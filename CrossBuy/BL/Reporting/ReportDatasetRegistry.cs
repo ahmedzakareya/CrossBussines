@@ -9,10 +9,19 @@ namespace CrossBuy.BL.Reporting
     // constructor, refuse duplicates, throw a named exception on an unknown code. One mental model for "how the
     // platform finds a pluggable thing" is worth more than a marginally cleverer second one.
     //
-    // NO DATASET IS REGISTERED BY THE PLATFORM in this increment. Connecting Accounting, Inventory or CRM is
-    // explicitly out of scope, so the registry ships empty and a module adds one line when its increment comes.
-    // An empty registry is not a broken one: ListForStudioAsync returns nothing and the Studio shows nothing,
-    // which is the honest state.
+    // WHAT IS REGISTERED HERE. Nothing, by this class — and that is still the design. Every dataset is
+    // contributed by its own module as an IReportDatasetDefinition, and the registry only collects, validates
+    // and refuses duplicates. The platform does not know Accounting from Inventory, which is why adding a
+    // module's datasets has never required editing this file.
+    //
+    // (This paragraph used to say the registry "ships empty". That was true of the increment that wrote it
+    // and has not been true since the module datasets landed: ReportingRegistration now contributes the
+    // Accounting, Inventory, CRM, Roster, Admin, document and register datasets. The distinction the old
+    // wording lost is the one that matters — the registry holds no datasets of its OWN, which is not the
+    // same as holding none.)
+    //
+    // An empty registry would still not be a broken one: ListForStudioAsync returns nothing and the Studio
+    // shows nothing, which is the honest state for a deployment that has wired no modules.
     // ============================================================================================
     public sealed class ReportDatasetRegistry : IReportDatasetRegistry
     {

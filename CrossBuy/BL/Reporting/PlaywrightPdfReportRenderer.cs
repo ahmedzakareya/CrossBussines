@@ -12,16 +12,24 @@ namespace CrossBuy.BL.Reporting
     // headless-browser call itself — the only part that needs a browser binary — sits behind
     // IHtmlToPdfConverter.
     //
-    // WHY THE SEAM EXISTS (stated plainly, because it is a real limitation of this slice):
-    // `Microsoft.Playwright` is NOT referenced by CrossBuy.csproj, and this slice does not add it. The csproj is
-    // a file the parallel team is also changing, and a Playwright reference is not additive — it needs a NuGet
-    // package plus a `playwright install` browser download in every environment that renders a PDF. Adding that
-    // as a side effect of an architecture slice would make an architecture review into a deployment change.
+    // WHY THE SEAM EXISTS. The browser binary is a DEPLOYMENT fact, not a reporting one: it needs a NuGet
+    // package plus a `playwright install` download in every environment that renders a PDF. Keeping that
+    // behind IHtmlToPdfConverter means the reporting decisions above can be read, reviewed and tested
+    // without a browser anywhere in sight.
     //
-    // So: the PDF path is ARCHITECTURALLY COMPLETE and FUNCTIONALLY UNBOUND. Requesting Pdf today produces a
-    // clean ReportRendererUnavailableException naming what is missing — never a corrupt file, never a silent
-    // fallback to HTML. Binding it later is one class and one DI line, and NO caller changes. The concrete
-    // binding is written out in the comment on IHtmlToPdfConverter below.
+    // THE SEAM IS BOUND. `Microsoft.Playwright` is referenced by CrossBuy.csproj and
+    // PlaywrightHtmlToPdfConverter is registered in ReportingRegistration, so Pdf is a working format.
+    //
+    // (This paragraph used to say the opposite — that Playwright was not referenced and the PDF path was
+    // "FUNCTIONALLY UNBOUND" — and it stayed wrong for long enough that a reader could have spent an
+    // afternoon binding something already bound, or told a customer PDF was unavailable. The seam's own
+    // design is what makes the stale reading plausible, so the current state is now stated outright rather
+    // than left to be inferred from the DI file.)
+    //
+    // An UNAVAILABLE converter is still handled the same way, because a deployment can still be missing the
+    // browser: IsAvailable is delegated, the registry checks it before calling, and the caller gets a clean
+    // ReportRendererUnavailableException naming what is missing — never a corrupt file, never a silent
+    // fallback to HTML.
     // ============================================================================================
     public class PlaywrightPdfReportRenderer : IReportRenderer
     {
