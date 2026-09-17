@@ -398,15 +398,39 @@ namespace CrossBuy.BL.Reporting
 
                     if (e.Kind == ReportElementKind.Chart)
                     {
-                        // A SERIES FIELD ON A CHART IS REFUSED, NOT IGNORED. This increment draws one series;
-                        // accepting the property and dropping it would leave an author looking at a chart that
-                        // silently answers a different question from the one they configured.
+                        clean.ChartKind = Enum.IsDefined(e.ChartKind) ? e.ChartKind : ReportChartKind.Column;
+
+                        // A SERIES FIELD IS OPTIONAL ON A CHART, AND MEANINGLESS ON A PIE.
+                        //
+                        // Columns, bars and lines all have a second dimension to spend: a column splits into a
+                        // group, a line becomes several lines. A pie has none - its slices already ARE the
+                        // categories, and its whole claim is that they sum to the circle. Splitting each slice
+                        // by a second field would either draw slices that no longer total the whole, or quietly
+                        // pick one series and draw that; the second is worse than the first.
+                        //
+                        // So it is REFUSED on a pie rather than ignored: an author who configured a breakdown
+                        // and got a chart answering a different question would have no way to tell.
                         if (!string.IsNullOrWhiteSpace(e.SeriesFieldKey))
                         {
-                            Reject(result, strict, "A chart draws one series; it takes no series field.");
-                            return null;
+                            if (clean.ChartKind == ReportChartKind.Pie)
+                            {
+                                Reject(result, strict,
+                                    "A pie chart's slices are already its categories; it takes no series field. "
+                                    + "Use a column, bar or line chart to break them down further.");
+                                return null;
+                            }
+
+                            // Bound through the SAME gate as the category axis, for the same reason: the series
+                            // values become the legend, so drawing them is reading the field.
+                            if (!Bind(e.SeriesFieldKey, fields, permitted, result, strict, out var chartSeries)) return null;
+                            if (string.Equals(chartSeries!.Key, category.Key, StringComparison.Ordinal))
+                            {
+                                Reject(result, strict,
+                                    "A chart's categories and its series must be two different fields.");
+                                return null;
+                            }
+                            clean.SeriesFieldKey = chartSeries.Key;
                         }
-                        clean.ChartKind = Enum.IsDefined(e.ChartKind) ? e.ChartKind : ReportChartKind.Column;
                     }
                     else
                     {

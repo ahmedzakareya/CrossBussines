@@ -553,12 +553,33 @@ namespace CrossBuy.BL.Reporting
         private static List<(string Label, decimal Value)> Buckets(
             ReportVisualRenderContext ctx, IReadOnlyList<ReportRow> rows, ReportElement e, bool naturalOrder)
         {
-            var grouped = rows
-                .GroupBy(r => Text(Value(r, e.CategoryFieldKey)) ?? "")
-                .Select(g => (Label: g.Key, Value: Dec(Summarise(g.ToList(), e.FieldKey, e.Aggregate))))
+            var groups = rows
+                .GroupBy(r => Key(ctx, e, Value(r, e.CategoryFieldKey)))
+                .Select(g => (
+                    Label: g.Key,
+                    Value: Dec(Summarise(g.ToList(), e.FieldKey, e.Aggregate)),
+                    // The earliest underlying date in the bucket, kept only to order a time axis. It is the
+                    // RAW value rather than the label, because the label is whatever the author's date format
+                    // produced and "Mar 2025" does not sort.
+                    At: g.Select(r => Value(r, e.CategoryFieldKey)).OfType<DateTime>()
+                         .DefaultIfEmpty(DateTime.MinValue).Min()))
                 .ToList();
 
-            if (!naturalOrder) grouped = grouped.OrderByDescending(x => x.Value).ToList();
+            // A TIME AXIS RUNS FORWARDS, WHATEVER ORDER THE ROWS ARRIVED IN.
+            //
+            // "Natural order" used to mean the order the source happened to return, and the sales source
+            // returns newest first - so a trend line put September on the left and the previous March on the
+            // right, and every rise in it was a fall. A reader does not check the axis direction before
+            // believing a line; they read the slope. That made it not a cosmetic problem.
+            //
+            // Sorting by the underlying date rather than by the label is what makes this work for any date
+            // format an author chooses. A non-date category keeps the source's order exactly as before:
+            // there the sequence is the author's own doing and nothing here can improve on it.
+            var grouped = !naturalOrder
+                ? groups.OrderByDescending(x => x.Value).Select(x => (x.Label, x.Value)).ToList()
+                : groups.Any(x => x.At > DateTime.MinValue)
+                    ? groups.OrderBy(x => x.At).Select(x => (x.Label, x.Value)).ToList()
+                    : groups.Select(x => (x.Label, x.Value)).ToList();
 
             var cap = Math.Max(2, e.MaxCategories);
             if (grouped.Count <= cap) return grouped;
@@ -567,6 +588,114 @@ namespace CrossBuy.BL.Reporting
             var rest = grouped.Skip(cap - 1).ToList();
             kept.Add((Other(ctx, rest.Count), rest.Sum(x => x.Value)));
             return kept;
+        }
+
+        // A CHART WITH A SECOND FIELD. One measure, one category axis, and now optionally a series field
+        // that splits each category. "Sales by month" and "sales by month per branch" are the same question
+        // at two levels of detail, and until this existed only the first could be drawn - the second had to
+        // become a cross-tab, which is a table, and a table is not what a trend is for.
+        //
+        // BOTH AXES ARE CAPPED, AND FOR DIFFERENT REASONS. Categories are capped because the drawing has a
+        // finite width; series are capped because the EYE has a finite number of colours it can tell apart,
+        // and a legend of twenty shades of one hue is a legend nobody reads. So the series ceiling is its own
+        // small number rather than MaxCategories, which an author sets with the horizontal axis in mind.
+        //
+        // NEITHER CEILING DROPS DATA. Both fold their tail into one labelled bucket, so a grouped column
+        // chart still totals what an ungrouped one would - which is the property that lets a reader put this
+        // chart beside the summary above it and have the two agree.
+        private const int SeriesCeiling = 6;
+
+        private sealed class ChartSeries
+        {
+            public string Name = "";
+            public decimal[] Values = Array.Empty<decimal>();
+        }
+
+        private static (List<string> Categories, List<ChartSeries> Series) SeriesBuckets(
+            ReportVisualRenderContext ctx, IReadOnlyList<ReportRow> rows, ReportElement e, bool naturalOrder)
+        {
+            // The category axis is chosen by the SAME routine and the same ceiling a single-series chart
+            // uses, so adding a series field never silently re-picks or re-orders the categories. A reader
+            // comparing the two charts is comparing the same axis.
+            var categories = Buckets(ctx, rows, e, naturalOrder).Select(b => b.Label).ToList();
+            var folded = categories.Count > 0 && categories[^1].StartsWith(
+                ctx.Arabic ? "أخرى (" : "Other (", StringComparison.Ordinal);
+            var index = new Dictionary<string, int>(StringComparer.Ordinal);
+            for (var i = 0; i < categories.Count; i++) index[categories[i]] = i;
+
+            // Series are ranked by their own total, so the largest keep their identity and the long tail
+            // folds - the opposite order would hand the six colours to whichever value sorted first.
+            var seriesTotals = rows
+                .GroupBy(r => Key(ctx, e, Value(r, e.SeriesFieldKey)))
+                .Select(g => (Name: g.Key, Total: Math.Abs(Dec(Summarise(g.ToList(), e.FieldKey, e.Aggregate)))))
+                .OrderByDescending(x => x.Total)
+                .ToList();
+
+            var keptNames = seriesTotals.Take(SeriesCeiling - (seriesTotals.Count > SeriesCeiling ? 1 : 0))
+                                        .Select(x => x.Name).ToList();
+            var keptSet = new HashSet<string>(keptNames, StringComparer.Ordinal);
+            var tailCount = seriesTotals.Count - keptNames.Count;
+            var otherName = Other(ctx, tailCount);
+
+            var names = new List<string>(keptNames);
+            if (tailCount > 0) names.Add(otherName);
+
+            var series = names.Select(n => new ChartSeries { Name = n, Values = new decimal[categories.Count] }).ToList();
+            var slot = new Dictionary<string, ChartSeries>(StringComparer.Ordinal);
+            for (var i = 0; i < names.Count; i++) slot[names[i]] = series[i];
+
+            // ONE PASS, GROUPED ON THE PAIR. Summarise runs per (category, series) cell rather than per row,
+            // because the aggregate is not always a sum: an Average over a cell is the average of that cell,
+            // and adding row values would have given the right answer only for Sum and Count.
+            foreach (var cell in rows.GroupBy(r => (
+                Cat: Key(ctx, e, Value(r, e.CategoryFieldKey)),
+                Ser: Key(ctx, e, Value(r, e.SeriesFieldKey)))))
+            {
+                // A row whose category folded into "Other" belongs to the LAST slot, not to nothing. Dropping
+                // it here is what would make the grouped chart stop agreeing with the plain one.
+                if (!index.TryGetValue(cell.Key.Cat, out var ci))
+                {
+                    if (!folded) continue;
+                    ci = categories.Count - 1;
+                }
+                var target = slot.TryGetValue(cell.Key.Ser, out var s) ? s
+                           : tailCount > 0 ? slot[otherName] : null;
+                if (target == null) continue;
+                target.Values[ci] += Dec(Summarise(cell.ToList(), e.FieldKey, e.Aggregate));
+            }
+
+            return (categories, series);
+        }
+
+        // The legend. Drawn only when there is more than one series, because a legend naming one thing is a
+        // caption that costs the drawing a strip of its height.
+        private static double Legend(StringBuilder sb, List<ChartSeries> series, double w, double h,
+            string color, string ink, double fs)
+        {
+            if (series.Count <= 1) return 0;
+
+            var boxH = fs * 1.5;
+            var y = h - boxH + fs * 0.15;
+            var swatch = fs * 0.8;
+            var x = 0.0;
+
+            for (var i = 0; i < series.Count; i++)
+            {
+                // The label is clipped to what is left of the strip rather than to a fixed count: the last
+                // entry of a six-series legend has far less room than the first, and a fixed clip would run
+                // it off the edge of the drawing.
+                var room = Math.Max(fs * 2, w - x - swatch - fs * 0.8);
+                var label = Clip(series[i].Name, Math.Max(3, (int)(room / (fs * 0.55))));
+                sb.Append("<rect x=\"").Append(Num(x)).Append("\" y=\"").Append(Num(y))
+                  .Append("\" width=\"").Append(Num(swatch)).Append("\" height=\"").Append(Num(swatch))
+                  .Append("\" rx=\"1\" fill=\"").Append(SeriesColor(color, i, series.Count)).Append("\"></rect>");
+                sb.Append("<text x=\"").Append(Num(x + swatch + fs * 0.3)).Append("\" y=\"")
+                  .Append(Num(y + swatch * 0.9)).Append("\" font-size=\"").Append(Num(fs * 0.85))
+                  .Append("\" fill=\"").Append(ink).Append("\">").Append(Enc(label)).Append("</text>");
+                x += swatch + fs * 0.3 + label.Length * fs * 0.5 + fs * 0.9;
+                if (x > w - fs * 3 && i < series.Count - 1) break;   // out of strip: the rest stay undrawn rather than overlap
+            }
+            return boxH;
         }
 
         private static decimal Dec(object? v) => v == null ? 0m : ReportValues.AsDecimal(v);
@@ -582,7 +711,9 @@ namespace CrossBuy.BL.Reporting
         {
             var rows = scope ?? new List<ReportRow>();
             var s = e.Style ?? new ReportElementStyle();
-            var data = Buckets(ctx, rows, e, naturalOrder: e.ChartKind == ReportChartKind.Line);
+            var natural = e.ChartKind == ReportChartKind.Line;
+            var multi = !string.IsNullOrWhiteSpace(e.SeriesFieldKey) && e.ChartKind != ReportChartKind.Pie;
+            var data = Buckets(ctx, rows, e, naturalOrder: natural);
 
             sb.Append("<div class=\"cbv-el cbv-chart\" style=\"").Append(style).Append("\">");
 
@@ -614,12 +745,29 @@ namespace CrossBuy.BL.Reporting
             sb.Append("<svg class=\"cbv-chart-svg\" direction=\"ltr\" viewBox=\"0 0 ").Append(Num(w)).Append(' ').Append(Num(h))
               .Append("\" width=\"100%\" height=\"100%\" preserveAspectRatio=\"xMidYMid meet\" role=\"img\">");
 
-            switch (e.ChartKind)
+            if (multi)
             {
-                case ReportChartKind.Pie: Pie(sb, ctx, e, data, w, h, baseColor, ink, fs); break;
-                case ReportChartKind.Bar: Bars(sb, ctx, e, data, w, h, baseColor, ink, fs, horizontal: true); break;
-                case ReportChartKind.Line: Line(sb, ctx, e, data, w, h, baseColor, ink, fs); break;
-                default: Bars(sb, ctx, e, data, w, h, baseColor, ink, fs, horizontal: false); break;
+                // The series split is resolved only now, once the drawing is known to have categories at all -
+                // an empty scope has already returned above, so nothing below has to handle a zero-width axis.
+                var (cats, series) = SeriesBuckets(ctx, rows, e, natural);
+                var legendH = Legend(sb, series, w, h, baseColor, ink, fs);
+                var plot = Math.Max(fs * 4, h - legendH);
+
+                if (e.ChartKind == ReportChartKind.Line)
+                    MultiLine(sb, ctx, e, cats, series, w, plot, baseColor, ink, fs);
+                else
+                    GroupedBars(sb, ctx, e, cats, series, w, plot, baseColor, ink, fs,
+                                horizontal: e.ChartKind == ReportChartKind.Bar);
+            }
+            else
+            {
+                switch (e.ChartKind)
+                {
+                    case ReportChartKind.Pie: Pie(sb, ctx, e, data, w, h, baseColor, ink, fs); break;
+                    case ReportChartKind.Bar: Bars(sb, ctx, e, data, w, h, baseColor, ink, fs, horizontal: true); break;
+                    case ReportChartKind.Line: Line(sb, ctx, e, data, w, h, baseColor, ink, fs); break;
+                    default: Bars(sb, ctx, e, data, w, h, baseColor, ink, fs, horizontal: false); break;
+                }
             }
 
             sb.Append("</svg></div>");
@@ -693,6 +841,131 @@ namespace CrossBuy.BL.Reporting
             }
         }
 
+        // GROUPED BARS. Each category holds one slot; the slot is divided between the series. The single-
+        // series routine is left exactly as it was rather than generalised into this one: it is the common
+        // case, its arithmetic is simpler, and a chart nobody asked to split should not start paying for a
+        // loop over a list of one.
+        private static void GroupedBars(StringBuilder sb, ReportVisualRenderContext ctx, ReportElement e,
+            List<string> cats, List<ChartSeries> series, double w, double h, string color, string ink,
+            double fs, bool horizontal)
+        {
+            if (cats.Count == 0 || series.Count == 0) return;
+
+            // THE SCALE IS THE LARGEST SINGLE BAR, not the largest category total. These are grouped bars and
+            // not stacked ones, so nothing is ever drawn at the sum - scaling to a total would leave every
+            // bar short by however much its neighbours contributed.
+            var max = 0m;
+            foreach (var s in series) foreach (var v in s.Values) max = Math.Max(max, Math.Abs(v));
+            if (max <= 0) max = 1;
+
+            var pad = fs * 0.6;
+            // VALUE LABELS ARE OFF IN A GROUPED CHART, whatever the element says. Six numbers across one
+            // category slot is the label collision this renderer has already had to fix once; the legend and
+            // the axis carry the reading instead.
+            var showValues = e.ShowValues && series.Count == 1;
+
+            if (horizontal)
+            {
+                var labelW = Math.Min(w * 0.5, w - fs * 6);
+                var trackW = Math.Max(fs, w - labelW - pad * 2 - (showValues ? fs * 5.5 : 0));
+                var rowH = (h - pad) / cats.Count;
+                var slotH = Math.Max(1.2, (rowH * 0.72) / series.Count);
+
+                for (var i = 0; i < cats.Count; i++)
+                {
+                    var y = pad / 2 + i * rowH;
+                    sb.Append("<text x=\"").Append(Num(labelW)).Append("\" y=\"").Append(Num(y + rowH / 2 + fs * .35))
+                      .Append("\" text-anchor=\"end\" font-size=\"").Append(Num(fs)).Append("\" fill=\"").Append(ink)
+                      .Append("\">").Append(Enc(Clip(cats[i], Math.Max(6, (int)(labelW / (fs * 0.5)))))).Append("</text>");
+
+                    var top = y + (rowH - slotH * series.Count) / 2;
+                    for (var k = 0; k < series.Count; k++)
+                    {
+                        var len = trackW * (double)(Math.Abs(series[k].Values[i]) / max);
+                        if (len <= 0) continue;
+                        sb.Append("<rect x=\"").Append(Num(labelW + pad)).Append("\" y=\"").Append(Num(top + k * slotH))
+                          .Append("\" width=\"").Append(Num(len)).Append("\" height=\"").Append(Num(Math.Max(1.0, slotH - 0.4)))
+                          .Append("\" fill=\"").Append(SeriesColor(color, k, series.Count)).Append("\" rx=\"1\"></rect>");
+                    }
+                }
+                return;
+            }
+
+            var axisH = fs * 1.6;
+            var plotH = Math.Max(fs, h - axisH - pad);
+            var colW = w / cats.Count;
+            var slotW = Math.Max(1.2, (colW * 0.72) / series.Count);
+
+            sb.Append("<line x1=\"0\" y1=\"").Append(Num(plotH)).Append("\" x2=\"").Append(Num(w))
+              .Append("\" y2=\"").Append(Num(plotH)).Append("\" stroke=\"").Append(ink)
+              .Append("\" stroke-opacity=\".25\" stroke-width=\"1\"></line>");
+
+            for (var i = 0; i < cats.Count; i++)
+            {
+                var left = i * colW + (colW - slotW * series.Count) / 2;
+                for (var k = 0; k < series.Count; k++)
+                {
+                    var bh = plotH * (double)(Math.Abs(series[k].Values[i]) / max);
+                    if (bh <= 0) continue;
+                    sb.Append("<rect x=\"").Append(Num(left + k * slotW)).Append("\" y=\"").Append(Num(plotH - bh))
+                      .Append("\" width=\"").Append(Num(Math.Max(1.0, slotW - 0.4))).Append("\" height=\"").Append(Num(bh))
+                      .Append("\" fill=\"").Append(SeriesColor(color, k, series.Count)).Append("\" rx=\"1\"></rect>");
+                }
+                sb.Append("<text x=\"").Append(Num(i * colW + colW / 2)).Append("\" y=\"")
+                  .Append(Num(plotH + fs * 1.15)).Append("\" text-anchor=\"middle\" font-size=\"")
+                  .Append(Num(fs)).Append("\" fill=\"").Append(ink).Append("\">")
+                  .Append(Enc(Clip(cats[i], Math.Max(4, (int)(colW / (fs * .55)))))).Append("</text>");
+            }
+        }
+
+        // SEVERAL LINES ON ONE PAIR OF AXES - the drawing a trend comparison actually wants. They share a
+        // scale, which is the entire point: lines drawn each to its own maximum would cross and separate in
+        // ways that mean nothing, and a reader would take that shape for the data.
+        private static void MultiLine(StringBuilder sb, ReportVisualRenderContext ctx, ReportElement e,
+            List<string> cats, List<ChartSeries> series, double w, double h, string color, string ink, double fs)
+        {
+            if (cats.Count == 0 || series.Count == 0) return;
+
+            var max = 0m;
+            foreach (var s in series) foreach (var v in s.Values) max = Math.Max(max, Math.Abs(v));
+            if (max <= 0) max = 1;
+
+            var axisH = fs * 1.6;
+            var plotH = Math.Max(fs, h - axisH - fs);
+            // INSET, so the first and last labels have somewhere to sit. Centred on x=0 and x=w they were
+            // half outside the viewBox and arrived clipped - the two labels a reader of a trend most wants.
+            var inset = Math.Min(w * 0.08, fs * 3.2);
+            var step = cats.Count == 1 ? 0 : (w - inset * 2) / (cats.Count - 1);
+            var x0 = cats.Count == 1 ? w / 2 : inset;
+
+            double Y(decimal v) => fs + plotH - plotH * (double)(Math.Abs(v) / max);
+
+            for (var k = 0; k < series.Count; k++)
+            {
+                var stroke = SeriesColor(color, k, series.Count);
+                var points = new StringBuilder();
+                for (var i = 0; i < cats.Count; i++)
+                {
+                    if (i > 0) points.Append(' ');
+                    points.Append(Num(x0 + i * step)).Append(',').Append(Num(Y(series[k].Values[i])));
+                }
+                sb.Append("<polyline points=\"").Append(points).Append("\" fill=\"none\" stroke=\"").Append(stroke)
+                  .Append("\" stroke-width=\"1.4\" stroke-linejoin=\"round\" stroke-linecap=\"round\"></polyline>");
+
+                // Markers only when the axis is short enough for them to be points rather than a thick line.
+                if (cats.Count <= 20)
+                    for (var i = 0; i < cats.Count; i++)
+                        sb.Append("<circle cx=\"").Append(Num(x0 + i * step)).Append("\" cy=\"")
+                          .Append(Num(Y(series[k].Values[i]))).Append("\" r=\"1.8\" fill=\"").Append(stroke).Append("\"></circle>");
+            }
+
+            // The axis is drawn ONCE, after the lines, so a marker sitting on a tick does not hide the label.
+            for (var i = 0; i < cats.Count; i++)
+                sb.Append("<text x=\"").Append(Num(x0 + i * step)).Append("\" y=\"").Append(Num(fs + plotH + fs * 1.15))
+                  .Append("\" text-anchor=\"middle\" font-size=\"").Append(Num(fs)).Append("\" fill=\"").Append(ink)
+                  .Append("\">").Append(Enc(Clip(cats[i], 10))).Append("</text>");
+        }
+
         private static void Line(StringBuilder sb, ReportVisualRenderContext ctx, ReportElement e,
             List<(string Label, decimal Value)> data, double w, double h, string color, string ink, double fs)
         {
@@ -700,8 +973,11 @@ namespace CrossBuy.BL.Reporting
             if (max <= 0) max = 1;
             var axisH = fs * 1.6;
             var plotH = Math.Max(fs, h - axisH - fs);
-            var step = data.Count == 1 ? 0 : w / (data.Count - 1);
-            var x0 = data.Count == 1 ? w / 2 : 0;
+            // INSET, so the first and last labels have somewhere to sit. Centred on x=0 and x=w they were
+            // half outside the viewBox and arrived clipped - the two labels a reader of a trend most wants.
+            var inset = Math.Min(w * 0.08, fs * 3.2);
+            var step = data.Count == 1 ? 0 : (w - inset * 2) / (data.Count - 1);
+            var x0 = data.Count == 1 ? w / 2 : inset;
 
             var points = new StringBuilder();
             for (var i = 0; i < data.Count; i++)
@@ -843,8 +1119,8 @@ namespace CrossBuy.BL.Reporting
                 foreach (var c in cols)
                 {
                     var cell = folded && ReferenceEquals(c, cols[^1])
-                        ? band.Where(r => !namedCols.Contains(Text(Value(r, e.SeriesFieldKey)) ?? "")).ToList()
-                        : band.Where(r => string.Equals(Text(Value(r, e.SeriesFieldKey)) ?? "", c,
+                        ? band.Where(r => !namedCols.Contains(Key(ctx, e, Value(r, e.SeriesFieldKey)))).ToList()
+                        : band.Where(r => string.Equals(Key(ctx, e, Value(r, e.SeriesFieldKey)), c,
                                                         StringComparison.Ordinal)).ToList();
                     sb.Append("<td>").Append(Enc(cell.Count == 0
                         ? ""
@@ -863,8 +1139,8 @@ namespace CrossBuy.BL.Reporting
                 foreach (var c in cols)
                 {
                     var cell = folded && ReferenceEquals(c, cols[^1])
-                        ? rows.Where(r => !namedCols.Contains(Text(Value(r, e.SeriesFieldKey)) ?? "")).ToList()
-                        : rows.Where(r => string.Equals(Text(Value(r, e.SeriesFieldKey)) ?? "", c,
+                        ? rows.Where(r => !namedCols.Contains(Key(ctx, e, Value(r, e.SeriesFieldKey)))).ToList()
+                        : rows.Where(r => string.Equals(Key(ctx, e, Value(r, e.SeriesFieldKey)), c,
                                                         StringComparison.Ordinal)).ToList();
                     sb.Append("<td>").Append(Enc(cell.Count == 0
                         ? ""
@@ -961,6 +1237,63 @@ namespace CrossBuy.BL.Reporting
         /// A generated hue ramp would have produced colours the author never chose and the brand sheet never
         /// measured — and the platform already refuses any colour that is not an authored #rrggbb. Tints of
         /// the one colour keep that promise: every slice is demonstrably the author's colour.
+        // SERIES ARE TOLD APART BY HUE; CATEGORIES BY SHADE. Both look like "pick colour number i", and
+        // using one for the other is what made the first grouped chart unreadable: six customers drawn in
+        // six tints of the same blue, with a legend that named them and a drawing in which nobody could
+        // find them.
+        //
+        // The distinction is in what the colours MEAN. The bars of a single-series chart are one quantity
+        // measured at several points, so a ramp is honest - it says "same thing, different amount", and a
+        // reader who ignores the colour loses nothing. Series are different entities measured the same
+        // way, and there the colour is the only thing carrying WHICH; it has to be categorical.
+        //
+        // THE AUTHOR'S COLOUR STAYS FIRST. Rotation starts from the hue they chose, so a report set to the
+        // brand blue still opens on the brand blue and the other series fan out from it, rather than the
+        // palette quietly replacing a deliberate choice.
+        //
+        // The rotation is deliberately not the full circle divided by n: at n = 2 that would put the second
+        // series on the exact complement, which reads as an alert rather than a peer. Just over a third of
+        // the wheel separates neighbours at any n while keeping every hue in the same family of weight.
+        private static string SeriesColor(string hex, int i, int n)
+        {
+            if (n <= 1 || i == 0 || hex.Length != 7) return hex;
+
+            var (h, s, l) = ToHsl(hex);
+            h = (h + i * 137.0) % 360.0;                       // the golden angle: no two of six land near each other
+
+            // Saturation and lightness are pulled toward a legible band rather than inherited: a very pale
+            // or very dark author colour would otherwise produce a set of colours that differ in hue and
+            // are all equally invisible on white.
+            s = Math.Clamp(s < 0.35 ? 0.55 : s, 0.42, 0.82);
+            l = Math.Clamp(l < 0.28 || l > 0.68 ? 0.48 : l, 0.34, 0.62);
+            return FromHsl(h, s, l);
+        }
+
+        private static (double H, double S, double L) ToHsl(string hex)
+        {
+            double r = Convert.ToInt32(hex.Substring(1, 2), 16) / 255.0,
+                   g = Convert.ToInt32(hex.Substring(3, 2), 16) / 255.0,
+                   b = Convert.ToInt32(hex.Substring(5, 2), 16) / 255.0;
+            double max = Math.Max(r, Math.Max(g, b)), min = Math.Min(r, Math.Min(g, b)), d = max - min;
+            double l = (max + min) / 2, s = d == 0 ? 0 : d / (1 - Math.Abs(2 * l - 1));
+            double h = d == 0 ? 0
+                     : max == r ? 60 * (((g - b) / d) % 6)
+                     : max == g ? 60 * (((b - r) / d) + 2)
+                                : 60 * (((r - g) / d) + 4);
+            if (h < 0) h += 360;
+            return (h, s, l);
+        }
+
+        private static string FromHsl(double h, double s, double l)
+        {
+            double c = (1 - Math.Abs(2 * l - 1)) * s, x = c * (1 - Math.Abs((h / 60 % 2) - 1)), m = l - c / 2;
+            (double r, double g, double b) t =
+                  h < 60  ? (c, x, 0) : h < 120 ? (x, c, 0) : h < 180 ? (0, c, x)
+                : h < 240 ? (0, x, c) : h < 300 ? (x, 0, c) : (c, 0, x);
+            int B(double v) => (int)Math.Clamp(Math.Round((v + m) * 255), 0, 255);
+            return $"#{B(t.r):x2}{B(t.g):x2}{B(t.b):x2}";
+        }
+
         private static string Shade(string hex, int i, int n)
         {
             if (n <= 1 || hex.Length != 7) return hex;
@@ -1171,6 +1504,21 @@ namespace CrossBuy.BL.Reporting
         }
 
         private static string Text(object? v) => v?.ToString() ?? "";
+
+        // THE LABEL A CHART GROUPS BY. Text() on a raw DateTime yields "9/13/2026 12:00:00 AM" - a label
+        // that is unreadable on an axis, differs by machine culture, and makes every row its own bucket
+        // because the time component is never equal twice.
+        //
+        // Running it through the element's own date format fixes all three, and does something more useful
+        // besides: since the bucket key IS this string, an author who sets the format to "yyyy-MM" gets a
+        // chart grouped BY MONTH, and "yyyy" gets one grouped by year. Period bucketing therefore needs no
+        // new property and no new element kind - it is the formatting decision the author was already
+        // making, now applied one step earlier than it used to be.
+        //
+        // Non-date values are untouched: their ToString() was already the value, and changing how they
+        // group would move data between buckets in a chart nobody asked to change.
+        private static string Key(ReportVisualRenderContext ctx, ReportElement e, object? v) =>
+            v is DateTime ? FormatValue(v, e.Style?.DateFormat, ctx) : Text(v);
 
         // ---- css --------------------------------------------------------------------------------------
         private static void Style(StringBuilder style, ReportElementStyle s)
