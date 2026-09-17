@@ -654,7 +654,21 @@
     .cbd-el {
         position: absolute; box-sizing: border-box; overflow: hidden; cursor: move;
         display: flex; user-select: none;
+
+        /* EVERY ELEMENT SHOWS ITS BOX, not just the selected one.
+           A chart is 85x64mm on the page and its design-time face is one short line of text, so with
+           no outline the canvas showed a title and then bare grid where the chart was - it read as a
+           missing element, and the only way to find out otherwise was to click where it should be.
+           A hairline says "something occupies this space" without competing with the real borders an
+           author sets, which are drawn from the element's own style and sit inside this one. */
+        outline: 1px dashed var(--bs-gray-400); outline-offset: -1px;
     }
+    /* A label, a bound field or a system field is text on a line; an outline round each one turns a
+       header into a wireframe. The hairline is for the elements whose SIZE is the point. */
+    .cbd-el[data-kind="0"], .cbd-el[data-kind="1"], .cbd-el[data-kind="5"], .cbd-el[data-kind="6"] {
+        outline: none;
+    }
+    .cbd-el:hover { outline-color: var(--bs-primary); }
     /* overflow:visible ONLY while selected. The element clips its own content (a long value must not
        spill across the page), but the resize handles sit half-outside its box — with the clip on they
        were invisible AND unclickable, so nothing could be resized with the mouse. Found by the probe. */

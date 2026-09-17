@@ -506,7 +506,7 @@
         // cbd-el-img is what lets an image FILL its frame instead of dictating its own height — see the
         // rule of that name in the stylesheet.
         return "<div class='cbd-el" + (sel ? " sel" : "") + (e.kind === KIND.Image ? " cbd-el-img" : "") +
-               "' data-el='" + e.id + "' style='" + st.join(";") + "'>" +
+               "' data-el='" + e.id + "' data-kind='" + e.kind + "' style='" + st.join(";") + "'>" +
                "<span class='cbd-el-body'>" + elementFace(e) + "</span>" + handles + "</div>";
     }
 
