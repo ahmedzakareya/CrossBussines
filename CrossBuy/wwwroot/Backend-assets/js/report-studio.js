@@ -1360,9 +1360,58 @@
             h.push(row(isCt ? (AR ? "حقل الصفوف" : "Row field") : (AR ? "المحور" : "Category axis"),
                 select("p-cat", fieldOpts, e.categoryFieldKey || "")));
 
+            // THE SERIES FIELD.
+            //
+            // Required on a cross-tab - without a column axis it is a Summary with extra steps - and
+            // OPTIONAL on a chart, where it splits each category: columns into a group, a line into
+            // several lines. The chart list therefore carries an explicit "none", because "I do not want
+            // a breakdown" has to be a choice the author can make and come back from, not the absence of
+            // one that the first field in the list silently fills.
+            //
+            // A PIE IS OFFERED NOTHING. Its slices already ARE the categories and their whole claim is
+            // that they sum to the circle, so the server refuses a series field on one. A control whose
+            // every value is rejected on save is worse than no control.
+            var isPie = !isCt && (e.chartKind === CHART.Pie);
             if (isCt) {
                 h.push(row(AR ? "حقل الأعمدة" : "Column field",
                     select("p-series", fieldOpts, e.seriesFieldKey || "")));
+            } else if (!isPie) {
+                h.push(row(AR ? "تقسيم حسب (سلسلة)" : "Break down by (series)",
+                    select("p-series", [{ v: "", t: AR ? "— بلا —" : "— none —" }].concat(fieldOpts),
+                           e.seriesFieldKey || "")));
+            } else if (e.seriesFieldKey) {
+                // Carried over from another chart kind. Say so rather than drop it silently: switching
+                // back to a column restores it, and saving while it is a pie is refused for this reason.
+                h.push("<div class='alert alert-warning py-2 px-3 fs-8 mb-3'>" +
+                    esc(AR ? "الدائرة لا تقبل تقسيمًا بسلسلة — شرائحها هي الفئات نفسها. غيّر النوع إلى أعمدة أو أشرطة أو خط لاستخدامه."
+                           : "A pie takes no series field - its slices already are the categories. Switch to column, bar or line to use it.") +
+                    "</div>");
+            }
+
+            // THE TIME BUCKET, offered only when an axis actually is a date.
+            //
+            // The renderer groups by the FORMATTED category, so this is not a display choice that merely
+            // looks different - it decides HOW MANY buckets there are. "yyyy-MM" is grouping by month.
+            // Without a control the capability existed and no author could reach it.
+            var catField = fieldOf(e.categoryFieldKey);
+            var serField = fieldOf(e.seriesFieldKey);
+            if ((catField && catField.type === 4) || (serField && serField.type === 4)) {
+                var buckets = [
+                    { v: "yyyy-MM-dd", t: AR ? "يومي" : "By day" },
+                    { v: "yyyy-MM", t: AR ? "شهري" : "By month" },
+                    { v: "yyyy", t: AR ? "سنوي" : "By year" }
+                ];
+                var cur = e.style.dateFormat || "yyyy-MM-dd";
+                // An author who typed their own format keeps it, listed as itself: the control shows the
+                // truth rather than snapping their choice to the nearest preset.
+                if (cur !== "yyyy-MM-dd" && cur !== "yyyy-MM" && cur !== "yyyy") {
+                    buckets.push({ v: cur, t: cur });
+                }
+                h.push(row(AR ? "تجميع التواريخ" : "Group dates by", select("p-datebucket", buckets, cur)));
+                h.push("<div class='text-muted fs-8 mb-3'>" +
+                    esc(AR ? "يحدّد عدد الفئات، لا شكل التسمية فقط — وهو تنسيق واحد للمحور والسلسلة معًا."
+                           : "Sets how many buckets there are, not just how the label looks - and one format serves both the axis and the series.") +
+                    "</div>");
             }
 
             h.push(row(AR ? "القيمة" : "Measure", select("p-field", fieldOpts, e.fieldKey || "")));
@@ -1610,9 +1659,21 @@
         on("p-subcode", "change", function () { edit(function () { e.subReportCode = $("p-subcode").value || null; }); });
         on("p-sublink", "change", function () { edit(function () { e.linkChildFieldKey = ($("p-sublink").value || "").trim() || null; }); });
 
-        on("p-chartkind", "change", function () { edit(function () { e.chartKind = parseInt($("p-chartkind").value, 10); }); });
-        on("p-cat", "change", function () { edit(function () { e.categoryFieldKey = $("p-cat").value || null; }); });
-        on("p-series", "change", function () { edit(function () { e.seriesFieldKey = $("p-series").value || null; }); });
+        on("p-chartkind", "change", function () {
+            edit(function () { e.chartKind = parseInt($("p-chartkind").value, 10); });
+            renderProps();   // a pie hides the series row; the other three show it
+        });
+        on("p-cat", "change", function () {
+            edit(function () { e.categoryFieldKey = $("p-cat").value || null; });
+            renderProps();   // a date axis brings the time bucket with it
+        });
+        on("p-series", "change", function () {
+            edit(function () { e.seriesFieldKey = $("p-series").value || null; });
+            renderProps();
+        });
+        on("p-datebucket", "change", function () {
+            edit(function () { e.style.dateFormat = $("p-datebucket").value || null; });
+        });
         on("p-showvals", "change", function () { edit(function () { e.showValues = $("p-showvals").checked; }); });
         on("p-showtotals", "change", function () { edit(function () { e.showGrandTotals = $("p-showtotals").checked; }); });
         on("p-maxcat", "change", function () {
