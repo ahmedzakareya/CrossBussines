@@ -1,0 +1,55 @@
+@model CrossBuy.ViewComponents.ExternalSignInModel
+
+@*
+    THE PROVIDER ROW, as the design draws it.
+
+    IT ALWAYS RENDERS, AND IT NEVER LIES. The two buttons are part of the design, so they are always
+    on the page; whether a given one signs you in depends on whether that provider is configured in
+    this installation, and the button says which. A configured provider posts to a real challenge. An
+    unconfigured one does not silently do nothing — the card's own notice explains that single
+    sign-on is not set up here and who can set it up.
+
+    That is the difference between this and the href="#" buttons it replaces: those looked like a way
+    in and were not, and nothing on the page ever admitted it.
+*@
+<div class="cb-or">@CrossBuy.Resources.SharedResources.OrContinueWith</div>
+
+<div class="row g-3">
+    @foreach (var p in Model.Providers)
+    {
+        <div class="col-6">
+            @if (p.Configured)
+            {
+                <a class="cb-sso" href="@Url.Action("ExternalLogin", "Account", new { provider = p.Scheme, returnUrl = ViewData["ReturnUrl"] as string })"
+                   title="@string.Format(CrossBuy.Resources.SharedResources.SignInWith, p.Display)">
+                    @Html.Raw(p.Mark)
+                    <span>@p.Display</span>
+                </a>
+            }
+            else
+            {
+                @* Not configured here. It still looks like the design and still answers when pressed —
+                   with the reason, in the notice a refusal already uses. *@
+                <button type="button" class="cb-sso cb-sso-off" data-sso-off="@p.Display"
+                        title="@CrossBuy.Resources.SharedResources.ExternalNotConfigured">
+                    @Html.Raw(p.Mark)
+                    <span>@p.Display</span>
+                </button>
+            }
+        </div>
+    }
+</div>
+
+<script>
+    (function () {
+        var notice = document.getElementById("cb-login-error");
+        Array.prototype.forEach.call(document.querySelectorAll("[data-sso-off]"), function (b) {
+            b.addEventListener("click", function () {
+                if (!notice) { return; }
+                notice.textContent = @Html.Raw(Json.Serialize(CrossBuy.Resources.SharedResources.ExternalNotConfigured));
+                notice.classList.remove("d-none");
+                notice.scrollIntoView({ block: "nearest", behavior: "smooth" });
+            });
+        });
+    })();
+</script>

@@ -144,12 +144,7 @@ namespace CrossBuy.BL
 			// handle profile image
 			if (profileImage != null && profileImage.Length > 0 && !string.IsNullOrEmpty(webRootPath))
 			{
-				var uploads = System.IO.Path.Combine(webRootPath, "uploads", "employees");
-				if (!System.IO.Directory.Exists(uploads)) System.IO.Directory.CreateDirectory(uploads);
-				var fileName = Guid.NewGuid() + System.IO.Path.GetExtension(profileImage.FileName);
-				using (var stream = System.IO.File.Create(System.IO.Path.Combine(uploads, fileName)))
-					await profileImage.CopyToAsync(stream);
-				emp.ProfileImage = "/uploads/employees/" + fileName;
+				emp.ProfileImage = await StoreProfileImageAsync(profileImage, webRootPath);
 			}
 			if (string.IsNullOrEmpty(emp.ProfileImage)) emp.ProfileImage = string.Empty;   // NOT NULL column — default empty when no image uploaded
 
@@ -209,15 +204,36 @@ namespace CrossBuy.BL
 
 			if (!string.IsNullOrEmpty(webRootPath))
 			{
-				var uploads = System.IO.Path.Combine(webRootPath, "uploads", "employees");
-				if (!System.IO.Directory.Exists(uploads)) System.IO.Directory.CreateDirectory(uploads);
-				var fileName = Guid.NewGuid() + System.IO.Path.GetExtension(profileImage.FileName);
-				using (var stream = System.IO.File.Create(System.IO.Path.Combine(uploads, fileName)))
-					await profileImage.CopyToAsync(stream);
-				emp.ProfileImage = "/uploads/employees/" + fileName;
+				emp.ProfileImage = await StoreProfileImageAsync(profileImage, webRootPath);
 				await _context.SaveChangesAsync();
 			}
 			return MapToViewModel(emp);
+		}
+
+		// ONE place the photo is written, because the failure mode is the same at both call sites and it is
+		// not a programming error: on a deployed server the application pool identity frequently has no write
+		// right on wwwroot\uploads. The raw exception says "Access to the path 'C:\inetpub\...' is denied",
+		// which reaches the browser through SaveEmployee's `ex.Message` — it publishes the server's absolute
+		// layout to anyone who can open the screen, and it tells the person reading it nothing they can act on.
+		// Rethrown as one sentence naming the RELATIVE folder and the fix.
+		private static async Task<string> StoreProfileImageAsync(
+			Microsoft.AspNetCore.Http.IFormFile profileImage, string webRootPath)
+		{
+			var uploads = System.IO.Path.Combine(webRootPath, "uploads", "employees");
+			var fileName = Guid.NewGuid() + System.IO.Path.GetExtension(profileImage.FileName);
+			try
+			{
+				if (!System.IO.Directory.Exists(uploads)) System.IO.Directory.CreateDirectory(uploads);
+				using var stream = System.IO.File.Create(System.IO.Path.Combine(uploads, fileName));
+				await profileImage.CopyToAsync(stream);
+			}
+			catch (Exception ex) when (ex is UnauthorizedAccessException or System.IO.IOException)
+			{
+				throw new InvalidOperationException(
+					"The employee photo could not be saved: the server folder wwwroot/uploads/employees is not writable. "
+					+ "Grant the application pool identity Modify rights on that folder, then save again.", ex);
+			}
+			return "/uploads/employees/" + fileName;
 		}
 	}
 }

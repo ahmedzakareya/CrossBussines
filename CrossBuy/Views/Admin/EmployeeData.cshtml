@@ -1380,6 +1380,21 @@ body[dir="rtl"] .er-review-row,
                                                    placeholder="@Localizer["Generated from first + last name"]"
                                                    readonly />
                                         </div>
+                                        @* THE ENGLISH NAME, which this wizard never asked for.
+                                           Employee.FullNameEn exists and EmployeeService already saves it, and
+                                           /Account/Profile and every English screen already prefer it — so with
+                                           no field here, every employee registered through this wizard was
+                                           Arabic-only and showed an Arabic name on an English page. Optional,
+                                           because a company that works in one language should not be forced to
+                                           type a second one: empty simply falls back to the Arabic name. *@
+                                        <div class="col-md-12">
+                                            <label class="er-label" for="FullNameEn">@Localizer["Full name (English)"]</label>
+                                            <input type="text" id="FullNameEn" name="FullNameEn"
+                                                   class="form-control-er"
+                                                   value="@Model?.FullNameEn"
+                                                   dir="ltr"
+                                                   placeholder="@Localizer["Shown on English screens; optional"]" />
+                                        </div>
                                         <div class="col-md-6">
                                             <label class="er-label" for="Email">@SR["Email"] <span class="req">*</span></label>
                                             <input type="email" id="Email" name="Email"
@@ -2380,6 +2395,8 @@ body[dir="rtl"] .er-review-row,
 
         var g1 = reviewGroup('ki-user', 'linear-gradient(135deg,#0E4A9E,#6EA8DC)', '@Localizer["Personal information"]',
             reviewItem('@Localizer["Full name"]',      $('#FullName').val()) +
+            // Only when given: an empty row on the review card would read as a field they forgot.
+            ($.trim($('#FullNameEn').val()) ? reviewItem('@Localizer["Full name (English)"]', $('#FullNameEn').val()) : '') +
             reviewItem('@SR["Email"]',          $('#Email').val()) +
             reviewItem('@Localizer["Phone number"]',   $('#PhoneNumber').val()) +
             reviewItem('@Localizer["Gender"]',         selectedText('#Gender')) +

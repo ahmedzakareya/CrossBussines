@@ -19,8 +19,13 @@
     second report would have to be added — an edit, a build and a deployment to offer a document the
     platform already knew how to render.
 
-    ONE LAYOUT IS A BUTTON, NOT A MENU. A dropdown offering a single choice is a step that teaches
-    people the control is slow. The menu appears when there is a choice.
+    ALWAYS A MENU, NEVER A BARE BUTTON — the owner's rule: "دائما وابدا نفترض ان في اكثر من نموذج".
+    This used to collapse to a plain button when a report had one layout or none, which was wrong twice
+    over. It made the control CHANGE SHAPE the moment somebody saved a second template, so the thing a
+    user had learned to click moved and grew a caret. And it hid the one route to authoring a layout
+    behind a second icon button, which is why a screen with no template at all looked like a screen that
+    simply printed something. One shape, whatever the catalogue holds: a menu that lists what exists and
+    offers to design what does not.
 
     NOTHING HERE PRINTS THE SCREEN and nothing downloads on click: every entry opens the shared dialog
     (_ReportPreviewModal), which is where "open in a tab" and "download" live.
@@ -81,10 +86,8 @@
     string Name(ReportTemplateSummary t) =>
         arabic ? t.Name : (string.IsNullOrWhiteSpace(t.NameEn) ? t.Name : t.NameEn!);
 
-    // A menu is warranted when there is more than one thing to pick: several reports, or one report
-    // with layouts of its own beyond the default.
+    // How many things the menu lists — used only to phrase the control, never to change its shape.
     var total = entries.Sum(e => e.Layouts.Count) + entries.Count;
-    var single = entries.Count == 1 && entries[0].Layouts.Count <= 1;
 }
 
 @if (entries.Count == 0)
@@ -92,35 +95,6 @@
     @* NOTHING BOUND, OR NOTHING PERMITTED — and no control at all, rather than one that leads nowhere.
        A print button that opens an empty dialog is worse than its absence: the reader blames the
        document rather than their permissions. *@
-}
-else if (single)
-{
-    var e = entries[0];
-    var only = e.Layouts.Count == 1 ? e.Layouts[0] : null;
-
-    <div class="btn-group btn-group-sm" role="group">
-        <button type="button" class="btn btn-sm btn-light-primary"
-                data-report-view="@Url_(e.Binding, null, true)"
-                data-report-download="@Url_(e.Binding, null, false)"
-                data-report-label="PDF"
-                data-report-viewable="true"
-                title="@Localizer["Open the printable document"]">
-            <i class="ki-outline ki-printer fs-5"></i>@Localizer["Print"]
-        </button>
-
-        @* EDITING IS PART OF PRINTING, on the same control. Without this the only route to a layout was
-           the reports centre — find the report, then press its pencil — which is the detour the viewer's
-           own chips already lost. A screen that can print a layout should be able to change it. *@
-        <a class="btn btn-sm btn-icon btn-light-primary"
-           href="@(only is not null
-                    ? Url.Action("Studio", "Reports", new { open = only.Id })
-                    : Url.Action("Viewer", "Reports", new { id = e.Binding.ReportCode }))"
-           target="_blank" rel="noopener"
-           title="@(only is not null ? Localizer["Edit the layout"].Value : Localizer["Design a layout"].Value)"
-           aria-label="@(only is not null ? Localizer["Edit the layout"].Value : Localizer["Design a layout"].Value)">
-            <i class="ki-outline ki-pencil fs-6"></i>
-        </a>
-    </div>
 }
 else
 {

@@ -79,4 +79,49 @@
   <data name="Outstanding balance" xml:space="preserve">
     <value>Solde impayé</value>
   </data>
+  <data name="Movement" xml:space="preserve">
+    <value>Mouvement</value>
+  </data>
+  <data name="Owed by the customer" xml:space="preserve">
+    <value>Dû par le client</value>
+  </data>
+  <data name="Owed to the vendor" xml:space="preserve">
+    <value>Dû au fournisseur</value>
+  </data>
+  <data name="Built from posted documents. A manual journal posted directly to the control account does not appear here, because the journal line does not record which party it belongs to." xml:space="preserve">
+    <value>Construit à partir des documents comptabilisés. Une écriture manuelle passée directement sur le compte collectif n'y figure pas, car la ligne d'écriture n'enregistre pas le tiers concerné.</value>
+  </data>
+  <data name="Carried forward" xml:space="preserve">
+    <value>Report à nouveau</value>
+  </data>
+  <data name="whole period" xml:space="preserve">
+    <value>période entière</value>
+  </data>
+  <data name="Rows" xml:space="preserve">
+    <value>Lignes</value>
+  </data>
+  <data name="Showing" xml:space="preserve">
+    <value>Affichage</value>
+  </data>
+  <data name="of" xml:space="preserve">
+    <value>sur</value>
+  </data>
+  <data name="Movements" xml:space="preserve">
+    <value>Mouvements</value>
+  </data>
+  <data name="Another party" xml:space="preserve">
+    <value>Autre tiers</value>
+  </data>
+  <data name="Whole history" xml:space="preserve">
+    <value>Historique complet</value>
+  </data>
+  <data name="The account is settled" xml:space="preserve">
+    <value>Le compte est soldé</value>
+  </data>
+  <data name="Every movement in this period is matched: nothing is outstanding on this account." xml:space="preserve">
+    <value>Tous les mouvements de la période se compensent : aucun solde en souffrance.</value>
+  </data>
+  <data name="This is the balance after every posted document in the period. Open the documents below to see what makes it up." xml:space="preserve">
+    <value>Solde après tous les documents comptabilisés de la période. Ouvrez les documents ci-dessous pour le détail.</value>
+  </data>
 </root>

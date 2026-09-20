@@ -1,0 +1,61 @@
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutAccounting.cshtml";
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    // ONE picker for both statements. The only thing that differs is which party it asks for and where
+    // it sends you — a second copy would drift the moment either one grew a field.
+    var isVendor = ViewBag.PickerIsVendor is bool b && b;
+    var parties = ViewBag.PartyPicker as List<CrossBuy.Controllers.AccountingController.PartyPickItem>
+                  ?? new List<CrossBuy.Controllers.AccountingController.PartyPickItem>();
+    var action = isVendor ? "VendorStatement" : "CustomerStatement";
+    var backAction = isVendor ? "Vendors" : "Customers";
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2">
+        <div class="app-container container-fluid d-flex flex-stack">
+            <div class="page-title d-flex flex-column justify-content-center gap-1">
+                <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@SR["Account statement"]</h1>
+                <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                    <li class="breadcrumb-item text-muted">@(isVendor ? Localizer["Vendors"].Value : SR["Customers"].Value)</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid">
+        <div class="app-container container-fluid">
+            <div class="card">
+                <div class="card-body py-10">
+                    <form method="get" action="@Url.Action(action, "Accounting")" class="row g-4 align-items-end" style="max-width:820px">
+                        <div class="col-md-6">
+                            <label class="required fw-semibold fs-6 mb-2">
+                                @(isVendor ? Localizer["Vendor"].Value : SR["Customer"].Value)
+                            </label>
+                            <select name="id" class="form-select form-select-solid" data-control="select2"
+                                    data-placeholder="@Localizer["Choose"]" required>
+                                <option value=""></option>
+                                @foreach (var p in parties)
+                                {
+                                    <option value="@p.Id">@p.Text</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="fw-semibold fs-6 mb-2">@SR["From"]</label>
+                            <input type="date" name="from" class="form-control form-control-solid" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="fw-semibold fs-6 mb-2">@SR["To"]</label>
+                            <input type="date" name="to" class="form-control form-control-solid" />
+                        </div>
+                        <div class="col-12 d-flex gap-2 mt-6">
+                            <button class="btn btn-primary"><i class="ki-outline ki-eye fs-3"></i>@Localizer["Open statement"]</button>
+                            <a href="@Url.Action(backAction, "Accounting")" class="btn btn-light">@SR["Back"]</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

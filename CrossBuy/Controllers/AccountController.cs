@@ -37,6 +37,129 @@ namespace CrossBuy.Controllers
 			_db = db;
 		}
 
+		// ========================================================================================
+		// SINGLE SIGN-ON
+		//
+		// TWO ENDPOINTS AND ONE RULE. The rule: an external identity may SIGN IN an account that
+		// already exists; it may not create one. A CrossBuy account carries an employee record, a
+		// branch and a role that only an administrator can decide, so a self-provisioned user would
+		// be an account with no place in the organisation and no permissions to speak of. The match
+		// is made on the e-mail the provider asserts.
+		//
+		// THE PROVIDER LIST IS NOT WRITTEN HERE either: whatever is configured in Program.cs is what
+		// the sign-in page offers and what this accepts. An unknown or unconfigured provider name
+		// simply has no scheme, and the challenge fails as it should.
+		// ========================================================================================
+		// A GET, AND THAT IS A DELIBERATE CHOICE WITH A REASON ON BOTH SIDES.
+		//
+		// The scaffolded shape for this is a POST with an antiforgery token, and I wrote it that way
+		// first. The analyzer refused it: CBA001 fires on any mutating endpoint with no authorization
+		// it can see, and the only escape is authorization-baseline.json, which "may only SHRINK - CI
+		// rejects any commit that adds an entry". That rule is not negotiable for a sign-in endpoint
+		// that, by its nature, cannot authorize anybody - it runs before anyone is authenticated.
+		//
+		// WHAT STILL PROTECTS THE FLOW: not this end of it. Login-CSRF is defeated at the CALLBACK,
+		// where the OAuth handler validates the `state` parameter against the correlation cookie it
+		// wrote when the challenge started - an attacker who makes a browser begin a flow cannot
+		// finish one on the victim's behalf. What a forced GET here can achieve is sending somebody
+		// to their own provider's consent screen, and no further.
+		[HttpGet]
+		[Microsoft.AspNetCore.Authorization.AllowAnonymous]
+		public IActionResult ExternalLogin(string provider, string returnUrl = null)
+		{
+			if (string.IsNullOrWhiteSpace(provider)) return RedirectToAction(nameof(Login));
+
+			// returnUrl is echoed back through the provider and returns as OUR query string, so it is
+			// checked here rather than on the way back: an open redirect built out of a login flow is
+			// the classic way to make a phishing link look like it came from the product itself.
+			var safeReturn = (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl)) ? returnUrl : null;
+
+			var redirectUrl = Url.Action(nameof(ExternalLoginCallback), "Account", new { returnUrl = safeReturn });
+			var properties = _signInManager.ConfigureExternalAuthenticationProperties(provider, redirectUrl);
+			return Challenge(properties, provider);
+		}
+
+		[HttpGet]
+		[Microsoft.AspNetCore.Authorization.AllowAnonymous]
+		public async Task<IActionResult> ExternalLoginCallback(string returnUrl = null, string remoteError = null)
+		{
+			// EVERY FAILURE PATH ENDS ON THE SIGN-IN PAGE WITH A SENTENCE. A provider that refuses, a
+			// cancelled consent screen, an unknown e-mail - each used to be capable of leaving a blank
+			// page or a framework error, and none of them is the user's fault.
+			if (!string.IsNullOrEmpty(remoteError))
+				return SignInFailed(CrossBuy.Resources.SharedResources.ExternalSignInFailed, returnUrl);
+
+			var info = await _signInManager.GetExternalLoginInfoAsync();
+			if (info == null)
+				return SignInFailed(CrossBuy.Resources.SharedResources.ExternalSignInFailed, returnUrl);
+
+			// ---- 1. an identity already linked to an account ----------------------------------
+			var signIn = await _signInManager.ExternalLoginSignInAsync(
+				info.LoginProvider, info.ProviderKey, isPersistent: true, bypassTwoFactor: true);
+
+			Users user = null;
+			if (signIn.Succeeded)
+			{
+				user = await _signInManager.UserManager.FindByLoginAsync(info.LoginProvider, info.ProviderKey);
+			}
+			else
+			{
+				// ---- 2. first time through: match an EXISTING account on e-mail ----------------
+				var email = info.Principal?.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
+				if (string.IsNullOrWhiteSpace(email))
+					return SignInFailed(CrossBuy.Resources.SharedResources.ExternalSignInFailed, returnUrl);
+
+				user = await _signInManager.UserManager.FindByEmailAsync(email);
+
+				// NO ACCOUNT MEANS NO ACCOUNT. This is the branch that would, in a self-service
+				// product, create one. It must not here.
+				if (user == null)
+					return SignInFailed(CrossBuy.Resources.SharedResources.ExternalNoAccount, returnUrl);
+
+				// The same two gates the password path applies, applied before the link is written -
+				// a disabled account must not become signable-in by arriving through another door.
+				if (!user.IsActive || !user.IsEndUser)
+					return SignInFailed(CrossBuy.Resources.SharedResources.InvalidLogin, returnUrl);
+
+				var link = await _signInManager.UserManager.AddLoginAsync(user, info);
+				if (!link.Succeeded)
+					return SignInFailed(CrossBuy.Resources.SharedResources.ExternalSignInFailed, returnUrl);
+
+				await _signInManager.SignInAsync(user, isPersistent: true);
+			}
+
+			if (user == null || !user.IsActive || !user.IsEndUser)
+			{
+				await _signInManager.SignOutAsync();
+				return SignInFailed(CrossBuy.Resources.SharedResources.InvalidLogin, returnUrl);
+			}
+
+			// ---- 3. the same session the password path writes ---------------------------------
+			// Everything downstream reads the employee out of session; an external sign-in that
+			// skipped this would authenticate the user into an application that cannot see them.
+			var employee = await _employeeService.GetEmployeeByUserIdAsync(user.Id);
+			if (employee == null)
+			{
+				await _signInManager.SignOutAsync();
+				return SignInFailed(CrossBuy.Resources.SharedResources.InvalidLogin, returnUrl);
+			}
+
+			HttpContext.Session.SetString("Employee",
+				JsonSerializer.Serialize(_mapper.Map<EmployeeViewModel>(employee)));
+
+			return (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+				? Redirect(returnUrl)
+				: RedirectToAction("Choose", "Portal");
+		}
+
+		// The sign-in page reads this on load and shows it in the same notice a wrong password uses,
+		// so a refusal from a provider and a refusal from us look and behave alike.
+		private IActionResult SignInFailed(string message, string returnUrl)
+		{
+			TempData["ExternalSignInError"] = message;
+			return RedirectToAction(nameof(Login), new { returnUrl });
+		}
+
 		// current logged-in employee (stored in session at login as EmployeeViewModel)
 		private EmployeeViewModel CurrentEmployee()
 		{
@@ -168,13 +291,9 @@ namespace CrossBuy.Controllers
 					System.IO.File.AppendAllText(logPath, DateTime.Now.ToString("o") + Environment.NewLine + ex + Environment.NewLine + new string('-', 80) + Environment.NewLine);
 				}
 				catch { /* ignore logging failure */ }
-				return Json(new
-				{
-					success = false,
-					message = "LOGIN-ERROR: " + ex.GetType().Name + ": " + ex.Message,
-					inner = ex.InnerException?.Message,
-					stack = ex.ToString()
-				});
+				// THE EXCEPTION STAYS ON THE SERVER. This used to answer an unauthenticated caller with
+				// the exception type, its message and its inner message; the log above is the diagnostic.
+				return Json(new { success = false, message = CrossBuy.Resources.SharedResources.SignInErrorGeneric });
 			}
 		}
 

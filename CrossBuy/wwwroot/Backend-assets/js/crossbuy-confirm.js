@@ -67,27 +67,27 @@
             generic: { icon: 'question', btn: 'btn btn-primary',
                        title: L('تأكيد الإجراء', 'Confirm action'),
                        text:  L('هل تريد متابعة هذا الإجراء؟', 'Do you want to proceed with this action?'),
-                       ok:    L('Continue', 'Continue') },
+                       ok:    L('متابعة', 'Continue') },
             save:    { icon: 'question', btn: 'btn btn-primary',
                        title: L('تأكيد الحفظ', 'Confirm save'),
                        text:  L('هل تريد حفظ التغييرات؟', 'Do you want to save the changes?'),
-                       ok:    L('Save', 'Save') },
+                       ok:    L('حفظ', 'Save') },
             edit:    { icon: 'question', btn: 'btn btn-primary',
                        title: L('تأكيد التعديل', 'Confirm edit'),
                        text:  L('هل تريد حفظ التعديلات؟', 'Do you want to save these changes?'),
-                       ok:    L('Edit', 'Save') },
+                       ok:    L('حفظ التعديل', 'Save') },
             approve: { icon: 'question', btn: 'btn btn-success',
                        title: L('تأكيد الاعتماد', 'Confirm approval'),
                        text:  L('هل تريد اعتماد هذا المستند؟', 'Do you want to approve this record?'),
-                       ok:    L('Approve', 'Approve') },
+                       ok:    L('اعتماد', 'Approve') },
             reject:  { icon: 'warning', btn: 'btn btn-danger',
                        title: L('تأكيد الرفض', 'Confirm rejection'),
                        text:  L('هل تريد رفض هذا المستند؟', 'Do you want to reject this record?'),
-                       ok:    L('Reject', 'Reject') },
+                       ok:    L('رفض', 'Reject') },
             'delete':{ icon: 'warning', btn: 'btn btn-danger',
                        title: L('تأكيد الحذف', 'Confirm delete'),
                        text:  L('لا يمكن التراجع عن هذا الإجراء.', 'This action cannot be undone.'),
-                       ok:    L('Delete', 'Delete') }
+                       ok:    L('حذف', 'Delete') }
         };
     }
 
@@ -112,7 +112,7 @@
             buttonsStyling: false,           // use Metronic/brand button classes
             reverseButtons: isRTL(),
             confirmButtonText: opts.confirmText || preset.ok,
-            cancelButtonText: opts.cancelText || L('Cancel', 'Cancel'),
+            cancelButtonText: opts.cancelText || L('إلغاء', 'Cancel'),
             customClass: {
                 confirmButton: opts.confirmClass || preset.btn,
                 cancelButton: 'btn btn-light',

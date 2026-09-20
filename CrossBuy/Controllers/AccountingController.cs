@@ -339,27 +339,763 @@ namespace CrossBuy.Controllers
 
 		// كشف حساب عميل
 		[SessionValidation][HttpGet]
-		public async Task<IActionResult> CustomerStatement(int id)
+		public async Task<IActionResult> CustomerStatement(int id, DateTime? from = null, DateTime? to = null, int page = 1, int pageSize = 50)
 		{
-			var c = await _context.Customers.AsNoTracking().FirstOrDefaultAsync(x => x.ID == id && x.CompanyID == DefaultCompanyId);
+			// RESOLVED, not the compile-time constant: this screen is company-scoped, and the constant is
+			// what made a company-2 accountant either see company 1 or see nothing.
+			var scope = await _company.ResolveAsync();
+			if (!scope.Ok) { TempData["AccErr"] = L["You do not have permission to perform this action"].Value; return RedirectToAction(nameof(Index)); }
+
+			// Reached from the menu with no party: ask for one instead of bouncing to another list.
+			if (id <= 0)
+			{
+				bool ar = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+				ViewBag.PartyPicker = (await _context.Customers.AsNoTracking()
+					.Where(x => x.CompanyID == scope.CompanyId && x.IsActive)
+					.OrderBy(x => x.Name).Select(x => new { x.ID, x.Name, x.NameEn }).ToListAsync())
+					.Select(x => new PartyPickItem(x.ID, ar ? x.Name : DisplayName.Or(x.NameEn, x.Name))).ToList();
+				return View("PartyStatementPicker");
+			}
+
+			var c = await _context.Customers.AsNoTracking().FirstOrDefaultAsync(x => x.ID == id && x.CompanyID == scope.CompanyId);
 			if (c == null) return RedirectToAction(nameof(Customers));
+
+			bool isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
 			ViewBag.Customer = c;
-			ViewBag.Invoices = await _context.SalesInvoices.AsNoTracking().Where(i => i.CustomerId == id).OrderBy(i => i.InvoiceDate).ToListAsync();
-			ViewBag.Receipts = await _context.Receipts.AsNoTracking().Where(r => r.CustomerId == id).OrderBy(r => r.ReceiptDate).ToListAsync();
-			return View();
+			return View(await BuildPartyStatementAsync(scope.CompanyId, id, isCustomer: true,
+				partyName: isAr ? c.Name : DisplayName.Or(c.NameEn, c.Name), from: from, to: to,
+				page: page, pageSize: pageSize));
 		}
+
+		// ================================================================================================
+		// MOVEMENT SUMMARY — one screen that holds a whole movement.
+		//
+		// Until now a movement was spread over four detail screens and two that did not exist at all: a
+		// receipt and a payment have only a LIST, and neither the returns nor the invoices showed the
+		// journal entries they produced. So "what actually happened here" meant opening three screens and
+		// holding the answer in your head.
+		//
+		// This is one screen for every kind: the document, the settlements against it, every journal entry
+		// it produced one under the other, and the timeline.
+		//
+		// THE KIND IS THE JOURNAL'S OWN SourceType, not a new vocabulary. Those values are what the posting
+		// services already write (SalesInvoice, Receipt, PurchaseInvoice, SalesReturn, PurchaseReturn,
+		// Payment), so the entries are found by the link that already exists rather than by a second one
+		// invented here. Anything outside that list is refused rather than guessed at.
+		// ================================================================================================
+
+		/// One labelled fact on the header strip. A LIST rather than fifteen nullable properties because the
+		/// facts a movement actually has differ by kind — a receipt has a method and a cash account, a return
+		/// has a warehouse and an original invoice — and a list shows exactly the ones that exist.
+		public sealed class MovementFact
+		{
+			public string Label { get; init; } = "";
+			public string Value { get; init; } = "";
+			public string? Url { get; init; }
+			public bool Mono { get; init; }          // render as a code badge (document numbers, codes)
+		}
+
+		public sealed class MovementLine
+		{
+			public int No { get; init; }
+			public string Description { get; init; } = "";
+			public string? ItemCode { get; init; }
+			public string? Unit { get; init; }
+			public string? Warehouse { get; init; }
+			public string? CostCenter { get; init; }
+			public decimal Qty { get; init; }
+			public decimal UnitPrice { get; init; }
+			public decimal Discount { get; init; }
+			public decimal TaxRate { get; init; }
+			public decimal Total { get; init; }
+		}
+
+		public sealed class MovementJournalLine
+		{
+			public string AccountCode { get; init; } = "";
+			public string AccountName { get; init; } = "";
+			public string? CostCenter { get; init; }
+			public string? Project { get; init; }
+			public decimal Debit { get; init; }
+			public decimal Credit { get; init; }
+			public string? Note { get; init; }
+		}
+
+		public sealed class MovementJournal
+		{
+			public int Id { get; init; }
+			public string? EntryNo { get; init; }
+			public DateTime Date { get; init; }
+			public string Status { get; init; } = "";
+			public string JournalType { get; init; } = "";
+			public string? Description { get; init; }
+			public string? CreatedByName { get; init; }
+			public string? CreatedByPhoto { get; init; }
+			public DateTime? CreatedAt { get; init; }
+			public string? PostedByName { get; init; }
+			public DateTime? PostedAt { get; init; }
+			public int? ReversedByEntryId { get; init; }
+			public string? ReversedByNo { get; init; }
+			public string? Url { get; init; }
+			public List<MovementJournalLine> Lines { get; init; } = new();
+			public decimal Total => Lines.Sum(l => l.Debit);
+			public decimal TotalCredit => Lines.Sum(l => l.Credit);
+			public bool Balanced => Total == TotalCredit;
+		}
+
+		/// A settlement seen from either side: on an invoice it is the receipt that paid it, on a receipt
+		/// it is the invoice it went against.
+		public sealed class MovementSettlement
+		{
+			public string Kind { get; init; } = "";
+			public int Id { get; init; }
+			public string DocNo { get; init; } = "";
+			public DateTime Date { get; init; }
+			public decimal Amount { get; init; }
+			public string? Url { get; init; }
+			public string? Label { get; init; }      // used by the related-documents list
+		}
+
+		public sealed class MovementSummaryModel
+		{
+			public string Kind { get; init; } = "";
+			public string KindLabel { get; init; } = "";
+			public int Id { get; init; }
+			public string DocNo { get; init; } = "";
+			public DateTime Date { get; init; }
+			public string Status { get; init; } = "";
+			public string PartyName { get; init; } = "";
+			public int? PartyId { get; init; }
+			public bool PartyIsCustomer { get; init; }
+			public string? Notes { get; init; }
+			public decimal SubTotal { get; init; }
+			public decimal TaxTotal { get; init; }
+			public decimal GrandTotal { get; init; }
+			public decimal DiscountTotal { get; init; }
+			public string? CurrencyCode { get; init; }
+			public decimal? ExchangeRate { get; init; }
+			public decimal? GrandTotalBase { get; init; }
+			public bool IsMoneyDoc { get; init; }            // receipt/payment: no lines, no tax, no discount
+			public List<MovementFact> Facts { get; init; } = new();
+			public List<MovementLine> Lines { get; init; } = new();
+			public List<MovementSettlement> Settlements { get; init; } = new();
+			public List<MovementSettlement> Related { get; init; } = new();
+			public List<MovementJournal> Journals { get; init; } = new();
+			public string? TimelineCode { get; init; }      // an EntityRegistry code, when the family has one
+			public decimal SettledAmount => Settlements.Sum(s => s.Amount);
+			public decimal Outstanding => GrandTotal - SettledAmount;
+		}
+
+		/// The kinds this screen understands, mapped to the registry code whose timeline it can show.
+		/// A kind with no registry family still gets every other section — the timeline is simply absent,
+		/// which is the honest state rather than an empty widget.
+		private static readonly Dictionary<string, string?> MovementKinds = new(StringComparer.Ordinal)
+		{
+			["SalesInvoice"] = CrossBuy.BL.Platform.EntityRegistry.SalesInvoice,
+			["PurchaseInvoice"] = CrossBuy.BL.Platform.EntityRegistry.PurchaseInvoice,
+			["SalesReturn"] = CrossBuy.BL.Platform.EntityRegistry.SalesReturn,
+			["PurchaseReturn"] = CrossBuy.BL.Platform.EntityRegistry.PurchaseReturn,
+			["Receipt"] = CrossBuy.BL.Platform.EntityRegistry.Receipt,
+			["Payment"] = CrossBuy.BL.Platform.EntityRegistry.Payment,
+		};
+
+		// ملخص الحركة — the whole movement on one screen.
+		[SessionValidation][HttpGet]
+		public async Task<IActionResult> MovementSummary(string kind, int id)
+		{
+			var scope = await _company.ResolveAsync();
+			if (!scope.Ok) { TempData["AccErr"] = L["You do not have permission to perform this action"].Value; return RedirectToAction(nameof(Index)); }
+			if (string.IsNullOrWhiteSpace(kind) || !MovementKinds.ContainsKey(kind) || id <= 0) return NotFound();
+
+			int co = scope.CompanyId;
+			bool isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+			MovementSummaryModel? m = null;
+			var settlements = new List<MovementSettlement>();
+			var facts = new List<MovementFact>();
+			var related = new List<MovementSettlement>();
+
+			// ---- the lookups every kind may need, read once ------------------------------------------
+			var curs = await _context.Currencies.AsNoTracking().ToDictionaryAsync(c => c.ID, c => c.Code);
+			string? CurCode(int? cid) => cid != null && curs.TryGetValue(cid.Value, out var c) ? c : null;
+			var whs = await _context.Warehouses.AsNoTracking().Where(w => w.CompanyID == co)
+				.ToDictionaryAsync(w => w.ID, w => isAr ? w.Name : DisplayName.Or(w.NameEn, w.Name));
+			var prjs = await _context.Projects.AsNoTracking().Where(p => p.CompanyID == co)
+				.ToDictionaryAsync(p => p.ID, p => isAr ? p.Name : DisplayName.Or(p.NameEn, p.Name));
+			var ccs = await _context.CostCenters.AsNoTracking().Where(c => c.CompanyID == co)
+				.ToDictionaryAsync(c => c.ID, c => isAr ? c.Name : DisplayName.Or(c.NameEn, c.Name));
+			var uoms = await _context.UnitsOfMeasure.AsNoTracking().Where(u => u.CompanyID == co)
+				.ToDictionaryAsync(u => u.ID, u => isAr ? u.Name : DisplayName.Or(u.NameEn, u.Name));
+
+			// THE ITEM'S OWN NAME, because the LINE has no English one on three of the six kinds.
+			// SalesInvoiceLine and PurchaseInvoiceLine carry ItemDescriptionEn; SalesReturnLine,
+			// PurchaseReturnLine and the money documents do not — so on an English screen a return line
+			// printed the Arabic description it was stored with. The item master is where the English
+			// name actually lives (PurchaseReturnDetail already resolves it this way), and it is the
+			// FALLBACK, not the override: a line description the user typed still wins over the catalogue.
+			var items = isAr ? new Dictionary<int, string>()
+				: await _context.Items.AsNoTracking().Where(i => i.CompanyID == co && i.NameEn != null && i.NameEn != "")
+					.ToDictionaryAsync(i => i.ID, i => i.NameEn!);
+
+			string? Look(Dictionary<int, string> d, int? k) => k != null && d.TryGetValue(k.Value, out var v) ? v : null;
+			// Arabic UI: the stored description, always. Otherwise: the line's own English text if it has
+			// one, else the item's English name, else the stored description — never a blank.
+			string LineText(string? en, string stored, int? itemId) =>
+				isAr ? stored
+				     : !string.IsNullOrWhiteSpace(en) ? en!
+				     : (itemId != null && items.TryGetValue(itemId.Value, out var n) ? n : stored);
+			void Fact(string label, string? value, string? url = null, bool mono = false)
+			{ if (!string.IsNullOrWhiteSpace(value)) facts.Add(new MovementFact { Label = label, Value = value!, Url = url, Mono = mono }); }
+
+			// The party's own identity fields, added by every branch that has a party.
+			void PartyFacts(string? phone, string? taxNo, string? email, int? termDays)
+			{
+				Fact(L["Phone"].Value, phone);
+				Fact(L["Tax registration number"].Value, taxNo, null, true);
+				Fact(L["Email"].Value, email);
+				if (termDays is > 0) Fact(L["Payment terms"].Value, string.Format(isAr ? "{0} يوم" : "{0} days", termDays));
+			}
+
+			// The money facts shared by every kind: currency, rate and the base-currency figure when the
+			// document is not in the base currency. A rate of 1 says nothing, so it is not shown.
+			void MoneyFacts(int? currencyId, decimal? rate, decimal? baseTotal)
+			{
+				Fact(L["Currency"].Value, CurCode(currencyId), null, true);
+				if (rate is > 0 && rate != 1m)
+				{
+					Fact(L["Exchange rate"].Value, rate.Value.ToString("0.####"));
+					if (baseTotal is > 0) Fact(L["Amount in base currency"].Value, baseTotal.Value.ToString("N2"));
+				}
+			}
+
+			if (kind == "SalesInvoice")
+			{
+				var d = await _context.SalesInvoices.AsNoTracking().Include(x => x.Lines)
+					.FirstOrDefaultAsync(x => x.ID == id && x.CompanyID == co);
+				if (d == null) return NotFound();
+				var cu = await _context.Customers.AsNoTracking().FirstOrDefaultAsync(x => x.ID == d.CustomerId);
+				// The receipts that settled it, through the allocation table rather than by guessing at dates.
+				settlements = await (from a in _context.ReceiptAllocations.AsNoTracking()
+									 join r in _context.Receipts.AsNoTracking() on a.ReceiptId equals r.ID
+									 where a.CompanyID == co && a.SalesInvoiceId == id
+									 select new MovementSettlement
+									 {
+										 Kind = "Receipt", Id = r.ID, DocNo = r.ReceiptNo ?? ("#" + r.ID),
+										 Date = r.ReceiptDate, Amount = a.ForeignAmount,
+									 }).ToListAsync();
+				// What came back against it — a return is part of the same movement, not a separate story.
+				related = await _context.SalesReturns.AsNoTracking()
+					.Where(r => r.CompanyID == co && r.OriginalInvoiceId == id)
+					.Select(r => new MovementSettlement
+					{
+						Kind = "SalesReturn", Id = r.ID, DocNo = r.ReturnNo ?? ("#" + r.ID),
+						Date = r.ReturnDate, Amount = r.GrandTotal, Label = L["Sales return"].Value,
+					}).ToListAsync();
+
+				MoneyFacts(d.CurrencyId, d.ExchangeRate, d.GrandTotalBase);
+				Fact(L["Project"].Value, Look(prjs, d.ProjectId));
+				Fact(L["ETA status"].Value, d.EtaStatus);
+				Fact(L["ETA UUID"].Value, d.EtaUuid, null, true);
+				if (!string.IsNullOrWhiteSpace(d.CustomerNameOverride))
+					Fact(L["Invoice beneficiary"].Value, d.CustomerNameOverride);
+				PartyFacts(cu?.Phone, cu?.TaxRegNo, cu?.Email, cu?.PaymentTermsDays);
+				if (d.CreatedAt != null) Fact(L["Created at"].Value, d.CreatedAt.Value.ToString("yyyy-MM-dd HH:mm"));
+
+				m = new MovementSummaryModel
+				{
+					Kind = kind, KindLabel = L["Sales invoice"].Value, Id = d.ID,
+					DocNo = d.InvoiceNo ?? ("#" + d.ID), Date = d.InvoiceDate, Status = d.Status,
+					PartyName = cu == null ? "" : (isAr ? cu.Name : DisplayName.Or(cu.NameEn, cu.Name)),
+					PartyId = d.CustomerId, PartyIsCustomer = true, Notes = d.Notes,
+					SubTotal = d.SubTotal, TaxTotal = d.TaxTotal, GrandTotal = d.GrandTotal,
+					DiscountTotal = d.Lines.Sum(l => l.DiscountAmount),
+					CurrencyCode = CurCode(d.CurrencyId), ExchangeRate = d.ExchangeRate, GrandTotalBase = d.GrandTotalBase,
+					Lines = d.Lines.OrderBy(l => l.LineNo).Select(l => new MovementLine
+					{
+						No = l.LineNo,
+						Description = LineText(l.ItemDescriptionEn, l.ItemDescription, l.ItemId),
+						ItemCode = l.ItemCode, Unit = Look(uoms, l.UoMId), Warehouse = Look(whs, l.WarehouseId),
+						Qty = l.Qty, UnitPrice = l.UnitPrice, Discount = l.DiscountAmount, TaxRate = l.TaxRate, Total = l.LineTotal,
+					}).ToList(),
+					TimelineCode = MovementKinds[kind],
+					Facts = facts,
+				};
+			}
+			else if (kind == "PurchaseInvoice")
+			{
+				var d = await _context.PurchaseInvoices.AsNoTracking().Include(x => x.Lines)
+					.FirstOrDefaultAsync(x => x.ID == id && x.CompanyID == co);
+				if (d == null) return NotFound();
+				var ve = await _context.Vendors.AsNoTracking().FirstOrDefaultAsync(x => x.ID == d.VendorId);
+				settlements = await (from a in _context.PaymentAllocations.AsNoTracking()
+									 join p in _context.Payments.AsNoTracking() on a.PaymentId equals p.ID
+									 where a.CompanyID == co && a.PurchaseInvoiceId == id
+									 select new MovementSettlement
+									 {
+										 Kind = "Payment", Id = p.ID, DocNo = p.PaymentNo ?? ("#" + p.ID),
+										 Date = p.PaymentDate, Amount = a.ForeignAmount,
+									 }).ToListAsync();
+				related = await _context.PurchaseReturns.AsNoTracking()
+					.Where(r => r.CompanyID == co && r.OriginalInvoiceId == id)
+					.Select(r => new MovementSettlement
+					{
+						Kind = "PurchaseReturn", Id = r.ID, DocNo = r.ReturnNo ?? ("#" + r.ID),
+						Date = r.ReturnDate, Amount = r.GrandTotal, Label = L["Purchase return"].Value,
+					}).ToListAsync();
+
+				MoneyFacts(d.CurrencyId, d.ExchangeRate, d.GrandTotalBase);
+				Fact(L["Project"].Value, Look(prjs, d.ProjectId));
+				PartyFacts(ve?.Phone, ve?.TaxRegNo, ve?.Email, ve?.PaymentTermsDays);
+				if (d.CreatedAt != null) Fact(L["Created at"].Value, d.CreatedAt.Value.ToString("yyyy-MM-dd HH:mm"));
+
+				m = new MovementSummaryModel
+				{
+					Kind = kind, KindLabel = L["Purchase Invoice"].Value, Id = d.ID,
+					DocNo = d.InvoiceNo ?? ("#" + d.ID), Date = d.InvoiceDate, Status = d.Status,
+					PartyName = ve == null ? "" : (isAr ? ve.Name : DisplayName.Or(ve.NameEn, ve.Name)),
+					PartyId = d.VendorId, PartyIsCustomer = false, Notes = d.Notes,
+					SubTotal = d.SubTotal, TaxTotal = d.TaxTotal, GrandTotal = d.GrandTotal,
+					DiscountTotal = d.Lines.Sum(l => l.DiscountAmount),
+					CurrencyCode = CurCode(d.CurrencyId), ExchangeRate = d.ExchangeRate, GrandTotalBase = d.GrandTotalBase,
+					Lines = d.Lines.OrderBy(l => l.LineNo).Select(l => new MovementLine
+					{
+						No = l.LineNo,
+						Description = LineText(l.ItemDescriptionEn, l.ItemDescription, l.ItemId),
+						Warehouse = Look(whs, l.WarehouseId), CostCenter = Look(ccs, l.CostCenterId),
+						Qty = l.Qty, UnitPrice = l.UnitPrice, Discount = l.DiscountAmount, TaxRate = l.TaxRate, Total = l.LineTotal,
+					}).ToList(),
+					TimelineCode = MovementKinds[kind],
+					Facts = facts,
+				};
+			}
+			else if (kind == "SalesReturn")
+			{
+				var d = await _context.SalesReturns.AsNoTracking().Include(x => x.Lines)
+					.FirstOrDefaultAsync(x => x.ID == id && x.CompanyID == co);
+				if (d == null) return NotFound();
+				var cu = await _context.Customers.AsNoTracking().FirstOrDefaultAsync(x => x.ID == d.CustomerId);
+				// The invoice it came back against — the first thing anyone opening a return asks for.
+				if (d.OriginalInvoiceId != null)
+				{
+					var oi = await _context.SalesInvoices.AsNoTracking()
+						.Where(i => i.ID == d.OriginalInvoiceId && i.CompanyID == co)
+						.Select(i => new { i.ID, i.InvoiceNo, i.InvoiceDate, i.GrandTotal }).FirstOrDefaultAsync();
+					if (oi != null) related.Add(new MovementSettlement
+					{
+						Kind = "SalesInvoice", Id = oi.ID, DocNo = oi.InvoiceNo ?? ("#" + oi.ID),
+						Date = oi.InvoiceDate, Amount = oi.GrandTotal, Label = L["Original invoice"].Value,
+					});
+				}
+
+				MoneyFacts(d.CurrencyId, d.ExchangeRate, d.GrandTotalBase);
+				Fact(L["Warehouse"].Value, Look(whs, d.WarehouseId));
+				PartyFacts(cu?.Phone, cu?.TaxRegNo, cu?.Email, cu?.PaymentTermsDays);
+				if (d.CreatedAt != null) Fact(L["Created at"].Value, d.CreatedAt.Value.ToString("yyyy-MM-dd HH:mm"));
+
+				m = new MovementSummaryModel
+				{
+					Kind = kind, KindLabel = L["Sales return"].Value, Id = d.ID,
+					DocNo = d.ReturnNo ?? ("#" + d.ID), Date = d.ReturnDate, Status = d.Status,
+					PartyName = cu == null ? "" : (isAr ? cu.Name : DisplayName.Or(cu.NameEn, cu.Name)),
+					PartyId = d.CustomerId, PartyIsCustomer = true, Notes = d.Notes,
+					SubTotal = d.SubTotal, TaxTotal = d.TaxTotal, GrandTotal = d.GrandTotal,
+					DiscountTotal = d.Lines.Sum(l => l.DiscountAmount),
+					CurrencyCode = CurCode(d.CurrencyId), ExchangeRate = d.ExchangeRate, GrandTotalBase = d.GrandTotalBase,
+					Lines = d.Lines.OrderBy(l => l.LineNo).Select(l => new MovementLine
+					{
+						No = l.LineNo, Description = LineText(null, l.ItemDescription, l.ItemId), Warehouse = Look(whs, l.WarehouseId),
+						Qty = l.Qty, UnitPrice = l.UnitPrice,
+						Discount = l.DiscountAmount, TaxRate = l.TaxRate, Total = l.LineTotal,
+					}).ToList(),
+					TimelineCode = MovementKinds[kind],
+					Facts = facts,
+				};
+			}
+			else if (kind == "PurchaseReturn")
+			{
+				var d = await _context.PurchaseReturns.AsNoTracking().Include(x => x.Lines)
+					.FirstOrDefaultAsync(x => x.ID == id && x.CompanyID == co);
+				if (d == null) return NotFound();
+				var ve = await _context.Vendors.AsNoTracking().FirstOrDefaultAsync(x => x.ID == d.VendorId);
+				if (d.OriginalInvoiceId != null)
+				{
+					var oi = await _context.PurchaseInvoices.AsNoTracking()
+						.Where(i => i.ID == d.OriginalInvoiceId && i.CompanyID == co)
+						.Select(i => new { i.ID, i.InvoiceNo, i.InvoiceDate, i.GrandTotal }).FirstOrDefaultAsync();
+					if (oi != null) related.Add(new MovementSettlement
+					{
+						Kind = "PurchaseInvoice", Id = oi.ID, DocNo = oi.InvoiceNo ?? ("#" + oi.ID),
+						Date = oi.InvoiceDate, Amount = oi.GrandTotal, Label = L["Original invoice"].Value,
+					});
+				}
+
+				MoneyFacts(d.CurrencyId, d.ExchangeRate, d.GrandTotalBase);
+				Fact(L["Warehouse"].Value, Look(whs, d.WarehouseId));
+				PartyFacts(ve?.Phone, ve?.TaxRegNo, ve?.Email, ve?.PaymentTermsDays);
+				if (d.CreatedAt != null) Fact(L["Created at"].Value, d.CreatedAt.Value.ToString("yyyy-MM-dd HH:mm"));
+
+				m = new MovementSummaryModel
+				{
+					Kind = kind, KindLabel = L["Purchase return"].Value, Id = d.ID,
+					DocNo = d.ReturnNo ?? ("#" + d.ID), Date = d.ReturnDate, Status = d.Status,
+					PartyName = ve == null ? "" : (isAr ? ve.Name : DisplayName.Or(ve.NameEn, ve.Name)),
+					PartyId = d.VendorId, PartyIsCustomer = false, Notes = d.Notes,
+					SubTotal = d.SubTotal, TaxTotal = d.TaxTotal, GrandTotal = d.GrandTotal,
+					CurrencyCode = CurCode(d.CurrencyId), ExchangeRate = d.ExchangeRate, GrandTotalBase = d.GrandTotalBase,
+					Lines = d.Lines.OrderBy(l => l.LineNo).Select(l => new MovementLine
+					{
+						No = l.LineNo, Description = LineText(null, l.ItemDescription, l.ItemId), Warehouse = Look(whs, l.WarehouseId),
+						Qty = l.Qty, UnitPrice = l.UnitCost,
+						Discount = 0, TaxRate = l.TaxRate, Total = l.LineTotal,
+					}).ToList(),
+					TimelineCode = MovementKinds[kind],
+					Facts = facts,
+				};
+			}
+			else if (kind == "Receipt")
+			{
+				var d = await _context.Receipts.AsNoTracking().FirstOrDefaultAsync(x => x.ID == id && x.CompanyID == co);
+				if (d == null) return NotFound();
+				var cu = d.CustomerId == null ? null : await _context.Customers.AsNoTracking().FirstOrDefaultAsync(x => x.ID == d.CustomerId);
+				// Seen from the other side: the invoices this receipt went against.
+				settlements = await (from a in _context.ReceiptAllocations.AsNoTracking()
+									 join i in _context.SalesInvoices.AsNoTracking() on a.SalesInvoiceId equals i.ID
+									 where a.CompanyID == co && a.ReceiptId == id
+									 select new MovementSettlement
+									 {
+										 Kind = "SalesInvoice", Id = i.ID, DocNo = i.InvoiceNo ?? ("#" + i.ID),
+										 Date = i.InvoiceDate, Amount = a.ForeignAmount,
+									 }).ToListAsync();
+
+				var cash = await _context.Accounts.AsNoTracking().Where(a => a.ID == d.CashAccountId)
+					.Select(a => new { a.Code, a.Name, a.NameEn }).FirstOrDefaultAsync();
+				Fact(L["Payment method"].Value, CrossBuy.BL.Platform.MoneyMethodNames.For(d.Method, isAr));
+				if (cash != null) Fact(L["Cash/bank account"].Value,
+					cash.Code + " — " + (isAr ? cash.Name : DisplayName.Or(cash.NameEn, cash.Name)));
+				MoneyFacts(d.CurrencyId, d.ExchangeRate, d.AmountBase);
+				PartyFacts(cu?.Phone, cu?.TaxRegNo, cu?.Email, null);
+				if (d.CreatedAt != null) Fact(L["Created at"].Value, d.CreatedAt.Value.ToString("yyyy-MM-dd HH:mm"));
+
+				m = new MovementSummaryModel
+				{
+					Kind = kind, KindLabel = L["Receipt"].Value, Id = d.ID,
+					DocNo = d.ReceiptNo ?? ("#" + d.ID), Date = d.ReceiptDate, Status = d.Status,
+					PartyName = cu == null ? "" : (isAr ? cu.Name : DisplayName.Or(cu.NameEn, cu.Name)),
+					PartyId = d.CustomerId, PartyIsCustomer = true, Notes = d.Notes,
+					SubTotal = d.Amount, TaxTotal = 0, GrandTotal = d.Amount,
+					CurrencyCode = CurCode(d.CurrencyId), ExchangeRate = d.ExchangeRate, GrandTotalBase = d.AmountBase,
+					IsMoneyDoc = true,
+					TimelineCode = MovementKinds[kind],
+					Facts = facts,
+				};
+			}
+			else // Payment
+			{
+				var d = await _context.Payments.AsNoTracking().FirstOrDefaultAsync(x => x.ID == id && x.CompanyID == co);
+				if (d == null) return NotFound();
+				var ve = d.VendorId == null ? null : await _context.Vendors.AsNoTracking().FirstOrDefaultAsync(x => x.ID == d.VendorId);
+				settlements = await (from a in _context.PaymentAllocations.AsNoTracking()
+									 join i in _context.PurchaseInvoices.AsNoTracking() on a.PurchaseInvoiceId equals i.ID
+									 where a.CompanyID == co && a.PaymentId == id
+									 select new MovementSettlement
+									 {
+										 Kind = "PurchaseInvoice", Id = i.ID, DocNo = i.InvoiceNo ?? ("#" + i.ID),
+										 Date = i.InvoiceDate, Amount = a.ForeignAmount,
+									 }).ToListAsync();
+
+				var cash = await _context.Accounts.AsNoTracking().Where(a => a.ID == d.CashAccountId)
+					.Select(a => new { a.Code, a.Name, a.NameEn }).FirstOrDefaultAsync();
+				Fact(L["Payment method"].Value, CrossBuy.BL.Platform.MoneyMethodNames.For(d.Method, isAr));
+				if (cash != null) Fact(L["Cash/bank account"].Value,
+					cash.Code + " — " + (isAr ? cash.Name : DisplayName.Or(cash.NameEn, cash.Name)));
+				MoneyFacts(d.CurrencyId, d.ExchangeRate, d.AmountBase);
+				PartyFacts(ve?.Phone, ve?.TaxRegNo, ve?.Email, null);
+				if (d.CreatedAt != null) Fact(L["Created at"].Value, d.CreatedAt.Value.ToString("yyyy-MM-dd HH:mm"));
+
+				m = new MovementSummaryModel
+				{
+					Kind = kind, KindLabel = L["Payment"].Value, Id = d.ID,
+					DocNo = d.PaymentNo ?? ("#" + d.ID), Date = d.PaymentDate, Status = d.Status,
+					PartyName = ve == null ? "" : (isAr ? ve.Name : DisplayName.Or(ve.NameEn, ve.Name)),
+					PartyId = d.VendorId, PartyIsCustomer = false, Notes = d.Notes,
+					SubTotal = d.Amount, TaxTotal = 0, GrandTotal = d.Amount,
+					CurrencyCode = CurCode(d.CurrencyId), ExchangeRate = d.ExchangeRate, GrandTotalBase = d.AmountBase,
+					IsMoneyDoc = true,
+					TimelineCode = MovementKinds[kind],
+					Facts = facts,
+				};
+			}
+
+			// Each settlement gets a link back into this same screen, so the chain can be walked in both
+			// directions without ever leaving it.
+			foreach (var s in settlements)
+				m.Settlements.Add(new MovementSettlement
+				{
+					Kind = s.Kind, Id = s.Id, DocNo = s.DocNo, Date = s.Date, Amount = s.Amount,
+					// Back into this same screen, so the chain walks in both directions without leaving it.
+					Url = Url.Action(nameof(MovementSummary), new { kind = s.Kind, id = s.Id }),
+				});
+
+			foreach (var r in related)
+				m.Related.Add(new MovementSettlement
+				{
+					Kind = r.Kind, Id = r.Id, DocNo = r.DocNo, Date = r.Date, Amount = r.Amount, Label = r.Label,
+					Url = Url.Action(nameof(MovementSummary), new { kind = r.Kind, id = r.Id }),
+				});
+
+			// EVERY JOURNAL THIS MOVEMENT PRODUCED, in order, each with its own lines. The link is the
+			// posting services' own SourceType/SourceId — the same pair the reversal and the audit use.
+			var jes = await _context.JournalEntries.AsNoTracking().Include(e => e.Lines)
+				.Where(e => e.CompanyID == co && e.SourceType == kind && e.SourceId == id)
+				.OrderBy(e => e.EntryDate).ThenBy(e => e.ID).ToListAsync();
+
+			var acctIds = jes.SelectMany(e => e.Lines).Select(l => l.AccountId).Distinct().ToList();
+			var accts = await _context.Accounts.AsNoTracking().Where(a => acctIds.Contains(a.ID))
+				.Select(a => new { a.ID, a.Code, a.Name, a.NameEn }).ToDictionaryAsync(a => a.ID);
+
+			// Who made it and who posted it — CreatedBy/PostedBy hold Employee ids, so the photo the owner
+			// asked for on the timeline is available on the journal card too.
+			var empIds = jes.SelectMany(e => new[] { e.CreatedBy, e.PostedBy }).Where(x => x != null)
+				.Select(x => x!.Value).Distinct().ToList();
+			var emps = await _context.Employee.AsNoTracking().Where(e => empIds.Contains(e.ID))
+				.Select(e => new { e.ID, e.FullName, e.ProfileImage }).ToDictionaryAsync(e => e.ID);
+
+			// A reversed entry names the entry that reversed it; show its number, not a bare id.
+			var revIds = jes.Where(e => e.ReversedByEntryId != null).Select(e => e.ReversedByEntryId!.Value).Distinct().ToList();
+			var revNos = revIds.Count == 0 ? new Dictionary<int, string?>()
+				: await _context.JournalEntries.AsNoTracking().Where(e => revIds.Contains(e.ID))
+					.ToDictionaryAsync(e => e.ID, e => e.EntryNo);
+
+			foreach (var e in jes)
+			{
+				string? photo = null, createdBy = null, postedBy = null;
+				if (e.CreatedBy != null && emps.TryGetValue(e.CreatedBy.Value, out var ce))
+				{
+					createdBy = ce.FullName;
+					if (!string.IsNullOrWhiteSpace(ce.ProfileImage)) photo = Url.Content("~" + ce.ProfileImage!.Replace("\\", "/"));
+				}
+				if (e.PostedBy != null && emps.TryGetValue(e.PostedBy.Value, out var pe)) postedBy = pe.FullName;
+
+				m.Journals.Add(new MovementJournal
+				{
+					Id = e.ID, EntryNo = e.EntryNo, Date = e.EntryDate, Status = e.Status, JournalType = e.JournalType,
+					Description = isAr ? e.Description : DisplayName.Or(e.DescriptionEn, e.Description),
+					CreatedByName = createdBy, CreatedByPhoto = photo, CreatedAt = e.CreatedAt,
+					PostedByName = postedBy, PostedAt = e.PostedAt,
+					ReversedByEntryId = e.ReversedByEntryId,
+					ReversedByNo = e.ReversedByEntryId != null && revNos.TryGetValue(e.ReversedByEntryId.Value, out var rn) ? rn : null,
+					Url = Url.Action(nameof(JournalEntry), new { id = e.ID }),
+					Lines = e.Lines.OrderBy(l => l.LineNo).Select(l => new MovementJournalLine
+					{
+						AccountCode = accts.TryGetValue(l.AccountId, out var a) ? (a.Code ?? "") : "",
+						AccountName = accts.TryGetValue(l.AccountId, out var a2) ? (isAr ? a2.Name : DisplayName.Or(a2.NameEn, a2.Name)) : "",
+						CostCenter = Look(ccs, l.CostCenterId), Project = Look(prjs, l.ProjectId),
+						Debit = l.Debit, Credit = l.Credit,
+						Note = isAr ? l.Description : DisplayName.Or(l.DescriptionEn, l.Description),
+					}).ToList(),
+				});
+			}
+
+			return View(m);
+		}
+
 
 		// كشف حساب مورد
 		[SessionValidation][HttpGet]
-		public async Task<IActionResult> VendorStatement(int id)
+		public async Task<IActionResult> VendorStatement(int id, DateTime? from = null, DateTime? to = null, int page = 1, int pageSize = 50)
 		{
-			var v = await _context.Vendors.AsNoTracking().FirstOrDefaultAsync(x => x.ID == id && x.CompanyID == DefaultCompanyId);
+			var scope = await _company.ResolveAsync();
+			if (!scope.Ok) { TempData["AccErr"] = L["You do not have permission to perform this action"].Value; return RedirectToAction(nameof(Index)); }
+
+			if (id <= 0)
+			{
+				bool ar = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+				ViewBag.PartyPicker = (await _context.Vendors.AsNoTracking()
+					.Where(x => x.CompanyID == scope.CompanyId && x.IsActive)
+					.OrderBy(x => x.Name).Select(x => new { x.ID, x.Name, x.NameEn }).ToListAsync())
+					.Select(x => new PartyPickItem(x.ID, ar ? x.Name : DisplayName.Or(x.NameEn, x.Name))).ToList();
+				ViewBag.PickerIsVendor = true;
+				return View("PartyStatementPicker");
+			}
+
+			var v = await _context.Vendors.AsNoTracking().FirstOrDefaultAsync(x => x.ID == id && x.CompanyID == scope.CompanyId);
 			if (v == null) return RedirectToAction(nameof(Vendors));
+
+			bool isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
 			ViewBag.Vendor = v;
-			ViewBag.Invoices = await _context.PurchaseInvoices.AsNoTracking().Where(i => i.VendorId == id).OrderBy(i => i.InvoiceDate).ToListAsync();
-			ViewBag.Payments = await _context.Payments.AsNoTracking().Where(p => p.VendorId == id).OrderBy(p => p.PaymentDate).ToListAsync();
-			return View();
+			return View(await BuildPartyStatementAsync(scope.CompanyId, id, isCustomer: false,
+				partyName: isAr ? v.Name : DisplayName.Or(v.NameEn, v.Name), from: from, to: to,
+				page: page, pageSize: pageSize));
 		}
+
+		// ================================================================================================
+		// THE PARTY STATEMENT — every movement on one customer or one vendor.
+		//
+		// The pair of actions this replaces fetched two document types and nothing else, so a customer who
+		// returned goods saw a balance that DISAGREED WITH THE LEDGER, and neither query carried a company
+		// predicate: Receipts, Payments, SalesReturns and PurchaseReturns have no global company filter
+		// either (only SalesInvoice, PurchaseInvoice and Customer do), so a receipt belonging to another
+		// company was read whenever the party id happened to exist there.
+		//
+		// WHY THIS IS BUILT FROM DOCUMENTS AND NOT FROM THE LEDGER — the question asked first, because a
+		// ledger-driven statement is the textbook answer:
+		//   JournalEntryLine carries AccountId, CostCenterId, ProjectId and EmployeeId. It carries NO
+		//   customer and NO vendor. Customer.ControlAccountId is a CONTROL account shared by every customer,
+		//   so filtering the ledger by it returns all of them together. There is no subsidiary ledger in
+		//   this schema, so the documents ARE the only per-party record that exists.
+		//   The consequence is stated rather than hidden: a manual journal posted straight to the control
+		//   account cannot appear on any one party's statement, because nothing records which party it was
+		//   for. That needs a party dimension on the journal line, which is a schema change.
+		//
+		// AMOUNTS ARE THE BASE-CURRENCY ONES. A statement that adds a dollar invoice to a pound receipt is
+		// arithmetic nobody can use; *Base is what the ledger posted. Older rows predate those columns, so
+		// the raw amount is the fallback rather than a zero.
+		//
+		// ONLY POSTED DOCUMENTS MOVE THE BALANCE. A draft invoice is not a receivable, and showing it would
+		// make the statement disagree with the ledger in the other direction.
+		// ================================================================================================
+
+		/// PUBLIC and named, not anonymous: a runtime-compiled view lives in another assembly and cannot
+		/// bind to an internal anonymous type through `dynamic`.
+		public sealed record PartyPickItem(int Id, string Text);
+
+		public sealed class PartyStatementRow
+		{
+			public DateTime Date { get; init; }
+			public string Kind { get; init; } = "";      // localised label
+			public string DocNo { get; init; } = "";
+			public string? Note { get; init; }
+			public decimal Debit { get; init; }
+			public decimal Credit { get; init; }
+			public string? Url { get; init; }            // the document behind the line, when it has a screen
+			public decimal Balance { get; set; }         // running, filled after the sort
+		}
+
+		public sealed class PartyStatementModel
+		{
+			public int PartyId { get; init; }
+			public string PartyName { get; init; } = "";
+			public bool IsCustomer { get; init; }
+			public DateTime? From { get; init; }
+			public DateTime? To { get; init; }
+			public decimal Opening { get; init; }
+			public decimal Closing { get; init; }
+			public decimal TotalDebit { get; init; }
+			public decimal TotalCredit { get; init; }
+			public List<PartyStatementRow> Rows { get; init; } = new();
+
+			// Paging. Opening is the period's; CarriedForward is THIS page's starting balance, which is
+			// the same figure on page 1 and the previous page's closing on every page after it.
+			public int Page { get; init; } = 1;
+			public int PageSize { get; init; } = 50;
+			public int TotalRows { get; init; }
+			public decimal CarriedForward { get; init; }
+			public int PageCount => Math.Max(1, (int)Math.Ceiling(TotalRows / (double)(PageSize < 1 ? 50 : PageSize)));
+		}
+
+		/// A movement as it is read out of a document table, before the period is applied.
+		private sealed record Movement(DateTime Date, string Kind, string DocNo, string? Note,
+									   decimal Debit, decimal Credit, string? Url);
+
+		private static decimal Base(decimal? baseAmount, decimal raw) => baseAmount ?? raw;
+
+		private async Task<PartyStatementModel> BuildPartyStatementAsync(
+			int companyId, int partyId, bool isCustomer, string partyName, DateTime? from, DateTime? to,
+			int page = 1, int pageSize = 50)
+		{
+			var moves = new List<Movement>();
+
+			if (isCustomer)
+			{
+				// AR: what the customer owes rises on a debit.
+				foreach (var i in await _context.SalesInvoices.AsNoTracking()
+					.Where(i => i.CustomerId == partyId && i.CompanyID == companyId && i.Status == "Posted")
+					.Select(i => new { i.ID, i.InvoiceDate, i.InvoiceNo, i.GrandTotal, i.GrandTotalBase, i.Notes }).ToListAsync())
+					moves.Add(new Movement(i.InvoiceDate, L["Sales invoice"].Value, i.InvoiceNo ?? ("#" + i.ID), i.Notes,
+						Base(i.GrandTotalBase, i.GrandTotal), 0, Url.Action(nameof(MovementSummary), new { kind = "SalesInvoice", id = i.ID })));
+
+				// The credit note that was missing entirely. Without it a returned order still showed as owed.
+				foreach (var r in await _context.SalesReturns.AsNoTracking()
+					.Where(r => r.CustomerId == partyId && r.CompanyID == companyId && r.Status == "Posted")
+					.Select(r => new { r.ID, r.ReturnDate, r.ReturnNo, r.GrandTotal, r.GrandTotalBase, r.Notes }).ToListAsync())
+					moves.Add(new Movement(r.ReturnDate, L["Sales return"].Value, r.ReturnNo ?? ("#" + r.ID), r.Notes,
+						0, Base(r.GrandTotalBase, r.GrandTotal), Url.Action(nameof(MovementSummary), new { kind = "SalesReturn", id = r.ID })));
+
+				foreach (var r in await _context.Receipts.AsNoTracking()
+					.Where(r => r.CustomerId == partyId && r.CompanyID == companyId && r.Status == "Posted")
+					.Select(r => new { r.ID, r.ReceiptDate, r.ReceiptNo, r.Amount, r.AmountBase, r.Notes }).ToListAsync())
+					// Receipts have a LIST screen and no per-row action, so the link goes there rather than to a
+					// detail page that does not exist — a link that 404s is worse than a link to the list.
+					moves.Add(new Movement(r.ReceiptDate, L["Receipt"].Value, r.ReceiptNo ?? ("#" + r.ID), r.Notes,
+						0, Base(r.AmountBase, r.Amount), Url.Action(nameof(MovementSummary), new { kind = "Receipt", id = r.ID })));
+			}
+			else
+			{
+				// AP: what we owe the vendor rises on a credit — the mirror of the block above.
+				foreach (var i in await _context.PurchaseInvoices.AsNoTracking()
+					.Where(i => i.VendorId == partyId && i.CompanyID == companyId && i.Status == "Posted")
+					.Select(i => new { i.ID, i.InvoiceDate, i.InvoiceNo, i.GrandTotal, i.GrandTotalBase, i.Notes }).ToListAsync())
+					moves.Add(new Movement(i.InvoiceDate, L["Purchase Invoice"].Value, i.InvoiceNo ?? ("#" + i.ID), i.Notes,
+						0, Base(i.GrandTotalBase, i.GrandTotal), Url.Action(nameof(MovementSummary), new { kind = "PurchaseInvoice", id = i.ID })));
+
+				foreach (var r in await _context.PurchaseReturns.AsNoTracking()
+					.Where(r => r.VendorId == partyId && r.CompanyID == companyId && r.Status == "Posted")
+					.Select(r => new { r.ID, r.ReturnDate, r.ReturnNo, r.GrandTotal, r.GrandTotalBase, r.Notes }).ToListAsync())
+					moves.Add(new Movement(r.ReturnDate, L["Purchase return"].Value, r.ReturnNo ?? ("#" + r.ID), r.Notes,
+						Base(r.GrandTotalBase, r.GrandTotal), 0, Url.Action(nameof(MovementSummary), new { kind = "PurchaseReturn", id = r.ID })));
+
+				foreach (var p in await _context.Payments.AsNoTracking()
+					.Where(p => p.VendorId == partyId && p.CompanyID == companyId && p.Status == "Posted")
+					.Select(p => new { p.ID, p.PaymentDate, p.PaymentNo, p.Amount, p.AmountBase, p.Notes }).ToListAsync())
+					moves.Add(new Movement(p.PaymentDate, L["Payment"].Value, p.PaymentNo ?? ("#" + p.ID), p.Notes,
+						Base(p.AmountBase, p.Amount), 0, Url.Action(nameof(MovementSummary), new { kind = "Payment", id = p.ID })));
+			}
+
+			// THE OPENING BALANCE IS EVERYTHING BEFORE THE PERIOD, not a stored figure: a statement whose
+			// opening does not equal the sum of what came before it is the classic way one stops reconciling.
+			decimal opening = 0;
+			if (from.HasValue)
+			{
+				foreach (var m in moves.Where(m => m.Date.Date < from.Value.Date)) opening += m.Debit - m.Credit;
+			}
+
+			var inPeriod = moves
+				.Where(m => (!from.HasValue || m.Date.Date >= from.Value.Date)
+						 && (!to.HasValue || m.Date.Date <= to.Value.Date))
+				.OrderBy(m => m.Date).ThenBy(m => m.DocNo, StringComparer.Ordinal)
+				.ToList();
+
+			// The balance is run over the WHOLE period BEFORE any slicing, so a row's balance does not
+			// depend on which page it happens to land on.
+			var all = new List<PartyStatementRow>(inPeriod.Count);
+			decimal running = opening, td = 0, tc = 0;
+			foreach (var m in inPeriod)
+			{
+				running += m.Debit - m.Credit; td += m.Debit; tc += m.Credit;
+				all.Add(new PartyStatementRow
+				{
+					Date = m.Date, Kind = m.Kind, DocNo = m.DocNo, Note = m.Note,
+					Debit = m.Debit, Credit = m.Credit, Url = m.Url, Balance = running,
+				});
+			}
+
+			if (pageSize < 1) pageSize = 50; else if (pageSize > 500) pageSize = 500;
+			int pages = Math.Max(1, (int)Math.Ceiling(all.Count / (double)pageSize));
+			if (page < 1) page = 1; else if (page > pages) page = pages;
+			int skip = (page - 1) * pageSize;
+
+			// What this page starts from: the period's opening on page 1, the previous page's closing after.
+			decimal carried = skip == 0 ? opening : all[skip - 1].Balance;
+
+			return new PartyStatementModel
+			{
+				PartyId = partyId, PartyName = partyName, IsCustomer = isCustomer,
+				From = from, To = to, Opening = opening, Closing = running,
+				TotalDebit = td, TotalCredit = tc,
+				Rows = all.Skip(skip).Take(pageSize).ToList(),
+				Page = page, PageSize = pageSize, TotalRows = all.Count, CarriedForward = carried,
+			};
+		}
+
 
 		// قائمة القيود — Journal entries list
 		[SessionValidation]
@@ -384,7 +1120,7 @@ namespace CrossBuy.Controllers
 				.Select(e => new JournalListItem
 				{
 					Id = e.ID, EntryNo = e.EntryNo, EntryDate = e.EntryDate, JournalType = e.JournalType,
-					Status = e.Status, Description = e.Description, DescriptionEn = e.DescriptionEn, SourceType = e.SourceType,
+					Status = e.Status, Description = e.Description, DescriptionEn = e.DescriptionEn, SourceType = e.SourceType, SourceId = e.SourceId,
 					Total = _context.JournalEntryLines.Where(l => l.JournalEntryId == e.ID).Sum(l => (decimal?)l.Debit) ?? 0,
 				}).ToListAsync();
 			SetPaging(total, page, pageSize);
@@ -440,13 +1176,102 @@ namespace CrossBuy.Controllers
 
 			if (!ok)
 			{
-				TempData["AccErr"] = err;
+				// The service layer has no localizer by design, so its message arrives in English. A
+				// localizer returns the key unchanged when there is no entry, so passing the service's
+				// own sentence through L is safe and translates wherever a key exists.
+				TempData["AccErr"] = string.IsNullOrWhiteSpace(err) ? err : L[err].Value;
 				ViewBag.Accounts = await _coa.GetFlatAsync(DefaultCompanyId, postableOnly: true);
 				ViewBag.CostCenters = await _costCenters.GetFlatAsync(DefaultCompanyId);
+				ViewBag.Projects = await PrjSvc.ForPickAsync(DefaultCompanyId);   // the GET sets all three; this path was dropping the Project column's options
 				return View();
 			}
 			TempData["AccMsg"] = forcedDraft ? L["The entry ({0:N2}) exceeds the approval threshold — saved as a draft awaiting the chief accountant's approval", total].Value
 				: post ? L["The journal entry was posted successfully"].Value : L["The journal entry was saved as a draft"].Value;
+			return RedirectToAction(nameof(Journals));
+		}
+
+		// تعديل قيد — EDIT A DRAFT MANUAL ENTRY.
+		//
+		// The rules live in IJournalEntryService.LoadEditableDraftAsync, not here: draft-only, manual-only,
+		// no source document, no reversal attached, and both the old and the new date must fall in an OPEN
+		// period. This action only decides whether to draw the form.
+		//
+		// It draws the SAME view the create uses. The lines editor — the classic table and the Excel grid
+		// that shares it — exists once; a second copy for editing would drift from it within a week.
+		[SessionValidation]
+		[HttpGet]
+		[CrossBuy.Models.AccPerm("post")]
+		public async Task<IActionResult> EditJournal(int id)
+		{
+			var scope = await _company.ResolveAsync();
+			if (!scope.Ok) { TempData["AccErr"] = L["You do not have permission to perform this action"].Value; return RedirectToAction(nameof(Journals)); }
+
+			// The company predicate is IN the query, so an entry belonging to another company is NOT FOUND
+			// rather than found-then-refused — otherwise the id becomes an existence oracle across tenants.
+			var entry = await _context.JournalEntries.AsNoTracking().Include(e => e.Lines)
+				.FirstOrDefaultAsync(e => e.ID == id && e.CompanyID == scope.CompanyId);
+			if (entry == null) { TempData["AccErr"] = L["Journal entry not found"].Value; return RedirectToAction(nameof(Journals)); }
+
+			// A cheap pre-check so the form is not drawn for something that cannot be saved. It is NOT the
+			// gate — the service re-checks all of it, including the period, on the post.
+			if (entry.Status != "Draft")
+			{ TempData["AccErr"] = L["Only a draft entry can be changed — a posted entry is corrected by a reversal"].Value; return RedirectToAction(nameof(Journals)); }
+			if (entry.JournalType != "Manual" || !string.IsNullOrWhiteSpace(entry.SourceType) || entry.SourceId != null)
+			{ TempData["AccErr"] = L["Only a manual entry can be changed — this entry was generated by the system"].Value; return RedirectToAction(nameof(Journals)); }
+
+			ViewBag.Accounts = await _coa.GetFlatAsync(scope.CompanyId, postableOnly: true);
+			ViewBag.CostCenters = await _costCenters.GetFlatAsync(scope.CompanyId);
+			ViewBag.Projects = await PrjSvc.ForPickAsync(scope.CompanyId);
+			ViewBag.EditId = entry.ID;
+			ViewBag.EntryDate = entry.EntryDate;
+			ViewBag.EntryDescription = entry.Description;
+			ViewBag.ExistingLines = entry.Lines.OrderBy(l => l.LineNo).Select(l => new {
+				accountId = l.AccountId, debit = l.Debit, credit = l.Credit,
+				costCenterId = l.CostCenterId, projectId = l.ProjectId, description = l.Description
+			}).ToList();
+			return View("CreateJournal");
+		}
+
+		[SessionValidation]
+		[HttpPost]
+		[ValidateAntiForgeryToken]
+		[CrossBuy.Models.AccPerm("post")]
+		public async Task<IActionResult> EditJournal(int id, DateTime entryDate, string? description, string? linesJson)
+		{
+			var scope = await _company.ResolveAsync();
+			if (!scope.Ok) { TempData["AccErr"] = L["You do not have permission to perform this action"].Value; return RedirectToAction(nameof(Journals)); }
+
+			List<JournalLineInput> lines;
+			try { lines = JsonSerializer.Deserialize<List<JournalLineInput>>(linesJson ?? "[]", new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new(); }
+			catch { lines = new(); }
+
+			var input = new JournalEntryInput { CompanyID = scope.CompanyId, EntryDate = entryDate, Description = description, Lines = lines };
+			var (ok, err) = await _journals.UpdateDraftAsync(id, scope.CompanyId, input, _access.CurrentEmployeeId());
+			if (!ok)
+			{
+				// The service layer has no localizer by design; a localizer returns the key unchanged when
+				// there is no entry, so passing its sentence through L is safe and translates where a key exists.
+				TempData["AccErr"] = string.IsNullOrWhiteSpace(err) ? err : L[err].Value;
+				return RedirectToAction(nameof(EditJournal), new { id });
+			}
+			TempData["AccMsg"] = L["The draft entry was updated"].Value;
+			return RedirectToAction(nameof(Journals));
+		}
+
+		// حذف مسودة — a draft written by mistake has no other remedy: it cannot be posted away and it
+		// cannot be reversed (a reversal answers a POSTED entry). Same guard as the edit, deliberately.
+		[SessionValidation]
+		[HttpPost]
+		[ValidateAntiForgeryToken]
+		[CrossBuy.Models.AccPerm("post")]
+		public async Task<IActionResult> DeleteJournal(int id)
+		{
+			var scope = await _company.ResolveAsync();
+			if (!scope.Ok) { TempData["AccErr"] = L["You do not have permission to perform this action"].Value; return RedirectToAction(nameof(Journals)); }
+
+			var (ok, err) = await _journals.DeleteDraftAsync(id, scope.CompanyId, _access.CurrentEmployeeId());
+			if (!ok) TempData["AccErr"] = string.IsNullOrWhiteSpace(err) ? err : L[err].Value;
+			else TempData["AccMsg"] = L["The draft entry was deleted"].Value;
 			return RedirectToAction(nameof(Journals));
 		}
 
@@ -876,6 +1701,12 @@ namespace CrossBuy.Controllers
 			ViewBag.Currencies = await CurrencyListAsync();
 			ViewBag.FunctionalCurrencyId = await FunctionalCurrencyIdAsync();
 			ViewBag.Projects = await PrjSvc.ForPickAsync(DefaultCompanyId);
+
+			// The units a line may be sold in. SalesInvoiceLine.UoMId has always carried this and the stock
+			// path has always converted it; the screen simply never offered the choice, so every line was
+			// silently the item's base unit. CompanyID is in the predicate like every other list here.
+			ViewBag.Units = await _context.UnitsOfMeasure.AsNoTracking()
+				.Where(u => u.CompanyID == DefaultCompanyId).OrderBy(u => u.Name).ToListAsync();
 			return View();
 		}
 
@@ -930,6 +1761,12 @@ namespace CrossBuy.Controllers
 			ViewBag.Currencies = await CurrencyListAsync();
 			ViewBag.FunctionalCurrencyId = await FunctionalCurrencyIdAsync();
 			ViewBag.Projects = await PrjSvc.ForPickAsync(DefaultCompanyId);
+
+			// The units a line may be sold in. SalesInvoiceLine.UoMId has always carried this and the stock
+			// path has always converted it; the screen simply never offered the choice, so every line was
+			// silently the item's base unit. CompanyID is in the predicate like every other list here.
+			ViewBag.Units = await _context.UnitsOfMeasure.AsNoTracking()
+				.Where(u => u.CompanyID == DefaultCompanyId).OrderBy(u => u.Name).ToListAsync();
 			var slIds = inv.Lines.Where(l => l.ItemId != null).Select(l => l.ItemId!.Value).Distinct().ToList();
 			ViewBag.ItemBarcodes = await _context.Items.AsNoTracking().Where(i => i.CompanyID == DefaultCompanyId && slIds.Contains(i.ID)).ToDictionaryAsync(i => i.ID, i => i.Barcode ?? "");
 			ViewBag.EditInvoice = inv;
@@ -1035,10 +1872,49 @@ namespace CrossBuy.Controllers
 		[SessionValidation][HttpGet]
 		public async Task<IActionResult> SalesReturnDetail(int id)
 		{
-			var ret = await _ar.GetSalesReturnAsync(DefaultCompanyId, id);
+			// The company is RESOLVED, not a constant: the screen below shows the document's own currency,
+			// and reading the right row for the wrong company is the failure that produces a right-looking
+			// number about somebody else's document.
+			var scope = await _company.ResolveAsync();
+			if (!scope.Ok) { TempData["AccErr"] = L["You do not have permission to perform this action"].Value; return RedirectToAction(nameof(Index)); }
+			var ret = await _ar.GetSalesReturnAsync(scope.CompanyId, id);
 			if (ret == null) { TempData["AccErr"] = L["Return not found"].Value; return RedirectToAction(nameof(SalesReturns)); }
 			ViewBag.Customer = await _context.Customers.AsNoTracking().FirstOrDefaultAsync(c => c.ID == ret.CustomerId);
+			await ReturnDetailFactsAsync(scope.CompanyId, ret.CurrencyId, ret.JournalEntryId, ret.OriginalInvoiceId, isSales: true);
 			return View(ret);
+		}
+
+		// The three facts BOTH return screens were showing wrong, resolved once.
+		//
+		//   · THE CURRENCY WAS THE LITERAL "EGP", printed next to the total. On a document in another
+		//     currency that is not a missing label, it is a WRONG ONE — and such documents exist (sales
+		//     return 4049 is KWD at a rate of 163). The document's own CurrencyId decides.
+		//   · "الفاتورة الأصلية #12509" and "قيد يومية #15162" showed ROW IDS. A reader cannot look up an
+		//     id: the invoice is known by its number, and the entry by JV-YYYY-NNNNNN.
+		private async Task ReturnDetailFactsAsync(
+			int companyId, int? currencyId, int? journalEntryId, int? originalInvoiceId, bool isSales)
+		{
+			// A document with no CurrencyId is not a document with no currency — it is one recorded in the
+			// company's FUNCTIONAL currency, which is exactly what the figure beside it is denominated in.
+			// Falling back to it is why the label can be trusted; printing nothing would leave the reader
+			// guessing, and printing a constant is what was wrong here in the first place.
+			var effectiveCurrencyId = currencyId ?? await _currency.GetFunctionalCurrencyIdAsync(companyId, null);
+			ViewBag.CurrencyCode = await _context.Currencies.AsNoTracking()
+				.Where(c => c.ID == effectiveCurrencyId).Select(c => c.Code).FirstOrDefaultAsync();
+
+			ViewBag.JournalEntryNo = journalEntryId == null ? null
+				: await _context.JournalEntries.AsNoTracking()
+					.Where(e => e.ID == journalEntryId && e.CompanyID == companyId)
+					.Select(e => e.EntryNo).FirstOrDefaultAsync();
+
+			if (originalInvoiceId != null)
+				ViewBag.OriginalInvoiceNo = isSales
+					? await _context.SalesInvoices.AsNoTracking()
+						.Where(i => i.ID == originalInvoiceId && i.CompanyID == companyId)
+						.Select(i => i.InvoiceNo).FirstOrDefaultAsync()
+					: await _context.PurchaseInvoices.AsNoTracking()
+						.Where(i => i.ID == originalInvoiceId && i.CompanyID == companyId)
+						.Select(i => i.InvoiceNo).FirstOrDefaultAsync();
 		}
 
 		[SessionValidation][HttpGet]
@@ -1363,9 +2239,12 @@ namespace CrossBuy.Controllers
 		[SessionValidation][HttpGet]
 		public async Task<IActionResult> PurchaseReturnDetail(int id)
 		{
-			var ret = await _ap.GetPurchaseReturnAsync(DefaultCompanyId, id);
+			var scope = await _company.ResolveAsync();
+			if (!scope.Ok) { TempData["AccErr"] = L["You do not have permission to perform this action"].Value; return RedirectToAction(nameof(Index)); }
+			var ret = await _ap.GetPurchaseReturnAsync(scope.CompanyId, id);
 			if (ret == null) { TempData["AccErr"] = L["Return not found"].Value; return RedirectToAction(nameof(PurchaseReturns)); }
 			ViewBag.Vendor = await _context.Vendors.AsNoTracking().FirstOrDefaultAsync(v => v.ID == ret.VendorId);
+			await ReturnDetailFactsAsync(scope.CompanyId, ret.CurrencyId, ret.JournalEntryId, ret.OriginalInvoiceId, isSales: false);
 			var retIsEn = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName != "ar";
 			var retItemIds = ret.Lines.Where(l => l.ItemId > 0).Select(l => l.ItemId).Distinct().ToList();
 			ViewBag.ItemNames = await _context.Items.AsNoTracking().Where(i => retItemIds.Contains(i.ID))
@@ -1859,6 +2738,11 @@ namespace CrossBuy.Controllers
 				// permission gate ends up written four ways.
 				["SalesReturn"] = CrossBuy.BL.Platform.EntityRegistry.SalesReturn,
 				["PurchaseReturn"] = CrossBuy.BL.Platform.EntityRegistry.PurchaseReturn,
+
+				// The money documents, for the same reason: a receipt is discussed exactly as often as the
+				// invoice it settled, and it had nowhere to be discussed because it had no family at all.
+				["Receipt"] = CrossBuy.BL.Platform.EntityRegistry.Receipt,
+				["Payment"] = CrossBuy.BL.Platform.EntityRegistry.Payment,
 			};
 
 		/// Resolved outcome of steps 1-3. `Ok == false` carries no detail on purpose.
@@ -1918,6 +2802,12 @@ namespace CrossBuy.Controllers
 				var c when c == CrossBuy.BL.Platform.EntityRegistry.PurchaseReturn =>
 					await _context.PurchaseReturns.AsNoTracking()
 						.AnyAsync(r => r.ID == id && r.CompanyID == ctx.CompanyId, ct),
+				var c when c == CrossBuy.BL.Platform.EntityRegistry.Receipt =>
+					await _context.Receipts.AsNoTracking()
+						.AnyAsync(r => r.ID == id && r.CompanyID == ctx.CompanyId, ct),
+				var c when c == CrossBuy.BL.Platform.EntityRegistry.Payment =>
+					await _context.Payments.AsNoTracking()
+						.AnyAsync(p => p.ID == id && p.CompanyID == ctx.CompanyId, ct),
 
 				// A family in the map with no row check here would be a document nobody verified
 				// exists — refuse rather than fall through to the last table in the chain.
@@ -2146,6 +3036,7 @@ namespace CrossBuy.Controllers
 		public string? Description { get; set; }
 		public string? DescriptionEn { get; set; }
 		public string? SourceType { get; set; }
+		public int? SourceId { get; set; }      // the row needs it to decide whether to offer Edit; the service still re-checks
 		public decimal Total { get; set; }
 	}
 }

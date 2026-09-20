@@ -2889,4 +2889,313 @@
   <data name="evt_mask_System" xml:space="preserve">
     <value>Charge masquée : événement système</value>
   </data>
+  <data name="SignInTitle" xml:space="preserve">
+    <value>Connexion</value>
+  </data>
+  <data name="SignInSubtitle" xml:space="preserve">
+    <value>Utilisez votre compte d'entreprise</value>
+  </data>
+  <data name="SignInAction" xml:space="preserve">
+    <value>Se connecter</value>
+  </data>
+  <data name="SigningIn" xml:space="preserve">
+    <value>Connexion en cours…</value>
+  </data>
+  <data name="RememberMe" xml:space="preserve">
+    <value>Rester connecté</value>
+  </data>
+  <data name="ForgotPasswordHelp" xml:space="preserve">
+    <value>Mot de passe oublié ? Votre administrateur peut le réinitialiser.</value>
+  </data>
+  <data name="ShowPassword" xml:space="preserve">
+    <value>Afficher le mot de passe</value>
+  </data>
+  <data name="HidePassword" xml:space="preserve">
+    <value>Masquer le mot de passe</value>
+  </data>
+  <data name="CapsLockOn" xml:space="preserve">
+    <value>La touche Verr. Maj est activée</value>
+  </data>
+  <data name="SignInFailed" xml:space="preserve">
+    <value>Échec de la connexion</value>
+  </data>
+  <data name="SignInErrorGeneric" xml:space="preserve">
+    <value>Une erreur s'est produite. Veuillez réessayer.</value>
+  </data>
+  <data name="UserNameRequired" xml:space="preserve">
+    <value>Le nom d'utilisateur est requis</value>
+  </data>
+  <data name="PasswordRequired" xml:space="preserve">
+    <value>Le mot de passe est requis</value>
+  </data>
+  <data name="LoginHeadline" xml:space="preserve">
+    <value>Un seul système pour gérer votre entreprise</value>
+  </data>
+  <data name="LoginPitchLead" xml:space="preserve">
+    <value>Comptabilité, stocks, RH et ventes sur une seule plateforme —</value>
+  </data>
+  <data name="LoginPitchAccent" xml:space="preserve">
+    <value>écritures équilibrées automatiquement</value>
+  </data>
+  <data name="LoginPitchTail" xml:space="preserve">
+    <value>et des rapports en temps réel, en arabe et en anglais.</value>
+  </data>
+  <data name="HR" xml:space="preserve">
+    <value>RH</value>
+  </data>
+  <data name="BrandTagline" xml:space="preserve">
+    <value>LA PLATEFORME INTER-MÉTIERS</value>
+  </data>
+  <data name="BrandHeadlineLead" xml:space="preserve">
+    <value>Une plateforme.</value>
+  </data>
+  <data name="BrandHeadlineAccent" xml:space="preserve">
+    <value>Des possibilités infinies.</value>
+  </data>
+  <data name="BrandSubLine1" xml:space="preserve">
+    <value>Reliez vos équipes, vos processus et vos données.</value>
+  </data>
+  <data name="BrandSubLine2" xml:space="preserve">
+    <value>Construisez un avenir plus intelligent.</value>
+  </data>
+  <data name="BrandFootline" xml:space="preserve">
+    <value>DES AFFAIRES SANS FRONTIÈRES</value>
+  </data>
+  <data name="WelcomeBackLead" xml:space="preserve">
+    <value>Bon retour</value>
+  </data>
+  <data name="WelcomeBackAccent" xml:space="preserve">
+    <value>parmi nous</value>
+  </data>
+  <data name="SignInToYourAccount" xml:space="preserve">
+    <value>Connectez-vous à votre compte CrossBuy</value>
+  </data>
+  <data name="ForgotPasswordQ" xml:space="preserve">
+    <value>Mot de passe oublié ?</value>
+  </data>
+  <data name="OrContinueWith" xml:space="preserve">
+    <value>ou continuer avec</value>
+  </data>
+  <data name="NewToCrossBuy" xml:space="preserve">
+    <value>Nouveau sur CrossBuy ?</value>
+  </data>
+  <data name="ContactYourAdministrator" xml:space="preserve">
+    <value>Contactez votre administrateur</value>
+  </data>
+  <data name="AllRightsReserved" xml:space="preserve">
+    <value>Tous droits réservés.</value>
+  </data>
+  <data name="TrustSecure" xml:space="preserve">
+    <value>Sécurisé</value>
+  </data>
+  <data name="TrustReliable" xml:space="preserve">
+    <value>Fiable</value>
+  </data>
+  <data name="TrustScalable" xml:space="preserve">
+    <value>Évolutif</value>
+  </data>
+  <data name="SignInWith" xml:space="preserve">
+    <value>Se connecter avec {0}</value>
+  </data>
+  <data name="ExternalSignInFailed" xml:space="preserve">
+    <value>La connexion n'a pas abouti. Veuillez réessayer.</value>
+  </data>
+  <data name="ExternalNoAccount" xml:space="preserve">
+    <value>Aucun compte CrossBuy n'est lié à cette adresse. Demandez-en un à votre administrateur.</value>
+  </data>
+  <data name="ExternalNotConfigured" xml:space="preserve">
+    <value>L'authentification unique n'est pas configurée sur cette installation. Votre administrateur peut l'activer.</value>
+  </data>
+  <data name="PillarPeople" xml:space="preserve">
+    <value>PERSONNES</value>
+  </data>
+  <data name="PillarTechnology" xml:space="preserve">
+    <value>TECHNOLOGIE</value>
+  </data>
+  <data name="PillarProcesses" xml:space="preserve">
+    <value>PROCESSUS</value>
+  </data>
+  <data name="PillarGrowth" xml:space="preserve">
+    <value>CROISSANCE</value>
+  </data>
+  <data name="SmarterBusinessTogether" xml:space="preserve">
+    <value>Des affaires plus intelligentes, ensemble</value>
+  </data>
+  <data name="POSShort" xml:space="preserve">
+    <value>PDV</value>
+  </data>
+  <data name="RememberMeShort" xml:space="preserve">
+    <value>Se souvenir de moi</value>
+  </data>
+  <data name="LanguageNameEn" xml:space="preserve">
+    <value>English</value>
+  </data>
+  <data name="LanguageNameAr" xml:space="preserve">
+    <value>العربية</value>
+  </data>
+  <data name="LanguageNameFr" xml:space="preserve">
+    <value>Français</value>
+  </data>
+  <data name="GrowingTogether" xml:space="preserve">
+    <value>Grandir ensemble</value>
+  </data>
+  <data name="YourPartnerInSuccess" xml:space="preserve">
+    <value>Votre partenaire de succès</value>
+  </data>
+  <data name="The entry must contain at least one line" xml:space="preserve">
+    <value>L'écriture doit contenir au moins une ligne</value>
+  </data>
+  <data name="A line cannot be both a debit and a credit" xml:space="preserve">
+    <value>Une ligne ne peut être à la fois au débit et au crédit</value>
+  </data>
+  <data name="An entry that is already posted or cancelled cannot be posted" xml:space="preserve">
+    <value>Une écriture déjà comptabilisée ou annulée ne peut pas être comptabilisée</value>
+  </data>
+  <data name="The entry must contain at least two lines" xml:space="preserve">
+    <value>L'écriture doit contenir au moins deux lignes</value>
+  </data>
+  <data name="Negative values are not allowed" xml:space="preserve">
+    <value>Les valeurs négatives ne sont pas autorisées</value>
+  </data>
+  <data name="Every line must be either a debit or a credit (not both, and not neither)" xml:space="preserve">
+    <value>Chaque ligne doit être soit au débit soit au crédit (ni les deux, ni aucun)</value>
+  </data>
+  <data name="The entry total must be greater than zero" xml:space="preserve">
+    <value>Le total de l'écriture doit être supérieur à zéro</value>
+  </data>
+  <data name="No fiscal period covers the entry date" xml:space="preserve">
+    <value>Aucune période fiscale ne couvre la date de l'écriture</value>
+  </data>
+  <data name="The fiscal period is closed — posting into it is not allowed" xml:space="preserve">
+    <value>La période fiscale est clôturée — la comptabilisation y est interdite</value>
+  </data>
+  <data name="An entry that is not posted cannot be reversed" xml:space="preserve">
+    <value>Une écriture non comptabilisée ne peut pas être extournée</value>
+  </data>
+  <data name="Manual" xml:space="preserve">
+    <value>Manuel</value>
+  </data>
+  <data name="Auto" xml:space="preserve">
+    <value>Auto</value>
+  </data>
+  <data name="Recurring" xml:space="preserve">
+    <value>Récurrent</value>
+  </data>
+  <data name="Reversing" xml:space="preserve">
+    <value>Extourne</value>
+  </data>
+  <data name="Opening" xml:space="preserve">
+    <value>D'ouverture</value>
+  </data>
+  <data name="The draft entry was updated" xml:space="preserve">
+    <value>Le brouillon a été mis à jour</value>
+  </data>
+  <data name="The draft entry was deleted" xml:space="preserve">
+    <value>Le brouillon a été supprimé</value>
+  </data>
+  <data name="Only a draft entry can be changed — a posted entry is corrected by a reversal" xml:space="preserve">
+    <value>Seul un brouillon peut être modifié — une écriture comptabilisée se corrige par une extourne</value>
+  </data>
+  <data name="Only a manual entry can be changed — this entry was generated by the system" xml:space="preserve">
+    <value>Seule une écriture manuelle peut être modifiée — celle-ci a été générée par le système</value>
+  </data>
+  <data name="This entry belongs to a source document and cannot be changed on its own" xml:space="preserve">
+    <value>Cette écriture dépend d'un document source et ne peut pas être modifiée seule</value>
+  </data>
+  <data name="This entry already has a reversal attached" xml:space="preserve">
+    <value>Cette écriture a déjà une extourne</value>
+  </data>
+  <data name="You do not have permission to perform this action" xml:space="preserve">
+    <value>Vous n'avez pas l'autorisation d'effectuer cette action</value>
+  </data>
+  <data name="Delete this draft?" xml:space="preserve">
+    <value>Supprimer ce brouillon ?</value>
+  </data>
+  <data name="Sales invoice" xml:space="preserve">
+    <value>Facture de vente</value>
+  </data>
+  <data name="Sales return" xml:space="preserve">
+    <value>Retour de vente</value>
+  </data>
+  <data name="Purchase return" xml:space="preserve">
+    <value>Retour d'achat</value>
+  </data>
+  <data name="Receipt" xml:space="preserve">
+    <value>Reçu</value>
+  </data>
+  <data name="Payment" xml:space="preserve">
+    <value>Paiement</value>
+  </data>
+  <data name="Opening balance" xml:space="preserve">
+    <value>Solde d'ouverture</value>
+  </data>
+  <data name="Closing balance" xml:space="preserve">
+    <value>Solde de clôture</value>
+  </data>
+  <data name="No movements in this period" xml:space="preserve">
+    <value>Aucun mouvement sur cette période</value>
+  </data>
+  <data name="Account statement" xml:space="preserve">
+    <value>Relevé de compte</value>
+  </data>
+  <data name="Customer statement" xml:space="preserve">
+    <value>Relevé client</value>
+  </data>
+  <data name="Vendor statement" xml:space="preserve">
+    <value>Relevé fournisseur</value>
+  </data>
+  <data name="Apply" xml:space="preserve">
+    <value>Appliquer</value>
+  </data>
+  <data name="Journal entry" xml:space="preserve">
+    <value>Écriture comptable</value>
+  </data>
+  <data name="Tax registration number" xml:space="preserve">
+    <value>Numéro d'identification fiscale</value>
+  </data>
+  <data name="Payment terms" xml:space="preserve">
+    <value>Conditions de paiement</value>
+  </data>
+  <data name="Exchange rate" xml:space="preserve">
+    <value>Taux de change</value>
+  </data>
+  <data name="Amount in base currency" xml:space="preserve">
+    <value>Montant en devise de base</value>
+  </data>
+  <data name="Project" xml:space="preserve">
+    <value>Projet</value>
+  </data>
+  <data name="ETA UUID" xml:space="preserve">
+    <value>UUID ETA</value>
+  </data>
+  <data name="Invoice beneficiary" xml:space="preserve">
+    <value>Bénéficiaire de la facture</value>
+  </data>
+  <data name="Created at" xml:space="preserve">
+    <value>Créé le</value>
+  </data>
+  <data name="Payment method" xml:space="preserve">
+    <value>Mode de paiement</value>
+  </data>
+  <data name="Cash/bank account" xml:space="preserve">
+    <value>Compte caisse/banque</value>
+  </data>
+  <data name="Original invoice" xml:space="preserve">
+    <value>Facture d'origine</value>
+  </data>
+  <data name="Cost center" xml:space="preserve">
+    <value>Centre de coûts</value>
+  </data>
+  <data name="You do not have permission for this HR action." xml:space="preserve">
+    <value>Vous n'avez pas l'autorisation pour cette action RH.</value>
+  </data>
+  <data name="The employee photo could not be saved: the server folder wwwroot/uploads/employees is not writable. Grant the application pool identity Modify rights on that folder, then save again." xml:space="preserve">
+    <value>La photo de l'employé n'a pas pu être enregistrée : le dossier serveur wwwroot/uploads/employees n'est pas accessible en écriture. Accordez à l'identité du pool d'applications le droit Modifier sur ce dossier, puis enregistrez à nouveau.</value>
+  </data>
+  <data name="Refresh" xml:space="preserve">
+    <value>Actualiser</value>
+  </data>
+  <data name="An error occurred" xml:space="preserve">
+    <value>Une erreur est survenue</value>
+  </data>
 </root>

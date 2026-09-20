@@ -151,6 +151,59 @@ namespace CrossBuy.BL.Platform
         public const string Reversed = "JournalEntry.Reversed";
     }
 
+    // ---------------------------------------------------------------------------------------------
+    // Sales / Purchase Return — the credit note and the debit note.
+    //
+    // NO PRODUCER EXISTS. EntityRegistry's own note says the panel shows "no activity yet" until
+    // ReceivableService/PayableService publish return events, and they never did. These names are consumed
+    // TODAY only by the read-time legacy adapters, which reconstruct the history from the return row and its
+    // journal entries — so the vocabulary is declared in one place rather than as literals in two adapters.
+    //
+    // A FUTURE PRODUCER MUST ALSO ADD A PRESENTER CASE in TimelineEventPresenter: a recorded event whose
+    // type has no presentation fails the STRICT dispatch path silently, which is exactly the defect the
+    // Tasks/Calendar block below documents. Reconstructed items carry their own titles and never reach it.
+    //
+    // Created IS the posting for both documents — neither service has a draft-then-post step for a return.
+    // Reversed names the one transition that changes a posted entry.
+    // ---------------------------------------------------------------------------------------------
+    public static class SalesReturnEvents
+    {
+        public const string Created = "SalesReturn.Created";
+        public const string Updated = "SalesReturn.Updated";
+        public const string Reversed = "SalesReturn.Reversed";
+    }
+
+    public static class PurchaseReturnEvents
+    {
+        public const string Created = "PurchaseReturn.Created";
+        public const string Updated = "PurchaseReturn.Updated";
+        public const string Reversed = "PurchaseReturn.Reversed";
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // Receipt / Payment — the money documents.
+    //
+    // NO PRODUCER, same as the returns: consumed today only by the read-time adapters. Allocated is the
+    // one name here that is not a mirror of the document lifecycle — it is the fact these documents exist
+    // for. Cash arriving is bookkeeping; cash SETTLING a named invoice is the business event, and it was
+    // previously visible only as a figure inside a settlements table.
+    // ---------------------------------------------------------------------------------------------
+    public static class ReceiptEvents
+    {
+        public const string Created = "Receipt.Created";
+        public const string Allocated = "Receipt.Allocated";
+        public const string Updated = "Receipt.Updated";
+        public const string Reversed = "Receipt.Reversed";
+    }
+
+    public static class PaymentEvents
+    {
+        public const string Created = "Payment.Created";
+        public const string Allocated = "Payment.Allocated";
+        public const string Updated = "Payment.Updated";
+        public const string Reversed = "Payment.Reversed";
+    }
+
     public static class ManufWorkOrderEvents
     {
         public const string Created = "ManufWorkOrder.Created";

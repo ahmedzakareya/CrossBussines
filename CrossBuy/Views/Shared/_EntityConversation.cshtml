@@ -738,6 +738,41 @@
         if (previewUrl) { try { URL.revokeObjectURL(previewUrl); } catch (e) { } previewUrl = null; }
     }
 
+    // PASTE A SCREENSHOT. Ctrl+V is how evidence actually arrives; the bitmap is handed to the same
+    // file input the paperclip fills and its change handler does the rest, so preview, chip, size,
+    // validation and send keep ONE implementation. Older engines expose the image only through
+    // items[].getAsFile(), so both routes are read before giving up.
+    (function () {
+        var box = document.getElementById('cbConvInput');
+        if (!box || typeof DataTransfer === 'undefined') { return; }
+        box.addEventListener('paste', function (e) {
+            var cd = e.clipboardData; if (!cd) { return; }
+            var grabbed = cd.files && cd.files.length ? [].slice.call(cd.files) : [];
+            if (!grabbed.length && cd.items) {
+                grabbed = [].slice.call(cd.items)
+                    .filter(function (it) { return it.kind === 'file'; })
+                    .map(function (it) { return it.getAsFile(); })
+                    .filter(Boolean);
+            }
+            if (!grabbed.length) { return; }   // ordinary text paste: leave it alone
+            e.preventDefault();
+
+            // One attachment per message, so the FIRST is taken rather than silently dropping the rest
+            // with no sign that anything was ignored.
+            var f = grabbed[0];
+            if (!f.name || f.name === 'image.png' || f.name === 'blob') {
+                var stamp = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14);
+                var ext = ((f.type || 'image/png').split('/')[1] || 'png');
+                try { f = new File([f], 'paste-' + stamp + '.' + ext, { type: f.type || 'image/png' }); }
+                catch (err) { /* a File constructor that refuses: the original name stands */ }
+            }
+            var dt = new DataTransfer();
+            dt.items.add(f);
+            fileInput.files = dt.files;
+            fileInput.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+    })();
+
     fileInput.addEventListener('change', function () {
         var f = fileInput.files && fileInput.files[0];
         if (!f) { return; }

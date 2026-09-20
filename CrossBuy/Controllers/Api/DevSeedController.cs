@@ -7836,6 +7836,101 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 		}
 
 		// GET /api/dev/seed-users?key=seed123
+		// GET /api/dev/make-admin?key=seed123&user=…&email=…&pass=…
+		//
+		// Creates ONE administrator and guarantees the four roles PlatformOpsAttribute recognises exist.
+		//
+		// WHY THIS IS NEEDED AT ALL: a catalogue can carry users and employees and still have an EMPTY
+		// AspNetRoles table — the live one does. PlatformOpsAttribute.IsAdmin asks nothing but Identity
+		// roles, so on such a catalogue NOBODY is an administrator, including the account called "Admin".
+		// Creating the user without creating the roles would produce a login that can open nothing.
+		//
+		// It goes through UserManager rather than SQL on purpose: an Identity password is a versioned,
+		// salted hash and hand-writing one produces an account that can never sign in. [DevOnly] keeps
+		// the endpoint at 404 outside Development, and the key is the same one the other seeds use.
+		[HttpGet("make-admin")]
+		public async Task<IActionResult> MakeAdmin(string key, string user, string email, string pass,
+			[FromServices] Microsoft.AspNetCore.Identity.RoleManager<Microsoft.AspNetCore.Identity.IdentityRole> roles,
+			string? fullName = null, int companyId = 1, int jobTitleId = 2)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			if (string.IsNullOrWhiteSpace(user) || string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(pass))
+				return BadRequest(new { message = "user, email and pass are required" });
+
+			// Every role the admin gate recognises, so a screen that asks for any one of them answers yes.
+			var made = new List<string>();
+			foreach (var r in CrossBuy.Models.PlatformOpsAttribute.AdminRoles)
+			{
+				if (!await roles.RoleExistsAsync(r))
+				{
+					var rr = await roles.CreateAsync(new Microsoft.AspNetCore.Identity.IdentityRole(r));
+					if (!rr.Succeeded) return Ok(new { success = false, step = "role:" + r, errors = rr.Errors.Select(e => e.Description) });
+					made.Add(r);
+				}
+			}
+
+			var u = await _um.FindByNameAsync(user) ?? await _um.FindByEmailAsync(email);
+			bool created = false;
+			if (u == null)
+			{
+				u = new Users { UserName = user, Email = email, EmailConfirmed = true, IsActive = true, IsEndUser = true };
+				var cr = await _um.CreateAsync(u, pass);
+				if (!cr.Succeeded) return Ok(new { success = false, step = "create", errors = cr.Errors.Select(e => e.Description) });
+				created = true;
+			}
+			else
+			{
+				// Already there: make it usable and set the password rather than failing — the caller asked
+				// for an administrator, not for an insert.
+				u.IsActive = true; u.IsEndUser = true; u.Email = email; u.EmailConfirmed = true;
+				await _um.UpdateAsync(u);
+				var token = await _um.GeneratePasswordResetTokenAsync(u);
+				var pr = await _um.ResetPasswordAsync(u, token, pass);
+				if (!pr.Succeeded) return Ok(new { success = false, step = "password", errors = pr.Errors.Select(e => e.Description) });
+			}
+
+			foreach (var r in CrossBuy.Models.PlatformOpsAttribute.AdminRoles)
+				if (!await _um.IsInRoleAsync(u, r)) await _um.AddToRoleAsync(u, r);
+
+			// THE LOGIN REFUSES A USER WITH NO EMPLOYEE, with the same message a wrong password gets —
+			// so an account without this row can never sign in and looks like a bad password forever.
+			var emp = await _db.Employee.FirstOrDefaultAsync(e => e.UserId == u.Id);
+			bool empCreated = false;
+			if (emp == null)
+			{
+				var name = string.IsNullOrWhiteSpace(fullName) ? (u.UserName ?? "user") : fullName!;
+				var parts = name.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
+				emp = new CrossBuy.Models.Context.Admin.Employee
+				{
+					FirstName = parts.Length > 0 ? parts[0] : name,
+					LastName = parts.Length > 1 ? parts[1] : "",
+					FullName = name,
+					Address = "", PhoneNumber = "", Email = email,
+					JobTitleID = jobTitleId, EmpCompanyID = companyId,
+					ProfileImage = "", Gender = "", MaritalStatus = "",
+					DateOfJoining = DateTime.UtcNow.Date, IsActive = true,
+					UserId = u.Id, CreatedAt = DateTime.UtcNow,
+				};
+				_db.Employee.Add(emp);
+				await _db.SaveChangesAsync();
+				empCreated = true;
+			}
+
+			return Ok(new
+			{
+				success = true,
+				created,
+				userId = u.Id,
+				userName = u.UserName,
+				email = u.Email,
+				rolesCreated = made,
+				rolesHeld = await _um.GetRolesAsync(u),
+				employeeId = emp.ID,
+				employeeCreated = empCreated,
+				companyId = emp.EmpCompanyID,
+			});
+		}
+
 		[HttpGet("seed-users")]
 		public async Task<IActionResult> SeedUsers(string key)
 		{
@@ -15390,6 +15485,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 			await _db.SaveChangesAsync();
 			return Ok(new { ok = true, note = "batches removed, no stock touched — invariant intact", log });
 		}
+
 		// =====================================================================================================
 		// FISCAL WINDOW. Gives a calendar year its twelve monthly periods so entries can be posted into it.
 		//

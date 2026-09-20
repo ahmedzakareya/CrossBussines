@@ -26,10 +26,19 @@
         <div class="card mb-5"><div class="card-body py-6"><div class="row g-6">
             <div class="col-md-4"><div class="text-muted fs-7">@SR["Customer"]</div><div class="fw-bold fs-5 text-gray-900">@(cust == null ? "—" : (isAr ? cust.Name : (cust.NameEn ?? cust.Name)))</div></div>
             <div class="col-md-2"><div class="text-muted fs-7">@SR["Date"]</div><div class="fw-bold fs-5">@Model.ReturnDate.ToString("yyyy-MM-dd")</div></div>
-            <div class="col-md-3"><div class="text-muted fs-7">@Localizer["Original invoice"]</div><div class="fw-bold fs-5">@(Model.OriginalInvoiceId.HasValue ? "#" + Model.OriginalInvoiceId : "—")</div></div>
-            <div class="col-md-3 text-md-end"><div class="text-muted fs-7">@Localizer["Return total"]</div><div class="fw-bold fs-3 text-danger">@M(Model.GrandTotal) <span class="fs-7 text-muted">EGP</span></div></div>
+            <div class="col-md-3"><div class="text-muted fs-7">@Localizer["Original invoice"]</div><div class="fw-bold fs-5">@if (Model.OriginalInvoiceId.HasValue){<a href="@Url.Action("MovementSummary","Accounting", new { kind = "SalesInvoice", id = Model.OriginalInvoiceId })" class="badge fw-bold fs-8" style="background:#E7F0FF;color:#145DBF;">@(ViewBag.OriginalInvoiceNo as string ?? ("#" + Model.OriginalInvoiceId))</a>}else{<span class="text-gray-300">&mdash;</span>}</div></div>
+            <div class="col-md-3 text-md-end"><div class="text-muted fs-7">@Localizer["Return total"]</div><div class="fw-bold fs-3 text-danger">@M(Model.GrandTotal) <span class="fs-7 text-muted">@(ViewBag.CurrencyCode as string ?? "")</span></div>
+                @if (Model.ExchangeRate is > 0 && Model.ExchangeRate != 1m)
+                {
+                    @* A FOREIGN DOCUMENT WITHOUT ITS RATE IS UNREADABLE: the figure above is
+                       in the document currency and the ledger carries another number. *@
+                    <div class="text-muted fs-8 mt-1" style="unicode-bidi:isolate;" dir="auto">
+                        @SR["Exchange rate"]: @Model.ExchangeRate!.Value.ToString("0.####")
+                        @if (Model.GrandTotalBase is > 0) { <text> &middot; @M(Model.GrandTotalBase!.Value)</text> }
+                    </div>
+                }</div>
         </div>
-        @if (Model.JournalEntryId != null) { <div class="mt-4"><a href="@Url.Action("JournalEntry","Accounting", new { id = Model.JournalEntryId })" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-document fs-4"></i>@Localizer["Journal entry"] #@Model.JournalEntryId</a></div> }
+        @if (Model.JournalEntryId != null) { <div class="mt-4"><a href="@Url.Action("JournalEntry","Accounting", new { id = Model.JournalEntryId })" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-document fs-4"></i>@Localizer["Journal entry"] @(ViewBag.JournalEntryNo as string ?? ("#" + Model.JournalEntryId))</a></div> }
         @if (!string.IsNullOrWhiteSpace(Model.Notes)) { <div class="text-muted fs-7 mt-3">@Model.Notes</div> }
         </div></div>
         <div class="card"><div class="card-header"><h3 class="card-title fw-bold">@Localizer["Returned lines"]</h3></div>

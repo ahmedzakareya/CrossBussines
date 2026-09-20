@@ -278,6 +278,7 @@
 				new() { LabelAr = "فواتير المبيعات", LabelEn = "Sales invoices", Action = "SalesInvoices", Controller = "Accounting" },
 				new() { LabelAr = "سندات القبض", LabelEn = "Receipts", Action = "Receipts", Controller = "Accounting" },
 				new() { LabelAr = "مرتجعات البيع (إشعار دائن)", LabelEn = "Sales returns", Action = "SalesReturns", Controller = "Accounting" },
+				new() { LabelAr = "كشف حساب عميل", LabelEn = "Customer statement", Action = "CustomerStatement", Controller = "Accounting" },
 				new() { LabelAr = "أعمار ديون العملاء", LabelEn = "AR aging", Action = "ArAging", Controller = "Accounting" },
 					new() { LabelAr = "تحليلات العملاء", LabelEn = "Customer analytics", Action = "CustomerAnalytics", Controller = "Accounting" },
 				}},
@@ -314,6 +315,7 @@
 				new() { LabelAr = "فواتير المشتريات", LabelEn = "Purchase invoices", Action = "PurchaseInvoices", Controller = "Accounting" },
 				new() { LabelAr = "سندات الدفع", LabelEn = "Payments", Action = "Payments", Controller = "Accounting" },
 				new() { LabelAr = "مرتجعات الشراء (إشعار مدين)", LabelEn = "Purchase returns", Action = "PurchaseReturns", Controller = "Accounting" },
+				new() { LabelAr = "كشف حساب مورد", LabelEn = "Vendor statement", Action = "VendorStatement", Controller = "Accounting" },
 				new() { LabelAr = "أعمار ديون الموردين", LabelEn = "AP aging", Action = "ApAging", Controller = "Accounting" },
 			}},
 			new() { LabelAr = "البنوك والنقدية", LabelEn = "Banks & cash", Icon = "ki-outline ki-dollar", Items = new()

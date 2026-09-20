@@ -1,4 +1,4 @@
-﻿﻿using CrossBuy.BL;
+﻿using CrossBuy.BL;
 using CrossBuy.BL.Reporting;   // ADR-037: AddCrossBusinessReporting()
 using CrossBuy.BL.Workspace;   // CrossBusiness Workspace: AddCrossBusinessWorkspace()
 using CrossBuy.Hubs;
@@ -126,7 +126,7 @@ builder.Services.AddCrossBusinessReporting(reporting => reporting
     .MapPermission(CrossBuy.BL.Reporting.ReportPermissions.Administer, "Admin", "SuperAdmin")
 
     // Authoring derived datasets. Admin-tier because an author shapes what the whole company is offered
-    // in the Studio - and deliberately a SEPARATE key from Administer, so a company can grant one
+    // in the Studio — and deliberately a SEPARATE key from Administer, so a company can grant one
     // without the other. It reveals nothing on its own: a derived dataset inherits its parent's
     // permission, so an author who cannot run the parent still cannot run the derivation.
     .MapPermission(CrossBuy.BL.Reporting.ReportPermissions.AuthorDatasets, "Admin", "SuperAdmin")
@@ -301,6 +301,10 @@ builder.Services.AddScoped<CrossBuy.BL.Platform.ILegacyTimelineAdapter, CrossBuy
 builder.Services.AddScoped<CrossBuy.BL.Platform.ILegacyTimelineAdapter, CrossBuy.BL.Platform.CustomerLegacyTimelineAdapter>();               // slice 2
 builder.Services.AddScoped<CrossBuy.BL.Platform.ILegacyTimelineAdapter, CrossBuy.BL.Platform.PurchaseInvoiceLegacyTimelineAdapter>();       // slice 2
 builder.Services.AddScoped<CrossBuy.BL.Platform.ILegacyTimelineAdapter, CrossBuy.BL.Platform.ManufWorkOrderLegacyTimelineAdapter>();        // slice 2
+builder.Services.AddScoped<CrossBuy.BL.Platform.ILegacyTimelineAdapter, CrossBuy.BL.Platform.SalesReturnLegacyTimelineAdapter>();            // returns: registry said SupportsTimeline, nothing ever read the history
+builder.Services.AddScoped<CrossBuy.BL.Platform.ILegacyTimelineAdapter, CrossBuy.BL.Platform.PurchaseReturnLegacyTimelineAdapter>();
+builder.Services.AddScoped<CrossBuy.BL.Platform.ILegacyTimelineAdapter, CrossBuy.BL.Platform.ReceiptLegacyTimelineAdapter>();                // money documents: no entity family existed at all
+builder.Services.AddScoped<CrossBuy.BL.Platform.ILegacyTimelineAdapter, CrossBuy.BL.Platform.PaymentLegacyTimelineAdapter>();
 builder.Services.AddScoped<CrossBuy.BL.Platform.IBusinessEventMonitorService, CrossBuy.BL.Platform.BusinessEventMonitorService>(); // Stage 0 Batch B: operator read model + guarded retry
 
 // The transactional-outbox dispatcher. Nothing else drains BusinessEventDispatch, so without this the
@@ -554,7 +558,10 @@ builder.Services.AddScoped<IManufService, ManufService>();
 builder.Services.AddScoped<IProcurementService, ProcurementService>();
 builder.Services.AddScoped<ISellingService, SellingService>();
 builder.Services.AddScoped<IPricingService, PricingService>();
-builder.Services.AddScoped<IShelfLabelService, ShelfLabelService>();   // HM-4: EAN-13 SVG shelf-label generator (zero dependency)
+builder.Services.AddSingleton<IShelfLabelService, ShelfLabelService>();   // HM-4: EAN-13 SVG shelf-label generator (zero dependency).
+// SINGLETON, not scoped: it holds only consts and pure methods, and IReportVisualRenderer — itself a
+// singleton — now draws barcodes through it. A scoped dependency there would be captured for the life
+// of the process by the first request that resolved it.
 builder.Services.AddScoped<IThreeWayMatchService, ThreeWayMatchService>();
 builder.Services.AddScoped<ICrmService, CrmService>();
 builder.Services.AddScoped<ICrmCustomerLink, CrmCustomerLink>();
@@ -596,7 +603,7 @@ builder.Services.AddHostedService<IntegrityCheckHostedService>();
 builder.Services.AddHostedService<CrmReminderHostedService>();
 
 // Scheduled reports. Registered here rather than inside AddCrossBusinessReporting because a background
-// loop is a decision about this PROCESS, not a property of the reporting library - the same reason the
+// loop is a decision about this PROCESS, not a property of the reporting library — the same reason the
 // other workers are listed here. It is DISABLED unless a host calls RunScheduledReports(), so adding
 // this line changes nothing on its own; see ReportScheduleHostedService for why that order matters.
 builder.Services.AddHostedService<CrossBuy.BL.Reporting.ReportScheduleHostedService>();
@@ -644,7 +651,28 @@ builder.Services.AddSession(options =>
 	options.Cookie.SecurePolicy = CookieSecurePolicy.None;
 	options.Cookie.SameSite = SameSiteMode.Lax;
 });
-builder.Services.AddAuthentication(
+// ================================================================================================
+// SINGLE SIGN-ON (Microsoft / Google)
+//
+// EACH PROVIDER IS REGISTERED ONLY IF IT IS CONFIGURED. That is not defensive coding, it is the
+// feature: the sign-in page renders a button for every scheme the application reports, so an
+// unconfigured provider has no scheme, no button, and no way for a user to click something that
+// cannot work. The sign-in screen used to carry Google and Apple buttons whose href was "#" — a door
+// painted on a wall — and this is what stops that from coming back by accident.
+//
+// SECRETS DO NOT LIVE IN appsettings.json. Put them in user-secrets in development and in the
+// environment (Authentication__Microsoft__ClientSecret) in production; the configuration system
+// reads all three the same way, so nothing below changes when they move.
+//
+// WHAT AN EXTERNAL IDENTITY IS ALLOWED TO DO: sign in an account that ALREADY EXISTS, matched on
+// e-mail. It may not create one. Accounts here carry a branch, a role and an employee record that
+// only an administrator can decide, so a self-provisioned user would be an account with no place in
+// the organisation. AccountController.ExternalLoginCallback is where that rule is enforced.
+// ================================================================================================
+var ssoMicrosoft = builder.Configuration.GetSection("Authentication:Microsoft");
+var ssoGoogle = builder.Configuration.GetSection("Authentication:Google");
+
+var authBuilder = builder.Services.AddAuthentication(
         CertificateAuthenticationDefaults.AuthenticationScheme)
     .AddCertificate()
     .AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options =>
@@ -678,7 +706,31 @@ builder.Services.AddAuthentication(
         };
     });
 
+// ---- the two providers, each behind its own configuration --------------------------------------
+if (!string.IsNullOrWhiteSpace(ssoMicrosoft["ClientId"]) && !string.IsNullOrWhiteSpace(ssoMicrosoft["ClientSecret"]))
+{
+    authBuilder.AddMicrosoftAccount(options =>
+    {
+        options.ClientId = ssoMicrosoft["ClientId"]!;
+        options.ClientSecret = ssoMicrosoft["ClientSecret"]!;
+        // The callback path is the one registered with the provider; changing it here means changing
+        // it in the Azure app registration too, so it is left at the framework default on purpose.
+        options.SaveTokens = false;   // nothing in this application calls Graph on the user's behalf
+    });
+}
+
+if (!string.IsNullOrWhiteSpace(ssoGoogle["ClientId"]) && !string.IsNullOrWhiteSpace(ssoGoogle["ClientSecret"]))
+{
+    authBuilder.AddGoogle(options =>
+    {
+        options.ClientId = ssoGoogle["ClientId"]!;
+        options.ClientSecret = ssoGoogle["ClientSecret"]!;
+        options.SaveTokens = false;
+    });
+}
+
 // CORS so the mobile app (and any external client) can reach the API
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("MobileCors", policy =>

@@ -37,136 +37,365 @@
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@@400;500;600;700;800;900&display=swap" rel="stylesheet">
     }
     <style>
+        /* ==========================================================================================
+           THE PORTAL CHOOSER.
+
+           ON THE SIGN-IN SCREEN'S PALETTE. The two pages are seen one after the other, so they use
+           the same ground, the same ink and the same blues; a user who signs in should not feel the
+           product changed hands between one screen and the next.
+
+           EVERY DIRECTIONAL RULE IS LOGICAL - inset-inline-*, padding-inline-*, text-align:start.
+           One stylesheet serves Arabic and English with no mirrored copy to keep in step.
+           ========================================================================================== */
         *{ box-sizing:border-box; }
-        body{ margin:0; min-height:100vh; color:#E7F0FF; overflow-x:hidden; font-family:'Inter',system-ui,Tahoma,sans-serif;
-            background:#0B3D91;
+
+        :root{
+            --ink:#0B2545;        /* headings */
+            --ink-soft:#40587C;   /* body copy */
+            --ink-mute:#6B82A6;   /* the quietest tier */
+            --blue:#1667D6;
+            --line:#E6EDF7;       /* hairlines */
+            --card:#ffffff;
+        }
+
+        /* THE SAME SCENE THE SIGN-IN PAGE STANDS ON. The two screens are seen one after the other;
+           carrying the render across is what makes them one place rather than two. A white wash over
+           the middle keeps the content readable while the office shows at both edges, which is how
+           the design uses it. */
+        body{ margin:0; min-height:100vh; color:var(--ink); overflow-x:hidden;
+            font-family:'Inter',system-ui,Tahoma,sans-serif;
+            background:#EDF3FC;
             background-image:
-              radial-gradient(60% 50% at 50% 0%, rgba(251,191,36,.10), transparent 60%),
-              radial-gradient(40% 40% at 95% 5%, rgba(56,189,248,.18), transparent 60%),
-              radial-gradient(120% 120% at 50% 40%, #0E4A9E 0%, #0B3D91 45%, #0B3D91 100%); }
+              /* The wash covers the MIDDLE THIRD only. At 13%-87% it bleached the office to a pale
+                 suggestion; the design shows the blue sweep on the left and the window and plant on
+                 the right quite clearly, and only lifts the surface the content stands on. */
+              linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0) 11%,
+                                     rgba(255,255,255,.72) 26%, rgba(255,255,255,.80) 50%,
+                                     rgba(255,255,255,.72) 74%, rgba(255,255,255,0) 89%,
+                                     rgba(255,255,255,0) 100%),
+              url('@Url.Content("~/Backend-assets/media/brand/login-scene.png")');
+            background-repeat:no-repeat, no-repeat;
+            background-size:cover, cover;
+            background-position:center, center;
+            background-attachment:fixed, fixed; }
         html[lang="ar"] body{ font-family:'Cairo',system-ui,Tahoma,sans-serif; }
         a{ text-decoration:none; }
-        .dots{ position:fixed; width:120px; height:90px; z-index:0; opacity:.5;
-            background-image:radial-gradient(rgba(255,255,255,.18) 1.4px, transparent 1.4px); background-size:16px 16px; }
+
+        /* ---- the corner furniture ------------------------------------------------------------ */
+        .dots{ position:fixed; width:120px; height:90px; z-index:0; opacity:.6;
+            background-image:radial-gradient(rgba(22,103,214,.16) 1.4px, transparent 1.4px); background-size:16px 16px; }
         .dots.tl{ top:120px; left:40px; } .dots.bl{ bottom:160px; left:30px; }
+        /* A glow is light from something darker than its surroundings; on a light page there is
+           nothing for it to do, so the amber halo is a faint blue tint. */
         .glow-corner{ position:fixed; bottom:-80px; left:-60px; width:420px; height:240px; z-index:0; pointer-events:none;
-            background:radial-gradient(closest-side, rgba(251,191,36,.20), transparent 70%); filter:blur(8px); transform:rotate(-12deg); }
+            background:radial-gradient(closest-side, rgba(22,103,214,.09), transparent 70%); filter:blur(8px); transform:rotate(-12deg); }
 
         .langbar{ position:fixed; top:22px; left:28px; z-index:6; display:inline-flex; align-items:center; gap:4px;
-            background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.18); border-radius:30px; padding:5px 6px; }
-        .langbar .gl{ display:flex; align-items:center; color:#A8C5FF; margin:0 4px; }
-        .langopt{ color:#D0E1FF; font-weight:600; font-size:13px; padding:5px 12px; border-radius:22px; line-height:1; transition:background .2s ease, color .2s ease; }
-        .langopt:hover{ color:#fff; background:rgba(255,255,255,.12); }
-        .langopt.on{ color:#0B3D91; background:linear-gradient(90deg,#FBBF24,#F59E0B); font-weight:800; }
+            background:#fff; border:1px solid var(--line); border-radius:30px; padding:5px 6px;
+            box-shadow:0 2px 10px rgba(11,37,69,.06); }
+        .langbar .gl{ display:flex; align-items:center; color:var(--blue); margin:0 6px; }
+        .langopt{ color:var(--ink-soft); font-weight:600; font-size:13px; padding:6px 14px; border-radius:22px; line-height:1;
+            transition:background .2s ease, color .2s ease; }
+        .langopt:hover{ color:var(--blue); background:#F2F7FF; }
+        .langopt.on{ color:#fff; background:var(--blue); font-weight:800; }
+
         .shieldtop{ position:fixed; top:22px; right:28px; z-index:6; width:44px; height:44px; border-radius:14px;
-            background:rgba(255,255,255,.06); border:1px solid rgba(251,191,36,.35); display:flex; align-items:center; justify-content:center; color:#FBBF24; }
+            background:var(--blue); border:0; display:flex; align-items:center; justify-content:center; color:#fff;
+            box-shadow:0 6px 16px rgba(22,103,214,.28); }
 
-        .head{ text-align:center; padding:16px 20px 2px; position:relative; z-index:3; }
-        .logo{ height:34px; margin-bottom:10px; }
-        .hello{ font-size:1.9rem; font-weight:900; margin:0 0 4px; color:#ffffff; }
-        .hello span{ color:#FBBF24; }
-        .sub{ color:#A8C5FF; font-size:1.05rem; margin:0; }
+        /* The design sets this down the outer edge; it is decoration, so it is hidden from readers. */
+        /* PHYSICALLY LEFT, not inline-start. The reference keeps this at the bottom-left in the
+           Arabic composition as well — it belongs to the artwork's margin, which does not mirror
+           with the reading direction. Low on the page, clear of the cards. */
+        .edgeline{ position:fixed; left:36px; bottom:96px; z-index:1;
+            writing-mode:vertical-rl; text-orientation:mixed; letter-spacing:.34em;
+            font-size:13px; font-weight:700; color:#8AA3C7; text-align:center; pointer-events:none; }
+        html[dir="rtl"] .edgeline{ writing-mode:vertical-rl; }
+        .edgeline::after{ content:""; display:block; width:4px; height:30px; border-radius:2px;
+            background:#F5A623; margin:14px auto 0; }
+        @@media (max-width:1400px){ .edgeline{ display:none; } }
+
+        /* ---- the head ------------------------------------------------------------------------- */
+        .head{ text-align:center; padding:4px 20px 4px; position:relative; z-index:3; }
+        .logo{ height:52px; margin-bottom:14px; }
+        .hello{ font-size:1.9rem; font-weight:900; margin:0 0 4px; color:var(--ink); }
+        .hello span{ color:var(--blue); }
+        .sub{ color:var(--ink-soft); font-size:1.05rem; margin:0; }
         .dash{ display:flex; align-items:center; justify-content:center; gap:7px; margin-top:14px; }
-        .dash i{ width:34px; height:5px; border-radius:5px; background:rgba(255,255,255,.18); display:block; }
-        .dash i.on{ width:42px; background:linear-gradient(90deg,#FBBF24,#F59E0B); }
+        .dash i{ width:34px; height:5px; border-radius:5px; background:#CBDDF4; display:block; }
+        .dash i.on{ width:42px; background:var(--blue); }
 
-        /* 3-column stage: left panels | center hub-orbit | right panels — 3 systems each side, aligned to the orbs */
-        .stage{ position:relative; z-index:2; width:100%; max-width:1280px; margin:4px auto 0; padding:0 20px;
-            display:grid; grid-template-columns:1fr 540px 1fr; align-items:stretch; gap:48px; }
-        .side{ display:flex; flex-direction:column; justify-content:space-between; gap:12px; z-index:3; padding:4px 0; }
-        .core{ position:relative; height:540px; z-index:2; }
+        /* ---- the stage ------------------------------------------------------------------------ */
+        .stage{ position:relative; z-index:2; width:100%; max-width:1340px; margin:2px auto 0; padding:0 20px;
+            display:grid; grid-template-columns:1fr 560px 1fr; align-items:stretch; gap:34px; }
+        .side{ display:flex; flex-direction:column; justify-content:flex-start; gap:14px; z-index:3; padding:4px 0; }
+        .core{ position:relative; height:470px; z-index:2; }
+        /* THE CENTRE'S OWN LIGHT. A halo wider than the orbit, fading to nothing well before the
+           side columns, so the cluster reads against light instead of against the office render.
+           Pointer-events none: it covers the orbs and would otherwise eat every click. */
+        .core::before{ content:""; position:absolute; top:50%; left:50%; translate:-50% -50%;
+            width:150%; height:130%; border-radius:50%; z-index:0; pointer-events:none;
+            background:radial-gradient(closest-side,
+                rgba(255,255,255,.95) 0%, rgba(255,255,255,.88) 42%,
+                rgba(255,255,255,.55) 68%, rgba(255,255,255,0) 100%); }
         .links{ position:absolute; inset:0; width:100%; height:100%; z-index:1; pointer-events:none; overflow:visible; }
-        .orbit{ position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:452px; height:452px;
-            border:1.5px dashed rgba(251,191,36,.55); border-radius:50%; z-index:1;
-            box-shadow: 0 0 40px -18px rgba(251,191,36,.6); }
-        .orbit.two{ width:312px; height:312px; border-color:rgba(251,191,36,.18); box-shadow:none; }
+        .orbit{ position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:392px; height:392px;
+            border:1.5px dashed rgba(22,103,214,.34); border-radius:50%; z-index:1; }
+        .orbit.two{ width:300px; height:300px; border-color:rgba(22,103,214,.18); }
 
-        /* soft translucent glass spheres sitting on the ring (subtle colour halo — no hard neon rim) */
-        .orb{ position:absolute; width:118px; height:118px; border-radius:50%; transform:translate(-50%,-50%); z-index:3; display:grid; place-items:center; cursor:pointer;
-            background:
-              radial-gradient(circle at 38% 28%, rgba(255,255,255,.14), rgba(255,255,255,0) 42%),
-              radial-gradient(circle at 50% 52%, var(--glow), rgba(20,16,36,0) 72%),
-              radial-gradient(circle at 50% 50%, rgba(18,20,30,.62), rgba(12,14,24,.66));
-            border:2px solid var(--c);
-            box-shadow: 0 0 15px 0 var(--c), inset 0 0 18px -5px var(--glow), inset 0 7px 16px rgba(255,255,255,.08);
+        /* THE ORBS ARE SOLID DISCS. The originals were dark glass with an emitted halo - both need a
+           dark page to exist at all. On white the same object is a filled circle in its accent, with
+           the label the design puts underneath it. */
+        .orb{ position:absolute; width:86px; height:86px; border-radius:50%; transform:translate(-50%,-50%); z-index:3;
+            display:grid; place-items:center; cursor:pointer; background:var(--c);
+            box-shadow:0 10px 26px -6px var(--c),
+                       0 0 0 7px color-mix(in srgb, var(--c) 12%, transparent),
+                       0 18px 44px -10px color-mix(in srgb, var(--c) 55%, transparent),
+                       inset 0 2px 6px rgba(255,255,255,.45),
+                       inset 0 -8px 16px -6px rgba(11,37,69,.22);
+            border:4px solid #fff;
             transition:transform .25s ease, box-shadow .25s ease; }
-        .orb:hover{ transform:translate(-50%,-50%) scale(1.05); box-shadow: 0 0 22px 1px var(--c), inset 0 0 22px -5px var(--glow), inset 0 7px 16px rgba(255,255,255,.12); }
-        .orb i{ font-size:54px; color:var(--c); filter:drop-shadow(0 6px 12px rgba(0,0,0,.45)); }
-        .orb .orbsvg{ width:56px; height:56px; color:var(--c); filter:drop-shadow(0 6px 12px rgba(0,0,0,.45)); }
-        .orb .num{ position:absolute; top:-4px; inset-inline-end:-4px; width:30px; height:30px; border-radius:50%;
-            display:flex; align-items:center; justify-content:center; font-size:.74rem; font-weight:800; color:#fff;
-            background: radial-gradient(circle at 40% 32%, rgba(255,255,255,.40), rgba(255,255,255,0) 58%), var(--c);
-            box-shadow:0 0 14px 1px var(--glow), 0 2px 7px rgba(0,0,0,.45);
-            border:1.5px solid rgba(255,255,255,.5); }
-        .dotn{ position:absolute; width:9px; height:9px; border-radius:50%; transform:translate(-50%,-50%); z-index:2; background:var(--c); box-shadow:0 0 10px var(--glow); }
+        .orb:hover{ transform:translate(-50%,-50%) scale(1.06);
+            box-shadow:0 16px 34px -6px var(--c),
+                       0 0 0 11px color-mix(in srgb, var(--c) 16%, transparent),
+                       0 24px 56px -10px color-mix(in srgb, var(--c) 65%, transparent),
+                       inset 0 2px 6px rgba(255,255,255,.5),
+                       inset 0 -8px 16px -6px rgba(11,37,69,.22); }
+        .orb i{ font-size:36px; color:#fff; }
+        .orb .orbsvg{ width:38px; height:38px; color:#fff; }
+        .orb .num{ position:absolute; top:-6px; inset-inline-end:-6px; width:28px; height:28px; border-radius:50%;
+            display:flex; align-items:center; justify-content:center; font-size:.72rem; font-weight:800; color:var(--c);
+            background:#fff; border:2px solid var(--c); box-shadow:0 2px 6px rgba(11,37,69,.14); }
+        /* The label sits under the disc, centred on it and free of the layout — a positioned block so
+           it cannot push the orbit around. */
+        .orb .lbl{ position:absolute; top:calc(100% + 10px); left:50%; transform:translateX(-50%);
+            white-space:nowrap; font-size:12px; font-weight:700; line-height:1;
+            color:var(--c); background:rgba(255,255,255,.72);
+            padding:5px 12px 6px; border-radius:999px;
+            border:1px solid transparent;
+            box-shadow:0 1px 3px rgba(11,37,69,.05);
+            backdrop-filter:blur(6px);
+            transition:background .25s ease, color .25s ease, transform .25s ease; }
+        /* 1/1.06 — the chip holds still while the disc grows, instead of resampling its own text. */
+        .orb:hover .lbl{ transform:translateX(-50%) scale(.943);
+            background:var(--c); color:#fff; border-color:transparent; }
+        .dotn{ position:absolute; width:9px; height:9px; border-radius:50%; transform:translate(-50%,-50%); z-index:2;
+            background:var(--c); }
 
-        .hub{ position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:196px; height:196px; border-radius:50%; z-index:4;
+        /* A BIGGER CIRCLE, AND CONTENT HELD WELL INSIDE IT. The logo measured 196px across in a
+           192px circle — ten pixels OUTSIDE the rim — because it was sized by height and the lockup
+           is 4.9:1, so the height decided a width nobody checked.
+           A circle's usable width is not its diameter: at the corners of an 84px-tall block the
+           chord is only 2*sqrt(R^2-42^2). At R=110 that is 203px, so 150px of content leaves real
+           air at every corner. */
+        .hub{ position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:220px; height:220px; border-radius:50%; z-index:4;
             display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; cursor:pointer;
-            background:
-              radial-gradient(circle at 38% 24%, rgba(255,255,255,.16), rgba(255,255,255,0) 42%),
-              radial-gradient(circle at 50% 120%, rgba(251,191,36,.30), rgba(0,0,0,.4) 72%), #0B3D91;
-            border:2px solid rgba(251,191,36,.45);
-            box-shadow:0 30px 60px rgba(0,0,0,.55), inset 0 2px 14px rgba(255,255,255,.14), 0 0 50px rgba(251,191,36,.28); }
-        .hub:hover{ box-shadow:0 30px 60px rgba(0,0,0,.6), inset 0 2px 14px rgba(255,255,255,.18), 0 0 70px rgba(251,191,36,.4); }
-        .hubmark{ display:grid; grid-template-columns:1fr 1fr; gap:6px; width:60px; margin-bottom:12px; }
-        .hubmark span{ width:27px; height:27px; border-radius:8px; }
-        .hubmark .g{ background:linear-gradient(135deg,#FBBF24,#F59E0B); } .hubmark .e{ background:linear-gradient(135deg,#38BDF8,#0E4A9E); }
-        .hub b{ font-size:1.12rem; font-weight:800; color:#fff; }
-        .hub small{ font-size:.78rem; color:#A8C5FF; margin-top:2px; }
+            padding:0 34px;
+            background:#fff; border:1px solid var(--line);
+            box-shadow:0 20px 50px rgba(11,37,69,.14), 0 4px 12px rgba(11,37,69,.06); }
+        .hub:hover{ box-shadow:0 26px 60px rgba(11,37,69,.20), 0 4px 14px rgba(11,37,69,.08); }
+        /* Measured on the reference: in a 180px circle the logo is 40px, then 8px to the title and
+           4px to the caption — an 84px block, centred, with 48px of clear circle above and below.
+           The logo carried a margin of its own before, which pushed the block off centre. */
+        /* SIZED BY WIDTH, not height — that is the dimension the circle constrains. */
+        .hublogo{ width:150px; max-width:100%; height:auto; margin:0 0 10px; display:block; }
+        .hub b{ font-size:1.02rem; font-weight:800; color:var(--ink); line-height:1.2; }
+        .hub small{ font-size:.73rem; color:var(--ink-soft); margin-top:5px; line-height:1.35; max-width:150px; }
 
-        .panel{ z-index:3; text-align:start; display:flex; flex-direction:column; }
-        .panel .t{ font-weight:800; font-size:1.16rem; margin:0 0 4px; }
-        .panel .d{ color:#A8C5FF; font-size:.85rem; line-height:1.55; margin:0 0 9px; }
-        .panel ul{ list-style:none; margin:0 0 12px; padding:0; display:flex; flex-direction:column; gap:5px; }
-        .panel li{ position:relative; color:#D0E1FF; font-size:.83rem; padding-inline-start:16px; }
-        .panel li::before{ content:""; position:absolute; inset-inline-start:0; top:.5em; width:7px; height:7px; border-radius:50%; background:var(--c); box-shadow:0 0 8px var(--c); }
-        .cta{ display:inline-flex; align-items:center; gap:9px; align-self:flex-start; padding:8px 18px; border-radius:30px; font-weight:700; font-size:.88rem; border:1.5px solid var(--c); color:#fff; transition:background .2s ease, color .2s ease; }
-        .cta .ic{ width:23px; height:23px; border-radius:50%; background:#fff; display:flex; align-items:center; justify-content:center; font-size:.75rem; color:#0B3D91; }
-        .panel:hover .cta{ background:var(--c); color:#0B3D91; }
-        /* on hover the pill fills with the accent, so the badge inverts to stay
-           readable: a white circle on a light accent would be ~2:1. */
-        .panel:hover .cta .ic{ background:#0B3D91; color:#fff; }
-        /* bottom wide systems (Manufacturing, CRM) */
-        .morsys{ position:relative; z-index:3; max-width:980px; margin:6px auto 0; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; padding:0 16px; }
-        .msys{ display:flex; align-items:center; gap:14px; padding:16px 20px; border-radius:18px;
-            background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.10); transition:background .2s ease, transform .2s ease, border-color .2s ease; }
-        .msys:hover{ background:rgba(255,255,255,.09); transform:translateY(-2px); border-color:var(--c); }
-        .msys-ic{ width:50px; height:50px; flex:none; border-radius:13px; display:flex; align-items:center; justify-content:center;
-            background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.14); box-shadow:0 0 22px -6px var(--c); }
-        .msys-ic i{ font-size:26px; color:var(--c); }
-        .msys-t{ font-weight:800; font-size:1.05rem; color:#fff; }
-        .msys-d{ color:#A8C5FF; font-size:.82rem; }
+        /* ---- the six portal cards -------------------------------------------------------------- */
+        /* THE CARD. The design puts the icon tile on the card's OUTER edge and the text beside it,
+           with the action pill running the width of the text column and its arrow at the far end.
+           row-reverse does that in both directions: the tile lands on the page's outer side because
+           the whole layout mirrors, not because a second rule says so. */
+        .panel{ z-index:3; text-align:start; display:flex; gap:15px; align-items:flex-start;
+            flex-direction:row-reverse;
+            /* 25px all round and 15px to the text — the reference card is 325x178 and those are its
+               own figures. At 16/18 the panels read as cramped boxes. */
+            background:rgba(255,255,255,.96); border:1px solid var(--line); border-radius:20px; padding:25px;
+            backdrop-filter:blur(6px);
+            box-shadow:0 18px 40px -18px rgba(11,37,69,.22), 0 2px 6px rgba(11,37,69,.04);
+            transition:transform .2s ease, box-shadow .2s ease, border-color .2s ease; }
+        .panel:hover{ transform:translateY(-2px); border-color:var(--c); box-shadow:0 16px 36px rgba(11,37,69,.12); }
+        /* A squircle with a lit top edge, not a flat square — the design's tiles have depth. */
+        .panel .pic{ width:75px; height:75px; flex:none; border-radius:21px; color:#fff;
+            display:flex; align-items:center; justify-content:center;
+            position:relative; overflow:hidden;
+            background:linear-gradient(160deg, color-mix(in srgb, var(--c) 78%, #fff) 0%, var(--c) 55%,
+                                              color-mix(in srgb, var(--c) 82%, #000) 100%);
+            box-shadow:0 14px 26px -10px var(--c),
+                       0 3px 8px -2px color-mix(in srgb, var(--c) 45%, transparent),
+                       inset 0 1px 0 rgba(255,255,255,.45); }
+        /* A 1px inset line reads flat at 75px. A real gloss on the lit corner does not — and it is
+           the same corner the tile's own gradient and its drop shadow already agree on. */
+        .panel .pic::after{ content:""; position:absolute; inset:0; border-radius:inherit;
+            pointer-events:none;
+            background:radial-gradient(120% 90% at 18% 8%,
+                rgba(255,255,255,.42) 0%, rgba(255,255,255,.14) 38%, rgba(255,255,255,0) 66%); }
+        .panel .pic i, .panel .pic svg{ position:relative; z-index:1; }
+        .panel .pic i{ font-size:34px; }
+        .panel .pic svg{ width:34px; height:34px; }
+        .panel .body{ min-width:0; flex:1 1 auto; }
+        .panel .t{ font-weight:800; font-size:1.06rem; margin:0 0 5px; color:var(--c); }
+        .panel .d{ color:var(--ink-soft); font-size:.8rem; line-height:1.45; margin:0 0 2px; }
+        .panel ul{ list-style:none; margin:0 0 12px; padding:0; display:flex; flex-direction:column; gap:1px; }
+        .panel li{ color:var(--ink-soft); font-size:.79rem; line-height:1.5; }
+        /* A SHORT PILL AT THE TEXT'S START EDGE. Stretched across the card it read as a bar; the
+           design gives it only the width its own label needs. */
+        /* A WHITE PILL WITH A BLUE CIRCLE, and the blue is the SAME on every card — it is the
+           product's action colour, not the card's subject colour. The card's own accent is already
+           carried by its tile and its title; putting it on the button too made six different-coloured
+           buttons where the design has one.
+           I had this solid in the card colour with a white circle and a door-entry glyph: the fill
+           inverted, the accent wrongly per-card, and the wrong icon. */
+        /* NO FIXED WIDTH. At min-width:112 with space-between every spare pixel went BETWEEN the
+           word and the circle, leaving the word flat against the padding and a hole in the middle.
+           Sized to its contents, the padding is the only spacing there is and it holds. */
+        /* THE BADGE IS THE FIRST CHILD, so it sits at the inline-START and the label at the
+           inline-END. The 5px belongs to the badge (it is already a filled circle, it needs no
+           breathing room) and the wide rim belongs to the LABEL. Stated logically: one rule, no
+           mirrored copy to get backwards. */
+        .cta{ display:inline-flex; align-items:center; gap:14px;
+            align-self:flex-start; height:40px;
+            padding-block:0; padding-inline-start:5px; padding-inline-end:22px; border-radius:30px;
+            font-weight:700; font-size:.86rem; background:#fff; border:0; color:var(--ink);
+            box-shadow:0 3px 10px rgba(11,37,69,.10);
+            transition:box-shadow .2s ease, transform .2s ease; }
+        .cta .ic{ width:30px; height:30px; border-radius:50%; background:var(--blue); display:flex;
+            align-items:center; justify-content:center; color:#fff; flex:none; }
+        .cta .ic svg{ width:16px; height:16px; }
+        /* THE ARROW POINTS OUTWARD, away from the hub: the column on the right points right, the
+           one on the left points left. The columns are .side.start / .side.end, so "start" is the
+           right-hand column in Arabic and the left-hand one in English — flipping on that keeps the
+           outward reading true in both without a mirrored copy of the rule.
+           The drawn path points RIGHT, so only the column currently on the left is flipped. */
+        html:not([dir="rtl"]) .side.start .cbarrow,
+        html[dir="rtl"]       .side.end   .cbarrow { transform:scaleX(-1); }
+        .panel:hover .cta{ transform:translateY(-1px); box-shadow:0 8px 20px rgba(11,37,69,.14); }
 
-        .features{ position:relative; z-index:3; max-width:1180px; margin:10px auto 14px; background:rgba(255,255,255,.05);
-            border:1px solid rgba(255,255,255,.10); border-radius:20px; padding:12px 24px; display:flex; align-items:center; gap:18px; flex-wrap:wrap; justify-content:center; }
-        .features .lead{ display:flex; align-items:center; gap:14px; padding-inline-end:22px; border-inline-end:1px solid rgba(255,255,255,.12); }
-        .features .lead .sh{ width:62px; height:62px; border-radius:16px; background:radial-gradient(circle at 40% 30%, rgba(255,255,255,.25), transparent 60%), linear-gradient(135deg,#FBBF24,#b88a12); display:flex; align-items:center; justify-content:center; color:#3a2c05; flex:none; }
-        .features .lead .sh i{ font-size:34px; line-height:1; }
-        .features .lead b{ color:#FBBF24; font-size:1.05rem; } .features .lead small{ display:block; color:#A8C5FF; font-size:.82rem; max-width:230px; }
-        .feat{ display:flex; align-items:center; gap:12px; }
-        .feat .fi{ width:50px; height:50px; border-radius:13px; background:rgba(255,255,255,.08); border:1px solid rgba(168,197,255,.18); display:flex; align-items:center; justify-content:center; color:#A8C5FF; font-size:26px; flex:none; }
-        .feat .fi i{ font-size:26px; line-height:1; }
-        .feat b{ font-size:.95rem; color:#E7F0FF; } .feat small{ display:block; color:#7DA9FF; font-size:.78rem; }
+        /* ---- the six secondary systems ---------------------------------------------------------- */
+        /* Tucked under the orbit rather than run across the page: the design keeps them inside the
+           middle column's measure so the two side columns stay the tallest thing on the page. */
+        /* The middle column's own measure — squeezed to 660 their captions wrapped to three lines. */
+        .morsys{ position:relative; z-index:3; max-width:740px; margin:6px auto 0;
+            display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:11px; padding:0 16px; }
+        .msys{ display:flex; align-items:center; gap:11px; padding:12px 13px; border-radius:15px;
+            flex-direction:row-reverse;
+            background:rgba(255,255,255,.94); border:1px solid var(--line); box-shadow:0 3px 14px rgba(11,37,69,.05);
+            backdrop-filter:blur(6px);
+            transition:transform .2s ease, box-shadow .2s ease, border-color .2s ease; }
+        .msys:hover{ transform:translateY(-2px); border-color:var(--c); box-shadow:0 12px 26px rgba(11,37,69,.10); }
+        .msys-ic{ width:40px; height:40px; flex:none; border-radius:12px; display:flex; align-items:center; justify-content:center;
+            background:linear-gradient(160deg, color-mix(in srgb, var(--c) 78%, #fff) 0%, var(--c) 60%,
+                                              color-mix(in srgb, var(--c) 82%, #000) 100%);
+            color:#fff; box-shadow:0 6px 14px -6px var(--c); }
+        .msys-ic i{ font-size:20px; }
+        .msys-t{ font-weight:800; font-size:.88rem; color:var(--ink); line-height:1.25; }
+        .msys-d{ color:var(--ink-mute); font-size:.7rem; line-height:1.35; margin-top:6px; }
 
-        /* tablet & down: hide the decorative orbit; the 6 systems become clean stacked cards (2-col then 1-col) */
-        @@media (max-width:1024px){
-            .stage{ grid-template-columns:1fr 1fr; max-width:760px; gap:16px; align-items:stretch; }
+        /* ---- the feature bar --------------------------------------------------------------------- */
+        .features{ position:relative; z-index:3; max-width:1340px; margin:10px auto 18px; background:var(--card);
+            border:1px solid var(--line); border-radius:20px; padding:14px 20px; display:flex; align-items:center;
+            gap:14px; flex-wrap:wrap; justify-content:space-between; box-shadow:0 4px 18px rgba(11,37,69,.06); }
+        .features .lead{ display:flex; align-items:center; gap:12px; padding-inline-end:20px;
+            border-inline-end:1px solid var(--line); }
+        .features .lead .sh{ width:54px; height:54px; border-radius:15px; background:var(--blue);
+            display:flex; align-items:center; justify-content:center; color:#fff; flex:none;
+            box-shadow:0 8px 20px -6px rgba(22,103,214,.6); }
+        .features .lead .sh i{ font-size:28px; line-height:1; }
+        .features .lead b{ color:var(--ink); font-size:.98rem; }
+        .features .lead small{ display:block; color:var(--ink-soft); font-size:.8rem; max-width:230px; }
+        /* min-width:0 is what actually lets a flex child shrink: without it the text's intrinsic width
+           is the floor, which is why the captions kept their size while the BOX collapsed under them. */
+        .feat{ display:flex; align-items:center; gap:11px; min-width:0; }
+        .feat > div{ min-width:0; }
+        .feat .fi{ width:46px; height:46px; border-radius:12px; background:#F2F7FD; border:1px solid var(--line);
+            display:flex; align-items:center; justify-content:center; color:var(--blue); flex:none; }
+        .feat .fi i{ font-size:23px; line-height:1; }
+        .feat b{ font-size:.9rem; color:var(--ink); } .feat small{ display:block; color:var(--ink-mute); font-size:.76rem; }
+
+        /* The filled action that closes the bar. */
+        .growcta{ display:flex; align-items:center; gap:12px; padding:8px 8px 8px 16px; border-radius:16px;
+            background:#fff; border:1px solid var(--line); box-shadow:0 3px 14px rgba(11,37,69,.06);
+            transition:box-shadow .2s ease, transform .2s ease; }
+        html[dir="rtl"] .growcta{ padding:8px 16px 8px 8px; }
+        .growcta:hover{ transform:translateY(-2px); box-shadow:0 12px 26px rgba(11,37,69,.12); }
+        .growcta .gi{ width:44px; height:44px; flex:none; border-radius:12px; display:flex; align-items:center;
+            justify-content:center; color:#fff;
+            background:linear-gradient(160deg,#4C8DE8 0%,var(--blue) 60%,#0E4A9E 100%);
+            box-shadow:0 6px 14px -6px var(--blue); }
+        .growcta .gi i{ font-size:21px; }
+        .growcta .gt b{ display:block; font-size:.92rem; color:var(--ink); }
+        .growcta .gt small{ display:block; color:var(--ink-mute); font-size:.76rem; }
+        .growcta .ga{ width:44px; height:44px; flex:none; border-radius:50%; background:var(--blue); color:#fff;
+            display:flex; align-items:center; justify-content:center; font-size:1.1rem;
+            box-shadow:0 8px 18px -6px var(--blue); }
+
+        /* ---- narrow screens ----------------------------------------------------------------------- */
+        @@media (max-width:1200px){
+            .stage{ grid-template-columns:1fr 1fr; max-width:840px; gap:16px; align-items:stretch; }
             .core{ display:none; }
             .side{ justify-content:flex-start; gap:16px; padding:0; }
-            .panel{ background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.10); border-radius:20px; padding:20px 22px; }
+            .morsys{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+
+            /* The bar becomes rows: the lead takes the full width with the rule moved UNDER it
+               (a vertical rule between stacked blocks reads as a stray line), the four features pair
+               up two to a row, and the action closes it across the bottom. */
+            .features{ margin-inline:16px; row-gap:14px; }
+            .features .lead{ flex:1 1 100%; border-inline-end:none; padding-inline-end:0;
+                             padding-bottom:14px; border-bottom:1px solid var(--line); }
+            .features .lead small{ max-width:none; }
+            .feat{ flex:1 1 calc(50% - 7px); }
+            .growcta{ flex:1 1 100%; justify-content:space-between; }
         }
-        /* phone: single column, stack everything */
+
+        /* A phone. The decorations go first — they are fixed-position and 461px wide, so on a 390px
+           screen they are nothing but overflow — and the scene stops being `fixed`, which iOS Safari
+           renders badly and repaints on every scroll. */
+        @@media (max-width:900px){
+            /* The scene leaves the body and becomes a FIXED layer behind the content. `cover` on the
+               body was measuring itself against the document — 2202px tall on a phone — which blew a
+               1536x1024 render up to ~3300px wide and left a narrow slice with its top cut off.
+               A fixed layer is measured against the VIEWPORT, and unlike background-attachment:fixed
+               it is composited correctly by iOS Safari. z-index 0: the page's own content all sits at
+               2 or above, so it stays in front without touching any of it. */
+            body{ background-image:none; }
+            body::before{ content:""; position:fixed; inset:0; z-index:0; pointer-events:none;
+                background-color:#EDF3FC;
+                background-image:
+                  linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0) 11%,
+                                         rgba(255,255,255,.72) 26%, rgba(255,255,255,.80) 50%,
+                                         rgba(255,255,255,.72) 74%, rgba(255,255,255,0) 89%,
+                                         rgba(255,255,255,0) 100%),
+                  url('@Url.Content("~/Backend-assets/media/brand/login-scene.png")');
+                background-repeat:no-repeat, no-repeat;
+                background-size:cover, cover;
+                background-position:center, center; }
+            .dots, .glow-corner, .edgeline{ display:none; }
+        }
         @@media (max-width:640px){
-            .stage{ grid-template-columns:1fr; max-width:460px; }
+            .stage{ grid-template-columns:1fr; max-width:480px; }
             .hello{ font-size:1.6rem; } .sub{ font-size:.95rem; }
             .langbar{ position:static; margin:12px auto 0; }
+            .shieldtop{ display:none; }
             .morsys{ grid-template-columns:1fr; }
-            .features{ padding:16px; gap:16px; } .features .lead{ border-inline-end:none; padding-inline-end:0; }
+            .features{ padding:16px; gap:14px; }
+            .panel{ padding:18px; gap:12px; }
+            .panel .pic{ width:60px; height:60px; border-radius:17px; }
+            .panel .pic i{ font-size:26px; } .panel .pic svg{ width:26px; height:26px; }
+        }
+        /* Below this a two-up feature is ~170px wide and every caption breaks; one per row reads. */
+        @@media (max-width:520px){
+            .feat{ flex:1 1 100%; }
+            .growcta{ padding:8px; }
+            .growcta .gt b{ font-size:.88rem; } .growcta .gt small{ font-size:.72rem; }
         }
     </style>
 </head>
 <body>
     <span class="dots tl"></span><span class="dots bl"></span><span class="glow-corner"></span>
+    @* The design runs this down the outer edge. Decoration, so it is hidden from screen readers —
+       the page says nothing here it does not also say in its content. *@
+    <div class="edgeline" aria-hidden="true">@SR["BrandFootline"]</div>
 
     <div class="langbar">
         <span class="gl"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18"></path><path d="M12 3c2.6 2.7 2.6 15.3 0 18M12 3c-2.6 2.7-2.6 15.3 0 18"></path></svg></span>
@@ -178,7 +407,7 @@
     <div class="shieldtop"><i class="ki-outline ki-shield-tick fs-2"></i></div>
 
     <div class="head">
-        <img class="logo" src="~/Backend-assets/media/logos/crossbuy-logo-light.svg" alt="CrossBuy" asp-append-version="true" />
+        <img class="logo" src="~/Backend-assets/media/brand/crossbuy-logo-lockup.png" alt="CrossBuy" asp-append-version="true" />
         <h1 class="hello">@Localizer["Welcome, "]<span>@name</span></h1>
         <p class="sub">@Localizer["Choose the portal that fits your needs today"]</p>
         <div class="dash"><i></i><i class="on"></i><i></i></div>
@@ -187,23 +416,32 @@
     <div class="stage">
         <!-- start-side panels: Back-office · People · Reports & Analytics -->
         <div class="side start">
-            <div class="panel" style="--c:#22D3EE;">
-                <div class="t" style="color:#22D3EE;">@Localizer["Administrative system"]</div>
+            <div class="panel" style="--c:#10A36F;">
+                <span class="pic"><i class="ki-solid ki-setting-2"></i></span>
+                <div class="body">
+                <div class="t">@Localizer["Administrative system"]</div>
                 <div class="d">@Localizer["Companies, employees, roles & data"]</div>
                 <ul><li>@Localizer["Users & permissions"]</li><li>@Localizer["System settings & data"]</li><li>@Localizer["Reports & statistics"]</li></ul>
-                <a class="cta" href="@Url.Action("Index","Service")"><span class="ic"><i class="ki-outline ki-entrance-@arrow"></i></span>@Localizer["Enter"]</a>
+                <a class="cta" href="@Url.Action("Index","Service")"><span class="ic"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true" class="cbarrow"><path d="M4 12h15M13 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>@Localizer["Enter"]</a>
+                </div>
             </div>
-            <div class="panel" style="--c:#A8C5FF;">
-                <div class="t" style="color:#A8C5FF;">@Localizer["Employees portal"]</div>
+            <div class="panel" style="--c:#7C5CFC;">
+                <span class="pic"><i class="ki-solid ki-people"></i></span>
+                <div class="body">
+                <div class="t">@Localizer["Employees portal"]</div>
                 <div class="d">@Localizer["Profile, leaves, payslips & alerts"]</div>
                 <ul><li>@Localizer["Personal profile & data"]</li><li>@Localizer["Leaves & attendance"]</li><li>@Localizer["Requests & notifications"]</li></ul>
-                <a class="cta" href="@Url.Action("Dashboard","People")"><span class="ic"><i class="ki-outline ki-entrance-@arrow"></i></span>@Localizer["Enter"]</a>
+                <a class="cta" href="@Url.Action("Dashboard","People")"><span class="ic"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true" class="cbarrow"><path d="M4 12h15M13 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>@Localizer["Enter"]</a>
+                </div>
             </div>
-            <div class="panel" style="--c:#5EEAD4;">
-                <div class="t" style="color:#5EEAD4;">@Localizer["Reports & Analytics"]</div>
+            <div class="panel" style="--c:#F0A020;">
+                <span class="pic"><i class="ki-solid ki-chart-line-up"></i></span>
+                <div class="body">
+                <div class="t">@Localizer["Reports & Analytics"]</div>
                 <div class="d">@Localizer["Comprehensive reports & analytics for better decisions"]</div>
                 <ul><li>@Localizer["Custom reports"]</li><li>@Localizer["Key performance indicators"]</li><li>@Localizer["Analytics & charts"]</li></ul>
-                <a class="cta" href="@Url.Action("Executive","Accounting")"><span class="ic"><i class="ki-outline ki-entrance-@arrow"></i></span>@Localizer["Enter"]</a>
+                <a class="cta" href="@Url.Action("Executive","Accounting")"><span class="ic"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true" class="cbarrow"><path d="M4 12h15M13 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>@Localizer["Enter"]</a>
+                </div>
             </div>
         </div>
 
@@ -212,62 +450,71 @@
             <svg class="links" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
                 @foreach (var p in _links)
                 {
-                    <line x1="50" y1="50" x2="@p.x" y2="@p.y" stroke="rgba(251,191,36,.34)" stroke-width="1" stroke-dasharray="2 5" vector-effect="non-scaling-stroke"></line>
-                    <circle cx="@(((50 + p.x) / 2))" cy="@(((50 + p.y) / 2))" r="0.9" fill="rgba(251,191,36,.85)"></circle>
-                    <circle cx="@(((50 + p.x * 3) / 4))" cy="@(((50 + p.y * 3) / 4))" r="0.7" fill="rgba(251,191,36,.6)"></circle>
+                    <line x1="50" y1="50" x2="@p.x" y2="@p.y" stroke="rgba(22,103,214,.26)" stroke-width="1" stroke-dasharray="2 5" vector-effect="non-scaling-stroke"></line>
+                    <circle cx="@(((50 + p.x) / 2))" cy="@(((50 + p.y) / 2))" r="0.9" fill="rgba(22,103,214,.55)"></circle>
+                    <circle cx="@(((50 + p.x * 3) / 4))" cy="@(((50 + p.y * 3) / 4))" r="0.7" fill="rgba(22,103,214,.35)"></circle>
                 }
             </svg>
             <div class="orbit"></div>
             <div class="orbit two"></div>
             <a class="hub" href="@Url.Action("Index", "Service")">
-                <div class="hubmark"><span class="g"></span><span class="e"></span><span class="e"></span><span class="g"></span></div>
+                <img class="hublogo" src="~/Backend-assets/media/brand/crossbuy-logo-lockup.png" alt="" asp-append-version="true" />
                 <b>@Localizer["Control panel"]</b>
                 <small>@Localizer["Quick access to all systems"]</small>
             </a>
-            <a class="orb" href="@Url.Action("Index","Service")"      style="--c:#22D3EE; --glow:rgba(34,211,238,.42);  left:@sTB;  top:14%;"><span class="num">01</span><i class="ki-solid ki-setting-2"></i></a>
-            <a class="orb" href="@Url.Action("Index","Inventory")"    style="--c:#FBBF24; --glow:rgba(251,191,36,.45);  left:@eTB;  top:14%;"><span class="num">02</span><i class="ki-solid ki-handcart"></i></a>
-            <a class="orb" href="@Url.Action("Dashboard","People")"   style="--c:#A8C5FF; --glow:rgba(168,197,255,.42); left:@sMID; top:50%;"><span class="num">03</span><i class="ki-solid ki-people"></i></a>
-            <a class="orb" href="@Url.Action("Index","Accounting")"   style="--c:#38BDF8; --glow:rgba(56,189,248,.45);  left:@eMID; top:50%;"><span class="num">04</span><i class="ki-solid ki-bill"></i></a>
-            <a class="orb" href="@Url.Action("Executive","Accounting")" style="--c:#5EEAD4; --glow:rgba(94,234,212,.42); left:@sTB;  top:86%;"><span class="num">03</span><i class="ki-solid ki-chart-line-up"></i></a>
-            <a class="orb" href="@Url.Action("Tickets","Crm")"        style="--c:#D8B4FE; --glow:rgba(216,180,254,.45); left:@eTB;  top:86%;"><span class="num">04</span><svg class="orbsvg" viewBox="0 0 24 24" width="42" height="42" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 13v-1a8 8 0 0 1 16 0v1"></path><rect x="2.4" y="12.8" width="4.3" height="6.6" rx="1.9" fill="currentColor" fill-opacity=".16"></rect><rect x="17.3" y="12.8" width="4.3" height="6.6" rx="1.9" fill="currentColor" fill-opacity=".16"></rect><path d="M19.45 19.4v.7a3 3 0 0 1-3 3H13.5"></path><circle cx="12" cy="23.1" r="1.15" fill="currentColor" stroke="none"></circle></svg></a>
+            <a class="orb" href="@Url.Action("Index","Service")"      style="--c:#10A36F;  left:@sTB;  top:14%;"><span class="num">01</span><i class="ki-solid ki-setting-2"></i><span class="lbl">@Localizer["Administrative system"]</span></a>
+            <a class="orb" href="@Url.Action("Index","Inventory")"    style="--c:#1F6FEB;  left:@eTB;  top:14%;"><span class="num">02</span><i class="ki-solid ki-handcart"></i><span class="lbl">@SR["Inventory"]</span></a>
+            <a class="orb" href="@Url.Action("Dashboard","People")"   style="--c:#7C5CFC; left:@sMID; top:50%;"><span class="num">03</span><i class="ki-solid ki-people"></i><span class="lbl">@Localizer["Employees portal"]</span></a>
+            <a class="orb" href="@Url.Action("Index","Accounting")"   style="--c:#0E86B8;  left:@eMID; top:50%;"><span class="num">04</span><i class="ki-solid ki-bill"></i><span class="lbl">@SR["Accounting"]</span></a>
+            <a class="orb" href="@Url.Action("Executive","Accounting")" style="--c:#F0A020; left:@sTB;  top:86%;"><span class="num">05</span><i class="ki-solid ki-chart-line-up"></i><span class="lbl">@Localizer["Reports & Analytics"]</span></a>
+            <a class="orb" href="@Url.Action("Tickets","Crm")"        style="--c:#E2445C; left:@eTB;  top:86%;"><span class="num">06</span><svg class="orbsvg" viewBox="0 0 24 24" width="42" height="42" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 13v-1a8 8 0 0 1 16 0v1"></path><rect x="2.4" y="12.8" width="4.3" height="6.6" rx="1.9" fill="currentColor" fill-opacity=".16"></rect><rect x="17.3" y="12.8" width="4.3" height="6.6" rx="1.9" fill="currentColor" fill-opacity=".16"></rect><path d="M19.45 19.4v.7a3 3 0 0 1-3 3H13.5"></path><circle cx="12" cy="23.1" r="1.15" fill="currentColor" stroke="none"></circle></svg><span class="lbl">@Localizer["Technical support"]</span></a>
         </div>
 
         <!-- end-side panels: Inventory · Accounting · Technical support -->
         <div class="side end">
-            <div class="panel" style="--c:#FBBF24;">
-                <div class="t" style="color:#FBBF24;">@SR["Inventory"]</div>
+            <div class="panel" style="--c:#1F6FEB;">
+                <span class="pic"><i class="ki-solid ki-parcel"></i></span>
+                <div class="body">
+                <div class="t">@SR["Inventory"]</div>
                 <div class="d">@Localizer["Items, stock & movements"]</div>
                 <ul><li>@Localizer["Items & warehouses"]</li><li>@Localizer["Stock movements & purchases"]</li><li>@Localizer["Counting & receiving"]</li></ul>
-                <a class="cta" href="@Url.Action("Index","Inventory")"><span class="ic"><i class="ki-outline ki-entrance-@arrow"></i></span>@Localizer["Enter"]</a>
+                <a class="cta" href="@Url.Action("Index","Inventory")"><span class="ic"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true" class="cbarrow"><path d="M4 12h15M13 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>@Localizer["Enter"]</a>
+                </div>
             </div>
-            <div class="panel" style="--c:#38BDF8;">
-                <div class="t" style="color:#38BDF8;">@SR["Accounting"]</div>
+            <div class="panel" style="--c:#0E86B8;">
+                <span class="pic"><i class="ki-solid ki-bill"></i></span>
+                <div class="body">
+                <div class="t">@SR["Accounting"]</div>
                 <div class="d">@Localizer["Accounts, journals & reports"]</div>
                 <ul><li>@Localizer["Journals & accounts"]</li><li>@Localizer["Invoices & payments"]</li><li>@Localizer["Financial reports"]</li></ul>
-                <a class="cta" href="@Url.Action("Index","Accounting")"><span class="ic"><i class="ki-outline ki-entrance-@arrow"></i></span>@Localizer["Enter"]</a>
+                <a class="cta" href="@Url.Action("Index","Accounting")"><span class="ic"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true" class="cbarrow"><path d="M4 12h15M13 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>@Localizer["Enter"]</a>
+                </div>
             </div>
-            <div class="panel" style="--c:#D8B4FE;">
-                <div class="t" style="color:#D8B4FE;">@Localizer["Technical support"]</div>
+            <div class="panel" style="--c:#E2445C;">
+                <span class="pic"><svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 13v-1a8 8 0 0 1 16 0v1"/><rect x="2.4" y="12.8" width="4.3" height="6.6" rx="1.9"/><rect x="17.3" y="12.8" width="4.3" height="6.6" rx="1.9"/><path d="M19.45 19.4v.7a3 3 0 0 1-3 3H13.5"/></svg></span>
+                <div class="body">
+                <div class="t">@Localizer["Technical support"]</div>
                 <div class="d">@Localizer["Reach our support & assistance team"]</div>
                 <ul><li>@Localizer["Support tickets & follow-up"]</li><li>@Localizer["Knowledge base"]</li><li>@Localizer["Direct contact"]</li></ul>
-                <a class="cta" href="@Url.Action("Tickets","Crm")"><span class="ic"><i class="ki-outline ki-entrance-@arrow"></i></span>@Localizer["Enter"]</a>
+                <a class="cta" href="@Url.Action("Tickets","Crm")"><span class="ic"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true" class="cbarrow"><path d="M4 12h15M13 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>@Localizer["Enter"]</a>
+                </div>
             </div>
         </div>
     </div>
 
     <!--begin::Bottom wide systems (Manufacturing · CRM) -->
     <div class="morsys">
-        <a class="msys" href="@Url.Action("WorkOrders","Inventory")" style="--c:#38BDF8;">
+        <a class="msys" href="@Url.Action("WorkOrders","Inventory")" style="--c:#0E86B8;">
             <span class="msys-ic"><i class="ki-solid ki-gear"></i></span>
             <div><div class="msys-t">@SR["Manufacturing"]</div>
             <div class="msys-d">@Localizer["Work orders & production tracking (WIP)"]</div></div>
         </a>
-        <a class="msys" href="@Url.Action("Index","Crm")" style="--c:#D8B4FE;">
+        <a class="msys" href="@Url.Action("Index","Crm")" style="--c:#E2445C;">
             <span class="msys-ic"><i class="ki-solid ki-people"></i></span>
             <div><div class="msys-t">@SR["CRM"]</div>
             <div class="msys-d">@Localizer["Customers, opportunities, campaigns & tickets"]</div></div>
         </a>
-        <a class="msys" href="@Url.Action("Index","Tasks")" style="--c:#C4B5FD;">
+        <a class="msys" href="@Url.Action("Index","Tasks")" style="--c:#7C5CFC;">
             <span class="msys-ic"><i class="ki-solid ki-abstract-26"></i></span>
             <div><div class="msys-t">@SR["Tasks"]</div>
             <div class="msys-d">@(System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar" ? "المهام والتايم شيت: تكلفة وفوترة ومرتبات" : "Tasks & timesheet: cost, billing & payroll")</div></div>
@@ -277,19 +524,19 @@
            partial: it is the post-login landing page and the destination of the switcher's own "All systems"
            row, so a user who starts here had no way to reach Timeline or Resource View without first entering
            some OTHER system to borrow its sidebar. Same .msys component, same colour the switcher already
-           gives Calendar (#F0ABFC), same label source — a listing of a system this page had omitted, not a
+           gives Calendar (#C0399B), same label source — a listing of a system this page had omitted, not a
            new navigation design. *@
-        <a class="msys" href="@Url.Action("Index","Calendar")" style="--c:#F0ABFC;">
+        <a class="msys" href="@Url.Action("Index","Calendar")" style="--c:#C0399B;">
             <span class="msys-ic"><i class="ki-solid ki-calendar"></i></span>
             <div><div class="msys-t">@SR["Calendar"]</div>
             <div class="msys-d">@(System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar" ? "التقويم: الجدول الزمني وعرض الموارد والتكرار" : "Calendar: timeline, resource view & recurrence")</div></div>
         </a>
-        <a class="msys" href="@Url.Action("Projects","Project")" style="--c:#2DD4BF;">
+        <a class="msys" href="@Url.Action("Projects","Project")" style="--c:#0E9F84;">
             <span class="msys-ic"><i class="ki-solid ki-questionnaire-tablet"></i></span>
             <div><div class="msys-t">@SR["Projects & Contracting"]</div>
             <div class="msys-d">@(System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar" ? "المشاريع والمقاولات: BOQ والعقود والمستخلصات" : "Projects, BOQ, contracts & progress billing")</div></div>
         </a>
-        <a class="msys" href="@Url.Action("Dashboard","Hyper")" style="--c:#F9A8D4;">
+        <a class="msys" href="@Url.Action("Dashboard","Hyper")" style="--c:#E0518F;">
             <span class="msys-ic"><i class="ki-solid ki-basket"></i></span>
             <div><div class="msys-t">@SR["Hypermarket"]</div>
             <div class="msys-d">@(System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar" ? "الهايبر ماركت: ممرّات الكاشير والقدرات والورديات" : "Hypermarket: lanes, capabilities & shifts")</div></div>
@@ -306,6 +553,15 @@
         <div class="feat"><div class="fi"><i class="ki-outline ki-cloud-add"></i></div><div><b>@Localizer["Backups"]</b><small>@Localizer["Periodic backups"]</small></div></div>
         <div class="feat"><div class="fi"><i class="ki-outline ki-time"></i></div><div><b>@Localizer["24/7 support"]</b><small>@Localizer["Always-on support"]</small></div></div>
         <div class="feat"><div class="fi"><i class="ki-outline ki-rocket"></i></div><div><b>@Localizer["High performance"]</b><small>@Localizer["Fast & reliable"]</small></div></div>
+
+        @* The design closes the bar with a filled action. It goes to the control panel — the one
+           destination on this page that is not already a card, so the button leads somewhere the
+           six portals do not. *@
+        <a class="growcta" href="@Url.Action("Index","Service")">
+            <span class="gi"><i class="ki-solid ki-chart-simple"></i></span>
+            <span class="gt"><b>@SR["GrowingTogether"]</b><small>@SR["YourPartnerInSuccess"]</small></span>
+            <span class="ga"><i class="ki-outline ki-arrow-@arrow"></i></span>
+        </a>
     </div>
 </body>
 </html>

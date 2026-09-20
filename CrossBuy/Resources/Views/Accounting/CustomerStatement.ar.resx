@@ -79,4 +79,52 @@
   <data name="Please find your account statement attached." xml:space="preserve">
     <value>تجد كشف حسابك مرفقًا.</value>
   </data>
+  <data name="Movement" xml:space="preserve">
+    <value>الحركة</value>
+  </data>
+  <data name="Owed by the customer" xml:space="preserve">
+    <value>على العميل</value>
+  </data>
+  <data name="Owed to the vendor" xml:space="preserve">
+    <value>لصالح المورد</value>
+  </data>
+  <data name="Vendors" xml:space="preserve">
+    <value>الموردون</value>
+  </data>
+  <data name="Built from posted documents. A manual journal posted directly to the control account does not appear here, because the journal line does not record which party it belongs to." xml:space="preserve">
+    <value>مبني على المستندات المُرحَّلة. القيد اليدوي المُرحَّل مباشرة على الحساب الوسيط لا يظهر هنا، لأن سطر القيد لا يسجّل الطرف التابع له.</value>
+  </data>
+  <data name="Carried forward" xml:space="preserve">
+    <value>رصيد مرحّل من الصفحة السابقة</value>
+  </data>
+  <data name="whole period" xml:space="preserve">
+    <value>الفترة كاملة</value>
+  </data>
+  <data name="Rows" xml:space="preserve">
+    <value>عدد الصفوف</value>
+  </data>
+  <data name="Showing" xml:space="preserve">
+    <value>عرض</value>
+  </data>
+  <data name="of" xml:space="preserve">
+    <value>من</value>
+  </data>
+  <data name="Movements" xml:space="preserve">
+    <value>الحركات</value>
+  </data>
+  <data name="Another party" xml:space="preserve">
+    <value>طرف آخر</value>
+  </data>
+  <data name="Whole history" xml:space="preserve">
+    <value>السجل الكامل</value>
+  </data>
+  <data name="The account is settled" xml:space="preserve">
+    <value>الحساب مسدَّد</value>
+  </data>
+  <data name="Every movement in this period is matched: nothing is outstanding on this account." xml:space="preserve">
+    <value>كل الحركات في هذه الفترة متطابقة: لا يوجد رصيد قائم على هذا الحساب.</value>
+  </data>
+  <data name="This is the balance after every posted document in the period. Open the documents below to see what makes it up." xml:space="preserve">
+    <value>هذا هو الرصيد بعد كل مستند مُرحَّل في الفترة. افتح المستندات بالأسفل لمعرفة مكوّناته.</value>
+  </data>
 </root>

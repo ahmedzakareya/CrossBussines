@@ -32,6 +32,8 @@ namespace CrossBuy.BL.Platform
         public const string StockWriteOff = "StockWriteOff";    // inventory document
         public const string LandedCost = "LandedCost";       // inventory document
         public const string PurchaseReturn = "PurchaseReturn";     // the debit note
+        public const string Receipt = "Receipt";                   // سند قبض من عميل
+        public const string Payment = "Payment";                   // سند دفع لمورد
         public const string JournalEntry = "JournalEntry";         // slice 3 (Stage 0)
         public const string Customer = "Customer";
         public const string Supplier = "Supplier";
@@ -53,6 +55,10 @@ namespace CrossBuy.BL.Platform
         // Created / Revoked / ValidityChanged. RecordAsync validates EntityCode against this registry and
         // throws on an unknown code, so onboarding the code is what makes the events possible at all.
         public const string PlatformRoleAssignment = "PlatformRoleAssignment";
+
+        // The failed-dispatch incident. Registered so the event monitor can carry a RESOLUTION RECORD:
+        // what was wrong, what was done, by whom, with the screenshots that prove it.
+        public const string PlatformEvent = "PlatformEvent";
 
         // ---- permission scope keys — routed by IPlatformPermissionProvider ----
         public const string ScopeAccounting = "Accounting";
@@ -240,6 +246,33 @@ namespace CrossBuy.BL.Platform
                 DisplayNameAr = "مرتجع مشتريات", DisplayNameEn = "Purchase return",
                 Module = "Accounting", Icon = "ki-outline ki-arrow-circle-right", Color = "warning",
                 RouteTemplate = "/Accounting/PurchaseReturnDetail?id={id}",
+                SupportsSearch = true, SupportsTimeline = true, SupportsComments = true,
+                SupportsFiles = true, SupportsFollowers = false,
+                PermissionScope = ScopeAccounting,
+                ListedInRecordPicker = true,
+            },
+            // ---- the money documents. Registered late and deliberately: a receipt and a payment had no
+            // family at all, so every screen showing one could offer neither a history nor a discussion —
+            // not because they have none, but because nothing could address them. They route to the
+            // movement summary because that IS their detail screen; there is no Receipt/Payment detail
+            // view to point at, and a route template naming one that does not exist would be a dead link.
+            new EntityDefinition
+            {
+                Code = Receipt,
+                DisplayNameAr = "سند قبض", DisplayNameEn = "Receipt",
+                Module = "Accounting", Icon = "ki-outline ki-wallet", Color = "success",
+                RouteTemplate = "/Accounting/MovementSummary/{id}?kind=Receipt",
+                SupportsSearch = true, SupportsTimeline = true, SupportsComments = true,
+                SupportsFiles = true, SupportsFollowers = false,
+                PermissionScope = ScopeAccounting,
+                ListedInRecordPicker = true,
+            },
+            new EntityDefinition
+            {
+                Code = Payment,
+                DisplayNameAr = "سند دفع", DisplayNameEn = "Payment",
+                Module = "Accounting", Icon = "ki-outline ki-dollar", Color = "danger",
+                RouteTemplate = "/Accounting/MovementSummary/{id}?kind=Payment",
                 SupportsSearch = true, SupportsTimeline = true, SupportsComments = true,
                 SupportsFiles = true, SupportsFollowers = false,
                 PermissionScope = ScopeAccounting,
@@ -500,6 +533,32 @@ namespace CrossBuy.BL.Platform
                 PermissionScope = ScopeNone,
                 ListedInRecordPicker = false,
             },
+            new EntityDefinition
+            {
+                // THE INCIDENT RECORD behind the Business Event Monitor. A dispatch that failed is
+                // diagnosed and fixed by a person, and what they did is the single most valuable thing to
+                // keep — it is what the next person reads when the same consumer fails again.
+                //
+                // SupportsTimeline is FALSE: the timeline is an end-user document widget and this is an
+                // operator's log. SupportsComments and SupportsFiles are TRUE, which is what gives the
+                // panel its notes, its authorship, its timestamps and its pasted screenshots.
+                //
+                // PermissionScope is ScopeNone for the same reason PlatformRoleAssignment uses it: no
+                // module owns platform operations, and naming one would let that module's roles decide
+                // who may read an incident. The monitor's [PlatformOps] gate is the only authority here,
+                // and the endpoints re-ask it.
+                //
+                // Not ListedInRecordPicker, and no RouteTemplate: an event is not a record a user links
+                // to from a document — it is reached from the monitor and nowhere else.
+                Code = PlatformEvent,
+                DisplayNameAr = "حدث المنصة", DisplayNameEn = "Platform event",
+                Module = "Platform", Icon = "ki-outline ki-abstract-26", Color = "danger",
+                RouteTemplate = null,
+                SupportsSearch = false, SupportsTimeline = false, SupportsComments = true,
+                SupportsFiles = true, SupportsFollowers = false,
+                PermissionScope = ScopeNone,
+                ListedInRecordPicker = false,
+            },
         };
 
         private static readonly Dictionary<string, EntityDefinition> ByCode =
@@ -649,6 +708,14 @@ namespace CrossBuy.BL.Platform
 
             switch (entityCode)
             {
+                // The platform event, so its resolution record can be company-checked like any other
+                // record. The predicate carries CompanyID, so an event belonging to another company is
+                // NOT FOUND rather than found-and-refused — the same shape every case above uses.
+                case PlatformEvent:
+                    label = await _db.BusinessEvents.AsNoTracking()
+                        .Where(e => e.EventId == entityId && e.CompanyID == companyId)
+                        .Select(e => e.EventType + " #" + e.EventId).FirstOrDefaultAsync(cancellationToken);
+                    break;
                 case SalesInvoice:
                     label = await _db.SalesInvoices.AsNoTracking()
                         .Where(i => i.ID == entityId && i.CompanyID == companyId)
@@ -714,6 +781,16 @@ namespace CrossBuy.BL.Platform
                     label = await _db.PurchaseReturns.AsNoTracking()
                         .Where(r => r.ID == entityId && r.CompanyID == companyId)
                         .Select(r => r.ReturnNo ?? ("#" + r.ID)).FirstOrDefaultAsync(cancellationToken);
+                    break;
+                case Receipt:
+                    label = await _db.Receipts.AsNoTracking()
+                        .Where(r => r.ID == entityId && r.CompanyID == companyId)
+                        .Select(r => r.ReceiptNo ?? ("#" + r.ID)).FirstOrDefaultAsync(cancellationToken);
+                    break;
+                case Payment:
+                    label = await _db.Payments.AsNoTracking()
+                        .Where(p => p.ID == entityId && p.CompanyID == companyId)
+                        .Select(p => p.PaymentNo ?? ("#" + p.ID)).FirstOrDefaultAsync(cancellationToken);
                     break;
                 case Quotation:
                     label = await _db.Quotations.AsNoTracking()

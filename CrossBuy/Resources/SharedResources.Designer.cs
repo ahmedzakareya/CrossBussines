@@ -1823,5 +1823,501 @@ namespace CrossBuy.Resources {
                 return ResourceManager.GetString("YesNo", resourceCulture);
             }
         }
+        /// <summary>
+        ///   Looks up a localized string similar to Sign in.
+        /// </summary>
+        public static string SignInTitle {
+            get {
+                return ResourceManager.GetString("SignInTitle", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Use your company account.
+        /// </summary>
+        public static string SignInSubtitle {
+            get {
+                return ResourceManager.GetString("SignInSubtitle", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Sign in.
+        /// </summary>
+        public static string SignInAction {
+            get {
+                return ResourceManager.GetString("SignInAction", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Signing in….
+        /// </summary>
+        public static string SigningIn {
+            get {
+                return ResourceManager.GetString("SigningIn", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Keep me signed in.
+        /// </summary>
+        public static string RememberMe {
+            get {
+                return ResourceManager.GetString("RememberMe", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Forgot your password? Your system administrator can reset it..
+        /// </summary>
+        public static string ForgotPasswordHelp {
+            get {
+                return ResourceManager.GetString("ForgotPasswordHelp", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Show password.
+        /// </summary>
+        public static string ShowPassword {
+            get {
+                return ResourceManager.GetString("ShowPassword", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Hide password.
+        /// </summary>
+        public static string HidePassword {
+            get {
+                return ResourceManager.GetString("HidePassword", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Caps Lock is on.
+        /// </summary>
+        public static string CapsLockOn {
+            get {
+                return ResourceManager.GetString("CapsLockOn", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Sign-in failed.
+        /// </summary>
+        public static string SignInFailed {
+            get {
+                return ResourceManager.GetString("SignInFailed", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Something went wrong. Please try again..
+        /// </summary>
+        public static string SignInErrorGeneric {
+            get {
+                return ResourceManager.GetString("SignInErrorGeneric", resourceCulture);
+            }
+        }
+        /// <summary>
+        ///   Looks up a localized string similar to User name is required.
+        /// </summary>
+        public static string UserNameRequired {
+            get {
+                return ResourceManager.GetString("UserNameRequired", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Password is required.
+        /// </summary>
+        public static string PasswordRequired {
+            get {
+                return ResourceManager.GetString("PasswordRequired", resourceCulture);
+            }
+        }
+        /// <summary>
+        ///   Looks up a localized string similar to From the purchase order to the journal entry.
+        /// </summary>
+        public static string LoginHeadline {
+            get {
+                return ResourceManager.GetString("LoginHeadline", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Purchasing, inventory, manufacturing, sales and accounts in one platform —.
+        /// </summary>
+        public static string LoginPitchLead {
+            get {
+                return ResourceManager.GetString("LoginPitchLead", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to every document posts its own entry.
+        /// </summary>
+        public static string LoginPitchAccent {
+            get {
+                return ResourceManager.GetString("LoginPitchAccent", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to in Arabic and English..
+        /// </summary>
+        public static string LoginPitchTail {
+            get {
+                return ResourceManager.GetString("LoginPitchTail", resourceCulture);
+            }
+        }
+        /// <summary>
+        ///   Looks up a localized string similar to HR.
+        /// </summary>
+        public static string HR {
+            get {
+                return ResourceManager.GetString("HR", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to THE CROSS-BUSINESS PLATFORM.
+        /// </summary>
+        public static string BrandTagline {
+            get {
+                return ResourceManager.GetString("BrandTagline", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to One Platform..
+        /// </summary>
+        public static string BrandHeadlineLead {
+            get {
+                return ResourceManager.GetString("BrandHeadlineLead", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Endless Possibilities..
+        /// </summary>
+        public static string BrandHeadlineAccent {
+            get {
+                return ResourceManager.GetString("BrandHeadlineAccent", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Connect your people, processes and data..
+        /// </summary>
+        public static string BrandSubLine1 {
+            get {
+                return ResourceManager.GetString("BrandSubLine1", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Build a smarter tomorrow..
+        /// </summary>
+        public static string BrandSubLine2 {
+            get {
+                return ResourceManager.GetString("BrandSubLine2", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to BUSINESS WITHOUT BOUNDARIES.
+        /// </summary>
+        public static string BrandFootline {
+            get {
+                return ResourceManager.GetString("BrandFootline", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Welcome.
+        /// </summary>
+        public static string WelcomeBackLead {
+            get {
+                return ResourceManager.GetString("WelcomeBackLead", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Back.
+        /// </summary>
+        public static string WelcomeBackAccent {
+            get {
+                return ResourceManager.GetString("WelcomeBackAccent", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Sign in to your CrossBuy account.
+        /// </summary>
+        public static string SignInToYourAccount {
+            get {
+                return ResourceManager.GetString("SignInToYourAccount", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Forgot password?.
+        /// </summary>
+        public static string ForgotPasswordQ {
+            get {
+                return ResourceManager.GetString("ForgotPasswordQ", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to or continue with.
+        /// </summary>
+        public static string OrContinueWith {
+            get {
+                return ResourceManager.GetString("OrContinueWith", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to New to CrossBuy?.
+        /// </summary>
+        public static string NewToCrossBuy {
+            get {
+                return ResourceManager.GetString("NewToCrossBuy", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Contact your administrator.
+        /// </summary>
+        public static string ContactYourAdministrator {
+            get {
+                return ResourceManager.GetString("ContactYourAdministrator", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to All rights reserved..
+        /// </summary>
+        public static string AllRightsReserved {
+            get {
+                return ResourceManager.GetString("AllRightsReserved", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Secure.
+        /// </summary>
+        public static string TrustSecure {
+            get {
+                return ResourceManager.GetString("TrustSecure", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Reliable.
+        /// </summary>
+        public static string TrustReliable {
+            get {
+                return ResourceManager.GetString("TrustReliable", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Scalable.
+        /// </summary>
+        public static string TrustScalable {
+            get {
+                return ResourceManager.GetString("TrustScalable", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Sign in with {0}.
+        /// </summary>
+        public static string SignInWith {
+            get {
+                return ResourceManager.GetString("SignInWith", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to That sign-in did not complete. Please try again..
+        /// </summary>
+        public static string ExternalSignInFailed {
+            get {
+                return ResourceManager.GetString("ExternalSignInFailed", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to No CrossBuy account is linked to that address. Ask your administrator to create one..
+        /// </summary>
+        public static string ExternalNoAccount {
+            get {
+                return ResourceManager.GetString("ExternalNoAccount", resourceCulture);
+            }
+        }
+        /// <summary>
+        ///   Looks up a localized string similar to Accounting.
+        /// </summary>
+        public static string Accounting {
+            get {
+                return ResourceManager.GetString("Accounting", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Inventory.
+        /// </summary>
+        public static string Inventory {
+            get {
+                return ResourceManager.GetString("Inventory", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to CRM.
+        /// </summary>
+        public static string CRM {
+            get {
+                return ResourceManager.GetString("CRM", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to POS.
+        /// </summary>
+        public static string POS {
+            get {
+                return ResourceManager.GetString("POS", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Manufacturing.
+        /// </summary>
+        public static string Manufacturing {
+            get {
+                return ResourceManager.GetString("Manufacturing", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Projects.
+        /// </summary>
+        public static string Projects {
+            get {
+                return ResourceManager.GetString("Projects", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Reports.
+        /// </summary>
+        public static string Reports {
+            get {
+                return ResourceManager.GetString("Reports", resourceCulture);
+            }
+        }
+        /// <summary>
+        ///   Looks up a localized string similar to Single sign-on is not set up for this installation. Your system administrator can enable it..
+        /// </summary>
+        public static string ExternalNotConfigured {
+            get {
+                return ResourceManager.GetString("ExternalNotConfigured", resourceCulture);
+            }
+        }
+        /// <summary>
+        ///   Looks up a localized string similar to PEOPLE.
+        /// </summary>
+        public static string PillarPeople {
+            get {
+                return ResourceManager.GetString("PillarPeople", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to TECHNOLOGY.
+        /// </summary>
+        public static string PillarTechnology {
+            get {
+                return ResourceManager.GetString("PillarTechnology", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to PROCESSES.
+        /// </summary>
+        public static string PillarProcesses {
+            get {
+                return ResourceManager.GetString("PillarProcesses", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to GROWTH.
+        /// </summary>
+        public static string PillarGrowth {
+            get {
+                return ResourceManager.GetString("PillarGrowth", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Smarter Business Together.
+        /// </summary>
+        public static string SmarterBusinessTogether {
+            get {
+                return ResourceManager.GetString("SmarterBusinessTogether", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to POS.
+        /// </summary>
+        public static string POSShort {
+            get {
+                return ResourceManager.GetString("POSShort", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Remember me.
+        /// </summary>
+        public static string RememberMeShort {
+            get {
+                return ResourceManager.GetString("RememberMeShort", resourceCulture);
+            }
+        }
+        /// <summary>
+        ///   Looks up a localized string similar to English.
+        /// </summary>
+        public static string LanguageNameEn {
+            get {
+                return ResourceManager.GetString("LanguageNameEn", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to العربية.
+        /// </summary>
+        public static string LanguageNameAr {
+            get {
+                return ResourceManager.GetString("LanguageNameAr", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Français.
+        /// </summary>
+        public static string LanguageNameFr {
+            get {
+                return ResourceManager.GetString("LanguageNameFr", resourceCulture);
+            }
+        }
     }
 }

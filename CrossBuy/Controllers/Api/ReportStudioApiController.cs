@@ -41,15 +41,22 @@ namespace CrossBuy.Controllers.Api
         private readonly CrossBuy.BL.Platform.IBusinessContextAccessor _contexts;
         private readonly IReportAssetService _assets;
 
+        // The template lifecycle — history, rollback, copy, delete. Every one of these is authorized by
+        // the service itself (LoadForAccessAsync at Edit or Manage); this controller adds the
+        // report-level gate it applies to everything and does not second-guess the rest.
+        private readonly IReportTemplateService _templates;
+
         public ReportStudioApiController(IReportStudioService studio,
             IReportAuthorizationService authorization,
             CrossBuy.BL.Platform.IBusinessContextAccessor contexts,
-            IReportAssetService assets)
+            IReportAssetService assets,
+            IReportTemplateService templates)
         {
             _studio = studio;
             _authorization = authorization;
             _contexts = contexts;
             _assets = assets;
+            _templates = templates;
         }
 
         // THE AUTHORITY CALL, in one place, run by EVERY endpoint below before it does anything.
@@ -334,6 +341,112 @@ namespace CrossBuy.Controllers.Api
         {
             var draft = await _studio.OpenAsync(templateId, ct);
             return draft is null ? NotFound() : Ok(new { draft });
+        }
+
+        // =========================================================================================
+        // THE TEMPLATE'S HISTORY
+        //
+        // A version is written on every save that changes the layout, and until now nothing could read
+        // them back. The list is ordered newest first because that is the end people look at.
+        // =========================================================================================
+        [HttpGet("versions/{templateId:int}")]
+        [IgnoreAntiforgeryToken]
+        public async Task<IActionResult> Versions(int templateId, CancellationToken ct)
+        {
+            var context = await _contexts.GetCurrentAsync(ct);
+            if (context is null || context.CompanyId <= 0) return Unauthorized();
+
+            var versions = await _templates.ListVersionsAsync(templateId, context, ct);
+            return Ok(new
+            {
+                versions = versions
+                    .OrderByDescending(v => v.VersionNo)
+                    .Select(v => new
+                    {
+                        versionNo = v.VersionNo,
+                        isCurrent = v.IsCurrent,
+                        publishedAt = v.PublishedAt,
+                        changeNote = v.ChangeNote,
+                    }),
+            });
+        }
+
+        // EACH OF THE THREE MUTATIONS BELOW RUNS THE AUTHOR GATE FIRST, and that is not belt-and-braces:
+        // CBA001 refuses to credit an authorization decision that is only reachable by descending into a
+        // service, and it is right - a rule found by descent is a rule nobody declared. The service's own
+        // per-template check (Edit for rollback, Manage for delete) still decides the outcome; this decides
+        // whether the caller may author reports in this company at all.
+
+        // GO BACK TO ONE. Appends nothing: the pointer moves to a version that already exists, so the
+        // act is itself undoable — which is what makes it safe to put behind one button.
+        [HttpPost("rollback")]
+        public async Task<IActionResult> Rollback([FromBody] RollbackRequest request, CancellationToken ct)
+        {
+            if (request is null || request.TemplateId <= 0 || request.VersionNo <= 0) return BadRequest();
+
+            if (!await AuthorizeAuthorAsync(ct)) return NotFound();
+
+            var context = await _contexts.GetCurrentAsync(ct);
+            if (context is null || context.CompanyId <= 0) return Unauthorized();
+
+            var result = await _templates.RollbackAsync(request.TemplateId, request.VersionNo, context, ct);
+            return result.Success
+                ? Ok(new { templateId = result.TemplateId, versionNo = result.VersionNo })
+                : StatusCode(StatusCodes.Status403Forbidden, new { errors = result.Diagnostics.Select(d => d.Message) });
+        }
+
+        // A COPY THE CALLER MAY EDIT. This is what "edit a platform template" means — the platform's own
+        // layout is read-only to every tenant, and forking is the sanctioned way to start from it.
+        [HttpPost("fork")]
+        public async Task<IActionResult> Fork([FromBody] ForkRequest request, CancellationToken ct)
+        {
+            if (request is null || request.TemplateId <= 0 || string.IsNullOrWhiteSpace(request.Name))
+                return BadRequest();
+
+            if (!await AuthorizeAuthorAsync(ct)) return NotFound();
+
+            var context = await _contexts.GetCurrentAsync(ct);
+            if (context is null || context.CompanyId <= 0) return Unauthorized();
+
+            // Personal or Company only, and never Platform: a tenant does not publish to other tenants,
+            // and the service refuses it anyway — refusing here as well keeps the request honest.
+            var scope = request.Scope == (int)Models.Context.Reporting.ReportTemplateScope.Company
+                ? Models.Context.Reporting.ReportTemplateScope.Company
+                : Models.Context.Reporting.ReportTemplateScope.Personal;
+
+            var result = await _templates.ForkAsync(request.TemplateId, scope, request.Name!.Trim(), context, ct);
+            return result.Success
+                ? Ok(new { templateId = result.TemplateId, versionNo = result.VersionNo })
+                : StatusCode(StatusCodes.Status403Forbidden, new { errors = result.Diagnostics.Select(d => d.Message) });
+        }
+
+        // SOFT DELETE, decided by the service. An archived artifact references (TemplateId, VersionNo),
+        // so a hard delete would orphan archive rows and make an archived document unexplainable.
+        [HttpPost("delete/{templateId:int}")]
+        public async Task<IActionResult> Delete(int templateId, CancellationToken ct)
+        {
+            if (!await AuthorizeAuthorAsync(ct)) return NotFound();
+
+            var context = await _contexts.GetCurrentAsync(ct);
+            if (context is null || context.CompanyId <= 0) return Unauthorized();
+
+            var ok = await _templates.DeleteAsync(templateId, context, ct);
+
+            // "Not yours" and "no such template" answer the same way, as everywhere else on this surface.
+            return ok ? Ok(new { deleted = true }) : NotFound();
+        }
+
+        public sealed class RollbackRequest
+        {
+            public int TemplateId { get; set; }
+            public int VersionNo { get; set; }
+        }
+
+        public sealed class ForkRequest
+        {
+            public int TemplateId { get; set; }
+            public string? Name { get; set; }
+            public int Scope { get; set; }
         }
     }
 }

@@ -11,18 +11,15 @@
 <html lang="@Thread.CurrentThread.CurrentCulture.TwoLetterISOLanguageName" dir="@(Thread.CurrentThread.CurrentCulture.TextInfo.IsRightToLeft ? "rtl" : "ltr")">
 <!--begin::Head-->
 <head>
-	<base href="../../../" />
-	<title>Metronic - The World's #1 Selling Bootstrap Admin Template by KeenThemes</title>
+	<base href="/" />
+	<title>@CrossBuy.Resources.SharedResources.SignInTitle — CrossBuy</title>
 	<meta charset="utf-8" />
-	<meta name="description" content="The most advanced Bootstrap 5 Admin Theme with 40 unique prebuilt layouts on Themeforest trusted by 100,000 beginners and professionals. Multi-demo, Dark Mode, RTL support and complete React, Angular, Vue, Asp.Net Core, Rails, Spring, Blazor, Django, Express.js, Node.js, Flask, Symfony & Laravel versions. Grab your copy now and get life-time updates for free." />
-	<meta name="keywords" content="metronic, bootstrap, bootstrap 5, angular, VueJs, React, Asp.Net Core, Rails, Spring, Blazor, Django, Express.js, Node.js, Flask, Symfony & Laravel starter kits, admin themes, web design, figma, web development, free templates, free admin themes, bootstrap theme, bootstrap template, bootstrap dashboard, bootstrap dak mode, bootstrap button, bootstrap datepicker, bootstrap timepicker, fullcalendar, datatables, flaticon" />
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
-	<meta property="og:locale" content="en_US" />
-	<meta property="og:type" content="article" />
-	<meta property="og:title" content="Metronic - The World's #1 Selling Bootstrap Admin Template by KeenThemes" />
-	<meta property="og:url" content="https://keenthemes.com/metronic" />
-	<meta property="og:site_name" content="Metronic by Keenthemes" />
-	<link rel="canonical" href="https://preview.keenthemes.com/metronic8" />
+	@* A SIGN-IN PAGE IS NOT A LANDING PAGE. It has nothing to rank for and every reason not to be
+	   indexed, so the description, keywords, og: tags and canonical link that used to live here -
+	   all of them Metronic's own demo metadata, pointing a search engine at keenthemes.com - are
+	   replaced by the one directive that is actually true of this page. *@
+	<meta name="robots" content="noindex, nofollow" />
 	<link rel="shortcut icon" href="~/Backend-assets/media/logos/favicon.ico" asp-append-version="true" />
     <link rel="icon" type="image/svg+xml" href="~/Backend-assets/media/logos/crossbuy-favicon.svg" asp-append-version="true" />
 	<!--begin::Fonts(mandatory for all pages)-->
@@ -34,19 +31,47 @@
 		<link href="~/Backend-assets/plugins/global/plugins.bundle.rtl.css" rel="stylesheet" type="text/css" asp-append-version="true" />
 		<link href="~/Backend-assets/css/style.bundle.rtl.css" rel="stylesheet" type="text/css" asp-append-version="true" />
 	<link href="~/Backend-assets/css/crossbuy-brand.css" rel="stylesheet" type="text/css" asp-append-version="true" />
-		<link href="https://fonts.googleapis.com/css2?family=Cairo&display=swap" rel="stylesheet">
-
 		<style>
-			body {
-				font-family: 'Arial', sans-serif;
+			/* Served from this application, not fetched from Google: the sign-in screen is the one
+			   page that must render correctly with no route to the internet. */
+			@@font-face {
+				font-family: 'Cairo';
+				src: url('@Url.Content("~/Backend-assets/fonts/cairo/Cairo-Regular.ttf")') format('truetype');
+				font-weight: 400;
+				font-display: swap;
 			}
 
+			@@font-face {
+				font-family: 'Cairo';
+				src: url('@Url.Content("~/Backend-assets/fonts/cairo/Cairo-SemiBold.ttf")') format('truetype');
+				font-weight: 600;
+				font-display: swap;
+			}
+
+			@@font-face {
+				font-family: 'Cairo';
+				src: url('@Url.Content("~/Backend-assets/fonts/cairo/Cairo-Bold.ttf")') format('truetype');
+				font-weight: 700;
+				font-display: swap;
+			}
+
+			/* 600 AND 800 ARE REAL FACES, NOT SYNTHESISED ONES. The page asks for both; with only 400
+			   and 700 served the browser smeared the 700 outline to fake them, which on a connected
+			   script reads as blurred rather than as a heavier cut. */
+			@@font-face {
+				font-family: 'Cairo';
+				src: url('@Url.Content("~/Backend-assets/fonts/cairo/Cairo-ExtraBold.ttf")') format('truetype');
+				font-weight: 800;
+				font-display: swap;
+			}
+
+			/* A real fallback chain rather than bare Arial: if the face somehow fails, the next
+			   name is a system Arabic face, not a Latin one. */
 			html[lang="ar"] body {
-				font-family: 'Cairo', sans-serif;
+				font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif;
 				direction: rtl;
 				text-align: right;
 			}
-
 		</style>
 
 	}
@@ -59,210 +84,606 @@
 
 
 	<style>
-		/* CrossBuy brand button — overrides Metronic blue primary on the sign-in page (both AR & EN) */
-		.cb-btn-brand { background-color: #0E4A9E; color: #fff; font-weight: 700; border: 0; }
-		.cb-btn-brand:hover, .cb-btn-brand:focus, .cb-btn-brand:active { background-color: #145DBF; color: #fff; }
+		/* ==========================================================================================
+		   THE SIGN-IN PAGE.
+
+		   ONE SCENE, TWO HALVES: a brand column that says what this is, and a card that lets you in.
+		   The card floats over the scene rather than sitting in a column of its own, which is what
+		   makes the background read as a photograph of a workplace instead of a decorative stripe.
+
+		   EVERY DIRECTIONAL RULE IS LOGICAL, not left/right: inset-inline-*, margin-inline-*,
+		   padding-inline-*. One stylesheet serves Arabic and English, and there is no mirrored copy
+		   to fall out of step the next time a value changes.
+		   ========================================================================================== */
+
+		:root {
+			--cb-ink:        #0B2545;   /* headings on light */
+			/* WAS #4A5B73, A GREY. 7.31:1 on the light surface the brand column sits on. */
+			--cb-ink-soft:   #1B4B8F;   /* body copy */
+			--cb-ink-mute:   #1D5AA8;   /* the quietest tier — 5.81:1 */
+			--cb-blue:       #1667D6;   /* the accent half of the wordmark */
+			--cb-blue-deep:  #0E4A9E;
+			--cb-tile:       #F2F7FF;
+			--cb-tile-edge:  #E2ECFB;
+			--cb-card-edge:  rgba(255,255,255,.7);
+		}
+
+		html, body { height: 100%; }
+
+		/* THE SCENE — lifted out of the design file itself.
+
+		   The asset folder's login-background.png is a 865x270 banner of a skyline, not this; the
+		   office render only existed inside the finished mockup with the card and the left column
+		   drawn on top of it, so those two rectangles were erased and filled from their own borders.
+		   Everything else here is the render untouched.
+
+		   NO WASH OVER IT. The render carries its own light — bright at the window, deep on the right
+		   — and the white veil the old banner needed would flatten exactly that. */
+		.cb-scene {
+			min-height: 100vh;
+			background-color: #E7EFFA;
+			background-image: url('@Url.Content("~/Backend-assets/media/brand/login-scene.png")');
+			background-repeat: no-repeat;
+			background-size: cover;
+			background-position: center;
+			position: relative;
+			overflow: hidden;
+		}
+
+		/* A TRANSLUCENT WHITE COLUMN, FULL HEIGHT. On the scene, not on the brand column: that column
+		   is only as tall as its content, which is why the last attempt stopped above the desk and
+		   left the closing line outside it.
+
+		   inset-inline-start: 0 puts it on the brand half in both directions — the page's left edge
+		   in English, its right edge in Arabic — from one declaration. */
+		.cb-brand-veil {
+			position: absolute; top: 0; bottom: 0; inset-inline-start: 0;
+			/* The width the brand block actually occupies — its own 470px plus the page gutter — not
+			   half the page. At 50% the band ran 137px past the content toward the middle. */
+			width: 560px; max-width: 45%;
+			/* FADED ON BOTH SIDES. The inner edge was softened first; the outer one — where the band
+			   meets the page boundary — is softened here too, so the band has no hard side at all.
+			   The stops are asymmetric on purpose: outside there is only the page gutter to fade
+			   across before it would reach the text, inside there is the whole gap to the card. */
+			background: linear-gradient(to left,
+				rgba(255,255,255,0) 0%, rgba(255,255,255,.38) 4%,
+				rgba(255,255,255,.62) 11%, rgba(255,255,255,.62) 58%,
+				rgba(255,255,255,.34) 80%, rgba(255,255,255,0) 100%);
+			pointer-events: none; z-index: 0;
+		}
+		/* In Arabic the band sits on the right, so the fade has to run the other way. */
+		html[dir="rtl"] .cb-brand-veil {
+			background: linear-gradient(to right,
+				rgba(255,255,255,0) 0%, rgba(255,255,255,.38) 4%,
+				rgba(255,255,255,.62) 11%, rgba(255,255,255,.62) 58%,
+				rgba(255,255,255,.34) 80%, rgba(255,255,255,0) 100%);
+		}
+		@@media (max-width: 991.98px) { .cb-brand-veil { display: none; } }
+
+		.cb-stage { position: relative; z-index: 1; }
+
+		/* ---------- the brand column ------------------------------------------------------------ */
+		/* EVERY SIZE IN PIXELS. The root font-size on this page is 13px, not 16 — Metronic sets it —
+		   so a size written in rem resolved to 81% of what it said and the whole column came out a
+		   third smaller than the design. */
+		/* SIZED BY WIDTH, not height. The new lockup is 4.9:1 where the old mark was 1.6:1 — asking
+		   for 17.6vh of height would have made it roughly 900px wide inside a 470px column. */
+		.cb-logo { width: 100%; max-width: 430px; height: auto; }
+		.cb-mobile-brand { width: 260px; height: auto; }
+		/* The same width as the logo above it, so the two read as one lockup. */
+		.cb-brand-tagline {
+			display: flex; align-items: center; gap: 14px;
+			width: 100%; max-width: 430px; margin: 1.7vh auto 0;
+			font-size: 13px; font-weight: 700; color: var(--cb-ink-soft);
+			letter-spacing: .34em;
+		}
+		.cb-brand-tagline::before, .cb-brand-tagline::after {
+			content: ""; flex: 1 1 auto; height: 1.5px; border-radius: 1px;
+			background: currentColor; opacity: .45;
+		}
+		/* NO TRACKING IN ARABIC. It is a connected script: letter-spacing prises joined letters apart
+		   and breaks the word shapes, which is what made the line look unfinished next to the English
+		   one. The rules still hold it to the logo's width, so nothing is lost by removing it. */
+		html[lang="ar"] .cb-brand-tagline { letter-spacing: normal; }
+		.cb-headline {
+			color: var(--cb-ink); font-weight: 800; line-height: 1.16;
+			letter-spacing: -.025em; font-size: 50px;
+		}
+		/* Negative tracking tightens Latin; on Arabic it crushes the joins. And the line needs more
+		   leading, because a shadda or a hamza sits above the line Latin does not use. */
+		html[lang="ar"] .cb-headline { letter-spacing: normal; line-height: 1.32; }
+		.cb-headline .cb-accent { color: var(--cb-blue); }
+
+		/* A WHITE EDGE ON THE LETTERS THEMSELVES. Every attempt to solve this with a layer over the
+		   scene ended up covering the photograph; this puts the light on the glyphs instead, so the
+		   render is untouched. The four one-pixel offsets draw the outline and the two blurred ones
+		   soften it - a single blurred shadow alone reads as a smudge at this weight. */
+		.cb-headline, .cb-sub, .cb-footline, .cb-brand-tagline {
+			text-shadow:
+				0 1px 0 #fff, 0 -1px 0 #fff, 1px 0 0 #fff, -1px 0 0 #fff,
+				0 0 6px rgba(255,255,255,.95), 0 0 14px rgba(255,255,255,.75);
+		}
+		/* The rules either side of the tagline get the same treatment, or the line separates from
+		   them the moment the background goes dark. */
+		.cb-brand-tagline::before, .cb-brand-tagline::after { box-shadow: 0 0 8px rgba(255,255,255,.9); }
+		.cb-rule { box-shadow: 0 0 8px rgba(255,255,255,.9); }
+		.cb-sub { color: var(--cb-ink-soft); font-size: 19px; line-height: 1.55; }
+		.cb-footline { letter-spacing: .24em; font-size: 13px; font-weight: 700; color: var(--cb-ink-mute); }
+		html[lang="ar"] .cb-footline { letter-spacing: normal; }
+		.cb-rule { width: 46px; height: 4px; border-radius: 2px; background: #F5A623; }
+
+		/* the vertical rhythm, read off the design as a share of the page height:
+		   logo 4.4%, headline 29.3%, tiles 48.3%, closing line 72.7% */
+		/* AGAINST THE OUTER EDGE. It was pinned to the column's inner edge, which puts it toward the
+		   middle of the page; margin-inline-start: 0 pins it to the column's start instead — the far
+		   left in English, the far right in Arabic, from the same declaration. */
+		.cb-brand-inner {
+			max-width: 470px; margin-inline-start: 0; margin-inline-end: auto;
+			position: relative;
+		}
+
+		.cb-brand-inner .cb-headline { margin-top: 3.1vh; }
+		.cb-brand-inner .cb-sub { margin-top: 1.3vh; }
+		.cb-brand-inner .cb-tiles { margin-top: 2.1vh; }
+		.cb-brand-inner .cb-rule { margin-top: 3.5vh; }
+
+		/* ---------- the module tiles ------------------------------------------------------------- */
+		.cb-tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+		/* THE DESIGN'S TILE: a pale blue panel with a hairline edge and NO shadow. Mine was white
+		   with a drop shadow, which made the row read as eight floating cards rather than one quiet
+		   grid sitting on the scene. */
+		.cb-tile {
+			background: rgba(232,241,253,.72);
+			border: 1px solid rgba(255,255,255,.85);
+			border-radius: 12px;
+			padding: 12px 6px 10px;
+			text-align: center;
+			backdrop-filter: blur(6px);
+		}
+		.cb-tile-art { display: block; }
+		.cb-tile svg { width: 34px; height: 34px; display: block; margin: 0 auto; }
+		.cb-tile span {
+			display: block; margin-top: 10px; font-size: 13px; font-weight: 600;
+			color: var(--cb-ink); line-height: 1.25;
+		}
+
+		/* ---------- the card --------------------------------------------------------------------- */
+		.cb-card {
+			/* WHITE. Over a flat gradient a glassy card looked right; over the real render it turned
+			   every field and every label blue. The design's card is white — what shows the scene is
+			   its shadow and its edge, not its face. */
+			background: rgba(255,255,255,.97);
+			border: 1px solid var(--cb-card-edge);
+			border-radius: 20px;
+			box-shadow: 0 24px 60px rgba(11,37,69,.14), 0 2px 6px rgba(11,37,69,.05);
+			backdrop-filter: blur(14px);
+			/* 8% of the card's width each side — the design's 40px on a 500px card. */
+			/* 42px, not 8%. A percentage padding resolves against the CONTAINING BLOCK's width, not
+			   the element's own, so 8% computed to 74px and squeezed every field inside the card to
+			   360px where the design gives them 420. */
+			padding: 36px 42px 50px;
+			width: 100%;
+			max-width: 510px;
+		}
+
+		/* ---- the card's internal rhythm, every gap taken from the design ---------------------- */
+		/* ---- the card's internal rhythm, every gap taken from the design -----------------------
+		   These were lost when the language control's styles were replaced - they sat in the same
+		   block - and the card closed from the design's 1.39 aspect to 1.10. */
+		.cb-pill-row     { margin-bottom: 14px; }
+		.cb-card-title   { margin-bottom: 10px; }
+		.cb-card-sub     { margin-bottom: 0; }
+		.cb-field-first  { margin-top: 33px; margin-bottom: 22px; }
+		.cb-field-second { margin-bottom: 22px; }
+		.cb-remember-row { margin-bottom: 37px; }
+		.cb-card-foot    { margin-top: 40px; }
+		/* The trigger: the code on a soft tinted ground — no border, no globe, no pill outline. */
+		.cb-lang { position: relative; }
+		.cb-lang-btn {
+			height: 34px; padding: 0 8px 0 12px; border: 0; border-radius: 10px;
+			background: #EEF3FA; color: var(--cb-blue);
+			display: inline-flex; align-items: center; gap: 6px;
+			font-size: 13px; font-weight: 700; letter-spacing: .04em;
+			transition: background .15s ease;
+		}
+		.cb-lang-btn:hover, .cb-lang-btn[aria-expanded="true"] { background: #E2ECFA; }
+		.cb-lang-caret { width: 15px; height: 15px; flex: 0 0 15px; opacity: .85; transition: transform .15s ease; }
+		.cb-lang-btn[aria-expanded="true"] .cb-lang-caret { transform: rotate(180deg); }
+
+		/* The sheet, anchored to the button. */
+		.cb-lang-menu {
+			position: absolute; top: calc(100% + 7px); inset-inline-end: 0; z-index: 20;
+			min-width: 186px; background: #fff; border: 1px solid #EBF0F7; border-radius: 14px;
+			box-shadow: 0 16px 38px rgba(11,37,69,.13); padding: 6px;
+		}
+		.cb-lang-item {
+			display: flex; align-items: center; gap: 10px; padding: 9px 11px;
+			border-radius: 10px; color: var(--cb-ink); font-size: 14px; font-weight: 600;
+			text-decoration: none;
+		}
+		.cb-lang-item img { width: 20px; height: 20px; border-radius: 4px; flex: 0 0 20px; }
+		.cb-lang-item:hover { background: #F4F8FE; color: var(--cb-blue); }
+		.cb-lang-item.on { background: #EAF2FE; color: var(--cb-blue); }
+
+		/* ---- the card's internal rhythm, every gap taken from the design ---------------------- */
+		/* ---- the card's internal rhythm, every gap taken from the design -----------------------
+		   These were lost when the language control's styles were replaced - they sat in the same
+		   block - and the card closed from the design's 1.39 aspect to 1.10. */
+		.cb-pill-row     { margin-bottom: 14px; }
+		.cb-card-title   { margin-bottom: 10px; }
+		.cb-card-sub     { margin-bottom: 0; }
+		.cb-field-first  { margin-top: 33px; margin-bottom: 22px; }
+		.cb-field-second { margin-bottom: 22px; }
+		.cb-remember-row { margin-bottom: 37px; }
+		.cb-card-foot    { margin-top: 40px; }
+		/* The segmented control. A single tinted track with a filled thumb on the live language —
+		   no border, no chevron, no menu. */
+		.cb-lang {
+			display: inline-flex; align-items: center; gap: 2px;
+			background: #EEF3FA; border-radius: 999px; padding: 3px;
+		}
+		.cb-lang-seg {
+			min-width: 38px; height: 30px; padding: 0 11px; border-radius: 999px;
+			display: inline-flex; align-items: center; justify-content: center;
+			font-size: 13px; font-weight: 700; letter-spacing: .02em;
+			color: #5B7FB0; text-decoration: none; transition: background .15s ease, color .15s ease;
+		}
+		.cb-lang-seg:hover { color: var(--cb-blue); background: rgba(255,255,255,.7); }
+		.cb-lang-seg.on {
+			background: #ffffff; color: var(--cb-blue);
+			box-shadow: 0 1px 3px rgba(11,37,69,.16);
+		}
+		.cb-card-title { color: var(--cb-ink); font-weight: 800; font-size: 34px; line-height: 1.2; }
+		.cb-card-title .cb-accent { color: var(--cb-blue); }
+		.cb-card-sub { color: var(--cb-ink-soft); font-size: 15px; }
+
+		/* ---------- fields ------------------------------------------------------------------ */
+		/* The icon sits at the field's START edge and the eye at its END edge; both are inline
+		   properties, so the pair swaps sides together when the page turns RTL. */
+		.cb-field { position: relative; }
+		.cb-field .form-control {
+			height: 56px; border-radius: 8px; background: #FAFBFC;
+			border: 1px solid #E5E8EC; font-size: 16px; color: var(--cb-ink);
+			padding-inline-start: 3.1rem; padding-inline-end: 1rem;
+		}
+		.cb-field .form-control:focus {
+			background: #fff; border-color: #9CC2F2; box-shadow: 0 0 0 3px rgba(22,103,214,.13);
+		}
+		/* Inside the card the surface is white, so these are a lighter blue — still blue, and still
+		   above the 4.5:1 a placeholder needs to be read at all. */
+		.cb-field .form-control::placeholder { color: #5B7FB0; }
+		.cb-field-icon {
+			position: absolute; inset-inline-start: 1rem; top: 50%; transform: translateY(-50%);
+			color: #3E6DA8; font-size: 19px; pointer-events: none;
+		}
+		.cb-pass-wrap .form-control { padding-inline-end: 3.25rem; }
+		/* THE BROWSER'S OWN EYE, REMOVED. Edge puts a reveal button inside every password field and
+		   Chromium adds a credentials button; either one sitting next to this page's toggle gives the
+		   field two eyes that do the same job with different icons — and the browser's carries no
+		   translated label and no aria-pressed state. */
+		.cb-pass-wrap .form-control::-ms-reveal,
+		.cb-pass-wrap .form-control::-ms-clear { display: none; width: 0; height: 0; }
+		.cb-pass-wrap .form-control::-webkit-credentials-auto-fill-button,
+		.cb-pass-wrap .form-control::-webkit-strong-password-auto-fill-button {
+			visibility: hidden; pointer-events: none; width: 0; margin: 0;
+		}
+		.cb-pass-toggle {
+			position: absolute; inset-inline-end: .5rem; top: 50%; transform: translateY(-50%);
+			width: 2.4rem; height: 2.4rem; display: flex; align-items: center; justify-content: center;
+			border: 0; background: transparent; color: #3E6DA8; border-radius: 8px;
+		}
+		.cb-pass-toggle svg { width: 20px; height: 20px; display: block; }
+		.cb-pass-toggle:hover, .cb-pass-toggle:focus { color: var(--cb-blue); background: #EEF5FF; }
+
+		/* NO INDENT. Bootstrap's .form-check reserves 1.5rem of padding-inline-start for a checkbox it
+		   positions absolutely; this one is a flex child with its own gap, so that reservation was
+		   34px of pure indent and the row sat inside the field edge above it. */
+		.cb-check { padding-inline-start: 0; padding-left: 0; margin: 0; min-height: 0; }
+		.cb-check .form-check-input { width: 21px; height: 21px; border-radius: 5px; border: 1.5px solid #C3D4EA; margin: 0; float: none; }
+		.cb-check .form-check-input:checked { background-color: var(--cb-blue); border-color: var(--cb-blue); }
+		.cb-check .form-check-label { color: var(--cb-ink); font-size: 15px; font-weight: 500; }
+		.cb-link { color: var(--cb-blue); font-size: 15px; font-weight: 600; text-decoration: none; }
+		.cb-link:hover { text-decoration: underline; color: var(--cb-blue-deep); }
+
+		/* ---------- the button ---------------------------------------------------------------- */
+		.cb-submit {
+			height: 58px; width: 100%; border: 0; border-radius: 8px; color: #fff;
+			font-size: 19px; font-weight: 700;
+			background: linear-gradient(90deg, #1B74E4 0%, #0E5BC4 100%);
+			box-shadow: 0 12px 26px rgba(22,103,214,.32);
+			display: flex; align-items: center; justify-content: center;
+		}
+		.cb-submit:hover { background: linear-gradient(90deg, #1F7FF2 0%, #1263D4 100%); color: #fff; }
+		.cb-submit:disabled { opacity: .72; }
+		.cb-submit-label { position: relative; width: 100%; display: flex; align-items: center; justify-content: center; }
+		/* "Sign In" in the design, not "Sign in" — capitalised here rather than in the resource file
+		   because the same string is the page's heading, where sentence case is right, and because the
+		   transform is a no-op in Arabic, which has no such rule. */
+		html[lang="en"] .cb-submit-word { text-transform: capitalize; }
+		/* The chevron the design puts at the button's end — white, and big enough to be one. */
+		.cb-submit .cb-go {
+			position: absolute; inset-inline-end: 18px; font-size: 22px;
+			color: #fff; opacity: 1; transition: transform .15s ease;
+		}
+		html[dir="rtl"] .cb-submit .cb-go { transform: scaleX(-1); }
+		.cb-submit:hover .cb-go { transform: translateX(3px); }
+		html[dir="rtl"] .cb-submit:hover .cb-go { transform: scaleX(-1) translateX(3px); }
+
+		/* ---------- single sign-on -------------------------------------------------------------- */
+		.cb-or {
+			display: flex; align-items: center; gap: 16px; color: #1D5AA8;
+			font-size: 14px; font-weight: 600; margin-top: 32px; margin-bottom: 33px;
+		}
+		.cb-or::before, .cb-or::after { content: ""; height: 1px; background: #E4ECF7; flex: 1 1 auto; }
+		.cb-sso {
+			height: 61px; border: 1px solid #E5E8EC; border-radius: 8px; background: #fff;
+			display: flex; align-items: center; justify-content: center; gap: .65rem;
+			font-weight: 600; font-size: 16px; color: var(--cb-ink); width: 100%;
+			text-decoration: none;
+		}
+		.cb-sso:hover { border-color: #9CC2F2; background: #F7FAFF; color: var(--cb-ink); }
+		.cb-sso svg { width: 22px; height: 22px; flex: 0 0 22px; }
+
+		/* ---------- the page footer -------------------------------------------------------------- */
+		/* The footer crosses the desk, light everywhere — 5.81:1 there. */
+		.cb-foot { color: #1D5AA8; font-size: 13px; font-weight: 600; }
+		.cb-foot .sep { color: #7FA8DC; margin-inline: 12px; }
+
+		/* ---------- refusal ----------------------------------------------------------------------- */
+		.cb-error {
+			border: 1px dashed #E8A0A0; background: #FDF3F3; color: #B02A2A;
+			border-radius: 10px; padding: 13px 16px; font-size: 14px; font-weight: 500;
+		}
+		.cb-caps { color: #B8791A; font-size: 13px; font-weight: 600; }
+
+		/* ==========================================================================================
+		   NARROW SCREENS. The brand column is the half that can go: its job is to persuade, and a
+		   person on a phone at the sign-in box has already been persuaded. The mark stays above the
+		   card so the page is still identifiably CrossBuy.
+		   ========================================================================================== */
+		@@media (max-width: 1399.98px) {
+			.cb-headline { font-size: 40px; }
+			.cb-sub { font-size: 17px; }
+			.cb-tiles { gap: 11px; }
+			.cb-card { max-width: 450px; padding: 32px 36px 44px; }
+			.cb-card-title { font-size: 29px; }
+		}
+
+		@@media (max-width: 991.98px) {
+			.cb-brand-col { display: none; }
+			.cb-brand-inner { margin-inline: auto; }
+			.cb-card-col { padding-inline-start: 0; }
+			.cb-card { max-width: 520px; margin-inline-start: 0; margin-top: 0; }
+			.cb-card-wrap { align-items: center !important; }
+			.cb-row { padding-top: 0; }
+			.cb-mobile-brand { display: block; }
+		}
+
+		@@media (min-width: 992px) {
+			.cb-mobile-brand { display: none; }
+		}
+
+		@@media (max-width: 575.98px) {
+			.cb-card { padding: 24px 22px 28px; border-radius: 16px; box-shadow: 0 14px 34px rgba(11,37,69,.12); }
+			.cb-card-title { font-size: 26px; }
+		}
 	</style>
 	<!--end::Global Stylesheets Bundle-->
-	<script>// Frame-busting to prevent site from being loaded within a frame without permission (click-jacking) if (window.top != window.self) { window.top.location.replace(window.self.location.href); }</script>
+	<script>
+		// Frame-busting: refuse to render inside someone else's frame (click-jacking).
+		// This whole block used to be one line BEHIND this comment, so it never executed once.
+		// It is a fallback: the real defence is an X-Frame-Options / CSP frame-ancestors response
+		// header, which does not depend on the framing page allowing this script to run.
+		if (window.top != window.self) { window.top.location.replace(window.self.location.href); }
+	</script>
 </head>
-<!--end::Head-->
-<!--begin::Body-->
 <body id="kt_body" class="app-blank">
-	<!--begin::Theme mode setup on page load-->
 	<script>var defaultThemeMode = "light"; var themeMode; if (document.documentElement) { if (document.documentElement.hasAttribute("data-bs-theme-mode")) { themeMode = document.documentElement.getAttribute("data-bs-theme-mode"); } else { if (localStorage.getItem("data-bs-theme") !== null) { themeMode = localStorage.getItem("data-bs-theme"); } else { themeMode = defaultThemeMode; } } if (themeMode === "system") { themeMode = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"; } document.documentElement.setAttribute("data-bs-theme", themeMode); }</script>
-	<!--end::Theme mode setup on page load-->
-	<!--begin::Root-->
-	<div class="d-flex flex-column flex-root" id="kt_app_root">
-		<!--begin::Authentication - Sign-in -->
-		<div class="d-flex flex-column flex-lg-row flex-column-fluid">
-			<!--begin::Body-->
-			<div class="d-flex flex-column flex-lg-row-fluid w-lg-50 p-10 order-2 order-lg-1">
-				<!--begin::Form-->
-				<div class="d-flex flex-center flex-column flex-lg-row-fluid">
-					<!--begin::Wrapper-->
-					<div class="w-lg-500px p-10">
-						<!--begin::Form-->
-						<form id="loginForm" method="post">
-							<!--begin::Return url (preserve the page the user was on after re-login)-->
-							<input type="hidden" name="returnUrl" value="@(ViewData["ReturnUrl"])" />
-							<!--begin::Heading-->
-							<div class="text-center mb-11">
-								<!--begin::Title-->
-								<h1 class="text-gray-900 fw-bolder mb-3">@CrossBuy.Resources.SharedResources.Login</h1>
-								<!--end::Title-->
-								<!--begin::Subtitle-->
-								<div class="text-gray-500 fw-semibold fs-6">Your Social Campaigns</div>
-								<!--end::Subtitle=-->
-							</div>
-							<!--begin::Heading-->
-							<!--begin::Login options-->
-							<div class="row g-3 mb-9">
-								<!--begin::Col-->
-								<div class="col-md-6">
-									<!--begin::Google link=-->
-									<a href="#" class="btn btn-flex btn-outline btn-text-gray-700 btn-active-color-primary bg-state-light flex-center text-nowrap w-100">
-										<img alt="Logo" src="~/Backend-assets/media/svg/brand-logos/google-icon.svg" class="h-15px me-3" />Sign in with Google
-									</a>
-									<!--end::Google link=-->
+
+	@{
+		var arabic = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+		var langCode = arabic ? "AR" : (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "fr" ? "FR" : "EN");
+	}
+
+	<div class="cb-scene d-flex flex-column" id="kt_app_root">
+		<div class="cb-brand-veil" aria-hidden="true"></div>
+
+
+		<div class="cb-stage container-fluid d-flex flex-column flex-grow-1 px-4 px-lg-10 py-6 py-lg-8">
+
+			@* TOP-ALIGNED, not centred: the design sets the logo 4.4% down the page and the card 14%. *@
+			<div class="row g-0 flex-grow-1 align-items-start cb-row">
+
+				@* ============================ THE BRAND COLUMN ============================ *@
+				<div class="col-lg-6 cb-brand-col">
+					@* Against the column's INNER edge, not centred in it — that is what puts the block
+					   at the design's 18.2% and keeps it there as the window widens. *@
+					<div class="cb-brand-inner">
+						@* The supplied file with its baked tagline cropped off, so the tagline below can
+						   be a line of text — the only way it is ever Arabic. *@
+						@* The supplied lockup with its drawn tagline cropped off, so the line below it can be
+						   text — the only way it is ever Arabic. *@
+						<img alt="CrossBuy" src="~/Backend-assets/media/brand/crossbuy-logo-lockup.png"
+							 class="d-block mx-auto cb-logo" asp-append-version="true" />
+						@* THE RULES ON EITHER SIDE are the logo's own device — the supplied artwork draws the
+						   tagline between two short strokes. They matter more here than there: the English
+						   string is long and filled the logo's width on its own, the Arabic one is half as
+						   long and floated in the middle with nothing tying it to the mark above. With the
+						   rules, the line spans the logo in either language whatever its length. *@
+						<div class="cb-brand-tagline"><span>@CrossBuy.Resources.SharedResources.BrandTagline</span></div>
+
+						<h1 class="cb-headline">
+							@CrossBuy.Resources.SharedResources.BrandHeadlineLead
+							<br /><span class="cb-accent">@CrossBuy.Resources.SharedResources.BrandHeadlineAccent</span>
+						</h1>
+
+						<p class="cb-sub">
+							@CrossBuy.Resources.SharedResources.BrandSubLine1
+							<br />@CrossBuy.Resources.SharedResources.BrandSubLine2
+						</p>
+
+						@* The tiles are drawn by Views/Shared/Components/ModuleTiles — see that file for
+						   why the supplied 3-D PNGs are not what the design uses. *@
+						@await Component.InvokeAsync("ModuleTiles")
+
+						<div class="cb-rule"></div>
+						<div class="cb-footline">@CrossBuy.Resources.SharedResources.BrandFootline</div>
+					</div>
+				</div>
+
+				@* ================================ THE CARD ================================ *@
+				<div class="col-lg-6 d-flex justify-content-center justify-content-lg-start cb-card-col">
+					<div class="w-100 d-flex flex-column align-items-center cb-card-wrap">
+
+						@* the mark, for the widths where the brand column is not drawn *@
+						<img alt="CrossBuy" src="~/Backend-assets/media/brand/crossbuy-logo-lockup.png"
+							 class="cb-mobile-brand mb-5" asp-append-version="true" />
+
+						<div class="cb-card">
+
+							@* ---- THE LANGUAGE CONTROL --------------------------------------------
+							   A MENU, NOT A SEGMENTED CONTROL. A segment shows every option at once,
+							   which is better for a set that will never grow — and this one will. Three
+							   languages fit on a track; a fourth would not, and the control would have
+							   to be rebuilt the day one is added. A menu takes any number.
+
+							   THE LIST IS A COLLECTION, not three copies of the same markup. Adding a
+							   language is one entry in it and nothing else on this page changes.
+
+							   Anchored to its own button rather than positioned by a library: Metronic's
+							   KTMenu expects the trigger to be the menu's PARENT, and when it was not it
+							   opened the panel 144px below the button and 285px to one side. top:100% is
+							   the button's bottom edge and inset-inline-end:0 its end edge, in both
+							   directions, from one declaration. *@
+							@{
+								var languages = new (string Code, string Culture, string Name, string Flag)[]
+								{
+									("EN", "en", CrossBuy.Resources.SharedResources.LanguageNameEn, "united-states"),
+									("AR", "ar", CrossBuy.Resources.SharedResources.LanguageNameAr, "saudi-arabia"),
+									("FR", "fr", CrossBuy.Resources.SharedResources.LanguageNameFr, "france"),
+								};
+							}
+							<div class="d-flex justify-content-end cb-pill-row">
+								<div class="cb-lang">
+									<button type="button" class="cb-lang-btn" id="cb-lang-toggle"
+											aria-haspopup="true" aria-expanded="false"
+											aria-label="@CrossBuy.Resources.SharedResources.Language">
+										<span>@langCode</span>
+										<svg viewBox="0 0 24 24" fill="none" aria-hidden="true" class="cb-lang-caret">
+											<path d="M6 9.5 12 15l6-5.5" stroke="currentColor" stroke-width="2"
+												  stroke-linecap="round" stroke-linejoin="round"/>
+										</svg>
+									</button>
+
+									<div class="cb-lang-menu" id="cb-lang-menu" hidden role="menu">
+										@foreach (var lang in languages)
+										{
+											<a asp-controller="Account" asp-action="SetLanguage" asp-route-culture="@lang.Culture"
+											   asp-route-returnUrl="@Context.Request.Path" role="menuitem"
+											   class="cb-lang-item @(langCode == lang.Code ? "on" : "")">
+												<img src="~/Backend-assets/media/flags/@(lang.Flag).svg" alt="" />
+												<span>@lang.Name</span>
+											</a>
+										}
+									</div>
 								</div>
-								<!--end::Col-->
-								<!--begin::Col-->
-								<div class="col-md-6">
-									<!--begin::Google link=-->
-									<a href="#" class="btn btn-flex btn-outline btn-text-gray-700 btn-active-color-primary bg-state-light flex-center text-nowrap w-100">
-										<img alt="Logo" src="~/Backend-assets/media/svg/brand-logos/apple-black.svg" class="theme-light-show h-15px me-3" />
-										<img alt="Logo" src="~/Backend-assets/media/svg/brand-logos/apple-black-dark.svg" class="theme-dark-show h-15px me-3" />Sign in with Apple
-									</a>
-									<!--end::Google link=-->
+							</div>
+
+							<h2 class="cb-card-title mb-2">
+								@CrossBuy.Resources.SharedResources.WelcomeBackLead
+								<span class="cb-accent">@CrossBuy.Resources.SharedResources.WelcomeBackAccent</span>
+							</h2>
+							<div class="cb-card-sub mb-7">@CrossBuy.Resources.SharedResources.SignInToYourAccount</div>
+
+							@* A refusal lands here, inside the card, with the caret returned to the field
+							   that has to change — not in a modal that must be dismissed first. *@
+							@{ var ssoError = TempData["ExternalSignInError"] as string; }
+							<div id="cb-login-error" class="cb-error @(string.IsNullOrEmpty(ssoError) ? "d-none" : "") mb-5" role="alert" aria-live="assertive">@ssoError</div>
+
+							<form id="loginForm" method="post">
+								<input type="hidden" name="returnUrl" value="@(ViewData["ReturnUrl"])" />
+
+								@* THE FIELD IS "USER NAME", NOT "USERNAME OR EMAIL". The design says the
+								   latter, but AccountController looks the user up with
+								   FindUserByNameAsync — an e-mail typed here would simply be rejected as
+								   an unknown user, and a placeholder that invites it is a trap. *@
+								<div class="cb-field cb-field-first">
+									@* Solid, not outline: the design's field marks are filled grey shapes, and the
+									   thin outline version read as a different, lighter icon set. *@
+									<i class="ki-solid ki-user cb-field-icon"></i>
+									<input type="text" asp-for="UserName" autocomplete="username" autofocus
+										   class="form-control" placeholder="@CrossBuy.Resources.SharedResources.UserName"
+										   aria-label="@CrossBuy.Resources.SharedResources.UserName" />
 								</div>
-								<!--end::Col-->
-							</div>
-							<!--end::Login options-->
-							<!--begin::Separator-->
-							<div class="separator separator-content my-14">
-								<span class="w-125px text-gray-500 fw-semibold fs-7">Or with email</span>
-							</div>
-							<!--end::Separator-->
-							<!--begin::Input group=-->
-							<div class="fv-row mb-8">
-								<!--begin::Email-->
-								<input type="text" placeholder="@CrossBuy.Resources.SharedResources.UserName" asp-for="UserName" autocomplete="off" class="form-control bg-transparent" />
 
-								<!--end::Email-->
-							</div>
-							<!--end::Input group=-->
-							<div class="fv-row mb-3">
-								<!--begin::Password-->
-								<input type="password" placeholder="@CrossBuy.Resources.SharedResources.Password" asp-for="Password" autocomplete="off" class="form-control bg-transparent" />
+								<div class="cb-field cb-pass-wrap cb-field-second">
+									<i class="ki-solid ki-lock-2 cb-field-icon"></i>
+									<input type="password" asp-for="Password" autocomplete="current-password"
+										   class="form-control" placeholder="@CrossBuy.Resources.SharedResources.Password"
+										   aria-label="@CrossBuy.Resources.SharedResources.Password" />
+									<button type="button" id="cb-pass-toggle" class="cb-pass-toggle"
+											aria-controls="Password" aria-pressed="false"
+											title="@CrossBuy.Resources.SharedResources.ShowPassword"
+											aria-label="@CrossBuy.Resources.SharedResources.ShowPassword">
+										@Html.Raw(CrossBuy.Views.Account.LoginIcons.EyeOff)
+									</button>
+								</div>
 
-								<!--end::Password-->
-							</div>
-							<!--end::Input group=-->
-							<!--begin::Wrapper-->
-							<div class="d-flex flex-stack flex-wrap gap-3 fs-base fw-semibold mb-8">
-								<div></div>
-								<!--begin::Link-->
-								<a href="authentication/layouts/corporate/reset-password.html" class="link-primary">Forgot Password ?</a>
-								<!--end::Link-->
-							</div>
-							<!--end::Wrapper-->
-							<!--begin::Submit button-->
-							<div class="d-grid mb-10">
-								<button type="submit" class="btn cb-btn-brand w-100">
-									<!--begin::Indicator label-->
-									@CrossBuy.Resources.SharedResources.Login
+								@* CAPS LOCK. A password field shows dots either way, so the one thing the
+								   user cannot see is the thing most likely to be wrong. *@
+								<div id="cb-caps" class="cb-caps d-none mb-2">
+									<i class="ki-outline ki-information-5 fs-6 me-1"></i>@CrossBuy.Resources.SharedResources.CapsLockOn
+								</div>
 
+								<div class="d-flex align-items-center justify-content-between flex-wrap gap-2 cb-remember-row">
+									@* RememberMe was already wired to PasswordSignInAsync's isPersistent and
+									   no control on this page ever set it — false for every user, always. *@
+									<label class="form-check cb-check d-flex align-items-center gap-2 m-0 cursor-pointer">
+										@* Checked by default, as the design shows it. It is a convenience on a
+										   product people sign into every morning, and the box is right there to
+										   clear for anyone on a shared machine. *@
+										<input class="form-check-input m-0" type="checkbox" asp-for="RememberMe" checked />
+										<span class="form-check-label cursor-pointer">@CrossBuy.Resources.SharedResources.RememberMeShort</span>
+									</label>
+									<span class="cb-link" role="note" title="@CrossBuy.Resources.SharedResources.ForgotPasswordHelp">@CrossBuy.Resources.SharedResources.ForgotPasswordQ</span>
+								</div>
+
+								<button type="submit" id="cb-login-submit" class="cb-submit" data-kt-indicator="off">
+									<span class="indicator-label cb-submit-label">
+										<span class="cb-submit-word">@CrossBuy.Resources.SharedResources.SignInAction</span>
+										<i class="ki-outline ki-arrow-right fs-2 cb-go"></i>
+									</span>
+									<span class="indicator-progress">
+										@CrossBuy.Resources.SharedResources.SigningIn
+										<span class="spinner-border spinner-border-sm align-middle ms-2"></span>
+									</span>
 								</button>
+							</form>
+
+							@* ---- SINGLE SIGN-ON ---------------------------------------------------
+							   Rendered from the schemes the application actually has configured, not
+							   from a list written here. Configure Microsoft or Google in settings and
+							   the buttons appear; configure neither and this whole block does not
+							   exist — which is the difference between an offer and a painted door. *@
+							@await Component.InvokeAsync("ExternalSignIn")
+
+							<div class="text-center cb-card-foot cb-card-sub">
+								@CrossBuy.Resources.SharedResources.NewToCrossBuy
+								<span class="cb-link" title="@CrossBuy.Resources.SharedResources.ForgotPasswordHelp">@CrossBuy.Resources.SharedResources.ContactYourAdministrator</span>
 							</div>
-							<!--end::Submit button-->
-							<!--begin::Sign up-->
-							<div class="text-gray-500 text-center fw-semibold fs-6">
-								Not a Member yet?
-								<a href="authentication/layouts/corporate/sign-up.html" class="link-primary">Sign up</a>
-							</div>
-							<!--end::Sign up-->
-						</form>
-						<!--end::Form-->
-					</div>
-					<!--end::Wrapper-->
-				</div>
-				<!--end::Form-->
-				<!--begin::Footer-->
-				<div class="w-lg-500px d-flex flex-stack px-10 mx-auto">
-					<!--begin::Languages-->
-					<div class="me-10">
-						<!--begin::Toggle-->
-						<button class="btn btn-flex btn-link btn-color-gray-700 btn-active-color-primary rotate fs-base" data-kt-menu-trigger="click" data-kt-menu-placement="bottom-start" data-kt-menu-offset="0px, 0px">
-							<img data-kt-element="current-lang-flag" class="w-20px h-20px rounded me-3" src="@Url.Content((System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar") ? "~/Backend-assets/media/flags/saudi-arabia.svg" : (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "fr") ? "~/Backend-assets/media/flags/france.svg" : "~/Backend-assets/media/flags/united-states.svg")" alt="" />
-							<span data-kt-element="current-lang-name" class="me-1">@((System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar") ? "العربية" : (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "fr") ? "Français" : "English")</span>
-							<span class="d-flex flex-center rotate-180">
-								<i class="ki-outline ki-down fs-5 text-muted m-0"></i>
-							</span>
-						</button>
-						<!--end::Toggle-->
-						<!--begin::Menu-->
-						<div class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-800 menu-state-bg-light-primary fw-semibold w-200px py-4 fs-7" data-kt-menu="true" id="kt_auth_lang_menu">
-							<!--begin::Menu item-->
-							<div class="menu-item px-3">
-								<a asp-controller="Account" asp-action="SetLanguage" asp-route-culture="en" asp-route-returnUrl="@Context.Request.Path" class="menu-link d-flex px-5 @((System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName != "ar" && System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName != "fr") ? "active" : "")" data-kt-lang="English">
-									<span class="symbol symbol-20px me-4">
-										<img data-kt-element="lang-flag" class="rounded-1" src="~/Backend-assets/media/flags/united-states.svg" alt="" />
-									</span>
-									<span data-kt-element="lang-name">English</span>
-								</a>
-							</div>
-							<!--end::Menu item-->
-							
-							<div class="menu-item px-3">
-								<a asp-controller="Account" asp-action="SetLanguage" asp-route-culture="ar" asp-route-returnUrl="@Context.Request.Path" class="menu-link d-flex px-5 @((System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar") ? "active" : "")" data-kt-lang="العربية">
-									<span class="symbol symbol-20px me-4">
-										<img data-kt-element="lang-flag" class="rounded-1" src="~/Backend-assets/media/flags/saudi-arabia.svg" alt="" />
-									</span>
-									<span data-kt-element="lang-name">العربية</span>
-								</a>
-							</div>
-							<div class="menu-item px-3">
-								<a asp-controller="Account" asp-action="SetLanguage" asp-route-culture="fr" asp-route-returnUrl="@Context.Request.Path" class="menu-link d-flex px-5 @((System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "fr") ? "active" : "")" data-kt-lang="Français">
-									<span class="symbol symbol-20px me-4">
-										<img data-kt-element="lang-flag" class="rounded-1" src="~/Backend-assets/media/flags/france.svg" alt="" />
-									</span>
-									<span data-kt-element="lang-name">Français</span>
-								</a>
-							</div>
-						
-							
-						
 						</div>
-						<!--end::Menu-->
 					</div>
-					<!--end::Languages-->
-					<!--begin::Links-->
-					<div class="d-flex fw-semibold text-primary fs-base gap-5">
-						<a href="pages/team.html" target="_blank">Terms</a>
-						<a href="pages/pricing/column.html" target="_blank">Plans</a>
-						<a href="pages/contact.html" target="_blank">Contact Us</a>
-					</div>
-					<!--end::Links-->
 				</div>
-				<!--end::Footer-->
 			</div>
-			<!--end::Body-->
-			<!--begin::Aside-->
-			<div class="d-flex flex-lg-row-fluid w-lg-50 bgi-size-cover bgi-position-center order-1 order-lg-2" style="background: radial-gradient(120% 120% at 80% 10%, #145DBF 0%, #0E4A9E 45%, #0B3D91 100%);">
-				<!--begin::Content-->
-				<div class="d-flex flex-column flex-center py-7 py-lg-15 px-5 px-md-15 w-100">
-					<!--begin::Logo-->
-					<a href="index.html" class="mb-0 mb-lg-12">
-						<img alt="CrossBuy" src="~/Backend-assets/media/logos/crossbuy-logo-light.svg" class="h-45px h-lg-55px" asp-append-version="true" />
-					</a>
-					<!--end::Logo-->
-					<!--begin::Image-->
-					<img class="d-none d-lg-block mx-auto w-275px w-md-50 w-xl-500px mb-10 mb-lg-20" src="~/Backend-assets/media/misc/crossbuy-auth.svg" alt="CrossBuy ERP" asp-append-version="true" />
-					<!--end::Image-->
-					<!--begin::Title-->
-					<h1 class="d-none d-lg-block text-white fs-2qx fw-bolder text-center mb-7">@((System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar") ? "نظام متكامل لإدارة أعمالك" : "One System to Run Your Business")</h1>
-					<!--end::Title-->
-					<!--begin::Text-->
-					<div class="d-none d-lg-block text-white fs-base text-center">
-						@if (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar")
-						{
-							<text>المحاسبة والمخزون والموارد البشرية والمبيعات في منصة واحدة —</text>
-							<br /><span class="text-warning fw-bold">قيود متوازنة تلقائيًا</span> <text>وتقارير لحظية بالعربية والإنجليزية.</text>
-						}
-						else
-						{
-							<text>Accounting, inventory, HR and sales in one platform —</text>
-							<br /><span class="text-warning fw-bold">auto-balanced entries</span> <text>and real-time reports, in Arabic & English.</text>
-						}
-					</div>
-					<!--end::Text-->
-				</div>
-				<!--end::Content-->
+
+			@* ================================ THE FOOTER ================================ *@
+			<div class="cb-foot text-center pt-8">
+				&copy; @DateTime.Now.Year CrossBuy. @CrossBuy.Resources.SharedResources.AllRightsReserved
+				<span class="sep">|</span>@CrossBuy.Resources.SharedResources.TrustSecure
+				<span class="sep">|</span>@CrossBuy.Resources.SharedResources.TrustReliable
+				<span class="sep">|</span>@CrossBuy.Resources.SharedResources.TrustScalable
 			</div>
-			<!--end::Aside-->
 		</div>
-		<!--end::Authentication - Sign-in-->
 	</div>
 	<!--end::Root-->
 	<!--begin::Javascript-->
@@ -289,41 +710,144 @@
 </script>
 
 <script>
-	$(document).ready(function () {
-		$("#loginForm").on("submit", function (e) {
-			e.preventDefault();
+	(function () {
+		"use strict";
 
-			$.ajax({
-				url: '/Account/Login',
-				type: 'POST',
-				data: $(this).serialize(),
-				success: function (response) {
-					if (response.success) {
-						window.location.href = response.redirectUrl;
-					} else {
-						let message = response.message || response.errors.join("<br>");
+		var form = document.getElementById("loginForm");
+		if (!form) { return; }
 
-						Swal.fire({
-							icon: 'error',
-							title: '@CrossBuy.Resources.SharedResources.Error',
-							html: message,
-							confirmButtonText: '@CrossBuy.Resources.SharedResources.Ok',
-							confirmButtonColor: '#d33'
-						});
-					}
-				},
-				error: function () {
-					Swal.fire({
-						icon: 'error',
-						title: 'System error',
-						text: 'Something went wrong while processing. Please try again later.',
-						confirmButtonText: 'OK',
-						confirmButtonColor: '#d33'
-					});
-				}
+		var pass = document.getElementById("Password");
+		var user = document.getElementById("UserName");
+		var box = document.getElementById("cb-login-error");
+		var submit = document.getElementById("cb-login-submit");
+
+		var SHOW = "@CrossBuy.Resources.SharedResources.ShowPassword";
+		var HIDE = "@CrossBuy.Resources.SharedResources.HidePassword";
+		var FAILED = "@CrossBuy.Resources.SharedResources.SignInFailed";
+		var GENERIC = "@CrossBuy.Resources.SharedResources.SignInErrorGeneric";
+
+		// ---- THE LANGUAGE MENU -----------------------------------------------------------------
+		// Escape and a click outside both close it: a menu that can only be dismissed by choosing
+		// from it is a trap for anyone who opened it by accident.
+		var langBtn = document.getElementById("cb-lang-toggle");
+		var langMenu = document.getElementById("cb-lang-menu");
+		if (langBtn && langMenu) {
+			var setLangOpen = function (open) {
+				langMenu.hidden = !open;
+				langBtn.setAttribute("aria-expanded", open ? "true" : "false");
+			};
+			langBtn.addEventListener("click", function (e) { e.stopPropagation(); setLangOpen(langMenu.hidden); });
+			document.addEventListener("click", function (e) {
+				if (!langMenu.hidden && !langMenu.contains(e.target)) { setLangOpen(false); }
 			});
+			document.addEventListener("keydown", function (e) { if (e.key === "Escape") { setLangOpen(false); } });
+		}
+
+		// ---- SHOW WHAT I TYPED -----------------------------------------------------------------
+		// The two shapes the reveal control swaps between. Drawn rather than taken from the icon
+		// font: it ships one eye and one eye-slash, both a decade old in shape, and neither matches
+		// anything else on this card.
+		var EYE_ON = @Html.Raw(Json.Serialize(CrossBuy.Views.Account.LoginIcons.EyeOn));
+		var EYE_OFF = @Html.Raw(Json.Serialize(CrossBuy.Views.Account.LoginIcons.EyeOff));
+
+		var toggle = document.getElementById("cb-pass-toggle");
+		if (toggle && pass) {
+			toggle.addEventListener("click", function () {
+				// The state the field ENDS in — which is what the icon, the label and aria-pressed all
+				// have to describe. Reading the state it is leaving is what made the icon look stuck.
+				var visible = pass.type !== "text";
+				pass.type = visible ? "text" : "password";
+				toggle.setAttribute("aria-pressed", visible ? "true" : "false");
+				toggle.setAttribute("aria-label", visible ? HIDE : SHOW);
+				toggle.title = visible ? HIDE : SHOW;
+				toggle.innerHTML = visible ? EYE_ON : EYE_OFF;
+				// The caret goes back where it was, or revealing the password costs the user their place.
+				pass.focus();
+			});
+		}
+
+		// ---- CAPS LOCK -------------------------------------------------------------------------
+		// getModifierState is the only honest source: inferring it from which case arrives is wrong
+		// for every keyboard layout that is not Latin, and this product's users type Arabic.
+		var caps = document.getElementById("cb-caps");
+		if (caps && pass) {
+			var readCaps = function (ev) {
+				if (!ev.getModifierState) { return; }
+				caps.classList.toggle("d-none", !ev.getModifierState("CapsLock"));
+			};
+			pass.addEventListener("keydown", readCaps);
+			pass.addEventListener("keyup", readCaps);
+			pass.addEventListener("blur", function () { caps.classList.add("d-none"); });
+		}
+
+		// ---- A REFUSAL YOU CAN READ ------------------------------------------------------------
+		// The modal is gone. A wrong password is an ordinary event on a sign-in form, and answering it
+		// with a dialog that must be dismissed puts a click between the user and the field they have to
+		// correct. This says what happened where it happened, and puts the caret back in the password.
+		function clearError() {
+			if (!box) { return; }
+			box.classList.add("d-none");
+			box.textContent = "";
+		}
+
+		function showError(message) {
+			if (!box) { return; }
+			box.textContent = message || GENERIC;
+			box.classList.remove("d-none");
+			if (pass) { pass.focus(); pass.select(); }
+		}
+
+		[user, pass].forEach(function (el) {
+			if (el) { el.addEventListener("input", clearError); }
 		});
-	});
+
+		// ---- ONE SUBMIT AT A TIME --------------------------------------------------------------
+		var busy = false;
+		function setBusy(on) {
+			busy = on;
+			if (!submit) { return; }
+			submit.setAttribute("data-kt-indicator", on ? "on" : "off");
+			submit.disabled = on;
+		}
+
+		form.addEventListener("submit", function (e) {
+			e.preventDefault();
+			if (busy) { return; }        // a slow network used to mean two sign-in attempts
+			clearError();
+			setBusy(true);
+
+			fetch("/Account/Login", {
+				method: "POST",
+				credentials: "same-origin",
+				headers: { "X-Requested-With": "XMLHttpRequest" },
+				body: new FormData(form)
+			})
+				.then(function (r) {
+					// r.text() THEN parse, never r.json() straight: a 500 or a login-page redirect answers
+					// with HTML, r.json() rejects, and the screen reports nothing at all.
+					return r.text().then(function (body) {
+						try { return { ok: r.ok, data: JSON.parse(body) }; }
+						catch (ignored) { return { ok: false, data: null }; }
+					});
+				})
+				.then(function (res) {
+					var d = res.data;
+					if (d && d.success && d.redirectUrl) { window.location.href = d.redirectUrl; return; }
+
+					setBusy(false);
+					// `d.errors.join(...)` threw here whenever the server sent neither a message nor an
+					// errors array — so the one case that most needed a message showed none.
+					var message = (d && d.message)
+						|| (d && d.errors && d.errors.length ? d.errors.join(" · ") : "")
+						|| (FAILED + " — " + GENERIC);
+					showError(message);
+				})
+				.catch(function () {
+					setBusy(false);
+					showError(GENERIC);
+				});
+		});
+	})();
 </script>
 
 

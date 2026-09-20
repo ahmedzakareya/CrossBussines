@@ -415,6 +415,21 @@
     // ---- details ----
     var modalEl = document.getElementById('cbEvtModal');
     var modal = new bootstrap.Modal(modalEl);
+    // A partial injected with innerHTML has its <script> tags PARSED BUT NOT RUN — that is what the
+    // spec says and it is why the conversation panel inside the details modal sat on its loading state
+    // forever. Re-creating each node (rather than eval'ing its text) keeps the page's CSP and any
+    // src-based script working.
+    function runInjectedScripts(container) {
+        Array.prototype.forEach.call(container.querySelectorAll('script'), function (old) {
+            var s = document.createElement('script');
+            for (var i = 0; i < old.attributes.length; i++) {
+                s.setAttribute(old.attributes[i].name, old.attributes[i].value);
+            }
+            s.textContent = old.textContent;
+            old.parentNode.replaceChild(s, old);
+        });
+    }
+
     function openDetails(id) {
         clearError();
         document.getElementById('cbEvtModalContent').innerHTML =
@@ -425,7 +440,12 @@
                 if (!r.ok) throw new Error('@Localizer["This event is not available."]');
                 return r.text();
             })
-            .then(function (html) { document.getElementById('cbEvtModalContent').innerHTML = html; bindDetails(); })
+            .then(function (html) {
+                var host = document.getElementById('cbEvtModalContent');
+                host.innerHTML = html;
+                runInjectedScripts(host);   // the conversation panel lives in one of them
+                bindDetails();
+            })
             .catch(function (e) {
                 document.getElementById('cbEvtModalContent').innerHTML =
                     '<div class="p-10 text-center text-danger fw-semibold">' + e.message + '</div>';

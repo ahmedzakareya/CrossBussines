@@ -31,6 +31,54 @@
     .cbchat-flash { animation: cbchatFlash 1.2s ease; }
     @@keyframes cbchatFlash { 0%, 100% { box-shadow: none; } 25% { box-shadow: 0 0 0 3px rgba(31,125,87,.45); } }
     .cbchat-locked { opacity: .55; pointer-events: none; }
+    .rtl-flip { transform: scaleX(1); }
+    html[dir="rtl"] .rtl-flip { transform: scaleX(-1); }
+
+    /* ---------------- PHONE: one pane at a time ----------------
+       Below lg the two columns are two SCREENS, not two stacked cards. The list fills the viewport;
+       opening a conversation swaps to the thread, which is a fixed full-height column: sticky header,
+       the messages scrolling in the middle, and the composer pinned above the home indicator. */
+    @@media (max-width: 991.98px) {
+        #cbchat_wrap[data-cbchat-pane="list"]   #cbchat_threadpane { display: none; }
+        #cbchat_wrap[data-cbchat-pane="thread"] #cbchat_listpane   { display: none; }
+
+        /* the list scrolls with the page instead of inside a 65vh box that produced two scrollbars */
+        #chatConvList { max-height: none !important; }
+        #cbchat_listpane { margin-bottom: 0 !important; }
+
+        #cbchat_wrap[data-cbchat-pane="thread"] #cbchat_messenger {
+            position: fixed; inset: 0; z-index: 105;
+            height: 100dvh; max-height: 100dvh;
+            margin: 0; border-radius: 0; border: 0;
+        }
+        #cbchat_wrap[data-cbchat-pane="thread"] #cbchat_messenger_header {
+            flex: 0 0 auto; min-height: 0; padding: 10px 12px;
+            padding-top: calc(10px + env(safe-area-inset-top));
+            border-bottom: 1px solid var(--bs-gray-200);
+        }
+        #cbchat_wrap[data-cbchat-pane="thread"] #cbchat_messenger_body { padding: 10px 12px 0; }
+        #cbchat_wrap[data-cbchat-pane="thread"] #chatFooter {
+            padding: 8px 12px calc(8px + env(safe-area-inset-bottom)) !important;
+            border-top: 1px solid var(--bs-gray-200);
+        }
+        /* a 16px composer: anything smaller makes iOS zoom the whole page on focus */
+        #cbchat_wrap[data-cbchat-pane="thread"] .cbchat-ta { font-size: 16px; }
+        /* a quoted message may not force the thread wider than the screen */
+        .cbchat-quote { max-width: 100%; }
+
+        /* TAP TO REVEAL, not always-on. There is no hover on a touch screen, but pinning the delete /
+           edit / react row above every bubble buried the conversation under its own controls — measured
+           at six visible tool rows on one screen. Tapping a message opens its tools and closes the
+           others, which is the gesture every phone messenger already trained people to expect. */
+        .chat-msg .chat-tools { opacity: 0; pointer-events: none; }
+        .chat-msg.cbchat-tools-open .chat-tools { opacity: 1; pointer-events: auto; }
+    }
+
+    /* A LONG UNBROKEN STRING IS NOT A LAYOUT: one pasted url or token measured 23,256px wide inside a
+       390px screen, so the message was simply unreadable. Applies at every width — a desktop bubble
+       blows out the same way, it just takes a longer string. */
+    .chat-msg .p-4, .chat-msg .cbchat-quote { overflow-wrap: anywhere; word-break: break-word; min-width: 0; }
+    #chatScroll { overflow-x: hidden; }
 </style>
 <div class="d-flex flex-column flex-column-fluid">
     <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
@@ -45,9 +93,15 @@
     </div></div>
 
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
-        <div class="d-flex flex-column flex-lg-row">
+        @* ONE PANE AT A TIME ON A PHONE. The desktop layout is two columns side by side; below lg it
+           simply STACKED, so the phone showed the whole conversation list and then an empty "select a
+           conversation" card underneath it. Tapping a name opened a thread that was entirely below the
+           fold — nothing appeared to happen — and the composer was never on screen at all. Same markup,
+           same desktop behaviour: the panes become alternating full-screen views, switched by
+           data-cbchat-pane on the wrapper. *@
+        <div class="d-flex flex-column flex-lg-row" id="cbchat_wrap" data-cbchat-pane="list">
             <!--begin::Contacts sidebar-->
-            <div class="flex-column flex-lg-row-auto w-100 w-lg-300px w-xl-350px mb-10 mb-lg-0">
+            <div class="flex-column flex-lg-row-auto w-100 w-lg-300px w-xl-350px mb-10 mb-lg-0" id="cbchat_listpane">
                 <div class="card card-flush">
                     <div class="card-header pt-7 border-0" id="cbchat_contacts_header">
                         <div class="d-flex align-items-center gap-3 w-100">
@@ -74,10 +128,15 @@
             <!--end::Contacts sidebar-->
 
             <!--begin::Messenger-->
-            <div class="flex-lg-row-fluid ms-lg-7 ms-xl-10">
+            <div class="flex-lg-row-fluid ms-lg-7 ms-xl-10" id="cbchat_threadpane">
                 <div class="card" id="cbchat_messenger">
                     <div class="card-header" id="cbchat_messenger_header">
                         <div class="card-title">
+                            @* The way back. A full-screen thread with no way out is a trap, and the
+                               browser's back button would leave the screen entirely. *@
+                            <button type="button" class="btn btn-icon btn-sm btn-light me-2 d-lg-none" id="chatBack" aria-label="@SR["Back"]">
+                                <i class="ki-outline ki-black-left fs-3 rtl-flip"></i>
+                            </button>
                             <div class="symbol symbol-40px symbol-circle me-3 d-none" id="chatHeadSym"><img id="chatHeadAvatar" src="@blank" alt="" /></div>
                             <div class="d-flex justify-content-center flex-column">
                                 <span class="fs-4 fw-bold text-gray-900 me-1 mb-1 lh-1" id="chatTitle">@Localizer["Select a conversation"]</span>
@@ -226,7 +285,20 @@ document.addEventListener('DOMContentLoaded', function () {
     var headSym = $('chatHeadSym'), headAvatar = $('chatHeadAvatar');
 
     function esc(s) { var d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
-    function timeStr(iso) { try { return new Date(iso).toLocaleString(); } catch (e) { return ''; } }
+    // THE PAGE'S LOCALE, NOT THE BROWSER'S. toLocaleString() with no argument asked the BROWSER, so an
+    // Arabic screen printed "8/26/2026, 7:52:05 AM" — a US format, to the second, that nobody reads on a
+    // message. A time is also a mixed run: dropped into an RTL line unisolated it reorders, which is why
+    // the stamp appeared to start with "AM".
+    var CB_CHAT_LOCALE = document.documentElement.lang || 'ar';
+    function timeStr(iso) {
+        try {
+            var d = new Date(iso), now = new Date();
+            var sameDay = d.toDateString() === now.toDateString();
+            return d.toLocaleString(CB_CHAT_LOCALE, sameDay
+                ? { hour: '2-digit', minute: '2-digit' }
+                : { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+        } catch (e) { return ''; }
+    }
     function post(url, data) {
         var fd; if (data instanceof FormData) fd = data; else { fd = new FormData(); for (var k in data) if (data[k] != null) fd.append(k, data[k]); }
         return fetch(url, { method: 'POST', credentials: 'same-origin', body: fd }).then(function (r) { return r.ok ? r.json() : null; });
@@ -287,7 +359,7 @@ document.addEventListener('DOMContentLoaded', function () {
         var avatar = '<div class="symbol symbol-35px symbol-circle ' + (mine ? 'ms-3' : 'me-3') + '"><img src="' + av + '" alt="" /></div>';
         var head = '<div class="d-flex align-items-center mb-1">' + (mine ? '' : avatar) +
             '<div class="' + (mine ? 'me-3 text-end' : 'ms-0') + '"><span class="fs-6 fw-bold text-gray-900 me-1">' + (mine ? '@Localizer["You"]' : esc(m.senderName)) + '</span>' +
-            '<span class="text-muted fs-8">' + timeStr(m.createdAt) + (m.editedAt ? ' · @Localizer["edited"]' : '') + '</span></div>' + (mine ? avatar : '') + '</div>';
+            '<span class="text-muted fs-8" style="unicode-bidi:isolate;" dir="auto">' + timeStr(m.createdAt) + '</span>' + (m.editedAt ? '<span class="text-muted fs-8"> · @Localizer["edited"]</span>' : '') + '</div>' + (mine ? avatar : '') + '</div>';
         var att = attachHtml(m);
         var txt = m.body ? esc(m.body).replace(/\n/g, '<br>') : '';
         var quote = '';
@@ -355,13 +427,65 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     function scrollBottom() { scroll.scrollTop = scroll.scrollHeight; }
     // size the messenger to fill from its top edge down to the viewport bottom → composer always visible
+    // ---- phone: the two columns are two screens ------------------------------------------------
+    var CB_CHAT_PHONE = '(max-width: 991.98px)';
+    function isPhone() { return window.matchMedia(CB_CHAT_PHONE).matches; }
+    // WHERE THE LIST WAS. body{overflow:hidden} stops the page scrolling behind the full-screen thread,
+    // but the browser CLAMPS the document scroll to 0 while it is set and does not put it back when it is
+    // cleared — so scrolling down the list, opening a chat and coming back dropped you at the top of the
+    // list every time, with the name you had just found scrolled away again. Measured: 80 → 0 → 0.
+    var listScrollY = 0;
+    function setPane(which) {
+        var w = document.getElementById('cbchat_wrap'); if (!w) return;
+        var wasList = w.getAttribute('data-cbchat-pane') !== 'thread';
+        if (which === 'thread' && isPhone() && wasList) listScrollY = window.scrollY || 0;
+
+        w.setAttribute('data-cbchat-pane', which);
+        document.body.style.overflow = (which === 'thread' && isPhone()) ? 'hidden' : '';
+
+        if (which === 'list') {
+            // After the layout is back, not before: restoring into a still-clamped document scrolls nowhere.
+            var y = listScrollY;
+            requestAnimationFrame(function () { window.scrollTo(0, y); });
+        }
+        fitMessenger();
+        if (which === 'thread') setTimeout(scrollBottom, 60);
+    }
+    var backBtn = document.getElementById('chatBack');
+    if (backBtn) backBtn.addEventListener('click', function () { setPane('list'); });
+
+    // Tap a bubble to show its tools; tap it again, or another one, to put them away. Delegated, because
+    // messages arrive after this runs. Anything already interactive inside the bubble keeps its own tap.
+    document.addEventListener('click', function (e) {
+        if (!isPhone()) return;
+        var msg = e.target.closest ? e.target.closest('.chat-msg') : null;
+        if (e.target.closest && e.target.closest('.chat-tools, a, button, input, textarea, .cbchat-quote')) return;
+        document.querySelectorAll('.chat-msg.cbchat-tools-open').forEach(function (el) {
+            if (el !== msg) el.classList.remove('cbchat-tools-open');
+        });
+        if (msg) msg.classList.toggle('cbchat-tools-open');
+    });
+
     function fitMessenger() {
         var m = document.getElementById('cbchat_messenger'); if (!m) return;
+        var w = document.getElementById('cbchat_wrap');
+        // On a phone the thread is position:fixed and the CSS already gives it the viewport height —
+        // an inline pixel height computed from a rect would fight it, and 100dvh is what tracks the
+        // browser chrome collapsing as you scroll.
+        if (isPhone() && w && w.getAttribute('data-cbchat-pane') === 'thread') { m.style.height = ''; if (cur) scrollBottom(); return; }
+        m.style.height = '';
         var h = window.innerHeight - m.getBoundingClientRect().top - 16;
         m.style.height = Math.max(420, h) + 'px';
         if (cur) scrollBottom();
     }
     window.addEventListener('resize', fitMessenger);
+    // Leaving phone width with a thread open must not leave the list hidden on a desktop layout.
+    try {
+        window.matchMedia(CB_CHAT_PHONE).addEventListener('change', function (e) {
+            if (!e.matches) { document.body.style.overflow = ''; fitMessenger(); }
+            else if (cur) setPane('thread');
+        });
+    } catch (e) { /* older browsers: the resize handler above still refits */ }
     function updateSeenBar() {
         var el = $('chatSeen'); if (!el || !curHeader) { if (el) el.innerHTML = ''; return; }
         var rows = scroll.querySelectorAll('.chat-msg[data-mine="1"]');
@@ -383,7 +507,8 @@ document.addEventListener('DOMContentLoaded', function () {
     function openConversation(id, meta) {
         if (conn && cur) { try { conn.invoke('LeaveConversation', cur); } catch (e) {} }
         cur = id; curHeader = { kind: meta.kind, other: meta.other || null }; replyTo = null; $('chatReplyBar').classList.add('d-none'); oldestId = null; members = [];
-        emptyBox.classList.add('d-none'); scroll.classList.remove('d-none'); footer.classList.remove('d-none'); setComposerEnabled(true); fitMessenger();
+        emptyBox.classList.add('d-none'); scroll.classList.remove('d-none'); footer.classList.remove('d-none'); setComposerEnabled(true);
+        if (isPhone()) setPane('thread'); else fitMessenger();
         titleEl.textContent = meta.title || '';
         headSym.classList.toggle('d-none', meta.kind === 'Group');
         headAvatar.src = meta.avatar || blank;

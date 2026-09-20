@@ -120,6 +120,22 @@
         <div class="fw-bold fs-6 mt-5 mb-2">@Localizer["Last error (full)"]</div>
         <pre class="bg-light-danger rounded p-4 mb-0 cb-platform-full-error" dir="ltr">@Model.FullError</pre>
     }
+
+    @* ---- THE RESOLUTION RECORD -------------------------------------------------------------------
+       How this failure was diagnosed and fixed, who wrote it and when, with the screenshots pasted in
+       as evidence. It is a separate record POINTING AT the event — the event row itself is never
+       edited, which is the promise the controller's header makes.
+       The panel is the platform's, and the endpoints are ours to name: a caller that names neither
+       renders disabled rather than posting its notes at another module's permission gate. *@
+    <div class="separator my-6"></div>
+    @{
+        ViewBag.ConversationEntityCode = CrossBuy.BL.Platform.EntityRegistry.PlatformEvent;
+        ViewBag.ConversationEntityId   = (int)h.EventId;
+        ViewBag.ConversationListUrl    = Url.Action("Notes", "BusinessEventMonitor");
+        ViewBag.ConversationAddUrl     = Url.Action("NotesAdd", "BusinessEventMonitor");
+        ViewBag.ConversationReactUrl   = null;
+    }
+    @await Html.PartialAsync("~/Views/Shared/_EntityConversation.cshtml")
 </div>
 <div class="modal-footer py-4 px-9">
     <a href="#" class="btn btn-sm btn-light cb-copy" data-copy="@h.EventUid.ToString("D")">@Localizer["Copy EventUid"]</a>

@@ -8,17 +8,114 @@
     var accounts = ViewBag.Accounts as List<AccountNode> ?? new List<AccountNode>();
     var costCenters = ViewBag.CostCenters as List<CostCenter> ?? new List<CostCenter>();
     var projects = ViewBag.Projects as List<(int id, string text)> ?? new List<(int id, string text)>();
+    var CamelCase = new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase };
+    // EDIT MODE. The same view serves the create and the edit of a draft; only these four differ.
+    var editId = ViewBag.EditId as int?;
+    var isEdit = editId != null;
+    var entryDateValue = ((DateTime?)ViewBag.EntryDate)?.ToString("yyyy-MM-dd") ?? DateTime.Today.ToString("yyyy-MM-dd");
 }
+
+<style>
+    /* The grid's surface is the app's, not Excel's: the palette below is this page's own tokens
+       (primary #1877F2, border #F1F1F4, gray-600 #78829D, card radius 11px) read off the running
+       page. Sizes are in px because the root font-size here is 13px — a rem lands at 81% of intent. */
+    .xl-pane { --xg-line:#F1F1F4; --xg-edge:#DBDFE9; --xg-head:#FCFCFD; --xg-mute:#78829D;
+               --xg-ink:#252F4A; --xg-pri:#1877F2; --xg-pri-soft:#E7F0FF;
+               border:1px solid var(--xg-edge); border-radius:11px; overflow:hidden; background:#fff; }
+
+    .xl-bar { display:flex; align-items:center; gap:10px; padding:8px 10px;
+              background:#fff; border-bottom:1px solid var(--xg-line); }
+    .xl-ref { flex:none; min-width:74px; height:32px; display:flex; align-items:center; justify-content:center;
+              font-size:12.5px; font-weight:700; color:var(--xg-ink);
+              background:#F9F9F9; border:1px solid var(--xg-line); border-radius:7px; }
+    .xl-formula { flex:1 1 auto; min-width:0; height:32px; padding:0 12px;
+                  border:1px solid var(--xg-line); border-radius:7px; background:#F9F9F9;
+                  font-size:13px; color:var(--xg-ink); outline:0;
+                  transition:border-color .15s ease, background .15s ease; }
+    .xl-formula:focus { background:#fff; border-color:var(--xg-pri); }
+    .xl-tools { flex:none; display:flex; align-items:center; gap:4px; }
+    .xl-btn { border:0; background:transparent; color:var(--xg-mute); width:32px; height:32px;
+              border-radius:7px; display:flex; align-items:center; justify-content:center;
+              transition:background .15s ease, color .15s ease; }
+    .xl-btn:hover { background:var(--xg-pri-soft); color:var(--xg-pri); }
+
+    .xl-scroll { position:relative; max-height:58vh; overflow:auto; outline:0; background:#fff; }
+    .xl-grid { border-collapse:separate; border-spacing:0; min-width:100%;
+               font-size:13px; color:var(--xg-ink); table-layout:fixed; }
+    .xl-grid th, .xl-grid td { border-inline-end:1px solid var(--xg-line);
+                               border-bottom:1px solid var(--xg-line);
+                               padding:0 10px; height:34px; white-space:nowrap;
+                               overflow:hidden; text-overflow:ellipsis; background:#fff; }
+
+    /* Both header rows stick: the letters so a formula's reference stays readable while scrolling,
+       the names so the column keeps its meaning. */
+    .xl-grid thead th { position:sticky; z-index:3; background:var(--xg-head); color:var(--xg-mute);
+                        font-weight:600; text-align:center; user-select:none; }
+    .xl-grid thead tr:first-child th { top:0; height:22px; font-size:10.5px; letter-spacing:.04em;
+                                       color:#A1A5B7; }
+    .xl-grid thead tr:last-child th { top:22px; height:36px; font-size:12.5px; color:var(--xg-ink);
+                                      border-bottom:1px solid var(--xg-edge); }
+
+    .xl-rn { position:sticky; inset-inline-start:0; z-index:2; width:44px; min-width:44px; max-width:44px;
+             background:var(--xg-head) !important; color:var(--xg-mute); text-align:center;
+             font-size:11px; font-weight:600; user-select:none;
+             border-inline-end:1px solid var(--xg-edge); }
+    .xl-grid thead .xl-rn { z-index:4; }
+
+    .xl-cell { cursor:cell; }
+    .xl-num  { text-align:end; font-variant-numeric:tabular-nums; direction:ltr; }
+    .xl-sel  { background:var(--xg-pri-soft) !important; }
+    /* The ring plus a soft halo — a 2px line alone disappears against a hairline grid. */
+    .xl-active { background:#fff !important;
+                 box-shadow:inset 0 0 0 2px var(--xg-pri), 0 0 0 3px rgba(24,119,242,.12);
+                 border-radius:3px; }
+    .xl-rn.xl-rn-on { background:var(--xg-pri-soft) !important; color:var(--xg-pri); }
+    /* Room for the arrow, only on the cell that has one. */
+    .xl-hasdd { padding-inline-end:36px !important; }
+    .xl-err { color:#F8285A; }
+
+    .xl-proxy { position:absolute; z-index:1; opacity:0; width:1px; height:1px; padding:0; margin:0;
+                border:0; resize:none; overflow:hidden; white-space:pre; }
+    .xl-editor { position:absolute; z-index:6; border:2px solid var(--xg-pri); border-radius:4px;
+                 outline:0; padding:0 8px; font-size:13px; background:#fff; color:var(--xg-ink);
+                 box-shadow:0 0 0 3px rgba(24,119,242,.12); }
+
+    .xl-arrow { position:absolute; z-index:7; width:24px; padding:0; border:0; border-radius:5px;
+                background:var(--xg-pri-soft); color:var(--xg-pri);
+                display:flex; align-items:center; justify-content:center; cursor:pointer;
+                transition:background .15s ease, color .15s ease; }
+    .xl-arrow:hover { background:var(--xg-pri); color:#fff; }
+
+    .xl-list { position:absolute; z-index:8; background:#fff; border:1px solid var(--xg-line);
+               border-radius:9px; box-shadow:0 12px 30px rgba(37,47,74,.14); padding:5px;
+               max-height:250px; overflow-y:auto; overflow-x:hidden;
+               width:max-content; max-width:440px; }
+    .xl-list div { padding:7px 10px; font-size:12.5px; border-radius:6px; cursor:pointer;
+                   white-space:nowrap; color:var(--xg-ink); }
+    .xl-list div.on, .xl-list div:hover { background:var(--xg-pri-soft); color:var(--xg-pri); font-weight:600; }
+
+    .xl-status { display:flex; align-items:center; gap:8px; padding:9px 12px; background:#FCFCFD;
+                 border-top:1px solid var(--xg-line); font-size:12px; color:var(--xg-mute); }
+    .xl-hint { opacity:.9; }
+    .xl-stat { margin-inline-start:auto; display:flex; gap:6px; align-items:center;
+               font-variant-numeric:tabular-nums; }
+    /* Each figure in its own chip: a run of numbers separated only by spaces is a wall of digits. */
+    .xl-stat span { background:#F9F9F9; border:1px solid var(--xg-line); border-radius:20px;
+                    padding:3px 11px; white-space:nowrap; }
+    .xl-stat b { color:var(--xg-ink); font-weight:700; }
+    .xl-ok  { background:#EAFBF1 !important; border-color:#C7EED8 !important; color:#16A34A !important; font-weight:700; }
+    .xl-bad { background:#FFF0F3 !important; border-color:#FFD4DD !important; color:#F8285A !important; font-weight:700; }
+</style>
 
 <div class="d-flex flex-column flex-column-fluid">
     <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2">
         <div class="app-container container-fluid d-flex flex-stack">
             <div class="page-title d-flex flex-column justify-content-center gap-1">
-                <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["New Journal Entry"]</h1>
+                <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@(isEdit ? Localizer["Edit Draft Entry"] : Localizer["New Journal Entry"])</h1>
                 <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
                     <li class="breadcrumb-item text-muted"><a href="@Url.Action("Journals","Accounting")" class="text-muted">@Localizer["Journals"]</a></li>
                     <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
-                    <li class="breadcrumb-item text-muted">@Localizer["New"]</li>
+                    <li class="breadcrumb-item text-muted">@(isEdit ? SR["Edit"] : Localizer["New"])</li>
                 </ul>
             </div>
         </div>
@@ -26,8 +123,9 @@
 
     <div id="kt_app_content" class="app-content flex-column-fluid">
         <div class="app-container container-fluid">
-            <form asp-action="CreateJournal" method="post" id="jeForm">
+            <form asp-action="@(isEdit ? "EditJournal" : "CreateJournal")" method="post" id="jeForm">
                 @Html.AntiForgeryToken()
+                @if (isEdit) { <input type="hidden" name="id" value="@editId" /> }
                 <input type="hidden" name="linesJson" id="linesJson" />
                 <input type="hidden" name="action" id="jeAction" value="post" />
 
@@ -36,11 +134,11 @@
                         <div class="row g-5">
                             <div class="col-md-4">
                                 <label class="required fw-semibold fs-6 mb-2">@SR["Date"]</label>
-                                <input type="date" name="entryDate" id="entryDate" class="form-control form-control-solid" value="2026-01-15" required />
+                                <input type="date" name="entryDate" id="entryDate" class="form-control form-control-solid" value="@entryDateValue" required />
                             </div>
                             <div class="col-md-8">
                                 <label class="fw-semibold fs-6 mb-2">@SR["Description"]</label>
-                                <input type="text" name="description" class="form-control form-control-solid" placeholder="@Localizer["Entry description"]" />
+                                <input type="text" name="description" class="form-control form-control-solid" placeholder="@Localizer["Entry description"]" value="@(ViewBag.EntryDescription as string)" />
                             </div>
                         </div>
                     </div>
@@ -49,12 +147,17 @@
                 <div class="card">
                     <div class="card-header">
                         <h3 class="card-title fw-bold">@Localizer["Entry Lines"]</h3>
-                        <div class="card-toolbar">
+                        <div class="card-toolbar gap-2">
                             <button type="button" class="btn btn-sm btn-light-primary" id="addRow"><i class="ki-outline ki-plus fs-3"></i>@Localizer["Add line"]</button>
+                            @* The mode switch. It carries the state in its own dataset so the label and icon
+                               have exactly one source of truth. *@
+                            <button type="button" class="btn btn-sm btn-light-success" id="xlToggle" data-on="0">
+                                <i class="ki-outline ki-grid-frame fs-3"></i><span id="xlToggleText">@Localizer["Excel mode"]</span>
+                            </button>
                         </div>
                     </div>
                     <div class="card-body">
-                        <div class="table-responsive">
+                        <div class="table-responsive" id="classicPane">
                             <table class="table table-row-bordered align-middle">
                                 <thead>
                                     <tr class="text-start text-muted fw-bold fs-8 text-uppercase gs-0" style="border-bottom:2px solid #0E4A9E;">
@@ -81,9 +184,67 @@
                             </table>
                         </div>
 
+                        @* ===== EXCEL MODE =========================================================
+                           A grid driven by the keyboard, not by form controls. The three things that
+                           decide whether an accountant actually leaves the spreadsheet:
+                             - the keyboard behaves as Excel's does (arrows, Enter, Tab, F2, Ctrl+D,
+                               Ctrl+Z, type-to-replace),
+                             - a range PASTED from a real sheet lands in the right cells and grows the
+                               grid to fit,
+                             - a range COPIED here pastes back into a real sheet.
+                           Everything else is presentation. ======================================== *@
+                        <div id="xlPane" class="xl-pane d-none">
+                            <div class="xl-bar">
+                                <span class="xl-ref" id="xlRef">A1</span>
+                                <input type="text" class="xl-formula" id="xlFormula" autocomplete="off" spellcheck="false" />
+                                <div class="xl-tools">
+                                    <button type="button" class="xl-btn" id="xlInsert" title="@Localizer["Insert row"]"><i class="ki-outline ki-plus-square fs-4"></i></button>
+                                    <button type="button" class="xl-btn" id="xlDelete" title="@Localizer["Delete row"]"><i class="ki-outline ki-minus-square fs-4"></i></button>
+                                    <button type="button" class="xl-btn" id="xlFill" title="@Localizer["Fill down"]"><i class="ki-outline ki-arrow-down fs-4"></i></button>
+                                    <button type="button" class="xl-btn" id="xlUndo" title="@SR["Undo"]"><i class="ki-outline ki-arrow-circle-left fs-4"></i></button>
+                                </div>
+                            </div>
+
+                            <div class="xl-scroll" id="xlScroll" tabindex="0">
+                                <table class="xl-grid" id="xlGrid">
+                                    <thead>
+                                        <tr id="xlHeadLetters"></tr>
+                                        <tr id="xlHeadNames"></tr>
+                                    </thead>
+                                    <tbody id="xlBody"></tbody>
+                                </table>
+                                @* The focus proxy — see the comment on xlSyncProxy. It must be a real
+                                   editable element or the browser raises no clipboard events at all. *@
+                                <textarea id="xlProxy" class="xl-proxy" aria-hidden="true" tabindex="-1"></textarea>
+                                <input type="text" id="xlEditor" class="xl-editor d-none" autocomplete="off" spellcheck="false" />
+                                @* Excel's validation arrow: it sits on the ACTIVE cell of a list column,
+                                   which is the only place Excel shows one. Alt+Down opens it too. *@
+                                <button type="button" id="xlArrow" class="xl-arrow d-none" tabindex="-1" aria-hidden="true">
+                                    <svg viewBox="0 0 10 6" width="10" height="6" aria-hidden="true"><path d="M0 0h10L5 6z" fill="currentColor"/></svg>
+                                </button>
+                                <div id="xlList" class="xl-list d-none"></div>
+                            </div>
+
+                            <div class="xl-status">
+                                <span id="xlHint" class="xl-hint">@Localizer["Paste a range from Excel with Ctrl+V, and type = for a formula"]</span>
+                                <span id="xlStat" class="xl-stat"></span>
+                            </div>
+                        </div>
+
                         <div class="d-flex justify-content-end gap-3 mt-6">
-                            <button type="button" class="btn btn-light" onclick="submitJe('draft')">@Localizer["Save draft"]</button>
-                            <button type="button" class="btn btn-primary" id="postBtn" onclick="submitJe('post')">@SR["Post"]</button>
+                            @if (isEdit)
+                            {
+                                @* An edit saves the draft and stops there. Posting stays one action in one
+                                   place — the list's Post button — rather than becoming a second path that
+                                   has to repeat the approval threshold and the segregation-of-duties rule. *@
+                                <a href="@Url.Action("Journals","Accounting")" class="btn btn-light">@SR["Cancel"]</a>
+                                <button type="button" class="btn btn-primary" id="postBtn" onclick="submitJe('draft')">@SR["Save"]</button>
+                            }
+                            else
+                            {
+                                <button type="button" class="btn btn-light" onclick="submitJe('draft')">@Localizer["Save draft"]</button>
+                                <button type="button" class="btn btn-primary" id="postBtn" onclick="submitJe('post')">@SR["Post"]</button>
+                            }
                         </div>
                     </div>
                 </div>
@@ -94,8 +255,11 @@
 
 @section Scripts {
     <script>
-        var ACCOUNTS = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(accounts.Select(a => new { a.Id, a.Code, name = (isAr ? a.Name : DisplayName.Or(a.NameEn, a.Name)) })));
-        var COSTCENTERS = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(costCenters.Select(c => new { c.ID, c.Code, name = (isAr ? c.Name : DisplayName.Or(c.NameEn, c.Name)) })));
+        @* camelCase, explicitly. Serialize's default keeps the declared names (Id, Code, ID), which is
+           why every code read back as undefined and every option value was the literal string
+           "undefined" — so parseInt gave NaN and no line carried an account id at all. *@
+        var ACCOUNTS = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(accounts.Select(a => new { a.Id, a.Code, name = (isAr ? a.Name : DisplayName.Or(a.NameEn, a.Name)) }), CamelCase));
+        var COSTCENTERS = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(costCenters.Select(c => new { c.ID, c.Code, name = (isAr ? c.Name : DisplayName.Or(c.NameEn, c.Name)) }), CamelCase));
         var PROJECTS = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(projects.Select(p => new { id = p.id, text = p.text })));
         var isAr = @(isAr ? "true" : "false");
 
@@ -106,7 +270,7 @@
         }
         function ccOptions() {
             var o = '<option value="">' + (isAr ? '—' : '—') + '</option>';
-            COSTCENTERS.forEach(function (c) { o += '<option value="' + c.iD + '">' + c.code + ' — ' + c.name + '</option>'; });
+            COSTCENTERS.forEach(function (c) { o += '<option value="' + c.id + '">' + c.code + ' — ' + c.name + '</option>'; });
             return o;
         }
         function prjOptions() {
@@ -140,7 +304,10 @@
             var balanced = Math.abs(d - c) < 0.005 && d > 0;
             pill.className = 'badge fs-7 badge-light-' + (balanced ? 'success' : 'danger');
             pill.textContent = balanced ? '@Localizer["Balanced ✓"]' : ('@Localizer["Diff:"] ' + (d - c).toFixed(2));
-            document.getElementById('postBtn').disabled = !balanced;
+            /* The button is NOT disabled. While a cell is mid-edit the totals are stale, and a disabled
+               button takes no mousedown — so it never commits the cell and never submits, and the press
+               does nothing at all with nothing said. submitJe refuses instead, and says why. */
+            JE_BALANCED = balanced; JE_DIFF = d - c;
         }
         document.getElementById('addRow').addEventListener('click', addRow);
         document.getElementById('rows').addEventListener('input', function (e) {
@@ -155,7 +322,15 @@
         document.getElementById('rows').addEventListener('click', function (e) {
             if (e.target.closest('.del')) { e.target.closest('tr').remove(); recalc(); }
         });
+        var IS_EDIT = @(isEdit ? "true" : "false");
+        var JE_BALANCED = false, JE_DIFF = 0;
         function submitJe(mode) {
+            /* The grid is the source of truth while it is the mode on screen: without this, lines
+               typed in Excel mode never reached the hidden table and an empty entry was posted. */
+            /* Commit an open cell BEFORE reading the grid. blur normally does this, but a submit must
+               not depend on a focus event having fired first. */
+            if (typeof XL !== 'undefined' && XL.editing) xlEndEdit(true);
+            if (typeof XL !== 'undefined' && XL.on) xlToClassic();
             var lines = [];
             document.querySelectorAll('#rows tr').forEach(function (tr) {
                 var acc = tr.querySelector('.acc').value;
@@ -165,11 +340,543 @@
                 var prj = tr.querySelector('.prj') ? tr.querySelector('.prj').value : '';
                 if (acc && (dr > 0 || cr > 0)) lines.push({ accountId: parseInt(acc), debit: dr, credit: cr, costCenterId: cc ? parseInt(cc) : null, projectId: prj ? parseInt(prj) : null, description: tr.querySelector('.desc').value });
             });
+            /* Re-read the totals AFTER the open cell was committed above — that commit is usually the
+               very thing that balances the entry. */
+            if (typeof XL !== 'undefined' && XL.on) xlStatus(); else recalc();
+            if (!JE_BALANCED) {
+                var why = '@Localizer["The entry is not balanced"]' + ' — ' + '@Localizer["Diff:"] ' + JE_DIFF.toFixed(2);
+                if (window.CB && CB.toast) CB.toast.error(why); else alert(why);
+                return;
+            }
             document.getElementById('linesJson').value = JSON.stringify(lines);
             document.getElementById('jeAction').value = mode;
-            document.getElementById('jeForm').submit();
+            var go = function () { document.getElementById('jeForm').submit(); };
+            /* An EDIT changes a record that already exists, so it is gated the same way post, reverse
+               and delete are — through the project's own confirm flow, which carries the Arabic copy,
+               the brand buttons and the RTL button order. A CREATE is not gated: there is nothing yet
+               to change. CB.confirm resolves false on cancel, so nothing is submitted. */
+            if (IS_EDIT && window.CB && CB.confirm) {
+                CB.confirm({ type: 'edit' }).then(function (ok) { if (ok === true || (ok && ok.confirmed)) go(); });
+            } else { go(); }
         }
-        // start with two rows
-        addRow(); addRow();
+        /* ===================================================================================
+           EXCEL MODE
+           A grid driven by the keyboard rather than by form controls. Three behaviours decide
+           whether an accountant actually stops opening the .xlsx, and they are the ones built
+           first: the keyboard matches Excel's, a range pasted FROM a sheet lands correctly and
+           grows the grid, and a range copied here pastes back INTO a sheet.
+           =================================================================================== */
+        var XLT = {
+            modeOn:  '@Localizer["Classic mode"]',
+            modeOff: '@Localizer["Excel mode"]',
+            sum:     '@Localizer["Sum"]',
+            count:   '@Localizer["Count"]',
+            avg:     '@Localizer["Average"]',
+            nomatch: '@Localizer["No match"]'
+        };
+        var BALTXT = '@Localizer["Balanced ✓"]', DIFFTXT = '@Localizer["Diff:"]';
+        var XLCOLS = [
+            { key: 'acc',  type: 'lookup', src: 'acc', w: 300 },
+            { key: 'dr',   type: 'num',                w: 120 },
+            { key: 'cr',   type: 'num',                w: 120 },
+            { key: 'cc',   type: 'lookup', src: 'cc',  w: 180 },
+            { key: 'prj',  type: 'lookup', src: 'prj', w: 170 },
+            { key: 'note', type: 'text',               w: 230 }
+        ];
+        var XLSRC = {
+            acc: ACCOUNTS.map(function (a) { return { id: a.id, code: String(a.code || ''), name: a.name || '', text: a.code + ' — ' + a.name }; }),
+            cc:  COSTCENTERS.map(function (c) { return { id: c.id, code: String(c.code || ''), name: c.name || '', text: c.code + ' — ' + c.name }; }),
+            prj: PROJECTS.map(function (p) { return { id: p.id, code: '', name: p.text || '', text: p.text }; })
+        };
+        var XL = { rows: [], r: 0, c: 0, ar: 0, ac: 0, on: false, editing: false, undo: [], li: -1 };
+        var MINROWS = 12;
+
+        function xlEsc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (m) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[m]; }); }
+        function xlBlank() { return { acc: { id: null, t: '' }, dr: '', cr: '', cc: { id: null, t: '' }, prj: { id: null, t: '' }, note: '' }; }
+        function xlCell(r, c) { var col = XLCOLS[c]; return XL.rows[r] ? XL.rows[r][col.key] : null; }
+        function xlDisplay(r, c) {
+            var col = XLCOLS[c], v = xlCell(r, c);
+            if (v == null) return '';
+            if (col.type === 'lookup') return v.t || '';
+            if (col.type === 'num') return v === '' ? '' : xlFmt(v);
+            return v;
+        }
+        function xlRaw(r, c) {
+            var col = XLCOLS[c], v = xlCell(r, c);
+            if (v == null) return '';
+            return col.type === 'lookup' ? (v.t || '') : String(v);
+        }
+        function xlFmt(n) {
+            var x = parseFloat(n); if (isNaN(x)) return String(n);
+            return x.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        /* Arabic-Indic digits, thousands separators and a stray currency sign all arrive by paste
+           from real sheets; none of them are the accountant's mistake, so none are rejected. */
+        function xlClean(s) {
+            return String(s == null ? '' : s)
+                .replace(/[٠-٩]/g, function (d) { return String(d.charCodeAt(0) - 1632); })
+                .replace(/[۰-۹]/g, function (d) { return String(d.charCodeAt(0) - 1776); })
+                .replace(/٫/g, '.')
+                .replace(/[٬, \s]/g, '')
+                .replace(/[^\d.\-+*\/()%=:A-Za-z]/g, '');
+        }
+
+        /* --- formulas ------------------------------------------------------------------------
+           No eval: a recursive-descent parser over + - * / ( ) % and unary sign. Cell references
+           and the range functions are substituted to plain numbers before it runs, so the parser
+           only ever sees arithmetic. */
+        function xlNumberAt(r, c) {
+            if (!XL.rows[r] || !XLCOLS[c] || XLCOLS[c].type !== 'num') return 0;
+            var n = parseFloat(XL.rows[r][XLCOLS[c].key]); return isNaN(n) ? 0 : n;
+        }
+        function xlRangeVals(a, b) {
+            var m1 = /^([A-Za-z])(\d+)$/.exec(a), m2 = /^([A-Za-z])(\d+)$/.exec(b);
+            if (!m1 || !m2) return [];
+            var c1 = m1[1].toUpperCase().charCodeAt(0) - 65, r1 = parseInt(m1[2], 10) - 1;
+            var c2 = m2[1].toUpperCase().charCodeAt(0) - 65, r2 = parseInt(m2[2], 10) - 1;
+            var out = [];
+            for (var r = Math.min(r1, r2); r <= Math.max(r1, r2); r++)
+                for (var c = Math.min(c1, c2); c <= Math.max(c1, c2); c++) out.push(xlNumberAt(r, c));
+            return out;
+        }
+        function xlExpand(s) {
+            s = s.replace(/(SUM|AVERAGE|AVG|COUNT|MIN|MAX)\s*\(\s*([A-Za-z]\d+)\s*:\s*([A-Za-z]\d+)\s*\)/gi, function (_, fn, a, b) {
+                var v = xlRangeVals(a, b), f = fn.toUpperCase();
+                if (!v.length) return '0';
+                if (f === 'SUM') return String(v.reduce(function (x, y) { return x + y; }, 0));
+                if (f === 'COUNT') return String(v.filter(function (x) { return x !== 0; }).length);
+                if (f === 'MIN') return String(Math.min.apply(null, v));
+                if (f === 'MAX') return String(Math.max.apply(null, v));
+                return String(v.reduce(function (x, y) { return x + y; }, 0) / v.length);
+            });
+            return s.replace(/([A-Za-z])(\d+)/g, function (_, L, N) {
+                return String(xlNumberAt(parseInt(N, 10) - 1, L.toUpperCase().charCodeAt(0) - 65));
+            });
+        }
+        function xlEval(src) {
+            var s = src, i = 0;
+            function ws() { while (i < s.length && s[i] === ' ') i++; }
+            function num() { ws(); var st = i; while (i < s.length && /[\d.]/.test(s[i])) i++; if (i === st) throw 0; var n = parseFloat(s.slice(st, i)); if (isNaN(n)) throw 0; return n; }
+            function post(v) { ws(); while (s[i] === '%') { i++; v /= 100; ws(); } return v; }
+            function factor() { ws(); if (s[i] === '(') { i++; var v = expr(); ws(); if (s[i] !== ')') throw 0; i++; return post(v); } if (s[i] === '-') { i++; return -factor(); } if (s[i] === '+') { i++; return factor(); } return post(num()); }
+            function term() { var v = factor(); for (;;) { ws(); if (s[i] === '*') { i++; v *= factor(); } else if (s[i] === '/') { i++; var d = factor(); v = d === 0 ? NaN : v / d; } else return v; } }
+            function expr() { var v = term(); for (;;) { ws(); if (s[i] === '+') { i++; v += term(); } else if (s[i] === '-') { i++; v -= term(); } else return v; } }
+            var out = expr(); ws(); if (i < s.length) throw 0; return out;
+        }
+        function xlNum(text) {
+            var t = String(text == null ? '' : text).trim();
+            if (t === '') return '';
+            if (t.charAt(0) === '=' || t.charAt(0) === '+') {
+                try { var v = xlEval(xlExpand(xlClean(t.substring(1)))); return isFinite(v) ? String(Math.round(v * 100) / 100) : ''; }
+                catch (e) { return ''; }
+            }
+            var n = parseFloat(xlClean(t)); return isNaN(n) ? '' : String(Math.round(n * 100) / 100);
+        }
+
+        /* --- lookups: exact code, then the whole label, then a code prefix, then a name contains -- */
+        function xlMatch(srcKey, text) {
+            var t = String(text || '').trim(); if (!t) return null;
+            var list = XLSRC[srcKey] || [], i, bare = t.split('—')[0].trim().toLowerCase(), lt = t.toLowerCase();
+            for (i = 0; i < list.length; i++) if (list[i].code && list[i].code.toLowerCase() === bare) return list[i];
+            for (i = 0; i < list.length; i++) if (list[i].text.toLowerCase() === lt) return list[i];
+            for (i = 0; i < list.length; i++) if (list[i].code && list[i].code.toLowerCase().indexOf(bare) === 0) return list[i];
+            for (i = 0; i < list.length; i++) if (list[i].name.toLowerCase().indexOf(lt) >= 0) return list[i];
+            return null;
+        }
+        function xlFilter(srcKey, text) {
+            var t = String(text || '').trim().toLowerCase(), list = XLSRC[srcKey] || [];
+            if (!t) return list.slice(0, 300);   /* opened, not typed into: show the column's list, scrolled */
+            return list.filter(function (o) { return o.text.toLowerCase().indexOf(t) >= 0; }).slice(0, 60);
+        }
+
+        /* --- the grid ---------------------------------------------------------------------------- */
+        function xlSnapshot() { XL.undo.push(JSON.stringify(XL.rows)); if (XL.undo.length > 60) XL.undo.shift(); }
+        function xlPad() { while (XL.rows.length < MINROWS) XL.rows.push(xlBlank()); }
+        function xlTd(r, c) { return document.querySelector('#xlBody td[data-r="' + r + '"][data-c="' + c + '"]'); }
+
+        function xlHead() {
+            var ths = document.querySelectorAll('#classicPane thead th');
+            var L = '<th class="xl-rn"></th>', N = '<th class="xl-rn"></th>', j;
+            for (j = 0; j < XLCOLS.length; j++) {
+                var w = ' style="width:' + XLCOLS[j].w + 'px"';
+                L += '<th' + w + '>' + String.fromCharCode(65 + j) + '</th>';
+                N += '<th' + w + '>' + xlEsc(ths[j] ? ths[j].textContent.trim() : '') + '</th>';
+            }
+            document.getElementById('xlHeadLetters').innerHTML = L;
+            document.getElementById('xlHeadNames').innerHTML = N;
+            /* The table needs its own width for table-layout:fixed to honour the column widths;
+               max-content did not resolve to the sum, so the container's width won and the account
+               column lost half of itself. */
+            var total = 42; for (j = 0; j < XLCOLS.length; j++) total += XLCOLS[j].w;
+            document.getElementById('xlGrid').style.width = total + 'px';
+        }
+        function xlRender() {
+            var h = '', i, j;
+            for (i = 0; i < XL.rows.length; i++) {
+                h += '<tr><td class="xl-rn" data-r="' + i + '">' + (i + 1) + '</td>';
+                for (j = 0; j < XLCOLS.length; j++) {
+                    var col = XLCOLS[j], bad = col.type === 'lookup' && xlRaw(i, j) && !xlCell(i, j).id;
+                    h += '<td class="xl-cell' + (col.type === 'num' ? ' xl-num' : '') + (bad ? ' xl-err' : '') +
+                         '" data-r="' + i + '" data-c="' + j + '">' + xlEsc(xlDisplay(i, j)) + '</td>';
+                }
+                h += '</tr>';
+            }
+            document.getElementById('xlBody').innerHTML = h;
+            xlPaint(); xlStatus();
+        }
+        function xlPaint() {
+            var r1 = Math.min(XL.r, XL.ar), r2 = Math.max(XL.r, XL.ar);
+            var c1 = Math.min(XL.c, XL.ac), c2 = Math.max(XL.c, XL.ac);
+            document.querySelectorAll('#xlBody td').forEach(function (td) { td.classList.remove('xl-sel', 'xl-active', 'xl-rn-on'); });
+            for (var r = r1; r <= r2; r++) {
+                var rn = document.querySelector('#xlBody td.xl-rn[data-r="' + r + '"]'); if (rn) rn.classList.add('xl-rn-on');
+                for (var c = c1; c <= c2; c++) { var td = xlTd(r, c); if (td) td.classList.add('xl-sel'); }
+            }
+            var a = xlTd(XL.r, XL.c);
+            if (a) { a.classList.add('xl-active'); a.classList.remove('xl-sel'); a.scrollIntoView({ block: 'nearest', inline: 'nearest' }); }
+            document.getElementById('xlRef').textContent = String.fromCharCode(65 + XL.c) + (XL.r + 1);
+            document.getElementById('xlFormula').value = xlRaw(XL.r, XL.c);
+            xlArrow();
+            xlSyncProxy();
+        }
+        /* The arrow tracks the active cell and exists only where there is a list to open. It is placed
+           at the cell's inline-END edge, which is the left in Arabic and the right in English — read
+           off the computed direction rather than assumed. */
+        function xlArrow() {
+            var b = document.getElementById('xlArrow'), td = xlTd(XL.r, XL.c);
+            if (!b) return;
+            document.querySelectorAll('#xlBody td.xl-hasdd').forEach(function (x) { x.classList.remove('xl-hasdd'); });
+            if (!XL.on || XL.editing || !td || XLCOLS[XL.c].type !== 'lookup') { b.classList.add('d-none'); return; }
+            td.classList.add('xl-hasdd');
+            var rtl = getComputedStyle(document.documentElement).direction === 'rtl';
+            b.classList.remove('d-none');
+            var bw = b.offsetWidth || 24, pad = 5;
+            b.style.top = (td.offsetTop + pad) + 'px';
+            b.style.left = (rtl ? td.offsetLeft + pad : td.offsetLeft + td.offsetWidth - bw - pad) + 'px';
+            b.style.height = (td.offsetHeight - pad * 2) + 'px';
+        }
+        /* The proxy holds the focus and the selection's TSV, already selected. Ctrl+C and Ctrl+X then
+           need no handler of their own — the browser copies exactly what is in it — and Ctrl+V arrives
+           as a genuine paste event, which is the only way to read a clipboard without a permission
+           prompt. preventScroll keeps the 1px element from yanking the grid around. */
+        function xlSyncProxy() {
+            if (!XL.on || XL.editing) return;
+            var p = document.getElementById('xlProxy'), a = xlTd(XL.r, XL.c);
+            if (!p) return;
+            if (a) { p.style.top = a.offsetTop + 'px'; p.style.left = a.offsetLeft + 'px'; }
+            p.value = xlTsv();
+            if (document.activeElement !== p) p.focus({ preventScroll: true });
+            p.select();
+        }
+        function xlStatus() {
+            var r1 = Math.min(XL.r, XL.ar), r2 = Math.max(XL.r, XL.ar);
+            var c1 = Math.min(XL.c, XL.ac), c2 = Math.max(XL.c, XL.ac);
+            var vals = [], r, c;
+            for (r = r1; r <= r2; r++) for (c = c1; c <= c2; c++) if (XLCOLS[c].type === 'num') { var v = parseFloat(xlCell(r, c)); if (!isNaN(v)) vals.push(v); }
+            var sum = vals.reduce(function (a, b) { return a + b; }, 0);
+            var sel = vals.length
+                ? '<span>' + xlEsc(XLT.count) + ': <b>' + vals.length + '</b></span>' +
+                  '<span>' + xlEsc(XLT.avg) + ': <b>' + xlFmt(sum / vals.length) + '</b></span>' +
+                  '<span>' + xlEsc(XLT.sum) + ': <b>' + xlFmt(sum) + '</b></span>'
+                : '';
+            var d = 0, cr = 0;
+            for (r = 0; r < XL.rows.length; r++) { d += parseFloat(XL.rows[r].dr) || 0; cr += parseFloat(XL.rows[r].cr) || 0; }
+            var balanced = Math.abs(d - cr) < 0.005 && d > 0;
+            var hD = document.querySelector('#classicPane thead th:nth-child(2)').textContent.trim();
+            var hC = document.querySelector('#classicPane thead th:nth-child(3)').textContent.trim();
+            document.getElementById('xlStat').innerHTML = sel +
+                '<span>' + xlEsc(hD) + ': <b>' + xlFmt(d) + '</b></span>' +
+                '<span>' + xlEsc(hC) + ': <b>' + xlFmt(cr) + '</b></span>' +
+                '<span class="' + (balanced ? 'xl-ok' : 'xl-bad') + '">' + xlEsc(balanced ? BALTXT : DIFFTXT + ' ' + xlFmt(d - cr)) + '</span>';
+            /* One source for the balance: the footer and the Post button read the same numbers
+               whichever mode drew them. */
+            document.getElementById('totD').textContent = d.toFixed(2);
+            document.getElementById('totC').textContent = cr.toFixed(2);
+            var pill = document.getElementById('balPill');
+            pill.className = 'badge fs-7 badge-light-' + (balanced ? 'success' : 'danger');
+            pill.textContent = balanced ? BALTXT : (DIFFTXT + ' ' + (d - cr).toFixed(2));
+            JE_BALANCED = balanced; JE_DIFF = d - cr;
+        }
+
+        function xlSet(r, c, text, snap) {
+            if (snap !== false) xlSnapshot();
+            while (XL.rows.length <= r) XL.rows.push(xlBlank());
+            var col = XLCOLS[c], row = XL.rows[r];
+            if (col.type === 'num') {
+                row[col.key] = xlNum(text);
+                /* a debit and a credit cannot both stand on one line */
+                if (parseFloat(row[col.key]) > 0) row[col.key === 'dr' ? 'cr' : 'dr'] = '';
+            } else if (col.type === 'lookup') {
+                var hit = xlMatch(col.src, text);
+                row[col.key] = hit ? { id: hit.id, t: hit.text } : { id: null, t: String(text || '').trim() };
+            } else { row[col.key] = String(text == null ? '' : text); }
+        }
+
+        /* --- moving and editing ------------------------------------------------------------------- */
+        function xlGo(r, c, extend) {
+            if (r < 0) r = 0;
+            if (c < 0) c = 0;
+            if (c > XLCOLS.length - 1) c = XLCOLS.length - 1;
+            if (r >= XL.rows.length) { XL.rows.push(xlBlank()); xlRender(); }   /* Excel grows downward */
+            XL.r = r; XL.c = c;
+            if (!extend) { XL.ar = r; XL.ac = c; }
+            xlPaint(); xlStatus();
+        }
+        function xlEditorEl() { return document.getElementById('xlEditor'); }
+        function xlBeginEdit(seed) {
+            var td = xlTd(XL.r, XL.c); if (!td) return;
+            var sc = document.getElementById('xlScroll'), ed = xlEditorEl();
+            var s = sc.getBoundingClientRect(), t = td.getBoundingClientRect();
+            ed.style.top = (t.top - s.top + sc.scrollTop) + 'px';
+            ed.style.left = (t.left - s.left + sc.scrollLeft) + 'px';
+            ed.style.width = t.width + 'px'; ed.style.height = t.height + 'px';
+            ed.style.textAlign = XLCOLS[XL.c].type === 'num' ? 'end' : 'start';
+            ed.value = seed == null ? xlRaw(XL.r, XL.c) : seed;
+            ed.classList.remove('d-none'); ed.focus();
+            if (seed == null) ed.select(); else ed.setSelectionRange(ed.value.length, ed.value.length);
+            XL.editing = true; XL.li = -1; xlList();
+        }
+        /* Repaint ONE cell. A full xlRender() replaces every <td>, which is fine after a paste but
+           fatal on a commit: the mousedown that caused the blur then resolves against a detached node
+           and the cell the user clicked never becomes active. */
+        function xlCellPaint(r, c) {
+            var td = xlTd(r, c); if (!td) return;
+            td.textContent = xlDisplay(r, c);
+            var bad = XLCOLS[c].type === 'lookup' && xlRaw(r, c) && !xlCell(r, c).id;
+            td.classList.toggle('xl-err', !!bad);
+        }
+        function xlEndEdit(commit, dr, dc) {
+            var ed = xlEditorEl(), r = XL.r, c = XL.c;
+            if (XL.editing && commit) xlSet(r, c, ed.value);
+            XL.editing = false; XL.li = -1;
+            ed.classList.add('d-none'); document.getElementById('xlList').classList.add('d-none');
+            xlCellPaint(r, c);
+            /* xlSet clears the opposite side of the same line, so that cell changed too. */
+            if (XLCOLS[c].key === 'dr') xlCellPaint(r, 2);
+            else if (XLCOLS[c].key === 'cr') xlCellPaint(r, 1);
+            xlPaint(); xlStatus();
+            xlSyncProxy();
+            if (dr || dc) xlGo(XL.r + (dr || 0), XL.c + (dc || 0), false);
+        }
+        function xlList() {
+            var box = document.getElementById('xlList'), col = XLCOLS[XL.c];
+            if (!XL.editing || col.type !== 'lookup') { box.classList.add('d-none'); return; }
+            var hits = xlFilter(col.src, xlEditorEl().value);
+            box.innerHTML = hits.length
+                ? hits.map(function (o, i) { return '<div data-i="' + i + '"' + (i === XL.li ? ' class="on"' : '') + ' data-text="' + xlEsc(o.text) + '">' + xlEsc(o.text) + '</div>'; }).join('')
+                : '<div class="text-muted">' + xlEsc(XLT.nomatch) + '</div>';
+            box._hits = hits;
+            var ed = xlEditorEl();
+            box.style.top = (parseFloat(ed.style.top) + parseFloat(ed.style.height)) + 'px';
+            box.style.left = '0px';
+            box.classList.remove('d-none');
+            /* Anchor at the cell's inline-START edge — the right in Arabic — then pull back inside the
+               pane if the list is wider than the room left. Both need the rendered width, so this runs
+               after the box is visible. */
+            var rtl = getComputedStyle(document.documentElement).direction === 'rtl';
+            var edL = parseFloat(ed.style.left), edW = parseFloat(ed.style.width), bw = box.offsetWidth;
+            var left = rtl ? (edL + edW - bw) : edL;
+            var room = document.getElementById('xlGrid').offsetWidth;
+            if (left + bw > room) left = room - bw;
+            if (left < 0) left = 0;
+            box.style.left = left + 'px';
+        }
+
+        /* --- clipboard: the whole reason this mode exists ----------------------------------------- */
+        function xlTsv() {
+            var r1 = Math.min(XL.r, XL.ar), r2 = Math.max(XL.r, XL.ar);
+            var c1 = Math.min(XL.c, XL.ac), c2 = Math.max(XL.c, XL.ac), out = [];
+            for (var r = r1; r <= r2; r++) { var line = []; for (var c = c1; c <= c2; c++) line.push(xlRaw(r, c)); out.push(line.join('\t')); }
+            return out.join('\r\n');
+        }
+        function xlPaste(text) {
+            var lines = String(text).replace(/\r\n?/g, '\n').replace(/\n$/, '').split('\n');
+            xlSnapshot();
+            for (var i = 0; i < lines.length; i++) {
+                var cells = lines[i].split('\t');
+                for (var j = 0; j < cells.length; j++) {
+                    var c = XL.c + j; if (c > XLCOLS.length - 1) continue;
+                    xlSet(XL.r + i, c, cells[j], false);
+                }
+            }
+            xlPad(); xlRender();
+        }
+
+        /* --- the two views hold the same lines ----------------------------------------------------- */
+        function xlPick(src, id) { return XLSRC[src].filter(function (x) { return String(x.id) === String(id); })[0]; }
+        function xlFromClassic() {
+            XL.rows = [];
+            document.querySelectorAll('#rows tr').forEach(function (tr) {
+                var row = xlBlank();
+                var a = tr.querySelector('.acc'), cc = tr.querySelector('.cc'), pj = tr.querySelector('.prj');
+                var o;
+                if (a && a.value && (o = xlPick('acc', a.value))) row.acc = { id: o.id, t: o.text };
+                if (cc && cc.value && (o = xlPick('cc', cc.value))) row.cc = { id: o.id, t: o.text };
+                if (pj && pj.value && (o = xlPick('prj', pj.value))) row.prj = { id: o.id, t: o.text };
+                var dr = parseFloat(tr.querySelector('.dr').value) || 0, cr = parseFloat(tr.querySelector('.cr').value) || 0;
+                row.dr = dr ? String(dr) : ''; row.cr = cr ? String(cr) : '';
+                row.note = tr.querySelector('.desc').value || '';
+                XL.rows.push(row);
+            });
+            xlPad();
+        }
+        function xlToClassic() {
+            var body = document.getElementById('rows');
+            body.innerHTML = '';
+            XL.rows.forEach(function (row) {
+                /* an empty sheet row is padding, not a line */
+                if (!row.acc.id && !row.dr && !row.cr && !row.note && !row.cc.id && !row.prj.id) return;
+                addRow();
+                var tr = body.lastElementChild;
+                if (row.acc.id) tr.querySelector('.acc').value = row.acc.id;
+                tr.querySelector('.dr').value = row.dr || 0;
+                tr.querySelector('.cr').value = row.cr || 0;
+                if (row.cc.id) tr.querySelector('.cc').value = row.cc.id;
+                if (row.prj.id && tr.querySelector('.prj')) tr.querySelector('.prj').value = row.prj.id;
+                tr.querySelector('.desc').value = row.note || '';
+            });
+            if (!body.children.length) { addRow(); addRow(); }
+            recalc();
+        }
+
+        (function xlWire() {
+            var btn = document.getElementById('xlToggle'), sc = document.getElementById('xlScroll'), ed = xlEditorEl();
+            var px = document.getElementById('xlProxy');
+            xlHead();
+
+            btn.addEventListener('click', function () {
+                XL.on = btn.dataset.on !== '1';
+                btn.dataset.on = XL.on ? '1' : '0';
+                document.getElementById('xlToggleText').textContent = XL.on ? XLT.modeOn : XLT.modeOff;
+                btn.classList.toggle('btn-light-success', !XL.on);
+                btn.classList.toggle('btn-success', XL.on);
+                document.getElementById('classicPane').classList.toggle('d-none', XL.on);
+                document.getElementById('addRow').classList.toggle('d-none', XL.on);
+                document.getElementById('xlPane').classList.toggle('d-none', !XL.on);
+                if (XL.on) { xlFromClassic(); xlRender(); xlGo(0, 0, false); xlSyncProxy(); }
+                else { if (XL.editing) xlEndEdit(true); xlToClassic(); }
+            });
+
+            sc.addEventListener('mousedown', function (e) {
+                var td = e.target.closest('td.xl-cell'); if (!td) return;
+                if (XL.editing) xlEndEdit(true);
+                XL.r = +td.dataset.r; XL.c = +td.dataset.c;
+                if (!e.shiftKey) { XL.ar = XL.r; XL.ac = XL.c; }
+                xlPaint(); xlStatus();
+            });
+            sc.addEventListener('dblclick', function (e) { if (e.target.closest('td.xl-cell')) xlBeginEdit(); });
+
+            px.addEventListener('keydown', function (e) {
+                if (XL.editing) return;
+                var k = e.key, ctrl = e.ctrlKey || e.metaKey, r, c;
+                if (ctrl && (k === 'z' || k === 'Z')) { if (XL.undo.length) { XL.rows = JSON.parse(XL.undo.pop()); xlRender(); } e.preventDefault(); return; }
+                if (ctrl && (k === 'd' || k === 'D')) {
+                    xlSnapshot();
+                    var a1 = Math.min(XL.r, XL.ar), a2 = Math.max(XL.r, XL.ar), b1 = Math.min(XL.c, XL.ac), b2 = Math.max(XL.c, XL.ac);
+                    for (c = b1; c <= b2; c++) for (r = a1 + 1; r <= a2; r++) xlSet(r, c, xlRaw(a1, c), false);
+                    xlRender(); e.preventDefault(); return;
+                }
+                if (ctrl && (k === 'a' || k === 'A')) { XL.ar = 0; XL.ac = 0; XL.r = XL.rows.length - 1; XL.c = XLCOLS.length - 1; xlPaint(); xlStatus(); e.preventDefault(); return; }
+                /* Ctrl+C is NOT intercepted: the proxy already holds the selection's TSV, selected, so
+                   the browser's own copy takes exactly the right text. Ctrl+X is the same copy plus a
+                   clear, so only the clear is ours — and it has to run after the browser has read the
+                   proxy, hence the timeout. */
+                if (ctrl && (k === 'x' || k === 'X')) {
+                    var x1 = Math.min(XL.r, XL.ar), x2 = Math.max(XL.r, XL.ar), y1 = Math.min(XL.c, XL.ac), y2 = Math.max(XL.c, XL.ac);
+                    setTimeout(function () {
+                        xlSnapshot();
+                        for (var r = x1; r <= x2; r++) for (var c = y1; c <= y2; c++) xlSet(r, c, '', false);
+                        xlRender();
+                    }, 0);
+                    return;
+                }
+                if (ctrl && (k === 'c' || k === 'C')) return;
+                switch (k) {
+                    case 'ArrowUp':    xlGo(XL.r - 1, XL.c, e.shiftKey); e.preventDefault(); return;
+                    case 'ArrowDown':  if (e.altKey) { xlBeginEdit(''); } else { xlGo(XL.r + 1, XL.c, e.shiftKey); } e.preventDefault(); return;
+                    case 'ArrowLeft':  xlGo(XL.r, XL.c - 1, e.shiftKey); e.preventDefault(); return;
+                    case 'ArrowRight': xlGo(XL.r, XL.c + 1, e.shiftKey); e.preventDefault(); return;
+                    case 'Tab':        xlGo(XL.r, XL.c + (e.shiftKey ? -1 : 1), false); e.preventDefault(); return;
+                    case 'Enter':      xlGo(XL.r + (e.shiftKey ? -1 : 1), XL.c, false); e.preventDefault(); return;
+                    case 'F2':         xlBeginEdit(); e.preventDefault(); return;
+                    case 'Home':       xlGo(ctrl ? 0 : XL.r, 0, e.shiftKey); e.preventDefault(); return;
+                    case 'End':        xlGo(ctrl ? XL.rows.length - 1 : XL.r, XLCOLS.length - 1, e.shiftKey); e.preventDefault(); return;
+                    case 'Delete':
+                    case 'Backspace': {
+                        xlSnapshot();
+                        var d1 = Math.min(XL.r, XL.ar), d2 = Math.max(XL.r, XL.ar), e1 = Math.min(XL.c, XL.ac), e2 = Math.max(XL.c, XL.ac);
+                        for (r = d1; r <= d2; r++) for (c = e1; c <= e2; c++) xlSet(r, c, '', false);
+                        xlRender(); e.preventDefault(); return;
+                    }
+                }
+                /* type-to-replace, exactly as Excel does */
+                if (!ctrl && !e.altKey && k.length === 1) { xlBeginEdit(k); e.preventDefault(); }
+            });
+
+            ed.addEventListener('input', function () { XL.li = -1; xlList(); });
+            /* Excel commits a cell when the focus leaves it. Without this, anything typed was lost the
+               moment the user clicked elsewhere — including on Save. The list and the dropdown arrow
+               both cancel their mousedown, so choosing from either does not count as leaving. */
+            ed.addEventListener('blur', function () { if (XL.editing) xlEndEdit(true); });
+            ed.addEventListener('keydown', function (e) {
+                var box = document.getElementById('xlList'), hits = box._hits || [];
+                if (!box.classList.contains('d-none') && hits.length) {
+                    if (e.key === 'ArrowDown') { XL.li = Math.min(XL.li + 1, hits.length - 1); xlList(); e.preventDefault(); return; }
+                    if (e.key === 'ArrowUp') { XL.li = Math.max(XL.li - 1, 0); xlList(); e.preventDefault(); return; }
+                    if ((e.key === 'Enter' || e.key === 'Tab') && XL.li >= 0) { ed.value = hits[XL.li].text; }
+                }
+                if (e.key === 'Enter') { xlEndEdit(true, e.shiftKey ? -1 : 1, 0); e.preventDefault(); }
+                else if (e.key === 'Tab') { xlEndEdit(true, 0, e.shiftKey ? -1 : 1); e.preventDefault(); }
+                else if (e.key === 'Escape') { xlEndEdit(false); e.preventDefault(); }
+            });
+            document.getElementById('xlList').addEventListener('mousedown', function (e) {
+                var d = e.target.closest('div[data-text]'); if (!d) return;
+                ed.value = d.dataset.text; xlEndEdit(true, 1, 0); e.preventDefault();
+            });
+
+            document.getElementById('xlFormula').addEventListener('keydown', function (e) {
+                if (e.key !== 'Enter') return;
+                xlSet(XL.r, XL.c, this.value); xlRender(); xlSyncProxy(); e.preventDefault();
+            });
+            document.getElementById('xlInsert').addEventListener('click', function () { xlSnapshot(); XL.rows.splice(XL.r, 0, xlBlank()); xlRender(); xlSyncProxy(); });
+            document.getElementById('xlDelete').addEventListener('click', function () { xlSnapshot(); XL.rows.splice(XL.r, 1); xlPad(); xlRender(); xlSyncProxy(); });
+            document.getElementById('xlFill').addEventListener('click', function () {
+                xlSnapshot();
+                var a1 = Math.min(XL.r, XL.ar), a2 = Math.max(XL.r, XL.ar), b1 = Math.min(XL.c, XL.ac), b2 = Math.max(XL.c, XL.ac);
+                for (var c = b1; c <= b2; c++) for (var r = a1 + 1; r <= a2; r++) xlSet(r, c, xlRaw(a1, c), false);
+                xlRender(); xlSyncProxy();
+            });
+            document.getElementById('xlUndo').addEventListener('click', function () { if (XL.undo.length) { XL.rows = JSON.parse(XL.undo.pop()); xlRender(); } xlSyncProxy(); });
+
+            /* Paste lands on the proxy because the proxy holds the focus and is editable. Copy and
+               cut are deliberately absent: the browser's own handling of the proxy is already right. */
+            px.addEventListener('paste', function (e) {
+                if (!XL.on || XL.editing) return;
+                var t = (e.clipboardData || window.clipboardData).getData('text'); if (!t) return;
+                xlPaste(t); e.preventDefault();
+            });
+            /* A click lands on the cell, not on the proxy, so the focus has to be handed back. */
+            sc.addEventListener('click', function () { if (!XL.editing) xlSyncProxy(); });
+            /* An empty seed means the filter matches everything, so the arrow opens the whole list
+               while typing still narrows it. */
+            document.getElementById('xlArrow').addEventListener('mousedown', function (e) { e.preventDefault(); xlBeginEdit(''); });
+        })();
+
+        // An edit starts with the entry's own lines; a create starts with two empty ones.
+        var EXISTING = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.ExistingLines ?? new List<object>(), CamelCase));
+        if (EXISTING && EXISTING.length) {
+            EXISTING.forEach(function (l) {
+                addRow();
+                var tr = document.getElementById('rows').lastElementChild;
+                tr.querySelector('.acc').value = l.accountId;
+                tr.querySelector('.dr').value = l.debit;
+                tr.querySelector('.cr').value = l.credit;
+                if (l.costCenterId) tr.querySelector('.cc').value = l.costCenterId;
+                if (l.projectId && tr.querySelector('.prj')) tr.querySelector('.prj').value = l.projectId;
+                tr.querySelector('.desc').value = l.description || '';
+            });
+            recalc();
+        } else { addRow(); addRow(); }
     </script>
 }

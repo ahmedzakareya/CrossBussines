@@ -21,11 +21,16 @@ namespace CrossBuy.Controllers
         private readonly IBusinessContextAccessor _context;
         private readonly IRuntimeInstanceInfo _runtime;
         private readonly CertificationRuntimeState _certification;
+        // For the resolution record below: the DbContext resolves the note authors' photographs and
+        // "me", and the localizer carries the attachment refusals.
+        private readonly CrossBuy.Models.Context.CrossDbContext _db;
+        private readonly Microsoft.Extensions.Localization.IStringLocalizer<CrossBuy.SharedResources> _L;
 
         public BusinessEventMonitorController(
             IBusinessEventMonitorService monitor, IBusinessContextAccessor context, IRuntimeInstanceInfo runtime,
-            CertificationRuntimeState certification)
-        { _monitor = monitor; _context = context; _runtime = runtime; _certification = certification; }
+            CertificationRuntimeState certification, CrossBuy.Models.Context.CrossDbContext db,
+            Microsoft.Extensions.Localization.IStringLocalizer<CrossBuy.SharedResources> localizer)
+        { _monitor = monitor; _context = context; _runtime = runtime; _certification = certification; _db = db; _L = localizer; }
 
         [HttpGet]
         public async Task<IActionResult> Index([FromQuery] BusinessEventMonitorFilter filter, CancellationToken cancellationToken)
@@ -144,5 +149,173 @@ namespace CrossBuy.Controllers
             var result = await _monitor.RetryAsync(dispatchId, ctx, reason.Trim(), elevatedOverride, cancellationToken);
             return Json(new { ok = result.Success, outcome = result.Outcome.ToString(), message = result.Message, attempts = result.Attempts });
         }
+
+        // ================================================================================================
+        // THE RESOLUTION RECORD
+        //
+        // A failed dispatch is diagnosed and fixed by a person, and what they did is the single most
+        // valuable thing to keep: it is what the next operator reads when the same consumer fails again.
+        // So the modal carries notes — who wrote them, when, and the screenshots pasted as evidence.
+        //
+        // NOTHING about comments, authorship, attachments, mentions or audit is implemented here. The
+        // Communication Platform owns all of it and _EntityConversation.cshtml already renders the panel
+        // for any registered family; this adds the family's three endpoints and nothing else.
+        //
+        // THE GATE IS THE READ GATE, deliberately. A caller who may not SEE an event may not annotate it,
+        // and both answer the same NotFound so the write path is no more of an existence oracle than the
+        // read path. It is re-asked on every endpoint rather than inherited from having opened the screen.
+        //
+        // This does NOT edit the event. The class comment's promise — "no endpoint that edits an event,
+        // edits a payload, or sets a status directly" — still holds: a note is a separate record that
+        // points AT the event, and the event row is untouched.
+        // ================================================================================================
+
+        private (CrossBuy.BL.Communication.ICommThreadService Threads,
+                 CrossBuy.BL.Communication.ICommCommentService Comments,
+                 CrossBuy.BL.Communication.ICommEntitySurface Surface)? TryConversation()
+        {
+            var sp = HttpContext.RequestServices;
+            var threads = sp.GetService(typeof(CrossBuy.BL.Communication.ICommThreadService)) as CrossBuy.BL.Communication.ICommThreadService;
+            var comments = sp.GetService(typeof(CrossBuy.BL.Communication.ICommCommentService)) as CrossBuy.BL.Communication.ICommCommentService;
+            var surface = sp.GetService(typeof(CrossBuy.BL.Communication.ICommEntitySurface)) as CrossBuy.BL.Communication.ICommEntitySurface;
+            return threads is null || comments is null || surface is null ? null : (threads, comments, surface);
+        }
+
+        private IActionResult ConversationUnavailable() =>
+            StatusCode(StatusCodes.Status503ServiceUnavailable,
+                new { ok = false, unavailable = true, code = "communication_unavailable" });
+
+        /// Exists + visible to THIS caller, and narrow-able to the platform's int-keyed reference.
+        private async Task<(bool Ok, CrossBuy.Models.Platform.BusinessContext? Context, int RefId)>
+            EventGateAsync(long id, CancellationToken ct)
+        {
+            var ctx = await _context.GetCurrentAsync(ct);
+            if (!ctx.IsAuthenticated) return (false, null, 0);
+
+            // CommEntityRef is int-keyed across the whole platform (TAB-1's contract) while EventId is a
+            // long. The narrowing is CHECKED rather than cast: an id beyond int range is refused as not
+            // found instead of silently wrapping onto some other event's thread.
+            if (id <= 0 || id > int.MaxValue) return (false, null, 0);
+
+            bool elevated = PlatformOpsAttribute.IsElevated(HttpContext);
+            var vm = await _monitor.GetDetailsAsync(id, ctx, crossCompany: elevated, maySeeRestricted: elevated, ct);
+            if (vm == null) return (false, null, 0);
+            return (true, ctx, (int)id);
+        }
+
+        // GET /BusinessEventMonitor/Notes?id=123
+        [HttpGet]
+        public async Task<IActionResult> Notes(long id, CancellationToken cancellationToken = default)
+        {
+            var gate = await EventGateAsync(id, cancellationToken);
+            if (!gate.Ok) return NotFound(new { ok = false, code = "not_found" });
+
+            var comm = TryConversation();
+            if (comm == null) return ConversationUnavailable();
+
+            var reference = new CrossBuy.Models.Communication.CommEntityRef(
+                CrossBuy.BL.Platform.EntityRegistry.PlatformEvent, gate.RefId);
+
+            // The REGISTRY decides whether this family carries comments, not this controller.
+            var allowed = await comm.Value.Surface.EvaluateAsync(reference, CrossBuy.BL.Communication.CommCapabilities.Comments);
+            if (!allowed.Allowed)
+                return StatusCode(StatusCodes.Status503ServiceUnavailable,
+                    new { ok = false, unavailable = true, code = "capability_disabled" });
+
+            try
+            {
+                var thread = await comm.Value.Threads.GetOrCreateAsync(gate.Context!,
+                    new CrossBuy.Models.Communication.CommThreadRequest { Entity = reference }, cancellationToken);
+                var page = await comm.Value.Comments.ListAsync(gate.Context!, thread.Id, null, cancellationToken);
+                bool isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+
+                var avatars = await CrossBuy.BL.Platform.EmployeePhotos.ResolveAsync(
+                    _db, gate.Context!, page.Items.Select(c => c.Author.EmployeeId), cancellationToken);
+
+                return Json(new
+                {
+                    ok = true,
+                    threadId = thread.Id,
+                    entity = new { code = CrossBuy.BL.Platform.EntityRegistry.PlatformEvent, id = gate.RefId },
+                    canReact = false,
+                    me = await CrossBuy.BL.Communication.CommPanel.MeAsync(_db, gate.Context!, isAr, cancellationToken),
+                    comments = CrossBuy.BL.Communication.CommPanel.Project(page.Items, isAr, avatars),
+                });
+            }
+            catch (CrossBuy.Models.Communication.CommAccessDeniedException)
+            {
+                // The platform's decision, RENDERED rather than swallowed: the panel has a designed
+                // disabled state, and a 500 inside a modal tells an operator nothing at all.
+                return StatusCode(StatusCodes.Status503ServiceUnavailable,
+                    new { ok = false, unavailable = true, code = "capability_disabled" });
+            }
+        }
+
+        // POST /BusinessEventMonitor/NotesAdd
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [RequestSizeLimit(21_000_000)]   // CommPanel.MaxUploadBytes plus the form envelope
+        public async Task<IActionResult> NotesAdd(long id, string? body, long? parentCommentId,
+            IFormFile? file, CancellationToken cancellationToken = default)
+        {
+            var gate = await EventGateAsync(id, cancellationToken);
+            if (!gate.Ok) return NotFound(new { ok = false, code = "not_found" });
+
+            // A note MAY be nothing but a screenshot. Requiring text would make "here is the proof"
+            // impossible to record without inventing a sentence to go with it.
+            if (string.IsNullOrWhiteSpace(body) && (file is null || file.Length == 0))
+                return Json(new { ok = false, error = _L["Write a note"].Value });
+
+            var comm = TryConversation();
+            if (comm == null) return ConversationUnavailable();
+
+            var reference = new CrossBuy.Models.Communication.CommEntityRef(
+                CrossBuy.BL.Platform.EntityRegistry.PlatformEvent, gate.RefId);
+
+            var allowed = await comm.Value.Surface.EvaluateAsync(reference, CrossBuy.BL.Communication.CommCapabilities.Comments);
+            if (!allowed.Allowed)
+                return StatusCode(StatusCodes.Status503ServiceUnavailable,
+                    new { ok = false, unavailable = true, code = "capability_disabled" });
+
+            // NOTHING REACHES DISK BEFORE THE GATE, so a refused caller never leaves an orphan file.
+            CrossBuy.Models.Communication.CommAttachmentRequest? attachment = null;
+            if (file is { Length: > 0 })
+            {
+                var env = HttpContext.RequestServices.GetService(typeof(Microsoft.AspNetCore.Hosting.IWebHostEnvironment))
+                    as Microsoft.AspNetCore.Hosting.IWebHostEnvironment;
+                if (env is null) return Json(new { ok = false, error = _L["The file could not be attached"].Value });
+
+                var (staged, refusal) = await CrossBuy.BL.Communication.CommPanel.StageAsync(file, env.WebRootPath, cancellationToken);
+                if (staged is null) return Json(new { ok = false, code = refusal, error = AttachmentRefusalText(refusal) });
+                attachment = staged;
+            }
+
+            try
+            {
+                var added = await comm.Value.Comments.AddAsync(gate.Context!,
+                    new CrossBuy.Models.Communication.CommCommentRequest
+                    {
+                        Entity = reference,
+                        Body = body ?? "",
+                        ParentCommentId = parentCommentId is > 0 ? parentCommentId : null,
+                        Attachments = attachment is null ? null : new[] { attachment },
+                    }, cancellationToken);
+                return Json(new { ok = true, id = added.CommentId, threadId = added.ThreadId });
+            }
+            catch (CrossBuy.Models.Communication.CommAccessDeniedException)
+            {
+                return StatusCode(StatusCodes.Status503ServiceUnavailable,
+                    new { ok = false, unavailable = true, code = "capability_disabled" });
+            }
+        }
+
+        /// One sentence per machine code, so the browser never has to compose a refusal.
+        private string AttachmentRefusalText(string code) => code switch
+        {
+            CrossBuy.BL.Communication.CommPanel.UploadRefusal.TooLarge => _L["The file is larger than 20 MB"].Value,
+            CrossBuy.BL.Communication.CommPanel.UploadRefusal.Type => _L["This kind of file cannot be attached"].Value,
+            _ => _L["The file could not be attached"].Value,
+        };
+
     }
 }

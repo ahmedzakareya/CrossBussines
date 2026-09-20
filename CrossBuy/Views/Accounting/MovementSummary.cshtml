@@ -1,0 +1,474 @@
+@model CrossBuy.Controllers.AccountingController.MovementSummaryModel
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutAccounting.cshtml";
+
+    // THE TRIAL BALANCE IDENTITY, as required: summary card with dashed KPI tiles and a notice banner,
+    // then data cards whose tables are `align-middle gy-4 mb-0` with tabular numerals, a 2px #0E4A9E
+    // rule under the head, dashed row separators, #E7F0FF/#145DBF badges and the #E7F0FF totals band.
+    var settled = Model.SettledAmount;
+    var outstanding = Model.GrandTotal - settled;
+    var fullySettled = Model.Settlements.Any() && outstanding <= 0.005m;
+
+    // The timeline and the conversation are the platform's own widgets; this screen only names the
+    // record. A kind with no registry family (a receipt, a payment) gets neither rather than an empty box.
+    if (!string.IsNullOrEmpty(Model.TimelineCode))
+    {
+        ViewBag.TimelineEntityType = Model.TimelineCode;
+        ViewBag.TimelineEntityId = Model.Id;
+
+        // The SAME panel and the SAME endpoints the invoice screens use. Its gate accepts exactly the
+        // four families this screen can show, so nothing new is registered and nothing is duplicated.
+        ViewBag.ConversationEntityCode = Model.TimelineCode;
+        ViewBag.ConversationEntityId = Model.Id;
+        ViewBag.ConversationListUrl = Url.Action("InvoiceConversation", "Accounting");
+        ViewBag.ConversationAddUrl = Url.Action("InvoiceConversationAdd", "Accounting");
+        ViewBag.ConversationReactUrl = Url.Action("InvoiceConversationReact", "Accounting");
+    }
+
+    string PartyUrl() => Model.PartyId == null ? null! : Url.Action(
+        Model.PartyIsCustomer ? "CustomerStatement" : "VendorStatement", "Accounting", new { id = Model.PartyId })!;
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2">
+        <div class="app-container container-fluid d-flex flex-stack">
+            <div class="page-title d-flex flex-column justify-content-center gap-1">
+                <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["Movement summary"]</h1>
+                <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                    <li class="breadcrumb-item text-muted">@Model.KindLabel</li>
+                    <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                    <li class="breadcrumb-item text-muted">@Model.DocNo</li>
+                </ul>
+            </div>
+            <div class="d-flex gap-2 d-print-none">
+                @if (Model.PartyId != null)
+                {
+                    <a href="@PartyUrl()" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-book fs-3"></i>@SR["Account statement"]</a>
+                }
+                <a href="javascript:history.back()" class="btn btn-sm btn-light">@SR["Back"]</a>
+            </div>
+        </div>
+    </div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+
+        <!--begin::Summary card-->
+        <div class="card mb-5 mb-xl-10">
+            <div class="card-body py-10">
+                <h2 class="mb-2">
+                    <span class="badge fw-bold fs-6 me-2" style="background:#E7F0FF;color:#145DBF;">@Model.KindLabel</span>
+                    @Model.DocNo
+                </h2>
+                <p class="fs-6 fw-semibold text-gray-600 py-1 m-0">
+                    @Model.Date.ToString("yyyy/MM/dd")
+                    @if (!string.IsNullOrEmpty(Model.PartyName))
+                    {
+                        <span class="text-gray-400 mx-2">&mdash;</span>
+                        <a href="@PartyUrl()" class="text-gray-800 text-hover-primary">@Model.PartyName</a>
+                    }
+                    <span class="badge fw-bold fs-8 ms-3" style="background:#f2f4f7;color:#475467;">@Model.Status</span>
+                </p>
+
+                <div class="row mt-6">
+                    @{ string Raw(decimal v) => v.ToString("F2", System.Globalization.CultureInfo.InvariantCulture); }
+                    <div class="col">
+                        <div class="card card-dashed flex-center min-w-175px my-3 p-6">
+                            <span class="fs-4 fw-semibold text-gray-600 pb-1 px-2">@SR["Subtotal"]</span>
+                            <span class="fs-lg-2tx fw-bold d-flex justify-content-center" data-kt-countup="true" data-kt-countup-value="@Raw(Model.SubTotal)" data-kt-countup-decimal-places="2">@Model.SubTotal.ToString("N2")</span>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="card card-dashed flex-center min-w-175px my-3 p-6">
+                            <span class="fs-4 fw-semibold text-info pb-1 px-2">@SR["Tax"]</span>
+                            <span class="fs-lg-2tx fw-bold d-flex justify-content-center" data-kt-countup="true" data-kt-countup-value="@Raw(Model.TaxTotal)" data-kt-countup-decimal-places="2">@Model.TaxTotal.ToString("N2")</span>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="card card-dashed flex-center min-w-175px my-3 p-6">
+                            <span class="fs-4 fw-semibold text-primary pb-1 px-2">@SR["Total"]</span>
+                            <span class="fs-lg-2tx fw-bold d-flex justify-content-center" data-kt-countup="true" data-kt-countup-value="@Raw(Model.GrandTotal)" data-kt-countup-decimal-places="2">@Model.GrandTotal.ToString("N2")</span>
+                        </div>
+                    </div>
+                    @if (Model.DiscountTotal > 0)
+                    {
+                        <div class="col">
+                            <div class="card card-dashed flex-center min-w-175px my-3 p-6">
+                                <span class="fs-4 fw-semibold text-gray-600 pb-1 px-2">@Localizer["Total discount"]</span>
+                                <span class="fs-lg-2tx fw-bold d-flex justify-content-center" data-kt-countup="true" data-kt-countup-value="@Raw(Model.DiscountTotal)" data-kt-countup-decimal-places="2">@Model.DiscountTotal.ToString("N2")</span>
+                            </div>
+                        </div>
+                    }
+                    @if (Model.Settlements.Any())
+                    {
+                        <div class="col">
+                            <div class="card card-dashed flex-center min-w-175px my-3 p-6">
+                                <span class="fs-4 fw-semibold @(fullySettled ? "text-success" : "text-danger") pb-1 px-2">@Localizer["Outstanding"]</span>
+                                <span class="fs-lg-2tx fw-bold d-flex justify-content-center" data-kt-countup="true" data-kt-countup-value="@Raw(outstanding)" data-kt-countup-decimal-places="2">@outstanding.ToString("N2")</span>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                @* THE DOCUMENT'S OWN FIELDS. Only the ones this movement actually carries are drawn — a
+                   receipt shows its method and cash account, a return shows its warehouse — so an empty
+                   cell never stands in for "not applicable". *@
+                @if (Model.Facts.Any())
+                {
+                    <div class="row mt-2 gx-0" style="border-top:1px dashed #eef1f6;">
+                        @foreach (var f in Model.Facts)
+                        {
+                            <div class="col-6 col-md-4 col-xl-3 py-4 px-3" style="border-bottom:1px dashed #eef1f6;">
+                                <div class="fw-semibold fs-8 text-uppercase text-muted mb-1">@f.Label</div>
+                                @if (f.Mono)
+                                {
+                                    <span class="badge fw-bold fs-8" style="background:#E7F0FF;color:#145DBF;unicode-bidi:isolate;" dir="auto">@f.Value</span>
+                                }
+                                else if (!string.IsNullOrEmpty(f.Url))
+                                {
+                                    <a href="@f.Url" class="fw-bold fs-6 text-gray-900 text-hover-primary" style="unicode-bidi:isolate;" dir="auto">@f.Value</a>
+                                }
+                                else
+                                {
+                                    <span class="fw-bold fs-6 text-gray-900" style="unicode-bidi:isolate;" dir="auto">@f.Value</span>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+
+                @if (Model.Journals.Any())
+                {
+                    <div class="notice d-flex rounded border border-dashed p-6 mt-4" style="background:#E7F0FF;border-color:#0E4A9E !important;">
+                        <span class="symbol symbol-45px me-5"><span class="symbol-label" style="background:#0E4A9E;"><i class="ki-outline ki-shield-tick fs-2x text-white"></i></span></span>
+                        <div class="d-flex flex-stack flex-grow-1 flex-wrap flex-md-nowrap">
+                            <div class="mb-3 mb-md-0 fw-semibold pe-5">
+                                <h4 class="text-gray-900 fw-bold mb-1">@Localizer["Posted to the ledger"]</h4>
+                                <div class="fs-6 text-gray-700">@Localizer["Every journal entry this movement produced is listed below, with its own lines."]</div>
+                            </div>
+                            <span class="badge fs-7 fw-bold px-4 py-2 flex-shrink-0" style="background:#0E4A9E;color:#fff;">@Model.Journals.Count</span>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    @* NOT AN ERROR AND NOT DECORATION: a draft has no entries yet, and saying so is the
+                       difference between "nothing posted" and "the screen failed to load them". *@
+                    <div class="notice d-flex rounded border border-dashed p-6 mt-4" style="background:#F9F9F9;border-color:#DBDFE9 !important;">
+                        <span class="symbol symbol-45px me-5"><span class="symbol-label" style="background:#78829D;"><i class="ki-outline ki-information-5 fs-2x text-white"></i></span></span>
+                        <div class="fw-semibold">
+                            <h4 class="text-gray-900 fw-bold mb-1">@Localizer["Nothing posted to the ledger"]</h4>
+                            <div class="fs-6 text-gray-700">@Localizer["This movement has produced no journal entry — it is still a draft, or it posts nothing by design."]</div>
+                        </div>
+                    </div>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(Model.Notes))
+                {
+                    <div class="text-gray-700 fs-6 mt-4"><i class="ki-outline ki-notepad fs-5 me-2 text-muted"></i>@Model.Notes</div>
+                }
+            </div>
+        </div>
+        <!--end::Summary card-->
+
+        @* ---- 1. the document's own lines ------------------------------------------------------- *@
+        @if (Model.Lines.Any())
+        {
+            @* A COLUMN ONLY APPEARS WHEN THE DATA EXISTS. A purchase line has a cost centre and no unit,
+               a sales line has a unit and an item code — drawing every column always would fill half the
+               table with dashes and say nothing. *@
+            var hasCode = Model.Lines.Any(l => !string.IsNullOrWhiteSpace(l.ItemCode));
+            var hasUnit = Model.Lines.Any(l => !string.IsNullOrWhiteSpace(l.Unit));
+            var hasWh = Model.Lines.Any(l => !string.IsNullOrWhiteSpace(l.Warehouse));
+            var hasCc = Model.Lines.Any(l => !string.IsNullOrWhiteSpace(l.CostCenter));
+            // #, description, qty, price, discount, tax% = the six cells the label spans; Total is the value cell.
+            var span = 6 + (hasCode ? 1 : 0) + (hasUnit ? 1 : 0) + (hasWh ? 1 : 0) + (hasCc ? 1 : 0);
+            <div class="card mb-5">
+                <div class="card-header border-0 pt-6">
+                    <div class="card-title"><span class="fw-bold fs-5 text-gray-900">@Localizer["Document lines"]</span>
+                        <span class="text-muted fs-7 ms-3">@Model.Lines.Count</span></div>
+                </div>
+                <div class="card-body pt-0 pb-5">
+                    <div class="table-responsive">
+                        <table class="table align-middle gy-4 mb-0" style="font-variant-numeric:tabular-nums;">
+                            <thead>
+                                <tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #0E4A9E;">
+                                    <th class="ps-4" style="width:46px;">#</th>
+                                    @if (hasCode) { <th style="width:120px;">@SR["Item code"]</th> }
+                                    <th>@SR["Description"]</th>
+                                    @if (hasUnit) { <th style="width:110px;">@SR["Unit"]</th> }
+                                    @if (hasWh) { <th style="width:150px;">@SR["Warehouse"]</th> }
+                                    @if (hasCc) { <th style="width:150px;">@SR["Cost center"]</th> }
+                                    <th class="text-end" style="width:110px;border-inline-start:1px solid #e4e6ef;">@Localizer["Qty"]</th>
+                                    <th class="text-end" style="width:130px;">@SR["Price"]</th>
+                                    <th class="text-end" style="width:120px;">@Localizer["Disc"]</th>
+                                    <th class="text-end" style="width:100px;">@Localizer["Tax%"]</th>
+                                    <th class="text-end pe-4" style="width:150px;">@SR["Total"]</th>
+                                </tr>
+                            </thead>
+                            <tbody class="fs-6">
+                                @foreach (var l in Model.Lines)
+                                {
+                                    <tr class="tb-row" style="border-bottom:1px dashed #eef1f6;">
+                                        <td class="ps-4 text-muted fs-7">@l.No</td>
+                                        @if (hasCode)
+                                        {
+                                            <td>@if (!string.IsNullOrWhiteSpace(l.ItemCode)) { <span class="badge fw-bold fs-8" style="background:#E7F0FF;color:#145DBF;">@l.ItemCode</span> } else { <span class="text-gray-300">&mdash;</span> }</td>
+                                        }
+                                        <td class="fw-bold text-gray-900">@l.Description</td>
+                                        @if (hasUnit) { <td class="text-gray-700 fs-7">@(string.IsNullOrWhiteSpace(l.Unit) ? "—" : l.Unit)</td> }
+                                        @if (hasWh) { <td class="text-gray-700 fs-7">@(string.IsNullOrWhiteSpace(l.Warehouse) ? "—" : l.Warehouse)</td> }
+                                        @if (hasCc) { <td class="text-gray-700 fs-7">@(string.IsNullOrWhiteSpace(l.CostCenter) ? "—" : l.CostCenter)</td> }
+                                        <td class="text-end" style="border-inline-start:1px solid #eff2f5;">@l.Qty.ToString("0.##")</td>
+                                        <td class="text-end">@l.UnitPrice.ToString("N2")</td>
+                                        <td class="text-end @(l.Discount > 0 ? "text-gray-900" : "text-gray-300")">@(l.Discount > 0 ? l.Discount.ToString("N2") : "—")</td>
+                                        <td class="text-end text-muted">@l.TaxRate.ToString("0.##")</td>
+                                        <td class="text-end pe-4 fw-bold">@l.Total.ToString("N2")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                            <tfoot>
+                                @if (Model.TaxTotal > 0 || Model.DiscountTotal > 0)
+                                {
+                                    <tr class="fs-6 fw-semibold text-gray-700">
+                                        <td colspan="@span" class="ps-4 text-end">@SR["Subtotal"]</td>
+                                        <td class="text-end pe-4">@Model.SubTotal.ToString("N2")</td>
+                                    </tr>
+                                    @if (Model.DiscountTotal > 0)
+                                    {
+                                        <tr class="fs-6 fw-semibold text-gray-700">
+                                            <td colspan="@span" class="ps-4 text-end">@SR["Discount"]</td>
+                                            <td class="text-end pe-4">@Model.DiscountTotal.ToString("N2")</td>
+                                        </tr>
+                                    }
+                                    @if (Model.TaxTotal > 0)
+                                    {
+                                        <tr class="fs-6 fw-semibold text-gray-700">
+                                            <td colspan="@span" class="ps-4 text-end">@SR["Tax"]</td>
+                                            <td class="text-end pe-4">@Model.TaxTotal.ToString("N2")</td>
+                                        </tr>
+                                    }
+                                }
+                                <tr class="fw-bolder fs-5" style="background:#E7F0FF;border-top:2px solid #0E4A9E;">
+                                    <td colspan="@span" class="ps-4 text-end" style="color:#145DBF;">
+                                        @SR["Total"]@if (!string.IsNullOrEmpty(Model.CurrencyCode)) { <span class="fs-7 ms-2">(@Model.CurrencyCode)</span> }
+                                    </td>
+                                    <td class="text-end pe-4" style="color:#0E4A9E;">@Model.GrandTotal.ToString("N2")</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @* ---- 1b. the documents this one is tied to: the return against an invoice, the invoice a
+                return came back against. Part of the same movement, so it is on the same screen. ----- *@
+        @if (Model.Related.Any())
+        {
+            <div class="card mb-5">
+                <div class="card-header border-0 pt-6">
+                    <div class="card-title"><span class="fw-bold fs-5 text-gray-900">@Localizer["Related documents"]</span>
+                        <span class="text-muted fs-7 ms-3">@Model.Related.Count</span></div>
+                </div>
+                <div class="card-body pt-0 pb-5">
+                    <div class="table-responsive">
+                        <table class="table align-middle gy-4 mb-0" style="font-variant-numeric:tabular-nums;">
+                            <thead>
+                                <tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #0E4A9E;">
+                                    <th class="ps-4" style="width:130px;">@SR["Date"]</th>
+                                    <th style="width:170px;">@Localizer["Document"]</th>
+                                    <th>@Localizer["Relation"]</th>
+                                    <th class="text-end pe-4" style="width:170px;border-inline-start:1px solid #e4e6ef;">@Localizer["Amount"]</th>
+                                </tr>
+                            </thead>
+                            <tbody class="fs-6">
+                                @foreach (var r in Model.Related)
+                                {
+                                    <tr class="tb-row" style="border-bottom:1px dashed #eef1f6;">
+                                        <td class="ps-4 text-muted">@r.Date.ToString("yyyy/MM/dd")</td>
+                                        <td><a href="@r.Url" class="badge fw-bold fs-8" style="background:#E7F0FF;color:#145DBF;">@r.DocNo</a></td>
+                                        <td class="text-gray-700">@r.Label</td>
+                                        <td class="text-end pe-4 fw-bold" style="border-inline-start:1px solid #eff2f5;">@r.Amount.ToString("N2")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @* ---- 2. what settled it, or what it settled -------------------------------------------- *@
+        @if (Model.Settlements.Any())
+        {
+            <div class="card mb-5">
+                <div class="card-header border-0 pt-6">
+                    <div class="card-title"><span class="fw-bold fs-5 text-gray-900">@Localizer["Settlements"]</span>
+                        <span class="text-muted fs-7 ms-3">@Model.Settlements.Count</span></div>
+                </div>
+                <div class="card-body pt-0 pb-5">
+                    <div class="table-responsive">
+                        <table class="table align-middle gy-4 mb-0" style="font-variant-numeric:tabular-nums;">
+                            <thead>
+                                <tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #0E4A9E;">
+                                    <th class="ps-4" style="width:130px;">@SR["Date"]</th>
+                                    <th style="width:170px;">@Localizer["Document"]</th>
+                                    <th>@Localizer["Movement"]</th>
+                                    <th class="text-end pe-4" style="width:170px;border-inline-start:1px solid #e4e6ef;">@Localizer["Amount"]</th>
+                                </tr>
+                            </thead>
+                            <tbody class="fs-6">
+                                @foreach (var s in Model.Settlements)
+                                {
+                                    <tr class="tb-row" style="border-bottom:1px dashed #eef1f6;">
+                                        <td class="ps-4 text-muted">@s.Date.ToString("yyyy/MM/dd")</td>
+                                        <td><a href="@s.Url" class="badge fw-bold fs-8" style="background:#E7F0FF;color:#145DBF;">@s.DocNo</a></td>
+                                        <td class="text-gray-700">@s.Kind</td>
+                                        <td class="text-end pe-4 fw-bold" style="border-inline-start:1px solid #eff2f5;">@s.Amount.ToString("N2")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                            <tfoot>
+                                <tr class="fw-bolder fs-5" style="background:#E7F0FF;border-top:2px solid #0E4A9E;">
+                                    <td colspan="3" class="ps-4 text-end" style="color:#145DBF;">@Localizer["Settled"]</td>
+                                    <td class="text-end pe-4" style="color:#0E4A9E;border-inline-start:1px solid #cfe7db;">@settled.ToString("N2")</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @* ---- 3. every journal entry it produced, ONE UNDER THE OTHER, each with its own lines ---- *@
+        @foreach (var j in Model.Journals)
+        {
+            var jHasCc = j.Lines.Any(l => !string.IsNullOrWhiteSpace(l.CostCenter));
+            var jHasPrj = j.Lines.Any(l => !string.IsNullOrWhiteSpace(l.Project));
+            var jSpan = 3 + (jHasCc ? 1 : 0) + (jHasPrj ? 1 : 0);
+            <div class="card mb-5">
+                <div class="card-header border-0 pt-6">
+                    <div class="card-title">
+                        <span class="fw-bold fs-5 text-gray-900">@SR["Journal entry"]</span>
+                        <a href="@j.Url" class="badge fw-bold fs-8 ms-3" style="background:#E7F0FF;color:#145DBF;">@(j.EntryNo ?? ("#" + j.Id))</a>
+                        <span class="text-muted fs-7 ms-3">@j.Date.ToString("yyyy/MM/dd")</span>
+                    </div>
+                    <div class="card-toolbar">
+                        @if (j.ReversedByEntryId != null)
+                        {
+                            @* A REVERSED ENTRY IS NOT A FAILURE, it is a correction — but reading its figures
+                               without knowing it was reversed is how a wrong number gets quoted. *@
+                            <a href="@Url.Action("JournalEntry","Accounting", new { id = j.ReversedByEntryId })" class="badge fw-bold fs-8 me-2" style="background:#FFE7E7;color:#B32D2D;">
+                                @Localizer["Reversed by"] @(j.ReversedByNo ?? ("#" + j.ReversedByEntryId))
+                            </a>
+                        }
+                        @if (!j.Balanced)
+                        {
+                            <span class="badge fw-bold fs-8 me-2" style="background:#FFE7E7;color:#B32D2D;">@Localizer["This entry is not balanced"]</span>
+                        }
+                        <span class="badge fw-bold fs-8 me-2" style="background:#f2f4f7;color:#475467;">@j.JournalType</span>
+                        <span class="badge fw-bold fs-8" style="background:#f2f4f7;color:#475467;">@j.Status</span>
+                    </div>
+                </div>
+                @if (!string.IsNullOrWhiteSpace(j.Description) || j.CreatedByName != null || j.PostedByName != null)
+                {
+                    <div class="card-body pt-0 pb-0">
+                        <div class="d-flex flex-wrap align-items-center gap-6 pb-4" style="border-bottom:1px dashed #eef1f6;">
+                            @if (!string.IsNullOrWhiteSpace(j.Description))
+                            {
+                                <div class="text-gray-700 fs-6 flex-grow-1"><i class="ki-outline ki-notepad fs-5 me-2 text-muted"></i>@j.Description</div>
+                            }
+                            @if (j.CreatedByName != null)
+                            {
+                                <div class="d-flex align-items-center">
+                                    @* The employee's own photo, the same one the timeline shows. *@
+                                    <div class="symbol symbol-35px me-3">
+                                        @if (!string.IsNullOrEmpty(j.CreatedByPhoto))
+                                        {
+                                            <img src="@j.CreatedByPhoto" alt="@j.CreatedByName" />
+                                        }
+                                        else
+                                        {
+                                            <span class="symbol-label fw-bold fs-7" style="background:#E7F0FF;color:#145DBF;">@(j.CreatedByName.Length > 0 ? j.CreatedByName.Substring(0, 1) : "?")</span>
+                                        }
+                                    </div>
+                                    <div>
+                                        <div class="fw-semibold fs-8 text-uppercase text-muted">@Localizer["Created by"]</div>
+                                        <div class="fw-bold fs-7 text-gray-900">@j.CreatedByName</div>
+                                    </div>
+                                </div>
+                            }
+                            @if (j.PostedByName != null)
+                            {
+                                <div>
+                                    <div class="fw-semibold fs-8 text-uppercase text-muted">@Localizer["Posted by"]</div>
+                                    <div class="fw-bold fs-7 text-gray-900">
+                                        @j.PostedByName
+                                        @if (j.PostedAt != null) { <span class="text-muted fs-8 ms-2">@j.PostedAt.Value.ToString("yyyy/MM/dd HH:mm")</span> }
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+                <div class="card-body pt-0 pb-5">
+                    <div class="table-responsive">
+                        <table class="table align-middle gy-4 mb-0" style="font-variant-numeric:tabular-nums;">
+                            <thead>
+                                <tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #0E4A9E;">
+                                    <th class="ps-4" style="width:130px;">@SR["Code"]</th>
+                                    <th>@SR["Account"]</th>
+                                    @if (jHasCc) { <th style="width:150px;">@SR["Cost center"]</th> }
+                                    @if (jHasPrj) { <th style="width:150px;">@SR["Project"]</th> }
+                                    <th style="min-width:160px;">@SR["Notes"]</th>
+                                    <th class="text-end" style="width:170px;border-inline-start:1px solid #e4e6ef;">@SR["Debit"]</th>
+                                    <th class="text-end pe-4" style="width:170px;">@SR["Credit"]</th>
+                                </tr>
+                            </thead>
+                            <tbody class="fs-6">
+                                @foreach (var l in j.Lines)
+                                {
+                                    <tr class="tb-row" style="border-bottom:1px dashed #eef1f6;">
+                                        <td class="ps-4"><span class="badge fw-bold fs-8" style="background:#E7F0FF;color:#145DBF;">@l.AccountCode</span></td>
+                                        <td class="fw-bold text-gray-900">@l.AccountName</td>
+                                        @if (jHasCc) { <td class="text-gray-700 fs-7">@(string.IsNullOrWhiteSpace(l.CostCenter) ? "—" : l.CostCenter)</td> }
+                                        @if (jHasPrj) { <td class="text-gray-700 fs-7">@(string.IsNullOrWhiteSpace(l.Project) ? "—" : l.Project)</td> }
+                                        <td class="text-muted fs-7">@l.Note</td>
+                                        <td class="text-end fw-bold @(l.Debit > 0 ? "text-gray-900" : "text-gray-300")" style="border-inline-start:1px solid #eff2f5;">@(l.Debit > 0 ? l.Debit.ToString("N2") : "—")</td>
+                                        <td class="text-end pe-4 fw-bold @(l.Credit > 0 ? "text-gray-900" : "text-gray-300")">@(l.Credit > 0 ? l.Credit.ToString("N2") : "—")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                            <tfoot>
+                                <tr class="fw-bolder fs-5" style="background:#E7F0FF;border-top:2px solid #0E4A9E;">
+                                    <td colspan="@jSpan" class="ps-4 text-end" style="color:#145DBF;">@SR["Total"]</td>
+                                    <td class="text-end" style="color:#0E4A9E;border-inline-start:1px solid #cfe7db;">@j.Total.ToString("N2")</td>
+                                    <td class="text-end pe-4" style="color:#0E4A9E;">@j.TotalCredit.ToString("N2")</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @* ---- 4. the timeline and the conversation, both the platform's own ---------------------- *@
+        @if (!string.IsNullOrEmpty(Model.TimelineCode))
+        {
+            @await Html.PartialAsync("_DocEventTimeline")
+            @await Html.PartialAsync("_EntityConversation")
+        }
+        else
+        {
+            @* HONEST ABOUT THE ABSENCE. A receipt and a payment are not registered entity families, so the
+               platform holds no timeline for them — an empty widget would look like a load that failed. *@
+            <div class="card">
+                <div class="card-body text-center text-muted py-15">
+                    <i class="ki-outline ki-time fs-3x text-muted mb-4 d-block"></i>
+                    @Localizer["This kind of movement has no timeline yet — its family is not registered on the platform."]
+                </div>
+            </div>
+        }
+    </div></div>
+</div>

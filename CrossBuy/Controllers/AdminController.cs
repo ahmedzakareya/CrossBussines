@@ -1057,7 +1057,12 @@ namespace CrossBuy.Controllers
  public async Task<IActionResult> SaveEmployee([FromForm] EmployeeViewModel model, [FromForm] Microsoft.AspNetCore.Http.IFormFile ProfileImage, [FromForm] int applicationId = 0)
 	{
 			var gate = await HrGateAsync(CrossBuy.BL.HrActions.EmployeeManage, subjectEmployeeId: model.ID);
-			if (!gate.Ok) return HrDenied(nameof(EmployeesList));
+			// THIS ENDPOINT IS CALLED BY AJAX, so a refusal must be JSON. HrDenied answers with a 302 to
+			// EmployeesList; jQuery follows it, receives that page's HTML with status 200, hands the string to
+			// `success`, finds no `success === true` and no `message`, and shows the generic "save failed,
+			// please try again" — a refusal displayed as a malfunction, with the reason thrown away. The other
+			// JSON actions in this controller already answer HrDeniedMessage; this one did not.
+			if (!gate.Ok) return Json(new { success = false, message = HrDeniedMessage });
 
       if (model == null)
 			return Json(new { success = false, message = "Invalid data" });
@@ -1127,7 +1132,10 @@ namespace CrossBuy.Controllers
 		}
 		catch (Exception ex)
 		{
-			return Json(new { success = false, message = ex.Message });
+			// The service raises its deployment failures as ONE English sentence that is also a resource key,
+			// so the reader gets it in their own language. A key with no entry resolves to itself, which is the
+			// existing behaviour for every other exception — nothing is swallowed.
+			return Json(new { success = false, message = L[ex.Message].Value });
 		}
 	}
 

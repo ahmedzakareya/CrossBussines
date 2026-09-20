@@ -154,7 +154,7 @@
     <value>عرض المرفق</value>
   </data>
   <data name="AttachName" xml:space="preserve">
-    <value>إسم المرفق</value>
+    <value>اسم المرفق</value>
   </data>
   <data name="BasicInformation" xml:space="preserve">
     <value>البيانات الأساسية</value>
@@ -172,13 +172,13 @@
     <value>الأفرع</value>
   </data>
   <data name="BranchName" xml:space="preserve">
-    <value>إسم الفرع</value>
+    <value>اسم الفرع</value>
   </data>
   <data name="BranchNameAr" xml:space="preserve">
-    <value>إسم الفرع - باللغة العربية</value>
+    <value>اسم الفرع - باللغة العربية</value>
   </data>
   <data name="BranchNameEn" xml:space="preserve">
-    <value>إسم الفرع - باللغة الإنجليزية</value>
+    <value>اسم الفرع - باللغة الإنجليزية</value>
   </data>
   <data name="Cancel" xml:space="preserve">
     <value>إلغــــــــــــــــــاء</value>
@@ -205,13 +205,13 @@
     <value>شعار الشركة</value>
   </data>
   <data name="CompanyName" xml:space="preserve">
-    <value>إسم الشركة</value>
+    <value>اسم الشركة</value>
   </data>
   <data name="CompanyNameAr" xml:space="preserve">
-    <value>إسم الشركة - باللغة العربية</value>
+    <value>اسم الشركة - باللغة العربية</value>
   </data>
   <data name="CompanyNameEn" xml:space="preserve">
-    <value>إسم الشركة - باللغة الانجليزية</value>
+    <value>اسم الشركة - باللغة الانجليزية</value>
   </data>
   <data name="companySub" xml:space="preserve">
     <value>ما اذا كانت الشركة مندرجة اسفل شركة مالكة اخري علي نفس النظام</value>
@@ -283,7 +283,7 @@
     <value>ضريبة الدخل</value>
   </data>
   <data name="InvalidLogin" xml:space="preserve">
-    <value>إسم المستخدم او كلمة المرور غير صحيحة !</value>
+    <value>اسم المستخدم أو كلمة المرور غير صحيح.</value>
   </data>
   <data name="JobTitle" xml:space="preserve">
     <value>المسمي الوظيفي</value>
@@ -307,7 +307,7 @@
     <value>خصم التأخير / دقيقة</value>
   </data>
   <data name="LeaveName" xml:space="preserve">
-    <value>إسم الإجازة</value>
+    <value>اسم الإجازة</value>
   </data>
   <data name="LeavePolicesList" xml:space="preserve">
     <value>قائمة لوائح الاجازات</value>
@@ -340,25 +340,25 @@
     <value>شركة رئيسية</value>
   </data>
   <data name="Name" xml:space="preserve">
-    <value>الإسم</value>
+    <value>الاسم</value>
   </data>
   <data name="NameAr" xml:space="preserve">
-    <value>الإسم - اللغة العربية</value>
+    <value>الاسم - اللغة العربية</value>
   </data>
   <data name="NameEn" xml:space="preserve">
-    <value>الإسم - اللغة الإنجليزية</value>
+    <value>الاسم - اللغة الإنجليزية</value>
   </data>
   <data name="NameOfTheAdministrativeBodyArabic" xml:space="preserve">
-    <value>إسم الجهة - اللغة العربية</value>
+    <value>اسم الجهة - اللغة العربية</value>
   </data>
   <data name="NameOfTheAdministrativeBodyEnglish" xml:space="preserve">
-    <value>إسم الجهة - اللغة الانجليزية</value>
+    <value>اسم الجهة - اللغة الانجليزية</value>
   </data>
   <data name="NameOfThePrimaryAdministrativeBodyArabic" xml:space="preserve">
-    <value>إسم الجهة الاساسية - اللغة العربية</value>
+    <value>اسم الجهة الاساسية - اللغة العربية</value>
   </data>
   <data name="NameOfThePrimaryAdministrativeBodyEnglish" xml:space="preserve">
-    <value>إسم الجهة  الأساسية - اللغة الانجليزية</value>
+    <value>اسم الجهة  الأساسية - اللغة الانجليزية</value>
   </data>
   <data name="New" xml:space="preserve">
     <value>جــديـــــد</value>
@@ -469,7 +469,7 @@
     <value>أنواع الأجازات</value>
   </data>
   <data name="UserName" xml:space="preserve">
-    <value>إسم المستخدم</value>
+    <value>اسم المستخدم</value>
   </data>
   <data name="Warning" xml:space="preserve">
     <value>تحذير</value>
@@ -3364,5 +3364,314 @@
   </data>
   <data name="just now" xml:space="preserve">
     <value>الآن</value>
+  </data>
+  <data name="SignInTitle" xml:space="preserve">
+    <value>تسجيل الدخول</value>
+  </data>
+  <data name="SignInSubtitle" xml:space="preserve">
+    <value>استخدم بيانات حسابك في الشركة</value>
+  </data>
+  <data name="SignInAction" xml:space="preserve">
+    <value>دخول</value>
+  </data>
+  <data name="SigningIn" xml:space="preserve">
+    <value>جارٍ الدخول…</value>
+  </data>
+  <data name="RememberMe" xml:space="preserve">
+    <value>ابقِ الجلسة مفتوحة</value>
+  </data>
+  <data name="ForgotPasswordHelp" xml:space="preserve">
+    <value>نسيت كلمة المرور؟ مدير النظام في شركتك يستطيع تغييرها.</value>
+  </data>
+  <data name="ShowPassword" xml:space="preserve">
+    <value>إظهار كلمة المرور</value>
+  </data>
+  <data name="HidePassword" xml:space="preserve">
+    <value>إخفاء كلمة المرور</value>
+  </data>
+  <data name="CapsLockOn" xml:space="preserve">
+    <value>مفتاح Caps Lock مُفعَّل</value>
+  </data>
+  <data name="SignInFailed" xml:space="preserve">
+    <value>تعذّر تسجيل الدخول</value>
+  </data>
+  <data name="SignInErrorGeneric" xml:space="preserve">
+    <value>حدث خطأ غير متوقع. حاول مرة أخرى.</value>
+  </data>
+  <data name="UserNameRequired" xml:space="preserve">
+    <value>أدخل اسم المستخدم</value>
+  </data>
+  <data name="PasswordRequired" xml:space="preserve">
+    <value>أدخل كلمة المرور</value>
+  </data>
+  <data name="LoginHeadline" xml:space="preserve">
+    <value>نظام متكامل لإدارة أعمالك</value>
+  </data>
+  <data name="LoginPitchLead" xml:space="preserve">
+    <value>المحاسبة والمخزون والموارد البشرية والمبيعات في منصة واحدة —</value>
+  </data>
+  <data name="LoginPitchAccent" xml:space="preserve">
+    <value>قيود متوازنة تلقائيًا</value>
+  </data>
+  <data name="LoginPitchTail" xml:space="preserve">
+    <value>وتقارير لحظية بالعربية والإنجليزية.</value>
+  </data>
+  <data name="HR" xml:space="preserve">
+    <value>الموارد البشرية</value>
+  </data>
+  <data name="BrandTagline" xml:space="preserve">
+    <value>المنصّة التي تربط أعمالك</value>
+  </data>
+  <data name="BrandHeadlineLead" xml:space="preserve">
+    <value>منصّة واحدة.</value>
+  </data>
+  <data name="BrandHeadlineAccent" xml:space="preserve">
+    <value>إمكانات بلا حدود.</value>
+  </data>
+  <data name="BrandSubLine1" xml:space="preserve">
+    <value>اربط فريقك وإجراءاتك وبياناتك.</value>
+  </data>
+  <data name="BrandSubLine2" xml:space="preserve">
+    <value>وابنِ غدًا أكثر ذكاءً.</value>
+  </data>
+  <data name="BrandFootline" xml:space="preserve">
+    <value>أعمال بلا حدود</value>
+  </data>
+  <data name="WelcomeBackLead" xml:space="preserve">
+    <value>أهلًا</value>
+  </data>
+  <data name="WelcomeBackAccent" xml:space="preserve">
+    <value>بعودتك</value>
+  </data>
+  <data name="SignInToYourAccount" xml:space="preserve">
+    <value>سجّل الدخول إلى حسابك في CrossBuy</value>
+  </data>
+  <data name="ForgotPasswordQ" xml:space="preserve">
+    <value>نسيت كلمة المرور؟</value>
+  </data>
+  <data name="OrContinueWith" xml:space="preserve">
+    <value>أو تابع عبر</value>
+  </data>
+  <data name="NewToCrossBuy" xml:space="preserve">
+    <value>جديد على CrossBuy؟</value>
+  </data>
+  <data name="ContactYourAdministrator" xml:space="preserve">
+    <value>تواصل مع مدير النظام</value>
+  </data>
+  <data name="AllRightsReserved" xml:space="preserve">
+    <value>جميع الحقوق محفوظة.</value>
+  </data>
+  <data name="TrustSecure" xml:space="preserve">
+    <value>آمن</value>
+  </data>
+  <data name="TrustReliable" xml:space="preserve">
+    <value>موثوق</value>
+  </data>
+  <data name="TrustScalable" xml:space="preserve">
+    <value>قابل للتوسّع</value>
+  </data>
+  <data name="SignInWith" xml:space="preserve">
+    <value>الدخول عبر {0}</value>
+  </data>
+  <data name="ExternalSignInFailed" xml:space="preserve">
+    <value>لم يكتمل تسجيل الدخول. حاول مرة أخرى.</value>
+  </data>
+  <data name="ExternalNoAccount" xml:space="preserve">
+    <value>لا يوجد حساب CrossBuy مرتبط بهذا البريد. اطلب من مدير النظام إنشاء حساب لك.</value>
+  </data>
+  <data name="ExternalNotConfigured" xml:space="preserve">
+    <value>الدخول الموحّد غير مُفعّل في هذا التنصيب. مدير النظام يستطيع تفعيله.</value>
+  </data>
+  <data name="PillarPeople" xml:space="preserve">
+    <value>أفراد</value>
+  </data>
+  <data name="PillarTechnology" xml:space="preserve">
+    <value>تقنية</value>
+  </data>
+  <data name="PillarProcesses" xml:space="preserve">
+    <value>إجراءات</value>
+  </data>
+  <data name="PillarGrowth" xml:space="preserve">
+    <value>نمو</value>
+  </data>
+  <data name="SmarterBusinessTogether" xml:space="preserve">
+    <value>أعمال أذكى، معًا</value>
+  </data>
+  <data name="POSShort" xml:space="preserve">
+    <value>نقطة البيع</value>
+  </data>
+  <data name="RememberMeShort" xml:space="preserve">
+    <value>تذكّرني</value>
+  </data>
+  <data name="LanguageNameEn" xml:space="preserve">
+    <value>English</value>
+  </data>
+  <data name="LanguageNameAr" xml:space="preserve">
+    <value>العربية</value>
+  </data>
+  <data name="LanguageNameFr" xml:space="preserve">
+    <value>Français</value>
+  </data>
+  <data name="GrowingTogether" xml:space="preserve">
+    <value>معًا نحو نمو أكبر</value>
+  </data>
+  <data name="YourPartnerInSuccess" xml:space="preserve">
+    <value>شريكك في النجاح</value>
+  </data>
+  <data name="The entry must contain at least one line" xml:space="preserve">
+    <value>يجب أن يحتوي القيد على سطر واحد على الأقل</value>
+  </data>
+  <data name="A line cannot be both a debit and a credit" xml:space="preserve">
+    <value>لا يمكن أن يكون السطر مدينًا ودائنًا في آنٍ واحد</value>
+  </data>
+  <data name="An entry that is already posted or cancelled cannot be posted" xml:space="preserve">
+    <value>لا يمكن ترحيل قيد مُرحَّل أو ملغي بالفعل</value>
+  </data>
+  <data name="The entry must contain at least two lines" xml:space="preserve">
+    <value>يجب أن يحتوي القيد على سطرين على الأقل</value>
+  </data>
+  <data name="Negative values are not allowed" xml:space="preserve">
+    <value>القيم السالبة غير مسموح بها</value>
+  </data>
+  <data name="Every line must be either a debit or a credit (not both, and not neither)" xml:space="preserve">
+    <value>كل سطر يجب أن يكون مدينًا أو دائنًا — لا الاثنين ولا ولا واحد</value>
+  </data>
+  <data name="The entry total must be greater than zero" xml:space="preserve">
+    <value>إجمالي القيد يجب أن يكون أكبر من صفر</value>
+  </data>
+  <data name="No fiscal period covers the entry date" xml:space="preserve">
+    <value>لا توجد فترة مالية تغطي تاريخ القيد</value>
+  </data>
+  <data name="The fiscal period is closed — posting into it is not allowed" xml:space="preserve">
+    <value>الفترة المالية مقفلة — الترحيل إليها غير مسموح</value>
+  </data>
+  <data name="An entry that is not posted cannot be reversed" xml:space="preserve">
+    <value>لا يمكن عكس قيد غير مُرحَّل</value>
+  </data>
+  <data name="Manual" xml:space="preserve">
+    <value>يدوي</value>
+  </data>
+  <data name="Auto" xml:space="preserve">
+    <value>آلي</value>
+  </data>
+  <data name="Recurring" xml:space="preserve">
+    <value>متكرر</value>
+  </data>
+  <data name="Reversing" xml:space="preserve">
+    <value>عكسي</value>
+  </data>
+  <data name="Opening" xml:space="preserve">
+    <value>افتتاحي</value>
+  </data>
+  <data name="The draft entry was updated" xml:space="preserve">
+    <value>تم تحديث المسودة</value>
+  </data>
+  <data name="The draft entry was deleted" xml:space="preserve">
+    <value>تم حذف المسودة</value>
+  </data>
+  <data name="Only a draft entry can be changed — a posted entry is corrected by a reversal" xml:space="preserve">
+    <value>المسودة فقط هي التي يمكن تعديلها — القيد المُرحَّل يُصحَّح بقيد عكسي</value>
+  </data>
+  <data name="Only a manual entry can be changed — this entry was generated by the system" xml:space="preserve">
+    <value>القيد اليدوي فقط هو الذي يمكن تعديله — هذا القيد أنشأه النظام</value>
+  </data>
+  <data name="This entry belongs to a source document and cannot be changed on its own" xml:space="preserve">
+    <value>هذا القيد تابع لمستند ولا يمكن تعديله بمفرده</value>
+  </data>
+  <data name="This entry already has a reversal attached" xml:space="preserve">
+    <value>هذا القيد له قيد عكسي بالفعل</value>
+  </data>
+  <data name="You do not have permission to perform this action" xml:space="preserve">
+    <value>ليس لديك صلاحية لتنفيذ هذا الإجراء</value>
+  </data>
+  <data name="Delete this draft?" xml:space="preserve">
+    <value>حذف هذه المسودة؟</value>
+  </data>
+  <data name="Sales invoice" xml:space="preserve">
+    <value>فاتورة مبيعات</value>
+  </data>
+  <data name="Sales return" xml:space="preserve">
+    <value>مردود مبيعات</value>
+  </data>
+  <data name="Purchase return" xml:space="preserve">
+    <value>مردود مشتريات</value>
+  </data>
+  <data name="Receipt" xml:space="preserve">
+    <value>سند قبض</value>
+  </data>
+  <data name="Payment" xml:space="preserve">
+    <value>سند دفع</value>
+  </data>
+  <data name="Opening balance" xml:space="preserve">
+    <value>رصيد افتتاحي</value>
+  </data>
+  <data name="Closing balance" xml:space="preserve">
+    <value>الرصيد الختامي</value>
+  </data>
+  <data name="No movements in this period" xml:space="preserve">
+    <value>لا توجد حركات في هذه الفترة</value>
+  </data>
+  <data name="Account statement" xml:space="preserve">
+    <value>كشف حساب</value>
+  </data>
+  <data name="Customer statement" xml:space="preserve">
+    <value>كشف حساب عميل</value>
+  </data>
+  <data name="Vendor statement" xml:space="preserve">
+    <value>كشف حساب مورد</value>
+  </data>
+  <data name="Apply" xml:space="preserve">
+    <value>تطبيق</value>
+  </data>
+  <data name="Journal entry" xml:space="preserve">
+    <value>قيد يومية</value>
+  </data>
+  <data name="Tax registration number" xml:space="preserve">
+    <value>الرقم الضريبي</value>
+  </data>
+  <data name="Payment terms" xml:space="preserve">
+    <value>شروط السداد</value>
+  </data>
+  <data name="Exchange rate" xml:space="preserve">
+    <value>سعر الصرف</value>
+  </data>
+  <data name="Amount in base currency" xml:space="preserve">
+    <value>القيمة بالعملة الأساسية</value>
+  </data>
+  <data name="Project" xml:space="preserve">
+    <value>المشروع</value>
+  </data>
+  <data name="ETA UUID" xml:space="preserve">
+    <value>معرّف الفاتورة الإلكترونية</value>
+  </data>
+  <data name="Invoice beneficiary" xml:space="preserve">
+    <value>المستفيد من الفاتورة</value>
+  </data>
+  <data name="Created at" xml:space="preserve">
+    <value>تاريخ الإنشاء</value>
+  </data>
+  <data name="Payment method" xml:space="preserve">
+    <value>طريقة السداد</value>
+  </data>
+  <data name="Cash/bank account" xml:space="preserve">
+    <value>حساب النقدية/البنك</value>
+  </data>
+  <data name="Original invoice" xml:space="preserve">
+    <value>الفاتورة الأصلية</value>
+  </data>
+  <data name="Cost center" xml:space="preserve">
+    <value>مركز التكلفة</value>
+  </data>
+  <data name="You do not have permission for this HR action." xml:space="preserve">
+    <value>ليس لديك صلاحية لهذا الإجراء في الموارد البشرية.</value>
+  </data>
+  <data name="The employee photo could not be saved: the server folder wwwroot/uploads/employees is not writable. Grant the application pool identity Modify rights on that folder, then save again." xml:space="preserve">
+    <value>تعذّر حفظ صورة الموظف: المجلد wwwroot/uploads/employees على الخادم غير قابل للكتابة. امنح هوية Application Pool صلاحية التعديل على هذا المجلد ثم احفظ مرة أخرى.</value>
+  </data>
+  <data name="Refresh" xml:space="preserve">
+    <value>تحديث</value>
+  </data>
+  <data name="An error occurred" xml:space="preserve">
+    <value>حدث خطأ</value>
   </data>
 </root>
