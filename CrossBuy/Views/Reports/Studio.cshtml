@@ -7,6 +7,62 @@
     var arabic = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
     ViewData["Title"] = arabic ? "استوديو التقارير" : "Report Studio";
     var openDraft = ViewData["StudioOpenDraft"] as StudioDraft;
+
+    // THE TOOLBAR ICON SET, defined once so it can be reviewed AS A SET rather than found one at a
+    // time down the file. That is the whole difference between an icon toolbar and a row of pictures:
+    // one grid, one stroke weight, one visual language, so a reader learns the vocabulary once.
+    //
+    // Drawn here rather than taken from the icon font because the font has none of these. A page in
+    // landscape, a band at the head of a sheet, a table whose header repeats on the next page - these
+    // are report-design ideas, and no general-purpose icon set ships them. The undo and redo arrows a
+    // few lines down were already hand-drawn for exactly this reason.
+    var ICONS = new Dictionary<string, string>(StringComparer.Ordinal)
+    {
+        // ---- page ----
+        ["portrait"]  = "<rect x='4' y='2' width='8' height='12' rx='1'/>",
+        ["landscape"] = "<rect x='2' y='4' width='12' height='8' rx='1'/>",
+        ["margins"]   = "<rect x='2' y='2' width='12' height='12' rx='1'/>"
+                      + "<rect x='5' y='5' width='6' height='6' stroke-dasharray='1.6 1.4'/>",
+
+        // ---- text direction. The arrow says which way the line grows; the bars are the line. ----
+        ["dirauto"]   = "<path d='M3 11h10'/><path d='M5 9l-2 2 2 2'/><path d='M11 9l2 2-2 2'/><path d='M4.5 6h7'/>",
+        ["dirrtl"]    = "<path d='M13 4H5'/><path d='M13 8H7'/><path d='M13 12h10'/><path d='M3 12h8'/><path d='M5 10l-2 2 2 2'/>",
+        ["dirltr"]    = "<path d='M3 4h8'/><path d='M3 8h6'/><path d='M3 12h8'/><path d='M11 10l2 2-2 2'/>",
+
+        // ---- what prints. A sheet with the band in question filled in. ----
+        ["hdr"]       = "<rect x='3' y='2' width='10' height='12' rx='1'/><path d='M3 5.4h10' stroke-width='2.4'/>",
+        ["ftr"]       = "<rect x='3' y='2' width='10' height='12' rx='1'/><path d='M3 10.6h10' stroke-width='2.4'/>",
+        ["pageno"]    = "<rect x='3' y='2' width='10' height='12' rx='1'/>"
+                      + "<path d='M6 11.4h1.4M8.8 11.4h1.2' stroke-width='1.8'/>",
+        ["repeat"]    = "<rect x='2' y='2' width='8' height='6' rx='.8'/><path d='M2 4.4h8' stroke-width='2'/>"
+                      + "<rect x='6' y='8' width='8' height='6' rx='.8'/><path d='M6 10.4h8' stroke-width='2'/>",
+
+        // ---- canvas ----
+        ["grid"]      = "<path d='M2 6h12M2 10h12M6 2v12M10 2v12'/>",
+        ["snap"]      = "<path d='M5 2v6a3 3 0 0 0 6 0V2'/><path d='M3.4 2h3.2M9.4 2h3.2'/><path d='M3.4 5.4h3.2M9.4 5.4h3.2'/>",
+
+        // ---- zoom ----
+        ["zoomout"]   = "<circle cx='7' cy='7' r='4.6'/><path d='M5 7h4'/><path d='M10.4 10.4 14 14'/>",
+        ["zoomin"]    = "<circle cx='7' cy='7' r='4.6'/><path d='M5 7h4M7 5v4'/><path d='M10.4 10.4 14 14'/>",
+        ["fit"]       = "<path d='M6 2H2v4'/><path d='M10 2h4v4'/><path d='M6 14H2v-4'/><path d='M10 14h4v-4'/>",
+
+        // ---- actions ----
+        ["newdoc"]    = "<path d='M9 2H4.5A1.5 1.5 0 0 0 3 3.5v9A1.5 1.5 0 0 0 4.5 14h7a1.5 1.5 0 0 0 1.5-1.5V6z'/><path d='M9 2v4h4'/>",
+        ["clear"]     = "<path d='M4 4l8 8M12 4l-8 8'/>",
+        ["eye"]       = "<path d='M1.6 8S4 3.6 8 3.6 14.4 8 14.4 8 12 12.4 8 12.4 1.6 8 1.6 8z'/><circle cx='8' cy='8' r='1.9'/>",
+        ["printer"]   = "<path d='M4.5 6V2.6h7V6'/><rect x='2' y='6' width='12' height='5' rx='1'/><path d='M4.5 9.6h7v3.8h-7z'/>",
+        ["pdf"]       = "<path d='M9 2H4.5A1.5 1.5 0 0 0 3 3.5v9A1.5 1.5 0 0 0 4.5 14h7a1.5 1.5 0 0 0 1.5-1.5V6z'/><path d='M9 2v4h4'/><path d='M8 8v3.4M6.4 10l1.6 1.6L9.6 10'/>",
+        ["export"]    = "<path d='M8 2v7.4'/><path d='M5.4 7.2 8 9.8l2.6-2.6'/><path d='M2.6 11.4v1A1.6 1.6 0 0 0 4.2 14h7.6a1.6 1.6 0 0 0 1.6-1.6v-1'/>",
+        ["save"]      = "<path d='M3 12.8V3.2A1.2 1.2 0 0 1 4.2 2h6.2L14 5.6v7.2A1.2 1.2 0 0 1 12.8 14H4.2A1.2 1.2 0 0 1 3 12.8z'/>"
+                      + "<path d='M5.4 2v3.6h5V2'/><rect x='5.4' y='9' width='5.2' height='5'/>",
+    };
+
+    // `extra` carries per-use attributes (a heavier stroke on a pressed state, say) without the call
+    // sites each rebuilding the <svg> wrapper and drifting from one another.
+    Func<string, Microsoft.AspNetCore.Html.IHtmlContent> Ico = name => new Microsoft.AspNetCore.Html.HtmlString(
+        "<svg class=\"cbd-i\" viewBox=\"0 0 16 16\" width=\"16\" height=\"16\" fill=\"none\" "
+        + "stroke=\"currentColor\" stroke-width=\"1.35\" stroke-linecap=\"round\" "
+        + "stroke-linejoin=\"round\" aria-hidden=\"true\">" + ICONS[name] + "</svg>");
 }
 @*
     ============================================================================================
@@ -132,18 +188,16 @@
                    Delete on purpose: that button removes what is SELECTED, these two remove the DESIGN.
                    Both ask before acting — neither is a click anyone wants to make by accident. *@
                 <div class="btn-group">
-                    <button type="button" id="cbd-new" class="btn btn-sm btn-flex btn-light"
-                            title="@(arabic ? "تقرير جديد — يبدأ من صفحة فارغة" : "New report — start from an empty page")">
-                        <i class="ki-outline ki-file fs-5 me-1"></i>@(arabic ? "جديد" : "New")
-                    </button>
-                    <button type="button" id="cbd-clear" class="btn btn-sm btn-flex btn-light"
-                            title="@(arabic ? "مسح كل عناصر الصفحة" : "Clear every element on the page")">
-                        <i class="ki-outline ki-cross fs-5 me-1"></i>@(arabic ? "مسح" : "Clear")
-                    </button>
+                    <button type="button" id="cbd-new" class="cbd-tb-btn"
+                            title="@(arabic ? "تقرير جديد — يبدأ من صفحة فارغة" : "New report — start from an empty page")"
+                            aria-label="@(arabic ? "تقرير جديد" : "New report")">@Ico("newdoc")</button>
+                    <button type="button" id="cbd-clear" class="cbd-tb-btn cbd-tb-danger"
+                            title="@(arabic ? "مسح كل عناصر الصفحة" : "Clear every element on the page")"
+                            aria-label="@(arabic ? "مسح الصفحة" : "Clear the page")">@Ico("clear")</button>
                 </div>
 
                 <div class="btn-group">
-                    <button type="button" id="cbd-undo" class="btn btn-sm btn-icon btn-light" disabled
+                    <button type="button" id="cbd-undo" class="cbd-tb-btn" disabled
                             title="@(arabic ? "تراجع" : "Undo") (Ctrl+Z)" aria-label="@(arabic ? "تراجع" : "Undo")">
                         @* A CURVED arrow, drawn here rather than taken from the icon font: the set ships
                            no undo glyph, and the plain ki-arrow-left that stood here reads as "go back"
@@ -153,7 +207,7 @@
                             <path d="M8 4.466V.534a.25.25 0 0 0-.41-.192L5.23 2.308a.25.25 0 0 0 0 .384l2.36 1.966A.25.25 0 0 0 8 4.466z"/>
                         </svg>
                     </button>
-                    <button type="button" id="cbd-redo" class="btn btn-sm btn-icon btn-light" disabled
+                    <button type="button" id="cbd-redo" class="cbd-tb-btn" disabled
                             title="@(arabic ? "إعادة" : "Redo") (Ctrl+Y)" aria-label="@(arabic ? "إعادة" : "Redo")">
                         @* The same arrow the other way round, so the pair reads as one control. *@
                         <svg width="17" height="17" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
@@ -164,27 +218,25 @@
                 </div>
 
                 <div class="btn-group">
-                    <button type="button" id="cbd-preview" class="btn btn-sm btn-flex btn-light">
-                        <i class="ki-outline ki-eye fs-5 me-1"></i>@(arabic ? "معاينة" : "Preview")
-                    </button>
-                    <button type="button" id="cbd-print" class="btn btn-sm btn-flex btn-light">
-                        <i class="ki-outline ki-printer fs-5 me-1"></i>@(arabic ? "طباعة" : "Print")
-                    </button>
-                    <button type="button" id="cbd-pdf" class="btn btn-sm btn-flex btn-light">
-                        <i class="ki-outline ki-file-down fs-5 me-1"></i>PDF
-                    </button>
-                    <button type="button" class="btn btn-sm btn-light dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="ki-outline ki-exit-down fs-5 me-1"></i>@(arabic ? "تصدير" : "Export")
-                    </button>
+                    <button type="button" id="cbd-preview" class="cbd-tb-btn"
+                            title="@(arabic ? "معاينة" : "Preview")"
+                            aria-label="@(arabic ? "معاينة" : "Preview")">@Ico("eye")</button>
+                    <button type="button" id="cbd-print" class="cbd-tb-btn"
+                            title="@(arabic ? "طباعة" : "Print")"
+                            aria-label="@(arabic ? "طباعة" : "Print")">@Ico("printer")</button>
+                    <button type="button" id="cbd-pdf" class="cbd-tb-btn"
+                            title="PDF" aria-label="PDF">@Ico("pdf")</button>
+                    <button type="button" class="cbd-tb-btn" data-bs-toggle="dropdown" aria-expanded="false"
+                            title="@(arabic ? "تصدير" : "Export")"
+                            aria-label="@(arabic ? "تصدير" : "Export")">@Ico("export")</button>
                     <ul class="dropdown-menu">
                         <li><button type="button" class="dropdown-item" data-export="3">CSV</button></li>
                         <li><button type="button" class="dropdown-item" data-export="2">Excel (XLSX)</button></li>
                     </ul>
                 </div>
 
-                <button type="button" id="cbd-save" class="btn btn-sm btn-flex btn-primary">
-                    <i class="ki-outline ki-check fs-5 me-1"></i>@(arabic ? "حفظ" : "Save")
-                </button>
+                <button type="button" id="cbd-save" class="cbd-tb-btn cbd-tb-primary"
+                        title="@(arabic ? "حفظ التقرير" : "Save the report") (Ctrl+S)">@Ico("save")<span class="cbd-tb-btn-text">@(arabic ? "حفظ" : "Save")</span></button>
             </div>
         </div>
     </div>
@@ -216,114 +268,160 @@
                card carries no shadow of its own — so the strip needs a margin that belongs to IT, not
                only space that belongs to the row above. Measured at 37px, which is finally a gap. *@
             <div class="card card-flush mt-3 mb-3">
-                <div id="cbd-setup" class="card-body py-3 d-flex flex-wrap align-items-center gap-3">
+                @*
+                    AN ICON TOOLBAR, not a settings form.
 
-                    <div class="d-flex align-items-center gap-2">
-                        <label class="fs-8 fw-semibold text-muted" for="cbd-paper">@(arabic ? "الورق" : "Paper")</label>
-                        <select id="cbd-paper" class="form-select form-select-sm w-100px">
-                            <option value="0">A4</option>
-                            <option value="1">A5</option>
-                            <option value="2">Letter</option>
-                            <option value="3">Legal</option>
-                            <option value="4">80mm</option>
-                        </select>
+                    What was here was twenty-one controls, each with its own text label, all at the same
+                    visual weight, wrapping onto a second row. Nothing in it was wrong and nothing in it
+                    was findable: "Repeat table header" took more width than the canvas ruler, and the
+                    four margin boxes were four bare numbers with no clue which edge each belonged to.
+
+                    THE RULE APPLIED HERE is the one Crystal Reports and Office follow. The ICON carries
+                    the meaning. Text survives only where the value IS a name — a typeface, a paper size —
+                    because no glyph can say "Cairo" or "Legal". A boolean is a button that looks pressed,
+                    not a tick with a sentence beside it. Related controls sit in a group, and a hairline
+                    separates groups, so the eye lands on a region before it lands on a control.
+
+                    AND THE MARKUP UNDERNEATH DID NOT CHANGE ITS CONTRACT. Every toggle is still an
+                    <input type="checkbox">, visually hidden behind its own <label for>: the click passes
+                    through natively, `change` fires, and .checked reads and writes exactly as before — so
+                    bindFlag() and loadPage() are untouched, and the keyboard and the screen reader keep
+                    semantics that a <div aria-pressed> would have had to imitate. A segmented choice still
+                    drives its original <select>, now hidden, through one delegated handler.
+                *@
+                <div id="cbd-setup" class="card-body py-2 d-flex flex-wrap align-items-center gap-1">
+
+                    @* ---- PAGE ---- *@
+                    <span class="cbd-tb-label">@(arabic ? "الصفحة" : "Page")</span>
+                    <select id="cbd-paper" class="form-select form-select-sm cbd-tb-sel w-90px"
+                            title="@(arabic ? "مقاس الورق" : "Paper size")" aria-label="@(arabic ? "مقاس الورق" : "Paper size")">
+                        <option value="0">A4</option>
+                        <option value="1">A5</option>
+                        <option value="2">Letter</option>
+                        <option value="3">Legal</option>
+                        <option value="4">80mm</option>
+                    </select>
+
+                    @* The select stays and stays authoritative; these two set it. *@
+                    <select id="cbd-orient" class="cbd-hidden-select" aria-hidden="true" tabindex="-1">
+                        <option value="0">@(arabic ? "طولي" : "Portrait")</option>
+                        <option value="1">@(arabic ? "عرضي" : "Landscape")</option>
+                    </select>
+                    <div class="cbd-seg" role="group" aria-label="@(arabic ? "اتجاه الورق" : "Page orientation")">
+                        <button type="button" class="cbd-tb-btn" data-seg="cbd-orient" data-val="0"
+                                title="@(arabic ? "طولي" : "Portrait")">@Ico("portrait")</button>
+                        <button type="button" class="cbd-tb-btn" data-seg="cbd-orient" data-val="1"
+                                title="@(arabic ? "عرضي" : "Landscape")">@Ico("landscape")</button>
                     </div>
 
-                    <div class="d-flex align-items-center gap-2">
-                        <label class="fs-8 fw-semibold text-muted" for="cbd-orient">@(arabic ? "الاتجاه" : "Orientation")</label>
-                        <select id="cbd-orient" class="form-select form-select-sm w-125px">
-                            <option value="0">@(arabic ? "طولي" : "Portrait")</option>
-                            <option value="1">@(arabic ? "عرضي" : "Landscape")</option>
-                        </select>
-                    </div>
-
-                    @* THE DOCUMENT FONT. Beside paper and margins because it is a property of the
-                       PAGE, not of a selected element — the properties panel's font sets one box,
-                       this sets the face everything inherits.
-
-                       The list is the server's ReportTypography.DesignerFaces, which is also what
-                       ReportVisualLayoutValidator accepts, so the designer cannot offer a face the
-                       save would reject. "Default" means the platform stack for the run's language,
-                       which is the right answer for a report read in both. *@
-                    <div class="d-flex align-items-center gap-2">
-                        <label class="fs-8 fw-semibold text-muted" for="cbd-font">@(arabic ? "الخط" : "Font")</label>
-                        <select id="cbd-font" class="form-select form-select-sm w-140px">
-                            <option value="">@(arabic ? "افتراضي" : "Default")</option>
-                            @foreach (var face in CrossBuy.BL.Reporting.ReportTypography.DesignerFaces)
-                            {
-                                <option value="@face">@face</option>
-                            }
-                        </select>
-                        <input id="cbd-fontsize" type="number" step="0.5" min="5" max="30"
-                               class="form-control form-control-sm w-70px"
-                               title="@(arabic ? "حجم الخط (نقطة)" : "Font size (pt)")"
-                               aria-label="@(arabic ? "حجم خط المستند" : "Document font size")"
-                               placeholder="@(arabic ? "نقطة" : "pt")" />
-                    </div>
-
-                    @* DIRECTION. "Auto" follows the language the report is printed in, which is what a
-                       document read in both wants and what every existing template gets. Forcing one is
-                       for a document that must match something outside the system — a pre-printed form,
-                       a bank or customs template. *@
-                    <div class="d-flex align-items-center gap-2">
-                        <label class="fs-8 fw-semibold text-muted" for="cbd-dir">@(arabic ? "الاتجاه النصي" : "Text direction")</label>
-                        <select id="cbd-dir" class="form-select form-select-sm w-140px">
-                            <option value="0">@(arabic ? "حسب اللغة" : "Follow language")</option>
-                            <option value="1">@(arabic ? "من اليمين" : "Right to left")</option>
-                            <option value="2">@(arabic ? "من اليسار" : "Left to right")</option>
-                        </select>
-                    </div>
-
-                    @* THE FOUR THINGS THE RENDERERS ALREADY OBEY and nothing could set. They are stored
-                       on every template and read on every render: the running header and footer, whether
-                       the PDF gets a page footer at all, and whether a long table repeats its column
-                       header. The behaviour existed; only the code could choose it. *@
-                    <div class="d-flex align-items-center gap-3 cbd-setup-wide">
-                        <span class="fs-8 fw-semibold text-muted">@(arabic ? "يُطبع" : "Print")</span>
-                        <div class="form-check form-check-sm form-check-custom">
-                            <input id="cbd-show-header" class="form-check-input" type="checkbox" />
-                            <label class="form-check-label fs-8 fw-semibold" for="cbd-show-header">@(arabic ? "ترويسة" : "Header")</label>
-                        </div>
-                        <div class="form-check form-check-sm form-check-custom">
-                            <input id="cbd-show-footer" class="form-check-input" type="checkbox" />
-                            <label class="form-check-label fs-8 fw-semibold" for="cbd-show-footer">@(arabic ? "تذييل" : "Footer")</label>
-                        </div>
-                        <div class="form-check form-check-sm form-check-custom">
-                            <input id="cbd-show-pageno" class="form-check-input" type="checkbox" />
-                            <label class="form-check-label fs-8 fw-semibold" for="cbd-show-pageno">@(arabic ? "أرقام الصفحات" : "Page numbers")</label>
-                        </div>
-                        <div class="form-check form-check-sm form-check-custom">
-                            <input id="cbd-repeat-head" class="form-check-input" type="checkbox" />
-                            <label class="form-check-label fs-8 fw-semibold" for="cbd-repeat-head">@(arabic ? "تكرار رأس الجدول" : "Repeat table header")</label>
+                    @* MARGINS IN A POPOVER. Four bare number boxes in a row could not say which edge each
+                       one was; here each carries its own name and they stop competing with the controls
+                       either side of them for the reader's attention. *@
+                    <div class="cbd-pop-wrap">
+                        <button type="button" class="cbd-tb-btn" id="cbd-margins-btn"
+                                title="@(arabic ? "الهوامش (مم)" : "Margins (mm)")"
+                                aria-haspopup="true" aria-expanded="false">@Ico("margins")</button>
+                        <div class="cbd-pop" id="cbd-margins-pop" hidden>
+                            <div class="cbd-pop-title">@(arabic ? "الهوامش (مم)" : "Margins (mm)")</div>
+                            <div class="cbd-pop-grid">
+                                <label for="cbd-mt">@(arabic ? "أعلى" : "Top")</label>
+                                <input id="cbd-mt" type="number" step="1" min="0" class="form-control form-control-sm" />
+                                <label for="cbd-mb">@(arabic ? "أسفل" : "Bottom")</label>
+                                <input id="cbd-mb" type="number" step="1" min="0" class="form-control form-control-sm" />
+                                <label for="cbd-ml">@(arabic ? "يسار" : "Left")</label>
+                                <input id="cbd-ml" type="number" step="1" min="0" class="form-control form-control-sm" />
+                                <label for="cbd-mr">@(arabic ? "يمين" : "Right")</label>
+                                <input id="cbd-mr" type="number" step="1" min="0" class="form-control form-control-sm" />
+                            </div>
                         </div>
                     </div>
 
-                    <div class="d-flex align-items-center gap-1 cbd-setup-wide">
-                        <span class="fs-8 fw-semibold text-muted me-1">@(arabic ? "الهوامش (مم)" : "Margins (mm)")</span>
-                        <input id="cbd-mt" type="number" step="1" min="0" class="form-control form-control-sm w-60px" title="@(arabic ? "أعلى" : "Top")" aria-label="@(arabic ? "هامش أعلى" : "Top margin")" />
-                        <input id="cbd-mb" type="number" step="1" min="0" class="form-control form-control-sm w-60px" title="@(arabic ? "أسفل" : "Bottom")" aria-label="@(arabic ? "هامش أسفل" : "Bottom margin")" />
-                        <input id="cbd-ml" type="number" step="1" min="0" class="form-control form-control-sm w-60px" title="@(arabic ? "يسار" : "Left")" aria-label="@(arabic ? "هامش يسار" : "Left margin")" />
-                        <input id="cbd-mr" type="number" step="1" min="0" class="form-control form-control-sm w-60px" title="@(arabic ? "يمين" : "Right")" aria-label="@(arabic ? "هامش يمين" : "Right margin")" />
+                    <span class="cbd-tb-sep"></span>
+
+                    @* ---- TEXT ----
+                       The document font: a property of the PAGE, not of a selected element. The list is
+                       ReportTypography.DesignerFaces, which is also what the validator accepts, so the
+                       designer cannot offer a face the save would reject. *@
+                    <span class="cbd-tb-label">@(arabic ? "النص" : "Text")</span>
+                    <select id="cbd-font" class="form-select form-select-sm cbd-tb-sel w-125px"
+                            title="@(arabic ? "خط المستند" : "Document font")" aria-label="@(arabic ? "خط المستند" : "Document font")">
+                        <option value="">@(arabic ? "افتراضي" : "Default")</option>
+                        @foreach (var face in CrossBuy.BL.Reporting.ReportTypography.DesignerFaces)
+                        {
+                            <option value="@face">@face</option>
+                        }
+                    </select>
+                    <input id="cbd-fontsize" type="number" step="0.5" min="5" max="30"
+                           class="form-control form-control-sm cbd-tb-num"
+                           title="@(arabic ? "حجم الخط (نقطة)" : "Font size (pt)")"
+                           aria-label="@(arabic ? "حجم خط المستند" : "Document font size")" />
+
+                    @* DIRECTION. "Follow language" is what a document read in both wants and what every
+                       existing template gets; forcing one is for a document that must match something
+                       outside the system — a pre-printed form, a bank or customs template. *@
+                    <select id="cbd-dir" class="cbd-hidden-select" aria-hidden="true" tabindex="-1">
+                        <option value="0">@(arabic ? "حسب اللغة" : "Follow language")</option>
+                        <option value="1">@(arabic ? "من اليمين" : "Right to left")</option>
+                        <option value="2">@(arabic ? "من اليسار" : "Left to right")</option>
+                    </select>
+                    <div class="cbd-seg" role="group" aria-label="@(arabic ? "اتجاه النص" : "Text direction")">
+                        <button type="button" class="cbd-tb-btn" data-seg="cbd-dir" data-val="0"
+                                title="@(arabic ? "حسب اللغة" : "Follow the language")">@Ico("dirauto")</button>
+                        <button type="button" class="cbd-tb-btn" data-seg="cbd-dir" data-val="1"
+                                title="@(arabic ? "من اليمين لليسار" : "Right to left")">@Ico("dirrtl")</button>
+                        <button type="button" class="cbd-tb-btn" data-seg="cbd-dir" data-val="2"
+                                title="@(arabic ? "من اليسار لليمين" : "Left to right")">@Ico("dirltr")</button>
                     </div>
 
-                    <div class="d-flex align-items-center gap-2 cbd-setup-wide">
-                        <label class="fs-8 fw-semibold text-muted" for="cbd-grid">@(arabic ? "الشبكة" : "Grid")</label>
-                        <input id="cbd-grid" type="number" step="1" min="1" max="20" class="form-control form-control-sm w-60px" aria-label="@(arabic ? "مقاس الشبكة" : "Grid size")" />
-                        <div class="form-check form-check-sm form-check-custom">
-                            <input id="cbd-snap" class="form-check-input" type="checkbox" />
-                            <label class="form-check-label fs-8 fw-semibold" for="cbd-snap">@(arabic ? "محاذاة" : "Snap")</label>
-                        </div>
-                        <div class="form-check form-check-sm form-check-custom">
-                            <input id="cbd-showgrid" class="form-check-input" type="checkbox" checked />
-                            <label class="form-check-label fs-8 fw-semibold" for="cbd-showgrid">@(arabic ? "إظهار" : "Show")</label>
-                        </div>
-                    </div>
+                    <span class="cbd-tb-sep"></span>
 
-                    <div class="d-flex align-items-center gap-2 ms-auto cbd-setup-wide">
-                        <label class="fs-8 fw-semibold text-muted" for="cbd-zoom">@(arabic ? "تكبير" : "Zoom")</label>
-                        <input id="cbd-zoom" type="range" min="40" max="200" step="10" value="100" class="w-125px" aria-label="@(arabic ? "تكبير" : "Zoom")" />
-                        <span id="cbd-zoom-label" class="fs-8 fw-semibold text-gray-700 w-40px">100%</span>
-                        <button type="button" id="cbd-fit" class="btn btn-sm btn-light">@(arabic ? "ملاءمة" : "Fit")</button>
+                    @* ---- WHAT PRINTS ---- *@
+                    <span class="cbd-tb-label">@(arabic ? "يُطبع" : "Print")</span>
+                    <input id="cbd-show-header" class="cbd-tgl-input" type="checkbox" />
+                    <label class="cbd-tb-btn" for="cbd-show-header"
+                           title="@(arabic ? "ترويسة الصفحة" : "Page header")">@Ico("hdr")</label>
+
+                    <input id="cbd-show-footer" class="cbd-tgl-input" type="checkbox" />
+                    <label class="cbd-tb-btn" for="cbd-show-footer"
+                           title="@(arabic ? "تذييل الصفحة" : "Page footer")">@Ico("ftr")</label>
+
+                    <input id="cbd-show-pageno" class="cbd-tgl-input" type="checkbox" />
+                    <label class="cbd-tb-btn" for="cbd-show-pageno"
+                           title="@(arabic ? "أرقام الصفحات" : "Page numbers")">@Ico("pageno")</label>
+
+                    <input id="cbd-repeat-head" class="cbd-tgl-input" type="checkbox" />
+                    <label class="cbd-tb-btn" for="cbd-repeat-head"
+                           title="@(arabic ? "تكرار رأس الجدول على كل صفحة" : "Repeat the table header on every page")">@Ico("repeat")</label>
+
+                    <span class="cbd-tb-sep"></span>
+
+                    @* ---- CANVAS ---- *@
+                    <span class="cbd-tb-label">@(arabic ? "الشبكة" : "Grid")</span>
+                    <input id="cbd-showgrid" class="cbd-tgl-input" type="checkbox" checked />
+                    <label class="cbd-tb-btn" for="cbd-showgrid"
+                           title="@(arabic ? "إظهار الشبكة" : "Show the grid")">@Ico("grid")</label>
+
+                    <input id="cbd-snap" class="cbd-tgl-input" type="checkbox" />
+                    <label class="cbd-tb-btn" for="cbd-snap"
+                           title="@(arabic ? "المحاذاة للشبكة" : "Snap to the grid")">@Ico("snap")</label>
+
+                    <input id="cbd-grid" type="number" step="1" min="1" max="20"
+                           class="form-control form-control-sm cbd-tb-num"
+                           title="@(arabic ? "مقاس الشبكة (مم)" : "Grid size (mm)")"
+                           aria-label="@(arabic ? "مقاس الشبكة" : "Grid size")" />
+
+                    @* ---- ZOOM, pushed to the far end: it changes how the page LOOKS and nothing the
+                           page IS, so it does not belong among the document's own properties. ---- *@
+                    <div class="d-flex align-items-center gap-1 ms-auto">
+                        <button type="button" class="cbd-tb-btn" data-zoom="-10"
+                                title="@(arabic ? "تصغير" : "Zoom out")">@Ico("zoomout")</button>
+                        <input id="cbd-zoom" type="range" min="40" max="200" step="10" value="100"
+                               class="cbd-tb-range" aria-label="@(arabic ? "تكبير" : "Zoom")" />
+                        <button type="button" class="cbd-tb-btn" data-zoom="10"
+                                title="@(arabic ? "تكبير" : "Zoom in")">@Ico("zoomin")</button>
+                        <span id="cbd-zoom-label" class="cbd-tb-pct">100%</span>
+                        <button type="button" id="cbd-fit" class="cbd-tb-btn"
+                                title="@(arabic ? "ملاءمة العرض" : "Fit to width")">@Ico("fit")</button>
                     </div>
                 </div>
             </div>
@@ -624,6 +722,75 @@
 
     .cbd-page { background: #fff; position: relative; margin: 0 auto; box-shadow: 0 2px 14px rgba(0,0,0,.15); }
     .cbd-content { position: absolute; }
+
+    /* ============================================================================================
+           THE ICON TOOLBAR.
+
+           One button shape for every control in both bars, which is what makes a set of icons read as
+           a toolbar rather than as a row of pictures. 30px square, the same hairline border, the same
+           hover, and exactly three states: resting, hovered, and ON.
+
+           "ON" IS A REAL STATE AND LOOKS LIKE ONE. A toggle that only darkens on hover cannot tell you
+           whether the page footer prints — which was the actual complaint about the checkboxes it
+           replaces, in a different form: they could be read, but only by reading.
+           ============================================================================================ */
+        .cbd-tb-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;
+                    min-width:30px;height:30px;padding:0 7px;border-radius:6px;cursor:pointer;
+                    border:1px solid var(--bs-gray-300);background:var(--bs-body-bg);
+                    color:var(--bs-gray-700);line-height:1;transition:background .12s,border-color .12s,color .12s;}
+        .cbd-tb-btn:hover{background:var(--bs-gray-100);border-color:var(--bs-gray-400);color:var(--bs-gray-900);}
+        .cbd-tb-btn:active{background:var(--bs-gray-200);}
+        .cbd-tb-btn:focus-visible{outline:2px solid var(--bs-primary);outline-offset:1px;}
+        .cbd-tb-btn[disabled]{opacity:.4;cursor:default;pointer-events:none;}
+        .cbd-i{display:block;flex:0 0 auto;}
+
+        /* The pressed state of a toggle and of a segment are the SAME state, so they are the same
+           treatment: tinted ground, brand border, brand ink. */
+        .cbd-tgl-input:checked + .cbd-tb-btn,
+        .cbd-tb-btn.on{background:var(--bs-primary-light);border-color:var(--bs-primary);
+                       color:var(--bs-primary);}
+        .cbd-tgl-input:checked + .cbd-tb-btn:hover,
+        .cbd-tb-btn.on:hover{background:var(--bs-primary-light);border-color:var(--bs-primary);}
+
+        /* The checkbox still exists and still carries the state - it is only not drawn. Kept in the
+           layout rather than display:none so focus can land on it and the label still follows it. */
+        .cbd-tgl-input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;margin:0;}
+        .cbd-tgl-input:focus-visible + .cbd-tb-btn{outline:2px solid var(--bs-primary);outline-offset:1px;}
+
+        .cbd-tb-primary{background:var(--bs-primary);border-color:var(--bs-primary);color:#fff;
+                        padding:0 12px;font-weight:600;font-size:.85rem;}
+        .cbd-tb-primary:hover{background:var(--bs-primary-active);border-color:var(--bs-primary-active);color:#fff;}
+        .cbd-tb-danger:hover{background:var(--bs-danger-light);border-color:var(--bs-danger);color:var(--bs-danger);}
+
+        /* A group reads as one control: inner corners squared, one shared border. */
+        .cbd-seg{display:inline-flex;}
+        .cbd-seg .cbd-tb-btn{border-radius:0;margin-inline-start:-1px;}
+        .cbd-seg .cbd-tb-btn:first-child{border-start-start-radius:6px;border-end-start-radius:6px;margin-inline-start:0;}
+        .cbd-seg .cbd-tb-btn:last-child{border-start-end-radius:6px;border-end-end-radius:6px;}
+        .cbd-seg .cbd-tb-btn.on{position:relative;z-index:1;}
+
+        .cbd-tb-label{font-size:.7rem;font-weight:600;color:var(--bs-gray-500);
+                      text-transform:uppercase;letter-spacing:.04em;margin-inline-end:2px;}
+        .cbd-tb-sep{width:1px;height:22px;background:var(--bs-gray-300);margin:0 6px;flex:0 0 auto;}
+        .cbd-tb-sel{height:30px;padding-block:0;}
+        .cbd-tb-num{width:58px;height:30px;padding-block:0;text-align:center;}
+        .cbd-tb-range{width:96px;}
+        .cbd-tb-pct{font-size:.75rem;font-weight:600;color:var(--bs-gray-700);
+                    width:38px;text-align:center;font-variant-numeric:tabular-nums;}
+
+        /* The select a segmented control speaks for. Not display:none — it stays the element the
+           load path writes to and the change handler listens on. */
+        .cbd-hidden-select{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;}
+
+        .cbd-pop-wrap{position:relative;display:inline-flex;}
+        .cbd-pop{position:absolute;top:calc(100% + 6px);inset-inline-start:0;z-index:60;
+                 min-width:200px;padding:12px;border-radius:8px;
+                 background:var(--bs-body-bg);border:1px solid var(--bs-gray-300);
+                 box-shadow:0 6px 24px rgba(0,0,0,.12);}
+        .cbd-pop-title{font-size:.7rem;font-weight:700;color:var(--bs-gray-500);
+                       text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px;}
+        .cbd-pop-grid{display:grid;grid-template-columns:auto 72px;gap:6px 10px;align-items:center;}
+        .cbd-pop-grid label{font-size:.78rem;font-weight:600;color:var(--bs-gray-700);margin:0;}
 
     /* The drag-select box. Pointer-events off so the drag keeps reaching the band underneath it -
            with them on, the box swallows its own mousemove the instant it gains a pixel of size. */

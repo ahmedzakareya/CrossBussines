@@ -151,6 +151,11 @@
         var el = document.querySelector('input[name="__RequestVerificationToken"]');
         return el ? el.value : "";
     }
+    // Set once the toolbar is wired; loadPage() calls it so the segmented buttons follow a
+    // template that was just opened. Declared here rather than inside the wiring closure because
+    // loadPage() is outside it.
+    var CBD_PAINT_SEGMENTS = null;
+
     function fieldOf(key) {
         for (var i = 0; i < S.fields.length; i++) { if (S.fields[i].key === key) { return S.fields[i]; } }
         return null;
@@ -2368,6 +2373,9 @@
         // A LAYOUT SAVED BEFORE THESE EXISTED has no value for them, and the renderers' own defaults
         // are true — so an absent flag reads as ON rather than silently turning a header off.
         if ($("cbd-dir")) { $("cbd-dir").value = String(pg.direction == null ? 0 : pg.direction); }
+        // Opening a saved template sets the selects; the segmented buttons read from them, so they
+        // are repainted here. Without it a report saved as Landscape opened with Portrait lit.
+        if (typeof CBD_PAINT_SEGMENTS === "function") { CBD_PAINT_SEGMENTS(); }
         if ($("cbd-show-header")) { $("cbd-show-header").checked = pg.showHeader !== false; }
         if ($("cbd-show-footer")) { $("cbd-show-footer").checked = pg.showFooter !== false; }
         if ($("cbd-show-pageno")) { $("cbd-show-pageno").checked = pg.showPageNumbers !== false; }
@@ -2451,6 +2459,85 @@
             renderCanvas();
         });
         $("cbd-fit").addEventListener("click", fitToWidth);
+
+        // =========================================================================================
+        // THE ICON TOOLBAR'S OWN THREE BEHAVIOURS.
+        //
+        // The toggles need none: they are still checkboxes behind a styled label, so the click, the
+        // `change` event and .checked all work exactly as they did, and every bindFlag() above is
+        // untouched. These three are what an icon toolbar adds on top.
+        // =========================================================================================
+
+        // 1. SEGMENTED CHOICE -> THE SELECT IT SPEAKS FOR.
+        //
+        // Orientation and text direction are still <select>s, hidden. The buttons set the value and
+        // dispatch `change`, so the handlers registered above hear exactly what they heard when a
+        // person used the dropdown - there is no second path into the model, and loadPage() still
+        // writes to one element rather than to a set of buttons.
+        function paintSegments() {
+            Array.prototype.forEach.call(document.querySelectorAll("[data-seg]"), function (b) {
+                var sel = $(b.getAttribute("data-seg"));
+                var on = sel && String(sel.value) === b.getAttribute("data-val");
+                b.classList.toggle("on", !!on);
+                b.setAttribute("aria-pressed", on ? "true" : "false");
+            });
+        }
+
+        Array.prototype.forEach.call(document.querySelectorAll("[data-seg]"), function (b) {
+            b.addEventListener("click", function () {
+                var sel = $(b.getAttribute("data-seg"));
+                if (!sel) { return; }
+                sel.value = b.getAttribute("data-val");
+                sel.dispatchEvent(new Event("change"));   // the real handler, not a copy of it
+                paintSegments();
+            });
+        });
+
+        // A template load writes to the selects directly, so the buttons follow the selects rather
+        // than the other way round.
+        ["cbd-orient", "cbd-dir"].forEach(function (id) {
+            var sel = $(id);
+            if (sel) { sel.addEventListener("change", paintSegments); }
+        });
+        paintSegments();
+        CBD_PAINT_SEGMENTS = paintSegments;
+
+        // 2. THE MARGINS POPOVER. Four numbers that belong together and do not belong in the row.
+        (function () {
+            var btn = $("cbd-margins-btn"), pop = $("cbd-margins-pop");
+            if (!btn || !pop) { return; }
+
+            function open(on) {
+                pop.hidden = !on;
+                btn.setAttribute("aria-expanded", on ? "true" : "false");
+                btn.classList.toggle("on", on);
+            }
+            btn.addEventListener("click", function (ev) { ev.stopPropagation(); open(pop.hidden); });
+
+            // Closing on an outside click is listened for on the DOCUMENT, so a click anywhere -
+            // including on the canvas, which stops its own propagation - still closes it.
+            document.addEventListener("click", function (ev) {
+                if (!pop.hidden && !pop.contains(ev.target) && ev.target !== btn) { open(false); }
+            });
+            pop.addEventListener("click", function (ev) { ev.stopPropagation(); });
+            document.addEventListener("keydown", function (ev) {
+                if (ev.key === "Escape" && !pop.hidden) { open(false); btn.focus(); }
+            });
+        })();
+
+        // 3. ZOOM STEPPERS. The slider stays and stays authoritative; these nudge it and let it
+        // announce the change, for the same reason the segments do not touch the model directly.
+        Array.prototype.forEach.call(document.querySelectorAll("[data-zoom]"), function (b) {
+            b.addEventListener("click", function () {
+                var r = $("cbd-zoom");
+                if (!r) { return; }
+                var step = parseInt(b.getAttribute("data-zoom"), 10);
+                var next = Math.max(40, Math.min(200, (parseInt(r.value, 10) || 100) + step));
+                if (next === parseInt(r.value, 10)) { return; }
+                r.value = next;
+                r.dispatchEvent(new Event("input"));
+            });
+        });
     }
 
     // =============================================================================================
