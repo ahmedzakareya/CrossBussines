@@ -516,18 +516,36 @@ namespace CrossBuy.Tests
         }
 
         [Fact]
-        public void No_hosted_service_drives_scheduling_in_this_slice()
+        public void The_scheduling_worker_exists_and_is_OFF_until_somebody_turns_it_on()
         {
-            // A structural assertion of a DELIBERATE omission (ADR-037 §Scheduling): the runner is invocable, and
-            // nothing fires on its own. Recorded as a test so that adding a hosted service is a conscious change
-            // that breaks this and must be justified — and so the reviewer can see the omission was intentional.
+            // THIS TEST REPLACES ONE THAT ASSERTED NO HOSTED SERVICE EXISTED AT ALL, and it is worth saying
+            // why rather than quietly swapping the assertion.
+            //
+            // The old test guarded a deliberate omission (ADR-037 §Scheduling): the runner was invocable and
+            // nothing fired on its own, recorded so that adding a worker would be a conscious act that broke
+            // a test and had to be justified. It did precisely that job — a worker was added, and this is the
+            // justification.
+            //
+            // What the omission was really protecting was never "no class implements IHostedService". It was
+            // that a developer's machine, or a restored production backup, must not start mailing reports to
+            // real recipients because the process happened to start. That property now lives in the OPTIONS,
+            // so that is what is asserted: the worker ships disabled, and running it takes a deliberate
+            // configuration change somebody has to write down.
             var hostedServices = typeof(ReportingServiceCollectionExtensions).Assembly
                 .GetTypes()
                 .Where(t => !t.IsAbstract && t.Namespace == "CrossBuy.BL.Reporting")
                 .Where(t => typeof(Microsoft.Extensions.Hosting.IHostedService).IsAssignableFrom(t))
                 .ToList();
 
-            Assert.Empty(hostedServices);
+            Assert.Single(hostedServices);
+            Assert.Equal(typeof(ReportScheduleHostedService), hostedServices[0]);
+
+            // A FRESH OPTIONS OBJECT, which is what the container hands the worker when no configuration
+            // section binds to it. Enabled defaulting to false is the whole safety property.
+            var options = new ReportScheduleWorkerOptions();
+            Assert.False(options.Enabled);
+            Assert.True(options.StartupDelay > TimeSpan.Zero);    // never races the application's warm-up
+            Assert.True(options.SweepInterval > TimeSpan.Zero);   // and never spins
         }
 
         // ------------------------------------------------------------------------------------------------

@@ -139,15 +139,31 @@ namespace CrossBuy.Tests
         // ================================================================================================
 
         [Fact]
-        public async Task Html_is_a_self_contained_fragment_and_PrintHtml_is_a_full_paged_document()
+        public async Task An_html_PREVIEW_is_a_fragment_and_everything_meant_to_leave_the_screen_is_a_document()
         {
+            // THE LINE IS "DOES THIS LEAVE THE SCREEN", NOT "IS THIS PrintHtml".
+            //
+            // A preview is injected into the Studio page, which has already declared its charset and its
+            // direction; a full document there would nest <html> inside <html>. An EXPORT is a file
+            // somebody opens on its own, and as a fragment it carried neither - so an Arabic report
+            // downloaded and double-clicked opened as mojibake, laid out left-to-right. Same format,
+            // opposite requirement, and the format alone could not tell them apart.
             var renderer = new HtmlReportRenderer();
 
-            var fragment = (await renderer.RenderAsync(Context(ReportOutputFormat.Html))).AsText();
+            var preview  = (await renderer.RenderAsync(Context(ReportOutputFormat.Html, preview: true))).AsText();
+            var export   = (await renderer.RenderAsync(Context(ReportOutputFormat.Html))).AsText();
             var document = (await renderer.RenderAsync(Context(ReportOutputFormat.PrintHtml))).AsText();
 
-            Assert.DoesNotContain("<!DOCTYPE html>", fragment);
+            Assert.DoesNotContain("<!DOCTYPE html>", preview);
+            Assert.Contains("<!DOCTYPE html>", export);
             Assert.Contains("<!DOCTYPE html>", document);
+
+            // The two things a file opened on its own has nobody else to supply.
+            foreach (var standalone in new[] { export, document })
+            {
+                Assert.Contains("charset", standalone);
+                Assert.Contains("dir=\"rtl\"", standalone);   // the context is Arabic
+            }
 
             // @page carries the geometry so the browser paginates identically whether a user prints it or the PDF
             // converter rasterises it.
@@ -155,7 +171,7 @@ namespace CrossBuy.Tests
             Assert.Contains("display:table-header-group", document);   // thead repeats per page
 
             // Self-contained: no external stylesheet, font or script. A headless browser may have no route back.
-            foreach (var html in new[] { fragment, document })
+            foreach (var html in new[] { preview, export, document })
             {
                 Assert.Contains("<style>", html);
                 Assert.DoesNotContain("<link", html);
@@ -214,9 +230,11 @@ namespace CrossBuy.Tests
 
             // Rendered, not logged: the person holding the paper is the one who needs to know it is provisional or
             // incomplete.
-            Assert.Contains("cbrep-banner-preview", preview);
+            // cbrep-banner-* became cbrep-notice-* when the notices were given the house shape and drawn
+            // from one definition. The class is the contract a stylesheet binds to, so the test follows it.
+            Assert.Contains("cbrep-notice-preview", preview);
             Assert.Contains("معاينة", preview);
-            Assert.Contains("cbrep-banner-truncated", truncated);
+            Assert.Contains("cbrep-notice-truncated", truncated);
         }
 
         [Fact]

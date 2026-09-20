@@ -445,7 +445,18 @@ namespace CrossBuy.Tests
 
             var opportunities = await RunAsync(host, new CrmOpportunitiesDataSource(host.Db), CrmDatasetCodes.Opportunities);
             Assert.Equal(2, opportunities.Run!.RowCount);
-            Assert.DoesNotContain("4444", Text(opportunities));
+
+            // A BARE NUMBER IS THE WRONG MARKER, twice over, and this assertion used to be "4444".
+            //
+            // It never matched the neighbour's amount in the first place: 4,444 renders as "4,444.00", so the
+            // substring "4444" was absent whether the isolation held or not - a guard that could only ever
+            // pass. Then the notices gained a palette, "#EF4444" entered the stylesheet, and the same guard
+            // could only ever FAIL. It went from vacuous to wrong without once testing what it was named for.
+            //
+            // The neighbour's NAME is what identifies its row, it is rendered verbatim, and no stylesheet
+            // will ever contain it - which is exactly how the Leads assertion above was already written.
+            Assert.DoesNotContain("Neighbour", Text(opportunities));
+            Assert.DoesNotContain("جار", Text(opportunities));
         }
 
         // An UNRESOLVED company is not "everything" and not company 1 — it is nothing. Driven through a host
