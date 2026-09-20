@@ -503,6 +503,15 @@ namespace CrossBuy.Tests
 
             public Task<(bool ok, string? error, int? reversalId)>
                 ReverseAsync(int entryId, int? userId, string? reason) => throw No();
+
+            // These two carry a companyId where PostAsync and ReverseAsync do not - the draft edit and
+            // delete paths resolve the tenant themselves rather than trusting a caller that already
+            // checked. Closeout reaches neither, so they refuse like the rest.
+            public Task<(bool ok, string? error)>
+                UpdateDraftAsync(int entryId, int companyId, JournalEntryInput input, int? userId) => throw No();
+
+            public Task<(bool ok, string? error)>
+                DeleteDraftAsync(int entryId, int companyId, int? userId) => throw No();
         }
     }
 }

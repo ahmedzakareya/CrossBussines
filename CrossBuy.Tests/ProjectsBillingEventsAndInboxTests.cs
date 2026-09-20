@@ -144,6 +144,8 @@ namespace CrossBuy.Tests
             public Task<(bool ok, string? error, JournalEntry? entry)> CreateAndPostNoTxAsync(JournalEntryInput a, int? b) => throw No();
             public Task<(bool ok, string? error)> PostAsync(int a, int? b) => throw No();
             public Task<(bool ok, string? error, int? reversalId)> ReverseAsync(int a, int? b, string? c) => throw No();
+            public Task<(bool ok, string? error)> UpdateDraftAsync(int a, int b, JournalEntryInput c, int? d) => throw No();
+            public Task<(bool ok, string? error)> DeleteDraftAsync(int a, int b, int? c) => throw No();
         }
 
         private static async Task<int> DraftAsync(Fx f) =>

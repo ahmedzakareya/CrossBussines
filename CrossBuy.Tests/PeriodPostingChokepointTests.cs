@@ -135,6 +135,8 @@ namespace CrossBuy.Tests
             public Task<(bool ok, string? error, JournalEntry? entry)> CreateAndPostAsync(JournalEntryInput input, int? userId) => throw new InvalidOperationException();
             public Task<(bool ok, string? error, JournalEntry? entry)> CreateAndPostNoTxAsync(JournalEntryInput input, int? userId) => throw new InvalidOperationException();
             public Task<(bool ok, string? error, int? reversalId)> ReverseAsync(int entryId, int? userId, string? reason) => throw new InvalidOperationException();
+            public Task<(bool ok, string? error)> UpdateDraftAsync(int entryId, int companyId, JournalEntryInput input, int? userId) => throw new InvalidOperationException();
+            public Task<(bool ok, string? error)> DeleteDraftAsync(int entryId, int companyId, int? userId) => throw new InvalidOperationException();
         }
 
         private static async Task<string?> GuardAsync(PlatformTestHost host, string? status)

@@ -55,6 +55,20 @@ namespace CrossBuy.Tests
         public Task<(bool ok, string? error, JournalEntry? entry)> CreateAndPostNoTxAsync(JournalEntryInput input, int? userId)
             => throw Unexpected(nameof(CreateAndPostNoTxAsync));
 
+        // The draft edit and delete paths belong to AccountingController (the MVC one), not to
+        // AccountingApiController, which is what this recorder stands in for. So they refuse rather than
+        // record: per the note above, every member the controller does NOT call throws, and a stub that
+        // quietly returned success here would let the API controller grow a new call this suite never sees.
+        //
+        // Note they take a companyId where PostAsync and ReverseAsync do not. If the API controller ever
+        // does reach them, the recorder should record THAT company - the one the service was told to act
+        // in - rather than the 0 those two record for want of one.
+        public Task<(bool ok, string? error)> UpdateDraftAsync(int entryId, int companyId, JournalEntryInput input, int? userId)
+            => throw Unexpected(nameof(UpdateDraftAsync));
+
+        public Task<(bool ok, string? error)> DeleteDraftAsync(int entryId, int companyId, int? userId)
+            => throw Unexpected(nameof(DeleteDraftAsync));
+
         private static JournalEntry NewEntry(int companyId) => new()
         {
             ID = 1, CompanyID = companyId, EntryNo = "JV-TEST", EntryDate = new DateTime(2026, 1, 1),
