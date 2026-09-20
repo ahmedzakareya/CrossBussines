@@ -246,6 +246,16 @@ namespace CrossBuy.BL.Reporting
                     clean.SystemField = e.SystemField;
                     break;
 
+                case ReportElementKind.Icon:
+                    // AN UNDEFINED VALUE FALLS BACK RATHER THAN REFUSING, which is the opposite of how
+                    // this validator treats a field key, and deliberately so. A bad field key means the
+                    // author asked for data they may not have or that does not exist — a question only
+                    // they can settle. A bad icon number means a layout was written against a newer
+                    // build, or by hand; there is nothing to ask and nothing at stake, so it draws the
+                    // default mark rather than refusing a whole report over a decoration.
+                    clean.Icon = Enum.IsDefined(e.Icon) ? e.Icon : ReportIcon.Money;
+                    break;
+
                 case ReportElementKind.Field:
                 {
                     if (!Bind(e.FieldKey, fields, permitted, result, strict, out var field)) return null;

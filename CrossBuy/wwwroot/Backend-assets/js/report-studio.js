@@ -22,7 +22,20 @@
     var AR = !!CBD.arabic;
 
     var BAND = { ReportHeader: 0, PageHeader: 1, GroupHeader: 2, Detail: 3, GroupFooter: 4, PageFooter: 5, ReportFooter: 6 };
-    var KIND = { Text: 0, Field: 1, Image: 2, Line: 3, Rectangle: 4, SystemField: 5, Summary: 6, Table: 7, QrCode: 8, Chart: 9, CrossTab: 10, SubReport: 11 };
+    var KIND = { Text: 0, Field: 1, Image: 2, Line: 3, Rectangle: 4, SystemField: 5, Summary: 6, Table: 7, QrCode: 8, Chart: 9, CrossTab: 10, SubReport: 11, Icon: 12 };
+
+    // The server's own drawings, handed over in window.CBD so there is exactly one definition of each
+    // mark. See the comment beside `icons:` in Studio.cshtml for why a second copy would be a bug.
+    var ICONS = (window.CBD && window.CBD.icons) || [];
+    function iconArt(v) {
+        for (var i = 0; i < ICONS.length; i++) { if (ICONS[i].v === v) { return ICONS[i]; } }
+        return ICONS[0] || { v: 0, t: "", d: "" };
+    }
+    function iconSvg(v, px, colour) {
+        return "<svg viewBox='0 0 24 24' width='" + px + "' height='" + px + "' fill='none' stroke='" +
+               (colour || "currentColor") + "' stroke-width='1.7' stroke-linecap='round' " +
+               "stroke-linejoin='round' aria-hidden='true'>" + iconArt(v).d + "</svg>";
+    }
     var CHART = { Column: 0, Bar: 1, Line: 2, Pie: 3 };
 
     // A sub-report links to a GROUP, so a group band is where a linked one belongs; a report band
@@ -268,6 +281,7 @@
         { id: "barchart",icon: "ki-chart-simple-3",    label: AR ? "أشرطة بيانية"    : "Bar chart",      make: function () { return el(KIND.Chart, { chartKind: CHART.Bar, widthMm: 90, heightMm: 55 }); } },
         { id: "linechart",icon: "ki-chart-line-down",  label: AR ? "خط بياني"        : "Line chart",     make: function () { return el(KIND.Chart, { chartKind: CHART.Line, widthMm: 90, heightMm: 50 }); } },
         { id: "piechart",icon: "ki-chart-pie-simple",  label: AR ? "دائرة بيانية"    : "Pie chart",      make: function () { return el(KIND.Chart, { chartKind: CHART.Pie, widthMm: 85, heightMm: 50 }); } },
+        { id: "icon",    icon: "ki-medal-star",        label: AR ? "أيقونة"          : "Icon",           make: function () { return el(KIND.Icon, { icon: 0, widthMm: 12, heightMm: 12, style: { color: "#166fe5" } }); } },
         { id: "crosstab",icon: "ki-abstract-26",       label: AR ? "جدول محوري"      : "Cross-tab",      make: function () { return el(KIND.CrossTab, { widthMm: 120, heightMm: 50 }); } },
         { id: "subrep",  icon: "ki-questionnaire-tablet", label: AR ? "تقرير فرعي"   : "Sub-report",     make: function () { return el(KIND.SubReport, { widthMm: 130, heightMm: 40 }); } }
     ];
@@ -290,6 +304,7 @@
             text: null, textEn: null, fieldKey: null, systemField: SYS.CurrentDate, aggregate: AGG.Sum,
             assetId: null, imageRole: 0, fit: 0, preserveAspect: true, columns: [],
             qrEcc: 2, qrModulePixels: 8,
+            icon: 0,
             categoryFieldKey: null, seriesFieldKey: null, chartKind: CHART.Column,
             maxCategories: 12, showValues: true, showGrandTotals: true,
             subReportCode: null, linkChildFieldKey: null,
@@ -552,6 +567,14 @@
                 return "<span class='text-muted fs-8 d-inline-flex align-items-center gap-1'>" +
                        "<i class='ki-outline ki-scan-barcode fs-4'></i>" + esc(what) + "</span>";
             }
+            case KIND.Icon:
+                // THE ONLY ELEMENT WHOSE DESIGN-TIME FACE IS THE REAL OUTPUT. A chart has to be named
+                // rather than drawn here because its bars need rows; an icon needs nothing, so the
+                // author sees on the canvas exactly what will print. Sized to the element's own box, so
+                // dragging a handle changes the mark and not a caption about it.
+                return "<span class='cbd-icon-face'>" +
+                       iconSvg(e.icon || 0, "100%", (e.style && e.style.color) || "#3F4254") + "</span>";
+
             case KIND.Chart: {
                 // A DESIGN-TIME FACE, same rule as the QR: the canvas names what will be drawn, it does
                 // not draw it. The real bars need the real rows, and Preview runs the real report.
@@ -1340,6 +1363,22 @@
             if (!SUBCAT) loadSubCatalog(function () { renderProps(); });
         }
 
+        if (e.kind === KIND.Icon) {
+            // A GRID, NOT A DROPDOWN. Sixteen marks are chosen by recognising one, and a <select> of
+            // sixteen words makes the author translate each name back into a picture before they can
+            // pick. The name is still there as the tooltip, for the one that is ambiguous.
+            var cells = ICONS.map(function (ic) {
+                return "<button type='button' class='cbd-icon-cell" + (e.icon === ic.v ? " on" : "") +
+                       "' data-icon='" + ic.v + "' title='" + esc(ic.t) + "' aria-label='" + esc(ic.t) + "'>" +
+                       iconSvg(ic.v, 20) + "</button>";
+            }).join("");
+            h.push(row(AR ? "الأيقونة" : "Icon", "<div class='cbd-icon-grid'>" + cells + "</div>"));
+            h.push("<div class='text-muted fs-8 mb-3'>" +
+                esc(AR ? "الحجم من مربّع العنصر، واللون من لون النص أسفل."
+                       : "The size comes from the element's own box and the colour from its text colour below.") +
+                "</div>");
+        }
+
         if (e.kind === KIND.Chart || e.kind === KIND.CrossTab) {
             var isCt = e.kind === KIND.CrossTab;
             var fieldOpts = S.fields.map(function (f) { return { v: f.key, t: f.title }; });
@@ -1668,6 +1707,13 @@
             edit(function () { e.chartKind = parseInt($("p-chartkind").value, 10); });
             renderProps();   // a pie hides the series row; the other three show it
         });
+        Array.prototype.forEach.call(document.querySelectorAll("[data-icon]"), function (b) {
+            b.addEventListener("click", function () {
+                edit(function () { e.icon = parseInt(b.getAttribute("data-icon"), 10); });
+                renderProps();
+            });
+        });
+
         on("p-cat", "change", function () {
             edit(function () { e.categoryFieldKey = $("p-cat").value || null; });
             renderProps();   // a date axis brings the time bucket with it

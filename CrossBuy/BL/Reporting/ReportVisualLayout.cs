@@ -66,6 +66,47 @@ namespace CrossBuy.BL.Reporting
         // built on, which is why the engine resolves it and the renderer only draws what it was handed:
         // a renderer that could fetch would be a second data path, and the platform has exactly one.
         SubReport = 11,
+
+        // A MARK THAT SAYS WHAT KIND OF NUMBER THIS IS. A KPI card is a figure, a caption and an icon,
+        // and the platform could draw the first two: an author wanting the third had to upload a PNG per
+        // card, at which point the tint is baked into the file and a colour change means re-uploading
+        // every one of them.
+        //
+        // NAMED FROM A FIXED SET, not a path and not an upload. Three things follow from that and all
+        // three are the reason it is an enum: the renderer's switch is total, so no layout can name a
+        // glyph that draws nothing; the drawing is inline SVG that inherits currentColor, so an icon
+        // follows the element's own colour and a theme change reaches it; and nothing is fetched, which
+        // keeps a drawn icon inside the same rule the charts live under — no script, no external asset,
+        // and the same markup survives the HTML view, the print view and Chromium's PDF pass.
+        //
+        // ADDITIVE at the end, same rule as every kind above it: a stored layout holds the integer.
+        Icon = 12,
+    }
+
+    // THE ICON VOCABULARY. Deliberately small and deliberately about BUSINESS, not about decoration:
+    // every one of these names something a report is already about, so an author picks the meaning and
+    // the drawing follows. A set that tried to be complete would be a clip-art library with no house
+    // style, and the first person to want a smiling face would get one.
+    //
+    // Additive: a new icon is a new value at the END, and an old layout keeps meaning what it meant.
+    public enum ReportIcon
+    {
+        Money = 0,        // cash, revenue, a total in currency
+        Invoice = 1,      // a document with lines
+        Customer = 2,
+        Vendor = 3,
+        Item = 4,         // a box: stock, a product
+        Warehouse = 5,
+        TrendUp = 6,
+        TrendDown = 7,
+        Chart = 8,
+        Calendar = 9,
+        Clock = 10,       // ageing, overdue, lead time
+        Percent = 11,     // a rate, a margin, a share
+        Bank = 12,
+        Tax = 13,
+        Check = 14,       // settled, approved, reconciled
+        Alert = 15,       // the one thing on the page that wants attention
     }
 
     // Which drawing a Chart element makes. Column/Bar are the same data with the axes swapped — kept as
@@ -222,8 +263,9 @@ namespace CrossBuy.BL.Reporting
         public string? CategoryFieldKey { get; set; }
 
         /// The SECOND axis, and it belongs to the cross-tab alone: the field whose distinct values become
-        /// columns. A chart is single-series in this increment and the validator refuses a value here on
-        /// one, rather than accepting it and drawing something the author did not ask for.
+        /// columns. On a CHART it is optional and splits each category — a column into a group, a line
+        /// into several lines. A PIE refuses it: its slices already are the categories, and their whole
+        /// claim is that they sum to the circle.
         public string? SeriesFieldKey { get; set; }
 
         public ReportChartKind ChartKind { get; set; } = ReportChartKind.Column;
@@ -253,6 +295,18 @@ namespace CrossBuy.BL.Reporting
         /// whole page run rather than once per row — there is no "current row" there to link to. Null in a
         /// report band, where the child is embedded whole and unlinked.
         public string? LinkChildFieldKey { get; set; }
+
+        // ---- icon -----------------------------------------------------------------------------------
+        //
+        // WHICH MARK. Ignored by every other kind, like every property above it: an element carries the
+        // whole vocabulary and each kind reads the part of it that applies, which is what lets an author
+        // change a Text into an Icon without the stored element losing anything.
+        //
+        // The SIZE is the element's own box and the COLOUR is Style.Color, so an icon is styled by the
+        // same two things everything else on the page is styled by. It has no colour property of its own,
+        // deliberately: a second place to set a colour is a second place for a report to disagree with
+        // itself about its own palette.
+        public ReportIcon Icon { get; set; } = ReportIcon.Money;
 
         // NO COLUMN LIST. The sub-report prints the CHILD definition's own visible columns, so there is no
         // second place where "may this reader see this field" gets answered — and no way for a parent

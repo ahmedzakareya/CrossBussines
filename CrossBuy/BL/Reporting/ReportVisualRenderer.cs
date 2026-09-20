@@ -449,6 +449,10 @@ namespace CrossBuy.BL.Reporting
                     sb.Append("<div class=\"cbv-el\" style=\"").Append(style).Append("\"></div>");
                     return;
 
+                case ReportElementKind.Icon:
+                    Icon(sb, ctx, e, style, s);
+                    return;
+
                 case ReportElementKind.Image:
                 {
                     // A data URI the caller resolved — from the asset store when the author picked a
@@ -538,6 +542,30 @@ namespace CrossBuy.BL.Reporting
 
             sb.Append("<div class=\"cbv-el\" style=\"").Append(style).Append("\"><span>")
               .Append(Enc(text)).Append("</span></div>");
+        }
+
+        // ---- the icon element ---------------------------------------------------------------------
+        //
+        // THE DRAWINGS LIVE IN ReportIconArt, not here, and that is load-bearing rather than tidy.
+        // The designer draws the SAME sixteen marks on its canvas: an icon takes no data, so unlike a
+        // chart or a QR its design-time face can be the real thing. That only stays true while there
+        // is one definition - two copies and the canvas goes on showing the old mark after the printed
+        // one changes, and the author designs against a picture that lies.
+
+        private static void Icon(StringBuilder sb, ReportVisualRenderContext ctx, ReportElement e, StringBuilder style, ReportElementStyle s)
+        {
+            // THE BOX IS THE ELEMENT'S, and the drawing fills it. An icon whose size came from the font
+            // size would be the one thing on the canvas that ignored its own handles, and resizing it
+            // would do nothing — which is exactly how a designer learns not to trust a control.
+            var colour = Hex(s.Color) ?? "#3F4254";
+
+            sb.Append("<div class=\"cbv-el cbv-icon\" style=\"").Append(style).Append("\">")
+              .Append("<svg viewBox=\"0 0 24 24\" width=\"100%\" height=\"100%\" ")
+              .Append("preserveAspectRatio=\"xMidYMid meet\" fill=\"none\" stroke=\"").Append(colour)
+              .Append("\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" ")
+              .Append("role=\"img\" aria-label=\"").Append(Enc(ReportIconArt.Title(e.Icon, ctx.Arabic))).Append("\">")
+              .Append(ReportIconArt.Path(e.Icon))
+              .Append("</svg></div>");
         }
 
         // ---- charts and cross-tabs -------------------------------------------------------------------
@@ -1626,6 +1654,10 @@ namespace CrossBuy.BL.Reporting
 
             // The chart box does not clip its drawing: an SVG sized to the element already fits, and
             // `overflow:hidden` on the shared .cbv-el would cut a value label sitting on the top bar.
+            // The icon fills its own box and nothing else: no padding of its own, because the element
+            // already has Style.PaddingMm, and two paddings would make a sized icon smaller than its handles.
+            sb.Append(".cbv-icon{display:flex;align-items:center;justify-content:center;overflow:visible;}");
+            sb.Append(".cbv-icon svg{display:block;}");
             sb.Append(".cbv-chart{overflow:visible;align-items:stretch;}");
             sb.Append(".cbv-chart-svg{display:block;width:100%;height:100%;}");
             sb.Append(".cbv-chart-empty{color:#7E8299;font-style:italic;align-self:center;}");
