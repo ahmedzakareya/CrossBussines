@@ -559,12 +559,16 @@ namespace CrossBuy.BL.Reporting
             if (e.Kind == ReportElementKind.Text && string.IsNullOrEmpty(text) && groupKey != null) text = groupKey;
 
             sb.Append("<div class=\"cbv-el\" style=\"").Append(style).Append("\"><span>")
-              .Append(Enc(text)).Append("</span>");
+              .Append(Enc(text));
 
+            // INSIDE the span, deliberately. `.cbv-el` is a flex ROW whose single child is a width:100%
+            // span; appending a sibling made the delta a second COLUMN, so it sat beside the figure and
+            // overflow:hidden clipped whichever ran out of room. Nested, it is a block inside the one
+            // child - which leaves the element's flex contract and the author's alignment untouched.
             if (e.Kind == ReportElementKind.Summary && e.Compare != ReportComparison.None)
                 Delta(sb, ctx, e, scope);
 
-            sb.Append("</div>");
+            sb.Append("</span></div>");
         }
 
         // ---- the comparison -------------------------------------------------------------------------
@@ -1745,8 +1749,8 @@ namespace CrossBuy.BL.Reporting
             // The delta is a SECOND LINE, at 72% of the figure's size: readable, and unmistakably
             // subordinate to the number it is about. Its colours are the semantic pair and nothing else
             // on the page uses them, so green and red here mean better and worse rather than decoration.
-            sb.Append(".cbv-delta{display:block;font-size:.72em;font-weight:600;margin-block-start:.4mm;");
-            sb.Append("white-space:nowrap;}");
+            sb.Append(".cbv-delta{display:block;font-size:.58em;font-weight:600;margin-block-start:.6mm;");
+            sb.Append("line-height:1.25;}");
             sb.Append(".cbv-delta-note{font-weight:400;opacity:.72;}");
             sb.Append(".cbv-delta-good{color:#17805A;}");
             sb.Append(".cbv-delta-bad{color:#C23A3A;}");

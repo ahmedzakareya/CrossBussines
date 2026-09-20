@@ -1384,9 +1384,12 @@
                         { v: "1", t: AR ? "الأعلى" : "Higher" },
                         { v: "0", t: AR ? "الأقل" : "Lower" }
                     ], e.compareHigherIsBetter === false ? "0" : "1")));
+                    // A COMPARISON MAKES THE ELEMENT TWO LINES. Said here because an element clips to
+                    // its own box, so adding one to a summary sized for a single figure quietly cuts the
+                    // delta in half - which looks like a rendering bug and is a height the author owns.
                     h.push("<div class='text-muted fs-8 mb-3'>" +
-                        esc(AR ? "الفترة السابقة هي نفس عدد الأيام قبل بداية المدى مباشرةً."
-                               : "The previous period is the same number of days immediately before the range starts.") +
+                        esc(AR ? "الفترة السابقة هي نفس عدد الأيام قبل بداية المدى مباشرةً. تُطبع سطرًا ثانيًا تحت الرقم — اترك للعنصر ارتفاعًا يكفي سطرين."
+                               : "The previous period is the same number of days immediately before the range starts. It prints as a second line under the figure, so leave the element height for two.") +
                         "</div>");
                 }
             } else if (e.compare) {
