@@ -139,6 +139,10 @@ namespace CrossBuy.BL.Reporting
         // Resolved sub-reports, keyed by the element id that placed one. Carried through the render
         // context rather than fetched downstream, for the reason the engine's resolver states: a renderer
         // that could reach a data source would be a second data path past the permission gate.
+        // The previous period's rows, when an element asked for a comparison. Null otherwise, which is
+        // every report until one does. Same rule as SubReports above: fetched by the engine, carried here.
+        public ReportComparisonData? Comparison { get; init; }
+
         public IReadOnlyDictionary<string, ReportSubReportData> SubReports { get; init; } =
             new Dictionary<string, ReportSubReportData>(StringComparer.Ordinal);
 

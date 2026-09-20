@@ -305,6 +305,7 @@
             assetId: null, imageRole: 0, fit: 0, preserveAspect: true, columns: [],
             qrEcc: 2, qrModulePixels: 8,
             icon: 0,
+            compare: 0, compareHigherIsBetter: true,
             categoryFieldKey: null, seriesFieldKey: null, chartKind: CHART.Column,
             maxCategories: 12, showValues: true, showGrandTotals: true,
             subReportCode: null, linkChildFieldKey: null,
@@ -1363,6 +1364,39 @@
             if (!SUBCAT) loadSubCatalog(function () { renderProps(); });
         }
 
+        if (e.kind === KIND.Summary) {
+            // OFFERED ONLY WHERE IT WORKS. The server refuses a comparison outside a report header or
+            // footer - a group's scope is "this customer's rows" and the previous period's equivalent may
+            // not exist at all - so showing the control in a group band would be offering a choice whose
+            // every value is rejected on save.
+            var reportBand = (p.b.kind === 0 || p.b.kind === 6);
+            if (reportBand) {
+                h.push(row(AR ? "المقارنة" : "Compare with", select("p-compare", [
+                    { v: 0, t: AR ? "— بلا —" : "— none —" },
+                    { v: 1, t: AR ? "الفترة السابقة" : "The previous period" }
+                ], e.compare || 0)));
+
+                if (e.compare) {
+                    // THE COLOUR IS A CLAIM AND THE AUTHOR MAKES IT. Revenue up is good; overdue
+                    // receivables up is not. Without this the report would tell a reader that a rise in
+                    // their ageing is an improvement, in the most confident way it has of saying anything.
+                    h.push(row(AR ? "الأفضل هو" : "Better is", select("p-cmpdir", [
+                        { v: "1", t: AR ? "الأعلى" : "Higher" },
+                        { v: "0", t: AR ? "الأقل" : "Lower" }
+                    ], e.compareHigherIsBetter === false ? "0" : "1")));
+                    h.push("<div class='text-muted fs-8 mb-3'>" +
+                        esc(AR ? "الفترة السابقة هي نفس عدد الأيام قبل بداية المدى مباشرةً."
+                               : "The previous period is the same number of days immediately before the range starts.") +
+                        "</div>");
+                }
+            } else if (e.compare) {
+                h.push("<div class='alert alert-warning py-2 px-3 fs-8 mb-3'>" +
+                    esc(AR ? "المقارنة تعمل في رأس أو تذييل التقرير فقط — نطاق المجموعة قد لا يكون له مقابل في الفترة السابقة."
+                           : "A comparison works only in a report header or footer - a group's scope may have no equivalent in the other period.") +
+                    "</div>");
+            }
+        }
+
         if (e.kind === KIND.Icon) {
             // A GRID, NOT A DROPDOWN. Sixteen marks are chosen by recognising one, and a <select> of
             // sixteen words makes the author translate each name back into a picture before they can
@@ -1707,6 +1741,14 @@
             edit(function () { e.chartKind = parseInt($("p-chartkind").value, 10); });
             renderProps();   // a pie hides the series row; the other three show it
         });
+        on("p-compare", "change", function () {
+            edit(function () { e.compare = parseInt($("p-compare").value, 10); });
+            renderProps();   // choosing a comparison brings the direction question with it
+        });
+        on("p-cmpdir", "change", function () {
+            edit(function () { e.compareHigherIsBetter = $("p-cmpdir").value === "1"; });
+        });
+
         Array.prototype.forEach.call(document.querySelectorAll("[data-icon]"), function (b) {
             b.addEventListener("click", function () {
                 edit(function () { e.icon = parseInt(b.getAttribute("data-icon"), 10); });

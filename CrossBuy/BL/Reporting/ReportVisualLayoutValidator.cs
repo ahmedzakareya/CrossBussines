@@ -286,6 +286,36 @@ namespace CrossBuy.BL.Reporting
                     break;
                 }
 
+                case ReportElementKind.Summary when e.Compare != ReportComparison.None:
+                {
+                    // A COMPARISON NEEDS A SCOPE THAT MEANS THE SAME THING IN BOTH PERIODS, and only the
+                    // report-level bands have one. A group band's scope is "this customer's rows"; the
+                    // previous period's equivalent may not exist at all — the customer may not have bought
+                    // last month — and there is no honest answer to "compared with what" for a group that
+                    // was not there. Comparing the group against the WHOLE previous period would produce a
+                    // number that is wrong and looks exactly as authoritative as a right one.
+                    //
+                    // REFUSED, not dropped: an author who configured a comparison and got a bare figure
+                    // would have no way to tell the difference from one that compared to nothing.
+                    if (band.Kind is not (ReportBandKind.ReportHeader or ReportBandKind.ReportFooter))
+                    {
+                        Reject(result, strict,
+                            "A comparison belongs in a report header or footer, where both periods mean "
+                            + "the same set of rows. A group's equivalent may not exist in the other period.");
+                        return null;
+                    }
+
+                    if (!Enum.IsDefined(e.Compare))
+                    {
+                        Reject(result, strict, "That comparison is not one this platform makes.");
+                        return null;
+                    }
+
+                    clean.Compare = e.Compare;
+                    clean.CompareHigherIsBetter = e.CompareHigherIsBetter;
+                    goto case ReportElementKind.Summary;
+                }
+
                 case ReportElementKind.Summary:
                 {
                     if (!Bind(e.FieldKey, fields, permitted, result, strict, out var field)) return null;

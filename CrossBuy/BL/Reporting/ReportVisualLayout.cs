@@ -83,6 +83,25 @@ namespace CrossBuy.BL.Reporting
         Icon = 12,
     }
 
+    /// WHAT A SUMMARY IS MEASURED AGAINST. A figure on its own says how much and not whether that is
+    /// good, and a reader makes the comparison anyway — against a number they do not have, from memory,
+    /// badly. This gives them the one the report can actually supply.
+    ///
+    /// ONE MEMBER BESIDES None, deliberately. "Same period last year" and "against budget" are both
+    /// real and both want something this does not have: the first needs a calendar rule rather than a
+    /// span of days (a year is not 365 days when February is in it), and the second needs a budget the
+    /// platform does not store. Naming them here as values that do not work would be worse than their
+    /// absence. They are additive at the end when they arrive.
+    public enum ReportComparison
+    {
+        None = 0,
+
+        /// The same span of days immediately before the reported one. A report run for March compares
+        /// against February; one run for 1-15 March compares against 14-28 February. It is derived from
+        /// the report's OWN From/To, so the comparison always covers exactly as long as the report does.
+        PreviousPeriod = 1,
+    }
+
     // THE ICON VOCABULARY. Deliberately small and deliberately about BUSINESS, not about decoration:
     // every one of these names something a report is already about, so an author picks the meaning and
     // the drawing follows. A set that tried to be complete would be a clip-art library with no house
@@ -307,6 +326,22 @@ namespace CrossBuy.BL.Reporting
         // deliberately: a second place to set a colour is a second place for a report to disagree with
         // itself about its own palette.
         public ReportIcon Icon { get; set; } = ReportIcon.Money;
+
+        // ---- comparison ------------------------------------------------------------------------------
+        //
+        // SUMMARY ONLY, AND REPORT-LEVEL BANDS ONLY. Both limits are in the validator and both are
+        // refusals rather than silent no-ops, for the same reason: a comparison that quietly did nothing,
+        // or quietly compared the wrong two things, would print a number that looks exactly as
+        // authoritative as a correct one.
+        public ReportComparison Compare { get; set; } = ReportComparison.None;
+
+        /// WHICH DIRECTION IS GOOD, because the platform cannot know and the colour is a claim.
+        ///
+        /// Revenue up is good; overdue receivables up is not; days-to-collect up is not. A delta coloured
+        /// green for "bigger" would be telling a reader that a rise in their ageing is an improvement, in
+        /// the most confident way a report has of saying anything. So the author says, and the default is
+        /// the common case rather than a guess dressed as one.
+        public bool CompareHigherIsBetter { get; set; } = true;
 
         // NO COLUMN LIST. The sub-report prints the CHILD definition's own visible columns, so there is no
         // second place where "may this reader see this field" gets answered — and no way for a parent

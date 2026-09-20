@@ -188,6 +188,135 @@ namespace CrossBuy.BL.Reporting
         // ----------------------------------------------------------------------------------------------
         private const int SubReportRowCeiling = 5000;
 
+        // =============================================================================================
+        // THE PREVIOUS PERIOD.
+        //
+        // WHAT IT READS IS NOT NEW. The same dataset, the same definition, the same permission key, the
+        // same filters, the same tenancy — only the date window moves. The reader could already have run
+        // this report over those dates by typing them into the parameter form, so nothing here shows them
+        // a row they could not have asked for. That is the whole security argument, and it is worth
+        // stating plainly because "re-run the query with different parameters" is exactly the shape a
+        // dangerous change would take if the parameters it altered were the tenancy ones. These are not:
+        // From and To are the only two that move, and both are the author's own.
+        //
+        // WHY THE ENGINE AND NOT THE RENDERER. The renderer draws what it is handed and fetches nothing.
+        // A renderer that could reach a data source would be a second data path past the permission gate,
+        // which is the same reason ResolveSubReportsAsync below lives here.
+        //
+        // UNAVAILABLE IS AN ANSWER. A dataset with no From/To has no previous period, and the element
+        // says so on the page. The alternative — comparing against an empty set — would print "+100%" on
+        // every card, which reads as "all of this is new" and is a lie about the business rather than a
+        // gap in the report.
+        private async Task<ReportComparisonData?> ResolveComparisonAsync(
+            ReportVisualLayout? visual, ReportDefinition definition, IReportDataSource dataSource,
+            ReportParameterSet parameters, IReadOnlyList<ReportFilter> filters,
+            IReadOnlyList<ReportSort> sorts, IReadOnlyList<ReportGrouping> groupings,
+            IReadOnlyList<ReportColumn> requestedColumns, IReadOnlyList<string> visibleColumns,
+            int maxRows, BusinessContext context, CultureInfo culture, ReportRunKind kind,
+            CancellationToken cancellationToken)
+        {
+            if (visual is null) return null;
+
+            var wanted = visual.Bands
+                .SelectMany(b => b.Elements)
+                .Any(e => e.Kind == ReportElementKind.Summary && e.Compare != ReportComparison.None);
+            if (!wanted) return null;
+
+            var from = parameters.GetDate("From");
+            var to = parameters.GetDate("To");
+            if (from is null || to is null || to < from)
+                return new ReportComparisonData
+                {
+                    Unavailable = true,
+                    Reason = culture.TwoLetterISOLanguageName == "ar"
+                        ? "لا فترة سابقة: هذا التقرير لا يُحدَّد بمدى تاريخي."
+                        : "No previous period: this report is not bounded by a date range.",
+                };
+
+            // THE SPAN IS INCLUSIVE ON BOTH ENDS, because the report's own window is. A report for the
+            // 1st to the 31st covers 31 days, so its comparison covers the 31 days ending the 31st of the
+            // month before — not 30, and not a calendar month, which is a different question with a
+            // different answer in February.
+            var span = (to.Value.Date - from.Value.Date).Days + 1;
+            var prevTo = from.Value.Date.AddDays(-1);
+            var prevFrom = prevTo.AddDays(-(span - 1));
+
+            // EVERY OTHER PARAMETER IS CARRIED THROUGH UNTOUCHED — the status filter, the customer, the
+            // system-supplied company. Rebuilding the set rather than mutating it keeps the original
+            // exactly as the history row recorded it.
+            var shifted = new ReportParameterSet(
+                parameters.Values.Select(v => v.Key switch
+                {
+                    "From" => new ReportParameterValue
+                    {
+                        Key = v.Key, Type = v.Type, Value = prevFrom,
+                        RawText = prevFrom.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                    },
+                    "To" => new ReportParameterValue
+                    {
+                        Key = v.Key, Type = v.Type, Value = prevTo,
+                        RawText = prevTo.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                    },
+                    _ => v,
+                }).ToList(),
+                parameters.RawText);
+
+            try
+            {
+                var previous = await dataSource.FetchAsync(new ReportDataQuery
+                {
+                    Definition = definition,
+                    Context = context,
+                    Parameters = shifted,
+                    Filters = filters,
+                    Sorts = sorts,
+                    Groupings = groupings,
+                    RequestedColumns = requestedColumns,
+                    MaxRows = maxRows,
+                    Kind = kind,
+                    Culture = culture,
+                }, cancellationToken);
+
+                // SHAPED THE SAME WAY, so the rows the renderer aggregates are the same shape as the ones
+                // it is comparing them with. An unshaped set would carry different columns and Summarise
+                // would answer from a different world.
+                var shaped = _shaper.Shape(definition, previous, new ReportShapeRequest
+                {
+                    Filters = filters,
+                    Sorts = sorts,
+                    Groupings = groupings,
+                    VisibleColumns = visibleColumns,
+                    MaxRows = maxRows,
+                }, culture);
+
+                return new ReportComparisonData
+                {
+                    From = prevFrom,
+                    To = prevTo,
+                    Rows = shaped.View?.Rows ?? (IReadOnlyList<ReportRow>)Array.Empty<ReportRow>(),
+                };
+            }
+            catch (OperationCanceledException) { throw; }
+            catch (Exception ex)
+            {
+                // THE COMPARISON FAILING MUST NOT FAIL THE REPORT. The figures the reader asked for are
+                // already fetched and correct; losing them because a secondary read went wrong would be a
+                // worse outcome than a card that says its comparison is unavailable. Logged at Warning,
+                // because a source that cannot answer for a past window is worth knowing about.
+                _logger.LogWarning(ex,
+                    "The comparison window for {ReportCode} could not be fetched; the report prints without it.",
+                    definition.Code);
+
+                return new ReportComparisonData
+                {
+                    Unavailable = true,
+                    Reason = culture.TwoLetterISOLanguageName == "ar"
+                        ? "تعذّر جلب الفترة السابقة."
+                        : "The previous period could not be read.",
+                };
+            }
+        }
+
         private async Task<IReadOnlyDictionary<string, ReportSubReportData>> ResolveSubReportsAsync(
             ReportVisualLayout? visual, ReportView view, BusinessContext context, CultureInfo culture,
             CancellationToken cancellationToken)
@@ -542,6 +671,9 @@ namespace CrossBuy.BL.Reporting
                 Assets = await ResolveAssetsAsync(visual, context, cancellationToken),
                 RoleImages = await ResolveOrgImagesAsync(visual, context, cancellationToken),
                 SubReports = await ResolveSubReportsAsync(visual, view, context, culture, cancellationToken),
+                Comparison = await ResolveComparisonAsync(visual, definition, dataSource, parameterSet,
+                    filters, sorts, groupings, requestedColumns, visibleColumns, maxRows,
+                    context, culture, request.Kind, cancellationToken),
             };
 
             ReportArtifact artifact;

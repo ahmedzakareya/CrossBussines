@@ -26,6 +26,21 @@ namespace CrossBuy.BL.Reporting
     // reaching the page by any route is encoded, including one an older layout stored before a validator
     // existed.
     // ============================================================================================
+    /// THE PREVIOUS PERIOD'S ROWS, fetched by the engine and handed over. The renderer never fetches —
+    /// a renderer that could would be a second data path, and the platform has exactly one.
+    ///
+    /// Unavailable is a REAL ANSWER and not an error: a report whose dataset has no From/To has no
+    /// previous period to speak of, and the element says so on the page rather than printing a delta
+    /// against zero, which would read as "everything is new" and be a lie about the business.
+    public sealed class ReportComparisonData
+    {
+        public bool Unavailable { get; init; }
+        public string? Reason { get; init; }
+        public DateTime From { get; init; }
+        public DateTime To { get; init; }
+        public IReadOnlyList<ReportRow> Rows { get; init; } = Array.Empty<ReportRow>();
+    }
+
     public sealed class ReportVisualRenderContext
     {
         public required ReportVisualLayout Layout { get; init; }
@@ -40,6 +55,9 @@ namespace CrossBuy.BL.Reporting
         // rather than uploaded per template. Same rule as Assets — the renderer gets bytes, never a path.
         public IReadOnlyDictionary<ReportImageRole, string> RoleImages { get; init; } =
             new Dictionary<ReportImageRole, string>();
+
+        // Null when no element asked for a comparison, which is every report until one does.
+        public ReportComparisonData? Comparison { get; init; }
 
         public string ReportTitle { get; init; } = "";
         public bool Arabic { get; init; }
@@ -541,7 +559,75 @@ namespace CrossBuy.BL.Reporting
             if (e.Kind == ReportElementKind.Text && string.IsNullOrEmpty(text) && groupKey != null) text = groupKey;
 
             sb.Append("<div class=\"cbv-el\" style=\"").Append(style).Append("\"><span>")
-              .Append(Enc(text)).Append("</span></div>");
+              .Append(Enc(text)).Append("</span>");
+
+            if (e.Kind == ReportElementKind.Summary && e.Compare != ReportComparison.None)
+                Delta(sb, ctx, e, scope);
+
+            sb.Append("</div>");
+        }
+
+        // ---- the comparison -------------------------------------------------------------------------
+        //
+        // A FIGURE SAYS HOW MUCH; THIS SAYS WHETHER THAT IS GOOD. It is drawn as a second line under the
+        // number rather than beside it, because a KPI card is read top to bottom and a delta to the side
+        // competes with the figure it is about.
+        //
+        // THE COLOUR IS A CLAIM, AND THE AUTHOR MAKES IT. Revenue up is good; overdue receivables up is
+        // not; days-to-collect up is not. Colouring "bigger" green would tell a reader that a rise in
+        // their ageing is an improvement, in the most confident way a report has of saying anything — so
+        // CompareHigherIsBetter decides, and the ARROW still follows the direction of the movement rather
+        // than the judgement, so a reader who ignores colour still reads the fact correctly.
+        private static void Delta(StringBuilder sb, ReportVisualRenderContext ctx, ReportElement e,
+            List<ReportRow>? scope)
+        {
+            var cmp = ctx.Comparison;
+
+            // NOT AN ERROR AND NOT A BLANK. A report with no date range has no previous period, and the
+            // card says so — printing a delta against an empty set would show "+100%" everywhere, which
+            // reads as "all of this is new" and is a lie about the business rather than a gap in it.
+            if (cmp is null || cmp.Unavailable)
+            {
+                sb.Append("<span class=\"cbv-delta cbv-delta-na\">")
+                  .Append(Enc(cmp?.Reason ?? (ctx.Arabic ? "لا مقارنة" : "no comparison")))
+                  .Append("</span>");
+                return;
+            }
+
+            var now = Dec(Summarise(scope, e.FieldKey, e.Aggregate));
+            var was = Dec(Summarise(cmp.Rows.ToList(), e.FieldKey, e.Aggregate));
+
+            // NOTHING TO DIVIDE BY IS ITS OWN ANSWER. A period that was zero and is now 40,000 has not
+            // grown by a percentage - it started. Saying "new" is the honest reading; "+∞%" and "+100%"
+            // are both inventions, and the second is the more dangerous because it looks plausible.
+            if (was == 0m)
+            {
+                sb.Append("<span class=\"cbv-delta cbv-delta-flat\">")
+                  .Append(Enc(now == 0m
+                      ? (ctx.Arabic ? "بلا تغيّر" : "no change")
+                      : (ctx.Arabic ? "جديد مقارنةً بالفترة السابقة" : "new this period")))
+                  .Append("</span>");
+                return;
+            }
+
+            var pct = (now - was) / Math.Abs(was) * 100m;
+            var rose = pct > 0m;
+            var flat = Math.Round(pct, 1) == 0m;
+
+            var cls = flat ? "cbv-delta-flat"
+                    : (rose == e.CompareHigherIsBetter) ? "cbv-delta-good" : "cbv-delta-bad";
+
+            // The arrow is a glyph rather than a drawing: it sits inline with text, at text size, and has
+            // to keep its baseline through the PDF pass - which is what an SVG at 7pt does badly.
+            var arrow = flat ? "\u2192" : rose ? "\u25B2" : "\u25BC";
+
+            var label = ctx.Arabic ? "مقارنةً بالفترة السابقة" : "vs previous period";
+
+            sb.Append("<span class=\"cbv-delta ").Append(cls).Append("\">")
+              .Append(arrow).Append("\u00A0")
+              .Append(Enc(Math.Abs(Math.Round(pct, 1)).ToString("0.#",
+                  ctx.Arabic ? new CultureInfo("ar") : CultureInfo.InvariantCulture)))
+              .Append("%\u00A0<span class=\"cbv-delta-note\">").Append(Enc(label)).Append("</span></span>");
         }
 
         // ---- the icon element ---------------------------------------------------------------------
@@ -1656,6 +1742,15 @@ namespace CrossBuy.BL.Reporting
             // `overflow:hidden` on the shared .cbv-el would cut a value label sitting on the top bar.
             // The icon fills its own box and nothing else: no padding of its own, because the element
             // already has Style.PaddingMm, and two paddings would make a sized icon smaller than its handles.
+            // The delta is a SECOND LINE, at 72% of the figure's size: readable, and unmistakably
+            // subordinate to the number it is about. Its colours are the semantic pair and nothing else
+            // on the page uses them, so green and red here mean better and worse rather than decoration.
+            sb.Append(".cbv-delta{display:block;font-size:.72em;font-weight:600;margin-block-start:.4mm;");
+            sb.Append("white-space:nowrap;}");
+            sb.Append(".cbv-delta-note{font-weight:400;opacity:.72;}");
+            sb.Append(".cbv-delta-good{color:#17805A;}");
+            sb.Append(".cbv-delta-bad{color:#C23A3A;}");
+            sb.Append(".cbv-delta-flat,.cbv-delta-na{color:#7E8299;font-weight:500;}");
             sb.Append(".cbv-icon{display:flex;align-items:center;justify-content:center;overflow:visible;}");
             sb.Append(".cbv-icon svg{display:block;}");
             sb.Append(".cbv-chart{overflow:visible;align-items:stretch;}");
