@@ -1,0 +1,35 @@
+﻿area,claim,command_or_method,result,evidence_level
+baseline,branch / HEAD / date,"git log -1 --format=""%H|%ad|%s""; git rev-parse --abbrev-ref HEAD",branch reporting/studio-gap-closure; HEAD moved 3x during discovery (2020ee5a -> ccc6a349 -> 13c8d984),repository-verified
+baseline,working tree state,git status --porcelain | wc -l,73-78 uncommitted entries throughout,repository-verified
+baseline,application version,grep Version/Company/Authors/Copyright CrossBuy.csproj,"NONE DECLARED — no version, product, company, author or copyright anywhere",repository-verified
+baseline,runtime used,netstat; curl https://localhost:44368/Account/Login,"the owner's IIS Express instance, started 10:32, Development, database CrossBuyDev",runtime viewed
+baseline,database identity,"sqlcmd -Q ""SELECT @@SERVERNAME, DB_NAME()""",DESKTOP-K8SA5SV | CrossBuyDev — production never contacted,runtime viewed
+owner,git author,"git log --format=""%an <%ae>"" | sort | uniq -c",Ahmed Zakarya — 235 of 247 commits,repository-verified
+owner,name in docs,grep -rlni ahmed docs/,"CrossBuy_System_Context_for_AI.md:194 ""= employee \""Ahmed\"", company head""; ADR-032:91 employee:12",repository-verified
+owner,employee 12 does not exist,"SELECT ... FROM Employee WHERE ID IN (5,12)",no row for 12 — the ADR's employee:12 is an illustrative example,runtime viewed
+owner,owner employee record,"SELECT ID, FullName, FullNameEn, ProfileImage FROM Employee WHERE ID=5","FullNameEn ""ahmed zakareya""; ProfileImage /uploads/employees/d5af6445-….png",runtime viewed
+owner,"Arabic name, decoded","SELECT UNICODE(SUBSTRING(FullName,n,1)) …","1575,1581,1605,1583,32,1586,1603,1585,1610,1575 -> احمد زكريا (clean, no mojibake)",runtime viewed
+owner,portrait,PNG header parse of d5af6445-….png,"1254x1254, 1,638,991 bytes, 8-bit truecolour; the only unique image among 17",repository-verified
+owner,photo hashing,sha256 over uploads/employees,REFUSED by the environment data-handling policy; duplicate grouping rests on file sizes,blocked
+screens,inventory,scripts/extract_screens.py,"309 screens, 63 partials, 1305 fields, 1475 actions, 1370 columns, 94 modals, 4333 keys",repository-verified
+screens,orphan resolution,"RENDERED_BY over View(""…"") and View(""~/Views/…"")",15 views opened by a differently-named action; DocumentDetails serves 8 document types,repository-verified
+access,roles and routes,scripts/extract_access.py,"11 platform scopes, 14 vocabularies, 1220 routable actions, 17 anonymous",repository-verified
+access,roles in the database,SELECT Name FROM AspNetRoles; role counts from the four module role tables,"SuperAdmin/Administrator/Admin/Auditor/PlatformOps; Inventory 1, Accounting 1, CRM 5; PlatformRoleAssignments = 0 ROWS",runtime viewed
+reports,catalogue,scripts/extract_reports_and_messages.py,"41 report codes, 305 bilingual columns, 5 output formats, 7 permission keys",repository-verified
+messages,catalogue,same script,"223 messages: 80 business-rule refusals, 50 validation, 35 failure, 32 empty state, 23 confirmation prompts, 3 permission refusals",repository-verified
+workflows,catalogue,scripts/build_workflow_catalog.py,"18 workflows, 93 steps, every route validated against the screen catalogue (4 invented routes were caught and corrected)",repository-verified
+workflows,command vs form,GET/POST pairing per controller,15 form-then-save pairs against 390 command-only POST actions — the product is AJAX-driven,repository-verified
+workflows,status vocabulary,status strings assigned/compared in BL and Controllers,"52 distinct values; ""Void"" AND ""Voided"" both assigned",repository-verified
+runtime,sign-in and landing,capture script,"sign-in lands on /Portal/Choose, not a dashboard",behaviour tested safely
+runtime,culture switch,"capture script, Arabic pass","html lang=ar dir=rtl, style.bundle.rtl.css served, Cairo confirmed loaded",behaviour tested safely
+runtime,refusal,capture of /Account/AccessDenied,"HTTP 403, screen captured",behaviour tested safely
+runtime,routing,"capture of /Inventory, /Accounting, /Crm, /Admin",404 — the default route has no action=Index; only 7 controllers have a bare-name route,behaviour tested safely
+runtime,slow screens,capture timeouts,/Accounting/Payroll and /Accounting/PayrollDisbursement exceeded 45s,runtime measured
+runtime,session eviction,capture logs across slices,the long-running instance evicts its in-memory session under memory pressure (>1.1GB); SessionValidation then redirects to sign-in mid-navigation,runtime measured
+runtime,second instance,dotnet run --launch-profile http,BUILD FAILED MSB3027 — the running instance holds bin/Debug/net8.0/CrossBuy.exe,blocked
+not-verified,actions,—,ZERO of 1475 actions were performed,not verified
+not-verified,roles,—,only the administrator session was used,not verified
+not-verified,mobile client,—,crossbuy_mobile not examined,not verified
+not-verified,AI service,—,"crossbuy_ai read, not started; no AI call made",not verified
+not-verified,reports run,—,"no report executed, exported or printed",not verified
+not-verified,production,—,never contacted,not verified

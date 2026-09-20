@@ -112,3 +112,12 @@ tools/ui-conformance/output/
 tools/ui-conformance/screenshots/
 tools/ui-conformance/**/*.png
 !tools/ui-conformance/baseline/**
+
+# ---- Discovery packages (docs/) -------------------------------------------------------------
+# The user-manual discovery carries 541 screenshots at ~57 MB. They are evidence, not source:
+# the capture scripts in the package regenerate them, and the ZIP beside the folder holds them.
+# Keeping them out of git history keeps the clone light; the documents, catalogues, assets and
+# scripts are all committed.
+docs/CrossBuy_User_Manual_Discovery/screenshots/
+# The same package existed twice on disk while it was being built. Only the named copy is tracked.
+docs/user-manual-discovery/

@@ -1,0 +1,1221 @@
+﻿controller,action,route,kind,verbs,action_attributes,controller_attributes,anonymous,evidence
+AccountingApi,AccountTypes,/AccountingApi/AccountTypes,api,"HttpGet(""account-types"")",,"ApiController; Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme); Produces(""application/json""); Route(""api/acc"")",no,repository-verified
+AccountingApi,Accounts,/AccountingApi/Accounts,api,"HttpGet(""accounts"")",,"ApiController; Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme); Produces(""application/json""); Route(""api/acc"")",no,repository-verified
+AccountingApi,ApAging,/AccountingApi/ApAging,api,"HttpGet(""ap/aging"")",,"ApiController; Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme); Produces(""application/json""); Route(""api/acc"")",no,repository-verified
+AccountingApi,ArAging,/AccountingApi/ArAging,api,"HttpGet(""ar/aging"")",,"ApiController; Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme); Produces(""application/json""); Route(""api/acc"")",no,repository-verified
+AccountingApi,CreateCustomer,/AccountingApi/CreateCustomer,api,"HttpPost(""ar/customers"")",,"ApiController; Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme); Produces(""application/json""); Route(""api/acc"")",no,repository-verified
+AccountingApi,CreateJournal,/AccountingApi/CreateJournal,api,"HttpPost(""journals"")",,"ApiController; Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme); Produces(""application/json""); Route(""api/acc"")",no,repository-verified
+AccountingApi,CreatePayment,/AccountingApi/CreatePayment,api,"HttpPost(""ap/payments"")",,"ApiController; Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme); Produces(""application/json""); Route(""api/acc"")",no,repository-verified
+AccountingApi,CreatePurchaseInvoice,/AccountingApi/CreatePurchaseInvoice,api,"HttpPost(""ap/bills"")",,"ApiController; Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme); Produces(""application/json""); Route(""api/acc"")",no,repository-verified
+AccountingApi,CreateReceipt,/AccountingApi/CreateReceipt,api,"HttpPost(""ar/receipts"")",,"ApiController; Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme); Produces(""application/json""); Route(""api/acc"")",no,repository-verified
+AccountingApi,CreateSalesInvoice,/AccountingApi/CreateSalesInvoice,api,"HttpPost(""ar/invoices"")",,"ApiController; Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme); Produces(""application/json""); Route(""api/acc"")",no,repository-verified
+AccountingApi,CreateVendor,/AccountingApi/CreateVendor,api,"HttpPost(""ap/vendors"")",,"ApiController; Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme); Produces(""application/json""); Route(""api/acc"")",no,repository-verified
+AccountingApi,Customers,/AccountingApi/Customers,api,"HttpGet(""ar/customers"")",,"ApiController; Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme); Produces(""application/json""); Route(""api/acc"")",no,repository-verified
+AccountingApi,Journal,/AccountingApi/Journal,api,"HttpGet(""journals/{id:int}"")",,"ApiController; Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme); Produces(""application/json""); Route(""api/acc"")",no,repository-verified
+AccountingApi,Journals,/AccountingApi/Journals,api,"HttpGet(""journals"")",,"ApiController; Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme); Produces(""application/json""); Route(""api/acc"")",no,repository-verified
+AccountingApi,Ledger,/AccountingApi/Ledger,api,"HttpGet(""ledger/{accountId:int}"")",,"ApiController; Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme); Produces(""application/json""); Route(""api/acc"")",no,repository-verified
+AccountingApi,PayrollPost,/AccountingApi/PayrollPost,api,"HttpPost(""payroll/post"")",,"ApiController; Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme); Produces(""application/json""); Route(""api/acc"")",no,repository-verified
+AccountingApi,PayrollPreview,/AccountingApi/PayrollPreview,api,"HttpGet(""payroll/preview"")",,"ApiController; Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme); Produces(""application/json""); Route(""api/acc"")",no,repository-verified
+AccountingApi,Post,/AccountingApi/Post,api,"HttpPost(""journals/{id:int}/post"")",,"ApiController; Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme); Produces(""application/json""); Route(""api/acc"")",no,repository-verified
+AccountingApi,Reverse,/AccountingApi/Reverse,api,"HttpPost(""journals/{id:int}/reverse"")",,"ApiController; Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme); Produces(""application/json""); Route(""api/acc"")",no,repository-verified
+AccountingApi,Summary,/AccountingApi/Summary,api,"HttpGet(""summary"")",,"ApiController; Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme); Produces(""application/json""); Route(""api/acc"")",no,repository-verified
+AccountingApi,TrialBalance,/AccountingApi/TrialBalance,api,"HttpGet(""trial-balance"")",,"ApiController; Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme); Produces(""application/json""); Route(""api/acc"")",no,repository-verified
+AccountingApi,Vendors,/AccountingApi/Vendors,api,"HttpGet(""ap/vendors"")",,"ApiController; Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme); Produces(""application/json""); Route(""api/acc"")",no,repository-verified
+Ai,AnomalyJournalScan,/Ai/AnomalyJournalScan,api,"HttpPost(""anomaly/journal-scan"")",,"ApiController; Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme); Produces(""application/json""); Route(""api/ai"")",no,repository-verified
+Ai,CashAccounts,/Ai/CashAccounts,api,"HttpGet(""cash-accounts"")",,"ApiController; Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme); Produces(""application/json""); Route(""api/ai"")",no,repository-verified
+Ai,Diag,/Ai/Diag,api,"HttpPost(""diag"")",CrossBuy.Models.DevOnly,"ApiController; Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme); Produces(""application/json""); Route(""api/ai"")",no,repository-verified
+Ai,ForecastCashflow,/Ai/ForecastCashflow,api,"HttpPost(""forecast/cashflow"")",,"ApiController; Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme); Produces(""application/json""); Route(""api/ai"")",no,repository-verified
+Ai,InventoryAnalyze,/Ai/InventoryAnalyze,api,"HttpPost(""inventory/analyze"")",,"ApiController; Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme); Produces(""application/json""); Route(""api/ai"")",no,repository-verified
+Ai,SearchAccounts,/Ai/SearchAccounts,api,"HttpGet(""accounts/search"")",,"ApiController; Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme); Produces(""application/json""); Route(""api/ai"")",no,repository-verified
+Ai,SearchCostCenters,/Ai/SearchCostCenters,api,"HttpGet(""costcenters/search"")",,"ApiController; Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme); Produces(""application/json""); Route(""api/ai"")",no,repository-verified
+AuthApi,Login,/AuthApi/Login,api,"HttpPost(""login"")",,"ApiController; Produces(""application/json""); Route(""api/auth"")",no,repository-verified
+AuthApi,Ping,/AuthApi/Ping,api,"HttpGet(""ping"")",Microsoft.AspNetCore.Authorization.Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme),"ApiController; Produces(""application/json""); Route(""api/auth"")",no,repository-verified
+DevSeed,ApplyPresetGuardTest,/DevSeed/ApplyPresetGuardTest,api,"HttpGet(""apply-preset-guard-test"")",,,no,repository-verified
+DevSeed,AppraisalTest,/DevSeed/AppraisalTest,api,"HttpGet(""appraisal-test"")",,,no,repository-verified
+DevSeed,BinStockTest,/DevSeed/BinStockTest,api,"HttpGet(""binstock-test"")",,,no,repository-verified
+DevSeed,Bis1Test,/DevSeed/Bis1Test,api,"HttpGet(""bis1-test"")",,,no,repository-verified
+DevSeed,Bis3Test,/DevSeed/Bis3Test,api,"HttpGet(""bis3-test"")",,,no,repository-verified
+DevSeed,Bis4Test,/DevSeed/Bis4Test,api,"HttpGet(""bis4-test"")",,,no,repository-verified
+DevSeed,BisRecipeTest,/DevSeed/BisRecipeTest,api,"HttpGet(""bis-recipe-test"")",,,no,repository-verified
+DevSeed,BrandTest,/DevSeed/BrandTest,api,"HttpGet(""brand-test"")",,,no,repository-verified
+DevSeed,ChatTestSeed,/DevSeed/ChatTestSeed,api,"HttpGet(""chat-test-seed"")",,,no,repository-verified
+DevSeed,CrmSeedDemo,/DevSeed/CrmSeedDemo,api,"HttpGet(""crm-seed-demo"")",,,no,repository-verified
+DevSeed,CrmSeedPipeline,/DevSeed/CrmSeedPipeline,api,"HttpGet(""crm-seed-pipeline"")",,,no,repository-verified
+DevSeed,CrmTest3WayMatch,/DevSeed/CrmTest3WayMatch,api,"HttpGet(""crm-test-3waymatch"")",,,no,repository-verified
+DevSeed,CrmTestAccount,/DevSeed/CrmTestAccount,api,"HttpGet(""crm-test-account"")",,,no,repository-verified
+DevSeed,CrmTestAnalytics,/DevSeed/CrmTestAnalytics,api,"HttpGet(""crm-test-analytics"")",,,no,repository-verified
+DevSeed,CrmTestAutomation,/DevSeed/CrmTestAutomation,api,"HttpGet(""crm-test-automation"")",,,no,repository-verified
+DevSeed,CrmTestCampaign,/DevSeed/CrmTestCampaign,api,"HttpGet(""crm-test-campaign"")",,,no,repository-verified
+DevSeed,CrmTestCreditLimit,/DevSeed/CrmTestCreditLimit,api,"HttpGet(""crm-test-creditlimit"")",,,no,repository-verified
+DevSeed,CrmTestCrm,/DevSeed/CrmTestCrm,api,"HttpGet(""crm-test-crm"")",,,no,repository-verified
+DevSeed,CrmTestCustomFields,/DevSeed/CrmTestCustomFields,api,"HttpGet(""crm-test-customfields"")",,,no,repository-verified
+DevSeed,CrmTestEnrich,/DevSeed/CrmTestEnrich,api,"HttpGet(""crm-test-enrich"")",,,no,repository-verified
+DevSeed,CrmTestManagerScope,/DevSeed/CrmTestManagerScope,api,"HttpGet(""crm-test-manager-scope"")",,,no,repository-verified
+DevSeed,CrmTestMarketing,/DevSeed/CrmTestMarketing,api,"HttpGet(""crm-test-marketing"")",,,no,repository-verified
+DevSeed,CrmTestO2c,/DevSeed/CrmTestO2c,api,"HttpGet(""crm-test-o2c"")",,,no,repository-verified
+DevSeed,CrmTestPricing,/DevSeed/CrmTestPricing,api,"HttpGet(""crm-test-pricing"")",,,no,repository-verified
+DevSeed,CrmTestPurchaseReturn,/DevSeed/CrmTestPurchaseReturn,api,"HttpGet(""crm-test-purchasereturn"")",,,no,repository-verified
+DevSeed,CrmTestQuotation,/DevSeed/CrmTestQuotation,api,"HttpGet(""crm-test-quotation"")",,,no,repository-verified
+DevSeed,CrmTestSalesReturn,/DevSeed/CrmTestSalesReturn,api,"HttpGet(""crm-test-salesreturn"")",,,no,repository-verified
+DevSeed,CrmTestScoring,/DevSeed/CrmTestScoring,api,"HttpGet(""crm-test-scoring"")",,,no,repository-verified
+DevSeed,CrmTestTickets,/DevSeed/CrmTestTickets,api,"HttpGet(""crm-test-tickets"")",,,no,repository-verified
+DevSeed,CrmTestTimeline,/DevSeed/CrmTestTimeline,api,"HttpGet(""crm-test-timeline"")",,,no,repository-verified
+DevSeed,CultureCheck,/DevSeed/CultureCheck,api,"HttpGet(""culture-check"")",,,no,repository-verified
+DevSeed,EmployeeRequestTest,/DevSeed/EmployeeRequestTest,api,"HttpGet(""employee-request-test"")",,,no,repository-verified
+DevSeed,ExcelSmoke,/DevSeed/ExcelSmoke,api,"HttpGet(""excel-smoke"")",,,no,repository-verified
+DevSeed,FiscalWindowOpen,/DevSeed/FiscalWindowOpen,api,"HttpGet(""fiscal-window-open"")",,,no,repository-verified
+DevSeed,FxTestBankReval,/DevSeed/FxTestBankReval,api,"HttpGet(""fx-test-bank-reval"")",,,no,repository-verified
+DevSeed,Hm10Accept,/DevSeed/Hm10Accept,api,"HttpGet(""hm10-accept"")",,,no,repository-verified
+DevSeed,Hm16Accept,/DevSeed/Hm16Accept,api,"HttpGet(""hm16-accept"")",,,no,repository-verified
+DevSeed,Hm1B3Test,/DevSeed/Hm1B3Test,api,"HttpGet(""hm1-b3-test"")",,,no,repository-verified
+DevSeed,Hm1B3TrackerTest,/DevSeed/Hm1B3TrackerTest,api,"HttpGet(""hm1-b3-tracker-test"")",,,no,repository-verified
+DevSeed,Hm1B5bTest,/DevSeed/Hm1B5bTest,api,"HttpGet(""hm1-b5b-test"")",,,no,repository-verified
+DevSeed,Hm1CloseBatchTest,/DevSeed/Hm1CloseBatchTest,api,"HttpGet(""hm1-close-batch-test"")",,,no,repository-verified
+DevSeed,Hm1CloseShiftTest,/DevSeed/Hm1CloseShiftTest,api,"HttpGet(""hm1-closeshift-test"")",,,no,repository-verified
+DevSeed,Hm1D5aTest,/DevSeed/Hm1D5aTest,api,"HttpGet(""hm1-d5a-test"")",,,no,repository-verified
+DevSeed,Hm1D6ConcurrencyTest,/DevSeed/Hm1D6ConcurrencyTest,api,"HttpGet(""hm1-d6-concurrency-test"")",,,no,repository-verified
+DevSeed,Hm1D6RaceTest,/DevSeed/Hm1D6RaceTest,api,"HttpGet(""hm1-d6-race-test"")",,,no,repository-verified
+DevSeed,Hm1DoublePostTest,/DevSeed/Hm1DoublePostTest,api,"HttpGet(""hm1-double-post-test"")",,,no,repository-verified
+DevSeed,Hm1GuardPurchaseTest,/DevSeed/Hm1GuardPurchaseTest,api,"HttpGet(""hm1-guard-purchase-test"")",,,no,repository-verified
+DevSeed,Hm1PhaseDMeasure,/DevSeed/Hm1PhaseDMeasure,api,"HttpGet(""hm1-phase-d-measure"")",,,no,repository-verified
+DevSeed,Hm1ResyncGuardTest,/DevSeed/Hm1ResyncGuardTest,api,"HttpGet(""hm1-resync-guard-test"")",,,no,repository-verified
+DevSeed,Hm1ReverseJe,/DevSeed/Hm1ReverseJe,api,"HttpGet(""hm1-reverse-je"")",,,no,repository-verified
+DevSeed,Hm1Seed,/DevSeed/Hm1Seed,api,"HttpGet(""hm1-seed"")",,,no,repository-verified
+DevSeed,Hm1Step0PurchaseTest,/DevSeed/Hm1Step0PurchaseTest,api,"HttpGet(""hm1-step0-purchase-test"")",,,no,repository-verified
+DevSeed,Hm1Step0Teardown,/DevSeed/Hm1Step0Teardown,api,"HttpGet(""hm1-step0-teardown"")",,,no,repository-verified
+DevSeed,Hm1VoidOrder,/DevSeed/Hm1VoidOrder,api,"HttpGet(""hm1-void-order"")",,,no,repository-verified
+DevSeed,Hm23c0Proofs,/DevSeed/Hm23c0Proofs,api,"HttpGet(""hm2-3c0-proofs"")",,,no,repository-verified
+DevSeed,Hm23cTest,/DevSeed/Hm23cTest,api,"HttpGet(""hm2-3c-test"")",,,no,repository-verified
+DevSeed,Hm24Proofs,/DevSeed/Hm24Proofs,api,"HttpGet(""hm2-4-proofs"")",,,no,repository-verified
+DevSeed,Hm2CashierReturnFxTest,/DevSeed/Hm2CashierReturnFxTest,api,"HttpGet(""hm2-cashier-return-fx-test"")",,,no,repository-verified
+DevSeed,Hm2Edge,/DevSeed/Hm2Edge,api,"HttpGet(""hm2-edge"")",,,no,repository-verified
+DevSeed,Hm2KwdFunctionalCompany,/DevSeed/Hm2KwdFunctionalCompany,api,"HttpGet(""hm2-kwd-functional-company"")",,,no,repository-verified
+DevSeed,Hm2KwdInvoiceTest,/DevSeed/Hm2KwdInvoiceTest,api,"HttpGet(""hm2-kwd-invoice-test"")",,,no,repository-verified
+DevSeed,Hm2KwdReceiptTest,/DevSeed/Hm2KwdReceiptTest,api,"HttpGet(""hm2-kwd-receipt-test"")",,,no,repository-verified
+DevSeed,Hm2KwdReturnTest,/DevSeed/Hm2KwdReturnTest,api,"HttpGet(""hm2-kwd-return-test"")",,,no,repository-verified
+DevSeed,Hm2PrecisionAudit,/DevSeed/Hm2PrecisionAudit,api,"HttpGet(""hm2-precision-audit"")",,,no,repository-verified
+DevSeed,Hm2RatePrecisionProbe,/DevSeed/Hm2RatePrecisionProbe,api,"HttpGet(""hm2-rate-precision-probe"")",,,no,repository-verified
+DevSeed,Hm2RateStalenessTest,/DevSeed/Hm2RateStalenessTest,api,"HttpGet(""hm2-rate-staleness-test"")",,,no,repository-verified
+DevSeed,Hm2RoundingTest,/DevSeed/Hm2RoundingTest,api,"HttpGet(""hm2-rounding-test"")",,,no,repository-verified
+DevSeed,Hm2Seed,/DevSeed/Hm2Seed,api,"HttpGet(""hm2-seed"")",,,no,repository-verified
+DevSeed,Hm3GuardTest,/DevSeed/Hm3GuardTest,api,"HttpGet(""hm3-guard-test"")",,,no,repository-verified
+DevSeed,Hm3Seed,/DevSeed/Hm3Seed,api,"HttpGet(""hm3-seed"")",,,no,repository-verified
+DevSeed,Hm4Accept,/DevSeed/Hm4Accept,api,"HttpGet(""hm4-accept"")",,,no,repository-verified
+DevSeed,Hm4Bump,/DevSeed/Hm4Bump,api,"HttpGet(""hm4-bump"")",,,no,repository-verified
+DevSeed,Hm4Seed,/DevSeed/Hm4Seed,api,"HttpGet(""hm4-seed"")",,,no,repository-verified
+DevSeed,Hm5Accept,/DevSeed/Hm5Accept,api,"HttpGet(""hm5-accept"")",,,no,repository-verified
+DevSeed,Hm5Seed,/DevSeed/Hm5Seed,api,"HttpGet(""hm5-seed"")",,,no,repository-verified
+DevSeed,Hm6Accept,/DevSeed/Hm6Accept,api,"HttpGet(""hm6-accept"")",,,no,repository-verified
+DevSeed,Hm6Seed,/DevSeed/Hm6Seed,api,"HttpGet(""hm6-seed"")",,,no,repository-verified
+DevSeed,Hm7CountAccept,/DevSeed/Hm7CountAccept,api,"HttpGet(""hm7-count-accept"")",,,no,repository-verified
+DevSeed,Hm7LandedAccept,/DevSeed/Hm7LandedAccept,api,"HttpGet(""hm7-landed-accept"")",,,no,repository-verified
+DevSeed,Hm8Accept,/DevSeed/Hm8Accept,api,"HttpGet(""hm8-accept"")",,,no,repository-verified
+DevSeed,Hm9S1Accept,/DevSeed/Hm9S1Accept,api,"HttpGet(""hm9-s1-accept"")",,,no,repository-verified
+DevSeed,Hm9S2Accept,/DevSeed/Hm9S2Accept,api,"HttpGet(""hm9-s2-accept"")",,,no,repository-verified
+DevSeed,HmBAccept,/DevSeed/HmBAccept,api,"HttpGet(""hm-b-accept"")",,,no,repository-verified
+DevSeed,HmD34GuardRegression,/DevSeed/HmD34GuardRegression,api,"HttpGet(""hm-d34-guard-regression"")",,,no,repository-verified
+DevSeed,HmD38OrderTest,/DevSeed/HmD38OrderTest,api,"HttpGet(""hm-d38-order-test"")",,,no,repository-verified
+DevSeed,HmGuardTest,/DevSeed/HmGuardTest,api,"HttpGet(""hm-guard-test"")",,,no,repository-verified
+DevSeed,HrTestAttendance,/DevSeed/HrTestAttendance,api,"HttpGet(""hr-test-attendance"")",,,no,repository-verified
+DevSeed,HrTestCarryOver,/DevSeed/HrTestCarryOver,api,"HttpGet(""hr-test-carryover"")",,,no,repository-verified
+DevSeed,HrTestDisburse,/DevSeed/HrTestDisburse,api,"HttpGet(""hr-test-disburse"")",,,no,repository-verified
+DevSeed,HrTestDocs,/DevSeed/HrTestDocs,api,"HttpGet(""hr-test-docs"")",,,no,repository-verified
+DevSeed,HrTestHoliday,/DevSeed/HrTestHoliday,api,"HttpGet(""hr-test-holiday"")",,,no,repository-verified
+DevSeed,HrTestLeaveAccrual,/DevSeed/HrTestLeaveAccrual,api,"HttpGet(""hr-test-leaveaccrual"")",,,no,repository-verified
+DevSeed,HrTestPayslip,/DevSeed/HrTestPayslip,api,"HttpGet(""hr-test-payslip"")",,,no,repository-verified
+DevSeed,HrTestSettlement,/DevSeed/HrTestSettlement,api,"HttpGet(""hr-test-settlement"")",,,no,repository-verified
+DevSeed,HyperHm0Seed,/DevSeed/HyperHm0Seed,api,"HttpGet(""hyper-hm0-seed"")",,,no,repository-verified
+DevSeed,IdentityRolesSeed,/DevSeed/IdentityRolesSeed,api,"HttpGet(""identity-roles-seed"")",,,no,repository-verified
+DevSeed,InvReconcile,/DevSeed/InvReconcile,api,"HttpGet(""inv-reconcile"")",,,no,repository-verified
+DevSeed,InvResyncItem,/DevSeed/InvResyncItem,api,"HttpGet(""inv-resync-item"")",,,no,repository-verified
+DevSeed,InvTestApproval,/DevSeed/InvTestApproval,api,"HttpGet(""inv-test-approval"")",,,no,repository-verified
+DevSeed,InvTestAssetBridge,/DevSeed/InvTestAssetBridge,api,"HttpGet(""inv-test-assetbridge"")",,,no,repository-verified
+DevSeed,InvTestAssetCapitalize,/DevSeed/InvTestAssetCapitalize,api,"HttpGet(""inv-test-assetcapitalize"")",,,no,repository-verified
+DevSeed,InvTestComposite,/DevSeed/InvTestComposite,api,"HttpGet(""inv-test-composite"")",,,no,repository-verified
+DevSeed,InvTestConcurrency,/DevSeed/InvTestConcurrency,api,"HttpGet(""inv-test-concurrency"")",,,no,repository-verified
+DevSeed,InvTestCosting,/DevSeed/InvTestCosting,api,"HttpGet(""inv-test-costing"")",,,no,repository-verified
+DevSeed,InvTestFefo,/DevSeed/InvTestFefo,api,"HttpGet(""inv-test-fefo"")",,,no,repository-verified
+DevSeed,InvTestGl,/DevSeed/InvTestGl,api,"HttpGet(""inv-test-gl"")",,,no,repository-verified
+DevSeed,InvTestI2,/DevSeed/InvTestI2,api,"HttpGet(""inv-test-i2"")",,,no,repository-verified
+DevSeed,InvTestI3,/DevSeed/InvTestI3,api,"HttpGet(""inv-test-i3"")",,,no,repository-verified
+DevSeed,InvTestI4,/DevSeed/InvTestI4,api,"HttpGet(""inv-test-i4"")",,,no,repository-verified
+DevSeed,InvTestI6,/DevSeed/InvTestI6,api,"HttpGet(""inv-test-i6"")",,,no,repository-verified
+DevSeed,InvTestI7,/DevSeed/InvTestI7,api,"HttpGet(""inv-test-i7"")",,,no,repository-verified
+DevSeed,InvTestI9,/DevSeed/InvTestI9,api,"HttpGet(""inv-test-i9"")",,,no,repository-verified
+DevSeed,InvTestIntegrity,/DevSeed/InvTestIntegrity,api,"HttpGet(""inv-test-integrity"")",,,no,repository-verified
+DevSeed,InvTestInterbranch,/DevSeed/InvTestInterbranch,api,"HttpGet(""inv-test-interbranch"")",,,no,repository-verified
+DevSeed,InvTestPeriodLock,/DevSeed/InvTestPeriodLock,api,"HttpGet(""inv-test-periodlock"")",,,no,repository-verified
+DevSeed,JeTestProject,/DevSeed/JeTestProject,api,"HttpGet(""je-test-project"")",,,no,repository-verified
+DevSeed,MaintTest,/DevSeed/MaintTest,api,"HttpGet(""maint-test"")",,,no,repository-verified
+DevSeed,MakeAdmin,/DevSeed/MakeAdmin,api,"HttpGet(""make-admin"")",,,no,repository-verified
+DevSeed,ManufTestImmediateScrap,/DevSeed/ManufTestImmediateScrap,api,"HttpGet(""manuf-test-immediate-scrap"")",,,no,repository-verified
+DevSeed,ManufTestLabor,/DevSeed/ManufTestLabor,api,"HttpGet(""manuf-test-labor"")",,,no,repository-verified
+DevSeed,ManufTestLaborFx,/DevSeed/ManufTestLaborFx,api,"HttpGet(""manuf-test-labor-fx"")",,,no,repository-verified
+DevSeed,ManufTestMrp,/DevSeed/ManufTestMrp,api,"HttpGet(""manuf-test-mrp"")",,,no,repository-verified
+DevSeed,ManufTestPartial,/DevSeed/ManufTestPartial,api,"HttpGet(""manuf-test-partial"")",,,no,repository-verified
+DevSeed,ManufTestRouting,/DevSeed/ManufTestRouting,api,"HttpGet(""manuf-test-routing"")",,,no,repository-verified
+DevSeed,ManufTestScrap,/DevSeed/ManufTestScrap,api,"HttpGet(""manuf-test-scrap"")",,,no,repository-verified
+DevSeed,ManufTestStaged,/DevSeed/ManufTestStaged,api,"HttpGet(""manuf-test-staged"")",,,no,repository-verified
+DevSeed,ManufTestWip,/DevSeed/ManufTestWip,api,"HttpGet(""manuf-test-wip"")",,,no,repository-verified
+DevSeed,ManufTestWipCheck,/DevSeed/ManufTestWipCheck,api,"HttpGet(""manuf-test-wipcheck"")",,,no,repository-verified
+DevSeed,ManufTestWo,/DevSeed/ManufTestWo,api,"HttpGet(""manuf-test-wo"")",,,no,repository-verified
+DevSeed,McTestFx,/DevSeed/McTestFx,api,"HttpGet(""mc-test-fx"")",,,no,repository-verified
+DevSeed,McTestO2c,/DevSeed/McTestO2c,api,"HttpGet(""mc-test-o2c"")",,,no,repository-verified
+DevSeed,McTestP2p,/DevSeed/McTestP2p,api,"HttpGet(""mc-test-p2p"")",,,no,repository-verified
+DevSeed,McTestPricing2,/DevSeed/McTestPricing2,api,"HttpGet(""mc-test-pricing2"")",,,no,repository-verified
+DevSeed,McTestReval,/DevSeed/McTestReval,api,"HttpGet(""mc-test-reval"")",,,no,repository-verified
+DevSeed,MfgSaleChainTest,/DevSeed/MfgSaleChainTest,api,"HttpGet(""mfg-sale-chain-test"")",,,no,repository-verified
+DevSeed,NumberingConcurrencyTest,/DevSeed/NumberingConcurrencyTest,api,"HttpGet(""numbering-concurrency-test"")",,,no,repository-verified
+DevSeed,OutboundLocationTest,/DevSeed/OutboundLocationTest,api,"HttpGet(""outbound-location-test"")",,,no,repository-verified
+DevSeed,P0Test,/DevSeed/P0Test,api,"HttpGet(""p0-test"")",,,no,repository-verified
+DevSeed,P1Test,/DevSeed/P1Test,api,"HttpGet(""p1-test"")",,,no,repository-verified
+DevSeed,P2Test,/DevSeed/P2Test,api,"HttpGet(""p2-test"")",,,no,repository-verified
+DevSeed,P3Test,/DevSeed/P3Test,api,"HttpGet(""p3-test"")",,,no,repository-verified
+DevSeed,P4Test,/DevSeed/P4Test,api,"HttpGet(""p4-test"")",,,no,repository-verified
+DevSeed,P5aTest,/DevSeed/P5aTest,api,"HttpGet(""p5a-test"")",,,no,repository-verified
+DevSeed,P5bTest,/DevSeed/P5bTest,api,"HttpGet(""p5b-test"")",,,no,repository-verified
+DevSeed,P6aTest,/DevSeed/P6aTest,api,"HttpGet(""p6a-test"")",,,no,repository-verified
+DevSeed,P6bTest,/DevSeed/P6bTest,api,"HttpGet(""p6b-test"")",,,no,repository-verified
+DevSeed,P6c2Test,/DevSeed/P6c2Test,api,"HttpGet(""p6c2-test"")",,,no,repository-verified
+DevSeed,P6cTest,/DevSeed/P6cTest,api,"HttpGet(""p6c-test"")",,,no,repository-verified
+DevSeed,P6dTest,/DevSeed/P6dTest,api,"HttpGet(""p6d-test"")",,,no,repository-verified
+DevSeed,P6eTest,/DevSeed/P6eTest,api,"HttpGet(""p6e-test"")",,,no,repository-verified
+DevSeed,Pos2Test,/DevSeed/Pos2Test,api,"HttpGet(""pos2-test"")",,,no,repository-verified
+DevSeed,Pos3Test,/DevSeed/Pos3Test,api,"HttpGet(""pos3-test"")",,,no,repository-verified
+DevSeed,Pos9eTest,/DevSeed/Pos9eTest,api,"HttpGet(""pos-9e-test"")",,,no,repository-verified
+DevSeed,PosA1Test,/DevSeed/PosA1Test,api,"HttpGet(""pos-a1-test"")",,,no,repository-verified
+DevSeed,PosB1Test,/DevSeed/PosB1Test,api,"HttpGet(""pos-b1-test"")",,,no,repository-verified
+DevSeed,PosB2Test,/DevSeed/PosB2Test,api,"HttpGet(""pos-b2-test"")",,,no,repository-verified
+DevSeed,PosC1Test,/DevSeed/PosC1Test,api,"HttpGet(""pos-c1-test"")",,,no,repository-verified
+DevSeed,PosC2Test,/DevSeed/PosC2Test,api,"HttpGet(""pos-c2-test"")",,,no,repository-verified
+DevSeed,PosC3Test,/DevSeed/PosC3Test,api,"HttpGet(""pos-c3-test"")",,,no,repository-verified
+DevSeed,PosC4Test,/DevSeed/PosC4Test,api,"HttpGet(""pos-c4-test"")",,,no,repository-verified
+DevSeed,PosModifiersTest,/DevSeed/PosModifiersTest,api,"HttpGet(""pos-modifiers-test"")",,,no,repository-verified
+DevSeed,PosPayRolesTest,/DevSeed/PosPayRolesTest,api,"HttpGet(""pos-payroles-test"")",,,no,repository-verified
+DevSeed,PosQuickMenuTest,/DevSeed/PosQuickMenuTest,api,"HttpGet(""pos-quickmenu-test"")",,,no,repository-verified
+DevSeed,PosSyncTest,/DevSeed/PosSyncTest,api,"HttpGet(""pos-sync-test"")",,,no,repository-verified
+DevSeed,PosTerminalsTest,/DevSeed/PosTerminalsTest,api,"HttpGet(""pos-terminals-test"")",,,no,repository-verified
+DevSeed,PricingTestCostPlus,/DevSeed/PricingTestCostPlus,api,"HttpGet(""pricing-test-costplus"")",,,no,repository-verified
+DevSeed,PricingTestDiscount,/DevSeed/PricingTestDiscount,api,"HttpGet(""pricing-test-discount"")",,,no,repository-verified
+DevSeed,PricingTestMargin,/DevSeed/PricingTestMargin,api,"HttpGet(""pricing-test-margin"")",,,no,repository-verified
+DevSeed,PrjDemoCost,/DevSeed/PrjDemoCost,api,"HttpGet(""prj-demo-cost"")",,,no,repository-verified
+DevSeed,ProjectTest,/DevSeed/ProjectTest,api,"HttpGet(""project-test"")",,,no,repository-verified
+DevSeed,PromotionTest,/DevSeed/PromotionTest,api,"HttpGet(""promotion-test"")",,,no,repository-verified
+DevSeed,R0Test,/DevSeed/R0Test,api,"HttpGet(""r0-test"")",,,no,repository-verified
+DevSeed,R1Test,/DevSeed/R1Test,api,"HttpGet(""r1-test"")",,,no,repository-verified
+DevSeed,R2Test,/DevSeed/R2Test,api,"HttpGet(""r2-test"")",,,no,repository-verified
+DevSeed,R3Test,/DevSeed/R3Test,api,"HttpGet(""r3-test"")",,,no,repository-verified
+DevSeed,Rc2Test,/DevSeed/Rc2Test,api,"HttpGet(""rc2-test"")",,,no,repository-verified
+DevSeed,Rc3aTest,/DevSeed/Rc3aTest,api,"HttpGet(""rc3a-test"")",,,no,repository-verified
+DevSeed,Rc3dTest,/DevSeed/Rc3dTest,api,"HttpGet(""rc3d-test"")",,,no,repository-verified
+DevSeed,Rc3eTest,/DevSeed/Rc3eTest,api,"HttpGet(""rc3e-test"")",,,no,repository-verified
+DevSeed,Rc4Test,/DevSeed/Rc4Test,api,"HttpGet(""rc4-test"")",,,no,repository-verified
+DevSeed,Rc6aTest,/DevSeed/Rc6aTest,api,"HttpGet(""rc6a-test"")",,,no,repository-verified
+DevSeed,Rc6bTest,/DevSeed/Rc6bTest,api,"HttpGet(""rc6b-test"")",,,no,repository-verified
+DevSeed,Rc6c2Test,/DevSeed/Rc6c2Test,api,"HttpGet(""rc6c2-test"")",,,no,repository-verified
+DevSeed,Rc6cTest,/DevSeed/Rc6cTest,api,"HttpGet(""rc6c-test"")",,,no,repository-verified
+DevSeed,ReceiptLocationTest,/DevSeed/ReceiptLocationTest,api,"HttpGet(""receipt-location-test"")",,,no,repository-verified
+DevSeed,RecruitDemo,/DevSeed/RecruitDemo,api,"HttpGet(""recruit-demo"")",,,no,repository-verified
+DevSeed,SalesHistorySeed,/DevSeed/SalesHistorySeed,api,"HttpGet(""sales-history-seed"")",,,no,repository-verified
+DevSeed,SeedAccDemo,/DevSeed/SeedAccDemo,api,"HttpGet(""seed-acc-demo"")",,,no,repository-verified
+DevSeed,SeedAccounting,/DevSeed/SeedAccounting,api,"HttpGet(""seed-accounting"")",,,no,repository-verified
+DevSeed,SeedAttendanceMonth,/DevSeed/SeedAttendanceMonth,api,"HttpGet(""seed-attendance-month"")",,,no,repository-verified
+DevSeed,SeedBankRecon,/DevSeed/SeedBankRecon,api,"HttpGet(""seed-bank-recon"")",,,no,repository-verified
+DevSeed,SeedBillingData,/DevSeed/SeedBillingData,api,"HttpGet(""seed-billing-data"")",,,no,repository-verified
+DevSeed,SeedBrands,/DevSeed/SeedBrands,api,"HttpGet(""seed-brands"")",,,no,repository-verified
+DevSeed,SeedCurrencies,/DevSeed/SeedCurrencies,api,"HttpGet(""seed-currencies"")",,,no,repository-verified
+DevSeed,SeedDeptHeads,/DevSeed/SeedDeptHeads,api,"HttpGet(""seed-dept-heads"")",,,no,repository-verified
+DevSeed,SeedDisbursement,/DevSeed/SeedDisbursement,api,"HttpGet(""seed-disbursement"")",,,no,repository-verified
+DevSeed,SeedExpiry,/DevSeed/SeedExpiry,api,"HttpGet(""seed-expiry"")",,,no,repository-verified
+DevSeed,SeedFaDemo,/DevSeed/SeedFaDemo,api,"HttpGet(""seed-fa-demo"")",,,no,repository-verified
+DevSeed,SeedFinalSettlement,/DevSeed/SeedFinalSettlement,api,"HttpGet(""seed-final-settlement"")",,,no,repository-verified
+DevSeed,SeedInvComposite,/DevSeed/SeedInvComposite,api,"HttpGet(""seed-inv-composite"")",,,no,repository-verified
+DevSeed,SeedInvDemo,/DevSeed/SeedInvDemo,api,"HttpGet(""seed-inv-demo"")",,,no,repository-verified
+DevSeed,SeedInvItems,/DevSeed/SeedInvItems,api,"HttpGet(""seed-inv-items"")",,,no,repository-verified
+DevSeed,SeedInvRoles,/DevSeed/SeedInvRoles,api,"HttpGet(""seed-inv-roles"")",,,no,repository-verified
+DevSeed,SeedItemAllMoves,/DevSeed/SeedItemAllMoves,api,"HttpGet(""seed-item-allmoves"")",,,no,repository-verified
+DevSeed,SeedItemImages,/DevSeed/SeedItemImages,api,"HttpGet(""seed-item-images"")",,,no,repository-verified
+DevSeed,SeedItemImagesReal,/DevSeed/SeedItemImagesReal,api,"HttpGet(""seed-item-images-real"")",,,no,repository-verified
+DevSeed,SeedMultiCurrency,/DevSeed/SeedMultiCurrency,api,"HttpGet(""seed-multicurrency"")",,,no,repository-verified
+DevSeed,SeedOpeningDemo,/DevSeed/SeedOpeningDemo,api,"HttpGet(""seed-opening-demo"")",,,no,repository-verified
+DevSeed,SeedPayments,/DevSeed/SeedPayments,api,"HttpGet(""seed-payments"")",,,no,repository-verified
+DevSeed,SeedProjectExecution,/DevSeed/SeedProjectExecution,api,"HttpGet(""seed-project-execution"")",,,no,repository-verified
+DevSeed,SeedRestaurantMenu,/DevSeed/SeedRestaurantMenu,api,"HttpGet(""seed-restaurant-menu"")",,,no,repository-verified
+DevSeed,SeedSectionsGroups,/DevSeed/SeedSectionsGroups,api,"HttpGet(""seed-sections-groups"")",,,no,repository-verified
+DevSeed,SeedTaxDemo,/DevSeed/SeedTaxDemo,api,"HttpGet(""seed-tax-demo"")",,,no,repository-verified
+DevSeed,SeedTestOrg,/DevSeed/SeedTestOrg,api,"HttpGet(""seed-test-org"")",,,no,repository-verified
+DevSeed,SeedUomDemo,/DevSeed/SeedUomDemo,api,"HttpGet(""seed-uom-demo"")",,,no,repository-verified
+DevSeed,SeedUsers,/DevSeed/SeedUsers,api,"HttpGet(""seed-users"")",,,no,repository-verified
+DevSeed,SeedWriteOffDemo,/DevSeed/SeedWriteOffDemo,api,"HttpGet(""seed-writeoff-demo"")",,,no,repository-verified
+DevSeed,SessProbe,/DevSeed/SessProbe,api,"HttpGet(""sess-probe"")",,,no,repository-verified
+DevSeed,SplitItemsTest,/DevSeed/SplitItemsTest,api,"HttpGet(""split-items-test"")",,,no,repository-verified
+DevSeed,TasksSeed,/DevSeed/TasksSeed,api,"HttpGet(""tasks-seed"")",,,no,repository-verified
+DevSeed,TasksSeedClear,/DevSeed/TasksSeedClear,api,"HttpGet(""tasks-seed-clear"")",,,no,repository-verified
+DevSeed,TipTest,/DevSeed/TipTest,api,"HttpGet(""tip-test"")",,,no,repository-verified
+DevSeed,Tm1Test,/DevSeed/Tm1Test,api,"HttpGet(""tm1-test"")",,,no,repository-verified
+DevSeed,Tm2Test,/DevSeed/Tm2Test,api,"HttpGet(""tm2-test"")",,,no,repository-verified
+DevSeed,Tm3Test,/DevSeed/Tm3Test,api,"HttpGet(""tm3-test"")",,,no,repository-verified
+DevSeed,Tm4Test,/DevSeed/Tm4Test,api,"HttpGet(""tm4-test"")",,,no,repository-verified
+DevSeed,Tm5Test,/DevSeed/Tm5Test,api,"HttpGet(""tm5-test"")",,,no,repository-verified
+DevSeed,Tm6Test,/DevSeed/Tm6Test,api,"HttpGet(""tm6-test"")",,,no,repository-verified
+DevSeed,Tm7Test,/DevSeed/Tm7Test,api,"HttpGet(""tm7-test"")",,,no,repository-verified
+DevSeed,Tm8Test,/DevSeed/Tm8Test,api,"HttpGet(""tm8-test"")",,,no,repository-verified
+DevSeed,Tm9aTest,/DevSeed/Tm9aTest,api,"HttpGet(""tm9a-test"")",,,no,repository-verified
+DevSeed,Tm9bTest,/DevSeed/Tm9bTest,api,"HttpGet(""tm9b-test"")",,,no,repository-verified
+DevSeed,Tm9cTest,/DevSeed/Tm9cTest,api,"HttpGet(""tm9c-test"")",,,no,repository-verified
+DevSeed,TrainingTest,/DevSeed/TrainingTest,api,"HttpGet(""training-test"")",,,no,repository-verified
+DevSeed,UndoExpiry,/DevSeed/UndoExpiry,api,"HttpGet(""undo-expiry"")",,,no,repository-verified
+DevSeed,WarehouseSectionsTest,/DevSeed/WarehouseSectionsTest,api,"HttpGet(""warehouse-sections-test"")",,,no,repository-verified
+EmployeesApi,Detail,/EmployeesApi/Detail,api,"HttpGet(""{id:int}"")",,,no,repository-verified
+EmployeesApi,List,/EmployeesApi/List,api,HttpGet,,,no,repository-verified
+HrApi,Branches,/HrApi/Branches,api,"HttpGet(""branches"")",,"ApiController; Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme); Produces(""application/json""); Route(""api/hr"")",no,repository-verified
+HrApi,Companies,/HrApi/Companies,api,"HttpGet(""companies"")",,"ApiController; Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme); Produces(""application/json""); Route(""api/hr"")",no,repository-verified
+HrApi,CreateJobTitle,/HrApi/CreateJobTitle,api,"HttpPost(""jobtitles"")",,"ApiController; Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme); Produces(""application/json""); Route(""api/hr"")",no,repository-verified
+HrApi,JobTitles,/HrApi/JobTitles,api,"HttpGet(""jobtitles"")",,"ApiController; Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme); Produces(""application/json""); Route(""api/hr"")",no,repository-verified
+HrApi,Summary,/HrApi/Summary,api,"HttpGet(""summary"")",,"ApiController; Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme); Produces(""application/json""); Route(""api/hr"")",no,repository-verified
+HrApi,UpdateJobTitle,/HrApi/UpdateJobTitle,api,"HttpPut(""jobtitles/{id:int}"")",,"ApiController; Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme); Produces(""application/json""); Route(""api/hr"")",no,repository-verified
+InventoryApi,Items,/InventoryApi/Items,api,"HttpGet(""items"")",,"ApiController; Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme); Produces(""application/json""); Route(""api/inv"")",no,repository-verified
+InventoryApi,OnHand,/InventoryApi/OnHand,api,"HttpGet(""onhand"")",,"ApiController; Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme); Produces(""application/json""); Route(""api/inv"")",no,repository-verified
+InventoryApi,Scan,/InventoryApi/Scan,api,"HttpGet(""scan"")",,"ApiController; Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme); Produces(""application/json""); Route(""api/inv"")",no,repository-verified
+LeaveApi,Create,/LeaveApi/Create,api,HttpPost,,"ApiController; Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme); Produces(""application/json""); Route(""api/leave"")",no,repository-verified
+LeaveApi,Decision,/LeaveApi/Decision,api,"HttpPost(""{id:int}/decision"")",,"ApiController; Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme); Produces(""application/json""); Route(""api/leave"")",no,repository-verified
+LeaveApi,My,/LeaveApi/My,api,"HttpGet(""my"")",,"ApiController; Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme); Produces(""application/json""); Route(""api/leave"")",no,repository-verified
+LeaveApi,Pending,/LeaveApi/Pending,api,"HttpGet(""pending"")",,"ApiController; Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme); Produces(""application/json""); Route(""api/leave"")",no,repository-verified
+LeaveApi,Types,/LeaveApi/Types,api,"HttpGet(""types"")",,"ApiController; Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme); Produces(""application/json""); Route(""api/leave"")",no,repository-verified
+LeaveApi,WorkDays,/LeaveApi/WorkDays,api,"HttpGet(""workdays"")",,"ApiController; Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme); Produces(""application/json""); Route(""api/leave"")",no,repository-verified
+MeApi,Activity,/MeApi/Activity,api,"HttpGet(""activity"")",,"ApiController; Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme); Produces(""application/json""); Route(""api/me"")",no,repository-verified
+MeApi,Dashboard,/MeApi/Dashboard,api,"HttpGet(""dashboard"")",,"ApiController; Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme); Produces(""application/json""); Route(""api/me"")",no,repository-verified
+MeApi,Documents,/MeApi/Documents,api,"HttpGet(""documents"")",,"ApiController; Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme); Produces(""application/json""); Route(""api/me"")",no,repository-verified
+MeApi,Position,/MeApi/Position,api,"HttpGet(""position"")",,"ApiController; Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme); Produces(""application/json""); Route(""api/me"")",no,repository-verified
+MeApi,Profile,/MeApi/Profile,api,"HttpGet(""profile"")",,"ApiController; Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme); Produces(""application/json""); Route(""api/me"")",no,repository-verified
+MeApi,Structure,/MeApi/Structure,api,"HttpGet(""structure"")",,"ApiController; Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme); Produces(""application/json""); Route(""api/me"")",no,repository-verified
+NotificationsApi,List,/NotificationsApi/List,api,HttpGet,,"Authorize(AuthenticationSchemes = ""Identity.Application,"" + JwtBearerDefaults.AuthenticationScheme)",no,repository-verified
+NotificationsApi,MarkAllRead,/NotificationsApi/MarkAllRead,api,"HttpPost(""read-all"")",,"Authorize(AuthenticationSchemes = ""Identity.Application,"" + JwtBearerDefaults.AuthenticationScheme)",no,repository-verified
+NotificationsApi,MarkRead,/NotificationsApi/MarkRead,api,"HttpPost(""{id:int}/read"")",,"Authorize(AuthenticationSchemes = ""Identity.Application,"" + JwtBearerDefaults.AuthenticationScheme)",no,repository-verified
+PlatformGrantsApi,Create,/PlatformGrantsApi/Create,api,HttpPost,,"ApiController; Authorize; Produces(""application/json""); Route(""api/platform/grants"")",no,repository-verified
+PlatformGrantsApi,Get,/PlatformGrantsApi/Get,api,"HttpGet(""{id:int}"")",,"ApiController; Authorize; Produces(""application/json""); Route(""api/platform/grants"")",no,repository-verified
+PlatformGrantsApi,List,/PlatformGrantsApi/List,api,HttpGet,,"ApiController; Authorize; Produces(""application/json""); Route(""api/platform/grants"")",no,repository-verified
+PlatformGrantsApi,Revoke,/PlatformGrantsApi/Revoke,api,"HttpPost(""{id:int}/revoke"")",,"ApiController; Authorize; Produces(""application/json""); Route(""api/platform/grants"")",no,repository-verified
+PlatformGrantsApi,UpdateValidity,/PlatformGrantsApi/UpdateValidity,api,"HttpPost(""{id:int}/validity"")",,"ApiController; Authorize; Produces(""application/json""); Route(""api/platform/grants"")",no,repository-verified
+ReportStudioApi,Asset,/ReportStudioApi/Asset,api,"HttpGet(""assets/{id:int}"")",IgnoreAntiforgeryToken,"ApiController; Authorize; AutoValidateAntiforgeryToken; Produces(""application/json""); Route(""api/reports/studio"")",no,repository-verified
+ReportStudioApi,Assets,/ReportStudioApi/Assets,api,"HttpGet(""assets"")",IgnoreAntiforgeryToken,"ApiController; Authorize; AutoValidateAntiforgeryToken; Produces(""application/json""); Route(""api/reports/studio"")",no,repository-verified
+ReportStudioApi,Delete,/ReportStudioApi/Delete,api,"HttpPost(""delete/{templateId:int}"")",,"ApiController; Authorize; AutoValidateAntiforgeryToken; Produces(""application/json""); Route(""api/reports/studio"")",no,repository-verified
+ReportStudioApi,DeleteAsset,/ReportStudioApi/DeleteAsset,api,"HttpPost(""assets/{id:int}/delete"")",,"ApiController; Authorize; AutoValidateAntiforgeryToken; Produces(""application/json""); Route(""api/reports/studio"")",no,repository-verified
+ReportStudioApi,Export,/ReportStudioApi/Export,api,"HttpPost(""export"")",,"ApiController; Authorize; AutoValidateAntiforgeryToken; Produces(""application/json""); Route(""api/reports/studio"")",no,repository-verified
+ReportStudioApi,Fields,/ReportStudioApi/Fields,api,"HttpGet(""fields"")",IgnoreAntiforgeryToken,"ApiController; Authorize; AutoValidateAntiforgeryToken; Produces(""application/json""); Route(""api/reports/studio"")",no,repository-verified
+ReportStudioApi,Fork,/ReportStudioApi/Fork,api,"HttpPost(""fork"")",,"ApiController; Authorize; AutoValidateAntiforgeryToken; Produces(""application/json""); Route(""api/reports/studio"")",no,repository-verified
+ReportStudioApi,Open,/ReportStudioApi/Open,api,"HttpGet(""open/{templateId:int}"")",IgnoreAntiforgeryToken,"ApiController; Authorize; AutoValidateAntiforgeryToken; Produces(""application/json""); Route(""api/reports/studio"")",no,repository-verified
+ReportStudioApi,Parameters,/ReportStudioApi/Parameters,api,"HttpGet(""parameters"")",IgnoreAntiforgeryToken,"ApiController; Authorize; AutoValidateAntiforgeryToken; Produces(""application/json""); Route(""api/reports/studio"")",no,repository-verified
+ReportStudioApi,Pdf,/ReportStudioApi/Pdf,api,"HttpPost(""pdf"")",,"ApiController; Authorize; AutoValidateAntiforgeryToken; Produces(""application/json""); Route(""api/reports/studio"")",no,repository-verified
+ReportStudioApi,Preview,/ReportStudioApi/Preview,api,"HttpPost(""preview"")",,"ApiController; Authorize; AutoValidateAntiforgeryToken; Produces(""application/json""); Route(""api/reports/studio"")",no,repository-verified
+ReportStudioApi,Print,/ReportStudioApi/Print,api,"HttpPost(""print"")","Produces(""text/html"")","ApiController; Authorize; AutoValidateAntiforgeryToken; Produces(""application/json""); Route(""api/reports/studio"")",no,repository-verified
+ReportStudioApi,Rollback,/ReportStudioApi/Rollback,api,"HttpPost(""rollback"")",,"ApiController; Authorize; AutoValidateAntiforgeryToken; Produces(""application/json""); Route(""api/reports/studio"")",no,repository-verified
+ReportStudioApi,Save,/ReportStudioApi/Save,api,"HttpPost(""save"")",,"ApiController; Authorize; AutoValidateAntiforgeryToken; Produces(""application/json""); Route(""api/reports/studio"")",no,repository-verified
+ReportStudioApi,UploadAsset,/ReportStudioApi/UploadAsset,api,"HttpPost(""assets"")",RequestSizeLimit(8 * 1024 * 1024),"ApiController; Authorize; AutoValidateAntiforgeryToken; Produces(""application/json""); Route(""api/reports/studio"")",no,repository-verified
+ReportStudioApi,Validate,/ReportStudioApi/Validate,api,"HttpPost(""validate"")",,"ApiController; Authorize; AutoValidateAntiforgeryToken; Produces(""application/json""); Route(""api/reports/studio"")",no,repository-verified
+ReportStudioApi,Versions,/ReportStudioApi/Versions,api,"HttpGet(""versions/{templateId:int}"")",IgnoreAntiforgeryToken,"ApiController; Authorize; AutoValidateAntiforgeryToken; Produces(""application/json""); Route(""api/reports/studio"")",no,repository-verified
+ReportsCenterApi,Archive,/ReportsCenterApi/Archive,api,"HttpGet(""archive"")",,"ApiController; Authorize; Produces(""application/json""); Route(""api/reports"")",no,repository-verified
+ReportsCenterApi,ArchiveDownload,/ReportsCenterApi/ArchiveDownload,api,"HttpGet(""archive/{entryId:long}/download"")",,"ApiController; Authorize; Produces(""application/json""); Route(""api/reports"")",no,repository-verified
+ReportsCenterApi,Catalog,/ReportsCenterApi/Catalog,api,"HttpGet(""catalog"")",,"ApiController; Authorize; Produces(""application/json""); Route(""api/reports"")",no,repository-verified
+ReportsCenterApi,Categories,/ReportsCenterApi/Categories,api,"HttpGet(""categories"")",,"ApiController; Authorize; Produces(""application/json""); Route(""api/reports"")",no,repository-verified
+ReportsCenterApi,Datasets,/ReportsCenterApi/Datasets,api,"HttpGet(""datasets"")",,"ApiController; Authorize; Produces(""application/json""); Route(""api/reports"")",no,repository-verified
+ReportsCenterApi,Describe,/ReportsCenterApi/Describe,api,"HttpGet(""{code}/describe"")",,"ApiController; Authorize; Produces(""application/json""); Route(""api/reports"")",no,repository-verified
+ReportsCenterApi,Export,/ReportsCenterApi/Export,api,"HttpGet(""{code}/export"")",,"ApiController; Authorize; Produces(""application/json""); Route(""api/reports"")",no,repository-verified
+ReportsCenterApi,History,/ReportsCenterApi/History,api,"HttpGet(""history"")",,"ApiController; Authorize; Produces(""application/json""); Route(""api/reports"")",no,repository-verified
+ReportsCenterApi,HistoryParameters,/ReportsCenterApi/HistoryParameters,api,"HttpGet(""history/{runId:long}/parameters"")",,"ApiController; Authorize; Produces(""application/json""); Route(""api/reports"")",no,repository-verified
+ReportsCenterApi,Preview,/ReportsCenterApi/Preview,api,"HttpGet(""{code}/preview"")",,"ApiController; Authorize; Produces(""application/json""); Route(""api/reports"")",no,repository-verified
+ReportsCenterApi,SavedReportVersions,/ReportsCenterApi/SavedReportVersions,api,"HttpGet(""saved/{templateId:int}/versions"")",,"ApiController; Authorize; Produces(""application/json""); Route(""api/reports"")",no,repository-verified
+ReportsCenterApi,SavedReports,/ReportsCenterApi/SavedReports,api,"HttpGet(""{code}/saved"")",,"ApiController; Authorize; Produces(""application/json""); Route(""api/reports"")",no,repository-verified
+ReportsCenterWriteEndpoints,AddFavorite,/ReportsCenterWriteEndpoints/AddFavorite,api,"HttpPost(""favorites"")",,"ApiController; Authorize; AutoValidateAntiforgeryToken; Produces(""application/json""); Route(""api/reports"")",no,repository-verified
+ReportsCenterWriteEndpoints,DeleteDerived,/ReportsCenterWriteEndpoints/DeleteDerived,api,"HttpDelete(""datasets/derived/{datasetCode}"")",,"ApiController; Authorize; AutoValidateAntiforgeryToken; Produces(""application/json""); Route(""api/reports"")",no,repository-verified
+ReportsCenterWriteEndpoints,DeleteLayout,/ReportsCenterWriteEndpoints/DeleteLayout,api,"HttpDelete(""saved/{templateId:int}"")",,"ApiController; Authorize; AutoValidateAntiforgeryToken; Produces(""application/json""); Route(""api/reports"")",no,repository-verified
+ReportsCenterWriteEndpoints,Fork,/ReportsCenterWriteEndpoints/Fork,api,"HttpPost(""saved/{templateId:int}/fork"")",,"ApiController; Authorize; AutoValidateAntiforgeryToken; Produces(""application/json""); Route(""api/reports"")",no,repository-verified
+ReportsCenterWriteEndpoints,ListDerived,/ReportsCenterWriteEndpoints/ListDerived,api,"HttpGet(""datasets/derived"")",,"ApiController; Authorize; AutoValidateAntiforgeryToken; Produces(""application/json""); Route(""api/reports"")",no,repository-verified
+ReportsCenterWriteEndpoints,RemoveFavorite,/ReportsCenterWriteEndpoints/RemoveFavorite,api,"HttpDelete(""favorites"")",,"ApiController; Authorize; AutoValidateAntiforgeryToken; Produces(""application/json""); Route(""api/reports"")",no,repository-verified
+ReportsCenterWriteEndpoints,ReorderFavorites,/ReportsCenterWriteEndpoints/ReorderFavorites,api,"HttpPost(""favorites/reorder"")",,"ApiController; Authorize; AutoValidateAntiforgeryToken; Produces(""application/json""); Route(""api/reports"")",no,repository-verified
+ReportsCenterWriteEndpoints,SaveDerived,/ReportsCenterWriteEndpoints/SaveDerived,api,"HttpPost(""datasets/derived"")",,"ApiController; Authorize; AutoValidateAntiforgeryToken; Produces(""application/json""); Route(""api/reports"")",no,repository-verified
+ReportsCenterWriteEndpoints,SaveLayout,/ReportsCenterWriteEndpoints/SaveLayout,api,"HttpPost(""saved"")",,"ApiController; Authorize; AutoValidateAntiforgeryToken; Produces(""application/json""); Route(""api/reports"")",no,repository-verified
+ReportsCenterWriteEndpoints,SetDefault,/ReportsCenterWriteEndpoints/SetDefault,api,"HttpPost(""saved/{templateId:int}/default"")",,"ApiController; Authorize; AutoValidateAntiforgeryToken; Produces(""application/json""); Route(""api/reports"")",no,repository-verified
+UatSeed,AgendaProbe,/UatSeed/AgendaProbe,api,"HttpGet(""agenda-probe"")",,"AllowAnonymous; ApiController; CrossBuy.Models.DevOnly; Route(""api/uat"")",yes,repository-verified
+UatSeed,Cleanup,/UatSeed/Cleanup,api,"HttpGet(""cleanup"")",,"AllowAnonymous; ApiController; CrossBuy.Models.DevOnly; Route(""api/uat"")",yes,repository-verified
+UatSeed,Counts,/UatSeed/Counts,api,"HttpGet(""counts"")",,"AllowAnonymous; ApiController; CrossBuy.Models.DevOnly; Route(""api/uat"")",yes,repository-verified
+UatSeed,Preflight,/UatSeed/Preflight,api,"HttpGet(""preflight"")",,"AllowAnonymous; ApiController; CrossBuy.Models.DevOnly; Route(""api/uat"")",yes,repository-verified
+UatSeed,Prime,/UatSeed/Prime,api,"HttpGet(""prime"")",,"AllowAnonymous; ApiController; CrossBuy.Models.DevOnly; Route(""api/uat"")",yes,repository-verified
+UatSeed,Provision,/UatSeed/Provision,api,"HttpGet(""provision"")",,"AllowAnonymous; ApiController; CrossBuy.Models.DevOnly; Route(""api/uat"")",yes,repository-verified
+UatSeed,Seed,/UatSeed/Seed,api,"HttpGet(""seed"")",,"AllowAnonymous; ApiController; CrossBuy.Models.DevOnly; Route(""api/uat"")",yes,repository-verified
+Account,AccessDenied,/Account/AccessDenied,mvc,HttpGet,Microsoft.AspNetCore.Authorization.AllowAnonymous,,yes,repository-verified
+Account,ChangePassword,/Account/ChangePassword,mvc,HttpPost,SessionValidation; ValidateAntiForgeryToken,,no,repository-verified
+Account,ExternalLogin,/Account/ExternalLogin,mvc,HttpGet,Microsoft.AspNetCore.Authorization.AllowAnonymous,,yes,repository-verified
+Account,ExternalLoginCallback,/Account/ExternalLoginCallback,mvc,HttpGet,Microsoft.AspNetCore.Authorization.AllowAnonymous,,yes,repository-verified
+Account,Login,/Account/Login,mvc,HttpGet,,,no,repository-verified
+Account,Login,/Account/Login,mvc,HttpPost,,,no,repository-verified
+Account,Logout,/Account/Logout,mvc,HttpGet (implicit),,,no,repository-verified
+Account,Profile,/Account/Profile,mvc,HttpGet,SessionValidation,,no,repository-verified
+Account,SetLanguage,/Account/SetLanguage,mvc,HttpGet (implicit),,,no,repository-verified
+Account,Settings,/Account/Settings,mvc,HttpGet,SessionValidation,,no,repository-verified
+Account,Statements,/Account/Statements,mvc,HttpGet,SessionValidation,,no,repository-verified
+Account,Subscription,/Account/Subscription,mvc,HttpGet,SessionValidation,,no,repository-verified
+Accounting,AccountingRoles,/Accounting/AccountingRoles,mvc,HttpGet,"SessionValidation; AccPerm(""manage"")",SessionValidation,no,repository-verified
+Accounting,AiInsights,/Accounting/AiInsights,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,ApAging,/Accounting/ApAging,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,ArAging,/Accounting/ArAging,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,AssetCategories,/Accounting/AssetCategories,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,AssignAccRole,/Accounting/AssignAccRole,mvc,HttpPost,"SessionValidation; ValidateAntiForgeryToken; AccPerm(""manage"")",SessionValidation,no,repository-verified
+Accounting,BalanceSheet,/Accounting/BalanceSheet,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,BankAccounts,/Accounting/BankAccounts,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,CashBoxes,/Accounting/CashBoxes,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,CashFlow,/Accounting/CashFlow,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,ChartOfAccounts,/Accounting/ChartOfAccounts,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,CloseYear,/Accounting/CloseYear,mvc,HttpPost,"SessionValidation; ValidateAntiForgeryToken; CrossBuy.Models.AccPerm(""manage"")",SessionValidation,no,repository-verified
+Accounting,CostCenters,/Accounting/CostCenters,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,CreateAccount,/Accounting/CreateAccount,mvc,HttpPost,"SessionValidation; ValidateAntiForgeryToken; CrossBuy.Models.AccPerm(""manage"")",SessionValidation,no,repository-verified
+Accounting,CreateAssetCategory,/Accounting/CreateAssetCategory,mvc,HttpPost,"SessionValidation; ValidateAntiForgeryToken; CrossBuy.Models.AccPerm(""manage"")",SessionValidation,no,repository-verified
+Accounting,CreateBankAccount,/Accounting/CreateBankAccount,mvc,HttpPost,"SessionValidation; ValidateAntiForgeryToken; CrossBuy.Models.AccPerm(""manage"")",SessionValidation,no,repository-verified
+Accounting,CreateCashBox,/Accounting/CreateCashBox,mvc,HttpPost,"SessionValidation; ValidateAntiForgeryToken; CrossBuy.Models.AccPerm(""manage"")",SessionValidation,no,repository-verified
+Accounting,CreateFixedAsset,/Accounting/CreateFixedAsset,mvc,HttpPost,"SessionValidation; ValidateAntiForgeryToken; CrossBuy.Models.AccPerm(""post"")",SessionValidation,no,repository-verified
+Accounting,CreateInvoiceFromReceipt,/Accounting/CreateInvoiceFromReceipt,mvc,HttpPost,"SessionValidation; ValidateAntiForgeryToken; CrossBuy.Models.AccPerm(""post"")",SessionValidation,no,repository-verified
+Accounting,CreateJournal,/Accounting/CreateJournal,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,CreateJournal,/Accounting/CreateJournal,mvc,HttpPost,"SessionValidation; ValidateAntiForgeryToken; CrossBuy.Models.AccPerm(""post"")",SessionValidation,no,repository-verified
+Accounting,CreatePayment,/Accounting/CreatePayment,mvc,HttpPost,"SessionValidation; ValidateAntiForgeryToken; CrossBuy.Models.AccPerm(""pay"")",SessionValidation,no,repository-verified
+Accounting,CreatePurchaseInvoice,/Accounting/CreatePurchaseInvoice,mvc,HttpPost,"SessionValidation; ValidateAntiForgeryToken; CrossBuy.Models.AccPerm(""post"")",SessionValidation,no,repository-verified
+Accounting,CreatePurchaseReturn,/Accounting/CreatePurchaseReturn,mvc,HttpPost,"SessionValidation; ValidateAntiForgeryToken; CrossBuy.Models.AccPerm(""post"")",SessionValidation,no,repository-verified
+Accounting,CreateReceipt,/Accounting/CreateReceipt,mvc,HttpPost,"SessionValidation; ValidateAntiForgeryToken; CrossBuy.Models.AccPerm(""pay"")",SessionValidation,no,repository-verified
+Accounting,CreateSalesInvoice,/Accounting/CreateSalesInvoice,mvc,HttpPost,"SessionValidation; ValidateAntiForgeryToken; CrossBuy.Models.AccPerm(""post"")",SessionValidation,no,repository-verified
+Accounting,CreateSalesReturn,/Accounting/CreateSalesReturn,mvc,HttpPost,"SessionValidation; ValidateAntiForgeryToken; CrossBuy.Models.AccPerm(""post"")",SessionValidation,no,repository-verified
+Accounting,CreateTaxCode,/Accounting/CreateTaxCode,mvc,HttpPost,"SessionValidation; ValidateAntiForgeryToken; CrossBuy.Models.AccPerm(""manage"")",SessionValidation,no,repository-verified
+Accounting,CustomerAnalytics,/Accounting/CustomerAnalytics,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,CustomerAnalyticsExport,/Accounting/CustomerAnalyticsExport,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,CustomerQuickAdd,/Accounting/CustomerQuickAdd,mvc,HttpPost,"SessionValidation; ValidateAntiForgeryToken; CrossBuy.Models.ApiPerm(CrossBuy.Models.ApiPermAttribute.Accounting, ""post"")",SessionValidation,no,repository-verified
+Accounting,CustomerStatement,/Accounting/CustomerStatement,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,Customers,/Accounting/Customers,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,CustomersData,/Accounting/CustomersData,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,CustomersExport,/Accounting/CustomersExport,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,CustomersSuggest,/Accounting/CustomersSuggest,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,DeleteJournal,/Accounting/DeleteJournal,mvc,HttpPost,"SessionValidation; ValidateAntiForgeryToken; CrossBuy.Models.AccPerm(""post"")",SessionValidation,no,repository-verified
+Accounting,DeleteMaintenanceSchedule,/Accounting/DeleteMaintenanceSchedule,mvc,HttpPost,"SessionValidation; ValidateAntiForgeryToken; CrossBuy.Models.AccPerm(""manage"")",SessionValidation,no,repository-verified
+Accounting,DeletePayrollBracket,/Accounting/DeletePayrollBracket,mvc,HttpPost,"SessionValidation; ValidateAntiForgeryToken; CrossBuy.Models.AccPerm(""manage"")",SessionValidation,no,repository-verified
+Accounting,DepreciationRunDetail,/Accounting/DepreciationRunDetail,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,DepreciationRuns,/Accounting/DepreciationRuns,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,DisbursePayroll,/Accounting/DisbursePayroll,mvc,HttpPost,"SessionValidation; ValidateAntiForgeryToken; CrossBuy.Models.AccPerm(""pay"")",SessionValidation,no,repository-verified
+Accounting,DisposeAsset,/Accounting/DisposeAsset,mvc,HttpPost,"SessionValidation; ValidateAntiForgeryToken; CrossBuy.Models.AccPerm(""manage"")",SessionValidation,no,repository-verified
+Accounting,DoReconcile,/Accounting/DoReconcile,mvc,HttpPost,"SessionValidation; ValidateAntiForgeryToken; CrossBuy.Models.AccPerm(""manage"")",SessionValidation,no,repository-verified
+Accounting,DoTransfer,/Accounting/DoTransfer,mvc,HttpPost,"SessionValidation; ValidateAntiForgeryToken; CrossBuy.Models.AccPerm(""pay"")",SessionValidation,no,repository-verified
+Accounting,EditAccount,/Accounting/EditAccount,mvc,HttpPost,"SessionValidation; ValidateAntiForgeryToken; CrossBuy.Models.AccPerm(""manage"")",SessionValidation,no,repository-verified
+Accounting,EditJournal,/Accounting/EditJournal,mvc,HttpGet,"SessionValidation; CrossBuy.Models.AccPerm(""post"")",SessionValidation,no,repository-verified
+Accounting,EditJournal,/Accounting/EditJournal,mvc,HttpPost,"SessionValidation; ValidateAntiForgeryToken; CrossBuy.Models.AccPerm(""post"")",SessionValidation,no,repository-verified
+Accounting,EditPurchaseInvoice,/Accounting/EditPurchaseInvoice,mvc,HttpGet,"SessionValidation; CrossBuy.Models.AccPerm(""post"")",SessionValidation,no,repository-verified
+Accounting,EditPurchaseReturn,/Accounting/EditPurchaseReturn,mvc,HttpGet,"SessionValidation; CrossBuy.Models.AccPerm(""post"")",SessionValidation,no,repository-verified
+Accounting,EditSalesInvoice,/Accounting/EditSalesInvoice,mvc,HttpGet,"SessionValidation; CrossBuy.Models.AccPerm(""post"")",SessionValidation,no,repository-verified
+Accounting,EditSalesReturn,/Accounting/EditSalesReturn,mvc,HttpGet,"SessionValidation; CrossBuy.Models.AccPerm(""post"")",SessionValidation,no,repository-verified
+Accounting,EtaStatus,/Accounting/EtaStatus,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,Executive,/Accounting/Executive,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,FileVatReturn,/Accounting/FileVatReturn,mvc,HttpPost,"SessionValidation; ValidateAntiForgeryToken; CrossBuy.Models.AccPerm(""manage"")",SessionValidation,no,repository-verified
+Accounting,FixedAssetDetail,/Accounting/FixedAssetDetail,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,FixedAssets,/Accounting/FixedAssets,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,IncomeStatement,/Accounting/IncomeStatement,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,Index,/Accounting/Index,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,InvoiceConversation,/Accounting/InvoiceConversation,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,InvoiceConversationAdd,/Accounting/InvoiceConversationAdd,mvc,HttpPost,SessionValidation; ValidateAntiForgeryToken; RequestSizeLimit(21_000_000),SessionValidation,no,repository-verified
+Accounting,InvoiceConversationReact,/Accounting/InvoiceConversationReact,mvc,HttpPost,SessionValidation; ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Accounting,JournalEntry,/Accounting/JournalEntry,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,Journals,/Accounting/Journals,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,JournalsData,/Accounting/JournalsData,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,JournalsExport,/Accounting/JournalsExport,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,Ledger,/Accounting/Ledger,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,LogMaintenance,/Accounting/LogMaintenance,mvc,HttpPost,"SessionValidation; ValidateAntiForgeryToken; CrossBuy.Models.AccPerm(""post"")",SessionValidation,no,repository-verified
+Accounting,MaintenanceDue,/Accounting/MaintenanceDue,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,MatchReceipts,/Accounting/MatchReceipts,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,MovementSummary,/Accounting/MovementSummary,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,NewPurchaseInvoice,/Accounting/NewPurchaseInvoice,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,NewPurchaseReturn,/Accounting/NewPurchaseReturn,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,NewSalesInvoice,/Accounting/NewSalesInvoice,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,NewSalesReturn,/Accounting/NewSalesReturn,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,Payments,/Accounting/Payments,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,PaymentsData,/Accounting/PaymentsData,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,PaymentsExport,/Accounting/PaymentsExport,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,Payroll,/Accounting/Payroll,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,PayrollDisbursement,/Accounting/PayrollDisbursement,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,PayrollTaxSettings,/Accounting/PayrollTaxSettings,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,Payslip,/Accounting/Payslip,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,Payslips,/Accounting/Payslips,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,Periods,/Accounting/Periods,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,PostJournal,/Accounting/PostJournal,mvc,HttpPost,"SessionValidation; ValidateAntiForgeryToken; CrossBuy.Models.AccPerm(""post"")",SessionValidation,no,repository-verified
+Accounting,PostPayroll,/Accounting/PostPayroll,mvc,HttpPost,"SessionValidation; ValidateAntiForgeryToken; CrossBuy.Models.AccPerm(""manage"")",SessionValidation,no,repository-verified
+Accounting,PrintInvoice,/Accounting/PrintInvoice,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,PurchaseInvoiceDetail,/Accounting/PurchaseInvoiceDetail,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,PurchaseInvoices,/Accounting/PurchaseInvoices,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,PurchaseInvoicesData,/Accounting/PurchaseInvoicesData,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,PurchaseInvoicesExport,/Accounting/PurchaseInvoicesExport,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,PurchaseReturnDetail,/Accounting/PurchaseReturnDetail,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,PurchaseReturns,/Accounting/PurchaseReturns,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,Receipts,/Accounting/Receipts,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,ReceiptsData,/Accounting/ReceiptsData,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,ReceiptsExport,/Accounting/ReceiptsExport,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,Reconcile,/Accounting/Reconcile,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,Reconciliations,/Accounting/Reconciliations,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,RemitStatutory,/Accounting/RemitStatutory,mvc,HttpPost,"SessionValidation; ValidateAntiForgeryToken; CrossBuy.Models.AccPerm(""pay"")",SessionValidation,no,repository-verified
+Accounting,RemoveAccRole,/Accounting/RemoveAccRole,mvc,HttpPost,"SessionValidation; ValidateAntiForgeryToken; AccPerm(""manage"")",SessionValidation,no,repository-verified
+Accounting,ReopenYear,/Accounting/ReopenYear,mvc,HttpPost,"SessionValidation; ValidateAntiForgeryToken; CrossBuy.Models.AccPerm(""manage"")",SessionValidation,no,repository-verified
+Accounting,ReverseJournal,/Accounting/ReverseJournal,mvc,HttpPost,"SessionValidation; ValidateAntiForgeryToken; CrossBuy.Models.AccPerm(""post"")",SessionValidation,no,repository-verified
+Accounting,RunDepreciation,/Accounting/RunDepreciation,mvc,HttpPost,"SessionValidation; ValidateAntiForgeryToken; CrossBuy.Models.AccPerm(""manage"")",SessionValidation,no,repository-verified
+Accounting,SalesInvoiceDetail,/Accounting/SalesInvoiceDetail,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,SalesInvoices,/Accounting/SalesInvoices,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,SalesInvoicesData,/Accounting/SalesInvoicesData,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,SalesInvoicesExport,/Accounting/SalesInvoicesExport,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,SalesReturnDetail,/Accounting/SalesReturnDetail,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,SalesReturns,/Accounting/SalesReturns,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,SaveAccSettings,/Accounting/SaveAccSettings,mvc,HttpPost,"SessionValidation; ValidateAntiForgeryToken; AccPerm(""manage"")",SessionValidation,no,repository-verified
+Accounting,SaveCustomer,/Accounting/SaveCustomer,mvc,HttpPost,"SessionValidation; ValidateAntiForgeryToken; CrossBuy.Models.AccPerm(""post"")",SessionValidation,no,repository-verified
+Accounting,SaveMaintenanceSchedule,/Accounting/SaveMaintenanceSchedule,mvc,HttpPost,"SessionValidation; ValidateAntiForgeryToken; CrossBuy.Models.AccPerm(""manage"")",SessionValidation,no,repository-verified
+Accounting,SavePayrollBracket,/Accounting/SavePayrollBracket,mvc,HttpPost,"SessionValidation; ValidateAntiForgeryToken; CrossBuy.Models.AccPerm(""manage"")",SessionValidation,no,repository-verified
+Accounting,SavePayrollSettings,/Accounting/SavePayrollSettings,mvc,HttpPost,"SessionValidation; ValidateAntiForgeryToken; CrossBuy.Models.AccPerm(""manage"")",SessionValidation,no,repository-verified
+Accounting,SaveVendor,/Accounting/SaveVendor,mvc,HttpPost,"SessionValidation; ValidateAntiForgeryToken; CrossBuy.Models.AccPerm(""post"")",SessionValidation,no,repository-verified
+Accounting,SetPeriodStatus,/Accounting/SetPeriodStatus,mvc,HttpPost,SessionValidation; ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Accounting,SettleVatReturn,/Accounting/SettleVatReturn,mvc,HttpPost,"SessionValidation; ValidateAntiForgeryToken; CrossBuy.Models.AccPerm(""manage"")",SessionValidation,no,repository-verified
+Accounting,StampInvoiceCustomer,/Accounting/StampInvoiceCustomer,mvc,HttpPost,"SessionValidation; ValidateAntiForgeryToken; CrossBuy.Models.AccPerm(""post"")",SessionValidation,no,repository-verified
+Accounting,TaxCodes,/Accounting/TaxCodes,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,ToggleTaxCode,/Accounting/ToggleTaxCode,mvc,HttpPost,"SessionValidation; ValidateAntiForgeryToken; CrossBuy.Models.AccPerm(""manage"")",SessionValidation,no,repository-verified
+Accounting,Transfer,/Accounting/Transfer,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,TrialBalance,/Accounting/TrialBalance,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,UpdatePurchaseInvoice,/Accounting/UpdatePurchaseInvoice,mvc,HttpPost,"SessionValidation; ValidateAntiForgeryToken; CrossBuy.Models.AccPerm(""post"")",SessionValidation,no,repository-verified
+Accounting,UpdatePurchaseReturn,/Accounting/UpdatePurchaseReturn,mvc,HttpPost,"SessionValidation; ValidateAntiForgeryToken; CrossBuy.Models.AccPerm(""post"")",SessionValidation,no,repository-verified
+Accounting,UpdateSalesInvoice,/Accounting/UpdateSalesInvoice,mvc,HttpPost,"SessionValidation; ValidateAntiForgeryToken; CrossBuy.Models.AccPerm(""post"")",SessionValidation,no,repository-verified
+Accounting,UpdateSalesReturn,/Accounting/UpdateSalesReturn,mvc,HttpPost,"SessionValidation; ValidateAntiForgeryToken; CrossBuy.Models.AccPerm(""post"")",SessionValidation,no,repository-verified
+Accounting,UpdateTaxCode,/Accounting/UpdateTaxCode,mvc,HttpPost,"SessionValidation; ValidateAntiForgeryToken; CrossBuy.Models.AccPerm(""manage"")",SessionValidation,no,repository-verified
+Accounting,VatReturnDetail,/Accounting/VatReturnDetail,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,VatReturns,/Accounting/VatReturns,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,VendorQuickAdd,/Accounting/VendorQuickAdd,mvc,HttpPost,"SessionValidation; ValidateAntiForgeryToken; CrossBuy.Models.ApiPerm(CrossBuy.Models.ApiPermAttribute.Accounting, ""post"")",SessionValidation,no,repository-verified
+Accounting,VendorStatement,/Accounting/VendorStatement,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,Vendors,/Accounting/Vendors,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,VendorsData,/Accounting/VendorsData,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,VendorsExport,/Accounting/VendorsExport,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,VendorsSuggest,/Accounting/VendorsSuggest,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Accounting,YearEndClose,/Accounting/YearEndClose,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Admin,AddAttachments,/Admin/AddAttachments,mvc,HttpPost,ValidateAntiForgeryToken,,no,repository-verified
+Admin,AddHierarchicalItem,/Admin/AddHierarchicalItem,mvc,HttpPost,,,no,repository-verified
+Admin,AdministrativeBodiesCompany,/Admin/AdministrativeBodiesCompany,mvc,HttpGet (implicit),,,no,repository-verified
+Admin,AdministrativeBodiesCompany,/Admin/AdministrativeBodiesCompany,mvc,HttpPost,,,no,repository-verified
+Admin,AdministrativeBodiesCompanyList,/Admin/AdministrativeBodiesCompanyList,mvc,HttpGet (implicit),,,no,repository-verified
+Admin,AdministrativeStructure,/Admin/AdministrativeStructure,mvc,HttpGet (implicit),,,no,repository-verified
+Admin,ApplicationDetail,/Admin/ApplicationDetail,mvc,HttpGet,,,no,repository-verified
+Admin,ApplicationForm,/Admin/ApplicationForm,mvc,HttpGet,,,no,repository-verified
+Admin,Applications,/Admin/Applications,mvc,HttpGet,,,no,repository-verified
+Admin,AppraisalScore,/Admin/AppraisalScore,mvc,HttpGet,,,no,repository-verified
+Admin,AppraisalTemplateEditor,/Admin/AppraisalTemplateEditor,mvc,HttpGet,,,no,repository-verified
+Admin,AppraisalTemplates,/Admin/AppraisalTemplates,mvc,HttpGet,,,no,repository-verified
+Admin,Appraisals,/Admin/Appraisals,mvc,HttpGet,,,no,repository-verified
+Admin,Attendance,/Admin/Attendance,mvc,HttpGet,,,no,repository-verified
+Admin,AttendanceEntry,/Admin/AttendanceEntry,mvc,HttpGet,,,no,repository-verified
+Admin,ChangeApplicationStage,/Admin/ChangeApplicationStage,mvc,HttpPost,ValidateAntiForgeryToken,,no,repository-verified
+Admin,CourseEnrollments,/Admin/CourseEnrollments,mvc,HttpGet,,,no,repository-verified
+Admin,CreateAppraisal,/Admin/CreateAppraisal,mvc,HttpPost,,,no,repository-verified
+Admin,DeleteApplicationDoc,/Admin/DeleteApplicationDoc,mvc,HttpPost,ValidateAntiForgeryToken,,no,repository-verified
+Admin,DeleteAppraisalTemplate,/Admin/DeleteAppraisalTemplate,mvc,HttpPost,,,no,repository-verified
+Admin,DeleteAttachment,/Admin/DeleteAttachment,mvc,HttpPost,ValidateAntiForgeryToken,,no,repository-verified
+Admin,DeleteContract,/Admin/DeleteContract,mvc,HttpPost,ValidateAntiForgeryToken,,no,repository-verified
+Admin,DeleteDocument,/Admin/DeleteDocument,mvc,HttpPost,ValidateAntiForgeryToken,,no,repository-verified
+Admin,DeleteHoliday,/Admin/DeleteHoliday,mvc,HttpPost,ValidateAntiForgeryToken,,no,repository-verified
+Admin,DeleteRequiredDocType,/Admin/DeleteRequiredDocType,mvc,HttpPost,,,no,repository-verified
+Admin,DeleteTrainingCourse,/Admin/DeleteTrainingCourse,mvc,HttpPost,,,no,repository-verified
+Admin,DocExpiryAlerts,/Admin/DocExpiryAlerts,mvc,HttpGet,,,no,repository-verified
+Admin,EmployeeData,/Admin/EmployeeData,mvc,HttpGet (implicit),,,no,repository-verified
+Admin,EmployeesList,/Admin/EmployeesList,mvc,HttpGet (implicit),,,no,repository-verified
+Admin,Encash,/Admin/Encash,mvc,HttpPost,ValidateAntiForgeryToken,,no,repository-verified
+Admin,EnrollEmployees,/Admin/EnrollEmployees,mvc,HttpPost,,,no,repository-verified
+Admin,FinalSettlement,/Admin/FinalSettlement,mvc,HttpGet,,,no,repository-verified
+Admin,GetBranches,/Admin/GetBranches,mvc,HttpGet,,,no,repository-verified
+Admin,GetCompanies,/Admin/GetCompanies,mvc,HttpGet,,,no,repository-verified
+Admin,GetEmployeeByUserId,/Admin/GetEmployeeByUserId,mvc,HttpGet,,,no,repository-verified
+Admin,GetHierarchicals,/Admin/GetHierarchicals,mvc,HttpGet,,,no,repository-verified
+Admin,GetJobTitles,/Admin/GetJobTitles,mvc,HttpGet,,,no,repository-verified
+Admin,GetLeaveTypeById,/Admin/GetLeaveTypeById,mvc,HttpGet,,,no,repository-verified
+Admin,GetLeaveTypes,/Admin/GetLeaveTypes,mvc,HttpGet,,,no,repository-verified
+Admin,GetParentInfo,/Admin/GetParentInfo,mvc,HttpGet (implicit),,,no,repository-verified
+Admin,GetPolicies,/Admin/GetPolicies,mvc,HttpGet,,,no,repository-verified
+Admin,GetPolicy,/Admin/GetPolicy,mvc,HttpGet,,,no,repository-verified
+Admin,GetRequiredDocTypeById,/Admin/GetRequiredDocTypeById,mvc,HttpGet,,,no,repository-verified
+Admin,GetSalaryPolicy,/Admin/GetSalaryPolicy,mvc,HttpGet,,,no,repository-verified
+Admin,HolidaysList,/Admin/HolidaysList,mvc,HttpGet,,,no,repository-verified
+Admin,HrDocFiles,/Admin/HrDocFiles,mvc,HttpGet,,,no,repository-verified
+Admin,HrDocuments,/Admin/HrDocuments,mvc,HttpGet,,,no,repository-verified
+Admin,Index,/Admin/Index,mvc,HttpGet (implicit),,,no,repository-verified
+Admin,JobTitle,/Admin/JobTitle,mvc,HttpGet (implicit),,,no,repository-verified
+Admin,JobTitle,/Admin/JobTitle,mvc,HttpPost,,,no,repository-verified
+Admin,JobTitlesList,/Admin/JobTitlesList,mvc,HttpGet (implicit),,,no,repository-verified
+Admin,LeaveAccrual,/Admin/LeaveAccrual,mvc,HttpGet,,,no,repository-verified
+Admin,LeaveCarryOver,/Admin/LeaveCarryOver,mvc,HttpGet,,,no,repository-verified
+Admin,LeaveTypesList,/Admin/LeaveTypesList,mvc,HttpGet (implicit),,,no,repository-verified
+Admin,MoveApplication,/Admin/MoveApplication,mvc,HttpPost,ValidateAntiForgeryToken,,no,repository-verified
+Admin,NotifyExpiring,/Admin/NotifyExpiring,mvc,HttpPost,ValidateAntiForgeryToken,,no,repository-verified
+Admin,Polices,/Admin/Polices,mvc,HttpGet (implicit),,,no,repository-verified
+Admin,PolicesData,/Admin/PolicesData,mvc,HttpGet (implicit),,,no,repository-verified
+Admin,PostFinalSettlement,/Admin/PostFinalSettlement,mvc,HttpPost,ValidateAntiForgeryToken,,no,repository-verified
+Admin,PostLeaveProvision,/Admin/PostLeaveProvision,mvc,HttpPost,ValidateAntiForgeryToken,,no,repository-verified
+Admin,RemoveEnrollment,/Admin/RemoveEnrollment,mvc,HttpPost,,,no,repository-verified
+Admin,RequiredDocTypesList,/Admin/RequiredDocTypesList,mvc,HttpGet,,,no,repository-verified
+Admin,RunLeaveCarryOver,/Admin/RunLeaveCarryOver,mvc,HttpPost,ValidateAntiForgeryToken,,no,repository-verified
+Admin,SaveApplication,/Admin/SaveApplication,mvc,HttpPost,ValidateAntiForgeryToken,,no,repository-verified
+Admin,SaveAppraisalCycle,/Admin/SaveAppraisalCycle,mvc,HttpPost,,,no,repository-verified
+Admin,SaveAppraisalScores,/Admin/SaveAppraisalScores,mvc,HttpPost,,,no,repository-verified
+Admin,SaveAppraisalTemplate,/Admin/SaveAppraisalTemplate,mvc,HttpPost,,,no,repository-verified
+Admin,SaveAttendance,/Admin/SaveAttendance,mvc,HttpPost,ValidateAntiForgeryToken,,no,repository-verified
+Admin,SaveAttendancePolicy,/Admin/SaveAttendancePolicy,mvc,HttpPost,ValidateAntiForgeryToken,,no,repository-verified
+Admin,SaveContract,/Admin/SaveContract,mvc,HttpPost,ValidateAntiForgeryToken,,no,repository-verified
+Admin,SaveDocument,/Admin/SaveDocument,mvc,HttpPost,ValidateAntiForgeryToken,,no,repository-verified
+Admin,SaveEmployee,/Admin/SaveEmployee,mvc,HttpPost,ValidateAntiForgeryToken,,no,repository-verified
+Admin,SaveHoliday,/Admin/SaveHoliday,mvc,HttpPost,ValidateAntiForgeryToken,,no,repository-verified
+Admin,SaveLeavePolicy,/Admin/SaveLeavePolicy,mvc,HttpPost,ValidateAntiForgeryToken,,no,repository-verified
+Admin,SaveLeaveType,/Admin/SaveLeaveType,mvc,HttpPost,,,no,repository-verified
+Admin,SaveLeaveTypeEncashable,/Admin/SaveLeaveTypeEncashable,mvc,HttpPost,ValidateAntiForgeryToken,,no,repository-verified
+Admin,SaveMainPolices,/Admin/SaveMainPolices,mvc,HttpPost,ValidateAntiForgeryToken,,no,repository-verified
+Admin,SaveRequiredDocType,/Admin/SaveRequiredDocType,mvc,HttpPost,,,no,repository-verified
+Admin,SaveSalaryPolicy,/Admin/SaveSalaryPolicy,mvc,HttpPost,"ValidateAntiForgeryToken; CrossBuy.Models.ApiPerm(CrossBuy.Models.ApiPermAttribute.Hr, CrossBuy.BL.HrActions.PayrollManage)",,no,repository-verified
+Admin,SaveTrainingCourse,/Admin/SaveTrainingCourse,mvc,HttpPost,,,no,repository-verified
+Admin,SetAppraisalCycleStatus,/Admin/SetAppraisalCycleStatus,mvc,HttpPost,,,no,repository-verified
+Admin,SetEnrollmentStatus,/Admin/SetEnrollmentStatus,mvc,HttpPost,,,no,repository-verified
+Admin,TrainingCourseEditor,/Admin/TrainingCourseEditor,mvc,HttpGet,,,no,repository-verified
+Admin,TrainingCourses,/Admin/TrainingCourses,mvc,HttpGet,,,no,repository-verified
+Admin,UploadApplicationDoc,/Admin/UploadApplicationDoc,mvc,HttpPost,ValidateAntiForgeryToken,,no,repository-verified
+Announcements,Active,/Announcements/Active,mvc,HttpGet,,SessionValidation,no,repository-verified
+Announcements,Create,/Announcements/Create,mvc,HttpPost,,SessionValidation,no,repository-verified
+Announcements,Dismiss,/Announcements/Dismiss,mvc,HttpPost,,SessionValidation,no,repository-verified
+Announcements,Index,/Announcements/Index,mvc,HttpGet,,SessionValidation,no,repository-verified
+Announcements,Toggle,/Announcements/Toggle,mvc,HttpPost,,SessionValidation,no,repository-verified
+Approvals,Index,/Approvals/Index,mvc,HttpGet,,SessionValidation,no,repository-verified
+Base,Index,/Base/Index,mvc,HttpGet (implicit),,,no,repository-verified
+Brand,ActivateDefaultBrand,/Brand/ActivateDefaultBrand,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Brand,BrandEditor,/Brand/BrandEditor,mvc,HttpGet,,SessionValidation,no,repository-verified
+Brand,Brands,/Brand/Brands,mvc,HttpGet,,SessionValidation,no,repository-verified
+Brand,DeleteBrand,/Brand/DeleteBrand,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Brand,SaveBrand,/Brand/SaveBrand,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+BusinessEventMonitor,Details,/BusinessEventMonitor/Details,mvc,HttpGet,,PlatformOps; SessionValidation,no,repository-verified
+BusinessEventMonitor,Index,/BusinessEventMonitor/Index,mvc,HttpGet,,PlatformOps; SessionValidation,no,repository-verified
+BusinessEventMonitor,Notes,/BusinessEventMonitor/Notes,mvc,HttpGet,,PlatformOps; SessionValidation,no,repository-verified
+BusinessEventMonitor,NotesAdd,/BusinessEventMonitor/NotesAdd,mvc,HttpPost,ValidateAntiForgeryToken; RequestSizeLimit(21_000_000),PlatformOps; SessionValidation,no,repository-verified
+BusinessEventMonitor,Retry,/BusinessEventMonitor/Retry,mvc,HttpPost,ValidateAntiForgeryToken,PlatformOps; SessionValidation,no,repository-verified
+BusinessEventMonitor,Rows,/BusinessEventMonitor/Rows,mvc,HttpGet,,PlatformOps; SessionValidation,no,repository-verified
+BusinessEventMonitor,Runtime,/BusinessEventMonitor/Runtime,mvc,HttpGet,,PlatformOps; SessionValidation,no,repository-verified
+Calendar,Attendees,/Calendar/Attendees,mvc,HttpGet,,SessionValidation,no,repository-verified
+Calendar,Conflicts,/Calendar/Conflicts,mvc,HttpGet,,SessionValidation,no,repository-verified
+Calendar,Delete,/Calendar/Delete,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Calendar,Events,/Calendar/Events,mvc,HttpGet,,SessionValidation,no,repository-verified
+Calendar,FreeSlots,/Calendar/FreeSlots,mvc,HttpGet,,SessionValidation,no,repository-verified
+Calendar,Get,/Calendar/Get,mvc,HttpGet,,SessionValidation,no,repository-verified
+Calendar,Index,/Calendar/Index,mvc,HttpGet,,SessionValidation,no,repository-verified
+Calendar,ResourceView,/Calendar/ResourceView,mvc,HttpGet,,SessionValidation,no,repository-verified
+Calendar,Save,/Calendar/Save,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Calendar,SaveSchedule,/Calendar/SaveSchedule,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Calendar,Schedule,/Calendar/Schedule,mvc,HttpGet,,SessionValidation,no,repository-verified
+Calendar,Timeline,/Calendar/Timeline,mvc,HttpGet,,SessionValidation,no,repository-verified
+Calendar,Upcoming,/Calendar/Upcoming,mvc,HttpGet,,SessionValidation,no,repository-verified
+Chat,AddMember,/Chat/AddMember,mvc,HttpPost,,SessionValidation,no,repository-verified
+Chat,Conversations,/Chat/Conversations,mvc,HttpGet,,SessionValidation,no,repository-verified
+Chat,CreateGroup,/Chat/CreateGroup,mvc,HttpPost,,SessionValidation,no,repository-verified
+Chat,Delete,/Chat/Delete,mvc,HttpPost,,SessionValidation,no,repository-verified
+Chat,Directory,/Chat/Directory,mvc,HttpGet,,SessionValidation,no,repository-verified
+Chat,Edit,/Chat/Edit,mvc,HttpPost,,SessionValidation,no,repository-verified
+Chat,Header,/Chat/Header,mvc,HttpGet,,SessionValidation,no,repository-verified
+Chat,Index,/Chat/Index,mvc,HttpGet,,SessionValidation,no,repository-verified
+Chat,MarkRead,/Chat/MarkRead,mvc,HttpPost,,SessionValidation,no,repository-verified
+Chat,Messages,/Chat/Messages,mvc,HttpGet,,SessionValidation,no,repository-verified
+Chat,React,/Chat/React,mvc,HttpPost,,SessionValidation,no,repository-verified
+Chat,RemoveMember,/Chat/RemoveMember,mvc,HttpPost,,SessionValidation,no,repository-verified
+Chat,Send,/Chat/Send,mvc,HttpPost,RequestSizeLimit(52_428_800),SessionValidation,no,repository-verified
+Chat,StartDirect,/Chat/StartDirect,mvc,HttpPost,,SessionValidation,no,repository-verified
+ClientPortal,Index,/ClientPortal/Index,mvc,"HttpGet(""""); HttpGet(""Index"")",,"Authorize; Route(""ClientPortal"")",no,repository-verified
+ClientPortal,Invoices,/ClientPortal/Invoices,mvc,"HttpGet(""Invoices"")",,"Authorize; Route(""ClientPortal"")",no,repository-verified
+ClientPortal,Projects,/ClientPortal/Projects,mvc,"HttpGet(""Projects"")",,"Authorize; Route(""ClientPortal"")",no,repository-verified
+ClientPortal,Quotations,/ClientPortal/Quotations,mvc,"HttpGet(""Quotations"")",,"Authorize; Route(""ClientPortal"")",no,repository-verified
+ClientPortal,Summary,/ClientPortal/Summary,mvc,"HttpGet(""api/summary"")",,"Authorize; Route(""ClientPortal"")",no,repository-verified
+Comm,Compose,/Comm/Compose,mvc,HttpGet,,SessionValidation,no,repository-verified
+Comm,Contacts,/Comm/Contacts,mvc,HttpGet,,SessionValidation,no,repository-verified
+Comm,Index,/Comm/Index,mvc,HttpGet,,SessionValidation,no,repository-verified
+Comm,Resend,/Comm/Resend,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Comm,Send,/Comm/Send,mvc,HttpPost,ValidateAntiForgeryToken; RequestSizeLimit(52_428_800),SessionValidation,no,repository-verified
+Comm,Star,/Comm/Star,mvc,HttpPost,,SessionValidation,no,repository-verified
+Comm,Trash,/Comm/Trash,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Comm,View,/Comm/View,mvc,HttpGet,,SessionValidation,no,repository-verified
+Comments,Add,/Comments/Add,mvc,HttpPost,,SessionValidation,no,repository-verified
+Comments,Delete,/Comments/Delete,mvc,HttpPost,,SessionValidation,no,repository-verified
+Comments,List,/Comments/List,mvc,HttpGet,,SessionValidation,no,repository-verified
+Crm,AccountEditor,/Crm/AccountEditor,mvc,HttpGet,,SessionValidation,no,repository-verified
+Crm,AccountInsights,/Crm/AccountInsights,mvc,HttpGet,"CrossBuy.Models.CrmPerm(""read"")",SessionValidation,no,repository-verified
+Crm,AccountPickData,/Crm/AccountPickData,mvc,HttpGet,,SessionValidation,no,repository-verified
+Crm,Accounts,/Crm/Accounts,mvc,HttpGet,,SessionValidation,no,repository-verified
+Crm,AccountsData,/Crm/AccountsData,mvc,HttpGet,,SessionValidation,no,repository-verified
+Crm,Activities,/Crm/Activities,mvc,HttpGet,,SessionValidation,no,repository-verified
+Crm,ActivitiesData,/Crm/ActivitiesData,mvc,HttpGet,,SessionValidation,no,repository-verified
+Crm,ActivitiesExport,/Crm/ActivitiesExport,mvc,HttpGet,,SessionValidation,no,repository-verified
+Crm,AddCampaignMember,/Crm/AddCampaignMember,mvc,HttpPost,"ValidateAntiForgeryToken; CrossBuy.Models.CrmPerm(""edit"")",SessionValidation,no,repository-verified
+Crm,AddListMember,/Crm/AddListMember,mvc,HttpPost,"ValidateAntiForgeryToken; CrossBuy.Models.CrmPerm(""edit"")",SessionValidation,no,repository-verified
+Crm,AddListToCampaign,/Crm/AddListToCampaign,mvc,HttpPost,"ValidateAntiForgeryToken; CrossBuy.Models.CrmPerm(""edit"")",SessionValidation,no,repository-verified
+Crm,AssignCrmRole,/Crm/AssignCrmRole,mvc,HttpPost,"ValidateAntiForgeryToken; CrossBuy.Models.CrmPerm(""manage"")",SessionValidation,no,repository-verified
+Crm,AutomationRules,/Crm/AutomationRules,mvc,HttpGet,,SessionValidation,no,repository-verified
+Crm,CampaignDetail,/Crm/CampaignDetail,mvc,HttpGet,,SessionValidation,no,repository-verified
+Crm,Campaigns,/Crm/Campaigns,mvc,HttpGet,,SessionValidation,no,repository-verified
+Crm,CampaignsData,/Crm/CampaignsData,mvc,HttpGet,,SessionValidation,no,repository-verified
+Crm,CampaignsExport,/Crm/CampaignsExport,mvc,HttpGet,,SessionValidation,no,repository-verified
+Crm,ConvertLead,/Crm/ConvertLead,mvc,HttpPost,"ValidateAntiForgeryToken; CrossBuy.Models.CrmPerm(""edit"")",SessionValidation,no,repository-verified
+Crm,ConvertOpportunityToQuotation,/Crm/ConvertOpportunityToQuotation,mvc,HttpPost,"ValidateAntiForgeryToken; CrossBuy.Models.CrmPerm(""edit"")",SessionValidation,no,repository-verified
+Crm,CrmRoles,/Crm/CrmRoles,mvc,HttpGet,"CrossBuy.Models.CrmPerm(""manage"")",SessionValidation,no,repository-verified
+Crm,CustomFields,/Crm/CustomFields,mvc,HttpGet,,SessionValidation,no,repository-verified
+Crm,CustomerPickData,/Crm/CustomerPickData,mvc,HttpGet,,SessionValidation,no,repository-verified
+Crm,DeleteAutomationRule,/Crm/DeleteAutomationRule,mvc,HttpPost,"ValidateAntiForgeryToken; CrossBuy.Models.CrmPerm(""manage"")",SessionValidation,no,repository-verified
+Crm,DeleteContact,/Crm/DeleteContact,mvc,HttpPost,"ValidateAntiForgeryToken; CrossBuy.Models.CrmPerm(""edit"")",SessionValidation,no,repository-verified
+Crm,DeleteCustomField,/Crm/DeleteCustomField,mvc,HttpPost,"ValidateAntiForgeryToken; CrossBuy.Models.CrmPerm(""manage"")",SessionValidation,no,repository-verified
+Crm,EntityCustomValues,/Crm/EntityCustomValues,mvc,HttpGet,,SessionValidation,no,repository-verified
+Crm,EntityPickData,/Crm/EntityPickData,mvc,HttpGet,,SessionValidation,no,repository-verified
+Crm,Forecast,/Crm/Forecast,mvc,HttpGet,,SessionValidation,no,repository-verified
+Crm,Index,/Crm/Index,mvc,HttpGet,,SessionValidation,no,repository-verified
+Crm,Leads,/Crm/Leads,mvc,HttpGet,,SessionValidation,no,repository-verified
+Crm,LeadsData,/Crm/LeadsData,mvc,HttpGet,,SessionValidation,no,repository-verified
+Crm,LeadsExport,/Crm/LeadsExport,mvc,HttpGet,,SessionValidation,no,repository-verified
+Crm,ListEditor,/Crm/ListEditor,mvc,HttpGet,,SessionValidation,no,repository-verified
+Crm,MarketingLists,/Crm/MarketingLists,mvc,HttpGet,,SessionValidation,no,repository-verified
+Crm,MarketingListsData,/Crm/MarketingListsData,mvc,HttpGet,,SessionValidation,no,repository-verified
+Crm,MoveOpportunity,/Crm/MoveOpportunity,mvc,HttpPost,"ValidateAntiForgeryToken; CrossBuy.Models.CrmPerm(""edit"")",SessionValidation,no,repository-verified
+Crm,Opportunities,/Crm/Opportunities,mvc,HttpGet,,SessionValidation,no,repository-verified
+Crm,OpportunitiesData,/Crm/OpportunitiesData,mvc,HttpGet,,SessionValidation,no,repository-verified
+Crm,OpportunitiesExport,/Crm/OpportunitiesExport,mvc,HttpGet,,SessionValidation,no,repository-verified
+Crm,OpportunityInsights,/Crm/OpportunityInsights,mvc,HttpGet,"CrossBuy.Models.CrmPerm(""read"")",SessionValidation,no,repository-verified
+Crm,OpportunityProducts,/Crm/OpportunityProducts,mvc,HttpGet,,SessionValidation,no,repository-verified
+Crm,Pipeline,/Crm/Pipeline,mvc,HttpGet,,SessionValidation,no,repository-verified
+Crm,PipelineEditor,/Crm/PipelineEditor,mvc,HttpGet,"CrossBuy.Models.CrmPerm(""manage"")",SessionValidation,no,repository-verified
+Crm,Pipelines,/Crm/Pipelines,mvc,HttpGet,"CrossBuy.Models.CrmPerm(""manage"")",SessionValidation,no,repository-verified
+Crm,RecomputeScores,/Crm/RecomputeScores,mvc,HttpPost,"ValidateAntiForgeryToken; CrossBuy.Models.CrmPerm(""manage"")",SessionValidation,no,repository-verified
+Crm,RemoveCampaignMember,/Crm/RemoveCampaignMember,mvc,HttpPost,"ValidateAntiForgeryToken; CrossBuy.Models.CrmPerm(""edit"")",SessionValidation,no,repository-verified
+Crm,RemoveCrmRole,/Crm/RemoveCrmRole,mvc,HttpPost,"ValidateAntiForgeryToken; CrossBuy.Models.CrmPerm(""manage"")",SessionValidation,no,repository-verified
+Crm,RemoveListMember,/Crm/RemoveListMember,mvc,HttpPost,"ValidateAntiForgeryToken; CrossBuy.Models.CrmPerm(""edit"")",SessionValidation,no,repository-verified
+Crm,Reports,/Crm/Reports,mvc,HttpGet,,SessionValidation,no,repository-verified
+Crm,SaveAccount,/Crm/SaveAccount,mvc,HttpPost,"ValidateAntiForgeryToken; CrossBuy.Models.CrmPerm(""edit"")",SessionValidation,no,repository-verified
+Crm,SaveActivity,/Crm/SaveActivity,mvc,HttpPost,"ValidateAntiForgeryToken; CrossBuy.Models.CrmPerm(""edit"")",SessionValidation,no,repository-verified
+Crm,SaveAutomationRule,/Crm/SaveAutomationRule,mvc,HttpPost,"ValidateAntiForgeryToken; CrossBuy.Models.CrmPerm(""manage"")",SessionValidation,no,repository-verified
+Crm,SaveCampaign,/Crm/SaveCampaign,mvc,HttpPost,"ValidateAntiForgeryToken; CrossBuy.Models.CrmPerm(""edit"")",SessionValidation,no,repository-verified
+Crm,SaveContact,/Crm/SaveContact,mvc,HttpPost,"ValidateAntiForgeryToken; CrossBuy.Models.CrmPerm(""edit"")",SessionValidation,no,repository-verified
+Crm,SaveCrmSettings,/Crm/SaveCrmSettings,mvc,HttpPost,"ValidateAntiForgeryToken; CrossBuy.Models.CrmPerm(""manage"")",SessionValidation,no,repository-verified
+Crm,SaveCustomField,/Crm/SaveCustomField,mvc,HttpPost,"ValidateAntiForgeryToken; CrossBuy.Models.CrmPerm(""manage"")",SessionValidation,no,repository-verified
+Crm,SaveLead,/Crm/SaveLead,mvc,HttpPost,"ValidateAntiForgeryToken; CrossBuy.Models.CrmPerm(""edit"")",SessionValidation,no,repository-verified
+Crm,SaveList,/Crm/SaveList,mvc,HttpPost,"ValidateAntiForgeryToken; CrossBuy.Models.CrmPerm(""edit"")",SessionValidation,no,repository-verified
+Crm,SaveOpportunity,/Crm/SaveOpportunity,mvc,HttpPost,"ValidateAntiForgeryToken; CrossBuy.Models.CrmPerm(""edit"")",SessionValidation,no,repository-verified
+Crm,SaveOpportunityProducts,/Crm/SaveOpportunityProducts,mvc,HttpPost,"ValidateAntiForgeryToken; CrossBuy.Models.CrmPerm(""edit"")",SessionValidation,no,repository-verified
+Crm,SavePipeline,/Crm/SavePipeline,mvc,HttpPost,"ValidateAntiForgeryToken; CrossBuy.Models.CrmPerm(""manage"")",SessionValidation,no,repository-verified
+Crm,SaveScoringRule,/Crm/SaveScoringRule,mvc,HttpPost,"ValidateAntiForgeryToken; CrossBuy.Models.CrmPerm(""manage"")",SessionValidation,no,repository-verified
+Crm,SaveSlaPolicy,/Crm/SaveSlaPolicy,mvc,HttpPost,"ValidateAntiForgeryToken; CrossBuy.Models.CrmPerm(""manage"")",SessionValidation,no,repository-verified
+Crm,SaveTicket,/Crm/SaveTicket,mvc,HttpPost,"ValidateAntiForgeryToken; CrossBuy.Models.CrmPerm(""edit"")",SessionValidation,no,repository-verified
+Crm,ScoringRules,/Crm/ScoringRules,mvc,HttpGet,"CrossBuy.Models.CrmPerm(""manage"")",SessionValidation,no,repository-verified
+Crm,SlaPolicies,/Crm/SlaPolicies,mvc,HttpGet,"CrossBuy.Models.CrmPerm(""manage"")",SessionValidation,no,repository-verified
+Crm,StagesData,/Crm/StagesData,mvc,HttpGet,,SessionValidation,no,repository-verified
+Crm,TicketEditor,/Crm/TicketEditor,mvc,HttpGet,,SessionValidation,no,repository-verified
+Crm,Tickets,/Crm/Tickets,mvc,HttpGet,,SessionValidation,no,repository-verified
+Crm,TicketsData,/Crm/TicketsData,mvc,HttpGet,,SessionValidation,no,repository-verified
+Crm,TimelineData,/Crm/TimelineData,mvc,HttpGet,,SessionValidation,no,repository-verified
+Crm,ToggleActivity,/Crm/ToggleActivity,mvc,HttpPost,"ValidateAntiForgeryToken; CrossBuy.Models.CrmPerm(""edit"")",SessionValidation,no,repository-verified
+Crm,UpdateMemberStatus,/Crm/UpdateMemberStatus,mvc,HttpPost,"ValidateAntiForgeryToken; CrossBuy.Models.CrmPerm(""edit"")",SessionValidation,no,repository-verified
+Crm,UpdateTicketStatus,/Crm/UpdateTicketStatus,mvc,HttpPost,"ValidateAntiForgeryToken; CrossBuy.Models.CrmPerm(""edit"")",SessionValidation,no,repository-verified
+Currency,Currencies,/Currency/Currencies,mvc,HttpGet,,SessionValidation,no,repository-verified
+Currency,CurrenciesData,/Currency/CurrenciesData,mvc,HttpGet,,SessionValidation,no,repository-verified
+Currency,ExchangeRates,/Currency/ExchangeRates,mvc,HttpGet,,SessionValidation,no,repository-verified
+Currency,PostRevaluation,/Currency/PostRevaluation,mvc,HttpPost,"ValidateAntiForgeryToken; AccPerm(""manage"")",SessionValidation,no,repository-verified
+Currency,Revaluation,/Currency/Revaluation,mvc,HttpGet,,SessionValidation,no,repository-verified
+Currency,SaveCurrency,/Currency/SaveCurrency,mvc,HttpPost,"ValidateAntiForgeryToken; AccPerm(""manage"")",SessionValidation,no,repository-verified
+Currency,SaveExchangeRate,/Currency/SaveExchangeRate,mvc,HttpPost,"ValidateAntiForgeryToken; AccPerm(""post"")",SessionValidation,no,repository-verified
+Currency,SetBranchCurrency,/Currency/SetBranchCurrency,mvc,HttpPost,"ValidateAntiForgeryToken; AccPerm(""manage"")",SessionValidation,no,repository-verified
+Currency,SetCompanyCurrency,/Currency/SetCompanyCurrency,mvc,HttpPost,"ValidateAntiForgeryToken; AccPerm(""manage"")",SessionValidation,no,repository-verified
+Currency,Setup,/Currency/Setup,mvc,HttpGet,,SessionValidation,no,repository-verified
+Documents,Content,/Documents/Content,mvc,"HttpGet(""{id:long}/content"")",,"Route(""Documents""); SessionValidation",no,repository-verified
+Documents,ForEntity,/Documents/ForEntity,mvc,"HttpGet(""for/{entityType}/{entityId:int}"")",,"Route(""Documents""); SessionValidation",no,repository-verified
+Documents,History,/Documents/History,mvc,"HttpGet(""{id:long}/history"")",,"Route(""Documents""); SessionValidation",no,repository-verified
+Documents,Reject,/Documents/Reject,mvc,"HttpPost(""{id:long}/reject"")",ValidateAntiForgeryToken,"Route(""Documents""); SessionValidation",no,repository-verified
+Documents,Submit,/Documents/Submit,mvc,"HttpPost(""submit"")",ValidateAntiForgeryToken; RequestSizeLimit(52_428_800),"Route(""Documents""); SessionValidation",no,repository-verified
+Documents,Verify,/Documents/Verify,mvc,"HttpPost(""{id:long}/verify"")",ValidateAntiForgeryToken,"Route(""Documents""); SessionValidation",no,repository-verified
+Documents,VersionContent,/Documents/VersionContent,mvc,"HttpGet(""{id:long}/versions/{versionNo:int}/content"")",,"Route(""Documents""); SessionValidation",no,repository-verified
+Documents,Workspace,/Documents/Workspace,mvc,"HttpGet(""workspace/{entityType}/{entityId:int}"")",,"Route(""Documents""); SessionValidation",no,repository-verified
+EmployeeOnboarding,Complete,/EmployeeOnboarding/Complete,mvc,"HttpPost(""{employeeId:int}/complete"")",ValidateAntiForgeryToken,"Route(""Hr/Onboarding"")",no,repository-verified
+EmployeeOnboarding,CompleteItem,/EmployeeOnboarding/CompleteItem,mvc,"HttpPost(""{employeeId:int}/item/{itemId:int}/complete"")",ValidateAntiForgeryToken,"Route(""Hr/Onboarding"")",no,repository-verified
+EmployeeOnboarding,Index,/EmployeeOnboarding/Index,mvc,"HttpGet(""{employeeId:int}"")",,"Route(""Hr/Onboarding"")",no,repository-verified
+EmployeeOnboarding,Start,/EmployeeOnboarding/Start,mvc,"HttpPost(""{employeeId:int}/start"")",ValidateAntiForgeryToken,"Route(""Hr/Onboarding"")",no,repository-verified
+EmployeeOnboarding,WaiveItem,/EmployeeOnboarding/WaiveItem,mvc,"HttpPost(""{employeeId:int}/item/{itemId:int}/waive"")",ValidateAntiForgeryToken,"Route(""Hr/Onboarding"")",no,repository-verified
+FileManager,CreateFolder,/FileManager/CreateFolder,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+FileManager,Delete,/FileManager/Delete,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+FileManager,Download,/FileManager/Download,mvc,HttpGet,,SessionValidation,no,repository-verified
+FileManager,FolderTree,/FileManager/FolderTree,mvc,HttpGet,,SessionValidation,no,repository-verified
+FileManager,Index,/FileManager/Index,mvc,HttpGet,,SessionValidation,no,repository-verified
+FileManager,List,/FileManager/List,mvc,HttpGet,,SessionValidation,no,repository-verified
+FileManager,Move,/FileManager/Move,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+FileManager,Rename,/FileManager/Rename,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+FileManager,Upload,/FileManager/Upload,mvc,HttpPost,ValidateAntiForgeryToken; RequestSizeLimit(268435456),SessionValidation,no,repository-verified
+Home,Error,/Home/Error,mvc,HttpGet (implicit),"ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)",,no,repository-verified
+Home,Index,/Home/Index,mvc,HttpGet (implicit),,,no,repository-verified
+Home,Privacy,/Home/Privacy,mvc,HttpGet (implicit),,,no,repository-verified
+Home,Store,/Home/Store,mvc,HttpGet (implicit),AllowAnonymous,,yes,repository-verified
+Hyper,Dashboard,/Hyper/Dashboard,mvc,"HttpGet(""""); HttpGet(""dashboard"")",,"Route(""hyper"")",no,repository-verified
+Hyper,ItemMargin,/Hyper/ItemMargin,mvc,"HttpGet(""reports/item-margin"")",,"Route(""hyper"")",no,repository-verified
+Hyper,Sales,/Hyper/Sales,mvc,"HttpGet(""reports/sales"")",,"Route(""hyper"")",no,repository-verified
+HyperPos,AttachCustomer,/HyperPos/AttachCustomer,mvc,"HttpPost(""customer/attach"")",ValidateAntiForgeryToken,"CrossBuy.Models.PosLaneActivityGuard(""HyperCtx"", ""hyper"", ""/hyper/pos/login""); Route(""hyper/pos"")",no,repository-verified
+HyperPos,Customer,/HyperPos/Customer,mvc,"HttpGet(""customer"")",,"CrossBuy.Models.PosLaneActivityGuard(""HyperCtx"", ""hyper"", ""/hyper/pos/login""); Route(""hyper/pos"")",no,repository-verified
+HyperPos,CustomerAdd,/HyperPos/CustomerAdd,mvc,"HttpPost(""customer/add"")",ValidateAntiForgeryToken,"CrossBuy.Models.PosLaneActivityGuard(""HyperCtx"", ""hyper"", ""/hyper/pos/login""); Route(""hyper/pos"")",no,repository-verified
+HyperPos,CustomerSearch,/HyperPos/CustomerSearch,mvc,"HttpGet(""customer/search"")",,"CrossBuy.Models.PosLaneActivityGuard(""HyperCtx"", ""hyper"", ""/hyper/pos/login""); Route(""hyper/pos"")",no,repository-verified
+HyperPos,Index,/HyperPos/Index,mvc,"HttpGet("""")",,"CrossBuy.Models.PosLaneActivityGuard(""HyperCtx"", ""hyper"", ""/hyper/pos/login""); Route(""hyper/pos"")",no,repository-verified
+HyperPos,Lane,/HyperPos/Lane,mvc,"HttpGet(""lane"")",,"CrossBuy.Models.PosLaneActivityGuard(""HyperCtx"", ""hyper"", ""/hyper/pos/login""); Route(""hyper/pos"")",no,repository-verified
+HyperPos,Login,/HyperPos/Login,mvc,"HttpGet(""login"")",AllowAnonymous,"CrossBuy.Models.PosLaneActivityGuard(""HyperCtx"", ""hyper"", ""/hyper/pos/login""); Route(""hyper/pos"")",yes,repository-verified
+HyperPos,Login,/HyperPos/Login,mvc,"HttpPost(""login"")",AllowAnonymous; ValidateAntiForgeryToken,"CrossBuy.Models.PosLaneActivityGuard(""HyperCtx"", ""hyper"", ""/hyper/pos/login""); Route(""hyper/pos"")",yes,repository-verified
+HyperPos,Logout,/HyperPos/Logout,mvc,"HttpGet(""logout"")",,"CrossBuy.Models.PosLaneActivityGuard(""HyperCtx"", ""hyper"", ""/hyper/pos/login""); Route(""hyper/pos"")",no,repository-verified
+HyperPos,Pay,/HyperPos/Pay,mvc,"HttpPost(""pay"")",ValidateAntiForgeryToken,"CrossBuy.Models.PosLaneActivityGuard(""HyperCtx"", ""hyper"", ""/hyper/pos/login""); Route(""hyper/pos"")",no,repository-verified
+HyperPos,PriceCheck,/HyperPos/PriceCheck,mvc,"HttpGet(""pricecheck"")",,"CrossBuy.Models.PosLaneActivityGuard(""HyperCtx"", ""hyper"", ""/hyper/pos/login""); Route(""hyper/pos"")",no,repository-verified
+HyperPos,PriceCheck,/HyperPos/PriceCheck,mvc,"HttpPost(""pricecheck"")",ValidateAntiForgeryToken,"CrossBuy.Models.PosLaneActivityGuard(""HyperCtx"", ""hyper"", ""/hyper/pos/login""); Route(""hyper/pos"")",no,repository-verified
+HyperPos,PrintInvoice,/HyperPos/PrintInvoice,mvc,"HttpGet(""invoice/print/{invoiceId:int}"")",,"CrossBuy.Models.PosLaneActivityGuard(""HyperCtx"", ""hyper"", ""/hyper/pos/login""); Route(""hyper/pos"")",no,repository-verified
+HyperPos,Receipts,/HyperPos/Receipts,mvc,"HttpGet(""receipts"")",,"CrossBuy.Models.PosLaneActivityGuard(""HyperCtx"", ""hyper"", ""/hyper/pos/login""); Route(""hyper/pos"")",no,repository-verified
+HyperPos,RemoveLine,/HyperPos/RemoveLine,mvc,"HttpPost(""line/remove"")",ValidateAntiForgeryToken,"CrossBuy.Models.PosLaneActivityGuard(""HyperCtx"", ""hyper"", ""/hyper/pos/login""); Route(""hyper/pos"")",no,repository-verified
+HyperPos,Scan,/HyperPos/Scan,mvc,"HttpPost(""scan"")",ValidateAntiForgeryToken,"CrossBuy.Models.PosLaneActivityGuard(""HyperCtx"", ""hyper"", ""/hyper/pos/login""); Route(""hyper/pos"")",no,repository-verified
+HyperPos,SetQty,/HyperPos/SetQty,mvc,"HttpPost(""line/qty"")",ValidateAntiForgeryToken,"CrossBuy.Models.PosLaneActivityGuard(""HyperCtx"", ""hyper"", ""/hyper/pos/login""); Route(""hyper/pos"")",no,repository-verified
+HyperPos,ShiftClose,/HyperPos/ShiftClose,mvc,"HttpPost(""shift/close"")",ValidateAntiForgeryToken,"CrossBuy.Models.PosLaneActivityGuard(""HyperCtx"", ""hyper"", ""/hyper/pos/login""); Route(""hyper/pos"")",no,repository-verified
+HyperPos,StampInvoiceCustomer,/HyperPos/StampInvoiceCustomer,mvc,"HttpPost(""invoice/stamp"")",ValidateAntiForgeryToken,"CrossBuy.Models.PosLaneActivityGuard(""HyperCtx"", ""hyper"", ""/hyper/pos/login""); Route(""hyper/pos"")",no,repository-verified
+HyperPos,Start,/HyperPos/Start,mvc,"HttpGet(""start"")",,"CrossBuy.Models.PosLaneActivityGuard(""HyperCtx"", ""hyper"", ""/hyper/pos/login""); Route(""hyper/pos"")",no,repository-verified
+HyperPos,Start,/HyperPos/Start,mvc,"HttpPost(""start"")",ValidateAntiForgeryToken,"CrossBuy.Models.PosLaneActivityGuard(""HyperCtx"", ""hyper"", ""/hyper/pos/login""); Route(""hyper/pos"")",no,repository-verified
+InsightActions,CreateTask,/InsightActions/CreateTask,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+InsightActions,NewTask,/InsightActions/NewTask,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,AddPlanDemand,/Inventory/AddPlanDemand,mvc,HttpPost,"ValidateAntiForgeryToken; InvPerm(""doc"")",SessionValidation,no,repository-verified
+Inventory,AddWorkOrderLabor,/Inventory/AddWorkOrderLabor,mvc,HttpPost,"ValidateAntiForgeryToken; InvPerm(""doc"")",SessionValidation,no,repository-verified
+Inventory,Approvals,/Inventory/Approvals,mvc,HttpGet,"InvPerm(""manage"")",SessionValidation,no,repository-verified
+Inventory,ApproveDoc,/Inventory/ApproveDoc,mvc,HttpPost,"ValidateAntiForgeryToken; InvPerm(""manage"")",SessionValidation,no,repository-verified
+Inventory,AssignRole,/Inventory/AssignRole,mvc,HttpPost,"ValidateAntiForgeryToken; InvPerm(""manage"")",SessionValidation,no,repository-verified
+Inventory,Batches,/Inventory/Batches,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,BulkExecute,/Inventory/BulkExecute,mvc,HttpPost,"ValidateAntiForgeryToken; InvPerm(""doc"")",SessionValidation,no,repository-verified
+Inventory,BulkPreview,/Inventory/BulkPreview,mvc,HttpPost,"ValidateAntiForgeryToken; InvPerm(""doc"")",SessionValidation,no,repository-verified
+Inventory,BulkPriceChange,/Inventory/BulkPriceChange,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,BulkUndo,/Inventory/BulkUndo,mvc,HttpPost,"ValidateAntiForgeryToken; InvPerm(""doc"")",SessionValidation,no,repository-verified
+Inventory,CancelWorkOrder,/Inventory/CancelWorkOrder,mvc,HttpPost,"ValidateAntiForgeryToken; InvPerm(""doc"")",SessionValidation,no,repository-verified
+Inventory,CapitalizeAsset,/Inventory/CapitalizeAsset,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,Categories,/Inventory/Categories,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,CompleteWorkOrder,/Inventory/CompleteWorkOrder,mvc,HttpPost,"ValidateAntiForgeryToken; InvPerm(""doc"")",SessionValidation,no,repository-verified
+Inventory,ConvertPoToInvoice,/Inventory/ConvertPoToInvoice,mvc,HttpPost,"ValidateAntiForgeryToken; InvPerm(""purchase"")",SessionValidation,no,repository-verified
+Inventory,ConvertQuoteToOrder,/Inventory/ConvertQuoteToOrder,mvc,HttpPost,"ValidateAntiForgeryToken; InvPerm(""doc"")",SessionValidation,no,repository-verified
+Inventory,ConvertSoToInvoice,/Inventory/ConvertSoToInvoice,mvc,HttpPost,"ValidateAntiForgeryToken; InvPerm(""doc"")",SessionValidation,no,repository-verified
+Inventory,CopyPriceList,/Inventory/CopyPriceList,mvc,HttpPost,"ValidateAntiForgeryToken; InvPerm(""doc"")",SessionValidation,no,repository-verified
+Inventory,CountDetails,/Inventory/CountDetails,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,CreateCategory,/Inventory/CreateCategory,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,CreateCategory,/Inventory/CreateCategory,mvc,HttpPost,"ValidateAntiForgeryToken; InvPerm(""manage"")",SessionValidation,no,repository-verified
+Inventory,CreateDelivery,/Inventory/CreateDelivery,mvc,HttpPost,"ValidateAntiForgeryToken; InvPerm(""doc"")",SessionValidation,no,repository-verified
+Inventory,CreateGoodsReceipt,/Inventory/CreateGoodsReceipt,mvc,HttpPost,"ValidateAntiForgeryToken; InvPerm(""purchase"")",SessionValidation,no,repository-verified
+Inventory,CreateItem,/Inventory/CreateItem,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,CreateItem,/Inventory/CreateItem,mvc,HttpPost,"ValidateAntiForgeryToken; InvPerm(""manage"")",SessionValidation,no,repository-verified
+Inventory,CreateLandedCost,/Inventory/CreateLandedCost,mvc,HttpPost,"ValidateAntiForgeryToken; InvPerm(""doc"")",SessionValidation,no,repository-verified
+Inventory,CreatePlan,/Inventory/CreatePlan,mvc,HttpPost,"ValidateAntiForgeryToken; InvPerm(""doc"")",SessionValidation,no,repository-verified
+Inventory,CreatePurchaseOrder,/Inventory/CreatePurchaseOrder,mvc,HttpPost,"ValidateAntiForgeryToken; InvPerm(""purchase"")",SessionValidation,no,repository-verified
+Inventory,CreateQuotation,/Inventory/CreateQuotation,mvc,HttpPost,"ValidateAntiForgeryToken; InvPerm(""doc"")",SessionValidation,no,repository-verified
+Inventory,CreateSalesOrder,/Inventory/CreateSalesOrder,mvc,HttpPost,"ValidateAntiForgeryToken; InvPerm(""doc"")",SessionValidation,no,repository-verified
+Inventory,CreateTransfer,/Inventory/CreateTransfer,mvc,HttpPost,"ValidateAntiForgeryToken; InvPerm(""doc"")",SessionValidation,no,repository-verified
+Inventory,CreateUnit,/Inventory/CreateUnit,mvc,HttpPost,"ValidateAntiForgeryToken; InvPerm(""manage"")",SessionValidation,no,repository-verified
+Inventory,CreateWarehouse,/Inventory/CreateWarehouse,mvc,HttpPost,"ValidateAntiForgeryToken; InvPerm(""manage"")",SessionValidation,no,repository-verified
+Inventory,CreateWorkOrder,/Inventory/CreateWorkOrder,mvc,HttpPost,"ValidateAntiForgeryToken; InvPerm(""doc"")",SessionValidation,no,repository-verified
+Inventory,CreateWriteOff,/Inventory/CreateWriteOff,mvc,HttpPost,"ValidateAntiForgeryToken; InvPerm(""doc"")",SessionValidation,no,repository-verified
+Inventory,DeleteBinLocation,/Inventory/DeleteBinLocation,mvc,HttpPost,"ValidateAntiForgeryToken; InvPerm(""manage"")",SessionValidation,no,repository-verified
+Inventory,DeletePlan,/Inventory/DeletePlan,mvc,HttpPost,"ValidateAntiForgeryToken; InvPerm(""doc"")",SessionValidation,no,repository-verified
+Inventory,DeletePriceList,/Inventory/DeletePriceList,mvc,HttpPost,"ValidateAntiForgeryToken; InvPerm(""doc"")",SessionValidation,no,repository-verified
+Inventory,DeletePromotion,/Inventory/DeletePromotion,mvc,HttpPost,"ValidateAntiForgeryToken; InvPerm(""doc"")",SessionValidation,no,repository-verified
+Inventory,DeleteRoutingOp,/Inventory/DeleteRoutingOp,mvc,HttpPost,"ValidateAntiForgeryToken; InvPerm(""manage"")",SessionValidation,no,repository-verified
+Inventory,Deliveries,/Inventory/Deliveries,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,DeliveriesData,/Inventory/DeliveriesData,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,DeliveriesExport,/Inventory/DeliveriesExport,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,DeliveryDetails,/Inventory/DeliveryDetails,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,DoCapitalizeAsset,/Inventory/DoCapitalizeAsset,mvc,HttpPost,"ValidateAntiForgeryToken; InvPerm(""manage"")",SessionValidation,no,repository-verified
+Inventory,EditCategory,/Inventory/EditCategory,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,EditCategory,/Inventory/EditCategory,mvc,HttpPost,"ValidateAntiForgeryToken; InvPerm(""manage"")",SessionValidation,no,repository-verified
+Inventory,EditItem,/Inventory/EditItem,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,EditItem,/Inventory/EditItem,mvc,HttpPost,"ValidateAntiForgeryToken; InvPerm(""manage"")",SessionValidation,no,repository-verified
+Inventory,EditWarehouse,/Inventory/EditWarehouse,mvc,HttpPost,"ValidateAntiForgeryToken; InvPerm(""manage"")",SessionValidation,no,repository-verified
+Inventory,ExpiryAlerts,/Inventory/ExpiryAlerts,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,GeneratePO,/Inventory/GeneratePO,mvc,HttpPost,"ValidateAntiForgeryToken; InvPerm(""purchase"")",SessionValidation,no,repository-verified
+Inventory,GeneratePlanWorkOrders,/Inventory/GeneratePlanWorkOrders,mvc,HttpPost,"ValidateAntiForgeryToken; InvPerm(""doc"")",SessionValidation,no,repository-verified
+Inventory,GoodsReceipts,/Inventory/GoodsReceipts,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,GoodsReceiptsData,/Inventory/GoodsReceiptsData,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,GoodsReceiptsExport,/Inventory/GoodsReceiptsExport,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,Index,/Inventory/Index,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,InitializeBinStock,/Inventory/InitializeBinStock,mvc,HttpPost,"ValidateAntiForgeryToken; InvPerm(""manage"")",SessionValidation,no,repository-verified
+Inventory,IntegrityReconciliation,/Inventory/IntegrityReconciliation,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,InventoryRoles,/Inventory/InventoryRoles,mvc,HttpGet,"InvPerm(""manage"")",SessionValidation,no,repository-verified
+Inventory,ItemBom,/Inventory/ItemBom,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,ItemLedger,/Inventory/ItemLedger,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,ItemLocations,/Inventory/ItemLocations,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,ItemPickData,/Inventory/ItemPickData,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,Items,/Inventory/Items,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,ItemsData,/Inventory/ItemsData,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,ItemsExport,/Inventory/ItemsExport,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,ItemsSuggest,/Inventory/ItemsSuggest,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,LandedCostDetails,/Inventory/LandedCostDetails,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,LandedCosts,/Inventory/LandedCosts,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,ManufDashboard,/Inventory/ManufDashboard,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,ManufReports,/Inventory/ManufReports,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,NewAssembly,/Inventory/NewAssembly,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,NewCount,/Inventory/NewCount,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,NewDelivery,/Inventory/NewDelivery,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,NewGoodsReceipt,/Inventory/NewGoodsReceipt,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,NewLandedCost,/Inventory/NewLandedCost,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,NewMovement,/Inventory/NewMovement,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,NewPurchaseOrder,/Inventory/NewPurchaseOrder,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,NewQuotation,/Inventory/NewQuotation,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,NewSalesOrder,/Inventory/NewSalesOrder,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,NewTransfer,/Inventory/NewTransfer,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,NewWorkOrder,/Inventory/NewWorkOrder,mvc,HttpGet,"InvPerm(""read"")",SessionValidation,no,repository-verified
+Inventory,NewWriteOff,/Inventory/NewWriteOff,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,OpAddAp,/Inventory/OpAddAp,mvc,HttpPost,"ValidateAntiForgeryToken; InvPerm(""manage"")",SessionValidation,no,repository-verified
+Inventory,OpAddAr,/Inventory/OpAddAr,mvc,HttpPost,"ValidateAntiForgeryToken; InvPerm(""manage"")",SessionValidation,no,repository-verified
+Inventory,OpAddAsset,/Inventory/OpAddAsset,mvc,HttpPost,"ValidateAntiForgeryToken; InvPerm(""manage"")",SessionValidation,no,repository-verified
+Inventory,OpAddGl,/Inventory/OpAddGl,mvc,HttpPost,"ValidateAntiForgeryToken; InvPerm(""manage"")",SessionValidation,no,repository-verified
+Inventory,OpAddStock,/Inventory/OpAddStock,mvc,HttpPost,"ValidateAntiForgeryToken; InvPerm(""manage"")",SessionValidation,no,repository-verified
+Inventory,OpFinalize,/Inventory/OpFinalize,mvc,HttpPost,"ValidateAntiForgeryToken; InvPerm(""manage"")",SessionValidation,no,repository-verified
+Inventory,OpeningBalances,/Inventory/OpeningBalances,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,PlanDetails,/Inventory/PlanDetails,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,Planning,/Inventory/Planning,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,PoMatch,/Inventory/PoMatch,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,PostAssembly,/Inventory/PostAssembly,mvc,HttpPost,"ValidateAntiForgeryToken; InvPerm(""doc"")",SessionValidation,no,repository-verified
+Inventory,PostCount,/Inventory/PostCount,mvc,HttpPost,"ValidateAntiForgeryToken; InvPerm(""doc"")",SessionValidation,no,repository-verified
+Inventory,PostMovement,/Inventory/PostMovement,mvc,HttpPost,"ValidateAntiForgeryToken; InvPerm(""doc"")",SessionValidation,no,repository-verified
+Inventory,PriceListEditor,/Inventory/PriceListEditor,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,PriceLists,/Inventory/PriceLists,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,PriceListsData,/Inventory/PriceListsData,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,PriceListsExport,/Inventory/PriceListsExport,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,PriceLookup,/Inventory/PriceLookup,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,ProducePartial,/Inventory/ProducePartial,mvc,HttpPost,"ValidateAntiForgeryToken; InvPerm(""doc"")",SessionValidation,no,repository-verified
+Inventory,ProductionPlanning,/Inventory/ProductionPlanning,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,PromotionEditor,/Inventory/PromotionEditor,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,Promotions,/Inventory/Promotions,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,PromotionsData,/Inventory/PromotionsData,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,PurchaseOrderDetails,/Inventory/PurchaseOrderDetails,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,PurchaseOrders,/Inventory/PurchaseOrders,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,PurchaseOrdersData,/Inventory/PurchaseOrdersData,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,PurchaseOrdersExport,/Inventory/PurchaseOrdersExport,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,QuotationConversation,/Inventory/QuotationConversation,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Inventory,QuotationConversationAdd,/Inventory/QuotationConversationAdd,mvc,HttpPost,SessionValidation; ValidateAntiForgeryToken; RequestSizeLimit(21_000_000),SessionValidation,no,repository-verified
+Inventory,QuotationConversationReact,/Inventory/QuotationConversationReact,mvc,HttpPost,SessionValidation; ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Inventory,QuotationDetails,/Inventory/QuotationDetails,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,Quotations,/Inventory/Quotations,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,QuotationsData,/Inventory/QuotationsData,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,QuotationsExport,/Inventory/QuotationsExport,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,RackBalances,/Inventory/RackBalances,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,ReceiptDetails,/Inventory/ReceiptDetails,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,RejectDoc,/Inventory/RejectDoc,mvc,HttpPost,"ValidateAntiForgeryToken; InvPerm(""manage"")",SessionValidation,no,repository-verified
+Inventory,ReleaseWorkOrder,/Inventory/ReleaseWorkOrder,mvc,HttpPost,"ValidateAntiForgeryToken; InvPerm(""doc"")",SessionValidation,no,repository-verified
+Inventory,RelocateBin,/Inventory/RelocateBin,mvc,HttpPost,"ValidateAntiForgeryToken; InvPerm(""manage"")",SessionValidation,no,repository-verified
+Inventory,RemovePlanDemand,/Inventory/RemovePlanDemand,mvc,HttpPost,"ValidateAntiForgeryToken; InvPerm(""doc"")",SessionValidation,no,repository-verified
+Inventory,RemoveRole,/Inventory/RemoveRole,mvc,HttpPost,"ValidateAntiForgeryToken; InvPerm(""manage"")",SessionValidation,no,repository-verified
+Inventory,RemoveWorkOrderLabor,/Inventory/RemoveWorkOrderLabor,mvc,HttpPost,"ValidateAntiForgeryToken; InvPerm(""doc"")",SessionValidation,no,repository-verified
+Inventory,ReorderReport,/Inventory/ReorderReport,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,ReorderSettings,/Inventory/ReorderSettings,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,Reports,/Inventory/Reports,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,RiskInsights,/Inventory/RiskInsights,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,Routing,/Inventory/Routing,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,RunIntegrity,/Inventory/RunIntegrity,mvc,HttpPost,"ValidateAntiForgeryToken; InvPerm(""manage"")",SessionValidation,no,repository-verified
+Inventory,SalesOrderDetails,/Inventory/SalesOrderDetails,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,SalesOrders,/Inventory/SalesOrders,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,SalesOrdersData,/Inventory/SalesOrdersData,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,SalesOrdersExport,/Inventory/SalesOrdersExport,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,SaveBinLocation,/Inventory/SaveBinLocation,mvc,HttpPost,"ValidateAntiForgeryToken; InvPerm(""manage"")",SessionValidation,no,repository-verified
+Inventory,SaveItemLocations,/Inventory/SaveItemLocations,mvc,HttpPost,"ValidateAntiForgeryToken; InvPerm(""manage"")",SessionValidation,no,repository-verified
+Inventory,SavePriceList,/Inventory/SavePriceList,mvc,HttpPost,"ValidateAntiForgeryToken; InvPerm(""doc"")",SessionValidation,no,repository-verified
+Inventory,SavePromotion,/Inventory/SavePromotion,mvc,HttpPost,"ValidateAntiForgeryToken; InvPerm(""doc"")",SessionValidation,no,repository-verified
+Inventory,SaveReorderSettings,/Inventory/SaveReorderSettings,mvc,HttpPost,"ValidateAntiForgeryToken; InvPerm(""manage"")",SessionValidation,no,repository-verified
+Inventory,SaveRoutingOp,/Inventory/SaveRoutingOp,mvc,HttpPost,"ValidateAntiForgeryToken; InvPerm(""manage"")",SessionValidation,no,repository-verified
+Inventory,SaveSettings,/Inventory/SaveSettings,mvc,HttpPost,"ValidateAntiForgeryToken; InvPerm(""manage"")",SessionValidation,no,repository-verified
+Inventory,SaveWorkCenter,/Inventory/SaveWorkCenter,mvc,HttpPost,"ValidateAntiForgeryToken; InvPerm(""manage"")",SessionValidation,no,repository-verified
+Inventory,SaveWorkOrder,/Inventory/SaveWorkOrder,mvc,HttpPost,"ValidateAntiForgeryToken; InvPerm(""doc"")",SessionValidation,no,repository-verified
+Inventory,ScanBarcode,/Inventory/ScanBarcode,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,Serials,/Inventory/Serials,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,SetBinCount,/Inventory/SetBinCount,mvc,HttpPost,"ValidateAntiForgeryToken; InvPerm(""manage"")",SessionValidation,no,repository-verified
+Inventory,SetQuoteStatus,/Inventory/SetQuoteStatus,mvc,HttpPost,"ValidateAntiForgeryToken; InvPerm(""doc"")",SessionValidation,no,repository-verified
+Inventory,Settings,/Inventory/Settings,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,ShelfLabels,/Inventory/ShelfLabels,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,StagnantReport,/Inventory/StagnantReport,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,StockBalances,/Inventory/StockBalances,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,StockBalancesData,/Inventory/StockBalancesData,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,StockBalancesExport,/Inventory/StockBalancesExport,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,StockCounts,/Inventory/StockCounts,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,StockMovements,/Inventory/StockMovements,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,StockMovementsData,/Inventory/StockMovementsData,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,StockMovementsExport,/Inventory/StockMovementsExport,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,StockMovementsSummary,/Inventory/StockMovementsSummary,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,StockTransfers,/Inventory/StockTransfers,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,TransferDetails,/Inventory/TransferDetails,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,Units,/Inventory/Units,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,ValuationReport,/Inventory/ValuationReport,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,WarehouseBinsData,/Inventory/WarehouseBinsData,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,WarehouseQuickAdd,/Inventory/WarehouseQuickAdd,mvc,HttpPost,"ValidateAntiForgeryToken; CrossBuy.Models.ApiPerm(CrossBuy.Models.ApiPermAttribute.Inventory, ""manage"")",SessionValidation,no,repository-verified
+Inventory,WarehouseSections,/Inventory/WarehouseSections,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,Warehouses,/Inventory/Warehouses,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,WorkCenters,/Inventory/WorkCenters,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,WorkOrderDetails,/Inventory/WorkOrderDetails,mvc,HttpGet,"InvPerm(""read"")",SessionValidation,no,repository-verified
+Inventory,WorkOrderItemPickData,/Inventory/WorkOrderItemPickData,mvc,HttpGet,"InvPerm(""read"")",SessionValidation,no,repository-verified
+Inventory,WorkOrders,/Inventory/WorkOrders,mvc,HttpGet,"InvPerm(""read"")",SessionValidation,no,repository-verified
+Inventory,WorkOrdersData,/Inventory/WorkOrdersData,mvc,HttpGet,"InvPerm(""read"")",SessionValidation,no,repository-verified
+Inventory,WriteOffDetails,/Inventory/WriteOffDetails,mvc,HttpGet,,SessionValidation,no,repository-verified
+Inventory,WriteOffs,/Inventory/WriteOffs,mvc,HttpGet,,SessionValidation,no,repository-verified
+Notifications,Index,/Notifications/Index,mvc,HttpGet,,SessionValidation,no,repository-verified
+Notifications,Prefs,/Notifications/Prefs,mvc,HttpGet,,SessionValidation,no,repository-verified
+Notifications,ToggleMute,/Notifications/ToggleMute,mvc,HttpPost,,SessionValidation,no,repository-verified
+People,AcknowledgeAppraisal,/People/AcknowledgeAppraisal,mvc,HttpPost,ValidateAntiForgeryToken,,no,repository-verified
+People,Attendance,/People/Attendance,mvc,HttpGet (implicit),,,no,repository-verified
+People,CreateLeave,/People/CreateLeave,mvc,HttpPost,ValidateAntiForgeryToken,,no,repository-verified
+People,CreateRequest,/People/CreateRequest,mvc,HttpPost,ValidateAntiForgeryToken,,no,repository-verified
+People,Dashboard,/People/Dashboard,mvc,HttpGet (implicit),,,no,repository-verified
+People,DecideLeave,/People/DecideLeave,mvc,HttpPost,ValidateAntiForgeryToken,,no,repository-verified
+People,DecideRequest,/People/DecideRequest,mvc,HttpPost,ValidateAntiForgeryToken,,no,repository-verified
+People,Index,/People/Index,mvc,HttpGet (implicit),,,no,repository-verified
+People,Leaves,/People/Leaves,mvc,HttpGet (implicit),,,no,repository-verified
+People,LetterPrint,/People/LetterPrint,mvc,HttpGet (implicit),,,no,repository-verified
+People,MyAppraisal,/People/MyAppraisal,mvc,HttpGet (implicit),,,no,repository-verified
+People,MyAppraisals,/People/MyAppraisals,mvc,HttpGet (implicit),,,no,repository-verified
+People,MyTrainings,/People/MyTrainings,mvc,HttpGet (implicit),,,no,repository-verified
+People,Payslip,/People/Payslip,mvc,HttpGet (implicit),,,no,repository-verified
+People,Payslips,/People/Payslips,mvc,HttpGet (implicit),,,no,repository-verified
+People,Profile,/People/Profile,mvc,HttpGet (implicit),,,no,repository-verified
+People,Requests,/People/Requests,mvc,HttpGet (implicit),,,no,repository-verified
+People,Structure,/People/Structure,mvc,HttpGet (implicit),,,no,repository-verified
+PlatformTimeline,List,/PlatformTimeline/List,mvc,HttpGet,,SessionValidation,no,repository-verified
+Portal,Choose,/Portal/Choose,mvc,HttpGet (implicit),,,no,repository-verified
+Pos,AckSyncConflict,/Pos/AckSyncConflict,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Pos,AddQuickItem,/Pos/AddQuickItem,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Pos,AddQuickItemJson,/Pos/AddQuickItemJson,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Pos,ApplyPreset,/Pos/ApplyPreset,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Pos,Areas,/Pos/Areas,mvc,HttpGet,,SessionValidation,no,repository-verified
+Pos,AssignPosRole,/Pos/AssignPosRole,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Pos,AttachModifierItemJson,/Pos/AttachModifierItemJson,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Pos,CashierRoles,/Pos/CashierRoles,mvc,HttpGet,,SessionValidation,no,repository-verified
+Pos,CloseShift,/Pos/CloseShift,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Pos,CustomerQuickAdd,/Pos/CustomerQuickAdd,mvc,HttpPost,"ValidateAntiForgeryToken; CrossBuy.Models.ApiPerm(CrossBuy.Models.ApiPermAttribute.Accounting, ""post"")",SessionValidation,no,repository-verified
+Pos,CustomerSearch,/Pos/CustomerSearch,mvc,HttpGet,,SessionValidation,no,repository-verified
+Pos,Dashboard,/Pos/Dashboard,mvc,HttpGet,,SessionValidation,no,repository-verified
+Pos,DeleteDeliveryZone,/Pos/DeleteDeliveryZone,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Pos,DeleteDiningArea,/Pos/DeleteDiningArea,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Pos,DeleteDriver,/Pos/DeleteDriver,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Pos,DeleteMenuGroup,/Pos/DeleteMenuGroup,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Pos,DeleteModifierGroup,/Pos/DeleteModifierGroup,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Pos,DeleteModifierOption,/Pos/DeleteModifierOption,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Pos,DeletePaymentMethod,/Pos/DeletePaymentMethod,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Pos,DeleteStation,/Pos/DeleteStation,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Pos,DeleteTable,/Pos/DeleteTable,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Pos,DeleteTerminal,/Pos/DeleteTerminal,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Pos,DeliveryZones,/Pos/DeliveryZones,mvc,HttpGet,,SessionValidation,no,repository-verified
+Pos,DetachModifierItem,/Pos/DetachModifierItem,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Pos,Drivers,/Pos/Drivers,mvc,HttpGet,,SessionValidation,no,repository-verified
+Pos,FloorData,/Pos/FloorData,mvc,HttpGet,,SessionValidation,no,repository-verified
+Pos,FloorPlan,/Pos/FloorPlan,mvc,HttpGet,,SessionValidation,no,repository-verified
+Pos,ItemSearch,/Pos/ItemSearch,mvc,HttpGet,,SessionValidation,no,repository-verified
+Pos,ItemSourcing,/Pos/ItemSourcing,mvc,HttpGet,,SessionValidation,no,repository-verified
+Pos,Modifiers,/Pos/Modifiers,mvc,HttpGet,,SessionValidation,no,repository-verified
+Pos,OpenShift,/Pos/OpenShift,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Pos,PaymentMethods,/Pos/PaymentMethods,mvc,HttpGet,,SessionValidation,no,repository-verified
+Pos,PrepareFinished,/Pos/PrepareFinished,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Pos,PrepareSemi,/Pos/PrepareSemi,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Pos,Preview,/Pos/Preview,mvc,HttpGet,,SessionValidation,no,repository-verified
+Pos,QuickMenu,/Pos/QuickMenu,mvc,HttpGet,,SessionValidation,no,repository-verified
+Pos,RegenerateQr,/Pos/RegenerateQr,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Pos,RemovePosRole,/Pos/RemovePosRole,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Pos,RemoveQuickItem,/Pos/RemoveQuickItem,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Pos,ReservationEvents,/Pos/ReservationEvents,mvc,HttpGet,,SessionValidation,no,repository-verified
+Pos,Reservations,/Pos/Reservations,mvc,HttpGet,,SessionValidation,no,repository-verified
+Pos,SaveCapabilities,/Pos/SaveCapabilities,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Pos,SaveDeliveryZone,/Pos/SaveDeliveryZone,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Pos,SaveDiningArea,/Pos/SaveDiningArea,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Pos,SaveDriver,/Pos/SaveDriver,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Pos,SaveItemSourcing,/Pos/SaveItemSourcing,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Pos,SaveLayout,/Pos/SaveLayout,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Pos,SaveMenuGroup,/Pos/SaveMenuGroup,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Pos,SaveModifierGroup,/Pos/SaveModifierGroup,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Pos,SaveModifierOption,/Pos/SaveModifierOption,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Pos,SavePaymentMethod,/Pos/SavePaymentMethod,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Pos,SavePosSetting,/Pos/SavePosSetting,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Pos,SaveReservation,/Pos/SaveReservation,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Pos,SaveStation,/Pos/SaveStation,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Pos,SaveTable,/Pos/SaveTable,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Pos,SaveTerminal,/Pos/SaveTerminal,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Pos,SetQuickCode,/Pos/SetQuickCode,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Pos,SetReservationStatus,/Pos/SetReservationStatus,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Pos,Setup,/Pos/Setup,mvc,HttpGet,,SessionValidation,no,repository-verified
+Pos,SourcingOverview,/Pos/SourcingOverview,mvc,HttpGet,,SessionValidation,no,repository-verified
+Pos,SyncConflicts,/Pos/SyncConflicts,mvc,HttpGet,,SessionValidation,no,repository-verified
+Pos,TableQr,/Pos/TableQr,mvc,HttpGet,,SessionValidation,no,repository-verified
+Pos,Terminals,/Pos/Terminals,mvc,HttpGet,,SessionValidation,no,repository-verified
+PosApp,AddCustomer,/PosApp/AddCustomer,mvc,"HttpPost(""customers/add"")",ValidateAntiForgeryToken,"CrossBuy.Models.PosLaneActivityGuard(""PosCtx"", ""restaurant"", ""/pos/login""); Route(""pos"")",no,repository-verified
+PosApp,AddCustomerAddress,/PosApp/AddCustomerAddress,mvc,"HttpPost(""customer/address"")",ValidateAntiForgeryToken,"CrossBuy.Models.PosLaneActivityGuard(""PosCtx"", ""restaurant"", ""/pos/login""); Route(""pos"")",no,repository-verified
+PosApp,AddLine,/PosApp/AddLine,mvc,"HttpPost(""order/add"")",ValidateAntiForgeryToken,"CrossBuy.Models.PosLaneActivityGuard(""PosCtx"", ""restaurant"", ""/pos/login""); Route(""pos"")",no,repository-verified
+PosApp,AddTable,/PosApp/AddTable,mvc,"HttpPost(""tables/add"")",ValidateAntiForgeryToken,"CrossBuy.Models.PosLaneActivityGuard(""PosCtx"", ""restaurant"", ""/pos/login""); Route(""pos"")",no,repository-verified
+PosApp,AssignDriver,/PosApp/AssignDriver,mvc,"HttpPost(""order/driver"")",ValidateAntiForgeryToken,"CrossBuy.Models.PosLaneActivityGuard(""PosCtx"", ""restaurant"", ""/pos/login""); Route(""pos"")",no,repository-verified
+PosApp,CreateOrder,/PosApp/CreateOrder,mvc,"HttpPost(""order/create"")",ValidateAntiForgeryToken,"CrossBuy.Models.PosLaneActivityGuard(""PosCtx"", ""restaurant"", ""/pos/login""); Route(""pos"")",no,repository-verified
+PosApp,CustomerAddresses,/PosApp/CustomerAddresses,mvc,"HttpGet(""customer/addresses"")",,"CrossBuy.Models.PosLaneActivityGuard(""PosCtx"", ""restaurant"", ""/pos/login""); Route(""pos"")",no,repository-verified
+PosApp,Delivery,/PosApp/Delivery,mvc,"HttpGet(""delivery"")",,"CrossBuy.Models.PosLaneActivityGuard(""PosCtx"", ""restaurant"", ""/pos/login""); Route(""pos"")",no,repository-verified
+PosApp,DeliveryOrders,/PosApp/DeliveryOrders,mvc,"HttpGet(""delivery/orders"")",,"CrossBuy.Models.PosLaneActivityGuard(""PosCtx"", ""restaurant"", ""/pos/login""); Route(""pos"")",no,repository-verified
+PosApp,DeliveryZones,/PosApp/DeliveryZones,mvc,"HttpGet(""delivery/zones"")",,"CrossBuy.Models.PosLaneActivityGuard(""PosCtx"", ""restaurant"", ""/pos/login""); Route(""pos"")",no,repository-verified
+PosApp,DiscardOrder,/PosApp/DiscardOrder,mvc,"HttpPost(""order/discard"")",ValidateAntiForgeryToken,"CrossBuy.Models.PosLaneActivityGuard(""PosCtx"", ""restaurant"", ""/pos/login""); Route(""pos"")",no,repository-verified
+PosApp,Drivers,/PosApp/Drivers,mvc,"HttpGet(""drivers"")",,"CrossBuy.Models.PosLaneActivityGuard(""PosCtx"", ""restaurant"", ""/pos/login""); Route(""pos"")",no,repository-verified
+PosApp,HeldOrders,/PosApp/HeldOrders,mvc,"HttpGet(""orders/held"")",,"CrossBuy.Models.PosLaneActivityGuard(""PosCtx"", ""restaurant"", ""/pos/login""); Route(""pos"")",no,repository-verified
+PosApp,HoldOrder,/PosApp/HoldOrder,mvc,"HttpPost(""order/hold"")",ValidateAntiForgeryToken,"CrossBuy.Models.PosLaneActivityGuard(""PosCtx"", ""restaurant"", ""/pos/login""); Route(""pos"")",no,repository-verified
+PosApp,ItemModifiers,/PosApp/ItemModifiers,mvc,"HttpGet(""item/modifiers"")",,"CrossBuy.Models.PosLaneActivityGuard(""PosCtx"", ""restaurant"", ""/pos/login""); Route(""pos"")",no,repository-verified
+PosApp,KdsLineStatus,/PosApp/KdsLineStatus,mvc,"HttpPost(""kds/line-status"")",ValidateAntiForgeryToken,"CrossBuy.Models.PosLaneActivityGuard(""PosCtx"", ""restaurant"", ""/pos/login""); Route(""pos"")",no,repository-verified
+PosApp,KdsTickets,/PosApp/KdsTickets,mvc,"HttpGet(""kds/tickets"")",,"CrossBuy.Models.PosLaneActivityGuard(""PosCtx"", ""restaurant"", ""/pos/login""); Route(""pos"")",no,repository-verified
+PosApp,Kitchen,/PosApp/Kitchen,mvc,"HttpGet(""kitchen"")",,"CrossBuy.Models.PosLaneActivityGuard(""PosCtx"", ""restaurant"", ""/pos/login""); Route(""pos"")",no,repository-verified
+PosApp,LoadOrder,/PosApp/LoadOrder,mvc,"HttpPost(""order/load"")",ValidateAntiForgeryToken,"CrossBuy.Models.PosLaneActivityGuard(""PosCtx"", ""restaurant"", ""/pos/login""); Route(""pos"")",no,repository-verified
+PosApp,Login,/PosApp/Login,mvc,"HttpGet(""login"")",AllowAnonymous,"CrossBuy.Models.PosLaneActivityGuard(""PosCtx"", ""restaurant"", ""/pos/login""); Route(""pos"")",yes,repository-verified
+PosApp,Login,/PosApp/Login,mvc,"HttpPost(""login"")",AllowAnonymous; ValidateAntiForgeryToken,"CrossBuy.Models.PosLaneActivityGuard(""PosCtx"", ""restaurant"", ""/pos/login""); Route(""pos"")",yes,repository-verified
+PosApp,Logout,/PosApp/Logout,mvc,"HttpGet(""logout"")",,"CrossBuy.Models.PosLaneActivityGuard(""PosCtx"", ""restaurant"", ""/pos/login""); Route(""pos"")",no,repository-verified
+PosApp,MergeOrder,/PosApp/MergeOrder,mvc,"HttpPost(""order/merge"")",ValidateAntiForgeryToken,"CrossBuy.Models.PosLaneActivityGuard(""PosCtx"", ""restaurant"", ""/pos/login""); Route(""pos"")",no,repository-verified
+PosApp,MoveOrder,/PosApp/MoveOrder,mvc,"HttpPost(""order/move"")",ValidateAntiForgeryToken,"CrossBuy.Models.PosLaneActivityGuard(""PosCtx"", ""restaurant"", ""/pos/login""); Route(""pos"")",no,repository-verified
+PosApp,NewOrderOnTable,/PosApp/NewOrderOnTable,mvc,"HttpPost(""order/new-on-table"")",ValidateAntiForgeryToken,"CrossBuy.Models.PosLaneActivityGuard(""PosCtx"", ""restaurant"", ""/pos/login""); Route(""pos"")",no,repository-verified
+PosApp,OfflineBundle,/PosApp/OfflineBundle,mvc,"HttpGet(""offline/bundle"")",,"CrossBuy.Models.PosLaneActivityGuard(""PosCtx"", ""restaurant"", ""/pos/login""); Route(""pos"")",no,repository-verified
+PosApp,OpenInvoices,/PosApp/OpenInvoices,mvc,"HttpGet(""orders/open"")",,"CrossBuy.Models.PosLaneActivityGuard(""PosCtx"", ""restaurant"", ""/pos/login""); Route(""pos"")",no,repository-verified
+PosApp,OpenTable,/PosApp/OpenTable,mvc,"HttpPost(""order/open-table"")",ValidateAntiForgeryToken,"CrossBuy.Models.PosLaneActivityGuard(""PosCtx"", ""restaurant"", ""/pos/login""); Route(""pos"")",no,repository-verified
+PosApp,OrderDetail,/PosApp/OrderDetail,mvc,"HttpGet(""order/detail"")",,"CrossBuy.Models.PosLaneActivityGuard(""PosCtx"", ""restaurant"", ""/pos/login""); Route(""pos"")",no,repository-verified
+PosApp,Pay,/PosApp/Pay,mvc,"HttpPost(""order/pay"")",ValidateAntiForgeryToken,"CrossBuy.Models.PosLaneActivityGuard(""PosCtx"", ""restaurant"", ""/pos/login""); Route(""pos"")",no,repository-verified
+PosApp,PaySplitItems,/PosApp/PaySplitItems,mvc,"HttpPost(""order/pay-split-items"")",ValidateAntiForgeryToken,"CrossBuy.Models.PosLaneActivityGuard(""PosCtx"", ""restaurant"", ""/pos/login""); Route(""pos"")",no,repository-verified
+PosApp,PayTenders,/PosApp/PayTenders,mvc,"HttpPost(""order/pay-tenders"")",ValidateAntiForgeryToken,"CrossBuy.Models.PosLaneActivityGuard(""PosCtx"", ""restaurant"", ""/pos/login""); Route(""pos"")",no,repository-verified
+PosApp,RecallOrder,/PosApp/RecallOrder,mvc,"HttpPost(""order/recall"")",ValidateAntiForgeryToken,"CrossBuy.Models.PosLaneActivityGuard(""PosCtx"", ""restaurant"", ""/pos/login""); Route(""pos"")",no,repository-verified
+PosApp,RecentOrders,/PosApp/RecentOrders,mvc,"HttpGet(""orders/recent"")",,"CrossBuy.Models.PosLaneActivityGuard(""PosCtx"", ""restaurant"", ""/pos/login""); Route(""pos"")",no,repository-verified
+PosApp,RemoveLine,/PosApp/RemoveLine,mvc,"HttpPost(""order/remove"")",ValidateAntiForgeryToken,"CrossBuy.Models.PosLaneActivityGuard(""PosCtx"", ""restaurant"", ""/pos/login""); Route(""pos"")",no,repository-verified
+PosApp,ReservationArrive,/PosApp/ReservationArrive,mvc,"HttpPost(""reservation/arrive"")",ValidateAntiForgeryToken,"CrossBuy.Models.PosLaneActivityGuard(""PosCtx"", ""restaurant"", ""/pos/login""); Route(""pos"")",no,repository-verified
+PosApp,ReservationNoShow,/PosApp/ReservationNoShow,mvc,"HttpPost(""reservation/noshow"")",ValidateAntiForgeryToken,"CrossBuy.Models.PosLaneActivityGuard(""PosCtx"", ""restaurant"", ""/pos/login""); Route(""pos"")",no,repository-verified
+PosApp,ReturnLines,/PosApp/ReturnLines,mvc,"HttpPost(""order/return-lines"")",ValidateAntiForgeryToken,"CrossBuy.Models.PosLaneActivityGuard(""PosCtx"", ""restaurant"", ""/pos/login""); Route(""pos"")",no,repository-verified
+PosApp,SearchCustomers,/PosApp/SearchCustomers,mvc,"HttpGet(""customers/search"")",,"CrossBuy.Models.PosLaneActivityGuard(""PosCtx"", ""restaurant"", ""/pos/login""); Route(""pos"")",no,repository-verified
+PosApp,SeatOrder,/PosApp/SeatOrder,mvc,"HttpPost(""order/seat"")",ValidateAntiForgeryToken,"CrossBuy.Models.PosLaneActivityGuard(""PosCtx"", ""restaurant"", ""/pos/login""); Route(""pos"")",no,repository-verified
+PosApp,SendKitchen,/PosApp/SendKitchen,mvc,"HttpPost(""order/send-kitchen"")",ValidateAntiForgeryToken,"CrossBuy.Models.PosLaneActivityGuard(""PosCtx"", ""restaurant"", ""/pos/login""); Route(""pos"")",no,repository-verified
+PosApp,SetDelivery,/PosApp/SetDelivery,mvc,"HttpPost(""order/delivery"")",ValidateAntiForgeryToken,"CrossBuy.Models.PosLaneActivityGuard(""PosCtx"", ""restaurant"", ""/pos/login""); Route(""pos"")",no,repository-verified
+PosApp,SetDeliveryStatus,/PosApp/SetDeliveryStatus,mvc,"HttpPost(""order/delivery-status"")",ValidateAntiForgeryToken,"CrossBuy.Models.PosLaneActivityGuard(""PosCtx"", ""restaurant"", ""/pos/login""); Route(""pos"")",no,repository-verified
+PosApp,SetGuests,/PosApp/SetGuests,mvc,"HttpPost(""order/guests"")",ValidateAntiForgeryToken,"CrossBuy.Models.PosLaneActivityGuard(""PosCtx"", ""restaurant"", ""/pos/login""); Route(""pos"")",no,repository-verified
+PosApp,SetOrderCustomer,/PosApp/SetOrderCustomer,mvc,"HttpPost(""order/customer"")",ValidateAntiForgeryToken,"CrossBuy.Models.PosLaneActivityGuard(""PosCtx"", ""restaurant"", ""/pos/login""); Route(""pos"")",no,repository-verified
+PosApp,SetQty,/PosApp/SetQty,mvc,"HttpPost(""order/setqty"")",ValidateAntiForgeryToken,"CrossBuy.Models.PosLaneActivityGuard(""PosCtx"", ""restaurant"", ""/pos/login""); Route(""pos"")",no,repository-verified
+PosApp,SetTableStatus,/PosApp/SetTableStatus,mvc,"HttpPost(""tables/status"")",ValidateAntiForgeryToken,"CrossBuy.Models.PosLaneActivityGuard(""PosCtx"", ""restaurant"", ""/pos/login""); Route(""pos"")",no,repository-verified
+PosApp,ShiftClose,/PosApp/ShiftClose,mvc,"HttpPost(""shift/close"")",ValidateAntiForgeryToken,"CrossBuy.Models.PosLaneActivityGuard(""PosCtx"", ""restaurant"", ""/pos/login""); Route(""pos"")",no,repository-verified
+PosApp,ShiftZ,/PosApp/ShiftZ,mvc,"HttpGet(""shift/z"")",,"CrossBuy.Models.PosLaneActivityGuard(""PosCtx"", ""restaurant"", ""/pos/login""); Route(""pos"")",no,repository-verified
+PosApp,Start,/PosApp/Start,mvc,"HttpGet(""start"")",,"CrossBuy.Models.PosLaneActivityGuard(""PosCtx"", ""restaurant"", ""/pos/login""); Route(""pos"")",no,repository-verified
+PosApp,Start,/PosApp/Start,mvc,"HttpPost(""start"")",ValidateAntiForgeryToken,"CrossBuy.Models.PosLaneActivityGuard(""PosCtx"", ""restaurant"", ""/pos/login""); Route(""pos"")",no,repository-verified
+PosApp,SyncPaidOrder,/PosApp/SyncPaidOrder,mvc,"HttpPost(""sync/paid-order"")",,"CrossBuy.Models.PosLaneActivityGuard(""PosCtx"", ""restaurant"", ""/pos/login""); Route(""pos"")",no,repository-verified
+PosApp,SyncShiftClose,/PosApp/SyncShiftClose,mvc,"HttpPost(""sync/shift-close"")",,"CrossBuy.Models.PosLaneActivityGuard(""PosCtx"", ""restaurant"", ""/pos/login""); Route(""pos"")",no,repository-verified
+PosApp,TableOrders,/PosApp/TableOrders,mvc,"HttpGet(""table/orders"")",,"CrossBuy.Models.PosLaneActivityGuard(""PosCtx"", ""restaurant"", ""/pos/login""); Route(""pos"")",no,repository-verified
+PosApp,TablesBoard,/PosApp/TablesBoard,mvc,"HttpGet(""tables"")",,"CrossBuy.Models.PosLaneActivityGuard(""PosCtx"", ""restaurant"", ""/pos/login""); Route(""pos"")",no,repository-verified
+PosApp,Terminal,/PosApp/Terminal,mvc,"HttpGet(""terminal"")",,"CrossBuy.Models.PosLaneActivityGuard(""PosCtx"", ""restaurant"", ""/pos/login""); Route(""pos"")",no,repository-verified
+PosApp,VoidPaid,/PosApp/VoidPaid,mvc,"HttpPost(""order/void-paid"")",ValidateAntiForgeryToken,"CrossBuy.Models.PosLaneActivityGuard(""PosCtx"", ""restaurant"", ""/pos/login""); Route(""pos"")",no,repository-verified
+Project,ActivityTypes,/Project/ActivityTypes,mvc,HttpGet,,SessionValidation,no,repository-verified
+Project,AddMember,/Project/AddMember,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Project,Advance,/Project/Advance,mvc,HttpGet,,SessionValidation,no,repository-verified
+Project,ApproveBilling,/Project/ApproveBilling,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Project,ApproveSubBilling,/Project/ApproveSubBilling,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Project,ApproveVariationOrder,/Project/ApproveVariationOrder,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Project,Billing,/Project/Billing,mvc,HttpGet,,SessionValidation,no,repository-verified
+Project,Boq,/Project/Boq,mvc,HttpGet,,SessionValidation,no,repository-verified
+Project,Budget,/Project/Budget,mvc,HttpGet,,SessionValidation,no,repository-verified
+Project,ConfirmProgress,/Project/ConfirmProgress,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Project,Dashboard,/Project/Dashboard,mvc,HttpGet,,SessionValidation,no,repository-verified
+Project,DeleteActivityType,/Project/DeleteActivityType,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Project,DeleteBilling,/Project/DeleteBilling,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Project,DeleteEquipmentDepreciation,/Project/DeleteEquipmentDepreciation,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Project,DeleteMaterialIssue,/Project/DeleteMaterialIssue,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Project,DeleteProgress,/Project/DeleteProgress,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Project,DeleteProject,/Project/DeleteProject,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Project,DeleteSubBilling,/Project/DeleteSubBilling,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Project,DeleteVariationOrder,/Project/DeleteVariationOrder,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Project,EndMember,/Project/EndMember,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Project,EquipmentDepreciation,/Project/EquipmentDepreciation,mvc,HttpGet,,SessionValidation,no,repository-verified
+Project,Labor,/Project/Labor,mvc,HttpGet,,SessionValidation,no,repository-verified
+Project,MaterialIssues,/Project/MaterialIssues,mvc,HttpGet,,SessionValidation,no,repository-verified
+Project,PostBilling,/Project/PostBilling,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Project,PostEquipmentDepreciation,/Project/PostEquipmentDepreciation,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Project,PostLabor,/Project/PostLabor,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Project,PostMaterialIssue,/Project/PostMaterialIssue,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Project,PostSubBilling,/Project/PostSubBilling,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Project,Profitability,/Project/Profitability,mvc,HttpGet,,SessionValidation,no,repository-verified
+Project,Progress,/Project/Progress,mvc,HttpGet,,SessionValidation,no,repository-verified
+Project,Projects,/Project/Projects,mvc,HttpGet,,SessionValidation,no,repository-verified
+Project,ReceiveAdvance,/Project/ReceiveAdvance,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Project,ReleaseRetention,/Project/ReleaseRetention,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Project,ReleaseSubRetention,/Project/ReleaseSubRetention,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Project,RetentionRelease,/Project/RetentionRelease,mvc,HttpGet,,SessionValidation,no,repository-verified
+Project,ReturnBilling,/Project/ReturnBilling,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Project,SaveActivityType,/Project/SaveActivityType,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Project,SaveBilling,/Project/SaveBilling,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Project,SaveBoq,/Project/SaveBoq,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Project,SaveEquipmentDepreciation,/Project/SaveEquipmentDepreciation,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Project,SaveMaterialIssue,/Project/SaveMaterialIssue,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Project,SaveProgress,/Project/SaveProgress,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Project,SaveProject,/Project/SaveProject,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Project,SaveSubBilling,/Project/SaveSubBilling,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Project,SaveSubcontract,/Project/SaveSubcontract,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Project,SaveVariationOrder,/Project/SaveVariationOrder,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Project,SubRetentionRelease,/Project/SubRetentionRelease,mvc,HttpGet,,SessionValidation,no,repository-verified
+Project,Subcontracts,/Project/Subcontracts,mvc,HttpGet,,SessionValidation,no,repository-verified
+Project,SubmitBilling,/Project/SubmitBilling,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Project,Team,/Project/Team,mvc,HttpGet,,SessionValidation,no,repository-verified
+Project,UpdateMember,/Project/UpdateMember,mvc,HttpPost,ValidateAntiForgeryToken,SessionValidation,no,repository-verified
+Project,VariationOrders,/Project/VariationOrders,mvc,HttpGet,,SessionValidation,no,repository-verified
+ProjectCloseout,Close,/ProjectCloseout/Close,mvc,"HttpPost(""{id:int}/Close"")",ValidateAntiForgeryToken,"Route(""Project/Closeout""); SessionValidation",no,repository-verified
+ProjectCloseout,Index,/ProjectCloseout/Index,mvc,"HttpGet(""{id:int}"")",,"Route(""Project/Closeout""); SessionValidation",no,repository-verified
+ProjectCloseout,Reopen,/ProjectCloseout/Reopen,mvc,"HttpPost(""{id:int}/Reopen"")",ValidateAntiForgeryToken,"Route(""Project/Closeout""); SessionValidation",no,repository-verified
+Reports,Datasets,/Reports/Datasets,mvc,HttpGet,,SessionValidation,no,repository-verified
+Reports,Download,/Reports/Download,mvc,HttpGet,,SessionValidation,no,repository-verified
+Reports,Export,/Reports/Export,mvc,HttpGet,,SessionValidation,no,repository-verified
+Reports,Index,/Reports/Index,mvc,HttpGet,,SessionValidation,no,repository-verified
+Reports,Rerun,/Reports/Rerun,mvc,HttpGet,,SessionValidation,no,repository-verified
+Reports,Studio,/Reports/Studio,mvc,HttpGet,,SessionValidation,no,repository-verified
+Reports,Viewer,/Reports/Viewer,mvc,HttpGet,,SessionValidation,no,repository-verified
+RestaurantIntelligence,Index,/RestaurantIntelligence/Index,mvc,HttpGet,"InvPerm(""read"")",SessionValidation,no,repository-verified
+Roster,Assign,/Roster/Assign,mvc,"HttpPost(""Period/{periodId:int}/Assign"")",ValidateAntiForgeryToken,"Route(""Hr/Roster"")",no,repository-verified
+Roster,CancelAssignment,/Roster/CancelAssignment,mvc,"HttpPost(""Assignment/{assignmentId:int}/Cancel"")",ValidateAntiForgeryToken,"Route(""Hr/Roster"")",no,repository-verified
+Roster,CreatePeriod,/Roster/CreatePeriod,mvc,"HttpPost(""Period/Create"")",ValidateAntiForgeryToken,"Route(""Hr/Roster"")",no,repository-verified
+Roster,Index,/Roster/Index,mvc,"HttpGet(""""); HttpGet(""Period/{periodId:int}"")",,"Route(""Hr/Roster"")",no,repository-verified
+Roster,Mine,/Roster/Mine,mvc,"HttpGet(""Mine"")",,"Route(""Hr/Roster"")",no,repository-verified
+Roster,Publish,/Roster/Publish,mvc,"HttpPost(""Period/{periodId:int}/Publish"")",ValidateAntiForgeryToken,"Route(""Hr/Roster"")",no,repository-verified
+Service,BranchDetails,/Service/BranchDetails,mvc,HttpPost,SessionValidation,SessionValidation,no,repository-verified
+Service,BranchesList,/Service/BranchesList,mvc,HttpGet (implicit),,SessionValidation,no,repository-verified
+Service,CompaniesList,/Service/CompaniesList,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Service,CompanyDetails,/Service/CompanyDetails,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Service,CompanyDetails,/Service/CompanyDetails,mvc,HttpPost,SessionValidation,SessionValidation,no,repository-verified
+Service,GetCompanyDataById,/Service/GetCompanyDataById,mvc,HttpGet,,SessionValidation,no,repository-verified
+Service,Index,/Service/Index,mvc,HttpGet,SessionValidation,SessionValidation,no,repository-verified
+Store,Category,/Store/Category,mvc,HttpGet (implicit),,AllowAnonymous,yes,repository-verified
+Store,Product,/Store/Product,mvc,HttpGet (implicit),,AllowAnonymous,yes,repository-verified
+Tasks,ActorAvatars,/Tasks/ActorAvatars,mvc,HttpGet,SessionValidation,,no,repository-verified
+Tasks,AddTime,/Tasks/AddTime,mvc,HttpPost,ValidateAntiForgeryToken,,no,repository-verified
+Tasks,All,/Tasks/All,mvc,HttpGet,,,no,repository-verified
+Tasks,AutoRules,/Tasks/AutoRules,mvc,HttpGet,,,no,repository-verified
+Tasks,Board,/Tasks/Board,mvc,HttpGet,,,no,repository-verified
+Tasks,BoardMove,/Tasks/BoardMove,mvc,HttpPost,ValidateAntiForgeryToken,,no,repository-verified
+Tasks,ChangeStatus,/Tasks/ChangeStatus,mvc,HttpPost,ValidateAntiForgeryToken,,no,repository-verified
+Tasks,Checklist,/Tasks/Checklist,mvc,HttpGet,,,no,repository-verified
+Tasks,ChecklistAdd,/Tasks/ChecklistAdd,mvc,HttpPost,ValidateAntiForgeryToken,,no,repository-verified
+Tasks,ChecklistList,/Tasks/ChecklistList,mvc,HttpGet,SessionValidation,,no,repository-verified
+Tasks,ChecklistRemove,/Tasks/ChecklistRemove,mvc,HttpPost,ValidateAntiForgeryToken,,no,repository-verified
+Tasks,ChecklistReorder,/Tasks/ChecklistReorder,mvc,HttpPost,ValidateAntiForgeryToken,,no,repository-verified
+Tasks,ChecklistToggle,/Tasks/ChecklistToggle,mvc,HttpPost,ValidateAntiForgeryToken,,no,repository-verified
+Tasks,ConfirmMatch,/Tasks/ConfirmMatch,mvc,HttpPost,ValidateAntiForgeryToken,,no,repository-verified
+Tasks,Delete,/Tasks/Delete,mvc,HttpPost,ValidateAntiForgeryToken,,no,repository-verified
+Tasks,DeleteTime,/Tasks/DeleteTime,mvc,HttpPost,ValidateAntiForgeryToken,,no,repository-verified
+Tasks,Dependencies,/Tasks/Dependencies,mvc,HttpGet,,,no,repository-verified
+Tasks,DependencyAdd,/Tasks/DependencyAdd,mvc,HttpPost,ValidateAntiForgeryToken,,no,repository-verified
+Tasks,DependencyCandidates,/Tasks/DependencyCandidates,mvc,HttpGet,,,no,repository-verified
+Tasks,DependencyList,/Tasks/DependencyList,mvc,HttpGet,SessionValidation,,no,repository-verified
+Tasks,DependencyRemove,/Tasks/DependencyRemove,mvc,HttpPost,ValidateAntiForgeryToken,,no,repository-verified
+Tasks,Detail,/Tasks/Detail,mvc,HttpGet,,,no,repository-verified
+Tasks,DismissMatch,/Tasks/DismissMatch,mvc,HttpPost,ValidateAntiForgeryToken,,no,repository-verified
+Tasks,GenerateInvoice,/Tasks/GenerateInvoice,mvc,HttpPost,ValidateAntiForgeryToken,,no,repository-verified
+Tasks,HoursReport,/Tasks/HoursReport,mvc,HttpGet,,,no,repository-verified
+Tasks,Index,/Tasks/Index,mvc,HttpGet,,,no,repository-verified
+Tasks,LinkSearch,/Tasks/LinkSearch,mvc,HttpGet,,,no,repository-verified
+Tasks,MatchSuggestions,/Tasks/MatchSuggestions,mvc,HttpGet,,,no,repository-verified
+Tasks,MentionSearch,/Tasks/MentionSearch,mvc,HttpGet,SessionValidation,,no,repository-verified
+Tasks,PostLaborToWO,/Tasks/PostLaborToWO,mvc,HttpPost,ValidateAntiForgeryToken,,no,repository-verified
+Tasks,Reports,/Tasks/Reports,mvc,HttpGet,,,no,repository-verified
+Tasks,RunGenerator,/Tasks/RunGenerator,mvc,HttpPost,ValidateAntiForgeryToken,,no,repository-verified
+Tasks,Save,/Tasks/Save,mvc,HttpPost,ValidateAntiForgeryToken,,no,repository-verified
+Tasks,SaveAutoRule,/Tasks/SaveAutoRule,mvc,HttpPost,ValidateAntiForgeryToken,,no,repository-verified
+Tasks,StartTimer,/Tasks/StartTimer,mvc,HttpPost,ValidateAntiForgeryToken,,no,repository-verified
+Tasks,StopTimer,/Tasks/StopTimer,mvc,HttpPost,ValidateAntiForgeryToken,,no,repository-verified
+Tasks,Summary,/Tasks/Summary,mvc,HttpGet (implicit),,,no,repository-verified
+Tasks,TaskCommentAdd,/Tasks/TaskCommentAdd,mvc,HttpPost,ValidateAntiForgeryToken; RequestSizeLimit(268435456),,no,repository-verified
+Tasks,TaskComments,/Tasks/TaskComments,mvc,HttpGet,,,no,repository-verified
+Tasks,TemplateApply,/Tasks/TemplateApply,mvc,HttpPost,ValidateAntiForgeryToken,,no,repository-verified
+Tasks,TemplateSave,/Tasks/TemplateSave,mvc,HttpPost,ValidateAntiForgeryToken,,no,repository-verified
+Tasks,TemplateSetActive,/Tasks/TemplateSetActive,mvc,HttpPost,ValidateAntiForgeryToken,,no,repository-verified
+Tasks,Templates,/Tasks/Templates,mvc,HttpGet,,,no,repository-verified
+Tasks,TimesheetLines,/Tasks/TimesheetLines,mvc,HttpGet,,,no,repository-verified
+Workspace,Agenda,/Workspace/Agenda,mvc,HttpGet (implicit),,SessionValidation,no,repository-verified
+Workspace,Index,/Workspace/Index,mvc,HttpGet (implicit),,SessionValidation,no,repository-verified
+Workspace,Mentions,/Workspace/Mentions,mvc,HttpGet (implicit),,SessionValidation,no,repository-verified
+Workspace,Notifications,/Workspace/Notifications,mvc,HttpGet (implicit),,SessionValidation,no,repository-verified
+Workspace,Reports,/Workspace/Reports,mvc,HttpGet (implicit),,SessionValidation,no,repository-verified

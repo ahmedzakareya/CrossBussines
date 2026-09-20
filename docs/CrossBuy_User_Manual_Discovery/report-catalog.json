@@ -1,0 +1,1896 @@
+{
+ "dataset_files": 15,
+ "report_codes": [
+  "Accounting.CustomerAging",
+  "Accounting.CustomerProfitability",
+  "Accounting.JournalActivity",
+  "Accounting.JournalEntry",
+  "Accounting.JournalVoucher",
+  "Accounting.PurchaseInvoiceDetail",
+  "Accounting.PurchaseInvoices",
+  "Accounting.PurchaseReturnDetail",
+  "Accounting.Purchases",
+  "Accounting.Receivables.Aging",
+  "Accounting.SalesInvoiceDetail",
+  "Accounting.SalesInvoices",
+  "Accounting.SalesReturnDetail",
+  "Accounting.SalesRevenue",
+  "Accounting.TrialBalance",
+  "Admin.OrgStructure.Units",
+  "Crm.Leads",
+  "Crm.Opportunities",
+  "Inventory.CountDetail",
+  "Inventory.CountDocument",
+  "Inventory.DeliveryDetail",
+  "Inventory.DeliveryDocument",
+  "Inventory.GoodsReceipts",
+  "Inventory.PurchaseOrderDetail",
+  "Inventory.PurchaseOrders",
+  "Inventory.QuotationDetails",
+  "Inventory.ReceiptDetail",
+  "Inventory.ReceiptDocument",
+  "Inventory.SalesOrderDetail",
+  "Inventory.SalesOrders",
+  "Inventory.StockMovements",
+  "Inventory.StockOnHand",
+  "Inventory.TransferDetail",
+  "Inventory.TransferDocument",
+  "Inventory.WriteOffDetail",
+  "Inventory.WriteOffDocument",
+  "Platform.BusinessEventLog",
+  "Platform.BusinessEvents",
+  "Platform.BusinessEvents.Log",
+  "Platform.ReportCatalog",
+  "Platform.ReportRunHistory"
+ ],
+ "permission_keys": [
+  "accounting.reports.view",
+  "admin.orgstructure.reports.notes",
+  "admin.orgstructure.reports.view",
+  "crm.reports.view",
+  "inventory.reports.view",
+  "reporting.businessevents.view",
+  "roster.reports.view"
+ ],
+ "output_formats": [
+  {
+   "format": "Html",
+   "purpose": "Self-contained HTML fragment for embedding in a screen or an email body."
+  },
+  {
+   "format": "Pdf",
+   "purpose": "Paged PDF. Produced today by the Playwright renderer via IHtmlToPdfConverter; a future engine can claim the same format with no caller change."
+  },
+  {
+   "format": "Xlsx",
+   "purpose": "Excel workbook (data export, not a document)."
+  },
+  {
+   "format": "Csv",
+   "purpose": "RFC 4180 text (data export)."
+  },
+  {
+   "format": "PrintHtml",
+   "purpose": "A complete HTML document carrying @page rules and print CSS, meant for the browser's print dialog or a print transport. Distinct from Html because the two have different chrome: Html embeds, PrintHtml paginates."
+  },
+  {
+   "format": "Warning",
+   "purpose": "The report was produced, but something the caller asked for was not honoured (an unknown sort field dropped, an archive request refused). A warning NEVER silently changes a number."
+  },
+  {
+   "format": "Error",
+   "purpose": "The report was not produced."
+  }
+ ],
+ "render_engines": [
+  "CrossBusiness.Csv",
+  "CrossBusiness.Html",
+  "CrossBusiness.Pdf({_converter.EngineName})",
+  "CrossBusiness.Xlsx(ClosedXML)",
+  "Playwright.Chromium",
+  "none"
+ ],
+ "datasets": [
+  {
+   "source": "CrossBuy/BL/Reporting/AccountingDatasets.cs",
+   "report_codes": [
+    "Accounting.CustomerAging",
+    "Accounting.CustomerProfitability",
+    "Accounting.JournalActivity",
+    "Accounting.JournalVoucher",
+    "Accounting.Purchases",
+    "Accounting.SalesRevenue"
+   ],
+   "declared_titles": [
+    {
+     "ar": "المبيعات والإيراد",
+     "en": "Sales and revenue"
+    },
+    {
+     "ar": "المشتريات",
+     "en": "Purchases"
+    },
+    {
+     "ar": "أعمار أرصدة العملاء",
+     "en": "Customer receivables aging"
+    },
+    {
+     "ar": "ربحية العملاء",
+     "en": "Customer profitability"
+    },
+    {
+     "ar": "حركة قيود اليومية",
+     "en": "Journal activity"
+    },
+    {
+     "ar": "سند قيد يومية",
+     "en": "Journal voucher"
+    }
+   ],
+   "permission_keys": [
+    "accounting.reports.view"
+   ],
+   "field_count": 76,
+   "fields": [
+    {
+     "key": "From",
+     "ar": "من تاريخ",
+     "en": "From"
+    },
+    {
+     "key": "To",
+     "ar": "إلى تاريخ",
+     "en": "To"
+    },
+    {
+     "key": "ReportSystemParameters.CompanyId",
+     "ar": "الشركة",
+     "en": "Company"
+    },
+    {
+     "key": "InvoiceDate",
+     "ar": "التاريخ",
+     "en": "Date"
+    },
+    {
+     "key": "InvoiceNo",
+     "ar": "رقم الفاتورة",
+     "en": "Invoice no."
+    },
+    {
+     "key": "CustomerName",
+     "ar": "العميل",
+     "en": "Customer"
+    },
+    {
+     "key": "CustomerId",
+     "ar": "رقم العميل",
+     "en": "Customer id"
+    },
+    {
+     "key": "Status",
+     "ar": "الحالة",
+     "en": "Status"
+    },
+    {
+     "key": "SubTotal",
+     "ar": "الصافي",
+     "en": "Net"
+    },
+    {
+     "key": "TaxTotal",
+     "ar": "الضريبة",
+     "en": "Tax"
+    },
+    {
+     "key": "GrandTotal",
+     "ar": "الإجمالي",
+     "en": "Total"
+    },
+    {
+     "key": "GrandTotalBase",
+     "ar": "الإجمالي (عملة الأساس)",
+     "en": "Total (base)"
+    },
+    {
+     "key": "ProjectId",
+     "ar": "المشروع",
+     "en": "Project"
+    },
+    {
+     "key": "JournalEntryId",
+     "ar": "قيد اليومية",
+     "en": "Journal entry"
+    },
+    {
+     "key": "Status",
+     "ar": "الحالة",
+     "en": "Status"
+    },
+    {
+     "key": "CustomerId",
+     "ar": "العميل",
+     "en": "Customer"
+    },
+    {
+     "key": "by-customer",
+     "ar": "حسب العميل",
+     "en": "By customer"
+    },
+    {
+     "key": "InvoiceDate",
+     "ar": "التاريخ",
+     "en": "Date"
+    },
+    {
+     "key": "InvoiceNo",
+     "ar": "رقم الفاتورة",
+     "en": "Invoice no."
+    },
+    {
+     "key": "VendorName",
+     "ar": "المورّد",
+     "en": "Vendor"
+    },
+    {
+     "key": "VendorId",
+     "ar": "رقم المورّد",
+     "en": "Vendor id"
+    },
+    {
+     "key": "Status",
+     "ar": "الحالة",
+     "en": "Status"
+    },
+    {
+     "key": "SubTotal",
+     "ar": "الصافي",
+     "en": "Net"
+    },
+    {
+     "key": "TaxTotal",
+     "ar": "الضريبة",
+     "en": "Tax"
+    },
+    {
+     "key": "GrandTotal",
+     "ar": "الإجمالي",
+     "en": "Total"
+    },
+    {
+     "key": "GrandTotalBase",
+     "ar": "الإجمالي (عملة الأساس)",
+     "en": "Total (base)"
+    },
+    {
+     "key": "ProjectId",
+     "ar": "المشروع",
+     "en": "Project"
+    },
+    {
+     "key": "Status",
+     "ar": "الحالة",
+     "en": "Status"
+    },
+    {
+     "key": "VendorId",
+     "ar": "المورّد",
+     "en": "Vendor"
+    },
+    {
+     "key": "by-vendor",
+     "ar": "حسب المورّد",
+     "en": "By vendor"
+    },
+    {
+     "key": "CustomerName",
+     "ar": "العميل",
+     "en": "Customer"
+    },
+    {
+     "key": "CustomerId",
+     "ar": "رقم العميل",
+     "en": "Customer id"
+    },
+    {
+     "key": "Current",
+     "ar": "جاري (٠-٣٠)",
+     "en": "Current (0-30)"
+    },
+    {
+     "key": "Days30",
+     "ar": "٣١-٦٠",
+     "en": "31-60"
+    },
+    {
+     "key": "Days60",
+     "ar": "٦١-٩٠",
+     "en": "61-90"
+    },
+    {
+     "key": "Days90Plus",
+     "ar": "أكثر من ٩٠",
+     "en": "90+"
+    },
+    {
+     "key": "Total",
+     "ar": "الإجمالي",
+     "en": "Total"
+    },
+    {
+     "key": "AsOf",
+     "ar": "حتى تاريخ",
+     "en": "As of"
+    },
+    {
+     "key": "CustomerName",
+     "ar": "العميل",
+     "en": "Customer"
+    },
+    {
+     "key": "Segment",
+     "ar": "التصنيف",
+     "en": "Segment"
+    },
+    {
+     "key": "InvoiceCount",
+     "ar": "عدد الفواتير",
+     "en": "Invoices"
+    },
+    {
+     "key": "Invoiced",
+     "ar": "المفوتر",
+     "en": "Invoiced"
+    },
+    {
+     "key": "Received",
+     "ar": "المحصّل",
+     "en": "Received"
+    },
+    {
+     "key": "Outstanding",
+     "ar": "المستحق",
+     "en": "Outstanding"
+    },
+    {
+     "key": "Revenue",
+     "ar": "الإيراد",
+     "en": "Revenue"
+    },
+    {
+     "key": "Cogs",
+     "ar": "تكلفة المبيعات",
+     "en": "COGS"
+    },
+    {
+     "key": "Margin",
+     "ar": "الهامش",
+     "en": "Margin"
+    },
+    {
+     "key": "MarginPct",
+     "ar": "نسبة الهامش",
+     "en": "Margin %"
+    },
+    {
+     "key": "LastInvoice",
+     "ar": "آخر فاتورة",
+     "en": "Last invoice"
+    },
+    {
+     "key": "EntryDate",
+     "ar": "تاريخ القيد",
+     "en": "Entry date"
+    },
+    {
+     "key": "EntryNo",
+     "ar": "رقم القيد",
+     "en": "Entry no."
+    },
+    {
+     "key": "JournalType",
+     "ar": "النوع",
+     "en": "Type"
+    },
+    {
+     "key": "SourceType",
+     "ar": "المصدر",
+     "en": "Source"
+    },
+    {
+     "key": "Status",
+     "ar": "الحالة",
+     "en": "Status"
+    },
+    {
+     "key": "PostedAt",
+     "ar": "تاريخ الترحيل",
+     "en": "Posted at"
+    },
+    {
+     "key": "Description",
+     "ar": "البيان",
+     "en": "Description"
+    },
+    {
+     "key": "ReversedByEntryId",
+     "ar": "عُكس بالقيد",
+     "en": "Reversed by"
+    },
+    {
+     "key": "FiscalPeriodId",
+     "ar": "الفترة المالية",
+     "en": "Fiscal period"
+    },
+    {
+     "key": "Status",
+     "ar": "الحالة",
+     "en": "Status"
+    },
+    {
+     "key": "JournalType",
+     "ar": "النوع",
+     "en": "Type"
+    },
+    {
+     "key": "by-source",
+     "ar": "حسب المصدر",
+     "en": "By source"
+    },
+    {
+     "key": "LineNo",
+     "ar": "م",
+     "en": "#"
+    },
+    {
+     "key": "AccountCode",
+     "ar": "رمز الحساب",
+     "en": "Account code"
+    },
+    {
+     "key": "AccountName",
+     "ar": "الحساب",
+     "en": "Account"
+    },
+    {
+     "key": "CostCenterName",
+     "ar": "مركز التكلفة",
+     "en": "Cost centre"
+    },
+    {
+     "key": "ProjectName",
+     "ar": "المشروع",
+     "en": "Project"
+    },
+    {
+     "key": "LineDescription",
+     "ar": "بيان السطر",
+     "en": "Line note"
+    },
+    {
+     "key": "Debit",
+     "ar": "مدين",
+     "en": "Debit"
+    },
+    {
+     "key": "Credit",
+     "ar": "دائن",
+     "en": "Credit"
+    },
+    {
+     "key": "EntryNo",
+     "ar": "رقم القيد",
+     "en": "Entry no."
+    },
+    {
+     "key": "EntryDate",
+     "ar": "تاريخ القيد",
+     "en": "Entry date"
+    },
+    {
+     "key": "Status",
+     "ar": "الحالة",
+     "en": "Status"
+    },
+    {
+     "key": "JournalType",
+     "ar": "النوع",
+     "en": "Type"
+    },
+    {
+     "key": "EntryDescription",
+     "ar": "بيان القيد",
+     "en": "Entry description"
+    },
+    {
+     "key": "PostedAt",
+     "ar": "تاريخ الترحيل",
+     "en": "Posted at"
+    },
+    {
+     "key": "JournalId",
+     "ar": "رقم القيد الداخلي",
+     "en": "Entry id"
+    }
+   ]
+  },
+  {
+   "source": "CrossBuy/BL/Reporting/BusinessEventsDataset.cs",
+   "report_codes": [
+    "Platform.BusinessEventLog",
+    "Platform.BusinessEvents",
+    "Platform.BusinessEvents.Log"
+   ],
+   "declared_titles": [
+    {
+     "ar": "سجل أحداث الأعمال",
+     "en": "Business event log"
+    },
+    {
+     "ar": "سجل أحداث الأعمال",
+     "en": "Business event log"
+    }
+   ],
+   "permission_keys": [
+    "reporting.businessevents.view"
+   ],
+   "field_count": 30,
+   "fields": [
+    {
+     "key": "OccurredAt",
+     "ar": "التاريخ والوقت",
+     "en": "Occurred at"
+    },
+    {
+     "key": "EventType",
+     "ar": "نوع الحدث",
+     "en": "Event type"
+    },
+    {
+     "key": "EntityType",
+     "ar": "نوع السجل",
+     "en": "Record type"
+    },
+    {
+     "key": "EntityId",
+     "ar": "رقم السجل",
+     "en": "Record"
+    },
+    {
+     "key": "ActorName",
+     "ar": "المستخدم",
+     "en": "Actor"
+    },
+    {
+     "key": "Visibility",
+     "ar": "مستوى الظهور",
+     "en": "Visibility"
+    },
+    {
+     "key": "BranchId",
+     "ar": "الفرع",
+     "en": "Branch"
+    },
+    {
+     "key": "CorrelationId",
+     "ar": "معرّف الارتباط",
+     "en": "Correlation id"
+    },
+    {
+     "key": "DeliveryState",
+     "ar": "حالة التسليم",
+     "en": "Delivery"
+    },
+    {
+     "key": "FailedConsumers",
+     "ar": "المستهلكات المتعثرة",
+     "en": "Failed consumers"
+    },
+    {
+     "key": "DeliveryAttempts",
+     "ar": "المحاولات",
+     "en": "Attempts"
+    },
+    {
+     "key": "DeliveryError",
+     "ar": "سبب التعثر",
+     "en": "Failure reason"
+    },
+    {
+     "key": "Payload",
+     "ar": "التفاصيل",
+     "en": "Payload"
+    },
+    {
+     "key": "EventUid",
+     "ar": "معرّف الحدث",
+     "en": "Event id"
+    },
+    {
+     "key": "DedupKey",
+     "ar": "-",
+     "en": "-"
+    },
+    {
+     "key": "Action",
+     "ar": "الإجراء",
+     "en": "Action"
+    },
+    {
+     "key": "From",
+     "ar": "من تاريخ",
+     "en": "From"
+    },
+    {
+     "key": "To",
+     "ar": "إلى تاريخ",
+     "en": "To"
+    },
+    {
+     "key": "EntityType",
+     "ar": "نوع السجل",
+     "en": "Record type"
+    },
+    {
+     "key": "EntityId",
+     "ar": "رقم السجل",
+     "en": "Record id"
+    },
+    {
+     "key": "ActorEmployeeId",
+     "ar": "المستخدم",
+     "en": "Actor"
+    },
+    {
+     "key": "EventType",
+     "ar": "نوع الحدث",
+     "en": "Event type"
+    },
+    {
+     "key": "CorrelationId",
+     "ar": "معرّف الارتباط",
+     "en": "Correlation id"
+    },
+    {
+     "key": "FilterBranchId",
+     "ar": "الفرع",
+     "en": "Branch"
+    },
+    {
+     "key": "DeliveryState",
+     "ar": "حالة التسليم",
+     "en": "Delivery state"
+    },
+    {
+     "key": "Consumer",
+     "ar": "المستهلك",
+     "en": "Consumer"
+    },
+    {
+     "key": "ReportSystemParameters.CompanyId",
+     "ar": "الشركة",
+     "en": "Company"
+    },
+    {
+     "key": "by-record-type",
+     "ar": "حسب نوع السجل",
+     "en": "By record type"
+    },
+    {
+     "key": "by-actor",
+     "ar": "حسب المستخدم",
+     "en": "By actor"
+    },
+    {
+     "key": "record",
+     "ar": "فتح السجل",
+     "en": "Open the record"
+    }
+   ]
+  },
+  {
+   "source": "CrossBuy/BL/Reporting/CrmDatasets.cs",
+   "report_codes": [
+    "Crm.Leads",
+    "Crm.Opportunities"
+   ],
+   "declared_titles": [
+    {
+     "ar": "العملاء المحتملون",
+     "en": "Leads"
+    },
+    {
+     "ar": "الفرص البيعية",
+     "en": "Opportunities"
+    }
+   ],
+   "permission_keys": [
+    "crm.reports.view"
+   ],
+   "field_count": 38,
+   "fields": [
+    {
+     "key": "ReportSystemParameters.CompanyId",
+     "ar": "الشركة",
+     "en": "Company"
+    },
+    {
+     "key": "OwnerEmployeeId",
+     "ar": "المسؤول",
+     "en": "Owner"
+    },
+    {
+     "key": "CreatedAt",
+     "ar": "تاريخ الإضافة",
+     "en": "Created"
+    },
+    {
+     "key": "Name",
+     "ar": "الاسم",
+     "en": "Name"
+    },
+    {
+     "key": "Company",
+     "ar": "الجهة",
+     "en": "Company"
+    },
+    {
+     "key": "Status",
+     "ar": "الحالة",
+     "en": "Status"
+    },
+    {
+     "key": "Source",
+     "ar": "المصدر",
+     "en": "Source"
+    },
+    {
+     "key": "Segment",
+     "ar": "التصنيف",
+     "en": "Segment"
+    },
+    {
+     "key": "EstimatedValue",
+     "ar": "القيمة المتوقعة",
+     "en": "Estimated value"
+    },
+    {
+     "key": "Score",
+     "ar": "التقييم",
+     "en": "Score"
+    },
+    {
+     "key": "OwnerName",
+     "ar": "المسؤول",
+     "en": "Owner"
+    },
+    {
+     "key": "AccountId",
+     "ar": "الحساب",
+     "en": "Account"
+    },
+    {
+     "key": "CustomerId",
+     "ar": "العميل المالي",
+     "en": "Financial customer"
+    },
+    {
+     "key": "Phone",
+     "ar": "الهاتف",
+     "en": "Phone"
+    },
+    {
+     "key": "Email",
+     "ar": "البريد",
+     "en": "Email"
+    },
+    {
+     "key": "From",
+     "ar": "من تاريخ",
+     "en": "From"
+    },
+    {
+     "key": "To",
+     "ar": "إلى تاريخ",
+     "en": "To"
+    },
+    {
+     "key": "Status",
+     "ar": "الحالة",
+     "en": "Status"
+    },
+    {
+     "key": "Source",
+     "ar": "المصدر",
+     "en": "Source"
+    },
+    {
+     "key": "by-status",
+     "ar": "حسب الحالة",
+     "en": "By status"
+    },
+    {
+     "key": "by-source",
+     "ar": "حسب المصدر",
+     "en": "By source"
+    },
+    {
+     "key": "CreatedAt",
+     "ar": "تاريخ الإضافة",
+     "en": "Created"
+    },
+    {
+     "key": "Title",
+     "ar": "الفرصة",
+     "en": "Opportunity"
+    },
+    {
+     "key": "StageName",
+     "ar": "المرحلة",
+     "en": "Stage"
+    },
+    {
+     "key": "Amount",
+     "ar": "القيمة",
+     "en": "Amount"
+    },
+    {
+     "key": "Probability",
+     "ar": "الاحتمال %",
+     "en": "Probability %"
+    },
+    {
+     "key": "ExpectedCloseDate",
+     "ar": "الإغلاق المتوقّع",
+     "en": "Expected close"
+    },
+    {
+     "key": "OwnerName",
+     "ar": "المسؤول",
+     "en": "Owner"
+    },
+    {
+     "key": "WinLossReason",
+     "ar": "سبب الكسب/الخسارة",
+     "en": "Win/loss reason"
+    },
+    {
+     "key": "AccountId",
+     "ar": "الحساب",
+     "en": "Account"
+    },
+    {
+     "key": "LeadId",
+     "ar": "من عميل محتمل",
+     "en": "From lead"
+    },
+    {
+     "key": "QuotationId",
+     "ar": "عرض السعر",
+     "en": "Quotation"
+    },
+    {
+     "key": "From",
+     "ar": "من تاريخ",
+     "en": "From"
+    },
+    {
+     "key": "To",
+     "ar": "إلى تاريخ",
+     "en": "To"
+    },
+    {
+     "key": "Stage",
+     "ar": "المرحلة",
+     "en": "Stage"
+    },
+    {
+     "key": "PipelineId",
+     "ar": "المسار",
+     "en": "Pipeline"
+    },
+    {
+     "key": "by-stage",
+     "ar": "حسب المرحلة",
+     "en": "By stage"
+    },
+    {
+     "key": "by-owner",
+     "ar": "حسب المسؤول",
+     "en": "By owner"
+    }
+   ]
+  },
+  {
+   "source": "CrossBuy/BL/Reporting/HrRosterDatasets.cs",
+   "report_codes": [],
+   "declared_titles": [
+    {
+     "ar": "جدول المناوبات",
+     "en": "Roster schedule"
+    },
+    {
+     "ar": "المخطط مقابل الفعلي",
+     "en": "Planned vs actual"
+    }
+   ],
+   "permission_keys": [
+    "roster.reports.view"
+   ],
+   "field_count": 23,
+   "fields": [
+    {
+     "key": "WorkDate",
+     "ar": "التاريخ",
+     "en": "Date"
+    },
+    {
+     "key": "EmployeeName",
+     "ar": "الموظف",
+     "en": "Employee"
+    },
+    {
+     "key": "EmployeeId",
+     "ar": "رقم الموظف",
+     "en": "Employee id"
+    },
+    {
+     "key": "BranchName",
+     "ar": "الفرع",
+     "en": "Branch"
+    },
+    {
+     "key": "ShiftCode",
+     "ar": "رمز المناوبة",
+     "en": "Shift code"
+    },
+    {
+     "key": "ShiftName",
+     "ar": "المناوبة",
+     "en": "Shift"
+    },
+    {
+     "key": "PlannedStart",
+     "ar": "بداية مخططة",
+     "en": "Planned start"
+    },
+    {
+     "key": "PlannedEnd",
+     "ar": "نهاية مخططة",
+     "en": "Planned end"
+    },
+    {
+     "key": "PlannedHours",
+     "ar": "الساعات المخططة",
+     "en": "Planned hours"
+    },
+    {
+     "key": "IsOvernight",
+     "ar": "مناوبة ليلية",
+     "en": "Overnight"
+    },
+    {
+     "key": "PeriodName",
+     "ar": "الفترة",
+     "en": "Period"
+    },
+    {
+     "key": "WorkDate",
+     "ar": "التاريخ",
+     "en": "Date"
+    },
+    {
+     "key": "EmployeeName",
+     "ar": "الموظف",
+     "en": "Employee"
+    },
+    {
+     "key": "EmployeeId",
+     "ar": "رقم الموظف",
+     "en": "Employee id"
+    },
+    {
+     "key": "BaselineSource",
+     "ar": "مصدر الخطة",
+     "en": "Baseline source"
+    },
+    {
+     "key": "PlannedHours",
+     "ar": "الساعات المخططة",
+     "en": "Planned hours"
+    },
+    {
+     "key": "ActualHours",
+     "ar": "الساعات الفعلية",
+     "en": "Actual hours"
+    },
+    {
+     "key": "LateMinutes",
+     "ar": "دقائق التأخير",
+     "en": "Late minutes"
+    },
+    {
+     "key": "EarlyDepartureMinutes",
+     "ar": "دقائق الانصراف المبكر",
+     "en": "Early departure minutes"
+    },
+    {
+     "key": "OvertimeCandidateMinutes",
+     "ar": "دقائق إضافية مرشحة",
+     "en": "Overtime candidate minutes"
+    },
+    {
+     "key": "IsAbsent",
+     "ar": "غياب",
+     "en": "Absent"
+    },
+    {
+     "key": "OnApprovedLeave",
+     "ar": "إجازة معتمدة",
+     "en": "Approved leave"
+    },
+    {
+     "key": "IsUnrostered",
+     "ar": "بدون جدولة",
+     "en": "Unrostered"
+    }
+   ]
+  },
+  {
+   "source": "CrossBuy/BL/Reporting/InventoryDatasets.cs",
+   "report_codes": [
+    "Inventory.StockMovements",
+    "Inventory.StockOnHand"
+   ],
+   "declared_titles": [
+    {
+     "ar": "أرصدة المخزون",
+     "en": "Stock on hand"
+    },
+    {
+     "ar": "حركات المخزون",
+     "en": "Stock movements"
+    }
+   ],
+   "permission_keys": [
+    "inventory.reports.view"
+   ],
+   "field_count": 37,
+   "fields": [
+    {
+     "key": "ReportSystemParameters.CompanyId",
+     "ar": "الشركة",
+     "en": "Company"
+    },
+    {
+     "key": "ItemCode",
+     "ar": "كود الصنف",
+     "en": "Item code"
+    },
+    {
+     "key": "ItemName",
+     "ar": "الصنف",
+     "en": "Item"
+    },
+    {
+     "key": "ItemId",
+     "ar": "رقم الصنف",
+     "en": "Item id"
+    },
+    {
+     "key": "WarehouseName",
+     "ar": "المخزن",
+     "en": "Warehouse"
+    },
+    {
+     "key": "WarehouseCode",
+     "ar": "كود المخزن",
+     "en": "Warehouse code"
+    },
+    {
+     "key": "QtyOnHand",
+     "ar": "الكمية",
+     "en": "Qty on hand"
+    },
+    {
+     "key": "AvgCost",
+     "ar": "متوسط التكلفة",
+     "en": "Avg cost"
+    },
+    {
+     "key": "TotalValue",
+     "ar": "قيمة المخزون",
+     "en": "Stock value"
+    },
+    {
+     "key": "ItemType",
+     "ar": "نوع الصنف",
+     "en": "Item type"
+    },
+    {
+     "key": "LastMovementAt",
+     "ar": "آخر حركة",
+     "en": "Last movement"
+    },
+    {
+     "key": "WarehouseId",
+     "ar": "المخزن",
+     "en": "Warehouse"
+    },
+    {
+     "key": "ItemId",
+     "ar": "الصنف",
+     "en": "Item"
+    },
+    {
+     "key": "StockState",
+     "ar": "حالة الرصيد",
+     "en": "Stock state"
+    },
+    {
+     "key": "BelowQty",
+     "ar": "أقل من كمية",
+     "en": "Below quantity"
+    },
+    {
+     "key": "by-warehouse",
+     "ar": "حسب المخزن",
+     "en": "By warehouse"
+    },
+    {
+     "key": "MovementDate",
+     "ar": "التاريخ",
+     "en": "Date"
+    },
+    {
+     "key": "MovementNo",
+     "ar": "رقم الحركة",
+     "en": "Movement no."
+    },
+    {
+     "key": "ItemName",
+     "ar": "الصنف",
+     "en": "Item"
+    },
+    {
+     "key": "ItemCode",
+     "ar": "كود الصنف",
+     "en": "Item code"
+    },
+    {
+     "key": "WarehouseName",
+     "ar": "المخزن",
+     "en": "Warehouse"
+    },
+    {
+     "key": "DirectionText",
+     "ar": "الاتجاه",
+     "en": "Direction"
+    },
+    {
+     "key": "QtyBase",
+     "ar": "الكمية",
+     "en": "Qty"
+    },
+    {
+     "key": "UnitCost",
+     "ar": "تكلفة الوحدة",
+     "en": "Unit cost"
+    },
+    {
+     "key": "TotalCost",
+     "ar": "قيمة الحركة",
+     "en": "Movement value"
+    },
+    {
+     "key": "SourceType",
+     "ar": "المصدر",
+     "en": "Source"
+    },
+    {
+     "key": "SourceId",
+     "ar": "رقم المستند",
+     "en": "Document id"
+    },
+    {
+     "key": "JournalEntryId",
+     "ar": "قيد اليومية",
+     "en": "Journal entry"
+    },
+    {
+     "key": "BatchId",
+     "ar": "الدفعة",
+     "en": "Batch"
+    },
+    {
+     "key": "SerialNo",
+     "ar": "الرقم التسلسلي",
+     "en": "Serial"
+    },
+    {
+     "key": "From",
+     "ar": "من تاريخ",
+     "en": "From"
+    },
+    {
+     "key": "To",
+     "ar": "إلى تاريخ",
+     "en": "To"
+    },
+    {
+     "key": "WarehouseId",
+     "ar": "المخزن",
+     "en": "Warehouse"
+    },
+    {
+     "key": "ItemId",
+     "ar": "الصنف",
+     "en": "Item"
+    },
+    {
+     "key": "Direction",
+     "ar": "الاتجاه",
+     "en": "Direction"
+    },
+    {
+     "key": "SourceType",
+     "ar": "المصدر",
+     "en": "Source type"
+    },
+    {
+     "key": "by-item",
+     "ar": "حسب الصنف",
+     "en": "By item"
+    }
+   ]
+  },
+  {
+   "source": "CrossBuy/BL/Reporting/OrgStructureDatasets.cs",
+   "report_codes": [
+    "Admin.OrgStructure.Units"
+   ],
+   "declared_titles": [
+    {
+     "ar": "الهيكل الإداري",
+     "en": "Administrative structure"
+    }
+   ],
+   "permission_keys": [
+    "admin.orgstructure.reports.notes",
+    "admin.orgstructure.reports.view"
+   ],
+   "field_count": 23,
+   "fields": [
+    {
+     "key": "ReportSystemParameters.CompanyId",
+     "ar": "الشركة",
+     "en": "Company"
+    },
+    {
+     "key": "Path",
+     "ar": "مسار التبعية",
+     "en": "Reporting path"
+    },
+    {
+     "key": "UnitName",
+     "ar": "الوحدة",
+     "en": "Unit"
+    },
+    {
+     "key": "UnitNameAr",
+     "ar": "الاسم بالعربية",
+     "en": "Name (Arabic)"
+    },
+    {
+     "key": "UnitNameEn",
+     "ar": "الاسم بالإنجليزية",
+     "en": "Name (English)"
+    },
+    {
+     "key": "UnitType",
+     "ar": "النوع",
+     "en": "Type"
+    },
+    {
+     "key": "UnitTypeId",
+     "ar": "رمز النوع",
+     "en": "Type id"
+    },
+    {
+     "key": "Level",
+     "ar": "المستوى",
+     "en": "Level"
+    },
+    {
+     "key": "ParentName",
+     "ar": "يتبع",
+     "en": "Reports to"
+    },
+    {
+     "key": "ParentId",
+     "ar": "رمز الأصل",
+     "en": "Parent id"
+    },
+    {
+     "key": "DirectChildren",
+     "ar": "التابعون المباشرون",
+     "en": "Direct reports"
+    },
+    {
+     "key": "DescendantCount",
+     "ar": "إجمالي التابعين",
+     "en": "Total below"
+    },
+    {
+     "key": "IsActive",
+     "ar": "نشطة",
+     "en": "Active"
+    },
+    {
+     "key": "Notes",
+     "ar": "ملاحظات",
+     "en": "Notes"
+    },
+    {
+     "key": "UnitId",
+     "ar": "رمز الوحدة",
+     "en": "Unit id"
+    },
+    {
+     "key": "LinkedObjectId",
+     "ar": "الكائن المرتبط",
+     "en": "Linked object id"
+    },
+    {
+     "key": "SortOrder",
+     "ar": "الترتيب",
+     "en": "Sort"
+    },
+    {
+     "key": "UnitTypeId",
+     "ar": "نوع الوحدة",
+     "en": "Unit type"
+    },
+    {
+     "key": "RootUnitId",
+     "ar": "يبدأ من الوحدة",
+     "en": "Start at unit"
+    },
+    {
+     "key": "IncludeInactive",
+     "ar": "تضمين غير النشطة",
+     "en": "Include inactive"
+    },
+    {
+     "key": "MaxLevel",
+     "ar": "حتى المستوى",
+     "en": "Down to level"
+    },
+    {
+     "key": "by-type",
+     "ar": "حسب النوع",
+     "en": "By type"
+    },
+    {
+     "key": "by-level",
+     "ar": "حسب المستوى",
+     "en": "By level"
+    }
+   ]
+  },
+  {
+   "source": "CrossBuy/BL/Reporting/PlatformReportDefinitions.cs",
+   "report_codes": [
+    "Platform.ReportCatalog",
+    "Platform.ReportRunHistory"
+   ],
+   "declared_titles": [
+    {
+     "ar": "دليل التقارير",
+     "en": "Report catalogue"
+    },
+    {
+     "ar": "سجل تشغيل التقارير",
+     "en": "Report run history"
+    }
+   ],
+   "permission_keys": [],
+   "field_count": 22,
+   "fields": [
+    {
+     "key": "Module",
+     "ar": "الوحدة",
+     "en": "Module"
+    },
+    {
+     "key": "Code",
+     "ar": "الرمز",
+     "en": "Code"
+    },
+    {
+     "key": "Title",
+     "ar": "الاسم",
+     "en": "Title"
+    },
+    {
+     "key": "Category",
+     "ar": "التصنيف",
+     "en": "Category"
+    },
+    {
+     "key": "Formats",
+     "ar": "الصيغ",
+     "en": "Formats"
+    },
+    {
+     "key": "Parameters",
+     "ar": "عدد المعاملات",
+     "en": "Parameters"
+    },
+    {
+     "key": "Schedulable",
+     "ar": "قابل للجدولة",
+     "en": "Schedulable"
+    },
+    {
+     "key": "PermissionKey",
+     "ar": "الصلاحية",
+     "en": "Permission"
+    },
+    {
+     "key": "Module",
+     "ar": "الوحدة",
+     "en": "Module"
+    },
+    {
+     "key": "StartedAt",
+     "ar": "التاريخ",
+     "en": "Started"
+    },
+    {
+     "key": "ReportCode",
+     "ar": "التقرير",
+     "en": "Report"
+    },
+    {
+     "key": "EmployeeId",
+     "ar": "الموظف",
+     "en": "Employee"
+    },
+    {
+     "key": "Kind",
+     "ar": "النوع",
+     "en": "Kind"
+    },
+    {
+     "key": "Status",
+     "ar": "الحالة",
+     "en": "Status"
+    },
+    {
+     "key": "Format",
+     "ar": "الصيغة",
+     "en": "Format"
+    },
+    {
+     "key": "RowCount",
+     "ar": "الصفوف",
+     "en": "Rows"
+    },
+    {
+     "key": "DurationMs",
+     "ar": "المدة (مللي)",
+     "en": "Duration (ms)"
+    },
+    {
+     "key": "ErrorCode",
+     "ar": "رمز الخطأ",
+     "en": "Error"
+    },
+    {
+     "key": "From",
+     "ar": "من تاريخ",
+     "en": "From"
+    },
+    {
+     "key": "To",
+     "ar": "إلى تاريخ",
+     "en": "To"
+    },
+    {
+     "key": "Status",
+     "ar": "الحالة",
+     "en": "Status"
+    },
+    {
+     "key": "ReportSystemParameters.CompanyId",
+     "ar": "الشركة",
+     "en": "Company"
+    }
+   ]
+  },
+  {
+   "source": "CrossBuy/BL/Reporting/ReportDataSource.cs",
+   "report_codes": [
+    "Accounting.TrialBalance"
+   ],
+   "declared_titles": [],
+   "permission_keys": [],
+   "field_count": 0,
+   "fields": []
+  },
+  {
+   "source": "CrossBuy/BL/Reporting/ReportDataset.cs",
+   "report_codes": [
+    "Accounting.Receivables.Aging"
+   ],
+   "declared_titles": [],
+   "permission_keys": [],
+   "field_count": 0,
+   "fields": []
+  },
+  {
+   "source": "CrossBuy/BL/Reporting/ReportMetadata.cs",
+   "report_codes": [
+    "Accounting.TrialBalance"
+   ],
+   "declared_titles": [],
+   "permission_keys": [
+    "accounting.reports.view"
+   ],
+   "field_count": 0,
+   "fields": []
+  },
+  {
+   "source": "CrossBuy/BL/Reporting/ReportScreenBindings.cs",
+   "report_codes": [
+    "Accounting.JournalEntry",
+    "Accounting.PurchaseInvoiceDetail",
+    "Accounting.PurchaseInvoices",
+    "Accounting.PurchaseReturnDetail",
+    "Accounting.SalesInvoiceDetail",
+    "Accounting.SalesInvoices",
+    "Accounting.SalesReturnDetail",
+    "Inventory.CountDetail",
+    "Inventory.DeliveryDetail",
+    "Inventory.GoodsReceipts",
+    "Inventory.PurchaseOrderDetail",
+    "Inventory.PurchaseOrders",
+    "Inventory.QuotationDetails",
+    "Inventory.ReceiptDetail",
+    "Inventory.SalesOrderDetail",
+    "Inventory.SalesOrders",
+    "Inventory.TransferDetail",
+    "Inventory.WriteOffDetail"
+   ],
+   "declared_titles": [],
+   "permission_keys": [],
+   "field_count": 0,
+   "fields": []
+  },
+  {
+   "source": "CrossBuy/BL/Reporting/ReportStudioService.cs",
+   "report_codes": [
+    "Platform.BusinessEventLog",
+    "Platform.BusinessEvents.Log"
+   ],
+   "declared_titles": [],
+   "permission_keys": [],
+   "field_count": 0,
+   "fields": []
+  },
+  {
+   "source": "CrossBuy/BL/Reporting/StockDocumentDatasets.cs",
+   "report_codes": [
+    "Inventory.CountDocument",
+    "Inventory.DeliveryDocument",
+    "Inventory.ReceiptDocument",
+    "Inventory.TransferDocument",
+    "Inventory.WriteOffDocument"
+   ],
+   "declared_titles": [],
+   "permission_keys": [],
+   "field_count": 26,
+   "fields": [
+    {
+     "key": "LineNo",
+     "ar": "م",
+     "en": "#"
+    },
+    {
+     "key": "ItemCode",
+     "ar": "كود الصنف",
+     "en": "Item code"
+    },
+    {
+     "key": "ItemName",
+     "ar": "الصنف",
+     "en": "Item"
+    },
+    {
+     "key": "BookQty",
+     "ar": "الكمية الدفترية",
+     "en": "Book qty"
+    },
+    {
+     "key": "DiffQty",
+     "ar": "الفرق",
+     "en": "Difference"
+    },
+    {
+     "key": "UnitCost",
+     "ar": "التكلفة",
+     "en": "Unit cost"
+    },
+    {
+     "key": "LineTotal",
+     "ar": "القيمة",
+     "en": "Value"
+    },
+    {
+     "key": "BatchNo",
+     "ar": "الدفعة",
+     "en": "Batch"
+    },
+    {
+     "key": "SerialNo",
+     "ar": "السيريال",
+     "en": "Serial"
+    },
+    {
+     "key": "ExpiryDate",
+     "ar": "الصلاحية",
+     "en": "Expiry"
+    },
+    {
+     "key": "LineReason",
+     "ar": "السبب",
+     "en": "Reason"
+    },
+    {
+     "key": "DocumentNo",
+     "ar": "رقم المستند",
+     "en": "Document no."
+    },
+    {
+     "key": "DocumentDate",
+     "ar": "التاريخ",
+     "en": "Date"
+    },
+    {
+     "key": "WarehouseName",
+     "ar": "المخزن",
+     "en": "Warehouse"
+    },
+    {
+     "key": "ToWarehouseName",
+     "ar": "إلى مخزن",
+     "en": "To warehouse"
+    },
+    {
+     "key": "PartyName",
+     "ar": "المورّد / العميل",
+     "en": "Party"
+    },
+    {
+     "key": "Status",
+     "ar": "الحالة",
+     "en": "Status"
+    },
+    {
+     "key": "Notes",
+     "ar": "ملاحظات",
+     "en": "Notes"
+    },
+    {
+     "key": "DocumentTotal",
+     "ar": "إجمالي القيمة",
+     "en": "Total value"
+    },
+    {
+     "key": "CompanyName",
+     "ar": "الشركة",
+     "en": "Company"
+    },
+    {
+     "key": "CompanyTaxNo",
+     "ar": "الرقم الضريبي",
+     "en": "Tax no."
+    },
+    {
+     "key": "CompanyAddress",
+     "ar": "عنوان الشركة",
+     "en": "Company address"
+    },
+    {
+     "key": "CompanyPhone",
+     "ar": "هاتف الشركة",
+     "en": "Company phone"
+    },
+    {
+     "key": "BranchName",
+     "ar": "الفرع",
+     "en": "Branch"
+    },
+    {
+     "key": "BranchLocation",
+     "ar": "موقع الفرع",
+     "en": "Branch location"
+    },
+    {
+     "key": "BranchPhone",
+     "ar": "هاتف الفرع",
+     "en": "Branch phone"
+    }
+   ]
+  },
+  {
+   "source": "CrossBuy/BL/Reporting/TradeDocumentDatasets.cs",
+   "report_codes": [],
+   "declared_titles": [],
+   "permission_keys": [],
+   "field_count": 22,
+   "fields": [
+    {
+     "key": "LineNo",
+     "ar": "م",
+     "en": "#"
+    },
+    {
+     "key": "ItemCode",
+     "ar": "الصنف",
+     "en": "Item"
+    },
+    {
+     "key": "ItemDescription",
+     "ar": "البيان",
+     "en": "Description"
+    },
+    {
+     "key": "Qty",
+     "ar": "الكمية",
+     "en": "Qty"
+    },
+    {
+     "key": "UnitPrice",
+     "ar": "السعر",
+     "en": "Unit price"
+    },
+    {
+     "key": "DiscountAmount",
+     "ar": "الخصم",
+     "en": "Discount"
+    },
+    {
+     "key": "TaxRate",
+     "ar": "الضريبة %",
+     "en": "Tax %"
+    },
+    {
+     "key": "LineTotal",
+     "ar": "الإجمالي",
+     "en": "Line total"
+    },
+    {
+     "key": "DocumentNo",
+     "ar": "رقم المستند",
+     "en": "Document no."
+    },
+    {
+     "key": "DocumentDate",
+     "ar": "التاريخ",
+     "en": "Date"
+    },
+    {
+     "key": "Status",
+     "ar": "الحالة",
+     "en": "Status"
+    },
+    {
+     "key": "Notes",
+     "ar": "ملاحظات",
+     "en": "Notes"
+    },
+    {
+     "key": "CompanyName",
+     "ar": "الشركة",
+     "en": "Company"
+    },
+    {
+     "key": "CompanyTaxNo",
+     "ar": "الرقم الضريبي",
+     "en": "Tax no."
+    },
+    {
+     "key": "CompanyAddress",
+     "ar": "عنوان الشركة",
+     "en": "Company address"
+    },
+    {
+     "key": "CompanyPhone",
+     "ar": "هاتف الشركة",
+     "en": "Company phone"
+    },
+    {
+     "key": "BranchName",
+     "ar": "الفرع",
+     "en": "Branch"
+    },
+    {
+     "key": "BranchLocation",
+     "ar": "موقع الفرع",
+     "en": "Branch location"
+    },
+    {
+     "key": "BranchPhone",
+     "ar": "هاتف الفرع",
+     "en": "Branch phone"
+    },
+    {
+     "key": "SubTotal",
+     "ar": "الإجمالي قبل الضريبة",
+     "en": "Subtotal"
+    },
+    {
+     "key": "TaxTotal",
+     "ar": "إجمالي الضريبة",
+     "en": "Tax total"
+    },
+    {
+     "key": "GrandTotal",
+     "ar": "الإجمالي النهائي",
+     "en": "Grand total"
+    }
+   ]
+  },
+  {
+   "source": "CrossBuy/BL/Reporting/TradeRegisterDatasets.cs",
+   "report_codes": [],
+   "declared_titles": [],
+   "permission_keys": [],
+   "field_count": 8,
+   "fields": [
+    {
+     "key": "DocumentDate",
+     "ar": "التاريخ",
+     "en": "Date"
+    },
+    {
+     "key": "Status",
+     "ar": "الحالة",
+     "en": "Status"
+    },
+    {
+     "key": "GrandTotal",
+     "ar": "الإجمالي",
+     "en": "Total"
+    },
+    {
+     "key": "CompanyName",
+     "ar": "الشركة",
+     "en": "Company"
+    },
+    {
+     "key": "CompanyTaxNo",
+     "ar": "الرقم الضريبي",
+     "en": "Tax no."
+    },
+    {
+     "key": "BranchName",
+     "ar": "الفرع",
+     "en": "Branch"
+    },
+    {
+     "key": "Search",
+     "ar": "بحث",
+     "en": "Search"
+    },
+    {
+     "key": "Status",
+     "ar": "الحالة",
+     "en": "Status"
+    }
+   ]
+  }
+ ]
+}

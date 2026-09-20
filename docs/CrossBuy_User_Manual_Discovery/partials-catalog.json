@@ -1,0 +1,5823 @@
+{
+ "partial_count": 63,
+ "partials": [
+  {
+   "id": "PARTIAL-Accounting-CustomerRows",
+   "folder": "Accounting",
+   "name": "_CustomerRows",
+   "source": "CrossBuy/Views/Accounting/_CustomerRows.cshtml",
+   "heading": null,
+   "fields": [],
+   "actions": [
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: pencil)",
+      "en": "(icon only: pencil)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "button",
+     "variant": "neutral",
+     "href": null,
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: eye)",
+      "en": "(icon only: eye)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "@Url.Action(",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    }
+   ],
+   "columns": [],
+   "notices": [],
+   "lines": 36
+  },
+  {
+   "id": "PARTIAL-Accounting-JournalRows",
+   "folder": "Accounting",
+   "name": "_JournalRows",
+   "source": "CrossBuy/Views/Accounting/_JournalRows.cshtml",
+   "heading": null,
+   "fields": [],
+   "actions": [
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: eye)",
+      "en": "(icon only: eye)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "@Url.Action(",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: pencil)",
+      "en": "(icon only: pencil)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "@Url.Action(",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: trash)",
+      "en": "(icon only: trash)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "button",
+     "variant": "danger",
+     "href": null,
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": "Post",
+      "ar": "ترحيل",
+      "en": "Post",
+      "fr": "Comptabiliser",
+      "ar_source": "shared",
+      "en_source": "shared"
+     },
+     "element": "button",
+     "variant": "neutral",
+     "href": null,
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": "Reverse",
+      "ar": "عكس",
+      "en": "Reverse",
+      "fr": "Contre-passer",
+      "ar_source": "view",
+      "en_source": "view"
+     },
+     "element": "button",
+     "variant": "danger",
+     "href": null,
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    }
+   ],
+   "columns": [],
+   "notices": [],
+   "lines": 55
+  },
+  {
+   "id": "PARTIAL-Accounting-PaymentRows",
+   "folder": "Accounting",
+   "name": "_PaymentRows",
+   "source": "CrossBuy/Views/Accounting/_PaymentRows.cshtml",
+   "heading": null,
+   "fields": [],
+   "actions": [
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: eye)",
+      "en": "(icon only: eye)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "@Url.Action(",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    }
+   ],
+   "columns": [],
+   "notices": [],
+   "lines": 15
+  },
+  {
+   "id": "PARTIAL-Accounting-PurchaseInvoiceRows",
+   "folder": "Accounting",
+   "name": "_PurchaseInvoiceRows",
+   "source": "CrossBuy/Views/Accounting/_PurchaseInvoiceRows.cshtml",
+   "heading": null,
+   "fields": [],
+   "actions": [
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: eye)",
+      "en": "(icon only: eye)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "@Url.Action(",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: pencil)",
+      "en": "(icon only: pencil)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "@Url.Action(",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    }
+   ],
+   "columns": [],
+   "notices": [],
+   "lines": 20
+  },
+  {
+   "id": "PARTIAL-Accounting-ReceiptRows",
+   "folder": "Accounting",
+   "name": "_ReceiptRows",
+   "source": "CrossBuy/Views/Accounting/_ReceiptRows.cshtml",
+   "heading": null,
+   "fields": [],
+   "actions": [
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: eye)",
+      "en": "(icon only: eye)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "@Url.Action(",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    }
+   ],
+   "columns": [],
+   "notices": [],
+   "lines": 15
+  },
+  {
+   "id": "PARTIAL-Accounting-SalesInvoiceRows",
+   "folder": "Accounting",
+   "name": "_SalesInvoiceRows",
+   "source": "CrossBuy/Views/Accounting/_SalesInvoiceRows.cshtml",
+   "heading": null,
+   "fields": [],
+   "actions": [
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: eye)",
+      "en": "(icon only: eye)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "@Url.Action(",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: pencil)",
+      "en": "(icon only: pencil)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "@Url.Action(",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    }
+   ],
+   "columns": [],
+   "notices": [],
+   "lines": 20
+  },
+  {
+   "id": "PARTIAL-Accounting-VendorRows",
+   "folder": "Accounting",
+   "name": "_VendorRows",
+   "source": "CrossBuy/Views/Accounting/_VendorRows.cshtml",
+   "heading": null,
+   "fields": [],
+   "actions": [
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: pencil)",
+      "en": "(icon only: pencil)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "button",
+     "variant": "neutral",
+     "href": null,
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: eye)",
+      "en": "(icon only: eye)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "@Url.Action(",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    }
+   ],
+   "columns": [],
+   "notices": [],
+   "lines": 24
+  },
+  {
+   "id": "PARTIAL-Admin-HrDocGallery",
+   "folder": "Admin",
+   "name": "_HrDocGallery",
+   "source": "CrossBuy/Views/Admin/_HrDocGallery.cshtml",
+   "heading": null,
+   "fields": [
+    {
+     "id": "files",
+     "control": "input",
+     "type": "file",
+     "label": null,
+     "placeholder": null,
+     "required": true,
+     "readonly": false,
+     "disabled": false,
+     "min": null,
+     "max": null,
+     "step": null,
+     "maxlength": null,
+     "lookup": null,
+     "model_binding": null
+    }
+   ],
+   "actions": [
+    {
+     "label": {
+      "key": "Open in new tab",
+      "ar": "فتح في تبويب جديد",
+      "en": "Open in new tab",
+      "fr": "Open in new tab",
+      "ar_source": "view",
+      "en_source": "fallback-to-key"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "#",
+     "id": "dgOpen",
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": "Download",
+      "ar": "تنزيل",
+      "en": "Download",
+      "fr": "Download",
+      "ar_source": "view",
+      "en_source": "fallback-to-key"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "#",
+     "id": "dgDownload",
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": "Add files",
+      "ar": "إضافة ملفات",
+      "en": "Add files",
+      "fr": "Add files",
+      "ar_source": "view",
+      "en_source": "fallback-to-key"
+     },
+     "element": "button",
+     "variant": "primary",
+     "href": null,
+     "id": null,
+     "opens_modal": null,
+     "submits": true,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "Delete",
+      "en": "Delete",
+      "fr": "Delete",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "element": "button",
+     "variant": "danger",
+     "href": null,
+     "id": "' + f.id + '",
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    }
+   ],
+   "columns": [],
+   "notices": [],
+   "lines": 155
+  },
+  {
+   "id": "PARTIAL-BusinessEventMonitor-Details",
+   "folder": "BusinessEventMonitor",
+   "name": "_Details",
+   "source": "CrossBuy/Views/BusinessEventMonitor/_Details.cshtml",
+   "heading": null,
+   "fields": [],
+   "actions": [
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: cross)",
+      "en": "(icon only: cross)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "button",
+     "variant": "neutral",
+     "href": null,
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": "Open",
+      "ar": "فتح",
+      "en": "Open",
+      "fr": "Ouvrir",
+      "ar_source": "view",
+      "en_source": "view"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "@h.EntityUrl",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": "Retry (override)",
+      "ar": "إعادة المحاولة (تجاوز)",
+      "en": "Retry (override)",
+      "fr": "Réessayer (dérogation)",
+      "ar_source": "view",
+      "en_source": "view"
+     },
+     "element": "button",
+     "variant": "neutral",
+     "href": null,
+     "id": "@c.DispatchId",
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": "Expand",
+      "ar": "توسيع",
+      "en": "Expand",
+      "fr": "Développer",
+      "ar_source": "view",
+      "en_source": "view"
+     },
+     "element": "button",
+     "variant": "neutral",
+     "href": null,
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": "Copy EventUid",
+      "ar": "نسخ معرّف الحدث",
+      "en": "Copy EventUid",
+      "fr": "Copier l'EventUid",
+      "ar_source": "view",
+      "en_source": "view"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "#",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": "Close",
+      "ar": "إغلاق",
+      "en": "Close",
+      "fr": "Fermer",
+      "ar_source": "shared",
+      "en_source": "shared"
+     },
+     "element": "button",
+     "variant": "neutral",
+     "href": null,
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    }
+   ],
+   "columns": [
+    {
+     "label": {
+      "key": "Consumer",
+      "ar": "المستهلك",
+      "en": "Consumer",
+      "fr": "Consommateur",
+      "ar_source": "view",
+      "en_source": "view"
+     },
+     "align": "start"
+    },
+    {
+     "label": {
+      "key": "Status",
+      "ar": "الحالة",
+      "en": "Status",
+      "fr": "Statut",
+      "ar_source": "view",
+      "en_source": "view"
+     },
+     "align": "start"
+    },
+    {
+     "label": {
+      "key": "Attempts",
+      "ar": "المحاولات",
+      "en": "Attempts",
+      "fr": "Tentatives",
+      "ar_source": "view",
+      "en_source": "view"
+     },
+     "align": "start"
+    },
+    {
+     "label": {
+      "key": "Updated",
+      "ar": "آخر تحديث",
+      "en": "Updated",
+      "fr": "Mis à jour",
+      "ar_source": "view",
+      "en_source": "view"
+     },
+     "align": "start"
+    },
+    {
+     "label": {
+      "key": "Error",
+      "ar": "الخطأ",
+      "en": "Error",
+      "fr": "Erreur",
+      "ar_source": "view",
+      "en_source": "view"
+     },
+     "align": "start"
+    }
+   ],
+   "notices": [],
+   "lines": 144
+  },
+  {
+   "id": "PARTIAL-BusinessEventMonitor-Rows",
+   "folder": "BusinessEventMonitor",
+   "name": "_Rows",
+   "source": "CrossBuy/Views/BusinessEventMonitor/_Rows.cshtml",
+   "heading": null,
+   "fields": [],
+   "actions": [
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: eye)",
+      "en": "(icon only: eye)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "#",
+     "id": "@r.EventId",
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: arrows-circle)",
+      "en": "(icon only: arrows-circle)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "button",
+     "variant": "neutral",
+     "href": null,
+     "id": "@r.DispatchId",
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    }
+   ],
+   "columns": [],
+   "notices": [],
+   "lines": 117
+  },
+  {
+   "id": "PARTIAL-ClientPortal-Layout",
+   "folder": "ClientPortal",
+   "name": "_Layout",
+   "source": "CrossBuy/Views/ClientPortal/_Layout.cshtml",
+   "heading": null,
+   "fields": [],
+   "actions": [],
+   "columns": [],
+   "notices": [],
+   "lines": 95
+  },
+  {
+   "id": "PARTIAL-Crm-AccountRows",
+   "folder": "Crm",
+   "name": "_AccountRows",
+   "source": "CrossBuy/Views/Crm/_AccountRows.cshtml",
+   "heading": null,
+   "fields": [],
+   "actions": [
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: eye)",
+      "en": "(icon only: eye)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "@Url.Action(",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    }
+   ],
+   "columns": [],
+   "notices": [],
+   "lines": 23
+  },
+  {
+   "id": "PARTIAL-Crm-ActivityRows",
+   "folder": "Crm",
+   "name": "_ActivityRows",
+   "source": "CrossBuy/Views/Crm/_ActivityRows.cshtml",
+   "heading": null,
+   "fields": [],
+   "actions": [
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: ؟)",
+      "en": "(icon only: ?)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "button",
+     "variant": "neutral",
+     "href": null,
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: pencil)",
+      "en": "(icon only: pencil)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "button",
+     "variant": "neutral",
+     "href": null,
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    }
+   ],
+   "columns": [],
+   "notices": [],
+   "lines": 26
+  },
+  {
+   "id": "PARTIAL-Crm-CampaignRows",
+   "folder": "Crm",
+   "name": "_CampaignRows",
+   "source": "CrossBuy/Views/Crm/_CampaignRows.cshtml",
+   "heading": null,
+   "fields": [],
+   "actions": [
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: chart-simple)",
+      "en": "(icon only: chart-simple)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "@Url.Action(",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: pencil)",
+      "en": "(icon only: pencil)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "button",
+     "variant": "neutral",
+     "href": null,
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    }
+   ],
+   "columns": [],
+   "notices": [],
+   "lines": 31
+  },
+  {
+   "id": "PARTIAL-Crm-CrmCustomFields",
+   "folder": "Crm",
+   "name": "_CrmCustomFields",
+   "source": "CrossBuy/Views/Crm/_CrmCustomFields.cshtml",
+   "heading": null,
+   "fields": [],
+   "actions": [],
+   "columns": [],
+   "notices": [],
+   "lines": 44
+  },
+  {
+   "id": "PARTIAL-Crm-LeadRows",
+   "folder": "Crm",
+   "name": "_LeadRows",
+   "source": "CrossBuy/Views/Crm/_LeadRows.cshtml",
+   "heading": null,
+   "fields": [],
+   "actions": [
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: pencil)",
+      "en": "(icon only: pencil)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "button",
+     "variant": "neutral",
+     "href": null,
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: user-tick)",
+      "en": "(icon only: user-tick)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "button",
+     "variant": "neutral",
+     "href": null,
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: eye)",
+      "en": "(icon only: eye)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "@Url.Action(",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    }
+   ],
+   "columns": [],
+   "notices": [],
+   "lines": 39
+  },
+  {
+   "id": "PARTIAL-Crm-ListRows",
+   "folder": "Crm",
+   "name": "_ListRows",
+   "source": "CrossBuy/Views/Crm/_ListRows.cshtml",
+   "heading": null,
+   "fields": [],
+   "actions": [
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: eye)",
+      "en": "(icon only: eye)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "@Url.Action(",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    }
+   ],
+   "columns": [],
+   "notices": [],
+   "lines": 18
+  },
+  {
+   "id": "PARTIAL-Crm-OppRows",
+   "folder": "Crm",
+   "name": "_OppRows",
+   "source": "CrossBuy/Views/Crm/_OppRows.cshtml",
+   "heading": null,
+   "fields": [],
+   "actions": [
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: handcart)",
+      "en": "(icon only: handcart)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "@Url.Action(",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: pencil)",
+      "en": "(icon only: pencil)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "button",
+     "variant": "neutral",
+     "href": null,
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    }
+   ],
+   "columns": [],
+   "notices": [],
+   "lines": 27
+  },
+  {
+   "id": "PARTIAL-Crm-TicketRows",
+   "folder": "Crm",
+   "name": "_TicketRows",
+   "source": "CrossBuy/Views/Crm/_TicketRows.cshtml",
+   "heading": null,
+   "fields": [],
+   "actions": [
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: eye)",
+      "en": "(icon only: eye)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "@Url.Action(",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    }
+   ],
+   "columns": [],
+   "notices": [],
+   "lines": 30
+  },
+  {
+   "id": "PARTIAL-Crm-Timeline",
+   "folder": "Crm",
+   "name": "_Timeline",
+   "source": "CrossBuy/Views/Crm/_Timeline.cshtml",
+   "heading": null,
+   "fields": [
+    {
+     "id": "type",
+     "control": "select",
+     "type": "select",
+     "label": {
+      "key": "Type",
+      "ar": "النوع",
+      "en": "Type",
+      "fr": "Type",
+      "ar_source": "shared",
+      "en_source": "shared"
+     },
+     "placeholder": null,
+     "required": false,
+     "readonly": false,
+     "disabled": false,
+     "min": null,
+     "max": null,
+     "step": null,
+     "maxlength": null,
+     "lookup": null,
+     "model_binding": null
+    },
+    {
+     "id": "subject",
+     "control": "input",
+     "type": "text",
+     "label": {
+      "key": "Subject",
+      "ar": "الموضوع",
+      "en": "Subject",
+      "fr": "Objet",
+      "ar_source": "view",
+      "en_source": "view"
+     },
+     "placeholder": null,
+     "required": true,
+     "readonly": false,
+     "disabled": false,
+     "min": null,
+     "max": null,
+     "step": null,
+     "maxlength": null,
+     "lookup": null,
+     "model_binding": null
+    },
+    {
+     "id": "dueDate",
+     "control": "input",
+     "type": "datetime-local",
+     "label": {
+      "key": "Due",
+      "ar": "الاستحقاق",
+      "en": "Due",
+      "fr": "Échéance",
+      "ar_source": "view",
+      "en_source": "view"
+     },
+     "placeholder": null,
+     "required": false,
+     "readonly": false,
+     "disabled": false,
+     "min": null,
+     "max": null,
+     "step": null,
+     "maxlength": null,
+     "lookup": null,
+     "model_binding": null
+    },
+    {
+     "id": "reminderAt",
+     "control": "input",
+     "type": "datetime-local",
+     "label": {
+      "key": "Reminder",
+      "ar": "تذكير",
+      "en": "Reminder",
+      "fr": "Rappel",
+      "ar_source": "view",
+      "en_source": "view"
+     },
+     "placeholder": null,
+     "required": false,
+     "readonly": false,
+     "disabled": false,
+     "min": null,
+     "max": null,
+     "step": null,
+     "maxlength": null,
+     "lookup": null,
+     "model_binding": null
+    },
+    {
+     "id": "notes",
+     "control": "input",
+     "type": "text",
+     "label": {
+      "key": "Notes",
+      "ar": "ملاحظات",
+      "en": "Notes",
+      "fr": "Remarques",
+      "ar_source": "shared",
+      "en_source": "shared"
+     },
+     "placeholder": null,
+     "required": false,
+     "readonly": false,
+     "disabled": false,
+     "min": null,
+     "max": null,
+     "step": null,
+     "maxlength": null,
+     "lookup": null,
+     "model_binding": null
+    }
+   ],
+   "actions": [
+    {
+     "label": {
+      "key": "New activity",
+      "ar": "نشاط جديد",
+      "en": "New activity",
+      "fr": "Nouvelle activité",
+      "ar_source": "view",
+      "en_source": "view"
+     },
+     "element": "button",
+     "variant": "neutral",
+     "href": null,
+     "id": null,
+     "opens_modal": "#@(sid)_add",
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": "Save",
+      "ar": "حفـــــظ",
+      "en": "Save",
+      "fr": "Enregistrer",
+      "ar_source": "shared",
+      "en_source": "shared"
+     },
+     "element": "button",
+     "variant": "primary",
+     "href": null,
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": "Reopen",
+      "ar": "إعادة فتح",
+      "en": "Reopen",
+      "fr": "Rouvrir",
+      "ar_source": "view",
+      "en_source": "view"
+     },
+     "element": "button",
+     "variant": "neutral",
+     "href": null,
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    }
+   ],
+   "columns": [],
+   "notices": [],
+   "lines": 78
+  },
+  {
+   "id": "PARTIAL-InsightActions-NewTask",
+   "folder": "InsightActions",
+   "name": "_NewTask",
+   "source": "CrossBuy/Views/InsightActions/_NewTask.cshtml",
+   "heading": null,
+   "fields": [
+    {
+     "id": "insightTaskTitle",
+     "control": "input",
+     "type": "text",
+     "label": {
+      "key": "Task title",
+      "ar": "عنوان المهمة",
+      "en": "Task title",
+      "fr": "Titre de la tâche",
+      "ar_source": "view",
+      "en_source": "view"
+     },
+     "placeholder": null,
+     "required": true,
+     "readonly": false,
+     "disabled": false,
+     "min": null,
+     "max": null,
+     "step": null,
+     "maxlength": "200",
+     "lookup": null,
+     "model_binding": "Title"
+    },
+    {
+     "id": "insightTaskReason",
+     "control": "textarea",
+     "type": "textarea",
+     "label": {
+      "key": "Reason",
+      "ar": "السبب",
+      "en": "Reason",
+      "fr": "Motif",
+      "ar_source": "view",
+      "en_source": "view"
+     },
+     "placeholder": null,
+     "required": false,
+     "readonly": false,
+     "disabled": false,
+     "min": null,
+     "max": null,
+     "step": null,
+     "maxlength": null,
+     "lookup": null,
+     "model_binding": "Reason"
+    },
+    {
+     "id": "insightTaskAssignee",
+     "control": "select",
+     "type": "select",
+     "label": {
+      "key": "Assignee",
+      "ar": "المسؤول",
+      "en": "Assignee",
+      "fr": "Responsable",
+      "ar_source": "view",
+      "en_source": "view"
+     },
+     "placeholder": null,
+     "required": false,
+     "readonly": false,
+     "disabled": false,
+     "min": null,
+     "max": null,
+     "step": null,
+     "maxlength": null,
+     "lookup": null,
+     "model_binding": "AssigneeEmployeeId"
+    },
+    {
+     "id": "insightTaskDue",
+     "control": "input",
+     "type": "date",
+     "label": {
+      "key": "Due date",
+      "ar": "تاريخ الاستحقاق",
+      "en": "Due date",
+      "fr": "Échéance",
+      "ar_source": "view",
+      "en_source": "view"
+     },
+     "placeholder": null,
+     "required": false,
+     "readonly": false,
+     "disabled": false,
+     "min": null,
+     "max": null,
+     "step": null,
+     "maxlength": null,
+     "lookup": null,
+     "model_binding": "DueDate"
+    },
+    {
+     "id": "insightTaskPriority",
+     "control": "select",
+     "type": "select",
+     "label": {
+      "key": "Priority",
+      "ar": "الأولوية",
+      "en": "Priority",
+      "fr": "Priorité",
+      "ar_source": "view",
+      "en_source": "view"
+     },
+     "placeholder": null,
+     "required": false,
+     "readonly": false,
+     "disabled": false,
+     "min": null,
+     "max": null,
+     "step": null,
+     "maxlength": null,
+     "lookup": null,
+     "model_binding": "Priority"
+    }
+   ],
+   "actions": [
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: cross)",
+      "en": "(icon only: cross)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "button",
+     "variant": "neutral",
+     "href": null,
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": "Cancel",
+      "ar": "إلغــــــــــــــــــاء",
+      "en": "Cancel",
+      "fr": "Annuler",
+      "ar_source": "shared",
+      "en_source": "shared"
+     },
+     "element": "button",
+     "variant": "neutral",
+     "href": null,
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": "Create task",
+      "ar": "إنشاء المهمة",
+      "en": "Create task",
+      "fr": "Créer la tâche",
+      "ar_source": "view",
+      "en_source": "view"
+     },
+     "element": "button",
+     "variant": "primary",
+     "href": null,
+     "id": "insightTaskSubmit",
+     "opens_modal": null,
+     "submits": true,
+     "confirm": false
+    }
+   ],
+   "columns": [],
+   "notices": [
+    {
+     "kind": "warning",
+     "message": {
+      "key": "A follow-up is already open for this finding",
+      "ar": "توجد بالفعل متابعة مفتوحة لهذه الملاحظة",
+      "en": "A follow-up is already open for this finding",
+      "fr": "Un suivi est déjà ouvert pour ce constat",
+      "ar_source": "view",
+      "en_source": "view"
+     }
+    },
+    {
+     "kind": "success",
+     "message": {
+      "key": "Task created",
+      "ar": "تم إنشاء المهمة",
+      "en": "Task created",
+      "fr": "Tâche créée",
+      "ar_source": "view",
+      "en_source": "view"
+     }
+    }
+   ],
+   "lines": 102
+  },
+  {
+   "id": "PARTIAL-Inventory-BalanceRows",
+   "folder": "Inventory",
+   "name": "_BalanceRows",
+   "source": "CrossBuy/Views/Inventory/_BalanceRows.cshtml",
+   "heading": null,
+   "fields": [],
+   "actions": [
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: document)",
+      "en": "(icon only: document)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "@Url.Action(",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    }
+   ],
+   "columns": [],
+   "notices": [],
+   "lines": 19
+  },
+  {
+   "id": "PARTIAL-Inventory-DeliveryRows",
+   "folder": "Inventory",
+   "name": "_DeliveryRows",
+   "source": "CrossBuy/Views/Inventory/_DeliveryRows.cshtml",
+   "heading": null,
+   "fields": [],
+   "actions": [
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: eye)",
+      "en": "(icon only: eye)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "@Url.Action(",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    }
+   ],
+   "columns": [],
+   "notices": [],
+   "lines": 21
+  },
+  {
+   "id": "PARTIAL-Inventory-GrRows",
+   "folder": "Inventory",
+   "name": "_GrRows",
+   "source": "CrossBuy/Views/Inventory/_GrRows.cshtml",
+   "heading": null,
+   "fields": [],
+   "actions": [
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: eye)",
+      "en": "(icon only: eye)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "@Url.Action(",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    }
+   ],
+   "columns": [],
+   "notices": [],
+   "lines": 21
+  },
+  {
+   "id": "PARTIAL-Inventory-ItemRows",
+   "folder": "Inventory",
+   "name": "_ItemRows",
+   "source": "CrossBuy/Views/Inventory/_ItemRows.cshtml",
+   "heading": null,
+   "fields": [],
+   "actions": [
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: eye)",
+      "en": "(icon only: eye)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "@Url.Action(",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: book-open)",
+      "en": "(icon only: book-open)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "@Url.Action(",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    }
+   ],
+   "columns": [],
+   "notices": [],
+   "lines": 41
+  },
+  {
+   "id": "PARTIAL-Inventory-ItemScanModal",
+   "folder": "Inventory",
+   "name": "_ItemScanModal",
+   "source": "CrossBuy/Views/Inventory/_ItemScanModal.cshtml",
+   "heading": null,
+   "fields": [
+    {
+     "id": "scanUom",
+     "control": "select",
+     "type": "select",
+     "label": {
+      "key": "Unit",
+      "ar": "الوحدة",
+      "en": "Unit",
+      "fr": "Unité",
+      "ar_source": "view",
+      "en_source": "view"
+     },
+     "placeholder": null,
+     "required": false,
+     "readonly": false,
+     "disabled": false,
+     "min": null,
+     "max": null,
+     "step": null,
+     "maxlength": null,
+     "lookup": null,
+     "model_binding": null
+    },
+    {
+     "id": "scanQty",
+     "control": "input",
+     "type": "number",
+     "label": {
+      "key": "Quantity",
+      "ar": "الكمية",
+      "en": "Quantity",
+      "fr": "Quantité",
+      "ar_source": "shared",
+      "en_source": "shared"
+     },
+     "placeholder": null,
+     "required": false,
+     "readonly": false,
+     "disabled": false,
+     "min": "0",
+     "max": null,
+     "step": "0.0001",
+     "maxlength": null,
+     "lookup": null,
+     "model_binding": null
+    }
+   ],
+   "actions": [
+    {
+     "label": {
+      "key": "Cancel",
+      "ar": "إلغــــــــــــــــــاء",
+      "en": "Cancel",
+      "fr": "Annuler",
+      "ar_source": "shared",
+      "en_source": "shared"
+     },
+     "element": "button",
+     "variant": "neutral",
+     "href": null,
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": "Add to list",
+      "ar": "إضافة للقائمة",
+      "en": "Add to list",
+      "fr": "Ajouter à la liste",
+      "ar_source": "view",
+      "en_source": "view"
+     },
+     "element": "button",
+     "variant": "primary",
+     "href": null,
+     "id": "scanOk",
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    }
+   ],
+   "columns": [],
+   "notices": [
+    {
+     "kind": "danger",
+     "message": {
+      "key": "No item with this barcode",
+      "ar": "لا يوجد صنف بهذا الباركود",
+      "en": "No item with this barcode",
+      "fr": "Aucun article avec ce code-barres",
+      "ar_source": "view",
+      "en_source": "view"
+     }
+    }
+   ],
+   "lines": 95
+  },
+  {
+   "id": "PARTIAL-Inventory-MovementRows",
+   "folder": "Inventory",
+   "name": "_MovementRows",
+   "source": "CrossBuy/Views/Inventory/_MovementRows.cshtml",
+   "heading": null,
+   "fields": [],
+   "actions": [],
+   "columns": [],
+   "notices": [],
+   "lines": 69
+  },
+  {
+   "id": "PARTIAL-Inventory-PoRows",
+   "folder": "Inventory",
+   "name": "_PoRows",
+   "source": "CrossBuy/Views/Inventory/_PoRows.cshtml",
+   "heading": null,
+   "fields": [],
+   "actions": [
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: eye)",
+      "en": "(icon only: eye)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "@Url.Action(",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": "Actions",
+      "ar": "الإجراءات",
+      "en": "Actions",
+      "fr": "Actions",
+      "ar_source": "shared",
+      "en_source": "shared"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "#",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": "Convert to invoice",
+      "ar": "تحويل لفاتورة شراء",
+      "en": "Convert to invoice",
+      "fr": "Convertir en facture",
+      "ar_source": "view",
+      "en_source": "view"
+     },
+     "element": "button",
+     "variant": "neutral",
+     "href": null,
+     "id": null,
+     "opens_modal": null,
+     "submits": true,
+     "confirm": false
+    }
+   ],
+   "columns": [],
+   "notices": [],
+   "lines": 45
+  },
+  {
+   "id": "PARTIAL-Inventory-PriceListRows",
+   "folder": "Inventory",
+   "name": "_PriceListRows",
+   "source": "CrossBuy/Views/Inventory/_PriceListRows.cshtml",
+   "heading": null,
+   "fields": [],
+   "actions": [
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: pencil)",
+      "en": "(icon only: pencil)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "@Url.Action(",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: copy)",
+      "en": "(icon only: copy)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "button",
+     "variant": "neutral",
+     "href": null,
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: trash)",
+      "en": "(icon only: trash)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "button",
+     "variant": "danger",
+     "href": null,
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    }
+   ],
+   "columns": [],
+   "notices": [],
+   "lines": 36
+  },
+  {
+   "id": "PARTIAL-Inventory-PromotionRows",
+   "folder": "Inventory",
+   "name": "_PromotionRows",
+   "source": "CrossBuy/Views/Inventory/_PromotionRows.cshtml",
+   "heading": null,
+   "fields": [],
+   "actions": [
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: pencil)",
+      "en": "(icon only: pencil)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "@Url.Action(",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: trash)",
+      "en": "(icon only: trash)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "button",
+     "variant": "danger",
+     "href": null,
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    }
+   ],
+   "columns": [],
+   "notices": [],
+   "lines": 42
+  },
+  {
+   "id": "PARTIAL-Inventory-QuoteRows",
+   "folder": "Inventory",
+   "name": "_QuoteRows",
+   "source": "CrossBuy/Views/Inventory/_QuoteRows.cshtml",
+   "heading": null,
+   "fields": [],
+   "actions": [
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: eye)",
+      "en": "(icon only: eye)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "@Url.Action(",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    }
+   ],
+   "columns": [],
+   "notices": [],
+   "lines": 22
+  },
+  {
+   "id": "PARTIAL-Inventory-SoRows",
+   "folder": "Inventory",
+   "name": "_SoRows",
+   "source": "CrossBuy/Views/Inventory/_SoRows.cshtml",
+   "heading": null,
+   "fields": [],
+   "actions": [
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: eye)",
+      "en": "(icon only: eye)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "@Url.Action(",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": "Actions",
+      "ar": "الإجراءات",
+      "en": "Actions",
+      "fr": "Actions",
+      "ar_source": "shared",
+      "en_source": "shared"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "#",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": "Convert to invoice",
+      "ar": "تحويل لفاتورة بيع",
+      "en": "Convert to invoice",
+      "fr": "Convertir en facture",
+      "ar_source": "view",
+      "en_source": "view"
+     },
+     "element": "button",
+     "variant": "neutral",
+     "href": null,
+     "id": null,
+     "opens_modal": null,
+     "submits": true,
+     "confirm": false
+    }
+   ],
+   "columns": [],
+   "notices": [],
+   "lines": 39
+  },
+  {
+   "id": "PARTIAL-Inventory-WorkOrderRows",
+   "folder": "Inventory",
+   "name": "_WorkOrderRows",
+   "source": "CrossBuy/Views/Inventory/_WorkOrderRows.cshtml",
+   "heading": null,
+   "fields": [],
+   "actions": [
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: eye)",
+      "en": "(icon only: eye)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "@Url.Action(",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    }
+   ],
+   "columns": [],
+   "notices": [],
+   "lines": 21
+  },
+  {
+   "id": "PARTIAL-Reports-ReportCard",
+   "folder": "Reports",
+   "name": "_ReportCard",
+   "source": "CrossBuy/Views/Reports/_ReportCard.cshtml",
+   "heading": null,
+   "fields": [],
+   "actions": [],
+   "columns": [],
+   "notices": [],
+   "lines": 53
+  },
+  {
+   "id": "PARTIAL-Shared-AnnouncementsBanner",
+   "folder": "Shared",
+   "name": "_AnnouncementsBanner",
+   "source": "CrossBuy/Views/Shared/_AnnouncementsBanner.cshtml",
+   "heading": null,
+   "fields": [],
+   "actions": [
+    {
+     "label": {
+      "key": null,
+      "ar": "Dismiss",
+      "en": "Dismiss",
+      "fr": "Dismiss",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "element": "button",
+     "variant": "neutral",
+     "href": null,
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    }
+   ],
+   "columns": [],
+   "notices": [
+    {
+     "kind": "info",
+     "message": {
+      "key": null,
+      "ar": "' + ' ' + ' ' + esc(a.title) + '",
+      "en": "' + ' ' + ' ' + esc(a.title) + '",
+      "fr": "' + ' ' + ' ' + esc(a.title) + '",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     }
+    }
+   ],
+   "lines": 38
+  },
+  {
+   "id": "PARTIAL-Shared-CalendarReminders",
+   "folder": "Shared",
+   "name": "_CalendarReminders",
+   "source": "CrossBuy/Views/Shared/_CalendarReminders.cshtml",
+   "heading": null,
+   "fields": [],
+   "actions": [
+    {
+     "label": {
+      "key": "Open calendar",
+      "ar": "فتح التقويم",
+      "en": "Open calendar",
+      "fr": "Ouvrir le calendrier",
+      "ar_source": "shared",
+      "en_source": "fallback-to-key"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "/Calendar/Index",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": "Got it",
+      "ar": "حسنًا",
+      "en": "Got it",
+      "fr": "Compris",
+      "ar_source": "shared",
+      "en_source": "fallback-to-key"
+     },
+     "element": "button",
+     "variant": "primary",
+     "href": null,
+     "id": "cbEvAck",
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    }
+   ],
+   "columns": [],
+   "notices": [],
+   "lines": 102
+  },
+  {
+   "id": "PARTIAL-Shared-CbToastr",
+   "folder": "Shared",
+   "name": "_CbToastr",
+   "source": "CrossBuy/Views/Shared/_CbToastr.cshtml",
+   "heading": null,
+   "fields": [],
+   "actions": [],
+   "columns": [],
+   "notices": [],
+   "lines": 46
+  },
+  {
+   "id": "PARTIAL-Shared-DocEventTimeline",
+   "folder": "Shared",
+   "name": "_DocEventTimeline",
+   "source": "CrossBuy/Views/Shared/_DocEventTimeline.cshtml",
+   "heading": null,
+   "fields": [],
+   "actions": [],
+   "columns": [],
+   "notices": [],
+   "lines": 253
+  },
+  {
+   "id": "PARTIAL-Shared-DocTimeline",
+   "folder": "Shared",
+   "name": "_DocTimeline",
+   "source": "CrossBuy/Views/Shared/_DocTimeline.cshtml",
+   "heading": null,
+   "fields": [
+    {
+     "id": "cbCmtInput",
+     "control": "textarea",
+     "type": "textarea",
+     "label": null,
+     "placeholder": null,
+     "required": false,
+     "readonly": false,
+     "disabled": false,
+     "min": null,
+     "max": null,
+     "step": null,
+     "maxlength": null,
+     "lookup": null,
+     "model_binding": null
+    }
+   ],
+   "actions": [
+    {
+     "label": {
+      "key": "Send",
+      "ar": "Send",
+      "en": "Send",
+      "fr": "Send",
+      "ar_source": "fallback-to-key",
+      "en_source": "fallback-to-key"
+     },
+     "element": "button",
+     "variant": "primary",
+     "href": null,
+     "id": "cbCmtSend",
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    }
+   ],
+   "columns": [],
+   "notices": [],
+   "lines": 68
+  },
+  {
+   "id": "PARTIAL-Shared-EntityConversation",
+   "folder": "Shared",
+   "name": "_EntityConversation",
+   "source": "CrossBuy/Views/Shared/_EntityConversation.cshtml",
+   "heading": null,
+   "fields": [
+    {
+     "id": "cbConvInput",
+     "control": "textarea",
+     "type": "textarea",
+     "label": null,
+     "placeholder": null,
+     "required": false,
+     "readonly": false,
+     "disabled": false,
+     "min": null,
+     "max": null,
+     "step": null,
+     "maxlength": "4000",
+     "lookup": null,
+     "model_binding": null
+    },
+    {
+     "id": "cbConvFile",
+     "control": "input",
+     "type": "file",
+     "label": null,
+     "placeholder": null,
+     "required": false,
+     "readonly": false,
+     "disabled": false,
+     "min": null,
+     "max": null,
+     "step": null,
+     "maxlength": null,
+     "lookup": null,
+     "model_binding": null
+    }
+   ],
+   "actions": [
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: cross)",
+      "en": "(icon only: cross)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "button",
+     "variant": "neutral",
+     "href": null,
+     "id": "cbConvReplyCancel",
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": "Remove the file",
+      "ar": "إزالة الملف",
+      "en": "Remove the file",
+      "fr": "Retirer le fichier",
+      "ar_source": "view",
+      "en_source": "fallback-to-key"
+     },
+     "element": "button",
+     "variant": "neutral",
+     "href": null,
+     "id": "cbConvFileClear",
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: ؟)",
+      "en": "(icon only: ?)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "button",
+     "variant": "neutral",
+     "href": null,
+     "id": "cbConvAttach",
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: ؟)",
+      "en": "(icon only: ?)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "button",
+     "variant": "neutral",
+     "href": null,
+     "id": "cbConvEmoji",
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": "Send",
+      "ar": "إرسال",
+      "en": "Send",
+      "fr": "Envoyer",
+      "ar_source": "view",
+      "en_source": "fallback-to-key"
+     },
+     "element": "button",
+     "variant": "primary",
+     "href": null,
+     "id": "cbConvSend",
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: exit-right-corner)",
+      "en": "(icon only: exit-right-corner)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": null,
+     "id": "cbConvFileOpen",
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: cloud-download)",
+      "en": "(icon only: cloud-download)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": null,
+     "id": "cbConvFileDownload",
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: cross)",
+      "en": "(icon only: cross)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "button",
+     "variant": "neutral",
+     "href": null,
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "' + ' ' + ch + ' ' + ' ' + r.count + ' ' + '",
+      "en": "' + ' ' + ch + ' ' + ' ' + r.count + ' ' + '",
+      "fr": "' + ' ' + ch + ' ' + ' ' + r.count + ' ' + '",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "element": "button",
+     "variant": "neutral",
+     "href": null,
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "' + esc(T.react) + '",
+      "en": "' + esc(T.react) + '",
+      "fr": "' + esc(T.react) + '",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "element": "button",
+     "variant": "neutral",
+     "href": null,
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "' + esc(T.reply) + '",
+      "en": "' + esc(T.reply) + '",
+      "fr": "' + esc(T.reply) + '",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "element": "button",
+     "variant": "neutral",
+     "href": null,
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "' + r.ch + '",
+      "en": "' + r.ch + '",
+      "fr": "' + r.ch + '",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "element": "button",
+     "variant": "neutral",
+     "href": null,
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "' + ch + '",
+      "en": "' + ch + '",
+      "fr": "' + ch + '",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "element": "button",
+     "variant": "neutral",
+     "href": null,
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    }
+   ],
+   "columns": [],
+   "notices": [],
+   "lines": 897
+  },
+  {
+   "id": "PARTIAL-Shared-InsightActionScripts",
+   "folder": "Shared",
+   "name": "_InsightActionScripts",
+   "source": "CrossBuy/Views/Shared/_InsightActionScripts.cshtml",
+   "heading": null,
+   "fields": [],
+   "actions": [],
+   "columns": [],
+   "notices": [
+    {
+     "kind": "danger",
+     "message": {
+      "key": null,
+      "ar": "Request failed",
+      "en": "Request failed",
+      "fr": "Request failed",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     }
+    }
+   ],
+   "lines": 99
+  },
+  {
+   "id": "PARTIAL-Shared-Layout",
+   "folder": "Shared",
+   "name": "_Layout",
+   "source": "CrossBuy/Views/Shared/_Layout.cshtml",
+   "heading": null,
+   "fields": [],
+   "actions": [],
+   "columns": [],
+   "notices": [],
+   "lines": 52
+  },
+  {
+   "id": "PARTIAL-Shared-LayoutAccounting",
+   "folder": "Shared",
+   "name": "_LayoutAccounting",
+   "source": "CrossBuy/Views/Shared/_LayoutAccounting.cshtml",
+   "heading": {
+    "key": null,
+    "ar": "Upgrade a Plan",
+    "en": "Upgrade a Plan",
+    "fr": "Upgrade a Plan",
+    "ar_source": "literal-in-view",
+    "en_source": "literal-in-view"
+   },
+   "fields": [
+    {
+     "id": "search",
+     "control": "input",
+     "type": "text",
+     "label": null,
+     "placeholder": null,
+     "required": false,
+     "readonly": false,
+     "disabled": false,
+     "min": null,
+     "max": null,
+     "step": null,
+     "maxlength": null,
+     "lookup": null,
+     "model_binding": null
+    },
+    {
+     "id": "query",
+     "control": "input",
+     "type": "text",
+     "label": null,
+     "placeholder": {
+      "key": null,
+      "ar": "Contains the word",
+      "en": "Contains the word",
+      "fr": "Contains the word",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "required": false,
+     "readonly": false,
+     "disabled": false,
+     "min": null,
+     "max": null,
+     "step": null,
+     "maxlength": null,
+     "lookup": null,
+     "model_binding": null
+    },
+    {
+     "id": "type",
+     "control": "input",
+     "type": "radio",
+     "label": {
+      "key": null,
+      "ar": "All",
+      "en": "All",
+      "fr": "All",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "placeholder": null,
+     "required": false,
+     "readonly": false,
+     "disabled": false,
+     "min": null,
+     "max": null,
+     "step": null,
+     "maxlength": null,
+     "lookup": null,
+     "model_binding": null
+    },
+    {
+     "id": "assignedto",
+     "control": "input",
+     "type": "text",
+     "label": {
+      "key": null,
+      "ar": "Projects",
+      "en": "Projects",
+      "fr": "Projects",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "placeholder": {
+      "key": null,
+      "ar": "Assigned to",
+      "en": "Assigned to",
+      "fr": "Assigned to",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "required": false,
+     "readonly": false,
+     "disabled": false,
+     "min": null,
+     "max": null,
+     "step": null,
+     "maxlength": null,
+     "lookup": null,
+     "model_binding": null
+    },
+    {
+     "id": "collaborators",
+     "control": "input",
+     "type": "text",
+     "label": null,
+     "placeholder": {
+      "key": null,
+      "ar": "Collaborators",
+      "en": "Collaborators",
+      "fr": "Collaborators",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "required": false,
+     "readonly": false,
+     "disabled": false,
+     "min": null,
+     "max": null,
+     "step": null,
+     "maxlength": null,
+     "lookup": null,
+     "model_binding": null
+    },
+    {
+     "id": "attachment",
+     "control": "input",
+     "type": "radio",
+     "label": {
+      "key": null,
+      "ar": "Has attachment",
+      "en": "Has attachment",
+      "fr": "Has attachment",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "placeholder": null,
+     "required": false,
+     "readonly": false,
+     "disabled": false,
+     "min": null,
+     "max": null,
+     "step": null,
+     "maxlength": null,
+     "lookup": null,
+     "model_binding": null
+    },
+    {
+     "id": "timezone",
+     "control": "select",
+     "type": "select",
+     "label": {
+      "key": null,
+      "ar": "Any",
+      "en": "Any",
+      "fr": "Any",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "placeholder": {
+      "key": null,
+      "ar": "date_period",
+      "en": "date_period",
+      "fr": "date_period",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "required": false,
+     "readonly": false,
+     "disabled": false,
+     "min": null,
+     "max": null,
+     "step": null,
+     "maxlength": null,
+     "lookup": "select2",
+     "model_binding": null
+    },
+    {
+     "id": "date_number",
+     "control": "input",
+     "type": "number",
+     "label": null,
+     "placeholder": {
+      "key": null,
+      "ar": "Lenght",
+      "en": "Lenght",
+      "fr": "Lenght",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "required": false,
+     "readonly": false,
+     "disabled": false,
+     "min": null,
+     "max": null,
+     "step": null,
+     "maxlength": null,
+     "lookup": null,
+     "model_binding": null
+    },
+    {
+     "id": "date_typer",
+     "control": "select",
+     "type": "select",
+     "label": null,
+     "placeholder": {
+      "key": null,
+      "ar": "Period",
+      "en": "Period",
+      "fr": "Period",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "required": false,
+     "readonly": false,
+     "disabled": false,
+     "min": null,
+     "max": null,
+     "step": null,
+     "maxlength": null,
+     "lookup": "select2",
+     "model_binding": null
+    },
+    {
+     "id": "notifications",
+     "control": "input",
+     "type": "checkbox",
+     "label": {
+      "key": "Notifications",
+      "ar": "الإشعارات",
+      "en": "Notifications",
+      "fr": "Notifications",
+      "ar_source": "shared",
+      "en_source": "shared"
+     },
+     "placeholder": null,
+     "required": false,
+     "readonly": false,
+     "disabled": false,
+     "min": null,
+     "max": null,
+     "step": null,
+     "maxlength": null,
+     "lookup": null,
+     "model_binding": null
+    },
+    {
+     "id": "plan",
+     "control": "input",
+     "type": "radio",
+     "label": null,
+     "placeholder": null,
+     "required": false,
+     "readonly": false,
+     "disabled": false,
+     "min": null,
+     "max": null,
+     "step": null,
+     "maxlength": null,
+     "lookup": null,
+     "model_binding": null
+    },
+    {
+     "id": "users",
+     "control": "input",
+     "type": "checkbox",
+     "label": null,
+     "placeholder": null,
+     "required": false,
+     "readonly": false,
+     "disabled": false,
+     "min": null,
+     "max": null,
+     "step": null,
+     "maxlength": null,
+     "lookup": null,
+     "model_binding": null
+    }
+   ],
+   "actions": [
+    {
+     "label": {
+      "key": null,
+      "ar": "Cancel",
+      "en": "Cancel",
+      "fr": "Cancel",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "element": "button",
+     "variant": "neutral",
+     "href": null,
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "Search",
+      "en": "Search",
+      "fr": "Search",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "element": "a",
+     "variant": "primary",
+     "href": "utilities/search/horizontal.html",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "Cancel",
+      "en": "Cancel",
+      "fr": "Cancel",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "element": "button",
+     "variant": "neutral",
+     "href": null,
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "Save Changes",
+      "en": "Save Changes",
+      "fr": "Save Changes",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "element": "button",
+     "variant": "primary",
+     "href": null,
+     "id": null,
+     "opens_modal": null,
+     "submits": true,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "View All",
+      "en": "View All",
+      "fr": "View All",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "pages/user-profile/activity.html",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: message-text-2)",
+      "en": "(icon only: message-text-2)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "@Url.Action(",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: sms)",
+      "en": "(icon only: sms)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "@Url.Action(",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: exit-right)",
+      "en": "(icon only: exit-right)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "authentication/layouts/corporate/sign-in.html",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: calendar)",
+      "en": "(icon only: calendar)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "@Url.Action(",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: address-book)",
+      "en": "(icon only: address-book)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "account/overview.html",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: tablet-ok)",
+      "en": "(icon only: tablet-ok)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "apps/ecommerce/catalog/products.html",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: calendar-add)",
+      "en": "(icon only: calendar-add)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "apps/inbox/listing.html",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: cross)",
+      "en": "(icon only: cross)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "button",
+     "variant": "neutral",
+     "href": null,
+     "id": "kt_activities_close",
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "View",
+      "en": "View",
+      "fr": "View",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "apps/projects/project.html",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "View",
+      "en": "View",
+      "fr": "View",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "apps/projects/project.html",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "Explore",
+      "en": "Explore",
+      "fr": "Explore",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "element": "a",
+     "variant": "primary",
+     "href": "#",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "Explore",
+      "en": "Explore",
+      "fr": "Explore",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "element": "a",
+     "variant": "primary",
+     "href": "#",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "Explore",
+      "en": "Explore",
+      "fr": "Explore",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "element": "a",
+     "variant": "primary",
+     "href": "#",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "Proceed",
+      "en": "Proceed",
+      "fr": "Proceed",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "element": "a",
+     "variant": "primary",
+     "href": "#",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "View All Activities",
+      "en": "View All Activities",
+      "fr": "View All Activities",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "pages/user-profile/activity.html",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: dots-square)",
+      "en": "(icon only: dots-square)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "button",
+     "variant": "neutral",
+     "href": null,
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "Coming soon",
+      "en": "Coming soon",
+      "fr": "Coming soon",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "element": "button",
+     "variant": "neutral",
+     "href": null,
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "Coming soon",
+      "en": "Coming soon",
+      "fr": "Coming soon",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "element": "button",
+     "variant": "neutral",
+     "href": null,
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "Send",
+      "en": "Send",
+      "fr": "Send",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "element": "button",
+     "variant": "primary",
+     "href": null,
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: minus)",
+      "en": "(icon only: minus)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "#",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: plus)",
+      "en": "(icon only: plus)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "#",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: minus)",
+      "en": "(icon only: minus)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "#",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: plus)",
+      "en": "(icon only: plus)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "#",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: minus)",
+      "en": "(icon only: minus)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "#",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: plus)",
+      "en": "(icon only: plus)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "#",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: minus)",
+      "en": "(icon only: minus)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "#",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: plus)",
+      "en": "(icon only: plus)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "#",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: minus)",
+      "en": "(icon only: minus)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "#",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: plus)",
+      "en": "(icon only: plus)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "#",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: minus)",
+      "en": "(icon only: minus)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "#",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: plus)",
+      "en": "(icon only: plus)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "#",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: minus)",
+      "en": "(icon only: minus)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "#",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: plus)",
+      "en": "(icon only: plus)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "#",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "Pleace Order",
+      "en": "Pleace Order",
+      "fr": "Pleace Order",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "element": "a",
+     "variant": "primary",
+     "href": "#",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "Monthly",
+      "en": "Monthly",
+      "fr": "Monthly",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "element": "button",
+     "variant": "neutral",
+     "href": null,
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "Annual",
+      "en": "Annual",
+      "fr": "Annual",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "element": "button",
+     "variant": "neutral",
+     "href": null,
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "Contact Us",
+      "en": "Contact Us",
+      "fr": "Contact Us",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "element": "a",
+     "variant": "success",
+     "href": "#",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "Cancel",
+      "en": "Cancel",
+      "fr": "Cancel",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "element": "button",
+     "variant": "neutral",
+     "href": null,
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "Upgrade Plan Please wait...",
+      "en": "Upgrade Plan Please wait...",
+      "fr": "Upgrade Plan Please wait...",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "element": "button",
+     "variant": "primary",
+     "href": null,
+     "id": "kt_modal_upgrade_plan_btn",
+     "opens_modal": null,
+     "submits": true,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "Cancel",
+      "en": "Cancel",
+      "fr": "Cancel",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "element": "button",
+     "variant": "neutral",
+     "href": null,
+     "id": "kt_modal_users_search_reset",
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "Add Selected Users",
+      "en": "Add Selected Users",
+      "fr": "Add Selected Users",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "element": "button",
+     "variant": "primary",
+     "href": null,
+     "id": "kt_modal_users_search_submit",
+     "opens_modal": null,
+     "submits": true,
+     "confirm": false
+    }
+   ],
+   "columns": [],
+   "notices": [],
+   "lines": 4756
+  },
+  {
+   "id": "PARTIAL-Shared-LayoutBackend",
+   "folder": "Shared",
+   "name": "_LayoutBackend",
+   "source": "CrossBuy/Views/Shared/_LayoutBackend.cshtml",
+   "heading": {
+    "key": null,
+    "ar": "Browse Users",
+    "en": "Browse Users",
+    "fr": "Browse Users",
+    "ar_source": "literal-in-view",
+    "en_source": "literal-in-view"
+   },
+   "fields": [
+    {
+     "id": "search",
+     "control": "input",
+     "type": "text",
+     "label": null,
+     "placeholder": null,
+     "required": false,
+     "readonly": false,
+     "disabled": false,
+     "min": null,
+     "max": null,
+     "step": null,
+     "maxlength": null,
+     "lookup": null,
+     "model_binding": null
+    },
+    {
+     "id": "query",
+     "control": "input",
+     "type": "text",
+     "label": null,
+     "placeholder": {
+      "key": null,
+      "ar": "Contains the word",
+      "en": "Contains the word",
+      "fr": "Contains the word",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "required": false,
+     "readonly": false,
+     "disabled": false,
+     "min": null,
+     "max": null,
+     "step": null,
+     "maxlength": null,
+     "lookup": null,
+     "model_binding": null
+    },
+    {
+     "id": "type",
+     "control": "input",
+     "type": "radio",
+     "label": {
+      "key": null,
+      "ar": "All",
+      "en": "All",
+      "fr": "All",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "placeholder": null,
+     "required": false,
+     "readonly": false,
+     "disabled": false,
+     "min": null,
+     "max": null,
+     "step": null,
+     "maxlength": null,
+     "lookup": null,
+     "model_binding": null
+    },
+    {
+     "id": "assignedto",
+     "control": "input",
+     "type": "text",
+     "label": {
+      "key": null,
+      "ar": "Projects",
+      "en": "Projects",
+      "fr": "Projects",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "placeholder": {
+      "key": null,
+      "ar": "Assigned to",
+      "en": "Assigned to",
+      "fr": "Assigned to",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "required": false,
+     "readonly": false,
+     "disabled": false,
+     "min": null,
+     "max": null,
+     "step": null,
+     "maxlength": null,
+     "lookup": null,
+     "model_binding": null
+    },
+    {
+     "id": "collaborators",
+     "control": "input",
+     "type": "text",
+     "label": null,
+     "placeholder": {
+      "key": null,
+      "ar": "Collaborators",
+      "en": "Collaborators",
+      "fr": "Collaborators",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "required": false,
+     "readonly": false,
+     "disabled": false,
+     "min": null,
+     "max": null,
+     "step": null,
+     "maxlength": null,
+     "lookup": null,
+     "model_binding": null
+    },
+    {
+     "id": "attachment",
+     "control": "input",
+     "type": "radio",
+     "label": {
+      "key": null,
+      "ar": "Has attachment",
+      "en": "Has attachment",
+      "fr": "Has attachment",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "placeholder": null,
+     "required": false,
+     "readonly": false,
+     "disabled": false,
+     "min": null,
+     "max": null,
+     "step": null,
+     "maxlength": null,
+     "lookup": null,
+     "model_binding": null
+    },
+    {
+     "id": "timezone",
+     "control": "select",
+     "type": "select",
+     "label": {
+      "key": null,
+      "ar": "Any",
+      "en": "Any",
+      "fr": "Any",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "placeholder": {
+      "key": null,
+      "ar": "date_period",
+      "en": "date_period",
+      "fr": "date_period",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "required": false,
+     "readonly": false,
+     "disabled": false,
+     "min": null,
+     "max": null,
+     "step": null,
+     "maxlength": null,
+     "lookup": "select2",
+     "model_binding": null
+    },
+    {
+     "id": "date_number",
+     "control": "input",
+     "type": "number",
+     "label": null,
+     "placeholder": {
+      "key": null,
+      "ar": "Lenght",
+      "en": "Lenght",
+      "fr": "Lenght",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "required": false,
+     "readonly": false,
+     "disabled": false,
+     "min": null,
+     "max": null,
+     "step": null,
+     "maxlength": null,
+     "lookup": null,
+     "model_binding": null
+    },
+    {
+     "id": "date_typer",
+     "control": "select",
+     "type": "select",
+     "label": null,
+     "placeholder": {
+      "key": null,
+      "ar": "Period",
+      "en": "Period",
+      "fr": "Period",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "required": false,
+     "readonly": false,
+     "disabled": false,
+     "min": null,
+     "max": null,
+     "step": null,
+     "maxlength": null,
+     "lookup": "select2",
+     "model_binding": null
+    },
+    {
+     "id": "notifications",
+     "control": "input",
+     "type": "checkbox",
+     "label": {
+      "key": "Notifications",
+      "ar": "الإشعارات",
+      "en": "Notifications",
+      "fr": "Notifications",
+      "ar_source": "shared",
+      "en_source": "shared"
+     },
+     "placeholder": null,
+     "required": false,
+     "readonly": false,
+     "disabled": false,
+     "min": null,
+     "max": null,
+     "step": null,
+     "maxlength": null,
+     "lookup": null,
+     "model_binding": null
+    }
+   ],
+   "actions": [
+    {
+     "label": {
+      "key": null,
+      "ar": "Cancel",
+      "en": "Cancel",
+      "fr": "Cancel",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "element": "button",
+     "variant": "neutral",
+     "href": null,
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "Search",
+      "en": "Search",
+      "fr": "Search",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "element": "a",
+     "variant": "primary",
+     "href": "utilities/search/horizontal.html",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "Cancel",
+      "en": "Cancel",
+      "fr": "Cancel",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "element": "button",
+     "variant": "neutral",
+     "href": null,
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "Save Changes",
+      "en": "Save Changes",
+      "fr": "Save Changes",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "element": "button",
+     "variant": "primary",
+     "href": null,
+     "id": null,
+     "opens_modal": null,
+     "submits": true,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "View All",
+      "en": "View All",
+      "fr": "View All",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "pages/user-profile/activity.html",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: message-text-2)",
+      "en": "(icon only: message-text-2)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "@Url.Action(",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: sms)",
+      "en": "(icon only: sms)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "@Url.Action(",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: calendar)",
+      "en": "(icon only: calendar)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "@Url.Action(",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: address-book)",
+      "en": "(icon only: address-book)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "account/overview.html",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: tablet-ok)",
+      "en": "(icon only: tablet-ok)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "apps/ecommerce/catalog/products.html",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: calendar-add)",
+      "en": "(icon only: calendar-add)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "apps/inbox/listing.html",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    }
+   ],
+   "columns": [],
+   "notices": [],
+   "lines": 1736
+  },
+  {
+   "id": "PARTIAL-Shared-LayoutEmbed",
+   "folder": "Shared",
+   "name": "_LayoutEmbed",
+   "source": "CrossBuy/Views/Shared/_LayoutEmbed.cshtml",
+   "heading": null,
+   "fields": [],
+   "actions": [],
+   "columns": [],
+   "notices": [],
+   "lines": 41
+  },
+  {
+   "id": "PARTIAL-Shared-LayoutHyperPos",
+   "folder": "Shared",
+   "name": "_LayoutHyperPos",
+   "source": "CrossBuy/Views/Shared/_LayoutHyperPos.cshtml",
+   "heading": null,
+   "fields": [],
+   "actions": [],
+   "columns": [],
+   "notices": [],
+   "lines": 115
+  },
+  {
+   "id": "PARTIAL-Shared-LayoutInventory",
+   "folder": "Shared",
+   "name": "_LayoutInventory",
+   "source": "CrossBuy/Views/Shared/_LayoutInventory.cshtml",
+   "heading": null,
+   "fields": [
+    {
+     "id": "search",
+     "control": "input",
+     "type": "text",
+     "label": null,
+     "placeholder": null,
+     "required": false,
+     "readonly": false,
+     "disabled": false,
+     "min": null,
+     "max": null,
+     "step": null,
+     "maxlength": null,
+     "lookup": null,
+     "model_binding": null
+    },
+    {
+     "id": "query",
+     "control": "input",
+     "type": "text",
+     "label": null,
+     "placeholder": {
+      "key": null,
+      "ar": "Contains the word",
+      "en": "Contains the word",
+      "fr": "Contains the word",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "required": false,
+     "readonly": false,
+     "disabled": false,
+     "min": null,
+     "max": null,
+     "step": null,
+     "maxlength": null,
+     "lookup": null,
+     "model_binding": null
+    },
+    {
+     "id": "type",
+     "control": "input",
+     "type": "radio",
+     "label": {
+      "key": null,
+      "ar": "All",
+      "en": "All",
+      "fr": "All",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "placeholder": null,
+     "required": false,
+     "readonly": false,
+     "disabled": false,
+     "min": null,
+     "max": null,
+     "step": null,
+     "maxlength": null,
+     "lookup": null,
+     "model_binding": null
+    },
+    {
+     "id": "assignedto",
+     "control": "input",
+     "type": "text",
+     "label": {
+      "key": null,
+      "ar": "Projects",
+      "en": "Projects",
+      "fr": "Projects",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "placeholder": {
+      "key": null,
+      "ar": "Assigned to",
+      "en": "Assigned to",
+      "fr": "Assigned to",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "required": false,
+     "readonly": false,
+     "disabled": false,
+     "min": null,
+     "max": null,
+     "step": null,
+     "maxlength": null,
+     "lookup": null,
+     "model_binding": null
+    },
+    {
+     "id": "collaborators",
+     "control": "input",
+     "type": "text",
+     "label": null,
+     "placeholder": {
+      "key": null,
+      "ar": "Collaborators",
+      "en": "Collaborators",
+      "fr": "Collaborators",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "required": false,
+     "readonly": false,
+     "disabled": false,
+     "min": null,
+     "max": null,
+     "step": null,
+     "maxlength": null,
+     "lookup": null,
+     "model_binding": null
+    },
+    {
+     "id": "attachment",
+     "control": "input",
+     "type": "radio",
+     "label": {
+      "key": null,
+      "ar": "Has attachment",
+      "en": "Has attachment",
+      "fr": "Has attachment",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "placeholder": null,
+     "required": false,
+     "readonly": false,
+     "disabled": false,
+     "min": null,
+     "max": null,
+     "step": null,
+     "maxlength": null,
+     "lookup": null,
+     "model_binding": null
+    },
+    {
+     "id": "timezone",
+     "control": "select",
+     "type": "select",
+     "label": {
+      "key": null,
+      "ar": "Any",
+      "en": "Any",
+      "fr": "Any",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "placeholder": {
+      "key": null,
+      "ar": "date_period",
+      "en": "date_period",
+      "fr": "date_period",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "required": false,
+     "readonly": false,
+     "disabled": false,
+     "min": null,
+     "max": null,
+     "step": null,
+     "maxlength": null,
+     "lookup": "select2",
+     "model_binding": null
+    },
+    {
+     "id": "date_number",
+     "control": "input",
+     "type": "number",
+     "label": null,
+     "placeholder": {
+      "key": null,
+      "ar": "Lenght",
+      "en": "Lenght",
+      "fr": "Lenght",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "required": false,
+     "readonly": false,
+     "disabled": false,
+     "min": null,
+     "max": null,
+     "step": null,
+     "maxlength": null,
+     "lookup": null,
+     "model_binding": null
+    },
+    {
+     "id": "date_typer",
+     "control": "select",
+     "type": "select",
+     "label": null,
+     "placeholder": {
+      "key": null,
+      "ar": "Period",
+      "en": "Period",
+      "fr": "Period",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "required": false,
+     "readonly": false,
+     "disabled": false,
+     "min": null,
+     "max": null,
+     "step": null,
+     "maxlength": null,
+     "lookup": "select2",
+     "model_binding": null
+    }
+   ],
+   "actions": [
+    {
+     "label": {
+      "key": null,
+      "ar": "Cancel",
+      "en": "Cancel",
+      "fr": "Cancel",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "element": "button",
+     "variant": "neutral",
+     "href": null,
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "Cancel",
+      "en": "Cancel",
+      "fr": "Cancel",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "element": "button",
+     "variant": "neutral",
+     "href": null,
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "Save Changes",
+      "en": "Save Changes",
+      "fr": "Save Changes",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "element": "button",
+     "variant": "primary",
+     "href": null,
+     "id": null,
+     "opens_modal": null,
+     "submits": true,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: message-text-2)",
+      "en": "(icon only: message-text-2)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "@Url.Action(",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: sms)",
+      "en": "(icon only: sms)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "@Url.Action(",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": "Logout",
+      "ar": "خروج",
+      "en": "Sign Out",
+      "fr": "Se déconnecter",
+      "ar_source": "shared",
+      "en_source": "shared"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "../Account/Logout",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: calendar)",
+      "en": "(icon only: calendar)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "@Url.Action(",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    }
+   ],
+   "columns": [],
+   "notices": [],
+   "lines": 887
+  },
+  {
+   "id": "PARTIAL-Shared-LayoutManufacturing",
+   "folder": "Shared",
+   "name": "_LayoutManufacturing",
+   "source": "CrossBuy/Views/Shared/_LayoutManufacturing.cshtml",
+   "heading": {
+    "key": "Upgrade a Plan",
+    "ar": "ترقية الخطة",
+    "en": "Upgrade a Plan",
+    "fr": "Mettre à niveau un forfait",
+    "ar_source": "view",
+    "en_source": "view"
+   },
+   "fields": [
+    {
+     "id": "search",
+     "control": "input",
+     "type": "text",
+     "label": null,
+     "placeholder": null,
+     "required": false,
+     "readonly": false,
+     "disabled": false,
+     "min": null,
+     "max": null,
+     "step": null,
+     "maxlength": null,
+     "lookup": null,
+     "model_binding": null
+    },
+    {
+     "id": "query",
+     "control": "input",
+     "type": "text",
+     "label": null,
+     "placeholder": null,
+     "required": false,
+     "readonly": false,
+     "disabled": false,
+     "min": null,
+     "max": null,
+     "step": null,
+     "maxlength": null,
+     "lookup": null,
+     "model_binding": null
+    },
+    {
+     "id": "type",
+     "control": "input",
+     "type": "radio",
+     "label": {
+      "key": "All",
+      "ar": "الكل",
+      "en": "All",
+      "fr": "Tous",
+      "ar_source": "shared",
+      "en_source": "shared"
+     },
+     "placeholder": null,
+     "required": false,
+     "readonly": false,
+     "disabled": false,
+     "min": null,
+     "max": null,
+     "step": null,
+     "maxlength": null,
+     "lookup": null,
+     "model_binding": null
+    },
+    {
+     "id": "assignedto",
+     "control": "input",
+     "type": "text",
+     "label": {
+      "key": "Projects",
+      "ar": "المشاريع",
+      "en": "Projects",
+      "fr": "Projets",
+      "ar_source": "view",
+      "en_source": "view"
+     },
+     "placeholder": null,
+     "required": false,
+     "readonly": false,
+     "disabled": false,
+     "min": null,
+     "max": null,
+     "step": null,
+     "maxlength": null,
+     "lookup": null,
+     "model_binding": null
+    },
+    {
+     "id": "collaborators",
+     "control": "input",
+     "type": "text",
+     "label": null,
+     "placeholder": null,
+     "required": false,
+     "readonly": false,
+     "disabled": false,
+     "min": null,
+     "max": null,
+     "step": null,
+     "maxlength": null,
+     "lookup": null,
+     "model_binding": null
+    },
+    {
+     "id": "attachment",
+     "control": "input",
+     "type": "radio",
+     "label": {
+      "key": "Has attachment",
+      "ar": "يحتوي على مرفق",
+      "en": "Has attachment",
+      "fr": "A une pièce jointe",
+      "ar_source": "view",
+      "en_source": "view"
+     },
+     "placeholder": null,
+     "required": false,
+     "readonly": false,
+     "disabled": false,
+     "min": null,
+     "max": null,
+     "step": null,
+     "maxlength": null,
+     "lookup": null,
+     "model_binding": null
+    },
+    {
+     "id": "timezone",
+     "control": "select",
+     "type": "select",
+     "label": {
+      "key": "Any",
+      "ar": "أي",
+      "en": "Any",
+      "fr": "Tout",
+      "ar_source": "view",
+      "en_source": "view"
+     },
+     "placeholder": {
+      "key": null,
+      "ar": "date_period",
+      "en": "date_period",
+      "fr": "date_period",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "required": false,
+     "readonly": false,
+     "disabled": false,
+     "min": null,
+     "max": null,
+     "step": null,
+     "maxlength": null,
+     "lookup": "select2",
+     "model_binding": null
+    },
+    {
+     "id": "date_number",
+     "control": "input",
+     "type": "number",
+     "label": null,
+     "placeholder": null,
+     "required": false,
+     "readonly": false,
+     "disabled": false,
+     "min": null,
+     "max": null,
+     "step": null,
+     "maxlength": null,
+     "lookup": null,
+     "model_binding": null
+    },
+    {
+     "id": "date_typer",
+     "control": "select",
+     "type": "select",
+     "label": null,
+     "placeholder": {
+      "key": null,
+      "ar": "Period",
+      "en": "Period",
+      "fr": "Period",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "required": false,
+     "readonly": false,
+     "disabled": false,
+     "min": null,
+     "max": null,
+     "step": null,
+     "maxlength": null,
+     "lookup": "select2",
+     "model_binding": null
+    },
+    {
+     "id": "notifications",
+     "control": "input",
+     "type": "checkbox",
+     "label": {
+      "key": "Notifications",
+      "ar": "الإشعارات",
+      "en": "Notifications",
+      "fr": "Notifications",
+      "ar_source": "shared",
+      "en_source": "shared"
+     },
+     "placeholder": null,
+     "required": false,
+     "readonly": false,
+     "disabled": false,
+     "min": null,
+     "max": null,
+     "step": null,
+     "maxlength": null,
+     "lookup": null,
+     "model_binding": null
+    },
+    {
+     "id": "plan",
+     "control": "input",
+     "type": "radio",
+     "label": null,
+     "placeholder": null,
+     "required": false,
+     "readonly": false,
+     "disabled": false,
+     "min": null,
+     "max": null,
+     "step": null,
+     "maxlength": null,
+     "lookup": null,
+     "model_binding": null
+    },
+    {
+     "id": "users",
+     "control": "input",
+     "type": "checkbox",
+     "label": null,
+     "placeholder": null,
+     "required": false,
+     "readonly": false,
+     "disabled": false,
+     "min": null,
+     "max": null,
+     "step": null,
+     "maxlength": null,
+     "lookup": null,
+     "model_binding": null
+    }
+   ],
+   "actions": [
+    {
+     "label": {
+      "key": "Cancel",
+      "ar": "إلغــــــــــــــــــاء",
+      "en": "Cancel",
+      "fr": "Annuler",
+      "ar_source": "shared",
+      "en_source": "shared"
+     },
+     "element": "button",
+     "variant": "neutral",
+     "href": null,
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": "Search",
+      "ar": "بحث ....",
+      "en": "Search .....",
+      "fr": "Rechercher .....",
+      "ar_source": "shared",
+      "en_source": "shared"
+     },
+     "element": "a",
+     "variant": "primary",
+     "href": "utilities/search/horizontal.html",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": "Cancel",
+      "ar": "إلغــــــــــــــــــاء",
+      "en": "Cancel",
+      "fr": "Annuler",
+      "ar_source": "shared",
+      "en_source": "shared"
+     },
+     "element": "button",
+     "variant": "neutral",
+     "href": null,
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": "Save Changes",
+      "ar": "حفظ التغييرات",
+      "en": "Save Changes",
+      "fr": "Enregistrer les modifications",
+      "ar_source": "view",
+      "en_source": "view"
+     },
+     "element": "button",
+     "variant": "primary",
+     "href": null,
+     "id": null,
+     "opens_modal": null,
+     "submits": true,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": "View All",
+      "ar": "عرض الكل",
+      "en": "View All",
+      "fr": "Tout afficher",
+      "ar_source": "view",
+      "en_source": "view"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "pages/user-profile/activity.html",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: message-text-2)",
+      "en": "(icon only: message-text-2)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "@Url.Action(",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: sms)",
+      "en": "(icon only: sms)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "@Url.Action(",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: exit-right)",
+      "en": "(icon only: exit-right)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "authentication/layouts/corporate/sign-in.html",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: calendar)",
+      "en": "(icon only: calendar)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "@Url.Action(",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: address-book)",
+      "en": "(icon only: address-book)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "account/overview.html",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: tablet-ok)",
+      "en": "(icon only: tablet-ok)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "apps/ecommerce/catalog/products.html",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: calendar-add)",
+      "en": "(icon only: calendar-add)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "apps/inbox/listing.html",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: cross)",
+      "en": "(icon only: cross)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "button",
+     "variant": "neutral",
+     "href": null,
+     "id": "kt_activities_close",
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": "View",
+      "ar": "عرض",
+      "en": "View",
+      "fr": "Voir",
+      "ar_source": "shared",
+      "en_source": "shared"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "apps/projects/project.html",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": "View",
+      "ar": "عرض",
+      "en": "View",
+      "fr": "Voir",
+      "ar_source": "shared",
+      "en_source": "shared"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "apps/projects/project.html",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "Explore",
+      "en": "Explore",
+      "fr": "Explore",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "element": "a",
+     "variant": "primary",
+     "href": "#",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "Explore",
+      "en": "Explore",
+      "fr": "Explore",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "element": "a",
+     "variant": "primary",
+     "href": "#",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "Explore",
+      "en": "Explore",
+      "fr": "Explore",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "element": "a",
+     "variant": "primary",
+     "href": "#",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "Proceed",
+      "en": "Proceed",
+      "fr": "Proceed",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "element": "a",
+     "variant": "primary",
+     "href": "#",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": "View All Activities",
+      "ar": "عرض كل الأنشطة",
+      "en": "View All Activities",
+      "fr": "Afficher toutes les activités",
+      "ar_source": "view",
+      "en_source": "view"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "pages/user-profile/activity.html",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: dots-square)",
+      "en": "(icon only: dots-square)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "button",
+     "variant": "neutral",
+     "href": null,
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: paper-clip)",
+      "en": "(icon only: paper-clip)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "button",
+     "variant": "neutral",
+     "href": null,
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: cloud-add)",
+      "en": "(icon only: cloud-add)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "button",
+     "variant": "neutral",
+     "href": null,
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": "Send",
+      "ar": "إرسال",
+      "en": "Send",
+      "fr": "Envoyer",
+      "ar_source": "view",
+      "en_source": "view"
+     },
+     "element": "button",
+     "variant": "primary",
+     "href": null,
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: minus)",
+      "en": "(icon only: minus)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "#",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: plus)",
+      "en": "(icon only: plus)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "#",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: minus)",
+      "en": "(icon only: minus)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "#",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: plus)",
+      "en": "(icon only: plus)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "#",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: minus)",
+      "en": "(icon only: minus)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "#",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: plus)",
+      "en": "(icon only: plus)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "#",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: minus)",
+      "en": "(icon only: minus)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "#",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: plus)",
+      "en": "(icon only: plus)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "#",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: minus)",
+      "en": "(icon only: minus)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "#",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: plus)",
+      "en": "(icon only: plus)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "#",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: minus)",
+      "en": "(icon only: minus)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "#",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: plus)",
+      "en": "(icon only: plus)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "#",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: minus)",
+      "en": "(icon only: minus)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "#",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: plus)",
+      "en": "(icon only: plus)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "#",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": "Pleace Order",
+      "ar": "إتمام الطلب",
+      "en": "Pleace Order",
+      "fr": "Passer la commande",
+      "ar_source": "view",
+      "en_source": "view"
+     },
+     "element": "a",
+     "variant": "primary",
+     "href": "#",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": "Monthly",
+      "ar": "شهري",
+      "en": "Monthly",
+      "fr": "Mensuel",
+      "ar_source": "view",
+      "en_source": "view"
+     },
+     "element": "button",
+     "variant": "neutral",
+     "href": null,
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": "Annual",
+      "ar": "سنوي",
+      "en": "Annual",
+      "fr": "Annuel",
+      "ar_source": "view",
+      "en_source": "view"
+     },
+     "element": "button",
+     "variant": "neutral",
+     "href": null,
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": "Contact Us",
+      "ar": "اتصل بنا",
+      "en": "Contact Us",
+      "fr": "Contactez-nous",
+      "ar_source": "view",
+      "en_source": "view"
+     },
+     "element": "a",
+     "variant": "success",
+     "href": "#",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": "Cancel",
+      "ar": "إلغــــــــــــــــــاء",
+      "en": "Cancel",
+      "fr": "Annuler",
+      "ar_source": "shared",
+      "en_source": "shared"
+     },
+     "element": "button",
+     "variant": "neutral",
+     "href": null,
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": "Upgrade Plan",
+      "ar": "ترقية الخطة",
+      "en": "Upgrade Plan",
+      "fr": "Mettre à niveau le forfait",
+      "ar_source": "view",
+      "en_source": "view"
+     },
+     "element": "button",
+     "variant": "primary",
+     "href": null,
+     "id": "kt_modal_upgrade_plan_btn",
+     "opens_modal": null,
+     "submits": true,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": "Cancel",
+      "ar": "إلغــــــــــــــــــاء",
+      "en": "Cancel",
+      "fr": "Annuler",
+      "ar_source": "shared",
+      "en_source": "shared"
+     },
+     "element": "button",
+     "variant": "neutral",
+     "href": null,
+     "id": "kt_modal_users_search_reset",
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": "Add Selected Users",
+      "ar": "إضافة المستخدمين المحددين",
+      "en": "Add Selected Users",
+      "fr": "Ajouter les utilisateurs sélectionnés",
+      "ar_source": "view",
+      "en_source": "view"
+     },
+     "element": "button",
+     "variant": "primary",
+     "href": null,
+     "id": "kt_modal_users_search_submit",
+     "opens_modal": null,
+     "submits": true,
+     "confirm": false
+    }
+   ],
+   "columns": [],
+   "notices": [],
+   "lines": 4767
+  },
+  {
+   "id": "PARTIAL-Shared-LayoutPeople",
+   "folder": "Shared",
+   "name": "_LayoutPeople",
+   "source": "CrossBuy/Views/Shared/_LayoutPeople.cshtml",
+   "heading": null,
+   "fields": [],
+   "actions": [
+    {
+     "label": {
+      "key": "Switch",
+      "ar": "تبديل",
+      "en": "Switch",
+      "fr": "Changer",
+      "ar_source": "view",
+      "en_source": "view"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "@Url.Action(",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    }
+   ],
+   "columns": [],
+   "notices": [],
+   "lines": 394
+  },
+  {
+   "id": "PARTIAL-Shared-LayoutPos",
+   "folder": "Shared",
+   "name": "_LayoutPos",
+   "source": "CrossBuy/Views/Shared/_LayoutPos.cshtml",
+   "heading": null,
+   "fields": [],
+   "actions": [],
+   "columns": [],
+   "notices": [],
+   "lines": 47
+  },
+  {
+   "id": "PARTIAL-Shared-LayoutPosApp",
+   "folder": "Shared",
+   "name": "_LayoutPosApp",
+   "source": "CrossBuy/Views/Shared/_LayoutPosApp.cshtml",
+   "heading": null,
+   "fields": [],
+   "actions": [],
+   "columns": [],
+   "notices": [],
+   "lines": 143
+  },
+  {
+   "id": "PARTIAL-Shared-LayoutWorkspace",
+   "folder": "Shared",
+   "name": "_LayoutWorkspace",
+   "source": "CrossBuy/Views/Shared/_LayoutWorkspace.cshtml",
+   "heading": null,
+   "fields": [
+    {
+     "id": "cbw-global-search",
+     "control": "input",
+     "type": "search",
+     "label": {
+      "key": null,
+      "ar": "بحث",
+      "en": "Search",
+      "fr": "Search",
+      "ar_source": "inline-ternary-in-view",
+      "en_source": "inline-ternary-in-view"
+     },
+     "placeholder": null,
+     "required": false,
+     "readonly": false,
+     "disabled": false,
+     "min": null,
+     "max": null,
+     "step": null,
+     "maxlength": null,
+     "lookup": null,
+     "model_binding": null
+    }
+   ],
+   "actions": [],
+   "columns": [],
+   "notices": [],
+   "lines": 213
+  },
+  {
+   "id": "PARTIAL-Shared-MainMenu",
+   "folder": "Shared",
+   "name": "_MainMenu",
+   "source": "CrossBuy/Views/Shared/_MainMenu.cshtml",
+   "heading": null,
+   "fields": [
+    {
+     "id": "mainMenuSearch",
+     "control": "input",
+     "type": "text",
+     "label": null,
+     "placeholder": null,
+     "required": false,
+     "readonly": false,
+     "disabled": false,
+     "min": null,
+     "max": null,
+     "step": null,
+     "maxlength": null,
+     "lookup": null,
+     "model_binding": null
+    }
+   ],
+   "actions": [],
+   "columns": [],
+   "notices": [],
+   "lines": 250
+  },
+  {
+   "id": "PARTIAL-Shared-NotificationBell",
+   "folder": "Shared",
+   "name": "_NotificationBell",
+   "source": "CrossBuy/Views/Shared/_NotificationBell.cshtml",
+   "heading": null,
+   "fields": [],
+   "actions": [
+    {
+     "label": {
+      "key": "Mark all read",
+      "ar": "تعليم الكل كمقروء",
+      "en": "Mark all read",
+      "fr": "Mark all read",
+      "ar_source": "view",
+      "en_source": "fallback-to-key"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "#",
+     "id": "cbnb_readall",
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    }
+   ],
+   "columns": [],
+   "notices": [],
+   "lines": 440
+  },
+  {
+   "id": "PARTIAL-Shared-QuickAdd",
+   "folder": "Shared",
+   "name": "_QuickAdd",
+   "source": "CrossBuy/Views/Shared/_QuickAdd.cshtml",
+   "heading": null,
+   "fields": [],
+   "actions": [
+    {
+     "label": {
+      "key": "Cancel",
+      "ar": "إلغــــــــــــــــــاء",
+      "en": "Cancel",
+      "fr": "Annuler",
+      "ar_source": "shared",
+      "en_source": "shared"
+     },
+     "element": "button",
+     "variant": "neutral",
+     "href": null,
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": "Save",
+      "ar": "حفـــــظ",
+      "en": "Save",
+      "fr": "Enregistrer",
+      "ar_source": "shared",
+      "en_source": "shared"
+     },
+     "element": "button",
+     "variant": "primary",
+     "href": null,
+     "id": "cbqaSave",
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    }
+   ],
+   "columns": [],
+   "notices": [],
+   "lines": 393
+  },
+  {
+   "id": "PARTIAL-Shared-ReportPreviewModal",
+   "folder": "Shared",
+   "name": "_ReportPreviewModal",
+   "source": "CrossBuy/Views/Shared/_ReportPreviewModal.cshtml",
+   "heading": null,
+   "fields": [],
+   "actions": [
+    {
+     "label": {
+      "key": "Cancel",
+      "ar": "إلغــــــــــــــــــاء",
+      "en": "Cancel",
+      "fr": "Annuler",
+      "ar_source": "shared",
+      "en_source": "shared"
+     },
+     "element": "button",
+     "variant": "neutral",
+     "href": null,
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": "Open in a new tab",
+      "ar": "فتح في تاب جديد",
+      "en": "Open in a new tab",
+      "fr": "Ouvrir dans un nouvel onglet",
+      "ar_source": "view",
+      "en_source": "view"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "#",
+     "id": "rpvNewTab",
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": "Download",
+      "ar": "تنزيل",
+      "en": "Download",
+      "fr": "Télécharger",
+      "ar_source": "view",
+      "en_source": "view"
+     },
+     "element": "a",
+     "variant": "primary",
+     "href": "#",
+     "id": "rpvDownload",
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    }
+   ],
+   "columns": [],
+   "notices": [],
+   "lines": 164
+  },
+  {
+   "id": "PARTIAL-Shared-ReportPrintMenu",
+   "folder": "Shared",
+   "name": "_ReportPrintMenu",
+   "source": "CrossBuy/Views/Shared/_ReportPrintMenu.cshtml",
+   "heading": null,
+   "fields": [],
+   "actions": [
+    {
+     "label": {
+      "key": "Print",
+      "ar": "طباعة",
+      "en": "Print",
+      "fr": "Imprimer",
+      "ar_source": "view",
+      "en_source": "view"
+     },
+     "element": "button",
+     "variant": "neutral",
+     "href": null,
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: pencil)",
+      "en": "(icon only: pencil)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "@Url.Action(",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    }
+   ],
+   "columns": [],
+   "notices": [],
+   "lines": 199
+  },
+  {
+   "id": "PARTIAL-Shared-ValidationScriptsPartial",
+   "folder": "Shared",
+   "name": "_ValidationScriptsPartial",
+   "source": "CrossBuy/Views/Shared/_ValidationScriptsPartial.cshtml",
+   "heading": null,
+   "fields": [],
+   "actions": [],
+   "columns": [],
+   "notices": [],
+   "lines": 3
+  },
+  {
+   "id": "PARTIAL-Shared-ViewImports",
+   "folder": "Shared",
+   "name": "_ViewImports",
+   "source": "CrossBuy/Views/_ViewImports.cshtml",
+   "heading": null,
+   "fields": [],
+   "actions": [],
+   "columns": [],
+   "notices": [],
+   "lines": 8
+  },
+  {
+   "id": "PARTIAL-Shared-ViewStart",
+   "folder": "Shared",
+   "name": "_ViewStart",
+   "source": "CrossBuy/Views/_ViewStart.cshtml",
+   "heading": null,
+   "fields": [],
+   "actions": [],
+   "columns": [],
+   "notices": [],
+   "lines": 4
+  },
+  {
+   "id": "PARTIAL-Shared-WorkspacePanelState",
+   "folder": "Shared",
+   "name": "_WorkspacePanelState",
+   "source": "CrossBuy/Views/Shared/_WorkspacePanelState.cshtml",
+   "heading": null,
+   "fields": [],
+   "actions": [],
+   "columns": [],
+   "notices": [
+    {
+     "kind": "info",
+     "message": {
+      "key": null,
+      "ar": "غير متاح في هذه البيئة",
+      "en": "Not available in this environment",
+      "fr": "Not available in this environment",
+      "ar_source": "inline-ternary-in-view",
+      "en_source": "inline-ternary-in-view"
+     }
+    },
+    {
+     "kind": "info",
+     "message": {
+      "key": null,
+      "ar": "لا تملك صلاحية عرض هذا",
+      "en": "You don't have access to this",
+      "fr": "You don't have access to this",
+      "ar_source": "inline-ternary-in-view",
+      "en_source": "inline-ternary-in-view"
+     }
+    },
+    {
+     "kind": "warning",
+     "message": {
+      "key": null,
+      "ar": "تعذّر التحميل مؤقتًا",
+      "en": "Couldn't load this just now",
+      "fr": "Couldn't load this just now",
+      "ar_source": "inline-ternary-in-view",
+      "en_source": "inline-ternary-in-view"
+     }
+    },
+    {
+     "kind": "info",
+     "message": {
+      "key": null,
+      "ar": "قائمة غير مكتملة",
+      "en": "This list is incomplete",
+      "fr": "This list is incomplete",
+      "ar_source": "inline-ternary-in-view",
+      "en_source": "inline-ternary-in-view"
+     }
+    }
+   ],
+   "lines": 80
+  },
+  {
+   "id": "PARTIAL-Shared-mainLayout",
+   "folder": "Shared",
+   "name": "_mainLayout",
+   "source": "CrossBuy/Views/Shared/_mainLayout.cshtml",
+   "heading": null,
+   "fields": [],
+   "actions": [
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: ؟)",
+      "en": "(icon only: ?)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "button",
+     "variant": "neutral",
+     "href": null,
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "Shop Now",
+      "en": "Shop Now",
+      "fr": "Shop Now",
+      "ar_source": "literal-in-view",
+      "en_source": "literal-in-view"
+     },
+     "element": "a",
+     "variant": "neutral",
+     "href": "shop-grid-right.html",
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": null,
+      "ar": "(أيقونة: ؟)",
+      "en": "(icon only: ?)",
+      "fr": "(icone)",
+      "ar_source": "icon-only",
+      "en_source": "icon-only"
+     },
+     "element": "button",
+     "variant": "neutral",
+     "href": null,
+     "id": null,
+     "opens_modal": null,
+     "submits": false,
+     "confirm": false
+    },
+    {
+     "label": {
+      "key": "Subscribe",
+      "ar": "اشترك",
+      "en": "Subscribe",
+      "fr": "S'abonner",
+      "ar_source": "view",
+      "en_source": "view"
+     },
+     "element": "button",
+     "variant": "neutral",
+     "href": null,
+     "id": null,
+     "opens_modal": null,
+     "submits": true,
+     "confirm": false
+    }
+   ],
+   "columns": [],
+   "notices": [],
+   "lines": 1182
+  },
+  {
+   "id": "PARTIAL-Tasks-TaskActivity",
+   "folder": "Tasks",
+   "name": "_TaskActivity",
+   "source": "CrossBuy/Views/Tasks/_TaskActivity.cshtml",
+   "heading": null,
+   "fields": [],
+   "actions": [],
+   "columns": [],
+   "notices": [],
+   "lines": 175
+  }
+ ]
+}

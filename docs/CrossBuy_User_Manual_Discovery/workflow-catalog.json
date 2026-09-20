@@ -1,0 +1,1666 @@
+{
+ "generated": "2026-09-20",
+ "workflow_count": 18,
+ "step_count": 93,
+ "validation": {
+  "steps_with_a_known_screen": 93,
+  "steps_with_an_unknown_route": 0,
+  "unknown_routes": []
+ },
+ "evidence_key": {
+  "runtime-viewed (screen renders); action NOT performed": "runtime-viewed (screen renders); action NOT performed",
+  "repository-verified": "repository-verified",
+  "not verified": "not verified",
+  "behaviour tested safely": "a non-mutating behaviour was exercised"
+ },
+ "global_caveat": "No workflow below was executed. Screens were opened and read; no document was created, posted, approved, cancelled or deleted, because doing so would change data. Steps marked \"not verified\" describe what the code and the screen text say will happen, not what was observed to happen.",
+ "workflows": [
+  {
+   "id": "WF-SETUP-01",
+   "module": "Service / Admin",
+   "title_en": "Create the company and its branches",
+   "title_ar": "إنشاء الشركة والفروع",
+   "purpose_en": "Establish the tenant every other record belongs to.",
+   "responsible": "Administrator (identity role)",
+   "prerequisites": [
+    "A signed-in administrator.",
+    "No prerequisite record — this is the first thing on a new install."
+   ],
+   "steps": [
+    {
+     "n": 1,
+     "route": "/Service/CompaniesList",
+     "screen_id": "SCR-SERVICE-CompaniesList",
+     "screen_exists": true,
+     "screen_title_en": "CompaniesList",
+     "screen_title_ar": "قائمة الشركات",
+     "action": "Open the companies list",
+     "expected_result": "The existing companies are listed.",
+     "status_after": null,
+     "evidence": "runtime-viewed (screen renders); action NOT performed",
+     "note": null
+    },
+    {
+     "n": 2,
+     "route": "/Service/CompaniesList",
+     "screen_id": "SCR-SERVICE-CompaniesList",
+     "screen_exists": true,
+     "screen_title_en": "CompaniesList",
+     "screen_title_ar": "قائمة الشركات",
+     "action": "Add a company",
+     "expected_result": "The company is created and becomes selectable elsewhere.",
+     "status_after": "Active",
+     "evidence": "not verified",
+     "note": null
+    },
+    {
+     "n": 3,
+     "route": "/Service/BranchesList",
+     "screen_id": "SCR-SERVICE-BranchesList",
+     "screen_exists": true,
+     "screen_title_en": "List Of Branches",
+     "screen_title_ar": "قائمة الأفرع",
+     "action": "Add a branch under the company",
+     "expected_result": "The branch is available for stock, POS and role scoping.",
+     "status_after": "Active",
+     "evidence": "not verified",
+     "note": null
+    }
+   ],
+   "exceptions": [
+    "A company cannot be deleted once documents reference it — NOT VERIFIED."
+   ],
+   "related": [
+    "/Admin/AdministrativeStructure",
+    "/Brand/Brands"
+   ],
+   "example": "Company \"Gulf Trading Co.\" with branches \"Cairo\" and \"Alexandria\".",
+   "evidence_level": "screens viewed; creation NOT performed"
+  },
+  {
+   "id": "WF-SETUP-02",
+   "module": "Admin",
+   "title_en": "Grant module roles so people can work",
+   "title_ar": "منح صلاحيات الوحدات",
+   "purpose_en": "Open the modules to named employees. Until this is done, some actions refuse even for an administrator.",
+   "responsible": "Administrator",
+   "prerequisites": [
+    "At least one company and one employee record."
+   ],
+   "steps": [
+    {
+     "n": 1,
+     "route": "/Inventory/InventoryRoles",
+     "screen_id": "SCR-INVENTORY-InventoryRoles",
+     "screen_exists": true,
+     "screen_title_en": "Inventory roles",
+     "screen_title_ar": "أدوار وصلاحيات المخزون",
+     "action": "Assign InventoryManager / PurchasingOfficer / WarehouseKeeper / Auditor",
+     "expected_result": "The employee gains the inventory actions read | doc | purchase | manage.",
+     "status_after": null,
+     "evidence": "runtime-viewed (screen renders); action NOT performed",
+     "note": null
+    },
+    {
+     "n": 2,
+     "route": "/Accounting/AccountingRoles",
+     "screen_id": "SCR-ACCOUNTING-AccountingRoles",
+     "screen_exists": true,
+     "screen_title_en": "Accounting roles",
+     "screen_title_ar": "أدوار وصلاحيات المحاسبة",
+     "action": "Assign ChiefAccountant / Auditor",
+     "expected_result": "The employee gains read | post | pay | manage | currency-override.",
+     "status_after": null,
+     "evidence": "runtime-viewed (screen renders); action NOT performed",
+     "note": null
+    },
+    {
+     "n": 3,
+     "route": "/Crm/CrmRoles",
+     "screen_id": "SCR-CRM-CrmRoles",
+     "screen_exists": true,
+     "screen_title_en": "CRM Roles",
+     "screen_title_ar": "صلاحيات CRM",
+     "action": "Assign SalesManager / SalesRep / CrmViewer",
+     "expected_result": "The employee gains read | edit | manage in CRM.",
+     "status_after": null,
+     "evidence": "runtime-viewed (screen renders); action NOT performed",
+     "note": null
+    },
+    {
+     "n": 4,
+     "route": "/Pos/CashierRoles",
+     "screen_id": "SCR-POS-CashierRoles",
+     "screen_exists": true,
+     "screen_title_en": "Cashier roles",
+     "screen_title_ar": "أدوار الكاشير",
+     "action": "Assign cashier roles per branch",
+     "expected_result": "The employee can sign in at a terminal.",
+     "status_after": null,
+     "evidence": "runtime-viewed (screen renders); action NOT performed",
+     "note": "The POS role vocabulary is NOT declared in source — read the values off this screen."
+    }
+   ],
+   "exceptions": [
+    "HR employee-manage is in NeverBootstrapOpen: it refuses until granted, even with no roles configured at all. PlatformRoleAssignments held 0 rows on the development install — repository-verified and runtime-viewed."
+   ],
+   "related": [
+    "/Admin/EmployeesList"
+   ],
+   "example": "Grant \"WarehouseKeeper\" for the Cairo branch.",
+   "evidence_level": "screens viewed; granting NOT performed"
+  },
+  {
+   "id": "WF-ACCESS-01",
+   "module": "Account",
+   "title_en": "Sign in, choose a portal, switch language",
+   "title_ar": "تسجيل الدخول واختيار البوابة وتغيير اللغة",
+   "purpose_en": "Everything starts here. This is the one workflow fully tested safely.",
+   "responsible": "Every user",
+   "prerequisites": [
+    "An account. The product also offers Microsoft and Google sign-in when configured — both were present on the development install."
+   ],
+   "steps": [
+    {
+     "n": 1,
+     "route": "/Account/Login",
+     "screen_id": "SCR-ACCOUNT-Login",
+     "screen_exists": true,
+     "screen_title_en": "One Platform.",
+     "screen_title_ar": "منصّة واحدة.",
+     "action": "Enter the user name and password, press Sign In",
+     "expected_result": "The browser lands on /Portal/Choose, not on a dashboard.",
+     "status_after": null,
+     "evidence": "behaviour tested safely",
+     "note": null
+    },
+    {
+     "n": 2,
+     "route": "/Portal/Choose",
+     "screen_id": "SCR-PORTAL-Choose",
+     "screen_exists": true,
+     "screen_title_en": "Welcome,",
+     "screen_title_ar": "أهلاً بك،",
+     "action": "Pick a portal",
+     "expected_result": "The chosen module opens with its own sidebar.",
+     "status_after": null,
+     "evidence": "runtime-viewed (screen renders); action NOT performed",
+     "note": null
+    },
+    {
+     "n": 3,
+     "route": "/Account/Login",
+     "screen_id": "SCR-ACCOUNT-Login",
+     "screen_exists": true,
+     "screen_title_en": "One Platform.",
+     "screen_title_ar": "منصّة واحدة.",
+     "action": "Choose ar / en / fr from the switcher in the layout header",
+     "expected_result": "The whole shell re-renders. Arabic sets <html lang=\"ar\" dir=\"rtl\"> and the RTL stylesheet bundle is served; Cairo is confirmed loaded.",
+     "status_after": null,
+     "evidence": "behaviour tested safely",
+     "note": "The switcher posts to /Account/SetLanguage, which is a REDIRECT ACTION with no view of its own - it is not a screen and has no screenshot."
+    },
+    {
+     "n": 4,
+     "route": "/Account/Profile",
+     "screen_id": "SCR-ACCOUNT-Profile",
+     "screen_exists": true,
+     "screen_title_en": "My Profile",
+     "screen_title_ar": "الملف الشخصي",
+     "action": "Review the profile",
+     "expected_result": "Personal details and preferences.",
+     "status_after": null,
+     "evidence": "runtime-viewed (screen renders); action NOT performed",
+     "note": null
+    }
+   ],
+   "exceptions": [
+    "A refused route answers /Account/AccessDenied with HTTP 403 — captured.",
+    "The default culture for a new session is English, even though Arabic is the most completely translated language."
+   ],
+   "related": [
+    "/Account/Settings",
+    "/Account/Subscription",
+    "/Account/Statements"
+   ],
+   "example": "admin / (development password, not reproduced).",
+   "evidence_level": "behaviour tested safely"
+  },
+  {
+   "id": "WF-P2P-01",
+   "module": "Inventory + Accounting",
+   "title_en": "Procure to pay",
+   "title_ar": "من الشراء إلى السداد",
+   "purpose_en": "Order goods, receive them into stock, record the supplier bill, pay it.",
+   "responsible": "PurchasingOfficer, WarehouseKeeper, ChiefAccountant",
+   "prerequisites": [
+    "At least one item, one unit, one category and one warehouse.",
+    "A supplier record.",
+    "An open fiscal period for the posting date."
+   ],
+   "steps": [
+    {
+     "n": 1,
+     "route": "/Inventory/Planning",
+     "screen_id": "SCR-INVENTORY-Planning",
+     "screen_exists": true,
+     "screen_title_en": "Reorder planning",
+     "screen_title_ar": "تخطيط النواقص",
+     "action": "Review replenishment suggestions",
+     "expected_result": "Items below their reorder point are listed. A recommendation only — nothing is ordered.",
+     "status_after": null,
+     "evidence": "runtime-viewed (screen renders); action NOT performed",
+     "note": "The screen states this itself: \"A recommendation only — nothing is ordered, transferred or manufactured.\""
+    },
+    {
+     "n": 2,
+     "route": "/Inventory/NewPurchaseOrder",
+     "screen_id": "SCR-INVENTORY-NewPurchaseOrder",
+     "screen_exists": true,
+     "screen_title_en": "New Purchase Order",
+     "screen_title_ar": "أمر شراء جديد",
+     "action": "Create the purchase order",
+     "expected_result": "A commitment is recorded. No stock movement and no ledger entry yet.",
+     "status_after": "Draft/Open",
+     "evidence": "not verified",
+     "note": null
+    },
+    {
+     "n": 3,
+     "route": "/Inventory/PurchaseOrders",
+     "screen_id": "SCR-INVENTORY-PurchaseOrders",
+     "screen_exists": true,
+     "screen_title_en": "Purchase orders",
+     "screen_title_ar": "أوامر الشراء",
+     "action": "Find and open the order",
+     "expected_result": "The order list, filterable.",
+     "status_after": null,
+     "evidence": "runtime-viewed (screen renders); action NOT performed",
+     "note": null
+    },
+    {
+     "n": 4,
+     "route": "/Inventory/NewGoodsReceipt",
+     "screen_id": "SCR-INVENTORY-NewGoodsReceipt",
+     "screen_exists": true,
+     "screen_title_en": "New Goods Receipt",
+     "screen_title_ar": "إذن استلام جديد",
+     "action": "Receive against the order",
+     "expected_result": "Stock increases. StockService is the authority for the movement.",
+     "status_after": "Received",
+     "evidence": "not verified",
+     "note": null
+    },
+    {
+     "n": 5,
+     "route": "/Inventory/LandedCosts",
+     "screen_id": "SCR-INVENTORY-LandedCosts",
+     "screen_exists": true,
+     "screen_title_en": "Landed costs",
+     "screen_title_ar": "التكاليف الإضافية",
+     "action": "Add freight, duty or handling",
+     "expected_result": "Item cost is adjusted after receipt. Margin figures before this step are provisional.",
+     "status_after": null,
+     "evidence": "not verified",
+     "note": null
+    },
+    {
+     "n": 6,
+     "route": "/Accounting/NewPurchaseInvoice",
+     "screen_id": "SCR-ACCOUNTING-NewPurchaseInvoice",
+     "screen_exists": true,
+     "screen_title_en": "Edit invoice",
+     "screen_title_ar": "تعديل الفاتورة",
+     "action": "Record the supplier invoice",
+     "expected_result": "Accounts payable and input VAT are raised; a journal entry is posted.",
+     "status_after": "Posted",
+     "evidence": "not verified",
+     "note": null
+    },
+    {
+     "n": 7,
+     "route": "/Accounting/Payments",
+     "screen_id": "SCR-ACCOUNTING-Payments",
+     "screen_exists": true,
+     "screen_title_en": "Payments",
+     "screen_title_ar": "سندات الدفع",
+     "action": "Create a payment and allocate it",
+     "expected_result": "Payable is cleared. Events Payment.Created then Payment.Allocated are emitted.",
+     "status_after": "Paid",
+     "evidence": "not verified",
+     "note": null
+    }
+   ],
+   "exceptions": [
+    "Purchase return (debit note) at /Accounting/NewPurchaseReturn. The screen states: \"Issues goods out, reverses the vendor payable & input VAT.\"",
+    "Goods received but not invoiced is a real position; the chart of accounts carries an account for it (بضاعة وردت ولم تُفوتَر)."
+   ],
+   "related": [
+    "/Accounting/ApAging",
+    "/Accounting/VendorStatement",
+    "Report Inventory.GoodsReceipts",
+    "Report Accounting.PurchaseInvoices"
+   ],
+   "example": "PO-2026-0001 to \"Nile Supplies\" for 100 units; receive 100; invoice 100; pay in full.",
+   "evidence_level": "screens viewed; no document created"
+  },
+  {
+   "id": "WF-O2C-01",
+   "module": "Inventory + Accounting",
+   "title_en": "Order to cash",
+   "title_ar": "من البيع إلى التحصيل",
+   "purpose_en": "Quote, confirm, deliver, invoice, collect.",
+   "responsible": "SalesRep, WarehouseKeeper, ChiefAccountant",
+   "prerequisites": [
+    "A customer record.",
+    "Stock on hand, or an item sourcing rule that allows the sale.",
+    "A price list; promotions are applied automatically."
+   ],
+   "steps": [
+    {
+     "n": 1,
+     "route": "/Inventory/NewQuotation",
+     "screen_id": "SCR-INVENTORY-NewQuotation",
+     "screen_exists": true,
+     "screen_title_en": "New Quotation",
+     "screen_title_ar": "عرض سعر جديد",
+     "action": "Raise a quotation",
+     "expected_result": "A priced offer. Pricing comes from IPricingService — list priority, quantity breaks and promotions — not from the screen.",
+     "status_after": "Draft",
+     "evidence": "not verified",
+     "note": null
+    },
+    {
+     "n": 2,
+     "route": "/Inventory/NewSalesOrder",
+     "screen_id": "SCR-INVENTORY-NewSalesOrder",
+     "screen_exists": true,
+     "screen_title_en": "New Sales Order",
+     "screen_title_ar": "أمر بيع جديد",
+     "action": "Convert to a sales order",
+     "expected_result": "The sale is committed.",
+     "status_after": "Confirmed",
+     "evidence": "not verified",
+     "note": null
+    },
+    {
+     "n": 3,
+     "route": "/Inventory/NewDelivery",
+     "screen_id": "SCR-INVENTORY-NewDelivery",
+     "screen_exists": true,
+     "screen_title_en": "New Delivery Note",
+     "screen_title_ar": "إذن صرف جديد",
+     "action": "Issue the delivery note",
+     "expected_result": "Stock decreases.",
+     "status_after": "Delivered",
+     "evidence": "not verified",
+     "note": null
+    },
+    {
+     "n": 4,
+     "route": "/Accounting/NewSalesInvoice",
+     "screen_id": "SCR-ACCOUNTING-NewSalesInvoice",
+     "screen_exists": true,
+     "screen_title_en": "Edit invoice",
+     "screen_title_ar": "تعديل الفاتورة",
+     "action": "Invoice the customer",
+     "expected_result": "Receivable and output VAT are raised; a journal entry is posted. SalesInvoice.Created is emitted.",
+     "status_after": "Posted",
+     "evidence": "not verified",
+     "note": null
+    },
+    {
+     "n": 5,
+     "route": "/Accounting/Receipts",
+     "screen_id": "SCR-ACCOUNTING-Receipts",
+     "screen_exists": true,
+     "screen_title_en": "Receipts",
+     "screen_title_ar": "سندات القبض",
+     "action": "Record the receipt and allocate it",
+     "expected_result": "Receivable is cleared. Receipt.Created then Receipt.Allocated.",
+     "status_after": "Paid",
+     "evidence": "not verified",
+     "note": null
+    }
+   ],
+   "exceptions": [
+    "Sales return (credit note) at /Accounting/NewSalesReturn. The screen states: \"The return reverses revenue & VAT, reduces the customer's receivable, and returns the goods.\"",
+    "Egyptian e-invoicing status is tracked separately at /Accounting/EtaStatus."
+   ],
+   "related": [
+    "/Accounting/ArAging",
+    "/Accounting/CustomerStatement",
+    "/Accounting/CustomerAnalytics",
+    "Report Accounting.SalesInvoices",
+    "Report Accounting.CustomerAging"
+   ],
+   "example": "Quotation to \"Delta Retail\" for 20 units; deliver; invoice; receive in two instalments.",
+   "evidence_level": "screens viewed; no document created"
+  },
+  {
+   "id": "WF-ACC-01",
+   "module": "Accounting",
+   "title_en": "Set up the ledger",
+   "title_ar": "تأسيس الدفاتر",
+   "purpose_en": "Chart of accounts, cost centres, fiscal periods, currencies.",
+   "responsible": "ChiefAccountant",
+   "prerequisites": [
+    "A company."
+   ],
+   "steps": [
+    {
+     "n": 1,
+     "route": "/Accounting/ChartOfAccounts",
+     "screen_id": "SCR-ACCOUNTING-ChartOfAccounts",
+     "screen_exists": true,
+     "screen_title_en": "Chart of Accounts",
+     "screen_title_ar": "شجرة الحسابات",
+     "action": "Build the account tree",
+     "expected_result": "Accounts are postable or parents.",
+     "status_after": null,
+     "evidence": "runtime-viewed (screen renders); action NOT performed",
+     "note": null
+    },
+    {
+     "n": 2,
+     "route": "/Accounting/CostCenters",
+     "screen_id": "SCR-ACCOUNTING-CostCenters",
+     "screen_exists": true,
+     "screen_title_en": "Cost Centers",
+     "screen_title_ar": "مراكز التكلفة",
+     "action": "Define cost centres",
+     "expected_result": "An analytic dimension. The screen states it \"does not change posting logic\".",
+     "status_after": null,
+     "evidence": "runtime-viewed (screen renders); action NOT performed",
+     "note": null
+    },
+    {
+     "n": 3,
+     "route": "/Accounting/Periods",
+     "screen_id": "SCR-ACCOUNTING-Periods",
+     "screen_exists": true,
+     "screen_title_en": "Fiscal Periods",
+     "screen_title_ar": "الفترات المالية",
+     "action": "Open fiscal periods",
+     "expected_result": "Posting is allowed inside an open period.",
+     "status_after": "Open",
+     "evidence": "runtime-viewed (screen renders); action NOT performed",
+     "note": null
+    },
+    {
+     "n": 4,
+     "route": "/Currency/Currencies",
+     "screen_id": "SCR-CURRENCY-Currencies",
+     "screen_exists": true,
+     "screen_title_en": "Currencies",
+     "screen_title_ar": "العملات",
+     "action": "Add currencies",
+     "expected_result": "Available for documents.",
+     "status_after": null,
+     "evidence": "runtime-viewed (screen renders); action NOT performed",
+     "note": null
+    },
+    {
+     "n": 5,
+     "route": "/Currency/Setup",
+     "screen_id": "SCR-CURRENCY-Setup",
+     "screen_exists": true,
+     "screen_title_en": "Functional Currency Setup",
+     "screen_title_ar": "إعداد العملة الوظيفية",
+     "action": "Set the functional currency",
+     "expected_result": "The reporting currency is fixed.",
+     "status_after": null,
+     "evidence": "runtime-viewed (screen renders); action NOT performed",
+     "note": null
+    },
+    {
+     "n": 6,
+     "route": "/Currency/ExchangeRates",
+     "screen_id": "SCR-CURRENCY-ExchangeRates",
+     "screen_exists": true,
+     "screen_title_en": "Exchange Rates",
+     "screen_title_ar": "أسعار الصرف",
+     "action": "Maintain rates",
+     "expected_result": "Used at document date.",
+     "status_after": null,
+     "evidence": "runtime-viewed (screen renders); action NOT performed",
+     "note": null
+    },
+    {
+     "n": 7,
+     "route": "/Inventory/OpeningBalances",
+     "screen_id": "SCR-INVENTORY-OpeningBalances",
+     "screen_exists": true,
+     "screen_title_en": "Opening balances (Go-Live)",
+     "screen_title_ar": "الأرصدة الافتتاحية (Go-Live)",
+     "action": "Enter opening balances",
+     "expected_result": "The ledger starts balanced.",
+     "status_after": null,
+     "evidence": "not verified",
+     "note": "Route listed under Inventory for stock; the accounting equivalent is the journals screen."
+    }
+   ],
+   "exceptions": [
+    "Closing a period needs the period-close permission; reopening needs period-reopen AND a recorded reason. The source documents the sequence Open → SoftClosed → Closed."
+   ],
+   "related": [
+    "/Accounting/TrialBalance",
+    "/Accounting/Journals"
+   ],
+   "example": "4-level chart; periods for FY2026; EGP functional with USD and EUR.",
+   "evidence_level": "screens viewed; no configuration changed"
+  },
+  {
+   "id": "WF-ACC-02",
+   "module": "Accounting",
+   "title_en": "Close a period and read the statements",
+   "title_ar": "إقفال الفترة وقراءة القوائم",
+   "purpose_en": "Prove the books balance, then close.",
+   "responsible": "ChiefAccountant",
+   "prerequisites": [
+    "All documents for the period posted."
+   ],
+   "steps": [
+    {
+     "n": 1,
+     "route": "/Accounting/TrialBalance",
+     "screen_id": "SCR-ACCOUNTING-TrialBalance",
+     "screen_exists": true,
+     "screen_title_en": "Trial Balance",
+     "screen_title_ar": "ميزان المراجعة",
+     "action": "Check the trial balance",
+     "expected_result": "Three tiles — Debit, Credit, Difference. A dashed notice reads \"The trial balance is balanced\" with a \"Matched\" badge when the difference is zero.",
+     "status_after": null,
+     "evidence": "runtime viewed — captured with Debit = Credit and Difference 0.00",
+     "note": null
+    },
+    {
+     "n": 2,
+     "route": "/Accounting/BalanceSheet",
+     "screen_id": "SCR-ACCOUNTING-BalanceSheet",
+     "screen_exists": true,
+     "screen_title_en": "Balance Sheet",
+     "screen_title_ar": "قائمة المركز المالي",
+     "action": "Review the balance sheet",
+     "expected_result": "Position at the date.",
+     "status_after": null,
+     "evidence": "runtime-viewed (screen renders); action NOT performed",
+     "note": null
+    },
+    {
+     "n": 3,
+     "route": "/Accounting/IncomeStatement",
+     "screen_id": "SCR-ACCOUNTING-IncomeStatement",
+     "screen_exists": true,
+     "screen_title_en": "Income Statement",
+     "screen_title_ar": "قائمة الدخل",
+     "action": "Review the income statement",
+     "expected_result": "Result for the period.",
+     "status_after": null,
+     "evidence": "runtime-viewed (screen renders); action NOT performed",
+     "note": null
+    },
+    {
+     "n": 4,
+     "route": "/Accounting/CashFlow",
+     "screen_id": "SCR-ACCOUNTING-CashFlow",
+     "screen_exists": true,
+     "screen_title_en": "Cash Flow Statement",
+     "screen_title_ar": "قائمة التدفقات النقدية",
+     "action": "Review cash flow",
+     "expected_result": "Movement for the period.",
+     "status_after": null,
+     "evidence": "runtime-viewed (screen renders); action NOT performed",
+     "note": null
+    },
+    {
+     "n": 5,
+     "route": "/Currency/Revaluation",
+     "screen_id": "SCR-CURRENCY-Revaluation",
+     "screen_exists": true,
+     "screen_title_en": "FX Revaluation",
+     "screen_title_ar": "إعادة تقييم العملات الأجنبية",
+     "action": "Run FX revaluation if there are foreign balances",
+     "expected_result": "Unrealised differences are posted.",
+     "status_after": null,
+     "evidence": "not verified",
+     "note": null
+    },
+    {
+     "n": 6,
+     "route": "/Accounting/DepreciationRuns",
+     "screen_id": "SCR-ACCOUNTING-DepreciationRuns",
+     "screen_exists": true,
+     "screen_title_en": "Monthly Depreciation",
+     "screen_title_ar": "الإهلاك الشهري",
+     "action": "Run depreciation",
+     "expected_result": "The screen states: \"One month's depreciation is computed for all active assets and posted as a single entry.\"",
+     "status_after": null,
+     "evidence": "not verified",
+     "note": null
+    },
+    {
+     "n": 7,
+     "route": "/Accounting/Periods",
+     "screen_id": "SCR-ACCOUNTING-Periods",
+     "screen_exists": true,
+     "screen_title_en": "Fiscal Periods",
+     "screen_title_ar": "الفترات المالية",
+     "action": "Close the period",
+     "expected_result": "Posting into it is refused.",
+     "status_after": "Closed",
+     "evidence": "not verified",
+     "note": null
+    },
+    {
+     "n": 8,
+     "route": "/Accounting/YearEndClose",
+     "screen_id": "SCR-ACCOUNTING-YearEndClose",
+     "screen_exists": true,
+     "screen_title_en": "Year-end Close",
+     "screen_title_ar": "إقفال السنة المالية",
+     "action": "Year-end close",
+     "expected_result": "Result is carried to retained earnings.",
+     "status_after": "Closed",
+     "evidence": "not verified",
+     "note": null
+    }
+   ],
+   "exceptions": [
+    "Reopening requires period-reopen and a recorded reason."
+   ],
+   "related": [
+    "Report Accounting.TrialBalance"
+   ],
+   "example": "Close September 2026 after posting depreciation and revaluation.",
+   "evidence_level": "trial balance viewed with data; closing NOT performed"
+  },
+  {
+   "id": "WF-INV-01",
+   "module": "Inventory",
+   "title_en": "Set up stock and count it",
+   "title_ar": "تأسيس المخزون والجرد",
+   "purpose_en": "Master data, then balances, then a physical count.",
+   "responsible": "InventoryManager, WarehouseKeeper",
+   "prerequisites": [
+    "At least one category and one unit BEFORE any item can be created — the Items screen says so and disables Add Product until both exist."
+   ],
+   "steps": [
+    {
+     "n": 1,
+     "route": "/Inventory/Categories",
+     "screen_id": "SCR-INVENTORY-Categories",
+     "screen_exists": true,
+     "screen_title_en": "Item Categories",
+     "screen_title_ar": "تصنيفات الأصناف",
+     "action": "Create categories",
+     "expected_result": "Items can be classified.",
+     "status_after": null,
+     "evidence": "runtime-viewed (screen renders); action NOT performed",
+     "note": null
+    },
+    {
+     "n": 2,
+     "route": "/Inventory/Units",
+     "screen_id": "SCR-INVENTORY-Units",
+     "screen_exists": true,
+     "screen_title_en": "Units of Measure",
+     "screen_title_ar": "وحدات القياس",
+     "action": "Create units of measure",
+     "expected_result": "Items can be quantified.",
+     "status_after": null,
+     "evidence": "runtime-viewed (screen renders); action NOT performed",
+     "note": null
+    },
+    {
+     "n": 3,
+     "route": "/Inventory/Warehouses",
+     "screen_id": "SCR-INVENTORY-Warehouses",
+     "screen_exists": true,
+     "screen_title_en": "Warehouses",
+     "screen_title_ar": "المخازن",
+     "action": "Create warehouses",
+     "expected_result": "Stock has a location.",
+     "status_after": null,
+     "evidence": "runtime-viewed (screen renders); action NOT performed",
+     "note": null
+    },
+    {
+     "n": 4,
+     "route": "/Inventory/WarehouseSections",
+     "screen_id": "SCR-INVENTORY-WarehouseSections",
+     "screen_exists": true,
+     "screen_title_en": "Warehouse sections / racks",
+     "screen_title_ar": "سيكشنات / رفوف المخزن",
+     "action": "Create sections and racks",
+     "expected_result": "Rack-level stock becomes possible.",
+     "status_after": null,
+     "evidence": "runtime-viewed (screen renders); action NOT performed",
+     "note": null
+    },
+    {
+     "n": 5,
+     "route": "/Inventory/ItemForm",
+     "screen_id": "SCR-INVENTORY-ItemForm",
+     "screen_exists": true,
+     "screen_title_en": "Edit item",
+     "screen_title_ar": "تعديل صنف",
+     "action": "Create an item",
+     "expected_result": "Item code, name, unit, category; and the tracking switches Track batch / Track expiry / Track serial / Composite item (Kit).",
+     "status_after": null,
+     "evidence": "not verified",
+     "note": "Reached as /Inventory/CreateItem or /Inventory/EditItem."
+    },
+    {
+     "n": 6,
+     "route": "/Inventory/OpeningBalances",
+     "screen_id": "SCR-INVENTORY-OpeningBalances",
+     "screen_exists": true,
+     "screen_title_en": "Opening balances (Go-Live)",
+     "screen_title_ar": "الأرصدة الافتتاحية (Go-Live)",
+     "action": "Enter opening quantities",
+     "expected_result": "Stock exists without a purchase.",
+     "status_after": null,
+     "evidence": "not verified",
+     "note": null
+    },
+    {
+     "n": 7,
+     "route": "/Inventory/StockCounts",
+     "screen_id": "SCR-INVENTORY-StockCounts",
+     "screen_exists": true,
+     "screen_title_en": "Stock counts",
+     "screen_title_ar": "الجرد والتسويات",
+     "action": "Run a stock count",
+     "expected_result": "Differences become adjustments.",
+     "status_after": null,
+     "evidence": "not verified",
+     "note": null
+    },
+    {
+     "n": 8,
+     "route": "/Inventory/IntegrityReconciliation",
+     "screen_id": "SCR-INVENTORY-IntegrityReconciliation",
+     "screen_exists": true,
+     "screen_title_en": "Integrity reconciliation",
+     "screen_title_ar": "تسوية السلامة",
+     "action": "Reconcile stock against the ledger",
+     "expected_result": "Discrepancies between stock value and the GL are listed.",
+     "status_after": null,
+     "evidence": "runtime-viewed (screen renders); action NOT performed",
+     "note": null
+    }
+   ],
+   "exceptions": [
+    "Write-offs at /Inventory/WriteOffs for damage and loss.",
+    "Stock emits NO platform events, so a goods receipt raises no notification."
+   ],
+   "related": [
+    "/Inventory/StockBalances",
+    "/Inventory/RackBalances",
+    "/Inventory/Batches",
+    "/Inventory/Serials",
+    "Report Inventory.StockOnHand"
+   ],
+   "example": "Warehouse \"Cairo Main\", section A, rack A-01; item \"Sugar 1kg\" batch-tracked.",
+   "evidence_level": "screens viewed; no stock moved"
+  },
+  {
+   "id": "WF-INV-02",
+   "module": "Inventory",
+   "title_en": "Transfer stock between warehouses",
+   "title_ar": "تحويل المخزون بين المخازن",
+   "purpose_en": "Move goods without selling them.",
+   "responsible": "WarehouseKeeper",
+   "prerequisites": [
+    "Two warehouses and stock at the source."
+   ],
+   "steps": [
+    {
+     "n": 1,
+     "route": "/Inventory/NewTransfer",
+     "screen_id": "SCR-INVENTORY-NewTransfer",
+     "screen_exists": true,
+     "screen_title_en": "New Stock Transfer",
+     "screen_title_ar": "تحويل بين المخازن",
+     "action": "Create the transfer",
+     "expected_result": "Source and destination, lines, quantities.",
+     "status_after": "Draft",
+     "evidence": "not verified",
+     "note": null
+    },
+    {
+     "n": 2,
+     "route": "/Inventory/StockTransfers",
+     "screen_id": "SCR-INVENTORY-StockTransfers",
+     "screen_exists": true,
+     "screen_title_en": "Stock transfers",
+     "screen_title_ar": "التحويلات بين المخازن",
+     "action": "Find the transfer",
+     "expected_result": "The list of transfers.",
+     "status_after": null,
+     "evidence": "runtime-viewed (screen renders); action NOT performed",
+     "note": null
+    },
+    {
+     "n": 3,
+     "route": "/Inventory/DocumentDetails",
+     "screen_id": "SCR-INVENTORY-DocumentDetails",
+     "screen_exists": true,
+     "screen_title_en": "? Model.Title : Model.TitleEn))",
+     "screen_title_ar": "? Model.Title : Model.TitleEn))",
+     "action": "Open the transfer document",
+     "expected_result": "One shared screen serves eight Inventory document types; it titles itself from the document.",
+     "status_after": null,
+     "evidence": "runtime-viewed (screen renders); action NOT performed",
+     "note": "Reached as /Inventory/TransferDetails."
+    }
+   ],
+   "exceptions": [
+    "Approvals may intervene — the Inventory approval silo feeds /Approvals/Index."
+   ],
+   "related": [
+    "/Inventory/Approvals",
+    "Report Inventory.TransferDocument"
+   ],
+   "example": "Move 50 units of \"Sugar 1kg\" from Cairo Main to Alexandria.",
+   "evidence_level": "screens viewed; no transfer created"
+  },
+  {
+   "id": "WF-HR-01",
+   "module": "Admin",
+   "title_en": "Hire, record attendance, run payroll",
+   "title_ar": "التعيين والحضور والرواتب",
+   "purpose_en": "The employee lifecycle through to a posted payroll entry.",
+   "responsible": "HrManager, PayrollOfficer",
+   "prerequisites": [
+    "HR roles GRANTED — employee-manage is NeverBootstrapOpen and refuses otherwise, even for an administrator.",
+    "Job titles, leave types, policies and official holidays defined."
+   ],
+   "steps": [
+    {
+     "n": 1,
+     "route": "/Admin/Applications",
+     "screen_id": "SCR-ADMIN-Applications",
+     "screen_exists": true,
+     "screen_title_en": "Job applications",
+     "screen_title_ar": "طلبات التوظيف",
+     "action": "Review job applications",
+     "expected_result": "Applicants are listed.",
+     "status_after": null,
+     "evidence": "runtime-viewed (screen renders); action NOT performed",
+     "note": null
+    },
+    {
+     "n": 2,
+     "route": "/Admin/EmployeeData",
+     "screen_id": "SCR-ADMIN-EmployeeData",
+     "screen_exists": true,
+     "screen_title_en": "Employee Registration",
+     "screen_title_ar": "تسجيل موظف",
+     "action": "Create the employee",
+     "expected_result": "A multi-step form: personal details, job, documents. Both Arabic and English name fields should be filled, or English screens show the Arabic name.",
+     "status_after": "Active",
+     "evidence": "not verified",
+     "note": null
+    },
+    {
+     "n": 3,
+     "route": "/Admin/HrDocuments",
+     "screen_id": "SCR-ADMIN-HrDocuments",
+     "screen_exists": true,
+     "screen_title_en": "Employee contracts & documents",
+     "screen_title_ar": "Employee contracts & documents",
+     "action": "Attach contracts and documents",
+     "expected_result": "Required document types are satisfied.",
+     "status_after": null,
+     "evidence": "runtime-viewed (screen renders); action NOT performed",
+     "note": null
+    },
+    {
+     "n": 4,
+     "route": "/Admin/Attendance",
+     "screen_id": "SCR-ADMIN-Attendance",
+     "screen_exists": true,
+     "screen_title_en": "Monthly attendance summary",
+     "screen_title_ar": "ملخص الحضور الشهري",
+     "action": "Record attendance",
+     "expected_result": "Late minutes, overtime and absences accumulate.",
+     "status_after": null,
+     "evidence": "runtime-viewed (screen renders); action NOT performed",
+     "note": null
+    },
+    {
+     "n": 5,
+     "route": "/Admin/LeaveTypesList",
+     "screen_id": "SCR-ADMIN-LeaveTypesList",
+     "screen_exists": true,
+     "screen_title_en": "Types of Leaves",
+     "screen_title_ar": "أنواع الأجازات",
+     "action": "Approve leave through the inbox",
+     "expected_result": "Leave requests appear in the Leave approval silo at /Approvals/Index.",
+     "status_after": null,
+     "evidence": "runtime-viewed (screen renders); action NOT performed",
+     "note": null
+    },
+    {
+     "n": 6,
+     "route": "/Accounting/Payroll",
+     "screen_id": "SCR-ACCOUNTING-Payroll",
+     "screen_exists": true,
+     "screen_title_en": "Payroll Journal",
+     "screen_title_ar": "قيد الرواتب",
+     "action": "Run payroll",
+     "expected_result": "Per employee: base, allowances, gross, late minutes, overtime minutes, absent days, overtime pay, late penalty, absence penalty, employee SI, company SI, tax, net. The GL expense is gross + overtime − latePenalty − absencePenalty.",
+     "status_after": "Posted",
+     "evidence": "not verified",
+     "note": "This route TIMED OUT twice during capture — see document 08."
+    },
+    {
+     "n": 7,
+     "route": "/Accounting/Payslips",
+     "screen_id": "SCR-ACCOUNTING-Payslips",
+     "screen_exists": true,
+     "screen_title_en": "Payslips",
+     "screen_title_ar": "قسائم الرواتب",
+     "action": "Issue payslips",
+     "expected_result": "Employees can view them in the People portal.",
+     "status_after": null,
+     "evidence": "runtime-viewed (screen renders); action NOT performed",
+     "note": null
+    },
+    {
+     "n": 8,
+     "route": "/Accounting/PayrollDisbursement",
+     "screen_id": "SCR-ACCOUNTING-PayrollDisbursement",
+     "screen_exists": true,
+     "screen_title_en": "Payroll disbursement & remittance",
+     "screen_title_ar": "Payroll disbursement & remittance",
+     "action": "Disburse and remit",
+     "expected_result": "The screen warns: \"No bank or cash account. Create one under «Banks & cash» first.\"",
+     "status_after": null,
+     "evidence": "runtime-viewed (screen renders); action NOT performed",
+     "note": null
+    }
+   ],
+   "exceptions": [
+    "/Admin/DocExpiryAlerts warns before a document lapses.",
+    "/Admin/FinalSettlement handles end of service.",
+    "Leave accrual, provision and carry-over post to the ledger."
+   ],
+   "related": [
+    "/People/Dashboard",
+    "/Accounting/PayrollTaxSettings"
+   ],
+   "example": "Employee \"A. Hassan\", Cairo branch, monthly salary; September payroll.",
+   "evidence_level": "screens viewed; payroll NOT run"
+  },
+  {
+   "id": "WF-APPR-01",
+   "module": "Approvals",
+   "title_en": "Act on an approval",
+   "title_ar": "البتّ في طلب موافقة",
+   "purpose_en": "One inbox aggregates four kinds of pending decision.",
+   "responsible": "Whoever the silo names as approver",
+   "prerequisites": [
+    "A pending item in one of the four silos."
+   ],
+   "steps": [
+    {
+     "n": 1,
+     "route": "/Approvals/Index",
+     "screen_id": "SCR-APPROVALS-Index",
+     "screen_exists": true,
+     "screen_title_en": "My approvals",
+     "screen_title_ar": "موافقاتي",
+     "action": "Open My approvals",
+     "expected_result": "Pending items from all four silos: Leave, Request, Inventory, ProjectBilling.",
+     "status_after": null,
+     "evidence": "runtime-viewed (screen renders); action NOT performed",
+     "note": null
+    },
+    {
+     "n": 2,
+     "route": "/Approvals/Index",
+     "screen_id": "SCR-APPROVALS-Index",
+     "screen_exists": true,
+     "screen_title_en": "My approvals",
+     "screen_title_ar": "موافقاتي",
+     "action": "Open the item",
+     "expected_result": "Each silo supplies its own navigation target; project billing opens the real document, not a list.",
+     "status_after": null,
+     "evidence": "not verified",
+     "note": null
+    },
+    {
+     "n": 3,
+     "route": "/Approvals/Index",
+     "screen_id": "SCR-APPROVALS-Index",
+     "screen_exists": true,
+     "screen_title_en": "My approvals",
+     "screen_title_ar": "موافقاتي",
+     "action": "Approve or reject",
+     "expected_result": "The item leaves the inbox.",
+     "status_after": "Approved / Rejected",
+     "evidence": "not verified",
+     "note": null
+    }
+   ],
+   "exceptions": [
+    "ACCOUNTING DOCUMENTS DO NOT GO THROUGH THIS INBOX. An invoice is posted, not approved — a deliberate design position the manual should state."
+   ],
+   "related": [
+    "/People/Leaves",
+    "/People/Requests",
+    "/Inventory/Approvals"
+   ],
+   "example": "A leave request from a Cairo employee.",
+   "evidence_level": "inbox viewed; no decision taken"
+  },
+  {
+   "id": "WF-POS-01",
+   "module": "Restaurant",
+   "title_en": "Serve a restaurant order",
+   "title_ar": "تشغيل طلب مطعم",
+   "purpose_en": "Cashier, kitchen and delivery on purpose-built operator screens.",
+   "responsible": "Cashier, kitchen staff, driver",
+   "prerequisites": [
+    "Operations setup, dining areas, kitchen stations, floor plan, quick items, modifiers, payment methods and terminals configured.",
+    "Item sourcing decided per item per branch — from stock, prepared in a kitchen, or bought in."
+   ],
+   "steps": [
+    {
+     "n": 1,
+     "route": "/Pos/Setup",
+     "screen_id": "SCR-POS-Setup",
+     "screen_exists": true,
+     "screen_title_en": "Operations platform setup",
+     "screen_title_ar": "تأسيس منصة العمليات",
+     "action": "Complete operations setup",
+     "expected_result": "Branch capabilities are enabled.",
+     "status_after": null,
+     "evidence": "runtime-viewed (screen renders); action NOT performed",
+     "note": null
+    },
+    {
+     "n": 2,
+     "route": "/Pos/FloorPlan",
+     "screen_id": "SCR-POS-FloorPlan",
+     "screen_exists": true,
+     "screen_title_en": "Floor plan",
+     "screen_title_ar": "رسم الطاولات",
+     "action": "Lay out tables",
+     "expected_result": "The cashier can seat a table.",
+     "status_after": null,
+     "evidence": "runtime-viewed (screen renders); action NOT performed",
+     "note": null
+    },
+    {
+     "n": 3,
+     "route": "/PosApp/Start",
+     "screen_id": "SCR-POSAPP-Start",
+     "screen_exists": true,
+     "screen_title_en": "Choose your terminal",
+     "screen_title_ar": "اختر جهاز الكاشير",
+     "action": "Open the cashier terminal",
+     "expected_result": "The operator surface, not a back-office list.",
+     "status_after": null,
+     "evidence": "runtime-viewed (screen renders); action NOT performed",
+     "note": null
+    },
+    {
+     "n": 4,
+     "route": "/PosApp/Kitchen",
+     "screen_id": "SCR-POSAPP-Kitchen",
+     "screen_exists": true,
+     "screen_title_en": "Kitchen Display",
+     "screen_title_ar": "شاشة المطبخ",
+     "action": "Kitchen display",
+     "expected_result": "Prepared items are consumed from stock — capability-gated.",
+     "status_after": null,
+     "evidence": "runtime-viewed (screen renders); action NOT performed",
+     "note": null
+    },
+    {
+     "n": 5,
+     "route": "/PosApp/Delivery",
+     "screen_id": "SCR-POSAPP-Delivery",
+     "screen_exists": true,
+     "screen_title_en": "Delivery board",
+     "screen_title_ar": "لوحة التوصيل",
+     "action": "Delivery board",
+     "expected_result": "Drivers and zones; the zone fee is frozen on the order.",
+     "status_after": null,
+     "evidence": "runtime-viewed (screen renders); action NOT performed",
+     "note": null
+    }
+   ],
+   "exceptions": [
+    "The terminal is designed to keep selling offline; /Pos/SyncConflicts exists to review what could not be reconciled.",
+    "Cancel-after-preparation is treated as waste."
+   ],
+   "related": [
+    "/Pos/Reservations",
+    "/Pos/Drivers",
+    "/Pos/DeliveryZones",
+    "/Pos/SourcingOverview",
+    "/RestaurantIntelligence/Index"
+   ],
+   "example": "Table 6, two covers, one item with a modifier, paid by card.",
+   "evidence_level": "setup screens viewed; operator screens viewed; NO order taken"
+  },
+  {
+   "id": "WF-PRJ-01",
+   "module": "Projects",
+   "title_en": "Run a construction project to billing",
+   "title_ar": "إدارة مشروع مقاولات حتى المستخلص",
+   "purpose_en": "Advance, progress billing, retention, release.",
+   "responsible": "ProjectsAdministrator, ProjectsFinance",
+   "prerequisites": [
+    "A project and its activity types."
+   ],
+   "steps": [
+    {
+     "n": 1,
+     "route": "/Project/Projects",
+     "screen_id": "SCR-PROJECT-Projects",
+     "screen_exists": true,
+     "screen_title_en": "Projects",
+     "screen_title_ar": "المشاريع",
+     "action": "Create the project",
+     "expected_result": "The project exists with a contract value.",
+     "status_after": null,
+     "evidence": "runtime-viewed (screen renders); action NOT performed",
+     "note": null
+    },
+    {
+     "n": 2,
+     "route": "/Project/Advance",
+     "screen_id": "SCR-PROJECT-Advance",
+     "screen_exists": true,
+     "screen_title_en": "Receive advance",
+     "screen_title_ar": "استلام دفعة مقدمة",
+     "action": "Receive an advance",
+     "expected_result": "The screen states: \"Advance received = a liability (2104), not revenue — posted via the GL, tagged to the project.\"",
+     "status_after": null,
+     "evidence": "not verified",
+     "note": null
+    },
+    {
+     "n": 3,
+     "route": "/Project/Dashboard",
+     "screen_id": "SCR-PROJECT-Dashboard",
+     "screen_exists": true,
+     "screen_title_en": "Projects & Contracting",
+     "screen_title_ar": "Projects & Contracting",
+     "action": "Track progress",
+     "expected_result": "Progress against plan.",
+     "status_after": null,
+     "evidence": "runtime-viewed (screen renders); action NOT performed",
+     "note": null
+    },
+    {
+     "n": 4,
+     "route": "/Project/Projects",
+     "screen_id": "SCR-PROJECT-Projects",
+     "screen_exists": true,
+     "screen_title_en": "Projects",
+     "screen_title_ar": "المشاريع",
+     "action": "Raise a progress billing (مستخلص)",
+     "expected_result": "Prepared, then approved, then posted — three SEPARATE permissions: billing-prepare, billing-approve, billing-post.",
+     "status_after": "Submitted → Approved → Posted",
+     "evidence": "not verified",
+     "note": null
+    },
+    {
+     "n": 5,
+     "route": "/Project/RetentionRelease",
+     "screen_id": "SCR-PROJECT-RetentionRelease",
+     "screen_exists": true,
+     "screen_title_en": "Release retention",
+     "screen_title_ar": "رد المحتجز",
+     "action": "Release retention",
+     "expected_result": "Held-back value is released.",
+     "status_after": null,
+     "evidence": "not verified",
+     "note": null
+    },
+    {
+     "n": 6,
+     "route": "/Project/SubRetentionRelease",
+     "screen_id": "SCR-PROJECT-SubRetentionRelease",
+     "screen_exists": true,
+     "screen_title_en": "Release subcontractor retention",
+     "screen_title_ar": "رد محتجز الباطن",
+     "action": "Release subcontractor retention",
+     "expected_result": "Subcontractor retention released.",
+     "status_after": null,
+     "evidence": "not verified",
+     "note": null
+    },
+    {
+     "n": 7,
+     "route": "/Project/Profitability",
+     "screen_id": "SCR-PROJECT-Profitability",
+     "screen_exists": true,
+     "screen_title_en": "Project profitability",
+     "screen_title_ar": "ربحية المشاريع",
+     "action": "Review profitability",
+     "expected_result": "Revenue against cost per project.",
+     "status_after": null,
+     "evidence": "runtime-viewed (screen renders); action NOT performed",
+     "note": null
+    }
+   ],
+   "exceptions": [
+    "Progress billing is the ONE accounting-adjacent document that goes through the approval inbox.",
+    "Segregation of duties is real here: prepare, approve and post are three grants."
+   ],
+   "related": [
+    "/ProjectCloseout/Index",
+    "Accounting.BoqItem"
+   ],
+   "example": "Project \"Tower A\", 10% advance, first billing at 30% completion, 5% retention.",
+   "evidence_level": "screens viewed; no billing raised"
+  },
+  {
+   "id": "WF-CRM-01",
+   "module": "CRM",
+   "title_en": "Lead to opportunity to ticket",
+   "title_ar": "من العميل المحتمل إلى الفرصة إلى التذكرة",
+   "purpose_en": "The commercial pipeline and post-sale support.",
+   "responsible": "SalesRep, SalesManager, Marketing",
+   "prerequisites": [
+    "Pipelines and stages configured."
+   ],
+   "steps": [
+    {
+     "n": 1,
+     "route": "/Crm/Leads",
+     "screen_id": "SCR-CRM-Leads",
+     "screen_exists": true,
+     "screen_title_en": "Leads",
+     "screen_title_ar": "العملاء المحتملون",
+     "action": "Capture a lead",
+     "expected_result": "The lead is scored by the scoring rules.",
+     "status_after": "New",
+     "evidence": "runtime-viewed (screen renders); action NOT performed",
+     "note": null
+    },
+    {
+     "n": 2,
+     "route": "/Crm/Opportunities",
+     "screen_id": "SCR-CRM-Opportunities",
+     "screen_exists": true,
+     "screen_title_en": "Opportunities",
+     "screen_title_ar": "الفرص",
+     "action": "Convert to an opportunity",
+     "expected_result": "It enters a pipeline stage.",
+     "status_after": "Open",
+     "evidence": "runtime-viewed (screen renders); action NOT performed",
+     "note": null
+    },
+    {
+     "n": 3,
+     "route": "/Crm/Pipeline",
+     "screen_id": "SCR-CRM-Pipeline",
+     "screen_exists": true,
+     "screen_title_en": "Sales pipeline",
+     "screen_title_ar": "مسار المبيعات",
+     "action": "Move it through the Kanban",
+     "expected_result": "Stages observed on the dashboard: Prospecting, Qualification, Proposal, Negotiation, Won, Lost.",
+     "status_after": "Won / Lost",
+     "evidence": "runtime-viewed (screen renders); action NOT performed",
+     "note": null
+    },
+    {
+     "n": 4,
+     "route": "/Crm/Accounts",
+     "screen_id": "SCR-CRM-Accounts",
+     "screen_exists": true,
+     "screen_title_en": "Accounts",
+     "screen_title_ar": "الحسابات",
+     "action": "Link to a financial customer",
+     "expected_result": "The screen confirms: \"Linked to a financial customer.\"",
+     "status_after": null,
+     "evidence": "not verified",
+     "note": null
+    },
+    {
+     "n": 5,
+     "route": "/Crm/Tickets",
+     "screen_id": "SCR-CRM-Tickets",
+     "screen_exists": true,
+     "screen_title_en": "Tickets",
+     "screen_title_ar": "التذاكر",
+     "action": "Handle support tickets against SLA policies",
+     "expected_result": "SLA timers apply.",
+     "status_after": "Open → Resolved",
+     "evidence": "runtime-viewed (screen renders); action NOT performed",
+     "note": null
+    }
+   ],
+   "exceptions": [
+    "Whether an opportunity converts to a QUOTATION inside the product, or by retyping, was NOT ESTABLISHED. This is the most commercially important unverified link in the package."
+   ],
+   "related": [
+    "/Crm/Forecast",
+    "/Crm/Reports",
+    "/Crm/Campaigns",
+    "/Crm/SlaPolicies",
+    "Report Crm.Leads",
+    "Report Crm.Opportunities"
+   ],
+   "example": "Lead \"Delta Retail\" → opportunity EGP 250,000 → Negotiation.",
+   "evidence_level": "screens viewed; nothing advanced"
+  },
+  {
+   "id": "WF-REP-01",
+   "module": "Reporting",
+   "title_en": "Find, run, print and design a report",
+   "title_ar": "تشغيل التقارير وتصميمها",
+   "purpose_en": "Every printed artefact in the product goes through here.",
+   "responsible": "Any user with the relevant reports.*.view permission",
+   "prerequisites": [
+    "The report permission key must be MAPPED. An unmapped key answers 404, not 403, deliberately — so the report is invisible rather than merely refused."
+   ],
+   "steps": [
+    {
+     "n": 1,
+     "route": "/Reports/Index",
+     "screen_id": "SCR-REPORTS-Index",
+     "screen_exists": true,
+     "screen_title_en": "Reports Center",
+     "screen_title_ar": "مركز التقارير",
+     "action": "Open the Reports Center",
+     "expected_result": "The catalogue of reports available to you.",
+     "status_after": null,
+     "evidence": "runtime-viewed (screen renders); action NOT performed",
+     "note": null
+    },
+    {
+     "n": 2,
+     "route": "/Reports/Viewer",
+     "screen_id": "SCR-REPORTS-Viewer",
+     "screen_exists": true,
+     "screen_title_en": "(Model.IsFavorite) { }",
+     "screen_title_ar": "(Model.IsFavorite) { }",
+     "action": "Open a report and set parameters",
+     "expected_result": "Parameters are validated before the data source is reached.",
+     "status_after": null,
+     "evidence": "runtime-viewed (screen renders); action NOT performed",
+     "note": null
+    },
+    {
+     "n": 3,
+     "route": "/Reports/Viewer",
+     "screen_id": "SCR-REPORTS-Viewer",
+     "screen_exists": true,
+     "screen_title_en": "(Model.IsFavorite) { }",
+     "screen_title_ar": "(Model.IsFavorite) { }",
+     "action": "Export or print",
+     "expected_result": "Html, PrintHtml, Pdf, Xlsx or Csv. PDF is produced by the Playwright renderer.",
+     "status_after": null,
+     "evidence": "not verified",
+     "note": null
+    },
+    {
+     "n": 4,
+     "route": "/Reports/Studio",
+     "screen_id": "SCR-REPORTS-Studio",
+     "screen_exists": true,
+     "screen_title_en": "Report Studio",
+     "screen_title_ar": "استوديو التقارير",
+     "action": "Design a template",
+     "expected_result": "Bands, elements, page setup, grouping, charts with series and time buckets.",
+     "status_after": null,
+     "evidence": "runtime-viewed (screen renders); action NOT performed",
+     "note": null
+    }
+   ],
+   "exceptions": [
+    "Platform templates cannot be edited: \"Platform templates are created by deployment, not by a tenant.\" Change \"Available to\" off Platform first.",
+    "Scheduled delivery is BUILT BUT DISABLED — the worker is off by design and NullReportMailSender is registered.",
+    "NO SCREEN PRINTS ITS OWN HTML. A screen that needs printing registers a dataset and links to /Reports/Viewer."
+   ],
+   "related": [
+    "/Reports/Datasets",
+    "/Reports/Templates"
+   ],
+   "example": "Run Inventory.StockOnHand for Cairo Main, export to Excel.",
+   "evidence_level": "screens viewed; no report run or exported"
+  },
+  {
+   "id": "WF-COLLAB-01",
+   "module": "Platform",
+   "title_en": "Work reaches you: workspace, notifications, tasks, mentions",
+   "title_ar": "وصول العمل إليك: مساحة العمل والإشعارات والمهام والإشارات",
+   "purpose_en": "How a document posted in one module becomes somebody else's work.",
+   "responsible": "Every user",
+   "prerequisites": [
+    "None."
+   ],
+   "steps": [
+    {
+     "n": 1,
+     "route": "/Workspace/Index",
+     "screen_id": "SCR-WORKSPACE-Index",
+     "screen_exists": true,
+     "screen_title_en": "Workspace",
+     "screen_title_ar": "مساحة العمل",
+     "action": "Open the Workspace",
+     "expected_result": "A cross-module read model of what is waiting.",
+     "status_after": null,
+     "evidence": "runtime-viewed (screen renders); action NOT performed",
+     "note": null
+    },
+    {
+     "n": 2,
+     "route": "/Workspace/Agenda",
+     "screen_id": "SCR-WORKSPACE-Agenda",
+     "screen_exists": true,
+     "screen_title_en": "Agenda",
+     "screen_title_ar": "الأجندة",
+     "action": "Agenda",
+     "expected_result": "What is due.",
+     "status_after": null,
+     "evidence": "runtime-viewed (screen renders); action NOT performed",
+     "note": null
+    },
+    {
+     "n": 3,
+     "route": "/Workspace/Notifications",
+     "screen_id": "SCR-WORKSPACE-Notifications",
+     "screen_exists": true,
+     "screen_title_en": "Notifications",
+     "screen_title_ar": "الإشعارات",
+     "action": "Notifications",
+     "expected_result": "Events delivered by the dispatch worker.",
+     "status_after": null,
+     "evidence": "runtime-viewed (screen renders); action NOT performed",
+     "note": null
+    },
+    {
+     "n": 4,
+     "route": "/Workspace/Mentions",
+     "screen_id": "SCR-WORKSPACE-Mentions",
+     "screen_exists": true,
+     "screen_title_en": "Mentions",
+     "screen_title_ar": "الإشارات إليّ",
+     "action": "Mentions",
+     "expected_result": "@mentions addressed to you, self-excluded.",
+     "status_after": null,
+     "evidence": "runtime-viewed (screen renders); action NOT performed",
+     "note": null
+    },
+    {
+     "n": 5,
+     "route": "/Tasks/Index",
+     "screen_id": "SCR-TASKS-Index",
+     "screen_exists": true,
+     "screen_title_en": null,
+     "screen_title_ar": null,
+     "action": "My tasks",
+     "expected_result": "Tasks, including ones generated by auto-rules.",
+     "status_after": null,
+     "evidence": "runtime-viewed (screen renders); action NOT performed",
+     "note": null
+    }
+   ],
+   "exceptions": [
+    "Notifications are not instant: the dispatch worker polls every 15 seconds, batches 50, retries 5 times with 30-second backoff.",
+    "STOCK EMITS NO EVENTS. A goods receipt produces no notification. 47 event types exist across 11 families; none is an inventory movement."
+   ],
+   "related": [
+    "/Notifications/Index",
+    "/Chat/Index",
+    "/Calendar/Index",
+    "/Comm/Index",
+    "/Announcements/Index",
+    "/FileManager/Index",
+    "/BusinessEventMonitor/Index"
+   ],
+   "example": "A sales invoice is posted; a task appears for the collections clerk.",
+   "evidence_level": "screens viewed; no event triggered"
+  },
+  {
+   "id": "WF-AI-01",
+   "module": "Accounting / Platform",
+   "title_en": "Read an AI insight",
+   "title_ar": "قراءة رؤى الذكاء الاصطناعي",
+   "purpose_en": "Three statistical capabilities. The AI proposes; it is never the source of truth.",
+   "responsible": "ChiefAccountant, InventoryManager",
+   "prerequisites": [
+    "The local AI service running on port 8000. Configured as Internal / LocalLoopback — nothing is sent to any third party."
+   ],
+   "steps": [
+    {
+     "n": 1,
+     "route": "/Accounting/AiInsights",
+     "screen_id": "SCR-ACCOUNTING-AiInsights",
+     "screen_exists": true,
+     "screen_title_en": "AI Insights",
+     "screen_title_ar": "رؤى ذكية",
+     "action": "Open AI insights",
+     "expected_result": "Anomaly, forecast and inventory findings.",
+     "status_after": null,
+     "evidence": "runtime-viewed (screen renders); action NOT performed",
+     "note": null
+    },
+    {
+     "n": 2,
+     "route": "/Accounting/AiInsights",
+     "screen_id": "SCR-ACCOUNTING-AiInsights",
+     "screen_exists": true,
+     "screen_title_en": "AI Insights",
+     "screen_title_ar": "رؤى ذكية",
+     "action": "Read a journal anomaly",
+     "expected_result": "Posted entries flagged FOR HUMAN REVIEW. A flag is not an error.",
+     "status_after": null,
+     "evidence": "not verified",
+     "note": null
+    },
+    {
+     "n": 3,
+     "route": "/Accounting/AiInsights",
+     "screen_id": "SCR-ACCOUNTING-AiInsights",
+     "screen_exists": true,
+     "screen_title_en": "AI Insights",
+     "screen_title_ar": "رؤى ذكية",
+     "action": "Read the cash-flow projection",
+     "expected_result": "Opening cash plus outstanding AR/AP with FIFO settlement, projected 90 days by default.",
+     "status_after": null,
+     "evidence": "not verified",
+     "note": null
+    },
+    {
+     "n": 4,
+     "route": "/Inventory/Index",
+     "screen_id": "SCR-INVENTORY-Index",
+     "screen_exists": true,
+     "screen_title_en": "Inventory",
+     "screen_title_ar": "المخزون",
+     "action": "Read the inventory analysis",
+     "expected_result": "Slow-moving / reorder / stockout-risk classification with suggested quantities.",
+     "status_after": null,
+     "evidence": "not verified",
+     "note": null
+    }
+   ],
+   "exceptions": [
+    "All three run on local scikit-learn — no LLM, no API key. Described in the source as \"local ML — no LLM, no API key\".",
+    "The egress policy refuses PersonalData everywhere and free text to any external processor. No approved external processor is configured.",
+    "Whether the CRM insight, scoring and automation screens are model-backed was NOT ESTABLISHED — do not describe them as AI without checking."
+   ],
+   "related": [
+    "/Crm/OpportunityInsights",
+    "/Crm/AccountInsights",
+    "/InsightActions/Index",
+    "/Tasks/MatchSuggestions"
+   ],
+   "example": "A journal entry flagged as unusual for its account and amount.",
+   "evidence_level": "screen viewed; no AI call made; AI service NOT started"
+  },
+  {
+   "id": "WF-EXT-01",
+   "module": "Portals",
+   "title_en": "What people outside the company see",
+   "title_ar": "ما يراه من هم خارج الشركة",
+   "purpose_en": "Three separate audiences with their own surfaces.",
+   "responsible": "n/a",
+   "prerequisites": [
+    "Store:Enabled is true and Store:StoreCompanyId pins the catalogue to one company."
+   ],
+   "steps": [
+    {
+     "n": 1,
+     "route": "/People/Dashboard",
+     "screen_id": "SCR-PEOPLE-Dashboard",
+     "screen_exists": true,
+     "screen_title_en": null,
+     "screen_title_ar": null,
+     "action": "Employee self-service",
+     "expected_result": "Profile, leaves, payslips, alerts.",
+     "status_after": null,
+     "evidence": "runtime-viewed (screen renders); action NOT performed",
+     "note": null
+    },
+    {
+     "n": 2,
+     "route": "/ClientPortal/Index",
+     "screen_id": "SCR-CLIENTPORTAL-Index",
+     "screen_exists": true,
+     "screen_title_en": null,
+     "screen_title_ar": null,
+     "action": "Client portal",
+     "expected_result": "A customer's own documents.",
+     "status_after": null,
+     "evidence": "runtime-viewed (screen renders); action NOT performed",
+     "note": null
+    },
+    {
+     "n": 3,
+     "route": "/Home/Store",
+     "screen_id": "SCR-HOME-Store",
+     "screen_exists": true,
+     "screen_title_en": "Don’t miss amazing",
+     "screen_title_ar": "Don’t miss amazing",
+     "action": "Public store",
+     "expected_result": "The anonymous catalogue — one company only.",
+     "status_after": null,
+     "evidence": "runtime-viewed (screen renders); action NOT performed",
+     "note": null
+    }
+   ],
+   "exceptions": [
+    "ClientPortal/NoAccess is served by ClientPortal.Index when the caller has no portal access.",
+    "The mobile client (crossbuy_mobile, Flutter) was NOT EXAMINED."
+   ],
+   "related": [
+    "/Portal/Choose"
+   ],
+   "example": "An employee checks a payslip; a customer downloads an invoice.",
+   "evidence_level": "screens viewed; mobile client not examined"
+  }
+ ]
+}

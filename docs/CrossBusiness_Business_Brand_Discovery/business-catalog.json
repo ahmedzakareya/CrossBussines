@@ -1,0 +1,2748 @@
+{
+  "generated_for": "CrossBuy business & brand discovery",
+  "repository_root": "C:\\CrossBuy\\CrossBuy",
+  "modules": {
+    "Platform": {
+      "categories": [
+        {
+          "en": "Platform",
+          "ar": "المنصّة",
+          "icon": "ki-outline ki-abstract-26",
+          "items": [
+            {
+              "en": "Workspace",
+              "ar": "مساحة العمل",
+              "action": "Index",
+              "controller": "Workspace"
+            },
+            {
+              "en": "Agenda",
+              "ar": "الأجندة",
+              "action": "Agenda",
+              "controller": "Workspace"
+            },
+            {
+              "en": "Notifications",
+              "ar": "الإشعارات",
+              "action": "Notifications",
+              "controller": "Workspace"
+            },
+            {
+              "en": "Mentions",
+              "ar": "الإشارات إليّ",
+              "action": "Mentions",
+              "controller": "Workspace"
+            },
+            {
+              "en": "My reports",
+              "ar": "تقاريري",
+              "action": "Reports",
+              "controller": "Workspace"
+            },
+            {
+              "en": "Business event monitor",
+              "ar": "مراقب أحداث المنصّة",
+              "action": "Index",
+              "controller": "(same line continuation — see MainMenu.cs)"
+            }
+          ]
+        },
+        {
+          "en": "Reporting",
+          "ar": "التقارير",
+          "icon": "ki-outline ki-chart-simple",
+          "items": [
+            {
+              "en": "Reports center",
+              "ar": "مركز التقارير",
+              "action": "Index",
+              "controller": "Reports"
+            },
+            {
+              "en": "Business event report",
+              "ar": "تقرير أحداث المنصّة",
+              "action": "Viewer",
+              "controller": "(same line continuation — see MainMenu.cs)"
+            },
+            {
+              "en": "Favourite reports",
+              "ar": "التقارير المفضّلة",
+              "action": "Index",
+              "controller": "(same line continuation — see MainMenu.cs)"
+            },
+            {
+              "en": "Report Studio",
+              "ar": "استوديو التقارير",
+              "action": "Studio",
+              "controller": "(same line continuation — see MainMenu.cs)"
+            }
+          ]
+        }
+      ]
+    },
+    "Inventory": {
+      "categories": [
+        {
+          "en": "General",
+          "ar": "عام",
+          "icon": "ki-outline ki-element-11",
+          "items": [
+            {
+              "en": "Dashboard",
+              "ar": "لوحة المخزون",
+              "action": "Index",
+              "controller": "Inventory"
+            }
+          ]
+        },
+        {
+          "en": "Master data",
+          "ar": "البيانات الأساسية",
+          "icon": "ki-outline ki-abstract-26",
+          "items": [
+            {
+              "en": "Items",
+              "ar": "الأصناف",
+              "action": "Items",
+              "controller": "Inventory"
+            },
+            {
+              "en": "Categories",
+              "ar": "التصنيفات",
+              "action": "Categories",
+              "controller": "Inventory"
+            },
+            {
+              "en": "Units",
+              "ar": "وحدات القياس",
+              "action": "Units",
+              "controller": "Inventory"
+            },
+            {
+              "en": "Warehouses",
+              "ar": "المخازن",
+              "action": "Warehouses",
+              "controller": "Inventory"
+            },
+            {
+              "en": "Sections / racks",
+              "ar": "سيكشنات / رفوف المخزن",
+              "action": "WarehouseSections",
+              "controller": "Inventory"
+            },
+            {
+              "en": "Item locations",
+              "ar": "مواقع الأصناف",
+              "action": "ItemLocations",
+              "controller": "Inventory"
+            }
+          ]
+        },
+        {
+          "en": "Movements & balances",
+          "ar": "الحركات والأرصدة",
+          "icon": "ki-outline ki-arrow-two-diagonals",
+          "items": [
+            {
+              "en": "Stock movements",
+              "ar": "حركات المخزون",
+              "action": "StockMovements",
+              "controller": "Inventory"
+            },
+            {
+              "en": "Stock balances",
+              "ar": "أرصدة المخزون",
+              "action": "StockBalances",
+              "controller": "Inventory"
+            },
+            {
+              "en": "Rack stock",
+              "ar": "جرد الرفوف",
+              "action": "RackBalances",
+              "controller": "Inventory"
+            },
+            {
+              "en": "Batches & expiry",
+              "ar": "الدفعات والصلاحية",
+              "action": "Batches",
+              "controller": "Inventory"
+            },
+            {
+              "en": "Serials",
+              "ar": "الأرقام التسلسلية",
+              "action": "Serials",
+              "controller": "Inventory"
+            }
+          ]
+        },
+        {
+          "en": "Operations",
+          "ar": "العمليات",
+          "icon": "ki-outline ki-handcart",
+          "items": [
+            {
+              "en": "Assembly",
+              "ar": "التجميع",
+              "action": "NewAssembly",
+              "controller": "Inventory"
+            },
+            {
+              "en": "Transfers",
+              "ar": "التحويلات بين المخازن",
+              "action": "StockTransfers",
+              "controller": "Inventory"
+            },
+            {
+              "en": "Stock counts",
+              "ar": "الجرد والتسويات",
+              "action": "StockCounts",
+              "controller": "Inventory"
+            },
+            {
+              "en": "Write-offs",
+              "ar": "الإعدام والتلف",
+              "action": "WriteOffs",
+              "controller": "Inventory"
+            },
+            {
+              "en": "Landed costs",
+              "ar": "التكاليف الإضافية",
+              "action": "LandedCosts",
+              "controller": "Inventory"
+            },
+            {
+              "en": "Capitalize asset",
+              "ar": "رسملة أصل من المخزون",
+              "action": "CapitalizeAsset",
+              "controller": "Inventory"
+            }
+          ]
+        },
+        {
+          "en": "Purchasing & sales",
+          "ar": "المشتريات والمبيعات",
+          "icon": "ki-outline ki-purchase",
+          "items": [
+            {
+              "en": "Purchase orders",
+              "ar": "أوامر الشراء",
+              "action": "PurchaseOrders",
+              "controller": "Inventory"
+            },
+            {
+              "en": "Goods receipts",
+              "ar": "أذون الاستلام",
+              "action": "GoodsReceipts",
+              "controller": "Inventory"
+            },
+            {
+              "en": "Purchase invoices",
+              "ar": "فواتير المشتريات",
+              "action": "PurchaseInvoices",
+              "controller": "Accounting"
+            },
+            {
+              "en": "Replenishment",
+              "ar": "تخطيط النواقص",
+              "action": "Planning",
+              "controller": "Inventory"
+            },
+            {
+              "en": "Price lists",
+              "ar": "قوائم الأسعار",
+              "action": "PriceLists",
+              "controller": "Inventory"
+            },
+            {
+              "en": "Promotions",
+              "ar": "العروض والخصومات",
+              "action": "Promotions",
+              "controller": "Inventory"
+            },
+            {
+              "en": "Quotations",
+              "ar": "عروض الأسعار",
+              "action": "Quotations",
+              "controller": "Inventory"
+            },
+            {
+              "en": "Sales orders",
+              "ar": "أوامر البيع",
+              "action": "SalesOrders",
+              "controller": "Inventory"
+            },
+            {
+              "en": "Deliveries",
+              "ar": "أذون الصرف",
+              "action": "Deliveries",
+              "controller": "Inventory"
+            },
+            {
+              "en": "Sales invoices",
+              "ar": "فواتير المبيعات",
+              "action": "SalesInvoices",
+              "controller": "Accounting"
+            }
+          ]
+        },
+        {
+          "en": "Governance & setup",
+          "ar": "الحوكمة والإعداد",
+          "icon": "ki-outline ki-shield-tick",
+          "items": [
+            {
+              "en": "Opening balances",
+              "ar": "الأرصدة الافتتاحية",
+              "action": "OpeningBalances",
+              "controller": "Inventory"
+            },
+            {
+              "en": "Integrity check",
+              "ar": "تسوية السلامة",
+              "action": "IntegrityReconciliation",
+              "controller": "Inventory"
+            },
+            {
+              "en": "Approvals",
+              "ar": "الموافقات",
+              "action": "Approvals",
+              "controller": "Inventory"
+            },
+            {
+              "en": "Inventory roles",
+              "ar": "صلاحيات المخزون",
+              "action": "InventoryRoles",
+              "controller": "Inventory"
+            },
+            {
+              "en": "Inventory settings",
+              "ar": "إعدادات المخزون",
+              "action": "Settings",
+              "controller": "Inventory"
+            }
+          ]
+        },
+        {
+          "en": "Reports",
+          "ar": "التقارير",
+          "icon": "ki-outline ki-chart-simple",
+          "items": [
+            {
+              "en": "Inventory reports",
+              "ar": "تقارير المخزون",
+              "action": "Reports",
+              "controller": "Inventory"
+            }
+          ]
+        }
+      ]
+    },
+    "Manufacturing": {
+      "categories": [
+        {
+          "en": "General",
+          "ar": "عام",
+          "icon": "ki-outline ki-element-11",
+          "items": [
+            {
+              "en": "Manufacturing dashboard",
+              "ar": "لوحة التصنيع",
+              "action": "ManufDashboard",
+              "controller": "Inventory"
+            }
+          ]
+        },
+        {
+          "en": "Production",
+          "ar": "الإنتاج",
+          "icon": "ki-outline ki-gear",
+          "items": [
+            {
+              "en": "Work orders",
+              "ar": "أوامر التشغيل",
+              "action": "WorkOrders",
+              "controller": "Inventory"
+            },
+            {
+              "en": "New work order",
+              "ar": "أمر تشغيل جديد",
+              "action": "NewWorkOrder",
+              "controller": "Inventory"
+            },
+            {
+              "en": "Production planning",
+              "ar": "تخطيط الإنتاج (MRP)",
+              "action": "ProductionPlanning",
+              "controller": "Inventory"
+            },
+            {
+              "en": "Quick assembly",
+              "ar": "التجميع الفوري",
+              "action": "NewAssembly",
+              "controller": "Inventory"
+            }
+          ]
+        },
+        {
+          "en": "Master data",
+          "ar": "البيانات الأساسية",
+          "icon": "ki-outline ki-abstract-26",
+          "items": [
+            {
+              "en": "Items & BOMs",
+              "ar": "الأصناف وقوائم المواد",
+              "action": "Items",
+              "controller": "Inventory"
+            },
+            {
+              "en": "Work centers",
+              "ar": "مراكز العمل",
+              "action": "WorkCenters",
+              "controller": "Inventory"
+            },
+            {
+              "en": "Units",
+              "ar": "وحدات القياس",
+              "action": "Units",
+              "controller": "Inventory"
+            }
+          ]
+        },
+        {
+          "en": "Reports",
+          "ar": "التقارير",
+          "icon": "ki-outline ki-chart-simple",
+          "items": [
+            {
+              "en": "Manufacturing reports",
+              "ar": "تقارير التصنيع",
+              "action": "ManufReports",
+              "controller": "Inventory"
+            }
+          ]
+        }
+      ]
+    },
+    "Restaurant": {
+      "categories": [
+        {
+          "en": "General",
+          "ar": "عام",
+          "icon": "ki-outline ki-element-11",
+          "items": [
+            {
+              "en": "Restaurant dashboard",
+              "ar": "لوحة المطعم",
+              "action": "Dashboard",
+              "controller": "Pos"
+            }
+          ]
+        },
+        {
+          "en": "Operations",
+          "ar": "التشغيل",
+          "icon": "ki-outline ki-handcart",
+          "items": [
+            {
+              "en": "Cashier terminal",
+              "ar": "شاشة الكاشير",
+              "action": "Start",
+              "controller": "PosApp"
+            },
+            {
+              "en": "Kitchen display",
+              "ar": "شاشة المطبخ",
+              "action": "Kitchen",
+              "controller": "PosApp"
+            },
+            {
+              "en": "Delivery board",
+              "ar": "لوحة التوصيل",
+              "action": "Delivery",
+              "controller": "PosApp"
+            }
+          ]
+        },
+        {
+          "en": "Floor & menu",
+          "ar": "القاعة والقائمة",
+          "icon": "ki-outline ki-geolocation",
+          "items": [
+            {
+              "en": "Operations setup",
+              "ar": "تأسيس منصة العمليات",
+              "action": "Setup",
+              "controller": "Pos"
+            },
+            {
+              "en": "Areas & stations",
+              "ar": "الصالات والمطابخ",
+              "action": "Areas",
+              "controller": "Pos"
+            },
+            {
+              "en": "Floor plan",
+              "ar": "مخطط الطاولات",
+              "action": "FloorPlan",
+              "controller": "Pos"
+            },
+            {
+              "en": "Reservations",
+              "ar": "الحجوزات",
+              "action": "Reservations",
+              "controller": "Pos"
+            },
+            {
+              "en": "Quick items",
+              "ar": "الأصناف السريعة",
+              "action": "QuickMenu",
+              "controller": "Pos"
+            },
+            {
+              "en": "Modifiers",
+              "ar": "الإضافات (Modifiers)",
+              "action": "Modifiers",
+              "controller": "Pos"
+            },
+            {
+              "en": "Cashier preview",
+              "ar": "معاينة الكاشير",
+              "action": "Preview",
+              "controller": "Pos"
+            }
+          ]
+        },
+        {
+          "en": "Setup",
+          "ar": "الإعداد",
+          "icon": "ki-outline ki-setting-2",
+          "items": [
+            {
+              "en": "Cashier terminals",
+              "ar": "أجهزة الكاشير",
+              "action": "Terminals",
+              "controller": "Pos"
+            },
+            {
+              "en": "Delivery drivers",
+              "ar": "سائقو التوصيل",
+              "action": "Drivers",
+              "controller": "Pos"
+            },
+            {
+              "en": "Payment methods",
+              "ar": "طرق الدفع",
+              "action": "PaymentMethods",
+              "controller": "Pos"
+            },
+            {
+              "en": "Cashier roles",
+              "ar": "صلاحيات الكاشير",
+              "action": "CashierRoles",
+              "controller": "Pos"
+            },
+            {
+              "en": "Delivery zones & fees",
+              "ar": "مناطق ورسوم التوصيل",
+              "action": "DeliveryZones",
+              "controller": "Pos"
+            },
+            {
+              "en": "Item sourcing",
+              "ar": "مصادر توفير الأصناف",
+              "action": "ItemSourcing",
+              "controller": "Pos"
+            },
+            {
+              "en": "Sourcing overview",
+              "ar": "نظرة عامة: مصادر التوفير",
+              "action": "SourcingOverview",
+              "controller": "Pos"
+            },
+            {
+              "en": "Sync conflict review",
+              "ar": "مراجعة تعارضات المزامنة",
+              "action": "SyncConflicts",
+              "controller": "Pos"
+            }
+          ]
+        }
+      ]
+    },
+    "Hyper": {
+      "categories": [
+        {
+          "en": "General",
+          "ar": "عام",
+          "icon": "ki-outline ki-element-11",
+          "items": [
+            {
+              "en": "Dashboard",
+              "ar": "لوحة التشخيص",
+              "action": "Dashboard",
+              "controller": "Hyper"
+            }
+          ]
+        },
+        {
+          "en": "Operations",
+          "ar": "التشغيل",
+          "icon": "ki-outline ki-handcart",
+          "items": [
+            {
+              "en": "Cashier terminal",
+              "ar": "شاشة الكاشير",
+              "action": "Login",
+              "controller": "HyperPos"
+            }
+          ]
+        },
+        {
+          "en": "Reports",
+          "ar": "التقارير",
+          "icon": "ki-outline ki-chart-simple",
+          "items": [
+            {
+              "en": "Hyper sales",
+              "ar": "مبيعات الهايبر",
+              "action": "Sales",
+              "controller": "Hyper"
+            },
+            {
+              "en": "Item margin",
+              "ar": "هامش الصنف",
+              "action": "ItemMargin",
+              "controller": "Hyper"
+            }
+          ]
+        }
+      ]
+    },
+    "Accounting": {
+      "categories": [
+        {
+          "en": "General",
+          "ar": "عام",
+          "icon": "ki-outline ki-bank",
+          "items": [
+            {
+              "en": "Executive dashboard",
+              "ar": "اللوحة التنفيذية",
+              "action": "Executive",
+              "controller": "Accounting"
+            },
+            {
+              "en": "Dashboard",
+              "ar": "لوحة المحاسبة",
+              "action": "Index",
+              "controller": "Accounting"
+            },
+            {
+              "en": "Chart of accounts",
+              "ar": "شجرة الحسابات",
+              "action": "ChartOfAccounts",
+              "controller": "Accounting"
+            },
+            {
+              "en": "Journals",
+              "ar": "القيود اليومية",
+              "action": "Journals",
+              "controller": "Accounting"
+            },
+            {
+              "en": "Cost centers",
+              "ar": "مراكز التكلفة",
+              "action": "CostCenters",
+              "controller": "Accounting"
+            },
+            {
+              "en": "Fiscal periods",
+              "ar": "الفترات المالية",
+              "action": "Periods",
+              "controller": "Accounting"
+            },
+            {
+              "en": "AI insights",
+              "ar": "رؤى ذكية (AI)",
+              "action": "AiInsights",
+              "controller": "Accounting"
+            }
+          ]
+        },
+        {
+          "en": "Currencies & FX",
+          "ar": "العملات وأسعار الصرف",
+          "icon": "ki-outline ki-dollar",
+          "items": [
+            {
+              "en": "Currencies",
+              "ar": "العملات",
+              "action": "Currencies",
+              "controller": "Currency"
+            },
+            {
+              "en": "Exchange rates",
+              "ar": "أسعار الصرف",
+              "action": "ExchangeRates",
+              "controller": "Currency"
+            },
+            {
+              "en": "Functional currency setup",
+              "ar": "إعداد العملة الوظيفية",
+              "action": "Setup",
+              "controller": "Currency"
+            },
+            {
+              "en": "FX revaluation",
+              "ar": "إعادة تقييم العملات",
+              "action": "Revaluation",
+              "controller": "Currency"
+            }
+          ]
+        },
+        {
+          "en": "Receivables",
+          "ar": "العملاء",
+          "icon": "ki-outline ki-handcart",
+          "items": [
+            {
+              "en": "Customers",
+              "ar": "العملاء",
+              "action": "Customers",
+              "controller": "Accounting"
+            },
+            {
+              "en": "Sales invoices",
+              "ar": "فواتير المبيعات",
+              "action": "SalesInvoices",
+              "controller": "Accounting"
+            },
+            {
+              "en": "Receipts",
+              "ar": "سندات القبض",
+              "action": "Receipts",
+              "controller": "Accounting"
+            },
+            {
+              "en": "Sales returns",
+              "ar": "مرتجعات البيع (إشعار دائن)",
+              "action": "SalesReturns",
+              "controller": "Accounting"
+            },
+            {
+              "en": "Customer statement",
+              "ar": "كشف حساب عميل",
+              "action": "CustomerStatement",
+              "controller": "Accounting"
+            },
+            {
+              "en": "AR aging",
+              "ar": "أعمار ديون العملاء",
+              "action": "ArAging",
+              "controller": "Accounting"
+            },
+            {
+              "en": "Customer analytics",
+              "ar": "تحليلات العملاء",
+              "action": "CustomerAnalytics",
+              "controller": "Accounting"
+            }
+          ]
+        },
+        {
+          "en": "CRM",
+          "ar": "إدارة العلاقات (CRM)",
+          "icon": "ki-outline ki-people",
+          "items": [
+            {
+              "en": "CRM dashboard",
+              "ar": "لوحة CRM",
+              "action": "Index",
+              "controller": "Crm"
+            },
+            {
+              "en": "Accounts",
+              "ar": "الحسابات",
+              "action": "Accounts",
+              "controller": "Crm"
+            },
+            {
+              "en": "Leads",
+              "ar": "العملاء المحتملون",
+              "action": "Leads",
+              "controller": "Crm"
+            },
+            {
+              "en": "Opportunities",
+              "ar": "الفرص البيعية",
+              "action": "Opportunities",
+              "controller": "Crm"
+            },
+            {
+              "en": "Pipeline (Kanban)",
+              "ar": "خط الأنابيب (Kanban)",
+              "action": "Pipeline",
+              "controller": "Crm"
+            },
+            {
+              "en": "Opportunity Insights",
+              "ar": "تحليلات الفرص",
+              "action": "OpportunityInsights",
+              "controller": "Crm"
+            },
+            {
+              "en": "Account Insights",
+              "ar": "تحليلات الحسابات",
+              "action": "AccountInsights",
+              "controller": "Crm"
+            },
+            {
+              "en": "Pipeline setup",
+              "ar": "إعداد خطوط الأنابيب",
+              "action": "Pipelines",
+              "controller": "Crm"
+            },
+            {
+              "en": "Activities",
+              "ar": "الأنشطة والمهام",
+              "action": "Activities",
+              "controller": "Crm"
+            },
+            {
+              "en": "Campaigns",
+              "ar": "الحملات التسويقية",
+              "action": "Campaigns",
+              "controller": "Crm"
+            },
+            {
+              "en": "Marketing lists",
+              "ar": "القوائم التسويقية",
+              "action": "MarketingLists",
+              "controller": "Crm"
+            },
+            {
+              "en": "Tickets",
+              "ar": "التذاكر",
+              "action": "Tickets",
+              "controller": "Crm"
+            },
+            {
+              "en": "SLA policies",
+              "ar": "سياسات SLA",
+              "action": "SlaPolicies",
+              "controller": "Crm"
+            },
+            {
+              "en": "Forecast",
+              "ar": "التنبؤ بالمبيعات",
+              "action": "Forecast",
+              "controller": "Crm"
+            },
+            {
+              "en": "360° reports",
+              "ar": "تقارير 360°",
+              "action": "Reports",
+              "controller": "Crm"
+            },
+            {
+              "en": "Scoring & automation",
+              "ar": "تقييم العملاء والأتمتة",
+              "action": "ScoringRules",
+              "controller": "Crm"
+            },
+            {
+              "en": "Custom fields",
+              "ar": "الحقول المخصّصة",
+              "action": "CustomFields",
+              "controller": "Crm"
+            },
+            {
+              "en": "Automation rules",
+              "ar": "قواعد الأتمتة",
+              "action": "AutomationRules",
+              "controller": "Crm"
+            },
+            {
+              "en": "CRM roles",
+              "ar": "صلاحيات CRM",
+              "action": "CrmRoles",
+              "controller": "Crm"
+            }
+          ]
+        },
+        {
+          "en": "Payables",
+          "ar": "الموردون",
+          "icon": "ki-outline ki-purchase",
+          "items": [
+            {
+              "en": "Vendors",
+              "ar": "الموردون",
+              "action": "Vendors",
+              "controller": "Accounting"
+            },
+            {
+              "en": "Purchase invoices",
+              "ar": "فواتير المشتريات",
+              "action": "PurchaseInvoices",
+              "controller": "Accounting"
+            },
+            {
+              "en": "Payments",
+              "ar": "سندات الدفع",
+              "action": "Payments",
+              "controller": "Accounting"
+            },
+            {
+              "en": "Purchase returns",
+              "ar": "مرتجعات الشراء (إشعار مدين)",
+              "action": "PurchaseReturns",
+              "controller": "Accounting"
+            },
+            {
+              "en": "Vendor statement",
+              "ar": "كشف حساب مورد",
+              "action": "VendorStatement",
+              "controller": "Accounting"
+            },
+            {
+              "en": "AP aging",
+              "ar": "أعمار ديون الموردين",
+              "action": "ApAging",
+              "controller": "Accounting"
+            }
+          ]
+        },
+        {
+          "en": "Banks & cash",
+          "ar": "البنوك والنقدية",
+          "icon": "ki-outline ki-dollar",
+          "items": [
+            {
+              "en": "Bank accounts",
+              "ar": "البنوك",
+              "action": "BankAccounts",
+              "controller": "Accounting"
+            },
+            {
+              "en": "Cash boxes",
+              "ar": "الخزائن",
+              "action": "CashBoxes",
+              "controller": "Accounting"
+            },
+            {
+              "en": "Cash transfer",
+              "ar": "تحويل نقدي",
+              "action": "Transfer",
+              "controller": "Accounting"
+            },
+            {
+              "en": "Bank reconcile",
+              "ar": "تسوية بنكية",
+              "action": "Reconcile",
+              "controller": "Accounting"
+            }
+          ]
+        },
+        {
+          "en": "Payroll",
+          "ar": "الرواتب",
+          "icon": "ki-outline ki-people",
+          "items": [
+            {
+              "en": "Payroll run",
+              "ar": "قيد الرواتب",
+              "action": "Payroll",
+              "controller": "Accounting"
+            },
+            {
+              "en": "Payslips",
+              "ar": "قسائم الرواتب",
+              "action": "Payslips",
+              "controller": "Accounting"
+            },
+            {
+              "en": "Disbursement & remittance",
+              "ar": "صرف الرواتب والتوريد",
+              "action": "PayrollDisbursement",
+              "controller": "Accounting"
+            },
+            {
+              "en": "Payroll tax & insurance",
+              "ar": "ضريبة الرواتب والتأمينات",
+              "action": "PayrollTaxSettings",
+              "controller": "Accounting"
+            }
+          ]
+        },
+        {
+          "en": "Tax",
+          "ar": "الضرائب",
+          "icon": "ki-outline ki-percentage",
+          "items": [
+            {
+              "en": "Tax codes",
+              "ar": "أكواد الضريبة",
+              "action": "TaxCodes",
+              "controller": "Accounting"
+            },
+            {
+              "en": "VAT returns",
+              "ar": "إقرارات القيمة المضافة",
+              "action": "VatReturns",
+              "controller": "Accounting"
+            },
+            {
+              "en": "ETA status",
+              "ar": "حالة الفاتورة الإلكترونية",
+              "action": "EtaStatus",
+              "controller": "Accounting"
+            }
+          ]
+        },
+        {
+          "en": "Fixed assets",
+          "ar": "الأصول الثابتة",
+          "icon": "ki-outline ki-some-files",
+          "items": [
+            {
+              "en": "Fixed assets",
+              "ar": "الأصول الثابتة",
+              "action": "FixedAssets",
+              "controller": "Accounting"
+            },
+            {
+              "en": "Asset categories",
+              "ar": "فئات الأصول",
+              "action": "AssetCategories",
+              "controller": "Accounting"
+            },
+            {
+              "en": "Depreciation runs",
+              "ar": "تشغيل الإهلاك",
+              "action": "DepreciationRuns",
+              "controller": "Accounting"
+            },
+            {
+              "en": "Maintenance due",
+              "ar": "صيانة مستحقّة",
+              "action": "MaintenanceDue",
+              "controller": "Accounting"
+            }
+          ]
+        },
+        {
+          "en": "Financial reports",
+          "ar": "التقارير المالية",
+          "icon": "ki-outline ki-chart-simple",
+          "items": [
+            {
+              "en": "Trial balance",
+              "ar": "ميزان المراجعة",
+              "action": "TrialBalance",
+              "controller": "Accounting"
+            },
+            {
+              "en": "Balance sheet",
+              "ar": "الميزانية العمومية",
+              "action": "BalanceSheet",
+              "controller": "Accounting"
+            },
+            {
+              "en": "Income statement",
+              "ar": "قائمة الدخل",
+              "action": "IncomeStatement",
+              "controller": "Accounting"
+            },
+            {
+              "en": "Cash flow",
+              "ar": "التدفقات النقدية",
+              "action": "CashFlow",
+              "controller": "Accounting"
+            }
+          ]
+        },
+        {
+          "en": "Closing",
+          "ar": "الإقفال",
+          "icon": "ki-outline ki-lock-2",
+          "items": [
+            {
+              "en": "Year-end close",
+              "ar": "إقفال السنة المالية",
+              "action": "YearEndClose",
+              "controller": "Accounting"
+            }
+          ]
+        },
+        {
+          "en": "Setup & roles",
+          "ar": "الإعدادات والصلاحيات",
+          "icon": "ki-outline ki-shield-tick",
+          "items": [
+            {
+              "en": "Accounting roles",
+              "ar": "أدوار المحاسبة",
+              "action": "AccountingRoles",
+              "controller": "Accounting"
+            }
+          ]
+        }
+      ]
+    },
+    "Tasks": {
+      "categories": [
+        {
+          "en": "Tasks",
+          "ar": "المهام",
+          "icon": "ki-outline ki-abstract-26",
+          "items": [
+            {
+              "en": "My tasks",
+              "ar": "مهامي",
+              "action": "Index",
+              "controller": "Tasks"
+            },
+            {
+              "en": "All tasks",
+              "ar": "كل المهام",
+              "action": "All",
+              "controller": "Tasks"
+            },
+            {
+              "en": "Board",
+              "ar": "اللوحة",
+              "action": "Board",
+              "controller": "Tasks"
+            }
+          ]
+        },
+        {
+          "en": "Reports",
+          "ar": "التقارير",
+          "icon": "ki-outline ki-chart-simple",
+          "items": [
+            {
+              "en": "Reports dashboard",
+              "ar": "لوحة التقارير",
+              "action": "Reports",
+              "controller": "Tasks"
+            },
+            {
+              "en": "Hours report",
+              "ar": "تقرير الساعات",
+              "action": "HoursReport",
+              "controller": "Tasks"
+            }
+          ]
+        },
+        {
+          "en": "Setup",
+          "ar": "الإعداد",
+          "icon": "ki-outline ki-gear",
+          "items": [
+            {
+              "en": "Auto-task rules",
+              "ar": "قواعد التوليد التلقائي",
+              "action": "AutoRules",
+              "controller": "Tasks"
+            },
+            {
+              "en": "Match suggestions",
+              "ar": "مطابقات مقترحة",
+              "action": "MatchSuggestions",
+              "controller": "Tasks"
+            },
+            {
+              "en": "Task templates",
+              "ar": "قوالب المهام",
+              "action": "Templates",
+              "controller": "Tasks"
+            }
+          ]
+        }
+      ]
+    },
+    "Calendar": {
+      "categories": [
+        {
+          "en": "Calendar",
+          "ar": "التقويم",
+          "icon": "ki-outline ki-calendar",
+          "items": [
+            {
+              "en": "Calendar",
+              "ar": "التقويم",
+              "action": "Index",
+              "controller": "Calendar"
+            },
+            {
+              "en": "Timeline",
+              "ar": "الجدول الزمني",
+              "action": "Timeline",
+              "controller": "Calendar"
+            },
+            {
+              "en": "Resource view",
+              "ar": "عرض الموارد",
+              "action": "ResourceView",
+              "controller": "Calendar"
+            }
+          ]
+        }
+      ]
+    },
+    "Projects": {
+      "categories": [
+        {
+          "en": "Projects & Contracting",
+          "ar": "المشاريع والمقاولات",
+          "icon": "ki-outline ki-briefcase",
+          "items": [
+            {
+              "en": "Projects dashboard",
+              "ar": "لوحة المشاريع",
+              "action": "Dashboard",
+              "controller": "Project"
+            },
+            {
+              "en": "Projects",
+              "ar": "المشاريع",
+              "action": "Projects",
+              "controller": "Project"
+            },
+            {
+              "en": "Receive advance",
+              "ar": "استلام دفعة مقدمة",
+              "action": "Advance",
+              "controller": "Project"
+            },
+            {
+              "en": "Release retention",
+              "ar": "رد المحتجز",
+              "action": "RetentionRelease",
+              "controller": "Project"
+            },
+            {
+              "en": "Release subcontractor retention",
+              "ar": "رد محتجز الباطن",
+              "action": "SubRetentionRelease",
+              "controller": "Project"
+            },
+            {
+              "en": "Project activity types",
+              "ar": "أنواع نشاط المشاريع",
+              "action": "ActivityTypes",
+              "controller": "Project"
+            },
+            {
+              "en": "Project profitability",
+              "ar": "ربحية المشاريع",
+              "action": "Profitability",
+              "controller": "Project"
+            }
+          ]
+        }
+      ]
+    },
+    "Admin": {
+      "categories": [
+        {
+          "en": "General",
+          "ar": "عام",
+          "icon": "ki-outline ki-element-11",
+          "items": [
+            {
+              "en": "HR Dashboard",
+              "ar": "لوحة الموارد البشرية",
+              "action": "Index",
+              "controller": "Admin"
+            },
+            {
+              "en": "Chat",
+              "ar": "المحادثات",
+              "action": "Index",
+              "controller": "Chat"
+            },
+            {
+              "en": "Notifications",
+              "ar": "الإشعارات",
+              "action": "Index",
+              "controller": "Notifications"
+            },
+            {
+              "en": "My approvals",
+              "ar": "موافقاتي",
+              "action": "Index",
+              "controller": "Approvals"
+            },
+            {
+              "en": "Email",
+              "ar": "البريد",
+              "action": "Index",
+              "controller": "Comm"
+            },
+            {
+              "en": "Calendar",
+              "ar": "التقويم",
+              "action": "Index",
+              "controller": "Calendar"
+            },
+            {
+              "en": "File Manager",
+              "ar": "إدارة الملفات",
+              "action": "Index",
+              "controller": "FileManager"
+            },
+            {
+              "en": "Announcements",
+              "ar": "الإعلانات",
+              "action": "Index",
+              "controller": "Announcements"
+            }
+          ]
+        },
+        {
+          "en": "Employees & structure",
+          "ar": "الموظفون والهيكل",
+          "icon": "ki-outline ki-people",
+          "items": [
+            {
+              "en": "Employees",
+              "ar": "الموظفون",
+              "action": "EmployeesList",
+              "controller": "Admin"
+            },
+            {
+              "en": "Org structure",
+              "ar": "الهيكل التنظيمي",
+              "action": "AdministrativeStructure",
+              "controller": "Admin"
+            },
+            {
+              "en": "Job titles",
+              "ar": "المسميات الوظيفية",
+              "action": "JobTitlesList",
+              "controller": "Admin"
+            },
+            {
+              "en": "Administrative bodies",
+              "ar": "الجهات الإدارية",
+              "action": "AdministrativeBodiesCompanyList",
+              "controller": "Admin"
+            },
+            {
+              "en": "Job applications",
+              "ar": "طلبات التوظيف",
+              "action": "Applications",
+              "controller": "Admin"
+            },
+            {
+              "en": "Contracts & documents",
+              "ar": "مستندات وعقود الموظفين",
+              "action": "HrDocuments",
+              "controller": "Admin"
+            },
+            {
+              "en": "Expiry alerts",
+              "ar": "تنبيهات انتهاء المستندات",
+              "action": "DocExpiryAlerts",
+              "controller": "Admin"
+            },
+            {
+              "en": "Required documents",
+              "ar": "أنواع المستندات المطلوبة",
+              "action": "RequiredDocTypesList",
+              "controller": "Admin"
+            },
+            {
+              "en": "Termination & settlement",
+              "ar": "إنهاء الخدمة والتسوية النهائية",
+              "action": "FinalSettlement",
+              "controller": "Admin"
+            }
+          ]
+        },
+        {
+          "en": "Leave & attendance",
+          "ar": "الإجازات والحضور",
+          "icon": "ki-outline ki-calendar-tick",
+          "items": [
+            {
+              "en": "Leave types",
+              "ar": "أنواع الإجازات",
+              "action": "LeaveTypesList",
+              "controller": "Admin"
+            },
+            {
+              "en": "Policies",
+              "ar": "السياسات",
+              "action": "Polices",
+              "controller": "Admin"
+            },
+            {
+              "en": "Official holidays",
+              "ar": "العطلات الرسمية",
+              "action": "HolidaysList",
+              "controller": "Admin"
+            },
+            {
+              "en": "Attendance",
+              "ar": "الحضور والانصراف",
+              "action": "Attendance",
+              "controller": "Admin"
+            },
+            {
+              "en": "Encashment & provision",
+              "ar": "بدل الإجازات ومخصصها",
+              "action": "LeaveAccrual",
+              "controller": "Admin"
+            },
+            {
+              "en": "Leave carry-over",
+              "ar": "ترحيل رصيد الإجازات",
+              "action": "LeaveCarryOver",
+              "controller": "Admin"
+            },
+            {
+              "en": "Performance appraisal",
+              "ar": "تقييم الأداء",
+              "action": "Appraisals",
+              "controller": "Admin"
+            },
+            {
+              "en": "Training",
+              "ar": "التدريب",
+              "action": "TrainingCourses",
+              "controller": "Admin"
+            }
+          ]
+        },
+        {
+          "en": "System setup",
+          "ar": "إعدادات النظام",
+          "icon": "ki-outline ki-setting-2",
+          "items": [
+            {
+              "en": "Companies",
+              "ar": "الشركات",
+              "action": "CompaniesList",
+              "controller": "Service"
+            },
+            {
+              "en": "Branches",
+              "ar": "الفروع",
+              "action": "BranchesList",
+              "controller": "Service"
+            },
+            {
+              "en": "Brands",
+              "ar": "العلامات التجارية",
+              "action": "Brands",
+              "controller": "Brand"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "module_count": 10,
+  "menu_entry_count": 186,
+  "controllers": {
+    "AccountController": {
+      "file": "CrossBuy/Controllers/AccountController.cs",
+      "api": false,
+      "lines": 432,
+      "actions": 11,
+      "httpGet": 8,
+      "httpPost": 3,
+      "authorize": false,
+      "allowAnonymous": 1
+    },
+    "AccountingController": {
+      "file": "CrossBuy/Controllers/AccountingController.cs",
+      "api": false,
+      "lines": 3043,
+      "actions": 134,
+      "httpGet": 83,
+      "httpPost": 53,
+      "authorize": false,
+      "allowAnonymous": 0
+    },
+    "AdminController.Appraisals": {
+      "file": "CrossBuy/Controllers/AdminController.Appraisals.cs",
+      "api": false,
+      "lines": 196,
+      "actions": 10,
+      "httpGet": 4,
+      "httpPost": 6,
+      "authorize": false,
+      "allowAnonymous": 0
+    },
+    "AdminController.Recruitment": {
+      "file": "CrossBuy/Controllers/AdminController.Recruitment.cs",
+      "api": false,
+      "lines": 205,
+      "actions": 12,
+      "httpGet": 5,
+      "httpPost": 7,
+      "authorize": false,
+      "allowAnonymous": 0
+    },
+    "AdminController.Training": {
+      "file": "CrossBuy/Controllers/AdminController.Training.cs",
+      "api": false,
+      "lines": 135,
+      "actions": 8,
+      "httpGet": 3,
+      "httpPost": 5,
+      "authorize": false,
+      "allowAnonymous": 0
+    },
+    "AdminController": {
+      "file": "CrossBuy/Controllers/AdminController.cs",
+      "api": false,
+      "lines": 1147,
+      "actions": 51,
+      "httpGet": 19,
+      "httpPost": 25,
+      "authorize": false,
+      "allowAnonymous": 0
+    },
+    "AnnouncementsController": {
+      "file": "CrossBuy/Controllers/AnnouncementsController.cs",
+      "api": false,
+      "lines": 74,
+      "actions": 5,
+      "httpGet": 2,
+      "httpPost": 3,
+      "authorize": false,
+      "allowAnonymous": 0
+    },
+    "ApprovalsController": {
+      "file": "CrossBuy/Controllers/ApprovalsController.cs",
+      "api": false,
+      "lines": 144,
+      "actions": 1,
+      "httpGet": 1,
+      "httpPost": 0,
+      "authorize": false,
+      "allowAnonymous": 0
+    },
+    "BaseController": {
+      "file": "CrossBuy/Controllers/BaseController.cs",
+      "api": false,
+      "lines": 17,
+      "actions": 1,
+      "httpGet": 0,
+      "httpPost": 0,
+      "authorize": false,
+      "allowAnonymous": 0
+    },
+    "BrandController": {
+      "file": "CrossBuy/Controllers/BrandController.cs",
+      "api": false,
+      "lines": 62,
+      "actions": 5,
+      "httpGet": 2,
+      "httpPost": 3,
+      "authorize": false,
+      "allowAnonymous": 0
+    },
+    "BusinessEventMonitorController": {
+      "file": "CrossBuy/Controllers/BusinessEventMonitorController.cs",
+      "api": false,
+      "lines": 322,
+      "actions": 7,
+      "httpGet": 5,
+      "httpPost": 2,
+      "authorize": false,
+      "allowAnonymous": 0
+    },
+    "CalendarController": {
+      "file": "CrossBuy/Controllers/CalendarController.cs",
+      "api": false,
+      "lines": 342,
+      "actions": 13,
+      "httpGet": 10,
+      "httpPost": 3,
+      "authorize": false,
+      "allowAnonymous": 0
+    },
+    "ChatController": {
+      "file": "CrossBuy/Controllers/ChatController.cs",
+      "api": false,
+      "lines": 197,
+      "actions": 14,
+      "httpGet": 5,
+      "httpPost": 9,
+      "authorize": false,
+      "allowAnonymous": 0
+    },
+    "ClientPortalController": {
+      "file": "CrossBuy/Controllers/ClientPortalController.cs",
+      "api": false,
+      "lines": 71,
+      "actions": 5,
+      "httpGet": 6,
+      "httpPost": 0,
+      "authorize": true,
+      "allowAnonymous": 0
+    },
+    "CommController": {
+      "file": "CrossBuy/Controllers/CommController.cs",
+      "api": false,
+      "lines": 186,
+      "actions": 8,
+      "httpGet": 4,
+      "httpPost": 4,
+      "authorize": false,
+      "allowAnonymous": 0
+    },
+    "CommentsController": {
+      "file": "CrossBuy/Controllers/CommentsController.cs",
+      "api": false,
+      "lines": 66,
+      "actions": 3,
+      "httpGet": 1,
+      "httpPost": 2,
+      "authorize": false,
+      "allowAnonymous": 0
+    },
+    "CrmController": {
+      "file": "CrossBuy/Controllers/CrmController.cs",
+      "api": false,
+      "lines": 1207,
+      "actions": 74,
+      "httpGet": 42,
+      "httpPost": 32,
+      "authorize": false,
+      "allowAnonymous": 0
+    },
+    "CurrencyController": {
+      "file": "CrossBuy/Controllers/CurrencyController.cs",
+      "api": false,
+      "lines": 205,
+      "actions": 10,
+      "httpGet": 5,
+      "httpPost": 5,
+      "authorize": false,
+      "allowAnonymous": 0
+    },
+    "DocumentsController": {
+      "file": "CrossBuy/Controllers/DocumentsController.cs",
+      "api": false,
+      "lines": 278,
+      "actions": 8,
+      "httpGet": 5,
+      "httpPost": 3,
+      "authorize": false,
+      "allowAnonymous": 0
+    },
+    "EmployeeOnboardingController": {
+      "file": "CrossBuy/Controllers/EmployeeOnboardingController.cs",
+      "api": false,
+      "lines": 217,
+      "actions": 5,
+      "httpGet": 1,
+      "httpPost": 4,
+      "authorize": false,
+      "allowAnonymous": 0
+    },
+    "FileManagerController": {
+      "file": "CrossBuy/Controllers/FileManagerController.cs",
+      "api": false,
+      "lines": 161,
+      "actions": 9,
+      "httpGet": 4,
+      "httpPost": 5,
+      "authorize": false,
+      "allowAnonymous": 0
+    },
+    "HomeController": {
+      "file": "CrossBuy/Controllers/HomeController.cs",
+      "api": false,
+      "lines": 65,
+      "actions": 4,
+      "httpGet": 0,
+      "httpPost": 0,
+      "authorize": false,
+      "allowAnonymous": 1
+    },
+    "HyperController": {
+      "file": "CrossBuy/Controllers/HyperController.cs",
+      "api": false,
+      "lines": 224,
+      "actions": 3,
+      "httpGet": 4,
+      "httpPost": 0,
+      "authorize": false,
+      "allowAnonymous": 0
+    },
+    "HyperPosController": {
+      "file": "CrossBuy/Controllers/HyperPosController.cs",
+      "api": false,
+      "lines": 550,
+      "actions": 18,
+      "httpGet": 10,
+      "httpPost": 11,
+      "authorize": false,
+      "allowAnonymous": 2
+    },
+    "InsightActionsController": {
+      "file": "CrossBuy/Controllers/InsightActionsController.cs",
+      "api": false,
+      "lines": 305,
+      "actions": 2,
+      "httpGet": 1,
+      "httpPost": 1,
+      "authorize": false,
+      "allowAnonymous": 0
+    },
+    "InventoryController": {
+      "file": "CrossBuy/Controllers/InventoryController.cs",
+      "api": false,
+      "lines": 3211,
+      "actions": 171,
+      "httpGet": 105,
+      "httpPost": 70,
+      "authorize": false,
+      "allowAnonymous": 0
+    },
+    "InventoryListRows": {
+      "file": "CrossBuy/Controllers/InventoryListRows.cs",
+      "api": false,
+      "lines": 81,
+      "actions": 0,
+      "httpGet": 0,
+      "httpPost": 0,
+      "authorize": false,
+      "allowAnonymous": 0
+    },
+    "NotificationsController": {
+      "file": "CrossBuy/Controllers/NotificationsController.cs",
+      "api": false,
+      "lines": 93,
+      "actions": 3,
+      "httpGet": 2,
+      "httpPost": 1,
+      "authorize": false,
+      "allowAnonymous": 0
+    },
+    "PeopleController": {
+      "file": "CrossBuy/Controllers/PeopleController.cs",
+      "api": false,
+      "lines": 643,
+      "actions": 18,
+      "httpGet": 0,
+      "httpPost": 5,
+      "authorize": false,
+      "allowAnonymous": 0
+    },
+    "PlatformTimelineController": {
+      "file": "CrossBuy/Controllers/PlatformTimelineController.cs",
+      "api": false,
+      "lines": 87,
+      "actions": 1,
+      "httpGet": 1,
+      "httpPost": 0,
+      "authorize": false,
+      "allowAnonymous": 0
+    },
+    "PortalController": {
+      "file": "CrossBuy/Controllers/PortalController.cs",
+      "api": false,
+      "lines": 22,
+      "actions": 1,
+      "httpGet": 0,
+      "httpPost": 0,
+      "authorize": false,
+      "allowAnonymous": 0
+    },
+    "PosAppController": {
+      "file": "CrossBuy/Controllers/PosAppController.cs",
+      "api": false,
+      "lines": 859,
+      "actions": 55,
+      "httpGet": 21,
+      "httpPost": 36,
+      "authorize": false,
+      "allowAnonymous": 2
+    },
+    "PosController": {
+      "file": "CrossBuy/Controllers/PosController.cs",
+      "api": false,
+      "lines": 927,
+      "actions": 63,
+      "httpGet": 21,
+      "httpPost": 43,
+      "authorize": false,
+      "allowAnonymous": 0
+    },
+    "ProjectCloseoutController": {
+      "file": "CrossBuy/Controllers/ProjectCloseoutController.cs",
+      "api": false,
+      "lines": 104,
+      "actions": 3,
+      "httpGet": 1,
+      "httpPost": 2,
+      "authorize": false,
+      "allowAnonymous": 0
+    },
+    "ProjectController": {
+      "file": "CrossBuy/Controllers/ProjectController.cs",
+      "api": false,
+      "lines": 926,
+      "actions": 52,
+      "httpGet": 17,
+      "httpPost": 35,
+      "authorize": false,
+      "allowAnonymous": 0
+    },
+    "ReportsController": {
+      "file": "CrossBuy/Controllers/ReportsController.cs",
+      "api": false,
+      "lines": 441,
+      "actions": 7,
+      "httpGet": 9,
+      "httpPost": 0,
+      "authorize": false,
+      "allowAnonymous": 0
+    },
+    "RestaurantIntelligenceController": {
+      "file": "CrossBuy/Controllers/RestaurantIntelligenceController.cs",
+      "api": false,
+      "lines": 99,
+      "actions": 1,
+      "httpGet": 1,
+      "httpPost": 0,
+      "authorize": false,
+      "allowAnonymous": 0
+    },
+    "RosterController": {
+      "file": "CrossBuy/Controllers/RosterController.cs",
+      "api": false,
+      "lines": 204,
+      "actions": 6,
+      "httpGet": 3,
+      "httpPost": 4,
+      "authorize": false,
+      "allowAnonymous": 0
+    },
+    "ServiceController": {
+      "file": "CrossBuy/Controllers/ServiceController.cs",
+      "api": false,
+      "lines": 232,
+      "actions": 6,
+      "httpGet": 4,
+      "httpPost": 2,
+      "authorize": false,
+      "allowAnonymous": 0
+    },
+    "StoreController": {
+      "file": "CrossBuy/Controllers/StoreController.cs",
+      "api": false,
+      "lines": 52,
+      "actions": 2,
+      "httpGet": 0,
+      "httpPost": 0,
+      "authorize": false,
+      "allowAnonymous": 1
+    },
+    "TasksController": {
+      "file": "CrossBuy/Controllers/TasksController.cs",
+      "api": false,
+      "lines": 1153,
+      "actions": 44,
+      "httpGet": 19,
+      "httpPost": 24,
+      "authorize": false,
+      "allowAnonymous": 0
+    },
+    "WorkspaceController": {
+      "file": "CrossBuy/Controllers/WorkspaceController.cs",
+      "api": false,
+      "lines": 89,
+      "actions": 5,
+      "httpGet": 0,
+      "httpPost": 0,
+      "authorize": false,
+      "allowAnonymous": 0
+    },
+    "AccountingApiController": {
+      "file": "CrossBuy/Controllers/Api/AccountingApiController.cs",
+      "api": true,
+      "lines": 477,
+      "actions": 22,
+      "httpGet": 12,
+      "httpPost": 10,
+      "authorize": true,
+      "allowAnonymous": 0
+    },
+    "AiController": {
+      "file": "CrossBuy/Controllers/Api/AiController.cs",
+      "api": true,
+      "lines": 245,
+      "actions": 7,
+      "httpGet": 3,
+      "httpPost": 4,
+      "authorize": true,
+      "allowAnonymous": 0
+    },
+    "AuthApiController": {
+      "file": "CrossBuy/Controllers/Api/AuthApiController.cs",
+      "api": true,
+      "lines": 76,
+      "actions": 2,
+      "httpGet": 1,
+      "httpPost": 1,
+      "authorize": false,
+      "allowAnonymous": 0
+    },
+    "DevSeedController": {
+      "file": "CrossBuy/Controllers/Api/DevSeedController.cs",
+      "api": true,
+      "lines": 15795,
+      "actions": 236,
+      "httpGet": 236,
+      "httpPost": 0,
+      "authorize": false,
+      "allowAnonymous": 1
+    },
+    "EmployeesApiController": {
+      "file": "CrossBuy/Controllers/Api/EmployeesApiController.cs",
+      "api": true,
+      "lines": 152,
+      "actions": 2,
+      "httpGet": 2,
+      "httpPost": 0,
+      "authorize": true,
+      "allowAnonymous": 0
+    },
+    "HrApiController": {
+      "file": "CrossBuy/Controllers/Api/HrApiController.cs",
+      "api": true,
+      "lines": 166,
+      "actions": 6,
+      "httpGet": 4,
+      "httpPost": 1,
+      "authorize": true,
+      "allowAnonymous": 0
+    },
+    "InventoryApiController": {
+      "file": "CrossBuy/Controllers/Api/InventoryApiController.cs",
+      "api": true,
+      "lines": 110,
+      "actions": 3,
+      "httpGet": 3,
+      "httpPost": 0,
+      "authorize": true,
+      "allowAnonymous": 0
+    },
+    "LeaveApiController": {
+      "file": "CrossBuy/Controllers/Api/LeaveApiController.cs",
+      "api": true,
+      "lines": 240,
+      "actions": 6,
+      "httpGet": 4,
+      "httpPost": 2,
+      "authorize": true,
+      "allowAnonymous": 0
+    },
+    "MeApiController": {
+      "file": "CrossBuy/Controllers/Api/MeApiController.cs",
+      "api": true,
+      "lines": 358,
+      "actions": 6,
+      "httpGet": 6,
+      "httpPost": 0,
+      "authorize": true,
+      "allowAnonymous": 0
+    },
+    "NotificationsApiController": {
+      "file": "CrossBuy/Controllers/Api/NotificationsApiController.cs",
+      "api": true,
+      "lines": 109,
+      "actions": 3,
+      "httpGet": 1,
+      "httpPost": 2,
+      "authorize": true,
+      "allowAnonymous": 0
+    },
+    "PlatformGrantsApiController": {
+      "file": "CrossBuy/Controllers/Api/PlatformGrantsApiController.cs",
+      "api": true,
+      "lines": 216,
+      "actions": 5,
+      "httpGet": 2,
+      "httpPost": 3,
+      "authorize": true,
+      "allowAnonymous": 0
+    },
+    "ReportStudioApiController": {
+      "file": "CrossBuy/Controllers/Api/ReportStudioApiController.cs",
+      "api": true,
+      "lines": 453,
+      "actions": 17,
+      "httpGet": 6,
+      "httpPost": 11,
+      "authorize": true,
+      "allowAnonymous": 0
+    },
+    "ReportsCenterApiController": {
+      "file": "CrossBuy/Controllers/Api/ReportsCenterApiController.cs",
+      "api": true,
+      "lines": 442,
+      "actions": 12,
+      "httpGet": 12,
+      "httpPost": 0,
+      "authorize": true,
+      "allowAnonymous": 0
+    },
+    "ReportsCenterWriteEndpoints": {
+      "file": "CrossBuy/Controllers/Api/ReportsCenterWriteEndpoints.cs",
+      "api": true,
+      "lines": 558,
+      "actions": 10,
+      "httpGet": 1,
+      "httpPost": 6,
+      "authorize": true,
+      "allowAnonymous": 0
+    },
+    "UatSeedController": {
+      "file": "CrossBuy/Controllers/Api/UatSeedController.cs",
+      "api": true,
+      "lines": 469,
+      "actions": 7,
+      "httpGet": 7,
+      "httpPost": 0,
+      "authorize": false,
+      "allowAnonymous": 1
+    }
+  },
+  "controller_count": 57,
+  "views_by_folder": {
+    "Inventory": 79,
+    "Accounting": 68,
+    "Crm": 34,
+    "Admin": 31,
+    "Shared": 29,
+    "Project": 17,
+    "Pos": 16,
+    "People": 12,
+    "Tasks": 10,
+    "Hyper": 9,
+    "Account": 6,
+    "ClientPortal": 6,
+    "PosApp": 5,
+    "Reports": 5,
+    "Service": 5,
+    "Workspace": 5,
+    "Currency": 4,
+    "BusinessEventMonitor": 3,
+    "Calendar": 3,
+    "Comm": 3,
+    "Home": 3,
+    ".": 2,
+    "Brand": 2,
+    "Roster": 2,
+    "Store": 2,
+    "Announcements": 1,
+    "Approvals": 1,
+    "Chat": 1,
+    "Documents": 1,
+    "EmployeeOnboarding": 1,
+    "FileManager": 1,
+    "InsightActions": 1,
+    "Notifications": 1,
+    "Portal": 1,
+    "ProjectCloseout": 1,
+    "RestaurantIntelligence": 1
+  },
+  "view_count": 372,
+  "persisted_entities": [
+    "Accounting.Account",
+    "Accounting.AccountType",
+    "Accounting.AccountingPeriodAudit",
+    "Accounting.AccountingSettings",
+    "Accounting.AccountingUserRole",
+    "Accounting.AssetCategory",
+    "Accounting.BankAccount",
+    "Accounting.BankReconciliation",
+    "Accounting.BankReconciliationLine",
+    "Accounting.BoqItem",
+    "Accounting.CashBox",
+    "Accounting.CostCenter",
+    "Accounting.Currency",
+    "Accounting.Customer",
+    "Accounting.DepreciationLine",
+    "Accounting.DepreciationRun",
+    "Accounting.EquipmentDepreciationAllocation",
+    "Accounting.EtaSettings",
+    "Accounting.ExchangeRate",
+    "Accounting.FiscalPeriod",
+    "Accounting.FiscalYear",
+    "Accounting.FixedAsset",
+    "Accounting.FxRevaluationRun",
+    "Accounting.JournalEntry",
+    "Accounting.JournalEntryLine",
+    "Accounting.MaintenanceRecord",
+    "Accounting.MaintenanceSchedule",
+    "Accounting.NumberSequence",
+    "Accounting.Payment",
+    "Accounting.PaymentAllocation",
+    "Accounting.PayrollSettings",
+    "Accounting.PayrollTaxBracket",
+    "Accounting.PostingRule",
+    "Accounting.ProgressBilling",
+    "Accounting.ProgressBillingLine",
+    "Accounting.Project",
+    "Accounting.ProjectActivityType",
+    "Accounting.ProjectCloseout",
+    "Accounting.ProjectMaterialIssue",
+    "Accounting.ProjectMaterialIssueLine",
+    "Accounting.ProjectMember",
+    "Accounting.ProjectProgress",
+    "Accounting.ProjectProgressLine",
+    "Accounting.PurchaseInvoice",
+    "Accounting.PurchaseInvoiceLine",
+    "Accounting.PurchaseReturn",
+    "Accounting.PurchaseReturnLine",
+    "Accounting.Receipt",
+    "Accounting.ReceiptAllocation",
+    "Accounting.SalesInvoice",
+    "Accounting.SalesInvoiceLine",
+    "Accounting.SalesReturn",
+    "Accounting.SalesReturnLine",
+    "Accounting.Subcontract",
+    "Accounting.SubcontractBilling",
+    "Accounting.TaxCode",
+    "Accounting.VariationOrder",
+    "Accounting.VariationOrderLine",
+    "Accounting.VatReturn",
+    "Accounting.Vendor",
+    "Accounting.YearEndClosing",
+    "Admin.ApplicationDocument",
+    "Admin.Appraisal",
+    "Admin.AppraisalCriterion",
+    "Admin.AppraisalCycle",
+    "Admin.AppraisalLine",
+    "Admin.AppraisalTemplate",
+    "Admin.Brand",
+    "Admin.EmployeeRequest",
+    "Admin.EmployeeRequestStep",
+    "Admin.HrDocumentAttachment",
+    "Admin.JobApplication",
+    "Admin.NotificationMute",
+    "Admin.RequiredDocumentType",
+    "Admin.TrainingCourse",
+    "Admin.TrainingEnrollment",
+    "AdministrativeBodiesCompany",
+    "Attachment",
+    "AttendancePolicies",
+    "AttendanceRecord",
+    "Branch",
+    "Calendar.CalendarEvent",
+    "Calendar.CalendarEventAttendee",
+    "Calendar.CalendarEventResource",
+    "Calendar.CalendarEventSchedule",
+    "Calendar.CalendarResource",
+    "Chat.ChatMessage",
+    "Chat.ChatReaction",
+    "Chat.Conversation",
+    "Chat.ConversationMember",
+    "Comm.Announcement",
+    "Comm.AnnouncementRead",
+    "Comm.CommAttachment",
+    "Comm.CommMessage",
+    "Comm.DocComment",
+    "Companies",
+    "CompanyType",
+    "Construction.BoqLineState",
+    "Construction.CertificateLineSnapshot",
+    "Construction.ClientContract",
+    "Construction.CommercialRevision",
+    "Construction.CommercialRevisionLine",
+    "Construction.ConstructionAuditEntry",
+    "Construction.SubcontractCertificateLine",
+    "Construction.SubcontractScope",
+    "CountriesLookup",
+    "Crm.Activity",
+    "Crm.Campaign",
+    "Crm.CampaignMember",
+    "Crm.CrmAccount",
+    "Crm.CrmAutomationRule",
+    "Crm.CrmContact",
+    "Crm.CrmCustomField",
+    "Crm.CrmCustomFieldValue",
+    "Crm.CrmListMember",
+    "Crm.CrmMarketingList",
+    "Crm.CrmPipeline",
+    "Crm.CrmPipelineStage",
+    "Crm.CrmScoringRule",
+    "Crm.CrmSettings",
+    "Crm.CrmSlaPolicy",
+    "Crm.CrmTicket",
+    "Crm.CrmUserRole",
+    "Crm.Lead",
+    "Crm.Opportunity",
+    "Crm.OpportunityProduct",
+    "Employee",
+    "EmployeeDocument",
+    "EmploymentContract",
+    "FinalSettlement",
+    "Hierarchical",
+    "HierarchicalType",
+    "Hr.EmployeeOnboarding",
+    "Hr.EmployeeOnboardingItem",
+    "Hr.OnboardingTemplate",
+    "Hr.OnboardingTemplateItem",
+    "Hr.RosterAssignment",
+    "Hr.RosterAssignmentRevision",
+    "Hr.RosterPeriod",
+    "Hr.WorkShift",
+    "Inventory.BinLocation",
+    "Inventory.BinStock",
+    "Inventory.DeliveryNote",
+    "Inventory.DeliveryNoteLine",
+    "Inventory.GoodsReceipt",
+    "Inventory.GoodsReceiptLine",
+    "Inventory.IntegrityCheckRun",
+    "Inventory.InventoryApproval",
+    "Inventory.InventoryReconcileLog",
+    "Inventory.InventorySettings",
+    "Inventory.InventoryUserRole",
+    "Inventory.Item",
+    "Inventory.ItemBarcode",
+    "Inventory.ItemCategory",
+    "Inventory.ItemComponent",
+    "Inventory.ItemImage",
+    "Inventory.ItemWarehouseSetting",
+    "Inventory.LandedCost",
+    "Inventory.LandedCostCharge",
+    "Inventory.ManufPlan",
+    "Inventory.ManufPlanDemand",
+    "Inventory.ManufRoutingOp",
+    "Inventory.ManufWorkCenter",
+    "Inventory.ManufWorkOrder",
+    "Inventory.ManufWorkOrderComponent",
+    "Inventory.ManufWorkOrderLabor",
+    "Inventory.OpeningBalance",
+    "Inventory.OpeningBalanceControl",
+    "Inventory.PriceChangeLog",
+    "Inventory.PriceList",
+    "Inventory.PriceListLine",
+    "Inventory.Promotion",
+    "Inventory.PurchaseOrder",
+    "Inventory.PurchaseOrderLine",
+    "Inventory.Quotation",
+    "Inventory.QuotationLine",
+    "Inventory.SalesOrder",
+    "Inventory.SalesOrderLine",
+    "Inventory.StockBalance",
+    "Inventory.StockBatch",
+    "Inventory.StockCostLayer",
+    "Inventory.StockCount",
+    "Inventory.StockCountLine",
+    "Inventory.StockMovement",
+    "Inventory.StockSerial",
+    "Inventory.StockTransfer",
+    "Inventory.StockTransferLine",
+    "Inventory.StockWriteOff",
+    "Inventory.StockWriteOffLine",
+    "Inventory.UnitOfMeasure",
+    "Inventory.UoMConversion",
+    "Inventory.Warehouse",
+    "LeaveApprovalStep",
+    "LeaveCarryOver",
+    "LeaveEncashment",
+    "LeavePolicies",
+    "LeaveProvisionRun",
+    "LeaveRequest",
+    "LeaveTypes",
+    "Library.LibraryItem",
+    "Loyalty.PointsMovement",
+    "Notification",
+    "OfficialHoliday",
+    "Payslip",
+    "Platform.AiEgressAudit",
+    "Platform.AiProjection",
+    "Platform.BootstrapAccessPolicy",
+    "Platform.BusinessEvent",
+    "Platform.BusinessEventDispatch",
+    "Platform.PlatformRoleAssignment",
+    "Policies",
+    "PolicyAssignments",
+    "Pos.ActivityPreset",
+    "Pos.ActivityPresetCapability",
+    "Pos.BranchCapability",
+    "Pos.BranchItemSourcing",
+    "Pos.BranchPaymentMethod",
+    "Pos.BranchPosSetting",
+    "Pos.BranchUserRole",
+    "Pos.CustomerAddress",
+    "Pos.DeliveryZone",
+    "Pos.DiningArea",
+    "Pos.Driver",
+    "Pos.HyperPayToken",
+    "Pos.ItemModifierGroup",
+    "Pos.KitchenStation",
+    "Pos.ModifierGroup",
+    "Pos.ModifierOption",
+    "Pos.PosMenuGroup",
+    "Pos.PosOrder",
+    "Pos.PosOrderLine",
+    "Pos.PosOrderLineModifier",
+    "Pos.PosPayment",
+    "Pos.PosQuickItem",
+    "Pos.PosShift",
+    "Pos.PosSyncConflict",
+    "Pos.PosSyncLog",
+    "Pos.PosTerminal",
+    "Pos.Reservation",
+    "Pos.RestaurantTable",
+    "Reporting.ReportArchiveEntry",
+    "Reporting.ReportAsset",
+    "Reporting.ReportCategory",
+    "Reporting.ReportDatasetSpec",
+    "Reporting.ReportDeliveryAttempt",
+    "Reporting.ReportFavorite",
+    "Reporting.ReportRun",
+    "Reporting.ReportSchedule",
+    "Reporting.ReportScheduleRecipient",
+    "Reporting.ReportShare",
+    "Reporting.ReportTag",
+    "Reporting.ReportTagLink",
+    "Reporting.ReportTemplate",
+    "Reporting.ReportTemplateVersion",
+    "SalaryPolicies",
+    "SystemForms",
+    "Tasks.TaskAutoLog",
+    "Tasks.TaskAutoRule",
+    "Tasks.TaskChecklistItem",
+    "Tasks.TaskDependency",
+    "Tasks.TaskItem",
+    "Tasks.TaskMatchSuggestion",
+    "Tasks.TaskTemplate",
+    "Tasks.TaskTemplateItem",
+    "Tasks.TimesheetEntry"
+  ],
+  "persisted_entity_count": 265,
+  "report_codes": [
+    "Accounting.CustomerAging",
+    "Accounting.CustomerProfitability",
+    "Accounting.JournalActivity",
+    "Accounting.JournalEntry",
+    "Accounting.JournalVoucher",
+    "Accounting.PurchaseInvoiceDetail",
+    "Accounting.PurchaseInvoices",
+    "Accounting.PurchaseReturnDetail",
+    "Accounting.Purchases",
+    "Accounting.Receivables.Aging",
+    "Accounting.SalesInvoiceDetail",
+    "Accounting.SalesInvoices",
+    "Accounting.SalesReturnDetail",
+    "Accounting.SalesRevenue",
+    "Accounting.TrialBalance",
+    "Admin.OrgStructure.Units",
+    "Crm.Leads",
+    "Crm.Opportunities",
+    "Inventory.CountDetail",
+    "Inventory.CountDocument",
+    "Inventory.DeliveryDetail",
+    "Inventory.DeliveryDocument",
+    "Inventory.GoodsReceipts",
+    "Inventory.PurchaseOrderDetail",
+    "Inventory.PurchaseOrders",
+    "Inventory.QuotationDetails",
+    "Inventory.ReceiptDetail",
+    "Inventory.ReceiptDocument",
+    "Inventory.SalesOrderDetail",
+    "Inventory.SalesOrders",
+    "Inventory.StockMovements",
+    "Inventory.StockOnHand",
+    "Inventory.TransferDetail",
+    "Inventory.TransferDocument",
+    "Inventory.WriteOffDetail",
+    "Inventory.WriteOffDocument",
+    "Platform.BusinessEventLog",
+    "Platform.BusinessEvents",
+    "Platform.BusinessEvents.Log",
+    "Platform.ReportCatalog",
+    "Platform.ReportRunHistory"
+  ],
+  "report_permission_keys": [
+    "accounting.reports.view",
+    "admin.orgstructure.reports.notes",
+    "admin.orgstructure.reports.view",
+    "crm.reports.view",
+    "inventory.reports.view",
+    "reporting.businessevents.view",
+    "roster.reports.view"
+  ],
+  "report_engines": [
+    "CrossBusiness.Csv",
+    "CrossBusiness.Html",
+    "CrossBusiness.Pdf({_converter.EngineName})",
+    "CrossBusiness.Xlsx(ClosedXML)",
+    "Playwright.Chromium",
+    "none"
+  ],
+  "localization": {
+    "cultures": [
+      "ar",
+      "en",
+      "fr"
+    ],
+    "shared_keys": {
+      "neutral": 979,
+      "ar": 1270,
+      "en": 993,
+      "fr": 1087
+    },
+    "ar_missing_vs_neutral": [
+      "Purchase Invoices",
+      "Sales Invoices"
+    ],
+    "ar_missing_count": 2,
+    "fr_missing_count": 7,
+    "resx_files": 891,
+    "units_by_culture_count": {
+      "4": 1,
+      "3": 287,
+      "1": 14,
+      "2": 6
+    },
+    "localized_view_units": 308,
+    "units_with_all_four": 1
+  },
+  "brand_drift": {
+    "views_with_hardcoded_hex": 285,
+    "views_total": 372,
+    "worst_offenders": [
+      {
+        "view": "CrossBuy/Views/Admin/Polices.cshtml",
+        "hardcoded_hex": 843,
+        "distinct_hex": 172,
+        "token_refs": 1
+      },
+      {
+        "view": "CrossBuy/Views/Admin/EmployeeData.cshtml",
+        "hardcoded_hex": 157,
+        "distinct_hex": 65,
+        "token_refs": 0
+      },
+      {
+        "view": "CrossBuy/Views/Admin/AdministrativeStructure.cshtml",
+        "hardcoded_hex": 103,
+        "distinct_hex": 41,
+        "token_refs": 0
+      },
+      {
+        "view": "CrossBuy/Views/Accounting/MovementSummary.cshtml",
+        "hardcoded_hex": 71,
+        "distinct_hex": 14,
+        "token_refs": 0
+      },
+      {
+        "view": "CrossBuy/Views/Inventory/WarehouseSections.cshtml",
+        "hardcoded_hex": 44,
+        "distinct_hex": 38,
+        "token_refs": 0
+      },
+      {
+        "view": "CrossBuy/Views/Account/Login.cshtml",
+        "hardcoded_hex": 41,
+        "distinct_hex": 34,
+        "token_refs": 25
+      },
+      {
+        "view": "CrossBuy/Views/Pos/Reservations.cshtml",
+        "hardcoded_hex": 40,
+        "distinct_hex": 21,
+        "token_refs": 0
+      },
+      {
+        "view": "CrossBuy/Views/Inventory/ManufDashboard.cshtml",
+        "hardcoded_hex": 39,
+        "distinct_hex": 13,
+        "token_refs": 0
+      },
+      {
+        "view": "CrossBuy/Views/Accounting/YearEndClose.cshtml",
+        "hardcoded_hex": 35,
+        "distinct_hex": 4,
+        "token_refs": 0
+      },
+      {
+        "view": "CrossBuy/Views/Portal/Choose.cshtml",
+        "hardcoded_hex": 34,
+        "distinct_hex": 23,
+        "token_refs": 0
+      },
+      {
+        "view": "CrossBuy/Views/Accounting/FixedAssetDetail.cshtml",
+        "hardcoded_hex": 33,
+        "distinct_hex": 7,
+        "token_refs": 0
+      },
+      {
+        "view": "CrossBuy/Views/Accounting/CustomerStatement.cshtml",
+        "hardcoded_hex": 32,
+        "distinct_hex": 10,
+        "token_refs": 0
+      },
+      {
+        "view": "CrossBuy/Views/Accounting/VendorStatement.cshtml",
+        "hardcoded_hex": 32,
+        "distinct_hex": 10,
+        "token_refs": 0
+      },
+      {
+        "view": "CrossBuy/Views/Shared/Components/ModuleTiles/Default.cshtml",
+        "hardcoded_hex": 32,
+        "distinct_hex": 17,
+        "token_refs": 0
+      },
+      {
+        "view": "CrossBuy/Views/Accounting/ChartOfAccounts.cshtml",
+        "hardcoded_hex": 26,
+        "distinct_hex": 14,
+        "token_refs": 0
+      },
+      {
+        "view": "CrossBuy/Views/Accounting/BalanceSheet.cshtml",
+        "hardcoded_hex": 24,
+        "distinct_hex": 5,
+        "token_refs": 0
+      },
+      {
+        "view": "CrossBuy/Views/Accounting/CreateJournal.cshtml",
+        "hardcoded_hex": 23,
+        "distinct_hex": 16,
+        "token_refs": 0
+      },
+      {
+        "view": "CrossBuy/Views/Crm/Index.cshtml",
+        "hardcoded_hex": 23,
+        "distinct_hex": 13,
+        "token_refs": 0
+      },
+      {
+        "view": "CrossBuy/Views/Pos/FloorPlan.cshtml",
+        "hardcoded_hex": 23,
+        "distinct_hex": 18,
+        "token_refs": 0
+      },
+      {
+        "view": "CrossBuy/Views/People/Dashboard.cshtml",
+        "hardcoded_hex": 22,
+        "distinct_hex": 10,
+        "token_refs": 0
+      }
+    ],
+    "most_used_colours": [
+      {
+        "hex": "#0E4A9E",
+        "uses": 758,
+        "is_brand_token": true
+      },
+      {
+        "hex": "#E7F0FF",
+        "uses": 270,
+        "is_brand_token": true
+      },
+      {
+        "hex": "#145DBF",
+        "uses": 161,
+        "is_brand_token": true
+      },
+      {
+        "hex": "#F3F7FF",
+        "uses": 104,
+        "is_brand_token": true
+      },
+      {
+        "hex": "#EEF1F6",
+        "uses": 81,
+        "is_brand_token": false
+      },
+      {
+        "hex": "#F2F4F7",
+        "uses": 51,
+        "is_brand_token": false
+      },
+      {
+        "hex": "#E4E6EF",
+        "uses": 51,
+        "is_brand_token": false
+      },
+      {
+        "hex": "#0B3D91",
+        "uses": 48,
+        "is_brand_token": true
+      },
+      {
+        "hex": "#475467",
+        "uses": 46,
+        "is_brand_token": false
+      },
+      {
+        "hex": "#F59E0B",
+        "uses": 41,
+        "is_brand_token": true
+      },
+      {
+        "hex": "#7E8299",
+        "uses": 37,
+        "is_brand_token": false
+      },
+      {
+        "hex": "#D92D20",
+        "uses": 35,
+        "is_brand_token": false
+      },
+      {
+        "hex": "#D0E1FF",
+        "uses": 29,
+        "is_brand_token": true
+      },
+      {
+        "hex": "#99A1B7",
+        "uses": 29,
+        "is_brand_token": false
+      },
+      {
+        "hex": "#FFFFFF",
+        "uses": 28,
+        "is_brand_token": true
+      },
+      {
+        "hex": "#F1F3F7",
+        "uses": 25,
+        "is_brand_token": false
+      },
+      {
+        "hex": "#EF4444",
+        "uses": 23,
+        "is_brand_token": true
+      },
+      {
+        "hex": "#B96A00",
+        "uses": 21,
+        "is_brand_token": false
+      },
+      {
+        "hex": "#FDEAEA",
+        "uses": 21,
+        "is_brand_token": false
+      },
+      {
+        "hex": "#64748B",
+        "uses": 21,
+        "is_brand_token": false
+      },
+      {
+        "hex": "#8B94AD",
+        "uses": 21,
+        "is_brand_token": false
+      },
+      {
+        "hex": "#94A3B8",
+        "uses": 17,
+        "is_brand_token": false
+      },
+      {
+        "hex": "#EFF2F5",
+        "uses": 16,
+        "is_brand_token": false
+      },
+      {
+        "hex": "#FEF3E2",
+        "uses": 16,
+        "is_brand_token": false
+      },
+      {
+        "hex": "#12B76A",
+        "uses": 16,
+        "is_brand_token": false
+      },
+      {
+        "hex": "#1877F2",
+        "uses": 14,
+        "is_brand_token": true
+      },
+      {
+        "hex": "#F4F6F8",
+        "uses": 13,
+        "is_brand_token": false
+      },
+      {
+        "hex": "#A1A5B7",
+        "uses": 13,
+        "is_brand_token": false
+      },
+      {
+        "hex": "#7E8AA8",
+        "uses": 13,
+        "is_brand_token": false
+      },
+      {
+        "hex": "#5E6278",
+        "uses": 11,
+        "is_brand_token": false
+      },
+      {
+        "hex": "#F9F9F9",
+        "uses": 11,
+        "is_brand_token": false
+      },
+      {
+        "hex": "#53658A",
+        "uses": 11,
+        "is_brand_token": false
+      },
+      {
+        "hex": "#F1F1F4",
+        "uses": 10,
+        "is_brand_token": false
+      },
+      {
+        "hex": "#16A34A",
+        "uses": 10,
+        "is_brand_token": true
+      },
+      {
+        "hex": "#1F7D57",
+        "uses": 10,
+        "is_brand_token": false
+      },
+      {
+        "hex": "#2F9E6E",
+        "uses": 9,
+        "is_brand_token": false
+      },
+      {
+        "hex": "#1E293B",
+        "uses": 9,
+        "is_brand_token": false
+      },
+      {
+        "hex": "#F1416C",
+        "uses": 8,
+        "is_brand_token": false
+      },
+      {
+        "hex": "#F8FAFC",
+        "uses": 8,
+        "is_brand_token": false
+      },
+      {
+        "hex": "#181C32",
+        "uses": 8,
+        "is_brand_token": false
+      }
+    ],
+    "colours_that_are_brand_tokens": 11
+  }
+}

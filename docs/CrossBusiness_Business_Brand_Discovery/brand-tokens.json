@@ -1,0 +1,1092 @@
+{
+  "source_of_truth": "CrossBuy/wwwroot/Backend-assets/css/crossbuy-brand.css",
+  "source_lines": 1074,
+  "loaded_by_views": [
+    "CrossBuy/Views/Account/Login.cshtml",
+    "CrossBuy/Views/Accounting/ChartOfAccounts.cshtml",
+    "CrossBuy/Views/Calendar/Index.cshtml",
+    "CrossBuy/Views/Hyper/PosLogin.cshtml",
+    "CrossBuy/Views/Inventory/Reports.cshtml",
+    "CrossBuy/Views/PosApp/Login.cshtml",
+    "CrossBuy/Views/Shared/_DocEventTimeline.cshtml",
+    "CrossBuy/Views/Shared/_EntityConversation.cshtml",
+    "CrossBuy/Views/Shared/_LayoutAccounting.cshtml",
+    "CrossBuy/Views/Shared/_LayoutBackend.cshtml",
+    "CrossBuy/Views/Shared/_LayoutEmbed.cshtml",
+    "CrossBuy/Views/Shared/_LayoutHyperPos.cshtml",
+    "CrossBuy/Views/Shared/_LayoutInventory.cshtml",
+    "CrossBuy/Views/Shared/_LayoutManufacturing.cshtml",
+    "CrossBuy/Views/Shared/_LayoutPeople.cshtml",
+    "CrossBuy/Views/Shared/_LayoutPos.cshtml",
+    "CrossBuy/Views/Shared/_LayoutPosApp.cshtml",
+    "CrossBuy/Views/Shared/_LayoutWorkspace.cshtml",
+    "CrossBuy/Views/Tasks/Detail.cshtml",
+    "CrossBuy/Views/Tasks/Index.cshtml",
+    "CrossBuy/Views/Tasks/_TaskActivity.cshtml",
+    "CrossBuy/Views/Workspace/Index.cshtml",
+    "CrossBuy/Views/Workspace/Notifications.cshtml"
+  ],
+  "declaration_count": 149,
+  "distinct_tokens": 129,
+  "colour_tokens": {
+    "--cb-blue-25": {
+      "value": "#F3F7FF",
+      "contrast_on_white": 1.07,
+      "contrast_white_on_it": 1.07,
+      "contrast_ink_on_it": 16.8,
+      "aa_normal_text_white_on_it": false,
+      "aa_normal_text_it_on_white": false,
+      "dark_theme_override": null
+    },
+    "--cb-blue-50": {
+      "value": "#E7F0FF",
+      "contrast_on_white": 1.15,
+      "contrast_white_on_it": 1.15,
+      "contrast_ink_on_it": 15.72,
+      "aa_normal_text_white_on_it": false,
+      "aa_normal_text_it_on_white": false,
+      "dark_theme_override": null
+    },
+    "--cb-blue-100": {
+      "value": "#D0E1FF",
+      "contrast_on_white": 1.32,
+      "contrast_white_on_it": 1.32,
+      "contrast_ink_on_it": 13.65,
+      "aa_normal_text_white_on_it": false,
+      "aa_normal_text_it_on_white": false,
+      "dark_theme_override": null
+    },
+    "--cb-blue-200": {
+      "value": "#A8C5FF",
+      "contrast_on_white": 1.74,
+      "contrast_white_on_it": 1.74,
+      "contrast_ink_on_it": 10.39,
+      "aa_normal_text_white_on_it": false,
+      "aa_normal_text_it_on_white": false,
+      "dark_theme_override": null
+    },
+    "--cb-blue-300": {
+      "value": "#7DA9FF",
+      "contrast_on_white": 2.34,
+      "contrast_white_on_it": 2.34,
+      "contrast_ink_on_it": 7.72,
+      "aa_normal_text_white_on_it": false,
+      "aa_normal_text_it_on_white": false,
+      "dark_theme_override": null
+    },
+    "--cb-blue-400": {
+      "value": "#5B8CFF",
+      "contrast_on_white": 3.16,
+      "contrast_white_on_it": 3.16,
+      "contrast_ink_on_it": 5.7,
+      "aa_normal_text_white_on_it": false,
+      "aa_normal_text_it_on_white": false,
+      "dark_theme_override": null
+    },
+    "--cb-blue-500": {
+      "value": "#1877F2",
+      "contrast_on_white": 4.23,
+      "contrast_white_on_it": 4.23,
+      "contrast_ink_on_it": 4.26,
+      "aa_normal_text_white_on_it": false,
+      "aa_normal_text_it_on_white": false,
+      "dark_theme_override": null
+    },
+    "--cb-blue-600": {
+      "value": "#166FE5",
+      "contrast_on_white": 4.73,
+      "contrast_white_on_it": 4.73,
+      "contrast_ink_on_it": 3.81,
+      "aa_normal_text_white_on_it": true,
+      "aa_normal_text_it_on_white": true,
+      "dark_theme_override": null
+    },
+    "--cb-blue-700": {
+      "value": "#145DBF",
+      "contrast_on_white": 6.27,
+      "contrast_white_on_it": 6.27,
+      "contrast_ink_on_it": 2.88,
+      "aa_normal_text_white_on_it": true,
+      "aa_normal_text_it_on_white": true,
+      "dark_theme_override": null
+    },
+    "--cb-blue-800": {
+      "value": "#0E4A9E",
+      "contrast_on_white": 8.43,
+      "contrast_white_on_it": 8.43,
+      "contrast_ink_on_it": 2.14,
+      "aa_normal_text_white_on_it": true,
+      "aa_normal_text_it_on_white": true,
+      "dark_theme_override": null
+    },
+    "--cb-blue-900": {
+      "value": "#0B3D91",
+      "contrast_on_white": 10.04,
+      "contrast_white_on_it": 10.04,
+      "contrast_ink_on_it": 1.8,
+      "aa_normal_text_white_on_it": true,
+      "aa_normal_text_it_on_white": true,
+      "dark_theme_override": null
+    },
+    "--bs-primary": {
+      "value": "#1877F2",
+      "contrast_on_white": 4.23,
+      "contrast_white_on_it": 4.23,
+      "contrast_ink_on_it": 4.26,
+      "aa_normal_text_white_on_it": false,
+      "aa_normal_text_it_on_white": false,
+      "dark_theme_override": null
+    },
+    "--bs-primary-active": {
+      "value": "#145DBF",
+      "contrast_on_white": 6.27,
+      "contrast_white_on_it": 6.27,
+      "contrast_ink_on_it": 2.88,
+      "aa_normal_text_white_on_it": true,
+      "aa_normal_text_it_on_white": true,
+      "dark_theme_override": null
+    },
+    "--bs-primary-light": {
+      "value": "#E7F0FF",
+      "contrast_on_white": 1.15,
+      "contrast_white_on_it": 1.15,
+      "contrast_ink_on_it": 15.72,
+      "aa_normal_text_white_on_it": false,
+      "aa_normal_text_it_on_white": false,
+      "dark_theme_override": null
+    },
+    "--bs-primary-inverse": {
+      "value": "#ffffff",
+      "contrast_on_white": 1.0,
+      "contrast_white_on_it": 1.0,
+      "contrast_ink_on_it": 18.04,
+      "aa_normal_text_white_on_it": false,
+      "aa_normal_text_it_on_white": false,
+      "dark_theme_override": null
+    },
+    "--bs-primary-text-emphasis": {
+      "value": "#0E4A9E",
+      "contrast_on_white": 8.43,
+      "contrast_white_on_it": 8.43,
+      "contrast_ink_on_it": 2.14,
+      "aa_normal_text_white_on_it": true,
+      "aa_normal_text_it_on_white": true,
+      "dark_theme_override": null
+    },
+    "--bs-primary-bg-subtle": {
+      "value": "#E7F0FF",
+      "contrast_on_white": 1.15,
+      "contrast_white_on_it": 1.15,
+      "contrast_ink_on_it": 15.72,
+      "aa_normal_text_white_on_it": false,
+      "aa_normal_text_it_on_white": false,
+      "dark_theme_override": null
+    },
+    "--bs-primary-border-subtle": {
+      "value": "#A8C5FF",
+      "contrast_on_white": 1.74,
+      "contrast_white_on_it": 1.74,
+      "contrast_ink_on_it": 10.39,
+      "aa_normal_text_white_on_it": false,
+      "aa_normal_text_it_on_white": false,
+      "dark_theme_override": null
+    },
+    "--bs-link-color": {
+      "value": "#145DBF",
+      "contrast_on_white": 6.27,
+      "contrast_white_on_it": 6.27,
+      "contrast_ink_on_it": 2.88,
+      "aa_normal_text_white_on_it": true,
+      "aa_normal_text_it_on_white": true,
+      "dark_theme_override": null
+    },
+    "--bs-link-hover-color": {
+      "value": "#0E4A9E",
+      "contrast_on_white": 8.43,
+      "contrast_white_on_it": 8.43,
+      "contrast_ink_on_it": 2.14,
+      "aa_normal_text_white_on_it": true,
+      "aa_normal_text_it_on_white": true,
+      "dark_theme_override": null
+    },
+    "--bs-component-active-bg": {
+      "value": "#166FE5",
+      "contrast_on_white": 4.73,
+      "contrast_white_on_it": 4.73,
+      "contrast_ink_on_it": 3.81,
+      "aa_normal_text_white_on_it": true,
+      "aa_normal_text_it_on_white": true,
+      "dark_theme_override": null
+    },
+    "--kt-primary": {
+      "value": "#1877F2",
+      "contrast_on_white": 4.23,
+      "contrast_white_on_it": 4.23,
+      "contrast_ink_on_it": 4.26,
+      "aa_normal_text_white_on_it": false,
+      "aa_normal_text_it_on_white": false,
+      "dark_theme_override": null
+    },
+    "--kt-primary-active": {
+      "value": "#145DBF",
+      "contrast_on_white": 6.27,
+      "contrast_white_on_it": 6.27,
+      "contrast_ink_on_it": 2.88,
+      "aa_normal_text_white_on_it": true,
+      "aa_normal_text_it_on_white": true,
+      "dark_theme_override": null
+    },
+    "--kt-primary-light": {
+      "value": "#E7F0FF",
+      "contrast_on_white": 1.15,
+      "contrast_white_on_it": 1.15,
+      "contrast_ink_on_it": 15.72,
+      "aa_normal_text_white_on_it": false,
+      "aa_normal_text_it_on_white": false,
+      "dark_theme_override": null
+    },
+    "--kt-primary-inverse": {
+      "value": "#ffffff",
+      "contrast_on_white": 1.0,
+      "contrast_white_on_it": 1.0,
+      "contrast_ink_on_it": 18.04,
+      "aa_normal_text_white_on_it": false,
+      "aa_normal_text_it_on_white": false,
+      "dark_theme_override": null
+    },
+    "--kt-text-primary": {
+      "value": "#0E4A9E",
+      "contrast_on_white": 8.43,
+      "contrast_white_on_it": 8.43,
+      "contrast_ink_on_it": 2.14,
+      "aa_normal_text_white_on_it": true,
+      "aa_normal_text_it_on_white": true,
+      "dark_theme_override": null
+    },
+    "--bs-btn-bg": {
+      "value": "#166FE5",
+      "contrast_on_white": 4.73,
+      "contrast_white_on_it": 4.73,
+      "contrast_ink_on_it": 3.81,
+      "aa_normal_text_white_on_it": true,
+      "aa_normal_text_it_on_white": true,
+      "dark_theme_override": null
+    },
+    "--bs-btn-border-color": {
+      "value": "#166FE5",
+      "contrast_on_white": 4.73,
+      "contrast_white_on_it": 4.73,
+      "contrast_ink_on_it": 3.81,
+      "aa_normal_text_white_on_it": true,
+      "aa_normal_text_it_on_white": true,
+      "dark_theme_override": null
+    },
+    "--bs-btn-hover-bg": {
+      "value": "#145DBF",
+      "contrast_on_white": 6.27,
+      "contrast_white_on_it": 6.27,
+      "contrast_ink_on_it": 2.88,
+      "aa_normal_text_white_on_it": true,
+      "aa_normal_text_it_on_white": true,
+      "dark_theme_override": null
+    },
+    "--bs-btn-hover-border-color": {
+      "value": "#145DBF",
+      "contrast_on_white": 6.27,
+      "contrast_white_on_it": 6.27,
+      "contrast_ink_on_it": 2.88,
+      "aa_normal_text_white_on_it": true,
+      "aa_normal_text_it_on_white": true,
+      "dark_theme_override": null
+    },
+    "--bs-btn-active-bg": {
+      "value": "#0E4A9E",
+      "contrast_on_white": 8.43,
+      "contrast_white_on_it": 8.43,
+      "contrast_ink_on_it": 2.14,
+      "aa_normal_text_white_on_it": true,
+      "aa_normal_text_it_on_white": true,
+      "dark_theme_override": null
+    },
+    "--bs-btn-active-border-color": {
+      "value": "#0E4A9E",
+      "contrast_on_white": 8.43,
+      "contrast_white_on_it": 8.43,
+      "contrast_ink_on_it": 2.14,
+      "aa_normal_text_white_on_it": true,
+      "aa_normal_text_it_on_white": true,
+      "dark_theme_override": null
+    },
+    "--bs-btn-disabled-bg": {
+      "value": "#166FE5",
+      "contrast_on_white": 4.73,
+      "contrast_white_on_it": 4.73,
+      "contrast_ink_on_it": 3.81,
+      "aa_normal_text_white_on_it": true,
+      "aa_normal_text_it_on_white": true,
+      "dark_theme_override": null
+    },
+    "--bs-btn-disabled-border-color": {
+      "value": "#166FE5",
+      "contrast_on_white": 4.73,
+      "contrast_white_on_it": 4.73,
+      "contrast_ink_on_it": 3.81,
+      "aa_normal_text_white_on_it": true,
+      "aa_normal_text_it_on_white": true,
+      "dark_theme_override": null
+    },
+    "--bs-btn-color": {
+      "value": "#0E4A9E",
+      "contrast_on_white": 8.43,
+      "contrast_white_on_it": 8.43,
+      "contrast_ink_on_it": 2.14,
+      "aa_normal_text_white_on_it": true,
+      "aa_normal_text_it_on_white": true,
+      "dark_theme_override": null
+    },
+    "--bs-btn-hover-color": {
+      "value": "#fff",
+      "contrast_on_white": 1.0,
+      "contrast_white_on_it": 1.0,
+      "contrast_ink_on_it": 18.04,
+      "aa_normal_text_white_on_it": false,
+      "aa_normal_text_it_on_white": false,
+      "dark_theme_override": null
+    },
+    "--bs-btn-active-color": {
+      "value": "#fff",
+      "contrast_on_white": 1.0,
+      "contrast_white_on_it": 1.0,
+      "contrast_ink_on_it": 18.04,
+      "aa_normal_text_white_on_it": false,
+      "aa_normal_text_it_on_white": false,
+      "dark_theme_override": null
+    },
+    "--tag-bg": {
+      "value": "#E7F0FF",
+      "contrast_on_white": 1.15,
+      "contrast_white_on_it": 1.15,
+      "contrast_ink_on_it": 15.72,
+      "aa_normal_text_white_on_it": false,
+      "aa_normal_text_it_on_white": false,
+      "dark_theme_override": null
+    },
+    "--tag-text-color": {
+      "value": "#0E4A9E",
+      "contrast_on_white": 8.43,
+      "contrast_white_on_it": 8.43,
+      "contrast_ink_on_it": 2.14,
+      "aa_normal_text_white_on_it": true,
+      "aa_normal_text_it_on_white": true,
+      "dark_theme_override": null
+    },
+    "--tag-remove-btn-color": {
+      "value": "#0E4A9E",
+      "contrast_on_white": 8.43,
+      "contrast_white_on_it": 8.43,
+      "contrast_ink_on_it": 2.14,
+      "aa_normal_text_white_on_it": true,
+      "aa_normal_text_it_on_white": true,
+      "dark_theme_override": null
+    },
+    "--tags-focus-border-color": {
+      "value": "#5B8CFF",
+      "contrast_on_white": 3.16,
+      "contrast_white_on_it": 3.16,
+      "contrast_ink_on_it": 5.7,
+      "aa_normal_text_white_on_it": false,
+      "aa_normal_text_it_on_white": false,
+      "dark_theme_override": null
+    },
+    "--bs-text-muted": {
+      "value": "#4B5675",
+      "contrast_on_white": 7.27,
+      "contrast_white_on_it": 7.27,
+      "contrast_ink_on_it": 2.48,
+      "aa_normal_text_white_on_it": true,
+      "aa_normal_text_it_on_white": true,
+      "dark_theme_override": null
+    },
+    "--bs-text-gray-500": {
+      "value": "#4B5675",
+      "contrast_on_white": 7.27,
+      "contrast_white_on_it": 7.27,
+      "contrast_ink_on_it": 2.48,
+      "aa_normal_text_white_on_it": true,
+      "aa_normal_text_it_on_white": true,
+      "dark_theme_override": null
+    },
+    "--bs-text-gray-600": {
+      "value": "#4B5675",
+      "contrast_on_white": 7.27,
+      "contrast_white_on_it": 7.27,
+      "contrast_ink_on_it": 2.48,
+      "aa_normal_text_white_on_it": true,
+      "aa_normal_text_it_on_white": true,
+      "dark_theme_override": null
+    },
+    "--bs-text-success": {
+      "value": "#14532D",
+      "contrast_on_white": 9.11,
+      "contrast_white_on_it": 9.11,
+      "contrast_ink_on_it": 1.98,
+      "aa_normal_text_white_on_it": true,
+      "aa_normal_text_it_on_white": true,
+      "dark_theme_override": null
+    },
+    "--bs-text-warning": {
+      "value": "#92400E",
+      "contrast_on_white": 7.09,
+      "contrast_white_on_it": 7.09,
+      "contrast_ink_on_it": 2.54,
+      "aa_normal_text_white_on_it": true,
+      "aa_normal_text_it_on_white": true,
+      "dark_theme_override": null
+    },
+    "--bs-text-danger": {
+      "value": "#991B1B",
+      "contrast_on_white": 8.31,
+      "contrast_white_on_it": 8.31,
+      "contrast_ink_on_it": 2.17,
+      "aa_normal_text_white_on_it": true,
+      "aa_normal_text_it_on_white": true,
+      "dark_theme_override": null
+    },
+    "--bs-success": {
+      "value": "#16A34A",
+      "contrast_on_white": 3.3,
+      "contrast_white_on_it": 3.3,
+      "contrast_ink_on_it": 5.47,
+      "aa_normal_text_white_on_it": false,
+      "aa_normal_text_it_on_white": false,
+      "dark_theme_override": null
+    },
+    "--bs-success-active": {
+      "value": "#22C55E",
+      "contrast_on_white": 2.28,
+      "contrast_white_on_it": 2.28,
+      "contrast_ink_on_it": 7.92,
+      "aa_normal_text_white_on_it": false,
+      "aa_normal_text_it_on_white": false,
+      "dark_theme_override": null
+    },
+    "--bs-success-light": {
+      "value": "#DCFCE7",
+      "contrast_on_white": 1.1,
+      "contrast_white_on_it": 1.1,
+      "contrast_ink_on_it": 16.42,
+      "aa_normal_text_white_on_it": false,
+      "aa_normal_text_it_on_white": false,
+      "dark_theme_override": null
+    },
+    "--bs-success-inverse": {
+      "value": "#ffffff",
+      "contrast_on_white": 1.0,
+      "contrast_white_on_it": 1.0,
+      "contrast_ink_on_it": 18.04,
+      "aa_normal_text_white_on_it": false,
+      "aa_normal_text_it_on_white": false,
+      "dark_theme_override": null
+    },
+    "--bs-success-text-emphasis": {
+      "value": "#14532D",
+      "contrast_on_white": 9.11,
+      "contrast_white_on_it": 9.11,
+      "contrast_ink_on_it": 1.98,
+      "aa_normal_text_white_on_it": true,
+      "aa_normal_text_it_on_white": true,
+      "dark_theme_override": null
+    },
+    "--bs-success-bg-subtle": {
+      "value": "#DCFCE7",
+      "contrast_on_white": 1.1,
+      "contrast_white_on_it": 1.1,
+      "contrast_ink_on_it": 16.42,
+      "aa_normal_text_white_on_it": false,
+      "aa_normal_text_it_on_white": false,
+      "dark_theme_override": null
+    },
+    "--bs-success-border-subtle": {
+      "value": "#86EFAC",
+      "contrast_on_white": 1.4,
+      "contrast_white_on_it": 1.4,
+      "contrast_ink_on_it": 12.85,
+      "aa_normal_text_white_on_it": false,
+      "aa_normal_text_it_on_white": false,
+      "dark_theme_override": null
+    },
+    "--bs-warning": {
+      "value": "#F59E0B",
+      "contrast_on_white": 2.15,
+      "contrast_white_on_it": 2.15,
+      "contrast_ink_on_it": 8.4,
+      "aa_normal_text_white_on_it": false,
+      "aa_normal_text_it_on_white": false,
+      "dark_theme_override": null
+    },
+    "--bs-warning-active": {
+      "value": "#FBBF24",
+      "contrast_on_white": 1.67,
+      "contrast_white_on_it": 1.67,
+      "contrast_ink_on_it": 10.8,
+      "aa_normal_text_white_on_it": false,
+      "aa_normal_text_it_on_white": false,
+      "dark_theme_override": null
+    },
+    "--bs-warning-light": {
+      "value": "#FEF3C7",
+      "contrast_on_white": 1.11,
+      "contrast_white_on_it": 1.11,
+      "contrast_ink_on_it": 16.2,
+      "aa_normal_text_white_on_it": false,
+      "aa_normal_text_it_on_white": false,
+      "dark_theme_override": null
+    },
+    "--bs-warning-inverse": {
+      "value": "#071437",
+      "contrast_on_white": 18.04,
+      "contrast_white_on_it": 18.04,
+      "contrast_ink_on_it": 1.0,
+      "aa_normal_text_white_on_it": true,
+      "aa_normal_text_it_on_white": true,
+      "dark_theme_override": null
+    },
+    "--bs-warning-text-emphasis": {
+      "value": "#92400E",
+      "contrast_on_white": 7.09,
+      "contrast_white_on_it": 7.09,
+      "contrast_ink_on_it": 2.54,
+      "aa_normal_text_white_on_it": true,
+      "aa_normal_text_it_on_white": true,
+      "dark_theme_override": null
+    },
+    "--bs-warning-bg-subtle": {
+      "value": "#FEF3C7",
+      "contrast_on_white": 1.11,
+      "contrast_white_on_it": 1.11,
+      "contrast_ink_on_it": 16.2,
+      "aa_normal_text_white_on_it": false,
+      "aa_normal_text_it_on_white": false,
+      "dark_theme_override": null
+    },
+    "--bs-warning-border-subtle": {
+      "value": "#FCD34D",
+      "contrast_on_white": 1.44,
+      "contrast_white_on_it": 1.44,
+      "contrast_ink_on_it": 12.51,
+      "aa_normal_text_white_on_it": false,
+      "aa_normal_text_it_on_white": false,
+      "dark_theme_override": null
+    },
+    "--bs-danger": {
+      "value": "#EF4444",
+      "contrast_on_white": 3.76,
+      "contrast_white_on_it": 3.76,
+      "contrast_ink_on_it": 4.79,
+      "aa_normal_text_white_on_it": false,
+      "aa_normal_text_it_on_white": false,
+      "dark_theme_override": null
+    },
+    "--bs-danger-active": {
+      "value": "#F87171",
+      "contrast_on_white": 2.77,
+      "contrast_white_on_it": 2.77,
+      "contrast_ink_on_it": 6.52,
+      "aa_normal_text_white_on_it": false,
+      "aa_normal_text_it_on_white": false,
+      "dark_theme_override": null
+    },
+    "--bs-danger-light": {
+      "value": "#FEE2E2",
+      "contrast_on_white": 1.22,
+      "contrast_white_on_it": 1.22,
+      "contrast_ink_on_it": 14.77,
+      "aa_normal_text_white_on_it": false,
+      "aa_normal_text_it_on_white": false,
+      "dark_theme_override": null
+    },
+    "--bs-danger-inverse": {
+      "value": "#ffffff",
+      "contrast_on_white": 1.0,
+      "contrast_white_on_it": 1.0,
+      "contrast_ink_on_it": 18.04,
+      "aa_normal_text_white_on_it": false,
+      "aa_normal_text_it_on_white": false,
+      "dark_theme_override": null
+    },
+    "--bs-danger-text-emphasis": {
+      "value": "#991B1B",
+      "contrast_on_white": 8.31,
+      "contrast_white_on_it": 8.31,
+      "contrast_ink_on_it": 2.17,
+      "aa_normal_text_white_on_it": true,
+      "aa_normal_text_it_on_white": true,
+      "dark_theme_override": null
+    },
+    "--bs-danger-bg-subtle": {
+      "value": "#FEE2E2",
+      "contrast_on_white": 1.22,
+      "contrast_white_on_it": 1.22,
+      "contrast_ink_on_it": 14.77,
+      "aa_normal_text_white_on_it": false,
+      "aa_normal_text_it_on_white": false,
+      "dark_theme_override": null
+    },
+    "--bs-danger-border-subtle": {
+      "value": "#FCA5A5",
+      "contrast_on_white": 1.9,
+      "contrast_white_on_it": 1.9,
+      "contrast_ink_on_it": 9.5,
+      "aa_normal_text_white_on_it": false,
+      "aa_normal_text_it_on_white": false,
+      "dark_theme_override": null
+    },
+    "--cb-danger-strong": {
+      "value": "#DC2626",
+      "contrast_on_white": 4.83,
+      "contrast_white_on_it": 4.83,
+      "contrast_ink_on_it": 3.73,
+      "aa_normal_text_white_on_it": true,
+      "aa_normal_text_it_on_white": true,
+      "dark_theme_override": null
+    },
+    "--cb-warning-strong": {
+      "value": "#B45309",
+      "contrast_on_white": 5.02,
+      "contrast_white_on_it": 5.02,
+      "contrast_ink_on_it": 3.59,
+      "aa_normal_text_white_on_it": true,
+      "aa_normal_text_it_on_white": true,
+      "dark_theme_override": null
+    },
+    "--cb-success-strong": {
+      "value": "#15803D",
+      "contrast_on_white": 5.02,
+      "contrast_white_on_it": 5.02,
+      "contrast_ink_on_it": 3.6,
+      "aa_normal_text_white_on_it": true,
+      "aa_normal_text_it_on_white": true,
+      "dark_theme_override": null
+    },
+    "--cb-success-stronger": {
+      "value": "#166534",
+      "contrast_on_white": 7.13,
+      "contrast_white_on_it": 7.13,
+      "contrast_ink_on_it": 2.53,
+      "aa_normal_text_white_on_it": true,
+      "aa_normal_text_it_on_white": true,
+      "dark_theme_override": null
+    },
+    "--cb-info-strong": {
+      "value": "#2563EB",
+      "contrast_on_white": 5.17,
+      "contrast_white_on_it": 5.17,
+      "contrast_ink_on_it": 3.49,
+      "aa_normal_text_white_on_it": true,
+      "aa_normal_text_it_on_white": true,
+      "dark_theme_override": null
+    },
+    "--cb-info-stronger": {
+      "value": "#1D4ED8",
+      "contrast_on_white": 6.7,
+      "contrast_white_on_it": 6.7,
+      "contrast_ink_on_it": 2.69,
+      "aa_normal_text_white_on_it": true,
+      "aa_normal_text_it_on_white": true,
+      "dark_theme_override": null
+    },
+    "--cb-violet-strong": {
+      "value": "#7C3AED",
+      "contrast_on_white": 5.7,
+      "contrast_white_on_it": 5.7,
+      "contrast_ink_on_it": 3.17,
+      "aa_normal_text_white_on_it": true,
+      "aa_normal_text_it_on_white": true,
+      "dark_theme_override": null
+    },
+    "--bs-info": {
+      "value": "#3B82F6",
+      "contrast_on_white": 3.68,
+      "contrast_white_on_it": 3.68,
+      "contrast_ink_on_it": 4.9,
+      "aa_normal_text_white_on_it": false,
+      "aa_normal_text_it_on_white": false,
+      "dark_theme_override": null
+    },
+    "--bs-info-active": {
+      "value": "#60A5FA",
+      "contrast_on_white": 2.54,
+      "contrast_white_on_it": 2.54,
+      "contrast_ink_on_it": 7.09,
+      "aa_normal_text_white_on_it": false,
+      "aa_normal_text_it_on_white": false,
+      "dark_theme_override": null
+    },
+    "--bs-info-light": {
+      "value": "#DBEAFE",
+      "contrast_on_white": 1.22,
+      "contrast_white_on_it": 1.22,
+      "contrast_ink_on_it": 14.78,
+      "aa_normal_text_white_on_it": false,
+      "aa_normal_text_it_on_white": false,
+      "dark_theme_override": null
+    },
+    "--bs-info-inverse": {
+      "value": "#ffffff",
+      "contrast_on_white": 1.0,
+      "contrast_white_on_it": 1.0,
+      "contrast_ink_on_it": 18.04,
+      "aa_normal_text_white_on_it": false,
+      "aa_normal_text_it_on_white": false,
+      "dark_theme_override": null
+    },
+    "--bs-info-text-emphasis": {
+      "value": "#1E40AF",
+      "contrast_on_white": 8.72,
+      "contrast_white_on_it": 8.72,
+      "contrast_ink_on_it": 2.07,
+      "aa_normal_text_white_on_it": true,
+      "aa_normal_text_it_on_white": true,
+      "dark_theme_override": null
+    },
+    "--bs-info-bg-subtle": {
+      "value": "#DBEAFE",
+      "contrast_on_white": 1.22,
+      "contrast_white_on_it": 1.22,
+      "contrast_ink_on_it": 14.78,
+      "aa_normal_text_white_on_it": false,
+      "aa_normal_text_it_on_white": false,
+      "dark_theme_override": null
+    },
+    "--bs-info-border-subtle": {
+      "value": "#93C5FD",
+      "contrast_on_white": 1.8,
+      "contrast_white_on_it": 1.8,
+      "contrast_ink_on_it": 10.0,
+      "aa_normal_text_white_on_it": false,
+      "aa_normal_text_it_on_white": false,
+      "dark_theme_override": null
+    },
+    "--bs-secondary-color": {
+      "value": "#6B7280",
+      "contrast_on_white": 4.83,
+      "contrast_white_on_it": 4.83,
+      "contrast_ink_on_it": 3.73,
+      "aa_normal_text_white_on_it": true,
+      "aa_normal_text_it_on_white": true,
+      "dark_theme_override": null
+    },
+    "--cb-sys-svc": {
+      "value": "#22D3EE",
+      "contrast_on_white": 1.81,
+      "contrast_white_on_it": 1.81,
+      "contrast_ink_on_it": 9.98,
+      "aa_normal_text_white_on_it": false,
+      "aa_normal_text_it_on_white": false,
+      "dark_theme_override": null
+    },
+    "--cb-sys-ppl": {
+      "value": "#A8C5FF",
+      "contrast_on_white": 1.74,
+      "contrast_white_on_it": 1.74,
+      "contrast_ink_on_it": 10.39,
+      "aa_normal_text_white_on_it": false,
+      "aa_normal_text_it_on_white": false,
+      "dark_theme_override": null
+    },
+    "--cb-sys-acc": {
+      "value": "#38BDF8",
+      "contrast_on_white": 2.14,
+      "contrast_white_on_it": 2.14,
+      "contrast_ink_on_it": 8.42,
+      "aa_normal_text_white_on_it": false,
+      "aa_normal_text_it_on_white": false,
+      "dark_theme_override": null
+    },
+    "--cb-sys-reports": {
+      "value": "#5EEAD4",
+      "contrast_on_white": 1.48,
+      "contrast_white_on_it": 1.48,
+      "contrast_ink_on_it": 12.19,
+      "aa_normal_text_white_on_it": false,
+      "aa_normal_text_it_on_white": false,
+      "dark_theme_override": null
+    },
+    "--cb-sys-tasks": {
+      "value": "#C4B5FD",
+      "contrast_on_white": 1.85,
+      "contrast_white_on_it": 1.85,
+      "contrast_ink_on_it": 9.77,
+      "aa_normal_text_white_on_it": false,
+      "aa_normal_text_it_on_white": false,
+      "dark_theme_override": null
+    },
+    "--cb-sys-crm": {
+      "value": "#D8B4FE",
+      "contrast_on_white": 1.77,
+      "contrast_white_on_it": 1.77,
+      "contrast_ink_on_it": 10.2,
+      "aa_normal_text_white_on_it": false,
+      "aa_normal_text_it_on_white": false,
+      "dark_theme_override": null
+    },
+    "--cb-sys-cal": {
+      "value": "#F0ABFC",
+      "contrast_on_white": 1.76,
+      "contrast_white_on_it": 1.76,
+      "contrast_ink_on_it": 10.25,
+      "aa_normal_text_white_on_it": false,
+      "aa_normal_text_it_on_white": false,
+      "dark_theme_override": null
+    },
+    "--cb-sys-proj": {
+      "value": "#2DD4BF",
+      "contrast_on_white": 1.86,
+      "contrast_white_on_it": 1.86,
+      "contrast_ink_on_it": 9.69,
+      "aa_normal_text_white_on_it": false,
+      "aa_normal_text_it_on_white": false,
+      "dark_theme_override": null
+    },
+    "--cb-sys-inv": {
+      "value": "#FBBF24",
+      "contrast_on_white": 1.67,
+      "contrast_white_on_it": 1.67,
+      "contrast_ink_on_it": 10.8,
+      "aa_normal_text_white_on_it": false,
+      "aa_normal_text_it_on_white": false,
+      "dark_theme_override": null
+    },
+    "--cb-sys-manuf": {
+      "value": "#FDBA74",
+      "contrast_on_white": 1.69,
+      "contrast_white_on_it": 1.69,
+      "contrast_ink_on_it": 10.7,
+      "aa_normal_text_white_on_it": false,
+      "aa_normal_text_it_on_white": false,
+      "dark_theme_override": null
+    },
+    "--cb-sys-hyper": {
+      "value": "#F9A8D4",
+      "contrast_on_white": 1.81,
+      "contrast_white_on_it": 1.81,
+      "contrast_ink_on_it": 9.95,
+      "aa_normal_text_white_on_it": false,
+      "aa_normal_text_it_on_white": false,
+      "dark_theme_override": null
+    },
+    "--cb-sys-rest": {
+      "value": "#FDA4AF",
+      "contrast_on_white": 1.89,
+      "contrast_white_on_it": 1.89,
+      "contrast_ink_on_it": 9.54,
+      "aa_normal_text_white_on_it": false,
+      "aa_normal_text_it_on_white": false,
+      "dark_theme_override": null
+    },
+    "--cb-room-1-bg": {
+      "value": "#DBEAFE",
+      "contrast_on_white": 1.22,
+      "contrast_white_on_it": 1.22,
+      "contrast_ink_on_it": 14.78,
+      "aa_normal_text_white_on_it": false,
+      "aa_normal_text_it_on_white": false,
+      "dark_theme_override": null
+    },
+    "--cb-room-1-line": {
+      "value": "#3B82F6",
+      "contrast_on_white": 3.68,
+      "contrast_white_on_it": 3.68,
+      "contrast_ink_on_it": 4.9,
+      "aa_normal_text_white_on_it": false,
+      "aa_normal_text_it_on_white": false,
+      "dark_theme_override": null
+    },
+    "--cb-room-1-ink": {
+      "value": "#1D4ED8",
+      "contrast_on_white": 6.7,
+      "contrast_white_on_it": 6.7,
+      "contrast_ink_on_it": 2.69,
+      "aa_normal_text_white_on_it": true,
+      "aa_normal_text_it_on_white": true,
+      "dark_theme_override": null
+    },
+    "--cb-room-2-bg": {
+      "value": "#FEE2E2",
+      "contrast_on_white": 1.22,
+      "contrast_white_on_it": 1.22,
+      "contrast_ink_on_it": 14.77,
+      "aa_normal_text_white_on_it": false,
+      "aa_normal_text_it_on_white": false,
+      "dark_theme_override": null
+    },
+    "--cb-room-2-line": {
+      "value": "#EF4444",
+      "contrast_on_white": 3.76,
+      "contrast_white_on_it": 3.76,
+      "contrast_ink_on_it": 4.79,
+      "aa_normal_text_white_on_it": false,
+      "aa_normal_text_it_on_white": false,
+      "dark_theme_override": null
+    },
+    "--cb-room-2-ink": {
+      "value": "#B91C1C",
+      "contrast_on_white": 6.47,
+      "contrast_white_on_it": 6.47,
+      "contrast_ink_on_it": 2.79,
+      "aa_normal_text_white_on_it": true,
+      "aa_normal_text_it_on_white": true,
+      "dark_theme_override": null
+    },
+    "--cb-room-3-bg": {
+      "value": "#DCFCE7",
+      "contrast_on_white": 1.1,
+      "contrast_white_on_it": 1.1,
+      "contrast_ink_on_it": 16.42,
+      "aa_normal_text_white_on_it": false,
+      "aa_normal_text_it_on_white": false,
+      "dark_theme_override": null
+    },
+    "--cb-room-3-line": {
+      "value": "#22C55E",
+      "contrast_on_white": 2.28,
+      "contrast_white_on_it": 2.28,
+      "contrast_ink_on_it": 7.92,
+      "aa_normal_text_white_on_it": false,
+      "aa_normal_text_it_on_white": false,
+      "dark_theme_override": null
+    },
+    "--cb-room-3-ink": {
+      "value": "#15803D",
+      "contrast_on_white": 5.02,
+      "contrast_white_on_it": 5.02,
+      "contrast_ink_on_it": 3.6,
+      "aa_normal_text_white_on_it": true,
+      "aa_normal_text_it_on_white": true,
+      "dark_theme_override": null
+    },
+    "--cb-room-4-bg": {
+      "value": "#FEF3C7",
+      "contrast_on_white": 1.11,
+      "contrast_white_on_it": 1.11,
+      "contrast_ink_on_it": 16.2,
+      "aa_normal_text_white_on_it": false,
+      "aa_normal_text_it_on_white": false,
+      "dark_theme_override": null
+    },
+    "--cb-room-4-line": {
+      "value": "#F59E0B",
+      "contrast_on_white": 2.15,
+      "contrast_white_on_it": 2.15,
+      "contrast_ink_on_it": 8.4,
+      "aa_normal_text_white_on_it": false,
+      "aa_normal_text_it_on_white": false,
+      "dark_theme_override": null
+    },
+    "--cb-room-4-ink": {
+      "value": "#B45309",
+      "contrast_on_white": 5.02,
+      "contrast_white_on_it": 5.02,
+      "contrast_ink_on_it": 3.59,
+      "aa_normal_text_white_on_it": true,
+      "aa_normal_text_it_on_white": true,
+      "dark_theme_override": null
+    },
+    "--cb-room-5-bg": {
+      "value": "#EDE9FE",
+      "contrast_on_white": 1.19,
+      "contrast_white_on_it": 1.19,
+      "contrast_ink_on_it": 15.19,
+      "aa_normal_text_white_on_it": false,
+      "aa_normal_text_it_on_white": false,
+      "dark_theme_override": null
+    },
+    "--cb-room-5-line": {
+      "value": "#8B5CF6",
+      "contrast_on_white": 4.23,
+      "contrast_white_on_it": 4.23,
+      "contrast_ink_on_it": 4.26,
+      "aa_normal_text_white_on_it": false,
+      "aa_normal_text_it_on_white": false,
+      "dark_theme_override": null
+    },
+    "--cb-room-5-ink": {
+      "value": "#6D28D9",
+      "contrast_on_white": 7.1,
+      "contrast_white_on_it": 7.1,
+      "contrast_ink_on_it": 2.54,
+      "aa_normal_text_white_on_it": true,
+      "aa_normal_text_it_on_white": true,
+      "dark_theme_override": null
+    },
+    "--cb-room-6-bg": {
+      "value": "#CFFAFE",
+      "contrast_on_white": 1.12,
+      "contrast_white_on_it": 1.12,
+      "contrast_ink_on_it": 16.11,
+      "aa_normal_text_white_on_it": false,
+      "aa_normal_text_it_on_white": false,
+      "dark_theme_override": null
+    },
+    "--cb-room-6-line": {
+      "value": "#06B6D4",
+      "contrast_on_white": 2.43,
+      "contrast_white_on_it": 2.43,
+      "contrast_ink_on_it": 7.43,
+      "aa_normal_text_white_on_it": false,
+      "aa_normal_text_it_on_white": false,
+      "dark_theme_override": null
+    },
+    "--cb-room-6-ink": {
+      "value": "#0E7490",
+      "contrast_on_white": 5.36,
+      "contrast_white_on_it": 5.36,
+      "contrast_ink_on_it": 3.37,
+      "aa_normal_text_white_on_it": true,
+      "aa_normal_text_it_on_white": true,
+      "dark_theme_override": null
+    },
+    "--cb-wall": {
+      "value": "#2B3445",
+      "contrast_on_white": 12.5,
+      "contrast_white_on_it": 12.5,
+      "contrast_ink_on_it": 1.44,
+      "aa_normal_text_white_on_it": true,
+      "aa_normal_text_it_on_white": true,
+      "dark_theme_override": null
+    }
+  },
+  "non_colour_tokens": {
+    "--cb-brand": "var(--cb-blue-500)",
+    "--cb-brand-fill": "var(--cb-blue-600)",
+    "--cb-brand-ink": "var(--cb-blue-800)",
+    "--cb-brand-surface": "var(--cb-blue-50)",
+    "--bs-primary-rgb": "24, 119, 242",
+    "--bs-primary-clarity": "rgba(24, 119, 242, 0.2)",
+    "--bs-link-color-rgb": "20, 93, 191",
+    "--bs-nav-pills-link-active-bg": "var(--cb-brand-fill)",
+    "--bs-success-rgb": "22, 163, 74",
+    "--bs-warning-rgb": "245, 158, 11",
+    "--bs-danger-rgb": "239, 68, 68",
+    "--bs-info-rgb": "59, 130, 246",
+    "--room-bg": "var(--cb-room-1-bg)",
+    "--room-line": "var(--cb-room-1-line)",
+    "--room-ink": "var(--cb-room-1-ink)"
+  },
+  "gradients": [
+    "linear-gradient(\n        45deg,\n        var(--bs-gray-200) 0 6px,\n        transparent 6px 12px)",
+    "linear-gradient(135deg,#166FE5,#145DBF) !important",
+    "linear-gradient(45deg,\n        #F2C037 0 8px, var(--cb-wall) 8px 16px)",
+    "linear-gradient(45deg,\n        rgba(255,255,255,.75) 0 7px, transparent 7px 14px)",
+    "linear-gradient(90deg,\n        var(--bs-gray-400) 0 14px, transparent 14px 30px) 0 50% / 100% 3px no-repeat",
+    "linear-gradient(var(--bs-gray-100) 1px, transparent 1px) 0 0 / 100% 24px,\n        linear-gradient(90deg, var(--bs-gray-100) 1px, transparent 1px) 0 0 / 24px 100%",
+    "linear-gradient(var(--bs-gray-200) 1px, transparent 1px) 0 0 / 100% 26px,\n        linear-gradient(90deg, var(--bs-gray-200) 1px, transparent 1px) 0 0 / 26px 100%,\n        var(--bs-gray-100)",
+    "linear-gradient(var(--room-ink) 2px, transparent 2px) 0 8px / 100% 11px,\n        rgba(255,255,255,.65)"
+  ],
+  "contrast_reference": {
+    "white": "#FFFFFF",
+    "ink": "#071437",
+    "aa_normal": 4.5,
+    "aa_large": 3.0
+  }
+}

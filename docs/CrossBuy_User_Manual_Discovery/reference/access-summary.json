@@ -1,0 +1,86 @@
+{
+ "platform_scopes": [
+  {
+   "constant": "ScopeAccounting",
+   "value": "Accounting"
+  },
+  {
+   "constant": "ScopeCalendar",
+   "value": "Calendar"
+  },
+  {
+   "constant": "ScopeCommunication",
+   "value": "Communication"
+  },
+  {
+   "constant": "ScopeCrm",
+   "value": "Crm"
+  },
+  {
+   "constant": "ScopeHr",
+   "value": "Hr"
+  },
+  {
+   "constant": "ScopeInventory",
+   "value": "Inventory"
+  },
+  {
+   "constant": "ScopeManufacturing",
+   "value": "Manufacturing"
+  },
+  {
+   "constant": "ScopeNone",
+   "value": "None"
+  },
+  {
+   "constant": "ScopePos",
+   "value": "Pos"
+  },
+  {
+   "constant": "ScopeProjects",
+   "value": "Projects"
+  },
+  {
+   "constant": "ScopeTasks",
+   "value": "Tasks"
+  }
+ ],
+ "vocabularies": {
+  "Accounting.action": 7,
+  "Calendar.action": 4,
+  "Calendar.role": 2,
+  "Communication.action": 6,
+  "Communication.role": 3,
+  "Crm.action": 3,
+  "Hr.action": 12,
+  "Hr.role": 4,
+  "Insight.action": 3,
+  "Inventory.action": 4,
+  "Projects.action": 11,
+  "Projects.role": 3,
+  "Tasks.action": 8,
+  "Tasks.role": 3
+ },
+ "distinct_permission_strings_checked": 4,
+ "most_checked": [
+  [
+   "currency-override",
+   10
+  ],
+  [
+   "manage",
+   6
+  ],
+  [
+   "doc",
+   3
+  ],
+  [
+   "read",
+   2
+  ]
+ ],
+ "routable_actions": 1220,
+ "anonymous_actions": 17,
+ "caveat": "Every row is repository-verified only. No role other than the administrator account was exercised at runtime, so no row here is runtime-verified."
+}

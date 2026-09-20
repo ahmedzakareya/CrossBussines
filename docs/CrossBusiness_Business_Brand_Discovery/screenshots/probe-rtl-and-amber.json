@@ -1,0 +1,202 @@
+{
+  "arabicPass": [
+    {
+      "id": "04-inventory-dash-ar",
+      "url": "/Inventory/Index",
+      "title": "نظام المخازن - CrossBuy",
+      "dir": "rtl",
+      "lang": "ar",
+      "bodyDirection": "rtl",
+      "bodyFontFamily": "Cairo, sans-serif",
+      "brand": "#1877F2",
+      "styleBundles": [
+        "/Backend-assets/css/style.bundle.rtl.css?v=JaSRwdxzEU4umeQvKAEA5-6yggDbik45WwM-O8Cb2y8"
+      ],
+      "cairoLoaded": true,
+      "fontFaces": [
+        "Inter",
+        "keenicons-outline",
+        "Cairo"
+      ],
+      "heading": "المخزون"
+    },
+    {
+      "id": "07-trial-balance-ar",
+      "url": "/Accounting/TrialBalance",
+      "title": "النظام المحاسبي - CrossBuy",
+      "dir": "rtl",
+      "lang": "ar",
+      "bodyDirection": "rtl",
+      "bodyFontFamily": "Cairo, sans-serif",
+      "brand": "#1877F2",
+      "styleBundles": [
+        "/Backend-assets/css/style.bundle.rtl.css?v=JaSRwdxzEU4umeQvKAEA5-6yggDbik45WwM-O8Cb2y8"
+      ],
+      "cairoLoaded": true,
+      "fontFaces": [
+        "keenicons-outline",
+        "Cairo"
+      ],
+      "heading": "ميزان المراجعة"
+    },
+    {
+      "id": "11-admin-hr-ar",
+      "url": "/Admin/Index",
+      "title": "لوحة تحكم CrossBuy",
+      "dir": "rtl",
+      "lang": "ar",
+      "bodyDirection": "rtl",
+      "bodyFontFamily": "Cairo, sans-serif",
+      "brand": "#1877F2",
+      "styleBundles": [
+        "/Backend-assets/css/style.bundle.rtl.css?v=JaSRwdxzEU4umeQvKAEA5-6yggDbik45WwM-O8Cb2y8"
+      ],
+      "cairoLoaded": true,
+      "fontFaces": [
+        "Inter",
+        "keenicons-outline",
+        "Cairo"
+      ],
+      "heading": "الموارد البشرية"
+    },
+    {
+      "id": "01-login-ar",
+      "url": "/Account/Login",
+      "title": "تسجيل الدخول — CrossBuy",
+      "dir": "rtl",
+      "lang": "ar",
+      "bodyDirection": "rtl",
+      "bodyFontFamily": "Cairo, \"Segoe UI\", Tahoma, sans-serif",
+      "brand": "#1877F2",
+      "styleBundles": [
+        "/Backend-assets/css/style.bundle.rtl.css?v=JaSRwdxzEU4umeQvKAEA5-6yggDbik45WwM-O8Cb2y8"
+      ],
+      "cairoLoaded": true,
+      "fontFaces": [
+        "keenicons-outline",
+        "keenicons-solid",
+        "Cairo"
+      ],
+      "heading": "منصّة واحدة.\n\t\t\t\t\t\t\tإمكانات بلا حدود."
+    }
+  ],
+  "amber": {
+    "/Inventory/Index": [
+      {
+        "tag": "div",
+        "cls": "progress-bar bg-warning",
+        "role": "background",
+        "text": "",
+        "colorOnIt": "rgb(255, 255, 255)"
+      },
+      {
+        "tag": "div",
+        "cls": "progress-bar bg-warning",
+        "role": "background",
+        "text": "",
+        "colorOnIt": "rgb(255, 255, 255)"
+      },
+      {
+        "tag": "div",
+        "cls": "progress-bar bg-warning",
+        "role": "background",
+        "text": "",
+        "colorOnIt": "rgb(255, 255, 255)"
+      },
+      {
+        "tag": "div",
+        "cls": "progress-bar bg-warning",
+        "role": "background",
+        "text": "",
+        "colorOnIt": "rgb(255, 255, 255)"
+      }
+    ],
+    "/Accounting/Index": [
+      {
+        "tag": "div",
+        "cls": "progress-bar bg-warning",
+        "role": "background",
+        "text": "",
+        "colorOnIt": "rgb(255, 255, 255)"
+      },
+      {
+        "tag": "div",
+        "cls": "progress-bar bg-warning",
+        "role": "background",
+        "text": "",
+        "colorOnIt": "rgb(255, 255, 255)"
+      }
+    ],
+    "/Crm/Pipeline": [
+      {
+        "tag": "span",
+        "cls": "bullet bullet-dot bg-warning h-10px w-10px me-3",
+        "role": "background",
+        "text": "",
+        "colorOnIt": "rgb(7, 20, 55)"
+      }
+    ],
+    "/Admin/Index": [
+      {
+        "tag": "div",
+        "cls": "position-absolute start-0 top-0 w-4px h-100 rounded-2 bg-warning",
+        "role": "background",
+        "text": "",
+        "colorOnIt": "rgb(7, 20, 55)"
+      },
+      {
+        "tag": "div",
+        "cls": "position-absolute start-0 top-0 w-4px h-100 rounded-2 bg-warning",
+        "role": "background",
+        "text": "",
+        "colorOnIt": "rgb(7, 20, 55)"
+      },
+      {
+        "tag": "div",
+        "cls": "position-absolute start-0 top-0 w-4px h-100 rounded-2 bg-warning",
+        "role": "background",
+        "text": "",
+        "colorOnIt": "rgb(7, 20, 55)"
+      },
+      {
+        "tag": "div",
+        "cls": "position-absolute start-0 top-0 w-4px h-100 rounded-2 bg-warning",
+        "role": "background",
+        "text": "",
+        "colorOnIt": "rgb(7, 20, 55)"
+      },
+      {
+        "tag": "div",
+        "cls": "position-absolute start-0 top-0 w-4px h-100 rounded-2 bg-warning",
+        "role": "background",
+        "text": "",
+        "colorOnIt": "rgb(7, 20, 55)"
+      },
+      {
+        "tag": "div",
+        "cls": "progress-bar bg-warning",
+        "role": "background",
+        "text": "",
+        "colorOnIt": "rgb(255, 255, 255)"
+      }
+    ]
+  },
+  "afterSwitch": {
+    "title": "اختر الوجهة - CrossBuy",
+    "dir": "rtl",
+    "lang": "ar",
+    "bodyDirection": "rtl",
+    "bodyFontFamily": "Cairo, system-ui, Tahoma, sans-serif",
+    "brand": "",
+    "styleBundles": [
+      "/Backend-assets/css/style.bundle.rtl.css?v=JaSRwdxzEU4umeQvKAEA5-6yggDbik45WwM-O8Cb2y8"
+    ],
+    "cairoLoaded": true,
+    "fontFaces": [
+      "keenicons-outline",
+      "keenicons-solid",
+      "Cairo"
+    ],
+    "heading": "أهلاً بك، احمد زكريا"
+  }
+}

@@ -1,0 +1,1157 @@
+{
+ "action_pairs_by_controller": {
+  "Account": {
+   "form_then_save": [
+    "Login"
+   ],
+   "command_only": [
+    "ChangePassword"
+   ],
+   "get_count": 10,
+   "post_count": 2
+  },
+  "Accounting": {
+   "form_then_save": [
+    "CreateJournal",
+    "EditJournal"
+   ],
+   "command_only": [
+    "AssignAccRole",
+    "CloseYear",
+    "CreateAccount",
+    "CreateAssetCategory",
+    "CreateBankAccount",
+    "CreateCashBox",
+    "CreateFixedAsset",
+    "CreateInvoiceFromReceipt",
+    "CreatePayment",
+    "CreatePurchaseInvoice",
+    "CreatePurchaseReturn",
+    "CreateReceipt",
+    "CreateSalesInvoice",
+    "CreateSalesReturn",
+    "CreateTaxCode",
+    "CustomerQuickAdd",
+    "DeleteJournal",
+    "DeleteMaintenanceSchedule",
+    "DeletePayrollBracket",
+    "DisbursePayroll",
+    "DisposeAsset",
+    "DoReconcile",
+    "DoTransfer",
+    "EditAccount",
+    "FileVatReturn",
+    "InvoiceConversationAdd",
+    "InvoiceConversationReact",
+    "LogMaintenance",
+    "PostJournal",
+    "PostPayroll",
+    "RemitStatutory",
+    "RemoveAccRole",
+    "ReopenYear",
+    "ReverseJournal",
+    "RunDepreciation",
+    "SaveAccSettings",
+    "SaveCustomer",
+    "SaveMaintenanceSchedule",
+    "SavePayrollBracket",
+    "SavePayrollSettings",
+    "SaveVendor",
+    "SetPeriodStatus",
+    "SettleVatReturn",
+    "StampInvoiceCustomer",
+    "ToggleTaxCode",
+    "UpdatePurchaseInvoice",
+    "UpdatePurchaseReturn",
+    "UpdateSalesInvoice",
+    "UpdateSalesReturn",
+    "UpdateTaxCode",
+    "VendorQuickAdd"
+   ],
+   "get_count": 83,
+   "post_count": 53
+  },
+  "Admin": {
+   "form_then_save": [
+    "AdministrativeBodiesCompany",
+    "JobTitle"
+   ],
+   "command_only": [
+    "AddAttachments",
+    "AddHierarchicalItem",
+    "ChangeApplicationStage",
+    "CreateAppraisal",
+    "DeleteApplicationDoc",
+    "DeleteAppraisalTemplate",
+    "DeleteAttachment",
+    "DeleteContract",
+    "DeleteDocument",
+    "DeleteHoliday",
+    "DeleteRequiredDocType",
+    "DeleteTrainingCourse",
+    "Encash",
+    "EnrollEmployees",
+    "MoveApplication",
+    "NotifyExpiring",
+    "PostFinalSettlement",
+    "PostLeaveProvision",
+    "RemoveEnrollment",
+    "RunLeaveCarryOver",
+    "SaveApplication",
+    "SaveAppraisalCycle",
+    "SaveAppraisalScores",
+    "SaveAppraisalTemplate",
+    "SaveAttendance",
+    "SaveAttendancePolicy",
+    "SaveContract",
+    "SaveDocument",
+    "SaveEmployee",
+    "SaveHoliday",
+    "SaveLeavePolicy",
+    "SaveLeaveType",
+    "SaveLeaveTypeEncashable",
+    "SaveMainPolices",
+    "SaveRequiredDocType",
+    "SaveSalaryPolicy",
+    "SaveTrainingCourse",
+    "SetAppraisalCycleStatus",
+    "SetEnrollmentStatus",
+    "UploadApplicationDoc"
+   ],
+   "get_count": 43,
+   "post_count": 42
+  },
+  "Announcements": {
+   "form_then_save": [],
+   "command_only": [
+    "Create",
+    "Dismiss",
+    "Toggle"
+   ],
+   "get_count": 2,
+   "post_count": 3
+  },
+  "Approvals": {
+   "form_then_save": [],
+   "command_only": [],
+   "get_count": 1,
+   "post_count": 0
+  },
+  "Base": {
+   "form_then_save": [],
+   "command_only": [],
+   "get_count": 1,
+   "post_count": 0
+  },
+  "Brand": {
+   "form_then_save": [],
+   "command_only": [
+    "ActivateDefaultBrand",
+    "DeleteBrand",
+    "SaveBrand"
+   ],
+   "get_count": 2,
+   "post_count": 3
+  },
+  "BusinessEventMonitor": {
+   "form_then_save": [],
+   "command_only": [
+    "NotesAdd",
+    "Retry"
+   ],
+   "get_count": 5,
+   "post_count": 2
+  },
+  "Calendar": {
+   "form_then_save": [],
+   "command_only": [
+    "Delete",
+    "Save",
+    "SaveSchedule"
+   ],
+   "get_count": 10,
+   "post_count": 3
+  },
+  "Chat": {
+   "form_then_save": [],
+   "command_only": [
+    "AddMember",
+    "CreateGroup",
+    "Delete",
+    "Edit",
+    "MarkRead",
+    "React",
+    "RemoveMember",
+    "Send",
+    "StartDirect"
+   ],
+   "get_count": 5,
+   "post_count": 9
+  },
+  "ClientPortal": {
+   "form_then_save": [],
+   "command_only": [],
+   "get_count": 5,
+   "post_count": 0
+  },
+  "Comm": {
+   "form_then_save": [],
+   "command_only": [
+    "Resend",
+    "Send",
+    "Star",
+    "Trash"
+   ],
+   "get_count": 4,
+   "post_count": 4
+  },
+  "Comments": {
+   "form_then_save": [],
+   "command_only": [
+    "Add",
+    "Delete"
+   ],
+   "get_count": 1,
+   "post_count": 2
+  },
+  "Crm": {
+   "form_then_save": [],
+   "command_only": [
+    "AddCampaignMember",
+    "AddListMember",
+    "AddListToCampaign",
+    "AssignCrmRole",
+    "ConvertLead",
+    "ConvertOpportunityToQuotation",
+    "DeleteAutomationRule",
+    "DeleteContact",
+    "DeleteCustomField",
+    "MoveOpportunity",
+    "RecomputeScores",
+    "RemoveCampaignMember",
+    "RemoveCrmRole",
+    "RemoveListMember",
+    "SaveAccount",
+    "SaveActivity",
+    "SaveAutomationRule",
+    "SaveCampaign",
+    "SaveContact",
+    "SaveCrmSettings",
+    "SaveCustomField",
+    "SaveLead",
+    "SaveList",
+    "SaveOpportunity",
+    "SaveOpportunityProducts",
+    "SavePipeline",
+    "SaveScoringRule",
+    "SaveSlaPolicy",
+    "SaveTicket",
+    "ToggleActivity",
+    "UpdateMemberStatus",
+    "UpdateTicketStatus"
+   ],
+   "get_count": 42,
+   "post_count": 32
+  },
+  "Currency": {
+   "form_then_save": [],
+   "command_only": [
+    "PostRevaluation",
+    "SaveCurrency",
+    "SaveExchangeRate",
+    "SetBranchCurrency",
+    "SetCompanyCurrency"
+   ],
+   "get_count": 5,
+   "post_count": 5
+  },
+  "Documents": {
+   "form_then_save": [],
+   "command_only": [
+    "Reject",
+    "Submit",
+    "Verify"
+   ],
+   "get_count": 5,
+   "post_count": 3
+  },
+  "EmployeeOnboarding": {
+   "form_then_save": [],
+   "command_only": [
+    "Complete",
+    "CompleteItem",
+    "Start",
+    "WaiveItem"
+   ],
+   "get_count": 1,
+   "post_count": 4
+  },
+  "FileManager": {
+   "form_then_save": [],
+   "command_only": [
+    "CreateFolder",
+    "Delete",
+    "Move",
+    "Rename",
+    "Upload"
+   ],
+   "get_count": 4,
+   "post_count": 5
+  },
+  "Home": {
+   "form_then_save": [],
+   "command_only": [],
+   "get_count": 4,
+   "post_count": 0
+  },
+  "Hyper": {
+   "form_then_save": [],
+   "command_only": [],
+   "get_count": 3,
+   "post_count": 0
+  },
+  "HyperPos": {
+   "form_then_save": [
+    "Login",
+    "PriceCheck",
+    "Start"
+   ],
+   "command_only": [
+    "AttachCustomer",
+    "CustomerAdd",
+    "Pay",
+    "RemoveLine",
+    "Scan",
+    "SetQty",
+    "ShiftClose",
+    "StampInvoiceCustomer"
+   ],
+   "get_count": 10,
+   "post_count": 11
+  },
+  "InsightActions": {
+   "form_then_save": [],
+   "command_only": [
+    "CreateTask"
+   ],
+   "get_count": 1,
+   "post_count": 1
+  },
+  "Inventory": {
+   "form_then_save": [
+    "CreateCategory",
+    "CreateItem",
+    "EditCategory",
+    "EditItem"
+   ],
+   "command_only": [
+    "AddPlanDemand",
+    "AddWorkOrderLabor",
+    "ApproveDoc",
+    "AssignRole",
+    "BulkExecute",
+    "BulkPreview",
+    "BulkUndo",
+    "CancelWorkOrder",
+    "CompleteWorkOrder",
+    "ConvertPoToInvoice",
+    "ConvertQuoteToOrder",
+    "ConvertSoToInvoice",
+    "CopyPriceList",
+    "CreateDelivery",
+    "CreateGoodsReceipt",
+    "CreateLandedCost",
+    "CreatePlan",
+    "CreatePurchaseOrder",
+    "CreateQuotation",
+    "CreateSalesOrder",
+    "CreateTransfer",
+    "CreateUnit",
+    "CreateWarehouse",
+    "CreateWorkOrder",
+    "CreateWriteOff",
+    "DeleteBinLocation",
+    "DeletePlan",
+    "DeletePriceList",
+    "DeletePromotion",
+    "DeleteRoutingOp",
+    "DoCapitalizeAsset",
+    "EditWarehouse",
+    "GeneratePO",
+    "GeneratePlanWorkOrders",
+    "InitializeBinStock",
+    "OpAddAp",
+    "OpAddAr",
+    "OpAddAsset",
+    "OpAddGl",
+    "OpAddStock",
+    "OpFinalize",
+    "PostAssembly",
+    "PostCount",
+    "PostMovement",
+    "ProducePartial",
+    "QuotationConversationAdd",
+    "QuotationConversationReact",
+    "RejectDoc",
+    "ReleaseWorkOrder",
+    "RelocateBin",
+    "RemovePlanDemand",
+    "RemoveRole",
+    "RemoveWorkOrderLabor",
+    "RunIntegrity",
+    "SaveBinLocation",
+    "SaveItemLocations",
+    "SavePriceList",
+    "SavePromotion",
+    "SaveReorderSettings",
+    "SaveRoutingOp",
+    "SaveSettings",
+    "SaveWorkCenter",
+    "SaveWorkOrder",
+    "SetBinCount",
+    "SetQuoteStatus",
+    "WarehouseQuickAdd"
+   ],
+   "get_count": 105,
+   "post_count": 70
+  },
+  "Notifications": {
+   "form_then_save": [],
+   "command_only": [
+    "ToggleMute"
+   ],
+   "get_count": 2,
+   "post_count": 1
+  },
+  "People": {
+   "form_then_save": [],
+   "command_only": [
+    "AcknowledgeAppraisal",
+    "CreateLeave",
+    "CreateRequest",
+    "DecideLeave",
+    "DecideRequest"
+   ],
+   "get_count": 13,
+   "post_count": 5
+  },
+  "PlatformTimeline": {
+   "form_then_save": [],
+   "command_only": [],
+   "get_count": 1,
+   "post_count": 0
+  },
+  "Portal": {
+   "form_then_save": [],
+   "command_only": [],
+   "get_count": 1,
+   "post_count": 0
+  },
+  "Pos": {
+   "form_then_save": [],
+   "command_only": [
+    "AckSyncConflict",
+    "AddQuickItem",
+    "AddQuickItemJson",
+    "ApplyPreset",
+    "AssignPosRole",
+    "AttachModifierItemJson",
+    "CloseShift",
+    "CustomerQuickAdd",
+    "DeleteDeliveryZone",
+    "DeleteDiningArea",
+    "DeleteDriver",
+    "DeleteMenuGroup",
+    "DeleteModifierGroup",
+    "DeleteModifierOption",
+    "DeletePaymentMethod",
+    "DeleteStation",
+    "DeleteTable",
+    "DeleteTerminal",
+    "DetachModifierItem",
+    "OpenShift",
+    "PrepareFinished",
+    "PrepareSemi",
+    "RegenerateQr",
+    "RemovePosRole",
+    "RemoveQuickItem",
+    "SaveCapabilities",
+    "SaveDeliveryZone",
+    "SaveDiningArea",
+    "SaveDriver",
+    "SaveItemSourcing",
+    "SaveLayout",
+    "SaveMenuGroup",
+    "SaveModifierGroup",
+    "SaveModifierOption",
+    "SavePaymentMethod",
+    "SavePosSetting",
+    "SaveReservation",
+    "SaveStation",
+    "SaveTable",
+    "SaveTerminal",
+    "SetQuickCode",
+    "SetReservationStatus"
+   ],
+   "get_count": 21,
+   "post_count": 42
+  },
+  "PosApp": {
+   "form_then_save": [
+    "Login",
+    "Start"
+   ],
+   "command_only": [
+    "AddCustomer",
+    "AddCustomerAddress",
+    "AddLine",
+    "AddTable",
+    "AssignDriver",
+    "CreateOrder",
+    "DiscardOrder",
+    "HoldOrder",
+    "KdsLineStatus",
+    "LoadOrder",
+    "MergeOrder",
+    "MoveOrder",
+    "NewOrderOnTable",
+    "OpenTable",
+    "Pay",
+    "PaySplitItems",
+    "PayTenders",
+    "RecallOrder",
+    "RemoveLine",
+    "ReservationArrive",
+    "ReservationNoShow",
+    "ReturnLines",
+    "SeatOrder",
+    "SendKitchen",
+    "SetDelivery",
+    "SetDeliveryStatus",
+    "SetGuests",
+    "SetOrderCustomer",
+    "SetQty",
+    "SetTableStatus",
+    "ShiftClose",
+    "SyncPaidOrder",
+    "SyncShiftClose",
+    "VoidPaid"
+   ],
+   "get_count": 21,
+   "post_count": 36
+  },
+  "Project": {
+   "form_then_save": [],
+   "command_only": [
+    "AddMember",
+    "ApproveBilling",
+    "ApproveSubBilling",
+    "ApproveVariationOrder",
+    "ConfirmProgress",
+    "DeleteActivityType",
+    "DeleteBilling",
+    "DeleteEquipmentDepreciation",
+    "DeleteMaterialIssue",
+    "DeleteProgress",
+    "DeleteProject",
+    "DeleteSubBilling",
+    "DeleteVariationOrder",
+    "EndMember",
+    "PostBilling",
+    "PostEquipmentDepreciation",
+    "PostLabor",
+    "PostMaterialIssue",
+    "PostSubBilling",
+    "ReceiveAdvance",
+    "ReleaseRetention",
+    "ReleaseSubRetention",
+    "ReturnBilling",
+    "SaveActivityType",
+    "SaveBilling",
+    "SaveBoq",
+    "SaveEquipmentDepreciation",
+    "SaveMaterialIssue",
+    "SaveProgress",
+    "SaveProject",
+    "SaveSubBilling",
+    "SaveSubcontract",
+    "SaveVariationOrder",
+    "SubmitBilling",
+    "UpdateMember"
+   ],
+   "get_count": 17,
+   "post_count": 35
+  },
+  "ProjectCloseout": {
+   "form_then_save": [],
+   "command_only": [
+    "Close",
+    "Reopen"
+   ],
+   "get_count": 1,
+   "post_count": 2
+  },
+  "Reports": {
+   "form_then_save": [],
+   "command_only": [],
+   "get_count": 7,
+   "post_count": 0
+  },
+  "RestaurantIntelligence": {
+   "form_then_save": [],
+   "command_only": [],
+   "get_count": 1,
+   "post_count": 0
+  },
+  "Roster": {
+   "form_then_save": [],
+   "command_only": [
+    "Assign",
+    "CancelAssignment",
+    "CreatePeriod",
+    "Publish"
+   ],
+   "get_count": 2,
+   "post_count": 4
+  },
+  "Service": {
+   "form_then_save": [
+    "CompanyDetails"
+   ],
+   "command_only": [
+    "BranchDetails"
+   ],
+   "get_count": 5,
+   "post_count": 2
+  },
+  "Store": {
+   "form_then_save": [],
+   "command_only": [],
+   "get_count": 2,
+   "post_count": 0
+  },
+  "Tasks": {
+   "form_then_save": [],
+   "command_only": [
+    "AddTime",
+    "BoardMove",
+    "ChangeStatus",
+    "ChecklistAdd",
+    "ChecklistRemove",
+    "ChecklistReorder",
+    "ChecklistToggle",
+    "ConfirmMatch",
+    "Delete",
+    "DeleteTime",
+    "DependencyAdd",
+    "DependencyRemove",
+    "DismissMatch",
+    "GenerateInvoice",
+    "PostLaborToWO",
+    "RunGenerator",
+    "Save",
+    "SaveAutoRule",
+    "StartTimer",
+    "StopTimer",
+    "TaskCommentAdd",
+    "TemplateApply",
+    "TemplateSave",
+    "TemplateSetActive"
+   ],
+   "get_count": 20,
+   "post_count": 24
+  },
+  "Workspace": {
+   "form_then_save": [],
+   "command_only": [],
+   "get_count": 5,
+   "post_count": 0
+  }
+ },
+ "status_vocabulary": {
+  "all": [
+   "Absent",
+   "Accepted",
+   "Acknowledged",
+   "Active",
+   "Approved",
+   "Arrived",
+   "Booked",
+   "Cancelled",
+   "Closed",
+   "Completed",
+   "Confirmed",
+   "Converted",
+   "Delivered",
+   "Disposed",
+   "Done",
+   "Draft",
+   "Expired",
+   "Failed",
+   "FullyDepreciated",
+   "Generated",
+   "Hired",
+   "InProgress",
+   "InStock",
+   "Interview",
+   "Issued",
+   "Late",
+   "New",
+   "NoShow",
+   "Open",
+   "OutForDelivery",
+   "Paid",
+   "Pending",
+   "Planned",
+   "Posted",
+   "Preparing",
+   "Present",
+   "Queued",
+   "Ready",
+   "Rejected",
+   "Released",
+   "Reopened",
+   "Resolved",
+   "RestDay",
+   "Reversed",
+   "Review",
+   "Sent",
+   "Settled",
+   "Submitted",
+   "Terminated",
+   "Unposted",
+   "Void",
+   "Voided"
+  ],
+  "assigned_in_code": [
+   [
+    "Closed",
+    41
+   ],
+   [
+    "Posted",
+    4
+   ],
+   [
+    "Void",
+    4
+   ],
+   [
+    "Open",
+    3
+   ],
+   [
+    "Approved",
+    3
+   ],
+   [
+    "Reversed",
+    3
+   ],
+   [
+    "Paid",
+    3
+   ],
+   [
+    "Completed",
+    3
+   ],
+   [
+    "Active",
+    3
+   ],
+   [
+    "Cancelled",
+    3
+   ],
+   [
+    "Failed",
+    2
+   ],
+   [
+    "Converted",
+    2
+   ],
+   [
+    "FullyDepreciated",
+    2
+   ],
+   [
+    "InProgress",
+    2
+   ],
+   [
+    "Reopened",
+    1
+   ],
+   [
+    "Queued",
+    1
+   ],
+   [
+    "Sent",
+    1
+   ],
+   [
+    "Terminated",
+    1
+   ],
+   [
+    "Disposed",
+    1
+   ],
+   [
+    "Rejected",
+    1
+   ],
+   [
+    "Generated",
+    1
+   ],
+   [
+    "Voided",
+    1
+   ],
+   [
+    "Arrived",
+    1
+   ],
+   [
+    "Acknowledged",
+    1
+   ],
+   [
+    "Confirmed",
+    1
+   ],
+   [
+    "Hired",
+    1
+   ],
+   [
+    "Issued",
+    1
+   ],
+   [
+    "InStock",
+    1
+   ],
+   [
+    "Released",
+    1
+   ],
+   [
+    "Settled",
+    1
+   ],
+   [
+    "Submitted",
+    1
+   ],
+   [
+    "New",
+    1
+   ]
+  ],
+  "compared_in_code": [
+   [
+    "Posted",
+    120
+   ],
+   [
+    "Open",
+    66
+   ],
+   [
+    "Reversed",
+    31
+   ],
+   [
+    "Closed",
+    20
+   ],
+   [
+    "Paid",
+    16
+   ],
+   [
+    "Completed",
+    13
+   ],
+   [
+    "New",
+    11
+   ],
+   [
+    "InProgress",
+    10
+   ],
+   [
+    "Active",
+    8
+   ],
+   [
+    "Cancelled",
+    8
+   ],
+   [
+    "Done",
+    7
+   ],
+   [
+    "Draft",
+    5
+   ],
+   [
+    "Confirmed",
+    5
+   ],
+   [
+    "Converted",
+    5
+   ],
+   [
+    "Released",
+    5
+   ],
+   [
+    "Approved",
+    4
+   ],
+   [
+    "Voided",
+    4
+   ],
+   [
+    "Hired",
+    4
+   ],
+   [
+    "Late",
+    3
+   ],
+   [
+    "Sent",
+    3
+   ],
+   [
+    "Pending",
+    3
+   ],
+   [
+    "Booked",
+    3
+   ],
+   [
+    "Ready",
+    3
+   ],
+   [
+    "Resolved",
+    2
+   ],
+   [
+    "Acknowledged",
+    2
+   ],
+   [
+    "Unposted",
+    2
+   ],
+   [
+    "Absent",
+    2
+   ],
+   [
+    "RestDay",
+    2
+   ],
+   [
+    "Accepted",
+    2
+   ],
+   [
+    "Preparing",
+    2
+   ],
+   [
+    "Present",
+    1
+   ],
+   [
+    "Reopened",
+    1
+   ],
+   [
+    "Queued",
+    1
+   ],
+   [
+    "Failed",
+    1
+   ],
+   [
+    "Disposed",
+    1
+   ],
+   [
+    "Void",
+    1
+   ],
+   [
+    "Rejected",
+    1
+   ],
+   [
+    "Expired",
+    1
+   ],
+   [
+    "Settled",
+    1
+   ],
+   [
+    "Planned",
+    1
+   ],
+   [
+    "Review",
+    1
+   ],
+   [
+    "Interview",
+    1
+   ],
+   [
+    "Delivered",
+    1
+   ],
+   [
+    "OutForDelivery",
+    1
+   ],
+   [
+    "Arrived",
+    1
+   ],
+   [
+    "NoShow",
+    1
+   ]
+  ],
+  "note": "Status is a STRING COLUMN, not an enum, in most of this product. Both \"Void\" and \"Voided\" are assigned, which a manual should not present as one status."
+ },
+ "event_families": {
+  "CalendarEvent": [
+   "AttendeeAdded",
+   "AttendeeRemoved",
+   "Cancelled",
+   "Completed",
+   "Created",
+   "ReminderTriggered",
+   "Rescheduled",
+   "Started",
+   "Updated"
+  ],
+  "Customer": [
+   "Created",
+   "Updated"
+  ],
+  "JournalEntry": [
+   "Reversed"
+  ],
+  "ManufWorkOrder": [
+   "Cancelled",
+   "Completed",
+   "Created",
+   "Produced",
+   "Released",
+   "Updated"
+  ],
+  "Payment": [
+   "Allocated",
+   "Created",
+   "Reversed",
+   "Updated"
+  ],
+  "PurchaseInvoice": [
+   "Cancelled",
+   "Created",
+   "Updated"
+  ],
+  "PurchaseReturn": [
+   "Created",
+   "Reversed",
+   "Updated"
+  ],
+  "Receipt": [
+   "Allocated",
+   "Created",
+   "Reversed",
+   "Updated"
+  ],
+  "SalesInvoice": [
+   "Cancelled",
+   "Created",
+   "Updated"
+  ],
+  "SalesReturn": [
+   "Created",
+   "Reversed",
+   "Updated"
+  ],
+  "Task": [
+   "Assigned",
+   "BecameOverdue",
+   "Cancelled",
+   "Completed",
+   "Created",
+   "DueDateChanged",
+   "Reassigned",
+   "Reopened",
+   "StatusChanged"
+  ]
+ },
+ "event_total": 47,
+ "approval_silos": [
+  {
+   "constant": "Leave",
+   "value": "Leave"
+  },
+  {
+   "constant": "Request",
+   "value": "Request"
+  },
+  {
+   "constant": "Inventory",
+   "value": "Inventory"
+  },
+  {
+   "constant": "ProjectBilling",
+   "value": "ProjectBilling"
+  }
+ ],
+ "ledger_posting_services": [
+  "AccountingPostingService.cs",
+  "BankService.cs",
+  "ClosingService.cs",
+  "ContractService.cs",
+  "EquipmentDepreciationService.cs",
+  "FinalSettlementService.cs",
+  "FixedAssetService.cs",
+  "FxRevaluationService.cs",
+  "IntegrityCheckService.cs",
+  "JournalEntryService.cs",
+  "LeaveAccrualService.cs",
+  "MaintenanceService.cs",
+  "OpeningBalanceService.cs",
+  "PayableService.cs",
+  "PosOrderService.cs",
+  "PosPreparationService.cs",
+  "PosSetupService.cs",
+  "ProjectLaborService.cs",
+  "ReceivableService.cs",
+  "StockService.cs",
+  "TaxService.cs"
+ ]
+}

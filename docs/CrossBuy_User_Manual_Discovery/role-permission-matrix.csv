@@ -1,0 +1,74 @@
+﻿module_scope,kind,constant,value,checked_in_code_times,notes_from_source,source_file,evidence_level
+Accounting,action,PeriodClose,period-close,0,,CrossBuy/BL/AccountingAccessService.cs,repository-verified
+Accounting,action,PeriodReopen,period-reopen,0,Open -> SoftClosed -> Closed,CrossBuy/BL/AccountingAccessService.cs,repository-verified
+Accounting,action,(comment only),read,2,"declared in an interface comment, not as a typed constant",CrossBuy/BL/AccountingAccessService.cs,repository-verified
+Accounting,action,(comment only),post,0,"declared in an interface comment, not as a typed constant",CrossBuy/BL/AccountingAccessService.cs,repository-verified
+Accounting,action,(comment only),pay,0,"declared in an interface comment, not as a typed constant",CrossBuy/BL/AccountingAccessService.cs,repository-verified
+Accounting,action,(comment only),manage,6,"declared in an interface comment, not as a typed constant",CrossBuy/BL/AccountingAccessService.cs,repository-verified
+Accounting,action,(comment only),currency-override,10,"declared in an interface comment, not as a typed constant",CrossBuy/BL/AccountingAccessService.cs,repository-verified
+Calendar,action,Read,read,2,,CrossBuy/BL/CalendarAccessService.cs,repository-verified
+Calendar,action,Create,create,0,,CrossBuy/BL/CalendarAccessService.cs,repository-verified
+Calendar,action,Edit,edit,0,,CrossBuy/BL/CalendarAccessService.cs,repository-verified
+Calendar,action,Manage,manage,6,,CrossBuy/BL/CalendarAccessService.cs,repository-verified
+Calendar,role,CalendarAdministrator,CalendarAdministrator,0,,CrossBuy/BL/CalendarAccessService.cs,repository-verified
+Calendar,role,CalendarSupervisor,CalendarSupervisor,0,,CrossBuy/BL/CalendarAccessService.cs,repository-verified
+Communication,action,Read,read,2,,CrossBuy/BL/CommunicationAccessService.cs,repository-verified
+Communication,action,Send,send,0,,CrossBuy/BL/CommunicationAccessService.cs,repository-verified
+Communication,action,CreateGroup,create-group,0,,CrossBuy/BL/CommunicationAccessService.cs,repository-verified
+Communication,action,ManageGroup,manage-group,0,,CrossBuy/BL/CommunicationAccessService.cs,repository-verified
+Communication,action,AnnouncementSend,announcement-send,0,,CrossBuy/BL/CommunicationAccessService.cs,repository-verified
+Communication,action,OutboxManage,outbox-manage,0,,CrossBuy/BL/CommunicationAccessService.cs,repository-verified
+Communication,role,CommunicationAdministrator,CommunicationAdministrator,0,,CrossBuy/BL/CommunicationAccessService.cs,repository-verified
+Communication,role,AnnouncementPublisher,AnnouncementPublisher,0,groups + announcements,CrossBuy/BL/CommunicationAccessService.cs,repository-verified
+Communication,role,OutboxOperator,OutboxOperator,0,announcements only,CrossBuy/BL/CommunicationAccessService.cs,repository-verified
+Crm,action,(comment only),read,2,"declared in an interface comment, not as a typed constant",CrossBuy/BL/CrmAccessService.cs,repository-verified
+Crm,action,(comment only),edit,0,"declared in an interface comment, not as a typed constant",CrossBuy/BL/CrmAccessService.cs,repository-verified
+Crm,action,(comment only),manage,6,"declared in an interface comment, not as a typed constant",CrossBuy/BL/CrmAccessService.cs,repository-verified
+Hr,action,Read,read,2,,CrossBuy/BL/HrAccessService.cs,repository-verified
+Hr,action,EmployeeView,employee-view,0,HR screens exist; lists and lookups,CrossBuy/BL/HrAccessService.cs,repository-verified
+Hr,action,EmployeeManage,employee-manage,0,an individual employee record,CrossBuy/BL/HrAccessService.cs,repository-verified
+Hr,action,AttendanceManage,attendance-manage,0,"create/edit employees, contracts, documents",CrossBuy/BL/HrAccessService.cs,repository-verified
+Hr,action,LeaveManage,leave-manage,0,"attendance records, policies, holidays",CrossBuy/BL/HrAccessService.cs,repository-verified
+Hr,action,LeaveApprove,leave-approve,0,leave types/policies/encashment/provision,CrossBuy/BL/HrAccessService.cs,repository-verified
+Hr,action,PayrollView,payroll-view,0,act on an approval step,CrossBuy/BL/HrAccessService.cs,repository-verified
+Hr,action,PayrollManage,payroll-manage,0,"payslips, payroll preview",CrossBuy/BL/HrAccessService.cs,repository-verified
+Hr,action,OrganizationManage,organization-manage,0,"salary policies, payroll runs",CrossBuy/BL/HrAccessService.cs,repository-verified
+Hr,action,PerformanceManage,performance-manage,0,"hierarchicals, job titles, org units",CrossBuy/BL/HrAccessService.cs,repository-verified
+Hr,action,ConfidentialView,confidential-view,0,"appraisals, training, recruitment",CrossBuy/BL/HrAccessService.cs,repository-verified
+Hr,action,EmployeeRequest,employee-request,0,"The one MUTATION an employee may perform with no HR role at all, and only ever about THEMSELVES: submitting and managing their own employee-service requests — leave requests, employee requests, acknowledging their own appraisal.  It exists because four live self-service mutations derive the actor fr",CrossBuy/BL/HrAccessService.cs,repository-verified
+Hr,role,HrManager,HrManager,0,,CrossBuy/BL/HrAccessService.cs,repository-verified
+Hr,role,HrOfficer,HrOfficer,0,everything except payroll money,CrossBuy/BL/HrAccessService.cs,repository-verified
+Hr,role,PayrollOfficer,PayrollOfficer,0,day-to-day employee/attendance/leave admin,CrossBuy/BL/HrAccessService.cs,repository-verified
+Hr,role,HrViewer,HrViewer,0,payroll and salary policy,CrossBuy/BL/HrAccessService.cs,repository-verified
+Insight,action,InventoryItem,InventoryItem,0,,CrossBuy/BL/Platform/Ai/InsightActions.cs,repository-verified
+Insight,action,CrmOpportunity,CrmOpportunity,0,,CrossBuy/BL/Platform/Ai/InsightActions.cs,repository-verified
+Insight,action,CrmAccount,CrmAccount,0,,CrossBuy/BL/Platform/Ai/InsightActions.cs,repository-verified
+Inventory,action,(comment only),read,2,"declared in an interface comment, not as a typed constant",CrossBuy/BL/InventoryAccessService.cs,repository-verified
+Inventory,action,(comment only),doc,3,"declared in an interface comment, not as a typed constant",CrossBuy/BL/InventoryAccessService.cs,repository-verified
+Inventory,action,(comment only),purchase,0,"declared in an interface comment, not as a typed constant",CrossBuy/BL/InventoryAccessService.cs,repository-verified
+Inventory,action,(comment only),manage,6,"declared in an interface comment, not as a typed constant",CrossBuy/BL/InventoryAccessService.cs,repository-verified
+Projects,action,Read,read,2,,CrossBuy/BL/ProjectsAccessService.cs,repository-verified
+Projects,action,Create,create,0,,CrossBuy/BL/ProjectsAccessService.cs,repository-verified
+Projects,action,Edit,edit,0,,CrossBuy/BL/ProjectsAccessService.cs,repository-verified
+Projects,action,Manage,manage,6,,CrossBuy/BL/ProjectsAccessService.cs,repository-verified
+Projects,action,BudgetView,budget-view,0,company-wide project administration,CrossBuy/BL/ProjectsAccessService.cs,repository-verified
+Projects,action,BudgetManage,budget-manage,0,,CrossBuy/BL/ProjectsAccessService.cs,repository-verified
+Projects,action,Billing,billing,0,,CrossBuy/BL/ProjectsAccessService.cs,repository-verified
+Projects,action,BillingPrepare,billing-prepare,0,"Project billing split into the three business capabilities of its lifecycle. `billing` above is KEPT and unchanged: advance receipt, retention release and subcontractor billing still use it, and this batch is not redesigning those. These three govern PROGRESS BILLING only.  The split exists because ",CrossBuy/BL/ProjectsAccessService.cs,repository-verified
+Projects,action,BillingApprove,billing-approve,0,create / edit / submit a billing draft,CrossBuy/BL/ProjectsAccessService.cs,repository-verified
+Projects,action,BillingPost,billing-post,0,approve or return a submitted billing,CrossBuy/BL/ProjectsAccessService.cs,repository-verified
+Projects,action,Close,close,0,post an approved billing to the GL,CrossBuy/BL/ProjectsAccessService.cs,repository-verified
+Projects,role,ProjectsAdministrator,ProjectsAdministrator,0,,CrossBuy/BL/ProjectsAccessService.cs,repository-verified
+Projects,role,ProjectsFinance,ProjectsFinance,0,every project in the company,CrossBuy/BL/ProjectsAccessService.cs,repository-verified
+Projects,role,ProjectsViewer,ProjectsViewer,0,budgets and billing,CrossBuy/BL/ProjectsAccessService.cs,repository-verified
+Tasks,action,Read,read,2,,CrossBuy/BL/TasksAccessService.cs,repository-verified
+Tasks,action,Create,create,0,,CrossBuy/BL/TasksAccessService.cs,repository-verified
+Tasks,action,Edit,edit,0,,CrossBuy/BL/TasksAccessService.cs,repository-verified
+Tasks,action,Assign,assign,0,,CrossBuy/BL/TasksAccessService.cs,repository-verified
+Tasks,action,Reassign,reassign,0,set the assignee when creating,CrossBuy/BL/TasksAccessService.cs,repository-verified
+Tasks,action,Complete,complete,0,move an existing task to someone else,CrossBuy/BL/TasksAccessService.cs,repository-verified
+Tasks,action,Reopen,reopen,0,,CrossBuy/BL/TasksAccessService.cs,repository-verified
+Tasks,action,Manage,manage,6,,CrossBuy/BL/TasksAccessService.cs,repository-verified
+Tasks,role,TasksAdministrator,TasksAdministrator,0,,CrossBuy/BL/TasksAccessService.cs,repository-verified
+Tasks,role,TasksSupervisor,TasksSupervisor,0,every task in the company,CrossBuy/BL/TasksAccessService.cs,repository-verified
+Tasks,role,TasksViewer,TasksViewer,0,may reassign within their scope,CrossBuy/BL/TasksAccessService.cs,repository-verified
