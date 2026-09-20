@@ -1249,17 +1249,61 @@ namespace CrossBuy.Tests
             Assert.True(Check(layout, "GrandTotal", "Status").Ok);
         }
 
-        [Fact]
-        public void A_series_field_on_a_chart_is_refused_rather_than_ignored()
+        [Theory]
+        [InlineData(ReportChartKind.Column)]
+        [InlineData(ReportChartKind.Bar)]
+        [InlineData(ReportChartKind.Line)]
+        public void A_column_bar_or_line_chart_accepts_a_series_field(ReportChartKind kind)
         {
-            // This increment draws one series. Accepting the property and dropping it would leave the
-            // author looking at a chart that answers a different question from the one they configured.
+            // These three have a second dimension to spend: a column splits into a group, a line becomes
+            // several lines. "Sales by month" and "sales by month per customer" are the same question at
+            // two levels of detail, and both are now drawable.
+            var layout = Layout();
+            var e = Put(layout, ReportBandKind.ReportHeader, Chart(kind, "GrandTotal", "Status"));
+            e.SeriesFieldKey = "CustomerName";
+
+            Assert.True(Check(layout, "GrandTotal", "Status", "CustomerName").Ok);
+        }
+
+        [Fact]
+        public void A_series_field_on_a_PIE_is_refused_rather_than_ignored()
+        {
+            // A pie has no second dimension to spend: its slices already ARE the categories, and its whole
+            // claim is that they sum to the circle. Splitting each slice by a second field would either draw
+            // slices that no longer total the whole, or quietly pick one series and draw that - and the
+            // second is worse, because an author who configured a breakdown and got a chart answering a
+            // different question would have no way to tell.
+            var layout = Layout();
+            var e = Put(layout, ReportBandKind.ReportHeader,
+                Chart(ReportChartKind.Pie, "GrandTotal", "Status"));
+            e.SeriesFieldKey = "CustomerName";
+
+            Assert.False(Check(layout, "GrandTotal", "Status", "CustomerName").Ok);
+        }
+
+        [Fact]
+        public void A_chart_series_is_bound_through_the_same_gate_as_its_axis()
+        {
+            // The series values become the legend, so drawing them is reading the field. A chart that bound
+            // its series on a laxer rule than its category would be a way to read a column the reader was
+            // never given.
             var layout = Layout();
             var e = Put(layout, ReportBandKind.ReportHeader,
                 Chart(ReportChartKind.Column, "GrandTotal", "Status"));
             e.SeriesFieldKey = "CustomerName";
 
-            Assert.False(Check(layout, "GrandTotal", "Status", "CustomerName").Ok);
+            Assert.False(Check(layout, "GrandTotal", "Status").Ok);   // CustomerName withheld
+        }
+
+        [Fact]
+        public void A_chart_refuses_the_same_field_as_category_and_series()
+        {
+            var layout = Layout();
+            var e = Put(layout, ReportBandKind.ReportHeader,
+                Chart(ReportChartKind.Column, "GrandTotal", "Status"));
+            e.SeriesFieldKey = "Status";
+
+            Assert.False(Check(layout, "GrandTotal", "Status").Ok);
         }
 
         [Fact]
