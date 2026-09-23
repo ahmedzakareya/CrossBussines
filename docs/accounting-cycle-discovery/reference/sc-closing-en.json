@@ -1,0 +1,58 @@
+{
+ "language": "en",
+ "periodId": 9,
+ "fiscalYearId": 1,
+ "steps": [
+  {
+   "n": 1,
+   "what": "ACC-CLS-01 close fiscal period 9",
+   "at": "2026-09-21T09:22:24.986Z",
+   "input": {
+    "periodId": 9
+   },
+   "landed": "/Accounting/Periods",
+   "banner": null,
+   "ok": true
+  },
+  {
+   "n": 2,
+   "what": "ACC-CLS-01b attempt to POST into the closed period (expected refusal)",
+   "at": "2026-09-21T09:22:33.383Z",
+   "input": {
+    "date": "2026-09-21",
+    "amount": 111
+   },
+   "landed": "/Accounting/CreateJournal",
+   "banner": null,
+   "ok": true,
+   "bodyExcerpt": "99+\nPlatform\nReporting\nGeneral\nCurrencies & FX\nReceivables\nCRM\nPayables\nBanks & cash\nPayroll\nTax\nFixed assets\nFinancial reports\nClosing\nSetup & roles\nSYSTEMS\nInventory\nManufacturing\nAccounting\nBack-office\nPeople\nCRM\nRestaurant\nHypermarket\nTasks\nCalendar\nProjects & Contracting\nAll systems\nNew Journal Entry\nJournals\nNew\nDate\nDescription\nEntry Lines\nAdd line\nExcel mode\nACCOUNT\tDEBIT\tCREDIT\tCOST CENTE"
+  },
+  {
+   "n": 3,
+   "what": "ACC-CLS-03 reopen the period with a recorded reason",
+   "at": "2026-09-21T09:22:40.392Z",
+   "input": {
+    "periodId": 9
+   },
+   "landed": "/Accounting/Periods",
+   "banner": null,
+   "ok": true
+  },
+  {
+   "n": 4,
+   "what": "ACC-CLS-02 close fiscal year 1",
+   "at": "2026-09-21T09:22:49.549Z",
+   "input": {
+    "fiscalYearId": 1
+   },
+   "landed": "/Accounting/YearEndClose",
+   "banner": null,
+   "ok": true
+  }
+ ],
+ "discoveredEndpoints": [
+  "http://localhost:5299/Accounting/Periods",
+  "/Accounting/SetPeriodStatus"
+ ],
+ "refusalUrl": "/Accounting/CreateJournal"
+}

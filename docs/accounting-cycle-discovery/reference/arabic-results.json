@@ -1,0 +1,114 @@
+[
+ {
+  "id": "ACC-P2P-01-01_invoice-posted",
+  "route": "/Accounting/PurchaseInvoices",
+  "captured": true,
+  "ready": true,
+  "dir": "rtl"
+ },
+ {
+  "id": "ACC-P2P-02-01_partial-payment",
+  "route": "/Accounting/Payments",
+  "captured": true,
+  "ready": true,
+  "dir": "rtl"
+ },
+ {
+  "id": "ACC-P2P-02-02_remaining-balance",
+  "route": "/Accounting/ApAging",
+  "captured": true,
+  "ready": true,
+  "dir": "rtl"
+ },
+ {
+  "id": "ACC-P2P-05-01_purchase-return",
+  "route": "/Accounting/PurchaseReturns",
+  "captured": true,
+  "ready": true,
+  "dir": "rtl"
+ },
+ {
+  "id": "ACC-O2C-01-01_invoice-posted",
+  "route": "/Accounting/SalesInvoices",
+  "captured": true,
+  "ready": true,
+  "dir": "rtl"
+ },
+ {
+  "id": "ACC-O2C-02-01_partial-receipt",
+  "route": "/Accounting/Receipts",
+  "captured": true,
+  "ready": true,
+  "dir": "rtl"
+ },
+ {
+  "id": "ACC-O2C-02-02_remaining-balance",
+  "route": "/Accounting/ArAging",
+  "captured": true,
+  "ready": true,
+  "dir": "rtl"
+ },
+ {
+  "id": "ACC-O2C-03-01_sales-return",
+  "route": "/Accounting/SalesReturns",
+  "captured": true,
+  "ready": true,
+  "dir": "rtl"
+ },
+ {
+  "id": "ACC-GL-02_journal-register",
+  "route": "/Accounting/Journals",
+  "captured": true,
+  "ready": true,
+  "dir": "rtl"
+ },
+ {
+  "id": "ACC-FA-01-01_asset-created",
+  "route": "/Accounting/FixedAssets",
+  "captured": true,
+  "ready": true,
+  "dir": "rtl"
+ },
+ {
+  "id": "ACC-FA-02-01_depreciation-run",
+  "route": "/Accounting/DepreciationRuns",
+  "captured": true,
+  "ready": true,
+  "dir": "rtl"
+ },
+ {
+  "id": "ACC-BNK-01-01_transfer",
+  "route": "/Accounting/Transfer",
+  "captured": true,
+  "ready": true,
+  "dir": "rtl"
+ },
+ {
+  "id": "ACC-CLS-01-01_periods-before",
+  "route": "/Accounting/Periods",
+  "captured": true,
+  "ready": true,
+  "dir": "rtl"
+ },
+ {
+  "id": "ACC-CLS-02-01_year-end-before",
+  "route": "/Accounting/YearEndClose",
+  "captured": true,
+  "ready": true,
+  "dir": "rtl"
+ },
+ {
+  "id": "ACC-FX-01-01_revaluation",
+  "route": "/Currency/Revaluation",
+  "captured": true,
+  "ready": true,
+  "dir": "rtl"
+ },
+ {
+  "id": "ACC-RPT-10_reports-center",
+  "route": "/Reports/Index",
+  "captured": true,
+  "ready": true,
+  "dir": "rtl"
+ }
+]

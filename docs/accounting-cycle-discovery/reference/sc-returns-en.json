@@ -1,0 +1,39 @@
+{
+ "language": "en",
+ "vendorId": 3015,
+ "customerId": 9047,
+ "originalPurchaseInvoice": 5073,
+ "originalSalesInvoice": 17613,
+ "steps": [
+  {
+   "n": 1,
+   "what": "ACC-P2P-03 purchase return, 2 units, linked to the original invoice",
+   "at": "2026-09-21T09:15:12.431Z",
+   "input": {
+    "vendorId": 3015,
+    "originalInvoiceId": 5073,
+    "qty": 2,
+    "unitPrice": 100,
+    "expectedGross": 228
+   },
+   "landed": "/Accounting/NewPurchaseReturn",
+   "banner": "Issues goods out, reverses the vendor payable & input VAT. Value is computed at the item's cost.",
+   "ok": true
+  },
+  {
+   "n": 2,
+   "what": "ACC-O2C-03 sales return, 1 unit, linked to the original invoice",
+   "at": "2026-09-21T09:15:19.529Z",
+   "input": {
+    "customerId": 9047,
+    "originalInvoiceId": 17613,
+    "qty": 1,
+    "unitPrice": 300,
+    "expectedGross": 342
+   },
+   "landed": "/Accounting/SalesReturns",
+   "banner": null,
+   "ok": true
+  }
+ ]
+}

@@ -1,0 +1,1112 @@
+{
+ "landedAfterSignIn": "http://localhost:5299/Portal/Choose",
+ "screens": {
+  "/Accounting/CreateJournal": {
+   "ready": true,
+   "checks": {
+    "domContentLoaded": true,
+    "networkIdle": true,
+    "noSpinners": true,
+    "notSignIn": true,
+    "notErrorPage": true,
+    "hasContent": true,
+    "noDevOverlay": true,
+    "settleMs": 900,
+    "elapsedMs": 1689
+   },
+   "heading": "New Journal Entry",
+   "title": "Accounting System - CrossBuy",
+   "chars": 5915,
+   "shape": {
+    "forms": 5,
+    "inputs": [
+     {
+      "tag": "input",
+      "type": "text",
+      "id": "",
+      "name": "search",
+      "ph": "Search...",
+      "required": false,
+      "dataControl": ""
+     },
+     {
+      "tag": "input",
+      "type": "text",
+      "id": "mainMenuSearch",
+      "name": "",
+      "ph": "Search menu",
+      "required": false,
+      "dataControl": ""
+     },
+     {
+      "tag": "input",
+      "type": "text",
+      "id": "entryDate",
+      "name": "entryDate",
+      "ph": "",
+      "required": true,
+      "dataControl": ""
+     },
+     {
+      "tag": "input",
+      "type": "text",
+      "id": "",
+      "name": "description",
+      "ph": "Entry description",
+      "required": false,
+      "dataControl": ""
+     },
+     {
+      "tag": "select",
+      "type": "select-one",
+      "id": "",
+      "name": "",
+      "ph": "",
+      "required": false,
+      "dataControl": ""
+     },
+     {
+      "tag": "input",
+      "type": "number",
+      "id": "",
+      "name": "",
+      "ph": "",
+      "required": false,
+      "dataControl": ""
+     },
+     {
+      "tag": "input",
+      "type": "number",
+      "id": "",
+      "name": "",
+      "ph": "",
+      "required": false,
+      "dataControl": ""
+     },
+     {
+      "tag": "select",
+      "type": "select-one",
+      "id": "",
+      "name": "",
+      "ph": "",
+      "required": false,
+      "dataControl": ""
+     },
+     {
+      "tag": "select",
+      "type": "select-one",
+      "id": "",
+      "name": "",
+      "ph": "",
+      "required": false,
+      "dataControl": ""
+     },
+     {
+      "tag": "input",
+      "type": "text",
+      "id": "",
+      "name": "",
+      "ph": "",
+      "required": false,
+      "dataControl": ""
+     },
+     {
+      "tag": "select",
+      "type": "select-one",
+      "id": "",
+      "name": "",
+      "ph": "",
+      "required": false,
+      "dataControl": ""
+     },
+     {
+      "tag": "input",
+      "type": "number",
+      "id": "",
+      "name": "",
+      "ph": "",
+      "required": false,
+      "dataControl": ""
+     },
+     {
+      "tag": "input",
+      "type": "number",
+      "id": "",
+      "name": "",
+      "ph": "",
+      "required": false,
+      "dataControl": ""
+     },
+     {
+      "tag": "select",
+      "type": "select-one",
+      "id": "",
+      "name": "",
+      "ph": "",
+      "required": false,
+      "dataControl": ""
+     },
+     {
+      "tag": "select",
+      "type": "select-one",
+      "id": "",
+      "name": "",
+      "ph": "",
+      "required": false,
+      "dataControl": ""
+     },
+     {
+      "tag": "input",
+      "type": "text",
+      "id": "",
+      "name": "",
+      "ph": "",
+      "required": false,
+      "dataControl": ""
+     },
+     {
+      "tag": "textarea",
+      "type": "textarea",
+      "id": "",
+      "name": "",
+      "ph": "Type a message",
+      "required": false,
+      "dataControl": ""
+     }
+    ],
+    "buttons": [
+     {
+      "text": "",
+      "id": "",
+      "cls": "btn btn-icon btn-custom btn-color-gray-600 btn-active-color-primary w-",
+      "type": ""
+     },
+     {
+      "text": "",
+      "id": "",
+      "cls": "btn btn-icon btn-custom btn-color-gray-600 btn-active-color-primary w-",
+      "type": ""
+     },
+     {
+      "text": "",
+      "id": "",
+      "cls": "btn btn-icon btn-custom btn-color-gray-600 btn-active-color-primary w-",
+      "type": ""
+     },
+     {
+      "text": "Add line",
+      "id": "addRow",
+      "cls": "btn btn-sm btn-light-primary",
+      "type": "button"
+     },
+     {
+      "text": "Excel mode",
+      "id": "xlToggle",
+      "cls": "btn btn-sm btn-light-success",
+      "type": "button"
+     },
+     {
+      "text": "",
+      "id": "",
+      "cls": "btn btn-icon btn-light-danger btn-sm del",
+      "type": "button"
+     },
+     {
+      "text": "",
+      "id": "",
+      "cls": "btn btn-icon btn-light-danger btn-sm del",
+      "type": "button"
+     },
+     {
+      "text": "Save draft",
+      "id": "",
+      "cls": "btn btn-light",
+      "type": "button"
+     },
+     {
+      "text": "Post",
+      "id": "postBtn",
+      "cls": "btn btn-primary",
+      "type": "button"
+     },
+     {
+      "text": "",
+      "id": "",
+      "cls": "btn btn-icon btn-color-primary bg-hover-body h-45px w-45px flex-shrink",
+      "type": ""
+     },
+     {
+      "text": "",
+      "id": "",
+      "cls": "btn btn-icon btn-color-warning bg-hover-body h-45px w-45px flex-shrink",
+      "type": ""
+     },
+     {
+      "text": "",
+      "id": "",
+      "cls": "btn btn-icon btn-color-success bg-hover-body h-45px w-45px flex-shrink",
+      "type": ""
+     },
+     {
+      "text": "",
+      "id": "",
+      "cls": "btn btn-icon btn-color-dark bg-hover-body h-45px w-45px flex-shrink-0",
+      "type": ""
+     },
+     {
+      "text": "",
+      "id": "kt_activities_close",
+      "cls": "btn btn-sm btn-icon btn-active-light-primary me-n5",
+      "type": "button"
+     },
+     {
+      "text": "View",
+      "id": "",
+      "cls": "btn btn-sm btn-light btn-active-light-primary",
+      "type": ""
+     },
+     {
+      "text": "View",
+      "id": "",
+      "cls": "btn btn-sm btn-light btn-active-light-primary",
+      "type": ""
+     },
+     {
+      "text": "Explore",
+      "id": "",
+      "cls": "btn btn-sm btn-primary btn-shadow",
+      "type": ""
+     },
+     {
+      "text": "Explore",
+      "id": "",
+      "cls": "btn btn-sm btn-primary btn-shadow",
+      "type": ""
+     },
+     {
+      "text": "Explore",
+      "id": "",
+      "cls": "btn btn-sm btn-primary btn-shadow",
+      "type": ""
+     },
+     {
+      "text": "Proceed",
+      "id": "",
+      "cls": "btn btn-primary px-6 align-self-center text-nowrap",
+      "type": ""
+     },
+     {
+      "text": "View All Activities",
+      "id": "",
+      "cls": "btn btn-bg-body text-primary",
+      "type": ""
+     },
+     {
+      "text": "",
+      "id": "",
+      "cls": "btn btn-sm btn-icon btn-active-color-primary",
+      "type": ""
+     },
+     {
+      "text": "",
+      "id": "",
+      "cls": "btn btn-sm btn-icon btn-active-light-primary me-1",
+      "type": "button"
+     },
+     {
+      "text": "",
+      "id": "",
+      "cls": "btn btn-sm btn-icon btn-active-light-primary me-1",
+      "type": "button"
+     },
+     {
+      "text": "Send",
+      "id": "",
+      "cls": "btn btn-primary",
+      "type": "button"
+     },
+     {
+      "text": "",
+      "id": "",
+      "cls": "btn btn-sm btn-light-primary btn-icon-success btn-icon w-25px h-25px m",
+      "type": ""
+     },
+     {
+      "text": "",
+      "id": "",
+      "cls": "btn btn-sm btn-light-primary btn-icon w-25px h-25px",
+      "type": ""
+     },
+     {
+      "text": "",
+      "id": "",
+      "cls": "btn btn-sm btn-light-primary btn-icon-success btn-icon w-25px h-25px m",
+      "type": ""
+     },
+     {
+      "text": "",
+      "id": "",
+      "cls": "btn btn-sm btn-light-primary btn-icon w-25px h-25px",
+      "type": ""
+     },
+     {
+      "text": "",
+      "id": "",
+      "cls": "btn btn-sm btn-light-primary btn-icon-success btn-icon w-25px h-25px m",
+      "type": ""
+     }
+    ],
+    "tables": 2,
+    "rows": 2,
+    "lineRows": 2
+   }
+  },
+  "/Accounting/Journals": {
+   "ready": true,
+   "checks": {
+    "domContentLoaded": true,
+    "networkIdle": true,
+    "noSpinners": true,
+    "notSignIn": true,
+    "notErrorPage": true,
+    "hasContent": true,
+    "noDevOverlay": true,
+    "settleMs": 900,
+    "elapsedMs": 1763
+   },
+   "heading": "Journal Entries",
+   "title": "Accounting System - CrossBuy",
+   "chars": 4739,
+   "shape": {
+    "forms": 29,
+    "inputs": [
+     {
+      "tag": "input",
+      "type": "text",
+      "id": "",
+      "name": "search",
+      "ph": "Search...",
+      "required": false,
+      "dataControl": ""
+     },
+     {
+      "tag": "input",
+      "type": "text",
+      "id": "mainMenuSearch",
+      "name": "",
+      "ph": "Search menu",
+      "required": false,
+      "dataControl": ""
+     },
+     {
+      "tag": "input",
+      "type": "text",
+      "id": "f_q",
+      "name": "",
+      "ph": "Add search terms…",
+      "required": false,
+      "dataControl": ""
+     },
+     {
+      "tag": "select",
+      "type": "select-one",
+      "id": "f_status",
+      "name": "",
+      "ph": "",
+      "required": false,
+      "dataControl": "select2"
+     },
+     {
+      "tag": "select",
+      "type": "select-one",
+      "id": "f_size",
+      "name": "",
+      "ph": "",
+      "required": false,
+      "dataControl": ""
+     },
+     {
+      "tag": "textarea",
+      "type": "textarea",
+      "id": "",
+      "name": "",
+      "ph": "Type a message",
+      "required": false,
+      "dataControl": ""
+     }
+    ],
+    "buttons": [
+     {
+      "text": "",
+      "id": "",
+      "cls": "btn btn-icon btn-custom btn-color-gray-600 btn-active-color-primary w-",
+      "type": ""
+     },
+     {
+      "text": "",
+      "id": "",
+      "cls": "btn btn-icon btn-custom btn-color-gray-600 btn-active-color-primary w-",
+      "type": ""
+     },
+     {
+      "text": "",
+      "id": "",
+      "cls": "btn btn-icon btn-custom btn-color-gray-600 btn-active-color-primary w-",
+      "type": ""
+     },
+     {
+      "text": "Trial Balance",
+      "id": "",
+      "cls": "btn btn-sm btn-light-primary",
+      "type": ""
+     },
+     {
+      "text": "New Entry",
+      "id": "",
+      "cls": "btn btn-sm btn-primary",
+      "type": ""
+     },
+     {
+      "text": "Reset",
+      "id": "f_reset",
+      "cls": "btn btn-light w-100",
+      "type": "button"
+     },
+     {
+      "text": "Export Excel",
+      "id": "",
+      "cls": "btn btn-sm btn-light-primary text-nowrap flex-shrink-0",
+      "type": "button"
+     },
+     {
+      "text": "",
+      "id": "",
+      "cls": "btn btn-sm btn-icon btn-light-primary me-1",
+      "type": ""
+     },
+     {
+      "text": "Reverse",
+      "id": "",
+      "cls": "btn btn-sm btn-light-danger py-1 px-3",
+      "type": ""
+     },
+     {
+      "text": "",
+      "id": "",
+      "cls": "btn btn-sm btn-icon btn-light-primary me-1",
+      "type": ""
+     },
+     {
+      "text": "Reverse",
+      "id": "",
+      "cls": "btn btn-sm btn-light-danger py-1 px-3",
+      "type": ""
+     },
+     {
+      "text": "",
+      "id": "",
+      "cls": "btn btn-sm btn-icon btn-light-primary me-1",
+      "type": ""
+     },
+     {
+      "text": "Reverse",
+      "id": "",
+      "cls": "btn btn-sm btn-light-danger py-1 px-3",
+      "type": ""
+     },
+     {
+      "text": "",
+      "id": "",
+      "cls": "btn btn-sm btn-icon btn-light-primary me-1",
+      "type": ""
+     },
+     {
+      "text": "Reverse",
+      "id": "",
+      "cls": "btn btn-sm btn-light-danger py-1 px-3",
+      "type": ""
+     },
+     {
+      "text": "",
+      "id": "",
+      "cls": "btn btn-sm btn-icon btn-light-primary me-1",
+      "type": ""
+     },
+     {
+      "text": "Reverse",
+      "id": "",
+      "cls": "btn btn-sm btn-light-danger py-1 px-3",
+      "type": ""
+     },
+     {
+      "text": "",
+      "id": "",
+      "cls": "btn btn-sm btn-icon btn-light-primary me-1",
+      "type": ""
+     },
+     {
+      "text": "Reverse",
+      "id": "",
+      "cls": "btn btn-sm btn-light-danger py-1 px-3",
+      "type": ""
+     },
+     {
+      "text": "",
+      "id": "",
+      "cls": "btn btn-sm btn-icon btn-light-primary me-1",
+      "type": ""
+     },
+     {
+      "text": "Reverse",
+      "id": "",
+      "cls": "btn btn-sm btn-light-danger py-1 px-3",
+      "type": ""
+     },
+     {
+      "text": "",
+      "id": "",
+      "cls": "btn btn-sm btn-icon btn-light-primary me-1",
+      "type": ""
+     },
+     {
+      "text": "Reverse",
+      "id": "",
+      "cls": "btn btn-sm btn-light-danger py-1 px-3",
+      "type": ""
+     },
+     {
+      "text": "",
+      "id": "",
+      "cls": "btn btn-sm btn-icon btn-light-primary me-1",
+      "type": ""
+     },
+     {
+      "text": "Reverse",
+      "id": "",
+      "cls": "btn btn-sm btn-light-danger py-1 px-3",
+      "type": ""
+     },
+     {
+      "text": "",
+      "id": "",
+      "cls": "btn btn-sm btn-icon btn-light-primary me-1",
+      "type": ""
+     },
+     {
+      "text": "Reverse",
+      "id": "",
+      "cls": "btn btn-sm btn-light-danger py-1 px-3",
+      "type": ""
+     },
+     {
+      "text": "",
+      "id": "",
+      "cls": "btn btn-sm btn-icon btn-light-primary me-1",
+      "type": ""
+     },
+     {
+      "text": "Reverse",
+      "id": "",
+      "cls": "btn btn-sm btn-light-danger py-1 px-3",
+      "type": ""
+     },
+     {
+      "text": "",
+      "id": "",
+      "cls": "btn btn-sm btn-icon btn-light-primary me-1",
+      "type": ""
+     }
+    ],
+    "tables": 1,
+    "rows": 25,
+    "lineRows": 25
+   }
+  },
+  "/Accounting/Periods": {
+   "ready": true,
+   "checks": {
+    "domContentLoaded": true,
+    "networkIdle": true,
+    "noSpinners": true,
+    "notSignIn": true,
+    "notErrorPage": true,
+    "hasContent": true,
+    "noDevOverlay": true,
+    "settleMs": 900,
+    "elapsedMs": 1515
+   },
+   "heading": "Fiscal Periods",
+   "title": "Accounting System - CrossBuy",
+   "chars": 3114,
+   "shape": {
+    "forms": 56,
+    "inputs": [
+     {
+      "tag": "input",
+      "type": "text",
+      "id": "",
+      "name": "search",
+      "ph": "Search...",
+      "required": false,
+      "dataControl": ""
+     },
+     {
+      "tag": "input",
+      "type": "text",
+      "id": "mainMenuSearch",
+      "name": "",
+      "ph": "Search menu",
+      "required": false,
+      "dataControl": ""
+     },
+     {
+      "tag": "input",
+      "type": "text",
+      "id": "pSearch",
+      "name": "",
+      "ph": "Search by year or period...",
+      "required": false,
+      "dataControl": ""
+     },
+     {
+      "tag": "textarea",
+      "type": "textarea",
+      "id": "",
+      "name": "",
+      "ph": "Type a message",
+      "required": false,
+      "dataControl": ""
+     }
+    ],
+    "buttons": [
+     {
+      "text": "",
+      "id": "",
+      "cls": "btn btn-icon btn-custom btn-color-gray-600 btn-active-color-primary w-",
+      "type": ""
+     },
+     {
+      "text": "",
+      "id": "",
+      "cls": "btn btn-icon btn-custom btn-color-gray-600 btn-active-color-primary w-",
+      "type": ""
+     },
+     {
+      "text": "",
+      "id": "",
+      "cls": "btn btn-icon btn-custom btn-color-gray-600 btn-active-color-primary w-",
+      "type": ""
+     },
+     {
+      "text": "Soft-close",
+      "id": "",
+      "cls": "btn btn-sm py-1 px-3",
+      "type": ""
+     },
+     {
+      "text": "Close",
+      "id": "",
+      "cls": "btn btn-sm py-1 px-3",
+      "type": ""
+     },
+     {
+      "text": "Soft-close",
+      "id": "",
+      "cls": "btn btn-sm py-1 px-3",
+      "type": ""
+     },
+     {
+      "text": "Close",
+      "id": "",
+      "cls": "btn btn-sm py-1 px-3",
+      "type": ""
+     },
+     {
+      "text": "Soft-close",
+      "id": "",
+      "cls": "btn btn-sm py-1 px-3",
+      "type": ""
+     },
+     {
+      "text": "Close",
+      "id": "",
+      "cls": "btn btn-sm py-1 px-3",
+      "type": ""
+     },
+     {
+      "text": "Soft-close",
+      "id": "",
+      "cls": "btn btn-sm py-1 px-3",
+      "type": ""
+     },
+     {
+      "text": "Close",
+      "id": "",
+      "cls": "btn btn-sm py-1 px-3",
+      "type": ""
+     },
+     {
+      "text": "Soft-close",
+      "id": "",
+      "cls": "btn btn-sm py-1 px-3",
+      "type": ""
+     },
+     {
+      "text": "Close",
+      "id": "",
+      "cls": "btn btn-sm py-1 px-3",
+      "type": ""
+     },
+     {
+      "text": "Soft-close",
+      "id": "",
+      "cls": "btn btn-sm py-1 px-3",
+      "type": ""
+     },
+     {
+      "text": "Close",
+      "id": "",
+      "cls": "btn btn-sm py-1 px-3",
+      "type": ""
+     },
+     {
+      "text": "Soft-close",
+      "id": "",
+      "cls": "btn btn-sm py-1 px-3",
+      "type": ""
+     },
+     {
+      "text": "Close",
+      "id": "",
+      "cls": "btn btn-sm py-1 px-3",
+      "type": ""
+     },
+     {
+      "text": "Soft-close",
+      "id": "",
+      "cls": "btn btn-sm py-1 px-3",
+      "type": ""
+     },
+     {
+      "text": "Close",
+      "id": "",
+      "cls": "btn btn-sm py-1 px-3",
+      "type": ""
+     },
+     {
+      "text": "Soft-close",
+      "id": "",
+      "cls": "btn btn-sm py-1 px-3",
+      "type": ""
+     },
+     {
+      "text": "Close",
+      "id": "",
+      "cls": "btn btn-sm py-1 px-3",
+      "type": ""
+     },
+     {
+      "text": "Soft-close",
+      "id": "",
+      "cls": "btn btn-sm py-1 px-3",
+      "type": ""
+     },
+     {
+      "text": "Close",
+      "id": "",
+      "cls": "btn btn-sm py-1 px-3",
+      "type": ""
+     },
+     {
+      "text": "",
+      "id": "",
+      "cls": "btn btn-icon btn-color-primary bg-hover-body h-45px w-45px flex-shrink",
+      "type": ""
+     },
+     {
+      "text": "",
+      "id": "",
+      "cls": "btn btn-icon btn-color-warning bg-hover-body h-45px w-45px flex-shrink",
+      "type": ""
+     },
+     {
+      "text": "",
+      "id": "",
+      "cls": "btn btn-icon btn-color-success bg-hover-body h-45px w-45px flex-shrink",
+      "type": ""
+     },
+     {
+      "text": "",
+      "id": "",
+      "cls": "btn btn-icon btn-color-dark bg-hover-body h-45px w-45px flex-shrink-0",
+      "type": ""
+     },
+     {
+      "text": "",
+      "id": "kt_activities_close",
+      "cls": "btn btn-sm btn-icon btn-active-light-primary me-n5",
+      "type": "button"
+     },
+     {
+      "text": "View",
+      "id": "",
+      "cls": "btn btn-sm btn-light btn-active-light-primary",
+      "type": ""
+     },
+     {
+      "text": "View",
+      "id": "",
+      "cls": "btn btn-sm btn-light btn-active-light-primary",
+      "type": ""
+     }
+    ],
+    "tables": 1,
+    "rows": 26,
+    "lineRows": 0
+   }
+  },
+  "/Accounting/ChartOfAccounts": {
+   "ready": true,
+   "checks": {
+    "domContentLoaded": true,
+    "networkIdle": true,
+    "noSpinners": true,
+    "notSignIn": true,
+    "notErrorPage": true,
+    "hasContent": true,
+    "noDevOverlay": true,
+    "settleMs": 900,
+    "elapsedMs": 1462
+   },
+   "heading": "Chart of Accounts",
+   "title": "Accounting System - CrossBuy",
+   "chars": 3051,
+   "shape": {
+    "forms": 6,
+    "inputs": [
+     {
+      "tag": "input",
+      "type": "text",
+      "id": "",
+      "name": "search",
+      "ph": "Search...",
+      "required": false,
+      "dataControl": ""
+     },
+     {
+      "tag": "input",
+      "type": "text",
+      "id": "mainMenuSearch",
+      "name": "",
+      "ph": "Search menu",
+      "required": false,
+      "dataControl": ""
+     },
+     {
+      "tag": "input",
+      "type": "text",
+      "id": "accSearch",
+      "name": "",
+      "ph": "Search by code or name...",
+      "required": false,
+      "dataControl": ""
+     },
+     {
+      "tag": "textarea",
+      "type": "textarea",
+      "id": "",
+      "name": "",
+      "ph": "Type a message",
+      "required": false,
+      "dataControl": ""
+     }
+    ],
+    "buttons": [
+     {
+      "text": "",
+      "id": "",
+      "cls": "btn btn-icon btn-custom btn-color-gray-600 btn-active-color-primary w-",
+      "type": ""
+     },
+     {
+      "text": "",
+      "id": "",
+      "cls": "btn btn-icon btn-custom btn-color-gray-600 btn-active-color-primary w-",
+      "type": ""
+     },
+     {
+      "text": "",
+      "id": "",
+      "cls": "btn btn-icon btn-custom btn-color-gray-600 btn-active-color-primary w-",
+      "type": ""
+     },
+     {
+      "text": "New account",
+      "id": "",
+      "cls": "btn btn-sm btn-primary",
+      "type": "button"
+     },
+     {
+      "text": "",
+      "id": "expandAll",
+      "cls": "btn btn-sm btn-icon btn-light",
+      "type": "button"
+     },
+     {
+      "text": "",
+      "id": "collapseAll",
+      "cls": "btn btn-sm btn-icon btn-light",
+      "type": "button"
+     },
+     {
+      "text": "",
+      "id": "",
+      "cls": "coa-twisty",
+      "type": "button"
+     },
+     {
+      "text": "",
+      "id": "",
+      "cls": "coa-twisty",
+      "type": "button"
+     },
+     {
+      "text": "",
+      "id": "",
+      "cls": "coa-twisty",
+      "type": "button"
+     },
+     {
+      "text": "",
+      "id": "",
+      "cls": "coa-twisty",
+      "type": "button"
+     },
+     {
+      "text": "",
+      "id": "",
+      "cls": "coa-twisty",
+      "type": "button"
+     },
+     {
+      "text": "",
+      "id": "",
+      "cls": "coa-twisty",
+      "type": "button"
+     },
+     {
+      "text": "",
+      "id": "",
+      "cls": "coa-twisty",
+      "type": "button"
+     },
+     {
+      "text": "",
+      "id": "",
+      "cls": "coa-twisty",
+      "type": "button"
+     },
+     {
+      "text": "",
+      "id": "",
+      "cls": "coa-twisty",
+      "type": "button"
+     },
+     {
+      "text": "",
+      "id": "",
+      "cls": "coa-twisty",
+      "type": "button"
+     },
+     {
+      "text": "Edit",
+      "id": "coaEdit",
+      "cls": "btn btn-sm btn-light-primary",
+      "type": "button"
+     },
+     {
+      "text": "",
+      "id": "",
+      "cls": "btn btn-icon btn-color-primary bg-hover-body h-45px w-45px flex-shrink",
+      "type": ""
+     },
+     {
+      "text": "",
+      "id": "",
+      "cls": "btn btn-icon btn-color-warning bg-hover-body h-45px w-45px flex-shrink",
+      "type": ""
+     },
+     {
+      "text": "",
+      "id": "",
+      "cls": "btn btn-icon btn-color-success bg-hover-body h-45px w-45px flex-shrink",
+      "type": ""
+     },
+     {
+      "text": "",
+      "id": "",
+      "cls": "btn btn-icon btn-color-dark bg-hover-body h-45px w-45px flex-shrink-0",
+      "type": ""
+     },
+     {
+      "text": "",
+      "id": "kt_activities_close",
+      "cls": "btn btn-sm btn-icon btn-active-light-primary me-n5",
+      "type": "button"
+     },
+     {
+      "text": "View",
+      "id": "",
+      "cls": "btn btn-sm btn-light btn-active-light-primary",
+      "type": ""
+     },
+     {
+      "text": "View",
+      "id": "",
+      "cls": "btn btn-sm btn-light btn-active-light-primary",
+      "type": ""
+     },
+     {
+      "text": "Explore",
+      "id": "",
+      "cls": "btn btn-sm btn-primary btn-shadow",
+      "type": ""
+     },
+     {
+      "text": "Explore",
+      "id": "",
+      "cls": "btn btn-sm btn-primary btn-shadow",
+      "type": ""
+     },
+     {
+      "text": "Explore",
+      "id": "",
+      "cls": "btn btn-sm btn-primary btn-shadow",
+      "type": ""
+     },
+     {
+      "text": "Proceed",
+      "id": "",
+      "cls": "btn btn-primary px-6 align-self-center text-nowrap",
+      "type": ""
+     },
+     {
+      "text": "View All Activities",
+      "id": "",
+      "cls": "btn btn-bg-body text-primary",
+      "type": ""
+     },
+     {
+      "text": "",
+      "id": "",
+      "cls": "btn btn-sm btn-icon btn-active-color-primary",
+      "type": ""
+     }
+    ],
+    "tables": 0,
+    "rows": 0,
+    "lineRows": 0
+   }
+  }
+ }
+}

@@ -1,0 +1,39 @@
+[
+ {
+  "probe": "viewer",
+  "report": "Accounting.JournalActivity",
+  "landed": "/Reports/Viewer/Accounting.JournalActivity",
+  "heading": "Journal activity",
+  "ready": true
+ },
+ {
+  "report": "Accounting.JournalActivity",
+  "format": "Csv",
+  "language": "en",
+  "status": "DOWNLOADED",
+  "filename": "ACC-EXP-PLATFORM_Accounting-JournalActivity.en.csv",
+  "bytes": 32681,
+  "sniffedType": "text/other",
+  "matchesRequestedFormat": true
+ },
+ {
+  "report": "Accounting.JournalActivity",
+  "format": "Xlsx",
+  "language": "en",
+  "status": "DOWNLOADED",
+  "filename": "ACC-EXP-PLATFORM_Accounting-JournalActivity.en.xlsx",
+  "bytes": 21929,
+  "sniffedType": "ZIP container (xlsx)",
+  "matchesRequestedFormat": true
+ },
+ {
+  "report": "Accounting.JournalActivity",
+  "format": "Pdf",
+  "language": "en",
+  "status": "DOWNLOADED",
+  "filename": "ACC-EXP-PLATFORM_Accounting-JournalActivity.en.pdf",
+  "bytes": 64980,
+  "sniffedType": "PDF",
+  "matchesRequestedFormat": true
+ }
+]

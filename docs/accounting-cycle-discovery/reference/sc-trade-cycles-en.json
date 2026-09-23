@@ -1,0 +1,93 @@
+{
+ "language": "en",
+ "date": "2026-09-21",
+ "vendorId": 3015,
+ "customerId": 9047,
+ "assumptions": {
+  "vatPercent": 14,
+  "currency": "EGP (functional)",
+  "note": "rates and tax are TEST ASSUMPTIONS, not statutory advice"
+ },
+ "steps": [
+  {
+   "n": 1,
+   "what": "ACC-P2P-01 create and post the purchase invoice",
+   "at": "2026-09-21T09:12:39.551Z",
+   "input": {
+    "vendorId": 3015,
+    "qty": 10,
+    "unitPrice": 100,
+    "taxRate": 14,
+    "expectedGross": 1140
+   },
+   "landed": "/Accounting/PurchaseInvoices",
+   "banner": null,
+   "ok": true
+  },
+  {
+   "n": 2,
+   "what": "ACC-P2P-02 partial payment 500.00 of 1,140.00",
+   "at": "2026-09-21T09:12:46.526Z",
+   "input": {
+    "vendorId": 3015,
+    "amount": 500,
+    "method": "Bank",
+    "cashAccountId": 5
+   },
+   "landed": "/Accounting/Payments",
+   "banner": null,
+   "ok": true
+  },
+  {
+   "n": 3,
+   "what": "ACC-P2P-02b final settlement 640.00 (1,140 - 500)",
+   "at": "2026-09-21T09:12:54.843Z",
+   "input": {
+    "vendorId": 3015,
+    "amount": 640
+   },
+   "landed": "/Accounting/Payments",
+   "banner": null,
+   "ok": true
+  },
+  {
+   "n": 4,
+   "what": "ACC-O2C-01 create and post the sales invoice",
+   "at": "2026-09-21T09:13:01.485Z",
+   "input": {
+    "customerId": 9047,
+    "qty": 5,
+    "unitPrice": 300,
+    "taxRate": 14,
+    "expectedGross": 1710
+   },
+   "landed": "/Accounting/SalesInvoices",
+   "banner": null,
+   "ok": true
+  },
+  {
+   "n": 5,
+   "what": "ACC-O2C-02 partial receipt 1,000.00 of 1,710.00",
+   "at": "2026-09-21T09:13:08.115Z",
+   "input": {
+    "customerId": 9047,
+    "amount": 1000
+   },
+   "landed": "/Accounting/Receipts",
+   "banner": null,
+   "ok": true
+  },
+  {
+   "n": 6,
+   "what": "ACC-O2C-02b final collection 710.00 (1,710 - 1,000)",
+   "at": "2026-09-21T09:13:47.525Z",
+   "input": {
+    "customerId": 9047,
+    "amount": 710
+   },
+   "landed": "/Accounting/Receipts",
+   "banner": null,
+   "ok": true
+  }
+ ]
+}

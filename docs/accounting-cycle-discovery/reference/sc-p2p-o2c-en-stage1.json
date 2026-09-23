@@ -1,0 +1,41 @@
+{
+ "language": "en",
+ "date": "2026-09-21",
+ "assumptions": {
+  "vatPercent": 14,
+  "currency": "EGP (functional)"
+ },
+ "steps": [
+  {
+   "n": 1,
+   "what": "create the synthetic supplier",
+   "at": "2026-09-21T09:11:12.125Z",
+   "input": {
+    "name": "ZZ-DISCOVERY Supplier Co"
+   },
+   "landed": "/Accounting/Vendors",
+   "banner": null,
+   "ok": true
+  },
+  {
+   "n": 2,
+   "what": "create the synthetic customer",
+   "at": "2026-09-21T09:11:31.492Z",
+   "input": {
+    "name": "ZZ-DISCOVERY Customer Co"
+   },
+   "landed": "/Accounting/Customers",
+   "banner": null,
+   "ok": true
+  }
+ ],
+ "masterData": {
+  "vendorName": "ZZ-DISCOVERY Supplier Co",
+  "custName": "ZZ-DISCOVERY Customer Co"
+ },
+ "pendingPurchase": {
+  "net": 1000,
+  "vat": 140,
+  "gross": 1140
+ }
+}

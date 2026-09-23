@@ -1,0 +1,28 @@
+{
+ "dev.superadmin": {
+  "signedIn": true,
+  "trialBalance": {
+   "footer": [
+    "113,396,869.64",
+    "113,396,869.64"
+   ],
+   "accountRows": 38
+  }
+ },
+ "dev.otherco": {
+  "signedIn": true,
+  "trialBalance": {
+   "footer": [
+    "0.00",
+    "0.00"
+   ],
+   "accountRows": 0
+  }
+ },
+ "dev.clerk": {
+  "signedIn": true,
+  "formReachable": true,
+  "afterPost": "/Accounting/Index",
+  "verdict": "post refused or returned to the form"
+ }
+}

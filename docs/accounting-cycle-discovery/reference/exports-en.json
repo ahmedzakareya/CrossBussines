@@ -1,0 +1,82 @@
+[
+ {
+  "route": "/Accounting/JournalsExport",
+  "name": "journals",
+  "language": "en",
+  "status": "DOWNLOADED",
+  "filename": "ACC-EXP_journals.en.xlsx",
+  "suggestedFilename": "journals.xlsx",
+  "bytes": 458180,
+  "sniffedType": "ZIP container (xlsx/docx family)"
+ },
+ {
+  "route": "/Accounting/SalesInvoicesExport",
+  "name": "sales-invoices",
+  "language": "en",
+  "status": "DOWNLOADED",
+  "filename": "ACC-EXP_sales-invoices.en.xlsx",
+  "suggestedFilename": "sales-invoices.xlsx",
+  "bytes": 235131,
+  "sniffedType": "ZIP container (xlsx/docx family)"
+ },
+ {
+  "route": "/Accounting/PurchaseInvoicesExport",
+  "name": "purchase-invoices",
+  "language": "en",
+  "status": "DOWNLOADED",
+  "filename": "ACC-EXP_purchase-invoices.en.xlsx",
+  "suggestedFilename": "purchase-invoices.xlsx",
+  "bytes": 10314,
+  "sniffedType": "ZIP container (xlsx/docx family)"
+ },
+ {
+  "route": "/Accounting/ReceiptsExport",
+  "name": "receipts",
+  "language": "en",
+  "status": "DOWNLOADED",
+  "filename": "ACC-EXP_receipts.en.xlsx",
+  "suggestedFilename": "receipts.xlsx",
+  "bytes": 132504,
+  "sniffedType": "ZIP container (xlsx/docx family)"
+ },
+ {
+  "route": "/Accounting/PaymentsExport",
+  "name": "payments",
+  "language": "en",
+  "status": "DOWNLOADED",
+  "filename": "ACC-EXP_payments.en.xlsx",
+  "suggestedFilename": "payments.xlsx",
+  "bytes": 6948,
+  "sniffedType": "ZIP container (xlsx/docx family)"
+ },
+ {
+  "route": "/Accounting/CustomersExport",
+  "name": "customers",
+  "language": "en",
+  "status": "DOWNLOADED",
+  "filename": "ACC-EXP_customers.en.xlsx",
+  "suggestedFilename": "customers.xlsx",
+  "bytes": 8332,
+  "sniffedType": "ZIP container (xlsx/docx family)"
+ },
+ {
+  "route": "/Accounting/VendorsExport",
+  "name": "vendors",
+  "language": "en",
+  "status": "DOWNLOADED",
+  "filename": "ACC-EXP_vendors.en.xlsx",
+  "suggestedFilename": "vendors.xlsx",
+  "bytes": 7276,
+  "sniffedType": "ZIP container (xlsx/docx family)"
+ },
+ {
+  "route": "/Accounting/CustomerAnalyticsExport",
+  "name": "customer-analytics",
+  "language": "en",
+  "status": "DOWNLOADED",
+  "filename": "ACC-EXP_customer-analytics.en.xlsx",
+  "suggestedFilename": "customer-analytics.xlsx",
+  "bytes": 10936,
+  "sniffedType": "ZIP container (xlsx/docx family)"
+ }
+]

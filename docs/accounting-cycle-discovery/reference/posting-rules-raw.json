@@ -1,0 +1,2174 @@
+{
+ "journal_creators": {
+  "CrossBuy/BL/AccountingPostingService.cs": [
+   {
+    "call": "CreateAndPostAsync",
+    "line": 285
+   },
+   {
+    "call": "CreateAndPostAsync",
+    "line": 355
+   },
+   {
+    "call": "CreateAndPostAsync",
+    "line": 381
+   }
+  ],
+  "CrossBuy/BL/BankService.cs": [
+   {
+    "call": "CreateAndPostAsync",
+    "line": 69
+   }
+  ],
+  "CrossBuy/BL/ClosingService.cs": [
+   {
+    "call": "CreateAndPostAsync",
+    "line": 103
+   },
+   {
+    "call": "ReverseAsync",
+    "line": 143
+   }
+  ],
+  "CrossBuy/BL/FinalSettlementService.cs": [
+   {
+    "call": "CreateAndPostAsync",
+    "line": 118
+   }
+  ],
+  "CrossBuy/BL/FixedAssetService.cs": [
+   {
+    "call": "CreateAndPostAsync",
+    "line": 137
+   },
+   {
+    "call": "CreateAndPostAsync",
+    "line": 199
+   },
+   {
+    "call": "CreateAndPostAsync",
+    "line": 261
+   },
+   {
+    "call": "CreateAndPostAsync",
+    "line": 309
+   }
+  ],
+  "CrossBuy/BL/FxRevaluationService.cs": [
+   {
+    "call": "CreateAndPostAsync",
+    "line": 160
+   },
+   {
+    "call": "CreateAndPostAsync",
+    "line": 169
+   },
+   {
+    "call": "ReverseAsync",
+    "line": 177
+   }
+  ],
+  "CrossBuy/BL/LeaveAccrualService.cs": [
+   {
+    "call": "CreateAndPostAsync",
+    "line": 113
+   },
+   {
+    "call": "CreateAndPostAsync",
+    "line": 187
+   }
+  ],
+  "CrossBuy/BL/MaintenanceService.cs": [
+   {
+    "call": "CreateAndPostAsync",
+    "line": 84
+   }
+  ],
+  "CrossBuy/BL/OpeningBalanceService.cs": [
+   {
+    "call": "CreateAndPostAsync",
+    "line": 106
+   },
+   {
+    "call": "CreateAndPostAsync",
+    "line": 134
+   },
+   {
+    "call": "CreateAndPostAsync",
+    "line": 171
+   }
+  ],
+  "CrossBuy/BL/PayableService.cs": [
+   {
+    "call": "CreateAndPostAsync",
+    "line": 209
+   },
+   {
+    "call": "ReverseAsync",
+    "line": 368
+   },
+   {
+    "call": "CreateAndPostAsync",
+    "line": 406
+   },
+   {
+    "call": "CreateAndPostAsync",
+    "line": 535
+   },
+   {
+    "call": "ReverseAsync",
+    "line": 577
+   },
+   {
+    "call": "ReverseAsync",
+    "line": 580
+   },
+   {
+    "call": "CreateAndPostAsync",
+    "line": 612
+   },
+   {
+    "call": "CreateAndPostAsync",
+    "line": 704
+   }
+  ],
+  "CrossBuy/BL/PosOrderService.cs": [
+   {
+    "call": "CreateAndPostAsync",
+    "line": 396
+   },
+   {
+    "call": "ReverseAsync",
+    "line": 1519
+   },
+   {
+    "call": "ReverseAsync",
+    "line": 1533
+   },
+   {
+    "call": "ReverseAsync",
+    "line": 1542
+   },
+   {
+    "call": "CreateAndPostAsync",
+    "line": 1632
+   }
+  ],
+  "CrossBuy/BL/PosPreparationService.cs": [
+   {
+    "call": "CreateAndPostNoTxAsync",
+    "line": 315
+   }
+  ],
+  "CrossBuy/BL/PosSetupService.cs": [
+   {
+    "call": "CreateAndPostAsync",
+    "line": 998
+   }
+  ],
+  "CrossBuy/BL/ReceivableService.cs": [
+   {
+    "call": "CreateAndPostAsync",
+    "line": 374
+   },
+   {
+    "call": "ReverseAsync",
+    "line": 491
+   },
+   {
+    "call": "CreateAndPostAsync",
+    "line": 519
+   },
+   {
+    "call": "CreateAndPostAsync",
+    "line": 647
+   },
+   {
+    "call": "ReverseAsync",
+    "line": 717
+   },
+   {
+    "call": "ReverseAsync",
+    "line": 720
+   },
+   {
+    "call": "CreateAndPostAsync",
+    "line": 746
+   },
+   {
+    "call": "CreateAndPostAsync",
+    "line": 851
+   }
+  ],
+  "CrossBuy/BL/StockService.cs": [
+   {
+    "call": "CreateAndPostNoTxAsync",
+    "line": 801
+   },
+   {
+    "call": "CreateAndPostNoTxAsync",
+    "line": 921
+   },
+   {
+    "call": "CreateAndPostNoTxAsync",
+    "line": 1095
+   },
+   {
+    "call": "CreateAndPostNoTxAsync",
+    "line": 1158
+   },
+   {
+    "call": "CreateAndPostNoTxAsync",
+    "line": 1213
+   },
+   {
+    "call": "CreateAndPostNoTxAsync",
+    "line": 1305
+   },
+   {
+    "call": "CreateAndPostNoTxAsync",
+    "line": 1351
+   },
+   {
+    "call": "CreateAndPostNoTxAsync",
+    "line": 1448
+   },
+   {
+    "call": "CreateAndPostNoTxAsync",
+    "line": 1548
+   },
+   {
+    "call": "CreateAndPostNoTxAsync",
+    "line": 1644
+   },
+   {
+    "call": "CreateAndPostNoTxAsync",
+    "line": 1726
+   },
+   {
+    "call": "CreateAndPostNoTxAsync",
+    "line": 1802
+   },
+   {
+    "call": "CreateAndPostNoTxAsync",
+    "line": 1859
+   },
+   {
+    "call": "CreateAndPostNoTxAsync",
+    "line": 1928
+   }
+  ],
+  "CrossBuy/BL/TaxService.cs": [
+   {
+    "call": "CreateAndPostAsync",
+    "line": 181
+   }
+  ]
+ },
+ "creator_count": 16,
+ "account_resolution": {
+  "CrossBuy/BL/AccountingPostingService.cs": {
+   "hardcoded": [],
+   "configurable": [
+    {
+     "via": "payFromGlAccountId",
+     "line": 68
+    },
+    {
+     "via": "payFromGlAccountId",
+     "line": 69
+    },
+    {
+     "via": "DebitAccountId",
+     "line": 238
+    },
+    {
+     "via": "CreditAccountId",
+     "line": 239
+    },
+    {
+     "via": "CreditAccountId",
+     "line": 309
+    },
+    {
+     "via": "payFromGlAccountId",
+     "line": 346
+    },
+    {
+     "via": "payFromGlAccountId",
+     "line": 354
+    },
+    {
+     "via": "payFromGlAccountId",
+     "line": 362
+    },
+    {
+     "via": "payFromGlAccountId",
+     "line": 368
+    },
+    {
+     "via": "payFromGlAccountId",
+     "line": 380
+    },
+    {
+     "via": "payFromGlAccountId",
+     "line": 388
+    }
+   ]
+  },
+  "CrossBuy/BL/AiInsightsService.cs": {
+   "hardcoded": [
+    {
+     "code": "1101",
+     "line": 133,
+     "snippet": "await _context.Accounts.AsNoTracking() .Where(a => a.CompanyID == companyId && a.Code.StartsWith(\"1101\")).Select(a => a.ID).ToListAsync(ct);"
+    }
+   ],
+   "configurable": []
+  },
+  "CrossBuy/BL/BankService.cs": {
+   "hardcoded": [],
+   "configurable": [
+    {
+     "via": "glAccountId",
+     "line": 21
+    },
+    {
+     "via": "glAccountId",
+     "line": 23
+    },
+    {
+     "via": "fromGlAccountId",
+     "line": 26
+    },
+    {
+     "via": "toGlAccountId",
+     "line": 26
+    },
+    {
+     "via": "bankAccountId",
+     "line": 29
+    },
+    {
+     "via": "bankAccountId",
+     "line": 31
+    },
+    {
+     "via": "glAccountId",
+     "line": 46
+    },
+    {
+     "via": "GlAccountId",
+     "line": 48
+    },
+    {
+     "via": "glAccountId",
+     "line": 48
+    },
+    {
+     "via": "glAccountId",
+     "line": 57
+    },
+    {
+     "via": "GlAccountId",
+     "line": 59
+    },
+    {
+     "via": "glAccountId",
+     "line": 59
+    },
+    {
+     "via": "fromGlAccountId",
+     "line": 65
+    },
+    {
+     "via": "toGlAccountId",
+     "line": 65
+    },
+    {
+     "via": "fromGlAccountId",
+     "line": 67
+    },
+    {
+     "via": "toGlAccountId",
+     "line": 67
+    },
+    {
+     "via": "toGlAccountId",
+     "line": 76
+    },
+    {
+     "via": "fromGlAccountId",
+     "line": 77
+    },
+    {
+     "via": "bankAccountId",
+     "line": 83
+    },
+    {
+     "via": "bankAccountId",
+     "line": 85
+    },
+    {
+     "via": "GlAccountId",
+     "line": 93
+    },
+    {
+     "via": "BankAccountId",
+     "line": 98
+    },
+    {
+     "via": "bankAccountId",
+     "line": 98
+    },
+    {
+     "via": "bankAccountId",
+     "line": 107
+    },
+    {
+     "via": "bankAccountId",
+     "line": 109
+    },
+    {
+     "via": "BankAccountId",
+     "line": 118
+    },
+    {
+     "via": "bankAccountId",
+     "line": 118
+    }
+   ]
+  },
+  "CrossBuy/BL/ClosingService.cs": {
+   "hardcoded": [
+    {
+     "code": "3201",
+     "line": 81,
+     "snippet": "ed\"); var retained = await _context.Accounts.Where(a => a.CompanyID == companyId && a.Code == \"3201\").Select(a => (int?)a.ID).FirstOrDefault"
+    }
+   ],
+   "configurable": [
+    {
+     "via": "RetainedEarningsAccountId",
+     "line": 115
+    }
+   ]
+  },
+  "CrossBuy/BL/ContractService.cs": {
+   "hardcoded": [],
+   "configurable": [
+    {
+     "via": "cashAccountId",
+     "line": 24
+    },
+    {
+     "via": "cashAccountId",
+     "line": 26
+    },
+    {
+     "via": "cashAccountId",
+     "line": 29
+    },
+    {
+     "via": "cashAccountId",
+     "line": 62
+    },
+    {
+     "via": "cashAccountId",
+     "line": 67
+    },
+    {
+     "via": "cashAccountId",
+     "line": 85
+    },
+    {
+     "via": "cashAccountId",
+     "line": 95
+    },
+    {
+     "via": "cashAccountId",
+     "line": 100
+    },
+    {
+     "via": "cashAccountId",
+     "line": 115
+    },
+    {
+     "via": "cashAccountId",
+     "line": 136
+    },
+    {
+     "via": "cashAccountId",
+     "line": 141
+    },
+    {
+     "via": "cashAccountId",
+     "line": 157
+    }
+   ]
+  },
+  "CrossBuy/BL/EquipmentDepreciationService.cs": {
+   "hardcoded": [],
+   "configurable": [
+    {
+     "via": "DepExpenseAccountId",
+     "line": 9
+    },
+    {
+     "via": "AccumDepAccountId",
+     "line": 10
+    },
+    {
+     "via": "DepExpenseAccountId",
+     "line": 132
+    },
+    {
+     "via": "DepExpenseAccountId",
+     "line": 152
+    }
+   ]
+  },
+  "CrossBuy/BL/FinalSettlementService.cs": {
+   "hardcoded": [],
+   "configurable": [
+    {
+     "via": "payFromGlAccountId",
+     "line": 25
+    },
+    {
+     "via": "payFromGlAccountId",
+     "line": 87
+    },
+    {
+     "via": "payFromGlAccountId",
+     "line": 112
+    }
+   ]
+  },
+  "CrossBuy/BL/FinancialStatementService.cs": {
+   "hardcoded": [
+    {
+     "code": "1101",
+     "line": 139,
+     "snippet": " await _context.Accounts.AsNoTracking() .Where(a => a.CompanyID == companyId && a.Code.StartsWith(\"1101\")) .Select(a => a.ID).ToListAsync();"
+    }
+   ],
+   "configurable": []
+  },
+  "CrossBuy/BL/FixedAssetService.cs": {
+   "hardcoded": [],
+   "configurable": [
+    {
+     "via": "FundingAccountId",
+     "line": 17
+    },
+    {
+     "via": "CostAccountId",
+     "line": 18
+    },
+    {
+     "via": "AccumDepAccountId",
+     "line": 19
+    },
+    {
+     "via": "DepExpenseAccountId",
+     "line": 20
+    },
+    {
+     "via": "cashAccountId",
+     "line": 36
+    },
+    {
+     "via": "CostAccountId",
+     "line": 85
+    },
+    {
+     "via": "AccumDepAccountId",
+     "line": 85
+    },
+    {
+     "via": "DepExpenseAccountId",
+     "line": 85
+    },
+    {
+     "via": "CostAccountId",
+     "line": 116
+    },
+    {
+     "via": "CostAccountId",
+     "line": 116
+    },
+    {
+     "via": "AccumDepAccountId",
+     "line": 117
+    },
+    {
+     "via": "AccumDepAccountId",
+     "line": 117
+    },
+    {
+     "via": "DepExpenseAccountId",
+     "line": 118
+    },
+    {
+     "via": "DepExpenseAccountId",
+     "line": 118
+    },
+    {
+     "via": "FundingAccountId",
+     "line": 120
+    },
+    {
+     "via": "CostAccountId",
+     "line": 127
+    },
+    {
+     "via": "AccumDepAccountId",
+     "line": 127
+    },
+    {
+     "via": "DepExpenseAccountId",
+     "line": 127
+    },
+    {
+     "via": "FundingAccountId",
+     "line": 144
+    },
+    {
+     "via": "CostAccountId",
+     "line": 171
+    },
+    {
+     "via": "CostAccountId",
+     "line": 171
+    },
+    {
+     "via": "AccumDepAccountId",
+     "line": 172
+    },
+    {
+     "via": "AccumDepAccountId",
+     "line": 172
+    },
+    {
+     "via": "DepExpenseAccountId",
+     "line": 173
+    },
+    {
+     "via": "DepExpenseAccountId",
+     "line": 173
+    },
+    {
+     "via": "CostAccountId",
+     "line": 185
+    },
+    {
+     "via": "AccumDepAccountId",
+     "line": 185
+    },
+    {
+     "via": "DepExpenseAccountId",
+     "line": 185
+    },
+    {
+     "via": "DepExpenseAccountId",
+     "line": 246
+    },
+    {
+     "via": "AccumDepAccountId",
+     "line": 247
+    },
+    {
+     "via": "cashAccountId",
+     "line": 279
+    },
+    {
+     "via": "AccumDepAccountId",
+     "line": 290
+    },
+    {
+     "via": "cashAccountId",
+     "line": 293
+    },
+    {
+     "via": "CostAccountId",
+     "line": 295
+    }
+   ]
+  },
+  "CrossBuy/BL/FxRevaluationService.cs": {
+   "hardcoded": [],
+   "configurable": [
+    {
+     "via": "ControlAccountId",
+     "line": 12
+    },
+    {
+     "via": "ControlAccountId",
+     "line": 73
+    },
+    {
+     "via": "ControlAccountId",
+     "line": 77
+    },
+    {
+     "via": "ControlAccountId",
+     "line": 89
+    },
+    {
+     "via": "ControlAccountId",
+     "line": 89
+    },
+    {
+     "via": "ControlAccountId",
+     "line": 97
+    },
+    {
+     "via": "ControlAccountId",
+     "line": 101
+    },
+    {
+     "via": "ControlAccountId",
+     "line": 113
+    },
+    {
+     "via": "ControlAccountId",
+     "line": 113
+    },
+    {
+     "via": "GlAccountId",
+     "line": 124
+    },
+    {
+     "via": "ControlAccountId",
+     "line": 127
+    },
+    {
+     "via": "GlAccountId",
+     "line": 127
+    },
+    {
+     "via": "ControlAccountId",
+     "line": 149
+    },
+    {
+     "via": "ControlAccountId",
+     "line": 150
+    },
+    {
+     "via": "ControlAccountId",
+     "line": 154
+    },
+    {
+     "via": "ControlAccountId",
+     "line": 155
+    }
+   ]
+  },
+  "CrossBuy/BL/IntegrityCheckService.cs": {
+   "hardcoded": [],
+   "configurable": [
+    {
+     "via": "InventoryAccountId",
+     "line": 48
+    },
+    {
+     "via": "InventoryAccountId",
+     "line": 48
+    },
+    {
+     "via": "ControlAccountId",
+     "line": 60
+    },
+    {
+     "via": "ControlAccountId",
+     "line": 69
+    },
+    {
+     "via": "GrniAccountId",
+     "line": 82
+    },
+    {
+     "via": "GrniAccountId",
+     "line": 82
+    },
+    {
+     "via": "CashAccountId",
+     "line": 277
+    },
+    {
+     "via": "CashAccountId",
+     "line": 278
+    },
+    {
+     "via": "CashAccountId",
+     "line": 279
+    }
+   ]
+  },
+  "CrossBuy/BL/LeaveAccrualService.cs": {
+   "hardcoded": [],
+   "configurable": [
+    {
+     "via": "payFromGlAccountId",
+     "line": 42
+    },
+    {
+     "via": "payFromGlAccountId",
+     "line": 96
+    },
+    {
+     "via": "payFromGlAccountId",
+     "line": 110
+    },
+    {
+     "via": "payFromGlAccountId",
+     "line": 120
+    }
+   ]
+  },
+  "CrossBuy/BL/MaintenanceService.cs": {
+   "hardcoded": [
+    {
+     "code": "520110",
+     "line": 76,
+     "snippet": "intAcc = await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == companyId && a.Code == \"520110\").Select(a => (int?)a.ID).FirstOrDefault"
+    }
+   ],
+   "configurable": [
+    {
+     "via": "payFromGlAccountId",
+     "line": 25
+    },
+    {
+     "via": "payFromGlAccountId",
+     "line": 27
+    },
+    {
+     "via": "payFromGlAccountId",
+     "line": 65
+    },
+    {
+     "via": "payFromGlAccountId",
+     "line": 74
+    },
+    {
+     "via": "payFromGlAccountId",
+     "line": 74
+    },
+    {
+     "via": "payFromGlAccountId",
+     "line": 78
+    },
+    {
+     "via": "payFromGlAccountId",
+     "line": 82
+    }
+   ]
+  },
+  "CrossBuy/BL/OpeningBalanceService.cs": {
+   "hardcoded": [],
+   "configurable": [
+    {
+     "via": "RevenueAccountId",
+     "line": 97
+    },
+    {
+     "via": "ControlAccountId",
+     "line": 102
+    },
+    {
+     "via": "ExpenseAccountId",
+     "line": 125
+    },
+    {
+     "via": "ControlAccountId",
+     "line": 131
+    }
+   ]
+  },
+  "CrossBuy/BL/PayableService.cs": {
+   "hardcoded": [],
+   "configurable": [
+    {
+     "via": "ExpenseAccountId",
+     "line": 15
+    },
+    {
+     "via": "ExpenseAccountId",
+     "line": 20
+    },
+    {
+     "via": "cashAccountId",
+     "line": 37
+    },
+    {
+     "via": "ControlAccountId",
+     "line": 101
+    },
+    {
+     "via": "ControlAccountId",
+     "line": 113
+    },
+    {
+     "via": "ExpenseAccountId",
+     "line": 179
+    },
+    {
+     "via": "InventoryAccountId",
+     "line": 183
+    },
+    {
+     "via": "ExpenseAccountId",
+     "line": 187
+    },
+    {
+     "via": "ExpenseAccountId",
+     "line": 204
+    },
+    {
+     "via": "ControlAccountId",
+     "line": 207
+    },
+    {
+     "via": "ExpenseAccountId",
+     "line": 295
+    },
+    {
+     "via": "GrniAccountId",
+     "line": 301
+    },
+    {
+     "via": "InventoryAccountId",
+     "line": 301
+    },
+    {
+     "via": "ExpenseAccountId",
+     "line": 304
+    },
+    {
+     "via": "ExpenseAccountId",
+     "line": 383
+    },
+    {
+     "via": "InventoryAccountId",
+     "line": 387
+    },
+    {
+     "via": "ExpenseAccountId",
+     "line": 390
+    },
+    {
+     "via": "ExpenseAccountId",
+     "line": 402
+    },
+    {
+     "via": "ControlAccountId",
+     "line": 405
+    },
+    {
+     "via": "ControlAccountId",
+     "line": 529
+    },
+    {
+     "via": "ControlAccountId",
+     "line": 607
+    },
+    {
+     "via": "cashAccountId",
+     "line": 624
+    },
+    {
+     "via": "cashAccountId",
+     "line": 626
+    },
+    {
+     "via": "CashAccountId",
+     "line": 656
+    },
+    {
+     "via": "cashAccountId",
+     "line": 656
+    },
+    {
+     "via": "ControlAccountId",
+     "line": 692
+    },
+    {
+     "via": "cashAccountId",
+     "line": 693
+    }
+   ]
+  },
+  "CrossBuy/BL/PosOrderService.cs": {
+   "hardcoded": [
+    {
+     "code": "110102",
+     "line": 389,
+     "snippet": "if (debit == 0) debit = await _db.Accounts.Where(a => a.CompanyID == companyId && a.Code == \"110102\").Select(a => a.ID).FirstOrDefaultAsync("
+    },
+    {
+     "code": "210207",
+     "line": 391,
+     "snippet": "ltAsync(); } var tips = await _db.Accounts.Where(a => a.CompanyID == companyId && a.Code == \"210207\").Select(a => (int?)a.ID).FirstOrDefault"
+    },
+    {
+     "code": "4101",
+     "line": 443,
+     "snippet": "t companyId) { int rev = await _db.Accounts.Where(a => a.CompanyID == companyId && a.Code == \"4101\").Select(a => a.ID).FirstOrDefaultAsync("
+    },
+    {
+     "code": "110101",
+     "line": 450,
+     "snippet": "companyId) { int cash = await _db.Accounts.Where(a => a.CompanyID == companyId && a.Code == \"110101\").Select(a => a.ID).FirstOrDefaultAsync("
+    },
+    {
+     "code": "1101",
+     "line": 451,
+     "snippet": "= await _db.Accounts.Where(a => a.CompanyID == companyId && a.IsPostable && a.Code.StartsWith(\"1101\")).OrderBy(a => a.Code).Select(a => a.ID"
+    }
+   ],
+   "configurable": [
+    {
+     "via": "RevenueAccountId",
+     "line": 289
+    },
+    {
+     "via": "RevenueAccountId",
+     "line": 346
+    },
+    {
+     "via": "RevenueAccountId",
+     "line": 355
+    },
+    {
+     "via": "RevenueAccountId",
+     "line": 361
+    },
+    {
+     "via": "RevenueAccountId",
+     "line": 366
+    },
+    {
+     "via": "CashAccountId",
+     "line": 382
+    },
+    {
+     "via": "TargetAccountId",
+     "line": 383
+    },
+    {
+     "via": "TargetAccountId",
+     "line": 383
+    },
+    {
+     "via": "TargetAccountId",
+     "line": 388
+    },
+    {
+     "via": "TargetAccountId",
+     "line": 388
+    },
+    {
+     "via": "CashAccountId",
+     "line": 1166
+    },
+    {
+     "via": "TargetAccountId",
+     "line": 1167
+    },
+    {
+     "via": "TargetAccountId",
+     "line": 1168
+    },
+    {
+     "via": "RevenueAccountId",
+     "line": 1193
+    },
+    {
+     "via": "DeliveryRevenueAccountId",
+     "line": 1199
+    },
+    {
+     "via": "RevenueAccountId",
+     "line": 1201
+    },
+    {
+     "via": "TargetAccountId",
+     "line": 1228
+    },
+    {
+     "via": "TargetAccountId",
+     "line": 1271
+    },
+    {
+     "via": "CashAccountId",
+     "line": 1298
+    },
+    {
+     "via": "TargetAccountId",
+     "line": 1299
+    },
+    {
+     "via": "TargetAccountId",
+     "line": 1299
+    },
+    {
+     "via": "TargetAccountId",
+     "line": 1307
+    },
+    {
+     "via": "TargetAccountId",
+     "line": 1307
+    },
+    {
+     "via": "RevenueAccountId",
+     "line": 1324
+    },
+    {
+     "via": "DeliveryRevenueAccountId",
+     "line": 1325
+    },
+    {
+     "via": "RevenueAccountId",
+     "line": 1325
+    },
+    {
+     "via": "TargetAccountId",
+     "line": 1353
+    },
+    {
+     "via": "CashAccountId",
+     "line": 1409
+    },
+    {
+     "via": "TargetAccountId",
+     "line": 1410
+    },
+    {
+     "via": "TargetAccountId",
+     "line": 1410
+    },
+    {
+     "via": "DeliveryRevenueAccountId",
+     "line": 1436
+    },
+    {
+     "via": "RevenueAccountId",
+     "line": 1457
+    },
+    {
+     "via": "RevenueAccountId",
+     "line": 1458
+    },
+    {
+     "via": "RevenueAccountId",
+     "line": 1459
+    },
+    {
+     "via": "TargetAccountId",
+     "line": 1466
+    },
+    {
+     "via": "CashAccountId",
+     "line": 1577
+    },
+    {
+     "via": "TargetAccountId",
+     "line": 1578
+    },
+    {
+     "via": "TargetAccountId",
+     "line": 1578
+    },
+    {
+     "via": "ControlAccountId",
+     "line": 1622
+    },
+    {
+     "via": "CashAccountId",
+     "line": 1638
+    }
+   ]
+  },
+  "CrossBuy/BL/PosPreparationService.cs": {
+   "hardcoded": [
+    {
+     "code": "510101",
+     "line": 308,
+     "snippet": "r cogs = await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == companyId && a.Code == \"510101\").Select(a => (int?)a.ID).FirstOrDefault"
+    },
+    {
+     "code": "520110",
+     "line": 309,
+     "snippet": " waste = await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == companyId && a.Code == \"520110\").Select(a => (int?)a.ID).FirstOrDefault"
+    }
+   ],
+   "configurable": []
+  },
+  "CrossBuy/BL/PosSetupService.cs": {
+   "hardcoded": [
+    {
+     "code": "1101",
+     "line": 818,
+     "snippet": "cking().Where(a => a.CompanyID == PosCompanyId && a.IsPostable && a.IsActive && a.Code.StartsWith(\"1101\")) .OrderBy(a => a.Code).Select(a =>"
+    },
+    {
+     "code": "110101",
+     "line": 825,
+     "snippet": "var parent = await _db.Accounts.FirstOrDefaultAsync(a => a.CompanyID == PosCompanyId && a.Code == \"110101\") ?? await _db.Accounts.Where(a"
+    },
+    {
+     "code": "1101",
+     "line": 826,
+     "snippet": "wait _db.Accounts.Where(a => a.CompanyID == PosCompanyId && a.IsPostable && a.Code.StartsWith(\"1101\")).OrderBy(a => a.Code).FirstOrDefaultAs"
+    },
+    {
+     "code": "110101",
+     "line": 986,
+     "snippet": " (drawer == 0) drawer = await _db.Accounts.Where(a => a.CompanyID == companyId && a.Code == \"110101\").Select(a => a.ID).FirstOrDefaultAsync("
+    },
+    {
+     "code": "520111",
+     "line": 987,
+     "snippet": "aultAsync(); var over = await _db.Accounts.Where(a => a.CompanyID == companyId && a.Code == \"520111\").Select(a => (int?)a.ID).FirstOrDefault"
+    }
+   ],
+   "configurable": [
+    {
+     "via": "targetAccountId",
+     "line": 81
+    },
+    {
+     "via": "cashAccountId",
+     "line": 93
+    },
+    {
+     "via": "targetAccountId",
+     "line": 742
+    },
+    {
+     "via": "TargetAccountId",
+     "line": 755
+    },
+    {
+     "via": "targetAccountId",
+     "line": 755
+    },
+    {
+     "via": "cashAccountId",
+     "line": 847
+    },
+    {
+     "via": "cashAccountId",
+     "line": 873
+    },
+    {
+     "via": "cashAccountId",
+     "line": 873
+    },
+    {
+     "via": "CashAccountId",
+     "line": 873
+    },
+    {
+     "via": "cashAccountId",
+     "line": 873
+    },
+    {
+     "via": "CashAccountId",
+     "line": 874
+    },
+    {
+     "via": "CashAccountId",
+     "line": 874
+    },
+    {
+     "via": "CashAccountId",
+     "line": 985
+    }
+   ]
+  },
+  "CrossBuy/BL/ReceivableService.cs": {
+   "hardcoded": [],
+   "configurable": [
+    {
+     "via": "RevenueAccountId",
+     "line": 15
+    },
+    {
+     "via": "cashAccountId",
+     "line": 79
+    },
+    {
+     "via": "ControlAccountId",
+     "line": 151
+    },
+    {
+     "via": "ControlAccountId",
+     "line": 199
+    },
+    {
+     "via": "RevenueAccountId",
+     "line": 330
+    },
+    {
+     "via": "RevenueAccountId",
+     "line": 330
+    },
+    {
+     "via": "RevenueAccountId",
+     "line": 335
+    },
+    {
+     "via": "ControlAccountId",
+     "line": 368
+    },
+    {
+     "via": "RevenueAccountId",
+     "line": 506
+    },
+    {
+     "via": "RevenueAccountId",
+     "line": 506
+    },
+    {
+     "via": "RevenueAccountId",
+     "line": 508
+    },
+    {
+     "via": "ControlAccountId",
+     "line": 516
+    },
+    {
+     "via": "RevenueAccountId",
+     "line": 625
+    },
+    {
+     "via": "RevenueAccountId",
+     "line": 625
+    },
+    {
+     "via": "RevenueAccountId",
+     "line": 629
+    },
+    {
+     "via": "ControlAccountId",
+     "line": 645
+    },
+    {
+     "via": "RevenueAccountId",
+     "line": 729
+    },
+    {
+     "via": "RevenueAccountId",
+     "line": 729
+    },
+    {
+     "via": "RevenueAccountId",
+     "line": 734
+    },
+    {
+     "via": "ControlAccountId",
+     "line": 745
+    },
+    {
+     "via": "cashAccountId",
+     "line": 774
+    },
+    {
+     "via": "cashAccountId",
+     "line": 774
+    },
+    {
+     "via": "cashAccountId",
+     "line": 775
+    },
+    {
+     "via": "CashAccountId",
+     "line": 801
+    },
+    {
+     "via": "cashAccountId",
+     "line": 801
+    },
+    {
+     "via": "cashAccountId",
+     "line": 840
+    },
+    {
+     "via": "ControlAccountId",
+     "line": 841
+    }
+   ]
+  },
+  "CrossBuy/BL/StockService.cs": {
+   "hardcoded": [
+    {
+     "code": "110302",
+     "line": 728,
+     "snippet": "c = await _context.Accounts.AsNoTracking().Where(a => a.CompanyID == companyId && a.Code == \"110302\").Select(a => (int?)a.ID).FirstOrDefault"
+    },
+    {
+     "code": "510103",
+     "line": 1032,
+     "snippet": "c = await _context.Accounts.AsNoTracking().Where(a => a.CompanyID == companyId && a.Code == \"510103\").Select(a => (int?)a.ID).FirstOrDefault"
+    },
+    {
+     "code": "3301",
+     "line": 1119,
+     "snippet": "obe = await _context.Accounts.AsNoTracking().Where(a => a.CompanyID == companyId && a.Code == \"3301\").Select(a => (int?)a.ID).FirstOrDefault"
+    },
+    {
+     "code": "1201",
+     "line": 1183,
+     "snippet": "Acc = await _context.Accounts.AsNoTracking().Where(a => a.CompanyID == companyId && a.Code == \"1201\").Select(a => (int?)a.ID).FirstOrDefault"
+    },
+    {
+     "code": "1202",
+     "line": 1184,
+     "snippet": "Acc = await _context.Accounts.AsNoTracking().Where(a => a.CompanyID == companyId && a.Code == \"1202\").Select(a => (int?)a.ID).FirstOrDefault"
+    },
+    {
+     "code": "520103",
+     "line": 1185,
+     "snippet": "c = await _context.Accounts.AsNoTracking().Where(a => a.CompanyID == companyId && a.Code == \"520103\").Select(a => (int?)a.ID).FirstOrDefault"
+    },
+    {
+     "code": "1105",
+     "line": 1430,
+     "snippet": "Acc = await _context.Accounts.AsNoTracking().Where(a => a.CompanyID == companyId && a.Code == \"1105\").Select(a => (int?)a.ID).FirstOrDefault"
+    },
+    {
+     "code": "1105",
+     "line": 1480,
+     "snippet": "Acc = await _context.Accounts.AsNoTracking().Where(a => a.CompanyID == companyId && a.Code == \"1105\").Select(a => (int?)a.ID).FirstOrDefault"
+    },
+    {
+     "code": "520108",
+     "line": 1481,
+     "snippet": "c = await _context.Accounts.AsNoTracking().Where(a => a.CompanyID == companyId && a.Code == \"520108\").Select(a => (int?)a.ID).FirstOrDefault"
+    },
+    {
+     "code": "1105",
+     "line": 1585,
+     "snippet": "Acc = await _context.Accounts.AsNoTracking().Where(a => a.CompanyID == companyId && a.Code == \"1105\").Select(a => (int?)a.ID).FirstOrDefault"
+    },
+    {
+     "code": "520108",
+     "line": 1586,
+     "snippet": "c = await _context.Accounts.AsNoTracking().Where(a => a.CompanyID == companyId && a.Code == \"520108\").Select(a => (int?)a.ID).FirstOrDefault"
+    },
+    {
+     "code": "520109",
+     "line": 1587,
+     "snippet": "c = await _context.Accounts.AsNoTracking().Where(a => a.CompanyID == companyId && a.Code == \"520109\").Select(a => (int?)a.ID).FirstOrDefault"
+    },
+    {
+     "code": "1105",
+     "line": 1674,
+     "snippet": "Acc = await _context.Accounts.AsNoTracking().Where(a => a.CompanyID == companyId && a.Code == \"1105\").Select(a => (int?)a.ID).FirstOrDefault"
+    },
+    {
+     "code": "210202",
+     "line": 1706,
+     "snippet": ") ? await _context.Accounts.AsNoTracking().Where(a => a.CompanyID == companyId && a.Code == \"210202\").Select(a => (int?)a.ID).FirstOrDefault"
+    },
+    {
+     "code": "1105",
+     "line": 1750,
+     "snippet": "Acc = await _context.Accounts.AsNoTracking().Where(a => a.CompanyID == companyId && a.Code == \"1105\").Select(a => (int?)a.ID).FirstOrDefault"
+    },
+    {
+     "code": "110101",
+     "line": 1766,
+     "snippet": " ?? await _context.Accounts.AsNoTracking().Where(a => a.CompanyID == companyId && a.Code == \"110101\").Select(a => (int?)a.ID).FirstOrDefault"
+    },
+    {
+     "code": "210202",
+     "line": 1778,
+     "snippet": "d = await _context.Accounts.AsNoTracking().Where(a => a.CompanyID == companyId && a.Code == \"210202\").Select(a => (int?)a.ID).FirstOrDefault"
+    },
+    {
+     "code": "1105",
+     "line": 1835,
+     "snippet": "Acc = await _context.Accounts.AsNoTracking().Where(a => a.CompanyID == companyId && a.Code == \"1105\").Select(a => (int?)a.ID).FirstOrDefault"
+    },
+    {
+     "code": "210202",
+     "line": 1848,
+     "snippet": "d = await _context.Accounts.AsNoTracking().Where(a => a.CompanyID == companyId && a.Code == \"210202\").Select(a => (int?)a.ID).FirstOrDefault"
+    }
+   ],
+   "configurable": [
+    {
+     "via": "externalCreditAccountId",
+     "line": 124
+    },
+    {
+     "via": "InventoryAccountId",
+     "line": 777
+    },
+    {
+     "via": "InventoryAccountId",
+     "line": 866
+    },
+    {
+     "via": "InventoryAccountId",
+     "line": 1063
+    },
+    {
+     "via": "InventoryAccountId",
+     "line": 1064
+    },
+    {
+     "via": "InventoryAccountId",
+     "line": 1133
+    },
+    {
+     "via": "InventoryAccountId",
+     "line": 1134
+    },
+    {
+     "via": "InventoryAccountId",
+     "line": 1181
+    },
+    {
+     "via": "InventoryAccountId",
+     "line": 1182
+    },
+    {
+     "via": "CostAccountId",
+     "line": 1200
+    },
+    {
+     "via": "AccumDepAccountId",
+     "line": 1200
+    },
+    {
+     "via": "DepExpenseAccountId",
+     "line": 1201
+    },
+    {
+     "via": "InventoryAccountId",
+     "line": 1234
+    },
+    {
+     "via": "InventoryAccountId",
+     "line": 1250
+    },
+    {
+     "via": "InventoryAccountId",
+     "line": 1256
+    },
+    {
+     "via": "InventoryAccountId",
+     "line": 1297
+    },
+    {
+     "via": "InventoryAccountId",
+     "line": 1321
+    },
+    {
+     "via": "InventoryAccountId",
+     "line": 1377
+    },
+    {
+     "via": "InventoryAccountId",
+     "line": 1476
+    },
+    {
+     "via": "InventoryAccountId",
+     "line": 1488
+    },
+    {
+     "via": "InventoryAccountId",
+     "line": 1539
+    },
+    {
+     "via": "InventoryAccountId",
+     "line": 1584
+    },
+    {
+     "via": "InventoryAccountId",
+     "line": 1597
+    },
+    {
+     "via": "InventoryAccountId",
+     "line": 1607
+    },
+    {
+     "via": "InventoryAccountId",
+     "line": 1680
+    },
+    {
+     "via": "CreditAccountId",
+     "line": 1710
+    },
+    {
+     "via": "CreditAccountId",
+     "line": 1712
+    },
+    {
+     "via": "CreditAccountId",
+     "line": 1712
+    },
+    {
+     "via": "externalCreditAccountId",
+     "line": 1742
+    },
+    {
+     "via": "externalCreditAccountId",
+     "line": 1766
+    },
+    {
+     "via": "CreditAccountId",
+     "line": 1813
+    },
+    {
+     "via": "CreditAccountId",
+     "line": 1845
+    },
+    {
+     "via": "CreditAccountId",
+     "line": 1845
+    },
+    {
+     "via": "CreditAccountId",
+     "line": 1845
+    },
+    {
+     "via": "InventoryAccountId",
+     "line": 1875
+    },
+    {
+     "via": "CogsAccountId",
+     "line": 1876
+    },
+    {
+     "via": "AdjustmentAccountId",
+     "line": 1877
+    },
+    {
+     "via": "GrniAccountId",
+     "line": 1878
+    }
+   ]
+  }
+ },
+ "duplicate_protection_sites": [
+  {
+   "file": "CrossBuy/BL/AccountingDashboardService.cs",
+   "line": 92,
+   "snippet": "tries.AsNoTracking() on l.JournalEntryId equals e.ID where e.CompanyID == companyId && (e.Status == \"Posted\" || e.Status == \"Reversed\") select new { l.Account"
+  },
+  {
+   "file": "CrossBuy/BL/AccountingDashboardService.cs",
+   "line": 165,
+   "snippet": "es dto.PostedCount = await _context.JournalEntries.CountAsync(e => e.CompanyID == companyId && e.Status == \"Posted\"); dto.DraftCount = await _context.JournalEntries.CountAs"
+  },
+  {
+   "file": "CrossBuy/BL/AccountingDashboardService.cs",
+   "line": 168,
+   "snippet": "ecent = await _context.JournalEntries.AsNoTracking() .Where(e => e.CompanyID == companyId && (e.Status == \"Posted\" || e.Status == \"Reversed\")) .OrderByDescending(e => e.I"
+  },
+  {
+   "file": "CrossBuy/BL/AccountingPeriodControlService.cs",
+   "line": 197,
+   "snippet": "e in _db.JournalEntries.AsNoTracking() where e.CompanyID == context.CompanyId && e.Status == \"Posted\" && e.EntryDate >= period.StartDate && e."
+  },
+  {
+   "file": "CrossBuy/BL/AccountingPeriodControlService.cs",
+   "line": 216,
+   "snippet": "ournalEntries.AsNoTracking().CountAsync( e => e.CompanyID == context.CompanyId && e.Status == \"Posted\" && e.EntryDate >= period.StartDate && e.E"
+  },
+  {
+   "file": "CrossBuy/BL/AccountingPostingService.cs",
+   "line": 36,
+   "snippet": "PayrollRunPreview { public int Year { get; set; } public int Month { get; set; } public bool AlreadyPosted { get; set; } public string? PostedEntryNo { get; set; }"
+  },
+  {
+   "file": "CrossBuy/BL/AccountingPostingService.cs",
+   "line": 120,
+   "snippet": "anyID == companyId && e.SourceType == \"Payroll\" && e.SourceId == src); if (existing != null) { p.AlreadyPosted = true; p.PostedEntryNo = existing.EntryNo; } var emplo"
+  },
+  {
+   "file": "CrossBuy/BL/AccountingPostingService.cs",
+   "line": 232,
+   "snippet": "month, int? userId) { var pre = await PreviewPayrollAsync(companyId, year, month); if (pre.AlreadyPosted) return (false, $\"Payroll for this period has already been"
+  },
+  {
+   "file": "CrossBuy/BL/AccountingPostingService.cs",
+   "line": 318,
+   "snippet": "ultAsync(e => e.CompanyID == companyId && e.SourceType == \"Payroll\" && e.SourceId == periodSrc && e.Status == \"Posted\"); if (je == null) return 0m; return R(await _context."
+  },
+  {
+   "file": "CrossBuy/BL/AccountingPostingService.cs",
+   "line": 326,
+   "snippet": ", int periodSrc) => await _context.JournalEntries.AsNoTracking() .AnyAsync(e => e.CompanyID == companyId && e.SourceType == sourceType && e.SourceId == periodSrc && e.Status == \"Po"
+  },
+  {
+   "file": "CrossBuy/BL/AccountingPostingService.cs",
+   "line": 326,
+   "snippet": "nyAsync(e => e.CompanyID == companyId && e.SourceType == sourceType && e.SourceId == periodSrc && e.Status == \"Posted\"); public async Task<PayrollDisbursementView> GetDisburse"
+  },
+  {
+   "file": "CrossBuy/BL/AccountingPostingService.cs",
+   "line": 333,
+   "snippet": "OrDefaultAsync(e => e.CompanyID == companyId && e.SourceType == \"Payroll\" && e.SourceId == src && e.Status == \"Posted\"); if (je == null) return v; v.HasPayroll = true; v"
+  },
+  {
+   "file": "CrossBuy/BL/AiInsightsService.cs",
+   "line": 99,
+   "snippet": "ntries = await _context.JournalEntries.AsNoTracking() .Where(e => e.CompanyID == companyId && e.Status == \"Posted\") .Select(e => new { id = e.ID, entryNo ="
+  },
+  {
+   "file": "CrossBuy/BL/AiInsightsService.cs",
+   "line": 136,
+   "snippet": "tries.AsNoTracking() on l.JournalEntryId equals e.ID where e.CompanyID == companyId && (e.Status == \"Posted\" || e.Status == \"Reversed\") && cashIds.Contains(l.AccountId)"
+  },
+  {
+   "file": "CrossBuy/BL/AiInsightsService.cs",
+   "line": 140,
+   "snippet": "var sInv = await _context.SalesInvoices.AsNoTracking().Where(i => i.CompanyID == companyId && i.Status == \"Posted\").ToListAsync(ct); var receipts = await _context.Receipts"
+  },
+  {
+   "file": "CrossBuy/BL/AiInsightsService.cs",
+   "line": 141,
+   "snippet": "; var receipts = await _context.Receipts.AsNoTracking().Where(r => r.CompanyID == companyId && r.Status == \"Posted\").ToListAsync(ct); var inflows = new List<object>(); f"
+  },
+  {
+   "file": "CrossBuy/BL/AiInsightsService.cs",
+   "line": 156,
+   "snippet": "var pInv = await _context.PurchaseInvoices.AsNoTracking().Where(i => i.CompanyID == companyId && i.Status == \"Posted\").ToListAsync(ct); var payments = await _context.Payments"
+  },
+  {
+   "file": "CrossBuy/BL/AiInsightsService.cs",
+   "line": 157,
+   "snippet": "; var payments = await _context.Payments.AsNoTracking().Where(p => p.CompanyID == companyId && p.Status == \"Posted\").ToListAsync(ct); var outflows = new List<object>();"
+  },
+  {
+   "file": "CrossBuy/BL/BankService.cs",
+   "line": 92,
+   "snippet": "ntries.AsNoTracking() on l.JournalEntryId equals e.ID where e.CompanyID == companyId && (e.Status == \"Posted\" || e.Status == \"Reversed\") && l.AccountId == bank."
+  },
+  {
+   "file": "CrossBuy/BL/BoqService.cs",
+   "line": 525,
+   "snippet": "& l.BoqItemId != null && ids.Contains(l.BoqItemId.Value) && (h.Status == \"Approved\" || h.Status == \"Posted\") select l.BoqItemId!.Value).Distinct().ToListAsy"
+  },
+  {
+   "file": "CrossBuy/BL/BoqService.cs",
+   "line": 539,
+   "snippet": "h.CompanyID == companyId && l.BoqItemId != null && ids.Contains(l.BoqItemId.Value) && h.Status == \"Posted\" select l.BoqItemId!.Value).Distinct().ToListAsync()"
+  },
+  {
+   "file": "CrossBuy/BL/ClosingService.cs",
+   "line": 51,
+   "snippet": "ntTypes.AsNoTracking() on a.AccountTypeId equals t.ID where e.CompanyID == companyId && (e.Status == \"Posted\" || e.Status == \"Reversed\") && e.EntryDate <= upTo"
+  },
+  {
+   "file": "CrossBuy/BL/ContractService.cs",
+   "line": 54,
+   "snippet": "nalEntryId equals en.ID where en.CompanyID == companyId && l.ProjectId == projectId && en.Status == \"Posted\" && (l.AccountId == advAcc || l.AccountId == retAc"
+  },
+  {
+   "file": "CrossBuy/BL/ContractService.cs",
+   "line": 129,
+   "snippet": "nalEntryId equals en.ID where en.CompanyID == companyId && l.ProjectId == projectId && en.Status == \"Posted\" && l.AccountId == acc select new { l.Debit, l.Cre"
+  },
+  {
+   "file": "CrossBuy/BL/EquipmentDepreciationService.cs",
+   "line": 127,
+   "snippet": "& x.CompanyID == companyId); if (hdr == null) return (false, \"Allocation not found\"); if (hdr.Status == \"Posted\") return (false, \"The allocation is already posted\"); // p"
+  },
+  {
+   "file": "CrossBuy/BL/EquipmentDepreciationService.cs",
+   "line": 166,
+   "snippet": "& x.CompanyID == companyId); if (hdr == null) return (false, \"Allocation not found\"); if (hdr.Status == \"Posted\") return (false, \"A posted allocation cannot be deleted\");"
+  },
+  {
+   "file": "CrossBuy/BL/FinancialStatementService.cs",
+   "line": 76,
+   "snippet": "ntries.AsNoTracking() on l.JournalEntryId equals e.ID where e.CompanyID == companyId && (e.Status == \"Posted\" || e.Status == \"Reversed\") && (fromDate == null ||"
+  },
+  {
+   "file": "CrossBuy/BL/FinancialStatementService.cs",
+   "line": 146,
+   "snippet": "Entries.AsNoTracking() on l.JournalEntryId equals e.ID where e.CompanyID == companyId && (e.Status == \"Posted\" || e.Status == \"Reversed\") && e.EntryDate < star"
+  },
+  {
+   "file": "CrossBuy/BL/FinancialStatementService.cs",
+   "line": 155,
+   "snippet": "tries.AsNoTracking() on l.JournalEntryId equals e.ID where e.CompanyID == companyId && (e.Status == \"Posted\" || e.Status == \"Reversed\") && e.EntryDate >= star"
+  },
+  {
+   "file": "CrossBuy/BL/FixedAssetService.cs",
+   "line": 216,
+   "snippet": "ait _context.DepreciationRuns.AnyAsync(r => r.CompanyID == companyId && r.PeriodDate == period && r.Status == \"Posted\"); if (exists) return (false, $\"Depreciation for this per"
+  },
+  {
+   "file": "CrossBuy/BL/FxRevaluationService.cs",
+   "line": 71,
+   "snippet": "v = await (from i in _db.SalesInvoices.AsNoTracking() where i.CompanyID == companyId && i.Status == \"Posted\" && i.CurrencyId != null && i.CurrencyId != functional"
+  },
+  {
+   "file": "CrossBuy/BL/FxRevaluationService.cs",
+   "line": 95,
+   "snippet": "await (from i in _db.PurchaseInvoices.AsNoTracking() where i.CompanyID == companyId && i.Status == \"Posted\" && i.CurrencyId != null && i.CurrencyId != functional"
+  },
+  {
+   "file": "CrossBuy/BL/GeneralLedgerService.cs",
+   "line": 63,
+   "snippet": "ntries.AsNoTracking() on l.JournalEntryId equals e.ID where e.CompanyID == companyId && (e.Status == \"Posted\" || e.Status == \"Reversed\") && (fromDate == null ||"
+  },
+  {
+   "file": "CrossBuy/BL/GeneralLedgerService.cs",
+   "line": 105,
+   "snippet": "Entries.AsNoTracking() on l.JournalEntryId equals e.ID where e.CompanyID == companyId && (e.Status == \"Posted\" || e.Status == \"Reversed\") && l.AccountId == accountId"
+  },
+  {
+   "file": "CrossBuy/BL/IntegrityCheckService.cs",
+   "line": 63,
+   "snippet": "decimal arSub = (await _db.SalesInvoices.AsNoTracking().Where(i => i.CompanyID == companyId && i.Status == \"Posted\").SumAsync(i => (decimal?)(i.GrandTotalBase ?? i.GrandTotal)"
+  },
+  {
+   "file": "CrossBuy/BL/IntegrityCheckService.cs",
+   "line": 64,
+   "snippet": "otal)) ?? 0m) - (await _db.Receipts.AsNoTracking().Where(r => r.CompanyID == companyId && r.Status == \"Posted\").SumAsync(r => (decimal?)(r.AmountBase ?? r.Amount)) ?? 0m)"
+  },
+  {
+   "file": "CrossBuy/BL/IntegrityCheckService.cs",
+   "line": 65,
+   "snippet": ")) ?? 0m) - (await _db.SalesReturns.AsNoTracking().Where(s => s.CompanyID == companyId && s.Status == \"Posted\").SumAsync(s => (decimal?)(s.GrandTotalBase ?? s.GrandTotal)"
+  },
+  {
+   "file": "CrossBuy/BL/IntegrityCheckService.cs",
+   "line": 71,
+   "snippet": "decimal apSub = (await _db.PurchaseInvoices.AsNoTracking().Where(i => i.CompanyID == companyId && i.Status == \"Posted\").SumAsync(i => (decimal?)(i.GrandTotalBase ?? i.GrandTotal)"
+  },
+  {
+   "file": "CrossBuy/BL/IntegrityCheckService.cs",
+   "line": 72,
+   "snippet": "otal)) ?? 0m) - (await _db.Payments.AsNoTracking().Where(p => p.CompanyID == companyId && p.Status == \"Posted\").SumAsync(p => (decimal?)(p.AmountBase ?? p.Amount)) ?? 0m)"
+  },
+  {
+   "file": "CrossBuy/BL/IntegrityCheckService.cs",
+   "line": 73,
+   "snippet": "?? 0m) - (await _db.PurchaseReturns.AsNoTracking().Where(r => r.CompanyID == companyId && r.Status == \"Posted\").SumAsync(r => (decimal?)(r.GrandTotalBase ?? r.GrandTotal)"
+  },
+  {
+   "file": "CrossBuy/BL/IntegrityCheckService.cs",
+   "line": 84,
+   "snippet": "decimal unbilled = await _db.GoodsReceipts.AsNoTracking().Where(g => g.CompanyID == companyId && g.Status == \"Posted\" && g.InvoiceId == null).SumAsync(g => (decimal?)g.TotalCost"
+  },
+  {
+   "file": "CrossBuy/BL/IntegrityCheckService.cs",
+   "line": 117,
+   "snippet": "db.Items.AsNoTracking() on l.ItemId equals it.ID where inv.CompanyID == companyId && inv.Status == \"Posted\" && l.ItemId != null && l.WarehouseId != null && l.Qty > 0"
+  },
+  {
+   "file": "CrossBuy/BL/IntegrityCheckService.cs",
+   "line": 390,
+   "snippet": "var openGrn = await _db.GoodsReceipts.AsNoTracking() .Where(g => g.CompanyID == companyId && g.Status == \"Posted\" && g.InvoiceId == null) .Select(g => new { g.ReceiptDat"
+  },
+  {
+   "file": "CrossBuy/BL/LeaveAccrualService.cs",
+   "line": 155,
+   "snippet": "acking() .Join(_context.JournalEntries.AsNoTracking().Where(e => e.CompanyID == companyId && e.Status == \"Posted\" && e.EntryDate <= asOf.Date), l => l.JournalEntryId,"
+  },
+  {
+   "file": "CrossBuy/BL/OpeningBalanceService.cs",
+   "line": 214,
+   "snippet": "decimal arSub = (await _db.SalesInvoices.AsNoTracking().Where(i => i.CompanyID == companyId && i.Status == \"Posted\").SumAsync(i => (decimal?)i.GrandTotal) ?? 0m) - (aw"
+  },
+  {
+   "file": "CrossBuy/BL/OpeningBalanceService.cs",
+   "line": 215,
+   "snippet": "Total) ?? 0m) - (await _db.Receipts.AsNoTracking().Where(r => r.CompanyID == companyId && r.Status == \"Posted\").SumAsync(r => (decimal?)r.Amount) ?? 0m); res.Add(new O"
+  },
+  {
+   "file": "CrossBuy/BL/OpeningBalanceService.cs",
+   "line": 220,
+   "snippet": "decimal apSub = (await _db.PurchaseInvoices.AsNoTracking().Where(i => i.CompanyID == companyId && i.Status == \"Posted\").SumAsync(i => (decimal?)i.GrandTotal) ?? 0m) - (aw"
+  },
+  {
+   "file": "CrossBuy/BL/OpeningBalanceService.cs",
+   "line": 221,
+   "snippet": "Total) ?? 0m) - (await _db.Payments.AsNoTracking().Where(p => p.CompanyID == companyId && p.Status == \"Posted\").SumAsync(p => (decimal?)p.Amount) ?? 0m); res.Add(new O"
+  },
+  {
+   "file": "CrossBuy/BL/PayableService.cs",
+   "line": 663,
+   "snippet": "aseInvoices.AsNoTracking() where i.CompanyID == companyId && i.VendorId == vendorId && i.Status == \"Posted\" && (i.CurrencyId ?? functional) == cur orderby i"
+  },
+  {
+   "file": "CrossBuy/BL/PayableService.cs",
+   "line": 722,
+   "snippet": "invoices = await _context.PurchaseInvoices.AsNoTracking().Where(i => i.CompanyID == companyId && i.Status == \"Posted\").ToListAsync(); var payments = await _context.Payments.A"
+  },
+  {
+   "file": "CrossBuy/BL/PayableService.cs",
+   "line": 723,
+   "snippet": "; var payments = await _context.Payments.AsNoTracking().Where(p => p.CompanyID == companyId && p.Status == \"Posted\").ToListAsync(); var rows = new List<AgingRow>(); for"
+  },
+  {
+   "file": "CrossBuy/BL/PosPreparationService.cs",
+   "line": 297,
+   "snippet": "twice. bool alreadyWasted = await _db.JournalEntries.AsNoTracking() .AnyAsync(j => j.CompanyID == companyId && j.SourceType == \"PosWaste\" && j.SourceId == orderId, ct); if (already"
+  },
+  {
+   "file": "CrossBuy/BL/ProcurementService.cs",
+   "line": 200,
+   "snippet": "await _context.GoodsReceipts.Where(g => g.CompanyID == companyId && g.PurchaseOrderId == poId && g.Status == \"Posted\").ToListAsync(); bool received = receipts.Any(); // P"
+  },
+  {
+   "file": "CrossBuy/BL/ProgressBillingService.cs",
+   "line": 162,
+   "snippet": "on l.BillingId equals h.ID where h.CompanyID == companyId && h.ProjectId == projectId && h.Status == \"Posted\" && h.ID != exceptBillingId select new { l.BoqItemI"
+  },
+  {
+   "file": "CrossBuy/BL/ProjectBudgetService.cs",
+   "line": 59,
+   "snippet": "on l.IssueId equals h.ID where h.CompanyID == companyId && h.ProjectId == projectId && h.Status == \"Posted\" && l.BoqItemId != null group l by l.BoqItemId!.V"
+  },
+  {
+   "file": "CrossBuy/BL/ProjectBudgetService.cs",
+   "line": 80,
+   "snippet": "ies.AsNoTracking() on l.JournalEntryId equals e.ID where e.CompanyID == companyId && e.Status == \"Posted\" && l.AccountId == costAccId.Value && l.ProjectId == project"
+  },
+  {
+   "file": "CrossBuy/BL/ProjectMaterialIssueService.cs",
+   "line": 83,
+   "snippet": "& x.CompanyID == companyId); if (hdr == null) return (false, \"Issue note not found\"); if (hdr.Status == \"Posted\") return (false, \"The issue note is already posted\"); // n"
+  },
+  {
+   "file": "CrossBuy/BL/ProjectMaterialIssueService.cs",
+   "line": 117,
+   "snippet": "& x.CompanyID == companyId); if (hdr == null) return (false, \"Issue note not found\"); if (hdr.Status == \"Posted\") return (false, \"A posted issue note cannot be deleted\");"
+  },
+  {
+   "file": "CrossBuy/BL/ReceivableService.cs",
+   "line": 280,
+   "snippet": "SalesInvoices.AsNoTracking().Where(i => i.CompanyID == companyId && i.CustomerId == customerId && i.Status == \"Posted\").SumAsync(i => (decimal?)(i.GrandTotalBase ?? i.GrandTotal)"
+  },
+  {
+   "file": "CrossBuy/BL/ReceivableService.cs",
+   "line": 281,
+   "snippet": "text.Receipts.AsNoTracking().Where(r => r.CompanyID == companyId && r.CustomerId == customerId && r.Status == \"Posted\").SumAsync(r => (decimal?)(r.AmountBase ?? r.Amount)) ?? 0m;"
+  }
+ ],
+ "transaction_sites": [
+  {
+   "file": "CrossBuy/BL/ChatService.cs",
+   "line": 246,
+   "what": "BeginTransactionAsync"
+  },
+  {
+   "file": "CrossBuy/BL/ChatService.cs",
+   "line": 254,
+   "what": "SaveChangesAsync();\n                awai"
+  },
+  {
+   "file": "CrossBuy/BL/JournalEntryService.cs",
+   "line": 216,
+   "what": "SaveChangesAsync();\n\t\t\tawait tx"
+  },
+  {
+   "file": "CrossBuy/BL/JournalEntryService.cs",
+   "line": 230,
+   "what": "SaveChangesAsync();\n\t\t\tawait tx"
+  },
+  {
+   "file": "CrossBuy/BL/JournalEntryService.cs",
+   "line": 433,
+   "what": "BeginTransactionAsync"
+  },
+  {
+   "file": "CrossBuy/BL/PayableService.cs",
+   "line": 619,
+   "what": "SaveChangesAsync();\n\t\t\tawait tx"
+  },
+  {
+   "file": "CrossBuy/BL/PayableService.cs",
+   "line": 712,
+   "what": "SaveChangesAsync();\n\t\t\tawait tx"
+  },
+  {
+   "file": "CrossBuy/BL/PosOrderService.cs",
+   "line": 1549,
+   "what": "SaveChangesAsync();\n\t\t\tawait tx"
+  },
+  {
+   "file": "CrossBuy/BL/PosOrderService.cs",
+   "line": 1713,
+   "what": "SaveChangesAsync();\n\t\t\t\tawait tx"
+  },
+  {
+   "file": "CrossBuy/BL/PosSetupService.cs",
+   "line": 1006,
+   "what": "SaveChangesAsync();\n\t\t\tawait tx"
+  },
+  {
+   "file": "CrossBuy/BL/PricingService.cs",
+   "line": 617,
+   "what": "SaveChangesAsync();\n\t\t\tawait tx"
+  },
+  {
+   "file": "CrossBuy/BL/PricingService.cs",
+   "line": 655,
+   "what": "SaveChangesAsync();\n\t\t\tawait tx"
+  },
+  {
+   "file": "CrossBuy/BL/ReceivableService.cs",
+   "line": 859,
+   "what": "SaveChangesAsync();\n\t\t\tawait tx"
+  },
+  {
+   "file": "CrossBuy/BL/ScopedTx.cs",
+   "line": 10,
+   "what": "BeginTransactionAsync"
+  },
+  {
+   "file": "CrossBuy/BL/ScopedTx.cs",
+   "line": 19,
+   "what": "BeginTransactionAsync"
+  },
+  {
+   "file": "CrossBuy/BL/StockService.cs",
+   "line": 924,
+   "what": "SaveChangesAsync();\n\t\t\t\tawait tx"
+  },
+  {
+   "file": "CrossBuy/BL/StockService.cs",
+   "line": 1004,
+   "what": "SaveChangesAsync();\n\t\t\t\tawait tx"
+  },
+  {
+   "file": "CrossBuy/BL/StockService.cs",
+   "line": 1102,
+   "what": "SaveChangesAsync();\n\t\t\t\tawait tx"
+  },
+  {
+   "file": "CrossBuy/BL/StockService.cs",
+   "line": 1454,
+   "what": "SaveChangesAsync();\n\t\t\t\tawait tx"
+  },
+  {
+   "file": "CrossBuy/BL/StockService.cs",
+   "line": 1555,
+   "what": "SaveChangesAsync();\n\t\t\t\tawait tx"
+  },
+  {
+   "file": "CrossBuy/BL/StockService.cs",
+   "line": 1649,
+   "what": "SaveChangesAsync();\n\t\t\t\tawait tx"
+  },
+  {
+   "file": "CrossBuy/BL/StockService.cs",
+   "line": 1733,
+   "what": "SaveChangesAsync();\n\t\t\t\tawait tx"
+  },
+  {
+   "file": "CrossBuy/BL/StockService.cs",
+   "line": 1818,
+   "what": "SaveChangesAsync();\n\t\t\t\tawait tx"
+  },
+  {
+   "file": "CrossBuy/BL/StockService.cs",
+   "line": 1865,
+   "what": "SaveChangesAsync();\n\t\t\t\tawait tx"
+  },
+  {
+   "file": "CrossBuy/BL/Communication/CommTransaction.cs",
+   "line": 59,
+   "what": "BeginTransactionAsync"
+  },
+  {
+   "file": "CrossBuy/BL/Documents/DocumentExpiryProjection.cs",
+   "line": 169,
+   "what": "BeginTransactionAsync"
+  },
+  {
+   "file": "CrossBuy/BL/Documents/PlatformDocumentService.cs",
+   "line": 374,
+   "what": "BeginTransactionAsync"
+  },
+  {
+   "file": "CrossBuy/BL/Documents/PlatformDocumentService.cs",
+   "line": 442,
+   "what": "BeginTransactionAsync"
+  },
+  {
+   "file": "CrossBuy/BL/Documents/PlatformDocumentService.cs",
+   "line": 674,
+   "what": "BeginTransactionAsync"
+  },
+  {
+   "file": "CrossBuy/BL/Documents/PlatformDocumentService.cs",
+   "line": 738,
+   "what": "BeginTransactionAsync"
+  },
+  {
+   "file": "CrossBuy/BL/Documents/PlatformDocumentService.cs",
+   "line": 852,
+   "what": "BeginTransactionAsync"
+  }
+ ],
+ "ledger_source_types": [
+  "Adjustment",
+  "Assembly",
+  "AssetCapitalization",
+  "AssetMaintenance",
+  "Depreciation",
+  "Disassembly",
+  "EquipmentDepAllocation",
+  "FinalSettlement",
+  "FixedAsset",
+  "FixedAssetDisposal",
+  "FxRevaluation",
+  "FxRevaluationReversal",
+  "Inventory",
+  "Issue",
+  "LandedCost",
+  "LeaveEncash",
+  "LeaveProvision",
+  "OpeningAPBalance",
+  "OpeningARBalance",
+  "OpeningAsset",
+  "OpeningGL",
+  "OpeningStock",
+  "Payment",
+  "Payroll",
+  "PayrollPay",
+  "PosPrep",
+  "PosRefund",
+  "PosShiftClose",
+  "PosTip",
+  "PosWaste",
+  "ProjectAdvance",
+  "ProjectIssue",
+  "ProjectLabor",
+  "PurchaseInvoice",
+  "PurchaseInvoiceEdit",
+  "PurchaseReturn",
+  "PurchaseReturnEdit",
+  "Receipt",
+  "RetentionRelease",
+  "Reversal",
+  "SalesInvoice",
+  "SalesInvoiceEdit",
+  "SalesInvoiceReversal",
+  "SalesReturn",
+  "SalesReturnEdit",
+  "StockTransfer",
+  "StockWriteOff",
+  "SubRetentionRelease",
+  "Transfer",
+  "TransferIn",
+  "TransferOut",
+  "VatReturn",
+  "WorkOrder",
+  "YearClose"
+ ]
+}

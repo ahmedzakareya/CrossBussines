@@ -1,0 +1,59 @@
+﻿area,claim,method,result,evidence_level
+baseline,branch and commit,git rev-parse / git log -1,"reporting/studio-gap-closure @ 32985d91, 2026-09-20 14:35:32 +0300",Repository evidence
+baseline,working tree preserved,git status --porcelain,"6 untracked files present at start, unchanged at end; nothing committed or deployed",Repository evidence
+baseline,application version,grep Version/Company/Authors/Copyright in csproj,NONE DECLARED,Repository evidence
+isolation,isolated database created,BACKUP COPY_ONLY + RESTORE WITH MOVE,"CrossBuyAcctTest restored from CrossBuyDev, 23,818 pages",Runtime observed
+isolation,isolated app instance,"dotnet publish to C:/temp/cb_acct_iso/app, run on :5299",published with BaseOutputPath redirected so the developer DLL lock (MSB3027) is avoided,Runtime observed
+isolation,PROOF of isolation,sys.dm_exec_sessions grouped by db and host_process_id,"PID 39228 (this discovery) = 4 sessions on CrossBuyAcctTest, ZERO on CrossBuyDev; developer PIDs 32692/24512 remain on CrossBuyDev",Runtime observed
+isolation,developer session undisturbed,HTTP probe of :44368 before and after,/Account/Login answered 200 throughout,Runtime observed
+isolation,SMTP disabled,Smtp__Enabled=false in the process environment,no mail path active,Runtime observed
+isolation,e-invoicing makes no outbound call,read BL/TaxService.cs:26-27,"SubmitSalesInvoiceAsync returns a hardcoded Submitted=false, Status=""NotConfigured""",Repository evidence
+isolation,production never contacted,no command in this package targets a remote server,confirmed,Repository evidence
+scope,services that post to the ledger,scripts/extract_posting_rules.py,16,Repository evidence
+scope,declared ledger source types,same,54,Repository evidence
+scope,source types with entries in the isolated DB,GROUP BY SourceType,28,Runtime observed
+scope,hard-coded vs configurable accounts,scripts/extract_posting_rules.py,"35 hard-coded sites, 277 configurable lookups; StockService holds 19 of the 35",Repository evidence
+scope,duplicate-posting guards,same,"75 sites, none exercised",Repository evidence
+scope,transaction/rollback sites,same,"31 sites, none exercised",Repository evidence
+setup,fiscal periods,SELECT over FiscalYears/FiscalPeriods,"2 years x 13 periods (12 + adjustment), all Open; period 9 covers 2026-09-21",Runtime observed
+setup,chart of accounts,SELECT over Accounts + AccountTypes,"63 accounts; 6 require a cost centre; GRNI 210203, advances 2104, realised FX 4902, unrealised FX 4903, opening equity 3301 all present",Runtime observed
+setup,approval threshold,SELECT over AccountingSettings,ApprovalThreshold = 0.00 -> the threshold and segregation-of-duties gates never fire,Runtime observed
+execution,draft journal created,"UI: /Accounting/CreateJournal, Save draft","JE 24209, Status=Draft, EntryNo=NULL, FiscalPeriodId=9, Dr=Cr=5000.00",Runtime observed
+execution,posting allocates the number,UI: POST /Accounting/PostJournal,"JE 24209 -> EntryNo JV-2026-008509, Status=Posted, PostedBy=5",Runtime observed
+execution,reversal creates a new entry,UI: POST /Accounting/ReverseJournal,"JE 24210 JV-2026-008510, JournalType=Reversing, Posted; 24209 -> Reversed with ReversedByEntryId=24210; lines are exact mirrors",Runtime observed
+execution,the same loop in Arabic,repeat with culture=ar,"JE 24211 -> JV-2026-008511, reversed by 24212 -> JV-2026-008512",Runtime observed
+reports,nine reports executed,"scripts/run-reports.mjs, both languages",9/9 rendered and captured in en and ar; 0 readiness failures,Runtime observed
+reconciliation,journal debits = credits,SQL over JournalEntryLines,"113,047,021.50 = 113,047,021.50, difference 0.00 across 11,785 entries",Reconciled result
+reconciliation,trial balance screen = ledger,compare screen totals with SQL,identical to the cent,Reconciled result
+reconciliation,sample transaction traced to report total,compare with the 2026-09-20 capture,"113,027,021.50 -> 113,047,021.50 = +20,000.00 = this discovery's 4 postings of 5,000",Reconciled result
+reconciliation,AR aging vs control account 1102,report total vs SQL net balance,"18,536,202.26 vs 18,520,263.26 -> 15,939.00 (pass 1: unexplained) - SUPERSEDED by pass 2",Runtime observed - superseded
+reconciliation,AP aging vs control account 2101,report total vs SQL net balance,"651,508.46 vs 635,232.29 -> 16,276.17 (pass 1: unexplained) - SUPERSEDED by pass 2",Runtime observed - superseded
+capture quality,countersSettled gate added,trial balance tiles vs footer,"first capture read 113,047,014.46 in the tiles mid-animation against 113,047,021.50 in the footer; the gate now waits for data-kt-countup to stabilise and the figures agree",Runtime observed
+not executed (pass 1),15 of 16 scenarios,-,"CLOSED IN PASS 2 for 12 groups; opening balances, accruals, bank reconciliation, inventory count and realised FX remain",Superseded
+not executed (pass 1),role-based access,-,CLOSED IN PASS 2 for 4 of 8 profiles,Superseded
+not executed (pass 1),report exports,-,CLOSED IN PASS 2 - 11 files produced,Superseded
+not executed,duplicate-posting and rollback,-,"guards found in source, never triggered",Unverified
+pass 2 isolation,isolation revalidated before any write,sys.dm_exec_sessions by pid,"pid 39228 (5088 after the restore) held sessions on CrossBuyAcctTest only, zero on CrossBuyDev; the developer instance answered 200 throughout",Runtime observed
+pass 2 isolation,outbound integrations disabled,run-isolated.cmd environment,"SMTP disabled, AI pointed at a dead port, no OpenAI key; e-invoicing makes NO outbound call (EtaInvoiceService returns a hardcoded ""NotConfigured""); no payment gateway exists",Runtime observed
+pass 2 checkpoints,destructive scenarios run on a disposable checkpoint,COPY_ONLY backup/restore,"CP1 before execution, CP2 before closing; the closing sequence ran after CP2 and CP2 was then restored, so FY2026 is Open again",Runtime observed
+pass 2 execution,purchase-to-pay executed,"UI form posts, verified in SQL","PI-2026-05073/74, PY-2026-00008/9, DN-2026-03016; journals JV-2026-008517..008526",Runtime observed
+pass 2 execution,order-to-cash executed,"UI form posts, verified in SQL","SV-2026-17613, RC-2026-15485/6, CN-2026-04050; journals JV-2026-008520..008523",Runtime observed
+pass 2 execution,"treasury, assets and FX executed","UI form posts, verified in SQL","transfer 2,500.00; asset 2026 capitalised 24,000.00; depreciation 12,433.34 in one entry of 7 line-pairs; FX revaluation and its exact reversal",Runtime observed
+pass 2 execution,closing sequence executed,SetPeriodStatus + YearEndClose,"period 9 closed, a posting into it REFUSED, reopen with reason recorded, FY2026 year-end JV-2026-008532 with 15 lines and Dr = Cr = 58,028,927.40 dated 2026-12-31",Runtime observed
+pass 2 execution,payroll posting,"PostPayroll(2026, 9)","REFUSED - ""There is no postable payroll in this period""; no September 2026 payroll data",Runtime observed - refused
+pass 2 reconciliation,AR aging vs control account 1102,numerical bridge in doc 09,"18,536,202.26 - 15,939.00 posted sales returns the aging never deducts = 18,520,263.26; closes EXACTLY",Reconciled result
+pass 2 reconciliation,AP aging vs control account 2101,numerical bridge in doc 09,"651,508.46 - 15,700.00 payments without a posted invoice - 650.37 purchase returns + 74.20 residual on 9 reversed PI journals = 635,232.29; residual OPEN",Reconciled result - 74.20 open
+pass 2 reconciliation,what the trial balance number measures,SQL against the screen,"raw DEBIT TURNOVER 113,067,021.50 matches the screen; the sum of per-account NET balances is 65,955,568.38; 37 accounts = 37 screen rows, and the per-account columns are turnover too",Reconciled result
+pass 2 reconciliation,the differences are pre-existing,account-level diff,"this pass posted only to 510105 and 110102, so neither difference was created by it",Reconciled result
+pass 2 roles,company boundary holds,sign-in as dev.otherco (company 65),"trial balance renders 0.00 / 0.00 with 0 account rows, against 113,396,869.64 and 38 rows for an authorised user",Runtime observed
+pass 2 roles,write gate holds,sign-in as dev.clerk (no roles),"the create-journal form opens, the post is refused, 0 journal entries created",Runtime observed
+pass 2 roles,read-screen reachability is open,12 routes x 4 profiles,every profile including one with no roles opens 10 of 12 accounting screens; only /Accounting/AccountingRoles refuses,Runtime observed
+pass 2 roles,segregation of duties proven in both halves,"ApprovalThreshold raised to 1,000.00 through the settings screen, then restored to 0.0000","a 2,500.00 entry pressed Post was FORCED TO DRAFT, and its creator could not then approve it; no source code was changed",Runtime observed
+pass 2 exports,in-module exports produced,"download, open as OOXML, count rows","8 of 8 xlsx files, 21,963 data rows, each containing this pass own documents",Runtime observed
+pass 2 exports,platform exports produced,Accounting.JournalActivity in 3 formats,"CSV 32,681 B with BOM, XLSX 21,929 B valid package, PDF 64,980 B / 17 pages / %%EOF",Runtime observed
+pass 2 exports,PDF font discrepancy,read the PDF BaseFont list,"AAAAAA+Dubai-Bold and BAAAAA+Dubai-Regular embedded, not the Cairo faces ReportFontLibrary provides",Runtime observed
+pass 2 exports,Accounting.TrialBalance is not a platform report,PDF request,404; the trial balance exists only as an in-module screen. An earlier list in this package included it and is corrected,Runtime observed
+pass 2 capture quality,the readiness gate refused a misleading capture,expect ZZ-DISCOVERY on the AR aging page,"the customer had settled to zero and the aging drops zero-balance parties, so NO FILE WAS WRITTEN",Runtime observed
+pass 2 not executed,"opening balances, accruals, bank reconciliation, inventory count, realised FX, POS/project/manufacturing postings",-,not executed; blockers recorded per area in doc 08 Gap R3,Unverified
+pass 2 not executed,4 of 8 role profiles,-,"accountant, cashier, purchasing, sales, warehouse and payroll are module roles granted per employee; no test user holds them",Unverified
+pass 2 not executed,"Arabic pass for roles, SoD and exports",-,the Arabic pass covers 16 transaction and report result screens only,Unverified

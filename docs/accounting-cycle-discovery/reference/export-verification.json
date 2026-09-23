@@ -1,0 +1,116 @@
+[
+ {
+  "file": "ACC-EXP_customer-analytics.en.xlsx",
+  "bytes": 10936,
+  "opens": true,
+  "sheets": 1,
+  "rows": 44,
+  "data_rows": 43,
+  "markers_found": [
+   "ZZ-DISCOVERY"
+  ],
+  "has_arabic": true,
+  "format": "OOXML .xlsx (ClosedXML, namespace-prefixed)"
+ },
+ {
+  "file": "ACC-EXP_customers.en.xlsx",
+  "bytes": 8332,
+  "opens": true,
+  "sheets": 1,
+  "rows": 45,
+  "data_rows": 44,
+  "markers_found": [
+   "ZZ-DISCOVERY"
+  ],
+  "has_arabic": true,
+  "format": "OOXML .xlsx (ClosedXML, namespace-prefixed)"
+ },
+ {
+  "file": "ACC-EXP_journals.en.xlsx",
+  "bytes": 458180,
+  "opens": true,
+  "sheets": 1,
+  "rows": 11809,
+  "data_rows": 11808,
+  "markers_found": [
+   "ZZ-DISCOVERY",
+   "PI-2026-05073",
+   "PI-2026-05074",
+   "SV-2026-17613",
+   "RC-2026-15485",
+   "RC-2026-15486",
+   "PY-2026-00008",
+   "PY-2026-00009"
+  ],
+  "has_arabic": true,
+  "format": "OOXML .xlsx (ClosedXML, namespace-prefixed)"
+ },
+ {
+  "file": "ACC-EXP_payments.en.xlsx",
+  "bytes": 6948,
+  "opens": true,
+  "sheets": 1,
+  "rows": 8,
+  "data_rows": 7,
+  "markers_found": [
+   "PY-2026-00008",
+   "PY-2026-00009"
+  ],
+  "has_arabic": false,
+  "format": "OOXML .xlsx (ClosedXML, namespace-prefixed)"
+ },
+ {
+  "file": "ACC-EXP_purchase-invoices.en.xlsx",
+  "bytes": 10314,
+  "opens": true,
+  "sheets": 1,
+  "rows": 120,
+  "data_rows": 119,
+  "markers_found": [
+   "PI-2026-05073",
+   "PI-2026-05074"
+  ],
+  "has_arabic": false,
+  "format": "OOXML .xlsx (ClosedXML, namespace-prefixed)"
+ },
+ {
+  "file": "ACC-EXP_receipts.en.xlsx",
+  "bytes": 132504,
+  "opens": true,
+  "sheets": 1,
+  "rows": 4428,
+  "data_rows": 4427,
+  "markers_found": [
+   "RC-2026-15485",
+   "RC-2026-15486"
+  ],
+  "has_arabic": false,
+  "format": "OOXML .xlsx (ClosedXML, namespace-prefixed)"
+ },
+ {
+  "file": "ACC-EXP_sales-invoices.en.xlsx",
+  "bytes": 235131,
+  "opens": true,
+  "sheets": 1,
+  "rows": 5504,
+  "data_rows": 5503,
+  "markers_found": [
+   "SV-2026-17613"
+  ],
+  "has_arabic": false,
+  "format": "OOXML .xlsx (ClosedXML, namespace-prefixed)"
+ },
+ {
+  "file": "ACC-EXP_vendors.en.xlsx",
+  "bytes": 7276,
+  "opens": true,
+  "sheets": 1,
+  "rows": 13,
+  "data_rows": 12,
+  "markers_found": [
+   "ZZ-DISCOVERY"
+  ],
+  "has_arabic": true,
+  "format": "OOXML .xlsx (ClosedXML, namespace-prefixed)"
+ }
+]

@@ -1,0 +1,63 @@
+﻿area,capability,declared_source_types,declared_in_code,entries_in_isolated_db,executed_by_this_discovery,status
+A Foundations,Company and branch accounting context,(none - configuration area),no,none,no,Implemented but unverified (configuration/screen area; no ledger source type)
+A Foundations,"Financial years, periods, locks and closing rules",(none - configuration area),no,none,no,Implemented and runtime verified (screen rendered); no posting executed
+A Foundations,"Chart of accounts, account types, control accounts",(none - configuration area),no,none,no,Implemented and runtime verified (screen rendered); no posting executed
+A Foundations,Cost centres and analytical dimensions,(none - configuration area),no,none,no,Implemented but unverified (configuration/screen area; no ledger source type)
+A Foundations,"Functional and transaction currencies, rates, precision",(none - configuration area),no,none,no,Implemented but unverified (configuration/screen area; no ledger source type)
+A Foundations,"Tax configuration, inclusive/exclusive, rounding",(none - configuration area),no,none,no,Implemented but unverified (configuration/screen area; no ledger source type)
+A Foundations,Document numbering,(none - configuration area),no,none,no,Implemented and runtime verified (screen rendered); no posting executed
+A Foundations,Opening GL balances,OpeningGL,OpeningGL,none,no,"Implemented but unverified (posting path declared in code, no data, not executed)"
+A Foundations,Opening customer balances,OpeningARBalance,OpeningARBalance,none,no,"Implemented but unverified (posting path declared in code, no data, not executed)"
+A Foundations,Opening supplier balances,OpeningAPBalance,OpeningAPBalance,none,no,"Implemented but unverified (posting path declared in code, no data, not executed)"
+A Foundations,Opening stock,OpeningStock,OpeningStock,OpeningStock=148,no,"Implemented, evidenced by existing ledger data; NOT executed here"
+A Foundations,Opening assets,OpeningAsset,OpeningAsset,none,no,"Implemented but unverified (posting path declared in code, no data, not executed)"
+B General ledger,Manual journals,Manual,no,Manual=3,Manual,Implemented and runtime verified (executed by this discovery)
+B General ledger,Draft / post separation,Manual,no,Manual=3,Manual,Implemented and runtime verified (executed by this discovery)
+B General ledger,Reversal of a posted entry,Reversal,Reversal,Reversal=321,Reversal,Implemented and runtime verified (executed by this discovery)
+B General ledger,Adjustment journals,Adjustment,Adjustment,none,no,"Implemented but unverified (posting path declared in code, no data, not executed)"
+B General ledger,Closed-period handling,(none - configuration area),no,none,no,Implemented and runtime verified (screen rendered); no posting executed
+C Purchasing & payables,Purchase invoice,PurchaseInvoice,PurchaseInvoice,PurchaseInvoice=121,PurchaseInvoice,Implemented and runtime verified (executed by this discovery)
+C Purchasing & payables,Purchase invoice edit (re-post),PurchaseInvoiceEdit,PurchaseInvoiceEdit,none,no,"Implemented but unverified (posting path declared in code, no data, not executed)"
+C Purchasing & payables,Goods receipt / GRNI timing difference,Inventory,Inventory,Inventory=967,Inventory,Implemented and runtime verified (executed by this discovery)
+C Purchasing & payables,Landed costs,LandedCost,LandedCost,LandedCost=1,no,"Implemented, evidenced by existing ledger data; NOT executed here"
+C Purchasing & payables,Supplier payment and allocation,Payment,Payment,Payment=4,Payment,Implemented and runtime verified (executed by this discovery)
+C Purchasing & payables,Purchase return / debit note,PurchaseReturn; PurchaseReturnEdit,PurchaseReturn; PurchaseReturnEdit,PurchaseReturn=30,PurchaseReturn,Implemented and runtime verified (executed by this discovery)
+C Purchasing & payables,Supplier statement and aging,(none - configuration area),no,none,no,Implemented and runtime verified (screen rendered); no posting executed
+D Sales & receivables,Sales invoice,SalesInvoice,SalesInvoice,SalesInvoice=5519,SalesInvoice,Implemented and runtime verified (executed by this discovery)
+D Sales & receivables,Sales invoice edit / reversal,SalesInvoiceEdit; SalesInvoiceReversal,SalesInvoiceEdit; SalesInvoiceReversal,none,no,"Implemented but unverified (posting path declared in code, no data, not executed)"
+D Sales & receivables,Customer receipt and allocation,Receipt,Receipt,Receipt=4403,Receipt,Implemented and runtime verified (executed by this discovery)
+D Sales & receivables,Sales return / credit note,SalesReturn; SalesReturnEdit,SalesReturn; SalesReturnEdit,SalesReturn=26,SalesReturn,Implemented and runtime verified (executed by this discovery)
+D Sales & receivables,Customer statement and aging,(none - configuration area),no,none,no,Implemented and runtime verified (screen rendered); no posting executed
+D Sales & receivables,Electronic invoicing status,(none - configuration area),no,none,no,Implemented but unverified (configuration/screen area; no ledger source type)
+E Cash & banks,Cash and bank accounts,(none - configuration area),no,none,no,Implemented and runtime verified (screen rendered); no posting executed
+E Cash & banks,Transfers between cash/bank,Transfer,Transfer,none,Transfer,Implemented and runtime verified (executed by this discovery)
+E Cash & banks,Bank reconciliation,(none - configuration area),no,none,no,Implemented but unverified (configuration/screen area; no ledger source type)
+F Inventory accounting,Valuation and cost of goods sold,Inventory,Inventory,Inventory=967,Inventory,Implemented and runtime verified (executed by this discovery)
+F Inventory accounting,Stock transfer,StockTransfer; TransferIn; TransferOut,StockTransfer; TransferIn; TransferOut,StockTransfer=5,no,"Implemented, evidenced by existing ledger data; NOT executed here"
+F Inventory accounting,Count / reconcile adjustment,StockReconcile; Adjustment,Adjustment,StockReconcile=6,no,"Implemented, evidenced by existing ledger data; NOT executed here"
+F Inventory accounting,Write-off,StockWriteOff,StockWriteOff,StockWriteOff=15,no,"Implemented, evidenced by existing ledger data; NOT executed here"
+F Inventory accounting,Assembly / disassembly,Assembly; Disassembly,Assembly; Disassembly,Assembly=8,no,"Implemented, evidenced by existing ledger data; NOT executed here"
+G Fixed assets,Acquisition and capitalisation,AssetCapitalization; FixedAsset,AssetCapitalization; FixedAsset,AssetCapitalization=1,FixedAsset,Implemented and runtime verified (executed by this discovery)
+G Fixed assets,Depreciation run,Depreciation; EquipmentDepAllocation,Depreciation; EquipmentDepAllocation,EquipmentDepAllocation=1,Depreciation,Implemented and runtime verified (executed by this discovery)
+G Fixed assets,Disposal and gain/loss,FixedAssetDisposal,FixedAssetDisposal,none,no,"Implemented but unverified (posting path declared in code, no data, not executed)"
+G Fixed assets,Asset maintenance,AssetMaintenance,AssetMaintenance,none,no,"Implemented but unverified (posting path declared in code, no data, not executed)"
+H Payroll,Payroll posting,Payroll,Payroll,Payroll=2,no,"Implemented, evidenced by existing ledger data; NOT executed here"
+H Payroll,Payroll disbursement,PayrollPay,PayrollPay,none,no,"Implemented but unverified (posting path declared in code, no data, not executed)"
+H Payroll,Leave provision / encashment,LeaveProvision; LeaveEncash,LeaveProvision; LeaveEncash,none,no,"Implemented but unverified (posting path declared in code, no data, not executed)"
+H Payroll,Final settlement,FinalSettlement,FinalSettlement,FinalSettlement=2,no,"Implemented, evidenced by existing ledger data; NOT executed here"
+I Connected modules,POS shift close,PosShiftClose,PosShiftClose,PosShiftClose=24,no,"Implemented, evidenced by existing ledger data; NOT executed here"
+I Connected modules,POS refund,PosRefund,PosRefund,PosRefund=21,no,"Implemented, evidenced by existing ledger data; NOT executed here"
+I Connected modules,POS tips,PosTip,PosTip,PosTip=24,no,"Implemented, evidenced by existing ledger data; NOT executed here"
+I Connected modules,POS preparation / waste,PosPrep; PosWaste,PosPrep; PosWaste,none,no,"Implemented but unverified (posting path declared in code, no data, not executed)"
+I Connected modules,Project advance,ProjectAdvance,ProjectAdvance,none,no,"Implemented but unverified (posting path declared in code, no data, not executed)"
+I Connected modules,Project issue and labour,ProjectIssue; ProjectLabor,ProjectIssue; ProjectLabor,ProjectLabor=1,no,"Implemented, evidenced by existing ledger data; NOT executed here"
+I Connected modules,Retention release,RetentionRelease; SubRetentionRelease,RetentionRelease; SubRetentionRelease,none,no,"Implemented but unverified (posting path declared in code, no data, not executed)"
+I Connected modules,Manufacturing work order,WorkOrder,WorkOrder,WorkOrder=115,no,"Implemented, evidenced by existing ledger data; NOT executed here"
+J Foreign currency,Transaction conversion,(none - configuration area),no,none,no,Implemented but unverified (configuration/screen area; no ledger source type)
+J Foreign currency,Unrealised revaluation,FxRevaluation,FxRevaluation,FxRevaluation=3,FxRevaluation,Implemented and runtime verified (executed by this discovery)
+J Foreign currency,Revaluation reversal,FxRevaluationReversal,FxRevaluationReversal,FxRevaluationReversal=3,FxRevaluationReversal,Implemented and runtime verified (executed by this discovery)
+K Closing & reporting,Trial balance,(none - configuration area),no,none,no,Implemented and runtime verified (screen rendered); no posting executed
+K Closing & reporting,Balance sheet / income statement / cash flow,(none - configuration area),no,none,no,Implemented and runtime verified (screen rendered); no posting executed
+K Closing & reporting,VAT return,VatReturn,VatReturn,none,no,"Implemented but unverified (posting path declared in code, no data, not executed)"
+K Closing & reporting,Period close,(none - configuration area),no,none,no,Implemented and runtime verified (screen rendered); no posting executed
+K Closing & reporting,Year-end close and retained earnings,YearClose,YearClose,none,YearClose,Implemented and runtime verified (executed by this discovery)

@@ -1,0 +1,471 @@
+[
+ {
+  "route": "/Accounting/TrialBalance",
+  "id": "ACC-RPT-01_trial-balance",
+  "question": "Do the books balance?",
+  "ready": true,
+  "heading": "Trial Balance",
+  "captured": true,
+  "checks": {
+   "domContentLoaded": true,
+   "networkIdle": true,
+   "noSpinners": true,
+   "countersSettled": true,
+   "expectSelector": "table",
+   "notSignIn": true,
+   "notErrorPage": true,
+   "hasContent": true,
+   "noDevOverlay": true,
+   "settleMs": 900,
+   "elapsedMs": 3033
+  },
+  "figures": {
+   "tables": [
+    {
+     "headers": [
+      "CODE",
+      "ACCOUNT",
+      "DEBIT",
+      "CREDIT"
+     ],
+     "bodyRows": 37,
+     "footer": [
+      [
+       "Total",
+       "113,067,021.50",
+       "113,067,021.50"
+      ]
+     ],
+     "lastRows": [
+      [
+       "520111",
+       "Cash over/short",
+       "1,989.45",
+       "90.00"
+      ],
+      [
+       "5903",
+       "Unrealized FX Loss",
+       "73,791.74",
+       "73,791.74"
+      ]
+     ]
+    }
+   ],
+   "tiles": [
+    "113,067,021.50",
+    "113,067,021.50",
+    "0.00"
+   ],
+   "text": "99+ Platform Reporting General Currencies & FX Receivables CRM Payables Banks & cash Payroll Tax Fixed assets Financial reports Trial balance Balance sheet Income statement Cash flow Closing Setup & roles SYSTEMS Inventory Manufacturing Accounting Back-office People CRM Restaurant Hypermarket Tasks Calendar Projects & Contracting All systems Trial Balance Accounting Trial Balance Print Trial Balance Debit 113,067,021.50 Credit 113,067,021.50 Difference 0.00 The trial balance is balanced Total debit balances match total credit balances exactly with no differences. Accounting entries are consistent for the selected period. Matched From To Cost center All CC001 — m CC002 — f All Apply CODE ACCOUNT DEBIT CREDIT 110101 Main Cash 45,802,163.42 62,751.50 11010101 Till T1 2,477.22 604.04 11010102 Till T2 2,044.02 — 11010103 Till POS2T 22.80 — 11010104 Till HM-L1 12,340.41 784.85 11010105 Till HM-L2 50.00 50.00 110102 Bank - Current 698,867.01 45,801.60 1102 Accounts Receivable 64,476,402.08 45,956,138.82 1103 Inventory 1,196,638.02 321,956.42 110302 Goods in Transit 885.78 885.78 Total 113,067,021.50 113,067,021.50 1 – 10 / 37 ‹ 1 2 3 4 › 2026© CrossBuy Activity Logs There are 2 new tasks "
+  }
+ },
+ {
+  "route": "/Accounting/BalanceSheet",
+  "id": "ACC-RPT-02_balance-sheet",
+  "question": "What do we own and owe?",
+  "ready": true,
+  "heading": "Balance Sheet",
+  "captured": true,
+  "checks": {
+   "domContentLoaded": true,
+   "networkIdle": true,
+   "noSpinners": true,
+   "countersSettled": true,
+   "expectSelector": "table",
+   "notSignIn": true,
+   "notErrorPage": true,
+   "hasContent": true,
+   "noDevOverlay": true,
+   "settleMs": 900,
+   "elapsedMs": 2908
+  },
+  "figures": {
+   "tables": [
+    {
+     "headers": [
+      "ACCOUNT",
+      "AMOUNT"
+     ],
+     "bodyRows": 13,
+     "footer": [],
+     "lastRows": [
+      [
+       "1201Assets at Cost",
+       "11,000.00"
+      ],
+      [
+       "Total Assets",
+       "65,900,258.01"
+      ]
+     ]
+    },
+    {
+     "headers": [
+      "ACCOUNT",
+      "AMOUNT"
+     ],
+     "bodyRows": 14,
+     "footer": [],
+     "lastRows": [
+      [
+       "Total Equity",
+       "58,051,919.37"
+      ],
+      [
+       "Total Liab. & Equity",
+       "65,900,258.01"
+      ]
+     ]
+    }
+   ],
+   "tiles": [
+    "65,900,258.01",
+    "7,848,338.64",
+    "58,051,919.37",
+    "57,988,925.37"
+   ],
+   "text": "99+ Platform Reporting General Currencies & FX Receivables CRM Payables Banks & cash Payroll Tax Fixed assets Financial reports Trial balance Balance sheet Income statement Cash flow Closing Setup & roles SYSTEMS Inventory Manufacturing Accounting Back-office People CRM Restaurant Hypermarket Tasks Calendar Projects & Contracting All systems Balance Sheet Accounting Balance Sheet Show Print Balance Sheet As of 2026/09/21 Total Assets 65,900,258.01 Total Liabilities 7,848,338.64 Total Equity 58,051,919.37 Period result 57,988,925.37 The balance sheet is balanced Total assets exactly match total liabilities and equity with no differences. The financial position is balanced as of the selected date. Matched Assets ACCOUNT AMOUNT 110101Main Cash 45,739,411.92 11010101Till T1 1,873.18 11010102Till T2 2,044.02 11010103Till POS2T 22.80 11010104Till HM-L1 11,555.56 110102Bank - Current 653,065.41 1102Accounts Receivable 18,520,263.26 1103Inventory 874,681.60 1104Retention receivable 5,500.00 110401VAT Input (Recoverable) 80,000.26 1105Work in progress 840.00 1201Assets at Cost 11,000.00 Total Assets 65,900,258.01 Liabilities & Equity ACCOUNT AMOUNT Liabilities 2101Accounts Payable 635,232.2"
+  }
+ },
+ {
+  "route": "/Accounting/IncomeStatement",
+  "id": "ACC-RPT-03_income-statement",
+  "question": "Did we make a profit?",
+  "ready": true,
+  "heading": "Income Statement",
+  "captured": true,
+  "checks": {
+   "domContentLoaded": true,
+   "networkIdle": true,
+   "noSpinners": true,
+   "countersSettled": true,
+   "expectSelector": "table",
+   "notSignIn": true,
+   "notErrorPage": true,
+   "hasContent": true,
+   "noDevOverlay": true,
+   "settleMs": 900,
+   "elapsedMs": 2945
+  },
+  "figures": {
+   "tables": [
+    {
+     "headers": [
+      "ACCOUNT",
+      "AMOUNT"
+     ],
+     "bodyRows": 17,
+     "footer": [],
+     "lastRows": [
+      [
+       "Total Expenses",
+       "(-38,761.12)"
+      ],
+      [
+       "Net Profit",
+       "37,106,385.33"
+      ]
+     ]
+    }
+   ],
+   "tiles": [
+    "37,067,624.21",
+    "-38,761.12",
+    "37,106,385.33"
+   ],
+   "text": "99+ Platform Reporting General Currencies & FX Receivables CRM Payables Banks & cash Payroll Tax Fixed assets Financial reports Trial balance Balance sheet Income statement Cash flow Closing Setup & roles SYSTEMS Inventory Manufacturing Accounting Back-office People CRM Restaurant Hypermarket Tasks Calendar Projects & Contracting All systems Income Statement Accounting Income Statement Show Print Income Statement For the period 2026/01/01 — to 2026/09/21 Total Revenue 37,067,624.21 Total Expenses -38,761.12 Net Profit 37,106,385.33 The period achieved a net profit Revenue exceeded total expenses during the selected period, achieving a positive net profit. Profit: 37,106,385.33 Income Statement ACCOUNT AMOUNT Revenue 4101Operating Revenue 9,045,853.56 4102Contract revenue 11,221,253.93 4902Realized FX Gain 9,514,777.21 4903Unrealized FX Gain 7,285,739.51 Total Revenue 37,067,624.21 Expenses 510101Cost of Goods Sold (23,675.82) 510103Inventory write-off / damage losses (338.80) 510104Project execution cost (26,326.30) 520101Salaries & Wages Expense (-1,005.00) 520103Depreciation Expense (-85,271.49) 520108Manufacturing applied (-4,005.00) 520109Production cost variance (-720.00) 5201"
+  }
+ },
+ {
+  "route": "/Accounting/CashFlow",
+  "id": "ACC-RPT-04_cash-flow",
+  "question": "Where did the cash go?",
+  "ready": true,
+  "heading": "Cash Flow Statement",
+  "captured": true,
+  "checks": {
+   "domContentLoaded": true,
+   "networkIdle": true,
+   "noSpinners": true,
+   "countersSettled": true,
+   "expectSelector": "table",
+   "notSignIn": true,
+   "notErrorPage": true,
+   "hasContent": true,
+   "noDevOverlay": true,
+   "settleMs": 900,
+   "elapsedMs": 2797
+  },
+  "figures": {
+   "tables": [
+    {
+     "headers": [
+      "ITEM",
+      "AMOUNT"
+     ],
+     "bodyRows": 6,
+     "footer": [],
+     "lastRows": [
+      [
+       "Net change in cash",
+       "27,756,536.95"
+      ],
+      [
+       "Cash at end of period",
+       "46,407,972.89"
+      ]
+     ]
+    }
+   ],
+   "tiles": [
+    "18,651,435.94",
+    "27,756,536.95",
+    "46,407,972.89"
+   ],
+   "text": "99+ Platform Reporting General Currencies & FX Receivables CRM Payables Banks & cash Payroll Tax Fixed assets Financial reports Trial balance Balance sheet Income statement Cash flow Closing Setup & roles SYSTEMS Inventory Manufacturing Accounting Back-office People CRM Restaurant Hypermarket Tasks Calendar Projects & Contracting All systems Cash Flow Statement Accounting Cash Flow Show Print Cash Flow Statement For the period 2026/01/01 — to 2026/09/21 Cash at beginning 18,651,435.94 Net change in cash 27,756,536.95 Cash at end of period 46,407,972.89 Net cash increased during the period Cash inflows exceeded outflows, so the closing cash balance is higher than the opening balance. Net change: 27,756,536.95 Cash Flow Statement ITEM AMOUNT Cash at beginning 18,651,435.94 OperatingCash from operating activities 27,756,536.95 InvestingCash from investing activities 0.00 FinancingCash from financing activities 0.00 Net change in cash 27,756,536.95 Cash at end of period 46,407,972.89 Cash movements are classified by the cash-flow category of the contra accounts. 2026© CrossBuy Activity Logs There are 2 new tasks for you in “AirPlus Mobile App” project: Added at 4:23 PM by Meeting with "
+  }
+ },
+ {
+  "route": "/Accounting/ArAging",
+  "id": "ACC-RPT-05_ar-aging",
+  "question": "Who owes us, and for how long?",
+  "ready": true,
+  "heading": "AR Aging",
+  "captured": true,
+  "checks": {
+   "domContentLoaded": true,
+   "networkIdle": true,
+   "noSpinners": true,
+   "countersSettled": true,
+   "expectSelector": "table",
+   "notSignIn": true,
+   "notErrorPage": true,
+   "hasContent": true,
+   "noDevOverlay": true,
+   "settleMs": 900,
+   "elapsedMs": 1571
+  },
+  "figures": {
+   "tables": [
+    {
+     "headers": [
+      "CUSTOMER",
+      "CURRENT (0-30)",
+      "31-60",
+      "61-90",
+      "90+",
+      "TOTAL"
+     ],
+     "bodyRows": 41,
+     "footer": [
+      [
+       "Totals",
+       "3,792,796.69",
+       "7,474,962.17",
+       "4,013,976.87",
+       "3,254,466.53",
+       "18,536,202.26"
+      ]
+     ],
+     "lastRows": [
+      [
+       "Pricing Test",
+       "5,030.19",
+       "4,470.27",
+       "11,217.63",
+       "—",
+       "20,718.09"
+      ],
+      [
+       "Customer #1026",
+       "2,815.54",
+       "1,222.44",
+       "7,300.97",
+       "—",
+       "11,338.95"
+      ]
+     ]
+    }
+   ],
+   "tiles": [],
+   "text": "99+ Platform Reporting General Currencies & FX Receivables Customers Sales invoices Receipts Sales returns Customer statement AR aging Customer analytics CRM Payables Banks & cash Payroll Tax Fixed assets Financial reports Closing Setup & roles SYSTEMS Inventory Manufacturing Accounting Back-office People CRM Restaurant Hypermarket Tasks Calendar Projects & Contracting All systems AR Aging Accounting AR Aging CUSTOMER CURRENT (0-30) 31-60 61-90 90+ TOTAL عميل قياس د 1,045,857.81 1,780,938.31 918,176.21 — 3,744,972.33 Pricing Test 52,223.84 70,465.75 34,922.64 1,405,371.40 1,562,983.63 Nile Co 579,288.59 851,603.21 — — 1,430,891.80 MC FX Test 476,228.39 233,999.96 443,968.72 — 1,154,197.07 MC FX Test 185,836.70 817,028.24 — — 1,002,864.94 Pricing Test 79,695.03 80,317.36 722,471.12 71,914.33 954,397.84 Customer #1024 93,944.95 136,613.49 24,495.88 556,101.12 811,155.44 Pricing Test 27,001.15 751,684.00 16,372.72 — 795,057.87 ZZ-CASH-CUST 160,529.41 572,369.50 45,438.99 — 778,337.90 Customer #1027 26,676.71 162,401.76 438,376.27 — 627,454.74 Totals 3,792,796.69 7,474,962.17 4,013,976.87 3,254,466.53 18,536,202.26 1 – 10 / 41 ‹ 1 2 3 … 5 › 2026© CrossBuy Activity Logs There are 2 new "
+  }
+ },
+ {
+  "route": "/Accounting/ApAging",
+  "id": "ACC-RPT-06_ap-aging",
+  "question": "Whom do we owe, and for how long?",
+  "ready": true,
+  "heading": "AP Aging",
+  "captured": true,
+  "checks": {
+   "domContentLoaded": true,
+   "networkIdle": true,
+   "noSpinners": true,
+   "countersSettled": true,
+   "expectSelector": "table",
+   "notSignIn": true,
+   "notErrorPage": true,
+   "hasContent": true,
+   "noDevOverlay": true,
+   "settleMs": 900,
+   "elapsedMs": 1611
+  },
+  "figures": {
+   "tables": [
+    {
+     "headers": [
+      "VENDOR",
+      "CURRENT (0-30)",
+      "31-60",
+      "61-90",
+      "90+",
+      "TOTAL"
+     ],
+     "bodyRows": 3,
+     "footer": [
+      [
+       "Totals",
+       "0.00",
+       "460,758.60",
+       "190,749.86",
+       "0.00",
+       "651,508.46"
+      ]
+     ],
+     "lastRows": [
+      [
+       "ZZ HM16 vendor",
+       "—",
+       "3,466.00",
+       "—",
+       "—",
+       "3,466.00"
+      ],
+      [
+       "ZZ step0 vendor",
+       "—",
+       "475.00",
+       "—",
+       "—",
+       "475.00"
+      ]
+     ]
+    }
+   ],
+   "tiles": [],
+   "text": "99+ Platform Reporting General Currencies & FX Receivables CRM Payables Vendors Purchase invoices Payments Purchase returns Vendor statement AP aging Banks & cash Payroll Tax Fixed assets Financial reports Closing Setup & roles SYSTEMS Inventory Manufacturing Accounting Back-office People CRM Restaurant Hypermarket Tasks Calendar Projects & Contracting All systems AP Aging Accounting AP Aging VENDOR CURRENT (0-30) 31-60 61-90 90+ TOTAL Power Supplier — 456,817.60 190,749.86 — 647,567.46 ZZ HM16 vendor — 3,466.00 — — 3,466.00 ZZ step0 vendor — 475.00 — — 475.00 Totals 0.00 460,758.60 190,749.86 0.00 651,508.46 1 – 3 / 3 ‹ 1 › 2026© CrossBuy Activity Logs There are 2 new tasks for you in “AirPlus Mobile App” project: Added at 4:23 PM by Meeting with customer Application Design A In Progress View Project Delivery Preparation CRM System Development B Completed View Invitation for crafting engaging designs that speak human workshop Sent at 4:23 PM by 3 New Incoming Project Files: Sent at 10:30 PM by Finance KPI App Guidelines 1.9mb Client UAT Testing Results 18kb Finance Reports 20mb Task #45890merged with #45890in “Ads Pro Admin Dashboard project: Initiated at 4:23 PM by 3 new applicat"
+  }
+ },
+ {
+  "route": "/Accounting/Journals",
+  "id": "ACC-RPT-07_journals",
+  "question": "What was posted, and when?",
+  "ready": true,
+  "heading": "Journal Entries",
+  "captured": true,
+  "checks": {
+   "domContentLoaded": true,
+   "networkIdle": true,
+   "noSpinners": true,
+   "countersSettled": true,
+   "expectSelector": "table",
+   "notSignIn": true,
+   "notErrorPage": true,
+   "hasContent": true,
+   "noDevOverlay": true,
+   "settleMs": 900,
+   "elapsedMs": 2560
+  },
+  "figures": {
+   "tables": [
+    {
+     "headers": [
+      "ENTRY NO",
+      "DATE",
+      "TYPE",
+      "DESCRIPTION",
+      "TOTAL",
+      "STATUS",
+      "ACTION"
+     ],
+     "bodyRows": 25,
+     "footer": [],
+     "lastRows": [
+      [
+       "JV-2025-004137",
+       "2025/07/09",
+       "Auto",
+       "Receipt RC-2025-15477",
+       "16,145.96",
+       "Posted",
+       "Reverse"
+      ],
+      [
+       "JV-2025-004136",
+       "2025/06/19",
+       "Auto",
+       "Sales invoice SV-2025-17604",
+       "26,458.33",
+       "Posted",
+       "Reverse"
+      ]
+     ]
+    }
+   ],
+   "tiles": [],
+   "text": "99+ Platform Reporting General Executive dashboard Dashboard Chart of accounts Journals Cost centers Fiscal periods AI insights Currencies & FX Receivables CRM Payables Banks & cash Payroll Tax Fixed assets Financial reports Closing Setup & roles SYSTEMS Inventory Manufacturing Accounting Back-office People CRM Restaurant Hypermarket Tasks Calendar Projects & Contracting All systems Journal Entries Accounting Journals Trial Balance New Entry Multi-search (entry no / description / type) ​ Status All Draft Submitted Posted Reversed All Reset 11,791 results Export Excel 25 50 100 25 ENTRY NO DATE TYPE DESCRIPTION TOTAL STATUS ACTION JV-2026-008516 2026/09/21 Reversing Reversal of JV-2026-008515 5,000.00 Posted Reverse JV-2026-008514 2026/09/21 Reversing Reversal of JV-2026-008513 5,000.00 Posted Reverse JV-2026-008515 2026/09/21 Manual ZZ-DISCOVERY GL-01 September office rent 5,000.00 Reversed — JV-2026-008513 2026/09/21 Manual ZZ-DISCOVERY GL-01 September office rent 5,000.00 Reversed — JV-2026-008512 2026/09/21 Reversing Reversal of JV-2026-008511 5,000.00 Posted Reverse JV-2026-008511 2026/09/21 Manual ZZ-DISCOVERY GL-01 September office rent 5,000.00 Reversed — JV-2026-008510 2026"
+  }
+ },
+ {
+  "route": "/Accounting/CustomerStatement",
+  "id": "ACC-RPT-08_customer-statement",
+  "question": "One customer’s account",
+  "ready": true,
+  "heading": "Account statement",
+  "captured": true,
+  "checks": {
+   "domContentLoaded": true,
+   "networkIdle": true,
+   "noSpinners": true,
+   "countersSettled": true,
+   "notSignIn": true,
+   "notErrorPage": true,
+   "hasContent": true,
+   "noDevOverlay": true,
+   "settleMs": 900,
+   "elapsedMs": 2253
+  },
+  "figures": {
+   "tables": [],
+   "tiles": [],
+   "text": "99+ Platform Reporting General Currencies & FX Receivables Customers Sales invoices Receipts Sales returns Customer statement AR aging Customer analytics CRM Payables Banks & cash Payroll Tax Fixed assets Financial reports Closing Setup & roles SYSTEMS Inventory Manufacturing Accounting Back-office People CRM Restaurant Hypermarket Tasks Calendar Projects & Contracting All systems Account statement Customers Customer Customer #1027 Customer #1026 Customer #1024 Nile Co Customer #1023 ZZ-CASH-CUST ZZ-KWD-CUST ZZ-KWD-CUST2 ZZ-KWD-CUST3 Future Markets United Co ZZ-HM9-REAL Nile Co ZZ-HM8-REAL MC Reval Test MC Reval Test Pricing Test Pricing Test Pricing Test Pricing Test Pricing Test MC FX Test MC FX Test MC FX Test MC FX Test MC FX Test MC FX Test MC FX Test MC FX Test MC FX Test MC FX Test MC FX Test MC FX Test MC FX Test عميل تزامن D6 عميل تزامن D6 عميل تزامن D6 عميل قياس د ZZ-HM9-NEW POS Walk-in POS Walk-in Delta Group Choose From To Open statement Back 2026© CrossBuy Activity Logs There are 2 new tasks for you in “AirPlus Mobile App” project: Added at 4:23 PM by Meeting with customer Application Design A In Progress View Project Delivery Preparation CRM System Development B Compl"
+  }
+ },
+ {
+  "route": "/Accounting/VendorStatement",
+  "id": "ACC-RPT-09_vendor-statement",
+  "question": "One supplier’s account",
+  "ready": true,
+  "heading": "Account statement",
+  "captured": true,
+  "checks": {
+   "domContentLoaded": true,
+   "networkIdle": true,
+   "noSpinners": true,
+   "countersSettled": true,
+   "notSignIn": true,
+   "notErrorPage": true,
+   "hasContent": true,
+   "noDevOverlay": true,
+   "settleMs": 900,
+   "elapsedMs": 1529
+  },
+  "figures": {
+   "tables": [],
+   "tiles": [],
+   "text": "99+ Platform Reporting General Currencies & FX Receivables CRM Payables Vendors Purchase invoices Payments Purchase returns Vendor statement AP aging Banks & cash Payroll Tax Fixed assets Financial reports Closing Setup & roles SYSTEMS Inventory Manufacturing Accounting Back-office People CRM Restaurant Hypermarket Tasks Calendar Projects & Contracting All systems Account statement Vendors Vendor ZZ HM16 vendor ZZ-KWD-VEN ZZ LC vendor ZZ step0 vendor Transport Co vendor 1 Vendor 1 Power Supplier Stationery Supplier Power Supplier Choose From To Open statement Back 2026© CrossBuy Activity Logs There are 2 new tasks for you in “AirPlus Mobile App” project: Added at 4:23 PM by Meeting with customer Application Design A In Progress View Project Delivery Preparation CRM System Development B Completed View Invitation for crafting engaging designs that speak human workshop Sent at 4:23 PM by 3 New Incoming Project Files: Sent at 10:30 PM by Finance KPI App Guidelines 1.9mb Client UAT Testing Results 18kb Finance Reports 20mb Task #45890merged with #45890in “Ads Pro Admin Dashboard project: Initiated at 4:23 PM by 3 new application design concepts added: Created at 4:23 PM by Explore Explo"
+  }
+ }
+]

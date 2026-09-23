@@ -1,0 +1,369 @@
+{
+ "language": "en",
+ "profiles": {
+  "dev.superadmin": {
+   "signIn": {
+    "signedIn": true,
+    "landed": "/Portal/Choose",
+    "note": "BUSINESS WITHOUT BOUNDARIES\nالعربية\nEnglish\nFrançais\nWelcome, Dev SuperAdmin\n\nChoose the portal that fits your needs tod"
+   },
+   "probes": {
+    "/Accounting/Index": {
+     "meaning": "view: accounting home",
+     "status": 200,
+     "verdict": "ALLOWED",
+     "landed": "/Accounting/Index",
+     "chars": 4136
+    },
+    "/Accounting/ChartOfAccounts": {
+     "meaning": "view: chart of accounts",
+     "status": 200,
+     "verdict": "ALLOWED",
+     "landed": "/Accounting/ChartOfAccounts",
+     "chars": 3036
+    },
+    "/Accounting/Journals": {
+     "meaning": "view: journal register",
+     "status": 200,
+     "verdict": "ALLOWED",
+     "landed": "/Accounting/Journals",
+     "chars": 4831
+    },
+    "/Accounting/CreateJournal": {
+     "meaning": "create: new journal form",
+     "status": 200,
+     "verdict": "ALLOWED",
+     "landed": "/Accounting/CreateJournal",
+     "chars": 5900
+    },
+    "/Accounting/TrialBalance": {
+     "meaning": "view/export: trial balance",
+     "status": 200,
+     "verdict": "ALLOWED",
+     "landed": "/Accounting/TrialBalance",
+     "chars": 3166
+    },
+    "/Accounting/ArAging": {
+     "meaning": "view: receivables aging",
+     "status": 200,
+     "verdict": "ALLOWED",
+     "landed": "/Accounting/ArAging",
+     "chars": 3171
+    },
+    "/Accounting/Periods": {
+     "meaning": "close/reopen: fiscal periods",
+     "status": 200,
+     "verdict": "ALLOWED",
+     "landed": "/Accounting/Periods",
+     "chars": 3099
+    },
+    "/Accounting/YearEndClose": {
+     "meaning": "close: year end",
+     "status": 200,
+     "verdict": "ALLOWED",
+     "landed": "/Accounting/YearEndClose",
+     "chars": 2889
+    },
+    "/Accounting/Payments": {
+     "meaning": "pay: supplier payments",
+     "status": 200,
+     "verdict": "ALLOWED",
+     "landed": "/Accounting/Payments",
+     "chars": 2799
+    },
+    "/Accounting/Receipts": {
+     "meaning": "collect: customer receipts",
+     "status": 200,
+     "verdict": "ALLOWED",
+     "landed": "/Accounting/Receipts",
+     "chars": 3592
+    },
+    "/Accounting/AccountingRoles": {
+     "meaning": "manage: accounting roles",
+     "status": 200,
+     "verdict": "DENIED (message on page)",
+     "landed": "/Accounting/Index",
+     "chars": 4188
+    },
+    "/Accounting/JournalsExport": {
+     "meaning": "export: journals",
+     "verdict": "ERROR",
+     "error": "Error: page.goto: Download is starting\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5299/Accounting/JournalsExport\", waiting until \"dom"
+    }
+   }
+  },
+  "dev.auditor": {
+   "signIn": {
+    "signedIn": true,
+    "landed": "/Portal/Choose",
+    "note": "BUSINESS WITHOUT BOUNDARIES\nالعربية\nEnglish\nFrançais\nWelcome, Dev Auditor\n\nChoose the portal that fits your needs today\n"
+   },
+   "probes": {
+    "/Accounting/Index": {
+     "meaning": "view: accounting home",
+     "status": 200,
+     "verdict": "ALLOWED",
+     "landed": "/Accounting/Index",
+     "chars": 4135
+    },
+    "/Accounting/ChartOfAccounts": {
+     "meaning": "view: chart of accounts",
+     "status": 200,
+     "verdict": "ALLOWED",
+     "landed": "/Accounting/ChartOfAccounts",
+     "chars": 3035
+    },
+    "/Accounting/Journals": {
+     "meaning": "view: journal register",
+     "status": 200,
+     "verdict": "ALLOWED",
+     "landed": "/Accounting/Journals",
+     "chars": 4830
+    },
+    "/Accounting/CreateJournal": {
+     "meaning": "create: new journal form",
+     "status": 200,
+     "verdict": "ALLOWED",
+     "landed": "/Accounting/CreateJournal",
+     "chars": 5899
+    },
+    "/Accounting/TrialBalance": {
+     "meaning": "view/export: trial balance",
+     "status": 200,
+     "verdict": "ALLOWED",
+     "landed": "/Accounting/TrialBalance",
+     "chars": 3165
+    },
+    "/Accounting/ArAging": {
+     "meaning": "view: receivables aging",
+     "status": 200,
+     "verdict": "ALLOWED",
+     "landed": "/Accounting/ArAging",
+     "chars": 3170
+    },
+    "/Accounting/Periods": {
+     "meaning": "close/reopen: fiscal periods",
+     "status": 200,
+     "verdict": "ALLOWED",
+     "landed": "/Accounting/Periods",
+     "chars": 3098
+    },
+    "/Accounting/YearEndClose": {
+     "meaning": "close: year end",
+     "status": 200,
+     "verdict": "ALLOWED",
+     "landed": "/Accounting/YearEndClose",
+     "chars": 2888
+    },
+    "/Accounting/Payments": {
+     "meaning": "pay: supplier payments",
+     "status": 200,
+     "verdict": "ALLOWED",
+     "landed": "/Accounting/Payments",
+     "chars": 2798
+    },
+    "/Accounting/Receipts": {
+     "meaning": "collect: customer receipts",
+     "status": 200,
+     "verdict": "ALLOWED",
+     "landed": "/Accounting/Receipts",
+     "chars": 3591
+    },
+    "/Accounting/AccountingRoles": {
+     "meaning": "manage: accounting roles",
+     "status": 200,
+     "verdict": "DENIED (message on page)",
+     "landed": "/Accounting/Index",
+     "chars": 4187
+    },
+    "/Accounting/JournalsExport": {
+     "meaning": "export: journals",
+     "verdict": "ERROR",
+     "error": "Error: page.goto: Download is starting\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5299/Accounting/JournalsExport\", waiting until \"dom"
+    }
+   }
+  },
+  "dev.clerk": {
+   "signIn": {
+    "signedIn": true,
+    "landed": "/Portal/Choose",
+    "note": "BUSINESS WITHOUT BOUNDARIES\nالعربية\nEnglish\nFrançais\nWelcome, Dev Clerk\n\nChoose the portal that fits your needs today\n\nA"
+   },
+   "probes": {
+    "/Accounting/Index": {
+     "meaning": "view: accounting home",
+     "status": 200,
+     "verdict": "ALLOWED",
+     "landed": "/Accounting/Index",
+     "chars": 4135
+    },
+    "/Accounting/ChartOfAccounts": {
+     "meaning": "view: chart of accounts",
+     "status": 200,
+     "verdict": "ALLOWED",
+     "landed": "/Accounting/ChartOfAccounts",
+     "chars": 3035
+    },
+    "/Accounting/Journals": {
+     "meaning": "view: journal register",
+     "status": 200,
+     "verdict": "ALLOWED",
+     "landed": "/Accounting/Journals",
+     "chars": 4830
+    },
+    "/Accounting/CreateJournal": {
+     "meaning": "create: new journal form",
+     "status": 200,
+     "verdict": "ALLOWED",
+     "landed": "/Accounting/CreateJournal",
+     "chars": 5899
+    },
+    "/Accounting/TrialBalance": {
+     "meaning": "view/export: trial balance",
+     "status": 200,
+     "verdict": "ALLOWED",
+     "landed": "/Accounting/TrialBalance",
+     "chars": 3165
+    },
+    "/Accounting/ArAging": {
+     "meaning": "view: receivables aging",
+     "status": 200,
+     "verdict": "ALLOWED",
+     "landed": "/Accounting/ArAging",
+     "chars": 3170
+    },
+    "/Accounting/Periods": {
+     "meaning": "close/reopen: fiscal periods",
+     "status": 200,
+     "verdict": "ALLOWED",
+     "landed": "/Accounting/Periods",
+     "chars": 3098
+    },
+    "/Accounting/YearEndClose": {
+     "meaning": "close: year end",
+     "status": 200,
+     "verdict": "ALLOWED",
+     "landed": "/Accounting/YearEndClose",
+     "chars": 2888
+    },
+    "/Accounting/Payments": {
+     "meaning": "pay: supplier payments",
+     "status": 200,
+     "verdict": "ALLOWED",
+     "landed": "/Accounting/Payments",
+     "chars": 2798
+    },
+    "/Accounting/Receipts": {
+     "meaning": "collect: customer receipts",
+     "status": 200,
+     "verdict": "ALLOWED",
+     "landed": "/Accounting/Receipts",
+     "chars": 3591
+    },
+    "/Accounting/AccountingRoles": {
+     "meaning": "manage: accounting roles",
+     "status": 200,
+     "verdict": "DENIED (message on page)",
+     "landed": "/Accounting/Index",
+     "chars": 4187
+    },
+    "/Accounting/JournalsExport": {
+     "meaning": "export: journals",
+     "verdict": "ERROR",
+     "error": "Error: page.goto: Download is starting\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5299/Accounting/JournalsExport\", waiting until \"dom"
+    }
+   }
+  },
+  "dev.otherco": {
+   "signIn": {
+    "signedIn": true,
+    "landed": "/Portal/Choose",
+    "note": "BUSINESS WITHOUT BOUNDARIES\nالعربية\nEnglish\nFrançais\nWelcome, Dev Other Co\n\nChoose the portal that fits your needs today"
+   },
+   "probes": {
+    "/Accounting/Index": {
+     "meaning": "view: accounting home",
+     "status": 200,
+     "verdict": "ALLOWED",
+     "landed": "/Accounting/Index",
+     "chars": 3286
+    },
+    "/Accounting/ChartOfAccounts": {
+     "meaning": "view: chart of accounts",
+     "status": 200,
+     "verdict": "ALLOWED",
+     "landed": "/Accounting/ChartOfAccounts",
+     "chars": 3036
+    },
+    "/Accounting/Journals": {
+     "meaning": "view: journal register",
+     "status": 200,
+     "verdict": "ALLOWED",
+     "landed": "/Accounting/Journals",
+     "chars": 2671
+    },
+    "/Accounting/CreateJournal": {
+     "meaning": "create: new journal form",
+     "status": 200,
+     "verdict": "ALLOWED",
+     "landed": "/Accounting/CreateJournal",
+     "chars": 5900
+    },
+    "/Accounting/TrialBalance": {
+     "meaning": "view/export: trial balance",
+     "status": 200,
+     "verdict": "ALLOWED",
+     "landed": "/Accounting/TrialBalance",
+     "chars": 2757
+    },
+    "/Accounting/ArAging": {
+     "meaning": "view: receivables aging",
+     "status": 200,
+     "verdict": "ALLOWED",
+     "landed": "/Accounting/ArAging",
+     "chars": 2531
+    },
+    "/Accounting/Periods": {
+     "meaning": "close/reopen: fiscal periods",
+     "status": 200,
+     "verdict": "ALLOWED",
+     "landed": "/Accounting/Periods",
+     "chars": 3099
+    },
+    "/Accounting/YearEndClose": {
+     "meaning": "close: year end",
+     "status": 200,
+     "verdict": "ALLOWED",
+     "landed": "/Accounting/YearEndClose",
+     "chars": 2847
+    },
+    "/Accounting/Payments": {
+     "meaning": "pay: supplier payments",
+     "status": 200,
+     "verdict": "ALLOWED",
+     "landed": "/Accounting/Payments",
+     "chars": 2799
+    },
+    "/Accounting/Receipts": {
+     "meaning": "collect: customer receipts",
+     "status": 200,
+     "verdict": "ALLOWED",
+     "landed": "/Accounting/Receipts",
+     "chars": 3592
+    },
+    "/Accounting/AccountingRoles": {
+     "meaning": "manage: accounting roles",
+     "status": 200,
+     "verdict": "DENIED (message on page)",
+     "landed": "/Accounting/Index",
+     "chars": 3338
+    },
+    "/Accounting/JournalsExport": {
+     "meaning": "export: journals",
+     "verdict": "ERROR",
+     "error": "Error: page.goto: Download is starting\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5299/Accounting/JournalsExport\", waiting until \"dom"
+    }
+   }
+  }
+ }
+}

@@ -1,0 +1,11 @@
+﻿check,basis,subledger_or_report,ledger_control,difference,result,notes
+Journal debits vs credits,"SUM(Debit) vs SUM(Credit), Posted+Reversed, company 1",113047021.50,113047021.50,0.00,RECONCILED,SQL over JournalEntryLines; matches the Trial Balance table footer and tiles exactly
+Trial balance screen vs ledger,TrialBalance totals vs SQL,113047021.50,113047021.50,0.00,RECONCILED,Screen ACC-RPT-01; tiles and footer agree once the count-up animation settles
+Sample transaction trace,"Trial balance movement caused by ACC-GL-01 (4 postings x 5,000)",113047021.50,113027021.50,20000.00,RECONCILED,"Prior capture 2026-09-20 read 113,027,021.50; the +20,000 is exactly this discovery's 2 originals and 2 reversals"
+Receivables vs control account,AR Aging report total vs account 1102 net balance,18536202.26,18520263.26,15939.00,RECONCILED (bridge closes exactly),"CAUSE FOUND: the aging report never deducts credit notes. Posted sales returns (base) = 15,939.00, equal to the difference to the cent. See 09-reconciliation-bridges.md"
+Payables vs control account,AP Aging report total vs account 2101 net balance,651508.46,635232.29,16276.17,RECONCILED to 74.20,"CAUSE FOUND: 15,700.00 of payments to 3 vendors with NO posted invoice (the aging skips those vendors) + 650.37 purchase returns not deducted - 74.20 residual on nine reversed purchase-invoice journals, which remains OPEN. See 09-reconciliation-bridges.md"
+Inventory vs control account,Inventory valuation vs account 1103,(not run),874681.60,(unknown),NOT TESTED,The inventory valuation report was not executed in this pass
+Cash/bank vs ledger,Bank reconciliation vs accounts 110101 / 110102,(not run),45739411.92 / 653065.41,(unknown),NOT TESTED,Bank reconciliation was not executed in this pass
+Assets vs ledger,Fixed-asset register vs accounts 1201 / 1202,(not run),11000.00 cost,(unknown),NOT TESTED,
+Payroll vs ledger,Payroll liabilities and payments vs 2103 / 210204 / 210205,(not run),(not extracted),(unknown),NOT TESTED,Only 2 Payroll entries exist and none was executed here
+Financial statements vs trial balance,Balance sheet / income statement vs adjusted TB,"(captured, not cross-footed)",(captured),(unknown),NOT TESTED,Both statements were rendered and captured; the cross-foot was not performed

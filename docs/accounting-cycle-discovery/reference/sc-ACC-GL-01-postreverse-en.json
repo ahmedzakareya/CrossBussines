@@ -1,0 +1,32 @@
+{
+ "scenario": "ACC-GL-01",
+ "language": "en",
+ "journalId": 24232,
+ "steps": [
+  {
+   "n": 1,
+   "what": "open the journals list and find the draft",
+   "at": "2026-09-21T09:55:41.575Z",
+   "ready": true,
+   "draftVisible": true
+  },
+  {
+   "n": 2,
+   "what": "POST /Accounting/PostJournal",
+   "at": "2026-09-21T09:55:47.168Z",
+   "ready": true,
+   "banner": null,
+   "url": "/Accounting/Journals"
+  },
+  {
+   "n": 3,
+   "what": "POST /Accounting/ReverseJournal",
+   "at": "2026-09-21T09:55:54.765Z",
+   "ready": true,
+   "banner": null,
+   "url": "/Accounting/Journals"
+  }
+ ],
+ "postBanner": null,
+ "reverseBanner": null
+}

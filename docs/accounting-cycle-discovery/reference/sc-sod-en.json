@@ -1,0 +1,19 @@
+{
+ "threshold": 1000,
+ "baseline": 0,
+ "steps": [
+  {
+   "step": "raise ApprovalThreshold to 1000",
+   "landed": "/Accounting/AccountingRoles",
+   "banner": null
+  },
+  {
+   "step": "admin creates 2,500 and presses Post directly",
+   "landed": "/Accounting/Journals"
+  },
+  {
+   "step": "dev.clerk saves a 3,000 draft",
+   "landed": "/Accounting/Index"
+  }
+ ]
+}

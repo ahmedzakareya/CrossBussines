@@ -1,0 +1,67 @@
+{
+ "language": "en",
+ "date": "2026-09-21",
+ "steps": [
+  {
+   "n": 1,
+   "what": "ACC-BNK-01 transfer 2,500.00 from Bank - Current to Main Cash",
+   "at": "2026-09-21T09:18:52.602Z",
+   "input": {
+    "from": "110102",
+    "to": "110101",
+    "amount": 2500
+   },
+   "landed": "/Accounting/Transfer",
+   "banner": null,
+   "ok": true
+  },
+  {
+   "n": 2,
+   "what": "ACC-FA-01 acquire an asset: cost 24,000.00, life 48 months, funded from the bank",
+   "at": "2026-09-21T09:18:59.181Z",
+   "input": {
+    "cost": 24000,
+    "usefulLifeMonths": 48,
+    "expectedMonthlyDepreciation": 500
+   },
+   "landed": "/Accounting/FixedAssets",
+   "banner": null,
+   "ok": true
+  },
+  {
+   "n": 3,
+   "what": "ACC-FA-02 run depreciation for the period containing 2026-09-21",
+   "at": "2026-09-21T09:19:05.761Z",
+   "input": {
+    "periodDate": "2026-09-21"
+   },
+   "landed": "/Accounting/DepreciationRuns",
+   "banner": "One month's depreciation is computed for all active assets and posted as a single entry.",
+   "ok": true
+  },
+  {
+   "n": 4,
+   "what": "ACC-PAY-01 post the September 2026 payroll",
+   "at": "2026-09-21T09:19:08.564Z",
+   "input": {
+    "year": 2026,
+    "month": 9
+   },
+   "landed": null,
+   "banner": null,
+   "ok": false
+  },
+  {
+   "n": 5,
+   "what": "ACC-FX-01 post an unrealised foreign-currency revaluation as at 2026-09-21",
+   "at": "2026-09-21T09:19:15.491Z",
+   "input": {
+    "asOf": "2026-09-21",
+    "rateType": "Central"
+   },
+   "landed": "/Currency/Revaluation?asOf=2026-09-21&rateType=Central",
+   "banner": null,
+   "ok": true
+  }
+ ]
+}

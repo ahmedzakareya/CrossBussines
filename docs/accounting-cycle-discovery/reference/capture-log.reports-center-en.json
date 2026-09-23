@@ -1,0 +1,38 @@
+[
+ {
+  "screenshot_id": "ACC-RPT-10_reports-center",
+  "scenario": "ACC-REPORTS",
+  "step": "the reporting platform catalogue",
+  "language": "en",
+  "route": "/Reports/Index",
+  "role": "ChiefAccountant/admin",
+  "record_id": "",
+  "before_after": "catalogue",
+  "filename": "ACC-RPT-10_reports-center.en.png",
+  "viewport": "1600x1000",
+  "capture_time": "2026-09-21T10:06:05.298Z",
+  "readiness_ok": true,
+  "readiness_checks": {
+   "domContentLoaded": true,
+   "networkIdle": true,
+   "noSpinners": true,
+   "countersSettled": true,
+   "notSignIn": true,
+   "notErrorPage": true,
+   "hasContent": true,
+   "noDevOverlay": true,
+   "settleMs": 900,
+   "elapsedMs": 918
+  },
+  "page_title": "Inventory System - CrossBuy",
+  "heading": "Reports Center",
+  "html_lang": "en",
+  "direction": "ltr",
+  "body_chars": 8489,
+  "intentional_error_state": false,
+  "sha256": "45dbb778b6652fa8a630b1af5fcc5f19733920eb07a21a61ce3ee91107e6eb6a",
+  "bytes": 167478,
+  "privacy_treatment": "synthetic data on an isolated disposable database (CrossBuyAcctTest)",
+  "evidence": "runtime observed"
+ }
+]

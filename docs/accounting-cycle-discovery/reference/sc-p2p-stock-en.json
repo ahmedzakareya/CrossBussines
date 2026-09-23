@@ -1,0 +1,38 @@
+{
+ "language": "en",
+ "vendorId": 3015,
+ "itemId": 5181,
+ "warehouseId": 1,
+ "steps": [
+  {
+   "n": 1,
+   "what": "ACC-P2P-04 stock purchase invoice, 20 units @ 50.00 + 14% VAT",
+   "at": "2026-09-21T09:17:05.065Z",
+   "input": {
+    "vendorId": 3015,
+    "itemId": 5181,
+    "warehouseId": 1,
+    "qty": 20,
+    "unitPrice": 50,
+    "expectedGross": 1140
+   },
+   "landed": "/Accounting/PurchaseInvoices",
+   "banner": null,
+   "ok": true
+  },
+  {
+   "n": 2,
+   "what": "ACC-P2P-05 purchase return, 5 of the 20 units (valued at item cost, not invoice price)",
+   "at": "2026-09-21T09:17:11.666Z",
+   "input": {
+    "vendorId": 3015,
+    "itemId": 5181,
+    "warehouseId": 1,
+    "qty": 5
+   },
+   "landed": "/Accounting/PurchaseReturns",
+   "banner": null,
+   "ok": true
+  }
+ ]
+}

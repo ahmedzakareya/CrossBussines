@@ -1,0 +1,130 @@
+{
+ "ready": true,
+ "catalogue": {
+  "heading": "Reports Center",
+  "cards": 47,
+  "reportLinks": [
+   {
+    "href": "/Account/SetLanguage?culture=en&returnUrl=%2FReports%2FIndex",
+    "text": "English"
+   },
+   {
+    "href": "/Account/SetLanguage?culture=ar&returnUrl=%2FReports%2FIndex",
+    "text": "العربية"
+   },
+   {
+    "href": "/Account/SetLanguage?culture=fr&returnUrl=%2FReports%2FIndex",
+    "text": "Français"
+   },
+   {
+    "href": "/Workspace/Reports",
+    "text": "My reports"
+   },
+   {
+    "href": "/Reports",
+    "text": "Reports center"
+   },
+   {
+    "href": "/Reports/Viewer/Platform.BusinessEventLog",
+    "text": "Business event report"
+   },
+   {
+    "href": "/Reports?favorites=true",
+    "text": "Favourite reports"
+   },
+   {
+    "href": "/Reports/Studio",
+    "text": "Report Studio"
+   },
+   {
+    "href": "/Inventory/Reports",
+    "text": "Inventory reports"
+   },
+   {
+    "href": "/Inventory/Reports",
+    "text": "Inventory reports"
+   },
+   {
+    "href": "/Reports",
+    "text": "available\n31\nReports"
+   },
+   {
+    "href": "/Reports?favorites=True",
+    "text": "pinned\n3\nFavourites"
+   },
+   {
+    "href": "/Reports",
+    "text": "saved\n101\nSaved layouts"
+   },
+   {
+    "href": "/Reports",
+    "text": "runs\n973\nRecent runs"
+   },
+   {
+    "href": "/Reports",
+    "text": "files\n0\nArchived"
+   },
+   {
+    "href": "/Reports",
+    "text": "ok\n32\nData sets"
+   },
+   {
+    "href": "/Reports",
+    "text": ""
+   },
+   {
+    "href": "/Reports/Viewer/Accounting.SalesRevenue",
+    "text": "Sales and revenue\nThe sales invoice register: net,"
+   },
+   {
+    "href": "/Reports/Viewer/Accounting.Purchases",
+    "text": "Purchases\nThe purchase invoice register: net, tax "
+   },
+   {
+    "href": "/Reports/Viewer/Accounting.CustomerAging",
+    "text": "Customer receivables aging\nOutstanding customer ba"
+   },
+   {
+    "href": "/Reports/Viewer/Accounting.CustomerProfitability",
+    "text": "Customer profitability\nPer customer: invoiced, rec"
+   },
+   {
+    "href": "/Reports/Viewer/Accounting.JournalActivity",
+    "text": "Journal activity\nRecorded journal entries: type, s"
+   },
+   {
+    "href": "/Reports/Viewer/Accounting.JournalVoucher",
+    "text": "Journal voucher\nA single entry with every line: ac"
+   },
+   {
+    "href": "/Reports/Viewer/Purchasing.InvoiceDocument",
+    "text": "Purchase invoice\nOne purchase invoice with every l"
+   },
+   {
+    "href": "/Reports/Viewer/Purchasing.OrderDocument",
+    "text": "Purchase order\nOne purchase order with every line:"
+   },
+   {
+    "href": "/Reports/Viewer/Purchasing.ReturnDocument",
+    "text": "Purchase return\nOne purchase return with every lin"
+   },
+   {
+    "href": "/Reports/Viewer/Sales.QuotationDocument",
+    "text": "Quotation\nOne quotation with every line, with the "
+   },
+   {
+    "href": "/Reports/Viewer/Sales.InvoiceDocument",
+    "text": "Sales invoice\nOne sales invoice with every line: i"
+   },
+   {
+    "href": "/Reports/Viewer/Sales.OrderDocument",
+    "text": "Sales order\nOne sales order with every line: item,"
+   },
+   {
+    "href": "/Reports/Viewer/Sales.ReturnDocument",
+    "text": "Sales return\nOne sales return with every line, wit"
+   }
+  ],
+  "bodyExcerpt": "99+ Platform Reporting Reports center Business event report Favourite reports Report Studio General Master data Movements & balances Operations Purchasing & sales Governance & setup Reports SYSTEMS Inventory Manufacturing Accounting Back-office People CRM Restaurant Hypermarket Tasks Calendar Projects & Contracting All systems Reports Center Inventory Reports Center Inventory reports available 31 Reports pinned 3 Favourites saved 101 Saved layouts runs 973 Recent runs files 0 Archived ok 32 Data sets Search reports Category All Reporting Reporting Reporting Reporting Reporting All Tag All All Favourites All Favourites only All Reporting 23 Sales and revenue The sales invoice register: net, t"
+ }
+}

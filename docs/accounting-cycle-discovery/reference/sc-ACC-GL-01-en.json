@@ -1,0 +1,45 @@
+{
+ "scenario": "ACC-GL-01",
+ "language": "en",
+ "steps": [
+  {
+   "n": 1,
+   "what": "open /Accounting/CreateJournal",
+   "at": "2026-09-21T08:46:15.445Z",
+   "ready": true,
+   "heading": "New Journal Entry"
+  },
+  {
+   "n": 2,
+   "what": "fill header and two lines",
+   "at": "2026-09-21T08:46:17.287Z",
+   "account_debit": {
+    "ok": true,
+    "value": "4072",
+    "text": "510105 — Rent Expense"
+   },
+   "account_credit": {
+    "ok": true,
+    "value": "5",
+    "text": "110102 — Bank - Current"
+   },
+   "debit": "5000",
+   "credit": "5000",
+   "balance": {
+    "balanced": null,
+    "diff": null,
+    "rows": 2
+   }
+  },
+  {
+   "n": 3,
+   "what": "press Save (submitJe('draft'))",
+   "at": "2026-09-21T08:46:22.308Z",
+   "ready": true,
+   "landed": "/Accounting/Journals",
+   "heading": "Journal Entries"
+  }
+ ],
+ "afterDraftUrl": "/Accounting/Journals",
+ "afterDraftText": "99+\nPlatform\nReporting\nGeneral\nExecutive dashboard\nDashboard\nChart of accounts\nJournals\nCost centers\nFiscal periods\nAI insights\nCurrencies & FX\nReceivables\nCRM\nPayables\nBanks & cash\nPayroll\nTax\nFixed assets\nFinancial reports\nClosing\nSetup & roles\nSYSTEMS\nInventory\nManufacturing\nAccounting\nBack-office\nPeople\nCRM\nRestaurant\nHypermarket\nTasks\nCalendar\nProjects & Contracting\nAll systems\nJournal Entries\nAccounting\nJournals\nTrial Balance\nNew Entry\nMulti-search (entry no / description / type)\n​\nStatus \nAll\nDraft\nSubmitted\nPosted\nReversed\nAll\n Reset\n11,788 results\nExport Excel\n25\n50\n100\n25\nENTRY NO\tDA"
+}
