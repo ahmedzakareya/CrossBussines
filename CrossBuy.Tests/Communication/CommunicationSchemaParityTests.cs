@@ -25,7 +25,21 @@ namespace CrossBuy.Tests.Communication
         private readonly CommunicationTestHost _host = new();
         public void Dispose() => _host.Dispose();
 
-        private const string ScriptName = "communication_platform_slice_001.sql";
+        // THE PLATFORM'S SCHEMA IS NOW TWO SCRIPTS, and parity is asserted against their UNION.
+        //
+        // slice-001 CREATES the platform. The 3B-B1 migration makes the actor columns nullable, adds
+        // the PortalUserId siblings, splits the uniqueness by actor kind and adds the exactly-one
+        // CHECK constraints. A model index may legitimately be created by either.
+        //
+        // THIS DOES NOT WEAKEN THE GUARD. The rule is unchanged — every index the model declares must
+        // be created by a deployment script — and only the set of scripts it may appear in has grown.
+        // The alternative, editing the CREATE script to describe a later migration, would make a fresh
+        // deploy and an upgraded one diverge in exactly the way this file exists to catch.
+        private static readonly string[] ScriptNames =
+        {
+            "communication_platform_slice_001.sql",
+            "communication_external_actor_3bb1.sql",
+        };
 
         // Finds the deployment script by walking up to the repository root. The test project and the web project
         // are siblings, so the script is a known relative path once the root is located.
@@ -53,12 +67,20 @@ namespace CrossBuy.Tests.Communication
 
                 if (directory == null) continue;
 
-                var path = Path.Combine(directory.FullName, "CrossBuy", "deploy", "sql", ScriptName);
-                if (File.Exists(path)) return File.ReadAllText(path);
+                var texts = new List<string>();
+                foreach (var name in ScriptNames)
+                {
+                    var path = Path.Combine(directory.FullName, "CrossBuy", "deploy", "sql", name);
+                    // EVERY named script must exist. A missing one fails rather than being skipped:
+                    // parity that quietly ignores an absent script is parity against less than it says.
+                    if (!File.Exists(path)) { texts.Clear(); break; }
+                    texts.Add(File.ReadAllText(path));
+                }
+                if (texts.Count == ScriptNames.Length) return string.Join(Environment.NewLine, texts);
             }
 
             Assert.Fail(
-                $"{ScriptName} could not be located from the assembly directory, the working directory, or " +
+                $"{string.Join(" + ", ScriptNames)} could not be located from the assembly directory, the working directory, or " +
                 "CROSSBUY_REPO_ROOT. Set CROSSBUY_REPO_ROOT to the repository root to run the schema parity tests.");
             return "";
         }
@@ -164,7 +186,7 @@ namespace CrossBuy.Tests.Communication
             var script = ScriptText();
 
             int index = script.IndexOf(indexName, StringComparison.Ordinal);
-            Assert.True(index >= 0, $"{indexName} is absent from {ScriptName}");
+            Assert.True(index >= 0, $"{indexName} is absent from {string.Join(" + ", ScriptNames)}");
 
             // The filter must appear in the same statement, not merely somewhere in the file.
             var statement = script.Substring(index, Math.Min(400, script.Length - index));
@@ -255,7 +277,28 @@ namespace CrossBuy.Tests.Communication
                 Assert.False(upper.StartsWith("UPDATE ", StringComparison.Ordinal), $"data modification: {line}");
                 Assert.False(upper.StartsWith("DELETE ", StringComparison.Ordinal), $"data modification: {line}");
                 Assert.False(upper.StartsWith("INSERT ", StringComparison.Ordinal), $"data modification (seed): {line}");
-                Assert.False(upper.StartsWith("DROP ", StringComparison.Ordinal), $"destructive: {line}");
+                // DROP INDEX ON ONE OF THIS PLATFORM'S OWN TABLES IS ALLOWED. Everything else that
+                // starts with DROP is not.
+                //
+                // This exception was added with the 3B-B1 migration and is deliberately the narrowest
+                // one that lets it exist. The actor split has to CHANGE the filter on two existing
+                // unique indexes, and a filter cannot be altered in place. It is not optional either:
+                // a UNIQUE index treats NULLs as EQUAL, so leaving
+                // `UX_CommParticipants_Live (ThreadId, EmployeeId) WHERE RemovedAt IS NULL` in place
+                // would permit exactly ONE portal participant per thread and reject the second with a
+                // duplicate-key error nobody would connect to this.
+                //
+                // Dropping an index changes no row. DROP TABLE, DROP CONSTRAINT, DROP COLUMN and a
+                // DROP INDEX on a table this platform does not own all remain refused, which is what
+                // the test's name has always meant.
+                if (upper.StartsWith("DROP ", StringComparison.Ordinal))
+                {
+                    bool isOwnIndexDrop = upper.StartsWith("DROP INDEX ", StringComparison.Ordinal)
+                        && CommunicationModel.TableNames.Any(t =>
+                            line.Contains("ON dbo." + t, StringComparison.Ordinal));
+                    Assert.True(isOwnIndexDrop, $"destructive: {line}");
+                }
+
                 Assert.False(upper.StartsWith("TRUNCATE ", StringComparison.Ordinal), $"destructive: {line}");
 
                 // ALTER TABLE is allowed ONLY to add a CHECK constraint to one of this platform's own tables.

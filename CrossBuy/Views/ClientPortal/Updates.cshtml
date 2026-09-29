@@ -1,0 +1,235 @@
+@model IReadOnlyList<CrossBuy.BL.Communication.PortalConversationDto>
+@using System.Globalization
+@*
+    UPDATES — the conversation list.
+
+    THE CONTENT IS THE PROGRAMME'S, THE DESIGN IS THE THEME'S. This renders EXACTLY what
+    ICommPortalService returned and nothing more: PortalConversationDto carries the thread id, its
+    anchor, the two subject columns, last activity, an unread count and whether this caller may
+    post. There is no priority, no SLA, no assignee and no status here, because none of those is in
+    the approved contract, and inventing a column would be inventing a fact about somebody's
+    business.
+
+    IT IS A FULL METRONIC DOCUMENT, like the four screens beside it, rather than a page on the old
+    cbp-* shell. That shell is gone: two portal designs answering the same customer would be the
+    "second competing design" this convergence exists to remove.
+
+    NO INTERNAL VOCABULARY. The anchor is shown as the customer's own document — "Quotation #12" —
+    never as an entity registry code, and no employee name, id or role appears anywhere.
+*@
+@{
+    Layout = null;
+    var isAr = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+}
+<!DOCTYPE html>
+<!--
+Author: Keenthemes
+Product Name: Metronic
+Product Version: 8.3.3 (demo30)
+Purchase: https://1.envato.market/EA4JP
+License: For each use you must have a valid license purchased only from above link in order to legally use the theme for your project.
+-->
+<html lang="@(isAr ? "ar" : "en")" dir="@(isAr ? "rtl" : "ltr")">
+	<!--begin::Head-->
+	<head>
+		<title>@(isAr ? "المستجدات" : "Updates") — CrossBuy</title>
+		<meta charset="utf-8" />
+		<meta name="description" content="CrossBuy client portal." />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<link rel="shortcut icon" href="/Backend-assets/media/logos/favicon.ico" asp-append-version="true" />
+		<link rel="icon" type="image/svg+xml" href="/Backend-assets/media/logos/crossbuy-favicon.svg" asp-append-version="true" />
+		<!--begin::Fonts(mandatory for all pages)-->
+		<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,400,500,600,700" />
+		<!--end::Fonts-->
+		<!--begin::Global Stylesheets Bundle(mandatory for all pages)-->
+		@if (isAr)
+		{
+			<link href="/portal-assets/plugins/global/plugins.bundle.rtl.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+			<link href="/portal-assets/css/style.bundle.rtl.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+			<link href="/Backend-assets/fonts/cairo/cairo.css" rel="stylesheet" asp-append-version="true">
+			<style>
+				html[lang="ar"] body { font-family: 'Cairo', sans-serif; direction: rtl; text-align: right; }
+				html[lang="ar"] .btn, html[lang="ar"] input, html[lang="ar"] select, html[lang="ar"] textarea,
+				html[lang="ar"] h1, html[lang="ar"] h2, html[lang="ar"] h3, html[lang="ar"] h4, html[lang="ar"] h5, html[lang="ar"] h6 { font-family: 'Cairo', sans-serif; }
+				html[lang="ar"] td, html[lang="ar"] th, html[lang="ar"] .fs-2hx, html[lang="ar"] .app-toolbar .fs-3 { unicode-bidi: plaintext; }
+			</style>
+		}
+		else
+		{
+			<link href="/portal-assets/plugins/global/plugins.bundle.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+			<link href="/portal-assets/css/style.bundle.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+		}
+		<!--end::Global Stylesheets Bundle-->
+	</head>
+	<!--end::Head-->
+	<!--begin::Body-->
+	<body id="kt_app_body" data-kt-app-header-fixed-mobile="true" data-kt-app-toolbar-enabled="true" class="app-default">
+		<!--begin::Theme mode setup on page load-->
+		<script>var defaultThemeMode = "light"; var themeMode; if ( document.documentElement ) { if ( document.documentElement.hasAttribute("data-bs-theme-mode")) { themeMode = document.documentElement.getAttribute("data-bs-theme-mode"); } else { if ( localStorage.getItem("data-bs-theme") !== null ) { themeMode = localStorage.getItem("data-bs-theme"); } else { themeMode = defaultThemeMode; } } if (themeMode === "system") { themeMode = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"; } document.documentElement.setAttribute("data-bs-theme", themeMode); }</script>
+		<!--end::Theme mode setup on page load-->
+		<!--begin::App-->
+		<div class="d-flex flex-column flex-root app-root" id="kt_app_root">
+			<!--begin::Page-->
+			<div class="app-page flex-column flex-column-fluid" id="kt_app_page">
+				@await Html.PartialAsync("_PortalHeader")
+				<!--begin::Wrapper-->
+				<div class="app-wrapper flex-column flex-row-fluid" id="kt_app_wrapper">
+					<!--begin::Toolbar-->
+					<div id="kt_app_toolbar" class="app-toolbar py-6">
+						<!--begin::Toolbar container-->
+						<div id="kt_app_toolbar_container" class="app-container container-xxl d-flex align-items-start">
+							<div class="d-flex flex-column flex-row-fluid">
+								<!--begin::Toolbar wrapper-->
+								<div class="d-flex align-items-center pt-1">
+									<ul class="breadcrumb breadcrumb-separatorless fw-semibold">
+										<li class="breadcrumb-item text-white fw-bold lh-1">
+											<i class="ki-outline ki-home text-white fs-3"></i>
+										</li>
+									</ul>
+								</div>
+								<!--end::Toolbar wrapper-->
+								<!--begin::Toolbar wrapper-->
+								<div class="d-flex flex-stack flex-wrap flex-lg-nowrap gap-4 gap-lg-10 pt-6 pb-18 py-lg-13">
+									<!--begin::Page title-->
+									<div class="page-title d-flex flex-column me-3">
+										<h1 class="page-heading d-flex text-white fw-bolder fs-2 flex-column justify-content-center my-0">@(isAr ? "المستجدات" : "Updates")</h1>
+										<span class="text-white opacity-75 pt-2 fs-6">
+											@(isAr ? "رسائلك مع فريقنا بخصوص مستنداتك." : "Your messages with our team about your documents.")
+										</span>
+									</div>
+									<!--end::Page title-->
+									<!--begin::Unread total-->
+									@{ var unreadTotal = Model.Sum(c => c.UnreadCount); }
+									@if (unreadTotal > 0)
+									{
+										<div class="d-flex align-items-center flex-shrink-0">
+											<span class="fs-2hx text-white fw-bold me-2">@unreadTotal</span>
+											<span class="text-white opacity-75 fs-6">@(isAr ? "غير مقروء" : "unread")</span>
+										</div>
+									}
+									<!--end::Unread total-->
+								</div>
+								<!--end::Toolbar wrapper-->
+							</div>
+						</div>
+						<!--end::Toolbar container-->
+					</div>
+					<!--end::Toolbar-->
+					<!--begin::Wrapper container-->
+					<div class="app-container container-xxl">
+						<!--begin::Main-->
+						<div class="app-main flex-column flex-row-fluid" id="kt_app_main">
+							<!--begin::Content wrapper-->
+							<div class="d-flex flex-column flex-column-fluid">
+								<!--begin::Content-->
+								<div id="kt_app_content" class="app-content">
+									<!--begin::Card-->
+									<div class="card">
+										<div class="card-header border-0 pt-6">
+											<div class="card-title">
+												<h2 class="fw-bold">@(isAr ? "المحادثات" : "Conversations")</h2>
+											</div>
+										</div>
+										<div class="card-body pt-0">
+										@if (!Model.Any())
+										{
+											@* The empty state says what it means. A customer with no conversations
+											   has not hit an error, so this is a notice and not a warning. *@
+											<div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-6">
+												<span class="symbol symbol-45px me-4">
+													<span class="symbol-label bg-primary">
+														<i class="ki-outline ki-message-text-2 fs-2 text-white"></i>
+													</span>
+												</span>
+												<div class="d-flex flex-stack flex-grow-1">
+													<div class="fw-semibold">
+														<div class="fs-6 text-gray-700">@(isAr ? "لا توجد محادثات بعد." : "No conversations yet.")</div>
+													</div>
+												</div>
+											</div>
+										}
+										else
+										{
+											<div class="table-responsive">
+												<table class="table table-row-dashed table-row-gray-300 align-middle gs-0 gy-4">
+													<thead>
+														<tr class="fw-bold text-muted">
+															<th class="min-w-150px">@(isAr ? "بخصوص" : "About")</th>
+															<th class="min-w-200px">@(isAr ? "الموضوع" : "Subject")</th>
+															<th class="min-w-120px">@(isAr ? "آخر نشاط" : "Last activity")</th>
+															<th class="min-w-100px text-end">@(isAr ? "الحالة" : "Status")</th>
+														</tr>
+													</thead>
+													<tbody>
+													@foreach (var c in Model)
+													{
+														var subject = isAr ? c.SubjectAr : c.SubjectEn;
+														<tr>
+															<td>
+																@* The anchor in the customer's own words. EntityType is a
+																   registry code and is deliberately not printed raw. *@
+																<a href="@Url.Action("Conversation", "ClientPortal", new { threadId = c.ThreadId })"
+																   class="text-gray-900 fw-bold text-hover-primary fs-6">
+																	@(c.EntityType == "Quotation"
+																		? (isAr ? $"عرض سعر رقم {c.EntityId}" : $"Quotation #{c.EntityId}")
+																		: (isAr ? $"مستند رقم {c.EntityId}" : $"Document #{c.EntityId}"))
+																</a>
+															</td>
+															<td class="text-gray-700 fw-semibold">@(string.IsNullOrWhiteSpace(subject) ? "—" : subject)</td>
+															@* A stamp with no zone is UTC; it is rendered as a plain date so
+															   no client-side assumption about the reader's zone is smuggled in. *@
+															<td class="text-gray-600 fw-semibold">@(c.LastActivityAt?.ToString("yyyy/MM/dd") ?? "—")</td>
+															<td class="text-end">
+																@if (c.UnreadCount > 0)
+																{
+																	@* Unread is the only thing a customer needs to act on, so
+																	   it is the only thing given emphasis — the same rule the
+																	   Quotations screen applies to "awaiting your response". *@
+																	<span class="badge badge-light-primary fw-bold">
+																		@(isAr ? $"{c.UnreadCount} غير مقروء" : $"{c.UnreadCount} unread")
+																	</span>
+																}
+																else
+																{
+																	<span class="badge badge-light fw-bold">@(isAr ? "مقروء" : "Read")</span>
+																}
+															</td>
+														</tr>
+													}
+													</tbody>
+												</table>
+											</div>
+										}
+										</div>
+									</div>
+									<!--end::Card-->
+								</div>
+								<!--end::Content-->
+							</div>
+							<!--end::Content wrapper-->
+							<!--begin::Footer-->
+							<div id="kt_app_footer" class="app-footer d-flex flex-column flex-md-row align-items-center flex-center flex-md-stack py-2 py-lg-4">
+								<div class="text-gray-900 order-2 order-md-1">
+									<span class="text-muted fw-semibold me-1">@DateTime.UtcNow.Year&copy;</span>
+									<span class="text-gray-800">CrossBuy</span>
+								</div>
+							</div>
+							<!--end::Footer-->
+						</div>
+						<!--end::Main-->
+					</div>
+					<!--end::Wrapper container-->
+				</div>
+				<!--end::Wrapper-->
+			</div>
+			<!--end::Page-->
+		</div>
+		<!--end::App-->
+		<!--begin::Javascript-->
+		<script>var hostUrl = "/portal-assets/";</script>
+		<script src="/portal-assets/plugins/global/plugins.bundle.js"></script>
+		<script src="/portal-assets/js/scripts.bundle.js"></script>
+		<!--end::Javascript-->
+	</body>
+	<!--end::Body-->
+</html>

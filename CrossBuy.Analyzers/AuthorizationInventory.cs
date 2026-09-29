@@ -51,7 +51,16 @@ namespace CrossBuy.Analyzers
             result.MutatingCount = result.Endpoints.Count;
             result.AttributeProtectedCount = result.Endpoints.Count(e => e.IsAttributeProtected);
             result.InBodyProtectedCount = result.Endpoints.Count(e => e.Authorization == AuthorizationKind.InBody);
-            result.GapCount = result.Endpoints.Count(e => !e.IsProtected);
+            result.AnonymousByDesignCount = result.Endpoints.Count(e => !e.IsProtected && e.IsAnonymousByDesign);
+
+            // THE DEBT COLUMN EXCLUDES A DECLARED ANONYMOUS ENDPOINT, and that is the whole point of
+            // the fourth column. A login cannot require an identity - it is how one is obtained - so
+            // counting it as an authorization gap says the tree owes a fix that does not exist, and
+            // makes a debt figure that can never legitimately reach zero.
+            //
+            // It is EXCLUDED, never RECLASSIFIED: the endpoint is still not protected, and
+            // IsProtected still answers false for it everywhere else.
+            result.GapCount = result.Endpoints.Count(e => !e.IsProtected && !e.IsAnonymousByDesign);
 
             return result;
         }
@@ -187,6 +196,8 @@ namespace CrossBuy.Analyzers
                     attributeNames.Any(AuthorizationSurface.EnvironmentGateAttributes.Contains) ||
                     classAttributes.Any(AuthorizationSurface.EnvironmentGateAttributes.Contains);
                 facts.IsAnonymousDeclared = attributeNames.Any(AuthorizationSurface.AnonymousAttributes.Contains);
+                facts.IsAnonymousByDesign =
+                    attributeNames.Any(AuthorizationSurface.AnonymousByDesignAttributes.Contains);
 
                 // ---- 1. an action-level permission attribute ----
                 var actionPermissions = attributeNames.Where(AuthorizationSurface.PermissionAttributes.Contains).ToList();

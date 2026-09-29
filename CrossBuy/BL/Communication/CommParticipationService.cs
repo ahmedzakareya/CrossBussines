@@ -29,6 +29,12 @@ namespace CrossBuy.BL.Communication
         // Adds or upgrades a participation. Idempotent, and never lowers an existing role.
         // DOES NOT SAVE — it enrols in the caller's CommTransaction so participation, the comment that caused
         // it and the audit row share one fate.
+        /// The ACTOR-shaped membership write (Wave 3B-B1). The employee overload below delegates here,
+        /// so there is ONE implementation and the internal path cannot drift from the external one.
+        Task<CommParticipant> EnsureActorAsync(
+            BusinessContext context, CommThread thread, CommActor actor, string role, string source,
+            CancellationToken cancellationToken = default);
+
         Task<CommParticipant> EnsureAsync(
             BusinessContext context, CommThread thread, int employeeId, string role, string source,
             CancellationToken cancellationToken = default);
@@ -98,8 +104,20 @@ namespace CrossBuy.BL.Communication
         }
 
         // ---------------------------------------------------------------------------------------------
-        public async Task<CommParticipant> EnsureAsync(
+        /// The employee overload, preserved verbatim in signature and behaviour. It constructs the
+        /// actor and delegates — an employee participant is not a special case, it is one of two kinds.
+        public Task<CommParticipant> EnsureAsync(
             BusinessContext context, CommThread thread, int employeeId, string role, string source,
+            CancellationToken cancellationToken = default)
+        {
+            if (employeeId <= 0)
+                throw new CommValidationException(
+                    CommValidationException.Codes.ActorRequired, "A participant needs a positive employee id.");
+            return EnsureActorAsync(context, thread, CommActor.Employee(employeeId), role, source, cancellationToken);
+        }
+
+        public async Task<CommParticipant> EnsureActorAsync(
+            BusinessContext context, CommThread thread, CommActor actor, string role, string source,
             CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(context);
@@ -113,12 +131,15 @@ namespace CrossBuy.BL.Communication
                 throw new CommValidationException(
                     CommValidationException.Codes.ParticipantRoleInvalid,
                     $"Participation source '{source}' is not one of {string.Join(" | ", CommParticipationSource.Values)}.");
-            if (employeeId <= 0)
-                throw new CommValidationException(
-                    CommValidationException.Codes.ActorRequired, "A participant needs a positive employee id.");
-
+            // ONE LIVE ROW PER (thread, actor), looked up per kind. A merged predicate would let
+            // employee 7 find portal user 7's membership and silently upgrade the wrong person's role.
+            int? actorEmployeeId = actor.EmployeeId;
+            int? actorPortalUserId = actor.PortalUserId;
             var existing = await _db.Participants
-                .Where(p => p.ThreadId == thread.Id && p.EmployeeId == employeeId && p.RemovedAt == null)
+                .Where(p => p.ThreadId == thread.Id && p.RemovedAt == null
+                            && (actorEmployeeId != null
+                                ? p.EmployeeId == actorEmployeeId
+                                : p.PortalUserId == actorPortalUserId))
                 .FirstOrDefaultAsync(cancellationToken);
 
             if (existing != null)
@@ -141,7 +162,7 @@ namespace CrossBuy.BL.Communication
                 ThreadId = thread.Id,
                 EntityType = thread.EntityType,
                 EntityId = thread.EntityId,
-                EmployeeId = employeeId,
+                Actor = actor,
                 Role = role,
                 Source = source,
                 CreatedBy = context.EmployeeId,
@@ -321,9 +342,13 @@ namespace CrossBuy.BL.Communication
             // The role filter is applied IN MEMORY through CommParticipantRole.NotifiedPerActivity rather than
             // as a SQL IN-list, so the follower/watcher rule lives in exactly one place and a future role
             // cannot be added to the vocabulary without this query learning about it.
+            // EMPLOYEE recipients only, and the filter is deliberate rather than incidental. A portal
+            // participant IS a follower of the thread, but external delivery does not exist yet
+            // (3B-E owns it); dropping them here keeps the employee queue exactly as it was, and the
+            // omission is stated rather than hidden behind a nullable that silently became nothing.
             var ids = rows
-                .Where(r => CommParticipantRole.NotifiedPerActivity(r.Role))
-                .Select(r => r.EmployeeId)
+                .Where(r => CommParticipantRole.NotifiedPerActivity(r.Role) && r.EmployeeId is > 0)
+                .Select(r => r.EmployeeId!.Value)
                 .Distinct()
                 .ToList();
 
@@ -375,7 +400,11 @@ namespace CrossBuy.BL.Communication
                 Payload = new CommParticipantEventPayload
                 {
                     ThreadId = thread.Id,
-                    EmployeeId = participant.EmployeeId,
+                    // ADDITIVE, NOT RETYPED. EmployeeId stays an int on the v1 payload so a message
+                    // already sitting in the outbox still deserializes; 0 means "not an employee", and
+                    // PortalUserId carries the external case alongside it.
+                    EmployeeId = participant.EmployeeId ?? 0,
+                    PortalUserId = participant.PortalUserId,
                     Role = participant.Role,
                     Source = participant.Source,
                 },

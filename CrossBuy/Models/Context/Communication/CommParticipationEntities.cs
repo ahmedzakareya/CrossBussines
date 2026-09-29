@@ -21,7 +21,32 @@ namespace CrossBuy.Models.Context.Communication
         public string EntityType { get; set; } = "";
         public int EntityId { get; set; }
 
-        public int EmployeeId { get; set; }
+        // ---- WHO IS PARTICIPATING (Wave 3B-B1) --------------------------------------------------
+        //
+        // EXACTLY ONE OF THESE, enforced by CommActor at the write path and by a CHECK constraint in
+        // the database. An employee participant keeps EmployeeId and a NULL PortalUserId — every row
+        // that existed before this column did is already in that shape, which is why there is no
+        // backfill.
+        //
+        // A PORTAL ID IS NEVER WRITTEN INTO THE EMPLOYEE COLUMN. That is the whole boundary: no
+        // query, report or reader can mistake a customer's contact for a member of staff, and the
+        // existing employee predicates (`p.EmployeeId == me`) stay correct untouched, because
+        // `NULL = @me` is UNKNOWN and excludes portal rows by SQL semantics rather than by an edit
+        // somebody has to remember to make.
+        public int? EmployeeId { get; set; }
+
+        /// The external participant: PortalUsers.Id, resolved server-side from the authenticated
+        /// portal principal. NULL for every internal participant.
+        public int? PortalUserId { get; set; }
+
+        /// The participant as ONE value. The setter writes one column and clears the other, so a row
+        /// cannot be given two identities by a caller that forgot the second assignment.
+        [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+        public CrossBuy.Models.Communication.CommActor Actor
+        {
+            get => CrossBuy.Models.Communication.CommActor.FromColumns(EmployeeId, PortalUserId);
+            set { EmployeeId = value.EmployeeId; PortalUserId = value.PortalUserId; }
+        }
 
         public string Role { get; set; } = "";            // CommParticipantRole
         public string Source { get; set; } = "";          // CommParticipationSource
@@ -102,7 +127,23 @@ namespace CrossBuy.Models.Context.Communication
         public long Id { get; set; }
         public int CompanyID { get; set; }
         public long ThreadId { get; set; }
-        public int EmployeeId { get; set; }
+
+        // ---- WHO HAS READ IT (Wave 3B-B1) --------------------------------------------------------
+        //
+        // Exactly one, same rule as CommParticipant. The uniqueness that used to be (ThreadId,
+        // EmployeeId) is now TWO filtered unique indexes, one per kind — see CommunicationModel. That
+        // split is not cosmetic: a single index over a merged actor id would make employee 7 and
+        // portal user 7 collide on one watermark, so one of them would silently inherit the other's
+        // read position.
+        public int? EmployeeId { get; set; }
+        public int? PortalUserId { get; set; }
+
+        [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+        public CrossBuy.Models.Communication.CommActor Reader
+        {
+            get => CrossBuy.Models.Communication.CommActor.FromColumns(EmployeeId, PortalUserId);
+            set { EmployeeId = value.EmployeeId; PortalUserId = value.PortalUserId; }
+        }
 
         public long? LastReadCommentId { get; set; }
         public DateTime? LastReadAt { get; set; }

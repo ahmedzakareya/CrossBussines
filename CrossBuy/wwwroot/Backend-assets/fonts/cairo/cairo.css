@@ -1,0 +1,57 @@
+/* ================================================================================================
+   CAIRO — LOCAL ONLY, as a standalone sheet.
+
+   WHY THIS FILE EXISTS SEPARATELY FROM crossbusiness-tokens.css. The token sheet declares these
+   same faces, but it also carries the whole internal colour and component token layer. The Client
+   Portal renders Metronic demo30 and must keep its own visual language, so pulling the token sheet
+   in to get a font would have restyled five retained pages to fix a network request. The faces are
+   therefore lifted out verbatim - same files, same weights, same 500 mapping - and nothing else
+   comes with them.
+
+   WHY IT REPLACES THE GOOGLE FONTS LINK ON THE PORTAL. The internal product already decided this:
+   "No fonts.googleapis.com, no fonts.gstatic.com. An on-premise ERP behind a firewall gets the
+   same typography as one with an open connection, and no page load reports a user's IP to a third
+   party." The portal is the EXTERNAL surface - the one audience who is not the customer's own
+   staff - so it is where that reasoning applies most, not least.
+
+   THE TYPOGRAPHY IS UNCHANGED. Same family, same four shipped weights, and the same deliberate
+   500 -> Regular mapping, so no page loses a face it was rendering before.
+
+   Inter is deliberately NOT bundled here: no local copy of it exists in this repository, and
+   dropping its stylesheet would change the Latin typography of the retained pages rather than
+   merely change where a file comes from. That one is reported, not silently altered.
+
+   Cairo is licensed under the SIL Open Font License; OFL.txt ships beside these files.
+   ================================================================================================ */
+@font-face {
+  font-family: "Cairo";
+  src: url("Cairo-Regular.woff2") format("woff2"),
+       url("Cairo-Regular.ttf") format("truetype");
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "Cairo";
+  src: url("Cairo-SemiBold.woff2") format("woff2"),
+       url("Cairo-SemiBold.ttf") format("truetype");
+  font-weight: 600; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "Cairo";
+  src: url("Cairo-Bold.woff2") format("woff2"),
+       url("Cairo-Bold.ttf") format("truetype");
+  font-weight: 700; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "Cairo";
+  src: url("Cairo-ExtraBold.woff2") format("woff2"),
+       url("Cairo-ExtraBold.ttf") format("truetype");
+  font-weight: 800; font-style: normal; font-display: swap;
+}
+
+/* 500 is not a shipped Cairo weight. Mapping it to 400 rather than leaving it undeclared stops
+   the browser synthesising a smeared faux-medium when a component asks for font-weight:500. */
+@font-face {
+  font-family: "Cairo";
+  src: url("Cairo-Regular.woff2") format("woff2");
+  font-weight: 500; font-style: normal; font-display: swap;
+}

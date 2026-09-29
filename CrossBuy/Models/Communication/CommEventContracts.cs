@@ -200,7 +200,15 @@ namespace CrossBuy.Models.Communication
     public sealed class CommParticipantEventPayload
     {
         public long ThreadId { get; init; }
+
+        /// The employee participant, or 0 when the participant is external. NOT retyped to int? —
+        /// this is a v1 payload that may already be persisted in the outbox, and the additive rule
+        /// says a new field may be ADDED but an existing one may not change type.
         public int EmployeeId { get; init; }
+
+        /// The external participant (PortalUsers.Id), null for every internal one. Added in 3B-B1.
+        public int? PortalUserId { get; init; }
+
         public string? Role { get; init; }
         public string? Source { get; init; }
     }

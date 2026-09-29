@@ -37,6 +37,17 @@ namespace CrossBuy.BL.Platform
 
         BusinessContext ForSystem(int companyId, Guid? correlationId = null);
 
+        // An authenticated EXTERNAL portal identity. Same shape as ForWorker/ForSystem - it publishes the
+        // company to ICompanyScopeHolder and BINDS the context to this DI scope - which is the whole
+        // point: IBusinessContextAccessor consults ScopeBoundContext before HTTP resolution, so a portal
+        // request can reach BusinessEventService without that service learning anything about portals.
+        //
+        // THE COMPANY MUST ALREADY HAVE BEEN RESOLVED from an ACTIVE PortalUser reached through the
+        // authenticated principal. This factory does not resolve it and must never be handed one taken
+        // from a route, a query string, a form field or a CustomerId.
+        BusinessContext ForExternalPortal(
+            int companyId, string userId, int? portalUserId = null, Guid? correlationId = null);
+
         // The context ForWorker/ForSystem bound to THIS DI scope, or null when nothing has bound one (every
         // HTTP scope, and any scope a worker forgot to bind). IBusinessContextAccessor consults it before
         // attempting HTTP resolution, which is what lets a background worker resolve a context at all.
@@ -222,6 +233,16 @@ namespace CrossBuy.BL.Platform
             var context = BusinessContext.ForSystem(companyId, correlationId ?? _correlationId);
             Publish(context);
             Bind(context);
+            return context;
+        }
+
+        public BusinessContext ForExternalPortal(
+            int companyId, string userId, int? portalUserId = null, Guid? correlationId = null)
+        {
+            var context = BusinessContext.ForExternalPortal(
+                companyId, userId, portalUserId, correlationId ?? _correlationId);
+            Publish(context);   // EF company filters read the same holder every other source publishes to
+            Bind(context);      // and the accessor consults this before it attempts HTTP resolution
             return context;
         }
 

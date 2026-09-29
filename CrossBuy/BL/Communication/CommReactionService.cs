@@ -138,7 +138,10 @@ namespace CrossBuy.BL.Communication
                     CompanyId = context.CompanyId,
                     BranchId = thread.BranchID,
                     ActorEmployeeId = context.EmployeeId,
-                    RecipientEmployeeIds = new[] { comment.AuthorEmployeeId },
+                    // Only an EMPLOYEE author is notified; a portal author has no delivery path yet.
+                    RecipientEmployeeIds = comment.AuthorEmployeeId is > 0
+                        ? new[] { comment.AuthorEmployeeId.Value }
+                        : Array.Empty<int>(),
                     SubjectVisibility = comment.Visibility,
                     Tokens = await ReactionTokensAsync(context, thread, reactionKey, cancellationToken),
 
@@ -294,9 +297,9 @@ namespace CrossBuy.BL.Communication
             BusinessContext context, long threadId, long? upToCommentId = null, CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(context);
-            if (context.EmployeeId is not > 0)
-                throw new CommValidationException(
-                    CommValidationException.Codes.ActorRequired, "Read status needs a resolved employee.");
+            // A READER OF EITHER KIND. The watermark belongs to whoever read the thread, and an
+            // external participant reads threads too. CommActor still refuses an unresolved identity.
+            var reader = CommActor.FromContext(context);
 
             var thread = await _threads.RequireAsync(context, threadId, cancellationToken);
             await _access.RequireThreadAsync(context, thread, CommPermissionLevel.Read, cancellationToken);
@@ -307,8 +310,17 @@ namespace CrossBuy.BL.Communication
                 .OrderByDescending(id => id)
                 .FirstOrDefaultAsync(cancellationToken);
 
+            // THE LOOKUP IS PER ACTOR KIND, and that is the point of the split columns: employee 7 and
+            // portal user 7 must not find each other's watermark. Both arms are server-side predicates
+            // over the matching filtered unique index — one row, one seek, no in-memory filtering.
+            int? readerEmployeeId = reader.EmployeeId;
+            int? readerPortalUserId = reader.PortalUserId;
             var receipt = await _db.ReadReceipts
-                .Where(r => r.ThreadId == threadId && r.EmployeeId == context.EmployeeId.Value)
+                .Where(r => r.ThreadId == threadId
+                            && r.CompanyID == context.CompanyId
+                            && (readerEmployeeId != null
+                                ? r.EmployeeId == readerEmployeeId
+                                : r.PortalUserId == readerPortalUserId))
                 .FirstOrDefaultAsync(cancellationToken);
 
             if (receipt == null)
@@ -317,7 +329,7 @@ namespace CrossBuy.BL.Communication
                 {
                     CompanyID = context.CompanyId,
                     ThreadId = threadId,
-                    EmployeeId = context.EmployeeId.Value,
+                    Reader = reader,
                     LastReadCommentId = watermark,
                     LastReadAt = DateTime.UtcNow,
                     CreatedBy = context.EmployeeId,

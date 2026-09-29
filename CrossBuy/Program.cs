@@ -1,4 +1,5 @@
 ﻿using CrossBuy.BL;
+using CrossBuy.BL.Platform;    // Client Portal: AddCrossBuyPortalAuthentication()
 using CrossBuy.BL.Reporting;   // ADR-037: AddCrossBusinessReporting()
 using CrossBuy.BL.Workspace;   // CrossBusiness Workspace: AddCrossBusinessWorkspace()
 using CrossBuy.Hubs;
@@ -728,6 +729,18 @@ if (!string.IsNullOrWhiteSpace(ssoGoogle["ClientId"]) && !string.IsNullOrWhiteSp
         options.SaveTokens = false;
     });
 }
+
+// CLIENT PORTAL AUTHENTICATION - a dedicated scheme and cookie for the EXTERNAL audience.
+//
+// Placed AFTER the registrations above on purpose: those establish the application defaults
+// (AddIdentity names the identity schemes, AddAuthentication(Certificate) names the DefaultScheme),
+// and this one must be read as adding to them rather than competing with them. It calls
+// AddAuthentication() with NO argument, so every default survives it untouched - which is the
+// whole reason a portal cookie cannot satisfy an internal [Authorize].
+//
+// One line, by SHF-01: the scheme, the cookie policy and the authorization policy all live in
+// PortalAuthenticationRegistration, where they can be tested.
+builder.Services.AddCrossBuyPortalAuthentication();
 
 // CORS so the mobile app (and any external client) can reach the API
 

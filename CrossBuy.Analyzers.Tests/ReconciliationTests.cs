@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 using System.Threading;
 using Microsoft.CodeAnalysis;
 
@@ -214,11 +214,51 @@ public class ReconciliationTests
     //
     // 439 = 156 + 189 + 94.
     // ----------------------------------------------------------------------------------------------
-    private const int FrozenMutating = 439;
-    private const int FrozenAttributeProtected = 156;
-    private const int FrozenInBodyProtected = 189;
+    // ----------------------------------------------------------------------------------------------
+    // CLIENT PORTAL CONVERGENCE (TAB-3, 2026-09-29). The largest single move of these figures so far,
+    // and every part of it is an ADDITION of authorized surface rather than a reclassification of
+    // anything that already existed.
+    //
+    // WHAT ARRIVED: the dedicated portal door (PortalAccountController), the external conversation
+    // surface (ClientPortalConversationsController), the portal's own mutating actions on
+    // ClientPortalController (comment, mark-read, accept/reject quotation, request contact) and the
+    // Portal Contacts staff screen on CrmController (photo upload/remove and four provisioning posts).
+    //
+    //   mutating            439 -> 470  (+31)
+    //   attributeProtected  156 -> 167  (+11)   [PortalAuthorize] endpoints
+    //   inBodyProtected     189 -> 208  (+19)   ICrmAccessService / IPortalDataService authorities
+    //   anonymousByDesign     0 ->   1  (+1)    PortalAccountController.Login, declared in source
+    //   gaps                 94 ->  94  (+0)    UNCHANGED
+    //
+    //   470 = 167 + 208 + 1 + 94.
+    //
+    // THE DEBT DID NOT MOVE, WHICH IS THE ONLY FIGURE THAT IS AN INVARIANT. Not one endpoint this
+    // wave added is unprotected: every portal read and mutation carries [PortalAuthorize] (a real
+    // AuthorizeAttribute binding the CrossBuy.Portal policy, not a marker), and every Portal Contacts
+    // endpoint authorizes in-body through ICrmAccessService.CanAsync, which AuthorizationSurface
+    // already declares. No baseline entry was added, removed or edited; the file still holds 94
+    // entries and TasksController.ChangeStatus was NOT reopened. No CBA diagnostic was suppressed.
+    //
+    // THE ONE ENDPOINT IN THE FOURTH COLUMN is the portal login, and it is there because it cannot
+    // require an identity - it is how one is obtained. It is declared with [AnonymousByDesign] and a
+    // stated reason rather than by a baseline entry, because that file may only shrink.
+    //
+    // CONTROLLERS 53 -> 55: PortalAccountController and ClientPortalConversationsController. The
+    // Portal Contacts screen added NO controller - it is a partial of CrmController, deliberately,
+    // because the controller count is frozen and a portal contact is a customer's person.
+    // ----------------------------------------------------------------------------------------------
+    private const int FrozenMutating = 470;
+    private const int FrozenAttributeProtected = 167;
+    private const int FrozenInBodyProtected = 208;
 
-    /// <summary>The enforced invariant. This one may only ever shrink - and here it did.</summary>
+    /// <summary>
+    /// Mutating endpoints that are unauthenticated ON PURPOSE and say so in source. NOT protected and
+    /// NOT debt — a fourth column, so the identity is
+    /// mutating = attribute + inBody + anonymousByDesign + gaps.
+    /// </summary>
+    private const int FrozenAnonymousByDesign = 1;
+
+    /// <summary>The enforced invariant. This one may only ever shrink - and here it did not move.</summary>
     private const int FrozenGaps = 94;
 
     // Controllers carrying at least one endpoint the analyzer models. Grew 40 -> 44 with the platform
@@ -252,7 +292,11 @@ public class ReconciliationTests
     //
     // TAB-3 carried 49 -> 50 for this same controller. Three controllers landed in between, so it was
     // measured rather than applied.
-    private const int FrozenControllers = 53;
+    // 53 -> 55 (Client Portal convergence, 2026-09-29). PortalAccountController - the external door -
+    // and ClientPortalConversationsController - the external conversation surface. Portal Contacts
+    // added NO controller: it is a partial of CrmController on purpose, because this count is frozen
+    // and a portal contact is a customer's person, so it answers to the CRM authority already there.
+    private const int FrozenControllers = 55;
 
     private static readonly Lazy<AuthorizationInventoryResult> Inventory = new(() =>
         AuthorizationInventory.Build(RealSourceCompilation.Value, CancellationToken.None));
@@ -300,16 +344,33 @@ public class ReconciliationTests
     public void The_analyzer_reproduces_the_frozen_authorization_debt()
     {
         Assert.Equal(FrozenGaps, Result.GapCount);
+
+        // AND THE FOURTH COLUMN, asserted beside the debt rather than instead of it. If a future wave
+        // declared a second endpoint [AnonymousByDesign], this fails and somebody has to say why a
+        // second endpoint cannot require an identity. Without it, the exclusion from GapCount would be
+        // an unbounded escape from the one figure that is an invariant.
+        Assert.Equal(FrozenAnonymousByDesign, Result.AnonymousByDesignCount);
     }
 
     [Fact]
     public void The_three_categories_sum_to_the_mutating_total_with_nothing_uncounted()
     {
-        // 157 + 88 + 143 = 388. An endpoint that fell out of all three categories would be invisible in every
-        // published number, which is how a measurement defect survives a review.
+        // An endpoint that fell out of every category would be invisible in every published number,
+        // which is how a measurement defect survives a review.
+        //
+        // THERE ARE NOW FOUR CATEGORIES, NOT THREE. The Client Portal convergence introduced
+        // [AnonymousByDesign] — a mutating endpoint that is unauthenticated ON PURPOSE and says so in
+        // source, with a reason the attribute refuses to be constructed without. A login cannot
+        // require an identity, because it is how one is obtained, so counting it as an authorization
+        // GAP would say the tree owes a fix that does not exist and would stop the debt figure ever
+        // legitimately reaching zero.
+        //
+        // IT IS EXCLUDED FROM THE DEBT, NEVER RECLASSIFIED AS PROTECTED: IsProtected still answers
+        // false for it. It is counted here so the identity closes with nothing hidden.
         Assert.Equal(
             Result.MutatingCount,
-            Result.AttributeProtectedCount + Result.InBodyProtectedCount + Result.GapCount);
+            Result.AttributeProtectedCount + Result.InBodyProtectedCount
+                + Result.AnonymousByDesignCount + Result.GapCount);
     }
 
     [Fact]
@@ -378,7 +439,14 @@ public class ReconciliationTests
         var baseline = BaselineDocument.TryParse(File.ReadAllText(BaselinePath));
         Assert.NotNull(baseline);
 
-        var analyzerGaps = Result.Endpoints.Where(e => !e.IsProtected).Select(e => e.Id).ToHashSet(StringComparer.Ordinal);
+        // THE DECLARED-ANONYMOUS ENDPOINTS ARE NOT GAPS, so they are not expected in the baseline.
+        // The baseline says of itself that it may only SHRINK and that CI rejects any commit adding an
+        // entry, so a legitimately new login could only be declared there by breaking the invariant
+        // that makes the file worth having. It is declared in SOURCE instead, and this set has to
+        // agree with that or the disagreement reads as a missing baseline entry nobody may add.
+        var analyzerGaps = Result.Endpoints
+            .Where(e => !e.IsProtected && !e.IsAnonymousByDesign)
+            .Select(e => e.Id).ToHashSet(StringComparer.Ordinal);
         var baselineIds = baseline!.Entries.Keys.ToHashSet(StringComparer.Ordinal);
 
         var onlyInBaseline = baselineIds.Except(analyzerGaps).OrderBy(x => x, StringComparer.Ordinal).ToList();

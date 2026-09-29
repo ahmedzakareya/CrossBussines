@@ -1,0 +1,219 @@
+@model IReadOnlyList<CrossBuy.BL.Portal.PortalDocumentDto>
+@using System.Globalization
+@*
+    MY DOCUMENTS — DOC1, in the theme's own language.
+
+    IT RENDERS A LIST OF GRANTS, not a file browser. Every row is a document somebody at the company
+    deliberately published to this customer; there is no folder, no tree and no path, because there
+    is nothing here to navigate — an internal document that was not published simply does not appear.
+
+    READ-ONLY, AND THE CONTROLS ARE ABSENT RATHER THAN HIDDEN. No upload, replace, delete, rename,
+    move, share or public-link button exists on this screen, because the service behind it exposes no
+    such operation. Hiding a control is not a control; not having one is.
+
+    THE LINK CARRIES A PUBLICATION ID, NEVER A DOCUMENT ID, a storage key or a path. The internal
+    document id is not rendered anywhere on this page.
+*@
+@{
+    Layout = null;
+    var isAr = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+}
+<!DOCTYPE html>
+<!--
+Author: Keenthemes
+Product Name: Metronic
+Product Version: 8.3.3 (demo30)
+Purchase: https://1.envato.market/EA4JP
+License: For each use you must have a valid license purchased only from above link in order to legally use the theme for your project.
+-->
+<html lang="@(isAr ? "ar" : "en")" dir="@(isAr ? "rtl" : "ltr")">
+	<!--begin::Head-->
+	<head>
+		<title>@(isAr ? "مستنداتي" : "My Documents") — CrossBuy</title>
+		<meta charset="utf-8" />
+		<meta name="description" content="CrossBuy client portal." />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<link rel="shortcut icon" href="/Backend-assets/media/logos/favicon.ico" asp-append-version="true" />
+		<link rel="icon" type="image/svg+xml" href="/Backend-assets/media/logos/crossbuy-favicon.svg" asp-append-version="true" />
+		<!--begin::Fonts(mandatory for all pages)-->
+		<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,400,500,600,700" />
+		<!--end::Fonts-->
+		<!--begin::Global Stylesheets Bundle(mandatory for all pages)-->
+		@if (isAr)
+		{
+			<link href="/portal-assets/plugins/global/plugins.bundle.rtl.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+			<link href="/portal-assets/css/style.bundle.rtl.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+			<link href="/Backend-assets/fonts/cairo/cairo.css" rel="stylesheet" asp-append-version="true">
+			<style>
+				html[lang="ar"] body { font-family: 'Cairo', sans-serif; direction: rtl; text-align: right; }
+				html[lang="ar"] .btn, html[lang="ar"] input, html[lang="ar"] select, html[lang="ar"] textarea,
+				html[lang="ar"] h1, html[lang="ar"] h2, html[lang="ar"] h3, html[lang="ar"] h4, html[lang="ar"] h5, html[lang="ar"] h6 { font-family: 'Cairo', sans-serif; }
+				html[lang="ar"] td, html[lang="ar"] th, html[lang="ar"] .fs-2hx, html[lang="ar"] .app-toolbar .fs-3 { unicode-bidi: plaintext; }
+			</style>
+		}
+		else
+		{
+			<link href="/portal-assets/plugins/global/plugins.bundle.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+			<link href="/portal-assets/css/style.bundle.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+		}
+		<!--end::Global Stylesheets Bundle-->
+	</head>
+	<!--end::Head-->
+	<!--begin::Body-->
+	<body id="kt_app_body" data-kt-app-header-fixed-mobile="true" data-kt-app-toolbar-enabled="true" class="app-default">
+		<!--begin::Theme mode setup on page load-->
+		<script>var defaultThemeMode = "light"; var themeMode; if ( document.documentElement ) { if ( document.documentElement.hasAttribute("data-bs-theme-mode")) { themeMode = document.documentElement.getAttribute("data-bs-theme-mode"); } else { if ( localStorage.getItem("data-bs-theme") !== null ) { themeMode = localStorage.getItem("data-bs-theme"); } else { themeMode = defaultThemeMode; } } if (themeMode === "system") { themeMode = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"; } document.documentElement.setAttribute("data-bs-theme", themeMode); }</script>
+		<!--end::Theme mode setup on page load-->
+		<!--begin::App-->
+		<div class="d-flex flex-column flex-root app-root" id="kt_app_root">
+			<!--begin::Page-->
+			<div class="app-page flex-column flex-column-fluid" id="kt_app_page">
+				@await Html.PartialAsync("_PortalHeader")
+				<!--begin::Wrapper-->
+				<div class="app-wrapper flex-column flex-row-fluid" id="kt_app_wrapper">
+					<!--begin::Toolbar-->
+					<div id="kt_app_toolbar" class="app-toolbar py-6">
+						<div id="kt_app_toolbar_container" class="app-container container-xxl d-flex align-items-start">
+							<div class="d-flex flex-column flex-row-fluid">
+								<div class="d-flex align-items-center pt-1">
+									<ul class="breadcrumb breadcrumb-separatorless fw-semibold">
+										<li class="breadcrumb-item text-white fw-bold lh-1">
+											<i class="ki-outline ki-home text-white fs-3"></i>
+										</li>
+									</ul>
+								</div>
+								<div class="d-flex flex-stack flex-wrap flex-lg-nowrap gap-4 gap-lg-10 pt-6 pb-18 py-lg-13">
+									<div class="page-title d-flex flex-column me-3">
+										<h1 class="page-heading d-flex text-white fw-bolder fs-2 flex-column justify-content-center my-0">@(isAr ? "مستنداتي" : "My Documents")</h1>
+										<span class="text-white opacity-75 pt-2 fs-6">
+											@(isAr ? "المستندات التي شاركها فريقنا معك." : "Documents our team has shared with you.")
+										</span>
+									</div>
+									@if (Model.Any())
+									{
+										<div class="d-flex align-items-center flex-shrink-0">
+											<span class="fs-2hx text-white fw-bold me-2">@Model.Count</span>
+											<span class="text-white opacity-75 fs-6">@(isAr ? "مستند" : Model.Count == 1 ? "document" : "documents")</span>
+										</div>
+									}
+								</div>
+							</div>
+						</div>
+					</div>
+					<!--end::Toolbar-->
+					<!--begin::Wrapper container-->
+					<div class="app-container container-xxl">
+						<!--begin::Main-->
+						<div class="app-main flex-column flex-row-fluid" id="kt_app_main">
+							<!--begin::Content wrapper-->
+							<div class="d-flex flex-column flex-column-fluid">
+								<!--begin::Content-->
+								<div id="kt_app_content" class="app-content">
+									<!--begin::Card-->
+									<div class="card">
+										<div class="card-header border-0 pt-6">
+											<div class="card-title"><h2 class="fw-bold">@(isAr ? "المستندات المتاحة" : "Available documents")</h2></div>
+										</div>
+										<div class="card-body pt-0">
+										@if (!Model.Any())
+										{
+											@* An empty list is not an error, and it must not read like one: a customer
+											   with nothing published has simply not been sent anything yet. *@
+											<div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-6">
+												<span class="symbol symbol-45px me-4">
+													<span class="symbol-label bg-primary">
+														<i class="ki-outline ki-folder fs-2 text-white"></i>
+													</span>
+												</span>
+												<div class="d-flex flex-stack flex-grow-1">
+													<div class="fw-semibold">
+														<div class="fs-6 text-gray-700">@(isAr ? "لا توجد مستندات متاحة." : "No documents available yet.")</div>
+													</div>
+												</div>
+											</div>
+										}
+										else
+										{
+											<div class="table-responsive">
+												<table class="table table-row-dashed table-row-gray-300 align-middle gs-0 gy-4">
+													<thead>
+														<tr class="fw-bold text-muted">
+															<th class="min-w-250px">@(isAr ? "المستند" : "Document")</th>
+															<th class="min-w-120px">@(isAr ? "تاريخ الإصدار" : "Issued")</th>
+															<th class="min-w-120px">@(isAr ? "صالح حتى" : "Valid until")</th>
+															<th class="min-w-100px text-end">@(isAr ? "الحجم" : "Size")</th>
+															<th class="min-w-100px text-end"></th>
+														</tr>
+													</thead>
+													<tbody>
+													@foreach (var d in Model)
+													{
+														@* An expiry in the past is stated plainly rather than hidden: a
+														   customer holding a lapsed certificate needs to know it lapsed,
+														   and removing the row would just make the document they were
+														   sent disappear without explanation. *@
+														var expired = d.ExpiryDate.HasValue && d.ExpiryDate.Value.Date < DateTime.UtcNow.Date;
+														<tr>
+															<td class="text-gray-900 fw-bold">@d.FileName</td>
+															<td class="text-gray-700 fw-semibold">@(d.IssueDate?.ToString("yyyy/MM/dd") ?? "—")</td>
+															<td>
+																@if (d.ExpiryDate.HasValue)
+																{
+																	<span class="badge @(expired ? "badge-light-danger" : "badge-light-success") fw-bold">
+																		@d.ExpiryDate.Value.ToString("yyyy/MM/dd")
+																	</span>
+																}
+																else
+																{
+																	<span class="text-gray-600 fw-semibold">—</span>
+																}
+															</td>
+															<td class="text-gray-700 fw-semibold text-end">@((d.SizeBytes / 1024m).ToString("N0")) KB</td>
+															<td class="text-end">
+																@* The only action on this screen. It points at the portal's
+																   own authorized streaming route — never /Files, never
+																   /uploads, never a storage path. *@
+																<a class="btn btn-sm btn-light-primary fw-bold"
+																   href="@Url.Action("DocumentContent", "ClientPortal", new { publicationId = d.PublicationId })">
+																	<i class="ki-outline ki-cloud-download fs-4 me-1"></i>@(isAr ? "تنزيل" : "Download")
+																</a>
+															</td>
+														</tr>
+													}
+													</tbody>
+												</table>
+											</div>
+										}
+										</div>
+									</div>
+									<!--end::Card-->
+								</div>
+								<!--end::Content-->
+							</div>
+							<!--end::Content wrapper-->
+							<!--begin::Footer-->
+							<div id="kt_app_footer" class="app-footer d-flex flex-column flex-md-row align-items-center flex-center flex-md-stack py-2 py-lg-4">
+								<div class="text-gray-900 order-2 order-md-1">
+									<span class="text-muted fw-semibold me-1">@DateTime.UtcNow.Year&copy;</span>
+									<span class="text-gray-800">CrossBuy</span>
+								</div>
+							</div>
+							<!--end::Footer-->
+						</div>
+						<!--end::Main-->
+					</div>
+					<!--end::Wrapper container-->
+				</div>
+				<!--end::Wrapper-->
+			</div>
+			<!--end::Page-->
+		</div>
+		<!--end::App-->
+		<!--begin::Javascript-->
+		<script>var hostUrl = "/portal-assets/";</script>
+		<script src="/portal-assets/plugins/global/plugins.bundle.js"></script>
+		<script src="/portal-assets/js/scripts.bundle.js"></script>
+		<!--end::Javascript-->
+	</body>
+	<!--end::Body-->
+</html>

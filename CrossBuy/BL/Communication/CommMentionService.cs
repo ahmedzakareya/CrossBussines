@@ -74,6 +74,16 @@ namespace CrossBuy.BL.Communication
             RecipientEmployeeIds = Array.Empty<int>(),
             UnresolvedNotes = Array.Empty<string>(),
         };
+
+        /// Empty WITH A STATED REASON. Used when the whole mention set is declined rather than simply
+        /// absent — an author needs to be able to tell "I mentioned nobody" from "my mentions were
+        /// not recorded", and UnresolvedNotes is where this platform already puts that difference.
+        public static CommMentionOutcome Empty(string reason) => new()
+        {
+            Mentions = Array.Empty<CommMention>(),
+            RecipientEmployeeIds = Array.Empty<int>(),
+            UnresolvedNotes = new[] { reason },
+        };
     }
 
     public sealed class CommMentionService : ICommMentionService
@@ -111,6 +121,19 @@ namespace CrossBuy.BL.Communication
             ArgumentNullException.ThrowIfNull(comment);
 
             if (tokens == null || tokens.Count == 0) return CommMentionOutcome.Empty();
+
+            // PORTAL MENTIONS ARE DEFERRED (Wave 3B-B1 §15), and this is where that decision is
+            // enforced rather than assumed. MentionedByEmployeeId used to be written as
+            // `context.EmployeeId ?? 0`, so an external author whose body happened to contain a
+            // mention token would have stamped employee 0 onto the row — the exact zero-coercion this
+            // wave exists to remove, one table over. A mention by a non-employee is DROPPED, with a
+            // note, so the comment still posts and the author is not silently told somebody was
+            // notified. When portal mentions arrive they will resolve an actor here, not a zero.
+            var author = CommActor.TryFromContext(context);
+            if (author == null || !author.Value.IsEmployee)
+                return CommMentionOutcome.Empty(
+                    "mentions are internal-only in this increment; an external author's mention tokens are " +
+                    "recorded as text and notify nobody");
 
             if (tokens.Count > _options.MaxMentionsPerComment)
                 throw new CommValidationException(
@@ -169,7 +192,8 @@ namespace CrossBuy.BL.Communication
                     LabelEn = expansion.LabelEn ?? token.Label,
 
                     ResolvedRecipientCount = expansion.EmployeeIds.Count,
-                    MentionedByEmployeeId = context.EmployeeId ?? 0,
+                    // Guaranteed an employee by the gate at the top of this method — no `?? 0`.
+                    MentionedByEmployeeId = author.Value.Id,
                     CreatedBy = context.EmployeeId,
                     CreatedAt = DateTime.UtcNow,
                 };

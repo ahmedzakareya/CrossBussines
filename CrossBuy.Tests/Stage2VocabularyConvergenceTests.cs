@@ -258,14 +258,40 @@ namespace CrossBuy.Tests
             Assert.Equal(values.Length, values.Distinct(StringComparer.Ordinal).Count());
         }
 
+        // THIS TEST INVERTED WHEN THE PORTAL STAGE ARRIVED, AND THAT IS THE GUARD WORKING.
+        //
+        // It used to assert that BusinessContextSource carried NO ExternalPortal member, with the
+        // stated reason that "that primitive belongs to the Portal stage, and importing it here would
+        // have activated external-portal behaviour as a side effect of a vocabulary wave". It held
+        // that line until the Portal convergence, which is the wave authorised to introduce it.
+        //
+        // So the member is now expected — but the boundary it was protecting is NOT dropped. What
+        // Stage 2 was really guarding is that an external identity never becomes trusted platform
+        // code or a member of staff, and that is what is asserted here instead. Deleting the test
+        // would have thrown the reason away with the assertion.
         [Fact]
-        public void Stage_two_introduced_no_company_fallback_and_no_portal_source()
+        public void The_external_portal_source_exists_and_is_neither_system_nor_an_employee()
         {
-            // The two boundaries Stage 2 was told to hold. BusinessContextSource must still carry no
-            // ExternalPortal member: that primitive belongs to the Portal stage, and importing it here
-            // would have activated external-portal behaviour as a side effect of a vocabulary wave.
             var sources = Enum.GetNames(typeof(CrossBuy.Models.Platform.BusinessContextSource));
-            Assert.DoesNotContain("ExternalPortal", sources);
+            Assert.Contains("ExternalPortal", sources);
+
+            var portal = CrossBuy.Models.Platform.BusinessContext.ForExternalPortal(
+                companyId: 7, userId: "portal-login", portalUserId: 42);
+
+            Assert.True(portal.IsExternalPortal);
+            Assert.Equal(CrossBuy.Models.Platform.BusinessContextSource.ExternalPortal, portal.Source);
+
+            // NOT trusted platform code: every system-only branch keeps refusing it.
+            Assert.False(portal.IsSystem);
+
+            // NOT a member of staff: fabricating an employee id would attribute a customer's decision
+            // to a colleague in every audit row that followed it.
+            Assert.Null(portal.EmployeeId);
+
+            // The company is required exactly as it is everywhere else — there is no default company.
+            Assert.Equal(7, portal.CompanyId);
+            Assert.Throws<CrossBuy.Models.Platform.BusinessContextUnresolvedException>(
+                () => CrossBuy.Models.Platform.BusinessContext.ForExternalPortal(0, "portal-login"));
 
             // And no imported identifier is a disguised company literal.
             var codes = Constants(typeof(EntityRegistry)).Values;

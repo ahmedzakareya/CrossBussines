@@ -24,6 +24,13 @@ namespace CrossBuy.Models.Platform
         // An external caller (mobile/API integration) acting as a resolved employee.
         Integration,
 
+        // An authenticated EXTERNAL identity - a Client Portal login acting for one customer of one
+        // company. Deliberately NOT Integration: that one is an external CALLER acting as a resolved
+        // EMPLOYEE, and this one has no employee at all. Deliberately not System either, because a
+        // customer is not trusted platform code - IsSystem stays false and every system-only branch
+        // (the CompanyIdOverride path in BusinessEventService, SystemContextPolicy) keeps refusing it.
+        ExternalPortal,
+
         // Constructed by a test. Never produced by production code paths.
         Test,
     }
@@ -59,6 +66,15 @@ namespace CrossBuy.Models.Platform
         // True only for BusinessContextSource.System. Kept as a property (rather than callers comparing
         // Source) because BusinessEventService and SqlEventDispatchStore already branch on it, and their
         // meaning of "trusted platform code" is exactly this.
+        // The PortalUser behind an ExternalPortal context, for audit attribution. Null for every other
+        // source. It is NOT an authority: nothing may grant on the strength of it.
+        public int? PortalUserId { get; init; }
+
+        // True only for an authenticated external customer identity. Separate from IsSystem on purpose:
+        // a consumer asking "is this trusted platform code" and one asking "is this an outsider" are
+        // asking opposite questions, and one flag answering both is how they get confused.
+        public bool IsExternalPortal => Source == BusinessContextSource.ExternalPortal;
+
         public bool IsSystem => Source == BusinessContextSource.System;
 
         public bool IsAuthenticated => EmployeeId.HasValue || !string.IsNullOrEmpty(UserId);
@@ -80,6 +96,49 @@ namespace CrossBuy.Models.Platform
                 CompanyId = companyId,
                 CorrelationId = correlationId,
                 Source = BusinessContextSource.System,
+            };
+        }
+
+        // AN AUTHENTICATED EXTERNAL PORTAL IDENTITY, acting for one company.
+        //
+        // WHY THIS EXISTS AT ALL: platform services that legitimately need a company - recording a
+        // business event, for one - take it from BusinessContext, and the employee factory correctly
+        // returns nothing when there is no employee. A portal customer is authenticated and belongs to
+        // exactly one company, so the honest answer is a context that says so, not a pretended employee.
+        //
+        // WHAT IT REFUSES TO BE, and each of these was a tempting shortcut:
+        //   * NOT an employee - EmployeeId stays null. Fabricating one would attribute a customer-s
+        //     decision to a member of staff in every audit row that follows it;
+        //   * NOT System - IsSystem is false by construction, so the override paths reserved for trusted
+        //     platform code stay closed to it;
+        //   * NOT company-1 - the company is required here exactly as it is everywhere else.
+        //
+        // THE COMPANY IS THE CALLER-S ONLY IF THE CALLER IS THE PORTAL RESOLVER. This factory takes a
+        // company id because it cannot resolve one itself; its contract is that the id came from an
+        // ACTIVE PortalUser row reached through the authenticated principal, never from a route, query,
+        // form value, CustomerId or anything else the browser can choose.
+        public static BusinessContext ForExternalPortal(
+            int companyId, string userId, int? portalUserId = null, Guid? correlationId = null)
+        {
+            if (companyId <= 0)
+                throw new BusinessContextUnresolvedException(
+                    "An external portal context requires the company resolved from the portal user. " +
+                    "There is no default company.");
+
+            // An external context with no identity would be an anonymous caller wearing a company, which
+            // is the one thing this must never produce.
+            if (string.IsNullOrWhiteSpace(userId))
+                throw new BusinessContextUnresolvedException(
+                    "An external portal context requires the authenticated identity it was resolved from.");
+
+            return new BusinessContext
+            {
+                CompanyId = companyId,
+                UserId = userId,
+                EmployeeId = null,               // stated rather than omitted: there is no employee here
+                CorrelationId = correlationId,
+                Source = BusinessContextSource.ExternalPortal,
+                PortalUserId = portalUserId,
             };
         }
 

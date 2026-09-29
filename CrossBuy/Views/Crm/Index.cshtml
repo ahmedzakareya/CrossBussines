@@ -325,6 +325,11 @@
                                         ("Tickets", SR["Tickets"].Value, "ki-questionnaire-tablet", "danger"),
                                         ("Campaigns", SR["Campaigns"].Value, "ki-rocket", "primary"),
                                         ("Forecast", SR["Forecast"].Value, "ki-chart-pie-simple", "success"),
+                                        @* The staff side of the Client Portal: who signs in on the customer's behalf,
+                                           their capabilities and their photograph. It sits in CRM because a portal
+                                           contact is a customer's person, and CRM already answers who may look at
+                                           customer people. *@
+                                        ("PortalUsers", isAr ? "مستخدمو البوابة" : "Portal contacts", "ki-profile-circle", "info"),
                                     };
                                 }
                                 @foreach (var l in links)

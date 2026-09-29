@@ -47,6 +47,18 @@ namespace CrossBuy.Models.Context.Portal
         public string? Email { get; set; }
         public string? Phone { get; set; }
 
+        /// The contact's photograph. Nullable, and nullable is the normal case: a portal contact is
+        /// not obliged to have a picture, and the portal shows the theme's neutral avatar when this
+        /// is empty rather than inventing one. Set from the CRM screen by staff - a customer cannot
+        /// change their own picture, by decision.
+        ///
+        /// THIS IS A STORED LOCATION, NOT A URL TO HAND OUT. It is resolved server-side by
+        /// PortalPhotoService and served only through an authorising endpoint. The convergence wave
+        /// that introduced that endpoint made the distinction load-bearing: the previous design put
+        /// this value straight into an &lt;img src&gt;, which made a guessable path the only thing
+        /// standing between a stranger and a named person's photograph.
+        public string? PhotoPath { get; set; }
+
         /// Comma-separated portal capabilities (see PortalCapabilities). Absent = the read-only
         /// default; a capability is something granted, never something inferred.
         public string? Capabilities { get; set; }
@@ -72,11 +84,21 @@ namespace CrossBuy.Models.Context.Portal
         public const string ViewInvoices = "portal-invoices";
         public const string ViewDocuments = "portal-documents";
 
-        /// Reserved and NOT granted by anything in this batch: accepting a quotation is a business
-        /// act with contractual meaning, and the internal flow for it is an employee action today.
-        /// Named here so the read side can be built against the real vocabulary rather than a
-        /// placeholder that would have to be renamed later.
+        /// The one WRITE a portal login may hold, and it is still not in Default: accepting a
+        /// quotation is a business act with contractual meaning, so somebody decides per contact that
+        /// this person speaks for the customer. PortalDataService.RespondToQuotationAsync is the only
+        /// thing that reads it, and it is checked on the POST rather than trusted from the screen.
         public const string RespondToQuotations = "portal-quotation-respond";
+
+        /// Asking a human to get in touch. A SEPARATE capability rather than something every login
+        /// can do, because it is the portal's second WRITE: it puts a row in front of staff, and a
+        /// portal account handed to a shared mailbox should not necessarily be able to raise work.
+        ///
+        /// NOT IN Default, deliberately and with a consequence worth naming: an existing portal user
+        /// cannot request contact until somebody grants it. That is the conservative direction, and
+        /// whether it should join the default is a PRODUCT decision, reported rather than taken here
+        /// - the provisioning contract states the default as the three read capabilities.
+        public const string RequestContact = "portal-contact-request";
 
         /// The safe default for a newly linked contact: they can see the commercial documents
         /// addressed to them and nothing else until somebody decides otherwise.
@@ -84,6 +106,19 @@ namespace CrossBuy.Models.Context.Portal
         {
             ViewQuotations, ViewProjects, ViewInvoices,
         };
+
+        /// EVERY capability this platform declares. It exists so provisioning can REFUSE a name
+        /// nobody implements: a capability that is stored but unimplemented is a grant no one can
+        /// reason about, and it reads as access that was given.
+        public static readonly string[] All =
+        {
+            ViewQuotations, ViewProjects, ViewInvoices, ViewDocuments,
+            RespondToQuotations, RequestContact,
+        };
+
+        public static bool IsKnown(string? capability)
+            => !string.IsNullOrWhiteSpace(capability)
+            && System.Array.IndexOf(All, capability) >= 0;
     }
 
     /// EF mapping, in a file this work stream owns, so CrossDbContext keeps a one-line footprint —
@@ -102,6 +137,10 @@ namespace CrossBuy.Models.Context.Portal
                 e.Property(x => x.Phone).HasMaxLength(64);
                 e.Property(x => x.UserId).HasMaxLength(450);
                 e.Property(x => x.Capabilities).HasMaxLength(400);
+                // 400 matches Capabilities and is far beyond what a generated file name needs; the
+                // deploy slice (portal_user_photo.sql) states the same width, so EF and the database
+                // cannot disagree about it.
+                e.Property(x => x.PhotoPath).HasMaxLength(400);
 
                 // The resolution every request performs: this login, in this company. Unique so one
                 // Identity account cannot be linked twice and silently resolve to whichever row the
@@ -112,6 +151,15 @@ namespace CrossBuy.Models.Context.Portal
                 // The listing an administrator uses, and the scope predicate itself.
                 e.HasIndex(x => new { x.CompanyID, x.CustomerId });
             });
+
+            // The portal's second table, mapped in its own file for the same reason this one is:
+            // CrossDbContext keeps a zero-line footprint for the whole Client Portal.
+            PortalContactRequestModel.Configure(builder);
+
+            // DOC1 - published client documents. Same reason again, and it is why the DOC1 slice
+            // needed no edit to CrossDbContext at all: PortalModel is already wired there, so a new
+            // portal table costs one line HERE rather than a DbSet in a file three work streams share.
+            ClientDocumentPublicationModel.Configure(builder);
         }
     }
 }

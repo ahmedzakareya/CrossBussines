@@ -1,0 +1,171 @@
+@using System.Globalization
+@*
+    THE PORTAL LOGIN SCREEN — security-required, and re-skinned to the RETAINED portal identity.
+
+    IT IS BUILT ON /portal-assets (Metronic demo30's authentication layout), not on the internal
+    /Backend-assets bundles the programme version used. The reason is the one the portal header
+    already states: a customer must arrive at the portal under the same mark and the same typography
+    they just signed in under. Signing in on the internal shell and landing on demo30 would read as
+    two products.
+
+    WHAT IT DELIBERATELY DOES NOT HAVE, because each would be an authority the server must never take
+    from the browser: no company selector, no customer selector, no employee selector. The form posts
+    a username and a password; everything about WHO that is gets resolved server-side from the
+    PortalUsers row.
+
+    ONE REFUSAL FOR EVERY FAILURE. The server answers the same message for an unknown user, a wrong
+    password, a missing portal link and a deactivated one, and this page prints whatever it is given
+    without adding a reason of its own. It never branches on the failure, because branching here is
+    exactly how an account-enumeration oracle gets built back in through the front end.
+
+    The single "forgot password" slot is text with no destination yet — 3A-0C owns that flow. It sits
+    in the layout now so adding it later is a href, not a redesign.
+*@
+@{
+    Layout = null;
+    var isAr = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+}
+<!DOCTYPE html>
+<!--
+Author: Keenthemes
+Product Name: Metronic
+Product Version: 8.3.3 (demo30)
+Purchase: https://1.envato.market/EA4JP
+License: For each use you must have a valid license purchased only from above link in order to legally use the theme for your project.
+-->
+<html lang="@(isAr ? "ar" : "en")" dir="@(isAr ? "rtl" : "ltr")">
+	<head>
+		<title>@(isAr ? "دخول العملاء" : "Client sign in") — CrossBuy</title>
+		<meta charset="utf-8" />
+		<meta name="description" content="CrossBuy client portal." />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<link rel="shortcut icon" href="/Backend-assets/media/logos/favicon.ico" asp-append-version="true" />
+		<link rel="icon" type="image/svg+xml" href="/Backend-assets/media/logos/crossbuy-favicon.svg" asp-append-version="true" />
+		<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,400,500,600,700" />
+		@if (isAr)
+		{
+			<link href="/portal-assets/plugins/global/plugins.bundle.rtl.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+			<link href="/portal-assets/css/style.bundle.rtl.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+			<link href="/Backend-assets/fonts/cairo/cairo.css" rel="stylesheet" asp-append-version="true">
+			<style>
+				html[lang="ar"] body { font-family: 'Cairo', sans-serif; direction: rtl; text-align: right; }
+				html[lang="ar"] .btn, html[lang="ar"] input, html[lang="ar"] h1 { font-family: 'Cairo', sans-serif; }
+			</style>
+		}
+		else
+		{
+			<link href="/portal-assets/plugins/global/plugins.bundle.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+			<link href="/portal-assets/css/style.bundle.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+		}
+	</head>
+	<body id="kt_body" class="app-blank">
+		<script>var defaultThemeMode = "light"; var themeMode; if ( document.documentElement ) { if ( document.documentElement.hasAttribute("data-bs-theme-mode")) { themeMode = document.documentElement.getAttribute("data-bs-theme-mode"); } else { if ( localStorage.getItem("data-bs-theme") !== null ) { themeMode = localStorage.getItem("data-bs-theme"); } else { themeMode = defaultThemeMode; } } if (themeMode === "system") { themeMode = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"; } document.documentElement.setAttribute("data-bs-theme", themeMode); }</script>
+		<div class="d-flex flex-column flex-root" id="kt_app_root">
+			<div class="d-flex flex-column flex-lg-row flex-column-fluid">
+				<!--begin::Form side-->
+				<div class="d-flex flex-column flex-lg-row-fluid w-lg-50 p-10 order-2 order-lg-1">
+					<div class="d-flex flex-center flex-column flex-lg-row-fluid">
+						<div class="w-lg-500px p-10">
+							<form id="portalLoginForm" method="post" asp-controller="PortalAccount" asp-action="Login">
+								@Html.AntiForgeryToken()
+								<input type="hidden" name="returnUrl" value="@(ViewData["ReturnUrl"])" />
+
+								<div class="text-center mb-11">
+									<img alt="CrossBuy" class="h-40px mb-6"
+										 src="/Backend-assets/media/brand/crossbuy-logo-lockup.png" asp-append-version="true" />
+									<h1 class="text-gray-900 fw-bolder mb-3">@(isAr ? "دخول العملاء" : "Client sign in")</h1>
+									<div class="text-gray-500 fw-semibold fs-6">@(isAr ? "بوابة العملاء" : "Client portal")</div>
+								</div>
+
+								@* The refusal slot. One message for every failure — the server never says
+								   which check refused, and neither does this. *@
+								<div id="portalLoginError" class="alert alert-danger d-none" role="alert"></div>
+
+								<div class="fv-row mb-8">
+									<input type="text" name="userName" id="userName" autocomplete="username"
+										   class="form-control bg-transparent"
+										   placeholder="@(isAr ? "اسم المستخدم" : "Username")" />
+								</div>
+
+								<div class="fv-row mb-3">
+									<input type="password" name="password" id="password" autocomplete="current-password"
+										   class="form-control bg-transparent"
+										   placeholder="@(isAr ? "كلمة المرور" : "Password")" />
+								</div>
+
+								<div class="d-flex flex-stack flex-wrap gap-3 fs-base fw-semibold mb-8">
+									<label class="form-check form-check-custom form-check-sm">
+										<input class="form-check-input" type="checkbox" name="rememberMe" value="true" />
+										<span class="form-check-label text-gray-600">@(isAr ? "تذكرني" : "Remember me")</span>
+									</label>
+									@* 3A-0C owns the reset flow; the slot exists so adding it is a href. *@
+									<span class="text-muted">@(isAr ? "نسيت كلمة المرور؟" : "Forgot password?")</span>
+								</div>
+
+								<div class="d-grid mb-10">
+									<button type="submit" id="portalLoginSubmit" class="btn btn-primary">
+										<span class="indicator-label">@(isAr ? "دخول" : "Sign in")</span>
+									</button>
+								</div>
+							</form>
+						</div>
+					</div>
+				</div>
+				<!--end::Form side-->
+				<!--begin::Brand side-->
+				<div class="d-flex flex-lg-row-fluid w-lg-50 bgi-size-cover bgi-position-center order-1 order-lg-2"
+					 style="background-color: #1877F2;">
+					<div class="d-flex flex-column flex-center py-15 px-5 px-md-15 w-100">
+						<img alt="CrossBuy" class="h-60px mb-8" src="/Backend-assets/media/brand/crossbuy-disc.png" asp-append-version="true" />
+						<h1 class="text-white fs-2qx fw-bolder text-center mb-7">@(isAr ? "بوابة العملاء" : "Client portal")</h1>
+						<div class="text-white fs-base text-center opacity-75">
+							@(isAr
+								? "تابع عروض الأسعار والفواتير والمشاريع والمستندات الخاصة بك."
+								: "Follow your quotations, invoices, projects and documents.")
+						</div>
+					</div>
+				</div>
+				<!--end::Brand side-->
+			</div>
+		</div>
+
+		<script>var hostUrl = "/portal-assets/";</script>
+		<script src="/portal-assets/plugins/global/plugins.bundle.js"></script>
+		<script src="/portal-assets/js/scripts.bundle.js"></script>
+		<script>
+			// Posts the form and follows the server's redirect. The server answers JSON so a refusal can
+			// be shown without losing what was typed, which is the same shape Account/Login uses.
+			//
+			// IT NEVER INVENTS A MESSAGE. Whatever the server said is printed verbatim, and a transport
+			// failure shows the same empty box rather than a second, distinguishable error - the front
+			// end must not become the oracle the back end refuses to be.
+			(function () {
+				"use strict";
+				var form = document.getElementById("portalLoginForm");
+				var box = document.getElementById("portalLoginError");
+				var btn = document.getElementById("portalLoginSubmit");
+
+				form.addEventListener("submit", function (e) {
+					e.preventDefault();
+					box.classList.add("d-none");
+					btn.disabled = true;
+
+					fetch(form.action, {
+						method: "POST",
+						credentials: "same-origin",
+						headers: { "X-Requested-With": "XMLHttpRequest" },
+						body: new FormData(form)
+					})
+					.then(function (r) { return r.json(); })
+					.then(function (res) {
+						if (res && res.success) { window.location.href = res.redirectUrl; return; }
+						box.textContent = (res && res.message) ? res.message : "";
+						box.classList.remove("d-none");
+						btn.disabled = false;
+					})
+					.catch(function () { box.classList.remove("d-none"); btn.disabled = false; });
+				});
+			})();
+		</script>
+	</body>
+</html>

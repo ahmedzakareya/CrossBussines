@@ -364,10 +364,15 @@ namespace CrossBuy.BL.Communication
 
             // The row-level half of the own-author exception. Testing membership of Allowed here instead would
             // be the leak described above.
+            // The own-author exception, by actor rather than by int — same reasoning as
+            // ResolveCommentRights. A caller with no resolved actor is nobody's author.
             if (comment.Visibility == CommVisibility.Restricted
-                && !visibilities.MayReadAnyRestricted
-                && comment.AuthorEmployeeId != (context.EmployeeId ?? 0))
-                return false;
+                && !visibilities.MayReadAnyRestricted)
+            {
+                var caller = CommActor.TryFromContext(context);
+                var author = CommActor.TryFromColumns(comment.AuthorEmployeeId, comment.AuthorPortalUserId);
+                if (caller == null || author == null || caller.Value != author.Value) return false;
+            }
 
             return true;
         }
@@ -379,7 +384,16 @@ namespace CrossBuy.BL.Communication
             ArgumentNullException.ThrowIfNull(threadAccess);
             ArgumentNullException.ThrowIfNull(comment);
 
-            bool mine = comment.AuthorEmployeeId == (context.EmployeeId ?? 0);
+            // OWNERSHIP IS AN ACTOR COMPARISON, NOT AN INT ONE.
+            //
+            // This line used to read `comment.AuthorEmployeeId == (context.EmployeeId ?? 0)`. Both
+            // sides collapsed an unresolved identity to 0, so an unresolved caller "owned" every
+            // comment authored by 0 — and CanDelete follows directly from `mine`. CommActor compares
+            // (kind, id), so employee 7 and portal user 7 are different people, and an unresolved
+            // caller has no actor at all and therefore owns nothing.
+            var caller = CommActor.TryFromContext(context);
+            var author = CommActor.TryFromColumns(comment.AuthorEmployeeId, comment.AuthorPortalUserId);
+            bool mine = caller != null && author != null && caller.Value == author.Value;
             bool deleted = comment.DeletedAt != null;
 
             if (!threadAccess.CanRead)

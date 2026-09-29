@@ -121,8 +121,19 @@ namespace CrossBuy.Analyzers
                 matched.Add(endpoint.Id);
 
                 var inBaseline = baseline != null && baseline.Entries.TryGetValue(endpoint.Id, out var entry);
-                var declaredAnonymous = inBaseline &&
-                                        baseline!.Entries[endpoint.Id].IsAnonymousByDesign;
+
+                // TWO ROUTES TO "ANONYMOUS ON PURPOSE", and they are not equivalent.
+                //
+                //   THE ATTRIBUTE is the one new code uses: a declaration in source, carrying a reason a
+                //   reviewer can argue with, sitting where the endpoint is read.
+                //
+                //   THE BASELINE CLASSIFICATION is the historical one, and it stays only because two
+                //   logins were grandfathered into it before the attribute existed. It is NOT the route
+                //   for anything new: that file says of itself that it may only SHRINK and that CI
+                //   rejects any commit adding an entry, so declaring a new login there would require
+                //   breaking the invariant that makes it worth having.
+                var declaredAnonymous = endpoint.IsAnonymousByDesign
+                                        || (inBaseline && baseline!.Entries[endpoint.Id].IsAnonymousByDesign);
 
                 // CBA005 — anonymous on purpose has to be declared on purpose.
                 if (endpoint.IsAnonymousDeclared && !declaredAnonymous)
@@ -142,7 +153,11 @@ namespace CrossBuy.Analyzers
                 // CBA001 — new debt. Suppressed when no baseline was supplied, because 143 accepted entries would
                 // otherwise be reported as new debt on a misconfiguration. That degradation is declared in the
                 // design document rather than silently relied on.
-                if (baseline != null && !inBaseline)
+                // A SOURCE DECLARATION SATISFIES CBA001 INSTEAD OF A BASELINE ENTRY - it does not
+                // WEAKEN it. An undeclared unprotected endpoint still fails, an [AllowAnonymous] POST
+                // with no attribute still fails, and the declaration cannot be written without a
+                // reason, because the attribute refuses an empty one at construction.
+                if (baseline != null && !inBaseline && !endpoint.IsAnonymousByDesign)
                 {
                     context.ReportDiagnostic(Diagnostic.Create(
                         AuthorizationDiagnostics.NewUnprotectedEndpoint, location, endpoint.Id));

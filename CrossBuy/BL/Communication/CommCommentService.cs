@@ -103,7 +103,11 @@ namespace CrossBuy.BL.Communication
             ArgumentNullException.ThrowIfNull(context);
             ArgumentNullException.ThrowIfNull(request);
 
-            if (context.EmployeeId is not > 0)
+            // A comment needs a resolved AUTHOR — of either kind. This used to demand an employee,
+            // which was correct while employees were the only actors and would now refuse every
+            // external comment. CommActor.FromContext still refuses an unresolved identity, so the
+            // guarantee is unchanged; what widened is who counts as resolved.
+            if (CommActor.TryFromContext(context) == null)
                 throw new CommValidationException(
                     CommValidationException.Codes.ActorRequired,
                     "A comment needs a resolved author. An unresolved identity cannot author content.");
@@ -202,7 +206,7 @@ namespace CrossBuy.BL.Communication
                 Body = prepared.Body,
                 BodyFormat = prepared.Format,
                 Visibility = request.Visibility,
-                AuthorEmployeeId = context.EmployeeId.Value,
+                Author = CommActor.FromContext(context),
                 RevisionCount = 0,
                 BodyAnalysisJson = System.Text.Json.JsonSerializer.Serialize(prepared.Analysis),
                 DedupKey = string.IsNullOrWhiteSpace(request.DedupKey) ? null : request.DedupKey!.Trim(),
@@ -340,7 +344,10 @@ namespace CrossBuy.BL.Communication
                 Body = comment.Body,
                 BodyFormat = comment.BodyFormat,
                 Visibility = comment.Visibility,
-                EditedByEmployeeId = context.EmployeeId ?? 0,
+                // No `?? 0`: a revision records WHO edited, and 0 is not a person. The edit path is
+                // reachable only for a caller with rights on the comment, so the actor always resolves.
+                EditedByEmployeeId = CommActor.FromContext(context).EmployeeId,
+                EditedByPortalUserId = CommActor.FromContext(context).PortalUserId,
                 EditedAt = DateTime.UtcNow,
                 Reason = request.Reason,
                 CreatedBy = context.EmployeeId,
@@ -436,7 +443,12 @@ namespace CrossBuy.BL.Communication
             thread.CommentCount = Math.Max(0, thread.CommentCount - 1);
             thread.UpdatedAt = comment.UpdatedAt;
 
-            bool byModerator = comment.AuthorEmployeeId != (context.EmployeeId ?? 0);
+            // An ACTOR comparison. The old int form asked "is the author the same employee as the
+            // caller", which a portal author could never satisfy — their own retraction would have
+            // been written into the audit trail as a moderator act.
+            var actingAs = CommActor.TryFromContext(context);
+            var commentAuthor = CommActor.TryFromColumns(comment.AuthorEmployeeId, comment.AuthorPortalUserId);
+            bool byModerator = actingAs == null || commentAuthor == null || actingAs.Value != commentAuthor.Value;
 
             await _events.PublishAsync(new CommEvent
             {
@@ -469,7 +481,9 @@ namespace CrossBuy.BL.Communication
                     CompanyId = context.CompanyId,
                     BranchId = context.BranchId,
                     ActorEmployeeId = context.EmployeeId,
-                    RecipientEmployeeIds = new[] { comment.AuthorEmployeeId },
+                    RecipientEmployeeIds = comment.AuthorEmployeeId is > 0
+                        ? new[] { comment.AuthorEmployeeId.Value }
+                        : Array.Empty<int>(),
                     SubjectVisibility = comment.Visibility,
                     Tokens = await TokensAsync(context, thread, actorName: null, extra: (CommTemplateTokens.Reason, reason ?? ""), cancellationToken),
                     DedupKeyPrefix = $"comment:{comment.Id}:deleted",
@@ -726,11 +740,13 @@ namespace CrossBuy.BL.Communication
             BusinessContext context, CommThread thread, CommComment comment, CommComment? parent,
             CommMentionOutcome outcome, CancellationToken cancellationToken)
         {
-            if (parent == null || parent.AuthorEmployeeId <= 0) return;
+            // A portal-authored parent gets no reply notification in this wave — external delivery
+            // arrives with 3B-E. Stated here so the silence is a decision, not an oversight.
+            if (parent == null || parent.AuthorEmployeeId is not > 0) return;
 
             // Already mentioned => already told, with a better message. Sending both would be two notifications
             // for one comment.
-            if (outcome.RecipientEmployeeIds.Contains(parent.AuthorEmployeeId)) return;
+            if (outcome.RecipientEmployeeIds.Contains(parent.AuthorEmployeeId.Value)) return;
 
             await _notifications.QueueAsync(context, new CommNotificationRequest
             {
@@ -741,7 +757,7 @@ namespace CrossBuy.BL.Communication
                 CompanyId = context.CompanyId,
                 BranchId = context.BranchId,
                 ActorEmployeeId = context.EmployeeId,
-                RecipientEmployeeIds = new[] { parent.AuthorEmployeeId },
+                RecipientEmployeeIds = new[] { parent.AuthorEmployeeId.Value },
                 SubjectVisibility = comment.Visibility,
                 Tokens = await TokensAsync(context, thread, actorName: null, extra: (CommTemplateTokens.Excerpt, _body.Excerpt(comment.Body, comment.BodyFormat)), cancellationToken),
                 DedupKeyPrefix = $"comment:{comment.Id}:reply",
@@ -759,7 +775,7 @@ namespace CrossBuy.BL.Communication
             // a "new comment on a thread you follow" for the same comment is one notification too many, and the
             // mention is the better message.
             var already = new HashSet<int>(outcome.RecipientEmployeeIds);
-            if (parent?.AuthorEmployeeId > 0) already.Add(parent.AuthorEmployeeId);
+            if (parent?.AuthorEmployeeId is > 0) already.Add(parent.AuthorEmployeeId.Value);
 
             var recipients = followers.Where(id => !already.Contains(id)).ToList();
             if (recipients.Count == 0) return;

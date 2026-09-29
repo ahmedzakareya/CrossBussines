@@ -1,0 +1,77 @@
+@using System.Globalization
+@*
+    THE PORTAL REFUSAL PAGE.
+
+    The cookie handler's AccessDeniedPath points here: an authenticated portal identity that is
+    nonetheless not allowed somewhere lands on this, rather than on the INTERNAL /Account/AccessDenied
+    which is written for staff and sits behind the employee session gate.
+
+    Re-skinned onto /portal-assets with the rest of the portal, for the same reason the login screen
+    was: a refusal must not look like a different product from the one that refused.
+
+    It is deliberately plain. It states that the account cannot open that page and offers the one
+    thing the visitor can act on — going back to their portal, or signing in as someone else. It does
+    NOT say which check refused, for the same reason the login screen does not.
+*@
+@{
+    Layout = null;
+    var isAr = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+}
+<!DOCTYPE html>
+<!--
+Author: Keenthemes
+Product Name: Metronic
+Product Version: 8.3.3 (demo30)
+Purchase: https://1.envato.market/EA4JP
+License: For each use you must have a valid license purchased only from above link in order to legally use the theme for your project.
+-->
+<html lang="@(isAr ? "ar" : "en")" dir="@(isAr ? "rtl" : "ltr")">
+	<head>
+		<title>@(isAr ? "غير مسموح" : "Not permitted") — CrossBuy</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<link rel="shortcut icon" href="/Backend-assets/media/logos/favicon.ico" asp-append-version="true" />
+		<link rel="icon" type="image/svg+xml" href="/Backend-assets/media/logos/crossbuy-favicon.svg" asp-append-version="true" />
+		<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,400,500,600,700" />
+		@if (isAr)
+		{
+			<link href="/portal-assets/plugins/global/plugins.bundle.rtl.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+			<link href="/portal-assets/css/style.bundle.rtl.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+			<link href="/Backend-assets/fonts/cairo/cairo.css" rel="stylesheet" asp-append-version="true">
+			<style>
+				html[lang="ar"] body { font-family: 'Cairo', sans-serif; direction: rtl; text-align: right; }
+				html[lang="ar"] .btn, html[lang="ar"] h1 { font-family: 'Cairo', sans-serif; }
+			</style>
+		}
+		else
+		{
+			<link href="/portal-assets/plugins/global/plugins.bundle.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+			<link href="/portal-assets/css/style.bundle.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+		}
+	</head>
+	<body class="app-blank">
+		<script>var defaultThemeMode = "light"; var themeMode; if ( document.documentElement ) { if ( document.documentElement.hasAttribute("data-bs-theme-mode")) { themeMode = document.documentElement.getAttribute("data-bs-theme-mode"); } else { if ( localStorage.getItem("data-bs-theme") !== null ) { themeMode = localStorage.getItem("data-bs-theme"); } else { themeMode = defaultThemeMode; } } if (themeMode === "system") { themeMode = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"; } document.documentElement.setAttribute("data-bs-theme", themeMode); }</script>
+		<div class="d-flex flex-column flex-root">
+			<div class="d-flex flex-column flex-center flex-column-fluid p-10">
+				<img alt="CrossBuy" class="h-50px mb-10" src="/Backend-assets/media/brand/crossbuy-logo-lockup.png" asp-append-version="true" />
+				<h1 class="fw-bolder fs-2hx text-gray-900 mb-4">@(isAr ? "غير مسموح" : "Not permitted")</h1>
+				<div class="fw-semibold fs-6 text-gray-500 mb-10 text-center" style="max-width: 32rem;">
+					@(isAr
+						? "حسابك لا يملك صلاحية فتح هذه الصفحة."
+						: "Your account is not permitted to open this page.")
+				</div>
+				<div class="d-flex gap-3">
+					<a href="@Url.Action("Index", "ClientPortal")" class="btn btn-primary">
+						@(isAr ? "العودة إلى البوابة" : "Back to the portal")
+					</a>
+					<a href="@Url.Action("Login", "PortalAccount")" class="btn btn-light">
+						@(isAr ? "تسجيل الدخول بحساب آخر" : "Sign in as someone else")
+					</a>
+				</div>
+			</div>
+		</div>
+		<script>var hostUrl = "/portal-assets/";</script>
+		<script src="/portal-assets/plugins/global/plugins.bundle.js"></script>
+		<script src="/portal-assets/js/scripts.bundle.js"></script>
+	</body>
+</html>

@@ -197,17 +197,36 @@ namespace CrossBuy.Models.Context.Communication
                 e.Property(x => x.Role).HasMaxLength(VocabularyLength).IsRequired();
                 e.Property(x => x.Source).HasMaxLength(VocabularyLength).IsRequired();
 
-                // One LIVE participation per (thread, employee). Filtered on RemovedAt so an employee who
-                // left and rejoined has one live row and a full history of both.
+                // ONE LIVE PARTICIPATION PER (thread, actor) — and it takes TWO indexes, not one.
+                //
+                // The employee index keeps its original name and shape, with one clause added: a NULL
+                // EmployeeId is a portal row and must not participate in employee uniqueness. Without
+                // that clause SQL Server would treat every portal row as "EmployeeId NULL" and allow
+                // exactly one of them per thread, which would look like a mysterious duplicate-key
+                // failure on the second external participant.
+                //
+                // A SINGLE MERGED INDEX WAS THE ALTERNATIVE AND IT IS WRONG: employee 7 and portal
+                // user 7 would collide on one key, so admitting one would evict the other.
                 e.HasIndex(x => new { x.ThreadId, x.EmployeeId })
                     .IsUnique()
                     .HasDatabaseName("UX_CommParticipants_Live")
-                    .HasFilter("[RemovedAt] IS NULL");
+                    .HasFilter("[RemovedAt] IS NULL AND [EmployeeId] IS NOT NULL");
 
-                // "What am I following" — the personal read.
+                e.HasIndex(x => new { x.ThreadId, x.PortalUserId })
+                    .IsUnique()
+                    .HasDatabaseName("UX_CommParticipants_Live_Portal")
+                    .HasFilter("[RemovedAt] IS NULL AND [PortalUserId] IS NOT NULL");
+
+                // "What am I following" — the personal read, one per actor kind. The portal arm carries
+                // CompanyID first for the same reason the employee arm does: every external read is
+                // company-scoped before it is anything else.
                 e.HasIndex(x => new { x.CompanyID, x.EmployeeId, x.Role })
                     .HasDatabaseName("IX_CommParticipants_Employee")
-                    .HasFilter("[RemovedAt] IS NULL");
+                    .HasFilter("[RemovedAt] IS NULL AND [EmployeeId] IS NOT NULL");
+
+                e.HasIndex(x => new { x.CompanyID, x.PortalUserId, x.ThreadId })
+                    .HasDatabaseName("IX_CommParticipants_PortalUser")
+                    .HasFilter("[RemovedAt] IS NULL AND [PortalUserId] IS NOT NULL");
             });
 
             builder.Entity<CommMention>(e =>
@@ -260,9 +279,18 @@ namespace CrossBuy.Models.Context.Communication
                 e.HasKey(x => x.Id);
                 e.Property(x => x.Id).ValueGeneratedOnAdd();
 
+                // One watermark per (thread, actor), split by kind for the same reason participation is:
+                // a shared key would let a portal user inherit an employee's read position, or the
+                // reverse, and an unread badge that silently clears is worse than one that never does.
                 e.HasIndex(x => new { x.ThreadId, x.EmployeeId })
                     .IsUnique()
-                    .HasDatabaseName("UX_CommReadReceipts_Unique");
+                    .HasDatabaseName("UX_CommReadReceipts_Unique")
+                    .HasFilter("[EmployeeId] IS NOT NULL");
+
+                e.HasIndex(x => new { x.ThreadId, x.PortalUserId })
+                    .IsUnique()
+                    .HasDatabaseName("UX_CommReadReceipts_Portal")
+                    .HasFilter("[PortalUserId] IS NOT NULL");
             });
         }
 

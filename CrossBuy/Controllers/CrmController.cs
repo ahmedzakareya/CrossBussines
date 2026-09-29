@@ -27,7 +27,10 @@ namespace CrossBuy.Controllers
 	public class CrmRoleRow { public int ID { get; set; } public int EmployeeId { get; set; } public string EmployeeName { get; set; } = ""; public string Role { get; set; } = ""; }
 
 	[SessionValidation]
-	public class CrmController : Controller
+	// PARTIAL: the Client Portal contacts screen lives in CrmController.PortalUsers.cs. It is a partial
+// rather than a controller of its own because a portal contact is a customer's person, so it answers
+// to the CRM authority this file already wires - and because the platform's controller count is frozen.
+public partial class CrmController : Controller
 	{
 		private readonly ICrmService _crm;
 		private readonly CrossDbContext _context;

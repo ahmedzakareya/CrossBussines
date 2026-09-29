@@ -1,0 +1,403 @@
+/* ================================================================================================
+   CrossBusiness Platform — SEMANTIC TOKEN LAYER  (Premium Executive, approved direction C)
+   TAB-V · V1 · crossbusiness-tokens.css
+   ================================================================================================
+
+   WHAT THIS FILE IS
+   The vocabulary CrossBusiness owns. It sits BELOW the framework alias layer, reversing today's
+   direction: CrossBusiness declares the values, and crossbuy-brand.css points Bootstrap/Metronic
+   variables at them. Nothing here targets a Metronic class, so this file cannot fight the
+   framework - it only supplies it.
+
+       crossbusiness-tokens.css      <- this file. the vocabulary.
+            v
+       crossbuy-brand.css           <- framework alias layer (--bs-*, --kt-*). V2.
+            v
+       Metronic / Bootstrap semantic consumption
+            v
+       approved narrow component styles
+
+   LOAD ORDER
+   AFTER style.bundle(.rtl).css and BEFORE crossbuy-brand.css. V1 does not wire it into any
+   layout; that is V2. Declaring it early lets V1 ship the vocabulary and the assets without
+   changing a single rendered pixel.
+
+   ------------------------------------------------------------------------------------------------
+   THE CONTRAST LAW
+   Every text-bearing role below carries its MEASURED WCAG 2.1 ratio in a comment beside it.
+   The numbers were computed by tools/tabv/contrast.py (sRGB relative luminance) and nothing is
+   written here that the script did not print. A role that fails 4.5:1 may exist as an identity
+   or as a non-text graphic, but it MUST NOT carry small text, and it says so in place.
+
+   THE GOLD RULE, made mechanical
+   The old identity's failure was that the brand accent and the warning semantic were the SAME
+   hex (#F59E0B), so no tool could tell a brand accent from a misused warning. Here they are
+   different values by construction:
+
+       --cb-accent   #D4AF37   gold   - decoration, rules, rails, selected emphasis
+       --cb-warning  #F59E0B   amber  - caution semantics only
+
+   Gold measures 2.10:1 against white BOTH ways: white on gold FAILS, and gold text on white
+   FAILS. Gold is therefore never a button, never small text, and never a fill under a label.
+   Where gold must carry a word, --cb-accent-ink (#755C18, 6.36 on white) is the only legal form.
+   ================================================================================================ */
+
+:root,
+[data-bs-theme="light"] {
+
+  /* ---- 1. BRAND SCALE -------------------------------------------------------------------
+     Built around the approved Primary Blue #3A5795. Unlike the identity it replaces, 500
+     passes AA in BOTH directions (7.05 as a fill under white, 7.05 as text on white), so the
+     brand does not need a separate "fill" step to be legible. */
+  --cb-brand-25:  #F4F6FB;
+  --cb-brand-50:  #EAEFF8;
+  --cb-brand-100: #D5DEEF;
+  --cb-brand-200: #B3C2DF;
+  --cb-brand-300: #8FA3CB;
+  --cb-brand-400: #6D85B6;   /* white on it 3.70 - LARGE TEXT ONLY, never a small-label fill */
+  --cb-brand-500: #3A5795;   /* Primary Blue. white on it 7.05 PASS | as text on white 7.05 PASS */
+  --cb-brand-600: #334D85;   /* white on it 8.26 PASS - hover */
+  --cb-brand-700: #2B4172;   /* white on it 9.99 PASS - pressed / active nav */
+  --cb-brand-800: #24365E;   /* white on it 11.90 PASS */
+  --cb-brand-900: #1F2D4D;   /* Dark Navy. white on it 13.63 PASS - sidebar, print header */
+
+  /* ---- 2. ACCENT (GOLD) -----------------------------------------------------------------
+     400 is the identity value. It is a DECORATIVE role. Read the gold rule above. */
+  --cb-accent-50:  #FBF6E6;
+  --cb-accent-100: #F4E8C0;
+  --cb-accent-200: #E9D488;
+  --cb-accent-300: #DDC05C;
+  --cb-accent-400: #D4AF37;  /* IDENTITY. white on it 2.10 FAIL | as text on white 2.10 FAIL
+                                legal uses: rules, rails, dividers, selected emphasis, chart
+                                highlight, print rule. On navy it reads 6.48 PASS. */
+  --cb-accent-500: #B8942A;  /* 2.87 on white - FAIL as text. Fill/graphic only. */
+  --cb-accent-600: #96771F;  /* 4.24 on white - LARGE TEXT ONLY */
+  --cb-accent-700: #755C18;  /* 6.36 on white PASS - the ONLY gold that may carry small text */
+  --cb-accent-800: #554211;
+
+  --cb-accent:      var(--cb-accent-400);
+  --cb-accent-ink:  var(--cb-accent-700);   /* gold that is allowed to be a word */
+  --cb-accent-rail: var(--cb-accent-400);   /* 3-4px inset rail on navy: 6.48 PASS */
+
+  /* ---- 3. NEUTRAL SCALE -----------------------------------------------------------------
+     Declared so the ~638 off-token greys measured across the view layer have somewhere to go. */
+  --cb-grey-25:  #FAFBFD;
+  --cb-grey-50:  #F5F7FB;   /* Light Canvas */
+  --cb-grey-100: #EDF1F7;
+  --cb-grey-200: #E3E8F0;
+  --cb-grey-300: #CBD3E1;
+  --cb-grey-400: #A8B3C7;
+  --cb-grey-500: #8A97B4;   /* 2.93 on white - NOT TEXT. borders, dividers, disabled glyphs. */
+  --cb-grey-600: #6B7994;   /* 4.39 on white - LARGE TEXT ONLY. placeholders, decorative icons. */
+  --cb-grey-700: #4E5A73;   /* 6.92 on white PASS - the muted text value */
+  --cb-grey-800: #343E54;   /* 10.70 on white PASS */
+  --cb-grey-900: #1F2937;   /* 14.68 on white PASS - body ink */
+
+  /* ---- 4. SURFACE ROLES -----------------------------------------------------------------
+     Four levels, capped deliberately. "No excessive nested cards" is unenforceable without a
+     limited surface vocabulary; a fifth level is a design review, not a new token. */
+  --cb-surface-page:    #F5F7FB;   /* the canvas */
+  --cb-surface-raised:  #FFFFFF;   /* cards, panels, table bodies */
+  --cb-surface-sunken:  #EDF1F7;   /* wells, inset groups, table header */
+  --cb-surface-overlay: #FFFFFF;   /* modals, drawers, popovers */
+  --cb-surface-brand:   var(--cb-brand-50);    /* selected row / light brand tint. ink 12.72 PASS */
+  --cb-surface-inverse: var(--cb-brand-900);   /* sidebar, print band */
+
+  /* ---- 5. TEXT ROLES --------------------------------------------------------------------- */
+  --cb-text:            var(--cb-grey-900);  /* 14.68 PASS */
+  --cb-text-secondary:  var(--cb-grey-800);  /* 10.70 PASS */
+  --cb-text-muted:      var(--cb-grey-700);  /* 6.92  PASS  <- muted still passes AA, by choice */
+  --cb-text-placeholder:var(--cb-grey-600);  /* 4.39  large-only: placeholders are not content */
+  --cb-text-brand:      var(--cb-brand-500); /* 7.05  PASS */
+  --cb-text-on-brand:   #FFFFFF;             /* on brand-500..900: 7.05 .. 13.63 PASS */
+  --cb-text-on-inverse: #FFFFFF;             /* 13.63 PASS on brand-900 */
+  --cb-text-inverse-muted: #9FB3D6;          /* 6.42  PASS on brand-900 */
+
+  /* ---- 6. BORDER ROLES ------------------------------------------------------------------- */
+  --cb-border:          var(--cb-grey-200);
+  --cb-border-strong:   var(--cb-grey-300);
+  --cb-border-subtle:   var(--cb-grey-100);
+  --cb-border-brand:    var(--cb-brand-500);
+  --cb-border-inverse:  #2E4678;
+  --cb-border-accent:   var(--cb-accent-400);
+
+  /* ---- 7. FOCUS -------------------------------------------------------------------------
+     Focus must be visible against BOTH the canvas and a dark shell. Both ratios clear 3:1,
+     the non-text minimum for a UI component boundary. */
+  --cb-focus-ring:        var(--cb-brand-500);     /* 7.05 vs white, 6.58 vs canvas */
+  --cb-focus-ring-dark:   var(--cb-brand-300);     /* 5.37 vs brand-900 */
+  --cb-focus-ring-width:  3px;
+  --cb-focus-ring-offset: 2px;
+  --cb-focus-ring-shadow: 0 0 0 var(--cb-focus-ring-width) rgba(58, 87, 149, .28);
+
+  /* ---- 8. SEMANTIC STATUS ---------------------------------------------------------------
+     Deliberately independent of the brand, so "success" is never mistaken for "branded".
+     `-base` is a FILL/graphic value; `-text` is the legible variant; `-strong` is the solid
+     fill that may carry a white label. */
+  --cb-success-bg:     #DCFCE7;  --cb-success-base:  #16A34A;  /* white on base 3.30 large-only */
+  --cb-success-strong: #15803D;  /* white on it 5.02 PASS */
+  --cb-success-text:   #14532D;  /* 9.11 on white, 8.30 on its own bg - PASS */
+  --cb-success-border: #86EFAC;
+
+  --cb-warning-bg:     #FEF3C7;  --cb-warning-base:  #F59E0B;  /* white on base 2.15 FAIL - never a label fill */
+  --cb-warning-strong: #B45309;  /* white on it 5.02 PASS */
+  --cb-warning-text:   #78350F;  /* 9.07 on white, 8.15 on its own bg - PASS */
+  --cb-warning-border: #FCD34D;
+
+  --cb-danger-bg:      #FEE2E2;  --cb-danger-base:   #EF4444;  /* white on base 3.76 large-only */
+  --cb-danger-strong:  #DC2626;  /* white on it 4.83 PASS */
+  --cb-danger-text:    #7F1D1D;  /* 10.02 on white, 8.20 on its own bg - PASS */
+  --cb-danger-border:  #FCA5A5;
+
+  --cb-info-bg:        #DBEAFE;  --cb-info-base:     #3B82F6;  /* white on base 3.68 large-only */
+  --cb-info-strong:    #2563EB;  /* white on it 5.17 PASS */
+  --cb-info-text:      #1E3A8A;  /* 10.36 on white, 8.49 on its own bg - PASS */
+  --cb-info-border:    #93C5FD;
+
+  --cb-neutral-bg:     #EDF1F7;  --cb-neutral-base:  #8A97B4;
+  --cb-neutral-strong: #6B7994;  /* white on it 4.39 - LARGE ONLY. neutral has no small-label fill. */
+  --cb-neutral-text:   #343E54;  /* 10.70 on white, 9.44 on its own bg - PASS */
+  --cb-neutral-border: #CBD3E1;
+
+  /* ---- 9. FINANCIAL STATUS --------------------------------------------------------------
+     Metronic has no concept of these and generic status colours do not cover them. All are
+     TEXT roles and all clear AA on white and on the canvas.
+
+     --cb-reversed exists because this platform's correction primitive is REVERSE, NEVER
+     DELETE. A reversed document must be visually distinct from a deleted one, since deleted
+     ones do not exist. */
+  --cb-debit:          #2B4172;  /* 9.99 white / 9.32 canvas - PASS */
+  --cb-credit:         #755C18;  /* 6.36 white / 5.93 canvas - PASS (the legible gold) */
+  --cb-posted:         #15803D;  /* 5.02 white / 4.68 canvas - PASS */
+  --cb-draft:          #4E5A73;  /* 6.92 white / 6.45 canvas - PASS */
+  --cb-reversed:       #B45309;  /* 5.02 white / 4.68 canvas - PASS */
+  --cb-negative-stock: #DC2626;  /* 4.83 white / 4.50 canvas - PASS */
+  --cb-debit-bg:    var(--cb-brand-50);
+  --cb-credit-bg:   var(--cb-accent-50);
+  --cb-posted-bg:   var(--cb-success-bg);
+  --cb-draft-bg:    var(--cb-grey-100);
+  --cb-reversed-bg: var(--cb-warning-bg);
+
+  /* ---- 10. TYPOGRAPHY --------------------------------------------------------------------
+     Cairo is the single family, Arabic and Latin, bundled locally (see @font-face below).
+     There is no remote font dependency and no Latin companion to fail separately. */
+  --cb-font-sans: "Cairo", "Segoe UI", Tahoma, Arial, sans-serif;
+  --cb-font-mono: ui-monospace, SFMono-Regular, "Cascadia Mono", Consolas, monospace;
+  --cb-font-numeric: var(--cb-font-sans);
+
+  --cb-fs-display:   2.25rem;   --cb-lh-display: 1.20;
+  --cb-fs-h1:        1.75rem;   --cb-lh-h1:      1.25;
+  --cb-fs-h2:        1.375rem;  --cb-lh-h2:      1.30;
+  --cb-fs-h3:        1.125rem;  --cb-lh-h3:      1.35;
+  --cb-fs-body:      0.9375rem; --cb-lh-body:    1.55;
+  --cb-fs-small:     0.875rem;  --cb-lh-small:   1.50;
+  --cb-fs-caption:   0.8125rem; --cb-lh-caption: 1.45;
+  --cb-fs-table-head:0.78125rem;
+  --cb-fs-kpi:       1.875rem;  --cb-lh-kpi:     1.15;
+
+  --cb-fw-regular: 400;
+  --cb-fw-medium:  500;
+  --cb-fw-semi:    600;
+  --cb-fw-bold:    700;
+  --cb-fw-heavy:   800;
+
+  --cb-track-caps: .14em;   /* uppercase eyebrow / table header */
+  --cb-track-tag:  .075em;  /* tagline lockups */
+
+  /* Financial and numeric data must line up column to column. */
+  --cb-numeric: tabular-nums lining-nums;
+
+  /* ---- 11. SPACING (8px base) ------------------------------------------------------------ */
+  --cb-space-0: 0;
+  --cb-space-1: 0.25rem;   /*  4 */
+  --cb-space-2: 0.5rem;    /*  8 */
+  --cb-space-3: 0.75rem;   /* 12 */
+  --cb-space-4: 1rem;      /* 16 */
+  --cb-space-5: 1.5rem;    /* 24 */
+  --cb-space-6: 2rem;      /* 32 */
+  --cb-space-7: 3rem;      /* 48 */
+  --cb-space-8: 4rem;      /* 64 */
+
+  /* ---- 12. RADIUS ------------------------------------------------------------------------ */
+  --cb-radius-sm:   0.375rem;
+  --cb-radius-md:   0.625rem;
+  --cb-radius-lg:   0.75rem;
+  --cb-radius-xl:   1rem;
+  --cb-radius-pill: 999px;
+
+  /* ---- 13. ELEVATION ---------------------------------------------------------------------
+     Three levels, tinted with the brand rather than neutral black, so shadows read as part of
+     the identity instead of as grime. Premium Executive rests FLAT: a card gets elevation only
+     where an interaction exists. */
+  --cb-shadow-none:    none;
+  --cb-shadow-raised:  0 1px 2px rgba(31, 45, 77, .06), 0 1px 3px rgba(31, 45, 77, .08);
+  --cb-shadow-hover:   0 4px 10px rgba(31, 45, 77, .10);
+  --cb-shadow-overlay: 0 12px 32px rgba(31, 45, 77, .18);
+
+  /* ---- 14. CARD -------------------------------------------------------------------------- */
+  --cb-card-bg:      var(--cb-surface-raised);
+  --cb-card-border:  var(--cb-border);
+  --cb-card-radius:  var(--cb-radius-lg);
+  --cb-card-shadow:  var(--cb-shadow-none);
+  --cb-card-shadow-interactive: var(--cb-shadow-hover);
+  --cb-card-pad:     var(--cb-space-5);
+  --cb-card-pad-compact: var(--cb-space-4);
+  --cb-card-header-border: var(--cb-border-subtle);
+
+  /* ---- 15. TABLE -------------------------------------------------------------------------
+     Two densities. The executive row is for dashboards and reports; the compact row exists
+     because Inventory Items, Accounting lists, HR grids and CRM lists are operational screens
+     and executive whitespace makes them slower to work in. */
+  --cb-table-head-bg:      var(--cb-surface-sunken);
+  --cb-table-head-color:   var(--cb-text-muted);
+  --cb-table-head-size:    var(--cb-fs-table-head);
+  --cb-table-head-track:   var(--cb-track-caps);
+  --cb-table-head-weight:  var(--cb-fw-bold);
+  --cb-table-head-rule:    2px solid var(--cb-brand-500);
+  --cb-table-row-border:   var(--cb-border-subtle);
+  --cb-table-row-h:            48px;   /* executive */
+  --cb-table-row-h-compact:    40px;   /* dense operational */
+  --cb-table-cell-x:           var(--cb-space-4);
+  --cb-table-cell-x-compact:   var(--cb-space-3);
+  --cb-table-row-hover-bg:     var(--cb-brand-25);
+  --cb-table-row-selected-bg:  var(--cb-brand-50);
+  --cb-table-total-rule:       2px solid var(--cb-accent-400);
+
+  /* ---- 16. FORM -------------------------------------------------------------------------- */
+  --cb-input-bg:          var(--cb-surface-raised);
+  --cb-input-color:       var(--cb-text);
+  --cb-input-border:      var(--cb-border-strong);
+  --cb-input-border-hover:var(--cb-grey-400);
+  --cb-input-radius:      var(--cb-radius-sm);
+  --cb-input-h:           42px;
+  --cb-input-h-compact:   36px;
+  --cb-input-pad-x:       var(--cb-space-3);
+  --cb-input-placeholder: var(--cb-text-placeholder);
+  --cb-input-disabled-bg: var(--cb-grey-100);
+  --cb-label-color:       var(--cb-text-secondary);
+  --cb-label-size:        var(--cb-fs-small);
+  --cb-label-weight:      var(--cb-fw-semi);
+  --cb-required-mark:     var(--cb-danger-strong);   /* paired with text, never colour alone */
+  --cb-field-gap:         var(--cb-space-4);
+  --cb-section-rule:      1px solid var(--cb-border-subtle);
+
+  /* ---- 17. NAVIGATION -------------------------------------------------------------------- */
+  --cb-nav-bg:            var(--cb-brand-900);
+  --cb-nav-width:         268px;
+  --cb-nav-width-collapsed: 76px;
+  --cb-nav-item-h:        42px;
+  --cb-nav-radius:        var(--cb-radius-md);
+  --cb-nav-color:         #C7D4EA;                 /* 9.11 on nav-bg PASS */
+  --cb-nav-color-muted:   var(--cb-text-inverse-muted);  /* 6.42 PASS */
+  --cb-nav-color-active:  #FFFFFF;                 /* 13.63 PASS */
+  --cb-nav-active-bg:     var(--cb-brand-700);     /* white on it 9.99 PASS */
+  --cb-nav-hover-bg:      rgba(255, 255, 255, .07);
+  --cb-nav-rail:          var(--cb-accent-400);    /* 6.48 on nav-bg PASS */
+  --cb-nav-rail-w:        3px;
+  --cb-nav-section-color: #9FB3D6;   /* 6.42 on navy PASS - was #8296C0 at 4.59, marginal for small uppercase */
+  --cb-nav-divider:       var(--cb-border-inverse);
+
+  --cb-header-bg:      var(--cb-surface-raised);
+  --cb-header-h:       68px;
+  --cb-header-border:  var(--cb-border);
+  --cb-header-color:   var(--cb-text);
+
+  /* ---- 18. PRINT / PDF ------------------------------------------------------------------
+     Consumed by the report renderer, not by a @media print block: this platform prints only
+     through /Reports/Viewer. Body values are chosen to stay readable in greyscale. */
+  --cb-print-band-bg:     var(--cb-brand-900);
+  --cb-print-band-color:  #FFFFFF;                 /* 13.63 PASS */
+  --cb-print-rule:        var(--cb-accent-400);    /* 6.48 on the band PASS */
+  --cb-print-ink:         var(--cb-grey-900);
+  --cb-print-muted:       var(--cb-grey-700);      /* 6.92 - still AA on paper */
+  --cb-print-border:      var(--cb-grey-300);
+  --cb-print-zebra:       var(--cb-grey-25);
+  --cb-print-total-rule:  var(--cb-accent-400);
+  --cb-print-font:        var(--cb-font-sans);
+}
+
+/* ================================================================================================
+   DARK THEME
+   Guarded so a light-mode rule cannot leak into dark, matching the discipline the existing brand
+   sheet already uses. Surfaces lift, brand text steps LIGHTER (a 500 that passes on white fails on
+   a dark ground), and gold keeps its decorative role.
+   ================================================================================================ */
+[data-bs-theme="dark"] {
+  --cb-surface-page:    #131E33;
+  --cb-surface-raised:  #1B2946;
+  --cb-surface-sunken:  #16223B;
+  --cb-surface-overlay: #22314F;
+  --cb-surface-brand:   #24365E;
+  --cb-surface-inverse: #0F1729;
+
+  --cb-text:            #E8EDF7;
+  --cb-text-secondary:  #C7D4EA;
+  --cb-text-muted:      #9FB3D6;
+  --cb-text-placeholder:#7D8FB5;
+  --cb-text-brand:      var(--cb-brand-300);
+  --cb-text-on-inverse: #FFFFFF;
+
+  --cb-border:          #2E4678;
+  --cb-border-strong:   #3C548A;
+  --cb-border-subtle:   #26375C;
+
+  --cb-focus-ring:      var(--cb-brand-300);
+  --cb-card-bg:         var(--cb-surface-raised);
+  --cb-card-border:     var(--cb-border);
+
+  --cb-table-head-bg:      var(--cb-surface-sunken);
+  --cb-table-row-border:   #26375C;
+  --cb-table-row-hover-bg: #22314F;
+  --cb-table-row-selected-bg: #24365E;
+
+  --cb-input-bg:        #16223B;
+  --cb-input-border:    #3C548A;
+  --cb-input-disabled-bg:#1B2946;
+
+  --cb-nav-bg:          #0F1729;
+  --cb-shadow-raised:   0 1px 3px rgba(0, 0, 0, .40);
+  --cb-shadow-hover:    0 4px 12px rgba(0, 0, 0, .50);
+  --cb-shadow-overlay:  0 12px 32px rgba(0, 0, 0, .60);
+}
+
+/* ================================================================================================
+   FONT FACES — local only.
+   No fonts.googleapis.com, no fonts.gstatic.com. An on-premise ERP behind a firewall gets the
+   same typography as one with an open connection, and no page load reports a user's IP to a
+   third party. These are the SAME static faces the PDF renderer embeds, so screen and print
+   share one family. Variable Cairo is deliberately NOT used: Chromium's print-to-PDF will not
+   embed a variable TTF and silently substitutes SegoeUI-Bold.
+   Cairo is licensed under the SIL Open Font License; OFL.txt ships beside the files.
+   ================================================================================================ */
+@font-face {
+  font-family: "Cairo";
+  src: url("../fonts/cairo/Cairo-Regular.woff2") format("woff2"),
+       url("../fonts/cairo/Cairo-Regular.ttf") format("truetype");
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "Cairo";
+  src: url("../fonts/cairo/Cairo-SemiBold.woff2") format("woff2"),
+       url("../fonts/cairo/Cairo-SemiBold.ttf") format("truetype");
+  font-weight: 600; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "Cairo";
+  src: url("../fonts/cairo/Cairo-Bold.woff2") format("woff2"),
+       url("../fonts/cairo/Cairo-Bold.ttf") format("truetype");
+  font-weight: 700; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "Cairo";
+  src: url("../fonts/cairo/Cairo-ExtraBold.woff2") format("woff2"),
+       url("../fonts/cairo/Cairo-ExtraBold.ttf") format("truetype");
+  font-weight: 800; font-style: normal; font-display: swap;
+}
+
+/* 500 is not a shipped Cairo weight. Mapping it to 400 rather than leaving it undeclared stops
+   the browser synthesising a smeared faux-medium when a component asks for font-weight:500. */
+@font-face {
+  font-family: "Cairo";
+  src: url("../fonts/cairo/Cairo-Regular.woff2") format("woff2");
+  font-weight: 500; font-style: normal; font-display: swap;
+}

@@ -417,7 +417,7 @@ namespace CrossBuy.BL.Communication
                 {
                     m.Id, m.ThreadId, m.CommentId, m.TargetKind, m.LabelAr, m.LabelEn,
                     m.ResolvedRecipientCount, m.MentionedByEmployeeId, m.CreatedAt,
-                    CommentVisibility = c.Visibility, c.AuthorEmployeeId, CommentDeleted = c.DeletedAt,
+                    CommentVisibility = c.Visibility, c.AuthorEmployeeId, c.AuthorPortalUserId, CommentDeleted = c.DeletedAt,
                 })
                 .Take(take)
                 .ToListAsync(cancellationToken);
@@ -429,7 +429,8 @@ namespace CrossBuy.BL.Communication
             rows = rows.Where(r =>
                 r.CommentVisibility != CommVisibility.Restricted
                 || visibilities.MayReadAnyRestricted
-                || r.AuthorEmployeeId == (context.EmployeeId ?? 0)).ToList();
+                || CommActor.TryFromColumns(r.AuthorEmployeeId, r.AuthorPortalUserId)
+                       == CommActor.TryFromContext(context)).ToList();
 
             if (rows.Count == 0) return CommTimelineSourceResult.None("empty after the restricted own-author pass");
 

@@ -83,6 +83,21 @@ namespace CrossBuy.BL
 				return Log(AuthorizationDecision.Deny(
 					companyId, Scope, action ?? "", AuthorizationReasonCodes.UnknownAction));
 
+			// AN EXTERNAL PORTAL IDENTITY IS NOT A MEMBER OF STAFF, and this module answers for staff.
+			//
+			// WHY IT IS STATED HERE RATHER THAN INHERITED: ModuleAccessServiceBase applies an employee
+			// gate, but this service implements IModuleAccessService DIRECTLY and never reaches it. The
+			// read arm below is unconditional - any caller of a configured company may view - which was
+			// true while every context carried an employee. The Client Portal context ended that, and
+			// this gate is what keeps the arm meaning what it always meant.
+			//
+			// The refusal is on the SOURCE, not on a missing EmployeeId: a worker context also has no
+			// employee and is a separate question, deliberately left alone here.
+			if (context.IsExternalPortal)
+			    return Log(AuthorizationDecision.Deny(
+			        companyId, Scope, action, AuthorizationReasonCodes.RoleNotHeld));
+
+
 			// A TARGET NAMING ANOTHER COMPANY IS REFUSED BEFORE ANY ROLE IS READ.
 			//
 			// ModuleAccessServiceBase applies this gate for the services that derive from it. This one

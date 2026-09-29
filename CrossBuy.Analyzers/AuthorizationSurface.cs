@@ -39,7 +39,31 @@ namespace CrossBuy.Analyzers
             "ProjectPerm",
             "TaskPerm",
             "CommunicationPerm",
-            "PosPerm");
+            "PosPerm",
+
+            // EXTERNAL IDENTITY, NOT A MODULE RIGHT. PortalAuthorize derives from
+            // AuthorizeAttribute and binds the CrossBuy.Portal policy, so it genuinely refuses
+            // the request - it is not a marker that merely satisfies this list. It is named here
+            // rather than folded into "Authorize" because bare [Authorize] proves authentication
+            // only, while THIS attribute names one specific scheme whose whole meaning is "an
+            // authenticated external customer", which for that audience IS the authority. What
+            // such a caller may then SEE is decided per request from the PortalUser row.
+            "PortalAuthorize");
+
+        /// <summary>
+        /// A mutating endpoint declared unauthenticated ON PURPOSE, in source, with a reason.
+        ///
+        /// WHY THIS IS NOT THE BASELINE. engineering/authorization-baseline.json is frozen
+        /// historical debt whose own rules say it "may only SHRINK" and that "CI rejects any
+        /// commit that adds an entry". Declaring a NEW legitimate login there would mean breaking
+        /// the invariant that makes the file meaningful, and would permanently count an endpoint
+        /// that is correct as one that is owed - so the debt figure could never reach zero.
+        ///
+        /// It grants silence from CBA001 and CBA005 and NOTHING ELSE: the endpoint is still not
+        /// protected, is still reported in its own column, and still owes anti-forgery.
+        /// </summary>
+        internal static readonly ImmutableHashSet<string> AnonymousByDesignAttributes =
+            ImmutableHashSet.Create("AnonymousByDesign");
 
         /// <summary>
         /// Attributes that prove AUTHENTICATION, a CSRF defence, an environment gate or a routing decision — and
@@ -181,7 +205,47 @@ namespace CrossBuy.Analyzers
             // recording resolver and fails both when a member does not ask and when a member is added that
             // the table does not cover. The declaration and that test are one unit; neither is safe alone.
             "IPlatformDocumentService", "PlatformDocumentService",
-            "IDocumentAccessResolver", "DocumentAccessResolver");
+            "IDocumentAccessResolver", "DocumentAccessResolver",
+            // The CLIENT PORTAL authority - external customer identity, which no other entry covers.
+            //
+            // ADDED BY THE SAME DELIBERATE PROCESS, and only after reading the implementation rather
+            // than the handoff. Every entry above answers for an EMPLOYEE. A portal request has no
+            // employee at all, so none of them can authorize one, and substituting an
+            // IModuleAccessService would be answering the wrong question with the wrong identity.
+            //
+            // WHY THE SERVICE AND NOT IPortalContextAccessor, which is what a reader would reach for
+            // first: the accessor RESOLVES an identity and authorizes nothing. Crediting it would mean
+            // an endpoint that merely called TryGetCurrentAsync and then ignored the answer satisfied
+            // CBA001 - the exact false credit CORRECTION-004 exists to prevent. The decision is taken
+            // one layer up, where identity and capability are checked together.
+            //
+            // IT IS AN AUTHORITY IN THE FULL SENSE, verified member by member:
+            //
+            //   * the identity comes ONLY from the authenticated principal. ResolveAsync reads
+            //     ClaimTypes.NameIdentifier and nothing else - not a header, not a route value, not a
+            //     query string - so no portal request can name the customer it speaks for;
+            //   * it fails closed on every branch: no principal, no claim, no PortalUser row, an
+            //     inactive row, CompanyID <= 0, CustomerId <= 0, and any exception while resolving all
+            //     return null, and null means REFUSE;
+            //   * every member of IPortalDataService resolves that context before it reads a row, and
+            //     the three that expose customer data also require a CAPABILITY - ViewQuotations,
+            //     ViewProjects, ViewInvoices - so authority is per-operation rather than per-session;
+            //   * absent capabilities parse to the read-only default, not to everything: a blank column
+            //     is a row nobody configured, and the safe reading of that is the minimum;
+            //   * the boundary is provable, not promised. Nothing in the portal path can produce a
+            //     BusinessContext, so a portal identity cannot reach an internal access service.
+            //
+            // THE HAZARD THIS CARRIES, stated plainly, because it is the same one the document service
+            // carries: crediting a SERVICE credits a future member that forgot to authorize. The
+            // mitigation is the same and is not optional - PortalAuthoritySurfaceTests drives every
+            // member of the interface reflectively and fails both when a member does not resolve the
+            // portal context and when a member is added that the test does not cover. The declaration
+            // and that test are one unit; neither is safe alone.
+            //
+            // WHAT THIS DOES NOT CREDIT: an endpoint that reads a CustomerId or CompanyId from the
+            // request and acts on it. A value the browser supplies is not an identity, and no entry in
+            // this file makes it one.
+            "IPortalDataService", "PortalDataService");
 
         /// <summary>
         /// Members of an authority type that are NOT authorization, named individually.

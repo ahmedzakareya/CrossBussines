@@ -346,6 +346,13 @@ namespace CrossBuy.Tests
 
             public BusinessContext ForSystem(int companyId, Guid? correlationId = null)
                 => BusinessContext.ForSystem(companyId, correlationId);
+
+            // Compelled interface member: IBusinessContextFactory gained ForExternalPortal when the
+            // Client Portal became able to establish a company context. This double models a WORKER
+            // scope, so it throws rather than returning a context nobody asked it to produce.
+            public BusinessContext ForExternalPortal(
+                int companyId, string userId, int? portalUserId = null, Guid? correlationId = null)
+                => throw new NotSupportedException("a worker scope never resolves an external portal identity");
             public BusinessContext? ScopeBoundContext => null;
             public Task<BusinessContext> ForHttpAsync(CancellationToken cancellationToken = default)
                 => throw new NotSupportedException("a worker scope never resolves from HTTP");

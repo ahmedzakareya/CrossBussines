@@ -65,6 +65,13 @@ namespace CrossBuy.Analyzers
         internal bool IsAnonymousDeclared;
 
         /// <summary>
+        /// Declared anonymous-by-design in SOURCE, with a reason. Distinct from
+        /// <see cref="IsAnonymousDeclared"/>, which only says [AllowAnonymous] is present: one is
+        /// the technical fact, the other is somebody taking responsibility for it.
+        /// </summary>
+        internal bool IsAnonymousByDesign;
+
+        /// <summary>
         /// Calls that look like authorization but resolve to no recognized authority. Drives CBA003.
         /// </summary>
         internal readonly List<string> UnsupportedAuthorizationHelpers = new List<string>();
@@ -97,5 +104,12 @@ namespace CrossBuy.Analyzers
         internal int AttributeProtectedCount;
         internal int InBodyProtectedCount;
         internal int GapCount;
+
+        /// <summary>
+        /// Mutating endpoints that are unauthenticated ON PURPOSE and say so in source. NOT
+        /// protected and NOT debt - a fourth column, so the identity is
+        /// mutating = attribute + inBody + anonymousByDesign + gaps.
+        /// </summary>
+        internal int AnonymousByDesignCount;
     }
 }

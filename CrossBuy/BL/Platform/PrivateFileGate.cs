@@ -70,6 +70,22 @@ namespace CrossBuy.BL.Platform
             ("/uploads/applicants", PrivateFilePolicy.RequireAuthenticated),  // applicant photos / CVs
             ("/uploads/library",    PrivateFilePolicy.RequireAuthenticated),  // FileManager library documents
             ("/uploads/employees",  PrivateFilePolicy.RequireAuthenticated),  // employee photographs (PII)
+
+            // PORTAL CONTACT PHOTOGRAPHS — A BACKSTOP, NOT THE AUTHORITY, and the distinction matters
+            // enough to state here. The Client Portal convergence moved these files OUT of wwwroot
+            // entirely: IPortalPhotoService stores them under the content root, where they have no
+            // URL, and serves them through two authorizing endpoints that check the portal identity
+            // or the staff company and CRM right. Nothing in the portal depends on this line.
+            //
+            // It stays because an unlisted prefix classifies as Public, so if anything ever writes a
+            // portal photograph under wwwroot again — an older deployment's files, a future upload
+            // path that forgets — the failure should be "signed-in only" rather than "anonymous".
+            //
+            // WHAT IT DELIBERATELY IS NOT: an audience-aware check. This gate reads the DEFAULT
+            // scheme's principal and knows nothing about CrossBuy.Portal; teaching it two schemes
+            // was rejected, because one boolean answering for two audiences is how the original
+            // defect happened.
+            ("/uploads/portal",     PrivateFilePolicy.RequireAuthenticated),  // legacy/portal photos (PII)
         };
 
         // Classification is a pure function of the path so it can be tested without a host, a request or a

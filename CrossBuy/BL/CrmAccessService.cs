@@ -65,6 +65,14 @@ namespace CrossBuy.BL
 			ArgumentNullException.ThrowIfNull(context);
 			if (string.IsNullOrWhiteSpace(action) || !Actions.Contains(action)) return false;
 
+			// AN EXTERNAL PORTAL IDENTITY IS NOT A MEMBER OF STAFF, and this module answers for staff.
+			// Stated here rather than inherited: this service implements IModuleAccessService DIRECTLY and
+			// never reaches the employee gate ModuleAccessServiceBase applies, while its read arm below is
+			// unconditional for a configured company. That was safe while every context carried an employee.
+			// The refusal is on the SOURCE, not on a missing EmployeeId - a worker context is a separate
+			// question and is deliberately left alone.
+			if (context.IsExternalPortal) return false;
+
 			// A COMPANY WITH ROLES CONFIGURED BEHAVES EXACTLY AS BEFORE — the roles decide.
 			if (!await AnyRoleConfiguredAsync(context.CompanyId, cancellationToken))
 			{

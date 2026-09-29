@@ -39,7 +39,11 @@ namespace CrossBuy.BL
 		Task<List<Quotation>> GetQuotationsAsync(int companyId);
 		Task<Quotation?> GetQuotationAsync(int companyId, int id);
 		Task<(bool ok, string? error, Quotation? q)> CreateQuotationAsync(int companyId, int customerId, int? warehouseId, DateTime date, DateTime? validUntil, string? notes, List<SoLineInput> lines, string? userId, int? currencyId = null, decimal? exchangeRate = null);
-		Task<(bool ok, string? error)> SetQuotationStatusAsync(int companyId, int id, string status);
+		/// `customerDecision` says the CUSTOMER answered, through the portal, and it is the only
+		/// thing that produces a Quotation.*ByCustomer event. Staff moving the same status on the
+		/// customer's behalf is a different fact and deliberately records nothing here.
+		Task<(bool ok, string? error)> SetQuotationStatusAsync(
+			int companyId, int id, string status, bool customerDecision = false);
 		Task<(bool ok, string? error, int? salesOrderId)> ConvertQuotationToOrderAsync(int companyId, int id, string? userId);
 	}
 
@@ -52,7 +56,14 @@ namespace CrossBuy.BL
 		private readonly INotificationService _notify;
 		private readonly ICurrencyService _currency;
 		private readonly ICurrencyRounding _rounding;
-		public SellingService(CrossDbContext context, IStockService stock, IReceivableService receivables, INotificationService notify, ICurrencyService currency, ICurrencyRounding rounding) { _context = context; _stock = stock; _receivables = receivables; _notify = notify; _currency = currency; _rounding = rounding; }
+
+		/// OPTIONAL so every existing construction of this service keeps working unchanged. When it is
+		/// absent the customer-decision path REFUSES rather than silently transitioning without its
+		/// event - a state change whose fact was never recorded is precisely what the outbox exists to
+		/// prevent, and quietly dropping it would be worse than refusing.
+		private readonly CrossBuy.BL.Platform.IBusinessEventService? _events;
+
+		public SellingService(CrossDbContext context, IStockService stock, IReceivableService receivables, INotificationService notify, ICurrencyService currency, ICurrencyRounding rounding, CrossBuy.BL.Platform.IBusinessEventService? events = null) { _context = context; _stock = stock; _receivables = receivables; _notify = notify; _currency = currency; _rounding = rounding; _events = events; }
 
 		private static decimal R4(decimal v) => Math.Round(v, 4, MidpointRounding.AwayFromZero);
 
@@ -136,15 +147,82 @@ namespace CrossBuy.BL
 			return (true, null, q);
 		}
 
-		public async Task<(bool ok, string? error)> SetQuotationStatusAsync(int companyId, int id, string status)
+		// =============================================================================================
+		// THE QUOTATION STATUS TRANSITION, and the customer-decision event that must share its fate.
+		//
+		// WHY THE EVENT IS RECORDED HERE AND NOT IN THE CONTROLLER. This method mutates the row and
+		// calls SaveChangesAsync; BusinessEventService.RecordAsync writes the event AND its outbox
+		// dispatch rows, and REFUSES to run without an ambient transaction. Emitting after the save
+		// would be a best-effort event that can be lost between two writes - the status would move and
+		// the fact would not, which is the one failure an outbox exists to prevent.
+		//
+		// ONLY A CUSTOMER DECISION PRODUCES AN EVENT. Staff can move a quotation to Accepted on the
+		// phone, on the customer's behalf, and that is a different fact: an event that could not tell
+		// the two apart would be useless to anyone auditing who decided. So the two authorized names
+		// carry ByCustomer, and `customerDecision` is what selects them.
+		//
+		// THE COMPANY IS NEVER TAKEN FROM THE CALLER'S ARGUMENT. RecordAsync resolves it from the
+		// ambient BusinessContext, which for a portal request is the ExternalPortal context bound from
+		// the ACTIVE PortalUser row. `companyId` here scopes the QUERY; the event's tenancy comes from
+		// the resolved identity, so a caller who lied about the company would find no row to move.
+		public async Task<(bool ok, string? error)> SetQuotationStatusAsync(
+			int companyId, int id, string status, bool customerDecision = false)
 		{
 			var allowed = new[] { "Draft", "Sent", "Accepted", "Rejected", "Expired" };
 			if (!allowed.Contains(status)) return (false, "Invalid status");
+
+			// A customer decision with no recorder REFUSES. Transitioning anyway would move the state
+			// and record nothing, which is the exact asymmetry this seam was authorized to remove.
+			if (customerDecision && _events == null)
+				return (false, "The business event recorder is unavailable");
+
 			var q = await _context.Quotations.FirstOrDefaultAsync(x => x.ID == id && x.CompanyID == companyId);
 			if (q == null) return (false, "Quotation not found");
 			if (q.Status == "Converted") return (false, "The quotation has been converted to a sales order — its status cannot be changed");
+
+			// NO EVENT FOR A TRANSITION THAT DID NOT OCCUR. Re-asserting the status a row already holds
+			// is not a decision; it is a repeat, and it must not add a second fact. Returning before the
+			// transaction also means a double-click writes nothing at all.
+			var alreadyThere = string.Equals(q.Status, status, StringComparison.Ordinal);
+
+			var eventType = !customerDecision || alreadyThere ? null
+				: string.Equals(status, "Accepted", StringComparison.Ordinal)
+					? CrossBuy.BL.Platform.QuotationEvents.AcceptedByCustomer
+				: string.Equals(status, "Rejected", StringComparison.Ordinal)
+					? CrossBuy.BL.Platform.QuotationEvents.RejectedByCustomer
+				: null;
+
+			// ONE UNIT OF WORK. BeginOrJoin, so this nests safely under an outer transaction and behaves
+			// exactly as before at a site that has none.
+			await using var tx = await ScopedTx.BeginOrJoinAsync(_context);
+
 			q.Status = status;
 			await _context.SaveChangesAsync();
+
+			if (eventType != null)
+			{
+				await _events!.RecordAsync(new CrossBuy.Models.Platform.BusinessEventRecord
+				{
+					EntityCode = CrossBuy.BL.Platform.EntityRegistry.Quotation,
+					EntityId = q.ID,
+					EventType = eventType,
+					// The DEDUP KEY is what makes a repeated decision exactly one event even if the
+					// status check above is ever bypassed: RecordAsync returns the original id and
+					// writes nothing for a key it has already stored in this company.
+					DedupKey = $"quotation-{q.ID}-{eventType}",
+					Payload = new
+					{
+						quotationId = q.ID,
+						customerId = q.CustomerId,
+						quoteNo = q.QuoteNo,
+						grandTotal = q.GrandTotal,
+						currencyId = q.CurrencyId,
+						decision = status,
+					},
+				});
+			}
+
+			await tx.CommitAsync();
 			return (true, null);
 		}
 

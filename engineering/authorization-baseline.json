@@ -1,10 +1,11 @@
-﻿{
+{
   "schema": 1,
   "generatedBy": "engineering/generate-authorization-baseline.py",
   "frozenBaseline": {
-    "mutating": 439,
-    "attributeProtected": 156,
-    "inBodyProtected": 189,
+    "mutating": 470,
+    "attributeProtected": 167,
+    "inBodyProtected": 208,
+    "anonymousByDesign": 1,
     "gaps": 94
   },
   "rules": [
@@ -1477,6 +1478,17 @@
       "inBodyProtected": "116 -> 120",
       "attributeProtected": "157 (unchanged)",
       "gaps": "143 (unchanged) - the gap set is identical id for id; no baseline entry was added or removed and CBA001 does not fire on any of the four"
+    },
+    {
+      "date": "2026-09-29",
+      "wave": "CLIENT-PORTAL-CONVERGENCE-IMPLEMENTATION-01 (TAB-3)",
+      "change": "The Client Portal convergence. New AUTHORIZED surface only: PortalAccountController (the external door), ClientPortalConversationsController (the external conversation surface), the portal's own mutating actions on ClientPortalController (comment, mark-read, accept/reject quotation, request contact) and the Portal Contacts staff screen on CrmController (photo upload/remove plus four provisioning posts). Portal Contacts added NO controller - it is a partial of CrmController, because the controller count is frozen and a portal contact is a customer's person.",
+      "mutating": "439 -> 470",
+      "attributeProtected": "156 -> 167 - [PortalAuthorize], a real AuthorizeAttribute binding the CrossBuy.Portal policy rather than a marker the analyzer merely recognises",
+      "inBodyProtected": "189 -> 208 - ICrmAccessService.CanAsync and IPortalDataService, both already declared authorities in AuthorizationSurface",
+      "anonymousByDesign": "0 -> 1 - PortalAccountController.Login, declared in SOURCE with a stated reason via [AnonymousByDesign]. It is NOT recorded as an entry here: this file may only shrink, so a legitimately new login could not be declared in it without breaking the invariant that makes it worth having. It is excluded from the debt and counted in its own column, so mutating = attributeProtected + inBodyProtected + anonymousByDesign + gaps still closes: 470 = 167 + 208 + 1 + 94.",
+      "gaps": "94 (unchanged) - the gap set is identical id for id. Not one endpoint this wave added is unprotected, no entry was added, removed or edited, TasksController.ChangeStatus was NOT reopened, and no CBA diagnostic was suppressed.",
+      "controllers": "53 -> 55"
     }
   ]
 }

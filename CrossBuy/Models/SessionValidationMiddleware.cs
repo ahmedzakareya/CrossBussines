@@ -31,7 +31,29 @@
 			// /hyper/pos (StartsWith), NOT to /hyper — the hyper BACK-OFFICE (/hyper) stays behind the Employee gate.
 			bool isHyperLane = path.StartsWith("/hyper/pos");
 
+			// 3A-0A: the CLIENT PORTAL lane. An external customer has no Employee row and therefore no
+			// employee session blob, so this gate would redirect every portal request to the INTERNAL
+			// login - which is how the portal came to be reachable only by someone who was also staff.
+			//
+			// THIS GRANTS NOTHING. It removes the portal surface from ONE question - does this request
+			// carry an employee session - and leaves it refused by its own control, exactly as the
+			// cashier app is refused by PosCtx and the hyper lane by HyperCtx. The portal-s control is
+			// the dedicated CrossBuy.Portal authentication scheme plus the PortalUser row that
+			// PortalContextAccessor demands; neither is reachable from here, and both fail closed.
+			//
+			// WHY IT IS A PATH TEST AND NOT A PRINCIPAL TEST, which is the thing worth knowing before
+			// anyone tries to improve it: this middleware runs BEFORE UseAuthorization, and the portal
+			// scheme is NOT the default one, so the portal principal has not been resolved at this point
+			// in the pipeline. A bypass conditioned on it would never match, and would fail OPEN into
+			// the employee redirect - a portal that silently stops working rather than loudly.
+			//
+			// The prefixes come from PortalAuthenticationDefaults so the lane and the scheme cannot drift
+			// apart by one being edited without the other.
+			bool isClientPortal = CrossBuy.Models.Platform.PortalAuthenticationDefaults.SurfacePathPrefixes
+				.Any(prefix => path.StartsWith(prefix, StringComparison.Ordinal));
+
 			if (!isCashierApp &&
+				!isClientPortal &&
 				!isHyperLane &&
 				!isStorefront &&
 				!path.StartsWith("/api") &&

@@ -1,0 +1,16 @@
+Cairo is licensed under the SIL Open Font License, Version 1.1.
+
+Copyright (c) 2016 The Cairo Project Authors (https://github.com/Gue3bara/Cairo)
+
+This Font Software is licensed under the SIL Open Font License, Version 1.1.
+The full licence text is published at: https://openfontlicense.org
+and in the font's own distribution at: https://github.com/Gue3bara/Cairo
+
+WHY THIS FILE IS HERE
+  BL/Reporting/Fonts/Cairo-Variable.ttf is compiled into the assembly as a manifest resource and
+  written into every report document as a base64 data: URI, so a report renders in Cairo on any
+  machine without the font being installed there. The OFL permits that redistribution and requires
+  the licence to travel with the font; this file is that requirement, not a formality.
+
+  The font is redistributed unmodified and is not sold on its own. The reserved-name clause is not
+  engaged: the family is shipped under its own name, "Cairo", with no derivative naming.

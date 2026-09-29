@@ -166,6 +166,12 @@ namespace CrossBuy.BL.Communication
 
             if (requests == null || requests.Count == 0) return Array.Empty<CommCommentAttachment>();
 
+            // THE ACTOR IS RESOLVED BEFORE ANY WORK, not at the point the row is built. This method is
+            // public on ICommAttachmentService and is not reachable only through CommCommentService,
+            // so it cannot rely on a caller having already checked — it used to, and that reliance is
+            // exactly how the `?? 0` below it stayed invisible.
+            var uploader = CommActor.FromContext(context);
+
             var entity = new CommEntityRef(thread.EntityType, thread.EntityId);
 
             // The Attachments capability is CHECKED SEPARATELY from Comments and maps to the registry's
@@ -211,7 +217,11 @@ namespace CrossBuy.BL.Communication
                     StorageKey = request.StorageKey.Trim(),
                     PreviewKind = classification.Kind,
                     CanInline = classification.CanInline,
-                    UploadedByEmployeeId = context.EmployeeId ?? 0,
+                    // WAS `context.EmployeeId ?? 0`. That silently attributed an unresolved identity to
+                    // employee 0 and, paired with the ownership test in CommAccessPolicy, made such a
+                    // caller the "owner" of every row authored by 0. CommActor.FromContext refuses
+                    // instead: an upload that cannot say who made it does not happen.
+                    UploadedBy = uploader,
                     CreatedBy = context.EmployeeId,
                     CreatedAt = DateTime.UtcNow,
                 };

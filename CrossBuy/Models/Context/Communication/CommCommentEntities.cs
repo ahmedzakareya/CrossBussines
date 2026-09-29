@@ -32,7 +32,22 @@ namespace CrossBuy.Models.Context.Communication
         public string BodyFormat { get; set; } = "";      // CommBodyFormat
         public string Visibility { get; set; } = "";      // CommVisibility
 
-        public int AuthorEmployeeId { get; set; }
+        // ---- WHO WROTE IT (Wave 3B-B1) -----------------------------------------------------------
+        //
+        // Exactly one, resolved from the BusinessContext at write time and never from a parameter.
+        // Every comment written before this column existed carries an employee and a NULL portal id,
+        // so nothing is back-filled and no historical author is rewritten.
+        public int? AuthorEmployeeId { get; set; }
+
+        /// The external author: PortalUsers.Id. NULL for every internal comment.
+        public int? AuthorPortalUserId { get; set; }
+
+        [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+        public CrossBuy.Models.Communication.CommActor Author
+        {
+            get => CrossBuy.Models.Communication.CommActor.FromColumns(AuthorEmployeeId, AuthorPortalUserId);
+            set { AuthorEmployeeId = value.EmployeeId; AuthorPortalUserId = value.PortalUserId; }
+        }
 
         // Edit history summary (modules 28, 30). RevisionCount is 0 for a never-edited comment; each edit
         // writes a CommCommentRevision holding the PREVIOUS body and increments this.
@@ -82,7 +97,21 @@ namespace CrossBuy.Models.Context.Communication
         // that matters more than a wording change, and an audit reader needs to see it in the same place.
         public string Visibility { get; set; } = "";
 
-        public int EditedByEmployeeId { get; set; }
+        // A FIFTH ACTOR COLUMN, beyond the four the wave brief names, and included for the reason the
+        // brief gives for the other four: this row records WHO, and it was written with
+        // `context.EmployeeId ?? 0`. Fixing the comment but not its revision would have left the same
+        // zero-coercion defect alive one table over, where the next reader would find it and assume
+        // it was deliberate.
+        public int? EditedByEmployeeId { get; set; }
+        public int? EditedByPortalUserId { get; set; }
+
+        [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+        public CrossBuy.Models.Communication.CommActor EditedBy
+        {
+            get => CrossBuy.Models.Communication.CommActor.FromColumns(EditedByEmployeeId, EditedByPortalUserId);
+            set { EditedByEmployeeId = value.EmployeeId; EditedByPortalUserId = value.PortalUserId; }
+        }
+
         public DateTime? EditedAt { get; set; }
         public string? Reason { get; set; }
     }
@@ -116,7 +145,22 @@ namespace CrossBuy.Models.Context.Communication
         public bool CanInline { get; set; }
         public string? ThumbnailStorageKey { get; set; }
 
-        public int UploadedByEmployeeId { get; set; }
+        // ---- WHO UPLOADED IT (Wave 3B-B1) --------------------------------------------------------
+        //
+        // THIS COLUMN CARRIED THE DEFECT. CommAttachmentService wrote `context.EmployeeId ?? 0`, so an
+        // unresolved identity became employee 0 — and CommAccessPolicy's ownership test compared the
+        // author against `context.EmployeeId ?? 0` too, which meant an unresolved caller "owned" every
+        // row authored by 0. It was out of reach only because the module gate refused external
+        // identities further up. Exactly one actor, and no zero, closes it at the source.
+        public int? UploadedByEmployeeId { get; set; }
+        public int? UploadedByPortalUserId { get; set; }
+
+        [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+        public CrossBuy.Models.Communication.CommActor UploadedBy
+        {
+            get => CrossBuy.Models.Communication.CommActor.FromColumns(UploadedByEmployeeId, UploadedByPortalUserId);
+            set { UploadedByEmployeeId = value.EmployeeId; UploadedByPortalUserId = value.PortalUserId; }
+        }
 
         public DateTime? DeletedAt { get; set; }
         public int? DeletedBy { get; set; }
