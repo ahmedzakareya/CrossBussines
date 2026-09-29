@@ -60,6 +60,28 @@ namespace CrossBuy.BL.Platform
         // what was wrong, what was done, by whom, with the screenshots that prove it.
         public const string PlatformEvent = "PlatformEvent";
 
+        // ---- STAGE 2 CONVERGENCE: identity imported from the programme line -------------------
+        //
+        // SEVEN CODES, AND NOTHING ELSE OF THEM. These are the entity codes the programme history
+        // already persisted, brought over as IDENTITY ONLY so that both lines mean the same thing by
+        // the same string. RecordAsync validates an event prefix against this registry and throws on an
+        // unknown code, so the code has to exist before any later stage can emit its events - and it
+        // must exist with the SAME spelling the programme line already wrote into its BusinessEvents.
+        //
+        // THE EntityDefinition OBJECTS ARE DELIBERATELY NOT IMPORTED. A const is inert; a definition
+        // carries capability flags that are not. Three of the programme definitions - CrmAccount, Lead
+        // and Opportunity - set SupportsTimeline true, and TimelineEventPresenter here has no arm for
+        // any of them, so registering them now would strand TimelineProjection dispatch rows on every
+        // emission. The other four are inert today but belong with the stage that can exercise them.
+        // Each definition arrives with its own stage, against a presenter that can render it.
+        public const string CrmAccount = "CrmAccount";
+        public const string Lead = "Lead";
+        public const string Opportunity = "Opportunity";
+        public const string EmployeeRequest = "EmployeeRequest";
+        public const string LeaveRequest = "LeaveRequest";
+        public const string InventoryApproval = "InventoryApproval";
+        public const string ProjectMilestone = "ProjectMilestone";
+
         // ---- permission scope keys — routed by IPlatformPermissionProvider ----
         public const string ScopeAccounting = "Accounting";
         public const string ScopeInventory = "Inventory";

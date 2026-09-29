@@ -239,6 +239,13 @@ namespace CrossBuy.BL.Platform
         public const string Completed = "Task.Completed";
         public const string Reopened = "Task.Reopened";
         public const string Cancelled = "Task.Cancelled";
+
+        // STAGE 2 CONVERGENCE: the hold lifecycle, imported as identity from the programme line.
+        // A hold is a Task fact, so it belongs in this family rather than in a new one.
+        public const string HoldRequested = "Task.HoldRequested";
+        public const string HoldApproved = "Task.HoldApproved";
+        public const string HoldRejected = "Task.HoldRejected";
+        public const string HoldResumed = "Task.HoldResumed";
     }
 
     // Named CalendarEventEvents because the ENTITY is "CalendarEvent": the doubled word is the entity plus the
@@ -254,5 +261,77 @@ namespace CrossBuy.BL.Platform
         public const string ReminderTriggered = "CalendarEvent.ReminderTriggered";
         public const string Started = "CalendarEvent.Started";
         public const string Completed = "CalendarEvent.Completed";
+    }
+
+    // =============================================================================================
+    // STAGE 2 CONVERGENCE - VOCABULARY IMPORTED FROM THE PROGRAMME LINE, IDENTITY ONLY.
+    //
+    // Every value below is the string the programme history has already written into its
+    // BusinessEvents rows. They are const strings and nothing else: no producer, no consumer, no
+    // registration and no schema arrives with them. They exist so that when each later stage lands
+    // its implementation, it emits the SAME identifier the other line already persisted, rather than
+    // inventing a second spelling for one fact - which is the failure this stage exists to prevent.
+    //
+    // NOTHING HERE IS EMITTED YET. BusinessEventTypes.Validate requires an event prefix to equal a
+    // REGISTERED entity code; the seven codes were imported in EntityRegistry alongside these, so the
+    // pairs are consistent. The EntityDefinition objects were deliberately NOT imported - see the
+    // note there - so nothing becomes searchable, pickable or timeline-projected by this stage.
+    // =============================================================================================
+
+    public static class CrmAccountEvents
+    {
+        public const string Created = "CrmAccount.Created";
+        public const string Updated = "CrmAccount.Updated";
+    }
+
+    public static class LeadEvents
+    {
+        public const string Created = "Lead.Created";
+        public const string Updated = "Lead.Updated";
+        public const string Converted = "Lead.Converted";
+        public const string FollowUpScheduled = "Lead.FollowUpScheduled";
+        public const string FollowUpCompleted = "Lead.FollowUpCompleted";
+    }
+
+    public static class OpportunityEvents
+    {
+        public const string Created = "Opportunity.Created";
+        public const string Updated = "Opportunity.Updated";
+        public const string StageChanged = "Opportunity.StageChanged";
+        public const string Won = "Opportunity.Won";
+        public const string Lost = "Opportunity.Lost";
+        public const string FollowUpScheduled = "Opportunity.FollowUpScheduled";
+        public const string FollowUpCompleted = "Opportunity.FollowUpCompleted";
+    }
+
+    public static class EmployeeRequestEvents
+    {
+        public const string Submitted = "EmployeeRequest.Submitted";
+        public const string Advanced = "EmployeeRequest.Advanced";
+        public const string Approved = "EmployeeRequest.Approved";
+        public const string Rejected = "EmployeeRequest.Rejected";
+    }
+
+    public static class LeaveRequestEvents
+    {
+        public const string Submitted = "LeaveRequest.Submitted";
+        public const string Advanced = "LeaveRequest.Advanced";
+        public const string Approved = "LeaveRequest.Approved";
+        public const string Rejected = "LeaveRequest.Rejected";
+    }
+
+    public static class InventoryApprovalEvents
+    {
+        public const string Requested = "InventoryApproval.Requested";
+        public const string Approved = "InventoryApproval.Approved";
+        public const string Rejected = "InventoryApproval.Rejected";
+    }
+
+    // The customer-facing decisions on a quotation. The Quotation entity code is already registered
+    // here, so these two need no registry change of their own.
+    public static class QuotationEvents
+    {
+        public const string AcceptedByCustomer = "Quotation.AcceptedByCustomer";
+        public const string RejectedByCustomer = "Quotation.RejectedByCustomer";
     }
 }
