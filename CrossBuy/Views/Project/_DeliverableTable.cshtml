@@ -1,0 +1,78 @@
+@using CrossBuy.Models.Context.Accounting
+@using CrossBuy.BL
+@model IReadOnlyList<CrossBuy.BL.ProjectDeliverableRow>
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@{
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    var canEdit = ViewData["CanEdit"] is true;
+    var projectId = ViewData["ProjectId"] as int? ?? 0;
+    string nm(string ar, string? en) => isAr ? ar : (string.IsNullOrEmpty(en) ? ar : en);
+    string d(DateTime? v) => v?.ToString("yyyy-MM-dd") ?? "—";
+    string badge(string s) => s switch
+    {
+        ProjectDeliverableStatuses.Delivered => "badge-light-success",
+        ProjectDeliverableStatuses.InProgress => "badge-light-primary",
+        ProjectDeliverableStatuses.Cancelled => "badge-light-dark",
+        _ => "badge-light",
+    };
+}
+<div class="table-responsive">
+    <table class="table table-row-dashed align-middle gy-3 mb-0">
+        <thead>
+            <tr class="fw-semibold text-gray-600 fs-7 text-uppercase">
+                <th>@Localizer["Deliverable"]</th>
+                <th class="w-125px">@Localizer["Due date"]</th>
+                <th class="w-125px">@Localizer["Status"]</th>
+                @if (canEdit) { <th class="text-end w-300px">@Localizer["Actions"]</th> }
+            </tr>
+        </thead>
+        <tbody>
+        @foreach (var x in Model)
+        {
+            <tr>
+                <td>
+                    <span class="text-gray-900 fw-semibold">@nm(x.Name, x.NameEn)</span>
+                    @if (!string.IsNullOrWhiteSpace(nm(x.Description ?? "", x.DescriptionEn)))
+                    {
+                        <div class="text-gray-600 fs-7">@nm(x.Description ?? "", x.DescriptionEn)</div>
+                    }
+                </td>
+                <td>
+                    <span class="text-gray-800">@d(x.DueDate)</span>
+                    @if (x.IsOverdue) { <span class="badge badge-light-danger ms-2">@Localizer["Overdue"]</span> }
+                </td>
+                <td><span class="badge @badge(x.Status)">@Localizer[x.Status]</span></td>
+                @if (canEdit)
+                {
+                    <td class="text-end">
+                        @* Only the moves the vocabulary actually permits from here are offered, so the
+                           screen never shows a button the service will refuse. *@
+                        @foreach (var next in new[] { ProjectDeliverableStatuses.InProgress, ProjectDeliverableStatuses.Delivered, ProjectDeliverableStatuses.Cancelled })
+                        {
+                            if (ProjectDeliverableStatuses.CanMove(x.Status, next))
+                            {
+                                <form method="post" action="@Url.Action("SetDeliverableStatus","Project")" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="projectId" value="@projectId" />
+                                    <input type="hidden" name="id" value="@x.Id" />
+                                    <input type="hidden" name="status" value="@next" />
+                                    <button type="submit" class="btn btn-sm btn-light">@Localizer[next]</button>
+                                </form>
+                            }
+                        }
+                        @if (x.Status == ProjectDeliverableStatuses.Pending)
+                        {
+                            <form method="post" action="@Url.Action("DeleteDeliverable","Project")" class="d-inline">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="projectId" value="@projectId" />
+                                <input type="hidden" name="id" value="@x.Id" />
+                                <button type="submit" class="btn btn-sm btn-light-danger">@Localizer["Delete"]</button>
+                            </form>
+                        }
+                    </td>
+                }
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>

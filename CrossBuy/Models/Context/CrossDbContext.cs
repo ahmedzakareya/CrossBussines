@@ -454,6 +454,58 @@ namespace CrossBuy.Models.Context
 			// is mapped in a file that work stream owns, so this shared file stays a list of calls.
 			Portal.PortalModel.Configure(builder);
 
+			builder.Entity<Accounting.ProjectMilestone>(e =>
+			{
+				e.ToTable("ProjectMilestones");
+				e.HasKey(x => x.ID);
+				e.Property(x => x.ID).ValueGeneratedOnAdd();
+				e.Property(x => x.Name).HasMaxLength(200).IsRequired();
+				e.Property(x => x.NameEn).HasMaxLength(200);
+				e.Property(x => x.Status).HasMaxLength(20).IsRequired();
+
+				// THE ONE QUERY THIS TABLE SERVES: the milestones of one project, in author order. Every
+				// read is company-scoped first, so CompanyID leads and a status filter rides the small
+				// remainder - a separate (ProjectId, Status) index would duplicate this one's prefix for a
+				// set already narrowed to a single project.
+				e.HasIndex(x => new { x.CompanyID, x.ProjectId, x.SortOrder })
+					.HasDatabaseName("IX_ProjectMilestones_ProjectOrder");
+
+				// DELETE BEHAVIOUR IS STATED, NOT INHERITED. Declared WITHOUT a navigation property on
+				// either side - ProjectMember's reason still holds, that a navigation invites an Include()
+				// which loads a project the caller may not access - so this says what happens to a milestone
+				// when its project is deleted and nothing more. Restrict mirrors the script's
+				// ON DELETE NO ACTION: deleting a project must not silently erase what it promised.
+				e.HasOne<Accounting.Project>().WithMany().HasForeignKey(x => x.ProjectId)
+					.OnDelete(DeleteBehavior.Restrict);
+			});
+
+			builder.Entity<Accounting.ProjectDeliverable>(e =>
+			{
+				e.ToTable("ProjectDeliverables");
+				e.HasKey(x => x.ID);
+				e.Property(x => x.ID).ValueGeneratedOnAdd();
+				e.Property(x => x.Name).HasMaxLength(200).IsRequired();
+				e.Property(x => x.NameEn).HasMaxLength(200);
+				e.Property(x => x.Status).HasMaxLength(20).IsRequired();
+
+				e.HasIndex(x => new { x.CompanyID, x.ProjectId, x.SortOrder })
+					.HasDatabaseName("IX_ProjectDeliverables_ProjectOrder");
+
+				// Grouping deliverables under their milestone, and answering whether a milestone still
+				// has open ones. Status is in the key because that second question is the one asked on
+				// every completion attempt.
+				e.HasIndex(x => new { x.MilestoneId, x.Status })
+					.HasDatabaseName("IX_ProjectDeliverables_Milestone");
+
+				// Both parents, both Restrict, both without navigations - same reasoning as above. The
+				// milestone relationship is OPTIONAL because MilestoneId is nullable: a project-level
+				// deliverable has no parent milestone and that is a supported shape, not a broken link.
+				e.HasOne<Accounting.Project>().WithMany().HasForeignKey(x => x.ProjectId)
+					.OnDelete(DeleteBehavior.Restrict);
+				e.HasOne<Accounting.ProjectMilestone>().WithMany().HasForeignKey(x => x.MilestoneId)
+					.OnDelete(DeleteBehavior.Restrict);
+			});
+
 			CrossBuy.BL.Platform.CompanyQueryFilters.Apply(builder, this);
 		}
 
@@ -539,6 +591,12 @@ namespace CrossBuy.Models.Context
         // written once and cannot drift between call sites.
         public DbSet<Platform.BootstrapAccessPolicy> BootstrapAccessPolicies { get; set; }
         public DbSet<Accounting.ProjectMember> ProjectMembers { get; set; }
+
+        // PROJECTS-2 milestones and deliverables. A milestone is a COMMITMENT the project made
+        // and a task is WORK somebody does; they are different tables on purpose, and nothing
+        // here creates a task - see ProjectMilestone.cs for the boundary.
+        public DbSet<Accounting.ProjectMilestone> ProjectMilestones { get; set; }
+        public DbSet<Accounting.ProjectDeliverable> ProjectDeliverables { get; set; }
 
         // ---- Reporting Platform (ADR-037) ----
         // Structure ships in deploy/sql/reporting_platform.sql (migrations are disabled). Every table is

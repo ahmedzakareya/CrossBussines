@@ -454,6 +454,33 @@ namespace CrossBuy.BL.Platform
                 PermissionScope = ScopeProjects,
                 ListedInRecordPicker = true,
             },
+            //
+            // EVERY CAPABILITY IS FALSE, INCLUDING ListedInRecordPicker, which is a SEPARATE field
+            // from SupportsSearch and would otherwise surface milestones in the picker by default.
+            // A capability describes what is WIRED and none of these are: registration makes a
+            // milestone RESOLVABLE, it does not put it into global search, a comment thread, an
+            // attachment surface, a follower list or a timeline. InventoryApproval below says the
+            // same thing for the same reason.
+            //
+            // THE ROUTE ALREADY EXISTS AND IS NOT CREATED HERE: ProjectController declares
+            // [HttpGet] Milestones(int id) and the default MVC pattern is {controller}/{action}/{id?},
+            // so /Project/Milestones/{id} is the live URL. BuildUrl substitutes {id} into it.
+            new EntityDefinition
+            {
+                Code = ProjectMilestone,
+                // The Arabic term the Milestones resources already use, written as the indefinite
+                // noun exactly as Project writes its own. Not a new coinage.
+                DisplayNameAr = "Ù…Ø¹Ù„Ù…", DisplayNameEn = "Milestone",
+                // ki-flag is the token the Milestones screen and its navigation link already use.
+                // Colour is info, a contextual colour the Projects module already carries; warning
+                // and amber are refused platform wide.
+                Module = "Projects", Icon = "ki-outline ki-flag", Color = "info",
+                RouteTemplate = "/Project/Milestones/{id}",
+                SupportsSearch = false, SupportsTimeline = false, SupportsComments = false,
+                SupportsFiles = false, SupportsFollowers = false,
+                PermissionScope = ScopeProjects,
+                ListedInRecordPicker = false,
+            },
             // The progress billing document (المستخلص). CLR type ProgressBilling; the registry CODE is
             // ProjectBilling because that is the business name, and the event prefix must equal the code.
             //
@@ -854,6 +881,21 @@ namespace CrossBuy.BL.Platform
                     label = await _db.Projects.AsNoTracking()
                         .Where(p => p.ID == entityId && p.CompanyID == companyId)
                         .Select(p => p.Code + " — " + p.Name).FirstOrDefaultAsync(cancellationToken);
+                    break;
+                // through Project here would undo it. No request-supplied company, no CompanyId = 1
+                // fallback, and the company comes from BusinessContext alone.
+                //
+                // ONE QUERY, ONE COLUMN. The label is the milestone's own Name, exactly as Customer,
+                // Lead and CrmAccount resolve theirs - no join to the project, no status text, no
+                // date. A resolved label is rendered wherever a link to this record appears, so it
+                // carries the record's name and nothing about its state.
+                //
+                // NO STATUS FILTER: resolution answers whether the record exists in this company,
+                // never whether it is still actionable. A completed or cancelled milestone resolves.
+                case ProjectMilestone:
+                    label = await _db.ProjectMilestones.AsNoTracking()
+                        .Where(m => m.ID == entityId && m.CompanyID == companyId)
+                        .Select(m => m.Name).FirstOrDefaultAsync(cancellationToken);
                     break;
                 case PosOrder:
                     label = await _db.PosOrders.AsNoTracking()

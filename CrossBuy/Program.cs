@@ -796,6 +796,12 @@ builder.Services.AddScoped<CrossBuy.BL.Platform.Orchestration.ITaskWorkPolicyRes
 builder.Services.AddScoped<CrossBuy.BL.Platform.Orchestration.ITaskOrchestrationService, CrossBuy.BL.Platform.Orchestration.TaskOrchestrationService>();
 builder.Services.AddScoped<CrossBuy.BL.Platform.IBusinessEventConsumer, CrossBuy.BL.Platform.Orchestration.TaskOrchestrationConsumer>();
 
+// ---- CONVERGENCE STAGE 5 - PROJECTS-2 milestone service ----
+// ONE scoped registration. A registration is not a permission: the milestone endpoints
+// authorize through the Projects module authority that already exists, and this adds no
+// MapPermission. Scoped because the DbContext is; a singleton would capture a scoped context.
+builder.Services.AddScoped<IProjectMilestoneService, ProjectMilestoneService>();
+
 builder.Services.AddSingleton<CrossBuy.BL.Platform.Ai.IAiConsumerGrants, CrossBuy.BL.Platform.Ai.AiConsumerGrants>();
 builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.IAiProjectionStore, CrossBuy.BL.Platform.Ai.AiProjectionStore>();
 builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.IAiProjectionBuilder, CrossBuy.BL.Platform.Ai.TaskLifecycleProjectionBuilder>();

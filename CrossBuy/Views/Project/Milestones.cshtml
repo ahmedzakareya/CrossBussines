@@ -1,0 +1,205 @@
+@using CrossBuy.Models.Context.Accounting
+@using CrossBuy.BL
+@model CrossBuy.BL.ProjectMilestoneBoard
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    var prj = ViewBag.Project as Project;
+    var canEdit = Model.CanEdit;
+    string nm(string ar, string? en) => isAr ? ar : (string.IsNullOrEmpty(en) ? ar : en);
+
+    // Badge colour per state. Amber is deliberately absent - this project bans warning-coloured
+    // treatments - so an overdue commitment reads as danger and everything else stays neutral.
+    string badge(string s) => s switch
+    {
+        ProjectMilestoneStatuses.Completed or ProjectDeliverableStatuses.Delivered => "badge-light-success",
+        ProjectMilestoneStatuses.InProgress => "badge-light-primary",
+        ProjectMilestoneStatuses.Cancelled => "badge-light-dark",
+        _ => "badge-light",
+    };
+    string d(DateTime? v) => v?.ToString("yyyy-MM-dd") ?? "—";
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading fw-bold fs-3 m-0">@Localizer["Milestones and deliverables"]</h1>
+            <span class="text-gray-700 fs-7">@(prj == null ? "" : prj.Code + " — " + nm(prj.Name, prj.NameEn))</span>
+        </div>
+        <a href="@Url.Action("Projects","Project")" class="btn btn-light">
+            <i class="ki-outline ki-arrow-@(isAr ? "right" : "left") fs-2"></i>@Localizer["Projects"]
+        </a>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (TempData["PrjMsg"] != null) { <div class="alert alert-success text-gray-800">@TempData["PrjMsg"]</div> }
+        @if (TempData["PrjErr"] != null) { <div class="alert alert-danger text-gray-800">@TempData["PrjErr"]</div> }
+
+        @* Says what this screen is NOT, because a list of dated items looks like a task list. *@
+        <div class="alert alert-light-primary d-flex align-items-center">
+            <i class="ki-outline ki-information-5 fs-2 me-3"></i>
+            <span>@Localizer["A milestone is what the project must deliver and when. Who does the work, and the hours it takes, stay with Tasks."]</span>
+        </div>
+
+        @if (Model.IsProjectClosed)
+        {
+            <div class="alert alert-light-dark d-flex align-items-center">
+                <i class="ki-outline ki-lock-2 fs-2 me-3"></i>
+                <span>@Localizer["This project is closed. Milestones and deliverables are shown for reference and cannot be changed."]</span>
+            </div>
+        }
+
+        @if (canEdit)
+        {
+            <div class="card mb-5">
+                <div class="card-header"><h3 class="card-title fw-bold">@Localizer["Add milestone"]</h3></div>
+                <div class="card-body pt-4">
+                    <form method="post" action="@Url.Action("SaveMilestone","Project")" class="row g-3 align-items-end">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="projectId" value="@(prj?.ID ?? 0)" />
+                        <input type="hidden" name="id" value="0" />
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold text-gray-800">@Localizer["Name"]</label>
+                            <input type="text" name="name" class="form-control" maxlength="200" required />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold text-gray-800">@Localizer["Name (English)"]</label>
+                            <input type="text" name="nameEn" class="form-control" maxlength="200" />
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-semibold text-gray-800">@Localizer["Target date"]</label>
+                            <input type="date" name="targetDate" class="form-control" required />
+                        </div>
+                        <div class="col-md-1">
+                            <label class="form-label fw-semibold text-gray-800">@Localizer["Order"]</label>
+                            <input type="number" name="sortOrder" class="form-control" value="0" />
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-primary w-100">@Localizer["Add"]</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        }
+
+        @if (!Model.Milestones.Any() && !Model.LooseDeliverables.Any())
+        {
+            @* The dashed notice this project uses for an empty, non-error state. *@
+            <div class="card"><div class="card-body">
+                <div class="border border-dashed border-gray-300 rounded p-8 text-center text-gray-700">
+                    <i class="ki-outline ki-flag fs-3x text-gray-400 d-block mb-3"></i>
+                    @Localizer["No milestones yet. A project with none is perfectly valid — add one when there is a dated commitment to record."]
+                </div>
+            </div></div>
+        }
+
+        @foreach (var m in Model.Milestones)
+        {
+            <div class="card mb-5">
+                <div class="card-header align-items-center">
+                    <div class="d-flex flex-column">
+                        <h3 class="card-title fw-bold m-0">@nm(m.Name, m.NameEn)</h3>
+                        <span class="text-gray-700 fs-7">@Localizer["Target"]: @d(m.TargetDate)</span>
+                    </div>
+                    <div class="card-toolbar gap-2">
+                        @if (m.IsOverdue) { <span class="badge badge-light-danger">@Localizer["Overdue"]</span> }
+                        <span class="badge @badge(m.Status)">@Localizer[m.Status]</span>
+                        @if (canEdit)
+                        {
+                            @foreach (var next in new[] { ProjectMilestoneStatuses.InProgress, ProjectMilestoneStatuses.Completed, ProjectMilestoneStatuses.Cancelled })
+                            {
+                                if (ProjectMilestoneStatuses.CanMove(m.Status, next))
+                                {
+                                    <form method="post" action="@Url.Action("SetMilestoneStatus","Project")" class="d-inline">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="projectId" value="@(prj?.ID ?? 0)" />
+                                        <input type="hidden" name="id" value="@m.Id" />
+                                        <input type="hidden" name="status" value="@next" />
+                                        <button type="submit" class="btn btn-sm btn-light">@Localizer[next]</button>
+                                    </form>
+                                }
+                            }
+                            @if (m.Status == ProjectMilestoneStatuses.Planned && !m.Deliverables.Any())
+                            {
+                                <form method="post" action="@Url.Action("DeleteMilestone","Project")" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="projectId" value="@(prj?.ID ?? 0)" />
+                                    <input type="hidden" name="id" value="@m.Id" />
+                                    <button type="submit" class="btn btn-sm btn-light-danger">@Localizer["Delete"]</button>
+                                </form>
+                            }
+                        }
+                    </div>
+                </div>
+                <div class="card-body pt-4">
+                    @if (!string.IsNullOrWhiteSpace(nm(m.Description ?? "", m.DescriptionEn)))
+                    {
+                        <p class="text-gray-800">@nm(m.Description ?? "", m.DescriptionEn)</p>
+                    }
+                    @if (m.CompletedAt != null)
+                    {
+                        <div class="text-gray-700 fs-7 mb-3">@Localizer["Completed"]: @d(m.CompletedAt)</div>
+                    }
+                    @if (m.Deliverables.Any())
+                    {
+                        <partial name="_DeliverableTable" model="m.Deliverables" view-data="@(new ViewDataDictionary(ViewData) { { "CanEdit", canEdit }, { "ProjectId", prj?.ID ?? 0 } })" />
+                    }
+                    else
+                    {
+                        <div class="text-gray-600 fs-7">@Localizer["No deliverables under this milestone."]</div>
+                    }
+                </div>
+            </div>
+        }
+
+        @if (Model.LooseDeliverables.Any())
+        {
+            <div class="card mb-5">
+                <div class="card-header"><h3 class="card-title fw-bold">@Localizer["Deliverables not under a milestone"]</h3></div>
+                <div class="card-body pt-4">
+                    <partial name="_DeliverableTable" model="Model.LooseDeliverables" view-data="@(new ViewDataDictionary(ViewData) { { "CanEdit", canEdit }, { "ProjectId", prj?.ID ?? 0 } })" />
+                </div>
+            </div>
+        }
+
+        @if (canEdit)
+        {
+            <div class="card mb-5">
+                <div class="card-header"><h3 class="card-title fw-bold">@Localizer["Add deliverable"]</h3></div>
+                <div class="card-body pt-4">
+                    <form method="post" action="@Url.Action("SaveDeliverable","Project")" class="row g-3 align-items-end">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="projectId" value="@(prj?.ID ?? 0)" />
+                        <input type="hidden" name="id" value="0" />
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold text-gray-800">@Localizer["Name"]</label>
+                            <input type="text" name="name" class="form-control" maxlength="200" required />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold text-gray-800">@Localizer["Milestone"]</label>
+                            <select name="milestoneId" class="form-select">
+                                <option value="">@Localizer["No milestone (project level)"]</option>
+                                @foreach (var m in Model.Milestones)
+                                {
+                                    <option value="@m.Id">@nm(m.Name, m.NameEn)</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-semibold text-gray-800">@Localizer["Due date"]</label>
+                            <input type="date" name="dueDate" class="form-control" />
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-semibold text-gray-800">@Localizer["Order"]</label>
+                            <input type="number" name="sortOrder" class="form-control" value="0" />
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-primary w-100">@Localizer["Add"]</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        }
+    </div></div>
+</div>

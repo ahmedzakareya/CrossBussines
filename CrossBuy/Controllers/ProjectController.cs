@@ -34,6 +34,7 @@ namespace CrossBuy.Controllers
 		private readonly IProjectsAccessService _projectsAccess;
 		// Batch: Projects foundation. The writer for dbo.ProjectMembers - see ProjectMembershipService.
 		private readonly IProjectMembershipService _members;
+		private readonly IProjectMilestoneService _milestones;
 		private readonly CrossBuy.BL.Platform.IBusinessContextAccessor _businessContexts;
 		// D1 Wave 1: the validated company source (CORRECTION-005) and the accounting right that GL-posting needs.
 		private readonly CrossBuy.BL.Platform.IRequestCompanyResolver _company;
@@ -44,10 +45,10 @@ namespace CrossBuy.Controllers
 
 		public ProjectController(IProjectService projects, IBoqService boq, IContractService contract, IProgressService progress, IProgressBillingService billing, IProjectMaterialIssueService material, IProjectLaborService labor, IProjectBudgetService budget, ISubcontractBillingService subcontract, IVariationOrderService variation, IEquipmentDepreciationService equipDep, ICostCenterService costCenters, CrossDbContext db,
 			// Stage 1 Batch C — projects access service + session-free context, for the BOQ proof endpoint.
-			IProjectsAccessService projectsAccess, IProjectMembershipService members, CrossBuy.BL.Platform.IBusinessContextAccessor businessContexts,
+			IProjectsAccessService projectsAccess, IProjectMembershipService members, IProjectMilestoneService milestones, CrossBuy.BL.Platform.IBusinessContextAccessor businessContexts,
 			CrossBuy.BL.Platform.IRequestCompanyResolver company, AccountingAccessService accounting,
 			IStringLocalizer<CrossBuy.SharedResources> localizer)
-		{ _projectsAccess = projectsAccess; _members = members; _businessContexts = businessContexts; _projects = projects; _boq = boq; _contract = contract; _progress = progress; _billing = billing; _material = material; _labor = labor; _budget = budget; _subcontract = subcontract; _variation = variation; _equipDep = equipDep; _costCenters = costCenters; _db = db; L = localizer; _company = company; _accounting = accounting; }
+		{ _projectsAccess = projectsAccess; _members = members; _milestones = milestones; _businessContexts = businessContexts; _projects = projects; _boq = boq; _contract = contract; _progress = progress; _billing = billing; _material = material; _labor = labor; _budget = budget; _subcontract = subcontract; _variation = variation; _equipDep = equipDep; _costCenters = costCenters; _db = db; L = localizer; _company = company; _accounting = accounting; }
 
 		// Projects & Contracting is its OWN system → show its sidebar (not Accounting/Admin).
 		public override void OnActionExecuting(ActionExecutingContext context)
@@ -809,6 +810,95 @@ namespace CrossBuy.Controllers
 			TempData[ok ? "PrjMsg" : "PrjErr"] = ok ? L["Depreciation allocation deleted"].Value : err;
 			return RedirectToAction(nameof(EquipmentDepreciation), new { id = projectId });
 		}
+		// ===== PROJECTS-2: milestones and deliverables =====
+		//
+		// THIN ON PURPOSE. Every rule - the company, the project's ownership of the row, the legal
+		// status moves, the cross-project deliverable check - lives in ProjectMilestoneService, which
+		// gates again on its own because it is reachable from anywhere. The gate here exists so a
+		// refusal REDIRECTS instead of rendering an empty board, which is the existing screen contract.
+		[HttpGet]
+		public async Task<IActionResult> Milestones(int id)
+		{
+			var gate = await GateAsync(ProjectsActions.Read, id);
+			if (!gate.Ok) return gate.Denied!;
+
+			var prj = await _projects.GetAsync(gate.CompanyId, id);
+			if (prj == null) return RedirectToAction(nameof(Projects));
+			ViewBag.Project = prj;
+
+			return View(await _milestones.BoardAsync(id));
+		}
+
+		[HttpPost][ValidateAntiForgeryToken]
+		public async Task<IActionResult> SaveMilestone(int projectId, int id, string? name, string? nameEn,
+			string? description, string? descriptionEn, DateTime targetDate, int sortOrder)
+		{
+			var gate = await GateAsync(ProjectsActions.Edit, projectId);
+			if (!gate.Ok) return gate.Denied!;
+
+			var (ok, err, _) = await _milestones.SaveMilestoneAsync(
+				projectId, id, name, nameEn, description, descriptionEn, targetDate, sortOrder);
+			TempData[ok ? "PrjMsg" : "PrjErr"] = ok ? L["Milestone saved"].Value : L[err ?? ""].Value;
+			return RedirectToAction(nameof(Milestones), new { id = projectId });
+		}
+
+		[HttpPost][ValidateAntiForgeryToken]
+		public async Task<IActionResult> SetMilestoneStatus(int projectId, int id, string status)
+		{
+			var gate = await GateAsync(ProjectsActions.Edit, projectId);
+			if (!gate.Ok) return gate.Denied!;
+
+			var (ok, err) = await _milestones.SetMilestoneStatusAsync(projectId, id, status ?? "");
+			TempData[ok ? "PrjMsg" : "PrjErr"] = ok ? L["Milestone updated"].Value : L[err ?? ""].Value;
+			return RedirectToAction(nameof(Milestones), new { id = projectId });
+		}
+
+		[HttpPost][ValidateAntiForgeryToken]
+		public async Task<IActionResult> DeleteMilestone(int projectId, int id)
+		{
+			var gate = await GateAsync(ProjectsActions.Edit, projectId);
+			if (!gate.Ok) return gate.Denied!;
+
+			var (ok, err) = await _milestones.DeleteMilestoneAsync(projectId, id);
+			TempData[ok ? "PrjMsg" : "PrjErr"] = ok ? L["Milestone deleted"].Value : L[err ?? ""].Value;
+			return RedirectToAction(nameof(Milestones), new { id = projectId });
+		}
+
+		[HttpPost][ValidateAntiForgeryToken]
+		public async Task<IActionResult> SaveDeliverable(int projectId, int id, int? milestoneId, string? name,
+			string? nameEn, string? description, string? descriptionEn, DateTime? dueDate, int sortOrder)
+		{
+			var gate = await GateAsync(ProjectsActions.Edit, projectId);
+			if (!gate.Ok) return gate.Denied!;
+
+			var (ok, err, _) = await _milestones.SaveDeliverableAsync(
+				projectId, id, milestoneId, name, nameEn, description, descriptionEn, dueDate, sortOrder);
+			TempData[ok ? "PrjMsg" : "PrjErr"] = ok ? L["Deliverable saved"].Value : L[err ?? ""].Value;
+			return RedirectToAction(nameof(Milestones), new { id = projectId });
+		}
+
+		[HttpPost][ValidateAntiForgeryToken]
+		public async Task<IActionResult> SetDeliverableStatus(int projectId, int id, string status)
+		{
+			var gate = await GateAsync(ProjectsActions.Edit, projectId);
+			if (!gate.Ok) return gate.Denied!;
+
+			var (ok, err) = await _milestones.SetDeliverableStatusAsync(projectId, id, status ?? "");
+			TempData[ok ? "PrjMsg" : "PrjErr"] = ok ? L["Deliverable updated"].Value : L[err ?? ""].Value;
+			return RedirectToAction(nameof(Milestones), new { id = projectId });
+		}
+
+		[HttpPost][ValidateAntiForgeryToken]
+		public async Task<IActionResult> DeleteDeliverable(int projectId, int id)
+		{
+			var gate = await GateAsync(ProjectsActions.Edit, projectId);
+			if (!gate.Ok) return gate.Denied!;
+
+			var (ok, err) = await _milestones.DeleteDeliverableAsync(projectId, id);
+			TempData[ok ? "PrjMsg" : "PrjErr"] = ok ? L["Deliverable deleted"].Value : L[err ?? ""].Value;
+			return RedirectToAction(nameof(Milestones), new { id = projectId });
+		}
+
 
 		// ===== PROJECT TEAM =====
 		//

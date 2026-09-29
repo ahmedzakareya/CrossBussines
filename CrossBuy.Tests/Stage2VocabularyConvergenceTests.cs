@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -195,16 +195,22 @@ namespace CrossBuy.Tests
         }
 
         [Fact]
-        public void An_imported_code_is_not_yet_a_registered_definition()
+        public void A_definition_arrives_only_with_the_stage_that_can_render_it()
         {
-            // STAGE BOUNDARY, ASSERTED RATHER THAN DESCRIBED. Stage 2 imported identity only; the
-            // EntityDefinition objects were deferred because three of them are timeline-enabled and
-            // TimelineEventPresenter here has no arm for them. If a later stage registers one, this
-            // test fails and points at the decision - which is the intent, not an obstacle.
+            // SUPERSEDED IN PART BY CONVERGENCE STAGE 5, AND REWRITTEN RATHER THAN DELETED. Stage 2
+            // imported identity only and deferred every EntityDefinition, because a definition carries
+            // capability flags that a bare const does not. That was the intent, and it worked: the
+            // deferral is what made Stage 5 stop and check TimelineEventPresenter before registering.
+            //
+            // Stage 5 landed the ProjectMilestone definition WITH its domain, and with SupportsTimeline
+            // still false - so the reason for the original deferral is satisfied, not bypassed. The CRM
+            // three are still absent, and still for the timeline-presenter reason.
             using var host = new PlatformTestHost();
             var registry = host.Registry();
 
-            Assert.False(registry.IsValid(EntityRegistry.ProjectMilestone));
+            Assert.True(registry.IsValid(EntityRegistry.ProjectMilestone));
+            Assert.False(registry.GetDefinition(EntityRegistry.ProjectMilestone).SupportsTimeline);
+
             Assert.False(registry.IsValid(EntityRegistry.Lead));
             Assert.False(registry.IsValid(EntityRegistry.CrmAccount));
         }
