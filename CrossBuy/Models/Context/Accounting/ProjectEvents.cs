@@ -143,5 +143,22 @@ namespace CrossBuy.Models.Context.Accounting
         public string? PreviousStatus { get; init; }
 
         public int? ActorEmployeeId { get; init; }
+
+        /// THE COMMITTED DATE, carried so a consumer can give projected work a REAL deadline instead
+        /// of an invented one. ProjectMilestone.TargetDate is REQUIRED by the model - "a commitment
+        /// with no date is not a milestone, it is a wish" - so on every event this service emits it is
+        /// a fact rather than a guess.
+        ///
+        /// ADDITIVE AT VERSION 1, NOT A VERSION BUMP. This is exactly the convention the comment at
+        /// the top of this class already records for ApprovalCycle: a payload persisted before this
+        /// field existed deserializes with it NULL and no consumer is told to expect a change it does
+        /// not have to handle. Nothing above is renamed and nothing is removed.
+        ///
+        /// IT IS A COPY, NOT THE AUTHORITY. The milestone row remains the source of truth; this is
+        /// what the date WAS when the fact occurred, which is what a replayed event should say.
+        ///
+        /// A READER MUST TREAT NULL AS "NOT CARRIED" and fall back to its own policy - never to a
+        /// fabricated date.
+        public DateTime? TargetDate { get; init; }
     }
 }

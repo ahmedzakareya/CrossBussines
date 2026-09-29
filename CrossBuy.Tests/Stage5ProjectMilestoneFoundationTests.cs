@@ -371,29 +371,49 @@ namespace CrossBuy.Tests
         [Fact]
         public void No_project_milestone_orchestration_rule_is_registered_yet()
         {
+            // MOVED WITH THE TAB-6 P0 WAVE, exactly as this test's original text said it would. The
+            // rule is no longer absent; what this test still guards is the part that mattered - that
+            // the foundation plugs into the generic contract WITHOUT the engine changing.
             var assembly = typeof(IProjectMilestoneService).Assembly;
-            Assert.Null(assembly.GetType(
-                "CrossBuy.BL.Platform.Orchestration.ProjectMilestoneOrchestrationRule"));
+            var rule = assembly.GetType("CrossBuy.BL.Platform.Orchestration.ProjectMilestoneOrchestrationRule");
+            Assert.NotNull(rule);
 
-            // And the generic engine is untouched by this stage - its contract is still exactly what
-            // Stage 4 landed, so TAB-6 plugs in without any engine change.
-            Assert.NotNull(assembly.GetType("CrossBuy.BL.Platform.Orchestration.ITaskOrchestrationRule"));
+            // It is a RULE, not a second engine: it implements the Stage-4 contract and nothing more.
+            var contract = assembly.GetType("CrossBuy.BL.Platform.Orchestration.ITaskOrchestrationRule");
+            Assert.NotNull(contract);
+            Assert.True(contract!.IsAssignableFrom(rule));
+
+            // And the generic engine is STILL untouched - its contract is exactly what Stage 4 landed.
+            Assert.NotNull(assembly.GetType("CrossBuy.BL.Platform.Orchestration.TaskOrchestrationService"));
+            Assert.NotNull(contract.GetMethod("Decide"));
         }
 
         [Fact]
         public void The_foundation_payload_carries_no_target_date()
         {
-            // PROVENANCE, PINNED. The qualified programme payload deliberately carries identifiers and
-            // state only - its own comment says "No Name, no Description, no TargetDate". The additive
-            // nullable TargetDate is TAB-6's enhancement under the SHF-175 amendment, not foundation, so
-            // it is absent here on purpose. TAB-6 adds it; this test then moves with that wave.
+            // PROVENANCE, PINNED - AND NOW MOVED, exactly as this test's original text said it would.
+            // The qualified programme payload deliberately carried identifiers and state only; the
+            // additive nullable TargetDate is TAB-6's enhancement under the SHF-175 amendment and NOT
+            // foundation. That provenance is still the point of this test: it records that the field
+            // arrived with the orchestration wave rather than with the foundation.
             var properties = typeof(ProjectMilestoneEventPayload)
                 .GetProperties().Select(p => p.Name).ToHashSet(StringComparer.Ordinal);
 
+            // The foundation fields are unchanged - nothing was renamed or removed to make room.
             Assert.Contains("MilestoneId", properties);
             Assert.Contains("Status", properties);
             Assert.Contains("PreviousStatus", properties);
-            Assert.DoesNotContain("TargetDate", properties);
+            Assert.Contains("CompanyId", properties);
+            Assert.Contains("ProjectId", properties);
+            Assert.Contains("ActorEmployeeId", properties);
+
+            // TAB-6's addition: present, NULLABLE, and at the same version. Nullable is what keeps a
+            // payload persisted before this wave readable, which is why the type is asserted and not
+            // merely the name.
+            Assert.Contains("TargetDate", properties);
+            Assert.Equal(typeof(DateTime?),
+                typeof(ProjectMilestoneEventPayload).GetProperty("TargetDate")!.PropertyType);
+            Assert.Equal(1, ProjectMilestoneEventPayload.Version);
         }
     }
 }

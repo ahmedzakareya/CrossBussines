@@ -796,6 +796,25 @@ builder.Services.AddScoped<CrossBuy.BL.Platform.Orchestration.ITaskWorkPolicyRes
 builder.Services.AddScoped<CrossBuy.BL.Platform.Orchestration.ITaskOrchestrationService, CrossBuy.BL.Platform.Orchestration.TaskOrchestrationService>();
 builder.Services.AddScoped<CrossBuy.BL.Platform.IBusinessEventConsumer, CrossBuy.BL.Platform.Orchestration.TaskOrchestrationConsumer>();
 
+// ---- TAB-6 P0 - THE FIRST BUSINESS ORCHESTRATION RULE ----
+//
+// The Stage 4 note above says the rules "arrive with the producers that emit them". Stage 5 landed
+// that producer, so this is that arrival: ProjectMilestoneService emits ProjectMilestone.Created,
+// StatusChanged and Deleted, and this rule is what turns them into managed work.
+//
+// ONE LINE, because ONE milestone is ONE commitment and ONE piece of work across its whole
+// lifecycle: Created opens it and whichever fact settles the commitment - a terminal status or a
+// deletion - closes that same task through one rule key. There is no second projection, so there is
+// no second registration.
+//
+// SCOPED, matching the three registrations above and every other rule shape on the platform. The
+// rule itself is stateless and pure, but the engine that resolves it is scoped, and a singleton rule
+// in a scoped enumerable is a lifetime mismatch nobody needs to reason about later.
+//
+// NOTHING GENERIC CHANGED TO ACCOMMODATE IT. The engine already resolves
+// IEnumerable<ITaskOrchestrationRule>; this simply makes the set non-empty for the first time.
+builder.Services.AddScoped<CrossBuy.BL.Platform.Orchestration.ITaskOrchestrationRule, CrossBuy.BL.Platform.Orchestration.ProjectMilestoneOrchestrationRule>();
+
 // ---- CONVERGENCE STAGE 5 - PROJECTS-2 milestone service ----
 // ONE scoped registration. A registration is not a permission: the milestone endpoints
 // authorize through the Projects module authority that already exists, and this adds no

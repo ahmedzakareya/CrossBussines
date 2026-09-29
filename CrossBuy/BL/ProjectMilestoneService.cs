@@ -117,9 +117,16 @@ namespace CrossBuy.BL
         // CALLED BEFORE CommitAsync, ALWAYS. RecordAsync throws when there is no ambient transaction,
         // and there is deliberately no catch around it anywhere below: a swallowed event failure would
         // leave a mutation standing with no record of it.
+        // targetDate is passed IN rather than read here, and always from the row this call is about,
+        // captured while that row still exists. On the delete path the milestone is removed a few lines
+        // later, so reading it afterwards would be reading nothing.
+        //
+        // EMITTING A FACT IS NOT INTEGRATION. This file names no Task type, holds no Task reference and
+        // knows no consumer; a rule that later reads this date is a separate component. That is the
+        // whole point of an outbox.
         private Task RecordAsync(
             BusinessContext ctx, int projectId, int milestoneId, string action,
-            string status, string? previousStatus, CancellationToken ct) =>
+            string status, string? previousStatus, DateTime targetDate, CancellationToken ct) =>
             _events.RecordAsync(new CrossBuy.Models.Platform.BusinessEventRecord
             {
                 EntityCode = CrossBuy.BL.Platform.EntityRegistry.ProjectMilestone,
@@ -158,6 +165,11 @@ namespace CrossBuy.BL
                     PreviousStatus = previousStatus,
                     // The gate refused any context without a real employee, so this is a fact.
                     ActorEmployeeId = ctx.EmployeeId,
+
+                    // Always populated by this producer: TargetDate is required on the entity, so no
+                    // event from here legitimately carries null. Null on a stored event means it
+                    // predates this field.
+                    TargetDate = targetDate,
                 },
             }, ct);
 
@@ -285,7 +297,7 @@ namespace CrossBuy.BL
                 // starting status is not a transition - emitting StatusChanged here would teach every
                 // consumer that a creation is also a move.
                 await RecordAsync(ctx, projectId, row.ID, ProjectMilestoneEvents.Created,
-                    row.Status, previousStatus: null, ct);
+                    row.Status, previousStatus: null, row.TargetDate, ct);
 
                 await tx.CommitAsync();
                 return (true, null, row.ID);
@@ -353,7 +365,7 @@ namespace CrossBuy.BL
             // ONLY REACHED WHEN THE STATUS ACTUALLY MOVED: CanMove above already refused a transition
             // to the state the row is in, so there is no same-status write to filter out here.
             await RecordAsync(ctx, projectId, row.ID, ProjectMilestoneEvents.StatusChanged,
-                row.Status, previousStatus, ct);
+                row.Status, previousStatus, row.TargetDate, ct);
 
             await tx.CommitAsync();
             return (true, null);
@@ -389,13 +401,18 @@ namespace CrossBuy.BL
             // keeps its row and its status.
             var deletedStatus = row.Status;
 
+            // CAPTURED BESIDE THE STATUS AND FOR THE SAME REASON. Remove + SaveChanges below leave
+            // nothing to read, so the deleted row's own date is taken here and emitted from this
+            // local - the deleted state is never queried back afterwards to reconstruct it.
+            var deletedTargetDate = row.TargetDate;
+
             // A TRANSACTION IS INTRODUCED HERE. This path had none at all - it saved and returned - so
             // without one the event could not be recorded, and with the event outside it a deletion
             // could commit while its record did not.
             await using var tx = await ScopedTx.BeginOrJoinAsync(_db);
 
             await RecordAsync(ctx, projectId, id, ProjectMilestoneEvents.Deleted,
-                deletedStatus, previousStatus: null, ct);
+                deletedStatus, previousStatus: null, deletedTargetDate, ct);
 
             _db.ProjectMilestones.Remove(row);
             await _db.SaveChangesAsync(ct);

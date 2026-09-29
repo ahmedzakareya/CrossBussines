@@ -402,15 +402,24 @@ namespace CrossBuy.Tests
         [Fact]
         public void The_project_milestone_rule_is_not_registered_yet_and_needs_no_engine_change()
         {
+            // MOVED WITH THE TAB-6 P0 WAVE. The rule has landed, and the claim this test really makes
+            // is the one that still matters and is now PROVEN rather than predicted: it plugged in
+            // with a rule class and a registration line, and NO generic engine change.
             var assembly = typeof(ITaskOrchestrationRule).Assembly;
-            Assert.Null(assembly.GetType("CrossBuy.BL.Platform.Orchestration.ProjectMilestoneOrchestrationRule"));
+            var rule = assembly.GetType("CrossBuy.BL.Platform.Orchestration.ProjectMilestoneOrchestrationRule");
+            Assert.NotNull(rule);
+            Assert.True(typeof(ITaskOrchestrationRule).IsAssignableFrom(rule));
 
-            // But everything TAB-6 plugs into IS here: the stable entity code from Stage 2, the rule
-            // contract, and a DueDatePolicy.FromSource its design names. TAB-6 needs a rule class and a
-            // registration line - no generic engine change.
+            // Everything it plugs into is unchanged: the stable entity code from Stage 2, the rule
+            // contract, and the DueDatePolicy.FromSource its design names.
             Assert.Equal("ProjectMilestone", EntityRegistry.ProjectMilestone);
             Assert.True(Enum.IsDefined(typeof(DueDatePolicy), DueDatePolicy.FromSource));
             Assert.NotNull(typeof(ITaskOrchestrationRule).GetMethod("Decide"));
+
+            // The engine's own contract is still exactly four actions - the rule added none.
+            Assert.Equal(
+                new[] { "Ignore", "Create", "Complete", "SyncProgress" }.OrderBy(x => x, StringComparer.Ordinal),
+                Enum.GetNames(typeof(TaskProjectionAction)).OrderBy(x => x, StringComparer.Ordinal));
         }
 
         [Fact]
