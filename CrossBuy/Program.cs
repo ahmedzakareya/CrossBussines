@@ -776,6 +776,26 @@ builder.Services.AddScoped<CrossBuy.BL.Platform.IBusinessEventConsumer, CrossBuy
 builder.Services.AddScoped<CrossBuy.BL.Platform.IBusinessEventConsumer, CrossBuy.BL.Platform.NotificationProjectionConsumer>();   // slice 2
 builder.Services.AddScoped<CrossBuy.BL.Platform.IBusinessEventNotificationMapper, CrossBuy.BL.Platform.BusinessEventNotificationMapper>();
 builder.Services.AddScoped<CrossBuy.BL.Platform.IBusinessEventConsumer, CrossBuy.BL.Platform.Ai.AiProjectionConsumer>();
+
+// ---- CONVERGENCE STAGE 4 - TASK ORCHESTRATION (generic engine only) ----
+//
+// THREE REGISTRATIONS, AND NOT ONE RULE. The engine projects committed business events into managed
+// work; the rules that decide WHICH events are work belong to their module waves and arrive with the
+// producers that emit them. An unregistered rule set is not a gap here - the engine resolves
+// IEnumerable<ITaskOrchestrationRule>, so an empty set means every event is Ignored, which is a
+// successful no-op and exactly the intended state until the first module wave lands.
+//
+// THE CONSUMER NAME AND ITS IMPLEMENTATION LAND TOGETHER, which is why Stage 2 deferred the name.
+// BusinessEventConsumers.Registered gained TaskOrchestration in this same commit: a name without an
+// implementation accumulates dispatch rows nothing drains, and an implementation without a name is
+// never dispatched to. Both directions are now satisfied.
+//
+// SCOPED, because the engine takes CrossDbContext and ITaskService. A singleton would capture a
+// scoped context and fail intermittently under load rather than at startup.
+builder.Services.AddScoped<CrossBuy.BL.Platform.Orchestration.ITaskWorkPolicyResolver, CrossBuy.BL.Platform.Orchestration.TaskWorkPolicyResolver>();
+builder.Services.AddScoped<CrossBuy.BL.Platform.Orchestration.ITaskOrchestrationService, CrossBuy.BL.Platform.Orchestration.TaskOrchestrationService>();
+builder.Services.AddScoped<CrossBuy.BL.Platform.IBusinessEventConsumer, CrossBuy.BL.Platform.Orchestration.TaskOrchestrationConsumer>();
+
 builder.Services.AddSingleton<CrossBuy.BL.Platform.Ai.IAiConsumerGrants, CrossBuy.BL.Platform.Ai.AiConsumerGrants>();
 builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.IAiProjectionStore, CrossBuy.BL.Platform.Ai.AiProjectionStore>();
 builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.IAiProjectionBuilder, CrossBuy.BL.Platform.Ai.TaskLifecycleProjectionBuilder>();

@@ -1,4 +1,4 @@
-using System.Text.Json.Nodes;
+﻿using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 
 namespace CrossBuy.Models.Platform
@@ -53,7 +53,13 @@ namespace CrossBuy.Models.Platform
         // Implemented so far. Search / Workflow / Integrations are added here as each one lands
         // (PKS-001 "Per-consumer dispatch state"). A name in this list with no IBusinessEventConsumer
         // registered in DI accumulates dispatch rows nothing drains — the worker logs an error if that happens.
-        public static readonly string[] Registered = { TimelineProjection, NotificationProjection, AiProjection };
+        // Phase 3 - the fourth real consumer: committed business events project into managed work.
+        // It writes TaskItems and TaskAutoLogs and nothing else, and it never consumes Task.* events,
+        // so one projection cannot produce the next.
+        public const string TaskOrchestration = "TaskOrchestration";
+
+        public static readonly string[] Registered =
+            { TimelineProjection, NotificationProjection, AiProjection, TaskOrchestration };
 
         public static bool IsRegistered(string? consumer) =>
             consumer != null && Registered.Contains(consumer, StringComparer.Ordinal);

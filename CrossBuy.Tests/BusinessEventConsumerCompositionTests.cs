@@ -1,4 +1,4 @@
-using CrossBuy.BL.Platform;
+﻿using CrossBuy.BL.Platform;
 using CrossBuy.Models.Platform;
 using Xunit;
 
@@ -28,6 +28,12 @@ namespace CrossBuy.Tests
 			(BusinessEventConsumers.TimelineProjection, typeof(TimelineProjectionConsumer)),
 			(BusinessEventConsumers.NotificationProjection, typeof(NotificationProjectionConsumer)),
 			(BusinessEventConsumers.AiProjection, typeof(CrossBuy.BL.Platform.Ai.AiProjectionConsumer)),
+			// Convergence Stage 4 - the fourth real consumer. Added here in the same commit that adds
+			// the name to Registered and the AddScoped line to Program.cs, because this map is what
+			// checks all three agree. Appending to it TIGHTENS the test: the new entry is now also
+			// required to appear as a registration in Program.cs.
+			(BusinessEventConsumers.TaskOrchestration,
+				typeof(CrossBuy.BL.Platform.Orchestration.TaskOrchestrationConsumer)),
 		};
 
 		[Fact]
@@ -64,13 +70,16 @@ namespace CrossBuy.Tests
 		{
 			var program = ProgramSource();
 
-			Assert.Equal(3, BusinessEventConsumers.Registered.Length);
-			Assert.Equal(3, BusinessEventConsumers.Registered.Distinct(StringComparer.Ordinal).Count());
+			// FOUR SINCE CONVERGENCE STAGE 4, and the count is still exact rather than a lower bound.
+			// The number moved because a consumer was deliberately added, which is the only reason it
+			// may ever move; the assertion stays counted so that swapping one registration for another
+			// still fails.
+			Assert.Equal(Expected.Length, BusinessEventConsumers.Registered.Length);
+			Assert.Equal(Expected.Length,
+				BusinessEventConsumers.Registered.Distinct(StringComparer.Ordinal).Count());
 
-			// Counted, not just probed: a future edit that replaces one registration with another would
-			// still satisfy three individual Contains assertions.
 			var registrations = program.Split("CrossBuy.BL.Platform.IBusinessEventConsumer, ").Length - 1;
-			Assert.Equal(3, registrations);
+			Assert.Equal(Expected.Length, registrations);
 		}
 
 		[Fact]
@@ -152,7 +161,10 @@ namespace CrossBuy.Tests
 
 		private static string ConsumerSource(string typeName)
 		{
-			foreach (var folder in new[] { "Platform", "Platform/Ai" })
+			// Convergence Stage 4 added Platform/Orchestration. The locator is a SEARCH, not a
+			// convention: a consumer whose source it cannot find fails loudly below rather than
+			// skipping its declared-name check, so this list has to grow when a folder does.
+			foreach (var folder in new[] { "Platform", "Platform/Ai", "Platform/Orchestration" })
 			{
 				var parts = new List<string> { "CrossBuy", "BL" };
 				parts.AddRange(folder.Split('/'));

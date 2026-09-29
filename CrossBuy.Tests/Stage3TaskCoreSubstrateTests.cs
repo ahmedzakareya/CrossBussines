@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -474,20 +474,22 @@ namespace CrossBuy.Tests
         // -----------------------------------------------------------------------------------------
 
         [Fact]
-        public void Stage_three_introduced_no_orchestration()
+        public void The_orchestration_layer_arrived_as_one_unit_in_stage_four()
         {
-            // Asserted, not described. Stage 4 lands the engine; if any of it appears earlier, this fails
-            // and names the stage that was skipped. ITaskOrchestrationRule, the consumer and the
-            // dispatcher registration all arrive together or not at all.
+            // SUPERSEDED BY CONVERGENCE STAGE 4, AND REWRITTEN RATHER THAN DELETED. This test used to
+            // assert the orchestration layer was ABSENT, which was the correct Stage 3 boundary: the
+            // engine, its consumer and the dispatcher registration had to arrive together or not at
+            // all. Stage 4 landed them together, so the assertion now checks what it always meant -
+            // that the unit is whole. A partial landing still fails here.
             var assembly = typeof(ITaskService).Assembly;
 
-            Assert.Null(assembly.GetType("CrossBuy.BL.Platform.Orchestration.ITaskOrchestrationRule"));
-            Assert.Null(assembly.GetType("CrossBuy.BL.Platform.Orchestration.ITaskOrchestrationService"));
-            Assert.Null(assembly.GetType("CrossBuy.BL.Platform.Orchestration.TaskOrchestrationConsumer"));
+            Assert.NotNull(assembly.GetType("CrossBuy.BL.Platform.Orchestration.ITaskOrchestrationRule"));
+            Assert.NotNull(assembly.GetType("CrossBuy.BL.Platform.Orchestration.ITaskOrchestrationService"));
+            Assert.NotNull(assembly.GetType("CrossBuy.BL.Platform.Orchestration.TaskOrchestrationConsumer"));
 
-            // And the consumer name stays unregistered, so no dispatch row is created for a consumer
-            // that cannot consume it.
-            Assert.DoesNotContain("TaskOrchestration", BusinessEventConsumers.Registered);
+            // The name and its implementation are registered together - a name without one accumulates
+            // dispatch rows nothing drains, which is what the old assertion was protecting against.
+            Assert.Contains("TaskOrchestration", BusinessEventConsumers.Registered);
         }
 
         private static string RepoRoot()
