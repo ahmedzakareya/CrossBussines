@@ -185,6 +185,8 @@ namespace CrossBuy.BL.Reporting
             Aggregate = SupportedAggregates.Count > 0 ? SupportedAggregates[0] : ReportAggregate.None,
             LookupEntityCode = LookupEntityCode,
             Internal = Sensitivity == ReportFieldSensitivity.Never,
+            Sensitivity = Sensitivity,
+            RequiredPermissionKey = RequiredPermissionKey,
         };
     }
 
@@ -391,11 +393,15 @@ namespace CrossBuy.BL.Reporting
             Fields.Where(f => IsFieldVisible(f, heldPermissions));
 
         public static bool IsFieldVisible(ReportDatasetField field, IReadOnlySet<string> heldPermissions) =>
-            field.Sensitivity switch
+            IsFieldVisible(field.Sensitivity, field.RequiredPermissionKey, heldPermissions);
+
+        // Studio fields and executable report columns use exactly the same visibility rule.
+        public static bool IsFieldVisible(ReportFieldSensitivity sensitivity, string? requiredPermissionKey,
+            IReadOnlySet<string> heldPermissions) => sensitivity switch
             {
                 ReportFieldSensitivity.Never => false,
                 ReportFieldSensitivity.Normal => true,
-                _ => field.RequiredPermissionKey != null && heldPermissions.Contains(field.RequiredPermissionKey),
+                _ => !string.IsNullOrWhiteSpace(requiredPermissionKey) && heldPermissions.Contains(requiredPermissionKey),
             };
     }
 

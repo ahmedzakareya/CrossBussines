@@ -106,6 +106,10 @@ namespace CrossBuy.BL.Reporting
         // export that includes a column the screen hides is the classic reporting data leak.
         public bool Internal { get; init; }
 
+        // Preserve the dataset's field authority through execution, including sub-reports.
+        public ReportFieldSensitivity Sensitivity { get; init; } = ReportFieldSensitivity.Normal;
+        public string? RequiredPermissionKey { get; init; }
+
         public ReportAlign EffectiveAlign => Align != ReportAlign.Auto
             ? Align
             : Type switch

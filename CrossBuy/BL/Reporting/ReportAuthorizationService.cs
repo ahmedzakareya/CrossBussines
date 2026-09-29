@@ -188,6 +188,9 @@ namespace CrossBuy.BL.Reporting
             BusinessContext context, CancellationToken cancellationToken = default);
 
         Task<bool> IsAdministratorAsync(BusinessContext context, CancellationToken cancellationToken = default);
+
+        Task<IReadOnlySet<string>> PermittedFieldKeysAsync(IEnumerable<ReportColumn> columns,
+            BusinessContext context, CancellationToken cancellationToken = default);
     }
 
     public class ReportAuthorizationService : IReportAuthorizationService
@@ -198,6 +201,10 @@ namespace CrossBuy.BL.Reporting
         public const string CodeTemplateNotYours = "template_not_visible";
         public const string CodeTemplateOtherCompany = "template_other_company";
         public const string CodeScopeNotAllowed = "template_scope_not_allowed";
+
+        // A field the CALLER named that they may not use. Deliberately says only that, never WHICH
+        // field: a code per column would be an oracle for the confidential shape of a report.
+        public const string CodeFieldNotPermitted = "report_field_not_permitted";
 
         private readonly CrossDbContext _db;
         private readonly IReportPermissionEvaluator _permissions;
@@ -215,6 +222,32 @@ namespace CrossBuy.BL.Reporting
 
         public Task<bool> IsAdministratorAsync(BusinessContext context, CancellationToken cancellationToken = default) =>
             _permissions.HasPermissionAsync(ReportPermissions.Administer, context, cancellationToken);
+
+        // Recompute through the same permission evaluator used by Studio and report access.
+        // Saved layouts and reporting administration do not themselves grant field access.
+        public async Task<IReadOnlySet<string>> PermittedFieldKeysAsync(IEnumerable<ReportColumn> columns,
+            BusinessContext context, CancellationToken cancellationToken = default)
+        {
+            var permitted = new HashSet<string>(StringComparer.Ordinal);
+
+            // FAIL CLOSED ON AN UNRESOLVED TENANT (H4). The engine gates company earlier, but this
+            // method is also the authority the SUB-REPORT and ARCHIVE paths call, and a rule that
+            // depends on somebody else having checked first is not a rule.
+            if (columns is null || context.CompanyId <= 0) return permitted;
+            var fields = columns.Where(c => !c.Internal).ToList();
+            var held = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var key in fields
+                .Where(c => c.Sensitivity is not (ReportFieldSensitivity.Normal or ReportFieldSensitivity.Never))
+                .Select(c => c.RequiredPermissionKey).Where(k => !string.IsNullOrWhiteSpace(k))
+                .Select(k => k!).Distinct(StringComparer.Ordinal))
+            {
+                if (await _permissions.HasPermissionAsync(key, context, cancellationToken)) held.Add(key);
+            }
+            foreach (var field in fields)
+                if (ReportDatasetDefinition.IsFieldVisible(field.Sensitivity, field.RequiredPermissionKey, held))
+                    permitted.Add(field.Key);
+            return permitted;
+        }
 
         public async Task<ReportAccessDecision> AuthorizeReportAsync(ReportDefinition definition,
             ReportAccessLevel required, BusinessContext context, CancellationToken cancellationToken = default)

@@ -295,9 +295,35 @@ namespace CrossBuy.BL.Reporting
                 .Take(Math.Clamp(take, 1, 500))
                 .ToListAsync(cancellationToken);
 
+            // A LISTING IS A DISCLOSURE. Showing the row says a named report was run, by whom and when -
+            // so an entry the caller could not retrieve must not be listed either. Without this, losing a
+            // grant hides the FILE but leaves its existence, name and timestamp on the screen, and the two
+            // answers disagree: listed, then refused.
+            //
+            // Decided per DISTINCT report code rather than per row, because a list is mostly repeats of a
+            // few codes and AuthorizeReportAsync can reach the database. Every gate inside MayReachAsync is
+            // constant for a given code and caller: the catalogue lookup, the report decision and the field
+            // gate all depend only on the definition. The one PER-ROW test it carries is the creator check,
+            // and that cannot vary here - the query above already restricted a non-administrator to their
+            // own rows, so it holds for every row in this loop. It is re-asserted below rather than
+            // reasoned about, because a later change to that query would otherwise silently widen a listing.
+            var visible = new List<ReportArchiveEntry>(rows.Count);
+            var decided = new Dictionary<string, bool>(StringComparer.Ordinal);
+
+            foreach (var row in rows)
+            {
+                if (!decided.TryGetValue(row.ReportCode, out var may))
+                {
+                    may = await MayReachAsync(row, isAdmin, context, cancellationToken);
+                    decided[row.ReportCode] = may;
+                }
+
+                if (may && (isAdmin || row.CreatedBy == context.EmployeeId)) visible.Add(row);
+            }
+
             // Presence is NOT probed per row here: 500 filesystem stats on a list screen is the sort of thing that
             // makes a page feel broken. It is checked on retrieval, where it matters.
-            return rows.Select(Project).ToList();
+            return visible.Select(Project).ToList();
         }
 
         public async Task<ReportArchiveInfo?> GetAsync(long archiveEntryId, BusinessContext context,
@@ -392,6 +418,81 @@ namespace CrossBuy.BL.Reporting
         // Company filter + creator/administrator check + the report's own permission, all three. The third matters:
         // an employee's module permission can be revoked AFTER they archived something, and the archive must not
         // become a way to keep reading a report they may no longer run.
+        // WHO MAY REACH AN ARCHIVED ARTIFACT, asked once and answered the same way everywhere.
+        //
+        // AN ARTIFACT IS NOT AN AUTHORIZATION TOKEN. This re-decides, for the caller standing here NOW,
+        // every question that was answered when the file was rendered. None of the following is a reason
+        // to hand it over: that they created it, that they own the template, that they could once see it,
+        // that it belongs to their company, that they administer reporting, or that the bytes exist.
+        //
+        // THREE FAILURES THIS CLOSES, in rising order of seriousness:
+        //   1. THE CREATOR KEPT ACCESS FOREVER. Someone who rendered a margin report in March and lost the
+        //      profitability grant in April could still download March's copy.
+        //   2. AN UNRESOLVABLE REPORT CODE SKIPPED THE CHECK. The permission test sat inside
+        //      `if (TryGetDefinition(...))` with no else, so a report since removed from the catalogue
+        //      became an artifact with NO permission gate at all. That is fail-OPEN.
+        //   3. NO FIELD AUTHORITY. The report-level gate asks "may you run this report", never "may you
+        //      see these columns" - so every gated field section 4b protects at execution was unprotected
+        //      the moment the same data sat in an archived file.
+        private async Task<bool> MayReachAsync(ReportArchiveEntry entry, bool isAdmin, BusinessContext context,
+            CancellationToken cancellationToken)
+        {
+            // The creator check NARROWS and never grants; removing it would widen who can reach an entry.
+            if (!isAdmin && entry.CreatedBy != context.EmployeeId) return false;
+
+            // FAIL CLOSED ON AN UNRESOLVABLE REPORT. A definition that no longer exists cannot be
+            // authorized, and an artifact we cannot describe is one we cannot prove safe to release.
+            if (!_catalog.TryGetDefinition(entry.ReportCode, out var definition) || definition == null)
+            {
+                _logger.LogInformation(
+                    "Report archive {Entry} refused: report code '{Code}' no longer resolves, so its "
+                    + "contents cannot be authorized.", entry.Id, entry.ReportCode);
+                return false;
+            }
+
+            var decision = await _authorization.AuthorizeReportAsync(definition, ReportAccessLevel.Run,
+                context, cancellationToken);
+            if (!decision.Allowed) return false;
+
+            // ---- FIELD AUTHORITY, ON AN OPAQUE FILE ---------------------------------------------------
+            //
+            // The stored bytes are a rendered CSV, XLSX or PDF. There is no honest way to remove a column
+            // from one after the fact - a string edit on a PDF is not redaction - and a caller not entitled
+            // to a number is not entitled to a file built from it either.
+            //
+            // So the question becomes: could this artifact contain a field this caller may not see? The
+            // archive records ReportCode, TemplateId and RunId but NOT the column list that was rendered,
+            // and nothing persists an ad-hoc VisibleColumns selection. The definition's own field set is
+            // therefore the UPPER BOUND of what the file can contain, and the only trustworthy description
+            // available without new schema. It is conservative on purpose: a caller who needs the report
+            // can re-run it and get a version authorized for them, which is the honest remedy.
+            //
+            // INTERNAL COLUMNS ARE EXCLUDED, and that exclusion is load-bearing rather than cosmetic.
+            // PermittedFieldKeysAsync never returns a Never/Internal key, while ReportDataShaper strips
+            // those columns before anything is rendered - so counting them would refuse EVERY artifact of
+            // any report whose dataset declares one, for every caller including an administrator, over a
+            // column the file provably cannot contain. Admin.OrgStructure.Units is exactly such a report.
+            //
+            // ONE AUTHORITY, NOT A SECOND ONE. This is the same PermittedFieldKeysAsync the engine calls
+            // before shaping a live report, so archive retrieval and execution cannot disagree - and
+            // because that method waves nobody through, reporting administration does not bypass another
+            // module's confidentiality here either.
+            var permitted = await _authorization.PermittedFieldKeysAsync(
+                definition.Columns, context, cancellationToken);
+
+            if (definition.Columns.Any(c => !c.Internal && !permitted.Contains(c.Key)))
+            {
+                // Deliberately says nothing about WHICH field, or that a hidden one exists: a refusal that
+                // named it would be an oracle for the confidential shape of the report.
+                _logger.LogInformation(
+                    "Report archive {Entry} refused: the caller is not currently permitted every field "
+                    + "report '{Code}' can contain.", entry.Id, entry.ReportCode);
+                return false;
+            }
+
+            return true;
+        }
+
         private async Task<ReportArchiveEntry?> LoadPermittedAsync(long id, BusinessContext context,
             CancellationToken cancellationToken)
         {
@@ -403,16 +504,7 @@ namespace CrossBuy.BL.Reporting
             if (entry == null) return null;
 
             var isAdmin = await _authorization.IsAdministratorAsync(context, cancellationToken);
-            if (!isAdmin && entry.CreatedBy != context.EmployeeId) return null;
-
-            if (_catalog.TryGetDefinition(entry.ReportCode, out var definition) && definition != null)
-            {
-                var decision = await _authorization.AuthorizeReportAsync(definition, ReportAccessLevel.Run,
-                    context, cancellationToken);
-                if (!decision.Allowed) return null;
-            }
-
-            return entry;
+            return await MayReachAsync(entry, isAdmin, context, cancellationToken) ? entry : null;
         }
 
         private static ReportArchiveInfo Project(ReportArchiveEntry a) => new()

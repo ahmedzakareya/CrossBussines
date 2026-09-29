@@ -298,19 +298,25 @@ namespace CrossBuy.Tests
             // …and gone the moment it is not. Same id, same bytes on disk, different answer.
             Assert.Null(await host.Archive.RetrieveAsync(entryId.Value, host.Ctx));
 
-            // AND THE LISTING STILL SHOWS IT, marked. This is deliberate and it is the opposite of what I
-            // first asserted. ListAsync is self-scoped — these are the caller's OWN artifacts — so dropping
-            // the row would make their history rewrite itself when a permission changed elsewhere. The row
-            // stays; the download is withdrawn and the reason is named.
+            // AND THE ROW GOES WITH IT. This assertion is REVERSED from what it used to say, and the
+            // reversal is a decision rather than a discovery, so the old reasoning is recorded here
+            // instead of being quietly deleted.
+            //
+            // IT USED TO ARGUE: ListAsync is self-scoped - these are the caller's OWN artifacts - so
+            // dropping the row would make their own history rewrite itself when a permission changed
+            // elsewhere. The row stayed, marked un-retrievable, and the reason was named.
+            //
+            // IT NOW ARGUES: a listing is itself a disclosure. The row says a NAMED report was run, by
+            // whom and when. Leaving it visible after the grant is gone means the file is hidden while
+            // its existence, name and timestamp remain on the screen - and the two answers disagree,
+            // which is the shape an oracle takes. "You may no longer run this, and here is proof you
+            // once did" is still telling them about a report they may not have.
+            //
+            // The cost is real and is accepted: a caller who loses a grant sees their own history get
+            // shorter. That is the coordinator's C2B ruling, and the confidentiality side wins.
             var model = await host.Presenter().BuildCenterAsync(Center());
 
-            var entry = Assert.Single(model.Archive.Items, a => a.Id == entryId.Value);
-            Assert.False(entry.Retrievable);
-            Assert.False(entry.CanDownload);
-
-            // The bytes are still on disk and the row still says so — the refusal is about permission, and
-            // conflating it with a retention sweep would send the user to the wrong administrator.
-            Assert.True(entry.BytesPresent);
+            Assert.DoesNotContain(model.Archive.Items, a => a.Id == entryId.Value);
         }
 
         // A run whose report is no longer permitted keeps its history row and loses its re-run link — same

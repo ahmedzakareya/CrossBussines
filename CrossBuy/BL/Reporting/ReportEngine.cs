@@ -345,11 +345,24 @@ namespace CrossBuy.BL.Reporting
                 var title = culture.TwoLetterISOLanguageName == "ar" ? child.TitleAr : child.TitleEn;
 
                 var decision = await _authorization.AuthorizeReportAsync(child, ReportAccessLevel.Run, context, cancellationToken);
-                if (!decision.Allowed)
-                {
-                    map[element.Id] = new ReportSubReportData { Title = title, Denied = true };
-                    continue;
-                }
+                // Use the existing unavailable representation for every refusal; no field/report oracle.
+                if (!decision.Allowed) continue;
+
+                var childPermitted = await _authorization.PermittedFieldKeysAsync(
+                    child.Columns, context, cancellationToken);
+                var childColumns = child.Columns.Where(c => childPermitted.Contains(c.Key)).ToList();
+                if (childColumns.Count == 0) continue;
+
+                // Display can narrow, but removing a predicate/sort/link could broaden the query.
+                // Reauthorize all shaping channels BEFORE fetch, even for saved layouts and empty groups.
+                bool ShapingPermitted(string? fieldKey) =>
+                    !string.IsNullOrWhiteSpace(fieldKey) && childPermitted.Contains(fieldKey);
+                var shapingRefused =
+                    child.DefaultFilters.Any(f => !ShapingPermitted(f.Field))
+                    || child.DefaultSorts.Any(so => !ShapingPermitted(so.Field))
+                    || (element.LinkChildFieldKey is { Length: > 0 }
+                        && !ShapingPermitted(element.LinkChildFieldKey));
+                if (shapingRefused) continue;
 
                 // The values this run will actually ask for. Collected from the PARENT's own rows, so the
                 // child query is narrowed to what the page can display rather than fetched whole.
@@ -363,7 +376,7 @@ namespace CrossBuy.BL.Reporting
 
                 if (linked && links.Count == 0)
                 {
-                    map[element.Id] = new ReportSubReportData { Title = title, Columns = child.Columns };
+                    map[element.Id] = new ReportSubReportData { Title = title, Columns = childColumns };
                     continue;
                 }
 
@@ -388,7 +401,7 @@ namespace CrossBuy.BL.Reporting
                         Filters = filters,
                         Sorts = child.DefaultSorts,
                         Groupings = Array.Empty<ReportGrouping>(),
-                        RequestedColumns = child.Columns,
+                        RequestedColumns = childColumns,
                         MaxRows = SubReportRowCeiling,
                         Kind = ReportRunKind.Full,
                         Culture = culture,
@@ -411,7 +424,7 @@ namespace CrossBuy.BL.Reporting
                 {
                     map[element.Id] = new ReportSubReportData
                     {
-                        Title = title, Columns = child.Columns, Unlinked = rows, Truncated = truncated,
+                        Title = title, Columns = childColumns, Unlinked = rows, Truncated = truncated,
                     };
                     continue;
                 }
@@ -422,7 +435,7 @@ namespace CrossBuy.BL.Reporting
 
                 map[element.Id] = new ReportSubReportData
                 {
-                    Title = title, Columns = child.Columns, ByLink = byLink, Truncated = truncated,
+                    Title = title, Columns = childColumns, ByLink = byLink, Truncated = truncated,
                 };
             }
 
@@ -562,6 +575,62 @@ namespace CrossBuy.BL.Reporting
             var visibleColumns = request.VisibleColumns.Count > 0
                 ? request.VisibleColumns
                 : layout.VisibleColumns;
+
+            // ---- 4b. FIELD AUTHORIZATION, FOR THE CALLER IN FRONT OF US -----------------------------------
+            //
+            // Everything above merged a SAVED definition with a SUBMITTED one. Neither is a grant. A template
+            // records what its author could see when they saved it; a request records what a browser asked
+            // for. This is where both meet what THIS caller may see TODAY, in THIS company, before any row is
+            // read, shaped or rendered.
+            //
+            // ONE ANSWER, FOUR SURFACES. A confidential field leaks through a filter or a grouping as surely
+            // as through a column: "customers where Margin > X" discloses Margin by row membership, and a
+            // group header discloses it by existing. Aggregates need no entry of their own - one rides on
+            // ReportColumn.Aggregate and the shaper computes it only for a column in the resolved visible
+            // set, so the column gate already governs every measure.
+            //
+            // THE REQUEST IS REFUSED; A STORED LAYOUT IS FILTERED. These are different acts. A field the
+            // CALLER named is refused, because silently running something other than what was asked for lets
+            // them believe a report means what it does not. A field a STORED layout or the definition's own
+            // defaults carry is DROPPED, because the caller did not ask for it and refusing would leave them
+            // unable to run a report whose author simply had wider access.
+            //
+            // THE CHILD IS GOVERNED TOO, one screen down in ResolveSubReportsAsync, through this same
+            // PermittedFieldKeysAsync - but by DENYING its band rather than narrowing it, because dropping a
+            // column removes information while dropping a filter or a link would ADD it.
+            //
+            // Either way the protected value is never read, shaped or rendered, and the refusal never names
+            // the field - that would turn this boundary into an oracle for which confidential columns exist.
+            var permittedFieldKeys = await _authorization.PermittedFieldKeysAsync(
+                definition.Columns, context, cancellationToken);
+
+            var knownFieldKeys = definition.Columns.Select(c => c.Key).ToHashSet(StringComparer.Ordinal);
+
+            // An UNKNOWN key is refused by the same code path. It cannot be authorized - there is no field
+            // metadata to authorize it against - so treating it as harmless would be a guess.
+            bool Allowed(string? key) =>
+                !string.IsNullOrWhiteSpace(key)
+                && knownFieldKeys.Contains(key!)
+                && permittedFieldKeys.Contains(key!);
+
+            var refused =
+                request.VisibleColumns.Any(k => !Allowed(k))
+                || request.Filters.Any(f => !Allowed(f.Field))
+                || request.Sorts.Any(x => !Allowed(x.Field))
+                || request.Groupings.Any(g => !Allowed(g.Field));
+
+            if (refused)
+                return await FailAsync(definition, request, context, startedAt, stopwatch, diagnostics,
+                    ReportDiagnostic.Error(ReportAuthorizationService.CodeFieldNotPermitted,
+                        "This report references a field you are not permitted to use."),
+                    cancellationToken);
+
+            // Nothing the caller named is out of bounds. What remains came from the stored template or the
+            // definition's defaults, and is narrowed rather than refused.
+            visibleColumns = visibleColumns.Where(Allowed).ToList();
+            filters = filters.Where(f => Allowed(f.Field)).ToList();
+            sorts = sorts.Where(x => Allowed(x.Field)).ToList();
+            groupings = groupings.Where(g => Allowed(g.Field)).ToList();
 
             var pageSetup = request.PageSetup ?? layout.PageSetup;
 
