@@ -242,6 +242,14 @@ builder.Services.AddScoped<CrossBuy.BL.Reporting.IReportModuleAuthority>(sp =>
 builder.Services.AddScoped<CrossBuy.BL.Reporting.IReportModuleAuthority>(sp =>
     new CrossBuy.BL.Reporting.ProjectsReportModuleAuthority(
         sp.GetRequiredService<CrossBuy.BL.ProjectsAccessService>()));
+
+// The Projects SUBJECT PACK (RECONCILIATION-02), registered HERE and not inside
+// AddCrossBusinessReporting because its two data sources need IProjectsAccessService - a service the
+// reporting module does not own. AddCrossBusinessReporting is self-sufficient by contract and
+// ReportingDiWiringTests pins that, so the coupling lives with the host that owns both modules.
+// See ReportingServiceCollectionExtensions.AddProjectsReporting for the whole argument, including why
+// the Work pack is not beside it.
+builder.Services.AddProjectsReporting();
 builder.Services.AddScoped<CrossBuy.BL.Reporting.IReportPermissionEvaluator,
     CrossBuy.BL.Reporting.ReportModulePermissionAdapter>();
 

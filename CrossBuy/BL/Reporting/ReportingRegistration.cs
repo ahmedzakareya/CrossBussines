@@ -237,6 +237,7 @@ namespace CrossBuy.BL.Reporting
             services.TryAddScoped<CrossBuy.BL.Hr.IAttendanceBaselineResolver,
                                   CrossBuy.BL.Hr.AttendanceBaselineResolver>();
 
+
             services.AddScoped<IReportDataSourceRegistry, ReportDataSourceRegistry>();
 
             // ---- dataset layer (ADR-037 §Dataset) --------------------------------------------------------
@@ -359,6 +360,62 @@ namespace CrossBuy.BL.Reporting
 
             return services;
         }
+
+        // ==========================================================================================
+        // THE PROJECTS SUBJECT PACK (RECONCILIATION-02) - DELIBERATELY NOT PART OF
+        // AddCrossBusinessReporting().
+        //
+        // AddCrossBusinessReporting() IS SELF-SUFFICIENT, and ReportingDiWiringTests pins that: it
+        // builds the whole reporting graph over logging, a DbContext, a scope holder, a context
+        // accessor and a web host environment. These two sources need IProjectsAccessService, which
+        // Reporting does not own and cannot supply - ProjectsAccessService needs the concrete
+        // AccountingAccessService, an IHttpContextAccessor and the bootstrap policy reader, so
+        // TryAdd-ing it here would pull a second business module into the reporting graph.
+        //
+        // Registering it from the HOST instead keeps that contract intact and puts the coupling where
+        // it is true: Program.cs owns both Reporting and Projects. It is the same placement the
+        // authority wave used for ProjectsReportModuleAuthority, for the same reason.
+        //
+        // THE SOURCES AND THE DEFINITIONS MOVE TOGETHER, on purpose. A definition registered without
+        // its source publishes a Studio subject that cannot resolve - a broken entry, which is worse
+        // than an absent one. A deployment without the Projects module simply has no Projects
+        // subjects, and the catalogue is honest about it.
+        //
+        // THE KEY AUTHORIZES THE SUBJECT, NOT THE ROWS. Both sources resolve their breadth per run
+        // from ProjectsAccessService.ResolveProjectScopeAsync, and milestones reach rows only through
+        // the visible-project set - never by querying ProjectMilestones directly.
+        //
+        // NO PERMISSION ADAPTER IS REGISTERED, and that absence is the design: projects.reports.view is
+        // answered by ProjectsReportModuleAuthority through IReportModuleAuthority +
+        // ReportModulePermissionAdapter. The programme line's ProjectsReportPermissionAdapter extended
+        // the obsolete ModuleActionReportPermissionAdapter and was NOT ported.
+        //
+        // THE WORK PACK IS NOT HERE, and its absence is measured rather than forgotten. Two of its four
+        // authorized subjects (work.hours, work.escalations) compile against this line unchanged; the
+        // other two do not. work.tasks reads TaskItem.HoldApprovedAtUtc - a column Stage 4 deliberately
+        // did not bring over and which Stage4TaskOrchestrationEngineTests asserts is ABSENT - and
+        // ITaskEscalationService.CurrentlyEscalatedTaskIdsAsync, which this line's interface does not
+        // declare. work.approvals is built on TaskApprovalProjection, whose rule-key prefixes come from
+        // five orchestration BUSINESS RULES (leave, employee request, inventory, project billing,
+        // document verification) that this line does not have. Shipping two of four would have been a
+        // scope reduction, so the pack was withdrawn whole and is owed to a Task-substrate wave.
+        // ==========================================================================================
+        public static IServiceCollection AddProjectsReporting(this IServiceCollection services)
+        {
+            ArgumentNullException.ThrowIfNull(services);
+
+            services.AddScoped<IReportDataSource, ProjectsDataSource>();
+            services.AddScoped<IReportDataSource, ProjectMilestonesDataSource>();
+
+            foreach (var project in ProjectsDatasets.All())
+            {
+                var definition = project;   // captured per iteration, NOT the loop variable's final value
+                services.AddScoped<IReportDatasetDefinition>(_ => definition);
+            }
+
+            return services;
+        }
+
     }
 
     // Everything a host may configure, in one object so the extension method never grows parameters.
