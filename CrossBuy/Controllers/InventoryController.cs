@@ -501,12 +501,55 @@ namespace CrossBuy.Controllers
 			return View();
 		}
 
+		// =====================================================================================
+		// OPS3 P0 (SHF-26 named concern) — the tenant binding for ItemWarehouseSetting writes.
+		//
+		// ItemWarehouseSetting carries no CompanyID and no query filter, so a row pairing this
+		// company's warehouse with another company's item is indistinguishable from a legitimate
+		// one once written. Nothing downstream can catch it. The binding therefore has to be
+		// proven HERE, before the first mutation, and proven for EVERY id in the payload.
+		//
+		// THE COMPANY IS DERIVED, NEVER DUPLICATED. Item and Warehouse are company-filtered pilot
+		// entities, and each predicate also names the resolved company explicitly, so the check
+		// fails closed even if the ambient scope and the resolver ever disagree. No CompanyID
+		// column is added to carry the same fact a second time.
+		//
+		// FOREIGN AND UNKNOWN ARE THE SAME ANSWER, deliberately. A read that cannot see another
+		// tenant's row reports it exactly as it reports a row that was never created, so neither
+		// the caller nor a script can use this endpoint to learn what exists elsewhere. That is
+		// also why the refusal text is the generic one already used by this controller and says
+		// nothing about which half of the request was rejected.
+		//
+		// ONE BOUNDED QUERY for the items, not one per row: the payload is caller-sized.
+		private async Task<bool> ItemWarehouseBindingIsAuthorizedAsync(int warehouseId, IEnumerable<int> itemIds)
+		{
+			var scope = await _company.ResolveAsync();
+			if (!scope.Ok) return false;
+
+			if (warehouseId <= 0) return false;
+			if (!await _context.Warehouses.AnyAsync(w => w.ID == warehouseId && w.CompanyID == scope.CompanyId))
+				return false;
+
+			var wanted = itemIds.Where(id => id > 0).Distinct().ToList();
+			if (wanted.Count == 0) return true;   // nothing to bind; the caller's own rows are unaffected
+
+			int mine = await _context.Items.CountAsync(i => wanted.Contains(i.ID) && i.CompanyID == scope.CompanyId);
+			return mine == wanted.Count;   // every requested item, or none of the request
+		}
+
 		[HttpPost][ValidateAntiForgeryToken]
 		[InvPerm("manage")]
 		public async Task<IActionResult> SaveItemLocations(int warehouseId, string? rowsJson)
 		{
 			List<ItemLocationRow> rows;
 			try { rows = System.Text.Json.JsonSerializer.Deserialize<List<ItemLocationRow>>(rowsJson ?? "[]", new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new(); } catch { rows = new(); }
+
+			// PHASE A — TENANT BINDING FOR THE WHOLE PAYLOAD, BEFORE ANYTHING IS TOUCHED. A valid prefix
+			// written before a foreign row is refused would leave a partial cross-tenant write that the
+			// refusal message does not undo, so the answer is all of the request or none of it.
+			if (!await ItemWarehouseBindingIsAuthorizedAsync(warehouseId, rows.Select(r => r.ItemId)))
+			{ TempData["InvErr"] = L["You do not have permission to perform this action"].Value; return RedirectToAction(nameof(ItemLocations), new { warehouseId }); }
+
 			// validate: chosen rack (if any) must belong to the chosen section
 			var bins = (await _warehouses.GetBinLocationsAsync(warehouseId)).ToDictionary(b => b.ID, b => b);
 			foreach (var r in rows)
@@ -3033,6 +3076,14 @@ namespace CrossBuy.Controllers
 		{
 			List<InvReportRow> rows;
 			try { rows = System.Text.Json.JsonSerializer.Deserialize<List<InvReportRow>>(settingsJson ?? "[]", new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new(); } catch { rows = new(); }
+
+			// PHASE A — TENANT BINDING FOR THE WHOLE PAYLOAD. This action has no section lookup to lean
+			// on, so nothing else stands between the request and the write: warehouseId and every ItemId
+			// arrive from the caller, and the values written are the reorder thresholds that decide when
+			// another tenant's low-stock work is raised or suppressed.
+			if (!await ItemWarehouseBindingIsAuthorizedAsync(warehouseId, rows.Select(r => r.ItemId)))
+			{ TempData["InvErr"] = L["You do not have permission to perform this action"].Value; return RedirectToAction(nameof(ReorderSettings), new { warehouseId }); }
+
 			foreach (var r in rows)
 			{
 				if (r.ItemId <= 0) continue;

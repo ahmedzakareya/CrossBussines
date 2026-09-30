@@ -49,8 +49,27 @@ namespace CrossBuy.BL
 		}
 
 		// ---- Section / Rack (BinLocation tree under a warehouse) ----
+		//
+		// THE COMPANY COMES FROM THE WAREHOUSE, because BinLocation has no CompanyID of its own
+		// and does not need one: a section exists only under a warehouse, and Warehouse is a
+		// company-filtered pilot entity, so the relationship already answers the question. Adding a
+		// column would carry the same fact twice and let the two disagree.
+		//
+		// WHY THIS READ IS A SECURITY BOUNDARY AND NOT A CONVENIENCE. warehouseId arrives from the
+		// request at InventoryController.SaveItemLocations, which writes ItemWarehouseSetting rows
+		// keyed on it - and ItemWarehouseSetting has no CompanyID and no query filter, so nothing
+		// downstream can catch a foreign warehouse. The section lookup is what stands between the
+		// request and that write: a row without a section is skipped, and a row with one cannot
+		// reach the write unless its section came out of THIS dictionary. Scoping here closes the
+		// path for every caller at once rather than at one call site.
+		//
+		// The filter honours a legitimate cross-company bypass exactly as every pilot entity does,
+		// so system and administrative scopes are unaffected.
 		public async Task<List<BinLocation>> GetBinLocationsAsync(int warehouseId) =>
-			await _context.BinLocations.AsNoTracking().Where(b => b.WarehouseId == warehouseId).OrderBy(b => b.Code).ToListAsync();
+			await _context.BinLocations.AsNoTracking()
+				.Where(b => b.WarehouseId == warehouseId
+					&& _context.Warehouses.Any(w => w.ID == b.WarehouseId))
+				.OrderBy(b => b.Code).ToListAsync();
 
 		public async Task<(bool ok, string? error)> SaveBinLocationAsync(int warehouseId, int id, string code, string? name, string locationType, int? parentId, bool isActive, string? nameEn = null)
 		{
