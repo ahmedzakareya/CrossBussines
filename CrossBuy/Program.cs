@@ -226,6 +226,22 @@ builder.Services.AddScoped<CrossBuy.BL.Reporting.RoleMapReportPermissionEvaluato
 builder.Services.AddScoped<CrossBuy.BL.Reporting.IReportModuleAuthority>(sp =>
     new CrossBuy.BL.Reporting.AccountingReportModuleAuthority(
         sp.GetRequiredService<AccountingAccessService>()));
+// ---- WORK AND PROJECTS REPORTING AUTHORITY ----
+//
+// The SAME shape as Accounting above and for the same reason: the concrete access service is named, so
+// the authority is asked of the module we meant rather than of whichever IModuleAccessService the
+// container bound last. Both classes also verify Scope before deciding, so a mis-wire here denies
+// instead of silently answering from the wrong module.
+//
+// NO MapPermission ACCOMPANIES THESE. A role-map entry for work.* or projects.* would no longer decide
+// anything - the adapter hands a claimed namespace to its module and never reaches the map - and adding
+// one would suggest Reporting could grant these keys by configuration. It cannot; the module does.
+builder.Services.AddScoped<CrossBuy.BL.Reporting.IReportModuleAuthority>(sp =>
+    new CrossBuy.BL.Reporting.WorkReportModuleAuthority(
+        sp.GetRequiredService<CrossBuy.BL.TasksAccessService>()));
+builder.Services.AddScoped<CrossBuy.BL.Reporting.IReportModuleAuthority>(sp =>
+    new CrossBuy.BL.Reporting.ProjectsReportModuleAuthority(
+        sp.GetRequiredService<CrossBuy.BL.ProjectsAccessService>()));
 builder.Services.AddScoped<CrossBuy.BL.Reporting.IReportPermissionEvaluator,
     CrossBuy.BL.Reporting.ReportModulePermissionAdapter>();
 
