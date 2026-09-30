@@ -37,6 +37,23 @@ namespace CrossBuy.BL
 	{
 		public const string PeriodClose = "period-close";     // Open -> SoftClosed -> Closed
 		public const string PeriodReopen = "period-reopen";   // Closed/SoftClosed -> Open, with a recorded reason
+
+		// ---- REPORTING. Two tiers, and both are SEPARATE FROM read for one measured reason. ----
+		//
+		// `read` above is UNCONDITIONAL for a configured company - any authenticated employee may open an
+		// accounting screen. That is the right default for a screen and the wrong one for a report: a
+		// report crosses documents, periods and customers in a single artifact that can be exported and
+		// mailed, so it answers to a role rather than to mere membership.
+		//
+		// THESE ARE THE AUTHORITY BEHIND THE REPORTING KEYS accounting.reports.view and
+		// accounting.reports.profitability. Reporting does not decide them - it asks here - which is what
+		// keeps reporting administration from becoming accounting authority.
+		public const string ReportRead = "report-read";
+
+		// The confidential tier: margin, profit, profitability analysis - what the company EARNED as
+		// opposed to what it billed. Strictly stronger than ReportRead and NEVER implied by it, so an
+		// Accountant who may read the registers still may not read the margin on them.
+		public const string ProfitabilityReportRead = "profitability-report-read";
 	}
 
 	public class AccountingAccessService : IAccountingAccessService, IModuleAccessService
@@ -60,7 +77,8 @@ namespace CrossBuy.BL
 
 		public IReadOnlyCollection<string> Actions { get; } =
 			new[] { "read", "post", "pay", "manage", "currency-override",
-				AccountingActions.PeriodClose, AccountingActions.PeriodReopen };
+				AccountingActions.PeriodClose, AccountingActions.PeriodReopen,
+				AccountingActions.ReportRead, AccountingActions.ProfitabilityReportRead };
 
 		// ---------------------------------------------------------------------------------------------
 		// Canonical, session-free. This is the implementation; everything else delegates here.
@@ -129,6 +147,12 @@ namespace CrossBuy.BL
 				bool acct = roles.Contains("Accountant");
 				bool cashier = roles.Contains("Cashier");
 
+				// Read from the SAME set the other three come from. Auditor was always in this taxonomy -
+				// AssignAccRole accepts exactly ChiefAccountant, Accountant, Cashier, Auditor - and simply had
+				// no arm it could appear in, because every existing action is a WRITE and an auditor writes
+				// nothing. Reading the registers is the first act the role exists for.
+				bool auditor = roles.Contains("Auditor");
+
 				bool allowed = action switch
 				{
 					"read" => true,                          // any authenticated user in this company may view
@@ -142,7 +166,13 @@ namespace CrossBuy.BL
 					AccountingActions.PeriodClose => chief || acct,
 					// Reopen is strictly stronger than close: it RE-ADMITS posting to a period that was sealed.
 					AccountingActions.PeriodReopen => chief,
-					_ => false                               // Auditor (or unknown role) → read-only
+					// STRICTER THAN read BY CONSTRUCTION: read is unconditional above; this requires a role. An
+					// employee of this company holding no accounting role reads a screen and not the reports.
+					AccountingActions.ReportRead => chief || acct || auditor,
+					// And this one is narrower again, and NOT implied by ReportRead - an Accountant and an
+					// Auditor both hold that and neither holds this.
+					AccountingActions.ProfitabilityReportRead => chief,
+					_ => false                               // unknown role → nothing beyond read
 				};
 
 				return Log(allowed

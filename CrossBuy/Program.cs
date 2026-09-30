@@ -199,6 +199,36 @@ builder.Services.AddCrossBusinessReporting(reporting => reporting
     .MapPermission(CrossBuy.BL.Reporting.OrgStructureReportPermissions.Notes,
         "Admin", "SuperAdmin"));
 
+// ---- ADR-037: THE MODULE FIELD AUTHORITY BOUNDARY ----------------------------------------------
+//
+// Reporting administration is authority over the REPORTING PLATFORM. It is not authority over what
+// another module considers confidential. Until now it was both: the role-map evaluator answered true
+// to every key for an administrator, so `reporting.administer` carried `accounting.reports.profitability`
+// with it and the Accounting module was never consulted about its own margins.
+//
+// TWO CHANGES MAKE THE BOUNDARY REAL, and this is the second of them. The first narrowed that
+// short-circuit to the `reporting.` namespace. This one puts the owning module in the path: an
+// `accounting.*` key is now decided by AccountingAccessService - the same service that answers for
+// posting and period control - instead of by a role map the Accounting module does not own.
+//
+// THE TWO MAPPINGS ABOVE FOR accounting.* NO LONGER DECIDE. They are deliberately left in place: they
+// document the intended shape, and they still bound nothing wider than the module allows, because the
+// module is asked second and refuses on its own terms. Delete them and behaviour does not change.
+//
+// LAST REGISTRATION WINS, which is how the adapter takes over from the evaluator registered inside
+// AddCrossBusinessReporting. The role-map evaluator is registered by its concrete type as well, so the
+// adapter can hold it for every key no module claims - reporting.*, crm.*, inventory.*, roster.* and
+// admin.orgstructure.* keep answering exactly as they did.
+builder.Services.AddScoped<CrossBuy.BL.Reporting.RoleMapReportPermissionEvaluator>();
+// Resolved by CONCRETE type on purpose: IModuleAccessService has several implementations, so asking
+// the container for "a module access service" would bind whichever registered last. Naming
+// AccountingAccessService here is what guarantees the accounting authority is the accounting one.
+builder.Services.AddScoped<CrossBuy.BL.Reporting.IReportModuleAuthority>(sp =>
+    new CrossBuy.BL.Reporting.AccountingReportModuleAuthority(
+        sp.GetRequiredService<AccountingAccessService>()));
+builder.Services.AddScoped<CrossBuy.BL.Reporting.IReportPermissionEvaluator,
+    CrossBuy.BL.Reporting.ReportModulePermissionAdapter>();
+
 // HR Product Batch 1 — employee onboarding. Appended in TAB-2's own region, next to the module's other
 // registration. The service is scoped because it takes the request's DbContext and BusinessContext.
 builder.Services.AddScoped<CrossBuy.BL.Hr.IReportClockShim, CrossBuy.BL.Hr.SystemOnboardingClock>();

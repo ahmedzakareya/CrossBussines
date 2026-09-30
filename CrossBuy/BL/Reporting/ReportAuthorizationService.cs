@@ -108,7 +108,23 @@ namespace CrossBuy.BL.Reporting
             if (string.Equals(permissionKey, ReportPermissions.Public, StringComparison.Ordinal))
                 return Task.FromResult(context.IsAuthenticated);
 
-            if (IsAdministrator(context)) return Task.FromResult(true);
+            // ---- ADR-037: ADMINISTRATION IS REPORTING AUTHORITY, NOT EVERY MODULE'S AUTHORITY --------
+            //
+            // This short-circuit used to answer TRUE for ANY key. A key is just a string to it, so
+            // `reporting.administer` and `accounting.reports.profitability` were indistinguishable and
+            // administering the reporting platform silently conferred the right to read what the company
+            // EARNED on every customer - the module never agreed to that and was never asked.
+            //
+            // IT IS NARROWED, NOT REMOVED. A reporting administrator must keep reporting administration:
+            // running the platform means holding reporting.administer, reporting.datasets.author and the
+            // rest of this namespace, and taking that away would break the role rather than bound it.
+            //
+            // THE BOUNDARY IS THE NAMESPACE, and it is generic by construction - no module is named here.
+            // A key this platform owns begins with the reporting prefix; anything else belongs to the
+            // module that named it and is left to the role map, or to that module's own authority via
+            // ReportModulePermissionAdapter. Adding a module changes nothing in this line.
+            if (IsReportingOwned(permissionKey) && IsAdministrator(context))
+                return Task.FromResult(true);
 
             if (_options.RoleMap.TryGetValue(permissionKey, out var roles))
                 return Task.FromResult(roles.Any(r =>
@@ -120,6 +136,16 @@ namespace CrossBuy.BL.Reporting
         private bool IsAdministrator(BusinessContext context) =>
             _options.AdministratorRoles.Any(r =>
                 context.Roles.Any(cr => string.Equals(cr, r, StringComparison.OrdinalIgnoreCase)));
+
+        // Derived from the vocabulary rather than from a list that would need maintaining: every key this
+        // platform issues - reporting.public, reporting.administer, reporting.datasets.author and the
+        // business-event tiers - is under this one prefix, and every module key (accounting.*, crm.*,
+        // inventory.*, admin.orgstructure.*, roster.*) is not.
+        public const string ReportingKeyPrefix = "reporting.";
+
+        private static bool IsReportingOwned(string? permissionKey) =>
+            permissionKey is { Length: > 0 }
+            && permissionKey.StartsWith(ReportingKeyPrefix, StringComparison.Ordinal);
     }
 
     // ============================================================================================
