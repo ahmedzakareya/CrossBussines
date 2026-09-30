@@ -14,9 +14,9 @@
                      "different content, so \"apply \u003cname\u003e.sql\" is ambiguous."
                  ],
     "generatedFrom":  "repository scan",
-    "totalScripts":  129,
+    "totalScripts":  136,
     "counts":  {
-                   "guarded":  104,
+                   "guarded":  111,
                    "guardedByPredicate":  7,
                    "review":  2,
                    "notDeployable":  1,
@@ -1382,6 +1382,31 @@
                         "excludedReason":  null
                     },
                     {
+                        "path":  "CrossBuy/deploy/sql/projects_milestones.sql",
+                        "name":  "projects_milestones.sql",
+                        "bytes":  12138,
+                        "encoding":  "utf-8",
+                        "sha256":  "c6684fc3807ea5a92ec50c46e7f62cb21acc565b0881870d10c090c85f3c9e0d",
+                        "rank":  30,
+                        "guards":  [
+                                       "object-null",
+                                       "if-not-exists",
+                                       "sys-catalog"
+                                   ],
+                        "mutations":  [
+                                          "create-table",
+                                          "create-index"
+                                      ],
+                        "unguardedBatches":  [
+
+                                             ],
+                        "idempotency":  "guarded",
+                        "reviewVerdict":  null,
+                        "reviewEvidence":  null,
+                        "excludedFromDeploy":  false,
+                        "excludedReason":  null
+                    },
+                    {
                         "path":  "CrossBuy/deploy/sql/tasks_ecosystem_checklist_dependencies_templates.sql",
                         "name":  "tasks_ecosystem_checklist_dependencies_templates.sql",
                         "bytes":  6740,
@@ -2344,6 +2369,134 @@
                         "excludedReason":  null
                     },
                     {
+                        "path":  "CrossBuy/deploy/sql/client_document_publication_doc1.sql",
+                        "name":  "client_document_publication_doc1.sql",
+                        "bytes":  6269,
+                        "encoding":  "utf-8",
+                        "sha256":  "71160ef8d9d86474fcb7e34e4dd056c57f4e6852bc80df00581f4d3e4fd3ef28",
+                        "rank":  40,
+                        "guards":  [
+                                       "object-null",
+                                       "if-not-exists",
+                                       "sys-catalog"
+                                   ],
+                        "mutations":  [
+                                          "create-table",
+                                          "create-index"
+                                      ],
+                        "unguardedBatches":  [
+
+                                             ],
+                        "idempotency":  "guarded",
+                        "reviewVerdict":  null,
+                        "reviewEvidence":  null,
+                        "excludedFromDeploy":  false,
+                        "excludedReason":  null
+                    },
+                    {
+                        "path":  "CrossBuy/deploy/sql/comm_documents_001.sql",
+                        "name":  "comm_documents_001.sql",
+                        "bytes":  11257,
+                        "encoding":  "utf-8",
+                        "sha256":  "e87f185dbcb06f3f63329e44f1e9132b4b2635fbf99b7c6281fa80ec57e4de1c",
+                        "rank":  40,
+                        "guards":  [
+                                       "object-null",
+                                       "if-not-exists",
+                                       "where-not-exists",
+                                       "sys-catalog"
+                                   ],
+                        "mutations":  [
+                                          "create-table",
+                                          "create-index"
+                                      ],
+                        "unguardedBatches":  [
+
+                                             ],
+                        "idempotency":  "guarded",
+                        "reviewVerdict":  null,
+                        "reviewEvidence":  null,
+                        "excludedFromDeploy":  false,
+                        "excludedReason":  null
+                    },
+                    {
+                        "path":  "CrossBuy/deploy/sql/comm_portal_001_identity.sql",
+                        "name":  "comm_portal_001_identity.sql",
+                        "bytes":  5514,
+                        "encoding":  "utf-8",
+                        "sha256":  "b6a8fbcbbfb41bddbd287e0000f6e899bf6b767a45fbcaae646f7e90999b6f76",
+                        "rank":  40,
+                        "guards":  [
+                                       "object-null",
+                                       "where-not-exists",
+                                       "sys-catalog"
+                                   ],
+                        "mutations":  [
+                                          "create-table",
+                                          "create-index"
+                                      ],
+                        "unguardedBatches":  [
+
+                                             ],
+                        "idempotency":  "guarded",
+                        "reviewVerdict":  null,
+                        "reviewEvidence":  null,
+                        "excludedFromDeploy":  false,
+                        "excludedReason":  null
+                    },
+                    {
+                        "path":  "CrossBuy/deploy/sql/comm_portal_002_contact_request.sql",
+                        "name":  "comm_portal_002_contact_request.sql",
+                        "bytes":  5962,
+                        "encoding":  "utf-8",
+                        "sha256":  "d9484ebc9b97162774fcd4512f1686eaa2235716db10873bd366e5a3a4e25151",
+                        "rank":  40,
+                        "guards":  [
+                                       "object-null",
+                                       "where-not-exists",
+                                       "sys-catalog"
+                                   ],
+                        "mutations":  [
+                                          "create-table",
+                                          "create-index"
+                                      ],
+                        "unguardedBatches":  [
+
+                                             ],
+                        "idempotency":  "guarded",
+                        "reviewVerdict":  null,
+                        "reviewEvidence":  null,
+                        "excludedFromDeploy":  false,
+                        "excludedReason":  null
+                    },
+                    {
+                        "path":  "CrossBuy/deploy/sql/communication_external_actor_3bb1.sql",
+                        "name":  "communication_external_actor_3bb1.sql",
+                        "bytes":  13059,
+                        "encoding":  "utf-8",
+                        "sha256":  "7b0dda896a3bc71f5e155dfc3b4da91d1e68170ac9a746215de8ea4be0c57437",
+                        "rank":  40,
+                        "guards":  [
+                                       "if-not-exists",
+                                       "if-exists",
+                                       "col-length",
+                                       "sys-catalog"
+                                   ],
+                        "mutations":  [
+                                          "alter-add",
+                                          "create-index",
+                                          "drop"
+                                      ],
+                        "unguardedBatches":  [
+
+                                             ],
+                        "idempotency":  "guarded",
+                        "reviewVerdict":  null,
+                        "reviewEvidence":  null,
+                        "excludedFromDeploy":  false,
+                        "excludedReason":  null
+                    },
+                    {
                         "path":  "CrossBuy/deploy/sql/communication_platform_slice_001.sql",
                         "name":  "communication_platform_slice_001.sql",
                         "bytes":  50859,
@@ -2933,6 +3086,28 @@
                         "bytes":  678,
                         "encoding":  "utf-8",
                         "sha256":  "a9eafa0cadce444b589d80e30ee03e28bff4bd2f902b534bec2347391497214d",
+                        "rank":  40,
+                        "guards":  [
+                                       "col-length"
+                                   ],
+                        "mutations":  [
+                                          "alter-add"
+                                      ],
+                        "unguardedBatches":  [
+
+                                             ],
+                        "idempotency":  "guarded",
+                        "reviewVerdict":  null,
+                        "reviewEvidence":  null,
+                        "excludedFromDeploy":  false,
+                        "excludedReason":  null
+                    },
+                    {
+                        "path":  "deploy/sql/portal_user_photo.sql",
+                        "name":  "portal_user_photo.sql",
+                        "bytes":  2556,
+                        "encoding":  "utf-8",
+                        "sha256":  "1c7aa75d41ab178794d80b7d2fa7da2604082ae532bcc33f79a934b7b3bf030d",
                         "rank":  40,
                         "guards":  [
                                        "col-length"
