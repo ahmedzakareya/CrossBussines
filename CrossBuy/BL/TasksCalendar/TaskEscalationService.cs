@@ -96,6 +96,17 @@ namespace CrossBuy.BL.TasksCalendar
 		/// The derived state of many tasks in one round trip, for a list or a board.
 		Task<IReadOnlyDictionary<int, TaskEscalationStatus>> EvaluateManyAsync(
 			int companyId, IReadOnlyCollection<int> taskIds, CancellationToken ct = default);
+
+		/// The SET-shaped companion: which tasks in this company are escalated RIGHT NOW.
+		///
+		/// EvaluateManyAsync answers "what is the state of these tasks" and needs the ids first. This one
+		/// answers "which ids", which a caller that has no candidate list - a filter, a badge count, a
+		/// company-wide view - cannot ask any other way without reading every task and evaluating each.
+		///
+		/// IT ADDS NO ESCALATION BEHAVIOUR. It reads the same durable witness the sweep already writes and
+		/// already reads, and it escalates nothing, notifies nobody and writes nothing.
+		Task<IReadOnlyCollection<int>> CurrentlyEscalatedTaskIdsAsync(
+			int companyId, CancellationToken ct = default);
 	}
 
 	public sealed class TaskEscalationService : ITaskEscalationService
@@ -305,6 +316,70 @@ namespace CrossBuy.BL.TasksCalendar
 			}
 
 			return result;
+		}
+
+		// -------------------------------------------------------------------------------------
+		// the set-shaped answer
+		// -------------------------------------------------------------------------------------
+
+		// WHICH TASKS ARE ESCALATED RIGHT NOW. A READ, and nothing but a read.
+		//
+		// ONE WITNESS, NOT TWO, and the difference is deliberate. The programme line answers this from two
+		// witnesses: a durable projection on TaskItem (EscalationLevel / EscalatedAtUtc /
+		// EscalatedForDueUtc) and the notification the platform wrote. THOSE THREE COLUMNS DO NOT EXIST ON
+		// THIS LINE - Stage4TaskOrchestrationEngineTests asserts their absence - so escalation here is
+		// derived state whose only durable record is the notification. Reading a witness this line does not
+		// keep would not be stricter, it would be empty; reading the one it does keep is the whole truth
+		// available, and the answer is exactly as complete as the sweep's own already-escalated check.
+		//
+		// THE DUE STAMP IS THE STALENESS RULE. The dedup key ends with the due date it escalated FOR, so
+		// evidence counts only against the due date the task has NOW. Move the deadline and the task stops
+		// being escalated - which is correct: nobody has been told about the new date.
+		//
+		// A DONE TASK IS NEVER ESCALATED, however loud its history. Escalation is a fact about outstanding
+		// work.
+		public async Task<IReadOnlyCollection<int>> CurrentlyEscalatedTaskIdsAsync(
+			int companyId, CancellationToken ct = default)
+		{
+			// An unresolved company returns NOTHING. It does not return "all" and it does not fall back to
+			// a company - the same rule the sweep states for itself.
+			if (companyId <= 0) return Array.Empty<int>();
+
+			// Notification.CompanyID is NULLABLE, so `== companyId` is deliberate: a row with no company is
+			// not this company's, and treating null as a match would be the leak. The key prefix carries the
+			// company a second time, which is what stops another tenant's key ending with the same stamp.
+			string prefix = $"task:{companyId}:";
+			var evidence = await _db.Notifications.AsNoTracking()
+				.Where(n => n.CompanyID == companyId
+							&& n.Type == TaskNotificationKinds.Escalated
+							&& n.EntityId != null
+							&& n.DedupKey != null
+							&& n.DedupKey.StartsWith(prefix))
+				.Select(n => new { TaskId = n.EntityId!.Value, n.DedupKey })
+				.ToListAsync(ct);
+			if (evidence.Count == 0) return Array.Empty<int>();
+
+			// The task's OWN company is re-checked here rather than trusted from the notification: the
+			// notification names a task id, and an id is only ever a lookup key.
+			var named = evidence.Select(e => e.TaskId).Distinct().ToList();
+			var candidates = await _db.TaskItems.AsNoTracking()
+				.Where(t => t.CompanyId == companyId
+							&& named.Contains(t.ID)
+							&& t.Status != TaskStatuses.Done
+							&& t.DueDate != null)
+				.Select(t => new { t.ID, t.DueDate })
+				.ToListAsync(ct);
+
+			var ids = new HashSet<int>();
+			foreach (var candidate in candidates)
+			{
+				string suffix = EscalationOccurrenceSuffix(TaskCalendarTime.AssumeUtc(candidate.DueDate!.Value));
+				if (evidence.Any(e => e.TaskId == candidate.ID
+									  && e.DedupKey!.EndsWith(suffix, StringComparison.Ordinal)))
+					ids.Add(candidate.ID);
+			}
+
+			return ids;
 		}
 
 		// -------------------------------------------------------------------------------------
