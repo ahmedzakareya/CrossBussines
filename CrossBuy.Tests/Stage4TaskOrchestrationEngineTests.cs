@@ -389,14 +389,33 @@ namespace CrossBuy.Tests
             // THE STAGE BOUNDARY, ASSERTED. Nine rules live in the programme folder; none of them is
             // here, because each belongs to the module wave that also owns the producer emitting its
             // events. If one appears, this fails and names the wave that was skipped.
+            //
+            // ---- NARROWED, NOT WEAKENED (DOCUMENT-VERIFICATION-TASK-AUTHORITY-01) ----------------
+            //
+            // DocumentVerificationRule has LEFT this list, and it left by satisfying the condition the
+            // list was always stated in terms of: "each belongs to the module wave that also owns the
+            // producer emitting its events". Documents owns that producer and it is LIVE on this line -
+            // PlatformDocumentService.SubmitAsync already raises DocumentSubmitted, and the only exits
+            // from Status="Submitted" are VerifyAsync/RejectAsync. So its wave happened; the boundary
+            // moved by one rule rather than being relaxed.
+            //
+            // The other eight stay, and for the unchanged reason: four of them listen for events NO
+            // producer on this line emits, and the rest belong to module waves that have not run. The
+            // assertion below is therefore still the live guard it always was - and the positive
+            // assertion that follows is what stops this test silently becoming vacuous if somebody
+            // later deletes the rule instead of the entry.
             var assembly = typeof(ITaskOrchestrationRule).Assembly;
             foreach (var rule in new[]
             {
-                "CrmFollowUpRule", "DocumentResubmissionRule", "DocumentVerificationRule",
+                "CrmFollowUpRule", "DocumentResubmissionRule",
                 "EmployeeRequestApprovalRule", "InventoryApprovalRule", "LeaveApprovalRule",
                 "ManufWorkOrderExecutionRule", "PosShortageRule", "ProjectBillingApprovalRule",
             })
                 Assert.Null(assembly.GetType("CrossBuy.BL.Platform.Orchestration." + rule));
+
+            // The one that did land, asserted positively so the removal above is accounted for rather
+            // than merely absent from a list.
+            Assert.NotNull(assembly.GetType("CrossBuy.BL.Platform.Orchestration.DocumentVerificationRule"));
         }
 
         [Fact]

@@ -882,6 +882,22 @@ builder.Services.AddScoped<CrossBuy.BL.Platform.IBusinessEventConsumer, CrossBuy
 // IEnumerable<ITaskOrchestrationRule>; this simply makes the set non-empty for the first time.
 builder.Services.AddScoped<CrossBuy.BL.Platform.Orchestration.ITaskOrchestrationRule, CrossBuy.BL.Platform.Orchestration.ProjectMilestoneOrchestrationRule>();
 
+// ---- DOCUMENT VERIFICATION - the second rule, and the first one whose producer is already live ----
+//
+// WHAT TURNS ON. PlatformDocumentService.SubmitAsync already emits DocumentSubmitted, and the only
+// exits from Status="Submitted" are VerifyAsync/RejectAsync, both of which require employee-manage -
+// an authority the submitter provably does not hold. So a submitted document is already work somebody
+// owes an answer to; this registration is what makes that waiting VISIBLE as a task.
+//
+// WHAT DOES NOT. Upload is untouched: UploadAsync lands Status="Active" and emits nothing, so routine
+// HR filing creates no work. A portal caller cannot reach SubmitAsync at all - ScopeAsync refuses a
+// context with no employee - so no client upload can open an internal verification task.
+//
+// THE TASK IS CREATED UNASSIGNED, for a deployment to route through TaskAutoRule exactly as document
+// EXPIRY work already is. Switch it off per company with TaskAutoRule(RuleType="DocumentVerification",
+// IsActive=false); absent means on, which is the convention DocumentExpiryProjection established.
+builder.Services.AddScoped<CrossBuy.BL.Platform.Orchestration.ITaskOrchestrationRule, CrossBuy.BL.Platform.Orchestration.DocumentVerificationRule>();
+
 // ---- CONVERGENCE STAGE 5 - PROJECTS-2 milestone service ----
 // ONE scoped registration. A registration is not a permission: the milestone endpoints
 // authorize through the Projects module authority that already exists, and this adds no
