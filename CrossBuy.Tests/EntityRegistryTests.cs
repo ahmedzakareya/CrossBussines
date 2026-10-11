@@ -62,13 +62,59 @@ namespace CrossBuy.Tests
             var registry = host.Registry();
             ITaskLinkResolver resolver = new TaskLinkResolver(registry);
 
-            // The picker listed exactly these seven types, in this order. "Supplier" was searchable but
-            // never listed, so it must still be absent.
+            // THE APPROVED PICKER LIST, SPELLED OUT ON PURPOSE.
+            //
+            // WHY A LITERAL AND NOT A QUERY. TaskLinkResolver.Types() IS
+            // `GetDefinitions().Where(d => d.ListedInRecordPicker)`, so asserting that it equals the
+            // definitions carrying that flag would restate the implementation and catch nothing. The
+            // literal is the governance pin: adding an entity to the picker has to be a deliberate
+            // edit HERE as well as in the registry, which is the whole value of the assertion.
+            //
+            // WHY IT GREW FROM SEVEN TO NINETEEN, attributed rather than assumed:
+            //   57b169d  Platform Kernel foundation        the original seven
+            //   aced8c6  "thirteen documents print..."     + the eight inventory documents, + SalesReturn
+            //   018a477  "money-document timelines"        + PurchaseReturn, Receipt, Payment
+            // Each registration carries its reason in EntityRegistry itself - the inventory block states
+            // that one shared detail view carries the conversation and activity panel for all of them.
+            // The expectation was last touched at 5657665 and simply never followed; the registry has
+            // held nineteen since before this line began, so this was stale debt, not a regression.
+            //
+            // ORDER IS DECLARATION ORDER, because the picker renders in the order the registry yields.
             var keys = resolver.Types().Select(t => t.Key).ToList();
             Assert.Equal(
-                new[] { "SalesInvoice", "Customer", "ManufWorkOrder", "PosOrder", "Employee", "Project", "Item" },
+                new[]
+                {
+                    "SalesInvoice",
+                    "PurchaseOrder", "GoodsReceipt", "SalesOrder", "DeliveryNote",
+                    "StockTransfer", "StockCount", "StockWriteOff", "LandedCost",
+                    "SalesReturn", "PurchaseReturn", "Receipt", "Payment",
+                    "Customer", "ManufWorkOrder", "PosOrder", "Employee", "Project", "Item",
+                },
                 keys);
+
+            // "Supplier" is searchable but was never listed, and still must not be.
             Assert.DoesNotContain(EntityRegistry.Supplier, keys);
+
+            // WHAT MUST NEVER REACH THE PICKER, asserted by name rather than left to the list above.
+            //
+            // A request or an approval is somebody's workflow item, not a business record you attach a
+            // task to, and each of these definitions says so with ListedInRecordPicker = false. Naming
+            // them here means a future registration that flipped one of those flags fails on a line
+            // that explains itself, instead of only widening the collection above.
+            foreach (var excluded in new[]
+                     {
+                         EntityRegistry.InventoryApproval,
+                         EntityRegistry.LeaveRequest,
+                         EntityRegistry.EmployeeRequest,
+                     })
+            {
+                Assert.True(registry.TryGetDefinition(excluded, out var def) && def != null,
+                    $"{excluded} should still be a registered entity");
+                Assert.False(def!.ListedInRecordPicker,
+                    $"{excluded} is a request/approval and must not be offered by the record picker");
+                Assert.DoesNotContain(excluded, keys);
+            }
+
             Assert.All(resolver.Types(), t =>
             {
                 Assert.False(string.IsNullOrWhiteSpace(t.LabelAr));

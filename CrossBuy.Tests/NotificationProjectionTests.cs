@@ -309,18 +309,53 @@ namespace CrossBuy.Tests
             Assert.Single(sink.Written);
             Assert.Equal(1, await host.NewContext().Notifications.CountAsync());
 
-            // The event does NOT complete yet, because a THIRD consumer now exists: AI Foundation
-            // Increment 1 registered AiProjection, so every event carries a third dispatch row. That is
-            // exactly the rule this test asserts — an event completes only when EVERY consumer is Done —
-            // so the assertion is unchanged and the test now drives all three consumers rather than two.
-            Assert.Null((await host.NewContext().BusinessEvents.SingleAsync()).CompletedAt);
+            // ---- Test 30: CompletedAt waits for EVERY registered consumer ----
+            //
+            // THIS NO LONGER NAMES THE CONSUMERS, AND THAT IS THE FIX.
+            //
+            // The test used to drive two consumers, then three once AI Foundation registered
+            // AiProjection - its own comment recorded that edit. Phase 3 then registered a FOURTH,
+            // TaskOrchestration, and the test was not followed again, so its final assertion failed
+            // while the product was behaving exactly as specified: TryCompleteEventAsync stamps
+            // CompletedAt only when NO dispatch row for the event is in a status other than Done
+            // (SqlEventDispatchStore.TryCompleteEventAsync), and the fourth row was still Pending.
+            //
+            // Driving whatever BusinessEventConsumers.Registered holds keeps the RULE under test and
+            // stops the test needing an edit every time a consumer lands. It does NOT weaken the
+            // assertion: the teeth are the Assert.Null BEFORE each remaining consumer is marked Done -
+            // the event must stay incomplete while even one row is outstanding - and that check is
+            // made once per remaining consumer rather than once in total.
+            var remaining = BusinessEventConsumers.Registered
+                .Except(new[] { BusinessEventConsumers.TimelineProjection, BusinessEventConsumers.NotificationProjection },
+                        StringComparer.Ordinal)
+                .ToList();
 
-            var ai = await store.ClaimPendingAsync(BusinessEventConsumers.AiProjection, 10);
-            await store.MarkDoneAsync(Assert.Single(ai).DispatchId);
-            await store.TryCompleteEventAsync(stored.EventId);
+            Assert.NotEmpty(remaining);   // a registry with only the two driven above would make the loop vacuous
 
-            // NOW every consumer is Done, so the event completes.
-            Assert.NotNull((await host.NewContext().BusinessEvents.SingleAsync()).CompletedAt);
+            foreach (var consumerName in remaining)
+            {
+                // Still outstanding, so the event must NOT be complete. Each read takes its own context
+                // and DISPOSES it: PlatformTestHost hands every context the same SQLite connection, and
+                // leaving them open accumulates live readers over one connection for the whole test.
+                using (var pending = host.NewContext())
+                    Assert.Null((await pending.BusinessEvents.SingleAsync()).CompletedAt);
+
+                var work = await store.ClaimPendingAsync(consumerName, 10);
+                await store.MarkDoneAsync(Assert.Single(work).DispatchId);
+                await store.TryCompleteEventAsync(stored.EventId);
+            }
+
+            // NOW every registered consumer is Done, so the event completes - and the roll-up is a fact
+            // about the ROWS, not about the loop above, so both are read through one fresh context.
+            using (var verify = host.NewContext())
+            {
+                Assert.NotNull((await verify.BusinessEvents.SingleAsync()).CompletedAt);
+
+                var rows = await verify.BusinessEventDispatches
+                    .Where(d => d.EventId == stored.EventId).ToListAsync();
+                Assert.Equal(BusinessEventConsumers.Registered.Length, rows.Count);
+                Assert.All(rows, r => Assert.Equal(BusinessEventDispatchStatus.Done, r.Status));
+            }
         }
 
         [Fact]
