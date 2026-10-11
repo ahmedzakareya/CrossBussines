@@ -34,6 +34,8 @@ namespace CrossBuy.BL.Documents
         //
         // "Document" prefixes each because the event is addressed to the employee: "Employee.Submitted"
         // would be a fact about the person, not about their file.
+        public const string Published = "DocumentPublished";
+        public const string Revoked = "DocumentRevoked";
         public const string Submitted = "DocumentSubmitted";
         public const string Verified = "DocumentVerified";
         public const string Rejected = "DocumentRejected";

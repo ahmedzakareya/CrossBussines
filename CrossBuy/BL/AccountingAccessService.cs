@@ -35,7 +35,12 @@ namespace CrossBuy.BL
 	// here because that would touch every existing call site for no behavioural gain.
 	public static class AccountingActions
 	{
-		public const string PeriodClose = "period-close";     // Open -> SoftClosed -> Closed
+		public const string CustomerDocumentUpload = "customer-document-upload";
+        public const string CustomerDocumentPublish = "customer-document-publish";
+        public const string CustomerDocumentUploader = "CustomerDocumentUploader";
+        public const string CustomerDocumentPublisher = "CustomerDocumentPublisher";
+
+        public const string PeriodClose = "period-close";     // Open -> SoftClosed -> Closed
 		public const string PeriodReopen = "period-reopen";   // Closed/SoftClosed -> Open, with a recorded reason
 
 		// ---- REPORTING. Two tiers, and both are SEPARATE FROM read for one measured reason. ----
@@ -78,7 +83,7 @@ namespace CrossBuy.BL
 		public IReadOnlyCollection<string> Actions { get; } =
 			new[] { "read", "post", "pay", "manage", "currency-override",
 				AccountingActions.PeriodClose, AccountingActions.PeriodReopen,
-				AccountingActions.ReportRead, AccountingActions.ProfitabilityReportRead };
+				AccountingActions.ReportRead, AccountingActions.ProfitabilityReportRead, AccountingActions.CustomerDocumentUpload, AccountingActions.CustomerDocumentPublish };
 
 		// ---------------------------------------------------------------------------------------------
 		// Canonical, session-free. This is the implementation; everything else delegates here.
@@ -139,7 +144,18 @@ namespace CrossBuy.BL
 				return Log(AuthorizationDecision.Deny(
 					companyId, Scope, action, AuthorizationReasonCodes.RoleNotHeld));
 
-			// ---- configured roles decide first, so a configured company behaves EXACTLY as before ----
+			// Customer document grants are explicit and independent. No chief/admin or bootstrap inheritance.
+            if (action == AccountingActions.CustomerDocumentUpload || action == AccountingActions.CustomerDocumentPublish)
+            {
+                var held = await RolesAsync(context, cancellationToken);
+                var required = action == AccountingActions.CustomerDocumentUpload
+                    ? AccountingActions.CustomerDocumentUploader : AccountingActions.CustomerDocumentPublisher;
+                return Log(held.Contains(required)
+                    ? AuthorizationDecision.Allow(AuthorizationDecisionSources.LegacyRole, companyId, Scope, action, AuthorizationReasonCodes.RoleHeld, held)
+                    : AuthorizationDecision.Deny(companyId, Scope, action, AuthorizationReasonCodes.RoleNotHeld));
+            }
+
+            // ---- configured roles decide first, so a configured company behaves EXACTLY as before ----
 			if (await AnyRoleConfiguredAsync(companyId, cancellationToken))
 			{
 				var roles = await RolesAsync(context, cancellationToken);

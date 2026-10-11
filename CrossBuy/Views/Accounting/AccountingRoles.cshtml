@@ -5,6 +5,8 @@
     var employees = ViewBag.Employees as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
     var assignments = ViewBag.Assignments as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
     var roles = new (string v, string ar, string en)[] {
+        ("CustomerDocumentUploader","رفع مستندات العملاء","Customer document uploader"),
+        ("CustomerDocumentPublisher","نشر مستندات العملاء","Customer document publisher"),
         ("ChiefAccountant","رئيس حسابات","Chief Accountant"),
         ("Accountant","محاسب","Accountant"),
         ("Cashier","أمين صندوق","Cashier"),

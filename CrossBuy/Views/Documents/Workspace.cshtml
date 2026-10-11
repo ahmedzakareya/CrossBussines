@@ -1,10 +1,14 @@
 @using CrossBuy.BL.Documents
 @using CrossBuy.Controllers
 @model DocumentWorkspaceVm
+@inject CrossBuy.BL.Platform.IBusinessContextAccessor BusinessContexts
+@inject CrossBuy.BL.AccountingAccessService AccountingAccess
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @{
     Layout = "~/Views/Shared/_LayoutBackend.cshtml";
     ViewData["Title"] = Localizer["Documents"].Value;
+    var actor = await BusinessContexts.TryGetCurrentAsync();
+    var canPublish = actor != null && await AccountingAccess.CanAsync(actor, CrossBuy.BL.AccountingActions.CustomerDocumentPublish);
 
     // THIS VIEW COMPARES NO DATES. Every row arrives with the state the platform computed, from the
     // one evaluator, so the two rules that are easy to get wrong — a document expiring TODAY is still
@@ -126,6 +130,20 @@
                                            to enforce. *@
                                         <a class="btn btn-sm btn-light" href="/Documents/@doc.Id/content">@Localizer["Open"]</a>
                                         <a class="btn btn-sm btn-light" href="/Documents/@doc.Id/history">@Localizer["History"]</a>
+                                        @if (canPublish && doc.EntityType == CrossBuy.BL.Platform.EntityRegistry.Customer)
+                                        {
+                                            @if (doc.Status == "Active" && doc.Confidentiality == "Internal" && doc.DocumentTypeId != null)
+                                            {
+                                                <form method="post" action="/Documents/@doc.Id/publish" class="d-inline">
+                                                    @Html.AntiForgeryToken()
+                                                    <button class="btn btn-sm btn-light-primary">@Localizer["Publish to customer"]</button>
+                                                </form>
+                                            }
+                                            <form method="post" action="/Documents/@doc.Id/revoke" class="d-inline">
+                                                @Html.AntiForgeryToken()
+                                                <button class="btn btn-sm btn-light-danger">@Localizer["Revoke publication"]</button>
+                                            </form>
+                                        }
                                     </td>
                                 </tr>
                             }

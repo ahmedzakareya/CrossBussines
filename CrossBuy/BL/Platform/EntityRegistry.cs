@@ -313,7 +313,7 @@ namespace CrossBuy.BL.Platform
                 Module = "Accounting", Icon = "ki-outline ki-profile-circle", Color = "success",
                 RouteTemplate = "/Accounting/CustomerStatement?id={id}",
                 SupportsSearch = true, SupportsTimeline = true, SupportsComments = false,
-                SupportsFiles = false, SupportsFollowers = false,
+                SupportsFiles = true, SupportsFollowers = false,
                 PermissionScope = ScopeAccounting,
                 ListedInRecordPicker = true,
             },

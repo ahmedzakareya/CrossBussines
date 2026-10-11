@@ -119,6 +119,12 @@ namespace CrossBuy.Tests
             // IEnumerable<IModuleAccessService> would be a circular dependency, which is what this test catches.
             services.AddScoped<CrossBuy.BL.AccountingAccessService>();
             services.AddScoped<CrossBuy.BL.IAccountingAccessService>(sp => sp.GetRequiredService<CrossBuy.BL.AccountingAccessService>());
+            services.AddScoped<IDocumentOwnerResolver, EmployeeDocumentOwnerResolver>();
+            services.AddScoped<IDocumentOwnerResolver, CustomerDocumentOwnerResolver>();
+            services.AddScoped<IDocumentAccessResolver, DocumentAccessResolver>();
+            services.AddScoped<IBusinessEventService, BusinessEventService>();
+            services.AddSingleton(TimeProvider.System);
+            services.AddScoped<CrossBuy.BL.Documents.IClientDocumentPublicationService, CrossBuy.BL.Documents.ClientDocumentPublicationService>();
             services.AddScoped<IModuleAccessService>(sp => sp.GetRequiredService<CrossBuy.BL.AccountingAccessService>());
 
             services.AddScoped<CrossBuy.BL.ProjectsAccessService>();
@@ -167,6 +173,15 @@ namespace CrossBuy.Tests
         }
 
         // ValidateOnBuild is NOT enough, and this test is why.
+        [Fact]
+        public void Customer_document_publication_and_owner_resolve_in_the_real_scoped_graph()
+        {
+            using var provider = BuildBatchCContainer();
+            using var scope = provider.CreateScope();
+            Assert.NotNull(scope.ServiceProvider.GetRequiredService<CrossBuy.BL.Documents.IClientDocumentPublicationService>());
+            Assert.Contains(scope.ServiceProvider.GetServices<IDocumentOwnerResolver>(), r => r.EntityType == EntityRegistry.Customer);
+        }
+
         //
         // A second defect survived it: TasksAccessService took IPlatformPermissionProvider, whose adapters take
         // IEnumerable<IModuleAccessService> — which contains TasksAccessService. ValidateOnBuild validates call

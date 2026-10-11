@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using CrossBuy.BL;
 using CrossBuy.Models;
 using CrossBuy.Models.Context;
@@ -2647,13 +2647,15 @@ namespace CrossBuy.Controllers
 		[SessionValidation][HttpGet][AccPerm("manage")]
 		public async Task<IActionResult> AccountingRoles()
 		{
-			ViewBag.Threshold = await ApprovalThresholdAsync();
+            var scope = await _company.ResolveAsync();
+            if (!scope.Ok) return NotFound();
+			ViewBag.Threshold = await _context.AccountingSettings.AsNoTracking().Where(x => x.CompanyID == scope.CompanyId).Select(x => x.ApprovalThreshold).FirstOrDefaultAsync();
 			var accIsAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
-			ViewBag.Employees = (await _context.Employee.AsNoTracking().Where(e => e.EmpCompanyID == DefaultCompanyId && e.IsActive)
+			ViewBag.Employees = (await _context.Employee.AsNoTracking().Where(e => e.EmpCompanyID == scope.CompanyId && e.IsActive)
 					.Select(e => new { e.ID, e.FullName, e.FullNameEn }).ToListAsync())
 				.Select(e => new CrossBuy.ViewModel.EmployeeViewModel { ID = e.ID, FullName = !accIsAr && !string.IsNullOrWhiteSpace(e.FullNameEn) ? e.FullNameEn : e.FullName })
 				.OrderBy(e => e.FullName).ToList();
-			ViewBag.Assignments = (await (from r in _context.AccountingUserRoles.AsNoTracking().Where(r => r.CompanyID == DefaultCompanyId)
+			ViewBag.Assignments = (await (from r in _context.AccountingUserRoles.AsNoTracking().Where(r => r.CompanyID == scope.CompanyId)
 										 join e in _context.Employee.AsNoTracking() on r.EmployeeId equals e.ID into ej
 										 from e in ej.DefaultIfEmpty()
 										 orderby r.ID descending
@@ -2665,12 +2667,15 @@ namespace CrossBuy.Controllers
 		[SessionValidation][HttpPost][ValidateAntiForgeryToken][AccPerm("manage")]
 		public async Task<IActionResult> AssignAccRole(int employeeId, string role)
 		{
-			var allowed = new[] { "ChiefAccountant", "Accountant", "Cashier", "Auditor" };
+            var scope = await _company.ResolveAsync();
+            if (!scope.Ok) return NotFound();
+			var allowed = new[] { "ChiefAccountant", "Accountant", "Cashier", "Auditor", AccountingActions.CustomerDocumentUploader, AccountingActions.CustomerDocumentPublisher };
 			if (employeeId <= 0 || !allowed.Contains(role)) { TempData["AccErr"] = L["Invalid data"].Value; return RedirectToAction(nameof(AccountingRoles)); }
-			bool exists = await _context.AccountingUserRoles.AnyAsync(r => r.CompanyID == DefaultCompanyId && r.EmployeeId == employeeId && r.Role == role);
+			if (!await _context.Employee.AsNoTracking().AnyAsync(e => e.ID == employeeId && e.EmpCompanyID == scope.CompanyId)) return NotFound();
+            bool exists = await _context.AccountingUserRoles.AnyAsync(r => r.CompanyID == scope.CompanyId && r.EmployeeId == employeeId && r.Role == role);
 			if (!exists)
 			{
-				_context.AccountingUserRoles.Add(new Models.Context.Accounting.AccountingUserRole { CompanyID = DefaultCompanyId, EmployeeId = employeeId, Role = role, CreatedAt = DateTime.UtcNow });
+				_context.AccountingUserRoles.Add(new Models.Context.Accounting.AccountingUserRole { CompanyID = scope.CompanyId, EmployeeId = employeeId, Role = role, CreatedAt = DateTime.UtcNow });
 				await _context.SaveChangesAsync();
 			}
 			TempData["AccMsg"] = L["Role assigned"].Value;
@@ -2680,8 +2685,10 @@ namespace CrossBuy.Controllers
 		[SessionValidation][HttpPost][ValidateAntiForgeryToken][AccPerm("manage")]
 		public async Task<IActionResult> SaveAccSettings(decimal approvalThreshold)
 		{
-			var s = await _context.AccountingSettings.FirstOrDefaultAsync(x => x.CompanyID == DefaultCompanyId);
-			if (s == null) { s = new Models.Context.Accounting.AccountingSettings { CompanyID = DefaultCompanyId, CreatedAt = DateTime.UtcNow }; _context.AccountingSettings.Add(s); }
+            var scope = await _company.ResolveAsync();
+            if (!scope.Ok) return NotFound();
+			var s = await _context.AccountingSettings.FirstOrDefaultAsync(x => x.CompanyID == scope.CompanyId);
+			if (s == null) { s = new Models.Context.Accounting.AccountingSettings { CompanyID = scope.CompanyId, CreatedAt = DateTime.UtcNow }; _context.AccountingSettings.Add(s); }
 			s.ApprovalThreshold = approvalThreshold < 0 ? 0 : approvalThreshold;
 			await _context.SaveChangesAsync();
 			TempData["AccMsg"] = L["The approval threshold was saved"].Value;
@@ -2691,7 +2698,9 @@ namespace CrossBuy.Controllers
 		[SessionValidation][HttpPost][ValidateAntiForgeryToken][AccPerm("manage")]
 		public async Task<IActionResult> RemoveAccRole(int id)
 		{
-			var r = await _context.AccountingUserRoles.FirstOrDefaultAsync(x => x.ID == id && x.CompanyID == DefaultCompanyId);
+            var scope = await _company.ResolveAsync();
+            if (!scope.Ok) return NotFound();
+			var r = await _context.AccountingUserRoles.FirstOrDefaultAsync(x => x.ID == id && x.CompanyID == scope.CompanyId);
 			if (r != null) { _context.AccountingUserRoles.Remove(r); await _context.SaveChangesAsync(); }
 			TempData["AccMsg"] = L["Role deleted"].Value;
 			return RedirectToAction(nameof(AccountingRoles));

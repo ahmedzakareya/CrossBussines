@@ -35,6 +35,7 @@ namespace CrossBuy.BL.Documents
         public static IServiceCollection AddDocumentPlatform(IServiceCollection services)
         {
             services.AddScoped<IPlatformDocumentService, PlatformDocumentService>();
+            services.AddScoped<IClientDocumentPublicationService, ClientDocumentPublicationService>();
 
             // THE CLOCK, registered with TryAdd rather than Add.
             //

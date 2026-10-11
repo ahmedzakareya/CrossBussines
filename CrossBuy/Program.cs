@@ -468,6 +468,7 @@ builder.Services.AddScoped<CrossBuy.BL.Platform.IEntityRegistry, CrossBuy.BL.Pla
 // The resolver takes EVERY IDocumentOwnerResolver and EVERY IModuleAccessService, so onboarding a family
 // is one registration below rather than an edit to the resolver: the centre never learns a module name.
 builder.Services.AddScoped<CrossBuy.BL.Platform.IDocumentOwnerResolver, CrossBuy.BL.Platform.EmployeeDocumentOwnerResolver>();
+builder.Services.AddScoped<CrossBuy.BL.Platform.IDocumentOwnerResolver, CrossBuy.BL.Platform.CustomerDocumentOwnerResolver>();
 builder.Services.AddScoped<CrossBuy.BL.Platform.IDocumentAccessResolver, CrossBuy.BL.Platform.DocumentAccessResolver>();
 
 // Storage lives OUTSIDE wwwroot, deliberately: anything under the web root is reachable by

@@ -328,31 +328,37 @@ namespace CrossBuy.Tests
         // ---- the Employee family is onboarded, and onboarding is per-family ------------------------
 
         [Fact]
-        public void Employee_carries_documents_and_the_flag_was_not_turned_on_in_bulk()
+        public async Task Onboarded_families_have_module_authority_and_unresolved_families_are_refused()
         {
             using var host = new PlatformTestHost();
             var registry = new EntityRegistry(host.Db);
 
             Assert.True(registry.TryGetDefinition(EntityRegistry.Employee, out var employee));
             Assert.True(employee!.SupportsFiles);
+            Assert.True(registry.GetDefinition(EntityRegistry.Customer).SupportsFiles);
+            Assert.Equal(EntityRegistry.ScopeAccounting, registry.GetDefinition(EntityRegistry.Customer).PermissionScope);
 
             // ...and it routes to a module that can actually answer, which is the reason the flag could
             // be turned on at all. ScopeNone would put it back on DefaultPermissionAdapter, where View is
             // granted to any authenticated same-company caller.
             Assert.Equal(EntityRegistry.ScopeHr, employee.PermissionScope);
 
-            // ONBOARDING IS DELIBERATE, ONE FAMILY AT A TIME. Every other family that has no document
-            // owner resolver must still be false: a SupportsFiles that drifted true in bulk would invite
-            // callers to attach documents to records the platform cannot authorize.
+            // SupportsFiles also describes legacy attachments in this baseline. It does not grant
+            // platform document authority: families without an owner resolver must still fail closed.
+            var resolver = new DocumentAccessResolver(Array.Empty<IDocumentOwnerResolver>(),
+                Array.Empty<IModuleAccessService>(), registry, NullLogger<DocumentAccessResolver>.Instance);
             foreach (var code in new[]
                      {
                          EntityRegistry.SalesInvoice, EntityRegistry.PurchaseInvoice, EntityRegistry.Quotation,
-                         EntityRegistry.Customer, EntityRegistry.Supplier, EntityRegistry.Project,
+                         EntityRegistry.Supplier, EntityRegistry.Project,
                          EntityRegistry.Item, EntityRegistry.JournalEntry,
                      })
             {
                 Assert.True(registry.TryGetDefinition(code, out var d), code);
-                Assert.False(d!.SupportsFiles, code + " gained SupportsFiles without an owner resolver");
+                var decision = await resolver.AuthorizeAsync(Employee(CompanyA, ColleagueOfA),
+                    new DocumentOwnerRef(code, 1), DocumentAction.Upload, CompanyA);
+                Assert.False(decision.Allowed);
+                Assert.Equal(DocumentAccessReasons.NoOwnerResolver, decision.ReasonCode);
             }
         }
 
