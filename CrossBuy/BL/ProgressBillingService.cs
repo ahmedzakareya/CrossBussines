@@ -110,11 +110,22 @@ namespace CrossBuy.BL
 		// them. Called INSIDE the caller's ScopedTx and BEFORE its commit, which is the contract the
 		// kernel enforces: an event for a transaction that rolls back is never written.
 		//
-		// THE DEDUP KEY IS THE TRANSITION ITSELF - billing id plus target state. A retry of the same
-		// transition returns the original event id and writes nothing, so a repeated approve or a
-		// concurrent post cannot put two 'Approved' facts into the permanent log.
+		// THE DEDUP KEY IS THE TRANSITION ITSELF - billing id plus target state - AND, FOR THE TWO
+		// TRANSITIONS THAT CAN HAPPEN MORE THAN ONCE, THE ROUND THEY BELONG TO.
+		//
+		// WHAT WAS BROKEN. The key was billing + action for every transition. Submitted and Returned
+		// are the two the state machine lets a billing reach repeatedly - Submitted -> Returned ->
+		// Submitted is a legal cycle - so a resubmission deduplicated against the FIRST submission:
+		// RecordAsync returned the original event id, no second fact was written, and a consumer that
+		// opens approval work on a submission created nothing for the second request. The approver was
+		// never asked again.
+		//
+		// APPROVED AND POSTED KEEP THE OLD KEY, deliberately. The state machine admits each at most
+		// once per billing (Submitted -> Approved -> Posted, with no path back), so their keys are
+		// already unique and changing them would only orphan the dedup identity of every fact already
+		// in the log.
 		private Task EmitAsync(ProgressBilling hdr, string action, int actorEmployeeId,
-			CancellationToken cancellationToken = default)
+			int? approvalCycle, CancellationToken cancellationToken = default)
 		=> _events.RecordAsync(new CrossBuy.Models.Platform.BusinessEventRecord
 		{
 			EntityCode = CrossBuy.BL.Platform.EntityRegistry.ProjectBilling,
@@ -123,7 +134,12 @@ namespace CrossBuy.BL
 			PayloadVersion = ProgressBillingEventPayload.Version,
 			Visibility = CrossBuy.Models.Platform.BusinessEventVisibility.Internal,
 			// billing 12 can only be approved once; a second attempt is the same fact, not a new one.
-			DedupKey = $"projectbilling:{hdr.ID}:{action}",
+			// A SUBMISSION OR A RETURN is only the same fact when it is the same ROUND.
+			DedupKey = approvalCycle is int cycle
+					   && (action == ProgressBillingEvents.Submitted
+						   || action == ProgressBillingEvents.Returned)
+				? $"projectbilling:{hdr.ID}:{action}:cycle:{cycle}"
+				: $"projectbilling:{hdr.ID}:{action}",
 			Payload = new ProgressBillingEventPayload
 			{
 				BillingId = hdr.ID,
@@ -139,8 +155,70 @@ namespace CrossBuy.BL
 				SalesInvoiceId = hdr.SalesInvoiceId,
 				RetentionReceiptId = hdr.RetentionReceiptId,
 				AdvanceReceiptId = hdr.AdvanceReceiptId,
+				ApprovalCycle = approvalCycle,
 			},
 		}, cancellationToken);
+
+		// ---- WHERE THE ROUND COMES FROM -------------------------------------------------------
+		//
+		// FROM THE LEDGER, which is the only durable record of how many times this billing has been
+		// put up for approval. Not from a timestamp, not from the title, not from a task id, and not
+		// from a new column - the facts are already persisted and they already answer the question.
+		//
+		// Both reads run inside the caller's ScopedTx, against the same DbContext, so they see this
+		// transaction's own writes and a rolled-back transition leaves neither the event nor the
+		// count behind.
+		//
+		// COMPANY IS IN EVERY PREDICATE. A ledger row belongs to one tenant, and a count that spanned
+		// companies would hand one tenant's round number to another's billing.
+
+		/// The round a NEW submission opens: one more than the billing has already had.
+		private async Task<int> NextSubmissionCycleAsync(int companyId, int billingId,
+			CancellationToken cancellationToken = default)
+			=> await _db.BusinessEvents.AsNoTracking()
+				.CountAsync(e => e.CompanyID == companyId
+							  && e.EntityType == CrossBuy.BL.Platform.EntityRegistry.ProjectBilling
+							  && e.EntityId == billingId
+							  && e.EventType == SubmittedEventType, cancellationToken) + 1;
+
+		/// The round a DECISION answers: the one the newest submission opened.
+		///
+		/// READ BACK FROM THE SUBMISSION'S OWN PAYLOAD rather than recomputed, and that is what makes
+		/// this safe across the change. A billing submitted BEFORE rounds existed carries no cycle, so
+		/// its decision carries none either and closes the legacy work that submission opened. One
+		/// submitted after carries its round, and the decision carries the same one. Recomputing a
+		/// count here would stamp "1" onto a decision whose submission had no round at all, and the
+		/// approver's task would never close.
+		private async Task<int?> OpenCycleAsync(int companyId, int billingId,
+			CancellationToken cancellationToken = default)
+		{
+			var payload = await _db.BusinessEvents.AsNoTracking()
+				.Where(e => e.CompanyID == companyId
+						 && e.EntityType == CrossBuy.BL.Platform.EntityRegistry.ProjectBilling
+						 && e.EntityId == billingId
+						 && e.EventType == SubmittedEventType)
+				.OrderByDescending(e => e.EventId)
+				.Select(e => e.Payload)
+				.FirstOrDefaultAsync(cancellationToken);
+
+			if (string.IsNullOrWhiteSpace(payload)) return null;
+
+			// TOLERANT ON PURPOSE. A payload this service did not write, or one written by an older
+			// version, must not throw in the middle of an approval - it means "no recorded round".
+			try
+			{
+				var node = System.Text.Json.Nodes.JsonNode.Parse(payload)?["approvalCycle"];
+				if (node is null) return null;
+				int cycle = node.GetValue<int>();
+				return cycle > 0 ? cycle : null;
+			}
+			catch (System.Text.Json.JsonException) { return null; }
+			catch (FormatException) { return null; }
+			catch (InvalidOperationException) { return null; }
+		}
+
+		private static readonly string SubmittedEventType =
+			$"{CrossBuy.BL.Platform.EntityRegistry.ProjectBilling}.{ProgressBillingEvents.Submitted}";
 
 		private static decimal R(decimal v) => Math.Round(v, 2, MidpointRounding.AwayFromZero);
 		private Task<int?> AccIdAsync(int companyId, string code) =>
@@ -316,7 +394,8 @@ namespace CrossBuy.BL
 			hdr.Status = ProgressBillingStatuses.Submitted;
 			hdr.SubmittedBy = actorEmployeeId; hdr.SubmittedAt = DateTime.UtcNow;
 			await _db.SaveChangesAsync();
-			await EmitAsync(hdr, ProgressBillingEvents.Submitted, actorEmployeeId);
+			await EmitAsync(hdr, ProgressBillingEvents.Submitted, actorEmployeeId,
+				await NextSubmissionCycleAsync(companyId, hdr.ID));
 			await tx.CommitAsync();
 			return (true, null);
 		}
@@ -349,7 +428,8 @@ namespace CrossBuy.BL
 			hdr.Status = ProgressBillingStatuses.Approved;
 			hdr.ApprovedBy = actorEmployeeId; hdr.ApprovedAt = DateTime.UtcNow;
 			await _db.SaveChangesAsync();
-			await EmitAsync(hdr, ProgressBillingEvents.Approved, actorEmployeeId);
+			await EmitAsync(hdr, ProgressBillingEvents.Approved, actorEmployeeId,
+				await OpenCycleAsync(companyId, hdr.ID));
 			await tx.CommitAsync();
 			return (true, null);
 		}
@@ -368,7 +448,8 @@ namespace CrossBuy.BL
 			hdr.Status = ProgressBillingStatuses.Returned;
 			hdr.UpdatedBy = actorEmployeeId; hdr.UpdatedAt = DateTime.UtcNow;
 			await _db.SaveChangesAsync();
-			await EmitAsync(hdr, ProgressBillingEvents.Returned, actorEmployeeId);
+			await EmitAsync(hdr, ProgressBillingEvents.Returned, actorEmployeeId,
+				await OpenCycleAsync(companyId, hdr.ID));
 			await tx.CommitAsync();
 			return (true, null);
 		}
@@ -464,7 +545,11 @@ namespace CrossBuy.BL
 			await _db.SaveChangesAsync();
 			// Inside the financial transaction, before the commit: if any compensation below had failed,
 			// the rollback takes the event with it and nothing was ever told that this billing posted.
-			await EmitAsync(track, ProgressBillingEvents.Posted, actorEmployeeId);
+			// The round carried for FIDELITY, not for addressing: posting is not approval work and its
+			// dedup key is unchanged. A consumer that ignores Posted - as the approval rule does - is
+			// unaffected, and one that reports on it can still say which round was approved.
+			await EmitAsync(track, ProgressBillingEvents.Posted, actorEmployeeId,
+				await OpenCycleAsync(companyId, track.ID));
 			await tx.CommitAsync();
 			return (true, null);
 		}

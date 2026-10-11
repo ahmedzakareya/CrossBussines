@@ -116,6 +116,22 @@ namespace CrossBuy.Models.Context.Accounting
 		public int? SalesInvoiceId { get; init; }
 		public int? RetentionReceiptId { get; init; }
 		public int? AdvanceReceiptId { get; init; }
+
+		// ---- WHICH ROUND OF APPROVAL THIS FACT BELONGS TO ----------------------------------------
+		//
+		// A billing that is Returned, corrected and Submitted again is asking a SECOND time. Without a
+		// round on the fact, the second request is indistinguishable from the first: the dedup key
+		// collapses it, no new event is recorded, and a consumer that opens approval work creates
+		// nothing at all - a silent no-op that looks like success.
+		//
+		// PAYLOAD ONLY, NOT A COLUMN. This is a wire field on an already-versioned JSON payload, so it
+		// needs no schema and no migration. The round is DERIVED from the event ledger - the count of
+		// Submitted facts this billing already has - and never from a timestamp, a title or a task id.
+		//
+		// NULL MEANS "RECORDED BEFORE ROUNDS EXISTED", and that is a real answer rather than a gap: a
+		// consumer keys such facts into its own legacy partition, so a legacy decision can only ever
+		// close legacy work and a round-scoped decision can only ever close round-scoped work.
+		public int? ApprovalCycle { get; init; }
 	}
 
 	public class ProgressBillingLine
