@@ -1,4 +1,4 @@
-﻿using CrossBuy.BL;
+using CrossBuy.BL;
 using CrossBuy.BL.ModulePermissions;
 using CrossBuy.BL.Platform;
 using CrossBuy.BL.TasksCalendar;
@@ -582,47 +582,38 @@ namespace CrossBuy.Tests
         }
 
         [Fact]
-        public async Task W4_project_billing_did_not_opt_in_and_did_not_move()
+        public void W4_project_billing_opts_in_through_its_coordinated_registration()
         {
-            using var host = await SeedAsync();
-
-            // The registered entrance providers are exactly one, and it is not project billing. Asserted on
-            // the composition root rather than on behaviour, because "did not opt in" is a registration fact.
-            string program = string.Join("\n", File.ReadAllLines(
-                    Path.Combine(RepoRoot(), "CrossBuy", "Program.cs"))
-                .Where(l => !l.TrimStart().StartsWith("//")));
-
-            Assert.Contains(
-                "ITaskSourceReadEntranceProvider, CrossBuy.BL.Platform.InventoryApprovalTaskVisibilityProvider>",
-                program);
-            Assert.DoesNotContain("ITaskSourceReadEntranceProvider, CrossBuy.BL.Platform.ProjectBilling", program);
-            Assert.Equal(1, program.Split('\n').Count(l => l.Contains("ITaskSourceReadEntranceProvider,", StringComparison.Ordinal)));
-
-            // …and the two visibility registrations are still there, unchanged and still narrowing-only.
-            Assert.Equal(1, program.Split('\n').Count(l => l.Contains("ITaskSourceVisibilityProvider,", StringComparison.Ordinal)));
+            string program = File.ReadAllText(Path.Combine(RepoRoot(), "CrossBuy", "Program.cs"));
+            Assert.Contains("builder.Services.AddProjectBillingApprovalWork();", program);
+            var services = new Microsoft.Extensions.DependencyInjection.ServiceCollection();
+            ProjectBillingApprovalWorkRegistration.AddProjectBillingApprovalWork(services);
+            Assert.Contains(services, d => d.ServiceType == typeof(ITaskSourceReadEntranceProvider)
+                && d.ImplementationType == typeof(ProjectBillingTaskVisibilityProvider));
+            Assert.Contains(services, d => d.ServiceType == typeof(ITaskSourceVisibilityProvider)
+                && d.ImplementationType == typeof(ProjectBillingTaskVisibilityProvider));
         }
 
         [Fact]
-        public void W5_the_project_billing_provider_is_not_an_entrance_provider()
+        public void W5_both_sources_explicitly_opt_in_to_read_entrance()
         {
-            // The type system carries the decision, so this cannot drift with a registration edit.
-            Assert.Null(typeof(InventoryApprovalTaskVisibilityProvider).Assembly.GetType(
-                "CrossBuy.BL.Platform.ProjectBillingTaskVisibilityProvider"));
+            Assert.True(typeof(ITaskSourceReadEntranceProvider)
+                .IsAssignableFrom(typeof(ProjectBillingTaskVisibilityProvider)));
             Assert.True(typeof(ITaskSourceReadEntranceProvider)
                 .IsAssignableFrom(typeof(InventoryApprovalTaskVisibilityProvider)));
         }
 
         [Fact]
-        public void W6_there_is_exactly_one_entrance_provider_implementation()
+        public void W6_exactly_the_two_qualified_sources_implement_entrance()
         {
             var implementations = typeof(ITaskSourceReadEntranceProvider).Assembly.GetTypes()
                 .Where(t => t is { IsClass: true, IsAbstract: false }
                             && typeof(ITaskSourceReadEntranceProvider).IsAssignableFrom(t))
                 .ToList();
 
-            // One class, serving both roles — so there is one policy and one place it can be got wrong.
-            Assert.Equal(new[] { typeof(InventoryApprovalTaskVisibilityProvider) }, implementations);
-            Assert.True(typeof(ITaskSourceVisibilityProvider).IsAssignableFrom(implementations[0]));
+            // Each qualified source serves both read roles through its existing module authority.
+            Assert.Equal(new[] { typeof(InventoryApprovalTaskVisibilityProvider), typeof(ProjectBillingTaskVisibilityProvider) }.OrderBy(t => t.FullName), implementations.OrderBy(t => t.FullName));
+            Assert.All(implementations, t => Assert.True(typeof(ITaskSourceVisibilityProvider).IsAssignableFrom(t)));
         }
 
         // ============================================================================================

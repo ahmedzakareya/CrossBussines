@@ -1,4 +1,4 @@
-﻿using CrossBuy.BL;
+using CrossBuy.BL;
 using CrossBuy.Models.Platform;
 using Microsoft.Extensions.Logging;
 
@@ -178,6 +178,12 @@ namespace CrossBuy.BL.Platform
         // record-level rule overrides this ONE method; the forwarding itself is not duplicated anywhere.
         protected virtual PermissionTarget? BuildTarget(PermissionCheckRequest request) => null;
 
+        // A child record may require a scoped database read to resolve its authorization target.
+        // Existing adapters keep their synchronous target and behavior unchanged.
+        protected virtual Task<PermissionTarget?> BuildTargetAsync(PermissionCheckRequest request,
+            CancellationToken cancellationToken)
+            => Task.FromResult(BuildTarget(request));
+
         public async Task<PermissionDecision> CanAsync(PermissionCheckRequest request, CancellationToken cancellationToken = default)
         {
             var moduleAction = MapAction(request.Action);
@@ -191,8 +197,9 @@ namespace CrossBuy.BL.Platform
             PermissionTarget? target;
             try
             {
-                target = BuildTarget(request);
+                target = await BuildTargetAsync(request, cancellationToken);
             }
+            catch (OperationCanceledException) { throw; }
             catch (Exception ex)
             {
                 // A malformed target DENIES rather than degrading to a module-level check. Falling back to

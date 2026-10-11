@@ -149,6 +149,12 @@ namespace CrossBuy.Tests
             services.AddScoped<CrossBuy.BL.IInventoryApprovalService, CrossBuy.BL.InventoryApprovalService>();
             services.AddScoped<ITaskSourceVisibilityProvider, InventoryApprovalTaskVisibilityProvider>();
             services.AddScoped<ITaskSourceReadEntranceProvider, InventoryApprovalTaskVisibilityProvider>();
+            services.AddScoped<CrossBuy.BL.IReceivableService>(_ => System.Reflection.DispatchProxy.Create<CrossBuy.BL.IReceivableService, UnusedApprovalBoundary>());
+            services.AddScoped<CrossBuy.BL.IJournalEntryService>(_ => System.Reflection.DispatchProxy.Create<CrossBuy.BL.IJournalEntryService, UnusedApprovalBoundary>());
+            services.AddScoped<CrossBuy.BL.IProgressService, CrossBuy.BL.ProgressService>();
+            services.AddScoped<CrossBuy.BL.IContractService, CrossBuy.BL.ContractService>();
+            services.AddScoped<CrossBuy.BL.IProgressBillingService, CrossBuy.BL.ProgressBillingService>();
+            CrossBuy.BL.ProjectBillingApprovalWorkRegistration.AddProjectBillingApprovalWork(services);
             services.AddScoped<ITaskSourceVisibility, TaskSourceVisibility>();
             services.AddScoped<ITaskSourceReadEntrance, TaskSourceReadEntrance>();
             services.AddScoped<Func<ITaskSourceVisibility>>(sp => () => sp.GetRequiredService<ITaskSourceVisibility>());
@@ -223,6 +229,10 @@ namespace CrossBuy.Tests
             Assert.Contains(services.GetServices<IModuleAccessService>(), m => m.Scope == EntityRegistry.ScopeInventory);
             Assert.IsType<CrossBuy.BL.TaskReadAuthorizer>(services.GetRequiredService<CrossBuy.BL.ITaskReadAuthorizer>());
             Assert.IsType<TaskSourceVisibility>(services.GetRequiredService<ITaskSourceVisibility>());
+            Assert.IsType<CrossBuy.BL.ProgressBillingService>(services.GetRequiredService<CrossBuy.BL.IProgressBillingService>());
+            Assert.Contains(services.GetServices<ITaskSourceVisibilityProvider>(), p => p is CrossBuy.BL.ProjectBillingTaskVisibilityProvider);
+            Assert.Contains(services.GetServices<ITaskSourceReadEntranceProvider>(), p => p is CrossBuy.BL.ProjectBillingTaskVisibilityProvider);
+            Assert.Contains(services.GetServices<CrossBuy.BL.Platform.Orchestration.ITaskOrchestrationRule>(), p => p is CrossBuy.BL.Platform.Orchestration.ProjectBillingApprovalRule);
         }
 
         //

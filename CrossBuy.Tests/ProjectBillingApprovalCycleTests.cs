@@ -65,6 +65,144 @@ namespace CrossBuy.Tests
 
         public Task DisposeAsync() { _host.Dispose(); return Task.CompletedTask; }
 
+        // A failure after the real recorder saved the event must undo the preceding header save.
+        private sealed class FailAfterRecord(IBusinessEventService inner) : IBusinessEventService
+        {
+            public bool Saved { get; private set; }
+            public async Task<long> RecordAsync(BusinessEventRecord record, System.Threading.CancellationToken ct = default)
+            {
+                await inner.RecordAsync(record, ct);
+                Saved = true;
+                throw new InvalidOperationException("Injected failure after event persistence");
+            }
+            public BusinessEventEnvelope BuildEnvelope(BusinessEvent stored) => inner.BuildEnvelope(stored);
+        }
+
+        [Fact]
+        public async Task C11_failure_after_event_write_rolls_back_header_event_dispatch_and_round()
+        {
+            int id = await DraftAsync();
+            var failing = new FailAfterRecord(_events);
+            var service = new ProgressBillingService(_host.Db, new InertAr(), new ProgressService(_host.Db),
+                new ContractService(_host.Db, new InertJournal()), failing, Access(_host));
+            await Assert.ThrowsAsync<InvalidOperationException>(() => service.SubmitAsync(CompanyOne, id, Preparer));
+            Assert.True(failing.Saved);
+            using (var fresh = _host.NewContext())
+            {
+                var header = await fresh.ProgressBillings.AsNoTracking().SingleAsync(b => b.ID == id);
+                Assert.Equal(ProgressBillingStatuses.Draft, header.Status);
+                Assert.Null(header.SubmittedBy);
+                Assert.Null(header.SubmittedAt);
+                Assert.Empty(await fresh.BusinessEvents.AsNoTracking().ToListAsync());
+                Assert.Empty(await fresh.BusinessEventDispatches.AsNoTracking().ToListAsync());
+                Assert.Empty(await fresh.TaskItems.AsNoTracking().ToListAsync());
+                Assert.Empty(await fresh.TaskAutoLogs.AsNoTracking().ToListAsync());
+            }
+            Assert.True((await _billing.SubmitAsync(CompanyOne, id, Preparer)).ok);
+            Assert.Equal(1, CycleOf(Assert.Single(Ledger(id, ProgressBillingEvents.Submitted))));
+        }
+
+        [Fact]
+        public async Task C12_outer_owner_rollback_undoes_joined_producer_and_projection()
+        {
+            int id = await DraftAsync();
+            await using (var owner = await ScopedTx.BeginOrJoinAsync(_host.Db))
+            {
+                Assert.True(owner.Owns);
+                Assert.True((await _billing.SubmitAsync(CompanyOne, id, Preparer)).ok);
+                await DeliverAsync(Assert.Single(Ledger(id, ProgressBillingEvents.Submitted)));
+                Assert.Single(Tasks());
+                await owner.RollbackAsync();
+            }
+            using (var fresh = _host.NewContext())
+            {
+                Assert.Equal(ProgressBillingStatuses.Draft,
+                    (await fresh.ProgressBillings.AsNoTracking().SingleAsync(b => b.ID == id)).Status);
+                Assert.Empty(await fresh.BusinessEvents.AsNoTracking().ToListAsync());
+                Assert.Empty(await fresh.BusinessEventDispatches.AsNoTracking().ToListAsync());
+                Assert.Empty(await fresh.TaskItems.AsNoTracking().ToListAsync());
+                Assert.Empty(await fresh.TaskAutoLogs.AsNoTracking().ToListAsync());
+            }
+            Assert.True((await _billing.SubmitAsync(CompanyOne, id, Preparer)).ok);
+            Assert.Equal(1, CycleOf(Assert.Single(Ledger(id, ProgressBillingEvents.Submitted))));
+        }
+
+        [Theory]
+        [InlineData(22, 1, false, true)]
+        [InlineData(11, 1, false, false)]
+        [InlineData(33, 1, false, false)]
+        [InlineData(22, 65, false, false)]
+        [InlineData(22, 0, false, false)]
+        [InlineData(0, 1, false, false)]
+        [InlineData(22, -1, false, false)]
+        [InlineData(22, 1, true, false)]
+        public async Task C13_source_authority_agrees_across_list_count_detail_and_access(
+            int employee, int company, bool portal, bool allowed)
+        {
+            _host.Seed.Employee.Add(Emp(33, CompanyOne));
+            foreach (var (principal, scope, role) in new[] {
+                (Approver, EntityRegistry.ScopeProjects, ProjectsRoles.ProjectsFinance),
+                (Preparer, EntityRegistry.ScopeProjects, ProjectsRoles.ProjectsFinance),
+                (33, EntityRegistry.ScopeProjects, ProjectsRoles.ProjectsViewer),
+                (33, EntityRegistry.ScopeTasks, TasksRoles.TasksViewer),
+                (Preparer, EntityRegistry.ScopeTasks, TasksRoles.TasksViewer) })
+                _host.Seed.PlatformRoleAssignments.Add(new PlatformRoleAssignment {
+                    CompanyID = CompanyOne, Scope = scope, PrincipalId = principal,
+                    Role = role, IsActive = true });
+            await _host.Seed.SaveChangesAsync();
+            int id = await DraftAsync();
+            await _billing.SubmitAsync(CompanyOne, id, Preparer);
+            await DeliverAsync(Assert.Single(Ledger(id, ProgressBillingEvents.Submitted)));
+            int taskId = Assert.Single(Tasks()).ID;
+            var actor = new BusinessContext { CompanyId = company, EmployeeId = employee,
+                UserId = "user-" + employee, Roles = Array.Empty<string>(), CorrelationId = Guid.NewGuid(),
+                Source = portal ? BusinessContextSource.ExternalPortal : BusinessContextSource.Http };
+            var provider = new ProjectBillingTaskVisibilityProvider(_billing);
+            var sources = new TaskSourceVisibility(new ITaskSourceVisibilityProvider[] { provider }, NullLogger<TaskSourceVisibility>.Instance);
+            var entrance = new TaskSourceReadEntrance(new ITaskSourceReadEntranceProvider[] { provider }, NullLogger<TaskSourceReadEntrance>.Instance);
+            var projects = Access(_host);
+            var permissions = new PlatformPermissionProvider(_host.Registry(),
+                new IModulePermissionAdapter[] { new CrossBuy.BL.ModulePermissions.ProjectsPermissionAdapter(new IModuleAccessService[] { (IModuleAccessService)projects }, _host.Db) },
+                NullLogger<PlatformPermissionProvider>.Instance);
+            var access = new TasksAccessService(_host.Db, new PlatformRoleDirectory(_host.Db, NullLogger<PlatformRoleDirectory>.Instance),
+                new OrgHierarchy(_host.Db, NullLogger<OrgHierarchy>.Instance), () => permissions,
+                NullLogger<TasksAccessService>.Instance, () => sources, () => entrance);
+            var auth = new TaskReadAuthorizer(new StubContextAccessor(actor), access, sources, entrance);
+            var tasks = new TaskService(_host.Db, new TaskCalendarEventPublisher(_events),
+                new TaskNotificationService(_host.Db, new RecordingNotificationService(_host.Db)), auth);
+            Assert.Equal(allowed ? 1 : 0, (await tasks.GetTasksAsync(company, "all", employee, null, null, null)).Count);
+            Assert.Equal(allowed ? 1 : 0, await tasks.CountTasksAsync(company, "all", employee, null, null, null));
+            Assert.Equal(allowed, await tasks.GetAsync(company, taskId) != null);
+            Assert.Equal(allowed, await access.CanAsync(actor, TasksActions.Read, PermissionTarget.ForTask(taskId)));
+            Assert.Equal(allowed ? 1 : 0, (await tasks.GetKpisAsync(company, "all", employee)).Total);
+            var report = new TaskReportService(_host.Db, null!, auth);
+            Assert.Equal(allowed ? 1 : 0, (await report.AutoGeneratedAsync(company)).Count);
+            if (allowed)
+                Assert.False(await access.CanAsync(actor, TasksActions.Reassign, PermissionTarget.ForTask(taskId)));
+        }
+
+        [Fact]
+        public async Task C14_a_stale_submission_cannot_create_a_second_round()
+        {
+            int id = await DraftAsync();
+            using var stale = _host.NewContext();
+            var old = await stale.ProgressBillings.SingleAsync(b => b.ID == id);
+            Assert.Equal(ProgressBillingStatuses.Draft, old.Status);
+            Assert.True((await _billing.SubmitAsync(CompanyOne, id, Preparer)).ok);
+            var staleEvents = new BusinessEventService(stale, _host.Registry(),
+                new StubContextAccessor(Ctx(Preparer, CompanyOne)), NullLogger<BusinessEventService>.Instance);
+            var retry = new ProgressBillingService(stale, new InertAr(), new ProgressService(stale),
+                new ContractService(stale, new InertJournal()), staleEvents, Access(_host));
+            Assert.False((await retry.SubmitAsync(CompanyOne, id, Preparer)).ok);
+            using var fresh = _host.NewContext();
+            var facts = await fresh.BusinessEvents.AsNoTracking()
+                .Where(e => e.EntityType == EntityRegistry.ProjectBilling && e.EntityId == id).ToListAsync();
+            Assert.Single(facts);
+            Assert.Equal(1, CycleOf(facts[0]));
+            Assert.Equal(ProgressBillingStatuses.Submitted,
+                (await fresh.ProgressBillings.AsNoTracking().SingleAsync(b => b.ID == id)).Status);
+        }
+
         // ---- fixture ------------------------------------------------------------------------------
 
         private static BusinessContext Ctx(int employeeId, int companyId) => new()

@@ -410,6 +410,7 @@ builder.Services.AddScoped<ILeaveWorkflowService, LeaveWorkflowService>();
 builder.Services.AddScoped<IEmployeeRequestService, EmployeeRequestService>();
 // Approval convergence: committed HR and Inventory producers and their rules.
 builder.Services.AddScoped<CrossBuy.BL.Platform.Orchestration.ITaskOrchestrationRule, CrossBuy.BL.Platform.Orchestration.InventoryApprovalRule>();
+builder.Services.AddProjectBillingApprovalWork();
 builder.Services.AddScoped<CrossBuy.BL.Platform.Orchestration.ITaskOrchestrationRule, CrossBuy.BL.Platform.Orchestration.LeaveApprovalRule>();
 builder.Services.AddScoped<CrossBuy.BL.Platform.Orchestration.ITaskOrchestrationRule, CrossBuy.BL.Platform.Orchestration.LeaveApprovalAdvanceCloseRule>();
 builder.Services.AddScoped<CrossBuy.BL.Platform.Orchestration.ITaskOrchestrationRule, CrossBuy.BL.Platform.Orchestration.EmployeeRequestApprovalRule>();

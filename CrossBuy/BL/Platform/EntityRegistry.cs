@@ -910,6 +910,11 @@ namespace CrossBuy.BL.Platform
                         .Where(e => e.ID == entityId)
                         .Select(EmployeeNames.Display()).FirstOrDefaultAsync(cancellationToken);
                     break;
+                case ProjectBilling:
+                    label = await _db.ProgressBillings.AsNoTracking()
+                        .Where(b => b.ID == entityId && b.CompanyID == companyId)
+                        .Select(b => "#" + b.BillingNo).FirstOrDefaultAsync(cancellationToken);
+                    break;
                 case Project:
                     label = await _db.Projects.AsNoTracking()
                         .Where(p => p.ID == entityId && p.CompanyID == companyId)

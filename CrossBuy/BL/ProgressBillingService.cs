@@ -1,4 +1,4 @@
-﻿using CrossBuy.Models.Context;
+using CrossBuy.Models.Context;
 using CrossBuy.Models.Context.Accounting;
 using Microsoft.EntityFrameworkCore;
 
@@ -390,6 +390,14 @@ namespace CrossBuy.BL
 			if (!ProgressBillingStatuses.CanMove(hdr.Status, ProgressBillingStatuses.Submitted))
 				return (false, "The current status does not allow submitting for approval");
 			if (hdr.GrossWork <= 0) return (false, "There is no work to bill in this period");
+
+            // Claim the authoritative state before allocating a round. A stale EF entity must not
+            // turn a competing submission into a second round without an intervening return.
+            var expectedStatus = hdr.Status;
+            if (await _db.ProgressBillings.Where(b => b.ID == id && b.CompanyID == companyId
+                    && b.Status == expectedStatus)
+                .ExecuteUpdateAsync(s => s.SetProperty(b => b.Status, ProgressBillingStatuses.Submitted)) != 1)
+                return (false, "The current status does not allow submitting for approval");
 
 			hdr.Status = ProgressBillingStatuses.Submitted;
 			hdr.SubmittedBy = actorEmployeeId; hdr.SubmittedAt = DateTime.UtcNow;

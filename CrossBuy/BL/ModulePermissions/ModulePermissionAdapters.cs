@@ -1,6 +1,8 @@
 using CrossBuy.BL;
 using CrossBuy.BL.Platform;
 using CrossBuy.Models.Platform;
+using CrossBuy.Models.Context;
+using Microsoft.EntityFrameworkCore;
 
 // MODULE SURFACE — the per-module translation layers, moved OUT of the Platform Kernel.
 //
@@ -163,7 +165,23 @@ namespace CrossBuy.BL.ModulePermissions
     // ProjectsAccessService: read | create | edit | manage | budget-view | budget-manage | billing | close
     public class ProjectsPermissionAdapter : ModulePermissionAdapterBase
     {
-        public ProjectsPermissionAdapter(IEnumerable<IModuleAccessService> modules) : base(modules) { }
+        private readonly CrossDbContext? _db;
+        public ProjectsPermissionAdapter(IEnumerable<IModuleAccessService> modules, CrossDbContext? db = null)
+            : base(modules) { _db = db; }
+
+        protected override async Task<PermissionTarget?> BuildTargetAsync(PermissionCheckRequest request,
+            CancellationToken cancellationToken)
+        {
+            if (request.EntityType != EntityRegistry.ProjectBilling)
+                return await base.BuildTargetAsync(request, cancellationToken);
+            if (_db == null) throw new InvalidOperationException("Billing target resolution requires a scoped context.");
+            var projectId = await _db.ProgressBillings.AsNoTracking()
+                .Where(b => b.ID == request.EntityId && b.CompanyID == request.Context.CompanyId)
+                .Select(b => (int?)b.ProjectId).FirstOrDefaultAsync(cancellationToken);
+            if (projectId is not > 0) throw new InvalidOperationException("Billing target was not found in the caller company.");
+            return new PermissionTarget { EntityType = request.EntityType, EntityId = request.EntityId,
+                CompanyId = request.Context.CompanyId, ProjectId = projectId.Value };
+        }
 
         public override string Scope => EntityRegistry.ScopeProjects;
         protected override string ModuleScope => EntityRegistry.ScopeProjects;
