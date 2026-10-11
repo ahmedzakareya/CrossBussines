@@ -250,6 +250,7 @@ builder.Services.AddScoped<CrossBuy.BL.Reporting.IReportModuleAuthority>(sp =>
 // See ReportingServiceCollectionExtensions.AddProjectsReporting for the whole argument, including why
 // the Work pack is not beside it.
 builder.Services.AddProjectsReporting();
+builder.Services.AddKpiReporting();
 builder.Services.AddScoped<CrossBuy.BL.Reporting.IReportPermissionEvaluator,
     CrossBuy.BL.Reporting.ReportModulePermissionAdapter>();
 

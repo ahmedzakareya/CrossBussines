@@ -25,7 +25,7 @@ namespace CrossBuy.Tests
         // holder it needs, and the BusinessContext accessor the façade resolves. Deliberately NOT the whole
         // application graph — that is Stage1DiWiringTests's job, and duplicating it here would make this file fail
         // for unrelated reasons.
-        private static ServiceProvider Build(Action<ReportingPlatformOptions>? configure = null)
+        private static ServiceProvider Build(Action<ReportingPlatformOptions>? configure = null, bool includeKpis = false)
         {
             var services = new ServiceCollection();
 
@@ -46,6 +46,12 @@ namespace CrossBuy.Tests
                 new ReportingTestHostEnvironment());
 
             services.AddCrossBusinessReporting(configure);
+            if (includeKpis)
+            {
+                services.AddScoped<CrossBuy.BL.IProjectsAccessService, KpiProjectsAccess>();
+                services.AddProjectsReporting();
+                services.AddKpiReporting();
+            }
 
             return services.BuildServiceProvider(new ServiceProviderOptions
             {
@@ -64,6 +70,25 @@ namespace CrossBuy.Tests
             // unresolvable dependency or a lifetime violation.
             using var provider = Build();
             Assert.NotNull(provider);
+        }
+
+        [Fact]
+        public void Kpi_registry_and_evaluator_resolve_through_the_production_registration()
+        {
+            using var provider = Build(includeKpis: true);
+            using var scope = provider.CreateScope();
+            var registry = scope.ServiceProvider.GetRequiredService<IKpiRegistry>();
+            Assert.Equal(10, registry.Definitions.Count);
+            Assert.NotNull(scope.ServiceProvider.GetRequiredService<IKpiEvaluator>());
+        }
+
+        private sealed class KpiProjectsAccess : CrossBuy.BL.IProjectsAccessService
+        {
+            public Task<bool> CanAsync(CrossBuy.Models.Platform.BusinessContext c,string a,CrossBuy.Models.Platform.PermissionTarget? t=null,CancellationToken ct=default) => Task.FromResult(false);
+            public Task<CrossBuy.Models.Platform.AccessScope> ResolveProjectScopeAsync(CrossBuy.Models.Platform.BusinessContext c,string a,CancellationToken ct=default)
+                => Task.FromResult(CrossBuy.Models.Platform.AccessScope.None());
+            public Task<IReadOnlySet<int>> MemberProjectIdsAsync(CrossBuy.Models.Platform.BusinessContext c,CancellationToken ct=default)
+                => Task.FromResult<IReadOnlySet<int>>(new HashSet<int>());
         }
 
         [Fact]
