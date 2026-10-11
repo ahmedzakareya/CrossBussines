@@ -621,7 +621,8 @@ namespace CrossBuy.Tests
 			var leave = new LeaveWorkflowService(host.Db, new InboxNoopNotifications(),
 				new InboxStubLeaveDashboard(), Microsoft.Extensions.Logging.Abstractions.NullLogger<LeaveWorkflowService>.Instance);
 			var inbox = new CrossBuy.BL.Approvals.ApprovalInboxService(
-				leave, new EmployeeRequestService(host.Db, new InboxNoopNotifications(), leave), Service(host.Db),
+				leave, new EmployeeRequestService(host.Db, new InboxNoopNotifications(), leave,
+					new StubCaller(41), new NoEventsExpected()), Service(host.Db),
 				new InboxNoBillingApprovals());
 
 			var controller = new ApprovalsController(
@@ -679,6 +680,35 @@ namespace CrossBuy.Tests
 			public string? RouteUrl(UrlRouteContext routeContext) => "/";
 		}
 
+		/// Phase B made the event recorder a REQUIRED constructor dependency, so read-only suites
+		/// have to supply one. It throws on purpose: nothing in these tests should produce a business
+		/// fact, and a recorder that quietly accepted one would hide exactly that mistake.
+		private sealed class NoEventsExpected : CrossBuy.BL.Platform.IBusinessEventService
+		{
+			public Task<long> RecordAsync(CrossBuy.Models.Platform.BusinessEventRecord record,
+				CancellationToken cancellationToken = default)
+				=> throw new InvalidOperationException(
+					"a read-only approval-inbox test reached a business-event producer");
+
+			public CrossBuy.Models.Platform.BusinessEventEnvelope BuildEnvelope(
+				CrossBuy.Models.Context.Platform.BusinessEvent stored)
+				=> throw new InvalidOperationException("no events are recorded here");
+		}
+
+		/// A resolved caller, because identity is no longer optional on this service.
+		private sealed class StubCaller : CrossBuy.BL.Platform.IBusinessContextAccessor
+		{
+			private readonly CrossBuy.Models.Platform.BusinessContext _c;
+			public StubCaller(int companyId) => _c = new()
+			{
+				CompanyId = companyId, EmployeeId = 1, UserId = "u1",
+				Roles = Array.Empty<string>(), CorrelationId = Guid.NewGuid(),
+			};
+			public Task<CrossBuy.Models.Platform.BusinessContext> GetCurrentAsync(CancellationToken ct = default)
+				=> Task.FromResult(_c);
+			public Task<CrossBuy.Models.Platform.BusinessContext?> TryGetCurrentAsync(CancellationToken ct = default)
+				=> Task.FromResult<CrossBuy.Models.Platform.BusinessContext?>(_c);
+		}
 		private sealed class InboxNoopNotifications : INotificationService
 		{
 			public Task NotifyAsync(int recipientEmployeeId, string? titleAr, string? titleEn,

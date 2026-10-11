@@ -1,4 +1,4 @@
-﻿using CrossBuy.Models.Context;
+using CrossBuy.Models.Context;
 using CrossBuy.Models.Platform;
 using Microsoft.EntityFrameworkCore;
 
@@ -608,6 +608,39 @@ namespace CrossBuy.BL.Platform
                 PermissionScope = ScopeNone,
                 ListedInRecordPicker = false,
             },
+            new EntityDefinition
+            {
+                Code = InventoryApproval,
+                DisplayNameAr = "طلب اعتماد مخزني", DisplayNameEn = "Inventory approval",
+                Module = "Inventory", Icon = "ki-outline ki-check-square", Color = "warning",
+                RouteTemplate = "/Inventory/Approvals",
+                SupportsSearch = false, SupportsTimeline = false, SupportsComments = false,
+                SupportsFiles = false, SupportsFollowers = false,
+                PermissionScope = ScopeInventory,
+                ListedInRecordPicker = false,
+            },
+            new EntityDefinition
+            {
+                Code = LeaveRequest,
+                DisplayNameAr = "طلب إجازة", DisplayNameEn = "Leave request",
+                Module = "Hr", Icon = "ki-outline ki-calendar-tick", Color = "info",
+                RouteTemplate = "/People/Leaves",
+                SupportsSearch = false, SupportsTimeline = false, SupportsComments = false,
+                SupportsFiles = false, SupportsFollowers = false,
+                PermissionScope = ScopeHr,
+                ListedInRecordPicker = false,
+            },
+            new EntityDefinition
+            {
+                Code = EmployeeRequest,
+                DisplayNameAr = "طلب موظف", DisplayNameEn = "Employee request",
+                Module = "Hr", Icon = "ki-outline ki-document", Color = "info",
+                RouteTemplate = "/People/Requests",
+                SupportsSearch = false, SupportsTimeline = false, SupportsComments = false,
+                SupportsFiles = false, SupportsFollowers = false,
+                PermissionScope = ScopeHr,
+                ListedInRecordPicker = false,
+            },
         };
 
         private static readonly Dictionary<string, EntityDefinition> ByCode =
@@ -919,6 +952,22 @@ namespace CrossBuy.BL.Platform
                     label = await _db.CalendarEvents.AsNoTracking()
                         .Where(e => e.Id == entityId && e.CompanyID == companyId && e.DeletedAt == null)
                         .Select(e => e.Title).FirstOrDefaultAsync(cancellationToken);
+                    break;
+                case InventoryApproval:
+                    label = await _db.InventoryApprovals.AsNoTracking()
+                        .Where(a => a.ID == entityId && a.CompanyID == companyId)
+                        .Select(a => a.DocType + " #" + a.ID).FirstOrDefaultAsync(cancellationToken);
+                    break;
+                case LeaveRequest:
+                    label = await _db.LeaveRequests.AsNoTracking()
+                        .Where(r => r.ID == entityId
+                            && _db.Employee.Any(e => e.ID == r.EmployeeID && e.EmpCompanyID == companyId))
+                        .Select(r => "#" + r.ID).FirstOrDefaultAsync(cancellationToken);
+                    break;
+                case EmployeeRequest:
+                    label = await _db.EmployeeRequests.AsNoTracking()
+                        .Where(r => r.ID == entityId && r.CompanyID == companyId)
+                        .Select(r => "#" + r.ID).FirstOrDefaultAsync(cancellationToken);
                     break;
             }
 

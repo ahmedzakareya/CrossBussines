@@ -243,12 +243,18 @@ namespace CrossBuy.Tests
         [Fact]
         public void The_work_pack_did_not_land_and_work_calendar_is_nowhere()
         {
-            // WITHDRAWN WHOLE, and this is the falsifier for the report that says so. work.tasks and
-            // work.approvals cannot compile against this line (TaskItem.HoldApprovedAtUtc,
-            // ITaskEscalationService.CurrentlyEscalatedTaskIdsAsync, and TaskApprovalProjection's five
-            // orchestration business rules are all absent), so shipping the other two would have been a
-            // scope reduction rather than the authorized reconciliation.
+            // HOLD and the escalation set query now exist. The remaining Work prerequisite is
+            // TaskApprovalProjection; ProjectBillingApprovalRule is also not converged here.
+            // The Work pack stays unregistered. These compiled-type checks pin the actual boundary
+            // rather than depending on text searches for names that may survive only in comments.
+            Assert.NotNull(typeof(CrossBuy.Models.Context.Tasks.TaskItem).GetProperty("HoldApprovedAtUtc"));
+            Assert.NotNull(typeof(CrossBuy.BL.TasksCalendar.ITaskEscalationService)
+                .GetMethod("CurrentlyEscalatedTaskIdsAsync"));
             var reporting = typeof(ReportModulePermissionAdapter).Assembly;
+            Assert.NotNull(reporting.GetType("CrossBuy.BL.Platform.Orchestration.LeaveApprovalRule"));
+            Assert.NotNull(reporting.GetType("CrossBuy.BL.Platform.Orchestration.EmployeeRequestApprovalRule"));
+            Assert.NotNull(reporting.GetType("CrossBuy.BL.Platform.Orchestration.InventoryApprovalRule"));
+            Assert.Null(reporting.GetType("CrossBuy.BL.Platform.Orchestration.ProjectBillingApprovalRule"));
             foreach (var absent in new[]
             {
                 "CrossBuy.BL.Reporting.WorkReportingDatasets",

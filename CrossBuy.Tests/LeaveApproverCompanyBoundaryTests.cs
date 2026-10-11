@@ -60,9 +60,57 @@ namespace CrossBuy.Tests
 			=> host.Seed.Hierarchicals.Add(
 				new Hierarchical { H_ID = 100 + employeeId, H_Type = 5, H_ObjectID = employeeId, H_Parent = null });
 
-		private static LeaveWorkflowService Leave(PlatformTestHost host, INotificationService? notifications = null)
+		// A VERIFIED STRUCTURAL ROOT, and the difference from SeedTop directly above is the whole of
+		// RSK-31. SeedTop builds a node with NO parent: the climb stops because nothing is above it,
+		// which is the absence of evidence. This one attaches the person's POSITION to a real company
+		// node, which is positive evidence that they are the top of an organisation rather than a row
+		// that failed to resolve. Both produce an empty approver chain; only this one may be approved.
+		private static void SeedVerifiedRoot(PlatformTestHost host, int employeeId, int companyNodeId = 900)
+		{
+			host.Seed.Hierarchicals.AddRange(
+				new Hierarchical { H_ID = companyNodeId, H_Type = 1, H_ObjectID = null, H_Parent = null },
+				new Hierarchical { H_ID = 200 + employeeId, H_Type = 4, H_ObjectID = null, H_Parent = companyNodeId },
+				new Hierarchical { H_ID = 100 + employeeId, H_Type = 5, H_ObjectID = employeeId, H_Parent = 200 + employeeId });
+		}
+
+		// THE ACTOR THESE SCENARIOS ALWAYS ASSUMED (SHF-87, RSK-26 fixture adaptation).
+		//
+		// This helper used to build the service with no caller context at all, and two scenarios below then
+		// called DecideAsync passing employee 10 and expected success. That worked only because the service
+		// trusted the parameter - which is the defect RSK-26 closed. Now the service resolves WHO is acting,
+		// so an unauthenticated construction is refused, correctly.
+		//
+		// The fix belongs HERE and not in the service: the scenarios were always about a legitimate approver
+		// acting, they simply never had to say so. `actingEmployeeId` says it. Nothing about the approver
+		// chain, the company setup, the escalation path or any assertion changes - the actor is named, and
+		// that is all. The service keeps no fallback: a construction with no context still refuses.
+		private static LeaveWorkflowService Leave(PlatformTestHost host, INotificationService? notifications = null,
+			int actingEmployeeId = 11, int actingCompanyId = CompanyOne)
 			=> new(host.Db, notifications ?? new RecordingNotifications(), new StubLeaveDashboard(),
-				NullLogger<LeaveWorkflowService>.Instance);
+				NullLogger<LeaveWorkflowService>.Instance,
+				// no recorder, exactly as before this file gained an actor - these scenarios assert chains and
+				// notifications, never Business Events
+				null!,
+				new ActingCaller(actingCompanyId, actingEmployeeId));
+
+		/// The authenticated caller the service authorizes against. A test double for
+		/// IBusinessContextAccessor and nothing more - it grants no permission and bypasses no check; it
+		/// only answers WHO is making the request, which production answers from the authenticated session.
+		private sealed class ActingCaller : CrossBuy.BL.Platform.IBusinessContextAccessor
+		{
+			private readonly CrossBuy.Models.Platform.BusinessContext _context;
+
+			public ActingCaller(int companyId, int employeeId) => _context = new()
+			{
+				CompanyId = companyId, EmployeeId = employeeId, UserId = "user-" + employeeId,
+				Roles = Array.Empty<string>(), CorrelationId = Guid.NewGuid(),
+			};
+
+			public Task<CrossBuy.Models.Platform.BusinessContext> GetCurrentAsync(CancellationToken cancellationToken = default)
+				=> Task.FromResult(_context);
+			public Task<CrossBuy.Models.Platform.BusinessContext?> TryGetCurrentAsync(CancellationToken cancellationToken = default)
+				=> Task.FromResult<CrossBuy.Models.Platform.BusinessContext?>(_context);
+		}
 
 		private static void SeedAnnualLeaveType(PlatformTestHost host)
 			=> host.Seed.LeaveTypes.Add(new LeaveTypes { ID = 1, NameAr = "سنوية", NameEn = "Annual" });
@@ -231,7 +279,8 @@ namespace CrossBuy.Tests
 			await host.Seed.SaveChangesAsync();
 
 			var notifications = new RecordingNotifications();
-			var service = Leave(host, notifications);
+			// employee 10 is the level-1 approver this scenario has always had acting
+			var service = Leave(host, notifications, actingEmployeeId: 10);
 			var (ok, _, req) = await service.CreateAsync(
 				11, 1, DateTime.Today.AddDays(3), DateTime.Today.AddDays(4), "r");
 			Assert.True(ok);
@@ -259,7 +308,8 @@ namespace CrossBuy.Tests
 			SeedAnnualLeaveType(host);
 			await host.Seed.SaveChangesAsync();
 
-			var service = Leave(host);
+			// employee 10 is the direct manager who approves below
+			var service = Leave(host, actingEmployeeId: 10);
 			var (ok, _, req) = await service.CreateAsync(
 				11, 1, DateTime.Today.AddDays(3), DateTime.Today.AddDays(4), "r");
 			Assert.True(ok);
@@ -320,21 +370,146 @@ namespace CrossBuy.Tests
 			Assert.True(result.HierarchyDefect);
 		}
 
+		// RSK-31 — THE CASE THAT USED TO BE APPROVED AND IS NOW REFUSED.
+		//
+		// A parentless node produces exactly the same empty chain and the same clear defect flag as a
+		// real company head, and that indistinguishability WAS the defect: the branch read 'no approver
+		// came back' as 'nobody is above this person'. It is the absence of evidence, and the tree here
+		// is simply broken - the person has no position and hangs off nothing.
+		[Fact]
+		public async Task An_unverified_empty_chain_is_no_longer_auto_approved()
+		{
+			using var host = new PlatformTestHost(companyId: CompanyOne);
+			host.Seed.Employee.Add(Emp(11, CompanyOne));
+			SeedTop(host, 11);                 // deliberately NOT a unit head - see the fixture comment
+			SeedAnnualLeaveType(host);
+			await host.Seed.SaveChangesAsync();
+
+			var result = await Leave(host).ApproverChainAsync(11);
+			Assert.Empty(result.Approvers);
+			Assert.False(result.HierarchyDefect);              // nothing the climb could call wrong
+			Assert.False(result.RequesterIsVerifiedRoot);      // and nothing that proves a root either
+
+			var (ok, error, req) = await Leave(host).CreateAsync(
+				11, 1, DateTime.Today.AddDays(3), DateTime.Today.AddDays(4), "r");
+
+			Assert.False(ok);
+			Assert.NotNull(error);
+			Assert.Null(req);
+			Assert.Empty(host.Seed.LeaveRequests.AsNoTracking().ToList());
+		}
+
+		/// A person who manages themselves is not a root. The climb breaks on the self-reference and
+		/// returns nothing, which used to read as 'top of tree'; the position attaches to no unit, so
+		/// there is no evidence of one.
+		[Fact]
+		public async Task A_self_managing_node_is_not_a_verified_root()
+		{
+			using var host = new PlatformTestHost(companyId: CompanyOne);
+			host.Seed.Employee.Add(Emp(11, CompanyOne));
+			// SEEDED IN TWO SAVES ON PURPOSE. The two rows reference each other, and EF refuses to insert a
+			// mutually-dependent pair in one batch - the cycle is real in the DATA, which is exactly the state
+			// being modelled, so the fixture closes the loop after both rows exist rather than pretending the
+			// shape is impossible.
+			host.Seed.Hierarchicals.AddRange(
+				new Hierarchical { H_ID = 211, H_Type = 4, H_ObjectID = null, H_Parent = null },
+				new Hierarchical { H_ID = 111, H_Type = 5, H_ObjectID = 11, H_Parent = 211 });
+			SeedAnnualLeaveType(host);
+			await host.Seed.SaveChangesAsync();
+
+			host.Seed.Hierarchicals.First(h => h.H_ID == 211).H_Parent = 111;   // the self-reference
+			await host.Seed.SaveChangesAsync();
+
+			var result = await Leave(host).ApproverChainAsync(11);
+			Assert.Empty(result.Approvers);
+			Assert.False(result.RequesterIsVerifiedRoot);
+
+			var (ok, _, _) = await Leave(host).CreateAsync(
+				11, 1, DateTime.Today.AddDays(3), DateTime.Today.AddDays(4), "r");
+			Assert.False(ok);
+		}
+
+		/// A requester whose hierarchy rows are missing entirely resolves to nothing at all. That is the
+		/// plainest case of absence-of-evidence, and it was an approval.
+		[Fact]
+		public async Task A_requester_with_no_hierarchy_rows_is_not_a_verified_root()
+		{
+			using var host = new PlatformTestHost(companyId: CompanyOne);
+			host.Seed.Employee.Add(Emp(11, CompanyOne));
+			SeedAnnualLeaveType(host);
+			await host.Seed.SaveChangesAsync();
+
+			var result = await Leave(host).ApproverChainAsync(11);
+			Assert.Empty(result.Approvers);
+			Assert.False(result.RequesterIsVerifiedRoot);
+
+			var (ok, _, _) = await Leave(host).CreateAsync(
+				11, 1, DateTime.Today.AddDays(3), DateTime.Today.AddDays(4), "r");
+			Assert.False(ok);
+		}
+
+		/// A cross-company graft already raised the defect flag; it must also fail the root test, so the
+		/// two independent reasons to refuse cannot be traded off against one another.
+		/// A REQUESTER WITH NO COMPANY MAKES NEITHER CLAIM, and the second half of that is what this
+		/// test is really for. The defect flag has been asserted here since the isolation work; the root
+		/// flag is new, and without this test the no-company branch could report the requester a root
+		/// and nothing would notice - the guard reads `defect || !root`, so a true defect already
+		/// refuses and the root value beside it is never consulted. That is exactly the kind of unread
+		/// value that becomes live the moment somebody reorders the condition, and it would then be
+		/// asserting that a company-less employee is the head of an organisation.
+		[Fact]
+		public async Task A_requester_with_no_company_is_neither_validated_nor_a_root()
+		{
+			using var host = new PlatformTestHost(companyId: CompanyOne);
+			host.Seed.Employee.Add(Emp(11, 0));        // no company on the requester's own row
+			SeedVerifiedRoot(host, 11);                // even WITH root-shaped rows above them
+			SeedAnnualLeaveType(host);
+			await host.Seed.SaveChangesAsync();
+
+			var result = await Leave(host).ApproverChainAsync(11);
+			Assert.Empty(result.Approvers);
+			Assert.True(result.HierarchyDefect);
+			Assert.False(result.RequesterIsVerifiedRoot);
+
+			var (ok, _, _) = await Leave(host).CreateAsync(
+				11, 1, DateTime.Today.AddDays(3), DateTime.Today.AddDays(4), "r");
+			Assert.False(ok);
+		}
+
+		[Fact]
+		public async Task A_cross_company_graft_is_not_rescued_by_the_root_test()
+		{
+			using var host = new PlatformTestHost(companyId: CompanyOne);
+			host.Seed.Employee.AddRange(Emp(11, CompanyOne), Emp(20, CompanyTwo));
+			SeedTop(host, 20);
+			SeedLink(host, 11, 20);
+			SeedAnnualLeaveType(host);
+			await host.Seed.SaveChangesAsync();
+
+			var result = await Leave(host).ApproverChainAsync(11);
+			Assert.Empty(result.Approvers);
+			Assert.True(result.HierarchyDefect);
+			Assert.False(result.RequesterIsVerifiedRoot);
+		}
+
 		[Fact]
 		public async Task A_genuine_top_of_tree_requester_is_still_auto_approved()
 		{
-			// The existing policy for "no manager above me", preserved: an empty chain with NO defect is
-			// still an auto-approval. This is the case the defect flag exists to keep separate, so it is
-			// asserted rather than assumed.
+			// The policy for a genuine root, preserved exactly - and it is now a VERIFIED root rather
+			// than merely a node with nothing above it. RSK-31 changed what counts as proof, not what a
+			// proven root gets: an empty chain, Approved, no current approver. The scenario always meant
+			// "a real head of the organisation"; the fixture now says so instead of relying on the climb
+			// finding nothing.
 			using var host = new PlatformTestHost(companyId: CompanyOne);
 			host.Seed.Employee.Add(Emp(11, CompanyOne));
-			SeedTop(host, 11);                 // employee 11 is the top node; nobody above
+			SeedVerifiedRoot(host, 11);        // position attaches directly to the company node
 			SeedAnnualLeaveType(host);
 			await host.Seed.SaveChangesAsync();
 
 			var result = await Leave(host).ApproverChainAsync(11);
 			Assert.Empty(result.Approvers);
 			Assert.False(result.HierarchyDefect);
+			Assert.True(result.RequesterIsVerifiedRoot);       // positively proven, not merely unopposed
 
 			var (ok, _, req) = await Leave(host).CreateAsync(
 				11, 1, DateTime.Today.AddDays(3), DateTime.Today.AddDays(4), "r");
@@ -450,7 +625,17 @@ namespace CrossBuy.Tests
 			PlatformTestHost host, INotificationService? notifications = null)
 		{
 			var recorder = notifications ?? new RecordingNotifications();
-			return new EmployeeRequestService(host.Db, recorder, Leave(host, recorder));
+			// PHASE B (SHF-87 second concern): the BusinessEvent recorder is a REQUIRED constructor
+			// dependency now. A REAL one rather than a double, because the scenario below genuinely
+			// creates an employee request with a chain and therefore genuinely records a Submitted
+			// fact - a stub would make the fixture compile while proving the producer never ran.
+			// The accessor is the one this file already had; nothing about the chain, the company
+			// boundary or any assertion changes.
+			var caller = new ActingCaller(CompanyOne, 11);
+			return new EmployeeRequestService(host.Db, recorder, Leave(host, recorder), caller,
+				new CrossBuy.BL.Platform.BusinessEventService(
+					host.Db, new CrossBuy.BL.Platform.EntityRegistry(host.Db), caller,
+					NullLogger<CrossBuy.BL.Platform.BusinessEventService>.Instance));
 		}
 
 		// ---------------------------------------------------------------------------------------------

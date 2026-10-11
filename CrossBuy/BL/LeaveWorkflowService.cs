@@ -38,7 +38,21 @@ namespace CrossBuy.BL
 	/// company. It exists because the two "empty chain" cases demand opposite handling: a genuine top-of-tree
 	/// requester is auto-approved, whereas a requester whose chain is broken by a cross-company graft must be
 	/// refused — auto-approving them would turn an isolation defect into an unapproved leave.
-	public sealed record ApproverChain(List<int> Approvers, bool HierarchyDefect, int DroppedNodes);
+	/// The approver chain, plus the two things an EMPTY one has to be told apart by.
+	///
+	/// `HierarchyDefect` says the climb was STOPPED by something wrong - today a requester with no
+	/// company, or a cross-company graft. `RequesterIsVerifiedRoot` says the opposite kind of thing:
+	/// that the requester's own position attaches DIRECTLY to a company, branch or administrative
+	/// body, which is what actually makes somebody the top of a tree.
+	///
+	/// THEY ARE NOT COMPLEMENTS, and that is the whole point of RSK-31. An empty chain used to be
+	/// read as 'nobody is above this person, so approve it', but a chain empties for twelve reasons
+	/// and only two of them raised the defect flag. The other ten - a missing employee node, a
+	/// position with no parent, a parent that is not a person, a self-managing node, a broken
+	/// reference - are ABSENCE OF EVIDENCE, and absence of evidence was being treated as proof of a
+	/// root. So the root is now proven positively or it is not a root.
+	public sealed record ApproverChain(
+		List<int> Approvers, bool HierarchyDefect, int DroppedNodes, bool RequesterIsVerifiedRoot = false);
 
 	public class LeaveWorkflowService : ILeaveWorkflowService
 	{
@@ -46,6 +60,8 @@ namespace CrossBuy.BL
 		private readonly INotificationService _notifications;
 		private readonly ILeaveDashboardService _dashboard;
 		private readonly ILogger<LeaveWorkflowService> _log;
+		private readonly CrossBuy.BL.Platform.IBusinessEventService? _events;
+		private readonly CrossBuy.BL.Platform.IBusinessContextAccessor? _contexts;
 
 		public LeaveWorkflowService(
 			CrossDbContext context, INotificationService notifications, ILeaveDashboardService dashboard,
@@ -55,6 +71,67 @@ namespace CrossBuy.BL
 			_notifications = notifications;
 			_dashboard = dashboard;
 			_log = log;
+		}
+
+		// THE CANONICAL EVENT RECORDER, and the constructor the container actually picks.
+		//
+		// Optional by overload for one reason only: hand-built test fixtures elsewhere in the repository
+		// construct this service with the four-parameter shape and are owned by other tabs. DI selects the
+		// greediest constructor whose parameters all resolve, so production always lands here and always
+		// has a recorder, and a guard test asserts exactly that. The same debt inventory approvals carry
+		// (RSK-25) and it is recorded rather than hidden.
+		public LeaveWorkflowService(
+			CrossDbContext context, INotificationService notifications, ILeaveDashboardService dashboard,
+			ILogger<LeaveWorkflowService> log, CrossBuy.BL.Platform.IBusinessEventService events)
+			: this(context, notifications, dashboard, log) { _events = events; }
+
+		// THE CONSTRUCTOR DI ACTUALLY PICKS, and the one that makes the decision path a security
+		// boundary. The container selects the greediest constructor whose parameters all resolve, so
+		// production always lands here and always has a caller identity; a guard test asserts it.
+		//
+		// The accessor is nullable ONLY because hand-built fixtures in other tabs' test files still
+		// construct the shorter shapes and cannot be edited from here. It is NOT a permissive default:
+		// DecideAsync REFUSES when no identity can be resolved - see AuthorizeDecisionAsync. An
+		// absent accessor denies; it never waves a decision through.
+		public LeaveWorkflowService(
+			CrossDbContext context, INotificationService notifications, ILeaveDashboardService dashboard,
+			ILogger<LeaveWorkflowService> log, CrossBuy.BL.Platform.IBusinessEventService events,
+			CrossBuy.BL.Platform.IBusinessContextAccessor contexts)
+			: this(context, notifications, dashboard, log, events) { _contexts = contexts; }
+
+		// ---- the canonical leave fact -------------------------------------------------------
+		//
+		// ONE emitter for all four transitions, so the payload shape and the identity rule cannot drift
+		// between them. Called INSIDE the authoritative transaction and BEFORE its commit, which is the
+		// contract the kernel enforces: RecordAsync THROWS without an ambient transaction (ADR-001), so an
+		// event for a decision that rolls back is not merely unlikely - it is unwritable.
+		//
+		// THE IDENTITY IS THE REQUEST, THE LEVEL AND THE ACTION. Not the request alone: a chain produces
+		// several facts about one request, and a key without the level would make level 2's approval a
+		// duplicate of level 1's and silently drop it. The level is what makes each fact its own fact.
+		private Task EmitAsync(LeaveRequest req, string eventType, int level, int? approver,
+			int? nextLevel, int? nextApprover, int? decidedBy, CancellationToken cancellationToken = default)
+		{
+			if (_events is null) return Task.CompletedTask;
+			return _events.RecordAsync(new CrossBuy.Models.Platform.BusinessEventRecord
+			{
+				EntityCode = CrossBuy.BL.Platform.EntityRegistry.LeaveRequest,
+				EntityId = req.ID,
+				EventType = eventType,
+				PayloadVersion = CrossBuy.Models.Platform.LeaveRequestEventPayload.Version,
+				Visibility = CrossBuy.Models.Platform.BusinessEventVisibility.Internal,
+				DedupKey = $"leave:{req.ID}:level:{level}:{CrossBuy.BL.Platform.BusinessEventTypes.ActionOf(eventType)}",
+				Payload = new CrossBuy.Models.Platform.LeaveRequestEventPayload
+				{
+					LeaveRequestId = req.ID,
+					RequesterEmployeeId = req.EmployeeID,
+					Level = level,
+					ApproverEmployeeId = approver,
+					NextLevel = nextLevel,
+					NextApproverEmployeeId = nextApprover,
+					DecidedByEmployeeId = decidedBy,
+				},
+			}, cancellationToken);
 		}
 
 		// the position/seat title of an employee in the org tree (e.g., "رئيس قسم", "مدير الفرع")
@@ -110,7 +187,9 @@ namespace CrossBuy.BL
 				_log.LogWarning(
 					"Leave: employee {Employee} has no company on their Employee row; no approver chain can be " +
 					"validated, so none is produced.", employeeId);
-				return new ApproverChain(new List<int>(), true, 0);
+				// Not a root either, and said out loud rather than left to the default: with no company we
+				// cannot validate an approver OR a root, so neither claim can be made.
+				return new ApproverChain(new List<int>(), true, 0, RequesterIsVerifiedRoot: false);
 			}
 
 			// every employee the tree references, restricted to the requester's company in ONE query
@@ -175,7 +254,13 @@ namespace CrossBuy.BL
 				if (IsUnitHead(mgr.Value)) break;   // reached the nearest unit head → final approver
 				current = mgr.Value;
 			}
-			return new ApproverChain(chain, defect, dropped);
+			// THE SAME TEST, ASKED OF THE REQUESTER. IsUnitHead has always been here; it was only ever
+			// called on a MANAGER, to stop the climb. Asking it about the requester is what turns 'no
+			// manager was produced' into a question with two different answers: a company head whose
+			// position hangs off the company node, and a broken row that resolves to nothing, are no
+			// longer indistinguishable. The climb above is untouched - this reads the tree, it does not
+			// change how the tree is walked.
+			return new ApproverChain(chain, defect, dropped, IsUnitHead(employeeId));
 		}
 
 		// =============================================================================================
@@ -233,6 +318,12 @@ namespace CrossBuy.BL
 			}).ToList();
 		}
 
+		// ONE AUTHORITATIVE UNIT. The request, its approval steps and the canonical fact now commit
+		// together or not at all. Before this they did not: the request was saved, then the steps were
+		// saved separately, and a failure in between left a request pointing at CurrentLevel 1 with NO
+		// step behind it - a row DecideAsync then refuses forever with 'the approval step is missing',
+		// because there is genuinely nothing to decide. BeginOrJoin rather than Begin: a caller that
+		// already opened a transaction owns it, and this one enlists instead of opening a second.
 		public async Task<(bool ok, string? error, LeaveRequest? req)> CreateAsync(
 			int employeeId, int leaveTypeId, DateTime start, DateTime end, string? reason)
 		{
@@ -270,12 +361,30 @@ namespace CrossBuy.BL
 			var chainResult = await ApproverChainAsync(employeeId);
 			var chain = chainResult.Approvers;
 
+			// MERGE: the SOURCE condition and BOTH explanations. The two sides document DIFFERENT closed
+			// risks - the destination the cross-company graft, the source the verified structural root -
+			// and neither contradicts the other, so both are kept. The source condition already contains
+			// the destination's: HierarchyDefect is still tested, with the root test added beside it.
+			//
 			// A chain broken by a cross-company graft must NOT reach the auto-approve branch below. Without
 			// this, closing the isolation leak would have created a worse defect: the requester's foreign
 			// manager gets filtered out, the chain comes back empty, and `chain.Count == 0` reads that as
 			// "requester is at the top of the tree" and approves the leave with no approver at all.
-			if (chain.Count == 0 && chainResult.HierarchyDefect)
+			//
+			// AN EMPTY CHAIN IS NOT PROOF OF A ROOT (RSK-31). It used to be read as one: no approver came
+			// back, therefore nobody is above this person, therefore approve. But a chain empties for many
+			// reasons and most of them are a broken org tree rather than a company head - a missing
+			// employee node, a position with no parent, a parent that is not a person, a self-managing
+			// node. Those are the ABSENCE of evidence, and this branch was treating them as proof.
+			//
+			// So auto-approval now requires the requester to be POSITIVELY verified as a structural root,
+			// and the defect flag stays beside it because the two say different things: one is 'the climb
+			// hit something wrong', the other is 'this person really is the top'. Either failing refuses.
+			// A verified root keeps exactly the behaviour it has today; only the unproven case changes.
+			if (chain.Count == 0 && (chainResult.HierarchyDefect || !chainResult.RequesterIsVerifiedRoot))
 				return (false, "The approval chain for this employee cannot be determined — the organisation structure is not correct. Please contact HR.", null);
+
+			await using var tx = await ScopedTx.BeginOrJoinAsync(_context);
 
 			var req = new LeaveRequest
 			{
@@ -323,6 +432,32 @@ namespace CrossBuy.BL
 				}
 				await _context.SaveChangesAsync();
 
+				// The steps exist, so the state the fact describes is now internally valid: level 1 is owed by
+				// a real approver with a real step behind it. Inside the transaction and before the commit.
+				await EmitAsync(req, CrossBuy.BL.Platform.LeaveRequestEvents.Submitted,
+					level: 1, approver: chain[0], nextLevel: null, nextApprover: null, decidedBy: null);
+			}
+			else
+			{
+				// TOP OF THE TREE. The domain auto-approved because nobody is above this requester, and that
+				// behaviour is preserved exactly as it was. Two facts are still recorded, because two things
+				// really did happen - the request was raised and it ended Approved - and level 0 is how the
+				// payload says NOBODY WAS EVER ASKED. The rule reads that and creates no work: a Task for an
+				// approver who does not exist is work nobody can do.
+				//
+				// No approval step is written and none is invented. That this path leaves no decision history
+				// is a real gap in the domain, and it is carried as debt rather than papered over by
+				// fabricating a step whose approver would be the requester themselves.
+				await EmitAsync(req, CrossBuy.BL.Platform.LeaveRequestEvents.Submitted,
+					level: 0, approver: null, nextLevel: null, nextApprover: null, decidedBy: null);
+				await EmitAsync(req, CrossBuy.BL.Platform.LeaveRequestEvents.Approved,
+					level: 0, approver: null, nextLevel: null, nextApprover: null, decidedBy: null);
+			}
+
+			await tx.CommitAsync();
+
+			if (chain.Count > 0)
+			{
 				var requester = await _context.Employee.AsNoTracking().FirstOrDefaultAsync(e => e.ID == employeeId);
 				var rAr = requester?.FullName ?? "موظف";
 				var rEn = requester?.FullNameEn ?? requester?.FullName ?? "An employee";
@@ -336,18 +471,107 @@ namespace CrossBuy.BL
 			return (true, null, req);
 		}
 
+		// ===========================================================================================
+		// THE DECISION IS AUTHORIZED HERE, NOT ONLY AT THE CONTROLLER (RSK-26).
+		//
+		// WHAT WAS WRONG. This method took `approverEmployeeId` as a PARAMETER and its only authority
+		// test was that the value equalled the stored CurrentApproverEmployeeID. It received no
+		// BusinessContext, asked no access service, and read the request with no company predicate. A
+		// caller passing a DIFFERENT employee id decided AS that person, because the id it passed WAS
+		// the current approver. Both live callers happen to be correct today; nothing made a third one
+		// correct, and that is the defect - an authoritative service was a security ASSUMPTION.
+		//
+		// THE PARAMETER STILL EXISTS AND NO LONGER AUTHORIZES ANYTHING. It is kept so the two existing
+		// callers need no change, and it is now VALIDATED against the resolved identity: a mismatch is
+		// refused even when the value names the real stored approver. That last case is the whole point
+		// - it is precisely the impersonation the old code accepted.
+		//
+		// AUTHORITY COMES FROM THE STORED CHAIN, NOT FROM THE ORG TREE. The chain was resolved and
+		// persisted when the request was submitted; asking IOrgHierarchy who manages whom TODAY would be
+		// a second, disagreeing authority - and after a mid-chain reorganisation it would refuse the very
+		// person the domain asked. HrAccessService keeps answering that question at the controller,
+		// which is defence in depth and stays exactly as it is.
+		// ===========================================================================================
+		private async Task<bool> MayDecideAsync(LeaveRequest req, int approverEmployeeId, CancellationToken ct)
+		{
+			// NO ACCESSOR MEANS NO IDENTITY MEANS NO. The nullable field exists for foreign test fixtures,
+			// not as a permissive default, and this is the line that makes that true.
+			if (_contexts is null) return false;
+
+			var caller = await _contexts.TryGetCurrentAsync(ct);
+			if (caller is null || caller.CompanyId <= 0) return false;
+			if (caller.EmployeeId is not int me || me <= 0) return false;
+
+			// THE PARAMETER IS CHECKED AGAINST THE IDENTITY, never trusted in place of it.
+			if (approverEmployeeId != me) return false;
+
+			// COMPANY THROUGH THE REQUESTER, because LeaveRequest carries no CompanyID of its own. This is
+			// the same basis ApproverChainAsync intersects on, so the write boundary and the chain agree
+			// about what company a request belongs to instead of each inventing an answer. A requester with
+			// no company row, or one in another tenant, matches nothing and is refused.
+			bool sameCompany = await _context.Employee.AsNoTracking()
+				.AnyAsync(e => e.ID == req.EmployeeID && e.EmpCompanyID == caller.CompanyId, ct);
+			if (!sameCompany) return false;
+
+			// THE STORED CURRENT APPROVER, and only them. Not a manager, not an HR role, not an admin.
+			if (req.CurrentApproverEmployeeID != me) return false;
+
+			// SEPARATION OF DUTIES AT THE WRITE BOUNDARY. The chain is built so this cannot arise and the
+			// controller refuses it too; this is the authoritative service declining to be the place where
+			// it starts being possible.
+			if (req.EmployeeID == me) return false;
+
+			return true;
+		}
+
 		public async Task<(bool ok, string? error)> DecideAsync(int requestId, int approverEmployeeId, bool approve, string? note)
 		{
+			await using var tx = await ScopedTx.BeginOrJoinAsync(_context);
+
 			var req = await _context.LeaveRequests
 				.Include(r => r.LeaveType)
 				.Include(r => r.ApprovalSteps)
 				.FirstOrDefaultAsync(r => r.ID == requestId);
 			if (req == null) return (false, "Order not found");
 			if (req.Status != 0) return (false, "The request has already been decided");
-			if (req.CurrentApproverEmployeeID != approverEmployeeId) return (false, "You do not have permission to approve this request");
+
+			// MERGE: the SOURCE authorization repair, with the DESTINATION translations. MayDecideAsync
+			// SUPERSEDES the destination's bare CurrentApproverEmployeeID comparison - it makes that same
+			// check AND resolves the caller from the context, verifies the company through the requester
+			// Employee, and applies separation of duties. The destination line is contained in what
+			// replaces it, so nothing is lost by dropping it.
+			//
+			// BEFORE ANY MUTATION AND BEFORE THE CLAIM. A refusal here emits no Business Event, moves no
+			// Task, sends no notification and leaves the request and every step exactly as they were - the
+			// transaction opened above is simply never written to and rolls back on dispose.
+			if (!await MayDecideAsync(req, approverEmployeeId, CancellationToken.None))
+				return (false, "You do not have permission to approve this request");
 
 			var step = req.ApprovalSteps.FirstOrDefault(s => s.Level == req.CurrentLevel && s.Status == 0);
 			if (step == null) return (false, "Approval step not found");
+
+			// THE LEVEL BEING DECIDED, captured before anything moves it. Both approval branches below
+			// change CurrentLevel - the final one zeroes it - so reading it afterwards would name the
+			// wrong level in the fact and complete the wrong Task.
+			int decidedLevel = req.CurrentLevel;
+
+			// ---- ONE DECISION WINS -------------------------------------------------------------
+			//
+			// The guards above are a READ followed by a WRITE, and between them two approvers pressing at
+			// once both saw Pending. Read-committed does not stop that, and there is no rowversion on any
+			// table in this repository to make it optimistic. So the step is CLAIMED with a single
+			// conditional statement - the same row, guarded on the status it must still have - and the DB
+			// decides. Exactly one caller sees 1 row affected; the loser sees 0 and is refused with the
+			// message the domain already uses for a request that has been decided, because that is what
+			// happened to it.
+			//
+			// Everything after this point therefore runs for the winner only: one transition, one event,
+			// one notification, one Task movement. The tracked entity is updated with the same values
+			// immediately below, so the existing domain writes are left exactly as they were.
+			int claimed = await _context.LeaveApprovalSteps
+				.Where(x => x.ID == step.ID && x.Status == 0)
+				.ExecuteUpdateAsync(set => set.SetProperty(x => x.Status, approve ? 1 : 2));
+			if (claimed != 1) return (false, "تم البتّ في الطلب مسبقًا");
 
 			var approver = await _context.Employee.AsNoTracking().FirstOrDefaultAsync(e => e.ID == approverEmployeeId);
 			var aAr = approver?.FullName ?? "المدير";
@@ -366,6 +590,12 @@ namespace CrossBuy.BL
 				req.DecisionAt = now; req.DecisionNote = note; req.CurrentApproverEmployeeID = null;
 				req.UpdatedAt = now; req.updatedBy = approverEmployeeId;
 				await _context.SaveChangesAsync();
+
+				// A rejection ends the WHOLE request, at whatever level it happened. One terminal fact.
+				await EmitAsync(req, CrossBuy.BL.Platform.LeaveRequestEvents.Rejected,
+					level: decidedLevel, approver: approverEmployeeId, nextLevel: null, nextApprover: null,
+					decidedBy: approverEmployeeId);
+				await tx.CommitAsync();
 
 				await _notifications.NotifyAsync(req.EmployeeID,
 					"تم رفض طلب إجازتك", "Your leave was rejected",
@@ -394,6 +624,13 @@ namespace CrossBuy.BL
 				req.UpdatedAt = now; req.updatedBy = approverEmployeeId;
 				await _context.SaveChangesAsync();
 
+				// The top of the chain approved. Terminal, and the level that took the decision is named so
+				// the rule closes THAT level's work rather than guessing which one was open.
+				await EmitAsync(req, CrossBuy.BL.Platform.LeaveRequestEvents.Approved,
+					level: decidedLevel, approver: approverEmployeeId, nextLevel: null, nextApprover: null,
+					decidedBy: approverEmployeeId);
+				await tx.CommitAsync();
+
 				await _notifications.NotifyAsync(req.EmployeeID,
 					"تمت الموافقة على إجازتك", "Your leave was approved",
 					$"طلب {typeAr} ({req.Days} يوم) تمت الموافقة عليه نهائيًا بواسطة {aAr}.",
@@ -412,6 +649,14 @@ namespace CrossBuy.BL
 			req.CurrentApproverEmployeeID = nextStep.ApproverEmployeeID;
 			req.UpdatedAt = now; req.updatedBy = approverEmployeeId;
 			await _context.SaveChangesAsync();
+
+			// NOT A TERMINAL FACT. The request is still Pending; the work simply belongs to somebody else
+			// now. Both levels travel in the payload because the rule has two things to do with one event:
+			// close the level that decided, and open the level that now owes.
+			await EmitAsync(req, CrossBuy.BL.Platform.LeaveRequestEvents.Advanced,
+				level: decidedLevel, approver: approverEmployeeId, nextLevel: nextLevel,
+				nextApprover: nextStep.ApproverEmployeeID, decidedBy: approverEmployeeId);
+			await tx.CommitAsync();
 
 			var requesterEmp = await _context.Employee.AsNoTracking().FirstOrDefaultAsync(e => e.ID == req.EmployeeID);
 			var reqAr = requesterEmp?.FullName ?? "موظف";

@@ -60,8 +60,39 @@ namespace CrossBuy.Tests
 			=> new LeaveWorkflowService(host.Db, new NoopNotifications(), new StubLeaveDashboard(),
 				NullLogger<LeaveWorkflowService>.Instance);
 
+		// PHASE B made the BusinessEvent recorder a REQUIRED constructor dependency, so this
+		// fixture has to supply one (SHF-31 named concern). The recorder THROWS on purpose: these
+		// suites exercise the pending-approval READERS, nothing here should produce a business
+		// fact, and a recorder that quietly accepted one would hide exactly that mistake. The
+		// reader behaviour, the assertions and the fixture shape are untouched.
 		private static IEmployeeRequestService Requests(PlatformTestHost host)
-			=> new EmployeeRequestService(host.Db, new NoopNotifications(), Leave(host));
+			=> new EmployeeRequestService(host.Db, new NoopNotifications(), Leave(host),
+				new ReaderCaller(), new NoEventsExpected());
+
+		private sealed class NoEventsExpected : CrossBuy.BL.Platform.IBusinessEventService
+		{
+			public Task<long> RecordAsync(CrossBuy.Models.Platform.BusinessEventRecord record,
+				CancellationToken cancellationToken = default)
+				=> throw new InvalidOperationException(
+					"a read-only approval-reader test reached a business-event producer");
+
+			public CrossBuy.Models.Platform.BusinessEventEnvelope BuildEnvelope(
+				CrossBuy.Models.Context.Platform.BusinessEvent stored)
+				=> throw new InvalidOperationException("no events are recorded here");
+		}
+
+		private sealed class ReaderCaller : CrossBuy.BL.Platform.IBusinessContextAccessor
+		{
+			private static readonly CrossBuy.Models.Platform.BusinessContext Ctx = new()
+			{
+				CompanyId = 41, EmployeeId = 1, UserId = "u1",
+				Roles = Array.Empty<string>(), CorrelationId = Guid.NewGuid(),
+			};
+			public Task<CrossBuy.Models.Platform.BusinessContext> GetCurrentAsync(CancellationToken ct = default)
+				=> Task.FromResult(Ctx);
+			public Task<CrossBuy.Models.Platform.BusinessContext?> TryGetCurrentAsync(CancellationToken ct = default)
+				=> Task.FromResult<CrossBuy.Models.Platform.BusinessContext?>(Ctx);
+		}
 
 		private static LeaveRequest LeaveRow(int requesterId, int? approverId, int status = 0, int id = 0)
 			=> new()

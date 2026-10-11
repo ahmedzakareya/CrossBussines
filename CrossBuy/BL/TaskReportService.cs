@@ -26,18 +26,50 @@ namespace CrossBuy.BL
 	{
 		private readonly CrossDbContext _db;
 		private readonly IEmployeeCostService _cost;
+
+		// TASK REPORT AUTHORIZATION. Optional, and two constructors rather than one changed one so every
+		// existing construction site keeps compiling while the composition root gets the authority - the
+		// container picks the greediest constructor it can satisfy. Same shape as TaskService.
+		//
+		// NULL MEANS NOT AN HTTP CALLER, never allow everything: TasksController gates the report actions
+		// before reaching here, so a browser cannot arrive without one.
+		private readonly CrossBuy.BL.ITaskReadAuthorizer? _readAuth;
+
 		public TaskReportService(CrossDbContext db, IEmployeeCostService cost) { _db = db; _cost = cost; }
+
+		public TaskReportService(CrossDbContext db, IEmployeeCostService cost,
+			CrossBuy.BL.ITaskReadAuthorizer readAuth) : this(db, cost) { _readAuth = readAuth; }
+
+		// THE AUTHORIZED SET EVERY REPORT COMPUTES OVER.
+		//
+		// Called BEFORE the GROUP BY, never after, and that ordering is the entire repair. Aggregating the
+		// company and then trimming rows would leave every total intact - an overdue count, an hours figure
+		// or a billable amount computed over work the caller may not see is the same disclosure as the rows,
+		// arriving in a smaller package. A report that says "47 overdue" to someone entitled to see three of
+		// them has told them about the other forty-four.
+		private async Task<IQueryable<TaskItem>> AuthorizedAsync(int companyId, CancellationToken ct = default)
+		{
+			var query = _db.TaskItems.AsNoTracking().Where(t => t.CompanyId == companyId);
+			if (_readAuth == null) return query;
+
+			var authorization = await _readAuth.ForListAsync(ct);
+			// Refused, so the report is empty rather than unfiltered. An authorizer that answered no must not
+			// be indistinguishable from one that was never asked.
+			if (authorization == null) return query.Where(_ => false);
+
+			return await _readAuth.ApplyAsync(query, authorization, ct);
+		}
 
 		public async Task<(TaskStatusSummary, TaskStatusSummary)> SummaryAsync(int companyId, int currentEmployeeId)
 		{
 			var now = DateTime.Now;
-			var all = await _db.TaskItems.AsNoTracking().Where(t => t.CompanyId == companyId).Select(t => new { t.Status, t.DueDate, t.AssigneeEmployeeId }).ToListAsync();
+			var all = await (await AuthorizedAsync(companyId)).Select(t => new { t.Status, t.DueDate, t.AssigneeEmployeeId }).ToListAsync();
 			TaskStatusSummary Build(List<(string Status, DateTime? Due)> l) => new TaskStatusSummary
 			{
 				New = l.Count(x => x.Status == "New"),
 				InProgress = l.Count(x => x.Status == "InProgress"),
 				Done = l.Count(x => x.Status == "Done"),
-				Overdue = l.Count(x => x.Due != null && x.Due < now && x.Status != "Done"),
+				Overdue = l.Count(x => CrossBuy.Models.Context.Tasks.TaskStatuses.IsOverdue(x.Due, x.Status, now)),
 				Total = l.Count
 			};
 			var mineL = all.Where(x => x.AssigneeEmployeeId == currentEmployeeId).Select(x => (x.Status, x.DueDate)).ToList();
@@ -48,7 +80,7 @@ namespace CrossBuy.BL
 		public async Task<List<OverdueTaskRow>> OverdueAsync(int companyId)
 		{
 			var now = DateTime.Now;
-			var rows = await _db.TaskItems.AsNoTracking().Where(t => t.CompanyId == companyId && t.DueDate != null && t.DueDate < now && t.Status != "Done")
+			var rows = await (await AuthorizedAsync(companyId)).Where(CrossBuy.Models.Context.Tasks.TaskStatuses.OverdueAt(now))
 				.OrderBy(t => t.DueDate).Select(t => new { t.ID, t.Title, t.AssigneeEmployeeId, t.DueDate, t.Priority }).ToListAsync();
 			var names = await NamesAsync(rows.Select(r => r.AssigneeEmployeeId));
 			return rows.Select(r => new OverdueTaskRow { Id = r.ID, Title = r.Title, Assignee = names.GetValueOrDefault(r.AssigneeEmployeeId, ""), Due = r.DueDate!.Value, DaysLate = (int)(now.Date - r.DueDate!.Value.Date).TotalDays, Priority = r.Priority }).ToList();
@@ -59,9 +91,9 @@ namespace CrossBuy.BL
 			var f = from.Date; var tEnd = to.Date.AddDays(1);
 			var hours = (await _db.TimesheetEntries.AsNoTracking().Where(e => e.CompanyId == companyId && e.Hours > 0 && e.WorkDate >= f && e.WorkDate < tEnd)
 				.GroupBy(e => e.EmployeeId).Select(g => new { g.Key, H = g.Sum(x => x.Hours) }).ToListAsync()).ToDictionary(x => x.Key, x => x.H);
-			var completed = (await _db.TaskItems.AsNoTracking().Where(t => t.CompanyId == companyId && t.CompletedAt != null && t.CompletedAt >= f && t.CompletedAt < tEnd)
+			var completed = (await (await AuthorizedAsync(companyId)).Where(t => t.CompletedAt != null && t.CompletedAt >= f && t.CompletedAt < tEnd)
 				.GroupBy(t => t.AssigneeEmployeeId).Select(g => new { g.Key, C = g.Count() }).ToListAsync()).ToDictionary(x => x.Key, x => x.C);
-			var open = (await _db.TaskItems.AsNoTracking().Where(t => t.CompanyId == companyId && t.Status != "Done")
+			var open = (await (await AuthorizedAsync(companyId)).Where(t => t.Status != "Done")
 				.GroupBy(t => t.AssigneeEmployeeId).Select(g => new { g.Key, O = g.Count() }).ToListAsync()).ToDictionary(x => x.Key, x => x.O);
 			var empIds = hours.Keys.Union(completed.Keys).Union(open.Keys).Where(id => id > 0).Distinct().ToList();
 			var names = await NamesAsync(empIds);
@@ -72,7 +104,7 @@ namespace CrossBuy.BL
 		public async Task<List<CostRow>> CostByAsync(int companyId, string entityType)
 		{
 			// tasks linked to this entity type → per entity, Σ (hours × employee hourly cost)
-			var tasks = await _db.TaskItems.AsNoTracking().Where(t => t.CompanyId == companyId && t.EntityType == entityType && t.EntityId != null)
+			var tasks = await (await AuthorizedAsync(companyId)).Where(t => t.EntityType == entityType && t.EntityId != null)
 				.Select(t => new { t.ID, EntId = t.EntityId!.Value }).ToListAsync();
 			if (tasks.Count == 0) return new();
 			var taskToEnt = tasks.ToDictionary(t => t.ID, t => t.EntId);
@@ -95,7 +127,7 @@ namespace CrossBuy.BL
 
 		public async Task<List<BillableCustomerRow>> BillableByCustomerAsync(int companyId)
 		{
-			var tasks = await _db.TaskItems.AsNoTracking().Where(t => t.CompanyId == companyId && t.IsBillable && t.CustomerId != null && t.BillRate != null)
+			var tasks = await (await AuthorizedAsync(companyId)).Where(t => t.IsBillable && t.CustomerId != null && t.BillRate != null)
 				.Select(t => new { t.ID, Cust = t.CustomerId!.Value, Rate = t.BillRate!.Value }).ToListAsync();
 			if (tasks.Count == 0) return new();
 			var taskIds = tasks.Select(t => t.ID).ToList();
@@ -117,8 +149,7 @@ namespace CrossBuy.BL
 		public async Task<List<AutoTaskRow>> AutoGeneratedAsync(int companyId)
 		{
 			var rows = await (from l in _db.TaskAutoLogs.AsNoTracking().Where(l => l.CompanyId == companyId)
-							  join t in _db.TaskItems.AsNoTracking() on l.TaskId equals t.ID into tj
-							  from t in tj.DefaultIfEmpty()
+							  join t in await AuthorizedAsync(companyId) on l.TaskId equals t.ID
 							  orderby l.CreatedAt descending
 							  select new AutoTaskRow { RuleKey = l.RuleKey, TaskId = l.TaskId, Title = t != null ? t.Title : "—", Status = t != null ? t.Status : "—", CreatedAt = l.CreatedAt }).Take(500).ToListAsync();
 			return rows;

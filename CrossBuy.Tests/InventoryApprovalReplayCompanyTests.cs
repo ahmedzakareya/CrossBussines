@@ -153,6 +153,10 @@ namespace CrossBuy.Tests
         public async Task A_replayed_command_executes_under_the_approval_rows_company(string docType)
         {
             using var host = new PlatformTestHost(companyId: CompanyA);
+            // The approver holds InventoryManager in BOTH companies: the service now asks for it,
+            // and these tests are about WHICH company the replay runs under, not about the right.
+            await GrantManagerAsync(host, CompanyA, Approver);
+            await GrantManagerAsync(host, CompanyB, Approver);
             var id = Seed(host, CompanyA, docType);
 
             var stock = new RecordingStock();
@@ -187,6 +191,10 @@ namespace CrossBuy.Tests
             // is what stops the cross-company attempt in the first place. Both are asserted, here and
             // above, because either alone would leave a hole.
             using var host = new PlatformTestHost(companyId: CompanyA);
+            // The approver holds InventoryManager in BOTH companies: the service now asks for it,
+            // and these tests are about WHICH company the replay runs under, not about the right.
+            await GrantManagerAsync(host, CompanyA, Approver);
+            await GrantManagerAsync(host, CompanyB, Approver);
             var id = Seed(host, CompanyA, docType);
 
             var stock = new RecordingStock();
@@ -216,6 +224,10 @@ namespace CrossBuy.Tests
             // the ROW is defence in depth: it keeps the replay correct by construction even if the
             // lookup scope were ever loosened, which is exactly the change this suite would catch.
             using var host = new PlatformTestHost(companyId: CompanyB);
+            // The approver holds InventoryManager in BOTH companies: the service now asks for it,
+            // and these tests are about WHICH company the replay runs under, not about the right.
+            await GrantManagerAsync(host, CompanyA, Approver);
+            await GrantManagerAsync(host, CompanyB, Approver);
             var id = Seed(host, CompanyB, "WriteOff");
 
             var stock = new RecordingStock();
@@ -237,6 +249,10 @@ namespace CrossBuy.Tests
         public async Task An_unresolved_company_cannot_approve_and_replays_nothing()
         {
             using var host = new PlatformTestHost(companyId: CompanyA);
+            // The approver holds InventoryManager in BOTH companies: the service now asks for it,
+            // and these tests are about WHICH company the replay runs under, not about the right.
+            await GrantManagerAsync(host, CompanyA, Approver);
+            await GrantManagerAsync(host, CompanyB, Approver);
             var id = Seed(host, CompanyA, "WriteOff");
 
             var stock = new RecordingStock();
@@ -253,6 +269,10 @@ namespace CrossBuy.Tests
         public async Task An_unresolved_company_cannot_submit_and_writes_no_row()
         {
             using var host = new PlatformTestHost(companyId: CompanyA);
+            // The approver holds InventoryManager in BOTH companies: the service now asks for it,
+            // and these tests are about WHICH company the replay runs under, not about the right.
+            await GrantManagerAsync(host, CompanyA, Approver);
+            await GrantManagerAsync(host, CompanyB, Approver);
             var service = Service(host, new RecordingStock(), new RecordingProcurement(), approverCompany: null);
 
             await Assert.ThrowsAsync<BusinessContextUnresolvedException>(
@@ -269,6 +289,10 @@ namespace CrossBuy.Tests
         public async Task A_new_submission_belongs_to_the_resolved_company_and_never_to_company_one()
         {
             using var host = new PlatformTestHost(companyId: CompanyB);
+            // The approver holds InventoryManager in BOTH companies: the service now asks for it,
+            // and these tests are about WHICH company the replay runs under, not about the right.
+            await GrantManagerAsync(host, CompanyA, Approver);
+            await GrantManagerAsync(host, CompanyB, Approver);
 
             var id = await Service(host, new RecordingStock(), new RecordingProcurement(), approverCompany: CompanyB)
                 .SubmitAsync("WriteOff", 5000m, new WriteOffApprovalPayload(), Requester);
@@ -304,8 +328,30 @@ namespace CrossBuy.Tests
 
         private static IInventoryApprovalService Service(PlatformTestHost host, IStockService stock,
             IProcurementService proc, int? approverCompany)
-            => new InventoryApprovalService(host.Db, stock, proc, new NoopNotifications(),
-                new FixedContext(approverCompany));
+        {
+            var ctx = new FixedContext(approverCompany);
+            // The REAL Inventory access service, not a permissive double. These tests are about the replay
+            // company, but they now pass the same authorization gate production does, so a wiring break
+            // surfaces here too rather than only in the dedicated security suite.
+            var access = new InventoryAccessService(
+                host.Db, new Microsoft.AspNetCore.Http.HttpContextAccessor(), ctx,
+                new CrossBuy.BL.Platform.BootstrapAccessPolicyReader(
+                    host.Db, Microsoft.Extensions.Logging.Abstractions.NullLogger<CrossBuy.BL.Platform.BootstrapAccessPolicyReader>.Instance),
+                Microsoft.Extensions.Logging.Abstractions.NullLogger<InventoryAccessService>.Instance);
+            return new InventoryApprovalService(host.Db, stock, proc, new NoopNotifications(), ctx,
+                new CrossBuy.BL.Platform.IModuleAccessService[] { access });
+        }
+
+        /// The approver must actually hold the right the service now asks for. Seeded per company, because
+        /// an InventoryManager in company 41 is not one in company 77 — a property these tests care about.
+        private static async Task GrantManagerAsync(PlatformTestHost host, int companyId, int employeeId)
+        {
+            host.Seed.InventoryUserRoles.Add(new CrossBuy.Models.Context.Inventory.InventoryUserRole
+            {
+                CompanyID = companyId, EmployeeId = employeeId, Role = "InventoryManager",
+            });
+            await host.Seed.SaveChangesAsync();
+        }
 
         private static string RepoRoot()
         {

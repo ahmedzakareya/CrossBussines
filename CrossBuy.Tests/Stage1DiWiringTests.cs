@@ -1,4 +1,4 @@
-﻿using CrossBuy.BL.Platform;
+using CrossBuy.BL.Platform;
 using CrossBuy.BL.ModulePermissions;
 using CrossBuy.Models.Context;
 using CrossBuy.Models.Platform;
@@ -135,6 +135,26 @@ namespace CrossBuy.Tests
             services.AddScoped<CrossBuy.BL.IHrAccessService>(sp => sp.GetRequiredService<CrossBuy.BL.HrAccessService>());
             services.AddScoped<IModuleAccessService>(sp => sp.GetRequiredService<CrossBuy.BL.HrAccessService>());
 
+            services.AddScoped<CrossBuy.BL.InventoryAccessService>();
+            services.AddScoped<CrossBuy.BL.IInventoryAccessService>(sp => sp.GetRequiredService<CrossBuy.BL.InventoryAccessService>());
+            services.AddScoped<IModuleAccessService>(sp => sp.GetRequiredService<CrossBuy.BL.InventoryAccessService>());
+            // Domain writers and notification delivery are boundaries for this container test;
+            // calling one throws. The approval services, module authorities and recorder are real.
+            services.AddScoped<CrossBuy.BL.IStockService>(_ => System.Reflection.DispatchProxy.Create<CrossBuy.BL.IStockService, UnusedApprovalBoundary>());
+            services.AddScoped<CrossBuy.BL.IProcurementService>(_ => System.Reflection.DispatchProxy.Create<CrossBuy.BL.IProcurementService, UnusedApprovalBoundary>());
+            services.AddScoped<CrossBuy.BL.INotificationService>(_ => System.Reflection.DispatchProxy.Create<CrossBuy.BL.INotificationService, UnusedApprovalBoundary>());
+            services.AddScoped<CrossBuy.BL.ILeaveDashboardService>(_ => System.Reflection.DispatchProxy.Create<CrossBuy.BL.ILeaveDashboardService, UnusedApprovalBoundary>());
+            services.AddScoped<CrossBuy.BL.ILeaveWorkflowService, CrossBuy.BL.LeaveWorkflowService>();
+            services.AddScoped<CrossBuy.BL.IEmployeeRequestService, CrossBuy.BL.EmployeeRequestService>();
+            services.AddScoped<CrossBuy.BL.IInventoryApprovalService, CrossBuy.BL.InventoryApprovalService>();
+            services.AddScoped<ITaskSourceVisibilityProvider, InventoryApprovalTaskVisibilityProvider>();
+            services.AddScoped<ITaskSourceReadEntranceProvider, InventoryApprovalTaskVisibilityProvider>();
+            services.AddScoped<ITaskSourceVisibility, TaskSourceVisibility>();
+            services.AddScoped<ITaskSourceReadEntrance, TaskSourceReadEntrance>();
+            services.AddScoped<Func<ITaskSourceVisibility>>(sp => () => sp.GetRequiredService<ITaskSourceVisibility>());
+            services.AddScoped<Func<ITaskSourceReadEntrance>>(sp => () => sp.GetRequiredService<ITaskSourceReadEntrance>());
+            services.AddScoped<CrossBuy.BL.ITaskReadAuthorizer, CrossBuy.BL.TaskReadAuthorizer>();
+
             // The Func<> that breaks the provider↔module cycle. Without it, RESOLVING the module collection
             // recurses forever and the application hangs before Kestrel starts.
             services.AddScoped<Func<IPlatformPermissionProvider>>(sp => () => sp.GetRequiredService<IPlatformPermissionProvider>());
@@ -182,6 +202,29 @@ namespace CrossBuy.Tests
             Assert.Contains(scope.ServiceProvider.GetServices<IDocumentOwnerResolver>(), r => r.EntityType == EntityRegistry.Customer);
         }
 
+        public class UnusedApprovalBoundary : System.Reflection.DispatchProxy
+        {
+            protected override object? Invoke(System.Reflection.MethodInfo? method, object?[]? args)
+                => throw new InvalidOperationException("The DI test must not execute a domain writer or delivery boundary.");
+        }
+
+        [Fact]
+        public void Converged_approval_services_resolve_with_real_module_authorities_and_recorder()
+        {
+            using var provider = BuildBatchCContainer();
+            using var scope = provider.CreateScope();
+            var services = scope.ServiceProvider;
+            Assert.IsType<CrossBuy.BL.LeaveWorkflowService>(services.GetRequiredService<CrossBuy.BL.ILeaveWorkflowService>());
+            Assert.IsType<CrossBuy.BL.EmployeeRequestService>(services.GetRequiredService<CrossBuy.BL.IEmployeeRequestService>());
+            var inventory = services.GetRequiredService<CrossBuy.BL.IInventoryApprovalService>();
+            var recorder = typeof(CrossBuy.BL.InventoryApprovalService).GetField("_events",
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!;
+            Assert.Same(services.GetRequiredService<IBusinessEventService>(), recorder.GetValue(inventory));
+            Assert.Contains(services.GetServices<IModuleAccessService>(), m => m.Scope == EntityRegistry.ScopeInventory);
+            Assert.IsType<CrossBuy.BL.TaskReadAuthorizer>(services.GetRequiredService<CrossBuy.BL.ITaskReadAuthorizer>());
+            Assert.IsType<TaskSourceVisibility>(services.GetRequiredService<ITaskSourceVisibility>());
+        }
+
         //
         // A second defect survived it: TasksAccessService took IPlatformPermissionProvider, whose adapters take
         // IEnumerable<IModuleAccessService> — which contains TasksAccessService. ValidateOnBuild validates call
@@ -199,20 +242,20 @@ namespace CrossBuy.Tests
             // If the provider↔module cycle came back, this line never returns.
             var modules = scope.ServiceProvider.GetServices<IModuleAccessService>().ToList();
 
-            // The six this container registers: Accounting (needed by Projects) + the four Batch C modules
-            // + Calendar. Inventory/CRM/POS are deliberately absent — they are unchanged by Batch C and pulling
-            // them in would make this test about their graphs too.
+            // Seven authorities: the six prior modules plus Inventory, now required by its approval service.
+            // CRM and POS remain outside this graph.
             //
             // The count is still EXACT, and is still followed by a Contains per module: a new access service
             // that is silently dropped from the container fails here, which is the property this line exists
             // for. Calendar was added when CalendarAccessService was written, not afterwards.
-            Assert.Equal(6, modules.Count);
+            Assert.Equal(7, modules.Count);
             Assert.Contains(modules, m => m.Scope == EntityRegistry.ScopeAccounting);
             Assert.Contains(modules, m => m.Scope == EntityRegistry.ScopeHr);
             Assert.Contains(modules, m => m.Scope == EntityRegistry.ScopeProjects);
             Assert.Contains(modules, m => m.Scope == EntityRegistry.ScopeTasks);
             Assert.Contains(modules, m => m.Scope == EntityRegistry.ScopeCommunication);
             Assert.Contains(modules, m => m.Scope == EntityRegistry.ScopeCalendar);
+            Assert.Contains(modules, m => m.Scope == EntityRegistry.ScopeInventory);
 
             // …and the lazily-resolved provider still works once construction is done.
             var tasks = scope.ServiceProvider.GetRequiredService<CrossBuy.BL.TasksAccessService>();

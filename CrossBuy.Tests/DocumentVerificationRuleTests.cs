@@ -407,9 +407,6 @@ namespace CrossBuy.Tests
             var assembly = typeof(ITaskOrchestrationRule).Assembly;
             foreach (var absent in new[]
             {
-                "CrossBuy.BL.Platform.Orchestration.LeaveApprovalRule",
-                "CrossBuy.BL.Platform.Orchestration.EmployeeRequestApprovalRule",
-                "CrossBuy.BL.Platform.Orchestration.InventoryApprovalRule",
                 "CrossBuy.BL.Platform.Orchestration.ProjectBillingApprovalRule",
                 "CrossBuy.BL.Platform.Orchestration.DocumentResubmissionRule",
                 "CrossBuy.BL.Platform.Orchestration.CrmOrchestrationRules",
@@ -422,6 +419,9 @@ namespace CrossBuy.Tests
             // The two that ARE here.
             Assert.NotNull(assembly.GetType("CrossBuy.BL.Platform.Orchestration.DocumentVerificationRule"));
             Assert.NotNull(assembly.GetType("CrossBuy.BL.Platform.Orchestration.ProjectMilestoneOrchestrationRule"));
+            // The later convergence wave brought these with their own producers and tests.
+            foreach (var present in new[] { "LeaveApprovalRule", "EmployeeRequestApprovalRule", "InventoryApprovalRule" })
+                Assert.NotNull(assembly.GetType("CrossBuy.BL.Platform.Orchestration." + present));
         }
 
         [Fact] // T15 - the Stage-4 invariant is about HOLD columns, and is untouched by a rule

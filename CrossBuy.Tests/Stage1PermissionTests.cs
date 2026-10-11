@@ -541,7 +541,9 @@ namespace CrossBuy.Tests
         {
             using var host = new PlatformTestHost();
 
-            Assert.Equal(new[] { "read", "post", "pay", "manage", "currency-override" }, Accounting(host).Actions);
+            Assert.Equal(new[] { "read", "post", "pay", "manage", "currency-override",
+                "period-close", "period-reopen", "report-read", "profitability-report-read",
+                "customer-document-upload", "customer-document-publish" }, Accounting(host).Actions);
             Assert.Equal(new[] { "read", "doc", "purchase", "manage" }, Inventory(host).Actions);
             Assert.Equal(new[] { "read", "edit", "manage" }, Crm(host).Actions);
             Assert.Equal(new[] { "view", "sell", "order", "kitchen", "manage" }, Pos(host).Actions);

@@ -154,6 +154,31 @@ namespace CrossBuy.BL
 			_access = access; _hierarchy = hierarchy;
 		}
 
+        private readonly ITaskReadAuthorizer? _readAuth;
+        public TaskService(CrossDbContext db,
+            CrossBuy.BL.TasksCalendar.ITaskCalendarEventPublisher events,
+            CrossBuy.BL.TasksCalendar.ITaskNotificationService notify,
+            ITaskReadAuthorizer readAuth) : this(db, events, notify) { _readAuth = readAuth; }
+
+        public TaskService(CrossDbContext db,
+            CrossBuy.BL.TasksCalendar.ITaskCalendarEventPublisher events,
+            CrossBuy.BL.TasksCalendar.ITaskNotificationService notify,
+            CrossBuy.BL.Platform.IBusinessEventService businessEvents,
+            CrossBuy.BL.Platform.IBusinessContextAccessor contexts,
+            ITasksAccessService access, CrossBuy.BL.Platform.IOrgHierarchy hierarchy,
+            ITaskReadAuthorizer readAuth)
+            : this(db, events, notify, businessEvents, contexts, access, hierarchy) { _readAuth = readAuth; }
+
+        private async Task<IQueryable<TaskItem>> AuthorizedBaseAsync(int companyId)
+        {
+            var query = _db.TaskItems.AsNoTracking().Where(t => t.CompanyId == companyId);
+            if (_readAuth == null) return query;
+            var authorization = await _readAuth.ForListAsync();
+            if (authorization == null || authorization.Context.CompanyId != companyId)
+                return query.Where(_ => false);
+            return await _readAuth.ApplyAsync(query, authorization);
+        }
+
 		private static readonly string[] Priorities = { "Low", "Normal", "High", "Urgent" };
 		private static readonly string[] Statuses = { "New", "InProgress", "Done" };
 		// allowed status transitions (New↔InProgress, InProgress→Done, Done→InProgress reopen, quick New→Done)
@@ -165,9 +190,9 @@ namespace CrossBuy.BL
 		};
 
 		// shared WHERE builder for list + count (same filters → consistent paging). `view` = quick status/priority tab.
-		private IQueryable<TaskItem> Filter(int companyId, string scope, int currentEmployeeId, string? status, string? priority, string? q, string? view = null, int? assignee = null)
+		private async Task<IQueryable<TaskItem>> Filter(int companyId, string scope, int currentEmployeeId, string? status, string? priority, string? q, string? view = null, int? assignee = null)
 		{
-			var query = _db.TaskItems.AsNoTracking().Where(t => t.CompanyId == companyId);
+			var query = await AuthorizedBaseAsync(companyId);
 			if (scope == "mine") query = query.Where(t => t.AssigneeEmployeeId == currentEmployeeId);
 			if (assignee.HasValue && assignee.Value > 0) query = query.Where(t => t.AssigneeEmployeeId == assignee.Value);
 			if (!string.IsNullOrWhiteSpace(status)) query = query.Where(t => t.Status == status);
@@ -192,13 +217,13 @@ namespace CrossBuy.BL
 			return query;
 		}
 
-		public Task<int> CountTasksAsync(int companyId, string scope, int currentEmployeeId, string? status, string? priority, string? q, string? view = null, int? assignee = null)
-			=> Filter(companyId, scope, currentEmployeeId, status, priority, q, view, assignee).CountAsync();
+		public async Task<int> CountTasksAsync(int companyId, string scope, int currentEmployeeId, string? status, string? priority, string? q, string? view = null, int? assignee = null)
+			=> await (await Filter(companyId, scope, currentEmployeeId, status, priority, q, view, assignee)).CountAsync();
 
 		public async Task<TaskKpiDto> GetKpisAsync(int companyId, string scope, int currentEmployeeId)
 		{
 			var now = DateTime.Now;
-			var q = _db.TaskItems.AsNoTracking().Where(t => t.CompanyId == companyId);
+			var q = await AuthorizedBaseAsync(companyId);
 			if (scope == "mine") q = q.Where(t => t.AssigneeEmployeeId == currentEmployeeId);
 			var rows = await q.Select(t => new { t.Status, t.Priority, t.DueDate }).ToListAsync();
 			return new TaskKpiDto
@@ -215,7 +240,7 @@ namespace CrossBuy.BL
 		{
 			if (page < 1) page = 1;
 			if (pageSize < 1 || pageSize > 200) pageSize = 25;
-			var baseQ = Filter(companyId, scope, currentEmployeeId, status, priority, q, view, assignee);
+			var baseQ = await Filter(companyId, scope, currentEmployeeId, status, priority, q, view, assignee);
 			// column sort (the header chevrons); "col_desc" = descending. Default = smart open-first ordering.
 			bool desc = sort != null && sort.EndsWith("_desc");
 			string col = sort?.Replace("_desc", "").Replace("_asc", "") ?? "";
@@ -285,7 +310,7 @@ namespace CrossBuy.BL
 		}
 
 		public async Task<TaskItem?> GetAsync(int companyId, int id) =>
-			await _db.TaskItems.AsNoTracking().FirstOrDefaultAsync(t => t.ID == id && t.CompanyId == companyId);
+			await (await AuthorizedBaseAsync(companyId)).FirstOrDefaultAsync(t => t.ID == id);
 
 		public async Task<(bool ok, string? error, int id)> SaveAsync(int companyId, TaskSaveInput input, int currentEmployeeId)
 		{

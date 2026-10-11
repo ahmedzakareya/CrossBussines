@@ -1,4 +1,4 @@
-﻿using CrossBuy.BL;
+using CrossBuy.BL;
 using CrossBuy.BL.Platform;    // Client Portal: AddCrossBuyPortalAuthentication()
 using CrossBuy.BL.Reporting;   // ADR-037: AddCrossBusinessReporting()
 using CrossBuy.BL.Workspace;   // CrossBusiness Workspace: AddCrossBusinessWorkspace()
@@ -408,6 +408,13 @@ builder.Services.AddScoped<IProjectsAccessService>(sp => sp.GetRequiredService<P
 builder.Services.AddScoped<CrossBuy.BL.Platform.IModuleAccessService>(sp => sp.GetRequiredService<ProjectsAccessService>());
 builder.Services.AddScoped<ILeaveWorkflowService, LeaveWorkflowService>();
 builder.Services.AddScoped<IEmployeeRequestService, EmployeeRequestService>();
+// Approval convergence: committed HR and Inventory producers and their rules.
+builder.Services.AddScoped<CrossBuy.BL.Platform.Orchestration.ITaskOrchestrationRule, CrossBuy.BL.Platform.Orchestration.InventoryApprovalRule>();
+builder.Services.AddScoped<CrossBuy.BL.Platform.Orchestration.ITaskOrchestrationRule, CrossBuy.BL.Platform.Orchestration.LeaveApprovalRule>();
+builder.Services.AddScoped<CrossBuy.BL.Platform.Orchestration.ITaskOrchestrationRule, CrossBuy.BL.Platform.Orchestration.LeaveApprovalAdvanceCloseRule>();
+builder.Services.AddScoped<CrossBuy.BL.Platform.Orchestration.ITaskOrchestrationRule, CrossBuy.BL.Platform.Orchestration.EmployeeRequestApprovalRule>();
+builder.Services.AddScoped<CrossBuy.BL.Platform.Orchestration.ITaskOrchestrationRule, CrossBuy.BL.Platform.Orchestration.EmployeeRequestApprovalAdvanceCloseRule>();
+
 builder.Services.AddScoped<IAppraisalService, AppraisalService>();
 builder.Services.AddScoped<ITrainingService, TrainingService>();
 builder.Services.AddScoped<IBrandService, BrandService>();
@@ -573,6 +580,14 @@ builder.Services.AddScoped<CrossBuy.BL.Platform.IModuleAccessService>(sp => sp.G
 // constructor and every Hold operation would refuse with "Hold operations require the business event
 // service" - a capability switching itself off with no startup error and no symptom until somebody
 // tried to pause a task. Naming them here turns that into a container-build failure instead.
+// Source authorization for the converged Inventory approval work. Project billing is not activated.
+builder.Services.AddScoped<CrossBuy.BL.Platform.ITaskSourceVisibilityProvider, CrossBuy.BL.Platform.InventoryApprovalTaskVisibilityProvider>();
+builder.Services.AddScoped<CrossBuy.BL.Platform.ITaskSourceReadEntranceProvider, CrossBuy.BL.Platform.InventoryApprovalTaskVisibilityProvider>();
+builder.Services.AddScoped<CrossBuy.BL.Platform.ITaskSourceVisibility, CrossBuy.BL.Platform.TaskSourceVisibility>();
+builder.Services.AddScoped<CrossBuy.BL.Platform.ITaskSourceReadEntrance, CrossBuy.BL.Platform.TaskSourceReadEntrance>();
+builder.Services.AddScoped<Func<CrossBuy.BL.Platform.ITaskSourceVisibility>>(sp => () => sp.GetRequiredService<CrossBuy.BL.Platform.ITaskSourceVisibility>());
+builder.Services.AddScoped<Func<CrossBuy.BL.Platform.ITaskSourceReadEntrance>>(sp => () => sp.GetRequiredService<CrossBuy.BL.Platform.ITaskSourceReadEntrance>());
+builder.Services.AddScoped<ITaskReadAuthorizer, TaskReadAuthorizer>();
 builder.Services.AddScoped<ITaskService>(sp => new TaskService(
     sp.GetRequiredService<CrossBuy.Models.Context.CrossDbContext>(),
     sp.GetRequiredService<CrossBuy.BL.TasksCalendar.ITaskCalendarEventPublisher>(),
@@ -580,7 +595,8 @@ builder.Services.AddScoped<ITaskService>(sp => new TaskService(
     sp.GetRequiredService<CrossBuy.BL.Platform.IBusinessEventService>(),
     sp.GetRequiredService<CrossBuy.BL.Platform.IBusinessContextAccessor>(),
     sp.GetRequiredService<CrossBuy.BL.ITasksAccessService>(),
-    sp.GetRequiredService<CrossBuy.BL.Platform.IOrgHierarchy>()));
+    sp.GetRequiredService<CrossBuy.BL.Platform.IOrgHierarchy>(),
+    sp.GetRequiredService<ITaskReadAuthorizer>()));
 builder.Services.AddScoped<ITaskLinkResolver, TaskLinkResolver>();   // TM-2: polymorphic record link
 builder.Services.AddScoped<ITimesheetService, TimesheetService>();   // TM-3: timesheet
 builder.Services.AddScoped<IEmployeeCostService, EmployeeCostService>();   // TM-4: shared hourly cost

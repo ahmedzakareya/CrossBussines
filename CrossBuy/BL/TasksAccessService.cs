@@ -85,10 +85,37 @@ namespace CrossBuy.BL
         //
         // Note that `ValidateOnBuild` did NOT catch this: it validates call sites without recursing through
         // IEnumerable<T>. Only RESOLVING the collection does — which is what Stage1DiWiringTests now asserts.
+        // SOURCE-RECORD VISIBILITY, as a Func for exactly the reason the permission provider is one: the
+        // object graph behind it reaches other IModuleAccessService instances, and this class IS one.
+        // Deferring resolution past construction is what keeps startup from hanging on a cycle.
+        //
+        // OPTIONAL so the two existing construction sites keep compiling, and null means the check is not
+        // available rather than that it passed - see the call site, which treats an absent visibility
+        // service as 'no provider registered', the same answer it gets for a type nobody guards.
+        private readonly Func<ITaskSourceVisibility>? _sources;
+
+        // SHF-85 — SOURCE-EXPLICIT TASK READ ENTRANCE, and the only thing that entry authorises here.
+        //
+        // Some work names NOBODY on purpose. An inventory approval is authorised by whoever holds the role
+        // minus the person who requested it, so there is no individual to write onto the task when it is
+        // created, and AssigneeEmployeeId and CreatedByEmployeeId are both 0. Every breadth this service
+        // resolves tests one of those two columns or the whole tenant, so the people entitled to that work
+        // are excluded by Own and Team, and the only breadth that includes them - Company - includes every
+        // other task in the company too.
+        //
+        // This asks the ONE question that closes that gap: has a source which explicitly opted into entrance
+        // named this exact record for this caller. It grants READ and nothing else, it is consulted only
+        // after the company, linked-entity and source-visibility gates have already passed, and every
+        // uncertain answer is no. Deferred for the same construction-cycle reason as _sources, and optional
+        // for the same reason: absent means no entrance, never an entrance that passed.
+        private readonly Func<ITaskSourceReadEntrance>? _entrance;
+
         public TasksAccessService(
             CrossDbContext db, IPlatformRoleDirectory roles, IOrgHierarchy org,
-            Func<IPlatformPermissionProvider> permissions, ILogger<TasksAccessService> log) : base(roles, log)
-        { _db = db; _org = org; _permissions = permissions; _log = log; }
+            Func<IPlatformPermissionProvider> permissions, ILogger<TasksAccessService> log,
+            Func<ITaskSourceVisibility>? sources = null,
+            Func<ITaskSourceReadEntrance>? entrance = null) : base(roles, log)
+        { _db = db; _org = org; _permissions = permissions; _log = log; _sources = sources; _entrance = entrance; }
 
         public override string Scope => EntityRegistry.ScopeTasks;
         public override IReadOnlyCollection<string> Actions => TasksActions.All;
@@ -152,6 +179,32 @@ namespace CrossBuy.BL
                 }
             }
 
+            // ---- and the SAME source-record eligibility the LIST applies ----
+            //
+            // Without this the detail page would be weaker than the list it opens from, which is the classic
+            // shape of this bug: filter the rows, forget the row. A caller who cannot see a billing approval
+            // in any list must not reach it by typing its task id either.
+            //
+            // It is asked ONLY for types a provider guards. Everything else keeps the answer it had, because
+            // the platform View check above is already the rule for those - see TaskSourceVisibility, whose
+            // header explains why registering a provider is how a module opts into the stricter treatment.
+            if (task.EntityType != null && task.EntityId is > 0 && _sources != null)
+            {
+                var probe = new[] { new CrossBuy.Models.Context.Tasks.TaskItem { ID = taskId, CompanyId = task.CompanyId, EntityType = task.EntityType, EntityId = task.EntityId } }
+                    .AsQueryable();
+                // The probe is a ONE-ROW in-memory queryable, so the same predicate the list composes in SQL is
+                // evaluated here against a single row. Same code, same answer - not a second copy of the rule.
+                var allowed = (await _sources().RestrictAsync(probe, context, cancellationToken)).Any();
+                if (!allowed)
+                {
+                    _log.LogInformation(
+                        "Tasks: '{Action}' on task {Task} denied - the caller is not eligible for the linked " +
+                        "{EntityType} {EntityId} it represents.",
+                        action, taskId, task.EntityType, task.EntityId);
+                    return false;
+                }
+            }
+
             if (companyWide) return true;
 
             // ---- record-level, in order of strength ----
@@ -168,6 +221,27 @@ namespace CrossBuy.BL
             }
 
             bool related = isAssignee || isCreator || managesAssignee;
+
+            // ---- SHF-85: source-explicit entrance, READ only ----
+            //
+            // Placed HERE deliberately, and the position is the whole safety argument. Everything above has
+            // already run: the task's own CompanyId was checked against the context, IPlatformPermissionProvider
+            // allowed the linked entity, and ITaskSourceVisibility did not refuse the row. So this can only
+            // admit a task those three already permit — it relaxes none of them, and a caller refused by any
+            // of them never reaches this line.
+            //
+            // READ ONLY. It is not consulted for edit, complete, reopen, reassign, assign or manage: being
+            // entitled to REVIEW work that names nobody is not being entitled to reassign it, and the switch
+            // below still governs all of those exactly as before.
+            if (action == TasksActions.Read && !related && !companyWide && _entrance != null
+                && await _entrance().AdmitsAsync(context, task.EntityType, task.EntityId, cancellationToken))
+            {
+                _log.LogInformation(
+                    "Tasks: read on task {Task} admitted by its source. Employee {Employee} holds no task " +
+                    "breadth covering it, and the {EntityType} {EntityId} it represents named them.",
+                    taskId, me, task.EntityType, task.EntityId);
+                return true;
+            }
 
             // Bootstrap-open still requires a RELATIONSHIP for a specific task. This is the one place the
             // compatibility rule is deliberately narrower than "behave as today": before this batch every
