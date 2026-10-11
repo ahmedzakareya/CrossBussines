@@ -386,13 +386,14 @@ namespace CrossBuy.Tests
         [Fact]
         public void No_business_rule_ships_in_stage_four()
         {
-            // Each rule lands with its module's qualified producer. Document verification, HR and
-            // Inventory are now converged. The unrelated donor rules remain absent and are pinned below.
+            // Each rule lands with its module's qualified producer. Document verification, HR,
+            // Inventory and now ProjectBilling are converged. The unrelated donor rules remain absent
+            // and are pinned below.
             var assembly = typeof(ITaskOrchestrationRule).Assembly;
             foreach (var rule in new[]
             {
                 "CrmFollowUpRule", "DocumentResubmissionRule",
-                "ManufWorkOrderExecutionRule", "PosShortageRule", "ProjectBillingApprovalRule",
+                "ManufWorkOrderExecutionRule", "PosShortageRule",
             })
                 Assert.Null(assembly.GetType("CrossBuy.BL.Platform.Orchestration." + rule));
 
@@ -402,6 +403,16 @@ namespace CrossBuy.Tests
             // HR and Inventory arrived with their transactional producers in the integration wave.
             foreach (var present in new[] { "EmployeeRequestApprovalRule", "InventoryApprovalRule", "LeaveApprovalRule" })
                 Assert.NotNull(assembly.GetType("CrossBuy.BL.Platform.Orchestration." + present));
+
+            // ProjectBilling moved out of the absent list in WORK-PREREQUISITES-03. It consumes a
+            // contract ProgressBillingService already emitted inside its own transaction, so nothing in
+            // the producing module changed to enable it - which is the same bar every rule above met.
+            Assert.NotNull(assembly.GetType("CrossBuy.BL.Platform.Orchestration.ProjectBillingApprovalRule"));
+
+            // STAGE 4'S OWN CLAIM IS UNDISTURBED: the engine still ships no rule of its own, and a rule
+            // is a separate type from the engine that runs it.
+            foreach (var engineType in new[] { "TaskOrchestrationService", "TaskWorkPolicy" })
+                Assert.NotNull(assembly.GetType("CrossBuy.BL.Platform.Orchestration." + engineType));
         }
 
         [Fact]

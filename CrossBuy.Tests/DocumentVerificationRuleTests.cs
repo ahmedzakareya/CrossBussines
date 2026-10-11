@@ -407,21 +407,27 @@ namespace CrossBuy.Tests
             var assembly = typeof(ITaskOrchestrationRule).Assembly;
             foreach (var absent in new[]
             {
-                "CrossBuy.BL.Platform.Orchestration.ProjectBillingApprovalRule",
                 "CrossBuy.BL.Platform.Orchestration.DocumentResubmissionRule",
                 "CrossBuy.BL.Platform.Orchestration.CrmOrchestrationRules",
                 "CrossBuy.BL.Platform.Orchestration.ManufWorkOrderExecutionRule",
                 "CrossBuy.BL.Platform.Orchestration.PosShortageRule",
-                "CrossBuy.BL.TasksCalendar.TaskApprovalProjection",
             })
                 Assert.Null(assembly.GetType(absent));
 
-            // The two that ARE here.
+            // The two this wave shipped with.
             Assert.NotNull(assembly.GetType("CrossBuy.BL.Platform.Orchestration.DocumentVerificationRule"));
             Assert.NotNull(assembly.GetType("CrossBuy.BL.Platform.Orchestration.ProjectMilestoneOrchestrationRule"));
-            // The later convergence wave brought these with their own producers and tests.
+
+            // The later convergence wave brought these three with their own producers and tests.
             foreach (var present in new[] { "LeaveApprovalRule", "EmployeeRequestApprovalRule", "InventoryApprovalRule" })
                 Assert.NotNull(assembly.GetType("CrossBuy.BL.Platform.Orchestration." + present));
+
+            // AND WORK-PREREQUISITES-03 BROUGHT THESE TWO, which is why they moved out of the absent
+            // list above rather than being deleted from it: the projection composes its five prefixes
+            // from the five rules, so it could not land before the fifth did. Asserted POSITIVELY so a
+            // later removal fails here instead of silently going green.
+            Assert.NotNull(assembly.GetType("CrossBuy.BL.Platform.Orchestration.ProjectBillingApprovalRule"));
+            Assert.NotNull(assembly.GetType("CrossBuy.BL.TasksCalendar.TaskApprovalProjection"));
         }
 
         [Fact] // T15 - the Stage-4 invariant is about HOLD columns, and is untouched by a rule

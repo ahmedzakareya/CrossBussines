@@ -243,10 +243,21 @@ namespace CrossBuy.Tests
         [Fact]
         public void The_work_pack_did_not_land_and_work_calendar_is_nowhere()
         {
-            // HOLD and the escalation set query now exist. The remaining Work prerequisite is
-            // TaskApprovalProjection; ProjectBillingApprovalRule is also not converged here.
-            // The Work pack stays unregistered. These compiled-type checks pin the actual boundary
-            // rather than depending on text searches for names that may survive only in comments.
+            // THE PREREQUISITES ARE NOW COMPLETE AND THE PACK IS STILL NOT HERE, which is a different
+            // boundary from the one this test used to pin and is stated POSITIVELY so it cannot rot
+            // the same way twice.
+            //
+            // WHAT CHANGED. Hold and the escalation set query landed first; WORK-PREREQUISITES-03 then
+            // converged ProjectBillingApprovalRule and TaskApprovalProjection, so the five approval
+            // rules the projection composes its prefixes from all exist. Asserting their ABSENCE was
+            // correct when written and is now false, so it is replaced rather than deleted - an
+            // assertion that merely stopped mentioning them could not tell "the prerequisites landed"
+            // from "somebody removed the line to go green".
+            //
+            // WHAT HAS NOT CHANGED. No Work DATASET, data source or registration exists, and the pack
+            // stays unregistered: a prerequisite is not an activation. These compiled-type checks pin
+            // that boundary rather than depending on text searches for names that may survive only in
+            // comments.
             Assert.NotNull(typeof(CrossBuy.Models.Context.Tasks.TaskItem).GetProperty("HoldApprovedAtUtc"));
             Assert.NotNull(typeof(CrossBuy.BL.TasksCalendar.ITaskEscalationService)
                 .GetMethod("CurrentlyEscalatedTaskIdsAsync"));
@@ -254,7 +265,8 @@ namespace CrossBuy.Tests
             Assert.NotNull(reporting.GetType("CrossBuy.BL.Platform.Orchestration.LeaveApprovalRule"));
             Assert.NotNull(reporting.GetType("CrossBuy.BL.Platform.Orchestration.EmployeeRequestApprovalRule"));
             Assert.NotNull(reporting.GetType("CrossBuy.BL.Platform.Orchestration.InventoryApprovalRule"));
-            Assert.Null(reporting.GetType("CrossBuy.BL.Platform.Orchestration.ProjectBillingApprovalRule"));
+            Assert.NotNull(reporting.GetType("CrossBuy.BL.Platform.Orchestration.ProjectBillingApprovalRule"));
+            Assert.NotNull(reporting.GetType("CrossBuy.BL.TasksCalendar.TaskApprovalProjection"));
             foreach (var absent in new[]
             {
                 "CrossBuy.BL.Reporting.WorkReportingDatasets",
@@ -263,7 +275,6 @@ namespace CrossBuy.Tests
                 "CrossBuy.BL.Reporting.WorkCalendarDataSource",
                 "CrossBuy.BL.Reporting.WorkEscalationsDataSource",
                 "CrossBuy.BL.Reporting.WorkApprovalsDataSource",
-                "CrossBuy.BL.TasksCalendar.TaskApprovalProjection",
             })
                 Assert.Null(reporting.GetType(absent));
 
