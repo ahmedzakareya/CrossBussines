@@ -111,10 +111,14 @@ namespace CrossBuy.BL.Portal
                 join d in _db.Set<PlatformDocument>().AsNoTracking()
                     on p.PlatformDocumentId equals d.Id
                 where d.CompanyID == portal.CompanyId
+                      && d.EntityType == EntityRegistry.Customer
+                      && d.EntityId == portal.CustomerId
+                      && d.Confidentiality == DocumentConfidentiality.Internal
                       && d.Status == ActiveStatus
                       && d.CurrentVersionId != null
                 join v in _db.Set<PlatformDocumentVersion>().AsNoTracking()
                     on d.CurrentVersionId equals v.Id
+                where v.CompanyID == portal.CompanyId && v.DocumentId == d.Id
                 orderby p.PublishedAt descending, p.Id descending
                 select new PortalDocumentDto
                 {
@@ -150,10 +154,14 @@ namespace CrossBuy.BL.Portal
                 join d in _db.Set<PlatformDocument>().AsNoTracking()
                     on p.PlatformDocumentId equals d.Id
                 where d.CompanyID == portal.CompanyId
+                      && d.EntityType == EntityRegistry.Customer
+                      && d.EntityId == portal.CustomerId
+                      && d.Confidentiality == DocumentConfidentiality.Internal
                       && d.Status == ActiveStatus
                       && d.CurrentVersionId != null
                 join v in _db.Set<PlatformDocumentVersion>().AsNoTracking()
                     on d.CurrentVersionId equals v.Id
+                where v.CompanyID == portal.CompanyId && v.DocumentId == d.Id
                 select new { v.StorageKey, v.FileName, v.ContentType })
                 .FirstOrDefaultAsync(cancellationToken);
 

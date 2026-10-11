@@ -110,8 +110,8 @@ namespace CrossBuy.Tests.Portal
             var doc = new PlatformDocument
             {
                 CompanyID = companyId,
-                EntityType = "SalesInvoice",
-                EntityId = 1,
+                EntityType = EntityRegistry.Customer,
+                EntityId = CustomerAcme,
                 Confidentiality = "Internal",
                 Status = status,
                 IssueDate = DateTime.UtcNow.AddDays(-10),
