@@ -140,6 +140,155 @@
         </div>
     }
 
+    @* ==============================================================================
+       ON HOLD / SLA PAUSE.
+
+       FUNCTIONAL CONTROLS ONLY. The same notice shape as the two banners above - dashed border,
+       icon tile, heading, body. No new component, no new colour, no view-local stylesheet.
+
+       THE STATE IS DERIVED FROM TWO TIMESTAMPS, exactly as the server derives it. There is no hold
+       status on the row to read, and this view does not invent one:
+         requested set, approved null -> HOLD REQUESTED (the SLA is still running)
+         approved set                 -> ON HOLD        (the sweeps are paused)
+
+       WHAT IS SHOWN TO WHOM. Requesting is an ordinary act on your own work, so the request form is
+       offered whenever the task is live and normal. Deciding is not: approve, reject, direct-hold
+       and resume appear only when the server has already answered that this caller may decide.
+       HIDING A BUTTON IS NOT AUTHORIZATION - every one of these posts is refused again on the
+       server - it simply stops the screen offering work that would be refused.
+
+       THE REASON IS SHOWN HERE AND NOWHERE ELSE. It reaches this page only because the caller
+       already passed the task's own read gate; it is never put in a URL, a notification key or a
+       title.
+       ============================================================================== *@
+    @if (t != null)
+    {
+        var holdState = TaskStatuses.HoldState(t.HoldRequestedAtUtc, t.HoldApprovedAtUtc);
+        var canDecideHold = ViewBag.CanDecideHold is bool cdh && cdh;
+        var holdIsLive = !TaskStatuses.IsTerminal(t.Status);
+
+        if (holdState == TaskStatuses.HoldStateOnHold)
+        {
+            var heldSince = t.HoldApprovedAtUtc.GetValueOrDefault().ToString("yyyy-MM-dd HH:mm");
+            <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-6 mb-5" data-cb-hold-state="OnHold">
+                <span class="symbol symbol-45px me-5 flex-shrink-0"><span class="symbol-label bg-primary">
+                    <i class="ki-outline ki-time fs-2x text-white"></i></span></span>
+                <div class="d-flex flex-stack flex-grow-1 flex-wrap flex-md-nowrap">
+                    <div class="mb-3 mb-md-0 fw-semibold pe-5">
+                        <h4 class="text-gray-900 fw-bold mb-1">@T("معلّقة", "On hold")</h4>
+                        <div class="fs-6 text-gray-700">
+                            @T("الاستحقاق متوقف مؤقتًا منذ", "The deadline has been paused since")
+                            <span class="fw-semibold">@heldSince</span>
+                            @if (!string.IsNullOrWhiteSpace(t.HoldReason))
+                            {
+                                <text> — </text><span class="fw-semibold">@t.HoldReason</span>
+                            }
+                        </div>
+                    </div>
+                    @if (canDecideHold)
+                    {
+                        <form method="post" action="/Tasks/ResumeHold" class="flex-shrink-0">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@t.ID" />
+                            <button type="submit" class="btn btn-sm btn-primary">
+                                <i class="ki-outline ki-arrow-right fs-2"></i>@T("استئناف", "Resume")</button>
+                        </form>
+                    }
+                </div>
+            </div>
+        }
+        else if (holdState == TaskStatuses.HoldStateRequested)
+        {
+            <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-6 mb-5" data-cb-hold-state="HoldRequested">
+                <span class="symbol symbol-45px me-5 flex-shrink-0"><span class="symbol-label bg-primary">
+                    <i class="ki-outline ki-questionnaire-tablet fs-2x text-white"></i></span></span>
+                <div class="d-flex flex-stack flex-grow-1 flex-wrap flex-md-nowrap">
+                    <div class="mb-3 mb-md-0 fw-semibold pe-5">
+                        <h4 class="text-gray-900 fw-bold mb-1">@T("طلب تعليق قيد المراجعة", "Hold requested")</h4>
+                        <div class="fs-6 text-gray-700">
+                            @* Stated, because it is the thing people get wrong about this state. *@
+                            @T("الاستحقاق ما زال ساريًا حتى تتم الموافقة.", "The deadline keeps running until this is approved.")
+                            @if (!string.IsNullOrWhiteSpace(t.HoldReason))
+                            {
+                                <text> — </text><span class="fw-semibold">@t.HoldReason</span>
+                            }
+                        </div>
+                    </div>
+                    @if (canDecideHold)
+                    {
+                        <div class="d-flex gap-2 flex-shrink-0">
+                            <form method="post" action="/Tasks/ApproveHold">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@t.ID" />
+                                <button type="submit" class="btn btn-sm btn-primary">
+                                    <i class="ki-outline ki-check fs-2"></i>@T("موافقة", "Approve")</button>
+                            </form>
+                            <form method="post" action="/Tasks/RejectHold">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@t.ID" />
+                                <button type="submit" class="btn btn-sm btn-light">
+                                    <i class="ki-outline ki-cross fs-2"></i>@T("رفض", "Reject")</button>
+                            </form>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+        else if (holdIsLive)
+        {
+            @* NORMAL. The request form is collapsed behind its own button so a read of the task is not
+               dressed as a decision waiting to be made. The reason box is `required` in the browser AND
+               mandatory on the server - the attribute is a courtesy to the person typing, not the rule. *@
+            <div class="d-flex flex-wrap gap-2 mb-5">
+                <button type="button" class="btn btn-sm btn-light-primary" data-bs-toggle="collapse"
+                        data-bs-target="#cbHoldRequestForm" aria-expanded="false" aria-controls="cbHoldRequestForm">
+                    <i class="ki-outline ki-time fs-2"></i>@T("طلب تعليق", "Request hold")</button>
+                @if (canDecideHold)
+                {
+                    <button type="button" class="btn btn-sm btn-light" data-bs-toggle="collapse"
+                            data-bs-target="#cbDirectHoldForm" aria-expanded="false" aria-controls="cbDirectHoldForm">
+                        <i class="ki-outline ki-shield-tick fs-2"></i>@T("تعليق مباشر", "Place on hold")</button>
+                }
+            </div>
+
+            <div class="collapse mb-5" id="cbHoldRequestForm">
+                <form method="post" action="/Tasks/RequestHold" class="card card-flush border border-dashed">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@t.ID" />
+                    <div class="card-body py-4">
+                        <label class="form-label fs-7 fw-semibold text-gray-700" for="cbHoldReason">
+                            @T("سبب طلب التعليق", "Why this task needs to be paused")</label>
+                        <textarea id="cbHoldReason" name="reason" class="form-control form-control-sm form-control-solid"
+                                  rows="2" maxlength="500" required
+                                  placeholder="@T("السبب إلزامي", "A reason is required")"></textarea>
+                        <div class="d-flex justify-content-end mt-3">
+                            <button type="submit" class="btn btn-sm btn-primary">@T("إرسال الطلب", "Submit request")</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            @if (canDecideHold)
+            {
+                <div class="collapse mb-5" id="cbDirectHoldForm">
+                    <form method="post" action="/Tasks/ApproveHold" class="card card-flush border border-dashed">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@t.ID" />
+                        <div class="card-body py-4">
+                            <label class="form-label fs-7 fw-semibold text-gray-700" for="cbDirectHoldReason">
+                                @T("سبب التعليق", "Why you are pausing this task")</label>
+                            <textarea id="cbDirectHoldReason" name="reason" class="form-control form-control-sm form-control-solid"
+                                      rows="2" maxlength="500" required
+                                      placeholder="@T("السبب إلزامي", "A reason is required")"></textarea>
+                            <div class="d-flex justify-content-end mt-3">
+                                <button type="submit" class="btn btn-sm btn-primary">@T("تعليق المهمة", "Put on hold")</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            }
+        }
+    }
 
     <div class="row g-5">
         <div class="col-lg-4">

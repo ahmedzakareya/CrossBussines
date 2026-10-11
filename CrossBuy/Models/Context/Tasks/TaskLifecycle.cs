@@ -138,21 +138,33 @@ namespace CrossBuy.Models.Context.Tasks
             : requestedAtUtc != null ? HoldStateRequested
             : HoldStateNormal;
         // ----------------------------------------------------------------------------------------
-        // STAGE 3 CONVERGENCE SEAM - THREE OVERLOADS ARE DELIBERATELY ABSENT.
+        // STAGE 3 CONVERGENCE SEAM - CLOSED BY THE HOLD STAGE.
         //
-        // This file is the programme line's TaskStatuses, imported verbatim except for the three
-        // members that read TaskItem.HoldApprovedAtUtc / HoldRequestedAtUtc. Those two columns belong
-        // to the Hold feature and do not exist on TaskItem here yet, so the overloads would not
-        // compile. Nothing was rewritten to make them fit: each omitted member is a whole method,
-        // and the parameter-taking twin of each one is present and byte-identical.
+        // Stage 3 imported this file verbatim EXCEPT for the three members below, because each reads
+        // TaskItem.HoldApprovedAtUtc / HoldRequestedAtUtc and those columns did not exist yet. The
+        // seam named them so they would be recognised as OWED rather than missing by accident:
         //
-        // OMITTED, AND OWNED BY THE HOLD STAGE:
         //   Expression<Func<TaskItem, bool>> SweepEligibleAt(DateTime)
         //   bool   IsSweepEligible(TaskItem, DateTime)
         //   string HoldState(TaskItem)
         //
-        // The Hold stage restores them together with the two columns, and this comment is how it
-        // knows they are owed rather than missing by accident.
+        // The Hold stage has now landed the five columns, so all three are restored here together
+        // with them. Each is byte-identical to its programme-line original, and each is a thin
+        // overload of the parameter-taking twin that has been present all along - so the rule has
+        // exactly one definition and these three only change its shape.
         // ----------------------------------------------------------------------------------------
+
+        /// The same overdue-and-not-paused rule, shaped for a DATABASE QUERY. TWINS ON PURPOSE: the
+        /// two sweeps filter in SQL and the screens ask in memory, and a hold exclusion that existed
+        /// in only one of them would be a pause that worked until somebody changed which side asked.
+        public static Expression<Func<TaskItem, bool>> SweepEligibleAt(DateTime now) =>
+            t => t.DueDate != null && t.DueDate < now && t.Status != Done && t.HoldApprovedAtUtc == null;
+
+        /// Convenience for callers that already hold the row.
+        public static bool IsSweepEligible(TaskItem task, DateTime now) =>
+            IsSweepEligible(task.DueDate, task.Status, task.HoldApprovedAtUtc, now);
+
+        public static string HoldState(TaskItem task) =>
+            HoldState(task.HoldRequestedAtUtc, task.HoldApprovedAtUtc);
     }
 }

@@ -425,17 +425,25 @@ namespace CrossBuy.Tests
         }
 
         [Fact] // T15 - the Stage-4 invariant is about HOLD columns, and is untouched by a rule
-        public void The_stage_four_hold_invariant_is_unaffected_by_adding_a_rule()
+        public void Adding_a_rule_changes_no_task_column()
         {
             var columns = _db.Model.FindEntityType(typeof(TaskItem))!
                 .GetProperties().Select(p => p.Name).ToHashSet(StringComparer.Ordinal);
 
-            foreach (var held in new[]
-            {
-                "HoldRequestedAtUtc", "HoldApprovedAtUtc", "HoldReason",
-                "EscalationLevel", "EscalatedAtUtc",
-            })
-                Assert.DoesNotContain(held, columns);
+            // WHAT THIS TEST IS ACTUALLY FOR, restated after the Hold stage landed. It was written to
+            // say "the document-verification wave added no task schema", and it said that by naming the
+            // columns that did not exist at the time. Five of those were the Hold columns, which the
+            // later authorized Hold wave added - with its own model, SQL artifact, service and UI. That
+            // is not this rule's doing and never was.
+            //
+            // So the claim is now made where it cannot go stale: the escalation-projection columns that
+            // NO wave has authorized are still absent, and the rule introduces nothing of its own.
+            foreach (var unauthorized in new[] { "EscalationLevel", "EscalatedAtUtc", "EscalatedForDueUtc" })
+                Assert.DoesNotContain(unauthorized, columns);
+
+            // Nothing document-shaped leaked onto the task either.
+            foreach (var invented in new[] { "DocumentId", "DocumentTypeCode", "VerificationState" })
+                Assert.DoesNotContain(invented, columns);
         }
     }
 }

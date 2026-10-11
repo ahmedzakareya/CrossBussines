@@ -43,5 +43,35 @@ namespace CrossBuy.Models.Context.Tasks
 		public DateTime? ExpectedFrom { get; set; }           // expected time window (optional, narrows matching)
 		public DateTime? ExpectedTo { get; set; }
 		public DateTime? MatchedAt { get; set; }              // set by TM-9-ب when auto-linked; null = still scheduled
+
+		// ON HOLD / SLA PAUSE. CURRENT STATE ONLY - who asked, who decided and why is recorded in
+		// Business Events, which is where this repository already keeps the history of what was done to
+		// a task. These five say what is true NOW.
+		//
+		// THERE IS NO OnHold STATUS, and that is the load-bearing decision. Status keeps New,
+		// InProgress and Done; ON HOLD is DERIVED from the nullability of the two timestamps, exactly
+		// as Overdue has always been derived rather than stored:
+		//
+		//     both null                       NORMAL
+		//     requested set, approved null    HOLD REQUESTED   (SLA still running)
+		//     approved set                    ON HOLD          (sweeps pause)
+		//
+		// A stored status would also enter the transition matrix, where every existing edge would have
+		// to answer what completing an on-hold task means.
+		//
+		// ALL FIVE NULLABLE AND DEFAULT-FREE: a default would turn every task that existed before this
+		// slice into a hold request nobody made. deploy/sql/tasks_hold.sql adds them the same way.
+		public DateTime? HoldRequestedAtUtc { get; set; }
+
+		public int? HoldRequestedByEmployeeId { get; set; }
+
+		// The reason the hold was asked for, or - on a direct manager hold, which writes no request
+		// pair - the reason the manager gave. Mandatory on BOTH paths, which is why the column itself
+		// stays nullable: the rule binds the write path, not the schema.
+		public string? HoldReason { get; set; }
+
+		public DateTime? HoldApprovedAtUtc { get; set; }
+
+		public int? HoldApprovedByEmployeeId { get; set; }
 	}
 }

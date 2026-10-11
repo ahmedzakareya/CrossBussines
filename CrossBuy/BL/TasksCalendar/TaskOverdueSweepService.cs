@@ -116,12 +116,13 @@ namespace CrossBuy.BL.TasksCalendar
 			// The whole entity, not a projection: the publisher builds its payload from the task's own
 			// fields (company, assignee) and its dedup key from the company and id. AsNoTracking still —
 			// this sweep observes a transition, it does not edit the task.
+			// SWEEP ELIGIBILITY, not plain overdue: the canonical rule now also excludes a task that is
+			// ACTIVELY ON HOLD. The task stays overdue everywhere it is READ - list, board, agenda,
+			// reports - because pausing stops this sweep from ACTING, it does not erase what happened.
+			// A pending request pauses nothing; only an approved hold does.
 			var candidates = await _db.TaskItems.AsNoTracking()
-				.Where(t => t.CompanyId == companyId
-							&& t.DueDate != null
-							&& t.DueDate < now
-							&& t.Status != "Done"
-							&& t.AssigneeEmployeeId > 0)
+				.Where(CrossBuy.Models.Context.Tasks.TaskStatuses.SweepEligibleAt(now))
+				.Where(t => t.CompanyId == companyId && t.AssigneeEmployeeId > 0)
 				.OrderBy(t => t.DueDate)
 				.Take(MaxPerSweep)
 				.ToListAsync(ct);

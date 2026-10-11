@@ -14,9 +14,9 @@
                      "different content, so \"apply \u003cname\u003e.sql\" is ambiguous."
                  ],
     "generatedFrom":  "repository scan",
-    "totalScripts":  136,
+    "totalScripts":  137,
     "counts":  {
-                   "guarded":  111,
+                   "guarded":  112,
                    "guardedByPredicate":  7,
                    "review":  2,
                    "notDeployable":  1,
@@ -1419,6 +1419,28 @@
                         "mutations":  [
                                           "create-table",
                                           "create-index"
+                                      ],
+                        "unguardedBatches":  [
+
+                                             ],
+                        "idempotency":  "guarded",
+                        "reviewVerdict":  null,
+                        "reviewEvidence":  null,
+                        "excludedFromDeploy":  false,
+                        "excludedReason":  null
+                    },
+                    {
+                        "path":  "CrossBuy/deploy/sql/tasks_hold.sql",
+                        "name":  "tasks_hold.sql",
+                        "bytes":  5319,
+                        "encoding":  "utf-8",
+                        "sha256":  "65838bfeb10d3c013ffe20a58d6b853dea592b181888e5a9bae4489768e14a58",
+                        "rank":  30,
+                        "guards":  [
+                                       "col-length"
+                                   ],
+                        "mutations":  [
+                                          "alter-add"
                                       ],
                         "unguardedBatches":  [
 

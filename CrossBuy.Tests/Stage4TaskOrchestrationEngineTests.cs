@@ -451,12 +451,48 @@ namespace CrossBuy.Tests
 
             var taskColumns = _db.Model.FindEntityType(typeof(TaskItem))!
                 .GetProperties().Select(p => p.Name).ToHashSet(StringComparer.Ordinal);
-            foreach (var held in new[]
+
+            // ---- NARROWED BY THE AUTHORIZED HOLD STAGE -------------------------------------------
+            //
+            // This assertion originally named five columns. It was never a product rejection of Hold -
+            // it was a SEQUENCING BOUNDARY, saying that STAGE 4 introduced no hold or escalation
+            // behaviour of its own, which remains true and is what the name still claims. Hold arrived
+            // later, through its own authorized wave, with its model, its SQL artifact, its service,
+            // its events and its UI together.
+            //
+            // THE TWO HALVES ARE NOT THE SAME CLAIM, and separating them is the point:
+            //
+            //   THE HOLD COLUMNS now EXIST, and the test says so POSITIVELY rather than falling silent
+            //   - an assertion that merely stopped mentioning them could not tell "the Hold stage
+            //     landed" from "somebody deleted the line to go green".
+            //
+            //   THE ESCALATION-PROJECTION COLUMNS are STILL ABSENT. EscalationLevel and EscalatedAtUtc
+            //   belong to a multi-level escalation feature that no wave has authorized; escalation on
+            //   this line is derived, with the notification as its only durable witness. So the
+            //   original boundary survives for exactly the half that was never granted.
+            foreach (var unauthorized in new[] { "EscalationLevel", "EscalatedAtUtc", "EscalatedForDueUtc" })
+                Assert.DoesNotContain(unauthorized, taskColumns);
+
+            foreach (var hold in new[]
             {
-                "HoldRequestedAtUtc", "HoldApprovedAtUtc", "HoldReason",
-                "EscalationLevel", "EscalatedAtUtc",
+                "HoldRequestedAtUtc", "HoldRequestedByEmployeeId", "HoldReason",
+                "HoldApprovedAtUtc", "HoldApprovedByEmployeeId",
             })
-                Assert.DoesNotContain(held, taskColumns);
+                Assert.Contains(hold, taskColumns);
+
+            // And Stage 4's own claim is re-stated where it can still fail: the engine, its contracts,
+            // the consumer and the work policy carry no hold concern at all.
+            foreach (var stageFourType in new[]
+            {
+                "CrossBuy.BL.Platform.Orchestration.TaskOrchestrationService",
+                "CrossBuy.BL.Platform.Orchestration.TaskWorkPolicy",
+                "CrossBuy.BL.Platform.Orchestration.TaskOrchestrationConsumer",
+            })
+            {
+                var type = assembly.GetType(stageFourType);
+                Assert.NotNull(type);
+                Assert.DoesNotContain(type!.GetMethods(), m => m.Name.Contains("Hold", StringComparison.Ordinal));
+            }
         }
     }
 }

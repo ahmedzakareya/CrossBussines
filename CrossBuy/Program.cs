@@ -564,7 +564,21 @@ builder.Services.AddScoped<CrossBuy.BL.Platform.IModuleAccessService>(sp => sp.G
 builder.Services.AddScoped<CrossBuy.BL.CommunicationAccessService>();
 builder.Services.AddScoped<CrossBuy.BL.ICommunicationAccessService>(sp => sp.GetRequiredService<CrossBuy.BL.CommunicationAccessService>());
 builder.Services.AddScoped<CrossBuy.BL.Platform.IModuleAccessService>(sp => sp.GetRequiredService<CrossBuy.BL.CommunicationAccessService>());
-builder.Services.AddScoped<ITaskService, TaskService>();   // TM-1: task management
+// TM-1: task management. CONSTRUCTED EXPLICITLY so the Hold dependencies cannot go missing quietly.
+//
+// TaskService has two constructors and .NET DI picks the greediest one it can SATISFY. If any of the
+// four Hold dependencies were ever unregistered, DI would silently fall back to the three-argument
+// constructor and every Hold operation would refuse with "Hold operations require the business event
+// service" - a capability switching itself off with no startup error and no symptom until somebody
+// tried to pause a task. Naming them here turns that into a container-build failure instead.
+builder.Services.AddScoped<ITaskService>(sp => new TaskService(
+    sp.GetRequiredService<CrossBuy.Models.Context.CrossDbContext>(),
+    sp.GetRequiredService<CrossBuy.BL.TasksCalendar.ITaskCalendarEventPublisher>(),
+    sp.GetRequiredService<CrossBuy.BL.TasksCalendar.ITaskNotificationService>(),
+    sp.GetRequiredService<CrossBuy.BL.Platform.IBusinessEventService>(),
+    sp.GetRequiredService<CrossBuy.BL.Platform.IBusinessContextAccessor>(),
+    sp.GetRequiredService<CrossBuy.BL.ITasksAccessService>(),
+    sp.GetRequiredService<CrossBuy.BL.Platform.IOrgHierarchy>()));
 builder.Services.AddScoped<ITaskLinkResolver, TaskLinkResolver>();   // TM-2: polymorphic record link
 builder.Services.AddScoped<ITimesheetService, TimesheetService>();   // TM-3: timesheet
 builder.Services.AddScoped<IEmployeeCostService, EmployeeCostService>();   // TM-4: shared hourly cost

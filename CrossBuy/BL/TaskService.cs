@@ -91,6 +91,22 @@ namespace CrossBuy.BL
 		/// The assignee picker. `companyId` is REQUIRED and is filtered in the query — see the
 		/// implementation for why this may not be done in the view.
 		Task<List<(int Id, string Name)>> ActiveEmployeesAsync(int companyId);
+
+		// ---- ON HOLD / SLA PAUSE -------------------------------------------------------------------
+		//
+		// FIVE OPERATIONS, FOUR EVENTS. Approving a request and a manager's own direct hold both end in
+		// ON HOLD and both record Task.HoldApproved, distinguished by `direct` in the payload; a fifth
+		// event type would describe one fact twice. They stay two methods because only one of them can
+		// be a self-approval.
+		Task<(bool ok, string? error)> RequestHoldAsync(int companyId, int id, int actorEmployeeId, string? reason, CancellationToken cancellationToken = default);
+		Task<(bool ok, string? error)> ApproveHoldAsync(int companyId, int id, int actorEmployeeId, CancellationToken cancellationToken = default);
+		Task<(bool ok, string? error)> RejectHoldAsync(int companyId, int id, int actorEmployeeId, string? decisionReason, CancellationToken cancellationToken = default);
+		Task<(bool ok, string? error)> DirectHoldAsync(int companyId, int id, int actorEmployeeId, string? reason, CancellationToken cancellationToken = default);
+		Task<(bool ok, string? error)> ResumeHoldAsync(int companyId, int id, int actorEmployeeId, CancellationToken cancellationToken = default);
+
+		/// The same authority question the operations ask, exposed so a screen can render the right
+		/// actions instead of offering ones the service will refuse.
+		Task<bool> CanDecideHoldAsync(int companyId, int id, int actorEmployeeId, CancellationToken cancellationToken = default);
 	}
 
 	public class TaskService : ITaskService
@@ -102,11 +118,40 @@ namespace CrossBuy.BL
 		private readonly CrossBuy.BL.TasksCalendar.ITaskCalendarEventPublisher _events;
 		private readonly CrossBuy.BL.TasksCalendar.ITaskNotificationService _notify;
 
+		// ---- HOLD DEPENDENCIES, ALL OPTIONAL ON PURPOSE --------------------------------------------
+		//
+		// Hold needs four things the rest of this service does not: who the caller really is, whether
+		// they hold Manage, who the assignee's manager is, and a durable place to record the decision.
+		// They arrive through a SECOND CONSTRUCTOR rather than by widening the existing one, so every
+		// existing call site - and every existing test - keeps compiling unchanged.
+		//
+		// NULL IS A REFUSAL, NEVER A BYPASS. A Hold operation whose dependencies are absent returns an
+		// error; it never proceeds on a weaker check. The events in particular are not optional in
+		// behaviour: the row keeps CURRENT state only, so who asked, who decided and why exists nowhere
+		// else, and a hold that cannot record its event must not happen.
+		private readonly CrossBuy.BL.Platform.IOrgHierarchy? _hierarchy;
+		private readonly CrossBuy.BL.Platform.IBusinessEventService? _businessEvents;
+		private readonly CrossBuy.BL.ITasksAccessService? _access;
+		private readonly CrossBuy.BL.Platform.IBusinessContextAccessor? _contexts;
+
 		public TaskService(CrossDbContext db,
 			CrossBuy.BL.TasksCalendar.ITaskCalendarEventPublisher events,
 			CrossBuy.BL.TasksCalendar.ITaskNotificationService notify)
 		{
 			_db = db; _events = events; _notify = notify;
+		}
+
+		public TaskService(CrossDbContext db,
+			CrossBuy.BL.TasksCalendar.ITaskCalendarEventPublisher events,
+			CrossBuy.BL.TasksCalendar.ITaskNotificationService notify,
+			CrossBuy.BL.Platform.IBusinessEventService? businessEvents,
+			CrossBuy.BL.Platform.IBusinessContextAccessor? contexts,
+			CrossBuy.BL.ITasksAccessService? access,
+			CrossBuy.BL.Platform.IOrgHierarchy? hierarchy)
+			: this(db, events, notify)
+		{
+			_businessEvents = businessEvents; _contexts = contexts;
+			_access = access; _hierarchy = hierarchy;
 		}
 
 		private static readonly string[] Priorities = { "Low", "Normal", "High", "Urgent" };
@@ -380,6 +425,14 @@ namespace CrossBuy.BL
 
 			bool completed = status == "Done";
 			bool reopened = previousStatus == "Done" && status != "Done";
+
+			// COMPLETING A TASK ENDS ANY HOLD ON IT, and ends it SILENTLY. The work is finished, so the
+			// pause has nothing left to pause and leaving the columns set would show a Done task as On
+			// Hold forever. No Task.HoldResumed is recorded and NO DUE DATE IS EXTENDED: extending the
+			// deadline of a task that was just completed would move a date nobody is waiting on, and
+			// Task.Completed is already the event that says what happened.
+			if (completed) ClearHoldState(t);
+
 			var correlation = Guid.NewGuid();
 
 			await using (var tx = await ScopedTx.BeginOrJoinAsync(_db))
@@ -436,6 +489,408 @@ namespace CrossBuy.BL
 				.Select(e => (Id: e.ID, Name: (isEn && !string.IsNullOrWhiteSpace(e.FullNameEn)) ? e.FullNameEn! : e.FullName!))
 				.OrderBy(x => x.Name, StringComparer.CurrentCulture)
 				.ToList();
+		}
+
+		// =========================================================================================
+		// ON HOLD / SLA PAUSE
+		//
+		// WHAT A HOLD IS. A task whose clock has been stopped by somebody entitled to stop it. The work
+		// stays owned, stays assigned and keeps its status; the ONLY things that change are that the
+		// sweeps stop acting on it, and that on resume the deadline moves by exactly the time granted.
+		//
+		// THERE IS NO OnHold STATUS, and everything below follows from that. The state is DERIVED from
+		// which of two timestamps are set - see TaskItem's five hold columns and TaskStatuses.HoldState -
+		// exactly as Overdue has always been derived rather than stored.
+		//
+		// THE EVENTS ARE THE AUDIT TRAIL, not decoration. The row keeps CURRENT state only, so who
+		// asked, who decided, why and when exists NOWHERE else - there is no hold log table and no
+		// second timeline. An operation that cannot record its event therefore REFUSES rather than
+		// making a change nobody can account for, and every write below runs inside ScopedTx with
+		// RecordAsync before the commit so the fact and its event share one fate (ADR-001).
+		// =========================================================================================
+
+		private const string TaskModule = "Tasks";
+
+		/// The longest reason a hold may carry. Stated once; both write paths ask it, and
+		/// deploy/sql/tasks_hold.sql declares the column NVARCHAR(500) to match.
+		public const int HoldReasonMaxLength = 500;
+
+		// REFUSED, NEVER TRUNCATED, and never stored blank. A silently shortened reason is a different
+		// reason, and an empty one defeats the only thing that makes a pause reviewable afterwards.
+		private static (bool ok, string? error, string? reason) NormalizeHoldReason(string? reason)
+		{
+			var trimmed = (reason ?? string.Empty).Trim();
+			if (trimmed.Length == 0) return (false, "A hold reason is required", null);
+			if (trimmed.Length > HoldReasonMaxLength)
+				return (false, $"A hold reason may not exceed {HoldReasonMaxLength} characters", null);
+			return (true, null, trimmed);
+		}
+
+		private static void ClearHoldState(TaskItem t)
+		{
+			t.HoldRequestedAtUtc = null;
+			t.HoldRequestedByEmployeeId = null;
+			t.HoldReason = null;
+			t.HoldApprovedAtUtc = null;
+			t.HoldApprovedByEmployeeId = null;
+		}
+
+		private async Task<TaskItem?> LoadHoldTargetAsync(int companyId, int id, CancellationToken ct)
+		{
+			// Company comes from the caller's resolved scope and is applied IN THE QUERY, so a foreign id
+			// reads as absent - the same answer a missing id gives, which is what stops an id being probed.
+			if (companyId <= 0 || id <= 0) return null;
+			return await _db.TaskItems.FirstOrDefaultAsync(x => x.ID == id && x.CompanyId == companyId, ct);
+		}
+
+		// WHO MAY DECIDE A HOLD: company-wide task administration, or the CURRENT assignee's direct
+		// manager. Both are resolved HERE rather than at the endpoint, because only one of them is a
+		// permission - "is this caller the manager of the person doing this work" is a question about
+		// the org tree at this instant, and the org tree has no permission key to gate on.
+		//
+		// MANAGE IS ASKED AT MODULE LEVEL - the company as target, no task id - and that is deliberate.
+		// TasksAccessService answers a TASK-targeted question with `related` while a company is
+		// BOOTSTRAP-OPEN, which would hand the assignee authority over their own hold; the module-level
+		// question refuses Manage under bootstrap-open instead. Fail closed is the right default for the
+		// right that grants a pause.
+		//
+		// EVERY MISSING DEPENDENCY IS A NO. Without the hierarchy there is no way to ask who the manager
+		// is, and a decision that cannot resolve its own authority must refuse rather than assume.
+		private async Task<bool> CanDecideHoldAsync(int companyId, TaskItem task, int actorEmployeeId, CancellationToken ct)
+		{
+			if (companyId <= 0 || actorEmployeeId <= 0) return false;
+
+			// THE ACTOR MUST BE THE RESOLVED CALLER, and it is checked BEFORE EITHER authority rather
+			// than only before the permission one. The manager branch below reads nothing but the
+			// employee id it was handed, so without this a caller could pass a colleague's id and borrow
+			// that person's place in the org tree. It is also what refuses an EXTERNAL PORTAL caller
+			// here as well as at the endpoint: a portal context carries no employee at all, so it can
+			// equal no actor. No context accessor at all is likewise a refusal, not a bypass.
+			if (_contexts == null) return false;
+
+			var context = await _contexts.TryGetCurrentAsync(ct);
+			if (context == null || context.CompanyId != companyId || context.EmployeeId != actorEmployeeId)
+				return false;
+
+			if (_access != null && await _access.CanAsync(context, TasksActions.Manage,
+					new CrossBuy.Models.Platform.PermissionTarget { CompanyId = companyId }, ct))
+				return true;
+
+			// THE DIRECT MANAGER OF THE CURRENT ASSIGNEE, RESOLVED NOW. Nothing about the manager is
+			// stored on the task, so a hierarchy change takes effect immediately in both directions: the
+			// new manager may decide, and the former one may not merely because they held the chair when
+			// the request was made. DirectManagerAsync intersects with the company, which is what refuses
+			// a manager who sits above the employee's node but belongs to another tenant.
+			if (_hierarchy == null || task.AssigneeEmployeeId <= 0) return false;
+			var manager = await _hierarchy.DirectManagerAsync(companyId, task.AssigneeEmployeeId, ct);
+			return manager != null && manager.Value == actorEmployeeId;
+		}
+
+		/// The same question, asked by the screen. A missing or foreign task answers false rather than
+		/// throwing: the caller then renders nothing, and the operations refuse it anyway.
+		public async Task<bool> CanDecideHoldAsync(
+			int companyId, int id, int actorEmployeeId, CancellationToken cancellationToken = default)
+		{
+			var t = await LoadHoldTargetAsync(companyId, id, cancellationToken);
+			return t != null && await CanDecideHoldAsync(companyId, t, actorEmployeeId, cancellationToken);
+		}
+
+		// ONE TRANSACTION PER OPERATION: the row change is saved, the event is recorded inside the same
+		// ScopedTx, and only then is it committed. A RecordAsync that throws takes the state change down
+		// with it, so no event can claim a transition that did not happen - and no transition can happen
+		// without its event.
+		private async Task RecordHoldAsync(TaskItem task, string eventType, int actorEmployeeId,
+			string occurrence, object payload, CancellationToken ct)
+		{
+			var correlation = Guid.NewGuid();
+			await using var tx = await ScopedTx.BeginOrJoinAsync(_db);
+			await _db.SaveChangesAsync(ct);
+			await _businessEvents!.RecordAsync(new CrossBuy.Models.Platform.BusinessEventRecord
+			{
+				EntityCode = CrossBuy.BL.TasksCalendar.TaskCalendarEntityCodes.Task,
+				EntityId = task.ID,
+				EventType = eventType,
+				Payload = payload,
+				PayloadVersion = 1,
+				Visibility = CrossBuy.Models.Platform.BusinessEventVisibility.Internal,
+				CorrelationId = correlation,
+				CompanyIdOverride = task.CompanyId,
+				ActorEmployeeIdOverride = actorEmployeeId,
+				OccurredAt = CrossBuy.BL.TasksCalendar.TaskCalendarTime.UtcNow(),
+				// Deterministic per (entity, event, occurrence): a retried save records ONE event, and
+				// each hold CYCLE is its own occurrence.
+				DedupKey = $"{eventType}:{task.CompanyId}:{task.ID}:{occurrence}"
+			}, ct);
+			await tx.CommitAsync();
+		}
+
+		private static DateTime HoldNowUtc() => CrossBuy.BL.TasksCalendar.TaskCalendarTime.UtcNow();
+
+		private static DateTime? HoldUtc(DateTime? value) =>
+			value.HasValue ? CrossBuy.BL.TasksCalendar.TaskCalendarTime.AssumeUtc(value.Value) : null;
+
+		// FULL PRECISION, UNLIKE THE PUBLISHER'S SECOND-RESOLUTION STAMP, and the difference is the
+		// thing being stamped. The publisher keys an occurrence on a DUE DATE - a date somebody chose,
+		// where two events a second apart are the same missed deadline. A hold occurrence is keyed on an
+		// INSTANT the system recorded, and two hold cycles on one task genuinely can open within the
+		// same second. At second resolution the second cycle's event collapses into the first cycle's
+		// dedup key and is silently never recorded - a pause with no audit row.
+		//
+		// RETRY PROTECTION IS NOT WEAKENED, because approve, reject and resume all stamp a value ALREADY
+		// STORED ON THE ROW (the request instant, or the approval instant), so a retried decision
+		// computes the same key. Only the request stamps its own new instant, and a repeated request is
+		// refused as a no-op before it ever reaches an event.
+		private static string HoldStamp(DateTime value) =>
+			CrossBuy.BL.TasksCalendar.TaskCalendarTime.AssumeUtc(value)
+				.ToString("yyyyMMddTHHmmssfffffff", System.Globalization.CultureInfo.InvariantCulture);
+
+		// ---- REQUEST -----------------------------------------------------------------------------
+		//
+		// ASKING IS NOT BEING GRANTED. This writes the request pair and the reason and NOTHING else: no
+		// approval timestamp, so the SLA keeps running, the overdue sweep keeps sweeping and escalation
+		// keeps escalating until somebody with authority decides. That is the whole point of asking.
+		public async Task<(bool ok, string? error)> RequestHoldAsync(
+			int companyId, int id, int actorEmployeeId, string? reason, CancellationToken cancellationToken = default)
+		{
+			if (actorEmployeeId <= 0) return (false, "No acting employee");
+			var t = await LoadHoldTargetAsync(companyId, id, cancellationToken);
+			if (t == null) return (false, "Task not found");
+			if (TaskStatuses.IsTerminal(t.Status)) return (false, "A completed task cannot be put on hold");
+
+			// IDEMPOTENT, AND THE FIRST REQUEST STANDS. A second submission must not restamp the request,
+			// re-attribute it, or replace the reason the approver is about to read. Already held is the
+			// same no-op: there is nothing left to ask for.
+			if (t.HoldApprovedAtUtc != null || t.HoldRequestedAtUtc != null) return (true, null);
+
+			var (reasonOk, reasonError, normalized) = NormalizeHoldReason(reason);
+			if (!reasonOk) return (false, reasonError);
+			if (_businessEvents == null) return (false, "Hold operations require the business event service");
+
+			var nowUtc = HoldNowUtc();
+			t.HoldRequestedAtUtc = nowUtc;
+			t.HoldRequestedByEmployeeId = actorEmployeeId;
+			t.HoldReason = normalized;
+
+			await RecordHoldAsync(t, CrossBuy.BL.Platform.TaskEvents.HoldRequested,
+				actorEmployeeId, $"requested:{HoldStamp(nowUtc)}", new
+				{
+					holdState = TaskStatuses.HoldStateRequested,
+					requestedAtUtc = nowUtc,
+					requestedByEmployeeId = actorEmployeeId,
+					reason = normalized,
+					newDueAt = HoldUtc(t.DueDate),
+					newAssigneeId = t.AssigneeEmployeeId,
+					sourceModule = TaskModule
+				}, cancellationToken);
+
+			return (true, null);
+		}
+
+		// ---- APPROVE -----------------------------------------------------------------------------
+		//
+		// THE MOMENT THE PAUSE STARTS. HoldApprovedAtUtc is not a decoration on the decision: it is the
+		// clock the resume extension is measured from, which is why a repeat approval must never move it.
+		public async Task<(bool ok, string? error)> ApproveHoldAsync(
+			int companyId, int id, int actorEmployeeId, CancellationToken cancellationToken = default)
+		{
+			if (actorEmployeeId <= 0) return (false, "No acting employee");
+			var t = await LoadHoldTargetAsync(companyId, id, cancellationToken);
+			if (t == null) return (false, "Task not found");
+			if (!await CanDecideHoldAsync(companyId, t, actorEmployeeId, cancellationToken))
+				return (false, "You may not decide a hold on this task");
+
+			// Already on hold: a no-op that leaves the approval timestamp exactly where it was. Moving it
+			// forward would silently shorten the time given back at resume.
+			if (t.HoldApprovedAtUtc != null) return (true, null);
+			if (t.HoldRequestedAtUtc == null) return (false, "There is no pending hold request on this task");
+
+			// THE RULE THAT SURVIVES EVERY AUTHORITY. The person who asked does not decide - not even
+			// holding Manage, and not even being the assignee's own manager. A pause the requester can
+			// grant themselves is not a control.
+			if (t.HoldRequestedByEmployeeId == actorEmployeeId)
+				return (false, "The employee who requested this hold may not approve it");
+
+			if (_businessEvents == null) return (false, "Hold operations require the business event service");
+
+			var nowUtc = HoldNowUtc();
+			var requestedAt = t.HoldRequestedAtUtc.Value;
+			t.HoldApprovedAtUtc = nowUtc;
+			t.HoldApprovedByEmployeeId = actorEmployeeId;
+			// The request pair and the reason are PRESERVED: they are the record of why this hold exists.
+
+			await RecordHoldAsync(t, CrossBuy.BL.Platform.TaskEvents.HoldApproved,
+				actorEmployeeId, $"approved:{HoldStamp(requestedAt)}", new
+				{
+					holdState = TaskStatuses.HoldStateOnHold,
+					direct = false,
+					requestedAtUtc = HoldUtc(t.HoldRequestedAtUtc),
+					requestedByEmployeeId = t.HoldRequestedByEmployeeId,
+					approvedAtUtc = nowUtc,
+					approvedByEmployeeId = actorEmployeeId,
+					reason = t.HoldReason,
+					newDueAt = HoldUtc(t.DueDate),
+					newAssigneeId = t.AssigneeEmployeeId,
+					sourceModule = TaskModule
+				}, cancellationToken);
+
+			return (true, null);
+		}
+
+		// ---- REJECT ------------------------------------------------------------------------------
+		//
+		// Returns the task to NORMAL by clearing the request columns. The APPROVAL columns are not
+		// touched and must already be null - rejecting a hold that has started is refused rather than
+		// quietly becoming a resume, because those give back different amounts of time.
+		//
+		// THE DECISION REASON LIVES IN THE EVENT AND NOWHERE ELSE. HoldReason holds the REQUESTER's
+		// words; overwriting them with the approver's would destroy the thing being decided about, and a
+		// sixth column is not authorized. The event payload already carries decision context.
+		public async Task<(bool ok, string? error)> RejectHoldAsync(
+			int companyId, int id, int actorEmployeeId, string? decisionReason, CancellationToken cancellationToken = default)
+		{
+			if (actorEmployeeId <= 0) return (false, "No acting employee");
+			var t = await LoadHoldTargetAsync(companyId, id, cancellationToken);
+			if (t == null) return (false, "Task not found");
+			if (!await CanDecideHoldAsync(companyId, t, actorEmployeeId, cancellationToken))
+				return (false, "You may not decide a hold on this task");
+
+			if (t.HoldApprovedAtUtc != null)
+				return (false, "This task is already on hold; it can be resumed but not rejected");
+			if (t.HoldRequestedAtUtc == null)
+				return (false, "There is no pending hold request on this task");
+			if (_businessEvents == null) return (false, "Hold operations require the business event service");
+
+			var requestedAt = t.HoldRequestedAtUtc.Value;
+			var requestedBy = t.HoldRequestedByEmployeeId;
+			var requestReason = t.HoldReason;
+			var note = (decisionReason ?? string.Empty).Trim();
+			if (note.Length > HoldReasonMaxLength) note = note.Substring(0, HoldReasonMaxLength);
+
+			t.HoldRequestedAtUtc = null;
+			t.HoldRequestedByEmployeeId = null;
+			t.HoldReason = null;
+
+			await RecordHoldAsync(t, CrossBuy.BL.Platform.TaskEvents.HoldRejected,
+				actorEmployeeId, $"rejected:{HoldStamp(requestedAt)}", new
+				{
+					holdState = TaskStatuses.HoldStateNormal,
+					requestedAtUtc = HoldUtc(requestedAt),
+					requestedByEmployeeId = requestedBy,
+					reason = requestReason,
+					decisionReason = note.Length == 0 ? null : note,
+					rejectedByEmployeeId = actorEmployeeId,
+					newDueAt = HoldUtc(t.DueDate),
+					newAssigneeId = t.AssigneeEmployeeId,
+					sourceModule = TaskModule
+				}, cancellationToken);
+
+			return (true, null);
+		}
+
+		// ---- DIRECT HOLD -------------------------------------------------------------------------
+		//
+		// The manager's own act: no request pair is written, because none was made. The reason is still
+		// mandatory - a pause nobody has to justify is a pause nobody can review - and it is the
+		// MANAGER's reason, which is the one case where HoldReason is not a requester's words.
+		//
+		// NO FABRICATED Task.HoldRequested. Recording a request that never happened would put a person's
+		// name against words they never wrote. The single Task.HoldApproved carries direct = true.
+		//
+		// A PENDING REQUEST BLOCKS IT, deliberately. With a request outstanding the right question is
+		// approve or reject, and allowing a direct hold instead would let a Manage-holding requester
+		// reach ON HOLD on their own request by another name - the exact thing self-approval forbids.
+		public async Task<(bool ok, string? error)> DirectHoldAsync(
+			int companyId, int id, int actorEmployeeId, string? reason, CancellationToken cancellationToken = default)
+		{
+			if (actorEmployeeId <= 0) return (false, "No acting employee");
+			var t = await LoadHoldTargetAsync(companyId, id, cancellationToken);
+			if (t == null) return (false, "Task not found");
+			if (!await CanDecideHoldAsync(companyId, t, actorEmployeeId, cancellationToken))
+				return (false, "You may not decide a hold on this task");
+
+			if (TaskStatuses.IsTerminal(t.Status)) return (false, "A completed task cannot be put on hold");
+			if (t.HoldApprovedAtUtc != null) return (true, null);   // already held: no-op, timestamp unmoved
+			if (t.HoldRequestedAtUtc != null)
+				return (false, "A hold request is pending on this task; approve or reject it");
+
+			var (reasonOk, reasonError, normalized) = NormalizeHoldReason(reason);
+			if (!reasonOk) return (false, reasonError);
+			if (_businessEvents == null) return (false, "Hold operations require the business event service");
+
+			var nowUtc = HoldNowUtc();
+			t.HoldReason = normalized;
+			t.HoldApprovedAtUtc = nowUtc;
+			t.HoldApprovedByEmployeeId = actorEmployeeId;
+
+			await RecordHoldAsync(t, CrossBuy.BL.Platform.TaskEvents.HoldApproved,
+				actorEmployeeId, $"direct:{HoldStamp(nowUtc)}", new
+				{
+					holdState = TaskStatuses.HoldStateOnHold,
+					direct = true,
+					requestedAtUtc = (DateTime?)null,
+					requestedByEmployeeId = (int?)null,
+					approvedAtUtc = nowUtc,
+					approvedByEmployeeId = actorEmployeeId,
+					reason = normalized,
+					newDueAt = HoldUtc(t.DueDate),
+					newAssigneeId = t.AssigneeEmployeeId,
+					sourceModule = TaskModule
+				}, cancellationToken);
+
+			return (true, null);
+		}
+
+		// ---- RESUME ------------------------------------------------------------------------------
+		//
+		// GIVES BACK EXACTLY THE TIME THAT WAS TAKEN: resume minus approval, added to whatever the due
+		// date is NOW. If somebody edited the due date during the hold, that edit stands and the granted
+		// time is added on top of it - reconstructing the pre-edit date would silently undo a deliberate
+		// decision.
+		//
+		// NO DUE DATE, NO INVENTION. A task that legitimately has no deadline has nothing to extend, so
+		// resume clears the hold and leaves DueDate null rather than manufacturing one.
+		//
+		// IT CANNOT EXTEND TWICE, because the approval timestamp it measures from is cleared with
+		// everything else - a second resume finds nothing on hold and is a no-op.
+		public async Task<(bool ok, string? error)> ResumeHoldAsync(
+			int companyId, int id, int actorEmployeeId, CancellationToken cancellationToken = default)
+		{
+			if (actorEmployeeId <= 0) return (false, "No acting employee");
+			var t = await LoadHoldTargetAsync(companyId, id, cancellationToken);
+			if (t == null) return (false, "Task not found");
+			if (!await CanDecideHoldAsync(companyId, t, actorEmployeeId, cancellationToken))
+				return (false, "You may not decide a hold on this task");
+
+			// Not on hold: nothing to resume and nothing to extend. A repeated submission is harmless.
+			if (t.HoldApprovedAtUtc == null) return (true, null);
+
+			var approvedAt = CrossBuy.BL.TasksCalendar.TaskCalendarTime.AssumeUtc(t.HoldApprovedAtUtc.Value);
+			var resumeUtc = HoldNowUtc();
+			var held = resumeUtc - approvedAt;
+			// A negative duration means the two timestamps disagree about the clock. Refuse rather than
+			// SHORTEN the deadline: a repair is somebody's decision, not an arithmetic side effect.
+			if (held < TimeSpan.Zero) return (false, "The hold cannot end before it began");
+			if (_businessEvents == null) return (false, "Hold operations require the business event service");
+
+			var previousDue = t.DueDate;
+			if (t.DueDate.HasValue) t.DueDate = t.DueDate.Value + held;
+			ClearHoldState(t);
+
+			await RecordHoldAsync(t, CrossBuy.BL.Platform.TaskEvents.HoldResumed,
+				actorEmployeeId, $"resumed:{HoldStamp(approvedAt)}", new
+				{
+					holdState = TaskStatuses.HoldStateNormal,
+					approvedAtUtc = approvedAt,
+					resumedAtUtc = resumeUtc,
+					resumedByEmployeeId = actorEmployeeId,
+					heldSeconds = (long)Math.Round(held.TotalSeconds),
+					previousDueAt = HoldUtc(previousDue),
+					newDueAt = HoldUtc(t.DueDate),
+					newAssigneeId = t.AssigneeEmployeeId,
+					sourceModule = TaskModule
+				}, cancellationToken);
+
+			return (true, null);
 		}
 	}
 }

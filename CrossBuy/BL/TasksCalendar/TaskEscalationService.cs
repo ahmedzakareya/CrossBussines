@@ -156,12 +156,19 @@ namespace CrossBuy.BL.TasksCalendar
 
 			// The whole entity, not a projection: the publisher builds its payload and dedup key from the
 			// task's own fields. AsNoTracking — this sweep observes a transition, it never edits the task.
+			// SWEEP ELIGIBILITY, ASKED FOR RATHER THAN RESTATED. `threshold` is now minus the grace, so
+			// this is the canonical rule evaluated at an earlier instant - "overdue, and has been for a
+			// while" - and it now also excludes a task that is ACTIVELY ON HOLD. One definition in
+			// TaskStatuses.SweepEligibleAt, used by both sweeps, so a pause cannot work in one and not
+			// the other.
+			//
+			// ONLY AN APPROVED HOLD PAUSES. A task whose hold is merely REQUESTED is still running, and
+			// the escalation that prompts somebody to decide that request is exactly what should fire.
+			//
+			// The escalation-specific half stays here: a task with no assignee has nobody to escalate TO.
 			var candidates = await _db.TaskItems.AsNoTracking()
-				.Where(t => t.CompanyId == companyId
-							&& t.DueDate != null
-							&& t.DueDate < threshold
-							&& t.Status != "Done"
-							&& t.AssigneeEmployeeId > 0)
+				.Where(CrossBuy.Models.Context.Tasks.TaskStatuses.SweepEligibleAt(threshold))
+				.Where(t => t.CompanyId == companyId && t.AssigneeEmployeeId > 0)
 				.OrderBy(t => t.DueDate)
 				.Take(MaxPerSweep)
 				.ToListAsync(ct);

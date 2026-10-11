@@ -43,6 +43,21 @@ namespace CrossBuy.Tests
         // Follows ITaskService, which gained a companyId parameter. The agenda never calls this member; it
         // exists only so the double still satisfies the interface.
         public Task<List<(int Id, string Name)>> ActiveEmployeesAsync(int companyId) => Task.FromResult(new List<(int, string)>());
+        // ---- ON HOLD. Not this double's business: every one of these REFUSES, so a caller that starts
+        // asking a Hold question here fails loudly instead of being quietly told yes.
+        public Task<(bool ok, string? error)> RequestHoldAsync(int companyId, int id, int actorEmployeeId, string? reason, System.Threading.CancellationToken cancellationToken = default) =>
+            Task.FromResult((false, (string?)"not supported by this test double"));
+        public Task<(bool ok, string? error)> ApproveHoldAsync(int companyId, int id, int actorEmployeeId, System.Threading.CancellationToken cancellationToken = default) =>
+            Task.FromResult((false, (string?)"not supported by this test double"));
+        public Task<(bool ok, string? error)> RejectHoldAsync(int companyId, int id, int actorEmployeeId, string? decisionReason, System.Threading.CancellationToken cancellationToken = default) =>
+            Task.FromResult((false, (string?)"not supported by this test double"));
+        public Task<(bool ok, string? error)> DirectHoldAsync(int companyId, int id, int actorEmployeeId, string? reason, System.Threading.CancellationToken cancellationToken = default) =>
+            Task.FromResult((false, (string?)"not supported by this test double"));
+        public Task<(bool ok, string? error)> ResumeHoldAsync(int companyId, int id, int actorEmployeeId, System.Threading.CancellationToken cancellationToken = default) =>
+            Task.FromResult((false, (string?)"not supported by this test double"));
+        public Task<bool> CanDecideHoldAsync(int companyId, int id, int actorEmployeeId, System.Threading.CancellationToken cancellationToken = default) =>
+            Task.FromResult(false);
+
     }
 
     internal sealed class FakeCalendarService : ICalendarService
@@ -368,6 +383,21 @@ namespace CrossBuy.Tests
             // Follows ITaskService, which gained a companyId parameter. The agenda never calls this member; it
         // exists only so the double still satisfies the interface.
         public Task<List<(int Id, string Name)>> ActiveEmployeesAsync(int companyId) => Task.FromResult(new List<(int, string)>());
+        // ---- ON HOLD. Not this double's business: every one of these REFUSES, so a caller that starts
+        // asking a Hold question here fails loudly instead of being quietly told yes.
+        public Task<(bool ok, string? error)> RequestHoldAsync(int companyId, int id, int actorEmployeeId, string? reason, System.Threading.CancellationToken cancellationToken = default) =>
+            Task.FromResult((false, (string?)"not supported by this test double"));
+        public Task<(bool ok, string? error)> ApproveHoldAsync(int companyId, int id, int actorEmployeeId, System.Threading.CancellationToken cancellationToken = default) =>
+            Task.FromResult((false, (string?)"not supported by this test double"));
+        public Task<(bool ok, string? error)> RejectHoldAsync(int companyId, int id, int actorEmployeeId, string? decisionReason, System.Threading.CancellationToken cancellationToken = default) =>
+            Task.FromResult((false, (string?)"not supported by this test double"));
+        public Task<(bool ok, string? error)> DirectHoldAsync(int companyId, int id, int actorEmployeeId, string? reason, System.Threading.CancellationToken cancellationToken = default) =>
+            Task.FromResult((false, (string?)"not supported by this test double"));
+        public Task<(bool ok, string? error)> ResumeHoldAsync(int companyId, int id, int actorEmployeeId, System.Threading.CancellationToken cancellationToken = default) =>
+            Task.FromResult((false, (string?)"not supported by this test double"));
+        public Task<bool> CanDecideHoldAsync(int companyId, int id, int actorEmployeeId, System.Threading.CancellationToken cancellationToken = default) =>
+            Task.FromResult(false);
+
         }
     }
 }

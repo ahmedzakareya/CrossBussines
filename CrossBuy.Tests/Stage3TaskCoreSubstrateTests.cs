@@ -274,10 +274,30 @@ namespace CrossBuy.Tests
             Assert.True(TaskStatuses.IsOverdue(DateTime.UtcNow.AddDays(-1), TaskStatuses.New, DateTime.UtcNow));
             Assert.NotNull(TaskStatuses.OverdueAt(DateTime.UtcNow));
 
-            // And the three TaskItem-typed hold overloads are deliberately absent until the Hold stage.
+            // ---- THE SEAM THIS ASSERTION GUARDED IS NOW CLOSED ------------------------------------
+            //
+            // Stage 3 imported TaskStatuses verbatim EXCEPT three TaskItem-typed overloads, because each
+            // reads hold columns that did not exist yet, and asserted their absence so they would be
+            // recognised as OWED rather than missing. That was correct for Stage 3 and stayed correct
+            // for Stage 4, which introduced no Hold behaviour of its own.
+            //
+            // The authorized Hold stage has since landed the five columns, so all three are back. The
+            // assertion is INVERTED rather than deleted: what Stage 3 proved was that the parameter-
+            // taking twin was always present and the file was never rewritten to fit, and that is still
+            // what matters - the rule has ONE definition and these overloads only change its shape.
             var members = typeof(TaskStatuses).GetMethods().Select(m => m.Name).ToHashSet(StringComparer.Ordinal);
-            Assert.DoesNotContain("SweepEligibleAt", members);
-            Assert.Contains("IsOnHold", members);   // the parameter-taking twin IS present
+            Assert.Contains("IsOnHold", members);          // the parameter-taking twin, present since Stage 3
+            Assert.Contains("SweepEligibleAt", members);   // restored by the Hold stage, with its columns
+
+            // The twins agree, which is the property the seam existed to protect: one rule, two shapes.
+            var overdue = new TaskItem
+            {
+                CompanyId = 1, Title = "t", Status = TaskStatuses.New,
+                DueDate = DateTime.UtcNow.AddDays(-1), Priority = "Normal",
+            };
+            Assert.True(TaskStatuses.IsSweepEligible(overdue, DateTime.UtcNow));
+            overdue.HoldApprovedAtUtc = DateTime.UtcNow;
+            Assert.False(TaskStatuses.IsSweepEligible(overdue, DateTime.UtcNow));
         }
 
         [Fact]

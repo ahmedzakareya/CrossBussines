@@ -483,6 +483,94 @@ namespace CrossBuy.Controllers
 		}
 
 		// TM-4: post this WO-linked task's labor to its work order via the EXISTING ManufService writer (post-once).
+		// ==========================================================================================
+		// ON HOLD / SLA PAUSE — five endpoints, no business rules.
+		//
+		// EVERY DECISION IS THE SERVICE'S. These actions resolve the caller, gate on the EXISTING task
+		// permissions and hand over; who may approve, whether a request is pending, whether the task is
+		// terminal and how much time a resume gives back are all answered in TaskService, where they can
+		// be tested without a controller.
+		//
+		// THE GATES ARE THE EXISTING ACTIONS AND NOTHING NEW. Request is an edit to the task, so it
+		// gates on TasksActions.Edit. The three decision endpoints gate on TasksActions.Read - enough to
+		// reach the task at all - and then the SERVICE applies the real authority (Manage, or the
+		// assignee's current direct manager). Gating the endpoint on Manage instead would lock out the
+		// direct manager, who is not a Manage holder and is explicitly entitled to decide.
+		// ==========================================================================================
+
+		[HttpPost][ValidateAntiForgeryToken]
+		public async Task<IActionResult> RequestHold(int id, string? reason)
+		{
+			var gate = await TaskGateAsync(TasksActions.Edit, id);
+			if (!gate.Ok)
+			{
+				this.ToastError(T("ليست لديك صلاحية لتنفيذ هذا الإجراء", "You do not have permission to perform this action"));
+				return RedirectToAction(nameof(Detail), new { id });
+			}
+
+			var (ok, err) = await _tasks.RequestHoldAsync(gate.CompanyId, id, CurrentEmployeeId(), reason);
+			if (ok) this.ToastSuccess(T("تم إرسال طلب التعليق", "Hold request submitted"));
+			else this.ToastError(err ?? T("تعذّر إرسال طلب التعليق", "Could not submit the hold request"));
+			return RedirectToAction(nameof(Detail), new { id });
+		}
+
+		// ONE BUTTON, TWO OPERATIONS, and the row decides which. With a request outstanding this is an
+		// APPROVAL; with nothing outstanding it is the manager's own DIRECT hold. Splitting them into two
+		// endpoints would make the screen compute which to call, putting a rule in the view.
+		[HttpPost][ValidateAntiForgeryToken]
+		public async Task<IActionResult> ApproveHold(int id, string? reason)
+		{
+			var gate = await TaskGateAsync(TasksActions.Read, id);
+			if (!gate.Ok)
+			{
+				this.ToastError(T("ليست لديك صلاحية لتنفيذ هذا الإجراء", "You do not have permission to perform this action"));
+				return RedirectToAction(nameof(Detail), new { id });
+			}
+
+			var task = await _tasks.GetAsync(gate.CompanyId, id);
+			bool decidingARequest = task != null && task.HoldRequestedAtUtc != null;
+
+			var (ok, err) = decidingARequest
+				? await _tasks.ApproveHoldAsync(gate.CompanyId, id, CurrentEmployeeId())
+				: await _tasks.DirectHoldAsync(gate.CompanyId, id, CurrentEmployeeId(), reason);
+
+			if (ok) this.ToastSuccess(T("تم تعليق المهمة", "The task is on hold"));
+			else this.ToastError(err ?? T("تعذّر تعليق المهمة", "Could not put the task on hold"));
+			return RedirectToAction(nameof(Detail), new { id });
+		}
+
+		[HttpPost][ValidateAntiForgeryToken]
+		public async Task<IActionResult> RejectHold(int id, string? decisionReason)
+		{
+			var gate = await TaskGateAsync(TasksActions.Read, id);
+			if (!gate.Ok)
+			{
+				this.ToastError(T("ليست لديك صلاحية لتنفيذ هذا الإجراء", "You do not have permission to perform this action"));
+				return RedirectToAction(nameof(Detail), new { id });
+			}
+
+			var (ok, err) = await _tasks.RejectHoldAsync(gate.CompanyId, id, CurrentEmployeeId(), decisionReason);
+			if (ok) this.ToastSuccess(T("تم رفض طلب التعليق", "Hold request rejected"));
+			else this.ToastError(err ?? T("تعذّر رفض طلب التعليق", "Could not reject the hold request"));
+			return RedirectToAction(nameof(Detail), new { id });
+		}
+
+		[HttpPost][ValidateAntiForgeryToken]
+		public async Task<IActionResult> ResumeHold(int id)
+		{
+			var gate = await TaskGateAsync(TasksActions.Read, id);
+			if (!gate.Ok)
+			{
+				this.ToastError(T("ليست لديك صلاحية لتنفيذ هذا الإجراء", "You do not have permission to perform this action"));
+				return RedirectToAction(nameof(Detail), new { id });
+			}
+
+			var (ok, err) = await _tasks.ResumeHoldAsync(gate.CompanyId, id, CurrentEmployeeId());
+			if (ok) this.ToastSuccess(T("تم استئناف المهمة", "The task has resumed"));
+			else this.ToastError(err ?? T("تعذّر استئناف المهمة", "Could not resume the task"));
+			return RedirectToAction(nameof(Detail), new { id });
+		}
+
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> PostLaborToWO(int taskId, string scope = "mine")
 		{
@@ -573,6 +661,12 @@ namespace CrossBuy.Controllers
 			ViewBag.Blocking = await _deps.BlockingStateAsync(co, id);
 			ViewBag.Employees = await _tasks.ActiveEmployeesAsync(co);
 			ViewBag.Escalation = await _escalation.EvaluateAsync(co, id);
+
+			// WHETHER TO OFFER THE DECISION ACTIONS AT ALL. Asked of the service that will enforce it, so
+			// the screen can never offer Approve/Reject/Resume to somebody the service would refuse - and
+			// never hide them from somebody it would allow. The derived hold state itself is read off the
+			// row by the view; it is not a second copy of the rule.
+			ViewBag.CanDecideHold = await _tasks.CanDecideHoldAsync(co, id, CurrentEmployeeId());
 			return View("Detail");
 		}
 
