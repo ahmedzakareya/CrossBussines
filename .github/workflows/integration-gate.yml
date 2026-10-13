@@ -155,8 +155,8 @@ jobs:
           R1_TARGET_REPOSITORY: ${{ github.repository }}
         run: |
           $base = "${{ steps.tab.outputs.base }}"
-          $bootstrap = @()
-          if ($env:R1_SOURCE_BRANCH -eq 'tab/tab-1-r1-qualified-20261013' -and $base -eq '480c3d49f7b862b0662af161db824360e80ff5df') { $bootstrap = @('-R1Bootstrap') }
+          $bootstrap = @{}
+          if ($env:R1_SOURCE_BRANCH -eq 'tab/tab-1-r1-qualified-20261013' -and $base -eq '480c3d49f7b862b0662af161db824360e80ff5df') { $bootstrap.R1Bootstrap = $true }
           ./governance/tools/integration-gate.ps1 -TabId ${{ steps.tab.outputs.tabId }} -Base $base -RequireAll @bootstrap
           exit $LASTEXITCODE
 
