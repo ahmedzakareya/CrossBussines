@@ -78,8 +78,8 @@ if ($Files -and $Files.Count) {
 } else {
     Push-Location $repo
     try {
-        if ($Base) { $raw = git -c "safe.directory=$repo" -c "core.excludesFile=$repo/.gitignore" diff --name-only $Base 2>$null }
-        else       { $raw = git -c "safe.directory=$repo" -c "core.excludesFile=$repo/.gitignore" status --porcelain 2>$null | ForEach-Object { $_.Substring(3) } }
+        if ($Base) { $raw = git -c "safe.directory=$repo" -c "core.excludesFile=$repo/.gitignore" -c core.safecrlf=false diff --name-only $Base 2>$null }
+        else       { $raw = git -c "safe.directory=$repo" -c "core.excludesFile=$repo/.gitignore" -c core.safecrlf=false status --porcelain 2>$null | ForEach-Object { $_.Substring(3) } }
         if ($LASTEXITCODE -ne 0) { Write-Host 'git file inventory failed; ownership cannot be checked.' -ForegroundColor Red; exit 3 }
     } finally { Pop-Location }
     $changed = @($raw | Where-Object { $_ -and $_.Trim() } | ForEach-Object { $_.Trim().Replace('\', '/') })

@@ -2,9 +2,9 @@
   "schema": 1,
   "generatedBy": "engineering/generate-authorization-baseline.py",
   "frozenBaseline": {
-    "mutating": 472,
-    "attributeProtected": 167,
-    "inBodyProtected": 211,
+    "mutating": 481,
+    "attributeProtected": 170,
+    "inBodyProtected": 217,
     "anonymousByDesign": 1,
     "gaps": 93
   },
@@ -1484,6 +1484,40 @@
       "anonymousByDesign": 1,
       "gaps": 93,
       "note": "HEAD comparison: CommController.Trash retired; Delete, Restore and EmptyTrash each authorize through MayManageOutboxAsync -> ICommunicationAccessService.CanAsync OutboxManage before writes. Net +2 mutating, +3 in-body protected, -1 pre-existing gap. No debt entry added; the prior removal of Trash is preserved. Concern-level reconciliation, not a new full-source inventory."
+    },
+    {
+      "stage": "R1 full semantic reconciliation 2026-10-13",
+      "previous": {
+        "mutating": 472,
+        "attributeProtected": 167,
+        "inBodyProtected": 211,
+        "anonymousByDesign": 1,
+        "gaps": 93
+      },
+      "measured": {
+        "mutating": 481,
+        "attributeProtected": 170,
+        "inBodyProtected": 217,
+        "anonymousByDesign": 1,
+        "gaps": 93
+      },
+      "controllers": 56,
+      "additionalAttributeProtected": [
+        "AccountingController.OpenYear",
+        "CustomerDocumentsController.Publish",
+        "CustomerDocumentsController.Revoke"
+      ],
+      "additionalInBodyProtected": [
+        "CommController.AddToCalendar",
+        "CommController.Respond",
+        "TasksController.ApproveHold",
+        "TasksController.RejectHold",
+        "TasksController.RequestHold",
+        "TasksController.ResumeHold"
+      ],
+      "gapEntriesAdded": 0,
+      "gapEntriesRemoved": 0,
+      "note": "Full real-source analyzer measured existing protected endpoints that the earlier concern-only 472 header omitted. This records implementation already present, not new endpoint creation. The gap ID set equals the existing 93 baseline entries exactly; CBA001/CBA004 no-new-debt tests retain their assertions."
     }
   ]
 }

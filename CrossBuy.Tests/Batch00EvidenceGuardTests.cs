@@ -176,9 +176,9 @@ namespace CrossBuy.Tests
             // entries — 143 vs 143, zero ids on either side alone.
             // The registry records later authorized surfaces and retired debt in its
             // history. Keep the historical debt ceiling and reconcile today's columns.
-            Assert.Equal(472, mutating);
-            Assert.Equal(167, attr);
-            Assert.Equal(211, inBody);
+            Assert.Equal(481, mutating);
+            Assert.Equal(170, attr);
+            Assert.Equal(217, inBody);
             int anonymous = f.TryGetProperty("anonymousByDesign", out var a) ? a.GetInt32() : 0;
 
             // THE INVARIANT. Descriptive totals grow when protected endpoints are added; this one may only shrink.

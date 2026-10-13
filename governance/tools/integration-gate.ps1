@@ -1,4 +1,4 @@
-﻿<#
+<#
 =============================================================================================
 R1 - integration gate.
 
@@ -89,18 +89,11 @@ if ($SkipBuild) {
 if ($SkipTests) {
     Add-Check 4 'Full suite green, skips reported' 'SKIP' '-SkipTests'
 } else {
-    $testOut = & dotnet test (Join-Path $repo 'CrossBuy.Tests\CrossBuy.Tests.csproj') -c TestRun --no-build --nologo 2>&1
+    $testOut = & dotnet test (Join-Path $repo 'CrossBuy.sln') -c TestRun --no-build --nologo 2>&1
     $testExit = $LASTEXITCODE
-    $testText = ($testOut | Out-String)
-    $m = [regex]::Match($testText, 'Failed:\s+(\d+),\s+Passed:\s+(\d+),\s+Skipped:\s+(\d+)')
-    if ($m.Success) {
-        $failed = [int]$m.Groups[1].Value; $passed = [int]$m.Groups[2].Value; $skipped = [int]$m.Groups[3].Value
-        $detail = ("{0} passed, {1} failed, {2} skipped; exit {3}" -f $passed, $failed, $skipped, $testExit)
-        if ($testExit -eq 0 -and $failed -eq 0) { Add-Check 4 'Full suite green, skips reported' 'PASS' $detail }
-        else { Add-Check 4 'Full suite green, skips reported' 'FAIL' $detail }
-    } else {
-        Add-Check 4 'Full suite green, skips reported' 'FAIL' 'no test summary parsed'
-    }
+    . (Join-Path $tools 'test-suite-summary.ps1')
+    $summary = Get-IntegrationTestSummary -Text ($testOut | Out-String) -ExitCode $testExit -ExpectedProjects 2
+    Add-Check 4 'Full suite green, skips reported' $summary.State $summary.Detail
 }
 
 # ---- 5 analyzer gates ------------------------------------------------------------------------

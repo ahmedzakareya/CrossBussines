@@ -89,6 +89,12 @@ jobs:
           python governance/tests/ci_tab_attribution_tests.py
           exit $LASTEXITCODE
 
+      - name: Both test project summaries are required
+        shell: pwsh
+        run: |
+          ./governance/tests/test-suite-summary-tests.ps1
+          exit $LASTEXITCODE
+
       - name: Registries are regenerated and unchanged
         shell: pwsh
         run: |
