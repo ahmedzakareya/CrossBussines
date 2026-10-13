@@ -27,11 +27,8 @@ namespace CrossBuy.Tests
         // updated. Stripping comments before matching (see DeclaringFiles) is what surfaced it.
         private static readonly string[] KnownHardcodedCompanyControllers =
         {
-            "AccountingController.cs",          // DefaultCompanyId
             "AdminController.cs",               // HrCompanyId
             "Api/InventoryApiController.cs",    // CompanyId
-            "BrandController.cs",               // DefaultCompanyId
-            "CurrencyController.cs",            // DefaultCompanyId
             "HyperController.cs",               // PosCompanyId
             "HyperPosController.cs",            // PosCompanyId
             "PosAppController.cs",              // PosCompanyId
@@ -46,7 +43,9 @@ namespace CrossBuy.Tests
         // The four that remain are POS and currency surfaces where company 1 is the documented
         // catalogue tenant; they are classified in docs/stabilization/COMPANY-ONE-INVENTORY.md rather
         // than left as an unexplained residue.
-        private const int KnownCount = 8;
+        // 2026-10-11 reconciliation records Accounting and Brand removals, and the already
+        // removed Currency declaration. COMPANY-ONE-INVENTORY.md retains the old measurement.
+        private const int KnownCount = 5;
 
         private static string ControllersRoot()
         {

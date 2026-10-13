@@ -1,3 +1,4 @@
+using EmployeeDocumentOwnerResolver = CrossBuy.BL.EmployeeDocumentOwnerResolver;
 using System;
 using System.Collections.Generic;
 using System.IO;

@@ -163,7 +163,7 @@
                     (Localizer["Archived"].Value, Model.Archive.Items.Count.ToString(), "ki-archive", "dark",
                         Url.Action("Index","Reports"), Localizer["files"].Value, "dark"),
                     (Localizer["Data sets"].Value, Model.Datasets.Items.Count.ToString(), "ki-data",
-                        Model.Datasets.HasItems ? "success" : "danger", Url.Action("Index","Reports"),
+                        Model.Datasets.HasItems ? "success" : "danger", Url.Action("Datasets","Reports"),
                         Model.Datasets.HasItems ? Localizer["ok"].Value : Localizer["none"].Value,
                         Model.Datasets.HasItems ? "success" : "danger"),
                 };
@@ -497,78 +497,78 @@
 
     </div></div>
 </div>
-
-
-@* ---------------------------------------------------------------------------
-   IN-PLACE PAGING. Both pagers are ordinary links carrying the full state, so they
-   are left intact and intercepted here: fetch the same URL, lift the matching pane
-   out of the response, swap only that pane. The other table, the filters and the
-   scroll position are untouched, and a spinner runs inside the pane being loaded.
-
-   Falls back to normal navigation with JS off or if the request fails, so paging
-   never becomes unreachable.
-   --------------------------------------------------------------------------- *@
-<script>
-(function () {
-    var PANES = ["cbPane-saved", "cbPane-recent"];
-    var isAr = @(q.Arabic ? "true" : "false");
-
-    function spinner(pane, on) {
-        var id = pane.id + "-busy";
-        var el = document.getElementById(id);
-        if (on) {
-            if (el) return;
-            el = document.createElement("div");
-            el.id = id;
-            el.setAttribute("aria-hidden", "true");
-            el.style.cssText = "position:absolute;inset:0;display:flex;align-items:center;" +
-                "justify-content:center;background:rgba(255,255,255,.65);z-index:5;border-radius:.625rem;";
-            el.innerHTML = '<span class="spinner-border text-primary" role="status"></span>';
-            pane.appendChild(el);
-            pane.setAttribute("aria-busy", "true");
-        } else if (el) {
-            el.remove();
-            pane.removeAttribute("aria-busy");
-        }
-    }
-
-    function load(pane, url) {
-        spinner(pane, true);
-        fetch(url, { headers: { "X-Requested-With": "fetch" }, cache: "no-store" })
-            .then(function (r) {
-                // an expired session answers 200 with the login page; treat it as a failure
-                // rather than swapping the login form into a table.
-                if (!r.ok || (r.redirected && /\/Account\/Login/i.test(r.url))) throw new Error("load");
-                return r.text();
-            })
-            .then(function (html) {
-                var doc = new DOMParser().parseFromString(html, "text/html");
-                var next = doc.getElementById(pane.id);
-                if (!next) throw new Error("pane");
-                pane.innerHTML = next.innerHTML;
-                spinner(pane, false);
-                history.replaceState(null, "", url);
-            })
-            .catch(function () {
-                // never strand the user on a spinner: fall back to a real navigation.
-                spinner(pane, false);
-                window.location.href = url;
-            });
-    }
-
-    PANES.forEach(function (id) {
-        var pane = document.getElementById(id);
-        if (!pane) return;
-        // delegated, so it survives the pager being replaced on every swap
-        pane.addEventListener("click", function (e) {
-            var a = e.target.closest(".pagination a.page-link");
-            if (!a || !pane.contains(a)) return;
-            var href = a.getAttribute("href");
-            if (!href || href === "#" || a.closest(".page-item.disabled")) { e.preventDefault(); return; }
-            if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;   // let the user open a new tab
-            e.preventDefault();
-            load(pane, href);
-        });
-    });
-})();
+
+
+@* ---------------------------------------------------------------------------
+   IN-PLACE PAGING. Both pagers are ordinary links carrying the full state, so they
+   are left intact and intercepted here: fetch the same URL, lift the matching pane
+   out of the response, swap only that pane. The other table, the filters and the
+   scroll position are untouched, and a spinner runs inside the pane being loaded.
+
+   Falls back to normal navigation with JS off or if the request fails, so paging
+   never becomes unreachable.
+   --------------------------------------------------------------------------- *@
+<script>
+(function () {
+    var PANES = ["cbPane-saved", "cbPane-recent"];
+    var isAr = @(q.Arabic ? "true" : "false");
+
+    function spinner(pane, on) {
+        var id = pane.id + "-busy";
+        var el = document.getElementById(id);
+        if (on) {
+            if (el) return;
+            el = document.createElement("div");
+            el.id = id;
+            el.setAttribute("aria-hidden", "true");
+            el.style.cssText = "position:absolute;inset:0;display:flex;align-items:center;" +
+                "justify-content:center;background:rgba(255,255,255,.65);z-index:5;border-radius:.625rem;";
+            el.innerHTML = '<span class="spinner-border text-primary" role="status"></span>';
+            pane.appendChild(el);
+            pane.setAttribute("aria-busy", "true");
+        } else if (el) {
+            el.remove();
+            pane.removeAttribute("aria-busy");
+        }
+    }
+
+    function load(pane, url) {
+        spinner(pane, true);
+        fetch(url, { headers: { "X-Requested-With": "fetch" }, cache: "no-store" })
+            .then(function (r) {
+                // an expired session answers 200 with the login page; treat it as a failure
+                // rather than swapping the login form into a table.
+                if (!r.ok || (r.redirected && /\/Account\/Login/i.test(r.url))) throw new Error("load");
+                return r.text();
+            })
+            .then(function (html) {
+                var doc = new DOMParser().parseFromString(html, "text/html");
+                var next = doc.getElementById(pane.id);
+                if (!next) throw new Error("pane");
+                pane.innerHTML = next.innerHTML;
+                spinner(pane, false);
+                history.replaceState(null, "", url);
+            })
+            .catch(function () {
+                // never strand the user on a spinner: fall back to a real navigation.
+                spinner(pane, false);
+                window.location.href = url;
+            });
+    }
+
+    PANES.forEach(function (id) {
+        var pane = document.getElementById(id);
+        if (!pane) return;
+        // delegated, so it survives the pager being replaced on every swap
+        pane.addEventListener("click", function (e) {
+            var a = e.target.closest(".pagination a.page-link");
+            if (!a || !pane.contains(a)) return;
+            var href = a.getAttribute("href");
+            if (!href || href === "#" || a.closest(".page-item.disabled")) { e.preventDefault(); return; }
+            if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;   // let the user open a new tab
+            e.preventDefault();
+            load(pane, href);
+        });
+    });
+})();
 </script>

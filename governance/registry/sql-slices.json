@@ -202,6 +202,15 @@
       "appliedStatus": "Various",
       "gatesCorePath": "Some",
       "note": "Hyper (hm*), POS, tasks (7 slices), calendar, library, inventory reconcile."
+    },
+    {
+      "sliceId": "SQL-23",
+      "slice": "platform_tags.sql",
+      "tree": "CANONICAL",
+      "owner": "Platform",
+      "appliedStatus": "Applied twice to linked CrossBuyDB2; backup verified",
+      "gatesCorePath": "Yes - restored CRM tag/filter surfaces",
+      "note": "Historical platform tag authority restored from 36387987; reused by CRM. Tags/TagAssignments created; both recorded passes committed without business rows. Real SQL Server fresh/input-first/concurrency matrix NOT PROVEN; no isolated database created."
     }
   ]
 }

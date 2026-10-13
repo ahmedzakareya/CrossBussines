@@ -84,7 +84,7 @@
 				// The hub. Its alias covers every OTHER report opened from a card - the drill-down pattern
 				// Inventory already uses for its own reports.
 				new() { LabelAr = "مركز التقارير", LabelEn = "Reports center", Action = "Index", Controller = "Reports",
-					Aliases = new() { "Viewer" } },
+                    Aliases = new() { "Viewer", "Datasets" } },
 				// A specific report, addressed by its registered code (BusinessEventsDataset.ReportCode). It is
 				// the same Viewer action as the alias above - the route VALUE is what makes it a different
 				// screen to the user, and what makes only this row light up when it is open.
@@ -367,7 +367,7 @@
 		{
 			new() { LabelAr = "المهام", LabelEn = "Tasks", Icon = "ki-outline ki-abstract-26", Items = new()
 			{
-				new() { LabelAr = "مهامي", LabelEn = "My tasks", Action = "Index", Controller = "Tasks" },
+                new() { LabelAr = "مهامي", LabelEn = "My tasks", Action = "Index", Controller = "Tasks", Aliases = new() { "Summary" } },
 				new() { LabelAr = "كل المهام", LabelEn = "All tasks", Action = "All", Controller = "Tasks" },
 				new() { LabelAr = "اللوحة", LabelEn = "Board", Action = "Board", Controller = "Tasks", Aliases = new() { "Detail" } },
 			}},

@@ -15,11 +15,11 @@
 <!DOCTYPE html>
 <html lang="@Thread.CurrentThread.CurrentCulture.TwoLetterISOLanguageName" dir="@(Thread.CurrentThread.CurrentCulture.TextInfo.IsRightToLeft ? "rtl" : "ltr")">
 <head>
-	<title>@ViewData["Title"] · CrossBuy POS</title>
+	<title>@ViewData["Title"] · @CrossBuy.BL.Platform.ProductIdentity.Name POS</title>
 	<meta charset="utf-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
-	<link rel="shortcut icon" href="~/Backend-assets/media/logos/favicon.ico" asp-append-version="true" />
-	<link rel="icon" type="image/svg+xml" href="~/Backend-assets/media/logos/crossbuy-favicon.svg" asp-append-version="true" />
+	<link rel="shortcut icon" href="@CrossBuy.BL.Platform.ProductIdentity.Assets.FaviconIco" asp-append-version="true" />
+	<link rel="icon" type="image/svg+xml" href="@CrossBuy.BL.Platform.ProductIdentity.Assets.Icon" asp-append-version="true" />
 	<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,400,500,600,700" />
 	<!-- PWA (installable cashier) — same as the standalone POS -->
 	<link rel="manifest" href="~/pos.webmanifest" asp-append-version="true" />
@@ -61,7 +61,8 @@
 					<!--begin::Logo-->
 					<div class="app-header-logo d-flex align-items-center gap-4" id="kt_app_header_logo">
 						<a href="/pos/start" class="app-sidebar-logo">
-							<img alt="CrossBuy" src="~/Backend-assets/media/logos/crossbuy-logo.svg" class="h-28px" asp-append-version="true" />
+							<img alt="@CrossBuy.BL.Platform.ProductIdentity.Name" src="@CrossBuy.BL.Platform.ProductIdentity.Assets.LogoOnLight" class="h-28px theme-light-show" asp-append-version="true" />
+<img alt="@CrossBuy.BL.Platform.ProductIdentity.Name" src="@CrossBuy.BL.Platform.ProductIdentity.Assets.LogoOnDark" class="h-28px theme-dark-show" asp-append-version="true" />
 						</a>
 						@if (!string.IsNullOrEmpty(ctx?.BranchName))
 						{

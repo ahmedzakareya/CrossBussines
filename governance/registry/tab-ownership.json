@@ -38,6 +38,7 @@
         "CrossBuy/BL/IntegrityCheckHostedService.cs",
         "CrossBuy/BL/CrmReminderHostedService.cs",
         "CrossBuy.Tests/Correction005StructuralTests.cs",
+        "CrossBuy.Tests/SqlManifestCompletenessTests.cs",
         "CrossBuy.Tests/Stage1BypassTests.cs",
         "CrossBuy.Tests/Stage1DiWiringTests.cs",
         "CrossBuy.Tests/Stage1IsolationMatrixTests.cs",

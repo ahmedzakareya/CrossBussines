@@ -22,6 +22,14 @@ namespace CrossBuy.BL
 		Task<YearClosePreview> PreviewAsync(int companyId, int fiscalYearId);
 		Task<(bool ok, string? error)> CloseYearAsync(int companyId, int fiscalYearId, int? userId);
 		Task<(bool ok, string? error)> ReopenYearAsync(int companyId, int closingId, int? userId);
+
+		/// <summary>
+		/// Opens a fiscal year and its twelve monthly periods for ONE company. Closing a year does not
+		/// create the next one -- CloseYearAsync posts the closing entry and marks the year closed, and
+		/// nothing else in the product ever wrote a FiscalYear -- so without this a company could post
+		/// only until its first year ran out.
+		/// </summary>
+		Task<(bool ok, string? error)> OpenYearAsync(int companyId, int year);
 	}
 
 	public class ClosingService : IClosingService
@@ -31,6 +39,54 @@ namespace CrossBuy.BL
 		public ClosingService(CrossDbContext context, IJournalEntryService journals) { _context = context; _journals = journals; }
 
 		private static decimal R(decimal v) => Math.Round(v, 2, MidpointRounding.AwayFromZero);
+
+
+		// =====================================================================================
+		// Opening a fiscal year.
+		//
+		// CloseYearAsync deliberately does NOT do this: it posts the closing entry and marks the year
+		// closed, and opening the next one is a separate decision an accountant makes. Before this
+		// existed, nothing in the product created a FiscalYear at all, so a company could post only
+		// within whatever calendar it happened to be given.
+		//
+		// COMPANY-SCOPED AND IDEMPOTENT. The company is the caller's, passed from the gated endpoint;
+		// a year that already exists for that company is refused rather than duplicated, so a double
+		// click cannot produce two overlapping calendars.
+		// =====================================================================================
+		public async Task<(bool ok, string? error)> OpenYearAsync(int companyId, int year)
+		{
+			if (companyId <= 0) return (false, "No company resolved.");
+			if (year < 2000 || year > 2100) return (false, "That is not a sensible fiscal year.");
+
+			if (await _context.FiscalYears.AnyAsync(y => y.CompanyID == companyId && y.StartDate.Year == year))
+				return (false, $"The fiscal year {year} is already open for this company.");
+
+			var fy = new FiscalYear
+			{
+				CompanyID = companyId,
+				Name = year.ToString(),
+				StartDate = new DateTime(year, 1, 1),
+				EndDate = new DateTime(year, 12, 31),
+				Status = "Open",
+			};
+			_context.FiscalYears.Add(fy);
+			await _context.SaveChangesAsync();
+
+			for (byte m = 1; m <= 12; m++)
+			{
+				_context.FiscalPeriods.Add(new FiscalPeriod
+				{
+					FiscalYearId = fy.ID,
+					PeriodNo = m,
+					StartDate = new DateTime(year, m, 1),
+					EndDate = new DateTime(year, m, DateTime.DaysInMonth(year, m)),
+					Status = AccountingPeriodStatuses.Open,
+				});
+			}
+			await _context.SaveChangesAsync();
+
+			return (true, null);
+		}
 
 		public async Task<List<FiscalYear>> GetYearsAsync(int companyId) =>
 			await _context.FiscalYears.AsNoTracking().Where(y => y.CompanyID == companyId).OrderByDescending(y => y.StartDate).ToListAsync();

@@ -161,6 +161,8 @@ namespace CrossBuy.Tests
             var view = View(relative.Split(Path.DirectorySeparatorChar));
 
             var hex = new Regex(@"#[0-9a-fA-F]{6}\b", RegexOptions.CultureInvariant);
+            // Comments explain retired colours and do not contribute to the rendered palette.
+            view = Regex.Replace(view, @"@\*.*?\*@|/\*.*?\*/|<!--.*?-->", string.Empty, RegexOptions.Singleline);
             var allowed = hex.Matches(authority).Select(m => m.Value.ToLowerInvariant()).ToHashSet();
 
             // Calendar's FullCalendar palette is part of its stated exemption.

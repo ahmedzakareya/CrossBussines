@@ -1,4 +1,4 @@
-﻿@using CrossBuy.BL
+@using CrossBuy.BL
 @inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
 @{
     @* GLOBAL UI RULE: Inventory is the only visual authority. Inventory shell, Inventory cards. *@
@@ -168,8 +168,7 @@
 }
 
 
-<style>
-</style>
+<link rel="stylesheet" href="~/Backend-assets/css/crossbuy-brand.css" asp-append-version="true" />
 
 @* THE PAGER. It works on the rows already in the page - see the header of the script for why
    that is the right call at this size, and for the row count at which it stops being. *@

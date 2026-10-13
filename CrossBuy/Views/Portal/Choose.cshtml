@@ -19,16 +19,16 @@
 <!DOCTYPE html>
 <html lang="@_cur" dir="@(isAr ? "rtl" : "ltr")">
 <head>
-    <title>@Localizer["Choose destination"] - CrossBuy</title>
+    <title>@Localizer["Choose destination"] - @CrossBuy.BL.Platform.ProductIdentity.Name</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="shortcut icon" href="~/Backend-assets/media/logos/favicon.ico" asp-append-version="true" />
-    <link rel="icon" type="image/svg+xml" href="~/Backend-assets/media/logos/crossbuy-favicon.svg" asp-append-version="true" />
+    <link rel="shortcut icon" href="@CrossBuy.BL.Platform.ProductIdentity.Assets.FaviconIco" asp-append-version="true" />
+    <link rel="icon" type="image/svg+xml" href="@CrossBuy.BL.Platform.ProductIdentity.Assets.Icon" asp-append-version="true" />
     @if (isAr)
     {
         <link href="~/Backend-assets/plugins/global/plugins.bundle.rtl.css" rel="stylesheet" type="text/css" asp-append-version="true" />
         <link href="~/Backend-assets/css/style.bundle.rtl.css" rel="stylesheet" type="text/css" asp-append-version="true" />
-        <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@@400;600;700;800;900&display=swap" rel="stylesheet">
+        <link href="~/Backend-assets/fonts/cairo/cairo.css" rel="stylesheet" asp-append-version="true" />
     }
     else
     {
@@ -53,7 +53,7 @@
             --ink:#0B2545;        /* headings */
             --ink-soft:#40587C;   /* body copy */
             --ink-mute:#6B82A6;   /* the quietest tier */
-            --blue:#1667D6;
+            --blue:@CrossBuy.BL.Platform.ProductIdentity.Palette.Primary;
             --line:#E6EDF7;       /* hairlines */
             --card:#ffffff;
         }
@@ -321,7 +321,7 @@
         .growcta:hover{ transform:translateY(-2px); box-shadow:0 12px 26px rgba(11,37,69,.12); }
         .growcta .gi{ width:44px; height:44px; flex:none; border-radius:12px; display:flex; align-items:center;
             justify-content:center; color:#fff;
-            background:linear-gradient(160deg,#4C8DE8 0%,var(--blue) 60%,#0E4A9E 100%);
+            background:linear-gradient(160deg,@CrossBuy.BL.Platform.ProductIdentity.Palette.Primary 0%,var(--blue) 60%,@CrossBuy.BL.Platform.ProductIdentity.Palette.Dark 100%);
             box-shadow:0 6px 14px -6px var(--blue); }
         .growcta .gi i{ font-size:21px; }
         .growcta .gt b{ display:block; font-size:.92rem; color:var(--ink); }
@@ -407,7 +407,7 @@
     <div class="shieldtop"><i class="ki-outline ki-shield-tick fs-2"></i></div>
 
     <div class="head">
-        <img class="logo" src="~/Backend-assets/media/brand/crossbuy-logo-lockup.png" alt="CrossBuy" asp-append-version="true" />
+        <img class="logo" src="@CrossBuy.BL.Platform.ProductIdentity.Assets.LogoOnLight" alt="@CrossBuy.BL.Platform.ProductIdentity.Name" asp-append-version="true" />
         <h1 class="hello">@Localizer["Welcome, "]<span>@name</span></h1>
         <p class="sub">@Localizer["Choose the portal that fits your needs today"]</p>
         <div class="dash"><i></i><i class="on"></i><i></i></div>
@@ -458,7 +458,7 @@
             <div class="orbit"></div>
             <div class="orbit two"></div>
             <a class="hub" href="@Url.Action("Index", "Service")">
-                <img class="hublogo" src="~/Backend-assets/media/brand/crossbuy-logo-lockup.png" alt="" asp-append-version="true" />
+                <img class="hublogo" src="@CrossBuy.BL.Platform.ProductIdentity.Assets.LogoOnLight" alt="" asp-append-version="true" />
                 <b>@Localizer["Control panel"]</b>
                 <small>@Localizer["Quick access to all systems"]</small>
             </a>

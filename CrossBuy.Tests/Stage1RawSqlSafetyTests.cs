@@ -40,6 +40,10 @@ namespace CrossBuy.Tests
         // gained or lost a call, so the reviewer's job is to add the verdict, not to silence the test.
         private static readonly (string File, int Count, string Verdict)[] ReviewedProductionRawSql =
         {
+            ("BL/AccountingPeriodControlService.cs", 1,
+                "Locked FiscalPeriods read has an explicit EXISTS on FiscalYears.CompanyID inside the raw query; caller authority is checked before locking."),
+            ("BL/ProgressBillingService.cs", 1,
+                "Locked ProgressBillings read predicates both ID and CompanyID using FromSqlInterpolated parameters inside the transaction."),
             ("BL/IntegrityCheckService.cs", 3,
                 "1) barcode_cross_table_dup reads Items (PILOT) — company predicate ADDED in B5; it previously " +
                 "counted every company's barcodes. 2) fixed_barcode_in_scale_range reads Items (PILOT) with an " +

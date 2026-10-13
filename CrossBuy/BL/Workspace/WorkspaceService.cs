@@ -942,11 +942,11 @@ namespace CrossBuy.BL.Workspace
         // produced by the read model, not by a view, and the file already carries its Arabic this way.
         private static string ReasonAr(WorkspaceAttentionReason r) => r switch
         {
-            WorkspaceAttentionReason.OverdueTask => "Overdue",
-            WorkspaceAttentionReason.ApprovalWaiting => "Awaiting your approval",
-            WorkspaceAttentionReason.DueToday => "Due today",
-            WorkspaceAttentionReason.UrgentTask => "Urgent",
-            _ => "You were mentioned",
+            WorkspaceAttentionReason.OverdueTask => "متأخرة",
+            WorkspaceAttentionReason.ApprovalWaiting => "بانتظار موافقتك",
+            WorkspaceAttentionReason.DueToday => "مستحقة اليوم",
+            WorkspaceAttentionReason.UrgentTask => "عاجلة",
+            _ => "تمت الإشارة إليك",
         };
 
         private static string ReasonEn(WorkspaceAttentionReason r) => r switch

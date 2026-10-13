@@ -36,6 +36,19 @@ namespace CrossBuy.ViewModel
 		public List<CompanyType>? companyTypes { get; set; }
 
 		public List<CrossBuy.Models.Context.Admin.Attachment >? AttachmentsFiles { get; set; }
+
+		// ---- first-administrator provisioning (new companies only) ----
+		// A company is created with nobody able to administer it: the Employee row is the authority for
+		// company (BusinessContextFactory) and there is no company switcher, so no existing user can act
+		// inside a company they have no row in. These carry the administrator the company is born with.
+		public string? AdministratorEmail { get; set; }
+		public string? AdministratorFullName { get; set; }
+		public string? AdministratorFullNameEn { get; set; }
+
+		// ---- provisioning outcome (server-filled, never bound from the form) ----
+		public bool AdministratorProvisioned { get; set; }
+		public string? AdministratorTempPassword { get; set; }
+		public string? AdministratorMessage { get; set; }
 	}
 
 }

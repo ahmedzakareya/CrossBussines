@@ -12,7 +12,7 @@
 <!--begin::Head-->
 <head>
 	<base href="/" />
-	<title>@CrossBuy.Resources.SharedResources.SignInTitle — CrossBuy</title>
+	<title>@CrossBuy.Resources.SharedResources.SignInTitle — @CrossBuy.BL.Platform.ProductIdentity.Name</title>
 	<meta charset="utf-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
 	@* A SIGN-IN PAGE IS NOT A LANDING PAGE. It has nothing to rank for and every reason not to be
@@ -20,8 +20,8 @@
 	   all of them Metronic's own demo metadata, pointing a search engine at keenthemes.com - are
 	   replaced by the one directive that is actually true of this page. *@
 	<meta name="robots" content="noindex, nofollow" />
-	<link rel="shortcut icon" href="~/Backend-assets/media/logos/favicon.ico" asp-append-version="true" />
-    <link rel="icon" type="image/svg+xml" href="~/Backend-assets/media/logos/crossbuy-favicon.svg" asp-append-version="true" />
+	<link rel="shortcut icon" href="@CrossBuy.BL.Platform.ProductIdentity.Assets.FaviconIco" asp-append-version="true" />
+    <link rel="icon" type="image/svg+xml" href="@CrossBuy.BL.Platform.ProductIdentity.Assets.Icon" asp-append-version="true" />
 	<!--begin::Fonts(mandatory for all pages)-->
 	<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,400,500,600,700" />
 	<!--end::Fonts-->
@@ -101,8 +101,8 @@
 			/* WAS #4A5B73, A GREY. 7.31:1 on the light surface the brand column sits on. */
 			--cb-ink-soft:   #1B4B8F;   /* body copy */
 			--cb-ink-mute:   #1D5AA8;   /* the quietest tier — 5.81:1 */
-			--cb-blue:       #1667D6;   /* the accent half of the wordmark */
-			--cb-blue-deep:  #0E4A9E;
+			--cb-blue:       @CrossBuy.BL.Platform.ProductIdentity.Palette.Primary;   /* the accent half of the wordmark */
+			--cb-blue-deep:  @CrossBuy.BL.Platform.ProductIdentity.Palette.Dark;
 			--cb-tile:       #F2F7FF;
 			--cb-tile-edge:  #E2ECFB;
 			--cb-card-edge:  rgba(255,255,255,.7);
@@ -389,11 +389,11 @@
 		.cb-submit {
 			height: 58px; width: 100%; border: 0; border-radius: 8px; color: #fff;
 			font-size: 19px; font-weight: 700;
-			background: linear-gradient(90deg, #1B74E4 0%, #0E5BC4 100%);
-			box-shadow: 0 12px 26px rgba(22,103,214,.32);
+			background: linear-gradient(90deg, var(--cb-blue) 0%, var(--cb-blue-deep) 100%);
+			box-shadow: 0 12px 26px rgba(58,87,149,.32);
 			display: flex; align-items: center; justify-content: center;
 		}
-		.cb-submit:hover { background: linear-gradient(90deg, #1F7FF2 0%, #1263D4 100%); color: #fff; }
+		.cb-submit:hover { background: linear-gradient(90deg, var(--cb-blue-deep) 0%, var(--cb-blue) 100%); color: #fff; }
 		.cb-submit:disabled { opacity: .72; }
 		.cb-submit-label { position: relative; width: 100%; display: flex; align-items: center; justify-content: center; }
 		/* "Sign In" in the design, not "Sign in" — capitalised here rather than in the resource file
@@ -503,7 +503,7 @@
 						   be a line of text — the only way it is ever Arabic. *@
 						@* The supplied lockup with its drawn tagline cropped off, so the line below it can be
 						   text — the only way it is ever Arabic. *@
-						<img alt="CrossBuy" src="~/Backend-assets/media/brand/crossbuy-logo-lockup.png"
+						<img alt="@CrossBuy.BL.Platform.ProductIdentity.Name" src="@CrossBuy.BL.Platform.ProductIdentity.Assets.LogoOnLight"
 							 class="d-block mx-auto cb-logo" asp-append-version="true" />
 						@* THE RULES ON EITHER SIDE are the logo's own device — the supplied artwork draws the
 						   tagline between two short strokes. They matter more here than there: the English
@@ -536,7 +536,7 @@
 					<div class="w-100 d-flex flex-column align-items-center cb-card-wrap">
 
 						@* the mark, for the widths where the brand column is not drawn *@
-						<img alt="CrossBuy" src="~/Backend-assets/media/brand/crossbuy-logo-lockup.png"
+						<img alt="@CrossBuy.BL.Platform.ProductIdentity.Name" src="@CrossBuy.BL.Platform.ProductIdentity.Assets.LogoOnLight"
 							 class="cb-mobile-brand mb-5" asp-append-version="true" />
 
 						<div class="cb-card">
@@ -678,7 +678,7 @@
 
 			@* ================================ THE FOOTER ================================ *@
 			<div class="cb-foot text-center pt-8">
-				&copy; @DateTime.Now.Year CrossBuy. @CrossBuy.Resources.SharedResources.AllRightsReserved
+				&copy; @DateTime.Now.Year @(CrossBuy.BL.Platform.ProductIdentity.Name). @CrossBuy.Resources.SharedResources.AllRightsReserved
 				<span class="sep">|</span>@CrossBuy.Resources.SharedResources.TrustSecure
 				<span class="sep">|</span>@CrossBuy.Resources.SharedResources.TrustReliable
 				<span class="sep">|</span>@CrossBuy.Resources.SharedResources.TrustScalable

@@ -225,17 +225,11 @@ namespace CrossBuy.Tests
             Assert.DoesNotContain("AddAuthentication(PortalAuthenticationDefaults", program);
             Assert.DoesNotContain("AddAuthentication(\"CrossBuy.Portal\"", program);
 
-            // THE INTERNAL COOKIE CONFIGURATION IS NOT EDITED BY THIS WAVE, asserted as ABSENCE.
-            //
-            // This used to assert that ConfigureApplicationCookie was PRESENT, which held on the line
-            // this suite came from because that line already called it. This composition root does
-            // not, and the portal convergence had no business adding one: that call configures the
-            // INTERNAL identity cookie, and a portal wave reaching into it is exactly the coupling
-            // AddCrossBuyPortalAuthentication's parameterless AddAuthentication() exists to avoid.
-            //
-            // So the property is kept and its direction corrected — the portal registration must not
-            // have introduced a configuration of somebody else's cookie.
-            Assert.DoesNotContain("ConfigureApplicationCookie", program);
+            // Portal registration must not configure the internal cookie. Other platform
+            // registrations may configure its shared access-denied destination independently.
+            var registration = System.IO.File.ReadAllText(System.IO.Path.Combine(
+                RepoRoot(), "CrossBuy", "BL", "Platform", "PortalAuthenticationRegistration.cs"));
+            Assert.DoesNotContain("ConfigureApplicationCookie", registration);
         }
 
         [Fact]

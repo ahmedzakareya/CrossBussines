@@ -305,7 +305,7 @@ namespace CrossBuy.BL
                 var ids = await CompanyPeriods(context.CompanyId).Select(p => p.ID).ToListAsync(ct);
                 if (!ids.Contains(fiscalPeriodId)) return (false, Refused);
                 _ = (await _db.FiscalPeriods
-                        .FromSqlInterpolated($"SELECT * FROM FiscalPeriods WITH (UPDLOCK) WHERE ID = {fiscalPeriodId}")
+                        .FromSqlInterpolated($"SELECT p.* FROM FiscalPeriods p WITH (UPDLOCK) WHERE p.ID = {fiscalPeriodId} AND EXISTS (SELECT 1 FROM FiscalYears y WHERE y.ID = p.FiscalYearId AND y.CompanyID = {context.CompanyId})")
                         .AsTracking().ToListAsync(ct)).FirstOrDefault();
             }
 

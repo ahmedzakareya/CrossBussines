@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using CrossBuy.BL;
 using CrossBuy.Models;
 using CrossBuy.Models.Context;
@@ -54,15 +54,61 @@ namespace CrossBuy.Controllers
 			_coa = coa; _journals = journals; _gl = gl; _costCenters = costCenters; _periods = periods; _posting = posting; _ar = ar; _ap = ap; _dashboard = dashboard; _banks = banks; _assets = assets; _tax = tax; _eta = eta; _statements = statements; _closing = closing; _context = context; _access = access; _insights = insights; _executive = executive; _currency = currency; _pricing = pricing; L = localizer; _company = company;
 		}
 
+		// ==========================================================================================
+		// THE COMPANY FOR THIS REQUEST
+		//
+		// WHAT WAS HERE: `private const int co = 1;`, read by 184 lines across 109
+		// actions — every customer, vendor, sales and purchase invoice, receipt, payment, journal,
+		// statement, ageing and trial-balance figure in the module. On a multi-company install that is
+		// not "a default": a company-2 accountant either saw company 1's books or saw nothing, and the
+		// WRITE paths posted company 2's documents into company 1's ledger. It is a tenant-isolation
+		// defect, not a display one.
+		//
+		// WHY THIS SHAPE AND NOT A PER-ACTION RESOLVE. A handful of actions here were already
+		// remediated under CORRECTION-005 with an inline `_company.ResolveAsync()` plus a refusal; at
+		// 109 call sites that is 700 lines of repetition and 109 chances to forget the refusal. The
+		// cached-field shape is the one TasksController adopted for exactly the same problem at 56 call
+		// sites, for the same reason: resolution is async so a constructor cannot do it, the controller
+		// is per-request, so one resolution serves every call site and they cannot disagree.
+		//
+		// FAIL CLOSED, TWICE. `0` is returned when nothing resolves, and no row holds company 0, so
+		// every `CompanyID == companyId` predicate matches nothing — reads and the row lookups writes
+		// perform. On top of that floor each action refuses explicitly, so an unresolved caller is told,
+		// rather than shown an empty screen that looks like "you have no invoices".
+		private int? _companyId;
+
+		private async Task<int> CompanyIdAsync()
+		{
+			if (_companyId.HasValue) return _companyId.Value;
+			var scope = await _company.ResolveAsync();
+			_companyId = scope.Ok ? scope.CompanyId : 0;
+			return _companyId.Value;
+		}
+
+		/// Page-shaped refusal — the shape this controller's own CORRECTION-005 actions already use.
+		/// The resolver's reason is deliberately not rendered: it names companies, and "your company is
+		/// 2, the record is company 1" tells a caller a record exists somewhere they cannot see.
+		private IActionResult CompanyRefusedView()
+		{
+			TempData["AccErr"] = L["You do not have permission to perform this action"].Value;
+			return RedirectToAction(nameof(Index));
+		}
+
+		/// JSON-shaped refusal, for the AJAX endpoints the document screens call.
+		private IActionResult CompanyRefusedJson() =>
+			Json(new { success = false, message = L["You do not have permission to perform this action"].Value });
+
 		// Multi-Currency helpers shared by the create-document screens
 		private async Task<List<Models.Context.Accounting.Currency>> CurrencyListAsync() => await _context.Currencies.AsNoTracking().OrderBy(c => c.Code).ToListAsync();
-		private Task<int> FunctionalCurrencyIdAsync() => _currency.GetFunctionalCurrencyIdAsync(DefaultCompanyId, null);
+		// The company is now a PARAMETER on these three helpers rather than a constant they read: a
+		// helper that resolves its own company could silently disagree with the action that called it.
+		private Task<int> FunctionalCurrencyIdAsync(int companyId) => _currency.GetFunctionalCurrencyIdAsync(companyId, null);
 		private CrossBuy.BL.IProjectService PrjSvc => (HttpContext.RequestServices.GetService(typeof(CrossBuy.BL.IProjectService)) as CrossBuy.BL.IProjectService)!;
 
 		// رؤى ذكية — AI insights (anomaly + cash-flow + inventory), all from the local
 		// ML service (no LLM / no API key). Server-rendered; the AI only surfaces findings.
 		//
-		// SECURITY REMEDIATION — this action used to pass `DefaultCompanyId` (the literal 1) to all three
+		// SECURITY REMEDIATION — this action used to pass `co` (the literal 1) to all three
 		// insight calls. Because it is [SessionValidation] and nothing more, ANY authenticated user of ANY
 		// company reached it, and six of the tables the service reads carry no Stage-1 global company
 		// filter (Account, Vendor, Receipt, Payment, StockBalance, StockMovement) — so for those the
@@ -173,34 +219,44 @@ namespace CrossBuy.Controllers
 		}
 
 		// ===== segregation of duties helpers (1c) =====
-		private async Task<decimal> ApprovalThresholdAsync()
-			=> (await _context.AccountingSettings.AsNoTracking().Where(s => s.CompanyID == DefaultCompanyId).Select(s => (decimal?)s.ApprovalThreshold).FirstOrDefaultAsync()) ?? 0m;
+		private async Task<decimal> ApprovalThresholdAsync(int companyId)
+			=> (await _context.AccountingSettings.AsNoTracking().Where(s => s.CompanyID == companyId).Select(s => (decimal?)s.ApprovalThreshold).FirstOrDefaultAsync()) ?? 0m;
 		private async Task<bool> IsChiefAsync()
 			=> (await _access.MyRolesAsync()).Contains("ChiefAccountant");
 
-		private async Task<List<AccountNode>> CashAccountsAsync() =>
-			(await _coa.GetFlatAsync(DefaultCompanyId, postableOnly: true)).Where(a => a.Code.StartsWith("1101")).ToList();
+		private async Task<List<AccountNode>> CashAccountsAsync(int companyId) =>
+			(await _coa.GetFlatAsync(companyId, postableOnly: true)).Where(a => a.Code.StartsWith("1101")).ToList();
 
-		// for Phase 0/1 we operate on a single company; multi-company selector comes later
-		private const int DefaultCompanyId = 1;
 
 		[SessionValidation]
 		[HttpGet]
-		public async Task<IActionResult> Index() => View(await _dashboard.BuildAsync(DefaultCompanyId));
+		public async Task<IActionResult> Index()
+		{
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			return View(await _dashboard.BuildAsync(co));
+		}
 
 		// Cross-module executive command center (KPIs + ratios + trends from every module)
 		[SessionValidation]
 		[HttpGet]
-		public async Task<IActionResult> Executive() => View(await _executive.BuildAsync(DefaultCompanyId));
+		public async Task<IActionResult> Executive()
+		{
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			return View(await _executive.BuildAsync(co));
+		}
 
 		// شجرة الحسابات — Chart of Accounts tree
 		[SessionValidation]
 		[HttpGet]
 		public async Task<IActionResult> ChartOfAccounts()
 		{
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
 			ViewBag.AccountTypes = await _coa.GetAccountTypesAsync();
-			ViewBag.AllAccounts = await _coa.GetFlatAsync(DefaultCompanyId);
-			var tree = await _coa.GetTreeAsync(DefaultCompanyId);
+			ViewBag.AllAccounts = await _coa.GetFlatAsync(co);
+			var tree = await _coa.GetTreeAsync(co);
 			return View(tree);
 		}
 
@@ -208,7 +264,9 @@ namespace CrossBuy.Controllers
 			[CrossBuy.Models.AccPerm("manage")]
 		public async Task<IActionResult> CreateAccount(string code, string name, string? nameEn, int accountTypeId, int? parentId, bool isPostable, bool requireCostCenter, string? cashFlowCategory)
 		{
-			var (ok, err, _) = await _coa.CreateAsync(DefaultCompanyId, code, name, nameEn ?? "", accountTypeId, parentId, isPostable, requireCostCenter, cashFlowCategory, null);
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			var (ok, err, _) = await _coa.CreateAsync(co, code, name, nameEn ?? "", accountTypeId, parentId, isPostable, requireCostCenter, cashFlowCategory, null);
 			TempData[ok ? "AccMsg" : "AccErr"] = ok ? L["Account added"].Value : err;
 			return RedirectToAction(nameof(ChartOfAccounts));
 		}
@@ -217,7 +275,9 @@ namespace CrossBuy.Controllers
 			[CrossBuy.Models.AccPerm("manage")]
 		public async Task<IActionResult> EditAccount(int id, string code, string name, string? nameEn, bool isPostable, bool isActive, bool requireCostCenter, string? cashFlowCategory)
 		{
-			var (ok, err) = await _coa.UpdateAsync(DefaultCompanyId, id, code, name, nameEn ?? "", isPostable, isActive, requireCostCenter, cashFlowCategory, null);
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			var (ok, err) = await _coa.UpdateAsync(co, id, code, name, nameEn ?? "", isPostable, isActive, requireCostCenter, cashFlowCategory, null);
 			TempData[ok ? "AccMsg" : "AccErr"] = ok ? L["Account updated"].Value : err;
 			return RedirectToAction(nameof(ChartOfAccounts));
 		}
@@ -226,7 +286,9 @@ namespace CrossBuy.Controllers
 		[SessionValidation][HttpGet]
 		public async Task<IActionResult> JournalEntry(int id)
 		{
-			var e = await _context.JournalEntries.AsNoTracking().Include(x => x.Lines).FirstOrDefaultAsync(x => x.ID == id && x.CompanyID == DefaultCompanyId);
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			var e = await _context.JournalEntries.AsNoTracking().Include(x => x.Lines).FirstOrDefaultAsync(x => x.ID == id && x.CompanyID == co);
 			if (e == null) return RedirectToAction(nameof(Journals));
 			var accIds = e.Lines.Select(l => l.AccountId).Distinct().ToList();
 			ViewBag.Accounts = await _context.Accounts.AsNoTracking().Where(a => accIds.Contains(a.ID)).ToDictionaryAsync(a => a.ID, a => new[] { a.Code, a.Name, a.NameEn });
@@ -258,12 +320,14 @@ namespace CrossBuy.Controllers
 			return View(inv);
 		}
 
-		// HM-8: official A4 invoice — back-office (accountant) path. Gate = SessionValidation; guard = company (DefaultCompanyId).
+		// HM-8: official A4 invoice — back-office (accountant) path. Gate = SessionValidation; guard = company (co).
 		[SessionValidation][HttpGet]
 		public async Task<IActionResult> PrintInvoice(int id)
 		{
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
 			var inv = await _context.SalesInvoices.AsNoTracking().Include(i => i.Lines)
-				.FirstOrDefaultAsync(i => i.ID == id && i.CompanyID == DefaultCompanyId);
+				.FirstOrDefaultAsync(i => i.ID == id && i.CompanyID == co);
 			if (inv == null) return RedirectToAction(nameof(SalesInvoices));
 			bool isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
 			var pd = await CrossBuy.BL.OfficialInvoiceHelper.LoadPrintDataAsync(_context, inv, isAr);
@@ -278,14 +342,14 @@ namespace CrossBuy.Controllers
 		// employee could rewrite the legal beneficiary NAME and TAX NUMBER on any posted sales invoice in
 		// company 1. `SessionValidation` proves a session exists and `ValidateAntiForgeryToken` proves the form
 		// came from our page — neither is authorization, and the company came from the compile-time constant
-		// `DefaultCompanyId`, not from the caller. The result is alteration of a printed statutory tax document.
+		// `co`, not from the caller. The result is alteration of a printed statutory tax document.
 		//
 		// Two things were added, and deliberately only two:
 		//
 		//   1. AccPerm("post") — the SAME right that already governs journals and sales/purchase invoices in
 		//      AccountingAccessService. Stamping the beneficiary of an issued invoice is an invoice mutation, so
 		//      it takes the invoice-mutation right rather than a new vocabulary invented for one action.
-		//   2. The company from the resolved BusinessContext (CORRECTION-005), replacing DefaultCompanyId.
+		//   2. The company from the resolved BusinessContext (CORRECTION-005), replacing co.
 		//
 		// The statutory POLICY was already correct and is untouched: OfficialInvoiceHelper.StampCustomer refuses
 		// a second stamp (SET-ONCE — a printed document's beneficiary cannot change once issued) and refuses any
@@ -1105,7 +1169,9 @@ namespace CrossBuy.Controllers
 		[SessionValidation][HttpGet]
 		public async Task<IActionResult> JournalsData(string? q, string? status, int page = 1, int pageSize = 25)
 		{
-			var query = _context.JournalEntries.AsNoTracking().Where(e => e.CompanyID == DefaultCompanyId);
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedJson();
+			var query = _context.JournalEntries.AsNoTracking().Where(e => e.CompanyID == co);
 			var terms = SearchTerms.Parse(q);
 			if (terms.Count > 0)
 			{
@@ -1132,9 +1198,11 @@ namespace CrossBuy.Controllers
 		[HttpGet]
 		public async Task<IActionResult> CreateJournal()
 		{
-			ViewBag.Accounts = await _coa.GetFlatAsync(DefaultCompanyId, postableOnly: true);
-			ViewBag.CostCenters = await _costCenters.GetFlatAsync(DefaultCompanyId);
-			ViewBag.Projects = await PrjSvc.ForPickAsync(DefaultCompanyId);   // manual JE lines can carry a Project (JournalLineInput.ProjectId flows through)
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			ViewBag.Accounts = await _coa.GetFlatAsync(co, postableOnly: true);
+			ViewBag.CostCenters = await _costCenters.GetFlatAsync(co);
+			ViewBag.Projects = await PrjSvc.ForPickAsync(co);   // manual JE lines can carry a Project (JournalLineInput.ProjectId flows through)
 			return View();
 		}
 
@@ -1144,13 +1212,15 @@ namespace CrossBuy.Controllers
 			[CrossBuy.Models.AccPerm("post")]
 		public async Task<IActionResult> CreateJournal(DateTime entryDate, string? description, string? linesJson, string action)
 		{
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
 			List<JournalLineInput> lines;
 			try { lines = JsonSerializer.Deserialize<List<JournalLineInput>>(linesJson ?? "[]", new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new(); }
 			catch { lines = new(); }
 
 			var input = new JournalEntryInput
 			{
-				CompanyID = DefaultCompanyId, EntryDate = entryDate, Description = description, Lines = lines,
+				CompanyID = co, EntryDate = entryDate, Description = description, Lines = lines,
 			};
 
 			var empId = _access.CurrentEmployeeId();
@@ -1158,7 +1228,7 @@ namespace CrossBuy.Controllers
 
 			// large entries can't be self-posted: above the threshold they are saved as a draft for a ChiefAccountant to approve & post (SoD)
 			var total = lines.Sum(l => l.Debit);
-			var threshold = await ApprovalThresholdAsync();
+			var threshold = await ApprovalThresholdAsync(co);
 			bool forcedDraft = false;
 			if (post && threshold > 0 && total >= threshold) { post = false; forcedDraft = true; }
 
@@ -1180,9 +1250,9 @@ namespace CrossBuy.Controllers
 				// localizer returns the key unchanged when there is no entry, so passing the service's
 				// own sentence through L is safe and translates wherever a key exists.
 				TempData["AccErr"] = string.IsNullOrWhiteSpace(err) ? err : L[err].Value;
-				ViewBag.Accounts = await _coa.GetFlatAsync(DefaultCompanyId, postableOnly: true);
-				ViewBag.CostCenters = await _costCenters.GetFlatAsync(DefaultCompanyId);
-				ViewBag.Projects = await PrjSvc.ForPickAsync(DefaultCompanyId);   // the GET sets all three; this path was dropping the Project column's options
+				ViewBag.Accounts = await _coa.GetFlatAsync(co, postableOnly: true);
+				ViewBag.CostCenters = await _costCenters.GetFlatAsync(co);
+				ViewBag.Projects = await PrjSvc.ForPickAsync(co);   // the GET sets all three; this path was dropping the Project column's options
 				return View();
 			}
 			TempData["AccMsg"] = forcedDraft ? L["The entry ({0:N2}) exceeds the approval threshold — saved as a draft awaiting the chief accountant's approval", total].Value
@@ -1281,12 +1351,14 @@ namespace CrossBuy.Controllers
 			[CrossBuy.Models.AccPerm("post")]
 		public async Task<IActionResult> PostJournal(int id)
 		{
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
 			var empId = _access.CurrentEmployeeId();
-			var entry = await _context.JournalEntries.AsNoTracking().Where(e => e.ID == id && e.CompanyID == DefaultCompanyId)
+			var entry = await _context.JournalEntries.AsNoTracking().Where(e => e.ID == id && e.CompanyID == co)
 				.Select(e => new { e.CreatedBy, Total = _context.JournalEntryLines.Where(l => l.JournalEntryId == e.ID).Sum(l => (decimal?)l.Debit) ?? 0 }).FirstOrDefaultAsync();
 			if (entry == null) { TempData["AccErr"] = L["Journal entry not found"].Value; return RedirectToAction(nameof(Journals)); }
 
-			var threshold = await ApprovalThresholdAsync();
+			var threshold = await ApprovalThresholdAsync(co);
 			if (threshold > 0 && entry.Total >= threshold)
 			{
 				// material entry → only a ChiefAccountant may approve & post, and not the one who created it (SoD)
@@ -1315,10 +1387,12 @@ namespace CrossBuy.Controllers
 		[HttpGet]
 		public async Task<IActionResult> TrialBalance(DateTime? from, DateTime? to, int? costCenterId)
 		{
-			var tb = await _gl.TrialBalanceAsync(DefaultCompanyId, from, to, costCenterId);
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			var tb = await _gl.TrialBalanceAsync(co, from, to, costCenterId);
 			ViewBag.From = from; ViewBag.To = to;
 			ViewBag.CostCenterId = costCenterId;
-			ViewBag.CostCenters = await _costCenters.GetFlatAsync(DefaultCompanyId);
+			ViewBag.CostCenters = await _costCenters.GetFlatAsync(co);
 			return View(tb);
 		}
 
@@ -1327,7 +1401,9 @@ namespace CrossBuy.Controllers
 		[HttpGet]
 		public async Task<IActionResult> CostCenters()
 		{
-			var tree = await _costCenters.GetTreeAsync(DefaultCompanyId);
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			var tree = await _costCenters.GetTreeAsync(co);
 			return View(tree);
 		}
 
@@ -1336,7 +1412,9 @@ namespace CrossBuy.Controllers
 		[HttpGet]
 		public async Task<IActionResult> Periods()
 		{
-			var list = await _periods.ListAsync(DefaultCompanyId);
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			var list = await _periods.ListAsync(co);
 			return View(list);
 		}
 
@@ -1401,9 +1479,11 @@ namespace CrossBuy.Controllers
 		[HttpGet]
 		public async Task<IActionResult> Payroll(int? year, int? month)
 		{
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
 			var y = year ?? 2026;
 			var m = month ?? 1;
-			var preview = await _posting.PreviewPayrollAsync(DefaultCompanyId, y, m);
+			var preview = await _posting.PreviewPayrollAsync(co, y, m);
 			return View(preview);
 		}
 
@@ -1413,7 +1493,9 @@ namespace CrossBuy.Controllers
 			[CrossBuy.Models.AccPerm("manage")]
 		public async Task<IActionResult> PostPayroll(int year, int month)
 		{
-			var (ok, err, _) = await _posting.PostPayrollRunAsync(DefaultCompanyId, year, month, null);
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			var (ok, err, _) = await _posting.PostPayrollRunAsync(co, year, month, null);
 			TempData[ok ? "AccMsg" : "AccErr"] = ok ? L["The payroll entry was posted and payslips issued successfully"].Value : err;
 			return RedirectToAction(nameof(Payroll), new { year, month });
 		}
@@ -1422,19 +1504,23 @@ namespace CrossBuy.Controllers
 		[SessionValidation][HttpGet]
 		public async Task<IActionResult> PayrollDisbursement(int? year, int? month)
 		{
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
 			var y = year ?? 2026; var m = month ?? 1;
 			ViewBag.Year = y; ViewBag.Month = m;
-			var banks = await _banks.GetBankAccountsAsync(DefaultCompanyId);
-			var boxes = await _banks.GetCashBoxesAsync(DefaultCompanyId);
+			var banks = await _banks.GetBankAccountsAsync(co);
+			var boxes = await _banks.GetCashBoxesAsync(co);
 			ViewBag.PaySources = banks.Select(b => new PaySourceOption { GlAccountId = b.GlAccountId, Name = b.BankName })
 				.Concat(boxes.Select(c => new PaySourceOption { GlAccountId = c.GlAccountId, Name = c.Name })).ToList();
-			return View(await _posting.GetDisbursementViewAsync(DefaultCompanyId, y, m));
+			return View(await _posting.GetDisbursementViewAsync(co, y, m));
 		}
 
 		[SessionValidation][HttpPost][ValidateAntiForgeryToken][CrossBuy.Models.AccPerm("pay")]
 		public async Task<IActionResult> DisbursePayroll(int year, int month, int payFromGlAccountId, DateTime payDate)
 		{
-			var (ok, err) = await _posting.DisbursePayrollAsync(DefaultCompanyId, year, month, payFromGlAccountId, payDate, null);
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			var (ok, err) = await _posting.DisbursePayrollAsync(co, year, month, payFromGlAccountId, payDate, null);
 			TempData[ok ? "AccMsg" : "AccErr"] = ok ? L["Net payroll was disbursed"].Value : err;
 			return RedirectToAction(nameof(PayrollDisbursement), new { year, month });
 		}
@@ -1442,7 +1528,9 @@ namespace CrossBuy.Controllers
 		[SessionValidation][HttpPost][ValidateAntiForgeryToken][CrossBuy.Models.AccPerm("pay")]
 		public async Task<IActionResult> RemitStatutory(int year, int month, string component, int payFromGlAccountId, DateTime payDate)
 		{
-			var (ok, err) = await _posting.RemitStatutoryAsync(DefaultCompanyId, year, month, component, payFromGlAccountId, payDate, null);
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			var (ok, err) = await _posting.RemitStatutoryAsync(co, year, month, component, payFromGlAccountId, payDate, null);
 			TempData[ok ? "AccMsg" : "AccErr"] = ok ? L["The deduction was remitted to the authority"].Value : err;
 			return RedirectToAction(nameof(PayrollDisbursement), new { year, month });
 		}
@@ -1451,17 +1539,21 @@ namespace CrossBuy.Controllers
 		[SessionValidation][HttpGet]
 		public async Task<IActionResult> PayrollTaxSettings()
 		{
-			ViewBag.Settings = await _context.PayrollSettings.AsNoTracking().FirstOrDefaultAsync(s => s.CompanyID == DefaultCompanyId)
-				?? new Models.Context.Accounting.PayrollSettings { CompanyID = DefaultCompanyId };
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			ViewBag.Settings = await _context.PayrollSettings.AsNoTracking().FirstOrDefaultAsync(s => s.CompanyID == co)
+				?? new Models.Context.Accounting.PayrollSettings { CompanyID = co };
 			return View(await _context.PayrollTaxBrackets.AsNoTracking()
-				.Where(b => b.CompanyID == DefaultCompanyId).OrderBy(b => b.Ordinal).ToListAsync());
+				.Where(b => b.CompanyID == co).OrderBy(b => b.Ordinal).ToListAsync());
 		}
 
 		[SessionValidation][HttpPost][ValidateAntiForgeryToken][CrossBuy.Models.AccPerm("manage")]
 		public async Task<IActionResult> SavePayrollSettings(decimal personalExemptionAnnual, bool taxBaseExcludesEmployeeSI, decimal siMinMonthly, decimal siMaxMonthly, decimal standardMonthlyHours)
 		{
-			var s = await _context.PayrollSettings.FirstOrDefaultAsync(x => x.CompanyID == DefaultCompanyId);
-			if (s == null) { s = new Models.Context.Accounting.PayrollSettings { CompanyID = DefaultCompanyId, CreatedAt = DateTime.UtcNow }; _context.PayrollSettings.Add(s); }
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			var s = await _context.PayrollSettings.FirstOrDefaultAsync(x => x.CompanyID == co);
+			if (s == null) { s = new Models.Context.Accounting.PayrollSettings { CompanyID = co, CreatedAt = DateTime.UtcNow }; _context.PayrollSettings.Add(s); }
 			s.PersonalExemptionAnnual = personalExemptionAnnual < 0 ? 0 : personalExemptionAnnual;
 			s.TaxBaseExcludesEmployeeSI = taxBaseExcludesEmployeeSI;
 			s.SiMinMonthly = siMinMonthly < 0 ? 0 : siMinMonthly;
@@ -1475,9 +1567,11 @@ namespace CrossBuy.Controllers
 		[SessionValidation][HttpPost][ValidateAntiForgeryToken][CrossBuy.Models.AccPerm("manage")]
 		public async Task<IActionResult> SavePayrollBracket(int id, int ordinal, decimal fromAmount, decimal? toAmount, decimal rate)
 		{
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
 			if (toAmount.HasValue && toAmount.Value <= fromAmount) { TempData["AccErr"] = L["The bracket's upper limit must exceed the lower limit"].Value; return RedirectToAction(nameof(PayrollTaxSettings)); }
-			var b = id > 0 ? await _context.PayrollTaxBrackets.FirstOrDefaultAsync(x => x.ID == id && x.CompanyID == DefaultCompanyId) : null;
-			if (b == null) { b = new Models.Context.Accounting.PayrollTaxBracket { CompanyID = DefaultCompanyId, CreatedAt = DateTime.UtcNow }; _context.PayrollTaxBrackets.Add(b); }
+			var b = id > 0 ? await _context.PayrollTaxBrackets.FirstOrDefaultAsync(x => x.ID == id && x.CompanyID == co) : null;
+			if (b == null) { b = new Models.Context.Accounting.PayrollTaxBracket { CompanyID = co, CreatedAt = DateTime.UtcNow }; _context.PayrollTaxBrackets.Add(b); }
 			b.Ordinal = ordinal; b.FromAmount = fromAmount < 0 ? 0 : fromAmount; b.ToAmount = toAmount; b.Rate = rate < 0 ? 0 : rate;
 			await _context.SaveChangesAsync();
 			TempData["AccMsg"] = L["Tax bracket saved"].Value;
@@ -1487,7 +1581,9 @@ namespace CrossBuy.Controllers
 		[SessionValidation][HttpPost][ValidateAntiForgeryToken][CrossBuy.Models.AccPerm("manage")]
 		public async Task<IActionResult> DeletePayrollBracket(int id)
 		{
-			var b = await _context.PayrollTaxBrackets.FirstOrDefaultAsync(x => x.ID == id && x.CompanyID == DefaultCompanyId);
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			var b = await _context.PayrollTaxBrackets.FirstOrDefaultAsync(x => x.ID == id && x.CompanyID == co);
 			if (b != null) { _context.PayrollTaxBrackets.Remove(b); await _context.SaveChangesAsync(); TempData["AccMsg"] = L["Bracket deleted"].Value; }
 			return RedirectToAction(nameof(PayrollTaxSettings));
 		}
@@ -1495,15 +1591,19 @@ namespace CrossBuy.Controllers
 		[SessionValidation][HttpGet]
 		public async Task<IActionResult> Payslips(int? year, int? month)
 		{
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
 			var y = year ?? 2026; var m = month ?? 1;
 			ViewBag.Year = y; ViewBag.Month = m;
-			return View(await _context.Payslips.AsNoTracking().Where(s => s.CompanyID == DefaultCompanyId && s.Year == y && s.Month == m).OrderBy(s => s.EmployeeName).ToListAsync());
+			return View(await _context.Payslips.AsNoTracking().Where(s => s.CompanyID == co && s.Year == y && s.Month == m).OrderBy(s => s.EmployeeName).ToListAsync());
 		}
 
 		[SessionValidation][HttpGet]
 		public async Task<IActionResult> Payslip(int id)
 		{
-			var slip = await _context.Payslips.AsNoTracking().FirstOrDefaultAsync(s => s.ID == id && s.CompanyID == DefaultCompanyId);
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			var slip = await _context.Payslips.AsNoTracking().FirstOrDefaultAsync(s => s.ID == id && s.CompanyID == co);
 			if (slip == null) { TempData["AccErr"] = L["Payslip not found"].Value; return RedirectToAction(nameof(Payslips)); }
 			return View(slip);
 		}
@@ -1515,15 +1615,17 @@ namespace CrossBuy.Controllers
 		[SessionValidation][HttpGet]
 		public async Task<IActionResult> CustomersData(string? q, bool? active, int page = 1, int pageSize = 25)
 		{
-			var (rows, total) = await _ar.SearchCustomersAsync(DefaultCompanyId, q, active, page, pageSize);
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedJson();
+			var (rows, total) = await _ar.SearchCustomersAsync(co, q, active, page, pageSize);
 			// per-customer outstanding (posted invoices − receipts − credit notes) — computed ONLY for this page's customers
 			var ids = rows.Select(c => c.ID).ToList();
 			var outstanding = new Dictionary<int, decimal>();
 			if (ids.Count > 0)
 			{
-				var inv = await _context.SalesInvoices.AsNoTracking().Where(i => i.CompanyID == DefaultCompanyId && i.Status == "Posted" && ids.Contains(i.CustomerId)).GroupBy(i => i.CustomerId).Select(g => new { id = g.Key, v = g.Sum(x => x.GrandTotal) }).ToListAsync();
-				var rcp = await _context.Receipts.AsNoTracking().Where(r => r.CompanyID == DefaultCompanyId && r.Status == "Posted" && r.CustomerId != null && ids.Contains(r.CustomerId!.Value)).GroupBy(r => r.CustomerId!.Value).Select(g => new { id = g.Key, v = g.Sum(x => x.Amount) }).ToListAsync();
-				var ret = await _context.SalesReturns.AsNoTracking().Where(s => s.CompanyID == DefaultCompanyId && s.Status == "Posted" && ids.Contains(s.CustomerId)).GroupBy(s => s.CustomerId).Select(g => new { id = g.Key, v = g.Sum(x => x.GrandTotal) }).ToListAsync();
+				var inv = await _context.SalesInvoices.AsNoTracking().Where(i => i.CompanyID == co && i.Status == "Posted" && ids.Contains(i.CustomerId)).GroupBy(i => i.CustomerId).Select(g => new { id = g.Key, v = g.Sum(x => x.GrandTotal) }).ToListAsync();
+				var rcp = await _context.Receipts.AsNoTracking().Where(r => r.CompanyID == co && r.Status == "Posted" && r.CustomerId != null && ids.Contains(r.CustomerId!.Value)).GroupBy(r => r.CustomerId!.Value).Select(g => new { id = g.Key, v = g.Sum(x => x.Amount) }).ToListAsync();
+				var ret = await _context.SalesReturns.AsNoTracking().Where(s => s.CompanyID == co && s.Status == "Posted" && ids.Contains(s.CustomerId)).GroupBy(s => s.CustomerId).Select(g => new { id = g.Key, v = g.Sum(x => x.GrandTotal) }).ToListAsync();
 				foreach (var x in inv) outstanding[x.id] = outstanding.GetValueOrDefault(x.id) + x.v;
 				foreach (var x in rcp) outstanding[x.id] = outstanding.GetValueOrDefault(x.id) - x.v;
 				foreach (var x in ret) outstanding[x.id] = outstanding.GetValueOrDefault(x.id) - x.v;
@@ -1539,7 +1641,9 @@ namespace CrossBuy.Controllers
 		[SessionValidation][HttpGet]
 		public async Task<IActionResult> CustomersExport(string? q, bool? active)
 		{
-			var (rows, _) = await _ar.SearchCustomersAsync(DefaultCompanyId, q, active, 1, 100000);
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			var (rows, _) = await _ar.SearchCustomersAsync(co, q, active, 1, 100000);
 			var headers = new[] { L["Name"].Value, "Name (EN)", L["Tax Reg. No."].Value, L["Phone"].Value, L["Email"].Value, L["Contact Person"].Value, L["Segment"].Value, L["Credit Limit"].Value, L["Payment Terms (days)"].Value, L["Status"].Value };
 			var data = rows.Select(c => (IReadOnlyList<object?>)new object?[] { c.Name, c.NameEn, c.TaxRegNo, c.Phone, c.Email, c.ContactPerson, c.Segment, c.CreditLimit, c.PaymentTermsDays, c.IsActive ? L["Active"].Value : L["Suspended"].Value });
 			return File(CrossBuy.BL.ExcelExporter.Build(L["Customers"].Value, headers, data, L["Customers — CrossBuy"].Value), CrossBuy.BL.ExcelExporter.ContentType, "customers.xlsx");
@@ -1548,7 +1652,9 @@ namespace CrossBuy.Controllers
 		[SessionValidation][HttpGet]
 		public async Task<IActionResult> VendorsExport(string? q, bool? active)
 		{
-			var (rows, _) = await _ap.SearchVendorsAsync(DefaultCompanyId, q, active, 1, 100000);
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			var (rows, _) = await _ap.SearchVendorsAsync(co, q, active, 1, 100000);
 			var headers = new[] { L["Name"].Value, "Name (EN)", L["Tax Reg. No."].Value, L["Phone"].Value, L["Email"].Value, L["Contact Person"].Value, L["Segment"].Value, L["Payment Terms (days)"].Value, L["Status"].Value };
 			var data = rows.Select(v => (IReadOnlyList<object?>)new object?[] { v.Name, v.NameEn, v.TaxRegNo, v.Phone, v.Email, v.ContactPerson, v.Segment, v.PaymentTermsDays, v.IsActive ? L["Active"].Value : L["Suspended"].Value });
 			return File(CrossBuy.BL.ExcelExporter.Build(L["Vendors"].Value, headers, data, L["Vendors — CrossBuy"].Value), CrossBuy.BL.ExcelExporter.ContentType, "vendors.xlsx");
@@ -1601,7 +1707,9 @@ namespace CrossBuy.Controllers
 		[SessionValidation][HttpGet]
 		public async Task<IActionResult> ReceiptsExport(string? q)
 		{
-			var query = _context.Receipts.AsNoTracking().Where(r => r.CompanyID == DefaultCompanyId);
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			var query = _context.Receipts.AsNoTracking().Where(r => r.CompanyID == co);
 			var terms = SearchTerms.Parse(q);
 			if (terms.Count > 0) { var pred = PredicateBuilder.AnyTerm<Models.Context.Accounting.Receipt>(terms, s => r => r.ReceiptNo.Contains(s) || (r.Method != null && r.Method.Contains(s))); if (pred != null) query = query.Where(pred); }
 			var rows = await query.OrderByDescending(r => r.ID).ToListAsync();
@@ -1613,7 +1721,9 @@ namespace CrossBuy.Controllers
 		[SessionValidation][HttpGet]
 		public async Task<IActionResult> PaymentsExport(string? q)
 		{
-			var query = _context.Payments.AsNoTracking().Where(p => p.CompanyID == DefaultCompanyId);
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			var query = _context.Payments.AsNoTracking().Where(p => p.CompanyID == co);
 			var terms = SearchTerms.Parse(q);
 			if (terms.Count > 0) { var pred = PredicateBuilder.AnyTerm<Models.Context.Accounting.Payment>(terms, s => p => p.PaymentNo.Contains(s) || (p.Method != null && p.Method.Contains(s))); if (pred != null) query = query.Where(pred); }
 			var rows = await query.OrderByDescending(p => p.ID).ToListAsync();
@@ -1625,7 +1735,9 @@ namespace CrossBuy.Controllers
 		[SessionValidation][HttpGet]
 		public async Task<IActionResult> JournalsExport(string? q, string? status)
 		{
-			var query = _context.JournalEntries.AsNoTracking().Where(e => e.CompanyID == DefaultCompanyId);
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			var query = _context.JournalEntries.AsNoTracking().Where(e => e.CompanyID == co);
 			var terms = SearchTerms.Parse(q);
 			if (terms.Count > 0) { var pred = PredicateBuilder.AnyTerm<Models.Context.Accounting.JournalEntry>(terms, s => e => (e.EntryNo != null && e.EntryNo.Contains(s)) || (e.Description != null && e.Description.Contains(s)) || (e.JournalType != null && e.JournalType.Contains(s))); if (pred != null) query = query.Where(pred); }
 			if (!string.IsNullOrWhiteSpace(status)) query = query.Where(e => e.Status == status);
@@ -1638,7 +1750,9 @@ namespace CrossBuy.Controllers
 		[SessionValidation][HttpGet]
 		public async Task<IActionResult> CustomersSuggest(string? term)
 		{
-			var list = await _ar.SuggestCustomersAsync(DefaultCompanyId, term, 10);
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedJson();
+			var list = await _ar.SuggestCustomersAsync(co, term, 10);
 			return Json(list.Select(x => new { value = x.value, name = x.name }));
 		}
 
@@ -1647,7 +1761,9 @@ namespace CrossBuy.Controllers
 		public async Task<IActionResult> SaveCustomer(int id, string name, string? nameEn, string? taxRegNo, decimal? creditLimit, int? paymentTermsDays,
 			string? phone, string? email, string? contactPerson, string? segment, string? address, string? shippingAddress, bool isActive = true)
 		{
-			var (ok, err) = await _ar.SaveCustomerAsync(DefaultCompanyId, new Models.Context.Accounting.Customer
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			var (ok, err) = await _ar.SaveCustomerAsync(co, new Models.Context.Accounting.Customer
 			{
 				ID = id, Name = name ?? "", NameEn = nameEn, TaxRegNo = taxRegNo, CreditLimit = creditLimit, PaymentTermsDays = paymentTermsDays,
 				Phone = phone, Email = email, ContactPerson = contactPerson, Segment = segment, Address = address, ShippingAddress = shippingAddress, IsActive = isActive,
@@ -1694,19 +1810,21 @@ namespace CrossBuy.Controllers
 		[SessionValidation][HttpGet]
 		public async Task<IActionResult> NewSalesInvoice()
 		{
-			ViewBag.Customers = await _ar.GetCustomersAsync(DefaultCompanyId);
-			ViewBag.RevenueAccounts = (await _coa.GetFlatAsync(DefaultCompanyId, postableOnly: true)).Where(a => a.TypeCode == "REV").ToList();
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			ViewBag.Customers = await _ar.GetCustomersAsync(co);
+			ViewBag.RevenueAccounts = (await _coa.GetFlatAsync(co, postableOnly: true)).Where(a => a.TypeCode == "REV").ToList();
 			// line items are now searched on-demand via Inventory/ItemPickData (no full-catalog preload)
-			ViewBag.InvWarehouses = await _context.Warehouses.AsNoTracking().Where(w => w.CompanyID == DefaultCompanyId && w.IsActive).OrderBy(w => w.Code).ToListAsync();
+			ViewBag.InvWarehouses = await _context.Warehouses.AsNoTracking().Where(w => w.CompanyID == co && w.IsActive).OrderBy(w => w.Code).ToListAsync();
 			ViewBag.Currencies = await CurrencyListAsync();
-			ViewBag.FunctionalCurrencyId = await FunctionalCurrencyIdAsync();
-			ViewBag.Projects = await PrjSvc.ForPickAsync(DefaultCompanyId);
+			ViewBag.FunctionalCurrencyId = await FunctionalCurrencyIdAsync(co);
+			ViewBag.Projects = await PrjSvc.ForPickAsync(co);
 
 			// The units a line may be sold in. SalesInvoiceLine.UoMId has always carried this and the stock
 			// path has always converted it; the screen simply never offered the choice, so every line was
 			// silently the item's base unit. CompanyID is in the predicate like every other list here.
 			ViewBag.Units = await _context.UnitsOfMeasure.AsNoTracking()
-				.Where(u => u.CompanyID == DefaultCompanyId).OrderBy(u => u.Name).ToListAsync();
+				.Where(u => u.CompanyID == co).OrderBy(u => u.Name).ToListAsync();
 			return View();
 		}
 
@@ -1714,18 +1832,20 @@ namespace CrossBuy.Controllers
 			[CrossBuy.Models.AccPerm("post")]
 		public async Task<IActionResult> CreateSalesInvoice(int customerId, DateTime invoiceDate, string? notes, string? linesJson, int? currencyId, decimal? exchangeRate, int? projectId)
 		{
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
 			List<SalesLineInput> lines;
 			try { lines = JsonSerializer.Deserialize<List<SalesLineInput>>(linesJson ?? "[]", new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new(); } catch { lines = new(); }
-			var functional = await FunctionalCurrencyIdAsync();
+			var functional = await FunctionalCurrencyIdAsync(co);
 			if (currencyId.HasValue && currencyId.Value != functional && !await _access.CanAsync("currency-override"))
 			{ TempData["AccErr"] = L["You do not have permission to issue a document in a currency other than the branch currency"].Value; return RedirectToAction(nameof(NewSalesInvoice)); }
 			// Pricing 2A — gross-margin floor: Block rejects the invoice; Warn proceeds and notifies.
-			var (mBlock, mWarn) = await CheckLineMarginsAsync(lines.Select(l => (l.ItemId, l.Qty, l.UnitPrice, l.DiscountAmount)), currencyId, exchangeRate, invoiceDate);
+			var (mBlock, mWarn) = await CheckLineMarginsAsync(co, lines.Select(l => (l.ItemId, l.Qty, l.UnitPrice, l.DiscountAmount)), currencyId, exchangeRate, invoiceDate);
 			if (mBlock != null) { TempData["AccErr"] = mBlock; return RedirectToAction(nameof(NewSalesInvoice)); }
 			// Pricing 2D — discount approval ceiling.
-			var (dBlock, dWarn) = await _pricing.EvaluateLineDiscountsAsync(DefaultCompanyId, lines.Select(l => (l.Qty, l.UnitPrice, l.DiscountAmount)), await _access.CanAsync("manage"));
+			var (dBlock, dWarn) = await _pricing.EvaluateLineDiscountsAsync(co, lines.Select(l => (l.Qty, l.UnitPrice, l.DiscountAmount)), await _access.CanAsync("manage"));
 			if (dBlock != null) { TempData["AccErr"] = dBlock; return RedirectToAction(nameof(NewSalesInvoice)); }
-			var (ok, err, _) = await _ar.CreateSalesInvoiceAsync(DefaultCompanyId, customerId, invoiceDate, lines, notes, null, currencyId, exchangeRate, projectId);
+			var (ok, err, _) = await _ar.CreateSalesInvoiceAsync(co, customerId, invoiceDate, lines, notes, null, currencyId, exchangeRate, projectId);
 			if (!ok) { TempData["AccErr"] = err; return RedirectToAction(nameof(NewSalesInvoice)); }
 			var okMsg2 = string.Join(" · ", new[] { mWarn, dWarn }.Where(m => m != null));
 			TempData[okMsg2.Length > 0 ? "AccWarn" : "AccMsg"] = okMsg2.Length > 0 ? okMsg2 : L["The sales invoice was issued and posted"].Value;
@@ -1737,15 +1857,17 @@ namespace CrossBuy.Controllers
 		[CrossBuy.Models.AccPerm("post")]
 		public async Task<IActionResult> EditSalesInvoice(int id)
 		{
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
 			var inv = await _context.SalesInvoices.AsNoTracking().Include(i => i.Lines)
-				.FirstOrDefaultAsync(i => i.ID == id && i.CompanyID == DefaultCompanyId);
+				.FirstOrDefaultAsync(i => i.ID == id && i.CompanyID == co);
 			if (inv == null) return NotFound();
 			if (inv.Status != "Posted") { TempData["AccErr"] = L["Only posted invoices can be edited"].Value; return RedirectToAction(nameof(SalesInvoices)); }
 			// Name the receipt(s) holding this invoice. The old message said only "a receipt",
 			// which left the user to search for it - and this is the common case, not a rare one.
 			var blockingReceipts = await (from a in _context.ReceiptAllocations.AsNoTracking()
 										   join r in _context.Receipts.AsNoTracking() on a.ReceiptId equals r.ID
-										   where a.CompanyID == DefaultCompanyId && a.SalesInvoiceId == id
+										   where a.CompanyID == co && a.SalesInvoiceId == id
 										   select new { r.ReceiptNo, a.ForeignAmount }).ToListAsync();
 			if (blockingReceipts.Count > 0)
 			{
@@ -1755,20 +1877,20 @@ namespace CrossBuy.Controllers
 					inv.InvoiceNo, named].Value;
 				return RedirectToAction(nameof(SalesInvoices));
 			}
-			ViewBag.Customers = await _ar.GetCustomersAsync(DefaultCompanyId);
-			ViewBag.RevenueAccounts = (await _coa.GetFlatAsync(DefaultCompanyId, postableOnly: true)).Where(a => a.TypeCode == "REV").ToList();
-			ViewBag.InvWarehouses = await _context.Warehouses.AsNoTracking().Where(w => w.CompanyID == DefaultCompanyId && w.IsActive).OrderBy(w => w.Code).ToListAsync();
+			ViewBag.Customers = await _ar.GetCustomersAsync(co);
+			ViewBag.RevenueAccounts = (await _coa.GetFlatAsync(co, postableOnly: true)).Where(a => a.TypeCode == "REV").ToList();
+			ViewBag.InvWarehouses = await _context.Warehouses.AsNoTracking().Where(w => w.CompanyID == co && w.IsActive).OrderBy(w => w.Code).ToListAsync();
 			ViewBag.Currencies = await CurrencyListAsync();
-			ViewBag.FunctionalCurrencyId = await FunctionalCurrencyIdAsync();
-			ViewBag.Projects = await PrjSvc.ForPickAsync(DefaultCompanyId);
+			ViewBag.FunctionalCurrencyId = await FunctionalCurrencyIdAsync(co);
+			ViewBag.Projects = await PrjSvc.ForPickAsync(co);
 
 			// The units a line may be sold in. SalesInvoiceLine.UoMId has always carried this and the stock
 			// path has always converted it; the screen simply never offered the choice, so every line was
 			// silently the item's base unit. CompanyID is in the predicate like every other list here.
 			ViewBag.Units = await _context.UnitsOfMeasure.AsNoTracking()
-				.Where(u => u.CompanyID == DefaultCompanyId).OrderBy(u => u.Name).ToListAsync();
+				.Where(u => u.CompanyID == co).OrderBy(u => u.Name).ToListAsync();
 			var slIds = inv.Lines.Where(l => l.ItemId != null).Select(l => l.ItemId!.Value).Distinct().ToList();
-			ViewBag.ItemBarcodes = await _context.Items.AsNoTracking().Where(i => i.CompanyID == DefaultCompanyId && slIds.Contains(i.ID)).ToDictionaryAsync(i => i.ID, i => i.Barcode ?? "");
+			ViewBag.ItemBarcodes = await _context.Items.AsNoTracking().Where(i => i.CompanyID == co && slIds.Contains(i.ID)).ToDictionaryAsync(i => i.ID, i => i.Barcode ?? "");
 			ViewBag.EditInvoice = inv;
 			return View("NewSalesInvoice", inv);
 		}
@@ -1777,16 +1899,18 @@ namespace CrossBuy.Controllers
 		[CrossBuy.Models.AccPerm("post")]
 		public async Task<IActionResult> UpdateSalesInvoice(int id, int customerId, DateTime invoiceDate, string? notes, string? linesJson, int? currencyId, decimal? exchangeRate, int? projectId)
 		{
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
 			List<SalesLineInput> lines;
 			try { lines = JsonSerializer.Deserialize<List<SalesLineInput>>(linesJson ?? "[]", new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new(); } catch { lines = new(); }
-			var functional = await FunctionalCurrencyIdAsync();
+			var functional = await FunctionalCurrencyIdAsync(co);
 			if (currencyId.HasValue && currencyId.Value != functional && !await _access.CanAsync("currency-override"))
 			{ TempData["AccErr"] = L["You do not have permission to issue a document in a currency other than the branch currency"].Value; return RedirectToAction(nameof(EditSalesInvoice), new { id }); }
-			var (mBlock, mWarn) = await CheckLineMarginsAsync(lines.Select(l => (l.ItemId, l.Qty, l.UnitPrice, l.DiscountAmount)), currencyId, exchangeRate, invoiceDate);
+			var (mBlock, mWarn) = await CheckLineMarginsAsync(co, lines.Select(l => (l.ItemId, l.Qty, l.UnitPrice, l.DiscountAmount)), currencyId, exchangeRate, invoiceDate);
 			if (mBlock != null) { TempData["AccErr"] = mBlock; return RedirectToAction(nameof(EditSalesInvoice), new { id }); }
-			var (dBlock, dWarn) = await _pricing.EvaluateLineDiscountsAsync(DefaultCompanyId, lines.Select(l => (l.Qty, l.UnitPrice, l.DiscountAmount)), await _access.CanAsync("manage"));
+			var (dBlock, dWarn) = await _pricing.EvaluateLineDiscountsAsync(co, lines.Select(l => (l.Qty, l.UnitPrice, l.DiscountAmount)), await _access.CanAsync("manage"));
 			if (dBlock != null) { TempData["AccErr"] = dBlock; return RedirectToAction(nameof(EditSalesInvoice), new { id }); }
-			var (ok, err, _) = await _ar.EditSalesInvoiceAsync(DefaultCompanyId, id, customerId, invoiceDate, lines, notes, null, currencyId, exchangeRate, projectId);
+			var (ok, err, _) = await _ar.EditSalesInvoiceAsync(co, id, customerId, invoiceDate, lines, notes, null, currencyId, exchangeRate, projectId);
 			if (!ok) { TempData["AccErr"] = err; return RedirectToAction(nameof(EditSalesInvoice), new { id }); }
 			var okMsg = string.Join(" · ", new[] { mWarn, dWarn }.Where(m => m != null));
 			TempData[okMsg.Length > 0 ? "AccWarn" : "AccMsg"] = okMsg.Length > 0 ? okMsg : L["The sales invoice was updated"].Value;
@@ -1795,6 +1919,7 @@ namespace CrossBuy.Controllers
 
 		// Pricing 2A — evaluate the gross-margin floor for each stock line (see PricingService.CheckMarginAsync).
 		private async Task<(string? block, string? warn)> CheckLineMarginsAsync(
+			int companyId,
 			IEnumerable<(int? ItemId, decimal Qty, decimal UnitPrice, decimal DiscountAmount)> lines,
 			int? currencyId, decimal? exchangeRate, DateTime asOf)
 		{
@@ -1803,7 +1928,7 @@ namespace CrossBuy.Controllers
 			{
 				if (!l.ItemId.HasValue || l.ItemId.Value <= 0) continue;
 				decimal net = l.Qty > 0 ? (l.UnitPrice - l.DiscountAmount / l.Qty) : l.UnitPrice;
-				var mc = await _pricing.CheckMarginAsync(DefaultCompanyId, l.ItemId.Value, net, currencyId, exchangeRate, asOf);
+				var mc = await _pricing.CheckMarginAsync(companyId, l.ItemId.Value, net, currencyId, exchangeRate, asOf);
 				if (mc.Mode == "Off" || mc.Ok || mc.Skipped) continue;
 				string msg = L["«{0}»: the price {1:N2} is below the floor {2:N2} (cost {3:N2} + margin {4:N2}%)", mc.ItemName, mc.PriceFunctional, mc.FloorFunctional, mc.CostFunctional, mc.MarginPct].Value;
 				if (mc.Mode == "Block") return (L["Margin floor block — "].Value + msg, null);
@@ -1816,17 +1941,21 @@ namespace CrossBuy.Controllers
 		[SessionValidation][HttpGet]
 		public async Task<IActionResult> SalesReturns()
 		{
-			ViewBag.Customers = await _ar.GetCustomersAsync(DefaultCompanyId);
-			return View(await _ar.GetSalesReturnsAsync(DefaultCompanyId));
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			ViewBag.Customers = await _ar.GetCustomersAsync(co);
+			return View(await _ar.GetSalesReturnsAsync(co));
 		}
 
 		[SessionValidation][HttpGet]
 		public async Task<IActionResult> NewSalesReturn()
 		{
-			ViewBag.Customers = await _ar.GetCustomersAsync(DefaultCompanyId);
-			ViewBag.RevenueAccounts = (await _coa.GetFlatAsync(DefaultCompanyId, postableOnly: true)).Where(a => a.TypeCode == "REV").ToList();
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			ViewBag.Customers = await _ar.GetCustomersAsync(co);
+			ViewBag.RevenueAccounts = (await _coa.GetFlatAsync(co, postableOnly: true)).Where(a => a.TypeCode == "REV").ToList();
 			// line items are now searched on-demand via Inventory/ItemPickData (no full-catalog preload)
-			ViewBag.InvWarehouses = await _context.Warehouses.AsNoTracking().Where(w => w.CompanyID == DefaultCompanyId && w.IsActive).OrderBy(w => w.Code).ToListAsync();
+			ViewBag.InvWarehouses = await _context.Warehouses.AsNoTracking().Where(w => w.CompanyID == co && w.IsActive).OrderBy(w => w.Code).ToListAsync();
 			return View();
 		}
 
@@ -1834,9 +1963,11 @@ namespace CrossBuy.Controllers
 			[CrossBuy.Models.AccPerm("post")]
 		public async Task<IActionResult> CreateSalesReturn(int customerId, int? originalInvoiceId, DateTime returnDate, string? notes, string? linesJson)
 		{
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
 			List<SalesLineInput> lines;
 			try { lines = JsonSerializer.Deserialize<List<SalesLineInput>>(linesJson ?? "[]", new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new(); } catch { lines = new(); }
-			var (ok, err, _) = await _ar.CreateSalesReturnAsync(DefaultCompanyId, customerId, originalInvoiceId, returnDate, lines, notes, null);
+			var (ok, err, _) = await _ar.CreateSalesReturnAsync(co, customerId, originalInvoiceId, returnDate, lines, notes, null);
 			TempData[ok ? "AccMsg" : "AccErr"] = ok ? L["The sales return was recorded and a credit note issued"].Value : err;
 			return ok ? RedirectToAction(nameof(SalesReturns)) : RedirectToAction(nameof(NewSalesReturn));
 		}
@@ -1846,14 +1977,16 @@ namespace CrossBuy.Controllers
 		[CrossBuy.Models.AccPerm("post")]
 		public async Task<IActionResult> EditSalesReturn(int id)
 		{
-			var ret = await _ar.GetSalesReturnAsync(DefaultCompanyId, id);
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			var ret = await _ar.GetSalesReturnAsync(co, id);
 			if (ret == null) { TempData["AccErr"] = L["Return not found"].Value; return RedirectToAction(nameof(SalesReturns)); }
 			if (ret.Status != "Posted") { TempData["AccErr"] = L["Only posted invoices can be edited"].Value; return RedirectToAction(nameof(SalesReturns)); }
-			ViewBag.Customers = await _ar.GetCustomersAsync(DefaultCompanyId);
-			ViewBag.RevenueAccounts = (await _coa.GetFlatAsync(DefaultCompanyId, postableOnly: true)).Where(a => a.TypeCode == "REV").ToList();
-			ViewBag.InvWarehouses = await _context.Warehouses.AsNoTracking().Where(w => w.CompanyID == DefaultCompanyId && w.IsActive).OrderBy(w => w.Code).ToListAsync();
+			ViewBag.Customers = await _ar.GetCustomersAsync(co);
+			ViewBag.RevenueAccounts = (await _coa.GetFlatAsync(co, postableOnly: true)).Where(a => a.TypeCode == "REV").ToList();
+			ViewBag.InvWarehouses = await _context.Warehouses.AsNoTracking().Where(w => w.CompanyID == co && w.IsActive).OrderBy(w => w.Code).ToListAsync();
 			var ids = ret.Lines.Where(l => l.ItemId != null).Select(l => l.ItemId!.Value).Distinct().ToList();
-			ViewBag.ItemBarcodes = await _context.Items.AsNoTracking().Where(i => i.CompanyID == DefaultCompanyId && ids.Contains(i.ID)).ToDictionaryAsync(i => i.ID, i => i.Barcode ?? "");
+			ViewBag.ItemBarcodes = await _context.Items.AsNoTracking().Where(i => i.CompanyID == co && ids.Contains(i.ID)).ToDictionaryAsync(i => i.ID, i => i.Barcode ?? "");
 			ViewBag.EditReturn = ret;
 			return View("NewSalesReturn", ret);
 		}
@@ -1862,9 +1995,11 @@ namespace CrossBuy.Controllers
 		[CrossBuy.Models.AccPerm("post")]
 		public async Task<IActionResult> UpdateSalesReturn(int id, int customerId, int? originalInvoiceId, DateTime returnDate, string? notes, string? linesJson)
 		{
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
 			List<SalesLineInput> lines;
 			try { lines = JsonSerializer.Deserialize<List<SalesLineInput>>(linesJson ?? "[]", new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new(); } catch { lines = new(); }
-			var (ok, err, _) = await _ar.EditSalesReturnAsync(DefaultCompanyId, id, customerId, originalInvoiceId, returnDate, lines, notes, null);
+			var (ok, err, _) = await _ar.EditSalesReturnAsync(co, id, customerId, originalInvoiceId, returnDate, lines, notes, null);
 			TempData[ok ? "AccMsg" : "AccErr"] = ok ? L["The sales return was updated"].Value : err;
 			return ok ? RedirectToAction(nameof(SalesReturns)) : RedirectToAction(nameof(EditSalesReturn), new { id });
 		}
@@ -1920,17 +2055,21 @@ namespace CrossBuy.Controllers
 		[SessionValidation][HttpGet]
 		public async Task<IActionResult> Receipts()
 		{
-			ViewBag.Customers = await _ar.GetCustomersAsync(DefaultCompanyId);
-			ViewBag.CashAccounts = (await _coa.GetFlatAsync(DefaultCompanyId, postableOnly: true)).Where(a => a.Code.StartsWith("1101")).ToList();
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			ViewBag.Customers = await _ar.GetCustomersAsync(co);
+			ViewBag.CashAccounts = (await _coa.GetFlatAsync(co, postableOnly: true)).Where(a => a.Code.StartsWith("1101")).ToList();
 			ViewBag.Currencies = await CurrencyListAsync();
-			ViewBag.FunctionalCurrencyId = await FunctionalCurrencyIdAsync();
+			ViewBag.FunctionalCurrencyId = await FunctionalCurrencyIdAsync(co);
 			return View();   // shell; rows via ReceiptsData
 		}
 
 		[SessionValidation][HttpGet]
 		public async Task<IActionResult> ReceiptsData(string? q, int page = 1, int pageSize = 25)
 		{
-			var query = _context.Receipts.AsNoTracking().Where(r => r.CompanyID == DefaultCompanyId);
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			var query = _context.Receipts.AsNoTracking().Where(r => r.CompanyID == co);
 			var terms = SearchTerms.Parse(q);
 			if (terms.Count > 0)
 			{
@@ -1948,27 +2087,41 @@ namespace CrossBuy.Controllers
 			[CrossBuy.Models.AccPerm("pay")]
 		public async Task<IActionResult> CreateReceipt(int customerId, DateTime receiptDate, decimal amount, string method, int cashAccountId, string? notes, int? currencyId, decimal? exchangeRate)
 		{
-			var functional = await FunctionalCurrencyIdAsync();
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			var functional = await FunctionalCurrencyIdAsync(co);
 			if (currencyId.HasValue && currencyId.Value != functional && !await _access.CanAsync("currency-override"))
 			{ TempData["AccErr"] = L["You do not have permission to issue a document in a currency other than the branch currency"].Value; return RedirectToAction(nameof(Receipts)); }
-			var th = await ApprovalThresholdAsync();
+			var th = await ApprovalThresholdAsync(co);
 			if (th > 0 && amount >= th && !await IsChiefAsync()) { TempData["AccErr"] = L["The amount ({0:N2}) exceeds the approval threshold — the chief accountant is required", amount].Value; return RedirectToAction(nameof(Receipts)); }
-			var (ok, err) = await _ar.CreateReceiptAsync(DefaultCompanyId, customerId, receiptDate, amount, method, cashAccountId, notes, null, currencyId, exchangeRate);
+			var (ok, err) = await _ar.CreateReceiptAsync(co, customerId, receiptDate, amount, method, cashAccountId, notes, null, currencyId, exchangeRate);
 			TempData[ok ? "AccMsg" : "AccErr"] = ok ? L["The receipt voucher was recorded and posted"].Value : err;
 			return RedirectToAction(nameof(Receipts));
 		}
 
 		[SessionValidation][HttpGet]
-		public async Task<IActionResult> ArAging() => View(await _ar.AgingAsync(DefaultCompanyId, DateTime.UtcNow));
+		public async Task<IActionResult> ArAging()
+		{
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			return View(await _ar.AgingAsync(co, DateTime.UtcNow));
+		}
 
 		// 2.8 customer analytics — profitability / LTV / segment analysis
 		[SessionValidation][HttpGet]
-		public async Task<IActionResult> CustomerAnalytics() => View(await _ar.GetCustomerAnalyticsAsync(DefaultCompanyId));
+		public async Task<IActionResult> CustomerAnalytics()
+		{
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			return View(await _ar.GetCustomerAnalyticsAsync(co));
+		}
 
 		[SessionValidation][HttpGet]
 		public async Task<IActionResult> CustomerAnalyticsExport()
 		{
-			var a = await _ar.GetCustomerAnalyticsAsync(DefaultCompanyId);
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			var a = await _ar.GetCustomerAnalyticsAsync(co);
 			var headers = new[] { L["Customer"].Value, L["Segment"].Value, L["Sales"].Value, L["Collections"].Value, L["Returns"].Value, L["Outstanding"].Value, L["Revenue"].Value, L["Cost"].Value, L["Gross Profit"].Value, L["Margin %"].Value, L["Invoice Count"].Value, L["First Invoice"].Value, L["Last Invoice"].Value, L["Avg Invoice"].Value };
 			var rows = a.Rows.Select(x => (IReadOnlyList<object?>)new object?[] { x.Name, x.Segment, x.Invoiced, x.Received, x.Returns, x.Outstanding, x.Revenue, x.Cogs, x.Margin, x.MarginPct, x.InvoiceCount, x.FirstInvoice, x.LastInvoice, x.AvgInvoice });
 			var bytes = ExcelExporter.Build(L["Customer Analytics"].Value, headers, rows, L["Customer Analytics — CrossBuy"].Value);
@@ -1982,7 +2135,9 @@ namespace CrossBuy.Controllers
 		[SessionValidation][HttpGet]
 		public async Task<IActionResult> VendorsData(string? q, bool? active, int page = 1, int pageSize = 25)
 		{
-			var (rows, total) = await _ap.SearchVendorsAsync(DefaultCompanyId, q, active, page, pageSize);
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedJson();
+			var (rows, total) = await _ap.SearchVendorsAsync(co, q, active, page, pageSize);
 			var pages = (int)Math.Ceiling(total / (double)(pageSize < 1 ? 25 : pageSize));
 			Response.Headers["X-Total"] = total.ToString();
 			Response.Headers["X-Page"] = (page < 1 ? 1 : page).ToString();
@@ -1993,7 +2148,9 @@ namespace CrossBuy.Controllers
 		[SessionValidation][HttpGet]
 		public async Task<IActionResult> VendorsSuggest(string? term)
 		{
-			var list = await _ap.SuggestVendorsAsync(DefaultCompanyId, term, 10);
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedJson();
+			var list = await _ap.SuggestVendorsAsync(co, term, 10);
 			return Json(list.Select(x => new { value = x.value, name = x.name }));
 		}
 
@@ -2002,7 +2159,9 @@ namespace CrossBuy.Controllers
 		public async Task<IActionResult> SaveVendor(int id, string name, string? nameEn, string? taxRegNo, int? paymentTermsDays,
 			string? phone, string? email, string? contactPerson, string? segment, string? address, bool isActive = true)
 		{
-			var (ok, err) = await _ap.SaveVendorAsync(DefaultCompanyId, new Models.Context.Accounting.Vendor
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			var (ok, err) = await _ap.SaveVendorAsync(co, new Models.Context.Accounting.Vendor
 			{
 				ID = id, Name = name ?? "", NameEn = nameEn, TaxRegNo = taxRegNo, PaymentTermsDays = paymentTermsDays,
 				Phone = phone, Email = email, ContactPerson = contactPerson, Segment = segment, Address = address, IsActive = isActive,
@@ -2078,14 +2237,16 @@ namespace CrossBuy.Controllers
 		[SessionValidation][HttpGet]
 		public async Task<IActionResult> NewPurchaseInvoice()
 		{
-			ViewBag.Vendors = await _ap.GetVendorsAsync(DefaultCompanyId);
-			ViewBag.ExpenseAccounts = (await _coa.GetFlatAsync(DefaultCompanyId, postableOnly: true)).Where(a => a.TypeCode == "EXP" || a.TypeCode == "ASSET").ToList();
-			ViewBag.CostCenters = await _costCenters.GetFlatAsync(DefaultCompanyId);
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			ViewBag.Vendors = await _ap.GetVendorsAsync(co);
+			ViewBag.ExpenseAccounts = (await _coa.GetFlatAsync(co, postableOnly: true)).Where(a => a.TypeCode == "EXP" || a.TypeCode == "ASSET").ToList();
+			ViewBag.CostCenters = await _costCenters.GetFlatAsync(co);
 			// line items are now searched on-demand via Inventory/ItemPickData (no full-catalog preload)
-			ViewBag.InvWarehouses = await _context.Warehouses.AsNoTracking().Where(w => w.CompanyID == DefaultCompanyId && w.IsActive).OrderBy(w => w.Code).ToListAsync();
+			ViewBag.InvWarehouses = await _context.Warehouses.AsNoTracking().Where(w => w.CompanyID == co && w.IsActive).OrderBy(w => w.Code).ToListAsync();
 			ViewBag.Currencies = await CurrencyListAsync();
-			ViewBag.FunctionalCurrencyId = await FunctionalCurrencyIdAsync();
-			ViewBag.Projects = await PrjSvc.ForPickAsync(DefaultCompanyId);
+			ViewBag.FunctionalCurrencyId = await FunctionalCurrencyIdAsync(co);
+			ViewBag.Projects = await PrjSvc.ForPickAsync(co);
 			return View();
 		}
 
@@ -2093,13 +2254,15 @@ namespace CrossBuy.Controllers
 			[CrossBuy.Models.AccPerm("post")]
 		public async Task<IActionResult> CreatePurchaseInvoice(int vendorId, DateTime invoiceDate, string? notes, string? linesJson, int? currencyId, decimal? exchangeRate, int? projectId)
 		{
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
 			List<PurchaseLineInput> lines;
 			try { lines = JsonSerializer.Deserialize<List<PurchaseLineInput>>(linesJson ?? "[]", new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new(); } catch { lines = new(); }
 			// currency-override guard: issuing a document in a non-functional currency needs the permission
-			var functional = await FunctionalCurrencyIdAsync();
+			var functional = await FunctionalCurrencyIdAsync(co);
 			if (currencyId.HasValue && currencyId.Value != functional && !await _access.CanAsync("currency-override"))
 			{ TempData["AccErr"] = L["You do not have permission to issue a document in a currency other than the branch currency"].Value; return RedirectToAction(nameof(NewPurchaseInvoice)); }
-			var (ok, err, _) = await _ap.CreatePurchaseInvoiceAsync(DefaultCompanyId, vendorId, invoiceDate, lines, notes, null, currencyId, exchangeRate, projectId);
+			var (ok, err, _) = await _ap.CreatePurchaseInvoiceAsync(co, vendorId, invoiceDate, lines, notes, null, currencyId, exchangeRate, projectId);
 			TempData[ok ? "AccMsg" : "AccErr"] = ok ? L["The purchase invoice was recorded and posted"].Value : err;
 			return ok ? RedirectToAction(nameof(PurchaseInvoices)) : RedirectToAction(nameof(NewPurchaseInvoice));
 		}
@@ -2112,11 +2275,13 @@ namespace CrossBuy.Controllers
 		[SessionValidation][HttpGet]
 		public async Task<IActionResult> MatchReceipts(int? vendorId)
 		{
-			ViewBag.Vendors = await _ap.GetVendorsAsync(DefaultCompanyId);
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			ViewBag.Vendors = await _ap.GetVendorsAsync(co);
 			ViewBag.SelVendor = vendorId;
 			if (vendorId is int vid)
 				ViewBag.OpenReceipts = await _context.GoodsReceipts.AsNoTracking()
-					.Where(g => g.CompanyID == DefaultCompanyId && g.Status == "Posted" && g.InvoiceId == null && g.VendorId == vid)
+					.Where(g => g.CompanyID == co && g.Status == "Posted" && g.InvoiceId == null && g.VendorId == vid)
 					.OrderByDescending(g => g.ID).ToListAsync();
 			return View();
 		}
@@ -2125,9 +2290,11 @@ namespace CrossBuy.Controllers
 		[CrossBuy.Models.AccPerm("post")]
 		public async Task<IActionResult> CreateInvoiceFromReceipt(int goodsReceiptId, DateTime invoiceDate, decimal invoiceAmount)
 		{
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
 			// thin: all validation (posted / open / vendor / value-guard), line-building and set-once live in the service.
-			var vendorForReturn = await _context.GoodsReceipts.AsNoTracking().Where(g => g.ID == goodsReceiptId && g.CompanyID == DefaultCompanyId).Select(g => g.VendorId).FirstOrDefaultAsync();
-			var (ok, err, _) = await _ap.MatchGoodsReceiptToInvoiceAsync(DefaultCompanyId, goodsReceiptId, invoiceDate, invoiceAmount, null);
+			var vendorForReturn = await _context.GoodsReceipts.AsNoTracking().Where(g => g.ID == goodsReceiptId && g.CompanyID == co).Select(g => g.VendorId).FirstOrDefaultAsync();
+			var (ok, err, _) = await _ap.MatchGoodsReceiptToInvoiceAsync(co, goodsReceiptId, invoiceDate, invoiceAmount, null);
 			TempData[ok ? "AccMsg" : "AccErr"] = ok ? L["The vendor invoice was matched to the goods receipt and GRNI was cleared"].Value : err;
 			return ok ? RedirectToAction(nameof(PurchaseInvoices)) : RedirectToAction(nameof(MatchReceipts), new { vendorId = vendorForReturn });
 		}
@@ -2137,14 +2304,16 @@ namespace CrossBuy.Controllers
 		[CrossBuy.Models.AccPerm("post")]
 		public async Task<IActionResult> EditPurchaseInvoice(int id)
 		{
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
 			var inv = await _context.PurchaseInvoices.AsNoTracking().Include(i => i.Lines)
-				.FirstOrDefaultAsync(i => i.ID == id && i.CompanyID == DefaultCompanyId);
+				.FirstOrDefaultAsync(i => i.ID == id && i.CompanyID == co);
 			if (inv == null) return NotFound();
 			if (inv.Status != "Posted") { TempData["AccErr"] = L["Only posted invoices can be edited"].Value; return RedirectToAction(nameof(PurchaseInvoices)); }
 			// Same as the sales side: say WHICH payment, not just that there is one.
 			var blockingPayments = await (from a in _context.PaymentAllocations.AsNoTracking()
 										   join pm in _context.Payments.AsNoTracking() on a.PaymentId equals pm.ID
-										   where a.CompanyID == DefaultCompanyId && a.PurchaseInvoiceId == id
+										   where a.CompanyID == co && a.PurchaseInvoiceId == id
 										   select new { pm.PaymentNo, a.ForeignAmount }).ToListAsync();
 			if (blockingPayments.Count > 0)
 			{
@@ -2154,15 +2323,15 @@ namespace CrossBuy.Controllers
 					inv.InvoiceNo, named].Value;
 				return RedirectToAction(nameof(PurchaseInvoices));
 			}
-			ViewBag.Vendors = await _ap.GetVendorsAsync(DefaultCompanyId);
-			ViewBag.ExpenseAccounts = (await _coa.GetFlatAsync(DefaultCompanyId, postableOnly: true)).Where(a => a.TypeCode == "EXP" || a.TypeCode == "ASSET").ToList();
-			ViewBag.CostCenters = await _costCenters.GetFlatAsync(DefaultCompanyId);
-			ViewBag.InvWarehouses = await _context.Warehouses.AsNoTracking().Where(w => w.CompanyID == DefaultCompanyId && w.IsActive).OrderBy(w => w.Code).ToListAsync();
+			ViewBag.Vendors = await _ap.GetVendorsAsync(co);
+			ViewBag.ExpenseAccounts = (await _coa.GetFlatAsync(co, postableOnly: true)).Where(a => a.TypeCode == "EXP" || a.TypeCode == "ASSET").ToList();
+			ViewBag.CostCenters = await _costCenters.GetFlatAsync(co);
+			ViewBag.InvWarehouses = await _context.Warehouses.AsNoTracking().Where(w => w.CompanyID == co && w.IsActive).OrderBy(w => w.Code).ToListAsync();
 			ViewBag.Currencies = await CurrencyListAsync();
-			ViewBag.FunctionalCurrencyId = await FunctionalCurrencyIdAsync();
-			ViewBag.Projects = await PrjSvc.ForPickAsync(DefaultCompanyId);
+			ViewBag.FunctionalCurrencyId = await FunctionalCurrencyIdAsync(co);
+			ViewBag.Projects = await PrjSvc.ForPickAsync(co);
 			var plIds = inv.Lines.Where(l => l.ItemId != null).Select(l => l.ItemId!.Value).Distinct().ToList();
-			ViewBag.ItemBarcodes = await _context.Items.AsNoTracking().Where(i => i.CompanyID == DefaultCompanyId && plIds.Contains(i.ID)).ToDictionaryAsync(i => i.ID, i => i.Barcode ?? "");
+			ViewBag.ItemBarcodes = await _context.Items.AsNoTracking().Where(i => i.CompanyID == co && plIds.Contains(i.ID)).ToDictionaryAsync(i => i.ID, i => i.Barcode ?? "");
 			ViewBag.EditInvoice = inv;
 			return View("NewPurchaseInvoice", inv);
 		}
@@ -2171,12 +2340,14 @@ namespace CrossBuy.Controllers
 		[CrossBuy.Models.AccPerm("post")]
 		public async Task<IActionResult> UpdatePurchaseInvoice(int id, int vendorId, DateTime invoiceDate, string? notes, string? linesJson, int? currencyId, decimal? exchangeRate, int? projectId)
 		{
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
 			List<PurchaseLineInput> lines;
 			try { lines = JsonSerializer.Deserialize<List<PurchaseLineInput>>(linesJson ?? "[]", new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new(); } catch { lines = new(); }
-			var functional = await FunctionalCurrencyIdAsync();
+			var functional = await FunctionalCurrencyIdAsync(co);
 			if (currencyId.HasValue && currencyId.Value != functional && !await _access.CanAsync("currency-override"))
 			{ TempData["AccErr"] = L["You do not have permission to issue a document in a currency other than the branch currency"].Value; return RedirectToAction(nameof(EditPurchaseInvoice), new { id }); }
-			var (ok, err, _) = await _ap.EditPurchaseInvoiceAsync(DefaultCompanyId, id, vendorId, invoiceDate, lines, notes, null, currencyId, exchangeRate, projectId);
+			var (ok, err, _) = await _ap.EditPurchaseInvoiceAsync(co, id, vendorId, invoiceDate, lines, notes, null, currencyId, exchangeRate, projectId);
 			TempData[ok ? "AccMsg" : "AccErr"] = ok ? L["The purchase invoice was updated"].Value : err;
 			return ok ? RedirectToAction(nameof(PurchaseInvoices)) : RedirectToAction(nameof(EditPurchaseInvoice), new { id });
 		}
@@ -2185,16 +2356,20 @@ namespace CrossBuy.Controllers
 		[SessionValidation][HttpGet]
 		public async Task<IActionResult> PurchaseReturns()
 		{
-			ViewBag.Vendors = await _ap.GetVendorsAsync(DefaultCompanyId);
-			return View(await _ap.GetPurchaseReturnsAsync(DefaultCompanyId));
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			ViewBag.Vendors = await _ap.GetVendorsAsync(co);
+			return View(await _ap.GetPurchaseReturnsAsync(co));
 		}
 
 		[SessionValidation][HttpGet]
 		public async Task<IActionResult> NewPurchaseReturn()
 		{
-			ViewBag.Vendors = await _ap.GetVendorsAsync(DefaultCompanyId);
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			ViewBag.Vendors = await _ap.GetVendorsAsync(co);
 			// line items are now searched on-demand via Inventory/ItemPickData (no full-catalog preload)
-			ViewBag.InvWarehouses = await _context.Warehouses.AsNoTracking().Where(w => w.CompanyID == DefaultCompanyId && w.IsActive).OrderBy(w => w.Code).ToListAsync();
+			ViewBag.InvWarehouses = await _context.Warehouses.AsNoTracking().Where(w => w.CompanyID == co && w.IsActive).OrderBy(w => w.Code).ToListAsync();
 			return View();
 		}
 
@@ -2202,9 +2377,11 @@ namespace CrossBuy.Controllers
 			[CrossBuy.Models.AccPerm("post")]
 		public async Task<IActionResult> CreatePurchaseReturn(int vendorId, int? originalInvoiceId, DateTime returnDate, string? notes, string? linesJson)
 		{
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
 			List<PurchaseLineInput> lines;
 			try { lines = JsonSerializer.Deserialize<List<PurchaseLineInput>>(linesJson ?? "[]", new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new(); } catch { lines = new(); }
-			var (ok, err, _) = await _ap.CreatePurchaseReturnAsync(DefaultCompanyId, vendorId, originalInvoiceId, returnDate, lines, notes, null);
+			var (ok, err, _) = await _ap.CreatePurchaseReturnAsync(co, vendorId, originalInvoiceId, returnDate, lines, notes, null);
 			TempData[ok ? "AccMsg" : "AccErr"] = ok ? L["The purchase return was recorded and a debit note issued"].Value : err;
 			return ok ? RedirectToAction(nameof(PurchaseReturns)) : RedirectToAction(nameof(NewPurchaseReturn));
 		}
@@ -2214,13 +2391,15 @@ namespace CrossBuy.Controllers
 		[CrossBuy.Models.AccPerm("post")]
 		public async Task<IActionResult> EditPurchaseReturn(int id)
 		{
-			var ret = await _ap.GetPurchaseReturnAsync(DefaultCompanyId, id);
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			var ret = await _ap.GetPurchaseReturnAsync(co, id);
 			if (ret == null) { TempData["AccErr"] = L["Return not found"].Value; return RedirectToAction(nameof(PurchaseReturns)); }
 			if (ret.Status != "Posted") { TempData["AccErr"] = L["Only posted invoices can be edited"].Value; return RedirectToAction(nameof(PurchaseReturns)); }
-			ViewBag.Vendors = await _ap.GetVendorsAsync(DefaultCompanyId);
-			ViewBag.InvWarehouses = await _context.Warehouses.AsNoTracking().Where(w => w.CompanyID == DefaultCompanyId && w.IsActive).OrderBy(w => w.Code).ToListAsync();
+			ViewBag.Vendors = await _ap.GetVendorsAsync(co);
+			ViewBag.InvWarehouses = await _context.Warehouses.AsNoTracking().Where(w => w.CompanyID == co && w.IsActive).OrderBy(w => w.Code).ToListAsync();
 			var ids = ret.Lines.Where(l => l.ItemId != 0).Select(l => l.ItemId).Distinct().ToList();
-			ViewBag.ItemBarcodes = await _context.Items.AsNoTracking().Where(i => i.CompanyID == DefaultCompanyId && ids.Contains(i.ID)).ToDictionaryAsync(i => i.ID, i => i.Barcode ?? "");
+			ViewBag.ItemBarcodes = await _context.Items.AsNoTracking().Where(i => i.CompanyID == co && ids.Contains(i.ID)).ToDictionaryAsync(i => i.ID, i => i.Barcode ?? "");
 			ViewBag.EditReturn = ret;
 			return View("NewPurchaseReturn", ret);
 		}
@@ -2229,9 +2408,11 @@ namespace CrossBuy.Controllers
 		[CrossBuy.Models.AccPerm("post")]
 		public async Task<IActionResult> UpdatePurchaseReturn(int id, int vendorId, int? originalInvoiceId, DateTime returnDate, string? notes, string? linesJson)
 		{
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
 			List<PurchaseLineInput> lines;
 			try { lines = JsonSerializer.Deserialize<List<PurchaseLineInput>>(linesJson ?? "[]", new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new(); } catch { lines = new(); }
-			var (ok, err, _) = await _ap.EditPurchaseReturnAsync(DefaultCompanyId, id, vendorId, originalInvoiceId, returnDate, lines, notes, null);
+			var (ok, err, _) = await _ap.EditPurchaseReturnAsync(co, id, vendorId, originalInvoiceId, returnDate, lines, notes, null);
 			TempData[ok ? "AccMsg" : "AccErr"] = ok ? L["The purchase return was updated"].Value : err;
 			return ok ? RedirectToAction(nameof(PurchaseReturns)) : RedirectToAction(nameof(EditPurchaseReturn), new { id });
 		}
@@ -2255,18 +2436,22 @@ namespace CrossBuy.Controllers
 		[SessionValidation][HttpGet]
 		public async Task<IActionResult> Payments()
 		{
-			ViewBag.Vendors = await _ap.GetVendorsAsync(DefaultCompanyId);
-			ViewBag.CashAccounts = (await _coa.GetFlatAsync(DefaultCompanyId, postableOnly: true)).Where(a => a.Code.StartsWith("1101")).ToList();
-			ViewBag.WhtCodes = (await _tax.GetCodesAsync(DefaultCompanyId)).Where(c => c.Kind == "WHT" && c.IsActive).ToList();
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			ViewBag.Vendors = await _ap.GetVendorsAsync(co);
+			ViewBag.CashAccounts = (await _coa.GetFlatAsync(co, postableOnly: true)).Where(a => a.Code.StartsWith("1101")).ToList();
+			ViewBag.WhtCodes = (await _tax.GetCodesAsync(co)).Where(c => c.Kind == "WHT" && c.IsActive).ToList();
 			ViewBag.Currencies = await CurrencyListAsync();
-			ViewBag.FunctionalCurrencyId = await FunctionalCurrencyIdAsync();
+			ViewBag.FunctionalCurrencyId = await FunctionalCurrencyIdAsync(co);
 			return View();   // shell; rows via PaymentsData
 		}
 
 		[SessionValidation][HttpGet]
 		public async Task<IActionResult> PaymentsData(string? q, int page = 1, int pageSize = 25)
 		{
-			var query = _context.Payments.AsNoTracking().Where(p => p.CompanyID == DefaultCompanyId);
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			var query = _context.Payments.AsNoTracking().Where(p => p.CompanyID == co);
 			var terms = SearchTerms.Parse(q);
 			if (terms.Count > 0)
 			{
@@ -2284,58 +2469,77 @@ namespace CrossBuy.Controllers
 			[CrossBuy.Models.AccPerm("pay")]
 		public async Task<IActionResult> CreatePayment(int vendorId, DateTime paymentDate, decimal amount, string method, int cashAccountId, string? notes, decimal whtRate = 0, int? currencyId = null, decimal? exchangeRate = null)
 		{
-			var functional = await FunctionalCurrencyIdAsync();
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			var functional = await FunctionalCurrencyIdAsync(co);
 			if (currencyId.HasValue && currencyId.Value != functional && !await _access.CanAsync("currency-override"))
 			{ TempData["AccErr"] = L["You do not have permission to issue a document in a currency other than the branch currency"].Value; return RedirectToAction(nameof(Payments)); }
-			var th = await ApprovalThresholdAsync();
+			var th = await ApprovalThresholdAsync(co);
 			if (th > 0 && amount >= th && !await IsChiefAsync()) { TempData["AccErr"] = L["The amount ({0:N2}) exceeds the approval threshold — the chief accountant is required", amount].Value; return RedirectToAction(nameof(Payments)); }
-			var (ok, err) = await _ap.CreatePaymentAsync(DefaultCompanyId, vendorId, paymentDate, amount, method, cashAccountId, notes, null, whtRate, currencyId, exchangeRate);
+			var (ok, err) = await _ap.CreatePaymentAsync(co, vendorId, paymentDate, amount, method, cashAccountId, notes, null, whtRate, currencyId, exchangeRate);
 			TempData[ok ? "AccMsg" : "AccErr"] = ok ? L["The payment voucher was recorded and posted"].Value : err;
 			return RedirectToAction(nameof(Payments));
 		}
 
 		[SessionValidation][HttpGet]
-		public async Task<IActionResult> ApAging() => View(await _ap.AgingAsync(DefaultCompanyId, DateTime.UtcNow));
+		public async Task<IActionResult> ApAging()
+		{
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			return View(await _ap.AgingAsync(co, DateTime.UtcNow));
+		}
 
 		// ---------------- Banks / Cash boxes / Transfers / Reconciliation ----------------
 		[SessionValidation][HttpGet]
 		public async Task<IActionResult> BankAccounts()
 		{
-			ViewBag.CashAccounts = await CashAccountsAsync();
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			ViewBag.CashAccounts = await CashAccountsAsync(co);
 			ViewBag.Currencies = await CurrencyListAsync();
-			ViewBag.FunctionalCurrencyId = await FunctionalCurrencyIdAsync();
-			return View(await _banks.GetBankAccountsAsync(DefaultCompanyId));
+			ViewBag.FunctionalCurrencyId = await FunctionalCurrencyIdAsync(co);
+			return View(await _banks.GetBankAccountsAsync(co));
 		}
 
 		[SessionValidation][HttpPost][ValidateAntiForgeryToken]
 			[CrossBuy.Models.AccPerm("manage")]
 		public async Task<IActionResult> CreateBankAccount(string bankName, string? bankNameEn, string? accountNumber, string? iban, int glAccountId, decimal openingBalance, int? currencyId, decimal? foreignBalance)
 		{
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
 			if (string.IsNullOrWhiteSpace(bankName) || glAccountId == 0) TempData["AccErr"] = L["The bank name and ledger account are required"].Value;
-			else { await _banks.CreateBankAccountAsync(DefaultCompanyId, bankName, bankNameEn, accountNumber, iban, glAccountId, openingBalance, currencyId, foreignBalance); TempData["AccMsg"] = L["Bank account added"].Value; }
+			else { await _banks.CreateBankAccountAsync(co, bankName, bankNameEn, accountNumber, iban, glAccountId, openingBalance, currencyId, foreignBalance); TempData["AccMsg"] = L["Bank account added"].Value; }
 			return RedirectToAction(nameof(BankAccounts));
 		}
 
 		[SessionValidation][HttpGet]
 		public async Task<IActionResult> CashBoxes()
 		{
-			ViewBag.CashAccounts = await CashAccountsAsync();
-			return View(await _banks.GetCashBoxesAsync(DefaultCompanyId));
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			ViewBag.CashAccounts = await CashAccountsAsync(co);
+			return View(await _banks.GetCashBoxesAsync(co));
 		}
 
 		[SessionValidation][HttpPost][ValidateAntiForgeryToken]
 			[CrossBuy.Models.AccPerm("manage")]
 		public async Task<IActionResult> CreateCashBox(string name, string? nameEn, int glAccountId)
 		{
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
 			if (string.IsNullOrWhiteSpace(name) || glAccountId == 0) TempData["AccErr"] = L["The name and ledger account are required"].Value;
-			else { await _banks.CreateCashBoxAsync(DefaultCompanyId, name, nameEn, glAccountId, null); TempData["AccMsg"] = L["Cash box added"].Value; }
+			else { await _banks.CreateCashBoxAsync(co, name, nameEn, glAccountId, null); TempData["AccMsg"] = L["Cash box added"].Value; }
 			return RedirectToAction(nameof(CashBoxes));
 		}
 
 		[SessionValidation][HttpGet]
 		public async Task<IActionResult> Transfer()
 		{
-			ViewBag.CashAccounts = await CashAccountsAsync();
+			// This action never named the constant itself — it reached company 1 indirectly, through
+			// CashAccountsAsync(). Resolving here is what makes the helper's new parameter honest.
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			ViewBag.CashAccounts = await CashAccountsAsync(co);
 			return View();
 		}
 
@@ -2343,7 +2547,9 @@ namespace CrossBuy.Controllers
 			[CrossBuy.Models.AccPerm("pay")]
 		public async Task<IActionResult> DoTransfer(int fromGlAccountId, int toGlAccountId, decimal amount, DateTime date, string? notes)
 		{
-			var (ok, err) = await _banks.TransferAsync(DefaultCompanyId, fromGlAccountId, toGlAccountId, amount, date, notes, null);
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			var (ok, err) = await _banks.TransferAsync(co, fromGlAccountId, toGlAccountId, amount, date, notes, null);
 			TempData[ok ? "AccMsg" : "AccErr"] = ok ? L["The transfer was made and posted"].Value : err;
 			return RedirectToAction(nameof(Transfer));
 		}
@@ -2351,12 +2557,14 @@ namespace CrossBuy.Controllers
 		[SessionValidation][HttpGet]
 		public async Task<IActionResult> Reconcile(int? bankAccountId, DateTime? statementDate)
 		{
-			ViewBag.Banks = await _banks.GetBankAccountsAsync(DefaultCompanyId);
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			ViewBag.Banks = await _banks.GetBankAccountsAsync(co);
 			ViewBag.BankAccountId = bankAccountId;
 			ViewBag.StatementDate = statementDate;
 			if (bankAccountId.HasValue)
 			{
-				var (bank, book, lines) = await _banks.GetReconciliationViewAsync(DefaultCompanyId, bankAccountId.Value, statementDate ?? DateTime.UtcNow);
+				var (bank, book, lines) = await _banks.GetReconciliationViewAsync(co, bankAccountId.Value, statementDate ?? DateTime.UtcNow);
 				ViewBag.Bank = bank; ViewBag.BookBalance = book;
 				return View(lines);
 			}
@@ -2367,20 +2575,29 @@ namespace CrossBuy.Controllers
 			[CrossBuy.Models.AccPerm("manage")]
 		public async Task<IActionResult> DoReconcile(int bankAccountId, DateTime statementDate, decimal statementBalance, List<int>? clearedLineIds)
 		{
-			var (ok, err, _) = await _banks.ReconcileAsync(DefaultCompanyId, bankAccountId, statementDate, statementBalance, clearedLineIds ?? new());
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			var (ok, err, _) = await _banks.ReconcileAsync(co, bankAccountId, statementDate, statementBalance, clearedLineIds ?? new());
 			TempData[ok ? "AccMsg" : "AccErr"] = ok ? L["The bank reconciliation was saved"].Value : err;
 			return RedirectToAction(nameof(Reconciliations));
 		}
 
 		[SessionValidation][HttpGet]
-		public async Task<IActionResult> Reconciliations() => View(await _banks.GetReconciliationsAsync(DefaultCompanyId));
+		public async Task<IActionResult> Reconciliations()
+		{
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			return View(await _banks.GetReconciliationsAsync(co));
+		}
 
 		// كشف حساب — Account ledger (drill-down)
 		[SessionValidation]
 		[HttpGet]
 		public async Task<IActionResult> Ledger(int accountId, DateTime? from, DateTime? to)
 		{
-			var st = await _gl.AccountStatementAsync(DefaultCompanyId, accountId, from, to);
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			var st = await _gl.AccountStatementAsync(co, accountId, from, to);
 			if (st == null) return RedirectToAction(nameof(TrialBalance));
 			ViewBag.From = from; ViewBag.To = to;
 			return View(st);
@@ -2391,11 +2608,13 @@ namespace CrossBuy.Controllers
 		[SessionValidation][HttpGet]
 		public async Task<IActionResult> FixedAssets()
 		{
-			ViewBag.Categories = await _assets.GetCategoriesAsync(DefaultCompanyId);
-			ViewBag.CostCenters = await _costCenters.GetFlatAsync(DefaultCompanyId);
-			ViewBag.FundingAccounts = (await _coa.GetFlatAsync(DefaultCompanyId, postableOnly: true))
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			ViewBag.Categories = await _assets.GetCategoriesAsync(co);
+			ViewBag.CostCenters = await _costCenters.GetFlatAsync(co);
+			ViewBag.FundingAccounts = (await _coa.GetFlatAsync(co, postableOnly: true))
 				.Where(a => a.Code.StartsWith("1101") || a.TypeCode == "LIAB").ToList();
-			return View(await _assets.GetAssetsAsync(DefaultCompanyId));
+			return View(await _assets.GetAssetsAsync(co));
 		}
 
 		[SessionValidation][HttpPost][ValidateAntiForgeryToken]
@@ -2403,7 +2622,9 @@ namespace CrossBuy.Controllers
 		public async Task<IActionResult> CreateFixedAsset(string name, string? nameEn, int? categoryId, DateTime acquisitionDate,
 			decimal cost, decimal salvageValue, int usefulLifeMonths, int? costCenterId, int fundingAccountId, string? notes)
 		{
-			var (ok, err, _) = await _assets.CreateAssetAsync(DefaultCompanyId, new FixedAssetInput
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			var (ok, err, _) = await _assets.CreateAssetAsync(co, new FixedAssetInput
 			{
 				Name = name, NameEn = nameEn, CategoryId = categoryId, AcquisitionDate = acquisitionDate, Cost = cost,
 				SalvageValue = salvageValue, UsefulLifeMonths = usefulLifeMonths, CostCenterId = costCenterId,
@@ -2416,14 +2637,16 @@ namespace CrossBuy.Controllers
 		[SessionValidation][HttpGet]
 		public async Task<IActionResult> FixedAssetDetail(int id)
 		{
-			var asset = await _assets.GetAssetAsync(DefaultCompanyId, id);
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			var asset = await _assets.GetAssetAsync(co, id);
 			if (asset == null) return RedirectToAction(nameof(FixedAssets));
 			ViewBag.History = await _assets.GetAssetHistoryAsync(id);
 			ViewBag.Monthly = _assets.MonthlyDepreciation(asset);
-			ViewBag.CashAccounts = await CashAccountsAsync();
-			ViewBag.MaintSchedules = await MntSvc.GetSchedulesAsync(DefaultCompanyId, id);   // asset maintenance
-			ViewBag.MaintRecords = await MntSvc.GetRecordsAsync(DefaultCompanyId, id);
-			ViewBag.Projects = await PrjSvc.ForPickAsync(DefaultCompanyId);
+			ViewBag.CashAccounts = await CashAccountsAsync(co);
+			ViewBag.MaintSchedules = await MntSvc.GetSchedulesAsync(co, id);   // asset maintenance
+			ViewBag.MaintRecords = await MntSvc.GetRecordsAsync(co, id);
+			ViewBag.Projects = await PrjSvc.ForPickAsync(co);
 			return View(asset);
 		}
 
@@ -2433,7 +2656,9 @@ namespace CrossBuy.Controllers
 		[SessionValidation][HttpPost][ValidateAntiForgeryToken][CrossBuy.Models.AccPerm("manage")]
 		public async Task<IActionResult> SaveMaintenanceSchedule(int id, int assetId, string title, string? titleEn, string type, int intervalMonths, DateTime nextDueDate, decimal? estimatedCost, bool isActive)
 		{
-			var (ok, err, _) = await MntSvc.SaveScheduleAsync(new CrossBuy.Models.Context.Accounting.MaintenanceSchedule { ID = id, CompanyID = DefaultCompanyId, AssetId = assetId, Title = title ?? "", TitleEn = titleEn, Type = type, IntervalMonths = intervalMonths, NextDueDate = nextDueDate, EstimatedCost = estimatedCost, IsActive = isActive });
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			var (ok, err, _) = await MntSvc.SaveScheduleAsync(new CrossBuy.Models.Context.Accounting.MaintenanceSchedule { ID = id, CompanyID = co, AssetId = assetId, Title = title ?? "", TitleEn = titleEn, Type = type, IntervalMonths = intervalMonths, NextDueDate = nextDueDate, EstimatedCost = estimatedCost, IsActive = isActive });
 			TempData[ok ? "AccMsg" : "AccErr"] = ok ? L["The maintenance schedule was saved"].Value : err;
 			return RedirectToAction(nameof(FixedAssetDetail), new { id = assetId });
 		}
@@ -2441,7 +2666,9 @@ namespace CrossBuy.Controllers
 		[SessionValidation][HttpPost][ValidateAntiForgeryToken][CrossBuy.Models.AccPerm("manage")]
 		public async Task<IActionResult> DeleteMaintenanceSchedule(int id, int assetId)
 		{
-			await MntSvc.DeleteScheduleAsync(DefaultCompanyId, id);
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			await MntSvc.DeleteScheduleAsync(co, id);
 			TempData["AccMsg"] = L["Schedule deleted"].Value;
 			return RedirectToAction(nameof(FixedAssetDetail), new { id = assetId });
 		}
@@ -2449,7 +2676,9 @@ namespace CrossBuy.Controllers
 		[SessionValidation][HttpPost][ValidateAntiForgeryToken][CrossBuy.Models.AccPerm("post")]
 		public async Task<IActionResult> LogMaintenance(int assetId, int? scheduleId, DateTime date, string? description, decimal cost, string? vendor, int? payFromGlAccountId, int? projectId)
 		{
-			var (ok, err) = await MntSvc.LogMaintenanceAsync(DefaultCompanyId, assetId, scheduleId, date, description, cost, vendor, payFromGlAccountId, projectId, null);
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			var (ok, err) = await MntSvc.LogMaintenanceAsync(co, assetId, scheduleId, date, description, cost, vendor, payFromGlAccountId, projectId, null);
 			TempData[ok ? "AccMsg" : "AccErr"] = ok ? (payFromGlAccountId.HasValue && cost > 0 ? L["Maintenance logged and the journal entry posted"].Value : L["Maintenance logged"].Value) : err;
 			return RedirectToAction(nameof(FixedAssetDetail), new { id = assetId });
 		}
@@ -2457,15 +2686,19 @@ namespace CrossBuy.Controllers
 		[SessionValidation][HttpGet]
 		public async Task<IActionResult> MaintenanceDue(int days = 30)
 		{
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
 			ViewBag.Days = days;
-			return View(await MntSvc.DueSoonAsync(DefaultCompanyId, days));
+			return View(await MntSvc.DueSoonAsync(co, days));
 		}
 
 		[SessionValidation][HttpPost][ValidateAntiForgeryToken]
 			[CrossBuy.Models.AccPerm("manage")]
 		public async Task<IActionResult> DisposeAsset(int id, DateTime disposalDate, decimal proceeds, int cashAccountId)
 		{
-			var (ok, err) = await _assets.DisposeAssetAsync(DefaultCompanyId, id, disposalDate, proceeds, cashAccountId, null);
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			var (ok, err) = await _assets.DisposeAssetAsync(co, id, disposalDate, proceeds, cashAccountId, null);
 			if (ok) TempData["AccMsg"] = L["The asset was disposed and the journal entry posted"].Value; else TempData["AccErr"] = err;
 			return RedirectToAction(nameof(FixedAssetDetail), new { id });
 		}
@@ -2473,27 +2706,38 @@ namespace CrossBuy.Controllers
 		[SessionValidation][HttpGet]
 		public async Task<IActionResult> AssetCategories()
 		{
-			ViewBag.Accounts = await _coa.GetFlatAsync(DefaultCompanyId, postableOnly: true);
-			return View(await _assets.GetCategoriesAsync(DefaultCompanyId));
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			ViewBag.Accounts = await _coa.GetFlatAsync(co, postableOnly: true);
+			return View(await _assets.GetCategoriesAsync(co));
 		}
 
 		[SessionValidation][HttpPost][ValidateAntiForgeryToken]
 			[CrossBuy.Models.AccPerm("manage")]
 		public async Task<IActionResult> CreateAssetCategory(string name, string? nameEn, int defaultUsefulLifeMonths, int costAccountId, int accumDepAccountId, int depExpenseAccountId)
 		{
-			var (ok, err, _) = await _assets.CreateCategoryAsync(DefaultCompanyId, name, nameEn, defaultUsefulLifeMonths, costAccountId, accumDepAccountId, depExpenseAccountId);
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			var (ok, err, _) = await _assets.CreateCategoryAsync(co, name, nameEn, defaultUsefulLifeMonths, costAccountId, accumDepAccountId, depExpenseAccountId);
 			if (ok) TempData["AccMsg"] = L["Category added"].Value; else TempData["AccErr"] = err;
 			return RedirectToAction(nameof(AssetCategories));
 		}
 
 		[SessionValidation][HttpGet]
-		public async Task<IActionResult> DepreciationRuns() => View(await _assets.GetRunsAsync(DefaultCompanyId));
+		public async Task<IActionResult> DepreciationRuns()
+		{
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			return View(await _assets.GetRunsAsync(co));
+		}
 
 		[SessionValidation][HttpPost][ValidateAntiForgeryToken]
 			[CrossBuy.Models.AccPerm("manage")]
 		public async Task<IActionResult> RunDepreciation(DateTime periodDate)
 		{
-			var (ok, err, _) = await _assets.RunDepreciationAsync(DefaultCompanyId, periodDate, null);
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			var (ok, err, _) = await _assets.RunDepreciationAsync(co, periodDate, null);
 			if (ok) TempData["AccMsg"] = L["Depreciation was calculated and posted"].Value; else TempData["AccErr"] = err;
 			return RedirectToAction(nameof(DepreciationRuns));
 		}
@@ -2501,10 +2745,12 @@ namespace CrossBuy.Controllers
 		[SessionValidation][HttpGet]
 		public async Task<IActionResult> DepreciationRunDetail(int id)
 		{
-			var run = await _assets.GetRunAsync(DefaultCompanyId, id);
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			var run = await _assets.GetRunAsync(co, id);
 			if (run == null) return RedirectToAction(nameof(DepreciationRuns));
 			var assetIds = run.Lines.Select(l => l.FixedAssetId).ToList();
-			ViewBag.AssetNames = (await _assets.GetAssetsAsync(DefaultCompanyId))
+			ViewBag.AssetNames = (await _assets.GetAssetsAsync(co))
 				.Where(a => assetIds.Contains(a.ID)).ToDictionary(a => a.ID, a => a);
 			return View(run);
 		}
@@ -2512,13 +2758,20 @@ namespace CrossBuy.Controllers
 		// ===== Phase 7: Taxes & ETA =====
 
 		[SessionValidation][HttpGet]
-		public async Task<IActionResult> TaxCodes() => View(await _tax.GetCodesAsync(DefaultCompanyId));
+		public async Task<IActionResult> TaxCodes()
+		{
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			return View(await _tax.GetCodesAsync(co));
+		}
 
 		[SessionValidation][HttpPost][ValidateAntiForgeryToken]
 			[CrossBuy.Models.AccPerm("manage")]
 		public async Task<IActionResult> CreateTaxCode(string code, string name, string? nameEn, string kind, decimal rate, bool isDefault)
 		{
-			var (ok, err) = await _tax.CreateCodeAsync(DefaultCompanyId, code, name, nameEn, kind, rate, isDefault);
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			var (ok, err) = await _tax.CreateCodeAsync(co, code, name, nameEn, kind, rate, isDefault);
 			TempData[ok ? "AccMsg" : "AccErr"] = ok ? L["Tax code added"].Value : err;
 			return RedirectToAction(nameof(TaxCodes));
 		}
@@ -2527,7 +2780,9 @@ namespace CrossBuy.Controllers
 			[CrossBuy.Models.AccPerm("manage")]
 		public async Task<IActionResult> UpdateTaxCode(int id, string name, string? nameEn, decimal rate, bool isDefault)
 		{
-			var (ok, err) = await _tax.UpdateCodeAsync(DefaultCompanyId, id, name, nameEn, rate, isDefault);
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			var (ok, err) = await _tax.UpdateCodeAsync(co, id, name, nameEn, rate, isDefault);
 			TempData[ok ? "AccMsg" : "AccErr"] = ok ? L["Tax code updated"].Value : err;
 			return RedirectToAction(nameof(TaxCodes));
 		}
@@ -2536,7 +2791,9 @@ namespace CrossBuy.Controllers
 			[CrossBuy.Models.AccPerm("manage")]
 		public async Task<IActionResult> ToggleTaxCode(int id)
 		{
-			var (ok, err) = await _tax.ToggleCodeAsync(DefaultCompanyId, id);
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			var (ok, err) = await _tax.ToggleCodeAsync(co, id);
 			TempData[ok ? "AccMsg" : "AccErr"] = ok ? L["Tax code updated"].Value : err;
 			return RedirectToAction(nameof(TaxCodes));
 		}
@@ -2544,15 +2801,19 @@ namespace CrossBuy.Controllers
 		[SessionValidation][HttpGet]
 		public async Task<IActionResult> VatReturns()
 		{
-			ViewBag.Codes = (await _tax.GetCodesAsync(DefaultCompanyId)).Where(c => c.Kind == "VAT").ToList();
-			return View(await _tax.GetReturnsAsync(DefaultCompanyId));
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			ViewBag.Codes = (await _tax.GetCodesAsync(co)).Where(c => c.Kind == "VAT").ToList();
+			return View(await _tax.GetReturnsAsync(co));
 		}
 
 		[SessionValidation][HttpPost][ValidateAntiForgeryToken]
 			[CrossBuy.Models.AccPerm("manage")]
 		public async Task<IActionResult> FileVatReturn(DateTime periodStart, DateTime periodEnd, string? notes)
 		{
-			var (ok, err, _) = await _tax.FileVatReturnAsync(DefaultCompanyId, periodStart, periodEnd, notes);
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			var (ok, err, _) = await _tax.FileVatReturnAsync(co, periodStart, periodEnd, notes);
 			TempData[ok ? "AccMsg" : "AccErr"] = ok ? L["The VAT return was filed"].Value : err;
 			return RedirectToAction(nameof(VatReturns));
 		}
@@ -2560,7 +2821,9 @@ namespace CrossBuy.Controllers
 		[SessionValidation][HttpGet]
 		public async Task<IActionResult> VatReturnDetail(int id)
 		{
-			var ret = await _tax.GetReturnAsync(DefaultCompanyId, id);
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			var ret = await _tax.GetReturnAsync(co, id);
 			if (ret == null) return RedirectToAction(nameof(VatReturns));
 			return View(ret);
 		}
@@ -2569,7 +2832,9 @@ namespace CrossBuy.Controllers
 			[CrossBuy.Models.AccPerm("manage")]
 		public async Task<IActionResult> SettleVatReturn(int id, DateTime settleDate)
 		{
-			var (ok, err) = await _tax.SettleVatReturnAsync(DefaultCompanyId, id, settleDate, null);
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			var (ok, err) = await _tax.SettleVatReturnAsync(co, id, settleDate, null);
 			TempData[ok ? "AccMsg" : "AccErr"] = ok ? L["The VAT settlement entry was posted"].Value : err;
 			return RedirectToAction(nameof(VatReturnDetail), new { id });
 		}
@@ -2577,10 +2842,12 @@ namespace CrossBuy.Controllers
 		[SessionValidation][HttpGet]
 		public async Task<IActionResult> EtaStatus()
 		{
-			var settings = await _tax.GetEtaSettingsAsync(DefaultCompanyId);
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			var settings = await _tax.GetEtaSettingsAsync(co);
 			ViewBag.Enabled = _eta.IsEnabled(settings);
 			ViewBag.Invoices = await _context.SalesInvoices.AsNoTracking()
-				.Where(i => i.CompanyID == DefaultCompanyId).OrderByDescending(i => i.ID).Take(50).ToListAsync();
+				.Where(i => i.CompanyID == co).OrderByDescending(i => i.ID).Take(50).ToListAsync();
 			return View(settings);
 		}
 
@@ -2589,27 +2856,33 @@ namespace CrossBuy.Controllers
 		[SessionValidation][HttpGet]
 		public async Task<IActionResult> IncomeStatement(DateTime? from, DateTime? to)
 		{
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
 			var f = from ?? new DateTime(DateTime.Today.Year, 1, 1);
 			var t = to ?? DateTime.Today;
 			ViewBag.From = f; ViewBag.To = t;
-			return View(await _statements.IncomeStatementAsync(DefaultCompanyId, f, t));
+			return View(await _statements.IncomeStatementAsync(co, f, t));
 		}
 
 		[SessionValidation][HttpGet]
 		public async Task<IActionResult> BalanceSheet(DateTime? asOf)
 		{
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
 			var d = asOf ?? DateTime.Today;
 			ViewBag.AsOf = d;
-			return View(await _statements.BalanceSheetAsync(DefaultCompanyId, d));
+			return View(await _statements.BalanceSheetAsync(co, d));
 		}
 
 		[SessionValidation][HttpGet]
 		public async Task<IActionResult> CashFlow(DateTime? from, DateTime? to)
 		{
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
 			var f = from ?? new DateTime(DateTime.Today.Year, 1, 1);
 			var t = to ?? DateTime.Today;
 			ViewBag.From = f; ViewBag.To = t;
-			return View(await _statements.CashFlowAsync(DefaultCompanyId, f, t));
+			return View(await _statements.CashFlowAsync(co, f, t));
 		}
 
 		// ===== Phase 9: Year-end Close =====
@@ -2617,10 +2890,12 @@ namespace CrossBuy.Controllers
 		[SessionValidation][HttpGet]
 		public async Task<IActionResult> YearEndClose()
 		{
-			ViewBag.Closings = await _closing.GetClosingsAsync(DefaultCompanyId);
-			var years = await _closing.GetYearsAsync(DefaultCompanyId);
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			ViewBag.Closings = await _closing.GetClosingsAsync(co);
+			var years = await _closing.GetYearsAsync(co);
 			var previews = new Dictionary<int, YearClosePreview>();
-			foreach (var y in years) previews[y.ID] = await _closing.PreviewAsync(DefaultCompanyId, y.ID);
+			foreach (var y in years) previews[y.ID] = await _closing.PreviewAsync(co, y.ID);
 			ViewBag.Previews = previews;
 			return View(years);
 		}
@@ -2629,8 +2904,27 @@ namespace CrossBuy.Controllers
 			[CrossBuy.Models.AccPerm("manage")]
 		public async Task<IActionResult> CloseYear(int fiscalYearId)
 		{
-			var (ok, err) = await _closing.CloseYearAsync(DefaultCompanyId, fiscalYearId, null);
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			var (ok, err) = await _closing.CloseYearAsync(co, fiscalYearId, null);
 			TempData[ok ? "AccMsg" : "AccErr"] = ok ? L["The fiscal year was closed and the closing entry posted"].Value : err;
+			return RedirectToAction(nameof(YearEndClose));
+		}
+
+		// Opening the NEXT year. CloseYearAsync does not do it -- it posts the closing entry and marks
+		// the year closed -- and before this there was no way to create a fiscal year in the product at
+		// all, so a company could post only within a calendar someone had written by hand.
+		//
+		// manage is the chief-accountant tier, the same gate as closing a year, and the company comes
+		// from the server rather than the form.
+		[SessionValidation][HttpPost][ValidateAntiForgeryToken]
+			[CrossBuy.Models.AccPerm("manage")]
+		public async Task<IActionResult> OpenYear(int year)
+		{
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			var (ok, err) = await _closing.OpenYearAsync(co, year);
+			TempData[ok ? "AccMsg" : "AccErr"] = ok ? L["The fiscal year was opened"].Value : err;
 			return RedirectToAction(nameof(YearEndClose));
 		}
 
@@ -2638,7 +2932,9 @@ namespace CrossBuy.Controllers
 			[CrossBuy.Models.AccPerm("manage")]
 		public async Task<IActionResult> ReopenYear(int closingId)
 		{
-			var (ok, err) = await _closing.ReopenYearAsync(DefaultCompanyId, closingId, null);
+			var co = await CompanyIdAsync();
+			if (co == 0) return CompanyRefusedView();
+			var (ok, err) = await _closing.ReopenYearAsync(co, closingId, null);
 			TempData[ok ? "AccMsg" : "AccErr"] = ok ? L["The year was reopened and the closing entry reversed"].Value : err;
 			return RedirectToAction(nameof(YearEndClose));
 		}
@@ -2718,7 +3014,7 @@ namespace CrossBuy.Controllers
 		//
 		// ORDER OF CHECKS IS THE SECURITY PROPERTY, and it is deliberate:
 		//
-		//   1. company resolved  — from IRequestCompanyResolver, never from DefaultCompanyId and never
+		//   1. company resolved  — from IRequestCompanyResolver, never from co and never
 		//                          from anything the caller supplied.
 		//   2. module permission — IAccountingAccessService "read", the approved contract. It fails closed
 		//                          on an unresolved company and denies an unknown action.

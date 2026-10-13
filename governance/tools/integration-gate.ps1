@@ -1,4 +1,4 @@
-<#
+﻿<#
 =============================================================================================
 R1 - integration gate.
 
@@ -90,12 +90,13 @@ if ($SkipTests) {
     Add-Check 4 'Full suite green, skips reported' 'SKIP' '-SkipTests'
 } else {
     $testOut = & dotnet test (Join-Path $repo 'CrossBuy.Tests\CrossBuy.Tests.csproj') -c TestRun --no-build --nologo 2>&1
+    $testExit = $LASTEXITCODE
     $testText = ($testOut | Out-String)
     $m = [regex]::Match($testText, 'Failed:\s+(\d+),\s+Passed:\s+(\d+),\s+Skipped:\s+(\d+)')
     if ($m.Success) {
         $failed = [int]$m.Groups[1].Value; $passed = [int]$m.Groups[2].Value; $skipped = [int]$m.Groups[3].Value
-        $detail = ("{0} passed, {1} failed, {2} skipped" -f $passed, $failed, $skipped)
-        if ($failed -eq 0) { Add-Check 4 'Full suite green, skips reported' 'PASS' $detail }
+        $detail = ("{0} passed, {1} failed, {2} skipped; exit {3}" -f $passed, $failed, $skipped, $testExit)
+        if ($testExit -eq 0 -and $failed -eq 0) { Add-Check 4 'Full suite green, skips reported' 'PASS' $detail }
         else { Add-Check 4 'Full suite green, skips reported' 'FAIL' $detail }
     } else {
         Add-Check 4 'Full suite green, skips reported' 'FAIL' 'no test summary parsed'
@@ -107,10 +108,11 @@ if ($SkipBuild) {
     Add-Check 5 'CBA001 / CBA004 / CBA006 = 0' 'SKIP' '-SkipBuild'
 } else {
     $anOut = & dotnet build (Join-Path $repo 'CrossBuy\CrossBuy.csproj') -c TestRun -v q --nologo 2>&1
+    $anExit = $LASTEXITCODE
     $anText = ($anOut | Out-String)
     $cba = ([regex]::Matches($anText, 'error CBA00[146]')).Count
-    if ($cba -eq 0) { Add-Check 5 'CBA001 / CBA004 / CBA006 = 0' 'PASS' '0 / 0 / 0' }
-    else { Add-Check 5 'CBA001 / CBA004 / CBA006 = 0' 'FAIL' ("{0} analyzer errors" -f $cba) }
+    if ($anExit -eq 0 -and $cba -eq 0) { Add-Check 5 'CBA001 / CBA004 / CBA006 = 0' 'PASS' '0 / 0 / 0' }
+    else { Add-Check 5 'CBA001 / CBA004 / CBA006 = 0' 'FAIL' ("{0} analyzer errors; build exit {1}" -f $cba, $anExit) }
 }
 
 # ---- 6 authorization debt --------------------------------------------------------------------
@@ -148,10 +150,11 @@ $deniedM = [regex]::Match($ownText, 'DENIED\s+:\s+(\d+)')
 $sharedM = [regex]::Match($ownText, 'shared\s+:\s+(\d+)')
 $deniedN = 0; if ($deniedM.Success) { $deniedN = [int]$deniedM.Groups[1].Value }
 $sharedN = 0; if ($sharedM.Success) { $sharedN = [int]$sharedM.Groups[1].Value }
-if ($deniedN -eq 0) { Add-Check 8 'Only owned paths modified' 'PASS' '0 denied' }
-else { Add-Check 8 'Only owned paths modified' 'FAIL' ("{0} files owned by another tab" -f $deniedN) }
+if ($ownExit -eq 0 -and $deniedM.Success -and $sharedM.Success -and $deniedN -eq 0) { Add-Check 8 'Only owned paths modified' 'PASS' '0 denied' }
+else { Add-Check 8 'Only owned paths modified' 'FAIL' ("ownership exit {0}; denied {1}; complete summary {2}" -f $ownExit, $deniedN, ($deniedM.Success -and $sharedM.Success)) }
 
-if ($sharedN -eq 0) { Add-Check 9 'Shared-file edits approved' 'PASS' 'none touched' }
+if (-not $sharedM.Success) { Add-Check 9 'Shared-file edits approved' 'FAIL' 'ownership shared-file summary missing' }
+elseif ($sharedN -eq 0) { Add-Check 9 'Shared-file edits approved' 'PASS' 'none touched' }
 elseif ($AllowShared) { Add-Check 9 'Shared-file edits approved' 'PASS' ("{0} touched, -AllowShared" -f $sharedN) }
 else { Add-Check 9 'Shared-file edits approved' 'FAIL' ("{0} touched without approval" -f $sharedN) }
 
@@ -183,7 +186,7 @@ if ((Test-Path $programPath) -and (Test-Path $diTest)) {
 # ---- 12 residue ----------------------------------------------------------------------------------
 $markers = @(Get-ChildItem $repo -Include *.cs, *.sql -Recurse -File -ErrorAction SilentlyContinue |
              Where-Object { $_.FullName -notmatch '\\(bin|obj|\.git|node_modules|\.venv)\\' } |
-             Select-String -Pattern 'MUTATION [A-H]' -ErrorAction SilentlyContinue)
+             Select-String -CaseSensitive -Pattern '^\s*(?://|--|/\*)\s*MUTATION [A-H]\b' -ErrorAction SilentlyContinue)
 if ($markers.Count -eq 0) { Add-Check 12 'No mutation markers / probe residue' 'PASS' '0 markers' }
 else { Add-Check 12 'No mutation markers / probe residue' 'FAIL' ("{0} markers left behind" -f $markers.Count) }
 

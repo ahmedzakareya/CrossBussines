@@ -237,7 +237,7 @@ namespace CrossBuy.Tests.Communication
             // foreign and absent indistinguishable.
             var gate = Member(StripComments(Read("CrossBuy/Controllers/InventoryController.cs")),
                 "QuotationConversationGateAsync");
-            Assert.Matches(new Regex(@"q\.ID\s*==\s*id\s*&&\s*q\.CompanyID\s*==\s*ctx\.CompanyId"), gate);
+            Assert.Matches(new Regex(@"Quotations\.AsNoTracking\(\)\.AnyAsync\(d\s*=>\s*d\.ID\s*==\s*id\s*&&\s*d\.CompanyID\s*==\s*ctx\.CompanyId"), gate);
         }
 
         [Fact]

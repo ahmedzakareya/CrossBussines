@@ -204,15 +204,18 @@ namespace CrossBuy.Tests
             //
             // Stage 5 landed the ProjectMilestone definition WITH its domain, and with SupportsTimeline
             // still false - so the reason for the original deferral is satisfied, not bypassed. The CRM
-            // three are still absent, and still for the timeline-presenter reason.
+            // three now arrive with their qualified CRM timeline presenter.
             using var host = new PlatformTestHost();
             var registry = host.Registry();
 
             Assert.True(registry.IsValid(EntityRegistry.ProjectMilestone));
             Assert.False(registry.GetDefinition(EntityRegistry.ProjectMilestone).SupportsTimeline);
 
-            Assert.False(registry.IsValid(EntityRegistry.Lead));
-            Assert.False(registry.IsValid(EntityRegistry.CrmAccount));
+            foreach (var crm in new[] { EntityRegistry.Lead, EntityRegistry.CrmAccount, EntityRegistry.Opportunity })
+            {
+                Assert.True(registry.IsValid(crm));
+                Assert.True(registry.GetDefinition(crm).SupportsTimeline);
+            }
         }
 
         // -----------------------------------------------------------------------------------------

@@ -3,10 +3,10 @@
 <!DOCTYPE html>
 <html lang="@Thread.CurrentThread.CurrentCulture.TwoLetterISOLanguageName" dir="@(ar ? "rtl" : "ltr")">
 <head>
-    <title>CrossBuy</title>
+    <title>@CrossBuy.BL.Platform.ProductIdentity.Name</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="icon" type="image/svg+xml" href="~/Backend-assets/media/logos/crossbuy-favicon.svg" asp-append-version="true" />
+    <link rel="icon" type="image/svg+xml" href="@CrossBuy.BL.Platform.ProductIdentity.Assets.Icon" asp-append-version="true" />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,400,500,600,700" />
     <link href="~/Backend-assets/plugins/custom/datatables/datatables.bundle.css" rel="stylesheet" type="text/css" asp-append-version="true" />
     @if (ar)

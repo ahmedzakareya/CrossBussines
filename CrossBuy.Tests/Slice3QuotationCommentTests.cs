@@ -45,10 +45,54 @@ namespace CrossBuy.Tests
         public void Registering_Quotation_did_not_change_the_record_picker()
         {
             using var host = new PlatformTestHost();
-            ITaskLinkResolver resolver = new TaskLinkResolver(host.Registry());
+            var registry = host.Registry();
+            ITaskLinkResolver resolver = new TaskLinkResolver(registry);
+            var keys = resolver.Types().Select(t => t.Key).ToArray();
+
+            // THIS TEST'S OWN POINT, UNCHANGED: Quotation is registered for comments and search but was
+            // never a TM-2 picker type, so registering it must not have added it. Asserted BY NAME as
+            // well as by the list, so a stale list could never stop covering the thing this test exists
+            // for.
+            Assert.DoesNotContain(EntityRegistry.Quotation, keys);
+            Assert.True(registry.TryGetDefinition(EntityRegistry.Quotation, out var quotation) && quotation != null);
+            Assert.False(quotation!.ListedInRecordPicker);
+
+            // THE APPROVED CONTRACT, SPELLED OUT. The same nineteen types, in the same declaration
+            // order, that EntityRegistryTests.TaskLinkResolver_preserves_its_pre_kernel_behaviour pins,
+            // and that Slice2RegistryTests and TasksCalendarRegistrationTests now also carry — the
+            // picker guards must agree, and all of them still carried the pre-kernel seven.
+            //
+            // IT IS A LITERAL ON PURPOSE. TaskLinkResolver.Types() IS
+            // `GetDefinitions().Where(d => d.ListedInRecordPicker)`, so deriving the expectation from
+            // the registry would restate the implementation and catch nothing at all.
+            //
+            // WHY NINETEEN, attributed: 57b169d established the original seven; aced8c6 added the eight
+            // inventory documents and SalesReturn; 018a477 added PurchaseReturn, Receipt and Payment.
             Assert.Equal(
-                new[] { "SalesInvoice", "Customer", "ManufWorkOrder", "PosOrder", "Employee", "Project", "Item" },
-                resolver.Types().Select(t => t.Key).ToArray());
+                new[]
+                {
+                    "SalesInvoice",
+                    "PurchaseOrder", "GoodsReceipt", "SalesOrder", "DeliveryNote",
+                    "StockTransfer", "StockCount", "StockWriteOff", "LandedCost",
+                    "SalesReturn", "PurchaseReturn", "Receipt", "Payment",
+                    "Customer", "ManufWorkOrder", "PosOrder", "Employee", "Project", "Item",
+                },
+                keys);
+
+            // A request or an approval is somebody's workflow item, not a record you attach a task to.
+            foreach (var excluded in new[]
+                     {
+                         EntityRegistry.InventoryApproval,
+                         EntityRegistry.LeaveRequest,
+                         EntityRegistry.EmployeeRequest,
+                     })
+            {
+                Assert.True(registry.TryGetDefinition(excluded, out var def) && def != null,
+                    $"{excluded} should still be a registered entity");
+                Assert.False(def!.ListedInRecordPicker,
+                    $"{excluded} is a request/approval and must not be offered by the record picker");
+                Assert.DoesNotContain(excluded, keys);
+            }
         }
 
         // ---- Test 27: URL + search + resolve ----

@@ -2,11 +2,11 @@
   "schema": 1,
   "generatedBy": "engineering/generate-authorization-baseline.py",
   "frozenBaseline": {
-    "mutating": 470,
+    "mutating": 472,
     "attributeProtected": 167,
-    "inBodyProtected": 208,
+    "inBodyProtected": 211,
     "anonymousByDesign": 1,
-    "gaps": 94
+    "gaps": 93
   },
   "rules": [
     "This baseline may only SHRINK. CI rejects any commit that adds an entry.",
@@ -16,7 +16,7 @@
     "No blanket suppression. No project-wide disable switch.",
     "The 'gaps' figure and the entries list are the ENFORCED invariant and may only shrink. The mutating, attributeProtected and inBodyProtected figures are descriptive totals of the tree and legitimately grow when protected endpoints are added; frozenBaselineHistory records every such change with its reason."
   ],
-  "count": 94,
+  "count": 93,
   "entries": [
     {
       "id": "AccountController.ChangePassword",
@@ -428,20 +428,6 @@
       "id": "CommController.Star",
       "controller": "CommController",
       "action": "Star",
-      "httpMethod": "POST",
-      "module": "Communication",
-      "isApi": false,
-      "file": "CrossBuy/Controllers/CommController.cs",
-      "inheritedGuard": "SessionValidation",
-      "classification": "AuthorizationGap",
-      "targetWave": "Wave 3-6",
-      "addedBy": "Stage-002A-Batch-00",
-      "reason": "Pre-existing Stage 1 debt, frozen baseline of 143"
-    },
-    {
-      "id": "CommController.Trash",
-      "controller": "CommController",
-      "action": "Trash",
       "httpMethod": "POST",
       "module": "Communication",
       "isApi": false,
@@ -1489,6 +1475,15 @@
       "anonymousByDesign": "0 -> 1 - PortalAccountController.Login, declared in SOURCE with a stated reason via [AnonymousByDesign]. It is NOT recorded as an entry here: this file may only shrink, so a legitimately new login could not be declared in it without breaking the invariant that makes it worth having. It is excluded from the debt and counted in its own column, so mutating = attributeProtected + inBodyProtected + anonymousByDesign + gaps still closes: 470 = 167 + 208 + 1 + 94.",
       "gaps": "94 (unchanged) - the gap set is identical id for id. Not one endpoint this wave added is unprotected, no entry was added, removed or edited, TasksController.ChangeStatus was NOT reopened, and no CBA diagnostic was suppressed.",
       "controllers": "53 -> 55"
+    },
+    {
+      "stage": "R1 Communication endpoint reconciliation 2026-10-13",
+      "mutating": 472,
+      "attributeProtected": 167,
+      "inBodyProtected": 211,
+      "anonymousByDesign": 1,
+      "gaps": 93,
+      "note": "HEAD comparison: CommController.Trash retired; Delete, Restore and EmptyTrash each authorize through MayManageOutboxAsync -> ICommunicationAccessService.CanAsync OutboxManage before writes. Net +2 mutating, +3 in-body protected, -1 pre-existing gap. No debt entry added; the prior removal of Trash is preserved. Concern-level reconciliation, not a new full-source inventory."
     }
   ]
 }

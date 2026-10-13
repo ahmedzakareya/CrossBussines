@@ -1,0 +1,170 @@
+{
+  "Database": "CrossBuy_R1_Verify_20261013_150c51ce",
+  "Created": true,
+  "DeletedAndVerified": true,
+  "ProductionDatabaseTouched": false,
+  "ScriptHashes": {
+    "Accounting": "A29DB2389C6977802A3627582D718E7E36202129E54BA92E2436CA1D666645B1",
+    "HR": "49224C72AA826CFF09ED4E09F4C7C146EADB751036052E66E645FD9D2D9558F6"
+  },
+  "Passed": 33,
+  "Failed": 0,
+  "Cases": [
+    {
+      "Passed": true,
+      "Case": "Accounting fresh then evidence-preserving rerun"
+    },
+    {
+      "Passed": true,
+      "Case": "Accounting accounting_period_control.sql input-first"
+    },
+    {
+      "Passed": true,
+      "Case": "Accounting period_close_and_billing_approval_schema_2026-09.sql input-first"
+    },
+    {
+      "Passed": true,
+      "Case": "Accounting both inputs canonical then legacy"
+    },
+    {
+      "Passed": true,
+      "Case": "Accounting both inputs legacy then canonical"
+    },
+    {
+      "Passed": true,
+      "Case": "Accounting missing prerequisite refusal"
+    },
+    {
+      "Passed": true,
+      "Case": "Accounting wrong optional width refusal"
+    },
+    {
+      "Passed": true,
+      "Case": "Accounting reserved name collision refusal"
+    },
+    {
+      "Passed": true,
+      "Case": "Accounting extra audit column refusal"
+    },
+    {
+      "Passed": true,
+      "Case": "Accounting untrusted check refusal"
+    },
+    {
+      "Passed": true,
+      "Case": "Accounting wrong check definition refusal"
+    },
+    {
+      "Passed": true,
+      "Case": "Accounting wrong default refusal"
+    },
+    {
+      "Passed": true,
+      "Case": "Accounting wrong index shape refusal"
+    },
+    {
+      "Passed": true,
+      "Case": "Accounting disabled index refusal"
+    },
+    {
+      "Passed": true,
+      "Case": "Accounting foreign-company historic evidence refusal"
+    },
+    {
+      "Passed": true,
+      "Case": "Accounting orphan historic evidence refusal"
+    },
+    {
+      "Passed": true,
+      "Case": "Accounting invalid no-op historic evidence refusal"
+    },
+    {
+      "Passed": true,
+      "Case": "Accounting concurrent reruns preserve evidence"
+    },
+    {
+      "Passed": true,
+      "Case": "Accounting concurrent initial schema creation"
+    },
+    {
+      "Passed": true,
+      "Case": "HR fresh backfill and rerun preserve four distinct owners"
+    },
+    {
+      "Passed": true,
+      "Case": "HR CrossBuy\\deploy\\sql\\hr_document_attachments.sql input-first"
+    },
+    {
+      "Passed": true,
+      "Case": "HR deploy\\sql\\hr_document_attachments.sql input-first"
+    },
+    {
+      "Passed": true,
+      "Case": "HR repair missing owner index"
+    },
+    {
+      "Passed": true,
+      "Case": "HR company-collision rows do not suppress another company"
+    },
+    {
+      "Passed": true,
+      "Case": "HR incompatible existing owner index must refuse atomically"
+    },
+    {
+      "Passed": true,
+      "Case": "HR concurrent backfill is deduplicated"
+    },
+    {
+      "Passed": true,
+      "Case": "HR concurrent initial schema creation"
+    },
+    {
+      "Passed": true,
+      "Case": "HR missing source refuses before schema creation"
+    },
+    {
+      "Passed": true,
+      "Case": "HR incompatible source width refuses before backfill"
+    },
+    {
+      "Passed": true,
+      "Case": "HR wrong attachment width refusal preserves rows"
+    },
+    {
+      "Passed": true,
+      "Case": "HR nullable required attachment field refusal"
+    },
+    {
+      "Passed": true,
+      "Case": "HR disabled owner index refusal"
+    },
+    {
+      "Passed": true,
+      "Case": "HR invalid source company is not repaired or copied"
+    }
+  ],
+  "Scope": "Deployment-script contract qualification only; no linked database activation or whole SQL integration-suite claim",
+  "SchemaArtifacts": [
+    {
+      "path": "CrossBuy/deploy/sql/accounting_period_control.sql",
+      "rawSha256": "a29db2389c6977802a3627582d718e7e36202129e54ba92e2436ca1d666645b1",
+      "lfNormalizedSha256": "a29db2389c6977802a3627582d718e7e36202129e54ba92e2436ca1d666645b1"
+    },
+    {
+      "path": "deploy/sql/period_close_and_billing_approval_schema_2026-09.sql",
+      "rawSha256": "a29db2389c6977802a3627582d718e7e36202129e54ba92e2436ca1d666645b1",
+      "lfNormalizedSha256": "a29db2389c6977802a3627582d718e7e36202129e54ba92e2436ca1d666645b1"
+    },
+    {
+      "path": "CrossBuy/deploy/sql/hr_document_attachments.sql",
+      "rawSha256": "49224c72aa826cff09ed4e09f4c7c146eadb751036052e66e645fd9d2d9558f6",
+      "lfNormalizedSha256": "49224c72aa826cff09ed4e09f4c7c146eadb751036052e66e645fd9d2d9558f6"
+    },
+    {
+      "path": "deploy/sql/hr_document_attachments.sql",
+      "rawSha256": "49224c72aa826cff09ed4e09f4c7c146eadb751036052e66e645fd9d2d9558f6",
+      "lfNormalizedSha256": "49224c72aa826cff09ed4e09f4c7c146eadb751036052e66e645fd9d2d9558f6"
+    }
+  ],
+  "HistoricalHeaderNotice": "Accounting candidate header predates isolated execution; this dated proof records current qualification and does not claim production application."
+}

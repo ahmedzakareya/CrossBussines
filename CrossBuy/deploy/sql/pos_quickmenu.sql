@@ -1,3 +1,8 @@
+-- PROPOSAL ONLY: NOT APPLIED / NOT RELEASE ACCEPTED.
+-- SliceId: R1-POS-QUICKMENU-001
+-- Supersedes both inputs after review; originals remain intact.
+-- Input: CrossBuy/deploy/sql/pos_quickmenu.sql SHA256 7c9ad648d74dc73c2e58e9dce40a215876df82e83b3b31ee4d5f7b937bdca9c5
+-- Input: deploy/sql/pos_quickmenu.sql SHA256 ef169e5c36e21f0e23a7fa68379fc0ecfba73adaf28220eb94f62b0fd53b5af0
 -- RC-1 cashier quick menu: per-branch menu groups (tabs) + quick items (buttons) + item PLU (Item.QuickCode).
 -- Idempotent, additive. Base PosMenuGroups — PosMenuGroups.KitchenStationId is added by pos_kds_stations.sql.
 -- Run AFTER pos_setup.sql (branches) and the Items table already exists.

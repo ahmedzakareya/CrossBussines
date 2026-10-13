@@ -8,6 +8,12 @@ namespace CrossBuy.BL
 		Task<List<CompanyDto>> GetAllCompaniesAsync();
 		Task<CompanyDto> GetCompanyForm();
 		Task<CompanyDto> SaveCompanyAsync(CompanyDto companyDto , List<Models.Context.Admin.Attachment> attachments);
+
+		/// <summary>
+		/// Repairs ONE company created before first-administrator module seeding existed. Refuses a
+		/// company that already holds any module role, and an employee who does not belong to it.
+		/// </summary>
+		Task<string> BackfillFirstAdministratorModuleRolesAsync(int companyId, int employeeId);
 		Task<CompanyDto> GetCompanyData(int? ID);
 
 		 Task<List<BranchiesDto>> GetAllBranchesAsync();

@@ -120,7 +120,23 @@ namespace CrossBuy.Controllers
         [HttpGet]
         public async Task<IActionResult> Studio(int? open, string? code, CancellationToken cancellationToken)
         {
-            var model = await _studio.BuildAsync(cancellationToken);
+            ReportStudioModel model;
+            try
+            {
+                model = await _studio.BuildAsync(cancellationToken);
+            }
+            catch (Microsoft.Data.SqlClient.SqlException ex) when (
+                ex.Number == 208 && ex.Message.Contains("ReportDatasetSpecs", StringComparison.Ordinal))
+            {
+                HttpContext.RequestServices.GetService<ILogger<ReportsController>>()?
+                    .LogWarning(ex, "Report Studio schema is not ready: reporting_schema_not_ready");
+                Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
+                return View(new ReportStudioModel
+                {
+                    Arabic = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar",
+                    SchemaUnavailable = true,
+                });
+            }
 
             // `open` reopens a saved report. It is resolved SERVER-SIDE and re-validated against today's
             // permissions — a stale bookmark to somebody else's template simply yields an empty canvas rather
