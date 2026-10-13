@@ -42,7 +42,8 @@ param(
     [switch]$AllowShared,
     [switch]$SkipTests,
     [switch]$SkipBuild,
-    [switch]$RequireAll
+    [switch]$RequireAll,
+    [switch]$R1Bootstrap
 )
 
 $ErrorActionPreference = 'Continue'
@@ -132,24 +133,39 @@ foreach ($pat in @('#pragma warning disable CBA', 'SuppressMessage("Authorizatio
 if ($supp -eq 0) { Add-Check 7 'No analyzer suppressions' 'PASS' '0 found' }
 else { Add-Check 7 'No analyzer suppressions' 'FAIL' ("{0} found" -f $supp) }
 
-# ---- 8-9 ownership ----------------------------------------------------------------------------
-$ownArgs = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', (Join-Path $tools 'check-file-ownership.ps1'), '-TabId', $TabId)
-if ($Base) { $ownArgs += @('-Base', $Base) }
-if ($AllowShared) { $ownArgs += '-AllowShared' }
-$ownOut = & powershell @ownArgs 2>&1
-$ownExit = $LASTEXITCODE
-$ownText = ($ownOut | Out-String)
-$deniedM = [regex]::Match($ownText, 'DENIED\s+:\s+(\d+)')
-$sharedM = [regex]::Match($ownText, 'shared\s+:\s+(\d+)')
-$deniedN = 0; if ($deniedM.Success) { $deniedN = [int]$deniedM.Groups[1].Value }
-$sharedN = 0; if ($sharedM.Success) { $sharedN = [int]$sharedM.Groups[1].Value }
-if ($ownExit -eq 0 -and $deniedM.Success -and $sharedM.Success -and $deniedN -eq 0) { Add-Check 8 'Only owned paths modified' 'PASS' '0 denied' }
-else { Add-Check 8 'Only owned paths modified' 'FAIL' ("ownership exit {0}; denied {1}; complete summary {2}" -f $ownExit, $deniedN, ($deniedM.Success -and $sharedM.Success)) }
+# ---- 8-9 ownership ---------------------------------------------------------------------------
+if ($R1Bootstrap) {
+    $bootstrapOut = & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $tools 'check-r1-bootstrap.ps1') `
+        -Base $Base -Branch $env:R1_SOURCE_BRANCH -Actor $env:R1_ACTOR -RepositoryOwner $env:R1_REPOSITORY_OWNER `
+        -SourceRepository $env:R1_SOURCE_REPOSITORY -TargetRepository $env:R1_TARGET_REPOSITORY 2>&1
+    $bootstrapExit = $LASTEXITCODE
+    if ($bootstrapExit -eq 0) {
+        Add-Check 8 'Approved integration snapshot unchanged' 'PASS' 'Immutable owner-approved source; only confined CI/normalization follow-ups'
+        Add-Check 9 'Integration-owner bootstrap review' 'PASS' 'Authenticated repository owner; ownership assignments unchanged'
+    } else {
+        Add-Check 8 'Approved integration snapshot unchanged' 'FAIL' ($bootstrapOut | Out-String)
+        Add-Check 9 'Integration-owner bootstrap review' 'FAIL' 'Bootstrap authorization or source confinement failed'
+    }
+} else {
+    $ownArgs = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', (Join-Path $tools 'check-file-ownership.ps1'), '-TabId', $TabId)
+    if ($Base) { $ownArgs += @('-Base', $Base) }
+    if ($AllowShared) { $ownArgs += '-AllowShared' }
+    $ownOut = & powershell @ownArgs 2>&1
+    $ownExit = $LASTEXITCODE
+    $ownText = ($ownOut | Out-String)
+    $deniedM = [regex]::Match($ownText, 'DENIED\s+:\s+(\d+)')
+    $sharedM = [regex]::Match($ownText, 'shared\s+:\s+(\d+)')
+    $deniedN = 0; if ($deniedM.Success) { $deniedN = [int]$deniedM.Groups[1].Value }
+    $sharedN = 0; if ($sharedM.Success) { $sharedN = [int]$sharedM.Groups[1].Value }
+    if ($ownExit -eq 0 -and $deniedM.Success -and $sharedM.Success -and $deniedN -eq 0) { Add-Check 8 'Only owned paths modified' 'PASS' '0 denied' }
+    else { Add-Check 8 'Only owned paths modified' 'FAIL' ("ownership exit {0}; denied {1}; complete summary {2}" -f $ownExit, $deniedN, ($deniedM.Success -and $sharedM.Success)) }
 
-if (-not $sharedM.Success) { Add-Check 9 'Shared-file edits approved' 'FAIL' 'ownership shared-file summary missing' }
-elseif ($sharedN -eq 0) { Add-Check 9 'Shared-file edits approved' 'PASS' 'none touched' }
-elseif ($AllowShared) { Add-Check 9 'Shared-file edits approved' 'PASS' ("{0} touched, -AllowShared" -f $sharedN) }
-else { Add-Check 9 'Shared-file edits approved' 'FAIL' ("{0} touched without approval" -f $sharedN) }
+    if (-not $sharedM.Success) { Add-Check 9 'Shared-file edits approved' 'FAIL' 'ownership shared-file summary missing' }
+    elseif ($sharedN -eq 0) { Add-Check 9 'Shared-file edits approved' 'PASS' 'none touched' }
+    elseif ($AllowShared) { Add-Check 9 'Shared-file edits approved' 'PASS' ("{0} touched, -AllowShared" -f $sharedN) }
+    else { Add-Check 9 'Shared-file edits approved' 'FAIL' ("{0} touched without approval" -f $sharedN) }
+
+}
 
 # ---- 10 SQL governance --------------------------------------------------------------------------
 $sqlOut = & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $tools 'validate-sql-governance.ps1') 2>&1

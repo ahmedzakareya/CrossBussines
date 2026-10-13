@@ -118,12 +118,28 @@ jobs:
           if ($code -eq 4) { Write-Host "::error::manifest.json is stale - re-run scan-sql-manifest.ps1." }
           exit $code
 
+      - name: Immutable bootstrap refusal controls
+        shell: pwsh
+        run: |
+          python governance/tests/r1-bootstrap-tests.py
+          exit $LASTEXITCODE
+
       # ---- ownership --------------------------------------------------------------------------
       - name: File ownership
         shell: pwsh
+        env:
+          R1_SOURCE_BRANCH: ${{ github.head_ref }}
+          R1_ACTOR: ${{ github.actor }}
+          R1_REPOSITORY_OWNER: ${{ github.repository_owner }}
+          R1_SOURCE_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
+          R1_TARGET_REPOSITORY: ${{ github.repository }}
         run: |
           $base = "${{ steps.tab.outputs.base }}"
-          ./governance/tools/check-file-ownership.ps1 -TabId ${{ steps.tab.outputs.tabId }} -Base $base
+          if ($env:R1_SOURCE_BRANCH -eq 'tab/tab-1-r1-qualified-20261013' -and $base -eq '480c3d49f7b862b0662af161db824360e80ff5df') {
+            ./governance/tools/check-r1-bootstrap.ps1 -Base $base -Branch $env:R1_SOURCE_BRANCH -Actor $env:R1_ACTOR -RepositoryOwner $env:R1_REPOSITORY_OWNER -SourceRepository $env:R1_SOURCE_REPOSITORY -TargetRepository $env:R1_TARGET_REPOSITORY
+          } else {
+            ./governance/tools/check-file-ownership.ps1 -TabId ${{ steps.tab.outputs.tabId }} -Base $base
+          }
           exit $LASTEXITCODE
 
       # ---- the full gate ----------------------------------------------------------------------
@@ -131,12 +147,17 @@ jobs:
       # stops meaning anything, and no coverage is ever claimed from a skip.
       - name: Integration gate (12 checks)
         shell: pwsh
+        env:
+          R1_SOURCE_BRANCH: ${{ github.head_ref }}
+          R1_ACTOR: ${{ github.actor }}
+          R1_REPOSITORY_OWNER: ${{ github.repository_owner }}
+          R1_SOURCE_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
+          R1_TARGET_REPOSITORY: ${{ github.repository }}
         run: |
           $base = "${{ steps.tab.outputs.base }}"
-          ./governance/tools/integration-gate.ps1 `
-            -TabId ${{ steps.tab.outputs.tabId }} `
-            -Base $base `
-            -RequireAll
+          $bootstrap = @()
+          if ($env:R1_SOURCE_BRANCH -eq 'tab/tab-1-r1-qualified-20261013' -and $base -eq '480c3d49f7b862b0662af161db824360e80ff5df') { $bootstrap = @('-R1Bootstrap') }
+          ./governance/tools/integration-gate.ps1 -TabId ${{ steps.tab.outputs.tabId }} -Base $base -RequireAll @bootstrap
           exit $LASTEXITCODE
 
       - name: Gate summary
