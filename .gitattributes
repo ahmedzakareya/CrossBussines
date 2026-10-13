@@ -7,3 +7,7 @@ CrossBuy/Views/Shared/_LayoutInventory.cshtml   -text
 CrossBuy/wwwroot/Backend-assets/css/crossbuy-brand.css -text
 CrossBuy/Views/Tasks/*.cshtml                   -text
 CrossBuy/Views/Calendar/*.cshtml                -text
+
+# Deployment manifests and package origins record exact SQL bytes. Preserve the
+# qualified files on checkout; changing LF/CRLF would invalidate their evidence.
+*.sql                                         -text
