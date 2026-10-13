@@ -44,7 +44,20 @@ try:
     git('add', '--', 'CrossBuy/Views/Calendar/Index.cshtml')
     git('-c', 'user.name=R1 Test', '-c', 'user.email=r1-test@example.invalid', 'commit', '-m', 'Unapproved module edit')
     check(1)
-    print('7 bootstrap controls passed; wrong actor, branch, base, fork and application edits refused.')
+    module.write_bytes(git('show', approved + ':CrossBuy/Views/Calendar/Index.cshtml').stdout)
+    attributes = fixture / '.gitattributes'
+    original_attributes = attributes.read_bytes()
+    attributes.write_bytes(original_attributes + b'\n*.sql text eol=lf\n')
+    git('add', '--', 'CrossBuy/Views/Calendar/Index.cshtml', '.gitattributes')
+    git('-c', 'user.name=R1 Test', '-c', 'user.email=r1-test@example.invalid', 'commit', '-m', 'Forbidden SQL byte policy edit')
+    check(1)
+    attributes.write_bytes(original_attributes)
+    registry = fixture / 'governance/registry/tab-ownership.json'
+    registry.write_bytes(registry.read_bytes().replace(b'TAB-2', b'TAB-9', 1))
+    git('add', '--', '.gitattributes', 'governance/registry/tab-ownership.json')
+    git('-c', 'user.name=R1 Test', '-c', 'user.email=r1-test@example.invalid', 'commit', '-m', 'Forbidden ownership edit')
+    check(1)
+    print('9 bootstrap controls passed; actor, branch, base, fork, application, SQL byte policy and ownership edits refused.')
 finally:
     if temporary.parent != Path(tempfile.gettempdir()).resolve() or not temporary.name.startswith('crossbuy-r1-bootstrap-'):
         raise RuntimeError('Refusing cleanup outside the unique temporary fixture.')
