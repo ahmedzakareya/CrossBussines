@@ -11,3 +11,6 @@ CrossBuy/Views/Calendar/*.cshtml                -text
 # Deployment manifests and package origins record exact SQL bytes. Preserve the
 # qualified files on checkout; changing LF/CRLF would invalidate their evidence.
 *.sql                                         -text
+docs/roadmap-v2/*.md                           text eol=lf
+docs/roadmap-v2/*.csv                          text eol=lf
+governance/registry/*.json                     text eol=lf

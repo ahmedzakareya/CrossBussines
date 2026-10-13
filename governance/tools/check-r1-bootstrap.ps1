@@ -31,6 +31,15 @@ try {
     $changed = @(Read-Git -Arguments @('diff', '--name-only', $approved, 'HEAD'))
     foreach ($path in $changed) {
         if ($path -in $followup) { continue }
+        if ($path -eq '.gitattributes') {
+            $before = @(Read-Git -Arguments @('show', "${approved}:$path")) -join "`n"
+            $after = @(Read-Git -Arguments @('show', "HEAD:$path")) -join "`n"
+            $rules = @('docs/roadmap-v2/*.md                           text eol=lf',
+                       'docs/roadmap-v2/*.csv                          text eol=lf',
+                       'governance/registry/*.json                     text eol=lf') -join "`n"
+            if ($after -ceq ($before + "`n" + $rules)) { continue }
+            throw 'Only the three generator-output LF rules may be appended; SQL and visual byte policies are immutable.'
+        }
         # The deterministic generator may normalize existing output line endings, but not change content.
         if ($path.StartsWith('docs/roadmap-v2/') -or $path.StartsWith('governance/registry/')) {
             $before = @(Read-Git -Arguments @('show', "${approved}:$path")) -join "`n"
