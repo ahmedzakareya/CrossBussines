@@ -55,4 +55,91 @@
   <data name="Select message" xml:space="preserve"><value>Sélectionner le message</value></data>
   <data name="Unknown recipient" xml:space="preserve"><value>Destinataire inconnu</value></data>
   <data name="No subject" xml:space="preserve"><value>Sans objet</value></data>
+  <data name="Restore" xml:space="preserve">
+    <value>Restaurer</value>
+  </data>
+  <data name="Delete permanently" xml:space="preserve">
+    <value>Supprimer définitivement</value>
+  </data>
+  <data name="Empty folder" xml:space="preserve">
+    <value>Vider le dossier</value>
+  </data>
+  <data name="selected" xml:space="preserve">
+    <value>sélectionné(s)</value>
+  </data>
+  <data name="Select all messages" xml:space="preserve">
+    <value>Sélectionner tous les messages</value>
+  </data>
+  <data name="Move to Deleted Items?" xml:space="preserve">
+    <value>Déplacer vers les éléments supprimés ?</value>
+  </data>
+  <data name="Delete permanently? This cannot be undone." xml:space="preserve">
+    <value>Supprimer définitivement ? Cette action est irréversible.</value>
+  </data>
+  <data name="Permanently delete everything in Deleted Items?" xml:space="preserve">
+    <value>Supprimer définitivement tout le contenu des éléments supprimés ?</value>
+  </data>
+  <data name="All" xml:space="preserve">
+    <value>Tous</value>
+  </data>
+  <data name="Communications" xml:space="preserve">
+    <value>Communications</value>
+  </data>
+  <data name="Email" xml:space="preserve">
+    <value>E-mail</value>
+  </data>
+  <data name="Email sent" xml:space="preserve">
+    <value>E-mail envoyé</value>
+  </data>
+  <data name="Failed" xml:space="preserve">
+    <value>Échecs</value>
+  </data>
+  <data name="Forward" xml:space="preserve">
+    <value>Transférer</value>
+  </data>
+  <data name="Home" xml:space="preserve">
+    <value>Accueil</value>
+  </data>
+  <data name="Message added to Outbox (SMTP not configured — it will be sent automatically once set)." xml:space="preserve">
+    <value>Message ajouté à la boîte d'envoi (SMTP non configuré — il partira automatiquement une fois le paramétrage effectué).</value>
+  </data>
+  <data name="New Message" xml:space="preserve">
+    <value>Nouveau message</value>
+  </data>
+  <data name="No messages yet" xml:space="preserve">
+    <value>Aucun message</value>
+  </data>
+  <data name="Outbox" xml:space="preserve">
+    <value>Boîte d'envoi</value>
+  </data>
+  <data name="Queued" xml:space="preserve">
+    <value>En file d'attente</value>
+  </data>
+  <data name="Refresh" xml:space="preserve">
+    <value>Actualiser</value>
+  </data>
+  <data name="Reply" xml:space="preserve">
+    <value>Répondre</value>
+  </data>
+  <data name="SMTP not set — messages are queued and sent once configured." xml:space="preserve">
+    <value>SMTP non configuré — les messages sont mis en file d'attente et envoyés une fois le paramétrage effectué.</value>
+  </data>
+  <data name="Search inbox" xml:space="preserve">
+    <value>Rechercher dans la messagerie</value>
+  </data>
+  <data name="Send failed" xml:space="preserve">
+    <value>Échec de l'envoi</value>
+  </data>
+  <data name="Sent" xml:space="preserve">
+    <value>Envoyés</value>
+  </data>
+  <data name="Star" xml:space="preserve">
+    <value>Suivre</value>
+  </data>
+  <data name="Starred" xml:space="preserve">
+    <value>Suivis</value>
+  </data>
+  <data name="Trash" xml:space="preserve">
+    <value>Corbeille</value>
+  </data>
 </root>

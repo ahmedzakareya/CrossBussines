@@ -47,12 +47,12 @@
                     <div class="card-body">
                         <a href="@Url.Action("Compose","Comm")" class="btn btn-primary fw-bold w-100 mb-8">@Localizer["New Message"]</a>
                         <div class="menu menu-column menu-rounded menu-state-bg menu-state-title-primary menu-state-icon-primary menu-state-bullet-primary mb-6">
-                            <div class="menu-item mb-2"><a href="@url("All")" class="menu-link @act("All")"><span class="menu-icon"><i class="ki-outline ki-sms fs-2 me-3"></i></span><span class="menu-title fw-bold">@Localizer["All"]</span><span class="badge badge-light-primary">@cAll</span></a></div>
-                            <div class="menu-item mb-2"><a href="@url("Starred")" class="menu-link @act("Starred")"><span class="menu-icon"><i class="ki-outline ki-star fs-2 me-3"></i></span><span class="menu-title fw-bold">@Localizer["Starred"]</span>@if (cStar > 0){<span class="badge badge-light-warning">@cStar</span>}</a></div>
-                            <div class="menu-item mb-2"><a href="@url("Outbox")" class="menu-link @act("Outbox")"><span class="menu-icon"><i class="ki-outline ki-time fs-2 me-3"></i></span><span class="menu-title fw-bold">@Localizer["Outbox"]</span>@if (cOut > 0){<span class="badge badge-light-warning">@cOut</span>}</a></div>
-                            <div class="menu-item mb-2"><a href="@url("Sent")" class="menu-link @act("Sent")"><span class="menu-icon"><i class="ki-outline ki-send fs-2 me-3"></i></span><span class="menu-title fw-bold">@Localizer["Sent"]</span>@if (cSent > 0){<span class="badge badge-light-success">@cSent</span>}</a></div>
-                            <div class="menu-item mb-2"><a href="@url("Failed")" class="menu-link @act("Failed")"><span class="menu-icon"><i class="ki-outline ki-cross-circle fs-2 me-3"></i></span><span class="menu-title fw-bold">@Localizer["Failed"]</span>@if (cFail > 0){<span class="badge badge-light-danger">@cFail</span>}</a></div>
-                            <div class="menu-item"><a href="@url("Trash")" class="menu-link @act("Trash")"><span class="menu-icon"><i class="ki-outline ki-trash fs-2 me-3"></i></span><span class="menu-title fw-bold">@Localizer["Trash"]</span>@if (cTrash > 0){<span class="badge badge-light">@cTrash</span>}</a></div>
+                            <div class="menu-item mb-2"><a href="@url("All")" class="menu-link @act("All")"><span class="menu-icon"><i class="ki-outline ki-sms fs-2 me-3"></i></span><span class="menu-title fw-bold">@Localizer["All"]</span><span class="badge badge-light-primary cb-count @(cAll > 0 ? "" : "d-none")" data-count="all">@cAll</span></a></div>
+                            <div class="menu-item mb-2"><a href="@url("Starred")" class="menu-link @act("Starred")"><span class="menu-icon"><i class="ki-outline ki-star fs-2 me-3"></i></span><span class="menu-title fw-bold">@Localizer["Starred"]</span><span class="badge badge-light-warning cb-count @(cStar > 0 ? "" : "d-none")" data-count="starred">@cStar</span></a></div>
+                            <div class="menu-item mb-2"><a href="@url("Outbox")" class="menu-link @act("Outbox")"><span class="menu-icon"><i class="ki-outline ki-time fs-2 me-3"></i></span><span class="menu-title fw-bold">@Localizer["Outbox"]</span><span class="badge badge-light-warning cb-count @(cOut > 0 ? "" : "d-none")" data-count="outbox">@cOut</span></a></div>
+                            <div class="menu-item mb-2"><a href="@url("Sent")" class="menu-link @act("Sent")"><span class="menu-icon"><i class="ki-outline ki-send fs-2 me-3"></i></span><span class="menu-title fw-bold">@Localizer["Sent"]</span><span class="badge badge-light-success cb-count @(cSent > 0 ? "" : "d-none")" data-count="sent">@cSent</span></a></div>
+                            <div class="menu-item mb-2"><a href="@url("Failed")" class="menu-link @act("Failed")"><span class="menu-icon"><i class="ki-outline ki-cross-circle fs-2 me-3"></i></span><span class="menu-title fw-bold">@Localizer["Failed"]</span><span class="badge badge-light-danger cb-count @(cFail > 0 ? "" : "d-none")" data-count="failed">@cFail</span></a></div>
+                            <div class="menu-item"><a href="@url("Trash")" class="menu-link @act("Trash")"><span class="menu-icon"><i class="ki-outline ki-trash fs-2 me-3"></i></span><span class="menu-title fw-bold">@Localizer["Trash"]</span><span class="badge badge-light cb-count @(cTrash > 0 ? "" : "d-none")" data-count="trash">@cTrash</span></a></div>
                         </div>
                         @{ var libFolders = ViewBag.LibFolders as List<CrossBuy.BL.LibItemDto>; }
                         <!--begin::Document library (SharePoint) — folders link straight into the library-->
@@ -90,9 +90,50 @@
                     <div class="card-header align-items-center py-5 gap-2 gap-md-5">
                         <div class="d-flex align-items-center">
                             <span class="fw-bold fs-4 text-gray-900 me-2">@(folder == "All" ? Localizer["All"].Value : (folder == "Outbox" ? Localizer["Outbox"].Value : (folder == "Trash" ? Localizer["Trash"].Value : (folder == "Starred" ? Localizer["Starred"].Value : sLabel(folder)))))</span>
-                            <span class="badge badge-light-primary">@Model.Count</span>
+                            <span class="badge badge-light-primary" id="cb-folder-count">@Model.Count</span>
+
+                            @* The token every mutation on this page posts. The page had none: its only
+                               form was the GET search box. *@
+                            @Html.AntiForgeryToken()
+
+                            @* SELECT ALL lives here rather than in a header row, because this table has
+                               no <thead> and inventing one to hold a checkbox would change the layout
+                               for a control that belongs with the other list actions anyway. *@
+                            @if (Model.Count > 0)
+                            {
+                                <div class="form-check form-check-sm form-check-custom form-check-solid ms-4">
+                                    <input class="form-check-input" type="checkbox" id="cb-all" aria-label="@Localizer["Select all messages"]" />
+                                </div>
+                            }
+
+                            @* THE BULK BAR IS HIDDEN UNTIL SOMETHING IS SELECTED, which is how a mail
+                               client behaves and also the honest state: with nothing ticked there is
+                               nothing these buttons could act on, and a row of permanently-enabled
+                               controls that quietly do nothing is what the checkboxes on this screen
+                               used to be. *@
+                            <div id="cb-bulk" class="d-none align-items-center gap-2 ms-4">
+                                <span class="text-muted fs-7" id="cb-bulk-count"></span>
+                                @if (folder == "Trash")
+                                {
+                                    <button type="button" class="btn btn-sm btn-light-primary" id="cb-restore">
+                                        <i class="ki-outline ki-arrow-circle-left fs-5"></i>@Localizer["Restore"]
+                                    </button>
+                                }
+                                <button type="button" class="btn btn-sm btn-light-danger" id="cb-del">
+                                    <i class="ki-outline ki-trash fs-5"></i>@(folder == "Trash" ? Localizer["Delete permanently"] : SR["Delete"])
+                                </button>
+                            </div>
                         </div>
                         <div class="d-flex align-items-center gap-2">
+                            @if (folder == "Trash" && Model.Count > 0)
+                            {
+                                @* Outlook's "Empty folder". It takes no ids on purpose - there is one
+                                   folder this can mean, and naming it in the route rather than in a
+                                   parameter is what stops a mistyped value emptying the inbox. *@
+                                <button type="button" class="btn btn-sm btn-light-danger" id="cb-empty">
+                                    <i class="ki-outline ki-trash fs-5"></i>@Localizer["Empty folder"]
+                                </button>
+                            }
                             <a href="@url(folder)" class="btn btn-sm btn-icon btn-light btn-active-light-primary" title="@Localizer["Refresh"]"><i class="ki-outline ki-arrows-circle fs-2"></i></a>
                             <form method="get" class="d-flex align-items-center position-relative">
                                 <input type="hidden" name="folder" value="@folder" />
@@ -114,7 +155,12 @@
                        DOCUMENT stops scrolling sideways. Same containment Reports/Viewer already uses. *@
                     <div class="card-body p-0">
                         <div class="table-responsive">
-                        <table class="table table-hover table-row-dashed fs-6 gy-4 my-0">
+                        @* table-layout:fixed is what makes the px widths on the other columns ACTUAL widths rather
+                           than suggestions. With auto layout the browser grows every column to fit its content,
+                           which is how a long subject pushed the status, actions and date past the card edge and
+                           into the horizontal scroller. Fixed layout gives the subject whatever is left and lets
+                           it clip. *@
+                        <table class="table table-hover table-row-dashed fs-6 gy-4 my-0" style="table-layout:fixed;width:100%">
                             <tbody>
                             @if (!Model.Any())
                             {
@@ -139,18 +185,45 @@
                                     Localizer["Select message"].Value,
                                     string.IsNullOrWhiteSpace(m.ToAddress) ? Localizer["Unknown recipient"].Value : m.ToAddress,
                                     string.IsNullOrWhiteSpace(m.Subject) ? Localizer["No subject"].Value : m.Subject);
-                                <tr>
-                                    <td class="ps-9 w-40px"><div class="form-check form-check-sm form-check-custom form-check-solid mt-2"><input class="form-check-input" type="checkbox" value="@m.Id" aria-label="@selectLabel" /></div></td>
+                                <tr data-row="@m.Id">
+                                    <td class="ps-9 w-40px"><div class="form-check form-check-sm form-check-custom form-check-solid mt-2"><input class="form-check-input cb-pick" type="checkbox" value="@m.Id" aria-label="@selectLabel" /></div></td>
                                     <td class="w-40px">
                                         <a href="#" class="btn btn-icon btn-color-gray-500 btn-active-color-primary w-30px h-30px cb-star" data-id="@m.Id" title="@Localizer["Star"]"><i class="ki-@(m.Starred ? "solid" : "outline") ki-star fs-3 @(m.Starred ? "text-warning" : "")"></i></a>
                                     </td>
-                                    <td class="w-150px w-md-200px">
+                                    <td class="w-150px w-xl-250px">
                                         <a href="@Url.Action("View","Comm", new { id = m.Id })" class="d-flex align-items-center text-gray-900">
-                                            <div class="symbol symbol-35px me-3"><div class="symbol-label @col"><span>@initial</span></div></div>
-                                            <span class="fw-semibold text-truncate">@m.ToAddress</span>
+                                            @* THE PHOTO WHEN THE RECIPIENT IS ON FILE, the coloured initial when they are not. Most
+                                               mail goes to customers and vendors who have no employee record, so the
+                                               initial is the ordinary case rather than a failure state. *@
+                                            <div class="symbol symbol-35px me-3">
+                                                @if (!string.IsNullOrWhiteSpace(m.RecipientPhoto))
+                                                {
+                                                    <img src="@Url.Content("~" + m.RecipientPhoto.Replace("\\", "/"))" alt="@m.ToAddress" class="symbol-label" style="object-fit:cover;" />
+                                                }
+                                                else
+                                                {
+                                                    <div class="symbol-label @col"><span>@initial</span></div>
+                                                }
+                                            </div>
+                                            @* dir="ltr" because an address is a LATIN string and the page may be RTL. Without it the
+                                               truncation clipped from the WRONG END - "ahmed.zakarya@alprimecap.com" rendered
+                                               as "...cap.com", hiding the only part that identifies anyone. The domain is
+                                               what repeats; the local part is what differs. *@
+                                            <bdi dir="ltr" class="fw-semibold text-truncate">@m.ToAddress</bdi>
                                         </a>
                                     </td>
-                                    <td>
+                                    @* ONE LINE, TRUNCATED. The actions used to float INSIDE this cell, so the
+                                       subject wrapped around them two or three words at a time and the row grew
+                                       to four lines of ragged text. They have their own column now and this one
+                                       clips instead of wrapping - a mail list is scanned down the subjects, and
+                                       a row whose height depends on its text makes that impossible. *@
+                                    @* A REAL max-width IN PIXELS, on the cell, with .text-truncate doing the
+                                       clipping. Two earlier attempts collapsed this column to nothing:
+                                       "mw-1px" is max-width rather than min, and width:100% + max-width:0
+                                       resolves to zero because max-width wins over width. The subject is
+                                       what people scan a mailbox by, so it gets the room and the long ones
+                                       end in an ellipsis instead of wrapping the row to four lines. *@
+                                    <td class="text-truncate">
                                         <a href="@Url.Action("View","Comm", new { id = m.Id })" class="text-gray-900">
                                             <span class="fw-bold">@m.Subject</span>
                                             @if (!string.IsNullOrWhiteSpace(m.Preview)) { <span class="fw-bold d-none d-md-inline">-</span> <span class="d-none d-md-inline text-muted">@m.Preview</span> }
@@ -159,8 +232,43 @@
                                         @if (m.Kind == "Forward") { <span class="badge badge-light-warning ms-1 fs-9">@Localizer["Forward"]</span> }
                                         else if (m.Kind is "Reply" or "ReplyAll") { <span class="badge badge-light-info ms-1 fs-9">@Localizer["Reply"]</span> }
                                     </td>
-                                    <td class="w-90px text-end"><span class="badge @sBadge(m.Status)">@sLabel(m.Status)</span></td>
-                                    <td class="w-110px text-end fs-7 pe-9 text-muted">@(m.At?.ToLocalTime().ToString("MM/dd HH:mm"))</td>
+                                    @* Dropped below xl. With a folder sidebar beside it this panel is about 540px, and six fixed
+                                       columns left the SUBJECT - the one people actually scan - with no room at all.
+                                       Status is the cheapest to lose: almost every row in a sent mailbox says the
+                                       same word, and the row still carries it at xl and on the message itself. *@
+                                    <td class="w-90px text-end d-none d-xl-table-cell"><span class="badge @sBadge(m.Status)">@sLabel(m.Status)</span></td>
+
+                                    @* THEIR OWN COLUMN, fixed width, so the subject beside them is never squeezed
+                                       by how many controls this folder happens to show. Deleted Items has two,
+                                       every other folder has one, and the column is sized for two either way -
+                                       otherwise the subject column would jump width when you change folder. *@
+                                    <td class="w-70px text-end text-nowrap">
+                                        @if (folder == "Trash")
+                                        {
+                                            @* RESTORE FIRST, because it is the recoverable one: a row whose only
+                                               control was a permanent delete made "put it back" reachable solely
+                                               by ticking a box, which is the step people skip. *@
+                                            <button type="button"
+                                                    class="btn btn-icon btn-sm btn-active-light-primary cb-restore-one"
+                                                    data-id="@m.Id"
+                                                    title="@Localizer["Restore"]"
+                                                    aria-label="@Localizer["Restore"]">
+                                                <i class="ki-outline ki-arrow-circle-left fs-5"></i>
+                                            </button>
+                                        }
+                                        @* Icon-only by design here: a visible word on every row would compete
+                                           with the subject for the eye. The accessible name carries it instead. *@
+                                        <button type="button"
+                                                class="btn btn-icon btn-sm btn-active-light-danger cb-del-one"
+                                                data-id="@m.Id"
+                                                title="@(folder == "Trash" ? Localizer["Delete permanently"].Value : SR["Delete"].Value)"
+                                                aria-label="@(folder == "Trash" ? Localizer["Delete permanently"].Value : SR["Delete"].Value)">
+                                            <i class="ki-outline ki-trash fs-5"></i>
+                                        </button>
+                                    </td>
+                                    @* text-nowrap because "10/08 14:44" was breaking after the slash and rendering as two
+                                       stacked fragments - a date that wraps is not a date. *@
+                                    <td class="w-90px text-end fs-7 pe-4 text-muted text-nowrap">@(m.At?.ToLocalTime().ToString("MM/dd HH:mm"))</td>
                                 </tr>
                             }
                             </tbody>
@@ -176,14 +284,190 @@
 
 @section Scripts {
 <script>
-    document.querySelectorAll('.cb-star').forEach(function (a) {
-        a.addEventListener('click', function (e) {
-            e.preventDefault(); var fd = new FormData(); fd.append('id', a.getAttribute('data-id'));
-            fetch('@Url.Action("Star","Comm")', { method: 'POST', credentials: 'same-origin', body: fd })
-                .then(function (r) { return r.json(); }).then(function (res) {
-                    if (res && res.ok) { var i = a.querySelector('i'); var on = i.classList.contains('ki-solid'); i.classList.toggle('ki-solid', !on); i.classList.toggle('ki-outline', on); i.classList.toggle('text-warning', !on); }
-                });
+    // ---- DELETE, RESTORE AND EMPTY ---------------------------------------------------------
+    //
+    // A LIST MUTATION ANSWERS IN PLACE. The rows are removed from the table rather than the page
+    // being reloaded: a reload loses the scroll position and the user's place in a mailbox, and the
+    // server has already told us exactly how many rows it acted on.
+    //
+    // ONLY THE IRREVERSIBLE ACTION ASKS. Moving to Deleted Items is undoable by design - the row is
+    // still there - so a confirm on it would be the dialog people learn to dismiss without reading,
+    // which is precisely what makes the one that matters ineffective.
+    (function () {
+        var folder = @Html.Raw(Json.Serialize(folder));
+        var permanent = folder === 'Trash';
+        var bulk = document.getElementById('cb-bulk');
+        var bulkCount = document.getElementById('cb-bulk-count');
+        var all = document.getElementById('cb-all');
+
+        function picks() {
+            return Array.prototype.slice.call(document.querySelectorAll('.cb-pick:checked'));
+        }
+
+        function sync() {
+            var n = picks().length;
+            if (bulk) bulk.classList.toggle('d-none', n === 0);
+            if (bulk) bulk.classList.toggle('d-flex', n > 0);
+            // NUMBER THEN WORD, assembled here rather than concatenated in the view: "1 محددة" and
+            // "1 selected" both read correctly this way round, and the bidi algorithm keeps the digit
+            // with its noun on an RTL page.
+            if (bulkCount) bulkCount.textContent = n ? (n + ' ' + @Html.Raw(Json.Serialize(Localizer["selected"].Value))) : '';
+            if (all) {
+                var boxes = document.querySelectorAll('.cb-pick');
+                all.checked = boxes.length > 0 && n === boxes.length;
+                all.indeterminate = n > 0 && n < boxes.length;
+            }
+        }
+
+        function post(url, ids) {
+            var fd = new FormData();
+            (ids || []).forEach(function (id) { fd.append('ids', id); });
+            fd.append('folder', folder);
+            fd.append('ajax', 'true');
+            var tok = document.querySelector('input[name="__RequestVerificationToken"]');
+            if (tok) fd.append('__RequestVerificationToken', tok.value);
+            return fetch(url, { method: 'POST', credentials: 'same-origin', body: fd })
+                .then(function (r) { return r.ok ? r.json() : { ok: false }; });
+        }
+
+        // The sidebar badges, from the server's own recount. A badge that is zero is hidden rather
+        // than removed, so the next mutation has something to write to.
+        function paint(counts) {
+            if (!counts) return;
+            document.querySelectorAll('.cb-count').forEach(function (b) {
+                var n = counts[b.getAttribute('data-count')];
+                if (typeof n !== 'number') return;
+                b.textContent = n;
+                b.classList.toggle('d-none', n === 0 && b.getAttribute('data-count') !== 'all');
+            });
+            var open = document.getElementById('cb-folder-count');
+            if (open) open.textContent = document.querySelectorAll('tr[data-row]').length;
+        }
+
+        function drop(ids, counts) {
+            ids.forEach(function (id) {
+                var tr = document.querySelector('tr[data-row="' + id + '"]');
+                if (tr) tr.remove();
+            });
+            sync();
+            paint(counts);
+            // An emptied folder still needs its "no messages yet" state, which only the server renders.
+            if (!document.querySelectorAll('tr[data-row]').length) location.reload();
+        }
+
+        // ---- THE CONFIRMATION ---------------------------------------------------------------
+        //
+        // EVERY delete asks, and the two asks are not the same question. Moving to Deleted Items is
+        // reversible and says so; deleting from Deleted Items is final and says THAT. A dialog that
+        // read identically in both places would teach people to clear it without reading, which is
+        // exactly what makes the one that matters useless.
+        //
+        // Swal with a native fallback, the same shape the rest of the product uses: if the plugin
+        // bundle has not loaded, the browser's own confirm still guards the action rather than the
+        // delete going through unasked.
+        function ask(onYes) {
+            var text = permanent
+                ? @Html.Raw(Json.Serialize(Localizer["Delete permanently? This cannot be undone."].Value))
+                : @Html.Raw(Json.Serialize(Localizer["Move to Deleted Items?"].Value));
+
+            if (window.Swal) {
+                Swal.fire({
+                    text: text,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    buttonsStyling: false,
+                    confirmButtonText: @Html.Raw(Json.Serialize(SR["Yes"].Value)),
+                    cancelButtonText: @Html.Raw(Json.Serialize(SR["Cancel"].Value)),
+                    customClass: { confirmButton: 'btn btn-danger', cancelButton: 'btn btn-light' }
+                }).then(function (r) { if (r.isConfirmed) onYes(); });
+            } else if (confirm(text)) { onYes(); }
+        }
+
+        function remove(ids) {
+            if (!ids.length) return;
+            ask(function () {
+                post('@Url.Action("Delete","Comm")', ids).then(function (res) { if (res && res.ok) drop(ids, res.counts); });
+            });
+        }
+
+        document.querySelectorAll('.cb-pick').forEach(function (c) { c.addEventListener('change', sync); });
+
+        if (all) {
+            all.addEventListener('change', function () {
+                document.querySelectorAll('.cb-pick').forEach(function (c) { c.checked = all.checked; });
+                sync();
+            });
+        }
+
+        document.querySelectorAll('.cb-del-one').forEach(function (b) {
+            b.addEventListener('click', function () { remove([b.getAttribute('data-id')]); });
         });
-    });
+
+        var del = document.getElementById('cb-del');
+        if (del) del.addEventListener('click', function () { remove(picks().map(function (c) { return c.value; })); });
+
+        function restore(ids) {
+            if (!ids.length) return;
+            // NO CONFIRMATION. Restoring destroys nothing and is itself undoable by deleting again -
+            // asking here would be the dialog that teaches people to dismiss the one that matters.
+            post('@Url.Action("Restore","Comm")', ids).then(function (res) { if (res && res.ok) drop(ids, res.counts); });
+        }
+
+        document.querySelectorAll('.cb-restore-one').forEach(function (b) {
+            b.addEventListener('click', function () { restore([b.getAttribute('data-id')]); });
+        });
+
+        var rest = document.getElementById('cb-restore');
+        if (rest) rest.addEventListener('click', function () {
+            restore(picks().map(function (c) { return c.value; }));
+        });
+
+        var empty = document.getElementById('cb-empty');
+        if (empty) empty.addEventListener('click', function () {
+            var text = @Html.Raw(Json.Serialize(Localizer["Permanently delete everything in Deleted Items?"].Value));
+            function go() { post('@Url.Action("EmptyTrash","Comm")', []).then(function (res) { if (res && res.ok) location.reload(); }); }
+            if (window.Swal) {
+                Swal.fire({ text: text, icon: 'warning', showCancelButton: true, buttonsStyling: false,
+                    confirmButtonText: @Html.Raw(Json.Serialize(SR["Yes"].Value)),
+                    cancelButtonText: @Html.Raw(Json.Serialize(SR["Cancel"].Value)),
+                    customClass: { confirmButton: 'btn btn-danger', cancelButton: 'btn btn-light' } })
+                    .then(function (r) { if (r.isConfirmed) go(); });
+            } else if (confirm(text)) { go(); }
+        });
+
+        // STAR LIVES IN HERE TOO, because it needs paint() and sync(): it used to sit outside this
+        // closure, where neither name exists.
+        document.querySelectorAll('.cb-star').forEach(function (a) {
+            a.addEventListener('click', function (e) {
+                e.preventDefault();
+                var fd = new FormData();
+                fd.append('id', a.getAttribute('data-id'));
+                fetch('@Url.Action("Star","Comm")', { method: 'POST', credentials: 'same-origin', body: fd })
+                    .then(function (r) { return r.json(); })
+                    .then(function (res) {
+                        if (!res || !res.ok) return;
+
+                        var i = a.querySelector('i');
+                        var on = i.classList.contains('ki-solid');
+                        i.classList.toggle('ki-solid', !on);
+                        i.classList.toggle('ki-outline', on);
+                        i.classList.toggle('text-warning', !on);
+
+                        paint(res.counts);
+
+                        // IN THE STARRED FOLDER, un-starring removes the row: the message is no longer
+                        // a member of the set being shown, and leaving it there would be the list
+                        // disagreeing with its own filter.
+                        if (folder === 'Starred' && on) {
+                            var tr = a.closest('tr[data-row]');
+                            if (tr) { tr.remove(); sync(); paint(res.counts); }
+                            if (!document.querySelectorAll('tr[data-row]').length) location.reload();
+                        }
+                    });
+            });
+        });
+
+        sync();
+    })();
 </script>
 }

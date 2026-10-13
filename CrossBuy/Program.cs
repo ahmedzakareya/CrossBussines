@@ -571,6 +571,9 @@ builder.Services.AddScoped<CrossBuy.BL.Platform.IModuleAccessService>(sp => sp.G
 //
 // It takes no IPlatformPermissionProvider, so it adds nothing to the resolution cycle that
 // TasksAccessService and CalendarAccessService break with Func<>.
+// Answering a meeting invitation carried by a mail message. Scoped: it takes the request's
+// DbContext and reads the message through ICommService so the company predicate applies.
+builder.Services.AddScoped<CrossBuy.BL.IMailInviteResponder, CrossBuy.BL.MailInviteResponder>();
 builder.Services.AddScoped<CrossBuy.BL.CommunicationAccessService>();
 builder.Services.AddScoped<CrossBuy.BL.ICommunicationAccessService>(sp => sp.GetRequiredService<CrossBuy.BL.CommunicationAccessService>());
 builder.Services.AddScoped<CrossBuy.BL.Platform.IModuleAccessService>(sp => sp.GetRequiredService<CrossBuy.BL.CommunicationAccessService>());
