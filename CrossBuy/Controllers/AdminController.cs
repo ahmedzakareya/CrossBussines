@@ -166,6 +166,12 @@ namespace CrossBuy.Controllers
 
 		private sealed class HrGate { public bool Ok; public int CompanyId; public int? EmployeeId; }
 
+		private async Task<int> HrContextCompanyAsync()
+		{
+			var ctx = await BusinessContexts.TryGetCurrentAsync();
+			return ctx?.CompanyId ?? 0;
+		}
+
 		// `subjectEmployeeId` is the employee the operation is ABOUT, when there is one. It is passed as a
 		// PermissionTarget so HrAccessService applies its own record rule (self / company-intersected manager /
 		// role) against the EMPLOYEE ROW's company — the posted id never establishes authorization by itself.
@@ -534,9 +540,22 @@ namespace CrossBuy.Controllers
 			{
 				var svc = HttpContext.RequestServices.GetService(typeof(BL.ICompanyService)) as BL.ICompanyService;
 				if (svc == null) return Json(new { ok = false, message = "service missing" });
-				var list = companyId.HasValue && companyId.Value > 0
-					? await svc.GetBranchesByCompanyAsync(companyId.Value)
-					: await svc.GetAllBranchesAsync();
+				// THE CALLER'S OWN BRANCHES, AND ONLY THOSE.
+				//
+				// WHAT WAS WRONG: with no companyId the method fell back to GetAllBranchesAsync, so the
+				// branch picker on the employee wizard listed every company's branches — thirteen of
+				// them, to the administrator of a company that has none. And a SUPPLIED companyId was
+				// never checked against the caller, so passing another company's id read its branch
+				// names directly.
+				//
+				// Both now resolve to the caller's company: an absent id means "mine", and a supplied
+				// id that is not mine returns nothing rather than someone else's list.
+				var company = await HrContextCompanyAsync();
+				if (company <= 0) return Json(new { ok = true, data = Array.Empty<object>() });
+				if (companyId.HasValue && companyId.Value > 0 && companyId.Value != company)
+					return Json(new { ok = true, data = Array.Empty<object>() });
+
+				var list = await svc.GetBranchesByCompanyAsync(company);
 				var items = list.Select(b => new { id = b.ID, name = b.NameAr ?? b.Name, nameEn = b.Name });
 				return Json(new { ok = true, data = items });
 			}
@@ -553,8 +572,23 @@ namespace CrossBuy.Controllers
 			{
 				var svc = HttpContext.RequestServices.GetService(typeof(BL.ICompanyService)) as BL.ICompanyService;
 				if (svc == null) return Json(new { ok = false, message = "service missing" });
+
+				// THE CALLER'S OWN COMPANY, AND ONLY THAT. This feeds the company picker on the employee
+				// wizard, and it used to list EVERY company in the installation by name — an
+				// administrator of a one-person company could read the names of all the others.
+				//
+				// Narrowing it also makes the picker tell the truth: SaveEmployeeAsync stamps the
+				// caller's company and refuses a form naming a different one, so every other option in
+				// this list was an option that could not be saved.
+				//
+				// The companies LIST screen (ServiceController) still calls GetAllCompaniesAsync and is
+				// unchanged — managing companies is a platform-level job and legitimately sees them all.
+				var company = await HrContextCompanyAsync();
+				if (company <= 0) return Json(new { ok = true, data = Array.Empty<object>() });
+
 				var list = await svc.GetAllCompaniesAsync();
-				var items = list.Select(c => new { id = c.CompanyID, name = c.CompanyNameAr ?? c.CompanyName, nameEn = c.CompanyName });
+				var items = list.Where(c => c.CompanyID == company)
+								.Select(c => new { id = c.CompanyID, name = c.CompanyNameAr ?? c.CompanyName, nameEn = c.CompanyName });
 				return Json(new { ok = true, data = items });
 			}
 			catch (Exception ex)
@@ -1094,9 +1128,23 @@ namespace CrossBuy.Controllers
 			var svc = HttpContext.RequestServices.GetService(typeof(BL.IEmployeeService)) as BL.IEmployeeService;
 			if (svc == null) return Json(new { success = false, message = "service missing" });
 
-			// R3 hire: the applicant has no login → auto-create an Identity user (email = applicant email) and link it.
+			// A NEW EMPLOYEE WITHOUT A LOGIN CANNOT BE SAVED AT ALL, so this path is not only for hires.
+			//
+			// Employee.UserId is NOT NULL, the employee screen carries UserId as a hidden field with no
+			// way to create or choose one, and this was the only place a login was ever minted — behind
+			// `applicationId > 0`. The result was that the ordinary "add employee" screen failed on
+			// every save, in every company, with "Cannot insert the value NULL into column 'UserId'"
+			// surfaced to the user as "An error occurred while saving the entity changes". Recruitment
+			// was the only way to add a person to the system.
+			//
+			// Dropping the applicationId condition reuses the SAME proven code for both routes: an
+			// existing account for that address is linked rather than duplicated, and otherwise a login
+			// is created with a one-time password returned to the caller exactly as the hire path does.
+			//
+			// The email is what the HR user supplies and is already validated above, so "no email" still
+			// means "no login" — this does not silently mint accounts for records that name nobody.
 			string? tempPassword = null;
-			if (applicationId > 0 && string.IsNullOrWhiteSpace(model.UserId) && !string.IsNullOrWhiteSpace(model.Email))
+			if (string.IsNullOrWhiteSpace(model.UserId) && !string.IsNullOrWhiteSpace(model.Email))
 			{
 				var userManager = HttpContext.RequestServices.GetService(typeof(Microsoft.AspNetCore.Identity.UserManager<CrossBuy.Models.Context.Admin.Users>)) as Microsoft.AspNetCore.Identity.UserManager<CrossBuy.Models.Context.Admin.Users>;
 				if (userManager != null)
@@ -1105,7 +1153,16 @@ namespace CrossBuy.Controllers
 					if (existingUser != null) { model.UserId = existingUser.Id; }
 					else
 					{
-						var newUser = new CrossBuy.Models.Context.Admin.Users { UserName = model.Email, Email = model.Email, EmailConfirmed = true };
+						// IsActive and IsEndUser are REQUIRED FOR SIGN-IN, not bookkeeping: AccountController.Login
+						// refuses on `!user.IsActive || !user.IsEndUser` BEFORE it checks the password. Created
+						// without them, this account answers "Username or password is incorrect!" forever while
+						// looking perfectly normal in the database — the same defect that shipped with the first
+						// company administrator.
+						var newUser = new CrossBuy.Models.Context.Admin.Users
+						{
+							UserName = model.Email, Email = model.Email, EmailConfirmed = true,
+							IsActive = true, IsEndUser = true,
+						};
 						tempPassword = "Cb@" + Guid.NewGuid().ToString("N").Substring(0, 8) + "9";   // meets Identity complexity
 						var cr = await userManager.CreateAsync(newUser, tempPassword);
 						if (!cr.Succeeded) return Json(new { success = false, message = string.Join("; ", cr.Errors.Select(e => e.Description)) });

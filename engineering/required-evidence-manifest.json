@@ -121,23 +121,6 @@
       "status": "PLANNED - Batch P continuation"
     },
     {
-      "group": "Platform kernel - comm outbox concurrency (slice 3)",
-      "class": "CrossBuy.Tests.SqlServer.CommOutboxConcurrencyTests",
-      "purpose": "Real UPDLOCK/READPAST claiming on the Comm outbox. Kernel-owned; registered here so the loss of one is noticed.",
-      "tests": [
-        "A_claim_abandoned_by_a_dead_worker_is_reclaimed_after_the_timeout",
-        "A_failed_message_retries_while_a_sent_one_stays_done",
-        "A_sent_message_is_never_reclaimed_even_when_every_clock_is_ancient",
-        "Concurrent_workers_partition_the_queue_without_double_sending",
-        "Each_claim_carries_its_own_company",
-        "MaxAttempts_stops_retry_and_the_failure_reason_is_kept",
-        "Only_one_worker_can_own_a_queued_message",
-        "Retrying_never_duplicates_attachments",
-        "The_deployed_outbox_script_is_idempotent_and_its_constraints_are_real",
-        "The_fixture_refuses_to_target_a_real_CrossBuy_database"
-      ]
-    },
-    {
       "group": "Platform kernel - business event dispatch concurrency",
       "class": "CrossBuy.Tests.SqlServer.DispatchConcurrencyTests",
       "purpose": "The claim-by-Status contract and the no-cursor rule (ADR-003/007) against a real server.",
@@ -310,7 +293,7 @@
         "Every_Never_action_denies_with_the_Never_reason_code",
         "Every_declared_column_exists_with_no_silent_omission",
         "Temporary_allows_before_expiry_and_denies_after_it",
-        "The_Never_list_holds_exactly_the_confirmed_fifteen_entries",
+        "The_Never_list_holds_exactly_the_confirmed_nineteen_entries",
         "The_reader_needs_no_Session_and_lists_policies_per_company",
         "The_slice_applies_a_SECOND_time_without_error_and_detects_no_drift",
         "Validate_refuses_a_permitting_policy_for_a_Never_action",
@@ -440,7 +423,148 @@
         "A_stale_claim_with_attempts_remaining_is_left_for_the_claim_loop_to_retry",
         "A_released_row_can_be_replayed_by_the_operator_path_and_reach_Done"
       ]
+    },
+    {
+      "group": "R1 current executable SQL evidence reconciliation",
+      "class": "CrossBuy.Tests.SqlServer.PimFoundationCorrectnessRegressionTests",
+      "tests": [
+        "A_company_cannot_open_a_work_order_on_another_company_item_or_warehouse",
+        "A_refused_cross_company_work_order_writes_nothing_at_all",
+        "A_same_company_work_order_still_succeeds_and_leaks_no_foreign_component",
+        "Authoritative_BOM_route_applies_scrap_and_rounding",
+        "Bundle_explode_applies_planned_scrap_like_every_other_BOM_path",
+        "Bundle_explode_rounds_component_quantity_to_four_decimals",
+        "Completing_a_completed_work_order_is_refused_and_consumes_nothing",
+        "Completing_without_releasing_still_issues_the_materials_once",
+        "Work_order_stock_movements_carry_the_work_order_id_in_SourceId",
+        "Zero_valued_material_issue_is_not_consumed_again_on_completion"
+      ]
+    },
+    {
+      "group": "R1 current executable SQL evidence reconciliation",
+      "class": "CrossBuy.Tests.SqlServer.PimInventoryIntelligenceTests",
+      "tests": [
+        "A_stocked_semi_finished_is_consumed_as_stock_and_its_raws_stay_untouched",
+        "Cancellation_waste_is_known_waste_and_not_unexplained_variance",
+        "Intelligence_never_crosses_a_company_or_reads_an_unowned_branch",
+        "Manual_waste_cannot_go_negative_or_cross_a_company",
+        "Manual_waste_decreases_stock_once_and_records_reason_actor_and_cost",
+        "Manual_waste_is_known_waste_not_unexplained_variance",
+        "Replenishment_falls_back_to_MinQty_and_tops_up_to_the_threshold_without_a_target",
+        "Replenishment_flags_a_make_item_without_manufacturing_it",
+        "Replenishment_ignores_a_zero_or_missing_configuration",
+        "Replenishment_is_silent_above_the_threshold_and_speaks_at_or_below_it",
+        "Shortage_intelligence_reads_the_existing_events",
+        "Variance_uses_base_units_so_grams_are_never_compared_with_kilograms"
+      ]
+    },
+    {
+      "group": "R1 current executable SQL evidence reconciliation",
+      "class": "CrossBuy.Tests.SqlServer.PimConsumptionTimingTests",
+      "tests": [
+        "A_branch_with_no_capability_still_deducts_at_payment",
+        "A_paid_return_reverses_the_money_without_restoring_consumed_ingredients",
+        "A_retried_kitchen_send_consumes_exactly_once",
+        "A_stocked_sauce_is_drawn_from_stock_and_no_tomato_is_touched",
+        "Cancelling_after_preparation_keeps_the_stock_consumed_and_records_waste",
+        "Cancelling_before_preparation_consumes_nothing_and_wastes_nothing",
+        "Consumption_never_crosses_a_company_boundary",
+        "Sending_to_the_kitchen_consumes_the_recipe_and_paying_does_not_consume_it_again",
+        "Shortage_under_AllowAndRecord_consumes_what_exists_and_records_the_shortfall",
+        "Shortage_under_Block_refuses_the_dispatch_and_consumes_nothing"
+      ]
+    },
+    {
+      "group": "R1 current executable SQL evidence reconciliation",
+      "class": "CrossBuy.Tests.SqlServer.PimCanonicalBomTests",
+      "tests": [
+        "A_chain_deeper_than_the_cap_is_refused",
+        "A_cycle_is_detected_and_refused",
+        "A_recipe_line_in_grams_resolves_against_a_kilogram_base",
+        "A_recipe_unit_with_no_conversion_is_refused_rather_than_silently_wrong",
+        "A_stocked_semi_finished_is_consumed_without_recursion_and_exploded_with_it",
+        "Canonical_rounding_is_four_decimals_away_from_zero",
+        "Every_migrated_site_resolves_the_same_canonical_quantity",
+        "Mrp_still_nets_explodes_and_levels_through_the_shared_walk",
+        "Multi_level_pizza_sauce_tomato_explodes_with_scrap_at_each_level",
+        "Netting_only_happens_when_the_caller_asks_for_it",
+        "One_company_cannot_explode_another_companys_recipe",
+        "Single_level_pizza_explodes_into_its_direct_ingredients",
+        "The_explosion_is_deterministic",
+        "Work_order_planning_stores_the_canonical_quantities"
+      ]
+    },
+    {
+      "group": "R1 current executable SQL evidence reconciliation",
+      "class": "CrossBuy.Tests.SqlServer.PimCompanyIsolationTests",
+      "tests": [
+        "A_company_cannot_move_stock_using_another_company_item_or_warehouse",
+        "A_company_reads_no_balance_for_another_company_item",
+        "The_platform_refuses_to_create_a_company_scope_for_an_unresolved_company",
+        "Unresolved_company_cannot_write_a_movement_against_a_real_company_item",
+        "Unresolved_company_reads_no_stock_that_belongs_to_a_real_company"
+      ]
+    },
+    {
+      "group": "R1 current executable SQL evidence reconciliation",
+      "class": "CrossBuy.Tests.SqlServer.PosInventoryManufacturingAcceptanceTests",
+      "tests": [
+        "A_direct_stock_item_sale_deducts_the_item_itself",
+        "B1_manufactured_item_consumes_its_bom_and_receives_the_finished_good",
+        "B2_pos_sale_routing_is_driven_by_branch_item_sourcing_and_the_bom",
+        "C_semi_finished_component_is_consumed_exactly_once",
+        "Cost_a_gl_posting_item_issue_writes_a_balanced_journal_entry",
+        "Cost_a_warehouse_transfer_posts_no_profit_and_loss_effect_by_design",
+        "Cost_manufacturing_completion_clears_wip_and_capitalises_the_finished_good",
+        "D_issue_beyond_stock_is_refused_where_the_warehouse_forbids_negative",
+        "D_negative_is_permitted_only_where_the_warehouse_explicitly_allows_it",
+        "Diagnostic_movement_insert_reports_its_real_cause",
+        "E_preparation_finished_moves_stock_between_branch_warehouses_and_conserves_quantity",
+        "F_preparation_semi_finished_transfers_then_completes_locally",
+        "Family_runs_against_its_own_disposable_probe_and_never_a_real_database",
+        "G_balance_of_one_company_is_invisible_to_another",
+        "G_movement_against_a_foreign_company_warehouse_or_item_is_refused",
+        "H_voiding_a_sale_restores_both_quantity_and_value",
+        "Work_order_stock_movements_and_journal_entries_both_carry_the_source_id"
+      ]
+    },
+    {
+      "group": "R1 current executable SQL evidence reconciliation",
+      "class": "CrossBuy.Tests.SqlServer.InventoryApprovalTransactionTests",
+      "tests": [
+        "I1_an_approval_commits_its_document_and_its_decision_together",
+        "I11_the_preparer_cannot_approve_their_own_document",
+        "I12_the_preparer_cannot_reject_their_own_document",
+        "I13_the_decision_records_its_actor_time_note_and_document_number",
+        "I5_a_failed_document_leaves_the_approval_pending_and_writes_nothing",
+        "I6_a_failure_after_the_document_but_before_the_decision_rolls_everything_back",
+        "I7_the_retry_after_a_rolled_back_approval_creates_exactly_one_document",
+        "I8_approving_an_already_approved_request_creates_no_second_document",
+        "I9_an_approver_in_another_company_cannot_approve_or_reject",
+        "The_decision_is_saved_BEFORE_the_transaction_commits",
+        "The_failure_seam_is_never_armed_by_production_code"
+      ]
     }
   ],
-  "enforcedTestCount": 234
+  "enforcedTestCount": 234,
+  "retiredGroups": [
+    {
+      "group": "Platform kernel - comm outbox concurrency (slice 3)",
+      "class": "CrossBuy.Tests.SqlServer.CommOutboxConcurrencyTests",
+      "purpose": "Real UPDLOCK/READPAST claiming on the Comm outbox. Kernel-owned; registered here so the loss of one is noticed.",
+      "tests": [
+        "A_claim_abandoned_by_a_dead_worker_is_reclaimed_after_the_timeout",
+        "A_failed_message_retries_while_a_sent_one_stays_done",
+        "A_sent_message_is_never_reclaimed_even_when_every_clock_is_ancient",
+        "Concurrent_workers_partition_the_queue_without_double_sending",
+        "Each_claim_carries_its_own_company",
+        "MaxAttempts_stops_retry_and_the_failure_reason_is_kept",
+        "Only_one_worker_can_own_a_queued_message",
+        "Retrying_never_duplicates_attachments",
+        "The_deployed_outbox_script_is_idempotent_and_its_constraints_are_real",
+        "The_fixture_refuses_to_target_a_real_CrossBuy_database"
+      ],
+      "retirementReason": "Suite explicitly excluded by CrossBuy.Tests.csproj because its removed CommStore factory targets a superseded dispatcher; retained source is not executable evidence."
+    }
+  ]
 }

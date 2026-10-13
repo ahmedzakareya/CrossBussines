@@ -1,4 +1,4 @@
-<#
+﻿<#
 =============================================================================================
 R1 - SQL deployment pipeline.
 
@@ -84,16 +84,39 @@ foreach ($f in $forbiddenCatalogs) {
 try { $manifest = Get-Content $manifestPath -Raw -Encoding UTF8 | ConvertFrom-Json }
 catch { Write-Host "manifest is not valid JSON: $_" -ForegroundColor Red; exit 3 }
 
+try {
+    . (Join-Path $PSScriptRoot 'sql-quarantine-policy.ps1')
+    $quarantine = Get-ValidatedSqlQuarantine $repo $manifest
+} catch { Write-Host "REFUSED: invalid SQL quarantine: $_" -ForegroundColor Red; exit 2 }
+
+function Get-FileSha256([string]$path) {
+    $sha = [System.Security.Cryptography.SHA256]::Create()
+    try {
+        $bytes = [System.IO.File]::ReadAllBytes($path)
+        return -join ($sha.ComputeHash($bytes) | ForEach-Object { $_.ToString('x2') })
+    } finally { $sha.Dispose() }
+}
+
+
 # ---- governance pre-flight -------------------------------------------------------------------
 Write-Host ''
 Write-Host 'PRE-FLIGHT'
 $blocked = @()
+$debtPath = Join-Path $repo 'CrossBuy\deploy\sql\manifest-known-debt.json'
+if (Test-Path -LiteralPath $debtPath) {
+    $deferred = @((Get-Content -LiteralPath $debtPath -Raw -Encoding UTF8 | ConvertFrom-Json).debt | Where-Object { $_.class -eq 'D' })
+    foreach ($entry in $deferred) { $blocked += ("unresolved object collision: {0}" -f $entry.path) }
+}
 $dupes = @($manifest.duplicateNames | Where-Object { $_ -and -not $_.identical })
 foreach ($d in $dupes) { $blocked += ("divergent duplicate: {0} ({1} hashes)" -f $d.name, $d.distinctHashes) }
 foreach ($s in @($manifest.scripts | Where-Object { $_.idempotency -eq 'review' })) {
     $blocked += ("unreviewed script present: {0}" -f $s.path)
 }
 foreach ($s in @($manifest.scripts | Where-Object { $_.idempotency -eq 'not-deployable' })) {
+    if ($quarantine.ContainsKey($s.path)) {
+        Write-Host ("  QUARANTINED history only: {0}; never deploy" -f $s.path)
+        continue
+    }
     $blocked += ("not-deployable script present: {0}" -f $s.path)
 }
 
@@ -177,6 +200,14 @@ if ($blocked.Count) {
 else { Write-Host '  OK  no divergent duplicates, no unreviewed or not-deployable scripts' -ForegroundColor Green }
 
 # ---- build the ordered plan --------------------------------------------------------------------
+foreach ($requested in @($Only) + @($Slice)) {
+    if (-not $requested) { continue }
+    $named = @($manifest.scripts | Where-Object { $_.name -eq $requested })
+    if ($named.Count -gt 0 -and @($named | Where-Object { -not $_.excludedFromDeploy }).Count -eq 0) {
+        Write-Host ("REFUSED: explicitly requested excluded script: {0}" -f $requested) -ForegroundColor Red
+        exit 2
+    }
+}
 $deployable = @($manifest.scripts |
     Where-Object { -not $_.excludedFromDeploy } |
     Where-Object { $_.idempotency -ne 'no-mutation' -or $_.name -eq 'platform_schema_history.sql' } |
@@ -200,6 +231,24 @@ foreach ($s in $plan) {
     Write-Host ("  {0,3}. rank {1,-4} {2,-52} {3}" -f $i, $s.rank, $s.name, $s.idempotency)
 }
 
+# A clean manifest classification applies only to the reviewed bytes. Check the entire plan
+# before any database write, including bootstrap/targeted runs that bypass unrelated backlog.
+foreach ($entry in $plan) {
+    $candidate = [System.IO.Path]::GetFullPath((Join-Path $repo $entry.path))
+    $rootPrefix = [System.IO.Path]::GetFullPath($repo).TrimEnd([char]92, [char]47) + [System.IO.Path]::DirectorySeparatorChar
+    if (-not $candidate.StartsWith($rootPrefix, [System.StringComparison]::OrdinalIgnoreCase) -or
+        -not (Test-Path -LiteralPath $candidate -PathType Leaf)) {
+        Write-Host ("REFUSED: missing or out-of-repository script: {0}" -f $entry.path) -ForegroundColor Red
+        exit 2
+    }
+    $actualHash = Get-FileSha256 $candidate
+    $expectedHash = if ($entry.rawSha256) { $entry.rawSha256 } else { $entry.sha256 }
+    if ($actualHash -ne $expectedHash) {
+        Write-Host ("REFUSED: manifest hash differs for {0}" -f $entry.path) -ForegroundColor Red
+        exit 2
+    }
+}
+
 if (-not $Apply) {
     Write-Host ''
     Write-Host 'DRY RUN - nothing executed. Pass -Apply to run this plan.' -ForegroundColor Green
@@ -207,13 +256,6 @@ if (-not $Apply) {
 }
 
 # ---- execute --------------------------------------------------------------------------------
-function Get-FileSha256([string]$path) {
-    $sha = [System.Security.Cryptography.SHA256]::Create()
-    try {
-        $bytes = [System.IO.File]::ReadAllBytes($path)
-        return -join ($sha.ComputeHash($bytes) | ForEach-Object { $_.ToString('x2') })
-    } finally { $sha.Dispose() }
-}
 
 function Invoke-SqlBatches([string]$sqlText, [string]$connStr) {
     # GO is a batch separator understood by the client, not by the server.
@@ -265,7 +307,7 @@ foreach ($s in $plan) {
             try {
                 $cmd = $conn.CreateCommand()
                 $cmd.CommandText = @'
-IF OBJECT_ID('dbo.PlatformSchemaHistory','U') IS NOT NULL
+IF OBJECT_ID('dbo.PlatformSchemaHistory','U') IS NULL THROW 51000, 'History table missing; application cannot be recorded.', 1;
 INSERT INTO dbo.PlatformSchemaHistory (ScriptName, ScriptHash, AppliedBy, Success, Error)
 VALUES (@n, @h, @b, @s, @e);
 '@
@@ -282,7 +324,9 @@ VALUES (@n, @h, @b, @s, @e);
                 [void]$cmd.ExecuteNonQuery()
             } finally { $conn.Close() }
         } catch {
-            Write-Host ("  WARNING: could not record history for {0}: {1}" -f $s.name, $_.Exception.Message) -ForegroundColor Yellow
+            Write-Host ("  FAILED: could not record history for {0}: {1}" -f $s.name, $_.Exception.Message) -ForegroundColor Red
+            $failed++
+            $err = "History recording failed: " + $_.Exception.Message
         }
     }
 

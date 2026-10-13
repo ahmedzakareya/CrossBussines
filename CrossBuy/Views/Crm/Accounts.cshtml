@@ -15,6 +15,18 @@
             <div class="col-md-10"><label class="fw-semibold fs-7 text-muted mb-1"><i class="ki-outline ki-magnifier fs-5 me-1"></i>@Localizer["Multi-search (name / industry / phone / segment)"]</label>
                 <input type="text" id="f_q" class="form-control form-control-solid" autocomplete="off" placeholder="@Localizer["Add search terms…"]" /></div>
             <div class="col-md-2"><button type="button" id="f_reset" class="btn btn-light w-100"><i class="ki-outline ki-arrows-circle fs-3"></i> @SR["Reset"]</button></div>
+            <div class="col-md-5"><label class="fw-semibold fs-7 text-muted mb-1"><i class="ki-outline ki-price-tag fs-5 me-1"></i>@SR["Tags"]</label>
+                <select id="f_tags" class="form-select form-select-solid cb-filter" multiple data-control="select2" data-placeholder="@SR["Select tags"]">
+                    @foreach (var tg in (ViewBag.AllTags as IReadOnlyList<CrossBuy.Models.Context.Platform.Tag> ?? new List<CrossBuy.Models.Context.Platform.Tag>())) { <option value="@tg.ID">@tg.Name</option> }
+                </select></div>
+            <div class="col-md-3"><label class="fw-semibold fs-7 text-muted mb-1">&nbsp;</label>
+                <select id="f_tagmode" class="form-select form-select-solid cb-filter" data-hide-search="true">
+                    <option value="false">@SR["Any tag"]</option><option value="true">@SR["All tags"]</option>
+                </select></div>
+            <div class="col-md-4 d-flex align-items-center gap-4 pt-4">
+                <label class="form-check form-check-custom form-check-sm">
+                    <input class="form-check-input cb-filter" type="checkbox" id="f_unassigned" /><span class="form-check-label fw-semibold">@SR["Unassigned"]</span></label>
+            </div>
         </div></div></div>
         <div class="card"><div class="card-header border-0 pt-6"><div class="card-title"><span class="text-muted fs-7" id="resultCount">—</span></div>
             <div class="card-toolbar d-flex align-items-center gap-2 flex-wrap"><select id="f_size" class="form-select form-select-solid form-select-sm w-auto" data-hide-search="true"><option value="25">25</option><option value="50">50</option><option value="100">100</option></select></div></div>
@@ -31,6 +43,15 @@
 </div>
 @section Scripts {
 <script>
-cbServerList({ url:'@Url.Action("AccountsData","Crm")', isAr:@(isAr ? "true" : "false") });
+cbServerList({ url:'@Url.Action("AccountsData","Crm")', isAr:@(isAr ? "true" : "false"),
+  addParams:function(p){ cbTagFilterParams(p); } });
+// The tag ids go on the wire as ids, never as names: a name is editable and not unique. There is no
+// overdue switch here - Activity has typed columns for a lead and an opportunity and none for an
+// account, so an account "follow-up" would be a relationship the model does not state.
+function cbTagFilterParams(p){
+  var t=document.getElementById('f_tags'); if(t){ Array.prototype.forEach.call(t.selectedOptions,function(o){ p.append('tagIds',o.value); }); }
+  var m=document.getElementById('f_tagmode'); if(m&&m.value==='true')p.set('tagMatchAll','true');
+  var u=document.getElementById('f_unassigned'); if(u&&u.checked)p.set('unassigned','true');
+}
 </script>
 }

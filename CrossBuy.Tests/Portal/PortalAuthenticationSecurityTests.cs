@@ -15,6 +15,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authorization.Policy;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -165,7 +166,9 @@ namespace CrossBuy.Tests.Portal
 
             var services = new ServiceCollection();
             services.AddLogging(b => b.SetMinimumLevel(LogLevel.Warning));
-            services.AddDataProtection();
+            // Keep real cookie encryption isolated to this host; tests must not read or
+            // write the user's persistent application key ring.
+            services.AddDataProtection().UseEphemeralDataProtectionProvider();
             services.AddSingleton<ILoggerFactory>(NullLoggerFactory.Instance);
 
             services.AddDbContext<CrossDbContext>(o => o.UseSqlite(_connection));

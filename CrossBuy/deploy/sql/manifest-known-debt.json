@@ -15,126 +15,44 @@
     "",
     "A Class-A script must NEVER appear here: if convergence code needs it, it gets registered."
   ],
-  "measuredAt": "Convergence SQL manifest reconciliation Stage A",
-  "totalDebt": 22,
+  "measuredAt": "R1 isolated real SQL Server qualification 2026-10-13; three collision paths retired with evidence",
+  "totalDebt": 0,
   "counts": {
-    "B": 19,
-    "D": 3
+    "B": 0,
+    "D": 0
   },
   "nonDeploymentRoots": [
     "tools/testdata",
     "CrossBuy/tools/testdata"
   ],
-  "debt": [
+  "debt": [],
+  "retiredDebt": [
     {
       "path": "CrossBuy/deploy/sql/accounting_period_control.sql",
       "class": "D",
-      "reason": "CLASS-D INVESTIGATE: creates AccountingPeriodAudits with different bytes from deploy/sql/period_close_and_billing_approval_schema_2026-09.sql. Stage A must not pick a winner."
-    },
-    {
-      "path": "CrossBuy/deploy/sql/comm_chat_identity_001.sql",
-      "class": "B",
-      "reason": "CLASS-B historical deployment script, omitted from the manifest before Stage A measured it. Registration is Stage B work."
-    },
-    {
-      "path": "CrossBuy/deploy/sql/documents_002_submission.sql",
-      "class": "B",
-      "reason": "CLASS-B historical deployment script, omitted from the manifest before Stage A measured it. Registration is Stage B work."
-    },
-    {
-      "path": "CrossBuy/deploy/sql/documents_003_lifecycle.sql",
-      "class": "B",
-      "reason": "CLASS-B historical deployment script, omitted from the manifest before Stage A measured it. Registration is Stage B work."
-    },
-    {
-      "path": "CrossBuy/deploy/sql/documents_004_expiry.sql",
-      "class": "B",
-      "reason": "CLASS-B historical deployment script, omitted from the manifest before Stage A measured it. Registration is Stage B work."
-    },
-    {
-      "path": "CrossBuy/deploy/sql/hr_appraisals.sql",
-      "class": "B",
-      "reason": "CLASS-B historical deployment script, omitted from the manifest before Stage A measured it. Registration is Stage B work."
-    },
-    {
-      "path": "CrossBuy/deploy/sql/hr_core_attendance.sql",
-      "class": "B",
-      "reason": "CLASS-B historical deployment script, omitted from the manifest before Stage A measured it. Registration is Stage B work."
-    },
-    {
-      "path": "CrossBuy/deploy/sql/hr_core_employee.sql",
-      "class": "B",
-      "reason": "CLASS-B historical deployment script, omitted from the manifest before Stage A measured it. Registration is Stage B work."
-    },
-    {
-      "path": "CrossBuy/deploy/sql/hr_core_leave.sql",
-      "class": "B",
-      "reason": "CLASS-B historical deployment script, omitted from the manifest before Stage A measured it. Registration is Stage B work."
-    },
-    {
-      "path": "CrossBuy/deploy/sql/hr_core_payroll.sql",
-      "class": "B",
-      "reason": "CLASS-B historical deployment script, omitted from the manifest before Stage A measured it. Registration is Stage B work."
+      "reason": "CLASS-D INVESTIGATE / RELEASE ACCEPTANCE: Source reconciled to reviewed atomic successor. 20 static cases and 29 syntax-only cases passed. Real SQL acceptance matrix NOT PROVEN; preserve release exclusion.",
+      "sourceReconciled": true,
+      "sourceRawSha256": "a29db2389c6977802a3627582d718e7e36202129e54ba92e2436ca1d666645b1",
+      "retiredReason": "Exact source successor qualified in isolated real SQL Server matrix",
+      "evidence": "governance/evidence/r1-accounting-hr-sql-matrix.json"
     },
     {
       "path": "CrossBuy/deploy/sql/hr_document_attachments.sql",
       "class": "D",
-      "reason": "CLASS-D INVESTIGATE: a second, differing copy of deploy/sql/hr_document_attachments.sql (2867 vs 1835 bytes) which IS registered. Stage A must not pick a winner."
-    },
-    {
-      "path": "CrossBuy/deploy/sql/hr_employee_requests.sql",
-      "class": "B",
-      "reason": "CLASS-B historical deployment script, omitted from the manifest before Stage A measured it. Registration is Stage B work."
-    },
-    {
-      "path": "CrossBuy/deploy/sql/hr_onboarding.sql",
-      "class": "B",
-      "reason": "CLASS-B historical deployment script, omitted from the manifest before Stage A measured it. Registration is Stage B work."
-    },
-    {
-      "path": "CrossBuy/deploy/sql/hr_recruitment.sql",
-      "class": "B",
-      "reason": "CLASS-B historical deployment script, omitted from the manifest before Stage A measured it. Registration is Stage B work."
-    },
-    {
-      "path": "CrossBuy/deploy/sql/hr_roster.sql",
-      "class": "B",
-      "reason": "CLASS-B historical deployment script, omitted from the manifest before Stage A measured it. Registration is Stage B work."
-    },
-    {
-      "path": "CrossBuy/deploy/sql/hr_training.sql",
-      "class": "B",
-      "reason": "CLASS-B historical deployment script, omitted from the manifest before Stage A measured it. Registration is Stage B work."
-    },
-    {
-      "path": "CrossBuy/deploy/sql/projects_billing_sod.sql",
-      "class": "B",
-      "reason": "CLASS-B historical deployment script, omitted from the manifest before Stage A measured it. Registration is Stage B work."
-    },
-    {
-      "path": "CrossBuy/deploy/sql/projects_closeout.sql",
-      "class": "B",
-      "reason": "CLASS-B historical deployment script, omitted from the manifest before Stage A measured it. Registration is Stage B work."
-    },
-    {
-      "path": "deploy/sql/doc_comments_p5.sql",
-      "class": "B",
-      "reason": "CLASS-B historical deployment script, omitted from the manifest before Stage A measured it. Registration is Stage B work."
-    },
-    {
-      "path": "deploy/sql/i18n_english_name_columns.sql",
-      "class": "B",
-      "reason": "CLASS-B historical deployment script, omitted from the manifest before Stage A measured it. Registration is Stage B work."
-    },
-    {
-      "path": "deploy/sql/landed_cost_charge_description_en_2026-09.sql",
-      "class": "B",
-      "reason": "CLASS-B historical deployment script, omitted from the manifest before Stage A measured it. Registration is Stage B work."
+      "reason": "CLASS-D INVESTIGATE / RELEASE ACCEPTANCE: source copies reconciled to reviewed revision-02; fresh/input-first matrix, incompatible existing index and concurrent/company-collision cases remain NOT PROVEN. Preserve release gate.",
+      "sourceReconciled": true,
+      "sourceRawSha256": "8334d608aaa1248e7052b795b1dc587d20af7307da9701aff3b9e6a6df5132d1",
+      "retiredReason": "Exact source successor qualified in isolated real SQL Server matrix",
+      "evidence": "governance/evidence/r1-accounting-hr-sql-matrix.json"
     },
     {
       "path": "deploy/sql/period_close_and_billing_approval_schema_2026-09.sql",
       "class": "D",
-      "reason": "CLASS-D INVESTIGATE: creates AccountingPeriodAudits with different bytes from CrossBuy/deploy/sql/accounting_period_control.sql. Stage A must not pick a winner."
+      "reason": "CLASS-D INVESTIGATE / RELEASE ACCEPTANCE: Source reconciled to reviewed atomic successor. 20 static cases and 29 syntax-only cases passed. Real SQL acceptance matrix NOT PROVEN; preserve release exclusion.",
+      "sourceReconciled": true,
+      "sourceRawSha256": "a29db2389c6977802a3627582d718e7e36202129e54ba92e2436ca1d666645b1",
+      "retiredReason": "Exact source successor qualified in isolated real SQL Server matrix",
+      "evidence": "governance/evidence/r1-accounting-hr-sql-matrix.json"
     }
   ]
 }

@@ -1,0 +1,500 @@
+{
+  "purpose": "Exact canonical-authoring-to-generated-package mappings. This is packaging provenance, not a competing SQL slice manifest or applied-schema history.",
+  "canonicalAuthoredRoot": "CrossBuy/deploy/sql",
+  "generatedPackageRoot": "deploy/sql",
+  "copies": [
+    {
+      "packagePath": "deploy/sql/announcements_p5.sql",
+      "canonicalPath": "CrossBuy/deploy/sql/announcements_p5.sql",
+      "rawSha256": "ea84a13394c08ef7701f0b554befd483d5a67fcf53f68874ea20fdebf02089c6",
+      "featureOwner": "NOT PROVEN",
+      "migrationOwner": "Integration Owner",
+      "origin": "R1 legacy authoring migration - compatibility copy retained"
+    },
+    {
+      "packagePath": "deploy/sql/appcache_session_table.sql",
+      "canonicalPath": "CrossBuy/deploy/sql/appcache_session_table.sql",
+      "rawSha256": "8048ff7409ec2a3fbff5d47e6ca8fdd094d15b5f91139ec8a00840763983b2e9",
+      "featureOwner": "NOT PROVEN",
+      "migrationOwner": "Integration Owner",
+      "origin": "R1 legacy authoring migration - compatibility copy retained"
+    },
+    {
+      "packagePath": "deploy/sql/asset_maintenance.sql",
+      "canonicalPath": "CrossBuy/deploy/sql/asset_maintenance.sql",
+      "rawSha256": "ba2a734bb72fa7b1534d0c022b1d1e331ba5c6c4af6851161f45f77870b16d4a",
+      "featureOwner": "NOT PROVEN",
+      "migrationOwner": "Integration Owner",
+      "origin": "R1 legacy authoring migration - compatibility copy retained"
+    },
+    {
+      "packagePath": "deploy/sql/bin_stock.sql",
+      "canonicalPath": "CrossBuy/deploy/sql/bin_stock.sql",
+      "rawSha256": "9e62a1735ae26f3aa434a7cada3afc83d5cc5ab47296a2aff317663f39c610c0",
+      "featureOwner": "NOT PROVEN",
+      "migrationOwner": "Integration Owner",
+      "origin": "R1 legacy authoring migration - compatibility copy retained"
+    },
+    {
+      "packagePath": "deploy/sql/boq.sql",
+      "canonicalPath": "CrossBuy/deploy/sql/boq.sql",
+      "rawSha256": "05beb3e014fd3a6f9e75ba7f8cfcbb3af4110b3018d7a582e16ecfeaccb555a9",
+      "featureOwner": "NOT PROVEN",
+      "migrationOwner": "Integration Owner",
+      "origin": "R1 legacy authoring migration - compatibility copy retained"
+    },
+    {
+      "packagePath": "deploy/sql/brand_foundation.sql",
+      "canonicalPath": "CrossBuy/deploy/sql/brand_foundation.sql",
+      "rawSha256": "84a291f7f1ef843873cca80403ac7499fb540b7702372f8122b37d7b652b1cf1",
+      "featureOwner": "NOT PROVEN",
+      "migrationOwner": "Integration Owner",
+      "origin": "R1 legacy authoring migration - compatibility copy retained"
+    },
+    {
+      "packagePath": "deploy/sql/chat_p3.sql",
+      "canonicalPath": "CrossBuy/deploy/sql/chat_p3.sql",
+      "rawSha256": "38a60c32cbaf0347ddb77a88ff5e1849f2fefeb24d49bc90ae0993f4f2c9ac86",
+      "featureOwner": "NOT PROVEN",
+      "migrationOwner": "Integration Owner",
+      "origin": "R1 legacy authoring migration - compatibility copy retained"
+    },
+    {
+      "packagePath": "deploy/sql/comm_mail.sql",
+      "canonicalPath": "CrossBuy/deploy/sql/comm_mail.sql",
+      "rawSha256": "e81360f5d1186063170d927e9a91ec44a1aaaa89d007f4be20ffffac31e1a592",
+      "featureOwner": "NOT PROVEN",
+      "migrationOwner": "Integration Owner",
+      "origin": "R1 legacy authoring migration - compatibility copy retained"
+    },
+    {
+      "packagePath": "deploy/sql/construction_c1_commercial_foundation.sql",
+      "canonicalPath": "CrossBuy/deploy/sql/construction_c1_commercial_foundation.sql",
+      "rawSha256": "e75c826c75cfec5e2f637a58f3b58914821bfc2977777e2c4e930cf7f81edaaa",
+      "featureOwner": "NOT PROVEN",
+      "migrationOwner": "Integration Owner",
+      "origin": "R1 legacy authoring migration - compatibility copy retained"
+    },
+    {
+      "packagePath": "deploy/sql/construction_c1_contract_mapping_measurement.sql",
+      "canonicalPath": "CrossBuy/deploy/sql/construction_c1_contract_mapping_measurement.sql",
+      "rawSha256": "95a9d6b90fb48390d99fce2f755386aceb9ea6c9dfc507ef61339b3af1b8140e",
+      "featureOwner": "NOT PROVEN",
+      "migrationOwner": "Integration Owner",
+      "origin": "R1 legacy authoring migration - compatibility copy retained"
+    },
+    {
+      "packagePath": "deploy/sql/crm_automation_37b.sql",
+      "canonicalPath": "CrossBuy/deploy/sql/crm_automation_37b.sql",
+      "rawSha256": "e57edffdfdf52b73f22a282ca33642777e7d63e7bf54cdce38ba519bc5aa0027",
+      "featureOwner": "NOT PROVEN",
+      "migrationOwner": "Integration Owner",
+      "origin": "R1 legacy authoring migration - compatibility copy retained"
+    },
+    {
+      "packagePath": "deploy/sql/crm_bilingual_fields_2026-07.sql",
+      "canonicalPath": "CrossBuy/deploy/sql/crm_bilingual_fields_2026-07.sql",
+      "rawSha256": "d020bd88cee83a5edb15d04da95eeebfcb4f93b15bd57b5a41ad57e0a9bedd77",
+      "featureOwner": "NOT PROVEN",
+      "migrationOwner": "Integration Owner",
+      "origin": "R1 legacy authoring migration - compatibility copy retained"
+    },
+    {
+      "packagePath": "deploy/sql/crm_customfields_37b.sql",
+      "canonicalPath": "CrossBuy/deploy/sql/crm_customfields_37b.sql",
+      "rawSha256": "c36a6ff0ea7066c4444977c22186ef9bec91046e383e64d88d2312bd6e1ed2cf",
+      "featureOwner": "NOT PROVEN",
+      "migrationOwner": "Integration Owner",
+      "origin": "R1 legacy authoring migration - compatibility copy retained"
+    },
+    {
+      "packagePath": "deploy/sql/crm_schema_updates_3x.sql",
+      "canonicalPath": "CrossBuy/deploy/sql/crm_schema_updates_3x.sql",
+      "rawSha256": "56abbcda4f516335e36651edc7c8206aefd66c9950668c42bb4ac45e075568b3",
+      "featureOwner": "NOT PROVEN",
+      "migrationOwner": "Integration Owner",
+      "origin": "R1 legacy authoring migration - compatibility copy retained"
+    },
+    {
+      "packagePath": "deploy/sql/doc_comments_p5.sql",
+      "canonicalPath": "CrossBuy/deploy/sql/doc_comments_p5.sql",
+      "rawSha256": "c2588f9a4a8a0e72b9eca3cf3e7e52887773049c864cd61bbdf63af6eafad1b9",
+      "featureOwner": "NOT PROVEN",
+      "migrationOwner": "Integration Owner",
+      "origin": "R1 legacy authoring migration - compatibility copy retained"
+    },
+    {
+      "packagePath": "deploy/sql/fx_bank_revaluation.sql",
+      "canonicalPath": "CrossBuy/deploy/sql/fx_bank_revaluation.sql",
+      "rawSha256": "bef1b3862d52cb7556fbebfbce84eb8bddb035f52300a403d809ad984e79f0a1",
+      "featureOwner": "NOT PROVEN",
+      "migrationOwner": "Integration Owner",
+      "origin": "R1 legacy authoring migration - compatibility copy retained"
+    },
+    {
+      "packagePath": "deploy/sql/hr10_training.sql",
+      "canonicalPath": "CrossBuy/deploy/sql/hr10_training.sql",
+      "rawSha256": "ca33acf6b9f1f57dedabe4fe5a965fc4272d2a7daefec906255e6ab951dca0fe",
+      "featureOwner": "NOT PROVEN",
+      "migrationOwner": "Integration Owner",
+      "origin": "R1 legacy authoring migration - compatibility copy retained"
+    },
+    {
+      "packagePath": "deploy/sql/hr11_recruitment.sql",
+      "canonicalPath": "CrossBuy/deploy/sql/hr11_recruitment.sql",
+      "rawSha256": "1d8991d1d8a900ea20802e89dafb017b90d9d58394b5e7360b1bf5b2ad9705f5",
+      "featureOwner": "NOT PROVEN",
+      "migrationOwner": "Integration Owner",
+      "origin": "R1 legacy authoring migration - compatibility copy retained"
+    },
+    {
+      "packagePath": "deploy/sql/hr8_employee_requests.sql",
+      "canonicalPath": "CrossBuy/deploy/sql/hr8_employee_requests.sql",
+      "rawSha256": "358fad6a211cd08319a2be6f49892dd2adf9ec86e57f31963e68ae2ea4ee14cc",
+      "featureOwner": "NOT PROVEN",
+      "migrationOwner": "Integration Owner",
+      "origin": "R1 legacy authoring migration - compatibility copy retained"
+    },
+    {
+      "packagePath": "deploy/sql/hr9_appraisals.sql",
+      "canonicalPath": "CrossBuy/deploy/sql/hr9_appraisals.sql",
+      "rawSha256": "e8af5b142d71360e3cb5d3d982588fdaa07c9aa30424ead46930e8b3e70730b1",
+      "featureOwner": "NOT PROVEN",
+      "migrationOwner": "Integration Owner",
+      "origin": "R1 legacy authoring migration - compatibility copy retained"
+    },
+    {
+      "packagePath": "deploy/sql/i18n_english_name_columns.sql",
+      "canonicalPath": "CrossBuy/deploy/sql/i18n_english_name_columns.sql",
+      "rawSha256": "34e8c4216beaa29617aa56ee0bf74e560307257ea24d4553498874dab089e913",
+      "featureOwner": "NOT PROVEN",
+      "migrationOwner": "Integration Owner",
+      "origin": "R1 legacy authoring migration - compatibility copy retained"
+    },
+    {
+      "packagePath": "deploy/sql/invoice_line_description_en_2026-07.sql",
+      "canonicalPath": "CrossBuy/deploy/sql/invoice_line_description_en_2026-07.sql",
+      "rawSha256": "40f7b7baa9453e40787896ca6b20400ec8e6a3d67cffe96103a615b0548ece32",
+      "featureOwner": "NOT PROVEN",
+      "migrationOwner": "Integration Owner",
+      "origin": "R1 legacy authoring migration - compatibility copy retained"
+    },
+    {
+      "packagePath": "deploy/sql/item_images.sql",
+      "canonicalPath": "CrossBuy/deploy/sql/item_images.sql",
+      "rawSha256": "0cb4f0b5a630177099d0b43e0f976160ac8ab250e5703b024fa5220e42680ee4",
+      "featureOwner": "NOT PROVEN",
+      "migrationOwner": "Integration Owner",
+      "origin": "R1 legacy authoring migration - compatibility copy retained"
+    },
+    {
+      "packagePath": "deploy/sql/landed_cost_charge_description_en_2026-09.sql",
+      "canonicalPath": "CrossBuy/deploy/sql/landed_cost_charge_description_en_2026-09.sql",
+      "rawSha256": "e4a5f45bcf7a55c726e894525e3d9cdbf36fb64e9076a865ae239eff51b9a218",
+      "featureOwner": "NOT PROVEN",
+      "migrationOwner": "Integration Owner",
+      "origin": "R1 legacy authoring migration - compatibility copy retained"
+    },
+    {
+      "packagePath": "deploy/sql/lead_name_en_2026-07.sql",
+      "canonicalPath": "CrossBuy/deploy/sql/lead_name_en_2026-07.sql",
+      "rawSha256": "7d90a208047134088ba640cb54c1ac89defc063507052e717dc6f299d7ea812c",
+      "featureOwner": "NOT PROVEN",
+      "migrationOwner": "Integration Owner",
+      "origin": "R1 legacy authoring migration - compatibility copy retained"
+    },
+    {
+      "packagePath": "deploy/sql/manuf_schema_4x.sql",
+      "canonicalPath": "CrossBuy/deploy/sql/manuf_schema_4x.sql",
+      "rawSha256": "e4f9438d59ffa38f64a449d86a798463e91d7586eb8cb5e08189d319ac9e8f5c",
+      "featureOwner": "NOT PROVEN",
+      "migrationOwner": "Integration Owner",
+      "origin": "R1 legacy authoring migration - compatibility copy retained"
+    },
+    {
+      "packagePath": "deploy/sql/manuf_variance_520109.sql",
+      "canonicalPath": "CrossBuy/deploy/sql/manuf_variance_520109.sql",
+      "rawSha256": "02b22a3f26d082b858b678cfe71ef830c2e9600a5bf618b2706c21eb4dc61c02",
+      "featureOwner": "NOT PROVEN",
+      "migrationOwner": "Integration Owner",
+      "origin": "R1 legacy authoring migration - compatibility copy retained"
+    },
+    {
+      "packagePath": "deploy/sql/notification_mutes_p2.sql",
+      "canonicalPath": "CrossBuy/deploy/sql/notification_mutes_p2.sql",
+      "rawSha256": "b83a2aaf3335e31b1fc5aa776d338bfc00957975d774e9638e7a957ed7234b9c",
+      "featureOwner": "NOT PROVEN",
+      "migrationOwner": "Integration Owner",
+      "origin": "R1 legacy authoring migration - compatibility copy retained"
+    },
+    {
+      "packagePath": "deploy/sql/notifications_hub_p1.sql",
+      "canonicalPath": "CrossBuy/deploy/sql/notifications_hub_p1.sql",
+      "rawSha256": "3f318e0860c934d3c01ae38a0c98932a128e8857983fd68f483c06ef55eab50d",
+      "featureOwner": "NOT PROVEN",
+      "migrationOwner": "Integration Owner",
+      "origin": "R1 legacy authoring migration - compatibility copy retained"
+    },
+    {
+      "packagePath": "deploy/sql/portal_user_photo.sql",
+      "canonicalPath": "CrossBuy/deploy/sql/portal_user_photo.sql",
+      "rawSha256": "4326d90325a6e26b89d776f3376fd4040e58f8f7583d7765f0eacaf86a36ee73",
+      "featureOwner": "NOT PROVEN",
+      "migrationOwner": "Integration Owner",
+      "origin": "R1 legacy authoring migration - compatibility copy retained"
+    },
+    {
+      "packagePath": "deploy/sql/pos_fix_preset_names.sql",
+      "canonicalPath": "CrossBuy/deploy/sql/pos_fix_preset_names.sql",
+      "rawSha256": "7ecb000a4457b9858956281213171d36aa3f5cf5ede590e2e3e2fd9a7391fb8d",
+      "featureOwner": "NOT PROVEN",
+      "migrationOwner": "Integration Owner",
+      "origin": "R1 legacy authoring migration - compatibility copy retained"
+    },
+    {
+      "packagePath": "deploy/sql/pos_send_to_kitchen.sql",
+      "canonicalPath": "CrossBuy/deploy/sql/pos_send_to_kitchen.sql",
+      "rawSha256": "a7f098b539d73aebd3e4afd2c9b62148cace8470214fdb020861e677e6c7f5de",
+      "featureOwner": "NOT PROVEN",
+      "migrationOwner": "Integration Owner",
+      "origin": "R1 legacy authoring migration - compatibility copy retained"
+    },
+    {
+      "packagePath": "deploy/sql/pos_table_status.sql",
+      "canonicalPath": "CrossBuy/deploy/sql/pos_table_status.sql",
+      "rawSha256": "b3c2ea0ef74d0a96e22fe3d0cf54de2f2399c77f1b02c76f903e16fe3b4e465c",
+      "featureOwner": "NOT PROVEN",
+      "migrationOwner": "Integration Owner",
+      "origin": "R1 legacy authoring migration - compatibility copy retained"
+    },
+    {
+      "packagePath": "deploy/sql/pricing_costplus_2c.sql",
+      "canonicalPath": "CrossBuy/deploy/sql/pricing_costplus_2c.sql",
+      "rawSha256": "c4d5485a6fa52fd8116e79cc8eacf36d017c8d794962fc0e3539ddd167a4dd4c",
+      "featureOwner": "NOT PROVEN",
+      "migrationOwner": "Integration Owner",
+      "origin": "R1 legacy authoring migration - compatibility copy retained"
+    },
+    {
+      "packagePath": "deploy/sql/pricing_discount_approval_2d.sql",
+      "canonicalPath": "CrossBuy/deploy/sql/pricing_discount_approval_2d.sql",
+      "rawSha256": "afe05387ff6f9bf59f74ea50be519953d37bb2ceab0aa0540b63ea9b01540295",
+      "featureOwner": "NOT PROVEN",
+      "migrationOwner": "Integration Owner",
+      "origin": "R1 legacy authoring migration - compatibility copy retained"
+    },
+    {
+      "packagePath": "deploy/sql/pricing_margin_2a.sql",
+      "canonicalPath": "CrossBuy/deploy/sql/pricing_margin_2a.sql",
+      "rawSha256": "dc8b52402cad445edeb7140c904e116297eea7e6a6ef39403e962e4ff6015d26",
+      "featureOwner": "NOT PROVEN",
+      "migrationOwner": "Integration Owner",
+      "origin": "R1 legacy authoring migration - compatibility copy retained"
+    },
+    {
+      "packagePath": "deploy/sql/pricing_promotions_2b.sql",
+      "canonicalPath": "CrossBuy/deploy/sql/pricing_promotions_2b.sql",
+      "rawSha256": "431631aa373b60e01cbf85c839bb37e72f5c43f4ae708461952a61cb41bea301",
+      "featureOwner": "NOT PROVEN",
+      "migrationOwner": "Integration Owner",
+      "origin": "R1 legacy authoring migration - compatibility copy retained"
+    },
+    {
+      "packagePath": "deploy/sql/project_dimension.sql",
+      "canonicalPath": "CrossBuy/deploy/sql/project_dimension.sql",
+      "rawSha256": "4ddaa6093cab6328273b2b89e7adc52191a61e635e6e89a9957e23db1c273d7b",
+      "featureOwner": "NOT PROVEN",
+      "migrationOwner": "Integration Owner",
+      "origin": "R1 legacy authoring migration - compatibility copy retained"
+    },
+    {
+      "packagePath": "deploy/sql/projects_contracting.sql",
+      "canonicalPath": "CrossBuy/deploy/sql/projects_contracting.sql",
+      "rawSha256": "b4575a70c5a64dc0eed7fd20cd3751e6b88d2cddd2ff2badece2e1b8afa38ea4",
+      "featureOwner": "NOT PROVEN",
+      "migrationOwner": "Integration Owner",
+      "origin": "R1 legacy authoring migration - compatibility copy retained"
+    },
+    {
+      "packagePath": "deploy/sql/projects_p2_contract.sql",
+      "canonicalPath": "CrossBuy/deploy/sql/projects_p2_contract.sql",
+      "rawSha256": "6bf31bd866755da56075fcc1e4b7fe2230fa7962b05aa70532a62a3bbf5eab90",
+      "featureOwner": "NOT PROVEN",
+      "migrationOwner": "Integration Owner",
+      "origin": "R1 legacy authoring migration - compatibility copy retained"
+    },
+    {
+      "packagePath": "deploy/sql/projects_p3_progress.sql",
+      "canonicalPath": "CrossBuy/deploy/sql/projects_p3_progress.sql",
+      "rawSha256": "354a09e706d8090f20a7be78e9bb69a12134bf96f190b953ca0200022deaf733",
+      "featureOwner": "NOT PROVEN",
+      "migrationOwner": "Integration Owner",
+      "origin": "R1 legacy authoring migration - compatibility copy retained"
+    },
+    {
+      "packagePath": "deploy/sql/projects_p4_billing.sql",
+      "canonicalPath": "CrossBuy/deploy/sql/projects_p4_billing.sql",
+      "rawSha256": "a29357b28017a55b2d0574e4365dff6a5f7fcbb551ed5bd1cf920814593ac1c4",
+      "featureOwner": "NOT PROVEN",
+      "migrationOwner": "Integration Owner",
+      "origin": "R1 legacy authoring migration - compatibility copy retained"
+    },
+    {
+      "packagePath": "deploy/sql/projects_p5a_material.sql",
+      "canonicalPath": "CrossBuy/deploy/sql/projects_p5a_material.sql",
+      "rawSha256": "9ca9e9b445a8a8f87b0faf199e659775b45fa0b8b70dbb436fd54a09e82b858b",
+      "featureOwner": "NOT PROVEN",
+      "migrationOwner": "Integration Owner",
+      "origin": "R1 legacy authoring migration - compatibility copy retained"
+    },
+    {
+      "packagePath": "deploy/sql/projects_p6c_subcontract.sql",
+      "canonicalPath": "CrossBuy/deploy/sql/projects_p6c_subcontract.sql",
+      "rawSha256": "26e3cce3b2bd4c7db6576aee3da7c34d670a3641926f211cf7006ccd3386c373",
+      "featureOwner": "NOT PROVEN",
+      "migrationOwner": "Integration Owner",
+      "origin": "R1 legacy authoring migration - compatibility copy retained"
+    },
+    {
+      "packagePath": "deploy/sql/projects_p6d_variation.sql",
+      "canonicalPath": "CrossBuy/deploy/sql/projects_p6d_variation.sql",
+      "rawSha256": "1c931cf51d422d2d02d93dbeb3fcad1899d847f50de175dbdd3e0fce852896a7",
+      "featureOwner": "NOT PROVEN",
+      "migrationOwner": "Integration Owner",
+      "origin": "R1 legacy authoring migration - compatibility copy retained"
+    },
+    {
+      "packagePath": "deploy/sql/projects_p6e_equipment_dep.sql",
+      "canonicalPath": "CrossBuy/deploy/sql/projects_p6e_equipment_dep.sql",
+      "rawSha256": "9908d037e413ceb35849e6a390113dd82d2107327dd7dc5cb2d13851fb4f78b0",
+      "featureOwner": "NOT PROVEN",
+      "migrationOwner": "Integration Owner",
+      "origin": "R1 legacy authoring migration - compatibility copy retained"
+    },
+    {
+      "packagePath": "deploy/sql/schema_sync_2026-07.sql",
+      "canonicalPath": "CrossBuy/deploy/sql/schema_sync_2026-07.sql",
+      "rawSha256": "954a1d681bb01cec3f02eab99417f26fe94e9dc2e2bd2eec1c22606c775758b4",
+      "featureOwner": "NOT PROVEN",
+      "migrationOwner": "Integration Owner",
+      "origin": "R1 legacy authoring migration - compatibility copy retained"
+    },
+    {
+      "packagePath": "deploy/sql/store_category_seed.sql",
+      "canonicalPath": "CrossBuy/deploy/sql/store_category_seed.sql",
+      "rawSha256": "9ab5e665bdda0506e3ecd2c5554b20d37f2db0e44f6e9fb03191786f364e5ff3",
+      "featureOwner": "NOT PROVEN",
+      "migrationOwner": "Integration Owner",
+      "origin": "R1 legacy authoring migration - compatibility copy retained"
+    },
+    {
+      "packagePath": "deploy/sql/store_from_items.sql",
+      "canonicalPath": "CrossBuy/deploy/sql/store_from_items.sql",
+      "rawSha256": "bd2bea3469ce79dac58d41226112dc1519530052eda7ec9fb6984a59baa923db",
+      "featureOwner": "NOT PROVEN",
+      "migrationOwner": "Integration Owner",
+      "origin": "R1 legacy authoring migration - compatibility copy retained"
+    },
+    {
+      "packagePath": "deploy/sql/tasks_category.sql",
+      "canonicalPath": "CrossBuy/deploy/sql/tasks_category.sql",
+      "rawSha256": "86eefde9610a7323ec548a3b3dcb68d580e10c44fc7753728afda972c89574df",
+      "featureOwner": "NOT PROVEN",
+      "migrationOwner": "Integration Owner",
+      "origin": "R1 legacy authoring migration - compatibility copy retained"
+    },
+    {
+      "packagePath": "deploy/sql/tasks_tm9_scheduled.sql",
+      "canonicalPath": "CrossBuy/deploy/sql/tasks_tm9_scheduled.sql",
+      "rawSha256": "38b86b9931ed88aac1c08e16115891dd3477a33ccd76a1b6f4f25b4f688423b3",
+      "featureOwner": "NOT PROVEN",
+      "migrationOwner": "Integration Owner",
+      "origin": "R1 legacy authoring migration - compatibility copy retained"
+    },
+    {
+      "packagePath": "deploy/sql/tasks_tm9b_suggestions.sql",
+      "canonicalPath": "CrossBuy/deploy/sql/tasks_tm9b_suggestions.sql",
+      "rawSha256": "945a41e3ce4ca40744623f27eb2a28f556bf013f6e0211a75bc8cd51dc2e9068",
+      "featureOwner": "NOT PROVEN",
+      "migrationOwner": "Integration Owner",
+      "origin": "R1 legacy authoring migration - compatibility copy retained"
+    },
+    {
+      "packagePath": "deploy/sql/ticket_desc_category_en_2026-07.sql",
+      "canonicalPath": "CrossBuy/deploy/sql/ticket_desc_category_en_2026-07.sql",
+      "rawSha256": "f3d6004a50f8aa898177809c802c74bf306ac9b6ee94591a32ad623d1117302a",
+      "featureOwner": "NOT PROVEN",
+      "migrationOwner": "Integration Owner",
+      "origin": "R1 legacy authoring migration - compatibility copy retained"
+    },
+    {
+      "packagePath": "deploy/sql/warehouse_sections_item_groups.sql",
+      "canonicalPath": "CrossBuy/deploy/sql/warehouse_sections_item_groups.sql",
+      "rawSha256": "190e896e10f71efff46e1bcebae3d66754838a4570051a046a979fa9235a2fac",
+      "featureOwner": "NOT PROVEN",
+      "migrationOwner": "Integration Owner",
+      "origin": "R1 legacy authoring migration - compatibility copy retained"
+    },
+    {
+      "packagePath": "deploy/sql/pos_setup.sql",
+      "canonicalPath": "CrossBuy/deploy/sql/pos_setup.sql",
+      "rawSha256": "40e82a1e2bfa9a2d720dbf2f52069144562f7391b430b695072d7d61b2d13ef9",
+      "featureOwner": "POS owner (existing registry role)",
+      "migrationOwner": "Integration Owner",
+      "origin": "R1-POS-SETUP-001"
+    },
+    {
+      "packagePath": "deploy/sql/pos_quickmenu.sql",
+      "canonicalPath": "CrossBuy/deploy/sql/pos_quickmenu.sql",
+      "rawSha256": "4bbd859e09a928df9147eb24f72009022e9dd7386c7fdc1594346ebaf98918d8",
+      "featureOwner": "POS owner (existing registry role)",
+      "migrationOwner": "Integration Owner",
+      "origin": "R1-POS-QUICKMENU-001"
+    },
+    {
+      "packagePath": "deploy/sql/pos_hold_recall.sql",
+      "canonicalPath": "CrossBuy/deploy/sql/pos_hold_recall.sql",
+      "rawSha256": "5ea0716c7dec1c177b5e74f7c5cb2c4c7aecd001ff67b7713bcb44394f585618",
+      "featureOwner": "POS owner (existing registry role)",
+      "migrationOwner": "Integration Owner",
+      "origin": "R1-POS-HOLD-RECALL-001"
+    },
+    {
+      "packagePath": "deploy/sql/pos_order_guests.sql",
+      "canonicalPath": "CrossBuy/deploy/sql/pos_order_guests.sql",
+      "rawSha256": "b852f274e169a443feb6bcf64d3b8fd10a48e4ea1af251c5508712a4402a248f",
+      "featureOwner": "POS owner (existing registry role)",
+      "migrationOwner": "Integration Owner",
+      "origin": "R1-POS-ORDER-GUESTS-001"
+    },
+    {
+      "packagePath": "deploy/sql/hr_document_attachments.sql",
+      "canonicalPath": "CrossBuy/deploy/sql/hr_document_attachments.sql",
+      "rawSha256": "49224c72aa826cff09ed4e09f4c7c146eadb751036052e66e645fd9d2d9558f6",
+      "featureOwner": "NOT PROVEN",
+      "migrationOwner": "Integration Owner",
+      "origin": "R1-HR-DOCUMENT-ATTACHMENTS-003; isolated matrix qualified"
+    },
+    {
+      "canonicalPath": "CrossBuy/deploy/sql/accounting_period_control.sql",
+      "packagePath": "deploy/sql/period_close_and_billing_approval_schema_2026-09.sql",
+      "rawSha256": "a29db2389c6977802a3627582d718e7e36202129e54ba92e2436ca1d666645b1",
+      "featureOwner": "Accounting/Projects",
+      "migrationOwner": "Integration Owner",
+      "origin": "R1-ACCOUNTING-AUDIT-SUCCESSOR-001"
+    }
+  ],
+  "legacyUnmigrated": [
+    {
+      "path": "deploy/sql/00_backup_dev_db.sql",
+      "rawSha256": "378ff64ce7cfc3fccee31ae04806cdc240a8c43eb364ab616ad25c2744c4a3e8",
+      "reason": "RETAIN_OPERATIONAL_SCRIPT"
+    },
+    {
+      "path": "deploy/sql/10_purge_for_production.sql",
+      "rawSha256": "8dc91f95228c16a73b3a59e7a8da1c333021796a0684a83444b14ab3f62909f6",
+      "reason": "RETAIN_OPERATIONAL_SCRIPT"
+    }
+  ],
+  "limitations": "Fresh/input-first matrix not run; module ownership not inferred. No SQL execution occurs during packaging."
+}

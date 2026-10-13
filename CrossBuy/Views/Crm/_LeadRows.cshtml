@@ -11,10 +11,28 @@
     var isEn = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName != "ar";
     string leadName(Lead l) => (isEn && !string.IsNullOrWhiteSpace(l.NameEn)) ? l.NameEn! : l.Name;
 }
+@{
+    // ONE batch of tags for the whole page, handed over by the controller - never a query per row.
+    var rowTags = ViewBag.RowTags as Dictionary<int, List<CrossBuy.Models.Context.Platform.Tag>>
+                  ?? new Dictionary<int, List<CrossBuy.Models.Context.Platform.Tag>>();
+    List<CrossBuy.Models.Context.Platform.Tag> tagsOf(int id) =>
+        rowTags.TryGetValue(id, out var t) ? t : new List<CrossBuy.Models.Context.Platform.Tag>();
+    // Bounded on purpose: a row is a summary. Three chips read at a glance; twelve are a wall.
+    const int MaxChips = 3;
+}
 @foreach (var l in Model)
 {
-    <tr data-id="@l.ID" data-name="@l.Name" data-nameen="@l.NameEn" data-company="@l.Company" data-phone="@l.Phone" data-email="@l.Email" data-source="@l.Source" data-segment="@l.Segment" data-value="@l.EstimatedValue" data-status="@l.Status" data-notes="@l.Notes" data-campaign="@l.CampaignId">
-        <td class="fw-bold text-gray-800">@leadName(l)<div class="text-muted fs-8">@l.Company</div></td>
+    <tr data-id="@l.ID" data-tags="@string.Join(",", tagsOf(l.ID).Select(t => t.ID))" data-name="@l.Name" data-nameen="@l.NameEn" data-company="@l.Company" data-phone="@l.Phone" data-email="@l.Email" data-source="@l.Source" data-segment="@l.Segment" data-value="@l.EstimatedValue" data-status="@l.Status" data-notes="@l.Notes" data-campaign="@l.CampaignId">
+        <td class="fw-bold text-gray-800">@leadName(l)<div class="text-muted fs-8">@l.Company</div>
+            @{ var rt = tagsOf(l.ID); }
+            @if (rt.Count > 0)
+            {
+                <div class="d-flex flex-wrap gap-1 mt-1">
+                    @foreach (var tg in rt.Take(MaxChips)) { <span class="badge badge-light-primary fs-9">@tg.Name</span> }
+                    @if (rt.Count > MaxChips) { <span class="badge badge-light fs-9" title="@string.Join(", ", rt.Skip(MaxChips).Select(x => x.Name))">+@(rt.Count - MaxChips)</span> }
+                </div>
+            }
+        </td>
         <td class="text-muted">@(l.Phone ?? "—")</td>
         <td>@if (string.IsNullOrEmpty(l.Source)) { <span class="text-muted">—</span> } else { <span class="badge badge-light-dark">@l.Source</span> }</td>
         <td class="text-end fw-bold">@l.EstimatedValue.ToString("N0")</td>

@@ -377,9 +377,6 @@ namespace CrossBuy.Tests
         // The GL-reaching subset must additionally demand accounting "post". Named individually, because "the
         // posting ones" is not something a future reader can verify.
         [Theory]
-        [InlineData("PostBilling")]
-        [InlineData("ApproveBilling")]
-        [InlineData("DeleteBilling")]
         [InlineData("PostSubBilling")]
         [InlineData("ApproveSubBilling")]
         [InlineData("DeleteSubBilling")]
@@ -395,6 +392,17 @@ namespace CrossBuy.Tests
         {
             var body = Body(File.ReadAllText(Path.Combine(ControllersRoot(), "ProjectController.cs")), action);
             Assert.Contains("requireAccountingPost: true", body);
+        }
+
+        [Theory]
+        [InlineData("PostBilling", "BillingPost")]
+        [InlineData("ApproveBilling", "BillingApprove")]
+        [InlineData("DeleteBilling", "BillingPrepare")]
+        public void Progress_billing_actions_use_their_separate_authorities(string action, string authority)
+        {
+            var body = Body(File.ReadAllText(Path.Combine(ControllersRoot(), "ProjectController.cs")), action);
+            Assert.Contains($"GateAsync(ProjectsActions.{authority}, projectId)", body);
+            Assert.DoesNotContain("requireAccountingPost: true", body);
         }
 
         [Theory]

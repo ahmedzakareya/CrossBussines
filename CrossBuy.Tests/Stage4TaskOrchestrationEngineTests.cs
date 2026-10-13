@@ -392,7 +392,7 @@ namespace CrossBuy.Tests
             var assembly = typeof(ITaskOrchestrationRule).Assembly;
             foreach (var rule in new[]
             {
-                "CrmFollowUpRule", "DocumentResubmissionRule",
+                "DocumentResubmissionRule",
                 "ManufWorkOrderExecutionRule", "PosShortageRule",
             })
                 Assert.Null(assembly.GetType("CrossBuy.BL.Platform.Orchestration." + rule));
@@ -408,6 +408,9 @@ namespace CrossBuy.Tests
             // contract ProgressBillingService already emitted inside its own transaction, so nothing in
             // the producing module changed to enable it - which is the same bar every rule above met.
             Assert.NotNull(assembly.GetType("CrossBuy.BL.Platform.Orchestration.ProjectBillingApprovalRule"));
+
+            // CRM now arrives with its qualified transactional follow-up producer.
+            Assert.NotNull(assembly.GetType("CrossBuy.BL.Platform.Orchestration.CrmFollowUpRule"));
 
             // STAGE 4'S OWN CLAIM IS UNDISTURBED: the engine still ships no rule of its own, and a rule
             // is a separate type from the engine that runs it.

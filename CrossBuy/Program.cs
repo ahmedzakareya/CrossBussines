@@ -103,6 +103,11 @@ builder.Services.AddIdentity<Users, IdentityRole>()
     .AddEntityFrameworkStores<CrossDbContext>()
     .AddDefaultTokenProviders();
 
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.AccessDeniedPath = "/Account/AccessDenied";
+});
+
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IEmployeeService, EmployeeService>();
 builder.Services.AddScoped<IFileManagerService, FileManagerService>();  // Company document library (Metronic file-manager)
@@ -248,8 +253,10 @@ builder.Services.AddScoped<CrossBuy.BL.Reporting.IReportModuleAuthority>(sp =>
 // reporting module does not own. AddCrossBusinessReporting is self-sufficient by contract and
 // ReportingDiWiringTests pins that, so the coupling lives with the host that owns both modules.
 // See ReportingServiceCollectionExtensions.AddProjectsReporting for the whole argument, including why
-// the Work pack is not beside it.
+// the subject packs remain host-owned rather than part of the standalone reporting graph.
 builder.Services.AddProjectsReporting();
+// Work subjects require the deployed Hold schema. Enable only after readiness is proven.
+if (builder.Configuration.GetValue<bool>("Reporting:Work:Enabled")) builder.Services.AddWorkReporting();
 builder.Services.AddKpiReporting();
 builder.Services.AddScoped<CrossBuy.BL.Reporting.IReportPermissionEvaluator,
     CrossBuy.BL.Reporting.ReportModulePermissionAdapter>();
@@ -476,7 +483,7 @@ builder.Services.AddScoped<CrossBuy.BL.Platform.IEntityRegistry, CrossBuy.BL.Pla
 //
 // The resolver takes EVERY IDocumentOwnerResolver and EVERY IModuleAccessService, so onboarding a family
 // is one registration below rather than an edit to the resolver: the centre never learns a module name.
-builder.Services.AddScoped<CrossBuy.BL.Platform.IDocumentOwnerResolver, CrossBuy.BL.Platform.EmployeeDocumentOwnerResolver>();
+builder.Services.AddScoped<CrossBuy.BL.Platform.IDocumentOwnerResolver, CrossBuy.BL.EmployeeDocumentOwnerResolver>();
 builder.Services.AddScoped<CrossBuy.BL.Platform.IDocumentOwnerResolver, CrossBuy.BL.Platform.CustomerDocumentOwnerResolver>();
 builder.Services.AddScoped<CrossBuy.BL.Platform.IDocumentAccessResolver, CrossBuy.BL.Platform.DocumentAccessResolver>();
 
@@ -571,6 +578,9 @@ builder.Services.AddScoped<CrossBuy.BL.Platform.IModuleAccessService>(sp => sp.G
 //
 // It takes no IPlatformPermissionProvider, so it adds nothing to the resolution cycle that
 // TasksAccessService and CalendarAccessService break with Func<>.
+// Answering a meeting invitation carried by a mail message. Scoped: it takes the request's
+// DbContext and reads the message through ICommService so the company predicate applies.
+builder.Services.AddScoped<CrossBuy.BL.IMailInviteResponder, CrossBuy.BL.MailInviteResponder>();
 builder.Services.AddScoped<CrossBuy.BL.CommunicationAccessService>();
 builder.Services.AddScoped<CrossBuy.BL.ICommunicationAccessService>(sp => sp.GetRequiredService<CrossBuy.BL.CommunicationAccessService>());
 builder.Services.AddScoped<CrossBuy.BL.Platform.IModuleAccessService>(sp => sp.GetRequiredService<CrossBuy.BL.CommunicationAccessService>());
@@ -1037,6 +1047,8 @@ builder.Services.AddSwaggerGen(c =>
 
 builder.Services.AddAutoMapper(typeof(Program));
 
+builder.Services.AddScoped<CrossBuy.BL.Platform.ITagService, CrossBuy.BL.Platform.TagService>();
+builder.Services.AddScoped<CrossBuy.BL.Platform.Orchestration.ITaskOrchestrationRule, CrossBuy.BL.Platform.Orchestration.CrmFollowUpRule>();
 var app = builder.Build();
 
 // [DIAG] confirm DataProtection key ring is shared across run modes (CLI vs IIS Express vs VS)
@@ -1200,4 +1212,3 @@ using (var reportingScope = app.Services.CreateScope())
 }
 
 app.Run();
-

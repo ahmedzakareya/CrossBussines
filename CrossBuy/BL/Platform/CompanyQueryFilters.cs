@@ -58,6 +58,7 @@ namespace CrossBuy.BL.Platform
             nameof(JournalEntry), nameof(SalesInvoice), nameof(PurchaseInvoice), nameof(Customer),
             nameof(Item), nameof(Warehouse), nameof(Quotation), nameof(Lead), nameof(Opportunity),
             nameof(CrmAccount), nameof(BusinessEvent), nameof(Notification),
+            nameof(Tag), nameof(TagAssignment),
         };
 
         // The pilot membership test, used by B4's write guard so the read filter and the write guard cover exactly
@@ -156,6 +157,8 @@ namespace CrossBuy.BL.Platform
             // request; never inferred to belong to the reader. See NotificationCompanyPolicy and
             // docs/platform/Stage-001-B3-Notification-Company-Policy.md.
             builder.Entity<Notification>().HasQueryFilter(NotificationCompanyPolicy.QueryFilter(db));
+            builder.Entity<Tag>().HasQueryFilter(e => db.CompanyScope.AllowsCrossCompany || e.CompanyID == db.CompanyScope.FilterCompanyId);
+            builder.Entity<TagAssignment>().HasQueryFilter(e => db.CompanyScope.AllowsCrossCompany || e.CompanyID == db.CompanyScope.FilterCompanyId);
         }
     }
 }

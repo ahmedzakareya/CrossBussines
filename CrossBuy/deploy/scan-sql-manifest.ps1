@@ -18,6 +18,7 @@
 $ErrorActionPreference = 'Stop'
 
 $repo = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent   # <repo>/CrossBuy/deploy -> <repo>
+. (Join-Path $PSScriptRoot 'validate-sql-package-path.ps1')
 $outFile = Join-Path $PSScriptRoot 'sql\manifest.json'
 
 # ---------------------------------------------------------------------------------------------
@@ -40,7 +41,7 @@ $guardPatterns = [ordered]@{
 # Statements that CHANGE something and therefore need a guard to be re-runnable.
 $mutatingPatterns = [ordered]@{
     'create-table'  = '(?im)^\s*CREATE\s+TABLE\s'
-    'alter-add'     = '(?im)^\s*ALTER\s+TABLE\s+\S+\s+ADD\s'
+    'alter-add'     = '(?im)(?:^\s*|^\s*IF\s+COL_LENGTH\([^\r\n]*?\)\s+IS\s+NULL\s+)ALTER\s+TABLE\s+\S+\s+ADD\s'
     'alter-drop'    = '(?im)^\s*ALTER\s+TABLE\s+\S+\s+DROP\s'
     'create-index'  = '(?im)^\s*CREATE\s+(UNIQUE\s+)?(CLUSTERED\s+|NONCLUSTERED\s+)?INDEX\s'
     'insert'        = '(?im)^\s*INSERT\s+INTO\s'
@@ -81,10 +82,21 @@ function Remove-SqlComments([string]$text) {
     return $text
 }
 
-function Get-Sha256([string]$path) {
+function Get-CanonicalSqlBytes([string]$path) {
+    $rawBytes = [System.IO.File]::ReadAllBytes($path)
+    $canonical = New-Object 'System.Collections.Generic.List[byte]'
+    for ($index = 0; $index -lt $rawBytes.Length; $index++) {
+        if ($rawBytes[$index] -eq 13 -and $index + 1 -lt $rawBytes.Length -and $rawBytes[$index + 1] -eq 10) { continue }
+        $canonical.Add($rawBytes[$index])
+    }
+    return ,$canonical.ToArray()
+}
+function Get-Sha256([string]$path, [switch]$Canonical) {
     $sha = [System.Security.Cryptography.SHA256]::Create()
-    try { return ([System.BitConverter]::ToString($sha.ComputeHash([System.IO.File]::ReadAllBytes($path))) -replace '-', '').ToLowerInvariant() }
-    finally { $sha.Dispose() }
+    try {
+        [byte[]]$bytes = if ($Canonical) { Get-CanonicalSqlBytes $path } else { [System.IO.File]::ReadAllBytes($path) }
+        return ([System.BitConverter]::ToString($sha.ComputeHash($bytes)) -replace '-', '').ToLowerInvariant()
+    } finally { $sha.Dispose() }
 }
 
 # ---------------------------------------------------------------------------------------------
@@ -132,6 +144,65 @@ function Get-Rank([string]$relative, [string]$name) {
 # Reviewed 2026-08-03 for Stage 0 Batch B. Re-review whenever the scan flags a new batch.
 # ---------------------------------------------------------------------------------------------
 $reviewLedger = @{
+    'CrossBuy/deploy/sql/hr_document_attachments.sql' = @{
+        verdict = 'idempotent'
+        sha256 = '49224c72aa826cff09ed4e09f4c7c146eadb751036052e66e645fd9d2d9558f6'
+        canonicalHash = $true
+        dynamicMutations = $true
+        evidence = 'R1 revision 03: dynamic DDL and company-aware attachment backfill, serialized by transaction-owned application lock and table locks. Qualified by 33 isolated SQL Server cases, with verified cleanup; governance/evidence/r1-accounting-hr-sql-matrix.json. Not a no-mutation script.'
+    }
+    'deploy/sql/hr_document_attachments.sql' = @{
+        verdict = 'idempotent'
+        sha256 = '49224c72aa826cff09ed4e09f4c7c146eadb751036052e66e645fd9d2d9558f6'
+        canonicalHash = $true
+        dynamicMutations = $true
+        evidence = 'Generated compatibility copy of the qualified revision 03 canonical HR successor; dynamic backfill is mutating and must not be classified as no-mutation.'
+    }
+    'CrossBuy/deploy/sql/crm_schema_updates_3x.sql' = @{
+        verdict = 'idempotent'
+        sha256 = '56abbcda4f516335e36651edc7c8206aefd66c9950668c42bb4ac45e075568b3'
+        evidence = 'Canonical R1 migration: byte-identical to the hash-verified reviewed package input. Tables/columns are guarded (OBJECT_ID / COL_LENGTH, including a sp_executesql loop). The flagged batch backfills Activities with "WHERE EntityType IS NULL", and the migration INSERT carries WHERE NOT EXISTS. All predicate-idempotent.'
+    }
+
+    'CrossBuy/deploy/sql/notifications_hub_p1.sql' = @{
+        verdict = 'idempotent'
+        sha256 = '3f318e0860c934d3c01ae38a0c98932a128e8857983fd68f483c06ef55eab50d'
+        evidence = 'Canonical R1 migration: byte-identical to the hash-verified reviewed package input. Indexes are IF NOT EXISTS guarded. The flagged batch is "UPDATE n SET n.CompanyID = e.EmpCompanyID ... WHERE n.CompanyID IS NULL" — predicate-idempotent.'
+    }
+
+    'CrossBuy/deploy/sql/pos_fix_preset_names.sql' = @{
+        verdict = 'idempotent'
+        sha256 = '7ecb000a4457b9858956281213171d36aa3f5cf5ede590e2e3e2fd9a7391fb8d'
+        evidence = 'Canonical R1 migration: byte-identical to the hash-verified reviewed package input. Four UPDATEs that assign a CONSTANT value keyed on Code. Re-running writes the identical value, so the end state is the same however many times it runs. Requires sqlcmd -f 65001 or the Arabic literals are stored as mojibake.'
+    }
+
+    'CrossBuy/deploy/sql/i18n_english_name_columns.sql' = @{
+        verdict = 'idempotent'
+        sha256 = '34e8c4216beaa29617aa56ee0bf74e560307257ea24d4553498874dab089e913'
+        evidence = 'Canonical R1 migration: byte-identical to the hash-verified reviewed package input. Reviewed R1: ten column additions use COL_LENGTH; Type repairs target only the old Arabic codes, and English seed-title backfills require TitleEn IS NULL and exact known titles. Second apply changes no repaired rows. Not applied by this review.'
+    }
+
+    'CrossBuy/deploy/sql/platform_ai_projections_slice_003.sql' = @{
+        verdict = 'idempotent'
+        sha256 = 'a0746a04d8bc3cacd2fcd6aadf6be5fa7925bcc2dab24ba470c8db83cbb90209'
+        evidence = 'Reviewed R1 without execution: guarded nullable column additions; deterministic expiry backfill affects only ExpiresAtUtc IS NULL and never extends an existing expiry; index and constraint additions have catalog guards. Requires the existing AiProjections schema. AI remains deferred; this technical rerun review does not authorize activation or prove fresh-database prerequisites.'
+    }
+    'CrossBuy/deploy/sql/hm16_rename_grni.sql' = @{
+        verdict = 'idempotent'
+        sha256 = 'f2578a330bf091234ee01b8adafb37a6bd12003ef3e9d3c41106a58800ed867b'
+        evidence = 'Reviewed R1: UPDATE is constrained to Code210203 and NameEn different from the constant target; after that assignment a second run matches no rows. Trailing SELECT is read-only. This is a technical rerun review, not authorization to rename live accounts.'
+    }
+    'CrossBuy/deploy/sql/comm_chat_identity_001.sql' = @{
+        verdict = 'idempotent'
+        sha256 = '2605ac2af0e921c09b70453f7e06833dac45cf8f2687e4bfb5ce0a7972e2366d'
+        evidence = 'Reviewed R1: column/index additions are guarded; direct-pair backfill affects only rows whose keys remain NULL and obtains a deterministic MIN/MAX pair from exactly two distinct members. Duplicate-pair refusal remains. Reapply does not merge/delete conversations. Requires owning tables and QUOTED_IDENTIFIER ON; not applied by this review.'
+    }
+    'deploy/sql/i18n_english_name_columns.sql' = @{
+        verdict = 'idempotent'
+        sha256 = '34e8c4216beaa29617aa56ee0bf74e560307257ea24d4553498874dab089e913'
+        evidence = 'Reviewed R1: ten column additions use COL_LENGTH; Type repairs target only the old Arabic codes, and English seed-title backfills require TitleEn IS NULL and exact known titles. Second apply changes no repaired rows. Not applied by this review.'
+    }
+
     'CrossBuy/deploy/sql/hm_d34_relabel_shell_company_refs.sql' = @{
         verdict = 'idempotent'
         evidence = 'Four UPDATEs keyed on membership of the shell-company set (CompanyID IN (65,71,79)). The first run empties that set, so a second run matches zero rows. The trailing SELECTs are read-only verification.'
@@ -176,13 +247,36 @@ $excluded = @{
 # ---------------------------------------------------------------------------------------------
 # Scan
 # ---------------------------------------------------------------------------------------------
+# Exact unresolved Class-D paths are held outside the deployable authored register.
+$debtPath = Join-Path $PSScriptRoot 'sql\manifest-known-debt.json'
+$deferredPaths = @()
+if (Test-Path -LiteralPath $debtPath) {
+    $deferredPaths = @((Get-Content -LiteralPath $debtPath -Raw -Encoding UTF8 | ConvertFrom-Json).debt | Where-Object { $_.class -eq 'D' } | ForEach-Object { $_.path })
+}
+
 $files = Get-ChildItem -Path $repo -Recurse -Filter *.sql -File |
     Where-Object { $_.FullName -notmatch '\\(bin|obj|node_modules|\.git)\\' } |
+    Where-Object { $_.FullName -notmatch '\\tools\\testdata\\' } |
     Sort-Object FullName
 
 $entries = @()
+$packageOrigins = @{}
+$originPath = Join-Path $PSScriptRoot 'package-sql-origin.json'
+if (Test-Path -LiteralPath $originPath) {
+    foreach ($origin in (Get-Content -LiteralPath $originPath -Raw -Encoding UTF8 | ConvertFrom-Json).copies) {
+        if ($packageOrigins.ContainsKey($origin.packagePath)) { throw 'Duplicate generated SQL package path' }
+        if ($origin.packagePath -notlike 'deploy/sql/*.sql' -or $origin.canonicalPath -notlike 'CrossBuy/deploy/sql/*.sql' -or
+            $origin.packagePath.Contains('..') -or $origin.canonicalPath.Contains('..')) { throw 'Invalid SQL package origin path' }
+        $canonical = Assert-SqlPackageRootPath $repo $origin.canonicalPath 'CrossBuy\deploy\sql'
+        $null = Assert-SqlPackageRootPath $repo $origin.packagePath 'deploy\sql'
+        if ((Get-Sha256 $canonical) -ne $origin.rawSha256 -or
+            (Get-Sha256 (Join-Path $repo $origin.packagePath)) -ne $origin.rawSha256) { throw 'Generated SQL package drift; republish before scanning' }
+        $packageOrigins[$origin.packagePath] = $origin
+    }
+}
 foreach ($f in $files) {
     $relative = $f.FullName.Substring($repo.Length).TrimStart('\', '/').Replace('\', '/')
+    if ($deferredPaths -contains $relative) { continue }
     $read = Read-SqlText $f.FullName
     $code = Remove-SqlComments $read.text
 
@@ -219,7 +313,16 @@ foreach ($f in $files) {
     # 'review' — the ledger can only DOWNGRADE the alarm for a file someone actually looked at.
     $reviewVerdict = $null
     $reviewEvidence = $null
-    if ($status -eq 'review' -and $reviewLedger.ContainsKey($relative)) {
+    # Lexical patterns do not see DDL/DML inside dynamic SQL strings. A reviewed
+    # dynamic contract is mutating; changed bytes fail closed until reviewed again.
+    if ($status -eq 'no-mutation' -and $reviewLedger.ContainsKey($relative) -and
+        $reviewLedger[$relative].dynamicMutations) {
+        $status = 'review'
+        $mutations += 'dynamic-sql-contract'
+    }
+    if ($status -eq 'review' -and $reviewLedger.ContainsKey($relative) -and
+        (-not $reviewLedger[$relative].sha256 -or $reviewLedger[$relative].sha256 -eq
+            (Get-Sha256 $f.FullName -Canonical:([bool]$reviewLedger[$relative].canonicalHash)))) {
         $reviewVerdict = $reviewLedger[$relative].verdict
         $reviewEvidence = $reviewLedger[$relative].evidence
         if ($reviewVerdict -eq 'idempotent') { $status = 'guarded-by-predicate' }
@@ -232,9 +335,11 @@ foreach ($f in $files) {
     $entries += [pscustomobject][ordered]@{
         path              = $relative
         name              = $f.Name
-        bytes             = $f.Length
+        bytes             = (Get-CanonicalSqlBytes $f.FullName).Length
+        rawBytes          = $f.Length
         encoding          = $read.encoding
-        sha256            = Get-Sha256 $f.FullName
+        sha256            = Get-Sha256 $f.FullName -Canonical
+        rawSha256         = Get-Sha256 $f.FullName
         rank              = Get-Rank $relative $f.Name
         guards            = $guards
         mutations         = $mutations
@@ -242,8 +347,10 @@ foreach ($f in $files) {
         idempotency       = $status
         reviewVerdict     = $reviewVerdict
         reviewEvidence    = $reviewEvidence
-        excludedFromDeploy = $excluded.ContainsKey($f.Name)
-        excludedReason    = if ($excluded.ContainsKey($f.Name)) { $excluded[$f.Name] } else { $null }
+        authoredSourcePath = if ($packageOrigins.ContainsKey($relative)) { $packageOrigins[$relative].canonicalPath } else { $relative }
+        isGeneratedPackageCopy = $packageOrigins.ContainsKey($relative)
+        excludedFromDeploy = $excluded.ContainsKey($f.Name) -or $packageOrigins.ContainsKey($relative)
+        excludedReason    = if ($packageOrigins.ContainsKey($relative)) { 'Generated compatibility copy; deploy its canonical authored source exactly once.' } elseif ($excluded.ContainsKey($f.Name)) { $excluded[$f.Name] } else { $null }
     }
 }
 
@@ -286,6 +393,7 @@ $manifest = [ordered]@{
         '  not-deployable       = read and judged unsafe to re-run; excluded from every deployment.',
         '  no-mutation          = the file changes nothing (comments, SELECTs, PRINTs only).',
         'excludedFromDeploy scripts must never run as part of a routine deployment.',
+        'sha256 and bytes are CRLF-normalized authored identities; rawSha256/rawBytes identify the exact deployment file bytes.',
         'duplicateNames with identical=false are the real hazard: the same file name in two trees with',
         'different content, so "apply <name>.sql" is ambiguous.'
     )

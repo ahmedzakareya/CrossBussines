@@ -20,6 +20,14 @@
     // THE MODEL. This object — not the DOM — is the report.
     // =============================================================================================
     var AR = !!CBD.arabic;
+    // Each request must use the same language as the designer, including previews and downloads.
+    function studioFetch(url, options) {
+        var localized = new URL(url, window.location.origin);
+        var culture = AR ? "ar" : "en";
+        localized.searchParams.set("culture", culture);
+        localized.searchParams.set("ui-culture", culture);
+        return window.fetch(localized.pathname + localized.search, options);
+    }
 
     var BAND = { ReportHeader: 0, PageHeader: 1, GroupHeader: 2, Detail: 3, GroupFooter: 4, PageFooter: 5, ReportFooter: 6 };
     var KIND = { Text: 0, Field: 1, Image: 2, Line: 3, Rectangle: 4, SystemField: 5, Summary: 6, Table: 7, QrCode: 8, Chart: 9, CrossTab: 10, SubReport: 11, Icon: 12 };
@@ -292,7 +300,7 @@
     var SUBCAT = null;
     function loadSubCatalog(then) {
         if (SUBCAT) { then(SUBCAT); return; }
-        fetch("/api/reports/center/catalog", { credentials: "same-origin" })
+        studioFetch("/api/reports/center/catalog", { credentials: "same-origin" })
             .then(function (r) { return r.ok ? r.json() : []; })
             .then(function (list) { SUBCAT = list || []; then(SUBCAT); })
             .catch(function () { SUBCAT = []; then(SUBCAT); });
@@ -2189,7 +2197,7 @@
     }
 
     function post(url, body) {
-        return fetch(url, {
+        return studioFetch(url, {
             method: "POST",
             headers: { "Content-Type": "application/json", "RequestVerificationToken": token() },
             body: JSON.stringify(body)
@@ -2230,17 +2238,17 @@
         S.fields = []; S.paramDefs = [];
         if (!code) { renderFields(); renderParams(); renderAll(); return; }
 
-        fetch("/api/reports/studio/fields?datasetCode=" + encodeURIComponent(code))
+        studioFetch("/api/reports/studio/fields?datasetCode=" + encodeURIComponent(code))
             .then(function (r) { return r.json(); })
             .then(function (d) { S.fields = d.fields || []; renderFields(); renderAll(); });
 
-        fetch("/api/reports/studio/parameters?datasetCode=" + encodeURIComponent(code))
+        studioFetch("/api/reports/studio/parameters?datasetCode=" + encodeURIComponent(code))
             .then(function (r) { return r.json(); })
             .then(function (d) { S.paramDefs = d.parameters || []; renderParams(); });
     }
 
     function loadAssets() {
-        fetch("/api/reports/studio/assets")
+        studioFetch("/api/reports/studio/assets")
             .then(function (r) { return r.json(); })
             .then(function (d) { S.assets = d.assets || []; renderAssets(); renderProps(); });
     }
@@ -2323,7 +2331,7 @@
     }
 
     function doOpen(templateId) {
-        fetch("/api/reports/studio/open/" + templateId)
+        studioFetch("/api/reports/studio/open/" + templateId)
             .then(function (r) { return r.ok ? r.json() : null; })
             .then(function (d) {
                 if (!d) { showErrors([AR ? "تعذر فتح التقرير." : "That report could not be opened."]); return; }
@@ -2795,7 +2803,7 @@
             // nothing happens" is built: a refusal (404 from the author gate, 400 from anti-forgery, 500 from
             // anything) answers with a body that is not JSON, r.json() rejects, the rejection is unhandled,
             // and the screen shows no message of any kind. A failed upload must SAY it failed.
-            fetch("/api/reports/studio/assets", {
+            studioFetch("/api/reports/studio/assets", {
                 method: "POST",
                 headers: { "RequestVerificationToken": token() },
                 body: fd

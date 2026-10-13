@@ -7,10 +7,28 @@
     string acctName(AccountRow a) => !isAr && !string.IsNullOrWhiteSpace(a.NameEn) ? a.NameEn! : a.Name;
     string acctIndustry(AccountRow a) => !isAr && !string.IsNullOrWhiteSpace(a.IndustryEn) ? a.IndustryEn! : a.Industry;
 }
+@{
+    // ONE batch of tags for the whole page, handed over by the controller - never a query per row.
+    var rowTags = ViewBag.RowTags as Dictionary<int, List<CrossBuy.Models.Context.Platform.Tag>>
+                  ?? new Dictionary<int, List<CrossBuy.Models.Context.Platform.Tag>>();
+    List<CrossBuy.Models.Context.Platform.Tag> tagsOf(int id) =>
+        rowTags.TryGetValue(id, out var t) ? t : new List<CrossBuy.Models.Context.Platform.Tag>();
+    // Bounded on purpose: a row is a summary. Three chips read at a glance; twelve are a wall.
+    const int MaxChips = 3;
+}
 @foreach (var a in Model)
 {
     <tr style="border-bottom:1px dashed #eef1f6;">
-        <td class="ps-4 fw-bold text-gray-900"><a href="@Url.Action("AccountEditor","Crm", new { id = a.Id })" class="text-gray-900 text-hover-primary">@acctName(a)</a></td>
+        <td class="ps-4 fw-bold text-gray-900"><a href="@Url.Action("AccountEditor","Crm", new { id = a.Id })" class="text-gray-900 text-hover-primary">@acctName(a)</a>
+            @{ var rt = tagsOf(a.Id); }
+            @if (rt.Count > 0)
+            {
+                <div class="d-flex flex-wrap gap-1 mt-1">
+                    @foreach (var tg in rt.Take(MaxChips)) { <span class="badge badge-light-primary fs-9">@tg.Name</span> }
+                    @if (rt.Count > MaxChips) { <span class="badge badge-light fs-9" title="@string.Join(", ", rt.Skip(MaxChips).Select(x => x.Name))">+@(rt.Count - MaxChips)</span> }
+                </div>
+            }
+            </td>
         <td>@{ var ind = acctIndustry(a); } @if (!string.IsNullOrEmpty(ind)) { <span class="text-gray-700">@ind</span> } @if (!string.IsNullOrEmpty(a.Segment)) { <span class="badge fw-bold ms-1" style="background:#E7F0FF;color:#0E4A9E;">@a.Segment</span> }</td>
         <td class="text-muted">@a.Phone</td>
         <td class="text-center"><span class="badge fw-bold" style="background:#f2f4f7;color:#475467;">@a.Contacts</span></td>

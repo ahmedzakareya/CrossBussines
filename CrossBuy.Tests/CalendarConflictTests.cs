@@ -47,12 +47,12 @@ namespace CrossBuy.Tests
         }
 
         public async Task<int> EventAsync(string title, DateTime startUtc, TimeSpan length,
-            int[]? attendees = null, int[]? resources = null, int companyId = 1)
+            int[]? attendees = null, int[]? resources = null, int companyId = 1, int ownerEmpId = 10)
         {
             var ev = new CalendarEvent
             {
                 CompanyID = companyId, Title = title, StartAt = startUtc, EndAt = startUtc + length,
-                Scope = "Company", OwnerEmpId = 10
+                Scope = "Company", OwnerEmpId = ownerEmpId
             };
             Db.CalendarEvents.Add(ev);
             await Db.SaveChangesAsync();

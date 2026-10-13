@@ -397,18 +397,18 @@ VALUES (@c, N'Accounting', N'post', N'ExplicitlyAllowed', N'subverted row', 1, S
         }
 
         [SkippableFact]
-        public void The_Never_list_holds_exactly_the_confirmed_fifteen_entries()
+        public void The_Never_list_holds_exactly_the_confirmed_nineteen_entries()
         {
             // Pinned so a change to the classification is a deliberate, visible edit rather than a drift. The
             // count differing from the frozen matrix's 14 was resolved by owner decision, not by forcing a total.
-            Assert.Equal(15, NeverBootstrapOpen.Count);
+            Assert.Equal(19, NeverBootstrapOpen.Count);
 
-            Assert.Equal(4, NeverBootstrapOpen.All.Count(e => e.Scope == "Accounting"));
+            Assert.Equal(6, NeverBootstrapOpen.All.Count(e => e.Scope == "Accounting"));
             Assert.Equal(4, NeverBootstrapOpen.All.Count(e => e.Scope == "Inventory"));
             Assert.Equal(1, NeverBootstrapOpen.All.Count(e => e.Scope == "Crm"));
             Assert.Equal(1, NeverBootstrapOpen.All.Count(e => e.Scope == "Platform"));
             Assert.Equal(1, NeverBootstrapOpen.All.Count(e => e.Scope == "Projects"));
-            Assert.Equal(2, NeverBootstrapOpen.All.Count(e => e.Scope == "Hr"));
+            Assert.Equal(4, NeverBootstrapOpen.All.Count(e => e.Scope == "Hr"));
             Assert.Equal(1, NeverBootstrapOpen.All.Count(e => e.Scope == "Tasks"));
             Assert.Equal(1, NeverBootstrapOpen.All.Count(e => e.Scope == "Communication"));
 

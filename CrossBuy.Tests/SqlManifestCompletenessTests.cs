@@ -232,26 +232,56 @@ namespace CrossBuy.Tests
         }
 
         [Fact]
-        public void The_debt_allowlist_records_both_classes_explicitly()
+        public void The_debt_allowlist_retains_only_unresolved_object_collisions()
         {
             var debt = Debt();
-            Assert.Contains(debt, d => d.Class == "B");
+            Assert.DoesNotContain(debt, d => d.Class == "B"); // R1 Stage B registered the19 historical omissions.
 
-            // The three unresolved collisions are the reason this file exists at all: two scripts that
-            // create one object with different bytes, and no authority to choose. They are recorded as
-            // INVESTIGATE rather than quietly registered.
-            var classD = debt.Where(d => d.Class == "D").Select(d => d.Path).ToList();
-            Assert.Equal(3, classD.Count);
-            Assert.Contains("CrossBuy/deploy/sql/accounting_period_control.sql", classD);
-            Assert.Contains("deploy/sql/period_close_and_billing_approval_schema_2026-09.sql", classD);
-            Assert.Contains("CrossBuy/deploy/sql/hr_document_attachments.sql", classD);
-            Assert.All(classD, p => Assert.Contains("INVESTIGATE",
-                debt.Single(d => d.Path == p).Reason, StringComparison.Ordinal));
+            // Retirement is evidence-backed, not an empty allowlist passing vacuously.
+            // Exact source identities were executed on isolated SQL Server, including
+            // input-first, rerun, refusal, company and concurrency cases; cleanup was verified.
+            using var proof = JsonDocument.Parse(File.ReadAllBytes(Path.Combine(RepoRoot(),
+                "governance", "evidence", "r1-accounting-hr-sql-matrix.json")));
+            var p = proof.RootElement;
+            Assert.True(p.GetProperty("Created").GetBoolean());
+            Assert.True(p.GetProperty("DeletedAndVerified").GetBoolean());
+            Assert.False(p.GetProperty("ProductionDatabaseTouched").GetBoolean());
+            Assert.StartsWith("CrossBuy_R1_Verify_20261013_", p.GetProperty("Database").GetString());
+            Assert.Equal(33, p.GetProperty("Passed").GetInt32());
+            Assert.Equal(0, p.GetProperty("Failed").GetInt32());
+            Assert.Equal(33, p.GetProperty("Cases").GetArrayLength());
+            foreach (var result in p.GetProperty("Cases").EnumerateArray())
+                Assert.True(result.GetProperty("Passed").GetBoolean());
+            Assert.Equal(4, p.GetProperty("SchemaArtifacts").GetArrayLength());
+            foreach (var artifact in p.GetProperty("SchemaArtifacts").EnumerateArray())
+            {
+                var path = artifact.GetProperty("path").GetString()!;
+                Assert.Equal(artifact.GetProperty("lfNormalizedSha256").GetString(),
+                    Canonical(Path.Combine(RepoRoot(), path.Replace('/', Path.DirectorySeparatorChar))).Sha);
+                Assert.DoesNotContain(debt, d => d.Path == path);
+            }
+            Assert.All(debt.Where(d => d.Class == "D"),
+                d => Assert.Contains("INVESTIGATE", d.Reason, StringComparison.Ordinal));
         }
 
         // -----------------------------------------------------------------------------------------
         // 5. THE STAGE-A REGISTRATIONS
         // -----------------------------------------------------------------------------------------
+
+        [Theory]
+        [InlineData("CrossBuy/deploy/sql/hr_document_attachments.sql")]
+        [InlineData("deploy/sql/hr_document_attachments.sql")]
+        public void The_qualified_dynamic_HR_backfill_is_reported_as_mutating(string path)
+        {
+            using var manifest = JsonDocument.Parse(File.ReadAllBytes(Path.Combine(RepoRoot(),
+                "CrossBuy", "deploy", "sql", "manifest.json")));
+            var entry = manifest.RootElement.GetProperty("scripts").EnumerateArray()
+                .Single(s => s.GetProperty("path").GetString() == path);
+            Assert.Equal("guarded-by-predicate", entry.GetProperty("idempotency").GetString());
+            Assert.Contains(entry.GetProperty("mutations").EnumerateArray(),
+                m => m.GetString() == "dynamic-sql-contract");
+            Assert.Contains("revision 03", entry.GetProperty("reviewEvidence").GetString()!, StringComparison.Ordinal);
+        }
 
         public static readonly string[] ClassA =
         {

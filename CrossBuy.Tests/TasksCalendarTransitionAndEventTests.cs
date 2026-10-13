@@ -265,7 +265,7 @@ namespace CrossBuy.Tests
             var (ok, err) = await f.Tasks.ChangeStatusAsync(1, id, "New", 20);
 
             Assert.False(ok);
-            Assert.Contains("انتقال غير مسموح", err);
+            Assert.Contains("Transition not allowed", err);
             Assert.Equal(before, await f.EventTypesAsync(id));   // no event for a change that did not happen
             Assert.Empty(f.Notifier.Sent);
         }
@@ -435,14 +435,62 @@ namespace CrossBuy.Tests
         public void The_record_picker_contract_is_unchanged_by_this_registration()
         {
             using var host = new PlatformTestHost();
-            ITaskLinkResolver resolver = new TaskLinkResolver(host.Registry());
+            var registry = host.Registry();
+            ITaskLinkResolver resolver = new TaskLinkResolver(registry);
+            var keys = resolver.Types().Select(t => t.Key).ToArray();
 
-            // EntityRegistryTests pins this list. Registering Task/CalendarEvent deliberately sets
-            // ListedInRecordPicker = false so a behaviour another tab's test guards is not changed
-            // silently — enabling it is a separate, owner-visible decision.
+            // THIS TEST'S OWN POINT, UNCHANGED: registering Task and CalendarEvent deliberately sets
+            // ListedInRecordPicker = false, so a behaviour another tab's test guards is not changed
+            // silently — enabling it is a separate, owner-visible decision. Asserted BY NAME now, so
+            // this test keeps proving its own registration is picker-neutral even if the shared list
+            // below is ever edited.
+            foreach (var registered in new[] { EntityRegistry.Task, EntityRegistry.CalendarEvent })
+            {
+                Assert.True(registry.TryGetDefinition(registered, out var def) && def != null,
+                    $"{registered} should be registered by this slice");
+                Assert.False(def!.ListedInRecordPicker,
+                    $"{registered} was registered with ListedInRecordPicker = false and must stay out");
+                Assert.DoesNotContain(registered, keys);
+            }
+
+            // THE APPROVED CONTRACT, SPELLED OUT. The same nineteen types, in the same declaration
+            // order, that EntityRegistryTests.TaskLinkResolver_preserves_its_pre_kernel_behaviour pins
+            // — the three picker guards must agree, and before this wave two of them still carried the
+            // pre-kernel seven.
+            //
+            // IT IS A LITERAL ON PURPOSE. TaskLinkResolver.Types() IS
+            // `GetDefinitions().Where(d => d.ListedInRecordPicker)`, so deriving the expectation from
+            // the registry would restate the implementation and catch nothing at all.
+            //
+            // WHY NINETEEN, attributed: 57b169d established the original seven; aced8c6 added the eight
+            // inventory documents and SalesReturn; 018a477 added PurchaseReturn, Receipt and Payment.
+            // This expectation was last touched before those landed and simply never followed.
             Assert.Equal(
-                new[] { "SalesInvoice", "Customer", "ManufWorkOrder", "PosOrder", "Employee", "Project", "Item" },
-                resolver.Types().Select(t => t.Key).ToArray());
+                new[]
+                {
+                    "SalesInvoice",
+                    "PurchaseOrder", "GoodsReceipt", "SalesOrder", "DeliveryNote",
+                    "StockTransfer", "StockCount", "StockWriteOff", "LandedCost",
+                    "SalesReturn", "PurchaseReturn", "Receipt", "Payment",
+                    "Customer", "ManufWorkOrder", "PosOrder", "Employee", "Project", "Item",
+                },
+                keys);
+
+            // A request or an approval is somebody's workflow item, not a record you attach a task to.
+            // Named here so a flipped flag fails on a line that says why, in every picker guard.
+            foreach (var excluded in new[]
+                     {
+                         EntityRegistry.InventoryApproval,
+                         EntityRegistry.LeaveRequest,
+                         EntityRegistry.EmployeeRequest,
+                     })
+            {
+                Assert.True(registry.TryGetDefinition(excluded, out var def) && def != null,
+                    $"{excluded} should still be a registered entity");
+                Assert.False(def!.ListedInRecordPicker,
+                    $"{excluded} is a request/approval and must not be offered by the record picker");
+                Assert.DoesNotContain(excluded, keys);
+            }
         }
 
         [Fact]

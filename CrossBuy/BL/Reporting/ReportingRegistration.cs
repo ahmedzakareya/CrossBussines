@@ -390,33 +390,11 @@ namespace CrossBuy.BL.Reporting
         // ReportModulePermissionAdapter. The programme line's ProjectsReportPermissionAdapter extended
         // the obsolete ModuleActionReportPermissionAdapter and was NOT ported.
         //
-        // THE WORK PACK IS STILL NOT HERE, but its PREREQUISITES now are - and the difference matters,
-        // because a prerequisite is not an activation.
-        //
-        // WHAT THE EARLIER NOTE SAID, and it was accurate when written: two of the four authorized
-        // subjects compiled and two did not, because work.tasks needed TaskItem.HoldApprovedAtUtc and
-        // ITaskEscalationService.CurrentlyEscalatedTaskIdsAsync, and work.approvals needed
-        // TaskApprovalProjection, whose rule-key prefixes come from five orchestration rules this line
-        // did not have.
-        //
-        // ALL OF THAT IS NOW CLOSED. Hold and the escalation set query landed with the Hold capability;
-        // the HR and Inventory approval convergence brought three of the five rules; and
-        // WORK-PREREQUISITES-03 converged ProjectBillingApprovalRule and TaskApprovalProjection. The
-        // projection's five prefixes all resolve.
-        //
-        // WHAT IS STILL OWED BEFORE THE PACK CAN BE REGISTERED, and this is why there is no
-        // AddWorkReporting() beneath this line yet:
-        //
-        //   THE DATASETS THEMSELVES. WorkReportingDatasets and its five data sources have not been
-        //   converged. The pack's own reconciliation is a separate wave.
-        //
-        //   work.calendar IS OUT BY DECISION, not by oversight - see WorkProjectsReportAuthority, which
-        //   states why a calendar subject needs its own key and its own module authority.
-        //
-        //   THE HOLD SLICE IS AUTHORED BUT UNEXECUTED. work.tasks reads HoldApprovedAtUtc, so the pack
-        //   compiles against any database and only RUNS against one where deploy/sql/tasks_hold.sql has
-        //   been applied. That is an operational dependency, not a code one, and it is recorded rather
-        //   than assumed.
+        // WORK-REPORTING-FOUNDATION-01 converges work.tasks and work.approvals only.
+        // Their registration lives with the host, behind Reporting:Work:Enabled, because
+        // HoldApprovedAtUtc must exist in the deployed schema before runtime activation.
+        // Calendar, hours and escalations remain outside this pack. No Work report-definition
+        // provider is introduced, so these subjects are not yet offered in the Studio picker.
         // ==========================================================================================
         public static IServiceCollection AddProjectsReporting(this IServiceCollection services)
         {

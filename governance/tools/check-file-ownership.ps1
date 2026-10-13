@@ -1,4 +1,4 @@
-<#
+﻿<#
 =============================================================================================
 R1 - tab ownership and shared-file enforcement.
 
@@ -78,14 +78,17 @@ if ($Files -and $Files.Count) {
 } else {
     Push-Location $repo
     try {
-        if ($Base) { $raw = git diff --name-only $Base 2>$null }
-        else       { $raw = git status --porcelain 2>$null | ForEach-Object { $_.Substring(3) } }
+        if ($Base) { $raw = git -c "safe.directory=$repo" -c "core.excludesFile=$repo/.gitignore" -c core.safecrlf=false diff --name-only $Base 2>$null }
+        else       { $raw = git -c "safe.directory=$repo" -c "core.excludesFile=$repo/.gitignore" -c core.safecrlf=false status --porcelain 2>$null | ForEach-Object { $_.Substring(3) } }
+        if ($LASTEXITCODE -ne 0) { Write-Host 'git file inventory failed; ownership cannot be checked.' -ForegroundColor Red; exit 3 }
     } finally { Pop-Location }
     $changed = @($raw | Where-Object { $_ -and $_.Trim() } | ForEach-Object { $_.Trim().Replace('\', '/') })
 }
 
 if (-not $changed.Count) {
     Write-Host "no changed files detected - nothing to check." -ForegroundColor Green
+    Write-Host "  DENIED : 0"
+    Write-Host "  shared : 0"
     exit 0
 }
 
