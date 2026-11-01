@@ -1,0 +1,144 @@
+/* Hospital prototype — only what the theme has no class for. Colours come from the house tokens
+   (#0E4A9E text/border, #E7F0FF surface, #145DBF code ink); no amber on any control or notice. */
+html[lang="ar"] body { font-family: 'Cairo', sans-serif; }
+
+/* Bidi: fractions, codes and figures keep their own run on an Arabic page. */
+.num { direction: ltr; unicode-bidi: isolate; font-variant-numeric: tabular-nums; }
+/* A badge is inline-flex, which drops the space between a figure and its word ("VAT15%"). */
+/* Physical margins on purpose: .num is direction:ltr, so a logical margin would resolve against the
+   figure's own direction and land on the wrong side in an Arabic badge. */
+.badge > .num { margin: 0 .25em; }
+
+/* House table (TrialBalance contract). */
+.hms-table thead tr { border-bottom: 2px solid #0E4A9E; }
+.hms-table tbody tr { border-bottom: 1px dashed #eef1f6; }
+.hms-table tbody tr:hover { background: #F7FAFF; }
+.hms-table tfoot tr { background: #E7F0FF; border-top: 2px solid #0E4A9E; }
+.hms-table tfoot td { color: #0E4A9E; }
+.hms-code { background: #E7F0FF; color: #145DBF; }
+.hms-zero { color: var(--bs-gray-300); }
+
+/* House notice (TrialBalance banner). */
+.hms-notice { background: #E7F0FF; border-color: #0E4A9E !important; }
+.hms-notice .symbol-label { background: #0E4A9E; }
+.hms-badge-solid { background: #0E4A9E; color: #fff; }
+
+/* Bed board. */
+.hms-bed { border: 1px solid var(--bs-gray-200); border-radius: .75rem; padding: .9rem; min-height: 118px; cursor: pointer; transition: box-shadow .12s ease, transform .12s ease; background: var(--bs-body-bg); border-inline-start-width: 4px; }
+.hms-bed:hover { box-shadow: 0 4px 14px rgba(14, 74, 158, .12); transform: translateY(-1px); }
+.hms-bed.occupied { border-inline-start-color: #0E4A9E; }
+.hms-bed.vacant { border-inline-start-color: var(--bs-success); background: var(--bs-light-success); }
+.hms-bed.cleaning { border-inline-start-color: var(--bs-info); background: var(--bs-light-info); }
+.hms-bed.reserved { border-inline-start-color: #7239EA; background: #F8F5FF; }
+.hms-bed.blocked { border-inline-start-color: var(--bs-gray-500); background: var(--bs-gray-100); }
+
+/* Kanban (ER). */
+.hms-lane { background: var(--bs-gray-100); border-radius: .85rem; padding: .85rem; min-height: 420px; }
+.hms-lane-card { background: var(--bs-body-bg); border-radius: .65rem; padding: .85rem; margin-bottom: .75rem; box-shadow: 0 1px 3px rgba(0,0,0,.05); border-inline-start: 4px solid var(--bs-gray-300); }
+.esi-1 { border-inline-start-color: #D9214E !important; }
+.esi-2 { border-inline-start-color: #F1416C !important; }
+.esi-3 { border-inline-start-color: #F6C000 !important; }
+.esi-4 { border-inline-start-color: #17C653 !important; }
+.esi-5 { border-inline-start-color: #1B84FF !important; }
+.badge-esi-1 { background: #D9214E; color: #fff; }
+.badge-esi-2 { background: #F1416C; color: #fff; }
+.badge-esi-3 { background: #FFF8DD; color: #8a6d00; }
+.badge-esi-4 { background: #DFFFEA; color: #0e7a39; }
+.badge-esi-5 { background: #E9F3FF; color: #0E4A9E; }
+
+/* Scheduler grids (appointments, theatre). */
+.hms-sched { display: grid; border: 1px solid var(--bs-gray-200); border-radius: .75rem; overflow: hidden; }
+.hms-sched > div { border-bottom: 1px dashed #eef1f6; border-inline-start: 1px solid #eff2f5; min-height: 46px; padding: .25rem .35rem; position: relative; }
+.hms-sched .hd { background: #F7FAFF; border-bottom: 2px solid #0E4A9E; font-weight: 700; padding: .6rem; }
+.hms-sched .tm { color: var(--bs-gray-600); font-size: .8rem; text-align: center; padding-top: .7rem; }
+.hms-slot { border-radius: .5rem; padding: .3rem .5rem; font-size: .8rem; line-height: 1.25; height: 100%; cursor: pointer; }
+.hms-slot.booked { background: #E7F0FF; color: #0E4A9E; }
+.hms-slot.arrived { background: var(--bs-light-info); color: var(--bs-info-active, #056ee9); }
+.hms-slot.inroom { background: #0E4A9E; color: #fff; }
+.hms-slot.done { background: var(--bs-light-success); color: #0e7a39; }
+.hms-slot.noshow { background: var(--bs-gray-100); color: var(--bs-gray-600); text-decoration: line-through; }
+.hms-or-block { position: absolute; top: 4px; bottom: 4px; border-radius: .5rem; padding: .35rem .6rem; font-size: .8rem; overflow: hidden; background: #E7F0FF; color: #0E4A9E; border-inline-start: 3px solid #0E4A9E; }
+.hms-or-block.live { background: #0E4A9E; color: #fff; }
+.hms-or-block.done { background: var(--bs-light-success); color: #0e7a39; border-inline-start-color: var(--bs-success); }
+
+/* MAR grid. */
+.mar-cell { width: 64px; text-align: center; }
+.mar-dot { display: inline-flex; width: 30px; height: 30px; border-radius: 50%; align-items: center; justify-content: center; font-size: .75rem; font-weight: 700; }
+.mar-given { background: var(--bs-light-success); color: #0e7a39; }
+.mar-due { background: #E7F0FF; color: #0E4A9E; box-shadow: inset 0 0 0 2px #0E4A9E; }
+.mar-missed { background: var(--bs-light-danger); color: var(--bs-danger); }
+.mar-held { background: var(--bs-gray-100); color: var(--bs-gray-600); }
+
+/* Settings: facility preset cards and module tiles. */
+.hms-preset { border: 1px dashed var(--bs-gray-300); border-radius: .85rem; padding: 1.25rem; cursor: pointer; height: 100%; transition: all .12s ease; }
+.hms-preset:hover { border-color: #0E4A9E; }
+.hms-preset.active { border: 2px solid #0E4A9E; background: #E7F0FF; }
+.hms-module { border: 1px solid var(--bs-gray-200); border-radius: .75rem; padding: 1rem; height: 100%; }
+.hms-module.off { background: var(--bs-gray-100); }
+.hms-module.off .hms-module-title { color: var(--bs-gray-600) !important; }
+
+/* Patient banner. */
+.hms-pbanner { background: linear-gradient(0deg, #F7FAFF, #F7FAFF); border: 1px solid #DCE7FA; border-radius: .85rem; }
+.hms-chip { display: inline-flex; align-items: center; gap: .35rem; padding: .25rem .65rem; border-radius: 2rem; background: var(--bs-gray-100); font-size: .8rem; font-weight: 600; color: var(--bs-gray-700); }
+
+/* Lab flags. */
+.flag-h { color: var(--bs-danger); font-weight: 700; }
+.flag-l { color: #145DBF; font-weight: 700; }
+
+/* Integration chip: which existing CrossBusiness module a block reuses. */
+.hms-reuse { display: inline-flex; align-items: center; gap: .3rem; font-size: .72rem; font-weight: 700; color: #7239EA; background: #F8F5FF; border-radius: 2rem; padding: .15rem .6rem; }
+
+/* Hospital map: a 12-column floor plan; rooms place themselves with grid-column / grid-row. */
+.hms-plan { display: grid; grid-template-columns: repeat(12, minmax(62px, 1fr)); grid-auto-rows: minmax(92px, auto); gap: .6rem; min-width: 820px; padding: .75rem; background: repeating-linear-gradient(0deg, #F7FAFF, #F7FAFF 23px, #EEF3FB 24px); border-radius: .85rem; border: 1px solid #DCE7FA; }
+.hms-room { border: 2px solid; border-radius: .65rem; padding: .55rem .65rem; cursor: pointer; overflow: hidden; transition: box-shadow .12s ease, opacity .12s ease; min-width: 0; }
+.hms-room:hover { box-shadow: 0 4px 14px rgba(14, 74, 158, .18); }
+.hms-room-dim { opacity: .18; }
+.fs-9 { font-size: .68rem !important; }
+
+/* Drawn room plan: walls, window, door, bathroom, and the beds where they stand. */
+.hms-roomplan { position: relative; height: 190px; border: 3px solid #5E6278; border-radius: .4rem; background: repeating-linear-gradient(45deg, #FBFCFE, #FBFCFE 10px, #F4F7FC 10px, #F4F7FC 20px); }
+.hms-roomplan.small { height: 130px; }
+.rp-window { position: absolute; top: -3px; inset-inline-start: 25%; width: 50%; height: 6px; background: #8FB8F0; border-radius: 3px; }
+.rp-door { position: absolute; bottom: -3px; inset-inline-end: 8%; width: 16%; height: 6px; background: #fff; border-inline: 2px solid #5E6278; }
+.rp-door span, .rp-bath span, .rp-ante span, .rp-companion span, .rp-lounge span { font-size: .62rem; font-weight: 700; color: var(--bs-gray-600); }
+.rp-door span { position: absolute; bottom: 7px; inset-inline-start: 0; white-space: nowrap; }
+.rp-bath { position: absolute; bottom: 0; inset-inline-start: 0; width: 22%; height: 34%; background: #EAF4FF; border-top: 2px solid #5E6278; border-inline-end: 2px solid #5E6278; display: flex; align-items: center; justify-content: center; gap: .2rem; color: #1B84FF; }
+.rp-ante { position: absolute; bottom: 0; inset-inline-end: 0; width: 22%; height: 34%; background: #FFF5F8; border-top: 2px dashed #F1416C; border-inline-start: 2px dashed #F1416C; display: flex; align-items: center; justify-content: center; }
+.rp-companion { position: absolute; bottom: 8%; inset-inline-start: 28%; width: 30%; height: 16%; background: #F1F1F4; border: 1px solid #C4CADA; border-radius: .35rem; display: flex; align-items: center; justify-content: center; }
+.rp-lounge { position: absolute; top: 8%; inset-inline-end: 4%; width: 24%; height: 36%; background: #F8F5FF; border: 1px dashed #7239EA; border-radius: .35rem; display: flex; align-items: center; justify-content: center; }
+.rp-curtain { position: absolute; top: 8%; bottom: 30%; inset-inline-start: 50%; border-inline-start: 2px dashed #B5B5C3; }
+.rp-bed { position: absolute; border-radius: .45rem; border: 2px solid #0E4A9E; background: #E7F0FF; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: transform .1s ease, box-shadow .1s ease; overflow: hidden; }
+.rp-bed:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(14, 74, 158, .25); }
+.rp-bed .rp-pillow { position: absolute; top: 4px; width: 55%; height: 12%; border-radius: 4px; background: rgba(255, 255, 255, .85); border: 1px solid rgba(14, 74, 158, .25); }
+.rp-bed .rp-bedno { font-size: .7rem; font-weight: 800; color: #0E4A9E; margin-top: 10%; }
+.rp-bed .rp-free { font-size: .62rem; font-weight: 700; color: var(--bs-gray-700); }
+.rp-bed.vacant { border-color: var(--bs-success); background: var(--bs-light-success); }
+.rp-bed.vacant .rp-bedno { color: #0e7a39; }
+.rp-bed.cleaning { border-color: var(--bs-info); background: var(--bs-light-info); }
+.rp-bed.reserved { border-color: #7239EA; background: #F8F5FF; }
+.rp-bed.blocked { border-color: var(--bs-gray-500); background: var(--bs-gray-200); }
+.rp-bed.sel { box-shadow: 0 0 0 3px #fff, 0 0 0 6px #0E4A9E; }
+.rp-bed.na { opacity: .45; cursor: not-allowed; }
+.hms-roomplan.small .rp-bed .rp-bedno { font-size: .6rem; }
+
+.cursor-pointer { cursor: pointer; }
+.min-w-0 { min-width: 0; }
+
+/* A short bed (four-bed bay) puts the face beside the bed number instead of over it. */
+.rp-bed.short { flex-direction: row; gap: .4rem; }
+.rp-bed.short .rp-bedno { margin-top: 6px; }
+.rp-bed.short .rp-who, .rp-bed.short .rp-free { margin-top: 6px; }
+
+/* Designer: floor grid (same rhythm as the hospital map) and editable room items. */
+.fd-grid { display: grid; grid-template-columns: repeat(12, minmax(62px, 1fr)); grid-auto-rows: 92px; gap: .6rem; min-width: 820px; padding: .75rem; border-radius: .85rem; border: 1px dashed #0E4A9E; background-color: #FBFCFE; background-image: linear-gradient(90deg, rgba(14,74,158,.06) 1px, transparent 1px), linear-gradient(rgba(14,74,158,.06) 1px, transparent 1px); background-size: calc(100% / 12) 101.6px; touch-action: none; }
+.fd-tile { position: relative; border: 2px solid; border-radius: .6rem; background: var(--bs-body-bg); padding: .5rem .6rem; cursor: grab; user-select: none; min-width: 0; overflow: hidden; }
+.fd-tile:active { cursor: grabbing; }
+.fd-tile.sel { box-shadow: 0 0 0 3px #fff, 0 0 0 5px #0E4A9E; z-index: 2; }
+.fd-open { position: absolute; bottom: 6px; inset-inline-start: 6px; width: 26px !important; height: 26px !important; }
+.fd-handle, .rp-handle { position: absolute; bottom: 0; inset-inline-end: 0; width: 12px; height: 12px; background: #0E4A9E; border-start-start-radius: 4px; cursor: nwse-resize; }
+.hms-roomplan.big { height: 420px; touch-action: none; }
+.rp-edit { cursor: move; user-select: none; }
+.rp-edit[data-sel] { outline: 2px dashed #F1416C; outline-offset: 2px; z-index: 3; }
+.rp-sink { position: absolute; border-radius: 50%; background: #EAF4FF; border: 2px solid #1B84FF; display: flex; align-items: center; justify-content: center; }
+.rp-sink span { font-size: .55rem; font-weight: 700; color: #1B84FF; }
+.rp-window, .rp-door, .rp-bath, .rp-ante, .rp-companion, .rp-lounge, .rp-curtain { box-sizing: border-box; }
