@@ -47,6 +47,26 @@ namespace CrossBuy.BL.Approvals
 		Task<ApprovalInboxPage> GetPendingForCurrentApproverAsync(
 			BusinessContext context, int employeeId, int take = 0,
 			CancellationToken cancellationToken = default);
+
+		/// <summary>
+		/// The pending approvals THIS caller may act on that concern one canonical business entity -
+		/// the integration seam a conversation-scoped consumer needs ("what is waiting on this record?").
+		///
+		/// IT DISCLOSES NOTHING THE CALLER COULD NOT ALREADY SEE, and that is the whole security design:
+		/// this is a FILTER over <see cref="GetPendingForCurrentApproverAsync"/>, not a second query
+		/// path. It opens no new module query, asks for no new permission, and cannot reach a silo the
+		/// caller is not already entitled to - because the rows it filters are the rows their own inbox
+		/// returned. A consumer who is not an approver for a record gets an empty list, which is the same
+		/// answer their inbox gives.
+		///
+		/// An unknown or unsupported <paramref name="entityType"/> returns EMPTY rather than throwing:
+		/// an unmapped silo is a real state (see <c>ApprovalEntityMap</c>), and a caller asking about a
+		/// record with no approval workflow should read "nothing is pending", not an exception.
+		/// Comparison is ORDINAL, matching how <c>IEntityRegistry</c> codes are compared everywhere else.
+		/// </summary>
+		Task<IReadOnlyList<PendingApprovalRow>> GetPendingForEntityAsync(
+			BusinessContext context, int employeeId, string entityType, int entityId,
+			CancellationToken cancellationToken = default);
 	}
 
 	// =================================================================================================
@@ -167,6 +187,26 @@ namespace CrossBuy.BL.Approvals
 			// then negated id, so this is newest-first with a total tiebreak - two rows submitted in the
 			// same tick cannot swap places between requests.
 			var merged = leaveRows.Concat(requestRows).Concat(inventoryRows).Concat(billingRows)
+				// CANONICAL IDENTITY, STAMPED IN EXACTLY ONE PLACE.
+				//
+				// The silo→entity-code mapping belongs to the approvals platform, not to each module, so
+				// it is applied here rather than asked of four readers that would then be four places to
+				// get it wrong. The modules keep producing the facts they own; nothing in their contract
+				// changed and none of their files was touched.
+				//
+				// THE COMPANY STAMPED IS THE ONE THE READERS WERE GIVEN - this same `context` - so it
+				// cannot describe a boundary other than the one that was actually applied a few lines
+				// above. It is provenance for a consumer holding rows from several calls, never a second
+				// authority; the guard at the top of this method is what fails closed.
+				//
+				// An unmapped silo gets NULL and stays unresolved. It is still a perfectly good inbox row
+				// - it renders, it counts, it navigates - it simply cannot be addressed by platform
+				// entity identity, and saying so is the point.
+				.Select(r => r with
+				{
+					EntityType = ApprovalEntityMap.CanonicalEntityType(r.Silo),
+					CompanyId = context.CompanyId,
+				})
 				.OrderBy(r => r.OrderKey)
 				.ToList();
 
@@ -182,6 +222,38 @@ namespace CrossBuy.BL.Approvals
 				CountsBySilo = countsBySilo,
 				VisibleSilos = visibleSilos,
 			};
+		}
+
+		public async Task<IReadOnlyList<PendingApprovalRow>> GetPendingForEntityAsync(
+			BusinessContext context, int employeeId, string entityType, int entityId,
+			CancellationToken cancellationToken = default)
+		{
+			ArgumentNullException.ThrowIfNull(context);
+
+			// Fail closed on the same three things the inbox does, plus the two this method adds. An
+			// unusable argument yields an empty list rather than an unfiltered one - there is no code
+			// path here that returns rows without an entityType AND an entityId to match them against.
+			if (string.IsNullOrWhiteSpace(entityType) || entityId <= 0) return Array.Empty<PendingApprovalRow>();
+			if (context.CompanyId <= 0 || employeeId <= 0) return Array.Empty<PendingApprovalRow>();
+
+			// THE CALLER'S OWN INBOX, UNPAGED, THEN FILTERED.
+			//
+			// take: 0 on purpose - paging the source first would make the answer depend on where a record
+			// happened to fall in the newest-first order, so a genuinely pending approval could vanish
+			// because thirty newer ones existed. The filter is cheap; the wrong answer is not.
+			//
+			// Every row here has already passed its module's company boundary and its approver
+			// entitlement. This method adds no authority and removes none.
+			var page = await GetPendingForCurrentApproverAsync(context, employeeId, take: 0, cancellationToken);
+
+			// Ordinal, like every other IEntityRegistry code comparison. An unmapped row carries a null
+			// EntityType and therefore matches nothing - an unresolved silo is excluded by construction
+			// rather than by a special case, which is what stops it being silently mistaken for a
+			// resolved one.
+			return page.Rows
+				.Where(r => string.Equals(r.EntityType, entityType, StringComparison.Ordinal)
+						 && r.EntityId == entityId)
+				.ToList();
 		}
 	}
 }

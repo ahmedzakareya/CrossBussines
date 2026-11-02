@@ -317,12 +317,27 @@ namespace CrossBuy.Tests
 					VisibleSilos = new HashSet<string> { ApprovalSilos.Leave, ApprovalSilos.Request },
 				});
 			}
+
+			// COMPELLED BY A NEW INTERFACE MEMBER, and deliberately inert: this suite asserts the
+			// Workspace panel, which calls only GetPendingForCurrentApproverAsync. No assertion, fixture
+			// or behaviour here changed.
+			public Task<IReadOnlyList<PendingApprovalRow>> GetPendingForEntityAsync(
+				BusinessContext context, int employeeId, string entityType, int entityId,
+				CancellationToken cancellationToken = default)
+				=> Task.FromResult<IReadOnlyList<PendingApprovalRow>>(Array.Empty<PendingApprovalRow>());
 		}
 
 		private sealed class ThrowingInbox : IApprovalInboxService
 		{
 			public Task<ApprovalInboxPage> GetPendingForCurrentApproverAsync(
 				BusinessContext context, int employeeId, int take = 0, CancellationToken cancellationToken = default)
+				=> throw new InvalidOperationException("the read platform is having a bad day");
+
+			// COMPELLED BY A NEW INTERFACE MEMBER. Throws for the same reason the member above does, so
+			// this double keeps behaving exactly as its name says.
+			public Task<IReadOnlyList<PendingApprovalRow>> GetPendingForEntityAsync(
+				BusinessContext context, int employeeId, string entityType, int entityId,
+				CancellationToken cancellationToken = default)
 				=> throw new InvalidOperationException("the read platform is having a bad day");
 		}
 
