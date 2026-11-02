@@ -285,26 +285,28 @@ namespace CrossBuy.BL.Reporting
                 sb.Append("</style><div class=\"cbv\" dir=\"").Append(dir).Append("\">");
             }
 
-            // THE NOTICES, ABOVE THE SHEETS. A designed report printed none at all: these lived only in
-            // the column renderer, so the same run was honest as a plain table and silent as a designed
-            // document — and the designed one is what people hand to someone.
-            //
-            // OUTSIDE the .cbv-page boxes, deliberately. A sheet is a fixed geometry in millimetres and
-            // the engine has already decided how many of them there are; a block placed INSIDE the first
-            // one would push its content past the printable box and add a page nobody asked for. Above
-            // them, the notice sits in the preview pane where it is read and is simply not part of the
-            // paper.
-            //
-            // WHICH MEANS a truncated PRINTED document still says nothing, and that gap is real rather
-            // than closed. Its right home is a band the author controls in Studio, not a block this
-            // renderer injects into someone's layout.
-            if (ctx.IsPreview) ReportNotice.Render(sb, ReportNotice.Kind.Preview, ctx.Arabic);
-            if (ctx.Truncated) ReportNotice.Render(sb, ReportNotice.Kind.Truncated, ctx.Arabic);
+            // Screen notices may occupy flow space. A full-paper print sheet cannot: a preceding
+            // notice shifts its fixed height onto another page, leaving an empty overflow page.
+            if (ctx.ScreenPreview)
+            {
+                if (ctx.IsPreview) ReportNotice.Render(sb, ReportNotice.Kind.Preview, ctx.Arabic);
+                if (ctx.Truncated) ReportNotice.Render(sb, ReportNotice.Kind.Truncated, ctx.Arabic);
+            }
 
             for (int p = 0; p < totalPages; p++)
             {
                 bool first = p == 0, last = p == totalPages - 1;
-                sb.Append("<section class=\"cbv-page\"><div class=\"cbv-content\">");
+                sb.Append("<section class=\"cbv-page\">");
+                if (first && !ctx.ScreenPreview && (ctx.Truncated || ctx.IsPreview))
+                {
+                    // Keep the limitation on the printed document, in the paper's bottom margin,
+                    // without changing the author's bands or the browser's pagination.
+                    sb.Append("<div class=\"cbv-print-notice\">").Append(Enc(ctx.Truncated
+                        ? (ctx.Arabic ? "النتيجة مقطوعة — بعض الصفوف غير معروضة" : "Truncated result — some rows are not shown")
+                        : (ctx.Arabic ? "معاينة — ليست النسخة النهائية" : "Preview — not the final document")))
+                      .Append("</div>");
+                }
+                sb.Append("<div class=\"cbv-content\">");
 
                 double y = 0;
 
@@ -1716,6 +1718,7 @@ namespace CrossBuy.BL.Reporting
                 // paper rather than the user's default.
                 sb.Append("@page{size:").Append(Mm(paperW)).Append(' ').Append(Mm(paperH)).Append(";margin:0}");
                 sb.Append("@media print{.cbv-page{break-after:page}.cbv-page:last-child{break-after:auto}}");
+                sb.Append(".cbv-print-notice{position:absolute;bottom:2mm;inset-inline:12mm;text-align:center;font-size:8pt;font-weight:600}");
             }
 
             sb.Append(".cbv-page{position:relative;width:").Append(Mm(paperW)).Append(";height:").Append(Mm(paperH))

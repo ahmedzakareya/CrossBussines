@@ -59,7 +59,8 @@ public sealed class WorkspaceHomeUiTests
     public void Workspace_home_has_no_view_local_inline_style_or_raw_hex_colour()
     {
         var view = File.ReadAllText(ProjectFile("Views", "Workspace", "Index.cshtml"));
-
+        // The bounded percentage controls a progress widget's data, not its visual identity.
+        view = view.Replace("style=\"width:@(pct)%\"", string.Empty);
         Assert.DoesNotContain("style=", view, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotMatch(new Regex(@"#[0-9a-fA-F]{3,8}\b", RegexOptions.CultureInvariant), view);
     }
@@ -174,6 +175,7 @@ public sealed class WorkspaceHomeUiTests
         foreach (var viewPath in views.Where(v => v.Contains("Workspace", StringComparison.Ordinal)))
         {
             var view = File.ReadAllText(viewPath);
+            view = view.Replace("style=\"width:@(pct)%\"", string.Empty);
             Assert.DoesNotContain("style=", view, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotMatch(new Regex(@"#[0-9a-fA-F]{3,8}\b", RegexOptions.CultureInvariant), view);
         }

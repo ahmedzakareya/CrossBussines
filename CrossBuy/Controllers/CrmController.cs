@@ -118,6 +118,34 @@ public partial class CrmController : Controller
 		// ---------------- CRM automation rules (3-7b-ii) ----------------
 		private ICrmAutomationService AutoSvc => (HttpContext.RequestServices.GetService(typeof(ICrmAutomationService)) as ICrmAutomationService)!;
 
+		// The PLATFORM tag service, resolved the same way this controller already resolves AutoSvc and
+		// CfSvc. It is used here for READS only - the company's tag list for a picker, and one batch of
+		// chips per rendered page. Every tag WRITE goes through CrmService, inside the save's own
+		// transaction, because a tag that saved while its record did not is the failure this increment
+		// exists to avoid.
+		private CrossBuy.BL.Platform.ITagService TagSvc =>
+			(HttpContext.RequestServices.GetService(typeof(CrossBuy.BL.Platform.ITagService)) as CrossBuy.BL.Platform.ITagService)!;
+
+		/// The tag set a form OWNS. An emptied multi-select posts no key at all, which binds to the same
+		/// null a caller with no tag control produces - so the form sends a sentinel to say "these tags
+		/// are mine", and an absent id list then means CLEARED rather than UNTOUCHED.
+		private int[]? TagsFromForm(int[]? tagIds)
+		{
+			bool managed = Request.HasFormContentType && Request.Form.ContainsKey("TagsManaged");
+			if (!managed) return null;
+			return tagIds ?? Array.Empty<int>();
+		}
+
+		/// One batch read per rendered page - never one call per row.
+		private async Task LoadRowTagsAsync(int companyId, string entityCode, IEnumerable<int> ids)
+		{
+			var list = ids.Where(i => i > 0).Distinct().ToList();
+			ViewBag.RowTags = list.Count == 0
+				? new Dictionary<int, List<CrossBuy.Models.Context.Platform.Tag>>()
+				: (await TagSvc.GetTagsForEntitiesAsync(companyId, entityCode, list))
+					.ToDictionary(p => p.Key, p => p.Value);
+		}
+
 		[HttpGet] public async Task<IActionResult> AutomationRules()
 		{
 			var (okCo, cid, denyCo) = await ResolveCompanyAsync();
@@ -240,13 +268,21 @@ public partial class CrmController : Controller
 		}
 
 		// ---------------- Accounts + Contacts (3-2) ----------------
-		[HttpGet] public IActionResult Accounts() => View();
-
-		[HttpGet] public async Task<IActionResult> AccountsData(string? q, int page = 1, int pageSize = 25)
+		[HttpGet] public async Task<IActionResult> Accounts()
 		{
 			var (okCo, cid, denyCo) = await ResolveCompanyAsync();
 			if (!okCo) return denyCo;
-			var (rows, total) = await _crm.SearchAccountsAsync(cid, q, page, pageSize);
+			ViewBag.AllTags = await TagSvc.GetTagsAsync(cid);
+			return View();
+		}
+
+		[HttpGet] public async Task<IActionResult> AccountsData(string? q, int page = 1, int pageSize = 25,
+			int[]? tagIds = null, bool tagMatchAll = false, bool unassigned = false)
+		{
+			var (okCo, cid, denyCo) = await ResolveCompanyAsync();
+			if (!okCo) return denyCo;
+			var (rows, total) = await _crm.SearchAccountsAsync(cid, q, page, pageSize, tagIds, tagMatchAll, unassigned);
+			await LoadRowTagsAsync(cid, CrossBuy.BL.Platform.EntityRegistry.CrmAccount, rows.Select(r => r.Id));
 			SetPaging(total, page, pageSize);
 			return PartialView("_AccountRows", rows);
 		}
@@ -265,15 +301,19 @@ public partial class CrmController : Controller
 				ViewBag.CustomerName = cust == null ? null : (!acIsAr && !string.IsNullOrWhiteSpace(cust.NameEn) ? cust.NameEn : cust.Name);
 			}
 			if (model.ID > 0) { ViewBag.Timeline = await _crm.GetTimelineAsync(cid, "Account", model.ID); ViewBag.EntityType = "Account"; ViewBag.EntityId = model.ID; }
+			ViewBag.AllTags = await TagSvc.GetTagsAsync(cid);
+			ViewBag.EntityTagIds = model.ID > 0
+				? (await TagSvc.GetEntityTagsAsync(cid, CrossBuy.BL.Platform.EntityRegistry.CrmAccount, model.ID)).Select(t => t.ID).ToArray()
+				: Array.Empty<int>();
 			return View(model);
 		}
 
 		[HttpPost][ValidateAntiForgeryToken][CrossBuy.Models.CrmPerm("edit")]
-		public async Task<IActionResult> SaveAccount(int id, string name, string? nameEn, string? industry, string? industryEn, string? phone, string? email, string? website, string? address, string? source, string? segment, bool isActive, string? notes)
+		public async Task<IActionResult> SaveAccount(int id, string name, string? nameEn, string? industry, string? industryEn, string? phone, string? email, string? website, string? address, string? source, string? segment, bool isActive, string? notes, int[]? tagIds = null)
 		{
 			var (okCo, cid, denyCo) = await ResolveCompanyAsync();
 			if (!okCo) return denyCo;
-			var (ok, err, newId) = await _crm.SaveAccountAsync(cid, new Models.Context.Crm.CrmAccount { ID = id, Name = name ?? "", NameEn = nameEn, Industry = industry, IndustryEn = industryEn, Phone = phone, Email = email, Website = website, Address = address, Source = source, Segment = segment, IsActive = isActive, Notes = notes }, User?.Identity?.Name);
+			var (ok, err, newId) = await _crm.SaveAccountAsync(cid, new Models.Context.Crm.CrmAccount { ID = id, Name = name ?? "", NameEn = nameEn, Industry = industry, IndustryEn = industryEn, Phone = phone, Email = email, Website = website, Address = address, Source = source, Segment = segment, IsActive = isActive, Notes = notes }, User?.Identity?.Name, TagsFromForm(tagIds));
 			TempData[ok ? "CrmMsg" : "CrmErr"] = ok ? (id > 0 ? L["Account updated"].Value : L["Account created"].Value) : err;
 			return ok ? RedirectToAction(nameof(AccountEditor), new { id = newId }) : RedirectToAction(nameof(Accounts));
 		}
@@ -635,14 +675,19 @@ public partial class CrmController : Controller
 			if (!okCo) return denyCo;
 			ViewBag.Campaigns = await _crm.GetCampaignsForPickAsync(cid);
 			ViewBag.CustomFields = await CfSvc.GetFieldsAsync(cid, "Lead", true);
+			// The company's OWN vocabulary, and only the live tags: an archived tag can still be read on
+			// a record that carries it, but it is not offered for new classification.
+			ViewBag.AllTags = await TagSvc.GetTagsAsync(cid);
 			return View();
 		}
 
-		[HttpGet] public async Task<IActionResult> LeadsData(string? q, string? status, int page = 1, int pageSize = 25)
+		[HttpGet] public async Task<IActionResult> LeadsData(string? q, string? status, int page = 1, int pageSize = 25,
+			int[]? tagIds = null, bool tagMatchAll = false, bool unassigned = false, bool overdueFollowUp = false)
 		{
 			var (okCo, cid, denyCo) = await ResolveCompanyAsync();
 			if (!okCo) return denyCo;
-			var (rows, total) = await _crm.SearchLeadsAsync(cid, q, status, page, pageSize);
+			var (rows, total) = await _crm.SearchLeadsAsync(cid, q, status, page, pageSize, tagIds, tagMatchAll, unassigned, overdueFollowUp);
+			await LoadRowTagsAsync(cid, CrossBuy.BL.Platform.EntityRegistry.Lead, rows.Select(r => r.ID));
 			var st = await _crm.GetCrmSettingsAsync(cid);
 			ViewBag.Hot = st.HotScore; ViewBag.Warm = st.WarmScore;
 			SetPaging(total, page, pageSize);
@@ -650,13 +695,13 @@ public partial class CrmController : Controller
 		}
 
 		[HttpPost][ValidateAntiForgeryToken][CrossBuy.Models.CrmPerm("edit")]
-		public async Task<IActionResult> SaveLead(int id, string name, string? nameEn, string? company, string? phone, string? email, string? source, string? segment, decimal estimatedValue, string status, string? notes, int? campaignId, string? customFieldsJson)
+		public async Task<IActionResult> SaveLead(int id, string name, string? nameEn, string? company, string? phone, string? email, string? source, string? segment, decimal estimatedValue, string status, string? notes, int? campaignId, string? customFieldsJson, int[]? tagIds = null)
 		{
 			var (okCo, cid, denyCo) = await ResolveCompanyAsync();
 			if (!okCo) return denyCo;
 			var lead = new Lead { ID = id, Name = name ?? "", NameEn = nameEn, Company = company, Phone = phone, Email = email, Source = source, Segment = segment, EstimatedValue = estimatedValue, Status = status, Notes = notes, CampaignId = campaignId };
 			bool isNew = id <= 0;
-			var (ok, err) = await _crm.SaveLeadAsync(cid, lead, User?.Identity?.Name);
+			var (ok, err) = await _crm.SaveLeadAsync(cid, lead, User?.Identity?.Name, TagsFromForm(tagIds));
 			if (ok && lead.ID > 0) await CfSvc.SaveValuesAsync(cid, "Lead", lead.ID, ParseCustomFields(customFieldsJson));
 			if (ok && isNew && lead.ID > 0)
 			{
@@ -992,14 +1037,17 @@ public partial class CrmController : Controller
 			ViewBag.DefaultPipelineId = pid;
 			ViewBag.Stages = pid > 0 ? await _crm.GetStagesAsync(cid, pid) : new List<Models.Context.Crm.CrmPipelineStage>();
 			ViewBag.CustomFields = await CfSvc.GetFieldsAsync(cid, "Opportunity", true);
+			ViewBag.AllTags = await TagSvc.GetTagsAsync(cid);
 			return View();
 		}
 
-		[HttpGet] public async Task<IActionResult> OpportunitiesData(string? q, string? stage, int page = 1, int pageSize = 25)
+		[HttpGet] public async Task<IActionResult> OpportunitiesData(string? q, string? stage, int page = 1, int pageSize = 25,
+			int[]? tagIds = null, bool tagMatchAll = false, bool unassigned = false, bool overdueFollowUp = false)
 		{
 			var (okCo, cid, denyCo) = await ResolveCompanyAsync();
 			if (!okCo) return denyCo;
-			var (rows, total) = await _crm.SearchOpportunitiesAsync(cid, q, stage, page, pageSize);
+			var (rows, total) = await _crm.SearchOpportunitiesAsync(cid, q, stage, page, pageSize, tagIds, tagMatchAll, unassigned, overdueFollowUp);
+			await LoadRowTagsAsync(cid, CrossBuy.BL.Platform.EntityRegistry.Opportunity, rows.Select(r => r.Id));
 			SetPaging(total, page, pageSize);
 			return PartialView("_OppRows", rows);
 		}
@@ -1071,12 +1119,12 @@ public partial class CrmController : Controller
 		}
 
 		[HttpPost][ValidateAntiForgeryToken][CrossBuy.Models.CrmPerm("edit")]
-		public async Task<IActionResult> SaveOpportunity(int id, string title, string? titleEn, int? accountId, int? pipelineId, string stage, decimal amount, DateTime? expectedCloseDate, string? notes, int? campaignId, string? winLossReason, string? customFieldsJson)
+		public async Task<IActionResult> SaveOpportunity(int id, string title, string? titleEn, int? accountId, int? pipelineId, string stage, decimal amount, DateTime? expectedCloseDate, string? notes, int? campaignId, string? winLossReason, string? customFieldsJson, int[]? tagIds = null)
 		{
 			var (okCo, cid, denyCo) = await ResolveCompanyAsync();
 			if (!okCo) return denyCo;
 			var opp = new Opportunity { ID = id, Title = title ?? "", TitleEn = titleEn, AccountId = accountId, PipelineId = pipelineId, Stage = stage, Amount = amount, ExpectedCloseDate = expectedCloseDate, Notes = notes, CampaignId = campaignId, WinLossReason = winLossReason };
-			var (ok, err) = await _crm.SaveOpportunityAsync(cid, opp, User?.Identity?.Name);
+			var (ok, err) = await _crm.SaveOpportunityAsync(cid, opp, User?.Identity?.Name, TagsFromForm(tagIds));
 			if (ok && opp.ID > 0) await CfSvc.SaveValuesAsync(cid, "Opportunity", opp.ID, ParseCustomFields(customFieldsJson));
 			TempData[ok ? "CrmMsg" : "CrmErr"] = ok ? (id > 0 ? L["Opportunity updated"].Value : L["Opportunity added"].Value) : err;
 			return RedirectToAction(nameof(Opportunities));

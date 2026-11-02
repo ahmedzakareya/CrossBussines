@@ -534,6 +534,68 @@
 									<!--end::Col-->
 								</div>
 								<!--end::Row-->
+
+								@* ---- first administrator: new companies only ---- *@
+								@* A company with no employee of its own cannot be administered by anyone, so the   *@
+								@* administrator is captured at creation. On an existing company this is hidden,    *@
+								@* because changing it here would not move anybody between companies.               *@
+								@if (Model.CompanyID == 0)
+								{
+									<!--begin::Row-->
+									<div class="row row-cols-1">
+										<div class="col">
+											<div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-6 mb-7">
+												<div class="d-flex flex-stack flex-grow-1">
+													<div class="fw-semibold">
+														<h4 class="text-gray-900 fw-bold">@CrossBuy.Resources.SharedResources.CompanyAdministratorTitle</h4>
+														<div class="fs-6 text-gray-700">@CrossBuy.Resources.SharedResources.CompanyAdministratorHint</div>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+									<!--end::Row-->
+									<!--begin::Row-->
+									<div class="row row-cols-1 row-cols-sm-2 rol-cols-md-1 row-cols-lg-2">
+										<!--begin::Col-->
+										<div class="col">
+											<!--begin::Input group-->
+											<div class="fv-row mb-7">
+												<label class="fs-6 fw-semibold form-label mt-3">
+													<span class="required">@CrossBuy.Resources.SharedResources.AdministratorEmail</span>
+												</label>
+												<input type="email" placeholder="@CrossBuy.Resources.SharedResources.AdministratorEmail" asp-for="AdministratorEmail" id="AdministratorEmail" class="form-control" />
+											</div>
+											<!--end::Input group-->
+										</div>
+										<!--end::Col-->
+										<!--begin::Col-->
+										<div class="col">
+											<!--begin::Input group-->
+											<div class="fv-row mb-7">
+												<label class="fs-6 fw-semibold form-label mt-3">
+													<span>@CrossBuy.Resources.SharedResources.AdministratorFullName</span>
+												</label>
+												<input type="text" placeholder="@CrossBuy.Resources.SharedResources.AdministratorFullName" asp-for="AdministratorFullName" id="AdministratorFullName" class="form-control" />
+											</div>
+											<!--end::Input group-->
+										</div>
+										<!--end::Col-->
+										<!--begin::Col-->
+										<div class="col">
+											<!--begin::Input group-->
+											<div class="fv-row mb-7">
+												<label class="fs-6 fw-semibold form-label mt-3">
+													<span>@CrossBuy.Resources.SharedResources.AdministratorFullNameEn</span>
+												</label>
+												<input type="text" placeholder="@CrossBuy.Resources.SharedResources.AdministratorFullNameEn" asp-for="AdministratorFullNameEn" id="AdministratorFullNameEn" class="form-control" />
+											</div>
+											<!--end::Input group-->
+										</div>
+										<!--end::Col-->
+									</div>
+									<!--end::Row-->
+								}
 					
 								<div class=row row-cols-1 row-cols-sm-2 rol-cols-md-1 row-cols-lg-2">
 									<!--begin::Col-->
@@ -989,6 +1051,13 @@
 				formData.append("TaxNumber", $("#TaxNumber").val());
 				formData.append("Description", $("#Description").val());
 
+				// The administrator fields only exist on a new company; on an edit they are not rendered.
+				if ($("#AdministratorEmail").length) {
+					formData.append("AdministratorEmail", $("#AdministratorEmail").val());
+					formData.append("AdministratorFullName", $("#AdministratorFullName").val());
+					formData.append("AdministratorFullNameEn", $("#AdministratorFullNameEn").val());
+				}
+
 				// Add image file if present
 				// إضافة ملف الصورة إذا وُجد
 				if (file) {
@@ -1028,10 +1097,35 @@
 					contentType: false,
 					success: function (response) {
 						if (response.success) {
-							CB.toast.success(response.message);
-							setTimeout(function () {
-								window.location.href = "/Service/CompaniesList";
-							}, 800);
+							var goList = function () { window.location.href = "/Service/CompaniesList"; };
+
+							if (response.administratorProvisioned && response.administratorTempPassword) {
+								// The temporary password is shown once and never again — it is not stored in any
+								// readable form. So this is a modal the user has to dismiss, not a toast that
+								// disappears on its own.
+								Swal.fire({
+									icon: 'success',
+									title: '@Html.Raw(CrossBuy.Resources.SharedResources.CompanyAdministratorTitle)',
+									html: '<div class="text-start">'
+										+ '<div class="mb-3">@Html.Raw(CrossBuy.Resources.SharedResources.AdministratorCredentialsOnce)</div>'
+										+ '<div><strong>@Html.Raw(CrossBuy.Resources.SharedResources.AdministratorEmail):</strong> <code>' + $('<div>').text(response.administratorEmail || '').html() + '</code></div>'
+										+ '<div><strong>@Html.Raw(CrossBuy.Resources.SharedResources.TemporaryPassword):</strong> <code>' + $('<div>').text(response.administratorTempPassword).html() + '</code></div>'
+										+ '</div>',
+									confirmButtonText: '@Html.Raw(CrossBuy.Resources.SharedResources.Ok)'
+								}).then(goList);
+							} else if (response.administratorMessage) {
+								// The company saved, but it has no administrator. Say so plainly rather than
+								// reporting a plain success the user would read as "everything is set up".
+								Swal.fire({
+									icon: 'warning',
+									title: '@Html.Raw(CrossBuy.Resources.SharedResources.CompanyAdministratorTitle)',
+									text: response.administratorMessage,
+									confirmButtonText: '@Html.Raw(CrossBuy.Resources.SharedResources.Ok)'
+								}).then(goList);
+							} else {
+								CB.toast.success(response.message);
+								setTimeout(goList, 800);
+							}
 						} else {
 							CB.toast.error(response.message);
 						}

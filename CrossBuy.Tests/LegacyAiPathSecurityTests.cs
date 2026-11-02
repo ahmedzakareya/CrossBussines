@@ -66,9 +66,11 @@ namespace CrossBuy.Tests
             Assert.DoesNotContain("ForecastCashflowAsync(DefaultCompanyId", src, StringComparison.Ordinal);
             Assert.DoesNotContain("AnalyzeInventoryAsync(DefaultCompanyId", src, StringComparison.Ordinal);
 
-            // The constant remains for the rest of the controller — this increment was bounded to the AI
-            // security path and did NOT expand into the full CORRECTION-005 wave.
-            Assert.Contains("const int DefaultCompanyId = 1", src, StringComparison.Ordinal);
+            // Accounting-tenancy convergence also removed the declaration. The legacy path may
+            // not restore it; this assertion does not activate or qualify deferred AI features.
+            Assert.DoesNotContain(src.Split('\n')
+                .Where(line => !line.TrimStart().StartsWith("//", StringComparison.Ordinal)),
+                line => line.Contains("const int DefaultCompanyId = 1;", StringComparison.Ordinal));
         }
 
         // The tables that make it an exposure rather than an empty screen. If a future wave adds company

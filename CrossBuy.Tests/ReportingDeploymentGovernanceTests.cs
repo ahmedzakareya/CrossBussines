@@ -90,8 +90,8 @@ namespace CrossBuy.Tests
             var hash = Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
 
             Assert.Equal($"{CanonicalRoot}/{SliceName}", entry.GetProperty("path").GetString());
-            Assert.Equal(bytes.Length, entry.GetProperty("bytes").GetInt64());
-            Assert.Equal(hash, entry.GetProperty("sha256").GetString());
+            Assert.Equal(bytes.Length, entry.GetProperty("rawBytes").GetInt64());
+            Assert.Equal(hash, entry.GetProperty("rawSha256").GetString());
 
             // The generator classifies guarding by inspection. "guarded" is what makes re-application safe,
             // and it is the property the runbook relies on when it says the slice may be re-run.

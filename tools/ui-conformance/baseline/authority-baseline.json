@@ -1,31 +1,31 @@
 {
   "_purpose": "Recorded state of the visual authority and the modules measured against it. Drift is not automatically wrong - the owner may change their own module - but it MUST be surfaced, because silently re-baselining would make 'matches Inventory' unfalsifiable.",
-  "_recorded": "2026-08-17",
+  "_recorded": "2026-10-13",
   "_algorithm": "aggregate = sha256( concat( '<repo-relative-path>:<sha256-of-file>\\n' ) for files matching glob, sorted by ordinal path )",
   "_reblessing": "Re-blessing is a deliberate act by the module owner, in a DEDICATED commit, never bundled with a feature change.",
   "inventory-views": {
     "glob": "CrossBuy/Views/Inventory/*.cshtml",
-    "aggregate": "0c0f9814176533927b8c0ed76e9291bc4c3a244b8d7649aba6650278375a6f83",
+    "aggregate": "149f5a706eb186e366907d78d1ae03b47e5a6ca74b5f288255919f1722c81386",
     "note": "78 views. THE visual authority."
   },
   "inventory-shell": {
     "glob": "CrossBuy/Views/Shared/_LayoutInventory.cshtml",
-    "aggregate": "91d25bd159a696ab80e1b8b70449ee459114ce6f328135f1ea04c3b111ab462a",
+    "aggregate": "4c1a32a8d6db7ce41e0ba4dc63e490d1c639d5b2b7e43d671008441662f15fb9",
     "note": "The shell every governed module renders through."
   },
   "brand-stylesheet": {
     "glob": "CrossBuy/wwwroot/Backend-assets/css/crossbuy-brand.css",
-    "aggregate": "21e330e502bd0e7613a9c90dc0ba53cd89db63241e2598b0a139e2449f1f6739",
-    "note": "Ledger green + gold. The one file allowed to define brand design tokens."
+    "aggregate": "560dbd80bbc6801fac0e83c3b639180dd874f7cb85af84080a51aaf6c079278c",
+    "note": "CrossBusiness blue identity; Calendar mobile styles scoped to #kt_calendar_app."
   },
   "tasks-views": {
     "glob": "CrossBuy/Views/Tasks/*.cshtml",
-    "aggregate": "df1a1a1da438543455729dfceb53437931575fd3a44c63b799c11a00356113cf",
+    "aggregate": "9773b674a4b734001b348589613d2b324446cf076a6385edcc37ea9395ae02b5",
     "note": "8 views, all on the authority shell at record time."
   },
   "calendar-views": {
     "glob": "CrossBuy/Views/Calendar/*.cshtml",
-    "aggregate": "0984b6de3676f1297c18bc5cdf88c9ddb65d06a54631210f5f7af843710ddbe1",
+    "aggregate": "2e5d7755f5b825e75259a24d639d33c36a55541adaf00ce2948c699537b155ed",
     "note": "3 views, all on the authority shell at record time."
   }
 }

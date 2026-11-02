@@ -9,10 +9,28 @@
     string hex(string s) => stgHex.TryGetValue(s, out var h) ? h : "#7239ea";
     string nm(string s) => s switch { "Prospecting" => Localizer["Prospecting"].Value, "Qualification" => Localizer["Qualification"].Value, "Proposal" => Localizer["Proposal"].Value, "Negotiation" => Localizer["Negotiation"].Value, "Won" => Localizer["Won"].Value, "Lost" => Localizer["Lost"].Value, _ => s };
 }
+@{
+    // ONE batch of tags for the whole page, handed over by the controller - never a query per row.
+    var rowTags = ViewBag.RowTags as Dictionary<int, List<CrossBuy.Models.Context.Platform.Tag>>
+                  ?? new Dictionary<int, List<CrossBuy.Models.Context.Platform.Tag>>();
+    List<CrossBuy.Models.Context.Platform.Tag> tagsOf(int id) =>
+        rowTags.TryGetValue(id, out var t) ? t : new List<CrossBuy.Models.Context.Platform.Tag>();
+    // Bounded on purpose: a row is a summary. Three chips read at a glance; twelve are a wall.
+    const int MaxChips = 3;
+}
 @foreach (var o in Model)
 {
-    <tr data-id="@o.Id" data-title="@o.Title" data-titleen="@o.TitleEn" data-accountid="@o.AccountId" data-accountname="@o.CustomerName" data-stage="@o.Stage" data-amount="@o.Amount" data-prob="@o.Probability" data-close="@(o.ExpectedCloseDate?.ToString("yyyy-MM-dd"))" data-campaign="@o.CampaignId" style="border-bottom:1px dashed #eef1f6;">
-        <td class="ps-4 fw-bold text-gray-800">@(isEn ? (string.IsNullOrWhiteSpace(o.TitleEn) ? o.Title : o.TitleEn) : o.Title)</td>
+    <tr data-id="@o.Id" data-tags="@string.Join(",", tagsOf(o.Id).Select(t => t.ID))" data-title="@o.Title" data-titleen="@o.TitleEn" data-accountid="@o.AccountId" data-accountname="@o.CustomerName" data-stage="@o.Stage" data-amount="@o.Amount" data-prob="@o.Probability" data-close="@(o.ExpectedCloseDate?.ToString("yyyy-MM-dd"))" data-campaign="@o.CampaignId" style="border-bottom:1px dashed #eef1f6;">
+        <td class="ps-4 fw-bold text-gray-800">@(isEn ? (string.IsNullOrWhiteSpace(o.TitleEn) ? o.Title : o.TitleEn) : o.Title)
+            @{ var rt = tagsOf(o.Id); }
+            @if (rt.Count > 0)
+            {
+                <div class="d-flex flex-wrap gap-1 mt-1">
+                    @foreach (var tg in rt.Take(MaxChips)) { <span class="badge badge-light-primary fs-9">@tg.Name</span> }
+                    @if (rt.Count > MaxChips) { <span class="badge badge-light fs-9" title="@string.Join(", ", rt.Skip(MaxChips).Select(x => x.Name))">+@(rt.Count - MaxChips)</span> }
+                </div>
+            }
+            </td>
         <td class="text-muted">@(o.CustomerName ?? "—")</td>
         <td class="text-end fw-bold">@o.Amount.ToString("N2")</td>
         <td class="text-center">@o.Probability%</td>

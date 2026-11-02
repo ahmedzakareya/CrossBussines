@@ -17,6 +17,14 @@ namespace CrossBuy.BL
         public bool HasAttachment { get; set; }
         public string Kind { get; set; } = "New";
         public DateTime? At { get; set; }
+
+        // ---- WHO THIS WENT TO, WHEN WE KNOW THEM ------------------------------------------
+        //
+        // A mail row addresses an EMAIL, not an employee: most recipients are customers, vendors
+        // or nobody on file. So this is null far more often than not, and the row falls back to
+        // the coloured initial - which is the honest rendering of "we have no picture of this
+        // address", not a placeholder waiting to be fixed.
+        public string? RecipientPhoto { get; set; }
     }
     public class MailFull
     {
@@ -30,6 +38,22 @@ namespace CrossBuy.BL
         public bool Starred { get; set; }
         public DateTime? SentAt { get; set; }
         public DateTime? CreatedAt { get; set; }
+
+        // The message's OWN state, so the screen can tell "delete" from "delete forever"
+        // without being told which folder the user arrived from - a link can be shared,
+        // bookmarked or reloaded, and a query-string folder would be a guess by then.
+        public DateTime? DeletedAt { get; set; }
+
+        /// THE SAME PICTURE THE LIST ALREADY SHOWS. The mailbox resolved a recipient's photo and the
+        /// opened message did not, so the one screen that has room for a face fell back to a coloured
+        /// letter while the cramped row beside it showed the person. Null stays the common answer -
+        /// most addresses belong to nobody on file - and the initial is the honest rendering of that.
+        public string? RecipientPhoto { get; set; }
+
+        /// The meeting this message IS, when it carries one. Null for ordinary mail, and null for an
+        /// invitation this reader cannot parse - the attachment chip still shows either way.
+        public MailInvite? Invite { get; set; }
+
         public List<MailAttachmentDto> Attachments { get; set; } = new();
     }
     public class MailAttachmentDto { public string FilePath { get; set; } = ""; public string FileName { get; set; } = ""; public long Size { get; set; } }
@@ -49,7 +73,19 @@ namespace CrossBuy.BL
         /// what CommMessageDispatcherHostedService uses, so the outbox store stays the single writer of status
         /// (and Attempts is incremented exactly once, by the claim).
         Task<(bool ok, string? error)> TransmitAsync(int id, CancellationToken cancellationToken = default);
-        Task<bool> TrashAsync(int companyId, int id);
+        // ---- DELETE, THE WAY A MAIL CLIENT MEANS IT -------------------------------------------
+        //
+        // Delete is TWO operations wearing one word, and which one you get depends on where you are
+        // standing. From any folder it MOVES the message to Deleted Items and nothing is lost. From
+        // inside Deleted Items it is final. That is the rule every mail client has taught people to
+        // expect, and getting it wrong in either direction is the kind of mistake a user cannot undo.
+        //
+        // ALL FOUR TAKE A SET. A mailbox is a list and people act on lists - select six, delete six.
+        // A per-row call in a loop would be six round trips and six chances to half-finish.
+        Task<int> TrashAsync(int companyId, IReadOnlyCollection<int> ids);
+        Task<int> RestoreAsync(int companyId, IReadOnlyCollection<int> ids);
+        Task<int> DeleteForeverAsync(int companyId, IReadOnlyCollection<int> ids);
+        Task<int> EmptyTrashAsync(int companyId);
         Task<bool> ToggleStarAsync(int companyId, int id);
         bool SmtpConfigured { get; }
     }
@@ -192,6 +228,47 @@ namespace CrossBuy.BL
             return text.Length > 100 ? text[..100] : text;
         }
 
+        /// The photo for each of these addresses, in one round trip.
+        ///
+        /// ONE QUERY FOR THE PAGE, not one per row: a mailbox renders dozens of rows and a lookup
+        /// inside the loop is the N+1 every list in this product is written to avoid.
+        ///
+        /// COMPANY-SCOPED, and that is not decoration. Matching on an email alone would let an
+        /// address that also exists in another tenant put THAT employee's face on this company's
+        /// mail - a small leak, and a confusing one.
+        ///
+        /// CASE- AND SPACE-INSENSITIVE, because an address typed by hand is not a key: the same
+        /// person appears as "Ahmed.Zakarya@..." and "ahmed.zakarya@..." in the same mailbox.
+        private async Task<Dictionary<string, string>> RecipientPhotosAsync(
+            int companyId, IReadOnlyCollection<string> addresses)
+        {
+            var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            if (companyId <= 0 || addresses == null || addresses.Count == 0) return result;
+
+            var wanted = addresses
+                .Where(a => !string.IsNullOrWhiteSpace(a))
+                .Select(a => a.Trim().ToLowerInvariant())
+                .Distinct()
+                .ToList();
+            if (wanted.Count == 0) return result;
+
+            var rows = await _db.Employee.AsNoTracking()
+                .Where(e => e.EmpCompanyID == companyId
+                         && e.Email != null
+                         && e.ProfileImage != null
+                         && e.ProfileImage != ""
+                         && wanted.Contains(e.Email.Trim().ToLower()))
+                .Select(e => new { e.Email, e.ProfileImage })
+                .ToListAsync();
+
+            foreach (var r in rows)
+            {
+                var key = r.Email!.Trim();
+                if (!result.ContainsKey(key)) result[key] = r.ProfileImage!;
+            }
+            return result;
+        }
+
         public async Task<List<MailListItem>> ListAsync(int companyId, string folder, string? q)
         {
             var query = _db.CommMessages.AsNoTracking().Where(x => x.CompanyID == companyId);
@@ -204,11 +281,16 @@ namespace CrossBuy.BL
             var ids = rows.Select(r => r.Id).ToList();
             var withAtt = await _db.CommAttachments.AsNoTracking().Where(a => ids.Contains(a.CommMessageId)).Select(a => a.CommMessageId).Distinct().ToListAsync();
             var set = withAtt.ToHashSet();
+
+            // One lookup for the whole page; most addresses will not be on file and that is normal.
+            var photos = await RecipientPhotosAsync(companyId, rows.Select(r => r.ToAddress).ToList());
+
             return rows.Select(r => new MailListItem
             {
                 Id = r.Id, ToAddress = r.ToAddress, Subject = r.Subject,
                 Preview = Plain(r.Body),
                 Status = r.Status, Starred = r.Starred, HasAttachment = set.Contains(r.Id), Kind = r.Kind, At = r.SentAt ?? r.CreatedAt,
+                RecipientPhoto = r.ToAddress != null && photos.TryGetValue(r.ToAddress.Trim(), out var p) ? p : null,
             }).ToList();
         }
 
@@ -230,20 +312,167 @@ namespace CrossBuy.BL
         {
             var x = await _db.CommMessages.AsNoTracking().FirstOrDefaultAsync(m => m.Id == id && m.CompanyID == companyId);
             if (x == null) return null;
-            return new MailFull
+
+            var full = new MailFull
             {
                 Id = x.Id, ToAddress = x.ToAddress, Cc = x.Cc, Subject = x.Subject, Body = x.Body, Status = x.Status,
                 Error = x.Error, Starred = x.Starred, SentAt = x.SentAt, CreatedAt = x.CreatedAt,
+                DeletedAt = x.DeletedAt,
                 Attachments = await _db.CommAttachments.AsNoTracking().Where(a => a.CommMessageId == x.Id)
                     .Select(a => new MailAttachmentDto { FilePath = a.FilePath, FileName = a.FileName, Size = a.Size }).ToListAsync(),
             };
+
+            // Through the SAME lookup the list uses, so the picture cannot differ between the row and
+            // the message it opens - two resolutions of "who is this address" would eventually
+            // disagree, and the one on the detail screen is the one people would believe.
+            var photos = await RecipientPhotosAsync(companyId, new[] { x.ToAddress });
+            full.RecipientPhoto = photos.TryGetValue(x.ToAddress ?? "", out var p) ? p : null;
+
+            full.Invite = await ReadInviteAsync(full.Attachments);
+            return full;
         }
 
-        public async Task<bool> TrashAsync(int companyId, int id)
+        /// The first .ics on the message, parsed. ONE file only: a message carrying two invitations
+        /// is not something this product sends, and drawing two cards would raise the question of
+        /// which one the "when" belongs to.
+        ///
+        /// READ FROM DISK, not from the database, because that is where the bytes are. A missing file
+        /// - swept, moved, written by another instance - yields no card rather than an error.
+        private async Task<MailInvite?> ReadInviteAsync(List<MailAttachmentDto> attachments)
         {
-            var m = await _db.CommMessages.FirstOrDefaultAsync(x => x.Id == id && x.CompanyID == companyId);
-            if (m == null) return false;
-            m.DeletedAt = DateTime.UtcNow; await _db.SaveChangesAsync(); return true;
+            var ics = attachments.FirstOrDefault(a =>
+                a.FileName.EndsWith(".ics", StringComparison.OrdinalIgnoreCase)
+                || a.FilePath.EndsWith(".ics", StringComparison.OrdinalIgnoreCase));
+            if (ics == null) return null;
+
+            try
+            {
+                var phys = Path.Combine(_env.WebRootPath,
+                    ics.FilePath.TrimStart('/', '\\').Replace('/', Path.DirectorySeparatorChar));
+                if (!System.IO.File.Exists(phys)) return null;
+
+                // Bounded: an invitation is a few hundred bytes and this runs on a page render.
+                var info = new FileInfo(phys);
+                if (info.Length > 256 * 1024) return null;
+
+                return MailInvite.TryParse(await System.IO.File.ReadAllTextAsync(phys));
+            }
+            catch (IOException) { return null; }
+            catch (UnauthorizedAccessException) { return null; }
+        }
+
+        // ---- MOVE TO DELETED ITEMS ----------------------------------------------------------
+        //
+        // Reversible by construction: the row stays and only DeletedAt is stamped, which is the same
+        // flag the Trash folder selects on. Nothing is read from disk and no file is touched.
+        //
+        // ALREADY-TRASHED IDS ARE SKIPPED rather than re-stamped. Re-stamping would move a message's
+        // deletion date forward every time it was selected, and a retention sweep that one day reads
+        // that date would keep the oldest rubbish the longest.
+        public async Task<int> TrashAsync(int companyId, IReadOnlyCollection<int> ids)
+        {
+            var rows = await ScopedAsync(companyId, ids, trashed: false);
+            if (rows.Count == 0) return 0;
+
+            var now = DateTime.UtcNow;
+            foreach (var m in rows) m.DeletedAt = now;
+            await _db.SaveChangesAsync();
+            return rows.Count;
+        }
+
+        /// Put it back where it was. Only a trashed message can be restored, so a double-click cannot
+        /// un-delete something that was never deleted.
+        public async Task<int> RestoreAsync(int companyId, IReadOnlyCollection<int> ids)
+        {
+            var rows = await ScopedAsync(companyId, ids, trashed: true);
+            if (rows.Count == 0) return 0;
+
+            foreach (var m in rows) m.DeletedAt = null;
+            await _db.SaveChangesAsync();
+            return rows.Count;
+        }
+
+        // ---- DELETE FOREVER ------------------------------------------------------------------
+        //
+        // ONLY FROM DELETED ITEMS, and the predicate says so rather than the caller promising it. A
+        // permanent delete that could be reached from the inbox would be one mis-posted parameter away
+        // from destroying live mail.
+        //
+        // THE ATTACHMENTS GO WITH IT - rows AND the bytes on disk. Leaving the files behind would turn
+        // every permanent delete into a slow leak of exactly the material the user asked to be rid of.
+        //
+        // A FILE THAT WILL NOT DELETE DOES NOT ABORT THE DELETE. It is logged and the message still
+        // goes: a locked or already-missing file must not leave the user staring at mail they have
+        // twice asked to remove. The rows are the record; the file is a copy of it.
+        public async Task<int> DeleteForeverAsync(int companyId, IReadOnlyCollection<int> ids)
+        {
+            var rows = await ScopedAsync(companyId, ids, trashed: true);
+            return rows.Count == 0 ? 0 : await PurgeAsync(rows);
+        }
+
+        /// Outlook's "Empty folder": everything currently in Deleted Items, for this company only.
+        public async Task<int> EmptyTrashAsync(int companyId)
+        {
+            if (companyId <= 0) return 0;
+            var rows = await _db.CommMessages
+                .Where(x => x.CompanyID == companyId && x.DeletedAt != null)
+                .ToListAsync();
+            return rows.Count == 0 ? 0 : await PurgeAsync(rows);
+        }
+
+        // ---- the two halves every operation above shares -------------------------------------
+
+        /// THE TENANT AND THE FOLDER ARE BOTH IN THE PREDICATE, and neither is the caller's to assert.
+        /// An id is only ever a lookup key: a message belonging to another company is not found here,
+        /// so no amount of guessing ids reaches it.
+        private async Task<List<CommMessage>> ScopedAsync(
+            int companyId, IReadOnlyCollection<int> ids, bool trashed)
+        {
+            if (companyId <= 0 || ids == null || ids.Count == 0) return new List<CommMessage>();
+
+            var wanted = ids.Where(i => i > 0).Distinct().ToList();
+            if (wanted.Count == 0) return new List<CommMessage>();
+
+            return await _db.CommMessages
+                .Where(x => x.CompanyID == companyId
+                         && wanted.Contains(x.Id)
+                         && (trashed ? x.DeletedAt != null : x.DeletedAt == null))
+                .ToListAsync();
+        }
+
+        private async Task<int> PurgeAsync(List<CommMessage> rows)
+        {
+            var messageIds = rows.Select(m => m.Id).ToList();
+            var attachments = await _db.CommAttachments
+                .Where(a => messageIds.Contains(a.CommMessageId))
+                .ToListAsync();
+
+            foreach (var a in attachments)
+            {
+                // Resolved exactly as the sender resolves it, so the two cannot disagree about where
+                // a stored path lives on disk.
+                var phys = Path.Combine(_env.WebRootPath,
+                    a.FilePath.TrimStart('/', '\\').Replace('/', Path.DirectorySeparatorChar));
+                try
+                {
+                    if (System.IO.File.Exists(phys)) System.IO.File.Delete(phys);
+                }
+                catch (IOException ex)
+                {
+                    _log.LogWarning(ex, "Mail attachment {Path} could not be removed; the message is "
+                        + "still deleted and the file is orphaned.", a.FilePath);
+                }
+                catch (UnauthorizedAccessException ex)
+                {
+                    _log.LogWarning(ex, "Mail attachment {Path} could not be removed; the message is "
+                        + "still deleted and the file is orphaned.", a.FilePath);
+                }
+            }
+
+            _db.CommAttachments.RemoveRange(attachments);
+            _db.CommMessages.RemoveRange(rows);
+            await _db.SaveChangesAsync();
+            return rows.Count;
         }
         public async Task<bool> ToggleStarAsync(int companyId, int id)
         {

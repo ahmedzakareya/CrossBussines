@@ -1,4 +1,4 @@
-<#
+﻿<#
 =============================================================================================
 R1 - SQL governance validation.
 
@@ -70,6 +70,17 @@ catch { Write-Host "manifest is not valid JSON: $_" -ForegroundColor Red; exit 3
 try { $registry = Get-Content $registryPath -Raw -Encoding UTF8 | ConvertFrom-Json }
 catch { Write-Host "slice registry is not valid JSON: $_" -ForegroundColor Red; exit 3 }
 
+try {
+    . (Join-Path $PSScriptRoot 'sql-quarantine-policy.ps1')
+    $quarantine = Get-ValidatedSqlQuarantine $repo $manifest
+} catch { Write-Host "SQL quarantine validation failed: $_" -ForegroundColor Red; exit 3 }
+
+$deferredPaths = @()
+$debtPath = Join-Path $repo 'CrossBuy\deploy\sql\manifest-known-debt.json'
+if (Test-Path -LiteralPath $debtPath) {
+    $deferredPaths = @((Get-Content -LiteralPath $debtPath -Raw -Encoding UTF8 | ConvertFrom-Json).debt |
+        Where-Object { $_.class -eq 'D' } | ForEach-Object { $_.path })
+}
 $canonicalRoot = $registry.canonicalAuthoredRoot
 $violations = 0
 $notDeployable = 0
@@ -107,11 +118,20 @@ else {
 }
 
 Write-Host ''
+foreach ($deferredPath in $deferredPaths) {
+    Write-Fail 'G2' ("unresolved object collision: {0}; release acceptance required" -f $deferredPath)
+    $notDeployable++
+}
+
 Write-Host 'G3  not-deployable scripts'
 $nd = @($manifest.scripts | Where-Object { $_.idempotency -eq 'not-deployable' })
 if ($nd.Count -eq 0) { Write-Ok 'none' }
 else {
     foreach ($s in $nd) {
+        if ($quarantine.ContainsKey($s.path)) {
+            Write-Ok ("QUARANTINED history only: {0}; excluded from every deployment" -f $s.path)
+            continue
+        }
         $reason = $s.excludedReason
         if ([string]::IsNullOrWhiteSpace($reason)) { $reason = 'judged unsafe to re-run' }
         Write-Fail 'G3' ("{0} - {1}" -f $s.path, $reason)
@@ -127,16 +147,29 @@ else {
 Write-Host ''
 Write-Host ("G4  canonical authored root ({0})" -f $canonicalRoot)
 $knownBacklog = @($registry.slices | Where-Object { $_.tree -like 'PACKAGE*' } | ForEach-Object { $_.slice })
+$originPath = Join-Path $repo 'CrossBuy\deploy\package-sql-origin.json'
+if (Test-Path -LiteralPath $originPath) {
+    $origins = Get-Content -LiteralPath $originPath -Raw -Encoding UTF8 | ConvertFrom-Json
+    $knownBacklog += @($origins.copies | ForEach-Object { [IO.Path]::GetFileName($_.packagePath) })
+    $knownBacklog += @($origins.legacyUnmigrated | ForEach-Object { [IO.Path]::GetFileName($_.path) })
+    $packageOut = & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo 'CrossBuy\deploy\publish-sql-package.ps1') 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        Write-Fail 'G4' ('generated package copy drift: ' + ($packageOut | Out-String).Trim())
+        $violations++
+    }
+}
 $pkgOnDisk = @(Get-ChildItem (Join-Path $repo 'deploy\sql') -Filter *.sql -File -ErrorAction SilentlyContinue)
 $unexpected = @()
 foreach ($f in $pkgOnDisk) {
-    if ($knownBacklog -notcontains $f.Name -and $registry.slices.slice -notcontains $f.Name) {
+    if ($knownBacklog -notcontains $f.Name) {
         # not individually registered; covered by the bulk backlog entry only if it predates R1
         $unexpected += $f.Name
     }
 }
 Write-Host ("        package-tree slices on disk: {0} (migration backlog per D-38)" -f $pkgOnDisk.Count)
-Write-Ok 'no NEW slice authored outside the canonical root in this run'
+if ($unexpected.Count -gt 0) {
+    foreach ($name in $unexpected) { Write-Fail 'G4' ("unclaimed SQL outside canonical root: {0}" -f $name); $violations++ }
+} else { Write-Ok 'package copies and explicit legacy exceptions only; no new package-root authoring' }
 
 # ---------------------------------------------------------------------------------------------
 # G5 / G7 - registry <-> disk agreement for individually-claimed slices.
@@ -162,28 +195,45 @@ else {
 }
 
 # ---------------------------------------------------------------------------------------------
-# G6 - manifest freshness. If a .sql file is newer than manifest.json, the registry is describing
-# a tree that no longer exists.
+# G6 - manifest freshness is content identity, not timestamp ordering.
+# Copies can retain old timestamps on changed SQL; touching unchanged SQL does not change identity.
 # ---------------------------------------------------------------------------------------------
 Write-Host ''
-Write-Host 'G6  manifest freshness'
+Write-Host 'G6  manifest content identity'
 if ($SkipStaleCheck) { Write-Host '        skipped (-SkipStaleCheck)' -ForegroundColor Yellow }
 else {
-    $manifestTime = (Get-Item $manifestPath).LastWriteTimeUtc
-    $newer = @()
-    foreach ($dir in @('CrossBuy\deploy\sql', 'deploy\sql')) {
-        $p = Join-Path $repo $dir
-        if (Test-Path $p) {
-            $newer += @(Get-ChildItem $p -Filter *.sql -File -Recurse -ErrorAction SilentlyContinue |
-                        Where-Object { $_.LastWriteTimeUtc -gt $manifestTime })
+    $registered = @{}
+    foreach ($entry in @($manifest.scripts)) {
+        $relative = $entry.path.Replace('\', '/')
+        if ($registered.ContainsKey($relative)) {
+            Write-Fail 'G6' ("duplicate manifest path: {0}" -f $relative); $stale++; continue
+        }
+        $registered[$relative] = $true
+        $fullPath = Join-Path $repo $relative
+        if (-not (Test-Path -LiteralPath $fullPath -PathType Leaf)) {
+            Write-Fail 'G6' ("registered file missing: {0}" -f $relative); $stale++; continue
+        }
+         $sha = [System.Security.Cryptography.SHA256]::Create()
+        try { $actual = ([System.BitConverter]::ToString($sha.ComputeHash([System.IO.File]::ReadAllBytes($fullPath))) -replace '-', '').ToLowerInvariant() }
+        finally { $sha.Dispose() }
+        $expectedHash = if ($entry.rawSha256) { $entry.rawSha256 } else { $entry.sha256 }
+        if ($actual -ne $expectedHash) {
+            Write-Fail 'G6' ("content hash differs: {0}" -f $relative); $stale++
         }
     }
-    if ($newer.Count -eq 0) { Write-Ok 'manifest is at least as new as every .sql file' }
-    else {
-        foreach ($f in $newer) { Write-Fail 'G6' ("{0} is newer than manifest.json" -f $f.Name) }
-        Write-Host '        re-run: powershell -File CrossBuy/deploy/scan-sql-manifest.ps1' -ForegroundColor Yellow
-        $stale = $newer.Count
+    foreach ($dir in @('CrossBuy\deploy\sql', 'deploy\sql')) {
+        $folder = Join-Path $repo $dir
+        if (Test-Path -LiteralPath $folder) {
+            foreach ($file in @(Get-ChildItem -LiteralPath $folder -Filter *.sql -File -Recurse)) {
+                $relative = $file.FullName.Substring($repo.Length).TrimStart('\', '/').Replace('\', '/')
+                if (-not $registered.ContainsKey($relative) -and $deferredPaths -notcontains $relative) {
+                    Write-Fail 'G6' ("deployment SQL absent from manifest: {0}" -f $relative); $stale++
+                }
+            }
+        }
     }
+    if ($stale -eq 0) { Write-Ok 'registered SQL hashes match; deployment roots contain no unregistered SQL' }
+    else { Write-Host '        re-run: powershell -File CrossBuy/deploy/scan-sql-manifest.ps1' -ForegroundColor Yellow }
 }
 
 # ---------------------------------------------------------------------------------------------

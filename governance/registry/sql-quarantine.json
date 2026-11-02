@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "purpose": "Exact historical exclusion admission; does not make any SQL deployable.",
+  "entries": [
+    {
+      "path": "script.sql",
+      "action": "NEVER_DEPLOY",
+      "lfSha256": "3f6eef6eaf48985cfd60750b6ab4e4fe3d7690159948549a015b9656f0a02d96",
+      "reason": "Unversioned historical scratch with unguarded schema creation; retain as history and exclude from every deployment plan.",
+      "decision": "docs/deployment/R1-SQL-Quarantine.md"
+    }
+  ]
+}

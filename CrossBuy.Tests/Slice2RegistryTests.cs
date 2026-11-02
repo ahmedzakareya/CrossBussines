@@ -37,8 +37,9 @@ namespace CrossBuy.Tests
             Assert.True(definition.SupportsTimeline);
             Assert.True(definition.SupportsSearch);
 
-            // Explicit non-goals stay off.
-            Assert.False(definition.SupportsFiles);
+            // Document conversations gained attachments after slice 2; manufacturing
+            // remains outside that attachment contract.
+            Assert.Equal(code is EntityRegistry.Customer or EntityRegistry.PurchaseInvoice, definition.SupportsFiles);
             Assert.False(definition.SupportsFollowers);
         }
 
@@ -178,12 +179,56 @@ namespace CrossBuy.Tests
         public void The_record_picker_did_not_change_when_PurchaseInvoice_was_added()
         {
             using var host = new PlatformTestHost();
-            ITaskLinkResolver resolver = new TaskLinkResolver(host.Registry());
+            var registry = host.Registry();
+            ITaskLinkResolver resolver = new TaskLinkResolver(registry);
+            var keys = resolver.Types().Select(t => t.Key).ToArray();
 
-            // PurchaseInvoice is registered but was never a TM-2 picker type, so it must stay out.
+            // THIS TEST'S OWN POINT, UNCHANGED: PurchaseInvoice is registered but was never a TM-2
+            // picker type, so it must stay out. That is now asserted BY NAME rather than left implicit
+            // in the list below - a stale list could stop covering it, a named assertion cannot.
+            Assert.DoesNotContain(EntityRegistry.PurchaseInvoice, keys);
+            Assert.True(registry.TryGetDefinition(EntityRegistry.PurchaseInvoice, out var purchaseInvoice)
+                        && purchaseInvoice != null);
+            Assert.False(purchaseInvoice!.ListedInRecordPicker);
+
+            // THE APPROVED CONTRACT, SPELLED OUT. The same nineteen types, in the same declaration
+            // order, that EntityRegistryTests.TaskLinkResolver_preserves_its_pre_kernel_behaviour pins
+            // - the three picker guards must agree, and before this wave two of them still carried the
+            // pre-kernel seven.
+            //
+            // IT IS A LITERAL ON PURPOSE. TaskLinkResolver.Types() IS
+            // `GetDefinitions().Where(d => d.ListedInRecordPicker)`, so deriving the expectation from
+            // the registry would restate the implementation and catch nothing at all.
+            //
+            // WHY NINETEEN, attributed: 57b169d established the original seven; aced8c6 added the eight
+            // inventory documents and SalesReturn; 018a477 added PurchaseReturn, Receipt and Payment.
+            // This expectation was last touched before those landed and simply never followed.
             Assert.Equal(
-                new[] { "SalesInvoice", "Customer", "ManufWorkOrder", "PosOrder", "Employee", "Project", "Item" },
-                resolver.Types().Select(t => t.Key).ToArray());
+                new[]
+                {
+                    "SalesInvoice",
+                    "PurchaseOrder", "GoodsReceipt", "SalesOrder", "DeliveryNote",
+                    "StockTransfer", "StockCount", "StockWriteOff", "LandedCost",
+                    "SalesReturn", "PurchaseReturn", "Receipt", "Payment",
+                    "Customer", "ManufWorkOrder", "PosOrder", "Employee", "Project", "Item",
+                },
+                keys);
+
+            // A request or an approval is somebody's workflow item, not a record you attach a task to.
+            // Named here so a flipped flag fails on a line that says why, in every picker guard.
+            foreach (var excluded in new[]
+                     {
+                         EntityRegistry.InventoryApproval,
+                         EntityRegistry.LeaveRequest,
+                         EntityRegistry.EmployeeRequest,
+                     })
+            {
+                Assert.True(registry.TryGetDefinition(excluded, out var def) && def != null,
+                    $"{excluded} should still be a registered entity");
+                Assert.False(def!.ListedInRecordPicker,
+                    $"{excluded} is a request/approval and must not be offered by the record picker");
+                Assert.DoesNotContain(excluded, keys);
+            }
         }
 
         // ---- Canonical event names for all three pilots ----

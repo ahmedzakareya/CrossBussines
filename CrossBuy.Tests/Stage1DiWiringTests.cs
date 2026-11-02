@@ -1,3 +1,5 @@
+using EmployeeDocumentOwnerResolver = CrossBuy.BL.EmployeeDocumentOwnerResolver;
+using CrossBuy.BL;
 using CrossBuy.BL.Platform;
 using CrossBuy.BL.ModulePermissions;
 using CrossBuy.Models.Context;
@@ -37,6 +39,41 @@ namespace CrossBuy.Tests
         }
 
         public void Dispose() => _connection.Dispose();
+
+        [Fact]
+        public void Every_background_worker_constructs_as_a_valid_singleton_without_starting_work()
+        {
+            var services = new ServiceCollection();
+            services.AddLogging();
+            services.AddOptions<BusinessEventDispatchOptions>();
+            services.AddSingleton<IWorkerGate, DeniedWorkerGate>();
+            services.AddSingleton(new CertificationRuntimeState(true));
+            services.AddSingleton(new CrossBuy.BL.Reporting.ReportScheduleWorkerOptions());
+            services.AddHostedService<BusinessEventDispatchWorker>();
+            services.AddHostedService<CrmReminderHostedService>();
+            services.AddHostedService<IntegrityCheckHostedService>();
+            services.AddHostedService<CrossBuy.BL.Reporting.ReportScheduleHostedService>();
+            services.AddHostedService<TaskGeneratorHostedService>();
+            services.AddHostedService<TaskScheduleMatchHostedService>();
+            services.AddHostedService<CrossBuy.BL.TasksCalendar.TaskEscalationHostedService>();
+            using var provider = services.BuildServiceProvider(new ServiceProviderOptions
+            {
+                ValidateOnBuild = true,
+                ValidateScopes = true,
+            });
+            var first = provider.GetServices<Microsoft.Extensions.Hosting.IHostedService>().ToArray();
+            var second = provider.GetServices<Microsoft.Extensions.Hosting.IHostedService>().ToArray();
+            Assert.Equal(7, first.Length);
+            for (var i = 0; i < first.Length; i++) Assert.Same(first[i], second[i]);
+            // Constructing the production workers proves DI lifetime safety without
+            // starting timers, sending messages or resolving a live database.
+        }
+
+        private sealed class DeniedWorkerGate : IWorkerGate
+        {
+            public Task<bool> WaitUntilAllowedAsync(string workerName, CancellationToken cancellationToken)
+                => Task.FromResult(false);
+        }
 
         // Mirrors the Program.cs registration: the scoped holder, the singleton write guard, and AddDbContext with
         // the (IServiceProvider, DbContextOptionsBuilder) overload that attaches the interceptor.

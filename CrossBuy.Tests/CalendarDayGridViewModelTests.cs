@@ -149,7 +149,7 @@ namespace CrossBuy.Tests
             await f.SeedPeopleAsync(10, 11);
             var day = LocalDay(3);
             await f.EventAsync("Ten only", day.AddHours(9).ToUniversalTime(), TimeSpan.FromHours(1), attendees: new[] { 10 });
-            await f.EventAsync("Eleven only", day.AddHours(11).ToUniversalTime(), TimeSpan.FromHours(1), attendees: new[] { 11 });
+            await f.EventAsync("Eleven only", day.AddHours(11).ToUniversalTime(), TimeSpan.FromHours(1), attendees: new[] { 11 }, ownerEmpId: 11);
             await f.EventAsync("Both", day.AddHours(14).ToUniversalTime(), TimeSpan.FromHours(1), attendees: new[] { 10, 11 });
 
             var page = await f.Svc.BuildTimelinePageAsync(1, day);
@@ -287,6 +287,10 @@ namespace CrossBuy.Tests
 
         private static string ProjectRoot()
         {
+            var configuredRoot = Environment.GetEnvironmentVariable("CROSSBUY_REPO_ROOT");
+            if (!string.IsNullOrWhiteSpace(configuredRoot)
+                && Directory.Exists(Path.Combine(configuredRoot, "CrossBuy", "Views", "Calendar")))
+                return Path.Combine(configuredRoot, "CrossBuy");
             var dir = new DirectoryInfo(AppContext.BaseDirectory);
             while (dir != null && !Directory.Exists(Path.Combine(dir.FullName, "CrossBuy", "Views", "Calendar")))
                 dir = dir.Parent;

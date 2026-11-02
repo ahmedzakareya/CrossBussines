@@ -147,11 +147,14 @@ namespace CrossBuy.Tests
 			Assert.Contains(result.Refusals, r => r.Contains("REFUSED (outbound messaging)"));
 		}
 
-		[Fact]
-		public async Task A_correct_development_target_clears_all_three_guards()
+        [SkippableFact]
+        public async Task A_correct_development_target_clears_all_three_guards()
 		{
 			using var db = ContextFor("CrossBuyDev");
 			var result = await UatSeedGuard.EvaluateAsync(db, new Env("Development"), Config(smtpEnabled: false));
+
+            Skip.If(result.Refusals.Any(r => r.Contains("'CrossBuyDev' is not reachable", StringComparison.Ordinal)),
+                "This database reachability proof requires an existing CrossBuyDev; no catalogue is created by this test.");
 
 			// The "REFUSED (database)" line below DOES require a reachable CrossBuyDev — it is the
 			// reachability refusal. An earlier comment here claimed the opposite ("must pass on a machine with

@@ -99,7 +99,7 @@ namespace CrossBuy.Hubs
                 var empId = Context.Items.TryGetValue("empId", out var v) && v is int cached ? cached : await EmpIdAsync() ?? 0;
                 if (empId <= 0) return false;
                 var companyId = await _db.Employee.AsNoTracking()
-                    .Where(e => e.ID == empId).Select(e => e.EmpCompanyID).FirstOrDefaultAsync();
+                    .Where(e => e.ID == empId && e.IsActive).Select(e => e.EmpCompanyID).FirstOrDefaultAsync();
                 if (companyId <= 0) return false;
                 var ctx = new CrossBuy.Models.Platform.BusinessContext
                 {
@@ -118,6 +118,7 @@ namespace CrossBuy.Hubs
         // typing indicator → broadcast to the room (except caller)
         public async Task Typing(int conversationId)
         {
+            if (conversationId <= 0 || !await MayJoinAsync(conversationId)) return;
             if (Context.Items.TryGetValue("empId", out var v) && v is int empId)
                 await Clients.OthersInGroup(ConvGroup(conversationId)).SendAsync("typing", new { conversationId, employeeId = empId });
         }

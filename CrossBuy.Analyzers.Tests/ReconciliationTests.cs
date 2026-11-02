@@ -247,9 +247,12 @@ public class ReconciliationTests
     // Portal Contacts screen added NO controller - it is a partial of CrmController, deliberately,
     // because the controller count is frozen and a portal contact is a customer's person.
     // ----------------------------------------------------------------------------------------------
-    private const int FrozenMutating = 470;
-    private const int FrozenAttributeProtected = 167;
-    private const int FrozenInBodyProtected = 208;
+    // R1 semantic inventory reconciliation: 481 = 170 + 217 + 1 + 93.
+    // The gap ID set remains identical to the existing 93-entry baseline.
+    // New protected identities are recorded in frozenBaselineHistory; no allowance was added.
+    private const int FrozenMutating = 481;
+    private const int FrozenAttributeProtected = 170;
+    private const int FrozenInBodyProtected = 217;
 
     /// <summary>
     /// Mutating endpoints that are unauthenticated ON PURPOSE and say so in source. NOT protected and
@@ -259,7 +262,7 @@ public class ReconciliationTests
     private const int FrozenAnonymousByDesign = 1;
 
     /// <summary>The enforced invariant. This one may only ever shrink - and here it did not move.</summary>
-    private const int FrozenGaps = 94;
+    private const int FrozenGaps = 93;
 
     // Controllers carrying at least one endpoint the analyzer models. Grew 40 -> 44 with the platform
     // modernization controllers that arrived with the same increment (Reporting, Workspace, Calendar and the
@@ -296,7 +299,7 @@ public class ReconciliationTests
     // and ClientPortalConversationsController - the external conversation surface. Portal Contacts
     // added NO controller: it is a partial of CrmController on purpose, because this count is frozen
     // and a portal contact is a customer's person, so it answers to the CRM authority already there.
-    private const int FrozenControllers = 55;
+    private const int FrozenControllers = 56;
 
     private static readonly Lazy<AuthorizationInventoryResult> Inventory = new(() =>
         AuthorizationInventory.Build(RealSourceCompilation.Value, CancellationToken.None));

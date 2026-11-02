@@ -2319,5 +2319,68 @@ namespace CrossBuy.Resources {
                 return ResourceManager.GetString("LanguageNameFr", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   Looks up a localized string similar to CompanyAdministratorTitle.
+        /// </summary>
+        public static string CompanyAdministratorTitle {
+            get {
+                return ResourceManager.GetString("CompanyAdministratorTitle", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to CompanyAdministratorHint.
+        /// </summary>
+        public static string CompanyAdministratorHint {
+            get {
+                return ResourceManager.GetString("CompanyAdministratorHint", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to AdministratorEmail.
+        /// </summary>
+        public static string AdministratorEmail {
+            get {
+                return ResourceManager.GetString("AdministratorEmail", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to AdministratorFullName.
+        /// </summary>
+        public static string AdministratorFullName {
+            get {
+                return ResourceManager.GetString("AdministratorFullName", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to AdministratorFullNameEn.
+        /// </summary>
+        public static string AdministratorFullNameEn {
+            get {
+                return ResourceManager.GetString("AdministratorFullNameEn", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to TemporaryPassword.
+        /// </summary>
+        public static string TemporaryPassword {
+            get {
+                return ResourceManager.GetString("TemporaryPassword", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to AdministratorCredentialsOnce.
+        /// </summary>
+        public static string AdministratorCredentialsOnce {
+            get {
+                return ResourceManager.GetString("AdministratorCredentialsOnce", resourceCulture);
+            }
+        }
     }
 }

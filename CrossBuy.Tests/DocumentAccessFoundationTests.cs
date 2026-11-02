@@ -1,3 +1,4 @@
+using EmployeeDocumentOwnerResolver = CrossBuy.BL.EmployeeDocumentOwnerResolver;
 using CrossBuy.BL;
 using CrossBuy.BL.Platform;
 using CrossBuy.Models.Context.Admin;

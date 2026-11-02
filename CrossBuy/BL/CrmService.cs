@@ -152,23 +152,47 @@ namespace CrossBuy.BL
 
 	public interface ICrmService
 	{
-		Task<(List<Lead> rows, int total)> SearchLeadsAsync(int companyId, string? q, string? status, int page, int pageSize);
+		Task<(List<Lead> rows, int total)> SearchLeadsAsync(int companyId, string? q, string? status, int page, int pageSize,
+			int[]? tagIds = null, bool tagMatchAll = false, bool unassignedOnly = false, bool overdueFollowUpOnly = false);
 		Task<Lead?> GetLeadAsync(int companyId, int id);
-		Task<(bool ok, string? error)> SaveLeadAsync(int companyId, Lead dto, string? userId);
+		/// <param name="tagIds">
+		/// The tag set this save OWNS, or null when the caller manages no tags. Null and empty are
+		/// different answers on purpose: an emptied multi-select posts no key at all, so without the
+		/// distinction "cleared every tag" would be indistinguishable from "did not touch tags", and
+		/// clearing the last chip would silently keep them. The controller turns the form's sentinel
+		/// into an empty array; here, empty means REMOVE THEM ALL.
+		/// </param>
+		Task<(bool ok, string? error)> SaveLeadAsync(int companyId, Lead dto, string? userId, int[]? tagIds = null);
 		Task<(bool ok, string? error, int accountId)> ConvertLeadToAccountAsync(int companyId, int leadId, string? userId);
 
 		// CRM 3-2: accounts (360 party) + contacts
-		Task<(List<AccountRow> rows, int total)> SearchAccountsAsync(int companyId, string? q, int page, int pageSize);
+		Task<(List<AccountRow> rows, int total)> SearchAccountsAsync(int companyId, string? q, int page, int pageSize,
+			int[]? tagIds = null, bool tagMatchAll = false, bool unassignedOnly = false);
 		Task<CrmAccount?> GetAccountAsync(int companyId, int id);
-		Task<(bool ok, string? error, int id)> SaveAccountAsync(int companyId, CrmAccount dto, string? userId);
+		/// <param name="tagIds">
+		/// The tag set this save OWNS, or null when the caller manages no tags. Null and empty are
+		/// different answers on purpose: an emptied multi-select posts no key at all, so without the
+		/// distinction "cleared every tag" would be indistinguishable from "did not touch tags", and
+		/// clearing the last chip would silently keep them. The controller turns the form's sentinel
+		/// into an empty array; here, empty means REMOVE THEM ALL.
+		/// </param>
+		Task<(bool ok, string? error, int id)> SaveAccountAsync(int companyId, CrmAccount dto, string? userId, int[]? tagIds = null);
 		Task<List<(int id, string name)>> GetAccountsForPickAsync(int companyId, string? term);
 		Task<(bool ok, string? error)> SaveContactAsync(int companyId, CrmContact dto);
 		Task<bool> DeleteContactAsync(int companyId, int id);
 
-		Task<(List<OppRow> rows, int total)> SearchOpportunitiesAsync(int companyId, string? q, string? stage, int page, int pageSize);
+		Task<(List<OppRow> rows, int total)> SearchOpportunitiesAsync(int companyId, string? q, string? stage, int page, int pageSize,
+			int[]? tagIds = null, bool tagMatchAll = false, bool unassignedOnly = false, bool overdueFollowUpOnly = false);
 		Task<List<PipelineStage>> PipelineSummaryAsync(int companyId);
 		Task<Opportunity?> GetOpportunityAsync(int companyId, int id);
-		Task<(bool ok, string? error)> SaveOpportunityAsync(int companyId, Opportunity dto, string? userId);
+		/// <param name="tagIds">
+		/// The tag set this save OWNS, or null when the caller manages no tags. Null and empty are
+		/// different answers on purpose: an emptied multi-select posts no key at all, so without the
+		/// distinction "cleared every tag" would be indistinguishable from "did not touch tags", and
+		/// clearing the last chip would silently keep them. The controller turns the form's sentinel
+		/// into an empty array; here, empty means REMOVE THEM ALL.
+		/// </param>
+		Task<(bool ok, string? error)> SaveOpportunityAsync(int companyId, Opportunity dto, string? userId, int[]? tagIds = null);
 		Task<List<OppRow>> PipelineBoardAsync(int companyId);
 		Task<(bool ok, string? error)> UpdateOpportunityStageAsync(int companyId, int id, string stage);
 
@@ -238,7 +262,66 @@ namespace CrossBuy.BL
 		private readonly INotificationService _notify;
 		private readonly ICrmAccessService _access;
 		private readonly ISellingService _selling;
-		public CrmService(CrossDbContext context, ICrmCustomerLink link, INotificationService notify, ICrmAccessService access, ISellingService selling) { _context = context; _link = link; _notify = notify; _access = access; _selling = selling; }
+
+		// =============================================================================================
+		// THE EVENT RECORDER, AND THE ONE TEST SEAM IN THIS FILE.
+		//
+		// Every other producer in this codebase takes IBusinessEventService as a REQUIRED constructor
+		// parameter, and that is the better shape. It is optional here for a governance reason rather
+		// than a design one: CRM Wave 1's suites construct CrmService directly, and SHF-65 forbids this
+		// increment from touching them — their assertions are the proof that CRM behaviour did not
+		// move. A required sixth parameter would force every one of those call sites to change.
+		//
+		// THE RISK IS REAL AND IT IS GUARDED, NOT HOPED AWAY: if the DI registration ever stopped
+		// supplying IBusinessEventService, CRM would go quiet and no behavioural test would notice.
+		// So CrmEventProducerTests resolves ICrmService FROM THE REAL CONTAINER and proves an event
+		// lands. Nothing in production constructs this service by hand.
+		//
+		// Note what this is NOT: it is not a swallowed failure. When a recorder is present its
+		// exceptions propagate and roll the CRM transaction back, which is the whole point of
+		// ADR-001. The only thing a null recorder skips is the recording itself.
+		// =============================================================================================
+		private readonly Platform.IBusinessEventService _events;
+
+		// =============================================================================================
+		// THE TAG AUTHORITY, AND WHY IT IS COMPOSED RATHER THAN INJECTED.
+		//
+		// This is the PLATFORM TagService — the same class Tasks uses, over the same tables, reading the
+		// same company vocabulary. It is composed here for the reason TaskService composes it: a
+		// required constructor parameter would force every hand-built CrmService in the CRM Wave 1
+		// suites to change, and those suites are the evidence that this increment moved no CRM
+		// behaviour. Composition keeps the field non-null on every path, so tag work can never be
+		// silently skipped the way an optional collaborator can be.
+		//
+		// It is NOT a CRM tag service. Nothing here writes TagAssignments, defines a tag, or holds a
+		// second vocabulary: every tag operation below goes through this one interface.
+		private readonly Platform.ITagService _tags;
+
+		/// The project's clock, wired for ONE concern: deciding whether a follow-up is overdue. Every
+		/// other date in this file is untouched.
+		private readonly TimeProvider _clock;
+
+		// IBusinessEventService IS REQUIRED, and the DI contract is the guarantee.
+		//
+		// It was optional for exactly one increment, and only because two hand-built test suites could
+		// not be edited under the governance in force at the time. That compromise had a real cost: a
+		// CrmService built without a recorder wrote CRM rows and published nothing, silently, and no
+		// test could tell the difference. There is deliberately NO NullBusinessEventService, no service
+		// locator lookup and no TryGetService fallback here - each of those would restore the silence
+		// under a different name. A caller that cannot supply a recorder cannot construct this service.
+		public CrmService(CrossDbContext context, ICrmCustomerLink link, INotificationService notify,
+			ICrmAccessService access, ISellingService selling, Platform.IBusinessEventService events,
+			TimeProvider? clock = null)
+		{
+			_context = context; _link = link; _notify = notify; _access = access; _selling = selling;
+			_events = events ?? throw new ArgumentNullException(nameof(events));
+			_tags = new Platform.TagService(context);
+			_clock = clock ?? TimeProvider.System;
+		}
+
+		// No null-conditional. Every authoritative CRM write path reaches a real recorder, or the object
+		// could not have been constructed.
+		private Task RecordAsync(Models.Platform.BusinessEventRecord record) => _events.RecordAsync(record);
 
 		private static decimal R2(decimal v) => Math.Round(v, 2, MidpointRounding.AwayFromZero);
 
@@ -270,8 +353,418 @@ namespace CrossBuy.BL
 		}
 		private int? Me() => _access.CurrentEmployeeId();
 
+		// =============================================================================================
+		// WAVE 1 — REFERENCE INTEGRITY ACROSS COMPANIES.
+		//
+		// Every CRM save takes its foreign keys straight off a browser POST: SaveLead carries a
+		// campaignId, SaveOpportunity an accountId and a pipelineId, SaveActivity a leadId /
+		// opportunityId / customerId, SaveContact an accountId. The ROW is stamped with the resolved
+		// company, so CompanyWriteGuardInterceptor and the global query filter are both satisfied —
+		// and neither of them looks at where the id POINTS. Company 41 could file its opportunity
+		// under company 77's account, and every later join would then read one tenant's pipeline
+		// through another tenant's party.
+		//
+		// The id is verified in the CALLER's company or the save is REFUSED. Refusing is the only
+		// honest answer: silently dropping the reference would store a record the user believes is
+		// linked, and silently keeping it is the leak itself.
+		//
+		// The message never says whose company the id belongs to — that would confirm the row exists
+		// somewhere, which is the same probe the owner-scope rule above is careful not to answer.
+		// =============================================================================================
+		private const string ForeignReference = "مرجع غير موجود في هذه الشركة";
+		// A record hidden by owner scope must be answered EXACTLY as a record that does not exist —
+		// same exception, same message. Any difference is an existence oracle over a colleague's book.
+		private const string HiddenRecord = "غير موجود";
+
+		private static async Task<bool> RefOkAsync(int? id, Func<int, Task<bool>> existsInCompany)
+			=> !id.HasValue || id.Value <= 0 || await existsInCompany(id.Value);
+
+		private Task<bool> LeadInCompanyAsync(int companyId, int id) =>
+			_context.Leads.AsNoTracking().AnyAsync(l => l.CompanyID == companyId && l.ID == id);
+		private Task<bool> AccountInCompanyAsync(int companyId, int id) =>
+			_context.CrmAccounts.AsNoTracking().AnyAsync(a => a.CompanyID == companyId && a.ID == id);
+		private Task<bool> OpportunityInCompanyAsync(int companyId, int id) =>
+			_context.Opportunities.AsNoTracking().AnyAsync(o => o.CompanyID == companyId && o.ID == id);
+		private Task<bool> CampaignInCompanyAsync(int companyId, int id) =>
+			_context.Campaigns.AsNoTracking().AnyAsync(c => c.CompanyID == companyId && c.ID == id);
+		private Task<bool> CustomerInCompanyAsync(int companyId, int id) =>
+			_context.Customers.AsNoTracking().AnyAsync(c => c.CompanyID == companyId && c.ID == id);
+		private Task<bool> PipelineInCompanyAsync(int companyId, int id) =>
+			_context.CrmPipelines.AsNoTracking().AnyAsync(p => p.CompanyID == companyId && p.ID == id);
+
+		// The polymorphic pair an Activity or a campaign member carries. An unknown type is not an
+		// error — Customer and Contact timelines are legitimate — but a KNOWN type with a foreign id is.
+		private async Task<bool> EntityRefOkAsync(int companyId, string? entityType, int? entityId)
+		{
+			if (string.IsNullOrWhiteSpace(entityType) || entityId is not int id || id <= 0) return true;
+			return entityType.Trim() switch
+			{
+				"Lead" => await LeadInCompanyAsync(companyId, id),
+				"Opportunity" => await OpportunityInCompanyAsync(companyId, id),
+				"Account" => await AccountInCompanyAsync(companyId, id),
+				"Customer" => await CustomerInCompanyAsync(companyId, id),
+				"Contact" => await _context.CrmContacts.AsNoTracking().AnyAsync(c => c.CompanyID == companyId && c.ID == id),
+				_ => true,
+			};
+		}
+
+		// =============================================================================================
+		// BUSINESS EVENT PRODUCERS.
+		//
+		// Each one is recorded INSIDE the transaction that writes the CRM row and BEFORE it commits,
+		// which is not a style choice: IBusinessEventService refuses to record without an ambient
+		// transaction precisely so that a fact and its event share one fate. Three write paths had no
+		// transaction of their own (lead, account and activity saves were a single SaveChanges), so
+		// they open one now — the transaction the producer requires, and nothing else about them
+		// changed.
+		//
+		// COMPANY. Every record carries CompanyIdOverride from the ROW, never from the ambient
+		// context. The kernel honours the override only for system callers, so for a request the two
+		// agree by construction and for a worker the entity's own company wins — which is the case
+		// that matters, because a background caller's ambient company is whatever company it is
+		// iterating, not necessarily the one that owns the row it just wrote.
+		//
+		// VISIBILITY is Internal for every CRM event: these are ordinary commercial facts that anyone
+		// who may view the record may read. Amounts appear on opportunity events, which is the one
+		// judgement call here — a deal's value is visible on the CRM screens to everybody who can
+		// open the deal, so the event is not more revealing than the record it describes.
+		// =============================================================================================
+
+		/// The outcome of a REFUSED transition: nothing moved, so nothing is announced.
+		private static readonly StageOutcome NoStageChange = new();
+
+		private static Models.Platform.OpportunityEventPayload PayloadFor(
+			Opportunity e, StageOutcome outcome, string[]? changed) => new()
+			{
+				OpportunityTitle = e.Title,
+				CrmAccountId = e.AccountId,
+				LeadId = e.LeadId,
+				OwnerEmployeeId = e.OwnerEmployeeId,
+				PipelineId = e.PipelineId,
+				StageId = e.StageId,
+				StageName = e.Stage,
+				PreviousStageId = outcome.Moved ? outcome.PreviousStageId : null,
+				PreviousStageName = outcome.Moved ? outcome.PreviousStageName : null,
+				Probability = e.Probability,
+				Amount = e.Amount,
+				ExpectedCloseDate = e.ExpectedCloseDate,
+				IsWon = outcome.BecameWon ? true : null,
+				IsLost = outcome.BecameLost ? true : null,
+				WinLossReason = outcome.BecameWon || outcome.BecameLost ? e.WinLossReason : null,
+				CustomerId = outcome.BecameWon ? e.CustomerId : null,
+				ChangedFields = changed,
+			};
+
+		/// The stage transition, named by its outcome. Called from BOTH stage writers, so the board
+		/// and the editor cannot disagree about what a move is called — the same reason ApplyStageAsync
+		/// exists at all.
+		private Task RecordStageEventAsync(Opportunity e, StageOutcome outcome)
+		{
+			string type = outcome.BecameWon ? Platform.OpportunityEvents.Won
+				: outcome.BecameLost ? Platform.OpportunityEvents.Lost
+				: Platform.OpportunityEvents.StageChanged;
+
+			// WON AND LOST ARE KEYED; A PLAIN MOVE IS NOT. Terminal states are reached once — the
+			// stage authority refuses to leave them — so a key on the deal is exactly right and makes
+			// a redelivered transition harmless. An ordinary move is legitimately repeatable, and
+			// Prospecting -> Negotiation -> Prospecting -> Negotiation is four real facts: any key
+			// built from the stage pair would silence the fourth.
+			string? key = outcome.BecameWon ? $"Opportunity.Won:{e.ID}"
+				: outcome.BecameLost ? $"Opportunity.Lost:{e.ID}"
+				: null;
+
+			return RecordAsync(new Models.Platform.BusinessEventRecord
+			{
+				EntityCode = Platform.EntityRegistry.Opportunity,
+				EntityId = e.ID,
+				EventType = type,
+				PayloadVersion = Models.Platform.OpportunityEventPayload.Version,
+				Visibility = Models.Platform.BusinessEventVisibility.Internal,
+				DedupKey = key,
+				CompanyIdOverride = e.CompanyID,
+				Payload = PayloadFor(e, outcome, changed: null),
+			});
+		}
+
+		// =============================================================================================
+		// THE FOLLOW-UP: the one CRM fact that is WORK rather than history.
+		//
+		// A CRM Activity of type "Task", with an owner and a due date, is the only place this model
+		// says THIS PERSON must do THIS by THIS DATE. Everything else CRM records is something that
+		// already happened. So that fact — and only that fact — is announced as a follow-up event, and
+		// the orchestration rule turns it into managed work.
+		//
+		// A call or a meeting is NOT converted: those are interactions, and CRM Activity remains their
+		// home. That boundary is CRM-ACTIVITY-VS-PLATFORM-TASK-AUTHORITY, and this increment narrows
+		// it rather than resolving it.
+		//
+		// WHICH RECORD THE EVENT IS ABOUT. The typed columns are the model's own statement about which
+		// entities own follow-ups: Activity has LeadId and OpportunityId and nothing else. An activity
+		// against an account, a customer or a contact reaches those only through the generic
+		// EntityType/EntityId pair, and produces no follow-up event here.
+		// =============================================================================================
+		private const string WorkActivityType = "Task";
+
+		private static (string? code, int? id) FollowUpTarget(Activity a)
+		{
+			if (a.OpportunityId is int oid && oid > 0) return (Platform.EntityRegistry.Opportunity, oid);
+			if (a.LeadId is int lid && lid > 0) return (Platform.EntityRegistry.Lead, lid);
+			// The polymorphic pair, but only for the two entities the typed columns already name.
+			if (a.EntityId is int eid && eid > 0)
+			{
+				if (string.Equals(a.EntityType, "Opportunity", StringComparison.Ordinal)) return (Platform.EntityRegistry.Opportunity, eid);
+				if (string.Equals(a.EntityType, "Lead", StringComparison.Ordinal)) return (Platform.EntityRegistry.Lead, eid);
+			}
+			return (null, null);
+		}
+
+		/// Assigned work with a deadline, still open. All four conditions matter: without an owner
+		/// there is nobody to assign, without a due date the task would need an invented one, a
+		/// non-"Task" activity is an interaction, and a done activity is not outstanding work.
+		private static bool IsOutstandingWork(Activity a)
+			=> string.Equals(a.Type, WorkActivityType, StringComparison.Ordinal)
+			   && a.DueDate.HasValue
+			   && a.OwnerEmployeeId is > 0
+			   && !a.Done;
+
+		private async Task RecordFollowUpAsync(Activity a, bool completed)
+		{
+			var (code, id) = FollowUpTarget(a);
+			if (code == null || id == null) return;
+
+			string name = code == Platform.EntityRegistry.Opportunity
+				? await _context.Opportunities.AsNoTracking().Where(o => o.CompanyID == a.CompanyID && o.ID == id).Select(o => o.Title).FirstOrDefaultAsync() ?? ""
+				: await _context.Leads.AsNoTracking().Where(l => l.CompanyID == a.CompanyID && l.ID == id).Select(l => l.Name).FirstOrDefaultAsync() ?? "";
+
+			string action = completed ? "FollowUpCompleted" : "FollowUpScheduled";
+			await RecordAsync(new Models.Platform.BusinessEventRecord
+			{
+				EntityCode = code,
+				EntityId = id.Value,
+				EventType = Platform.BusinessEventTypes.Build(code, action),
+				PayloadVersion = Models.Platform.CrmFollowUpEventPayload.Version,
+				Visibility = Models.Platform.BusinessEventVisibility.Internal,
+				// Keyed on the ACTIVITY, not the record it is about: a lead may carry many follow-ups,
+				// and keying on the lead would make the second one disappear.
+				DedupKey = $"{code}.{action}:{a.ID}",
+				CompanyIdOverride = a.CompanyID,
+				Payload = new Models.Platform.CrmFollowUpEventPayload
+				{
+					ActivityId = a.ID,
+					Subject = a.Subject,
+					SubjectEn = a.SubjectEn,
+					ActivityType = a.Type,
+					OwnerEmployeeId = a.OwnerEmployeeId,
+					DueDate = a.DueDate,
+					EntityCode = code,
+					EntityId = id,
+					EntityName = name,
+				},
+			});
+		}
+
+		// =============================================================================================
+		// TAGS AND THE TWO OPERATIONAL FILTERS.
+		//
+		// THE ORDER IS THE SECURITY. Every list below applies its predicates in one order, and the
+		// order is not a style note: company scope, then the CRM owner scope, then the screen's own
+		// filters, and only THEN the tag / unassigned / overdue predicates. A tag filter may only
+		// narrow a set the caller was already allowed to see. Matching tags FIRST and intersecting
+		// afterwards is exactly how a tag would become a way to discover a colleague's lead.
+		//
+		// THE COUNT AND THE LIST SHARE ONE QUERY, so a filtered page can never be counted against an
+		// unfiltered total. That is not a habit here - it is a defect this codebase has already had.
+		// =============================================================================================
+
+		/// Tag matching, expressed through the tag AUTHORITY instead of its tables.
+		///
+		/// WHY THIS COSTS AN EXTRA ROUND TRIP, stated rather than hidden: ITagService exposes no
+		/// "which entities carry these tags" query, and reading the TagAssignments DbSet directly is
+		/// forbidden - one vocabulary, one authority. So the ALREADY-SCOPED, already-filtered ids are
+		/// projected (ints, not rows), handed to the authority in ONE batch call, and the surviving
+		/// ids narrow the query the database then counts and pages.
+		///
+		/// The scoped set being the INPUT is what makes this safe: an id the caller may not see never
+		/// enters the batch, so no tag can bring it back. Recorded as
+		/// CRM-TAG-FILTER-ID-MATERIALIZATION-DEBT - the fix is an entity-id query on ITagService, and
+		/// that interface belongs to whoever owns it, not to this increment.
+		private async Task<List<int>?> TagMatchedIdsAsync(
+			int companyId, string entityCode, IQueryable<int> scopedIds, int[]? tagIds, bool matchAll)
+		{
+			var wanted = (tagIds ?? Array.Empty<int>()).Where(id => id > 0).Distinct().ToArray();
+			if (wanted.Length == 0) return null;   // no tags chosen is NO restriction, not an empty result
+
+			var ids = await scopedIds.ToListAsync();
+			if (ids.Count == 0) return new List<int>();
+
+			var byEntity = await _tags.GetTagsForEntitiesAsync(companyId, entityCode, ids);
+			var keep = new List<int>();
+			foreach (var pair in byEntity)
+			{
+				var have = pair.Value.Select(t => t.ID).ToHashSet();
+				// ANY: at least one chosen tag. ALL: every one of them. There is no third mode.
+				bool hit = matchAll ? wanted.All(have.Contains) : wanted.Any(have.Contains);
+				if (hit) keep.Add(pair.Key);
+			}
+			return keep;
+		}
+
+		// Overdue follow-up is evaluated as an EXISTS the database runs - never a query per row, and
+		// never an activity list pulled into memory.
+		//
+		// The definition is the work contract the events increment established: an activity of type
+		// "Task", not done, with a due date STRICTLY in the past, in this company, related to this
+		// record. Strictly, because a follow-up due at this instant is due rather than late - the same
+		// comparison TaskStatuses.IsOverdue and the CRM dashboard already make.
+		private const string WorkActivityTypeName = "Task";
+
+		private DateTime NowUtc() => _clock.GetUtcNow().UtcDateTime;
+
+		/// Tag replacement, inside the caller's transaction and through the platform authority.
+		///
+		/// It runs BEFORE the commit for the same reason the Business Event does: a refused tag - one
+		/// belonging to another company, or one that does not exist - must take the whole save down
+		/// with it. A lead that saved while its tags did not is a record the user believes is
+		/// classified and that no filter will ever find.
+		///
+		/// null means THIS CALLER MANAGES NO TAGS, so the existing set is left alone. Empty means the
+		/// form owned the tag set and the user cleared it.
+		private async Task<(bool ok, string? error)> ApplyTagsAsync(int companyId, string entityCode, int entityId, int[]? tagIds)
+		{
+			if (tagIds == null) return (true, null);
+			return await _tags.SetEntityTagsAsync(companyId, entityCode, entityId, tagIds, Me());
+		}
+
+
+		private static string[]? Changed(params (string field, bool moved)[] candidates)
+		{
+			var list = candidates.Where(c => c.moved).Select(c => c.field).ToArray();
+			return list.Length == 0 ? null : list;
+		}
+
+		// =============================================================================================
+		// WAVE 1 — ONE STAGE AUTHORITY.
+		//
+		// Two methods moved an opportunity through its pipeline: UpdateOpportunityStageAsync (the
+		// Kanban board) and SaveOpportunityAsync (the editor). Each computed "did this become Won?"
+		// from its own snapshot, and each accepted whatever stage arrived. When the requested stage did
+		// not resolve, ResolveStageAsync answered with the FIRST stage of the pipeline — so a typo
+		// moved a negotiation back to prospecting and reported success.
+		//
+		// Both paths now go through ApplyStageAsync. It is the only place that decides a stage, a
+		// probability, and whether the Won side effects run.
+		// =============================================================================================
+		private const string InvalidStage = "مرحلة غير صحيحة";
+		private const string TerminalOpportunity = "لا يمكن تغيير مرحلة فرصة مغلقة";
+
+		// A stage the pipeline does not contain is REFUSED, not rounded to the nearest one. An empty
+		// request still means "start at the beginning", which is what a new opportunity needs.
+		private async Task<(CrmPipelineStage? stage, bool unknown)> ResolveStageStrictAsync(
+			int companyId, int pipelineId, string? stageName, int? stageId)
+		{
+			if (pipelineId <= 0) return (null, false);
+			var q = _context.CrmPipelineStages.AsNoTracking().Where(s => s.CompanyID == companyId && s.PipelineId == pipelineId);
+			if (stageId.HasValue && stageId.Value > 0)
+			{
+				var byId = await q.FirstOrDefaultAsync(s => s.ID == stageId.Value);
+				return (byId, byId == null);
+			}
+			if (!string.IsNullOrWhiteSpace(stageName))
+			{
+				var byName = await q.FirstOrDefaultAsync(s => s.Name == stageName);
+				return (byName, byName == null);
+			}
+			return (await q.OrderBy(s => s.Sort).FirstOrDefaultAsync(), false);
+		}
+
+		// Won and Lost are where a deal STOPS. The pipeline says which stages those are; without a
+		// configured pipeline the legacy vocabulary does.
+		private async Task<bool> IsTerminalAsync(int companyId, Opportunity o)
+		{
+			if (o.StageId is int sid && sid > 0)
+			{
+				var st = await _context.CrmPipelineStages.AsNoTracking()
+					.FirstOrDefaultAsync(s => s.CompanyID == companyId && s.ID == sid);
+				if (st != null) return st.IsWon || st.IsLost;
+			}
+			return o.Stage == "Won" || o.Stage == "Lost";
+		}
+
+		// The single transition. Returns becameWon so the caller runs the Won side effects EXACTLY
+		// once, inside the same transaction that made the stage true.
+		/// WHAT A TRANSITION ACTUALLY WAS, so the producer beside it can name the fact instead of
+		/// guessing at it. Nothing here decides anything the previous version did not decide: Moved,
+		/// PreviousStageId and PreviousStageName are values this method already computed or held, and
+		/// BecameLost is the mirror of a BecameWon that was already here. The stage rules themselves
+		/// are byte-for-byte the rules CRM Wave 1 qualified.
+		private sealed class StageOutcome
+		{
+			public bool Moved { get; init; }
+			public bool BecameWon { get; init; }
+			public bool BecameLost { get; init; }
+			public int? PreviousStageId { get; init; }
+			public string? PreviousStageName { get; init; }
+		}
+
+		private async Task<(bool ok, string? error, StageOutcome outcome)> ApplyStageAsync(
+			int companyId, Opportunity e, string? stageName, int? stageId, int? requestedPipelineId)
+		{
+			if (requestedPipelineId is int rp && rp > 0 && !await PipelineInCompanyAsync(companyId, rp))
+				return (false, ForeignReference, NoStageChange);
+
+			var pid = requestedPipelineId ?? e.PipelineId ?? await GetDefaultPipelineIdAsync(companyId);
+			var (st, unknown) = await ResolveStageStrictAsync(companyId, pid, stageName, stageId);
+			if (unknown) return (false, InvalidStage, NoStageChange);
+
+			// Legacy vocabulary is a closed set too. Accepting free text here is how "Wonn" became a
+			// stage nobody could filter by and no board column showed.
+			if (st == null && !string.IsNullOrWhiteSpace(stageName) && !OppStages.Contains(stageName))
+				return (false, InvalidStage, NoStageChange);
+
+			bool sameStage = st != null ? e.StageId == st.ID : string.Equals(e.Stage, stageName, StringComparison.Ordinal);
+
+			// A closed deal does not quietly reopen. There is no reopen rule in this product, so the
+			// refusal is the rule; re-saving the SAME terminal stage is not a transition and stays
+			// allowed, otherwise editing a won deal's notes would be impossible.
+			if (!sameStage && await IsTerminalAsync(companyId, e))
+				return (false, TerminalOpportunity, NoStageChange);
+
+			var previousStageId = e.StageId;
+			var previousStageName = e.Stage;
+
+			if (st != null)
+			{
+				var became = st.IsWon && e.StageId != st.ID;
+				var becameLost = st.IsLost && e.StageId != st.ID;
+				e.PipelineId = pid; e.StageId = st.ID; e.Stage = st.Name; e.Probability = st.Probability;
+				return (true, null, new StageOutcome
+				{
+					Moved = !sameStage,
+					BecameWon = became,
+					BecameLost = becameLost,
+					PreviousStageId = previousStageId,
+					PreviousStageName = previousStageName,
+				});
+			}
+
+			var target = string.IsNullOrWhiteSpace(stageName) ? (string.IsNullOrWhiteSpace(e.Stage) ? "Prospecting" : e.Stage) : stageName!;
+			var becameWonLegacy = target == "Won" && e.Stage != "Won";
+			var becameLostLegacy = target == "Lost" && e.Stage != "Lost";
+			e.Stage = target;
+			e.Probability = target == "Won" ? 100 : (target == "Lost" ? 0 : e.Probability);
+			return (true, null, new StageOutcome
+			{
+				Moved = !sameStage,
+				BecameWon = becameWonLegacy,
+				BecameLost = becameLostLegacy,
+				PreviousStageId = previousStageId,
+				PreviousStageName = previousStageName,
+			});
+		}
+
 		// ---------------- Leads ----------------
-		public async Task<(List<Lead> rows, int total)> SearchLeadsAsync(int companyId, string? q, string? status, int page, int pageSize)
+		public async Task<(List<Lead> rows, int total)> SearchLeadsAsync(int companyId, string? q, string? status, int page, int pageSize,
+			int[]? tagIds = null, bool tagMatchAll = false, bool unassignedOnly = false, bool overdueFollowUpOnly = false)
 		{
 			var query = _context.Leads.AsNoTracking().Where(l => l.CompanyID == companyId);
 			var terms = SearchTerms.Parse(q);
@@ -284,6 +777,19 @@ namespace CrossBuy.BL
 			if (!string.IsNullOrWhiteSpace(status)) query = query.Where(l => l.Status == status);
 			var scope = await ScopeAsync();
 			if (scope != null) query = query.Where(l => l.OwnerEmployeeId == null || scope.Contains(l.OwnerEmployeeId.Value));
+
+			// AFTER the company and owner predicates, never before them.
+			if (unassignedOnly) query = query.Where(l => l.OwnerEmployeeId == null);
+			if (overdueFollowUpOnly)
+			{
+				var now = NowUtc();
+				query = query.Where(l => _context.Activities.Any(a =>
+					a.CompanyID == companyId && a.LeadId == l.ID &&
+					a.Type == WorkActivityTypeName && !a.Done && a.DueDate != null && a.DueDate < now));
+			}
+			var tagged = await TagMatchedIdsAsync(companyId, Platform.EntityRegistry.Lead, query.Select(l => l.ID), tagIds, tagMatchAll);
+			if (tagged != null) query = query.Where(l => tagged.Contains(l.ID));
+
 			var total = await query.CountAsync();
 			page = Clamp(page, ref pageSize);
 			var rows = await query.OrderByDescending(l => l.ID).Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
@@ -296,13 +802,19 @@ namespace CrossBuy.BL
 			return e != null && await OwnerVisibleAsync(e.OwnerEmployeeId) ? e : null;
 		}
 
-		public async Task<(bool ok, string? error)> SaveLeadAsync(int companyId, Lead dto, string? userId)
+		public async Task<(bool ok, string? error)> SaveLeadAsync(int companyId, Lead dto, string? userId, int[]? tagIds = null)
 		{
 			if (string.IsNullOrWhiteSpace(dto.Name)) return (false, "Lead name is required");
+			if (!await RefOkAsync(dto.CampaignId, x => CampaignInCompanyAsync(companyId, x))) return (false, ForeignReference);
 			Lead e;
 			if (dto.ID > 0)
 			{
-				e = await _context.Leads.FirstOrDefaultAsync(l => l.CompanyID == companyId && l.ID == dto.ID) ?? throw new InvalidOperationException("Not found");
+				var existing = await _context.Leads.FirstOrDefaultAsync(l => l.CompanyID == companyId && l.ID == dto.ID);
+                if (existing == null) return (false, "Lead not found");
+                e = existing;
+				// The list hides a colleague's lead and the id lookup hides it too. A WRITE was the one
+				// door left open: a rep could not see the row but could still overwrite it by id.
+				if (!await OwnerVisibleAsync(e.OwnerEmployeeId)) return (false, "Lead not found");
 			}
 			else
 			{
@@ -311,12 +823,66 @@ namespace CrossBuy.BL
 				e = new Lead { CompanyID = companyId, CreatedAt = DateTime.UtcNow, CreatedBy = userId, OwnerEmployeeId = routed };
 				_context.Leads.Add(e);
 			}
+			bool isNew = dto.ID <= 0;
+
+			// The state the event will describe as PREVIOUS, captured before the assignment overwrites
+			// it. After the save it exists nowhere else — which is the whole reason a payload carries it.
+			var beforeStatus = isNew ? null : e.Status;
+			var beforeName = e.Name; var beforeOwner = e.OwnerEmployeeId; var beforeValue = e.EstimatedValue;
+			var beforeSource = e.Source; var beforeSegment = e.Segment; var beforeCampaign = e.CampaignId;
+			var beforePhone = e.Phone; var beforeEmail = e.Email; var beforeCompany = e.Company;
+
 			e.Name = dto.Name.Trim(); e.NameEn = dto.NameEn; e.Company = dto.Company; e.Phone = dto.Phone; e.Email = dto.Email; e.Source = dto.Source;
 			e.Segment = dto.Segment; e.EstimatedValue = dto.EstimatedValue; e.Status = string.IsNullOrWhiteSpace(dto.Status) ? "New" : dto.Status; e.Notes = dto.Notes;
 			e.CampaignId = dto.CampaignId;
 			if (dto.OwnerEmployeeId.HasValue) e.OwnerEmployeeId = dto.OwnerEmployeeId;
 			e.Score = await ComputeLeadScoreAsync(companyId, e);   // CRM 3-7: refresh score from active rules
+
+			// The transaction exists for the event. This path was a bare SaveChanges, and a producer
+			// without an ambient transaction is refused by the kernel — correctly, because an event
+			// that outlives a rolled-back write is the failure the kernel exists to prevent.
+			await using var tx = await ScopedTx.BeginOrJoinAsync(_context);
 			await _context.SaveChangesAsync();
+
+			await RecordAsync(new Models.Platform.BusinessEventRecord
+			{
+				EntityCode = Platform.EntityRegistry.Lead,
+				EntityId = e.ID,
+				EventType = isNew ? Platform.LeadEvents.Created : Platform.LeadEvents.Updated,
+				PayloadVersion = Models.Platform.LeadEventPayload.Version,
+				Visibility = Models.Platform.BusinessEventVisibility.Internal,
+				// Created happens once per lead and is keyed. Updated has no key at all: an edit is a
+				// repeatable fact, and a key would silence every edit after the first.
+				DedupKey = isNew ? $"Lead.Created:{e.ID}" : null,
+				CompanyIdOverride = e.CompanyID,
+				Payload = new Models.Platform.LeadEventPayload
+				{
+					LeadName = e.Name,
+					CompanyName = e.Company,
+					OwnerEmployeeId = e.OwnerEmployeeId,
+					Status = e.Status,
+					PreviousStatus = beforeStatus,
+					Source = e.Source,
+					EstimatedValue = e.EstimatedValue,
+					CampaignId = e.CampaignId,
+					ChangedFields = isNew ? null : Changed(
+						("Name", !string.Equals(beforeName, e.Name, StringComparison.Ordinal)),
+						("Status", !string.Equals(beforeStatus, e.Status, StringComparison.Ordinal)),
+						("OwnerEmployeeId", beforeOwner != e.OwnerEmployeeId),
+						("EstimatedValue", beforeValue != e.EstimatedValue),
+						("Source", !string.Equals(beforeSource, e.Source, StringComparison.Ordinal)),
+						("Segment", !string.Equals(beforeSegment, e.Segment, StringComparison.Ordinal)),
+						("CampaignId", beforeCampaign != e.CampaignId),
+						("Phone", !string.Equals(beforePhone, e.Phone, StringComparison.Ordinal)),
+						("Email", !string.Equals(beforeEmail, e.Email, StringComparison.Ordinal)),
+						("Company", !string.Equals(beforeCompany, e.Company, StringComparison.Ordinal))),
+				},
+			});
+
+			var (leadTagOk, leadTagErr) = await ApplyTagsAsync(companyId, Platform.EntityRegistry.Lead, e.ID, tagIds);
+			if (!leadTagOk) { await tx.RollbackAsync(); return (false, leadTagErr); }
+
+			await tx.CommitAsync();
 			return (true, null);
 		}
 
@@ -367,7 +933,19 @@ namespace CrossBuy.BL
 		{
 			var lead = await _context.Leads.FirstOrDefaultAsync(l => l.CompanyID == companyId && l.ID == leadId);
 			if (lead == null) return (false, "Lead not found", 0);
+			if (!await OwnerVisibleAsync(lead.OwnerEmployeeId)) return (false, "Lead not found", 0);
 			if (lead.AccountId.HasValue) return (false, "It has already been converted to an account", lead.AccountId.Value);
+			// Converted WITHOUT an account is the shape a half-finished conversion used to leave behind.
+			// It is refused rather than converted again, because the second run would create the party
+			// twice and the first account would be the one nothing points at.
+			if (lead.Status == "Converted") return (false, "It has already been converted", 0);
+
+			// ONE transaction. This writes three rows — an account, its primary contact, and the lead's
+			// own converted state — and they are one business fact. Before, they were two SaveChanges
+			// calls with nothing between them: a failure on the second left a real account and a real
+			// contact behind while the lead still read as un-converted, so the next click created the
+			// party all over again.
+			await using var tx = await ScopedTx.BeginOrJoinAsync(_context);
 			var acc = new CrmAccount
 			{
 				CompanyID = companyId, Name = string.IsNullOrWhiteSpace(lead.Company) ? lead.Name : lead.Company!, Phone = lead.Phone, Email = lead.Email,
@@ -376,10 +954,64 @@ namespace CrossBuy.BL
 			_context.CrmAccounts.Add(acc);
 			await _context.SaveChangesAsync();
 			// primary contact from the lead's person name (when the lead carried a company)
+			CrmContact? primary = null;
 			if (!string.IsNullOrWhiteSpace(lead.Name))
-				_context.CrmContacts.Add(new CrmContact { CompanyID = companyId, AccountId = acc.ID, Name = lead.Name, Phone = lead.Phone, Email = lead.Email, IsPrimary = true, OwnerEmployeeId = acc.OwnerEmployeeId, CreatedAt = DateTime.UtcNow });
+			{
+				primary = new CrmContact { CompanyID = companyId, AccountId = acc.ID, Name = lead.Name, Phone = lead.Phone, Email = lead.Email, IsPrimary = true, OwnerEmployeeId = acc.OwnerEmployeeId, CreatedAt = DateTime.UtcNow };
+				_context.CrmContacts.Add(primary);
+			}
+			var previousStatus = lead.Status;
 			lead.AccountId = acc.ID; lead.Status = "Converted";
 			await _context.SaveChangesAsync();
+
+			// TWO FACTS, TWO EVENTS, ONE TRANSACTION. A party came into existence and a lead stopped
+			// being a lead. A consumer that cares about accounts must not have to know that some of
+			// them are born inside a conversion, and a consumer that cares about the funnel must not
+			// have to infer the conversion from an account it did not ask about.
+			await RecordAsync(new Models.Platform.BusinessEventRecord
+			{
+				EntityCode = Platform.EntityRegistry.CrmAccount,
+				EntityId = acc.ID,
+				EventType = Platform.CrmAccountEvents.Created,
+				PayloadVersion = Models.Platform.CrmAccountEventPayload.Version,
+				Visibility = Models.Platform.BusinessEventVisibility.Internal,
+				DedupKey = $"CrmAccount.Created:{acc.ID}",
+				CompanyIdOverride = acc.CompanyID,
+				Payload = new Models.Platform.CrmAccountEventPayload
+				{
+					AccountName = acc.Name,
+					OwnerEmployeeId = acc.OwnerEmployeeId,
+					Segment = acc.Segment,
+					ConvertedFromLeadId = lead.ID,
+				},
+			});
+
+			await RecordAsync(new Models.Platform.BusinessEventRecord
+			{
+				EntityCode = Platform.EntityRegistry.Lead,
+				EntityId = lead.ID,
+				EventType = Platform.LeadEvents.Converted,
+				PayloadVersion = Models.Platform.LeadEventPayload.Version,
+				Visibility = Models.Platform.BusinessEventVisibility.Internal,
+				// A lead converts once — the method refuses a second attempt — so the key is the lead.
+				DedupKey = $"Lead.Converted:{lead.ID}",
+				CompanyIdOverride = lead.CompanyID,
+				Payload = new Models.Platform.LeadEventPayload
+				{
+					LeadName = lead.Name,
+					CompanyName = lead.Company,
+					OwnerEmployeeId = lead.OwnerEmployeeId,
+					Status = lead.Status,
+					PreviousStatus = previousStatus,
+					Source = lead.Source,
+					EstimatedValue = lead.EstimatedValue,
+					CampaignId = lead.CampaignId,
+					CrmAccountId = acc.ID,
+					PrimaryContactId = primary?.ID,
+				},
+			});
+
+			await tx.CommitAsync();
 			return (true, null, acc.ID);
 		}
 
@@ -398,29 +1030,49 @@ namespace CrossBuy.BL
 		}
 
 		// CRM 3-2: on Won, link the account to a financial customer and stamp the opportunity's CustomerId for O2C.
-		private async Task LinkWonOpportunityAsync(int companyId, Opportunity o)
+		//
+		// WAVE 1 — THIS NO LONGER SWALLOWS. The catch used to say "linking failure must not block the
+		// stage change", and the result was a deal marked Won whose CustomerId was never stamped: the
+		// O2C path then refused to raise a quotation from it and nobody was told why. The link is not
+		// decoration — it is the fact that makes a won deal billable — so it now runs inside the same
+		// transaction as the transition and its failure refuses the transition.
+		//
+		// It is also the only writer here that reaches OUTSIDE CRM (ICrmCustomerLink creates the
+		// financial customer), which is exactly the kind of write that must not be half-done.
+		private async Task<(bool ok, string? error)> LinkWonOpportunityAsync(int companyId, Opportunity o)
 		{
-			try
+			if (!o.AccountId.HasValue) return (true, null);
+			var custId = await EnsureAccountCustomerAsync(companyId, o.AccountId.Value);
+			if (custId == null) return (false, "تعذّر ربط الحساب بعميل مالي");
+			if (o.CustomerId != custId)
 			{
-				if (o.AccountId.HasValue)
-				{
-					var custId = await EnsureAccountCustomerAsync(companyId, o.AccountId.Value);
-					if (custId.HasValue && o.CustomerId != custId)
-					{
-						var live = await _context.Opportunities.FirstOrDefaultAsync(x => x.CompanyID == companyId && x.ID == o.ID);
-						if (live != null) { live.CustomerId = custId; await _context.SaveChangesAsync(); }
-					}
-				}
+				var live = await _context.Opportunities.FirstOrDefaultAsync(x => x.CompanyID == companyId && x.ID == o.ID);
+				if (live != null) { live.CustomerId = custId; await _context.SaveChangesAsync(); }
 			}
-			catch { /* linking failure must not block the stage change */ }
+			return (true, null);
 		}
 
 		// ---------------- Opportunities ----------------
-		public async Task<(List<OppRow> rows, int total)> SearchOpportunitiesAsync(int companyId, string? q, string? stage, int page, int pageSize)
+		public async Task<(List<OppRow> rows, int total)> SearchOpportunitiesAsync(int companyId, string? q, string? stage, int page, int pageSize,
+			int[]? tagIds = null, bool tagMatchAll = false, bool unassignedOnly = false, bool overdueFollowUpOnly = false)
 		{
 			var scope = await ScopeAsync();
 			var oppSrc = _context.Opportunities.AsNoTracking().Where(o => o.CompanyID == companyId);
 			if (scope != null) oppSrc = oppSrc.Where(o => o.OwnerEmployeeId == null || scope.Contains(o.OwnerEmployeeId.Value));
+
+			// AFTER the company and owner predicates, and before the projection so the database still
+			// counts and pages the narrowed set.
+			if (unassignedOnly) oppSrc = oppSrc.Where(o => o.OwnerEmployeeId == null);
+			if (overdueFollowUpOnly)
+			{
+				var now = NowUtc();
+				oppSrc = oppSrc.Where(o => _context.Activities.Any(a =>
+					a.CompanyID == companyId && a.OpportunityId == o.ID &&
+					a.Type == WorkActivityTypeName && !a.Done && a.DueDate != null && a.DueDate < now));
+			}
+			var tagged = await TagMatchedIdsAsync(companyId, Platform.EntityRegistry.Opportunity, oppSrc.Select(o => o.ID), tagIds, tagMatchAll);
+			if (tagged != null) oppSrc = oppSrc.Where(o => tagged.Contains(o.ID));
+
 			var isEn = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName != "ar";
 			var q0 = from o in oppSrc
 					 join a in _context.CrmAccounts.AsNoTracking() on o.AccountId equals (int?)a.ID into aj
@@ -459,22 +1111,29 @@ namespace CrossBuy.BL
 		{
 			var o = await _context.Opportunities.FirstOrDefaultAsync(x => x.CompanyID == companyId && x.ID == id);
 			if (o == null) return (false, "Opportunity not found");
-			var pid = o.PipelineId ?? await GetDefaultPipelineIdAsync(companyId);
-			var st = await ResolveStageAsync(companyId, pid, stage, null);
-			bool becameWon;
-			if (st != null)
-			{
-				becameWon = st.IsWon && o.StageId != st.ID;
-				o.PipelineId = pid; o.StageId = st.ID; o.Stage = st.Name; o.Probability = st.Probability;
-			}
-			else   // no configured pipeline → legacy stage-name behavior
-			{
-				if (string.IsNullOrWhiteSpace(stage)) return (false, "Invalid stage");
-				becameWon = stage == "Won" && o.Stage != "Won";
-				o.Stage = stage; o.Probability = stage == "Won" ? 100 : (stage == "Lost" ? 0 : o.Probability);
-			}
+			if (!await OwnerVisibleAsync(o.OwnerEmployeeId)) return (false, "Opportunity not found");
+			if (string.IsNullOrWhiteSpace(stage)) return (false, InvalidStage);
+
+			await using var tx = await ScopedTx.BeginOrJoinAsync(_context);
+			var (ok, err, outcome) = await ApplyStageAsync(companyId, o, stage, null, null);
+			if (!ok) { await tx.RollbackAsync(); return (false, err); }
 			await _context.SaveChangesAsync();
-			if (becameWon) { await LinkWonOpportunityAsync(companyId, o); await NotifyOpportunityWonAsync(companyId, o); }
+			if (outcome.BecameWon)
+			{
+				var (linked, linkErr) = await LinkWonOpportunityAsync(companyId, o);
+				if (!linked) { await tx.RollbackAsync(); return (false, linkErr); }
+			}
+
+			// AFTER the link, not before it. The Won event says the deal is won AND billable — the
+			// customer is stamped by the time this row is written — so a link that fails takes the
+			// transition, the event and any work down with it rather than leaving a Won event behind
+			// pointing at a deal that never linked.
+			await RecordStageEventAsync(o, outcome);
+
+			await tx.CommitAsync();
+			// AFTER the commit, and deliberately: a notification is not the business fact, and a mail
+			// failure must not undo a won deal.
+			if (outcome.BecameWon) await NotifyOpportunityWonAsync(companyId, o);
 			return (true, null);
 		}
 
@@ -487,14 +1146,10 @@ namespace CrossBuy.BL
 		}
 		public Task<List<CrmPipelineStage>> GetStagesAsync(int companyId, int pipelineId) =>
 			_context.CrmPipelineStages.AsNoTracking().Where(s => s.CompanyID == companyId && s.PipelineId == pipelineId).OrderBy(s => s.Sort).ToListAsync();
-		private async Task<CrmPipelineStage?> ResolveStageAsync(int companyId, int pipelineId, string? stageName, int? stageId)
-		{
-			if (pipelineId <= 0) return null;
-			var q = _context.CrmPipelineStages.AsNoTracking().Where(s => s.CompanyID == companyId && s.PipelineId == pipelineId);
-			if (stageId.HasValue && stageId.Value > 0) return await q.FirstOrDefaultAsync(s => s.ID == stageId.Value);
-			if (!string.IsNullOrWhiteSpace(stageName)) { var byName = await q.FirstOrDefaultAsync(s => s.Name == stageName); if (byName != null) return byName; }
-			return await q.OrderBy(s => s.Sort).FirstOrDefaultAsync();
-		}
+		// ResolveStageAsync was removed with its last caller. It ended by returning the pipeline's FIRST
+		// stage for a request it could not resolve, which is the silent rounding described in §3.3 of
+		// docs/crm/CRM-STRENGTHENING-WAVE1.md — leaving it in the file would leave that behaviour one
+		// call away. ResolveStageStrictAsync is the replacement and refuses instead.
 		public Task<List<CrmPipeline>> GetPipelinesAsync(int companyId) =>
 			_context.CrmPipelines.AsNoTracking().Where(p => p.CompanyID == companyId).OrderByDescending(p => p.IsDefault).ThenBy(p => p.Name).ToListAsync();
 		public async Task<CrmPipeline?> GetPipelineWithStagesAsync(int companyId, int id)
@@ -594,24 +1249,104 @@ namespace CrossBuy.BL
 			return e != null && await OwnerVisibleAsync(e.OwnerEmployeeId) ? e : null;
 		}
 
-		public async Task<(bool ok, string? error)> SaveOpportunityAsync(int companyId, Opportunity dto, string? userId)
+		public async Task<(bool ok, string? error)> SaveOpportunityAsync(int companyId, Opportunity dto, string? userId, int[]? tagIds = null)
 		{
 			if (string.IsNullOrWhiteSpace(dto.Title)) return (false, "Opportunity title is required");
+			// Every id on this form arrived from the browser. None of them is trusted.
+			if (!await RefOkAsync(dto.AccountId, x => AccountInCompanyAsync(companyId, x))) return (false, ForeignReference);
+			if (!await RefOkAsync(dto.LeadId, x => LeadInCompanyAsync(companyId, x))) return (false, ForeignReference);
+			if (!await RefOkAsync(dto.CampaignId, x => CampaignInCompanyAsync(companyId, x))) return (false, ForeignReference);
+			if (!await RefOkAsync(dto.CustomerId, x => CustomerInCompanyAsync(companyId, x))) return (false, ForeignReference);
+
 			Opportunity e;
-			if (dto.ID > 0) { e = await _context.Opportunities.FirstOrDefaultAsync(o => o.CompanyID == companyId && o.ID == dto.ID) ?? throw new InvalidOperationException("Not found"); }
+			if (dto.ID > 0)
+			{
+				var existing = await _context.Opportunities.FirstOrDefaultAsync(o => o.CompanyID == companyId && o.ID == dto.ID);
+                if (existing == null) return (false, "Opportunity not found");
+                e = existing;
+				if (!await OwnerVisibleAsync(e.OwnerEmployeeId)) return (false, "Opportunity not found");
+			}
 			else { e = new Opportunity { CompanyID = companyId, CreatedAt = DateTime.UtcNow, CreatedBy = userId, OwnerEmployeeId = dto.OwnerEmployeeId ?? Me() }; _context.Opportunities.Add(e); }
-			var prevStageId = e.StageId; var prevStage = e.Stage;
-			var pid = dto.PipelineId ?? e.PipelineId ?? await GetDefaultPipelineIdAsync(companyId);
-			var st = await ResolveStageAsync(companyId, pid, dto.Stage, dto.StageId);
+			bool isNew = dto.ID <= 0;
+			var beforeTitle = e.Title; var beforeAmount = e.Amount; var beforeAccount = e.AccountId;
+			var beforeOwner = e.OwnerEmployeeId; var beforeClose = e.ExpectedCloseDate; var beforeReason = e.WinLossReason;
+
+			await using var tx = await ScopedTx.BeginOrJoinAsync(_context);
+			// The stage is decided FIRST and by the one authority, so a refused transition costs no
+			// write at all — the editor cannot smuggle a closed deal back into the pipeline by saving
+			// a title alongside it.
+			var (stageOk, stageErr, outcome) = await ApplyStageAsync(companyId, e, dto.Stage, dto.StageId, dto.PipelineId);
+			if (!stageOk) { await tx.RollbackAsync(); return (false, stageErr); }
+
 			e.Title = dto.Title.Trim(); e.TitleEn = string.IsNullOrWhiteSpace(dto.TitleEn) ? null : dto.TitleEn.Trim(); e.AccountId = dto.AccountId; e.CustomerId = dto.CustomerId; e.LeadId = dto.LeadId;
-			e.PipelineId = pid > 0 ? pid : (int?)null; e.WinLossReason = dto.WinLossReason;
-			bool becameWon;
-			if (st != null) { e.StageId = st.ID; e.Stage = st.Name; e.Probability = st.Probability; becameWon = st.IsWon && prevStageId != st.ID; }
-			else { e.Stage = string.IsNullOrWhiteSpace(dto.Stage) ? "Prospecting" : dto.Stage; becameWon = e.Stage == "Won" && prevStage != "Won"; }
+			e.WinLossReason = dto.WinLossReason;
 			e.Amount = dto.Amount; e.ExpectedCloseDate = dto.ExpectedCloseDate; e.Notes = dto.Notes; e.CampaignId = dto.CampaignId;
 			if (dto.OwnerEmployeeId.HasValue) e.OwnerEmployeeId = dto.OwnerEmployeeId;
 			await _context.SaveChangesAsync();
-			if (becameWon) { await LinkWonOpportunityAsync(companyId, e); await NotifyOpportunityWonAsync(companyId, e); }
+			if (outcome.BecameWon)
+			{
+				var (linked, linkErr) = await LinkWonOpportunityAsync(companyId, e);
+				if (!linked) { await tx.RollbackAsync(); return (false, linkErr); }
+			}
+
+			// ONE EVENT FOR ONE SAVE, and which one depends on what actually happened.
+			//
+			// A NEW deal announces itself as Created — its opening stage is where it starts, not a
+			// transition it made. It announces Won or Lost as well only in the unusual case where it
+			// was created straight into a terminal stage, because that IS a win, and because the
+			// customer link above has already run for it.
+			//
+			// An EDIT announces the transition when the stage moved, and Updated when it did not.
+			// Never both: a stage move that also renamed the deal is one committed save, and a
+			// consumer should not have to decide which of two rows about it to believe.
+			if (isNew)
+			{
+				await RecordAsync(new Models.Platform.BusinessEventRecord
+				{
+					EntityCode = Platform.EntityRegistry.Opportunity,
+					EntityId = e.ID,
+					EventType = Platform.OpportunityEvents.Created,
+					PayloadVersion = Models.Platform.OpportunityEventPayload.Version,
+					Visibility = Models.Platform.BusinessEventVisibility.Internal,
+					DedupKey = $"Opportunity.Created:{e.ID}",
+					CompanyIdOverride = e.CompanyID,
+					// NoStageChange, not the outcome: a new deal's opening stage is where it starts, so
+					// the payload carries no "previous stage" — there was no previous. The outcome still
+					// matters below, where a deal created straight into a terminal stage says so.
+					Payload = PayloadFor(e, NoStageChange, changed: null),
+				});
+				if (outcome.BecameWon || outcome.BecameLost) await RecordStageEventAsync(e, outcome);
+			}
+			else if (outcome.Moved)
+			{
+				await RecordStageEventAsync(e, outcome);
+			}
+			else
+			{
+				await RecordAsync(new Models.Platform.BusinessEventRecord
+				{
+					EntityCode = Platform.EntityRegistry.Opportunity,
+					EntityId = e.ID,
+					EventType = Platform.OpportunityEvents.Updated,
+					PayloadVersion = Models.Platform.OpportunityEventPayload.Version,
+					Visibility = Models.Platform.BusinessEventVisibility.Internal,
+					DedupKey = null,   // an edit is repeatable; a key would silence every later one
+					CompanyIdOverride = e.CompanyID,
+					Payload = PayloadFor(e, outcome, Changed(
+						("Title", !string.Equals(beforeTitle, e.Title, StringComparison.Ordinal)),
+						("Amount", beforeAmount != e.Amount),
+						("AccountId", beforeAccount != e.AccountId),
+						("OwnerEmployeeId", beforeOwner != e.OwnerEmployeeId),
+						("ExpectedCloseDate", beforeClose != e.ExpectedCloseDate),
+						("WinLossReason", !string.Equals(beforeReason, e.WinLossReason, StringComparison.Ordinal)))),
+				});
+			}
+
+			var (oppTagOk, oppTagErr) = await ApplyTagsAsync(companyId, Platform.EntityRegistry.Opportunity, e.ID, tagIds);
+			if (!oppTagOk) { await tx.RollbackAsync(); return (false, oppTagErr); }
+
+			await tx.CommitAsync();
+			if (outcome.BecameWon) await NotifyOpportunityWonAsync(companyId, e);
 			return (true, null);
 		}
 
@@ -702,11 +1437,18 @@ namespace CrossBuy.BL
 			var existing = await _context.CampaignMembers.Where(m => m.CompanyID == companyId && m.CampaignId == campaignId)
 				.Select(m => new { m.EntityType, m.EntityId }).ToListAsync();
 			var have = existing.Select(e => e.EntityType + ":" + e.EntityId).ToHashSet();
+			// The container first: enrolling into another tenant's campaign would attribute this
+			// company's audience to that company's marketing.
+			if (!await CampaignInCompanyAsync(companyId, campaignId)) return 0;
 			int added = 0;
 			foreach (var (etype, eid, name) in members)
 			{
 				if (string.IsNullOrWhiteSpace(etype) || eid <= 0) continue;
 				if (!have.Add(etype + ":" + eid)) continue;   // skip duplicates
+				// A member id arrives from the picker, and the picker is company-scoped — but the POST is
+				// not the picker. A foreign member is SKIPPED rather than fatal, matching the duplicate
+				// rule beside it, and the returned count still tells the caller what was really added.
+				if (!await EntityRefOkAsync(companyId, etype, eid)) continue;
 				_context.CampaignMembers.Add(new CampaignMember { CompanyID = companyId, CampaignId = campaignId, EntityType = etype, EntityId = eid, MemberName = name, Status = "Targeted", CreatedAt = DateTime.UtcNow });
 				added++;
 			}
@@ -787,11 +1529,13 @@ namespace CrossBuy.BL
 		{
 			var have = (await _context.CrmListMembers.Where(m => m.CompanyID == companyId && m.ListId == listId)
 				.Select(m => new { m.EntityType, m.EntityId }).ToListAsync()).Select(e => e.EntityType + ":" + e.EntityId).ToHashSet();
+			if (!await _context.CrmMarketingLists.AsNoTracking().AnyAsync(l => l.CompanyID == companyId && l.ID == listId)) return 0;
 			int added = 0;
 			foreach (var (etype, eid, name) in members)
 			{
 				if (string.IsNullOrWhiteSpace(etype) || eid <= 0) continue;
 				if (!have.Add(etype + ":" + eid)) continue;
+				if (!await EntityRefOkAsync(companyId, etype, eid)) continue;   // same rule as the campaign audience
 				_context.CrmListMembers.Add(new CrmListMember { CompanyID = companyId, ListId = listId, EntityType = etype, EntityId = eid, MemberName = name, CreatedAt = DateTime.UtcNow });
 				added++;
 			}
@@ -1089,6 +1833,7 @@ namespace CrossBuy.BL
 			if (done.HasValue) query = query.Where(a => a.Done == done.Value);
 			var scope = await ScopeAsync();
 			if (scope != null) query = query.Where(a => a.OwnerEmployeeId == null || scope.Contains(a.OwnerEmployeeId.Value));
+
 			var total = await query.CountAsync();
 			page = Clamp(page, ref pageSize);
 			var rows = await query.OrderBy(a => a.Done).ThenBy(a => a.DueDate ?? DateTime.MaxValue).ThenByDescending(a => a.ID).Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
@@ -1098,16 +1843,43 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> SaveActivityAsync(int companyId, Activity dto, string? userId)
 		{
 			if (string.IsNullOrWhiteSpace(dto.Subject)) return (false, "Activity subject is required");
+			// An activity is the CRM interaction record, so its links are the history: pointing one at
+			// another tenant's lead would file this company's call under that company's story.
+			if (!await RefOkAsync(dto.LeadId, x => LeadInCompanyAsync(companyId, x))) return (false, ForeignReference);
+			if (!await RefOkAsync(dto.OpportunityId, x => OpportunityInCompanyAsync(companyId, x))) return (false, ForeignReference);
+			if (!await RefOkAsync(dto.CustomerId, x => CustomerInCompanyAsync(companyId, x))) return (false, ForeignReference);
+			if (!await EntityRefOkAsync(companyId, dto.EntityType, dto.EntityId)) return (false, ForeignReference);
 			Activity e;
-			if (dto.ID > 0) { e = await _context.Activities.FirstOrDefaultAsync(a => a.CompanyID == companyId && a.ID == dto.ID) ?? throw new InvalidOperationException("Not found"); }
+			if (dto.ID > 0)
+			{
+				e = await _context.Activities.FirstOrDefaultAsync(a => a.CompanyID == companyId && a.ID == dto.ID) ?? throw new InvalidOperationException("Not found");
+				if (!await OwnerVisibleAsync(e.OwnerEmployeeId)) throw new InvalidOperationException(HiddenRecord);
+			}
 			else { e = new Activity { CompanyID = companyId, CreatedAt = DateTime.UtcNow, CreatedBy = userId, OwnerEmployeeId = dto.OwnerEmployeeId ?? Me() }; _context.Activities.Add(e); }
+
+			// Read BEFORE the assignment: whether this activity was already outstanding work decides
+			// which of the two follow-up facts — if either — this save represents.
+			bool wasWork = dto.ID > 0 && IsOutstandingWork(e);
+
 			e.Type = string.IsNullOrWhiteSpace(dto.Type) ? "Task" : dto.Type; e.Subject = dto.Subject.Trim(); e.SubjectEn = string.IsNullOrWhiteSpace(dto.SubjectEn) ? null : dto.SubjectEn.Trim();
 			e.DueDate = dto.DueDate; e.Done = dto.Done; e.LeadId = dto.LeadId; e.OpportunityId = dto.OpportunityId; e.CustomerId = dto.CustomerId; e.Notes = dto.Notes;
 			e.EntityType = string.IsNullOrWhiteSpace(dto.EntityType) ? null : dto.EntityType.Trim();
 			e.EntityId = dto.EntityId;
 			if (e.ReminderAt != dto.ReminderAt) { e.ReminderAt = dto.ReminderAt; e.Reminded = false; }   // re-arm on change
 			if (dto.OwnerEmployeeId.HasValue) e.OwnerEmployeeId = dto.OwnerEmployeeId;
+
+			// WORK BEGINS OR WORK ENDS, and only a change between the two is announced. An activity
+			// that was already outstanding work and still is has not started anything; re-saving it
+			// must not open a second follow-up.
+			bool isWork = IsOutstandingWork(e);
+			bool becameWork = !wasWork && isWork;
+			bool finished = wasWork && e.Done;
+
+			await using var tx = await ScopedTx.BeginOrJoinAsync(_context);
 			await _context.SaveChangesAsync();
+			if (becameWork) await RecordFollowUpAsync(e, completed: false);
+			else if (finished) await RecordFollowUpAsync(e, completed: true);
+			await tx.CommitAsync();
 			return (true, null);
 		}
 
@@ -1115,7 +1887,21 @@ namespace CrossBuy.BL
 		{
 			var a = await _context.Activities.FirstOrDefaultAsync(x => x.CompanyID == companyId && x.ID == id);
 			if (a == null) return false;
-			a.Done = !a.Done; await _context.SaveChangesAsync(); return true;
+			if (!await OwnerVisibleAsync(a.OwnerEmployeeId)) return false;   // hidden reads as absent, and absent cannot be toggled
+
+			bool wasWork = IsOutstandingWork(a);
+			a.Done = !a.Done;
+
+			await using var tx = await ScopedTx.BeginOrJoinAsync(_context);
+			await _context.SaveChangesAsync();
+
+			// TICKING IT OFF ENDS THE WORK. Un-ticking it does NOT reopen the work, and that is a
+			// recorded gap rather than an omission: the projection vocabulary has Create, Complete and
+			// SyncProgress and no Reopen, so announcing a re-opening would produce an event no
+			// consumer could act on. CRM-FOLLOWUP-REOPEN-NOT-PROJECTED.
+			if (wasWork && a.Done) await RecordFollowUpAsync(a, completed: true);
+			await tx.CommitAsync();
+			return true;
 		}
 
 		// CRM 3-4: every activity attached to one entity, newest first, scope-filtered.
@@ -1144,7 +1930,8 @@ namespace CrossBuy.BL
 		}
 
 		// ---------------- Accounts + Contacts (3-2) ----------------
-		public async Task<(List<AccountRow> rows, int total)> SearchAccountsAsync(int companyId, string? q, int page, int pageSize)
+		public async Task<(List<AccountRow> rows, int total)> SearchAccountsAsync(int companyId, string? q, int page, int pageSize,
+			int[]? tagIds = null, bool tagMatchAll = false, bool unassignedOnly = false)
 		{
 			var query = _context.CrmAccounts.AsNoTracking().Where(a => a.CompanyID == companyId);
 			var terms = SearchTerms.Parse(q);
@@ -1156,6 +1943,14 @@ namespace CrossBuy.BL
 			}
 			var scope = await ScopeAsync();
 			if (scope != null) query = query.Where(a => a.OwnerEmployeeId == null || scope.Contains(a.OwnerEmployeeId.Value));
+			// Accounts carry the same authoritative owner field, so Unassigned means the same thing
+			// here. Overdue follow-up does NOT reach this list: Activity has typed columns for a lead
+			// and an opportunity and none for an account, so an account "follow-up" would be a
+			// relationship the model does not state.
+			if (unassignedOnly) query = query.Where(a => a.OwnerEmployeeId == null);
+			var tagged = await TagMatchedIdsAsync(companyId, Platform.EntityRegistry.CrmAccount, query.Select(a => a.ID), tagIds, tagMatchAll);
+			if (tagged != null) query = query.Where(a => tagged.Contains(a.ID));
+
 			var total = await query.CountAsync();
 			page = Clamp(page, ref pageSize);
 			var rows = await query.OrderByDescending(a => a.ID).Skip((page - 1) * pageSize).Take(pageSize)
@@ -1174,16 +1969,60 @@ namespace CrossBuy.BL
 			return a;
 		}
 
-		public async Task<(bool ok, string? error, int id)> SaveAccountAsync(int companyId, CrmAccount dto, string? userId)
+		public async Task<(bool ok, string? error, int id)> SaveAccountAsync(int companyId, CrmAccount dto, string? userId, int[]? tagIds = null)
 		{
 			if (string.IsNullOrWhiteSpace(dto.Name)) return (false, "Account name is required", 0);
 			CrmAccount e;
-			if (dto.ID > 0) { e = await _context.CrmAccounts.FirstOrDefaultAsync(a => a.CompanyID == companyId && a.ID == dto.ID) ?? throw new InvalidOperationException("غير موجود"); }
+			if (dto.ID > 0)
+			{
+				var existing = await _context.CrmAccounts.FirstOrDefaultAsync(a => a.CompanyID == companyId && a.ID == dto.ID);
+                if (existing == null) return (false, "Not found", 0);
+                e = existing;
+				if (!await OwnerVisibleAsync(e.OwnerEmployeeId)) return (false, "Not found", 0);
+			}
 			else { e = new CrmAccount { CompanyID = companyId, CreatedAt = DateTime.UtcNow, CreatedBy = userId, OwnerEmployeeId = dto.OwnerEmployeeId ?? Me() }; _context.CrmAccounts.Add(e); }
+			bool isNew = dto.ID <= 0;
+			var beforeName = e.Name; var beforeOwner = e.OwnerEmployeeId; var beforeIndustry = e.Industry;
+			var beforeSegment = e.Segment; var beforeActive = e.IsActive;
+
 			e.Name = dto.Name.Trim(); e.NameEn = dto.NameEn; e.Industry = dto.Industry; e.IndustryEn = dto.IndustryEn; e.Phone = dto.Phone; e.Email = dto.Email; e.Website = dto.Website;
 			e.Address = dto.Address; e.Source = dto.Source; e.Segment = dto.Segment; e.IsActive = dto.IsActive; e.Notes = dto.Notes;
 			if (dto.OwnerEmployeeId.HasValue) e.OwnerEmployeeId = dto.OwnerEmployeeId;
+
+			await using var tx = await ScopedTx.BeginOrJoinAsync(_context);
 			await _context.SaveChangesAsync();
+
+			await RecordAsync(new Models.Platform.BusinessEventRecord
+			{
+				EntityCode = Platform.EntityRegistry.CrmAccount,
+				EntityId = e.ID,
+				EventType = isNew ? Platform.CrmAccountEvents.Created : Platform.CrmAccountEvents.Updated,
+				PayloadVersion = Models.Platform.CrmAccountEventPayload.Version,
+				Visibility = Models.Platform.BusinessEventVisibility.Internal,
+				DedupKey = isNew ? $"CrmAccount.Created:{e.ID}" : null,
+				CompanyIdOverride = e.CompanyID,
+				Payload = new Models.Platform.CrmAccountEventPayload
+				{
+					AccountName = e.Name,
+					OwnerEmployeeId = e.OwnerEmployeeId,
+					Industry = e.Industry,
+					Segment = e.Segment,
+					// Reported, never created here: an account is linked to a financial customer on
+					// Won, and an account write must not open an AR account as a side effect.
+					CustomerId = e.CustomerId,
+					ChangedFields = isNew ? null : Changed(
+						("Name", !string.Equals(beforeName, e.Name, StringComparison.Ordinal)),
+						("OwnerEmployeeId", beforeOwner != e.OwnerEmployeeId),
+						("Industry", !string.Equals(beforeIndustry, e.Industry, StringComparison.Ordinal)),
+						("Segment", !string.Equals(beforeSegment, e.Segment, StringComparison.Ordinal)),
+						("IsActive", beforeActive != e.IsActive)),
+				},
+			});
+
+			var (accTagOk, accTagErr) = await ApplyTagsAsync(companyId, Platform.EntityRegistry.CrmAccount, e.ID, tagIds);
+			if (!accTagOk) { await tx.RollbackAsync(); return (false, accTagErr, 0); }
+
+			await tx.CommitAsync();
 			return (true, null, e.ID);
 		}
 
@@ -1202,6 +2041,9 @@ namespace CrossBuy.BL
 		{
 			if (dto.AccountId <= 0) return (false, "Account is required");
 			if (string.IsNullOrWhiteSpace(dto.Name)) return (false, "Contact name is required");
+			// The contact row would carry the CALLER's company while hanging off another tenant's
+			// account — a person filed under a party this company cannot even read.
+			if (!await AccountInCompanyAsync(companyId, dto.AccountId)) return (false, ForeignReference);
 			CrmContact e;
 			if (dto.ID > 0) { e = await _context.CrmContacts.FirstOrDefaultAsync(c => c.CompanyID == companyId && c.ID == dto.ID) ?? throw new InvalidOperationException("غير موجود"); }
 			else { e = new CrmContact { CompanyID = companyId, AccountId = dto.AccountId, CreatedAt = DateTime.UtcNow, OwnerEmployeeId = Me() }; _context.CrmContacts.Add(e); }

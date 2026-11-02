@@ -183,7 +183,9 @@ namespace CrossBuy.Tests
 			Assert.Contains("aria-label=", panel);
 
 			// Decorative icons are hidden from assistive technology rather than announced as "check square".
-			Assert.Contains("aria-hidden=\"true\"", panel);
+            // Panel notices render their shared decorative icon from a helper, so its
+            // accessibility contract lives in the helper rather than this source fragment.
+            Assert.Contains("aria-hidden=\"\"true\"\"", View());
 
 			// The only interactive element is an anchor with visible text — no icon-only control.
 			Assert.DoesNotContain("<i class=\"ki-outline\"></i>", panel);

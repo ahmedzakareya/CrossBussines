@@ -27,5 +27,13 @@ namespace CrossBuy.Models.Context.Calendar
         public int Id { get; set; }
         public int EventId { get; set; }
         public int EmployeeId { get; set; }
+
+        // ---- THE ANSWER ----------------------------------------------------------------------
+        //
+        // NULL IS "HAS NOT REPLIED", and it is the honest value for every row written before this
+        // existed. The vocabulary is iCalendar's own PARTSTAT - the same words the sender already
+        // puts in the .ics - so the stored answer and the wire format cannot drift apart.
+        public string? ResponseStatus { get; set; }
+        public DateTime? RespondedAtUtc { get; set; }
     }
 }

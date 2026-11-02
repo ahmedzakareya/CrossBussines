@@ -8,6 +8,8 @@
     var customerName = ViewBag.CustomerName as string;
     var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
     var acctDisplayName = !isAr && !string.IsNullOrWhiteSpace(Model.NameEn) ? Model.NameEn! : Model.Name;
+    var allTags = ViewBag.AllTags as IReadOnlyList<CrossBuy.Models.Context.Platform.Tag> ?? new List<CrossBuy.Models.Context.Platform.Tag>();
+    var myTagIds = ViewBag.EntityTagIds as int[] ?? Array.Empty<int>();
 }
 <div class="d-flex flex-column flex-column-fluid">
     <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
@@ -42,6 +44,13 @@
                 <div class="col-md-6"><label class="fw-semibold fs-7 text-muted mb-1">@SR["Address"]</label><input name="address" class="form-control form-control-solid" value="@Model.Address" /></div>
                 <div class="col-md-3"><label class="fw-semibold fs-7 text-muted mb-1">@Localizer["Source"]</label><input name="source" class="form-control form-control-solid" value="@Model.Source" /></div>
                 <div class="col-md-3 d-flex align-items-end"><div class="form-check form-switch"><input type="hidden" name="isActive" value="false" /><input class="form-check-input" type="checkbox" name="isActive" value="true" id="isActive" @(Model.IsActive ? "checked" : "")><label class="form-check-label fw-semibold ms-2" for="isActive">@SR["Active"]</label></div></div>
+                <div class="col-12"><label class="fw-semibold fs-7 text-muted mb-1">@SR["Tags"]</label>
+                    @* The sentinel is what lets the server tell "cleared them all" from "did not manage tags":
+                       an emptied multi-select posts no key at all. *@
+                    <input type="hidden" name="TagsManaged" value="1" />
+                    <select name="tagIds" class="form-select form-select-solid" multiple data-control="select2" data-placeholder="@SR["Select tags"]">
+                        @foreach (var tg in allTags) { <option value="@tg.ID" selected="@(myTagIds.Contains(tg.ID))">@tg.Name</option> }
+                    </select></div>
                 <div class="col-12"><label class="fw-semibold fs-7 text-muted mb-1">@SR["Notes"]</label><textarea name="notes" class="form-control form-control-solid" rows="2">@Model.Notes</textarea></div>
             </div></div></div>
             <div class="d-flex justify-content-end gap-2 mb-5"><a href="@Url.Action("Accounts","Crm")" class="btn btn-light">@SR["Cancel"]</a><button class="btn btn-primary"><i class="ki-outline ki-check fs-2"></i>@SR["Save"]</button></div>

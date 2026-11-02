@@ -1,4 +1,4 @@
-﻿using CrossBuy.BL;
+using CrossBuy.BL;
 using CrossBuy.Models.Context;
 using CrossBuy.Models.Context.Admin;
 using CrossBuy.Models.Context.Accounting;
@@ -149,6 +149,119 @@ namespace CrossBuy.Controllers.Api
 		// controller's constructor is edited by several tabs at once, and a 23rd parameter would collide on
 		// every merge. Nothing outside this one method changes.
 		// =========================================================================================
+		// =========================================================================================
+		// GET /api/dev/backfill-module-roles?key=seed123&companyId=<id>&employeeId=<id>
+		//
+		// Repairs ONE company created before first-administrator module seeding existed, by calling
+		// the SAME CompanyService method company creation uses. It is not a role-granting endpoint:
+		// the service refuses an employee who does not belong to the company and refuses any company
+		// that already holds module roles, so it can only ever fill a vacuum.
+		// =========================================================================================
+		// =========================================================================================
+		// GET /api/dev/reset-user-password?key=seed123&email=<x>&companyId=<id>&password=<y>
+		//
+		// WHY IT EXISTS: the product has no administrator-facing password reset. AccountController
+		// only offers SELF-service change-password, which needs the current password. So when a login
+		// is created and its one-time password is lost, nobody can recover that account — there is no
+		// screen for it. That gap is recorded for the roadmap; this is the development stand-in.
+		//
+		// IT IS DELIBERATELY NARROW. The caller must name the company, and the reset is refused unless
+		// the user's OWN employee row belongs to that company — so it cannot be pointed at an account
+		// in a company the caller did not name. It goes through UserManager's own reset token; no hash
+		// is written by hand. [DevOnly] means it 404s outside Development.
+		// =========================================================================================
+		// =========================================================================================
+		// GET /api/dev/open-fiscal-year?key=seed123&companyId=<id>&year=<yyyy>
+		//
+		// WHY IT EXISTS: THE PRODUCT HAS NO WAY TO CREATE A FISCAL YEAR. Nothing outside this
+		// controller ever inserts a FiscalYear -- there is no screen, no endpoint and no service. A
+		// newly created company therefore has no fiscal calendar, and StockService.PeriodGuardAsync
+		// refuses every posting with "No fiscal period covers the movement date". The failure is silent
+		// at the UI: the message is swallowed into a toast and the row simply never appears.
+		//
+		// That means a new company can post NOTHING -- no opening stock, no invoice, no journal --
+		// until somebody writes rows by hand. It is recorded as a roadmap gap; this is the development
+		// stand-in so a demo company can be stood up.
+		//
+		// Narrow: it refuses a company that already has a fiscal year, so it can only fill a vacuum.
+		// =========================================================================================
+		[HttpGet("open-fiscal-year")]
+		public async Task<IActionResult> OpenFiscalYear(
+			[FromQuery] string key, [FromQuery] int companyId, [FromQuery] int year)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			if (companyId <= 0 || year < 2000 || year > 2100)
+				return BadRequest(new { message = "companyId and a sensible year are required" });
+
+			if (!await _db.Companies.AnyAsync(c => c.CompanyID == companyId))
+				return NotFound(new { message = $"no such company: {companyId}" });
+
+			if (await _db.FiscalYears.AnyAsync(f => f.CompanyID == companyId))
+				return BadRequest(new { message = $"refused: company {companyId} already has a fiscal year" });
+
+			var fy = new CrossBuy.Models.Context.Accounting.FiscalYear
+			{
+				CompanyID = companyId, Name = year.ToString(),
+				StartDate = new DateTime(year, 1, 1), EndDate = new DateTime(year, 12, 31),
+				Status = "Open",
+			};
+			_db.FiscalYears.Add(fy);
+			await _db.SaveChangesAsync();
+
+			for (byte m = 1; m <= 12; m++)
+			{
+				_db.FiscalPeriods.Add(new CrossBuy.Models.Context.Accounting.FiscalPeriod
+				{
+					FiscalYearId = fy.ID, PeriodNo = m,
+					StartDate = new DateTime(year, m, 1),
+					EndDate = new DateTime(year, m, DateTime.DaysInMonth(year, m)),
+					Status = "Open",
+				});
+			}
+			await _db.SaveChangesAsync();
+
+			return Ok(new { companyId, year, fiscalYearId = fy.ID, periods = 12, message = "fiscal year opened" });
+		}
+
+		[HttpGet("reset-user-password")]
+		public async Task<IActionResult> ResetUserPassword(
+			[FromQuery] string key, [FromQuery] string email,
+			[FromQuery] int companyId, [FromQuery] string password)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			if (string.IsNullOrWhiteSpace(email) || companyId <= 0 || string.IsNullOrWhiteSpace(password))
+				return BadRequest(new { message = "email, companyId and password are all required" });
+
+			var user = await _um.FindByEmailAsync(email);
+			if (user == null) return NotFound(new { message = "no such login" });
+
+			var belongs = await _db.Employee.AsNoTracking()
+				.AnyAsync(e => e.UserId == user.Id && e.EmpCompanyID == companyId);
+
+			if (!belongs)
+				return BadRequest(new { message = $"refused: that login is not an employee of company {companyId}" });
+
+			var token = await _um.GeneratePasswordResetTokenAsync(user);
+			var res = await _um.ResetPasswordAsync(user, token, password);
+			if (!res.Succeeded)
+				return StatusCode(500, new { message = "reset failed", errors = res.Errors.Select(e => e.Description) });
+
+			user.IsActive = true; user.IsEndUser = true;
+			await _um.UpdateAsync(user);
+
+			return Ok(new { email, companyId, message = "password reset; IsActive and IsEndUser ensured" });
+		}
+
+		[HttpGet("backfill-module-roles")]
+		public async Task<IActionResult> BackfillModuleRoles(
+			[FromQuery] string key, [FromQuery] int companyId, [FromQuery] int employeeId,
+			[FromServices] CrossBuy.BL.ICompanyService companies)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			var message = await companies.BackfillFirstAdministratorModuleRolesAsync(companyId, employeeId);
+			return Ok(new { companyId, employeeId, message });
+		}
+
 		[HttpGet("identity-roles-seed")]
 		public async Task<IActionResult> IdentityRolesSeed(string key, string password, bool reset = false)
 		{
@@ -7851,7 +7964,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 		[HttpGet("make-admin")]
 		public async Task<IActionResult> MakeAdmin(string key, string user, string email, string pass,
 			[FromServices] Microsoft.AspNetCore.Identity.RoleManager<Microsoft.AspNetCore.Identity.IdentityRole> roles,
-			string? fullName = null, int companyId = 1, int jobTitleId = 2)
+			string? fullName = null, int companyId = CrossBuy.Models.DevSeedFixture.DefaultCompanyId, int jobTitleId = 2)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 			if (string.IsNullOrWhiteSpace(user) || string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(pass))

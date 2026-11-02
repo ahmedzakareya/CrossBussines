@@ -1,5 +1,19 @@
 # Company-1 Inventory
 
+## 2026-10-11 target reconciliation measurement
+
+The historical measurement below is retained as a baseline. On `wt-pb-cycle-01`, the
+controller-declaration guard now finds **5** files: AdminController, Api/InventoryApiController,
+HyperController, HyperPosController and PosAppController. CurrencyController had already
+removed its declaration in the target line. The transferred Brand and Accounting tenancy changes
+remove their declarations too. Accounting's remaining executable references were reconciled to
+the resolved caller company, including payroll and invoice dropdown recovery paths. No database
+change or deployment was performed. This count covers the guard's named declaration forms only;
+it does not classify every parameter default or prove all remaining controllers tenant-safe.
+
+The earlier invoice-only and legacy-AI guards that required Accounting's constant to remain
+are superseded by guards against reintroducing that declaration. AI remains deferred.
+
 Re-measured on the stabilization candidate, comments stripped so the documentation of past fixes is
 not counted as debt. The convergence report said 13 files; the honest current figure is **17 sites
 across 16 files** — 14 declared constants and 3 files carrying company parameter defaults. The

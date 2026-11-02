@@ -1,4 +1,4 @@
-﻿@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @{
     @* GLOBAL UI RULE: Inventory is the only visual authority. Inventory shell, Inventory cards. *@
     Layout = "~/Views/Shared/_LayoutInventory.cshtml";
@@ -6,180 +6,7 @@
     var dir = isAr ? "rtl" : "ltr";
 }
 <link href="@Url.Content("~/Backend-assets/plugins/custom/fullcalendar/fullcalendar.bundle.css")" rel="stylesheet" type="text/css" />
-<style>
-    /* Event ownership is carried by two APPROVED Metronic semantic tokens, never by a literal. */
-    /* Personal uses brand primary, company uses the info token. The pair must stay visually */
-    /* distinct: that distinction is what tells a reader whose event this is, so it is behaviour, */
-    /* not decoration. The literal removed from the company rule was Metronic's STOCK primary — */
-    /* precisely the blue crossbuy-brand.css overrides to ledger green on purpose, so hardcoding */
-    /* it re-introduced the one colour the brand exists to replace. */
-    /* FACEBOOK BLUE REBRAND: the pair above stopped being distinct. --bs-primary became
-       #1877F2 and --bs-info #3B82F6 - two neighbouring blues, 37 apart in RGB - so a company
-       event read as a personal one. Both also carry small white text, and white measures
-       4.23 on the first and 3.68 on the second, under the AA minimum.
-       So each chip now names the step that can actually hold a white label, and company
-       takes violet: red, amber and green belong to danger/warning/success, and a calendar
-       chip must not look like a status.
-           personal  --cb-brand-fill    #166FE5  white 4.73  separation 115
-           company   --cb-violet-strong #7C3AED  white 5.70                 */
-    .fc-event.cbev-personal, .fc .cbev-personal { background: var(--cb-brand-fill); border-color: var(--cb-brand-fill); color: #fff; }
-    .fc-event.cbev-company, .fc .cbev-company { background: var(--cb-violet-strong); border-color: var(--cb-violet-strong); color: #fff; }
-    #kt_calendar_app { min-height: 700px; }
-
-    /* ------------------------------------------------------------------------------------------
-       THE EVENT TITLE MUST STAY INSIDE ITS COLOURED PILL.
-
-       Measured defect, RTL at 390px: a dot-event title rendered at x=125 w=6px while ITS OWN event
-       box was x=135 w=36px — the title had escaped its pill to the left and was painting WHITE text
-       straight onto the day cell. axe reported white on the .fc-day-today tint at 1.06:1, and it
-       was right: the text really was outside the purple.
-
-       Cause is the flexbox default, not a colour: FullCalendar lays the dot event out as a flex row
-       and `.fc-event-title` is a flex item, whose min-width defaults to `auto` = its intrinsic
-       content width. A long Arabic title therefore REFUSES to shrink below its text width and
-       overflows the 36px pill. `min-width: 0` is the standard release for exactly this, and
-       ellipsis truncation makes the overflow visible as "…" instead of as escaped text.
-
-       Fixed at OUR integration boundary — no vendor file is touched, no colour is changed, and the
-       approved personal/company colours above are untouched. ------------------------------------ */
-       Measured box model at 390px RTL, pill x=260..296 (36px wide):
-           .fc-daygrid-event-dot   287  8px   inside
-           .fc-event-time  "3 ص"   258 23px   STARTS LEFT OF THE PILL
-           .fc-event-title         249  6px   ENTIRELY OUTSIDE THE PILL
-
-       The children sum to ~37px inside a 36px flex line, and the pill is `overflow: visible`, so the
-       line spills out of the coloured background instead of being clipped by it. Letting the title
-       shrink is not enough on its own — the TIME is also `min-width: auto` and refuses to go below
-       its text width, and nothing clips what escapes.
-
-       So both halves are fixed: every child may shrink, and the pill CLIPS. `overflow: hidden` on the
-       pill is the guarantee that matters — it makes it structurally impossible for white event text
-       to be painted anywhere except on its own coloured background. */
-    .fc-daygrid-dot-event,
-    .fc-daygrid-block-event { overflow: hidden; }
-
-    .fc-daygrid-dot-event .fc-event-title,
-    .fc-daygrid-block-event .fc-event-title,
-    .fc-daygrid-dot-event .fc-event-time,
-    .fc-daygrid-block-event .fc-event-time {
-        min-width: 0;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
-    /* ------------------------------------------------------------------------------------------
-       DAYS OUTSIDE THE CURRENT MONTH MUST STILL BE READABLE.
-
-       FullCalendar dims them with `.fc-day-other .fc-daygrid-day-top { opacity: .3 }`. The day
-       number's own colour measures 13.26:1 in isolation — which is why an isolated sample says it
-       passes — but 30% opacity composites it to 1.8:1 on white. The dimming is the failure, not the
-       colour.
-
-       The "not this month" signal is real information and is KEPT: instead of removing the dim, the
-       number is painted at full opacity in --bs-text-muted (7.27:1). It still reads as clearly
-       secondary to the darker current-month numbers, and it is now legible. Uses the authority's own
-       token; no new palette, no !important. (Measured hex values are in the increment report, not
-       here: the colour gate scans this whole block and a hex in a comment reads to it as an invented
-       palette.) ------------------------------------------------------------------------------- */
-    .fc .fc-day-other .fc-daygrid-day-top { opacity: 1; }
-    .fc .fc-day-other .fc-daygrid-day-number { color: var(--bs-text-muted); }
-    /* --- responsive / mobile: stack the toolbar, shrink controls, let height flow --- */
-    @@media (max-width: 767.98px) {
-        #kt_calendar_app { min-height: auto; }
-        .fc .fc-toolbar.fc-header-toolbar { flex-direction: column; align-items: stretch; gap: .5rem; margin-bottom: 1rem; }
-        .fc .fc-toolbar-chunk { display: flex; justify-content: center; flex-wrap: wrap; gap: .25rem; }
-        .fc .fc-toolbar-title { font-size: 1.05rem; text-align: center; }
-        .fc .fc-button { padding: .35rem .55rem; font-size: .8rem; }
-        .fc .fc-col-header-cell-cushion, .fc .fc-daygrid-day-number { font-size: .75rem; }
-        .fc .fc-daygrid-event { font-size: .7rem; }
-        .card-body { padding: .75rem; }
-        .cbrecip-menu { width: 100%; }
-    }
-    .cbrecip-input { outline: 0; border: 0; background: transparent; min-width: 140px; padding: 6px 2px; }
-    .cbrecip-box { min-height: 40px; align-content: center; }
-    /* Recipient picker: Metronic tokens only. The literals removed here were the Metronic 8.1 grey */
-    /* scale; the shipped bundle is 8.2.3 and its grey ramp has since moved, so those literals had */
-    /* already drifted away from the components they sit beside. A token tracks the theme, including */
-    /* its dark values, which a literal cannot. The avatar rule also named --bs-light-primary, which */
-    /* is defined nowhere, so it had always fallen through to its literal; it now names the real */
-    /* brand token --bs-primary-light. */
-    .cbrecip-menu { position: absolute; top: 100%; inset-inline-start: 0; z-index: 1060; background: var(--bs-body-bg); border: 1px solid var(--bs-gray-300); border-radius: 8px; box-shadow: var(--bs-box-shadow); width: 340px; max-width: 100%; max-height: 300px; overflow: auto; margin-top: 4px; }
-    .cbrecip-item { display: flex; align-items: center; gap: 10px; padding: 8px 12px; cursor: pointer; }
-    .cbrecip-item:hover, .cbrecip-item.active { background: var(--bs-gray-100); }
-    .cbrecip-av img, .cbrecip-av .cbrecip-ini { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; display: flex; align-items: center; justify-content: center; background: var(--bs-primary-light); color: var(--bs-primary); font-weight: 700; }
-    .cbrecip-name { font-weight: 600; color: var(--bs-gray-900); font-size: .9rem; }
-    .cbrecip-email { font-size: .78rem; color: var(--bs-gray-600); }
-
-    /* The TODAY tint. FullCalendar ships its own, and Metronic recolours it to a pale green that
-       belongs to no part of this identity - it arrives from the theme bundle, so no amount of
-       grepping this repository for a hex finds it. Repointed at the brand's own surface token, the
-       one 100+ screens already use for a tinted ground. No new value is introduced. */
-    .fc .fc-day-today { background: var(--cb-brand-surface, #E7F0FF) !important; }
-
-    /* The event dot, which FullCalendar paints from --bs-primary and therefore renders in the same
-       family as the chip it sits on - measured at 1.35:1 on a company chip and 1.12:1 on a personal
-       one, against WCAG's 3:1 for a non-text graphic. It takes the chip's own white, whose ratios
-       are the 5.70 / 4.73 recorded above. */
-    .fc .cbev-company .fc-daygrid-event-dot,
-    .fc .cbev-personal .fc-daygrid-event-dot { border-color: #fff; }
-
-    /* ------------------------------------------------------------------------------------------
-       WEEK AND DAY VIEWS: A SHORT EVENT MUST STILL BE READABLE.
-
-       Measured defect, week view at 1680px - the block is shorter than its own text:
-
-           15 minutes   block  14px   text  12px   overflow: visible
-           60 minutes   block  38px   text  36px   overflow: visible
-           2h 30m       block  97px   text  95px   overflow: visible
-
-       A 15-minute event gets a 14px sliver, and FullCalendar stacks the time ABOVE the title, so
-       two lines are asked to fit in fourteen pixels. `overflow: visible` means nothing clips them
-       either, so the text renders outside its own coloured block - exactly the failure this file
-       already documents for the month-view pill, on the other axis.
-
-       Fixed the same way and at the same boundary - no vendor file, no colour:
-
-         · min-height so one line always has room. 15 minutes at this zoom cannot be given more
-           space without lying about the duration, so it is given enough to be READ.
-         · overflow: hidden, so what does not fit is clipped by the block instead of escaping it.
-         · the time and title become one WRAPPING flex row: a short event reads
-           "10:00 - 10:15  Daily stand-up" on one line, while a tall event still wraps to two
-           because its title is long. One rule, both cases, no height query needed.
-       ------------------------------------------------------------------------------------------ */
-    .fc .fc-timegrid-event { min-height: 22px; overflow: hidden; }
-    .fc .fc-timegrid-event .fc-event-main { min-height: 0; overflow: hidden; }
-    .fc .fc-timegrid-event .fc-event-main-frame { flex-flow: row nowrap; column-gap: .35rem; align-items: baseline; }
-    .fc .fc-timegrid-event .fc-event-time { flex: 0 0 auto; font-weight: 600; }
-    .fc .fc-timegrid-event .fc-event-title-container { min-width: 0; }
-    .fc .fc-timegrid-event .fc-event-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-    /* ------------------------------------------------------------------------------------------
-       LIST VIEW: THE COLOUR BELONGS TO THE DOT, NOT TO THE ROW.
-
-       In list view FullCalendar renders each event as a <tr class="fc-list-event">, and that <tr>
-       carries the .cbev-* class. The solid-fill rule written for month and week chips therefore
-       painted an entire table row - a saturated band the full width of the card, four of them
-       stacked. That was never a decision about the list; it is a side effect of one selector
-       reaching a element it was not written for.
-
-       FullCalendar's own list view already has the right affordance for this: .fc-list-event-dot,
-       a small ring beside the time. So the fill is switched off for list rows and the dot takes the
-       category colour instead - the same two tokens, just carried by the element built for it.
-       ------------------------------------------------------------------------------------------ */
-    .fc .fc-list-event.cbev-company, .fc .fc-list-event.cbev-personal { background: transparent; }
-    /* NOT 'inherit': the <td> would inherit from the <tr>, and the <tr> is exactly what carries the
-       chip rule's color:#fff - which left white text on a now-white row. Measured at
-       rgb(255,255,255) on rgba(0,0,0,0) before this line existed. Stated outright instead. */
-    .fc .fc-list-event.cbev-company, .fc .fc-list-event.cbev-personal { color: #4b5675; }
-    .fc .fc-list-event.cbev-company > td, .fc .fc-list-event.cbev-personal > td { color: #4b5675; }
-    .fc .fc-list-event.cbev-company .fc-list-event-title a,
-    .fc .fc-list-event.cbev-personal .fc-list-event-title a { color: #071437; font-weight: 600; }
-    .fc .fc-list-event.cbev-company .fc-list-event-dot { border-color: var(--cb-violet-strong); }
-    .fc .fc-list-event.cbev-personal .fc-list-event-dot { border-color: var(--cb-brand-fill); }
-    /* The row keeps a hover, the way a list row should. */
-    .fc .fc-list-event:hover > td { background: var(--cb-brand-surface, #E7F0FF); }
-</style>
+<link rel="stylesheet" href="~/Backend-assets/css/crossbuy-brand.css" asp-append-version="true" />
 <div class="d-flex flex-column flex-column-fluid">
     <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack">
         <div class="page-title d-flex flex-column justify-content-center gap-1">
@@ -518,6 +345,23 @@
     // ---------- FullCalendar ----------
     // On phones let the grid flow (auto height, page scrolls); on desktop keep the fixed Metronic height.
     function calHeight(){ return window.innerWidth < 768 ? 'auto' : 750; }
+    // Full weekday names overlap in a seven-column phone month grid. Keep the
+    // complete accessible label while rendering locale-native narrow day names.
+    // Desktop and the date-bearing week/day headers retain FullCalendar's text.
+    function calDayHeader(arg) {
+        var label = document.createElement('span');
+        var compactMonth = window.innerWidth < 576 && arg.view.type === 'dayGridMonth';
+        var locale = '@(isAr ? "ar" : "en")';
+        var full = arg.view.type === 'dayGridMonth'
+            ? new Intl.DateTimeFormat(locale, {weekday:'long', timeZone:'UTC'}).format(arg.date)
+            : arg.text;
+        label.textContent = compactMonth
+            ? new Intl.DateTimeFormat(locale, {weekday:'narrow', timeZone:'UTC'}).format(arg.date)
+            : arg.text;
+        label.title = full;
+        label.setAttribute('aria-label', full);
+        return {domNodes:[label]};
+    }
     // The deep-link parameters, read once. Both are optional and each is independent: a day with no
     // event id simply opens the calendar on that day.
     var qs = new URLSearchParams(location.search);
@@ -539,6 +383,7 @@
         },
         headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek' },
         initialView: 'dayGridMonth',
+        dayHeaderContent: calDayHeader,
         height: calHeight(),
         selectable: true,
         navLinks: true,
@@ -564,7 +409,10 @@
             arg.el.setAttribute('role', 'button');
             if (arg.el.getAttribute('aria-controls') === '') { arg.el.removeAttribute('aria-controls'); }
         },
-        windowResize: function(){ calendar.setOption('height', calHeight()); },
+        windowResize: function(){
+            calendar.setOption('height', calHeight());
+            calendar.setOption('dayHeaderContent', function(arg){ return calDayHeader(arg); });
+        },
         events: function(info, success, failure){
             fetch('@Url.Action("Events","Calendar")'+'?from='+encodeURIComponent(info.startStr)+'&to='+encodeURIComponent(info.endStr), {credentials:'same-origin'})
                 .then(function(r){return r.ok?r.json():[];})
@@ -591,20 +439,8 @@
         }
     });
     calendar.render();
-    // FullCalendar v5 ignores buttonText when a string `locale` is set — force the toolbar labels onto the DOM.
-    (function(){
-        var map = {
-            'fc-today-button': '@Localizer["today"]',
-            'fc-dayGridMonth-button': '@Localizer["month"]',
-            'fc-timeGridWeek-button': '@Localizer["week"]',
-            'fc-timeGridDay-button': '@Localizer["day"]',
-            'fc-listWeek-button': '@Localizer["list"]'
-        };
-        Object.keys(map).forEach(function(cls){
-            var b = calEl.querySelector('.' + cls);
-            if (b) b.textContent = map[cls];
-        });
-    })();
+    // Constructor buttonText has precedence over locale defaults in the bundled
+    // FullCalendar version. Let its renderer own the text nodes across resizes.
     window.calendar = calendar;
 
     // ---------- real-time: refetch when an event is created/edited/deleted anywhere in the company ----------

@@ -174,13 +174,17 @@ namespace CrossBuy.Tests
             // protected endpoints looks like. Verified independently of the analyzer by differencing the gap set
             // rebuilt from docs/architecture/evidence/Roslyn-Authorization-Inventory.csv against this file's
             // entries — 143 vs 143, zero ids on either side alone.
-            Assert.Equal(410, mutating);
-            Assert.Equal(157, attr);
-            Assert.Equal(110, inBody);
+            // The registry records later authorized surfaces and retired debt in its
+            // history. Keep the historical debt ceiling and reconcile today's columns.
+            Assert.Equal(481, mutating);
+            Assert.Equal(170, attr);
+            Assert.Equal(217, inBody);
+            int anonymous = f.TryGetProperty("anonymousByDesign", out var a) ? a.GetInt32() : 0;
 
             // THE INVARIANT. Descriptive totals grow when protected endpoints are added; this one may only shrink.
-            Assert.Equal(143, gaps);
-            Assert.Equal(mutating, attr + inBody + gaps);
+            Assert.InRange(gaps, 0, 94);
+            Assert.Equal(gaps, doc.RootElement.GetProperty("entries").GetArrayLength());
+            Assert.Equal(mutating, attr + inBody + anonymous + gaps);
         }
     }
 }

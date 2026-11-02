@@ -188,10 +188,10 @@
                    Delete on purpose: that button removes what is SELECTED, these two remove the DESIGN.
                    Both ask before acting — neither is a click anyone wants to make by accident. *@
                 <div class="btn-group">
-                    <button type="button" id="cbd-new" class="cbd-tb-btn"
+                    <button disabled="@(Model.SchemaUnavailable ? "disabled" : null)" type="button" id="cbd-new" class="cbd-tb-btn"
                             title="@(arabic ? "تقرير جديد — يبدأ من صفحة فارغة" : "New report — start from an empty page")"
                             aria-label="@(arabic ? "تقرير جديد" : "New report")">@Ico("newdoc")</button>
-                    <button type="button" id="cbd-clear" class="cbd-tb-btn cbd-tb-danger"
+                    <button disabled="@(Model.SchemaUnavailable ? "disabled" : null)" type="button" id="cbd-clear" class="cbd-tb-btn cbd-tb-danger"
                             title="@(arabic ? "مسح كل عناصر الصفحة" : "Clear every element on the page")"
                             aria-label="@(arabic ? "مسح الصفحة" : "Clear the page")">@Ico("clear")</button>
                 </div>
@@ -218,15 +218,15 @@
                 </div>
 
                 <div class="btn-group">
-                    <button type="button" id="cbd-preview" class="cbd-tb-btn"
+                    <button disabled="@(Model.SchemaUnavailable ? "disabled" : null)" type="button" id="cbd-preview" class="cbd-tb-btn"
                             title="@(arabic ? "معاينة" : "Preview")"
                             aria-label="@(arabic ? "معاينة" : "Preview")">@Ico("eye")</button>
-                    <button type="button" id="cbd-print" class="cbd-tb-btn"
+                    <button disabled="@(Model.SchemaUnavailable ? "disabled" : null)" type="button" id="cbd-print" class="cbd-tb-btn"
                             title="@(arabic ? "طباعة" : "Print")"
                             aria-label="@(arabic ? "طباعة" : "Print")">@Ico("printer")</button>
-                    <button type="button" id="cbd-pdf" class="cbd-tb-btn"
+                    <button disabled="@(Model.SchemaUnavailable ? "disabled" : null)" type="button" id="cbd-pdf" class="cbd-tb-btn"
                             title="PDF" aria-label="PDF">@Ico("pdf")</button>
-                    <button type="button" class="cbd-tb-btn" data-bs-toggle="dropdown" aria-expanded="false"
+                    <button disabled="@(Model.SchemaUnavailable ? "disabled" : null)" type="button" class="cbd-tb-btn" data-bs-toggle="dropdown" aria-expanded="false"
                             title="@(arabic ? "تصدير" : "Export")"
                             aria-label="@(arabic ? "تصدير" : "Export")">@Ico("export")</button>
                     <ul class="dropdown-menu">
@@ -235,7 +235,7 @@
                     </ul>
                 </div>
 
-                <button type="button" id="cbd-save" class="cbd-tb-btn cbd-tb-primary"
+                <button disabled="@(Model.SchemaUnavailable ? "disabled" : null)" type="button" id="cbd-save" class="cbd-tb-btn cbd-tb-primary"
                         title="@(arabic ? "حفظ التقرير" : "Save the report") (Ctrl+S)">@Ico("save")<span class="cbd-tb-btn-text">@(arabic ? "حفظ" : "Save")</span></button>
             </div>
         </div>
@@ -250,12 +250,14 @@
                 <div class="card-body text-center py-15">
                     <i class="ki-outline ki-information-5 fs-3x text-gray-400 mb-4 d-block"></i>
                     <div class="fw-bold fs-4 text-gray-800 mb-2">
-                        @(arabic ? "لا توجد مجموعات بيانات متاحة لك" : "No data sets are available to you")
+                        @(Model.SchemaUnavailable
+                            ? (arabic ? "مصمم التقارير غير جاهز في هذا التنصيب" : "Report Studio is not ready on this installation")
+                            : (arabic ? "لا توجد مجموعات بيانات متاحة لك" : "No data sets are available to you"))
                     </div>
                     <div class="text-muted fs-6">
-                        @(arabic
-                            ? "يحتاج بناء التقارير إلى صلاحية على مجموعة بيانات واحدة على الأقل. تواصل مع مسؤول النظام."
-                            : "Building a report needs permission on at least one data set. Ask your administrator.")
+                        @(Model.SchemaUnavailable
+                            ? (arabic ? "يلزم استكمال تهيئة قاعدة بيانات التقارير بواسطة مسؤول النظام." : "The reporting database setup must be completed by your administrator.")
+                            : (arabic ? "يحتاج بناء التقارير إلى صلاحية على مجموعة بيانات واحدة على الأقل. تواصل مع مسؤول النظام." : "Building a report needs permission on at least one data set. Ask your administrator."))
                     </div>
                 </div>
             </div>
@@ -308,9 +310,9 @@
                         <option value="1">@(arabic ? "عرضي" : "Landscape")</option>
                     </select>
                     <div class="cbd-seg" role="group" aria-label="@(arabic ? "اتجاه الورق" : "Page orientation")">
-                        <button type="button" class="cbd-tb-btn" data-seg="cbd-orient" data-val="0"
+                        <button disabled="@(Model.SchemaUnavailable ? "disabled" : null)" type="button" class="cbd-tb-btn" data-seg="cbd-orient" data-val="0"
                                 title="@(arabic ? "طولي" : "Portrait")">@Ico("portrait")</button>
-                        <button type="button" class="cbd-tb-btn" data-seg="cbd-orient" data-val="1"
+                        <button disabled="@(Model.SchemaUnavailable ? "disabled" : null)" type="button" class="cbd-tb-btn" data-seg="cbd-orient" data-val="1"
                                 title="@(arabic ? "عرضي" : "Landscape")">@Ico("landscape")</button>
                     </div>
 
@@ -318,7 +320,7 @@
                        one was; here each carries its own name and they stop competing with the controls
                        either side of them for the reader's attention. *@
                     <div class="cbd-pop-wrap">
-                        <button type="button" class="cbd-tb-btn" id="cbd-margins-btn"
+                        <button disabled="@(Model.SchemaUnavailable ? "disabled" : null)" type="button" class="cbd-tb-btn" id="cbd-margins-btn"
                                 title="@(arabic ? "الهوامش (مم)" : "Margins (mm)")"
                                 aria-haspopup="true" aria-expanded="false">@Ico("margins")</button>
                         <div class="cbd-pop" id="cbd-margins-pop" hidden>
@@ -365,11 +367,11 @@
                         <option value="2">@(arabic ? "من اليسار" : "Left to right")</option>
                     </select>
                     <div class="cbd-seg" role="group" aria-label="@(arabic ? "اتجاه النص" : "Text direction")">
-                        <button type="button" class="cbd-tb-btn" data-seg="cbd-dir" data-val="0"
+                        <button disabled="@(Model.SchemaUnavailable ? "disabled" : null)" type="button" class="cbd-tb-btn" data-seg="cbd-dir" data-val="0"
                                 title="@(arabic ? "حسب اللغة" : "Follow the language")">@Ico("dirauto")</button>
-                        <button type="button" class="cbd-tb-btn" data-seg="cbd-dir" data-val="1"
+                        <button disabled="@(Model.SchemaUnavailable ? "disabled" : null)" type="button" class="cbd-tb-btn" data-seg="cbd-dir" data-val="1"
                                 title="@(arabic ? "من اليمين لليسار" : "Right to left")">@Ico("dirrtl")</button>
-                        <button type="button" class="cbd-tb-btn" data-seg="cbd-dir" data-val="2"
+                        <button disabled="@(Model.SchemaUnavailable ? "disabled" : null)" type="button" class="cbd-tb-btn" data-seg="cbd-dir" data-val="2"
                                 title="@(arabic ? "من اليسار لليمين" : "Left to right")">@Ico("dirltr")</button>
                     </div>
 
@@ -413,14 +415,14 @@
                     @* ---- ZOOM, pushed to the far end: it changes how the page LOOKS and nothing the
                            page IS, so it does not belong among the document's own properties. ---- *@
                     <div class="d-flex align-items-center gap-1 ms-auto">
-                        <button type="button" class="cbd-tb-btn" data-zoom="-10"
+                        <button disabled="@(Model.SchemaUnavailable ? "disabled" : null)" type="button" class="cbd-tb-btn" data-zoom="-10"
                                 title="@(arabic ? "تصغير" : "Zoom out")">@Ico("zoomout")</button>
                         <input id="cbd-zoom" type="range" min="40" max="200" step="10" value="100"
                                class="cbd-tb-range" aria-label="@(arabic ? "تكبير" : "Zoom")" />
-                        <button type="button" class="cbd-tb-btn" data-zoom="10"
+                        <button disabled="@(Model.SchemaUnavailable ? "disabled" : null)" type="button" class="cbd-tb-btn" data-zoom="10"
                                 title="@(arabic ? "تكبير" : "Zoom in")">@Ico("zoomin")</button>
                         <span id="cbd-zoom-label" class="cbd-tb-pct">100%</span>
-                        <button type="button" id="cbd-fit" class="cbd-tb-btn"
+                        <button disabled="@(Model.SchemaUnavailable ? "disabled" : null)" type="button" id="cbd-fit" class="cbd-tb-btn"
                                 title="@(arabic ? "ملاءمة العرض" : "Fit to width")">@Ico("fit")</button>
                     </div>
                 </div>
@@ -445,7 +447,7 @@
                 *@
                 <div class="cbd-dockbar">
                     <div class="cbd-dockbar-tabs">
-                    <button type="button" id="cbd-tools-tab" class="cbd-dock-tab" aria-expanded="false"
+                    <button disabled="@(Model.SchemaUnavailable ? "disabled" : null)" type="button" id="cbd-tools-tab" class="cbd-dock-tab" aria-expanded="false"
                             aria-controls="cbd-tools-panel"
                             title="@(arabic ? "الأدوات والبيانات والأقسام" : "Tools, data and bands")">
                         <i class="ki-outline ki-abstract-25 fs-6"></i>
@@ -454,7 +456,7 @@
 
                     @if (Model.Saved.Count > 0)
                     {
-                        <button type="button" id="cbd-saved-tab" class="cbd-dock-tab" aria-expanded="false"
+                        <button disabled="@(Model.SchemaUnavailable ? "disabled" : null)" type="button" id="cbd-saved-tab" class="cbd-dock-tab" aria-expanded="false"
                                 aria-controls="cbd-saved-panel"
                                 title="@(arabic ? "تقاريري المحفوظة" : "My saved reports")">
                             <i class="ki-outline ki-folder fs-6"></i>
@@ -474,7 +476,7 @@
                                 <li class="nav-item"><a class="nav-link py-2" data-bs-toggle="tab" href="#cbd-tab-bands">@(arabic ? "الأقسام" : "Bands")</a></li>
                             </ul>
                             <div class="card-toolbar">
-                                <button type="button" id="cbd-tools-close" class="btn btn-sm btn-icon btn-light w-25px h-25px"
+                                <button disabled="@(Model.SchemaUnavailable ? "disabled" : null)" type="button" id="cbd-tools-close" class="btn btn-sm btn-icon btn-light w-25px h-25px"
                                         title="@(arabic ? "إغلاق" : "Close")" aria-label="@(arabic ? "إغلاق" : "Close")">
                                     <i class="ki-outline ki-cross fs-6"></i>
                                 </button>
@@ -534,13 +536,13 @@
 
                                     <div class="d-flex flex-stack mb-1">
                                         <span class="fs-8 fw-bold text-gray-700">@(arabic ? "المرشِّحات" : "Filters")</span>
-                                        <button type="button" id="cbd-add-filter" class="btn btn-sm btn-icon btn-light" aria-label="@(arabic ? "إضافة مرشِّح" : "Add filter")"><i class="ki-outline ki-plus fs-5"></i></button>
+                                        <button disabled="@(Model.SchemaUnavailable ? "disabled" : null)" type="button" id="cbd-add-filter" class="btn btn-sm btn-icon btn-light" aria-label="@(arabic ? "إضافة مرشِّح" : "Add filter")"><i class="ki-outline ki-plus fs-5"></i></button>
                                     </div>
                                     <div id="cbd-filters" class="d-flex flex-column gap-2 mb-3"></div>
 
                                     <div class="d-flex flex-stack mb-1">
                                         <span class="fs-8 fw-bold text-gray-700">@(arabic ? "الترتيب" : "Sorting")</span>
-                                        <button type="button" id="cbd-add-sort" class="btn btn-sm btn-icon btn-light" aria-label="@(arabic ? "إضافة ترتيب" : "Add sort")"><i class="ki-outline ki-plus fs-5"></i></button>
+                                        <button disabled="@(Model.SchemaUnavailable ? "disabled" : null)" type="button" id="cbd-add-sort" class="btn btn-sm btn-icon btn-light" aria-label="@(arabic ? "إضافة ترتيب" : "Add sort")"><i class="ki-outline ki-plus fs-5"></i></button>
                                     </div>
                                     <div id="cbd-sorts" class="d-flex flex-column gap-2"></div>
                                 </div>
@@ -564,7 +566,7 @@
                             <div class="card-header min-h-40px px-3">
                                 <h3 class="card-title fs-8 fw-bold text-gray-700 m-0">@(arabic ? "تقاريري" : "My reports")</h3>
                                 <div class="card-toolbar">
-                                    <button type="button" id="cbd-saved-close" class="btn btn-sm btn-icon btn-light w-25px h-25px"
+                                    <button disabled="@(Model.SchemaUnavailable ? "disabled" : null)" type="button" id="cbd-saved-close" class="btn btn-sm btn-icon btn-light w-25px h-25px"
                                             title="@(arabic ? "إغلاق" : "Close")" aria-label="@(arabic ? "إغلاق" : "Close")">
                                         <i class="ki-outline ki-cross fs-6"></i>
                                     </button>
@@ -598,16 +600,16 @@
                     <div class="cbd-statusbar">
                         <span id="cbd-status" class="fs-8 text-muted"></span>
                         <span class="ms-auto d-flex gap-1">
-                            <button type="button" id="cbd-front" class="btn btn-sm btn-light py-1 px-2 fs-8" title="@(arabic ? "إلى الأمام" : "Bring to front")">
+                            <button disabled="@(Model.SchemaUnavailable ? "disabled" : null)" type="button" id="cbd-front" class="btn btn-sm btn-light py-1 px-2 fs-8" title="@(arabic ? "إلى الأمام" : "Bring to front")">
                                 <i class="ki-outline ki-up-square fs-6"></i>
                             </button>
-                            <button type="button" id="cbd-back" class="btn btn-sm btn-light py-1 px-2 fs-8" title="@(arabic ? "إلى الخلف" : "Send to back")">
+                            <button disabled="@(Model.SchemaUnavailable ? "disabled" : null)" type="button" id="cbd-back" class="btn btn-sm btn-light py-1 px-2 fs-8" title="@(arabic ? "إلى الخلف" : "Send to back")">
                                 <i class="ki-outline ki-down-square fs-6"></i>
                             </button>
-                            <button type="button" id="cbd-dup" class="btn btn-sm btn-light py-1 px-2 fs-8" title="@(arabic ? "تكرار" : "Duplicate") (Ctrl+D)">
+                            <button disabled="@(Model.SchemaUnavailable ? "disabled" : null)" type="button" id="cbd-dup" class="btn btn-sm btn-light py-1 px-2 fs-8" title="@(arabic ? "تكرار" : "Duplicate") (Ctrl+D)">
                                 <i class="ki-outline ki-copy fs-6"></i>
                             </button>
-                            <button type="button" id="cbd-del" class="btn btn-sm btn-light-danger py-1 px-2 fs-8" title="@(arabic ? "حذف" : "Delete") (Del)">
+                            <button disabled="@(Model.SchemaUnavailable ? "disabled" : null)" type="button" id="cbd-del" class="btn btn-sm btn-light-danger py-1 px-2 fs-8" title="@(arabic ? "حذف" : "Delete") (Del)">
                                 <i class="ki-outline ki-trash fs-6"></i>
                             </button>
                         </span>
@@ -659,313 +661,7 @@
 @Html.AntiForgeryToken()
 
 @section Styles {
-<style>
-    /* ---------------------------------------------------------------------------------------------
-       THE CANVAS. Scoped under .cbd- and used nowhere else on the site.
-
-       Colours come from Metronic's own CSS variables so the designer follows the active theme instead
-       of hardcoding a light-mode palette — a designer that stayed white in dark mode would be the one
-       screen in the product that ignored the user's choice.
-       --------------------------------------------------------------------------------------------- */
-    .cbd-wrap { display: flex; gap: .75rem; align-items: flex-start; }
-    .cbd-rail { width: 290px; flex: 0 0 290px; }
-    .cbd-rail-body { max-height: calc(100vh - 330px); overflow-y: auto; }
-
-    /* THE DOCK BAR — one 34px strip of stacked vertical tabs, panels flying out OVER the canvas.
-       Docking the panels as flex items was the first attempt and it cost too much: with the toolbox rail
-       and a 250px list both in the row, the canvas dropped from 607px to 350px. As overlays the canvas
-       keeps its width whatever is open, which is what an auto-hide tab promises in the first place. */
-    .cbd-dockbar { display: flex; flex-direction: row; align-items: flex-start; gap: .5rem; flex: 0 0 auto; }
-    .cbd-dockbar-tabs { display: flex; flex-direction: column; align-items: stretch; gap: .35rem; flex: 0 0 auto; }
-    .cbd-dock-tab {
-        writing-mode: vertical-rl; display: flex; align-items: center; gap: 8px;
-        padding: 12px 7px; cursor: pointer; font-size: 11px; font-weight: 600;
-        background: var(--bs-card-bg); color: var(--bs-gray-700);
-        border: 1px solid var(--bs-border-color); border-radius: .475rem;
-    }
-    .cbd-dock-tab:hover { color: var(--bs-primary); border-color: var(--bs-primary); }
-    .cbd-dock-tab.on {
-        color: var(--bs-primary); border-color: var(--bs-primary);
-        background: rgba(var(--bs-primary-rgb), .08);
-    }
-    .cbd-dock-count {
-        writing-mode: horizontal-tb; font-size: 9px; line-height: 1; padding: 2px 4px;
-        border-radius: 6px; background: var(--bs-gray-200); color: var(--bs-gray-700);
-    }
-    /* THE PANEL PUSHES, IT DOES NOT COVER. Flying out over the canvas was the first attempt and it was
-       rejected for the obvious reason: the panel was sitting on top of the design being worked on. So a
-       panel takes its own column of the row and the canvas gives up that width while it is open — the
-       point of the tab strip is that closing it hands all of that width straight back (34px of tabs
-       instead of a permanent 290px rail: the canvas goes from 607px to 906px). */
-    .cbd-dock-panel { flex: 0 0 250px; width: 250px; }
-    /* The toolbox keeps the width it was designed at: the tool buttons, the field list and the band
-       rows were all laid out for a 290px rail. */
-    .cbd-dock-panel-wide { flex: 0 0 290px; width: 290px; }
-
-    .cbd-stage {
-        flex: 1 1 auto; min-width: 0;
-        display: grid;
-        grid-template-columns: 22px 1fr;
-        grid-template-rows: 22px 1fr 34px;
-        background: var(--bs-card-bg); border-radius: .475rem; border: 1px solid var(--bs-border-color);
-        overflow: hidden;
-    }
-    .cbd-ruler-corner { grid-column: 1; grid-row: 1; background: var(--bs-gray-200); }
-    .cbd-ruler-h { grid-column: 2; grid-row: 1; background: var(--bs-gray-200); position: relative; overflow: hidden; }
-    .cbd-ruler-v { grid-column: 1; grid-row: 2; background: var(--bs-gray-200); position: relative; overflow: hidden; }
-    .cbd-tick { position: absolute; font-size: 8px; color: var(--bs-gray-600); }
-    .cbd-tick-h { top: 0; border-inline-start: 1px solid var(--bs-gray-400); height: 100%; padding-inline-start: 2px; }
-    .cbd-tick-v { inset-inline-start: 0; border-top: 1px solid var(--bs-gray-400); width: 100%; padding-inline-start: 2px; }
-
-    .cbd-scroll { grid-column: 2; grid-row: 2; overflow: auto; background: var(--bs-gray-200); padding: 14px; min-height: 420px; max-height: calc(100vh - 330px); }
-    .cbd-statusbar { grid-column: 1 / -1; grid-row: 3; display: flex; align-items: center; gap: .5rem; padding: 0 .75rem; border-top: 1px solid var(--bs-border-color); }
-
-    .cbd-page { background: #fff; position: relative; margin: 0 auto; box-shadow: 0 2px 14px rgba(0,0,0,.15); }
-    .cbd-content { position: absolute; }
-
-    /* ============================================================================================
-           THE ICON TOOLBAR.
-
-           One button shape for every control in both bars, which is what makes a set of icons read as
-           a toolbar rather than as a row of pictures. 30px square, the same hairline border, the same
-           hover, and exactly three states: resting, hovered, and ON.
-
-           "ON" IS A REAL STATE AND LOOKS LIKE ONE. A toggle that only darkens on hover cannot tell you
-           whether the page footer prints — which was the actual complaint about the checkboxes it
-           replaces, in a different form: they could be read, but only by reading.
-           ============================================================================================ */
-        .cbd-tb-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;
-                    min-width:30px;height:30px;padding:0 7px;border-radius:6px;cursor:pointer;
-                    border:1px solid var(--bs-gray-300);background:var(--bs-body-bg);
-                    color:var(--bs-gray-700);line-height:1;transition:background .12s,border-color .12s,color .12s;}
-        .cbd-tb-btn:hover{background:var(--bs-gray-100);border-color:var(--bs-gray-400);color:var(--bs-gray-900);}
-        .cbd-tb-btn:active{background:var(--bs-gray-200);}
-        .cbd-tb-btn:focus-visible{outline:2px solid var(--bs-primary);outline-offset:1px;}
-        .cbd-tb-btn[disabled]{opacity:.4;cursor:default;pointer-events:none;}
-        .cbd-i{display:block;flex:0 0 auto;}
-
-        /* The pressed state of a toggle and of a segment are the SAME state, so they are the same
-           treatment: tinted ground, brand border, brand ink. */
-        .cbd-tgl-input:checked + .cbd-tb-btn,
-        .cbd-tb-btn.on{background:var(--bs-primary-light);border-color:var(--bs-primary);
-                       color:var(--bs-primary);}
-        .cbd-tgl-input:checked + .cbd-tb-btn:hover,
-        .cbd-tb-btn.on:hover{background:var(--bs-primary-light);border-color:var(--bs-primary);}
-
-        /* The checkbox still exists and still carries the state - it is only not drawn. Kept in the
-           layout rather than display:none so focus can land on it and the label still follows it. */
-        .cbd-tgl-input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;margin:0;}
-        .cbd-tgl-input:focus-visible + .cbd-tb-btn{outline:2px solid var(--bs-primary);outline-offset:1px;}
-
-        .cbd-tb-primary{background:var(--bs-primary);border-color:var(--bs-primary);color:#fff;
-                        padding:0 12px;font-weight:600;font-size:.85rem;}
-        .cbd-tb-primary:hover{background:var(--bs-primary-active);border-color:var(--bs-primary-active);color:#fff;}
-        .cbd-tb-danger:hover{background:var(--bs-danger-light);border-color:var(--bs-danger);color:var(--bs-danger);}
-
-        /* A group reads as one control: inner corners squared, one shared border. */
-        .cbd-seg{display:inline-flex;}
-        .cbd-seg .cbd-tb-btn{border-radius:0;margin-inline-start:-1px;}
-        .cbd-seg .cbd-tb-btn:first-child{border-start-start-radius:6px;border-end-start-radius:6px;margin-inline-start:0;}
-        .cbd-seg .cbd-tb-btn:last-child{border-start-end-radius:6px;border-end-end-radius:6px;}
-        .cbd-seg .cbd-tb-btn.on{position:relative;z-index:1;}
-
-        .cbd-tb-label{font-size:.7rem;font-weight:600;color:var(--bs-gray-500);
-                      text-transform:uppercase;letter-spacing:.04em;margin-inline-end:2px;}
-        .cbd-tb-sep{width:1px;height:22px;background:var(--bs-gray-300);margin:0 6px;flex:0 0 auto;}
-        .cbd-tb-sel{height:30px;padding-block:0;}
-        .cbd-tb-num{width:58px;height:30px;padding-block:0;text-align:center;}
-        .cbd-tb-range{width:96px;}
-        .cbd-tb-pct{font-size:.75rem;font-weight:600;color:var(--bs-gray-700);
-                    width:38px;text-align:center;font-variant-numeric:tabular-nums;}
-
-        /* The select a segmented control speaks for. Not display:none — it stays the element the
-           load path writes to and the change handler listens on. */
-        .cbd-hidden-select{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;}
-
-        .cbd-pop-wrap{position:relative;display:inline-flex;}
-        .cbd-pop{position:absolute;top:calc(100% + 6px);inset-inline-start:0;z-index:60;
-                 min-width:200px;padding:12px;border-radius:8px;
-                 background:var(--bs-body-bg);border:1px solid var(--bs-gray-300);
-                 box-shadow:0 6px 24px rgba(0,0,0,.12);}
-        .cbd-pop-title{font-size:.7rem;font-weight:700;color:var(--bs-gray-500);
-                       text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px;}
-        .cbd-pop-grid{display:grid;grid-template-columns:auto 72px;gap:6px 10px;align-items:center;}
-        .cbd-pop-grid label{font-size:.78rem;font-weight:600;color:var(--bs-gray-700);margin:0;}
-
-    /* The icon picker: sixteen marks chosen by eye. Square cells on one grid so the SET is visible,
-           which is the point of having a vocabulary rather than a folder of pictures. */
-        .cbd-icon-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:4px;}
-        .cbd-icon-cell{display:flex;align-items:center;justify-content:center;aspect-ratio:1;
-                       border:1px solid var(--bs-gray-300);border-radius:6px;background:var(--bs-body-bg);
-                       color:var(--bs-gray-700);cursor:pointer;padding:0;
-                       transition:background .12s,border-color .12s,color .12s;}
-        .cbd-icon-cell:hover{background:var(--bs-gray-100);border-color:var(--bs-gray-400);color:var(--bs-gray-900);}
-        .cbd-icon-cell.on{background:var(--bs-primary-light);border-color:var(--bs-primary);color:var(--bs-primary);}
-        .cbd-icon-cell:focus-visible{outline:2px solid var(--bs-primary);outline-offset:1px;}
-
-        /* The element's face on the canvas fills its box, because the box IS the icon's size. */
-        .cbd-icon-face{display:flex;align-items:center;justify-content:center;width:100%;height:100%;}
-        .cbd-icon-face svg{display:block;width:100%;height:100%;}
-
-    /* The drag-select box. Pointer-events off so the drag keeps reaching the band underneath it -
-           with them on, the box swallows its own mousemove the instant it gains a pixel of size. */
-        .cbd-marquee{position:absolute;z-index:40;pointer-events:none;
-                     border:1px solid var(--bs-primary);background:rgba(24,119,242,.12);border-radius:2px;}
-    .cbd-band { position: relative; border-bottom: 1px dashed var(--bs-gray-400); }
-    .cbd-band.sel { background: rgba(var(--bs-primary-rgb), .04); }
-    .cbd-band-tag {
-        position: absolute; top: 1px; inset-inline-start: 1px; z-index: 0;
-        font-size: 8px; line-height: 1; padding: 2px 4px; border-radius: 2px;
-        background: var(--bs-gray-200); color: var(--bs-gray-700); pointer-events: none; user-select: none;
-    }
-    .cbd-band.drop { background: rgba(var(--bs-primary-rgb), .10); }
-
-    /* THE BAND SPLITTER. 6px along the band's bottom edge — the boundary itself is what the user aims at,
-       so the grip is drawn on it rather than beside it. It lies over the last 6px of the band, which is
-       the one cost: an element sitting flush against the bottom is grabbed from slightly higher up.
-       z-index sits above elements (theirs come from e.z, which counts up from 1) but below the element
-       resize handles at 999, so a selected element's corner still wins where the two meet. */
-    .cbd-band-resize {
-        position: absolute; inset-inline: 0; bottom: 0; height: 6px; z-index: 500;
-        cursor: row-resize; background: transparent;
-    }
-    /* .on is re-applied to THIS grip after every frame of the drag: renderCanvas rebuilds the node, so
-       :hover alone goes dark the instant the element it was hovering is replaced. */
-    .cbd-band-resize:hover, .cbd-band-resize.on { background: rgba(var(--bs-primary-rgb), .45); }
-
-    .cbd-el {
-        position: absolute; box-sizing: border-box; overflow: hidden; cursor: move;
-        display: flex; user-select: none;
-
-        /* EVERY ELEMENT SHOWS ITS BOX, not just the selected one.
-           A chart is 85x64mm on the page and its design-time face is one short line of text, so with
-           no outline the canvas showed a title and then bare grid where the chart was - it read as a
-           missing element, and the only way to find out otherwise was to click where it should be.
-           A hairline says "something occupies this space" without competing with the real borders an
-           author sets, which are drawn from the element's own style and sit inside this one. */
-        outline: 1px dashed var(--bs-gray-400); outline-offset: -1px;
-    }
-    /* A label, a bound field or a system field is text on a line; an outline round each one turns a
-       header into a wireframe. The hairline is for the elements whose SIZE is the point. */
-    .cbd-el[data-kind="0"], .cbd-el[data-kind="1"], .cbd-el[data-kind="5"], .cbd-el[data-kind="6"] {
-        outline: none;
-    }
-    .cbd-el:hover { outline-color: var(--bs-primary); }
-    /* overflow:visible ONLY while selected. The element clips its own content (a long value must not
-       spill across the page), but the resize handles sit half-outside its box — with the clip on they
-       were invisible AND unclickable, so nothing could be resized with the mouse. Found by the probe. */
-    .cbd-el.sel { outline: 2px solid var(--bs-primary); outline-offset: -1px; overflow: visible; }
-    .cbd-el-body { flex: 1 1 auto; min-width: 0; overflow: hidden; white-space: pre-wrap; word-break: break-word; }
-    .cbd-el img { display: block; width: 100%; height: 100%; }
-
-    /* AN IMAGE MUST FIT ITS FRAME, and without this rule it does the opposite: it SETS its own height and
-       the frame is ignored.
-       The body span is a flex item whose cross size comes from `align-items` on the element — flex-start,
-       centre or flex-end, never stretch — so its height is AUTO. `height:100%` on a child of an
-       auto-height parent is an indefinite percentage, which computes to `auto`: the picture keeps its
-       intrinsic aspect ratio at width:100% and a portrait photo becomes several times taller than the
-       box. `object-fit` cannot help, because it only has an effect on a box with a definite size — which
-       is why "احتواء / Contain" appeared to do nothing at all.
-       Unselected, .cbd-el's overflow:hidden hid the damage by cropping. SELECTED, that clip is off (the
-       resize handles need it off) — so the picture visibly spilled out of its own frame, which is how
-       this was reported.
-       align-self:stretch gives the span the element's own content height, and a stretched flex item's
-       cross size IS definite, so the percentage resolves and object-fit finally applies. Stretch also
-       matches what the print renderer emits, where the img is a direct child of a box with an explicit
-       height in mm — so the canvas and the printed page now size images the same way. */
-    .cbd-el-img > .cbd-el-body { align-self: stretch; min-height: 0; }
-
-    .cbd-handle {
-        position: absolute; width: 9px; height: 9px; background: #fff;
-        border: 1px solid var(--bs-primary); border-radius: 1px; z-index: 999;
-    }
-    .cbd-handle.nw { inset-inline-start: -5px; top: -5px; cursor: nwse-resize; }
-    .cbd-handle.ne { inset-inline-end: -5px; top: -5px; cursor: nesw-resize; }
-    .cbd-handle.sw { inset-inline-start: -5px; bottom: -5px; cursor: nesw-resize; }
-    .cbd-handle.se { inset-inline-end: -5px; bottom: -5px; cursor: nwse-resize; }
-
-    /* THE FOUR EDGE HANDLES. Each sits at the middle of its side and resizes ONE axis, which is the
-       whole reason they exist: a corner cannot change a height without dragging the width along with
-       it. Centred with a translate rather than a calc on inset, so the element's own RTL mirroring
-       keeps working - inset-inline-* flips, and a hard-coded left would not. */
-    .cbd-handle.n { inset-inline-start: 50%; top: -5px;    transform: translateX(-50%); cursor: ns-resize; }
-    .cbd-handle.s { inset-inline-start: 50%; bottom: -5px; transform: translateX(-50%); cursor: ns-resize; }
-    .cbd-handle.w { inset-inline-start: -5px; top: 50%;    transform: translateY(-50%); cursor: ew-resize; }
-    .cbd-handle.e { inset-inline-end: -5px;   top: 50%;    transform: translateY(-50%); cursor: ew-resize; }
-
-    .cbd-guide { position: absolute; background: #f1416c; z-index: 998; pointer-events: none; }
-
-    .cbd-tool { cursor: grab; }
-    .cbd-asset { border: 1px solid var(--bs-border-color); border-radius: .3rem; padding: 2px; cursor: grab; background: #fff; }
-    .cbd-asset img { width: 46px; height: 34px; object-fit: contain; display: block; }
-
-    /* AN ASSET ROW CAN OUTLIVE ITS FILE. The row is in the database and the bytes are on the application's
-       own disk, so an instance that was re-published — or a second instance pointed at the same database —
-       lists images whose GET answers 404. Left alone that reads as "the picture will not import": an empty
-       box and no reason given. These two rules make it say so instead. */
-    .cbd-asset.missing { border: 1px dashed var(--bs-danger); position: relative; width: 52px; height: 40px; }
-    .cbd-asset.missing::after {
-        content: "!"; position: absolute; inset: 0; display: grid; place-items: center;
-        color: var(--bs-danger); font-weight: 700; font-size: 15px; line-height: 1;
-    }
-    .cbd-img-missing { color: var(--bs-danger); font-size: 10px; line-height: 1.1; text-align: center; }
-
-    /* The preview pane hosts the RENDERER's own markup. It is given room and left alone: restyling it
-       here would make the preview disagree with the print, which is the one thing this design forbids. */
-    #cbd-preview-body .cbv-page { margin: 0 auto 14px; }
-
-    /* Tablet: the rails collapse under the canvas rather than squeezing it to nothing. */
-    @@media (max-width: 1199.98px) {
-        .cbd-wrap { flex-wrap: wrap; }
-        .cbd-rail { width: 100%; flex: 1 1 100%; order: 2; }
-        .cbd-stage { order: 1; flex: 1 1 100%; width: 100%; }
-        .cbd-rail-body { max-height: 300px; }
-
-        /* The tab strip stops holding a whole row to itself: with the rails wrapped it was the only
-           thing on its line, 34px of content in a 101px band. */
-        .cbd-dockbar { order: 0; flex-direction: row; }
-    }
-
-    /* ---- PHONE ----------------------------------------------------------------------------------
-       Nothing here was overflowing — the complaint was the SPRAWL. Measured at 390 x 844: the page ran
-       1682px tall, of which 400px was chrome before any of the design was visible; the page-setup strip
-       alone took 217px as five nearly-empty right-aligned rows, and the saved-reports tab sat sideways
-       on a line of its own. Below is that same content, laid out for the width it actually has. */
-    @@media (max-width: 767.98px) {
-
-        /* The setup strip becomes a two-column grid: label and control on one line, each pair filling
-           half the width, instead of one pair per row with a wide empty gutter beside it. */
-        /* minmax(0, 1fr), NOT 1fr. A bare 1fr track has an automatic MINIMUM of min-content, so the row
-           of four margin boxes widened both tracks to ~300px each, the full-width groups then measured
-           612px inside a 348px card, and the whole document picked up 270px of horizontal scroll — the
-           header included, because it is laid out against the widened canvas. min-width:0 on the groups
-           is the same rule one level down: a grid item has that automatic minimum too. */
-        #cbd-setup { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem .75rem; align-items: center; }
-        #cbd-setup > div { display: flex; align-items: center; gap: .4rem; justify-content: space-between; min-width: 0; }
-        #cbd-setup > div > label, #cbd-setup > div > span { white-space: nowrap; }
-        #cbd-setup > div > select, #cbd-setup > div > input { width: auto !important; min-width: 0; flex: 1 1 auto; }
-        /* The margins, the grid group and the zoom slider need the full width — four boxes, three
-           controls and a range slider do not survive being squeezed into half a phone. Marked with a
-           class rather than selected with :has(), which is recent enough that a browser without it
-           would silently squeeze them anyway. */
-        #cbd-setup > .cbd-setup-wide { grid-column: 1 / -1; margin-inline-start: 0 !important; }
-
-        /* A sideways tab is a desktop affordance. On a phone the dock is a plain full-width button with
-           the list dropping underneath it, in the flow, where a phone user expects it. */
-        .cbd-dockbar { flex: 1 1 100%; width: 100%; flex-wrap: wrap; }
-        .cbd-dockbar-tabs { flex-direction: row; flex: 1 1 100%; }
-        .cbd-dock-tab { writing-mode: horizontal-tb; flex: 1 1 auto; justify-content: center; padding: 8px; }
-        .cbd-dock-panel, .cbd-dock-panel-wide { width: 100%; flex: 1 1 100%; margin-top: .5rem; }
-
-        /* The canvas gets the height back that the chrome above it was taking. */
-        .cbd-stage { grid-template-columns: 16px 1fr; grid-template-rows: 16px 1fr 34px; }
-        .cbd-rail-body { max-height: 260px; }
-
-        /* Buttons that carry both an icon and a word wrap to three rows at this width; the label is what
-           makes them findable, so the padding goes rather than the text. */
-        #kt_app_toolbar .btn { padding-inline: .5rem; }
-    }
-</style>
+<link rel="stylesheet" href="~/Backend-assets/css/crossbuy-brand.css" asp-append-version="true" />
 }
 
 @section Scripts {

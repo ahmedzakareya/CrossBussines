@@ -64,10 +64,10 @@ powershell -File governance/tools/apply-sql-slices.ps1 -ConnectionString "Server
 |---|---|---|
 | 1–3 | Debug / Release / TestRun build | any configuration reports errors, **or no error-count summary is found** |
 | 4 | Full suite green | any test failed; the skip count is always reported |
-| 5 | CBA001 / CBA004 / CBA006 | any analyzer authorization error |
+| 5 | CBA001 / CBA004 / CBA006 | any analyzer authorization error or failed analyzer build |
 | 6 | Authorization debt | debt count and entry count disagree |
 | 7 | Suppressions | a CBA pragma or authorization SuppressMessage appears |
-| 8 | Owned paths only | a file belongs to another tab |
+| 8 | Owned paths only | another tab owns a file, the inventory command fails, or its required summaries are missing |
 | 9 | Shared files | a shared file is touched without `-AllowShared` |
 | 10 | SQL governance | G1–G7 (below) |
 | 11 | Hosted services | a registered hosted service is absent from the DI wiring test |
@@ -142,3 +142,7 @@ Each was proved to fire, not merely written:
 * `docs/deployment/SQL-Deployment-Runbook.md` — the human deployment procedure
 * `docs/roadmap-v2/Roadmap-V2-17-SQL-Deployment-Governance.md` — the design this implements
 * `docs/roadmap-v2/Roadmap-V2-09-Parallel-Execution-Model.md` — the model and its alternatives
+
+## R1 gate hardening — 2026-10-12
+
+A successful-looking test summary does not override a nonzero command exit. Analyzer checks require a successful build as well as zero CBA errors. Ownership checks require a successful inventory and complete denied/shared summaries; a successful empty inventory explicitly reports both zero counts. SQL freshness compares SHA-256 and registered file presence, and detects unregistered deployment SQL. File timestamps are not content identity. The manifest was regenerated; unresolved duplicate slices and deployment review debt still block promotion. No database application is implied by manifest registration.

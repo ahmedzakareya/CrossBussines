@@ -172,7 +172,7 @@
         else
         {
             sb.Append($@"<div class=""alert alert-{colour} d-flex align-items-center p-4 mb-0 text-gray-800"">
-                            <i class=""ki-outline {icon} fs-2hx me-3""></i>
+                            <i class=""ki-outline {icon} fs-2hx me-3"" aria-hidden=""true""></i>
                             <div class=""d-flex flex-column"">
                                 <span class=""fw-bold"">{System.Net.WebUtility.HtmlEncode(title)}</span>
                             </div>
@@ -290,7 +290,7 @@
                     <div class="table-responsive">
                         <table class="table table-row-dashed align-middle fs-6 gy-3 my-0">
                             <thead>
-                                <tr class="fw-bold fs-7 text-uppercase text-gray-700" style="border-bottom:2px solid #0E4A9E;">
+                                <tr class="fw-bold fs-7 text-uppercase text-gray-700" data-cb-workspace-heading>
                                     <th class="w-150px">@Localizer["Reason"]</th>
                                     <th>@Localizer["Item"]</th>
 
@@ -383,14 +383,14 @@
                             @* Isolated and tabular: a figure on an Arabic line reorders around its
                                neighbours without it, and the column twitches as digits change. *@
                             <span class="fw-bold text-@(MetricColor(m.Tone) == "secondary" ? "gray-900" : MetricColor(m.Tone))"
-                                  dir="ltr" style="unicode-bidi:isolate;font-variant-numeric:tabular-nums">@m.Value</span>
+                                  dir="ltr" data-cb-workspace-number>@m.Value</span>
                         </div>
                         <div class="separator separator-dashed my-1"></div>
                     }
                     <div class="d-flex flex-stack py-2">
                         <span class="text-gray-800 fw-bold">@Shared["Approvals"]</span>
                         <span class="fw-bold fs-4 text-@(Model.PendingApprovals > 0 ? "danger" : "gray-900")"
-                              dir="ltr" style="unicode-bidi:isolate;font-variant-numeric:tabular-nums">@Model.PendingApprovals</span>
+                              dir="ltr" data-cb-workspace-number>@Model.PendingApprovals</span>
                     </div>
 
                     @* ACCOUNTING'S "EXPENSE DISTRIBUTION" SHAPE, answering something this page could
@@ -418,7 +418,7 @@
                             <div class="d-flex flex-stack mb-2">
                                 <span class="text-gray-700 fw-semibold flex-grow-1 text-truncate me-3">@s.Name</span>
                                 <span class="text-gray-900 fw-bold me-3" dir="ltr"
-                                      style="unicode-bidi:isolate;font-variant-numeric:tabular-nums">@s.Count</span>
+                                      data-cb-workspace-number>@s.Count</span>
                             </div>
                             <div class="d-flex align-items-center w-100 mb-4">
                                 @* ONE FILL. A source is a name, not a state - rotating colours here would
@@ -429,7 +429,7 @@
                                          aria-valuenow="@pct" aria-valuemin="0" aria-valuemax="100" aria-label="@s.Name"></div>
                                 </div>
                                 <span class="text-gray-500 fw-semibold fs-8" dir="ltr"
-                                      style="unicode-bidi:isolate;font-variant-numeric:tabular-nums">@pct%</span>
+                                      data-cb-workspace-number>@pct%</span>
                             </div>
                         }
                     }
@@ -526,7 +526,7 @@
                             <div class="table-responsive">
                                 <table class="table table-row-dashed align-middle fs-6 gy-3 my-0">
                                     <thead>
-                                        <tr class="fw-bold fs-7 text-uppercase text-gray-700" style="border-bottom:2px solid #0E4A9E;">
+                                        <tr class="fw-bold fs-7 text-uppercase text-gray-700" data-cb-workspace-heading>
                                             <th>@Localizer["Work item"]</th>
                                             <th>@Localizer["Status"]</th>
                                             <th class="text-end">@Localizer["Due"]</th>
@@ -595,7 +595,7 @@
                             <div class="table-responsive">
                                 <table class="table table-row-dashed align-middle fs-6 gy-3 my-0">
                                     <thead>
-                                        <tr class="fw-bold fs-7 text-uppercase text-gray-700" style="border-bottom:2px solid #0E4A9E;">
+                                        <tr class="fw-bold fs-7 text-uppercase text-gray-700" data-cb-workspace-heading>
                                             <th>@Localizer["Type"]</th>
                                             <th>@Localizer["Details"]</th>
                                             <th class="text-end">@Localizer["When"]</th>
@@ -666,7 +666,7 @@
                             <div class="table-responsive">
                                 <table class="table table-row-dashed align-middle fs-6 gy-3 my-0">
                                     <thead>
-                                        <tr class="fw-bold fs-7 text-uppercase text-gray-700" style="border-bottom:2px solid #0E4A9E;">
+                                        <tr class="fw-bold fs-7 text-uppercase text-gray-700" data-cb-workspace-heading>
                                             <th>@Localizer["Agenda item"]</th>
                                             <th>@Localizer["Type"]</th>
                                             <th class="text-end">@Localizer["When"]</th>
@@ -719,7 +719,7 @@
                             <div class="table-responsive">
                                 <table class="table table-row-dashed align-middle fs-6 gy-3 my-0">
                                     <thead>
-                                        <tr class="fw-bold fs-7 text-uppercase text-gray-700" style="border-bottom:2px solid #0E4A9E;">
+                                        <tr class="fw-bold fs-7 text-uppercase text-gray-700" data-cb-workspace-heading>
                                             <th>@Localizer["Activity"]</th>
                                             <th>@Localizer["Details"]</th>
                                             <th class="text-end">@Localizer["When"]</th>

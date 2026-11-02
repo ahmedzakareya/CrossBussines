@@ -1,4 +1,6 @@
-﻿using CrossBuy.BL;
+﻿using Microsoft.Extensions.Logging.Abstractions;
+using CrossBuy.BL.Platform;
+using CrossBuy.BL;
 using CrossBuy.Models.Context;
 using CrossBuy.Models.Context.Admin;
 using CrossBuy.Models.Context.Crm;
@@ -69,7 +71,19 @@ namespace CrossBuy.Tests
 		// would imply this code may call them, and a NullReferenceException would be a louder failure than
 		// a stub quietly swallowing a call that should never happen.
 		private static ICrmService Service(CrossDbContext db, ICrmAccessService access)
-			=> new CrmService(db, null!, null!, access, null!);
+			=> new CrmService(db, null!, null!, access, null!, Recorder(db));
+		// COMPELLED BY THE MANDATORY RECORDER, and nothing else in this file moves.
+		//
+		// CrmService now REQUIRES IBusinessEventService, so this fixture must supply one. It supplies a
+		// REAL BusinessEventService rather than a silent stub: a dummy that discards facts would restore
+		// exactly the blindness making the dependency mandatory was meant to remove. The company comes
+		// from the context the caller already scoped, so the event lands in the same tenant as the row -
+		// BusinessEvent is a pilot entity and the write guard would refuse it otherwise.
+		private static IBusinessEventService Recorder(CrossDbContext db)
+			=> new BusinessEventService(
+				db, new EntityRegistry(db),
+				new StubContextAccessor(PlatformTestHost.DefaultContext(db.CompanyScope.CompanyId ?? 1)),
+				NullLogger<BusinessEventService>.Instance);
 
 		// Owner visibility is a SEPARATE axis from company isolation, and these tests are about the
 		// company one. Unrestricted (null) is the widest owner scope there is — so if a row still does not
@@ -199,14 +213,14 @@ namespace CrossBuy.Tests
 
 			// The save looks the row up as (CompanyID == caller AND ID == given) and refuses when that
 			// finds nothing. Naming another company's lead id therefore fails in exactly the way naming a
-			// lead that was never created fails — same exception, same message — so the refusal cannot be
+			// lead that was never created fails — same refused result, same message — so the refusal cannot be
 			// read as confirmation that the row exists somewhere.
-			var foreignAttempt = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-				svc.SaveLeadAsync(Caller, new Lead { ID = theirs.ID, Name = "Hijacked", Status = "Qualified" }, "u22"));
-			var absentAttempt = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-				svc.SaveLeadAsync(Caller, new Lead { ID = 999_999, Name = "Hijacked", Status = "Qualified" }, "u22"));
+			var foreignAttempt = await svc.SaveLeadAsync(Caller, new Lead { ID = theirs.ID, Name = "Hijacked", Status = "Qualified" }, "u22");
+            Assert.False(foreignAttempt.ok);
+			var absentAttempt = await svc.SaveLeadAsync(Caller, new Lead { ID = 999_999, Name = "Hijacked", Status = "Qualified" }, "u22");
+            Assert.False(absentAttempt.ok);
 
-			Assert.Equal(absentAttempt.Message, foreignAttempt.Message);
+			Assert.Equal(absentAttempt.error, foreignAttempt.error);
 
 			// And nothing moved: not the row it aimed at, and no smuggled copy in the caller's company.
 			var after = await host.AllCompanies().Leads.AsNoTracking().FirstAsync(l => l.ID == theirs.ID);
@@ -280,12 +294,12 @@ namespace CrossBuy.Tests
 			var req = host.Request(Caller);
 			var svc = Service(req.Db, new WideOpenAccess(Emp2));
 
-			var foreignAttempt = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-				svc.SaveAccountAsync(Caller, new CrmAccount { ID = theirs.ID, Name = "Hijacked" }, "u22"));
-			var absentAttempt = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-				svc.SaveAccountAsync(Caller, new CrmAccount { ID = 999_999, Name = "Hijacked" }, "u22"));
+			var foreignAttempt = await svc.SaveAccountAsync(Caller, new CrmAccount { ID = theirs.ID, Name = "Hijacked" }, "u22");
+            Assert.False(foreignAttempt.ok);
+			var absentAttempt = await svc.SaveAccountAsync(Caller, new CrmAccount { ID = 999_999, Name = "Hijacked" }, "u22");
+            Assert.False(absentAttempt.ok);
 
-			Assert.Equal(absentAttempt.Message, foreignAttempt.Message);
+			Assert.Equal(absentAttempt.error, foreignAttempt.error);
 
 			var after = await host.AllCompanies().CrmAccounts.AsNoTracking().FirstAsync(a => a.ID == theirs.ID);
 			Assert.Equal("Foreign account", after.Name);

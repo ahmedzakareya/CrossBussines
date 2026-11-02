@@ -1,4 +1,5 @@
 ﻿using CrossBuy.BL;
+using System.Linq;
 using CrossBuy.Models;
 //using CrossBuy.Models.Context.Admin;
 using CrossBuy.ViewModel;
@@ -38,10 +39,38 @@ namespace CrossBuy.Controllers
 
 
 
+
+		// =====================================================================================
+		// CREATING A COMPANY IS A PLATFORM ACT, NOT A COMPANY-ADMINISTRATION ONE.
+		//
+		// Both CompanyDetails actions carried [SessionValidation] and nothing else, so ANY signed-in
+		// user could open the form and POST it. Measured, not reasoned: the administrator of a
+		// single demo company created a second tenant through the real screen, and the response came
+		// back success:true with the company, its org node, an employee and a working login all
+		// created. The grant layer did hold -- cross-company grants were refused for want of
+		// platform authority -- but the TENANT existed, so any company administrator could mint
+		// unlimited companies.
+		//
+		// The bar is the same one PlatformGrantWriter already uses for cross-company administration:
+		// GrantAdminIdentityRoles.PlatformSecurity, i.e. SuperAdmin or PlatformOps. Reusing that
+		// list rather than naming the roles again keeps the two definitions from drifting apart.
+		// =====================================================================================
+		private bool IsPlatformAdministrator() =>
+			CrossBuy.Models.Platform.GrantAdminIdentityRoles.PlatformSecurity
+				.Any(r => User.IsInRole(r));
+
+		private IActionResult RefuseCompanyAdministration() =>
+			Request.Headers["X-Requested-With"] == "XMLHttpRequest"
+				|| Request.ContentType?.Contains("multipart/form-data") == true
+				? Json(new { success = false, message = L["You do not have permission to perform this action"].Value })
+				: RedirectToAction(nameof(CompaniesList));
+
 		[SessionValidation]
 		[HttpGet]
 		public async  Task<IActionResult> CompanyDetails(int? ID)
 		{
+			if (!IsPlatformAdministrator()) return RefuseCompanyAdministration();
+
 			CompanyDto companies ;
 			if (ID==null)
 			{
@@ -61,6 +90,8 @@ namespace CrossBuy.Controllers
 		[HttpPost]
 		public async Task<IActionResult> CompanyDetails(CompanyDto model, string attachmentsFiles)
 		{
+			if (!IsPlatformAdministrator()) return RefuseCompanyAdministration();
+
 			// Check if the model state is valid
 			if (ModelState.IsValid)
 			{
@@ -97,7 +128,17 @@ namespace CrossBuy.Controllers
 					if (company != null && company.CompanyID > 0) // assuming CompanyID is a positive value if saved successfully
 					{
 						// Return success message if company was saved successfully
-						return Json(new { success = true, message = CrossBuy.Resources.SharedResources.Success });
+						// The administrator's temporary password exists only in this response. It is never stored in
+						// readable form, so if it is not shown now it cannot be recovered — only reset.
+						return Json(new
+						{
+							success = true,
+							message = CrossBuy.Resources.SharedResources.Success,
+							administratorProvisioned = company.AdministratorProvisioned,
+							administratorEmail = company.AdministratorProvisioned ? model.AdministratorEmail : null,
+							administratorTempPassword = company.AdministratorTempPassword,
+							administratorMessage = company.AdministratorMessage,
+						});
 					}
 					else
 					{

@@ -140,6 +140,7 @@ namespace CrossBuy.BL.Reporting
         public IReadOnlyList<StudioDatasetOption> Datasets { get; init; } = Array.Empty<StudioDatasetOption>();
         public IReadOnlyList<StudioSavedReport> Saved { get; init; } = Array.Empty<StudioSavedReport>();
         public bool Arabic { get; init; }
+        public bool SchemaUnavailable { get; init; }
 
         // No dataset the caller may build over. A real, renderable state — not an error and not an empty canvas
         // pretending to work.
@@ -583,7 +584,7 @@ namespace CrossBuy.BL.Reporting
                 {
                     // One message for "no such field" and for "not yours" — see above.
                     result.Errors.Add(arabic
-                        ? $"Field «{key}» is not available in this data set."
+                        ? $"الحقل «{key}» غير متاح في مجموعة البيانات هذه."
                         : $"Field '{key}' is not available on this data set.");
                     continue;
                 }
@@ -603,7 +604,7 @@ namespace CrossBuy.BL.Reporting
                 if (!permitted.TryGetValue(filter.Field, out var field))
                 {
                     result.Errors.Add(arabic
-                        ? $"You cannot filter on «{filter.Field}»."
+                        ? $"لا يمكنك الترشيح باستخدام الحقل «{filter.Field}»."
                         : $"Cannot filter on '{filter.Field}'.");
                     continue;
                 }
@@ -655,7 +656,7 @@ namespace CrossBuy.BL.Reporting
                 if (!permitted.TryGetValue(sort.Field, out var field))
                 {
                     result.Errors.Add(arabic
-                        ? $"You cannot sort on «{sort.Field}»."
+                        ? $"لا يمكنك الترتيب باستخدام الحقل «{sort.Field}»."
                         : $"Cannot sort on '{sort.Field}'.");
                     continue;
                 }
@@ -694,7 +695,7 @@ namespace CrossBuy.BL.Reporting
                 if (!declared.TryGetValue(key, out var descriptor))
                 {
                     result.Errors.Add(arabic
-                        ? $"Parameter «{key}» is not defined for this data set."
+                        ? $"المعامل «{key}» غير معرّف في مجموعة البيانات هذه."
                         : $"Parameter '{key}' is not declared on this data set.");
                     continue;
                 }
@@ -702,7 +703,7 @@ namespace CrossBuy.BL.Reporting
                 if (descriptor.SystemSupplied)
                 {
                     result.Errors.Add(arabic
-                        ? $"Parameter «{key}» is set by the system and cannot be overridden."
+                        ? $"المعامل «{key}» يحدده النظام ولا يمكن تغييره."
                         : $"Parameter '{key}' is supplied by the system and cannot be set.");
                     continue;
                 }

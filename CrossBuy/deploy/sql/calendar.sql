@@ -53,3 +53,25 @@ GO
 IF COL_LENGTH('dbo.CalendarEvents', 'LocationEn') IS NULL
     ALTER TABLE dbo.CalendarEvents ADD LocationEn nvarchar(300) NULL;
 GO
+
+-- ---- ADDITIVE: the attendee's ANSWER ---------------------------------------------------------
+--
+-- CalendarEventAttendees recorded WHO was invited and nothing else, so an invitation could be sent,
+-- delivered and read with no place to put "yes". The mail screen drew the invitation as a card and
+-- had to say "responding is not available yet" underneath it, because three buttons that look like
+-- Outlook and quietly lose the answer are worse than no buttons.
+--
+-- NULL MEANS NOT ANSWERED, which is exactly what every existing row is. No default and no backfill:
+-- a person who was invited before this column existed has not declined, they have not replied, and
+-- inventing "NeedsAction" as a stored value would be this slice asserting something about history.
+--
+-- The vocabulary is the iCalendar PARTSTAT one the sender already writes into the .ics -
+-- ACCEPTED / TENTATIVE / DECLINED - so the stored answer and the wire format cannot drift.
+IF COL_LENGTH('dbo.CalendarEventAttendees', 'ResponseStatus') IS NULL
+    ALTER TABLE dbo.CalendarEventAttendees ADD ResponseStatus nvarchar(20) NULL;
+GO
+
+IF COL_LENGTH('dbo.CalendarEventAttendees', 'RespondedAtUtc') IS NULL
+    ALTER TABLE dbo.CalendarEventAttendees ADD RespondedAtUtc datetime2 NULL;
+GO
+

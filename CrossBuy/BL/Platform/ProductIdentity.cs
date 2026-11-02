@@ -90,13 +90,10 @@
 
 			// ---- THE LOGOS -----------------------------------------------------------------------
 			//
-			// NAMED BY THE GROUND THEY SIT ON, NOT BY THEIR OWN COLOUR, and with this artwork the
-			// distinction is no longer subtle: each variant carries its OWN OPAQUE PLATE - the
-			// light-ground file paints a white rectangle behind the mark, the dark-ground file paints
-			// #1F2D4D. Put one on the wrong theme and you do not get a low-contrast wordmark, you get
-			// a solid block of the wrong colour across the header. The supplied filenames use the
-			// same convention: -light means FOR light, which is the opposite of the retired
-			// crossbuy-logo-light.svg, where light meant light-COLOURED.
+			// The owner-approved linked-path concept has a transparent background in both variants.
+			// -light means FOR light surfaces: the canonical blue/navy symbol and wordmark.
+			// -dark means FOR dark surfaces: the same geometry and outlined lettering in white.
+			// Existing paths remain stable; neither variant includes an opaque background plate.
 			public const string LogoOnLight = Logos + "crossbusiness-logo-horizontal-light.svg";
 			public const string LogoOnDark = Logos + "crossbusiness-logo-horizontal-dark.svg";
 

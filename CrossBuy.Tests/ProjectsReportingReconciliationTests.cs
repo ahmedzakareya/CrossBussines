@@ -241,23 +241,10 @@ namespace CrossBuy.Tests
         }
 
         [Fact]
-        public void The_work_pack_did_not_land_and_work_calendar_is_nowhere()
+        public void The_two_work_subjects_landed_and_deferred_subjects_remain_absent()
         {
-            // THE PREREQUISITES ARE NOW COMPLETE AND THE PACK IS STILL NOT HERE, which is a different
-            // boundary from the one this test used to pin and is stated POSITIVELY so it cannot rot
-            // the same way twice.
-            //
-            // WHAT CHANGED. Hold and the escalation set query landed first; WORK-PREREQUISITES-03 then
-            // converged ProjectBillingApprovalRule and TaskApprovalProjection, so the five approval
-            // rules the projection composes its prefixes from all exist. Asserting their ABSENCE was
-            // correct when written and is now false, so it is replaced rather than deleted - an
-            // assertion that merely stopped mentioning them could not tell "the prerequisites landed"
-            // from "somebody removed the line to go green".
-            //
-            // WHAT HAS NOT CHANGED. No Work DATASET, data source or registration exists, and the pack
-            // stays unregistered: a prerequisite is not an activation. These compiled-type checks pin
-            // that boundary rather than depending on text searches for names that may survive only in
-            // comments.
+            // Foundation convergence lands only tasks and approvals. Code presence is distinct
+            // from runtime activation, which still requires the deployed Hold schema.
             Assert.NotNull(typeof(CrossBuy.Models.Context.Tasks.TaskItem).GetProperty("HoldApprovedAtUtc"));
             Assert.NotNull(typeof(CrossBuy.BL.TasksCalendar.ITaskEscalationService)
                 .GetMethod("CurrentlyEscalatedTaskIdsAsync"));
@@ -267,14 +254,18 @@ namespace CrossBuy.Tests
             Assert.NotNull(reporting.GetType("CrossBuy.BL.Platform.Orchestration.InventoryApprovalRule"));
             Assert.NotNull(reporting.GetType("CrossBuy.BL.Platform.Orchestration.ProjectBillingApprovalRule"));
             Assert.NotNull(reporting.GetType("CrossBuy.BL.TasksCalendar.TaskApprovalProjection"));
-            foreach (var absent in new[]
+            foreach (var present in new[]
             {
                 "CrossBuy.BL.Reporting.WorkReportingDatasets",
                 "CrossBuy.BL.Reporting.WorkTasksDataSource",
+                "CrossBuy.BL.Reporting.WorkApprovalsDataSource",
+            })
+                Assert.NotNull(reporting.GetType(present));
+            foreach (var absent in new[]
+            {
                 "CrossBuy.BL.Reporting.WorkHoursDataSource",
                 "CrossBuy.BL.Reporting.WorkCalendarDataSource",
                 "CrossBuy.BL.Reporting.WorkEscalationsDataSource",
-                "CrossBuy.BL.Reporting.WorkApprovalsDataSource",
             })
                 Assert.Null(reporting.GetType(absent));
 
@@ -282,8 +273,7 @@ namespace CrossBuy.Tests
             Assert.DoesNotContain("work.calendar",
                 ProjectsDatasets.All().Select(d => d.DatasetCode));
 
-            // The Work AUTHORITY does exist (the previous wave landed it) and still refuses every key,
-            // because no Work dataset names one. Authority without a dataset grants nothing.
+            // The existing authority owns the namespace; convergence adds no duplicate vocabulary.
             Assert.Equal("work.", WorkReportPermissions.Prefix);
         }
 

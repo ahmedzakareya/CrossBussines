@@ -309,10 +309,10 @@ namespace CrossBuy.Tests
             // of one fact, in two files, in two languages. This is the only thing that keeps them equal.
             var sql = File.ReadAllText(RepoFile("CrossBuy", "deploy", "sql", "accounting_period_control.sql"));
 
-            Assert.Contains($"ReopenReason NVARCHAR({AccountingPeriodControlService.ReasonMaxLength}) NULL",
-                sql, StringComparison.Ordinal);
-            Assert.Contains($"Reason           nvarchar({AccountingPeriodControlService.ReasonMaxLength})",
-                sql, StringComparison.Ordinal);
+            // The successor uses dynamic DDL and bracketed identifiers. Pin the
+            // actual type and nullable width, independent of formatting and case.
+            foreach (var column in new[] { "ReopenReason", "Reason" })
+                Assert.Matches($@"(?i)\b{column}\]?\s+nvarchar\s*\(\s*{AccountingPeriodControlService.ReasonMaxLength}\s*\)\s+NULL\b", sql);
         }
 
         [Fact]

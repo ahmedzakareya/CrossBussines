@@ -17,11 +17,11 @@
 <html lang="@Thread.CurrentThread.CurrentCulture.TwoLetterISOLanguageName" dir="@(Thread.CurrentThread.CurrentCulture.TextInfo.IsRightToLeft ? "rtl" : "ltr")">
 
 <head>
-    <title>@Localizer["People Portal"] - CrossBuy</title>
+    <title>@Localizer["People Portal"] - @CrossBuy.BL.Platform.ProductIdentity.Name</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="shortcut icon" href="~/Backend-assets/media/logos/favicon.ico" asp-append-version="true" />
-    <link rel="icon" type="image/svg+xml" href="~/Backend-assets/media/logos/crossbuy-favicon.svg" asp-append-version="true" />
+    <link rel="shortcut icon" href="@CrossBuy.BL.Platform.ProductIdentity.Assets.FaviconIco" asp-append-version="true" />
+    <link rel="icon" type="image/svg+xml" href="@CrossBuy.BL.Platform.ProductIdentity.Assets.Icon" asp-append-version="true" />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,400,500,600,700" />
     <link href="~/Backend-assets/plugins/custom/datatables/datatables.bundle.css" rel="stylesheet" type="text/css" asp-append-version="true" />
     @if (isAr)
@@ -68,7 +68,8 @@
                             <i class="ki-outline ki-abstract-14 fs-2"></i>
                         </div>
                         <a href="@Url.Action("Profile", "People")" class="app-sidebar-logo">
-                            <img alt="CrossBuy" src="~/Backend-assets/media/logos/crossbuy-logo.svg" class="h-28px" asp-append-version="true" />
+                            <img alt="@CrossBuy.BL.Platform.ProductIdentity.Name" src="@CrossBuy.BL.Platform.ProductIdentity.Assets.LogoOnLight" class="h-28px theme-light-show" asp-append-version="true" />
+<img alt="@CrossBuy.BL.Platform.ProductIdentity.Name" src="@CrossBuy.BL.Platform.ProductIdentity.Assets.LogoOnDark" class="h-28px theme-dark-show" asp-append-version="true" />
                         </a>
                         <span class="badge badge-light-primary fw-bold fs-7 ms-3 d-none d-md-inline-flex align-items-center">
                             <i class="ki-outline ki-profile-user fs-6 me-1 text-primary"></i>@Localizer["People Portal"]
@@ -244,7 +245,7 @@
                         <div class="app-container container-fluid d-flex flex-column flex-md-row flex-center flex-md-stack py-3">
                             <div class="text-gray-900 order-2 order-md-1">
                                 <span class="text-muted fw-semibold me-1">@DateTime.Now.Year&copy;</span>
-                                <span class="text-gray-800">CrossBuy</span>
+                                <span class="text-gray-800">@CrossBuy.BL.Platform.ProductIdentity.Name</span>
                             </div>
                             <ul class="menu menu-gray-600 menu-hover-primary fw-semibold order-1">
                                 <li class="menu-item"><span class="menu-link px-2">@Localizer["People Portal"]</span></li>

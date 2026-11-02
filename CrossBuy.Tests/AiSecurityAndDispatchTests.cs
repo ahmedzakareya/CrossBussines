@@ -146,9 +146,11 @@ namespace CrossBuy.Tests
                 .Where(d => d.EventId == eventId)
                 .OrderBy(d => d.Consumer).ToListAsync();
 
-            Assert.Equal(3, rows.Count);      // Timeline + Notification + AI
-            Assert.All(rows.Where(r => r.Consumer != BusinessEventConsumers.TimelineProjection),
+            Assert.Equal(4, rows.Count);      // Timeline + Notification + AI + Task orchestration
+            Assert.All(rows.Where(r => r.Consumer is BusinessEventConsumers.AiProjection or BusinessEventConsumers.NotificationProjection),
                        r => Assert.Equal(BusinessEventDispatchStatus.Done, r.Status));
+            Assert.All(rows.Where(r => r.Consumer is BusinessEventConsumers.TimelineProjection or BusinessEventConsumers.TaskOrchestration),
+                       r => Assert.Equal(BusinessEventDispatchStatus.Pending, r.Status));
             Assert.Single(rows, r => r.Consumer == BusinessEventConsumers.AiProjection);
             Assert.Single(rows, r => r.Consumer == BusinessEventConsumers.NotificationProjection);
         }
@@ -170,6 +172,7 @@ namespace CrossBuy.Tests
                 {
                     BusinessEventConsumers.AiProjection,
                     BusinessEventConsumers.NotificationProjection,
+                    BusinessEventConsumers.TaskOrchestration,
                     BusinessEventConsumers.TimelineProjection,
                 }.OrderBy(c => c).ToArray(),
                 consumers.ToArray());

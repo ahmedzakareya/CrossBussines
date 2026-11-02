@@ -1,4 +1,4 @@
-﻿@using CrossBuy.BL
+@using CrossBuy.BL
 @inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
 @{
     @* GLOBAL UI RULE: the Inventory module is the only visual authority. This page lives in the
@@ -212,25 +212,7 @@
     @* The clock turns once every two seconds - slow enough not to pull the eye away from the
    list, fast enough to read as "running". prefers-reduced-motion switches it to a quiet
    pulse, because a permanently spinning element is exactly what that setting exists for. *@
-<style>
-    /* Every declaration below either consumes a token through var() or sets a non-colour
-       property - nothing here DEFINES a colour, a typeface or a custom property, which is what
-       the conformance gate on inline <style> actually forbids. */
-    .cb-timer-sep { border-inline-start: 1px solid var(--bs-primary); }
-    .cb-btn-flat { box-shadow: none !important; }
-    .cb-el-hpair { display: none; }
-    .cb-el-hpair.is-on { display: inline-flex; }
-    .cb-live-dot { width: 8px; height: 8px; animation: cbLiveDot 1.6s ease-in-out infinite; }
-    @@keyframes cbLiveDot { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
-    @@keyframes cbTimerSpin { to { transform: rotate(360deg); } }
-    .cb-timer-spin { display: inline-block; animation: cbTimerSpin 2s linear infinite; }
-    @@media (prefers-reduced-motion: reduce) {
-        @@keyframes cbTimerPulse { 50% { opacity: .35; } }
-        .cb-timer-spin { animation: cbTimerPulse 1.6s ease-in-out infinite; }
-        /* The dot stops moving but stays visible: it is the only thing that says "running". */
-        .cb-live-dot { animation: none; opacity: .85; }
-    }
-</style>
+<link rel="stylesheet" href="~/Backend-assets/css/crossbuy-brand.css" asp-append-version="true" />
 <script>
 (function () {
     // One interval for the page, however many badges there are - so this already works
@@ -613,16 +595,7 @@
 </div></div>
 <!--end::Content-->
 
-<style>
-    /* DATE FIELDS IN THIS MODAL SIT ON THEIR LABEL'S LINE AND ARE 220px WIDE, unlike every other control
-       in the same grid. flatpickr wraps each date input in `<div class="flatpickr-wrapper">`, and that
-       wrapper is display:inline-block with an intrinsic 220px - so the inline <label> before it stays on
-       the same line and the field stops short of the column edge. Invisible while the dialog was narrow
-       and one field per row; obvious the moment the form became a 3-up grid. Scoped to #taskModal so the
-       shared flatpickr styling is untouched. */
-    #taskModal .flatpickr-wrapper { display: block; width: 100%; }
-    #taskModal .flatpickr-wrapper > .flatpickr-input { width: 100%; }
-</style>
+<link rel="stylesheet" href="~/Backend-assets/css/crossbuy-brand.css" asp-append-version="true" />
 
 <!--begin::Task modal-->
 <div class="modal fade" id="taskModal" tabindex="-1" aria-hidden="true">

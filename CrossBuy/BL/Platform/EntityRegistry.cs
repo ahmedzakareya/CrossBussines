@@ -86,6 +86,7 @@ namespace CrossBuy.BL.Platform
         public const string ScopeAccounting = "Accounting";
         public const string ScopeInventory = "Inventory";
         public const string ScopePos = "Pos";
+
         public const string ScopeCrm = "Crm";
         // Slice 2: manufacturing has no RBAC service of its own — its screens live in InventoryController and
         // are governed by inventory roles. The scope is separate anyway so manufacturing policy can diverge
@@ -641,6 +642,43 @@ namespace CrossBuy.BL.Platform
                 PermissionScope = ScopeHr,
                 ListedInRecordPicker = false,
             },
+            new EntityDefinition
+            {
+                Code = Lead,
+                DisplayNameAr = "عميل محتمل", DisplayNameEn = "Lead",
+                Module = "Crm", Icon = "ki-outline ki-user", Color = "info",
+                // A list screen, no per-lead page: the grid edits in place. A template without "{id}" is
+                // the documented list-only form, as /Tasks/Index and /Project/Projects already are.
+                RouteTemplate = "/Crm/Leads",
+                SupportsSearch = false, SupportsTimeline = true, SupportsComments = false,
+                SupportsFiles = false, SupportsFollowers = false,
+                PermissionScope = ScopeCrm,
+                ListedInRecordPicker = false,
+            },
+            new EntityDefinition
+            {
+                Code = Opportunity,
+                DisplayNameAr = "فرصة بيعية", DisplayNameEn = "Opportunity",
+                Module = "Crm", Icon = "ki-outline ki-basket", Color = "primary",
+                RouteTemplate = "/Crm/Opportunities",
+                SupportsSearch = false, SupportsTimeline = true, SupportsComments = false,
+                SupportsFiles = false, SupportsFollowers = false,
+                PermissionScope = ScopeCrm,
+                ListedInRecordPicker = false,
+            },
+            new EntityDefinition
+            {
+                Code = CrmAccount,
+                DisplayNameAr = "حساب عميل", DisplayNameEn = "CRM account",
+                Module = "Crm", Icon = "ki-outline ki-profile-circle", Color = "success",
+                // The one CRM entity with a genuine per-id page: CrmController.AccountEditor(int? id)
+                // returns a full view under _LayoutAccounting, and SaveAccount already redirects to it.
+                RouteTemplate = "/Crm/AccountEditor?id={id}",
+                SupportsSearch = false, SupportsTimeline = true, SupportsComments = false,
+                SupportsFiles = false, SupportsFollowers = false,
+                PermissionScope = ScopeCrm,
+                ListedInRecordPicker = false,
+            },
         };
 
         private static readonly Dictionary<string, EntityDefinition> ByCode =
@@ -957,6 +995,21 @@ namespace CrossBuy.BL.Platform
                     label = await _db.CalendarEvents.AsNoTracking()
                         .Where(e => e.Id == entityId && e.CompanyID == companyId && e.DeletedAt == null)
                         .Select(e => e.Title).FirstOrDefaultAsync(cancellationToken);
+                    break;
+                case Lead:
+                    label = await _db.Leads.AsNoTracking()
+                        .Where(l => l.ID == entityId && l.CompanyID == companyId)
+                        .Select(l => l.Name).FirstOrDefaultAsync(cancellationToken);
+                    break;
+                case Opportunity:
+                    label = await _db.Opportunities.AsNoTracking()
+                        .Where(o => o.ID == entityId && o.CompanyID == companyId)
+                        .Select(o => o.Title).FirstOrDefaultAsync(cancellationToken);
+                    break;
+                case CrmAccount:
+                    label = await _db.CrmAccounts.AsNoTracking()
+                        .Where(a => a.ID == entityId && a.CompanyID == companyId)
+                        .Select(a => a.Name).FirstOrDefaultAsync(cancellationToken);
                     break;
                 case InventoryApproval:
                     label = await _db.InventoryApprovals.AsNoTracking()

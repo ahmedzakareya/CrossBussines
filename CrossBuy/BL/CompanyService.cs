@@ -4,6 +4,9 @@ using CrossBuy.Models.Context;
 using CrossBuy.Models.Context.Admin;
 using CrossBuy.ViewModel;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
+using CrossBuy.Models.Platform;
+using CrossBuy.BL.Platform;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.SqlServer.Server;
@@ -26,6 +29,142 @@ namespace CrossBuy.BL
 		private readonly IServiceProvider _serviceProvider;
 		private readonly IHttpContextAccessor _httpContextAccessor;
 
+		// =====================================================================================
+		// What the first administrator of a new company is given, per module scope.
+		//
+		// THIS LIST IS BOUNDED BY WHAT THE PLATFORM CAN ACTUALLY GRANT, NOT BY WHAT WOULD BE
+		// USEFUL. PlatformGrantWriter administers only the scopes that declare a role vocabulary
+		// ("AdministrableScopes"), and exactly four exist: Hr, Projects, Tasks, Communication.
+		// Inventory, Accounting and Crm keep their roles in their own tables
+		// (InventoryUserRoles / AccountingUserRoles / CrmUserRoles) and Calendar declares no
+		// vocabulary at all, so naming any of them here would produce a refusal, not a grant.
+		// Wiring those three subsystems into company provisioning is separate work.
+		//
+		// Two further exclusions are deliberate rather than forced:
+		//
+		//   * PayrollOfficer / payroll-manage. HrAccessService says it outright - "NOT HrManager:
+		//     money is a separate right". A provisioning step should not be the thing that hands
+		//     out payroll.
+		//   * Pos. PlatformGrantWriter.RefusedScopes rejects it outright (IMP-001): POS is
+		//     administered through BranchUserRoles, and a new company has no branches yet.
+		// =====================================================================================
+		private static readonly (string Scope, string Role)[] FirstAdministratorGrants =
+		{
+			(EntityRegistry.ScopeHr, HrRoles.HrManager),
+			(EntityRegistry.ScopeProjects, ProjectsRoles.ProjectsAdministrator),
+			(EntityRegistry.ScopeTasks, TasksRoles.TasksAdministrator),
+			(EntityRegistry.ScopeCommunication, CommunicationRoles.CommunicationAdministrator),
+		};
+
+		// =====================================================================================
+		// The three module manager rows a first administrator needs, written where each module's
+		// gate actually looks. See the call site in SaveCompanyAsync for why these are seeded into
+		// the module tables rather than granted through PlatformGrantWriter.
+		//
+		// Shared by company creation and by the backfill below, so a company created before this
+		// existed is repaired with exactly the same rows rather than a hand-written approximation.
+		// =====================================================================================
+
+		// =====================================================================================
+		// The company's first fiscal year, and its twelve monthly periods, all open.
+		//
+		// January start. Companies carries no fiscal-year-start field, so there is nothing to read
+		// a different opening month from; when one is added, this is the single place to honour it.
+		//
+		// IDEMPOTENT BY COMPANY: a company that already has a fiscal year gets nothing, so this can
+		// never produce a second calendar for the same tenant.
+		// =====================================================================================
+		private static async Task AddFirstFiscalYearAsync(CrossDbContext context, int companyId, DateTime today)
+		{
+			if (await context.FiscalYears.AnyAsync(f => f.CompanyID == companyId)) return;
+
+			var year = today.Year;
+
+			var fiscalYear = new Models.Context.Accounting.FiscalYear
+			{
+				CompanyID = companyId,
+				Name = year.ToString(),
+				StartDate = new DateTime(year, 1, 1),
+				EndDate = new DateTime(year, 12, 31),
+				Status = "Open",
+			};
+
+			context.FiscalYears.Add(fiscalYear);
+
+			// The periods carry the year's id, so it has to exist before they are written.
+			await context.SaveChangesAsync();
+
+			for (byte month = 1; month <= 12; month++)
+			{
+				context.FiscalPeriods.Add(new Models.Context.Accounting.FiscalPeriod
+				{
+					FiscalYearId = fiscalYear.ID,
+					PeriodNo = month,
+					StartDate = new DateTime(year, month, 1),
+					EndDate = new DateTime(year, month, DateTime.DaysInMonth(year, month)),
+					Status = Models.Context.Accounting.AccountingPeriodStatuses.Open,
+				});
+			}
+
+			await context.SaveChangesAsync();
+		}
+
+		private static void AddFirstAdministratorModuleRoles(CrossDbContext context, int companyId, int employeeId)
+		{
+			var now = DateTime.UtcNow;
+
+			context.AccountingUserRoles.Add(new Models.Context.Accounting.AccountingUserRole
+			{
+				CompanyID = companyId, EmployeeId = employeeId, Role = "ChiefAccountant", CreatedAt = now,
+			});
+
+			context.InventoryUserRoles.Add(new Models.Context.Inventory.InventoryUserRole
+			{
+				// Company-wide: InventoryManager is not branch-scoped, and a new company has no
+				// branches to scope to anyway.
+				CompanyID = companyId, EmployeeId = employeeId, Role = "InventoryManager",
+				ScopeBranchId = null, CreatedAt = now,
+			});
+
+			context.CrmUserRoles.Add(new Models.Context.Crm.CrmUserRole
+			{
+				CompanyID = companyId, EmployeeId = employeeId, Role = "SalesManager", CreatedAt = now,
+			});
+		}
+
+		// =====================================================================================
+		// Repairs ONE company that was created before the seeding above existed.
+		//
+		// It is deliberately narrow, because the thing it writes is module-manager authority:
+		//   * the employee must already belong to the company named, so this cannot hand authority
+		//     over one tenant to someone from another;
+		//   * it refuses a company that already holds ANY row in these tables, so it can only ever
+		//     fill a vacuum and never quietly widen an existing configuration;
+		//   * it names exactly one company and never iterates.
+		// =====================================================================================
+		public async Task<string> BackfillFirstAdministratorModuleRolesAsync(int companyId, int employeeId)
+		{
+			if (companyId <= 0 || employeeId <= 0) return "Refused: a company and an employee must both be named.";
+
+			var belongs = await _context.Employee.AsNoTracking()
+				.AnyAsync(e => e.ID == employeeId && e.EmpCompanyID == companyId && e.IsActive);
+
+			if (!belongs)
+				return $"Refused: employee {employeeId} is not an active employee of company {companyId}.";
+
+			bool already =
+				await _context.AccountingUserRoles.AnyAsync(r => r.CompanyID == companyId) ||
+				await _context.InventoryUserRoles.AnyAsync(r => r.CompanyID == companyId) ||
+				await _context.CrmUserRoles.AnyAsync(r => r.CompanyID == companyId);
+
+			if (already)
+				return $"Refused: company {companyId} already holds module roles — this only fills a vacuum.";
+
+			AddFirstAdministratorModuleRoles(_context, companyId, employeeId);
+			await _context.SaveChangesAsync();
+
+			return $"Seeded ChiefAccountant, InventoryManager and SalesManager for employee {employeeId} in company {companyId}.";
+		}
 
 		public CompanyService(CrossDbContext context, IMapper mapper , IServiceProvider serviceProvider , IHttpContextAccessor httpContextAccessor)
 		{
@@ -277,6 +416,234 @@ namespace CrossBuy.BL
 								context.Hierarchicals.Add(hierarchical);
 								await context.SaveChangesAsync();
 
+								// ---- the company is born with a fiscal calendar ----
+								// WITHOUT ONE THE COMPANY CAN POST NOTHING. StockService.PeriodGuardAsync and the
+								// journal path both resolve a fiscal period for the posting date and refuse when
+								// none covers it. Nothing in the product ever created a FiscalYear -- no screen,
+								// no endpoint, no service -- so a company created through this method could never
+								// record opening stock, an invoice or a journal entry. Worse, the refusal reaches
+								// the UI as a toast, so the screen simply does nothing and says nothing.
+								//
+								// This belongs to the COMPANY rather than to its administrator, so it is created
+								// here rather than inside the administrator block: a company provisioned without
+								// an administrator still needs a calendar.
+								await AddFirstFiscalYearAsync(context, company.CompanyID, DateTime.UtcNow);
+
+
+								// ---- the company is born with an administrator ----
+								// Creating a company used to write Companies + Hierarchical and stop there, which left the
+								// company unreachable. BusinessContextFactory treats the Employee row as THE authority for
+								// company, its lookup is FirstOrDefault(e => e.UserId == userId) with no ordering, and there
+								// is no company switcher — so nobody could ever act inside the new company. The administrator
+								// gets its OWN login rather than a second Employee row on an existing one, because a second
+								// row would make the company that user lands in depend on row order.
+								string? adminTempPassword = null;
+								string? adminMessage = null;
+								bool adminProvisioned = false;
+
+								if (!string.IsNullOrWhiteSpace(model.AdministratorEmail))
+								{
+									var adminEmail = model.AdministratorEmail.Trim();
+									var userManager = scope.ServiceProvider
+										.GetRequiredService<UserManager<Users>>();
+
+									if (await userManager.FindByEmailAsync(adminEmail) != null)
+									{
+										// Reusing a login that already resolves to an employee elsewhere would make that
+										// user's company ambiguous. Refuse rather than create the ambiguity.
+										adminMessage = "A login already exists for this address. The company administrator needs an address of their own.";
+									}
+									else
+									{
+										var adminUser = new Users
+										{
+											UserName = adminEmail,
+											Email = adminEmail,
+											EmailConfirmed = true,
+											IsActive = true,
+											// REQUIRED FOR SIGN-IN, not a classification. AccountController.Login
+											// refuses on `!user.IsActive || !user.IsEndUser` before it ever checks the
+											// password, so an administrator created with this false is handed working
+											// credentials that answer "Username or password is incorrect!" forever.
+											IsEndUser = true,
+										};
+
+										adminTempPassword = "Cb@" + Guid.NewGuid().ToString("N").Substring(0, 8) + "9";
+										var created = await userManager.CreateAsync(adminUser, adminTempPassword);
+
+										if (!created.Succeeded)
+										{
+											adminTempPassword = null;
+											adminMessage = string.Join("; ", created.Errors.Select(e => e.Description));
+										}
+										else
+										{
+											// "Admin" is the own-company administration tier
+											// (GrantAdminIdentityRoles.CompanyAdministration) — exactly the authority a
+											// company needs over itself, and NOT the cross-company tier.
+											try { await userManager.AddToRoleAsync(adminUser, "Admin"); } catch { /* role optional */ }
+
+											// JobTitleID is required on Employee, so the administrator needs a title — and it
+											// has to be an EXISTING one.
+											//
+											// WHY NOT CREATE A COMPANY-SCOPED TITLE, which is what this plainly wants:
+											// JobTitle.CompanyID exists on the model but NOT in the deployed schema
+											// (deploy/sql/fresh/01_schema.sql defines JobTitles as ID, Title, TitleAr,
+											// Description only). RSK-35 Phase B added the property, and its own comment
+											// says "nothing reads this property today, so adding it changes no
+											// behaviour" — which held until something tried to WRITE one. EF emits the
+											// mapped column and SQL Server answers "Invalid column name 'CompanyID'",
+											// so ANY JobTitles insert fails, with or without the company set.
+											//
+											// Reusing a title is therefore not a preference, it is the only thing that
+											// works against the schema as deployed. Closing this properly means adding
+											// the column to the schema slice, which is a coupled slice+manifest change
+											// and is deliberately not bundled in here.
+											var adminTitleId = await context.JobTitles.AsNoTracking()
+												.OrderBy(t => t.ID)
+												.Select(t => (int?)t.ID)
+												.FirstOrDefaultAsync();
+
+											if (adminTitleId is null)
+											{
+												// Nothing to point JobTitleID at, and it is NOT NULL. Say so instead of
+												// failing the whole company save with a constraint error.
+												adminTempPassword = null;
+												adminMessage = "The company was created, but no administrator could be added: the system has no job title to assign.";
+											}
+											else
+											{
+
+											var adminName = string.IsNullOrWhiteSpace(model.AdministratorFullName)
+												? adminEmail
+												: model.AdministratorFullName.Trim();
+
+											var adminEmployee = new Employee
+											{
+												// Stamped from the company just created — never from the form. A posted
+												// EmpCompanyID is what lets SaveEmployeeAsync write into any company at
+												// all, so this path does not accept one.
+												EmpCompanyID = company.CompanyID,
+												UserId = adminUser.Id,
+												JobTitleID = adminTitleId.Value,
+												FirstName = adminName,
+												LastName = "",
+												FullName = adminName,
+												FullNameEn = string.IsNullOrWhiteSpace(model.AdministratorFullNameEn)
+													? adminName
+													: model.AdministratorFullNameEn.Trim(),
+												Email = adminEmail,
+												Address = model.Address ?? "",
+												PhoneNumber = model.PhoneNumber ?? "",
+												ProfileImage = "",
+												Gender = "",
+												MaritalStatus = "",
+												CountryID = model.CountryID > 0 ? (int?)model.CountryID : null,
+												DateOfBirth = DateTime.UtcNow,
+												DateOfJoining = DateTime.UtcNow,
+												IsActive = true,
+												CreatedBy = employee?.ID,
+												CreatedAt = DateTime.UtcNow,
+											};
+
+											context.Employee.Add(adminEmployee);
+											await context.SaveChangesAsync();
+											adminProvisioned = true;
+
+											// ---- module grants, in the NEW company only ----
+											// The identity role "Admin" above only buys GRANT ADMINISTRATION
+											// (GrantAdminIdentityRoles.CompanyAdministration). It buys nothing
+											// in the modules: HrAccessService and friends read
+											// PlatformRoleAssignments, so without these rows the administrator
+											// cannot even create the company's second employee.
+											//
+											// These go through IPlatformGrantWriter rather than inserting rows
+											// directly, because the writer is what enforces "a real, active
+											// employee of the TARGET company", records the audit trail, and
+											// refuses a company the actor has no authority over. Writing the
+											// rows by hand would bypass exactly the checks that make these
+											// grants trustworthy.
+											var grantWriter = scope.ServiceProvider.GetService<IPlatformGrantWriter>();
+											var contextFactory = scope.ServiceProvider.GetService<IBusinessContextFactory>();
+											var actor = contextFactory == null
+												? null
+												: await contextFactory.TryForHttpAsync();
+
+											if (grantWriter == null || actor == null)
+											{
+												adminMessage = "The administrator was created but holds no module roles: the grant writer or the caller's business context was unavailable.";
+											}
+											else
+											{
+												var refused = new List<string>();
+
+												foreach (var (grantScope, grantRole) in FirstAdministratorGrants)
+												{
+													var granted = await grantWriter.CreateGrantAsync(actor, new CreatePlatformGrantCommand
+													{
+														CompanyId = company.CompanyID,
+														Scope = grantScope,
+														PrincipalType = PlatformPrincipalTypesRef.Employee,
+														PrincipalId = adminEmployee.ID,
+														Role = grantRole,
+														Reason = "First administrator of a newly created company.",
+														// A retried creation returns the original grant rather
+														// than stacking a second one.
+														IdempotencyKey = $"first-admin:{company.CompanyID}:{grantScope}:{grantRole}",
+													});
+
+													if (granted.Outcome != PlatformGrantOutcome.Success
+														&& granted.Outcome != PlatformGrantOutcome.IdempotentReplay)
+													{
+														refused.Add($"{grantScope}/{grantRole}: {granted.Message}");
+													}
+												}
+
+												// A silently role-less administrator looks identical to a working
+												// one until someone tries to use the company, so say it here.
+												if (refused.Count > 0)
+												{
+													adminMessage = "The administrator was created, but some module roles were refused — "
+														+ string.Join("; ", refused);
+												}
+											}
+
+											// ---- Accounting, Inventory and CRM: seeded, not granted ----
+											// These three do NOT read PlatformRoleAssignments. Their gates ask their
+											// own access service, which reads its own table:
+											//   AccPerm -> AccountingAccessService.RolesAsync -> AccountingUserRoles
+											//   InvPerm -> InventoryAccessService.RolesAsync  -> InventoryUserRoles
+											//   CrmPerm -> CrmAccessService.RolesAsync        -> CrmUserRoles
+											// and AccountingAccessService says so outright: "this service does not
+											// query PlatformRoleAssignments itself".
+											//
+											// So a platform grant for these scopes would sit in a table nothing
+											// consults — PlatformGrantWriter refuses them for exactly that reason.
+											// The row has to go where the gate looks.
+											//
+											// WHY THIS IS NEEDED AT ALL: the three role screens (AssignAccRole,
+											// Inventory AssignRole, AssignCrmRole) are each gated on their own
+											// module's "manage" tier — ChiefAccountant, InventoryManager,
+											// SalesManager. Without this, a new company's administrator can never
+											// hold any of them and can never grant them either, so the company is
+											// permanently locked out of Accounting, Inventory and CRM. Seeding the
+											// manager row is what breaks that circle; everything after it happens
+											// through the ordinary screens.
+											//
+											// NOT AUDITED, AND THAT IS A PROPERTY OF THESE TABLES: they carry only
+											// ID, CompanyID, EmployeeId, Role, CreatedAt — no actor, no reason, no
+											// revocation, unlike PlatformRoleAssignments. Recorded here because it
+											// is one of the reasons to migrate them.
+											AddFirstAdministratorModuleRoles(context, company.CompanyID, adminEmployee.ID);
+											await context.SaveChangesAsync();
+											}   // end: a job title was available
+										}
+									}
+								}
+								else
+								{
+									adminMessage = "No administrator address was supplied, so this company has nobody who can administer it.";
+								}
 								// Commit the transaction if all operations succeed
 								await transaction.CommitAsync();
 
@@ -291,6 +658,9 @@ namespace CrossBuy.BL
 								var modelReturn = new CompanyDto
 								{
 									CompanyID = company.CompanyID,
+									AdministratorProvisioned = adminProvisioned,
+									AdministratorTempPassword = adminTempPassword,
+									AdministratorMessage = adminMessage,
 								};
 
 								return modelReturn;

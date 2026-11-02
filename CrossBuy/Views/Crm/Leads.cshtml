@@ -4,6 +4,7 @@
     Layout = "~/Views/Shared/_LayoutAccounting.cshtml";
     var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
     var campaigns = ViewBag.Campaigns as List<(int id, string name)> ?? new();
+    var allTags = ViewBag.AllTags as IReadOnlyList<CrossBuy.Models.Context.Platform.Tag> ?? new List<CrossBuy.Models.Context.Platform.Tag>();
 }
 <div class="d-flex flex-column flex-column-fluid">
     <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
@@ -21,6 +22,20 @@
             <div class="col-md-3"><label class="fw-semibold fs-7 text-muted mb-1">@SR["Status"]</label>
                 <select id="f_status" class="form-select form-select-solid cb-filter" data-control="select2" data-hide-search="true"><option value="">@SR["All"]</option><option value="New">@Localizer["New"]</option><option value="Contacted">@Localizer["Contacted"]</option><option value="Qualified">@Localizer["Qualified"]</option><option value="Converted">@Localizer["Converted"]</option><option value="Lost">@Localizer["Lost"]</option></select></div>
             <div class="col-md-2"><button type="button" id="f_reset" class="btn btn-light w-100"><i class="ki-outline ki-arrows-circle fs-3"></i> @SR["Reset"]</button></div>
+            <div class="col-md-5"><label class="fw-semibold fs-7 text-muted mb-1"><i class="ki-outline ki-price-tag fs-5 me-1"></i>@SR["Tags"]</label>
+                <select id="f_tags" class="form-select form-select-solid cb-filter" multiple data-control="select2" data-placeholder="@SR["Select tags"]">
+                    @foreach (var tg in allTags) { <option value="@tg.ID">@tg.Name</option> }
+                </select></div>
+            <div class="col-md-3"><label class="fw-semibold fs-7 text-muted mb-1">&nbsp;</label>
+                <select id="f_tagmode" class="form-select form-select-solid cb-filter" data-hide-search="true">
+                    <option value="false">@SR["Any tag"]</option><option value="true">@SR["All tags"]</option>
+                </select></div>
+            <div class="col-md-4 d-flex align-items-center gap-4 pt-4">
+                <label class="form-check form-check-custom form-check-sm">
+                    <input class="form-check-input cb-filter" type="checkbox" id="f_unassigned" /><span class="form-check-label fw-semibold">@SR["Unassigned"]</span></label>
+                <label class="form-check form-check-custom form-check-sm">
+                    <input class="form-check-input cb-filter" type="checkbox" id="f_overdue" /><span class="form-check-label fw-semibold">@SR["Overdue follow-ups"]</span></label>
+            </div>
         </div></div></div>
 
         <div class="card"><div class="card-header border-0 pt-6"><div class="card-title"><span class="text-muted fs-7" id="resultCount">—</span></div>
@@ -52,6 +67,11 @@
             <div class="col-md-4 mb-4"><label class="fw-semibold fs-6 mb-2">@Localizer["Est. value"]</label><input name="estimatedValue" id="f_value" type="number" step="0.01" class="form-control form-control-solid" value="0" /></div>
             <div class="col-md-4 mb-4"><label class="fw-semibold fs-6 mb-2">@SR["Status"]</label><select name="status" id="f_status_m" class="form-select form-select-solid"><option value="New">@Localizer["New"]</option><option value="Contacted">@Localizer["Contacted"]</option><option value="Qualified">@Localizer["Qualified"]</option><option value="Lost">@Localizer["Lost"]</option></select></div>
             <div class="col-md-4 mb-4"><label class="fw-semibold fs-6 mb-2">@Localizer["Campaign"]</label><select name="campaignId" id="f_campaign" class="form-select form-select-solid"><option value="">@Localizer["None"]</option>@foreach (var cm in campaigns) { <option value="@cm.id">@cm.name</option> }</select></div>
+            <div class="col-md-12 mb-4"><label class="fw-semibold fs-6 mb-2">@SR["Tags"]</label>
+                <input type="hidden" name="TagsManaged" value="1" />
+                <select name="tagIds" id="f_tags_m" class="form-select form-select-solid" multiple data-control="select2" data-placeholder="@SR["Select tags"]" data-dropdown-parent="#mNew">
+                    @foreach (var tg in allTags) { <option value="@tg.ID">@tg.Name</option> }
+                </select></div>
             <div class="col-md-12 mb-2"><label class="fw-semibold fs-6 mb-2">@SR["Notes"]</label><textarea name="notes" id="f_notes" class="form-control form-control-solid" rows="2"></textarea></div>
             @await Html.PartialAsync("_CrmCustomFields", (List<CrossBuy.Models.Context.Crm.CrmCustomField>)(ViewBag.CustomFields ?? new List<CrossBuy.Models.Context.Crm.CrmCustomField>()))
         </div><input type="hidden" name="customFieldsJson" class="cf-json" /></div>
@@ -62,7 +82,22 @@
 @section Scripts {
 <script>
 cbServerList({ url:'@Url.Action("LeadsData","Crm")', exportUrl:'@Url.Action("LeadsExport","Crm")', isAr:@(isAr ? "true" : "false"),
-  addParams:function(p){ var s=document.getElementById('f_status'); if(s&&s.value)p.set('status',s.value); } });
+  addParams:function(p){ var s=document.getElementById('f_status'); if(s&&s.value)p.set('status',s.value); cbTagFilterParams(p); } });
+// The tag ids go on the wire as ids, never as names: a name is editable and not unique.
+function cbTagFilterParams(p){
+  var t=document.getElementById('f_tags'); if(t){ Array.prototype.forEach.call(t.selectedOptions,function(o){ p.append('tagIds',o.value); }); }
+  var m=document.getElementById('f_tagmode'); if(m&&m.value==='true')p.set('tagMatchAll','true');
+  var u=document.getElementById('f_unassigned'); if(u&&u.checked)p.set('unassigned','true');
+  var o=document.getElementById('f_overdue'); if(o&&o.checked)p.set('overdueFollowUp','true');
+}
+// Both halves matter. An edit that opened with an EMPTY picker would silently clear every tag on the
+// next save, because the form owns the set - so the row hands its ids over and the modal selects them.
+function cbSetTags(ids){
+  var el=document.getElementById('f_tags_m'); if(!el)return;
+  var want=(ids||'').split(',').filter(function(x){return x;});
+  Array.prototype.forEach.call(el.options,function(o){ o.selected = want.indexOf(o.value)>=0; });
+  if(window.jQuery && jQuery(el).data('select2')) jQuery(el).val(want).trigger('change');
+}
 var modal; function v(id,val){document.getElementById(id).value=val||'';}
 // ---- CRM custom fields (3-7b) ----
 function cfClear(){ document.querySelectorAll('#mNew .cf-input').forEach(function(el){ if(el.type==='checkbox') el.checked=false; else el.value=''; }); }
@@ -71,10 +106,10 @@ function cfLoad(entityType,id){ cfClear(); if(!id||id==='0')return;
     (d||[]).forEach(function(x){ var el=document.querySelector('#mNew .cf-input[data-cf="'+x.fieldId+'"]'); if(!el)return; if(el.type==='checkbox') el.checked=(x.value==='true'); else el.value=x.value||''; }); }); }
 (function(){ var f=document.querySelector('#mNew form'); if(f) f.addEventListener('submit',function(){ var arr=[]; document.querySelectorAll('#mNew .cf-input').forEach(function(el){ arr.push({fieldId:parseInt(el.getAttribute('data-cf')), value: el.type==='checkbox'?(el.checked?'true':'false'):el.value}); }); var j=document.querySelector('#mNew .cf-json'); if(j) j.value=JSON.stringify(arr); }); })();
 function leadNew(){ document.getElementById('mTitle').textContent='@Localizer["New lead"]';
-  v('f_id','0');v('f_name','');v('f_nameEn','');v('f_company','');v('f_phone','');v('f_email','');v('f_source','');v('f_segment','');v('f_value','0');document.getElementById('f_status_m').value='New';v('f_campaign','');v('f_notes','');cfClear();
+  v('f_id','0');v('f_name','');v('f_nameEn','');v('f_company','');v('f_phone','');v('f_email','');v('f_source','');v('f_segment','');v('f_value','0');document.getElementById('f_status_m').value='New';v('f_campaign','');v('f_notes','');cbSetTags('');cfClear();
   modal=modal||new bootstrap.Modal(document.getElementById('mNew'));modal.show(); }
 function leadEdit(btn){ var r=btn.closest('tr'); document.getElementById('mTitle').textContent='@Localizer["Edit lead"]';
-  v('f_id',r.getAttribute('data-id'));v('f_name',r.getAttribute('data-name'));v('f_nameEn',r.getAttribute('data-nameen')||'');v('f_company',r.getAttribute('data-company'));v('f_phone',r.getAttribute('data-phone'));v('f_email',r.getAttribute('data-email'));v('f_source',r.getAttribute('data-source'));v('f_segment',r.getAttribute('data-segment'));v('f_value',r.getAttribute('data-value'));document.getElementById('f_status_m').value=r.getAttribute('data-status')||'New';v('f_campaign',r.getAttribute('data-campaign'));v('f_notes',r.getAttribute('data-notes'));cfLoad('Lead',r.getAttribute('data-id'));
+  v('f_id',r.getAttribute('data-id'));v('f_name',r.getAttribute('data-name'));v('f_nameEn',r.getAttribute('data-nameen')||'');v('f_company',r.getAttribute('data-company'));v('f_phone',r.getAttribute('data-phone'));v('f_email',r.getAttribute('data-email'));v('f_source',r.getAttribute('data-source'));v('f_segment',r.getAttribute('data-segment'));v('f_value',r.getAttribute('data-value'));document.getElementById('f_status_m').value=r.getAttribute('data-status')||'New';v('f_campaign',r.getAttribute('data-campaign'));v('f_notes',r.getAttribute('data-notes'));cbSetTags(r.getAttribute('data-tags'));cfLoad('Lead',r.getAttribute('data-id'));
   modal=modal||new bootstrap.Modal(document.getElementById('mNew'));modal.show(); }
 </script>
 }

@@ -9,11 +9,11 @@
 <html lang="@Thread.CurrentThread.CurrentCulture.TwoLetterISOLanguageName" dir="@(Thread.CurrentThread.CurrentCulture.TextInfo.IsRightToLeft ? "rtl" : "ltr")">
 <head>
 	<base href="../../../" />
-	<title>CrossBuy — @(isAr ? "هايبر ماركت" : "Hypermarket")</title>
+	<title>@CrossBuy.BL.Platform.ProductIdentity.Name — @(isAr ? "هايبر ماركت" : "Hypermarket")</title>
 	<meta charset="utf-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
-	<link rel="shortcut icon" href="~/Backend-assets/media/logos/favicon.ico" asp-append-version="true" />
-	<link rel="icon" type="image/svg+xml" href="~/Backend-assets/media/logos/crossbuy-favicon.svg" asp-append-version="true" />
+	<link rel="shortcut icon" href="@CrossBuy.BL.Platform.ProductIdentity.Assets.FaviconIco" asp-append-version="true" />
+	<link rel="icon" type="image/svg+xml" href="@CrossBuy.BL.Platform.ProductIdentity.Assets.Icon" asp-append-version="true" />
 	<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,400,500,600,700" />
 	@if (isAr)
 	{
@@ -30,8 +30,8 @@
 		<link href="~/Backend-assets/css/crossbuy-brand.css" rel="stylesheet" type="text/css" asp-append-version="true" />
 	}
 	<style>
-		.cb-btn-brand { background-color: #0E4A9E; color: #fff; font-weight: 700; border: 0; }
-		.cb-btn-brand:hover, .cb-btn-brand:focus, .cb-btn-brand:active { background-color: #145DBF; color: #fff; }
+		.cb-btn-brand { background-color: @CrossBuy.BL.Platform.ProductIdentity.Palette.Primary; color: #fff; font-weight: 700; border: 0; }
+		.cb-btn-brand:hover, .cb-btn-brand:focus, .cb-btn-brand:active { background-color: @CrossBuy.BL.Platform.ProductIdentity.Palette.Dark; color: #fff; }
 	</style>
 	<script>if (window.top != window.self) { window.top.location.replace(window.self.location.href); }</script>
 </head>
@@ -71,12 +71,12 @@
 					</div>
 				</div>
 			</div>
-			<div class="d-flex flex-lg-row-fluid w-lg-50 bgi-size-cover bgi-position-center order-1 order-lg-2" style="background: radial-gradient(120% 120% at 80% 10%, #145DBF 0%, #0E4A9E 45%, #0B3D91 100%);">
+			<div class="d-flex flex-lg-row-fluid w-lg-50 bgi-size-cover bgi-position-center order-1 order-lg-2" style="background: radial-gradient(120% 120% at 80% 10%, @CrossBuy.BL.Platform.ProductIdentity.Palette.Primary 0%, @CrossBuy.BL.Platform.ProductIdentity.Palette.Dark 45%, @CrossBuy.BL.Platform.ProductIdentity.Palette.Dark 100%);">
 				<div class="d-flex flex-column flex-center py-7 py-lg-15 px-5 px-md-15 w-100">
 					<a href="/hyper/pos/login" class="mb-0 mb-lg-12">
-						<img alt="CrossBuy" src="~/Backend-assets/media/logos/crossbuy-logo-light.svg" class="h-45px h-lg-55px" asp-append-version="true" />
+						<img alt="@CrossBuy.BL.Platform.ProductIdentity.Name" src="@CrossBuy.BL.Platform.ProductIdentity.Assets.LogoOnDark" class="h-45px h-lg-55px" asp-append-version="true" />
 					</a>
-					<img class="d-none d-lg-block mx-auto w-275px w-md-50 w-xl-500px mb-10 mb-lg-20" src="~/Backend-assets/media/misc/crossbuy-cashier.svg" alt="Hypermarket" asp-append-version="true" />
+					<img class="d-none d-lg-block mx-auto w-275px w-md-50 w-xl-500px mb-10 mb-lg-20" src="@CrossBuy.BL.Platform.ProductIdentity.Assets.CashierIllustration" alt="Hypermarket" asp-append-version="true" />
 					<h1 class="d-none d-lg-block text-white fs-2qx fw-bolder text-center mb-7">@(isAr ? "كاشير الهايبر ماركت" : "Hypermarket Cashier")</h1>
 					<div class="d-none d-lg-block text-white fs-base text-center">
 						@if (isAr)

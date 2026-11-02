@@ -210,7 +210,8 @@ foreach ($s in $deployable) {
     $row = $byName[$s.path]
     if (-not $row) { $pending += $s; continue }
     if (-not $row.Success) { $failedRows += [pscustomobject]@{ script = $s; row = $row }; continue }
-    if ($row.ScriptHash -eq $s.sha256) { $applied += [pscustomobject]@{ script = $s; row = $row } }
+    $expectedHash = if ($s.rawSha256) { $s.rawSha256 } else { $s.sha256 }
+    if ($row.ScriptHash -eq $expectedHash) { $applied += [pscustomobject]@{ script = $s; row = $row } }
     else { $changed += [pscustomobject]@{ script = $s; row = $row } }
 }
 
@@ -234,7 +235,8 @@ if (-not $Quiet) {
     }
     if ($changed.Count) {
         Write-Host "CHANGED — applied here, but the file has been edited since. The database is running" -ForegroundColor Yellow
-        Write-Host "older DDL than the repository describes. Re-apply (the scripts are idempotent) and re-record:" -ForegroundColor Yellow
+        Write-Host "a different recorded script identity than the repository describes. BLOCK promotion:" -ForegroundColor Yellow
+        Write-Host "Review and supersede with a new slice identity, or restore the approved version. Never silently re-apply or re-record a changed slice." -ForegroundColor Yellow
         foreach ($c in $changed) {
             Write-Host ("  {0}" -f $c.script.path)
             Write-Host ("      applied {0} with {1}" -f $c.row.AppliedAt, $c.row.ScriptHash.Substring(0, 12))

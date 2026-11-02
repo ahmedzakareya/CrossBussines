@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Logging.Abstractions;
+using CrossBuy.BL.Platform;
 using CrossBuy.BL;
 using CrossBuy.Models.Context;
 using CrossBuy.Models.Context.Admin;
@@ -49,7 +51,19 @@ namespace CrossBuy.Tests
 		};
 
 		private static ICrmService Service(CrossDbContext db, ICrmAccessService access)
-			=> new CrmService(db, null!, null!, access, null!);
+			=> new CrmService(db, null!, null!, access, null!, Recorder(db));
+		// COMPELLED BY THE MANDATORY RECORDER, and nothing else in this file moves.
+		//
+		// CrmService now REQUIRES IBusinessEventService, so this fixture must supply one. It supplies a
+		// REAL BusinessEventService rather than a silent stub: a dummy that discards facts would restore
+		// exactly the blindness making the dependency mandatory was meant to remove. The company comes
+		// from the context the caller already scoped, so the event lands in the same tenant as the row -
+		// BusinessEvent is a pilot entity and the write guard would refuse it otherwise.
+		private static IBusinessEventService Recorder(CrossDbContext db)
+			=> new BusinessEventService(
+				db, new EntityRegistry(db),
+				new StubContextAccessor(PlatformTestHost.DefaultContext(db.CompanyScope.CompanyId ?? 1)),
+				NullLogger<BusinessEventService>.Instance);
 
 		// Owner scope is injected directly rather than derived from seeded role rows: these tests are
 		// about what CrmService DOES with a scope, not about how CrmAccessService computes one. That
@@ -349,14 +363,51 @@ namespace CrossBuy.Tests
 			var code = SourceText("CrossBuy", "BL", "CrmService.cs");
 
 			Assert.Contains("private async Task<bool> OwnerVisibleAsync(int? ownerEmployeeId)", code, StringComparison.Ordinal);
-			Assert.Equal(6, Occurrences(code, "OwnerVisibleAsync(") - 1);   // -1 for the declaration
+			// Pin each original reader independently; extra protected writers are permitted.
+            foreach (var reader in new[] { "GetLeadAsync", "GetAccountAsync", "GetOpportunityAsync", "GetTicketAsync", "GetCampaignAsync", "GetListAsync" })
+            {
+                var signature = System.Text.RegularExpressions.Regex.Match(code, @"public async Task<[^\r\n]+> " + reader + @"\(");
+                Assert.True(signature.Success, "Missing reader: " + reader);
+                int next = code.IndexOf("\n\t\tpublic ", signature.Index + signature.Length, StringComparison.Ordinal);
+                var body = next < 0 ? code[signature.Index..] : code[signature.Index..next];
+                Assert.Contains("OwnerVisibleAsync(", body, StringComparison.Ordinal);
+            }
 		}
 
-		private static int Occurrences(string haystack, string needle)
+		[Fact]
+		public void Every_owner_bearing_WRITE_consults_the_owner_scope_too()
 		{
-			int n = 0, i = 0;
-			while ((i = haystack.IndexOf(needle, i, StringComparison.Ordinal)) >= 0) { n++; i += needle.Length; }
-			return n;
+			// CRM Wave 1. The reads above have hidden a colleague's record by id since the owner scope
+			// landed — and the WRITES never asked at all, so the same rep could not see the row and could
+			// still overwrite it, convert it, move its stage or tick off its activity by id. Hiding a row
+			// from a reader while accepting a writer's id for it is not a narrower kind of access.
+			//
+			// This is pinned at the source for the same reason its sibling is: the defect is a MISSING
+			// call, and no behavioural test can see a door that a future method quietly leaves open.
+			var code = SourceText("CrossBuy", "BL", "CrmService.cs");
+
+			foreach (var writer in new[]
+					 {
+						 "public async Task<(bool ok, string? error)> SaveLeadAsync(",
+						 "public async Task<(bool ok, string? error)> SaveOpportunityAsync(",
+						 "public async Task<(bool ok, string? error, int id)> SaveAccountAsync(",
+						 "public async Task<(bool ok, string? error)> SaveActivityAsync(",
+						 "public async Task<bool> ToggleActivityAsync(",
+						 "public async Task<(bool ok, string? error, int accountId)> ConvertLeadToAccountAsync(",
+						 "public async Task<(bool ok, string? error)> UpdateOpportunityStageAsync(",
+					 })
+				Assert.Contains("OwnerVisibleAsync(", MethodBody(code, writer), StringComparison.Ordinal);
+		}
+
+		/// The text from a method's signature up to the start of the next member. Crude by design: it
+		/// needs to answer "does THIS method consult the scope", and a whole-file count cannot — it
+		/// passes just as happily when one method checks twice and its neighbour not at all.
+		private static string MethodBody(string code, string signature)
+		{
+			int start = code.IndexOf(signature, StringComparison.Ordinal);
+			Assert.True(start > 0, "method not found, or it was renamed without updating this test: " + signature);
+			int next = code.IndexOf("\n\t\tpublic ", start + signature.Length, StringComparison.Ordinal);
+			return next < 0 ? code[start..] : code[start..next];
 		}
 
 		private static string SourceText(params string[] relativeParts)

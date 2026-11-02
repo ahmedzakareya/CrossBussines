@@ -141,16 +141,11 @@ namespace CrossBuy.Tests
         }
 
         [Fact]
-        public void The_scope_of_this_fix_was_held_to_the_six_read_paths()
+        public void The_controller_cannot_reintroduce_the_constant_company_after_tenancy_convergence()
         {
-            // Stated as a test so the restraint is durable: this controller carries a large constant-
-            // company debt that this change deliberately did NOT sweep. If someone later "finishes the
-            // job" in one pass, that is a decision worth making on purpose, and this failing is the
-            // prompt to make it rather than a rubber stamp.
-            var remaining = Regex.Matches(Controller(), @"\bDefaultCompanyId\b").Count;
-
-            Assert.True(remaining > 0,
-                "the controller-wide constant-company debt appears closed; if that was intended, retire this test");
+            // The transferred accounting-tenancy workstream closes the wider debt deliberately.
+            // Preserve the six invoice-path guards above and forbid restoring the old declaration.
+            Assert.Empty(Regex.Matches(Controller(), @"(?m)^\s*private\s+const\s+int\s+DefaultCompanyId\b"));
         }
 
         // ---- the missing-partial class of defect --------------------------------------------------

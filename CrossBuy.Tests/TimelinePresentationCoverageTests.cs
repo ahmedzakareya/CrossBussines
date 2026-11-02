@@ -245,6 +245,35 @@ namespace CrossBuy.Tests
             Assert.Equal("TimelineProjection", Consumer(host).Consumer);
         }
 
+        [Theory]
+        [InlineData(SalesReturnEvents.Created)]
+        [InlineData(PurchaseReturnEvents.Reversed)]
+        [InlineData(ReceiptEvents.Allocated)]
+        [InlineData(PaymentEvents.Updated)]
+        [InlineData(TaskEvents.HoldRequested)]
+        [InlineData(TaskEvents.HoldApproved)]
+        [InlineData(TaskEvents.HoldRejected)]
+        [InlineData(TaskEvents.HoldResumed)]
+        public void Added_presentations_are_bilingual_and_refuse_unknown_payload_versions(string type)
+        {
+            Assert.True(TimelineEventPresenter.TryPresent(type, 1, "{}", out var p, out var error), error);
+            Assert.False(string.IsNullOrWhiteSpace(p!.TitleAr));
+            Assert.False(string.IsNullOrWhiteSpace(p.TitleEn));
+            Assert.NotEqual(p.TitleAr, p.TitleEn);
+            Assert.False(TimelineEventPresenter.TryPresent(type, 2, "{}", out _, out _));
+            Assert.False(TimelineEventPresenter.TryPresent(type, 1, "[]", out _, out _));
+        }
+
+        [Fact]
+        public void Financial_facts_do_not_expose_uncontracted_payload_text()
+        {
+            Assert.True(TimelineEventPresenter.TryPresent(ReceiptEvents.Created, 1,
+                "{\"privateNote\":\"not-for-display\"}", out var p, out var error), error);
+            Assert.DoesNotContain("not-for-display", p!.TitleEn);
+            Assert.Null(p.DescriptionAr);
+            Assert.Null(p.DescriptionEn);
+        }
+
         // ---- fixtures ---------------------------------------------------------------------------
 
         private static TimelineProjectionConsumer Consumer(PlatformTestHost host)

@@ -564,7 +564,8 @@ namespace CrossBuy.Tests
             Assert.False(result.Ok);
 
             // An approved one passes, so this is a whitelist and not a blanket refusal.
-            e.Style.FontFamily = "Cairo";
+            Assert.NotEmpty(ReportVisualLayoutValidator.ApprovedFonts);
+            e.Style.FontFamily = ReportVisualLayoutValidator.ApprovedFonts[0];
             Assert.True(new ReportVisualLayoutValidator().Validate(layout, dataset,
                 new HashSet<string>(StringComparer.Ordinal), new HashSet<int>()).Ok);
         }
@@ -792,6 +793,27 @@ namespace CrossBuy.Tests
         // =========================================================================================
         // 32–35  PAPER, PAGINATION AND ONE LAYOUT FOR EVERY OUTPUT
         // =========================================================================================
+
+        [Fact]
+        public async Task Truncated_print_keeps_the_warning_inside_the_first_sheet_without_flow_notices()
+        {
+            using var host = new ReportingTestHost();
+            Grant(host, AccountingReportPermissions.View);
+            host.SeedEmployee(7);
+            await SeedSalesAsync(host);
+            var layout = Layout();
+            Put(layout, ReportBandKind.Detail, Field("InvoiceNo"));
+            var draft = Draft(layout, "InvoiceNo");
+            draft.PageSize = 1;
+
+            var result = await Studio(host).RunAsync(draft, ReportOutputFormat.PrintHtml, preview: false);
+            Assert.True(result.IsSuccess);
+            Assert.True(result.Run!.Truncated);
+            var html = Encoding.UTF8.GetString(result.Artifact!.Content);
+            Assert.Contains("<section class=\"cbv-page\"><div class=\"cbv-print-notice\">", html);
+            Assert.DoesNotContain("<body class=\"cbv\"><div", html);
+            Assert.Contains("some rows are not shown", html);
+        }
 
         [Fact] // 32
         public void Paper_and_orientation_decide_the_printable_box()

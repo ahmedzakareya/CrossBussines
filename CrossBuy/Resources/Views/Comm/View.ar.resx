@@ -84,4 +84,61 @@
   <data name="SMTP not set — messages are queued and sent once configured." xml:space="preserve">
     <value>لم يُضبَط SMTP — تُحفَظ الرسائل في الانتظار وتُرسَل تلقائيًا عند الضبط.</value>
   </data>
+  <data name="Restore" xml:space="preserve">
+    <value>استعادة</value>
+  </data>
+  <data name="Delete permanently" xml:space="preserve">
+    <value>حذف نهائي</value>
+  </data>
+  <data name="Move to Deleted Items?" xml:space="preserve">
+    <value>نقل إلى المهملات؟</value>
+  </data>
+  <data name="Delete permanently? This cannot be undone." xml:space="preserve">
+    <value>حذف نهائي؟ لا يمكن التراجع عن هذا.</value>
+  </data>
+  <data name="Cancelled" xml:space="preserve">
+    <value>ملغاة</value>
+  </data>
+  <data name="All day" xml:space="preserve">
+    <value>طوال اليوم</value>
+  </data>
+  <data name="Organizer" xml:space="preserve">
+    <value>المنظّم</value>
+  </data>
+  <data name="Add to calendar" xml:space="preserve">
+    <value>إضافة إلى التقويم</value>
+  </data>
+  <data name="In your calendar — open it" xml:space="preserve">
+    <value>في تقويمك — افتح الموعد</value>
+  </data>
+  <data name="Responding is not available yet." xml:space="preserve">
+    <value>الرد غير متاح بعد.</value>
+  </data>
+  <data name="Show original message" xml:space="preserve">
+    <value>عرض الرسالة الأصلية</value>
+  </data>
+  <data name="Accept" xml:space="preserve">
+    <value>قبول</value>
+  </data>
+  <data name="Tentative" xml:space="preserve">
+    <value>ربما</value>
+  </data>
+  <data name="Decline" xml:space="preserve">
+    <value>رفض</value>
+  </data>
+  <data name="Respond to this invitation" xml:space="preserve">
+    <value>الرد على الدعوة</value>
+  </data>
+  <data name="Added to your calendar" xml:space="preserve">
+    <value>أُضيف إلى تقويمك</value>
+  </data>
+  <data name="Already in your calendar" xml:space="preserve">
+    <value>موجود في تقويمك بالفعل</value>
+  </data>
+  <data name="Added — open calendar" xml:space="preserve">
+    <value>أُضيف — افتح التقويم</value>
+  </data>
+  <data name="Already there — open calendar" xml:space="preserve">
+    <value>موجود بالفعل — افتح التقويم</value>
+  </data>
 </root>

@@ -1,4 +1,4 @@
-﻿@using CrossBuy.BL.TasksCalendar
+@using CrossBuy.BL.TasksCalendar
 @using CrossBuy.Models.Context.Tasks
 @inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
 @{
@@ -1258,73 +1258,7 @@
 
 @* A feed reads as one column: a hairline between items and a tint on hover, instead of a
    hard border drawn around every row. *@
-<style>
-    .cb-feed-item { border-bottom: 1px solid var(--bs-gray-200); transition: background-color .12s ease; }
-    .cb-feed-item:last-child { border-bottom: 0; }
-    .cb-feed-item:hover { background-color: var(--bs-gray-100); border-radius: .5rem; }
-    /* ONE SIZE FOR EVERY IMAGE. Each preview was scaling to its own aspect ratio, so a wide
-       screenshot and a tall one came out different sizes and the column looked ragged. The frame
-       is fixed and the image covers it; the full, uncropped picture is one click away in the
-       viewer, which is what a feed does. */
-    .cb-feed-media {
-        width: 100%;
-        max-width: 480px;
-        aspect-ratio: 16 / 9;
-        overflow: hidden;
-        border-radius: .5rem;
-    }
-    .cb-feed-media img { width: 100%; height: 100%; object-fit: cover; display: block; }
-    /* Each paragraph still renders in its own direction - Arabic reads right-to-left inside the
-       line - but the LINE always starts on the column edge, so the name, the body and the media
-       share one edge instead of the body jumping to the far side. */
-    /* `start` was not enough: under unicode-bidi:plaintext it resolves against the PARAGRAPH's
-       own direction, so an Arabic body still aligned right while the English name above it
-       aligned left. Alignment must follow the DOCUMENT, so it is stated per document direction;
-       the paragraph keeps rendering in its own direction, which is the part that must be auto. */
-    .cb-feed-body { unicode-bidi: plaintext; white-space: pre-wrap; overflow-wrap: anywhere; }
-    html[dir="rtl"] .cb-feed-body, [dir="rtl"] .cb-feed-body { text-align: right; }
-    html:not([dir="rtl"]) .cb-feed-body { text-align: left; }
-
-
-    /* READ MORE. Four lines, then a toggle - and only when it really overflows. */
-    .cb-clamp { display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
-    .cb-more { background: none; border: 0; padding: 0; font-weight: 600; }
-
-    /* ONE row treatment for every list on this card - checklist, dependencies, feed: a hairline
-       between rows and a tint on hover, never a border drawn around each one, and none under the
-       last row. The delete stays quiet until the row is pointed at: it was a filled danger block
-       on every line, which made destroying a row the loudest thing on the screen. */
-    .cb-row { border-bottom: 1px solid var(--bs-gray-200); transition: background-color .12s ease; }
-    .cb-row:last-child { border-bottom: 0; }
-    .cb-row:hover { background-color: var(--bs-gray-100); border-radius: .5rem; }
-    .cb-row-del { opacity: .4; transition: opacity .12s ease; }
-    .cb-row:hover .cb-row-del, .cb-row-del:focus-visible { opacity: 1; }
-
-    /* A MENTION READS AS A NAME, not as its token. The author types (or picks) "@@[Ali](employee:7)";
-       leaving that on screen would show the reader the machinery. Brand tokens only - the chip must
-       stay legible on the feed ground and in either theme. */
-    /* .cb-mention now lives in crossbuy-brand.css - a second screen renders mentions too, and a
-       class defined in one page's <style> block is unreachable from the other. */
-
-    /* THE PICKER. Anchored to the composer, not to the page, so it follows the box when the
-       textarea grows; inset-inline-start keeps it on the reading edge in both directions. */
-    #cbComposer { position: relative; }
-    .cb-at-menu {
-        position: absolute; z-index: 1056;   /* above the composer, below a Bootstrap modal (1055) */
-        inset-inline-start: .75rem; inset-inline-end: auto;
-        min-width: 260px; max-width: 360px; max-height: 264px; overflow-y: auto;
-        background: var(--bs-body-bg); border: 1px solid var(--bs-gray-300);
-        border-radius: .475rem; box-shadow: 0 .5rem 1.5rem rgba(0,0,0,.12);
-        padding: .25rem;
-    }
-    .cb-at-item { display: flex; align-items: center; gap: .5rem; padding: .35rem .5rem;
-        border-radius: .375rem; cursor: pointer; }
-    .cb-at-item.active, .cb-at-item:hover { background: var(--cb-brand-surface); }
-    .cb-at-item img { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
-    .cb-at-fallback { width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
-        display: flex; align-items: center; justify-content: center;
-        background: var(--cb-brand-surface); color: var(--cb-brand-ink); font-weight: 600; font-size: 11px; }
-</style>
+<link rel="stylesheet" href="~/Backend-assets/css/crossbuy-brand.css" asp-append-version="true" />
 
 <div class="modal fade" id="cbPreUploadModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-lg">

@@ -1,4 +1,4 @@
-﻿﻿using CrossBuy.Models.Context.Admin;
+﻿using CrossBuy.Models.Context.Admin;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using System.Reflection.Emit;
@@ -246,6 +246,51 @@ namespace CrossBuy.Models.Context
 			// The ONLY table the future AI/RAG layer reads. Structure ships in
 			// deploy/sql/platform_ai_projections.sql; this mapping exists so EF generates the same names and
 			// so a test host can materialise it from the model alone (the pattern used by Communication above).
+			// ---- Task Wave 2: platform tags ----------------------------------------------------------
+			// Structure ships in CrossBuy/deploy/sql/platform_tags.sql; this mapping exists so EF generates
+			// the same names and so a test host can materialise the tables from the model alone - the
+			// pattern AiProjections and the Communication tables already use.
+			builder.Entity<Platform.Tag>(e =>
+			{
+				e.ToTable("Tags");
+				e.HasKey(x => x.ID);
+				e.Property(x => x.ID).ValueGeneratedOnAdd();
+				e.Property(x => x.Name).HasMaxLength(60).IsRequired();
+				e.Property(x => x.NormalizedName).HasMaxLength(60).IsRequired();
+				// UNIQUENESS IS PER COMPANY AND ON THE NORMALIZED NAME, which is the whole point: "Urgent"
+				// and " urgent " collide inside one company, while company 41 and company 77 may each have
+				// their own. Enforced by the DATABASE and not only by the service, because two concurrent
+				// creates would both pass an application-only check.
+				e.HasIndex(x => new { x.CompanyID, x.NormalizedName })
+					.IsUnique().HasDatabaseName("UX_Tags_Company_NormalizedName");
+				// The picker's read path: one company's live tags.
+				e.HasIndex(x => new { x.CompanyID, x.IsActive })
+					.HasDatabaseName("IX_Tags_Company_Active");
+			});
+
+			builder.Entity<Platform.TagAssignment>(e =>
+			{
+				e.ToTable("TagAssignments");
+				e.HasKey(x => x.ID);
+				e.Property(x => x.ID).ValueGeneratedOnAdd();
+				e.Property(x => x.EntityType).HasMaxLength(60).IsRequired();
+				// ONE tag per entity, enforced by the DATABASE. The service checks first so the caller gets a
+				// clean answer, but a double-submit races that check and this is what makes the second row
+				// impossible rather than merely unlikely.
+				e.HasIndex(x => new { x.CompanyID, x.TagId, x.EntityType, x.EntityId })
+					.IsUnique().HasDatabaseName("UX_TagAssignments_Unique");
+				// "which tags does this task have?" - the per-entity read, once per screen.
+				e.HasIndex(x => new { x.CompanyID, x.EntityType, x.EntityId })
+					.HasDatabaseName("IX_TagAssignments_Entity");
+				// "which tasks carry this tag?" - the FILTER read. Without it a tag filter over a large task
+				// list is a scan, which is the performance debt this wave was told not to add.
+				e.HasIndex(x => new { x.CompanyID, x.TagId, x.EntityType })
+					.HasDatabaseName("IX_TagAssignments_Tag_Entity");
+				// RESTRICT, not cascade: a used tag is archived rather than deleted, so a delete that would
+				// orphan assignments must fail loudly instead of quietly erasing history.
+				e.HasOne<Platform.Tag>().WithMany().HasForeignKey(x => x.TagId).OnDelete(DeleteBehavior.Restrict);
+			});
+
 			builder.Entity<Platform.AiProjection>(e =>
 			{
 				e.ToTable("AiProjections");
@@ -580,6 +625,8 @@ namespace CrossBuy.Models.Context
         // Increment 4.6 — the durable external-AI egress audit. Append-only; nothing updates a row.
         // Structure is deployed by deploy/sql/platform_ai_egress_audit.sql (migrations are disabled).
         public DbSet<Platform.AiEgressAudit> AiEgressAudits { get; set; }
+        public DbSet<Platform.Tag> Tags { get; set; }
+        public DbSet<Platform.TagAssignment> TagAssignments { get; set; }
 
         // Stage 1 Batch C — the ONE shared module role-assignment table, and project membership.
         // Structure ships in deploy/sql/platform_role_assignments.sql and deploy/sql/project_members.sql

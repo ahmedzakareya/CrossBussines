@@ -1,4 +1,4 @@
-﻿@using CrossBuy.BL.TasksCalendar
+@using CrossBuy.BL.TasksCalendar
 @model CalendarTimelinePage
 @inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
 @{
@@ -181,7 +181,7 @@
                 @* NAMED, not inferred. These are counted in the number above and appear in NO row of the
                    grid: no attendees, and an owner who is not an active employee of this company. Before
                    this block a reader could only discover them as a mismatch between a count and a grid. *@
-                <div class="notice d-flex rounded border border-dashed p-6 mt-4" style="background:#E7F0FF;border-color:#0E4A9E !important;">
+                <div class="notice d-flex rounded border border-dashed p-6 mt-4" data-cb-calendar-unassigned>
                     <span class="symbol symbol-45px me-5"><span class="symbol-label" style="background:#0E4A9E;"><i class="ki-outline ki-information-5 fs-2x text-white"></i></span></span>
                     <div class="d-flex flex-stack flex-grow-1 flex-wrap flex-md-nowrap">
                         <div class="mb-3 mb-md-0 fw-semibold pe-5">
@@ -251,7 +251,7 @@
                                group rows elsewhere (#f4f6f8). It carries the branch, how many people sit
                                in it and how many of them are booked - so a branch that is entirely free is
                                readable as a fact instead of as thirteen columns of dots. *@
-                            <tr style="background:#f4f6f8;">
+                            <tr data-cb-calendar-group>
                                 <td colspan="@(hours.Count + 1)" class="py-2">
                                     <div class="d-flex align-items-center flex-wrap gap-2">
                                         <span class="fw-bold fs-7 text-gray-900">

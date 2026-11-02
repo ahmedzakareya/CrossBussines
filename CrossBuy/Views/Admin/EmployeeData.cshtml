@@ -2606,7 +2606,27 @@ body[dir="rtl"] .er-review-row,
                     var go = function () {
                         if (res.redirectUrl) window.location.href = res.redirectUrl;
                     };
-                    if (window.Swal) {
+                    // A LOGIN WAS CREATED: show its password ONCE, here, or it is lost.
+                    // The save path mints a temporary password when the employee has no login, and
+                    // returned it in this response while the screen ignored it -- so the account
+                    // existed, could sign in, and nobody knew the password. It is not written to any
+                    // log either, deliberately, which is exactly why this modal has to carry it.
+                    // Same treatment as the company administrator hand-over: a modal to dismiss, not
+                    // a toast that disappears on its own.
+                    if (window.Swal && res.tempPassword) {
+                        var esc = function (t) { return $('<div>').text(t == null ? '' : t).html(); };
+                        Swal.fire({
+                            icon: 'success', title: '@Localizer["Saved successfully"]',
+                            html: '<div class="text-start">'
+                                + '<div class="mb-3">@Localizer["A login was created for this employee. The password is shown once and cannot be recovered afterwards — only reset."]</div>'
+                                + '<div><strong>@Localizer["User name"]:</strong> <code>' + esc(res.data && res.data.email) + '</code></div>'
+                                + '<div><strong>@Localizer["Temporary password"]:</strong> <code>' + esc(res.tempPassword) + '</code></div>'
+                                + '</div>',
+                            confirmButtonText: '@Localizer["OK"]',
+                            customClass: { confirmButton: 'btn btn-primary' },
+                            buttonsStyling: false
+                        }).then(go);
+                    } else if (window.Swal) {
                         Swal.fire({
                             icon: 'success', title: '@Localizer["Saved successfully"]',
                             html: '@Localizer["Employee has been saved successfully."]',

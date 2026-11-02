@@ -227,7 +227,7 @@ namespace CrossBuy.Tests.Communication
 
             // Treated as absent unless the WHOLE set resolves: a half-present platform that can list
             // but not add is a worse answer than an honest refusal.
-            Assert.Contains("threads is null || comments is null || surface is null ? null", source);
+            Assert.Matches(@"threads is null \|\| comments is null \|\| surface is null\s*\? null", source);
             Assert.Contains("Status503ServiceUnavailable", source);
             Assert.Contains("communication_unavailable", source);
 

@@ -1,0 +1,113 @@
+{
+  "claims": [
+    {
+      "sliceId": "R1-POS-SETUP-001",
+      "supersededSliceName": "pos_setup.sql",
+      "canonicalPath": "CrossBuy/deploy/sql/pos_setup.sql",
+      "compatibilityPackagePath": "deploy/sql/pos_setup.sql",
+      "rawSha256": "40e82a1e2bfa9a2d720dbf2f52069144562f7391b430b695072d7d61b2d13ef9",
+      "previousSourceHashes": [
+        "b287595b7fd7110188fea6de272402c5ddc84ab0767d3d8da538a99d8ee270ac",
+        "babdddeabc668ecfbf641f996bf3e9317489fbc6d57c88bb31069816600360d0"
+      ],
+      "databaseEvidence": "external/r1/revision-02; two execution passes and exact-hash PlatformSchemaHistory record",
+      "freshMatrix": "NOT RUN - owner declined isolated test database",
+      "status": "REVIEWED SOURCE ADOPTION; RELEASE MATRIX UNPROVEN",
+      "appliedCandidateRawSha256": "f7c83ad682854b1593aaf0e00ce7cb42b16eba755ec16cc296a8fb8868bc9311",
+      "sourceNormalization": "Trailing blank lines only; executable SQL text unchanged from locally applied candidate. Canonical-path applied history not asserted."
+    },
+    {
+      "sliceId": "R1-POS-QUICKMENU-001",
+      "supersededSliceName": "pos_quickmenu.sql",
+      "canonicalPath": "CrossBuy/deploy/sql/pos_quickmenu.sql",
+      "compatibilityPackagePath": "deploy/sql/pos_quickmenu.sql",
+      "rawSha256": "4bbd859e09a928df9147eb24f72009022e9dd7386c7fdc1594346ebaf98918d8",
+      "previousSourceHashes": [
+        "7c9ad648d74dc73c2e58e9dce40a215876df82e83b3b31ee4d5f7b937bdca9c5",
+        "ef169e5c36e21f0e23a7fa68379fc0ecfba73adaf28220eb94f62b0fd53b5af0"
+      ],
+      "databaseEvidence": "external/r1/revision-02; two execution passes and exact-hash PlatformSchemaHistory record",
+      "freshMatrix": "NOT RUN - owner declined isolated test database",
+      "status": "REVIEWED SOURCE ADOPTION; RELEASE MATRIX UNPROVEN",
+      "appliedCandidateRawSha256": "064701a88cfa852d894588de13358cf056a9dc05ff8e65ba9be1075f7a1a477b",
+      "sourceNormalization": "Trailing blank lines only; executable SQL text unchanged from locally applied candidate. Canonical-path applied history not asserted."
+    },
+    {
+      "sliceId": "R1-POS-HOLD-RECALL-001",
+      "supersededSliceName": "pos_hold_recall.sql",
+      "canonicalPath": "CrossBuy/deploy/sql/pos_hold_recall.sql",
+      "compatibilityPackagePath": "deploy/sql/pos_hold_recall.sql",
+      "rawSha256": "5ea0716c7dec1c177b5e74f7c5cb2c4c7aecd001ff67b7713bcb44394f585618",
+      "previousSourceHashes": [
+        "ced9b5266e1c1f8e0722903017307b4505144d9b5a6a3a90c753b427769ab59f",
+        "f7348e6e28d3822b013332b164941c381047acea99796fd37e2f481d1027479c"
+      ],
+      "databaseEvidence": "external/r1/revision-02; two execution passes and exact-hash PlatformSchemaHistory record",
+      "freshMatrix": "NOT RUN - owner declined isolated test database",
+      "status": "REVIEWED SOURCE ADOPTION; RELEASE MATRIX UNPROVEN",
+      "appliedCandidateRawSha256": "6325f8184cef2fba0ffb061f25c97952860547446a3765d1a9b8768d24eb9705",
+      "sourceNormalization": "Trailing blank lines only; executable SQL text unchanged from locally applied candidate. Canonical-path applied history not asserted."
+    },
+    {
+      "sliceId": "R1-POS-ORDER-GUESTS-001",
+      "supersededSliceName": "pos_order_guests.sql",
+      "canonicalPath": "CrossBuy/deploy/sql/pos_order_guests.sql",
+      "compatibilityPackagePath": "deploy/sql/pos_order_guests.sql",
+      "rawSha256": "b852f274e169a443feb6bcf64d3b8fd10a48e4ea1af251c5508712a4402a248f",
+      "previousSourceHashes": [
+        "72b2af6a5be1f2c5000348cde6c7333bc2d55dec31be99a86ae5460b7e55da2e",
+        "722d8f0954cc6ff317ab0968e976ad88f4bb52cca0a6bfe116014d025f543bcd"
+      ],
+      "databaseEvidence": "external/r1/revision-02; two execution passes and exact-hash PlatformSchemaHistory record",
+      "freshMatrix": "NOT RUN - owner declined isolated test database",
+      "status": "REVIEWED SOURCE ADOPTION; RELEASE MATRIX UNPROVEN",
+      "appliedCandidateRawSha256": "80e7ed065f3c52c8f0193f60d22c65bb2e1422423d5888900d50fcbcbcd04ebe",
+      "sourceNormalization": "Trailing blank lines only; executable SQL text unchanged from locally applied candidate. Canonical-path applied history not asserted."
+    },
+    {
+      "sliceId": "R1-HR-DOCUMENT-ATTACHMENTS-001",
+      "supersededSliceName": "hr_document_attachments.sql",
+      "canonicalPath": "CrossBuy/deploy/sql/hr_document_attachments.sql",
+      "compatibilityPackagePath": "deploy/sql/hr_document_attachments.sql",
+      "rawSha256": "8334d608aaa1248e7052b795b1dc587d20af7307da9701aff3b9e6a6df5132d1",
+      "appliedCandidateRawSha256": "8334d608aaa1248e7052b795b1dc587d20af7307da9701aff3b9e6a6df5132d1",
+      "previousSourceHashes": [
+        "767719f35a202f3a9ad21c97fc932aea861409e1658cb7f6cd8ce7119e480bcc",
+        "6bc5c6262061b7c2f3d9537ded909ba99d68a394d1b14279013210571da8b6f7"
+      ],
+      "databaseEvidence": "Recorded revision-02 exact-hash application and two passes on linked database; no new SQL execution for source adoption",
+      "freshMatrix": "NOT RUN - owner declined isolated test database",
+      "status": "SUPERSEDED IN SOURCE BY R1-HR-DOCUMENT-ATTACHMENTS-003; prior linked database record preserved",
+      "sourceNormalization": "Trailing blank lines only; executable candidate retained; applied external raw hash distinguished from canonical source raw hash"
+    },
+    {
+      "sliceId": "R1-ACCOUNTING-AUDIT-SUCCESSOR-001",
+      "canonicalPath": "CrossBuy/deploy/sql/accounting_period_control.sql",
+      "compatibilityPackagePath": "deploy/sql/period_close_and_billing_approval_schema_2026-09.sql",
+      "rawSha256": "a29db2389c6977802a3627582d718e7e36202129e54ba92e2436ca1d666645b1",
+      "databaseEvidence": "governance/evidence/r1-accounting-hr-sql-matrix.json",
+      "freshMatrix": "Fresh, both historical input orders, preserved evidence rerun, incompatible metadata and historical-row refusals, concurrent initial creation/reruns passed",
+      "status": "ISOLATED SQL MATRIX QUALIFIED; NOT APPLIED TO LINKED DATABASE",
+      "staticCasesPassed": 20,
+      "syntaxCasesPassed": 29,
+      "productionApplied": false
+    },
+    {
+      "sliceId": "R1-HR-DOCUMENT-ATTACHMENTS-003",
+      "canonicalPath": "CrossBuy/deploy/sql/hr_document_attachments.sql",
+      "compatibilityPackagePath": "deploy/sql/hr_document_attachments.sql",
+      "rawSha256": "49224c72aa826cff09ed4e09f4c7c146eadb751036052e66e645fd9d2d9558f6",
+      "previousSourceHashes": [
+        "8334d608aaa1248e7052b795b1dc587d20af7307da9701aff3b9e6a6df5132d1",
+        "8334d608aaa1248e7052b795b1dc587d20af7307da9701aff3b9e6a6df5132d1"
+      ],
+      "status": "ISOLATED SQL MATRIX QUALIFIED; NOT APPLIED TO LINKED DATABASE",
+      "databaseEvidence": "governance/evidence/r1-accounting-hr-sql-matrix.json",
+      "freshMatrix": "Fresh, both input-first paths, rerun, company collision, incompatible/disabled index refusal, malformed source/attachment refusal, concurrent initial creation and backfill passed",
+      "productionApplied": false
+    }
+  ],
+  "owner": "Integration Owner - R1 source adoption; POS domain ownership unchanged",
+  "purpose": "R1 reviewed slice identities and canonical-to-package compatibility copies; manifest.json remains the authored registry of record",
+  "schemaActivation": "No linked database SQL executed by this source adoption; isolated SQL test execution and verified cleanup are recorded separately."
+}

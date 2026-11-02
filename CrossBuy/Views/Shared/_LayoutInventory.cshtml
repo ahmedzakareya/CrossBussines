@@ -36,10 +36,10 @@ License: For each use you must have a valid license purchased only from above li
 		   name here and inventing one is out of scope.
 		   The theme attribution comment near the top of this file is deliberately KEPT: it records
 		   provenance and the Metronic licence terms, and it is a source comment, not rendered output. *@
-		<meta name="description" content="CrossBuy business platform." />
+		<meta name="description" content="@CrossBuy.BL.Platform.ProductIdentity.Name — @CrossBuy.BL.Platform.ProductIdentity.Tagline" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<link rel="shortcut icon" href="~/Backend-assets/media/logos/favicon.ico" asp-append-version="true" />
-    <link rel="icon" type="image/svg+xml" href="~/Backend-assets/media/logos/crossbuy-favicon.svg" asp-append-version="true" />
+		<link rel="shortcut icon" href="@CrossBuy.BL.Platform.ProductIdentity.Assets.FaviconIco" asp-append-version="true" />
+    <link rel="icon" type="image/svg+xml" href="@CrossBuy.BL.Platform.ProductIdentity.Assets.Icon" asp-append-version="true" />
 		<!--begin::Fonts(mandatory for all pages)-->
 		<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,400,500,600,700" />
 		<!--end::Fonts-->
@@ -131,7 +131,8 @@ License: For each use you must have a valid license purchased only from above li
 							   content); an extra aria-label would double-announce it. *@
 							<!--begin::Logo-->
 							<a href="@Url.Action("Index", "Home")" class="app-sidebar-logo">
-								<img alt="@Localizer["PageTitle"]" src="~/Backend-assets/media/logos/crossbuy-logo.svg" class="h-28px" asp-append-version="true" />
+								<img alt="@CrossBuy.BL.Platform.ProductIdentity.Name" src="@CrossBuy.BL.Platform.ProductIdentity.Assets.LogoOnLight" class="h-28px theme-light-show" asp-append-version="true" />
+<img alt="@CrossBuy.BL.Platform.ProductIdentity.Name" src="@CrossBuy.BL.Platform.ProductIdentity.Assets.LogoOnDark" class="h-28px theme-dark-show" asp-append-version="true" />
 							</a>
 							<!--end::Logo-->
 						</div>
@@ -659,7 +660,7 @@ License: For each use you must have a valid license purchased only from above li
 								   The year is derived rather than frozen at 2024. *@
 								<div class="text-gray-900 order-2 order-md-1">
 									<span class="text-gray-700 fw-semibold me-1">@(DateTime.Now.Year)&copy;</span>
-									<span class="text-gray-800 fw-semibold">CrossBuy</span>
+									<span class="text-gray-800 fw-semibold">@CrossBuy.BL.Platform.ProductIdentity.Name</span>
 								</div>
 							</div>
 							<!--end::Footer container-->

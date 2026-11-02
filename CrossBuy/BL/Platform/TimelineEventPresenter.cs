@@ -77,6 +77,27 @@ namespace CrossBuy.BL.Platform
                     presentation = PresentJournalEntry(eventType, journal);
                     return true;
 
+                // These registered financial families have no versioned display-field
+                // contract yet. Show the declared event fact without exposing raw payloads.
+                case SalesReturnEvents.Created:
+                case SalesReturnEvents.Updated:
+                case SalesReturnEvents.Reversed:
+                case PurchaseReturnEvents.Created:
+                case PurchaseReturnEvents.Updated:
+                case PurchaseReturnEvents.Reversed:
+                case ReceiptEvents.Created:
+                case ReceiptEvents.Allocated:
+                case ReceiptEvents.Updated:
+                case ReceiptEvents.Reversed:
+                case PaymentEvents.Created:
+                case PaymentEvents.Allocated:
+                case PaymentEvents.Updated:
+                case PaymentEvents.Reversed:
+                    if (!TryPayload<System.Text.Json.Nodes.JsonObject>(eventType, payloadVersion, 1, payloadJson, out _, out error))
+                        return false;
+                    presentation = PresentFinancialFact(eventType);
+                    return true;
+
                 // ---- Tasks & Calendar ----
                 //
                 // EntityRegistry has marked Task and CalendarEvent SupportsTimeline = true since they were
@@ -99,6 +120,10 @@ namespace CrossBuy.BL.Platform
                 case TaskEvents.Completed:
                 case TaskEvents.Reopened:
                 case TaskEvents.Cancelled:
+                case TaskEvents.HoldRequested:
+                case TaskEvents.HoldApproved:
+                case TaskEvents.HoldRejected:
+                case TaskEvents.HoldResumed:
                     if (!TryPayload<TaskEventPayload>(eventType, payloadVersion, TaskEventPayload.Version, payloadJson, out var task, out error))
                         return false;
                     presentation = PresentTask(eventType, task);
@@ -116,6 +141,54 @@ namespace CrossBuy.BL.Platform
                     if (!TryPayload<CalendarEventPayload>(eventType, payloadVersion, CalendarEventPayload.Version, payloadJson, out var calendar, out error))
                         return false;
                     presentation = PresentCalendarEvent(eventType, calendar);
+                    return true;
+
+                // ---- CRM Wave 1 --------------------------------------------------------------------
+                //
+                // FOURTEEN TYPES, FOUR PAYLOADS. The CRM producers declare five Lead facts, seven
+                // Opportunity facts and two CrmAccount facts, and the follow-up pair on BOTH entities
+                // carries the SAME CrmFollowUpEventPayload - so it is grouped by payload here rather
+                // than by entity, which is what the switch is actually keyed on.
+                //
+                // THIS ARRIVED WITH THE CAPABILITY FLIP, NOT BEFORE IT AND NOT AFTER. The registry
+                // held Lead, Opportunity and CrmAccount at SupportsTimeline = false precisely because
+                // these arms did not exist: TimelineProjectionConsumer is strict, so a flag without a
+                // presenter turns every CRM event into a dispatch row that fails on every retry -
+                // which is the 512-row defect the Tasks and Calendar note above records. The two
+                // halves are one change.
+                case LeadEvents.Created:
+                case LeadEvents.Updated:
+                case LeadEvents.Converted:
+                    if (!TryPayload<LeadEventPayload>(eventType, payloadVersion, LeadEventPayload.Version, payloadJson, out var lead, out error))
+                        return false;
+                    presentation = PresentLead(eventType, lead);
+                    return true;
+
+                case OpportunityEvents.Created:
+                case OpportunityEvents.Updated:
+                case OpportunityEvents.StageChanged:
+                case OpportunityEvents.Won:
+                case OpportunityEvents.Lost:
+                    if (!TryPayload<OpportunityEventPayload>(eventType, payloadVersion, OpportunityEventPayload.Version, payloadJson, out var opportunity, out error))
+                        return false;
+                    presentation = PresentOpportunity(eventType, opportunity);
+                    return true;
+
+                case CrmAccountEvents.Created:
+                case CrmAccountEvents.Updated:
+                    if (!TryPayload<CrmAccountEventPayload>(eventType, payloadVersion, CrmAccountEventPayload.Version, payloadJson, out var account, out error))
+                        return false;
+                    presentation = PresentCrmAccount(eventType, account);
+                    return true;
+
+                // The follow-up pair is declared on BOTH Lead and Opportunity and shares one payload.
+                case LeadEvents.FollowUpScheduled:
+                case LeadEvents.FollowUpCompleted:
+                case OpportunityEvents.FollowUpScheduled:
+                case OpportunityEvents.FollowUpCompleted:
+                    if (!TryPayload<CrmFollowUpEventPayload>(eventType, payloadVersion, CrmFollowUpEventPayload.Version, payloadJson, out var followUp, out error))
+                        return false;
+                    presentation = PresentCrmFollowUp(eventType, followUp);
                     return true;
 
                 default:
@@ -382,6 +455,33 @@ namespace CrossBuy.BL.Platform
         //   * nothing reads a field the payload does not carry, so a description never implies knowledge the
         //     event does not contain.
         // -----------------------------------------------------------------------------------------------
+        private static Presentation PresentFinancialFact(string eventType)
+        {
+            var (ar, en) = eventType switch
+            {
+                SalesReturnEvents.Created => ("تسجيل مرتجع مبيعات", "Sales return recorded"),
+                SalesReturnEvents.Updated => ("تعديل مرتجع مبيعات", "Sales return updated"),
+                SalesReturnEvents.Reversed => ("عكس مرتجع مبيعات", "Sales return reversed"),
+                PurchaseReturnEvents.Created => ("تسجيل مرتجع مشتريات", "Purchase return recorded"),
+                PurchaseReturnEvents.Updated => ("تعديل مرتجع مشتريات", "Purchase return updated"),
+                PurchaseReturnEvents.Reversed => ("عكس مرتجع مشتريات", "Purchase return reversed"),
+                ReceiptEvents.Created => ("تسجيل سند قبض", "Receipt recorded"),
+                ReceiptEvents.Allocated => ("تخصيص سند قبض", "Receipt allocated"),
+                ReceiptEvents.Updated => ("تعديل سند قبض", "Receipt updated"),
+                ReceiptEvents.Reversed => ("عكس سند قبض", "Receipt reversed"),
+                PaymentEvents.Created => ("تسجيل سند دفع", "Payment recorded"),
+                PaymentEvents.Allocated => ("تخصيص سند دفع", "Payment allocated"),
+                PaymentEvents.Updated => ("تعديل سند دفع", "Payment updated"),
+                PaymentEvents.Reversed => ("عكس سند دفع", "Payment reversed"),
+                _ => throw new ArgumentOutOfRangeException(nameof(eventType)),
+            };
+            return new Presentation
+            {
+                TitleAr = ar, TitleEn = en, Icon = "ki-outline ki-document",
+                Color = BusinessEventTypes.ActionOf(eventType) == "Reversed" ? "danger" : "primary",
+            };
+        }
+
         private static Presentation PresentTask(string eventType, TaskEventPayload? p)
         {
             string title = string.IsNullOrWhiteSpace(p?.Title) ? "" : p!.Title!;
@@ -390,6 +490,22 @@ namespace CrossBuy.BL.Platform
 
             switch (eventType)
             {
+                case TaskEvents.HoldRequested:
+                case TaskEvents.HoldApproved:
+                case TaskEvents.HoldRejected:
+                case TaskEvents.HoldResumed:
+                    var (holdAr, holdEn) = eventType switch
+                    {
+                        TaskEvents.HoldRequested => ("طلب تعليق المهمة", "Task hold requested"),
+                        TaskEvents.HoldApproved => ("اعتماد تعليق المهمة", "Task hold approved"),
+                        TaskEvents.HoldRejected => ("رفض تعليق المهمة", "Task hold rejected"),
+                        _ => ("استئناف المهمة", "Task resumed"),
+                    };
+                    return new Presentation
+                    {
+                        TitleAr = holdAr, TitleEn = holdEn,
+                        Icon = "ki-outline ki-time", Color = "info",
+                    };
                 case TaskEvents.Created:
                     return new Presentation
                     {
@@ -666,6 +782,19 @@ namespace CrossBuy.BL.Platform
             "ContactPerson" => isArabic ? "مسؤول الاتصال" : "Contact person",
             // ---- slice 2: Purchase invoice ----
             "VendorId" => isArabic ? "المورّد" : "Supplier",
+            // ---- CRM Wave 1 ----
+            "Title" => isArabic ? "العنوان" : "Title",
+            "Status" => isArabic ? "الحالة" : "Status",
+            "Source" => isArabic ? "المصدر" : "Source",
+            "Company" => isArabic ? "الجهة" : "Company",
+            "OwnerEmployeeId" => isArabic ? "المسؤول" : "Owner",
+            "EstimatedValue" => isArabic ? "القيمة التقديرية" : "Estimated value",
+            "CampaignId" => isArabic ? "الحملة" : "Campaign",
+            "AccountId" => isArabic ? "الحساب" : "Account",
+            "Amount" => isArabic ? "القيمة" : "Amount",
+            "ExpectedCloseDate" => isArabic ? "تاريخ الإغلاق المتوقع" : "Expected close date",
+            "WinLossReason" => isArabic ? "سبب الربح أو الخسارة" : "Win or loss reason",
+            "Industry" => isArabic ? "القطاع" : "Industry",
             // ---- slice 2: Work order ----
             "Qty" => isArabic ? "الكمية" : "Quantity",
             "PlannedStart" => isArabic ? "بداية مخطّطة" : "Planned start",
@@ -674,6 +803,182 @@ namespace CrossBuy.BL.Platform
             "OverheadCost" => isArabic ? "التكاليف غير المباشرة" : "Overhead cost",
             _ => field,
         };
+
+        // ---- CRM Wave 1 ---------------------------------------------------------------------------
+        //
+        // EVERY LINE BELOW IS DERIVED FROM THE PAYLOAD AND FROM NOTHING ELSE. The presenter is pure:
+        // it never touches the database, so a field the producer did not send is simply not shown
+        // rather than fetched. That is why each fragment is guarded on its own value instead of being
+        // interpolated blindly - an event recorded before a field existed still renders honestly.
+
+        private static Presentation PresentLead(string eventType, LeadEventPayload? p)
+        {
+            string name = string.IsNullOrWhiteSpace(p?.LeadName) ? "" : $" «{p!.LeadName}»";
+            string company = string.IsNullOrWhiteSpace(p?.CompanyName) ? "" : $" — {p!.CompanyName}";
+
+            if (eventType == LeadEvents.Created)
+                return new Presentation
+                {
+                    TitleAr = "عميل محتمل جديد", TitleEn = "Lead created",
+                    DescriptionAr = $"أُضيف عميل محتمل{name}{company}" + Money(" — القيمة التقديرية", p?.EstimatedValue),
+                    DescriptionEn = $"Lead{name} was added{company}" + Money(" — estimated value", p?.EstimatedValue),
+                    Icon = "ki-outline ki-user", Color = "info",
+                };
+
+            if (eventType == LeadEvents.Converted)
+                return new Presentation
+                {
+                    TitleAr = "تحويل عميل محتمل", TitleEn = "Lead converted",
+                    // The account and opportunity ids are reported only when the producer sent them.
+                    DescriptionAr = $"حُوّل العميل المحتمل{name} إلى حساب" + Ref(" — الحساب رقم", p?.CrmAccountId),
+                    DescriptionEn = $"Lead{name} was converted into an account" + Ref(" — account", p?.CrmAccountId),
+                    Icon = "ki-outline ki-arrow-right", Color = "success",
+                };
+
+            // Updated. A status move is the one substantive flip a lead has, so it is called out
+            // instead of disappearing into the field list - the same treatment Customer.Updated gets.
+            string statusAr = "", statusEn = "";
+            if (!string.IsNullOrWhiteSpace(p?.PreviousStatus) && !string.IsNullOrWhiteSpace(p?.Status)
+                && !string.Equals(p!.PreviousStatus, p.Status, StringComparison.Ordinal))
+            {
+                statusAr = $" — الحالة {p.PreviousStatus} ← {p.Status}";
+                statusEn = $" — status {p.PreviousStatus} → {p.Status}";
+            }
+            return new Presentation
+            {
+                TitleAr = "تعديل عميل محتمل", TitleEn = "Lead updated",
+                DescriptionAr = $"عُدّل العميل المحتمل{name}{FieldList(p?.ChangedFields, isArabic: true)}{statusAr}",
+                DescriptionEn = $"Lead{name} was updated{FieldList(p?.ChangedFields, isArabic: false)}{statusEn}",
+                Icon = "ki-outline ki-pencil", Color = "warning",
+            };
+        }
+
+        private static Presentation PresentOpportunity(string eventType, OpportunityEventPayload? p)
+        {
+            string title = string.IsNullOrWhiteSpace(p?.OpportunityTitle) ? "" : $" «{p!.OpportunityTitle}»";
+            string amountAr = Money(" — القيمة", p?.Amount);
+            string amountEn = Money(" — amount", p?.Amount);
+
+            switch (eventType)
+            {
+                case OpportunityEvents.Created:
+                    return new Presentation
+                    {
+                        TitleAr = "فرصة بيعية جديدة", TitleEn = "Opportunity created",
+                        DescriptionAr = $"أُضيفت فرصة{title}{amountAr}" + Named(" — المرحلة", p?.StageName),
+                        DescriptionEn = $"Opportunity{title} was added{amountEn}" + Named(" — stage", p?.StageName),
+                        Icon = "ki-outline ki-basket", Color = "primary",
+                    };
+
+                case OpportunityEvents.StageChanged:
+                    // The move itself is the fact. Both ends are shown when both were sent; a producer
+                    // that knew only the destination still renders a true sentence.
+                    string moveAr = !string.IsNullOrWhiteSpace(p?.PreviousStageName) && !string.IsNullOrWhiteSpace(p?.StageName)
+                        ? $" — {p!.PreviousStageName} ← {p.StageName}" : Named(" — المرحلة", p?.StageName);
+                    string moveEn = !string.IsNullOrWhiteSpace(p?.PreviousStageName) && !string.IsNullOrWhiteSpace(p?.StageName)
+                        ? $" — {p!.PreviousStageName} → {p.StageName}" : Named(" — stage", p?.StageName);
+                    return new Presentation
+                    {
+                        TitleAr = "تغيير مرحلة الفرصة", TitleEn = "Opportunity stage changed",
+                        DescriptionAr = $"انتقلت الفرصة{title}{moveAr}",
+                        DescriptionEn = $"Opportunity{title} moved{moveEn}",
+                        Icon = "ki-outline ki-arrow-right", Color = "info",
+                    };
+
+                case OpportunityEvents.Won:
+                    return new Presentation
+                    {
+                        TitleAr = "ربح الفرصة", TitleEn = "Opportunity won",
+                        DescriptionAr = $"رُبحت الفرصة{title}{amountAr}" + Named(" — السبب", p?.WinLossReason),
+                        DescriptionEn = $"Opportunity{title} was won{amountEn}" + Named(" — reason", p?.WinLossReason),
+                        Icon = "ki-outline ki-check-circle", Color = "success",
+                    };
+
+                case OpportunityEvents.Lost:
+                    return new Presentation
+                    {
+                        TitleAr = "خسارة الفرصة", TitleEn = "Opportunity lost",
+                        DescriptionAr = $"خُسرت الفرصة{title}{amountAr}" + Named(" — السبب", p?.WinLossReason),
+                        DescriptionEn = $"Opportunity{title} was lost{amountEn}" + Named(" — reason", p?.WinLossReason),
+                        Icon = "ki-outline ki-cross-circle", Color = "danger",
+                    };
+
+                default:   // Updated
+                    return new Presentation
+                    {
+                        TitleAr = "تعديل فرصة بيعية", TitleEn = "Opportunity updated",
+                        DescriptionAr = $"عُدّلت الفرصة{title}{FieldList(p?.ChangedFields, isArabic: true)}",
+                        DescriptionEn = $"Opportunity{title} was updated{FieldList(p?.ChangedFields, isArabic: false)}",
+                        Icon = "ki-outline ki-pencil", Color = "warning",
+                    };
+            }
+        }
+
+        private static Presentation PresentCrmAccount(string eventType, CrmAccountEventPayload? p)
+        {
+            string name = string.IsNullOrWhiteSpace(p?.AccountName) ? "" : $" «{p!.AccountName}»";
+
+            if (eventType == CrmAccountEvents.Created)
+                return new Presentation
+                {
+                    TitleAr = "حساب عميل جديد", TitleEn = "CRM account created",
+                    // ConvertedFromLeadId is the one fact that distinguishes an account born from a
+                    // conversion from one typed in directly, and the producer sends it only then.
+                    DescriptionAr = $"أُضيف حساب{name}" + Named(" — القطاع", p?.Industry)
+                                    + Ref(" — من العميل المحتمل رقم", p?.ConvertedFromLeadId),
+                    DescriptionEn = $"Account{name} was added" + Named(" — industry", p?.Industry)
+                                    + Ref(" — converted from lead", p?.ConvertedFromLeadId),
+                    Icon = "ki-outline ki-profile-circle", Color = "success",
+                };
+
+            return new Presentation
+            {
+                TitleAr = "تعديل حساب عميل", TitleEn = "CRM account updated",
+                DescriptionAr = $"عُدّل الحساب{name}{FieldList(p?.ChangedFields, isArabic: true)}",
+                DescriptionEn = $"Account{name} was updated{FieldList(p?.ChangedFields, isArabic: false)}",
+                Icon = "ki-outline ki-pencil", Color = "warning",
+            };
+        }
+
+        private static Presentation PresentCrmFollowUp(string eventType, CrmFollowUpEventPayload? p)
+        {
+            string subject = string.IsNullOrWhiteSpace(p?.Subject) ? "" : $" «{p!.Subject}»";
+            // The anchor is named only when the producer sent a name; the code and id alone would be
+            // an internal identifier on a user screen.
+            string onAr = string.IsNullOrWhiteSpace(p?.EntityName) ? "" : $" — على {p!.EntityName}";
+            string onEn = string.IsNullOrWhiteSpace(p?.EntityName) ? "" : $" — on {p!.EntityName}";
+
+            bool completed = eventType == LeadEvents.FollowUpCompleted
+                             || eventType == OpportunityEvents.FollowUpCompleted;
+
+            if (completed)
+                return new Presentation
+                {
+                    TitleAr = "إنجاز متابعة", TitleEn = "Follow-up completed",
+                    DescriptionAr = $"أُنجزت المتابعة{subject}{onAr}",
+                    DescriptionEn = $"Follow-up{subject} was completed{onEn}",
+                    Icon = "ki-outline ki-check-square", Color = "success",
+                };
+
+            return new Presentation
+            {
+                TitleAr = "جدولة متابعة", TitleEn = "Follow-up scheduled",
+                DescriptionAr = $"جُدولت متابعة{subject}{onAr}" + Due(" — تستحق", p?.DueDate, arabic: true),
+                DescriptionEn = $"Follow-up{subject} was scheduled{onEn}" + Due(" — due", p?.DueDate, arabic: false),
+                Icon = "ki-outline ki-calendar", Color = "primary",
+            };
+        }
+
+        // Two small shared fragments. Both return "" for a missing value, which is how the presenter
+        // stays honest about a payload that did not carry the field.
+        private static string Money(string prefix, decimal? value)
+            => value.HasValue ? $"{prefix} {value.Value:N2}" : "";
+
+        private static string Named(string prefix, string? value)
+            => string.IsNullOrWhiteSpace(value) ? "" : $"{prefix} {value}";
+
+        private static string Ref(string prefix, int? id)
+            => id.HasValue && id.Value > 0 ? $"{prefix} #{id.Value}" : "";
 
         private static string Delta(SalesInvoiceEventPayload? p, bool isArabic)
         {
