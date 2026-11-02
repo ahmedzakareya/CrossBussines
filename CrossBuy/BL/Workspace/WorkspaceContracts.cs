@@ -1,3 +1,4 @@
+using CrossBuy.Models.Communication;
 using CrossBuy.Models.Platform;
 
 namespace CrossBuy.BL.Workspace
@@ -324,7 +325,11 @@ namespace CrossBuy.BL.Workspace
         Mention = 4,           // someone asked for this person by name
     }
 
-    public sealed class WorkspaceAttentionItem
+    // A RECORD, so the ranking pass can say `item with { Rank = n }` instead of listing every
+    // field again. It used to be a class and the pass rebuilt it property by property, which is
+    // how PersonName and PersonAvatarUrl were populated at every source and still arrived null:
+    // a field added here but forgotten there vanishes silently, with nothing to read as wrong.
+    public sealed record WorkspaceAttentionItem
     {
         public required WorkspaceAttentionReason Reason { get; init; }
         public required string ReasonLabelAr { get; init; }
@@ -343,6 +348,14 @@ namespace CrossBuy.BL.Workspace
         public int? AgeDays { get; init; }
 
         public string? Priority { get; init; }
+
+        /// WHO THIS ROW IS ABOUT, when it is about somebody else's action: the colleague who named
+        /// you, or the person whose request is waiting on you. A task of your own names nobody —
+        /// printing the reader's own face back at them is noise, not information.
+        public string? PersonName { get; init; }
+
+        /// Their photo, when the source carries one. Null falls back to initials, never to a glyph.
+        public string? PersonAvatarUrl { get; init; }
 
         /// Supplied by the panel the row came from, which got it from the owning module. The Workspace
         /// builds no module route.
@@ -370,6 +383,17 @@ namespace CrossBuy.BL.Workspace
         public WorkspaceTone Tone { get; init; }
         public DateTime? At { get; init; }
         public string? Url { get; init; }
+
+        /// WHO CAUSED IT. Notifications.ActorEmployeeID has always been on the row and this
+        /// projection dropped it, so a notice a colleague triggered looked exactly like one the
+        /// system raised by itself. Null is the COMMON case here and is not a gap: measured on this
+        /// database, 66 of 1323 rows have an actor - integrity alerts, schedules and sweepers have
+        /// nobody behind them, and those rows must keep showing a glyph rather than borrow a face.
+        public int? ActorEmployeeId { get; init; }
+        public string? ActorName { get; init; }
+
+        /// Employee.ProfileImage, app-relative as stored (e.g. "/uploads/employees/....png").
+        public string? ActorAvatarUrl { get; init; }
     }
 
     public sealed class WorkspaceMention
@@ -487,6 +511,10 @@ namespace CrossBuy.BL.Workspace
         public required string Title { get; init; }
         public string? Detail { get; init; }
         public string? Actor { get; init; }
+
+        /// The actor's photo, from the platform timeline (Employee.ProfileImage). An activity feed's
+        /// first question is who did this; a name alone answers it in words and not at a glance.
+        public string? ActorAvatarUrl { get; init; }
         public DateTime? At { get; init; }
         public string Icon { get; init; } = "ki-outline ki-abstract-26";
         public WorkspaceTone Tone { get; init; }
@@ -502,6 +530,26 @@ namespace CrossBuy.BL.Workspace
         public string Label(bool arabic) => arabic ? LabelAr : LabelEn;
     }
 
+    // WHERE A NUMBER ON THE DASHBOARD CAME FROM.
+    //
+    // SCR-49 requires "per-user metrics from approved datasets only". Today most of them are not: the
+    // task tiles are computed by ITaskService, which is a MODULE service, not a registered reporting
+    // dataset. That divergence was real but SILENT - a tile from a governed dataset and a tile from a
+    // module service rendered identically, so nobody could see which was which.
+    //
+    // Making provenance a FIELD rather than a comment is the whole point: it is measurable, it is
+    // assertable in a test, and it tells an owner exactly how far from the requirement the screen is.
+    // It does not by itself make the screen compliant - see WorkspaceDashboard.UnapprovedMetrics.
+    public enum WorkspaceMetricProvenance
+    {
+        // A registered reporting dataset, read through IWorkspaceKpiSource. What SCR-49 asks for.
+        ApprovedDataset = 0,
+
+        // A module service answering on its own authority (ITaskService, the notification store).
+        // Correctly authorized - it delegates, and fails closed - but NOT a governed dataset.
+        ModuleService = 1,
+    }
+
     public sealed class WorkspaceMetric
     {
         public required string LabelAr { get; init; }
@@ -512,8 +560,37 @@ namespace CrossBuy.BL.Workspace
         public WorkspaceTone Tone { get; init; }
         public string? Url { get; init; }
 
+        // DEFAULTS TO ModuleService DELIBERATELY. A metric that does not say where it came from is not
+        // from an approved dataset, and defaulting the other way would let a new tile claim provenance
+        // it never earned simply by forgetting to set this.
+        public WorkspaceMetricProvenance Provenance { get; init; } = WorkspaceMetricProvenance.ModuleService;
+
+        // The dataset or service that produced it, for the diagnostics strip. Never shown as a label.
+        public string SourceName { get; init; } = "";
+
         public string Label(bool arabic) => arabic ? LabelAr : LabelEn;
         public string? Hint(bool arabic) => arabic ? HintAr : HintEn;
+    }
+
+    // ---- approved-dataset metrics (SCR-49) --------------------------------------------------------
+    //
+    // THE SAME SHAPE AS IWorkspaceReportSource, AND FOR THE SAME REASON. Reporting owns datasets, KPI
+    // definitions and their authority; the Workspace owns none of those and must not learn them. A
+    // module contributes approved metrics by registering one of these AFTER AddCrossBusinessWorkspace,
+    // and the Workspace never learns about the module.
+    //
+    // WHY NOTHING IMPLEMENTS THIS YET, stated so the gap is not mistaken for an oversight: the KPI
+    // registry admits dataset codes from AccountingDatasets and ProjectsDatasets ONLY
+    // (KpiRegistry.cs - "Unsupported KPI dataset" is thrown otherwise), and the Work/Tasks datasets are
+    // not in that set. So no approved KPI over task data can exist today, and the task tiles cannot be
+    // sourced from one. Both of those files belong to Reporting, not here.
+    public interface IWorkspaceKpiSource
+    {
+        string SourceName { get; }
+        bool IsAvailable { get; }
+
+        Task<IReadOnlyList<WorkspaceMetric>> GetAsync(
+            BusinessContext context, CancellationToken cancellationToken = default);
     }
 
     public interface IWorkspaceFavoritesSource
@@ -532,6 +609,83 @@ namespace CrossBuy.BL.Workspace
 
     // ---- the page model -------------------------------------------------------------------------
 
+    /// <summary>
+    /// One entity-anchored conversation this caller takes part in, flattened for a Workspace row.
+    ///
+    /// EVERY FIELD IS EITHER THE HUB'S OWN ANSWER OR A REGISTRY LOOKUP. Nothing here is derived from a
+    /// second query: the subject, counts, role and activity come from the Communication Hub's
+    /// business-conversation read, and the label, icon and url come from the entity registry's
+    /// DEFINITION - which is a synchronous dictionary lookup, not a row read. That is what keeps a
+    /// thirty-row panel at one call rather than thirty-one.
+    /// </summary>
+    public sealed class WorkspaceConversationRow
+    {
+        public required long ThreadId { get; init; }
+        public required string EntityType { get; init; }
+        public required int EntityId { get; init; }
+
+        /// <summary>The Hub's subject for the thread. Either may be null when it names only one.</summary>
+        public string? SubjectAr { get; init; }
+        public string? SubjectEn { get; init; }
+
+        /// <summary>What KIND of record this hangs on, from the registry definition - "Invoice",
+        /// "فاتورة". Null when the code is not registered, which is a real state: the conversation is
+        /// still listed, it simply cannot be named or linked.</summary>
+        public string? EntityLabelAr { get; init; }
+        public string? EntityLabelEn { get; init; }
+
+        /// <summary>The registry's own route for the record, or NULL when it publishes none.
+        ///
+        /// NO ANCHOR IS EVER INVENTED. A conversation whose entity has no registered route renders
+        /// without a link rather than guessing a controller and action - a fabricated url would 404 at
+        /// best and open the wrong record at worst.</summary>
+        public string? Url { get; init; }
+
+        public string? Icon { get; init; }
+        public string? Color { get; init; }
+
+        public required int CommentCount { get; init; }
+        public DateTime? LastActivityAt { get; init; }
+
+        /// <summary>This caller's participation role, as the Hub reports it.</summary>
+        public required string Role { get; init; }
+
+        /// <summary>Muted by this caller. Still listed - muting silences notifications, it does not
+        /// hide the conversation - but the row is rendered quieter.</summary>
+        public bool Muted { get; init; }
+
+        /// <summary>True when the registry could name the record, so a view can test one flag instead
+        /// of null-checking four fields.</summary>
+        public bool IsResolved => EntityLabelEn != null || EntityLabelAr != null;
+    }
+
+    /// <summary>
+    /// The conversations half of the communication panel. Carries its OWN state, because the two
+    /// halves fail independently: the notification store can be down while the Hub answers, and the
+    /// Hub can be absent while notifications read perfectly. One shared state would have made either
+    /// failure hide the other half that still worked.
+    /// </summary>
+    public sealed class WorkspaceConversationList
+    {
+        public WorkspacePanelState State { get; init; } = WorkspacePanelState.Unavailable;
+        public IReadOnlyList<WorkspaceConversationRow> Items { get; init; } = Array.Empty<WorkspaceConversationRow>();
+    }
+
+    public sealed class WorkspaceCommunicationInbox
+    {
+        public WorkspacePanelState State { get; init; } = WorkspacePanelState.Unavailable;
+        public string? Reason { get; init; }
+        public CommPage<CommInboxItemDto> Page { get; init; } = CommPage<CommInboxItemDto>.Empty();
+        public int? UnreadTotal { get; init; }
+
+        /// <summary>
+        /// The caller's entity-anchored conversations, populated only where a screen asks for them -
+        /// the dashboard does, the paged notifications screen does not, because reading them there
+        /// would be work nobody looks at.
+        /// </summary>
+        public WorkspaceConversationList Conversations { get; init; } = new();
+    }
+
     public sealed class WorkspaceDashboard
     {
         public required string EmployeeName { get; init; }
@@ -542,6 +696,15 @@ namespace CrossBuy.BL.Workspace
         public WorkspaceCapabilities Capabilities { get; init; } = WorkspaceCapabilities.None;
 
         public IReadOnlyList<WorkspaceMetric> Metrics { get; init; } = Array.Empty<WorkspaceMetric>();
+
+        // THE SCR-49 GAP, PUBLISHED RATHER THAN IMPLIED — the same device CommEntitySurface uses to
+        // publish its onboarding divergence. Every metric NOT from an approved dataset, named. Empty
+        // means the dashboard satisfies "approved datasets only"; anything in it is the exact distance
+        // left to travel, and an owner can read that distance without reading the code.
+        public IReadOnlyList<string> UnapprovedMetrics { get; init; } = Array.Empty<string>();
+
+        // True only when every metric shown came from a registered reporting dataset.
+        public bool MetricsAreApprovedOnly => UnapprovedMetrics.Count == 0;
         // Composed from MyWork, Approvals and Mentions AFTER they load — see ComposeAttention.
         public WorkspacePanel<WorkspaceAttentionItem> Attention { get; init; } =
             WorkspacePanel<WorkspaceAttentionItem>.Empty();
@@ -549,6 +712,7 @@ namespace CrossBuy.BL.Workspace
         public WorkspacePanel<WorkspaceWorkItem> MyWork { get; init; } = WorkspacePanel<WorkspaceWorkItem>.Empty();
         public WorkspacePanel<WorkspaceApprovalItem> Approvals { get; init; } = WorkspacePanel<WorkspaceApprovalItem>.Empty();
         public WorkspacePanel<WorkspaceAgendaRow> Agenda { get; init; } = WorkspacePanel<WorkspaceAgendaRow>.Empty();
+        public WorkspaceCommunicationInbox CommunicationInbox { get; init; } = new();
         public WorkspacePanel<WorkspaceNotification> Notifications { get; init; } = WorkspacePanel<WorkspaceNotification>.Empty();
         public WorkspacePanel<WorkspaceMention> Mentions { get; init; } = WorkspacePanel<WorkspaceMention>.Empty();
         public WorkspacePanel<WorkspaceFavorite> Favorites { get; init; } = WorkspacePanel<WorkspaceFavorite>.Empty();
@@ -591,6 +755,14 @@ namespace CrossBuy.BL.Workspace
             int days = 7, int page = 1, CancellationToken cancellationToken = default);
 
         Task<WorkspacePanel<WorkspaceReportLink>> GetReportsAsync(
+            CancellationToken cancellationToken = default);
+
+        /// <param name="includeConversations">Read the caller's entity-anchored conversations too.
+        /// OFF BY DEFAULT so the paged notifications screen does not pay for a panel it never renders;
+        /// the dashboard turns it on.</param>
+        Task<WorkspaceCommunicationInbox> GetCommunicationInboxAsync(
+            bool unreadOnly = false, long? afterId = null, int take = 25,
+            bool includeConversations = false,
             CancellationToken cancellationToken = default);
 
         Task<WorkspaceCapabilities> GetCapabilitiesAsync(CancellationToken cancellationToken = default);

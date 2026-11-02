@@ -23,10 +23,34 @@ public sealed class KpiRegistry : IKpiRegistry
     public KpiRegistry(IReportDatasetRegistry datasets) : this(datasets, KpiCatalog.All()) { }
     public KpiRegistry(IReportDatasetRegistry datasets, IEnumerable<KpiDefinition> definitions)
     {
-        var items = definitions.ToArray();
+        // ---- SCR-49: the Work subjects, admitted CONDITIONALLY -------------------------------------
+        //
+        // WHY WORK IS NOT SIMPLY ADDED TO `allowed` AND LEFT THERE. The Work dataset pack is opt-in:
+        // Program.cs calls AddWorkReporting() only when "Reporting:Work:Enabled" is true, and that key
+        // is absent from every appsettings file. So in every deployment as it stands, work.tasks and
+        // work.approvals are NOT in the dataset registry.
+        //
+        // `datasets.Resolve` below THROWS for an unregistered code. This constructor runs when the DI
+        // graph is built, so an unconditional Work KPI would turn a disabled optional pack into an
+        // application that cannot start — the same class of failure CLAUDE.md records for Batch C's
+        // PermissionScopeStartupValidator, and a far worse outcome than a missing tile.
+        //
+        // So a Work KPI is DROPPED when its dataset is absent, and kept when it is present.
+        //
+        // ACCOUNTING AND PROJECTS KEEP THE OLD BEHAVIOUR EXACTLY, and deliberately: they are
+        // unconditional packs, so a missing dataset there is a genuine wiring bug that must still fail
+        // loudly at graph construction rather than quietly producing a dashboard with fewer tiles.
+        var conditional = new HashSet<string>(
+            WorkReportingDatasets.All().Select(d => d.DatasetCode), StringComparer.Ordinal);
+
+        var items = definitions
+            .Where(k => !conditional.Contains(k.DatasetCode) || datasets.TryResolve(k.DatasetCode, out _))
+            .ToArray();
+
         var keys = new HashSet<string>(StringComparer.Ordinal);
         var allowed = new HashSet<string>(AccountingDatasets.All().Select(d => d.DatasetCode)
-            .Concat(ProjectsDatasets.All().Select(d => d.DatasetCode)), StringComparer.Ordinal);
+            .Concat(ProjectsDatasets.All().Select(d => d.DatasetCode))
+            .Concat(conditional), StringComparer.Ordinal);
         foreach (var k in items)
         {
             if (string.IsNullOrWhiteSpace(k.Key) || !keys.Add(k.Key)) throw new ArgumentException("Empty or duplicate KPI key.");
@@ -120,5 +144,60 @@ public static class KpiCatalog
             "IsOverdue", ReportAggregate.Count, ProjectsReportPermissions.View,
             "Existing ProjectMilestone.IsOverdue semantics", "Company and resolved project scope; one row per milestone",
             new[] { ReportFilter.Eq("IsOverdue", "true") });
+
+        // ---- SCR-49: WORK -------------------------------------------------------------------------
+        //
+        // These are the first approved-dataset metrics over task data, and they exist so the Workspace
+        // dashboard can stop sourcing its task tiles from ITaskService. Every one of them REUSES a
+        // field the Work datasets already publish; none introduces a formula, a query or a second
+        // definition of anything.
+        //
+        // THE SEMANTICS ARE BORROWED, NOT RESTATED, and that is the point of each WindowSemantics
+        // string below: "overdue", "waiting approval" and "on hold" are decided by TaskStatuses,
+        // TaskApprovalProjection and TaskLifecycle respectively. The dataset columns ask those
+        // authorities; a KPI that re-derived "due < now and not Done" would be a second answer to a
+        // question the product has already settled, free to drift from the screen it sits beside.
+        //
+        // ONE PERMISSION TIER, matching WorkReportPermissions: these are operational counts, not
+        // commercial disclosures. A billable or rate-bearing Work metric would need its own key AND
+        // its own module action, not room left over in this one.
+        yield return new("work.tasks.overdue", "Work", WorkDatasetCodes.Tasks,
+            "IsOverdue", ReportAggregate.Count, WorkReportPermissions.View,
+            "Canonical TaskStatuses.IsOverdue; due date passed and not Done",
+            "Company and the caller's own task read scope; one row per task",
+            new[] { ReportFilter.Eq("IsOverdue", "true") });
+
+        yield return new("work.tasks.waiting-approval", "Work", WorkDatasetCodes.Tasks,
+            "IsWaitingApproval", ReportAggregate.Count, WorkReportPermissions.View,
+            "TaskApprovalProjection's five approval flows; waiting on a decision",
+            "Company and the caller's own task read scope; one row per task",
+            new[] { ReportFilter.Eq("IsWaitingApproval", "true") });
+
+        // APPROVED, NOT MERELY REQUESTED — TaskLifecycle draws that line and the column honours it. A
+        // pending hold REQUEST pauses nothing and its SLA keeps running, so counting it here would
+        // report a stopped clock that is still ticking.
+        yield return new("work.tasks.on-hold", "Work", WorkDatasetCodes.Tasks,
+            "IsOnHold", ReportAggregate.Count, WorkReportPermissions.View,
+            "Approved holds only (HoldApprovedAtUtc), not pending hold requests",
+            "Company and the caller's own task read scope; one row per task",
+            Array.Empty<ReportFilter>());
+
+        // NO FILTER, AND THAT IS NOT AN OMISSION: the work.approvals dataset is "Pending approvals" —
+        // it already contains only open work waiting on a decision. Adding a status filter here would
+        // narrow a set that is already narrowed, and would couple this KPI to status spellings the
+        // dataset deliberately keeps to itself.
+        yield return new("work.approvals.pending", "Work", WorkDatasetCodes.Approvals,
+            "Status", ReportAggregate.Count, WorkReportPermissions.View,
+            "Open work awaiting a decision across the five approval flows",
+            "Company and the caller's own approval read scope; one row per pending approval",
+            Array.Empty<ReportFilter>());
+
+        // MAX, NOT AVERAGE. An average age hides the one request that has been sitting for three
+        // weeks behind a dozen opened this morning; the oldest item is the one an SLA is breached by.
+        yield return new("work.approvals.oldest-age-days", "Work", WorkDatasetCodes.Approvals,
+            "AgeDays", ReportAggregate.Max, WorkReportPermissions.View,
+            "Age in days of the OLDEST pending approval, not the mean",
+            "Company and the caller's own approval read scope; days since SubmittedAt",
+            Array.Empty<ReportFilter>());
     }
 }

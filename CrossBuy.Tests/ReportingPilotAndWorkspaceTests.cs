@@ -513,9 +513,20 @@ namespace CrossBuy.Tests
                 .OrderBy(f => f, StringComparer.Ordinal)
                 .ToList();
 
-            // ReportingRegistration names the interface in its one AddScoped line; the adapter implements it.
+            // REGISTRATION FILES NAME THE INTERFACE; ONE ADAPTER FILE IMPLEMENTS IT. That split is what
+            // the containment actually protects, and it still holds with three names rather than two:
+            //
+            //   ReportingRegistration.cs   one AddScoped line  -> IWorkspaceReportSource
+            //   KpiRegistration.cs         one AddScoped line  -> IWorkspaceKpiSource  (SCR-49)
+            //   ReportingWorkspaceSource.cs  BOTH adapters, so a Workspace contract change still costs
+            //                                exactly one implementation file to repair.
+            //
+            // The KPI contributor could not join the first list: it depends on IKpiRegistry and
+            // IKpiEvaluator, which AddCrossBusinessReporting does not register and must not, because
+            // ReportingDiWiringTests pins that graph as self-sufficient. So the registration follows
+            // its dependencies into the KPI pack while the implementation stays contained.
             Assert.Equal(
-                new[] { "ReportingRegistration.cs", "ReportingWorkspaceSource.cs" },
+                new[] { "KpiRegistration.cs", "ReportingRegistration.cs", "ReportingWorkspaceSource.cs" },
                 referencing);
         }
 

@@ -358,6 +358,14 @@ namespace CrossBuy.BL.Reporting
             // reports "unavailable" honestly instead of failing to resolve a service.
             services.AddScoped<CrossBuy.BL.Workspace.IWorkspaceReportSource, ReportingWorkspaceSource>();
 
+            // SCR-49's KPI contributor is NOT registered here, and the reason is a contract this file
+            // keeps: AddCrossBusinessReporting must be SELF-SUFFICIENT — every service it registers
+            // has to resolve from this graph alone, which ReportingDiWiringTests pins with
+            // ValidateOnBuild. ReportingWorkspaceKpiSource needs IKpiRegistry and IKpiEvaluator, and
+            // those belong to the optional AddKpiReporting() pack, so registering it here would make
+            // a standalone reporting graph fail to build. It lives in KpiRegistration.cs instead,
+            // beside the services it depends on. Same reason AddProjectsReporting is host-owned.
+
             return services;
         }
 

@@ -281,4 +281,133 @@ namespace CrossBuy.BL.Reporting
             catch { return Array.Empty<T>(); }
         }
     }
+
+    // =============================================================================================
+    // SCR-49 — APPROVED-DATASET METRICS FOR THE WORKSPACE DASHBOARD.
+    //
+    // WHY THIS CLASS LIVES IN THIS FILE RATHER THAN ITS OWN. ReportingPilotAndWorkspaceTests asserts
+    // that EXACTLY two files in BL/Reporting may name CrossBuy.BL.Workspace — this one and the single
+    // registration line. That containment is the thing keeping another product's release cycle out of
+    // Reporting, so a second contributor belongs beside the first, not in a new file that would widen
+    // the seam from one file to two.
+    //
+    // WHAT IT CLOSES. The Workspace's own notes record the gap precisely: SCR-49 requires dashboard
+    // metrics to come from approved datasets, the task tiles came from ITaskService instead, and no
+    // approved KPI over task data COULD exist because KpiRegistry admitted Accounting and Projects
+    // dataset codes only. That restriction is lifted in KpiRegistry; this is the consumer.
+    //
+    // ────────────────────────────────────────────────────────────────────────────────────────────
+    // IT DECIDES NOTHING ABOUT AUTHORITY, and must not. Every number comes from IKpiEvaluator, which
+    // resolves the caller's own BusinessContext, refuses an unresolved company, an external portal
+    // caller and a missing employee, and checks BOTH the dataset's permission key AND the KPI's
+    // before a row is read. A metric this class could not evaluate is simply absent.
+    //
+    // NON-READY IS ABSENT, NOT ZERO. A DENIED, TRUNCATED or INVALID_SOURCE result must never render
+    // as "0", because a tile reading zero is a factual claim that there is nothing to see — the one
+    // reading a caller is most likely to act on. Silence is the honest answer; the diagnostics strip
+    // already tells an owner which tiles are missing.
+    //
+    // IT DOES NOT STAMP ITS OWN PROVENANCE. WorkspaceService sets ApprovedDataset when it reads from a
+    // registered source, precisely so a contributor cannot award itself standing it did not earn.
+    // =============================================================================================
+    public sealed class ReportingWorkspaceKpiSource : CrossBuy.BL.Workspace.IWorkspaceKpiSource
+    {
+        private readonly IKpiRegistry _registry;
+        private readonly IKpiEvaluator _evaluator;
+
+        public ReportingWorkspaceKpiSource(IKpiRegistry registry, IKpiEvaluator evaluator)
+        {
+            _registry = registry ?? throw new ArgumentNullException(nameof(registry));
+            _evaluator = evaluator ?? throw new ArgumentNullException(nameof(evaluator));
+        }
+
+        public string SourceName => "Reporting KPI";
+
+        // AVAILABLE ONLY WHEN THERE IS SOMETHING TO SAY. When the Work pack is switched off its KPIs
+        // are not in the registry at all (KpiRegistry admits them conditionally), so this answers
+        // false and the Workspace keeps its module-sourced tiles instead of showing an empty strip.
+        public bool IsAvailable => _registry.Definitions.Any(d => Tiles.ContainsKey(d.Key));
+
+        /// The KPI keys this dashboard surfaces, and how each is presented.
+        ///
+        /// LABELS MATCH THE MODULE TILES ON PURPOSE. WorkspaceService drops a module tile when an
+        /// approved dataset already answered the same question, and it matches on LabelEn. "Overdue"
+        /// here therefore REPLACES the ITaskService tile of the same name rather than appearing
+        /// beside it — which is the whole point of SCR-49, and is why the English labels are not
+        /// free to be improved without checking what they displace.
+        private static readonly IReadOnlyDictionary<string, WorkspaceKpiTile> Tiles =
+            new Dictionary<string, WorkspaceKpiTile>(StringComparer.Ordinal)
+            {
+                ["work.tasks.overdue"] = new(
+                    "متأخرة", "Overdue", "تحتاج انتباهك", "needs attention",
+                    "/Tasks?view=overdue", Critical: true),
+
+                ["work.tasks.waiting-approval"] = new(
+                    "بانتظار الموافقة", "Waiting approval", null, null,
+                    "/Tasks?view=approvals"),
+
+                ["work.approvals.pending"] = new(
+                    "موافقات معلّقة", "Pending approvals", null, null,
+                    "/Approvals"),
+
+                ["work.approvals.oldest-age-days"] = new(
+                    "أقدم طلب (يوم)", "Oldest approval (days)", "عمر أقدم طلب", "age of the oldest request",
+                    "/Approvals", Critical: true),
+            };
+
+        public async Task<IReadOnlyList<CrossBuy.BL.Workspace.WorkspaceMetric>> GetAsync(
+            BusinessContext context, CancellationToken cancellationToken = default)
+        {
+            var metrics = new List<CrossBuy.BL.Workspace.WorkspaceMetric>();
+
+            // ONLY KPIs THAT ARE ACTUALLY REGISTERED. Iterating the registry rather than the tile map
+            // means a pack that is switched off contributes nothing instead of raising "unknown KPI".
+            foreach (var definition in _registry.Definitions)
+            {
+                if (!Tiles.TryGetValue(definition.Key, out var tile)) continue;
+
+                KpiResult result;
+                try
+                {
+                    result = await _evaluator.EvaluateAsync(
+                        definition.Key,
+                        new Dictionary<string, string?>(StringComparer.Ordinal),
+                        cancellationToken);
+                }
+                catch (OperationCanceledException) { throw; }
+                catch
+                {
+                    // One broken KPI must not blank the strip, for the same reason the Reports panel
+                    // swallows: the Workspace would otherwise lose every tile to one bad dataset.
+                    continue;
+                }
+
+                if (!string.Equals(result.Status, "READY", StringComparison.Ordinal)) continue;
+                if (result.Value is not { } value) continue;
+
+                metrics.Add(new CrossBuy.BL.Workspace.WorkspaceMetric
+                {
+                    LabelAr = tile.LabelAr,
+                    LabelEn = tile.LabelEn,
+                    Value = value.ToString("N0", System.Globalization.CultureInfo.InvariantCulture),
+                    HintAr = tile.HintAr,
+                    HintEn = tile.HintEn,
+                    // ZERO IS A GOOD STATE, NOT A NEUTRAL ONE — the same reading the module tile it
+                    // replaces already used, so swapping the source does not change what a glance means.
+                    Tone = tile.Critical
+                        ? (value > 0 ? CrossBuy.BL.Workspace.WorkspaceTone.Critical
+                                     : CrossBuy.BL.Workspace.WorkspaceTone.Ok)
+                        : CrossBuy.BL.Workspace.WorkspaceTone.Info,
+                    Url = tile.Url,
+                });
+            }
+
+            return metrics;
+        }
+
+        /// How one KPI is presented. A record rather than four parallel dictionaries.
+        public sealed record WorkspaceKpiTile(
+            string LabelAr, string LabelEn, string? HintAr, string? HintEn, string Url,
+            bool Critical = false);
+    }
 }
