@@ -5,8 +5,50 @@
 @{
     Layout = "~/Views/Shared/_LayoutBackend.cshtml";
     int leaveCount = ViewBag.LeaveCount; int requestCount = ViewBag.RequestCount; int invCount = ViewBag.InventoryCount;
+    int billingCount = ViewBag.ProjectBillingCount ?? 0;
+    bool isBillingApprover = ViewBag.IsBillingApprover ?? false;
+    string billingLabel = ViewBag.ProjectBillingLabel as string ?? "";
+    string billingIcon = ViewBag.ProjectBillingIcon as string ?? "ki-document";
     bool isInvMgr = ViewBag.IsInvMgr;
     var total = Model.Count;
+}
+@functions {
+    // THE SAME PALETTE AND THE SAME HASH AS _DocEventTimeline, restated rather than referenced because
+    // that one lives in JavaScript and this column is rendered on the server. The values are copied
+    // deliberately and must stay in step: each ink measured >= 4.5 on white, and none sits in the hue
+    // band crossbuy-brand.css reserves for semantic success - a person must never read as a status.
+    public static class ApprovalAvatar
+    {
+        private static readonly string[] Inks =
+            { "#0E4A9E", "#3730A3", "#155E75", "#5B21B6", "#334155", "#7E22CE", "#0F766E", "#9D174D" };
+
+        // Hashing the NAME, not the row index: the same person keeps the same colour everywhere they
+        // appear, which is the whole point - a colour that changed per page would be decoration.
+        private static int Index(string? name)
+        {
+            unchecked
+            {
+                uint h = 0;
+                foreach (var c in name ?? "") { h = h * 31 + c; }
+                return (int)(h % (uint)Inks.Length);
+            }
+        }
+
+        public static string Ink(string? name) => Inks[Index(name)];
+
+        // The tile is the ink at 12% so the letters keep their contrast against it.
+        public static string Tint(string? name) => Ink(name) + "1F";
+
+        public static string Initials(string? name)
+        {
+            var parts = (name ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length == 0) return "?";
+            var first = parts[0][0];
+            var last = parts.Length > 1 ? parts[^1][0] : '\0';
+            return last == '\0' ? char.ToUpperInvariant(first).ToString()
+                                : $"{char.ToUpperInvariant(first)}{char.ToUpperInvariant(last)}";
+        }
+    }
 }
 <div class="d-flex flex-column flex-column-fluid">
     <!--begin::Toolbar-->
@@ -34,15 +76,27 @@
                    nothing the tiles do not already say in words: each one is labelled underneath.
 
                    One tint for all three. The number carries the information; the colour is chrome. *@
-                var tiles = new (string label, int count, string icon)[] {
+                var tiles = new List<(string label, int count, string icon)> {
                     (Localizer["Leave"].Value, leaveCount, "ki-calendar-tick"),
                     (Localizer["Employee requests"].Value, requestCount, "ki-file-added"),
                     (Localizer["Inventory"].Value, invCount, "ki-check-square"),
                 };
+
+                @* Project billing joins the strip only for someone who can actually act on one — its
+                   entitlement is per project, so a permanent zero would tell a non-approver nothing.
+                   Label and icon come from the entity registry via the controller, so this screen holds
+                   no second copy of "مستخلص" / "Progress billing". *@
+                if (isBillingApprover || billingCount > 0)
+                {
+                    tiles.Add((billingLabel, billingCount, billingIcon));
+                }
+
+                @* Four tiles share a row at xl; three keep the original thirds. *@
+                var tileCol = tiles.Count >= 4 ? "col-6 col-xl-3" : "col-6 col-xl-4";
             }
             @foreach (var t in tiles)
             {
-                <div class="col-6 col-xl-4">
+                <div class="@tileCol">
                     <div class="card h-100">
                         <div class="card-body d-flex align-items-center p-5">
                             <span class="symbol symbol-50px me-4"><span class="symbol-label bg-light-primary"><i class="ki-outline @t.icon fs-2x text-primary"></i></span></span>
@@ -80,7 +134,31 @@
                                     <tr>
                                         <td><span class="badge badge-light-@r.Color"><i class="ki-outline @r.Icon fs-7 me-1"></i>@r.SiloLabel</span></td>
                                         <td class="fw-bold text-gray-900">@r.Title</td>
-                                        <td class="text-gray-700 fw-semibold">@(r.Requester ?? "—")</td>
+                                        @* THE REQUESTER, SHOWN AS A PERSON. The column named nine people and
+                                           drew none of them. Same treatment as the conversation panel and the
+                                           activity timeline: the photograph when there is one, initials on that
+                                           person's own colour when there is not - never one grey silhouette for
+                                           everybody, which is what makes a list of people read as a list of rows. *@
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="symbol symbol-35px me-3">
+                                                    @if (!string.IsNullOrWhiteSpace(r.RequesterPhoto))
+                                                    {
+                                                        @* onerror: a stored path whose FILE is gone must not leave a
+                                                           broken-image glyph where a face belongs. *@
+                                                        <img src="@Url.Content("~" + r.RequesterPhoto)" alt="@r.Requester"
+                                                             style="width:35px;height:35px;object-fit:cover;border-radius:50%;display:block;"
+                                                             onerror="cbAvatarFallback(this)" />
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="symbol-label fw-bold fs-8"
+                                                              style="background:@ApprovalAvatar.Tint(r.Requester);color:@ApprovalAvatar.Ink(r.Requester);">@ApprovalAvatar.Initials(r.Requester)</span>
+                                                    }
+                                                </div>
+                                                <span class="text-gray-700 fw-semibold">@(r.Requester ?? "—")</span>
+                                            </div>
+                                        </td>
                                         <td class="text-muted fw-semibold">@(r.Meta ?? "—")</td>
                                         <td class="text-muted fw-semibold">@(r.Date?.ToString("yyyy-MM-dd") ?? "—")</td>
                                         <td class="text-end"><a href="@r.Url" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-eye fs-5"></i>@Localizer["Review"]</a></td>
@@ -111,5 +189,12 @@
         if (!c.error) { c.start(); el.setAttribute('data-kt-initialized', '1'); }
     });
 })();
+
+// A stored photo path whose FILE is gone would otherwise leave the browser's torn-page glyph exactly
+// where a face belongs. Swap it for the neutral silhouette the rest of the product already ships.
+function cbAvatarFallback(img) {
+    img.onerror = null;
+    img.src = '/Backend-assets/media/svg/avatars/blank.svg';
+}
 </script>
 }

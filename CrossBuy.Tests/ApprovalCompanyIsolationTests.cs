@@ -625,8 +625,13 @@ namespace CrossBuy.Tests
 					new StubCaller(41), new NoEventsExpected()), Service(host.Db),
 				new InboxNoBillingApprovals());
 
+			// COMPELLED BY A NEW CONSTRUCTOR DEPENDENCY. The screen now reads each silo's name, icon and
+			// colour from the entity registry instead of writing them out, so the REAL registry is
+			// supplied here — a stub would let the presentation drift from the registered vocabulary,
+			// which is the drift this dependency exists to prevent. No assertion in this suite changed.
 			var controller = new ApprovalsController(
-				new StubEmployees(employeeId), host.Db, new StubLocalizer(), inbox, accessor);
+				new StubEmployees(employeeId), host.Db, new StubLocalizer(), inbox, accessor,
+				new CrossBuy.BL.Platform.EntityRegistry(host.Db));
 
 			var http = new DefaultHttpContext
 			{
@@ -672,8 +677,22 @@ namespace CrossBuy.Tests
 		{
 			public StubUrlHelper(ActionContext actionContext) => ActionContext = actionContext;
 			public ActionContext ActionContext { get; }
+			// ROUTE VALUES ARE PART OF THE ANSWER, and this stub used to drop them — which is exactly
+			// why the project-billing link could resolve to a bare action for as long as it did without
+			// a single test noticing. A stub that discards an argument cannot fail when the code under
+			// test discards it too.
 			public string? Action(UrlActionContext actionContext)
-				=> "/" + actionContext.Controller + "/" + actionContext.Action;
+			{
+				var path = "/" + actionContext.Controller + "/" + actionContext.Action;
+				var values = actionContext.Values == null
+					? null
+					: new Microsoft.AspNetCore.Routing.RouteValueDictionary(actionContext.Values);
+				if (values == null || values.Count == 0) { return path; }
+				var query = string.Join("&", values
+					.Where(kv => kv.Value != null && kv.Value.ToString()!.Length > 0)
+					.Select(kv => kv.Key + "=" + kv.Value));
+				return query.Length == 0 ? path : path + "?" + query;
+			}
 			public string? Content(string? contentPath) => contentPath;
 			public bool IsLocalUrl(string? url) => true;
 			public string? Link(string? routeName, object? values) => "/";

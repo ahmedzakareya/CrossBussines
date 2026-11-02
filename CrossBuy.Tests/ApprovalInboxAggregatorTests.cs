@@ -410,13 +410,25 @@ namespace CrossBuy.Tests
 			foreach (var property in typeof(ApprovalInboxPage).GetProperties())
 				Assert.DoesNotContain("CrossBuy.Models.Context", property.PropertyType.FullName ?? "");
 
-			// Read-only by construction: one method, and nothing named like a write.
-			// Read-only by construction: exactly one method, and it is a Get. Matching write VERBS as
-			// substrings would be wrong here - "GetPendingForCurrentApproverAsync" contains "Approve" -
-			// so the assertion is on the method set, which is the property that actually matters.
-			var methods = typeof(IApprovalInboxService).GetMethods().Select(m => m.Name).ToArray();
-			Assert.Equal(new[] { "GetPendingForCurrentApproverAsync" }, methods);
+			// Read-only by construction: an EXACT method set, and every one of them is a Get. Matching
+			// write VERBS as substrings would be wrong here - "GetPendingForCurrentApproverAsync"
+			// contains "Approve" - so the assertion is on the method set, which is the property that
+			// actually matters.
+			//
+			// THE SET GREW BY ONE READ, and the rule is unchanged rather than relaxed. The entity-scoped
+			// read is a FILTER over the inbox above - it opens no query, takes no new permission and
+			// returns the same row type - so the platform is still read-only by construction. The
+			// assertion stays EXACT on purpose: a new member must be added here deliberately, which is
+			// what stops a write from arriving unnoticed.
+			var methods = typeof(IApprovalInboxService).GetMethods().Select(m => m.Name)
+				.OrderBy(m => m, StringComparer.Ordinal).ToArray();
+			Assert.Equal(
+				new[] { "GetPendingForCurrentApproverAsync", "GetPendingForEntityAsync" }, methods);
 			Assert.All(methods, m => Assert.StartsWith("Get", m, StringComparison.Ordinal));
+
+			// And the new member returns the same read-only row shape - not an entity, not a writer.
+			var entityRead = typeof(IApprovalInboxService).GetMethod("GetPendingForEntityAsync")!;
+			Assert.DoesNotContain("CrossBuy.Models.Context", entityRead.ReturnType.FullName ?? "");
 		}
 
 		[Fact]
