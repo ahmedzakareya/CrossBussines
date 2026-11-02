@@ -2541,8 +2541,11 @@ namespace CrossBuy.Controllers.Api
 			int pcs = await _db.UnitsOfMeasure.Where(u => u.CompanyID == company && u.Code == "PCS").Select(u => u.ID).FirstAsync();
 			int kg = await _db.UnitsOfMeasure.Where(u => u.CompanyID == company && u.Code == "KG").Select(u => u.ID).FirstAsync();
 			int accInv = await _db.Accounts.Where(a => a.CompanyID == company && a.Code == "1103").Select(a => a.ID).FirstAsync();
-			int accAdj = await _db.Accounts.Where(a => a.CompanyID == company && a.Code == "520103").Select(a => a.ID).FirstOrDefaultAsync();
-			if (accAdj == 0) accAdj = await _db.ItemCategories.Where(c => c.CompanyID == company && c.AdjustmentAccountId != null).Select(c => c.AdjustmentAccountId!.Value).FirstAsync();
+			// Count differences are NOT depreciation: 520103 here is how every seeded category came to book stock adjustments to
+			// Depreciation Expense. Provisional: 510103 (inventory write-off / losses) until the owner approves a dedicated
+			// count-differences account. No fallback to "any category's adjustment account" — that copied the wrong one onward.
+			int accAdj = await _db.Accounts.Where(a => a.CompanyID == company && a.Code == "510103").Select(a => a.ID).FirstOrDefaultAsync();
+			if (accAdj == 0) return BadRequest(new { message = "account 510103 (inventory write-off / losses) missing" });
 			int accCogs = await _db.Accounts.Where(a => a.CompanyID == company && a.Code == "510101").Select(a => a.ID).FirstAsync();
 
 			var cat = await _db.ItemCategories.FirstOrDefaultAsync(c => c.CompanyID == company && c.Code == "ZZ-CNT-CAT");

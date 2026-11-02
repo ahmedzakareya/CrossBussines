@@ -412,14 +412,7 @@ namespace CrossBuy.BL
 						StockMovement? last = null;
 						foreach (var a in alloc)
 						{
-							var creq = new MovementRequest
-							{
-								Date = req.Date, ItemId = hdr.ID, WarehouseId = req.WarehouseId, Direction = -1,
-								Qty = a.qtyBase, UoMId = hdr.BaseUoMId, BatchNo = a.batchNo,
-								SourceType = req.SourceType, SourceId = req.SourceId, SourceLineId = req.SourceLineId,
-								BinLocationId = req.BinLocationId, PostToGl = req.PostToGl,
-								Notes = (req.Notes ?? "") + $" [FEFO {a.batchNo}]"
-							};
+							var creq = FefoShare(req, hdr.ID, hdr.BaseUoMId, a.qtyBase, a.batchNo);
 							var (ok, err, mv) = await PostSingleAsync(companyId, creq, userId);
 							if (!ok) { await ftx.RollbackAsync(); return (false, err, null); }
 							last = mv;
@@ -594,10 +587,26 @@ namespace CrossBuy.BL
 					else { sn.Status = "InStock"; sn.WarehouseId = wh.ID; }
 				}
 
+				// ---- WHERE THE GOODS ACTUALLY LAND -------------------------------------------------
+				//
+				// Every posting path in the system could already carry a BinLocationId and not one of
+				// them ever did: measured 2026-10-14, all 1455 StockMovement rows across all 20 source
+				// types had it null. So the racks a warehouse is divided into described nothing, and
+				// every screen built on them had to say "assigned" where it meant "held".
+				//
+				// The item already knows where it belongs - ItemWarehouseSetting carries a default
+				// section and an optional default rack - and that rule existed in exactly one place,
+				// a backfill utility, never at posting time. It belongs HERE, at the single choke
+				// point every movement passes through, so a document that does not name a location
+				// still records one and no caller has to remember.
+				//
+				// AN EXPLICIT CHOICE ALWAYS WINS: this only fills a blank, it never overrides.
+				int? binId = req.BinLocationId ?? await ResolveDefaultBinAsync(wh.ID, item.ID);
+
 				var mv = new StockMovement
 				{
 					CompanyID = companyId, MovementDate = req.Date, ItemId = item.ID, WarehouseId = wh.ID,
-					BinLocationId = req.BinLocationId, BatchId = batchId, SerialNo = req.SerialNo,
+					BinLocationId = binId, BatchId = batchId, SerialNo = req.SerialNo,
 					Direction = req.Direction, QtyBase = qtyBase, UoMId = req.UoMId ?? item.BaseUoMId, QtyInUoM = req.Qty,
 					UnitCost = unitCost, TotalCost = totalCost, SourceType = req.SourceType, SourceId = req.SourceId, SourceLineId = req.SourceLineId,
 					Notes = req.Notes, CreatedBy = userId, CreatedAt = DateTime.UtcNow
@@ -605,9 +614,10 @@ namespace CrossBuy.BL
 				_context.StockMovements.Add(mv);
 				await _context.SaveChangesAsync();
 
-				// maintain rack-level quantity (locational only — never value/GL) when the movement specifies a bin
-				if (req.BinLocationId.HasValue)
-					await AdjustBinStockAsync(companyId, wh.ID, req.BinLocationId.Value, item.ID, req.Direction * qtyBase, req.Date);
+				// maintain rack-level quantity (locational only — never value/GL) when the movement carries a bin,
+				// whether the document named it or it came from the item’s default
+				if (binId.HasValue)
+					await AdjustBinStockAsync(companyId, wh.ID, binId.Value, item.ID, req.Direction * qtyBase, req.Date);
 
 				// ===== GL posting =====
 				if (req.PostToGl && totalCost != 0m)
@@ -623,6 +633,40 @@ namespace CrossBuy.BL
 		}
 
 		// ================= Rack-level stock (BinStock) — QUANTITY only, never value/GL =================
+		// THE ITEM’S OWN DEFAULT LOCATION, most specific first: its default rack if it has one,
+		// otherwise its default section. Null when the item has no setting for this warehouse, and
+		// null rather than a guess when the stored default no longer points at a live location in
+		// THIS warehouse - ItemWarehouseSetting holds plain ints with no foreign key behind them, so
+		// a deleted section would otherwise be stamped onto new movements forever.
+		//
+		// TENANCY: ItemWarehouseSetting has no CompanyID and no query filter, and neither has
+		// BinLocation. Both are scoped through Warehouses, which IS filtered - the same way
+		// WarehouseService.GetBinLocationsAsync does it. The warehouse id arrives already resolved
+		// under the caller’s scope, and this re-checks rather than trusting it.
+		//
+		// ON OUTBOUND MOVEMENTS this names the location the goods are taken FROM. Stock that was
+		// received before locations were recorded has no BinStock row, so the first issue against
+		// it clamps at zero in AdjustBinStockAsync and the rack balance reads low until the rack is
+		// seeded. InitializeBinStockFromDefaultsAsync exists for exactly that, and should be run
+		// once per warehouse when locations are switched on.
+		private async Task<int?> ResolveDefaultBinAsync(int warehouseId, int itemId)
+		{
+			var s = await _context.ItemWarehouseSettings.AsNoTracking()
+				.Where(x => x.ItemId == itemId && x.WarehouseId == warehouseId
+					   && _context.Warehouses.Any(w => w.ID == x.WarehouseId))
+				.Select(x => new { x.DefaultBinLocationId, x.DefaultSectionId })
+				.FirstOrDefaultAsync();
+
+			int? bin = DefaultBinFor(s?.DefaultBinLocationId, s?.DefaultSectionId);
+			if (bin == null) return null;
+
+			bool live = await _context.BinLocations.AsNoTracking().AnyAsync(b =>
+				b.ID == bin.Value && b.WarehouseId == warehouseId && b.IsActive
+				&& _context.Warehouses.Any(w => w.ID == b.WarehouseId));
+
+			return live ? bin : null;
+		}
+
 		// Adjust the per-(item, warehouse, bin) quantity. Called automatically for any movement that carries a bin.
 		private async Task AdjustBinStockAsync(int companyId, int warehouseId, int binLocationId, int itemId, decimal deltaQty, DateTime date)
 		{
@@ -1878,19 +1922,21 @@ namespace CrossBuy.BL
 			int? grniAcc = cat?.GrniAccountId;
 			if (inventoryAcc == null) return (false, "The inventory account is not linked for the item category — link it from the Categories screen", null);
 
-			// the counter account depends on the movement type
-			int? counter = req.SourceType switch
-			{
-				"Receipt" => grniAcc ?? adjAcc,
-				"PurchaseInvoice" => grniAcc ?? adjAcc,
-				"PurchaseReturn" => grniAcc ?? adjAcc,   // OUT: Dr GRNI / Cr Inventory (bridges the debit-note)
-				"Issue" => cogsAcc,
-				"SalesInvoice" => cogsAcc,
-				"SalesReturn" => cogsAcc,                 // IN: Dr Inventory / Cr COGS (reverses the sale's COGS)
-				_ => adjAcc                       // Opening / Adjustment / Transfer / count
-			};
+			// the counter account depends on the movement type — see CounterSideFor
+			int? counter;
 			// optional override (e.g. project material issue → project execution cost 510104). Inventory side unchanged → stock_gl intact.
 			if (req.CounterAccountOverride.HasValue) counter = req.CounterAccountOverride.Value;
+			else switch (CounterSideFor(req.SourceType))
+			{
+				case StockCounterSide.Grni: counter = grniAcc ?? adjAcc; break;
+				case StockCounterSide.Cogs: counter = cogsAcc; break;
+				case StockCounterSide.OpeningEquity:
+					// the same account OpeningStock already credits; never the category's adjustment account
+					counter = await _context.Accounts.AsNoTracking().Where(a => a.CompanyID == companyId && a.Code == "3301").Select(a => (int?)a.ID).FirstOrDefaultAsync();
+					if (counter == null) return (false, "The opening-balance account (3301) does not exist", null);
+					break;
+				default: counter = adjAcc; break;
+			}
 			if (counter == null) return (false, "The contra account is not linked for the item category (cost/adjustment/GRNI)", null);
 
 			// some accounts (expense/COGS) require a cost center — attach a default one if so
@@ -1914,16 +1960,10 @@ namespace CrossBuy.BL
 			var desc = $"حركة مخزون: {item.ItemCode} - {item.Name}";
 			var descEn = $"Stock movement: {item.ItemCode} - {(string.IsNullOrWhiteSpace(item.NameEn) ? item.Name : item.NameEn)}";
 			var proj = req.ProjectId;   // analytic dimension carried from the source document (e.g. a project-tagged sales invoice → COGS)
-			if (req.Direction == 1)   // IN: Dr Inventory / Cr counter
-			{
-				lines.Add(new JournalLineInput { AccountId = inventoryAcc.Value, Debit = value, Credit = 0, Description = desc, DescriptionEn = descEn, CostCenterId = cc, ProjectId = proj });
-				lines.Add(new JournalLineInput { AccountId = counter.Value, Debit = 0, Credit = value, Description = desc, DescriptionEn = descEn, CostCenterId = cc, ProjectId = proj });
-			}
-			else                      // OUT: Dr counter (COGS/Adjustment) / Cr Inventory
-			{
-				lines.Add(new JournalLineInput { AccountId = counter.Value, Debit = value, Credit = 0, Description = desc, DescriptionEn = descEn, CostCenterId = cc, ProjectId = proj });
-				lines.Add(new JournalLineInput { AccountId = inventoryAcc.Value, Debit = 0, Credit = value, Description = desc, DescriptionEn = descEn, CostCenterId = cc, ProjectId = proj });
-			}
+			// IN: Dr Inventory / Cr counter · OUT: Dr counter (COGS/Adjustment) / Cr Inventory — debit line first either way
+			var (drAcc, crAcc) = GlSidesFor(req.Direction, inventoryAcc.Value, counter.Value);
+			lines.Add(new JournalLineInput { AccountId = drAcc, Debit = value, Credit = 0, Description = desc, DescriptionEn = descEn, CostCenterId = cc, ProjectId = proj });
+			lines.Add(new JournalLineInput { AccountId = crAcc, Debit = 0, Credit = value, Description = desc, DescriptionEn = descEn, CostCenterId = cc, ProjectId = proj });
 
 			var (ok, err, entry) = await _journals.CreateAndPostNoTxAsync(new JournalEntryInput
 			{
@@ -1934,5 +1974,45 @@ namespace CrossBuy.BL
 			if (!ok) return (false, "تعذّر ترحيل القيد: " + err, null);
 			return (true, null, entry?.ID);
 		}
+
+		// ================= Posting rules as pure functions (no database, so they are tested directly) =================
+		// WHICH SIDE OF THE CATEGORY'S GL MAP A MOVEMENT BOOKS AGAINST. Anything not named here falls to the category's
+		// adjustment account, and that fall-through is exactly how sales reversals, sales-invoice edits and dev "Opening"
+		// stock came to be credited to whatever the adjustment account was (520103 Depreciation Expense on CrossBuyDB2,
+		// measured 2026-11-02). A new movement type that has a real counterpart belongs in this list, not in the default.
+		public static StockCounterSide CounterSideFor(string? sourceType) => sourceType switch
+		{
+			"Receipt" or "PurchaseInvoice" or "PurchaseReturn" => StockCounterSide.Grni,   // PurchaseReturn OUT: Dr GRNI / Cr Inventory (bridges the debit-note)
+			"Issue" or "SalesInvoice" => StockCounterSide.Cogs,
+			// stock coming back from a sale reverses that sale's cost of goods: IN Dr Inventory / Cr COGS
+			"SalesReturn" or "SalesInvoiceReversal" or "SalesInvoiceEdit" => StockCounterSide.Cogs,
+			"Opening" => StockCounterSide.OpeningEquity,   // IN: Dr Inventory / Cr 3301 Opening Balance Equity
+			_ => StockCounterSide.Adjustment               // Adjustment / Transfer / count
+		};
+
+		public static (int debitAccount, int creditAccount) GlSidesFor(short direction, int inventoryAccount, int counterAccount)
+			=> direction == 1 ? (inventoryAccount, counterAccount) : (counterAccount, inventoryAccount);
+
+		// ONE BATCH'S SHARE OF A FEFO-SPLIT ISSUE. Each share books like the whole would: the caller's counter account and
+		// project (a pharmacy dispense's cost of goods, a project issue's cost account) — not the category default.
+		public static MovementRequest FefoShare(MovementRequest req, int itemId, int baseUoMId, decimal qtyBase, string batchNo) => new()
+		{
+			Date = req.Date, ItemId = itemId, WarehouseId = req.WarehouseId, Direction = -1,
+			Qty = qtyBase, UoMId = baseUoMId, BatchNo = batchNo,
+			SourceType = req.SourceType, SourceId = req.SourceId, SourceLineId = req.SourceLineId,
+			BinLocationId = req.BinLocationId, PostToGl = req.PostToGl,
+			CounterAccountOverride = req.CounterAccountOverride, ProjectId = req.ProjectId,
+			Notes = (req.Notes ?? "") + $" [FEFO {batchNo}]"
+		};
+
+		// THE ITEM'S DEFAULT LOCATION RULE, most specific first: its default rack, otherwise its default section; a
+		// non-positive id is no location. ResolveDefaultBinAsync applies this and then checks the location is live.
+		public static int? DefaultBinFor(int? defaultBinLocationId, int? defaultSectionId)
+		{
+			int? bin = defaultBinLocationId ?? defaultSectionId;
+			return bin is > 0 ? bin : null;
+		}
 	}
+
+	public enum StockCounterSide { Grni, Cogs, OpeningEquity, Adjustment }
 }
