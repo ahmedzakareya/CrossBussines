@@ -46,6 +46,7 @@ namespace CrossBuy.Tests
             (EntityRegistry.ScopeCalendar,      typeof(CalendarPermissionAdapter)),
             (EntityRegistry.ScopeTasks,         typeof(TasksPermissionAdapter)),
             (EntityRegistry.ScopeCommunication, typeof(CommunicationPermissionAdapter)),
+            (EntityRegistry.ScopeHospital,      typeof(HospitalPermissionAdapter)),
         };
 
         private static string ProgramSource() =>
@@ -154,6 +155,7 @@ namespace CrossBuy.Tests
             (EntityRegistry.ScopeCalendar,      "CalendarAccessService"),
             (EntityRegistry.ScopeTasks,         "TasksAccessService"),
             (EntityRegistry.ScopeCommunication, "CommunicationAccessService"),
+            (EntityRegistry.ScopeHospital,      "HospitalAccessService"),
             (EntityRegistry.ScopeCrm,           "CrmAccessService"),
             (EntityRegistry.ScopeInventory,     "InventoryAccessService"),
         };
@@ -286,7 +288,7 @@ namespace CrossBuy.Tests
                 EntityRegistry.ScopeAccounting, EntityRegistry.ScopeInventory, EntityRegistry.ScopeManufacturing,
                 EntityRegistry.ScopeCrm, EntityRegistry.ScopePos, EntityRegistry.ScopeHr,
                 EntityRegistry.ScopeProjects, EntityRegistry.ScopeCalendar, EntityRegistry.ScopeTasks,
-                EntityRegistry.ScopeCommunication,
+                EntityRegistry.ScopeCommunication, EntityRegistry.ScopeHospital,
             };
 
             // Fresh stubs per adapter, so `Asked` records ONE adapter's delegation and not the running
@@ -501,6 +503,7 @@ namespace CrossBuy.Tests
                 new PosPermissionAdapter(modules), new HrPermissionAdapter(modules),
                 new ProjectsPermissionAdapter(modules), new CalendarPermissionAdapter(modules),
                 new TasksPermissionAdapter(modules), new CommunicationPermissionAdapter(modules),
+                new HospitalPermissionAdapter(modules),
             };
         }
 

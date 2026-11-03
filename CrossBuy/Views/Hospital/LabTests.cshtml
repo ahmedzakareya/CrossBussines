@@ -1,0 +1,140 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model IReadOnlyList<HospitalLabSetupRow>
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Lab tests & analytes"].Value;
+    bool canManage = ViewBag.CanManage == true;
+    string ro = canManage ? "" : "disabled";
+    string Num(decimal? v) => v?.ToString("0.####", System.Globalization.CultureInfo.InvariantCulture) ?? "";
+    int unset = Model.Count(m => m.Setup == null || m.Analytes.Count == 0);
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Lab tests & analytes"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item text-muted"><a href="@Url.Action("Lab")" class="text-muted text-hover-primary">@T["Laboratory (module)"]</a></li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@T["Lab tests & analytes"]</li>
+            </ul>
+        </div>
+        @if (canManage && unset > 0)
+        {
+            <div class="d-flex align-items-center gap-2 gap-lg-3 d-print-none">
+                <button type="button" class="btn btn-sm btn-light-primary" data-seed><i class="ki-outline ki-arrow-down fs-4"></i>@T["Load the standard panels"]</button>
+            </div>
+        }
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice">
+            <span class="symbol symbol-45px me-5 flex-shrink-0"><span class="symbol-label"><i class="ki-outline ki-flask fs-2x text-white"></i></span></span>
+            <div class="d-flex flex-stack flex-grow-1 flex-wrap flex-md-nowrap">
+                <div class="mb-3 mb-md-0 fw-semibold pe-5">
+                    <h4 class="text-gray-900 fw-bold mb-1">@T["Every lab test is a service of the Lab category"]</h4>
+                    <div class="fs-6 text-gray-700">@T["Its price lives in the service catalogue; here are its specimen, its section and what it measures. A value outside the reference range is flagged L or H, and past a critical limit the doctor must be told."]</div>
+                </div>
+                <a href="@Url.Action("Services", new { category = HospitalServiceCategories.Lab })" class="btn btn-sm btn-light flex-shrink-0">@T["Service catalogue"]</a>
+            </div>
+        </div>
+
+        @if (Model.Count == 0)
+        {
+            <div class="card"><div class="card-body text-center text-muted py-15"><i class="ki-outline ki-flask fs-3x text-gray-300 d-block mb-4"></i>@T["No lab services yet. Add them in the service catalogue."]</div></div>
+        }
+        @foreach (var m in Model)
+        {
+            var s = m.Service;
+            <div class="card mb-5" data-test="@s.ID">
+                <div class="card-header border-0 pt-6">
+                    <div class="card-title align-items-start flex-column m-0">
+                        <span class="card-label fw-bold text-gray-900 fs-4">@DisplayName.Of(s.Name, s.NameEn) <span class="badge hp-code fw-bold fs-8 hp-num ms-1">@s.Code</span></span>
+                        <span class="text-muted mt-1 fw-semibold fs-7"><span class="hp-num">@m.Analytes.Count(a => a.IsActive)</span> @T["analytes"]@if (m.Setup == null) {<text> · <span class="text-danger">@T["not set up yet"]</span></text>}</span>
+                    </div>
+                </div>
+                <div class="card-body pt-2">
+                    <div class="row g-3 mb-5 align-items-end">
+                        <div class="col-md-3"><label class="form-label fs-7 fw-semibold text-gray-600">@T["Specimen"]</label><input class="form-control form-control-sm form-control-solid" data-k="specimen" value="@m.Setup?.Specimen" @ro /></div>
+                        <div class="col-md-3"><label class="form-label fs-7 fw-semibold text-gray-600">@T["Specimen (English)"]</label><input class="form-control form-control-sm form-control-solid" dir="ltr" data-k="specimenEn" value="@m.Setup?.SpecimenEn" @ro /></div>
+                        <div class="col-md-2"><label class="form-label fs-7 fw-semibold text-gray-600">@T["Section"]</label><input class="form-control form-control-sm form-control-solid" data-k="section" value="@m.Setup?.Section" @ro /></div>
+                        <div class="col-md-2"><label class="form-label fs-7 fw-semibold text-gray-600">@T["Section (English)"]</label><input class="form-control form-control-sm form-control-solid" dir="ltr" data-k="sectionEn" value="@m.Setup?.SectionEn" @ro /></div>
+                        @if (canManage) { <div class="col-md-2"><button type="button" class="btn btn-sm btn-light-primary w-100" data-save-test="@s.ID">@T["Save"]</button></div> }
+                    </div>
+                    <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-2 mb-0">
+                        <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0">
+                            <th class="min-w-80px">@T["Code"]</th><th class="min-w-150px">@T["Name"]</th><th class="min-w-150px">@T["Name (English)"]</th><th class="min-w-80px">@T["Unit"]</th>
+                            <th class="min-w-70px">@T["Low"]</th><th class="min-w-70px">@T["High"]</th><th class="min-w-70px">@T["Critical low"]</th><th class="min-w-70px">@T["Critical high"]</th><th class="w-60px">@T["Decimals"]</th><th class="w-50px">@T["Active"]</th><th class="w-90px"></th>
+                        </tr></thead>
+                        <tbody>
+                            @foreach (var a in m.Analytes.Append(null))
+                            {
+                                if (a == null && !canManage) { continue; }
+                                <tr data-analyte-row data-id="@a?.ID" data-service="@s.ID">
+                                    <td><input class="form-control form-control-sm form-control-solid hp-num" dir="ltr" data-k="code" value="@a?.Code" maxlength="30" placeholder="@(a == null ? T["New"].Value : "")" @ro /></td>
+                                    <td><input class="form-control form-control-sm form-control-solid" data-k="name" value="@a?.Name" @ro /></td>
+                                    <td><input class="form-control form-control-sm form-control-solid" dir="ltr" data-k="nameEn" value="@a?.NameEn" @ro /></td>
+                                    <td><input class="form-control form-control-sm form-control-solid" dir="ltr" data-k="unit" value="@a?.Unit" @ro /></td>
+                                    <td><input class="form-control form-control-sm form-control-solid hp-num" dir="ltr" inputmode="decimal" data-k="refLow" data-n value="@Num(a?.RefLow)" @ro /></td>
+                                    <td><input class="form-control form-control-sm form-control-solid hp-num" dir="ltr" inputmode="decimal" data-k="refHigh" data-n value="@Num(a?.RefHigh)" @ro /></td>
+                                    <td><input class="form-control form-control-sm form-control-solid hp-num" dir="ltr" inputmode="decimal" data-k="criticalLow" data-n value="@Num(a?.CriticalLow)" @ro /></td>
+                                    <td><input class="form-control form-control-sm form-control-solid hp-num" dir="ltr" inputmode="decimal" data-k="criticalHigh" data-n value="@Num(a?.CriticalHigh)" @ro /></td>
+                                    <td><input class="form-control form-control-sm form-control-solid hp-num" dir="ltr" inputmode="numeric" data-k="decimals" data-n value="@(a?.Decimals ?? 1)" @ro /></td>
+                                    <td><div class="form-check form-check-sm form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" data-k="isActive" @(a == null || a.IsActive ? "checked" : "") @ro /></div></td>
+                                    <td class="text-end">@if (canManage) {<button type="button" class="btn btn-sm @(a == null ? "btn-primary" : "btn-light")" data-save-analyte>@(a == null ? T["Add"] : T["Save"])</button>}</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table></div>
+                </div>
+            </div>
+        }
+    </div></div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            var root = @Json.Serialize(Url.Action("LabTests"));
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value) };
+            function toast(k, m) { if (window.toastr) toastr[k](m); }
+            function post(url, body) {
+                return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: body ? JSON.stringify(body) : null })
+                    .then(function (r) { return r.json().catch(function () { return { ok: false }; }); });
+            }
+            function swap() {
+                return fetch(location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.text(); }).then(function (html) {
+                    var doc = new DOMParser().parseFromString(html, 'text/html');
+                    ['kt_app_content', 'kt_app_toolbar'].forEach(function (id) { var f = doc.getElementById(id); if (f) document.getElementById(id).innerHTML = f.innerHTML; });
+                });
+            }
+            function read(scope) {
+                var o = {};
+                scope.querySelectorAll('[data-k]').forEach(function (i) {
+                    var k = i.getAttribute('data-k');
+                    if (i.type === 'checkbox') o[k] = i.checked;
+                    else if (i.hasAttribute('data-n')) o[k] = i.value.trim() === '' ? null : Number(i.value);
+                    else o[k] = i.value;
+                });
+                return o;
+            }
+            function done(btn) { return function (res) { btn.disabled = false; if (!res.ok) { toast('error', res.error || W.failed); return; } toast('success', W.saved); swap(); }; }
+            document.addEventListener('click', function (e) {
+                var t = e.target.closest('[data-seed],[data-save-test],[data-save-analyte]'); if (!t) return;
+                t.disabled = true;
+                if (t.hasAttribute('data-seed')) { post(root + '/SeedStandard').then(done(t)); return; }
+                if (t.hasAttribute('data-save-test')) { post(root + '/' + t.getAttribute('data-save-test'), read(t.closest('.row'))).then(done(t)); return; }
+                var tr = t.closest('tr'), body = read(tr);
+                body.serviceId = Number(tr.getAttribute('data-service'));
+                body.id = tr.getAttribute('data-id') ? Number(tr.getAttribute('data-id')) : null;
+                post(root + '/Analyte', body).then(done(t));
+            });
+        })();
+    </script>
+}

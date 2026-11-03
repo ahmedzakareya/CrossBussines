@@ -1,0 +1,238 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model HospitalLabOrderView
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    var o = Model.Order;
+    var p = Model.Patient;
+    var name = DisplayName.Of(p.Name, p.NameEn);
+    ViewData["Title"] = T["Result entry"].Value + " — " + o.AccessionNo;
+    bool canLab = ViewBag.CanLab == true, canVerify = ViewBag.CanVerify == true;
+    int? me = ViewBag.Me as int?;
+    bool locked = o.Status == HospitalLabStatus.Verified;
+    bool bench = o.Status is HospitalLabStatus.Received or HospitalLabStatus.Resulted;
+    bool canEnter = canLab && bench;
+    var age = HospitalPatientService.AgeOn(p.BirthDate, DateTime.UtcNow);
+    string Who(int? id) => id != null && Model.People.TryGetValue(id.Value, out var n) ? n : "—";
+    string Num(decimal? v, int dec) => HospitalUi.LabNum(v, dec);
+    var trail = new (string Label, DateTime? At, int? By, string Icon)[] {
+        (T["Ordered"].Value, o.OrderedAt, o.OrderedByEmployeeId, "ki-document"),
+        (T["Collected"].Value, o.CollectedAt, o.CollectedByEmployeeId, "ki-syringe"),
+        (T["Received in lab"].Value, o.ReceivedAt, o.ReceivedByEmployeeId, "ki-entrance-left"),
+        (T["Result entered"].Value, o.ResultedAt, o.ResultedByEmployeeId, "ki-notepad-edit"),
+        (T["Verified"].Value, o.VerifiedAt, o.VerifiedByEmployeeId, "ki-shield-tick") };
+    var specimen = Model.Setup == null ? null : DisplayName.Of(Model.Setup.Specimen, Model.Setup.SpecimenEn);
+    var labSection = Model.Setup == null ? null : DisplayName.Of(Model.Setup.Section, Model.Setup.SectionEn);
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@(locked ? T["Lab result"] : T["Result entry"])</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item text-muted"><a href="@Url.Action("Lab")" class="text-muted text-hover-primary">@T["Laboratory (module)"]</a></li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted hp-num">@o.AccessionNo</li>
+            </ul>
+        </div>
+        <div class="d-flex align-items-center gap-2 gap-lg-3 d-print-none">
+            @if (canLab && o.Status == HospitalLabStatus.Ordered) { <button type="button" class="btn btn-sm btn-primary" data-step="Collect" data-confirm="@string.Format(T["Collect the specimen of {0} for {1} ({2})?"].Value, o.AccessionNo, name, DisplayName.Of(o.Name, o.NameEn))"><i class="ki-outline ki-syringe fs-4"></i>@T["Collect"]</button> }
+            @if (canLab && o.Status == HospitalLabStatus.Collected) { <button type="button" class="btn btn-sm btn-primary" data-step="Receive" data-confirm="@string.Format(T["Receive the specimen of {0} for {1} ({2}) in the lab?"].Value, o.AccessionNo, name, DisplayName.Of(o.Name, o.NameEn))"><i class="ki-outline ki-entrance-left fs-4"></i>@T["Receive"]</button> }
+            @if (canEnter) { <button type="button" class="btn btn-sm btn-light" data-save><i class="ki-outline ki-save-2 fs-4"></i>@T["Save"]</button> }
+            @if (canVerify && o.Status == HospitalLabStatus.Resulted) { <button type="button" class="btn btn-sm btn-primary" data-step="Verify" data-confirm="@T["Verify these results? Once verified they reach the doctor and the patient file and can no longer be changed."]"><i class="ki-outline ki-check-circle fs-4"></i>@T["Verify result"]</button> }
+            @if (locked) { <span class="badge badge-light-success fs-7 px-4 py-3"><i class="ki-outline ki-shield-tick fs-5 text-success me-1"></i>@T["Verified"] <span class="hp-num ms-1" data-fmt data-utc="@o.VerifiedAt?.ToString("o")">@o.VerifiedAt?.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</span></span> }
+        </div>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="hp-pbanner p-6 mb-5"><div class="d-flex flex-wrap align-items-center gap-5">
+            <div class="symbol symbol-75px symbol-circle flex-shrink-0">@if (p.PhotoPath != null) {<img src="@p.PhotoPath" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(p.NameEn)" />} else {<span class="symbol-label fs-2 fw-bold hp-initials">@HospitalUi.Initials(p.NameEn)</span>}</div>
+            <div class="flex-grow-1 min-w-0">
+                <div class="d-flex flex-wrap align-items-center gap-2 mb-1"><a href="@Url.Action("Patient", new { id = p.ID })" class="fs-2 fw-bold text-gray-900 text-hover-primary">@name</a><span class="badge hp-code fw-bold fs-8 hp-num">@p.Mrn</span></div>
+                <div class="d-flex flex-wrap gap-2 mt-2">
+                    <span class="hp-chip"><i class="ki-outline ki-user fs-7"></i>@if (age != null) {<span class="hp-num">@age</span> @T["y"] <text> · </text>}@(p.Sex == HospitalPatientSex.Male ? T["Male"] : T["Female"])</span>
+                    @if (p.BloodGroup != null) { <span class="hp-chip"><i class="ki-outline ki-drop fs-7"></i>@T["Blood group"] <span class="hp-num">@p.BloodGroup</span></span> }
+                    @if (o.OrderedByEmployeeId != null) { <span class="hp-chip"><i class="ki-outline ki-briefcase fs-7"></i>@Who(o.OrderedByEmployeeId)</span> }
+                </div>
+            </div>
+        </div></div>
+
+        @if (o.IsCritical)
+        {
+            if (o.CriticalAcknowledgedAt == null)
+            {
+                <div class="notice d-flex rounded border border-dashed p-6 mb-5 bg-light-danger border-danger">
+                    <span class="symbol symbol-45px me-5 flex-shrink-0"><span class="symbol-label bg-danger"><i class="ki-outline ki-notification-status fs-2x text-white"></i></span></span>
+                    <div class="flex-grow-1">
+                        <h4 class="text-gray-900 fw-bold mb-1">@T["A critical value — tell the doctor now"]</h4>
+                        <div class="fs-6 text-gray-700 mb-4">@T["Choose the doctor to tell: he gets an alert on any screen of the system until he reads the value back. The flag stays raised until then."]</div>
+                        <a href="@Url.Action("LabCritical", new { id = o.ID })" class="btn btn-danger"><i class="ki-outline ki-notification-status fs-4"></i>@T["Notify the doctor"]</a>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="notice d-flex rounded border border-dashed p-6 mb-5 bg-light-success border-success">
+                    <i class="ki-outline ki-call fs-2tx text-success me-4"></i>
+                    <div class="fw-semibold">
+                        <h4 class="text-gray-900 fw-bold mb-1">@T["The doctor was told of the critical value"]</h4>
+                        <div class="fs-6 text-gray-700">@if (o.CriticalNote?.StartsWith(HospitalLabAlertService.ReadBackNotePrefix) == true) {<text>@T["Read back on screen:"] <bdi dir="ltr" class="hp-num">@o.CriticalNote[HospitalLabAlertService.ReadBackNotePrefix.Length..]</bdi></text>} else {@o.CriticalNote} — <a href="@Url.Action("LabCritical", new { id = o.ID })" class="fw-semibold">@T["Following it up"]</a> — @Who(o.CriticalAcknowledgedByEmployeeId) · <span class="hp-num" data-fmt data-utc="@o.CriticalAcknowledgedAt?.ToString("o")">@o.CriticalAcknowledgedAt?.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</span></div>
+                    </div>
+                </div>
+            }
+        }
+
+        <div class="row g-5 g-xl-8">
+            <div class="col-xl-8">
+                <div class="card mb-5">
+                    <div class="card-header border-0 pt-6">
+                        <div class="card-title align-items-start flex-column m-0">
+                            <span class="card-label fw-bold text-gray-900 fs-4">@DisplayName.Of(o.Name, o.NameEn) <span class="badge hp-code fw-bold fs-8 hp-num ms-1">@o.AccessionNo</span></span>
+                            <span class="text-muted mt-1 fw-semibold fs-7">@if (specimen != null) {<text>@T["Specimen:"] @specimen</text>}@if (labSection != null) {<text> · @labSection</text>}@if (o.CollectedAt != null) {<text> · @T["collected at"] <span class="hp-num" data-fmt data-utc="@o.CollectedAt?.ToString("o")">@o.CollectedAt?.ToLocalTime().ToString("HH:mm")</span></text>}</span>
+                        </div>
+                        <div class="card-toolbar">
+                            <span class="badge badge-light-@(locked ? "success" : o.Status == HospitalLabStatus.Resulted ? "primary" : "info") fs-7">@T["lab:" + o.Status]</span>
+                        </div>
+                    </div>
+                    <div class="card-body pt-2">
+                        @if (Model.Lines.Count == 0)
+                        {
+                            <div class="notice d-flex rounded border border-dashed border-primary bg-light-primary p-6">
+                                <i class="ki-outline ki-setting-3 fs-2tx text-primary me-4"></i>
+                                <div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@T["This test has no analytes yet"]</h4>
+                                    <div class="fs-6 text-gray-700">@T["Set its analytes and ranges in lab tests before entering results."] <a href="@Url.Action("LabTests")" class="fw-bold">@T["Lab tests & analytes"]</a></div></div>
+                            </div>
+                        }
+                        else
+                        {
+                            @if (!bench && !locked)
+                            {
+                                <div class="text-muted fs-7 mb-3"><i class="ki-outline ki-information-5 fs-6 me-1"></i>@T["Results are entered once the specimen is received in the lab."]</div>
+                            }
+                            <div class="table-responsive"><table class="table align-middle table-row-dashed fs-6 gy-3 mb-0">
+                                <thead><tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0">
+                                    <th>@T["Analyte"]</th><th class="w-150px">@T["Result"]</th><th>@T["Unit"]</th><th>@T["Reference range"]</th><th class="text-center w-70px">@T["Flag"]</th><th class="w-100px">@T["Previous"]</th>
+                                </tr></thead>
+                                <tbody class="fw-semibold text-gray-700">
+                                    @foreach (var l in Model.Lines)
+                                    {
+                                        var a = l.Analyte; var r = l.Result;
+                                        var shown = r == null ? "" : r.Value != null ? Num(r.Value, r.Decimals) : r.TextValue ?? "";
+                                        var flag = r?.Flag ?? HospitalLabFlag.Normal;
+                                        <tr>
+                                            <td><div class="fw-bold text-gray-800">@DisplayName.Of(a.Name, a.NameEn)</div><div class="text-muted fs-8 hp-num">@a.Code</div></td>
+                                            <td>
+                                                @if (canEnter)
+                                                {
+                                                    <input type="text" inputmode="@(a.RefLow != null || a.RefHigh != null ? "decimal" : "text")" dir="ltr" class="form-control form-control-sm form-control-solid hp-num w-125px" data-analyte="@a.ID" value="@shown"
+                                                           data-lo="@Num(a.RefLow, 4)" data-hi="@Num(a.RefHigh, 4)" data-clo="@Num(a.CriticalLow, 4)" data-chi="@Num(a.CriticalHigh, 4)" />
+                                                }
+                                                else
+                                                {
+                                                    <span class="hp-num fs-5 @(flag != HospitalLabFlag.Normal ? "hp-result-out" : "text-gray-900")" dir="ltr">@(shown == "" ? "—" : shown)</span>
+                                                }
+                                            </td>
+                                            <td class="text-muted fs-7" dir="ltr">@(r?.Unit ?? a.Unit)</td>
+                                            <td class="hp-num text-gray-700"><bdi dir="ltr">@HospitalUi.LabRange(r?.RefLow ?? a.RefLow, r?.RefHigh ?? a.RefHigh, r?.Decimals ?? a.Decimals)</bdi></td>
+                                            <td class="text-center" data-flag-cell>@if (flag != HospitalLabFlag.Normal) {<span class="hp-flag hp-flag-@flag">@flag</span>} else {<span class="text-gray-400">—</span>}</td>
+                                            <td class="hp-num text-muted" dir="ltr">@(l.Previous != null ? Num(l.Previous, a.Decimals) : "—")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table></div>
+                            <div class="mt-6">
+                                <label class="form-label fw-semibold text-gray-700">@T["Laboratory comment"]</label>
+                                @if (canEnter) { <textarea class="form-control form-control-solid" rows="2" maxlength="1000" data-comment>@o.Comment</textarea> }
+                                else { <div class="text-gray-800 fs-6">@(string.IsNullOrWhiteSpace(o.Comment) ? "—" : o.Comment)</div> }
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-4">
+                <div class="notice d-flex rounded border border-dashed border-primary bg-light-primary p-6 mb-5">
+                    <i class="ki-outline ki-shield-tick fs-2tx text-primary me-4"></i>
+                    <div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@T["Two-step verification"]</h4>
+                        <div class="fs-6 text-gray-700">@T["A technician enters the result and a specialist verifies it; only then is it visible to the doctor and in the patient file."]</div></div>
+                </div>
+                <div class="card mb-5">
+                    <div class="card-header border-0 pt-6"><div class="card-title"><span class="card-label fw-bold text-gray-900 fs-4">@T["Specimen trail"]</span></div></div>
+                    <div class="card-body pt-2">
+                        @foreach (var s in trail)
+                        {
+                            <div class="d-flex align-items-center py-3 hp-row">
+                                <span class="symbol symbol-30px flex-shrink-0"><span class="symbol-label @(s.At != null ? "bg-light-primary" : "bg-light")"><i class="ki-outline @s.Icon fs-5 @(s.At != null ? "text-primary" : "text-gray-400")"></i></span></span>
+                                <div class="ms-3 flex-grow-1"><div class="fw-semibold @(s.At != null ? "text-gray-800" : "text-gray-400")">@s.Label</div>@if (s.At != null) {<div class="text-muted fs-8">@Who(s.By)</div>}</div>
+                                <span class="hp-num text-muted fs-7" data-fmt data-utc="@s.At?.ToString("o")">@(s.At?.ToLocalTime().ToString("HH:mm") ?? "—")</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+                @if (canLab && !locked)
+                {
+                    <div class="card">
+                        <div class="card-header border-0 pt-6"><div class="card-title"><span class="card-label fw-bold text-gray-900 fs-4">@T["Priority"]</span></div></div>
+                        <div class="card-body pt-2 d-flex gap-2">
+                            @foreach (var pr in HospitalLabPriority.All)
+                            {
+                                <button type="button" class="btn btn-sm flex-grow-1 @(o.Priority == pr ? (pr == HospitalLabPriority.Stat ? "btn-danger" : "btn-primary") : "btn-light")" data-priority="@pr" data-confirm="@string.Format(T["Change the priority of {0} to {1}?"].Value, o.AccessionNo, pr == HospitalLabPriority.Stat ? "STAT" : T[pr].Value)">@(pr == HospitalLabPriority.Stat ? "STAT" : T[pr].Value)</button>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div></div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            var base = @Json.Serialize(Url.Action("LabOrder", new { id = o.ID }));
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value), verified: @Json.Serialize(T["Result verified — the doctor can see it"].Value) };
+            function toast(k, m) { if (window.toastr) toastr[k](m); }
+            function post(step, body) {
+                return fetch(base + '/' + step, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: body ? JSON.stringify(body) : null })
+                    .then(function (r) { return r.json().catch(function () { return { ok: false }; }); });
+            }
+            // In place, never a reload: the page is rendered again and its content and actions swapped.
+            function swap() {
+                return fetch(location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.text(); }).then(function (html) {
+                    var doc = new DOMParser().parseFromString(html, 'text/html');
+                    ['kt_app_content', 'kt_app_toolbar'].forEach(function (id) { var f = doc.getElementById(id); if (f) document.getElementById(id).innerHTML = f.innerHTML; });
+                });
+            }
+            function done(btn, msg) { return function (res) { if (btn) btn.disabled = false; if (!res.ok) { toast('error', res.error || W.failed); return; } toast('success', msg || W.saved); swap(); }; }
+            // The flag as you type — the same rule as the server (HospitalLabService.Flag); the server's is the one stored.
+            function flagOf(inp) {
+                var v = parseFloat(inp.value); if (inp.value.trim() === '' || isNaN(v)) return '';
+                function n(k) { var x = inp.getAttribute('data-' + k); return x === '' ? null : parseFloat(x); }
+                if (n('clo') !== null && v < n('clo')) return 'LL'; if (n('chi') !== null && v > n('chi')) return 'HH';
+                if (n('lo') !== null && v < n('lo')) return 'L'; if (n('hi') !== null && v > n('hi')) return 'H'; return '';
+            }
+            document.addEventListener('input', function (e) {
+                if (!e.target.matches('[data-analyte]')) return;
+                var f = flagOf(e.target), cell = e.target.closest('tr').querySelector('[data-flag-cell]');
+                cell.innerHTML = f ? '<span class="hp-flag hp-flag-' + f + '">' + f + '</span>' : '<span class="text-gray-400">—</span>';
+            });
+            document.addEventListener('click', function (e) {
+                var t = e.target.closest('[data-step],[data-save],[data-priority]'); if (!t) return;
+                var msg = t.getAttribute('data-confirm');
+                if (msg && !t.hasAttribute('data-confirmed')) { cbConfirm(msg, { kind: t.getAttribute('data-confirm-kind') || 'primary' }).then(function (ok) { if (ok) { t.setAttribute('data-confirmed', ''); t.click(); } }); return; }
+                t.removeAttribute('data-confirmed');
+                t.disabled = true;
+                if (t.hasAttribute('data-step')) { var s = t.getAttribute('data-step'); post(s).then(done(t, s === 'Verify' ? W.verified : null)); return; }
+                if (t.hasAttribute('data-priority')) { post('Priority', { priority: t.getAttribute('data-priority') }).then(done(t)); return; }
+                var values = {};
+                document.querySelectorAll('[data-analyte]').forEach(function (i) { values[i.getAttribute('data-analyte')] = i.value; });
+                var c = document.querySelector('[data-comment]');
+                post('Results', { values: values, comment: c ? c.value : null }).then(done(t));
+            });
+        })();
+    </script>
+}

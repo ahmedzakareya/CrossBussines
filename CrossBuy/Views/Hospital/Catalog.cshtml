@@ -1,0 +1,158 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model IReadOnlyList<HospitalCatalogEntry>
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Services & items"].Value;
+    bool canManage = ViewBag.CanManage == true;
+    string tab = (ViewBag.Tab as string) ?? HospitalPriceGroups.Service;
+    var fac = (HospitalPriceCurrency)ViewBag.Facility;
+    var lists = ((ViewBag.Lists as IReadOnlyList<HospitalPriceListRow>) ?? Array.Empty<HospitalPriceListRow>()).Where(r => r.List.Status != HospitalPriceListStatus.Archived).ToList();
+    var mapped = ((ViewBag.Mapped as IReadOnlyList<HospitalItemCategory>) ?? Array.Empty<HospitalItemCategory>()).ToDictionary(c => c.ItemCategoryId, c => c.Kind);
+    var categories = (ViewBag.Categories as List<CrossBuy.Controllers.HospitalController.HospitalChoice>) ?? new();
+    var state = (ViewBag.LineState as Dictionary<string, (int On, int Stale)>) ?? new();
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Services & items"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item text-muted">@T["Finance"]</li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@T["Services & items"]</li>
+            </ul>
+        </div>
+        <div class="d-flex align-items-center gap-2 gap-lg-3 d-print-none">
+            <a href="@Url.Action("PriceLists")" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-price-tag fs-4"></i>@T["Price lists"]</a>
+            @if (canManage)
+            {
+                <a href="@Url.Action("CreateItem", "Inventory")" class="btn btn-sm btn-light-primary" target="_blank"><i class="ki-outline ki-package fs-4"></i>@T["New item or consumable"]</a>
+                <a href="@Url.Action("Services")" class="btn btn-sm btn-primary"><i class="ki-outline ki-plus fs-4"></i>@T["New service"]</a>
+            }
+        </div>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice">
+            <span class="symbol symbol-45px me-5 flex-shrink-0"><span class="symbol-label"><i class="ki-outline ki-element-11 fs-2x text-white"></i></span></span>
+            <div class="d-flex flex-stack flex-grow-1 flex-wrap flex-md-nowrap">
+                <div class="mb-3 mb-md-0 fw-semibold pe-5">
+                    <h4 class="text-gray-900 fw-bold mb-1">@T["Each item is defined once"]</h4>
+                    <div class="fs-6 text-gray-700">@T["Services are created in the service catalogue; medicines and consumables on the Inventory item card, in a category mapped below. The selling price entered there is recorded on the main list automatically — and only there."]</div>
+                </div>
+                <span class="badge hp-badge fs-7 fw-bold px-4 py-2 flex-shrink-0"><span class="hp-num me-1">@Model.Count</span>@T["items"]</span>
+            </div>
+        </div>
+
+        <div class="card mb-5">
+            <div class="card-header border-0 pt-6">
+                <ul class="nav nav-stretch nav-line-tabs nav-line-tabs-2x border-transparent fs-6 fw-bold">
+                    @foreach (var g in HospitalPriceGroups.All)
+                    {
+                        <li class="nav-item"><a class="nav-link text-active-primary py-4 me-6 @(g == tab ? "active" : "")" data-bs-toggle="tab" href="#cat_@g">@T["group:" + g] <span class="badge badge-light-primary ms-1 hp-num">@Model.Count(e => e.Group == g)</span></a></li>
+                    }
+                </ul>
+            </div>
+            <div class="card-body pt-4"><div class="tab-content">
+                @foreach (var g in HospitalPriceGroups.All)
+                {
+                    var rows = Model.Where(e => e.Group == g).ToList();
+                    <div class="tab-pane fade @(g == tab ? "show active" : "")" id="cat_@g" role="tabpanel">
+                        @if (rows.Count == 0)
+                        {
+                            <div class="text-center text-muted py-12"><i class="ki-outline @(g == HospitalPriceGroups.Service ? "ki-price-tag" : "ki-capsule") fs-3x text-gray-300 d-block mb-4"></i>
+                                @(g == HospitalPriceGroups.Service ? T["No services yet."] : T["Map an inventory category to the hospital below; its items appear here."])</div>
+                        }
+                        else
+                        {
+                            <div class="table-responsive"><table class="table align-middle table-row-dashed fs-6 gy-3 mb-0">
+                                <thead><tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0">
+                                    <th class="w-125px">@T["Code"]</th><th>@T["Item"]</th><th>@T["Type"]</th><th class="text-end">@T["Selling price"] (<span class="hp-num">@fac.Code</span>)</th>@if (g == HospitalPriceGroups.Medicine) {<th class="text-end">@T["Public price"]</th>}<th>@T["On other lists"]</th>
+                                </tr></thead>
+                                <tbody class="fw-semibold text-gray-700">
+                                    @foreach (var e in rows)
+                                    {
+                                        var st = state.GetValueOrDefault(e.Key);
+                                        <tr>
+                                            <td><span class="badge hp-code fw-bold fs-8 hp-num">@e.Code</span></td>
+                                            <td><a href="@Url.Action("CatalogEntry", new { key = e.Key })" class="fw-bold text-gray-900 text-hover-primary">@DisplayName.Of(e.Name, e.NameEn)</a><div class="text-muted fs-8" dir="auto">@(DisplayName.IsArabic ? e.NameEn : e.Name)</div></td>
+                                            <td class="fs-7">@(g == HospitalPriceGroups.Service ? T["cat:" + e.Category].Value : T["group:" + g].Value)</td>
+                                            <td class="text-end hp-num fw-bold">@fac.Format(e.MainPrice)</td>
+                                            @if (g == HospitalPriceGroups.Medicine) {<td class="text-end hp-num">@(e.PublicPrice is decimal pp ? fac.Format(pp) : "—")</td>}
+                                            <td><span class="hp-num">@st.On / @lists.Count</span>@if (st.Stale > 0) {<span class="badge badge-light-danger fs-8 ms-2"><span class="hp-num me-1">@st.Stale</span>@T["not updated (count)"]</span>}@if (st.On < lists.Count) {<span class="badge badge-light-info fs-8 ms-2">@T["New — not added"]</span>}</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table></div>
+                        }
+                    </div>
+                }
+            </div></div>
+        </div>
+
+        @if (canManage)
+        {
+            <div class="card">
+                <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
+                    <span class="card-label fw-bold text-gray-900 fs-4">@T["Inventory categories in the hospital"]</span>
+                    <span class="text-muted mt-1 fw-semibold fs-7">@T["Every active item of a mapped category is a hospital medicine or consumable, priced at its selling price on the main list"]</span>
+                </div>
+                    <div class="card-toolbar"><button type="button" class="btn btn-sm btn-primary" data-save-map><i class="ki-outline ki-check fs-4"></i>@T["Save"]</button></div>
+                </div>
+                <div class="card-body pt-2">
+                    @if (categories.Count == 0) { <div class="text-muted">@T["Inventory has no categories yet."]</div> }
+                    else
+                    {
+                        <div class="row g-4" id="catMap">
+                            @foreach (var c in categories)
+                            {
+                                var k = mapped.GetValueOrDefault(c.Id);
+                                @* The picker sits under the name at the card's full width: "Not hospital" never gets cut. *@
+                                <div class="col-md-6 col-xl-4"><div class="d-flex flex-column gap-2 h-100 border border-dashed border-gray-300 rounded p-4">
+                                    <div class="d-flex flex-stack gap-2"><span class="fw-semibold text-gray-800 fs-7">@DisplayName.Of(c.Name, c.NameEn)</span><span class="badge hp-code fw-bold fs-9 hp-num">@c.Label</span></div>
+                                    <select class="form-select form-select-sm form-select-solid" data-cat="@c.Id">
+                                        <option value="">@T["Not hospital"]</option>
+                                        @foreach (var kind in HospitalPriceGroups.ItemKinds) { <option value="@kind" selected="@(k == kind)">@T["group:" + kind]</option> }
+                                    </select>
+                                </div></div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    </div></div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value) };
+            var url = @Json.Serialize(Url.Action("SaveItemCategories"));
+            function toast(k, m) { if (window.toastr) toastr[k](m); }
+            function swap() {
+                var active = document.querySelector('.nav-line-tabs .nav-link.active'), tab = active ? active.getAttribute('href').replace('#cat_', '') : '';
+                return fetch(location.pathname + (tab ? '?tab=' + tab : ''), { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.text(); }).then(function (html) {
+                    var fresh = new DOMParser().parseFromString(html, 'text/html').getElementById('kt_app_content');
+                    if (fresh) document.getElementById('kt_app_content').innerHTML = fresh.innerHTML;
+                    if (window.jQuery && jQuery.fn.select2) jQuery('#kt_app_content select.form-select:not([data-no-select2])').select2({ minimumResultsForSearch: Infinity, width: '100%', dir: document.documentElement.dir === 'rtl' ? 'rtl' : 'ltr' });
+                });
+            }
+            document.addEventListener('click', function (e) {
+                var t = e.target.closest('[data-save-map]'); if (!t) return;
+                var map = {};
+                document.querySelectorAll('[data-cat]').forEach(function (s) { if (s.value) map[s.getAttribute('data-cat')] = s.value; });
+                t.disabled = true;
+                fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify({ map: map }) })
+                    .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+                    .then(function (res) { t.disabled = false; if (!res.ok) { toast('error', res.error || W.failed); return; } toast('success', W.saved); swap(); });
+            });
+        })();
+    </script>
+}

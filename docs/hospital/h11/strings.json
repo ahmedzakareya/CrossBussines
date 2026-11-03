@@ -1,0 +1,655 @@
+{
+  "_about": "H11 insurance & claims strings for CrossBuy/Resources/HospitalResources{,.ar,.en,.fr}.resx (TAB-1 owns Resources/**). Key = resx data name. Until merged, the screens show the English key text. Keys already present in the resx are not repeated.",
+  "strings": {
+    "0 = no cap": {
+      "en": "0 = no cap",
+      "ar": "0 = بلا حد",
+      "fr": "0 = sans plafond"
+    },
+    "A batch is sent to the payer outside the system; record its submission and the payer's answer for each line here.": {
+      "en": "A batch is sent to the payer outside the system; record its submission and the payer's answer for each line here.",
+      "ar": "تُرسل الدفعة إلى الجهة الدافعة خارج النظام؛ سجّل هنا رفعها ورد الجهة على كل بند.",
+      "fr": "Le lot est envoyé au payeur hors du système ; enregistrez ici sa transmission et la réponse du payeur pour chaque ligne."
+    },
+    "A patient is covered when the policy and the contract are both valid on the day": {
+      "en": "A patient is covered when the policy and the contract are both valid on the day",
+      "ar": "يكون المريض مغطى حين تكون الوثيقة والعقد ساريين معاً في ذلك اليوم",
+      "fr": "Un patient est couvert lorsque la police et le contrat sont tous deux valides ce jour-là"
+    },
+    "A request for this service is already waiting for the payer": {
+      "en": "A request for this service is already waiting for the payer",
+      "ar": "يوجد طلب لهذه الخدمة بانتظار رد الجهة بالفعل",
+      "fr": "Une demande pour ce service attend déjà la réponse du payeur"
+    },
+    "Accepted": {
+      "en": "Accepted",
+      "ar": "مقبول",
+      "fr": "Accepté"
+    },
+    "Add policy": {
+      "en": "Add policy",
+      "ar": "إضافة وثيقة",
+      "fr": "Ajouter une police"
+    },
+    "Another contract uses this code": {
+      "en": "Another contract uses this code",
+      "ar": "هذا الرمز مستخدم في عقد آخر",
+      "fr": "Un autre contrat utilise ce code"
+    },
+    "Approvals & claims": {
+      "en": "Approvals & claims",
+      "ar": "الموافقات والمطالبات",
+      "fr": "Accords et réclamations"
+    },
+    "Approvals pending": {
+      "en": "Approvals pending",
+      "ar": "موافقات بانتظار الرد",
+      "fr": "Accords en attente"
+    },
+    "Bill total": {
+      "en": "Bill total",
+      "ar": "إجمالي الفاتورة",
+      "fr": "Total de la facture"
+    },
+    "Build batch": {
+      "en": "Build batch",
+      "ar": "إنشاء الدفعة",
+      "fr": "Constituer le lot"
+    },
+    "Build month batch": {
+      "en": "Build month batch",
+      "ar": "إنشاء دفعة الشهر",
+      "fr": "Constituer le lot du mois"
+    },
+    "Build the {0} batch of {1}? Each closed bill is split into the payer's share and the patient's.": {
+      "en": "Build the {0} batch of {1}? Each closed bill is split into the payer's share and the patient's.",
+      "ar": "إنشاء دفعة {0} لـ {1}؟ تُقسم كل فاتورة مغلقة إلى حصة الجهة وحصة المريض.",
+      "fr": "Constituer le lot {0} de {1} ? Chaque facture clôturée est répartie entre la part du payeur et celle du patient."
+    },
+    "cap": {
+      "en": "cap",
+      "ar": "بحد",
+      "fr": "plafond"
+    },
+    "cb:Draft": {
+      "en": "Draft",
+      "ar": "مسودة",
+      "fr": "Brouillon"
+    },
+    "cb:Paid": {
+      "en": "Paid",
+      "ar": "مسددة",
+      "fr": "Payé"
+    },
+    "cb:Partial": {
+      "en": "Part paid",
+      "ar": "مسددة جزئياً",
+      "fr": "Payé en partie"
+    },
+    "cb:Rejected": {
+      "en": "Rejected",
+      "ar": "مرفوضة",
+      "fr": "Refusé"
+    },
+    "cb:Submitted": {
+      "en": "Submitted",
+      "ar": "مرفوعة",
+      "fr": "Transmis"
+    },
+    "Choose the month to claim": {
+      "en": "Choose the month to claim",
+      "ar": "اختر شهر المطالبة",
+      "fr": "Choisissez le mois à réclamer"
+    },
+    "Choose the patient and the service": {
+      "en": "Choose the patient and the service",
+      "ar": "اختر المريض والخدمة",
+      "fr": "Choisissez le patient et le service"
+    },
+    "cl:Accepted": {
+      "en": "Accepted",
+      "ar": "مقبول",
+      "fr": "Accepté"
+    },
+    "cl:Pending": {
+      "en": "Awaiting the payer",
+      "ar": "بانتظار الجهة",
+      "fr": "En attente du payeur"
+    },
+    "cl:Rejected": {
+      "en": "Rejected",
+      "ar": "مرفوض",
+      "fr": "Refusé"
+    },
+    "cl:Resubmitted": {
+      "en": "Resubmitted",
+      "ar": "أُعيد رفعه",
+      "fr": "Soumis à nouveau"
+    },
+    "Claim batches": {
+      "en": "Claim batches",
+      "ar": "دفعات المطالبات",
+      "fr": "Lots de réclamations"
+    },
+    "Claimed": {
+      "en": "Claimed",
+      "ar": "المطالَب به",
+      "fr": "Réclamé"
+    },
+    "Claimed from the payer": {
+      "en": "Claimed from the payer",
+      "ar": "المطالَب به من الجهة",
+      "fr": "Réclamé au payeur"
+    },
+    "Claims": {
+      "en": "Claims",
+      "ar": "المطالبات",
+      "fr": "Réclamations"
+    },
+    "Claims this month": {
+      "en": "Claims this month",
+      "ar": "مطالبات الشهر",
+      "fr": "Réclamations du mois"
+    },
+    "Class": {
+      "en": "Class",
+      "ar": "الفئة",
+      "fr": "Classe"
+    },
+    "Classes": {
+      "en": "Classes",
+      "ar": "الفئات",
+      "fr": "Classes"
+    },
+    "Co-pay": {
+      "en": "Co-pay",
+      "ar": "التحمل",
+      "fr": "Quote-part"
+    },
+    "Co-pay cap per bill": {
+      "en": "Co-pay cap per bill",
+      "ar": "الحد الأقصى للتحمل لكل فاتورة",
+      "fr": "Plafond de quote-part par facture"
+    },
+    "Contract": {
+      "en": "Contract",
+      "ar": "العقد",
+      "fr": "Contrat"
+    },
+    "Contracts": {
+      "en": "Contracts",
+      "ar": "العقود",
+      "fr": "Contrats"
+    },
+    "Cover today": {
+      "en": "Cover today",
+      "ar": "التغطية اليوم",
+      "fr": "Couverture aujourd'hui"
+    },
+    "Covered": {
+      "en": "Covered",
+      "ar": "مغطى",
+      "fr": "Couvert"
+    },
+    "Days to collect": {
+      "en": "Days to collect",
+      "ar": "متوسط أيام التحصيل",
+      "fr": "Délai d'encaissement (jours)"
+    },
+    "Discount": {
+      "en": "Discount",
+      "ar": "الخصم",
+      "fr": "Remise"
+    },
+    "E-claims channel: not connected": {
+      "en": "E-claims channel: not connected",
+      "ar": "الربط الإلكتروني للمطالبات: غير متصل",
+      "fr": "Canal de réclamations électroniques : non connecté"
+    },
+    "Each contract points at one list, in that list's currency. A contract on the main list takes its discount on top; a payer's own list has the discount built in.": {
+      "en": "Each contract points at one list, in that list's currency. A contract on the main list takes its discount on top; a payer's own list has the discount built in.",
+      "ar": "كل عقد يشير إلى قائمة واحدة بعملتها. العقد المربوط بالقائمة الرئيسية يأخذ خصمه فوقها؛ القائمة الخاصة بالجهة يكون خصمها مضمَّناً فيها.",
+      "fr": "Chaque contrat renvoie à une liste, dans la devise de cette liste. Un contrat sur la liste principale applique sa remise en plus ; la liste propre d'un payeur inclut déjà la remise."
+    },
+    "Each contract sets the discount, co-pay, price list and services needing approval": {
+      "en": "Each contract sets the discount, co-pay, price list and services needing approval",
+      "ar": "كل عقد يحدد الخصم والتحمل وقائمة الأسعار والخدمات التي تحتاج موافقة",
+      "fr": "Chaque contrat fixe la remise, la quote-part, la liste de prix et les services soumis à accord"
+    },
+    "Enter the member number (up to 40 characters)": {
+      "en": "Enter the member number (up to 40 characters)",
+      "ar": "أدخل رقم العضوية (حتى 40 حرفاً)",
+      "fr": "Saisissez le numéro d'adhérent (40 caractères au plus)"
+    },
+    "Enter the payer's approval reference": {
+      "en": "Enter the payer's approval reference",
+      "ar": "أدخل مرجع موافقة الجهة",
+      "fr": "Saisissez la référence d'accord du payeur"
+    },
+    "Enter the payer's reason for the rejection": {
+      "en": "Enter the payer's reason for the rejection",
+      "ar": "أدخل سبب رفض الجهة",
+      "fr": "Saisissez le motif du refus du payeur"
+    },
+    "Enter the payer's rejection code and reason": {
+      "en": "Enter the payer's rejection code and reason",
+      "ar": "أدخل رمز الرفض وسببه كما ورد من الجهة",
+      "fr": "Saisissez le code et le motif du refus du payeur"
+    },
+    "from submission": {
+      "en": "from submission",
+      "ar": "من تاريخ الرفع",
+      "fr": "depuis la transmission"
+    },
+    "inelig:contract-expired": {
+      "en": "the payer's contract has expired",
+      "ar": "عقد الجهة منتهٍ",
+      "fr": "le contrat du payeur a expiré"
+    },
+    "inelig:contract-inactive": {
+      "en": "the payer's contract is inactive",
+      "ar": "عقد الجهة غير مفعّل",
+      "fr": "le contrat du payeur est inactif"
+    },
+    "inelig:contract-not-started": {
+      "en": "the payer's contract has not started",
+      "ar": "عقد الجهة لم يبدأ بعد",
+      "fr": "le contrat du payeur n'a pas commencé"
+    },
+    "inelig:no-policy": {
+      "en": "no insurance policy",
+      "ar": "لا توجد وثيقة تأمين",
+      "fr": "aucune police d'assurance"
+    },
+    "inelig:policy-expired": {
+      "en": "the policy has expired",
+      "ar": "الوثيقة منتهية",
+      "fr": "la police a expiré"
+    },
+    "inelig:policy-inactive": {
+      "en": "the policy is inactive",
+      "ar": "الوثيقة غير مفعّلة",
+      "fr": "la police est inactive"
+    },
+    "inelig:policy-not-started": {
+      "en": "the policy has not started",
+      "ar": "الوثيقة لم تبدأ بعد",
+      "fr": "la police n'a pas commencé"
+    },
+    "Insurance": {
+      "en": "Insurance",
+      "ar": "التأمين",
+      "fr": "Assurance"
+    },
+    "Line": {
+      "en": "Line",
+      "ar": "البند",
+      "fr": "Ligne"
+    },
+    "Member no.": {
+      "en": "Member no.",
+      "ar": "رقم العضوية",
+      "fr": "N° d'adhérent"
+    },
+    "Month": {
+      "en": "Month",
+      "ar": "الشهر",
+      "fr": "Mois"
+    },
+    "New approval request": {
+      "en": "New approval request",
+      "ar": "طلب موافقة جديد",
+      "fr": "Nouvelle demande d'accord"
+    },
+    "New contract": {
+      "en": "New contract",
+      "ar": "عقد جديد",
+      "fr": "Nouveau contrat"
+    },
+    "No approval": {
+      "en": "No approval",
+      "ar": "بلا موافقة",
+      "fr": "Sans accord"
+    },
+    "No approval requests yet.": {
+      "en": "No approval requests yet.",
+      "ar": "لا توجد طلبات موافقة بعد.",
+      "fr": "Aucune demande d'accord pour l'instant."
+    },
+    "No claim batches yet. Build one from a month's closed bills.": {
+      "en": "No claim batches yet. Build one from a month's closed bills.",
+      "ar": "لا توجد دفعات مطالبات بعد. أنشئ دفعة من الفواتير المغلقة لشهر.",
+      "fr": "Aucun lot pour l'instant. Constituez-en un à partir des factures clôturées d'un mois."
+    },
+    "No closed, unclaimed bills of this payer's covered patients in that month": {
+      "en": "No closed, unclaimed bills of this payer's covered patients in that month",
+      "ar": "لا توجد فواتير مغلقة غير مُطالب بها لمرضى هذه الجهة المغطين في ذلك الشهر",
+      "fr": "Aucune facture clôturée et non réclamée des patients couverts par ce payeur ce mois-là"
+    },
+    "No contracts yet.": {
+      "en": "No contracts yet.",
+      "ar": "لا توجد عقود بعد.",
+      "fr": "Aucun contrat pour l'instant."
+    },
+    "No patient policies yet.": {
+      "en": "No patient policies yet.",
+      "ar": "لا توجد وثائق تأمين للمرضى بعد.",
+      "fr": "Aucune police patient pour l'instant."
+    },
+    "No rejected lines waiting.": {
+      "en": "No rejected lines waiting.",
+      "ar": "لا توجد بنود مرفوضة بانتظار المعالجة.",
+      "fr": "Aucune ligne refusée en attente."
+    },
+    "None waiting": {
+      "en": "None waiting",
+      "ar": "لا شيء بانتظار الرد",
+      "fr": "Aucune en attente"
+    },
+    "oldest": {
+      "en": "oldest",
+      "ar": "أقدمها منذ",
+      "fr": "la plus ancienne"
+    },
+    "on the main list only": {
+      "en": "on the main list only",
+      "ar": "على القائمة الرئيسية فقط",
+      "fr": "sur la liste principale uniquement"
+    },
+    "one per closed bill": {
+      "en": "one per closed bill",
+      "ar": "واحدة لكل فاتورة مغلقة",
+      "fr": "une par facture clôturée"
+    },
+    "Only a rejected line can be resubmitted": {
+      "en": "Only a rejected line can be resubmitted",
+      "ar": "لا يُعاد رفع إلا البند المرفوض",
+      "fr": "Seule une ligne refusée peut être soumise à nouveau"
+    },
+    "pa:Approved": {
+      "en": "Approved",
+      "ar": "موافَق",
+      "fr": "Accordé"
+    },
+    "pa:Pending": {
+      "en": "Pending",
+      "ar": "بانتظار الرد",
+      "fr": "En attente"
+    },
+    "pa:Rejected": {
+      "en": "Rejected",
+      "ar": "مرفوض",
+      "fr": "Refusé"
+    },
+    "paid": {
+      "en": "paid",
+      "ar": "المدفوع",
+      "fr": "payé"
+    },
+    "Patient policies": {
+      "en": "Patient policies",
+      "ar": "وثائق المرضى",
+      "fr": "Polices des patients"
+    },
+    "Patient policy": {
+      "en": "Patient policy",
+      "ar": "وثيقة المريض",
+      "fr": "Police du patient"
+    },
+    "Patient's share": {
+      "en": "Patient's share",
+      "ar": "حصة المريض",
+      "fr": "Part du patient"
+    },
+    "Payer": {
+      "en": "Payer",
+      "ar": "الجهة",
+      "fr": "Payeur"
+    },
+    "Payer's share": {
+      "en": "Payer's share",
+      "ar": "حصة الجهة",
+      "fr": "Part du payeur"
+    },
+    "Payers & contracts": {
+      "en": "Payers & contracts",
+      "ar": "شركات التأمين والعقود",
+      "fr": "Payeurs et contrats"
+    },
+    "Period": {
+      "en": "Period",
+      "ar": "الفترة",
+      "fr": "Période"
+    },
+    "Pre-authorisations": {
+      "en": "Pre-authorisations",
+      "ar": "الموافقات المسبقة",
+      "fr": "Accords préalables"
+    },
+    "Prices live in the price lists": {
+      "en": "Prices live in the price lists",
+      "ar": "الأسعار في قوائم الأسعار",
+      "fr": "Les prix sont dans les listes de prix"
+    },
+    "Reason": {
+      "en": "Reason",
+      "ar": "سبب الرفض",
+      "fr": "Motif"
+    },
+    "Ref.": {
+      "en": "Ref.",
+      "ar": "المرجع",
+      "fr": "Réf."
+    },
+    "Rejected": {
+      "en": "Rejected",
+      "ar": "مرفوض",
+      "fr": "Refusé"
+    },
+    "Rejection": {
+      "en": "Rejection",
+      "ar": "نسبة الرفض",
+      "fr": "Refus"
+    },
+    "Rejection rate": {
+      "en": "Rejection rate",
+      "ar": "نسبة الرفض",
+      "fr": "Taux de refus"
+    },
+    "Rejections": {
+      "en": "Rejections",
+      "ar": "المرفوضات",
+      "fr": "Refus"
+    },
+    "Request": {
+      "en": "Request",
+      "ar": "الطلب",
+      "fr": "Demande"
+    },
+    "Resubmit": {
+      "en": "Resubmit",
+      "ar": "إعادة رفع",
+      "fr": "Soumettre à nouveau"
+    },
+    "Resubmit {0} in this month's batch: write the justification the payer will read.": {
+      "en": "Resubmit {0} in this month's batch: write the justification the payer will read.",
+      "ar": "إعادة رفع {0} في دفعة هذا الشهر: اكتب المبررات التي ستقرؤها الجهة.",
+      "fr": "Soumettre à nouveau {0} dans le lot de ce mois : rédigez la justification que lira le payeur."
+    },
+    "Resubmitted": {
+      "en": "Resubmitted",
+      "ar": "أُعيد رفعه",
+      "fr": "Soumis à nouveau"
+    },
+    "Search by code or name": {
+      "en": "Search by code or name",
+      "ar": "ابحث بالرمز أو الاسم",
+      "fr": "Rechercher par code ou nom"
+    },
+    "Send request": {
+      "en": "Send request",
+      "ar": "إرسال الطلب",
+      "fr": "Envoyer la demande"
+    },
+    "Service (catalogue)": {
+      "en": "Service",
+      "ar": "الخدمة",
+      "fr": "Service"
+    },
+    "Services needing the payer's approval": {
+      "en": "Services needing the payer's approval",
+      "ar": "الخدمات التي تحتاج موافقة الجهة",
+      "fr": "Services soumis à l'accord du payeur"
+    },
+    "Someone else changed this at the same moment; refresh and try again": {
+      "en": "Someone else changed this at the same moment; refresh and try again",
+      "ar": "قام مستخدم آخر بالتعديل في اللحظة نفسها؛ حدّث الصفحة وحاول مرة أخرى",
+      "fr": "Quelqu'un d'autre a modifié ceci au même moment ; actualisez et réessayez"
+    },
+    "Submit batch": {
+      "en": "Submit batch",
+      "ar": "رفع الدفعة",
+      "fr": "Transmettre le lot"
+    },
+    "Submit the batch before recording the payer's answer": {
+      "en": "Submit the batch before recording the payer's answer",
+      "ar": "ارفع الدفعة قبل تسجيل رد الجهة",
+      "fr": "Transmettez le lot avant d'enregistrer la réponse du payeur"
+    },
+    "Submit {0} to {1}? {2} claims for {3} {4}; the batch can no longer change.": {
+      "en": "Submit {0} to {1}? {2} claims for {3} {4}; the batch can no longer change.",
+      "ar": "رفع {0} إلى {1}؟ {2} مطالبة بمبلغ {3} {4}؛ لن يمكن تعديل الدفعة بعد ذلك.",
+      "fr": "Transmettre {0} à {1} ? {2} réclamations pour {3} {4} ; le lot ne pourra plus être modifié."
+    },
+    "Target below 5%": {
+      "en": "Target below 5%",
+      "ar": "الهدف أقل من 5%",
+      "fr": "Objectif : moins de 5 %"
+    },
+    "The accepted amount is 0 to what was claimed": {
+      "en": "The accepted amount is 0 to what was claimed",
+      "ar": "المبلغ المقبول من 0 حتى المبلغ المطالَب به",
+      "fr": "Le montant accepté va de 0 au montant réclamé"
+    },
+    "The amount cannot be negative": {
+      "en": "The amount cannot be negative",
+      "ar": "لا يمكن أن يكون المبلغ سالباً",
+      "fr": "Le montant ne peut pas être négatif"
+    },
+    "The batch has no claims": {
+      "en": "The batch has no claims",
+      "ar": "الدفعة لا تحتوي مطالبات",
+      "fr": "Le lot ne contient aucune réclamation"
+    },
+    "The co-pay cap cannot be negative": {
+      "en": "The co-pay cap cannot be negative",
+      "ar": "لا يمكن أن يكون حد التحمل سالباً",
+      "fr": "Le plafond de quote-part ne peut pas être négatif"
+    },
+    "The co-pay is 0 to 100%": {
+      "en": "The co-pay is 0 to 100%",
+      "ar": "التحمل من 0 إلى 100%",
+      "fr": "La quote-part va de 0 à 100 %"
+    },
+    "The contract ends before it starts": {
+      "en": "The contract ends before it starts",
+      "ar": "ينتهي العقد قبل أن يبدأ",
+      "fr": "Le contrat se termine avant de commencer"
+    },
+    "The discount is 0 to 100%": {
+      "en": "The discount is 0 to 100%",
+      "ar": "الخصم من 0 إلى 100%",
+      "fr": "La remise va de 0 à 100 %"
+    },
+    "The month's closed bills of the payer's covered patients, not claimed yet, are gathered into its draft batch.": {
+      "en": "The month's closed bills of the payer's covered patients, not claimed yet, are gathered into its draft batch.",
+      "ar": "تُجمع الفواتير المغلقة لمرضى الجهة المغطين في ذلك الشهر، غير المُطالب بها بعد، في مسودة دفعتها.",
+      "fr": "Les factures clôturées du mois des patients couverts par le payeur, pas encore réclamées, sont regroupées dans son lot brouillon."
+    },
+    "The patient is not covered: {0}": {
+      "en": "The patient is not covered: {0}",
+      "ar": "المريض غير مغطى: {0}",
+      "fr": "Le patient n'est pas couvert : {0}"
+    },
+    "The payer accepted {0}: enter the amount it pays.": {
+      "en": "The payer accepted {0}: enter the amount it pays.",
+      "ar": "قبلت الجهة {0}: أدخل المبلغ الذي ستدفعه.",
+      "fr": "Le payeur a accepté {0} : saisissez le montant qu'il paie."
+    },
+    "The payer already answered this request": {
+      "en": "The payer already answered this request",
+      "ar": "سبق أن ردت الجهة على هذا الطلب",
+      "fr": "Le payeur a déjà répondu à cette demande"
+    },
+    "The payer approved {0} for {1}: enter its approval reference.": {
+      "en": "The payer approved {0} for {1}: enter its approval reference.",
+      "ar": "وافقت الجهة على {0} لـ {1}: أدخل مرجع الموافقة.",
+      "fr": "Le payeur a accordé {0} pour {1} : saisissez sa référence d'accord."
+    },
+    "The payer rejected {0} for {1}: enter its reason.": {
+      "en": "The payer rejected {0} for {1}: enter its reason.",
+      "ar": "رفضت الجهة {0} لـ {1}: أدخل السبب.",
+      "fr": "Le payeur a refusé {0} pour {1} : saisissez son motif."
+    },
+    "The payer rejected {0}: enter its rejection code.": {
+      "en": "The payer rejected {0}: enter its rejection code.",
+      "ar": "رفضت الجهة {0}: أدخل رمز الرفض.",
+      "fr": "Le payeur a refusé {0} : saisissez son code de refus."
+    },
+    "The payer's answer for this line is already recorded": {
+      "en": "The payer's answer for this line is already recorded",
+      "ar": "رد الجهة على هذا البند مسجل بالفعل",
+      "fr": "La réponse du payeur pour cette ligne est déjà enregistrée"
+    },
+    "The policy ends before it starts": {
+      "en": "The policy ends before it starts",
+      "ar": "تنتهي الوثيقة قبل أن تبدأ",
+      "fr": "La police se termine avant de commencer"
+    },
+    "The service price": {
+      "en": "The service price",
+      "ar": "سعر الخدمة",
+      "fr": "Le prix du service"
+    },
+    "They go out flagged; the payer is likely to reject them. Request the approval before submitting, or expect to resubmit with a justification.": {
+      "en": "They go out flagged; the payer is likely to reject them. Request the approval before submitting, or expect to resubmit with a justification.",
+      "ar": "تُرفع مُعلَّمة وغالباً ما ترفضها الجهة. اطلب الموافقة قبل الرفع، أو توقّع إعادة رفعها مع المبررات.",
+      "fr": "Elles partent signalées ; le payeur risque de les refuser. Demandez l'accord avant la transmission, ou prévoyez de les soumettre à nouveau avec une justification."
+    },
+    "This batch has no claims.": {
+      "en": "This batch has no claims.",
+      "ar": "هذه الدفعة لا تحتوي مطالبات.",
+      "fr": "Ce lot ne contient aucune réclamation."
+    },
+    "This batch was already submitted": {
+      "en": "This batch was already submitted",
+      "ar": "رُفعت هذه الدفعة بالفعل",
+      "fr": "Ce lot a déjà été transmis"
+    },
+    "This field is required": {
+      "en": "This field is required",
+      "ar": "هذا الحقل مطلوب",
+      "fr": "Ce champ est obligatoire"
+    },
+    "This member number is already registered with this payer": {
+      "en": "This member number is already registered with this payer",
+      "ar": "رقم العضوية هذا مسجل بالفعل لدى هذه الجهة",
+      "fr": "Ce numéro d'adhérent est déjà enregistré auprès de ce payeur"
+    },
+    "Unknown payer kind": {
+      "en": "Unknown payer kind",
+      "ar": "نوع جهة غير معروف",
+      "fr": "Type de payeur inconnu"
+    },
+    "Write the justification the payer will read": {
+      "en": "Write the justification the payer will read",
+      "ar": "اكتب المبررات التي ستقرؤها الجهة",
+      "fr": "Rédigez la justification que lira le payeur"
+    },
+    "{0} lines need the payer's approval and have none": {
+      "en": "{0} lines need the payer's approval and have none",
+      "ar": "{0} بنود تحتاج موافقة الجهة ولا موافقة لها",
+      "fr": "{0} lignes exigent l'accord du payeur et n'en ont pas"
+    }
+  }
+}

@@ -1,0 +1,124 @@
+@using CrossBuy.Models.Context.Hospital
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Floor & room designer"].Value;
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    // Every word the designer script shows, in the page's language.
+    var words = new Dictionary<string, string>();
+    foreach (var k in new[] {
+        "Saved", "The change could not be saved", "Room", "Rooms", "bed(s)", "Draw the room", "Unsaved changes",
+        "Add to the room", "Bed", "Bathroom", "Door", "Window", "Companion bed", "Lounge", "Curtain", "Anteroom", "Sink",
+        "Selected", "Delete item", "Default drawing", "Save drawing", "Click any item on the plan to select it.",
+        "Drag an item to move it; drag its small corner to resize it.",
+        "Drag a space to move it, drag its corner to resize it, and press the pencil to draw the room inside.",
+        "No floors yet. Add the first floor to start drawing.", "This floor has no rooms yet.",
+        "Two items overlap", "This bed holds a patient and cannot be removed", "Discard unsaved changes?",
+        "X %", "Y %", "W %", "H %", "Back to the floor", "Bed code", "Room type", "No type" })
+    { words[k] = T[k].Value; }
+    foreach (var k in HospitalRoomKinds.All) { words["kind:" + k] = T["kind:" + k].Value; }
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Floor & room designer"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item text-muted"><a href="@Url.Action("Index")" class="text-muted text-hover-primary">@T["Beds & rooms"]</a></li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@T["Floor & room designer"]</li>
+            </ul>
+        </div>
+        <div class="d-flex align-items-center gap-2 gap-lg-3 d-print-none">
+            <a href="@Url.Action("Map")" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-map fs-4"></i>@T["Preview on the map"]</a>
+            <button type="button" class="btn btn-sm btn-light-primary" data-open="floorModal"><i class="ki-outline ki-plus fs-4"></i>@T["Add floor"]</button>
+            <button type="button" class="btn btn-sm btn-light-primary" data-open="wardModal"><i class="ki-outline ki-plus fs-4"></i>@T["Add ward"]</button>
+            <button type="button" class="btn btn-sm btn-primary" data-open="roomModal"><i class="ki-outline ki-plus fs-4"></i>@T["Add room"]</button>
+        </div>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice">
+            <span class="symbol symbol-45px me-5 flex-shrink-0"><span class="symbol-label"><i class="ki-outline ki-pencil fs-2x text-white"></i></span></span>
+            <div class="d-flex flex-stack flex-grow-1 flex-wrap flex-md-nowrap">
+                <div class="mb-3 mb-md-0 fw-semibold pe-5">
+                    <h4 class="text-gray-900 fw-bold mb-1">@T["The admin draws the building"]</h4>
+                    <div class="fs-6 text-gray-700">@T["Floors, rooms, their place, size and contents are drawn here, and every hospital screen reads the same drawing."]</div>
+                </div>
+                <span class="badge hp-badge fs-7 fw-bold px-4 py-2 flex-shrink-0">@T["No developer"]</span>
+            </div>
+        </div>
+        <div class="card"><div class="card-body" id="designerBody"></div></div>
+    </div></div>
+</div>
+
+<div class="modal fade" id="floorModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-600px"><div class="modal-content">
+    <div class="modal-header"><h2 class="fw-bold m-0">@T["Add floor"]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <form class="modal-body py-8 px-lg-10" data-form="floor"><div class="row g-5">
+        <div class="col-md-4"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Code"]</label><input name="code" class="form-control form-control-solid" maxlength="40" dir="ltr" /></div>
+        <div class="col-md-8"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Order"]</label><input name="sortOrder" type="number" value="0" class="form-control form-control-solid" /></div>
+        <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Name (Arabic)"]</label><input name="name" class="form-control form-control-solid" dir="rtl" /></div>
+        <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Name (English)"]</label><input name="nameEn" class="form-control form-control-solid" dir="ltr" /></div>
+    </div></form>
+    <div class="modal-footer flex-center"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-submit="floor">@T["Save"]</button></div>
+</div></div></div>
+
+<div class="modal fade" id="wardModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-600px"><div class="modal-content">
+    <div class="modal-header"><h2 class="fw-bold m-0">@T["Add ward"]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <form class="modal-body py-8 px-lg-10" data-form="ward"><div class="row g-5">
+        <div class="col-12 d-none" data-empty="floors"><div class="notice d-flex align-items-center rounded border border-primary border-dashed bg-light-primary p-4 gap-3"><i class="ki-outline ki-information-5 fs-2x text-primary"></i><div class="flex-grow-1 fs-7 text-gray-800 fw-semibold">@T["No floors yet. Add the first floor to start drawing."]</div><button type="button" class="btn btn-sm btn-primary flex-shrink-0" data-switch="floorModal"><i class="ki-outline ki-plus fs-4"></i>@T["Add floor"]</button></div></div>
+        <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Floor"]</label><select name="floorId" class="form-select form-select-solid" data-hp-select2 data-placeholder="@T["Choose a floor"]" data-floors></select></div>
+        <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Code"]</label><input name="code" class="form-control form-control-solid" maxlength="40" dir="ltr" /></div>
+        <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Name (Arabic)"]</label><input name="name" class="form-control form-control-solid" dir="rtl" /></div>
+        <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Name (English)"]</label><input name="nameEn" class="form-control form-control-solid" dir="ltr" /></div>
+        <div class="col-12"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Patients"]</label>
+            <select name="sexPolicy" class="form-select form-select-solid" data-hp-select2>
+                @foreach (var p in HospitalSexPolicy.All) { <option value="@p">@T[p]</option> }
+            </select></div>
+    </div></form>
+    <div class="modal-footer flex-center"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-submit="ward">@T["Save"]</button></div>
+</div></div></div>
+
+<div class="modal fade" id="roomModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-650px"><div class="modal-content">
+    <div class="modal-header"><h2 class="fw-bold m-0">@T["Add room"]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <form class="modal-body py-8 px-lg-10" data-form="room"><div class="row g-5">
+        <div class="col-12 d-none" data-empty="floors"><div class="notice d-flex align-items-center rounded border border-primary border-dashed bg-light-primary p-4 gap-3"><i class="ki-outline ki-information-5 fs-2x text-primary"></i><div class="flex-grow-1 fs-7 text-gray-800 fw-semibold">@T["No floors yet. Add the first floor to start drawing."]</div><button type="button" class="btn btn-sm btn-primary flex-shrink-0" data-switch="floorModal"><i class="ki-outline ki-plus fs-4"></i>@T["Add floor"]</button></div></div>
+        <div class="col-12 d-none" data-empty="types"><div class="notice d-flex align-items-center rounded border border-primary border-dashed bg-light-primary p-4 gap-3"><i class="ki-outline ki-information-5 fs-2x text-primary"></i><div class="flex-grow-1 fs-7 text-gray-800 fw-semibold">@T["No room types yet. Load the standard types, then edit them from Room types."]</div><button type="button" class="btn btn-sm btn-primary flex-shrink-0" data-seed-types><i class="ki-outline ki-arrow-down fs-4"></i>@T["Load standard types"]</button></div></div>
+        <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Floor"]</label><select name="floorId" class="form-select form-select-solid" data-hp-select2 data-placeholder="@T["Choose a floor"]" data-floors></select></div>
+        <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Ward"]</label><select name="wardId" class="form-select form-select-solid" data-hp-select2 data-placeholder="@T["Without a ward"]" data-allow-clear="true" data-wards></select></div>
+        <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Kind of space"]</label>
+            <select name="kind" class="form-select form-select-solid" data-hp-select2>
+                @foreach (var k in HospitalRoomKinds.All) { <option value="@k">@T["kind:" + k]</option> }
+            </select></div>
+        <div class="col-md-6" data-type-row><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Room type"]</label><select name="roomTypeId" class="form-select form-select-solid" data-hp-select2 data-placeholder="@T["Choose the room type"]" data-types></select></div>
+        <div class="col-md-4"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Room number"]</label><input name="number" class="form-control form-control-solid" maxlength="40" dir="ltr" /></div>
+        <div class="col-md-4"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Name (Arabic)"]</label><input name="name" class="form-control form-control-solid" dir="rtl" /></div>
+        <div class="col-md-4"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Name (English)"]</label><input name="nameEn" class="form-control form-control-solid" dir="ltr" /></div>
+        <div class="col-12 text-muted fs-7">@T["Beds are created from the type; the room appears on its floor for you to place, then draw inside."]</div>
+    </div></form>
+    <div class="modal-footer flex-center"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-submit="room">@T["Create"]</button></div>
+</div></div></div>
+
+@section Scripts {
+    <partial name="_HospitalScripts" />
+    <script>
+        window.HospitalDesigner = {
+            isAr: @Json.Serialize(isAr),
+            words: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(words)),
+            urls: {
+                building: @Json.Serialize(Url.Action("Building")),
+                floor: @Json.Serialize(Url.Action("SaveFloor")),
+                ward: @Json.Serialize(Url.Action("SaveWard")),
+                room: @Json.Serialize(Url.Action("CreateRoom")),
+                plan: @Json.Serialize(Url.Action("SaveFloorPlan", new { id = 0 })),
+                layout: @Json.Serialize(Url.Action("SaveRoomLayout", new { id = 0 })),
+                roomPage: @Json.Serialize(Url.Action("Room", new { id = 0 })),
+                seedTypes: @Json.Serialize(Url.Action("SeedDefaultRoomTypes"))
+            },
+            bedKinds: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(new[] { HospitalRoomKinds.Ward, HospitalRoomKinds.Icu }))
+        };
+    </script>
+    <script src="~/js/hospital/hospital-designer.js" asp-append-version="true"></script>
+}

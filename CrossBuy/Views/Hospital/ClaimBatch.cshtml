@@ -1,0 +1,169 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model HospitalBatchView
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    var b = Model.Row.Batch;
+    ViewData["Title"] = b.BatchNo;
+    string? cur = Model.Row.Currency ?? ViewBag.Currency as string;   // the contract's currency when it has its own
+    bool canBill = ViewBag.CanBill == true;
+    bool draft = b.Status == HospitalClaimBatchStatus.Draft;
+    string Money(decimal v) => v.ToString("N3", System.Globalization.CultureInfo.InvariantCulture);
+    string Plain(decimal v) => v.ToString("0.000", System.Globalization.CultureInfo.InvariantCulture);
+    string BatchBadge(string s) => s switch { HospitalClaimBatchStatus.Paid => "success", HospitalClaimBatchStatus.Partial => "info", HospitalClaimBatchStatus.Rejected => "danger", HospitalClaimBatchStatus.Submitted => "primary", _ => "secondary" };
+    string LineBadge(string s) => s switch { HospitalClaimLineStatus.Accepted => "success", HospitalClaimLineStatus.Rejected => "danger", HospitalClaimLineStatus.Resubmitted => "info", _ => "primary" };
+    int flagged = Model.Claims.Sum(c => c.Lines.Count(l => l.MissingPreauth));
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0 d-flex align-items-center gap-3"><span class="hp-num">@b.BatchNo</span> <span class="badge badge-light-@BatchBadge(b.Status) fs-7">@T["cb:" + b.Status]</span></h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item"><a href="@Url.Action("Insurance", new { tab = "cl" })" class="text-muted text-hover-primary">@T["Approvals & claims"]</a></li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@DisplayName.Of(Model.Row.Payer, Model.Row.PayerEn) · <span class="hp-num ms-1">@b.Period</span></li>
+            </ul>
+        </div>
+        <div class="d-flex align-items-center gap-2 gap-lg-3 d-print-none">
+            @if (canBill && draft && Model.Claims.Count > 0)
+            {
+                <button type="button" class="btn btn-sm btn-primary" data-submit-batch data-ask="@string.Format(T["Submit {0} to {1}? {2} claims for {3} {4}; the batch can no longer change."].Value, b.BatchNo, DisplayName.Of(Model.Row.Payer, Model.Row.PayerEn), Model.Row.Claims, Money(Model.Row.Amount), cur)"><i class="ki-outline ki-send fs-4"></i>@T["Submit batch"]</button>
+            }
+        </div>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="row g-5 g-xl-8 mb-5">
+            <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
+                <div class="text-muted fw-semibold fs-7 mb-1">@T["Claims"]</div><div class="fs-2hx fw-bold hp-num text-gray-900">@Model.Row.Claims</div>
+                <div class="text-muted fs-8 mt-1">@T["one per closed bill"]</div></div></div></div>
+            <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
+                <div class="text-muted fw-semibold fs-7 mb-1">@T["Claimed from the payer"]</div><div class="fs-2hx fw-bold hp-num text-gray-900">@Money(Model.Row.Amount)</div>
+                <div class="text-muted fs-8 mt-1">@cur</div></div></div></div>
+            <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
+                <div class="text-muted fw-semibold fs-7 mb-1">@T["Accepted"]</div><div class="fs-2hx fw-bold hp-num text-success">@(Model.Row.Accepted > 0 ? Money(Model.Row.Accepted) : "—")</div>
+                <div class="text-muted fs-8 mt-1">@cur</div></div></div></div>
+            <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
+                <div class="text-muted fw-semibold fs-7 mb-1">@T["Rejected"]</div><div class="fs-2hx fw-bold hp-num @(Model.Row.Rejected > 0 ? "text-danger" : "text-gray-900")">@(Model.Row.Rejected > 0 ? Money(Model.Row.Rejected) : "—")</div>
+                <div class="text-muted fs-8 mt-1">@cur</div></div></div></div>
+        </div>
+
+        @if (flagged > 0)
+        {
+            <div class="notice d-flex rounded border border-dashed p-6 mb-5 bg-light-danger border-danger">
+                <i class="ki-outline ki-shield-cross fs-2tx text-danger me-4"></i>
+                <div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@string.Format(T["{0} lines need the payer's approval and have none"].Value, flagged)</h4>
+                    <div class="fs-6 text-gray-700">@T["They go out flagged; the payer is likely to reject them. Request the approval before submitting, or expect to resubmit with a justification."]</div></div>
+            </div>
+        }
+
+        @if (Model.Claims.Count == 0) { <div class="card"><div class="card-body text-center text-muted py-15">@T["This batch has no claims."]</div></div> }
+        @foreach (var c in Model.Claims)
+        {
+            <div class="card mb-5">
+                <div class="card-header border-0 pt-5">
+                    <div class="card-title align-items-start flex-column m-0">
+                        <span class="card-label fw-bold text-gray-900 fs-5">@DisplayName.Of(c.PatientName, c.PatientNameEn) <span class="text-muted fs-7 hp-num ms-2">@c.Mrn</span></span>
+                        <span class="text-muted mt-1 fw-semibold fs-7">@T["Bill"] <a href="@Url.Action("Bill", new { id = c.Claim.BillId })" class="hp-num fw-bold">@c.BillNo</a> · @T["Member no."] <span class="hp-num">@c.PolicyNo</span></span>
+                    </div>
+                    <div class="card-toolbar gap-6 fs-7">
+                        <div class="text-end"><div class="text-muted">@T["Bill total"]</div><div class="fw-bold hp-num text-gray-900">@Money(c.Claim.Gross)</div></div>
+                        <div class="text-end"><div class="text-muted">@T["Patient's share"]</div><div class="fw-bold hp-num text-gray-900">@Money(c.Claim.PatientShare)</div></div>
+                        <div class="text-end"><div class="text-muted">@T["Payer's share"]</div><div class="fw-bold hp-num" style="color:var(--cb-brand, #3A5795)">@Money(c.Claim.InsurerShare)</div></div>
+                    </div>
+                </div>
+                <div class="card-body pt-2">
+                    <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-2 mb-0">
+                        <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0">
+                            <th class="w-100px">@T["Code"]</th><th>@T["Line"]</th><th>@T["Category"]</th><th class="text-end">@T["Amount"]</th><th class="text-end">@T["Claimed"]</th><th>@T["Status"]</th><th class="text-end w-200px"></th>
+                        </tr></thead>
+                        <tbody class="fw-semibold text-gray-700">
+                            @foreach (var l in c.Lines)
+                            {
+                                var what = DisplayName.Of(l.Description, l.DescriptionEn);
+                                <tr>
+                                    <td class="hp-num">@l.Code</td>
+                                    <td><div class="text-gray-800">@what</div>
+                                        @if (l.MissingPreauth) {<span class="badge badge-light-danger fs-9">@T["No approval"]</span>}
+                                        @if (l.ResubmitsLineId != null) {<span class="badge badge-light-info fs-9">@T["Resubmitted"]</span>}
+                                        @if (l.Justification != null) {<div class="text-muted fs-8">@l.Justification</div>}
+                                        @if (l.RejectCode != null) {<div class="fs-8"><span class="badge hp-code fs-9 hp-num">@l.RejectCode</span> <span class="text-danger">@l.RejectReason</span></div>}</td>
+                                    <td>@T["cat:" + l.Category]</td>
+                                    <td class="text-end hp-num">@Money(l.Amount)</td>
+                                    <td class="text-end hp-num fw-bold">@Money(l.InsurerAmount)@if (l.Status == HospitalClaimLineStatus.Accepted && l.AcceptedAmount != l.InsurerAmount) {<div class="text-success fs-8">@T["paid"] @Money(l.AcceptedAmount ?? 0)</div>}</td>
+                                    <td><span class="badge badge-light-@LineBadge(l.Status) fs-8">@T["cl:" + l.Status]</span></td>
+                                    <td class="text-end">
+                                        @if (canBill && !draft && l.Status == HospitalClaimLineStatus.Pending)
+                                        {
+                                            <button type="button" class="btn btn-sm btn-light-success py-1 px-3" data-accept="@l.ID" data-full="@Plain(l.InsurerAmount)" data-ask="@string.Format(T["The payer accepted {0}: enter the amount it pays."].Value, what)">@T["Accepted"]</button>
+                                            <button type="button" class="btn btn-sm btn-light-danger py-1 px-3" data-reject="@l.ID" data-ask="@string.Format(T["The payer rejected {0}: enter its rejection code."].Value, what)" data-ask2="@T["And the payer's reason:"]">@T["Rejected"]</button>
+                                        }
+                                        else if (canBill && l.Status == HospitalClaimLineStatus.Rejected)
+                                        {
+                                            <button type="button" class="btn btn-sm btn-light-primary py-1 px-3" data-resubmit="@l.ID" data-ask="@string.Format(T["Resubmit {0} in this month's batch: write the justification the payer will read."].Value, what)"><i class="ki-outline ki-arrow-circle-right fs-5"></i>@T["Resubmit"]</button>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table></div>
+                </div>
+            </div>
+        }
+    </div></div>
+</div>
+
+@section Scripts {
+    <partial name="_HospitalPrompt" />
+    <script>
+        (function () {
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value) };
+            var root = @Json.Serialize(Url.Action("Insurance")), self = @Json.Serialize(Url.Action("ClaimBatch", new { id = b.ID })), batch = @Json.Serialize(Url.Action("ClaimBatch", new { id = 0 }));
+            function toast(k, m) { if (window.toastr) toastr[k](m); }
+            function post(url, body) {
+                return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(body || {}) })
+                    .then(function (r) { return r.json().catch(function () { return { ok: false }; }); });
+            }
+            // In place, never a reload: the page is rendered again and its toolbar and content swapped.
+            function swap() {
+                return fetch(self, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.text(); }).then(function (html) {
+                    var doc = new DOMParser().parseFromString(html, 'text/html');
+                    ['kt_app_content', 'kt_app_toolbar'].forEach(function (id) { var f = doc.getElementById(id); if (f) document.getElementById(id).innerHTML = f.innerHTML; });
+                });
+            }
+            function done(t, after) { return function (res) { t.disabled = false; if (!res.ok) { toast('error', res.error || W.failed); return; } toast('success', W.saved); (after || swap)(res); }; }
+            document.addEventListener('click', function (e) {
+                var t = e.target.closest('[data-submit-batch],[data-accept],[data-reject],[data-resubmit]'); if (!t) return;
+                var ask = t.getAttribute('data-ask');
+                if (t.hasAttribute('data-submit-batch')) {
+                    cbConfirm(ask).then(function (ok) { if (!ok) return; t.disabled = true; post(root + '/Batch/' + @b.ID + '/Submit').then(done(t)); });
+                } else if (t.hasAttribute('data-accept')) {
+                    cbPrompt(ask, { value: t.getAttribute('data-full') }).then(function (v) {
+                        if (v == null) return; t.disabled = true;
+                        post(root + '/Line/' + t.getAttribute('data-accept') + '/Response', { accept: true, acceptedAmount: Number(v) }).then(done(t));
+                    });
+                } else if (t.hasAttribute('data-reject')) {
+                    cbPrompt(ask, { kind: 'danger' }).then(function (code) {
+                        if (code == null) return;
+                        return cbPrompt(t.getAttribute('data-ask2'), { kind: 'danger', textarea: true }).then(function (reason) {
+                            if (reason == null) return; t.disabled = true;
+                            post(root + '/Line/' + t.getAttribute('data-reject') + '/Response', { accept: false, code: code, reason: reason }).then(done(t));
+                        });
+                    });
+                } else {
+                    cbPrompt(ask, { textarea: true }).then(function (v) {
+                        if (v == null) return; t.disabled = true;
+                        // the line goes into this month's draft batch: open it
+                        post(root + '/Line/' + t.getAttribute('data-resubmit') + '/Resubmit', { justification: v }).then(done(t, function (res) { location.href = batch.replace(/0$/, res.id); }));
+                    });
+                }
+            });
+        })();
+    </script>
+}

@@ -551,6 +551,27 @@ namespace CrossBuy.Models.Context
 					.OnDelete(DeleteBehavior.Restrict);
 			});
 
+			// Hospital facility (floors, wards, rooms, beds, room types). Mapped in the module's own file.
+			Hospital.HospitalFacilityModel.Configure(builder);
+			// Hospital patients (H2): the patient index and the record-access log.
+			Hospital.HospitalPatientsModel.Configure(builder);
+			// Hospital accommodation (H3): admissions and bed stays.
+			Hospital.HospitalAdmissionsModel.Configure(builder);
+			// Hospital outpatient (H4): departments, practitioners, appointments.
+			Hospital.HospitalOutpatientModel.Configure(builder);
+			// Hospital consultation (H5): encounters, diagnoses, prescriptions, the code catalogue.
+			Hospital.HospitalConsultationModel.Configure(builder);
+			// Hospital billing (H6): catalogue, settings, bills, orders, payments, cashier shifts.
+			Hospital.HospitalBillingModel.Configure(builder);
+			// Hospital price lists (H7): lists, their lines, mapped inventory categories, public prices.
+			Hospital.HospitalPricingModel.Configure(builder);
+			// Hospital laboratory (H8): test setup, analytes, lab orders and results.
+			Hospital.HospitalLabModel.Configure(builder);
+			Hospital.HospitalRadiologyModel.Configure(builder);
+			Hospital.HospitalPharmacyModel.Configure(builder);
+			Hospital.HospitalInsuranceModel.Configure(builder);
+			Hospital.HospitalEstimatesModel.Configure(builder);
+
 			CrossBuy.BL.Platform.CompanyQueryFilters.Apply(builder, this);
 		}
 
@@ -611,6 +632,52 @@ namespace CrossBuy.Models.Context
         public DbSet<Calendar.CalendarEventSchedule> CalendarEventSchedules { get; set; }
         public DbSet<Calendar.CalendarResource> CalendarResources { get; set; }
         public DbSet<Calendar.CalendarEventResource> CalendarEventResources { get; set; }
+        // Hospital facility — the building as the admin draws it (deploy/sql/hospital_h1_facility.sql).
+        public DbSet<Hospital.HospitalRoomType> HospitalRoomTypes { get; set; }
+        public DbSet<Hospital.HospitalFloor> HospitalFloors { get; set; }
+        public DbSet<Hospital.HospitalWard> HospitalWards { get; set; }
+        public DbSet<Hospital.HospitalRoom> HospitalRooms { get; set; }
+        public DbSet<Hospital.HospitalBed> HospitalBeds { get; set; }
+        // Hospital patients (deploy/sql/hospital_h2_patients.sql).
+        public DbSet<Hospital.HospitalPatient> HospitalPatients { get; set; }
+        public DbSet<Hospital.HospitalPatientAccessLog> HospitalPatientAccessLogs { get; set; }
+        // Hospital accommodation (deploy/sql/hospital_h3_admissions.sql).
+        public DbSet<Hospital.HospitalAdmission> HospitalAdmissions { get; set; }
+        public DbSet<Hospital.HospitalBedStay> HospitalBedStays { get; set; }
+        // Hospital outpatient (deploy/sql/hospital_h4_outpatient.sql).
+        public DbSet<Hospital.HospitalDepartment> HospitalDepartments { get; set; }
+        public DbSet<Hospital.HospitalPractitioner> HospitalPractitioners { get; set; }
+        public DbSet<Hospital.HospitalAppointment> HospitalAppointments { get; set; }
+        // Hospital consultation (deploy/sql/hospital_h5_consultation.sql).
+        public DbSet<Hospital.HospitalDiagnosisCode> HospitalDiagnosisCodes { get; set; }
+        public DbSet<Hospital.HospitalEncounter> HospitalEncounters { get; set; }
+        public DbSet<Hospital.HospitalEncounterDiagnosis> HospitalEncounterDiagnoses { get; set; }
+        public DbSet<Hospital.HospitalPrescriptionLine> HospitalPrescriptionLines { get; set; }
+        // Hospital billing (deploy/sql/hospital_h6_billing.sql).
+        public DbSet<Hospital.HospitalBillingSettings> HospitalBillingSettings { get; set; }
+        public DbSet<Hospital.HospitalService> HospitalServices { get; set; }
+        public DbSet<Hospital.HospitalEncounterOrder> HospitalEncounterOrders { get; set; }
+        public DbSet<Hospital.HospitalBill> HospitalBills { get; set; }
+        public DbSet<Hospital.HospitalBillLine> HospitalBillLines { get; set; }
+        public DbSet<Hospital.HospitalCashierShift> HospitalCashierShifts { get; set; }
+        // Hospital price lists (deploy/sql/hospital_h7_pricelists.sql).
+        public DbSet<Hospital.HospitalPriceList> HospitalPriceLists { get; set; }
+        public DbSet<Hospital.HospitalPriceListLine> HospitalPriceListLines { get; set; }
+        public DbSet<Hospital.HospitalItemCategory> HospitalItemCategories { get; set; }
+        public DbSet<Hospital.HospitalItemPublicPrice> HospitalItemPublicPrices { get; set; }
+        // Hospital laboratory (deploy/sql/hospital_h8_lab.sql).
+        public DbSet<Hospital.HospitalLabTest> HospitalLabTests { get; set; }
+        public DbSet<Hospital.HospitalLabAnalyte> HospitalLabAnalytes { get; set; }
+        public DbSet<Hospital.HospitalLabOrder> HospitalLabOrders { get; set; }
+        public DbSet<Hospital.HospitalLabCriticalAlert> HospitalLabCriticalAlerts { get; set; }
+        public DbSet<Hospital.HospitalRadExam> HospitalRadExams { get; set; }
+        public DbSet<Hospital.HospitalRadRoom> HospitalRadRooms { get; set; }
+        public DbSet<Hospital.HospitalRadOrder> HospitalRadOrders { get; set; }
+        public DbSet<Hospital.HospitalPharmacySettings> HospitalPharmacySettings { get; set; }
+        public DbSet<Hospital.HospitalDispense> HospitalDispenses { get; set; }
+        public DbSet<Hospital.HospitalDispenseLine> HospitalDispenseLines { get; set; }
+        public DbSet<Hospital.HospitalLabResult> HospitalLabResults { get; set; }
+        public DbSet<Hospital.HospitalPayment> HospitalPayments { get; set; }
         public DbSet<Library.LibraryItem> LibraryItems { get; set; }
         public DbSet<Comm.Announcement> Announcements { get; set; }
         public DbSet<Comm.AnnouncementRead> AnnouncementReads { get; set; }

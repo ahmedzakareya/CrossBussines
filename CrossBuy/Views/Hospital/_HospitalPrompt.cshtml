@@ -1,0 +1,24 @@
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> PSR
+@*
+    cbConfirm's twin for a step that needs one value typed (an approval reference, a rejection reason, a
+    justification): the same house SweetAlert, never the browser's prompt(). window.cbPrompt(text,
+    { kind, title, ok, placeholder, textarea, value }) resolves to the trimmed text, or null when cancelled.
+    The value is required: the dialog refuses an empty answer.
+*@
+<script>
+(function () {
+    if (window.cbPrompt) return;
+    var okText = @Json.Serialize(PSR["Confirm"].Value), cancelText = @Json.Serialize(PSR["Cancel"].Value), need = @Json.Serialize(PSR["This field is required"].Value);
+    window.cbPrompt = function (text, o) {
+        o = o || {};
+        if (!window.Swal) return Promise.resolve(null);
+        return Swal.fire({
+            title: o.title || '', text: text, input: o.textarea ? 'textarea' : 'text', inputValue: o.value || '', inputPlaceholder: o.placeholder || '',
+            icon: o.kind === 'danger' ? 'warning' : 'question', iconColor: o.kind === 'danger' ? '#DC2626' : '#3A5795',
+            showCancelButton: true, buttonsStyling: false, confirmButtonText: o.ok || okText, cancelButtonText: cancelText,
+            inputValidator: function (v) { return v && v.trim() ? null : need; },
+            customClass: { container: 'cb-confirm-top', input: 'form-control form-control-solid', confirmButton: 'btn fw-bold ' + (o.kind === 'danger' ? 'btn-danger' : 'btn-primary'), cancelButton: 'btn fw-bold btn-light' }
+        }).then(function (r) { return r.isConfirmed ? String(r.value).trim() : null; });
+    };
+})();
+</script>

@@ -2,8 +2,8 @@
   "schema": 1,
   "generatedBy": "engineering/generate-authorization-baseline.py",
   "frozenBaseline": {
-    "mutating": 481,
-    "attributeProtected": 170,
+    "mutating": 566,
+    "attributeProtected": 255,
     "inBodyProtected": 217,
     "anonymousByDesign": 1,
     "gaps": 93
@@ -1518,6 +1518,25 @@
       "gapEntriesAdded": 0,
       "gapEntriesRemoved": 0,
       "note": "Full real-source analyzer measured existing protected endpoints that the earlier concern-only 472 header omitted. This records implementation already present, not new endpoint creation. The gap ID set equals the existing 93 baseline entries exactly; CBA001/CBA004 no-new-debt tests retain their assertions."
+    },
+    {
+      "stage": "Hospital industry pack H1-H12 (Hospital implementation / TAB-1 reconciliation, 2026-11-03)",
+      "previous": {
+        "mutating": 481,
+        "attributeProtected": 170,
+        "inBodyProtected": 217,
+        "anonymousByDesign": 1,
+        "gaps": 93
+      },
+      "measured": {
+        "mutating": 566,
+        "attributeProtected": 255,
+        "inBodyProtected": 217,
+        "anonymousByDesign": 1,
+        "gaps": 93
+      },
+      "controllers": 57,
+      "note": "+85 mutating endpoints, ALL attribute-protected: attributeProtected 170 -> 255 absorbs the whole increase and the debt is UNCHANGED at 93, gap set identical id for id. No baseline entry added, removed or re-blessed; no CBA diagnostic suppressed. Every new endpoint carries [HospitalPerm], a real ModulePermAttributeBase action filter already on the authorization surface. Measured by the analyzer on an export of the staged commit tree, not on the shared working tree."
     }
   ]
 }

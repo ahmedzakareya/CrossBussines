@@ -1,0 +1,54 @@
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@{
+    // The accommodation window (admit / transfer) and the bed window, shared by the bed board, the room
+    // page and the patient file. hospital-admit.js drives both; every rule is checked again on the server.
+    var words = new Dictionary<string, string>();
+    foreach (var k in new[] {
+        "Accommodate a patient", "Transfer the patient", "Patient", "Search by name, MRN or ID", "Suitable rooms with a free bed",
+        "Excluded automatically: shared rooms of the other sex and wards for the other sex", "Pick the bed on the plan",
+        "Room", "Bed", "Daily rate", "per day", "bed(s) free", "Diagnosis", "Confirm accommodation", "Confirm transfer", "Cancel",
+        "No suitable bed", "Every suitable room is full; choose another patient or free a bed first.", "Already admitted",
+        "This patient is already in room {0}, bed {1}.", "Open file", "Transfer", "Discharge", "Close", "Accommodate a patient here",
+        "Discharge this patient? The bed goes to cleaning.", "Admitted", "Allergy", "Saved", "The change could not be saved",
+        "Choose a patient first", "Choose a bed on the plan", "y", "Male", "Female", "Since", "Ward", "Vacant", "Occupied", "Cleaning", "Reserved", "Blocked",
+        "This bed is not available to accommodate." })
+    { words[k] = T[k].Value; }
+}
+@Html.AntiForgeryToken()
+<div class="modal fade" id="admitModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-1000px"><div class="modal-content">
+    <div class="modal-header"><h2 class="fw-bold m-0" data-admit-title>@T["Accommodate a patient"]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="modal-body py-8 px-lg-10">
+        <div class="mb-5" data-admit-picker>
+            <label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Patient"]</label>
+            <select class="form-select form-select-solid" data-no-select2 data-admit-patient data-placeholder="@T["Search by name, MRN or ID"]"></select>
+        </div>
+        <div data-admit-body></div>
+    </div>
+    <div class="modal-footer flex-center">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button>
+        <button type="button" class="btn btn-primary" data-admit-confirm disabled><i class="ki-outline ki-entrance-left fs-4"></i><span>@T["Confirm accommodation"]</span></button>
+    </div>
+</div></div></div>
+
+<div class="modal fade" id="bedModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-750px"><div class="modal-content">
+    <div class="modal-header"><h2 class="fw-bold m-0" data-bed-title></h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="modal-body py-8 px-lg-10" data-bed-body></div>
+    <div class="modal-footer flex-center" data-bed-footer></div>
+</div></div></div>
+
+<script>
+    window.HospitalAdmitConfig = {
+        isAr: @Json.Serialize(System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar"),
+        words: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(words)),
+        urls: {
+            building: @Json.Serialize(Url.Action("Building", "Hospital")),
+            search: @Json.Serialize(Url.Action("SearchPatients", "Hospital")),
+            suitable: @Json.Serialize(Url.Action("SuitableBeds", "Hospital")),
+            admit: @Json.Serialize(Url.Action("Admit", "Hospital")),
+            transfer: @Json.Serialize(Url.Action("Transfer", "Hospital", new { id = 0 })),
+            discharge: @Json.Serialize(Url.Action("Discharge", "Hospital", new { id = 0 })),
+            patient: @Json.Serialize(Url.Action("Patient", "Hospital", new { id = 0 }))
+        }
+    };
+</script>
+<script src="~/js/hospital/hospital-admit.js" asp-append-version="true"></script>

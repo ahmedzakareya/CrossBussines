@@ -473,6 +473,9 @@ namespace CrossBuy.Tests
                     "StockTransfer", "StockCount", "StockWriteOff", "LandedCost",
                     "SalesReturn", "PurchaseReturn", "Receipt", "Payment",
                     "Customer", "ManufWorkOrder", "PosOrder", "Employee", "Project", "Item",
+                    // Added by the hospital pack (H1): a room can be linked from a task. The patient (H2) is
+                    // deliberately NOT in the picker - a patient's identity is clinical data.
+                    "HospitalRoom",
                 },
                 keys);
 

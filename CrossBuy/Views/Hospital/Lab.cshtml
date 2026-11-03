@@ -1,0 +1,158 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model IReadOnlyList<HospitalLabRow>
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Laboratory (module)"].Value;
+    var stats = (HospitalLabStats)ViewBag.Stats;
+    var critical = (ViewBag.Critical as List<HospitalLabRow>) ?? new();
+    string? status = ViewBag.Status as string;
+    bool canLab = ViewBag.CanLab == true, canManage = ViewBag.CanManage == true;
+    string Prio(string p) => p == HospitalLabPriority.Stat ? "<span class=\"badge badge-danger fs-8\">STAT</span>" : p == HospitalLabPriority.Urgent ? "<span class=\"badge badge-light-primary fs-8\">" + T["Urgent"].Value + "</span>" : "<span class=\"badge badge-light fs-8\">" + T["Routine"].Value + "</span>";
+    string St(string s) => s switch { "Ordered" => "secondary", "Collected" => "info", "Received" => "info", "Resulted" => "primary", _ => "success" };
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Laboratory (module)"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item text-muted">@T["Diagnostics"]</li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@T["Laboratory (module)"]</li>
+            </ul>
+        </div>
+        <div class="d-flex align-items-center gap-2 gap-lg-3 d-print-none">
+            <a href="@Url.Action("LabTests")" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-setting-3 fs-4"></i>@T["Lab tests & analytes"]</a>
+        </div>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="row g-5 g-xl-8 mb-5">
+            @foreach (var s in new[] {
+                (T["Orders today"].Value, stats.OrdersToday.ToString(), "", "ki-flask", "text-gray-900"),
+                (T["Average turnaround"].Value, stats.AvgTurnaroundMinutes?.ToString() ?? "—", T["minutes, order to verification, today"].Value, "ki-time", "text-gray-900"),
+                (T["Awaiting verification"].Value, stats.AwaitingVerification.ToString(), T["Entered, not yet verified"].Value, "ki-shield-search", stats.AwaitingVerification > 0 ? "text-primary" : "text-gray-900"),
+                (T["Critical values not yet told"].Value, stats.OpenCriticals.ToString(), T["The doctor must be told"].Value, "ki-notification-status", stats.OpenCriticals > 0 ? "text-danger" : "text-gray-900") })
+            {
+                <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
+                    <div class="d-flex flex-stack"><div class="text-muted fw-semibold fs-7 mb-1">@s.Item1</div><i class="ki-outline @s.Item4 fs-2 text-gray-400"></i></div>
+                    <div class="fs-2hx fw-bold hp-num @s.Item5">@s.Item2</div>
+                    <div class="text-muted fs-8 mt-1">@(string.IsNullOrEmpty(s.Item3) ? " " : s.Item3)</div>
+                </div></div></div>
+            }
+        </div>
+
+        @foreach (var c in critical)
+        {
+            <div class="notice d-flex rounded border border-dashed p-6 mb-5 bg-light-danger border-danger">
+                <span class="symbol symbol-45px me-5 flex-shrink-0"><span class="symbol-label bg-danger"><i class="ki-outline ki-notification-status fs-2x text-white"></i></span></span>
+                <div class="d-flex flex-stack flex-grow-1 flex-wrap flex-md-nowrap">
+                    <div class="mb-3 mb-md-0 fw-semibold pe-5">
+                        <h4 class="text-gray-900 fw-bold mb-1">@T["Critical value:"] @DisplayName.Of(c.Name, c.NameEn)</h4>
+                        <div class="fs-6 text-gray-700">@DisplayName.Of(c.PatientName, c.PatientNameEn) · <span class="hp-num">@c.Mrn</span>@if (c.From != null) {<text> · @DisplayName.Of(c.From, c.FromEn)</text>} — @T["the doctor has not been recorded as told yet."]</div>
+                    </div>
+                    <a href="@Url.Action("LabCritical", new { id = c.Id })" class="btn btn-sm btn-danger flex-shrink-0"><i class="ki-outline ki-notification-status fs-5"></i>@T["Notify the doctor"]</a>
+                </div>
+            </div>
+        }
+
+        <div class="row g-5 g-xl-8 mb-5">
+            <div class="col-12"><div class="card"><div class="card-body py-5">
+                <div class="d-flex flex-wrap gap-3 justify-content-between">
+                    @foreach (var st in HospitalLabStatus.All)
+                    {
+                        <a href="@Url.Action("Lab", new { status = st })" class="d-flex align-items-center gap-3 flex-grow-1 rounded p-3 @(status == st ? "bg-light-primary" : "")" style="min-width:150px">
+                            <span class="symbol symbol-40px"><span class="symbol-label fw-bold fs-5 hp-num @(st == HospitalLabStatus.Verified ? "bg-light-success text-success" : "bg-light-primary text-primary")">@stats.Pipeline.GetValueOrDefault(st)</span></span>
+                            <span class="fw-semibold text-gray-800 fs-7">@T["lab:" + st]</span>
+                        </a>
+                    }
+                </div>
+            </div></div></div>
+        </div>
+
+        <div class="card">
+            <div class="card-header border-0 pt-6">
+                <div class="card-title align-items-start flex-column m-0">
+                    <span class="card-label fw-bold text-gray-900 fs-4">@T["Laboratory worklist"]</span>
+                    <span class="text-muted mt-1 fw-semibold fs-7">@T["Every lab order a doctor signs arrives here"]</span>
+                </div>
+                <div class="card-toolbar d-flex gap-2">
+                    <a href="@Url.Action("Lab")" class="btn btn-sm @(status == null ? "btn-primary" : "btn-light")">@T["Open work"]</a>
+                    <div class="d-flex align-items-center position-relative"><i class="ki-outline ki-magnifier fs-3 position-absolute ms-4"></i><input type="text" data-filter class="form-control form-control-solid w-200px ps-12" placeholder="@T["Search..."]" /></div>
+                </div>
+            </div>
+            <div class="card-body pt-2">
+                @if (Model.Count == 0) { <div class="text-center text-muted py-15"><i class="ki-outline ki-flask fs-3x text-gray-300 d-block mb-4"></i>@T["No lab orders here."]</div> }
+                else
+                {
+                    <div class="table-responsive"><table class="table align-middle table-row-dashed fs-6 gy-3 mb-0">
+                        <thead><tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0">
+                            <th class="w-125px">@T["Order"]</th><th>@T["Patient"]</th><th>@T["Test"]</th><th>@T["Priority"]</th><th>@T["From"]</th><th>@T["Time"]</th><th>@T["State"]</th><th class="text-end w-150px"></th>
+                        </tr></thead>
+                        <tbody class="fw-semibold text-gray-700">
+                            @foreach (var r in Model)
+                            {
+                                <tr data-row>
+                                    <td><a href="@Url.Action("LabOrder", new { id = r.Id })" class="badge hp-code fw-bold fs-8 hp-num">@r.AccessionNo</a></td>
+                                    <td><div class="d-flex align-items-center gap-3">
+                                        <div class="symbol symbol-35px symbol-circle flex-shrink-0">@if (r.PatientPhoto != null) {<img src="@r.PatientPhoto" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(r.PatientNameEn)" />} else {<span class="symbol-label fw-bold fs-8 hp-initials">@HospitalUi.Initials(r.PatientNameEn)</span>}</div>
+                                        <div><a href="@Url.Action("Patient", new { id = r.PatientId })" class="fw-bold text-gray-900 text-hover-primary">@DisplayName.Of(r.PatientName, r.PatientNameEn)</a><div class="text-muted fs-8 hp-num">@r.Mrn</div></div></div></td>
+                                    <td><div class="fw-semibold text-gray-800">@DisplayName.Of(r.Name, r.NameEn)</div><div class="text-muted fs-8 hp-num">@r.Code</div></td>
+                                    <td>@Html.Raw(Prio(r.Priority))</td>
+                                    <td class="fs-7">@(r.From != null ? DisplayName.Of(r.From, r.FromEn) : "—")</td>
+                                    <td class="hp-num fs-7" data-fmt data-utc="@r.OrderedAt.ToString("o")">@r.OrderedAt.ToLocalTime().ToString("HH:mm")</td>
+                                    <td><span class="badge badge-light-@St(r.Status) fs-8">@T["lab:" + r.Status]</span>@if (r.CriticalOpen) {<span class="badge badge-danger fs-8 ms-1">@T["Critical"]</span>}</td>
+                                    <td class="text-end">
+                                        @if (canLab && r.Status == HospitalLabStatus.Ordered) { <button type="button" class="btn btn-sm btn-light-primary" data-step="Collect" data-id="@r.Id" data-confirm="@string.Format(T["Collect the specimen of {0} for {1} ({2})?"].Value, r.AccessionNo, DisplayName.Of(r.PatientName, r.PatientNameEn), DisplayName.Of(r.Name, r.NameEn))"><i class="ki-outline ki-syringe fs-5"></i>@T["Collect"]</button> }
+                                        else if (canLab && r.Status == HospitalLabStatus.Collected) { <button type="button" class="btn btn-sm btn-light-primary" data-step="Receive" data-id="@r.Id" data-confirm="@string.Format(T["Receive the specimen of {0} for {1} ({2}) in the lab?"].Value, r.AccessionNo, DisplayName.Of(r.PatientName, r.PatientNameEn), DisplayName.Of(r.Name, r.NameEn))"><i class="ki-outline ki-entrance-left fs-5"></i>@T["Receive"]</button> }
+                                        else if (r.Status == HospitalLabStatus.Verified) { <a href="@Url.Action("LabOrder", new { id = r.Id })" class="btn btn-sm btn-light">@T["View"]</a> }
+                                        else if (r.Status == HospitalLabStatus.Resulted) { <a href="@Url.Action("LabOrder", new { id = r.Id })" class="btn btn-sm btn-light-primary">@T["Verify"]</a> }
+                                        else { <a href="@Url.Action("LabOrder", new { id = r.Id })" class="btn btn-sm btn-primary">@T["Enter result"]</a> }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table></div>
+                }
+            </div>
+        </div>
+    </div></div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value) };
+            var base = @Json.Serialize(Url.Action("LabOrder", new { id = 0 }));
+            function toast(k, m) { if (window.toastr) toastr[k](m); }
+            // In place, never a reload: the page is rendered again and its content swapped.
+            function swap() {
+                return fetch(location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.text(); }).then(function (html) {
+                    var fresh = new DOMParser().parseFromString(html, 'text/html').getElementById('kt_app_content');
+                    if (fresh) document.getElementById('kt_app_content').innerHTML = fresh.innerHTML;
+                });
+            }
+            document.addEventListener('click', function (e) {
+                var t = e.target.closest('[data-step]'); if (!t) return;
+                var msg = t.getAttribute('data-confirm');
+                if (msg && !t.hasAttribute('data-confirmed')) { cbConfirm(msg, { kind: t.getAttribute('data-confirm-kind') || 'primary' }).then(function (ok) { if (ok) { t.setAttribute('data-confirmed', ''); t.click(); } }); return; }
+                t.removeAttribute('data-confirmed');
+                t.disabled = true;
+                fetch(base.replace(/0$/, t.getAttribute('data-id')) + '/' + t.getAttribute('data-step'), { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token } })
+                    .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+                    .then(function (res) { t.disabled = false; if (!res.ok) { toast('error', res.error || W.failed); return; } toast('success', W.saved); swap(); });
+            });
+            document.addEventListener('input', function (e) {
+                if (!e.target.matches('[data-filter]')) return;
+                var q = e.target.value.trim().toLowerCase();
+                document.querySelectorAll('[data-row]').forEach(function (tr) { tr.style.display = !q || tr.textContent.toLowerCase().indexOf(q) !== -1 ? '' : 'none'; });
+            });
+        })();
+    </script>
+}

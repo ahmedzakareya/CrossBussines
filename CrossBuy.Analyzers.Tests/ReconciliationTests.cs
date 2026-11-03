@@ -250,8 +250,8 @@ public class ReconciliationTests
     // R1 semantic inventory reconciliation: 481 = 170 + 217 + 1 + 93.
     // The gap ID set remains identical to the existing 93-entry baseline.
     // New protected identities are recorded in frozenBaselineHistory; no allowance was added.
-    private const int FrozenMutating = 481;
-    private const int FrozenAttributeProtected = 170;
+    private const int FrozenMutating = 566;
+    private const int FrozenAttributeProtected = 255;
     private const int FrozenInBodyProtected = 217;
 
     /// <summary>
@@ -299,7 +299,11 @@ public class ReconciliationTests
     // and ClientPortalConversationsController - the external conversation surface. Portal Contacts
     // added NO controller: it is a partial of CrmController on purpose, because this count is frozen
     // and a portal contact is a customer's person, so it answers to the CRM authority already there.
-    private const int FrozenControllers = 56;
+    //
+    // 56 -> 57 (Hospital H1, 2026-11-01). HospitalController adds 10 mutating endpoints, ALL of them
+    // [HospitalPerm]-protected (measured on the hospital branch: attribute-protected +10, in-body +0,
+    // gaps +0). The mutating / protected figures are not moved here; this tree's own drift is its own.
+    private const int FrozenControllers = 57;
 
     private static readonly Lazy<AuthorizationInventoryResult> Inventory = new(() =>
         AuthorizationInventory.Build(RealSourceCompilation.Value, CancellationToken.None));

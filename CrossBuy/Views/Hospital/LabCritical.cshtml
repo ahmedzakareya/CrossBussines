@@ -1,0 +1,258 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model HospitalCriticalSubject
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    bool rad = Model.Source == HospitalAlertSource.Radiology;
+    var p = Model.Patient;
+    ViewData["Title"] = T["Notify a critical value"].Value + " — " + Model.AccessionNo;
+    var recipients = (ViewBag.Recipients as IReadOnlyList<HospitalLabRecipient>) ?? Array.Empty<HospitalLabRecipient>();
+    var trail = (ViewBag.Trail as IReadOnlyList<HospitalLabAlertTrail>) ?? Array.Empty<HospitalLabAlertTrail>();
+    var photos = (ViewBag.Photos as Dictionary<int, string>) ?? new();
+    var departments = (ViewBag.Departments as Dictionary<int, string>) ?? new();
+    var pv = ViewBag.PreviewView as HospitalLabAlertView;
+    bool canLab = ViewBag.CanLab == true;
+    bool acknowledged = Model.AcknowledgedAt != null;
+    var first = pv?.Lines.FirstOrDefault();
+    var waitingFor = trail.Where(t => t.Alert.AcknowledgedAt == null).Select(t => t.Alert.ToEmployeeId).ToHashSet();
+    var top = recipients.Where(r => r.Why != "Other").ToList();
+    var rest = recipients.Where(r => r.Why == "Other").ToList();
+    var preselect = top.FirstOrDefault(r => r.HasUser && !waitingFor.Contains(r.Practitioner.EmployeeId ?? 0));
+    string Who(int? id) => id != null && Model.People.TryGetValue(id.Value, out var n) ? n : "—";
+    string Clock(DateTime? t) => t?.ToLocalTime().ToString("HH:mm") ?? "";
+    string WhyText(HospitalLabRecipient r) => r.Why == HospitalLabAlertReason.Ordering
+        ? T["Ordering doctor"].Value + " — " + (r.OnDuty ? T["on duty now"].Value : T["not on duty now"].Value)
+        : (r.Practitioner.DepartmentId is int d && departments.TryGetValue(d, out var dn) ? dn + " · " : "") + (r.OnDuty ? T["on duty now"].Value : T["not on duty now"].Value);
+    bool phoneCall = acknowledged && Model.CriticalNote != null && !Model.CriticalNote.StartsWith(HospitalLabAlertService.ReadBackNotePrefix);
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Notify a critical value"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item text-muted"><a href="@Url.Action(rad ? "Radiology" : "Lab")" class="text-muted text-hover-primary">@(rad ? T["Radiology"] : T["Laboratory (module)"])</a></li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted"><a href="@Url.Action(rad ? "RadOrder" : "LabOrder", new { id = Model.Id })" class="text-muted text-hover-primary hp-num">@Model.AccessionNo</a></li>
+            </ul>
+        </div>
+        <div class="d-flex align-items-center gap-2 gap-lg-3 d-print-none">
+            <button type="button" class="btn btn-sm btn-light-primary" data-preview><i class="ki-outline ki-eye fs-4"></i>@T["Preview what the doctor sees"]</button>
+        </div>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="notice d-flex rounded border border-dashed p-6 mb-5 @(acknowledged ? "bg-light-success border-success" : "bg-light-danger border-danger")">
+            <span class="symbol symbol-45px me-5 flex-shrink-0"><span class="symbol-label @(acknowledged ? "bg-success" : "bg-danger")"><i class="ki-outline @(acknowledged ? "ki-check-circle" : "ki-notification-status") fs-2x text-white"></i></span></span>
+            <div class="d-flex flex-stack flex-grow-1 flex-wrap flex-md-nowrap">
+                <div class="mb-3 mb-md-0 fw-semibold pe-5">
+                    <h4 class="text-gray-900 fw-bold mb-1">@(rad ? T["Critical result:"] : T["Critical value:"]) @(first != null ? DisplayName.Of(first.Name, first.NameEn) : DisplayName.Of(Model.Name, Model.NameEn)) @if (first != null) {<bdi dir="ltr" class="hp-num">@first.Shown @first.Unit</bdi>}</h4>
+                    <div class="fs-6 text-gray-700">@DisplayName.Of(p.Name, p.NameEn) · <span class="hp-num">@p.Mrn</span> · @if (pv?.Room != null) {<text>@T["Room"] <bdi class="hp-num">@pv.Room</bdi> · @T["Bed"] <bdi class="hp-num">@pv.Bed</bdi></text>} else {@T["Outpatient"]} —
+                        @(acknowledged ? T["the doctor acknowledged it."] : T["choose whom to tell; he gets an alert sized to the danger and his acknowledgement is recorded."])</div>
+                    @if (rad && Model.Impression != null) { <div class="fs-6 text-gray-900 fw-bold mt-2">@Model.Impression</div> }
+                </div>
+                @if (first != null) { <span class="badge @(acknowledged ? "badge-success" : "badge-danger") fs-7 fw-bold px-4 py-2 flex-shrink-0">@first.Flag</span> }
+            </div>
+        </div>
+
+        <div class="row g-5 g-xl-8">
+            <div class="col-xl-7">
+                <div class="card mb-5">
+                    <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
+                        <span class="card-label fw-bold text-gray-900 fs-4">@T["1 · Whom to tell?"]</span>
+                        <span class="text-muted mt-1 fw-semibold fs-7">@T["The ordering doctor is preselected; a doctor of his department or any other doctor can be chosen instead"]</span>
+                    </div></div>
+                    <div class="card-body pt-2">
+                        @if (recipients.Count == 0) { <div class="text-muted py-6 text-center">@T["No doctors yet. Add them in practitioners."]</div> }
+                        @foreach (var r in top)
+                        {
+                            var d = r.Practitioner; bool waiting = waitingFor.Contains(d.EmployeeId ?? 0); bool off = !r.HasUser || acknowledged || !canLab;
+                            <div class="hp-crit-pick p-4 mb-3 d-flex align-items-center gap-4 @(preselect == r && !off ? "on" : "") @(off ? "off" : "")" data-pick="@d.ID" data-name="@DisplayName.Of(d.Name, d.NameEn)" @(off ? "data-off" : "")>
+                                <div class="symbol symbol-45px symbol-circle flex-shrink-0">@if (d.EmployeeId is int e && photos.TryGetValue(e, out var ph)) {<img src="@ph" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(d.NameEn)" />} else {<span class="symbol-label fw-bold hp-initials">@HospitalUi.Initials(d.NameEn)</span>}</div>
+                                <div class="flex-grow-1 min-w-0">
+                                    <div class="fw-bold text-gray-900">@DisplayName.Of(d.Name, d.NameEn)</div>
+                                    <div class="text-muted fs-7">@(r.HasUser ? WhyText(r) : T["has no user in the system — an alert cannot reach him"].Value)@if (waiting) {<text> · <span class="text-danger fw-semibold">@T["alert waiting"]</span></text>}</div>
+                                </div>
+                                <span class="hp-crit-dot" style="background:@(r.OnDuty ? "#16A34A" : "#99A1B7")"></span>
+                            </div>
+                        }
+                        @if (rest.Count > 0)
+                        {
+                            <div class="mt-2">
+                                <label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Or another doctor"]</label>
+                                <select class="form-select form-select-solid" data-other data-control="select2" data-placeholder="—" @(acknowledged || !canLab ? "disabled" : "")>
+                                    <option value="">—</option>
+                                    @foreach (var r in rest)
+                                    {
+                                        if (!r.HasUser) { continue; }
+                                        <option value="@r.Practitioner.ID">@DisplayName.Of(r.Practitioner.Name, r.Practitioner.NameEn)@(r.OnDuty ? " · " + T["on duty now"].Value : "")</option>
+                                    }
+                                </select>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <div class="card mb-5">
+                    <div class="card-header border-0 pt-6"><div class="card-title"><span class="card-label fw-bold text-gray-900 fs-4">@T["How"]</span></div></div>
+                    <div class="card-body pt-2">
+                        <label class="form-check form-check-custom form-check-solid mb-3"><input class="form-check-input" type="checkbox" checked disabled /><span class="form-check-label text-gray-800">@T["An alert on any screen of the system that blocks work until acknowledged — if he is not signed in, it shows the moment he opens the system"]</span></label>
+                        <label class="form-check form-check-custom form-check-solid mb-3"><input class="form-check-input" type="checkbox" disabled /><span class="form-check-label text-gray-800">@T["Text message to his mobile"] <span class="text-muted fs-8">— @T["needs an SMS provider, not connected yet"]</span></span></label>
+                        <label class="form-check form-check-custom form-check-solid mb-3"><input class="form-check-input" type="checkbox" data-phone @(acknowledged || !canLab ? "disabled" : "") /><span class="form-check-label text-gray-800">@T["Phone call — I record it myself"]</span></label>
+                        <div class="d-none mb-3" data-phone-wrap><input type="text" class="form-control form-control-solid" maxlength="400" data-phone-note placeholder="@T["Whom you told, and how — e.g. Dr Khaled by phone"]" /></div>
+                        @if (canLab && !acknowledged)
+                        {
+                            <div class="separator separator-dashed my-5"></div>
+                            <div class="d-flex flex-wrap gap-3">
+                                <button type="button" class="btn btn-sm btn-danger" data-send><i class="ki-outline ki-notification-status fs-4"></i>@T["Send the critical alert"]</button>
+                                <button type="button" class="btn btn-sm btn-light-primary" data-preview><i class="ki-outline ki-eye fs-4"></i>@T["Preview what the doctor sees"]</button>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-5">
+                <div class="card mb-5">
+                    <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
+                        <span class="card-label fw-bold text-gray-900 fs-4">@T["2 · Following it up"]</span>
+                        <span class="text-muted mt-1 fw-semibold fs-7">@T["The lab sees it live; the red flag clears only on acknowledgement"]</span>
+                    </div></div>
+                    <div class="card-body pt-2">
+                        @{
+                            var verified = Model.Final;
+                        }
+                        <div class="hp-crit-step"><span class="ic" style="background:#16A34A"><i class="ki-outline ki-shield-tick fs-6 text-white"></i></span>
+                            <div class="d-flex flex-stack"><div class="fw-bold text-gray-900">@(rad ? T["Report signed"] : verified ? T["Result verified"] : T["Result entered"])</div><span class="hp-num fs-7 text-gray-700" data-fmt data-utc="@Model.DoneAt?.ToString("o")">@Clock(Model.DoneAt)</span></div>
+                            <div class="text-muted fs-8">@Who(Model.DoneByEmployeeId)</div></div>
+                        @if (trail.Count == 0 && !acknowledged)
+                        {
+                            <div class="hp-crit-step"><span class="ic" style="background:#F1F1F4"><i class="ki-outline ki-send fs-6 text-gray-500"></i></span>
+                                <div class="fw-bold text-gray-500">@T["No alert sent yet"]</div><div class="text-muted fs-8">@T["Choose the doctor, then send"]</div></div>
+                        }
+                        @foreach (var t in trail)
+                        {
+                            var a = t.Alert; bool done = a.AcknowledgedAt != null;
+                            <div class="hp-crit-step"><span class="ic" style="background:var(--cb-brand, #3A5795)"><i class="ki-outline @(a.Reason == HospitalLabAlertReason.Escalation ? "ki-arrow-up" : "ki-send") fs-6 text-white"></i></span>
+                                <div class="d-flex flex-stack"><div class="fw-bold text-gray-900">@string.Format(a.Reason == HospitalLabAlertReason.Escalation ? T["Escalated to {0}"].Value : T["Alert sent to {0}"].Value, t.To)</div><span class="hp-num fs-7 text-gray-700" data-fmt data-utc="@a.SentAt.ToString("o")">@Clock(a.SentAt)</span></div>
+                                <div class="text-muted fs-8">@(a.Level == HospitalLabAlertLevel.Abnormal ? T["A notice — the value is out of range on an urgent order"] : a.ViaSms ? T["Screen + text message"] : T["On every screen of the system"])@if (t.SentBy != null) {<text> · @t.SentBy</text>}</div></div>
+                            <div class="hp-crit-step"><span class="ic" style="background:@(a.SeenAt != null ? "var(--cb-brand, #3A5795)" : "#F1F1F4")"><i class="ki-outline ki-eye fs-6 @(a.SeenAt != null ? "text-white" : "text-gray-500")"></i></span>
+                                <div class="d-flex flex-stack"><div class="fw-bold @(a.SeenAt != null ? "text-gray-900" : "text-gray-500")">@(a.SeenAt != null ? T["Seen by the doctor"] : T["Not seen yet"])</div><span class="hp-num fs-7 text-gray-700" data-fmt data-utc="@a.SeenAt?.ToString("o")">@Clock(a.SeenAt)</span></div>
+                                <div class="text-muted fs-8">@(a.SeenAt != null ? T["The alert opened on his screen"] : T["It opens on his next screen or sign-in"])</div></div>
+                            if (done)
+                            {
+                                <div class="hp-crit-step"><span class="ic" style="background:#16A34A"><i class="ki-outline ki-check-circle fs-6 text-white"></i></span>
+                                    <div class="d-flex flex-stack"><div class="fw-bold text-gray-900">@(a.ReadBack != null ? T["Acknowledged with read-back"] : T["Acknowledged"])</div><span class="hp-num fs-7 text-gray-700" data-fmt data-utc="@a.AcknowledgedAt?.ToString("o")">@Clock(a.AcknowledgedAt)</span></div>
+                                    <div class="text-muted fs-8">@t.AcknowledgedBy@if (a.ReadBack != null) {<text> · <bdi dir="ltr" class="hp-num">@a.ReadBack</bdi></text>}</div></div>
+                            }
+                            else if (a.Level == HospitalLabAlertLevel.Critical)
+                            {
+                                var remindAt = a.SentAt.AddMinutes(HospitalLabAlertService.ReminderMinutes);
+                                var escalateAt = a.SentAt.AddMinutes(HospitalLabAlertService.EscalateMinutes);
+                                <div class="hp-crit-step"><span class="ic" style="background:#F1F1F4"><i class="ki-outline ki-check-circle fs-6" style="color:#99A1B7"></i></span>
+                                    <div class="d-flex flex-stack"><div class="fw-bold text-gray-500">@T["Awaiting acknowledgement with read-back"]</div>
+                                        @if (a.RemindedAt == null) {<span class="hp-num fs-7 text-danger fw-bold" data-countdown="@remindAt.ToString("o")"></span>} else {<span class="fs-7 text-danger fw-bold">@T["reminded"]</span>}</div>
+                                    <div class="text-muted fs-8">@(a.RemindedAt == null ? T["left before the reminder"] : T["the alert sounded again on his screen"])</div></div>
+                                if (a.EscalatedAt == null)
+                                {
+                                    <div class="hp-crit-step"><span class="ic" style="background:#F1F1F4"><i class="ki-outline ki-arrow-up fs-6" style="color:#99A1B7"></i></span>
+                                        <div class="d-flex flex-stack"><div class="fw-bold text-gray-500">@string.Format(T["Escalation after {0} minutes"].Value, HospitalLabAlertService.EscalateMinutes)</div><span class="hp-num fs-7 text-danger fw-bold" data-fmt data-utc="@escalateAt.ToString("o")">@Clock(escalateAt)</span></div>
+                                        <div class="text-muted fs-8">@(t.EscalateTo != null ? string.Format(T["to {0} — same department"].Value, t.EscalateTo) : T["No other doctor of the department has a user — escalation has no one to reach"].Value)</div></div>
+                                }
+                            }
+                        }
+                        @if (phoneCall)
+                        {
+                            <div class="hp-crit-step"><span class="ic" style="background:#16A34A"><i class="ki-outline ki-call fs-6 text-white"></i></span>
+                                <div class="d-flex flex-stack"><div class="fw-bold text-gray-900">@T["The call was recorded"]</div><span class="hp-num fs-7 text-gray-700" data-fmt data-utc="@Model.AcknowledgedAt?.ToString("o")">@Clock(Model.AcknowledgedAt)</span></div>
+                                <div class="text-muted fs-8">@Model.CriticalNote · @Who(Model.AcknowledgedByEmployeeId)</div></div>
+                        }
+                    </div>
+                </div>
+
+                <div class="card mb-5">
+                    <div class="card-header border-0 pt-6"><div class="card-title"><span class="card-label fw-bold text-gray-900 fs-4">@T["Alert by danger"]</span></div></div>
+                    <div class="card-body pt-2">
+                        @foreach (var l in new[] {
+                            ("#DC2626", "ki-notification-status", T["Critical (LL / HH)"].Value, T["A full-screen alert with sound on any screen of the whole system; closes only on acknowledgement with read-back, and escalates if not acknowledged."].Value),
+                            ("#3A5795", "ki-information-5", T["Abnormal on a STAT/urgent order (L / H)"].Value, T["A notice to the ordering doctor when the result is verified — it does not stop his work."].Value),
+                            ("#16A34A", "ki-check-circle", T["Normal"].Value, T["No alert; it appears in the patient file once verified."].Value) })
+                        {
+                            <div class="hp-crit-level d-flex gap-3 mb-3"><i class="ki-outline @l.Item2 fs-2x" style="color:@l.Item1"></i><div><div class="fw-bold text-gray-900">@l.Item3</div><div class="text-muted fs-7">@l.Item4</div></div></div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div></div>
+</div>
+
+<script type="application/json" id="labPreview">@Html.Raw(System.Text.Json.JsonSerializer.Serialize((object?)ViewBag.Preview))</script>
+
+@section Scripts {
+    <script>
+        (function () {
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            var sendUrl = @Json.Serialize(Url.Action(rad ? "RadCriticalSend" : "LabCriticalSend", new { id = Model.Id }));
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), sent: @Json.Serialize(T["Alert sent to {0}"].Value), pick: @Json.Serialize(T["Choose the doctor to tell"].Value),
+                      confirm: @Json.Serialize(T["Send the critical alert to {0}? It will block his screen until he reads the value back."].Value), note: @Json.Serialize(T["Write whom you told"].Value) };
+            function toast(k, m) { if (window.toastr) toastr[k](m); }
+            function chosen() {
+                var other = document.querySelector('[data-other]');
+                if (other && other.value) return { id: +other.value, name: other.options[other.selectedIndex].text.split(' · ')[0] };
+                var on = document.querySelector('[data-pick].on');
+                return on ? { id: +on.getAttribute('data-pick'), name: on.getAttribute('data-name') } : null;
+            }
+            // In place, never a reload: the page is rendered again and its content swapped.
+            function swap() {
+                return fetch(location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.text(); }).then(function (html) {
+                    var doc = new DOMParser().parseFromString(html, 'text/html');
+                    ['kt_app_content', 'kt_app_toolbar'].forEach(function (id) { var f = doc.getElementById(id); if (f) document.getElementById(id).innerHTML = f.innerHTML; });
+                    if (window.KTApp && KTApp.createSelect2) KTApp.createSelect2();
+                    tick();
+                });
+            }
+            function tick() {
+                document.querySelectorAll('[data-countdown]').forEach(function (el) {
+                    var s = Math.max(0, Math.round((new Date(el.getAttribute('data-countdown').replace(/Z?$/, 'Z')).getTime() - Date.now()) / 1000));
+                    el.textContent = String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+                    if (s === 0 && !el.hasAttribute('data-fired')) { el.setAttribute('data-fired', ''); setTimeout(swap, 1500); }
+                });
+            }
+            tick(); setInterval(tick, 1000);
+            setInterval(function () { if (!document.hidden) swap(); }, 30000);   // the lab sees the doctor's side live
+            document.addEventListener('click', function (e) {
+                var pick = e.target.closest('[data-pick]');
+                if (pick && !pick.hasAttribute('data-off')) {
+                    document.querySelectorAll('[data-pick]').forEach(function (x) { x.classList.remove('on'); }); pick.classList.add('on');
+                    var other = document.querySelector('[data-other]'); if (other && other.value) { other.value = ''; if (window.jQuery) jQuery(other).trigger('change.select2'); }
+                    return;
+                }
+                if (e.target.closest('[data-preview]')) {
+                    var data = JSON.parse(document.getElementById('labPreview').textContent || 'null');
+                    if (data && window.cbLabAlert) window.cbLabAlert.show(data);
+                    return;
+                }
+                var send = e.target.closest('[data-send]'); if (!send) return;
+                var to = chosen(); if (!to) { toast('error', W.pick); return; }
+                var phone = document.querySelector('[data-phone]').checked, note = document.querySelector('[data-phone-note]').value.trim();
+                if (phone && !note) { toast('error', W.note); return; }
+                cbConfirm(W.confirm.replace('{0}', to.name), { kind: 'danger' }).then(function (ok) {
+                    if (!ok) return;
+                    send.disabled = true;
+                    fetch(sendUrl, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify({ practitionerId: to.id, viaSms: false, phoneNote: phone ? note : null }) })
+                        .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+                        .then(function (res) { send.disabled = false; if (!res.ok) { toast('error', res.error || W.failed); return; } toast('success', W.sent.replace('{0}', to.name)); swap(); });
+                });
+            });
+            document.addEventListener('change', function (e) {
+                if (e.target.matches('[data-phone]')) document.querySelector('[data-phone-wrap]').classList.toggle('d-none', !e.target.checked);
+            });
+            if (window.jQuery) jQuery(document).on('select2:select', '[data-other]', function () { document.querySelectorAll('[data-pick]').forEach(function (x) { x.classList.remove('on'); }); });
+        })();
+    </script>
+}

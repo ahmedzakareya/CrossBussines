@@ -1,0 +1,214 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model IReadOnlyList<HospitalShiftSummary>
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Cashier closing"].Value;
+    var currency = ViewBag.Currency as HospitalCurrency;
+    var denoms = (ViewBag.Denominations as IReadOnlyList<decimal>) ?? Array.Empty<decimal>();
+    var mine = ViewBag.Mine as HospitalShiftSummary;
+    bool canBill = ViewBag.CanBill == true;
+    var people = (ViewBag.People as Dictionary<int, (string Name, string En)>) ?? new();
+    var photos = (ViewBag.Photos as Dictionary<int, string>) ?? new();
+    int? me = ViewBag.Me as int?;
+    string M(decimal v) => currency == null ? v.ToString("N2") : currency.Format(v);
+    string cur = currency?.Label(DisplayName.IsArabic) ?? "";
+    int dp = currency?.Decimals ?? 2;
+    (string Name, string En) Who(int id) => people.TryGetValue(id, out var p) ? p : ("—", "");
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Cashier closing"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item text-muted">@T["Finance"]</li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@T["Cashier"]</li>
+            </ul>
+        </div>
+        <div class="d-flex align-items-center gap-2 gap-lg-3 d-print-none">
+            <a href="@Url.Action("Bills")" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-bill fs-4"></i>@T["Bills"]</a>
+        </div>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid" id="cashRoot">
+        @if (mine == null)
+        {
+            <div class="card mb-5"><div class="card-body py-8">
+                <div class="d-flex flex-wrap align-items-center gap-5">
+                    @if (me is int m)
+                    {
+                        var w = Who(m);
+                        <div class="symbol symbol-55px symbol-circle flex-shrink-0">@if (photos.TryGetValue(m, out var ph)) {<img src="@ph" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(w.En)" />} else {<span class="symbol-label fw-bold hp-initials">@HospitalUi.Initials(w.En)</span>}</div>
+                        <div class="flex-grow-1"><div class="fs-4 fw-bold text-gray-900">@w.Name</div><div class="text-muted fw-semibold">@T["No open shift — open one to take payments."]</div></div>
+                    }
+                    @if (canBill)
+                    {
+                        <div class="d-flex flex-wrap gap-3 align-items-end">
+                            <div><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Cashier desk"]</label><input class="form-control form-control-solid w-200px" data-desk value="@T["Clinics desk"]" maxlength="100" /></div>
+                            <div><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Opening float"] (@cur)</label><input type="number" min="0" step="0.001" class="form-control form-control-solid hp-num w-150px" data-float value="@M(50m).Replace(",", "")" /></div>
+                            <button type="button" class="btn btn-primary" data-open><i class="ki-outline ki-lock-3 fs-4"></i>@T["Open the shift"]</button>
+                        </div>
+                    }
+                </div>
+            </div></div>
+        }
+        else
+        {
+            var s = mine.Shift; var w = Who(s.CashierEmployeeId);
+            <div class="card mb-5"><div class="card-body d-flex flex-wrap align-items-center gap-5 py-6">
+                <div class="symbol symbol-55px symbol-circle flex-shrink-0">@if (photos.TryGetValue(s.CashierEmployeeId, out var ph)) {<img src="@ph" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(w.En)" />} else {<span class="symbol-label fw-bold hp-initials">@HospitalUi.Initials(w.En)</span>}</div>
+                <div class="flex-grow-1"><div class="fs-4 fw-bold text-gray-900">@w.Name</div>
+                    <div class="text-muted fw-semibold">@s.Desk · @T["opened"] <span class="hp-num" data-utc="@s.OpenedAt.ToString("o")">@s.OpenedAt.ToString("HH:mm")</span> · <span class="hp-num">@mine.Receipts</span> @T["receipts"]</div></div>
+                <span class="badge badge-light-info fs-7 px-4 py-2">@T["shift:Open"]</span>
+            </div></div>
+
+            <div class="row g-5 g-xl-8 mb-5">
+                @foreach (var pm in HospitalPaymentMethods.All)
+                {
+                    <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
+                        <div class="text-muted fw-semibold fs-7 mb-1">@T["pm:" + pm]</div>
+                        <div class="fs-2hx fw-bold text-gray-900 hp-num">@M(mine.ByMethod[pm])</div>
+                        <div class="text-muted fs-8 mt-1">@cur</div>
+                    </div></div></div>
+                }
+            </div>
+
+            <div class="row g-5 g-xl-8 mb-5">
+                <div class="col-xl-6">
+                    <div class="card h-100">
+                        <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Cash count"]</span></div></div>
+                        <div class="card-body pt-2">
+                            <table class="table align-middle table-row-dashed fs-6 gy-2 mb-0">
+                                <thead><tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0"><th>@T["Denomination"]</th><th class="w-125px">@T["Count"]</th><th class="text-end">@T["Value"]</th></tr></thead>
+                                <tbody class="fw-semibold text-gray-700">
+                                    @foreach (var d in denoms)
+                                    {
+                                        <tr><td class="hp-num fw-bold">@d.ToString(d < 1 ? "0.000" : "0", System.Globalization.CultureInfo.InvariantCulture)</td>
+                                            <td><input type="number" min="0" step="1" class="form-control form-control-sm form-control-solid hp-num w-100px" data-denom="@d.ToString(System.Globalization.CultureInfo.InvariantCulture)" value="0" /></td>
+                                            <td class="text-end hp-num" data-value></td></tr>
+                                    }
+                                </tbody>
+                                <tfoot><tr class="fw-bolder fs-5"><td class="ps-4" colspan="2" style="color:#145DBF">@T["Counted"]</td><td class="text-end hp-num pe-4" data-counted>0</td></tr></tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-6">
+                    <div class="card mb-5">
+                        <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Closing summary"]</span></div></div>
+                        <div class="card-body pt-2">
+                            @foreach (var r in new[] { (T["Opening float"].Value, s.OpeningFloat, false), (T["Cash receipts"].Value, mine.CashReceipts, false), (T["Expected cash"].Value, mine.Expected, true) })
+                            {
+                                <div class="d-flex flex-stack py-3 border-bottom border-gray-200 border-bottom-dashed"><span class="fw-semibold @(r.Item3 ? "text-gray-900 fw-bold" : "text-gray-700")">@r.Item1</span><span class="fw-bold hp-num">@M(r.Item2)</span></div>
+                            }
+                            <div class="mt-5" data-variance-box data-expected="@mine.Expected.ToString(System.Globalization.CultureInfo.InvariantCulture)"></div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Handover"]</span></div></div>
+                        <div class="card-body pt-2">
+                            <label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Hand over to"]</label>
+                            <select class="form-select form-select-solid" data-handover>
+                                <option>@T["Main treasury"]</option><option>@T["Evening shift"]</option>
+                            </select>
+                            <button type="button" class="btn btn-primary w-100 mt-5" data-close="@s.ID"><i class="ki-outline ki-lock-2 fs-4"></i>@T["Close the shift"]</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <div class="card">
+            <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Today's shifts"]</span></div></div>
+            <div class="card-body pt-2">
+                @if (Model.Count == 0) { <div class="text-center text-muted py-10">@T["No shift today yet."]</div> }
+                else
+                {
+                    <table class="table align-middle table-row-dashed fs-6 gy-3 mb-0">
+                        <thead><tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0"><th>@T["Cashier desk"]</th><th>@T["Cashier"]</th><th>@T["Shift"]</th><th class="text-end">@T["Receipts"]</th><th class="text-end">@T["Variance"]</th><th>@T["Status"]</th></tr></thead>
+                        <tbody class="fw-semibold text-gray-700">
+                            @foreach (var x in Model)
+                            {
+                                var w = Who(x.Shift.CashierEmployeeId);
+                                <tr>
+                                    <td class="fw-bold text-gray-800">@x.Shift.Desk</td>
+                                    <td><div class="d-flex align-items-center"><div class="symbol symbol-30px symbol-circle me-3">@if (photos.TryGetValue(x.Shift.CashierEmployeeId, out var ph2)) {<img src="@ph2" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(w.En)" />} else {<span class="symbol-label fw-bold fs-9 hp-initials">@HospitalUi.Initials(w.En)</span>}</div><span class="fs-7">@w.Name</span></div></td>
+                                    <td class="hp-num fs-7"><span data-utc-time="@x.Shift.OpenedAt.ToString("o")">@x.Shift.OpenedAt.ToString("HH:mm")</span>–@if (x.Shift.ClosedAt is DateTime c) {<span data-utc-time="@c.ToString("o")">@c.ToString("HH:mm")</span>}</td>
+                                    <td class="text-end hp-num">@M(x.ByMethod.Values.Sum())</td>
+                                    <td class="text-end hp-num @(x.Shift.Variance < 0 ? "text-danger" : "")">@(x.Shift.Variance is decimal v && v != 0 ? M(v) : "—")</td>
+                                    <td><span class="badge @(x.Shift.Status == HospitalShiftStatus.Open ? "badge-light-info" : "badge-light-success") fs-8">@T["shift:" + x.Shift.Status]</span></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+            </div>
+        </div>
+    </div></div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            var dp = @dp;
+            function expected() { var b = document.querySelector('[data-variance-box]'); return b ? +b.getAttribute('data-expected') : 0; }
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value),
+                balances: @Json.Serialize(T["Cash balances"].Value), short: @Json.Serialize(T["Cash short"].Value), over: @Json.Serialize(T["Cash over"].Value),
+                none: @Json.Serialize(T["No difference."].Value), posts: @Json.Serialize(T["The difference posts to the cash over/short account."].Value),
+                confirm: @Json.Serialize(T["Close this shift? The count and any difference are posted."].Value) };
+            var urls = { open: @Json.Serialize(Url.Action("OpenShift")), close: @Json.Serialize(Url.Action("CloseShift", new { id = 0 })) };
+            function fmt(v) { return Number(v).toLocaleString('en-US', { minimumFractionDigits: dp, maximumFractionDigits: dp }); }
+            function toast(k, m) { if (window.toastr) toastr[k](m); }
+            // In place, never a reload: the server renders the page again and its content is swapped.
+            function swap() {
+                return fetch(location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.text(); }).then(function (html) {
+                    var fresh = new DOMParser().parseFromString(html, 'text/html').getElementById('kt_app_content');
+                    if (fresh) document.getElementById('kt_app_content').innerHTML = fresh.innerHTML;
+                    var tb = new DOMParser().parseFromString(html, 'text/html').querySelector('.app-toolbar .d-print-none');
+                    var cur = document.querySelector('.app-toolbar .d-print-none'); if (tb && cur) cur.innerHTML = tb.innerHTML;
+                });
+            }
+            function post(url, body) { return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(body || {}) }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); }); }
+            function recount() {
+                var total = 0;
+                document.querySelectorAll('[data-denom]').forEach(function (inp) {
+                    var v = (+inp.value || 0) * (+inp.getAttribute('data-denom')); total += v;
+                    inp.closest('tr').querySelector('[data-value]').textContent = fmt(v);
+                });
+                var c = document.querySelector('[data-counted]'); if (c) c.textContent = fmt(total);
+                var box = document.querySelector('[data-variance-box]'); if (!box) return;
+                var diff = Math.round((total - expected()) * Math.pow(10, dp)) / Math.pow(10, dp);
+                var kind = diff === 0 ? 'success' : diff < 0 ? 'danger' : 'info';
+                box.innerHTML = '<div class="notice d-flex rounded border border-' + kind + ' border-dashed bg-light-' + kind + ' p-5"><i class="ki-outline ' + (diff === 0 ? 'ki-check-circle' : 'ki-information-5') + ' fs-2tx text-' + kind + ' me-4"></i>' +
+                    '<div class="d-flex flex-stack flex-grow-1"><div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">' + (diff === 0 ? W.balances : diff < 0 ? W.short : W.over) + '</h4><div class="fs-7 text-gray-700">' + (diff === 0 ? W.none : W.posts) + '</div></div>' +
+                    (diff === 0 ? '' : '<span class="badge badge-' + kind + ' fs-7 px-4 py-2 hp-num">' + fmt(diff) + '</span>') + '</div></div>';
+            }
+            document.addEventListener('input', function (e) { if (e.target.closest('[data-denom]')) recount(); });
+            recount();
+            document.addEventListener('click', function (e) {
+                var t;
+                if ((t = e.target.closest('[data-open]'))) {
+                    t.disabled = true;
+                    post(urls.open, { desk: document.querySelector('[data-desk]').value, openingFloat: +(document.querySelector('[data-float]').value || 0) })
+                        .then(function (res) { t.disabled = false; if (!res.ok) { toast('error', res.error || W.failed); return; } toast('success', W.saved); swap().then(function () { recount(); times(); }); });
+                } else if ((t = e.target.closest('[data-close]'))) {
+                    if (!t.hasAttribute('data-confirmed')) { var closeBtn = t; cbConfirm(W.confirm).then(function (ok) { if (ok) { closeBtn.setAttribute('data-confirmed', ''); closeBtn.click(); } }); return; }
+                    t.removeAttribute('data-confirmed');
+                    var counts = {}; document.querySelectorAll('[data-denom]').forEach(function (inp) { if (+inp.value > 0) counts[inp.getAttribute('data-denom')] = +inp.value; });
+                    t.disabled = true;
+                    post(urls.close.replace(/0\/Close$/, t.getAttribute('data-close') + '/Close'), { counts: counts, handoverTo: document.querySelector('[data-handover]').value })
+                        .then(function (res) { t.disabled = false; if (!res.ok) { toast('error', res.error || W.failed); return; } toast('success', W.saved); swap().then(function () { recount(); times(); }); });
+                }
+            });
+            function times() { document.querySelectorAll('[data-utc],[data-utc-time]').forEach(function (el) { var d = new Date((el.getAttribute('data-utc') || el.getAttribute('data-utc-time')).replace(/Z?$/, 'Z')); if (!isNaN(d)) el.textContent = d.toTimeString().slice(0, 5); }); }
+            times();
+        })();
+    </script>
+}

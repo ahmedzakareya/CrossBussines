@@ -1,0 +1,1256 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="{0} being cleaned" xml:space="preserve"><value>{0} en nettoyage</value></data>
+  <data name="{0}% occupancy" xml:space="preserve"><value>{0} % d'occupation</value></data>
+  <data name="across {0} floors" xml:space="preserve"><value>sur {0} étages</value></data>
+  <data name="Active" xml:space="preserve"><value>Actif</value></data>
+  <data name="Add floor" xml:space="preserve"><value>Ajouter un étage</value></data>
+  <data name="Add room" xml:space="preserve"><value>Ajouter une chambre</value></data>
+  <data name="Add the floors and rooms in the designer; they appear here with their beds at once." xml:space="preserve"><value>Ajoutez les étages et les chambres dans le concepteur ; ils apparaissent ici avec leurs lits immédiatement.</value></data>
+  <data name="Add to the room" xml:space="preserve"><value>Ajouter à la chambre</value></data>
+  <data name="Add ward" xml:space="preserve"><value>Ajouter un service</value></data>
+  <data name="Anteroom" xml:space="preserve"><value>Sas</value></data>
+  <data name="Available now" xml:space="preserve"><value>Disponibles</value></data>
+  <data name="Back to the floor" xml:space="preserve"><value>Retour à l'étage</value></data>
+  <data name="Bath" xml:space="preserve"><value>Salle de bain</value></data>
+  <data name="Bathroom" xml:space="preserve"><value>Salle de bain</value></data>
+  <data name="Bed" xml:space="preserve"><value>Lit</value></data>
+  <data name="Bed code" xml:space="preserve"><value>Code du lit</value></data>
+  <data name="bed(s)" xml:space="preserve"><value>lit(s)</value></data>
+  <data name="Beds" xml:space="preserve"><value>Lits</value></data>
+  <data name="Beds &amp; rooms" xml:space="preserve"><value>Lits et chambres</value></data>
+  <data name="Beds are created from the type; the room appears on its floor for you to place, then draw inside." xml:space="preserve"><value>Les lits sont créés selon le type ; la chambre apparaît sur son étage pour que vous la placiez, puis l'aménagiez.</value></data>
+  <data name="Beds in a new room" xml:space="preserve"><value>Lits d'une nouvelle chambre</value></data>
+  <data name="beds occupied" xml:space="preserve"><value>lits occupés</value></data>
+  <data name="Beds per room" xml:space="preserve"><value>Lits par chambre</value></data>
+  <data name="Blocked" xml:space="preserve"><value>Bloqué</value></data>
+  <data name="Cancel" xml:space="preserve"><value>Annuler</value></data>
+  <data name="Choose the room type" xml:space="preserve"><value>Choisissez le type de chambre</value></data>
+  <data name="Cleaning" xml:space="preserve"><value>Nettoyage</value></data>
+  <data name="Click any item on the plan to select it." xml:space="preserve"><value>Cliquez sur un élément du plan pour le sélectionner.</value></data>
+  <data name="Code" xml:space="preserve"><value>Code</value></data>
+  <data name="Companion" xml:space="preserve"><value>Accompagnant</value></data>
+  <data name="Companion bed" xml:space="preserve"><value>Lit d'accompagnant</value></data>
+  <data name="Create" xml:space="preserve"><value>Créer</value></data>
+  <data name="Curtain" xml:space="preserve"><value>Rideau</value></data>
+  <data name="Daily rate" xml:space="preserve"><value>Tarif journalier</value></data>
+  <data name="Default drawing" xml:space="preserve"><value>Plan par défaut</value></data>
+  <data name="Delete item" xml:space="preserve"><value>Supprimer l'élément</value></data>
+  <data name="Discard unsaved changes?" xml:space="preserve"><value>Abandonner les modifications non enregistrées ?</value></data>
+  <data name="Door" xml:space="preserve"><value>Porte</value></data>
+  <data name="Drag a space to move it, drag its corner to resize it, and press the pencil to draw the room inside." xml:space="preserve"><value>Faites glisser un espace pour le déplacer, son coin pour le redimensionner, et le crayon pour aménager la chambre.</value></data>
+  <data name="Drag an item to move it; drag its small corner to resize it." xml:space="preserve"><value>Faites glisser un élément pour le déplacer ; son petit coin pour le redimensionner.</value></data>
+  <data name="Draw the room" xml:space="preserve"><value>Aménager la chambre</value></data>
+  <data name="Draw this room" xml:space="preserve"><value>Aménager cette chambre</value></data>
+  <data name="Edit" xml:space="preserve"><value>Modifier</value></data>
+  <data name="Edit room type" xml:space="preserve"><value>Modifier le type de chambre</value></data>
+  <data name="Enter a code of up to 40 characters" xml:space="preserve"><value>Saisissez un code de 40 caractères au plus</value></data>
+  <data name="Enter a room number of up to 40 characters" xml:space="preserve"><value>Saisissez un numéro de chambre de 40 caractères au plus</value></data>
+  <data name="Enter the Arabic name" xml:space="preserve"><value>Saisissez le nom arabe</value></data>
+  <data name="Every room takes its daily rate, its starting beds and the same-sex rule from its type." xml:space="preserve"><value>Chaque chambre tient son tarif journalier, ses lits de départ et la règle de même sexe de son type.</value></data>
+  <data name="Features" xml:space="preserve"><value>Équipements</value></data>
+  <data name="Floor" xml:space="preserve"><value>Étage</value></data>
+  <data name="Floor &amp; room designer" xml:space="preserve"><value>Concepteur d'étages et de chambres</value></data>
+  <data name="Floors, rooms, their place, size and contents are drawn here, and every hospital screen reads the same drawing." xml:space="preserve"><value>Les étages, les chambres, leur place, leur taille et leur contenu se dessinent ici, et chaque écran de l'hôpital lit le même plan.</value></data>
+  <data name="H %" xml:space="preserve"><value>H %</value></data>
+  <data name="Hospital" xml:space="preserve"><value>Hôpital</value></data>
+  <data name="Inactive" xml:space="preserve"><value>Inactif</value></data>
+  <data name="Kind of space" xml:space="preserve"><value>Type d'espace</value></data>
+  <data name="Load the standard types" xml:space="preserve"><value>Charger les types standard</value></data>
+  <data name="Lounge" xml:space="preserve"><value>Salon</value></data>
+  <data name="Name (Arabic)" xml:space="preserve"><value>Nom (arabe)</value></data>
+  <data name="Name (English)" xml:space="preserve"><value>Nom (anglais)</value></data>
+  <data name="New room type" xml:space="preserve"><value>Nouveau type de chambre</value></data>
+  <data name="No developer" xml:space="preserve"><value>Sans développeur</value></data>
+  <data name="No floors yet. Add the first floor to start drawing." xml:space="preserve"><value>Aucun étage pour l'instant. Ajoutez le premier pour commencer à dessiner.</value></data>
+  <data name="No room types yet. Load the standard six, or add your own." xml:space="preserve"><value>Aucun type de chambre. Chargez les six types standard, ou créez les vôtres.</value></data>
+  <data name="No sex restriction" xml:space="preserve"><value>Sans restriction de sexe</value></data>
+  <data name="No type" xml:space="preserve"><value>Sans type</value></data>
+  <data name="not available to accommodate" xml:space="preserve"><value>non disponibles à l'admission</value></data>
+  <data name="not_found" xml:space="preserve"><value>Introuvable</value></data>
+  <data name="occupied (count)" xml:space="preserve"><value>occupés</value></data>
+  <data name="Occupied" xml:space="preserve"><value>Occupé</value></data>
+  <data name="Only Vacant, Cleaning or Blocked can be set here" xml:space="preserve"><value>Seuls Libre, Nettoyage ou Bloqué peuvent être choisis ici</value></data>
+  <data name="Open the designer" xml:space="preserve"><value>Ouvrir le concepteur</value></data>
+  <data name="Order" xml:space="preserve"><value>Ordre</value></data>
+  <data name="Patients" xml:space="preserve"><value>Patients</value></data>
+  <data name="per day" xml:space="preserve"><value>par jour</value></data>
+  <data name="Reserved" xml:space="preserve"><value>Réservé</value></data>
+  <data name="Reserved or blocked" xml:space="preserve"><value>Réservés ou bloqués</value></data>
+  <data name="Room" xml:space="preserve"><value>Chambre</value></data>
+  <data name="Room number" xml:space="preserve"><value>Numéro de chambre</value></data>
+  <data name="Room type" xml:space="preserve"><value>Type de chambre</value></data>
+  <data name="Room types" xml:space="preserve"><value>Types de chambres</value></data>
+  <data name="Rooms" xml:space="preserve"><value>Chambres</value></data>
+  <data name="Rooms / beds" xml:space="preserve"><value>Chambres / lits</value></data>
+  <data name="Same sex only" xml:space="preserve"><value>Même sexe uniquement</value></data>
+  <data name="Save" xml:space="preserve"><value>Enregistrer</value></data>
+  <data name="Save drawing" xml:space="preserve"><value>Enregistrer le plan</value></data>
+  <data name="Saved" xml:space="preserve"><value>Enregistré</value></data>
+  <data name="Selected" xml:space="preserve"><value>Sélection</value></data>
+  <data name="Sink" xml:space="preserve"><value>Lavabo</value></data>
+  <data name="Status" xml:space="preserve"><value>Statut</value></data>
+  <data name="The admin draws the building" xml:space="preserve"><value>L'administrateur dessine le bâtiment</value></data>
+  <data name="The building has not been drawn yet" xml:space="preserve"><value>Le bâtiment n'est pas encore dessiné</value></data>
+  <data name="The change could not be saved" xml:space="preserve"><value>La modification n'a pas pu être enregistrée</value></data>
+  <data name="The daily rate cannot be negative" xml:space="preserve"><value>Le tarif journalier ne peut pas être négatif</value></data>
+  <data name="The room type catalogue is not empty" xml:space="preserve"><value>Le catalogue des types de chambres n'est pas vide</value></data>
+  <data name="The type decides price, beds and who may share" xml:space="preserve"><value>Le type fixe le prix, les lits et qui peut partager</value></data>
+  <data name="The ward is not on this floor" xml:space="preserve"><value>Le service n'est pas à cet étage</value></data>
+  <data name="This bed holds a patient and cannot be removed" xml:space="preserve"><value>Ce lit est occupé et ne peut pas être retiré</value></data>
+  <data name="This floor has no rooms yet." xml:space="preserve"><value>Cet étage n'a pas encore de chambre.</value></data>
+  <data name="This space carries no beds" xml:space="preserve"><value>Cet espace n'a pas de lit</value></data>
+  <data name="Two items overlap" xml:space="preserve"><value>Deux éléments se chevauchent</value></data>
+  <data name="types" xml:space="preserve"><value>types</value></data>
+  <data name="Unknown room kind" xml:space="preserve"><value>Type d'espace inconnu</value></data>
+  <data name="Unknown sex policy" xml:space="preserve"><value>Règle de sexe inconnue</value></data>
+  <data name="Unsaved changes" xml:space="preserve"><value>Modifications non enregistrées</value></data>
+  <data name="Vacant" xml:space="preserve"><value>Libre</value></data>
+  <data name="W %" xml:space="preserve"><value>L %</value></data>
+  <data name="Ward" xml:space="preserve"><value>Service</value></data>
+  <data name="Window" xml:space="preserve"><value>Fenêtre</value></data>
+  <data name="X %" xml:space="preserve"><value>X %</value></data>
+  <data name="Y %" xml:space="preserve"><value>Y %</value></data>
+  <data name="Another floor already uses this code" xml:space="preserve"><value>Un autre étage utilise déjà ce code</value></data>
+  <data name="Another room already uses this number" xml:space="preserve"><value>Une autre chambre utilise déjà ce numéro</value></data>
+  <data name="Another room type already uses this code" xml:space="preserve"><value>Un autre type de chambre utilise déjà ce code</value></data>
+  <data name="Another ward already uses this code" xml:space="preserve"><value>Un autre service utilise déjà ce code</value></data>
+  <data name="A bed code in the drawing belongs to another room" xml:space="preserve"><value>Un code de lit du plan appartient à une autre chambre</value></data>
+  <data name="A room is outside the floor's 12 columns" xml:space="preserve"><value>Une chambre sort des 12 colonnes de l'étage</value></data>
+  <data name="A room type holds between 1 and 20 beds" xml:space="preserve"><value>Un type de chambre compte de 1 à 20 lits</value></data>
+  <data name="A room drawing holds at most 80 items" xml:space="preserve"><value>Un plan de chambre compte au plus 80 éléments</value></data>
+  <data name="An item is outside the room" xml:space="preserve"><value>Un élément sort de la chambre</value></data>
+  <data name="A bed in the drawing has no code" xml:space="preserve"><value>Un lit du plan n'a pas de code</value></data>
+  <data name="A bed code is longer than 40 characters" xml:space="preserve"><value>Un code de lit dépasse 40 caractères</value></data>
+  <data name="This space does not carry beds" xml:space="preserve"><value>Cet espace ne reçoit pas de lits</value></data>
+  <data name="Unknown room feature: {0}" xml:space="preserve"><value>Équipement inconnu : {0}</value></data>
+  <data name="A bed code for this room is already used: {0}" xml:space="preserve"><value>Un code de lit de cette chambre est déjà utilisé : {0}</value></data>
+  <data name="Rooms {0} and {1} overlap" xml:space="preserve"><value>Les chambres {0} et {1} se chevauchent</value></data>
+  <data name="Bed {0} holds a patient and cannot be removed" xml:space="preserve"><value>Le lit {0} est occupé et ne peut pas être retiré</value></data>
+  <data name="Unknown item in the drawing: {0}" xml:space="preserve"><value>Élément inconnu dans le plan : {0}</value></data>
+  <data name="Bed {0} is drawn twice" xml:space="preserve"><value>Le lit {0} est dessiné deux fois</value></data>
+  <data name="Two items overlap: {0} and {1}" xml:space="preserve"><value>Deux éléments se chevauchent : {0} et {1}</value></data>
+  <data name="Bed {0} holds a patient" xml:space="preserve"><value>Le lit {0} est occupé</value></data>
+  <data name="Mark Vacant" xml:space="preserve"><value>Marquer libre</value></data>
+  <data name="Mark Cleaning" xml:space="preserve"><value>Marquer en nettoyage</value></data>
+  <data name="Mark Blocked" xml:space="preserve"><value>Bloquer</value></data>
+  <data name="feature:bath" xml:space="preserve"><value>Salle de bain privée</value></data>
+  <data name="feature:companion" xml:space="preserve"><value>Lit d'accompagnant</value></data>
+  <data name="feature:tv" xml:space="preserve"><value>Télévision</value></data>
+  <data name="feature:fridge" xml:space="preserve"><value>Réfrigérateur</value></data>
+  <data name="feature:lounge" xml:space="preserve"><value>Salon</value></data>
+  <data name="feature:oxygen" xml:space="preserve"><value>Oxygène mural</value></data>
+  <data name="feature:negative-pressure" xml:space="preserve"><value>Pression négative</value></data>
+  <data name="feature:anteroom" xml:space="preserve"><value>Sas</value></data>
+  <data name="feature:monitor" xml:space="preserve"><value>Monitorage cardiaque</value></data>
+  <data name="Icu" xml:space="preserve"><value>Soins intensifs</value></data>
+  <data name="Clinic" xml:space="preserve"><value>Consultation</value></data>
+  <data name="Emergency" xml:space="preserve"><value>Urgences</value></data>
+  <data name="Imaging" xml:space="preserve"><value>Imagerie</value></data>
+  <data name="Laboratory" xml:space="preserve"><value>Laboratoire</value></data>
+  <data name="Pharmacy" xml:space="preserve"><value>Pharmacie</value></data>
+  <data name="Theatre" xml:space="preserve"><value>Bloc opératoire</value></data>
+  <data name="Service" xml:space="preserve"><value>Espace de service</value></data>
+  <data name="Any" xml:space="preserve"><value>Les deux sexes</value></data>
+  <data name="Male" xml:space="preserve"><value>Hommes</value></data>
+  <data name="Female" xml:space="preserve"><value>Femmes</value></data>
+  <data name="kind:Ward" xml:space="preserve"><value>Chambre d'hospitalisation</value></data>
+  <data name="kind:Icu" xml:space="preserve"><value>Soins intensifs</value></data>
+  <data name="kind:Clinic" xml:space="preserve"><value>Consultation</value></data>
+  <data name="kind:Emergency" xml:space="preserve"><value>Urgences</value></data>
+  <data name="kind:Imaging" xml:space="preserve"><value>Imagerie</value></data>
+  <data name="kind:Laboratory" xml:space="preserve"><value>Laboratoire</value></data>
+  <data name="kind:Pharmacy" xml:space="preserve"><value>Pharmacie</value></data>
+  <data name="kind:Theatre" xml:space="preserve"><value>Bloc opératoire</value></data>
+  <data name="kind:Service" xml:space="preserve"><value>Espace de service</value></data>
+  <data name="Choose a floor" xml:space="preserve"><value>Choisir un étage</value></data>
+  <data name="Without a ward" xml:space="preserve"><value>Sans service</value></data>
+  <data name="No room types yet. Load the standard types, then edit them from Room types." xml:space="preserve"><value>Aucun type de chambre. Chargez les types standard, puis modifiez-les depuis Types de chambres.</value></data>
+  <data name="Load standard types" xml:space="preserve"><value>Charger les types standard</value></data>
+  <data name="Access log" xml:space="preserve"><value>Journal d'accès</value></data>
+  <data name="Allergies" xml:space="preserve"><value>Allergies</value></data>
+  <data name="Allergy" xml:space="preserve"><value>Allergie</value></data>
+  <data name="An allergy shows as a red alert on the file" xml:space="preserve"><value>Une allergie apparaît en alerte rouge sur le dossier</value></data>
+  <data name="As the ID, mobile or name is typed, the system looks for an existing file before a new one is opened." xml:space="preserve"><value>Pendant la saisie de l'identifiant, du mobile ou du nom, le système cherche un dossier existant avant d'en ouvrir un nouveau.</value></data>
+  <data name="Blood group" xml:space="preserve"><value>Groupe sanguin</value></data>
+  <data name="Choose the sex" xml:space="preserve"><value>Choisissez le sexe</value></data>
+  <data name="Chronic conditions" xml:space="preserve"><value>Maladies chroniques</value></data>
+  <data name="Date of birth" xml:space="preserve"><value>Date de naissance</value></data>
+  <data name="Duplicate check" xml:space="preserve"><value>Contrôle des doublons</value></data>
+  <data name="Edit file" xml:space="preserve"><value>Modifier le dossier</value></data>
+  <data name="Edit patient file" xml:space="preserve"><value>Modifier le dossier patient</value></data>
+  <data name="Emergency contact" xml:space="preserve"><value>Contact d'urgence</value></data>
+  <data name="Enter a real date of birth" xml:space="preserve"><value>Saisissez une date de naissance réelle</value></data>
+  <data name="Enter a valid mobile number" xml:space="preserve"><value>Saisissez un numéro de mobile valide</value></data>
+  <data name="Enter the English name" xml:space="preserve"><value>Saisissez le nom en anglais</value></data>
+  <data name="Every name is captured in Arabic and English" xml:space="preserve"><value>Chaque nom est saisi en arabe et en anglais</value></data>
+  <data name="Every open file" xml:space="preserve"><value>Tous les dossiers ouverts</value></data>
+  <data name="Files carrying an allergy alert" xml:space="preserve"><value>Dossiers avec une alerte d'allergie</value></data>
+  <data name="From the system country table" xml:space="preserve"><value>Depuis la table des pays du système</value></data>
+  <data name="Full name" xml:space="preserve"><value>Nom complet</value></data>
+  <data name="General consent not signed" xml:space="preserve"><value>Consentement général non signé</value></data>
+  <data name="General consent signed" xml:space="preserve"><value>Consentement général signé</value></data>
+  <data name="Generated by the system when the file is saved; the number shown is the next one." xml:space="preserve"><value>Généré par le système à l'enregistrement ; le numéro affiché est le prochain.</value></data>
+  <data name="ID number" xml:space="preserve"><value>N° d'identité</value></data>
+  <data name="MRN" xml:space="preserve"><value>N° de dossier</value></data>
+  <data name="Medical alerts" xml:space="preserve"><value>Alertes médicales</value></data>
+  <data name="Medical record number" xml:space="preserve"><value>Numéro de dossier médical</value></data>
+  <data name="Mobile" xml:space="preserve"><value>Mobile</value></data>
+  <data name="Name" xml:space="preserve"><value>Nom</value></data>
+  <data name="Name, MRN, ID or mobile..." xml:space="preserve"><value>Nom, n° de dossier, identité ou mobile...</value></data>
+  <data name="Nationality" xml:space="preserve"><value>Nationalité</value></data>
+  <data name="New files since the 1st" xml:space="preserve"><value>Nouveaux dossiers depuis le 1er</value></data>
+  <data name="No file matches this search." xml:space="preserve"><value>Aucun dossier ne correspond à cette recherche.</value></data>
+  <data name="No patients yet. Register the first file." xml:space="preserve"><value>Aucun patient. Enregistrez le premier dossier.</value></data>
+  <data name="None recorded" xml:space="preserve"><value>Aucun</value></data>
+  <data name="Nothing similar yet." xml:space="preserve"><value>Aucun dossier similaire.</value></data>
+  <data name="One file per ID number" xml:space="preserve"><value>Un dossier par numéro d'identité</value></data>
+  <data name="One per line" xml:space="preserve"><value>Un par ligne</value></data>
+  <data name="Open file" xml:space="preserve"><value>Ouvrir le dossier</value></data>
+  <data name="Opening this file is recorded in the access log with your name and time." xml:space="preserve"><value>L'ouverture de ce dossier est enregistrée dans le journal d'accès avec votre nom et l'heure.</value></data>
+  <data name="Overview" xml:space="preserve"><value>Aperçu</value></data>
+  <data name="Page" xml:space="preserve"><value>Page</value></data>
+  <data name="Patient" xml:space="preserve"><value>Patient</value></data>
+  <data name="Patient details" xml:space="preserve"><value>Informations du patient</value></data>
+  <data name="Patient registry" xml:space="preserve"><value>Registre des patients</value></data>
+  <data name="Possible duplicates" xml:space="preserve"><value>Doublons possibles</value></data>
+  <data name="Recorded allergy" xml:space="preserve"><value>Allergie enregistrée</value></data>
+  <data name="Register" xml:space="preserve"><value>Enregistrer</value></data>
+  <data name="Register a new patient" xml:space="preserve"><value>Enregistrer un nouveau patient</value></data>
+  <data name="Register patient" xml:space="preserve"><value>Enregistrer un patient</value></data>
+  <data name="Registered" xml:space="preserve"><value>Enregistré le</value></data>
+  <data name="Registered this month" xml:space="preserve"><value>Enregistrés ce mois</value></data>
+  <data name="Relationship" xml:space="preserve"><value>Lien de parenté</value></data>
+  <data name="Same ID number" xml:space="preserve"><value>Même n° d'identité</value></data>
+  <data name="Same mobile" xml:space="preserve"><value>Même mobile</value></data>
+  <data name="Same name" xml:space="preserve"><value>Même nom</value></data>
+  <data name="Same name and date of birth" xml:space="preserve"><value>Même nom et date de naissance</value></data>
+  <data name="Save and open file" xml:space="preserve"><value>Enregistrer et ouvrir le dossier</value></data>
+  <data name="Sex" xml:space="preserve"><value>Sexe</value></data>
+  <data name="Similar files" xml:space="preserve"><value>Dossiers similaires</value></data>
+  <data name="System" xml:space="preserve"><value>Système</value></data>
+  <data name="The ID number must be 5 to 20 digits" xml:space="preserve"><value>Le n° d'identité doit compter 5 à 20 chiffres</value></data>
+  <data name="The patient signed the general consent to treatment and the privacy notice" xml:space="preserve"><value>Le patient a signé le consentement général aux soins et l'avis de confidentialité</value></data>
+  <data name="The record number never changes." xml:space="preserve"><value>Le numéro de dossier ne change jamais.</value></data>
+  <data name="This ID number already has a file: {0}" xml:space="preserve"><value>Ce n° d'identité a déjà un dossier : {0}</value></data>
+  <data name="Total patients" xml:space="preserve"><value>Total des patients</value></data>
+  <data name="Unknown blood group" xml:space="preserve"><value>Groupe sanguin inconnu</value></data>
+  <data name="Unknown nationality" xml:space="preserve"><value>Nationalité inconnue</value></data>
+  <data name="What" xml:space="preserve"><value>Action</value></data>
+  <data name="When" xml:space="preserve"><value>Quand</value></data>
+  <data name="Who" xml:space="preserve"><value>Qui</value></data>
+  <data name="access:create" xml:space="preserve"><value>Création du dossier</value></data>
+  <data name="access:open" xml:space="preserve"><value>Ouverture du dossier</value></data>
+  <data name="access:update" xml:space="preserve"><value>Modification du dossier</value></data>
+  <data name="file(s)" xml:space="preserve"><value>dossier(s)</value></data>
+  <data name="y" xml:space="preserve"><value>ans</value></data>
+  <data name="Accommodate" xml:space="preserve"><value>Héberger</value></data>
+  <data name="Accommodate a patient" xml:space="preserve"><value>Héberger un patient</value></data>
+  <data name="Accommodate a patient here" xml:space="preserve"><value>Héberger un patient ici</value></data>
+  <data name="Admissions" xml:space="preserve"><value>Séjours</value></data>
+  <data name="Admitted" xml:space="preserve"><value>Admis</value></data>
+  <data name="Already admitted" xml:space="preserve"><value>Patient déjà admis</value></data>
+  <data name="Bed {0} is not vacant" xml:space="preserve"><value>Le lit {0} n'est pas libre</value></data>
+  <data name="Change photo" xml:space="preserve"><value>Changer la photo</value></data>
+  <data name="Choose a bed on the plan" xml:space="preserve"><value>Choisissez le lit sur le plan</value></data>
+  <data name="Choose a patient first" xml:space="preserve"><value>Choisissez d'abord le patient</value></data>
+  <data name="Close" xml:space="preserve"><value>Fermer</value></data>
+  <data name="Confirm accommodation" xml:space="preserve"><value>Confirmer l'hébergement</value></data>
+  <data name="Confirm transfer" xml:space="preserve"><value>Confirmer le transfert</value></data>
+  <data name="Current" xml:space="preserve"><value>En cours</value></data>
+  <data name="Diagnosis" xml:space="preserve"><value>Diagnostic</value></data>
+  <data name="Discharge" xml:space="preserve"><value>Sortie</value></data>
+  <data name="Discharge this patient? The bed goes to cleaning." xml:space="preserve"><value>Confirmer la sortie ? Le lit passe au nettoyage.</value></data>
+  <data name="Every suitable room is full; choose another patient or free a bed first." xml:space="preserve"><value>Toutes les chambres adaptées sont pleines ; choisissez un autre patient ou libérez un lit.</value></data>
+  <data name="Excluded automatically: shared rooms of the other sex and wards for the other sex" xml:space="preserve"><value>Exclus automatiquement : chambres partagées de l'autre sexe et services de l'autre sexe</value></data>
+  <data name="From" xml:space="preserve"><value>Du</value></data>
+  <data name="Full" xml:space="preserve"><value>Complet</value></data>
+  <data name="JPEG, PNG or WebP, up to 5 MB. Shown on the file and on the bed the patient lies in." xml:space="preserve"><value>JPEG, PNG ou WebP, 5 Mo max. Affichée sur le dossier et sur le lit du patient.</value></data>
+  <data name="No admissions yet." xml:space="preserve"><value>Aucun séjour.</value></data>
+  <data name="No suitable bed" xml:space="preserve"><value>Aucun lit adapté</value></data>
+  <data name="Patient photo" xml:space="preserve"><value>Photo du patient</value></data>
+  <data name="Pick the bed on the plan" xml:space="preserve"><value>Choisissez le lit sur le plan</value></data>
+  <data name="Room {0} is shared with the other sex" xml:space="preserve"><value>La chambre {0} est partagée avec l'autre sexe</value></data>
+  <data name="Search by name, MRN or ID" xml:space="preserve"><value>Rechercher par nom, n° de dossier ou identité</value></data>
+  <data name="Since" xml:space="preserve"><value>Depuis</value></data>
+  <data name="Suitable rooms with a free bed" xml:space="preserve"><value>Chambres adaptées avec un lit libre</value></data>
+  <data name="The patient is already in this bed" xml:space="preserve"><value>Le patient est déjà dans ce lit</value></data>
+  <data name="The photo must be an image of up to 5 MB" xml:space="preserve"><value>La photo doit être une image de 5 Mo maximum</value></data>
+  <data name="This bed is not available to accommodate." xml:space="preserve"><value>Ce lit n'est pas disponible.</value></data>
+  <data name="This patient is already admitted" xml:space="preserve"><value>Ce patient est déjà admis</value></data>
+  <data name="This patient is already in room {0}, bed {1}." xml:space="preserve"><value>Ce patient est déjà en chambre {0}, lit {1}.</value></data>
+  <data name="To" xml:space="preserve"><value>Au</value></data>
+  <data name="Transfer" xml:space="preserve"><value>Transfert</value></data>
+  <data name="Transfer the patient" xml:space="preserve"><value>Transférer le patient</value></data>
+  <data name="Ward {0} takes the other sex" xml:space="preserve"><value>Le service {0} accueille l'autre sexe</value></data>
+  <data name="bed(s) free" xml:space="preserve"><value>lit(s) libre(s)</value></data>
+  <data name="beds (count)" xml:space="preserve"><value>lits</value></data>
+  <data name="end:discharge" xml:space="preserve"><value>sortie</value></data>
+  <data name="end:transfer" xml:space="preserve"><value>transfert</value></data>
+  <data name="free" xml:space="preserve"><value>libre(s)</value></data>
+  <data name="A slot is 5 to 120 minutes" xml:space="preserve"><value>Un créneau dure de 5 à 120 minutes</value></data>
+  <data name="Add doctor" xml:space="preserve"><value>Ajouter un médecin</value></data>
+  <data name="All departments" xml:space="preserve"><value>Tous les services</value></data>
+  <data name="An appointment cannot be booked in the past" xml:space="preserve"><value>Impossible de réserver dans le passé</value></data>
+  <data name="Appointments" xml:space="preserve"><value>Rendez-vous</value></data>
+  <data name="Appointments today" xml:space="preserve"><value>Rendez-vous du jour</value></data>
+  <data name="Available" xml:space="preserve"><value>Disponible</value></data>
+  <data name="Board" xml:space="preserve"><value>Tableau</value></data>
+  <data name="Book" xml:space="preserve"><value>Réserver</value></data>
+  <data name="Book an appointment" xml:space="preserve"><value>Prendre un rendez-vous</value></data>
+  <data name="Booking stops on expiry" xml:space="preserve"><value>La réservation s'arrête à l'expiration</value></data>
+  <data name="Call next" xml:space="preserve"><value>Appeler le suivant</value></data>
+  <data name="Calling the next patient" xml:space="preserve"><value>Appel du patient suivant</value></data>
+  <data name="Cancel the appointment" xml:space="preserve"><value>Annuler le rendez-vous</value></data>
+  <data name="Check in" xml:space="preserve"><value>Enregistrer l'arrivée</value></data>
+  <data name="Checked in" xml:space="preserve"><value>Arrivés</value></data>
+  <data name="Choose a clinic room" xml:space="preserve"><value>Choisissez une salle de consultation</value></data>
+  <data name="Click an empty slot to book, or an appointment to move it along" xml:space="preserve"><value>Cliquez un créneau libre pour réserver, ou un rendez-vous pour le faire avancer</value></data>
+  <data name="Clinic room" xml:space="preserve"><value>Salle de consultation</value></data>
+  <data name="Clinic schedule" xml:space="preserve"><value>Planning de consultation</value></data>
+  <data name="Clinical data and privileges live in one record per doctor; permanent and part-time are paid through payroll, visiting doctors as vendors." xml:space="preserve"><value>Données cliniques et privilèges dans un seul dossier par médecin ; permanents et temps partiel payés par la paie, visiteurs comme fournisseurs.</value></data>
+  <data name="Clinical privileges" xml:space="preserve"><value>Privilèges cliniques</value></data>
+  <data name="Clinics" xml:space="preserve"><value>Consultations</value></data>
+  <data name="Clinics board" xml:space="preserve"><value>Tableau des consultations</value></data>
+  <data name="Clinics running" xml:space="preserve"><value>Consultations en cours</value></data>
+  <data name="Clinics running late" xml:space="preserve"><value>Consultations en retard</value></data>
+  <data name="Confirm booking" xml:space="preserve"><value>Confirmer la réservation</value></data>
+  <data name="Credentials &amp; licences" xml:space="preserve"><value>Accréditations et licences</value></data>
+  <data name="Date" xml:space="preserve"><value>Date</value></data>
+  <data name="Decides what the doctor can do in clinic, wards and theatre" xml:space="preserve"><value>Détermine ce que le médecin peut faire en consultation, en service et au bloc</value></data>
+  <data name="Delay (min)" xml:space="preserve"><value>Retard (min)</value></data>
+  <data name="Department" xml:space="preserve"><value>Service</value></data>
+  <data name="Did not come" xml:space="preserve"><value>Absent</value></data>
+  <data name="Doctor" xml:space="preserve"><value>Médecin</value></data>
+  <data name="Doctor details" xml:space="preserve"><value>Informations du médecin</value></data>
+  <data name="Doctor schedule" xml:space="preserve"><value>Planning des médecins</value></data>
+  <data name="Doctors &amp; staff" xml:space="preserve"><value>Médecins et personnel</value></data>
+  <data name="Document" xml:space="preserve"><value>Document</value></data>
+  <data name="Each clinic calls the next arrived patient by queue number; the number is given at check-in." xml:space="preserve"><value>Chaque consultation appelle le patient arrivé suivant par son numéro, donné à l'enregistrement.</value></data>
+  <data name="Edit doctor" xml:space="preserve"><value>Modifier le médecin</value></data>
+  <data name="Employee" xml:space="preserve"><value>Employé</value></data>
+  <data name="Engagement" xml:space="preserve"><value>Type d'engagement</value></data>
+  <data name="Expired" xml:space="preserve"><value>Expiré</value></data>
+  <data name="Expires in {0} days" xml:space="preserve"><value>Expire dans {0} jours</value></data>
+  <data name="Expiry" xml:space="preserve"><value>Expiration</value></data>
+  <data name="Finish" xml:space="preserve"><value>Terminer</value></data>
+  <data name="Finish the visit" xml:space="preserve"><value>Terminer la visite</value></data>
+  <data name="In session" xml:space="preserve"><value>En consultation</value></data>
+  <data name="Licence expiry" xml:space="preserve"><value>Expiration de la licence</value></data>
+  <data name="Licences expiring in 60 days" xml:space="preserve"><value>Licences expirant sous 60 jours</value></data>
+  <data name="Link the employee to show their photo and pay them through payroll" xml:space="preserve"><value>Liez l'employé pour afficher sa photo et le payer par la paie</value></data>
+  <data name="Load standard departments" xml:space="preserve"><value>Charger les services standard</value></data>
+  <data name="Minutes per patient" xml:space="preserve"><value>Minutes par patient</value></data>
+  <data name="Next" xml:space="preserve"><value>Suivant</value></data>
+  <data name="Next day" xml:space="preserve"><value>Jour suivant</value></data>
+  <data name="No appointments today." xml:space="preserve"><value>Aucun rendez-vous aujourd'hui.</value></data>
+  <data name="No appointments yet." xml:space="preserve"><value>Aucun rendez-vous.</value></data>
+  <data name="No clinic runs today." xml:space="preserve"><value>Aucune consultation aujourd'hui.</value></data>
+  <data name="No doctor sees patients on this day." xml:space="preserve"><value>Aucun médecin ne consulte ce jour-là.</value></data>
+  <data name="No practitioners yet. Add the first doctor." xml:space="preserve"><value>Aucun praticien. Ajoutez le premier médecin.</value></data>
+  <data name="No-shows" xml:space="preserve"><value>Absences</value></data>
+  <data name="Nobody is waiting for this doctor" xml:space="preserve"><value>Personne n'attend ce médecin</value></data>
+  <data name="Not an employee (visiting)" xml:space="preserve"><value>Pas un employé (visiteur)</value></data>
+  <data name="Not started" xml:space="preserve"><value>Pas commencée</value></data>
+  <data name="Note" xml:space="preserve"><value>Note</value></data>
+  <data name="Now serving" xml:space="preserve"><value>Numéro servi</value></data>
+  <data name="Number" xml:space="preserve"><value>Numéro</value></data>
+  <data name="On expiry, new bookings for this doctor stop automatically until the renewed licence is entered." xml:space="preserve"><value>À l'expiration, les nouvelles réservations s'arrêtent jusqu'à la saisie de la licence renouvelée.</value></data>
+  <data name="One practitioner record, two ways to pay" xml:space="preserve"><value>Un dossier praticien, deux modes de paiement</value></data>
+  <data name="Outpatient clinics board" xml:space="preserve"><value>Tableau des consultations externes</value></data>
+  <data name="Paid through" xml:space="preserve"><value>Payé par</value></data>
+  <data name="Part-time" xml:space="preserve"><value>Temps partiel</value></data>
+  <data name="Permanent doctors" xml:space="preserve"><value>Médecins permanents</value></data>
+  <data name="Practitioners" xml:space="preserve"><value>Praticiens</value></data>
+  <data name="Previous day" xml:space="preserve"><value>Jour précédent</value></data>
+  <data name="Professional licence" xml:space="preserve"><value>Licence professionnelle</value></data>
+  <data name="Professional licence about to expire" xml:space="preserve"><value>Licence professionnelle bientôt expirée</value></data>
+  <data name="Profile" xml:space="preserve"><value>Profil</value></data>
+  <data name="Queue number" xml:space="preserve"><value>Numéro d'ordre</value></data>
+  <data name="Seen" xml:space="preserve"><value>Vus</value></data>
+  <data name="Seen today" xml:space="preserve"><value>Vus aujourd'hui</value></data>
+  <data name="Send in to the doctor" xml:space="preserve"><value>Faire entrer chez le médecin</value></data>
+  <data name="That slot is already booked" xml:space="preserve"><value>Ce créneau est déjà réservé</value></data>
+  <data name="That time is not one of the doctor&#x27;s slots" xml:space="preserve"><value>Cette heure n'est pas un créneau du médecin</value></data>
+  <data name="The appointment book offers exactly these days and slots" xml:space="preserve"><value>Le carnet propose exactement ces jours et créneaux</value></data>
+  <data name="The doctor already has a patient in the room" xml:space="preserve"><value>Le médecin a déjà un patient</value></data>
+  <data name="The doctor does not see patients on that day" xml:space="preserve"><value>Le médecin ne consulte pas ce jour-là</value></data>
+  <data name="The doctor&#x27;s licence has expired; booking is stopped until it is renewed" xml:space="preserve"><value>La licence du médecin a expiré ; réservation arrêtée jusqu'au renouvellement</value></data>
+  <data name="The patient already has an appointment at that time" xml:space="preserve"><value>Le patient a déjà un rendez-vous à cette heure</value></data>
+  <data name="The professional licence has expired" xml:space="preserve"><value>La licence professionnelle a expiré</value></data>
+  <data name="The session must end after it starts and hold at least one slot" xml:space="preserve"><value>La séance doit finir après son début et contenir au moins un créneau</value></data>
+  <data name="This appointment cannot make that move" xml:space="preserve"><value>Ce rendez-vous ne peut pas passer à cet état</value></data>
+  <data name="Time" xml:space="preserve"><value>Heure</value></data>
+  <data name="Title (Arabic)" xml:space="preserve"><value>Titre (arabe)</value></data>
+  <data name="Title (English)" xml:space="preserve"><value>Titre (anglais)</value></data>
+  <data name="Today" xml:space="preserve"><value>Aujourd'hui</value></data>
+  <data name="Today&#x27;s appointments" xml:space="preserve"><value>Rendez-vous du jour</value></data>
+  <data name="Unknown engagement" xml:space="preserve"><value>Engagement inconnu</value></data>
+  <data name="Unknown payment channel" xml:space="preserve"><value>Canal de paiement inconnu</value></data>
+  <data name="Unknown privilege" xml:space="preserve"><value>Privilège inconnu</value></data>
+  <data name="Unknown visit type" xml:space="preserve"><value>Type de visite inconnu</value></data>
+  <data name="Unknown weekday" xml:space="preserve"><value>Jour inconnu</value></data>
+  <data name="Visit type" xml:space="preserve"><value>Type de visite</value></data>
+  <data name="Visiting" xml:space="preserve"><value>Visiteurs</value></data>
+  <data name="Waiting" xml:space="preserve"><value>En attente</value></data>
+  <data name="Weekly presence" xml:space="preserve"><value>Présence hebdomadaire</value></data>
+  <data name="With the doctor now" xml:space="preserve"><value>Chez le médecin</value></data>
+  <data name="a patient is with the doctor" xml:space="preserve"><value>un patient est chez le médecin</value></data>
+  <data name="across {0} doctors" xml:space="preserve"><value>pour {0} médecins</value></data>
+  <data name="appt:Arrived" xml:space="preserve"><value>Arrivé</value></data>
+  <data name="appt:Booked" xml:space="preserve"><value>Réservé</value></data>
+  <data name="appt:Cancelled" xml:space="preserve"><value>Annulé</value></data>
+  <data name="appt:Done" xml:space="preserve"><value>Terminé</value></data>
+  <data name="appt:InRoom" xml:space="preserve"><value>Chez le médecin</value></data>
+  <data name="appt:NoShow" xml:space="preserve"><value>Absent</value></data>
+  <data name="arrived, not yet called" xml:space="preserve"><value>arrivés, pas encore appelés</value></data>
+  <data name="day:Friday" xml:space="preserve"><value>Ven</value></data>
+  <data name="day:Monday" xml:space="preserve"><value>Lun</value></data>
+  <data name="day:Saturday" xml:space="preserve"><value>Sam</value></data>
+  <data name="day:Sunday" xml:space="preserve"><value>Dim</value></data>
+  <data name="day:Thursday" xml:space="preserve"><value>Jeu</value></data>
+  <data name="day:Tuesday" xml:space="preserve"><value>Mar</value></data>
+  <data name="day:Wednesday" xml:space="preserve"><value>Mer</value></data>
+  <data name="eng:PartTime" xml:space="preserve"><value>Temps partiel</value></data>
+  <data name="eng:Permanent" xml:space="preserve"><value>Permanent</value></data>
+  <data name="eng:Visiting" xml:space="preserve"><value>Visiteur</value></data>
+  <data name="min per patient" xml:space="preserve"><value>min par patient</value></data>
+  <data name="over 15 minutes" xml:space="preserve"><value>plus de 15 minutes</value></data>
+  <data name="paid:Payroll" xml:space="preserve"><value>Payé par la paie</value></data>
+  <data name="paid:Vendor" xml:space="preserve"><value>Payé comme fournisseur</value></data>
+  <data name="pay:Payroll" xml:space="preserve"><value>Paie</value></data>
+  <data name="pay:Vendor" xml:space="preserve"><value>Fournisseur — comptabilité</value></data>
+  <data name="payroll, variable line" xml:space="preserve"><value>paie, ligne variable</value></data>
+  <data name="priv:anes" xml:space="preserve"><value>Anesthésie</value></data>
+  <data name="priv:er" xml:space="preserve"><value>Urgences</value></data>
+  <data name="priv:ip" xml:space="preserve"><value>Hospitalisation</value></data>
+  <data name="priv:opd" xml:space="preserve"><value>Consultation externe</value></data>
+  <data name="priv:proc" xml:space="preserve"><value>Actes</value></data>
+  <data name="priv:surg" xml:space="preserve"><value>Chirurgie</value></data>
+  <data name="the slot stays recorded" xml:space="preserve"><value>le créneau reste enregistré</value></data>
+  <data name="through payroll" xml:space="preserve"><value>par la paie</value></data>
+  <data name="through vendors &amp; payables" xml:space="preserve"><value>via fournisseurs et dettes</value></data>
+  <data name="visit:FollowUp" xml:space="preserve"><value>Suivi</value></data>
+  <data name="visit:New" xml:space="preserve"><value>Nouveau</value></data>
+  <data name="visit:Procedure" xml:space="preserve"><value>Acte</value></data>
+  <data name="visit:Video" xml:space="preserve"><value>Vidéo</value></data>
+  <data name="visits finished" xml:space="preserve"><value>visites terminées</value></data>
+  <data name="with a doctor now: {0}" xml:space="preserve"><value>chez un médecin : {0}</value></data>
+  <data name="{0} days" xml:space="preserve"><value>{0} jours</value></data>
+  <data name="1 month" xml:space="preserve"><value>1 mois</value></data>
+  <data name="1 week" xml:space="preserve"><value>1 semaine</value></data>
+  <data name="2 weeks" xml:space="preserve"><value>2 semaines</value></data>
+  <data name="3 months" xml:space="preserve"><value>3 mois</value></data>
+  <data name="6 months" xml:space="preserve"><value>6 mois</value></data>
+  <data name="A diagnosis is listed twice" xml:space="preserve"><value>Un diagnostic figure deux fois</value></data>
+  <data name="A quantity is 1 to 10000" xml:space="preserve"><value>Une quantité va de 1 à 10000</value></data>
+  <data name="Add at least one diagnosis before signing" xml:space="preserve"><value>Ajoutez au moins un diagnostic avant de signer</value></data>
+  <data name="Add drug" xml:space="preserve"><value>Ajouter un médicament</value></data>
+  <data name="Assessment (A)" xml:space="preserve"><value>Évaluation (A)</value></data>
+  <data name="At a glance" xml:space="preserve"><value>En un coup d'œil</value></data>
+  <data name="BP diastolic" xml:space="preserve"><value>PA diastolique</value></data>
+  <data name="BP systolic" xml:space="preserve"><value>PA systolique</value></data>
+  <data name="Chief complaint" xml:space="preserve"><value>Motif de consultation</value></data>
+  <data name="Clinical note" xml:space="preserve"><value>Note clinique</value></data>
+  <data name="Coding system" xml:space="preserve"><value>Système de codage</value></data>
+  <data name="Consultation" xml:space="preserve"><value>Consultation</value></data>
+  <data name="Diastolic pressure is 30 to 160" xml:space="preserve"><value>La pression diastolique va de 30 à 160</value></data>
+  <data name="Diastolic pressure must be below systolic" xml:space="preserve"><value>La diastolique doit être inférieure à la systolique</value></data>
+  <data name="Doctor worklist" xml:space="preserve"><value>Liste du médecin</value></data>
+  <data name="Dose &amp; duration" xml:space="preserve"><value>Dose et durée</value></data>
+  <data name="Drug" xml:space="preserve"><value>Médicament</value></data>
+  <data name="Drug name and strength" xml:space="preserve"><value>Nom et dosage du médicament</value></data>
+  <data name="Earlier visits" xml:space="preserve"><value>Visites antérieures</value></data>
+  <data name="Enter the chief complaint before signing" xml:space="preserve"><value>Saisissez le motif avant de signer</value></data>
+  <data name="Examination (O)" xml:space="preserve"><value>Examen (O)</value></data>
+  <data name="File" xml:space="preserve"><value>Dossier</value></data>
+  <data name="First visit" xml:space="preserve"><value>Première visite</value></data>
+  <data name="Follow-up in" xml:space="preserve"><value>Suivi dans</value></data>
+  <data name="Follow-up is 1 to 730 days" xml:space="preserve"><value>Le suivi va de 1 à 730 jours</value></data>
+  <data name="Heart rate" xml:space="preserve"><value>Fréquence cardiaque</value></data>
+  <data name="Heart rate is 20 to 250" xml:space="preserve"><value>La fréquence cardiaque va de 20 à 250</value></data>
+  <data name="Height cm" xml:space="preserve"><value>Taille cm</value></data>
+  <data name="Height is 30 to 250 cm" xml:space="preserve"><value>La taille va de 30 à 250 cm</value></data>
+  <data name="History (S)" xml:space="preserve"><value>Anamnèse (S)</value></data>
+  <data name="Last visit" xml:space="preserve"><value>Dernière visite</value></data>
+  <data name="Linked to the pharmacy stock when the pharmacy unit lands" xml:space="preserve"><value>Lié au stock de la pharmacie avec le module pharmacie</value></data>
+  <data name="Load standard ICD-10 codes" xml:space="preserve"><value>Charger les codes CIM-10 standard</value></data>
+  <data name="Make primary" xml:space="preserve"><value>Rendre principal</value></data>
+  <data name="Mark exactly one diagnosis as primary" xml:space="preserve"><value>Marquez exactement un diagnostic principal</value></data>
+  <data name="No diagnosis yet." xml:space="preserve"><value>Aucun diagnostic.</value></data>
+  <data name="No drug prescribed." xml:space="preserve"><value>Aucun médicament prescrit.</value></data>
+  <data name="No visits yet." xml:space="preserve"><value>Aucune visite.</value></data>
+  <data name="On signing" xml:space="preserve"><value>À la signature</value></data>
+  <data name="Open" xml:space="preserve"><value>Ouvrir</value></data>
+  <data name="Oxygen saturation is 50 to 100" xml:space="preserve"><value>La saturation va de 50 à 100</value></data>
+  <data name="Plan (P)" xml:space="preserve"><value>Plan (P)</value></data>
+  <data name="Prescription" xml:space="preserve"><value>Ordonnance</value></data>
+  <data name="Primary" xml:space="preserve"><value>Principal</value></data>
+  <data name="Qty" xml:space="preserve"><value>Qté</value></data>
+  <data name="Refer to" xml:space="preserve"><value>Adresser à</value></data>
+  <data name="Referral &amp; follow-up" xml:space="preserve"><value>Orientation et suivi</value></data>
+  <data name="Remaining" xml:space="preserve"><value>Restants</value></data>
+  <data name="Resume" xml:space="preserve"><value>Reprendre</value></data>
+  <data name="Save draft" xml:space="preserve"><value>Enregistrer le brouillon</value></data>
+  <data name="Search code or description..." xml:space="preserve"><value>Rechercher un code ou une description...</value></data>
+  <data name="Secondary" xml:space="preserve"><value>Secondaire</value></data>
+  <data name="Sign &amp; close visit" xml:space="preserve"><value>Signer et clôturer la visite</value></data>
+  <data name="Sign and close this visit? It cannot be changed afterwards." xml:space="preserve"><value>Signer et clôturer cette visite ? Elle ne pourra plus être modifiée.</value></data>
+  <data name="Signed" xml:space="preserve"><value>Signée</value></data>
+  <data name="Start" xml:space="preserve"><value>Commencer</value></data>
+  <data name="Systolic pressure is 50 to 260" xml:space="preserve"><value>La pression systolique va de 50 à 260</value></data>
+  <data name="Temperature is 30 to 44 °C" xml:space="preserve"><value>La température va de 30 à 44 °C</value></data>
+  <data name="Temperature °C" xml:space="preserve"><value>Température °C</value></data>
+  <data name="The patient must check in before the consultation starts" xml:space="preserve"><value>Le patient doit être enregistré avant la consultation</value></data>
+  <data name="The visit is locked, the appointment is finished and the note joins the patient&#x27;s file. Charges reach the bill once billing lands." xml:space="preserve"><value>La visite est verrouillée, le rendez-vous terminé et la note rejoint le dossier. Les frais iront à la facture avec le module facturation.</value></data>
+  <data name="This visit is signed and can no longer be changed" xml:space="preserve"><value>Cette visite est signée et ne peut plus être modifiée</value></data>
+  <data name="Today&#x27;s list" xml:space="preserve"><value>Liste du jour</value></data>
+  <data name="Unknown diagnosis code: {0}" xml:space="preserve"><value>Code diagnostic inconnu : {0}</value></data>
+  <data name="View visit" xml:space="preserve"><value>Voir la visite</value></data>
+  <data name="Visits" xml:space="preserve"><value>Visites</value></data>
+  <data name="Vitals" xml:space="preserve"><value>Constantes</value></data>
+  <data name="Vitals are taken before the patient goes in" xml:space="preserve"><value>Les constantes sont prises avant l'entrée du patient</value></data>
+  <data name="Wait" xml:space="preserve"><value>Attente</value></data>
+  <data name="Weight is 0.5 to 400 kg" xml:space="preserve"><value>Le poids va de 0,5 à 400 kg</value></data>
+  <data name="Weight kg" xml:space="preserve"><value>Poids kg</value></data>
+  <data name="Worklist" xml:space="preserve"><value>Liste</value></data>
+  <data name="check every prescription against it." xml:space="preserve"><value>vérifiez chaque ordonnance.</value></data>
+  <data name="e.g. 1 tab twice daily · 30 days" xml:space="preserve"><value>ex. 1 cp deux fois par jour · 30 jours</value></data>
+  <data name="enc:Draft" xml:space="preserve"><value>Brouillon</value></data>
+  <data name="enc:Signed" xml:space="preserve"><value>Signée</value></data>
+  <data name="min" xml:space="preserve"><value>min</value></data>
+  <data name="A count cannot be negative" xml:space="preserve"><value>Un comptage ne peut pas être négatif</value></data>
+  <data name="A difference found when a shift is counted" xml:space="preserve"><value>Écart constaté au comptage de la caisse</value></data>
+  <data name="A float cannot be negative" xml:space="preserve"><value>Le fonds de caisse ne peut pas être négatif</value></data>
+  <data name="A price cannot be negative" xml:space="preserve"><value>Un prix ne peut pas être négatif</value></data>
+  <data name="A quantity is 1 to 1000" xml:space="preserve"><value>Une quantité va de 1 à 1000</value></data>
+  <data name="Accommodation is counted from the bed stays" xml:space="preserve"><value>L'hébergement est calculé à partir des séjours</value></data>
+  <data name="Account" xml:space="preserve"><value>Compte</value></data>
+  <data name="Accounts" xml:space="preserve"><value>Comptes</value></data>
+  <data name="Add" xml:space="preserve"><value>Ajouter</value></data>
+  <data name="Add service" xml:space="preserve"><value>Ajouter un service</value></data>
+  <data name="All" xml:space="preserve"><value>Tous</value></data>
+  <data name="Amount" xml:space="preserve"><value>Montant</value></data>
+  <data name="An order is not a service the doctor can order" xml:space="preserve"><value>Une demande n'est pas un service prescriptible</value></data>
+  <data name="Another service already uses this code" xml:space="preserve"><value>Un autre service utilise déjà ce code</value></data>
+  <data name="Applies only to services marked taxable. Medical services are usually exempt; Kuwait has no VAT." xml:space="preserve"><value>S'applique aux seuls services taxables. Les services médicaux sont en général exonérés ; le Koweït n'a pas de TVA.</value></data>
+  <data name="Bank" xml:space="preserve"><value>Banque</value></data>
+  <data name="Bill" xml:space="preserve"><value>Facture</value></data>
+  <data name="Bill lines" xml:space="preserve"><value>Lignes de facture</value></data>
+  <data name="Billed" xml:space="preserve"><value>Facturé</value></data>
+  <data name="Billed as" xml:space="preserve"><value>Facturé comme</value></data>
+  <data name="Billing &amp; cashier" xml:space="preserve"><value>Facturation et caisse</value></data>
+  <data name="Billing settings" xml:space="preserve"><value>Paramètres de facturation</value></data>
+  <data name="Bills" xml:space="preserve"><value>Factures</value></data>
+  <data name="Bills, payments and cash differences post through the same journal engine as the rest of the system, into these accounts, in" xml:space="preserve"><value>Factures, encaissements et écarts de caisse passent par le même moteur d'écritures que le reste du système, sur ces comptes, en</value></data>
+  <data name="Card, transfer and wallet payments" xml:space="preserve"><value>Paiements carte, virement et portefeuille</value></data>
+  <data name="Cash" xml:space="preserve"><value>Espèces</value></data>
+  <data name="Cash balances" xml:space="preserve"><value>La caisse est juste</value></data>
+  <data name="Cash count" xml:space="preserve"><value>Comptage de la caisse</value></data>
+  <data name="Cash over" xml:space="preserve"><value>Excédent de caisse</value></data>
+  <data name="Cash over/short" xml:space="preserve"><value>Écarts de caisse</value></data>
+  <data name="Cash patient" xml:space="preserve"><value>Patient au comptant</value></data>
+  <data name="Cash payments and the cashier&#x27;s till" xml:space="preserve"><value>Paiements en espèces et tiroir-caisse</value></data>
+  <data name="Cash receipts" xml:space="preserve"><value>Encaissements en espèces</value></data>
+  <data name="Cash short" xml:space="preserve"><value>Manque de caisse</value></data>
+  <data name="Cashier" xml:space="preserve"><value>Caisse</value></data>
+  <data name="Cashier closing" xml:space="preserve"><value>Clôture de caisse</value></data>
+  <data name="Cashier desk" xml:space="preserve"><value>Poste de caisse</value></data>
+  <data name="Category" xml:space="preserve"><value>Catégorie</value></data>
+  <data name="Choose a consultation service" xml:space="preserve"><value>Choisissez un service de consultation</value></data>
+  <data name="Choose a service first" xml:space="preserve"><value>Choisissez d'abord un service</value></data>
+  <data name="Choose active posting accounts of this company" xml:space="preserve"><value>Choisissez des comptes de saisie actifs de la société</value></data>
+  <data name="Clinics desk" xml:space="preserve"><value>Caisse des consultations</value></data>
+  <data name="Close the shift" xml:space="preserve"><value>Clôturer la caisse</value></data>
+  <data name="Close the stay &amp; post" xml:space="preserve"><value>Clôturer le séjour et comptabiliser</value></data>
+  <data name="Close the visit &amp; post" xml:space="preserve"><value>Clôturer la visite et comptabiliser</value></data>
+  <data name="Close this bill and post it to the ledger? It cannot be changed afterwards." xml:space="preserve"><value>Clôturer et comptabiliser cette facture ? Elle ne pourra plus être modifiée.</value></data>
+  <data name="Close this shift? The count and any difference are posted." xml:space="preserve"><value>Clôturer la caisse ? Le comptage et tout écart sont comptabilisés.</value></data>
+  <data name="Closed and posted" xml:space="preserve"><value>Clôturée et comptabilisée</value></data>
+  <data name="Closing summary" xml:space="preserve"><value>Synthèse de clôture</value></data>
+  <data name="Collect &amp; issue receipt" xml:space="preserve"><value>Encaisser et émettre un reçu</value></data>
+  <data name="Collect payment" xml:space="preserve"><value>Encaisser</value></data>
+  <data name="Collected" xml:space="preserve"><value>Encaissé</value></data>
+  <data name="Count" xml:space="preserve"><value>Nombre</value></data>
+  <data name="Counted" xml:space="preserve"><value>Compté</value></data>
+  <data name="Coverage" xml:space="preserve"><value>Couverture</value></data>
+  <data name="Credit" xml:space="preserve"><value>Crédit</value></data>
+  <data name="Debit" xml:space="preserve"><value>Débit</value></data>
+  <data name="Default" xml:space="preserve"><value>Par défaut</value></data>
+  <data name="Default (billing settings)" xml:space="preserve"><value>Par défaut (paramètres)</value></data>
+  <data name="Denomination" xml:space="preserve"><value>Coupure</value></data>
+  <data name="Discharge the patient before closing the stay&#x27;s bill" xml:space="preserve"><value>Faites sortir le patient avant de clôturer la facture du séjour</value></data>
+  <data name="Due" xml:space="preserve"><value>Dû</value></data>
+  <data name="Edit service" xml:space="preserve"><value>Modifier le service</value></data>
+  <data name="Enter an amount above zero" xml:space="preserve"><value>Saisissez un montant supérieur à zéro</value></data>
+  <data name="Evening shift" xml:space="preserve"><value>Équipe du soir</value></data>
+  <data name="Every charge on a bill comes from here: the consultation a doctor is billed as, what the doctor orders, and what the desk adds. A bill keeps the price it was charged at." xml:space="preserve"><value>Chaque ligne de facture vient d'ici : la consultation, les demandes du médecin et les ajouts de l'accueil. Une facture garde le prix facturé.</value></data>
+  <data name="Exempt" xml:space="preserve"><value>Exonéré</value></data>
+  <data name="Expected cash" xml:space="preserve"><value>Espèces attendues</value></data>
+  <data name="Finance" xml:space="preserve"><value>Finances</value></data>
+  <data name="Gross" xml:space="preserve"><value>Brut</value></data>
+  <data name="Hand over to" xml:space="preserve"><value>Remettre à</value></data>
+  <data name="Handover" xml:space="preserve"><value>Remise</value></data>
+  <data name="Inpatient stay" xml:space="preserve"><value>Séjour hospitalier</value></data>
+  <data name="Insurer" xml:space="preserve"><value>Assureur</value></data>
+  <data name="Insurer share" xml:space="preserve"><value>Part assureur</value></data>
+  <data name="Journal preview" xml:space="preserve"><value>Aperçu de l'écriture</value></data>
+  <data name="Lab, imaging and procedures — billed to the visit when it is signed" xml:space="preserve"><value>Analyses, imagerie et actes — facturés à la signature de la visite</value></data>
+  <data name="Load the standard services" xml:space="preserve"><value>Charger les services standard</value></data>
+  <data name="Main treasury" xml:space="preserve"><value>Trésorerie principale</value></data>
+  <data name="Map the cash and cash over/short accounts in billing settings" xml:space="preserve"><value>Indiquez les comptes de caisse et d'écarts dans les paramètres</value></data>
+  <data name="Map the cash, bank and receivable accounts in billing settings" xml:space="preserve"><value>Indiquez les comptes caisse, banque et créances dans les paramètres</value></data>
+  <data name="Map the output VAT account in billing settings" xml:space="preserve"><value>Indiquez le compte de TVA collectée dans les paramètres</value></data>
+  <data name="Map the receivable and revenue accounts in billing settings" xml:space="preserve"><value>Indiquez les comptes de créances et de produits dans les paramètres</value></data>
+  <data name="Method" xml:space="preserve"><value>Mode</value></data>
+  <data name="Name the cashier desk" xml:space="preserve"><value>Nommez le poste de caisse</value></data>
+  <data name="New service" xml:space="preserve"><value>Nouveau service</value></data>
+  <data name="No bills yet." xml:space="preserve"><value>Aucune facture.</value></data>
+  <data name="No bills yet. A bill opens when a visit is signed or a patient is admitted." xml:space="preserve"><value>Aucune facture. Une facture s'ouvre à la signature d'une visite ou à l'admission.</value></data>
+  <data name="No difference." xml:space="preserve"><value>Aucun écart.</value></data>
+  <data name="No lines yet." xml:space="preserve"><value>Aucune ligne.</value></data>
+  <data name="No open shift — open one to take payments." xml:space="preserve"><value>Aucune caisse ouverte — ouvrez-en une pour encaisser.</value></data>
+  <data name="No payment yet." xml:space="preserve"><value>Aucun paiement.</value></data>
+  <data name="No services yet." xml:space="preserve"><value>Aucun service.</value></data>
+  <data name="No shift today yet." xml:space="preserve"><value>Aucune caisse aujourd'hui.</value></data>
+  <data name="Nothing ordered." xml:space="preserve"><value>Rien de demandé.</value></data>
+  <data name="Nothing to post yet." xml:space="preserve"><value>Rien à comptabiliser.</value></data>
+  <data name="One price list for the whole hospital" xml:space="preserve"><value>Une seule grille de prix pour l'hôpital</value></data>
+  <data name="Only a line added at the desk can be removed here" xml:space="preserve"><value>Seule une ligne ajoutée à l'accueil peut être retirée ici</value></data>
+  <data name="Only active posting accounts of this company are offered" xml:space="preserve"><value>Seuls les comptes de saisie actifs de la société sont proposés</value></data>
+  <data name="Only the shift&#x27;s cashier or a supervisor closes it" xml:space="preserve"><value>Seul le caissier ou un superviseur clôture la caisse</value></data>
+  <data name="Open bills" xml:space="preserve"><value>Factures ouvertes</value></data>
+  <data name="Open the shift" xml:space="preserve"><value>Ouvrir la caisse</value></data>
+  <data name="Open the visit" xml:space="preserve"><value>Ouvrir la visite</value></data>
+  <data name="Open your cashier shift before taking a payment" xml:space="preserve"><value>Ouvrez votre caisse avant d'encaisser</value></data>
+  <data name="Opened" xml:space="preserve"><value>Ouverte le</value></data>
+  <data name="Opening float" xml:space="preserve"><value>Fonds de caisse</value></data>
+  <data name="Orders (P)" xml:space="preserve"><value>Demandes (P)</value></data>
+  <data name="Outpatient visit" xml:space="preserve"><value>Visite externe</value></data>
+  <data name="Output VAT" xml:space="preserve"><value>TVA collectée</value></data>
+  <data name="Paid" xml:space="preserve"><value>Payé</value></data>
+  <data name="Patient balance due" xml:space="preserve"><value>Reste dû par le patient</value></data>
+  <data name="Patient receivables" xml:space="preserve"><value>Créances patients</value></data>
+  <data name="Patient share + tax" xml:space="preserve"><value>Part patient + taxe</value></data>
+  <data name="Payments" xml:space="preserve"><value>Paiements</value></data>
+  <data name="Posted to the general ledger" xml:space="preserve"><value>Comptabilisé au grand livre</value></data>
+  <data name="Posted when the bill closes, through the accounting journal engine" xml:space="preserve"><value>Comptabilisé à la clôture via le moteur d'écritures</value></data>
+  <data name="Price" xml:space="preserve"><value>Prix</value></data>
+  <data name="Receipts" xml:space="preserve"><value>Encaissements</value></data>
+  <data name="Revenue (default)" xml:space="preserve"><value>Produits (par défaut)</value></data>
+  <data name="Revenue account" xml:space="preserve"><value>Compte de produits</value></data>
+  <data name="Running — counted until discharge" xml:space="preserve"><value>En cours — compté jusqu'à la sortie</value></data>
+  <data name="Search a test, scan or procedure..." xml:space="preserve"><value>Rechercher une analyse, un examen ou un acte...</value></data>
+  <data name="Service catalogue" xml:space="preserve"><value>Catalogue des services</value></data>
+  <data name="Shift" xml:space="preserve"><value>Caisse</value></data>
+  <data name="Sign the visit before closing its bill" xml:space="preserve"><value>Signez la visite avant de clôturer sa facture</value></data>
+  <data name="Still owed" xml:space="preserve"><value>Reste dû</value></data>
+  <data name="Tax" xml:space="preserve"><value>Taxe</value></data>
+  <data name="Tax on taxable services" xml:space="preserve"><value>Taxe sur les services taxables</value></data>
+  <data name="Taxable" xml:space="preserve"><value>Taxable</value></data>
+  <data name="The amount is more than the patient owes ({0})" xml:space="preserve"><value>Le montant dépasse ce que doit le patient ({0})</value></data>
+  <data name="The department&#x27;s consultation" xml:space="preserve"><value>La consultation du service</value></data>
+  <data name="The difference posts to the cash over/short account." xml:space="preserve"><value>L'écart est passé au compte d'écarts de caisse.</value></data>
+  <data name="The ledger refused the posting: {0}" xml:space="preserve"><value>Le grand livre a refusé l'écriture : {0}</value></data>
+  <data name="The patient pays the bill in full; insurer shares and co-pays arrive with the insurance unit. Tax applies only to services marked taxable." xml:space="preserve"><value>Le patient paie tout ; parts assureur et tickets modérateurs arrivent avec le module assurance. La taxe ne vise que les services taxables.</value></data>
+  <data name="The tax rate is 0 to 100%" xml:space="preserve"><value>Le taux de taxe va de 0 à 100 %</value></data>
+  <data name="The visit is locked, the appointment is finished, and the consultation fee and the orders go to the visit&#x27;s bill." xml:space="preserve"><value>La visite est verrouillée, le rendez-vous terminé, et la consultation et les demandes vont à la facture.</value></data>
+  <data name="This bill is closed" xml:space="preserve"><value>Cette facture est clôturée</value></data>
+  <data name="This shift is already closed" xml:space="preserve"><value>Cette caisse est déjà clôturée</value></data>
+  <data name="Through the accounting engine" xml:space="preserve"><value>Via le moteur comptable</value></data>
+  <data name="Today&#x27;s shifts" xml:space="preserve"><value>Caisses du jour</value></data>
+  <data name="Total" xml:space="preserve"><value>Total</value></data>
+  <data name="Type" xml:space="preserve"><value>Type</value></data>
+  <data name="Unknown payment method" xml:space="preserve"><value>Mode de paiement inconnu</value></data>
+  <data name="Unknown service category" xml:space="preserve"><value>Catégorie de service inconnue</value></data>
+  <data name="Used for a service with no revenue account of its own" xml:space="preserve"><value>Pour un service sans compte de produits propre</value></data>
+  <data name="VAT" xml:space="preserve"><value>TVA</value></data>
+  <data name="VAT rate" xml:space="preserve"><value>Taux de TVA</value></data>
+  <data name="Value" xml:space="preserve"><value>Valeur</value></data>
+  <data name="Variance" xml:space="preserve"><value>Écart</value></data>
+  <data name="What patients owe once a bill closes" xml:space="preserve"><value>Ce que doivent les patients après clôture</value></data>
+  <data name="You already have an open shift" xml:space="preserve"><value>Vous avez déjà une caisse ouverte</value></data>
+  <data name="bill:Closed" xml:space="preserve"><value>Clôturée</value></data>
+  <data name="bill:Open" xml:space="preserve"><value>Ouverte</value></data>
+  <data name="cat:Accommodation" xml:space="preserve"><value>Hébergement</value></data>
+  <data name="cat:Consultation" xml:space="preserve"><value>Consultation</value></data>
+  <data name="cat:Lab" xml:space="preserve"><value>Laboratoire</value></data>
+  <data name="cat:Other" xml:space="preserve"><value>Autre</value></data>
+  <data name="cat:Pharmacy" xml:space="preserve"><value>Pharmacie</value></data>
+  <data name="cat:Procedure" xml:space="preserve"><value>Actes</value></data>
+  <data name="cat:Radiology" xml:space="preserve"><value>Radiologie</value></data>
+  <data name="discharged" xml:space="preserve"><value>sorti</value></data>
+  <data name="opened" xml:space="preserve"><value>ouverte à</value></data>
+  <data name="pm:Card" xml:space="preserve"><value>Carte</value></data>
+  <data name="pm:Cash" xml:space="preserve"><value>Espèces</value></data>
+  <data name="pm:Transfer" xml:space="preserve"><value>Virement</value></data>
+  <data name="pm:Wallet" xml:space="preserve"><value>Portefeuille</value></data>
+  <data name="receipts" xml:space="preserve"><value>reçus</value></data>
+  <data name="services" xml:space="preserve"><value>services</value></data>
+  <data name="shift:Closed" xml:space="preserve"><value>Clôturée</value></data>
+  <data name="shift:Open" xml:space="preserve"><value>Ouverte</value></data>
+  <data name="still in hospital" xml:space="preserve"><value>toujours hospitalisé</value></data>
+  <data name="visits and stays still running" xml:space="preserve"><value>visites et séjours en cours</value></data>
+  <data name="; the journal entry is in" xml:space="preserve"><value> ; l'écriture comptable est en</value></data>
+  <data name="A category is a medicine or a consumable" xml:space="preserve"><value>Une catégorie est un médicament ou un consommable</value></data>
+  <data name="A draft version of this list already exists" xml:space="preserve"><value>Une version brouillon de cette liste existe déjà</value></data>
+  <data name="A foreign-currency bill is collected after it is closed" xml:space="preserve"><value>Une facture en devise est encaissée après sa clôture</value></data>
+  <data name="A foreign-currency bill paid at a rate other than its closing rate" xml:space="preserve"><value>Facture en devise payée à un autre cours que celui de sa clôture</value></data>
+  <data name="A medicine's price in any list never exceeds its approved public price. The item and its selling price come from the Inventory item card." xml:space="preserve"><value>Le prix d'un médicament ne dépasse jamais son prix public homologué. L'article et son prix de vente viennent de la fiche article du stock.</value></data>
+  <data name="A new list — prices not updated:" xml:space="preserve"><value>Nouvelle liste — prix non mis à jour :</value></data>
+  <data name="A new service, medicine or consumable lands on the main list only. Every other list shows it as new until you add it through its discount rule, and a change of the main price marks the line not updated there." xml:space="preserve"><value>Un nouveau service, médicament ou consommable entre dans la liste principale seulement. Les autres listes l'affichent comme nouveau jusqu'à son ajout par leur règle de remise, et un changement du prix principal y marque la ligne non mise à jour.</value></data>
+  <data name="A percentage is between -100 and 1000" xml:space="preserve"><value>Un pourcentage va de -100 à 1000</value></data>
+  <data name="A rounding step is above zero" xml:space="preserve"><value>Un pas d'arrondi est supérieur à zéro</value></data>
+  <data name="Above the medicine's public price ({0})" xml:space="preserve"><value>Au-dessus du prix public du médicament ({0})</value></data>
+  <data name="Add by the rule" xml:space="preserve"><value>Ajouter par la règle</value></data>
+  <data name="Add items" xml:space="preserve"><value>Ajouter des articles</value></data>
+  <data name="Add selected" xml:space="preserve"><value>Ajouter la sélection</value></data>
+  <data name="All lists" xml:space="preserve"><value>Toutes les listes</value></data>
+  <data name="Approve" xml:space="preserve"><value>Valider</value></data>
+  <data name="Approve all" xml:space="preserve"><value>Tout valider</value></data>
+  <data name="Approve the list" xml:space="preserve"><value>Valider la liste</value></data>
+  <data name="Approved" xml:space="preserve"><value>Validée</value></data>
+  <data name="Archive" xml:space="preserve"><value>Archiver</value></data>
+  <data name="Archive this list? Patients must be moved off it first." xml:space="preserve"><value>Archiver cette liste ? Les patients doivent d'abord en être retirés.</value></data>
+  <data name="Automatic" xml:space="preserve"><value>Automatique</value></data>
+  <data name="Awaiting review, or the main price moved" xml:space="preserve"><value>En attente de revue, ou le prix principal a changé</value></data>
+  <data name="Billing" xml:space="preserve"><value>Facturation</value></data>
+  <data name="By the rule" xml:space="preserve"><value>Par la règle</value></data>
+  <data name="By this list's rule" xml:space="preserve"><value>Par la règle de cette liste</value></data>
+  <data name="Capped at the public price" xml:space="preserve"><value>Plafonné au prix public</value></data>
+  <data name="Catalogue" xml:space="preserve"><value>Catalogue</value></data>
+  <data name="Change" xml:space="preserve"><value>Écart</value></data>
+  <data name="Changing the rule sends every rule-priced line back to review." xml:space="preserve"><value>Changer la règle renvoie en revue chaque ligne tarifée par la règle.</value></data>
+  <data name="Choose a service" xml:space="preserve"><value>Choisir un service</value></data>
+  <data name="Choose an approved price list" xml:space="preserve"><value>Choisissez une liste de prix validée</value></data>
+  <data name="Closing fixes its rate; a payment at another rate posts the difference to the exchange-difference account." xml:space="preserve"><value>La clôture fige le cours ; un paiement à un autre cours passe l'écart au compte de différences de change.</value></data>
+  <data name="Closing rate" xml:space="preserve"><value>Cours de clôture</value></data>
+  <data name="Consumables" xml:space="preserve"><value>Consommables</value></data>
+  <data name="Copy as a new version" xml:space="preserve"><value>Copier en nouvelle version</value></data>
+  <data name="Create and copy the items" xml:space="preserve"><value>Créer et copier les articles</value></data>
+  <data name="Created in" xml:space="preserve"><value>Créé dans</value></data>
+  <data name="Currencies in use" xml:space="preserve"><value>Devises utilisées</value></data>
+  <data name="Currency" xml:space="preserve"><value>Devise</value></data>
+  <data name="Discount rule" xml:space="preserve"><value>Règle de remise</value></data>
+  <data name="Each item is defined once" xml:space="preserve"><value>Chaque article est défini une seule fois</value></data>
+  <data name="Edit the list" xml:space="preserve"><value>Modifier la liste</value></data>
+  <data name="Empty = by the rule" xml:space="preserve"><value>Vide = par la règle</value></data>
+  <data name="Enter the start date" xml:space="preserve"><value>Saisissez la date de début</value></data>
+  <data name="Entered the catalogue" xml:space="preserve"><value>Entré au catalogue</value></data>
+  <data name="Every active item of a mapped category is a hospital medicine or consumable, priced at its selling price on the main list" xml:space="preserve"><value>Tout article actif d'une catégorie liée est un médicament ou consommable de l'hôpital, à son prix de vente sur la liste principale</value></data>
+  <data name="Every item is copied — all not updated" xml:space="preserve"><value>Tous les articles sont copiés — tous non mis à jour</value></data>
+  <data name="Every item was copied at the main list's latest prices through the discount rule. Review each line and approve it, or approve them all; the list prices no bill before that." xml:space="preserve"><value>Tous les articles ont été copiés aux derniers prix de la liste principale via la règle de remise. Revoyez et validez chaque ligne, ou validez tout ; la liste ne tarifie aucune facture avant cela.</value></data>
+  <data name="Exchange differences" xml:space="preserve"><value>Différences de change</value></data>
+  <data name="Facility currency" xml:space="preserve"><value>Devise de l'établissement</value></data>
+  <data name="From the card" xml:space="preserve"><value>De la fiche</value></data>
+  <data name="Frozen rate" xml:space="preserve"><value>Cours figé</value></data>
+  <data name="Hospital — service catalogue" xml:space="preserve"><value>Hôpital — catalogue des services</value></data>
+  <data name="How a bill line is priced" xml:space="preserve"><value>Comment une ligne de facture est tarifée</value></data>
+  <data name="In the facility currency" xml:space="preserve"><value>En devise de l'établissement</value></data>
+  <data name="Inventory categories in the hospital" xml:space="preserve"><value>Catégories de stock de l'hôpital</value></data>
+  <data name="Inventory has no categories yet." xml:space="preserve"><value>Le stock n'a pas encore de catégories.</value></data>
+  <data name="Inventory — the item card" xml:space="preserve"><value>Stock — la fiche article</value></data>
+  <data name="Item" xml:space="preserve"><value>Article</value></data>
+  <data name="Items on the main list that are not on this one. They come in at the rule's price and show not updated until you approve them." xml:space="preserve"><value>Articles de la liste principale absents de celle-ci. Ils entrent au prix de la règle et restent non mis à jour jusqu'à validation.</value></data>
+  <data name="Its own price if it has one, otherwise the main price through the discount rule and rounding." xml:space="preserve"><value>Son prix propre s'il en a un, sinon le prix principal via la règle de remise et l'arrondi.</value></data>
+  <data name="Its price in every list" xml:space="preserve"><value>Son prix dans chaque liste</value></data>
+  <data name="Kind" xml:space="preserve"><value>Type</value></data>
+  <data name="List" xml:space="preserve"><value>Liste</value></data>
+  <data name="Main" xml:space="preserve"><value>Principale</value></data>
+  <data name="Main list" xml:space="preserve"><value>Liste principale</value></data>
+  <data name="Main list price" xml:space="preserve"><value>Prix de la liste principale</value></data>
+  <data name="Map an inventory category to the hospital below; its items appear here." xml:space="preserve"><value>Liez ci-dessous une catégorie de stock à l'hôpital ; ses articles apparaissent ici.</value></data>
+  <data name="Map the exchange-difference account in billing settings" xml:space="preserve"><value>Paramétrez le compte de différences de change</value></data>
+  <data name="Medicines" xml:space="preserve"><value>Médicaments</value></data>
+  <data name="Negative = a discount off the main price, positive = a mark-up" xml:space="preserve"><value>Négatif = remise sur le prix principal, positif = majoration</value></data>
+  <data name="Never above the approved public price, whatever the rule." xml:space="preserve"><value>Jamais au-dessus du prix public homologué, quelle que soit la règle.</value></data>
+  <data name="New" xml:space="preserve"><value>Nouveau</value></data>
+  <data name="New catalogue item" xml:space="preserve"><value>Nouvel article du catalogue</value></data>
+  <data name="New item or consumable" xml:space="preserve"><value>Nouvel article ou consommable</value></data>
+  <data name="New items not added" xml:space="preserve"><value>Nouveaux articles non ajoutés</value></data>
+  <data name="New list" xml:space="preserve"><value>Nouvelle liste</value></data>
+  <data name="New main-list items not added here:" xml:space="preserve"><value>Nouveaux articles de la liste principale non ajoutés ici :</value></data>
+  <data name="New price list" xml:space="preserve"><value>Nouvelle liste de prix</value></data>
+  <data name="New — not added" xml:space="preserve"><value>Nouveau — non ajouté</value></data>
+  <data name="No discount — it is the selling price" xml:space="preserve"><value>Aucune remise — c'est le prix de vente</value></data>
+  <data name="None" xml:space="preserve"><value>Aucun</value></data>
+  <data name="Not added" xml:space="preserve"><value>Non ajouté</value></data>
+  <data name="Not approved yet" xml:space="preserve"><value>Pas encore validée</value></data>
+  <data name="Not covered" xml:space="preserve"><value>Non couvert</value></data>
+  <data name="Not covered by this list (billed from the main list)" xml:space="preserve"><value>Non couvert par cette liste (facturé depuis la liste principale)</value></data>
+  <data name="Not covered, or not added yet?" xml:space="preserve"><value>Non couvert, ou pas encore ajouté ?</value></data>
+  <data name="Not hospital" xml:space="preserve"><value>Hors hôpital</value></data>
+  <data name="Not on the list: priced from the main list" xml:space="preserve"><value>Absent de la liste : tarifé depuis la liste principale</value></data>
+  <data name="Not updated" xml:space="preserve"><value>Non mis à jour</value></data>
+  <data name="Nothing on this list in this group." xml:space="preserve"><value>Rien dans ce groupe sur cette liste.</value></data>
+  <data name="Nothing to add" xml:space="preserve"><value>Rien à ajouter</value></data>
+  <data name="On other lists" xml:space="preserve"><value>Sur les autres listes</value></data>
+  <data name="On the main list only" xml:space="preserve"><value>Sur la liste principale seulement</value></data>
+  <data name="Only a draft is approved" xml:space="preserve"><value>Seul un brouillon se valide</value></data>
+  <data name="Only a draft is edited; copy an approved list as a new version" xml:space="preserve"><value>Seul un brouillon se modifie ; copiez une liste validée en nouvelle version</value></data>
+  <data name="Only a medicine has a public price" xml:space="preserve"><value>Seul un médicament a un prix public</value></data>
+  <data name="Only an approved list appears here. The insurance unit will set it from the patient's contract." xml:space="preserve"><value>Seules les listes validées apparaissent ici. Le module assurance la fixera depuis le contrat du patient.</value></data>
+  <data name="Open a list to see its lines and review its prices" xml:space="preserve"><value>Ouvrez une liste pour voir ses lignes et revoir ses prix</value></data>
+  <data name="Open the item card" xml:space="preserve"><value>Ouvrir la fiche article</value></data>
+  <data name="Outside the list — main price" xml:space="preserve"><value>Hors liste — prix principal</value></data>
+  <data name="Own price" xml:space="preserve"><value>Prix propre</value></data>
+  <data name="Patients on this list" xml:space="preserve"><value>Patients sur cette liste</value></data>
+  <data name="Patients still use this list. Move them first" xml:space="preserve"><value>Des patients utilisent encore cette liste. Déplacez-les d'abord</value></data>
+  <data name="Pick a patient and a service to see the list and the price" xml:space="preserve"><value>Choisissez un patient et un service pour voir la liste et le prix</value></data>
+  <data name="Pick a patient and a service." xml:space="preserve"><value>Choisissez un patient et un service.</value></data>
+  <data name="Price list" xml:space="preserve"><value>Liste de prix</value></data>
+  <data name="Price lists" xml:space="preserve"><value>Listes de prix</value></data>
+  <data name="Price source" xml:space="preserve"><value>Source des prix</value></data>
+  <data name="Price state" xml:space="preserve"><value>État des prix</value></data>
+  <data name="Priced from" xml:space="preserve"><value>Tarifée depuis</value></data>
+  <data name="Priced from the main list in the bill's currency and marked on the bill." xml:space="preserve"><value>Tarifé depuis la liste principale dans la devise de la facture et signalé sur la facture.</value></data>
+  <data name="Prices not updated" xml:space="preserve"><value>Prix non mis à jour</value></data>
+  <data name="Prices not updated:" xml:space="preserve"><value>Prix non mis à jour :</value></data>
+  <data name="Public price" xml:space="preserve"><value>Prix public</value></data>
+  <data name="Public price (ceiling)" xml:space="preserve"><value>Prix public (plafond)</value></data>
+  <data name="Put a patient on this list from the patient's file." xml:space="preserve"><value>Placez un patient sur cette liste depuis son dossier.</value></data>
+  <data name="Rate" xml:space="preserve"><value>Cours</value></data>
+  <data name="Review the not-updated prices first" xml:space="preserve"><value>Revoyez d'abord les prix non mis à jour</value></data>
+  <data name="Rounding" xml:space="preserve"><value>Arrondi</value></data>
+  <data name="Rounding step" xml:space="preserve"><value>Pas d'arrondi</value></data>
+  <data name="Save and approve" xml:space="preserve"><value>Enregistrer et valider</value></data>
+  <data name="Save the price" xml:space="preserve"><value>Enregistrer le prix</value></data>
+  <data name="Saving a new price updates the main list at once, and marks this item not updated on every other list that holds it until it is reviewed:" xml:space="preserve"><value>Enregistrer un nouveau prix met à jour la liste principale aussitôt, et marque cet article non mis à jour sur chaque autre liste qui le contient jusqu'à revue :</value></data>
+  <data name="Search by name or MRN" xml:space="preserve"><value>Rechercher par nom ou n° de dossier</value></data>
+  <data name="Selling price" xml:space="preserve"><value>Prix de vente</value></data>
+  <data name="Services (group)" xml:space="preserve"><value>Services</value></data>
+  <data name="Services &amp; items" xml:space="preserve"><value>Services et articles</value></data>
+  <data name="Services are created in the service catalogue; medicines and consumables on the Inventory item card, in a category mapped below. The selling price entered there is recorded on the main list automatically — and only there." xml:space="preserve"><value>Les services se créent dans le catalogue des services ; médicaments et consommables sur la fiche article du stock, dans une catégorie liée ci-dessous. Le prix de vente saisi y est repris automatiquement sur la liste principale — et seulement là.</value></data>
+  <data name="Services to the nearest" xml:space="preserve"><value>Services au plus proche de</value></data>
+  <data name="Source" xml:space="preserve"><value>Source</value></data>
+  <data name="State" xml:space="preserve"><value>État</value></data>
+  <data name="The bill is in" xml:space="preserve"><value>La facture est en</value></data>
+  <data name="The bill keeps the price, the currency and the list. Editing the list later never changes an existing bill." xml:space="preserve"><value>La facture garde le prix, la devise et la liste. Modifier la liste ensuite ne change jamais une facture existante.</value></data>
+  <data name="The currency's decimals" xml:space="preserve"><value>Décimales de la devise</value></data>
+  <data name="The end date is before the start date" xml:space="preserve"><value>La date de fin précède la date de début</value></data>
+  <data name="The foreign currency in the books" xml:space="preserve"><value>La devise dans la comptabilité</value></data>
+  <data name="The line on that list" xml:space="preserve"><value>La ligne sur cette liste</value></data>
+  <data name="The list on the patient's file prices the bill, in its currency. No list, or a list not approved or not valid that day: the main list." xml:space="preserve"><value>La liste du dossier patient tarifie la facture, dans sa devise. Aucune liste, ou une liste non validée ou non valable ce jour : la liste principale.</value></data>
+  <data name="The main list and" xml:space="preserve"><value>La liste principale et</value></data>
+  <data name="The main list is updated" xml:space="preserve"><value>La liste principale est à jour</value></data>
+  <data name="The main list through the discount rule" xml:space="preserve"><value>La liste principale via la règle de remise</value></data>
+  <data name="The main list updates automatically" xml:space="preserve"><value>La liste principale se met à jour automatiquement</value></data>
+  <data name="The patient's bills are priced from this list, in its currency" xml:space="preserve"><value>Les factures du patient sont tarifées depuis cette liste, dans sa devise</value></data>
+  <data name="The patient's list" xml:space="preserve"><value>La liste du patient</value></data>
+  <data name="The patient's list is not approved or not valid today, so the main list applies" xml:space="preserve"><value>La liste du patient n'est pas validée ou pas valable aujourd'hui : la liste principale s'applique</value></data>
+  <data name="The public price is a ceiling" xml:space="preserve"><value>Le prix public est un plafond</value></data>
+  <data name="The regulator's approved price: no list may charge more" xml:space="preserve"><value>Le prix homologué : aucune liste ne peut le dépasser</value></data>
+  <data name="The selling price on the Inventory item card is the main list price. Changing it there marks this item not updated on every other list that holds it:" xml:space="preserve"><value>Le prix de vente de la fiche article du stock est le prix de la liste principale. Le changer y marque cet article non mis à jour sur chaque autre liste qui le contient :</value></data>
+  <data name="The selling price on the card IS the main list" xml:space="preserve"><value>Le prix de vente de la fiche EST la liste principale</value></data>
+  <data name="The snapshot" xml:space="preserve"><value>L'instantané</value></data>
+  <data name="There is no exchange rate for the bill's currency. Enter one in Accounting first" xml:space="preserve"><value>Aucun cours pour la devise de la facture. Saisissez-en un en comptabilité d'abord</value></data>
+  <data name="There is no exchange rate for this currency. Enter one in Accounting first" xml:space="preserve"><value>Aucun cours pour cette devise. Saisissez-en un en comptabilité d'abord</value></data>
+  <data name="They await review, or their main price changed after they were confirmed. The price shown is the rule applied to the current main price." xml:space="preserve"><value>En attente de revue, ou leur prix principal a changé depuis leur validation. Le prix affiché est la règle appliquée au prix principal actuel.</value></data>
+  <data name="This list" xml:space="preserve"><value>Cette liste</value></data>
+  <data name="This list is archived" xml:space="preserve"><value>Cette liste est archivée</value></data>
+  <data name="Try the pricing" xml:space="preserve"><value>Essayer la tarification</value></data>
+  <data name="Unknown list kind" xml:space="preserve"><value>Type de liste inconnu</value></data>
+  <data name="Up to date" xml:space="preserve"><value>À jour</value></data>
+  <data name="Updated automatically" xml:space="preserve"><value>Mis à jour automatiquement</value></data>
+  <data name="Updates itself from the card" xml:space="preserve"><value>Se met à jour depuis la fiche</value></data>
+  <data name="Valid from" xml:space="preserve"><value>Valable du</value></data>
+  <data name="Valid to" xml:space="preserve"><value>Valable au</value></data>
+  <data name="Validity" xml:space="preserve"><value>Validité</value></data>
+  <data name="Versions" xml:space="preserve"><value>Versions</value></data>
+  <data name="at the rate of the day it closes. It is paid after closing, and a different rate on payment posts to the exchange-difference account." xml:space="preserve"><value>au cours du jour de clôture. Elle est payée après la clôture, et un autre cours au paiement passe au compte de différences de change.</value></data>
+  <data name="at today's rate" xml:space="preserve"><value>au cours du jour</value></data>
+  <data name="catalogue items are copied at the main list's latest price through the rule, and every price is marked not updated until you review it. The list prices no bill before it is approved." xml:space="preserve"><value>articles du catalogue sont copiés au dernier prix de la liste principale via la règle, et chaque prix est marqué non mis à jour jusqu'à revue. La liste ne tarifie aucune facture avant validation.</value></data>
+  <data name="foreign" xml:space="preserve"><value>devise</value></data>
+  <data name="group:Consumable" xml:space="preserve"><value>Consommables</value></data>
+  <data name="group:Medicine" xml:space="preserve"><value>Médicaments</value></data>
+  <data name="group:Service" xml:space="preserve"><value>Services</value></data>
+  <data name="in" xml:space="preserve"><value>en</value></data>
+  <data name="items" xml:space="preserve"><value>articles</value></data>
+  <data name="kind:Cash" xml:space="preserve"><value>Comptant</value></data>
+  <data name="kind:Corporate" xml:space="preserve"><value>Entreprises</value></data>
+  <data name="kind:Government" xml:space="preserve"><value>Gouvernement</value></data>
+  <data name="kind:Insurer" xml:space="preserve"><value>Assureur</value></data>
+  <data name="new (count)" xml:space="preserve"><value>nouveaux</value></data>
+  <data name="not updated (count)" xml:space="preserve"><value>non mis à jour</value></data>
+  <data name="others" xml:space="preserve"><value>autres</value></data>
+  <data name="patients (count)" xml:space="preserve"><value>patients</value></data>
+  <data name="plst:Active" xml:space="preserve"><value>Active</value></data>
+  <data name="plst:Archived" xml:space="preserve"><value>Archivée</value></data>
+  <data name="plst:Draft" xml:space="preserve"><value>Brouillon</value></data>
+  <data name="src:ceiling" xml:space="preserve"><value>Plafonné au prix public</value></data>
+  <data name="src:excluded" xml:space="preserve"><value>Non couvert</value></data>
+  <data name="src:main" xml:space="preserve"><value>De la fiche</value></data>
+  <data name="src:missing" xml:space="preserve"><value>Non ajouté</value></data>
+  <data name="src:override" xml:space="preserve"><value>Prix propre</value></data>
+  <data name="src:rule" xml:space="preserve"><value>Par la règle</value></data>
+  <data name="{0} prices are not updated. Review them before approving" xml:space="preserve"><value>{0} prix non mis à jour. Revoyez-les avant de valider</value></data>
+  <data name="Priced from the patient's list, in its currency. Insurer shares and co-pays arrive with the insurance unit; until then the patient's share is the whole bill." xml:space="preserve"><value>Tarifée depuis la liste du patient, dans sa devise. Les parts assureur et tickets modérateurs arrivent avec le module assurance ; d'ici là, la part du patient est toute la facture.</value></data>
+  <data name="Arrived, not called yet" xml:space="preserve"><value>Arrivés, pas encore appelés</value></data>
+  <data name="Beds free" xml:space="preserve"><value>Lits libres</value></data>
+  <data name="Click any room to see who is inside and their details" xml:space="preserve"><value>Cliquez une pièce pour voir qui s'y trouve et ses détails</value></data>
+  <data name="Doctors today" xml:space="preserve"><value>Médecins du jour</value></data>
+  <data name="Hospital map" xml:space="preserve"><value>Plan de l'hôpital</value></data>
+  <data name="In beds" xml:space="preserve"><value>Aux lits</value></data>
+  <data name="In the consultation" xml:space="preserve"><value>En consultation</value></data>
+  <data name="No floors yet." xml:space="preserve"><value>Aucun étage pour l'instant.</value></data>
+  <data name="No patient here right now" xml:space="preserve"><value>Aucun patient ici pour l'instant</value></data>
+  <data name="No rooms on this floor yet." xml:space="preserve"><value>Aucune pièce à cet étage pour l'instant.</value></data>
+  <data name="Nobody right now" xml:space="preserve"><value>Personne pour l'instant</value></data>
+  <data name="Not found in any room" xml:space="preserve"><value>Introuvable dans les pièces</value></data>
+  <data name="Open the room" xml:space="preserve"><value>Ouvrir la chambre</value></data>
+  <data name="Patients in the building" xml:space="preserve"><value>Patients dans le bâtiment</value></data>
+  <data name="Search for a patient or a doctor..." xml:space="preserve"><value>Rechercher un patient ou un médecin...</value></data>
+  <data name="The space is free, or a service area." xml:space="preserve"><value>L'espace est libre, ou réservé aux services.</value></data>
+  <data name="Waiting in clinics" xml:space="preserve"><value>En attente aux consultations</value></data>
+  <data name="With appointments today" xml:space="preserve"><value>Avec des rendez-vous aujourd'hui</value></data>
+  <data name="in clinics" xml:space="preserve"><value>aux consultations</value></data>
+  <data name="of" xml:space="preserve"><value>sur</value></data>
+  <data name="Preview on the map" xml:space="preserve"><value>Aperçu sur le plan</value></data>
+  <data name="A critical limit lies outside the reference range" xml:space="preserve"><value>Une limite critique se situe hors de l'intervalle de référence</value></data>
+  <data name="A critical value — tell the doctor now" xml:space="preserve"><value>Valeur critique — prévenez le médecin maintenant</value></data>
+  <data name="A different person verifies the results they did not enter" xml:space="preserve"><value>Une autre personne valide les résultats qu'elle n'a pas saisis</value></data>
+  <data name="A technician enters the result and a specialist verifies it; only then is it visible to the doctor and in the patient file." xml:space="preserve"><value>Un technicien saisit le résultat et un biologiste le valide ; ce n'est qu'ensuite qu'il est visible par le médecin et dans le dossier.</value></data>
+  <data name="Already recorded" xml:space="preserve"><value>Déjà enregistré</value></data>
+  <data name="Analyte" xml:space="preserve"><value>Paramètre</value></data>
+  <data name="Another analyte of this test uses this code" xml:space="preserve"><value>Un autre paramètre de cette analyse utilise ce code</value></data>
+  <data name="Average turnaround" xml:space="preserve"><value>Délai moyen de rendu</value></data>
+  <data name="Awaiting verification" xml:space="preserve"><value>En attente de validation</value></data>
+  <data name="Call the ordering doctor, then record whom you told. The flag stays raised until you do." xml:space="preserve"><value>Appelez le médecin prescripteur, puis notez qui vous avez prévenu. L'alerte reste levée jusque-là.</value></data>
+  <data name="Collect" xml:space="preserve"><value>Prélever</value></data>
+  <data name="Collect the specimen before receiving it in the lab" xml:space="preserve"><value>Prélevez l'échantillon avant de le réceptionner au laboratoire</value></data>
+  <data name="Critical" xml:space="preserve"><value>Critique</value></data>
+  <data name="Critical high" xml:space="preserve"><value>Critique haut</value></data>
+  <data name="Critical low" xml:space="preserve"><value>Critique bas</value></data>
+  <data name="Critical value:" xml:space="preserve"><value>Valeur critique :</value></data>
+  <data name="Critical values not yet told" xml:space="preserve"><value>Valeurs critiques non signalées</value></data>
+  <data name="Decimals" xml:space="preserve"><value>Décimales</value></data>
+  <data name="Decimals are 0 to 4" xml:space="preserve"><value>Les décimales vont de 0 à 4</value></data>
+  <data name="Diagnostics" xml:space="preserve"><value>Diagnostic</value></data>
+  <data name="Enter a code of up to 30 characters" xml:space="preserve"><value>Saisissez un code de 30 caractères au plus</value></data>
+  <data name="Enter every result before verifying" xml:space="preserve"><value>Saisissez tous les résultats avant de valider</value></data>
+  <data name="Enter result" xml:space="preserve"><value>Saisir le résultat</value></data>
+  <data name="Enter the name in both languages" xml:space="preserve"><value>Saisissez le nom dans les deux langues</value></data>
+  <data name="Enter the specimen and the section" xml:space="preserve"><value>Saisissez l'échantillon et la section</value></data>
+  <data name="Entered, not yet verified" xml:space="preserve"><value>Saisis, pas encore validés</value></data>
+  <data name="Every lab order a doctor signs arrives here" xml:space="preserve"><value>Chaque demande d'analyse signée par un médecin arrive ici</value></data>
+  <data name="Every lab test is a service of the Lab category" xml:space="preserve"><value>Chaque analyse est un service de la catégorie Laboratoire</value></data>
+  <data name="Flag" xml:space="preserve"><value>Indicateur</value></data>
+  <data name="High" xml:space="preserve"><value>Haut</value></data>
+  <data name="Its price lives in the service catalogue; here are its specimen, its section and what it measures. A value outside the reference range is flagged L or H, and past a critical limit the doctor must be told." xml:space="preserve"><value>Son prix est dans le catalogue des services ; ici figurent son échantillon, sa section et ce qu'il mesure. Une valeur hors intervalle est marquée L ou H, et au-delà d'une limite critique le médecin doit être prévenu.</value></data>
+  <data name="Lab result" xml:space="preserve"><value>Résultat d'analyse</value></data>
+  <data name="Lab tests &amp; analytes" xml:space="preserve"><value>Analyses et paramètres</value></data>
+  <data name="Laboratory comment" xml:space="preserve"><value>Commentaire du laboratoire</value></data>
+  <data name="Laboratory worklist" xml:space="preserve"><value>Liste de travail du laboratoire</value></data>
+  <data name="Load the standard panels" xml:space="preserve"><value>Charger les bilans standard</value></data>
+  <data name="Low" xml:space="preserve"><value>Bas</value></data>
+  <data name="No lab orders here." xml:space="preserve"><value>Aucune demande d'analyse ici.</value></data>
+  <data name="No lab services yet. Add them in the service catalogue." xml:space="preserve"><value>Aucun service de laboratoire. Ajoutez-les dans le catalogue.</value></data>
+  <data name="Open work" xml:space="preserve"><value>Travail en cours</value></data>
+  <data name="Ordered" xml:space="preserve"><value>Demandé</value></data>
+  <data name="Orders today" xml:space="preserve"><value>Demandes du jour</value></data>
+  <data name="Previous" xml:space="preserve"><value>Précédent</value></data>
+  <data name="Priority" xml:space="preserve"><value>Priorité</value></data>
+  <data name="Receive" xml:space="preserve"><value>Réceptionner</value></data>
+  <data name="Receive the specimen in the lab before entering results" xml:space="preserve"><value>Réceptionnez l'échantillon avant de saisir les résultats</value></data>
+  <data name="Received in lab" xml:space="preserve"><value>Reçu au laboratoire</value></data>
+  <data name="Record the call" xml:space="preserve"><value>Consigner l'appel</value></data>
+  <data name="Reference range" xml:space="preserve"><value>Intervalle de référence</value></data>
+  <data name="Result" xml:space="preserve"><value>Résultat</value></data>
+  <data name="Result entered" xml:space="preserve"><value>Résultat saisi</value></data>
+  <data name="Result entry" xml:space="preserve"><value>Saisie du résultat</value></data>
+  <data name="Result verified — the doctor can see it" xml:space="preserve"><value>Résultat validé — le médecin peut le voir</value></data>
+  <data name="Results are entered once the specimen is received in the lab." xml:space="preserve"><value>Les résultats sont saisis une fois l'échantillon reçu au laboratoire.</value></data>
+  <data name="Routine" xml:space="preserve"><value>Routine</value></data>
+  <data name="Search..." xml:space="preserve"><value>Rechercher...</value></data>
+  <data name="Section" xml:space="preserve"><value>Section</value></data>
+  <data name="Section (English)" xml:space="preserve"><value>Section (anglais)</value></data>
+  <data name="Set its analytes and ranges in lab tests before entering results." xml:space="preserve"><value>Définissez ses paramètres et intervalles avant de saisir des résultats.</value></data>
+  <data name="Specimen" xml:space="preserve"><value>Échantillon</value></data>
+  <data name="Specimen (English)" xml:space="preserve"><value>Échantillon (anglais)</value></data>
+  <data name="Specimen:" xml:space="preserve"><value>Échantillon :</value></data>
+  <data name="Specimen trail" xml:space="preserve"><value>Traçabilité de l'échantillon</value></data>
+  <data name="Stat" xml:space="preserve"><value>Immédiat</value></data>
+  <data name="Test" xml:space="preserve"><value>Analyse</value></data>
+  <data name="The doctor must be told" xml:space="preserve"><value>Le médecin doit être prévenu</value></data>
+  <data name="The doctor was told of the critical value" xml:space="preserve"><value>Le médecin a été prévenu de la valeur critique</value></data>
+  <data name="The low limit is above the high limit" xml:space="preserve"><value>La limite basse dépasse la limite haute</value></data>
+  <data name="The specimen was already collected" xml:space="preserve"><value>L'échantillon a déjà été prélevé</value></data>
+  <data name="This order has no critical value" xml:space="preserve"><value>Cette demande n'a pas de valeur critique</value></data>
+  <data name="This result is verified and locked" xml:space="preserve"><value>Ce résultat est validé et verrouillé</value></data>
+  <data name="This test has no analytes yet" xml:space="preserve"><value>Cette analyse n'a pas encore de paramètres</value></data>
+  <data name="This test has no analytes yet. Set it up in lab tests first" xml:space="preserve"><value>Cette analyse n'a pas encore de paramètres. Configurez-la d'abord</value></data>
+  <data name="Two-step verification" xml:space="preserve"><value>Validation en deux étapes</value></data>
+  <data name="Unit" xml:space="preserve"><value>Unité</value></data>
+  <data name="Unknown priority" xml:space="preserve"><value>Priorité inconnue</value></data>
+  <data name="Urgent" xml:space="preserve"><value>Urgent</value></data>
+  <data name="Verified" xml:space="preserve"><value>Validé</value></data>
+  <data name="Verify" xml:space="preserve"><value>Valider</value></data>
+  <data name="Verify result" xml:space="preserve"><value>Valider le résultat</value></data>
+  <data name="View" xml:space="preserve"><value>Voir</value></data>
+  <data name="Whom you told, and how — e.g. Dr Khaled by phone" xml:space="preserve"><value>Qui vous avez prévenu, et comment — ex. Dr Khaled par téléphone</value></data>
+  <data name="Write whom you told" xml:space="preserve"><value>Indiquez qui vous avez prévenu</value></data>
+  <data name="analytes" xml:space="preserve"><value>paramètres</value></data>
+  <data name="collected at" xml:space="preserve"><value>prélevé à</value></data>
+  <data name="lab:Collected" xml:space="preserve"><value>Prélevé</value></data>
+  <data name="lab:Ordered" xml:space="preserve"><value>Demandé</value></data>
+  <data name="lab:Received" xml:space="preserve"><value>Au laboratoire</value></data>
+  <data name="lab:Resulted" xml:space="preserve"><value>À valider</value></data>
+  <data name="lab:Verified" xml:space="preserve"><value>Validé</value></data>
+  <data name="minutes, order to verification, today" xml:space="preserve"><value>minutes, de la demande à la validation, aujourd'hui</value></data>
+  <data name="not set up yet" xml:space="preserve"><value>pas encore configuré</value></data>
+  <data name="the doctor has not been recorded as told yet." xml:space="preserve"><value>l'appel au médecin n'est pas encore consigné.</value></data>
+  <data name="{0} needs a number" xml:space="preserve"><value>{0} demande un nombre</value></data>
+  <data name="Lab results" xml:space="preserve"><value>Résultats d'analyses</value></data>
+  <data name="still in the lab — shown once verified" xml:space="preserve"><value>encore au laboratoire — affichés une fois validés</value></data>
+  <data name="No verified lab results yet." xml:space="preserve"><value>Aucun résultat validé pour l'instant.</value></data>
+  <data name="Laboratory (module)" xml:space="preserve"><value>Laboratoire</value></data>
+  <data name="Collect the specimen of {0} for {1} ({2})?" xml:space="preserve"><value>Prélever l'échantillon de {0} pour {1} ({2}) ?</value></data>
+  <data name="Receive the specimen of {0} for {1} ({2}) in the lab?" xml:space="preserve"><value>Réceptionner au laboratoire l'échantillon de {0} pour {1} ({2}) ?</value></data>
+  <data name="Verify these results? Once verified they reach the doctor and the patient file and can no longer be changed." xml:space="preserve"><value>Valider ces résultats ? Une fois validés, ils parviennent au médecin et au dossier et ne peuvent plus être modifiés.</value></data>
+  <data name="Record that the doctor was told of this critical value?" xml:space="preserve"><value>Consigner que le médecin a été prévenu de cette valeur critique ?</value></data>
+  <data name="Change the priority of {0} to {1}?" xml:space="preserve"><value>Changer la priorité de {0} en {1} ?</value></data>
+  <data name="1 · Whom to tell?" xml:space="preserve"><value>1 · Qui prévenir ?</value></data>
+  <data name="2 · Following it up" xml:space="preserve"><value>2 · Suivi</value></data>
+  <data name="A full-screen alert with sound on any screen of the whole system; closes only on acknowledgement with read-back, and escalates if not acknowledged." xml:space="preserve"><value>Une alerte plein écran sonore sur tout écran du système ; ne se ferme qu'avec accusé et relecture, et remonte si elle n'est pas accusée.</value></data>
+  <data name="A notice to the ordering doctor when the result is verified — it does not stop his work." xml:space="preserve"><value>Un avis au prescripteur à la validation — il n'interrompt pas son travail.</value></data>
+  <data name="A notice — the value is out of range on an urgent order" xml:space="preserve"><value>Un avis — valeur hors intervalle sur une demande urgente</value></data>
+  <data name="Abnormal on a STAT/urgent order (L / H)" xml:space="preserve"><value>Anormal sur une demande urgente (L / H)</value></data>
+  <data name="Acknowledged" xml:space="preserve"><value>Accusé</value></data>
+  <data name="Acknowledged with read-back" xml:space="preserve"><value>Accusé avec relecture</value></data>
+  <data name="Acknowledged with read-back — the lab sees it now" xml:space="preserve"><value>Accusé avec relecture — le laboratoire le voit maintenant</value></data>
+  <data name="Alert by danger" xml:space="preserve"><value>Alerte selon le danger</value></data>
+  <data name="Alert sent to {0}" xml:space="preserve"><value>Alerte envoyée à {0}</value></data>
+  <data name="An alert on any screen of the system that blocks work until acknowledged — if he is not signed in, it shows the moment he opens the system" xml:space="preserve"><value>Une alerte sur tout écran du système qui bloque le travail jusqu'à l'accusé — s'il n'est pas connecté, elle s'affiche dès qu'il ouvre le système</value></data>
+  <data name="Awaiting acknowledgement with read-back" xml:space="preserve"><value>En attente d'accusé avec relecture</value></data>
+  <data name="Choose the doctor to tell" xml:space="preserve"><value>Choisissez le médecin à prévenir</value></data>
+  <data name="Choose the doctor to tell: he gets an alert on any screen of the system until he reads the value back. The flag stays raised until then." xml:space="preserve"><value>Choisissez le médecin : il reçoit une alerte sur tout écran jusqu'à relecture de la valeur. L'alerte reste levée jusque-là.</value></data>
+  <data name="Choose the doctor, then send" xml:space="preserve"><value>Choisissez le médecin, puis envoyez</value></data>
+  <data name="Critical (LL / HH)" xml:space="preserve"><value>Critique (LL / HH)</value></data>
+  <data name="Critical limit" xml:space="preserve"><value>Limite critique</value></data>
+  <data name="Critical value — act now" xml:space="preserve"><value>Valeur critique — agissez maintenant</value></data>
+  <data name="Escalated to you — {0} did not acknowledge it" xml:space="preserve"><value>Remonté vers vous — {0} ne l'a pas accusé</value></data>
+  <data name="Escalated to {0}" xml:space="preserve"><value>Remonté à {0}</value></data>
+  <data name="Escalation after {0} minutes" xml:space="preserve"><value>Remontée après {0} minutes</value></data>
+  <data name="Following it up" xml:space="preserve"><value>Suivi</value></data>
+  <data name="From the laboratory" xml:space="preserve"><value>Du laboratoire</value></data>
+  <data name="How" xml:space="preserve"><value>Comment</value></data>
+  <data name="It opens on his next screen or sign-in" xml:space="preserve"><value>Elle s'ouvre à son prochain écran ou connexion</value></data>
+  <data name="No alert sent yet" xml:space="preserve"><value>Aucune alerte envoyée</value></data>
+  <data name="No alert; it appears in the patient file once verified." xml:space="preserve"><value>Pas d'alerte ; elle apparaît au dossier une fois validée.</value></data>
+  <data name="No doctors yet. Add them in practitioners." xml:space="preserve"><value>Aucun médecin. Ajoutez-les dans les praticiens.</value></data>
+  <data name="No other doctor of the department has a user — escalation has no one to reach" xml:space="preserve"><value>Aucun autre médecin du service n'a d'utilisateur — la remontée n'atteint personne</value></data>
+  <data name="Normal" xml:space="preserve"><value>Normal</value></data>
+  <data name="Not seen yet" xml:space="preserve"><value>Pas encore vu</value></data>
+  <data name="Notify a critical value" xml:space="preserve"><value>Signaler une valeur critique</value></data>
+  <data name="Notify the doctor" xml:space="preserve"><value>Prévenir le médecin</value></data>
+  <data name="On every screen of the system" xml:space="preserve"><value>Sur tous les écrans du système</value></data>
+  <data name="Open patient file" xml:space="preserve"><value>Ouvrir le dossier</value></data>
+  <data name="Open the result" xml:space="preserve"><value>Ouvrir le résultat</value></data>
+  <data name="Or another doctor" xml:space="preserve"><value>Ou un autre médecin</value></data>
+  <data name="Ordering doctor" xml:space="preserve"><value>Médecin prescripteur</value></data>
+  <data name="Out-of-range result on an urgent order" xml:space="preserve"><value>Résultat hors intervalle sur une demande urgente</value></data>
+  <data name="Outpatient" xml:space="preserve"><value>Consultation externe</value></data>
+  <data name="Phone call — I record it myself" xml:space="preserve"><value>Appel téléphonique — je le consigne moi-même</value></data>
+  <data name="Preview what the doctor sees" xml:space="preserve"><value>Aperçu de ce que voit le médecin</value></data>
+  <data name="Preview — this is what the doctor sees" xml:space="preserve"><value>Aperçu — voici ce que voit le médecin</value></data>
+  <data name="Read back on screen:" xml:space="preserve"><value>Relu à l'écran :</value></data>
+  <data name="Reading the value back prevents a transcription error; it is recorded with your name and time in the patient file." xml:space="preserve"><value>Relire la valeur évite une erreur de transcription ; c'est consigné à votre nom et heure dans le dossier.</value></data>
+  <data name="Received — I will act" xml:space="preserve"><value>Reçu — j'agis</value></data>
+  <data name="Reminder — not acknowledged yet" xml:space="preserve"><value>Rappel — pas encore accusé</value></data>
+  <data name="Result verified" xml:space="preserve"><value>Résultat validé</value></data>
+  <data name="Screen + text message" xml:space="preserve"><value>Écran + SMS</value></data>
+  <data name="Seen by the doctor" xml:space="preserve"><value>Vu par le médecin</value></data>
+  <data name="Send the critical alert" xml:space="preserve"><value>Envoyer l'alerte critique</value></data>
+  <data name="Send the critical alert to {0}? It will block his screen until he reads the value back." xml:space="preserve"><value>Envoyer l'alerte critique à {0} ? Elle bloquera son écran jusqu'à relecture de la valeur.</value></data>
+  <data name="Text message to his mobile" xml:space="preserve"><value>SMS sur son mobile</value></data>
+  <data name="The alert opened on his screen" xml:space="preserve"><value>L'alerte s'est ouverte sur son écran</value></data>
+  <data name="The call was recorded" xml:space="preserve"><value>L'appel a été consigné</value></data>
+  <data name="The lab sees it live; the red flag clears only on acknowledgement" xml:space="preserve"><value>Le laboratoire suit en direct ; l'alerte rouge ne s'efface qu'à l'accusé</value></data>
+  <data name="The ordering doctor is preselected; a doctor of his department or any other doctor can be chosen instead" xml:space="preserve"><value>Le prescripteur est présélectionné ; un médecin de son service ou tout autre peut être choisi</value></data>
+  <data name="To confirm, type the value as you read it" xml:space="preserve"><value>Pour confirmer, saisissez la valeur telle que vous l'avez lue</value></data>
+  <data name="alert waiting" xml:space="preserve"><value>alerte en attente</value></data>
+  <data name="choose whom to tell; he gets an alert sized to the danger and his acknowledgement is recorded." xml:space="preserve"><value>choisissez qui prévenir ; il reçoit une alerte à la mesure du danger et son accusé est consigné.</value></data>
+  <data name="has no user in the system — an alert cannot reach him" xml:space="preserve"><value>n'a pas d'utilisateur — l'alerte ne peut l'atteindre</value></data>
+  <data name="just now" xml:space="preserve"><value>à l'instant</value></data>
+  <data name="left before the reminder" xml:space="preserve"><value>avant le rappel</value></data>
+  <data name="needs an SMS provider, not connected yet" xml:space="preserve"><value>nécessite un fournisseur SMS, pas encore connecté</value></data>
+  <data name="not on duty now" xml:space="preserve"><value>pas de service maintenant</value></data>
+  <data name="on duty now" xml:space="preserve"><value>de service maintenant</value></data>
+  <data name="reminded" xml:space="preserve"><value>rappelé</value></data>
+  <data name="sent by {0}" xml:space="preserve"><value>envoyée par {0}</value></data>
+  <data name="the alert sounded again on his screen" xml:space="preserve"><value>l'alerte a de nouveau sonné sur son écran</value></data>
+  <data name="the doctor acknowledged it." xml:space="preserve"><value>le médecin l'a accusée.</value></data>
+  <data name="to {0} — same department" xml:space="preserve"><value>à {0} — même service</value></data>
+  <data name="{0} min ago" xml:space="preserve"><value>il y a {0} min</value></data>
+  <data name="An alert to this doctor is already waiting" xml:space="preserve"><value>Une alerte attend déjà ce médecin</value></data>
+  <data name="The doctor already acknowledged this critical value" xml:space="preserve"><value>Le médecin a déjà accusé cette valeur critique</value></data>
+  <data name="The value you typed is not the value sent. Read it again" xml:space="preserve"><value>La valeur saisie n'est pas celle envoyée. Relisez-la</value></data>
+  <data name="This doctor has no user in the system, so an alert cannot reach him" xml:space="preserve"><value>Ce médecin n'a pas d'utilisateur, l'alerte ne peut l'atteindre</value></data>
+  <data name="Other values out of range" xml:space="preserve"><value>Autres valeurs hors intervalle</value></data>
+  <data name="Confirm that you received the critical value {0} for {1}? It is recorded with your name and time in the patient file." xml:space="preserve"><value>Confirmer la réception de la valeur critique {0} pour {1} ? C'est consigné à votre nom et heure dans le dossier.</value></data>
+  <data name="Confirm" xml:space="preserve"><value>Confirmer</value></data>
+  <data name="A critical result — tell the doctor now" xml:space="preserve"><value>Résultat critique — prévenez le médecin maintenant</value></data>
+  <data name="A patient is being scanned in this room" xml:space="preserve"><value>Un patient est en cours d'examen dans cette salle</value></data>
+  <data name="Add the machines and their modality before patients arrive." xml:space="preserve"><value>Ajoutez les appareils et leur modalité avant l'arrivée des patients.</value></data>
+  <data name="Another room uses this code" xml:space="preserve"><value>Une autre salle utilise ce code</value></data>
+  <data name="Arrived" xml:space="preserve"><value>Arrivé</value></data>
+  <data name="Arrived at radiology" xml:space="preserve"><value>Arrivé en radiologie</value></data>
+  <data name="Choose a working room of this exam's modality" xml:space="preserve"><value>Choisissez une salle en service de cette modalité</value></data>
+  <data name="Choose whether the result is normal, abnormal or critical" xml:space="preserve"><value>Indiquez si le résultat est normal, anormal ou critique</value></data>
+  <data name="Confirm that you received the critical imaging result {0} for {1}? It is recorded with your name and time in the patient file." xml:space="preserve"><value>Confirmer la réception du résultat d'imagerie critique {0} pour {1} ? C'est consigné à votre nom et heure dans le dossier.</value></data>
+  <data name="Contrast allergy" xml:space="preserve"><value>Allergie au produit de contraste</value></data>
+  <data name="Critical result:" xml:space="preserve"><value>Résultat critique :</value></data>
+  <data name="Each machine takes the patients of its modality; one in maintenance takes nobody" xml:space="preserve"><value>Chaque appareil reçoit les patients de sa modalité ; un appareil en maintenance n'en reçoit aucun</value></data>
+  <data name="Earlier reports" xml:space="preserve"><value>Comptes rendus antérieurs</value></data>
+  <data name="End maintenance" xml:space="preserve"><value>Fin de maintenance</value></data>
+  <data name="End scan" xml:space="preserve"><value>Terminer l'examen</value></data>
+  <data name="End the maintenance of {0}? It takes patients again." xml:space="preserve"><value>Terminer la maintenance de {0} ? Il reçoit à nouveau des patients.</value></data>
+  <data name="End the scan before writing the report" xml:space="preserve"><value>Terminez l'examen avant de rédiger le compte rendu</value></data>
+  <data name="End the scan? The room is freed and the report can be written." xml:space="preserve"><value>Terminer l'examen ? La salle est libérée et le compte rendu peut être rédigé.</value></data>
+  <data name="Enter a code of up to 20 characters" xml:space="preserve"><value>Saisissez un code de 20 caractères au plus</value></data>
+  <data name="Every imaging exam is a service of the Radiology category" xml:space="preserve"><value>Chaque examen d'imagerie est un service de la catégorie Radiologie</value></data>
+  <data name="Every imaging order a doctor signs arrives here" xml:space="preserve"><value>Chaque demande d'imagerie signée par un médecin arrive ici</value></data>
+  <data name="Exam" xml:space="preserve"><value>Examen</value></data>
+  <data name="Exam trail" xml:space="preserve"><value>Traçabilité de l'examen</value></data>
+  <data name="Exams &amp; rooms" xml:space="preserve"><value>Examens et salles</value></data>
+  <data name="Findings" xml:space="preserve"><value>Constatations</value></data>
+  <data name="Free (room)" xml:space="preserve"><value>Libre</value></data>
+  <data name="Imaging order" xml:space="preserve"><value>Demande d'imagerie</value></data>
+  <data name="Imaging report" xml:space="preserve"><value>Compte rendu d'imagerie</value></data>
+  <data name="Imaging reports" xml:space="preserve"><value>Comptes rendus d'imagerie</value></data>
+  <data name="Imaging rooms" xml:space="preserve"><value>Salles d'imagerie</value></data>
+  <data name="Impression" xml:space="preserve"><value>Conclusion</value></data>
+  <data name="Impression category" xml:space="preserve"><value>Catégorie de conclusion</value></data>
+  <data name="In maintenance" xml:space="preserve"><value>En maintenance</value></data>
+  <data name="Its price lives in the service catalogue; here are its modality, whether it uses contrast, and the text its report starts from." xml:space="preserve"><value>Son prix est dans le catalogue ; ici figurent sa modalité, l'usage d'un produit de contraste et le texte de départ du compte rendu.</value></data>
+  <data name="Load the standard rooms &amp; exams" xml:space="preserve"><value>Charger les salles et examens standard</value></data>
+  <data name="Load the standard rooms and the setup of the starter imaging exams?" xml:space="preserve"><value>Charger les salles standard et la configuration des examens de base ?</value></data>
+  <data name="Maintenance" xml:space="preserve"><value>Maintenance</value></data>
+  <data name="Mark the patient arrived before scanning" xml:space="preserve"><value>Enregistrez l'arrivée du patient avant l'examen</value></data>
+  <data name="Mark {0} arrived for {1}? A room of the exam's type is given." xml:space="preserve"><value>Enregistrer l'arrivée de {0} pour {1} ? Une salle de la modalité lui est attribuée.</value></data>
+  <data name="Modality" xml:space="preserve"><value>Modalité</value></data>
+  <data name="No imaging orders here." xml:space="preserve"><value>Aucune demande d'imagerie ici.</value></data>
+  <data name="No imaging rooms yet" xml:space="preserve"><value>Aucune salle d'imagerie</value></data>
+  <data name="No patient" xml:space="preserve"><value>Aucun patient</value></data>
+  <data name="No radiology services yet. Add them in the service catalogue." xml:space="preserve"><value>Aucun service de radiologie. Ajoutez-les dans le catalogue.</value></data>
+  <data name="No signed imaging reports yet." xml:space="preserve"><value>Aucun compte rendu signé pour l'instant.</value></data>
+  <data name="No working room does this modality. Add one in radiology setup, or end its maintenance" xml:space="preserve"><value>Aucune salle en service pour cette modalité. Ajoutez-en une ou terminez sa maintenance</value></data>
+  <data name="Not connected yet" xml:space="preserve"><value>Pas encore connecté</value></data>
+  <data name="Open images in PACS" xml:space="preserve"><value>Ouvrir les images dans le PACS</value></data>
+  <data name="Patient ready" xml:space="preserve"><value>Patient prêt</value></data>
+  <data name="Patients are waiting in this room; it keeps its modality until they are done" xml:space="preserve"><value>Des patients attendent cette salle ; elle garde sa modalité jusqu'à leur passage</value></data>
+  <data name="Put {0} in maintenance? It takes no patients until you end it." xml:space="preserve"><value>Mettre {0} en maintenance ? Il ne reçoit plus de patients jusqu'à la fin.</value></data>
+  <data name="Queue" xml:space="preserve"><value>File d'attente</value></data>
+  <data name="Radiology" xml:space="preserve"><value>Radiologie</value></data>
+  <data name="Radiology worklist" xml:space="preserve"><value>Liste de travail de radiologie</value></data>
+  <data name="Report signed" xml:space="preserve"><value>Compte rendu signé</value></data>
+  <data name="Report signed — the doctor can see it" xml:space="preserve"><value>Compte rendu signé — le médecin peut le voir</value></data>
+  <data name="Report template" xml:space="preserve"><value>Modèle de compte rendu</value></data>
+  <data name="Report template (English)" xml:space="preserve"><value>Modèle de compte rendu (anglais)</value></data>
+  <data name="Report written" xml:space="preserve"><value>Compte rendu rédigé</value></data>
+  <data name="Reporting" xml:space="preserve"><value>Rédaction du compte rendu</value></data>
+  <data name="Room with the shortest queue" xml:space="preserve"><value>Salle la moins chargée</value></data>
+  <data name="Scan ended" xml:space="preserve"><value>Examen terminé</value></data>
+  <data name="Scan started" xml:space="preserve"><value>Examen commencé</value></data>
+  <data name="Scanning" xml:space="preserve"><value>En cours d'examen</value></data>
+  <data name="Sign report" xml:space="preserve"><value>Signer le compte rendu</value></data>
+  <data name="Sign this report as CRITICAL? You will then choose the doctor to tell." xml:space="preserve"><value>Signer ce compte rendu comme CRITIQUE ? Vous choisirez ensuite le médecin à prévenir.</value></data>
+  <data name="Sign this report? Once signed it reaches the doctor and the patient file and can no longer be changed." xml:space="preserve"><value>Signer ce compte rendu ? Une fois signé, il parvient au médecin et au dossier et ne peut plus être modifié.</value></data>
+  <data name="Signed by" xml:space="preserve"><value>Signé par</value></data>
+  <data name="Start scan" xml:space="preserve"><value>Commencer l'examen</value></data>
+  <data name="Start the scan of {0} in {1}?" xml:space="preserve"><value>Commencer l'examen de {0} dans {1} ?</value></data>
+  <data name="The doctor was told of the critical result" xml:space="preserve"><value>Le médecin a été prévenu du résultat critique</value></data>
+  <data name="The patient has already arrived" xml:space="preserve"><value>Le patient est déjà arrivé</value></data>
+  <data name="The radiographer performs the scan and the radiologist writes and signs the report; only a signed report reaches the doctor and the patient file." xml:space="preserve"><value>Le manipulateur réalise l'examen et le radiologue rédige et signe le compte rendu ; seul un compte rendu signé parvient au médecin et au dossier.</value></data>
+  <data name="The report is written once the scan has ended." xml:space="preserve"><value>Le compte rendu est rédigé une fois l'examen terminé.</value></data>
+  <data name="The room is scanning another patient" xml:space="preserve"><value>La salle examine un autre patient</value></data>
+  <data name="The scan has not started" xml:space="preserve"><value>L'examen n'a pas commencé</value></data>
+  <data name="This exam uses contrast and the patient's file records an allergy to it:" xml:space="preserve"><value>Cet examen utilise un produit de contraste et le dossier mentionne une allergie :</value></data>
+  <data name="This report is signed and locked" xml:space="preserve"><value>Ce compte rendu est signé et verrouillé</value></data>
+  <data name="This room is in maintenance" xml:space="preserve"><value>Cette salle est en maintenance</value></data>
+  <data name="Unknown impression category" xml:space="preserve"><value>Catégorie inconnue</value></data>
+  <data name="Unknown modality" xml:space="preserve"><value>Modalité inconnue</value></data>
+  <data name="Uses contrast" xml:space="preserve"><value>Avec produit de contraste</value></data>
+  <data name="Working" xml:space="preserve"><value>En service</value></data>
+  <data name="Write report" xml:space="preserve"><value>Rédiger</value></data>
+  <data name="Write the findings and the impression before signing" xml:space="preserve"><value>Rédigez les constatations et la conclusion avant de signer</value></data>
+  <data name="imp:Abnormal" xml:space="preserve"><value>Anormal</value></data>
+  <data name="imp:Critical" xml:space="preserve"><value>Critique</value></data>
+  <data name="imp:Normal" xml:space="preserve"><value>Normal</value></data>
+  <data name="mod:CT" xml:space="preserve"><value>Scanner</value></data>
+  <data name="mod:MR" xml:space="preserve"><value>IRM</value></data>
+  <data name="mod:US" xml:space="preserve"><value>Échographie</value></data>
+  <data name="mod:XR" xml:space="preserve"><value>Radiographie</value></data>
+  <data name="on today's list" xml:space="preserve"><value>sur la liste du jour</value></data>
+  <data name="rad:Arrived" xml:space="preserve"><value>Arrivé</value></data>
+  <data name="rad:Reporting" xml:space="preserve"><value>Compte rendu en cours</value></data>
+  <data name="rad:Scanning" xml:space="preserve"><value>En examen</value></data>
+  <data name="rad:Scheduled" xml:space="preserve"><value>Planifié</value></data>
+  <data name="rad:Signed" xml:space="preserve"><value>Signé</value></data>
+  <data name="still in radiology — shown once signed" xml:space="preserve"><value>encore en radiologie — affichés une fois signés</value></data>
+  <data name="with contrast" xml:space="preserve"><value>avec contraste</value></data>
+  <data name="{0} has a recorded contrast allergy. Start the scan anyway?" xml:space="preserve"><value>{0} a une allergie au contraste enregistrée. Commencer l'examen quand même ?</value></data>
+  <data name="Critical result — act now" xml:space="preserve"><value>Résultat critique — agissez maintenant</value></data>
+  <data name="From radiology" xml:space="preserve"><value>De la radiologie</value></data>
+  <data name="A batch is near expiry within (days)" xml:space="preserve"><value>Un lot est proche de l'expiration sous (jours)</value></data>
+  <data name="A dose label from Report Studio" xml:space="preserve"><value>Une étiquette de posologie depuis Report Studio</value></data>
+  <data name="A line on the visit's bill" xml:space="preserve"><value>Une ligne sur la facture de la visite</value></data>
+  <data name="A stock issue from the pharmacy store" xml:space="preserve"><value>Une sortie de stock du dépôt de la pharmacie</value></data>
+  <data name="A text message to the patient with the directions" xml:space="preserve"><value>Un SMS au patient avec la posologie</value></data>
+  <data name="Average dispense time" xml:space="preserve"><value>Délai moyen de délivrance</value></data>
+  <data name="Batch" xml:space="preserve"><value>Lot</value></data>
+  <data name="Below reorder point" xml:space="preserve"><value>Sous le seuil de commande</value></data>
+  <data name="Check" xml:space="preserve"><value>À vérifier</value></data>
+  <data name="Check before dispensing" xml:space="preserve"><value>À vérifier avant de délivrer</value></data>
+  <data name="Choose the pharmacy store" xml:space="preserve"><value>Choisissez le dépôt de la pharmacie</value></data>
+  <data name="Choose the pharmacy store in the pharmacy settings" xml:space="preserve"><value>Choisissez le dépôt dans les paramètres de la pharmacie</value></data>
+  <data name="Confirm dispensing" xml:space="preserve"><value>Confirmer la délivrance</value></data>
+  <data name="Dispense" xml:space="preserve"><value>Délivrance</value></data>
+  <data name="Dispense {0} to {1}? The stock leaves the pharmacy store and the items are charged on the bill." xml:space="preserve"><value>Délivrer {0} à {1} ? Le stock sort du dépôt et les articles sont facturés.</value></data>
+  <data name="Dispensed" xml:space="preserve"><value>Délivrée</value></data>
+  <data name="Dispensed — the stock left the store and the bill was charged" xml:space="preserve"><value>Délivrée — le stock est sorti et la facture a été débitée</value></data>
+  <data name="Dispensing queue" xml:space="preserve"><value>File de délivrance</value></data>
+  <data name="Every prescription a doctor signs arrives here" xml:space="preserve"><value>Chaque ordonnance signée par un médecin arrive ici</value></data>
+  <data name="In the pharmacy" xml:space="preserve"><value>En pharmacie</value></data>
+  <data name="Inpatient" xml:space="preserve"><value>Hospitalisation</value></data>
+  <data name="Inventory — nearest-expiry batch first (FEFO)" xml:space="preserve"><value>Stock — le lot qui expire le plus tôt d'abord (FEFO)</value></data>
+  <data name="Items (count)" xml:space="preserve"><value>Articles</value></data>
+  <data name="Main price list" xml:space="preserve"><value>Liste principale</value></data>
+  <data name="Map the cost-of-goods account of {0}'s inventory category first" xml:space="preserve"><value>Associez d'abord le compte de coût des ventes de la catégorie de {0}</value></data>
+  <data name="Mark prescription {0} as reviewed?" xml:space="preserve"><value>Marquer l'ordonnance {0} comme vérifiée ?</value></data>
+  <data name="Medicines are dispensed from one warehouse of the inventory. Choose it in the pharmacy settings before dispensing." xml:space="preserve"><value>Les médicaments sont délivrés depuis un dépôt du stock. Choisissez-le dans les paramètres avant de délivrer.</value></data>
+  <data name="Near expiry is 1 to 365 days" xml:space="preserve"><value>La proximité d'expiration va de 1 à 365 jours</value></data>
+  <data name="Near-expiry batches" xml:space="preserve"><value>Lots proches de l'expiration</value></data>
+  <data name="No prescriptions here." xml:space="preserve"><value>Aucune ordonnance ici.</value></data>
+  <data name="Not stocked" xml:space="preserve"><value>Non stocké</value></data>
+  <data name="On dispensing" xml:space="preserve"><value>À la délivrance</value></data>
+  <data name="On hand" xml:space="preserve"><value>En stock</value></data>
+  <data name="Open the bill" xml:space="preserve"><value>Ouvrir la facture</value></data>
+  <data name="Patient pays" xml:space="preserve"><value>À la charge du patient</value></data>
+  <data name="Pharmacist's note (optional)" xml:space="preserve"><value>Note du pharmacien (facultatif)</value></data>
+  <data name="Pharmacy settings" xml:space="preserve"><value>Paramètres de la pharmacie</value></data>
+  <data name="Pharmacy stock" xml:space="preserve"><value>Stock de la pharmacie</value></data>
+  <data name="Pharmacy store (warehouse)" xml:space="preserve"><value>Dépôt de la pharmacie</value></data>
+  <data name="Prescriptions waiting" xml:space="preserve"><value>Ordonnances en attente</value></data>
+  <data name="Review the prescription before dispensing" xml:space="preserve"><value>Vérifiez l'ordonnance avant de délivrer</value></data>
+  <data name="Reviewed by the pharmacist" xml:space="preserve"><value>Vérifiée par le pharmacien</value></data>
+  <data name="This prescription was already dispensed" xml:space="preserve"><value>Cette ordonnance a déjà été délivrée</value></data>
+  <data name="This prescription was already reviewed" xml:space="preserve"><value>Cette ordonnance a déjà été vérifiée</value></data>
+  <data name="in the pharmacy store" xml:space="preserve"><value>dans le dépôt de la pharmacie</value></data>
+  <data name="minutes, today" xml:space="preserve"><value>minutes, aujourd'hui</value></data>
+  <data name="rx:Dispensed" xml:space="preserve"><value>Délivrée</value></data>
+  <data name="rx:New" xml:space="preserve"><value>Nouvelle</value></data>
+  <data name="rx:Verified" xml:space="preserve"><value>Vérifiée</value></data>
+  <data name="within {0} days" xml:space="preserve"><value>sous {0} jours</value></data>
+  <data name="{0} is not stocked — the patient buys it outside; it is not charged" xml:space="preserve"><value>{0} n'est pas stocké — le patient l'achète à l'extérieur ; non facturé</value></data>
+  <data name="{0} is prescribed twice" xml:space="preserve"><value>{0} est prescrit deux fois</value></data>
+  <data name="{0} — the file records an allergy it mentions: {1}" xml:space="preserve"><value>{0} — le dossier mentionne une allergie : {1}</value></data>
+  <data name="{0}: the batch that leaves first expires soon" xml:space="preserve"><value>{0} : le lot délivré en premier expire bientôt</value></data>
+  <data name="{0}: the store holds {1}, the prescription asks {2}" xml:space="preserve"><value>{0} : le dépôt détient {1}, l'ordonnance demande {2}</value></data>
+  <data name="{0}: {1}" xml:space="preserve"><value>{0} : {1}</value></data>
+  <data name="Pharmacy (module)" xml:space="preserve"><value>Pharmacie</value></data>
+</root>

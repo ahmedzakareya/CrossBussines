@@ -1,0 +1,144 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model List<HospitalWorklistRow>
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Doctor worklist"].Value;
+    var doctors = (ViewBag.Doctors as IReadOnlyList<HospitalPractitionerView>) ?? Array.Empty<HospitalPractitionerView>();
+    var d = ViewBag.Doctor as HospitalPractitionerView;
+    bool canConsult = ViewBag.CanConsult == true;
+    var nowUtc = DateTime.UtcNow;
+    int waiting = Model.Count(r => r.Appointment.Status == HospitalAppointmentStatus.Arrived);
+    int seen = Model.Count(r => r.Appointment.Status == HospitalAppointmentStatus.Done);
+    int remaining = Model.Count(r => r.Appointment.Status is HospitalAppointmentStatus.Booked or HospitalAppointmentStatus.Arrived or HospitalAppointmentStatus.InRoom);
+    string StatusBadge(string s) => s switch
+    {
+        HospitalAppointmentStatus.Booked => "badge-light",
+        HospitalAppointmentStatus.Arrived => "badge-light-info",
+        HospitalAppointmentStatus.InRoom => "hp-badge",
+        HospitalAppointmentStatus.Done => "badge-light-success",
+        _ => "badge-light",
+    };
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Doctor worklist"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item text-muted">@T["Clinics"]</li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@T["Worklist"]</li>
+            </ul>
+        </div>
+        <form method="get" action="@Url.Action("Worklist")" id="docForm" class="w-250px">
+            <select name="doctor" class="form-select form-select-sm form-select-solid">
+                @foreach (var x in doctors) { <option value="@x.Row.ID" selected="@(d != null && x.Row.ID == d.Row.ID)">@DisplayName.Of(x.Row.Name, x.Row.NameEn)</option> }
+            </select>
+        </form>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (d == null)
+        {
+            <div class="card"><div class="card-body text-center text-muted py-15">@T["No practitioners yet. Add the first doctor."]</div></div>
+        }
+        else
+        {
+            <div class="card mb-5"><div class="card-body d-flex flex-wrap align-items-center gap-5 py-6">
+                <div class="symbol symbol-60px symbol-circle flex-shrink-0">@if (d.PhotoPath != null) {<img src="@d.PhotoPath" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(d.Row.NameEn)" />} else {<span class="symbol-label fs-3 fw-bold hp-initials">@HospitalUi.Initials(d.Row.NameEn)</span>}</div>
+                <div class="flex-grow-1 min-w-0">
+                    <div class="fs-3 fw-bold text-gray-900">@DisplayName.Of(d.Row.Name, d.Row.NameEn)</div>
+                    <div class="text-muted fw-semibold">@DisplayName.Of(d.Row.Title, d.Row.TitleEn)@if (d.ClinicRoomNumber != null) {<text> · </text>@T["Room"] <span class="hp-num">@d.ClinicRoomNumber</span>}</div>
+                </div>
+                <div class="d-flex gap-5 flex-grow-1 justify-content-end">
+                    @foreach (var s in new[] { (T["Waiting"].Value, waiting, "text-gray-900"), (T["Seen"].Value, seen, "text-success"), (T["Remaining"].Value, remaining, "text-gray-900") })
+                    {
+                        <div class="border border-gray-200 rounded px-6 py-3 text-center min-w-100px">
+                            <div class="fs-2hx fw-bold @s.Item3 hp-num">@s.Item2</div>
+                            <div class="text-muted fs-7 fw-semibold">@s.Item1</div>
+                        </div>
+                    }
+                </div>
+            </div></div>
+
+            <div class="card">
+                <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
+                    <span class="card-label fw-bold text-gray-900 fs-4">@T["Today's list"]</span>
+                    <span class="text-muted mt-1 fw-semibold fs-7">@T["Vitals are taken before the patient goes in"]</span>
+                </div></div>
+                <div class="card-body pt-2">
+                    @if (Model.Count == 0) { <div class="text-center text-muted py-15">@T["No appointments today."]</div> }
+                    else
+                    {
+                        <div class="table-responsive"><table class="table align-middle table-row-dashed fs-6 gy-4 mb-0">
+                            <thead><tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0">
+                                <th class="w-50px">#</th><th class="w-80px">@T["Time"]</th><th>@T["Patient"]</th><th>@T["Visit type"]</th><th class="text-center w-110px">@T["Vitals"]</th><th class="w-90px">@T["Wait"]</th><th>@T["Status"]</th><th class="text-end w-150px"></th>
+                            </tr></thead>
+                            <tbody class="fw-semibold text-gray-700">
+                                @{ int i = 0; }
+                                @foreach (var r in Model)
+                                {
+                                    var a = r.Appointment; i++;
+                                    int? wait = a.Status == HospitalAppointmentStatus.Arrived && a.ArrivedAt is DateTime arr ? (int)Math.Max(0, (nowUtc - arr).TotalMinutes) : null;
+                                    <tr>
+                                        <td><span class="fs-3 fw-bold text-gray-400 hp-num">@i.ToString("00")</span></td>
+                                        <td><span class="hp-num fw-bold text-gray-900">@HospitalUi.Clock(a.StartMinute)</span></td>
+                                        <td><div class="d-flex align-items-center min-w-0">
+                                            <div class="symbol symbol-40px symbol-circle flex-shrink-0">@if (a.PatientPhoto != null) {<img src="@a.PatientPhoto" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(a.PatientNameEn)" />} else {<span class="symbol-label fw-bold hp-initials">@HospitalUi.Initials(a.PatientNameEn)</span>}</div>
+                                            <div class="d-flex flex-column ms-3 min-w-0"><a href="@Url.Action("Patient", new { id = a.PatientId })" class="text-gray-900 text-hover-primary fs-6 fw-bold text-truncate">@DisplayName.Of(a.PatientName, a.PatientNameEn)</a>
+                                                <span class="text-muted fs-7"><span class="hp-num">@a.Mrn</span>@if (a.QueueNumber != null) {<text> · </text><span class="hp-num">A-@a.QueueNumber.Value.ToString("000")</span>}</span></div>
+                                        </div></td>
+                                        <td class="fs-7">@T["visit:" + a.VisitType]</td>
+                                        <td class="text-center">@if (r.HasVitals) {<i class="ki-outline ki-check-circle fs-2 text-success"></i>} else {<span class="text-gray-400">—</span>}</td>
+                                        <td>@if (wait != null) {<span class="hp-num fw-bold @(wait > 15 ? "text-danger" : "text-gray-800")">@wait</span> <span class="text-muted fs-8">@T["min"]</span>} else {<span class="text-gray-400">—</span>}</td>
+                                        <td><span class="badge @StatusBadge(a.Status) fs-8">@T["appt:" + a.Status]</span>@if (r.EncounterStatus == HospitalEncounterStatus.Signed) {<span class="badge badge-light-success fs-9 ms-1">@T["Signed"]</span>}</td>
+                                        <td class="text-end">
+                                            @if (r.EncounterId is int eid)
+                                            {
+                                                <a href="@Url.Action("Consult", new { id = eid })" class="btn btn-sm @(r.EncounterStatus == HospitalEncounterStatus.Draft ? "btn-primary" : "btn-light-primary")">@(r.EncounterStatus == HospitalEncounterStatus.Draft ? T["Resume"] : T["View visit"])</a>
+                                            }
+                                            else if (canConsult && a.Status is HospitalAppointmentStatus.Arrived or HospitalAppointmentStatus.InRoom)
+                                            {
+                                                <button type="button" class="btn btn-sm btn-primary" data-start="@a.Id">@T["Start"]</button>
+                                            }
+                                            else
+                                            {
+                                                <a href="@Url.Action("Patient", new { id = a.PatientId })" class="btn btn-sm btn-light-primary">@T["File"]</a>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table></div>
+                    }
+                </div>
+            </div>
+        }
+    </div></div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            var sel = document.querySelector('#docForm [name=doctor]');
+            if (sel) CB.onSelectChange(sel, function () { document.getElementById('docForm').submit(); });
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            var urls = { open: @Json.Serialize(Url.Action("OpenConsultation", new { appointmentId = 0 })), consult: @Json.Serialize(Url.Action("Consult", new { id = 0 })) };
+            document.addEventListener('click', function (e) {
+                var b = e.target.closest('[data-start]'); if (!b) return;
+                b.disabled = true;
+                fetch(urls.open.replace(/0$/, b.getAttribute('data-start')), { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token } })
+                    .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+                    .then(function (res) {
+                        if (!res.ok) { b.disabled = false; if (window.toastr) toastr.error(res.error || @Json.Serialize(T["The change could not be saved"].Value)); return; }
+                        location.href = urls.consult.replace(/0$/, res.id);
+                    });
+            });
+        })();
+    </script>
+}

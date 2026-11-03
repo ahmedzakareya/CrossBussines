@@ -1,0 +1,203 @@
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> HT
+@*
+    A lab value a doctor must be told about, on EVERY screen of the system (each layout renders this
+    partial) — or the moment he signs in. A critical value blocks the screen until the doctor reads the
+    value back; an abnormal one on an urgent order is a notice that does not stop his work. The lab's
+    "preview what the doctor sees" calls window.cbLabAlert.show with the same renderer.
+    Design: the approved prototype, #/lab-critical.
+*@
+@await Html.PartialAsync("_CbConfirm")
+<div id="cbLabAlertRoot" class="d-none">@Html.AntiForgeryToken()</div>
+<style>
+    .cbla-overlay{position:fixed;inset:0;z-index:2000;background:rgba(127,29,29,.55);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:16px}
+    .cbla-card{background:#fff;border-radius:1rem;max-width:560px;width:100%;max-height:calc(100vh - 32px);overflow:auto;box-shadow:0 30px 80px rgba(0,0,0,.35)}
+    .cbla-band{background:#DC2626;color:#fff;padding:18px 24px;display:flex;align-items:center;gap:14px}
+    .cbla-bell{width:46px;height:46px;border-radius:50%;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;flex-shrink:0;animation:cblaPulse 1.2s ease-in-out infinite}
+    @@keyframes cblaPulse{0%,100%{box-shadow:0 0 0 0 rgba(255,255,255,.55)}50%{box-shadow:0 0 0 12px rgba(255,255,255,0)}}
+    .cbla-box{background:#FEF2F2;border-radius:.75rem;padding:1.25rem}
+    .cbla-num{font-variant-numeric:tabular-nums;unicode-bidi:isolate}
+    .cbla-value{font-size:2.6rem;font-weight:800;color:#DC2626;line-height:1;font-variant-numeric:tabular-nums;unicode-bidi:isolate}
+    .cbla-big-unit{font-size:1.1rem;font-weight:600;color:var(--bs-gray-700)}
+    .cbla-unit{font-weight:500;color:var(--bs-gray-600);font-size:.85em}
+    .cbla-chip{background:#fff;border-radius:.5rem;padding:.2rem .6rem;font-size:.8rem;font-weight:600;color:var(--bs-gray-700)}
+    .cbla-facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(80px,1fr));gap:8px}
+    .cbla-fact{background:#fff;border-radius:.6rem;padding:.55rem .75rem}
+    .cbla-lbl{font-size:.75rem;color:var(--bs-gray-600);margin-bottom:2px}
+    .cbla-val{font-weight:700;color:var(--bs-gray-900)}
+    .cbla-more{font-size:.75rem;font-weight:600;color:var(--bs-gray-600);margin:14px 0 2px}
+    .cbla-row{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;padding:7px 0;border-top:1px dashed #FECACA;font-size:.9rem}
+    .cbla-out{color:#DC2626;font-weight:700}
+    .cbla-face{width:50px;height:50px;border-radius:50%;object-fit:cover;flex-shrink:0;background:#E7F0FF;color:#1F2D4D;display:flex;align-items:center;justify-content:center;font-weight:700}
+</style>
+<script>
+(function () {
+    if (window.cbLabAlert) return;
+    var W = {
+        title: @Json.Serialize(HT["Critical value — act now"].Value),
+        titleRad: @Json.Serialize(HT["Critical result — act now"].Value),
+        fromRad: @Json.Serialize(HT["From radiology"].Value),
+        from: @Json.Serialize(HT["From the laboratory"].Value),
+        ago: @Json.Serialize(HT["{0} min ago"].Value),
+        now: @Json.Serialize(HT["just now"].Value),
+        sentBy: @Json.Serialize(HT["sent by {0}"].Value),
+        escalated: @Json.Serialize(HT["Escalated to you — {0} did not acknowledge it"].Value),
+        reminder: @Json.Serialize(HT["Reminder — not acknowledged yet"].Value),
+        outpatient: @Json.Serialize(HT["Outpatient"].Value),
+        room: @Json.Serialize(HT["Room"].Value),
+        bed: @Json.Serialize(HT["Bed"].Value),
+        others: @Json.Serialize(HT["Other values out of range"].Value),
+        confirmAckRad: @Json.Serialize(HT["Confirm that you received the critical imaging result {0} for {1}? It is recorded with your name and time in the patient file."].Value),
+        imaging: @Json.Serialize(HT["Imaging report"].Value),
+        confirmAck: @Json.Serialize(HT["Confirm that you received the critical value {0} for {1}? It is recorded with your name and time in the patient file."].Value),
+        limit: @Json.Serialize(HT["Critical limit"].Value),
+        normal: @Json.Serialize(HT["Normal"].Value),
+        previous: @Json.Serialize(HT["Previous"].Value),
+        readLabel: @Json.Serialize(HT["To confirm, type the value as you read it"].Value),
+        readHint: @Json.Serialize(HT["Reading the value back prevents a transcription error; it is recorded with your name and time in the patient file."].Value),
+        ack: @Json.Serialize(HT["Received — I will act"].Value),
+        file: @Json.Serialize(HT["Open patient file"].Value),
+        done: @Json.Serialize(HT["Acknowledged with read-back — the lab sees it now"].Value),
+        abnormal: @Json.Serialize(HT["Out-of-range result on an urgent order"].Value),
+        open: @Json.Serialize(HT["Open the result"].Value),
+        urgent: @Json.Serialize(HT["Urgent"].Value),
+        preview: @Json.Serialize(HT["Preview — this is what the doctor sees"].Value),
+        failed: @Json.Serialize(HT["The change could not be saved"].Value)
+    };
+    var mineUrl = @Json.Serialize(Url.Action("LabAlertsMine", "Hospital"));
+    var URL = { mine: mineUrl, base: mineUrl.replace(/Mine$/, '') };
+    var shown = {}, current = null, beepTimer = null;
+
+    function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+    function fmt(t, a) { return t.replace('{0}', a); }
+    function token() { var i = document.querySelector('#cbLabAlertRoot input[name="__RequestVerificationToken"]'); return i ? i.value : ''; }
+    function post(url, body) {
+        return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token() }, body: JSON.stringify(body || {}) })
+            .then(function (r) { return r.json().catch(function () { return { ok: false }; }); });
+    }
+    function same(a, b) {
+        var x = parseFloat(a), y = parseFloat(String(b).trim());
+        if (!isNaN(x) && !isNaN(y) && /^[-+]?\d*\.?\d+$/.test(String(b).trim())) return x === y;
+        return String(a).trim().toLowerCase() === String(b).trim().toLowerCase() && String(b).trim() !== '';
+    }
+    // A short two-tone alarm; browsers allow it only after the page had a user gesture, so it is best effort.
+    function beep() {
+        try {
+            var C = window.AudioContext || window.webkitAudioContext; if (!C) return;
+            var ctx = beep.ctx || (beep.ctx = new C());
+            [0, 0.35].forEach(function (t, i) {
+                var o = ctx.createOscillator(), g = ctx.createGain();
+                o.frequency.value = i ? 660 : 880; o.connect(g); g.connect(ctx.destination);
+                g.gain.setValueAtTime(0.0001, ctx.currentTime + t); g.gain.exponentialRampToValueAtTime(0.25, ctx.currentTime + t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + t + 0.3);
+                o.start(ctx.currentTime + t); o.stop(ctx.currentTime + t + 0.32);
+            });
+        } catch (e) { }
+    }
+    function ago(iso) { var m = Math.max(0, Math.round((Date.now() - new Date(String(iso).replace(/Z?$/, 'Z')).getTime()) / 60000)); return m < 1 ? W.now : fmt(W.ago, m); }
+
+    function render(a, preview) {
+        var rad = a.source === 'Radiology';
+        var first = a.lines[0] || { value: a.value, unit: '', flag: 'HH', critical: null, range: '—', previous: null };
+        var face = a.photo ? '<img class="cbla-face" src="' + esc(a.photo) + '" alt="" onerror="this.outerHTML=\'<span class=&quot;cbla-face&quot;>' + esc(a.initials) + '</span>\'" />' : '<span class="cbla-face">' + esc(a.initials) + '</span>';
+        var prio = a.priority === 'Stat' ? '<span class="badge badge-light-danger fw-bold fs-8">STAT</span>' : a.priority === 'Urgent' ? '<span class="badge badge-light-primary fw-bold fs-8">' + esc(W.urgent) + '</span>' : '';
+        var sub = (preview ? W.preview : (rad ? W.fromRad : W.from) + ' · ' + ago(a.sentAt) + (a.sentBy ? ' · ' + fmt(W.sentBy, esc(a.sentBy)) : ''));
+        // Each number sits in its own isolated cell (bdi), so an Arabic label never reorders it.
+        function num(v, unit) { return '<bdi dir="ltr" class="cbla-num">' + esc(v) + (unit ? ' <span class="cbla-unit">' + esc(unit) + '</span>' : '') + '</bdi>'; }
+        function fact(label, value) { return '<div class="cbla-fact"><div class="cbla-lbl">' + esc(label) + '</div><div class="cbla-val">' + value + '</div></div>'; }
+        var more = a.lines.slice(1).map(function (l) {
+            return '<div class="cbla-row"><span class="text-gray-800">' + esc(l.name) + '</span><span class="cbla-out">' + num(l.value, l.unit) + '</span><span class="badge badge-danger fs-9">' + esc(l.flag) + '</span></div>';
+        }).join('');
+        return '<div class="cbla-card">' +
+            '<div class="cbla-band"><span class="cbla-bell"><i class="ki-outline ki-notification-status fs-2x text-white"></i></span>' +
+                '<div class="flex-grow-1"><div class="fs-3 fw-bolder">' + esc(rad ? W.titleRad : W.title) + '</div><div class="fs-7" style="opacity:.8">' + esc(sub) + '</div></div></div>' +
+            (a.escalatedFrom ? '<div class="px-6 pt-4 fs-7 fw-semibold text-danger">' + esc(fmt(W.escalated, a.escalatedFrom)) + '</div>' : a.reminded ? '<div class="px-6 pt-4 fs-7 fw-semibold text-danger">' + esc(W.reminder) + '</div>' : '') +
+            '<div class="p-6">' +
+                '<div class="d-flex align-items-center gap-4 mb-5">' + face + '<div class="flex-grow-1 min-w-0"><div class="fs-4 fw-bold text-gray-900">' + esc(a.patient) + '</div>' +
+                    '<div class="text-muted fs-7">' + num(a.mrn) + ' · ' + (a.room ? esc(W.room) + ' ' + num(a.room) + ' · ' + esc(W.bed) + ' ' + num(a.bed) : esc(W.outpatient)) + '</div></div>' + prio + '</div>' +
+                (rad ? '<div class="cbla-box mb-5"><div class="d-flex flex-stack gap-3 mb-3"><span class="fw-bold text-gray-800">' + esc(a.test) + '</span><span class="cbla-chip">' + num(a.accession) + '</span></div>' +
+                    '<div class="text-gray-900 fs-5 fw-bold" style="white-space:pre-line">' + esc(a.impression || '') + '</div></div>' : '') +
+                (rad ? '' : '<div class="cbla-box mb-5">' +
+                    '<div class="d-flex flex-stack gap-3 mb-3"><span class="fw-bold text-gray-800">' + esc(first.name || a.test) + '</span><span class="cbla-chip">' + num(a.accession) + '</span></div>' +
+                    '<div class="d-flex align-items-center gap-3 mb-4"><bdi dir="ltr" class="cbla-value">' + esc(first.value) + (first.unit ? ' <span class="cbla-big-unit">' + esc(first.unit) + '</span>' : '') + '</bdi><span class="badge badge-danger fs-7 ms-auto">' + esc(first.flag) + '</span></div>' +
+                    '<div class="cbla-facts">' +
+                        (first.critical ? fact(W.limit, num(first.critical)) : '') +
+                        fact(W.normal, num(first.range)) +
+                        fact(W.previous, first.previous ? num(first.previous) : '—') + '</div>' +
+                    (more ? '<div class="cbla-more">' + esc(W.others) + '</div>' + more : '') +
+                '</div>') +
+                (rad ? '' : '<label class="form-label fw-semibold text-gray-800">' + esc(W.readLabel) + '</label>' +
+                '<input class="form-control form-control-lg form-control-solid cbla-num mb-2" dir="ltr" inputmode="decimal" placeholder="0.00" autocomplete="off" data-cbla-read />' +
+                '<div class="text-muted fs-8 mb-6">' + esc(W.readHint) + '</div>') +
+                '<div class="d-flex gap-3"><button type="button" class="btn btn-danger flex-grow-1" data-cbla-ack' + (rad ? '' : ' disabled') + '><i class="ki-outline ki-check-circle fs-3"></i>' + esc(W.ack) + '</button>' +
+                '<a href="' + esc(a.fileUrl) + '" class="btn btn-light" data-cbla-file>' + esc(W.file) + '</a></div>' +
+            '</div></div>';
+    }
+
+    function close() { if (current) { current.el.remove(); current = null; } if (beepTimer) { clearInterval(beepTimer); beepTimer = null; } }
+
+    function show(a, preview) {
+        close();
+        var el = document.createElement('div');
+        el.className = 'cbla-overlay'; el.setAttribute('role', 'alertdialog'); el.setAttribute('aria-modal', 'true');
+        el.dir = document.documentElement.dir || 'ltr';
+        el.innerHTML = render(a, preview);
+        document.body.appendChild(el);
+        current = { el: el, alert: a, preview: !!preview };
+        var inp = el.querySelector('[data-cbla-read]'), ack = el.querySelector('[data-cbla-ack]');
+        if (inp) {
+            inp.addEventListener('input', function () { ack.disabled = !same(a.value, inp.value); });
+            inp.addEventListener('keydown', function (e) { if (e.key === 'Enter' && !ack.disabled) ack.click(); });
+        }
+        ack.addEventListener('click', function () {
+            if (preview) { close(); return; }
+            cbConfirm('', { kind: 'danger', title: inp ? W.title : W.titleRad, html: inp ? esc(W.confirmAck).replace('{0}', '<bdi dir="ltr"><b>' + esc(inp.value.trim()) + '</b></bdi>').replace('{1}', '<bdi><b>' + esc(a.patient) + '</b></bdi>')
+                : esc(W.confirmAckRad).replace('{0}', '<bdi><b>' + esc(a.test) + '</b></bdi>').replace('{1}', '<bdi><b>' + esc(a.patient) + '</b></bdi>') }).then(function (yes) {
+                if (!yes) return;
+                ack.disabled = true;
+                post(URL.base + a.id + '/Acknowledge', { value: inp ? inp.value : null }).then(function (r) {
+                    if (!r.ok) { ack.disabled = false; if (window.toastr) toastr.error(r.error || W.failed); return; }
+                    close(); if (window.toastr) toastr.success(W.done); poll();
+                });
+            });
+        });
+        el.querySelector('[data-cbla-file]').addEventListener('click', function (e) { if (preview) { e.preventDefault(); close(); } });
+        if (preview) {
+            // The preview may be closed with Escape or a click outside; the real alert may not.
+            el.addEventListener('click', function (e) { if (e.target === el) close(); });
+            document.addEventListener('keydown', function k(e) { if (e.key === 'Escape') { close(); document.removeEventListener('keydown', k); } });
+        } else {
+            beep(); beepTimer = setInterval(beep, 60000);
+            if (!shown[a.id]) { shown[a.id] = true; post(URL.base + a.id + '/Seen'); }
+        }
+        setTimeout(function () { (inp || ack).focus(); }, 50);
+    }
+
+    function notice(a) {
+        if (shown[a.id] || !window.toastr) return;
+        shown[a.id] = true;
+        post(URL.base + a.id + '/Seen');
+        var first = a.lines[0] || {};
+        var body = esc(a.patient) + ' · ' + (a.source === 'Radiology' ? '<bdi>' + esc(a.test) + '</bdi> — ' + esc(a.impression || '') : '<span dir="ltr">' + esc(first.name || a.test) + ' ' + esc(first.value || '') + ' ' + esc(first.unit || '') + ' (' + esc(first.flag || '') + ')</span>') + '<br><a href="' + esc(a.orderUrl) + '" class="fw-bold">' + esc(W.open) + '</a>';
+        toastr.info(body, esc(W.abnormal), {
+            timeOut: 0, extendedTimeOut: 0, closeButton: true, escapeHtml: false, tapToDismiss: false,
+            positionClass: window.innerWidth < 768 ? 'toast-bottom-center' : (document.documentElement.dir === 'rtl' ? 'toast-top-left' : 'toast-top-right'),
+            onCloseClick: function () { post(URL.base + a.id + '/Acknowledge', {}); }
+        });
+    }
+
+    function poll() {
+        fetch(URL.mine, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function (r) { return (r.headers.get('content-type') || '').indexOf('json') >= 0 ? r.json() : null; })
+            .then(function (res) {
+                if (!res || !res.ok) return;
+                var crit = res.alerts.filter(function (a) { return a.level === 'Critical'; });
+                if (crit.length && (!current || current.preview || current.alert.id !== crit[0].id || current.alert.reminded !== crit[0].reminded)) show(crit[0], false);
+                else if (!crit.length && current && !current.preview) close();   // acknowledged elsewhere (another tab, or the lab recorded a call)
+                res.alerts.filter(function (a) { return a.level === 'Abnormal'; }).forEach(notice);
+            }).catch(function () { });
+    }
+
+    window.cbLabAlert = { show: function (a) { show(a, true); }, poll: poll };
+    function boot() { poll(); setInterval(poll, 30000); document.addEventListener('visibilitychange', function () { if (!document.hidden) poll(); }); }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+})();
+</script>

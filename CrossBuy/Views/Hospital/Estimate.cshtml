@@ -1,0 +1,112 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model HospitalEstimateView
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    var e = Model.Row.Estimate;
+    ViewData["Title"] = e.EstimateNo;
+    string? cur = ViewBag.Currency as string;
+    bool canBill = ViewBag.CanBill == true;
+    string Money(decimal v) => v.ToString("N3", System.Globalization.CultureInfo.InvariantCulture);
+    string St(string s) => s switch { HospitalEstimateStatus.Issued => "success", HospitalEstimateStatus.Cancelled => "secondary", _ => "primary" };
+    var who = DisplayName.Of(Model.Row.PatientName, Model.Row.PatientNameEn);
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0 d-flex align-items-center gap-3"><span class="hp-num">@e.EstimateNo</span> <span class="badge badge-light-@St(e.Status) fs-7">@T["est:" + e.Status]</span>
+                @if (Model.Expired && e.Status == HospitalEstimateStatus.Issued) {<span class="badge badge-light-danger fs-7">@T["Expired — re-price it"]</span>}</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item"><a href="@Url.Action("Estimates")" class="text-muted text-hover-primary">@T["Estimates & deposits"]</a></li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@who · <span class="hp-num ms-1">@Model.Row.Mrn</span></li>
+            </ul>
+        </div>
+        <div class="d-flex align-items-center gap-2 gap-lg-3 d-print-none">
+            @if (canBill && e.Status == HospitalEstimateStatus.Draft)
+            {
+                <button type="button" class="btn btn-sm btn-light" data-step="Cancel" data-kind="danger" data-ask="@string.Format(T["Cancel estimate {0}? It stays on record, cancelled."].Value, e.EstimateNo)">@T["Cancel estimate"]</button>
+                <button type="button" class="btn btn-sm btn-primary" data-step="Issue" data-ask="@string.Format(T["Issue {0} to {1}? It no longer changes, and the payer is asked for approval when its contract needs it."].Value, e.EstimateNo, who)"><i class="ki-outline ki-send fs-4"></i>@T["Issue estimate"]</button>
+            }
+            else if (canBill && e.Status == HospitalEstimateStatus.Issued)
+            {
+                <button type="button" class="btn btn-sm btn-light" data-step="Cancel" data-kind="danger" data-ask="@string.Format(T["Cancel estimate {0}? It stays on record, cancelled."].Value, e.EstimateNo)">@T["Cancel estimate"]</button>
+            }
+        </div>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="row g-5 g-xl-8">
+            <div class="col-xl-8"><div class="card h-100">
+                <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
+                    <span class="card-label fw-bold text-gray-900 fs-4">@(Model.Row.Package == null ? T["Services"].Value : DisplayName.Of(Model.Row.Package, Model.Row.PackageEn ?? Model.Row.Package))</span>
+                    <span class="text-muted mt-1 fw-semibold fs-7">@(Model.Row.Payer == null ? T["Self-pay"].Value : DisplayName.Of(Model.Row.Payer, Model.Row.PayerEn ?? Model.Row.Payer)) · @T["Expected stay (nights)"] <span class="hp-num">@e.ExpectedNights</span></span>
+                </div></div>
+                <div class="card-body pt-2">
+                    <div class="table-responsive"><table class="table align-middle table-row-dashed fs-6 gy-3 mb-0">
+                        <thead><tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0"><th>@T["Item"]</th><th class="text-end w-75px">@T["Qty"]</th><th class="text-end">@T["Estimate"]</th><th class="text-end">@T["Payer's share"]</th></tr></thead>
+                        <tbody class="fw-semibold text-gray-700">
+                            @foreach (var l in Model.Lines)
+                            {
+                                <tr><td><div class="text-gray-800">@DisplayName.Of(l.Description, l.DescriptionEn)</div><div class="text-muted fs-8 hp-num">@l.Code @if (e.PayerId != null && !l.Covered) {<text> · <span class="text-danger">@T["not covered"]</span></text>}</div></td>
+                                    <td class="text-end hp-num">@l.Quantity.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)</td><td class="text-end hp-num">@Money(l.Amount)</td><td class="text-end hp-num">@(l.PayerAmount > 0 ? Money(l.PayerAmount) : "—")</td></tr>
+                            }
+                        </tbody>
+                        <tfoot><tr class="fw-bolder fs-5"><td class="ps-4" colspan="2" style="color:#145DBF">@T["Estimated total"] <span class="text-muted fs-8">@cur</span></td><td class="text-end hp-num">@Money(e.Gross)</td><td class="text-end hp-num">@Money(e.PayerShare)</td></tr></tfoot>
+                    </table></div>
+                    @if (e.Note != null) {<div class="text-gray-700 fs-7 mt-4">@e.Note</div>}
+                    <div class="text-muted fs-8 mt-3">@T["A package has a fixed price; anything beyond its limits (extra nights, complications, a second implant) is billed outside it."]</div>
+                </div>
+            </div></div>
+            <div class="col-xl-4"><div class="card h-100">
+                <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Required deposit"]</span></div></div>
+                <div class="card-body pt-2">
+                    <div class="d-flex flex-stack py-3 border-bottom border-gray-200"><span class="fw-semibold text-gray-700">@T["Payer share"]</span><span class="fw-bold fs-4 hp-num text-gray-900">@Money(e.PayerShare)</span></div>
+                    <div class="d-flex flex-stack py-3 border-bottom border-gray-200"><span class="fw-semibold text-gray-700">@T["Expected patient share"]</span><span class="fw-bold fs-4 hp-num text-gray-900">@Money(e.PatientShare)</span></div>
+                    <div class="d-flex flex-stack py-3 mb-5"><span class="fw-semibold text-gray-700">@T["Deposit required"] <span class="text-muted fs-8">(+<span class="hp-num">@e.MarginPct.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)</span>%)</span></span><span class="fw-bold fs-2 hp-num" style="color:var(--cb-brand, #3A5795)">@Money(e.Deposit)</span></div>
+                    @if (Model.PreauthNo != null)
+                    {
+                        <div class="notice d-flex rounded border border-dashed p-5 mb-5 hp-notice"><div class="fw-semibold">
+                            <h5 class="text-gray-900 fw-bold mb-1">@T["Approval request"] <span class="hp-num">@Model.PreauthNo</span></h5>
+                            <div class="fs-7 text-gray-700">@T["pa:" + Model.PreauthStatus] · <a href="@Url.Action("Insurance")" class="fw-bold">@T["Approvals & claims"]</a></div></div></div>
+                    }
+                    <div class="text-muted fs-8">@T["Collecting the deposit is done on the patient's bill; the estimate only states it."]</div>
+                    @if (e.IssuedAt != null) {<div class="text-muted fs-8 mt-2">@T["Issued"] <span class="hp-num" data-fmt data-utc="@e.IssuedAt.Value.ToString("o")">@e.IssuedAt.Value.ToString("yyyy-MM-dd HH:mm")</span> · @string.Format(T["valid {0} days"].Value, HospitalEstimateRules.ValidDays)</div>}
+                </div>
+            </div></div>
+        </div>
+    </div></div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value) };
+            var base = @Json.Serialize(Url.Action("Estimate", new { id = e.ID }));
+            function toast(k, m) { if (window.toastr) toastr[k](m); }
+            // In place, never a reload: the page is rendered again and its toolbar and content swapped.
+            function swap() {
+                return fetch(base, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.text(); }).then(function (html) {
+                    var doc = new DOMParser().parseFromString(html, 'text/html');
+                    ['kt_app_content', 'kt_app_toolbar'].forEach(function (id) { var f = doc.getElementById(id); if (f) document.getElementById(id).innerHTML = f.innerHTML; });
+                });
+            }
+            document.addEventListener('click', function (ev) {
+                var t = ev.target.closest('[data-step]'); if (!t) return;
+                cbConfirm(t.getAttribute('data-ask'), { kind: t.getAttribute('data-kind') || 'primary' }).then(function (ok) {
+                    if (!ok) return;
+                    t.disabled = true;
+                    fetch(base + '/' + t.getAttribute('data-step'), { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token } })
+                        .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+                        .then(function (res) { t.disabled = false; if (!res.ok) { toast('error', res.error || W.failed); return; } toast('success', W.saved); swap(); });
+                });
+            });
+        })();
+    </script>
+}

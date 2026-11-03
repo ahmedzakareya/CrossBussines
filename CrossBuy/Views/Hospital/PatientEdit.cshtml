@@ -1,0 +1,218 @@
+@using CrossBuy.BL
+@using CrossBuy.Models.Context.Hospital
+@model HospitalPatient?
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    bool isNew = Model == null;
+    var p = Model ?? new HospitalPatient { NationalityId = ViewBag.DefaultNationality as int? };
+    var title = isNew ? T["Register a new patient"].Value : T["Edit patient file"].Value;
+    ViewData["Title"] = title;
+    var countries = (ViewBag.Countries as List<(int Id, string Label)>) ?? new();
+    string? mrn = isNew ? ViewBag.NextMrn as string : p.Mrn;
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@title</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item text-muted"><a href="@Url.Action("Patients")" class="text-muted text-hover-primary">@T["Patients"]</a></li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@(isNew ? T["Register"] : T["Edit"])</li>
+            </ul>
+        </div>
+        <div class="d-flex align-items-center gap-2 gap-lg-3 d-print-none">
+            <a href="@(isNew ? Url.Action("Patients") : Url.Action("Patient", new { id = p.ID }))" class="btn btn-sm btn-light">@T["Cancel"]</a>
+            <button type="button" class="btn btn-sm btn-primary" id="patientSave"><i class="ki-outline ki-check fs-4"></i>@(isNew ? T["Save and open file"] : T["Save"])</button>
+        </div>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <form id="patientForm" autocomplete="off">
+            <input type="hidden" name="id" value="@(isNew ? "" : p.ID.ToString())" />
+            <div class="row g-5 g-xl-8">
+                <div class="col-xl-8">
+                    <div class="card mb-5">
+                        <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
+                            <span class="card-label fw-bold text-gray-900 fs-4">@T["Patient details"]</span>
+                            <span class="text-muted mt-1 fw-semibold fs-7">@T["Every name is captured in Arabic and English"]</span>
+                        </div></div>
+                        <div class="card-body pt-4"><div class="row g-6">
+                            <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Name (Arabic)"]</label><input name="name" value="@p.Name" class="form-control form-control-solid" dir="rtl" maxlength="200" data-similar placeholder="@T["Full name"]" /></div>
+                            <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Name (English)"]</label><input name="nameEn" value="@p.NameEn" class="form-control form-control-solid" dir="ltr" maxlength="200" data-similar placeholder="Full name" /></div>
+                            <div class="col-md-4"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["ID number"]</label><input name="nationalId" value="@p.NationalId" class="form-control form-control-solid hp-num" dir="ltr" inputmode="numeric" maxlength="20" data-similar /><div class="text-muted fs-8 mt-1">@T["One file per ID number"]</div></div>
+                            <div class="col-md-4"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Date of birth"]</label><input name="birthDate" type="date" value="@p.BirthDate?.ToString("yyyy-MM-dd")" class="form-control form-control-solid" /></div>
+                            <div class="col-md-4"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Sex"]</label>
+                                <select name="sex" class="form-select form-select-solid">
+                                    <option value="M" selected="@(p.Sex == HospitalPatientSex.Male)">@T["Male"]</option>
+                                    <option value="F" selected="@(p.Sex == HospitalPatientSex.Female)">@T["Female"]</option>
+                                </select></div>
+                            <div class="col-md-4"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Nationality"]</label>
+                                <select name="nationalityId" class="form-select form-select-solid">
+                                    <option value="">—</option>
+                                    @foreach (var c in countries) { <option value="@c.Id" selected="@(c.Id == p.NationalityId)">@c.Label</option> }
+                                </select>
+                                <div class="text-muted fs-8 mt-1">@T["From the system country table"]</div></div>
+                            <div class="col-md-4"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Mobile"]</label><input name="phone" value="@p.Phone" class="form-control form-control-solid hp-num" dir="ltr" maxlength="20" data-similar placeholder="+20 1xx xxx xxxx" /></div>
+                            <div class="col-md-4"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Blood group"]</label>
+                                <select name="bloodGroup" class="form-select form-select-solid">
+                                    <option value="">—</option>
+                                    @foreach (var g in HospitalBloodGroups.All) { <option value="@g" selected="@(g == p.BloodGroup)">@g</option> }
+                                </select></div>
+                        </div></div>
+                    </div>
+
+                    <div class="card mb-5">
+                        <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
+                            <span class="card-label fw-bold text-gray-900 fs-4">@T["Medical alerts"]</span>
+                            <span class="text-muted mt-1 fw-semibold fs-7">@T["An allergy shows as a red alert on the file"]</span>
+                        </div></div>
+                        <div class="card-body pt-4"><div class="row g-6">
+                            <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Allergies"]</label><textarea name="allergies" rows="3" maxlength="1000" class="form-control form-control-solid" placeholder="@T["One per line"]">@p.Allergies</textarea></div>
+                            <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Chronic conditions"]</label><textarea name="chronicConditions" rows="3" maxlength="1000" class="form-control form-control-solid" placeholder="@T["One per line"]">@p.ChronicConditions</textarea></div>
+                        </div></div>
+                    </div>
+
+                    <div class="card mb-5">
+                        <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Emergency contact"]</span></div></div>
+                        <div class="card-body pt-4">
+                            <div class="row g-6">
+                                <div class="col-md-4"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Name"]</label><input name="emergencyName" value="@p.EmergencyName" maxlength="200" class="form-control form-control-solid" /></div>
+                                <div class="col-md-4"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Relationship"]</label><input name="emergencyRelation" value="@p.EmergencyRelation" maxlength="60" class="form-control form-control-solid" /></div>
+                                <div class="col-md-4"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Mobile"]</label><input name="emergencyPhone" value="@p.EmergencyPhone" maxlength="20" class="form-control form-control-solid hp-num" dir="ltr" /></div>
+                            </div>
+                            <label class="form-check form-check-custom form-check-solid mt-6"><input class="form-check-input" type="checkbox" name="consentSigned" value="true" @(p.ConsentSigned || isNew ? "checked" : "") /><span class="form-check-label fw-semibold text-gray-700">@T["The patient signed the general consent to treatment and the privacy notice"]</span></label>
+                        </div>
+                    </div>
+
+                    @{ var priceLists = (ViewBag.PriceLists as List<CrossBuy.Controllers.HospitalController.HospitalChoice>) ?? new(); }
+                    <div class="card mb-5">
+                        <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
+                            <span class="card-label fw-bold text-gray-900 fs-4">@T["Billing"]</span>
+                            <span class="text-muted mt-1 fw-semibold fs-7">@T["The patient's bills are priced from this list, in its currency"]</span>
+                        </div></div>
+                        <div class="card-body pt-4"><div class="row g-6">
+                            <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Price list"]</label>
+                                <select name="priceListId" class="form-select form-select-solid" data-placeholder="@T["Main list"]">
+                                    <option value="">@T["Main list"]</option>
+                                    @foreach (var l in priceLists) { <option value="@l.Id" selected="@(l.Id == p.PriceListId)">@l.Label — @DisplayName.Of(l.Name, l.NameEn)</option> }
+                                </select></div>
+                            <div class="col-md-6 d-flex align-items-end"><div class="text-muted fs-8">@T["Only an approved list appears here. The insurance unit will set it from the patient's contract."]</div></div>
+                        </div></div>
+                    </div>
+                </div>
+
+                <div class="col-xl-4">
+                    <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice">
+                        <span class="symbol symbol-45px me-4 flex-shrink-0"><span class="symbol-label"><i class="ki-outline ki-people fs-2x text-white"></i></span></span>
+                        <div class="fw-semibold">
+                            <h4 class="text-gray-900 fw-bold mb-1">@T["Duplicate check"]</h4>
+                            <div class="fs-7 text-gray-700">@T["As the ID, mobile or name is typed, the system looks for an existing file before a new one is opened."]</div>
+                        </div>
+                    </div>
+                    <div class="card mb-5">
+                        <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Similar files"]</span></div></div>
+                        <div class="card-body pt-2" id="similarList"><div class="text-muted fs-7 py-4">@T["Nothing similar yet."]</div></div>
+                    </div>
+                    <div class="card mb-5">
+                        <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Patient photo"]</span></div></div>
+                        <div class="card-body pt-2 d-flex align-items-center gap-5">
+                            <label class="symbol symbol-75px symbol-circle flex-shrink-0 m-0 hp-photo-edit" title="@T["Change photo"]">
+                                @if (p.PhotoPath != null) { <img src="@p.PhotoPath" alt="" style="object-fit:cover" id="photoPreview" /> }
+                                else { <span class="symbol-label fw-bold hp-initials" id="photoPreview"><i class="ki-outline ki-user fs-2x" style="color:var(--cb-brand, #3A5795)"></i></span> }
+                                <span class="hp-photo-btn"><i class="ki-outline ki-picture fs-6 text-white"></i></span>
+                                <input type="file" accept="image/jpeg,image/png,image/webp" class="d-none" id="photoInput" />
+                            </label>
+                            <div class="text-muted fs-7">@T["JPEG, PNG or WebP, up to 5 MB. Shown on the file and on the bed the patient lies in."]</div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Medical record number"]</span></div></div>
+                        <div class="card-body pt-2">
+                            <div class="fs-2 fw-bold text-gray-900 hp-num mb-2">@mrn</div>
+                            <div class="text-muted fs-7">@(isNew ? T["Generated by the system when the file is saved; the number shown is the next one."] : T["The record number never changes."])</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div></div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            var form = document.getElementById('patientForm');
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            var urls = { save: @Json.Serialize(Url.Action("SavePatient")), similar: @Json.Serialize(Url.Action("SimilarPatients")), file: @Json.Serialize(Url.Action("Patient", new { id = 0 })), photo: @Json.Serialize(Url.Action("PatientPhoto", new { id = 0 })) };
+            // The photo is chosen here and uploaded right after the file is saved (a new file has no id yet).
+            var photoInput = document.getElementById('photoInput');
+            photoInput.addEventListener('change', function () {
+                if (!photoInput.files.length) return;
+                var img = document.createElement('img'); img.id = 'photoPreview'; img.alt = ''; img.style.objectFit = 'cover';
+                img.src = URL.createObjectURL(photoInput.files[0]);
+                document.getElementById('photoPreview').replaceWith(img);
+            });
+            function uploadPhoto(id) {
+                if (!photoInput.files.length) return Promise.resolve({ ok: true });
+                var fd = new FormData(); fd.append('photo', photoInput.files[0]); fd.append('__RequestVerificationToken', token);
+                return fetch(urls.photo.replace(/0\/Photo$/, id + '/Photo'), { method: 'POST', body: fd, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                    .then(function (r) { return r.json().catch(function () { return { ok: false }; }); });
+            }
+            var words = {
+                failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value),
+                none: @Json.Serialize(T["Nothing similar yet."].Value), open: @Json.Serialize(T["Open file"].Value),
+                reason: { 'national-id': @Json.Serialize(T["Same ID number"].Value), phone: @Json.Serialize(T["Same mobile"].Value), name: @Json.Serialize(T["Same name"].Value) }
+            };
+            function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+            function val(n) { var el = form.elements[n]; return el ? el.value.trim() : ''; }
+
+            // ---- duplicate check, as the desk types --------------------------------------------
+            var timer = null, list = document.getElementById('similarList');
+            function similar() {
+                var qs = new URLSearchParams({ nationalId: val('nationalId'), phone: val('phone'), name: val('name'), nameEn: val('nameEn') });
+                if (val('id')) qs.set('exclude', val('id'));
+                fetch(urls.similar + '?' + qs, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.json(); }).then(function (res) {
+                    if (!res.ok || !res.items.length) { list.innerHTML = '<div class="text-muted fs-7 py-4">' + esc(words.none) + '</div>'; return; }
+                    list.innerHTML = res.items.map(function (h) {
+                        var strong = h.reason === 'national-id';
+                        return '<div class="hp-similar p-4 mb-3' + (strong ? ' border-danger' : '') + '"><div class="d-flex flex-stack gap-3"><div class="min-w-0">' +
+                            '<div class="fw-bold text-gray-900 text-truncate">' + esc(h.name) + '</div>' +
+                            '<div class="text-muted fs-8"><span class="hp-num">' + esc(h.mrn) + '</span>' + (h.nationalId ? ' · <span class="hp-num">' + esc(h.nationalId) + '</span>' : '') + '</div>' +
+                            '<span class="badge ' + (strong ? 'badge-light-danger' : 'badge-light-primary') + ' fs-9 mt-2">' + esc(words.reason[h.reason] || '') + '</span></div>' +
+                            '<a class="btn btn-sm btn-light-primary flex-shrink-0" href="' + h.url + '">' + esc(words.open) + '</a></div></div>';
+                    }).join('');
+                });
+            }
+            form.querySelectorAll('[data-similar]').forEach(function (el) { el.addEventListener('input', function () { clearTimeout(timer); timer = setTimeout(similar, 350); }); });
+            if (val('id')) similar();
+
+            // ---- save ------------------------------------------------------------------------
+            document.getElementById('patientSave').addEventListener('click', function () {
+                var b = this; b.disabled = true;
+                var payload = {
+                    id: val('id') ? +val('id') : null, name: val('name'), nameEn: val('nameEn'), sex: val('sex'),
+                    birthDate: val('birthDate') || null, nationalId: val('nationalId') || null,
+                    nationalityId: val('nationalityId') ? +val('nationalityId') : null, phone: val('phone') || null,
+                    bloodGroup: val('bloodGroup') || null, allergies: val('allergies') || null, chronicConditions: val('chronicConditions') || null,
+                    emergencyName: val('emergencyName') || null, emergencyRelation: val('emergencyRelation') || null, emergencyPhone: val('emergencyPhone') || null,
+                    consentSigned: form.elements.consentSigned.checked,
+                    priceListId: val('priceListId') ? +val('priceListId') : null
+                };
+                fetch(urls.save, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(payload) })
+                    .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+                    .then(function (res) {
+                        if (!res.ok) { b.disabled = false; if (window.toastr) toastr.error(res.error || words.failed); return; }
+                        uploadPhoto(res.id).then(function (ph) {
+                            if (!ph.ok && window.toastr) toastr.error(ph.error || words.failed);
+                            location.href = urls.file.replace(/0$/, res.id);
+                        });
+                    })
+                    .catch(function () { b.disabled = false; if (window.toastr) toastr.error(words.failed); });
+            });
+        })();
+    </script>
+}

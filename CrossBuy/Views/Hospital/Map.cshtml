@@ -1,0 +1,237 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model IReadOnlyList<HospitalFloorView>
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Hospital map"].Value;
+    var occupants = (ViewBag.Occupants as Dictionary<int, HospitalOccupantView>) ?? new();
+    var clinics = (ViewBag.Clinics as Dictionary<int, List<CrossBuy.Controllers.HospitalController.HospitalMapClinic>>) ?? new();
+    int? want = ViewBag.Floor as int?;
+    var current = Model.FirstOrDefault(f => f.Id == want) ?? Model.FirstOrDefault();
+    var rooms = Model.SelectMany(f => f.Rooms).ToList();
+    int inBeds = rooms.SelectMany(r => r.Beds).Count(b => occupants.ContainsKey(b.Id));
+    int freeBeds = rooms.SelectMany(r => r.Beds).Count(b => b.Status == HospitalBedStatus.Vacant && !occupants.ContainsKey(b.Id));
+    int allBeds = rooms.SelectMany(r => r.Beds).Count();
+    int waiting = (int)(ViewBag.Waiting ?? 0), inClinics = (int)(ViewBag.InClinics ?? 0), doctorsToday = (int)(ViewBag.DoctorsToday ?? 0);
+    string Label(HospitalRoomView r) => !string.IsNullOrWhiteSpace(r.Name) ? DisplayName.Of(r.Name, r.NameEn) : T["kind:" + r.Kind].Value + " " + r.Number;
+    bool HoldsBeds(HospitalRoomView r) => r.Kind is HospitalRoomKinds.Ward or HospitalRoomKinds.Icu;
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+
+@functions {
+    // A face, never a glyph: the photo when there is one, the initials on the brand tint otherwise.
+    static Microsoft.AspNetCore.Html.IHtmlContent Face(string? photo, string nameEn, int size)
+    {
+        var p = (nameEn ?? "").Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var ini = ((p.Length > 0 ? p[0][..1] : "") + (p.Length > 1 ? p[1][..1] : "")).ToUpperInvariant();
+        var inner = string.IsNullOrEmpty(photo)
+            ? "<span class=\"symbol-label fw-bold fs-9 hp-initials\">" + System.Net.WebUtility.HtmlEncode(ini) + "</span>"
+            : "<img src=\"" + System.Net.WebUtility.HtmlEncode(photo) + "\" alt=\"\" style=\"object-fit:cover\" data-initials=\"" + System.Net.WebUtility.HtmlEncode(ini) + "\" />";
+        return new Microsoft.AspNetCore.Html.HtmlString("<div class=\"symbol symbol-" + size + "px symbol-circle flex-shrink-0\">" + inner + "</div>");
+    }
+}
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Hospital map"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item text-muted">@T["Hospital"]</li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@T["Hospital map"]</li>
+            </ul>
+        </div>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="row g-5 g-xl-8 mb-5">
+            @foreach (var s in new[] {
+                (T["Patients in the building"].Value, (inBeds + inClinics + waiting).ToString(), T["In beds"].Value + " " + inBeds + " · " + T["in clinics"].Value + " " + (inClinics + waiting), "ki-people", "text-gray-900"),
+                (T["Doctors today"].Value, doctorsToday.ToString(), T["With appointments today"].Value, "ki-briefcase", "text-gray-900"),
+                (T["Beds free"].Value, freeBeds.ToString(), T["of"].Value + " " + allBeds + " " + T["beds (count)"].Value, "ki-home-3", "text-success"),
+                (T["Waiting in clinics"].Value, waiting.ToString(), T["Arrived, not called yet"].Value, "ki-time", waiting > 0 ? "text-primary" : "text-gray-900") })
+            {
+                <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
+                    <div class="d-flex flex-stack"><div class="text-muted fw-semibold fs-7 mb-1">@s.Item1</div><i class="ki-outline @s.Item4 fs-2 text-gray-400"></i></div>
+                    <div class="fs-2hx fw-bold hp-num @s.Item5">@s.Item2</div>
+                    <div class="text-muted fs-8 mt-1">@s.Item3</div>
+                </div></div></div>
+            }
+        </div>
+
+        @if (Model.Count == 0)
+        {
+            <div class="card"><div class="card-body text-center text-muted py-15"><i class="ki-outline ki-map fs-3x text-gray-300 d-block mb-4"></i>@T["No floors yet."] <a href="@Url.Action("Designer")">@T["Floor & room designer"]</a></div></div>
+        }
+        else
+        {
+            <div class="card">
+                <div class="card-header border-0 pt-6">
+                    <div class="card-title align-items-start flex-column m-0">
+                        <span class="card-label fw-bold text-gray-900 fs-4" data-floor-title>@DisplayName.Of(current!.Name, current.NameEn)</span>
+                        <span class="text-muted mt-1 fw-semibold fs-7">@T["Click any room to see who is inside and their details"]</span>
+                    </div>
+                    <div class="card-toolbar">
+                        <div class="d-flex align-items-center position-relative"><i class="ki-outline ki-magnifier fs-3 position-absolute ms-4"></i>
+                            <input type="text" id="mapSearch" class="form-control form-control-solid w-275px ps-12" placeholder="@T["Search for a patient or a doctor..."]" autocomplete="off" /></div>
+                    </div>
+                </div>
+                <div class="card-body pt-4">
+                    <div class="d-flex flex-wrap gap-2 mb-5">
+                        @foreach (var f in Model)
+                        {
+                            <button type="button" class="btn btn-sm @(f.Id == current.Id ? "btn-primary" : "btn-light")" data-floor="@f.Id" data-floor-name="@DisplayName.Of(f.Name, f.NameEn)">@DisplayName.Of(f.Name, f.NameEn)</button>
+                        }
+                    </div>
+                    <div class="d-flex flex-wrap gap-4 mb-5">
+                        @foreach (var k in HospitalRoomKinds.All)
+                        {
+                            <span class="d-inline-flex align-items-center gap-2 fs-8 fw-semibold text-gray-700"><span class="hp-key hp-k-@k"></span>@T["kind:" + k]</span>
+                        }
+                    </div>
+                    <div id="mapHits" class="mb-4"></div>
+                    <div class="overflow-auto">
+                        @foreach (var f in Model)
+                        {
+                            int rows = f.Rooms.Count == 0 ? 1 : f.Rooms.Max(r => r.Row + r.RowSpan - 1);
+                            <div class="hp-floor readonly @(f.Id == current.Id ? "" : "d-none")" data-plan="@f.Id" style="grid-template-rows:repeat(@rows, minmax(118px, auto))">
+                                @if (f.Rooms.Count == 0) { <div class="text-muted fs-7 p-6" style="grid-column:1 / span 12">@T["No rooms on this floor yet."]</div> }
+                                @foreach (var r in f.Rooms)
+                                {
+                                    var beds = r.Beds.Where(b => occupants.ContainsKey(b.Id)).Select(b => (Bed: b, Who: occupants[b.Id])).ToList();
+                                    var here = clinics.GetValueOrDefault(r.Id) ?? new();
+                                    bool empty = HoldsBeds(r) ? beds.Count == 0 : r.Kind == HospitalRoomKinds.Clinic ? here.Count == 0 : false;
+                                    var search = string.Join(" ", new[] { r.Number, Label(r) }
+                                        .Concat(beds.SelectMany(x => new[] { x.Who.Name, x.Who.NameEn, x.Who.Mrn }))
+                                        .Concat(here.SelectMany(c => new[] { c.Doctor.Name, c.Doctor.NameEn, c.InRoom?.Name ?? "", c.InRoom?.NameEn ?? "", c.InRoom?.Sub ?? "" }))).ToLowerInvariant();
+                                    <div class="hp-tile hp-k-@r.Kind @(empty ? "hp-tile-empty" : "")" data-room="@r.Id" data-search="@search" data-label="@Label(r)"
+                                         style="grid-column:@r.Column / span @r.ColumnSpan; grid-row:@r.Row / span @r.RowSpan">
+                                        <div class="fw-bold fs-7 text-gray-900 text-truncate">@Label(r)</div>
+                                        @if (HoldsBeds(r))
+                                        {
+                                            <div class="fs-8 text-muted mt-1 text-truncate">@if (r.Type != null) {<text>@DisplayName.Of(r.Type.Name, r.Type.NameEn) · </text>}<span class="hp-num fw-bold text-gray-800">@beds.Count / @r.Beds.Count</span> @T["occupied (count)"]</div>
+                                            @foreach (var x in beds.Take(4))
+                                            {
+                                                <div class="d-flex align-items-center gap-2 mt-2">@Face(x.Who.PhotoPath, x.Who.NameEn, 25)<span class="fs-8 fw-bold text-gray-800 text-truncate">@DisplayName.Of(x.Who.Name, x.Who.NameEn)</span></div>
+                                            }
+                                            @if (beds.Count > 4) { <div class="fs-8 text-muted mt-1">+<span class="hp-num">@(beds.Count - 4)</span></div> }
+                                        }
+                                        else if (r.Kind == HospitalRoomKinds.Clinic)
+                                        {
+                                            @foreach (var c in here)
+                                            {
+                                                if (c.InRoom != null) { <div class="d-flex align-items-center gap-2 mt-2">@Face(c.InRoom.Photo, c.InRoom.NameEn, 25)<span class="fs-8 fw-bold text-gray-800 text-truncate">@DisplayName.Of(c.InRoom.Name, c.InRoom.NameEn)</span></div> }
+                                                <div class="d-flex align-items-center gap-2 mt-2">@Face(c.Doctor.Photo, c.Doctor.NameEn, 25)<span class="fs-8 text-gray-700 text-truncate">@DisplayName.Of(c.Doctor.Name, c.Doctor.NameEn)</span></div>
+                                                if (c.Waiting > 0) { <div class="fs-8 text-muted mt-1">@T["Waiting"] <span class="hp-num fw-bold">@c.Waiting</span></div> }
+                                            }
+                                        }
+
+                                        @* What the window shows when the room is clicked. *@
+                                        <template data-info>
+                                            <div class="d-flex flex-wrap gap-2 mb-5">
+                                                <span class="badge badge-light fs-8">@DisplayName.Of(f.Name, f.NameEn)</span>
+                                                <span class="badge badge-light-primary fs-8">@T["kind:" + r.Kind]</span>
+                                                @if (r.Type != null) { <span class="badge badge-light fs-8">@DisplayName.Of(r.Type.Name, r.Type.NameEn)</span> }
+                                            </div>
+                                            @if (HoldsBeds(r))
+                                            {
+                                                @foreach (var b in r.Beds)
+                                                {
+                                                    var who = occupants.GetValueOrDefault(b.Id);
+                                                    <div class="d-flex align-items-center gap-3 py-3 border-bottom border-gray-200 border-bottom-dashed">
+                                                        <span class="badge hp-code fs-8 hp-num">@b.Code</span>
+                                                        @if (who != null)
+                                                        {
+                                                            @Face(who.PhotoPath, who.NameEn, 35)
+                                                            <div class="flex-grow-1"><a href="@Url.Action("Patient", new { id = who.PatientId })" class="fw-bold text-gray-900 text-hover-primary">@DisplayName.Of(who.Name, who.NameEn)</a>
+                                                                <div class="text-muted fs-8"><span class="hp-num">@who.Mrn</span>@if (!string.IsNullOrWhiteSpace(who.Diagnosis)) {<text> · @who.Diagnosis</text>}@if (who.HasAllergy) {<span class="text-danger fw-bold"> · @T["Allergy"]</span>}</div></div>
+                                                        }
+                                                        else { <span class="text-muted fs-7">@T[b.Status]</span> }
+                                                    </div>
+                                                }
+                                                <a href="@Url.Action("Room", new { id = r.Id })" class="btn btn-sm btn-light-primary mt-5">@T["Open the room"]</a>
+                                            }
+                                            else if (r.Kind == HospitalRoomKinds.Clinic && here.Count > 0)
+                                            {
+                                                @foreach (var c in here)
+                                                {
+                                                    <div class="text-muted fs-7 fw-semibold mb-2">@T["Doctor"]</div>
+                                                    <a href="@c.Doctor.Url" class="d-flex align-items-center gap-3 mb-4 text-hover-primary">@Face(c.Doctor.Photo, c.Doctor.NameEn, 40)<div><div class="fw-bold text-gray-900">@DisplayName.Of(c.Doctor.Name, c.Doctor.NameEn)</div><div class="text-muted fs-8">@c.Doctor.Sub</div></div></a>
+                                                    <div class="text-muted fs-7 fw-semibold mb-2">@T["In the consultation"]</div>
+                                                    @if (c.InRoom != null) { <a href="@c.InRoom.Url" class="d-flex align-items-center gap-3 mb-4 text-hover-primary">@Face(c.InRoom.Photo, c.InRoom.NameEn, 40)<div><div class="fw-bold text-gray-900">@DisplayName.Of(c.InRoom.Name, c.InRoom.NameEn)</div><div class="text-muted fs-8 hp-num">@c.InRoom.Sub</div></div></a> }
+                                                    else { <div class="text-muted fs-7 mb-4">@T["Nobody right now"]</div> }
+                                                    <div class="fs-7 mb-5">@T["Waiting"] <span class="hp-num fw-bold">@c.Waiting</span></div>
+                                                }
+                                                <a href="@Url.Action("Clinics")" class="btn btn-sm btn-light-primary">@T["Clinics board"]</a>
+                                            }
+                                            else
+                                            {
+                                                <div class="notice d-flex rounded border border-dashed p-5 hp-notice"><i class="ki-outline ki-home-3 fs-2x text-primary me-4"></i>
+                                                    <div class="fw-semibold"><div class="fs-6 text-gray-800">@T["No patient here right now"]</div><div class="fs-7 text-gray-600">@T["The space is free, or a service area."]</div></div></div>
+                                            }
+                                        </template>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div></div>
+</div>
+
+<div class="modal fade" id="mapRoom" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-600px"><div class="modal-content">
+    <div class="modal-header"><h2 class="fw-bold m-0" data-title></h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="modal-body py-8 px-lg-10" data-body></div>
+</div></div></div>
+
+@section Scripts {
+    <script>
+        (function () {
+            var W = { notFound: @Json.Serialize(T["Not found in any room"].Value) };
+            var title = document.querySelector('[data-floor-title]'), hits = document.getElementById('mapHits');
+            function showFloor(id) {
+                document.querySelectorAll('[data-plan]').forEach(function (p) { p.classList.toggle('d-none', p.getAttribute('data-plan') !== String(id)); });
+                document.querySelectorAll('[data-floor]').forEach(function (b) {
+                    var on = b.getAttribute('data-floor') === String(id);
+                    b.classList.toggle('btn-primary', on); b.classList.toggle('btn-light', !on);
+                    if (on && title) title.textContent = b.getAttribute('data-floor-name');
+                });
+                history.replaceState(null, '', location.pathname + '?floor=' + id);
+            }
+            function openRoom(el) {
+                var m = document.getElementById('mapRoom');
+                m.querySelector('[data-title]').textContent = el.getAttribute('data-label');
+                m.querySelector('[data-body]').innerHTML = el.querySelector('template[data-info]').innerHTML;
+                bootstrap.Modal.getOrCreateInstance(m).show();
+            }
+            document.addEventListener('click', function (e) {
+                var t;
+                if ((t = e.target.closest('[data-floor]'))) showFloor(t.getAttribute('data-floor'));
+                else if ((t = e.target.closest('[data-hit]'))) { showFloor(t.getAttribute('data-hit-floor')); openRoom(document.querySelector('.hp-tile[data-room="' + t.getAttribute('data-hit') + '"]')); }
+                else if ((t = e.target.closest('[data-plan] .hp-tile'))) openRoom(t);
+            });
+            // Search dims every room that does not match, and lists the rooms that do — on any floor.
+            var inp = document.getElementById('mapSearch');
+            if (inp) inp.addEventListener('input', function () {
+                var q = inp.value.trim().toLowerCase(), found = [];
+                document.querySelectorAll('[data-plan] .hp-tile').forEach(function (el) {
+                    var match = !q || el.getAttribute('data-search').indexOf(q) !== -1;
+                    el.classList.toggle('hp-tile-dim', !!q && !match);
+                    if (q.length >= 2 && match) found.push(el);
+                });
+                if (q.length < 2) { hits.innerHTML = ''; return; }
+                hits.innerHTML = found.length ? found.slice(0, 8).map(function (el) {
+                    var plan = el.closest('[data-plan]'), fid = plan.getAttribute('data-plan');
+                    var fname = document.querySelector('[data-floor="' + fid + '"]').getAttribute('data-floor-name');
+                    var b = document.createElement('button'); b.type = 'button'; b.className = 'btn btn-sm btn-light-primary me-2 mb-2';
+                    b.setAttribute('data-hit', el.getAttribute('data-room')); b.setAttribute('data-hit-floor', fid); b.textContent = fname + ' · ' + el.getAttribute('data-label');
+                    return b.outerHTML;
+                }).join('') : '<span class="text-muted fs-7">' + W.notFound + '</span>';
+            });
+        })();
+    </script>
+}

@@ -1,0 +1,145 @@
+/* Hospital — drawn room plans and the floor/room designer. Only what the theme has no class for; colours
+   are the house tokens of crossbuy-brand.css (--cb-brand #3A5795, --cb-brand-ink #1F2D4D, --cb-blue-50 surface). No amber on any control or notice. */
+
+.hp-num { direction: ltr; unicode-bidi: isolate; font-variant-numeric: tabular-nums; }
+.hp-notice { background: var(--cb-blue-50, #E7F0FF); border-color: var(--cb-brand, #3A5795) !important; }
+.hp-notice .symbol-label { background: var(--cb-brand, #3A5795); }
+.hp-badge { background: var(--cb-brand, #3A5795); color: #fff; }
+
+/* ---- room plan ---- */
+.hp-plan { position: relative; height: 190px; border: 3px solid #5E6278; border-radius: .4rem; background: repeating-linear-gradient(45deg, #FBFCFE, #FBFCFE 10px, #F4F7FC 10px, #F4F7FC 20px); }
+.hp-plan.small { height: 130px; }
+.hp-plan.big { height: 420px; touch-action: none; }
+/* Every item is placed by percent — beds included, which are links on the board, not divs. */
+.hp-plan > div, .hp-plan > a, .hp-bed { position: absolute; box-sizing: border-box; }
+.hp-plan.small .hp-bed .code { font-size: .6rem; }
+.hp-plan span.lbl { font-size: .62rem; font-weight: 700; color: var(--bs-gray-600); }
+.hp-window { background: #8FB8F0; border-radius: 3px; }
+.hp-door { background: #fff; border-inline: 2px solid #5E6278; }
+.hp-door span.lbl { position: absolute; bottom: 7px; inset-inline-start: 0; white-space: nowrap; }
+.hp-bath { background: #EAF4FF; border: 2px solid #5E6278; display: flex; align-items: center; justify-content: center; gap: .2rem; color: var(--bs-info, #3B82F6); }
+.hp-anteroom { background: #FFF5F8; border: 2px dashed #F1416C; display: flex; align-items: center; justify-content: center; }
+.hp-companion { background: #F1F1F4; border: 1px solid #C4CADA; border-radius: .35rem; display: flex; align-items: center; justify-content: center; }
+.hp-lounge { background: #F8F5FF; border: 1px dashed #7239EA; border-radius: .35rem; display: flex; align-items: center; justify-content: center; }
+.hp-curtain { border-inline-start: 2px dashed #B5B5C3; }
+.hp-sink { border-radius: 50%; background: #EAF4FF; border: 2px solid var(--bs-info, #3B82F6); display: flex; align-items: center; justify-content: center; }
+
+.hp-bed { border-radius: .45rem; border: 2px solid var(--cb-brand, #3A5795); background: var(--cb-blue-50, #E7F0FF); display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; transition: transform .1s ease, box-shadow .1s ease; }
+a.hp-bed:hover, .hp-bed.clickable:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(58, 87, 149, .25); cursor: pointer; }
+.hp-bed .pillow { position: absolute; top: 4px; width: 55%; height: 12%; border-radius: 4px; background: rgba(255, 255, 255, .85); border: 1px solid rgba(58, 87, 149, .25); }
+.hp-bed .code { font-size: .7rem; font-weight: 800; color: var(--cb-brand, #3A5795); margin-top: 10%; }
+.hp-bed .state { font-size: .62rem; font-weight: 700; color: var(--bs-gray-700); }
+.hp-bed.short { flex-direction: row; gap: .4rem; }
+.hp-bed.short .code, .hp-bed.short .state { margin-top: 6px; }
+.hp-bed.Vacant { border-color: var(--bs-success); background: var(--bs-light-success); }
+.hp-bed.Vacant .code { color: var(--bs-text-success, #14532D); }
+.hp-bed.Cleaning { border-color: var(--bs-info); background: var(--bs-light-info); }
+.hp-bed.Reserved { border-color: #7239EA; background: #F8F5FF; }
+.hp-bed.Blocked { border-color: var(--bs-gray-500); background: var(--bs-gray-200); }
+.hp-legend { display: inline-block; width: 18px; height: 12px; border-radius: 3px; border: 2px solid; position: static !important; }
+
+/* ---- designer ---- */
+.hp-edit { cursor: move; user-select: none; }
+.hp-edit[data-sel] { outline: 2px dashed #F1416C; outline-offset: 2px; z-index: 3; }
+.hp-handle { position: absolute; bottom: 0; inset-inline-end: 0; width: 12px; height: 12px; background: var(--cb-brand, #3A5795); border-start-start-radius: 4px; cursor: nwse-resize; }
+
+.hp-floor { display: grid; grid-template-columns: repeat(12, minmax(62px, 1fr)); grid-auto-rows: 92px; gap: .6rem; min-width: 820px; padding: .75rem; border-radius: .85rem; border: 1px dashed var(--cb-brand, #3A5795); background-color: #FBFCFE; background-image: linear-gradient(90deg, rgba(58,87,149,.06) 1px, transparent 1px), linear-gradient(rgba(58,87,149,.06) 1px, transparent 1px); background-size: calc(100% / 12) 101.6px; touch-action: none; }
+.hp-floor.readonly { border: 1px solid #E3E9F5; background-color: #F5F7FB; background-image: none; touch-action: auto; grid-auto-rows: minmax(118px, auto); min-width: 900px; }
+/* ONE space tile for every floor screen — the designer draws it, the map fills it with people. Its colour is
+   its kind (.hp-k-*, below), the same on both. */
+.hp-tile { position: relative; border: 2px solid var(--k, #99A1B7); border-radius: .65rem; background: var(--kb, #F9F9F9); padding: .6rem .75rem; user-select: none; min-width: 0; overflow: hidden; transition: box-shadow .12s ease, opacity .12s ease; }
+.hp-floor:not(.readonly) .hp-tile { cursor: grab; }
+.hp-floor.readonly .hp-tile { cursor: pointer; }
+.hp-floor.readonly .hp-tile:hover { box-shadow: 0 4px 14px rgba(31, 45, 77, .14); }
+.hp-tile.sel { box-shadow: 0 0 0 3px #fff, 0 0 0 5px var(--cb-brand, #3A5795); z-index: 2; }
+.hp-tile.hp-tile-empty { background: var(--bs-body-bg); border-style: dashed; }
+.hp-tile.hp-tile-dim { opacity: .25; }
+.hp-key { width: 12px; height: 12px; border-radius: 3px; border: 2px solid var(--k, #99A1B7); background: var(--kb, #F9F9F9); display: inline-block; }
+.hp-tile .hp-open { position: absolute; bottom: 6px; inset-inline-start: 6px; }
+.fs-9 { font-size: .68rem !important; }
+
+/* A room type's features: icon + word, on the house surface. */
+.hp-feature { display: inline-flex; align-items: center; gap: .35rem; padding: .35rem .65rem; border-radius: .5rem; background: #F7FAFF; border: 1px solid #DCE7FA; font-size: .78rem; font-weight: 600; color: var(--bs-gray-800); }
+.hp-feature i { font-size: 1rem; color: var(--cb-brand, #3A5795); }
+
+/* ---- patients (H2), from the prototype ---- */
+.hp-code { background: var(--cb-blue-50, #E7F0FF); color: #145DBF; }
+.hp-pbanner { background: #F7FAFF; border: 1px solid #DCE7FA; border-radius: .85rem; }
+.hp-chip { display: inline-flex; align-items: center; gap: .35rem; padding: .25rem .65rem; border-radius: 2rem; background: var(--bs-gray-100); font-size: .8rem; font-weight: 600; color: var(--bs-gray-700); }
+.hp-initials { background: var(--cb-blue-50, #E7F0FF); color: var(--cb-brand, #3A5795); }
+.hp-similar { border: 1px solid #DCE7FA; border-radius: .6rem; }
+
+/* ---- the person in the bed (H3), as the prototype draws them ---- */
+.hp-bed.Occupied { border-color: var(--cb-brand, #3A5795); background: var(--cb-blue-50, #E7F0FF); }
+.hp-bed .who { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0; max-width: 100%; }
+.hp-bed.short .who { flex-direction: row; margin-top: 6px; gap: .3rem; }
+.hp-bed .av { border-radius: 50%; object-fit: cover; border: 2px solid #fff; box-shadow: 0 1px 3px rgba(58, 87, 149, .3); flex-shrink: 0; }
+.hp-bed .av.ini { display: inline-flex; align-items: center; justify-content: center; background: var(--cb-brand, #3A5795); color: #fff; font-weight: 700; }
+.hp-bed .nm { font-size: .62rem; font-weight: 700; color: var(--cb-brand, #3A5795); max-width: 100%; padding: 0 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hp-bed.sel { box-shadow: 0 0 0 3px #fff, 0 0 0 6px var(--cb-brand, #3A5795); z-index: 2; }
+.hp-bed.na { opacity: .45; cursor: not-allowed; }
+.hp-bed.clickable { cursor: pointer; }
+.hp-photo-edit { position: relative; cursor: pointer; }
+.hp-photo-edit .hp-photo-btn { position: absolute; bottom: -2px; inset-inline-end: -2px; width: 26px; height: 26px; border-radius: 50%; background: var(--cb-brand, #3A5795); color: #fff; display: flex; align-items: center; justify-content: center; border: 2px solid #fff; }
+
+/* ---- outpatient (H4): the doctor schedule grid and its slots, from the prototype ---- */
+.hp-sched { display: grid; border: 1px solid var(--bs-gray-200); border-radius: .75rem; overflow: hidden; }
+.hp-sched > div { border-bottom: 1px dashed #eef1f6; border-inline-start: 1px solid #eff2f5; min-height: 46px; padding: .25rem .35rem; position: relative; }
+.hp-sched .hd { background: #F7FAFF; border-bottom: 2px solid var(--cb-brand, #3A5795); font-weight: 700; padding: .6rem; }
+.hp-sched .tm { color: var(--bs-gray-600); font-size: .8rem; text-align: center; padding-top: .7rem; }
+.hp-sched .free { cursor: pointer; }
+.hp-sched .free:hover { background: #F7FAFF; }
+.hp-sched .free:hover::after { content: '+'; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--cb-brand, #3A5795); font-weight: 700; }
+.hp-sched .off { background: repeating-linear-gradient(45deg, #FBFCFE, #FBFCFE 6px, #F4F7FC 6px, #F4F7FC 12px); }
+/* Appointment states — the prototype's filled slots on the house palette, each tint a shade deeper than the
+   prototype's so the five states read apart at a glance. No amber. */
+.hp-slot { border-radius: .5rem; padding: .3rem .5rem; font-size: .8rem; line-height: 1.25; height: 100%; cursor: pointer; }
+.hp-slot.Booked { background: #E3E9F5; color: var(--cb-brand-ink, #1F2D4D); }
+.hp-slot.Arrived { background: #CBEBFA; color: #075985; }
+.hp-slot.InRoom { background: var(--cb-brand-fill, #3A5795); color: #FFFFFF; }
+.hp-slot.Done { background: #D1F7DE; color: var(--bs-text-success, #14532D); }
+.hp-slot.NoShow { background: #EEF0F4; color: var(--bs-text-muted, #4B5675); text-decoration: line-through; }
+.hp-slot.Cancelled { background: #F9F9F9; color: #99A1B7; }
+.hp-slot.InRoom .text-muted, .hp-slot.InRoom .hp-num { color: rgba(255,255,255,.8) !important; }
+
+/* The legend: one round dot per state, a shade deeper than its slot so it reads at 12px. */
+.hp-swatch { display: inline-block; width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+.hp-swatch.Booked { background: #9AAED3; }
+.hp-swatch.Arrived { background: #0EA5E9; }
+.hp-swatch.InRoom { background: var(--cb-brand-fill, #3A5795); }
+.hp-swatch.Done { background: #16A34A; }
+.hp-swatch.NoShow { background: #C4CADA; }
+.hp-day { min-width: 80px; }
+.hp-day.on { background: var(--cb-brand, #3A5795); color: #fff; }
+.hp-day.off { background: var(--bs-gray-100); color: var(--bs-gray-500); }
+
+/* ---- the kind palette: one colour pair per kind of space, shared by the designer, the map and the legend ---- */
+.hp-k-Ward, .hp-k-Clinic { --k: var(--cb-brand, #3A5795); --kb: #F5F7FB; }
+.hp-k-Icu { --k: #D9214E; --kb: #FFF5F8; }
+.hp-k-Emergency { --k: #EF4444; --kb: #FEF2F2; }
+.hp-k-Imaging { --k: #7239EA; --kb: #F8F5FF; }
+.hp-k-Laboratory { --k: #16A34A; --kb: #F0FDF4; }
+.hp-k-Pharmacy { --k: #3B82F6; --kb: #EFF6FF; }
+.hp-k-Theatre { --k: var(--cb-brand-ink, #1F2D4D); --kb: #E7F0FF; }
+.hp-k-Service { --k: #99A1B7; --kb: #F9F9F9; }
+
+/* ---- H8 laboratory: result flags (prototype .flag-h/.flag-l) — high in danger, low in the brand blue, critical filled ---- */
+.hp-flag { display: inline-block; min-width: 30px; text-align: center; font-weight: 700; font-variant-numeric: tabular-nums; }
+.hp-flag-H { color: var(--bs-danger); }
+.hp-flag-L { color: #145DBF; }
+.hp-flag-HH, .hp-flag-LL { color: #fff; background: var(--bs-danger); border-radius: .425rem; padding: .1rem .4rem; }
+.hp-result-out { color: var(--bs-danger); font-weight: 700; }
+/* A list of rows divided by one dashed line (the prototype's cb-row), never a box around each row. */
+.hp-row + .hp-row { border-top: 1px dashed var(--bs-gray-300); }
+
+/* ---- H8 critical value: whom to tell (prototype #/lab-critical) ---- */
+.hp-crit-pick { cursor: pointer; border: 1px solid var(--bs-gray-300); border-radius: .75rem; transition: border-color .15s, background .15s; }
+.hp-crit-pick:hover { border-color: var(--cb-brand, #3A5795); }
+.hp-crit-pick.on { border-color: var(--cb-brand, #3A5795); background: var(--cb-blue-50, #E7F0FF); }
+.hp-crit-pick.off { cursor: not-allowed; opacity: .55; }
+.hp-crit-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+.hp-crit-step { position: relative; padding-inline-start: 34px; padding-bottom: 18px; }
+.hp-crit-step:before { content: ""; position: absolute; inset-inline-start: 11px; top: 24px; bottom: 0; border-inline-start: 2px dashed var(--bs-gray-300); }
+.hp-crit-step:last-child:before { display: none; }
+.hp-crit-step .ic { position: absolute; inset-inline-start: 0; top: 0; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+.hp-crit-level { border-radius: .75rem; padding: 14px 16px; border: 1px solid var(--bs-gray-200); }

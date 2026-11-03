@@ -1,0 +1,1256 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="{0} being cleaned" xml:space="preserve"><value>{0} قيد التنظيف</value></data>
+  <data name="{0}% occupancy" xml:space="preserve"><value>إشغال {0}٪</value></data>
+  <data name="across {0} floors" xml:space="preserve"><value>على {0} أدوار</value></data>
+  <data name="Active" xml:space="preserve"><value>فعّال</value></data>
+  <data name="Add floor" xml:space="preserve"><value>إضافة دور</value></data>
+  <data name="Add room" xml:space="preserve"><value>إضافة غرفة</value></data>
+  <data name="Add the floors and rooms in the designer; they appear here with their beds at once." xml:space="preserve"><value>أضف الأدوار والغرف من المصمم، وستظهر هنا بأسرّتها فوراً.</value></data>
+  <data name="Add to the room" xml:space="preserve"><value>أضف للغرفة</value></data>
+  <data name="Add ward" xml:space="preserve"><value>إضافة جناح</value></data>
+  <data name="Anteroom" xml:space="preserve"><value>غرفة انتقالية</value></data>
+  <data name="Available now" xml:space="preserve"><value>متاح الآن</value></data>
+  <data name="Back to the floor" xml:space="preserve"><value>العودة للدور</value></data>
+  <data name="Bath" xml:space="preserve"><value>حمام</value></data>
+  <data name="Bathroom" xml:space="preserve"><value>حمام</value></data>
+  <data name="Bed" xml:space="preserve"><value>سرير</value></data>
+  <data name="Bed code" xml:space="preserve"><value>رمز السرير</value></data>
+  <data name="bed(s)" xml:space="preserve"><value>سرير</value></data>
+  <data name="Beds" xml:space="preserve"><value>الأسرّة</value></data>
+  <data name="Beds &amp; rooms" xml:space="preserve"><value>الأسرة والغرف</value></data>
+  <data name="Beds are created from the type; the room appears on its floor for you to place, then draw inside." xml:space="preserve"><value>تُنشأ الأسرّة حسب النوع، وتظهر الغرفة على الدور لتضعها في مكانها ثم ترسمها من الداخل.</value></data>
+  <data name="Beds in a new room" xml:space="preserve"><value>أسرّة الغرفة الجديدة</value></data>
+  <data name="beds occupied" xml:space="preserve"><value>سرير مشغول</value></data>
+  <data name="Beds per room" xml:space="preserve"><value>أسرّة في الغرفة:</value></data>
+  <data name="Blocked" xml:space="preserve"><value>مغلق</value></data>
+  <data name="Cancel" xml:space="preserve"><value>إلغاء</value></data>
+  <data name="Choose the room type" xml:space="preserve"><value>اختر نوع الغرفة</value></data>
+  <data name="Cleaning" xml:space="preserve"><value>تنظيف</value></data>
+  <data name="Click any item on the plan to select it." xml:space="preserve"><value>اضغط أي عنصر في المخطط لتحديده.</value></data>
+  <data name="Code" xml:space="preserve"><value>الرمز</value></data>
+  <data name="Companion" xml:space="preserve"><value>مرافق</value></data>
+  <data name="Companion bed" xml:space="preserve"><value>سرير مرافق</value></data>
+  <data name="Create" xml:space="preserve"><value>إنشاء</value></data>
+  <data name="Curtain" xml:space="preserve"><value>ستارة فصل</value></data>
+  <data name="Daily rate" xml:space="preserve"><value>السعر اليومي</value></data>
+  <data name="Default drawing" xml:space="preserve"><value>الرسم الافتراضي</value></data>
+  <data name="Delete item" xml:space="preserve"><value>حذف العنصر</value></data>
+  <data name="Discard unsaved changes?" xml:space="preserve"><value>توجد تعديلات غير محفوظة، هل تريد تركها؟</value></data>
+  <data name="Door" xml:space="preserve"><value>باب</value></data>
+  <data name="Drag a space to move it, drag its corner to resize it, and press the pencil to draw the room inside." xml:space="preserve"><value>اسحب أي مساحة لتحريكها، واسحب الركن لتغيير حجمها، واضغط القلم لرسم الغرفة من الداخل.</value></data>
+  <data name="Drag an item to move it; drag its small corner to resize it." xml:space="preserve"><value>اسحب العنصر لتحريكه، واسحب الركن الصغير لتغيير حجمه.</value></data>
+  <data name="Draw the room" xml:space="preserve"><value>رسم الغرفة</value></data>
+  <data name="Draw this room" xml:space="preserve"><value>رسم هذه الغرفة</value></data>
+  <data name="Edit" xml:space="preserve"><value>تعديل</value></data>
+  <data name="Edit room type" xml:space="preserve"><value>تعديل نوع الغرفة</value></data>
+  <data name="Enter a code of up to 40 characters" xml:space="preserve"><value>أدخل رمزاً لا يزيد عن 40 حرفاً</value></data>
+  <data name="Enter a room number of up to 40 characters" xml:space="preserve"><value>أدخل رقم غرفة لا يزيد عن 40 حرفاً</value></data>
+  <data name="Enter the Arabic name" xml:space="preserve"><value>أدخل الاسم بالعربية</value></data>
+  <data name="Every room takes its daily rate, its starting beds and the same-sex rule from its type." xml:space="preserve"><value>كل غرفة تأخذ سعرها اليومي وأسرّتها الابتدائية وقاعدة نفس الجنس من نوعها.</value></data>
+  <data name="Features" xml:space="preserve"><value>المميزات</value></data>
+  <data name="Floor" xml:space="preserve"><value>الدور</value></data>
+  <data name="Floor &amp; room designer" xml:space="preserve"><value>مصمم الأدوار والغرف</value></data>
+  <data name="Floors, rooms, their place, size and contents are drawn here, and every hospital screen reads the same drawing." xml:space="preserve"><value>الأدوار والغرف ومكانها وحجمها ومحتواها تُرسم هنا، وكل شاشات المستشفى تقرأ نفس الرسم.</value></data>
+  <data name="H %" xml:space="preserve"><value>ارتفاع %</value></data>
+  <data name="Hospital" xml:space="preserve"><value>المستشفى</value></data>
+  <data name="Inactive" xml:space="preserve"><value>غير فعّال</value></data>
+  <data name="Kind of space" xml:space="preserve"><value>نوع المساحة</value></data>
+  <data name="Load the standard types" xml:space="preserve"><value>تحميل الأنواع القياسية</value></data>
+  <data name="Lounge" xml:space="preserve"><value>صالة</value></data>
+  <data name="Name (Arabic)" xml:space="preserve"><value>الاسم بالعربية</value></data>
+  <data name="Name (English)" xml:space="preserve"><value>الاسم بالإنجليزية</value></data>
+  <data name="New room type" xml:space="preserve"><value>نوع غرفة جديد</value></data>
+  <data name="No developer" xml:space="preserve"><value>بدون مبرمج</value></data>
+  <data name="No floors yet. Add the first floor to start drawing." xml:space="preserve"><value>لا توجد أدوار بعد. أضف الدور الأول لتبدأ الرسم.</value></data>
+  <data name="No room types yet. Load the standard six, or add your own." xml:space="preserve"><value>لا توجد أنواع غرف بعد. حمّل الأنواع الستة القياسية، أو أضف نوعك.</value></data>
+  <data name="No sex restriction" xml:space="preserve"><value>بدون قيد جنس</value></data>
+  <data name="No type" xml:space="preserve"><value>بدون نوع</value></data>
+  <data name="not available to accommodate" xml:space="preserve"><value>غير متاحة للإسكان</value></data>
+  <data name="not_found" xml:space="preserve"><value>غير موجود</value></data>
+  <data name="occupied (count)" xml:space="preserve"><value>مشغول</value></data>
+  <data name="Occupied" xml:space="preserve"><value>مشغول</value></data>
+  <data name="Only Vacant, Cleaning or Blocked can be set here" xml:space="preserve"><value>يمكن هنا اختيار متاح أو تنظيف أو مغلق فقط</value></data>
+  <data name="Open the designer" xml:space="preserve"><value>افتح المصمم</value></data>
+  <data name="Order" xml:space="preserve"><value>الترتيب</value></data>
+  <data name="Patients" xml:space="preserve"><value>المرضى</value></data>
+  <data name="per day" xml:space="preserve"><value>/ يوم</value></data>
+  <data name="Reserved" xml:space="preserve"><value>محجوز</value></data>
+  <data name="Reserved or blocked" xml:space="preserve"><value>محجوز أو مغلق</value></data>
+  <data name="Room" xml:space="preserve"><value>غرفة</value></data>
+  <data name="Room number" xml:space="preserve"><value>رقم الغرفة</value></data>
+  <data name="Room type" xml:space="preserve"><value>نوع الغرفة</value></data>
+  <data name="Room types" xml:space="preserve"><value>أنواع الغرف</value></data>
+  <data name="Rooms" xml:space="preserve"><value>الغرف</value></data>
+  <data name="Rooms / beds" xml:space="preserve"><value>الغرف / الأسرّة</value></data>
+  <data name="Same sex only" xml:space="preserve"><value>نفس الجنس فقط</value></data>
+  <data name="Save" xml:space="preserve"><value>حفظ</value></data>
+  <data name="Save drawing" xml:space="preserve"><value>حفظ الرسم</value></data>
+  <data name="Saved" xml:space="preserve"><value>تم الحفظ</value></data>
+  <data name="Selected" xml:space="preserve"><value>العنصر المحدد</value></data>
+  <data name="Sink" xml:space="preserve"><value>مغسلة</value></data>
+  <data name="Status" xml:space="preserve"><value>الحالة</value></data>
+  <data name="The admin draws the building" xml:space="preserve"><value>الأدمن يرسم المبنى بنفسه</value></data>
+  <data name="The building has not been drawn yet" xml:space="preserve"><value>لم يُرسم المبنى بعد</value></data>
+  <data name="The change could not be saved" xml:space="preserve"><value>تعذّر حفظ التعديل</value></data>
+  <data name="The daily rate cannot be negative" xml:space="preserve"><value>لا يمكن أن يكون السعر اليومي سالباً</value></data>
+  <data name="The room type catalogue is not empty" xml:space="preserve"><value>قائمة أنواع الغرف ليست فارغة</value></data>
+  <data name="The type decides price, beds and who may share" xml:space="preserve"><value>النوع يحدد السعر والأسرّة ومن يمكنه المشاركة</value></data>
+  <data name="The ward is not on this floor" xml:space="preserve"><value>الجناح ليس على هذا الدور</value></data>
+  <data name="This bed holds a patient and cannot be removed" xml:space="preserve"><value>على هذا السرير مريض ولا يمكن حذفه</value></data>
+  <data name="This floor has no rooms yet." xml:space="preserve"><value>لا توجد غرف على هذا الدور بعد.</value></data>
+  <data name="This space carries no beds" xml:space="preserve"><value>هذه المساحة بدون أسرّة</value></data>
+  <data name="Two items overlap" xml:space="preserve"><value>عنصران متداخلان</value></data>
+  <data name="types" xml:space="preserve"><value>أنواع</value></data>
+  <data name="Unknown room kind" xml:space="preserve"><value>نوع مساحة غير معروف</value></data>
+  <data name="Unknown sex policy" xml:space="preserve"><value>قاعدة جنس غير معروفة</value></data>
+  <data name="Unsaved changes" xml:space="preserve"><value>تعديلات غير محفوظة</value></data>
+  <data name="Vacant" xml:space="preserve"><value>متاح</value></data>
+  <data name="W %" xml:space="preserve"><value>عرض %</value></data>
+  <data name="Ward" xml:space="preserve"><value>الجناح</value></data>
+  <data name="Window" xml:space="preserve"><value>شباك</value></data>
+  <data name="X %" xml:space="preserve"><value>أفقي %</value></data>
+  <data name="Y %" xml:space="preserve"><value>رأسي %</value></data>
+  <data name="Another floor already uses this code" xml:space="preserve"><value>هذا الرمز مستخدم لدور آخر</value></data>
+  <data name="Another room already uses this number" xml:space="preserve"><value>هذا الرقم مستخدم لغرفة أخرى</value></data>
+  <data name="Another room type already uses this code" xml:space="preserve"><value>هذا الرمز مستخدم لنوع غرفة آخر</value></data>
+  <data name="Another ward already uses this code" xml:space="preserve"><value>هذا الرمز مستخدم لجناح آخر</value></data>
+  <data name="A bed code in the drawing belongs to another room" xml:space="preserve"><value>رمز سرير في الرسم يخص غرفة أخرى</value></data>
+  <data name="A room is outside the floor's 12 columns" xml:space="preserve"><value>غرفة خارج أعمدة الدور الاثني عشر</value></data>
+  <data name="A room type holds between 1 and 20 beds" xml:space="preserve"><value>نوع الغرفة يحمل من 1 إلى 20 سريراً</value></data>
+  <data name="A room drawing holds at most 80 items" xml:space="preserve"><value>رسم الغرفة يحمل 80 عنصراً كحد أقصى</value></data>
+  <data name="An item is outside the room" xml:space="preserve"><value>عنصر خارج حدود الغرفة</value></data>
+  <data name="A bed in the drawing has no code" xml:space="preserve"><value>سرير في الرسم بدون رمز</value></data>
+  <data name="A bed code is longer than 40 characters" xml:space="preserve"><value>رمز سرير أطول من 40 حرفاً</value></data>
+  <data name="This space does not carry beds" xml:space="preserve"><value>هذه المساحة لا تحمل أسرّة</value></data>
+  <data name="Unknown room feature: {0}" xml:space="preserve"><value>ميزة غرفة غير معروفة: {0}</value></data>
+  <data name="A bed code for this room is already used: {0}" xml:space="preserve"><value>رمز سرير لهذه الغرفة مستخدم بالفعل: {0}</value></data>
+  <data name="Rooms {0} and {1} overlap" xml:space="preserve"><value>الغرفتان {0} و{1} متداخلتان</value></data>
+  <data name="Bed {0} holds a patient and cannot be removed" xml:space="preserve"><value>على السرير {0} مريض ولا يمكن حذفه</value></data>
+  <data name="Unknown item in the drawing: {0}" xml:space="preserve"><value>عنصر غير معروف في الرسم: {0}</value></data>
+  <data name="Bed {0} is drawn twice" xml:space="preserve"><value>السرير {0} مرسوم مرتين</value></data>
+  <data name="Two items overlap: {0} and {1}" xml:space="preserve"><value>عنصران متداخلان: {0} و{1}</value></data>
+  <data name="Bed {0} holds a patient" xml:space="preserve"><value>على السرير {0} مريض</value></data>
+  <data name="Mark Vacant" xml:space="preserve"><value>متاح</value></data>
+  <data name="Mark Cleaning" xml:space="preserve"><value>تنظيف</value></data>
+  <data name="Mark Blocked" xml:space="preserve"><value>إغلاق</value></data>
+  <data name="feature:bath" xml:space="preserve"><value>حمام خاص</value></data>
+  <data name="feature:companion" xml:space="preserve"><value>سرير مرافق</value></data>
+  <data name="feature:tv" xml:space="preserve"><value>تلفاز</value></data>
+  <data name="feature:fridge" xml:space="preserve"><value>ثلاجة</value></data>
+  <data name="feature:lounge" xml:space="preserve"><value>صالة استقبال</value></data>
+  <data name="feature:oxygen" xml:space="preserve"><value>أكسجين مركزي</value></data>
+  <data name="feature:negative-pressure" xml:space="preserve"><value>ضغط سالب</value></data>
+  <data name="feature:anteroom" xml:space="preserve"><value>غرفة انتقالية</value></data>
+  <data name="feature:monitor" xml:space="preserve"><value>مراقبة قلبية</value></data>
+  <data name="Icu" xml:space="preserve"><value>عناية مركزة</value></data>
+  <data name="Clinic" xml:space="preserve"><value>عيادة</value></data>
+  <data name="Emergency" xml:space="preserve"><value>طوارئ</value></data>
+  <data name="Imaging" xml:space="preserve"><value>أشعة</value></data>
+  <data name="Laboratory" xml:space="preserve"><value>معمل</value></data>
+  <data name="Pharmacy" xml:space="preserve"><value>صيدلية</value></data>
+  <data name="Theatre" xml:space="preserve"><value>عمليات</value></data>
+  <data name="Service" xml:space="preserve"><value>خدمات</value></data>
+  <data name="Any" xml:space="preserve"><value>الجنسان</value></data>
+  <data name="Male" xml:space="preserve"><value>رجال</value></data>
+  <data name="Female" xml:space="preserve"><value>نساء</value></data>
+  <data name="kind:Ward" xml:space="preserve"><value>غرفة تنويم</value></data>
+  <data name="kind:Icu" xml:space="preserve"><value>عناية مركزة</value></data>
+  <data name="kind:Clinic" xml:space="preserve"><value>عيادة</value></data>
+  <data name="kind:Emergency" xml:space="preserve"><value>طوارئ</value></data>
+  <data name="kind:Imaging" xml:space="preserve"><value>أشعة</value></data>
+  <data name="kind:Laboratory" xml:space="preserve"><value>معمل</value></data>
+  <data name="kind:Pharmacy" xml:space="preserve"><value>صيدلية</value></data>
+  <data name="kind:Theatre" xml:space="preserve"><value>عمليات</value></data>
+  <data name="kind:Service" xml:space="preserve"><value>خدمات</value></data>
+  <data name="Choose a floor" xml:space="preserve"><value>اختر الدور</value></data>
+  <data name="Without a ward" xml:space="preserve"><value>بدون جناح</value></data>
+  <data name="No room types yet. Load the standard types, then edit them from Room types." xml:space="preserve"><value>لا توجد أنواع غرف بعد. حمّل الأنواع القياسية ثم عدّلها من شاشة أنواع الغرف.</value></data>
+  <data name="Load standard types" xml:space="preserve"><value>تحميل الأنواع القياسية</value></data>
+  <data name="Access log" xml:space="preserve"><value>سجل الوصول</value></data>
+  <data name="Allergies" xml:space="preserve"><value>الحساسية</value></data>
+  <data name="Allergy" xml:space="preserve"><value>حساسية</value></data>
+  <data name="An allergy shows as a red alert on the file" xml:space="preserve"><value>تظهر الحساسية كتنبيه أحمر على الملف</value></data>
+  <data name="As the ID, mobile or name is typed, the system looks for an existing file before a new one is opened." xml:space="preserve"><value>أثناء كتابة الهوية أو الجوال أو الاسم يبحث النظام عن ملف قائم قبل فتح ملف جديد.</value></data>
+  <data name="Blood group" xml:space="preserve"><value>فصيلة الدم</value></data>
+  <data name="Choose the sex" xml:space="preserve"><value>اختر النوع</value></data>
+  <data name="Chronic conditions" xml:space="preserve"><value>الأمراض المزمنة</value></data>
+  <data name="Date of birth" xml:space="preserve"><value>تاريخ الميلاد</value></data>
+  <data name="Duplicate check" xml:space="preserve"><value>فحص التكرار</value></data>
+  <data name="Edit file" xml:space="preserve"><value>تعديل الملف</value></data>
+  <data name="Edit patient file" xml:space="preserve"><value>تعديل ملف المريض</value></data>
+  <data name="Emergency contact" xml:space="preserve"><value>جهة الاتصال للطوارئ</value></data>
+  <data name="Enter a real date of birth" xml:space="preserve"><value>أدخل تاريخ ميلاد صحيحاً</value></data>
+  <data name="Enter a valid mobile number" xml:space="preserve"><value>أدخل رقم جوال صحيحاً</value></data>
+  <data name="Enter the English name" xml:space="preserve"><value>أدخل الاسم بالإنجليزية</value></data>
+  <data name="Every name is captured in Arabic and English" xml:space="preserve"><value>كل اسم يُدخل بالعربية والإنجليزية</value></data>
+  <data name="Every open file" xml:space="preserve"><value>كل الملفات المفتوحة</value></data>
+  <data name="Files carrying an allergy alert" xml:space="preserve"><value>ملفات عليها تنبيه حساسية</value></data>
+  <data name="From the system country table" xml:space="preserve"><value>من جدول الدول في النظام</value></data>
+  <data name="Full name" xml:space="preserve"><value>الاسم الكامل</value></data>
+  <data name="General consent not signed" xml:space="preserve"><value>الموافقة العامة غير موقّعة</value></data>
+  <data name="General consent signed" xml:space="preserve"><value>الموافقة العامة موقّعة</value></data>
+  <data name="Generated by the system when the file is saved; the number shown is the next one." xml:space="preserve"><value>يولّده النظام عند حفظ الملف؛ الرقم الظاهر هو الرقم التالي.</value></data>
+  <data name="ID number" xml:space="preserve"><value>رقم الهوية</value></data>
+  <data name="MRN" xml:space="preserve"><value>رقم الملف</value></data>
+  <data name="Medical alerts" xml:space="preserve"><value>التنبيهات الطبية</value></data>
+  <data name="Medical record number" xml:space="preserve"><value>رقم الملف الطبي</value></data>
+  <data name="Mobile" xml:space="preserve"><value>الجوال</value></data>
+  <data name="Name" xml:space="preserve"><value>الاسم</value></data>
+  <data name="Name, MRN, ID or mobile..." xml:space="preserve"><value>اسم، رقم ملف، هوية أو جوال...</value></data>
+  <data name="Nationality" xml:space="preserve"><value>الجنسية</value></data>
+  <data name="New files since the 1st" xml:space="preserve"><value>ملفات جديدة منذ أول الشهر</value></data>
+  <data name="No file matches this search." xml:space="preserve"><value>لا يوجد ملف يطابق هذا البحث.</value></data>
+  <data name="No patients yet. Register the first file." xml:space="preserve"><value>لا يوجد مرضى بعد. سجّل أول ملف.</value></data>
+  <data name="None recorded" xml:space="preserve"><value>لا يوجد</value></data>
+  <data name="Nothing similar yet." xml:space="preserve"><value>لا توجد ملفات مشابهة.</value></data>
+  <data name="One file per ID number" xml:space="preserve"><value>ملف واحد لكل رقم هوية</value></data>
+  <data name="One per line" xml:space="preserve"><value>واحد في كل سطر</value></data>
+  <data name="Open file" xml:space="preserve"><value>فتح الملف</value></data>
+  <data name="Opening this file is recorded in the access log with your name and time." xml:space="preserve"><value>فتح هذا الملف مُسجَّل في سجل الوصول باسمك ووقتك.</value></data>
+  <data name="Overview" xml:space="preserve"><value>نظرة عامة</value></data>
+  <data name="Page" xml:space="preserve"><value>صفحة</value></data>
+  <data name="Patient" xml:space="preserve"><value>المريض</value></data>
+  <data name="Patient details" xml:space="preserve"><value>بيانات المريض</value></data>
+  <data name="Patient registry" xml:space="preserve"><value>سجل المرضى</value></data>
+  <data name="Possible duplicates" xml:space="preserve"><value>ملفات مكررة محتملة</value></data>
+  <data name="Recorded allergy" xml:space="preserve"><value>حساسية مسجلة</value></data>
+  <data name="Register" xml:space="preserve"><value>تسجيل</value></data>
+  <data name="Register a new patient" xml:space="preserve"><value>تسجيل مريض جديد</value></data>
+  <data name="Register patient" xml:space="preserve"><value>تسجيل مريض</value></data>
+  <data name="Registered" xml:space="preserve"><value>تاريخ التسجيل</value></data>
+  <data name="Registered this month" xml:space="preserve"><value>مسجلون هذا الشهر</value></data>
+  <data name="Relationship" xml:space="preserve"><value>صلة القرابة</value></data>
+  <data name="Same ID number" xml:space="preserve"><value>نفس رقم الهوية</value></data>
+  <data name="Same mobile" xml:space="preserve"><value>نفس الجوال</value></data>
+  <data name="Same name" xml:space="preserve"><value>نفس الاسم</value></data>
+  <data name="Same name and date of birth" xml:space="preserve"><value>نفس الاسم وتاريخ الميلاد</value></data>
+  <data name="Save and open file" xml:space="preserve"><value>حفظ وفتح الملف</value></data>
+  <data name="Sex" xml:space="preserve"><value>النوع</value></data>
+  <data name="Similar files" xml:space="preserve"><value>ملفات مشابهة</value></data>
+  <data name="System" xml:space="preserve"><value>النظام</value></data>
+  <data name="The ID number must be 5 to 20 digits" xml:space="preserve"><value>رقم الهوية يجب أن يكون من ٥ إلى ٢٠ رقماً</value></data>
+  <data name="The patient signed the general consent to treatment and the privacy notice" xml:space="preserve"><value>وقّع المريض على الموافقة العامة على العلاج وسياسة الخصوصية</value></data>
+  <data name="The record number never changes." xml:space="preserve"><value>رقم الملف لا يتغير أبداً.</value></data>
+  <data name="This ID number already has a file: {0}" xml:space="preserve"><value>رقم الهوية هذا له ملف بالفعل: {0}</value></data>
+  <data name="Total patients" xml:space="preserve"><value>إجمالي المرضى</value></data>
+  <data name="Unknown blood group" xml:space="preserve"><value>فصيلة دم غير معروفة</value></data>
+  <data name="Unknown nationality" xml:space="preserve"><value>جنسية غير معروفة</value></data>
+  <data name="What" xml:space="preserve"><value>الإجراء</value></data>
+  <data name="When" xml:space="preserve"><value>الوقت</value></data>
+  <data name="Who" xml:space="preserve"><value>المستخدم</value></data>
+  <data name="access:create" xml:space="preserve"><value>إنشاء الملف</value></data>
+  <data name="access:open" xml:space="preserve"><value>فتح الملف</value></data>
+  <data name="access:update" xml:space="preserve"><value>تعديل الملف</value></data>
+  <data name="file(s)" xml:space="preserve"><value>ملف</value></data>
+  <data name="y" xml:space="preserve"><value>سنة</value></data>
+  <data name="Accommodate" xml:space="preserve"><value>إسكان</value></data>
+  <data name="Accommodate a patient" xml:space="preserve"><value>إسكان مريض</value></data>
+  <data name="Accommodate a patient here" xml:space="preserve"><value>إسكان مريض هنا</value></data>
+  <data name="Admissions" xml:space="preserve"><value>الإقامات</value></data>
+  <data name="Admitted" xml:space="preserve"><value>مُسكَّن</value></data>
+  <data name="Already admitted" xml:space="preserve"><value>المريض مُسكَّن بالفعل</value></data>
+  <data name="Bed {0} is not vacant" xml:space="preserve"><value>السرير {0} غير متاح</value></data>
+  <data name="Change photo" xml:space="preserve"><value>تغيير الصورة</value></data>
+  <data name="Choose a bed on the plan" xml:space="preserve"><value>اختر السرير من المخطط</value></data>
+  <data name="Choose a patient first" xml:space="preserve"><value>اختر المريض أولاً</value></data>
+  <data name="Close" xml:space="preserve"><value>إغلاق</value></data>
+  <data name="Confirm accommodation" xml:space="preserve"><value>تأكيد الإسكان</value></data>
+  <data name="Confirm transfer" xml:space="preserve"><value>تأكيد التحويل</value></data>
+  <data name="Current" xml:space="preserve"><value>حالية</value></data>
+  <data name="Diagnosis" xml:space="preserve"><value>التشخيص</value></data>
+  <data name="Discharge" xml:space="preserve"><value>خروج</value></data>
+  <data name="Discharge this patient? The bed goes to cleaning." xml:space="preserve"><value>تأكيد خروج المريض؟ يتحول السرير إلى التنظيف.</value></data>
+  <data name="Every suitable room is full; choose another patient or free a bed first." xml:space="preserve"><value>كل الغرف المناسبة ممتلئة؛ اختر مريضاً آخر أو أفرغ سريراً أولاً.</value></data>
+  <data name="Excluded automatically: shared rooms of the other sex and wards for the other sex" xml:space="preserve"><value>مستبعد تلقائياً: الغرف المشتركة بجنس مختلف والأجنحة المخصصة للجنس الآخر</value></data>
+  <data name="From" xml:space="preserve"><value>من</value></data>
+  <data name="Full" xml:space="preserve"><value>ممتلئة</value></data>
+  <data name="JPEG, PNG or WebP, up to 5 MB. Shown on the file and on the bed the patient lies in." xml:space="preserve"><value>JPEG أو PNG أو WebP حتى ٥ ميجابايت. تظهر على الملف وعلى سرير المريض.</value></data>
+  <data name="No admissions yet." xml:space="preserve"><value>لا توجد إقامات بعد.</value></data>
+  <data name="No suitable bed" xml:space="preserve"><value>لا يوجد سرير مناسب</value></data>
+  <data name="Patient photo" xml:space="preserve"><value>صورة المريض</value></data>
+  <data name="Pick the bed on the plan" xml:space="preserve"><value>اختر السرير من المخطط</value></data>
+  <data name="Room {0} is shared with the other sex" xml:space="preserve"><value>الغرفة {0} مشتركة مع الجنس الآخر</value></data>
+  <data name="Search by name, MRN or ID" xml:space="preserve"><value>ابحث بالاسم أو رقم الملف أو الهوية</value></data>
+  <data name="Since" xml:space="preserve"><value>منذ</value></data>
+  <data name="Suitable rooms with a free bed" xml:space="preserve"><value>الغرف المناسبة التي بها سرير متاح</value></data>
+  <data name="The patient is already in this bed" xml:space="preserve"><value>المريض في هذا السرير بالفعل</value></data>
+  <data name="The photo must be an image of up to 5 MB" xml:space="preserve"><value>يجب أن تكون الصورة ملف صورة حتى ٥ ميجابايت</value></data>
+  <data name="This bed is not available to accommodate." xml:space="preserve"><value>هذا السرير غير متاح للإسكان.</value></data>
+  <data name="This patient is already admitted" xml:space="preserve"><value>هذا المريض مُسكَّن بالفعل</value></data>
+  <data name="This patient is already in room {0}, bed {1}." xml:space="preserve"><value>هذا المريض موجود بالفعل في الغرفة {0}، السرير {1}.</value></data>
+  <data name="To" xml:space="preserve"><value>إلى</value></data>
+  <data name="Transfer" xml:space="preserve"><value>تحويل</value></data>
+  <data name="Transfer the patient" xml:space="preserve"><value>تحويل المريض</value></data>
+  <data name="Ward {0} takes the other sex" xml:space="preserve"><value>«{0}» مخصص للجنس الآخر</value></data>
+  <data name="bed(s) free" xml:space="preserve"><value>سرير متاح</value></data>
+  <data name="beds (count)" xml:space="preserve"><value>أسرّة</value></data>
+  <data name="end:discharge" xml:space="preserve"><value>خروج</value></data>
+  <data name="end:transfer" xml:space="preserve"><value>تحويل</value></data>
+  <data name="free" xml:space="preserve"><value>متاح</value></data>
+  <data name="A slot is 5 to 120 minutes" xml:space="preserve"><value>مدة الموعد من ٥ إلى ١٢٠ دقيقة</value></data>
+  <data name="Add doctor" xml:space="preserve"><value>إضافة طبيب</value></data>
+  <data name="All departments" xml:space="preserve"><value>كل الأقسام</value></data>
+  <data name="An appointment cannot be booked in the past" xml:space="preserve"><value>لا يمكن حجز موعد في يوم مضى</value></data>
+  <data name="Appointments" xml:space="preserve"><value>المواعيد</value></data>
+  <data name="Appointments today" xml:space="preserve"><value>مواعيد اليوم</value></data>
+  <data name="Available" xml:space="preserve"><value>متاح</value></data>
+  <data name="Board" xml:space="preserve"><value>اللوحة</value></data>
+  <data name="Book" xml:space="preserve"><value>حجز</value></data>
+  <data name="Book an appointment" xml:space="preserve"><value>حجز موعد</value></data>
+  <data name="Booking stops on expiry" xml:space="preserve"><value>يتوقف الحجز عند الانتهاء</value></data>
+  <data name="Call next" xml:space="preserve"><value>نداء التالي</value></data>
+  <data name="Calling the next patient" xml:space="preserve"><value>نداء المريض التالي</value></data>
+  <data name="Cancel the appointment" xml:space="preserve"><value>إلغاء الموعد</value></data>
+  <data name="Check in" xml:space="preserve"><value>تسجيل الحضور</value></data>
+  <data name="Checked in" xml:space="preserve"><value>حضروا</value></data>
+  <data name="Choose a clinic room" xml:space="preserve"><value>اختر غرفة عيادة</value></data>
+  <data name="Click an empty slot to book, or an appointment to move it along" xml:space="preserve"><value>اضغط خانة فارغة للحجز، أو موعداً لتحريكه</value></data>
+  <data name="Clinic room" xml:space="preserve"><value>غرفة العيادة</value></data>
+  <data name="Clinic schedule" xml:space="preserve"><value>جدول العيادة</value></data>
+  <data name="Clinical data and privileges live in one record per doctor; permanent and part-time are paid through payroll, visiting doctors as vendors." xml:space="preserve"><value>البيانات الطبية والصلاحيات في ملف واحد لكل طبيب؛ الدائم والجزئي يُدفع لهما من المرتبات، والزائر يُعامل كمورّد.</value></data>
+  <data name="Clinical privileges" xml:space="preserve"><value>الصلاحيات السريرية</value></data>
+  <data name="Clinics" xml:space="preserve"><value>العيادات</value></data>
+  <data name="Clinics board" xml:space="preserve"><value>لوحة العيادات</value></data>
+  <data name="Clinics running" xml:space="preserve"><value>عيادات تعمل الآن</value></data>
+  <data name="Clinics running late" xml:space="preserve"><value>عيادات متأخرة</value></data>
+  <data name="Confirm booking" xml:space="preserve"><value>تأكيد الحجز</value></data>
+  <data name="Credentials &amp; licences" xml:space="preserve"><value>الاعتماد والتراخيص</value></data>
+  <data name="Date" xml:space="preserve"><value>التاريخ</value></data>
+  <data name="Decides what the doctor can do in clinic, wards and theatre" xml:space="preserve"><value>تحدد ما يستطيع الطبيب عمله في العيادة والتنويم والعمليات</value></data>
+  <data name="Delay (min)" xml:space="preserve"><value>تأخير (د)</value></data>
+  <data name="Department" xml:space="preserve"><value>القسم</value></data>
+  <data name="Did not come" xml:space="preserve"><value>لم يحضر</value></data>
+  <data name="Doctor" xml:space="preserve"><value>الطبيب</value></data>
+  <data name="Doctor details" xml:space="preserve"><value>بيانات الطبيب</value></data>
+  <data name="Doctor schedule" xml:space="preserve"><value>جدول الأطباء</value></data>
+  <data name="Doctors &amp; staff" xml:space="preserve"><value>الأطباء والعاملون</value></data>
+  <data name="Document" xml:space="preserve"><value>المستند</value></data>
+  <data name="Each clinic calls the next arrived patient by queue number; the number is given at check-in." xml:space="preserve"><value>كل عيادة تنادي المريض التالي الحاضر برقم الدور؛ والرقم يُعطى عند تسجيل الحضور.</value></data>
+  <data name="Edit doctor" xml:space="preserve"><value>تعديل الطبيب</value></data>
+  <data name="Employee" xml:space="preserve"><value>الموظف</value></data>
+  <data name="Engagement" xml:space="preserve"><value>نوع التعاقد</value></data>
+  <data name="Expired" xml:space="preserve"><value>منتهي</value></data>
+  <data name="Expires in {0} days" xml:space="preserve"><value>ينتهي خلال {0} يوم</value></data>
+  <data name="Expiry" xml:space="preserve"><value>الانتهاء</value></data>
+  <data name="Finish" xml:space="preserve"><value>إنهاء</value></data>
+  <data name="Finish the visit" xml:space="preserve"><value>إنهاء الزيارة</value></data>
+  <data name="In session" xml:space="preserve"><value>في الكشف</value></data>
+  <data name="Licence expiry" xml:space="preserve"><value>انتهاء الترخيص</value></data>
+  <data name="Licences expiring in 60 days" xml:space="preserve"><value>تراخيص تنتهي خلال ٦٠ يوماً</value></data>
+  <data name="Link the employee to show their photo and pay them through payroll" xml:space="preserve"><value>اربط الموظف لتظهر صورته ويُدفع له من المرتبات</value></data>
+  <data name="Load standard departments" xml:space="preserve"><value>تحميل الأقسام القياسية</value></data>
+  <data name="Minutes per patient" xml:space="preserve"><value>دقائق لكل مريض</value></data>
+  <data name="Next" xml:space="preserve"><value>التالي</value></data>
+  <data name="Next day" xml:space="preserve"><value>اليوم التالي</value></data>
+  <data name="No appointments today." xml:space="preserve"><value>لا توجد مواعيد اليوم.</value></data>
+  <data name="No appointments yet." xml:space="preserve"><value>لا توجد مواعيد بعد.</value></data>
+  <data name="No clinic runs today." xml:space="preserve"><value>لا توجد عيادة تعمل اليوم.</value></data>
+  <data name="No doctor sees patients on this day." xml:space="preserve"><value>لا يوجد طبيب يستقبل مرضى في هذا اليوم.</value></data>
+  <data name="No practitioners yet. Add the first doctor." xml:space="preserve"><value>لا يوجد ممارسون بعد. أضف أول طبيب.</value></data>
+  <data name="No-shows" xml:space="preserve"><value>لم يحضروا</value></data>
+  <data name="Nobody is waiting for this doctor" xml:space="preserve"><value>لا يوجد من ينتظر هذا الطبيب</value></data>
+  <data name="Not an employee (visiting)" xml:space="preserve"><value>ليس موظفاً (زائر)</value></data>
+  <data name="Not started" xml:space="preserve"><value>لم تبدأ</value></data>
+  <data name="Note" xml:space="preserve"><value>ملاحظة</value></data>
+  <data name="Now serving" xml:space="preserve"><value>رقم الدور</value></data>
+  <data name="Number" xml:space="preserve"><value>الرقم</value></data>
+  <data name="On expiry, new bookings for this doctor stop automatically until the renewed licence is entered." xml:space="preserve"><value>عند الانتهاء يتوقف حجز مواعيد جديدة لهذا الطبيب تلقائياً حتى إدخال الترخيص المجدد.</value></data>
+  <data name="One practitioner record, two ways to pay" xml:space="preserve"><value>ملف ممارس واحد، وطريقتان للدفع</value></data>
+  <data name="Outpatient clinics board" xml:space="preserve"><value>لوحة العيادات الخارجية</value></data>
+  <data name="Paid through" xml:space="preserve"><value>قناة الدفع</value></data>
+  <data name="Part-time" xml:space="preserve"><value>دوام جزئي</value></data>
+  <data name="Permanent doctors" xml:space="preserve"><value>أطباء دائمون</value></data>
+  <data name="Practitioners" xml:space="preserve"><value>الممارسون الصحيون</value></data>
+  <data name="Previous day" xml:space="preserve"><value>اليوم السابق</value></data>
+  <data name="Professional licence" xml:space="preserve"><value>الترخيص المهني</value></data>
+  <data name="Professional licence about to expire" xml:space="preserve"><value>الترخيص المهني قارب على الانتهاء</value></data>
+  <data name="Profile" xml:space="preserve"><value>الملف</value></data>
+  <data name="Queue number" xml:space="preserve"><value>رقم الدور</value></data>
+  <data name="Seen" xml:space="preserve"><value>تم</value></data>
+  <data name="Seen today" xml:space="preserve"><value>تم الكشف اليوم</value></data>
+  <data name="Send in to the doctor" xml:space="preserve"><value>إدخال للطبيب</value></data>
+  <data name="That slot is already booked" xml:space="preserve"><value>هذا الموعد محجوز بالفعل</value></data>
+  <data name="That time is not one of the doctor&#x27;s slots" xml:space="preserve"><value>هذا الوقت ليس من مواعيد الطبيب</value></data>
+  <data name="The appointment book offers exactly these days and slots" xml:space="preserve"><value>دفتر المواعيد يعرض هذه الأيام والمواعيد فقط</value></data>
+  <data name="The doctor already has a patient in the room" xml:space="preserve"><value>عند الطبيب مريض بالفعل</value></data>
+  <data name="The doctor does not see patients on that day" xml:space="preserve"><value>الطبيب لا يستقبل مرضى في هذا اليوم</value></data>
+  <data name="The doctor&#x27;s licence has expired; booking is stopped until it is renewed" xml:space="preserve"><value>انتهى ترخيص الطبيب؛ الحجز متوقف حتى التجديد</value></data>
+  <data name="The patient already has an appointment at that time" xml:space="preserve"><value>للمريض موعد آخر في نفس الوقت</value></data>
+  <data name="The professional licence has expired" xml:space="preserve"><value>انتهى الترخيص المهني</value></data>
+  <data name="The session must end after it starts and hold at least one slot" xml:space="preserve"><value>يجب أن تنتهي الفترة بعد بدايتها وتتسع لموعد واحد على الأقل</value></data>
+  <data name="This appointment cannot make that move" xml:space="preserve"><value>لا يمكن نقل هذا الموعد لهذه الحالة</value></data>
+  <data name="Time" xml:space="preserve"><value>الوقت</value></data>
+  <data name="Title (Arabic)" xml:space="preserve"><value>المسمى (عربي)</value></data>
+  <data name="Title (English)" xml:space="preserve"><value>المسمى (إنجليزي)</value></data>
+  <data name="Today" xml:space="preserve"><value>اليوم</value></data>
+  <data name="Today&#x27;s appointments" xml:space="preserve"><value>مواعيد اليوم</value></data>
+  <data name="Unknown engagement" xml:space="preserve"><value>نوع تعاقد غير معروف</value></data>
+  <data name="Unknown payment channel" xml:space="preserve"><value>قناة دفع غير معروفة</value></data>
+  <data name="Unknown privilege" xml:space="preserve"><value>صلاحية غير معروفة</value></data>
+  <data name="Unknown visit type" xml:space="preserve"><value>نوع زيارة غير معروف</value></data>
+  <data name="Unknown weekday" xml:space="preserve"><value>يوم غير معروف</value></data>
+  <data name="Visit type" xml:space="preserve"><value>نوع الزيارة</value></data>
+  <data name="Visiting" xml:space="preserve"><value>زائرون</value></data>
+  <data name="Waiting" xml:space="preserve"><value>ينتظرون</value></data>
+  <data name="Weekly presence" xml:space="preserve"><value>أيام التواجد</value></data>
+  <data name="With the doctor now" xml:space="preserve"><value>عند الطبيب الآن</value></data>
+  <data name="a patient is with the doctor" xml:space="preserve"><value>مريض عند الطبيب</value></data>
+  <data name="across {0} doctors" xml:space="preserve"><value>عبر {0} أطباء</value></data>
+  <data name="appt:Arrived" xml:space="preserve"><value>حضر</value></data>
+  <data name="appt:Booked" xml:space="preserve"><value>محجوز</value></data>
+  <data name="appt:Cancelled" xml:space="preserve"><value>ملغى</value></data>
+  <data name="appt:Done" xml:space="preserve"><value>انتهى</value></data>
+  <data name="appt:InRoom" xml:space="preserve"><value>عند الطبيب</value></data>
+  <data name="appt:NoShow" xml:space="preserve"><value>لم يحضر</value></data>
+  <data name="arrived, not yet called" xml:space="preserve"><value>حضروا ولم يُنادوا بعد</value></data>
+  <data name="day:Friday" xml:space="preserve"><value>الجمعة</value></data>
+  <data name="day:Monday" xml:space="preserve"><value>الاثنين</value></data>
+  <data name="day:Saturday" xml:space="preserve"><value>السبت</value></data>
+  <data name="day:Sunday" xml:space="preserve"><value>الأحد</value></data>
+  <data name="day:Thursday" xml:space="preserve"><value>الخميس</value></data>
+  <data name="day:Tuesday" xml:space="preserve"><value>الثلاثاء</value></data>
+  <data name="day:Wednesday" xml:space="preserve"><value>الأربعاء</value></data>
+  <data name="eng:PartTime" xml:space="preserve"><value>دوام جزئي</value></data>
+  <data name="eng:Permanent" xml:space="preserve"><value>دائم</value></data>
+  <data name="eng:Visiting" xml:space="preserve"><value>زائر</value></data>
+  <data name="min per patient" xml:space="preserve"><value>دقيقة لكل مريض</value></data>
+  <data name="over 15 minutes" xml:space="preserve"><value>أكثر من ١٥ دقيقة</value></data>
+  <data name="paid:Payroll" xml:space="preserve"><value>يُدفع عبر المرتبات</value></data>
+  <data name="paid:Vendor" xml:space="preserve"><value>يُدفع كمورّد</value></data>
+  <data name="pay:Payroll" xml:space="preserve"><value>المرتبات</value></data>
+  <data name="pay:Vendor" xml:space="preserve"><value>مورّد — الحسابات</value></data>
+  <data name="payroll, variable line" xml:space="preserve"><value>المرتبات ببند متغير</value></data>
+  <data name="priv:anes" xml:space="preserve"><value>تخدير</value></data>
+  <data name="priv:er" xml:space="preserve"><value>طوارئ</value></data>
+  <data name="priv:ip" xml:space="preserve"><value>تنويم</value></data>
+  <data name="priv:opd" xml:space="preserve"><value>عيادة خارجية</value></data>
+  <data name="priv:proc" xml:space="preserve"><value>إجراءات</value></data>
+  <data name="priv:surg" xml:space="preserve"><value>جراحة</value></data>
+  <data name="the slot stays recorded" xml:space="preserve"><value>يبقى الموعد مسجلاً</value></data>
+  <data name="through payroll" xml:space="preserve"><value>عبر المرتبات</value></data>
+  <data name="through vendors &amp; payables" xml:space="preserve"><value>عبر الموردين والمدفوعات</value></data>
+  <data name="visit:FollowUp" xml:space="preserve"><value>متابعة</value></data>
+  <data name="visit:New" xml:space="preserve"><value>جديد</value></data>
+  <data name="visit:Procedure" xml:space="preserve"><value>إجراء</value></data>
+  <data name="visit:Video" xml:space="preserve"><value>مرئي عن بعد</value></data>
+  <data name="visits finished" xml:space="preserve"><value>زيارات انتهت</value></data>
+  <data name="with a doctor now: {0}" xml:space="preserve"><value>عند الطبيب الآن: {0}</value></data>
+  <data name="{0} days" xml:space="preserve"><value>{0} يوم</value></data>
+  <data name="1 month" xml:space="preserve"><value>شهر</value></data>
+  <data name="1 week" xml:space="preserve"><value>أسبوع</value></data>
+  <data name="2 weeks" xml:space="preserve"><value>أسبوعين</value></data>
+  <data name="3 months" xml:space="preserve"><value>٣ أشهر</value></data>
+  <data name="6 months" xml:space="preserve"><value>٦ أشهر</value></data>
+  <data name="A diagnosis is listed twice" xml:space="preserve"><value>تشخيص مكرر</value></data>
+  <data name="A quantity is 1 to 10000" xml:space="preserve"><value>الكمية من ١ إلى ١٠٠٠٠</value></data>
+  <data name="Add at least one diagnosis before signing" xml:space="preserve"><value>أضف تشخيصاً واحداً على الأقل قبل التوقيع</value></data>
+  <data name="Add drug" xml:space="preserve"><value>إضافة دواء</value></data>
+  <data name="Assessment (A)" xml:space="preserve"><value>التشخيص (A)</value></data>
+  <data name="At a glance" xml:space="preserve"><value>ملخص سريع</value></data>
+  <data name="BP diastolic" xml:space="preserve"><value>الضغط الانبساطي</value></data>
+  <data name="BP systolic" xml:space="preserve"><value>الضغط الانقباضي</value></data>
+  <data name="Chief complaint" xml:space="preserve"><value>الشكوى الرئيسية</value></data>
+  <data name="Clinical note" xml:space="preserve"><value>التوثيق السريري</value></data>
+  <data name="Coding system" xml:space="preserve"><value>نظام الترميز</value></data>
+  <data name="Consultation" xml:space="preserve"><value>الكشف</value></data>
+  <data name="Diastolic pressure is 30 to 160" xml:space="preserve"><value>الضغط الانبساطي من ٣٠ إلى ١٦٠</value></data>
+  <data name="Diastolic pressure must be below systolic" xml:space="preserve"><value>الضغط الانبساطي يجب أن يكون أقل من الانقباضي</value></data>
+  <data name="Doctor worklist" xml:space="preserve"><value>قائمة الطبيب</value></data>
+  <data name="Dose &amp; duration" xml:space="preserve"><value>الجرعة والمدة</value></data>
+  <data name="Drug" xml:space="preserve"><value>الدواء</value></data>
+  <data name="Drug name and strength" xml:space="preserve"><value>اسم الدواء وتركيزه</value></data>
+  <data name="Earlier visits" xml:space="preserve"><value>زيارات سابقة</value></data>
+  <data name="Enter the chief complaint before signing" xml:space="preserve"><value>أدخل الشكوى الرئيسية قبل التوقيع</value></data>
+  <data name="Examination (O)" xml:space="preserve"><value>الفحص السريري (O)</value></data>
+  <data name="File" xml:space="preserve"><value>الملف</value></data>
+  <data name="First visit" xml:space="preserve"><value>أول زيارة</value></data>
+  <data name="Follow-up in" xml:space="preserve"><value>موعد متابعة بعد</value></data>
+  <data name="Follow-up is 1 to 730 days" xml:space="preserve"><value>المتابعة من يوم إلى ٧٣٠ يوماً</value></data>
+  <data name="Heart rate" xml:space="preserve"><value>النبض</value></data>
+  <data name="Heart rate is 20 to 250" xml:space="preserve"><value>النبض من ٢٠ إلى ٢٥٠</value></data>
+  <data name="Height cm" xml:space="preserve"><value>الطول سم</value></data>
+  <data name="Height is 30 to 250 cm" xml:space="preserve"><value>الطول من ٣٠ إلى ٢٥٠ سم</value></data>
+  <data name="History (S)" xml:space="preserve"><value>التاريخ المرضي (S)</value></data>
+  <data name="Last visit" xml:space="preserve"><value>آخر زيارة</value></data>
+  <data name="Linked to the pharmacy stock when the pharmacy unit lands" xml:space="preserve"><value>يُربط برصيد الصيدلية عند إضافة وحدة الصيدلية</value></data>
+  <data name="Load standard ICD-10 codes" xml:space="preserve"><value>تحميل رموز ICD-10 القياسية</value></data>
+  <data name="Make primary" xml:space="preserve"><value>اجعله رئيسياً</value></data>
+  <data name="Mark exactly one diagnosis as primary" xml:space="preserve"><value>حدد تشخيصاً رئيسياً واحداً فقط</value></data>
+  <data name="No diagnosis yet." xml:space="preserve"><value>لا يوجد تشخيص بعد.</value></data>
+  <data name="No drug prescribed." xml:space="preserve"><value>لم يُوصف دواء.</value></data>
+  <data name="No visits yet." xml:space="preserve"><value>لا توجد زيارات بعد.</value></data>
+  <data name="On signing" xml:space="preserve"><value>عند التوقيع</value></data>
+  <data name="Open" xml:space="preserve"><value>فتح</value></data>
+  <data name="Oxygen saturation is 50 to 100" xml:space="preserve"><value>تشبع الأكسجين من ٥٠ إلى ١٠٠</value></data>
+  <data name="Plan (P)" xml:space="preserve"><value>الخطة (P)</value></data>
+  <data name="Prescription" xml:space="preserve"><value>الروشتة</value></data>
+  <data name="Primary" xml:space="preserve"><value>رئيسي</value></data>
+  <data name="Qty" xml:space="preserve"><value>الكمية</value></data>
+  <data name="Refer to" xml:space="preserve"><value>تحويل إلى</value></data>
+  <data name="Referral &amp; follow-up" xml:space="preserve"><value>التحويل والمتابعة</value></data>
+  <data name="Remaining" xml:space="preserve"><value>متبقٍ</value></data>
+  <data name="Resume" xml:space="preserve"><value>متابعة الكشف</value></data>
+  <data name="Save draft" xml:space="preserve"><value>حفظ كمسودة</value></data>
+  <data name="Search code or description..." xml:space="preserve"><value>ابحث بالرمز أو الوصف...</value></data>
+  <data name="Secondary" xml:space="preserve"><value>ثانوي</value></data>
+  <data name="Sign &amp; close visit" xml:space="preserve"><value>توقيع وإغلاق الزيارة</value></data>
+  <data name="Sign and close this visit? It cannot be changed afterwards." xml:space="preserve"><value>توقيع وإغلاق هذه الزيارة؟ لا يمكن تعديلها بعد ذلك.</value></data>
+  <data name="Signed" xml:space="preserve"><value>موقّعة</value></data>
+  <data name="Start" xml:space="preserve"><value>ابدأ الكشف</value></data>
+  <data name="Systolic pressure is 50 to 260" xml:space="preserve"><value>الضغط الانقباضي من ٥٠ إلى ٢٦٠</value></data>
+  <data name="Temperature is 30 to 44 °C" xml:space="preserve"><value>الحرارة من ٣٠ إلى ٤٤ °م</value></data>
+  <data name="Temperature °C" xml:space="preserve"><value>الحرارة °م</value></data>
+  <data name="The patient must check in before the consultation starts" xml:space="preserve"><value>يجب تسجيل حضور المريض قبل بدء الكشف</value></data>
+  <data name="The visit is locked, the appointment is finished and the note joins the patient&#x27;s file. Charges reach the bill once billing lands." xml:space="preserve"><value>تُقفل الزيارة وينتهي الموعد ويُضاف التوثيق لملف المريض. تصل الرسوم للفاتورة عند إضافة وحدة الفوترة.</value></data>
+  <data name="This visit is signed and can no longer be changed" xml:space="preserve"><value>هذه الزيارة موقّعة ولا يمكن تعديلها</value></data>
+  <data name="Today&#x27;s list" xml:space="preserve"><value>قائمة اليوم</value></data>
+  <data name="Unknown diagnosis code: {0}" xml:space="preserve"><value>رمز تشخيص غير معروف: {0}</value></data>
+  <data name="View visit" xml:space="preserve"><value>عرض الزيارة</value></data>
+  <data name="Visits" xml:space="preserve"><value>الزيارات</value></data>
+  <data name="Vitals" xml:space="preserve"><value>العلامات الحيوية</value></data>
+  <data name="Vitals are taken before the patient goes in" xml:space="preserve"><value>تُسجل العلامات الحيوية قبل دخول المريض</value></data>
+  <data name="Wait" xml:space="preserve"><value>الانتظار</value></data>
+  <data name="Weight is 0.5 to 400 kg" xml:space="preserve"><value>الوزن من ٠٫٥ إلى ٤٠٠ كجم</value></data>
+  <data name="Weight kg" xml:space="preserve"><value>الوزن كجم</value></data>
+  <data name="Worklist" xml:space="preserve"><value>قائمة الطبيب</value></data>
+  <data name="check every prescription against it." xml:space="preserve"><value>راجع كل روشتة مقابلها.</value></data>
+  <data name="e.g. 1 tab twice daily · 30 days" xml:space="preserve"><value>مثال: قرص مرتين يومياً · ٣٠ يوم</value></data>
+  <data name="enc:Draft" xml:space="preserve"><value>مسودة</value></data>
+  <data name="enc:Signed" xml:space="preserve"><value>موقّعة</value></data>
+  <data name="min" xml:space="preserve"><value>د</value></data>
+  <data name="A count cannot be negative" xml:space="preserve"><value>العدد لا يكون سالباً</value></data>
+  <data name="A difference found when a shift is counted" xml:space="preserve"><value>فرق يظهر عند جرد الوردية</value></data>
+  <data name="A float cannot be negative" xml:space="preserve"><value>العهدة لا تكون سالبة</value></data>
+  <data name="A price cannot be negative" xml:space="preserve"><value>السعر لا يكون سالباً</value></data>
+  <data name="A quantity is 1 to 1000" xml:space="preserve"><value>الكمية من ١ إلى ١٠٠٠</value></data>
+  <data name="Accommodation is counted from the bed stays" xml:space="preserve"><value>الإقامة تُحسب من فترات الإسكان</value></data>
+  <data name="Account" xml:space="preserve"><value>الحساب</value></data>
+  <data name="Accounts" xml:space="preserve"><value>الحسابات</value></data>
+  <data name="Add" xml:space="preserve"><value>إضافة</value></data>
+  <data name="Add service" xml:space="preserve"><value>إضافة خدمة</value></data>
+  <data name="All" xml:space="preserve"><value>الكل</value></data>
+  <data name="Amount" xml:space="preserve"><value>المبلغ</value></data>
+  <data name="An order is not a service the doctor can order" xml:space="preserve"><value>طلب ليس من الخدمات التي يطلبها الطبيب</value></data>
+  <data name="Another service already uses this code" xml:space="preserve"><value>هذا الرمز مستخدم لخدمة أخرى</value></data>
+  <data name="Applies only to services marked taxable. Medical services are usually exempt; Kuwait has no VAT." xml:space="preserve"><value>تُطبق فقط على الخدمات الخاضعة للضريبة. الخدمات الطبية معفاة عادةً؛ والكويت بدون ضريبة قيمة مضافة.</value></data>
+  <data name="Bank" xml:space="preserve"><value>البنك</value></data>
+  <data name="Bill" xml:space="preserve"><value>فاتورة</value></data>
+  <data name="Bill lines" xml:space="preserve"><value>بنود الفاتورة</value></data>
+  <data name="Billed" xml:space="preserve"><value>المفوتر</value></data>
+  <data name="Billed as" xml:space="preserve"><value>يُفوتر كشفه كـ</value></data>
+  <data name="Billing &amp; cashier" xml:space="preserve"><value>الفوترة والخزينة</value></data>
+  <data name="Billing settings" xml:space="preserve"><value>إعدادات الفوترة</value></data>
+  <data name="Bills" xml:space="preserve"><value>الفواتير</value></data>
+  <data name="Bills, payments and cash differences post through the same journal engine as the rest of the system, into these accounts, in" xml:space="preserve"><value>الفواتير والتحصيلات وفروقات الخزينة تُرحّل بنفس محرك القيود المستخدم في النظام، إلى هذه الحسابات، بعملة</value></data>
+  <data name="Card, transfer and wallet payments" xml:space="preserve"><value>تحصيلات البطاقات والتحويل والمحافظ</value></data>
+  <data name="Cash" xml:space="preserve"><value>نقدي</value></data>
+  <data name="Cash balances" xml:space="preserve"><value>النقدية مطابقة</value></data>
+  <data name="Cash count" xml:space="preserve"><value>جرد النقدية</value></data>
+  <data name="Cash over" xml:space="preserve"><value>زيادة في الخزينة</value></data>
+  <data name="Cash over/short" xml:space="preserve"><value>فروقات الخزينة</value></data>
+  <data name="Cash patient" xml:space="preserve"><value>مريض نقدي</value></data>
+  <data name="Cash payments and the cashier&#x27;s till" xml:space="preserve"><value>التحصيل النقدي ودرج الخزينة</value></data>
+  <data name="Cash receipts" xml:space="preserve"><value>مقبوضات نقدية</value></data>
+  <data name="Cash short" xml:space="preserve"><value>عجز في الخزينة</value></data>
+  <data name="Cashier" xml:space="preserve"><value>الخزينة</value></data>
+  <data name="Cashier closing" xml:space="preserve"><value>إغلاق الخزينة</value></data>
+  <data name="Cashier desk" xml:space="preserve"><value>الخزينة</value></data>
+  <data name="Category" xml:space="preserve"><value>الفئة</value></data>
+  <data name="Choose a consultation service" xml:space="preserve"><value>اختر خدمة كشف</value></data>
+  <data name="Choose a service first" xml:space="preserve"><value>اختر الخدمة أولاً</value></data>
+  <data name="Choose active posting accounts of this company" xml:space="preserve"><value>اختر حسابات ترحيل نشطة لهذه الشركة</value></data>
+  <data name="Clinics desk" xml:space="preserve"><value>خزينة العيادات</value></data>
+  <data name="Close the shift" xml:space="preserve"><value>إغلاق الوردية</value></data>
+  <data name="Close the stay &amp; post" xml:space="preserve"><value>إغلاق الإقامة وترحيل</value></data>
+  <data name="Close the visit &amp; post" xml:space="preserve"><value>إغلاق الزيارة وترحيل</value></data>
+  <data name="Close this bill and post it to the ledger? It cannot be changed afterwards." xml:space="preserve"><value>إغلاق الفاتورة وترحيلها للأستاذ العام؟ لا يمكن تعديلها بعد ذلك.</value></data>
+  <data name="Close this shift? The count and any difference are posted." xml:space="preserve"><value>إغلاق الوردية؟ يُسجل الجرد ويُرحّل أي فرق.</value></data>
+  <data name="Closed and posted" xml:space="preserve"><value>مغلقة ومرحّلة</value></data>
+  <data name="Closing summary" xml:space="preserve"><value>ملخص الإغلاق</value></data>
+  <data name="Collect &amp; issue receipt" xml:space="preserve"><value>تحصيل وإصدار إيصال</value></data>
+  <data name="Collect payment" xml:space="preserve"><value>التحصيل</value></data>
+  <data name="Collected" xml:space="preserve"><value>المحصّل</value></data>
+  <data name="Count" xml:space="preserve"><value>العدد</value></data>
+  <data name="Counted" xml:space="preserve"><value>المعدود</value></data>
+  <data name="Coverage" xml:space="preserve"><value>التغطية</value></data>
+  <data name="Credit" xml:space="preserve"><value>دائن</value></data>
+  <data name="Debit" xml:space="preserve"><value>مدين</value></data>
+  <data name="Default" xml:space="preserve"><value>الافتراضي</value></data>
+  <data name="Default (billing settings)" xml:space="preserve"><value>الافتراضي (إعدادات الفوترة)</value></data>
+  <data name="Denomination" xml:space="preserve"><value>الفئة</value></data>
+  <data name="Discharge the patient before closing the stay&#x27;s bill" xml:space="preserve"><value>أخرج المريض قبل إغلاق فاتورة الإقامة</value></data>
+  <data name="Due" xml:space="preserve"><value>المتبقي</value></data>
+  <data name="Edit service" xml:space="preserve"><value>تعديل الخدمة</value></data>
+  <data name="Enter an amount above zero" xml:space="preserve"><value>أدخل مبلغاً أكبر من صفر</value></data>
+  <data name="Evening shift" xml:space="preserve"><value>الوردية المسائية</value></data>
+  <data name="Every charge on a bill comes from here: the consultation a doctor is billed as, what the doctor orders, and what the desk adds. A bill keeps the price it was charged at." xml:space="preserve"><value>كل بند في أي فاتورة يأتي من هنا: كشف الطبيب، وما يطلبه، وما يضيفه الاستقبال. والفاتورة تحتفظ بالسعر الذي فُوترت به.</value></data>
+  <data name="Exempt" xml:space="preserve"><value>معفى</value></data>
+  <data name="Expected cash" xml:space="preserve"><value>النقدية المتوقعة</value></data>
+  <data name="Finance" xml:space="preserve"><value>المالية</value></data>
+  <data name="Gross" xml:space="preserve"><value>الإجمالي</value></data>
+  <data name="Hand over to" xml:space="preserve"><value>يُسلّم إلى</value></data>
+  <data name="Handover" xml:space="preserve"><value>التسليم</value></data>
+  <data name="Inpatient stay" xml:space="preserve"><value>إقامة تنويم</value></data>
+  <data name="Insurer" xml:space="preserve"><value>التأمين</value></data>
+  <data name="Insurer share" xml:space="preserve"><value>حصة التأمين</value></data>
+  <data name="Journal preview" xml:space="preserve"><value>معاينة القيد المحاسبي</value></data>
+  <data name="Lab, imaging and procedures — billed to the visit when it is signed" xml:space="preserve"><value>تحاليل وأشعة وإجراءات — تُضاف لفاتورة الزيارة عند التوقيع</value></data>
+  <data name="Load the standard services" xml:space="preserve"><value>تحميل الخدمات القياسية</value></data>
+  <data name="Main treasury" xml:space="preserve"><value>الخزينة الرئيسية</value></data>
+  <data name="Map the cash and cash over/short accounts in billing settings" xml:space="preserve"><value>حدد حسابي الصندوق وفروقات الخزينة في إعدادات الفوترة</value></data>
+  <data name="Map the cash, bank and receivable accounts in billing settings" xml:space="preserve"><value>حدد حسابات الصندوق والبنك وذمم المرضى في إعدادات الفوترة</value></data>
+  <data name="Map the output VAT account in billing settings" xml:space="preserve"><value>حدد حساب ضريبة المخرجات في إعدادات الفوترة</value></data>
+  <data name="Map the receivable and revenue accounts in billing settings" xml:space="preserve"><value>حدد حسابي ذمم المرضى والإيراد في إعدادات الفوترة</value></data>
+  <data name="Method" xml:space="preserve"><value>طريقة الدفع</value></data>
+  <data name="Name the cashier desk" xml:space="preserve"><value>اكتب اسم الخزينة</value></data>
+  <data name="New service" xml:space="preserve"><value>خدمة جديدة</value></data>
+  <data name="No bills yet." xml:space="preserve"><value>لا توجد فواتير بعد.</value></data>
+  <data name="No bills yet. A bill opens when a visit is signed or a patient is admitted." xml:space="preserve"><value>لا توجد فواتير بعد. تُفتح الفاتورة عند توقيع زيارة أو إسكان مريض.</value></data>
+  <data name="No difference." xml:space="preserve"><value>لا يوجد فرق.</value></data>
+  <data name="No lines yet." xml:space="preserve"><value>لا توجد بنود بعد.</value></data>
+  <data name="No open shift — open one to take payments." xml:space="preserve"><value>لا توجد وردية مفتوحة — افتح وردية لتستطيع التحصيل.</value></data>
+  <data name="No payment yet." xml:space="preserve"><value>لا يوجد تحصيل بعد.</value></data>
+  <data name="No services yet." xml:space="preserve"><value>لا توجد خدمات بعد.</value></data>
+  <data name="No shift today yet." xml:space="preserve"><value>لا توجد ورديات اليوم بعد.</value></data>
+  <data name="Nothing ordered." xml:space="preserve"><value>لا توجد طلبات.</value></data>
+  <data name="Nothing to post yet." xml:space="preserve"><value>لا يوجد ما يُرحّل بعد.</value></data>
+  <data name="One price list for the whole hospital" xml:space="preserve"><value>قائمة أسعار واحدة للمستشفى كله</value></data>
+  <data name="Only a line added at the desk can be removed here" xml:space="preserve"><value>يمكن حذف البنود المضافة من الاستقبال فقط</value></data>
+  <data name="Only active posting accounts of this company are offered" xml:space="preserve"><value>تظهر حسابات الترحيل النشطة لهذه الشركة فقط</value></data>
+  <data name="Only the shift&#x27;s cashier or a supervisor closes it" xml:space="preserve"><value>يغلق الوردية أمينها أو المشرف فقط</value></data>
+  <data name="Open bills" xml:space="preserve"><value>فواتير مفتوحة</value></data>
+  <data name="Open the shift" xml:space="preserve"><value>فتح الوردية</value></data>
+  <data name="Open the visit" xml:space="preserve"><value>فتح الزيارة</value></data>
+  <data name="Open your cashier shift before taking a payment" xml:space="preserve"><value>افتح ورديتك في الخزينة قبل التحصيل</value></data>
+  <data name="Opened" xml:space="preserve"><value>تاريخ الفتح</value></data>
+  <data name="Opening float" xml:space="preserve"><value>عهدة الافتتاح</value></data>
+  <data name="Orders (P)" xml:space="preserve"><value>الطلبات (P)</value></data>
+  <data name="Outpatient visit" xml:space="preserve"><value>زيارة عيادة</value></data>
+  <data name="Output VAT" xml:space="preserve"><value>ضريبة القيمة المضافة — مخرجات</value></data>
+  <data name="Paid" xml:space="preserve"><value>المدفوع</value></data>
+  <data name="Patient balance due" xml:space="preserve"><value>المتبقي على المريض</value></data>
+  <data name="Patient receivables" xml:space="preserve"><value>ذمم المرضى</value></data>
+  <data name="Patient share + tax" xml:space="preserve"><value>حصة المريض + الضريبة</value></data>
+  <data name="Payments" xml:space="preserve"><value>التحصيلات</value></data>
+  <data name="Posted to the general ledger" xml:space="preserve"><value>مُرحّل للأستاذ العام</value></data>
+  <data name="Posted when the bill closes, through the accounting journal engine" xml:space="preserve"><value>يُرحّل عند إغلاق الفاتورة عبر محرك القيود المحاسبي</value></data>
+  <data name="Price" xml:space="preserve"><value>السعر</value></data>
+  <data name="Receipts" xml:space="preserve"><value>المقبوضات</value></data>
+  <data name="Revenue (default)" xml:space="preserve"><value>الإيراد (افتراضي)</value></data>
+  <data name="Revenue account" xml:space="preserve"><value>حساب الإيراد</value></data>
+  <data name="Running — counted until discharge" xml:space="preserve"><value>جارية — تُحسب حتى الخروج</value></data>
+  <data name="Search a test, scan or procedure..." xml:space="preserve"><value>ابحث عن تحليل أو أشعة أو إجراء...</value></data>
+  <data name="Service catalogue" xml:space="preserve"><value>قائمة الخدمات والأسعار</value></data>
+  <data name="Shift" xml:space="preserve"><value>الوردية</value></data>
+  <data name="Sign the visit before closing its bill" xml:space="preserve"><value>وقّع الزيارة قبل إغلاق فاتورتها</value></data>
+  <data name="Still owed" xml:space="preserve"><value>المتبقي</value></data>
+  <data name="Tax" xml:space="preserve"><value>الضريبة</value></data>
+  <data name="Tax on taxable services" xml:space="preserve"><value>الضريبة على الخدمات الخاضعة لها</value></data>
+  <data name="Taxable" xml:space="preserve"><value>خاضعة للضريبة</value></data>
+  <data name="The amount is more than the patient owes ({0})" xml:space="preserve"><value>المبلغ أكبر من المستحق على المريض ({0})</value></data>
+  <data name="The department&#x27;s consultation" xml:space="preserve"><value>كشف القسم</value></data>
+  <data name="The difference posts to the cash over/short account." xml:space="preserve"><value>يُرحّل الفرق لحساب فروقات الخزينة.</value></data>
+  <data name="The ledger refused the posting: {0}" xml:space="preserve"><value>رفض الأستاذ العام القيد: {0}</value></data>
+  <data name="The patient pays the bill in full; insurer shares and co-pays arrive with the insurance unit. Tax applies only to services marked taxable." xml:space="preserve"><value>يدفع المريض الفاتورة كاملة؛ وحصص التأمين ونسب التحمل تأتي مع وحدة التأمين. والضريبة على الخدمات الخاضعة لها فقط.</value></data>
+  <data name="The tax rate is 0 to 100%" xml:space="preserve"><value>نسبة الضريبة من ٠ إلى ١٠٠٪</value></data>
+  <data name="The visit is locked, the appointment is finished, and the consultation fee and the orders go to the visit&#x27;s bill." xml:space="preserve"><value>تُقفل الزيارة وينتهي الموعد، وتُضاف رسوم الكشف والطلبات لفاتورة الزيارة.</value></data>
+  <data name="This bill is closed" xml:space="preserve"><value>هذه الفاتورة مغلقة</value></data>
+  <data name="This shift is already closed" xml:space="preserve"><value>هذه الوردية مغلقة بالفعل</value></data>
+  <data name="Through the accounting engine" xml:space="preserve"><value>عبر محرك القيود المحاسبي</value></data>
+  <data name="Today&#x27;s shifts" xml:space="preserve"><value>ورديات اليوم</value></data>
+  <data name="Total" xml:space="preserve"><value>الإجمالي</value></data>
+  <data name="Type" xml:space="preserve"><value>النوع</value></data>
+  <data name="Unknown payment method" xml:space="preserve"><value>طريقة دفع غير معروفة</value></data>
+  <data name="Unknown service category" xml:space="preserve"><value>فئة خدمة غير معروفة</value></data>
+  <data name="Used for a service with no revenue account of its own" xml:space="preserve"><value>يُستخدم للخدمة التي ليس لها حساب إيراد خاص</value></data>
+  <data name="VAT" xml:space="preserve"><value>الضريبة</value></data>
+  <data name="VAT rate" xml:space="preserve"><value>نسبة ضريبة القيمة المضافة</value></data>
+  <data name="Value" xml:space="preserve"><value>القيمة</value></data>
+  <data name="Variance" xml:space="preserve"><value>الفرق</value></data>
+  <data name="What patients owe once a bill closes" xml:space="preserve"><value>المستحق على المرضى بعد إغلاق الفاتورة</value></data>
+  <data name="You already have an open shift" xml:space="preserve"><value>لديك وردية مفتوحة بالفعل</value></data>
+  <data name="bill:Closed" xml:space="preserve"><value>مغلقة</value></data>
+  <data name="bill:Open" xml:space="preserve"><value>مفتوحة</value></data>
+  <data name="cat:Accommodation" xml:space="preserve"><value>إقامة</value></data>
+  <data name="cat:Consultation" xml:space="preserve"><value>كشف</value></data>
+  <data name="cat:Lab" xml:space="preserve"><value>مختبر</value></data>
+  <data name="cat:Other" xml:space="preserve"><value>أخرى</value></data>
+  <data name="cat:Pharmacy" xml:space="preserve"><value>صيدلية</value></data>
+  <data name="cat:Procedure" xml:space="preserve"><value>إجراءات</value></data>
+  <data name="cat:Radiology" xml:space="preserve"><value>أشعة</value></data>
+  <data name="discharged" xml:space="preserve"><value>خرج</value></data>
+  <data name="opened" xml:space="preserve"><value>فُتحت</value></data>
+  <data name="pm:Card" xml:space="preserve"><value>بطاقة</value></data>
+  <data name="pm:Cash" xml:space="preserve"><value>نقدي</value></data>
+  <data name="pm:Transfer" xml:space="preserve"><value>تحويل</value></data>
+  <data name="pm:Wallet" xml:space="preserve"><value>محفظة</value></data>
+  <data name="receipts" xml:space="preserve"><value>إيصال</value></data>
+  <data name="services" xml:space="preserve"><value>خدمة</value></data>
+  <data name="shift:Closed" xml:space="preserve"><value>مغلقة</value></data>
+  <data name="shift:Open" xml:space="preserve"><value>مفتوحة</value></data>
+  <data name="still in hospital" xml:space="preserve"><value>ما زال بالمستشفى</value></data>
+  <data name="visits and stays still running" xml:space="preserve"><value>زيارات وإقامات جارية</value></data>
+  <data name="; the journal entry is in" xml:space="preserve"><value>، والقيد المحاسبي بعملة</value></data>
+  <data name="A category is a medicine or a consumable" xml:space="preserve"><value>الفئة إما أدوية أو مستهلكات</value></data>
+  <data name="A draft version of this list already exists" xml:space="preserve"><value>توجد مسودة إصدار جديد لهذه القائمة بالفعل</value></data>
+  <data name="A foreign-currency bill is collected after it is closed" xml:space="preserve"><value>الفاتورة بعملة أجنبية تُحصَّل بعد إغلاقها</value></data>
+  <data name="A foreign-currency bill paid at a rate other than its closing rate" xml:space="preserve"><value>فاتورة بعملة أجنبية دُفعت بسعر صرف غير سعر إغلاقها</value></data>
+  <data name="A medicine's price in any list never exceeds its approved public price. The item and its selling price come from the Inventory item card." xml:space="preserve"><value>سعر الدواء في أي قائمة لا يتجاوز سعره الرسمي المعتمد. الصنف وسعر بيعه من كارت الصنف في المخزون.</value></data>
+  <data name="A new list — prices not updated:" xml:space="preserve"><value>قائمة جديدة — أسعار غير محدّثة:</value></data>
+  <data name="A new service, medicine or consumable lands on the main list only. Every other list shows it as new until you add it through its discount rule, and a change of the main price marks the line not updated there." xml:space="preserve"><value>أي خدمة أو دواء أو مستهلك جديد يُسجَّل تلقائياً في القائمة الرئيسية فقط. باقي القوائم تُظهره «جديد» حتى تضيفه بقاعدة خصمها، وتغيير السعر الرئيسي يجعل السطر «غير محدّث» فيها.</value></data>
+  <data name="A percentage is between -100 and 1000" xml:space="preserve"><value>النسبة بين -١٠٠ و ١٠٠٠</value></data>
+  <data name="A rounding step is above zero" xml:space="preserve"><value>خطوة التقريب أكبر من صفر</value></data>
+  <data name="Above the medicine's public price ({0})" xml:space="preserve"><value>أعلى من السعر الرسمي للدواء ({0})</value></data>
+  <data name="Add by the rule" xml:space="preserve"><value>إضافة بالقاعدة</value></data>
+  <data name="Add items" xml:space="preserve"><value>إضافة بنود</value></data>
+  <data name="Add selected" xml:space="preserve"><value>إضافة المحدد</value></data>
+  <data name="All lists" xml:space="preserve"><value>كل القوائم</value></data>
+  <data name="Approve" xml:space="preserve"><value>اعتماد</value></data>
+  <data name="Approve all" xml:space="preserve"><value>اعتماد الكل</value></data>
+  <data name="Approve the list" xml:space="preserve"><value>اعتماد القائمة</value></data>
+  <data name="Approved" xml:space="preserve"><value>الاعتماد</value></data>
+  <data name="Archive" xml:space="preserve"><value>أرشفة</value></data>
+  <data name="Archive this list? Patients must be moved off it first." xml:space="preserve"><value>أرشفة هذه القائمة؟ يجب نقل المرضى منها أولاً.</value></data>
+  <data name="Automatic" xml:space="preserve"><value>تلقائية</value></data>
+  <data name="Awaiting review, or the main price moved" xml:space="preserve"><value>بانتظار المراجعة، أو تغيّر السعر الرئيسي</value></data>
+  <data name="Billing" xml:space="preserve"><value>الفوترة</value></data>
+  <data name="By the rule" xml:space="preserve"><value>بالقاعدة</value></data>
+  <data name="By this list's rule" xml:space="preserve"><value>بقاعدة هذه القائمة</value></data>
+  <data name="Capped at the public price" xml:space="preserve"><value>مقيّد بالسعر الرسمي</value></data>
+  <data name="Catalogue" xml:space="preserve"><value>الكتالوج</value></data>
+  <data name="Change" xml:space="preserve"><value>الفرق</value></data>
+  <data name="Changing the rule sends every rule-priced line back to review." xml:space="preserve"><value>تغيير القاعدة يعيد كل سطر مسعّر بالقاعدة للمراجعة.</value></data>
+  <data name="Choose a service" xml:space="preserve"><value>اختر خدمة</value></data>
+  <data name="Choose an approved price list" xml:space="preserve"><value>اختر قائمة أسعار معتمدة</value></data>
+  <data name="Closing fixes its rate; a payment at another rate posts the difference to the exchange-difference account." xml:space="preserve"><value>الإغلاق يثبّت سعر الصرف؛ والدفع بسعر آخر يرحّل الفرق إلى حساب فروقات العملة.</value></data>
+  <data name="Closing rate" xml:space="preserve"><value>سعر الإغلاق</value></data>
+  <data name="Consumables" xml:space="preserve"><value>المستهلكات</value></data>
+  <data name="Copy as a new version" xml:space="preserve"><value>نسخ كإصدار جديد</value></data>
+  <data name="Create and copy the items" xml:space="preserve"><value>إنشاء وسحب البنود</value></data>
+  <data name="Created in" xml:space="preserve"><value>يُنشأ في</value></data>
+  <data name="Currencies in use" xml:space="preserve"><value>العملات المستخدمة</value></data>
+  <data name="Currency" xml:space="preserve"><value>العملة</value></data>
+  <data name="Discount rule" xml:space="preserve"><value>قاعدة الخصم</value></data>
+  <data name="Each item is defined once" xml:space="preserve"><value>كل بند يُعرَّف مرة واحدة</value></data>
+  <data name="Edit the list" xml:space="preserve"><value>تعديل القائمة</value></data>
+  <data name="Empty = by the rule" xml:space="preserve"><value>فارغ = بالقاعدة</value></data>
+  <data name="Enter the start date" xml:space="preserve"><value>أدخل تاريخ البداية</value></data>
+  <data name="Entered the catalogue" xml:space="preserve"><value>دخل الكتالوج</value></data>
+  <data name="Every active item of a mapped category is a hospital medicine or consumable, priced at its selling price on the main list" xml:space="preserve"><value>كل صنف نشط في فئة مربوطة يصبح دواءً أو مستهلكاً للمستشفى، بسعر بيعه في القائمة الرئيسية</value></data>
+  <data name="Every item is copied — all not updated" xml:space="preserve"><value>سيتم سحب كل البنود — وكلها «غير محدّثة»</value></data>
+  <data name="Every item was copied at the main list's latest prices through the discount rule. Review each line and approve it, or approve them all; the list prices no bill before that." xml:space="preserve"><value>سُحبت كل البنود بآخر أسعار القائمة الرئيسية بعد قاعدة الخصم. راجع كل سطر واعتمده، أو اعتمدها كلها؛ ولا تُستخدم القائمة في الفوترة قبل ذلك.</value></data>
+  <data name="Exchange differences" xml:space="preserve"><value>فروقات العملة</value></data>
+  <data name="Facility currency" xml:space="preserve"><value>عملة المنشأة</value></data>
+  <data name="From the card" xml:space="preserve"><value>من الكارت</value></data>
+  <data name="Frozen rate" xml:space="preserve"><value>سعر الصرف المثبّت</value></data>
+  <data name="Hospital — service catalogue" xml:space="preserve"><value>المستشفى — قائمة الخدمات</value></data>
+  <data name="How a bill line is priced" xml:space="preserve"><value>كيف يُسعَّر بند الفاتورة</value></data>
+  <data name="In the facility currency" xml:space="preserve"><value>بعملة المنشأة</value></data>
+  <data name="Inventory categories in the hospital" xml:space="preserve"><value>فئات المخزون في المستشفى</value></data>
+  <data name="Inventory has no categories yet." xml:space="preserve"><value>لا توجد فئات في المخزون بعد.</value></data>
+  <data name="Inventory — the item card" xml:space="preserve"><value>المخزون — كارت الصنف</value></data>
+  <data name="Item" xml:space="preserve"><value>البند</value></data>
+  <data name="Items on the main list that are not on this one. They come in at the rule's price and show not updated until you approve them." xml:space="preserve"><value>بنود موجودة في القائمة الرئيسية وليست في هذه القائمة. تُضاف بسعر القاعدة وتظهر «غير محدّثة» حتى تعتمدها.</value></data>
+  <data name="Its own price if it has one, otherwise the main price through the discount rule and rounding." xml:space="preserve"><value>سعره الخاص إن وُجد، وإلا السعر الرئيسي بعد قاعدة الخصم والتقريب.</value></data>
+  <data name="Its price in every list" xml:space="preserve"><value>سعره في كل القوائم</value></data>
+  <data name="Kind" xml:space="preserve"><value>النوع</value></data>
+  <data name="List" xml:space="preserve"><value>القائمة</value></data>
+  <data name="Main" xml:space="preserve"><value>الرئيسية</value></data>
+  <data name="Main list" xml:space="preserve"><value>القائمة الرئيسية</value></data>
+  <data name="Main list price" xml:space="preserve"><value>سعر القائمة الرئيسية</value></data>
+  <data name="Map an inventory category to the hospital below; its items appear here." xml:space="preserve"><value>اربط فئة من المخزون بالمستشفى بالأسفل؛ تظهر أصنافها هنا.</value></data>
+  <data name="Map the exchange-difference account in billing settings" xml:space="preserve"><value>حدد حساب فروقات العملة في إعدادات الفوترة</value></data>
+  <data name="Medicines" xml:space="preserve"><value>الأدوية</value></data>
+  <data name="Negative = a discount off the main price, positive = a mark-up" xml:space="preserve"><value>سالب = خصم من السعر الرئيسي، موجب = زيادة</value></data>
+  <data name="Never above the approved public price, whatever the rule." xml:space="preserve"><value>لا يتجاوز السعر الرسمي المعتمد مهما كانت القاعدة.</value></data>
+  <data name="New" xml:space="preserve"><value>جديد</value></data>
+  <data name="New catalogue item" xml:space="preserve"><value>بند جديد في الكتالوج</value></data>
+  <data name="New item or consumable" xml:space="preserve"><value>صنف أو مستهلك جديد</value></data>
+  <data name="New items not added" xml:space="preserve"><value>بنود جديدة لم تُضف</value></data>
+  <data name="New list" xml:space="preserve"><value>قائمة جديدة</value></data>
+  <data name="New main-list items not added here:" xml:space="preserve"><value>بنود جديدة في القائمة الرئيسية لم تُضف هنا:</value></data>
+  <data name="New price list" xml:space="preserve"><value>قائمة أسعار جديدة</value></data>
+  <data name="New — not added" xml:space="preserve"><value>جديد — غير مضاف</value></data>
+  <data name="No discount — it is the selling price" xml:space="preserve"><value>لا خصم — هي سعر البيع</value></data>
+  <data name="None" xml:space="preserve"><value>بدون</value></data>
+  <data name="Not added" xml:space="preserve"><value>غير مضاف</value></data>
+  <data name="Not approved yet" xml:space="preserve"><value>لم تُعتمد بعد</value></data>
+  <data name="Not covered" xml:space="preserve"><value>غير مشمول</value></data>
+  <data name="Not covered by this list (billed from the main list)" xml:space="preserve"><value>غير مشمول بهذه القائمة (يُفوتر من القائمة الرئيسية)</value></data>
+  <data name="Not covered, or not added yet?" xml:space="preserve"><value>غير مشمول أو لم يُضف بعد؟</value></data>
+  <data name="Not hospital" xml:space="preserve"><value>ليست للمستشفى</value></data>
+  <data name="Not on the list: priced from the main list" xml:space="preserve"><value>ليس في القائمة: يُسعَّر من القائمة الرئيسية</value></data>
+  <data name="Not updated" xml:space="preserve"><value>غير محدّث</value></data>
+  <data name="Nothing on this list in this group." xml:space="preserve"><value>لا شيء في هذه المجموعة بهذه القائمة.</value></data>
+  <data name="Nothing to add" xml:space="preserve"><value>لا يوجد ما يُضاف</value></data>
+  <data name="On other lists" xml:space="preserve"><value>في القوائم الأخرى</value></data>
+  <data name="On the main list only" xml:space="preserve"><value>في القائمة الرئيسية فقط</value></data>
+  <data name="Only a draft is approved" xml:space="preserve"><value>تُعتمد المسودة فقط</value></data>
+  <data name="Only a draft is edited; copy an approved list as a new version" xml:space="preserve"><value>تُعدَّل المسودة فقط؛ انسخ القائمة المعتمدة كإصدار جديد</value></data>
+  <data name="Only a medicine has a public price" xml:space="preserve"><value>السعر الرسمي للأدوية فقط</value></data>
+  <data name="Only an approved list appears here. The insurance unit will set it from the patient's contract." xml:space="preserve"><value>تظهر هنا القوائم المعتمدة فقط. ستحددها وحدة التأمين لاحقاً من عقد المريض.</value></data>
+  <data name="Open a list to see its lines and review its prices" xml:space="preserve"><value>افتح قائمة لترى بنودها وتراجع أسعارها</value></data>
+  <data name="Open the item card" xml:space="preserve"><value>فتح كارت الصنف</value></data>
+  <data name="Outside the list — main price" xml:space="preserve"><value>خارج القائمة — السعر الرئيسي</value></data>
+  <data name="Own price" xml:space="preserve"><value>سعر خاص</value></data>
+  <data name="Patients on this list" xml:space="preserve"><value>المرضى على هذه القائمة</value></data>
+  <data name="Patients still use this list. Move them first" xml:space="preserve"><value>ما زال مرضى على هذه القائمة. انقلهم أولاً</value></data>
+  <data name="Pick a patient and a service to see the list and the price" xml:space="preserve"><value>اختر مريضاً وخدمة لترى القائمة والسعر</value></data>
+  <data name="Pick a patient and a service." xml:space="preserve"><value>اختر مريضاً وخدمة.</value></data>
+  <data name="Price list" xml:space="preserve"><value>قائمة الأسعار</value></data>
+  <data name="Price lists" xml:space="preserve"><value>قوائم الأسعار</value></data>
+  <data name="Price source" xml:space="preserve"><value>مصدر الأسعار</value></data>
+  <data name="Price state" xml:space="preserve"><value>حالة الأسعار</value></data>
+  <data name="Priced from" xml:space="preserve"><value>سُعِّرت من</value></data>
+  <data name="Priced from the main list in the bill's currency and marked on the bill." xml:space="preserve"><value>يُسعَّر من القائمة الرئيسية بعملة الفاتورة، ويُعلَّم عليه في الفاتورة.</value></data>
+  <data name="Prices not updated" xml:space="preserve"><value>أسعار غير محدّثة</value></data>
+  <data name="Prices not updated:" xml:space="preserve"><value>أسعار غير محدّثة:</value></data>
+  <data name="Public price" xml:space="preserve"><value>السعر الرسمي</value></data>
+  <data name="Public price (ceiling)" xml:space="preserve"><value>السعر الرسمي (سقف)</value></data>
+  <data name="Put a patient on this list from the patient's file." xml:space="preserve"><value>ضع المريض على هذه القائمة من ملف المريض.</value></data>
+  <data name="Rate" xml:space="preserve"><value>السعر</value></data>
+  <data name="Review the not-updated prices first" xml:space="preserve"><value>راجع الأسعار غير المحدّثة أولاً</value></data>
+  <data name="Rounding" xml:space="preserve"><value>التقريب</value></data>
+  <data name="Rounding step" xml:space="preserve"><value>خطوة التقريب</value></data>
+  <data name="Save and approve" xml:space="preserve"><value>حفظ واعتماد</value></data>
+  <data name="Save the price" xml:space="preserve"><value>حفظ السعر</value></data>
+  <data name="Saving a new price updates the main list at once, and marks this item not updated on every other list that holds it until it is reviewed:" xml:space="preserve"><value>حفظ سعر جديد يحدّث القائمة الرئيسية فوراً، ويجعل هذا البند «غير محدّث» في كل قائمة أخرى تحتويه حتى يُراجَع:</value></data>
+  <data name="Search by name or MRN" xml:space="preserve"><value>ابحث بالاسم أو رقم الملف</value></data>
+  <data name="Selling price" xml:space="preserve"><value>سعر البيع</value></data>
+  <data name="Services (group)" xml:space="preserve"><value>الخدمات</value></data>
+  <data name="Services &amp; items" xml:space="preserve"><value>الخدمات والأصناف</value></data>
+  <data name="Services are created in the service catalogue; medicines and consumables on the Inventory item card, in a category mapped below. The selling price entered there is recorded on the main list automatically — and only there." xml:space="preserve"><value>الخدمات تُنشأ في قائمة الخدمات، والأدوية والمستهلكات من كارت الصنف في المخزون ضمن فئة مربوطة بالأسفل. سعر البيع المسجّل هناك يُسجَّل في القائمة الرئيسية تلقائياً — وفيها فقط.</value></data>
+  <data name="Services to the nearest" xml:space="preserve"><value>الخدمات لأقرب</value></data>
+  <data name="Source" xml:space="preserve"><value>المصدر</value></data>
+  <data name="State" xml:space="preserve"><value>الحالة</value></data>
+  <data name="The bill is in" xml:space="preserve"><value>الفاتورة بعملة</value></data>
+  <data name="The bill keeps the price, the currency and the list. Editing the list later never changes an existing bill." xml:space="preserve"><value>الفاتورة تحفظ السعر والعملة والقائمة. تعديل القائمة لاحقاً لا يغيّر فاتورة قائمة.</value></data>
+  <data name="The currency's decimals" xml:space="preserve"><value>بدقة العملة</value></data>
+  <data name="The end date is before the start date" xml:space="preserve"><value>تاريخ النهاية قبل تاريخ البداية</value></data>
+  <data name="The foreign currency in the books" xml:space="preserve"><value>العملة الأجنبية في الحسابات</value></data>
+  <data name="The line on that list" xml:space="preserve"><value>سطر البند في تلك القائمة</value></data>
+  <data name="The list on the patient's file prices the bill, in its currency. No list, or a list not approved or not valid that day: the main list." xml:space="preserve"><value>القائمة المسجّلة في ملف المريض تسعّر الفاتورة بعملتها. لا قائمة، أو قائمة غير معتمدة أو غير سارية يومها: القائمة الرئيسية.</value></data>
+  <data name="The main list and" xml:space="preserve"><value>القائمة الرئيسية و</value></data>
+  <data name="The main list is updated" xml:space="preserve"><value>حُدِّثت القائمة الرئيسية</value></data>
+  <data name="The main list through the discount rule" xml:space="preserve"><value>القائمة الرئيسية بقاعدة الخصم</value></data>
+  <data name="The main list updates automatically" xml:space="preserve"><value>القائمة الرئيسية تُحدَّث تلقائياً</value></data>
+  <data name="The patient's bills are priced from this list, in its currency" xml:space="preserve"><value>فواتير المريض تُسعَّر من هذه القائمة وبعملتها</value></data>
+  <data name="The patient's list" xml:space="preserve"><value>قائمة المريض</value></data>
+  <data name="The patient's list is not approved or not valid today, so the main list applies" xml:space="preserve"><value>قائمة المريض غير معتمدة أو غير سارية اليوم، فتُطبَّق القائمة الرئيسية</value></data>
+  <data name="The public price is a ceiling" xml:space="preserve"><value>السعر الرسمي سقف</value></data>
+  <data name="The regulator's approved price: no list may charge more" xml:space="preserve"><value>السعر المعتمد من الجهة الرقابية: لا تتجاوزه أي قائمة</value></data>
+  <data name="The selling price on the Inventory item card is the main list price. Changing it there marks this item not updated on every other list that holds it:" xml:space="preserve"><value>سعر البيع في كارت الصنف بالمخزون هو سعر القائمة الرئيسية. تغييره هناك يجعل هذا البند «غير محدّث» في كل قائمة أخرى تحتويه:</value></data>
+  <data name="The selling price on the card IS the main list" xml:space="preserve"><value>سعر البيع في الكارت هو القائمة الرئيسية</value></data>
+  <data name="The snapshot" xml:space="preserve"><value>اللقطة</value></data>
+  <data name="There is no exchange rate for the bill's currency. Enter one in Accounting first" xml:space="preserve"><value>لا يوجد سعر صرف لعملة الفاتورة. أدخله في الحسابات أولاً</value></data>
+  <data name="There is no exchange rate for this currency. Enter one in Accounting first" xml:space="preserve"><value>لا يوجد سعر صرف لهذه العملة. أدخله في الحسابات أولاً</value></data>
+  <data name="They await review, or their main price changed after they were confirmed. The price shown is the rule applied to the current main price." xml:space="preserve"><value>بانتظار المراجعة، أو تغيّر سعرها الرئيسي بعد اعتمادها. السعر المعروض هو القاعدة على السعر الرئيسي الحالي.</value></data>
+  <data name="This list" xml:space="preserve"><value>هذه القائمة</value></data>
+  <data name="This list is archived" xml:space="preserve"><value>هذه القائمة مؤرشفة</value></data>
+  <data name="Try the pricing" xml:space="preserve"><value>جرّب التسعير</value></data>
+  <data name="Unknown list kind" xml:space="preserve"><value>نوع قائمة غير معروف</value></data>
+  <data name="Up to date" xml:space="preserve"><value>محدّث</value></data>
+  <data name="Updated automatically" xml:space="preserve"><value>محدّث تلقائياً</value></data>
+  <data name="Updates itself from the card" xml:space="preserve"><value>تتحدّث من الكارت تلقائياً</value></data>
+  <data name="Valid from" xml:space="preserve"><value>تبدأ من</value></data>
+  <data name="Valid to" xml:space="preserve"><value>تنتهي في</value></data>
+  <data name="Validity" xml:space="preserve"><value>الصلاحية</value></data>
+  <data name="Versions" xml:space="preserve"><value>الإصدارات</value></data>
+  <data name="at the rate of the day it closes. It is paid after closing, and a different rate on payment posts to the exchange-difference account." xml:space="preserve"><value>بسعر صرف يوم إغلاقها. تُحصَّل بعد الإغلاق، وأي فرق في سعر الصرف عند الدفع يُرحَّل لحساب فروقات العملة.</value></data>
+  <data name="at today's rate" xml:space="preserve"><value>بسعر اليوم</value></data>
+  <data name="catalogue items are copied at the main list's latest price through the rule, and every price is marked not updated until you review it. The list prices no bill before it is approved." xml:space="preserve"><value>بنداً من الكتالوج تُنسخ بآخر سعر في القائمة الرئيسية بعد تطبيق القاعدة، وتُعلَّم كل الأسعار «غير محدّثة» حتى تراجعها. ولا تُستخدم القائمة في الفوترة قبل اعتمادها.</value></data>
+  <data name="foreign" xml:space="preserve"><value>أجنبية</value></data>
+  <data name="group:Consumable" xml:space="preserve"><value>المستهلكات</value></data>
+  <data name="group:Medicine" xml:space="preserve"><value>الأدوية</value></data>
+  <data name="group:Service" xml:space="preserve"><value>الخدمات</value></data>
+  <data name="in" xml:space="preserve"><value>بعملة</value></data>
+  <data name="items" xml:space="preserve"><value>بند</value></data>
+  <data name="kind:Cash" xml:space="preserve"><value>نقدي</value></data>
+  <data name="kind:Corporate" xml:space="preserve"><value>شركات</value></data>
+  <data name="kind:Government" xml:space="preserve"><value>حكومي</value></data>
+  <data name="kind:Insurer" xml:space="preserve"><value>تأمين</value></data>
+  <data name="new (count)" xml:space="preserve"><value>جديد</value></data>
+  <data name="not updated (count)" xml:space="preserve"><value>غير محدّث</value></data>
+  <data name="others" xml:space="preserve"><value>قوائم أخرى</value></data>
+  <data name="patients (count)" xml:space="preserve"><value>مريض</value></data>
+  <data name="plst:Active" xml:space="preserve"><value>سارية</value></data>
+  <data name="plst:Archived" xml:space="preserve"><value>مؤرشفة</value></data>
+  <data name="plst:Draft" xml:space="preserve"><value>مسودة</value></data>
+  <data name="src:ceiling" xml:space="preserve"><value>مقيّد بالسعر الرسمي</value></data>
+  <data name="src:excluded" xml:space="preserve"><value>غير مشمول</value></data>
+  <data name="src:main" xml:space="preserve"><value>من الكارت</value></data>
+  <data name="src:missing" xml:space="preserve"><value>غير مضاف</value></data>
+  <data name="src:override" xml:space="preserve"><value>سعر خاص</value></data>
+  <data name="src:rule" xml:space="preserve"><value>بالقاعدة</value></data>
+  <data name="{0} prices are not updated. Review them before approving" xml:space="preserve"><value>{0} سعر غير محدّث. راجعها قبل الاعتماد</value></data>
+  <data name="Priced from the patient's list, in its currency. Insurer shares and co-pays arrive with the insurance unit; until then the patient's share is the whole bill." xml:space="preserve"><value>مسعّرة من قائمة المريض وبعملتها. حصص التأمين ونسب التحمل تأتي مع وحدة التأمين؛ وحتى ذلك حصة المريض هي الفاتورة كلها.</value></data>
+  <data name="Arrived, not called yet" xml:space="preserve"><value>حضروا ولم يُنادَ عليهم بعد</value></data>
+  <data name="Beds free" xml:space="preserve"><value>أسرّة متاحة</value></data>
+  <data name="Click any room to see who is inside and their details" xml:space="preserve"><value>اضغط أي غرفة لعرض من بداخلها وبياناته</value></data>
+  <data name="Doctors today" xml:space="preserve"><value>أطباء اليوم</value></data>
+  <data name="Hospital map" xml:space="preserve"><value>خريطة المستشفى</value></data>
+  <data name="In beds" xml:space="preserve"><value>في الأسرّة</value></data>
+  <data name="In the consultation" xml:space="preserve"><value>داخل الكشف</value></data>
+  <data name="No floors yet." xml:space="preserve"><value>لا توجد أدوار بعد.</value></data>
+  <data name="No patient here right now" xml:space="preserve"><value>لا يوجد مريض في هذا المكان الآن</value></data>
+  <data name="No rooms on this floor yet." xml:space="preserve"><value>لا توجد غرف في هذا الدور بعد.</value></data>
+  <data name="Nobody right now" xml:space="preserve"><value>لا أحد الآن</value></data>
+  <data name="Not found in any room" xml:space="preserve"><value>غير موجود في أي غرفة</value></data>
+  <data name="Open the room" xml:space="preserve"><value>فتح الغرفة</value></data>
+  <data name="Patients in the building" xml:space="preserve"><value>مرضى داخل المبنى الآن</value></data>
+  <data name="Search for a patient or a doctor..." xml:space="preserve"><value>ابحث عن مريض أو طبيب...</value></data>
+  <data name="The space is free, or a service area." xml:space="preserve"><value>المكان متاح أو مخصص للخدمات.</value></data>
+  <data name="Waiting in clinics" xml:space="preserve"><value>ينتظرون في العيادات</value></data>
+  <data name="With appointments today" xml:space="preserve"><value>لهم مواعيد اليوم</value></data>
+  <data name="in clinics" xml:space="preserve"><value>في العيادات</value></data>
+  <data name="of" xml:space="preserve"><value>من</value></data>
+  <data name="Preview on the map" xml:space="preserve"><value>معاينة على الخريطة</value></data>
+  <data name="A critical limit lies outside the reference range" xml:space="preserve"><value>الحد الحرج يجب أن يقع خارج المعدل الطبيعي</value></data>
+  <data name="A critical value — tell the doctor now" xml:space="preserve"><value>قيمة حرجة — أبلغ الطبيب الآن</value></data>
+  <data name="A different person verifies the results they did not enter" xml:space="preserve"><value>يعتمد النتيجة شخص آخر غير من أدخلها</value></data>
+  <data name="A technician enters the result and a specialist verifies it; only then is it visible to the doctor and in the patient file." xml:space="preserve"><value>الفني يُدخل النتيجة ثم يعتمدها الأخصائي، وبعدها فقط تظهر للطبيب وفي ملف المريض.</value></data>
+  <data name="Already recorded" xml:space="preserve"><value>مسجل من قبل</value></data>
+  <data name="Analyte" xml:space="preserve"><value>المؤشر</value></data>
+  <data name="Another analyte of this test uses this code" xml:space="preserve"><value>هذا الرمز مستخدم لمؤشر آخر في نفس التحليل</value></data>
+  <data name="Average turnaround" xml:space="preserve"><value>متوسط زمن الإنجاز</value></data>
+  <data name="Awaiting verification" xml:space="preserve"><value>بانتظار الاعتماد</value></data>
+  <data name="Call the ordering doctor, then record whom you told. The flag stays raised until you do." xml:space="preserve"><value>اتصل بالطبيب الطالب ثم سجّل من أبلغته. تبقى العلامة مرفوعة حتى تفعل ذلك.</value></data>
+  <data name="Collect" xml:space="preserve"><value>سحب العينة</value></data>
+  <data name="Collect the specimen before receiving it in the lab" xml:space="preserve"><value>اسحب العينة قبل استلامها في المختبر</value></data>
+  <data name="Critical" xml:space="preserve"><value>حرجة</value></data>
+  <data name="Critical high" xml:space="preserve"><value>الحد الحرج الأعلى</value></data>
+  <data name="Critical low" xml:space="preserve"><value>الحد الحرج الأدنى</value></data>
+  <data name="Critical value:" xml:space="preserve"><value>قيمة حرجة:</value></data>
+  <data name="Critical values not yet told" xml:space="preserve"><value>قيم حرجة لم يُبلَّغ عنها</value></data>
+  <data name="Decimals" xml:space="preserve"><value>الخانات العشرية</value></data>
+  <data name="Decimals are 0 to 4" xml:space="preserve"><value>الخانات العشرية من 0 إلى 4</value></data>
+  <data name="Diagnostics" xml:space="preserve"><value>التشخيص</value></data>
+  <data name="Enter a code of up to 30 characters" xml:space="preserve"><value>أدخل رمزاً حتى 30 حرفاً</value></data>
+  <data name="Enter every result before verifying" xml:space="preserve"><value>أدخل كل النتائج قبل الاعتماد</value></data>
+  <data name="Enter result" xml:space="preserve"><value>إدخال النتيجة</value></data>
+  <data name="Enter the name in both languages" xml:space="preserve"><value>أدخل الاسم باللغتين</value></data>
+  <data name="Enter the specimen and the section" xml:space="preserve"><value>أدخل نوع العينة والقسم</value></data>
+  <data name="Entered, not yet verified" xml:space="preserve"><value>أُدخلت ولم تُعتمد بعد</value></data>
+  <data name="Every lab order a doctor signs arrives here" xml:space="preserve"><value>كل طلب تحليل يوقّعه الطبيب يصل إلى هنا</value></data>
+  <data name="Every lab test is a service of the Lab category" xml:space="preserve"><value>كل تحليل هو خدمة من فئة المختبر</value></data>
+  <data name="Flag" xml:space="preserve"><value>علامة</value></data>
+  <data name="High" xml:space="preserve"><value>الحد الأعلى</value></data>
+  <data name="Its price lives in the service catalogue; here are its specimen, its section and what it measures. A value outside the reference range is flagged L or H, and past a critical limit the doctor must be told." xml:space="preserve"><value>سعره في دليل الخدمات؛ وهنا نوع عينته وقسمه وما يقيسه. القيمة خارج المعدل الطبيعي تُعلَّم L أو H، وبعد الحد الحرج يجب إبلاغ الطبيب.</value></data>
+  <data name="Lab result" xml:space="preserve"><value>نتيجة التحليل</value></data>
+  <data name="Lab tests &amp; analytes" xml:space="preserve"><value>التحاليل ومؤشراتها</value></data>
+  <data name="Laboratory comment" xml:space="preserve"><value>تعليق أخصائي المختبر</value></data>
+  <data name="Laboratory worklist" xml:space="preserve"><value>قائمة عمل المختبر</value></data>
+  <data name="Load the standard panels" xml:space="preserve"><value>تحميل التحاليل القياسية</value></data>
+  <data name="Low" xml:space="preserve"><value>الحد الأدنى</value></data>
+  <data name="No lab orders here." xml:space="preserve"><value>لا توجد طلبات تحاليل هنا.</value></data>
+  <data name="No lab services yet. Add them in the service catalogue." xml:space="preserve"><value>لا توجد خدمات مختبر بعد. أضفها من دليل الخدمات.</value></data>
+  <data name="Open work" xml:space="preserve"><value>العمل المفتوح</value></data>
+  <data name="Ordered" xml:space="preserve"><value>طُلب</value></data>
+  <data name="Orders today" xml:space="preserve"><value>طلبات اليوم</value></data>
+  <data name="Previous" xml:space="preserve"><value>السابقة</value></data>
+  <data name="Priority" xml:space="preserve"><value>الأولوية</value></data>
+  <data name="Receive" xml:space="preserve"><value>استلام</value></data>
+  <data name="Receive the specimen in the lab before entering results" xml:space="preserve"><value>استلم العينة في المختبر قبل إدخال النتائج</value></data>
+  <data name="Received in lab" xml:space="preserve"><value>استُلمت في المختبر</value></data>
+  <data name="Record the call" xml:space="preserve"><value>تسجيل الإبلاغ</value></data>
+  <data name="Reference range" xml:space="preserve"><value>المعدل الطبيعي</value></data>
+  <data name="Result" xml:space="preserve"><value>النتيجة</value></data>
+  <data name="Result entered" xml:space="preserve"><value>أُدخلت النتيجة</value></data>
+  <data name="Result entry" xml:space="preserve"><value>إدخال النتيجة</value></data>
+  <data name="Result verified — the doctor can see it" xml:space="preserve"><value>اعتُمدت النتيجة — يراها الطبيب الآن</value></data>
+  <data name="Results are entered once the specimen is received in the lab." xml:space="preserve"><value>تُدخل النتائج بعد استلام العينة في المختبر.</value></data>
+  <data name="Routine" xml:space="preserve"><value>روتيني</value></data>
+  <data name="Search..." xml:space="preserve"><value>بحث...</value></data>
+  <data name="Section" xml:space="preserve"><value>القسم</value></data>
+  <data name="Section (English)" xml:space="preserve"><value>القسم (إنجليزي)</value></data>
+  <data name="Set its analytes and ranges in lab tests before entering results." xml:space="preserve"><value>حدد مؤشراته ومعدلاتها في إعداد التحاليل قبل إدخال النتائج.</value></data>
+  <data name="Specimen" xml:space="preserve"><value>العينة</value></data>
+  <data name="Specimen (English)" xml:space="preserve"><value>العينة (إنجليزي)</value></data>
+  <data name="Specimen:" xml:space="preserve"><value>العينة:</value></data>
+  <data name="Specimen trail" xml:space="preserve"><value>سجل العينة</value></data>
+  <data name="Stat" xml:space="preserve"><value>فوري</value></data>
+  <data name="Test" xml:space="preserve"><value>التحليل</value></data>
+  <data name="The doctor must be told" xml:space="preserve"><value>يجب إبلاغ الطبيب</value></data>
+  <data name="The doctor was told of the critical value" xml:space="preserve"><value>أُبلغ الطبيب بالقيمة الحرجة</value></data>
+  <data name="The low limit is above the high limit" xml:space="preserve"><value>الحد الأدنى أعلى من الحد الأعلى</value></data>
+  <data name="The specimen was already collected" xml:space="preserve"><value>العينة مسحوبة بالفعل</value></data>
+  <data name="This order has no critical value" xml:space="preserve"><value>لا توجد قيمة حرجة في هذا الطلب</value></data>
+  <data name="This result is verified and locked" xml:space="preserve"><value>هذه النتيجة معتمدة ومقفلة</value></data>
+  <data name="This test has no analytes yet" xml:space="preserve"><value>هذا التحليل بلا مؤشرات بعد</value></data>
+  <data name="This test has no analytes yet. Set it up in lab tests first" xml:space="preserve"><value>هذا التحليل بلا مؤشرات بعد. أعدّه أولاً في إعداد التحاليل</value></data>
+  <data name="Two-step verification" xml:space="preserve"><value>اعتماد على مرحلتين</value></data>
+  <data name="Unit" xml:space="preserve"><value>الوحدة</value></data>
+  <data name="Unknown priority" xml:space="preserve"><value>أولوية غير معروفة</value></data>
+  <data name="Urgent" xml:space="preserve"><value>عاجل</value></data>
+  <data name="Verified" xml:space="preserve"><value>معتمدة</value></data>
+  <data name="Verify" xml:space="preserve"><value>اعتماد</value></data>
+  <data name="Verify result" xml:space="preserve"><value>اعتماد النتيجة</value></data>
+  <data name="View" xml:space="preserve"><value>عرض</value></data>
+  <data name="Whom you told, and how — e.g. Dr Khaled by phone" xml:space="preserve"><value>من أبلغت وكيف — مثلاً د. خالد هاتفياً</value></data>
+  <data name="Write whom you told" xml:space="preserve"><value>اكتب من أبلغته</value></data>
+  <data name="analytes" xml:space="preserve"><value>مؤشرات</value></data>
+  <data name="collected at" xml:space="preserve"><value>سُحبت</value></data>
+  <data name="lab:Collected" xml:space="preserve"><value>سُحبت العينة</value></data>
+  <data name="lab:Ordered" xml:space="preserve"><value>مطلوب</value></data>
+  <data name="lab:Received" xml:space="preserve"><value>في المختبر</value></data>
+  <data name="lab:Resulted" xml:space="preserve"><value>بانتظار الاعتماد</value></data>
+  <data name="lab:Verified" xml:space="preserve"><value>معتمدة</value></data>
+  <data name="minutes, order to verification, today" xml:space="preserve"><value>دقيقة من الطلب للاعتماد، اليوم</value></data>
+  <data name="not set up yet" xml:space="preserve"><value>لم يُعدّ بعد</value></data>
+  <data name="the doctor has not been recorded as told yet." xml:space="preserve"><value>لم يُسجَّل إبلاغ الطبيب بعد.</value></data>
+  <data name="{0} needs a number" xml:space="preserve"><value>{0} يحتاج رقماً</value></data>
+  <data name="Lab results" xml:space="preserve"><value>نتائج التحاليل</value></data>
+  <data name="still in the lab — shown once verified" xml:space="preserve"><value>ما زالت في المختبر — تظهر بعد الاعتماد</value></data>
+  <data name="No verified lab results yet." xml:space="preserve"><value>لا توجد نتائج تحاليل معتمدة بعد.</value></data>
+  <data name="Laboratory (module)" xml:space="preserve"><value>المختبر</value></data>
+  <data name="Collect the specimen of {0} for {1} ({2})?" xml:space="preserve"><value>تأكيد سحب عينة الطلب {0} للمريض {1} ({2})؟</value></data>
+  <data name="Receive the specimen of {0} for {1} ({2}) in the lab?" xml:space="preserve"><value>تأكيد استلام عينة الطلب {0} للمريض {1} ({2}) في المختبر؟</value></data>
+  <data name="Verify these results? Once verified they reach the doctor and the patient file and can no longer be changed." xml:space="preserve"><value>تأكيد اعتماد النتائج؟ بعد الاعتماد تصل للطبيب وملف المريض ولا يمكن تعديلها.</value></data>
+  <data name="Record that the doctor was told of this critical value?" xml:space="preserve"><value>تأكيد تسجيل أن الطبيب أُبلغ بهذه القيمة الحرجة؟</value></data>
+  <data name="Change the priority of {0} to {1}?" xml:space="preserve"><value>تأكيد تغيير أولوية الطلب {0} إلى {1}؟</value></data>
+  <data name="1 · Whom to tell?" xml:space="preserve"><value>١ · من يُبلَّغ؟</value></data>
+  <data name="2 · Following it up" xml:space="preserve"><value>٢ · متابعة الإبلاغ</value></data>
+  <data name="A full-screen alert with sound on any screen of the whole system; closes only on acknowledgement with read-back, and escalates if not acknowledged." xml:space="preserve"><value>تنبيه يملأ الشاشة بصوت في أي شاشة من النظام كله، لا يُغلق إلا بالاستلام وقراءة القيمة، ويتصاعد إن لم يُستلم.</value></data>
+  <data name="A notice to the ordering doctor when the result is verified — it does not stop his work." xml:space="preserve"><value>تنبيه للطبيب الطالب عند اعتماد النتيجة — لا يوقف عمله.</value></data>
+  <data name="A notice — the value is out of range on an urgent order" xml:space="preserve"><value>تنبيه — القيمة خارج المعدل في طلب عاجل</value></data>
+  <data name="Abnormal on a STAT/urgent order (L / H)" xml:space="preserve"><value>غير طبيعية لطلب عاجل (L / H)</value></data>
+  <data name="Acknowledged" xml:space="preserve"><value>استُلم</value></data>
+  <data name="Acknowledged with read-back" xml:space="preserve"><value>استلم وقرأ القيمة</value></data>
+  <data name="Acknowledged with read-back — the lab sees it now" xml:space="preserve"><value>سُجّل الاستلام مع قراءة القيمة — يراه المختبر الآن</value></data>
+  <data name="Alert by danger" xml:space="preserve"><value>شكل التنبيه حسب الخطر</value></data>
+  <data name="Alert sent to {0}" xml:space="preserve"><value>أُرسل التنبيه إلى {0}</value></data>
+  <data name="An alert on any screen of the system that blocks work until acknowledged — if he is not signed in, it shows the moment he opens the system" xml:space="preserve"><value>تنبيه يظهر في أي شاشة من النظام ويمنع العمل حتى الاستلام — ولو مش داخل النظام يظهر أول ما يفتحه</value></data>
+  <data name="Awaiting acknowledgement with read-back" xml:space="preserve"><value>بانتظار الاستلام وقراءة القيمة</value></data>
+  <data name="Choose the doctor to tell" xml:space="preserve"><value>اختر الطبيب الذي سيُبلَّغ</value></data>
+  <data name="Choose the doctor to tell: he gets an alert on any screen of the system until he reads the value back. The flag stays raised until then." xml:space="preserve"><value>اختر الطبيب الذي سيُبلَّغ: يصله تنبيه في أي شاشة من النظام حتى يقرأ القيمة. تبقى العلامة مرفوعة حتى ذلك.</value></data>
+  <data name="Choose the doctor, then send" xml:space="preserve"><value>اختر الطبيب ثم أرسل</value></data>
+  <data name="Critical (LL / HH)" xml:space="preserve"><value>حرجة (LL / HH)</value></data>
+  <data name="Critical limit" xml:space="preserve"><value>الحد الحرج</value></data>
+  <data name="Critical value — act now" xml:space="preserve"><value>قيمة حرجة — تحتاج تصرفاً الآن</value></data>
+  <data name="Escalated to you — {0} did not acknowledge it" xml:space="preserve"><value>صُعّد إليك — لم يستلمه {0}</value></data>
+  <data name="Escalated to {0}" xml:space="preserve"><value>صُعّد إلى {0}</value></data>
+  <data name="Escalation after {0} minutes" xml:space="preserve"><value>تصعيد بعد {0} دقائق</value></data>
+  <data name="Following it up" xml:space="preserve"><value>متابعة الإبلاغ</value></data>
+  <data name="From the laboratory" xml:space="preserve"><value>من المختبر</value></data>
+  <data name="How" xml:space="preserve"><value>طريقة الإبلاغ</value></data>
+  <data name="It opens on his next screen or sign-in" xml:space="preserve"><value>يظهر في شاشته التالية أو عند دخوله</value></data>
+  <data name="No alert sent yet" xml:space="preserve"><value>لم يُرسل تنبيه بعد</value></data>
+  <data name="No alert; it appears in the patient file once verified." xml:space="preserve"><value>لا تنبيه؛ تظهر في ملف المريض بعد الاعتماد.</value></data>
+  <data name="No doctors yet. Add them in practitioners." xml:space="preserve"><value>لا يوجد أطباء بعد. أضفهم من الممارسين الصحيين.</value></data>
+  <data name="No other doctor of the department has a user — escalation has no one to reach" xml:space="preserve"><value>لا يوجد طبيب آخر في القسم له مستخدم — التصعيد لن يصل لأحد</value></data>
+  <data name="Normal" xml:space="preserve"><value>الطبيعي</value></data>
+  <data name="Not seen yet" xml:space="preserve"><value>لم يره بعد</value></data>
+  <data name="Notify a critical value" xml:space="preserve"><value>إبلاغ قيمة حرجة</value></data>
+  <data name="Notify the doctor" xml:space="preserve"><value>إبلاغ الطبيب</value></data>
+  <data name="On every screen of the system" xml:space="preserve"><value>على كل شاشات النظام</value></data>
+  <data name="Open patient file" xml:space="preserve"><value>فتح ملف المريض</value></data>
+  <data name="Open the result" xml:space="preserve"><value>فتح النتيجة</value></data>
+  <data name="Or another doctor" xml:space="preserve"><value>أو طبيب آخر</value></data>
+  <data name="Ordering doctor" xml:space="preserve"><value>الطبيب الطالب</value></data>
+  <data name="Out-of-range result on an urgent order" xml:space="preserve"><value>نتيجة خارج المعدل في طلب عاجل</value></data>
+  <data name="Outpatient" xml:space="preserve"><value>عيادات خارجية</value></data>
+  <data name="Phone call — I record it myself" xml:space="preserve"><value>مكالمة هاتفية — أسجّلها بنفسي</value></data>
+  <data name="Preview what the doctor sees" xml:space="preserve"><value>معاينة ما يراه الطبيب</value></data>
+  <data name="Preview — this is what the doctor sees" xml:space="preserve"><value>معاينة — هذا ما يراه الطبيب</value></data>
+  <data name="Read back on screen:" xml:space="preserve"><value>قرأ القيمة على الشاشة:</value></data>
+  <data name="Reading the value back prevents a transcription error; it is recorded with your name and time in the patient file." xml:space="preserve"><value>قراءة القيمة مرة أخرى تمنع الخطأ في النقل، وتُسجَّل باسمك ووقتك في ملف المريض.</value></data>
+  <data name="Received — I will act" xml:space="preserve"><value>استلمت وسأتصرف</value></data>
+  <data name="Reminder — not acknowledged yet" xml:space="preserve"><value>تذكير — لم يُستلم بعد</value></data>
+  <data name="Result verified" xml:space="preserve"><value>اعتُمدت النتيجة</value></data>
+  <data name="Screen + text message" xml:space="preserve"><value>شاشة + رسالة نصية</value></data>
+  <data name="Seen by the doctor" xml:space="preserve"><value>رآه الطبيب</value></data>
+  <data name="Send the critical alert" xml:space="preserve"><value>إرسال تنبيه القيمة الحرجة</value></data>
+  <data name="Send the critical alert to {0}? It will block his screen until he reads the value back." xml:space="preserve"><value>إرسال تنبيه القيمة الحرجة إلى {0}؟ سيوقف شاشته حتى يقرأ القيمة.</value></data>
+  <data name="Text message to his mobile" xml:space="preserve"><value>رسالة نصية إلى جواله</value></data>
+  <data name="The alert opened on his screen" xml:space="preserve"><value>فتح التنبيه على شاشته</value></data>
+  <data name="The call was recorded" xml:space="preserve"><value>سُجّلت المكالمة</value></data>
+  <data name="The lab sees it live; the red flag clears only on acknowledgement" xml:space="preserve"><value>يراها المختبر مباشرة؛ لا تُغلق العلامة الحمراء إلا بالاستلام</value></data>
+  <data name="The ordering doctor is preselected; a doctor of his department or any other doctor can be chosen instead" xml:space="preserve"><value>الطبيب الطالب مختار مسبقاً، ويمكن اختيار طبيب من قسمه أو أي طبيب آخر</value></data>
+  <data name="To confirm, type the value as you read it" xml:space="preserve"><value>للتأكيد اكتب القيمة كما قرأتها</value></data>
+  <data name="alert waiting" xml:space="preserve"><value>تنبيه بانتظار الاستلام</value></data>
+  <data name="choose whom to tell; he gets an alert sized to the danger and his acknowledgement is recorded." xml:space="preserve"><value>اختر من يُبلَّغ؛ يصله تنبيه بحجم الخطر ويُسجَّل استلامه.</value></data>
+  <data name="has no user in the system — an alert cannot reach him" xml:space="preserve"><value>ليس له مستخدم في النظام — لا يصله التنبيه</value></data>
+  <data name="just now" xml:space="preserve"><value>الآن</value></data>
+  <data name="left before the reminder" xml:space="preserve"><value>متبقٍ قبل التذكير</value></data>
+  <data name="needs an SMS provider, not connected yet" xml:space="preserve"><value>يحتاج ربط مزوّد رسائل، غير مربوط بعد</value></data>
+  <data name="not on duty now" xml:space="preserve"><value>خارج دوامه الآن</value></data>
+  <data name="on duty now" xml:space="preserve"><value>مناوب الآن</value></data>
+  <data name="reminded" xml:space="preserve"><value>تم التذكير</value></data>
+  <data name="sent by {0}" xml:space="preserve"><value>أرسلها {0}</value></data>
+  <data name="the alert sounded again on his screen" xml:space="preserve"><value>عاد التنبيه بصوت على شاشته</value></data>
+  <data name="the doctor acknowledged it." xml:space="preserve"><value>استلمها الطبيب.</value></data>
+  <data name="to {0} — same department" xml:space="preserve"><value>إلى {0} — نفس القسم</value></data>
+  <data name="{0} min ago" xml:space="preserve"><value>منذ {0} دقيقة</value></data>
+  <data name="An alert to this doctor is already waiting" xml:space="preserve"><value>يوجد تنبيه لهذا الطبيب بانتظار الاستلام</value></data>
+  <data name="The doctor already acknowledged this critical value" xml:space="preserve"><value>الطبيب استلم هذه القيمة الحرجة بالفعل</value></data>
+  <data name="The value you typed is not the value sent. Read it again" xml:space="preserve"><value>القيمة التي كتبتها ليست القيمة المرسلة. اقرأها مرة أخرى</value></data>
+  <data name="This doctor has no user in the system, so an alert cannot reach him" xml:space="preserve"><value>هذا الطبيب ليس له مستخدم في النظام، فلا يصله التنبيه</value></data>
+  <data name="Other values out of range" xml:space="preserve"><value>قيم أخرى خارج المعدل</value></data>
+  <data name="Confirm that you received the critical value {0} for {1}? It is recorded with your name and time in the patient file." xml:space="preserve"><value>تأكيد استلام القيمة الحرجة {0} للمريض {1}؟ سيُسجَّل الاستلام باسمك ووقتك في ملف المريض.</value></data>
+  <data name="Confirm" xml:space="preserve"><value>تأكيد</value></data>
+  <data name="A critical result — tell the doctor now" xml:space="preserve"><value>نتيجة حرجة — أبلغ الطبيب الآن</value></data>
+  <data name="A patient is being scanned in this room" xml:space="preserve"><value>يوجد مريض قيد التصوير في هذه الغرفة</value></data>
+  <data name="Add the machines and their modality before patients arrive." xml:space="preserve"><value>أضف الأجهزة ونوعها قبل وصول المرضى.</value></data>
+  <data name="Another room uses this code" xml:space="preserve"><value>هذا الرمز مستخدم لغرفة أخرى</value></data>
+  <data name="Arrived" xml:space="preserve"><value>حضر</value></data>
+  <data name="Arrived at radiology" xml:space="preserve"><value>حضر إلى الأشعة</value></data>
+  <data name="Choose a working room of this exam's modality" xml:space="preserve"><value>اختر غرفة عاملة من نوع هذا الفحص</value></data>
+  <data name="Choose whether the result is normal, abnormal or critical" xml:space="preserve"><value>اختر تصنيف النتيجة: طبيعي أو غير طبيعي أو حرج</value></data>
+  <data name="Confirm that you received the critical imaging result {0} for {1}? It is recorded with your name and time in the patient file." xml:space="preserve"><value>تأكيد استلام النتيجة الحرجة لفحص {0} للمريض {1}؟ سيُسجَّل الاستلام باسمك ووقتك في ملف المريض.</value></data>
+  <data name="Contrast allergy" xml:space="preserve"><value>حساسية صبغة</value></data>
+  <data name="Critical result:" xml:space="preserve"><value>نتيجة حرجة:</value></data>
+  <data name="Each machine takes the patients of its modality; one in maintenance takes nobody" xml:space="preserve"><value>كل جهاز يستقبل مرضى نوعه، والجهاز في الصيانة لا يستقبل أحداً</value></data>
+  <data name="Earlier reports" xml:space="preserve"><value>تقارير سابقة</value></data>
+  <data name="End maintenance" xml:space="preserve"><value>إنهاء الصيانة</value></data>
+  <data name="End scan" xml:space="preserve"><value>إنهاء التصوير</value></data>
+  <data name="End the maintenance of {0}? It takes patients again." xml:space="preserve"><value>إنهاء صيانة {0}؟ سيستقبل المرضى مرة أخرى.</value></data>
+  <data name="End the scan before writing the report" xml:space="preserve"><value>أنهِ التصوير قبل كتابة التقرير</value></data>
+  <data name="End the scan? The room is freed and the report can be written." xml:space="preserve"><value>إنهاء التصوير؟ تتحرر الغرفة ويمكن كتابة التقرير.</value></data>
+  <data name="Enter a code of up to 20 characters" xml:space="preserve"><value>أدخل رمزاً حتى 20 حرفاً</value></data>
+  <data name="Every imaging exam is a service of the Radiology category" xml:space="preserve"><value>كل فحص أشعة هو خدمة من فئة الأشعة</value></data>
+  <data name="Every imaging order a doctor signs arrives here" xml:space="preserve"><value>كل طلب أشعة يوقّعه الطبيب يصل إلى هنا</value></data>
+  <data name="Exam" xml:space="preserve"><value>الفحص</value></data>
+  <data name="Exam trail" xml:space="preserve"><value>سجل الفحص</value></data>
+  <data name="Exams &amp; rooms" xml:space="preserve"><value>الفحوصات والأجهزة</value></data>
+  <data name="Findings" xml:space="preserve"><value>النتائج</value></data>
+  <data name="Free (room)" xml:space="preserve"><value>متاحة</value></data>
+  <data name="Imaging order" xml:space="preserve"><value>طلب أشعة</value></data>
+  <data name="Imaging report" xml:space="preserve"><value>تقرير الأشعة</value></data>
+  <data name="Imaging reports" xml:space="preserve"><value>تقارير الأشعة</value></data>
+  <data name="Imaging rooms" xml:space="preserve"><value>غرف الأجهزة</value></data>
+  <data name="Impression" xml:space="preserve"><value>الخلاصة</value></data>
+  <data name="Impression category" xml:space="preserve"><value>النتيجة المختصرة</value></data>
+  <data name="In maintenance" xml:space="preserve"><value>في الصيانة</value></data>
+  <data name="Its price lives in the service catalogue; here are its modality, whether it uses contrast, and the text its report starts from." xml:space="preserve"><value>سعره في دليل الخدمات؛ وهنا نوع الجهاز، وهل يستخدم صبغة، والنص الذي يبدأ منه تقريره.</value></data>
+  <data name="Load the standard rooms &amp; exams" xml:space="preserve"><value>تحميل الأجهزة والفحوصات القياسية</value></data>
+  <data name="Load the standard rooms and the setup of the starter imaging exams?" xml:space="preserve"><value>تحميل الأجهزة القياسية وإعداد فحوصات الأشعة الأساسية؟</value></data>
+  <data name="Maintenance" xml:space="preserve"><value>صيانة</value></data>
+  <data name="Mark the patient arrived before scanning" xml:space="preserve"><value>سجّل حضور المريض قبل التصوير</value></data>
+  <data name="Mark {0} arrived for {1}? A room of the exam's type is given." xml:space="preserve"><value>تسجيل حضور {0} لفحص {1}؟ تُحدَّد له غرفة من نوع الفحص.</value></data>
+  <data name="Modality" xml:space="preserve"><value>نوع الجهاز</value></data>
+  <data name="No imaging orders here." xml:space="preserve"><value>لا توجد طلبات أشعة هنا.</value></data>
+  <data name="No imaging rooms yet" xml:space="preserve"><value>لا توجد أجهزة أشعة بعد</value></data>
+  <data name="No patient" xml:space="preserve"><value>لا يوجد مريض</value></data>
+  <data name="No radiology services yet. Add them in the service catalogue." xml:space="preserve"><value>لا توجد خدمات أشعة بعد. أضفها من دليل الخدمات.</value></data>
+  <data name="No signed imaging reports yet." xml:space="preserve"><value>لا توجد تقارير أشعة معتمدة بعد.</value></data>
+  <data name="No working room does this modality. Add one in radiology setup, or end its maintenance" xml:space="preserve"><value>لا يوجد جهاز عامل من هذا النوع. أضف واحداً في إعداد الأشعة أو أنهِ صيانته</value></data>
+  <data name="Not connected yet" xml:space="preserve"><value>غير مربوط بعد</value></data>
+  <data name="Open images in PACS" xml:space="preserve"><value>فتح الصور في PACS</value></data>
+  <data name="Patient ready" xml:space="preserve"><value>المريض جاهز</value></data>
+  <data name="Patients are waiting in this room; it keeps its modality until they are done" xml:space="preserve"><value>يوجد مرضى بانتظار هذه الغرفة؛ يبقى نوعها كما هو حتى ينتهوا</value></data>
+  <data name="Put {0} in maintenance? It takes no patients until you end it." xml:space="preserve"><value>إدخال {0} في الصيانة؟ لن يستقبل مرضى حتى تنهي الصيانة.</value></data>
+  <data name="Queue" xml:space="preserve"><value>في الانتظار</value></data>
+  <data name="Radiology" xml:space="preserve"><value>الأشعة</value></data>
+  <data name="Radiology worklist" xml:space="preserve"><value>قائمة عمل الأشعة</value></data>
+  <data name="Report signed" xml:space="preserve"><value>اعتُمد التقرير</value></data>
+  <data name="Report signed — the doctor can see it" xml:space="preserve"><value>اعتُمد التقرير — يراه الطبيب الآن</value></data>
+  <data name="Report template" xml:space="preserve"><value>قالب التقرير</value></data>
+  <data name="Report template (English)" xml:space="preserve"><value>قالب التقرير (إنجليزي)</value></data>
+  <data name="Report written" xml:space="preserve"><value>كُتب التقرير</value></data>
+  <data name="Reporting" xml:space="preserve"><value>كتابة التقرير</value></data>
+  <data name="Room with the shortest queue" xml:space="preserve"><value>الغرفة الأقل انتظاراً</value></data>
+  <data name="Scan ended" xml:space="preserve"><value>انتهى التصوير</value></data>
+  <data name="Scan started" xml:space="preserve"><value>بدأ التصوير</value></data>
+  <data name="Scanning" xml:space="preserve"><value>قيد التصوير</value></data>
+  <data name="Sign report" xml:space="preserve"><value>اعتماد التقرير</value></data>
+  <data name="Sign this report as CRITICAL? You will then choose the doctor to tell." xml:space="preserve"><value>اعتماد التقرير كنتيجة حرجة؟ ستختار بعدها الطبيب الذي سيُبلَّغ.</value></data>
+  <data name="Sign this report? Once signed it reaches the doctor and the patient file and can no longer be changed." xml:space="preserve"><value>اعتماد التقرير؟ بعد الاعتماد يصل للطبيب وملف المريض ولا يمكن تعديله.</value></data>
+  <data name="Signed by" xml:space="preserve"><value>اعتمده</value></data>
+  <data name="Start scan" xml:space="preserve"><value>بدء التصوير</value></data>
+  <data name="Start the scan of {0} in {1}?" xml:space="preserve"><value>بدء تصوير {0} في {1}؟</value></data>
+  <data name="The doctor was told of the critical result" xml:space="preserve"><value>أُبلغ الطبيب بالنتيجة الحرجة</value></data>
+  <data name="The patient has already arrived" xml:space="preserve"><value>المريض مسجل حضوره بالفعل</value></data>
+  <data name="The radiographer performs the scan and the radiologist writes and signs the report; only a signed report reaches the doctor and the patient file." xml:space="preserve"><value>فني الأشعة يجري التصوير، وأخصائي الأشعة يكتب التقرير ويعتمده؛ ولا يصل للطبيب وملف المريض إلا التقرير المعتمد.</value></data>
+  <data name="The report is written once the scan has ended." xml:space="preserve"><value>يُكتب التقرير بعد انتهاء التصوير.</value></data>
+  <data name="The room is scanning another patient" xml:space="preserve"><value>الغرفة تصوّر مريضاً آخر</value></data>
+  <data name="The scan has not started" xml:space="preserve"><value>التصوير لم يبدأ</value></data>
+  <data name="This exam uses contrast and the patient's file records an allergy to it:" xml:space="preserve"><value>هذا الفحص يستخدم صبغة وملف المريض يسجّل حساسية منها:</value></data>
+  <data name="This report is signed and locked" xml:space="preserve"><value>هذا التقرير معتمد ومقفل</value></data>
+  <data name="This room is in maintenance" xml:space="preserve"><value>هذه الغرفة في الصيانة</value></data>
+  <data name="Unknown impression category" xml:space="preserve"><value>تصنيف غير معروف</value></data>
+  <data name="Unknown modality" xml:space="preserve"><value>نوع جهاز غير معروف</value></data>
+  <data name="Uses contrast" xml:space="preserve"><value>يستخدم صبغة</value></data>
+  <data name="Working" xml:space="preserve"><value>يعمل</value></data>
+  <data name="Write report" xml:space="preserve"><value>كتابة التقرير</value></data>
+  <data name="Write the findings and the impression before signing" xml:space="preserve"><value>اكتب النتائج والخلاصة قبل الاعتماد</value></data>
+  <data name="imp:Abnormal" xml:space="preserve"><value>غير طبيعي</value></data>
+  <data name="imp:Critical" xml:space="preserve"><value>حرج</value></data>
+  <data name="imp:Normal" xml:space="preserve"><value>طبيعي</value></data>
+  <data name="mod:CT" xml:space="preserve"><value>مقطعية</value></data>
+  <data name="mod:MR" xml:space="preserve"><value>رنين</value></data>
+  <data name="mod:US" xml:space="preserve"><value>موجات صوتية</value></data>
+  <data name="mod:XR" xml:space="preserve"><value>أشعة سينية</value></data>
+  <data name="on today's list" xml:space="preserve"><value>في قائمة اليوم</value></data>
+  <data name="rad:Arrived" xml:space="preserve"><value>حضر</value></data>
+  <data name="rad:Reporting" xml:space="preserve"><value>قيد كتابة التقرير</value></data>
+  <data name="rad:Scanning" xml:space="preserve"><value>قيد التصوير</value></data>
+  <data name="rad:Scheduled" xml:space="preserve"><value>مجدول</value></data>
+  <data name="rad:Signed" xml:space="preserve"><value>معتمد</value></data>
+  <data name="still in radiology — shown once signed" xml:space="preserve"><value>ما زالت في الأشعة — تظهر بعد الاعتماد</value></data>
+  <data name="with contrast" xml:space="preserve"><value>بالصبغة</value></data>
+  <data name="{0} has a recorded contrast allergy. Start the scan anyway?" xml:space="preserve"><value>{0} لديه حساسية صبغة مسجلة. هل تبدأ التصوير رغم ذلك؟</value></data>
+  <data name="Critical result — act now" xml:space="preserve"><value>نتيجة حرجة — تحتاج تصرفاً الآن</value></data>
+  <data name="From radiology" xml:space="preserve"><value>من الأشعة</value></data>
+  <data name="A batch is near expiry within (days)" xml:space="preserve"><value>تُعد الدفعة قريبة الانتهاء خلال (يوم)</value></data>
+  <data name="A dose label from Report Studio" xml:space="preserve"><value>ملصق الجرعة من Report Studio</value></data>
+  <data name="A line on the visit's bill" xml:space="preserve"><value>سطر على فاتورة الزيارة</value></data>
+  <data name="A stock issue from the pharmacy store" xml:space="preserve"><value>حركة صرف من مستودع الصيدلية</value></data>
+  <data name="A text message to the patient with the directions" xml:space="preserve"><value>رسالة للمريض بطريقة الاستخدام</value></data>
+  <data name="Average dispense time" xml:space="preserve"><value>متوسط زمن الصرف</value></data>
+  <data name="Batch" xml:space="preserve"><value>الدفعة</value></data>
+  <data name="Below reorder point" xml:space="preserve"><value>أصناف تحت حد الطلب</value></data>
+  <data name="Check" xml:space="preserve"><value>مراجعة</value></data>
+  <data name="Check before dispensing" xml:space="preserve"><value>راجع قبل الصرف</value></data>
+  <data name="Choose the pharmacy store" xml:space="preserve"><value>اختر مستودع الصيدلية</value></data>
+  <data name="Choose the pharmacy store in the pharmacy settings" xml:space="preserve"><value>اختر مستودع الصيدلية من إعدادات الصيدلية</value></data>
+  <data name="Confirm dispensing" xml:space="preserve"><value>تأكيد الصرف</value></data>
+  <data name="Dispense" xml:space="preserve"><value>صرف</value></data>
+  <data name="Dispense {0} to {1}? The stock leaves the pharmacy store and the items are charged on the bill." xml:space="preserve"><value>صرف الروشتة {0} للمريض {1}؟ سيُخصم المخزون من مستودع الصيدلية وتُضاف الأصناف على الفاتورة.</value></data>
+  <data name="Dispensed" xml:space="preserve"><value>صُرفت</value></data>
+  <data name="Dispensed — the stock left the store and the bill was charged" xml:space="preserve"><value>تم الصرف — خُصم المخزون وأُضيفت الأصناف على الفاتورة</value></data>
+  <data name="Dispensing queue" xml:space="preserve"><value>قائمة الصرف</value></data>
+  <data name="Every prescription a doctor signs arrives here" xml:space="preserve"><value>كل روشتة يوقّعها الطبيب تصل إلى هنا</value></data>
+  <data name="In the pharmacy" xml:space="preserve"><value>متوفر بالصيدلية</value></data>
+  <data name="Inpatient" xml:space="preserve"><value>تنويم</value></data>
+  <data name="Inventory — nearest-expiry batch first (FEFO)" xml:space="preserve"><value>المخزون — صرف بالدفعة الأقرب انتهاءً (FEFO)</value></data>
+  <data name="Items (count)" xml:space="preserve"><value>الأصناف</value></data>
+  <data name="Main price list" xml:space="preserve"><value>القائمة الرئيسية</value></data>
+  <data name="Map the cost-of-goods account of {0}'s inventory category first" xml:space="preserve"><value>اربط حساب تكلفة البضاعة لفئة {0} في المخزون أولاً</value></data>
+  <data name="Mark prescription {0} as reviewed?" xml:space="preserve"><value>تأكيد مراجعة الروشتة {0}؟</value></data>
+  <data name="Medicines are dispensed from one warehouse of the inventory. Choose it in the pharmacy settings before dispensing." xml:space="preserve"><value>تُصرف الأدوية من مستودع واحد في المخزون. اختره من إعدادات الصيدلية قبل الصرف.</value></data>
+  <data name="Near expiry is 1 to 365 days" xml:space="preserve"><value>مدة قرب الانتهاء من 1 إلى 365 يوماً</value></data>
+  <data name="Near-expiry batches" xml:space="preserve"><value>دفعات قريبة الانتهاء</value></data>
+  <data name="No prescriptions here." xml:space="preserve"><value>لا توجد روشتات هنا.</value></data>
+  <data name="Not stocked" xml:space="preserve"><value>غير متوفر</value></data>
+  <data name="On dispensing" xml:space="preserve"><value>عند الصرف</value></data>
+  <data name="On hand" xml:space="preserve"><value>الرصيد</value></data>
+  <data name="Open the bill" xml:space="preserve"><value>فتح الفاتورة</value></data>
+  <data name="Patient pays" xml:space="preserve"><value>يدفع المريض</value></data>
+  <data name="Pharmacist's note (optional)" xml:space="preserve"><value>ملاحظة الصيدلي (اختياري)</value></data>
+  <data name="Pharmacy settings" xml:space="preserve"><value>إعدادات الصيدلية</value></data>
+  <data name="Pharmacy stock" xml:space="preserve"><value>مخزون الصيدلية</value></data>
+  <data name="Pharmacy store (warehouse)" xml:space="preserve"><value>مستودع الصيدلية</value></data>
+  <data name="Prescriptions waiting" xml:space="preserve"><value>روشتات بالانتظار</value></data>
+  <data name="Review the prescription before dispensing" xml:space="preserve"><value>راجع الروشتة قبل الصرف</value></data>
+  <data name="Reviewed by the pharmacist" xml:space="preserve"><value>راجعها الصيدلي</value></data>
+  <data name="This prescription was already dispensed" xml:space="preserve"><value>هذه الروشتة صُرفت بالفعل</value></data>
+  <data name="This prescription was already reviewed" xml:space="preserve"><value>هذه الروشتة رُوجعت بالفعل</value></data>
+  <data name="in the pharmacy store" xml:space="preserve"><value>في مستودع الصيدلية</value></data>
+  <data name="minutes, today" xml:space="preserve"><value>دقيقة، اليوم</value></data>
+  <data name="rx:Dispensed" xml:space="preserve"><value>صُرفت</value></data>
+  <data name="rx:New" xml:space="preserve"><value>جديدة</value></data>
+  <data name="rx:Verified" xml:space="preserve"><value>راجعها الصيدلي</value></data>
+  <data name="within {0} days" xml:space="preserve"><value>خلال {0} يوماً</value></data>
+  <data name="{0} is not stocked — the patient buys it outside; it is not charged" xml:space="preserve"><value>{0} غير متوفر بالصيدلية — يشتريه المريض من الخارج ولا يُحتسب</value></data>
+  <data name="{0} is prescribed twice" xml:space="preserve"><value>{0} موصوف مرتين</value></data>
+  <data name="{0} — the file records an allergy it mentions: {1}" xml:space="preserve"><value>{0} — ملف المريض يسجّل حساسية منه: {1}</value></data>
+  <data name="{0}: the batch that leaves first expires soon" xml:space="preserve"><value>{0}: الدفعة التي ستُصرف أولاً قريبة الانتهاء</value></data>
+  <data name="{0}: the store holds {1}, the prescription asks {2}" xml:space="preserve"><value>{0}: الرصيد {1} والمطلوب {2}</value></data>
+  <data name="{0}: {1}" xml:space="preserve"><value>{0}: {1}</value></data>
+  <data name="Pharmacy (module)" xml:space="preserve"><value>الصيدلية</value></data>
+</root>

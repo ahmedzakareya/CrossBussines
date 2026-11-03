@@ -101,6 +101,15 @@ namespace CrossBuy.Models
         protected override (string, string) DeniedRedirect => ("Index", "Project");
     }
 
+    /// Hospital module permission. action = read | confidential-view | manage
+    [AttributeUsage(AttributeTargets.Method)]
+    public sealed class HospitalPermAttribute : ModulePermAttributeBase
+    {
+        public HospitalPermAttribute(string action) : base(action) { }
+        protected override string Scope => EntityRegistry.ScopeHospital;
+        protected override (string, string) DeniedRedirect => ("Index", "Home");
+    }
+
     /// Tasks module permission. action = read | create | edit | assign | reassign | complete | reopen | manage
     [AttributeUsage(AttributeTargets.Method)]
     public sealed class TaskPermAttribute : ModulePermAttributeBase

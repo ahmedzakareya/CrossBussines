@@ -72,6 +72,10 @@ public sealed class PlatformShellGuardTests
         "_Layout.cshtml", "_LayoutAccounting.cshtml", "_LayoutBackend.cshtml", "_LayoutEmbed.cshtml",
         "_LayoutHyperPos.cshtml", "_LayoutInventory.cshtml", "_LayoutManufacturing.cshtml",
         "_LayoutPeople.cshtml", "_LayoutPos.cshtml", "_LayoutPosApp.cshtml",
+        // The hospital pack's own shell, on the owner's instruction (2026-11-01: "المستشفى layout لحالها
+        // انسخها من الحسابات"). A byte copy of _LayoutAccounting with the hospital menu and title, so the
+        // visual language stays one; only the module chrome differs.
+        "_LayoutHospital.cshtml",
         // Orphaned: referenced by no view. Kept in the list so its DELETION is a deliberate act rather
         // than something this guard forces, but Retired_shells_are_referenced_by_nothing keeps it dead.
         "_LayoutWorkspace.cshtml",

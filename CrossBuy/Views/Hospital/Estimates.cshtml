@@ -1,0 +1,196 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model IReadOnlyList<HospitalEstimateRow>
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Estimates & deposits"].Value;
+    var packages = (ViewBag.Packages as IReadOnlyList<HospitalPackageRow>) ?? Array.Empty<HospitalPackageRow>();
+    var rooms = (ViewBag.RoomTypes as List<HospitalRoomType>) ?? new();
+    string? cur = ViewBag.Currency as string;
+    bool canBill = ViewBag.CanBill == true;
+    string Money(decimal v) => v.ToString("N3", System.Globalization.CultureInfo.InvariantCulture);
+    string St(string s) => s switch { HospitalEstimateStatus.Issued => "success", HospitalEstimateStatus.Cancelled => "secondary", _ => "primary" };
+    string Avatar(string? photo, string nameEn) => photo != null
+        ? $"<div class=\"symbol symbol-35px symbol-circle flex-shrink-0\"><img src=\"{photo}\" alt=\"\" style=\"object-fit:cover\" data-initials=\"{HospitalUi.Initials(nameEn)}\" /></div>"
+        : $"<div class=\"symbol symbol-35px symbol-circle flex-shrink-0\"><span class=\"symbol-label fw-bold fs-8 hp-initials\">{HospitalUi.Initials(nameEn)}</span></div>";
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Estimates & deposits"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item text-muted">@T["Finance"]</li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@T["Estimates"]</li>
+            </ul>
+        </div>
+        <div class="d-flex align-items-center gap-2 gap-lg-3 d-print-none">
+            <a href="@Url.Action("Packages")" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-package fs-4"></i>@T["Packages"]</a>
+        </div>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (canBill)
+        {
+            <div class="row g-5 g-xl-8 mb-5" data-builder>
+                <div class="col-xl-8"><div class="card h-100">
+                    <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
+                        <span class="card-label fw-bold text-gray-900 fs-4">@T["Procedure estimate"]</span>
+                        <span class="text-muted mt-1 fw-semibold fs-7" data-cover-line>@T["Choose the patient: the estimate is priced on their price list and split by their cover today"]</span>
+                    </div></div>
+                    <div class="card-body pt-2">
+                        <div class="row g-5 mb-6">
+                            <div class="col-md-6"><label class="form-label required">@T["Patient"]</label><select class="form-select form-select-solid" data-e-patient data-placeholder="@T["Search by name or MRN"]"></select></div>
+                            <div class="col-md-6"><label class="form-label">@T["Package / procedure"]</label><select class="form-select form-select-solid" data-e-package data-control="select2" data-allow-clear="true" data-placeholder="@T["No package"]">
+                                <option></option>
+                                @foreach (var p in packages) { <option value="@p.Package.ID" data-room="@p.Package.RoomTypeId" data-nights="@p.Package.IncludedNights">@p.Package.Code · @DisplayName.Of(p.Package.Name, p.Package.NameEn)</option> }
+                            </select></div>
+                            <div class="col-md-4"><label class="form-label">@T["Room class"]</label><select class="form-select form-select-solid" data-e-room data-control="select2" data-allow-clear="true" data-hide-search="true" data-placeholder="@T["No stay"]">
+                                <option></option>
+                                @foreach (var r in rooms) { <option value="@r.ID">@DisplayName.Of(r.Name, r.NameEn ?? r.Name)</option> }
+                            </select></div>
+                            <div class="col-md-4"><label class="form-label">@T["Expected stay (nights)"]</label><input class="form-control form-control-solid hp-num" dir="ltr" type="number" min="0" max="365" value="0" data-e-nights /></div>
+                            <div class="col-md-4"><label class="form-label">@T["Deposit margin"]</label><div class="input-group input-group-solid"><input class="form-control form-control-solid hp-num" dir="ltr" type="number" min="0" max="200" value="20" data-e-margin /><span class="input-group-text">%</span></div></div>
+                            <div class="col-12"><label class="form-label">@T["Other expected services"]</label><select class="form-select form-select-solid" multiple data-e-services data-placeholder="@T["Search by code or name"]"></select></div>
+                        </div>
+                        <div class="table-responsive"><table class="table align-middle table-row-dashed fs-6 gy-3 mb-0">
+                            <thead><tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0"><th>@T["Item"]</th><th class="text-end w-75px">@T["Qty"]</th><th class="text-end">@T["Estimate"]</th><th class="text-end">@T["Payer's share"]</th></tr></thead>
+                            <tbody class="fw-semibold text-gray-700" data-e-lines><tr><td colspan="4" class="text-center text-muted py-8">@T["Choose a package or services to see the estimate."]</td></tr></tbody>
+                            <tfoot><tr class="fw-bolder fs-5"><td class="ps-4" colspan="2" style="color:#145DBF">@T["Estimated total"] <span class="text-muted fs-8">@cur</span></td><td class="text-end hp-num" data-e-gross>—</td><td></td></tr></tfoot>
+                        </table></div>
+                        <div class="text-muted fs-8 mt-3">@T["A package has a fixed price; anything beyond its limits (extra nights, complications, a second implant) is billed outside it."]</div>
+                    </div>
+                </div></div>
+                <div class="col-xl-4"><div class="card h-100">
+                    <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Required deposit"]</span></div></div>
+                    <div class="card-body pt-2">
+                        <div class="d-flex flex-stack py-3 border-bottom border-gray-200"><span class="fw-semibold text-gray-700">@T["Payer share"]</span><span class="fw-bold fs-4 hp-num text-gray-900" data-e-payer>—</span></div>
+                        <div class="d-flex flex-stack py-3 border-bottom border-gray-200"><span class="fw-semibold text-gray-700">@T["Expected patient share"]</span><span class="fw-bold fs-4 hp-num text-gray-900" data-e-patient-share>—</span></div>
+                        <div class="d-flex flex-stack py-3 mb-5"><span class="fw-semibold text-gray-700">@T["Deposit required"]</span><span class="fw-bold fs-2 hp-num" style="color:var(--cb-brand, #3A5795)" data-e-deposit>—</span></div>
+                        <div class="notice d-none rounded border border-dashed p-5 mb-5 hp-notice" data-e-preauth>
+                            <div class="fw-semibold"><h5 class="text-gray-900 fw-bold mb-1"><i class="ki-outline ki-shield-tick fs-4 me-1" style="color:var(--cb-brand, #3A5795)"></i>@T["Pre-authorisation needed"]</h5>
+                                <div class="fs-7 text-gray-700">@T["Issuing the estimate sends the payer an approval request."]</div></div>
+                        </div>
+                        <div class="text-muted fs-8 mb-5">@T["Collecting the deposit is done on the patient's bill; the estimate only states it."]</div>
+                        <button type="button" class="btn btn-primary w-100" data-e-save disabled><i class="ki-outline ki-document fs-4"></i>@T["Save estimate"]</button>
+                    </div>
+                </div></div>
+            </div>
+        }
+
+        <div class="card">
+            <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
+                <span class="card-label fw-bold text-gray-900 fs-4">@T["Estimates"]</span>
+                <span class="text-muted mt-1 fw-semibold fs-7">@T["A draft can be re-priced; an issued estimate is what the patient was told"]</span>
+            </div></div>
+            <div class="card-body pt-2">
+                @if (Model.Count == 0) { <div class="text-center text-muted py-15"><i class="ki-outline ki-calculator fs-3x text-gray-300 d-block mb-4"></i>@T["No estimates yet."]</div> }
+                else
+                {
+                    <div class="table-responsive"><table class="table align-middle table-row-dashed fs-6 gy-3 mb-0">
+                        <thead><tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0">
+                            <th class="w-125px">@T["Estimate"]</th><th>@T["Patient"]</th><th>@T["Package / procedure"]</th><th>@T["Payer"]</th><th class="text-end">@T["Estimated total"]</th><th class="text-end">@T["Deposit required"]</th><th>@T["Status"]</th>
+                        </tr></thead>
+                        <tbody class="fw-semibold text-gray-700">
+                            @foreach (var r in Model)
+                            {
+                                var e = r.Estimate;
+                                <tr>
+                                    <td><a href="@Url.Action("Estimate", new { id = e.ID })" class="badge hp-code fw-bold fs-8 hp-num">@e.EstimateNo</a><div class="text-muted fs-8 hp-num mt-1" data-fmt data-utc="@e.CreatedAt.ToString("o")">@e.CreatedAt.ToString("yyyy-MM-dd HH:mm")</div></td>
+                                    <td><div class="d-flex align-items-center gap-3">@Html.Raw(Avatar(r.Photo, r.PatientNameEn))
+                                        <div><a href="@Url.Action("Patient", new { id = e.PatientId })" class="fw-bold text-gray-900 text-hover-primary">@DisplayName.Of(r.PatientName, r.PatientNameEn)</a><div class="text-muted fs-8 hp-num">@r.Mrn</div></div></div></td>
+                                    <td>@(r.Package == null ? T["Services"].Value : DisplayName.Of(r.Package, r.PackageEn ?? r.Package))</td>
+                                    <td>@(r.Payer == null ? T["Self-pay"].Value : DisplayName.Of(r.Payer, r.PayerEn ?? r.Payer))</td>
+                                    <td class="text-end hp-num">@Money(e.Gross)</td>
+                                    <td class="text-end hp-num fw-bold">@Money(e.Deposit)</td>
+                                    <td><span class="badge badge-light-@St(e.Status) fs-8">@T["est:" + e.Status]</span></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table></div>
+                }
+            </div>
+        </div>
+    </div></div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            var isAr = document.documentElement.dir === 'rtl';
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value), outside: @Json.Serialize(T["not covered"].Value),
+                self: @Json.Serialize(T["Self-pay"].Value), uncovered: @Json.Serialize(T["Not covered: {0} — self-pay"].Value), empty: @Json.Serialize(T["Choose a package or services to see the estimate."].Value),
+                save: @Json.Serialize(T["Save this estimate as a draft for {0}? It can be re-priced until it is issued."].Value) };
+            var urls = { root: @Json.Serialize(Url.Action("Estimates")), patients: @Json.Serialize(Url.Action("SearchInsurancePatients")), services: @Json.Serialize(Url.Action("SearchServices")), one: @Json.Serialize(Url.Action("Estimate", new { id = 0 })) };
+            var root = document.querySelector('[data-builder]'); if (!root) return;
+            function toast(k, m) { if (window.toastr) toastr[k](m); }
+            function money(v) { return Number(v).toLocaleString('en-US', { minimumFractionDigits: 3, maximumFractionDigits: 3 }); }
+            function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+            function post(url, body) {
+                return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(body || {}) })
+                    .then(function (r) { return r.json().catch(function () { return { ok: false }; }); });
+            }
+            var el = function (s) { return root.querySelector(s); };
+            var patient = el('[data-e-patient]'), pkg = el('[data-e-package]'), room = el('[data-e-room]'), nights = el('[data-e-nights]'), margin = el('[data-e-margin]'), svcs = el('[data-e-services]'), save = el('[data-e-save]');
+            function picker(s, url, multi) {
+                $(s).select2({ width: '100%', dir: isAr ? 'rtl' : 'ltr', placeholder: s.getAttribute('data-placeholder'), multiple: !!multi,
+                    ajax: { url: url, dataType: 'json', delay: 200, data: function (p) { return { q: p.term || '' }; }, processResults: function (d) { return { results: d.results || [] }; } } });
+            }
+            if (window.$ && $.fn.select2) { picker(patient, urls.patients); picker(svcs, urls.services, true); }
+            function input() {
+                return { patientId: Number(patient.value || 0), packageId: pkg.value ? Number(pkg.value) : null, roomTypeId: room.value ? Number(room.value) : null,
+                    expectedNights: Number(nights.value || 0), marginPct: Number(margin.value || 0),
+                    services: ($(svcs).val() || []).map(function (id) { return { serviceId: Number(id), quantity: 1 }; }) };
+            }
+            var last = null, seq = 0;
+            // Re-priced on every change, never stored: the server prices it as the patient's bill would be.
+            function quote() {
+                var body = input(); last = null; save.disabled = true;
+                if (!body.patientId || (!body.packageId && body.services.length === 0)) { el('[data-e-lines]').innerHTML = '<tr><td colspan="4" class="text-center text-muted py-8">' + esc(W.empty) + '</td></tr>'; return; }
+                var mine = ++seq;
+                post(urls.root + '/Quote', body).then(function (q) {
+                    if (mine !== seq) return;   // a newer change is being priced
+                    if (!q.ok) { toast('error', q.error || W.failed); return; }
+                    last = body; save.disabled = false;
+                    el('[data-e-lines]').innerHTML = q.lines.map(function (l) {
+                        return '<tr><td><div class="text-gray-800">' + esc(l.text) + '</div><div class="text-muted fs-8 hp-num">' + esc(l.code) + (l.covered || !q.payer ? '' : ' · <span class="text-danger">' + esc(W.outside) + '</span>') + '</div></td>' +
+                            '<td class="text-end hp-num">' + esc(l.qty) + '</td><td class="text-end hp-num">' + money(l.amount) + '</td><td class="text-end hp-num">' + (l.payer > 0 ? money(l.payer) : '—') + '</td></tr>';
+                    }).join('');
+                    el('[data-e-gross]').textContent = money(q.gross);
+                    el('[data-e-payer]').textContent = money(q.payerShare);
+                    el('[data-e-patient-share]').textContent = money(q.patientShare);
+                    el('[data-e-deposit]').textContent = money(q.deposit);
+                    el('[data-cover-line]').textContent = q.payer ? q.payer + ' · ' + q.policyNo : q.uncovered ? W.uncovered.replace('{0}', q.uncovered) : W.self;
+                    el('[data-e-preauth]').classList.toggle('d-none', !q.needsPreauth);
+                });
+            }
+            // A package brings its room class and nights; they stay editable.
+            $(pkg).on('change', function () {
+                var o = pkg.options[pkg.selectedIndex];
+                if (o && o.value) { if (o.getAttribute('data-room')) $(room).val(o.getAttribute('data-room')).trigger('change.select2'); nights.value = o.getAttribute('data-nights') || 0; }
+                quote();
+            });
+            [patient, room, svcs].forEach(function (s) { $(s).on('change', quote); });
+            [nights, margin].forEach(function (i) { i.addEventListener('change', quote); });
+            save.addEventListener('click', function () {
+                if (!last) return;
+                var who = $(patient).find('option:selected').text();
+                cbConfirm(W.save.replace('{0}', who)).then(function (ok) {
+                    if (!ok) return;
+                    save.disabled = true;
+                    post(urls.root + '/Draft', last).then(function (r) {
+                        save.disabled = false;
+                        if (!r.ok) { toast('error', r.error || W.failed); return; }
+                        toast('success', W.saved); location.href = urls.one.replace(/0$/, r.id);
+                    });
+                });
+            });
+        })();
+    </script>
+}

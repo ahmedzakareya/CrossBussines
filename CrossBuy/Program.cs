@@ -568,6 +568,32 @@ builder.Services.AddScoped<CrossBuy.BL.CalendarAccessService>();
 builder.Services.AddScoped<CrossBuy.BL.ICalendarAccessService>(sp => sp.GetRequiredService<CrossBuy.BL.CalendarAccessService>());
 builder.Services.AddScoped<CrossBuy.BL.Platform.IModuleAccessService>(sp => sp.GetRequiredService<CrossBuy.BL.CalendarAccessService>());
 
+// Hospital (industry pack H1): access service + platform adapter, the same two layers as every module.
+// An adapter without the access service denies with "No IModuleAccessService registered for scope".
+builder.Services.AddScoped<CrossBuy.BL.HospitalAccessService>();
+builder.Services.AddScoped<CrossBuy.BL.IHospitalAccessService>(sp => sp.GetRequiredService<CrossBuy.BL.HospitalAccessService>());
+builder.Services.AddScoped<CrossBuy.BL.Platform.IModuleAccessService>(sp => sp.GetRequiredService<CrossBuy.BL.HospitalAccessService>());
+builder.Services.AddScoped<CrossBuy.BL.Platform.IModulePermissionAdapter, CrossBuy.BL.ModulePermissions.HospitalPermissionAdapter>();
+builder.Services.AddScoped<CrossBuy.BL.Hospital.HospitalFacilityService>();
+// Hospital H2: the patient registry.
+builder.Services.AddScoped<CrossBuy.BL.Hospital.HospitalPatientService>();
+// Hospital H3: accommodation (admit, transfer, discharge).
+builder.Services.AddScoped<CrossBuy.BL.Hospital.HospitalAdmissionService>();
+// Hospital H4: outpatient (practitioners, appointments, clinics board).
+builder.Services.AddScoped<CrossBuy.BL.Hospital.HospitalOutpatientService>();
+// Hospital H5: the consultation (worklist, encounter, diagnoses, prescription).
+builder.Services.AddScoped<CrossBuy.BL.Hospital.HospitalConsultationService>();
+// Hospital H6: billing and the cashier; the GL is reached only through the accounting journal engine.
+builder.Services.AddScoped<CrossBuy.BL.Hospital.IHospitalLedger, CrossBuy.BL.Hospital.HospitalJournalLedger>();
+// Hospital H7: price lists (the main list is the card price; every other list has one currency and a rule).
+builder.Services.AddScoped<CrossBuy.BL.Hospital.HospitalPricingService>();
+builder.Services.AddScoped<CrossBuy.BL.Hospital.HospitalBillingService>();
+// Hospital H8: the laboratory (orders from signed visits, two-step results, critical values).
+builder.Services.AddScoped<CrossBuy.BL.Hospital.HospitalLabService>();
+builder.Services.AddScoped<CrossBuy.BL.Hospital.HospitalLabAlertService>();
+builder.Services.AddScoped<CrossBuy.BL.Hospital.HospitalRadiologyService>();
+builder.Services.AddScoped<CrossBuy.BL.Hospital.HospitalPharmacyService>();
+
 // Communication, registered exactly as the five module access services above are: the concrete type,
 // the module's own interface, and IModuleAccessService - all three resolving the SAME scoped instance.
 //

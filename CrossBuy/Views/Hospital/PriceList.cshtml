@@ -1,0 +1,350 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model HospitalPriceListView
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    var l = Model.List;
+    ViewData["Title"] = DisplayName.Of(l.Name, l.NameEn);
+    bool canManage = ViewBag.CanManage == true;
+    string tab = (ViewBag.Tab as string) ?? HospitalPriceGroups.Service;
+    var versions = (ViewBag.Versions as List<HospitalPriceList>) ?? new();
+    var patients = (ViewBag.Patients as List<CrossBuy.Controllers.HospitalController.HospitalListPatient>) ?? new();
+    var cur = Model.Currency; var fac = Model.Facility;
+    bool foreign = l.CurrencyId != null, draft = l.Status == HospitalPriceListStatus.Draft, archived = l.Status == HospitalPriceListStatus.Archived;
+    bool editable = canManage && !archived;
+    string Pct(decimal v) => (v > 0 ? "+" : "") + v.ToString("0.##") + "%";
+    string StatusBadge(string s) => s == HospitalPriceListStatus.Active ? "success" : s == HospitalPriceListStatus.Draft ? "secondary" : "danger";
+    string SrcBadge(string s) => s switch { "rule" => "primary", "override" => "info", "ceiling" => "success", _ => "danger" };
+    var lineRows = Model.Lines.Select(x => new { id = x.Line!.ID, key = x.Entry.Key, code = x.Entry.Code, name = DisplayName.Of(x.Entry.Name, x.Entry.NameEn), group = x.Entry.Group,
+        main = fac.Format(x.Entry.MainPrice), rule = cur.Format(HospitalPricingService.Rule(x.Entry.MainPrice, l.FrozenRate, HospitalPricingService.AdjFor(l, x.Entry.Group), cur.Decimals, l.RoundingStep, x.Entry.Group == HospitalPriceGroups.Service)),
+        fixedPrice = x.Line.FixedPrice, excluded = x.Line.IsExcluded, cap = x.Entry.PublicPrice is decimal pp ? cur.Format(Math.Round(pp * l.FrozenRate, cur.Decimals)) : null });
+    int stale = Model.StaleCount;
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@DisplayName.Of(l.Name, l.NameEn)</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item text-muted">@T["Finance"]</li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted"><a href="@Url.Action("PriceLists")" class="text-muted text-hover-primary">@T["Price lists"]</a></li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted hp-num">@l.Code v@(l.Version)</li>
+            </ul>
+        </div>
+        <div class="d-flex align-items-center gap-2 gap-lg-3 d-print-none">
+            <a href="@Url.Action("PriceLists")" class="btn btn-sm btn-light"><i class="ki-outline @(DisplayName.IsArabic ? "ki-arrow-right" : "ki-arrow-left") fs-4"></i>@T["All lists"]</a>
+            @if (canManage)
+            {
+                if (draft) { <button type="button" class="btn btn-sm btn-light-primary" data-edit-list><i class="ki-outline ki-pencil fs-4"></i>@T["Edit"]</button> }
+                if (l.Status == HospitalPriceListStatus.Active) { <button type="button" class="btn btn-sm btn-light-primary" data-post="Copy"><i class="ki-outline ki-copy fs-4"></i>@T["Copy as a new version"]</button> }
+                if (!archived) { <button type="button" class="btn btn-sm btn-primary" data-pick @(Model.Pending.Count == 0 ? "disabled" : "")><i class="ki-outline ki-plus fs-4"></i>@T["Add items"]</button> }
+                if (draft)
+                {
+                    if (stale > 0) { <span title="@T["Review the not-updated prices first"]"><button type="button" class="btn btn-sm btn-light" disabled><i class="ki-outline ki-lock fs-4"></i>@T["Approve the list"]</button></span> }
+                    else { <button type="button" class="btn btn-sm btn-success" data-post="Approve"><i class="ki-outline ki-check fs-4"></i>@T["Approve the list"]</button> }
+                }
+                if (l.Status == HospitalPriceListStatus.Active) { <button type="button" class="btn btn-sm btn-light" data-post="Archive" data-confirm="@T["Archive this list? Patients must be moved off it first."]"><i class="ki-outline ki-archive fs-4"></i>@T["Archive"]</button> }
+            }
+        </div>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (stale > 0 && !archived)
+        {
+            <div class="notice d-flex rounded border border-dashed p-6 mb-5 bg-light-danger border-danger">
+                <span class="symbol symbol-45px me-5 flex-shrink-0"><span class="symbol-label bg-danger"><i class="ki-outline ki-time fs-2x text-white"></i></span></span>
+                <div class="d-flex flex-stack flex-grow-1 flex-wrap flex-md-nowrap">
+                    <div class="mb-3 mb-md-0 fw-semibold pe-5">
+                        <h4 class="text-gray-900 fw-bold mb-1">@(draft && l.ApprovedAt == null && Model.Lines.All(x => x.Stale) ? T["A new list — prices not updated:"] : T["Prices not updated:"]) <span class="hp-num">@stale</span></h4>
+                        <div class="fs-6 text-gray-700">@(Model.Lines.All(x => x.Stale) ? T["Every item was copied at the main list's latest prices through the discount rule. Review each line and approve it, or approve them all; the list prices no bill before that."] : T["They await review, or their main price changed after they were confirmed. The price shown is the rule applied to the current main price."])</div>
+                    </div>
+                    @if (canManage) { <button type="button" class="btn btn-sm btn-danger flex-shrink-0" data-approve-all>@T["Approve all"]</button> }
+                </div>
+            </div>
+        }
+        @if (Model.Pending.Count > 0 && !archived)
+        {
+            <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice">
+                <span class="symbol symbol-45px me-5 flex-shrink-0"><span class="symbol-label"><i class="ki-outline ki-add-item fs-2x text-white"></i></span></span>
+                <div class="d-flex flex-stack flex-grow-1 flex-wrap flex-md-nowrap">
+                    <div class="mb-3 mb-md-0 fw-semibold pe-5">
+                        <h4 class="text-gray-900 fw-bold mb-1">@T["New main-list items not added here:"] <span class="hp-num">@Model.Pending.Count</span></h4>
+                        <div class="fs-6 text-gray-700">@string.Join(DisplayName.IsArabic ? "، " : ", ", Model.Pending.Take(8).Select(e => DisplayName.Of(e.Name, e.NameEn)))@(Model.Pending.Count > 8 ? "…" : "")</div>
+                    </div>
+                    @if (canManage) { <button type="button" class="btn btn-sm btn-primary flex-shrink-0" data-add-all>@T["Add by the rule"]</button> }
+                </div>
+            </div>
+        }
+
+        <div class="row g-5 g-xl-8">
+            <div class="col-xl-4">
+                <div class="card mb-5">
+                    <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
+                        <span class="card-label fw-bold text-gray-900 fs-4">@DisplayName.Of(l.Name, l.NameEn)</span>
+                        <span class="text-muted mt-1 fw-semibold fs-7 hp-num">@l.Code · v@(l.Version)</span>
+                    </div></div>
+                    <div class="card-body pt-2">
+                        @{ var kv = new List<(string, string)> {
+                            (T["Kind"].Value, T["kind:" + l.Kind].Value),
+                            (T["Currency"].Value, "<span class=\"badge " + (foreign ? "badge-light-info" : "badge-light-primary") + " fw-bold fs-8 hp-num\">" + cur.Code + "</span>" + (foreign ? " <span class=\"text-muted fs-8\">" + T["foreign"].Value + "</span>" : "")),
+                            (T["Price source"].Value, T["The main list through the discount rule"].Value),
+                            (T["Discount rule"].Value, T["Services (group)"].Value + " <bdi class=\"hp-num\" dir=\"ltr\">" + Pct(l.ServicesAdjPct) + "</bdi><br/>" + T["Medicines"].Value + " <bdi class=\"hp-num\" dir=\"ltr\">" + Pct(l.MedicinesAdjPct) + "</bdi><br/>" + T["Consumables"].Value + " <bdi class=\"hp-num\" dir=\"ltr\">" + Pct(l.ConsumablesAdjPct) + "</bdi>"),
+                            (T["Rounding"].Value, l.RoundingStep is decimal st ? T["Services to the nearest"].Value + " <span class=\"hp-num\">" + cur.Format(st) + "</span>" : T["The currency's decimals"].Value) };
+                           if (foreign) kv.Add((T["Frozen rate"].Value, "<span class=\"hp-num\">1 " + fac.Code + " = " + l.FrozenRate.ToString("0.####") + " " + cur.Code + "</span>"));
+                           kv.Add((T["Validity"].Value, "<span class=\"hp-num text-nowrap\">" + l.ValidFrom.ToString("yyyy-MM-dd") + (DisplayName.IsArabic ? " ← " : " → ") + (l.ValidTo?.ToString("yyyy-MM-dd") ?? T["Open"].Value) + "</span>"));
+                           kv.Add((T["State"].Value, "<span class=\"badge badge-light-" + StatusBadge(l.Status) + " fs-8\">" + T["plst:" + l.Status].Value + "</span>"));
+                           kv.Add((T["Approved"].Value, l.ApprovedAt is DateTime ap ? "<span class=\"hp-num\">" + ap.ToString("yyyy-MM-dd") + "</span>" : "<span class=\"text-muted\">" + T["Not approved yet"].Value + "</span>")); }
+                        @foreach (var (k, v) in kv)
+                        {
+                            <div class="d-flex flex-stack py-3 border-bottom border-gray-200 border-bottom-dashed"><span class="text-gray-600 fw-semibold fs-7">@k</span><span class="text-end fs-7">@Html.Raw(v)</span></div>
+                        }
+                    </div>
+                </div>
+
+                @if (foreign)
+                {
+                    <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice">
+                        <span class="symbol symbol-45px me-4 flex-shrink-0"><span class="symbol-label"><i class="ki-outline ki-dollar fs-2x text-white"></i></span></span>
+                        <div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@T["The foreign currency in the books"]</h4>
+                            <div class="fs-7 text-gray-700">@T["The bill is in"] <span class="hp-num">@cur.Code</span>@T["; the journal entry is in"] <span class="hp-num">@fac.Code</span> @T["at the rate of the day it closes. It is paid after closing, and a different rate on payment posts to the exchange-difference account."]</div></div>
+                    </div>
+                }
+
+                <div class="card mb-5">
+                    <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Versions"]</span></div></div>
+                    <div class="card-body pt-2">
+                        @foreach (var vv in versions)
+                        {
+                            <a href="@Url.Action("PriceList", new { id = vv.ID })" class="d-flex flex-stack py-3 border-bottom border-gray-200 border-bottom-dashed text-hover-primary @(vv.ID == l.ID ? "fw-bold" : "")">
+                                <span class="hp-num">v@(vv.Version)</span>
+                                <span class="fs-8 text-muted hp-num">@vv.ValidFrom.ToString("yyyy-MM-dd")</span>
+                                <span class="badge badge-light-@StatusBadge(vv.Status) fs-8">@T["plst:" + vv.Status]</span>
+                            </a>
+                        }
+                    </div>
+                </div>
+
+                <div class="card mb-5">
+                    <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
+                        <span class="card-label fw-bold text-gray-900 fs-4">@T["Patients on this list"]</span>
+                        <span class="text-muted mt-1 fw-semibold fs-7"><span class="hp-num">@Model.Patients</span> @T["patients (count)"]</span>
+                    </div></div>
+                    <div class="card-body pt-2">
+                        @if (Model.Patients == 0) { <div class="text-muted fs-7">@T["Put a patient on this list from the patient's file."]</div> }
+                        @foreach (var p in patients)
+                        {
+                            string nm = DisplayName.Of(p.Name, p.NameEn);
+                            <a href="@Url.Action("Patient", new { id = p.Id })" class="d-flex align-items-center py-2 text-hover-primary">
+                                <div class="symbol symbol-30px symbol-circle me-3">@if (!string.IsNullOrEmpty(p.PhotoPath)) {<img src="@p.PhotoPath" alt="" data-initials="@HospitalUi.Initials(p.NameEn)" />} else {<span class="symbol-label fs-8 fw-bold hp-initials">@HospitalUi.Initials(p.NameEn)</span>}</div>
+                                <div><div class="fw-semibold text-gray-800 fs-7">@nm</div><div class="text-muted fs-8 hp-num">@p.Mrn</div></div>
+                            </a>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-8">
+                <div class="card">
+                    <div class="card-header border-0 pt-6">
+                        <ul class="nav nav-stretch nav-line-tabs nav-line-tabs-2x border-transparent fs-6 fw-bold">
+                            @foreach (var g in HospitalPriceGroups.All)
+                            {
+                                int n = Model.Lines.Count(x => x.Entry.Group == g), ns = Model.Lines.Count(x => x.Entry.Group == g && x.Stale);
+                                <li class="nav-item"><a class="nav-link text-active-primary py-4 me-6 @(g == tab ? "active" : "")" data-bs-toggle="tab" href="#pl_@g">@T["group:" + g] <span class="badge badge-light-primary ms-1 hp-num">@n</span>@if (ns > 0) {<span class="badge badge-light-danger ms-1 hp-num">@ns</span>}</a></li>
+                            }
+                        </ul>
+                    </div>
+                    <div class="card-body pt-4"><div class="tab-content">
+                        @foreach (var g in HospitalPriceGroups.All)
+                        {
+                            var rows = Model.Lines.Where(x => x.Entry.Group == g).ToList();
+                            <div class="tab-pane fade @(g == tab ? "show active" : "")" id="pl_@g" role="tabpanel">
+                                @if (g == HospitalPriceGroups.Medicine)
+                                {
+                                    <div class="notice d-flex rounded border border-dashed p-5 mb-5 hp-notice">
+                                        <span class="symbol symbol-40px me-4 flex-shrink-0"><span class="symbol-label"><i class="ki-outline ki-capsule fs-2 text-white"></i></span></span>
+                                        <div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@T["The public price is a ceiling"]</h4><div class="fs-7 text-gray-700">@T["A medicine's price in any list never exceeds its approved public price. The item and its selling price come from the Inventory item card."]</div></div>
+                                    </div>
+                                }
+                                @if (rows.Count == 0) { <div class="text-center text-muted py-10">@T["Nothing on this list in this group."]</div> }
+                                else
+                                {
+                                    <div class="table-responsive"><table class="table align-middle table-row-dashed fs-6 gy-3 mb-0">
+                                        <thead><tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0">
+                                            <th class="w-125px">@T["Code"]</th><th class="min-w-200px">@T["Item"]</th><th class="text-end">@T["Main"] (<span class="hp-num">@fac.Code</span>)</th><th class="text-end">@T["This list"] (<span class="hp-num">@cur.Code</span>)</th><th class="text-end">@T["Change"]</th><th>@T["Source"]</th><th>@T["State"]</th><th class="text-end"></th>
+                                        </tr></thead>
+                                        <tbody class="fw-semibold text-gray-700">
+                                            @foreach (var x in rows)
+                                            {
+                                                decimal mainIn = x.Entry.MainPrice * l.FrozenRate;
+                                                int? diff = x.Price is decimal pr && mainIn > 0 ? (int)Math.Round((pr / mainIn - 1) * 100) : null;
+                                                <tr class="@(x.Stale ? "bg-light-danger" : "")">
+                                                    <td><span class="badge hp-code fw-bold fs-8 hp-num">@x.Entry.Code</span></td>
+                                                    <td><a href="@Url.Action("CatalogEntry", new { key = x.Entry.Key })" class="fw-semibold text-gray-800 text-hover-primary">@DisplayName.Of(x.Entry.Name, x.Entry.NameEn)</a><div class="text-muted fs-8">@(x.Entry.Group == HospitalPriceGroups.Service ? T["cat:" + x.Entry.Category].Value : T["group:" + x.Entry.Group].Value)</div></td>
+                                                    <td class="text-end hp-num">@fac.Format(x.Entry.MainPrice)@if (x.Stale && x.Line!.ConfirmedMainPrice is decimal was && was != x.Entry.MainPrice) {<div class="text-muted fs-8"><s>@fac.Format(was)</s></div>}</td>
+                                                    <td class="text-end hp-num fw-bold">@(x.Price is decimal p ? cur.Format(p) : "—")</td>
+                                                    <td class="text-end @(diff < 0 ? "text-success" : "")">@if (diff == null) {<span class="text-muted">—</span>} else {<bdi class="hp-num" dir="ltr">@((diff > 0 ? "+" : "") + diff + "%")</bdi>}</td>
+                                                    <td><span class="badge badge-light-@SrcBadge(x.Source) fs-8">@T["src:" + x.Source]</span></td>
+                                                    <td>@if (x.Stale) {<span class="badge badge-light-danger fs-8">@T["Not updated"]</span>} else {<span class="badge badge-light-success fs-8">@T["Up to date"]</span>}</td>
+                                                    <td class="text-end text-nowrap">
+                                                        @if (editable)
+                                                        {
+                                                            if (x.Stale) { <button type="button" class="btn btn-sm btn-light-success py-1 px-3 me-1" data-approve="@x.Line!.ID">@T["Approve"]</button> }
+                                                            <button type="button" class="btn btn-icon btn-sm btn-light w-30px h-30px" data-line="@x.Line!.ID" title="@T["Own price"]"><i class="ki-outline ki-pencil fs-6"></i></button>
+                                                        }
+                                                    </td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table></div>
+                                }
+                            </div>
+                        }
+                    </div></div>
+                </div>
+            </div>
+        </div>
+        <script type="application/json" id="lineRows">@Html.Raw(System.Text.Json.JsonSerializer.Serialize(lineRows))</script>
+    </div></div>
+</div>
+
+@if (canManage)
+{
+    <div class="modal fade" id="lineModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-550px"><div class="modal-content">
+        <div class="modal-header"><h2 class="fw-bold m-0" data-title></h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <form class="modal-body py-8 px-lg-10" id="lineForm" autocomplete="off"><input type="hidden" name="id" />
+            <div class="d-flex flex-stack py-3 border-bottom border-gray-200 border-bottom-dashed"><span class="text-gray-600 fw-semibold fs-7">@T["Main list price"] (<span class="hp-num">@fac.Code</span>)</span><span class="hp-num fw-bold" data-main></span></div>
+            <div class="d-flex flex-stack py-3 border-bottom border-gray-200 border-bottom-dashed"><span class="text-gray-600 fw-semibold fs-7">@T["By this list's rule"] (<span class="hp-num">@cur.Code</span>)</span><span class="hp-num fw-bold" data-rule></span></div>
+            <div class="d-flex flex-stack py-3 border-bottom border-gray-200 border-bottom-dashed" data-cap-row><span class="text-gray-600 fw-semibold fs-7">@T["Public price (ceiling)"]</span><span class="hp-num fw-bold text-danger" data-cap></span></div>
+            <div class="mt-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Own price"] (<span class="hp-num">@cur.Code</span>)</label><input name="fixedPrice" type="number" min="0" step="0.001" class="form-control form-control-solid hp-num" dir="ltr" placeholder="@T["Empty = by the rule"]" /></div>
+            <label class="form-check form-switch form-check-custom form-check-solid mt-6"><input class="form-check-input" type="checkbox" name="isExcluded" /><span class="form-check-label text-gray-700">@T["Not covered by this list (billed from the main list)"]</span></label>
+        </form>
+        <div class="modal-footer flex-center"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-save-line>@T["Save and approve"]</button></div>
+    </div></div></div>
+
+    <div class="modal fade" id="pickModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-650px"><div class="modal-content">
+        <div class="modal-header"><h2 class="fw-bold m-0">@T["Add items"]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body py-6 px-lg-10">
+            <div class="text-gray-700 fs-7 mb-4">@T["Items on the main list that are not on this one. They come in at the rule's price and show not updated until you approve them."]</div>
+            <div class="table-responsive mh-400px overflow-auto"><table class="table align-middle table-row-dashed fs-7 gy-2 mb-0">
+                <thead><tr class="text-gray-500 fw-bold fs-8 text-uppercase"><th class="w-30px"><input type="checkbox" class="form-check-input" data-pick-all checked /></th><th>@T["Item"]</th><th>@T["Type"]</th><th class="text-end">@T["By the rule"] (<span class="hp-num">@cur.Code</span>)</th></tr></thead>
+                <tbody>
+                    @foreach (var e in Model.Pending)
+                    {
+                        <tr><td><input type="checkbox" class="form-check-input" data-pick-key="@e.Key" checked /></td>
+                            <td><span class="badge hp-code fw-bold fs-8 hp-num me-2">@e.Code</span>@DisplayName.Of(e.Name, e.NameEn)</td>
+                            <td>@T["group:" + e.Group]</td>
+                            <td class="text-end hp-num">@cur.Format(HospitalPricingService.Rule(e.MainPrice, l.FrozenRate, HospitalPricingService.AdjFor(l, e.Group), cur.Decimals, l.RoundingStep, e.Group == HospitalPriceGroups.Service))</td></tr>
+                    }
+                </tbody>
+            </table></div>
+        </div>
+        <div class="modal-footer flex-center"><a href="@Url.Action("Catalog")" class="btn btn-light-primary"><i class="ki-outline ki-plus fs-4"></i>@T["New catalogue item"]</a><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-add-picked>@T["Add selected"]</button></div>
+    </div></div></div>
+
+    @if (draft)
+    {
+        <div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-750px"><div class="modal-content">
+            <div class="modal-header"><h2 class="fw-bold m-0">@T["Edit the list"]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+            <form class="modal-body py-8 px-lg-10" id="editForm" autocomplete="off"><div class="row g-5">
+                <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Name (Arabic)"]</label><input name="name" value="@l.Name" maxlength="200" class="form-control form-control-solid" dir="rtl" /></div>
+                <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Name (English)"]</label><input name="nameEn" value="@l.NameEn" maxlength="200" class="form-control form-control-solid" dir="ltr" /></div>
+                <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Kind"]</label>
+                    <select name="kind" class="form-select form-select-solid">@foreach (var k in HospitalPriceListKinds.All) { <option value="@k" selected="@(k == l.Kind)">@T["kind:" + k]</option> }</select></div>
+                <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Currency"]</label><input class="form-control form-control-solid hp-num" value="@cur.Code" disabled /></div>
+                <div class="col-md-4"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Services (group)"] %</label><input name="servicesAdjPct" type="number" step="0.01" value="@l.ServicesAdjPct.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)" class="form-control form-control-solid hp-num" dir="ltr" /></div>
+                <div class="col-md-4"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Medicines"] %</label><input name="medicinesAdjPct" type="number" step="0.01" value="@l.MedicinesAdjPct.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)" class="form-control form-control-solid hp-num" dir="ltr" /></div>
+                <div class="col-md-4"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Consumables"] %</label><input name="consumablesAdjPct" type="number" step="0.01" value="@l.ConsumablesAdjPct.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)" class="form-control form-control-solid hp-num" dir="ltr" /></div>
+                <div class="col-md-4"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Rounding step"]</label><input name="roundingStep" type="number" min="0" step="0.001" value="@(l.RoundingStep?.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture))" placeholder="@T["None"]" class="form-control form-control-solid hp-num" dir="ltr" /></div>
+                <div class="col-md-4"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Valid from"]</label><input name="validFrom" type="date" value="@l.ValidFrom.ToString("yyyy-MM-dd")" class="form-control form-control-solid hp-num" /></div>
+                <div class="col-md-4"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Valid to"]</label><input name="validTo" type="date" value="@(l.ValidTo?.ToString("yyyy-MM-dd"))" class="form-control form-control-solid hp-num" /></div>
+            </div><div class="text-muted fs-8 mt-5">@T["Changing the rule sends every rule-priced line back to review."]</div></form>
+            <div class="modal-footer flex-center"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-save-list>@T["Save"]</button></div>
+        </div></div></div>
+    }
+}
+
+@section Scripts {
+    <script>
+        (function () {
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value) };
+            var base = @Json.Serialize(Url.Action("PriceList", new { id = l.ID })), lineUrl = @Json.Serialize(Url.Action("SavePriceListLine", new { id = 0 }));
+            function toast(k, m) { if (window.toastr) toastr[k](m); }
+            function rows() { var el = document.getElementById('lineRows'); return el ? JSON.parse(el.textContent) : []; }
+            function post(url, body) {
+                return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(body || {}) })
+                    .then(function (r) { return r.json().catch(function () { return { ok: false }; }); });
+            }
+            // In place, never a reload: the server renders the page again and the content and toolbar are swapped,
+            // keeping the open tab.
+            function swap() {
+                var active = document.querySelector('.nav-line-tabs .nav-link.active'), tab = active ? active.getAttribute('href').replace('#pl_', '') : '';
+                return fetch(base + (tab ? '?tab=' + tab : ''), { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.text(); }).then(function (html) {
+                    var doc = new DOMParser().parseFromString(html, 'text/html');
+                    var fresh = doc.getElementById('kt_app_content'); if (fresh) document.getElementById('kt_app_content').innerHTML = fresh.innerHTML;
+                    var tb = doc.querySelector('.app-toolbar .d-print-none'), cur = document.querySelector('.app-toolbar .d-print-none'); if (tb && cur) cur.innerHTML = tb.innerHTML;
+                    var pick = doc.querySelector('#pickModal tbody'), pickCur = document.querySelector('#pickModal tbody'); if (pick && pickCur) pickCur.innerHTML = pick.innerHTML;
+                });
+            }
+            function done(res, modal) {
+                if (!res.ok) { toast('error', res.error || W.failed); return false; }
+                if (modal) bootstrap.Modal.getInstance(modal).hide();
+                toast('success', W.saved); swap(); return true;
+            }
+            var lineModal = document.getElementById('lineModal'), lineForm = document.getElementById('lineForm');
+            document.addEventListener('click', function (e) {
+                var t;
+                if ((t = e.target.closest('[data-approve-all]'))) { t.disabled = true; post(base + '/ApproveLines', { ids: null }).then(function (r) { t.disabled = false; done(r); }); }
+                else if ((t = e.target.closest('[data-approve]'))) { t.disabled = true; post(base + '/ApproveLines', { ids: [+t.getAttribute('data-approve')] }).then(function (r) { t.disabled = false; done(r); }); }
+                else if ((t = e.target.closest('[data-add-all]'))) { t.disabled = true; post(base + '/AddLines', { keys: null }).then(function (r) { t.disabled = false; done(r); }); }
+                else if ((t = e.target.closest('[data-pick]'))) bootstrap.Modal.getOrCreateInstance(document.getElementById('pickModal')).show();
+                else if ((t = e.target.closest('[data-pick-all]'))) document.querySelectorAll('[data-pick-key]').forEach(function (c) { c.checked = t.checked; });
+                else if ((t = e.target.closest('[data-add-picked]'))) {
+                    var keys = [].slice.call(document.querySelectorAll('[data-pick-key]:checked')).map(function (c) { return c.getAttribute('data-pick-key'); });
+                    if (!keys.length) return;
+                    t.disabled = true; post(base + '/AddLines', { keys: keys }).then(function (r) { t.disabled = false; done(r, document.getElementById('pickModal')); });
+                }
+                else if ((t = e.target.closest('[data-line]'))) {
+                    var r = rows().filter(function (x) { return x.id === +t.getAttribute('data-line'); })[0]; if (!r) return;
+                    lineModal.querySelector('[data-title]').textContent = r.name;
+                    lineModal.querySelector('[data-main]').textContent = r.main; lineModal.querySelector('[data-rule]').textContent = r.rule;
+                    lineModal.querySelector('[data-cap-row]').style.display = r.cap ? '' : 'none'; lineModal.querySelector('[data-cap]').textContent = r.cap || '';
+                    lineForm.elements.id.value = r.id; lineForm.elements.fixedPrice.value = r.fixedPrice == null ? '' : r.fixedPrice; lineForm.elements.isExcluded.checked = r.excluded;
+                    bootstrap.Modal.getOrCreateInstance(lineModal).show();
+                }
+                else if ((t = e.target.closest('[data-save-line]'))) {
+                    var f = lineForm.elements;
+                    t.disabled = true;
+                    post(lineUrl.replace(/0\/Save$/, f.id.value + '/Save'), { fixedPrice: f.fixedPrice.value === '' ? null : +f.fixedPrice.value, isExcluded: f.isExcluded.checked })
+                        .then(function (r) { t.disabled = false; done(r, lineModal); });
+                }
+                else if ((t = e.target.closest('[data-post]'))) {
+                    var msg = t.getAttribute('data-confirm');
+                    if (msg && !t.hasAttribute('data-confirmed')) { cbConfirm(msg, { kind: t.getAttribute('data-confirm-kind') || 'primary' }).then(function (ok) { if (ok) { t.setAttribute('data-confirmed', ''); t.click(); } }); return; }
+                    t.removeAttribute('data-confirmed');
+                    var what = t.getAttribute('data-post'); t.disabled = true;
+                    post(base + '/' + what).then(function (r) {
+                        t.disabled = false;
+                        if (!r.ok) { toast('error', r.error || W.failed); return; }
+                        if (what === 'Copy') location.href = base.replace(/\/\d+$/, '/' + r.id); else { toast('success', W.saved); swap(); }
+                    });
+                }
+                else if ((t = e.target.closest('[data-edit-list]'))) bootstrap.Modal.getOrCreateInstance(document.getElementById('editModal')).show();
+                else if ((t = e.target.closest('[data-save-list]'))) {
+                    var g = document.getElementById('editForm').elements, num = function (n) { return g[n].value === '' ? null : +g[n].value; };
+                    t.disabled = true;
+                    post(base + '/Update', { name: g.name.value, nameEn: g.nameEn.value, kind: g.kind.value, servicesAdjPct: num('servicesAdjPct') || 0, medicinesAdjPct: num('medicinesAdjPct') || 0,
+                        consumablesAdjPct: num('consumablesAdjPct') || 0, roundingStep: num('roundingStep'), validFrom: g.validFrom.value || null, validTo: g.validTo.value || null })
+                        .then(function (r) { t.disabled = false; done(r, document.getElementById('editModal')); });
+                }
+            });
+        })();
+    </script>
+}

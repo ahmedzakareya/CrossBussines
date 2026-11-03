@@ -1,0 +1,172 @@
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model IReadOnlyList<HospitalRoomType>
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Room types"].Value;
+    bool canManage = ViewBag.CanManage == true;
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    // One icon per feature, used by the cards and the edit form alike (names checked against this keenicons build).
+    var featureIcons = new Dictionary<string, string> {
+        ["bath"] = "ki-drop", ["companion"] = "ki-people", ["tv"] = "ki-screen", ["fridge"] = "ki-thermometer", ["lounge"] = "ki-coffee",
+        ["oxygen"] = "ki-cloud", ["negative-pressure"] = "ki-shield-tick", ["anteroom"] = "ki-entrance-left", ["monitor"] = "ki-pulse" };
+    string IconOf(string f) => featureIcons.TryGetValue(f, out var i) ? i : "ki-check";
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Room types"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item text-muted"><a href="@Url.Action("Index")" class="text-muted text-hover-primary">@T["Beds & rooms"]</a></li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@T["Room types"]</li>
+            </ul>
+        </div>
+        @if (canManage)
+        {
+            <div class="d-flex align-items-center gap-2 gap-lg-3 d-print-none">
+                <button type="button" class="btn btn-sm btn-light-primary d-none" id="btnSeed"><i class="ki-outline ki-element-plus fs-4"></i>@T["Load the standard types"]</button>
+                <button type="button" class="btn btn-sm btn-primary" id="btnNew"><i class="ki-outline ki-plus fs-4"></i>@T["New room type"]</button>
+            </div>
+        }
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice">
+            <span class="symbol symbol-45px me-5 flex-shrink-0"><span class="symbol-label"><i class="ki-outline ki-element-11 fs-2x text-white"></i></span></span>
+            <div class="d-flex flex-stack flex-grow-1 flex-wrap flex-md-nowrap">
+                <div class="mb-3 mb-md-0 fw-semibold pe-5">
+                    <h4 class="text-gray-900 fw-bold mb-1">@T["The type decides price, beds and who may share"]</h4>
+                    <div class="fs-6 text-gray-700">@T["Every room takes its daily rate, its starting beds and the same-sex rule from its type."]</div>
+                </div>
+                <span class="badge hp-badge fs-7 fw-bold px-4 py-2 flex-shrink-0"><span class="hp-num" id="typeCount">@Model.Count</span>&nbsp;@T["types"]</span>
+            </div>
+        </div>
+        <div class="row g-5 g-xl-8" id="typeCards"></div>
+    </div></div>
+</div>
+
+@if (canManage)
+{
+    <div class="modal fade" id="typeModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered mw-700px"><div class="modal-content">
+            <div class="modal-header"><h2 class="fw-bold m-0" id="typeModalTitle">@T["New room type"]</h2>
+                <div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+            <form id="typeForm" class="modal-body py-8 px-lg-10">
+                <input type="hidden" name="Id" />
+                <div class="row g-5">
+                    <div class="col-md-4"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Code"]</label><input name="Code" class="form-control form-control-solid" maxlength="40" dir="ltr" /></div>
+                    <div class="col-md-4"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Name (Arabic)"]</label><input name="Name" class="form-control form-control-solid" dir="rtl" /></div>
+                    <div class="col-md-4"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Name (English)"]</label><input name="NameEn" class="form-control form-control-solid" dir="ltr" /></div>
+                    <div class="col-md-4"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Beds in a new room"]</label><input name="BedCount" type="number" min="1" max="20" value="1" class="form-control form-control-solid" /></div>
+                    <div class="col-md-4"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Daily rate"]</label><input name="DailyRate" type="number" min="0" step="0.01" value="0" class="form-control form-control-solid" dir="ltr" /></div>
+                    <div class="col-md-4"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Order"]</label><input name="SortOrder" type="number" value="0" class="form-control form-control-solid" /></div>
+                    <div class="col-12"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Features"]</label>
+                        <div class="d-flex flex-wrap gap-4">
+                            @foreach (var f in HospitalRoomFeatures.All)
+                            {
+                                <label class="form-check form-check-custom form-check-solid form-check-sm"><input class="form-check-input" type="checkbox" name="Features" value="@f" /><span class="form-check-label text-gray-700"><i class="ki-outline @IconOf(f) fs-5 me-1" style="color:var(--cb-brand, #3A5795)"></i>@T["feature:" + f]</span></label>
+                            }
+                        </div>
+                    </div>
+                    <div class="col-md-6"><label class="form-check form-switch form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" name="SameSexOnly" value="true" /><span class="form-check-label text-gray-700">@T["Same sex only"]</span></label></div>
+                    <div class="col-md-6"><label class="form-check form-switch form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" name="IsActive" value="true" checked /><span class="form-check-label text-gray-700">@T["Active"]</span></label></div>
+                </div>
+            </form>
+            <div class="modal-footer flex-center">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button>
+                <button type="button" class="btn btn-primary" id="typeSave">@T["Save"]</button>
+            </div>
+        </div></div>
+    </div>
+}
+
+@section Scripts {
+    <partial name="_HospitalScripts" />
+    <script>
+        (function () {
+            var isAr = @Json.Serialize(isAr), canManage = @Json.Serialize(canManage);
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            var txt = {
+                beds: @Json.Serialize(T["Beds per room"].Value), perDay: @Json.Serialize(T["per day"].Value),
+                same: @Json.Serialize(T["Same sex only"].Value), any: @Json.Serialize(T["No sex restriction"].Value),
+                rooms: @Json.Serialize(T["Rooms"].Value), bedsWord: @Json.Serialize(T["beds (count)"].Value), free: @Json.Serialize(T["free"].Value), full: @Json.Serialize(T["Full"].Value), inactive: @Json.Serialize(T["Inactive"].Value),
+                edit: @Json.Serialize(T["Edit"].Value), editTitle: @Json.Serialize(T["Edit room type"].Value), newTitle: @Json.Serialize(T["New room type"].Value),
+                empty: @Json.Serialize(T["No room types yet. Load the standard six, or add your own."].Value),
+                saved: @Json.Serialize(T["Saved"].Value), failed: @Json.Serialize(T["The change could not be saved"].Value)
+            };
+            var features = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(HospitalRoomFeatures.All.ToDictionary(f => f, f => new { label = T["feature:" + f].Value, icon = IconOf(f) })));
+            var data = { types: [], floors: [] };
+            var esc = HospitalPlan.esc;
+            function name(o) { return isAr ? o.name : (o.nameEn || o.name); }
+            function bedsOf(rs) { var a = []; rs.forEach(function (r) { a = a.concat(r.beds); }); return a; }
+            function freeOf(rs) { return bedsOf(rs).filter(function (b) { return b.status === 'Vacant'; }).length; }
+            function money(v) { var c = data.currency, d = c ? c.decimals : 2; return '<span class="hp-num">' + Number(v || 0).toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d }) + '</span>' + (c ? ' <span class="fs-7 fw-semibold text-muted">' + esc(c.label) + '</span>' : ''); }
+
+            function draw() {
+                var rooms = []; data.floors.forEach(function (f) { rooms = rooms.concat(f.rooms); });
+                document.getElementById('typeCount').textContent = data.types.length;
+                var seed = document.getElementById('btnSeed'); if (seed) seed.classList.toggle('d-none', data.types.length > 0);
+                var host = document.getElementById('typeCards');
+                if (!data.types.length) { host.innerHTML = '<div class="col-12"><div class="card"><div class="card-body text-center text-muted py-15">' + esc(txt.empty) + '</div></div></div>'; return; }
+                host.innerHTML = data.types.map(function (t) {
+                    var mine = rooms.filter(function (r) { return r.typeId === t.id; });
+                    var sample = mine[0] || { kind: t.code === 'icu' ? 'Icu' : 'Ward', layout: null, beds: Array.apply(null, Array(t.beds)).map(function (_, i) { return { code: String.fromCharCode(65 + i), status: 'Vacant' }; }) };
+                    return '<div class="col-md-6 col-xl-4"><div class="card h-100"><div class="card-body p-6">' +
+                        '<div class="d-flex flex-stack mb-2"><span class="fw-bold fs-4 text-gray-900">' + esc(name(t)) + '</span><span class="fs-4 fw-bold" style="color:var(--cb-brand, #3A5795)">' + money(t.rate) + '</span></div>' +
+                        '<div class="text-muted fs-7 mb-4">' + esc(txt.beds) + ' <span class="hp-num fw-bold text-gray-800">' + t.beds + '</span> · ' + esc(t.sameSex ? txt.same : txt.any) + (t.active ? '' : ' · <span class="text-danger">' + esc(txt.inactive) + '</span>') + '</div>' +
+                        HospitalPlan.render(sample, { features: t.features }, { small: true }) +
+                        '<div class="d-flex flex-wrap gap-2 mt-4">' + t.features.map(function (f) { var x = features[f] || { label: f, icon: 'ki-check' }; return '<span class="hp-feature"><i class="ki-outline ' + x.icon + '"></i>' + esc(x.label) + '</span>'; }).join('') + '</div>' +
+                        // The prototype's footer: rooms · beds, and how many are free now (or "full").
+                        '<div class="separator my-4"></div><div class="d-flex flex-stack fs-7 gap-2"><span class="text-muted">' + esc(txt.rooms) + ' <span class="hp-num fw-bold text-gray-800">' + mine.length + '</span> · ' + esc(txt.bedsWord) + ' <span class="hp-num fw-bold text-gray-800">' + bedsOf(mine).length + '</span></span>' +
+                        '<span class="d-flex align-items-center gap-2">' + (mine.length ? (freeOf(mine) ? '<span class="badge badge-light-success fs-8"><span class="hp-num">' + freeOf(mine) + '</span>&nbsp;' + esc(txt.free) + '</span>' : '<span class="badge badge-light fs-8">' + esc(txt.full) + '</span>') : '') +
+                        (canManage ? '<button type="button" class="btn btn-icon btn-sm btn-light w-30px h-30px" title="' + esc(txt.edit) + '" data-edit="' + t.id + '"><i class="ki-outline ki-pencil fs-6"></i></button>' : '') + '</span></div></div></div></div>';
+                }).join('');
+                host.querySelectorAll('[data-edit]').forEach(function (b) { b.addEventListener('click', function () { open(data.types.filter(function (t) { return t.id === +b.getAttribute('data-edit'); })[0]); }); });
+            }
+            function load() {
+                return fetch(@Json.Serialize(Url.Action("Building")), { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                    .then(function (r) { return r.json(); }).then(function (res) { if (res.ok) { data = res; draw(); } });
+            }
+            function open(t) {
+                var f = document.getElementById('typeForm'); f.reset();
+                document.getElementById('typeModalTitle').textContent = t ? txt.editTitle : txt.newTitle;
+                f.Id.value = t ? t.id : ''; f.Code.value = t ? t.code : ''; f.Name.value = t ? t.name : ''; f.NameEn.value = t ? (t.nameEn || '') : '';
+                f.BedCount.value = t ? t.beds : 1; f.DailyRate.value = t ? t.rate : 0; f.SortOrder.value = t ? (data.types.indexOf(t) + 1) : data.types.length + 1;
+                f.SameSexOnly.checked = !!(t && t.sameSex); f.IsActive.checked = !t || t.active;
+                f.querySelectorAll('[name="Features"]').forEach(function (c) { c.checked = !!(t && t.features.indexOf(c.value) !== -1); });
+                bootstrap.Modal.getOrCreateInstance(document.getElementById('typeModal')).show();
+            }
+            function post(url, fd) {
+                fd.append('__RequestVerificationToken', token);
+                return fetch(url, { method: 'POST', body: fd, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                    .then(function (r) { return r.json().catch(function () { return { ok: false }; }); });
+            }
+            if (canManage) {
+                document.getElementById('btnNew').addEventListener('click', function () { open(null); });
+                document.getElementById('btnSeed').addEventListener('click', function () {
+                    post(@Json.Serialize(Url.Action("SeedDefaultRoomTypes")), new FormData()).then(function (res) {
+                        if (!res.ok) { toastr.error(res.error || txt.failed); return; }
+                        toastr.success(txt.saved); load();
+                    });
+                });
+                document.getElementById('typeSave').addEventListener('click', function () {
+                    var f = document.getElementById('typeForm'), fd = new FormData(f);
+                    if (!f.SameSexOnly.checked) fd.set('SameSexOnly', 'false');
+                    if (!f.IsActive.checked) fd.set('IsActive', 'false');
+                    if (!f.Id.value) fd.delete('Id');
+                    post(@Json.Serialize(Url.Action("SaveRoomType")), fd).then(function (res) {
+                        if (!res.ok) { toastr.error(res.error || txt.failed); return; }
+                        bootstrap.Modal.getInstance(document.getElementById('typeModal')).hide();
+                        toastr.success(txt.saved); load();
+                    });
+                });
+            }
+            load();
+        })();
+    </script>
+}

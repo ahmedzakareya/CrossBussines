@@ -1,0 +1,142 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model IReadOnlyList<HospitalPackageRow>
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Packages"].Value;
+    var rooms = (ViewBag.RoomTypes as List<HospitalRoomType>) ?? new();
+    string? cur = ViewBag.Currency as string;
+    bool canManage = ViewBag.CanManage == true;
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+    object PackageData(HospitalPackageRow r) => new { id = r.Package.ID, code = r.Package.Code, name = r.Package.Name, nameEn = r.Package.NameEn, serviceId = r.Package.ServiceId,
+        service = r.ServiceCode + " · " + DisplayName.Of(r.Service, r.ServiceEn), price = r.Package.Price, includedNights = r.Package.IncludedNights, roomTypeId = r.Package.RoomTypeId,
+        inclusions = r.Package.Inclusions, inclusionsEn = r.Package.InclusionsEn, isActive = r.Package.IsActive };
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Packages"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item"><a href="@Url.Action("Estimates")" class="text-muted text-hover-primary">@T["Estimates & deposits"]</a></li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@T["Packages"]</li>
+            </ul>
+        </div>
+        <div class="d-flex align-items-center gap-2 gap-lg-3 d-print-none">
+            @if (canManage) { <button type="button" class="btn btn-sm btn-primary" data-edit><i class="ki-outline ki-plus fs-4"></i>@T["New package"]</button> }
+        </div>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="card">
+            <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
+                <span class="card-label fw-bold text-gray-900 fs-4">@T["Packages"]</span>
+                <span class="text-muted mt-1 fw-semibold fs-7">@T["A procedure at a fixed price: its main service, the nights it includes and what it covers"]</span>
+            </div></div>
+            <div class="card-body pt-2">
+                @if (Model.Count == 0) { <div class="text-center text-muted py-15"><i class="ki-outline ki-package fs-3x text-gray-300 d-block mb-4"></i>@T["No packages yet."]</div> }
+                else
+                {
+                    <div class="table-responsive"><table class="table align-middle table-row-dashed fs-6 gy-3 mb-0">
+                        <thead><tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0">
+                            <th>@T["Package / procedure"]</th><th>@T["Main service"]</th><th class="text-end">@T["Price"]</th><th class="text-end">@T["Included nights"]</th><th>@T["Room class"]</th><th>@T["State"]</th><th class="text-end w-75px"></th>
+                        </tr></thead>
+                        <tbody class="fw-semibold text-gray-700">
+                            @foreach (var r in Model)
+                            {
+                                var p = r.Package;
+                                <tr>
+                                    <td><div class="fw-bold text-gray-900">@DisplayName.Of(p.Name, p.NameEn)</div><div class="text-muted fs-8 hp-num">@p.Code</div>
+                                        @if (DisplayName.Of(p.Inclusions ?? "", p.InclusionsEn ?? "") is var inc && inc.Length > 0) {<div class="text-muted fs-8">@inc</div>}</td>
+                                    <td><span class="hp-num">@r.ServiceCode</span> · @DisplayName.Of(r.Service, r.ServiceEn)</td>
+                                    <td class="text-end hp-num fw-bold">@p.Price.ToString("N3", inv) <span class="text-muted fs-8">@cur</span></td>
+                                    <td class="text-end hp-num">@p.IncludedNights</td>
+                                    <td>@(r.RoomType ?? "—")</td>
+                                    <td>@if (p.IsActive) {<span class="badge badge-light-success fs-8">@T["Active"]</span>} else {<span class="badge badge-light fs-8">@T["Inactive"]</span>}</td>
+                                    <td class="text-end">@if (canManage) {<button type="button" class="btn btn-sm btn-light" data-edit="@System.Text.Json.JsonSerializer.Serialize(PackageData(r))">@T["Edit"]</button>}</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table></div>
+                }
+            </div>
+        </div>
+    </div></div>
+</div>
+
+@if (canManage)
+{
+    <div class="modal fade" id="packageModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-750px"><div class="modal-content">
+        <div class="modal-header"><h2 class="fw-bold m-0">@T["Package"]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body py-8 px-lg-10" data-form>
+            <div class="row g-5">
+                <div class="col-md-3"><label class="form-label required">@T["Code"]</label><input class="form-control form-control-solid hp-num" dir="ltr" data-k="code" maxlength="20" /></div>
+                <div class="col-md-5"><label class="form-label required">@T["Name"]</label><input class="form-control form-control-solid" data-k="name" maxlength="150" /></div>
+                <div class="col-md-4"><label class="form-label required">@T["Name (English)"]</label><input class="form-control form-control-solid" dir="ltr" data-k="nameEn" maxlength="150" /></div>
+                <div class="col-12"><label class="form-label required">@T["Main service"] <span class="text-muted fs-8">@T["the procedure the payer approves"]</span></label><select class="form-select form-select-solid" data-k="serviceId" data-placeholder="@T["Search by code or name"]"></select></div>
+                <div class="col-md-4"><label class="form-label required">@T["Price"]</label><div class="input-group input-group-solid"><input class="form-control form-control-solid hp-num" dir="ltr" data-k="price" data-num /><span class="input-group-text">@cur</span></div></div>
+                <div class="col-md-4"><label class="form-label">@T["Included nights"]</label><input class="form-control form-control-solid hp-num" dir="ltr" type="number" min="0" max="365" data-k="includedNights" data-num /></div>
+                <div class="col-md-4"><label class="form-label">@T["Room class"]</label><select class="form-select form-select-solid" data-k="roomTypeId" data-control="select2" data-allow-clear="true" data-hide-search="true" data-placeholder="@T["Any room class"]" data-dropdown-parent="#packageModal">
+                    <option></option>
+                    @foreach (var r in rooms) { <option value="@r.ID">@DisplayName.Of(r.Name, r.NameEn ?? r.Name)</option> }</select></div>
+                <div class="col-md-6"><label class="form-label">@T["What it covers"]</label><textarea class="form-control form-control-solid" rows="3" data-k="inclusions" maxlength="1000"></textarea></div>
+                <div class="col-md-6"><label class="form-label">@T["What it covers (English)"]</label><textarea class="form-control form-control-solid" rows="3" dir="ltr" data-k="inclusionsEn" maxlength="1000"></textarea></div>
+                <div class="col-12"><div class="form-check form-switch form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" data-k="isActive" checked /><label class="form-check-label">@T["Active"]</label></div></div>
+            </div>
+        </div>
+        <div class="modal-footer flex-center"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-save>@T["Save"]</button></div>
+    </div></div></div>
+}
+
+@section Scripts {
+    <script>
+        (function () {
+            var modal = document.getElementById('packageModal'); if (!modal) return;
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            var isAr = document.documentElement.dir === 'rtl';
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value) };
+            var urls = { save: @Json.Serialize(Url.Action("SavePackage")), services: @Json.Serialize(Url.Action("SearchServices")) };
+            var form = modal.querySelector('[data-form]'), svc = form.querySelector('[data-k=serviceId]'), editing = null;
+            function toast(k, m) { if (window.toastr) toastr[k](m); }
+            $(svc).select2({ width: '100%', dir: isAr ? 'rtl' : 'ltr', dropdownParent: $(modal), placeholder: svc.getAttribute('data-placeholder'),
+                ajax: { url: urls.services, dataType: 'json', delay: 200, data: function (p) { return { q: p.term || '' }; }, processResults: function (d) { return { results: d.results || [] }; } } });
+            function swap() {
+                return fetch(location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.text(); }).then(function (html) {
+                    var f = new DOMParser().parseFromString(html, 'text/html').getElementById('kt_app_content');
+                    if (f) document.getElementById('kt_app_content').innerHTML = f.innerHTML;
+                });
+            }
+            document.addEventListener('click', function (e) {
+                var t = e.target.closest('[data-edit],[data-save]'); if (!t) return;
+                if (t.hasAttribute('data-edit')) {
+                    var d = t.getAttribute('data-edit') ? JSON.parse(t.getAttribute('data-edit')) : { price: 0, includedNights: 0, isActive: true };
+                    editing = d.id || null;
+                    $(svc).empty(); if (d.serviceId) $(svc).append(new Option(d.service, d.serviceId, true, true)).trigger('change');
+                    form.querySelectorAll('[data-k]').forEach(function (el) {
+                        var k = el.getAttribute('data-k'); if (k === 'serviceId') return;
+                        if (el.type === 'checkbox') el.checked = d[k] !== false;
+                        else if ($(el).data('select2')) $(el).val(d[k] == null ? '' : d[k]).trigger('change');
+                        else el.value = d[k] == null ? '' : d[k];
+                    });
+                    bootstrap.Modal.getOrCreateInstance(modal).show(); return;
+                }
+                var body = { id: editing };
+                form.querySelectorAll('[data-k]').forEach(function (el) {
+                    var k = el.getAttribute('data-k'), v = el.type === 'checkbox' ? el.checked : (el.value === '' ? null : el.value);
+                    if (v != null && (el.hasAttribute('data-num') || k === 'serviceId' || k === 'roomTypeId')) v = Number(v);
+                    body[k] = v;
+                });
+                body.serviceId = body.serviceId || 0; body.price = body.price || 0; body.includedNights = body.includedNights || 0;
+                t.disabled = true;
+                fetch(urls.save, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(body) })
+                    .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+                    .then(function (res) { t.disabled = false; if (!res.ok) { toast('error', res.error || W.failed); return; } toast('success', W.saved); bootstrap.Modal.getOrCreateInstance(modal).hide(); swap(); });
+            });
+        })();
+    </script>
+}

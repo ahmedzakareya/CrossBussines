@@ -1,0 +1,254 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model List<HospitalPractitionerView>
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Appointments"].Value;
+    DateTime day = ViewBag.Date, today = ViewBag.Today;
+    int? department = ViewBag.Department as int?;
+    bool canBook = ViewBag.CanBook == true;
+    var departments = (ViewBag.Departments as IReadOnlyList<HospitalDepartment>) ?? Array.Empty<HospitalDepartment>();
+    var appts = (ViewBag.Appointments as IReadOnlyList<HospitalAppointmentView>) ?? Array.Empty<HospitalAppointmentView>();
+    var docIds = Model.Select(d => d.Row.ID).ToHashSet();
+    var shown = appts.Where(a => docIds.Contains(a.PractitionerId)).ToList();
+    // One time column for every doctor: the union of their slots, in order.
+    var times = Model.SelectMany(d => HospitalOutpatientService.Slots(d.Row)).Distinct().OrderBy(m => m).ToList();
+    var bySlot = shown.GroupBy(a => (a.PractitionerId, a.StartMinute)).ToDictionary(g => g.Key, g => g.First());
+    bool past = day < today;
+    string dayLabel = day.ToString("dddd d MMMM yyyy", System.Globalization.CultureInfo.CurrentUICulture);
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Appointments"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item text-muted">@T["Hospital"]</li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@T["Appointments"]</li>
+            </ul>
+        </div>
+        <div class="d-flex align-items-center gap-2 gap-lg-3 d-print-none">
+            <a href="@Url.Action("Clinics")" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-briefcase fs-4"></i>@T["Clinics board"]</a>
+        </div>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="row g-5 g-xl-8 mb-5">
+            @foreach (var s in new[] {
+                (T["Appointments today"].Value, shown.Count, T.GetString("across {0} doctors", Model.Count).Value, "text-gray-900"),
+                (T["Checked in"].Value, shown.Count(a => a.Status is HospitalAppointmentStatus.Arrived or HospitalAppointmentStatus.InRoom or HospitalAppointmentStatus.Done), T.GetString("with a doctor now: {0}", shown.Count(a => a.Status == HospitalAppointmentStatus.InRoom)).Value, "text-primary"),
+                (T["Waiting"].Value, shown.Count(a => a.Status == HospitalAppointmentStatus.Arrived), T["arrived, not yet called"].Value, "text-gray-900"),
+                (T["No-shows"].Value, shown.Count(a => a.Status == HospitalAppointmentStatus.NoShow), T["the slot stays recorded"].Value, "text-gray-900") })
+            {
+                <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
+                    <div class="text-muted fw-semibold fs-7 mb-1">@s.Item1</div>
+                    <div class="fs-2hx fw-bold @s.Item4 hp-num">@s.Item2</div>
+                    <div class="text-muted fs-8 mt-1">@s.Item3</div>
+                </div></div></div>
+            }
+        </div>
+
+        <div class="card">
+            <div class="card-header border-0 pt-6">
+                <div class="card-title align-items-start flex-column m-0">
+                    <span class="card-label fw-bold text-gray-900 fs-4">@T["Doctor schedule"] — @dayLabel</span>
+                    <span class="text-muted mt-1 fw-semibold fs-7">@T["Click an empty slot to book, or an appointment to move it along"]</span>
+                </div>
+                <form class="card-toolbar d-flex flex-wrap gap-2" method="get" action="@Url.Action("Appointments")" id="dayForm">
+                    <input type="hidden" name="date" value="@day.ToString("yyyy-MM-dd")" />
+                    <div class="w-200px">
+                        <select name="department" class="form-select form-select-sm form-select-solid" data-hide-search="true">
+                            <option value="">@T["All departments"]</option>
+                            @foreach (var d in departments) { <option value="@d.ID" selected="@(d.ID == department)">@DisplayName.Of(d.Name, d.NameEn)</option> }
+                        </select>
+                    </div>
+                    <a class="btn btn-sm btn-icon btn-light" title="@T["Previous day"]" href="@Url.Action("Appointments", new { date = day.AddDays(-1).ToString("yyyy-MM-dd"), department })"><i class="ki-outline ki-@(DisplayName.IsArabic ? "right" : "left") fs-3"></i></a>
+                    <a class="btn btn-sm btn-light" href="@Url.Action("Appointments", new { department })">@T["Today"]</a>
+                    <a class="btn btn-sm btn-icon btn-light" title="@T["Next day"]" href="@Url.Action("Appointments", new { date = day.AddDays(1).ToString("yyyy-MM-dd"), department })"><i class="ki-outline ki-@(DisplayName.IsArabic ? "left" : "right") fs-3"></i></a>
+                </form>
+            </div>
+            <div class="card-body pt-2">
+                <div class="d-flex flex-wrap gap-5 mb-5">
+                    @foreach (var st in new[] { HospitalAppointmentStatus.Booked, HospitalAppointmentStatus.Arrived, HospitalAppointmentStatus.InRoom, HospitalAppointmentStatus.Done, HospitalAppointmentStatus.NoShow })
+                    {
+                        <span class="d-inline-flex align-items-center gap-2 fs-7 fw-semibold text-gray-700"><span class="hp-swatch @st"></span>@T["appt:" + st]</span>
+                    }
+                </div>
+                @if (Model.Count == 0)
+                {
+                    <div class="text-center text-muted py-15"><i class="ki-outline ki-calendar fs-3x text-gray-300 d-block mb-4"></i>@T["No doctor sees patients on this day."]</div>
+                }
+                else
+                {
+                    <div class="overflow-auto">
+                        <div class="hp-sched" style="grid-template-columns:70px repeat(@Model.Count, minmax(170px,1fr));">
+                            <div class="hd"></div>
+                            @foreach (var d in Model)
+                            {
+                                <div class="hd"><div class="d-flex align-items-center min-w-0">
+                                    <div class="symbol symbol-35px symbol-circle flex-shrink-0">@if (d.PhotoPath != null) {<img src="@d.PhotoPath" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(d.Row.NameEn)" />} else {<span class="symbol-label fw-bold fs-8 hp-initials">@HospitalUi.Initials(d.Row.NameEn)</span>}</div>
+                                    <div class="d-flex flex-column ms-3 min-w-0"><a href="@Url.Action("Practitioner", new { id = d.Row.ID })" class="text-gray-900 text-hover-primary fs-7 fw-bold text-truncate">@DisplayName.Of(d.Row.Name, d.Row.NameEn)</a>
+                                        <span class="text-muted fw-semibold fs-8 text-truncate">@(d.Department == null ? "" : DisplayName.Of(d.Department.Name, d.Department.NameEn))@if (d.ClinicRoomNumber != null) {<text> · </text>@T["Room"] <span class="hp-num">@d.ClinicRoomNumber</span>}</span></div>
+                                </div></div>
+                            }
+                            @foreach (var t in times)
+                            {
+                                <div class="tm hp-num">@HospitalUi.Clock(t)</div>
+                                @foreach (var d in Model)
+                                {
+                                    var offers = HospitalOutpatientService.Slots(d.Row).Contains(t);
+                                    var licensed = HospitalOutpatientService.LicenseValidOn(d.Row, day);
+                                    if (bySlot.TryGetValue((d.Row.ID, t), out var a))
+                                    {
+                                        <div><div class="hp-slot @a.Status" data-appt="@a.Id" title="@a.Mrn">
+                                            <div class="fw-bold text-truncate">@DisplayName.Of(a.PatientName, a.PatientNameEn)</div>
+                                            <div class="fs-8 opacity-75">@T["visit:" + a.VisitType] · @T["appt:" + a.Status]@if (a.QueueNumber != null) {<text> · </text><span class="hp-num">A-@a.QueueNumber.Value.ToString("000")</span>}</div>
+                                        </div></div>
+                                    }
+                                    else if (offers && licensed && canBook && !past)
+                                    {
+                                        <div class="free" data-doc="@d.Row.ID" data-minute="@t" title="@T["Book"]"></div>
+                                    }
+                                    else
+                                    {
+                                        <div class="off"></div>
+                                    }
+                                }
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div></div>
+</div>
+
+<div class="modal fade" id="bookModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-650px"><div class="modal-content">
+    <div class="modal-header"><h2 class="fw-bold m-0">@T["Book an appointment"]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="modal-body py-8 px-lg-10">
+        <div class="d-flex align-items-center mb-6" data-book-doc></div>
+        <div class="row g-5">
+            <div class="col-12"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Patient"]</label>
+                <select class="form-select form-select-solid" data-no-select2 data-book-patient data-placeholder="@T["Search by name, MRN or ID"]"></select></div>
+            <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Visit type"]</label>
+                <select class="form-select form-select-solid" data-book-type>
+                    @foreach (var v in HospitalVisitTypes.All) { <option value="@v">@T["visit:" + v]</option> }
+                </select></div>
+            <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Time"]</label><div class="form-control form-control-solid hp-num" data-book-time></div></div>
+            <div class="col-12"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Note"]</label><textarea class="form-control form-control-solid" rows="2" maxlength="400" data-book-note></textarea></div>
+        </div>
+    </div>
+    <div class="modal-footer flex-center"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-book-confirm><i class="ki-outline ki-calendar-add fs-4"></i>@T["Confirm booking"]</button></div>
+</div></div></div>
+
+<div class="modal fade" id="apptModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-550px"><div class="modal-content">
+    <div class="modal-header"><h2 class="fw-bold m-0" data-appt-title></h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="modal-body py-8 px-lg-10" data-appt-body></div>
+    <div class="modal-footer flex-center" data-appt-footer></div>
+</div></div></div>
+
+@section Scripts {
+    <script>
+        (function () {
+            var $ = window.jQuery, esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+            var isAr = @Json.Serialize(DisplayName.IsArabic), canBook = @Json.Serialize(canBook);
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            var day = @Json.Serialize(day.ToString("yyyy-MM-dd"));
+            var docs = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ToDictionary(d => d.Row.ID.ToString(), d => new { name = DisplayName.Of(d.Row.Name, d.Row.NameEn), title = DisplayName.Of(d.Row.Title, d.Row.TitleEn), photo = d.PhotoPath, initials = HospitalUi.Initials(d.Row.NameEn) })));
+            var appts = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(shown.ToDictionary(a => a.Id.ToString(), a => new { id = a.Id, patientId = a.PatientId, name = DisplayName.Of(a.PatientName, a.PatientNameEn), mrn = a.Mrn, photo = a.PatientPhoto, initials = HospitalUi.Initials(a.PatientNameEn), doc = a.PractitionerId, time = HospitalUi.Clock(a.StartMinute), status = a.Status, visit = a.VisitType, queue = a.QueueNumber, note = a.Note })));
+            var W = {
+                failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value), choose: @Json.Serialize(T["Choose a patient first"].Value),
+                open: @Json.Serialize(T["Open file"].Value), close: @Json.Serialize(T["Close"].Value), queue: @Json.Serialize(T["Queue number"].Value),
+                status: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(HospitalAppointmentStatus.All.ToDictionary(s => s, s => T["appt:" + s].Value))),
+                visit: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(HospitalVisitTypes.All.ToDictionary(s => s, s => T["visit:" + s].Value))),
+                act: { Arrived: @Json.Serialize(T["Check in"].Value), InRoom: @Json.Serialize(T["Send in to the doctor"].Value), Done: @Json.Serialize(T["Finish the visit"].Value), NoShow: @Json.Serialize(T["Did not come"].Value), Cancelled: @Json.Serialize(T["Cancel the appointment"].Value) }
+            };
+            var urls = { book: @Json.Serialize(Url.Action("BookAppointment")), move: @Json.Serialize(Url.Action("MoveAppointment", new { id = 0 })), search: @Json.Serialize(Url.Action("SearchPatients")), patient: @Json.Serialize(Url.Action("Patient", new { id = 0 })) };
+            var moves = { Booked: ['Arrived', 'NoShow', 'Cancelled'], Arrived: ['InRoom', 'Cancelled'], InRoom: ['Done'] };
+            function toast(k, m) { if (window.toastr) toastr[k](m); }
+            function post(url, body) { return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(body) }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); }); }
+            function person(p, size, href) {
+                return '<div class="d-flex align-items-center min-w-0"><div class="symbol symbol-' + size + 'px symbol-circle flex-shrink-0">' +
+                    (p.photo ? '<img src="' + esc(p.photo) + '" alt="" style="object-fit:cover" data-initials="' + esc(p.initials) + '" />' : '<span class="symbol-label fw-bold hp-initials">' + esc(p.initials) + '</span>') +
+                    '</div><div class="d-flex flex-column ms-3 min-w-0">' + (href ? '<a class="fw-bold text-gray-900 text-hover-primary text-truncate" href="' + href + '">' + esc(p.name) + '</a>' : '<span class="fw-bold text-gray-900 text-truncate">' + esc(p.name) + '</span>') +
+                    '<span class="text-muted fs-7 text-truncate">' + (p.sub || '') + '</span></div></div>';
+            }
+            // Changing the department reloads the day for it (a filter is a GET, never a write).
+            var dept = document.querySelector('#dayForm [name=department]');
+            if (dept) CB.onSelectChange(dept, function () { document.getElementById('dayForm').submit(); });
+
+            // ---------------- book ----------------
+            var bookEl = document.getElementById('bookModal'), picker = bookEl.querySelector('[data-book-patient]'), slot = null;
+            if ($ && $.fn.select2) $(picker).select2({ width: '100%', dir: isAr ? 'rtl' : 'ltr', dropdownParent: $(bookEl), placeholder: picker.getAttribute('data-placeholder'),
+                ajax: { url: urls.search, dataType: 'json', delay: 250, data: function (p) { return { q: p.term || '' }; }, processResults: function (d) { return { results: d.results || [] }; } } });
+            // One delegated handler, so a refreshed grid needs no re-binding.
+            document.addEventListener('click', function (e) {
+                var cell = e.target.closest('[data-doc][data-minute]'); if (!cell) return;
+                {
+                    var d = docs[cell.getAttribute('data-doc')], m = +cell.getAttribute('data-minute');
+                    slot = { doc: +cell.getAttribute('data-doc'), minute: m };
+                    var clock = ('0' + Math.floor(m / 60)).slice(-2) + ':' + ('0' + m % 60).slice(-2);
+                    bookEl.querySelector('[data-book-doc]').innerHTML = person({ name: d.name, photo: d.photo, initials: d.initials, sub: esc(d.title) + ' · <span class="hp-num">' + clock + '</span>' }, 50);
+                    bookEl.querySelector('[data-book-time]').textContent = day + '  ' + clock;
+                    bookEl.querySelector('[data-book-note]').value = '';
+                    if ($) $(picker).val(null).trigger('change');
+                    bootstrap.Modal.getOrCreateInstance(bookEl).show();
+                }
+            });
+            bookEl.querySelector('[data-book-confirm]').addEventListener('click', function () {
+                var b = this, pid = picker.value;
+                if (!pid) { toast('error', W.choose); return; }
+                b.disabled = true;
+                post(urls.book, { patientId: +pid, practitionerId: slot.doc, date: day, startMinute: slot.minute, visitType: bookEl.querySelector('[data-book-type]').value, note: bookEl.querySelector('[data-book-note]').value || null })
+                    .then(function (res) {
+                        b.disabled = false;
+                        if (!res.ok) { toast('error', res.error || W.failed); return; }
+                        bootstrap.Modal.getInstance(bookEl).hide(); toast('success', W.saved); refresh();
+                    });
+            });
+
+            // ---------------- an appointment: move it along ----------------
+            var apptEl = document.getElementById('apptModal');
+            document.addEventListener('click', function (e) {
+                var el = e.target.closest('[data-appt]'); if (!el) return;
+                var a = appts[el.getAttribute('data-appt')]; if (!a) return;
+                apptEl.querySelector('[data-appt-title]').innerHTML = '<span class="hp-num">' + a.time + '</span> — ' + esc(W.status[a.status]);
+                apptEl.querySelector('[data-appt-body]').innerHTML =
+                    person({ name: a.name, photo: a.photo, initials: a.initials, sub: '<span class="hp-num">' + esc(a.mrn) + '</span> · ' + esc(W.visit[a.visit]) }, 55, urls.patient.replace(/0$/, a.patientId)) +
+                    '<div class="separator my-5"></div>' + person({ name: docs[a.doc].name, photo: docs[a.doc].photo, initials: docs[a.doc].initials, sub: esc(docs[a.doc].title) }, 35) +
+                    (a.queue ? '<div class="mt-5 fs-7"><span class="text-muted">' + esc(W.queue) + ':</span> <span class="fw-bold fs-4 hp-num">A-' + ('00' + a.queue).slice(-3) + '</span></div>' : '') +
+                    (a.note ? '<div class="mt-4 text-gray-700 fs-7">' + esc(a.note) + '</div>' : '');
+                var foot = '<button type="button" class="btn btn-light" data-bs-dismiss="modal">' + esc(W.close) + '</button>';
+                if (canBook) (moves[a.status] || []).forEach(function (to) {
+                    var cls = to === 'Cancelled' || to === 'NoShow' ? 'btn-light' : 'btn-primary';
+                    foot += '<button type="button" class="btn ' + cls + '" data-move="' + to + '">' + esc(W.act[to]) + '</button>';
+                });
+                var f = apptEl.querySelector('[data-appt-footer]'); f.innerHTML = foot;
+                f.querySelectorAll('[data-move]').forEach(function (b) {
+                    b.addEventListener('click', function () {
+                        b.disabled = true;
+                        post(urls.move.replace(/0\/Move$/, a.id + '/Move'), { to: b.getAttribute('data-move') }).then(function (res) {
+                            if (!res.ok) { b.disabled = false; toast('error', res.error || W.failed); return; }
+                            bootstrap.Modal.getInstance(apptEl).hide(); toast('success', W.saved); refresh();
+                        });
+                    });
+                });
+                bootstrap.Modal.getOrCreateInstance(apptEl).show();
+            });
+
+            // In place, never a reload: the server renders the day again and the grid and counters are swapped.
+            function refresh() {
+                fetch(location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.text(); }).then(function (html) {
+                    var doc = new DOMParser().parseFromString(html, 'text/html');
+                    ['.hp-sched', '.app-content .row.mb-5'].forEach(function (sel) { var a = document.querySelector(sel), b = doc.querySelector(sel); if (a && b) a.innerHTML = b.innerHTML; });
+                    var m = /var appts = (\{[\s\S]*?\});\n/.exec(html); if (m) { try { appts = JSON.parse(m[1]); } catch (e) { } }
+                });
+            }
+        })();
+    </script>
+}

@@ -39,6 +39,7 @@ namespace CrossBuy.Analyzers
             "ProjectPerm",
             "TaskPerm",
             "CommunicationPerm",
+            "HospitalPerm",
             "PosPerm",
 
             // EXTERNAL IDENTITY, NOT A MODULE RIGHT. PortalAuthorize derives from

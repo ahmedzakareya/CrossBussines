@@ -1,0 +1,242 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model HospitalRadOrderView
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    var o = Model.Order;
+    var p = Model.Patient;
+    var name = DisplayName.Of(p.Name, p.NameEn);
+    ViewData["Title"] = DisplayName.Of(o.Name, o.NameEn) + " — " + o.AccessionNo;
+    bool canRad = ViewBag.CanRad == true, canReport = ViewBag.CanReport == true;
+    var previous = (ViewBag.Previous as List<HospitalRadOrder>) ?? new();
+    bool signed = o.Status == HospitalRadStatus.Signed;
+    bool writing = canReport && o.Status == HospitalRadStatus.Reporting;
+    var age = HospitalPatientService.AgeOn(p.BirthDate, DateTime.UtcNow);
+    string Who(int? id) => id != null && Model.People.TryGetValue(id.Value, out var n) ? n : "—";
+    string Clock(DateTime? t) => t?.ToLocalTime().ToString("HH:mm") ?? "—";
+    string CatClass(string? c) => c == HospitalRadImpression.Critical ? "badge-danger" : c == HospitalRadImpression.Abnormal ? "badge-light-danger" : "badge-light-success";
+    var trail = new (string Label, DateTime? At, int? By, string Icon)[] {
+        (T["Ordered"].Value, o.OrderedAt, o.OrderedByEmployeeId, "ki-document"),
+        (T["Arrived at radiology"].Value, o.ArrivedAt, o.ArrivedByEmployeeId, "ki-entrance-left"),
+        (T["Scan started"].Value, o.ScanStartedAt, o.ScannedByEmployeeId, "ki-scan-barcode"),
+        (T["Scan ended"].Value, o.ScanEndedAt, o.ScannedByEmployeeId, "ki-check-square"),
+        (T["Report written"].Value, o.ReportedAt, o.ReportedByEmployeeId, "ki-notepad-edit"),
+        (T["Report signed"].Value, o.SignedAt, o.SignedByEmployeeId, "ki-shield-tick") };
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@(signed ? T["Imaging report"] : o.Status == HospitalRadStatus.Reporting ? T["Reporting"] : T["Imaging order"])</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item text-muted"><a href="@Url.Action("Radiology")" class="text-muted text-hover-primary">@T["Radiology"]</a></li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted hp-num">@o.AccessionNo</li>
+            </ul>
+        </div>
+        <div class="d-flex align-items-center gap-2 gap-lg-3 d-print-none">
+            @if (canRad && o.Status == HospitalRadStatus.Scheduled)
+            {
+                <select class="form-select form-select-sm form-select-solid w-175px" data-room data-control="select2" data-hide-search="true">
+                    <option value="">@T["Room with the shortest queue"]</option>
+                    @foreach (var m in Model.Rooms) { <option value="@m.ID" disabled="@m.InMaintenance">@m.Code · @DisplayName.Of(m.Name, m.NameEn)@(m.InMaintenance ? " — " + T["Maintenance"].Value : "")</option> }
+                </select>
+                <button type="button" class="btn btn-sm btn-primary" data-step="Arrive" data-confirm="@string.Format(T["Mark {0} arrived for {1}? A room of the exam's type is given."].Value, name, DisplayName.Of(o.Name, o.NameEn))"><i class="ki-outline ki-entrance-left fs-4"></i>@T["Arrived"]</button>
+            }
+            @if (canRad && o.Status == HospitalRadStatus.Arrived) { <button type="button" class="btn btn-sm btn-primary" data-step="Start" data-confirm="@(Model.ContrastAlert ? string.Format(T["{0} has a recorded contrast allergy. Start the scan anyway?"].Value, name) : string.Format(T["Start the scan of {0} in {1}?"].Value, name, Model.Room?.Code ?? "—"))" data-confirm-kind="@(Model.ContrastAlert ? "danger" : "primary")"><i class="ki-outline ki-scan-barcode fs-4"></i>@T["Start scan"]</button> }
+            @if (canRad && o.Status == HospitalRadStatus.Scanning) { <button type="button" class="btn btn-sm btn-primary" data-step="End" data-confirm="@T["End the scan? The room is freed and the report can be written."]"><i class="ki-outline ki-check-square fs-4"></i>@T["End scan"]</button> }
+            @if (writing)
+            {
+                <button type="button" class="btn btn-sm btn-light" data-save><i class="ki-outline ki-save-2 fs-4"></i>@T["Save"]</button>
+                <button type="button" class="btn btn-sm btn-primary" data-sign><i class="ki-outline ki-check-circle fs-4"></i>@T["Sign report"]</button>
+            }
+            @if (signed) { <span class="badge badge-light-success fs-7 px-4 py-3"><i class="ki-outline ki-shield-tick fs-5 text-success me-1"></i>@T["Signed"] <span class="hp-num ms-1" data-fmt data-utc="@o.SignedAt?.ToString("o")">@o.SignedAt?.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</span></span> }
+        </div>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="hp-pbanner p-6 mb-5"><div class="d-flex flex-wrap align-items-center gap-5">
+            <div class="symbol symbol-75px symbol-circle flex-shrink-0">@if (p.PhotoPath != null) {<img src="@p.PhotoPath" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(p.NameEn)" />} else {<span class="symbol-label fs-2 fw-bold hp-initials">@HospitalUi.Initials(p.NameEn)</span>}</div>
+            <div class="flex-grow-1 min-w-0">
+                <div class="d-flex flex-wrap align-items-center gap-2 mb-1"><a href="@Url.Action("Patient", new { id = p.ID })" class="fs-2 fw-bold text-gray-900 text-hover-primary">@name</a><span class="badge hp-code fw-bold fs-8 hp-num">@p.Mrn</span></div>
+                <div class="d-flex flex-wrap gap-2 mt-2">
+                    <span class="hp-chip"><i class="ki-outline ki-user fs-7"></i>@if (age != null) {<span class="hp-num">@age</span> @T["y"] <text> · </text>}@(p.Sex == HospitalPatientSex.Male ? T["Male"] : T["Female"])</span>
+                    @if (o.OrderedByEmployeeId != null) { <span class="hp-chip"><i class="ki-outline ki-briefcase fs-7"></i>@Who(o.OrderedByEmployeeId)</span> }
+                    @if (Model.Room != null) { <span class="hp-chip"><i class="ki-outline ki-geolocation fs-7"></i><span class="hp-num">@Model.Room.Code</span> · @DisplayName.Of(Model.Room.Name, Model.Room.NameEn)</span> }
+                </div>
+            </div>
+        </div></div>
+
+        @if (Model.ContrastAlert)
+        {
+            <div class="notice d-flex rounded border border-dashed border-danger bg-light-danger p-6 mb-5">
+                <i class="ki-outline ki-shield-cross fs-2tx text-danger me-4"></i>
+                <div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@T["Contrast allergy"]</h4>
+                    <div class="fs-6 text-gray-700">@T["This exam uses contrast and the patient's file records an allergy to it:"] @p.Allergies</div></div>
+            </div>
+        }
+        @if (o.IsCritical)
+        {
+            <div class="notice d-flex rounded border border-dashed p-6 mb-5 @(o.CriticalAcknowledgedAt == null ? "bg-light-danger border-danger" : "bg-light-success border-success")">
+                <span class="symbol symbol-45px me-5 flex-shrink-0"><span class="symbol-label @(o.CriticalAcknowledgedAt == null ? "bg-danger" : "bg-success")"><i class="ki-outline @(o.CriticalAcknowledgedAt == null ? "ki-notification-status" : "ki-check-circle") fs-2x text-white"></i></span></span>
+                <div class="d-flex flex-stack flex-grow-1 flex-wrap flex-md-nowrap">
+                    <div class="mb-3 mb-md-0 fw-semibold pe-5">
+                        <h4 class="text-gray-900 fw-bold mb-1">@(o.CriticalAcknowledgedAt == null ? T["A critical result — tell the doctor now"] : T["The doctor was told of the critical result"])</h4>
+                        <div class="fs-6 text-gray-700">@o.Impression</div>
+                    </div>
+                    <a href="@Url.Action("RadCritical", new { id = o.ID })" class="btn btn-sm @(o.CriticalAcknowledgedAt == null ? "btn-danger" : "btn-light") flex-shrink-0">@(o.CriticalAcknowledgedAt == null ? T["Notify the doctor"] : T["Following it up"])</a>
+                </div>
+            </div>
+        }
+
+        <div class="row g-5 g-xl-8">
+            <div class="col-xl-8">
+                <div class="card mb-5">
+                    <div class="card-header border-0 pt-6">
+                        <div class="card-title align-items-start flex-column m-0">
+                            <span class="card-label fw-bold text-gray-900 fs-4">@DisplayName.Of(o.Name, o.NameEn) <span class="badge hp-code fw-bold fs-8 hp-num ms-1">@o.AccessionNo</span></span>
+                            <span class="text-muted mt-1 fw-semibold fs-7">@T["mod:" + o.Modality]@if (o.Contrast) {<text> · @T["with contrast"]</text>}@if (Model.Room != null) {<text> · <span class="hp-num">@Model.Room.Code</span></text>}</span>
+                        </div>
+                        <div class="card-toolbar"><span class="badge badge-light-@(signed ? "success" : "primary") fs-7">@T["rad:" + o.Status]</span></div>
+                    </div>
+                    <div class="card-body pt-2">
+                        @if (o.Status is HospitalRadStatus.Scheduled or HospitalRadStatus.Arrived or HospitalRadStatus.Scanning)
+                        {
+                            <div class="text-muted fs-7 py-4"><i class="ki-outline ki-information-5 fs-6 me-1"></i>@T["The report is written once the scan has ended."]</div>
+                        }
+                        else if (writing)
+                        {
+                            <div class="row g-5 mb-5">
+                                <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Impression category"]</label>
+                                    <select class="form-select form-select-solid" data-k="category" data-control="select2" data-hide-search="true">
+                                        <option value="">—</option>
+                                        @foreach (var c in HospitalRadImpression.All) { <option value="@c" selected="@(o.ImpressionCategory == c)">@T["imp:" + c]</option> }
+                                    </select></div>
+                                <div class="col-md-6 d-flex align-items-end"><button type="button" class="btn btn-light-primary w-100" disabled title="@T["Not connected yet"]"><i class="ki-outline ki-picture fs-4"></i>@T["Open images in PACS"] <span class="text-muted fs-8 ms-1">— @T["Not connected yet"]</span></button></div>
+                            </div>
+                            <label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Findings"]</label>
+                            <textarea class="form-control form-control-solid mb-5" rows="8" maxlength="4000" data-k="findings">@o.Findings</textarea>
+                            <label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Impression"]</label>
+                            <textarea class="form-control form-control-solid" rows="3" maxlength="1000" data-k="impression">@o.Impression</textarea>
+                        }
+                        else
+                        {
+                            @if (o.ImpressionCategory != null) { <span class="badge @CatClass(o.ImpressionCategory) fs-7 mb-4">@T["imp:" + o.ImpressionCategory]</span> }
+                            <div class="text-muted fs-7 fw-semibold mb-1">@T["Findings"]</div>
+                            <div class="text-gray-800 fs-6 mb-5" style="white-space:pre-line">@(o.Findings ?? "—")</div>
+                            <div class="text-muted fs-7 fw-semibold mb-1">@T["Impression"]</div>
+                            <div class="text-gray-900 fs-5 fw-bold" style="white-space:pre-line">@(o.Impression ?? "—")</div>
+                            @if (signed) { <div class="text-muted fs-8 mt-5">@T["Signed by"] @Who(o.SignedByEmployeeId)</div> }
+                        }
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-4">
+                <div class="notice d-flex rounded border border-dashed border-primary bg-light-primary p-6 mb-5">
+                    <i class="ki-outline ki-shield-tick fs-2tx text-primary me-4"></i>
+                    <div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@T["Two-step verification"]</h4>
+                        <div class="fs-6 text-gray-700">@T["The radiographer performs the scan and the radiologist writes and signs the report; only a signed report reaches the doctor and the patient file."]</div></div>
+                </div>
+                <div class="card mb-5">
+                    <div class="card-header border-0 pt-6"><div class="card-title"><span class="card-label fw-bold text-gray-900 fs-4">@T["Exam trail"]</span></div></div>
+                    <div class="card-body pt-2">
+                        @foreach (var s in trail)
+                        {
+                            <div class="d-flex align-items-center py-3 hp-row">
+                                <span class="symbol symbol-30px flex-shrink-0"><span class="symbol-label @(s.At != null ? "bg-light-primary" : "bg-light")"><i class="ki-outline @s.Icon fs-5 @(s.At != null ? "text-primary" : "text-gray-400")"></i></span></span>
+                                <div class="ms-3 flex-grow-1"><div class="fw-semibold @(s.At != null ? "text-gray-800" : "text-gray-400")">@s.Label</div>@if (s.At != null) {<div class="text-muted fs-8">@Who(s.By)</div>}</div>
+                                <span class="hp-num text-muted fs-7" data-fmt data-utc="@s.At?.ToString("o")">@Clock(s.At)</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+                @if (canRad && !signed)
+                {
+                    <div class="card mb-5">
+                        <div class="card-header border-0 pt-6"><div class="card-title"><span class="card-label fw-bold text-gray-900 fs-4">@T["Priority"]</span></div></div>
+                        <div class="card-body pt-2 d-flex gap-2">
+                            @foreach (var pr in HospitalLabPriority.All)
+                            {
+                                <button type="button" class="btn btn-sm flex-grow-1 @(o.Priority == pr ? (pr == HospitalLabPriority.Stat ? "btn-danger" : "btn-primary") : "btn-light")" data-priority="@pr" data-confirm="@string.Format(T["Change the priority of {0} to {1}?"].Value, o.AccessionNo, pr == HospitalLabPriority.Stat ? "STAT" : T[pr].Value)">@(pr == HospitalLabPriority.Stat ? "STAT" : T[pr].Value)</button>
+                            }
+                        </div>
+                    </div>
+                }
+                @if (previous.Count > 0)
+                {
+                    <div class="card">
+                        <div class="card-header border-0 pt-6"><div class="card-title"><span class="card-label fw-bold text-gray-900 fs-4">@T["Earlier reports"]</span></div></div>
+                        <div class="card-body pt-2">
+                            @foreach (var r in previous)
+                            {
+                                <a href="@Url.Action("RadOrder", new { id = r.ID })" class="d-block py-3 hp-row text-hover-primary">
+                                    <div class="d-flex flex-stack"><span class="fw-semibold text-gray-800">@DisplayName.Of(r.Name, r.NameEn)</span><span class="hp-num text-muted fs-8" data-fmt data-utc="@r.SignedAt?.ToString("o")">@r.SignedAt?.ToLocalTime().ToString("yyyy-MM-dd")</span></div>
+                                    <div class="text-muted fs-8 text-truncate">@r.Impression</div>
+                                </a>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div></div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            var base = @Json.Serialize(Url.Action("RadOrder", new { id = o.ID }));
+            var critUrl = @Json.Serialize(Url.Action("RadCritical", new { id = o.ID }));
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value), signed: @Json.Serialize(T["Report signed — the doctor can see it"].Value),
+                      sign: @Json.Serialize(T["Sign this report? Once signed it reaches the doctor and the patient file and can no longer be changed."].Value),
+                      signCritical: @Json.Serialize(T["Sign this report as CRITICAL? You will then choose the doctor to tell."].Value) };
+            function toast(k, m) { if (window.toastr) toastr[k](m); }
+            function post(step, body) {
+                return fetch(base + '/' + step, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(body || {}) })
+                    .then(function (r) { return r.json().catch(function () { return { ok: false }; }); });
+            }
+            // In place, never a reload: the page is rendered again and its content and actions swapped.
+            function swap() {
+                return fetch(location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.text(); }).then(function (html) {
+                    var doc = new DOMParser().parseFromString(html, 'text/html');
+                    ['kt_app_content', 'kt_app_toolbar'].forEach(function (id) { var f = doc.getElementById(id); if (f) document.getElementById(id).innerHTML = f.innerHTML; });
+                    if (window.KTApp && KTApp.createSelect2) KTApp.createSelect2();
+                });
+            }
+            function done(btn, msg) { return function (res) { if (btn) btn.disabled = false; if (!res.ok) { toast('error', res.error || W.failed); return; } toast('success', msg || W.saved); swap(); }; }
+            function report() {
+                var o = {}; document.querySelectorAll('[data-k]').forEach(function (i) { o[i.getAttribute('data-k')] = i.value || null; }); return o;
+            }
+            document.addEventListener('click', function (e) {
+                var t = e.target.closest('[data-step],[data-save],[data-sign],[data-priority]'); if (!t) return;
+                var msg = t.getAttribute('data-confirm');
+                if (msg && !t.hasAttribute('data-confirmed')) { cbConfirm(msg, { kind: t.getAttribute('data-confirm-kind') || 'primary' }).then(function (ok) { if (ok) { t.setAttribute('data-confirmed', ''); t.click(); } }); return; }
+                t.removeAttribute('data-confirmed');
+                if (t.hasAttribute('data-sign')) {
+                    var r = report(), critical = r.category === 'Critical';
+                    cbConfirm(critical ? W.signCritical : W.sign, { kind: critical ? 'danger' : 'primary' }).then(function (ok) {
+                        if (!ok) return;
+                        t.disabled = true;
+                        post('Sign', r).then(function (res) {
+                            t.disabled = false;
+                            if (!res.ok) { toast('error', res.error || W.failed); return; }
+                            toast('success', W.signed);
+                            if (critical) location.href = critUrl; else swap();
+                        });
+                    });
+                    return;
+                }
+                t.disabled = true;
+                if (t.hasAttribute('data-save')) { post('Report', report()).then(done(t)); return; }
+                if (t.hasAttribute('data-priority')) { post('Priority', { priority: t.getAttribute('data-priority') }).then(done(t)); return; }
+                var step = t.getAttribute('data-step'), room = document.querySelector('[data-room]');
+                post(step, step === 'Arrive' ? { roomId: room && room.value ? +room.value : null } : null).then(done(t));
+            });
+        })();
+    </script>
+}

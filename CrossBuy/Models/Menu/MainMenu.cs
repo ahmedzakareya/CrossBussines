@@ -403,6 +403,56 @@
 			}},
 		};
 
+		// ===== Hospital (HospitalController — industry pack H1: the building as the admin draws it) =====
+		public static List<MenuCategory> Hospital() => new()
+		{
+			// The prototype's groups: the front desk first, then inpatient.
+			new() { LabelAr = "لوحة المستشفى", LabelEn = "Hospital dashboard", Icon = "ki-outline ki-element-11", Items = new()
+			{
+				new() { LabelAr = "خريطة المستشفى", LabelEn = "Hospital map", Action = "Map", Controller = "Hospital" },
+			}},
+			new() { LabelAr = "المرضى والاستقبال", LabelEn = "Patients & front desk", Icon = "ki-outline ki-profile-user", Items = new()
+			{
+				new() { LabelAr = "سجل المرضى", LabelEn = "Patient registry", Action = "Patients", Controller = "Hospital" },
+				new() { LabelAr = "تسجيل مريض", LabelEn = "Register patient", Action = "RegisterPatient", Controller = "Hospital" },
+				new() { LabelAr = "المواعيد", LabelEn = "Appointments", Action = "Appointments", Controller = "Hospital" },
+			}},
+			new() { LabelAr = "العيادات", LabelEn = "Clinics", Icon = "ki-outline ki-briefcase", Items = new()
+			{
+				new() { LabelAr = "لوحة العيادات", LabelEn = "Clinics board", Action = "Clinics", Controller = "Hospital" },
+				new() { LabelAr = "قائمة الطبيب", LabelEn = "Doctor worklist", Action = "Worklist", Controller = "Hospital" },
+			}},
+			new() { LabelAr = "التنويم", LabelEn = "Inpatient", Icon = "ki-outline ki-home-3", Items = new()
+			{
+				new() { LabelAr = "الأسرة والغرف", LabelEn = "Beds & rooms", Action = "Index", Controller = "Hospital" },
+				new() { LabelAr = "أنواع الغرف", LabelEn = "Room types", Action = "RoomTypes", Controller = "Hospital" },
+				new() { LabelAr = "مصمم الأدوار والغرف", LabelEn = "Floor & room designer", Action = "Designer", Controller = "Hospital" },
+			}},
+			new() { LabelAr = "التشخيص", LabelEn = "Diagnostics", Icon = "ki-outline ki-flask", Items = new()
+			{
+				new() { LabelAr = "المختبر", LabelEn = "Laboratory", Action = "Lab", Controller = "Hospital" },
+				new() { LabelAr = "التحاليل ومؤشراتها", LabelEn = "Lab tests & analytes", Action = "LabTests", Controller = "Hospital" },
+				new() { LabelAr = "الأشعة", LabelEn = "Radiology", Action = "Radiology", Controller = "Hospital" },
+				new() { LabelAr = "الفحوصات والأجهزة", LabelEn = "Exams & rooms", Action = "RadiologySetup", Controller = "Hospital" },
+			}},
+			new() { LabelAr = "الصيدلية", LabelEn = "Pharmacy", Icon = "ki-outline ki-capsule", Items = new()
+			{
+				new() { LabelAr = "قائمة الصرف", LabelEn = "Dispensing queue", Action = "Pharmacy", Controller = "Hospital" },
+			}},
+			new() { LabelAr = "الأطباء والعاملون", LabelEn = "Doctors & staff", Icon = "ki-outline ki-people", Items = new()
+			{
+				new() { LabelAr = "الممارسون الصحيون", LabelEn = "Practitioners", Action = "Practitioners", Controller = "Hospital" },
+			}},
+			new() { LabelAr = "المالية والتأمين", LabelEn = "Finance & insurance", Icon = "ki-outline ki-bill", Items = new()
+			{
+				new() { LabelAr = "الفوترة والخزينة", LabelEn = "Billing & cashier", Action = "Bills", Controller = "Hospital" },
+				new() { LabelAr = "إغلاق الخزينة", LabelEn = "Cashier closing", Action = "Cashier", Controller = "Hospital" },
+				new() { LabelAr = "الخدمات والأصناف", LabelEn = "Services & items", Action = "Catalog", Controller = "Hospital" },
+				new() { LabelAr = "قوائم الأسعار", LabelEn = "Price lists", Action = "PriceLists", Controller = "Hospital" },
+				new() { LabelAr = "إعدادات الفوترة", LabelEn = "Billing settings", Action = "BillingSettings", Controller = "Hospital" },
+			}},
+		};
+
 		// ===== Projects & Contracting (ProjectController — its OWN system, not under Accounting) =====
 		public static List<MenuCategory> Projects() => new()
 		{

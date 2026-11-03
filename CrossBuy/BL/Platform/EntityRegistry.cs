@@ -50,6 +50,11 @@ namespace CrossBuy.BL.Platform
         // already-defined Task.* / CalendarEvent.* contracts publishable at all.
         public const string Task = "Task";
         public const string CalendarEvent = "CalendarEvent";
+        // Hospital: a room is a collaboration subject from day one: the ward talks about it, mentions
+        // people on it and gets notified through the Communication Platform like any other record.
+        public const string HospitalRoom = "HospitalRoom";
+        // Hospital H2: the care team discusses a patient on the patient's file.
+        public const string HospitalPatient = "HospitalPatient";
 
         // Stage 2A Batch A. The grant store becomes an event PRODUCER: IPlatformGrantWriter records
         // Created / Revoked / ValidityChanged. RecordAsync validates EntityCode against this registry and
@@ -111,6 +116,8 @@ namespace CrossBuy.BL.Platform
         // which DefaultPermissionAdapter denies for every action except View — correct while no policy
         // existed, and the reason a calendar write could not be authorized at all.
         public const string ScopeCalendar = "Calendar";
+        // The first industry pack, exactly as the note above foresaw: one constant, roles as rows.
+        public const string ScopeHospital = "Hospital";
 
         public const string ScopeNone = "None";
 
@@ -124,6 +131,7 @@ namespace CrossBuy.BL.Platform
         {
             ScopeAccounting, ScopeInventory, ScopePos, ScopeCrm, ScopeManufacturing,
             ScopeHr, ScopeProjects, ScopeTasks, ScopeCommunication, ScopeCalendar,
+            ScopeHospital,
         };
 
         public static bool IsKnownScope(string? scope)
@@ -564,6 +572,34 @@ namespace CrossBuy.BL.Platform
             },
             new EntityDefinition
             {
+                // Hospital H1. Comments only, deliberately: there is no HospitalRoom event producer yet, so
+                // SupportsTimeline would strand dispatch rows with no presenter arm, and Files needs a
+                // document owner resolver this unit does not add. Both switch on when they exist.
+                Code = HospitalRoom,
+                DisplayNameAr = "غرفة", DisplayNameEn = "Hospital room",
+                Module = "Hospital", Icon = "ki-outline ki-home-3", Color = "primary",
+                RouteTemplate = "/Hospital/Room/{id}",
+                SupportsSearch = true, SupportsTimeline = false, SupportsComments = true,
+                SupportsFiles = false, SupportsFollowers = false,
+                PermissionScope = ScopeHospital,
+                ListedInRecordPicker = true,
+            },
+            new EntityDefinition
+            {
+                // Hospital H2. Comments only, like the room. NOT in the record picker: a picker anywhere in
+                // the system would let anyone who can comment search patient names, and a patient's
+                // identity is clinical data. The file is reached from the hospital's own registry.
+                Code = HospitalPatient,
+                DisplayNameAr = "مريض", DisplayNameEn = "Patient",
+                Module = "Hospital", Icon = "ki-outline ki-profile-user", Color = "primary",
+                RouteTemplate = "/Hospital/Patient/{id}",
+                SupportsSearch = true, SupportsTimeline = false, SupportsComments = true,
+                SupportsFiles = false, SupportsFollowers = false,
+                PermissionScope = ScopeHospital,
+                ListedInRecordPicker = false,
+            },
+            new EntityDefinition
+            {
                 // Stage 2A Batch A — the platform grant store, onboarded so the Grant Writer can record events.
                 //
                 // SupportsTimeline / Comments / Files / Followers are all FALSE, and it is NOT listed in the
@@ -802,6 +838,16 @@ namespace CrossBuy.BL.Platform
                     .OrderByDescending(t => t.ID).Take(SearchTake)
                     .Select(t => new ValueTuple<int, string>(t.ID, t.Title)).ToListAsync(cancellationToken),
 
+                HospitalRoom => await _db.HospitalRooms.AsNoTracking()
+                    .Where(r => r.CompanyId == companyId && r.IsActive && (any || r.Number.Contains(term) || (r.Name != null && r.Name.Contains(term))))
+                    .OrderBy(r => r.Number).Take(SearchTake)
+                    .Select(r => new ValueTuple<int, string>(r.ID, r.Name == null ? r.Number : r.Number + " — " + r.Name)).ToListAsync(cancellationToken),
+
+                HospitalPatient => await _db.HospitalPatients.AsNoTracking()
+                    .Where(p => p.CompanyId == companyId && p.IsActive && (any || p.Mrn.Contains(term) || p.Name.Contains(term) || p.NameEn.Contains(term)))
+                    .OrderByDescending(p => p.ID).Take(SearchTake)
+                    .Select(p => new ValueTuple<int, string>(p.ID, p.Mrn + " — " + p.Name)).ToListAsync(cancellationToken),
+
                 CalendarEvent => await _db.CalendarEvents.AsNoTracking()
                     .Where(e => e.CompanyID == companyId && e.DeletedAt == null && (any || e.Title.Contains(term)))
                     .OrderByDescending(e => e.StartAt).Take(SearchTake)
@@ -991,6 +1037,18 @@ namespace CrossBuy.BL.Platform
                 // read decision, and nothing here bypasses it. A Personal event the caller may not see still
                 // resolves to its title here — which is why this code is not in the record picker, and why the
                 // agenda redacts rather than relying on this path.
+                case HospitalRoom:
+                    label = await _db.HospitalRooms.AsNoTracking()
+                        .Where(r => r.ID == entityId && r.CompanyId == companyId)
+                        .Select(r => r.Name == null ? r.Number : r.Number + " — " + r.Name).FirstOrDefaultAsync(cancellationToken);
+                    break;
+
+                case HospitalPatient:
+                    label = await _db.HospitalPatients.AsNoTracking()
+                        .Where(p => p.ID == entityId && p.CompanyId == companyId)
+                        .Select(p => p.Mrn + " — " + p.Name).FirstOrDefaultAsync(cancellationToken);
+                    break;
+
                 case CalendarEvent:
                     label = await _db.CalendarEvents.AsNoTracking()
                         .Where(e => e.Id == entityId && e.CompanyID == companyId && e.DeletedAt == null)

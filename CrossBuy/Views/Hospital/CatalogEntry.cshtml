@@ -1,0 +1,170 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model HospitalCatalogEntry
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    var e = Model;
+    ViewData["Title"] = DisplayName.Of(e.Name, e.NameEn);
+    bool canManage = ViewBag.CanManage == true;
+    var fac = (HospitalPriceCurrency)ViewBag.Facility;
+    var lists = (ViewBag.Lists as List<HospitalPriceListView>) ?? new();
+    bool isService = e.ServiceId != null;
+    int holding = lists.Count(v => v.Lines.Any(x => x.Entry.Key == e.Key));
+    string SrcBadge(string s) => s switch { "rule" => "primary", "override" => "info", "ceiling" => "success", _ => "danger" };
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@DisplayName.Of(e.Name, e.NameEn)</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item text-muted">@T["Finance"]</li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted"><a href="@Url.Action("Catalog")" class="text-muted text-hover-primary">@T["Services & items"]</a></li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted hp-num">@e.Code</li>
+            </ul>
+        </div>
+        <div class="d-flex align-items-center gap-2 gap-lg-3 d-print-none">
+            <a href="@Url.Action("Catalog", new { tab = e.Group })" class="btn btn-sm btn-light"><i class="ki-outline @(DisplayName.IsArabic ? "ki-arrow-right" : "ki-arrow-left") fs-4"></i>@T["Catalogue"]</a>
+            @if (!isService) { <a href="@Url.Action("EditItem", "Inventory", new { id = e.ItemId })" class="btn btn-sm btn-light-primary" target="_blank"><i class="ki-outline ki-package fs-4"></i>@T["Open the item card"]</a> }
+        </div>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="row g-5 g-xl-8">
+            <div class="col-xl-4">
+                <div class="card mb-5">
+                    <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
+                        <span class="card-label fw-bold text-gray-900 fs-4">@DisplayName.Of(e.Name, e.NameEn)</span>
+                        <span class="text-muted mt-1 fw-semibold fs-7 hp-num">@e.Code</span>
+                    </div></div>
+                    <div class="card-body pt-2">
+                        <div class="d-flex flex-stack py-3 border-bottom border-gray-200 border-bottom-dashed"><span class="text-gray-600 fw-semibold fs-7">@T["Type"]</span><span class="fs-7">@(isService ? T["cat:" + e.Category] : T["group:" + e.Group])</span></div>
+                        <div class="d-flex flex-stack py-3 border-bottom border-gray-200 border-bottom-dashed"><span class="text-gray-600 fw-semibold fs-7">@T["Created in"]</span><span class="fs-7">@(isService ? T["Hospital — service catalogue"] : T["Inventory — the item card"])</span></div>
+                        @if (e.Since is DateTime since) { <div class="d-flex flex-stack py-3 border-bottom border-gray-200 border-bottom-dashed"><span class="text-gray-600 fw-semibold fs-7">@T["Entered the catalogue"]</span><span class="fs-7 hp-num">@since.ToString("yyyy-MM-dd")</span></div> }
+                        <div class="d-flex flex-stack py-3"><span class="text-gray-600 fw-semibold fs-7">@T["On other lists"]</span><span class="fs-7 hp-num">@holding / @lists.Count</span></div>
+                    </div>
+                </div>
+
+                <div class="card mb-5">
+                    <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Selling price"]</span></div></div>
+                    <div class="card-body pt-2">
+                        @if (isService && canManage)
+                        {
+                            <label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Selling price"] (<span class="hp-num">@fac.Code</span>)</label>
+                            <input id="sellPrice" type="number" min="0" step="0.001" value="@e.MainPrice.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture)" class="form-control form-control-solid hp-num mb-4" dir="ltr" />
+                        }
+                        else
+                        {
+                            <div class="fs-2hx fw-bold text-gray-900 hp-num mb-4">@fac.Format(e.MainPrice) <span class="fs-6 text-muted">@fac.Label(DisplayName.IsArabic)</span></div>
+                        }
+                        <div class="notice d-flex rounded border border-dashed p-5 mb-4 hp-notice">
+                            <span class="symbol symbol-40px me-4 flex-shrink-0"><span class="symbol-label"><i class="ki-outline ki-arrows-circle fs-2 text-white"></i></span></span>
+                            <div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@T["The main list updates automatically"]</h4>
+                                <div class="fs-7 text-gray-700">@(isService ? T["Saving a new price updates the main list at once, and marks this item not updated on every other list that holds it until it is reviewed:"] : T["The selling price on the Inventory item card is the main list price. Changing it there marks this item not updated on every other list that holds it:"]) <span class="hp-num fw-bold">@holding</span></div></div>
+                        </div>
+                        @if (isService && canManage) { <button type="button" class="btn btn-primary w-100" data-save-price><i class="ki-outline ki-check fs-4"></i>@T["Save the price"]</button> }
+                    </div>
+                </div>
+
+                @if (e.Group == HospitalPriceGroups.Medicine)
+                {
+                    <div class="card mb-5">
+                        <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
+                            <span class="card-label fw-bold text-gray-900 fs-4">@T["Public price"]</span>
+                            <span class="text-muted mt-1 fw-semibold fs-7">@T["The regulator's approved price: no list may charge more"]</span>
+                        </div></div>
+                        <div class="card-body pt-2">
+                            @if (canManage)
+                            {
+                                <input id="publicPrice" type="number" min="0" step="0.001" value="@(e.PublicPrice?.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture))" placeholder="@T["None"]" class="form-control form-control-solid hp-num mb-4" dir="ltr" />
+                                <button type="button" class="btn btn-light-primary w-100" data-save-public><i class="ki-outline ki-check fs-4"></i>@T["Save"]</button>
+                            }
+                            else { <div class="fs-3 fw-bold hp-num">@(e.PublicPrice is decimal pp ? fac.Format(pp) : "—")</div> }
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <div class="col-xl-8">
+                <div class="card">
+                    <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Its price in every list"]</span></div></div>
+                    <div class="card-body pt-2">
+                        <div class="table-responsive"><table class="table align-middle table-row-dashed fs-6 gy-3 mb-0">
+                            <thead><tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0">
+                                <th class="w-125px">@T["Code"]</th><th>@T["List"]</th><th>@T["Currency"]</th><th class="text-end">@T["Price"]</th><th>@T["Source"]</th><th>@T["State"]</th><th class="text-end"></th>
+                            </tr></thead>
+                            <tbody class="fw-semibold text-gray-700">
+                                <tr>
+                                    <td><span class="badge hp-code fw-bold fs-8 hp-num">MAIN</span></td>
+                                    <td class="fw-bold text-gray-900">@T["Main list"]</td>
+                                    <td><span class="badge badge-light-primary fw-bold fs-8 hp-num">@fac.Code</span></td>
+                                    <td class="text-end hp-num fw-bold">@fac.Format(e.MainPrice)</td>
+                                    <td><span class="badge badge-light-secondary fs-8">@T["From the card"]</span></td>
+                                    <td><span class="badge badge-light-success fs-8">@T["Updated automatically"]</span></td>
+                                    <td></td>
+                                </tr>
+                                @foreach (var v in lists)
+                                {
+                                    var x = v.Lines.FirstOrDefault(y => y.Entry.Key == e.Key);
+                                    bool foreign = v.List.CurrencyId != null;
+                                    <tr class="@(x?.Stale == true ? "bg-light-danger" : "")">
+                                        <td><span class="badge hp-code fw-bold fs-8 hp-num">@v.List.Code</span> <span class="text-muted fs-8 hp-num">v@(v.List.Version)</span></td>
+                                        <td><a href="@Url.Action("PriceList", new { id = v.List.ID })" class="fw-semibold text-gray-900 text-hover-primary">@DisplayName.Of(v.List.Name, v.List.NameEn)</a>@if (v.List.Status == HospitalPriceListStatus.Draft) {<span class="badge badge-light-secondary fs-8 ms-2">@T["plst:Draft"]</span>}</td>
+                                        <td><span class="badge @(foreign ? "badge-light-info" : "badge-light-primary") fw-bold fs-8 hp-num">@v.Currency.Code</span></td>
+                                        <td class="text-end hp-num fw-bold">@(x?.Price is decimal p ? v.Currency.Format(p) : "—")</td>
+                                        <td>@if (x != null) {<span class="badge badge-light-@SrcBadge(x.Source) fs-8">@T["src:" + x.Source]</span>}</td>
+                                        <td>@if (x == null) {<span class="badge badge-light-info fs-8">@T["New — not added"]</span>} else if (x.Stale) {<span class="badge badge-light-danger fs-8">@T["Not updated"]</span>} else {<span class="badge badge-light-success fs-8">@T["Up to date"]</span>}</td>
+                                        <td class="text-end">
+                                            @if (canManage)
+                                            {
+                                                if (x == null) { <button type="button" class="btn btn-sm btn-light-primary py-1 px-3" data-add-to="@v.List.ID">@T["Add"]</button> }
+                                                else if (x.Stale) { <button type="button" class="btn btn-sm btn-light-success py-1 px-3" data-approve-in="@v.List.ID" data-line="@x.Line!.ID">@T["Approve"]</button> }
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div></div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value), mainUpdated: @Json.Serialize(T["The main list is updated"].Value) };
+            var key = @Json.Serialize(e.Key);
+            var urls = { price: @Json.Serialize(isService ? Url.Action("SaveServicePrice", new { id = e.ServiceId }) : null), pub: @Json.Serialize(e.ItemId != null ? Url.Action("SavePublicPrice", new { id = e.ItemId }) : null),
+                list: @Json.Serialize(Url.Action("PriceList", new { id = 0 })) };
+            function toast(k, m) { if (window.toastr) toastr[k](m); }
+            function post(url, body) {
+                return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(body || {}) })
+                    .then(function (r) { return r.json().catch(function () { return { ok: false }; }); });
+            }
+            function swap() {
+                return fetch(location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.text(); }).then(function (html) {
+                    var fresh = new DOMParser().parseFromString(html, 'text/html').getElementById('kt_app_content');
+                    if (fresh) document.getElementById('kt_app_content').innerHTML = fresh.innerHTML;
+                });
+            }
+            function done(res, msg) { if (!res.ok) { toast('error', res.error || W.failed); return; } toast('success', msg || W.saved); swap(); }
+            document.addEventListener('click', function (ev) {
+                var t;
+                if ((t = ev.target.closest('[data-save-price]'))) { var v = document.getElementById('sellPrice').value; t.disabled = true; post(urls.price, { price: v === '' ? null : +v }).then(function (r) { t.disabled = false; done(r, W.mainUpdated); }); }
+                else if ((t = ev.target.closest('[data-save-public]'))) { var p = document.getElementById('publicPrice').value; t.disabled = true; post(urls.pub, { price: p === '' ? null : +p }).then(function (r) { t.disabled = false; done(r); }); }
+                else if ((t = ev.target.closest('[data-add-to]'))) { t.disabled = true; post(urls.list.replace(/0$/, t.getAttribute('data-add-to')) + '/AddLines', { keys: [key] }).then(function (r) { t.disabled = false; done(r); }); }
+                else if ((t = ev.target.closest('[data-approve-in]'))) { t.disabled = true; post(urls.list.replace(/0$/, t.getAttribute('data-approve-in')) + '/ApproveLines', { ids: [+t.getAttribute('data-line')] }).then(function (r) { t.disabled = false; done(r); }); }
+            });
+        })();
+    </script>
+}

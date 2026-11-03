@@ -324,8 +324,12 @@ namespace CrossBuy.Tests
                 EntityRegistry.EmployeeRequest
             };
 
+            // Added after CRM by the hospital pack (H1 room, H2 patient) - named, so the count stays exact.
+            var hospital = new[] { EntityRegistry.HospitalRoom, EntityRegistry.HospitalPatient };
+
             Assert.All(preCrm, c => Assert.Contains(c, codes));
-            Assert.Equal(preCrm.Length + 3, codes.Count);
+            Assert.All(hospital, c => Assert.Contains(c, codes));
+            Assert.Equal(preCrm.Length + 3 + hospital.Length, codes.Count);
             Assert.Equal(codes.Count, codes.Distinct(StringComparer.Ordinal).Count());
         }
 

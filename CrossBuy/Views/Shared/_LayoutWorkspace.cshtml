@@ -207,6 +207,7 @@
 @* Metronic bundles last, as in every other layout in this product. *@
 <script src="~/Backend-assets/plugins/global/plugins.bundle.js" asp-append-version="true"></script>
 <script src="~/Backend-assets/js/scripts.bundle.js" asp-append-version="true"></script>
+@await Html.PartialAsync("_LabCriticalAlerts")
 @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

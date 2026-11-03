@@ -190,6 +190,7 @@
         if (key == "tasks") return path.StartsWith("/tasks") ? "active" : "";
         if (key == "cal") return path.StartsWith("/calendar") ? "active" : "";
         if (key == "proj") return path.StartsWith("/project") ? "active" : "";   // Projects & Contracting system
+        if (key == "hosp") return path.StartsWith("/hospital") ? "active" : "";
         var u = url.TrimEnd('/').ToLowerInvariant(); var seg = u.Replace("/index","").Replace("/dashboard","");
         if (key == "inv") return (!isManufPath && (path == u || path.StartsWith("/inventory"))) ? "active" : "";   // inventory ≠ manufacturing
         return (path == u || (seg.Length > 1 && path.StartsWith(seg))) ? "active" : "";

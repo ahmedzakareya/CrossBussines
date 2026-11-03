@@ -1,0 +1,309 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model HospitalBillView
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    var b = Model.Bill; var p = Model.Patient; var t = Model.Totals;
+    ViewData["Title"] = T["Bill"].Value + " " + b.BillNo;
+    var currency = ViewBag.Currency as HospitalCurrency;
+    bool isAr = DisplayName.IsArabic, canBill = ViewBag.CanBill == true, open = b.Status == HospitalBillStatus.Open;
+    var journal = (ViewBag.Journal as IReadOnlyList<HospitalLedgerLine>) ?? Array.Empty<HospitalLedgerLine>();
+    string? missing = ViewBag.JournalMissing as string;
+    var accountNames = (ViewBag.AccountNames as Dictionary<int, string>) ?? new();
+    var myShift = ViewBag.MyShift as HospitalCashierShift;
+    var admission = ViewBag.Admission as HospitalAdmission;
+    var encounter = ViewBag.Encounter as HospitalEncounter;
+    // H7: the bill's own amounts are in ITS currency (its price list's); the journal is in the facility's.
+    var billCur = Model.Currency;
+    string M(decimal v) => billCur != null ? billCur.Format(v) : currency == null ? v.ToString("N2") : currency.Format(v);
+    string Dash(decimal v) => v == 0 ? "—" : M(v);
+    string cur = billCur?.Label(isAr) ?? currency?.Label(isAr) ?? "";
+    string MF(decimal v) => currency == null ? v.ToString("N2") : currency.Format(v);
+    string DashF(decimal v) => v == 0 ? "—" : MF(v);
+    string facCur = currency?.Label(isAr) ?? "";
+    bool foreign = Model.Foreign;
+    var name = DisplayName.Of(p.Name, p.NameEn);
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Billing & cashier"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item text-muted"><a href="@Url.Action("Bills")" class="text-muted text-hover-primary">@T["Bills"]</a></li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted hp-num">@b.BillNo</li>
+            </ul>
+        </div>
+        <div class="d-flex align-items-center gap-2 gap-lg-3 d-print-none">
+            @if (open && canBill)
+            {
+                <button type="button" class="btn btn-sm btn-primary" data-close><i class="ki-outline ki-lock-2 fs-4"></i>@(b.AdmissionId != null ? T["Close the stay & post"] : T["Close the visit & post"])</button>
+            }
+            else if (!open)
+            {
+                <span class="badge badge-light-success fs-7 px-4 py-3"><i class="ki-outline ki-lock-2 fs-5 text-success me-1"></i>@T["Closed and posted"]</span>
+            }
+        </div>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid" id="billRoot">
+        <div class="card mb-5 mb-xl-10"><div class="card-body py-10">
+            <h2 class="mb-2">@T["Bill"] <span class="hp-num">@b.BillNo</span></h2>
+            <p class="fs-6 fw-semibold text-gray-600 py-1 m-0">
+                <a href="@Url.Action("Patient", new { id = p.ID })" class="text-gray-700 text-hover-primary">@name</a> ·
+                @if (b.AdmissionId != null) {<text>@T["Inpatient stay"]</text>} else {<text>@T["Outpatient visit"]</text>}
+                · @T["From"] <span class="hp-num">@b.OpenedAt.ToLocalTime().ToString("yyyy-MM-dd")</span>
+                @if (b.ClosedAt is DateTime c) {<text> — @T["To"] </text><span class="hp-num">@c.ToLocalTime().ToString("yyyy-MM-dd")</span>}
+            </p>
+            <div class="d-flex align-items-center flex-wrap gap-2 mt-3 fs-7">
+                <i class="ki-outline ki-price-tag fs-4 text-primary"></i><span class="text-gray-600">@T["Priced from"]</span>
+                @if (Model.List is HospitalPriceList pl) { <a href="@Url.Action("PriceList", new { id = pl.ID })" class="fw-bold">@DisplayName.Of(pl.Name, pl.NameEn)</a> <span class="text-muted hp-num">@pl.Code v@(pl.Version)</span> }
+                else { <a href="@Url.Action("Catalog")" class="fw-bold">@T["Main list"]</a> }
+                @if (billCur != null) { <span class="badge @(foreign ? "badge-light-info" : "badge-light-primary") fw-bold fs-8 hp-num">@billCur.Code</span> }
+                @if (foreign && b.ExchangeRate is decimal xr) { <span class="text-muted">@T["Closing rate"] <span class="hp-num">1 @billCur!.Code = @xr.ToString("0.####") @(currency?.Code)</span></span> }
+            </div>
+            <div class="row mt-6">
+                @foreach (var k in new[] { (T["Gross"].Value, t.Gross, "text-info"), (T["Insurer share"].Value, t.Insurer, "text-primary"), (T["Patient share + tax"].Value, t.Patient + t.Vat, "text-primary"), (T["Patient balance due"].Value, t.Due, t.Due > 0 ? "text-danger" : "text-success") })
+                {
+                    <div class="col-sm-6 col-xl-3"><div class="card card-dashed flex-center min-w-175px my-3 p-6">
+                        <span class="fs-4 fw-semibold @k.Item3 pb-1 px-2">@k.Item1</span>
+                        <span class="fs-lg-2tx fw-bold d-flex justify-content-center hp-num">@M(k.Item2)</span>
+                        <span class="text-muted fs-8">@cur</span>
+                    </div></div>
+                }
+            </div>
+            <div class="notice d-flex rounded border border-dashed p-6 mt-4 mb-0 hp-notice">
+                <span class="symbol symbol-45px me-5 flex-shrink-0"><span class="symbol-label"><i class="ki-outline ki-shield-tick fs-2x text-white"></i></span></span>
+                <div class="d-flex flex-stack flex-grow-1 flex-wrap flex-md-nowrap">
+                    <div class="mb-3 mb-md-0 fw-semibold pe-5">
+                        @if (Model.List is HospitalPriceList onList)
+                        {
+                            <h4 class="text-gray-900 fw-bold mb-1">@DisplayName.Of(onList.Name, onList.NameEn) <span class="text-muted fs-7 fw-semibold">· @T["kind:" + onList.Kind]</span></h4>
+                            <div class="fs-6 text-gray-700">@T["Priced from the patient's list, in its currency. Insurer shares and co-pays arrive with the insurance unit; until then the patient's share is the whole bill."]</div>
+                        }
+                        else
+                        {
+                            <h4 class="text-gray-900 fw-bold mb-1">@T["Cash patient"]</h4>
+                            <div class="fs-6 text-gray-700">@T["The patient pays the bill in full; insurer shares and co-pays arrive with the insurance unit. Tax applies only to services marked taxable."]</div>
+                        }
+                    </div>
+                    <span class="badge hp-badge fs-7 fw-bold px-4 py-2 flex-shrink-0">@T["VAT"] <span class="hp-num ms-1">@Model.VatRatePercent.ToString("0.##")%</span></span>
+                </div>
+            </div>
+        </div></div>
+
+        <div class="card mb-5">
+            <div class="card-header border-0 pt-6">
+                <div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Bill lines"]</span></div>
+                @if (open && canBill)
+                {
+                    <div class="card-toolbar d-flex gap-2 align-items-center">
+                        <div class="w-300px"><select class="form-select form-select-sm form-select-solid" data-no-select2 data-add-service data-placeholder="@T["Add service"]"></select></div>
+                        <input type="number" min="1" value="1" class="form-control form-control-sm form-control-solid hp-num w-70px" data-add-qty />
+                        <button type="button" class="btn btn-sm btn-light-primary" data-add-line><i class="ki-outline ki-plus fs-4"></i>@T["Add"]</button>
+                    </div>
+                }
+            </div>
+            <div class="card-body pt-2">
+                <div class="table-responsive"><table class="table align-middle table-row-dashed fs-6 gy-3 mb-0">
+                    <thead><tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0">
+                        <th class="w-125px">@T["Code"]</th><th>@T["Service"]</th><th class="text-end w-70px">@T["Qty"]</th><th class="text-end">@T["Price"]</th><th class="text-end">@T["Gross"]</th><th class="text-end">@T["Insurer"]</th><th class="text-end">@T["Patient"]</th><th class="text-end">@T["VAT"]</th><th class="w-40px"></th>
+                    </tr></thead>
+                    <tbody class="fw-semibold text-gray-700">
+                        @if (Model.Lines.Count == 0) { <tr><td colspan="9" class="text-center text-muted py-8">@T["No lines yet."]</td></tr> }
+                        @foreach (var l in Model.Lines)
+                        {
+                            <tr>
+                                <td><span class="badge hp-code fw-bold fs-8 hp-num">@l.Code</span></td>
+                                <td><div class="fw-semibold text-gray-800">@(isAr ? l.Description : l.DescriptionEn)</div>
+                                    <div class="text-muted fs-8">@T["cat:" + l.Category]@if (l.Running) {<span class="badge badge-light-info fs-9 ms-2">@T["Running — counted until discharge"]</span>}@if (l.OutsideList) {<span class="badge badge-light-danger fs-9 ms-2">@T["Outside the list — main price"]</span>}</div></td>
+                                <td class="text-end hp-num">@l.Quantity.ToString("0.##")</td>
+                                <td class="text-end hp-num">@M(l.UnitPrice)</td>
+                                <td class="text-end hp-num">@M(l.Gross)</td>
+                                <td class="text-end hp-num text-gray-500">@Dash(l.Insurer)</td>
+                                <td class="text-end hp-num">@Dash(l.Patient)</td>
+                                <td class="text-end hp-num">@Dash(l.Vat)</td>
+                                <td class="text-end">@if (open && canBill && l.Source == HospitalBillLineSources.Manual && l.Id != null) {<button type="button" class="btn btn-icon btn-sm btn-light w-30px h-30px" data-remove="@l.Id"><i class="ki-outline ki-trash fs-5"></i></button>}</td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot><tr class="fw-bolder fs-5">
+                        <td class="ps-4" colspan="4" style="color:#145DBF">@T["Total"] (@cur)</td>
+                        <td class="text-end hp-num">@M(t.Gross)</td><td class="text-end hp-num">@M(t.Insurer)</td><td class="text-end hp-num">@M(t.Patient)</td><td class="text-end hp-num">@M(t.Vat)</td><td></td>
+                    </tr></tfoot>
+                </table></div>
+            </div>
+        </div>
+
+        <div class="row g-5 g-xl-8">
+            <div class="col-xl-7">
+                <div class="card mb-5">
+                    <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
+                        <span class="card-label fw-bold text-gray-900 fs-4">@T["Journal preview"]</span>
+                        <span class="text-muted mt-1 fw-semibold fs-7">@(open ? T["Posted when the bill closes, through the accounting journal engine"] : T["Posted to the general ledger"])@if (foreign) {<text> · @T["in"] </text><span class="hp-num">@(currency?.Code)</span>@if (open) {<text> @T["at today's rate"]</text>}}</span>
+                    </div></div>
+                    <div class="card-body pt-2">
+                        @if (missing != null)
+                        {
+                            <div class="notice d-flex rounded border border-danger border-dashed bg-light-danger p-5">
+                                <i class="ki-outline ki-information-5 fs-2tx text-danger me-4"></i>
+                                <div class="fw-semibold"><div class="fs-6 text-gray-800">@T[missing]</div>
+                                    <a href="@Url.Action("BillingSettings")" class="fs-7 fw-bold">@T["Billing settings"]</a></div>
+                            </div>
+                        }
+                        else if (journal.Count == 0) { <div class="text-muted fs-7 py-4">@T["Nothing to post yet."]</div> }
+                        else
+                        {
+                            <table class="table align-middle table-row-dashed fs-6 gy-3 mb-0">
+                                <thead><tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0"><th>@T["Account"]</th><th class="text-end w-150px">@T["Debit"]</th><th class="text-end w-150px">@T["Credit"]</th></tr></thead>
+                                <tbody class="fw-semibold text-gray-700">
+                                    @foreach (var j in journal)
+                                    {
+                                        <tr><td>@(accountNames.TryGetValue(j.AccountId, out var an) ? an : j.AccountId.ToString())</td><td class="text-end hp-num">@DashF(j.Debit)</td><td class="text-end hp-num">@DashF(j.Credit)</td></tr>
+                                    }
+                                </tbody>
+                                <tfoot><tr class="fw-bolder fs-5"><td class="ps-4" style="color:#145DBF">@T["Total"]</td><td class="text-end hp-num">@MF(journal.Sum(j => j.Debit))</td><td class="text-end hp-num pe-4">@MF(journal.Sum(j => j.Credit))</td></tr></tfoot>
+                            </table>
+                        }
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Payments"]</span></div></div>
+                    <div class="card-body pt-2">
+                        @if (Model.Payments.Count == 0) { <div class="text-muted fs-7 py-4">@T["No payment yet."]</div> }
+                        else
+                        {
+                            <table class="table align-middle table-row-dashed fs-6 gy-3 mb-0"><tbody class="fw-semibold text-gray-700">
+                                @foreach (var pay in Model.Payments)
+                                {
+                                    <tr><td><span class="badge hp-code fs-8 hp-num">@pay.ReceiptNo</span></td><td class="hp-num" data-utc="@pay.ReceivedAt.ToString("o")">@pay.ReceivedAt.ToString("yyyy-MM-dd HH:mm")</td><td>@T["pm:" + pay.Method]</td><td class="text-end hp-num fw-bold">@M(pay.Amount) <span class="text-muted fs-8">@cur</span>@if (pay.BaseAmount is decimal ba) {<div class="text-muted fs-8 fw-semibold">@MF(ba) @facCur</div>}</td></tr>
+                                }
+                            </tbody></table>
+                        }
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-5">
+                @* Money is collected while anything is owed - a closed bill too: a patient often pays after discharge. *@
+                @if (canBill && (open || t.Due > 0))
+                {
+                    <div class="card mb-5">
+                        <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Collect payment"]</span></div></div>
+                        <div class="card-body pt-2">
+                            @if (foreign && open)
+                            {
+                                <div class="notice d-flex rounded border border-primary border-dashed bg-light-primary p-5">
+                                    <i class="ki-outline ki-dollar fs-2tx text-primary me-4"></i>
+                                    <div class="fw-semibold"><div class="fs-6 text-gray-800">@T["A foreign-currency bill is collected after it is closed"]</div>
+                                        <div class="fs-7 text-gray-600">@T["Closing fixes its rate; a payment at another rate posts the difference to the exchange-difference account."]</div></div>
+                                </div>
+                            }
+                            else if (myShift == null)
+                            {
+                                <div class="notice d-flex rounded border border-primary border-dashed bg-light-primary p-5">
+                                    <i class="ki-outline ki-information-5 fs-2tx text-primary me-4"></i>
+                                    <div class="fw-semibold"><div class="fs-6 text-gray-800">@T["Open your cashier shift before taking a payment"]</div>
+                                        <a href="@Url.Action("Cashier")" class="fs-7 fw-bold">@T["Cashier closing"]</a></div>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="row g-5">
+                                    <div class="col-12"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Amount"]</label>
+                                        <div class="input-group input-group-solid"><input class="form-control form-control-solid hp-num" data-amount value="@(t.Due > 0 ? M(t.Due).Replace(",", "") : "")" /><span class="input-group-text">@cur</span></div></div>
+                                    <div class="col-12"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Method"]</label>
+                                        <div class="d-flex gap-2 flex-wrap">
+                                            @foreach (var m in HospitalPaymentMethods.All)
+                                            {
+                                                <label><input type="radio" class="btn-check" name="pm" value="@m" @(m == HospitalPaymentMethods.Cash ? "checked" : "") /><span class="btn btn-sm btn-outline btn-outline-dashed btn-active-light-primary">@T["pm:" + m]</span></label>
+                                            }
+                                        </div></div>
+                                </div>
+                                <button type="button" class="btn btn-primary w-100 mt-6" data-collect @(t.Due <= 0 ? "disabled" : "")><i class="ki-outline ki-wallet fs-4"></i>@T["Collect & issue receipt"]</button>
+                                <div class="text-muted fs-8 mt-4">@T["Shift"]: @myShift.Desk</div>
+                            }
+                        </div>
+                    </div>
+                }
+                <div class="card">
+                    <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Patient"]</span></div></div>
+                    <div class="card-body pt-2">
+                        <div class="d-flex align-items-center">
+                            <div class="symbol symbol-50px symbol-circle flex-shrink-0">@if (p.PhotoPath != null) {<img src="@p.PhotoPath" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(p.NameEn)" />} else {<span class="symbol-label fw-bold hp-initials">@HospitalUi.Initials(p.NameEn)</span>}</div>
+                            <div class="d-flex flex-column ms-3"><a href="@Url.Action("Patient", new { id = p.ID })" class="text-gray-900 text-hover-primary fs-6 fw-bold">@name</a><span class="text-muted fs-7 hp-num">@p.Mrn</span></div>
+                        </div>
+                        @if (admission != null)
+                        {
+                            <div class="separator separator-dashed my-4"></div>
+                            <div class="fs-7"><span class="text-muted">@T["Admitted"]:</span> <span class="hp-num fw-bold">@admission.AdmittedAt.ToLocalTime().ToString("yyyy-MM-dd")</span>
+                                · @(admission.Status == HospitalAdmissionStatus.Active ? T["still in hospital"] : T["discharged"])</div>
+                        }
+                        @if (encounter != null)
+                        {
+                            <div class="separator separator-dashed my-4"></div>
+                            <a href="@Url.Action("Consult", new { id = encounter.ID })" class="fs-7 fw-bold">@T["Open the visit"]</a>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div></div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            var $ = window.jQuery, isAr = @Json.Serialize(isAr);
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            var urls = { search: @Json.Serialize(Url.Action("SearchServices")), add: @Json.Serialize(Url.Action("AddBillLine", new { id = b.ID })), remove: @Json.Serialize(Url.Action("RemoveBillLine", new { id = 0 })),
+                collect: @Json.Serialize(Url.Action("CollectPayment", new { id = b.ID })), close: @Json.Serialize(Url.Action("CloseBill", new { id = b.ID })) };
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value), choose: @Json.Serialize(T["Choose a service first"].Value),
+                confirmClose: @Json.Serialize(T["Close this bill and post it to the ledger? It cannot be changed afterwards."].Value) };
+            function toast(k, m) { if (window.toastr) toastr[k](m); }
+            function post(url, body) { return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(body || {}) }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); }); }
+            // In place, never a reload: the server renders the bill again and it is swapped.
+            function refresh() {
+                fetch(location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.text(); }).then(function (html) {
+                    var d = new DOMParser().parseFromString(html, 'text/html');
+                    var fresh = d.getElementById('billRoot'); if (fresh) document.getElementById('billRoot').innerHTML = fresh.innerHTML;
+                    var tb = d.querySelector('.app-toolbar .d-print-none'); if (tb) document.querySelector('.app-toolbar .d-print-none').innerHTML = tb.innerHTML;
+                    initPicker();
+                });
+            }
+            function initPicker() {
+                var el = document.querySelector('[data-add-service]');
+                if (!el || !$ || !$.fn.select2 || $(el).hasClass('select2-hidden-accessible')) return;
+                $(el).select2({ width: '100%', dir: isAr ? 'rtl' : 'ltr', placeholder: el.getAttribute('data-placeholder'),
+                    ajax: { url: urls.search, dataType: 'json', delay: 200, data: function (p) { return { q: p.term || '' }; }, processResults: function (d) { return { results: d.results || [] }; } } });
+            }
+            initPicker();
+            document.addEventListener('click', function (e) {
+                var t;
+                if ((t = e.target.closest('[data-add-line]'))) {
+                    var sel = document.querySelector('[data-add-service]'); if (!sel.value) { toast('error', W.choose); return; }
+                    t.disabled = true;
+                    post(urls.add, { serviceId: +sel.value, quantity: +document.querySelector('[data-add-qty]').value || 1 }).then(function (res) { t.disabled = false; if (!res.ok) { toast('error', res.error || W.failed); return; } toast('success', W.saved); refresh(); });
+                } else if ((t = e.target.closest('[data-remove]'))) {
+                    post(urls.remove.replace(/0\/Remove$/, t.getAttribute('data-remove') + '/Remove')).then(function (res) { if (!res.ok) { toast('error', res.error || W.failed); return; } refresh(); });
+                } else if ((t = e.target.closest('[data-collect]'))) {
+                    var m = document.querySelector('[name=pm]:checked');
+                    t.disabled = true;
+                    post(urls.collect, { amount: +(document.querySelector('[data-amount]').value || 0), method: m ? m.value : 'Cash' }).then(function (res) { t.disabled = false; if (!res.ok) { toast('error', res.error || W.failed); return; } toast('success', W.saved); refresh(); });
+                } else if ((t = e.target.closest('[data-close]'))) {
+                    var closeBtn = t;
+                    cbConfirm(W.confirmClose).then(function (ok) {
+                        if (!ok) return;
+                        closeBtn.disabled = true;
+                        post(urls.close).then(function (res) { closeBtn.disabled = false; if (!res.ok) { toast('error', res.error || W.failed); return; } toast('success', W.saved); refresh(); });
+                    });
+                }
+            });
+            document.querySelectorAll('[data-utc]').forEach(function (el) { var d = new Date(el.getAttribute('data-utc').replace(/Z?$/, 'Z')); if (!isNaN(d)) el.textContent = d.toISOString().slice(0, 10) + ' ' + d.toTimeString().slice(0, 5); });
+        })();
+    </script>
+}

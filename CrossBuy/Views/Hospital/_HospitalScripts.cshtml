@@ -1,0 +1,16 @@
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@* The plan renderer and the words it draws, in the page's language. Included by every hospital screen. *@
+<script src="~/js/hospital/hospital-plan.js" asp-append-version="true"></script>
+<script>
+	(function () {
+		var t = HospitalPlan.text;
+		t.door = @Json.Serialize(T["Door"].Value); t.bath = @Json.Serialize(T["Bath"].Value);
+		t.anteroom = @Json.Serialize(T["Anteroom"].Value); t.companion = @Json.Serialize(T["Companion"].Value);
+		t.lounge = @Json.Serialize(T["Lounge"].Value); t.sink = @Json.Serialize(T["Sink"].Value);
+		t.status = {
+			Vacant: @Json.Serialize(T["Vacant"].Value), Occupied: @Json.Serialize(T["Occupied"].Value),
+			Cleaning: @Json.Serialize(T["Cleaning"].Value), Reserved: @Json.Serialize(T["Reserved"].Value),
+			Blocked: @Json.Serialize(T["Blocked"].Value)
+		};
+	})();
+</script>

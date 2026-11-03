@@ -1,0 +1,25 @@
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> CSR
+@*
+    The one confirmation of the system: a Metronic SweetAlert, never the browser's confirm() (the owner's
+    rule). window.cbConfirm(text, { kind: 'danger' | 'primary', title, ok, html }) resolves to true or false.
+    It sits above any overlay (the critical-value alert included). Never amber: the icon is red for a
+    danger step and the brand blue otherwise. o.html (already escaped) replaces the plain text.
+*@
+<style>.swal2-container.cb-confirm-top{z-index:2100}</style>
+<script>
+(function () {
+    if (window.cbConfirm) return;
+    var okText = @Json.Serialize(CSR["Confirm"].Value), cancelText = @Json.Serialize(CSR["Cancel"].Value);
+    window.cbConfirm = function (text, o) {
+        o = o || {};
+        if (!window.Swal) return Promise.resolve(false);   // never fall back to the browser dialog
+        return Swal.fire({
+            title: o.title || '', html: o.html || String(text).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }),
+            icon: o.kind === 'danger' ? 'warning' : 'question', iconColor: o.kind === 'danger' ? '#DC2626' : '#3A5795',
+            showCancelButton: true, buttonsStyling: false, reverseButtons: false, focusCancel: o.kind === 'danger',
+            confirmButtonText: o.ok || okText, cancelButtonText: cancelText,
+            customClass: { container: 'cb-confirm-top', confirmButton: 'btn fw-bold ' + (o.kind === 'danger' ? 'btn-danger' : 'btn-primary'), cancelButton: 'btn fw-bold btn-light' }
+        }).then(function (r) { return !!r.isConfirmed; });
+    };
+})();
+</script>
