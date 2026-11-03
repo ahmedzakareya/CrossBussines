@@ -210,5 +210,69 @@ namespace CrossBuy.Tests
             // A canonical name recorded against the WRONG entity is still rejected.
             Assert.False(BusinessEventTypes.TryValidate("SalesInvoice.Created", EntityRegistry.Customer, out _));
         }
+
+        // ----------------------------------------------------------------------------------------
+        // A TIMELINE ROW THAT CANNOT BE CLICKED IS A DECLARED DECISION, NOT AN OVERSIGHT.
+        //
+        // SupportsTimeline = true means business events for this code reach a timeline, and every
+        // timeline and notification surface builds its deep link the same way - through
+        // IEntityRegistry.BuildUrl. There are EIGHT such call sites today (CommNotificationService,
+        // BusinessEventMonitorService twice, NotificationProjectionConsumer, and four legacy timeline
+        // adapters), and BuildUrl returns null for a definition with no RouteTemplate.
+        //
+        // THE NULL IS GUARDED EVERYWHERE IT IS RENDERED, which is what makes this worth a test rather
+        // than a bug report: Views/Workspace/Index.cshtml falls back to the Workspace itself in all
+        // three places it shows one (lines 330, 483, 788). So nothing 404s and nothing throws - the
+        // user clicks a progress-billing row in Recent Activity and is returned to the dashboard they
+        // were already on. There is no error, no log line, and no way to tell a routeless entity from
+        // a dead click. That is the kind of fault that gets reported as "the dashboard is flaky" and
+        // never traced, so the pairing must be a decision somebody made ON PURPOSE and wrote down.
+        //
+        // Both current entries already carry their reason in EntityRegistry.cs. This test holds the
+        // line that a THIRD one cannot appear without someone adding it here and stating why.
+        // ----------------------------------------------------------------------------------------
+        [Fact]
+        public void Every_timeline_entity_has_a_route_or_is_a_declared_exception()
+        {
+            using var host = new PlatformTestHost();
+            var registry = host.Registry();
+
+            // The reason is repeated from the registry rather than referenced, so a reader of the
+            // failure sees WHY the two exceptions exist without opening another file.
+            var declared = new System.Collections.Generic.Dictionary<string, string>(System.StringComparer.Ordinal)
+            {
+                [EntityRegistry.CalendarEvent] =
+                    "no event-detail route exists; a calendar list URL is not a deep link to one event",
+                [EntityRegistry.ProjectBilling] =
+                    "the screen needs BOTH project id and billing id, and BuildUrl carries only one - a "
+                    + "single-id template would resolve, fail the project lookup and redirect, which is a "
+                    + "wrong answer dressed as a working one",
+            };
+
+            var routeless = registry.GetDefinitions()
+                .Where(d => d.SupportsTimeline && string.IsNullOrWhiteSpace(d.RouteTemplate))
+                .Select(d => d.Code)
+                .OrderBy(c => c, System.StringComparer.Ordinal)
+                .ToList();
+
+            var undeclared = routeless.Where(c => !declared.ContainsKey(c)).ToList();
+            Assert.True(undeclared.Count == 0,
+                "these codes reach a timeline but BuildUrl returns null for them, so their rows silently "
+                + "return the reader to the page they were already on: "
+                + string.Join(", ", undeclared)
+                + ". Give the code a RouteTemplate, or add it here with the reason it cannot have one.");
+
+            // AND THE EXEMPTION LIST CANNOT ROT. An entry that has since gained a route, or stopped
+            // reaching a timeline, must leave this list - otherwise the list outlives its reason and the
+            // next person reads a stale excuse as a current decision.
+            foreach (var code in declared.Keys)
+            {
+                var definition = registry.GetDefinition(code);
+                Assert.True(string.IsNullOrWhiteSpace(definition.RouteTemplate),
+                    code + " now has a RouteTemplate, so it is no longer an exception. Remove it from this list.");
+                Assert.True(definition.SupportsTimeline,
+                    code + " no longer reaches a timeline, so a missing route costs nothing. Remove it from this list.");
+            }
+        }
     }
 }

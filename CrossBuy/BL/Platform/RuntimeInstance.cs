@@ -167,12 +167,61 @@ namespace CrossBuy.BL.Platform
 
     // ---------------------------------------------------------------------------------------------
     // The gate every hosted service awaits before doing any work.
+    //
+    // D-16 - THIS GATE USED TO FAIL OPEN, AND THEN LATCH. Two coupled defects, and the second made the
+    // first permanent:
+    //   * any exception while evaluating the lease returned Unrestricted, which means "run"; and
+    //   * that answer was cached, so SQL was never consulted again for the life of the process.
+    // One transient blip therefore pinned a process to "run unrestricted" for good. During an outage BOTH
+    // processes evaluated Unrestricted and both ran; after it ended, neither re-evaluated. Duplicate
+    // dispatches, reminders and journals - at exactly the moment nobody is able to observe them.
+    //
+    // THE RULE NOW: A FAILED CHECK IS NOT PERMISSION. A check that threw, or that came back in a shape
+    // this code does not understand, yields Standby and is NEVER cached - the next ask re-evaluates.
+    //
+    // ONE FAIL-OPEN SURVIVES ON PURPOSE, and it is not a failed check: an ABSENT CONNECTION STRING is a
+    // configuration statement. A developer box with no database configured would otherwise have every
+    // scheduled job refuse to start, which is its own outage and the reason the original author chose
+    // fail-open. That case still opens the gate, still shouts about it, and is the only one that latches
+    // - because a connection string does not appear halfway through a process lifetime.
     // ---------------------------------------------------------------------------------------------
+
+    /// What ONE attempt to take the lease found. Separated from the policy so the policy can be tested
+    /// without a database - which is the whole reason the latch went unnoticed for so long.
+    public enum WorkerLeaseOutcome
+    {
+        Acquired,        // this process now holds the lease
+        HeldByAnother,   // somebody else holds it; stand by and ask again later
+        NotConfigured,   // there is nothing to take - no connection string
+        Failed,          // THE CHECK ITSELF FAILED. We do not know who holds it, so we must not assume we do.
+    }
+
+    /// The held lease. The SQL implementation is an open connection holding a session application lock, so
+    /// IsHeld is "is that connection still open" - losing the connection IS losing the lease.
+    public interface IWorkerLease : IAsyncDisposable
+    {
+        bool IsHeld { get; }
+    }
+
+    public readonly record struct WorkerLeaseAttempt(WorkerLeaseOutcome Outcome, string? Detail, IWorkerLease? Lease);
+
     public interface IWorkerGate
     {
         // Returns true when this process may run background work. Blocks (respecting the token) while this
         // process is a standby, so a worker's loop needs one line and no policy of its own.
         Task<bool> WaitUntilAllowedAsync(string workerName, CancellationToken cancellationToken);
+
+        // THE PER-TICK RE-CHECK. Evaluates ONCE and returns; it never waits, so a worker can ask it at the
+        // top of every tick without holding the tick open. False means "not right now", which is
+        // RECOVERABLE - the caller must park and ask again, never exit. Exiting on false would end the
+        // BackgroundService for good: if this process loses the lease to another that later dies, nothing
+        // would ever re-acquire and no worker would run anywhere until a restart.
+        //
+        // The default implementation delegates to WaitUntilAllowedAsync so existing implementers - test
+        // stubs, chiefly - keep compiling unchanged. A REAL gate must override it: the delegate BLOCKS, and
+        // blocking is the one thing a per-tick check must not do.
+        Task<bool> IsStillAllowedAsync(string workerName, CancellationToken cancellationToken)
+            => WaitUntilAllowedAsync(workerName, cancellationToken);
     }
 
     public sealed class WorkerGate : IWorkerGate, IAsyncDisposable
@@ -183,10 +232,17 @@ namespace CrossBuy.BL.Platform
         private readonly string? _connectionString;
         private readonly SemaphoreSlim _once = new(1, 1);
 
-        // Held for the whole process lifetime. This connection is the lease: closing it releases the lock, which
-        // is exactly the behaviour wanted on crash or shutdown.
-        private SqlConnection? _leaseConnection;
-        private bool _evaluated;
+        // How the lease is taken. Production always uses the SQL path; a test supplies its own so that
+        // "transient failure, then recovery" can be exercised without a database in the loop.
+        private readonly Func<CancellationToken, Task<WorkerLeaseAttempt>> _attempt;
+
+        // Held for the whole process lifetime. Losing it is losing primacy, which is why IsHeld is consulted
+        // on every evaluation rather than trusted once.
+        private IWorkerLease? _lease;
+
+        // ONLY the no-connection-string answer latches. Deliberately not a general "_evaluated" flag: that
+        // is what made a one-off failure permanent.
+        private bool _notConfigured;
 
         public WorkerGate(IOptions<RuntimeOptions> options, IRuntimeInstanceInfo instance,
             IConfiguration configuration, ILogger<WorkerGate> log)
@@ -195,6 +251,18 @@ namespace CrossBuy.BL.Platform
             _instance = instance;
             _log = log;
             _connectionString = configuration.GetConnectionString("DefaultConnection");
+            _attempt = AcquireThroughSqlAsync;
+        }
+
+        /// TEST SEAM. Takes the lease-acquisition step as a function so the gate's POLICY - fail closed, do
+        /// not latch, recover - can be proven without opening a database. DI never selects this constructor:
+        /// the delegate is not a registered service, so the container cannot satisfy it.
+        public WorkerGate(IOptions<RuntimeOptions> options, IRuntimeInstanceInfo instance,
+            IConfiguration configuration, ILogger<WorkerGate> log,
+            Func<CancellationToken, Task<WorkerLeaseAttempt>> attempt)
+            : this(options, instance, configuration, log)
+        {
+            _attempt = attempt ?? throw new ArgumentNullException(nameof(attempt));
         }
 
         public async Task<bool> WaitUntilAllowedAsync(string workerName, CancellationToken cancellationToken)
@@ -229,79 +297,177 @@ namespace CrossBuy.BL.Platform
             return false;
         }
 
-        // Acquires the lease at most once per process. Every worker calls this; the first one to arrive decides,
-        // and the rest observe the same answer — so six workers do not take six locks.
+        /// ONE evaluation, no waiting. See IWorkerGate for why false must mean "park", never "exit".
+        public async Task<bool> IsStillAllowedAsync(string workerName, CancellationToken cancellationToken)
+        {
+            if (!_options.RequireSingleWorkerProcess) return true;
+            if (cancellationToken.IsCancellationRequested) return false;
+
+            var wasPrimary = _instance.WorkerRole == WorkerRole.Primary;
+            var (role, warning) = await EvaluateAsync(cancellationToken);
+
+            if (role == WorkerRole.Standby)
+            {
+                _instance.SetWorkerRole(WorkerRole.Standby);
+                if (wasPrimary)
+                {
+                    // WARNING, not Information. Standby AT STARTUP is routine; losing primacy MID-RUN is not,
+                    // and it is the event an operator needs to see when output stops.
+                    _log.LogWarning(
+                        "{Worker}: this instance ({Instance}, PID {Pid}) NO LONGER holds the background-worker " +
+                        "lease '{Lease}'. It stands down and will resume if it reacquires.",
+                        workerName, _instance.InstanceName, _instance.ProcessId, _options.WorkerLeaseName);
+                }
+                return false;
+            }
+
+            MarkOnce(role, warning);
+            return true;
+        }
+
         private async Task<(WorkerRole role, string? warning)> EvaluateAsync(CancellationToken cancellationToken)
         {
             await _once.WaitAsync(cancellationToken);
             try
             {
-                if (_leaseConnection != null && _leaseConnection.State == ConnectionState.Open)
-                    return (WorkerRole.Primary, null);
-                if (_evaluated && _instance.WorkerRole == WorkerRole.Unrestricted)
+                // STILL HOLDING IT. One cheap check, no database round trip - which is what makes a per-tick
+                // re-check affordable for the process that is actually doing the work.
+                if (_lease is { IsHeld: true }) return (WorkerRole.Primary, null);
+
+                // HELD IT, LOST IT. Drop the dead handle before asking again; the old code left it in place
+                // and leaked the connection on the next successful acquisition.
+                if (_lease != null)
+                {
+                    var dead = _lease;
+                    _lease = null;
+                    try { await dead.DisposeAsync(); } catch { /* it is already gone; releasing is best effort */ }
+                }
+
+                // The one latched answer, and the only one that is not a failed check.
+                if (_notConfigured)
                     return (WorkerRole.Unrestricted, _instance.WorkerSafetyWarning);
 
-                if (string.IsNullOrWhiteSpace(_connectionString))
+                var attempt = await _attempt(cancellationToken);
+                switch (attempt.Outcome)
                 {
-                    _evaluated = true;
-                    return (WorkerRole.Unrestricted,
-                        "No DefaultConnection connection string, so the single-worker lease cannot be taken.");
-                }
-
-                SqlConnection? connection = null;
-                try
-                {
-                    connection = new SqlConnection(_connectionString);
-                    await connection.OpenAsync(cancellationToken);
-
-                    await using var command = connection.CreateCommand();
-                    command.CommandText = "sp_getapplock";
-                    command.CommandType = CommandType.StoredProcedure;
-                    command.Parameters.AddWithValue("@Resource", _options.WorkerLeaseName);
-                    command.Parameters.AddWithValue("@LockMode", "Exclusive");
-                    // 'Session' — NOT 'Transaction'. A transaction-owned lock would be released the moment the
-                    // acquiring transaction ended, which is useless for a process-lifetime lease.
-                    command.Parameters.AddWithValue("@LockOwner", "Session");
-                    command.Parameters.AddWithValue("@LockTimeout", 0);   // never block; a standby must return at once
-                    var result = command.Parameters.Add("@ReturnValue", SqlDbType.Int);
-                    result.Direction = ParameterDirection.ReturnValue;
-
-                    await command.ExecuteNonQueryAsync(cancellationToken);
-                    int code = (int)(result.Value ?? -999);
-
-                    // 0 = granted, 1 = granted after waiting. Negative = not granted (-1 timeout, -2 cancelled,
-                    // -3 deadlock victim, -999 parameter/other error).
-                    if (code is 0 or 1)
-                    {
-                        _leaseConnection = connection;
-                        connection = null;              // ownership transferred; do not dispose in the finally
-                        _evaluated = true;
+                    case WorkerLeaseOutcome.Acquired:
+                        _lease = attempt.Lease;
                         return (WorkerRole.Primary, null);
-                    }
-                    if (code == -1)
-                    {
-                        _evaluated = true;
-                        return (WorkerRole.Standby, null);
-                    }
 
-                    _evaluated = true;
-                    return (WorkerRole.Unrestricted,
-                        $"sp_getapplock returned {code} for '{_options.WorkerLeaseName}', so single-process " +
-                        "enforcement is not active. Workers are running unrestricted.");
-                }
-                catch (Exception ex)
-                {
-                    _evaluated = true;
-                    return (WorkerRole.Unrestricted,
-                        $"The single-worker lease could not be evaluated ({ex.GetType().Name}: {ex.Message}). " +
-                        "Workers are running unrestricted.");
-                }
-                finally
-                {
-                    if (connection != null) await connection.DisposeAsync();
+                    case WorkerLeaseOutcome.HeldByAnother:
+                        return (WorkerRole.Standby, null);
+
+                    case WorkerLeaseOutcome.NotConfigured:
+                        _notConfigured = true;
+                        return (WorkerRole.Unrestricted,
+                            attempt.Detail ?? "No DefaultConnection connection string, so the single-worker lease cannot be taken.");
+
+                    default:
+                        // FAIL CLOSED. We asked and did not get an answer we understand, so we do not know
+                        // whether another process is primary - and "we do not know" must never read as "yes".
+                        // Not cached: the very next ask tries again, so connectivity returning restores the
+                        // worker without a restart.
+                        _log.LogError(
+                            "The background-worker lease '{Lease}' could not be evaluated ({Detail}). This " +
+                            "instance ({Instance}, PID {Pid}) stands down rather than assume it may run. It will " +
+                            "re-check.",
+                            _options.WorkerLeaseName, attempt.Detail, _instance.InstanceName, _instance.ProcessId);
+                        return (WorkerRole.Standby, null);
                 }
             }
             finally { _once.Release(); }
+        }
+
+        /// The production acquisition step. Everything SQL lives here and nowhere else.
+        private async Task<WorkerLeaseAttempt> AcquireThroughSqlAsync(CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrWhiteSpace(_connectionString))
+                return new WorkerLeaseAttempt(WorkerLeaseOutcome.NotConfigured,
+                    "No DefaultConnection connection string, so the single-worker lease cannot be taken.", null);
+
+            SqlConnection? connection = null;
+            try
+            {
+                connection = new SqlConnection(_connectionString);
+                await connection.OpenAsync(cancellationToken);
+
+                await using var command = connection.CreateCommand();
+                command.CommandText = "sp_getapplock";
+                command.CommandType = CommandType.StoredProcedure;
+                command.Parameters.AddWithValue("@Resource", _options.WorkerLeaseName);
+                command.Parameters.AddWithValue("@LockMode", "Exclusive");
+                // 'Session' - NOT 'Transaction'. A transaction-owned lock would be released the moment the
+                // acquiring transaction ended, which is useless for a process-lifetime lease.
+                command.Parameters.AddWithValue("@LockOwner", "Session");
+                command.Parameters.AddWithValue("@LockTimeout", 0);   // never block; a standby must return at once
+                var result = command.Parameters.Add("@ReturnValue", SqlDbType.Int);
+                result.Direction = ParameterDirection.ReturnValue;
+
+                await command.ExecuteNonQueryAsync(cancellationToken);
+                int code = (int)(result.Value ?? -999);
+
+                // 0 = granted, 1 = granted after waiting. Negative = not granted (-1 timeout, -2 cancelled,
+                // -3 deadlock victim, -999 parameter/other error).
+                if (code is 0 or 1)
+                {
+                    var lease = new SqlWorkerLease(connection, _options.WorkerLeaseName, _log);
+                    connection = null;              // ownership transferred; do not dispose in the finally
+                    return new WorkerLeaseAttempt(WorkerLeaseOutcome.Acquired, null, lease);
+                }
+                if (code == -1)
+                    return new WorkerLeaseAttempt(WorkerLeaseOutcome.HeldByAnother, null, null);
+
+                // ANY OTHER CODE IS A FAILED CHECK, not a grant. This used to return Unrestricted.
+                return new WorkerLeaseAttempt(WorkerLeaseOutcome.Failed,
+                    $"sp_getapplock returned {code}", null);
+            }
+            catch (OperationCanceledException) { throw; }
+            catch (Exception ex)
+            {
+                return new WorkerLeaseAttempt(WorkerLeaseOutcome.Failed, $"{ex.GetType().Name}: {ex.Message}", null);
+            }
+            finally
+            {
+                if (connection != null) await connection.DisposeAsync();
+            }
+        }
+
+        /// The lease as an open SQL connection holding a session application lock. Closing it releases the
+        /// lock, which is exactly the behaviour wanted on crash or shutdown.
+        private sealed class SqlWorkerLease : IWorkerLease
+        {
+            private readonly SqlConnection _connection;
+            private readonly string _leaseName;
+            private readonly ILogger _log;
+
+            public SqlWorkerLease(SqlConnection connection, string leaseName, ILogger log)
+            { _connection = connection; _leaseName = leaseName; _log = log; }
+
+            public bool IsHeld => _connection.State == ConnectionState.Open;
+
+            public async ValueTask DisposeAsync()
+            {
+                // Explicit release on graceful shutdown. SQL Server would release it anyway when the
+                // connection dropped, but releasing eagerly lets a rolling restart hand over without waiting
+                // for a timeout.
+                if (_connection.State == ConnectionState.Open)
+                {
+                    try
+                    {
+                        await using var command = _connection.CreateCommand();
+                        command.CommandText = "sp_releaseapplock";
+                        command.CommandType = CommandType.StoredProcedure;
+                        command.Parameters.AddWithValue("@Resource", _leaseName);
+                        command.Parameters.AddWithValue("@LockOwner", "Session");
+                        await command.ExecuteNonQueryAsync();
+                    }
+                    catch (Exception ex)
+                    {
+                        _log.LogWarning(ex, "Releasing the background-worker lease failed; the connection close will release it.");
+                    }
+                }
+                await _connection.DisposeAsync();
+            }
         }
 
         private void MarkOnce(WorkerRole role, string? warning)
@@ -311,7 +477,8 @@ namespace CrossBuy.BL.Platform
 
             if (role == WorkerRole.Unrestricted && !string.IsNullOrEmpty(warning))
             {
-                // Loud, because this is the fail-open path. It is a real operational condition, not a detail.
+                // Loud, because this is the one surviving fail-open path. It is a real operational condition,
+                // not a detail.
                 _log.LogError(
                     "SINGLE-WORKER ENFORCEMENT IS NOT ACTIVE on {Instance} (PID {Pid}). {Warning} " +
                     "If more than one process is running these workers, the non-outbox jobs (task generation, " +
@@ -328,25 +495,11 @@ namespace CrossBuy.BL.Platform
 
         public async ValueTask DisposeAsync()
         {
-            // Explicit release on graceful shutdown. SQL Server would release it anyway when the connection
-            // dropped, but releasing eagerly lets a rolling restart hand over without waiting for a timeout.
-            if (_leaseConnection != null)
+            if (_lease != null)
             {
-                try
-                {
-                    await using var command = _leaseConnection.CreateCommand();
-                    command.CommandText = "sp_releaseapplock";
-                    command.CommandType = CommandType.StoredProcedure;
-                    command.Parameters.AddWithValue("@Resource", _options.WorkerLeaseName);
-                    command.Parameters.AddWithValue("@LockOwner", "Session");
-                    await command.ExecuteNonQueryAsync();
-                }
-                catch (Exception ex)
-                {
-                    _log.LogWarning(ex, "Releasing the background-worker lease failed; the connection close will release it.");
-                }
-                await _leaseConnection.DisposeAsync();
-                _leaseConnection = null;
+                var lease = _lease;
+                _lease = null;
+                await lease.DisposeAsync();
             }
             _once.Dispose();
         }

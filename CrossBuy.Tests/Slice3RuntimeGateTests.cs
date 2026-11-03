@@ -115,41 +115,196 @@ namespace CrossBuy.Tests
             Assert.Contains("UNENFORCED", instance.WorkerSafetyMode);
         }
 
-        // ---- An unreachable database also fails open, with the reason preserved ----
-        [Fact]
-        public async Task With_an_unreachable_database_the_gate_opens_and_records_why()
+        // =========================================================================================
+        // D-16 - A FAILED CHECK IS NOT PERMISSION.
+        //
+        // The test that stood here asserted the OPPOSITE: that an unreachable database opened the gate.
+        // It is deleted rather than adapted, because it pinned the defect. Its own comment called
+        // fail-open "the deliberate choice", and for an ABSENT CONNECTION STRING it still is - that case
+        // is kept green immediately above. What was never deliberate was failing open on a database that
+        // was configured and did not answer, and then CACHING that answer for the life of the process.
+        //
+        // NO DATABASE IS OPENED BY ANY TEST BELOW. The gate takes its acquisition step as a function, so
+        // the policy - fail closed, never latch, recover - is exercised with a stub. That seam exists
+        // because the latch survived precisely by being untestable without an engine.
+        // =========================================================================================
+
+        private sealed class StubLease : IWorkerLease
         {
-            var (instance, gate) = Build(
-                new RuntimeOptions { RequireSingleWorkerProcess = true },
-                "Server=localhost,14331;Database=NoSuchDb;User Id=nobody;Password=nothing;TrustServerCertificate=True;Connect Timeout=1");
+            public bool IsHeld { get; set; } = true;
+            public int Disposals { get; private set; }
+            public ValueTask DisposeAsync() { Disposals++; IsHeld = false; return ValueTask.CompletedTask; }
+        }
+
+        private static (RuntimeInstanceInfo instance, WorkerGate gate) BuildWith(
+            Func<CancellationToken, Task<WorkerLeaseAttempt>> attempt, int retrySeconds = 60)
+        {
+            var opts = Options.Create(new RuntimeOptions
+            { RequireSingleWorkerProcess = true, LeaseRetrySeconds = retrySeconds });
+            var instance = new RuntimeInstanceInfo(opts, new StubHostEnvironment());
+            var gate = new WorkerGate(opts, instance, Config("Server=unused"), NullLogger<WorkerGate>.Instance, attempt);
+            return (instance, gate);
+        }
+
+        private static Task<WorkerLeaseAttempt> Failed(string detail = "SqlException: network") =>
+            Task.FromResult(new WorkerLeaseAttempt(WorkerLeaseOutcome.Failed, detail, null));
+
+        /// SQL UNAVAILABLE AT STARTUP. The old behaviour was Unrestricted - "run anyway". A worker must now
+        /// stand down, because an unanswered question about who is primary is not a yes.
+        [Fact]
+        public async Task An_unavailable_database_at_startup_stands_the_worker_down_instead_of_running_it()
+        {
+            var (instance, gate) = BuildWith(_ => Failed());
             await using var _ = gate;
 
-            Assert.True(await gate.WaitUntilAllowedAsync("test", CancellationToken.None));
+            Assert.False(await gate.IsStillAllowedAsync("test", CancellationToken.None));
+            Assert.Equal(WorkerRole.Standby, instance.WorkerRole);
+            Assert.False(instance.WorkersEnabled);
+            // And it must NOT have claimed enforcement is off - that is the fail-open story, and it is gone.
+            Assert.NotEqual(WorkerRole.Unrestricted, instance.WorkerRole);
+        }
 
-            Assert.Equal(WorkerRole.Unrestricted, instance.WorkerRole);
-            Assert.NotNull(instance.WorkerSafetyWarning);
-            Assert.Contains("could not be evaluated", instance.WorkerSafetyWarning!);
-            // The exception type is kept so an operator can tell a permission error from a network error.
-            Assert.Contains("Exception", instance.WorkerSafetyWarning!);
+        /// THE LATCH, WHICH IS THE DEFECT THAT MADE THE OTHER ONE PERMANENT. One failure after a healthy
+        /// acquisition must not pin the process. The third call proves the answer was never cached.
+        [Fact]
+        public async Task A_transient_failure_after_a_good_check_is_not_cached()
+        {
+            var lease = new StubLease();
+            var calls = 0;
+            var (instance, gate) = BuildWith(_ =>
+            {
+                calls++;
+                if (calls == 1) return Task.FromResult(new WorkerLeaseAttempt(WorkerLeaseOutcome.Acquired, null, lease));
+                if (calls == 2) return Failed();
+                return Task.FromResult(new WorkerLeaseAttempt(WorkerLeaseOutcome.Acquired, null, new StubLease()));
+            });
+            await using var _ = gate;
+
+            Assert.True(await gate.IsStillAllowedAsync("test", CancellationToken.None));   // 1: primary
+            Assert.Equal(WorkerRole.Primary, instance.WorkerRole);
+
+            lease.IsHeld = false;                                                         // the connection died
+            Assert.False(await gate.IsStillAllowedAsync("test", CancellationToken.None));  // 2: failed -> stand down
+            Assert.Equal(WorkerRole.Standby, instance.WorkerRole);
+
+            Assert.True(await gate.IsStillAllowedAsync("test", CancellationToken.None));   // 3: RECOVERED
+            Assert.Equal(WorkerRole.Primary, instance.WorkerRole);
+            Assert.Equal(3, calls);
+        }
+
+        /// NO UNRESTRICTED CACHED STATE. Repeated failures must each be re-asked, never answered from a
+        /// stored verdict - and must never resolve to Unrestricted.
+        [Fact]
+        public async Task Repeated_failures_are_re_asked_every_time_and_never_become_unrestricted()
+        {
+            var calls = 0;
+            var (instance, gate) = BuildWith(_ => { calls++; return Failed(); });
+            await using var _ = gate;
+
+            for (var i = 0; i < 4; i++)
+                Assert.False(await gate.IsStillAllowedAsync("test", CancellationToken.None));
+
+            Assert.Equal(4, calls);                       // asked every time, not once
+            Assert.Equal(WorkerRole.Standby, instance.WorkerRole);
+            Assert.NotEqual(WorkerRole.Unrestricted, instance.WorkerRole);
+        }
+
+        /// LEASE REVOKED MID-RUN. The holder's connection drops and another process takes it. The old gate
+        /// never looked again; this one stands down and releases the dead handle rather than leaking it.
+        [Fact]
+        public async Task Losing_the_lease_mid_run_stands_the_worker_down_and_drops_the_dead_handle()
+        {
+            var lease = new StubLease();
+            var (instance, gate) = BuildWith(_ =>
+                lease.Disposals == 0 && lease.IsHeld
+                    ? Task.FromResult(new WorkerLeaseAttempt(WorkerLeaseOutcome.Acquired, null, lease))
+                    : Task.FromResult(new WorkerLeaseAttempt(WorkerLeaseOutcome.HeldByAnother, null, null)));
+            await using var _ = gate;
+
+            Assert.True(await gate.IsStillAllowedAsync("test", CancellationToken.None));
+            Assert.Equal(WorkerRole.Primary, instance.WorkerRole);
+
+            lease.IsHeld = false;
+            Assert.False(await gate.IsStillAllowedAsync("test", CancellationToken.None));
+            Assert.Equal(WorkerRole.Standby, instance.WorkerRole);
+            Assert.Equal(1, lease.Disposals);   // the dead lease was released, not left in place
+        }
+
+        /// A HEALTHY LEASE COSTS NOTHING TO RE-CHECK. The acquisition step runs once; every later tick is
+        /// answered from the held lease. This is what makes a per-tick check affordable.
+        [Fact]
+        public async Task A_held_lease_is_confirmed_without_asking_again()
+        {
+            var calls = 0;
+            var (instance, gate) = BuildWith(_ =>
+            { calls++; return Task.FromResult(new WorkerLeaseAttempt(WorkerLeaseOutcome.Acquired, null, new StubLease())); });
+            await using var _ = gate;
+
+            for (var i = 0; i < 5; i++)
+                Assert.True(await gate.IsStillAllowedAsync("test", CancellationToken.None));
+
+            Assert.Equal(1, calls);
+            Assert.Equal(WorkerRole.Primary, instance.WorkerRole);
+        }
+
+        /// CANCELLATION DURING A RE-CHECK returns false without throwing, so a shutdown looks like a clean
+        /// stand-down to the caller rather than an exception escaping a worker loop.
+        [Fact]
+        public async Task A_cancelled_recheck_returns_false_rather_than_throwing()
+        {
+            var (_, gate) = BuildWith(_ => Task.FromResult(new WorkerLeaseAttempt(WorkerLeaseOutcome.Acquired, null, new StubLease())));
+            await using var __ = gate;
+
+            using var cts = new CancellationTokenSource();
+            cts.Cancel();
+            Assert.False(await gate.IsStillAllowedAsync("test", cts.Token));
+        }
+
+        /// NO WORK WHILE AUTHORIZATION IS UNKNOWN. The blocking startup path must PARK on a failed check,
+        /// not open. Bounded by cancellation so the test does not sit on the retry delay.
+        [Fact]
+        public async Task The_startup_wait_parks_on_a_failed_check_and_never_opens_the_gate()
+        {
+            var (instance, gate) = BuildWith(_ => Failed());
+            await using var _ = gate;
+
+            using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(250));
+            Assert.False(await gate.WaitUntilAllowedAsync("test", cts.Token));
+            Assert.NotEqual(WorkerRole.Unrestricted, instance.WorkerRole);
+            Assert.False(instance.WorkersEnabled);
         }
 
         // ---- The lease is evaluated ONCE per process, not once per worker ----
+        //
+        // D-16 REWROTE THIS TEST, AND THE REASON MATTERS. It used to point six callers at an UNREACHABLE
+        // database and assert they all came back true with the role Unrestricted. That passed only because
+        // the gate failed open and then LATCHED: the first caller's failure was cached and the other five
+        // read the cache. So the test was not measuring "one evaluation per process" at all - it was
+        // measuring the defect, and it would now park six workers on the retry delay for ever and take the
+        // test host down with it. That is the fix working, not a regression.
+        //
+        // The invariant it was WRITTEN for is real and still holds, so it is proven directly instead: six
+        // concurrent callers, one acquisition, five served from the held lease. No database, by the seam.
         [Fact]
         public async Task Six_workers_asking_the_gate_do_not_each_evaluate_the_lease()
         {
-            var (instance, gate) = Build(
-                new RuntimeOptions { RequireSingleWorkerProcess = true },
-                "Server=localhost,14332;Database=NoSuchDb;User Id=nobody;Password=nothing;TrustServerCertificate=True;Connect Timeout=1");
+            var acquisitions = 0;
+            var (instance, gate) = BuildWith(_ =>
+            {
+                Interlocked.Increment(ref acquisitions);
+                return Task.FromResult(new WorkerLeaseAttempt(WorkerLeaseOutcome.Acquired, null, new StubLease()));
+            });
             await using var _ = gate;
 
-            // Six concurrent callers, as at startup. A per-caller evaluation would take six connections (and, on a
-            // working database, six locks — of which five would fail and turn the process into a standby of itself).
+            // Six concurrent callers, as at startup. A per-caller evaluation would take six connections and,
+            // on a working database, six locks - of which five would fail and turn the process into a standby
+            // of itself.
             var results = await Task.WhenAll(Enumerable.Range(0, 6)
                 .Select(i => gate.WaitUntilAllowedAsync("worker" + i, CancellationToken.None)));
 
             Assert.All(results, Assert.True);
-            Assert.Equal(WorkerRole.Unrestricted, instance.WorkerRole);
-            Assert.NotNull(instance.WorkerSafetyWarning);
+            Assert.Equal(WorkerRole.Primary, instance.WorkerRole);
+            Assert.Equal(1, acquisitions);   // the point of the test, now asserted rather than implied
         }
 
         // ---- A cancelled gate returns false so the worker exits instead of looping ----
