@@ -757,14 +757,6 @@ namespace CrossBuy.BL.Workspace
         Task<WorkspacePanel<WorkspaceReportLink>> GetReportsAsync(
             CancellationToken cancellationToken = default);
 
-        /// <param name="includeConversations">Read the caller's entity-anchored conversations too.
-        /// OFF BY DEFAULT so the paged notifications screen does not pay for a panel it never renders;
-        /// the dashboard turns it on.</param>
-        Task<WorkspaceCommunicationInbox> GetCommunicationInboxAsync(
-            bool unreadOnly = false, long? afterId = null, int take = 25,
-            bool includeConversations = false,
-            CancellationToken cancellationToken = default);
-
         Task<WorkspaceCapabilities> GetCapabilitiesAsync(CancellationToken cancellationToken = default);
 
         // NOTE: no write. The mark-as-read endpoint stays withdrawn until an approved authority exists —
