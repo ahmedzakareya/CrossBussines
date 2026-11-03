@@ -15,9 +15,9 @@
     "different content, so \"apply <name>.sql\" is ambiguous."
   ],
   "generatedFrom": "repository scan",
-  "totalScripts": 214,
+  "totalScripts": 228,
   "counts": {
-    "guarded": 188,
+    "guarded": 202,
     "guardedByPredicate": 17,
     "review": 0,
     "notDeployable": 1,
@@ -5326,6 +5326,378 @@
       "reviewVerdict": null,
       "reviewEvidence": null,
       "authoredSourcePath": "CrossBuy/deploy/sql/fx_bank_revaluation.sql",
+      "isGeneratedPackageCopy": false,
+      "excludedFromDeploy": false,
+      "excludedReason": null
+    },
+    {
+      "path": "CrossBuy/deploy/sql/hospital_h1_facility.sql",
+      "name": "hospital_h1_facility.sql",
+      "bytes": 8363,
+      "rawBytes": 8363,
+      "encoding": "utf-8",
+      "sha256": "e6998fe191533214a24c4f2248b4e5ba580e234770ada9d97bcf5c39fc620f14",
+      "rawSha256": "e6998fe191533214a24c4f2248b4e5ba580e234770ada9d97bcf5c39fc620f14",
+      "rank": 40,
+      "guards": [
+        "object-null",
+        "col-length"
+      ],
+      "mutations": [
+        "create-table",
+        "create-index"
+      ],
+      "unguardedBatches": [],
+      "idempotency": "guarded",
+      "reviewVerdict": null,
+      "reviewEvidence": null,
+      "authoredSourcePath": "CrossBuy/deploy/sql/hospital_h1_facility.sql",
+      "isGeneratedPackageCopy": false,
+      "excludedFromDeploy": false,
+      "excludedReason": null
+    },
+    {
+      "path": "CrossBuy/deploy/sql/hospital_h10_pharmacy.sql",
+      "name": "hospital_h10_pharmacy.sql",
+      "bytes": 5588,
+      "rawBytes": 5588,
+      "encoding": "utf-8",
+      "sha256": "68be1de1780092e969be4e98e0c618d14f10814bf2da5506d958f9a6e0440a0d",
+      "rawSha256": "68be1de1780092e969be4e98e0c618d14f10814bf2da5506d958f9a6e0440a0d",
+      "rank": 40,
+      "guards": [
+        "object-null",
+        "if-not-exists",
+        "if-exists",
+        "col-length",
+        "sys-catalog"
+      ],
+      "mutations": [
+        "create-table",
+        "alter-add",
+        "alter-drop",
+        "create-index"
+      ],
+      "unguardedBatches": [],
+      "idempotency": "guarded",
+      "reviewVerdict": null,
+      "reviewEvidence": null,
+      "authoredSourcePath": "CrossBuy/deploy/sql/hospital_h10_pharmacy.sql",
+      "isGeneratedPackageCopy": false,
+      "excludedFromDeploy": false,
+      "excludedReason": null
+    },
+    {
+      "path": "CrossBuy/deploy/sql/hospital_h11_insurance.sql",
+      "name": "hospital_h11_insurance.sql",
+      "bytes": 12296,
+      "rawBytes": 12296,
+      "encoding": "utf-8",
+      "sha256": "8ce88481b2bf1dd406a41acaf127925a74dee76a4f9c933b15153c87896b4afb",
+      "rawSha256": "8ce88481b2bf1dd406a41acaf127925a74dee76a4f9c933b15153c87896b4afb",
+      "rank": 40,
+      "guards": [
+        "object-null"
+      ],
+      "mutations": [
+        "create-table",
+        "create-index"
+      ],
+      "unguardedBatches": [],
+      "idempotency": "guarded",
+      "reviewVerdict": null,
+      "reviewEvidence": null,
+      "authoredSourcePath": "CrossBuy/deploy/sql/hospital_h11_insurance.sql",
+      "isGeneratedPackageCopy": false,
+      "excludedFromDeploy": false,
+      "excludedReason": null
+    },
+    {
+      "path": "CrossBuy/deploy/sql/hospital_h12_estimates.sql",
+      "name": "hospital_h12_estimates.sql",
+      "bytes": 7195,
+      "rawBytes": 7195,
+      "encoding": "utf-8",
+      "sha256": "1f21016503e8c74353b6693ad03d204646c6a7c3c445d3945eae8daf54a6275b",
+      "rawSha256": "1f21016503e8c74353b6693ad03d204646c6a7c3c445d3945eae8daf54a6275b",
+      "rank": 40,
+      "guards": [
+        "object-null"
+      ],
+      "mutations": [
+        "create-table",
+        "create-index"
+      ],
+      "unguardedBatches": [],
+      "idempotency": "guarded",
+      "reviewVerdict": null,
+      "reviewEvidence": null,
+      "authoredSourcePath": "CrossBuy/deploy/sql/hospital_h12_estimates.sql",
+      "isGeneratedPackageCopy": false,
+      "excludedFromDeploy": false,
+      "excludedReason": null
+    },
+    {
+      "path": "CrossBuy/deploy/sql/hospital_h13_emergency.sql",
+      "name": "hospital_h13_emergency.sql",
+      "bytes": 5975,
+      "rawBytes": 5975,
+      "encoding": "utf-8",
+      "sha256": "78691d01579a27f34561ec537154bc73cd4dacfafa545edcc8c43582505255f1",
+      "rawSha256": "78691d01579a27f34561ec537154bc73cd4dacfafa545edcc8c43582505255f1",
+      "rank": 40,
+      "guards": [
+        "object-null"
+      ],
+      "mutations": [
+        "create-table",
+        "create-index"
+      ],
+      "unguardedBatches": [],
+      "idempotency": "guarded",
+      "reviewVerdict": null,
+      "reviewEvidence": null,
+      "authoredSourcePath": "CrossBuy/deploy/sql/hospital_h13_emergency.sql",
+      "isGeneratedPackageCopy": false,
+      "excludedFromDeploy": false,
+      "excludedReason": null
+    },
+    {
+      "path": "CrossBuy/deploy/sql/hospital_h14_nursing.sql",
+      "name": "hospital_h14_nursing.sql",
+      "bytes": 6760,
+      "rawBytes": 6760,
+      "encoding": "utf-8",
+      "sha256": "365d66149a6a9ca66b8a688563e3ecd7114ea37f9bff59fee0f6e3ceeb99367a",
+      "rawSha256": "365d66149a6a9ca66b8a688563e3ecd7114ea37f9bff59fee0f6e3ceeb99367a",
+      "rank": 40,
+      "guards": [
+        "object-null"
+      ],
+      "mutations": [
+        "create-table",
+        "create-index"
+      ],
+      "unguardedBatches": [],
+      "idempotency": "guarded",
+      "reviewVerdict": null,
+      "reviewEvidence": null,
+      "authoredSourcePath": "CrossBuy/deploy/sql/hospital_h14_nursing.sql",
+      "isGeneratedPackageCopy": false,
+      "excludedFromDeploy": false,
+      "excludedReason": null
+    },
+    {
+      "path": "CrossBuy/deploy/sql/hospital_h2_patients.sql",
+      "name": "hospital_h2_patients.sql",
+      "bytes": 4138,
+      "rawBytes": 4138,
+      "encoding": "utf-8",
+      "sha256": "61572967a076e570c5f0103451747fa17a8f2e8bee836f0e9226b717736caf9f",
+      "rawSha256": "61572967a076e570c5f0103451747fa17a8f2e8bee836f0e9226b717736caf9f",
+      "rank": 40,
+      "guards": [
+        "object-null",
+        "col-length"
+      ],
+      "mutations": [
+        "create-table",
+        "create-index"
+      ],
+      "unguardedBatches": [],
+      "idempotency": "guarded",
+      "reviewVerdict": null,
+      "reviewEvidence": null,
+      "authoredSourcePath": "CrossBuy/deploy/sql/hospital_h2_patients.sql",
+      "isGeneratedPackageCopy": false,
+      "excludedFromDeploy": false,
+      "excludedReason": null
+    },
+    {
+      "path": "CrossBuy/deploy/sql/hospital_h3_admissions.sql",
+      "name": "hospital_h3_admissions.sql",
+      "bytes": 4412,
+      "rawBytes": 4412,
+      "encoding": "utf-8",
+      "sha256": "83f6d7bd4586cdc0ae6a4d13f7f31a1f68486685eebf85060fe0393178c9040d",
+      "rawSha256": "83f6d7bd4586cdc0ae6a4d13f7f31a1f68486685eebf85060fe0393178c9040d",
+      "rank": 40,
+      "guards": [
+        "object-null",
+        "col-length"
+      ],
+      "mutations": [
+        "create-table",
+        "alter-add",
+        "create-index"
+      ],
+      "unguardedBatches": [],
+      "idempotency": "guarded",
+      "reviewVerdict": null,
+      "reviewEvidence": null,
+      "authoredSourcePath": "CrossBuy/deploy/sql/hospital_h3_admissions.sql",
+      "isGeneratedPackageCopy": false,
+      "excludedFromDeploy": false,
+      "excludedReason": null
+    },
+    {
+      "path": "CrossBuy/deploy/sql/hospital_h4_outpatient.sql",
+      "name": "hospital_h4_outpatient.sql",
+      "bytes": 6884,
+      "rawBytes": 6884,
+      "encoding": "utf-8",
+      "sha256": "9cf9c3a3f15c731fcab632efa9243472242903e628c4383bf45ad6eecc59df6b",
+      "rawSha256": "9cf9c3a3f15c731fcab632efa9243472242903e628c4383bf45ad6eecc59df6b",
+      "rank": 40,
+      "guards": [
+        "object-null",
+        "col-length"
+      ],
+      "mutations": [
+        "create-table",
+        "create-index"
+      ],
+      "unguardedBatches": [],
+      "idempotency": "guarded",
+      "reviewVerdict": null,
+      "reviewEvidence": null,
+      "authoredSourcePath": "CrossBuy/deploy/sql/hospital_h4_outpatient.sql",
+      "isGeneratedPackageCopy": false,
+      "excludedFromDeploy": false,
+      "excludedReason": null
+    },
+    {
+      "path": "CrossBuy/deploy/sql/hospital_h5_consultation.sql",
+      "name": "hospital_h5_consultation.sql",
+      "bytes": 5734,
+      "rawBytes": 5734,
+      "encoding": "utf-8",
+      "sha256": "8fb125960f2e3dfc3c418fcae858d03569951489d7cda328ec96029a694a8b4b",
+      "rawSha256": "8fb125960f2e3dfc3c418fcae858d03569951489d7cda328ec96029a694a8b4b",
+      "rank": 40,
+      "guards": [
+        "object-null",
+        "col-length"
+      ],
+      "mutations": [
+        "create-table",
+        "create-index"
+      ],
+      "unguardedBatches": [],
+      "idempotency": "guarded",
+      "reviewVerdict": null,
+      "reviewEvidence": null,
+      "authoredSourcePath": "CrossBuy/deploy/sql/hospital_h5_consultation.sql",
+      "isGeneratedPackageCopy": false,
+      "excludedFromDeploy": false,
+      "excludedReason": null
+    },
+    {
+      "path": "CrossBuy/deploy/sql/hospital_h6_billing.sql",
+      "name": "hospital_h6_billing.sql",
+      "bytes": 10471,
+      "rawBytes": 10471,
+      "encoding": "utf-8",
+      "sha256": "fcea02e93889138bbe431bea790b96d534df9cf2829396e8408bd7be1853ad40",
+      "rawSha256": "fcea02e93889138bbe431bea790b96d534df9cf2829396e8408bd7be1853ad40",
+      "rank": 40,
+      "guards": [
+        "object-null",
+        "col-length"
+      ],
+      "mutations": [
+        "create-table",
+        "alter-add",
+        "create-index"
+      ],
+      "unguardedBatches": [],
+      "idempotency": "guarded",
+      "reviewVerdict": null,
+      "reviewEvidence": null,
+      "authoredSourcePath": "CrossBuy/deploy/sql/hospital_h6_billing.sql",
+      "isGeneratedPackageCopy": false,
+      "excludedFromDeploy": false,
+      "excludedReason": null
+    },
+    {
+      "path": "CrossBuy/deploy/sql/hospital_h7_pricelists.sql",
+      "name": "hospital_h7_pricelists.sql",
+      "bytes": 7390,
+      "rawBytes": 7390,
+      "encoding": "utf-8",
+      "sha256": "f423d11785f8cf90994fbcbaa603d5c4c67ac4bd42bfdd821a14a604e3bd9a9f",
+      "rawSha256": "f423d11785f8cf90994fbcbaa603d5c4c67ac4bd42bfdd821a14a604e3bd9a9f",
+      "rank": 40,
+      "guards": [
+        "object-null",
+        "col-length"
+      ],
+      "mutations": [
+        "create-table",
+        "alter-add",
+        "create-index"
+      ],
+      "unguardedBatches": [],
+      "idempotency": "guarded",
+      "reviewVerdict": null,
+      "reviewEvidence": null,
+      "authoredSourcePath": "CrossBuy/deploy/sql/hospital_h7_pricelists.sql",
+      "isGeneratedPackageCopy": false,
+      "excludedFromDeploy": false,
+      "excludedReason": null
+    },
+    {
+      "path": "CrossBuy/deploy/sql/hospital_h8_lab.sql",
+      "name": "hospital_h8_lab.sql",
+      "bytes": 8827,
+      "rawBytes": 8827,
+      "encoding": "utf-8",
+      "sha256": "4a242a58c7495ff26094090e493084e5dac29f5c019cdf3903ff98045b3d2533",
+      "rawSha256": "4a242a58c7495ff26094090e493084e5dac29f5c019cdf3903ff98045b3d2533",
+      "rank": 40,
+      "guards": [
+        "object-null"
+      ],
+      "mutations": [
+        "create-table",
+        "create-index"
+      ],
+      "unguardedBatches": [],
+      "idempotency": "guarded",
+      "reviewVerdict": null,
+      "reviewEvidence": null,
+      "authoredSourcePath": "CrossBuy/deploy/sql/hospital_h8_lab.sql",
+      "isGeneratedPackageCopy": false,
+      "excludedFromDeploy": false,
+      "excludedReason": null
+    },
+    {
+      "path": "CrossBuy/deploy/sql/hospital_h9_radiology.sql",
+      "name": "hospital_h9_radiology.sql",
+      "bytes": 7484,
+      "rawBytes": 7484,
+      "encoding": "utf-8",
+      "sha256": "b1baf36270f14c1ff627ae891c5b54e2a66ad0bfd6819e7136c6f5fb361c869b",
+      "rawSha256": "b1baf36270f14c1ff627ae891c5b54e2a66ad0bfd6819e7136c6f5fb361c869b",
+      "rank": 40,
+      "guards": [
+        "object-null",
+        "if-not-exists",
+        "if-exists",
+        "col-length",
+        "sys-catalog"
+      ],
+      "mutations": [
+        "create-table",
+        "alter-add",
+        "create-index",
+        "exec-ddl"
+      ],
+      "unguardedBatches": [],
+      "idempotency": "guarded",
+      "reviewVerdict": null,
+      "reviewEvidence": null,
+      "authoredSourcePath": "CrossBuy/deploy/sql/hospital_h9_radiology.sql",
       "isGeneratedPackageCopy": false,
       "excludedFromDeploy": false,
       "excludedReason": null
