@@ -43,6 +43,19 @@ namespace CrossBuy.BL.Platform
             using var timer = new PeriodicTimer(TimeSpan.FromSeconds(Math.Max(1, _options.PollSeconds)));
             do
             {
+                // D-16. THE LEASE CAN BE LOST MID-RUN - a dropped connection, a failover, another process
+                // taking it. The gate used to be asked ONCE, before this loop, so a worker that lost primacy
+                // kept working while the new primary worked too: duplicate output, unobserved.
+                //
+                // PARK, NEVER RETURN. False means "not right now" and is recoverable. Returning would end this
+                // BackgroundService for good, so if the process that took the lease later died, nothing would
+                // re-acquire and no worker would run anywhere until a restart. Only cancellation ends a worker,
+                // which is what a false from WaitUntilAllowedAsync means here.
+                if (!await _gate.IsStillAllowedAsync(nameof(BusinessEventDispatchWorker), stoppingToken))
+                {
+                    if (!await _gate.WaitUntilAllowedAsync(nameof(BusinessEventDispatchWorker), stoppingToken)) return;
+                }
+
                 try
                 {
                     await RunPassAsync(stoppingToken);
