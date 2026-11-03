@@ -176,8 +176,8 @@ namespace CrossBuy.Tests
             // entries — 143 vs 143, zero ids on either side alone.
             // The registry records later authorized surfaces and retired debt in its
             // history. Keep the historical debt ceiling and reconcile today's columns.
-            Assert.Equal(481, mutating);
-            Assert.Equal(170, attr);
+            Assert.Equal(566, mutating); // 481 -> 566 (Hospital H1-H12, c13388c): +85 mutating, all [HospitalPerm]-protected; see frozenBaselineHistory
+            Assert.Equal(255, attr);     // 170 -> 255: attribute-protected absorbs the whole +85; in-body and gaps unchanged
             Assert.Equal(217, inBody);
             int anonymous = f.TryGetProperty("anonymousByDesign", out var a) ? a.GetInt32() : 0;
 
