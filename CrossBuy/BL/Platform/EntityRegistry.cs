@@ -471,9 +471,10 @@ namespace CrossBuy.BL.Platform
             // attachment surface, a follower list or a timeline. InventoryApproval below says the
             // same thing for the same reason.
             //
-            // THE ROUTE ALREADY EXISTS AND IS NOT CREATED HERE: ProjectController declares
-            // [HttpGet] Milestones(int id) and the default MVC pattern is {controller}/{action}/{id?},
-            // so /Project/Milestones/{id} is the live URL. BuildUrl substitutes {id} into it.
+            // ProjectController.Milestones(int id) interprets id as the PROJECT id and renders that
+            // project's milestone board. This registry's id is a MILESTONE id, and there is no
+            // milestone-detail destination. Returning that value as a project id can open a different
+            // project's board, so this entity deliberately has no record URL.
             new EntityDefinition
             {
                 Code = ProjectMilestone,
@@ -484,7 +485,7 @@ namespace CrossBuy.BL.Platform
                 // Colour is info, a contextual colour the Projects module already carries; warning
                 // and amber are refused platform wide.
                 Module = "Projects", Icon = "ki-outline ki-flag", Color = "info",
-                RouteTemplate = "/Project/Milestones/{id}",
+                RouteTemplate = null,
                 SupportsSearch = false, SupportsTimeline = false, SupportsComments = false,
                 SupportsFiles = false, SupportsFollowers = false,
                 PermissionScope = ScopeProjects,
@@ -499,12 +500,14 @@ namespace CrossBuy.BL.Platform
             //
             // Comments/files/followers stay FALSE: a billing is a financial document, and this batch adds no
             // conversation or attachment surface for it. Central Documents is a later, separate decision.
+            // Its current screen also requires BOTH project id and billing id, but this resolver only has
+            // the billing id; do not emit a URL that omits the project context.
             new EntityDefinition
             {
                 Code = ProjectBilling,
                 DisplayNameAr = "مستخلص", DisplayNameEn = "Progress billing",
                 Module = "Projects", Icon = "ki-outline ki-bill", Color = "primary",
-                RouteTemplate = "/Project/Billing?b={id}",
+                RouteTemplate = null,
                 SupportsSearch = false, SupportsTimeline = true, SupportsComments = false,
                 SupportsFiles = false, SupportsFollowers = false,
                 PermissionScope = ScopeProjects,
@@ -529,9 +532,8 @@ namespace CrossBuy.BL.Platform
                 // actions and three roles; registering with no scope would make this registry the loosest
                 // door into a module that already has a lock.
                 //
-                // RouteTemplate has no {id}: Tasks has a list screen and no per-task detail screen, so a
-                // /Tasks/Details/{id} route would be a dead link. BuildUrl returns the list unchanged —
-                // the same treatment PosOrder already gets.
+                // Task details are served by TasksController.Detail. Keep this deep link aligned with
+                // CommTaskRef.Route so registry-generated links open the same task record.
                 //
                 // ListedInRecordPicker is FALSE, and that is a deliberate deviation from this tab's own
                 // earlier proposal: EntityRegistryTests pins the picker to exactly seven types in order
@@ -541,7 +543,7 @@ namespace CrossBuy.BL.Platform
                 Code = Task,
                 DisplayNameAr = "مهمة", DisplayNameEn = "Task",
                 Module = "Tasks", Icon = "ki-outline ki-check-square", Color = "primary",
-                RouteTemplate = "/Tasks/Index",
+                RouteTemplate = "/Tasks/Detail/{id}",
                 SupportsSearch = true, SupportsTimeline = true, SupportsComments = true,
                 SupportsFiles = true, SupportsFollowers = true,
                 PermissionScope = ScopeTasks,
@@ -561,10 +563,12 @@ namespace CrossBuy.BL.Platform
                 //
                 // An attendee email is not an authenticated principal, so external attendees stay out of
                 // this registration entirely pending an ExternalPrincipalContext.
+                // Calendar has no event-detail route yet. A generic calendar list URL is not a deep link
+                // to this event, so leave the destination absent until the owning module supplies one.
                 Code = CalendarEvent,
                 DisplayNameAr = "حدث", DisplayNameEn = "Calendar event",
                 Module = "Calendar", Icon = "ki-outline ki-calendar", Color = "info",
-                RouteTemplate = "/Calendar/Index",
+                RouteTemplate = null,
                 SupportsSearch = true, SupportsTimeline = true, SupportsComments = true,
                 SupportsFiles = true, SupportsFollowers = false,
                 PermissionScope = ScopeCalendar,
