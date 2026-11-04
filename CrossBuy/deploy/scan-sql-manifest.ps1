@@ -128,6 +128,48 @@ function Get-Rank([string]$relative, [string]$name) {
         $name -like 'hr*' -or $name -like 'pricing_*' -or $name -like 'manuf_*') { return 30 }
     # Utility / operational scripts that are never part of an ordinary deploy.
     if ($name -in @('00_backup_dev_db.sql', '10_purge_for_production.sql', 'script.sql')) { return 90 }
+    # R7 schemas are dependent, not interchangeable rank-40 files. Rank 40 sorts by path, and
+    # alphabetical order reverses every request/decision/application chain (applications < decisions
+    # < requests, while the dependency runs the other way) - 28 real ordering edges break under it.
+    # Structures precede budget versions. The one non-construction name is not a passenger:
+    # actual_cost_allocations (52) refuses to run until journal_functional_currency_snapshot (51)
+    # has added JournalEntries.FunctionalCurrencyId, which it checks with COL_LENGTH, so the
+    # Accounting slice is a hard Construction prerequisite. native_rowversion leads the block not
+    # because anything depends on it - nothing does - but because it THROWs 51022 if another slice
+    # has already added a rowversion to any of its five legacy tables.
+    switch ($name) {
+        'construction_r7_native_rowversion.sql'           { return 43 }
+        'construction_r7_consolidate_commercial_state.sql' { return 44 }
+        'construction_r7_budget_policy.sql'               { return 45 }
+        'construction_r7_structure.sql'                   { return 46 }
+        'construction_r7_budget_versions.sql'             { return 47 }
+        'construction_r7_procurement_provenance.sql'       { return 48 }
+        'construction_r7_order_allocations.sql'            { return 49 }
+        'construction_r7_commitment_reservations.sql'      { return 50 }
+        'journal_functional_currency_snapshot.sql'         { return 51 }
+        'construction_r7_actual_cost_allocations.sql'      { return 52 }
+        'construction_r7_invoice_line_provenance.sql'      { return 53 }
+        'construction_r7_budget_exceptions.sql'            { return 54 }
+        'construction_r7_purchase_drafts.sql'              { return 55 }
+        'construction_r7_purchase_approvals.sql'           { return 56 }
+        'construction_r7_material_consumptions.sql'        { return 57 }
+        'construction_r7_partial_invoice_provenance.sql'   { return 58 }
+        'construction_r7_rebase_requests.sql'              { return 59 }
+        'construction_r7_rebase_decisions.sql'             { return 60 }
+        'construction_r7_exposure_rebases.sql'             { return 61 }
+        'construction_r7_purchase_rebase_requests.sql'     { return 62 }
+        'construction_r7_purchase_rebase_decisions.sql'    { return 63 }
+        'construction_r7_company_policies.sql'             { return 64 }
+        'construction_r7_budget_transfer_requests.sql'     { return 65 }
+        'construction_r7_budget_transfer_decisions.sql'    { return 66 }
+        'construction_r7_budget_transfer_applications.sql' { return 67 }
+        'construction_r7_cost_forecast_snapshots.sql'      { return 68 }
+        'construction_r7_warehouse_exception_requests.sql' { return 69 }
+        'construction_r7_warehouse_exception_decisions.sql' { return 70 }
+        'construction_r7_warehouse_exception_application.sql' { return 71 }
+        'construction_r7_rebased_warehouse_consent.sql' { return 72 }
+    }
+
     return 40
 }
 
