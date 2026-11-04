@@ -315,8 +315,8 @@
                                                 <div class="position-absolute start-0 top-0 w-4px h-100 rounded-2 bg-@tone"></div>
                                                 @* The destination comes from the panel the row was composed
                                                    from, which got it from the owning module. *@
-                                                <a class="d-block fw-bold text-gray-900 text-hover-primary"
-                                                   href="@(item.Url ?? Url.Action("Index", "Workspace"))">@item.Title</a>
+                                                <a class="d-block fw-bold text-gray-900 @(item.Url == null ? "pe-none" : "text-hover-primary")"
+                                                   href="@item.Url">@item.Title</a>
                                                 <span class="fs-7 text-muted fw-semibold d-block">
                                                     @item.Source(arabic)
                                                     @if (!string.IsNullOrWhiteSpace(item.Priority) && item.Priority != "Normal")
@@ -446,7 +446,7 @@
                 {
                     var metricColor = MetricColor(metric.Tone);
                     <div class="col-6 col-md-4 @metricCol">
-                        <a href="@(metric.Url ?? Url.Action("Index", "Workspace"))" class="card h-100 text-decoration-none">
+                        <a href="@metric.Url" class="card h-100 text-decoration-none @(metric.Url == null ? "pe-none" : "")">
                             <div class="card-body d-flex justify-content-between align-items-start flex-column p-5">
                                 <div class="d-flex flex-stack w-100 mb-4">
                                     <div class="symbol symbol-40px">
@@ -730,7 +730,7 @@
                                         {
                                             <tr>
                                                 <td>
-                                                    <a class="fw-bold text-gray-900 text-hover-primary" href="@(activity.Url ?? Url.Action("Index", "Workspace"))">
+                                                    <a class="fw-bold text-gray-900 @(activity.Url == null ? "pe-none" : "text-hover-primary")" href="@activity.Url">
                                                         <i class="@activity.Icon text-@MetricColor(activity.Tone) me-2"></i>@activity.Title
                                                     </a>
                                                 </td>

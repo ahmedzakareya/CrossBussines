@@ -113,7 +113,7 @@
                                                     </span>
                                                 </div>
                                                 <div class="d-flex flex-column">
-                                                    <a class="fw-bold text-gray-900 text-hover-primary" href="@(link.Url ?? "#")">@link.Label</a>
+                                                    <a class="fw-bold text-gray-900 @(link.Url == null ? "pe-none" : "text-hover-primary")" href="@link.Url">@link.Label</a>
                                                     <span class="text-gray-700 fs-7">
                                                         @if (!string.IsNullOrWhiteSpace(link.Sub))
                                                         {
