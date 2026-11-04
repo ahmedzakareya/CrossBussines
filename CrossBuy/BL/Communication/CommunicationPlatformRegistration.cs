@@ -120,6 +120,60 @@ namespace CrossBuy.BL.Communication
             services.AddScoped<ICommTimelineSource, CommAuditTimelineSource>();
             services.AddScoped<ICommTimelineAggregator, CommTimelineAggregator>();
 
+            // Communication ↔ Tasks. Registered here, but it takes NO Tasks type in its constructor — it
+            // resolves ITaskService/ITasksAccessService at call time and reports their absence. So this
+            // line does not make the Tasks module a dependency of the Communication graph, and the
+            // activation test that resolves every platform service in a scope keeps passing without the
+            // Tasks module registered at all.
+            services.AddScoped<ICommTaskIntegrationService, CommTaskIntegrationService>();
+
+            // PERSISTENT TASK LINKS — ACTIVATED BY THE DEPLOYMENT THAT HAS THE TABLE, NOT BY THE BUILD.
+            //
+            // CommTaskLinks is provisioned on CrossBuyDB2 and absent from CrossBuyDev, and this solution
+            // reaches BOTH: the https launch profile overrides the connection to CrossBuyDB2, while the
+            // http and IIS Express profiles fall back to appsettings.json and CrossBuyDev. An
+            // unconditional EfCommTaskLinkStore would therefore be correct under one profile and a
+            // SQL-208 on first use under the other two — the HM-D44 shape, reintroduced.
+            //
+            // SO THE DATABASE IS ASKED, rather than told. ProbingCommTaskLinkStore reads the system
+            // catalogues once per process through the probe registered below and delegates to
+            // EfCommTaskLinkStore or UnprovisionedCommTaskLinkStore accordingly. A deployment on
+            // CrossBuyDB2 gets persistence and one on CrossBuyDev gets the honest refusal, with no
+            // configuration distinguishing them — which is what lets the switch live in a committed
+            // file at all. See CommTaskLinkProvisioning.cs for why a failed probe is not cached.
+            //
+            // THE FLAG REMAINS, AS A KILL SWITCH ONLY. Explicit `false` forces the unprovisioned store
+            // with no probe, so an operator can disable the feature without touching schema. Absent and
+            // `true` both mean "ask the database": the flag can restrict, never grant. That asymmetry is
+            // the point — a committed `true` is harmless against an unprovisioned database, where the
+            // old semantics made it a SQL-208.
+            //
+            // DEFAULT CLOSED is unchanged, because the failure modes are not symmetric. Off against a
+            // provisioned database means a Link button that honestly reports "not provisioned". On
+            // against an unprovisioned one means an exception from the database driver in the middle of
+            // somebody's work. The first is a configuration gap somebody notices; the second is an
+            // outage.
+            //
+            // This reuses both existing stores and the existing probe — no second persistence
+            // implementation and no second schema check.
+            if (configuration?.GetValue<bool?>("CommunicationPlatform:TaskLinksProvisioned") == false)
+            {
+                services.AddScoped<ICommTaskLinkStore, UnprovisionedCommTaskLinkStore>();
+            }
+            else
+            {
+                // Singleton: the answer is a property of the DATABASE, not of a request, and probing it
+                // once per request would be one catalogue round trip per page that shows a Link button.
+                services.AddSingleton<CommTaskLinkProvisioning>();
+                services.AddScoped<EfCommTaskLinkStore>();
+                services.AddScoped<ICommTaskLinkStore, ProbingCommTaskLinkStore>();
+            }
+
+            // The activation CHECK, registered always. It is a read against the system catalogues that
+            // answers "does this database really have CommTaskLinks?" — the question the presence of a
+            // .sql file in the repository does not answer. Registering it does not activate anything;
+            // it is what an operator runs BEFORE the line above is changed.
+            services.AddScoped<ICommTaskLinkSchemaProbe, CommTaskLinkSchemaProbe>();
             return services;
         }
 

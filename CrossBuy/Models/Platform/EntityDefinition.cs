@@ -38,6 +38,20 @@ namespace CrossBuy.Models.Platform
         // "Supplier" is searchable but was never offered by the picker (and therefore never resolvable)
         // in the pre-kernel TaskLinkResolver; this flag preserves that exact behaviour.
         public bool ListedInRecordPicker { get; init; }
+
+        // Whether a TASK may be linked to a record of this type.
+        //
+        // IT IS ITS OWN CAPABILITY, and the two obvious shortcuts are both wrong in opposite
+        // directions. ListedInRecordPicker is true for NINETEEN entities, so keying on it would
+        // silently widen task links from eleven to nineteen, including LandedCost, StockCount and
+        // nine other documents nobody asked to link work to. SupportsComments is wrong the other
+        // way: six of the eleven below do not carry comments at all, and a task may be linked to a
+        // record whether or not anyone can talk about it.
+        //
+        // OPT-IN, NEVER INFERRED. A newly registered entity is NOT linkable until its owner says so
+        // here, because every linkable type is a route by which work can point at a record and a
+        // silent default would make that decision by accident.
+        public bool EligibleForTaskLink { get; init; }
     }
 
     // A resolved pointer to one business record: the (code, id) pair plus its display label.

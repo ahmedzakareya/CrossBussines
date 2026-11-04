@@ -142,6 +142,7 @@ namespace CrossBuy.BL.Platform
             new EntityDefinition
             {
                 Code = SalesInvoice,
+                EligibleForTaskLink = true,   // Task link: opted in by its owner.
                 DisplayNameAr = "فاتورة مبيعات", DisplayNameEn = "Sales invoice",
                 Module = "Accounting", Icon = "ki-outline ki-bill", Color = "primary",
                 RouteTemplate = "/Accounting/SalesInvoiceDetail?id={id}",
@@ -318,6 +319,7 @@ namespace CrossBuy.BL.Platform
                 // through CrmCustomerLink), so authorizing this entity by CRM roles would block accounting
                 // users from a page they can already open. See Slice-002 doc.
                 Code = Customer,
+                EligibleForTaskLink = true,   // Task link: opted in by its owner.
                 DisplayNameAr = "عميل", DisplayNameEn = "Customer",
                 Module = "Accounting", Icon = "ki-outline ki-profile-circle", Color = "success",
                 RouteTemplate = "/Accounting/CustomerStatement?id={id}",
@@ -331,6 +333,7 @@ namespace CrossBuy.BL.Platform
                 // Slice 2 pilot. Detail page is /Accounting/PurchaseInvoiceDetail, so the scope is Accounting
                 // even though posting also writes a stock receipt.
                 Code = PurchaseInvoice,
+                EligibleForTaskLink = true,   // Task link: opted in by its owner.
                 DisplayNameAr = "فاتورة مشتريات", DisplayNameEn = "Purchase invoice",
                 Module = "Accounting", Icon = "ki-outline ki-bill", Color = "warning",
                 RouteTemplate = "/Accounting/PurchaseInvoiceDetail?id={id}",
@@ -352,6 +355,7 @@ namespace CrossBuy.BL.Platform
                 // so registration needs no alias mapping and existing rows keep resolving.
                 // Timeline is NOT enabled: no producer emits quotation events yet and no screen renders one.
                 Code = Quotation,
+                EligibleForTaskLink = true,   // Task link: opted in by its owner.
                 DisplayNameAr = "عرض سعر", DisplayNameEn = "Quotation",
                 Module = "Inventory", Icon = "ki-outline ki-document", Color = "info",
                 RouteTemplate = "/Inventory/QuotationDetails?id={id}",
@@ -372,6 +376,7 @@ namespace CrossBuy.BL.Platform
                 // Timeline is NOT enabled: there is no journal-entry timeline screen, and enabling the flag
                 // without one would make ITimelineProjectionService answer for a screen that does not exist.
                 Code = JournalEntry,
+                EligibleForTaskLink = true,   // Task link: opted in by its owner.
                 DisplayNameAr = "قيد يومية", DisplayNameEn = "Journal entry",
                 Module = "Accounting", Icon = "ki-outline ki-notepad-edit", Color = "dark",
                 RouteTemplate = "/Accounting/JournalEntry?id={id}",
@@ -399,6 +404,7 @@ namespace CrossBuy.BL.Platform
                 // Slice 2 pilot — the only entity in the kernel so far with a genuine multi-state lifecycle
                 // (Draft → Released → Completed, or → Cancelled).
                 Code = ManufWorkOrder,
+                EligibleForTaskLink = true,   // Task link: opted in by its owner.
                 DisplayNameAr = "أمر تشغيل", DisplayNameEn = "Work order",
                 Module = "Manufacturing", Icon = "ki-outline ki-gear", Color = "info",
                 RouteTemplate = "/Inventory/WorkOrderDetails?id={id}",
@@ -410,6 +416,7 @@ namespace CrossBuy.BL.Platform
             new EntityDefinition
             {
                 Code = PosOrder,
+                EligibleForTaskLink = true,   // Task link: opted in by its owner.
                 DisplayNameAr = "طلب مطعم", DisplayNameEn = "Restaurant order",
                 Module = "Pos", Icon = "ki-outline ki-handcart", Color = "dark",
                 // No admin detail screen for a POS order yet → reference-only (label shown, no "open").
@@ -422,6 +429,7 @@ namespace CrossBuy.BL.Platform
             new EntityDefinition
             {
                 Code = Employee,
+                EligibleForTaskLink = true,   // Task link: opted in by its owner.
                 DisplayNameAr = "موظف", DisplayNameEn = "Employee",
                 Module = "Hr", Icon = "ki-outline ki-user", Color = "primary",
                 // List-only screen (no per-id detail view) — BuildUrl returns it unchanged.
@@ -455,6 +463,7 @@ namespace CrossBuy.BL.Platform
             new EntityDefinition
             {
                 Code = Project,
+                EligibleForTaskLink = true,   // Task link: opted in by its owner.
                 DisplayNameAr = "مشروع", DisplayNameEn = "Project",
                 Module = "Projects", Icon = "ki-outline ki-abstract-26", Color = "info",
                 RouteTemplate = "/Project/Projects",
@@ -516,6 +525,7 @@ namespace CrossBuy.BL.Platform
             new EntityDefinition
             {
                 Code = Item,
+                EligibleForTaskLink = true,   // Task link: opted in by its owner.
                 DisplayNameAr = "صنف", DisplayNameEn = "Item",
                 Module = "Inventory", Icon = "ki-outline ki-basket", Color = "success",
                 RouteTemplate = "/Inventory/EditItem?id={id}",
@@ -541,6 +551,7 @@ namespace CrossBuy.BL.Platform
                 // behaviour another tab's test guards, so it needs that owner's agreement — everything
                 // else about this registration works without it.
                 Code = Task,
+                EligibleForTaskLink = true,   // Task link: opted in by its owner.
                 DisplayNameAr = "مهمة", DisplayNameEn = "Task",
                 Module = "Tasks", Icon = "ki-outline ki-check-square", Color = "primary",
                 RouteTemplate = "/Tasks/Detail/{id}",

@@ -179,6 +179,57 @@ namespace CrossBuy.BL
             return await _readAuth.ApplyAsync(query, authorization);
         }
 
+		// ============================================================================================
+		// WHICH RECORDS A TASK MAY BE LINKED TO.
+		//
+		// NOW THE REGISTRY'S ANSWER, NOT A LIST HERE. SaveAsync once carried a bare string[] of seven
+		// entity codes; this file then held a temporary opt-in set while TAB-1 added the capability.
+		// EntityDefinition.EligibleForTaskLink has landed, so the set is gone and the registry decides.
+		// One definition, in the file that owns entity metadata — which is the whole point, because the
+		// Communication adapter asks this same method and a second list would drift from the first.
+		//
+		// ELIGIBILITY DID NOT WIDEN AND THAT WAS CHECKED, not assumed: the registry flags exactly the
+		// eleven the opt-in set held — the original seven plus PurchaseInvoice, Quotation, JournalEntry
+		// and Task. TaskEntityLinkPolicyTests pins all eleven, and pins twelve registered,
+		// picker-listed entities OUT, so a future flag added carelessly turns a test red.
+		//
+		// WHY NOT AN EXISTING FLAG, recorded because it is the trap: ListedInRecordPicker is true for
+		// NINETEEN entities, so keying on it would have made LandedCost, StockCount and ten other
+		// documents linkable. SupportsComments fails the other way — six of the original seven lack it.
+		//
+		// A NULL REGISTRY IS NOT ELIGIBLE. Fail closed: "nobody told me what this is" must not read as
+		// "link it anyway". TaskService never passes null (see the call site), and the Communication
+		// adapter resolves the registry from a container that registers it.
+		public static class TaskEntityLinkPolicy
+		{
+			// THE LIST WITHOUT A REGISTRY IN HAND. The Communication adapter's guard reads this as a
+			// PROPERTY, and removing it when the capability moved to the registry reddened a test file
+			// TAB-5 may not edit. It is restored here rather than fixed there, and it is NOT a second
+			// source of truth: it reads EligibleForTaskLink off the same definitions as everything else.
+			//
+			// WHY NO CONTEXT IS NEEDED, measured rather than hoped: EntityRegistry.GetDefinitions() returns
+			// the STATIC Definitions list and never touches the CrossDbContext, which the constructor only
+			// stores for SearchAsync and ResolveAsync. Entity METADATA is therefore context-free. If that
+			// ever stops being true, this property is the first thing that breaks and the tests say so.
+			public static IReadOnlyCollection<string> EligibleEntityTypes =>
+				new CrossBuy.BL.Platform.EntityRegistry(null!).GetDefinitions()
+					.Where(d => d.EligibleForTaskLink)
+					.Select(d => d.Code)
+					.OrderBy(x => x, StringComparer.Ordinal)
+					.ToArray();
+
+			// Derived on every read, so there is still exactly one source of truth.
+			public static bool IsEligible(CrossBuy.BL.Platform.IEntityRegistry? registry,
+				string? entityType, int? entityId)
+			{
+				if (entityId is not > 0 || string.IsNullOrWhiteSpace(entityType)) return false;
+				if (registry is null) return false;
+				return registry.TryGetDefinition(entityType, out var definition)
+					&& definition is not null
+					&& definition.EligibleForTaskLink;
+			}
+		}
+
 		private static readonly string[] Priorities = { "Low", "Normal", "High", "Urgent" };
 		private static readonly string[] Statuses = { "New", "InProgress", "Done" };
 		// allowed status transitions (New↔InProgress, InProgress→Done, Done→InProgress reopen, quick New→Done)

@@ -322,6 +322,9 @@ namespace CrossBuy.Models.Communication
         public const string NotificationFailed = "NotificationFailed";
         public const string AccessDenied = "AccessDenied";
 
+        public const string TaskCreatedFromMessage = "TaskCreatedFromMessage";
+        public const string TaskLinkedToConversation = "TaskLinkedToConversation";
+        public const string TaskUnlinkedFromConversation = "TaskUnlinkedFromConversation";
         private static readonly HashSet<string> All = new(StringComparer.Ordinal)
         {
             ThreadCreated, ThreadLocked, ThreadUnlocked,
@@ -332,6 +335,7 @@ namespace CrossBuy.Models.Communication
             PermissionGranted, PermissionRevoked, ReadStatusUpdated,
             NotificationQueued, NotificationDelivered, NotificationSkipped, NotificationFailed,
             AccessDenied,
+            TaskCreatedFromMessage, TaskLinkedToConversation, TaskUnlinkedFromConversation,
         };
 
         public static bool IsValid(string? value) => value != null && All.Contains(value);

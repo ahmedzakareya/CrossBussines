@@ -398,6 +398,65 @@ namespace CrossBuy.Models.Context.Communication
                     .HasDatabaseName("UX_CommAuditEntries_DedupKey")
                     .HasFilter("[DedupKey] IS NOT NULL");
             });
+
+            // -----------------------------------------------------------------------------------------
+            // Communication <-> Tasks link (Phase 3).
+            //
+            // MAPPED; runtime activation is configuration-gated. Mapping is what lets CommunicationSchemaParityTests hold this model
+            // and deploy/sql/comm_task_links.sql to each other — which is the only mechanical check that
+            // the names, keys and filters here are the ones the DDL actually creates. It does NOT make
+            // the feature live by itself. ICommTaskLinkStore uses EfCommTaskLinkStore only when the
+            // connection's CommunicationPlatform:TaskLinksProvisioned flag is true; otherwise it stays
+            // on UnprovisionedCommTaskLinkStore. The canonical 7183 preflight verifies that pairing for
+            // CrossBuyDB2; other profiles remain fail-closed unless explicitly provisioned.
+            //
+            // THE NAMES MUST MATCH THE SCRIPTS EXACTLY, including the filters: parity asserts the literal
+            // "CREATE UNIQUE INDEX <name>" appears in the deployed DDL, and a filtered index whose
+            // predicate differed here would describe a schema nobody deploys. Parity reads the task-link
+            // slice AND its migration comm_task_links_m2m.sql, so the names below are the post-migration
+            // ones — the base slice alone describes a schema that no longer exists.
+            builder.Entity<CommTaskLink>(e =>
+            {
+                e.ToTable("CommTaskLinks");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Id).ValueGeneratedOnAdd();
+                e.Property(x => x.Origin).HasMaxLength(VocabularyLength).IsRequired();
+                e.Property(x => x.CreatedAt).IsRequired();
+
+                // THE LIVE RELATIONSHIP, IN TWO PARTS since comm_task_links_m2m.sql.
+                //
+                // The original rule was a single unique index on (CompanyID, TaskId, ThreadId): a task
+                // was attached to a conversation or it was not, and CommentId sat outside the key as
+                // mere provenance. The migration replaced that rule, because a task genuinely can be
+                // raised from several distinct messages in one conversation, and each of those
+                // relationships has to be unlinkable on its own.
+                //
+                // The two indexes PARTITION the table on CommentId IS NULL / IS NOT NULL, so no row
+                // satisfies both filters and a conversation-level link coexists with message-level ones.
+                // Both are filtered to live rows, so an unlinked pair can be linked again.
+                //
+                // The old UX_CommTaskLinks_Live is DROPPED by that same script. It must not be declared
+                // here: this model is what EnsureCreated builds for an in-memory database, so leaving the
+                // superseded index in place would recreate the very constraint the migration removed and
+                // make message-level linking fail against the model while succeeding in production.
+                e.HasIndex(x => new { x.CompanyID, x.TaskId, x.ThreadId })
+                    .IsUnique()
+                    .HasDatabaseName("UX_CommTaskLinks_LiveConversation")
+                    .HasFilter("[RemovedAt] IS NULL AND [CommentId] IS NULL");
+
+                e.HasIndex(x => new { x.CompanyID, x.TaskId, x.ThreadId, x.CommentId })
+                    .IsUnique()
+                    .HasDatabaseName("UX_CommTaskLinks_LiveMessage")
+                    .HasFilter("[RemovedAt] IS NULL AND [CommentId] IS NOT NULL");
+
+                e.HasIndex(x => new { x.CompanyID, x.ThreadId })
+                    .HasDatabaseName("IX_CommTaskLinks_Thread")
+                    .HasFilter("[RemovedAt] IS NULL");
+
+                e.HasIndex(x => new { x.CompanyID, x.TaskId })
+                    .HasDatabaseName("IX_CommTaskLinks_Task")
+                    .HasFilter("[RemovedAt] IS NULL");
+            });
         }
 
         // Every table this platform owns, in deployment order (parents before children). Read by
@@ -419,6 +478,11 @@ namespace CrossBuy.Models.Context.Communication
             "CommNotificationDeliveries",
             "CommNotificationPreferences",
             "CommAuditEntries",
+
+            // Phase 3. Lives in its OWN slice, deploy/sql/comm_task_links.sql, rather than in the
+            // platform slice — that script is already deployed and editing a CREATE script to
+            // describe a later migration would make a fresh deploy and an upgraded one diverge.
+            "CommTaskLinks",
         };
     }
 }
