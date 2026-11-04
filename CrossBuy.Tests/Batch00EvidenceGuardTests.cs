@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Xunit;
 
 namespace CrossBuy.Tests
@@ -174,17 +175,204 @@ namespace CrossBuy.Tests
             // protected endpoints looks like. Verified independently of the analyzer by differencing the gap set
             // rebuilt from docs/architecture/evidence/Roslyn-Authorization-Inventory.csv against this file's
             // entries — 143 vs 143, zero ids on either side alone.
-            // The registry records later authorized surfaces and retired debt in its
-            // history. Keep the historical debt ceiling and reconcile today's columns.
-            Assert.Equal(566, mutating); // 481 -> 566 (Hospital H1-H12, c13388c): +85 mutating, all [HospitalPerm]-protected; see frozenBaselineHistory
-            Assert.Equal(255, attr);     // 170 -> 255: attribute-protected absorbs the whole +85; in-body and gaps unchanged
-            Assert.Equal(217, inBody);
+            // ============================ WHY THERE ARE NO LITERALS HERE ============================
+            //
+            // Three frozen literals stood here - mutating, attributeProtected and inBodyProtected - and every
+            // legitimate growth of the codebase turned this test red until somebody edited them. That is the
+            // wrong failure to teach: the habit it builds is "the guard went red, bump the number", and a real
+            // regression arrives wearing exactly that costume. The literals also went stale on their own,
+            // 481 -> 566 and 170 -> 255 -> 263, faster than anyone reconciled them.
+            //
+            // Worse, they could not see the defect they were meant to see. Moving entries BETWEEN the two
+            // protected buckets preserves the sum, so the identity below is blind to a misclassification and
+            // only ever catches a miscount. That is not hypothetical: six SEC-01 endpoints were carried as
+            // in-body while every one of them holds an [ApiPerm(...)] in source.
+            //
+            // The numbers are therefore asserted against THE FILE'S OWN RECORD instead of against this source.
+            // =======================================================================================
             int anonymous = f.TryGetProperty("anonymousByDesign", out var a) ? a.GetInt32() : 0;
 
-            // THE INVARIANT. Descriptive totals grow when protected endpoints are added; this one may only shrink.
-            Assert.InRange(gaps, 0, 94);
-            Assert.Equal(gaps, doc.RootElement.GetProperty("entries").GetArrayLength());
+            // THE IDENTITY. Kept, with its known limit stated above: it catches a miscount, never a move.
             Assert.Equal(mutating, attr + inBody + anonymous + gaps);
+            Assert.Equal(gaps, doc.RootElement.GetProperty("entries").GetArrayLength());
+
+            // THE RATCHET, DERIVED RATHER THAN TYPED. This used to read Assert.InRange(gaps, 0, 94): a ceiling
+            // a person maintained, which means a ceiling a person could raise. It is now taken from the file's
+            // own frozenBaselineHistory - debt may never exceed the LOWEST level history has ever recorded -
+            // and the ceiling tightens by itself each time a record books a lower one.
+            var history = doc.RootElement.GetProperty("frozenBaselineHistory");
+            var recordedGapLevels = new List<int>();
+            var reconciled = 0;
+            var unreadable = new List<string>();
+            var partial = new List<string>();
+            int[]? newest = null;
+
+            foreach (var record in history.EnumerateArray())
+            {
+                // The records are not uniform: the older ones carry their totals at the root, three carry
+                // them as prose strings, and the recent ones nest them under "measured". Only numeric
+                // totals can be checked, and the two assertions after the loop account for every record
+                // that could not be - none is allowed to disappear between them.
+                var totals = Totals(record);
+                if (!TryTotal(totals, "gaps", out var hGaps)) { unreadable.Add(Stage(record)); continue; }
+                recordedGapLevels.Add(hGaps);
+
+                if (!TryTotal(totals, "mutating", out var hMut)) { partial.Add(Stage(record)); continue; }
+                if (!TryTotal(totals, "attributeProtected", out var hAttr)) { partial.Add(Stage(record)); continue; }
+                if (!TryTotal(totals, "inBodyProtected", out var hBody)) { partial.Add(Stage(record)); continue; }
+                TryTotal(totals, "anonymousByDesign", out var hAnon);
+
+                var stage = Stage(record);
+                Assert.True(hMut == hAttr + hBody + hAnon + hGaps,
+                    $"frozenBaselineHistory record '{stage}' does not reconcile: " +
+                    $"{hAttr} + {hBody} + {hAnon} + {hGaps} != {hMut}");
+                reconciled++;
+                newest = new[] { hMut, hAttr, hBody, hAnon, hGaps };
+            }
+
+            // A GUARD THAT CHECKS NOTHING PASSES - but the check for that must not itself depend on which
+            // tree it runs against. This read `reconciled >= 21`, a count measured on a working tree that
+            // carried three uncommitted records; against HEAD only 18 reconcile and the guard failed for
+            // being on the wrong tree rather than for anything being wrong. SUCCESSES ARE TREE-DEPENDENT BY
+            // DEFINITION, because records are appended as work lands, so no floor on them is portable.
+            //
+            // The SKIPS are portable. Exactly three records state their gaps as prose - "143 (unchanged) -
+            // no unprotected endpoint was added", and two like it - and those three are present at HEAD and
+            // in any working tree, because history is only ever appended to. So the unreadable set is
+            // bounded instead: a fourth record the guard cannot read is a regression on every tree, whether
+            // it arrives as a new prose total or as a shape this test has not learned to read.
+            Assert.True(unreadable.Count == 3,
+                $"{unreadable.Count} history records could not be read, expected the 3 known prose-total "
+                + "records: " + string.Join(" | ", unreadable));
+            Assert.NotEmpty(recordedGapLevels);
+
+            // A RECORD READS COMPLETELY OR NOT AT ALL. The three reads above used to fall through on a bare
+            // `continue`, so a record stating a numeric gaps but a missing or prose `mutating` would feed
+            // the ceiling and then never be identity-checked - counted in neither list, reported by nothing.
+            // That is the same shape as the defect this whole test exists for: a number trusted because no
+            // assertion happened to look at it.
+            Assert.True(partial.Count == 0,
+                "these history records state a debt level but not the totals that must reconcile with it: "
+                + string.Join(" | ", partial));
+
+            // And every record is in exactly one of the three buckets, which is what stops a future edit to
+            // the loop losing one silently. `reconciled` exists to be counted here; without this it was an
+            // incremented variable nothing read, which reads as a live check and is not one.
+            Assert.Equal(history.GetArrayLength(), reconciled + unreadable.Count + partial.Count);
+
+            // THE CEILING MUST BE TIED TO REALITY, NOT MERELY BE A CEILING. This test shipped with the
+            // ratchet reading only the root of each record, so the five records that nest their totals
+            // under "measured" were invisible and the ceiling stood at 93 against a live debt of 73 - every
+            // closure since R1 unseen. Debt could have climbed 20 and `gaps <= ceiling` would have passed
+            // the whole way. A guard can be live and slack at once, and mutation-testing that it FIRES does
+            // not show that it fires at the right height.
+            //
+            // So the live header must equal the NEWEST recorded state. A baseline edit without a record now
+            // fails here instead of quietly loosening the ratchet, which is the governance property this
+            // file was always reaching for.
+            Assert.True(newest is not null, "no history record states a complete set of totals");
+            Assert.Equal(new[] { mutating, attr, inBody, anonymous, gaps }, newest);
+
+            var ceiling = recordedGapLevels.Min();
+            Assert.True(gaps <= ceiling,
+                $"authorization debt rose: {gaps} gaps against a recorded floor of {ceiling}. " +
+                "This baseline may only shrink.");
+        }
+
+        /// Names a record for a failure message. Unnamed records exist, so this never returns null.
+        private static string Stage(JsonElement record)
+            => record.TryGetProperty("stage", out var s) && s.ValueKind == JsonValueKind.String
+                ? s.GetString()! : "(unnamed record)";
+
+        /// WHERE A RECORD KEEPS ITS TOTALS. The older records are flat; every record since R1 nests them
+        /// under "measured", which is the state that record LEFT BEHIND. "previous" is deliberately never
+        /// consulted: it is the state before the record's own change, so a ratchet fed from it would
+        /// measure debt the record itself removed and would never tighten.
+        private static JsonElement Totals(JsonElement record)
+        {
+            if (record.TryGetProperty("gaps", out var atRoot) && atRoot.ValueKind == JsonValueKind.Number)
+                return record;
+            return record.TryGetProperty("measured", out var measured)
+                && measured.ValueKind == JsonValueKind.Object ? measured : record;
+        }
+
+        /// Reads one total from a history record, accepting only a real number. Records carrying their totals
+        /// as strings are skipped rather than coerced: a figure nobody typed as a number is a figure nobody
+        /// measured, and parsing it silently would let the weakest records drive the ratchet.
+        private static bool TryTotal(JsonElement record, string name, out int value)
+        {
+            value = 0;
+            return record.TryGetProperty(name, out var v)
+                && v.ValueKind == JsonValueKind.Number
+                && v.TryGetInt32(out value);
+        }
+
+        // ============================================================================================
+        // 3. The debt entries still describe real, still-unprotected code
+        // ============================================================================================
+
+        // THE ENTRY LIST IS THE DEBT, so counting it is not enough. An entry whose action was renamed or
+        // deleted keeps the total looking honest while protecting nothing, and an entry that has since
+        // acquired an attribute inflates the debt and hides how much is genuinely open. Either way the number
+        // above becomes a story rather than a measurement, so every entry is resolved against its own source.
+        [Fact]
+        public void Every_baseline_entry_still_names_a_real_and_still_unprotected_action()
+        {
+            using var doc = Load("authorization-baseline.json");
+            var root = RepoRoot();
+
+            // Attributes are written both bare and fully qualified in this codebase ([ApiPerm] and
+            // [CrossBuy.Models.ApiPerm]), which is why the prefix is optional here.
+            var authorization = new Regex(@"\[\s*(?:[\w.]+\.)?(?:\w*Perm\w*|Authorize)\s*[\(\]]",
+                RegexOptions.Compiled);
+
+            var unresolved = new List<string>();
+            var protectedAfterAll = new List<string>();
+            var examined = 0;
+
+            foreach (var entry in doc.RootElement.GetProperty("entries").EnumerateArray())
+            {
+                var id = entry.GetProperty("id").GetString()!;
+                var relative = entry.GetProperty("file").GetString()!;
+                var action = entry.GetProperty("action").GetString()!;
+                var path = Path.Combine(root, relative.Replace('/', Path.DirectorySeparatorChar));
+
+                if (!File.Exists(path)) { unresolved.Add($"{id}: no such file '{relative}'"); continue; }
+
+                var lines = File.ReadAllLines(path);
+                var declaration = new Regex(
+                    @"\b(?:public|internal|protected)\s[^\n;{]*\b" + Regex.Escape(action) + @"\s*\(",
+                    RegexOptions.Compiled);
+
+                var at = -1;
+                for (var i = 0; i < lines.Length && at < 0; i++)
+                    if (declaration.IsMatch(lines[i])) at = i;
+
+                if (at < 0) { unresolved.Add($"{id}: '{action}' is no longer declared in {relative}"); continue; }
+                examined++;
+
+                // Walk back over the contiguous block of attributes and comments above the declaration.
+                for (var i = at - 1; i >= 0; i--)
+                {
+                    var line = lines[i].Trim();
+                    if (line.StartsWith("["))
+                    {
+                        if (authorization.IsMatch(line))
+                            protectedAfterAll.Add($"{id}: carries {line} but is still listed as a gap");
+                        continue;
+                    }
+                    if (line.Length == 0 || line.StartsWith("//") || line.StartsWith("*") || line.StartsWith("/*"))
+                        continue;
+                    break;
+                }
+            }
+
+            Assert.True(unresolved.Count == 0,
+                "baseline entries no longer resolve to code:\n  " + string.Join("\n  ", unresolved));
+            Assert.True(protectedAfterAll.Count == 0,
+                "baseline entries are protected and should have been retired with a frozenBaselineHistory " +
+                "record:\n  " + string.Join("\n  ", protectedAfterAll));
+            Assert.Equal(doc.RootElement.GetProperty("entries").GetArrayLength(), examined);
         }
     }
 }
