@@ -10,7 +10,10 @@
     string billingLabel = ViewBag.ProjectBillingLabel as string ?? "";
     string billingIcon = ViewBag.ProjectBillingIcon as string ?? "ki-document";
     bool isInvMgr = ViewBag.IsInvMgr;
-    var total = Model.Count;
+    int total = ViewBag.Total ?? Model.Count;          // the whole inbox, not the visible page
+    string? q = ViewBag.Q; int pg = ViewBag.Page ?? 1, pages = ViewBag.Pages ?? 1, filtered = ViewBag.Filtered ?? Model.Count;
+    bool isArUi = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    string Lx(string ar, string en) => isArUi ? ar : en;
 }
 @functions {
     // THE SAME PALETTE AND THE SAME HASH AS _DocEventTimeline, restated rather than referenced because
@@ -112,7 +115,14 @@
         <!--end::Summary tiles-->
 
         <div class="card card-flush">
-            <div class="card-header pt-6"><h3 class="card-title fw-bold text-gray-900">@Localizer["Pending on me"]</h3></div>
+            <div class="card-header pt-6 flex-wrap gap-3">
+                <h3 class="card-title fw-bold text-gray-900 flex-column align-items-start">@Localizer["Pending on me"]<span class="text-muted fs-7 fw-semibold mt-1">@Lx("النتائج: ", "Results: ")@filtered</span></h3>
+                <form method="get" class="card-toolbar d-flex gap-2">
+                    <input type="text" name="q" value="@q" class="form-control form-control-solid form-control-sm w-250px" placeholder="@Lx("ابحث بالموضوع أو مقدّم الطلب أو النوع…", "Search subject, requester or type…")" autocomplete="off" />
+                    <button class="btn btn-sm btn-light-primary"><i class="ki-outline ki-magnifier fs-4"></i></button>
+                    @if (!string.IsNullOrWhiteSpace(q)) { <a href="@Url.Action("Index", "Approvals")" class="btn btn-sm btn-light" title="@Lx("إعادة ضبط", "Reset")"><i class="ki-outline ki-arrows-circle fs-4"></i></a> }
+                </form>
+            </div>
             <div class="card-body pt-2">
                 @if (total == 0)
                 {
@@ -125,7 +135,7 @@
                             <thead>
                                 <tr class="text-start text-muted fw-bold fs-8 text-uppercase gs-0" style="border-bottom:2px solid #0E4A9E;">
                                     <th>@SR["Type"]</th><th>@Localizer["Subject"]</th><th>@Localizer["Requester"]</th>
-                                    <th>@Localizer["Details"]</th><th>@SR["Date"]</th><th class="text-end">@SR["Actions"]</th>
+                                    <th>@Localizer["Details"]</th><th>@SR["Date"]</th><th>@Lx("ينتظر منذ", "Waiting")</th><th class="text-end">@SR["Actions"]</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -160,13 +170,25 @@
                                             </div>
                                         </td>
                                         <td class="text-muted fw-semibold">@(r.Meta ?? "—")</td>
-                                        <td class="text-muted fw-semibold">@(r.Date?.ToString("yyyy-MM-dd") ?? "—")</td>
+                                        <td class="text-muted fw-semibold text-nowrap">@(r.Date?.ToString("yyyy-MM-dd") ?? "—")</td>
+                                        @* THE WAIT (HR prototype: a clear deadline, overdue in red from the third day). *@
+                                        <td class="text-nowrap">@if (r.Date.HasValue) { var waited = Math.Max(0, (int)(DateTime.Today - r.Date.Value.Date).TotalDays); <span class="badge @(waited >= 3 ? "badge-light-danger" : "badge-light") fw-bold fs-8">@(waited == 0 ? Lx("اليوم", "Today") : (waited >= 3 ? Lx("متأخر ", "Overdue ") : "") + waited + Lx(" يوم", " d"))</span> } else { <span class="text-muted">—</span> }</td>
                                         <td class="text-end"><a href="@r.Url" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-eye fs-5"></i>@Localizer["Review"]</a></td>
                                     </tr>
                                 }
                             </tbody>
                         </table>
                     </div>
+                    @if (filtered == 0) { <div class="text-center text-muted py-8">@Lx("لا نتائج مطابقة للبحث", "Nothing matches the search")</div> }
+                    @if (pages > 1)
+                    {
+                        <div class="d-flex flex-stack flex-wrap pt-5">
+                            <div class="fs-7 text-muted">@Lx("صفحة ", "Page ")@pg @Lx("من ", "of ")@pages</div>
+                            <ul class="pagination">
+                                @for (int i = 1; i <= pages; i++) { <li class="page-item @(i == pg ? "active" : "")"><a class="page-link" href="@Url.Action("Index", "Approvals", new { q, page = i })">@i</a></li> }
+                            </ul>
+                        </div>
+                    }
                 }
                 @if (!isInvMgr)
                 {

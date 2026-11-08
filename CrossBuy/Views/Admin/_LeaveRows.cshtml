@@ -1,0 +1,46 @@
+@model CrossBuy.Controllers.AdminController.LeaveRowsModel
+@{
+    // One page of the leave requests (AdminController.LeaveData), injected by cbServerList.
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    string L(string ar, string en) => isAr ? ar : en;
+    string Pick(string? ar, string? en) => (isAr ? (string.IsNullOrWhiteSpace(ar) ? en : ar) : (string.IsNullOrWhiteSpace(en) ? ar : en)) ?? "—";
+    string Initials(string? name) { var p = (name ?? "?").Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries); return p.Length == 0 ? "?" : string.Concat(p.Take(2).Select(w => w[0])).ToUpperInvariant(); }
+}
+@foreach (var r in Model.Rows)
+{
+    var photo = Model.Photos.TryGetValue(r.EmployeeId, out var ph) ? ph : null;
+    <tr>
+        <td class="ps-4">
+            <div class="d-flex align-items-center min-w-0">
+                <div class="symbol symbol-30px symbol-circle flex-shrink-0">
+                    @if (photo != null) { <img src="@photo" alt="" /> } else { <span class="symbol-label fw-bold fs-9 hr-initials">@Initials(r.Name)</span> }
+                </div>
+                <a href="@Url.Action("EmployeeProfile", "Admin", new { id = r.EmployeeId })" class="ms-2 text-gray-900 text-hover-primary fw-bold fs-7 text-truncate"><bdi>@(r.Name ?? "—")</bdi></a>
+            </div>
+        </td>
+        <td>@Pick(r.TypeAr, r.TypeEn)@if (r.CertificateDocId is long cd) { <a href="@CrossBuy.BL.Hr.HrFileRules.LeaveCertificateUrl(cd)" target="_blank" rel="noopener" class="ms-1" title="@(isAr ? "الشهادة الطبية" : "Medical certificate")"><i class="ki-outline ki-document fs-5 text-primary"></i></a> }</td>
+        <td class="text-nowrap"><span class="hr-num">@r.Start.ToString("yyyy-MM-dd")</span> <span class="text-muted">@(isAr ? "←" : "→")</span> <span class="hr-num">@r.End.ToString("yyyy-MM-dd")</span></td>
+        <td class="text-end hr-num fw-bold">@r.Days</td>
+        <td>
+            @switch (r.Status)
+            {
+                case 1: <span class="badge badge-light-success fw-bold fs-8">@L("معتمدة", "Approved")</span> break;
+                case 2: <span class="badge badge-light-danger fw-bold fs-8">@L("مرفوضة", "Rejected")</span> break;
+                default: <span class="badge badge-light-primary fw-bold fs-8">@L("قيد الموافقة", "Pending")</span> break;
+            }
+        </td>
+        <td class="pe-4 fs-7 text-gray-700">
+            @if (r.Status == 0)
+            {
+                @if (r.WaitingOnAr != null || r.WaitingOnEn != null) { <span>@L("بانتظار", "Waiting on") <bdi class="fw-semibold">@Pick(r.WaitingOnAr, r.WaitingOnEn)</bdi></span> @if (r.Level > 0) { <span class="text-muted">· @L("المستوى", "level") <span class="hr-num">@r.Level</span></span> } }
+                else { <span class="text-danger">@L("بلا معتمِد — لن يتحرك", "No approver — it will not move")</span> }
+            }
+            else if (r.DecidedByAr != null || r.DecidedByEn != null)
+            {
+                <span>@(r.Status == 1 ? L("اعتمدها", "Approved by") : L("رفضها", "Refused by")) <bdi class="fw-semibold">@Pick(r.DecidedByAr, r.DecidedByEn)</bdi></span>
+                @if (r.DecisionAt.HasValue) { <span class="text-muted hr-num"> · @r.DecisionAt.Value.ToString("yyyy-MM-dd")</span> }
+            }
+            else { <span class="text-muted">—</span> }
+        </td>
+    </tr>
+}

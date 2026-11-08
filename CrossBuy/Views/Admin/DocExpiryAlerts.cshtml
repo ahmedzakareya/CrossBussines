@@ -1,65 +1,124 @@
 @model List<CrossBuy.BL.ExpiryItem>
-@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
 @{
+    // HR prototype design (design-output/hr-prototype #/compliance), adopted by the owner on 2026-11-08.
+    // Same data and actions as before: the window filter, "send reminders" (house confirm), the attachment gallery.
+    ViewData["Title"] = "DocExpiryAlerts";
     Layout = "~/Views/Shared/_LayoutBackend.cshtml";
     int days = ViewBag.Days;
-    string ctName(string v) => v switch { "Permanent" => Localizer["Permanent"].Value, "FixedTerm" => Localizer["Fixed-term"].Value, "Probation" => Localizer["Probation"].Value, "PartTime" => Localizer["Part-time"].Value, _ => v };
-    string dtName(string v) => v switch { "NationalId" => Localizer["National ID"].Value, "Passport" => Localizer["Passport"].Value, "Qualification" => Localizer["Qualification"].Value, "Contract" => Localizer["Contract"].Value, "Insurance" => Localizer["Insurance"].Value, "WorkPermit" => Localizer["Work permit"].Value, "Other" => Localizer["Other"].Value, _ => v };
-    string itemLabel(CrossBuy.BL.ExpiryItem i) => i.Kind == "Contract" ? ctName(i.Label) : dtName(i.Label);
+    var photos = (ViewBag.Photos as Dictionary<int, string>) ?? new Dictionary<int, string>();
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    string L(string ar, string en) => isAr ? ar : en;
+    string Initials(string? name) { var p = (name ?? "?").Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries); return p.Length == 0 ? "?" : string.Concat(p.Take(2).Select(w => w[0])).ToUpperInvariant(); }
+    var names = new Dictionary<string, (string ar, string en)>(StringComparer.OrdinalIgnoreCase) {
+        ["NationalId"] = ("البطاقة المدنية", "Civil ID"), ["Passport"] = ("جواز السفر", "Passport"), ["Qualification"] = ("المؤهل", "Qualification"),
+        ["Contract"] = ("عقد", "Contract"), ["Insurance"] = ("التأمين", "Insurance"), ["WorkPermit"] = ("إذن العمل", "Work permit"), ["Other"] = ("أخرى", "Other"),
+        ["Permanent"] = ("عقد دائم", "Permanent contract"), ["FixedTerm"] = ("عقد محدد المدة", "Fixed-term contract"), ["Probation"] = ("عقد تجربة", "Probation contract"), ["PartTime"] = ("عقد دوام جزئي", "Part-time contract") };
+    string ItemName(CrossBuy.BL.ExpiryItem i) => names.TryGetValue(i.Label ?? "", out var v) ? L(v.ar, v.en) : i.Label ?? "";
+    var expired = Model.Count(i => i.DaysLeft < 0);
+    var in30 = Model.Count(i => i.DaysLeft >= 0 && i.DaysLeft <= 30);
+    var in60 = Model.Count(i => i.DaysLeft > 30 && i.DaysLeft <= 60);
+    var later = Model.Count(i => i.DaysLeft > 60);
 }
+<link href="~/css/hr.css" rel="stylesheet" asp-append-version="true" />
+
 <div class="d-flex flex-column flex-column-fluid">
-    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
-        <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["Document & contract expiry alerts"]</h1>
-        <form method="get" class="d-flex gap-2 align-items-center">
-            <label class="fw-semibold fs-7">@Localizer["Within"]</label>
-            <select name="days" class="form-select form-select-sm form-select-solid w-auto" onchange="this.form.submit()">
-                @foreach (var d in new[]{30,60,90,180}){<option value="@d" selected="@(d==days)">@d @Localizer["days"]</option>}
-            </select>
-        </form>
-    </div></div>
-    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
-        <div class="card card-flush"><div class="card-body pt-6">
-            <div class="d-flex flex-stack mb-5">
-                <div class="text-muted fs-7">@Localizer["Items expired or expiring within {0} days.", days]</div>
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2">
+        <div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+            <div class="page-title d-flex flex-column justify-content-center gap-1">
+                <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@L("الوثائق والانتهاء", "Documents & expiry")</h1>
+                <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                    <li class="breadcrumb-item text-muted"><a href="@Url.Action("Index", "Admin")" class="text-muted text-hover-primary">@SR["HumanResources"]</a></li>
+                    <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                    <li class="breadcrumb-item text-muted">@L("الموظفون والهيكل", "People & organisation")</li>
+                </ul>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <form method="get" class="d-flex gap-2 align-items-center">
+                    <label class="fw-semibold fs-7 text-muted text-nowrap">@L("خلال", "Within")</label>
+                    <select name="days" class="form-select form-select-sm form-select-solid w-auto" onchange="this.form.submit()">
+                        @foreach (var d in new[] { 30, 60, 90, 180 }) { <option value="@d" selected="@(d == days)">@d @L("يوماً", "days")</option> }
+                    </select>
+                </form>
                 @if (Model.Any())
                 {
-                    <form asp-action="NotifyExpiring" method="post" data-cb-confirm data-cb-action="generic" data-cb-text="@Localizer["Notify each affected employee?"]">@Html.AntiForgeryToken()
+                    <form asp-action="CreateExpiryTasks" method="post" data-cb-confirm data-cb-action="generic" data-cb-text="@L("إنشاء مهمة تجديد لكل وثيقة أو عقد ينتهي خلال ٣٠ يوماً أو انتهى؟ لا تُنشأ المهمة مرتين.", "Create a renewal task for every document or contract expiring within 30 days or already expired? A task is never created twice.")">@Html.AntiForgeryToken()
                         <input type="hidden" name="days" value="@days" />
-                        <button class="btn btn-sm btn-light-primary"><i class="ki-outline ki-notification-status fs-4"></i>@Localizer["Send reminders"]</button>
+                        <button class="btn btn-sm btn-light-primary"><i class="ki-outline ki-check-square fs-4"></i>@L("إنشاء مهام المتابعة", "Create follow-up tasks")</button>
+                    </form>
+                    <form asp-action="NotifyExpiring" method="post" data-cb-confirm data-cb-action="generic" data-cb-text="@L("إرسال تنبيه لكل موظف معني؟", "Notify each affected employee?")">@Html.AntiForgeryToken()
+                        <input type="hidden" name="days" value="@days" />
+                        <button class="btn btn-sm btn-primary"><i class="ki-outline ki-notification-status fs-4"></i>@L("إرسال التنبيهات", "Send reminders")</button>
                     </form>
                 }
             </div>
-            @if (!Model.Any())
-            {
-                <div class="text-center text-muted py-15"><i class="ki-outline ki-check-circle fs-3x text-primary mb-3 d-block"></i>@Localizer["Nothing expired or expiring."]</div>
-            }
-            else
-            {
-                <div class="table-responsive">
-                <table class="table align-middle table-row-dashed fs-6 gy-3">
-                    <thead><tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase" style="border-bottom:2px solid #0E4A9E;"><th>@SR["Employee"]</th><th>@SR["Item"]</th><th>@SR["Date"]</th><th>@Localizer["Remaining"]</th><th class="text-end">@SR["Actions"]</th></tr></thead>
-                    <tbody class="fw-semibold text-gray-700">
-                    @foreach (var i in Model)
-                    {
-                        <tr>
-                            <td class="fw-bold text-gray-800">@i.EmployeeName</td>
-                            <td><span class="badge @(i.Kind == "Contract" ? "badge-light-primary" : "badge-light-primary") me-2">@(i.Kind == "Contract" ? Localizer["Contract"] : Localizer["Document"])</span>@itemLabel(i)</td>
-                            <td>@i.Date.ToString("yyyy-MM-dd")</td>
-                            <td>@if (i.DaysLeft < 0) { <span class="badge badge-light-danger">@Localizer["{0}d ago", -i.DaysLeft]</span> } else if (i.DaysLeft <= 30) { <span class="badge badge-light-secondary">@i.DaysLeft @Localizer["d"]</span> } else { <span class="badge badge-light">@i.DaysLeft @Localizer["d"]</span> }</td>
-                            <td class="text-end">
-                                @if (i.FileCount > 0) { <button type="button" class="btn btn-icon btn-light-primary btn-sm me-1 position-relative cb-gallery" data-cb-kind="@i.Kind" data-cb-id="@i.RefId" data-cb-title="@itemLabel(i) — @i.EmployeeName" title="@Localizer["Attachments"]"><i class="ki-outline ki-paper-clip fs-5"></i><span class="badge badge-circle badge-success position-absolute top-0 start-100 translate-middle" style="font-size:.65rem;min-width:16px;height:16px;">@i.FileCount</span></button> } else { <button type="button" class="btn btn-icon btn-light btn-sm me-1" disabled title="@Localizer["No file attached"]"><i class="ki-outline ki-paper-clip fs-5 text-gray-400"></i></button> }
-                                <a href="@Url.Action("HrDocuments","Admin", new { employeeId = i.EmployeeId })" class="btn btn-icon btn-light-secondary btn-sm" title="@Localizer["Manage"]"><i class="ki-outline ki-arrow-right fs-6"></i></a>
-                            </td>
-                        </tr>
-                    }
-                    </tbody>
-                </table>
+        </div>
+    </div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid">
+        <div class="app-container container-fluid">
+
+            @if (TempData["HrMsg"] is string msg) { <div class="alert alert-success d-flex align-items-center py-3 mb-5"><i class="ki-outline ki-check-circle fs-2 me-3 text-success"></i>@msg</div> }
+
+            <div class="row g-5 g-xl-8 mb-5">
+                @foreach (var s in new[] { (L("منتهية", "Expired"), expired, "ki-cross-circle", expired > 0 ? "text-danger" : "text-gray-900"),
+                                           (L("خلال ٣٠ يوماً", "Within 30 days"), in30, "ki-time", in30 > 0 ? "text-danger" : "text-gray-900"),
+                                           (L("خلال ٦٠ يوماً", "Within 60 days"), in60, "ki-calendar", "text-primary"),
+                                           (L("بعد ذلك ضمن المدة", "Later in the window"), later, "ki-calendar-2", "text-gray-900") })
+                {
+                    <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
+                        <div class="d-flex flex-stack"><div class="text-muted fw-semibold fs-7 mb-1">@s.Item1</div><i class="ki-outline @s.Item3 fs-2 text-gray-400"></i></div>
+                        <div class="fs-2hx fw-bold @s.Item4"><span class="hr-num">@s.Item2</span></div>
+                    </div></div></div>
+                }
+            </div>
+
+            <div class="card mb-5">
+                <div class="card-header border-0 pt-6 flex-wrap gap-3">
+                    <div class="card-title align-items-start flex-column m-0">
+                        <span class="fw-bold text-gray-900 fs-4">@L("مركز الامتثال والانتهاء", "Compliance & expiry centre")</span>
+                        <span class="text-muted mt-1 fw-semibold fs-7">@L("وثائق وعقود منتهية أو تنتهي خلال", "Documents and contracts expired or expiring within") <span class="hr-num">@days</span> @L("يوماً", "days") · <span id="resultCount">—</span></span>
+                    </div>
+                    <div class="card-toolbar d-flex align-items-center gap-2 flex-wrap">
+                        <div class="w-250px"><input type="text" id="f_q" class="form-control form-control-solid form-control-sm" autocomplete="off" placeholder="@L("ابحث بالموظف أو نوع الوثيقة…", "Search employee or document type…")" /></div>
+                        <select id="f_size" class="form-select form-select-solid form-select-sm w-auto"><option value="25">25</option><option value="50">50</option><option value="100">100</option></select>
+                        <button type="button" id="f_reset" class="btn btn-sm btn-light" title="@L("إعادة ضبط", "Reset")"><i class="ki-outline ki-arrows-circle fs-4"></i></button>
+                    </div>
                 </div>
-            }
-        </div></div>
-    </div></div>
+                <div class="card-body pt-4">
+                    <div class="table-responsive">
+                        <table class="table align-middle gy-4 mb-0 hr-table">
+                            <thead><tr class="fw-bold fs-8 text-uppercase text-muted">
+                                <th class="ps-4">@L("الموظف", "Employee")</th><th>@L("الوثيقة", "Document")</th><th>@L("تنتهي", "Expires")</th><th>@L("المتبقي", "Left")</th><th class="pe-4 text-end"></th>
+                            </tr></thead>
+                            <tbody class="fs-6" id="rows"></tbody>
+                        </table>
+                    </div>
+                    <div class="text-center text-muted py-10 d-none" id="loadingRow"><span class="spinner-border spinner-border-sm me-2"></span>@L("جارٍ التحميل…", "Loading…")</div>
+                    <div class="text-center text-muted py-10 d-none" id="emptyRow">@L("لا شيء مطابق ضمن هذه المدة", "Nothing matches in this window")</div>
+                    <div class="d-flex flex-stack flex-wrap pt-5"><div class="fs-7 text-muted" id="pageInfo"></div><ul class="pagination" id="pager"></ul></div>
+                </div>
+            </div>
+
+            <div class="hr-notice mb-5">
+                <i class="ki-outline ki-information-5 fs-2"></i>
+                <div><div class="fw-bold">@L("المتابعة الآلية", "Automatic follow-up")</div>
+                <div class="fs-7">@L("كل يوم تُنشأ مهمة «تجديد» لكل وثيقة أو عقد ينتهي خلال ٣٠ يوماً، مرتبطة بملف الموظف وتستحق في تاريخ الانتهاء؛ إن لم تُجدد تصبح متأخرة وتظهر في «ما يحتاج انتباهي» تلقائياً. لا تُنشأ المهمة مرتين، والتجديد بتاريخ جديد ينشئ مهمة جديدة. التشغيل والإيقاف ومن تُسند إليه من قواعد المهام التلقائية (HrDocumentExpiry). الاحتفاظ بجواز الموظف ممنوع قانوناً — النظام يسجل الرقم والانتهاء فقط.", "Every day a \"renew\" task is created for each document or contract expiring within 30 days, linked to the employee and due on the expiry date; if it is not renewed it becomes overdue and shows in Attention by itself. A task is never created twice, and a renewal with a new date creates a new one. On/off and the assignee come from the automatic task rules (HrDocumentExpiry). Keeping an employee's passport is unlawful — the system records only the number and expiry.")</div></div>
+            </div>
+        </div>
+    </div>
 </div>
+
+@section Scripts {
+<script src="~/Backend-assets/js/crossbuy-tagify.js" asp-append-version="true"></script>
+<script>
+cbServerList({
+    url: '@Url.Action("ExpiryData", "Admin")',
+    isAr: @(isAr ? "true" : "false"),
+    addParams: function (p) { p.set('days', '@days'); }
+});
+</script>
+}
 
 @{ ViewData["GalleryManage"] = false; }
 @await Html.PartialAsync("_HrDocGallery")

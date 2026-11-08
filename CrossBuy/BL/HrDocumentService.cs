@@ -40,27 +40,33 @@ namespace CrossBuy.BL
 	{
 		private readonly CrossDbContext _context;
 		private readonly INotificationService _notifications;
-		public HrDocumentService(CrossDbContext context, INotificationService notifications)
-		{ _context = context; _notifications = notifications; }
-
-		private static async Task<string?> SaveFileAsync(IFormFile? file, string? webRootPath)
-		{
-			if (file == null || file.Length == 0 || string.IsNullOrEmpty(webRootPath)) return null;
-			var dir = Path.Combine(webRootPath, "uploads", "hr-docs");
-			if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
-			var name = Guid.NewGuid() + Path.GetExtension(file.FileName);
-			using (var s = File.Create(Path.Combine(dir, name))) await file.CopyToAsync(s);
-			return "/uploads/hr-docs/" + name;
-		}
+		private readonly CrossBuy.BL.Documents.IPlatformDocumentService? _docs;
+		private readonly CrossBuy.BL.Platform.IDocumentStorage? _storage;
+		// The platform services are optional so the existing two-argument construction (tests) still compiles; the
+		// container always supplies them, and without them no file is stored at all (never a local fallback).
+		public HrDocumentService(CrossDbContext context, INotificationService notifications,
+			CrossBuy.BL.Documents.IPlatformDocumentService? docs = null, CrossBuy.BL.Platform.IDocumentStorage? storage = null)
+		{ _context = context; _notifications = notifications; _docs = docs; _storage = storage; }
 
 		// Persist every uploaded file as an attachment row linked to the given record.
 		private async Task AddAttachmentsAsync(int companyId, string ownerKind, int ownerId, IEnumerable<IFormFile>? files, string? webRootPath)
 		{
-			if (files == null) return;
+			if (files == null || !files.Any(f => f != null && f.Length > 0)) return;
+			// Every scan is a document on the EMPLOYEE in the Central Document Platform (owner rule: every file lives in
+			// the File Manager). The row keeps the platform's authorised delivery URL; nothing is written under wwwroot.
+			if (_docs == null || _storage == null) throw new InvalidOperationException("The File Manager is not available, so the file was not stored.");
+			int employeeId = ownerKind == "Contract"
+				? await _context.EmploymentContracts.AsNoTracking().Where(c => c.ID == ownerId && c.CompanyID == companyId).Select(c => c.EmployeeID).FirstOrDefaultAsync()
+				: await _context.EmployeeDocuments.AsNoTracking().Where(d => d.ID == ownerId && d.CompanyID == companyId).Select(d => d.EmployeeID).FirstOrDefaultAsync();
+			if (employeeId <= 0) return;
+			var store = new CrossBuy.BL.Hr.HrFileStore(_context, _docs, _storage);
 			foreach (var f in files)
 			{
-				var path = await SaveFileAsync(f, webRootPath);
-				if (path == null) continue;
+				if (f == null || f.Length == 0) continue;
+				string? path, err;
+				using (var content = f.OpenReadStream())
+					(path, err) = await store.StoreScanAsync(employeeId, f.FileName, content, f.Length, ownerKind == "Contract" ? "Employment contract scan" : "Employee document scan");
+				if (path == null) throw new InvalidOperationException(err ?? "The file could not be stored");
 				_context.HrDocumentAttachments.Add(new HrDocumentAttachment
 				{
 					CompanyID = companyId, OwnerKind = ownerKind, OwnerID = ownerId,
@@ -94,7 +100,8 @@ namespace CrossBuy.BL
 				await _context.SaveChangesAsync();
 				ownerId = existing.ID;
 			}
-			await AddAttachmentsAsync(c.CompanyID, "Contract", ownerId, files, webRootPath);
+			try { await AddAttachmentsAsync(c.CompanyID, "Contract", ownerId, files, webRootPath); }
+			catch (InvalidOperationException ex) { return (false, "Saved, but the file was not stored: " + ex.Message); }
 			return (true, null);
 		}
 
@@ -134,7 +141,8 @@ namespace CrossBuy.BL
 				await _context.SaveChangesAsync();
 				ownerId = existing.ID;
 			}
-			await AddAttachmentsAsync(d.CompanyID, "Document", ownerId, files, webRootPath);
+			try { await AddAttachmentsAsync(d.CompanyID, "Document", ownerId, files, webRootPath); }
+			catch (InvalidOperationException ex) { return (false, "Saved, but the file was not stored: " + ex.Message); }
 			return (true, null);
 		}
 
@@ -177,16 +185,8 @@ namespace CrossBuy.BL
 			int empId = a.OwnerKind == "Contract"
 				? (await _context.EmploymentContracts.Where(c => c.ID == a.OwnerID).Select(c => (int?)c.EmployeeID).FirstOrDefaultAsync()) ?? 0
 				: (await _context.EmployeeDocuments.Where(d => d.ID == a.OwnerID).Select(d => (int?)d.EmployeeID).FirstOrDefaultAsync()) ?? 0;
-			// best-effort remove the physical file
-			try
-			{
-				if (!string.IsNullOrEmpty(webRootPath) && !string.IsNullOrEmpty(a.FilePath))
-				{
-					var full = Path.Combine(webRootPath, a.FilePath.TrimStart('/', '\\').Replace('/', Path.DirectorySeparatorChar));
-					if (File.Exists(full)) File.Delete(full);
-				}
-			}
-			catch { /* ignore file-system errors, still drop the row */ }
+			// The file lives in the File Manager, which keeps it as the record's history (the platform has no delete):
+			// only the attachment row goes. Nothing under wwwroot is touched any more.
 			_context.HrDocumentAttachments.Remove(a);
 			await _context.SaveChangesAsync();
 			return (true, empId);

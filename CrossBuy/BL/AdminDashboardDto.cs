@@ -31,12 +31,17 @@ namespace CrossBuy.BL
 		public List<HrExpiryRow> ExpiringDocs { get; set; } = new();
 		public List<HrHolidayRow> UpcomingHolidays { get; set; } = new();
 
+		// ----- People shown with their photo (HR prototype dashboard, 2026-11-08) -----
+		public List<HrPersonRow> RecentJoiners { get; set; } = new();
+		public Dictionary<int, string> Photos { get; set; } = new();   // employee id -> web photo path
+
 		public int Year { get; set; }
 	}
 
 	public class HrDistRow { public string? NameAr { get; set; } public string? NameEn { get; set; } public int Count { get; set; } public int Pct { get; set; } }
 	public class HrMonthPoint { public int Year { get; set; } public int Month { get; set; } public int Count { get; set; } }
-	public class HrLeaveRow { public string? EmployeeName { get; set; } public string? TypeAr { get; set; } public string? TypeEn { get; set; } public DateTime StartDate { get; set; } public DateTime EndDate { get; set; } public int Days { get; set; } public int Status { get; set; } }
-	public class HrExpiryRow { public string? EmployeeName { get; set; } public string Label { get; set; } = ""; public DateTime Date { get; set; } public int DaysLeft { get; set; } public string Kind { get; set; } = ""; }
+	public class HrLeaveRow { public int EmployeeId { get; set; } public string? EmployeeName { get; set; } public string? TypeAr { get; set; } public string? TypeEn { get; set; } public DateTime StartDate { get; set; } public DateTime EndDate { get; set; } public int Days { get; set; } public int Status { get; set; } }
+	public class HrExpiryRow { public int EmployeeId { get; set; } public string? EmployeeName { get; set; } public string Label { get; set; } = ""; public DateTime Date { get; set; } public int DaysLeft { get; set; } public string Kind { get; set; } = ""; }
+	public class HrPersonRow { public int Id { get; set; } public string? Name { get; set; } public string? TitleAr { get; set; } public string? TitleEn { get; set; } public DateTime Date { get; set; } public bool Active { get; set; } }
 	public class HrHolidayRow { public string? NameAr { get; set; } public string? NameEn { get; set; } public DateTime Date { get; set; } }
 }

@@ -57,7 +57,7 @@
                             <label class="fw-semibold fs-7 mb-1">@Localizer["Template"]</label>
                             <select name="templateId" class="form-select form-select-solid mb-3" data-control="select2" required>@foreach (var t in templates.Where(x => x.IsActive)) { <option value="@t.ID">@t.Name</option> }</select>
                             <label class="fw-semibold fs-7 mb-1">@SR["Employee"]</label>
-                            <select name="employeeId" class="form-select form-select-solid mb-3" data-control="select2" required>@foreach (var e in ViewBag.Employees) { <option value="@e.ID">@CrossBuy.BL.EmployeeNames.Of(e.FullName, e.FullNameEn)</option> }</select>
+                            <select name="employeeId" class="form-select form-select-solid mb-3" data-person-select required>@foreach (var e in ViewBag.Employees) { <option value="@e.ID" data-photo="@CrossBuy.BL.Hr.PersonTile.Photo((string?)e.ProfileImage)" data-initials="@CrossBuy.BL.Hr.PersonTile.Initials((string?)e.FullName, (string?)e.FullNameEn)">@CrossBuy.BL.EmployeeNames.Of(e.FullName, e.FullNameEn)</option> }</select>
                             <label class="fw-semibold fs-7 mb-1">@Localizer["Appraising manager"]</label>
                             <select name="managerId" class="form-select form-select-solid mb-3" data-control="select2">@foreach (var e in ViewBag.Employees) { <option value="@e.ID">@CrossBuy.BL.EmployeeNames.Of(e.FullName, e.FullNameEn)</option> }</select>
                             <button class="btn btn-primary w-100"><i class="ki-outline ki-plus fs-3"></i>@Localizer["Create & score"]</button>
@@ -90,3 +90,7 @@
         </div>
     </div></div>
 </div>
+
+@section Scripts {
+@await Html.PartialAsync("_PersonSelect")
+}

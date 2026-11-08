@@ -1,0 +1,399 @@
+@model CrossBuy.Controllers.AdminController.EmployeeProfileModel
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    // HR prototype design (design-output/hr-prototype #/employee/:id), adopted by the owner on 2026-11-08.
+    // Read-only file; editing stays on the EmployeeData wizard linked from the banner.
+    ViewData["Title"] = "EmployeeProfile";
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    string L(string ar, string en) => isAr ? ar : en;
+    string Pick(string? ar, string? en) => isAr ? (string.IsNullOrWhiteSpace(ar) ? en ?? "" : ar) : (string.IsNullOrWhiteSpace(en) ? ar ?? "" : en);
+    string Initials(string? name) { var p = (name ?? "?").Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries); return string.Concat(p.Take(2).Select(w => w[0])).ToUpperInvariant(); }
+    string D(DateTime? d) => d.HasValue ? d.Value.ToString("yyyy-MM-dd") : "—";
+    var today = DateTime.Today;
+    var m = Model;
+    var name = Pick(m.Name, m.NameEn);
+    var years = m.DateOfJoining.HasValue ? Math.Max(0, (today - m.DateOfJoining.Value.Date).TotalDays / 365.25) : (double?)null;
+    var docTypes = new Dictionary<string, (string ar, string en)>(StringComparer.OrdinalIgnoreCase) {
+        ["NationalId"] = ("البطاقة المدنية", "Civil ID"), ["Passport"] = ("جواز السفر", "Passport"), ["Qualification"] = ("المؤهل", "Qualification"),
+        ["Contract"] = ("عقد", "Contract"), ["Insurance"] = ("التأمين", "Insurance"), ["WorkPermit"] = ("إذن العمل", "Work permit"), ["Other"] = ("أخرى", "Other"),
+        ["Permanent"] = ("عقد دائم", "Permanent contract"), ["FixedTerm"] = ("عقد محدد المدة", "Fixed-term contract"), ["Probation"] = ("عقد تجربة", "Probation contract"), ["PartTime"] = ("عقد دوام جزئي", "Part-time contract") };
+    string DocName(string t) => docTypes.TryGetValue(t ?? "", out var v) ? L(v.ar, v.en) : t ?? "";
+    var valueNames = new Dictionary<string, (string ar, string en)>(StringComparer.OrdinalIgnoreCase) {
+        ["Male"] = ("ذكر", "Male"), ["Female"] = ("أنثى", "Female"), ["Single"] = ("أعزب", "Single"), ["Married"] = ("متزوج", "Married"),
+        ["Divorced"] = ("مطلق", "Divorced"), ["Widowed"] = ("أرمل", "Widowed"), ["FullTime"] = ("دوام كامل", "Full time"), ["Full Time"] = ("دوام كامل", "Full time"),
+        ["PartTime"] = ("دوام جزئي", "Part time"), ["Part Time"] = ("دوام جزئي", "Part time"), ["Contract"] = ("عقد", "Contract") };
+    string? V(string? v) => v != null && valueNames.TryGetValue(v.Trim(), out var t) ? L(t.ar, t.en) : v;
+    var rec2 = ViewBag.Record2 as CrossBuy.Models.Context.Admin.Employee;
+    var dependants = ViewBag.Dependants as List<CrossBuy.Models.Context.Admin.EmployeeDependant> ?? new();
+    var history = ViewBag.History as List<CrossBuy.Controllers.AdminController.ProfileHistoryRow> ?? new();
+    var relations = new Dictionary<string, (string ar, string en)> { ["Spouse"] = ("زوج/زوجة", "Spouse"), ["Son"] = ("ابن", "Son"), ["Daughter"] = ("ابنة", "Daughter"), ["Father"] = ("أب", "Father"), ["Mother"] = ("أم", "Mother"), ["Other"] = ("أخرى", "Other") };
+    var fields = new Dictionary<string, (string ar, string en)> { ["Hire"] = ("تعيين", "Hire"), ["JobTitle"] = ("المسمى الوظيفي", "Job title"), ["Branch"] = ("الفرع", "Branch"), ["Department"] = ("الإدارة", "Department"), ["EmploymentType"] = ("نوع التوظيف", "Employment type") };
+    var expiring = m.Documents.Count(d => d.Expiry.HasValue && (d.Expiry.Value.Date - today).TotalDays <= 60);
+}
+<link href="~/css/hr.css" rel="stylesheet" asp-append-version="true" />
+
+@functions {
+    static (string cls, int days) Chip(DateTime? expiry)
+    {
+        if (!expiry.HasValue) return ("", int.MaxValue);
+        var days = (int)Math.Floor((expiry.Value.Date - DateTime.Today).TotalDays);
+        return (days < 0 ? "badge-light-danger" : days <= 30 ? "badge-light-danger" : days <= 60 ? "badge-light-warning" : "badge-light-success", days);
+    }
+}
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2">
+        <div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+            <div class="page-title d-flex flex-column justify-content-center gap-1">
+                <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@name</h1>
+                <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                    <li class="breadcrumb-item text-muted"><a href="@Url.Action("Index", "Admin")" class="text-muted text-hover-primary">@SR["HumanResources"]</a></li>
+                    <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                    <li class="breadcrumb-item text-muted"><a href="@Url.Action("EmployeesList", "Admin")" class="text-muted text-hover-primary">@L("سجل الموظفين", "Employee directory")</a></li>
+                    <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                    <li class="breadcrumb-item text-muted">@name</li>
+                </ul>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <a href="@Url.Action("HrDocuments", "Admin", new { employeeId = m.Id })" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-document fs-4"></i>@L("الوثائق والعقود", "Documents & contracts")</a>
+                @if (m.CanSeePay)
+                {
+                    <a href="@Url.Action("FinalSettlement", "Admin", new { employeeId = m.Id })" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-calculator fs-4"></i>@L("تقدير نهاية الخدمة", "End-of-service estimate")</a>
+                }
+                @if (m.CanEdit)
+                {
+                    <a href="@Url.Action("EmployeeData", "Admin", new { id = m.Id })" class="btn btn-sm btn-light"><i class="ki-outline ki-pencil fs-4"></i>@L("تعديل البيانات", "Edit details")</a>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid">
+        <div class="app-container container-fluid">
+            @if (TempData["HrErr"] is string hrErr) { <div class="alert alert-danger d-flex align-items-center py-3 mb-5"><i class="ki-outline ki-information-5 fs-2 me-3 text-danger"></i>@hrErr</div> }
+            @if (TempData["HrMsg"] is string hrMsg) { <div class="alert alert-success d-flex align-items-center py-3 mb-5"><i class="ki-outline ki-check-circle fs-2 me-3 text-success"></i>@hrMsg</div> }
+            @* open the tab named in the address (#emp_pay after a salary change) *@
+            <script>document.addEventListener('DOMContentLoaded', function () { var h = location.hash; if (!h || !/^#emp_\w+$/.test(h)) return; var a = document.querySelector('a[data-bs-toggle="tab"][href="' + h + '"]'); if (a && window.bootstrap) bootstrap.Tab.getOrCreateInstance(a).show(); });</script>
+
+            @* ── Banner ── *@
+            <div class="card mb-5">
+                <div class="card-body d-flex flex-wrap gap-6 align-items-center">
+                    <div class="symbol symbol-100px symbol-circle flex-shrink-0">
+                        @if (m.Photo != null)
+                        {
+                            <img src="@m.Photo" alt="@name" onerror="this.parentNode.innerHTML='<span class=\'symbol-label fs-1 fw-bold hr-initials\'>@Initials(m.NameEn ?? m.Name)</span>'" />
+                        }
+                        else
+                        {
+                            <span class="symbol-label fs-1 fw-bold hr-initials">@Initials(m.NameEn ?? m.Name)</span>
+                        }
+                    </div>
+                    <div class="flex-grow-1 min-w-0">
+                        <div class="d-flex align-items-center flex-wrap gap-3 mb-1">
+                            <span class="fs-2 fw-bold text-gray-900">@name</span>
+                            @if (m.Active) { <span class="badge badge-light-success fw-bold fs-8">@L("على رأس العمل", "Active")</span> }
+                            else { <span class="badge badge-light fw-bold fs-8">@L("غير نشط", "Inactive")</span> }
+                        </div>
+                        <div class="text-muted fw-semibold mb-3">@string.Join(" · ", new[] { Pick(m.Title, m.TitleEn), Pick(m.Branch, m.BranchEn), Pick(m.Company, m.CompanyEn) }.Where(s => !string.IsNullOrWhiteSpace(s)))</div>
+                        <div class="d-flex flex-wrap gap-8 fs-7">
+                            <div><div class="text-muted">@L("الرقم الوظيفي", "Employee no.")</div><div class="fw-bold hr-num">@m.Id</div></div>
+                            <div><div class="text-muted">@L("تاريخ التعيين", "Joined")</div><div class="fw-bold hr-num">@D(m.DateOfJoining)</div></div>
+                            <div><div class="text-muted">@L("الخدمة", "Service")</div><div class="fw-bold">@if (years.HasValue) { <span class="hr-num">@years.Value.ToString("0.00")</span> @L("سنة", "years") } else { <span>—</span> }</div></div>
+                            <div>
+                                <div class="text-muted">@L("المدير المباشر", "Line manager")</div>
+                                @if (m.Manager != null)
+                                {
+                                    <a href="@Url.Action("EmployeeProfile", "Admin", new { id = m.Manager.Id })" class="d-flex align-items-center gap-2 text-gray-900 text-hover-primary fw-bold">
+                                        <span class="symbol symbol-25px symbol-circle">
+                                            @if (m.Manager.Photo != null) { <img src="@m.Manager.Photo" alt="" /> }
+                                            else { <span class="symbol-label fs-9 fw-bold hr-initials">@Initials(m.Manager.NameEn ?? m.Manager.Name)</span> }
+                                        </span>
+                                        <bdi>@Pick(m.Manager.Name, m.Manager.NameEn)</bdi>
+                                    </a>
+                                }
+                                else { <div class="fw-bold">—</div> }
+                            </div>
+                        </div>
+                    </div>
+                    @if (expiring > 0)
+                    {
+                        <div class="hr-notice mb-0" style="max-width:320px">
+                            <i class="ki-outline ki-shield-cross fs-2"></i>
+                            <div><div class="fw-bold">@L("وثائق تنتهي قريباً", "Documents expiring soon")</div><div class="fs-7"><span class="hr-num">@expiring</span> @L("خلال ٦٠ يوماً أو منتهية", "within 60 days or expired")</div></div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            @* ── Tabs ── *@
+            <div class="card">
+                <div class="card-header border-0 pt-4">
+                    <ul class="nav nav-stretch nav-line-tabs nav-line-tabs-2x border-transparent fs-6 fw-bold" role="tablist">
+                        <li class="nav-item"><a class="nav-link text-active-primary active" data-bs-toggle="tab" href="#emp_p">@L("البيانات الشخصية", "Personal")</a></li>
+                        <li class="nav-item"><a class="nav-link text-active-primary" data-bs-toggle="tab" href="#emp_d">@L("الوثائق والانتهاء", "Documents & expiry") <span class="badge badge-light-primary ms-1 hr-num">@m.Documents.Count</span></a></li>
+                        <li class="nav-item"><a class="nav-link text-active-primary" data-bs-toggle="tab" href="#emp_l">@L("الإجازات", "Leave")</a></li>
+                        @if (m.CanSeePay) { <li class="nav-item"><a class="nav-link text-active-primary" data-bs-toggle="tab" href="#emp_pay">@L("الراتب", "Pay")</a></li> }
+                        <li class="nav-item"><a class="nav-link text-active-primary" data-bs-toggle="tab" href="#emp_h">@L("السجل التاريخي", "History")</a></li>
+                    </ul>
+                </div>
+                <div class="card-body pt-6">
+                    <div class="tab-content">
+
+                        <div class="tab-pane fade show active" id="emp_p" role="tabpanel">
+                            <div class="row g-5">
+                                @foreach (var f in new[] {
+                                    (L("الاسم بالعربي", "Arabic name"), m.Name, false),
+                                    (L("الاسم بالإنجليزي", "English name"), m.NameEn, false),
+                                    (L("الجنسية", "Nationality"), Pick(m.Nationality, m.NationalityEn), false),
+                                    (L("تاريخ الميلاد", "Date of birth"), D(m.DateOfBirth), true),
+                                    (L("الجنس", "Gender"), V(m.Gender), false),
+                                    (L("الحالة الاجتماعية", "Marital status"), V(m.MaritalStatus), false),
+                                    (L("نوع التوظيف", "Employment type"), V(m.EmploymentType), false),
+                                    (L("البريد الإلكتروني", "Email"), m.Email, true),
+                                    (L("الهاتف", "Phone"), m.Phone, true),
+                                    (L("العنوان", "Address"), m.Address, false) })
+                                {
+                                    <div class="col-md-6 col-xl-4">
+                                        <div class="text-muted fs-7 mb-1">@f.Item1</div>
+                                        <div class="fw-semibold text-gray-900 fs-6 @(f.Item3 ? "hr-num" : "")">@(string.IsNullOrWhiteSpace(f.Item2) ? "—" : f.Item2)</div>
+                                    </div>
+                                }
+                            </div>
+                            @* HR1 — identity, bank, emergency contact *@
+                            <div class="separator my-6"></div>
+                            <div class="row g-5">
+                                @foreach (var f in new[] {
+                                    (L("الرقم المدني", "Civil ID"), rec2?.CivilIdNumber, true),
+                                    (L("رقم الجواز", "Passport"), rec2?.PassportNumber, true),
+                                    (L("الديانة", "Religion"), rec2?.Religion == "Muslim" ? L("مسلم", "Muslim") : rec2?.Religion == "Christian" ? L("مسيحي", "Christian") : rec2?.Religion == "Other" ? L("أخرى", "Other") : null, false),
+                                    (L("البنك", "Bank"), rec2?.BankName, false),
+                                    (L("الحساب البنكي IBAN", "Bank IBAN"), rec2?.Iban, true),
+                                    (L("جهة الطوارئ", "Emergency contact"), string.Join(" · ", new[] { rec2?.EmergencyContactName, rec2?.EmergencyContactRelation, rec2?.EmergencyContactPhone }.Where(x => !string.IsNullOrWhiteSpace(x))), false) })
+                                {
+                                    <div class="col-md-6 col-xl-4">
+                                        <div class="text-muted fs-7 mb-1">@f.Item1</div>
+                                        <div class="fw-semibold text-gray-900 fs-6 @(f.Item3 ? "hr-num" : "")">@(string.IsNullOrWhiteSpace(f.Item2) ? "—" : f.Item2)</div>
+                                    </div>
+                                }
+                            </div>
+
+                            @* HR1 — dependants *@
+                            <div class="separator my-6"></div>
+                            <div class="d-flex flex-stack mb-3"><span class="fw-bold fs-5">@L("المعالون", "Dependants")</span></div>
+                            <table class="table align-middle gy-3 mb-0 hr-table">
+                                <thead><tr class="fw-bold fs-8 text-uppercase text-muted"><th class="ps-4">@L("الاسم", "Name")</th><th>@L("الصلة", "Relation")</th><th>@L("تاريخ الميلاد", "Born")</th><th>@L("الرقم المدني", "Civil ID")</th><th>@L("على كفالة الشركة", "Company-sponsored")</th><th class="pe-4"></th></tr></thead>
+                                <tbody class="fs-6">
+                                    @if (dependants.Count == 0) { <tr><td colspan="6" class="text-center text-muted py-6">@L("لا معالين مسجلين", "No dependants recorded")</td></tr> }
+                                    @foreach (var d in dependants)
+                                    {
+                                        <tr>
+                                            <td class="ps-4 fw-semibold">@Pick(d.FullName, d.FullNameEn)</td>
+                                            <td>@(relations.TryGetValue(d.Relation, out var rl) ? L(rl.ar, rl.en) : d.Relation)</td>
+                                            <td class="hr-num">@D(d.DateOfBirth)</td>
+                                            <td class="hr-num">@(d.CivilIdNumber ?? "—")</td>
+                                            <td>@if (d.IsSponsored) { <span class="badge badge-light-success fw-bold fs-8">@L("نعم", "Yes")</span> } else { <span class="text-gray-400">—</span> }</td>
+                                            <td class="pe-4 text-end">@if (m.CanEdit) { <form asp-action="DeleteDependant" method="post" class="d-inline" data-cb-confirm data-cb-action="delete" data-cb-text="@L("حذف هذا المعال؟", "Remove this dependant?")">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@d.ID" /><input type="hidden" name="employeeId" value="@m.Id" /><button class="btn btn-icon btn-sm btn-light" style="opacity:.5"><i class="ki-outline ki-trash fs-5"></i></button></form> }</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                            @if (m.CanEdit)
+                            {
+                                <form asp-action="AddDependant" method="post" class="row g-3 align-items-end mt-3">
+                                    @Html.AntiForgeryToken()<input type="hidden" name="employeeId" value="@m.Id" />
+                                    <div class="col-md-3"><input name="fullName" class="form-control form-control-solid form-control-sm" placeholder="@L("الاسم", "Name")" required /></div>
+                                    <div class="col-md-2"><select name="relation" class="form-select form-select-solid form-select-sm">@foreach (var rr in relations) { <!option value="@rr.Key">@L(rr.Value.ar, rr.Value.en)</!option> }</select></div>
+                                    <div class="col-md-2"><input type="date" name="dateOfBirth" class="form-control form-control-solid form-control-sm" /></div>
+                                    <div class="col-md-2"><input name="civilIdNumber" class="form-control form-control-solid form-control-sm" placeholder="@L("الرقم المدني", "Civil ID")" /></div>
+                                    <div class="col-md-2"><label class="form-check form-check-sm form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" name="isSponsored" value="true" /><span class="form-check-label fs-7">@L("على الكفالة", "Sponsored")</span></label></div>
+                                    <div class="col-md-1"><button class="btn btn-sm btn-light-primary w-100"><i class="ki-outline ki-plus fs-4"></i></button></div>
+                                </form>
+                            }
+                        </div>
+
+                        <div class="tab-pane fade" id="emp_d" role="tabpanel">
+                            <div class="table-responsive">
+                                <table class="table align-middle gy-4 mb-0 hr-table">
+                                    <thead><tr class="fw-bold fs-8 text-uppercase text-muted">
+                                        <th class="ps-4">@L("الوثيقة", "Document")</th><th>@L("الرقم", "Number")</th><th>@L("من", "From")</th><th>@L("تنتهي", "Expires")</th><th class="pe-4 text-end">@L("المتبقي", "Left")</th>
+                                    </tr></thead>
+                                    <tbody class="fs-6">
+                                        @if (m.Documents.Count == 0)
+                                        {
+                                            <tr><td colspan="5" class="text-center text-muted py-10">@L("لا توجد وثائق أو عقود مسجلة", "No documents or contracts recorded")</td></tr>
+                                        }
+                                        @foreach (var d in m.Documents)
+                                        {
+                                            var c = Chip(d.Expiry);
+                                            <tr>
+                                                <td class="ps-4 fw-semibold">@DocName(d.Type)@if (d.HasFile) { <i class="ki-outline ki-paper-clip fs-6 text-muted ms-1" title="@L("مرفق", "Attached")"></i> }</td>
+                                                <td class="hr-num">@(d.Number ?? "—")</td>
+                                                <td class="hr-num">@D(d.Start)</td>
+                                                <td class="hr-num">@D(d.Expiry)</td>
+                                                <td class="pe-4 text-end">
+                                                    @if (!d.Expiry.HasValue) { <span class="text-gray-400">—</span> }
+                                                    else if (c.days < 0) { <span class="badge @c.cls fw-bold">@(L("منتهية منذ ", "Expired ") + (-c.days) + L(" يوم", " days ago"))</span> }
+                                                    else { <span class="badge @c.cls fw-bold">@(c.days + L(" يوم", " days"))</span> }
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="tab-pane fade" id="emp_l" role="tabpanel">
+                            @if (!string.IsNullOrWhiteSpace(m.PolicyName) || !string.IsNullOrWhiteSpace(m.PolicyNameEn))
+                            {
+                                <div class="text-muted fs-7 mb-4">@L("سياسة الإجازات", "Leave policy"): <span class="fw-bold text-gray-800">@Pick(m.PolicyName, m.PolicyNameEn)</span></div>
+                            }
+                            <div class="table-responsive">
+                                <table class="table align-middle gy-4 mb-0 hr-table">
+                                    <thead><tr class="fw-bold fs-8 text-uppercase text-muted">
+                                        <th class="ps-4">@L("النوع", "Type")</th><th class="text-end">@L("المستحق", "Entitled")</th><th class="text-end">@L("المستخدم", "Used")</th><th class="pe-4 text-end">@L("المتاح", "Available")</th>
+                                    </tr></thead>
+                                    <tbody class="fs-6">
+                                        @if (m.Balances.Count == 0)
+                                        {
+                                            <tr><td colspan="4" class="text-center text-muted py-10">@L("لا توجد سياسة إجازات مرتبطة بهذا الموظف", "No leave policy is linked to this employee")</td></tr>
+                                        }
+                                        @foreach (var b in m.Balances)
+                                        {
+                                            <tr>
+                                                <td class="ps-4 fw-semibold">@Pick(b.NameAr, b.NameEn)</td>
+                                                <td class="text-end hr-num">@b.Entitlement</td>
+                                                <td class="text-end hr-num">@b.Used</td>
+                                                <td class="pe-4 text-end hr-num fw-bold @(b.Remaining <= 0 ? "text-danger" : "text-gray-900")">@b.Remaining</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        @if (m.CanSeePay)
+                        {
+                            <div class="tab-pane fade" id="emp_pay" role="tabpanel">
+                                @{
+                                    var sal = ViewBag.Salary as CrossBuy.BL.Hr.SalaryParts ?? CrossBuy.BL.Hr.SalaryParts.None;
+                                    var salHist = ViewBag.SalaryHistory as List<CrossBuy.Models.Context.Admin.EmployeeSalary> ?? new();
+                                    bool canSetSalary = ViewBag.CanSetSalary == true;
+                                    string cur = ViewBag.Currency as string ?? "";
+                                    var inv = System.Globalization.CultureInfo.InvariantCulture;
+                                    var tiles = new[] { (L("الأساسي", "Basic"), sal.Basic, false), (L("بدل السكن", "Housing"), sal.Housing, false), (L("بدل المواصلات", "Transport"), sal.Transport, false), (L("بدلات أخرى", "Other allowances"), sal.Other, false), (L("الإجمالي الشهري", "Monthly total"), sal.Total, true) };
+                                    string salNote = sal.IsEmployeeOwn ? L("راتب الموظف ساري من ", "The employee's own salary, effective ") + sal.EffectiveFrom?.ToString("yyyy-MM-dd")
+                                        : sal.Source == CrossBuy.BL.Hr.HrSalaryService.SourcePolicy ? L("مأخوذ من سياسة الراتب للائحة الموظف — لم يُحدَّد له راتب خاص بعد", "Taken from the salary policy of the employee's leave policy — no salary of their own yet")
+                                        : L("لا يوجد راتب مسجل لهذا الموظف", "No salary is recorded for this employee");
+                                }
+                                @* HR4 — the salary structure in force today *@
+                                <div class="mb-4"><div class="fw-bold fs-5">@L("هيكل الراتب الحالي", "Current salary structure")</div><div class="text-muted fs-7">@salNote</div></div>
+                                <div class="row g-4 mb-6">
+                                    @foreach (var t in tiles)
+                                    {
+                                        <div class="col-6 col-md">
+                                            <div class="border border-gray-300 border-dashed rounded py-3 px-4 h-100 @(t.Item3 ? "bg-light-primary" : "")">
+                                                <div class="text-muted fs-8 mb-1">@t.Item1</div>
+                                                <div class="fw-bold fs-4 hr-num @(t.Item3 ? "text-primary" : "text-gray-900")">@t.Item2.ToString("N3", inv) <span class="fs-8 text-muted fw-semibold">@cur</span></div>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                                @if (canSetSalary)
+                                {
+                                    <form asp-action="SetSalary" method="post" class="border rounded p-5 mb-6" data-cb-confirm data-cb-action="generic" data-cb-text="@L("حفظ الراتب الجديد من التاريخ المحدد؟ الرواتب السابقة تبقى كما هي.", "Save the new salary from the chosen date? Earlier pay stays as it was.")">
+                                        @Html.AntiForgeryToken()<input type="hidden" name="employeeId" value="@m.Id" />
+                                        <div class="fw-bold mb-4">@L("تعديل الراتب (زيادة أو تصحيح)", "Change the salary (a raise or a correction)")</div>
+                                        <div class="row g-4 align-items-end">
+                                            <div class="col-md-2"><label class="form-label fs-7 required">@L("ساري من", "Effective from")</label><input type="date" name="effectiveFrom" required value="@DateTime.Today.ToString("yyyy-MM-01")" class="form-control form-control-solid form-control-sm" /></div>
+                                            <div class="col-md-2"><label class="form-label fs-7 required">@L("الأساسي", "Basic")</label><input type="number" step="0.001" min="0" name="basicSalary" required value="@(sal.Basic > 0 ? sal.Basic.ToString("0.###", inv) : "")" class="form-control form-control-solid form-control-sm hr-num" /></div>
+                                            <div class="col-md-2"><label class="form-label fs-7">@L("السكن", "Housing")</label><input type="number" step="0.001" min="0" name="housingAllowance" value="@sal.Housing.ToString("0.###", inv)" class="form-control form-control-solid form-control-sm hr-num" /></div>
+                                            <div class="col-md-2"><label class="form-label fs-7">@L("المواصلات", "Transport")</label><input type="number" step="0.001" min="0" name="transportAllowance" value="@sal.Transport.ToString("0.###", inv)" class="form-control form-control-solid form-control-sm hr-num" /></div>
+                                            <div class="col-md-2"><label class="form-label fs-7">@L("بدلات أخرى", "Other")</label><input type="number" step="0.001" min="0" name="otherAllowances" value="@sal.Other.ToString("0.###", inv)" class="form-control form-control-solid form-control-sm hr-num" /></div>
+                                            <div class="col-md-2"><button class="btn btn-sm btn-primary w-100"><i class="ki-outline ki-check fs-4"></i>@L("حفظ", "Save")</button></div>
+                                            <div class="col-12"><input name="note" maxlength="400" class="form-control form-control-solid form-control-sm" placeholder="@L("سبب التغيير (زيادة سنوية، ترقية، تصحيح…)", "Reason (annual raise, promotion, correction…)")" /></div>
+                                        </div>
+                                    </form>
+                                }
+                                @if (salHist.Count > 0)
+                                {
+                                    <div class="fw-bold fs-6 mb-2">@L("سجل الراتب", "Salary history")</div>
+                                    <div class="table-responsive mb-6">
+                                        <table class="table align-middle gy-3 mb-0 hr-table">
+                                            <thead><tr class="fw-bold fs-8 text-uppercase text-muted"><th class="ps-4">@L("ساري من", "Effective")</th><th class="text-end">@L("الأساسي", "Basic")</th><th class="text-end">@L("البدلات", "Allowances")</th><th class="text-end">@L("الإجمالي", "Total")</th><th class="pe-4">@L("السبب", "Reason")</th></tr></thead>
+                                            <tbody class="fs-6">
+                                                @foreach (var h in salHist)
+                                                {
+                                                    <tr><td class="ps-4 hr-num">@h.EffectiveFrom.ToString("yyyy-MM-dd")</td>
+                                                        <td class="text-end hr-num">@h.BasicSalary.ToString("N3", inv)</td>
+                                                        <td class="text-end hr-num">@((h.HousingAllowance + h.TransportAllowance + h.OtherAllowances).ToString("N3", inv))</td>
+                                                        <td class="text-end hr-num fw-bold">@((h.BasicSalary + h.HousingAllowance + h.TransportAllowance + h.OtherAllowances).ToString("N3", inv))</td>
+                                                        <td class="pe-4 text-muted">@(h.Note ?? "—")</td></tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                }
+                                <div class="fw-bold fs-6 mb-2">@L("آخر القسائم", "Recent payslips")</div>
+                                <div class="table-responsive">
+                                    <table class="table align-middle gy-4 mb-0 hr-table">
+                                        <thead><tr class="fw-bold fs-8 text-uppercase text-muted">
+                                            <th class="ps-4">@L("الشهر", "Month")</th><th class="text-end">@L("الإجمالي", "Gross")</th><th class="text-end">@L("الاستقطاعات", "Deductions")</th><th class="pe-4 text-end">@L("الصافي", "Net")</th>
+                                        </tr></thead>
+                                        <tbody class="fs-6">
+                                            @if (m.Payslips.Count == 0)
+                                            {
+                                                <tr><td colspan="4" class="text-center text-muted py-10">@L("لا توجد قسائم رواتب بعد", "No payslips yet")</td></tr>
+                                            }
+                                            @foreach (var p in m.Payslips)
+                                            {
+                                                <tr>
+                                                    <td class="ps-4 hr-num">@($"{p.Year}-{p.Month:00}")</td>
+                                                    <td class="text-end hr-num">@p.Gross.ToString("N3")</td>
+                                                    <td class="text-end hr-num">@p.Deductions.ToString("N3")</td>
+                                                    <td class="pe-4 text-end hr-num fw-bold">@p.Net.ToString("N3")</td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        }
+
+                        <div class="tab-pane fade" id="emp_h" role="tabpanel">
+                            <div class="hr-notice">
+                                <i class="ki-outline ki-time fs-2"></i>
+                                <div><div class="fw-bold">@L("سجل بتواريخ سريان", "Effective-dated history")</div>
+                                <div class="fs-7">@L("كل تغيير في المسمى أو الفرع أو الإدارة أو نوع التوظيف يُحفظ بتاريخ سريانه ولا يمسح ما قبله، مع العقود والتعيين. بدأ التسجيل في ٨ نوفمبر ٢٠٢٦.", "Every change of title, branch, department or employment type is kept with its effective date and never overwrites the past, beside contracts and the hire. Recording started on 8 November 2026.")</div></div>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table align-middle gy-4 mb-0 hr-table">
+                                    <thead><tr class="fw-bold fs-8 text-uppercase text-muted"><th class="ps-4">@L("من تاريخ", "Effective")</th><th>@L("التغيير", "Change")</th><th class="pe-4">@L("التفاصيل", "Detail")</th></tr></thead>
+                                    <tbody class="fs-6">
+                                        @foreach (var h in history)
+                                        {
+                                            string field = h.Field;
+                                            string? by = h.By;
+                                            <tr><td class="ps-4 hr-num">@h.EffectiveFrom.ToString("yyyy-MM-dd")</td>
+                                                <td>@(fields.TryGetValue(field, out var fl) ? L(fl.ar, fl.en) : field)</td>
+                                                <td class="pe-4 text-muted">@if (field == "Hire") { <span>@L("تعيين", "Hired")</span> } else { <span>@h.Old <span class="text-gray-400">@(isAr ? "←" : "→")</span> <span class="text-gray-900 fw-semibold">@h.New</span></span> }@if (by != null) { <span class="fs-8"> · @L("بواسطة ", "by ")<bdi>@by</bdi></span> }</td></tr>
+                                        }
+                                        @foreach (var c in m.Documents.Where(d => d.Kind == "contract" && d.Start.HasValue))
+                                        {
+                                            <tr><td class="ps-4 hr-num">@D(c.Start)</td><td>@DocName(c.Type)</td><td class="pe-4 text-muted">@(c.Status ?? "")@(c.Expiry.HasValue ? " · " + L("حتى ", "until ") + D(c.Expiry) : "")</td></tr>
+                                        }
+                                        @if (m.DateOfJoining.HasValue)
+                                        {
+                                            <tr><td class="ps-4 hr-num">@D(m.DateOfJoining)</td><td>@L("تعيين", "Hire")</td><td class="pe-4 text-muted">@Pick(m.Title, m.TitleEn)</td></tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

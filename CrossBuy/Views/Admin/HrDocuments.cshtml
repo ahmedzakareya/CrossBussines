@@ -68,9 +68,9 @@
                     </div>
                     <form method="get" class="d-flex flex-column">
                         <label class="fw-semibold fs-8 text-muted mb-1">@SR["Employee"]</label>
-                        <select name="employeeId" class="form-select form-select-solid w-300px" data-control="select2" data-placeholder="@Localizer["Select employee…"]" onchange="this.form.submit()">
+                        <select name="employeeId" class="form-select form-select-solid w-300px" data-person-select data-placeholder="@Localizer["Select employee…"]" onchange="this.form.submit()">
                             <option value=""></option>
-                            @foreach (var e in emps) { <option value="@e.ID" selected="@(selEmp == e.ID)">@empName(e)</option> }
+                            @foreach (var e in emps) { <option value="@e.ID" selected="@(selEmp == e.ID)" data-photo="@CrossBuy.BL.Hr.PersonTile.Photo((string?)e.ProfileImage)" data-initials="@CrossBuy.BL.Hr.PersonTile.Initials((string?)e.FullName, (string?)e.FullNameEn)">@empName(e)</option> }
                         </select>
                     </form>
                 </div>
@@ -258,6 +258,7 @@
 @await Html.PartialAsync("_HrDocGallery")
 
 @section Scripts {
+@await Html.PartialAsync("_PersonSelect")
 <script>
 (function () {
     // --- Metronic date pickers (flatpickr) ---

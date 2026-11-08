@@ -1,293 +1,180 @@
 @using CrossBuy.BL
 @using CrossBuy.Models.Context.Admin
 @model PeopleDashboardDto
-@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
-@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
 @{
+    // HR prototype design (design-output/hr-prototype #/ess), adopted by the owner on 2026-11-08 for every HR
+    // screen the prototype shares with the system. Same data as before (LeaveDashboardService.BuildAsync); every
+    // tile opens a screen that already exists, and the services that do not exist yet say so.
     Layout = "~/Views/Shared/_LayoutPeople.cshtml";
-    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
-    var name = isAr ? (ViewBag.NameAr ?? ViewBag.NameEn) : (ViewBag.NameEn ?? ViewBag.NameAr);
-    string nm(string? a, string? b) => (isAr ? a : b)?.Trim().Length > 0 ? (isAr ? a : b)! : (b ?? a ?? "-");
-    var palette = new[] { "primary", "success", "warning", "info", "danger" };
-    var barHex = new[] { "#0E4A9E", "#0d9edc", "#f6c000", "#7239ea", "#f1416c" };
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    string L(string ar, string en) => isAr ? ar : en;
+    string Pick(string? ar, string? en) => (isAr ? (string.IsNullOrWhiteSpace(ar) ? en : ar) : (string.IsNullOrWhiteSpace(en) ? ar : en)) ?? "—";
+    string nameAr = ViewBag.NameAr, nameEn = ViewBag.NameEn;
+    var name = Pick(nameAr, nameEn);
+    string? photo = ViewBag.Photo;
+    var initials = CrossBuy.BL.Hr.PersonTile.Initials(nameAr, nameEn);
     var recent = ViewBag.Recent as List<LeaveRequest> ?? new List<LeaveRequest>();
-    var leaveDays = ViewBag.LeaveDays as HashSet<int> ?? new HashSet<int>();
-    DateTime now = ViewBag.Now ?? DateTime.UtcNow;
-    var monthStart = new DateTime(now.Year, now.Month, 1);
-    var daysInMonth = DateTime.DaysInMonth(now.Year, now.Month);
-    var leadBlanks = (int)monthStart.DayOfWeek; // Sunday=0
-    var monthNames = new[] { "", Localizer["January"].Value, Localizer["February"].Value, Localizer["March"].Value, Localizer["April"].Value, Localizer["May"].Value, Localizer["June"].Value, Localizer["July"].Value, Localizer["August"].Value, Localizer["September"].Value, Localizer["October"].Value, Localizer["November"].Value, Localizer["December"].Value };
-    var dow = new[] { Localizer["Sun"].Value, Localizer["Mon"].Value, Localizer["Tue"].Value, Localizer["Wed"].Value, Localizer["Thu"].Value, Localizer["Fri"].Value, Localizer["Sat"].Value };
-    var statusBadge = new[] { "warning", "success", "danger" };
-    var statusText = new[] { Localizer["Pending"].Value, Localizer["Approved"].Value, Localizer["Rejected"].Value };
-    // chart data
-    var donutLabels = string.Join(",", Model.ByType.Select(t => "'" + (nm(t.NameAr, t.NameEn)).Replace("'", " ") + "'"));
-    var donutSeries = string.Join(",", Model.ByType.Select(t => t.Count));
-    var trendSeries = string.Join(",", Model.Monthly.Select(m => m.Count));
-    var trendCats = string.Join(",", Model.Monthly.Select(m => "'" + monthNames[m.Month] + "'"));
+    var waiting = ViewBag.Waiting as Dictionary<int, string> ?? new Dictionary<int, string>();
+    bool IsKind(LeaveBalanceRow b, string word) => (b.NameEn ?? "").Contains(word, StringComparison.OrdinalIgnoreCase);
+    var annual = Model.Balances.FirstOrDefault(b => IsKind(b, "annual"));
+    var sick = Model.Balances.FirstOrDefault(b => IsKind(b, "sick") || IsKind(b, "medical"));
+    var tiles = new List<(string icon, string title, string sub, string? url)> {
+        ("ki-calendar-add", L("طلب إجازة", "Request leave"), annual != null ? L("المتاح ", "Available ") + annual.Remaining + L(" يوماً", " days") : L("أرصدتك وطلباتك", "Your balances and requests"), Url.Action("Leaves", "People")),
+        ("ki-document", L("شهادات وطلبات", "Letters & requests"), L("شهادة راتب أو خبرة، إذن خروج", "Salary or experience letter, permission"), Url.Action("Requests", "People")),
+        ("ki-bill", L("كشف الراتب", "Payslips"), L("كشوفك الشهرية", "Your monthly payslips"), Url.Action("Payslips", "People")),
+        ("ki-time", L("حضوري", "My attendance"), L("الدخول والخروج", "Check-in and check-out"), Url.Action("Attendance", "People")),
+        ("ki-profile-circle", L("ملفي", "My profile"), L("بياناتي ووثائقي", "My details and documents"), Url.Action("Profile", "People")),
+        ("ki-abstract-26", L("الهيكل", "Structure"), L("مديري وفريقي", "My manager and team"), Url.Action("Structure", "People")),
+        ("ki-medal-star", L("تقييماتي", "My appraisals"), L("الأهداف والتقييم", "Goals and reviews"), Url.Action("MyAppraisals", "People")),
+        ("ki-teacher", L("تدريبي", "My training"), L("الدورات المسجلة", "Enrolled courses"), Url.Action("MyTrainings", "People")),
+        ("ki-dollar", L("طلب سلفة", "Request an advance"), L("بسقف من الأجر", "Capped on the wage"), null),
+        ("ki-user-edit", L("تعديل بياناتي", "Update my details"), L("IBAN وهاتف وعنوان بموافقة الموارد البشرية", "IBAN, phone, address with HR approval"), null),
+        ("ki-arrow-two-diagonals", L("تفويض موافقاتي", "Delegate my approvals"), L("أثناء إجازتي", "While I am on leave"), null) };
 }
-
+<link href="~/css/hr.css" rel="stylesheet" asp-append-version="true" />
 <style>
-    /* Force Cairo on ApexCharts SVG text + HTML legend (beats ApexCharts' internal font on the chart <text> nodes) */
-    .apexcharts-canvas text,
-    .apexcharts-canvas text tspan,
-    .apexcharts-text, .apexcharts-text tspan,
-    .apexcharts-datalabel, .apexcharts-datalabel-label, .apexcharts-datalabel-value,
-    .apexcharts-legend-text,
-    .apexcharts-tooltip,
-    .apexcharts-title-text { font-family: 'Cairo', sans-serif !important; }
+    .ess-tile { display: block; height: 100%; padding: 1.25rem; border-radius: .75rem; border: 1px solid var(--bs-gray-200); background: var(--bs-body-bg); transition: border-color .15s, box-shadow .15s; }
+    a.ess-tile:hover { border-color: var(--cb-brand, #3A5795); box-shadow: 0 4px 14px rgba(58, 87, 149, .10); }
+    .ess-tile.soon { background: var(--bs-gray-100); cursor: default; }
 </style>
+
 <div class="d-flex flex-column flex-column-fluid">
     <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2">
-        <div class="app-container container-fluid d-flex flex-column justify-content-center">
-            <h1 class="page-heading text-gray-900 fw-bold fs-2 m-0">@Localizer["Welcome, {0} 👋", name]</h1>
-            <span class="text-muted fw-semibold fs-7 mt-1">@Localizer["A quick look at your balances and requests"]</span>
+        <div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+            <div class="page-title d-flex flex-column justify-content-center gap-1">
+                <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@L("بوابة الموظف", "Employee self-service")</h1>
+                <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted">@L("الخدمة الذاتية", "Self-service")</li></ul>
+            </div>
+            <a href="@Url.Action("Leaves", "People")" class="btn btn-sm btn-primary"><i class="ki-outline ki-plus fs-4"></i>@L("طلب إجازة", "Request leave")</a>
         </div>
     </div>
 
     <div id="kt_app_content" class="app-content flex-column-fluid">
         <div class="app-container container-fluid">
 
-            <!--begin::Total requests + trend-->
-            <div class="card mb-6" style="background:linear-gradient(135deg,#0E4A9E,#145DBF);border:0;">
-                <div class="card-body d-flex flex-column flex-md-row align-items-md-center gap-6">
-                    <div class="flex-shrink-0">
-                        <div class="text-white-50 fw-semibold fs-6 mb-1">@Localizer["Total requests"]</div>
-                        <div class="d-flex align-items-end gap-3">
-                            <span class="text-white fw-bold" style="font-size:3rem;line-height:1;">@Model.Total</span>
-                            <span class="badge mb-2 fw-bold" style="background:#fff;color:#0E4A9E;"><i class="ki-outline ki-arrow-@(Model.PctChange >= 0 ? "up" : "down") fs-7 me-1" style="color:#0E4A9E;"></i>@Math.Abs(Model.PctChange)%</span>
-                        </div>
-                        <div class="text-white-50 fs-8 mt-1">@Localizer["vs last month"]</div>
+            @* ── Welcome ── *@
+            <div class="card mb-5">
+                <div class="card-body d-flex flex-wrap gap-6 align-items-center py-6">
+                    <div class="symbol symbol-80px symbol-circle flex-shrink-0">
+                        @if (photo != null) { <img src="@photo" alt="" /> } else { <span class="symbol-label fs-2 fw-bold hr-initials">@initials</span> }
                     </div>
-                    <div class="flex-grow-1 w-100"><div id="trend_chart" style="min-height:150px;"></div></div>
+                    <div class="min-w-0">
+                        <div class="fs-2 fw-bold text-gray-900">@L("أهلاً ", "Welcome, ")<bdi>@name</bdi></div>
+                        <div class="text-muted fw-semibold">@string.Join(" · ", new[] { Pick((string?)ViewBag.TitleAr, (string?)ViewBag.TitleEn), Pick((string?)ViewBag.BranchAr, (string?)ViewBag.BranchEn) }.Where(x => x != "—"))</div>
+                        @if (Model.HasPolicy) { <div class="text-muted fs-7 mt-1">@L("سياسة الإجازات", "Leave policy"): <span class="fw-bold text-gray-700">@Pick(Model.PolicyNameAr, Model.PolicyNameEn)</span></div> }
+                    </div>
+                    <div class="ms-auto d-flex flex-wrap gap-8">
+                        @foreach (var s in new[] { (L("إجازة سنوية متاحة", "Annual leave available"), annual?.Remaining.ToString() ?? "—"),
+                                                   (L("مرضية مستخدمة", "Sick leave used"), sick?.Used.ToString() ?? "—"),
+                                                   (L("طلبات مفتوحة", "Open requests"), Model.MyPending.ToString()),
+                                                   (L("معتمدة هذا العام", "Approved this year"), Model.MyApprovedThisYear.ToString()) })
+                        {
+                            <div class="text-center"><div class="fs-2 fw-bold hr-num text-gray-900">@s.Item2</div><div class="text-muted fs-8">@s.Item1</div></div>
+                        }
+                    </div>
                 </div>
             </div>
-            <!--end::Total requests + trend-->
 
-            <!--begin::Stat tiles-->
-            <div class="row g-5 g-xl-8 mb-2">
-                @{
-                    var tiles = new[] {
-                        (Localizer["My pending"].Value, Model.MyPending, "ki-time", "warning"),
-                        (Localizer["Approved this year"].Value, Model.MyApprovedThisYear, "ki-check-circle", "success"),
-                        (Localizer["Awaiting my approval"].Value, Model.PendingApprovals, "ki-notification-status", "primary"),
-                        (Localizer["My team"].Value, Model.TeamSize, "ki-people", "info"),
-                    };
-                }
-                @foreach (var (label, val, icon, col) in tiles)
+            @if (Model.PendingApprovals > 0)
+            {
+                <div class="hr-notice mb-5">
+                    <i class="ki-outline ki-notification-status fs-2"></i>
+                    <div class="flex-grow-1"><div class="fw-bold">@L("بانتظار موافقتك", "Waiting for your approval")</div>
+                        <div class="fs-7"><span class="hr-num fw-bold">@Model.PendingApprovals</span> @L("طلباً من فريقك", "requests from your team") (<span class="hr-num">@Model.TeamSize</span> @L("في فريقك", "in your team"))</div></div>
+                    <a href="@Url.Action("Index", "Approvals")" class="btn btn-sm btn-primary align-self-center">@L("صندوق الموافقات", "Approvals inbox")</a>
+                </div>
+            }
+
+            @* ── Services ── *@
+            <div class="row g-5 mb-5">
+                @foreach (var t in tiles)
                 {
-                    <div class="col-6 col-md-3">
-                        <div class="card card-flush h-100">
-                            <div class="card-body d-flex flex-column justify-content-center py-6">
-                                <div class="symbol symbol-40px mb-3"><span class="symbol-label bg-light-@col"><i class="ki-outline @icon fs-2 text-@col"></i></span></div>
-                                <span class="fs-2hx fw-bold text-gray-900 lh-1">@val</span>
-                                <span class="text-muted fw-semibold fs-7 mt-1">@label</span>
+                    <div class="col-sm-6 col-xl-3">
+                        @if (t.url != null)
+                        {
+                            <a href="@t.url" class="ess-tile text-decoration-none">
+                                <i class="ki-outline @t.icon fs-2x text-primary mb-3 d-block"></i>
+                                <div class="fw-bold fs-6 text-gray-900">@t.title</div>
+                                <div class="text-muted fs-7">@t.sub</div>
+                            </a>
+                        }
+                        else
+                        {
+                            <div class="ess-tile soon">
+                                <div class="d-flex flex-stack mb-3"><i class="ki-outline @t.icon fs-2x text-gray-400"></i><span class="badge badge-light fw-bold fs-8">@L("قادم", "Coming")</span></div>
+                                <div class="fw-bold fs-6 text-gray-600">@t.title</div>
+                                <div class="text-muted fs-7">@t.sub</div>
                             </div>
-                        </div>
+                        }
                     </div>
                 }
             </div>
-            <!--end::Stat tiles-->
 
-            <!--begin::Balances-->
-            <div class="card card-flush mt-6">
-                <div class="card-header pt-6">
-                    <div class="card-title"><h3 class="fw-bold text-gray-900">@Localizer["Leave Balances"]</h3></div>
-                    @if (Model.HasPolicy)
-                    {
-                        <div class="card-toolbar"><span class="badge badge-light-primary fs-7">@Localizer["Policy: "]@nm(Model.PolicyNameAr, Model.PolicyNameEn)</span></div>
-                    }
-                </div>
-                <div class="card-body pt-2">
-                    @if (!Model.HasPolicy)
-                    {
-                        <div class="text-center text-muted py-8 fs-6"><i class="ki-outline ki-information-5 fs-3x text-muted mb-3 d-block"></i>@Localizer["You are not assigned to a leave policy yet."]</div>
-                    }
-                    else
-                    {
-                        <div class="row g-5">
-                            @for (var i = 0; i < Model.Balances.Count; i++)
-                            {
-                                var b = Model.Balances[i];
-                                var h = barHex[i % barHex.Length];
-                                var pct = b.Entitlement > 0 ? (int)Math.Round(100.0 * b.Remaining / b.Entitlement) : 0; if (pct < 0) pct = 0;
-                                <div class="col-md-6 col-xl-4">
-                                    <div class="border border-gray-300 border-dashed rounded p-5 h-100">
-                                        <div class="d-flex align-items-center mb-3">
-                                            <div class="symbol symbol-40px me-3"><span class="symbol-label" style="background:@(h)1a;"><i class="ki-outline ki-calendar-tick fs-2" style="color:@h;"></i></span></div>
-                                            <span class="fs-5 fw-bold text-gray-900">@nm(b.NameAr, b.NameEn)</span>
-                                        </div>
-                                        <div class="d-flex align-items-end flex-stack mb-2">
-                                            <span class="fs-2hx fw-bold text-gray-900 lh-1">@b.Remaining</span>
-                                            <span class="text-muted fw-semibold fs-7">@Localizer["of {0} days", b.Entitlement]</span>
-                                        </div>
-                                        <div class="progress h-8px" style="background:@(h)1a;"><div class="progress-bar" style="width:@(pct)%;background:@h;"></div></div>
-                                        <div class="d-flex flex-stack mt-2 fs-8 text-muted fw-semibold"><span>@Localizer["Remaining"]</span><span>@Localizer["Used: {0}", b.Used]</span></div>
-                                    </div>
-                                </div>
-                            }
-                        </div>
-                    }
-                </div>
-            </div>
-            <!--end::Balances-->
-
-            <div class="row g-5 g-xl-8 mt-1">
-                <!--begin::Recent requests-->
+            <div class="row g-5 mb-5">
+                @* ── My requests ── *@
                 <div class="col-xl-7">
-                    <div class="card card-flush h-100">
-                        <div class="card-header pt-6"><div class="card-title"><h3 class="fw-bold text-gray-900">@Localizer["Recent requests"]</h3></div>
-                            <div class="card-toolbar"><a href="@Url.Action("Leaves","People")" class="btn btn-sm btn-light-primary">@Localizer["View all"]</a></div>
-                        </div>
-                        <div class="card-body pt-2">
-                            @if (recent.Count == 0)
-                            {
-                                <div class="text-center text-muted py-8">@Localizer["No requests"]</div>
-                            }
-                            else
-                            {
-                                <div class="table-responsive">
-                                <table class="table align-middle table-row-dashed fs-7 gy-3">
-                                    <thead><tr class="text-muted fw-bold fs-8 text-uppercase" style="border-bottom:2px solid #0E4A9E;">
-                                        <th>@SR["Type"]</th><th>@SR["From"]</th><th>@SR["To"]</th><th>@Localizer["Days"]</th><th class="text-end">@SR["Status"]</th>
-                                    </tr></thead>
-                                    <tbody>
+                    <div class="card h-100">
+                        <div class="card-header border-0 pt-6"><div class="card-title flex-column m-0">
+                            <span class="fw-bold text-gray-900 fs-4">@L("طلباتي", "My requests")</span>
+                            <span class="text-muted fs-7 mt-1">@L("آخر خمسة طلبات إجازة", "Your last five leave requests")</span></div>
+                            <div class="card-toolbar"><a href="@Url.Action("Leaves", "People")" class="btn btn-sm btn-light-primary">@L("الكل", "All")</a></div></div>
+                        <div class="card-body pt-4">
+                            <table class="table align-middle gy-3 mb-0 hr-table">
+                                <thead><tr class="fw-bold fs-8 text-uppercase text-muted"><th class="ps-0">@L("الطلب", "Request")</th><th>@L("الفترة", "Period")</th><th>@L("أين وصل", "Where it is")</th><th class="text-end">@L("الحالة", "Status")</th></tr></thead>
+                                <tbody class="fs-6">
+                                    @if (recent.Count == 0) { <tr><td colspan="4" class="text-center text-muted py-8">@L("لا طلبات بعد", "No requests yet")</td></tr> }
                                     @foreach (var r in recent)
                                     {
                                         <tr>
-                                            <td class="fw-bold text-gray-900">@nm(r.LeaveType?.NameAr, r.LeaveType?.NameEn)</td>
-                                            <td>@r.StartDate.ToString("yyyy/MM/dd")</td>
-                                            <td>@r.EndDate.ToString("yyyy/MM/dd")</td>
-                                            <td><span class="fw-bold text-primary">@r.Days</span></td>
-                                            <td class="text-end"><span class="badge badge-light-@statusBadge[r.Status]">@statusText[r.Status]</span></td>
+                                            <td class="ps-0"><div class="fw-semibold">@Pick(r.LeaveType?.NameAr, r.LeaveType?.NameEn)</div><div class="text-muted fs-8"><span class="hr-num">@r.Days</span> @L("يوم", "days")</div></td>
+                                            <td class="text-nowrap hr-num">@r.StartDate.ToString("yyyy-MM-dd")</td>
+                                            <td class="fs-7 text-gray-700">
+                                                @if (r.Status == 0) { if (r.CurrentApproverEmployeeID is int w && waiting.TryGetValue(w, out var wn)) { <span>@L("بانتظار", "Waiting on") <bdi class="fw-semibold">@wn</bdi></span> } else { <span class="text-danger">@L("بلا معتمِد — راجع الموارد البشرية", "No approver — ask HR")</span> } }
+                                                else if (r.DecisionAt.HasValue) { <span class="text-muted hr-num">@r.DecisionAt.Value.ToString("yyyy-MM-dd")</span> }
+                                                else { <span class="text-muted">—</span> }
+                                            </td>
+                                            <td class="text-end">
+                                                @switch (r.Status)
+                                                {
+                                                    case 1: <span class="badge badge-light-success fw-bold fs-8">@L("معتمدة", "Approved")</span> break;
+                                                    case 2: <span class="badge badge-light-danger fw-bold fs-8">@L("مرفوضة", "Rejected")</span> break;
+                                                    default: <span class="badge badge-light-primary fw-bold fs-8">@L("قيد الموافقة", "Pending")</span> break;
+                                                }
+                                            </td>
                                         </tr>
                                     }
-                                    </tbody>
-                                </table>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                @* ── My balances ── *@
+                <div class="col-xl-5">
+                    <div class="card h-100">
+                        <div class="card-header border-0 pt-6"><div class="card-title flex-column m-0">
+                            <span class="fw-bold text-gray-900 fs-4">@L("أرصدتي", "My balances")</span>
+                            <span class="text-muted fs-7 mt-1">@L("هذا العام", "This year")</span></div></div>
+                        <div class="card-body pt-4">
+                            @if (Model.Balances.Count == 0) { <div class="text-center text-muted py-8">@L("لا سياسة إجازات مرتبطة بك — راجع الموارد البشرية", "No leave policy is linked to you — ask HR")</div> }
+                            @foreach (var b in Model.Balances)
+                            {
+                                var pct = b.Entitlement > 0 ? (int)Math.Round(100.0 * Math.Min(b.Used, b.Entitlement) / b.Entitlement) : 0;
+                                <div class="mb-5">
+                                    <div class="d-flex flex-stack mb-2"><span class="fw-semibold text-gray-800">@Pick(b.NameAr, b.NameEn)</span><span class="fs-7 text-muted"><span class="hr-num fw-bold text-gray-900">@b.Remaining</span> @L("متاح من", "left of") <span class="hr-num">@b.Entitlement</span></span></div>
+                                    <div class="progress h-6px bg-light-primary"><div class="progress-bar bg-primary" style="width:@(pct)%"></div></div>
                                 </div>
                             }
                         </div>
                     </div>
                 </div>
-                <!--end::Recent requests-->
-
-                <!--begin::Donut-->
-                <div class="col-xl-5">
-                    <div class="card card-flush h-100">
-                        <div class="card-header pt-6"><div class="card-title"><h3 class="fw-bold text-gray-900">@Localizer["Requests distribution"]</h3></div></div>
-                        <div class="card-body d-flex flex-column align-items-center justify-content-center pt-2">
-                            @if (Model.Total == 0)
-                            {
-                                <div class="text-center text-muted py-8">@SR["NoData"]</div>
-                            }
-                            else
-                            {
-                                <div id="donut_chart"></div>
-                            }
-                        </div>
-                    </div>
-                </div>
-                <!--end::Donut-->
             </div>
 
-            <div class="row g-5 g-xl-8 mt-1 mb-8">
-                <!--begin::Manage-->
-                <div class="col-xl-5">
-                    <div class="card card-flush h-100 bg-light-primary">
-                        <div class="card-body d-flex flex-column justify-content-center text-center py-10">
-                            <i class="ki-outline ki-calendar-add fs-4x text-primary mb-4"></i>
-                            <h3 class="fw-bold text-gray-900 mb-2">@Localizer["Manage your requests easily"]</h3>
-                            <div class="text-muted fs-6 mb-5">@Localizer["Submit a new leave request or track your status"]</div>
-                            <div><a href="@Url.Action("Leaves","People")" class="btn btn-primary"><i class="ki-outline ki-plus fs-3"></i>@Localizer["New leave request"]</a></div>
-                        </div>
-                    </div>
-                </div>
-                <!--end::Manage-->
-
-                <!--begin::Calendar-->
-                <div class="col-xl-7">
-                    <div class="card card-flush h-100">
-                        <div class="card-header pt-6"><div class="card-title"><h3 class="fw-bold text-gray-900">@monthNames[now.Month] @now.Year</h3></div></div>
-                        <div class="card-body pt-2">
-                            <div class="text-center" style="display:grid;grid-template-columns:repeat(7,1fr);gap:.35rem;align-items:center;justify-items:center;">
-                                @for (var i = 0; i < 7; i++)
-                                {
-                                    <span class="text-muted fw-bold fs-8 py-2">@dow[i]</span>
-                                }
-                                @for (var i = 0; i < leadBlanks; i++)
-                                {
-                                    <span>&nbsp;</span>
-                                }
-                                @for (var day = 1; day <= daysInMonth; day++)
-                                {
-                                    var isLeave = leaveDays.Contains(day);
-                                    var isToday = day == now.Day;
-                                    var cls = isLeave ? "text-white" : (isToday ? "text-white" : "text-gray-700");
-                                    var bg = isLeave ? "background:#0E4A9E;" : (isToday ? "background:#145DBF;" : "");
-                                    <span class="d-inline-flex align-items-center justify-content-center rounded-circle fw-semibold fs-7 @cls" style="width:36px;height:36px;@bg">@day</span>
-                                }
-                            </div>
-                            <div class="d-flex flex-wrap gap-5 mt-5 pt-4 border-top border-gray-200 fs-8 fw-semibold text-gray-700">
-                                <span class="d-flex align-items-center"><span class="d-inline-block rounded-circle me-2" style="width:14px;height:14px;background:#0E4A9E;"></span>@Localizer["Leave days"]</span>
-                                <span class="d-flex align-items-center"><span class="d-inline-block rounded-circle me-2" style="width:14px;height:14px;background:#145DBF;"></span>@Localizer["Today"]</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <!--end::Calendar-->
+            <div class="hr-notice mb-5">
+                <i class="ki-outline ki-phone fs-2"></i>
+                <div><div class="fw-bold">@L("على الجوال أيضاً", "On mobile too")</div>
+                <div class="fs-7">@L("نفس الخدمات في تطبيق الجوال عبر واجهات الموظفين والإجازات الموجودة.", "The same services in the mobile app through the existing employee and leave APIs.")</div></div>
             </div>
-
         </div>
     </div>
 </div>
-
-@section Scripts {
-    <script>
-        (function () {
-            var FF = 'Cairo, sans-serif';
-            function draw() {
-                if (typeof ApexCharts === 'undefined') return;
-                // global default so every chart element (labels/legend/tooltip) uses Cairo
-                window.Apex = window.Apex || {};
-                window.Apex.chart = Object.assign({}, window.Apex.chart, { fontFamily: FF });
-                // trend
-                var tEl = document.querySelector('#trend_chart');
-                if (tEl) {
-                    new ApexCharts(tEl, {
-                        chart: { type: 'area', height: 150, fontFamily: FF, sparkline: { enabled: false }, toolbar: { show: false }, foreColor: 'rgba(255,255,255,.75)' },
-                        series: [{ name: '@Localizer["Requests"]', data: [@Html.Raw(trendSeries)] }],
-                        xaxis: { categories: [@Html.Raw(trendCats)], axisBorder: { show: false }, axisTicks: { show: false }, labels: { style: { fontFamily: FF } } },
-                        yaxis: { labels: { style: { fontFamily: FF }, formatter: function (v) { return Math.round(v); } } },
-                        stroke: { curve: 'smooth', width: 3, colors: ['#ffffff'] },
-                        fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.45, opacityTo: 0.05 }, colors: ['#ffffff'] },
-                        colors: ['#ffffff'], dataLabels: { enabled: false }, grid: { borderColor: 'rgba(255,255,255,.12)' },
-                        tooltip: { theme: 'dark', style: { fontFamily: FF } }
-                    }).render();
-                }
-                // donut
-                var dEl = document.querySelector('#donut_chart');
-                if (dEl) {
-                    new ApexCharts(dEl, {
-                        chart: { type: 'donut', width: 320, fontFamily: FF },
-                        series: [@Html.Raw(donutSeries)],
-                        labels: [@Html.Raw(donutLabels)],
-                        colors: ['#145DBF', '#2f9e6e', '#F59E0B', '#22CCE2', '#145DBF'],
-                        legend: { position: 'bottom', fontSize: '13px', fontFamily: FF },
-                        dataLabels: { enabled: true, style: { fontFamily: FF }, formatter: function (v) { return Math.round(v) + '%'; } },
-                        tooltip: { style: { fontFamily: FF } },
-                        plotOptions: { pie: { donut: { size: '62%', labels: { show: true,
-                            name: { fontFamily: FF }, value: { fontFamily: FF },
-                            total: { show: true, label: '@SR["Total"]', fontFamily: FF, formatter: function () { return '@Model.Total'; } } } } } }
-                    }).render();
-                }
-            }
-            function boot() {
-                // render only after Cairo is actually loaded, else ApexCharts measures glyphs with the fallback font
-                if (document.fonts && document.fonts.load) {
-                    document.fonts.load('700 16px Cairo').then(function () { return document.fonts.load('400 16px Cairo'); }).then(draw).catch(draw);
-                } else { draw(); }
-            }
-            if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
-        })();
-    </script>
-}

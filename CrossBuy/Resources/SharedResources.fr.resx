@@ -3221,4 +3221,34 @@
   <data name="Purchase invoices" xml:space="preserve">
     <value>Factures d'achat</value>
   </data>
+  <data name="Country rule pack" xml:space="preserve">
+    <value>Pack de règles du pays</value>
+  </data>
+  <data name="Every resignation tier needs a paid percentage between 0 and 100" xml:space="preserve">
+    <value>Chaque tranche de démission exige un pourcentage entre 0 et 100</value>
+  </data>
+  <data name="Follow-up tasks created: {0} (already tracked: {1})" xml:space="preserve">
+    <value>Tâches de suivi créées : {0} (déjà suivies : {1})</value>
+  </data>
+  <data name="Leave days must be between 0 and 400" xml:space="preserve">
+    <value>Les jours de congé doivent être entre 0 et 400</value>
+  </data>
+  <data name="Loans &amp; advances" xml:space="preserve">
+    <value>Prêts et avances</value>
+  </data>
+  <data name="No country rule pack is installed. Apply hr_rule_packs.sql." xml:space="preserve">
+    <value>Aucun pack de règles n'est installé. Appliquez hr_rule_packs.sql.</value>
+  </data>
+  <data name="Overtime approval" xml:space="preserve">
+    <value>Approbation des heures supplémentaires</value>
+  </data>
+  <data name="Overtime figures are out of range" xml:space="preserve">
+    <value>Les valeurs d'heures supplémentaires sont hors limites</value>
+  </data>
+  <data name="Rules saved" xml:space="preserve">
+    <value>Règles enregistrées</value>
+  </data>
+  <data name="The loan cap must be between 0 and 100" xml:space="preserve">
+    <value>Le plafond de prêt doit être entre 0 et 100</value>
+  </data>
 </root>

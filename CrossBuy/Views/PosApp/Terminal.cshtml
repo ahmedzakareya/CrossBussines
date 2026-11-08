@@ -27,6 +27,9 @@
     if (string.IsNullOrEmpty(initials)) initials = "?";
     var empPhoto = ctx?.EmployeePhoto;
     string empPhotoUrl = string.IsNullOrWhiteSpace(empPhoto) ? "" : (empPhoto.StartsWith("http") ? empPhoto : Url.Content("~" + empPhoto.Replace("\\", "/")));
+    // a sign-in session older than the photo move holds a gone /uploads path: use the photo route by id instead (2026-11-08)
+    if (!string.IsNullOrEmpty(empPhotoUrl) && !empPhoto!.StartsWith("http") && !empPhoto.Replace("\\", "/").StartsWith("/People/Photo/") && !empPhoto.Replace("\\", "/").StartsWith("/Backend-assets/") && ctx!.EmployeeId > 0)
+        empPhotoUrl = Url.Content("~/People/Photo/" + ctx.EmployeeId);
     // flatten quick-menu items (single grid + category filter); DisplayName follows the language, Search carries both
     var allItems = menu.SelectMany(g => g.Items.Select(i => new { i.ItemId, DisplayName = L(i.Name, i.NameEn), Search = (i.Name + " " + (i.NameEn ?? "")).Trim(), i.Code, i.QuickCode, i.Price, Gid = g.GroupId?.ToString() ?? "none" })).ToList();
     var catIcons = new[] { "ki-burger-menu-2", "ki-cup", "ki-scooter", "ki-basket", "ki-coffee", "ki-gift", "ki-tag", "ki-dish" };
@@ -57,7 +60,7 @@
         <div class="posx-user" id="posxUser">
             @if (!string.IsNullOrEmpty(empPhotoUrl))
             {
-                <img class="av" src="@empPhotoUrl" alt="@empName" />
+                <img class="av" src="@empPhotoUrl" alt="@empName" onerror="this.remove()" />
             }
             else
             {

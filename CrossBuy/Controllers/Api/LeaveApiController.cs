@@ -156,6 +156,11 @@ namespace CrossBuy.Controllers.Api
 				HttpContext.RequestAborted);
 			if (!maySubmit) return NotFound(new { success = false, message = "Not authorised" });
 
+			// HR3: this JSON endpoint carries no file, so a type whose policy requires a medical certificate is refused here
+			// with the reason, rather than created without the evidence the policy demands.
+			if ((await new CrossBuy.BL.Hr.HrLeaveEligibility(_context).CertificateTypesAsync(ctx.EmployeeId.Value)).Contains(dto.LeaveTypeID))
+				return BadRequest(new { success = false, message = CrossBuy.BL.Hr.HrLeaveEligibility.CertificateMissing.Text });
+
 			var (ok, error, req) = await _workflow.CreateAsync(ctx.EmployeeId.Value, dto.LeaveTypeID, dto.StartDate, dto.EndDate, dto.Reason);
 			if (!ok) return BadRequest(new { success = false, message = error });
 

@@ -44,6 +44,17 @@ namespace CrossBuy.Models.Context.Admin
 
 		public decimal? ManufHourlyRate { get; set; } // سعر ساعة التصنيع الصريح (يتجاوز اشتقاق الراتب)
 
+		// HR1 — employee record 2.0 (hr1_employee_record.sql, 2026-11-08)
+		public string? CivilIdNumber { get; set; }
+		public string? PassportNumber { get; set; }
+		public string? Religion { get; set; }                 // Muslim | Christian | Other — drives Hajj / iddah leave
+		public string? Iban { get; set; }
+		public string? BankName { get; set; }
+		public string? EmergencyContactName { get; set; }
+		public string? EmergencyContactPhone { get; set; }
+		public string? EmergencyContactRelation { get; set; }
+		public string? AttendanceDeviceId { get; set; }       // HR5: the employee's ID on the fingerprint device (unique per company)
+
 		public string UserId { get; set; }
 		public Users User { get; set; }
 

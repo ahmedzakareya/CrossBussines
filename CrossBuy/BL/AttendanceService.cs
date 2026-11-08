@@ -15,6 +15,11 @@ namespace CrossBuy.BL
 		public int OvertimeMinutes { get; set; }
 		public int LeaveDays { get; set; }
 		public int AbsentDays { get; set; }
+		// Work done on a rest day or an official holiday (2026-11-08). The whole worked time of such a day is overtime,
+		// paid at the rest-day / holiday rate of the country rule pack. Before this, the summary skipped those days
+		// entirely, so a Friday worked was never paid.
+		public int RestDayOvertimeMinutes { get; set; }
+		public int HolidayOvertimeMinutes { get; set; }
 	}
 
 	public interface IAttendanceService
@@ -138,6 +143,9 @@ namespace CrossBuy.BL
 			var recs = await _db.AttendanceRecords.AsNoTracking().Where(r => r.CompanyID == companyId && r.WorkDate >= s && r.WorkDate <= e).ToListAsync();
 			var leaves = await _db.LeaveRequests.AsNoTracking().Where(r => r.Status == 1 && r.StartDate <= e && r.EndDate >= s).ToListAsync();
 			var permMap = await PermittedMinutesMapAsync(companyId, s, e);   // HR-8 hourly permissions
+			// The country rule pack's DAILY overtime cap (2026-11-08): a working day counts at most that much overtime.
+			var otPack = (await new CrossBuy.BL.Hr.HrRulePackService(_db).EffectiveAsync(companyId))?.Rules.Overtime;
+			int dailyOtCap = otPack is { DailyCapHours: > 0 } ? (int)Math.Round(otPack.DailyCapHours * 60m) : int.MaxValue;
 
 			var rows = new List<AttendanceMonthRow>();
 			foreach (var emp in emps)
@@ -145,23 +153,35 @@ namespace CrossBuy.BL
 				var policy = await PolicyForAsync(emp.ID);
 				if (policy == null) continue;   // only employees with a schedule are summarized
 				var myRecs = recs.Where(r => r.EmployeeID == emp.ID).ToDictionary(r => r.WorkDate.Date);
-				int workDays = 0, present = 0, lateCnt = 0, lateMin = 0, ot = 0, leaveDays = 0, absent = 0;
+				int workDays = 0, present = 0, lateCnt = 0, lateMin = 0, ot = 0, leaveDays = 0, absent = 0, restOt = 0, holOt = 0;
 				for (var d = s; d <= e; d = d.AddDays(1))
 				{
-					if (holidays.Contains(d) || !IsWorkDay(policy, d)) continue;   // not a scheduled work day
+					if (holidays.Contains(d) || !IsWorkDay(policy, d))            // not a scheduled work day
+					{
+						// …but work done on it is overtime of its own kind (rest day / official holiday)
+						if (myRecs.TryGetValue(d, out var off) && off.WorkedHours > 0)
+						{
+							var mins = (int)Math.Round(off.WorkedHours * 60m);
+							if (holidays.Contains(d)) holOt += mins; else restOt += mins;
+						}
+						continue;
+					}
 					workDays++;
 					bool onLeave = leaves.Any(l => l.EmployeeID == emp.ID && l.StartDate.Date <= d && l.EndDate.Date >= d);
 					if (myRecs.TryGetValue(d, out var r) && (r.Status == "Present" || r.Status == "Late"))
 					{
-						present++; ot += r.OvertimeMinutes;
+						present++; ot += Math.Min(r.OvertimeMinutes, dailyOtCap);
 						var permitted = permMap.TryGetValue((emp.ID, d.Date), out var pm) ? pm : 0;   // HR-8: waive late within permission window
 						var effLate = Math.Max(0, r.LateMinutes - permitted);
 						lateMin += effLate; if (effLate > 0) lateCnt++;
 					}
 					else if (onLeave) leaveDays++;
-					else absent++;
+					// A day that has not happened yet is not an absence (2026-11-08): before this, a summary taken mid-month
+					// counted every remaining work day as absent, and payroll (AccountingPostingService) reads AbsentDays for its
+					// absence penalty. A month-end run is unchanged — by then no day is in the future.
+					else if (d <= DateTime.Today) absent++;
 				}
-				rows.Add(new AttendanceMonthRow { EmployeeID = emp.ID, EmployeeName = !isAr && !string.IsNullOrWhiteSpace(emp.FullNameEn) ? emp.FullNameEn : emp.FullName, WorkDays = workDays, PresentDays = present, LateCount = lateCnt, LateMinutes = lateMin, OvertimeMinutes = ot, LeaveDays = leaveDays, AbsentDays = absent });
+				rows.Add(new AttendanceMonthRow { EmployeeID = emp.ID, EmployeeName = !isAr && !string.IsNullOrWhiteSpace(emp.FullNameEn) ? emp.FullNameEn : emp.FullName, WorkDays = workDays, PresentDays = present, LateCount = lateCnt, LateMinutes = lateMin, OvertimeMinutes = ot, LeaveDays = leaveDays, AbsentDays = absent, RestDayOvertimeMinutes = restOt, HolidayOvertimeMinutes = holOt });
 			}
 			return rows.OrderBy(r => r.EmployeeName).ToList();
 		}

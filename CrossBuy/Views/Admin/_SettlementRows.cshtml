@@ -1,0 +1,30 @@
+@model CrossBuy.Controllers.AdminController.SettlementRowsModel
+@{
+    // One page of final settlements (AdminController.SettlementsData), injected by cbServerList.
+    var ci = System.Globalization.CultureInfo.InvariantCulture;
+    string Money(decimal v) => v.ToString("#,##0.00", ci);
+    string Initials(string? name) { var p = (name ?? "?").Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries); return p.Length == 0 ? "?" : string.Concat(p.Take(2).Select(w => w[0])).ToUpperInvariant(); }
+}
+@foreach (var s in Model.Rows)
+{
+    var photo = Model.Photos.TryGetValue(s.EmployeeID, out var ph) ? ph : null;
+    <tr>
+        <td class="ps-4">
+            <div class="d-flex align-items-center min-w-0">
+                <div class="symbol symbol-30px symbol-circle flex-shrink-0">
+                    @if (photo != null) { <img src="@photo" alt="" /> } else { <span class="symbol-label fw-bold fs-9 hr-initials">@Initials(s.EmployeeName)</span> }
+                </div>
+                <div class="d-flex flex-column ms-2 min-w-0">
+                    <a href="@Url.Action("FinalSettlement", "Admin", new { employeeId = s.EmployeeID })" class="text-gray-900 text-hover-primary fw-bold fs-7 text-truncate"><bdi>@s.EmployeeName</bdi></a>
+                    @if (!string.IsNullOrWhiteSpace(s.Reason)) { <span class="text-muted fs-8 text-truncate">@s.Reason</span> }
+                </div>
+            </div>
+        </td>
+        <td class="hr-num text-nowrap">@s.TerminationDate.ToString("yyyy-MM-dd")</td>
+        <td class="text-end hr-num">@s.ServiceYears.ToString("0.00", ci)</td>
+        <td class="text-end hr-num @(s.LeaveValue > 0 ? "" : "text-gray-300")">@(s.LeaveValue > 0 ? Money(s.LeaveValue) : "—")</td>
+        <td class="text-end hr-num @(s.Gratuity > 0 ? "" : "text-gray-300")">@(s.Gratuity > 0 ? Money(s.Gratuity) : "—")</td>
+        <td class="text-end hr-num @(s.Deductions > 0 ? "text-danger" : "text-gray-300")">@(s.Deductions > 0 ? "−" + Money(s.Deductions) : "—")</td>
+        <td class="text-end pe-4 hr-num fw-bolder text-gray-900">@Money(s.NetSettlement)</td>
+    </tr>
+}

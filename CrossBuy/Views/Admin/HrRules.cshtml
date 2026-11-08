@@ -1,0 +1,283 @@
+@model CrossBuy.Controllers.AdminController.HrRulesPageModel
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    // HR prototype design (design-output/hr-prototype #/rules), adopted by the owner on 2026-11-08.
+    // THE REGULATIONS ARE CHANGEABLE (owner, 2026-11-08): every figure, name, rule text and legal reference of THIS
+    // company's copy is editable, rows are added and removed, and a country template can be applied. The templates
+    // themselves (Kuwait, Saudi Arabia, UAE, Egypt) never change from this screen.
+    ViewData["Title"] = "HrRules";
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    string L(string ar, string en) => isAr ? ar : en;
+    var r = Model.Rules;
+    var ci = System.Globalization.CultureInfo.InvariantCulture;
+    string N(decimal v) => v.ToString("0.##", ci);
+    string ro = Model.CanEdit ? "" : "disabled";
+    var days = new[] { DayOfWeek.Saturday, DayOfWeek.Sunday, DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday };
+    var dayAr = new Dictionary<DayOfWeek, string> { [DayOfWeek.Saturday] = "السبت", [DayOfWeek.Sunday] = "الأحد", [DayOfWeek.Monday] = "الاثنين", [DayOfWeek.Tuesday] = "الثلاثاء", [DayOfWeek.Wednesday] = "الأربعاء", [DayOfWeek.Thursday] = "الخميس", [DayOfWeek.Friday] = "الجمعة" };
+    // Flag images from the theme (an emoji flag renders as two letters on Windows).
+    var flags = new Dictionary<string, string> { ["KW"] = "kuwait", ["SA"] = "saudi-arabia", ["AE"] = "united-arab-emirates", ["EG"] = "egypt" };
+}
+<link href="~/css/hr.css" rel="stylesheet" asp-append-version="true" />
+<style>
+    .rp-in { min-width: 0; }
+    .rp-del { opacity: .45; } .rp-del:hover, .rp-del:focus-visible { opacity: 1; }
+</style>
+
+@{
+    void Num(string name, decimal? value, string? suffix = null, string width = "90px")
+    {
+        <div class="d-inline-flex align-items-center gap-1"><input type="number" step="0.01" min="0" name="@name" value="@(value.HasValue ? N(value.Value) : "")" class="form-control form-control-solid form-control-sm hr-num text-center" style="width:@width" @ro />@if (suffix != null) { <span class="text-muted fs-8">@suffix</span> }</div>
+    }
+    void Txt(string name, string? value, string? placeholder = null, string cls = "")
+    {
+        <input type="text" name="@name" value="@value" placeholder="@placeholder" class="form-control form-control-solid form-control-sm rp-in @cls" @ro />
+    }
+    void Counsel(string name, bool value)
+    {
+        <label class="form-check form-check-sm form-check-custom form-check-solid text-nowrap" title="@L("قيمة يراجعها المستشار القانوني قبل التشغيل", "A value legal counsel confirms before go-live")">
+            <input class="form-check-input" type="checkbox" name="@name" value="true" @(value ? "checked" : "") @ro /><input type="hidden" name="@name" value="false" />
+            <span class="form-check-label fs-8 @(value ? "text-danger fw-bold" : "text-muted")">@L("يراجعها المستشار", "Counsel")</span>
+        </label>
+    }
+    void Del()
+    {
+        if (Model.CanEdit) { <button type="button" class="btn btn-icon btn-sm btn-light rp-del" data-rp-del title="@L("حذف", "Remove")"><i class="ki-outline ki-trash fs-5"></i></button> }
+    }
+    void LeaveRow(string k, CrossBuy.BL.Hr.HrLeaveRule l)
+    {
+        <tr data-rp-row>
+            <td class="ps-4"><input type="hidden" name="Leave.Index" value="@k" /><input type="hidden" name="Leave[@k].Code" value="@l.Code" />
+                @{ Txt($"Leave[{k}].NameAr", l.NameAr, "الاسم بالعربية"); }<div class="mt-1">@{ Txt($"Leave[{k}].NameEn", l.NameEn, "Name in English"); }</div></td>
+            <td>@{ Num($"Leave[{k}].Days", l.Days, null, "80px"); }</td>
+            <td>@{ Txt($"Leave[{k}].RuleAr", l.RuleAr, "القاعدة بالعربية"); }<div class="mt-1">@{ Txt($"Leave[{k}].RuleEn", l.RuleEn, "Rule in English"); }</div></td>
+            <td class="text-nowrap">
+                <div class="d-flex align-items-center gap-2 mb-1"><span class="text-muted fs-8 w-70px">@L("بعد خدمة", "After")</span>@{ Num($"Leave[{k}].MinServiceMonths", l.MinServiceMonths, L("شهر", "months"), "64px"); }</div>
+                <div class="d-flex align-items-center gap-2 mb-1"><span class="text-muted fs-8 w-70px">@L("مرات/الخدمة", "Times/career")</span>@{ Num($"Leave[{k}].MaxTimesPerService", l.MaxTimesPerService, L("٠ = بلا حد", "0 = no limit"), "64px"); }</div>
+                <div class="d-flex align-items-center gap-2 mb-1"><span class="text-muted fs-8 w-70px">@L("الاستحقاق", "Accrual")</span>
+                    <select name="Leave[@k].Accrual" class="form-select form-select-solid form-select-sm" style="width:160px" @ro>
+                        <!option value="upfront" @(l.AccruesMonthly ? "" : "selected")>@L("كاملة أول السنة", "Upfront")</!option>
+                        <!option value="monthly" @(l.AccruesMonthly ? "selected" : "")>@L("شهرياً", "Monthly")</!option></select></div>
+                <div class="d-flex align-items-center gap-2"><span class="text-muted fs-8 w-70px">@L("الديانة", "Religion")</span>
+                    <select name="Leave[@k].Religion" class="form-select form-select-solid form-select-sm" style="width:160px" @ro>
+                        <!option value="" @(string.IsNullOrEmpty(l.Religion) ? "selected" : "")>@L("الجميع", "Everyone")</!option>
+                        <!option value="Muslim" @(l.Religion == "Muslim" ? "selected" : "")>@L("مسلم", "Muslim")</!option>
+                        <!option value="Christian" @(l.Religion == "Christian" ? "selected" : "")>@L("مسيحي", "Christian")</!option></select></div>
+            </td>
+            <td>@{ Txt($"Leave[{k}].Reference", l.Reference, L("المادة", "Article")); }<div class="mt-2">@{ Counsel($"Leave[{k}].Counsel", l.Counsel); }</div></td>
+            <td class="pe-4 text-end">@{ Del(); }</td>
+        </tr>
+    }
+    void TierRow(string k, CrossBuy.BL.Hr.HrResignationTier t)
+    {
+        <tr data-rp-row>
+            <td class="ps-4"><input type="hidden" name="Resignation.Index" value="@k" />
+                <div class="d-flex align-items-center gap-2 flex-wrap">@{ Num($"Resignation[{k}].FromYears", t.FromYears, null, "70px"); }<span class="text-muted">–</span>@{ Num($"Resignation[{k}].ToYears", t.ToYears, L("سنة (فارغ = بلا حد)", "yrs (empty = no limit)"), "70px"); }</div></td>
+            <td>@{ Num($"Resignation[{k}].PaidPct", t.PaidPct, "%", "80px"); }</td>
+            <td class="pe-4 text-end">@{ Del(); }</td>
+        </tr>
+    }
+    void InsRow(string k, CrossBuy.BL.Hr.HrInsuranceRule s)
+    {
+        <tr data-rp-row>
+            <td class="ps-4"><input type="hidden" name="Insurance.Index" value="@k" />@{ Txt($"Insurance[{k}].NameAr", s.NameAr, "البند بالعربية"); }<div class="mt-1">@{ Txt($"Insurance[{k}].NameEn", s.NameEn, "Item in English"); }</div><div class="mt-2">@{ Counsel($"Insurance[{k}].Counsel", s.Counsel); }</div></td>
+            <td><select name="Insurance[@k].AppliesTo" class="form-select form-select-solid form-select-sm" style="width:120px" @ro>
+                    <!option value="all" @(s.ForNationalsOnly ? "" : "selected")>@L("الجميع", "Everyone")</!option>
+                    <!option value="nationals" @(s.ForNationalsOnly ? "selected" : "")>@L("المواطنون فقط", "Nationals only")</!option></select></td>
+            <td>@{ Num($"Insurance[{k}].EmployeePct", s.EmployeePct, "%", "64px"); }</td>
+            <td>@{ Num($"Insurance[{k}].EmployerPct", s.EmployerPct, "%", "64px"); }</td>
+            <td>@{ Num($"Insurance[{k}].WageCap", s.WageCap, null, "84px"); }</td>
+            <td class="pe-4 text-end">@{ Del(); }</td>
+        </tr>
+    }
+}
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2">
+        <div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+            <div class="page-title d-flex flex-column justify-content-center gap-1">
+                <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@L("حزمة قواعد الدولة", "Country rule pack")</h1>
+                <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                    <li class="breadcrumb-item text-muted"><a href="@Url.Action("Index", "Admin")" class="text-muted text-hover-primary">@SR["HumanResources"]</a></li>
+                    <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                    <li class="breadcrumb-item text-muted">@L("الإعدادات", "Settings")</li>
+                </ul>
+            </div>
+            @if (Model.CanEdit) { <button type="submit" form="rulesForm" class="btn btn-sm btn-primary"><i class="ki-outline ki-check fs-4"></i>@L("حفظ", "Save")</button> }
+        </div>
+    </div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid">
+        <div class="app-container container-fluid">
+            @if (TempData["HrErr"] is string err) { <div class="alert alert-danger d-flex align-items-center py-3 mb-5"><i class="ki-outline ki-information-5 fs-2 me-3 text-danger"></i>@err</div> }
+            @if (TempData["HrMsg"] is string msg) { <div class="alert alert-success d-flex align-items-center py-3 mb-5"><i class="ki-outline ki-check-circle fs-2 me-3 text-success"></i>@msg</div> }
+
+            @* ── Which law, and starting from a country template ── *@
+            <div class="card mb-5">
+                <div class="card-body d-flex flex-wrap gap-5 align-items-center py-5">
+                    @if (flags.TryGetValue(Model.Pack.CountryCode, out var fl)) { <img src="~/Backend-assets/media/flags/@(fl).svg" class="w-45px h-45px rounded-circle" alt="" /> }
+                    <div class="flex-grow-1 min-w-0">
+                        <div class="fw-bold fs-5 text-gray-900">@(isAr ? Model.Pack.NameAr : Model.Pack.NameEn)</div>
+                        <div class="text-muted fs-7">
+                            @if (Model.IsCompanyCopy) { <span>@L("نسخة شركتك — الإصدار", "Your company's copy — version") <span class="hr-num fw-bold">@Model.Pack.Version</span> · @L("آخر تعديل", "last changed") <span class="hr-num">@Model.Pack.UpdatedAt.ToString("yyyy-MM-dd")</span> · <span class="hr-num">@r.Currency</span></span> }
+                            else { <span>@L("قالب الدولة كما هو. أول حفظ ينشئ نسخة خاصة بشركتك.", "The country template as shipped. The first save creates your company's own copy.")</span> }
+                        </div>
+                    </div>
+                    @if (Model.CanEdit)
+                    {
+                        <form asp-action="ApplyHrTemplate" method="post" class="d-flex gap-2 align-items-center" data-cb-confirm data-cb-action="generic" data-cb-text="@L("تطبيق قالب الدولة يستبدل كل قواعد شركتك الحالية بقيم القالب. هل تتابع؟", "Applying a country template replaces all your company's current rules with the template's. Continue?")">
+                            @Html.AntiForgeryToken()
+                            <select name="countryCode" class="form-select form-select-solid form-select-sm w-auto">
+                                @foreach (var t in Model.Templates) { <option value="@t.CountryCode" selected="@(t.CountryCode == Model.Pack.CountryCode)">@t.CountryCode — @(isAr ? t.NameAr : t.NameEn)</option> }
+                            </select>
+                            <button class="btn btn-sm btn-light-primary text-nowrap"><i class="ki-outline ki-arrows-circle fs-4"></i>@L("تطبيق القالب", "Apply template")</button>
+                        </form>
+                    }
+                </div>
+            </div>
+
+            <div class="hr-notice mb-5">
+                <i class="ki-outline ki-setting-2 fs-2"></i>
+                <div><div class="fw-bold">@L("اللوائح قابلة للتغيير", "The regulations are changeable")</div>
+                <div class="fs-7">@L("كل رقم واسم وقاعدة ومرجع هنا إعداد لشركتك، لا قيمة مكتوبة في الكود: عدّل، وأضف نوع إجازة أو شريحة أو بند تأمين، أو احذفه. عند تغيّر القانون عدّل القيم أو طبّق قالب الدولة المحدّث. كل حفظ إصدار جديد. العلامة الحمراء = قيمة يراجعها المستشار القانوني قبل التشغيل.", "Every figure, name, rule and reference here is your company's setting, not code: edit it, add a leave type, tier or insurance line, or remove one. When the law changes, edit the values or apply the updated country template. Every save is a new version. The red mark = a value legal counsel confirms before go-live.")</div></div>
+            </div>
+
+            <form id="rulesForm" asp-action="SaveHrRules" method="post" data-cb-confirm data-cb-action="generic" data-cb-text="@L("حفظ قواعد الشركة؟ تنطبق على الحسابات من الآن.", "Save the company's rules? They apply to calculations from now on.")">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="countryCode" value="@Model.Pack.CountryCode" />
+                <input type="hidden" name="Currency" value="@r.Currency" />
+
+                @* ── Leave ── *@
+                <div class="card mb-5">
+                    <div class="card-header border-0 pt-6"><div class="card-title"><span class="fw-bold text-gray-900 fs-4">@L("الإجازات", "Leave")</span></div>
+                        @if (Model.CanEdit) { <div class="card-toolbar"><button type="button" class="btn btn-sm btn-light-primary" data-rp-add="leave"><i class="ki-outline ki-plus fs-4"></i>@L("نوع إجازة", "Leave type")</button></div> }</div>
+                    <div class="card-body pt-4"><div class="table-responsive">
+                        <table class="table align-top gy-3 mb-0 hr-table">
+                            <thead><tr class="fw-bold fs-8 text-uppercase text-muted"><th class="ps-4" style="min-width:170px">@L("النوع", "Type")</th><th>@L("أيام", "Days")</th><th style="min-width:280px">@L("القاعدة", "Rule")</th><th>@L("شروط الاستحقاق", "Eligibility")</th><th style="min-width:150px">@L("المرجع", "Reference")</th><th class="pe-4"></th></tr></thead>
+                            <tbody class="fs-6" data-rp-body="leave">@for (int i = 0; i < r.Leave.Count; i++) { LeaveRow("l" + i, r.Leave[i]); }</tbody>
+                        </table>
+                    </div></div>
+                </div>
+
+                <div class="row g-5 mb-5">
+                    @* ── Gratuity ── *@
+                    <div class="col-xl-6">
+                        <div class="card h-100">
+                            <div class="card-header border-0 pt-6"><div class="card-title"><span class="fw-bold text-gray-900 fs-4">@L("مكافأة نهاية الخدمة", "End-of-service gratuity")</span></div></div>
+                            <div class="card-body pt-4">
+                                <table class="table align-middle gy-3 mb-0 hr-table"><tbody class="fs-6">
+                                    <tr><td class="ps-4">@L("سنوات الشريحة الأولى", "Years in the first tier")</td><td class="pe-4 text-end">@{ Num("Gratuity.FirstYears", r.Gratuity.FirstYears, L("سنة", "yrs")); }</td></tr>
+                                    <tr><td class="ps-4">@L("أيام عن كل سنة في الشريحة الأولى", "Days per year in the first tier")</td><td class="pe-4 text-end">@{ Num("Gratuity.FirstDaysPerYear", r.Gratuity.FirstDaysPerYear, L("يوم", "days")); }</td></tr>
+                                    <tr><td class="ps-4">@L("أيام عن كل سنة بعدها", "Days per year thereafter")</td><td class="pe-4 text-end">@{ Num("Gratuity.LaterDaysPerYear", r.Gratuity.LaterDaysPerYear, L("يوم", "days")); }</td></tr>
+                                    <tr><td class="ps-4">@L("السقف (٠ = بلا سقف)", "Cap (0 = none)")</td><td class="pe-4 text-end">@{ Num("Gratuity.CapMonths", r.Gratuity.CapMonths, L("شهراً", "months")); }</td></tr>
+                                    <tr><td class="ps-4">@L("أيام الأجر في الشهر", "Wage days per month")</td><td class="pe-4 text-end">@{ Num("WageDaysPerMonth", r.WageDaysPerMonth, L("يوم", "days")); }</td></tr>
+                                    <tr><td class="ps-4">@L("ساعات العمل في اليوم", "Working hours per day")</td><td class="pe-4 text-end">@{ Num("HoursPerDay", r.HoursPerDay, L("ساعة", "h")); }</td></tr>
+                                    <tr><td class="ps-4">@L("أساس الأجر للمكافأة والعمل الإضافي", "Wage basis for gratuity and overtime")</td><td class="pe-4 text-end">
+                                        <select name="WageBasis" class="form-select form-select-solid form-select-sm w-auto d-inline-block" @ro>
+                                            <option value="total" selected="@(!CrossBuy.BL.Hr.HrRules.IsBasic(r))">@L("الأجر الشامل (أساسي + بدلات)", "Total wage (basic + allowances)")</option>
+                                            <option value="basic" selected="@CrossBuy.BL.Hr.HrRules.IsBasic(r)">@L("الأجر الأساسي فقط", "Basic wage only")</option>
+                                        </select></td></tr>
+                                    <tr><td class="ps-4">@L("المرجع", "Reference")</td><td class="pe-4">@{ Txt("Gratuity.Reference", r.Gratuity.Reference); }<div class="mt-2 d-flex justify-content-end">@{ Counsel("Gratuity.Counsel", r.Gratuity.Counsel); }</div></td></tr>
+                                </tbody></table>
+                            </div>
+                        </div>
+                    </div>
+                    @* ── Resignation ── *@
+                    <div class="col-xl-6">
+                        <div class="card h-100">
+                            <div class="card-header border-0 pt-6"><div class="card-title"><span class="fw-bold text-gray-900 fs-4">@L("المكافأة عند الاستقالة", "Gratuity on resignation")</span></div>
+                                @if (Model.CanEdit) { <div class="card-toolbar"><button type="button" class="btn btn-sm btn-light-primary" data-rp-add="tier"><i class="ki-outline ki-plus fs-4"></i>@L("شريحة", "Tier")</button></div> }</div>
+                            <div class="card-body pt-4">
+                                <table class="table align-middle gy-3 mb-0 hr-table">
+                                    <thead><tr class="fw-bold fs-8 text-uppercase text-muted"><th class="ps-4">@L("مدة الخدمة (سنوات)", "Service (years)")</th><th>@L("يُصرف", "Paid")</th><th class="pe-4"></th></tr></thead>
+                                    <tbody class="fs-6" data-rp-body="tier">@for (int i = 0; i < r.Resignation.Count; i++) { TierRow("t" + i, r.Resignation[i]); }</tbody>
+                                </table>
+                                <div class="d-flex gap-3 align-items-center mt-4">@{ Txt("ResignationReference", r.ResignationReference, L("المرجع", "Reference"), "w-200px"); Counsel("ResignationCounsel", r.ResignationCounsel); }</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-5 mb-5">
+                    @* ── Overtime, loans, weekend ── *@
+                    <div class="col-xl-5">
+                        <div class="card h-100">
+                            <div class="card-header border-0 pt-6"><div class="card-title"><span class="fw-bold text-gray-900 fs-4">@L("العمل الإضافي والاستقطاع", "Overtime and deductions")</span></div></div>
+                            <div class="card-body pt-4">
+                                <table class="table align-middle gy-3 mb-0 hr-table"><tbody class="fs-6">
+                                    <tr><td class="ps-4">@L("يوم عمل", "Working day")</td><td class="pe-4 text-end">@{ Num("Overtime.WorkingDayPct", r.Overtime.WorkingDayPct, "%"); }</td></tr>
+                                    <tr><td class="ps-4">@L("يوم الراحة", "Rest day")</td><td class="pe-4 text-end">@{ Num("Overtime.RestDayPct", r.Overtime.RestDayPct, "%"); }</td></tr>
+                                    <tr><td class="ps-4">@L("عطلة رسمية", "Official holiday")</td><td class="pe-4 text-end">@{ Num("Overtime.HolidayPct", r.Overtime.HolidayPct, "%"); }</td></tr>
+                                    <tr><td class="ps-4">@L("السقف اليومي", "Daily cap")</td><td class="pe-4 text-end">@{ Num("Overtime.DailyCapHours", r.Overtime.DailyCapHours, L("ساعة", "h")); }</td></tr>
+                                    <tr><td class="ps-4">@L("السقف السنوي (٠ = بلا سقف)", "Yearly cap (0 = none)")</td><td class="pe-4 text-end">@{ Num("Overtime.YearlyCapHours", r.Overtime.YearlyCapHours, L("ساعة", "h")); }</td></tr>
+                                    <tr><td class="ps-4">@L("يُصرف بعد الاعتماد", "Paid only once approved")</td><td class="pe-4 text-end"><label class="form-check form-switch form-check-custom form-check-solid justify-content-end"><input class="form-check-input" type="checkbox" name="Overtime.RequiresApproval" value="true" @(r.Overtime.RequiresApproval ? "checked" : "") @ro /><input type="hidden" name="Overtime.RequiresApproval" value="false" /></label></td></tr>
+                                    <tr><td class="ps-4">@L("المرجع", "Reference")</td><td class="pe-4">@{ Txt("Overtime.Reference", r.Overtime.Reference); }<div class="mt-2 d-flex justify-content-end">@{ Counsel("Overtime.Counsel", r.Overtime.Counsel); }</div></td></tr>
+                                    <tr><td class="ps-4">@L("سقف قسط القرض من الأجر", "Loan instalment cap of wage")</td><td class="pe-4 text-end">@{ Num("LoanCapPct", r.LoanCapPct, "%"); }</td></tr>
+                                    <tr><td class="ps-4">@L("مرجع القرض", "Loan reference")</td><td class="pe-4">@{ Txt("LoanReference", r.LoanReference); }</td></tr>
+                                </tbody></table>
+                                <div class="mt-5">
+                                    <div class="fw-semibold mb-2">@L("عطلة نهاية الأسبوع", "Weekend")</div>
+                                    <div class="d-flex flex-wrap gap-3">
+                                        @foreach (var d in days) { <label class="form-check form-check-sm form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" name="Weekend" value="@d" @(r.Weekend.Contains(d.ToString()) ? "checked" : "") @ro /><span class="form-check-label">@(isAr ? dayAr[d] : d.ToString())</span></label> }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    @* ── Social insurance ── *@
+                    <div class="col-xl-7">
+                        <div class="card h-100">
+                            <div class="card-header border-0 pt-6"><div class="card-title"><span class="fw-bold text-gray-900 fs-4">@L("التأمينات الاجتماعية", "Social insurance")</span></div>
+                                @if (Model.CanEdit) { <div class="card-toolbar"><button type="button" class="btn btn-sm btn-light-primary" data-rp-add="ins"><i class="ki-outline ki-plus fs-4"></i>@L("بند", "Line")</button></div> }</div>
+                            <div class="card-body pt-4"><div class="table-responsive">
+                                <table class="table align-top gy-3 mb-0 hr-table">
+                                    <thead><tr class="fw-bold fs-8 text-uppercase text-muted"><th class="ps-4" style="min-width:170px">@L("البند", "Item")</th><th>@L("يشمل", "Covers")</th><th>@L("الموظف", "Employee")</th><th>@L("صاحب العمل", "Employer")</th><th>@L("سقف الأجر", "Wage cap")</th><th class="pe-4"></th></tr></thead>
+                                    <tbody class="fs-6" data-rp-body="ins">@for (int i = 0; i < r.Insurance.Count; i++) { InsRow("i" + i, r.Insurance[i]); }</tbody>
+                                </table>
+                            </div>
+                            <div class="d-flex align-items-center gap-3 mt-4">
+                                <span class="fw-semibold fs-7 text-nowrap">@L("المواطنون هم من جنسيتهم", "Nationals are those whose nationality is")</span>
+                                @{ Txt("NationalCountryName", r.NationalCountryName, "Kuwait", "w-200px"); }
+                                <span class="text-muted fs-8">@L("كما في جدول الدول (بالإنجليزية)", "as in the countries list (English)")</span>
+                            </div></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-5">
+                    <div class="card-header border-0 pt-6"><div class="card-title"><span class="fw-bold text-gray-900 fs-4">@L("ملاحظات الحزمة", "Pack notes")</span></div></div>
+                    <div class="card-body pt-2"><textarea name="Notes" rows="2" class="form-control form-control-solid" placeholder="@L("مثال: المكافأة تُحسب على الأجر الأساسي", "e.g. the gratuity is computed on the basic wage")" @ro>@r.Notes</textarea></div>
+                </div>
+            </form>
+
+            @* Row templates for "add" (the key placeholder __K__ becomes a fresh unique key). *@
+            <template id="rp-tpl-leave"><table><tbody>@{ LeaveRow("__K__", new CrossBuy.BL.Hr.HrLeaveRule()); }</tbody></table></template>
+            <template id="rp-tpl-tier"><table><tbody>@{ TierRow("__K__", new CrossBuy.BL.Hr.HrResignationTier()); }</tbody></table></template>
+            <template id="rp-tpl-ins"><table><tbody>@{ InsRow("__K__", new CrossBuy.BL.Hr.HrInsuranceRule()); }</tbody></table></template>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+(function () {
+    // Add a row from its template with a fresh key (ASP.NET binds non-sequential rows through the ".Index" field).
+    document.querySelectorAll('[data-rp-add]').forEach(function (b) {
+        b.addEventListener('click', function () {
+            var kind = b.getAttribute('data-rp-add');
+            var src = document.getElementById('rp-tpl-' + kind).content.querySelector('tr');
+            var html = src.outerHTML.split('__K__').join('n' + Date.now());
+            var holder = document.createElement('tbody'); holder.innerHTML = html;
+            var row = holder.querySelector('tr');
+            document.querySelector('[data-rp-body="' + kind + '"]').appendChild(row);
+            var first = row.querySelector('input[type=text], input[type=number]'); if (first) first.focus();
+        });
+    });
+    // Remove a row (delegated: added rows are removable too). The save asks first, so nothing is lost by a stray click.
+    document.addEventListener('click', function (ev) {
+        var del = ev.target.closest && ev.target.closest('[data-rp-del]'); if (!del) return;
+        var row = del.closest('[data-rp-row]'); if (row) row.remove();
+    });
+})();
+</script>
+}

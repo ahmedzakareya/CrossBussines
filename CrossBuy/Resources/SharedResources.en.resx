@@ -1899,4 +1899,34 @@
   <data name="AdministratorFullNameEn" xml:space="preserve"><value>Administrator name (English)</value></data>
   <data name="TemporaryPassword" xml:space="preserve"><value>Temporary password</value></data>
   <data name="AdministratorCredentialsOnce" xml:space="preserve"><value>Hand these to the administrator now. The password is shown once and cannot be recovered afterwards — only reset.</value></data>
+  <data name="Country rule pack" xml:space="preserve">
+    <value>Country rule pack</value>
+  </data>
+  <data name="Every resignation tier needs a paid percentage between 0 and 100" xml:space="preserve">
+    <value>Every resignation tier needs a paid percentage between 0 and 100</value>
+  </data>
+  <data name="Follow-up tasks created: {0} (already tracked: {1})" xml:space="preserve">
+    <value>Follow-up tasks created: {0} (already tracked: {1})</value>
+  </data>
+  <data name="Leave days must be between 0 and 400" xml:space="preserve">
+    <value>Leave days must be between 0 and 400</value>
+  </data>
+  <data name="Loans &amp; advances" xml:space="preserve">
+    <value>Loans &amp; advances</value>
+  </data>
+  <data name="No country rule pack is installed. Apply hr_rule_packs.sql." xml:space="preserve">
+    <value>No country rule pack is installed. Apply hr_rule_packs.sql.</value>
+  </data>
+  <data name="Overtime approval" xml:space="preserve">
+    <value>Overtime approval</value>
+  </data>
+  <data name="Overtime figures are out of range" xml:space="preserve">
+    <value>Overtime figures are out of range</value>
+  </data>
+  <data name="Rules saved" xml:space="preserve">
+    <value>Rules saved</value>
+  </data>
+  <data name="The loan cap must be between 0 and 100" xml:space="preserve">
+    <value>The loan cap must be between 0 and 100</value>
+  </data>
 </root>

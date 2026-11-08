@@ -1,0 +1,47 @@
+@*
+    THE PERSON PICKER, shared by every module (promoted from Views/Hospital/_HospitalPersonSelect.cshtml on 2026-11-08,
+    owner: "add the employee's photo" to the HR pickers; one implementation, not a copy per module).
+    A person is shown with their photo, never a bare name (the owner's rule) — in a select2 picker too.
+    Any <select data-person-select> whose options carry data-photo (a web path) and data-initials becomes a
+    select2 whose list and chosen value show the photo, or the initials when there is none. The select keeps its
+    value and its change events. Include once per page: @await Html.PartialAsync("_PersonSelect")
+*@
+<style>
+    .hp-person-opt { display: flex; align-items: center; gap: .6rem; }
+    .hp-person-opt .hp-av { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+    .hp-person-opt .hp-av-i { width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; font-size: .7rem; font-weight: 700; background: var(--cb-blue-50, #E7F0FF); color: #145DBF; }
+</style>
+<script>
+    (function () {
+        if (window.hpPersonSelect) return;
+        function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+        function render(o) {
+            if (!o.id || (!o.element && o.initials == null)) return o.text;
+            // a static option carries data-photo / data-initials; a searched one (data-person-ajax) carries photo / initials
+            var photo = o.photo !== undefined ? o.photo : o.element.getAttribute('data-photo'), ini = (o.initials !== undefined ? o.initials : o.element.getAttribute('data-initials')) || '';
+            var av = photo ? '<img class="hp-av" src="' + esc(photo) + '" alt="" />' : '<span class="hp-av-i">' + esc(ini) + '</span>';
+            var el = $('<span class="hp-person-opt">' + av + '<span>' + esc(o.text) + '</span></span>');
+            // a photo that cannot be served (moved, or not readable here) falls back to the initials, never a broken image
+            el.find('img.hp-av').on('error', function () { $(this).replaceWith('<span class="hp-av-i">' + esc(ini) + '</span>'); });
+            return el;
+        }
+        window.hpPersonSelect = function (root) {
+            if (!window.$ || !$.fn.select2) return;
+            (root || document).querySelectorAll('select[data-person-select]').forEach(function (s) {
+                if ($(s).data('select2')) $(s).select2('destroy');
+                var modal = s.closest('.modal'), url = s.getAttribute('data-person-ajax');
+                var o = { width: '100%', dir: document.documentElement.dir === 'rtl' ? 'rtl' : 'ltr', templateResult: render, templateSelection: render,
+                    dropdownParent: modal ? $(modal) : $(document.body), placeholder: s.getAttribute('data-placeholder') || '', allowClear: s.hasAttribute('data-allow-clear') };
+                // data-person-ajax="url": the list opens with the first page and narrows as one types (results: id, text, photo, initials)
+                if (url) {
+                    o.minimumInputLength = 0;
+                    o.ajax = { url: url, delay: 250, data: function (p) { return { q: p.term }; }, processResults: function (d) { return { results: d.results || [] }; } };
+                    o.language = { searching: function () { return s.getAttribute('data-searching') || '…'; }, noResults: function () { return s.getAttribute('data-no-results') || '—'; } };
+                }
+                $(s).select2(o);
+            });
+        };
+        document.addEventListener('DOMContentLoaded', function () { window.hpPersonSelect(); });
+        if (document.readyState !== 'loading') window.hpPersonSelect();
+    })();
+</script>

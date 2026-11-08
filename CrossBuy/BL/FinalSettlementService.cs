@@ -16,6 +16,17 @@ namespace CrossBuy.BL
 		public decimal LeaveValue { get; set; }
 		public decimal GratuityDaysPerYear { get; set; }
 		public decimal SuggestedGratuity { get; set; }
+
+		// ---- the country rule pack's gratuity (2026-11-08) — present when a pack is installed ----
+		public string? RulePackNameAr { get; set; }
+		public string? RulePackNameEn { get; set; }
+		public decimal MonthlyWage { get; set; }
+		public bool WageIsBasic { get; set; }   // the pack computes on the basic wage (not basic + allowances)
+		public CrossBuy.BL.Hr.HrGratuityResult? ByLaw { get; set; }
+		public CrossBuy.BL.Hr.HrGratuityRule? GratuityRule { get; set; }
+		public string? Currency { get; set; }
+		/// HR4: what the employee still owes on loans and advances — recovered from the settlement automatically.
+		public decimal OutstandingLoans { get; set; }
 	}
 
 	public interface IFinalSettlementService
@@ -80,6 +91,26 @@ namespace CrossBuy.BL
 			var settings = await _context.PayrollSettings.AsNoTracking().FirstOrDefaultAsync(s => s.CompanyID == companyId);
 			pv.GratuityDaysPerYear = settings?.GratuityDaysPerYear ?? 0m;
 			pv.SuggestedGratuity = R(pv.ServiceYears * pv.GratuityDaysPerYear * pv.DailyRate);
+
+			// THE COUNTRY RULE PACK (owner ruling 2026-11-08: every legal figure is a setting per country). When the company
+			// runs on a pack, the suggestion is the statutory gratuity on termination by the employer — tiers and cap from
+			// the pack — and the resignation figure is shown beside it. The amount stays editable at posting, as before.
+			// The monthly wage is the same total LeaveAccrualService.DailyRateAsync divides by 30, read exactly here so the
+			// gratuity carries no rounding from the daily figure.
+			var eff = await new CrossBuy.BL.Hr.HrRulePackService(_context).EffectiveAsync(companyId);
+			if (eff is { } pack)
+			{
+				// HR4: the last pay in force (the employee's own salary, else the policy's) on the termination date
+				var pay = await new CrossBuy.BL.Hr.HrSalaryService(_context).ForAsync(employeeId, terminationDate);
+				pv.MonthlyWage = CrossBuy.BL.Hr.HrRules.IsBasic(pack.Rules) ? pay.Basic : pay.Total;   // the pack's wage basis
+				pv.WageIsBasic = CrossBuy.BL.Hr.HrRules.IsBasic(pack.Rules);
+				pv.ByLaw = CrossBuy.BL.Hr.HrGratuity.Compute(pack.Rules, (decimal)Math.Max(0, years), pv.MonthlyWage);
+				pv.GratuityRule = pack.Rules.Gratuity;
+				pv.RulePackNameAr = pack.Pack.NameAr; pv.RulePackNameEn = pack.Pack.NameEn; pv.Currency = pack.Rules.Currency;
+				if (pv.MonthlyWage > 0) pv.SuggestedGratuity = R(pv.ByLaw.OnTermination);
+			}
+			pv.OutstandingLoans = (await new CrossBuy.BL.Hr.HrLoanService(_context).ListAsync(companyId, employeeId))
+				.Where(r => r.Loan.Status == "Active").Sum(r => r.Outstanding);
 			return pv;
 		}
 
@@ -94,7 +125,12 @@ namespace CrossBuy.BL
 			var pv = await PreviewAsync(companyId, employeeId, terminationDate);
 			var leaveValue = pv.LeaveValue;
 			var gross = R(leaveValue + gratuity + otherEarnings);
-			var net = R(gross - deductions);
+			// HR4: outstanding loans are recovered from what is left after the other deductions (the rest stays owed)
+			var loanRows = (await new CrossBuy.BL.Hr.HrLoanService(_context).ListAsync(companyId, employeeId)).Where(r => r.Loan.Status == "Active" && r.Outstanding > 0).OrderBy(r => r.Loan.ID).ToList();
+			var loanRecovery = R(Math.Max(0, Math.Min(loanRows.Sum(r => r.Outstanding), gross - deductions)));
+			var loanAcc = loanRecovery > 0 ? await new CrossBuy.BL.Hr.HrLoanService(_context).LoanAccountAsync(companyId) : null;
+			if (loanRecovery > 0 && loanAcc == null) return (false, "The posting rule Payroll / EmployeeLoans is not defined, so the outstanding loans cannot be recovered.");
+			var net = R(gross - deductions - loanRecovery);
 			if (net < 0) return (false, "The deductions exceed the total entitlements");
 
 			var leaveAcc = await AccIdAsync(companyId, "520104");
@@ -112,6 +148,7 @@ namespace CrossBuy.BL
 			if (net > 0) lines.Add(new() { AccountId = payFromGlAccountId, Debit = 0, Credit = net, Description = "Net settlement paid" });
 			// deductions recovered against salary expense (keeps the entry balanced without a new control account)
 			if (deductions > 0) lines.Add(new() { AccountId = salaryAcc.Value, Debit = 0, Credit = deductions, CostCenterId = ccId, Description = "End-of-service deductions" });
+			if (loanRecovery > 0) lines.Add(new() { AccountId = loanAcc!.Value, Debit = 0, Credit = loanRecovery, Description = "Outstanding employee loans recovered" });
 
 			if (lines.Sum(l => l.Debit) <= 0) return (false, "There are no entitlements to post");
 
@@ -125,6 +162,21 @@ namespace CrossBuy.BL
 				Lines = lines,
 			}, userId);
 			if (!ok) return (false, err);
+
+			// HR4: the loans the settlement repaid, oldest first; a loan it finishes is Settled
+			if (loanRecovery > 0)
+			{
+				var left = loanRecovery; var y = terminationDate.Year; var m = terminationDate.Month;
+				foreach (var r in loanRows)
+				{
+					if (left <= 0) break;
+					var take = Math.Min(r.Outstanding, left); left -= take;
+					var existing = await _context.EmployeeLoanDeductions.FirstOrDefaultAsync(d => d.LoanID == r.Loan.ID && d.Year == y && d.Month == m);
+					if (existing != null) existing.Amount += take;   // the month's payroll already took an instalment: one row per loan per month
+					else _context.EmployeeLoanDeductions.Add(new EmployeeLoanDeduction { CompanyID = companyId, LoanID = r.Loan.ID, Year = y, Month = m, Amount = take, JournalEntryId = entry?.ID, CreatedAt = DateTime.UtcNow });
+					if (take >= r.Outstanding) { var l = await _context.EmployeeLoans.FirstAsync(x => x.ID == r.Loan.ID); l.Status = "Settled"; }
+				}
+			}
 
 			// record leave payout so the balance reflects it (linked to the settlement entry)
 			var balances = await _leave.GetEncashableBalancesAsync(employeeId);

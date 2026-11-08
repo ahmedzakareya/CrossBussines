@@ -63,7 +63,14 @@ namespace CrossBuy.BL.Platform
         // sometimes a leading slash and sometimes not — and every screen that shows one has to
         // normalise it. Refuses anything that is not a relative path under the site, so a column
         // holding an absolute URL cannot turn an avatar into an off-site request.
-        private static string? Web(string? stored)
+        //
+        // PUBLIC, for the callers that already hold a company-scoped employee row. ResolveAsync exists
+        // so the TENANCY PREDICATE is written once; a reader that has already applied the same
+        // `EmpCompanyID == companyId` filter in its own query (the calendar timeline builds its whole
+        // grid from one) would otherwise have to choose between a second round trip for photos it has
+        // already read, or its own copy of this normalisation. The predicate is the part that must not
+        // be duplicated — this is not it.
+        public static string? Web(string? stored)
         {
             if (string.IsNullOrWhiteSpace(stored)) return null;
 

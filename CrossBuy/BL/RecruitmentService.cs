@@ -57,7 +57,15 @@ namespace CrossBuy.BL
 	public class RecruitmentService : IRecruitmentService
 	{
 		private readonly CrossDbContext _db;
-		public RecruitmentService(CrossDbContext db) { _db = db; }
+		private readonly CrossBuy.BL.Documents.IPlatformDocumentService? _docs;
+		private readonly CrossBuy.BL.Platform.IDocumentStorage? _storage;
+		// The platform services are optional so a one-argument construction still compiles; the container always supplies
+		// them, and without them no file is stored at all (never a local fallback).
+		public RecruitmentService(CrossDbContext db, CrossBuy.BL.Documents.IPlatformDocumentService? docs = null, CrossBuy.BL.Platform.IDocumentStorage? storage = null)
+		{ _db = db; _docs = docs; _storage = storage; }
+		private CrossBuy.BL.Hr.HrFileStore Files => _docs != null && _storage != null
+			? new CrossBuy.BL.Hr.HrFileStore(_db, _docs, _storage)
+			: throw new InvalidOperationException("The File Manager is not available, so the file was not stored.");
 
 		public Task<List<RequiredDocumentType>> GetDocTypesAsync(int companyId, bool activeOnly = false) =>
 			_db.RequiredDocumentTypes.AsNoTracking()
@@ -201,15 +209,10 @@ namespace CrossBuy.BL
 				if (prev.Count > 0) { _db.ApplicationDocuments.RemoveRange(prev); await _db.SaveChangesAsync(); }
 			}
 
-			string? path = null;
-			if (!string.IsNullOrEmpty(webRootPath))
-			{
-				var dir = Path.Combine(webRootPath, "uploads", "hr-docs");
-				if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
-				var name = Guid.NewGuid() + Path.GetExtension(file.FileName);
-				using (var s = File.Create(Path.Combine(dir, name))) await file.CopyToAsync(s);
-				path = "/uploads/hr-docs/" + name;
-			}
+			// The File Manager, on the application (owner rule: every file lives there; nothing under wwwroot).
+			string? path, ferr;
+			using (var fs = file.OpenReadStream()) (path, ferr) = await Files.StoreApplicantFileAsync(appId, false, file.FileName, fs, file.Length);
+			if (path == null) return (false, ferr ?? "The file could not be stored");
 			_db.ApplicationDocuments.Add(new ApplicationDocument
 			{
 				ApplicationID = appId, RequiredDocumentTypeID = reqTypeId, DocType = docType,
@@ -227,15 +230,7 @@ namespace CrossBuy.BL
 				.FirstOrDefaultAsync(d => d.ID == docId && d.Application!.CompanyID == companyId);
 			if (doc == null) return (false, "Document not found", 0);
 			int appId = doc.ApplicationID;
-			try
-			{
-				if (!string.IsNullOrEmpty(webRootPath) && !string.IsNullOrEmpty(doc.FilePath))
-				{
-					var full = Path.Combine(webRootPath, doc.FilePath.TrimStart('/', '\\').Replace('/', Path.DirectorySeparatorChar));
-					if (File.Exists(full)) File.Delete(full);
-				}
-			}
-			catch { /* ignore fs errors */ }
+			// The row goes; the File Manager keeps the document as the application's history (the platform has no delete).
 			_db.ApplicationDocuments.Remove(doc);
 			await _db.SaveChangesAsync();
 			return (true, null, appId);
@@ -249,23 +244,44 @@ namespace CrossBuy.BL
 			if (app.Status == "Hired" || app.HiredEmployeeID != null) return (false, "The application has already been hired");
 			if (employeeId <= 0) return (false, "Invalid employee");
 
-			// carry the applicant photo onto the new employee if HR didn't upload a different one during the wizard
-			if (!string.IsNullOrWhiteSpace(app.PhotoPath))
+			// The applicant's files are COPIED onto the new employee in the File Manager: the employee owns their own
+			// documents (read under employee-view), and the application keeps its originals as its history.
+			var files = Files;
+
+			// the photo, if HR didn't upload a different one during the wizard
+			if (CrossBuy.BL.Hr.HrFileStore.DocumentIdOf(app.PhotoPath) is long photoDoc)
 			{
-				var emp = await _db.Employee.FirstOrDefaultAsync(e => e.ID == employeeId);
-				if (emp != null && string.IsNullOrWhiteSpace(emp.ProfileImage)) emp.ProfileImage = app.PhotoPath;
+				var emp = await _db.Employee.FirstOrDefaultAsync(e => e.ID == employeeId && e.EmpCompanyID == companyId);
+				if (emp != null && string.IsNullOrWhiteSpace(emp.ProfileImage) && await files.OpenCurrentBytesAsync(companyId, photoDoc) is { } p)
+				{
+					using var buf = new MemoryStream();
+					await using (p.Content) await p.Content.CopyToAsync(buf);
+					buf.Position = 0;
+					var (url, _) = await files.StorePhotoAsync(companyId, employeeId, buf, buf.Length);
+					if (url != null) emp.ProfileImage = url;
+				}
 			}
 
-			// carry each application document into the employee's HR vault (same physical file; EmployeeDocument references it)
+			// each document into the employee's HR vault
 			var docs = await _db.ApplicationDocuments.AsNoTracking().Where(d => d.ApplicationID == appId).ToListAsync();
 			foreach (var d in docs)
+			{
+				string? copied = null;
+				if (CrossBuy.BL.Hr.HrFileStore.DocumentIdOf(d.FilePath) is long srcDoc && await files.OpenCurrentBytesAsync(companyId, srcDoc) is { } f)
+				{
+					using var buf = new MemoryStream();
+					await using (f.Content) await f.Content.CopyToAsync(buf);
+					buf.Position = 0;
+					(copied, _) = await files.StoreScanAsync(employeeId, d.FileName ?? f.FileName, buf, buf.Length, "Carried from the job application on hire");
+				}
 				_db.EmployeeDocuments.Add(new EmployeeDocument
 				{
 					CompanyID = companyId, EmployeeID = employeeId,
 					DocType = string.IsNullOrWhiteSpace(d.DocType) ? "Other" : d.DocType,
-					DocNumber = d.DocNumber, FilePath = d.FilePath,
+					DocNumber = d.DocNumber, FilePath = copied,
 					IssueDate = d.IssueDate, ExpiryDate = d.ExpiryDate, CreatedAt = DateTime.UtcNow
 				});
+			}
 
 			app.HiredEmployeeID = employeeId; app.HiredAt = DateTime.UtcNow; app.Status = "Hired"; app.UpdatedAt = DateTime.UtcNow;
 			await _db.SaveChangesAsync();

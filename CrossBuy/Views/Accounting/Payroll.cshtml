@@ -94,6 +94,7 @@
                                         <th class="text-end">@Localizer["Gross"]</th>
                                         <th class="text-end">@Localizer["SI (emp)"]</th>
                                         <th class="text-end">@SR["Tax"]</th>
+                                        <th class="text-end">@(isAr ? "أقساط القروض" : "Loan instalments")</th>
                                         <th class="text-end">@Localizer["Net"]</th>
                                     </tr>
                                 </thead>
@@ -106,6 +107,7 @@
                                             <td class="text-end text-gray-800">@e.Gross.ToString("N2")</td>
                                             <td class="text-end text-muted">@e.SiEmployee.ToString("N2")</td>
                                             <td class="text-end text-muted">@e.Tax.ToString("N2")</td>
+                                            <td class="text-end text-muted">@(e.LoanDeduction > 0 ? e.LoanDeduction.ToString("N2") : "—")</td>
                                             <td class="text-end fw-bold text-gray-900">@e.Net.ToString("N2")</td>
                                         </tr>
                                     }
@@ -116,6 +118,7 @@
                                         <td class="text-end text-primary">@Model.TotalGross.ToString("N2")</td>
                                         <td class="text-end text-primary">@Model.TotalSiEmployee.ToString("N2")</td>
                                         <td class="text-end text-primary">@Model.TotalTax.ToString("N2")</td>
+                                        <td class="text-end text-primary">@Model.TotalLoanDeduction.ToString("N2")</td>
                                         <td class="text-end text-primary">@Model.TotalNet.ToString("N2")</td>
                                     </tr>
                                 </tfoot>

@@ -86,6 +86,22 @@ namespace CrossBuy.BL.Documents
                                     summary.Truncated
                                         ? $" — CAPPED at {DocumentExpiryProjection.MaxPerRun}; the remainder is picked up next run"
                                         : string.Empty);
+
+                            // HR2 (2026-11-08): the HR tables' expiring documents and contracts, by the same design
+                            // (one task per instrument and expiry date, due on the expiry). Its own try: an HR fault
+                            // must not cost the platform documents their run, nor the reverse.
+                            try
+                            {
+                                var hr = ActivatorUtilities.CreateInstance<CrossBuy.BL.Hr.HrExpiryFollowUp>(scope.ServiceProvider);
+                                var hrSummary = await hr.RunAsync(companyId, stoppingToken);
+                                if (hrSummary.TasksCreated > 0)
+                                    _log.LogInformation("HR document expiry, company {CompanyId}: {Created} task(s) created of {Examined}",
+                                        companyId, hrSummary.TasksCreated, hrSummary.Examined);
+                            }
+                            catch (Exception ex) when (ex is not OperationCanceledException)
+                            {
+                                _log.LogError(ex, "HR document expiry follow-up failed for company {CompanyId}", companyId);
+                            }
                         },
                         stoppingToken);
                 }

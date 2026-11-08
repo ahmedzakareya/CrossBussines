@@ -11,6 +11,10 @@
 	var ctx = ctxJson != null ? JsonSerializer.Deserialize<PosAppController.PosCtx>(ctxJson) : null;
 	var uName = isAr ? (ctx?.EmployeeName ?? "") : (string.IsNullOrWhiteSpace(ctx?.EmployeeNameEn) ? ctx?.EmployeeName : ctx?.EmployeeNameEn);
 	var photo = !string.IsNullOrWhiteSpace(ctx?.EmployeePhoto) ? Url.Content("~" + ctx!.EmployeePhoto.Replace("\\", "/")) : Url.Content("~/Backend-assets/media/svg/avatars/blank.svg");
+	// (2026-11-08) the POS context is written at sign-in, so a session older than the photo move still holds an /uploads path
+	// that is gone: anything that is not already the photo route or a theme avatar is asked of /People/Photo/{id}.
+	if (ctx != null && !string.IsNullOrWhiteSpace(ctx.EmployeePhoto) && !ctx.EmployeePhoto.Replace("\\", "/").StartsWith("/People/Photo/") && !ctx.EmployeePhoto.Replace("\\", "/").StartsWith("/Backend-assets/") && ctx.EmployeeId > 0)
+		photo = Url.Content("~/People/Photo/" + ctx.EmployeeId);
 }
 <!DOCTYPE html>
 <html lang="@Thread.CurrentThread.CurrentCulture.TwoLetterISOLanguageName" dir="@(Thread.CurrentThread.CurrentCulture.TextInfo.IsRightToLeft ? "rtl" : "ltr")">
@@ -79,13 +83,13 @@
 									<span class="fw-bold fs-7 text-gray-800">@uName</span>
 									<span class="fw-semibold fs-8 text-muted mt-1">@(isAr ? "الكاشير" : "Cashier")</span>
 								</span>
-								<div class="symbol symbol-circle symbol-40px"><img src="@photo" alt="user" /></div>
+								<div class="symbol symbol-circle symbol-40px"><img src="@photo" alt="user" onerror="this.onerror=null;this.src='@Url.Content("~/Backend-assets/media/svg/avatars/blank.svg")'" /></div>
 							</div>
 							<!--begin::User account menu-->
 							<div class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-800 menu-state-bg menu-state-color fw-semibold py-4 fs-6 w-250px" data-kt-menu="true">
 								<div class="menu-item px-3">
 									<div class="menu-content d-flex align-items-center px-3">
-										<div class="symbol symbol-50px me-5"><img alt="user" src="@photo" /></div>
+										<div class="symbol symbol-50px me-5"><img alt="user" src="@photo" onerror="this.onerror=null;this.src='@Url.Content("~/Backend-assets/media/svg/avatars/blank.svg")'" /></div>
 										<div class="d-flex flex-column">
 											<div class="fw-bold fs-5">@uName</div>
 											<span class="fw-semibold text-muted fs-7">@ctx?.BranchName</span>

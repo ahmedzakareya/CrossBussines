@@ -22,6 +22,7 @@ namespace CrossBuy.Models.Context.Admin
 		public decimal SiCompany { get; set; }
 		public decimal Tax { get; set; }
 		public decimal Net { get; set; }
+		public decimal LoanDeduction { get; set; }       // HR4: loan/advance instalments taken by this payslip
 		public int? JournalEntryId { get; set; }
 		public DateTime? CreatedAt { get; set; }
 	}

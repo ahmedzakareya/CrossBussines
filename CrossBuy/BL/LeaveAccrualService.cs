@@ -62,11 +62,9 @@ namespace CrossBuy.BL
 
 		public async Task<decimal> DailyRateAsync(int employeeId)
 		{
-			var assignment = await _context.PolicyAssignments.AsNoTracking().FirstOrDefaultAsync(p => p.EmployeeID == employeeId);
-			if (assignment == null) return 0m;
-			var sp = await _context.SalaryPolicies.AsNoTracking().FirstOrDefaultAsync(s => s.LeavePolicyTypeID == assignment.LeavePolicyTypeID);
-			if (sp == null) return 0m;
-			var monthly = sp.BaseSalary + sp.HousingAllowance + sp.TransportationAllowance + sp.OtherAllowances;
+			// HR4: the employee's own salary in force today, else the policy's (the one place pay is read)
+			var monthly = (await new CrossBuy.BL.Hr.HrSalaryService(_context).ForAsync(employeeId, DateTime.Today)).Total;
+			if (monthly <= 0) return 0m;
 			return R(monthly / 30m);   // standard 30-day month
 		}
 

@@ -15,6 +15,8 @@
     var statusText = new[] { Localizer["Pending"].Value, Localizer["Approved"].Value, Localizer["Rejected"].Value };
     var stepColor = new[] { "warning-strong", "success", "danger" };
     var stepIcon = new[] { "ki-time", "ki-check", "ki-cross" };
+    var certs = ViewBag.Certs as Dictionary<int, long> ?? new();
+    var certTypeIds = ViewBag.CertTypes as List<int> ?? new();
 }
 
 @functions {
@@ -111,6 +113,10 @@
                                                 {
                                                     <div class="text-gray-500 fs-7">@r.Reason</div>
                                                 }
+                                                @if (certs.TryGetValue(r.ID, out var certDoc))
+                                                {
+                                                    <a href="@CrossBuy.BL.Hr.HrFileRules.LeaveCertificateUrl(certDoc)" target="_blank" rel="noopener" class="d-inline-flex align-items-center gap-1 fs-7 fw-semibold mb-2"><i class="ki-outline ki-document fs-5"></i>@(isAr ? "الشهادة الطبية" : "Medical certificate")</a>
+                                                }
                                                 @Chain(r, Model.ApproverNames, isAr, stepColor, stepIcon)
                                             </div>
                                         </div>
@@ -152,6 +158,10 @@
                                                 {
                                                     <div class="text-gray-500 fs-7 mb-3">@r.Reason</div>
                                                 }
+                                                @if (certs.TryGetValue(r.ID, out var certDoc))
+                                                {
+                                                    <a href="@CrossBuy.BL.Hr.HrFileRules.LeaveCertificateUrl(certDoc)" target="_blank" rel="noopener" class="d-inline-flex align-items-center gap-1 fs-7 fw-semibold mb-2"><i class="ki-outline ki-document fs-5"></i>@(isAr ? "الشهادة الطبية" : "Medical certificate")</a>
+                                                }
                                                 @Chain(r, Model.ApproverNames, isAr, stepColor, stepIcon)
                                                 <form asp-action="DecideLeave" method="post" class="d-flex gap-3 mt-3">
                                                     @Html.AntiForgeryToken()
@@ -186,7 +196,7 @@
 <div class="modal fade" id="kt_modal_new_leave" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered mw-550px">
         <div class="modal-content">
-            <form asp-action="CreateLeave" method="post">
+            <form asp-action="CreateLeave" method="post" enctype="multipart/form-data">
                 @Html.AntiForgeryToken()
                 <div class="modal-header">
                     <h2 class="fw-bold">@Localizer["New Leave Request"]</h2>
@@ -197,7 +207,7 @@
                 <div class="modal-body py-8 px-9">
                     <div class="mb-7">
                         <label class="required fw-semibold fs-6 mb-2">@SR["LeaveType"]</label>
-                        <select name="leaveTypeId" class="form-select form-select-solid" required>
+                        <select name="leaveTypeId" id="leave_type" class="form-select form-select-solid" required>
                             <option value="">@Localizer["Select leave type"]</option>
                             @foreach (var lt in Model.Types)
                             {
@@ -218,6 +228,13 @@
                     <div id="leave_days_hint" class="mb-7 fs-7 text-muted d-none">
                         <i class="ki-outline ki-information-5 fs-6 text-primary me-1"></i>
                         <span></span>
+                    </div>
+                    @* HR3: the medical certificate, asked for when the employee's policy requires one for the chosen type.
+                       It is stored in the File Manager on this request (never under /uploads). *@
+                    <div id="leave_cert" class="mb-7 d-none">
+                        <label class="required fw-semibold fs-6 mb-2" id="leave_cert_label">@(isAr ? "الشهادة الطبية" : "Medical certificate")</label>
+                        <input type="file" name="certificate" id="leave_cert_file" accept=".pdf,.png,.jpg,.jpeg,.webp,.avif,.doc,.docx" class="form-control form-control-solid" />
+                        <div class="form-text">@(isAr ? "لائحة شركتك تشترطها لهذا النوع. PDF أو صورة، حتى 15 ميجابايت؛ تُحفظ في مدير الملفات ويراها المعتمِدون." : "Your company's policy requires it for this type. PDF or image, up to 15 MB; it is kept in the File Manager and your approvers can open it.")</div>
                     </div>
                     <div class="mb-2">
                         <label class="fw-semibold fs-6 mb-2">@Localizer["Reason (optional)"]</label>
@@ -240,6 +257,19 @@
             // work-day flags indexed by weekday (0=Sunday … 6=Saturday); null = no restriction
             var workDays = @(Model.WorkDays == null ? "null" : Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.WorkDays)));
             var isAr = @(isAr ? "true" : "false");
+
+            // HR3: show (and require) the certificate field for the types the policy marks
+            var certTypes = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(certTypeIds));
+            var typeSel = document.getElementById('leave_type'), certBox = document.getElementById('leave_cert'), certFile = document.getElementById('leave_cert_file');
+            function refreshCert() {
+                var need = certTypes.indexOf(parseInt(typeSel.value, 10)) >= 0;
+                certBox.classList.toggle('d-none', !need);
+                certFile.required = need;
+                if (!need) certFile.value = '';
+            }
+            typeSel.addEventListener('change', refreshCert);
+            if (window.jQuery) jQuery(typeSel).on('change', refreshCert);   // select2 does not reach addEventListener
+            refreshCert();
             var restPrefix = '@Localizer["Rest days are not counted — working days selected: "]';
 
             // disable rest days when the policy restricts work days

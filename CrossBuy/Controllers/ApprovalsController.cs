@@ -52,7 +52,7 @@ namespace CrossBuy.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string? q = null, [FromQuery(Name = "page")] int pageNo = 1)
         {
             var empId = await CurrentEmployeeIdAsync();
             if (empId == null) return RedirectToAction("Login", "Account");
@@ -256,7 +256,19 @@ namespace CrossBuy.Controllers
             ViewBag.IsBillingApprover = page.VisibleSilos.Contains(ApprovalSilos.ProjectBilling);
             ViewBag.ProjectBillingLabel = siloChrome(ApprovalSilos.ProjectBilling).Label;
             ViewBag.ProjectBillingIcon = siloChrome(ApprovalSilos.ProjectBilling).Icon;
-            return View(rows);
+
+            // SEARCH AND PAGES (owner, 2026-11-08: every list has search and pagination). Over the rows this approver
+            // may already act on, so it discloses nothing new; the tiles and the header badge keep counting the WHOLE
+            // inbox (ViewBag.Total), never the visible page. Every term must match the subject, requester, type or detail.
+            const int pageSize = 25;
+            ViewBag.Total = rows.Count;
+            var terms = (q ?? "").Split(new[] { ' ', ',' }, StringSplitOptions.RemoveEmptyEntries);
+            var filtered = rows.Where(r => terms.All(t => new[] { r.Title, r.Requester, r.SiloLabel, r.Meta }
+                .Any(f => !string.IsNullOrEmpty(f) && f.Contains(t, StringComparison.OrdinalIgnoreCase)))).ToList();
+            int pages = Math.Max(1, (int)Math.Ceiling(filtered.Count / (double)pageSize));
+            pageNo = Math.Clamp(pageNo, 1, pages);
+            ViewBag.Q = q; ViewBag.Page = pageNo; ViewBag.Pages = pages; ViewBag.Filtered = filtered.Count;
+            return View(filtered.Skip((pageNo - 1) * pageSize).Take(pageSize).ToList());
         }
     }
 }

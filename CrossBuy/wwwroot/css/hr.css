@@ -1,0 +1,82 @@
+/* HR design layer — the owner-approved prototype (design-output/hr-prototype) carried into the product.
+   Only what the theme has no class for. Colours come from crossbuy-brand.css tokens; no amber/yellow on any
+   control or notice (standing owner rule). */
+
+.hr-num { direction: ltr; unicode-bidi: isolate; font-variant-numeric: tabular-nums; }
+
+/* House notice (the TrialBalance banner). */
+.hr-notice { background: var(--cb-brand-surface, #E7F0FF); border-color: var(--cb-brand, #3A5795) !important; }
+.hr-notice .symbol-label { background: var(--cb-brand, #3A5795); }
+/* The bare form (<div class="hr-notice"><i/><div/></div>) carries its own layout: icon beside the text. */
+.hr-notice:not(.notice) { display: flex; gap: .9rem; align-items: flex-start; padding: 1rem 1.25rem; border: 1px dashed; border-radius: .625rem; color: var(--bs-gray-800, #252F4A); }
+.hr-notice:not(.notice) > i { color: var(--cb-brand, #3A5795); flex-shrink: 0; margin-top: .1rem; }
+.hr-badge-solid { background: var(--cb-brand, #3A5795); color: #fff; }
+
+/* House table. */
+.hr-table thead tr { border-bottom: 2px solid var(--cb-brand, #3A5795); }
+.hr-table tbody tr { border-bottom: 1px dashed #eef1f6; }
+.hr-table tbody tr:hover { background: var(--cb-blue-25, #F3F7FF); }
+
+/* Initials disc for a person with no photo (inline colours in the prototype, kept as a class here). */
+.hr-initials { background: var(--cb-brand-surface, #E7F0FF) !important; color: var(--cb-brand, #3A5795) !important; }
+
+/* Organisation chart: a top-down tree drawn with borders only. */
+.org-tree ul { padding-top: 22px; position: relative; display: flex; justify-content: center; margin: 0; padding-inline-start: 0; }
+.org-tree li { list-style: none; text-align: center; position: relative; padding: 22px 8px 0; }
+.org-tree li::before, .org-tree li::after { content: ''; position: absolute; top: 0; width: 50%; height: 22px; border-top: 2px solid var(--cb-blue-200, #A8C5FF); }
+.org-tree li::before { inset-inline-end: 50%; }
+.org-tree li::after { inset-inline-start: 50%; border-inline-start: 2px solid var(--cb-blue-200, #A8C5FF); }
+.org-tree li:only-child::before, .org-tree li:only-child::after { display: none; }
+.org-tree li:only-child { padding-top: 0; }
+.org-tree li:first-child::before, .org-tree li:last-child::after { border: 0 none; }
+.org-tree li:last-child::before { border-inline-end: 2px solid var(--cb-blue-200, #A8C5FF); border-start-end-radius: 6px; }
+.org-tree li:first-child::after { border-start-start-radius: 6px; }
+.org-tree ul ul::before { content: ''; position: absolute; top: 0; inset-inline-start: 50%; height: 22px; border-inline-start: 2px solid var(--cb-blue-200, #A8C5FF); }
+.org-node { display: inline-flex; flex-direction: column; align-items: center; gap: .35rem; min-width: 150px; max-width: 200px; padding: .75rem .9rem; border-radius: .75rem; border: 1px solid var(--bs-gray-200); background: var(--bs-body-bg); position: relative; }
+.org-node.unit { background: var(--cb-brand-surface, #E7F0FF); border-color: var(--cb-blue-100, #D0E1FF); }
+.org-node.company { background: var(--cb-brand, #3A5795); border-color: var(--cb-brand, #3A5795); }
+.org-node.company .org-name, .org-node.company .org-sub { color: #fff !important; }
+.org-node.vacant { border-style: dashed; background: var(--bs-gray-100); }
+.org-node.inactive { opacity: .55; }
+.org-node .org-add { position: absolute; top: -10px; inset-inline-end: -10px; width: 24px; height: 24px; border-radius: 50%; display: none; align-items: center; justify-content: center; background: var(--bs-body-bg); border: 1px solid var(--cb-brand, #3A5795); color: var(--cb-brand, #3A5795); cursor: pointer; }
+.org-node:hover .org-add { display: inline-flex; }
+.org-node.hit { box-shadow: 0 0 0 3px #fff, 0 0 0 5px var(--cb-brand, #3A5795); }
+.org-name { font-weight: 700; font-size: .85rem; color: var(--bs-gray-900); line-height: 1.25; }
+.org-sub { font-size: .75rem; color: var(--bs-gray-600); line-height: 1.2; }
+.org-scroll { overflow: auto; padding-bottom: 1rem; }
+
+/* ── Employee data wizard (Admin/EmployeeData) in the prototype design ────────────────────────────────────
+   The wizard keeps its own markup and scripts; this layer only re-skins it: the house brand instead of its
+   private palette, the step circles become the prototype's line tabs, and the photo is round like every
+   other place a person is shown. Scoped to .er-page so nothing else is touched. */
+.er-page {
+    --er-primary: var(--cb-brand, #3A5795);
+    --er-primary-lt: var(--cb-brand-surface, #E7F0FF);
+    --er-primary-bd: #B9C9E8;
+}
+.er-page .er-card { border: 0; box-shadow: var(--bs-card-box-shadow, 0 0 20px 0 rgba(76, 87, 125, .02)); border-radius: .625rem; }
+.er-page .er-stepper-nav { justify-content: flex-start; gap: 2rem; padding: 0 2rem; row-gap: 0; border-bottom: 1px solid var(--bs-gray-200, #F1F1F4); }
+.er-page .er-step-line { display: none; }
+.er-page .er-step { padding: 1.15rem 0 1rem; border-bottom: 2px solid transparent; margin-bottom: -1px; gap: 8px; }
+.er-page .er-step:has(.er-step-meta.active) { border-bottom-color: var(--cb-brand, #3A5795); }
+.er-page .er-step-circle { width: 22px; height: 22px; background: transparent !important; border: 0 !important; box-shadow: none !important; }
+.er-page .er-step-circle.active i, .er-page .er-step-circle.active i::before { color: var(--cb-brand, #3A5795) !important; }
+.er-page .er-step-circle.done i, .er-page .er-step-circle.done i::before { color: var(--bs-success, #17C653) !important; }
+.er-page .er-step-meta .sub { display: none; }
+.er-page .er-step-meta .ttl { font-size: 14px; font-weight: 600; }
+.er-page .er-step-meta.done .ttl { color: var(--bs-gray-800, #252F4A); }
+.er-page .er-step-meta.idle .ttl { color: var(--bs-gray-500, #99A1B7); }
+.er-page .image-input, .er-page .image-input .image-input-wrapper { border-radius: 50%; }
+
+/* ── Team leave calendar (Admin/Leave), from the prototype ── */
+.lv-grid { display: grid; grid-template-columns: 220px repeat(30, minmax(26px, 1fr)); border: 1px solid var(--bs-gray-200); border-radius: .75rem; overflow: hidden; min-width: 1060px; }
+.lv-grid > div { border-bottom: 1px dashed #eef1f6; min-height: 42px; display: flex; align-items: center; justify-content: center; font-size: .72rem; }
+.lv-grid .hd { background: var(--cb-blue-25, #F3F7FF); border-bottom: 2px solid var(--cb-brand, #3A5795); font-weight: 700; }
+.lv-grid .who { justify-content: flex-start; padding-inline-start: .6rem; }
+.lv-grid .we { background: var(--bs-gray-100); }
+.lv-grid .hol { background: #F8F5FF; }
+.lv-day { width: 100%; height: 26px; border-radius: .35rem; }
+.lv-annual { background: var(--cb-brand, #3A5795); }
+.lv-sick { background: var(--cb-blue-300, #7DA9FF); }
+.lv-pending { background: repeating-linear-gradient(45deg, var(--cb-blue-100, #D0E1FF), var(--cb-blue-100, #D0E1FF) 4px, #fff 4px, #fff 8px); border: 1px solid var(--cb-brand, #3A5795); }
+.lv-swatch { display: inline-block; width: 14px; height: 14px; border-radius: 4px; vertical-align: middle; }

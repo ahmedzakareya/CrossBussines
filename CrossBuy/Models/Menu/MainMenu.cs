@@ -517,3 +517,7 @@
 		};
 	}
 }
+				new() { LabelAr = "الإجازات", LabelEn = "Leave", Action = "Leave", Controller = "Admin" },   // HR leave overview (prototype design, 2026-11-08)
+				new() { LabelAr = "حزمة قواعد الدولة", LabelEn = "Country rule pack", Action = "HrRules", Controller = "Admin" },   // every legal figure as a setting (2026-11-08)
+				new() { LabelAr = "القروض والسلف", LabelEn = "Loans & advances", Action = "Loans", Controller = "Admin" },   // HR4: loans with the legal deduction cap (2026-11-08)
+				new() { LabelAr = "اعتماد العمل الإضافي", LabelEn = "Overtime approval", Action = "Overtime", Controller = "Admin" },   // HR5: overtime approved before pay, within the yearly cap (2026-11-08)

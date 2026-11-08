@@ -1,0 +1,29 @@
+@model CrossBuy.Controllers.AdminController.AttendanceRowsModel
+@{
+    // One page of the attendance month summary (AdminController.AttendanceData), injected by cbServerList.
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    string Initials(string? name) { var p = (name ?? "?").Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries); return p.Length == 0 ? "?" : string.Concat(p.Take(2).Select(w => w[0])).ToUpperInvariant(); }
+    string Hm(int minutes) => minutes <= 0 ? "0" : (minutes / 60) + ":" + (minutes % 60).ToString("00");
+}
+@foreach (var r in Model.Rows)
+{
+    var name = Model.Names.TryGetValue(r.EmployeeID, out var n) ? n : r.EmployeeName;
+    var photo = Model.Photos.TryGetValue(r.EmployeeID, out var ph) ? ph : null;
+    var pct = r.WorkDays > 0 ? (int)Math.Round(100.0 * r.PresentDays / r.WorkDays) : 0;
+    <tr>
+        <td class="ps-4">
+            <div class="d-flex align-items-center min-w-0">
+                <div class="symbol symbol-30px symbol-circle flex-shrink-0">
+                    @if (photo != null) { <img src="@photo" alt="" /> } else { <span class="symbol-label fw-bold fs-9 hr-initials">@Initials(name)</span> }
+                </div>
+                <a href="@Url.Action("EmployeeProfile", "Admin", new { id = r.EmployeeID })" class="ms-2 text-gray-900 text-hover-primary fw-bold fs-7 text-truncate"><bdi>@name</bdi></a>
+            </div>
+        </td>
+        <td class="text-center hr-num fw-bold">@r.PresentDays<span class="text-muted fw-normal">/@r.WorkDays</span></td>
+        <td style="min-width:110px"><div class="d-flex align-items-center gap-2"><div class="progress h-6px w-100 bg-light"><div class="progress-bar @(pct >= 90 ? "bg-success" : pct >= 60 ? "bg-primary" : "bg-danger")" style="width:@(pct)%"></div></div><span class="text-muted fs-8 hr-num">@(pct)%</span></div></td>
+        <td class="text-center hr-num @(r.LateCount > 0 ? "fw-bold text-gray-900" : "text-gray-400")">@r.LateCount@if (r.LateMinutes > 0) { <div class="text-muted fs-8">@Hm(r.LateMinutes)</div> }</td>
+        <td class="text-center hr-num @(r.OvertimeMinutes > 0 ? "fw-bold text-primary" : "text-gray-400")">@Hm(r.OvertimeMinutes)</td>
+        <td class="text-center hr-num text-muted">@r.LeaveDays</td>
+        <td class="text-center pe-4 hr-num @(r.AbsentDays > 0 ? "text-danger fw-bold" : "text-gray-400")">@r.AbsentDays</td>
+    </tr>
+}

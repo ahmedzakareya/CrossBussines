@@ -3699,4 +3699,34 @@
   <data name="Tax reg. no." xml:space="preserve">
     <value>الرقم الضريبي</value>
   </data>
+  <data name="Country rule pack" xml:space="preserve">
+    <value>حزمة قواعد الدولة</value>
+  </data>
+  <data name="Every resignation tier needs a paid percentage between 0 and 100" xml:space="preserve">
+    <value>كل شريحة استقالة تحتاج نسبة صرف بين 0 و100</value>
+  </data>
+  <data name="Follow-up tasks created: {0} (already tracked: {1})" xml:space="preserve">
+    <value>أُنشئت مهام متابعة: {0} (متابَعة من قبل: {1})</value>
+  </data>
+  <data name="Leave days must be between 0 and 400" xml:space="preserve">
+    <value>أيام الإجازة يجب أن تكون بين 0 و400</value>
+  </data>
+  <data name="Loans &amp; advances" xml:space="preserve">
+    <value>القروض والسلف</value>
+  </data>
+  <data name="No country rule pack is installed. Apply hr_rule_packs.sql." xml:space="preserve">
+    <value>لا توجد حزمة قواعد دولة مثبّتة. طبّق hr_rule_packs.sql.</value>
+  </data>
+  <data name="Overtime approval" xml:space="preserve">
+    <value>اعتماد العمل الإضافي</value>
+  </data>
+  <data name="Overtime figures are out of range" xml:space="preserve">
+    <value>قيم العمل الإضافي خارج النطاق</value>
+  </data>
+  <data name="Rules saved" xml:space="preserve">
+    <value>حُفظت القواعد</value>
+  </data>
+  <data name="The loan cap must be between 0 and 100" xml:space="preserve">
+    <value>سقف القرض يجب أن يكون بين 0 و100</value>
+  </data>
 </root>

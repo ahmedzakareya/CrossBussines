@@ -1,0 +1,78 @@
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    // HR5 — import attendance from a fingerprint device export (HR prototype design, adopted 2026-11-08).
+    ViewData["Title"] = "Attendance import";
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    string L(string ar, string en) => isAr ? ar : en;
+    var res = ViewBag.Result as CrossBuy.BL.Hr.AttendanceImportResult;
+    int mapped = ViewBag.Mapped is int mm ? mm : 0;
+}
+<link href="~/css/hr.css" rel="stylesheet" asp-append-version="true" />
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2">
+        <div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+            <div class="page-title d-flex flex-column justify-content-center gap-1">
+                <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@L("استيراد من جهاز البصمة", "Import from the fingerprint device")</h1>
+                <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                    <li class="breadcrumb-item text-muted"><a href="@Url.Action("Index", "Admin")" class="text-muted text-hover-primary">@SR["HumanResources"]</a></li>
+                    <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                    <li class="breadcrumb-item text-muted"><a href="@Url.Action("Attendance", "Admin")" class="text-muted text-hover-primary">@L("الحضور والانصراف", "Attendance")</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid">
+        <div class="app-container container-fluid">
+            @if (TempData["HrErr"] is string err) { <div class="alert alert-danger d-flex align-items-center py-3 mb-5"><i class="ki-outline ki-information-5 fs-2 me-3 text-danger"></i>@err</div> }
+
+            @if (res != null)
+            {
+                <div class="card mb-5">
+                    <div class="card-header border-0 pt-6"><div class="card-title flex-column m-0"><span class="fw-bold fs-4">@L("نتيجة الاستيراد", "Import result")</span>
+                        @if (res.From is DateTime f && res.To is DateTime t) { <span class="text-muted fs-7 mt-1">@L("من ", "From ")<span class="hr-num">@f.ToString("yyyy-MM-dd")</span>@L(" إلى ", " to ")<span class="hr-num">@t.ToString("yyyy-MM-dd")</span></span> }</div></div>
+                    <div class="card-body pt-2">
+                        <div class="row g-4 mb-4">
+                            @foreach (var s in new[] { (L("أيام سُجّلت", "Days recorded"), res.DaysRecorded, "text-success"), (L("بصمات مقروءة", "Punches read"), res.Punches, "text-gray-900"),
+                                                       (L("أيام مصحّحة يدوياً لم تُمس", "Hand-corrected days kept"), res.DaysKeptManual, "text-gray-900"), (L("أسطر لم تُفهم", "Lines not understood"), res.BadLines, res.BadLines > 0 ? "text-danger" : "text-gray-900") })
+                            {
+                                <div class="col-6 col-md-3"><div class="border border-gray-300 border-dashed rounded py-3 px-4 h-100"><div class="text-muted fs-8 mb-1">@s.Item1</div><div class="fw-bold fs-2 hr-num @s.Item3">@s.Item2</div></div></div>
+                            }
+                        </div>
+                        @if (res.UnknownIds.Count > 0)
+                        {
+                            <div class="alert alert-light-danger py-3 mb-3"><div class="fw-bold mb-1">@L("أرقام على الجهاز لا تطابق أي موظف — لم تُستورد:", "Device IDs that match no employee — not imported:")</div>
+                                <div class="hr-num">@string.Join("، ", res.UnknownIds)</div>
+                                <div class="fs-8 mt-1">@L("سجّل «رقم جهاز البصمة» في بيانات الموظف ثم أعد الاستيراد؛ إعادة الملف نفسه لا تكرر شيئاً.", "Set the “Attendance device ID” on the employee, then import again; re-importing the same file duplicates nothing.")</div></div>
+                        }
+                        @if (res.Errors.Count > 0) { <div class="alert alert-light-danger py-3 mb-0 fs-7">@foreach (var e in res.Errors) { <div>@e</div> }</div> }
+                    </div>
+                </div>
+            }
+
+            <div class="card mb-5">
+                <div class="card-body">
+                    <form asp-action="AttendanceImport" method="post" enctype="multipart/form-data" class="d-flex flex-wrap gap-3 align-items-end mb-6">
+                        @Html.AntiForgeryToken()
+                        <div class="flex-grow-1 min-w-250px"><label class="form-label required">@L("ملف التصدير من الجهاز", "The device export file")</label>
+                            <input type="file" name="file" accept=".csv,.txt,.dat,.log" required class="form-control form-control-solid" /></div>
+                        <button class="btn btn-primary"><i class="ki-outline ki-file-up fs-3"></i>@L("استيراد", "Import")</button>
+                    </form>
+                    <div class="hr-notice">
+                        <i class="ki-outline ki-fingerprint-scanning fs-2"></i>
+                        <div class="fs-7">
+                            <div class="fw-bold fs-6 mb-1">@L("كيف يُقرأ الملف", "How the file is read")</div>
+                            <div>@L("سطر لكل بصمة: رقم الموظف على الجهاز، ثم التاريخ والوقت (مفصولة بفاصلة أو فاصلة منقوطة أو Tab)، مثل:", "One line per punch: the employee's device ID, then the date and time (separated by a comma, semicolon or tab), for example:")</div>
+                            <pre class="bg-light rounded p-3 my-2 hr-num" dir="ltr">1001,2026-11-08 07:58:12
+1001,2026-11-08 16:31:40</pre>
+                            <div>@L("أول بصمة في اليوم = الحضور، وآخرها = الانصراف، ويُحسب التأخير والعمل الإضافي بنفس قواعد الجدول. الأيام المصحّحة يدوياً لا تُستبدل. الرقم يُطابَق مع «رقم جهاز البصمة» في بيانات الموظف، وإلا مع رقم الموظف في النظام.", "The first punch of the day is the check-in and the last the check-out; lateness and overtime follow the same schedule rules. Hand-corrected days are not replaced. The ID is matched to the employee's “Attendance device ID”, otherwise to their number in the system.")</div>
+                            <div class="mt-1">@L("موظفون لهم رقم جهاز مسجل: ", "Employees with a device ID set: ")<span class="hr-num fw-bold">@mapped</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

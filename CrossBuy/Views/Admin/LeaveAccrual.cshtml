@@ -28,9 +28,9 @@
                     <div class="card-header"><div class="card-title"><h2>@Localizer["Leave encashment"]</h2></div></div>
                     <div class="card-body pt-2">
                         <form method="get" class="d-flex gap-2 mb-5">
-                            <select name="employeeId" class="form-select form-select-solid" data-control="select2" onchange="this.form.submit()">
-                                <option value="">@Localizer["Select employee…"]</option>
-                                @foreach (var e in emps) { <option value="@e.ID" selected="@(selEmp == e.ID)">@empName(e)</option> }
+                            <select name="employeeId" class="form-select form-select-solid" data-person-select data-placeholder="@Localizer["Select employee…"]" onchange="this.form.submit()">
+                                <option value=""></option>
+                                @foreach (var e in emps) { <option value="@e.ID" selected="@(selEmp == e.ID)" data-photo="@CrossBuy.BL.Hr.PersonTile.Photo((string?)e.ProfileImage)" data-initials="@CrossBuy.BL.Hr.PersonTile.Initials((string?)e.FullName, (string?)e.FullNameEn)">@empName(e)</option> }
                             </select>
                         </form>
                         @if (selEmp.HasValue)
@@ -123,3 +123,7 @@
         </div>
     </div></div>
 </div>
+
+@section Scripts {
+@await Html.PartialAsync("_PersonSelect")
+}

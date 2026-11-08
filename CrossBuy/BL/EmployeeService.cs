@@ -45,6 +45,10 @@ namespace CrossBuy.BL
 				BranchID      = emp.BranchID,
 				EmpCompanyID  = emp.EmpCompanyID,
 				ManufHourlyRate = emp.ManufHourlyRate,
+				CivilIdNumber = emp.CivilIdNumber, PassportNumber = emp.PassportNumber, Religion = emp.Religion,
+				Iban = emp.Iban, BankName = emp.BankName, EmergencyContactName = emp.EmergencyContactName,
+				EmergencyContactPhone = emp.EmergencyContactPhone, EmergencyContactRelation = emp.EmergencyContactRelation,
+				AttendanceDeviceId = emp.AttendanceDeviceId,
 				PolicyID      = policyId
 			};
 		}
@@ -100,7 +104,8 @@ namespace CrossBuy.BL
 					CountryEn     = e.Country.CountryName,
 					Email         = e.Email,
 					PhoneNumber   = e.PhoneNumber,
-					IsActive      = e.IsActive
+					IsActive      = e.IsActive,
+					DateOfJoining = e.DateOfJoining
 				})
 				.ToListAsync();
 		}
@@ -123,6 +128,8 @@ namespace CrossBuy.BL
 			}
 		}
 
+		private static string? Clean(string? v) => string.IsNullOrWhiteSpace(v) ? null : v.Trim();
+
 		public async Task<ViewModel.EmployeeViewModel> SaveEmployeeAsync(
 			ViewModel.EmployeeViewModel model,
 			Microsoft.AspNetCore.Http.IFormFile profileImage,
@@ -132,6 +139,7 @@ namespace CrossBuy.BL
 
 			// The caller's company, when a request context resolves at all.
 			var callerCompany = await ResolveCallerCompanyAsync();
+			var callerEmployeeIdForHistory = (await _contexts.TryGetCurrentAsync())?.EmployeeId;   // HR1: who made the change
 
 			// A form that names a DIFFERENT company than the caller's is refused rather than quietly
 			// ignored. Silently overwriting it would make an attempt to write into another tenant
@@ -212,8 +220,16 @@ namespace CrossBuy.BL
 			if (model.DateOfBirth.HasValue)   emp.DateOfBirth  = model.DateOfBirth.Value;
 			if (model.DateOfJoining.HasValue) emp.DateOfJoining = model.DateOfJoining.Value;
 			emp.ManufHourlyRate = (model.ManufHourlyRate.HasValue && model.ManufHourlyRate.Value > 0) ? model.ManufHourlyRate : null;
+			// HR1: what the tracked fields were BEFORE this save, so a change is written to EmployeeHistory with its date.
+			var before = isNew ? null : new { emp.JobTitleID, emp.BranchID, emp.DepartmentID, emp.EmploymentType };
 			if (model.JobTitleID.HasValue)    emp.JobTitleID   = model.JobTitleID.Value;
 			if (model.BranchID.HasValue)      emp.BranchID     = model.BranchID.Value;
+			// HR1 identity, bank and emergency contact (each optional; an empty field clears it)
+			emp.CivilIdNumber = Clean(model.CivilIdNumber); emp.PassportNumber = Clean(model.PassportNumber); emp.Religion = Clean(model.Religion);
+			emp.Iban = Clean(model.Iban)?.Replace(" ", "").ToUpperInvariant(); emp.BankName = Clean(model.BankName);
+			emp.EmergencyContactName = Clean(model.EmergencyContactName); emp.EmergencyContactPhone = Clean(model.EmergencyContactPhone);
+			emp.EmergencyContactRelation = Clean(model.EmergencyContactRelation);
+			emp.AttendanceDeviceId = Clean(model.AttendanceDeviceId);   // HR5: unique per company (the index refuses a duplicate)
 
 			// THE COMPANY IS STAMPED, NOT ACCEPTED. This line used to read
 			// `if (model.EmpCompanyID.HasValue) emp.EmpCompanyID = model.EmpCompanyID.Value;`, which let
@@ -233,6 +249,22 @@ namespace CrossBuy.BL
 				emp.ProfileImage = await StoreProfileImageAsync(profileImage, webRootPath);
 			}
 			if (string.IsNullOrEmpty(emp.ProfileImage)) emp.ProfileImage = string.Empty;   // NOT NULL column — default empty when no image uploaded
+
+			// HR1: the effective-dated history — a hire, or each tracked field that changed, dated today.
+			void Track(string field, object? oldV, object? newV)
+			{
+				if (Equals(oldV, newV)) return;
+				_context.EmployeeHistory.Add(new EmployeeHistory { Employee = emp, CompanyID = emp.EmpCompanyID, Field = field,
+					OldValue = oldV?.ToString(), NewValue = newV?.ToString(), EffectiveFrom = DateTime.Today, ChangedByEmployeeId = callerEmployeeIdForHistory });
+			}
+			if (isNew) Track("Hire", null, emp.DateOfJoining.ToString("yyyy-MM-dd"));
+			else if (before != null)
+			{
+				Track("JobTitle", before.JobTitleID, emp.JobTitleID);
+				Track("Branch", before.BranchID, emp.BranchID);
+				Track("Department", before.DepartmentID, emp.DepartmentID);
+				Track("EmploymentType", before.EmploymentType, emp.EmploymentType);
+			}
 
 			try
 			{
@@ -308,24 +340,11 @@ namespace CrossBuy.BL
 		// which reaches the browser through SaveEmployee's `ex.Message` — it publishes the server's absolute
 		// layout to anyone who can open the screen, and it tells the person reading it nothing they can act on.
 		// Rethrown as one sentence naming the RELATIVE folder and the fix.
-		private static async Task<string> StoreProfileImageAsync(
+		// RETIRED 2026-11-08 (owner rule: every file, pictures included, lives in the File Manager). A photo is stored by
+		// CrossBuy.BL.Hr.HrFileStore on the Central Document Platform once the employee exists; nothing here may write
+		// under wwwroot/uploads again, so a caller that still passes a file fails loudly instead of quietly doing so.
+		private static Task<string> StoreProfileImageAsync(
 			Microsoft.AspNetCore.Http.IFormFile profileImage, string webRootPath)
-		{
-			var uploads = System.IO.Path.Combine(webRootPath, "uploads", "employees");
-			var fileName = Guid.NewGuid() + System.IO.Path.GetExtension(profileImage.FileName);
-			try
-			{
-				if (!System.IO.Directory.Exists(uploads)) System.IO.Directory.CreateDirectory(uploads);
-				using var stream = System.IO.File.Create(System.IO.Path.Combine(uploads, fileName));
-				await profileImage.CopyToAsync(stream);
-			}
-			catch (Exception ex) when (ex is UnauthorizedAccessException or System.IO.IOException)
-			{
-				throw new InvalidOperationException(
-					"The employee photo could not be saved: the server folder wwwroot/uploads/employees is not writable. "
-					+ "Grant the application pool identity Modify rights on that folder, then save again.", ex);
-			}
-			return "/uploads/employees/" + fileName;
-		}
+			=> throw new InvalidOperationException("The employee photo is stored through the File Manager; save the employee, then upload the photo.");
 	}
 }

@@ -74,6 +74,16 @@ namespace CrossBuy.Controllers
 			}
 			ViewBag.LeaveDays = leaveDays;
 			ViewBag.Now = now;
+			// HR prototype design (2026-11-08): the employee shown with their photo and title, and each recent request
+			// with WHO it is waiting on (the chain's current approver), read inside the employee's own company.
+			var me = await _context.Employee.AsNoTracking().Where(e => e.ID == emp.ID)
+				.Select(e => new { e.ProfileImage, e.EmpCompanyID, T = e.JobTitle.TitleAr, TE = e.JobTitle.Title, B = e.Branch.NameAr, BE = e.Branch.Name }).FirstOrDefaultAsync();
+			ViewBag.Photo = CrossBuy.BL.Platform.EmployeePhotos.Web(me?.ProfileImage);
+			ViewBag.TitleAr = me?.T; ViewBag.TitleEn = me?.TE; ViewBag.BranchAr = me?.B; ViewBag.BranchEn = me?.BE;
+			var recent = (List<CrossBuy.Models.Context.Admin.LeaveRequest>)ViewBag.Recent;
+			var waitIds = recent.Where(r => r.CurrentApproverEmployeeID.HasValue).Select(r => r.CurrentApproverEmployeeID!.Value).Distinct().ToList();
+			ViewBag.Waiting = await _context.Employee.AsNoTracking().Where(e => waitIds.Contains(e.ID) && e.EmpCompanyID == me!.EmpCompanyID)
+				.ToDictionaryAsync(e => e.ID, e => CrossBuy.BL.EmployeeNames.Of(e.FullName, e.FullNameEn));
 			return View(vm);
 		}
 
@@ -263,12 +273,20 @@ namespace CrossBuy.Controllers
 					.ToDictionaryAsync(e => e.ID, e => new ApproverName { Ar = e.FullName, En = e.FullNameEn });
 			}
 
+			// HR3: which types need a certificate (the form asks for the file), and the certificates already attached
+			var ctxCert = await _businessContexts.TryGetCurrentAsync();
+			ViewBag.CertTypes = (await new CrossBuy.BL.Hr.HrLeaveEligibility(_context).CertificateTypesAsync(emp.ID)).ToList();
+			ViewBag.Certs = ctxCert == null ? new Dictionary<int, long>()
+				: await Microsoft.Extensions.DependencyInjection.ActivatorUtilities.CreateInstance<CrossBuy.BL.Hr.HrFileStore>(HttpContext.RequestServices)
+					.LeaveCertificatesAsync(ctxCert.CompanyId, vm.Mine.Concat(vm.Pending).Select(r => r.ID));
+
 			return View(vm);
 		}
 
 		[HttpPost]
 		[ValidateAntiForgeryToken]
-		public async Task<IActionResult> CreateLeave(int leaveTypeId, DateTime startDate, DateTime endDate, string? reason)
+		[RequestSizeLimit(16 * 1024 * 1024)]
+		public async Task<IActionResult> CreateLeave(int leaveTypeId, DateTime startDate, DateTime endDate, string? reason, IFormFile? certificate)
 		{
 			var emp = CurrentEmployee();
 			if (emp == null) return RedirectToAction("Login", "Account");
@@ -279,9 +297,27 @@ namespace CrossBuy.Controllers
 			var self = await SelfServiceSubjectAsync();
 			if (self == null) { TempData["LeaveErr"] = L["You are not allowed to perform this action"].Value; return RedirectToAction(nameof(Leaves)); }
 
-			var (ok, error, _) = await _workflow.CreateAsync(self.Value, leaveTypeId, startDate, endDate, reason);
-			if (!ok) TempData["LeaveErr"] = error;
-			else TempData["LeaveMsg"] = L["Leave request submitted"].Value;
+			// HR3: a certificate the policy requires is checked BEFORE the request exists, and the file itself (size, type)
+			// too, so the only failure left after the request is created is the store's own.
+			var hasCert = certificate is { Length: > 0 };
+			if (hasCert && CrossBuy.BL.Hr.HrFileRules.CheckScan(certificate!.FileName, certificate.Length) is string bad) { TempData["LeaveErr"] = bad; return RedirectToAction(nameof(Leaves)); }
+			var eligibility = new CrossBuy.BL.Hr.HrLeaveEligibility(_context);
+			if (!hasCert && (await eligibility.CertificateTypesAsync(self.Value)).Contains(leaveTypeId))
+			{ TempData["LeaveErr"] = CrossBuy.BL.Hr.HrLeaveEligibility.CertificateMissing.Text; return RedirectToAction(nameof(Leaves)); }
+
+			var (ok, error, req) = await _workflow.CreateAsync(self.Value, leaveTypeId, startDate, endDate, reason);
+			if (!ok) { TempData["LeaveErr"] = error; return RedirectToAction(nameof(Leaves)); }
+			TempData["LeaveMsg"] = L["Leave request submitted"].Value;
+			if (hasCert && req != null)
+			{
+				var store = Microsoft.Extensions.DependencyInjection.ActivatorUtilities.CreateInstance<CrossBuy.BL.Hr.HrFileStore>(HttpContext.RequestServices);
+				await using var body = certificate!.OpenReadStream();
+				var (_, storeError) = await store.StoreLeaveCertificateAsync(req.ID, certificate.FileName, body, certificate.Length, HttpContext.RequestAborted);
+				if (storeError != null)
+					TempData["LeaveErr"] = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar"
+						? $"قُدّم الطلب، لكن تعذّر حفظ الشهادة الطبية ({storeError}). أرسلها للموارد البشرية."
+						: $"The request was submitted, but the medical certificate could not be saved ({storeError}). Send it to HR.";
+			}
 			return RedirectToAction(nameof(Leaves));
 		}
 
@@ -539,9 +575,15 @@ namespace CrossBuy.Controllers
 			var myNode = all.FirstOrDefault(h => h.H_Type == 5 && h.H_ObjectID == myEmployeeId);
 			if (myNode == null) return new List<int>();
 			var myChildPositions = all.Where(h => h.H_Parent == myNode.H_ID).Select(h => h.H_ID).ToHashSet();
-			return all
+			var ids = all
 				.Where(h => h.H_Type == 5 && h.H_Parent.HasValue && myChildPositions.Contains(h.H_Parent.Value) && h.H_ObjectID.HasValue)
 				.Select(h => h.H_ObjectID!.Value).Distinct().ToList();
+			// HR0: Hierarchicals carries no company column yet, so the tree alone cannot prove a "subordinate" is
+			// in my company. Intersect with my company's employees so a mis-parented node can never hand me
+			// another company's people.
+			var myCompany = await _context.Employee.AsNoTracking().Where(e => e.ID == myEmployeeId).Select(e => e.EmpCompanyID).FirstOrDefaultAsync();
+			if (myCompany <= 0 || ids.Count == 0) return new List<int>();
+			return await _context.Employee.AsNoTracking().Where(e => ids.Contains(e.ID) && e.EmpCompanyID == myCompany).Select(e => e.ID).ToListAsync();
 		}
 
 		private async Task<(Dictionary<int, string> comp, Dictionary<int, string> branch, Dictionary<int, string> emp)> ImageMapsAsync()

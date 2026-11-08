@@ -25,6 +25,9 @@ namespace CrossBuy.BL
 		public decimal SiCompany { get; set; }
 		public decimal Tax { get; set; }
 		public decimal Net { get; set; }
+		// HR4: loan/advance instalments taken this month (already subtracted from Net), and which loans they repay
+		public decimal LoanDeduction { get; set; }
+		public List<(int LoanId, decimal Amount)> LoanParts { get; set; } = new();
 		// expense charged to GL = earnings minus penalties (keeps the entry balanced without new accounts)
 		public decimal EarningExpense => Math.Round(Gross + OvertimePay - LatePenalty - AbsencePenalty, 2, MidpointRounding.AwayFromZero);
 	}
@@ -44,6 +47,7 @@ namespace CrossBuy.BL
 		public decimal TotalSiCompany { get; set; }
 		public decimal TotalTax { get; set; }
 		public decimal TotalNet { get; set; }
+		public decimal TotalLoanDeduction { get; set; }   // HR4: loan instalments deducted this month
 	}
 
 	// HR-4: accrued vs paid view of a payroll period (net to staff + statutory tax/SI to authorities)
@@ -131,6 +135,13 @@ namespace CrossBuy.BL
 			var policyByEmp = assignments.GroupBy(a => a.EmployeeID).ToDictionary(g => g.Key, g => g.First().LeavePolicyTypeID);
 
 			var salaryByPolicy = await _context.SalaryPolicies.AsNoTracking().ToListAsync();
+			// HR4 (2026-11-08): the AMOUNTS come from each employee's own salary in force at the month's end (falling back
+			// to the policy's salary). The policy still supplies the RATES it owns: overtime, penalties, SI shares, tax.
+			var payOf = await new CrossBuy.BL.Hr.HrSalaryService(_context).ForManyAsync(empIds, new DateTime(year, month, 1).AddMonths(1).AddDays(-1));
+			// HR4: loan instalments due this month, and the legal cap they are clipped to (the rule pack's LoanCapPct)
+			var loans = new CrossBuy.BL.Hr.HrLoanService(_context);
+			var loansDue = await loans.DueAsync(companyId, year, month);
+			var loanCap = await loans.CapAsync(companyId);
 
 			// payroll calc settings + progressive tax brackets (per company). Both optional → graceful legacy fallback.
 			var paySettings = await _context.PayrollSettings.AsNoTracking().FirstOrDefaultAsync(s => s.CompanyID == companyId);
@@ -139,6 +150,17 @@ namespace CrossBuy.BL
 
 			// attendance summary for the month (late/overtime/absence) — only applied to employees actually tracked
 			var attSummary = (await _attendance.MonthlySummaryAsync(companyId, year, month)).ToDictionary(r => r.EmployeeID);
+			// THE COUNTRY RULE PACK (2026-11-08): when the company runs on one, overtime is paid as the statutory
+			// percentage of the hourly wage by day type (working day / rest day / official holiday). Without a pack the
+			// legacy flat SalaryPolicies.OvertimeRate per hour stays exactly as it was.
+			var rulePack = (await new CrossBuy.BL.Hr.HrRulePackService(_context).EffectiveAsync(companyId))?.Rules;
+			// HR5: when the pack requires it, only APPROVED overtime is paid (per employee, per month, by day type)
+			var otApproved = rulePack?.Overtime.RequiresApproval == true
+				? await new CrossBuy.BL.Hr.HrOvertimeService(_context, _attendance).ApprovedAsync(companyId, year, month) : null;
+			// Nationals of the pack's country (for the "nationals" insurance lines): matched by CountriesLookup.CountryName.
+			var nationalCountryIds = rulePack?.NationalCountryName is { Length: > 0 } ncn
+				? (await _context.Set<CrossBuy.Models.Context.Admin.CountriesLookup>().AsNoTracking().Where(c => c.CountryName == ncn).Select(c => c.ID).ToListAsync()).ToHashSet()
+				: new HashSet<int>();
 			var mStart = new DateTime(year, month, 1); var mEnd = mStart.AddMonths(1).AddDays(-1);
 			var trackedEmp = (await _context.AttendanceRecords.AsNoTracking()
 				.Where(r => r.CompanyID == companyId && r.WorkDate >= mStart && r.WorkDate <= mEnd)
@@ -164,16 +186,34 @@ namespace CrossBuy.BL
 
 			foreach (var e in employees)
 			{
-				if (!policyByEmp.TryGetValue(e.ID, out var polId)) continue;
-				var sp = salaryByPolicy.FirstOrDefault(s => s.LeavePolicyTypeID == polId);
-				if (sp == null) continue;
+				if (!payOf.TryGetValue(e.ID, out var pay) || pay.Total <= 0) continue;
+				// an employee paid by their own salary may have no policy: its rates are then simply zero
+				var sp = (policyByEmp.TryGetValue(e.ID, out var polId) ? salaryByPolicy.FirstOrDefault(s => s.LeavePolicyTypeID == polId) : null)
+					?? new CrossBuy.Models.Context.Admin.SalaryPolicies { PaymentMethod = "" };
 
-				var allowances = R(sp.HousingAllowance + sp.TransportationAllowance + sp.OtherAllowances);
-				var gross = R(sp.BaseSalary + allowances);
+				var allowances = R(pay.Allowances);
+				var gross = R(pay.Basic + allowances);
 				// social insurance on the insurable wage (clamped to the statutory min/max band)
-				var insurable = InsurableWage(gross, paySettings);
-				var siEmp = R(insurable * sp.SocialInsuranceEmployeeShare / 100m);
-				var siCo = R(insurable * sp.SocialInsuranceCompanyShare / 100m);
+				decimal siEmp, siCo;
+				if (rulePack is { Insurance.Count: > 0 } siPack)
+				{
+					// THE COUNTRY RULE PACK (2026-11-08): each insurance line on the wage up to its own cap, for everyone or
+					// for nationals only. Without a pack the salary policy's shares on the settings band apply, as before.
+					bool national = e.CountryID is int cid && nationalCountryIds.Contains(cid);
+					decimal empSum = 0, coSum = 0;
+					foreach (var line in siPack.Insurance.Where(l => !l.ForNationalsOnly || national))
+					{
+						var wage = line.WageCap is > 0 ? Math.Min(gross, line.WageCap.Value) : gross;
+						empSum += wage * line.EmployeePct / 100m; coSum += wage * line.EmployerPct / 100m;
+					}
+					siEmp = R(empSum); siCo = R(coSum);
+				}
+				else
+				{
+					var insurable = InsurableWage(gross, paySettings);
+					siEmp = R(insurable * sp.SocialInsuranceEmployeeShare / 100m);
+					siCo = R(insurable * sp.SocialInsuranceCompanyShare / 100m);
+				}
 				// income tax: progressive annual schedule if brackets exist; otherwise legacy flat rate
 				decimal tax = 0m;
 				if (sp.IsTaxApplicable)
@@ -197,21 +237,49 @@ namespace CrossBuy.BL
 				decimal otPay = 0, latePen = 0, absPen = 0;
 				if (trackedEmp.Contains(e.ID) && attSummary.TryGetValue(e.ID, out var att))
 				{
-					lateMin = att.LateMinutes; otMin = att.OvertimeMinutes; absDays = att.AbsentDays;
-					otPay = R(otMin / 60m * sp.OvertimeRate);          // OvertimeRate = amount per overtime hour
+					lateMin = att.LateMinutes; absDays = att.AbsentDays;
+					// the overtime minutes that are payable: as recorded, or — when approval is required — what was approved
+					int otW = att.OvertimeMinutes, otR = att.RestDayOvertimeMinutes, otH = att.HolidayOvertimeMinutes;
+					if (otApproved != null)
+					{
+						var ap = otApproved.TryGetValue(e.ID, out var a) ? a : (0, 0, 0);
+						otW = Math.Min(otW, ap.Item1); otR = Math.Min(otR, ap.Item2); otH = Math.Min(otH, ap.Item3);
+					}
+					otMin = otW;
+					if (rulePack is { } rp && rp.WageDaysPerMonth > 0 && rp.HoursPerDay > 0)
+					{
+						// hourly wage on the wage the pack names (WageBasis: total or basic)
+						var wageBase = CrossBuy.BL.Hr.HrRules.IsBasic(rp) ? R(pay.Basic) : gross;   // the pack's wage basis
+						var hourly = wageBase / rp.WageDaysPerMonth / rp.HoursPerDay;
+						var o = rp.Overtime;
+						otPay = R(hourly / 60m * (otW * o.WorkingDayPct + otR * o.RestDayPct + otH * o.HolidayPct) / 100m);
+						otMin = otW + otR + otH;
+					}
+					else otPay = R(otMin / 60m * sp.OvertimeRate);          // legacy: OvertimeRate = amount per overtime hour
 					latePen = R(lateMin * sp.LatePenaltyPerMinute);
 					absPen = R(absDays * sp.AbsencePenaltyPerDay);
 				}
 				var net = R(gross + otPay - siEmp - tax - latePen - absPen);
+				// HR4: loan instalments, oldest loan first, within the cap of the wage and never past the net pay
+				var loanParts = new List<(int LoanId, decimal Amount)>();
+				if (loansDue.TryGetValue(e.ID, out var dueLoans))
+				{
+					var capBase = loanCap.OnBasic ? pay.Basic : gross;
+					var capAmount = loanCap.Pct > 0 ? capBase * loanCap.Pct / 100m : decimal.MaxValue;
+					loanParts = CrossBuy.BL.Hr.HrLoanService.Allocate(dueLoans, capAmount, net);
+				}
+				var loanDed = R(loanParts.Sum(x => x.Amount));
+				net = R(net - loanDed);
 
 				p.Employees.Add(new PayrollEmployeeLine
 				{
 					EmployeeId = e.ID, Name = e.FullName, NameEn = e.FullNameEn ?? e.FullName,
 					CostCenterId = ccId, CostCenterName = ccId.HasValue ? costCenters.FirstOrDefault(c => c.ID == ccId)?.Name : null,
-					BaseSalary = R(sp.BaseSalary), Allowances = allowances, Gross = gross,
+					BaseSalary = R(pay.Basic), Allowances = allowances, Gross = gross,
 					LateMinutes = lateMin, OvertimeMinutes = otMin, AbsentDays = absDays,
 					OvertimePay = otPay, LatePenalty = latePen, AbsencePenalty = absPen,
 					SiEmployee = siEmp, SiCompany = siCo, Tax = tax, Net = net,
+					LoanDeduction = loanDed, LoanParts = loanParts,
 				});
 			}
 
@@ -223,6 +291,7 @@ namespace CrossBuy.BL
 			p.TotalSiCompany = R(p.Employees.Sum(x => x.SiCompany));
 			p.TotalTax = R(p.Employees.Sum(x => x.Tax));
 			p.TotalNet = R(p.Employees.Sum(x => x.Net));
+			p.TotalLoanDeduction = R(p.Employees.Sum(x => x.LoanDeduction));
 			return p;
 		}
 
@@ -245,6 +314,10 @@ namespace CrossBuy.BL
 			var siPayAcc = Cr("SocialInsPayable");
 			if (salaryAcc == null || netAcc == null)
 				return (false, "The posting rules are incomplete (payroll/accrual). Run the accounting seed.", null);
+			// HR4: loan deductions credit the employee-loans receivable they repay
+			var loanAcc = Cr(CrossBuy.BL.Hr.HrLoanService.RuleComponent) ?? Dr(CrossBuy.BL.Hr.HrLoanService.RuleComponent);
+			if (pre.TotalLoanDeduction > 0 && loanAcc == null)
+				return (false, "The posting rule Payroll / EmployeeLoans is not defined, so the loan deductions cannot be posted.", null);
 
 			var lines = new List<JournalLineInput>();
 
@@ -269,6 +342,8 @@ namespace CrossBuy.BL
 			var siTotal = R(pre.TotalSiEmployee + pre.TotalSiCompany);
 			if (siTotal > 0 && siPayAcc != null)
 				lines.Add(new JournalLineInput { AccountId = siPayAcc.Value, Debit = 0, Credit = siTotal, Description = "Social insurance payable" });
+			if (pre.TotalLoanDeduction > 0)
+				lines.Add(new JournalLineInput { AccountId = loanAcc!.Value, Debit = 0, Credit = pre.TotalLoanDeduction, Description = "Employee loan instalments deducted" });
 
 			var input = new JournalEntryInput
 			{
@@ -293,10 +368,12 @@ namespace CrossBuy.BL
 					CompanyID = companyId, Year = year, Month = month, EmployeeID = x.EmployeeId, EmployeeName = x.Name, CostCenterId = x.CostCenterId,
 					BaseSalary = x.BaseSalary, Allowances = x.Allowances, OvertimePay = x.OvertimePay, GrossEarnings = R(x.Gross + x.OvertimePay),
 					LateMinutes = x.LateMinutes, LatePenalty = x.LatePenalty, AbsentDays = x.AbsentDays, AbsencePenalty = x.AbsencePenalty,
-					SiEmployee = x.SiEmployee, SiCompany = x.SiCompany, Tax = x.Tax, Net = x.Net,
+					SiEmployee = x.SiEmployee, SiCompany = x.SiCompany, Tax = x.Tax, Net = x.Net, LoanDeduction = x.LoanDeduction,
 					JournalEntryId = entry!.ID, CreatedAt = DateTime.UtcNow,
 				});
 			await _context.SaveChangesAsync();
+			// HR4: the deductions this posted payroll took, one row per loan; a loan they finish becomes Settled
+			await new CrossBuy.BL.Hr.HrLoanService(_context).RecordAsync(companyId, year, month, pre.Employees.SelectMany(x => x.LoanParts), entry!.ID);
 			return (true, null, entry!.ID);
 		}
 

@@ -66,16 +66,21 @@ namespace CrossBuy.Controllers
 			var gate = await HrGateAsync(CrossBuy.BL.HrActions.PerformanceManage);
 			if (!gate.Ok) return HrDenied(nameof(Applications));
 
-			// optional applicant photo
-			if (photo != null && photo.Length > 0 && !string.IsNullOrEmpty(WebRoot))
-			{
-				var dir = System.IO.Path.Combine(WebRoot, "uploads", "applicants");
-				if (!System.IO.Directory.Exists(dir)) System.IO.Directory.CreateDirectory(dir);
-				var fn = Guid.NewGuid() + System.IO.Path.GetExtension(photo.FileName);
-				using (var st = System.IO.File.Create(System.IO.Path.Combine(dir, fn))) await photo.CopyToAsync(st);
-				input.PhotoPath = "/uploads/applicants/" + fn;
-			}
+			// The applicant photo goes to the File Manager (owner rule: every file and picture lives there), on the saved
+			// application, so it is stored AFTER the save, which supplies the id.
 			var (ok, err, sid) = await RecruitSvc.SaveApplicationAsync(gate.CompanyId, input, null);
+			if (ok && sid > 0 && photo != null && photo.Length > 0)
+			{
+				var store = Microsoft.Extensions.DependencyInjection.ActivatorUtilities.CreateInstance<CrossBuy.BL.Hr.HrFileStore>(HttpContext.RequestServices);
+				string? url, perr;
+				using (var ps = photo.OpenReadStream()) (url, perr) = await store.StoreApplicantFileAsync(sid, true, photo.FileName, ps, photo.Length);
+				if (url == null) { ok = false; err = L[perr ?? "The photo could not be saved"].Value; }
+				else
+				{
+					var row = await Db.JobApplications.FirstOrDefaultAsync(a => a.ID == sid && a.CompanyID == gate.CompanyId);
+					if (row != null) { row.PhotoPath = url; await Db.SaveChangesAsync(); }
+				}
+			}
 			TempData[ok ? "HrMsg" : "HrErr"] = ok ? L["Application saved"].Value : err;
 			return ok ? RedirectToAction(nameof(Applications)) : RedirectToAction(nameof(ApplicationForm), new { id = input.ID });
 		}

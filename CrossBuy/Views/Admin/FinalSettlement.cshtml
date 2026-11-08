@@ -1,107 +1,193 @@
 @using CrossBuy.Models.Context.Admin
-@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
 @{
+    // HR prototype design (design-output/hr-prototype #/eos/:id), adopted by the owner on 2026-11-08.
+    // Same calculation and posting as before (FinalSettlementService.PreviewAsync / PostAsync); only the design changed.
     Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    ViewData["Title"] = "FinalSettlement";
     var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    string L(string ar, string en) => isAr ? ar : en;
+    string Pick(string? ar, string? en) => (isAr ? (string.IsNullOrWhiteSpace(ar) ? en : ar) : (string.IsNullOrWhiteSpace(en) ? ar : en)) ?? "";
+    string Initials(string? name) { var p = (name ?? "?").Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries); return p.Length == 0 ? "?" : string.Concat(p.Take(2).Select(w => w[0])).ToUpperInvariant(); }
     var emps = ViewBag.Employees as List<CrossBuy.ViewModel.EmployeeListItemDto> ?? new();
     int? selEmp = ViewBag.SelectedEmployee as int?;
     var pv = ViewBag.Preview as CrossBuy.BL.SettlementPreview;
+    var person = ViewBag.Person as CrossBuy.ViewModel.EmployeeListItemDto;
     var sources = ViewBag.PaySources as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
-    var history = ViewBag.Settlements as List<FinalSettlement> ?? new();
     DateTime termDate = ViewBag.TermDate is DateTime d ? d : DateTime.Today;
     var ci = System.Globalization.CultureInfo.InvariantCulture;
     string Money(decimal v) => v.ToString("#,##0.00", ci);
-    string empName(CrossBuy.ViewModel.EmployeeListItemDto e) => isAr ? (e.FullName ?? "") : (string.IsNullOrEmpty(e.FullNameEn) ? e.FullName : e.FullNameEn) ?? "";
+    var photo = person == null ? null : CrossBuy.BL.Platform.EmployeePhotos.Web(person.ProfileImage);
 }
+<link href="~/css/hr.css" rel="stylesheet" asp-append-version="true" />
+
+@{
+    void Line(string label, string value, bool total = false, string? cls = null)
+    {
+        <div class="d-flex flex-stack py-3 @(total ? "border-top border-2 border-gray-300 mt-1" : "border-bottom border-gray-200")">
+            <span class="@(total ? "fw-bold text-gray-900" : "text-gray-700")">@label</span>
+            <span class="hr-num @(total ? "fw-bolder fs-4 text-gray-900" : "fw-bold") @cls">@value</span>
+        </div>
+    }
+}
+
 <div class="d-flex flex-column flex-column-fluid">
-    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid">
-        <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["Termination & final settlement"]</h1>
-    </div></div>
-    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
-        @if (TempData["HrErr"] != null) { <div class="alert alert-danger">@TempData["HrErr"]</div> }
-
-        <div class="card card-flush mb-5"><div class="card-body py-5">
-            <form method="get" class="row g-3 align-items-end">
-                <div class="col-md-6"><label class="fw-semibold fs-7 mb-1">@SR["Employee"]</label>
-                    <select name="employeeId" class="form-select form-select-solid" data-control="select2" onchange="this.form.submit()">
-                        <option value="">@Localizer["Select employee…"]</option>
-                        @foreach (var e in emps) { <option value="@e.ID" selected="@(selEmp == e.ID)">@empName(e)</option> }
-                    </select></div>
-                <div class="col-md-4"><label class="fw-semibold fs-7 mb-1">@Localizer["Termination date"]</label>
-                    <input name="terminationDate" type="date" class="form-control form-control-solid" value="@termDate.ToString("yyyy-MM-dd")" onchange="this.form.submit()" /></div>
-                <div class="col-md-2"><button class="btn btn-light-primary w-100">@Localizer["Compute"]</button></div>
-            </form>
-        </div></div>
-
-        @if (selEmp.HasValue && pv != null)
-        {
-            if (pv.AlreadyTerminated)
-            {
-                <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-4 mb-4">
-                    <span class="symbol symbol-40px me-4"><span class="symbol-label bg-light-primary"><i class="ki-outline ki-information-5 fs-2 text-primary"></i></span></span>
-                    <div class="d-flex align-items-center fw-semibold fs-6 text-gray-700">@Localizer["This employee is already terminated (inactive)."]</div>
-                </div>
-            }
-            <div class="row g-5">
-                <div class="col-lg-5">
-                    <div class="card card-flush h-100"><div class="card-header"><div class="card-title"><h2>@Localizer["Service summary"]</h2></div></div>
-                        <div class="card-body pt-2">
-                            <div class="d-flex justify-content-between py-2 border-bottom"><span class="text-muted">@Localizer["Join date"]</span><span class="fw-bold">@pv.JoinDate.ToString("yyyy-MM-dd")</span></div>
-                            <div class="d-flex justify-content-between py-2 border-bottom"><span class="text-muted">@Localizer["Service years"]</span><span class="fw-bold">@Money(pv.ServiceYears)</span></div>
-                            <div class="d-flex justify-content-between py-2 border-bottom"><span class="text-muted">@Localizer["Daily rate"]</span><span class="fw-bold">@Money(pv.DailyRate)</span></div>
-                            <div class="d-flex justify-content-between py-2 border-bottom"><span class="text-muted">@Localizer["Encashable leave"]</span><span class="fw-bold">@pv.LeaveDays @Localizer["d"]</span></div>
-                            <div class="d-flex justify-content-between py-2 border-bottom"><span class="text-muted">@Localizer["Leave value"]</span><span class="fw-bold text-primary">@Money(pv.LeaveValue)</span></div>
-                            <div class="d-flex justify-content-between py-3"><span class="text-muted">@Localizer["Suggested gratuity"]<span class="fs-8 d-block">@Localizer["({0} days/yr)", Money(pv.GratuityDaysPerYear)]</span></span><span class="fw-bold" style="color:#145DBF;">@Money(pv.SuggestedGratuity)</span></div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-7">
-                    <div class="card card-flush h-100"><div class="card-header"><div class="card-title"><h2>@Localizer["Post settlement"]</h2></div></div>
-                        <div class="card-body pt-2">
-                            <form asp-action="PostFinalSettlement" method="post" data-cb-confirm data-cb-action="generic" data-cb-text="@Localizer["This terminates the employee and posts the settlement. Continue?"]">@Html.AntiForgeryToken()
-                                <input type="hidden" name="employeeId" value="@selEmp" />
-                                <input type="hidden" name="terminationDate" value="@termDate.ToString("yyyy-MM-dd")" />
-                                <div class="row g-3">
-                                    <div class="col-12"><label class="fw-semibold fs-7 mb-1">@Localizer["Reason"]</label><input name="reason" class="form-control form-control-solid" /></div>
-                                    <div class="col-md-6"><label class="fw-semibold fs-7 mb-1">@Localizer["Gratuity"]</label><input name="gratuity" type="number" step="0.01" min="0" class="form-control form-control-solid" value="@pv.SuggestedGratuity.ToString("0.00", ci)" /></div>
-                                    <div class="col-md-6"><label class="fw-semibold fs-7 mb-1">@Localizer["Other earnings"]</label><input name="otherEarnings" type="number" step="0.01" min="0" class="form-control form-control-solid" value="0" /></div>
-                                    <div class="col-md-6"><label class="fw-semibold fs-7 mb-1">@Localizer["Deductions"]</label><input name="deductions" type="number" step="0.01" min="0" class="form-control form-control-solid" value="0" /></div>
-                                    <div class="col-md-6"><label class="fw-semibold fs-7 mb-1">@Localizer["Pay from"]</label><select name="payFromGlAccountId" class="form-select form-select-solid" required>@foreach (var s in sources){<option value="@s.GlAccountId">@s.Name</option>}</select></div>
-                                </div>
-                                <div class="text-muted fs-8 mt-3">@Localizer["Net = (leave + gratuity + other) − deductions. Dr settlement expenses / Cr bank. The employee is deactivated and their contract closed."]</div>
-                                <button class="btn btn-danger w-100 mt-4" @(pv.AlreadyTerminated ? "disabled" : "")><i class="ki-outline ki-exit-right fs-3"></i>@Localizer["Terminate & post settlement"]</button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        }
-        else { <div class="card card-flush mb-5"><div class="card-body text-center text-muted py-10">@Localizer["Pick an employee to compute their settlement."]</div></div> }
-
-        <div class="card card-flush mt-5"><div class="card-header"><div class="card-title"><h2>@Localizer["Recent settlements"]</h2></div></div>
-            <div class="card-body pt-2">
-                <div class="table-responsive">
-                <table class="table align-middle fs-7 gy-3 mb-0" style="font-variant-numeric:tabular-nums;">
-                    <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #0E4A9E;">
-                        <th class="ps-4">@SR["Employee"]</th><th>@SR["Date"]</th><th class="text-end">@Localizer["Years"]</th><th class="text-end">@Localizer["Leave"]</th><th class="text-end">@Localizer["Gratuity"]</th><th class="text-end pe-4">@Localizer["Net"]</th></tr></thead>
-                    <tbody class="fw-semibold text-gray-700">
-                    @foreach (var s in history)
-                    {
-                        <tr style="border-bottom:1px dashed #eef1f6;">
-                            <td class="ps-4 fw-bold text-gray-800">@s.EmployeeName</td>
-                            <td class="text-gray-700">@s.TerminationDate.ToString("yyyy-MM-dd")</td>
-                            <td class="text-end">@Money(s.ServiceYears)</td>
-                            <td class="text-end @(s.LeaveValue > 0 ? "" : "text-gray-300")">@(s.LeaveValue > 0 ? Money(s.LeaveValue) : "—")</td>
-                            <td class="text-end @(s.Gratuity > 0 ? "" : "text-gray-300")">@(s.Gratuity > 0 ? Money(s.Gratuity) : "—")</td>
-                            <td class="text-end pe-4 fw-bolder" style="color:#0E4A9E;">@Money(s.NetSettlement)</td>
-                        </tr>
-                    }
-                    </tbody>
-                </table>
-                </div>
-                @if (!history.Any()) { <div class="text-center text-muted py-5">@Localizer["No settlements yet."]</div> }
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2">
+        <div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+            <div class="page-title d-flex flex-column justify-content-center gap-1">
+                <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@L("نهاية الخدمة والمخالصة", "End of service & settlement")</h1>
+                <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                    <li class="breadcrumb-item text-muted"><a href="@Url.Action("Index", "Admin")" class="text-muted text-hover-primary">@SR["HumanResources"]</a></li>
+                    <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                    <li class="breadcrumb-item text-muted">@L("الرواتب والمستحقات", "Pay & entitlements")</li>
+                </ul>
             </div>
         </div>
-    </div></div>
+    </div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid">
+        <div class="app-container container-fluid">
+            @if (TempData["HrErr"] is string err) { <div class="alert alert-danger d-flex align-items-center py-3 mb-5"><i class="ki-outline ki-information-5 fs-2 me-3 text-danger"></i>@err</div> }
+            @if (TempData["HrMsg"] is string msg) { <div class="alert alert-success d-flex align-items-center py-3 mb-5"><i class="ki-outline ki-check-circle fs-2 me-3 text-success"></i>@msg</div> }
+
+            @* ── Who and when ── *@
+            <div class="card mb-5">
+                <div class="card-body d-flex flex-wrap gap-6 align-items-center py-6">
+                    @if (person != null)
+                    {
+                        <div class="d-flex align-items-center min-w-0 flex-grow-1">
+                            <div class="symbol symbol-60px symbol-circle flex-shrink-0">
+                                @if (photo != null) { <img src="@photo" alt="" /> } else { <span class="symbol-label fs-3 fw-bold hr-initials">@Initials(person.FullNameEn ?? person.FullName)</span> }
+                            </div>
+                            <div class="d-flex flex-column ms-4 min-w-0">
+                                <a href="@Url.Action("EmployeeProfile", "Admin", new { id = person.ID })" class="fs-3 fw-bold text-gray-900 text-hover-primary text-truncate"><bdi>@Pick(person.FullName, person.FullNameEn)</bdi></a>
+                                <span class="text-muted fw-semibold">@Pick(person.JobTitleAr, person.JobTitleEn)@if (person.DateOfJoining.HasValue) { <span> · @L("تعيين", "joined") <span class="hr-num">@person.DateOfJoining.Value.ToString("yyyy-MM-dd")</span></span> }</span>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="flex-grow-1 text-muted">@L("اختر الموظف وتاريخ انتهاء الخدمة لحساب المخالصة.", "Pick the employee and the end-of-service date to compute the settlement.")</div>
+                    }
+                    <form method="get" class="d-flex flex-wrap gap-3 align-items-end">
+                        <div class="w-275px"><label class="fw-semibold fs-7 mb-1 text-muted">@L("الموظف", "Employee")</label>
+                            <select name="employeeId" class="form-select form-select-solid form-select-sm" data-person-select data-placeholder="@L("اختر موظفاً…", "Select an employee…")" onchange="this.form.submit()">
+                                <option value=""></option>
+                                @foreach (var e in emps) { <option value="@e.ID" selected="@(selEmp == e.ID)" data-photo="@CrossBuy.BL.Platform.EmployeePhotos.Web(e.ProfileImage)" data-initials="@Initials(e.FullNameEn ?? e.FullName)">@Pick(e.FullName, e.FullNameEn)</option> }
+                            </select></div>
+                        <div><label class="fw-semibold fs-7 mb-1 text-muted">@L("تاريخ انتهاء الخدمة", "End-of-service date")</label>
+                            <input name="terminationDate" type="date" class="form-control form-control-solid form-control-sm" value="@termDate.ToString("yyyy-MM-dd")" onchange="this.form.submit()" /></div>
+                    </form>
+                </div>
+            </div>
+
+            @if (selEmp.HasValue && pv != null)
+            {
+                if (pv.AlreadyTerminated)
+                {
+                    <div class="hr-notice mb-5"><i class="ki-outline ki-information-5 fs-2"></i><div><div class="fw-bold">@L("انتهت خدمة هذا الموظف", "This employee's service has already ended")</div><div class="fs-7">@L("الموظف غير نشط، والمخالصة لا تُرحَّل مرتين.", "The employee is inactive, and a settlement is never posted twice.")</div></div></div>
+                }
+                <div class="row g-5 mb-5">
+                    <div class="col-xl-6">
+                        <div class="card h-100">
+                            <div class="card-header border-0 pt-6"><div class="card-title flex-column m-0">
+                                <span class="fw-bold text-gray-900 fs-4">@L("مكافأة نهاية الخدمة", "End-of-service gratuity")</span>
+                                <span class="text-muted fs-7 mt-1">@(pv.ByLaw != null ? Pick(pv.RulePackNameAr, pv.RulePackNameEn) : L("كما يحسبها النظام اليوم", "As the system computes it today"))</span></div>
+                                <div class="card-toolbar"><a href="@Url.Action("HrRules", "Admin")" class="btn btn-sm btn-light">@L("القواعد", "Rules")</a></div></div>
+                            <div class="card-body pt-2">
+                                @{ Line(L("تاريخ التعيين", "Joined"), pv.JoinDate.ToString("yyyy-MM-dd")); }
+                                @{ Line(L("سنوات الخدمة", "Years of service"), pv.ServiceYears.ToString("0.00", ci)); }
+                                @if (pv.ByLaw is { } g && pv.GratuityRule is { } gr)
+                                {
+                                    Line(pv.WageIsBasic ? L("الأجر الشهري الأساسي", "Monthly basic wage") : L("الأجر الشهري الشامل", "Monthly total wage"), Money(pv.MonthlyWage));
+                                    Line(L("الأجر اليومي للمكافأة", "Daily wage for the gratuity"), Money(g.DailyWage));
+                                    Line(L("أول ", "First ") + gr.FirstYears.ToString("0.##", ci) + L(" سنوات × ", " years × ") + gr.FirstDaysPerYear.ToString("0.##", ci) + L(" يوماً", " days"), Money(g.FirstPart));
+                                    Line(L("ما بعدها × ", "Thereafter × ") + gr.LaterDaysPerYear.ToString("0.##", ci) + L(" يوماً عن كل سنة", " days a year"), Money(g.LaterPart));
+                                    Line(L("السقف: ", "Cap: ") + gr.CapMonths.ToString("0.##", ci) + L(" شهراً", " months") + (g.CapApplied ? L(" (طُبّق)", " (applied)") : ""), Money(g.CapAmount));
+                                    Line(L("رصيد إجازة قابل للصرف", "Encashable leave balance") + " (" + pv.LeaveDays + " " + L("يوم", "days") + ")", Money(pv.LeaveValue));
+                                    Line(L("عند الإنهاء من صاحب العمل", "On termination by the employer"), Money(g.OnTermination), true, "text-primary");
+                                    Line(L("عند الاستقالة", "On resignation") + " (" + g.ResignationPaidPct.ToString("0.##", ci) + "%)", Money(g.OnResignation), false, "fw-bolder");
+                                    if (pv.OutstandingLoans > 0) { Line(L("يُخصم: قروض وسلف متبقية", "Less: outstanding loans & advances"), "−" + Money(pv.OutstandingLoans), false, "text-danger"); }
+                                    if (pv.MonthlyWage <= 0) { <div class="text-danger fs-7 mt-3">@L("لا سياسة راتب مرتبطة بالموظف، فلا يمكن حساب المكافأة وفق القانون.", "No salary policy is linked to the employee, so the statutory gratuity cannot be computed.")</div> }
+                                }
+                                else
+                                {
+                                    Line(L("الأجر اليومي", "Daily rate"), Money(pv.DailyRate));
+                                    Line(L("أيام المكافأة عن كل سنة", "Gratuity days per year"), pv.GratuityDaysPerYear.ToString("0.##", ci));
+                                    Line(L("رصيد إجازة قابل للصرف", "Encashable leave balance"), pv.LeaveDays + " " + L("يوم", "days"));
+                                    Line(L("قيمة رصيد الإجازة", "Leave balance value"), Money(pv.LeaveValue));
+                                    Line(L("المكافأة المقترحة", "Suggested gratuity"), Money(pv.SuggestedGratuity), true, "text-primary");
+                                }
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-xl-6">
+                        <div class="card h-100">
+                            <div class="card-header border-0 pt-6"><div class="card-title flex-column m-0">
+                                <span class="fw-bold text-gray-900 fs-4">@L("المخالصة النهائية", "Final settlement")</span>
+                                <span class="text-muted fs-7 mt-1">@L("الصافي = (الإجازة + المكافأة + مستحقات أخرى) − الخصومات", "Net = (leave + gratuity + other earnings) − deductions")</span></div></div>
+                            <div class="card-body pt-2">
+                                <form asp-action="PostFinalSettlement" method="post" data-cb-confirm data-cb-action="generic" data-cb-text="@L("سيُنهي هذا خدمة الموظف ويرحّل المخالصة. هل تتابع؟", "This ends the employee's service and posts the settlement. Continue?")">@Html.AntiForgeryToken()
+                                    <input type="hidden" name="employeeId" value="@selEmp" />
+                                    <input type="hidden" name="terminationDate" value="@termDate.ToString("yyyy-MM-dd")" />
+                                    <div class="row g-4">
+                                        <div class="col-12"><label class="fw-semibold fs-7 mb-1 text-muted">@L("السبب", "Reason")</label><input name="reason" class="form-control form-control-solid" placeholder="@L("استقالة، إنهاء من صاحب العمل، انتهاء عقد…", "Resignation, termination by the employer, contract end…")" /></div>
+                                        <div class="col-md-6"><label class="fw-semibold fs-7 mb-1 text-muted">@L("المكافأة", "Gratuity")</label><input name="gratuity" type="number" step="0.01" min="0" class="form-control form-control-solid hr-num" value="@pv.SuggestedGratuity.ToString("0.00", ci)" /></div>
+                                        <div class="col-md-6"><label class="fw-semibold fs-7 mb-1 text-muted">@L("مستحقات أخرى", "Other earnings")</label><input name="otherEarnings" type="number" step="0.01" min="0" class="form-control form-control-solid hr-num" value="0" /></div>
+                                        <div class="col-md-6"><label class="fw-semibold fs-7 mb-1 text-muted">@L("خصومات أخرى (عهد…)", "Other deductions (custody…)")</label><input name="deductions" type="number" step="0.01" min="0" class="form-control form-control-solid hr-num" value="0" /></div>
+                                        <div class="col-md-6"><label class="fw-semibold fs-7 mb-1 text-muted">@L("الدفع من", "Pay from")</label><select name="payFromGlAccountId" class="form-select form-select-solid" required>@foreach (var s in sources) { <option value="@s.GlAccountId">@s.Name</option> }</select></div>
+                                    </div>
+                                    @if (pv.OutstandingLoans > 0) { <div class="alert alert-light-danger py-2 px-3 mt-4 mb-0 fs-7">@L("القروض والسلف المتبقية (", "Outstanding loans & advances (")<span class="hr-num fw-bold">@Money(pv.OutstandingLoans)</span>@L(") تُسترد من المخالصة تلقائياً، دائنة لحساب سلف الموظفين.", ") are recovered from the settlement automatically, credited to the employee-loans account.")</div> }
+                                    <div class="text-muted fs-8 mt-4">@L("القيد: مدين مصروفات المخالصة / دائن البنك أو الصندوق. يُعطَّل الموظف ويُغلق عقده.", "Entry: Dr settlement expenses / Cr bank or cash. The employee is deactivated and their contract closed.")</div>
+                                    <button class="btn btn-danger w-100 mt-4" @(pv.AlreadyTerminated ? "disabled" : "")><i class="ki-outline ki-exit-right fs-3"></i>@L("إنهاء الخدمة وترحيل المخالصة", "End service & post the settlement")</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="hr-notice mb-5">
+                    <i class="ki-outline ki-shield-cross fs-2"></i>
+                    <div><div class="fw-bold">@L("ما بقي", "What remains")</div>
+                    <div class="fs-7">@L("المكافأة تُحسب الآن من حزمة قواعد الدولة على راتب الموظف، والقروض المتبقية تُسترد تلقائياً. القادم: مخصص شهري للمكافأة يُرحَّل للقيود، وقائمة إخلاء طرف تُنشئ مهمة لكل قسم.", "The gratuity is now computed from the country rule pack on the employee's own salary, and outstanding loans are recovered automatically. Next: a monthly gratuity provision posted to the ledger, and a clearance checklist that opens a task per department.")</div></div>
+                </div>
+            }
+
+            @* ── History ── *@
+            <div class="card mb-5">
+                <div class="card-header border-0 pt-6 flex-wrap gap-3">
+                    <div class="card-title flex-column m-0">
+                        <span class="fw-bold text-gray-900 fs-4">@L("المخالصات المرحّلة", "Posted settlements")</span>
+                        <span class="text-muted fs-7 mt-1" id="resultCount">—</span>
+                    </div>
+                    <div class="card-toolbar d-flex align-items-center gap-2 flex-wrap">
+                        <div class="w-250px"><input type="text" id="f_q" class="form-control form-control-solid form-control-sm" autocomplete="off" placeholder="@L("ابحث بالموظف أو السبب…", "Search employee or reason…")" /></div>
+                        <select id="f_size" class="form-select form-select-solid form-select-sm w-auto"><option value="25">25</option><option value="50">50</option><option value="100">100</option></select>
+                        <button type="button" id="f_reset" class="btn btn-sm btn-light" title="@L("إعادة ضبط", "Reset")"><i class="ki-outline ki-arrows-circle fs-4"></i></button>
+                    </div>
+                </div>
+                <div class="card-body pt-4">
+                    <div class="table-responsive">
+                        <table class="table align-middle gy-3 mb-0 hr-table">
+                            <thead><tr class="fw-bold fs-8 text-uppercase text-muted">
+                                <th class="ps-4">@L("الموظف", "Employee")</th><th>@L("التاريخ", "Date")</th><th class="text-end">@L("سنوات", "Years")</th><th class="text-end">@L("الإجازة", "Leave")</th><th class="text-end">@L("المكافأة", "Gratuity")</th><th class="text-end">@L("الخصومات", "Deductions")</th><th class="text-end pe-4">@L("الصافي", "Net")</th>
+                            </tr></thead>
+                            <tbody class="fs-6" id="rows"></tbody>
+                        </table>
+                    </div>
+                    <div class="text-center text-muted py-10 d-none" id="loadingRow"><span class="spinner-border spinner-border-sm me-2"></span>@L("جارٍ التحميل…", "Loading…")</div>
+                    <div class="text-center text-muted py-10 d-none" id="emptyRow">@L("لا مخالصات مطابقة", "No matching settlements")</div>
+                    <div class="d-flex flex-stack flex-wrap pt-5"><div class="fs-7 text-muted" id="pageInfo"></div><ul class="pagination" id="pager"></ul></div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+
+@section Scripts {
+@await Html.PartialAsync("_PersonSelect")
+<script src="~/Backend-assets/js/crossbuy-tagify.js" asp-append-version="true"></script>
+<script>
+cbServerList({ url: '@Url.Action("SettlementsData", "Admin")', isAr: @(isAr ? "true" : "false") });
+</script>
+}

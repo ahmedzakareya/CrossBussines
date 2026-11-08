@@ -18,5 +18,7 @@ namespace CrossBuy.ViewModel
 		public string? Email { get; set; }
 		public string? PhoneNumber { get; set; }
 		public bool IsActive { get; set; }
+		// The directory shows the joining date and years of service (HR prototype design, 2026-11-08).
+		public DateTime? DateOfJoining { get; set; }
 	}
 }

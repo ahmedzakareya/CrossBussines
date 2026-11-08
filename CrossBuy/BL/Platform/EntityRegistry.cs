@@ -55,6 +55,7 @@ namespace CrossBuy.BL.Platform
         public const string HospitalRoom = "HospitalRoom";
         // Hospital H2: the care team discusses a patient on the patient's file.
         public const string HospitalPatient = "HospitalPatient";
+        public const string JobApplication = "JobApplication";   // HR recruitment: an applicant, files only (2026-11-08)
 
         // Stage 2A Batch A. The grant store becomes an event PRODUCER: IPlatformGrantWriter records
         // Created / Revoked / ValidityChanged. RecordAsync validates EntityCode against this registry and
@@ -615,6 +616,21 @@ namespace CrossBuy.BL.Platform
             },
             new EntityDefinition
             {
+                // HR recruitment (2026-11-08). A job application, FILES ONLY: the applicant's photo and documents live on
+                // the document platform (owner rule — every file in the File Manager), owned through
+                // JobApplicationDocumentOwnerResolver. No search, comments or picker: an application is reached from the
+                // recruitment screens. On hire its files are COPIED onto the new Employee record; the application keeps its own.
+                Code = JobApplication,
+                DisplayNameAr = "طلب توظيف", DisplayNameEn = "Job application",
+                Module = "Hr", Icon = "ki-outline ki-user-tick", Color = "primary",
+                RouteTemplate = "/Admin/ApplicationDetail/{id}",
+                SupportsSearch = false, SupportsTimeline = false, SupportsComments = false,
+                SupportsFiles = true, SupportsFollowers = false,
+                PermissionScope = ScopeHr,
+                ListedInRecordPicker = false,
+            },
+            new EntityDefinition
+            {
                 // Stage 2A Batch A — the platform grant store, onboarded so the Grant Writer can record events.
                 //
                 // SupportsTimeline / Comments / Files / Followers are all FALSE, and it is NOT listed in the
@@ -678,7 +694,7 @@ namespace CrossBuy.BL.Platform
                 Module = "Hr", Icon = "ki-outline ki-calendar-tick", Color = "info",
                 RouteTemplate = "/People/Leaves",
                 SupportsSearch = false, SupportsTimeline = false, SupportsComments = false,
-                SupportsFiles = false, SupportsFollowers = false,
+                SupportsFiles = true, SupportsFollowers = false,   // HR3: files = the medical certificate (LeaveRequestDocumentOwnerResolver)
                 PermissionScope = ScopeHr,
                 ListedInRecordPicker = false,
             },
@@ -1069,6 +1085,12 @@ namespace CrossBuy.BL.Platform
                     label = await _db.HospitalPatients.AsNoTracking()
                         .Where(p => p.ID == entityId && p.CompanyId == companyId)
                         .Select(p => p.Mrn + " — " + p.Name).FirstOrDefaultAsync(cancellationToken);
+                    break;
+
+                case JobApplication:
+                    label = await _db.JobApplications.AsNoTracking()
+                        .Where(a => a.ID == entityId && a.CompanyID == companyId)
+                        .Select(a => "#" + a.ApplicationNo + " — " + (a.FullName ?? (a.FirstName + " " + a.LastName))).FirstOrDefaultAsync(cancellationToken);
                     break;
 
                 case CalendarEvent:

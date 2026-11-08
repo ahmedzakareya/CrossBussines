@@ -881,6 +881,13 @@ namespace CrossBuy.Models.Context
         public DbSet<Pos.PosSyncConflict> PosSyncConflicts { get; set; }
         public DbSet<Tasks.TaskItem> TaskItems { get; set; }   // TM-1: task management
         public DbSet<Tasks.TimesheetEntry> TimesheetEntries { get; set; }   // TM-3: timesheet
+        public DbSet<Admin.HrRulePack> HrRulePacks { get; set; }   // HR country rule packs (hr_rule_packs.sql)
+        public DbSet<Admin.EmployeeDependant> EmployeeDependants { get; set; }   // HR1 (hr1_employee_record.sql)
+        public DbSet<Admin.EmployeeSalary> EmployeeSalaries { get; set; }   // HR4 (hr4_employee_salary.sql): pay per employee, effective-dated
+        public DbSet<Admin.EmployeeLoan> EmployeeLoans { get; set; }                   // HR4 (hr4_employee_loans.sql)
+        public DbSet<Admin.EmployeeLoanDeduction> EmployeeLoanDeductions { get; set; } // HR4: one row per loan per posted payroll month
+        public DbSet<Admin.OvertimeApproval> OvertimeApprovals { get; set; }           // HR5 (hr5_overtime_approvals.sql)
+        public DbSet<Admin.EmployeeHistory> EmployeeHistory { get; set; }         // HR1 effective-dated history
         public DbSet<Tasks.TaskAutoRule> TaskAutoRules { get; set; }        // TM-7: auto-task rules
         public DbSet<Tasks.TaskAutoLog> TaskAutoLogs { get; set; }          // TM-7: dedupe log
         public DbSet<Tasks.TaskMatchSuggestion> TaskMatchSuggestions { get; set; }   // TM-9-ب: scheduled-task match candidates

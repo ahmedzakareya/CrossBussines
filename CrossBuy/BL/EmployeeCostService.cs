@@ -22,7 +22,9 @@ namespace CrossBuy.BL
 			var empRate = await _db.Employee.AsNoTracking().Where(e => e.ID == employeeId).Select(e => e.ManufHourlyRate).FirstOrDefaultAsync();
 			if (empRate.HasValue && empRate.Value > 0) return empRate.Value;
 			// fallback: BaseSalary (from the employee's salary policy) ÷ standard monthly hours
-			var baseSalary = await _db.SalaryPolicies.AsNoTracking().Where(sp => sp.Employees.Any(e => e.ID == employeeId)).Select(sp => (decimal?)sp.BaseSalary).FirstOrDefaultAsync();
+			// HR4: the employee's own basic salary in force today, else their policy's (the one place pay is read)
+			var pay = await new CrossBuy.BL.Hr.HrSalaryService(_db).ForAsync(employeeId, DateTime.Today);
+			decimal? baseSalary = pay.Basic > 0 ? pay.Basic : null;
 			var stdHours = await _db.PayrollSettings.AsNoTracking().Where(p => p.CompanyID == companyId).Select(p => (decimal?)p.StandardMonthlyHours).FirstOrDefaultAsync() ?? 0m;
 			if (baseSalary.HasValue && baseSalary.Value > 0 && stdHours > 0) return Math.Round(baseSalary.Value / stdHours, 4);
 			return 0m;

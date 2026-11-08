@@ -35,6 +35,8 @@ namespace CrossBuy.BL.Documents
         public static IServiceCollection AddDocumentPlatform(IServiceCollection services)
         {
             services.AddScoped<IPlatformDocumentService, PlatformDocumentService>();
+            services.AddScoped<CrossBuy.BL.Platform.IDocumentOwnerResolver, CrossBuy.BL.Hr.JobApplicationDocumentOwnerResolver>();   // HR: applicant photo + documents (2026-11-08)
+            services.AddScoped<CrossBuy.BL.Platform.IDocumentOwnerResolver, CrossBuy.BL.Hr.LeaveRequestDocumentOwnerResolver>();    // HR3: medical certificates on leave requests (2026-11-08)
             services.AddScoped<IClientDocumentPublicationService, ClientDocumentPublicationService>();
 
             // THE CLOCK, registered with TryAdd rather than Add.

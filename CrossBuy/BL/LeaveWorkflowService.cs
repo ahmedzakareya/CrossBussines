@@ -358,6 +358,13 @@ namespace CrossBuy.BL
 			if (days > remaining)
 				return (false, $"Insufficient balance. {(remaining < 0 ? 0 : remaining)} day(s) remain and {days} day(s) are requested.", null);
 
+			// HR3: the law (country rule pack) and the company policy — notice, service, times per career, religion, accrual.
+			// Every refusal names the rule and its figure.
+			// Accrual is judged against the balance of the year the leave falls in, not of today's year.
+			var remainingInLeaveYear = start.Year == DateTime.UtcNow.Year ? remaining : await _dashboard.RemainingForTypeInYearAsync(employeeId, leaveTypeId, start.Year);
+			var refusal = await new CrossBuy.BL.Hr.HrLeaveEligibility(_context).CheckAsync(employeeId, leaveTypeId, start, days, remainingInLeaveYear);
+			if (refusal != null) return (false, refusal.Text, null);
+
 			var chainResult = await ApproverChainAsync(employeeId);
 			var chain = chainResult.Approvers;
 

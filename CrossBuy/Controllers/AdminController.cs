@@ -34,11 +34,29 @@ namespace CrossBuy.Controllers
 		}
 
 		// ===== Official holidays (HR-1) =====
-		private const int HrCompanyId = 1;
+		// THE HR COMPANY, RESOLVED PER REQUEST.
+		//
+		// This was `private const int HrCompanyId = 1;`, read by twenty-four lines across eleven HR
+		// screens - holidays, attendance, final settlements, employee documents, leave accrual and
+		// carry-over, the HR dashboard. Every one of them showed company 1’s people to whoever was
+		// signed in, and none of the eleven resolved a company at all; the comment on PostPayroll
+		// already named the constant as the defect.
+		//
+		// ZERO WHEN IT CANNOT RESOLVE, deliberately. The screens filter on this value, so an
+		// unresolvable request reads an empty company rather than somebody else’s - missing and
+		// inaccessible give the same answer, which is the rule the rest of the platform follows.
+		private async Task<int> HrCompanyAsync()
+		{
+			var scope = await CompanyResolver.ResolveAsync();
+			return scope.Ok ? scope.CompanyId : 0;
+		}
 		[HttpGet]
 		public async Task<IActionResult> HolidaysList()
 		{
-			return View(await holidayService.GetAllAsync(HrCompanyId));
+			var gate = await HrGateAsync(CrossBuy.BL.HrActions.Read);
+			if (!gate.Ok) return HrDenied(nameof(Index));
+			var hrCompany = gate.CompanyId;
+			return View(await holidayService.GetAllAsync(hrCompany));
 		}
 
 		[HttpPost]
@@ -76,18 +94,37 @@ namespace CrossBuy.Controllers
 		[HttpGet]
 		public async Task<IActionResult> Attendance(int? year, int? month)
 		{
+			// HR0: every HR read checks the HR right before it reads. Under bootstrap (no HR role assigned in the
+			// company) `read` stays open, so nobody loses a screen today; once roles exist the right is enforced.
+			var gate = await HrGateAsync(CrossBuy.BL.HrActions.Read);
+			if (!gate.Ok) return HrDenied(nameof(Index));
+			var hrCompany = gate.CompanyId;
 			int y = year ?? DateTime.Today.Year, m = month ?? DateTime.Today.Month;
 			ViewBag.Year = y; ViewBag.Month = m;
-			return View(await AttSvc.MonthlySummaryAsync(HrCompanyId, y, m));
+			var summary = await AttSvc.MonthlySummaryAsync(hrCompany, y, m);
+			// HR prototype design (2026-11-08): the month's latest punches beside the summary, and every person with their photo.
+			var records = await AttSvc.ForMonthAsync(hrCompany, null, y, m);
+			ViewBag.Latest = records.OrderByDescending(r => r.WorkDate).ThenByDescending(r => r.CheckIn).Take(15).ToList();
+			var ctxPhotos = await BusinessContexts.TryGetCurrentAsync();
+			ViewBag.Photos = ctxPhotos == null ? new Dictionary<int, string>()
+				: await CrossBuy.BL.Platform.EmployeePhotos.ResolveAsync(Db, ctxPhotos, summary.Select(r => r.EmployeeID).Concat(records.Select(r => r.EmployeeID)).Distinct());
+			var shownIds = summary.Select(r => r.EmployeeID).Concat(records.Select(r => r.EmployeeID)).Distinct().ToList();
+			ViewBag.Names = (await Db.Employee.AsNoTracking().Where(e => shownIds.Contains(e.ID) && e.EmpCompanyID == hrCompany)
+				.Select(e => new { e.ID, e.FullName, e.FullNameEn }).ToListAsync())
+				.ToDictionary(e => e.ID, e => CrossBuy.BL.EmployeeNames.Of(e.FullName, e.FullNameEn));
+			return View(summary);
 		}
 
 		[HttpGet]
 		public async Task<IActionResult> AttendanceEntry(int? year, int? month)
 		{
+			var gate = await HrGateAsync(CrossBuy.BL.HrActions.AttendanceManage);
+			if (!gate.Ok) return HrDenied(nameof(Attendance));
+			var hrCompany = gate.CompanyId;
 			int y = year ?? DateTime.Today.Year, m = month ?? DateTime.Today.Month;
 			ViewBag.Year = y; ViewBag.Month = m;
 			ViewBag.Employees = await EmployeesAsync();
-			ViewBag.Records = await AttSvc.ForMonthAsync(HrCompanyId, null, y, m);
+			ViewBag.Records = await AttSvc.ForMonthAsync(hrCompany, null, y, m);
 			return View();
 		}
 
@@ -113,16 +150,27 @@ namespace CrossBuy.Controllers
 		[HttpGet]
 		public async Task<IActionResult> FinalSettlement(int? employeeId, DateTime? terminationDate)
 		{
+			// Settlement money is payroll data: payroll-view, not the general HR read.
+			var gate = await HrGateAsync(CrossBuy.BL.HrActions.PayrollView);
+			if (!gate.Ok) return HrDenied(nameof(Index));
+			var hrCompany = gate.CompanyId;
 			ViewBag.Employees = await EmployeesAsync();
 			ViewBag.SelectedEmployee = employeeId;
 			var termDate = terminationDate ?? DateTime.Today;
 			ViewBag.TermDate = termDate;
-			if (employeeId.HasValue) ViewBag.Preview = await SettleSvc.PreviewAsync(HrCompanyId, employeeId.Value, termDate);
-			var banks = await BankSvc2.GetBankAccountsAsync(HrCompanyId);
-			var boxes = await BankSvc2.GetCashBoxesAsync(HrCompanyId);
+			if (employeeId.HasValue) ViewBag.Preview = await SettleSvc.PreviewAsync(hrCompany, employeeId.Value, termDate);
+			// HR prototype design (2026-11-08): the selected person shown with their photo and title.
+			if (employeeId.HasValue)
+			{
+				ViewBag.Person = await Db.Employee.AsNoTracking().Where(e => e.ID == employeeId.Value && e.EmpCompanyID == hrCompany)
+					.Select(e => new CrossBuy.ViewModel.EmployeeListItemDto { ID = e.ID, FullName = e.FullName, FullNameEn = e.FullNameEn, ProfileImage = e.ProfileImage, JobTitleAr = e.JobTitle.TitleAr, JobTitleEn = e.JobTitle.Title, DateOfJoining = e.DateOfJoining, IsActive = e.IsActive })
+					.FirstOrDefaultAsync();
+			}
+			var banks = await BankSvc2.GetBankAccountsAsync(hrCompany);
+			var boxes = await BankSvc2.GetCashBoxesAsync(hrCompany);
 			ViewBag.PaySources = banks.Select(b => new PaySourceOption { GlAccountId = b.GlAccountId, Name = b.BankName })
 				.Concat(boxes.Select(c => new PaySourceOption { GlAccountId = c.GlAccountId, Name = c.Name })).ToList();
-			ViewBag.Settlements = await Db.FinalSettlements.AsNoTracking().Where(s => s.CompanyID == HrCompanyId).OrderByDescending(s => s.ID).Take(20).ToListAsync();
+			ViewBag.Settlements = await Db.FinalSettlements.AsNoTracking().Where(s => s.CompanyID == hrCompany).OrderByDescending(s => s.ID).Take(20).ToListAsync();
 			return View();
 		}
 
@@ -215,16 +263,19 @@ namespace CrossBuy.Controllers
 		[HttpGet]
 		public async Task<IActionResult> HrDocuments(int? employeeId)
 		{
+			var gate = await HrGateAsync(CrossBuy.BL.HrActions.EmployeeView);
+			if (!gate.Ok) return HrDenied(nameof(Index));
+			var hrCompany = gate.CompanyId;
 			ViewBag.Employees = await EmployeesAsync();
 			ViewBag.SelectedEmployee = employeeId;
 			if (employeeId.HasValue)
 			{
-				var contracts = await DocSvc.GetContractsAsync(HrCompanyId, employeeId.Value);
-				var documents = await DocSvc.GetDocumentsAsync(HrCompanyId, employeeId.Value);
+				var contracts = await DocSvc.GetContractsAsync(hrCompany, employeeId.Value);
+				var documents = await DocSvc.GetDocumentsAsync(hrCompany, employeeId.Value);
 				ViewBag.Contracts = contracts;
 				ViewBag.Documents = documents;
-				ViewBag.ContractFileCounts = await DocSvc.GetAttachmentCountsAsync(HrCompanyId, "Contract", contracts.Select(c => c.ID));
-				ViewBag.DocumentFileCounts = await DocSvc.GetAttachmentCountsAsync(HrCompanyId, "Document", documents.Select(d => d.ID));
+				ViewBag.ContractFileCounts = await DocSvc.GetAttachmentCountsAsync(hrCompany, "Contract", contracts.Select(c => c.ID));
+				ViewBag.DocumentFileCounts = await DocSvc.GetAttachmentCountsAsync(hrCompany, "Document", documents.Select(d => d.ID));
 			}
 			return View();
 		}
@@ -233,8 +284,13 @@ namespace CrossBuy.Controllers
 		[HttpGet]
 		public async Task<IActionResult> HrDocFiles(string kind, int id)
 		{
+			// Contract and document scans are an employee's record: employee-view, and an empty list on refusal
+			// because the gallery iterates the answer.
+			var gate = await HrGateAsync(CrossBuy.BL.HrActions.EmployeeView);
+			if (!gate.Ok) return Json(Array.Empty<object>());
+			var hrCompany = gate.CompanyId;
 			var k = kind == "Contract" ? "Contract" : "Document";
-			var atts = await DocSvc.GetAttachmentsAsync(HrCompanyId, k, id);
+			var atts = await DocSvc.GetAttachmentsAsync(hrCompany, k, id);
 			return Json(atts.Select(a => new { id = a.ID, url = a.FilePath, name = a.FileName ?? System.IO.Path.GetFileName(a.FilePath) }));
 		}
 
@@ -245,8 +301,8 @@ namespace CrossBuy.Controllers
 			var gate = await HrGateAsync(CrossBuy.BL.HrActions.EmployeeManage, subjectEmployeeId: employeeId);
 			if (!gate.Ok) return HrDenied(nameof(HrDocuments), new { employeeId });
 
-			await DocSvc.AddFilesAsync(gate.CompanyId, kind, ownerId, files, WebRoot);
-			TempData["HrMsg"] = L["Attachments added"].Value;
+			try { await DocSvc.AddFilesAsync(gate.CompanyId, kind, ownerId, files, WebRoot); TempData["HrMsg"] = L["Attachments added"].Value; }
+			catch (InvalidOperationException ex) { TempData["HrErr"] = L[ex.Message].Value; }
 			return RedirectToAction(nameof(HrDocuments), new { employeeId });
 		}
 
@@ -315,9 +371,17 @@ namespace CrossBuy.Controllers
 		[HttpGet]
 		public async Task<IActionResult> DocExpiryAlerts(int? days)
 		{
+			var gate = await HrGateAsync(CrossBuy.BL.HrActions.Read);
+			if (!gate.Ok) return HrDenied(nameof(Index));
+			var hrCompany = gate.CompanyId;
 			int d = days ?? 60;
 			ViewBag.Days = d;
-			return View(await DocSvc.ExpiringAsync(HrCompanyId, d));
+			var items = await DocSvc.ExpiringAsync(hrCompany, d);
+			// Every person on the page is shown with their photo (HR prototype design, 2026-11-08).
+			var ctxPhotos = await BusinessContexts.TryGetCurrentAsync();
+			ViewBag.Photos = ctxPhotos == null ? new Dictionary<int, string>()
+				: await CrossBuy.BL.Platform.EmployeePhotos.ResolveAsync(Db, ctxPhotos, items.Select(i => i.EmployeeId).Distinct());
+			return View(items);
 		}
 
 		[HttpPost]
@@ -340,16 +404,23 @@ namespace CrossBuy.Controllers
 		[HttpGet]
 		public async Task<IActionResult> LeaveAccrual(int? employeeId, DateTime? asOf)
 		{
+			var gate = await HrGateAsync(CrossBuy.BL.HrActions.LeaveManage);
+			if (!gate.Ok) return HrDenied(nameof(Index));
+			var hrCompany = gate.CompanyId;
+			// The balance lookup takes a bare employee id, so the id is checked against the caller's company
+			// first: another company's employee reads as no selection at all.
+			if (employeeId.HasValue && !await Db.Employee.AsNoTracking().AnyAsync(e => e.ID == employeeId.Value && e.EmpCompanyID == hrCompany))
+				employeeId = null;
 			ViewBag.Employees = await EmployeesAsync();
 			ViewBag.SelectedEmployee = employeeId;
 			ViewBag.Balances = employeeId.HasValue ? await AccrualSvc.GetEncashableBalancesAsync(employeeId.Value) : new List<CrossBuy.BL.EncashableBalance>();
-			var banks = await BankSvc.GetBankAccountsAsync(HrCompanyId);
-			var boxes = await BankSvc.GetCashBoxesAsync(HrCompanyId);
+			var banks = await BankSvc.GetBankAccountsAsync(hrCompany);
+			var boxes = await BankSvc.GetCashBoxesAsync(hrCompany);
 			ViewBag.PaySources = banks.Select(b => new PaySourceOption { GlAccountId = b.GlAccountId, Name = b.BankName })
 				.Concat(boxes.Select(c => new PaySourceOption { GlAccountId = c.GlAccountId, Name = c.Name })).ToList();
 			var asOfDate = asOf ?? new DateTime(DateTime.Today.Year, 12, 31);
 			ViewBag.AsOf = asOfDate;
-			ViewBag.Provision = await AccrualSvc.ProvisionPreviewAsync(HrCompanyId, asOfDate);
+			ViewBag.Provision = await AccrualSvc.ProvisionPreviewAsync(hrCompany, asOfDate);
 			ViewBag.LeaveTypes = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.ToListAsync(Db.LeaveTypes.AsNoTracking().OrderBy(t => t.NameAr));
 			return View();
 		}
@@ -369,10 +440,13 @@ namespace CrossBuy.Controllers
 		[HttpGet]
 		public async Task<IActionResult> LeaveCarryOver(int? fromYear)
 		{
+			var gate = await HrGateAsync(CrossBuy.BL.HrActions.LeaveManage);
+			if (!gate.Ok) return HrDenied(nameof(Index));
+			var hrCompany = gate.CompanyId;
 			int y = fromYear ?? (DateTime.Today.Year - 1);
 			ViewBag.FromYear = y;
-			ViewBag.Rows = await AccrualSvc.CarryOverPreviewAsync(HrCompanyId, y);
-			ViewBag.Existing = await Db.LeaveCarryOvers.AsNoTracking().Where(c => c.CompanyID == HrCompanyId && c.Year == y + 1).SumAsync(c => (int?)c.Days) ?? 0;
+			ViewBag.Rows = await AccrualSvc.CarryOverPreviewAsync(hrCompany, y);
+			ViewBag.Existing = await Db.LeaveCarryOvers.AsNoTracking().Where(c => c.CompanyID == hrCompany && c.Year == y + 1).SumAsync(c => (int?)c.Days) ?? 0;
 			return View();
 		}
 
@@ -413,6 +487,15 @@ namespace CrossBuy.Controllers
 		}
 		public async Task<IActionResult> Index()
 		{
+			// The HR dashboard is where every other HR refusal lands, so its own refusal must land elsewhere:
+			// the employee's self-service dashboard, which every signed-in employee may open.
+			var gate = await HrGateAsync(CrossBuy.BL.HrActions.Read);
+			if (!gate.Ok)
+			{
+				TempData["HrErr"] = L["You do not have permission to perform this action"].Value;
+				return RedirectToAction("Dashboard", "People");
+			}
+			var hrCompany = gate.CompanyId;
 			var now = DateTime.UtcNow;
 			var year = now.Year;
 			var today = now.Date;
@@ -420,7 +503,7 @@ namespace CrossBuy.Controllers
 
 			// ----- Employees (company scoped) -----
 			var emps = await Db.Employee.AsNoTracking().Include(e => e.JobTitle)
-				.Where(e => e.EmpCompanyID == HrCompanyId).ToListAsync();
+				.Where(e => e.EmpCompanyID == hrCompany).ToListAsync();
 			dto.TotalEmployees = emps.Count;
 			dto.ActiveEmployees = emps.Count(e => e.IsActive);
 			dto.InactiveEmployees = emps.Count(e => !e.IsActive);
@@ -433,7 +516,7 @@ namespace CrossBuy.Controllers
 
 			// ----- Leave requests (company scoped via Employee) -----
 			var reqs = await Db.LeaveRequests.AsNoTracking().Include(r => r.LeaveType).Include(r => r.Employee)
-				.Where(r => r.Employee != null && r.Employee.EmpCompanyID == HrCompanyId).ToListAsync();
+				.Where(r => r.Employee != null && r.Employee.EmpCompanyID == hrCompany).ToListAsync();
 			dto.PendingLeaves = reqs.Count(r => r.Status == 0);
 			dto.ApprovedLeavesYtd = reqs.Count(r => r.Status == 1 && r.StartDate.Year == year);
 			dto.OnLeaveToday = reqs.Count(r => r.Status == 1 && r.StartDate.Date <= today && r.EndDate.Date >= today);
@@ -451,6 +534,7 @@ namespace CrossBuy.Controllers
 			{
 				// The name the reader sees, not the Arabic one: this list sits beside the expiring-documents
 				// card, which already resolved it, so the two cards disagreed about the same person.
+				EmployeeId = r.EmployeeID,
 				EmployeeName = r.Employee != null
 					? CrossBuy.BL.EmployeeNames.Of(r.Employee.FullName, r.Employee.FullNameEn)
 					: null,
@@ -465,7 +549,7 @@ namespace CrossBuy.Controllers
 			// ----- Attendance (current month, company-wide totals) -----
 			try
 			{
-				var att = await AttSvc.MonthlySummaryAsync(HrCompanyId, now.Year, now.Month);
+				var att = await AttSvc.MonthlySummaryAsync(hrCompany, now.Year, now.Month);
 				dto.AttPresent = att.Sum(a => a.PresentDays);
 				dto.AttAbsent = att.Sum(a => a.AbsentDays);
 				dto.AttLate = att.Sum(a => a.LateCount);
@@ -477,11 +561,12 @@ namespace CrossBuy.Controllers
 			// ----- Documents / contracts expiring (next 60 days) -----
 			try
 			{
-				var exp = await DocSvc.ExpiringAsync(HrCompanyId, 60);
+				var exp = await DocSvc.ExpiringAsync(hrCompany, 60);
 				dto.ExpiredDocs = exp.Count(x => x.DaysLeft < 0);
 				dto.ExpiringSoonCount = exp.Count(x => x.DaysLeft >= 0);
 				dto.ExpiringDocs = exp.OrderBy(x => x.DaysLeft).Take(6).Select(x => new CrossBuy.BL.HrExpiryRow
 				{
+					EmployeeId = x.EmployeeId,
 					EmployeeName = x.EmployeeName,
 					Label = x.Label,
 					Date = x.Date,
@@ -494,7 +579,7 @@ namespace CrossBuy.Controllers
 			// ----- Upcoming official holidays -----
 			try
 			{
-				var hols = await holidayService.GetAllAsync(HrCompanyId);
+				var hols = await holidayService.GetAllAsync(hrCompany);
 				dto.UpcomingHolidays = hols.Select(h =>
 				{
 					var d = h.HolidayDate.Date;
@@ -508,12 +593,26 @@ namespace CrossBuy.Controllers
 			}
 			catch { }
 
+			// ----- Recent joiners (last 13 months) and every shown person's photo -----
+			dto.RecentJoiners = emps.Where(e => e.DateOfJoining >= today.AddMonths(-13) && e.DateOfJoining <= today.AddDays(31))
+				.OrderByDescending(e => e.DateOfJoining).Take(6)
+				.Select(e => new CrossBuy.BL.HrPersonRow { Id = e.ID, Name = CrossBuy.BL.EmployeeNames.Of(e.FullName, e.FullNameEn), TitleAr = e.JobTitle?.TitleAr, TitleEn = e.JobTitle?.Title, Date = e.DateOfJoining, Active = e.IsActive })
+				.ToList();
+			var ctxPhotos = await BusinessContexts.TryGetCurrentAsync();
+			if (ctxPhotos != null)
+			{
+				var shown = dto.RecentJoiners.Select(p => p.Id).Concat(dto.ExpiringDocs.Select(x => x.EmployeeId)).Concat(dto.RecentLeaves.Select(x => x.EmployeeId)).Distinct().ToList();
+				dto.Photos = await CrossBuy.BL.Platform.EmployeePhotos.ResolveAsync(Db, ctxPhotos, shown);
+			}
+
 			return View(dto);
 		}
 
         // image is saved together with SaveEmployee (no separate endpoint)
 		public async Task<IActionResult> JobTitlesList()
 		{
+			var gate = await HrGateAsync(CrossBuy.BL.HrActions.Read);
+			if (!gate.Ok) return HrDenied(nameof(Index));
 			var model = await this.jobTitles.GetAll();
 			return View(model);
 		}
@@ -521,6 +620,8 @@ namespace CrossBuy.Controllers
 		[HttpGet]
 		public async Task<IActionResult> GetJobTitles()
 		{
+			// A refused lookup answers an empty list, not an error: the pickers that call it iterate `data`.
+			if (!(await HrGateAsync(CrossBuy.BL.HrActions.Read)).Ok) return Json(new { ok = true, data = Array.Empty<object>() });
 			try
 			{
 				var list = await jobTitles.GetAll();
@@ -536,6 +637,7 @@ namespace CrossBuy.Controllers
 		[HttpGet]
 		public async Task<IActionResult> GetBranches(int? companyId = null)
 		{
+			if (!(await HrGateAsync(CrossBuy.BL.HrActions.Read)).Ok) return Json(new { ok = true, data = Array.Empty<object>() });
 			try
 			{
 				var svc = HttpContext.RequestServices.GetService(typeof(BL.ICompanyService)) as BL.ICompanyService;
@@ -568,6 +670,7 @@ namespace CrossBuy.Controllers
 		[HttpGet]
 		public async Task<IActionResult> GetCompanies()
 		{
+			if (!(await HrGateAsync(CrossBuy.BL.HrActions.Read)).Ok) return Json(new { ok = true, data = Array.Empty<object>() });
 			try
 			{
 				var svc = HttpContext.RequestServices.GetService(typeof(BL.ICompanyService)) as BL.ICompanyService;
@@ -599,6 +702,8 @@ namespace CrossBuy.Controllers
 
 		public async Task<IActionResult> JobTitle(int? ID)
 		{
+			var gate = await HrGateAsync(CrossBuy.BL.HrActions.Read);
+			if (!gate.Ok) return HrDenied(nameof(Index));
 			var model = await this.jobTitles.GetByID(ID);
 			return View(model);
 		}
@@ -628,6 +733,8 @@ namespace CrossBuy.Controllers
 			var model = await administrativeBodiesCompanyService.GetAll();
 			return View(model);
 		}
+			var gate = await HrGateAsync(CrossBuy.BL.HrActions.Read);
+			if (!gate.Ok) return HrDenied(nameof(Index));
 
 
 		public async Task<IActionResult> AdministrativeBodiesCompany(int id)
@@ -635,6 +742,8 @@ namespace CrossBuy.Controllers
 			var model = await this.administrativeBodiesCompanyService.GetById(id);
 			return View(model);
 		}
+			var gate = await HrGateAsync(CrossBuy.BL.HrActions.Read);
+			if (!gate.Ok) return HrDenied(nameof(Index));
 
 		[HttpPost]
 		public async Task<IActionResult> AdministrativeBodiesCompany(AdministrativeBodiesCompanyDto model)
@@ -656,18 +765,24 @@ namespace CrossBuy.Controllers
 										  .Select(e => e.ErrorMessage).ToList();
 			return Json(new { success = false, message = L["Invalid data"].Value, errors });
 		}
-		public async Task<IActionResult> AdministrativeStructure()
+		public async Task<IActionResult> AdministrativeStructure(CancellationToken ct = default)
 		{
-
-			return View();
+			var gate = await HrGateAsync(CrossBuy.BL.HrActions.Read);
+			if (!gate.Ok) return HrDenied(nameof(Index));
+			// The owner adopted the HR prototype's design for every screen it shares with the system
+			// (2026-11-08). The previous view, AdministrativeStructure.cshtml, is left in place untouched.
+			return View("OrgStructure", await BuildOrgChartAsync(gate.CompanyId, ct));
 		}
 		[HttpGet]
 		public async Task<IActionResult> GetHierarchicals(int? companyId = null)
 		{
-			var data = companyId.HasValue && companyId.Value > 0
-				? await administrativeStructureService.GetByCompanyAsync(companyId.Value)
-				: await administrativeStructureService.GataAll();
-			return Json(data);
+			// THE CALLER'S OWN TREE, AND ONLY THAT. With no companyId this used to return GataAll() — every
+			// company's units, positions and the employees placed in them — and a supplied companyId was never
+			// checked against the caller. Same rule as GetBranches above: absent means "mine", foreign means none.
+			var gate = await HrGateAsync(CrossBuy.BL.HrActions.Read);
+			if (!gate.Ok || gate.CompanyId <= 0) return Json(Array.Empty<object>());
+			if (companyId.HasValue && companyId.Value > 0 && companyId.Value != gate.CompanyId) return Json(Array.Empty<object>());
+			return Json(await administrativeStructureService.GetByCompanyAsync(gate.CompanyId));
 		}
 
 		public async Task<JsonResult> GetParentInfo(int parentId)
@@ -680,6 +795,7 @@ namespace CrossBuy.Controllers
 
 			return Json(new
 			{
+			if (!(await HrGateAsync(CrossBuy.BL.HrActions.Read)).Ok) return Json(new { success = false, message = HrDeniedMessage });
 				success = true,
 				nameAr = parent.H_Name,
 				nameEn = parent.H_NameEn
@@ -740,6 +856,8 @@ namespace CrossBuy.Controllers
         {
 			var gate = await HrGateAsync(CrossBuy.BL.HrActions.LeaveManage);
 			if (!gate.Ok) return Json(new { ok = false, message = HrDeniedMessage });
+			var gate = await HrGateAsync(CrossBuy.BL.HrActions.Read);
+			if (!gate.Ok) return HrDenied(nameof(Index));
 
             if (model == null)
                 return Json(new { ok = false, message = L["Invalid data"].Value });
@@ -748,6 +866,7 @@ namespace CrossBuy.Controllers
             {
                 var result = await policesService.SaveLeavePolicyAsync(model, ct);
                 var verb = model.ID == 0 ? L["Added"].Value : L["Updated"].Value;
+            if (!(await HrGateAsync(CrossBuy.BL.HrActions.Read)).Ok) return Json(new { ok = true, data = Array.Empty<object>() });
                 return Json(new { ok = true, message = verb + L[" successfully."].Value, data = result });
             }
             catch (KeyNotFoundException knf)
@@ -798,11 +917,15 @@ namespace CrossBuy.Controllers
 				return Json(new { success = false, message = ex.Message });
 			}
 		}
+			var gate = await HrGateAsync(CrossBuy.BL.HrActions.Read);
+			if (!gate.Ok) return HrDenied(nameof(Index));
 		[HttpGet]
 		public async Task<IActionResult> GetLeaveTypeById(int id)
 		{
 			try
 			{
+			var gate = await HrGateAsync(CrossBuy.BL.HrActions.Read);
+			if (!gate.Ok) return HrDenied(nameof(Index));
 				var leaveType = await policesService.GetLeaveTypeByIDAsync(id);
 
 				if (leaveType == null)
@@ -828,6 +951,7 @@ namespace CrossBuy.Controllers
             {
                 if (id <= 0)
                     return Json(new { ok = false, message = L["Invalid identifier."].Value });
+			if (!(await HrGateAsync(CrossBuy.BL.HrActions.Read)).Ok) return Json(new { success = false, message = HrDeniedMessage });
 
                 var result = await policesService.GetSalaryPolicyAsync(id);
                 if (result == null)
@@ -851,6 +975,8 @@ namespace CrossBuy.Controllers
         {
             try
             {
+            // Salary figures are payroll data: payroll-view, not the general HR read.
+            if (!(await HrGateAsync(CrossBuy.BL.HrActions.PayrollView)).Ok) return Json(new { ok = false, message = HrDeniedMessage });
                 if (model == null)
                     return Json(new { ok = false, message = L["Invalid data"].Value });
 
@@ -1013,6 +1139,7 @@ namespace CrossBuy.Controllers
         public async Task<IActionResult> EmployeesList()
         {
             var svc = HttpContext.RequestServices.GetService(typeof(BL.IEmployeeService)) as BL.IEmployeeService;
+			if (!(await HrGateAsync(CrossBuy.BL.HrActions.Read)).Ok) return Json(new { ok = false, message = HrDeniedMessage });
             var model = svc != null ? await svc.GetAllAsync() : new List<ViewModel.EmployeeListItemDto>();
             return View(model);
         }
@@ -1024,12 +1151,14 @@ namespace CrossBuy.Controllers
             {
                 var svc = HttpContext.RequestServices.GetService(typeof(BL.IEmployeeService)) as BL.IEmployeeService;
                 model = svc != null ? await svc.GetByIdAsync(id.Value) : null;
-                if (model == null) return NotFound();
+                // HR0: GetByIdAsync looks the employee up by id alone, so the record's own company decides.
+                // Another company's employee answers exactly like a missing one.
+                if (model == null || model.EmpCompanyID != hrCompany) return NotFound();
             }
             else if (fromApplication.HasValue && fromApplication.Value > 0)
             {
                 // R3: hire — prefill the wizard from an accepted application (HR reviews, then saves)
-                var app = await RecruitSvc.GetApplicationAsync(HrCompanyId, fromApplication.Value);
+                var app = await RecruitSvc.GetApplicationAsync(hrCompany, fromApplication.Value);
                 if (app == null) { TempData["HrErr"] = L["Record not found."].Value; return RedirectToAction(nameof(Applications)); }
                 if (app.Status != "Accepted") { TempData["HrErr"] = L["Only accepted applications can be hired"].Value; return RedirectToAction(nameof(ApplicationDetail), new { id = app.ID }); }
                 model = new EmployeeViewModel
@@ -1039,6 +1168,8 @@ namespace CrossBuy.Controllers
                     FullNameEn = app.FullNameEn, Email = app.Email, PhoneNumber = app.PhoneNumber, Address = app.Address,
                     DateOfBirth = app.DateOfBirth, Gender = app.Gender, MaritalStatus = app.MaritalStatus,
                     CountryID = app.CountryID, JobTitleID = app.JobTitleID, BranchID = app.BranchID,
+            var gate = await HrGateAsync(CrossBuy.BL.HrActions.Read);
+            if (!gate.Ok) return HrDenied(nameof(Index));
                     EmpCompanyID = app.EmpCompanyID, DepartmentID = app.DepartmentID, EmploymentType = app.EmploymentType,
                     ProfileImage = app.PhotoPath,   // carry the applicant photo → shown in the wizard, no re-upload needed
                     DateOfJoining = DateTime.Today
@@ -1046,6 +1177,9 @@ namespace CrossBuy.Controllers
                 ViewBag.ApplicationId = app.ID;
             }
             else
+			var gate = await HrGateAsync(CrossBuy.BL.HrActions.EmployeeView);
+			if (!gate.Ok) return HrDenied(nameof(EmployeesList));
+			var hrCompany = gate.CompanyId;
             {
                 model = new EmployeeViewModel();
             }
@@ -1077,11 +1211,13 @@ namespace CrossBuy.Controllers
 			var svc = HttpContext.RequestServices.GetService(typeof(BL.IEmployeeService)) as BL.IEmployeeService;
 			if (svc == null) return Json(new { ok = false, message = "service missing" });
 			var e = await svc.GetEmployeeByUserIdAsync(userId);
-			if (e == null) return Json(new { ok = false, message = "not found" });
+			// HR0: the lookup is by user id alone; a user who is another company's employee reads as not found.
+			if (e == null || e.EmpCompanyID != gate.CompanyId) return Json(new { ok = false, message = "not found" });
 			return Json(new { ok = true, data = e });
 		}
 		catch (Exception ex)
 		{
+            if (!(await HrGateAsync(CrossBuy.BL.HrActions.Read)).Ok) return Json(new { ok = true, data = Array.Empty<object>() });
 			return Json(new { ok = false, message = ex.Message });
 		}
 	}
@@ -1098,6 +1234,8 @@ namespace CrossBuy.Controllers
 			// JSON actions in this controller already answer HrDeniedMessage; this one did not.
 			if (!gate.Ok) return Json(new { success = false, message = HrDeniedMessage });
 
+		var gate = await HrGateAsync(CrossBuy.BL.HrActions.EmployeeView);
+		if (!gate.Ok) return Json(new { ok = false, message = HrDeniedMessage });
       if (model == null)
 			return Json(new { success = false, message = "Invalid data" });
 
@@ -1173,7 +1311,18 @@ namespace CrossBuy.Controllers
 			}
 
 			var webRoot = HttpContext.RequestServices.GetService(typeof(Microsoft.AspNetCore.Hosting.IWebHostEnvironment)) as Microsoft.AspNetCore.Hosting.IWebHostEnvironment;
-			var saved = await svc.SaveEmployeeAsync(model, ProfileImage, webRoot?.WebRootPath);
+			// The photo is NOT handed to the service: it goes to the Central Document Platform (owner rule — every file,
+			// pictures included, lives in the File Manager), which needs the saved employee id. So: save, then store.
+			var saved = await svc.SaveEmployeeAsync(model, null!, webRoot?.WebRootPath);
+			if (saved != null && saved.ID > 0 && ProfileImage != null && ProfileImage.Length > 0)
+			{
+				var store = Microsoft.Extensions.DependencyInjection.ActivatorUtilities.CreateInstance<CrossBuy.BL.Hr.HrFileStore>(HttpContext.RequestServices);
+				using var photoStream = ProfileImage.OpenReadStream();
+				var (photoUrl, photoErr) = await store.StorePhotoAsync(gate.CompanyId, saved.ID, photoStream, ProfileImage.Length);
+				if (photoUrl == null) return Json(new { success = false, message = L[photoErr ?? "The photo could not be saved"].Value });
+				var row = await Db.Employee.FirstOrDefaultAsync(e => e.ID == saved.ID && e.EmpCompanyID == gate.CompanyId);
+				if (row != null) { row.ProfileImage = photoUrl; await Db.SaveChangesAsync(); saved.ProfileImage = photoUrl; }
+			}
 			// R3: if this came from a job application, carry its documents onto the new employee and mark it Hired
 			string? hireError = null;
 			if (applicationId > 0 && saved != null && saved.ID > 0)
@@ -1198,6 +1347,12 @@ namespace CrossBuy.Controllers
 
 	}
 
+
+			// HR5: the attendance-device ID is unique per company — refuse a duplicate here, in words, before the index does.
+			var deviceId = model.AttendanceDeviceId?.Trim();
+			if (!string.IsNullOrEmpty(deviceId) && await Db.Employee.AsNoTracking().AnyAsync(e => e.EmpCompanyID == gate.CompanyId && e.AttendanceDeviceId == deviceId && e.ID != model.ID))
+				return Json(new { success = false, message = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar"
+					? $"رقم جهاز البصمة {deviceId} مستخدم لموظف آخر في الشركة" : $"Attendance device ID {deviceId} is already used by another employee in the company" });
 
 
 }

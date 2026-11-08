@@ -71,11 +71,13 @@ document.addEventListener('DOMContentLoaded', function () {
     function showMain(f) {
         openEl.href = f.url; dlEl.href = f.url;
         mainEl.innerHTML = '';
-        if (isImage(f.url)) {
+        // The type comes from the file NAME first: File Manager URLs (/People/HrFile/{id}) carry no extension.
+
+        if (isImage(f.name || '') || isImage(f.url)) {
             var img = document.createElement('img');
             img.src = f.url; img.style.maxWidth = '100%'; img.style.maxHeight = '100%'; img.style.objectFit = 'contain';
             mainEl.appendChild(img);
-        } else if (isPdf(f.url)) {
+        } else if (isPdf(f.name || '') || isPdf(f.url)) {
             var fr = document.createElement('iframe');
             fr.src = f.url; fr.style.width = '100%'; fr.style.height = '100%'; fr.style.border = '0';
             mainEl.appendChild(fr);
@@ -136,8 +138,11 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    document.querySelectorAll('.cb-gallery').forEach(function (b) {
-        b.addEventListener('click', function () {
+    // DELEGATED, not bound per button: the expiry list's rows arrive by AJAX (cbServerList) after this runs, and a
+    // button bound at load would be dead in every injected row. One listener serves every .cb-gallery, whenever it lands.
+    document.addEventListener('click', function (ev) {
+        var b = ev.target.closest && ev.target.closest('.cb-gallery'); if (!b) return;
+        [b].forEach(function () {
             var kind = b.getAttribute('data-cb-kind');
             var id = b.getAttribute('data-cb-id');
             var title = b.getAttribute('data-cb-title') || '';
