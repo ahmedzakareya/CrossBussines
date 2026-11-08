@@ -4,9 +4,9 @@
   "frozenBaseline": {
     "mutating": 566,
     "attributeProtected": 255,
-    "inBodyProtected": 217,
+    "inBodyProtected": 219,
     "anonymousByDesign": 1,
-    "gaps": 93
+    "gaps": 91
   },
   "rules": [
     "This baseline may only SHRINK. CI rejects any commit that adds an entry.",
@@ -16,7 +16,7 @@
     "No blanket suppression. No project-wide disable switch.",
     "The 'gaps' figure and the entries list are the ENFORCED invariant and may only shrink. The mutating, attributeProtected and inBodyProtected figures are descriptive totals of the tree and legitimately grow when protected endpoints are added; frozenBaselineHistory records every such change with its reason."
   ],
-  "count": 93,
+  "count": 91,
   "entries": [
     {
       "id": "AccountController.ChangePassword",
@@ -236,34 +236,6 @@
       "module": "Retail",
       "isApi": false,
       "file": "CrossBuy/Controllers/BrandController.cs",
-      "inheritedGuard": "SessionValidation",
-      "classification": "AuthorizationGap",
-      "targetWave": "Wave 3-6",
-      "addedBy": "Stage-002A-Batch-00",
-      "reason": "Pre-existing Stage 1 debt, frozen baseline of 143"
-    },
-    {
-      "id": "CalendarController.Delete",
-      "controller": "CalendarController",
-      "action": "Delete",
-      "httpMethod": "POST",
-      "module": "Communication",
-      "isApi": false,
-      "file": "CrossBuy/Controllers/CalendarController.cs",
-      "inheritedGuard": "SessionValidation",
-      "classification": "AuthorizationGap",
-      "targetWave": "Wave 3-6",
-      "addedBy": "Stage-002A-Batch-00",
-      "reason": "Pre-existing Stage 1 debt, frozen baseline of 143"
-    },
-    {
-      "id": "CalendarController.Save",
-      "controller": "CalendarController",
-      "action": "Save",
-      "httpMethod": "POST",
-      "module": "Communication",
-      "isApi": false,
-      "file": "CrossBuy/Controllers/CalendarController.cs",
       "inheritedGuard": "SessionValidation",
       "classification": "AuthorizationGap",
       "targetWave": "Wave 3-6",
@@ -1537,6 +1509,32 @@
       },
       "controllers": 57,
       "note": "+85 mutating endpoints, ALL attribute-protected: attributeProtected 170 -> 255 absorbs the whole increase and the debt is UNCHANGED at 93, gap set identical id for id. No baseline entry added, removed or re-blessed; no CBA diagnostic suppressed. Every new endpoint carries [HospitalPerm], a real ModulePermAttributeBase action filter already on the authorization surface. Measured by the analyzer on an export of the staged commit tree, not on the shared working tree."
+    },
+    {
+      "stage": "Calendar write authorization (TAB-5), measured on tree 61e1c77d",
+      "date": "2026-11-08",
+      "change": "CalendarController.Save and CalendarController.Delete now ask ICalendarAccessService before writing - Save refuses on !mayWrite, Delete refuses on a failed CanEventAsync - so both leave the gap set as IN-BODY protected. No attribute was added and no endpoint was created, which is why mutating and attributeProtected do not move. The third gate in that file, on SaveSchedule, already existed at HEAD and is not part of this change.",
+      "gapEntriesRemoved": 2,
+      "gapEntriesAdded": 0,
+      "previous": {
+        "mutating": 566,
+        "attributeProtected": 255,
+        "inBodyProtected": 217,
+        "anonymousByDesign": 1,
+        "gaps": 93
+      },
+      "measured": {
+        "mutating": 566,
+        "attributeProtected": 255,
+        "inBodyProtected": 219,
+        "anonymousByDesign": 1,
+        "gaps": 91
+      },
+      "mutating": 566,
+      "attributeProtected": 255,
+      "inBodyProtected": 219,
+      "anonymousByDesign": 1,
+      "gaps": 91
     }
   ]
 }

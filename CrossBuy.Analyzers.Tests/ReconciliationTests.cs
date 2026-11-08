@@ -252,7 +252,7 @@ public class ReconciliationTests
     // New protected identities are recorded in frozenBaselineHistory; no allowance was added.
     private const int FrozenMutating = 566;
     private const int FrozenAttributeProtected = 255;
-    private const int FrozenInBodyProtected = 217;
+    private const int FrozenInBodyProtected = 219;
 
     /// <summary>
     /// Mutating endpoints that are unauthenticated ON PURPOSE and say so in source. NOT protected and
@@ -262,7 +262,7 @@ public class ReconciliationTests
     private const int FrozenAnonymousByDesign = 1;
 
     /// <summary>The enforced invariant. This one may only ever shrink - and here it did not move.</summary>
-    private const int FrozenGaps = 93;
+    private const int FrozenGaps = 91;
 
     // Controllers carrying at least one endpoint the analyzer models. Grew 40 -> 44 with the platform
     // modernization controllers that arrived with the same increment (Reporting, Workspace, Calendar and the

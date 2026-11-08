@@ -96,6 +96,22 @@ namespace CrossBuy.Controllers
             string? descriptionEn = null, string? locationEn = null)
         {
             var me = await MeAsync(); if (me == null) return Unauthorized();
+
+            // AUTHORIZATION, ASKED BEFORE ANYTHING ELSE. CalendarService.SaveAsync already refuses a
+            // non-owner by throwing, so this WIDENS NOTHING — it is a second, earlier refusal, and every
+            // caller this admits is still owner-checked below. What it adds is an authority the analyzer
+            // can see: an ownership comparison buried in a service is invisible to it, which is why this
+            // endpoint sat in the authorization baseline as debt while behaving correctly.
+            //
+            // Edit for an existing event, Create for a new one: CanEventAsync names a row, and there is no
+            // row to name when id is 0. There is deliberately no `delete` action — CalendarActions says the
+            // calendar's delete rule IS its edit rule.
+            var ctx = await _businessContexts.TryGetCurrentAsync();
+            var mayWrite = ctx != null && (id > 0
+                ? await _calendarAccess.CanEventAsync(ctx, CalendarActions.Edit, id)
+                : await _calendarAccess.CanAsync(ctx, CalendarActions.Create, null));
+            if (!mayWrite) return Json(new { ok = false, error = _sr["not_authorized"].Value });
+
             if (string.IsNullOrWhiteSpace(title)) return Json(new { ok = false, error = "title_required" });
             var att = (attendees ?? "").Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
                 .Select(s => int.TryParse(s, out var n) ? n : 0).Where(n => n > 0).ToList();
@@ -141,6 +157,16 @@ namespace CrossBuy.Controllers
         public async Task<IActionResult> Delete(int id)
         {
             var me = await MeAsync(); if (me == null) return Unauthorized();
+
+            // Same gate as Save, same reason, and the same non-widening: DeleteAsync already returns false
+            // for a non-owner. The refusal is `{ ok = false }` with NO error string ON PURPOSE — that is
+            // byte-for-byte what a caller already gets for a deleted, absent or other-company id, and the
+            // service returns false for all of those identically so an id cannot be probed. Adding
+            // "not_authorized" here would separate "exists but not yours" from "does not exist".
+            var ctx = await _businessContexts.TryGetCurrentAsync();
+            if (ctx == null || !await _calendarAccess.CanEventAsync(ctx, CalendarActions.Edit, id))
+                return Json(new { ok = false });
+
             var ok = await _cal.DeleteAsync(me.Value.companyId, me.Value.empId, id);
             if (ok) { try { await BroadcastCalendarChangedAsync(me.Value.companyId); } catch { } }
             return Json(new { ok });
