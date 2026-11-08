@@ -128,10 +128,22 @@ it, the Workspace will show duplicate report links** — both sources contribute
 extension point, which is the direction the contract's own comment describes ("a module … registers one of
 these"). TAB 3's call.
 
-The same applies more weakly to `ReportFavoritesWorkspaceSource` (an `IWorkspaceFavoritesSource`, registered):
-it contributes report favourites to the **Favourites** panel while this adapter contributes them to the
-**Reports** panel. Two panels, so not a duplicate — but worth a deliberate decision rather than an accident.
-Its links point at `/Workspace/Reports`; ours point at `/Reports/Viewer/{code}`.
+~~The same applies more weakly to `ReportFavoritesWorkspaceSource`~~ — **RESOLVED 2026-11-08, withdrawn in
+`59c49f5`.** This paragraph used to read: *"it contributes report favourites to the Favourites panel while
+this adapter contributes them to the Reports panel. Two panels, so not a duplicate — but worth a deliberate
+decision rather than an accident. Its links point at `/Workspace/Reports`; ours point at
+`/Reports/Viewer/{code}`."*
+
+**Its closing sentence was right and its premise was wrong.** There was no second panel.
+`WorkspaceDashboard.Favorites` was computed on every dashboard load — a `GetFavoritesAsync` round trip on the
+first screen every user sees — and **no view ever rendered it**. So "two panels, so not a duplicate" is the
+reasoning that let a duplicate producer survive the H-1 clean-up above, and the `/Workspace/Reports` links this
+paragraph flagged were never seen only because nobody drew the panel.
+
+`ReportFavoritesWorkspaceSource` is deleted and its registration removed; Reporting is the one producer, through
+`/Reports/Viewer/{code}`. The `IWorkspaceFavoritesSource` seam survives for a module that wants it. Pinned by
+`WorkspaceFavouritesWithdrawnTests`, whose second fact goes red if a Favourites card is ever added — the card and
+a registered source have to land in the same change, or the card renders an empty panel for ever.
 
 ### H-2 · ~~Promote the Blue tokens to a shared file~~ — WITHDRAWN
 
