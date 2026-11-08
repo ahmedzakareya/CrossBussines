@@ -7,7 +7,8 @@ namespace CrossBuy.BL
 {
     // one row in the listing (folder or file). name = culture-appropriate display; nameAr/nameEn = raw twins (for the rename editor)
     public record LibItemDto(int id, bool isFolder, string name, string nameAr, string? nameEn, long size, string sizeText,
-        string modified, string? ext, string? url, string ownerName);
+        string modified, string? ext, string? url, string ownerName, bool isChatAttachment = false,
+        int ownerEmployeeId = 0, string? ownerAvatarUrl = null);
 
     public record LibCrumbDto(int? id, string name);
 
@@ -67,7 +68,7 @@ namespace CrossBuy.BL
                     (r.UpdatedAt ?? r.CreatedAt)?.ToString("yyyy-MM-dd HH:mm") ?? "-",
                     r.IsFolder ? null : Ext(r.Name),
                     r.IsFolder ? null : r.StoredPath,
-                    ownerName);
+                    ownerName, ownerEmployeeId: r.OwnerEmpId);
             }).ToList();
 
             var path = await BreadcrumbAsync(companyId, folderId);

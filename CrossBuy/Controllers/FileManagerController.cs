@@ -16,8 +16,10 @@ namespace CrossBuy.Controllers
         private readonly IEmployeeService _employees;
         private readonly IWebHostEnvironment _env;
         private readonly CrossDbContext _db;
-        public FileManagerController(IFileManagerService fm, IEmployeeService employees, IWebHostEnvironment env, CrossDbContext db)
-        { _fm = fm; _employees = employees; _env = env; _db = db; }
+        private readonly CrossBuy.BL.Platform.IBusinessContextAccessor _contexts;
+        public FileManagerController(IFileManagerService fm, IEmployeeService employees, IWebHostEnvironment env, CrossDbContext db,
+            CrossBuy.BL.Platform.IBusinessContextAccessor contexts)
+        { _fm = fm; _employees = employees; _env = env; _db = db; _contexts = contexts; }
 
         private async Task<(int empId, int companyId)?> MeAsync()
         {
@@ -42,7 +44,27 @@ namespace CrossBuy.Controllers
         public async Task<IActionResult> List(int? folderId, string? q)
         {
             var me = await MeAsync(); if (me == null) return Unauthorized();
-            return Json(await _fm.ListAsync(me.Value.companyId, folderId, q));
+            var result = await _fm.ListAsync(me.Value.companyId, folderId, q);
+
+            // THE OWNER'S PHOTOGRAPH. One company-scoped lookup for the whole page, through the same
+            // helper every other screen draws a person with, so this listing cannot drift away from
+            // the rest of the product. The helper owns the tenancy predicate and the stored-path
+            // normalisation; repeating either here is how copies of one query end up disagreeing.
+            //
+            // The context is re-resolved and checked against the company MeAsync already agreed, so a
+            // row can never be decorated with a face resolved under a different tenant.
+            var context = await _contexts.TryGetCurrentAsync(HttpContext.RequestAborted);
+            if (context == null || context.CompanyId != me.Value.companyId) return Unauthorized();
+
+            var photos = await CrossBuy.BL.Platform.EmployeePhotos.ResolveAsync(
+                _db, context, result.items.Select(i => i.ownerEmployeeId), HttpContext.RequestAborted);
+
+            return Json(result with
+            {
+                items = result.items
+                    .Select(i => i with { ownerAvatarUrl = photos.GetValueOrDefault(i.ownerEmployeeId) })
+                    .ToList()
+            });
         }
 
         [HttpGet]
