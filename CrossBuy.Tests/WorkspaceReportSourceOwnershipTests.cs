@@ -402,7 +402,7 @@ namespace CrossBuy.Tests
                 Array.Empty<IWorkspaceFavoritesSource>(),
                 Array.Empty<IWorkspaceActivitySource>(),
                 reportSources,
-                NullLogger<WorkspaceService>.Instance);
+                Array.Empty<IWorkspaceKpiSource>(), NullLogger<WorkspaceService>.Instance);
 
         private sealed class ThrowingReportSource : IWorkspaceReportSource
         {

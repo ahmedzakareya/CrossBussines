@@ -377,7 +377,7 @@ namespace CrossBuy.Tests
                 new FixedContext(Resolved()), new ServiceCollection().BuildServiceProvider(),
                 new NoNotifications(), new NoIdentity(),
                 Array.Empty<IWorkspaceFavoritesSource>(), Array.Empty<IWorkspaceActivitySource>(),
-                Array.Empty<IWorkspaceReportSource>(), NullLogger<WorkspaceService>.Instance);
+                Array.Empty<IWorkspaceReportSource>(), Array.Empty<IWorkspaceKpiSource>(), NullLogger<WorkspaceService>.Instance);
 
             var panel = await workspace.GetAgendaAsync(days: 7);
 
@@ -559,7 +559,7 @@ namespace CrossBuy.Tests
                 Array.Empty<IWorkspaceFavoritesSource>(),
                 Array.Empty<IWorkspaceActivitySource>(),
                 Array.Empty<IWorkspaceReportSource>(),
-                NullLogger<WorkspaceService>.Instance);
+                Array.Empty<IWorkspaceKpiSource>(), NullLogger<WorkspaceService>.Instance);
         }
 
         /// A local wall-clock moment expressed the way the contract expresses one: a UTC instant carrying

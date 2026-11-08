@@ -1,4 +1,4 @@
-﻿using CrossBuy.BL.Communication;
+using CrossBuy.BL.Communication;
 using CrossBuy.BL.Platform;
 using CrossBuy.BL.Reporting;
 using CrossBuy.BL.TasksCalendar;
@@ -34,6 +34,10 @@ namespace CrossBuy.BL.Workspace
         private const int AttentionShown = 8;
         private const int WorkItemsShown = 8;
         private const int NotificationsShown = 8;
+
+        // Fewer than the notification count on purpose: a conversation row is taller, and the dashboard
+        // is a summary rather than the list. The Hub's own screen is where the rest live.
+        private const int ConversationsShown = 6;
         private const int MentionsShown = 6;
         private const int ActivityShown = 10;
         private const int FavoritesShown = 8;
@@ -96,6 +100,12 @@ namespace CrossBuy.BL.Workspace
         private readonly IEnumerable<IWorkspaceFavoritesSource> _favoriteSources;
         private readonly IEnumerable<IWorkspaceActivitySource> _activitySources;
         private readonly IEnumerable<IWorkspaceReportSource> _reportSources;
+
+        // Approved-dataset metrics (SCR-49). Empty today: no module registers one, because the KPI
+        // registry does not admit a Work/Tasks dataset. Asked anyway, so the day one IS registered the
+        // dashboard uses it with no change here — the same seam behaviour that let Reporting contribute
+        // its favourites without a single Workspace edit.
+        private readonly IEnumerable<IWorkspaceKpiSource> _kpiSources;
         private readonly ILogger<WorkspaceService> _log;
 
         public WorkspaceService(
@@ -106,8 +116,10 @@ namespace CrossBuy.BL.Workspace
             IEnumerable<IWorkspaceFavoritesSource> favoriteSources,
             IEnumerable<IWorkspaceActivitySource> activitySources,
             IEnumerable<IWorkspaceReportSource> reportSources,
+            IEnumerable<IWorkspaceKpiSource> kpiSources,
             ILogger<WorkspaceService> log)
         {
+            _kpiSources = kpiSources;
             _contexts = contexts;
             _services = services;
             _notifications = notifications;
@@ -168,6 +180,9 @@ namespace CrossBuy.BL.Workspace
             var activity = await SafeAsync("Recent Activity", () => LoadActivityAsync(context, cancellationToken));
             var approvals = await SafeAsync("Approvals", () => LoadApprovalsAsync(context, cancellationToken));
 
+            var communicationInbox = await GetCommunicationInboxAsync(
+                take: NotificationsShown, includeConversations: true, cancellationToken: cancellationToken);
+
             var unreadNotifications = await SafeCountAsync(() => _notifications.CountUnreadAsync(context, cancellationToken));
             var unreadMentions = await SafeCountAsync(() => CountUnreadMentionsAsync(context, cancellationToken));
 
@@ -199,10 +214,18 @@ namespace CrossBuy.BL.Workspace
                 CompanyName = companyName,
                 Capabilities = capabilities,
                 Metrics = metrics,
+                // SCR-49's distance, measured rather than described. Empty means the screen satisfies
+                // "approved datasets only"; today it lists the task and notification tiles, because no
+                // approved KPI over task data can exist while the KPI registry admits Accounting and
+                // Projects dataset codes only.
+                UnapprovedMetrics = metrics
+                    .Where(m => m.Provenance != WorkspaceMetricProvenance.ApprovedDataset)
+                    .Select(m => m.LabelEn).ToList(),
                 Attention = attention,
                 MyWork = work,
                 Agenda = agenda,
                 Notifications = notifications,
+                CommunicationInbox = communicationInbox,
                 Mentions = mentions,
                 Favorites = favorites,
                 Reports = reports,
@@ -585,6 +608,127 @@ namespace CrossBuy.BL.Workspace
             return isAr ? (ar ?? en) : (en ?? ar);
         }
 
+        public async Task<WorkspaceCommunicationInbox> GetCommunicationInboxAsync(
+            bool unreadOnly = false, long? afterId = null, int take = 25,
+            bool includeConversations = false,
+            CancellationToken cancellationToken = default)
+        {
+            var context = await _contexts.TryGetCurrentAsync(cancellationToken);
+            if (context == null || context.CompanyId <= 0 || context.EmployeeId is not > 0)
+                return new() { State = WorkspacePanelState.AccessDenied };
+            var source = _services.GetService<ICommNotificationService>();
+            if (source == null) return new() { State = WorkspacePanelState.Unavailable };
+
+            // THE TWO HALVES ARE READ INDEPENDENTLY AND FAIL INDEPENDENTLY. Conversations are fetched
+            // before the try below rather than inside it, because a Hub that is absent or failing must
+            // not cost the caller their notifications - which is exactly what sharing one catch would
+            // have done.
+            var conversations = includeConversations
+                ? await GetBusinessConversationsAsync(context, cancellationToken)
+                : new WorkspaceConversationList();
+
+            try
+            {
+                var page = await source.GetInboxAsync(context, unreadOnly,
+                    new CommPageRequest { AfterId = afterId is > 0 ? afterId : null, PageSize = Math.Clamp(take, 1, 50) },
+                    cancellationToken);
+                var unread = await source.GetUnreadCountAsync(context, cancellationToken);
+                return new()
+                {
+                    State = page.Items.Count == 0 ? WorkspacePanelState.Empty : WorkspacePanelState.Ready,
+                    Page = page, UnreadTotal = unread,
+                    Conversations = conversations
+                };
+            }
+            catch (OperationCanceledException) { throw; }
+            // The conversations ride along even on a notification failure: they were read separately and
+            // successfully, and discarding them would let one half's outage blank the other.
+            catch (UnauthorizedAccessException)
+            { return new() { State = WorkspacePanelState.AccessDenied, Conversations = conversations }; }
+            catch (Exception ex)
+            {
+                _log.LogWarning(ex, "Workspace Communication inbox could not be read");
+                return new() { State = WorkspacePanelState.TemporaryFailure, Conversations = conversations };
+            }
+        }
+
+        // =========================================================================================
+        // THE CALLER'S ENTITY-ANCHORED CONVERSATIONS.
+        //
+        // CONSUMED, NEVER RE-DERIVED. ICommTaskIntegrationService.MyBusinessConversationsAsync is the
+        // Communication Hub's own read: it decides which threads this caller participates in, applies
+        // the company and participant boundaries, and never returns a conversation the caller cannot
+        // read. Workspace asks it and formats the answer. There is no CommDbContext here, no thread
+        // query, and no second definition of "mine".
+        //
+        // THE HUB ALSO DECIDES WHAT COUNTS AS A BUSINESS CONVERSATION. Ordinary chat carries no
+        // business anchor, and the Hub excludes it rather than Workspace filtering by a shape it
+        // guessed at - which is what "do not invent conversation anchors" means in code.
+        //
+        // ONE CALL, THEN A DICTIONARY. The entity label, icon and route come from the registry's
+        // DEFINITION, which is an in-memory lookup. Resolving each row's title through
+        // IEntityRegistry.ResolveAsync would have been one database round trip per conversation - the
+        // N+1 that turns a thirty-row panel into thirty-one queries - and it would buy nothing the
+        // Hub's own subject does not already say.
+        // =========================================================================================
+        private async Task<WorkspaceConversationList> GetBusinessConversationsAsync(
+            BusinessContext context, CancellationToken cancellationToken)
+        {
+            // Absent module is a FIRST-CLASS STATE, not an error. Communication is optional in some
+            // deployments, and the panel says so rather than reading as "you have no conversations".
+            var hub = _services.GetService<ICommTaskIntegrationService>();
+            if (hub == null) return new() { State = WorkspacePanelState.Unavailable };
+
+            try
+            {
+                var rows = await hub.MyBusinessConversationsAsync(context, ConversationsShown, cancellationToken);
+                if (rows.Count == 0) return new() { State = WorkspacePanelState.Empty };
+
+                // Optional: a deployment without the registry still lists conversations, unlabelled and
+                // unlinked, rather than losing the panel.
+                var registry = _services.GetService<IEntityRegistry>();
+
+                var items = new List<WorkspaceConversationRow>(rows.Count);
+                foreach (var r in rows)
+                {
+                    EntityDefinition? definition = null;
+                    registry?.TryGetDefinition(r.EntityType, out definition);
+
+                    items.Add(new WorkspaceConversationRow
+                    {
+                        ThreadId = r.ThreadId,
+                        EntityType = r.EntityType,
+                        EntityId = r.EntityId,
+                        SubjectAr = r.SubjectAr,
+                        SubjectEn = r.SubjectEn,
+                        EntityLabelAr = definition?.DisplayNameAr,
+                        EntityLabelEn = definition?.DisplayNameEn,
+
+                        // NULL WHEN THE REGISTRY PUBLISHES NO ROUTE. BuildUrl returns null for a code it
+                        // does not know and for a definition with no RouteTemplate, and that null is
+                        // carried through to the view as "no link" - never replaced by a guess.
+                        Url = definition == null ? null : registry?.BuildUrl(r.EntityType, r.EntityId),
+
+                        Icon = definition?.Icon,
+                        Color = definition?.Color,
+                        CommentCount = r.CommentCount,
+                        LastActivityAt = r.LastActivityAt,
+                        Role = r.Role,
+                        Muted = r.Muted,
+                    });
+                }
+
+                return new() { State = WorkspacePanelState.Ready, Items = items };
+            }
+            catch (OperationCanceledException) { throw; }
+            catch (UnauthorizedAccessException) { return new() { State = WorkspacePanelState.AccessDenied }; }
+            catch (Exception ex)
+            {
+                _log.LogWarning(ex, "Workspace business conversations could not be read");
+                return new() { State = WorkspacePanelState.TemporaryFailure };
+            }
+        }
+
         private async Task<WorkspacePanel<WorkspaceNotification>> LoadNotificationsAsync(
             BusinessContext context, bool unreadOnly, int take, int page, CancellationToken cancellationToken)
         {
@@ -860,6 +1004,9 @@ namespace CrossBuy.BL.Workspace
                     ReasonLabelEn = ReasonEn(WorkspaceAttentionReason.ApprovalWaiting),
                     Title = a.Title,
                     SourceAr = "الاعتمادات", SourceEn = "Approvals",
+                    // The requester's NAME only: the approvals read platform does not carry a
+                    // photo yet, so this row falls back to initials rather than inventing one.
+                    PersonName = a.Requester,
                     Due = a.Submitted,
                     AgeDays = a.AgeDays,
                     Priority = a.ApprovalType,
@@ -884,6 +1031,8 @@ namespace CrossBuy.BL.Workspace
                     ReasonLabelEn = ReasonEn(WorkspaceAttentionReason.Mention),
                     Title = m.Excerpt ?? m.EntityLabel,
                     SourceAr = "التواصل", SourceEn = "Communication",
+                    PersonName = m.MentionedBy,
+                    PersonAvatarUrl = m.MentionedByAvatarUrl,
                     Due = m.At,
                     AgeDays = age,
                     Priority = null,
@@ -906,16 +1055,12 @@ namespace CrossBuy.BL.Workspace
 
             var items = ordered
                 .Take(AttentionShown)
-                .Select((c, i) => new WorkspaceAttentionItem
-                {
-                    Reason = c.Item.Reason,
-                    ReasonLabelAr = c.Item.ReasonLabelAr, ReasonLabelEn = c.Item.ReasonLabelEn,
-                    Title = c.Item.Title,
-                    SourceAr = c.Item.SourceAr, SourceEn = c.Item.SourceEn,
-                    Due = c.Item.Due, AgeDays = c.Item.AgeDays, Priority = c.Item.Priority,
-                    Url = c.Item.Url, Tone = c.Item.Tone,
-                    Rank = i + 1,
-                })
+                // RANK IS THE ONLY THING THIS PASS DECIDES, so it is the only thing it names. The
+                // earlier version copied all eleven fields by hand to stamp one of them, and the two
+                // person fields added for the avatar were populated at every source above and still
+                // arrived null on screen because this list had not grown with them. `with` cannot
+                // drop a field, so that failure cannot happen again.
+                .Select((c, i) => c.Item with { Rank = i + 1 })
                 .ToList();
 
             if (items.Count > 0)
@@ -965,6 +1110,37 @@ namespace CrossBuy.BL.Workspace
             BusinessContext context, int unreadNotifications, int unreadMentions, CancellationToken ct)
         {
             var metrics = new List<WorkspaceMetric>();
+
+            // APPROVED DATASETS FIRST (SCR-49). A registered IWorkspaceKpiSource is the governed answer,
+            // so anything it supplies takes the tile and the module fallback below is not asked for the
+            // same fact. Each source is awaited in its own try/catch for the same reason every other
+            // Workspace source is: one module's broken contribution must not blank the strip.
+            var approvedLabels = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var source in _kpiSources.Where(s => s.IsAvailable))
+            {
+                try
+                {
+                    var supplied = await source.GetAsync(context, ct);
+                    foreach (var m in supplied)
+                    {
+                        // Provenance is stamped HERE, not trusted from the contributor: a source cannot
+                        // award itself approved standing, it earns it by being a registered KPI source.
+                        metrics.Add(new WorkspaceMetric
+                        {
+                            LabelAr = m.LabelAr, LabelEn = m.LabelEn, Value = m.Value,
+                            HintAr = m.HintAr, HintEn = m.HintEn, Tone = m.Tone, Url = m.Url,
+                            Provenance = WorkspaceMetricProvenance.ApprovedDataset,
+                            SourceName = source.SourceName,
+                        });
+                        approvedLabels.Add(m.LabelEn);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _log.LogWarning(ex, "Workspace KPI source {Source} failed.", source.SourceName);
+                }
+            }
+
             var tasks = _services.GetService<ITaskService>();
 
             if (tasks != null && context.EmployeeId is > 0)
@@ -1021,7 +1197,31 @@ namespace CrossBuy.BL.Workspace
                     Tone = WorkspaceTone.Warn, Url = "/Workspace/Mentions",
                 });
 
-            return metrics;
+            // ONE PASS OVER WHAT THE MODULES SUPPLIED, rather than five near-identical edits above.
+            //
+            // Two jobs. First, a module tile is DROPPED when an approved dataset already answered the
+            // same question — the governed number wins and the screen never shows the same fact twice
+            // from two authorities, which is the duplicate-producer defect the Reporting favourites
+            // source was withdrawn for. Second, every surviving module tile is NAMED, so the diagnostics
+            // strip can say which authority produced it instead of leaving provenance to inference.
+            var named = new List<WorkspaceMetric>(metrics.Count);
+            foreach (var m in metrics)
+            {
+                if (m.Provenance == WorkspaceMetricProvenance.ApprovedDataset) { named.Add(m); continue; }
+                if (approvedLabels.Contains(m.LabelEn)) { continue; }
+
+                named.Add(m.SourceName.Length > 0 ? m : new WorkspaceMetric
+                {
+                    LabelAr = m.LabelAr, LabelEn = m.LabelEn, Value = m.Value,
+                    HintAr = m.HintAr, HintEn = m.HintEn, Tone = m.Tone, Url = m.Url,
+                    Provenance = WorkspaceMetricProvenance.ModuleService,
+                    SourceName = m.LabelEn is "Unread notifications" or "Mentions"
+                        ? "Platform notifications"
+                        : "ITaskService",
+                });
+            }
+
+            return named;
         }
 
         // ================================================================================================

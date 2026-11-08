@@ -20,6 +20,11 @@ namespace CrossBuy.Models.Platform
         public int? ActorEmployeeId { get; init; }
         public string? ActorDisplayName { get; init; }
 
+        /// The actor's photo (Employee.ProfileImage), beside their name because every surface that
+        /// says WHO did something also draws them. Null is the ordinary answer - most employees have
+        /// no photo - and the reader falls back to an initials tile, never a broken-image frame.
+        public string? ActorAvatarUrl { get; init; }
+
         // From EntityDefinition / the event-type presenter — Metronic KI icon + contextual colour.
         public required string Icon { get; init; }
         public required string Color { get; init; }

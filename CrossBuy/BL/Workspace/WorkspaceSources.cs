@@ -30,8 +30,10 @@ namespace CrossBuy.BL.Workspace
     public sealed class PlatformNotificationWorkspaceSource : IWorkspaceNotificationSource
     {
         private readonly CrossDbContext _db;
+        private readonly TimeProvider _clock;
 
-        public PlatformNotificationWorkspaceSource(CrossDbContext db) { _db = db; }
+        public PlatformNotificationWorkspaceSource(CrossDbContext db, TimeProvider? clock = null)
+        { _db = db; _clock = clock ?? TimeProvider.System; }
 
         public bool IsAvailable => true;
 
@@ -40,7 +42,7 @@ namespace CrossBuy.BL.Workspace
         {
             if (context.EmployeeId is not > 0) return Array.Empty<WorkspaceNotification>();
 
-            var now = DateTime.Now;
+            var now = _clock.GetUtcNow().UtcDateTime;
             var arabic = WorkspaceCulture.IsArabic();
 
             // Company AND recipient are both in the WHERE clause. Not filtered after loading — a row belonging
@@ -59,7 +61,33 @@ namespace CrossBuy.BL.Workspace
                 .Take(Math.Clamp(take, 1, 100))
                 .ToListAsync(cancellationToken);
 
-            return rows.Select(Project).ToList();
+            var actors = await ResolveActorsAsync(rows, cancellationToken);
+            return rows.Select(n => Project(n, actors)).ToList();
+        }
+
+        // THE PEOPLE BEHIND THE PAGE, in ONE query, after the page is already bounded.
+        //
+        // Not a join on the notification query: that would re-read Employee for every repeated actor
+        // and tie the list’s shape to a navigation. Not a lookup per row either - that is the N+1
+        // this adapter exists to avoid. Employee is one of the three platform tables this file is
+        // allowed to read, so nothing about the "no module reads" rule changes.
+        private async Task<Dictionary<int, (string? Name, string? Avatar)>> ResolveActorsAsync(
+            IReadOnlyList<Models.Context.Admin.Notification> rows, CancellationToken cancellationToken)
+        {
+            var ids = rows.Where(r => r.ActorEmployeeID is > 0)
+                          .Select(r => r.ActorEmployeeID!.Value)
+                          .Distinct().ToList();
+            if (ids.Count == 0) return new Dictionary<int, (string? Name, string? Avatar)>();
+
+            var arabic = WorkspaceCulture.IsArabic();
+            var people = await _db.Employee.AsNoTracking()
+                .Where(e => ids.Contains(e.ID))
+                .Select(e => new { e.ID, e.FullName, e.FullNameEn, e.ProfileImage })
+                .ToListAsync(cancellationToken);
+
+            return people.ToDictionary(
+                e => e.ID,
+                e => (WorkspaceCulture.Pick(e.FullName, e.FullNameEn, arabic), e.ProfileImage));
         }
 
         // ONE PROJECTION FOR BOTH READS. The take-based read and the paged one produce the same rows,
@@ -68,7 +96,9 @@ namespace CrossBuy.BL.Workspace
         //
         // `arabic` is read from the ambient culture inside the projection rather than passed, so a
         // caller cannot hand it the wrong one.
-        private static WorkspaceNotification Project(Models.Context.Admin.Notification n)
+        private static WorkspaceNotification Project(
+            Models.Context.Admin.Notification n,
+            IReadOnlyDictionary<int, (string? Name, string? Avatar)> actors)
         {
             var arabic = System.Globalization.CultureInfo.CurrentUICulture
                 .TwoLetterISOLanguageName == "ar";
@@ -82,6 +112,11 @@ namespace CrossBuy.BL.Workspace
                 IsRead = n.IsRead,
                 At = n.CreatedAt,
                 Url = n.Url,
+                ActorEmployeeId = n.ActorEmployeeID,
+                ActorName = n.ActorEmployeeID is > 0 && actors.TryGetValue(n.ActorEmployeeID.Value, out var a)
+                    ? a.Name : null,
+                ActorAvatarUrl = n.ActorEmployeeID is > 0 && actors.TryGetValue(n.ActorEmployeeID.Value, out var b)
+                    ? b.Avatar : null,
                 Tone = n.Priority?.ToLowerInvariant() switch
                 {
                     "critical" => WorkspaceTone.Critical,
@@ -115,27 +150,28 @@ namespace CrossBuy.BL.Workspace
         {
             if (context.EmployeeId is not > 0) return Array.Empty<WorkspaceNotification>();
 
-            var now = DateTime.UtcNow;
+            var now = _clock.GetUtcNow().UtcDateTime;
             var rows = await Scope(context, unreadOnly, now)
                 .OrderByDescending(n => n.ID)
                 .Skip(Math.Max(0, skip))
                 .Take(Math.Clamp(take, 1, 100))
                 .ToListAsync(cancellationToken);
 
-            return rows.Select(Project).ToList();
+            var actors = await ResolveActorsAsync(rows, cancellationToken);
+            return rows.Select(n => Project(n, actors)).ToList();
         }
 
         public async Task<int> CountAsync(BusinessContext context, bool unreadOnly,
             CancellationToken cancellationToken = default)
         {
             if (context.EmployeeId is not > 0) return 0;
-            return await Scope(context, unreadOnly, DateTime.UtcNow).CountAsync(cancellationToken);
+            return await Scope(context, unreadOnly, _clock.GetUtcNow().UtcDateTime).CountAsync(cancellationToken);
         }
 
         public async Task<int> CountUnreadAsync(BusinessContext context, CancellationToken cancellationToken = default)
         {
             if (context.EmployeeId is not > 0) return 0;
-            var now = DateTime.Now;
+            var now = _clock.GetUtcNow().UtcDateTime;
 
             return await _db.Notifications.AsNoTracking().CountAsync(
                 n => n.CompanyID == context.CompanyId
@@ -252,6 +288,7 @@ namespace CrossBuy.BL.Workspace
                 Title = WorkspaceCulture.Pick(t.TitleAr, t.TitleEn, arabic) ?? t.EventType,
                 Detail = WorkspaceCulture.Pick(t.DescriptionAr, t.DescriptionEn, arabic),
                 Actor = t.ActorDisplayName,
+                ActorAvatarUrl = t.ActorAvatarUrl,
                 At = t.CreatedAt,
 
                 // The presenter's own icon and colour, so a row looks the same here as on the record's own

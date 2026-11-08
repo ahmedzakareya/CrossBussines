@@ -383,7 +383,7 @@ namespace CrossBuy.Tests
                 Array.Empty<IWorkspaceFavoritesSource>(),
                 new IWorkspaceActivitySource[] { new TimelineActivityWorkspaceSource(services.BuildServiceProvider()) },
                 Array.Empty<IWorkspaceReportSource>(),
-                NullLogger<WorkspaceService>.Instance);
+                Array.Empty<IWorkspaceKpiSource>(), NullLogger<WorkspaceService>.Instance);
         }
 
         private sealed record Call(BusinessContext Context, DateTime SinceUtc, int Take);

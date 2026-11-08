@@ -254,7 +254,7 @@ namespace CrossBuy.Tests
                 new FixedContext(Resolved()), new ServiceCollection().BuildServiceProvider(),
                 new NoNotifications(), new NoIdentity(),
                 Array.Empty<IWorkspaceFavoritesSource>(), Array.Empty<IWorkspaceActivitySource>(),
-                Array.Empty<IWorkspaceReportSource>(), NullLogger<WorkspaceService>.Instance);
+                Array.Empty<IWorkspaceReportSource>(), Array.Empty<IWorkspaceKpiSource>(), NullLogger<WorkspaceService>.Instance);
 
             var dashboard = await workspace.GetDashboardAsync();
 
@@ -301,7 +301,7 @@ namespace CrossBuy.Tests
                 Array.Empty<IWorkspaceFavoritesSource>(),
                 Array.Empty<IWorkspaceActivitySource>(),
                 Array.Empty<IWorkspaceReportSource>(),
-                NullLogger<WorkspaceService>.Instance);
+                Array.Empty<IWorkspaceKpiSource>(), NullLogger<WorkspaceService>.Instance);
         }
 
         private sealed record Query(int CompanyId, string Scope, int EmployeeId, string? Status,

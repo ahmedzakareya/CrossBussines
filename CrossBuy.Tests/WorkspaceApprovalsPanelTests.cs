@@ -60,7 +60,7 @@ namespace CrossBuy.Tests
 				Array.Empty<IWorkspaceFavoritesSource>(),
 				Array.Empty<IWorkspaceActivitySource>(),
 				Array.Empty<IWorkspaceReportSource>(),
-				NullLogger<WorkspaceService>.Instance);
+				Array.Empty<IWorkspaceKpiSource>(), NullLogger<WorkspaceService>.Instance);
 		}
 
 		// ---------------------------------------------------------------------------------------------

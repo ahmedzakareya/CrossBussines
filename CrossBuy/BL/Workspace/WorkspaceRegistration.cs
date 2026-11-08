@@ -53,6 +53,23 @@ namespace CrossBuy.BL.Workspace
             // A deployment WITHOUT Reporting therefore has no contributor at all, and the Reports panel
             // reports Unavailable honestly rather than resolving a second-best implementation.
 
+            // ---- approved-dataset metrics (SCR-49) -------------------------------------------------
+            //
+            // NO IWorkspaceKpiSource IS REGISTERED HERE, and that is the honest state rather than an
+            // omission. SCR-49 requires the personal dashboard's metrics to come from approved datasets
+            // only. Reporting owns datasets, KPI definitions and their authority; a Workspace-authored
+            // implementation would be the Workspace deciding what an approved metric is, which is the
+            // inversion ADR-037 exists to prevent — and the same mistake the withdrawn
+            // ReportLibraryWorkspaceReportSource made.
+            //
+            // It cannot be registered by Reporting today either, and the reason is structural: KpiRegistry
+            // admits dataset codes from AccountingDatasets and ProjectsDatasets ONLY and throws
+            // "Unsupported KPI dataset" for anything else, so no approved KPI over TASK data can exist.
+            // Until that changes the task tiles stay module-sourced, and WorkspaceDashboard
+            // .UnapprovedMetrics names every tile that is — so the gap is visible instead of implied.
+            //
+            // When Reporting registers one, the dashboard uses it with NO change to the Workspace.
+
             // ---- favourites + activity extension points -------------------------------------------
             //
             // A module contributes rows by registering one of these AFTER this call. It never edits the
