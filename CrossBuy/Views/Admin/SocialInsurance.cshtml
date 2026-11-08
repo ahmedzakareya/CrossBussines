@@ -1,0 +1,119 @@
+@model CrossBuy.Controllers.AdminController.InsurancePageModel
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    // HR6 — the monthly social-insurance statement (HR prototype #/payroll, adopted 2026-11-08).
+    ViewData["Title"] = "Social insurance";
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    string L(string ar, string en) => isAr ? ar : en;
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+    var monthsAr = new[] { "", "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر" };
+    var monthsEn = new[] { "", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" };
+    var m = Model.Month;
+    string MonthName(DateTime d) => (isAr ? monthsAr[d.Month] : monthsEn[d.Month]) + " " + d.Year;
+    string Money(decimal v) => v.ToString("N3", inv);
+}
+<link href="~/css/hr.css" rel="stylesheet" asp-append-version="true" />
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2">
+        <div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+            <div class="page-title d-flex flex-column justify-content-center gap-1">
+                <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@L("كشف التأمينات الاجتماعية", "Social insurance statement")</h1>
+                <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                    <li class="breadcrumb-item text-muted"><a href="@Url.Action("Index", "Admin")" class="text-muted text-hover-primary">@SR["HumanResources"]</a></li>
+                    <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                    <li class="breadcrumb-item text-muted">@L("الرواتب والمستحقات", "Pay & entitlements")</li>
+                </ul>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <a href="@Url.Action("SocialInsurance", new { month = m.AddMonths(isAr ? 1 : -1).ToString("yyyy-MM") })" class="btn btn-icon btn-sm btn-light"><i class="ki-outline ki-arrow-right fs-3"></i></a>
+                <span class="fw-bold fs-6 px-2">@MonthName(m)</span>
+                <a href="@Url.Action("SocialInsurance", new { month = m.AddMonths(isAr ? -1 : 1).ToString("yyyy-MM") })" class="btn btn-icon btn-sm btn-light"><i class="ki-outline ki-arrow-left fs-3"></i></a>
+            </div>
+        </div>
+    </div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid">
+        <div class="app-container container-fluid">
+            <div class="hr-notice mb-5">
+                <i class="ki-outline ki-shield-tick fs-2"></i>
+                <div class="flex-grow-1">
+                    <div class="fw-bold">@(isAr ? Model.PackNameAr : Model.PackNameEn)</div>
+                    <div class="fs-7">@L("كل بند من حزمة قواعد الدولة على أجر الموظف في نهاية الشهر، حتى سقف البند؛ بنود «المواطنين فقط» تُطبَّق على من جنسيته ", "Each rule-pack line on the employee's wage at the month's end, up to the line's cap; “nationals only” lines apply to those whose nationality is ")<b>@(Model.NationalCountry ?? "—")</b>@L(". نفس الحساب الذي تخصمه الرواتب.", ". The same computation payroll deducts with.")</div>
+                </div>
+                <a href="@Url.Action("HrRules")" class="btn btn-sm btn-light flex-shrink-0">@L("حزمة قواعد الدولة", "Country rule pack")</a>
+            </div>
+
+            <div class="row g-5 g-xl-8 mb-5">
+                @foreach (var s in new[] { (L("موظفون مشمولون", "Employees covered"), Model.People.ToString(), "ki-people"), (L("منهم مواطنون", "Of whom nationals"), Model.Nationals.ToString(), "ki-flag"),
+                                           (L("حصة الموظفين", "Employees' share"), Money(Model.Employee) + " " + Model.Currency, "ki-user"), (L("حصة الشركة", "Employer's share"), Money(Model.Employer) + " " + Model.Currency, "ki-bank") })
+                {
+                    <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
+                        <div class="d-flex flex-stack"><div class="text-muted fw-semibold fs-7 mb-1">@s.Item1</div><i class="ki-outline @s.Item3 fs-2 text-gray-400"></i></div>
+                        <div class="fs-2 fw-bold text-gray-900"><span class="hr-num">@s.Item2</span></div>
+                    </div></div></div>
+                }
+            </div>
+
+            @if (Model.Totals.Count > 0)
+            {
+                <div class="card mb-5">
+                    <div class="card-header border-0 pt-6"><div class="card-title"><span class="fw-bold fs-4">@L("حسب البند", "By line")</span></div></div>
+                    <div class="card-body pt-2"><div class="table-responsive">
+                        <table class="table align-middle gy-3 mb-0 hr-table">
+                            <thead><tr class="fw-bold fs-8 text-uppercase text-muted"><th class="ps-4">@L("البند", "Line")</th><th>@L("يشمل", "Covers")</th><th class="text-end">@L("الموظف %", "Employee %")</th><th class="text-end">@L("الشركة %", "Employer %")</th><th class="text-end">@L("موظفون", "People")</th><th class="text-end">@L("حصة الموظفين", "Employees")</th><th class="text-end pe-4">@L("حصة الشركة", "Employer")</th></tr></thead>
+                            <tbody class="fs-6">
+                                @foreach (var t in Model.Totals)
+                                {
+                                    <tr><td class="ps-4 fw-semibold">@(isAr ? t.NameAr : t.NameEn)</td>
+                                        <td>@(t.NationalsOnly ? L("المواطنون فقط", "Nationals only") : L("الجميع", "Everyone"))</td>
+                                        <td class="text-end hr-num">@t.EmployeePct.ToString("0.##", inv)%</td><td class="text-end hr-num">@t.EmployerPct.ToString("0.##", inv)%</td>
+                                        <td class="text-end hr-num">@t.People</td><td class="text-end hr-num">@Money(t.Employee)</td><td class="text-end hr-num pe-4">@Money(t.Employer)</td></tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div></div>
+                </div>
+            }
+
+            <div class="card mb-5">
+                <div class="card-header border-0 pt-6 flex-wrap gap-3">
+                    <div class="card-title flex-column m-0">
+                        <span class="fw-bold text-gray-900 fs-4">@L("حسب الموظف", "By employee")</span>
+                        <span class="text-muted fs-7 mt-1">@L("حصة الموظف / حصة الشركة لكل بند", "Employee / employer share per line") · <span id="resultCount">—</span></span>
+                    </div>
+                    <div class="card-toolbar d-flex align-items-center gap-2 flex-wrap">
+                        <div class="w-250px"><input type="text" id="f_q" class="form-control form-control-solid form-control-sm" autocomplete="off" placeholder="@L("ابحث بالموظف…", "Search employee…")" /></div>
+                        <select id="f_scope" class="form-select form-select-solid form-select-sm w-auto cb-filter"><option value="">@L("الجميع", "Everyone")</option><option value="nationals">@L("المواطنون", "Nationals")</option><option value="others">@L("غير المواطنين", "Non-nationals")</option></select>
+                        <select id="f_size" class="form-select form-select-solid form-select-sm w-auto"><option value="25">25</option><option value="50">50</option><option value="100">100</option></select>
+                        <button type="button" id="f_reset" class="btn btn-sm btn-light" title="@L("إعادة ضبط", "Reset")"><i class="ki-outline ki-arrows-circle fs-4"></i></button>
+                    </div>
+                </div>
+                <div class="card-body pt-4">
+                    <div class="table-responsive">
+                        <table class="table align-middle gy-3 mb-0 hr-table">
+                            <thead><tr class="fw-bold fs-8 text-uppercase text-muted"><th class="ps-4">@L("الموظف", "Employee")</th><th class="text-end">@L("الأجر", "Wage")</th><th style="min-width:260px">@L("البنود (موظف / شركة)", "Lines (employee / employer)")</th><th class="text-end">@L("حصة الموظف", "Employee")</th><th class="text-end pe-4">@L("حصة الشركة", "Employer")</th></tr></thead>
+                            <tbody class="fs-6" id="rows"></tbody>
+                        </table>
+                    </div>
+                    <div class="text-center text-muted py-10 d-none" id="loadingRow"><span class="spinner-border spinner-border-sm me-2"></span>@L("جارٍ التحميل…", "Loading…")</div>
+                    <div class="text-center text-muted py-10 d-none" id="emptyRow">@L("لا موظفين مطابقين", "No matching employees")</div>
+                    <div class="d-flex flex-stack flex-wrap pt-5"><div class="fs-7 text-muted" id="pageInfo"></div><ul class="pagination" id="pager"></ul></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script src="~/Backend-assets/js/crossbuy-tagify.js" asp-append-version="true"></script>
+<script>
+cbServerList({
+    url: '@Url.Action("SocialInsuranceData", "Admin")',
+    isAr: @(isAr ? "true" : "false"),
+    addParams: function (p) { p.set('month', '@m.ToString("yyyy-MM")'); var s = document.getElementById('f_scope'); if (s && s.value !== '') p.set('scope', s.value); },
+    onReset: function () { var s = document.getElementById('f_scope'); if (s) s.value = ''; }
+});
+</script>
+}

@@ -1,0 +1,34 @@
+@model CrossBuy.Controllers.AdminController.PayrollRowsModel
+@{
+    // One page of the payroll register (AdminController.PayrollRunData), injected by cbServerList.
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+    string Money(decimal v) => v == 0 ? "—" : v.ToString("N3", inv);
+    string Initials(string? name) { var p = (name ?? "?").Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries); return p.Length == 0 ? "?" : string.Concat(p.Take(2).Select(w => w[0])).ToUpperInvariant(); }
+}
+@foreach (var e in Model.Rows)
+{
+    var photo = Model.Photos.TryGetValue(e.EmployeeId, out var ph) ? ph : null;
+    var name = isAr ? e.Name : (string.IsNullOrWhiteSpace(e.NameEn) ? e.Name : e.NameEn);
+    <tr>
+        <td class="ps-4">
+            <div class="d-flex align-items-center min-w-0">
+                <div class="symbol symbol-30px symbol-circle flex-shrink-0">
+                    @if (photo != null) { <img src="@photo" alt="" /> } else { <span class="symbol-label fw-bold fs-9 hr-initials">@Initials(name)</span> }
+                </div>
+                <div class="d-flex flex-column ms-2 min-w-0">
+                    <a href="@Url.Action("EmployeeProfile", "Admin", new { id = e.EmployeeId })" class="text-gray-900 text-hover-primary fw-bold fs-7 text-truncate"><bdi>@name</bdi></a>
+                    <span class="text-muted fs-8 text-truncate">@(e.CostCenterName ?? "—")</span>
+                </div>
+            </div>
+        </td>
+        <td class="text-end hr-num">@Money(e.BaseSalary)</td>
+        <td class="text-end hr-num">@Money(e.Allowances)</td>
+        <td class="text-end hr-num">@Money(e.OvertimePay)</td>
+        <td class="text-end hr-num text-danger">@Money(e.LatePenalty + e.AbsencePenalty)</td>
+        <td class="text-end hr-num">@Money(e.SiEmployee)</td>
+        <td class="text-end hr-num">@Money(e.Tax)</td>
+        <td class="text-end hr-num">@Money(e.LoanDeduction)</td>
+        <td class="text-end hr-num fw-bold pe-4">@e.Net.ToString("N3", inv)</td>
+    </tr>
+}

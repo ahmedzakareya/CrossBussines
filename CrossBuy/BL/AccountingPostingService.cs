@@ -200,13 +200,8 @@ namespace CrossBuy.BL
 					// THE COUNTRY RULE PACK (2026-11-08): each insurance line on the wage up to its own cap, for everyone or
 					// for nationals only. Without a pack the salary policy's shares on the settings band apply, as before.
 					bool national = e.CountryID is int cid && nationalCountryIds.Contains(cid);
-					decimal empSum = 0, coSum = 0;
-					foreach (var line in siPack.Insurance.Where(l => !l.ForNationalsOnly || national))
-					{
-						var wage = line.WageCap is > 0 ? Math.Min(gross, line.WageCap.Value) : gross;
-						empSum += wage * line.EmployeePct / 100m; coSum += wage * line.EmployerPct / 100m;
-					}
-					siEmp = R(empSum); siCo = R(coSum);
+					var siLines = CrossBuy.BL.Hr.HrInsurance.Lines(siPack, gross, national);   // HR6: the one computation the statement shows
+					siEmp = R(siLines.Sum(x => x.Employee)); siCo = R(siLines.Sum(x => x.Employer));
 				}
 				else
 				{

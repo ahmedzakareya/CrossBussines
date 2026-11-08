@@ -1474,6 +1474,35 @@ namespace CrossBuy.Controllers
 			return RedirectToAction(nameof(Periods));
 		}
 
+		// ---------------- HR6 (2026-11-08): payroll is HR's data, and its period is never a compiled-in date ----------------
+		// Every employee's pay is on these screens, so reading them is HR's payroll-view and posting is HR's payroll-manage —
+		// in ADDITION to the accounting right each endpoint already demands (the entry still lands in the ledger). The period
+		// used to default to 2026/1 everywhere; it now defaults to the month in hand.
+		private async Task<bool> PayrollHrAllowsAsync(string action)
+		{
+			var ctx = BusinessContexts == null ? null : await BusinessContexts.TryGetCurrentAsync();
+			if (ctx == null || ctx.CompanyId <= 0) return false;
+			var hr = HttpContext.RequestServices.GetService(typeof(CrossBuy.BL.IHrAccessService)) as CrossBuy.BL.IHrAccessService;
+			return hr != null && await hr.CanAsync(ctx, action, null);
+		}
+
+		private IActionResult PayrollRefused(bool manage)
+		{
+			bool ar = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+			TempData["AccErr"] = manage
+				? (ar ? "ترحيل الرواتب يحتاج صلاحية «إدارة الرواتب» من الموارد البشرية (دور موظف رواتب)." : "Posting payroll needs HR's payroll-manage right (the Payroll officer role).")
+				: (ar ? "الرواتب بيانات موارد بشرية: عرضها يحتاج صلاحية «عرض الرواتب»." : "Payroll is HR data: viewing it needs HR's payroll-view right.");
+			return RedirectToAction(nameof(Index));
+		}
+
+		/// The latest month that has payslips (for the payslip and disbursement screens), else the current month.
+		private async Task<(int Year, int Month)> LatestPayrollPeriodAsync(int co)
+		{
+			var last = await _context.Payslips.AsNoTracking().Where(s => s.CompanyID == co)
+				.OrderByDescending(s => s.Year).ThenByDescending(s => s.Month).Select(s => new { s.Year, s.Month }).FirstOrDefaultAsync();
+			return last == null ? (DateTime.Today.Year, DateTime.Today.Month) : (last.Year, last.Month);
+		}
+
 		// قيد الرواتب — Payroll posting (preview computed payroll, then post the journal)
 		[SessionValidation]
 		[HttpGet]
@@ -1481,8 +1510,10 @@ namespace CrossBuy.Controllers
 		{
 			var co = await CompanyIdAsync();
 			if (co == 0) return CompanyRefusedView();
-			var y = year ?? 2026;
-			var m = month ?? 1;
+			if (!await PayrollHrAllowsAsync(CrossBuy.BL.HrActions.PayrollView)) return PayrollRefused(false);
+			var y = year ?? DateTime.Today.Year;      // HR6: the month in hand, not a compiled-in 2026/1
+			var m = month ?? DateTime.Today.Month;
+			ViewBag.CanPostPayroll = await PayrollHrAllowsAsync(CrossBuy.BL.HrActions.PayrollManage);
 			var preview = await _posting.PreviewPayrollAsync(co, y, m);
 			return View(preview);
 		}
@@ -1495,6 +1526,7 @@ namespace CrossBuy.Controllers
 		{
 			var co = await CompanyIdAsync();
 			if (co == 0) return CompanyRefusedView();
+			if (!await PayrollHrAllowsAsync(CrossBuy.BL.HrActions.PayrollManage)) return PayrollRefused(true);
 			var (ok, err, _) = await _posting.PostPayrollRunAsync(co, year, month, null);
 			TempData[ok ? "AccMsg" : "AccErr"] = ok ? L["The payroll entry was posted and payslips issued successfully"].Value : err;
 			return RedirectToAction(nameof(Payroll), new { year, month });
@@ -1506,7 +1538,9 @@ namespace CrossBuy.Controllers
 		{
 			var co = await CompanyIdAsync();
 			if (co == 0) return CompanyRefusedView();
-			var y = year ?? 2026; var m = month ?? 1;
+			if (!await PayrollHrAllowsAsync(CrossBuy.BL.HrActions.PayrollView)) return PayrollRefused(false);
+			var (ly, lm) = await LatestPayrollPeriodAsync(co);   // HR6: the latest posted month, not 2026/1
+			var y = year ?? ly; var m = month ?? lm;
 			ViewBag.Year = y; ViewBag.Month = m;
 			var banks = await _banks.GetBankAccountsAsync(co);
 			var boxes = await _banks.GetCashBoxesAsync(co);
@@ -1593,7 +1627,9 @@ namespace CrossBuy.Controllers
 		{
 			var co = await CompanyIdAsync();
 			if (co == 0) return CompanyRefusedView();
-			var y = year ?? 2026; var m = month ?? 1;
+			if (!await PayrollHrAllowsAsync(CrossBuy.BL.HrActions.PayrollView)) return PayrollRefused(false);
+			var (ly, lm) = await LatestPayrollPeriodAsync(co);   // HR6: the latest posted month, not 2026/1
+			var y = year ?? ly; var m = month ?? lm;
 			ViewBag.Year = y; ViewBag.Month = m;
 			return View(await _context.Payslips.AsNoTracking().Where(s => s.CompanyID == co && s.Year == y && s.Month == m).OrderBy(s => s.EmployeeName).ToListAsync());
 		}
@@ -1603,6 +1639,7 @@ namespace CrossBuy.Controllers
 		{
 			var co = await CompanyIdAsync();
 			if (co == 0) return CompanyRefusedView();
+			if (!await PayrollHrAllowsAsync(CrossBuy.BL.HrActions.PayrollView)) return PayrollRefused(false);
 			var slip = await _context.Payslips.AsNoTracking().FirstOrDefaultAsync(s => s.ID == id && s.CompanyID == co);
 			if (slip == null) { TempData["AccErr"] = L["Payslip not found"].Value; return RedirectToAction(nameof(Payslips)); }
 			return View(slip);

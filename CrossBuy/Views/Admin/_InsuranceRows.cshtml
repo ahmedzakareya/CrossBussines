@@ -1,0 +1,35 @@
+@model CrossBuy.Controllers.AdminController.InsuranceRowsModel
+@{
+    // One page of the monthly social-insurance statement (AdminController.SocialInsuranceData), injected by cbServerList.
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    string L(string ar, string en) => isAr ? ar : en;
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+    string Initials(string? name) { var p = (name ?? "?").Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries); return p.Length == 0 ? "?" : string.Concat(p.Take(2).Select(w => w[0])).ToUpperInvariant(); }
+}
+@foreach (var r in Model.Rows)
+{
+    var photo = Model.Photos.TryGetValue(r.EmployeeId, out var ph) ? ph : null;
+    <tr>
+        <td class="ps-4">
+            <div class="d-flex align-items-center min-w-0">
+                <div class="symbol symbol-30px symbol-circle flex-shrink-0">
+                    @if (photo != null) { <img src="@photo" alt="" /> } else { <span class="symbol-label fw-bold fs-9 hr-initials">@Initials(r.Name)</span> }
+                </div>
+                <div class="d-flex flex-column ms-2 min-w-0">
+                    <a href="@Url.Action("EmployeeProfile", "Admin", new { id = r.EmployeeId })" class="text-gray-900 text-hover-primary fw-bold fs-7 text-truncate"><bdi>@r.Name</bdi></a>
+                    <span class="fs-8 @(r.National ? "text-success" : "text-muted")">@(r.National ? L("مواطن", "National") : L("غير مواطن", "Non-national"))</span>
+                </div>
+            </div>
+        </td>
+        <td class="text-end hr-num">@r.Wage.ToString("N3", inv)</td>
+        <td class="fs-8">
+            @if (r.Lines.Count == 0) { <span class="text-gray-400">—</span> }
+            @foreach (var l in r.Lines)
+            {
+                <div class="d-flex justify-content-between gap-3"><span class="text-muted">@(isAr ? l.NameAr : l.NameEn)</span><span class="hr-num">@l.Employee.ToString("N3", inv) / @l.Employer.ToString("N3", inv)</span></div>
+            }
+        </td>
+        <td class="text-end hr-num fw-bold">@r.Employee.ToString("N3", inv)</td>
+        <td class="text-end hr-num fw-bold pe-4">@r.Employer.ToString("N3", inv)</td>
+    </tr>
+}

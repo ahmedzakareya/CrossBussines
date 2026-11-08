@@ -1,0 +1,140 @@
+@model CrossBuy.Controllers.AdminController.PayrollRunPageModel
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    // HR6 — the payroll run in the HR prototype design (#/payroll, adopted 2026-11-08).
+    ViewData["Title"] = "Payroll run";
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    string L(string ar, string en) => isAr ? ar : en;
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+    var monthsAr = new[] { "", "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر" };
+    var monthsEn = new[] { "", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" };
+    var m = Model.Month; var p = Model.Preview;
+    string MonthName(DateTime d) => (isAr ? monthsAr[d.Month] : monthsEn[d.Month]) + " " + d.Year;
+    string Money(decimal v) => v.ToString("N3", inv);
+}
+<link href="~/css/hr.css" rel="stylesheet" asp-append-version="true" />
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2">
+        <div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+            <div class="page-title d-flex flex-column justify-content-center gap-1">
+                <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@L("مسير الرواتب", "Payroll run")</h1>
+                <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                    <li class="breadcrumb-item text-muted"><a href="@Url.Action("Index", "Admin")" class="text-muted text-hover-primary">@SR["HumanResources"]</a></li>
+                    <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                    <li class="breadcrumb-item text-muted">@L("الرواتب والمستحقات", "Pay & entitlements")</li>
+                </ul>
+            </div>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <a href="@Url.Action("PayrollRun", new { month = m.AddMonths(isAr ? 1 : -1).ToString("yyyy-MM") })" class="btn btn-icon btn-sm btn-light"><i class="ki-outline ki-arrow-right fs-3"></i></a>
+                <span class="fw-bold fs-6 px-2">@MonthName(m)</span>
+                <a href="@Url.Action("PayrollRun", new { month = m.AddMonths(isAr ? -1 : 1).ToString("yyyy-MM") })" class="btn btn-icon btn-sm btn-light"><i class="ki-outline ki-arrow-left fs-3"></i></a>
+                @if (p.AlreadyPosted)
+                {
+                    <span class="badge badge-light-success fw-bold fs-7 py-3 px-4"><i class="ki-outline ki-check-circle fs-5 me-1"></i>@L("مرحّل", "Posted") <span class="hr-num ms-1">@p.PostedEntryNo</span></span>
+                }
+                else if (Model.CanPost && p.Employees.Count > 0)
+                {
+                    <form asp-controller="Accounting" asp-action="PostPayroll" method="post" class="d-inline" data-cb-confirm data-cb-action="generic"
+                          data-cb-text="@L("ترحيل قيد رواتب " + MonthName(m) + " وإصدار القسائم؟ لا يمكن تعديل الشهر بعده.", "Post the " + MonthName(m) + " payroll entry and issue the payslips? The month cannot change afterwards.")">
+                        @Html.AntiForgeryToken()<input type="hidden" name="year" value="@m.Year" /><input type="hidden" name="month" value="@m.Month" />
+                        <button class="btn btn-sm btn-primary"><i class="ki-outline ki-check fs-4"></i>@L("ترحيل المسير", "Post the run")</button>
+                    </form>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid">
+        <div class="app-container container-fluid">
+            @if (TempData["AccErr"] is string err) { <div class="alert alert-danger d-flex align-items-center py-3 mb-5"><i class="ki-outline ki-information-5 fs-2 me-3 text-danger"></i>@err</div> }
+
+            <div class="hr-notice mb-5">
+                <i class="ki-outline ki-wallet fs-2"></i>
+                <div class="flex-grow-1">
+                    <div class="fw-bold">@L("مسير ", "") @MonthName(m) @L("", " payroll") — @(isAr ? Model.PackNameAr : Model.PackNameEn)</div>
+                    <div class="fs-7">@L("الراتب من هيكل كل موظف، والإضافي والخصومات من الحضور، والتأمينات من حزمة قواعد الدولة، وأقساط القروض في حدود سقفها. نفس الحساب الذي يرحّله قيد الرواتب في المحاسبة.",
+                        "Pay from each employee's own structure, overtime and deductions from attendance, insurance from the country rule pack, loan instalments within their cap. The same computation the accounting payroll entry posts.")
+                        @if (!Model.CanPost && !p.AlreadyPosted) { <span class="fw-bold">@L(" الترحيل يحتاج صلاحية «إدارة الرواتب».", " Posting needs the payroll-manage right.")</span> }</div>
+                </div>
+                <a href="@Url.Action("SocialInsurance", new { month = m.ToString("yyyy-MM") })" class="btn btn-sm btn-light flex-shrink-0">@L("كشف التأمينات", "Insurance statement")</a>
+            </div>
+
+            <div class="card mb-5">
+                <div class="card-header border-0 pt-6"><div class="card-title"><span class="fw-bold fs-4">@L("مراحل المسير", "Run stages")</span></div></div>
+                <div class="card-body pt-2">
+                    <div class="d-flex flex-wrap align-items-center gap-3">
+                        @for (int i = 0; i < Model.Stages.Count; i++)
+                        {
+                            var s = Model.Stages[i];
+                            if (i > 0) { <i class="ki-outline @(isAr ? "ki-arrow-left" : "ki-arrow-right") fs-3 text-gray-400"></i> }
+                            <span class="badge @(s.Done ? "badge-light-success" : "badge-light") fs-7 fw-bold py-3 px-4" title="@(isAr ? s.NoteAr : s.NoteEn)">
+                                @if (s.Done) { <i class="ki-outline ki-check fs-6 me-1"></i> }@L(s.Ar, s.En)
+                                @if (!string.IsNullOrEmpty(isAr ? s.NoteAr : s.NoteEn)) { <span class="text-muted fw-semibold ms-1 fs-8">· @(isAr ? s.NoteAr : s.NoteEn)</span> }
+                            </span>
+                        }
+                    </div>
+                    @if (Model.OvertimeNeedsApproval && Model.OvertimeUndecided > 0)
+                    {
+                        <div class="mt-4 fs-7"><a href="@Url.Action("Overtime", new { month = m.ToString("yyyy-MM") })" class="fw-bold">@L("اعتمد العمل الإضافي قبل الترحيل", "Approve the overtime before posting") →</a></div>
+                    }
+                </div>
+            </div>
+
+            <div class="row g-5 g-xl-8 mb-5">
+                @foreach (var s in new[] { (L("موظفون", "Employees"), p.Employees.Count.ToString(), "ki-people"), (L("الإجمالي", "Gross"), Money(p.TotalGross + p.TotalOvertime), "ki-dollar"),
+                                           (L("الخصومات", "Deductions"), Money(p.TotalSiEmployee + p.TotalTax + p.TotalLatePenalty + p.TotalAbsencePenalty + p.TotalLoanDeduction), "ki-minus-circle"),
+                                           (L("الصافي", "Net"), Money(p.TotalNet), "ki-wallet"), (L("تأمينات الشركة", "Employer insurance"), Money(p.TotalSiCompany), "ki-bank") })
+                {
+                    <div class="col-sm-6 col-xl"><div class="card card-flush h-100"><div class="card-body py-5">
+                        <div class="d-flex flex-stack"><div class="text-muted fw-semibold fs-7 mb-1">@s.Item1</div><i class="ki-outline @s.Item3 fs-2 text-gray-400"></i></div>
+                        <div class="fs-3 fw-bold text-gray-900 text-nowrap"><span class="hr-num">@s.Item2</span> <span class="fs-8 text-muted">@(s.Item1 == L("موظفون", "Employees") ? "" : Model.Currency)</span></div>
+                    </div></div></div>
+                }
+            </div>
+
+            <div class="card mb-5">
+                <div class="card-header border-0 pt-6 flex-wrap gap-3">
+                    <div class="card-title flex-column m-0">
+                        <span class="fw-bold text-gray-900 fs-4">@L("كشف المسير", "Payroll register")</span>
+                        <span class="text-muted fs-7 mt-1"><span id="resultCount">—</span></span>
+                    </div>
+                    <div class="card-toolbar d-flex align-items-center gap-2 flex-wrap">
+                        <div class="w-250px"><input type="text" id="f_q" class="form-control form-control-solid form-control-sm" autocomplete="off" placeholder="@L("ابحث بالموظف أو مركز التكلفة…", "Search employee or cost centre…")" /></div>
+                        <select id="f_size" class="form-select form-select-solid form-select-sm w-auto"><option value="25">25</option><option value="50">50</option><option value="100">100</option></select>
+                        <button type="button" id="f_reset" class="btn btn-sm btn-light" title="@L("إعادة ضبط", "Reset")"><i class="ki-outline ki-arrows-circle fs-4"></i></button>
+                    </div>
+                </div>
+                <div class="card-body pt-4">
+                    <div class="table-responsive">
+                        <table class="table align-middle gy-3 mb-0 hr-table">
+                            <thead><tr class="fw-bold fs-8 text-uppercase text-muted">
+                                <th class="ps-4" style="min-width:200px">@L("الموظف", "Employee")</th><th class="text-end">@L("الأساسي", "Basic")</th><th class="text-end">@L("البدلات", "Allowances")</th><th class="text-end">@L("إضافي", "Overtime")</th><th class="text-end">@L("تأخير/غياب", "Late/absence")</th><th class="text-end">@L("تأمينات", "Insurance")</th><th class="text-end">@L("ضريبة", "Tax")</th><th class="text-end">@L("قسط قرض", "Loan")</th><th class="text-end pe-4">@L("الصافي", "Net")</th>
+                            </tr></thead>
+                            <tbody class="fs-6" id="rows"></tbody>
+                            <tfoot><tr class="fw-bold fs-6 border-top">
+                                <td class="ps-4">@L("الإجمالي", "Total")</td><td class="text-end hr-num">@Money(p.Employees.Sum(e => e.BaseSalary))</td><td class="text-end hr-num">@Money(p.Employees.Sum(e => e.Allowances))</td><td class="text-end hr-num">@Money(p.TotalOvertime)</td>
+                                <td class="text-end hr-num">@Money(p.TotalLatePenalty + p.TotalAbsencePenalty)</td><td class="text-end hr-num">@Money(p.TotalSiEmployee)</td><td class="text-end hr-num">@Money(p.TotalTax)</td><td class="text-end hr-num">@Money(p.TotalLoanDeduction)</td><td class="text-end hr-num pe-4">@Money(p.TotalNet)</td>
+                            </tr></tfoot>
+                        </table>
+                    </div>
+                    <div class="text-center text-muted py-10 d-none" id="loadingRow"><span class="spinner-border spinner-border-sm me-2"></span>@L("جارٍ التحميل…", "Loading…")</div>
+                    <div class="text-center text-muted py-10 d-none" id="emptyRow">@L("لا موظفين في المسير", "No employees in the run")</div>
+                    <div class="d-flex flex-stack flex-wrap pt-5"><div class="fs-7 text-muted" id="pageInfo"></div><ul class="pagination" id="pager"></ul></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script src="~/Backend-assets/js/crossbuy-tagify.js" asp-append-version="true"></script>
+<script>
+cbServerList({
+    url: '@Url.Action("PayrollRunData", "Admin")',
+    isAr: @(isAr ? "true" : "false"),
+    addParams: function (p) { p.set('month', '@m.ToString("yyyy-MM")'); }
+});
+</script>
+}

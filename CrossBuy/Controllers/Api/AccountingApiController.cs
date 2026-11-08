@@ -312,14 +312,28 @@ namespace CrossBuy.Controllers.Api
 		// `read` and not `manage`: the preview computes nothing and posts nothing, and the MVC Payroll screen is a
 		// read surface too. Posting it is a different right — see below.
 		[HttpGet("payroll/preview")]
-		public async Task<IActionResult> PayrollPreview(int companyId = 0, int year = 2026, int month = 1,
+		public async Task<IActionResult> PayrollPreview(int companyId = 0, int? year = null, int? month = null,
 			CancellationToken cancellationToken = default)
 		{
 			var auth = await _guard.AuthorizeAsync(PermRead, companyId, cancellationToken);
 			if (!auth.Ok) return auth.Error!;
+			// HR6: every employee's pay — HR's payroll-view as well as the accounting read; the period is the month in hand.
+			if (!await PayrollHrAllowsAsync(CrossBuy.BL.HrActions.PayrollView, cancellationToken)) return NotFound(new { success = false, message = "Not authorised" });
+			int y = year ?? DateTime.Today.Year, m = month ?? DateTime.Today.Month;
+			var p0 = await _posting.PreviewPayrollAsync(auth.CompanyId, y, m);
+			return Ok(new { success = true, data = p0 });
 
-			var p = await _posting.PreviewPayrollAsync(auth.CompanyId, year, month);
-			return Ok(new { success = true, data = p });
+		}
+
+		// HR6: payroll is HR's data. The accounting guard decides the company and the accounting right; HR decides who may
+		// see or post everyone's pay. A refusal reads as not found, like the guard's own.
+		private async Task<bool> PayrollHrAllowsAsync(string action, CancellationToken ct)
+		{
+			var contexts = HttpContext.RequestServices.GetService(typeof(CrossBuy.BL.Platform.IBusinessContextAccessor)) as CrossBuy.BL.Platform.IBusinessContextAccessor;
+			var ctx = contexts == null ? null : await contexts.TryGetCurrentAsync(ct);
+			if (ctx == null || ctx.CompanyId <= 0) return false;
+			var hr = HttpContext.RequestServices.GetService(typeof(CrossBuy.BL.IHrAccessService)) as CrossBuy.BL.IHrAccessService;
+			return hr != null && await hr.CanAsync(ctx, action, null, ct);
 		}
 
 		// POST /api/acc/payroll/post?companyId=&year=&month=   requires: MANAGE
@@ -330,13 +344,14 @@ namespace CrossBuy.Controllers.Api
 		// Duplicate posting is already prevented inside PostPayrollRunAsync (it refuses when a Payroll-sourced
 		// journal exists for this company + period). That logic is untouched.
 		[HttpPost("payroll/post")]
-		public async Task<IActionResult> PayrollPost(int companyId = 0, int year = 2026, int month = 1,
+		public async Task<IActionResult> PayrollPost(int companyId = 0, int? year = null, int? month = null,
 			CancellationToken cancellationToken = default)
 		{
 			var auth = await _guard.AuthorizeAsync(PermManage, companyId, cancellationToken);
 			if (!auth.Ok) return auth.Error!;
+			if (!await PayrollHrAllowsAsync(CrossBuy.BL.HrActions.PayrollManage, cancellationToken)) return NotFound(new { success = false, message = "Not authorised" });   // HR6
 
-			var (ok, err, entryId) = await _posting.PostPayrollRunAsync(auth.CompanyId, year, month, auth.EmployeeId);
+			var (ok, err, entryId) = await _posting.PostPayrollRunAsync(auth.CompanyId, year ?? DateTime.Today.Year, month ?? DateTime.Today.Month, auth.EmployeeId);
 			return ok ? Ok(new { success = true, entryId }) : BadRequest(new { success = false, message = err });
 		}
 
