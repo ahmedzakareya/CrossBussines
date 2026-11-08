@@ -1,0 +1,189 @@
+@using CrossBuy.BL.Workspace
+@using CrossBuy.BL
+@using System.Globalization
+@model WorkspaceCommunicationInbox
+@functions {
+    // NO PHOTO IS THE NORMAL CASE, and a broken-image frame is not an acceptable answer to it.
+    // Same two-letter rule the mentions screen uses, so one person reads the same on both.
+    private static string Initials(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) { return "?"; }
+        var parts = name.Trim().Split(' ', System.StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 1) { return parts[0].Substring(0, 1); }
+        return parts[0].Substring(0, 1) + parts[1].Substring(0, 1);
+    }
+}
+@{
+    var ar = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    var summary = ViewData["CommunicationSummary"] is true;
+    var unreadOnly = ViewBag.UnreadOnly is true;
+}
+<div class="card card-flush mb-5" data-cbw-source="communication">
+    <div class="card-header">
+        <h3 class="card-title">@(ar ? "تنبيهات التواصل" : "Communication notifications")
+            @if (Model.UnreadTotal is > 0)
+            {
+                <span class="badge badge-light-danger ms-2">@Model.UnreadTotal</span>
+            }
+        </h3>
+        <div class="card-toolbar">
+            <a class="btn btn-sm btn-light" href="@Url.Action("Notifications", "Workspace", new { unreadOnly })">@(ar ? "عرض الكل" : "View all")</a>
+        </div>
+    </div>
+    <div class="card-body pt-0">
+        @if (Model.State == WorkspacePanelState.Ready)
+        {
+            @foreach (var n in Model.Page.Items)
+            {
+                var title = DisplayName.Or(ar ? n.TitleAr : n.TitleEn, ar ? n.TitleEn : n.TitleAr);
+                var body = DisplayName.Or(ar ? n.BodyAr : n.BodyEn, ar ? n.BodyEn : n.BodyAr);
+                @* EVERY ONE OF THESE ROWS NAMES A PERSON - "أضاف سارة تعليقًا", "أشار إليك" - so it shows
+                   that person's face. Nothing had to be fetched for it: CommNotificationService.GetInboxAsync
+                   already resolves the actor once per page through ICommActorDirectory, and
+                   CommActorDto.AvatarUrl is Employee.ProfileImage. The panel was simply not reading it. *@
+                var who = n.Actor?.Display(ar);
+                var photo = string.IsNullOrWhiteSpace(n.Actor?.AvatarUrl)
+                    ? null
+                    : Url.Content("~" + n.Actor!.AvatarUrl!.Replace("\\", "/"));
+                <div class="py-3 border-bottom border-gray-200" data-cbw-communication-notification="@n.NotificationId">
+                    <div class="d-flex align-items-start">
+                        @* A SYSTEM NOTICE HAS NO FACE. Those rows keep the bell glyph rather than
+                           borrowing somebody else's initials. *@
+                        <div class="symbol symbol-35px me-3 flex-shrink-0">
+                            @if (photo != null)
+                            {
+                                <img src="@photo" alt="@who" class="rounded-circle" />
+                            }
+                            else if (who != null)
+                            {
+                                <span class="symbol-label bg-light-primary text-primary fw-bold fs-7">@Initials(who)</span>
+                            }
+                            else
+                            {
+                                <span class="symbol-label bg-light-primary">
+                                    <i class="ki-outline ki-notification-status fs-5 text-primary"></i>
+                                </span>
+                            }
+                        </div>
+                        <div class="d-flex flex-column min-w-0 flex-grow-1">
+                            <div>
+                                @if (!string.IsNullOrWhiteSpace(n.Url))
+                                { <a class="fw-bold text-gray-900 text-hover-primary" href="@n.Url">@title</a> }
+                                else
+                                { <span class="fw-bold text-gray-900">@title</span> }
+                                @if (n.ReadAt == null)
+                                { <span class="badge badge-light-primary ms-2">@(ar ? "غير مقروء" : "Unread")</span> }
+                            </div>
+                            <div class="text-gray-700 fs-7">@body</div>
+                        </div>
+                    </div>
+                </div>            }
+            @if (!summary && Model.Page.NextCursor.HasValue)
+            {
+                <a class="btn btn-sm btn-light-primary mt-4" href="@Url.Action("Notifications", "Workspace", new { unreadOnly, commAfter = Model.Page.NextCursor.Value })">@(ar ? "التنبيهات الأقدم" : "Older notifications")</a>
+            }
+        }
+        else
+        {
+            <p class="text-gray-700 mb-0" role="status">@(Model.State switch
+            {
+                WorkspacePanelState.Empty => ar ? "لا توجد تنبيهات تواصل." : "No communication notifications.",
+                WorkspacePanelState.AccessDenied => ar ? "لا تملك صلاحية عرض تنبيهات التواصل." : "You don't have access to communication notifications.",
+                WorkspacePanelState.TemporaryFailure => ar ? "تعذر تحميل تنبيهات التواصل مؤقتًا. أعد المحاولة." : "Communication notifications could not load. Try again.",
+                _ => ar ? "التواصل غير متاح في هذه البيئة." : "Communication is not available in this environment."
+            })</p>
+        }
+
+        @* ---- CONVERSATIONS ON RECORDS -------------------------------------------------------------
+           THE HUB'S OWN LIST, not a second one. ICommTaskIntegrationService.MyBusinessConversationsAsync
+           decides which threads are this caller's and never returns one they cannot read, so there is no
+           participant or company test repeated here.
+
+           IT RENDERS ONLY WHERE A SCREEN ASKED FOR IT. The paged notifications screen does not, and its
+           state stays Unavailable, so this whole block is skipped rather than showing an empty section.
+
+           NOTHING IS INVENTED. A conversation whose entity the registry does not publish a route for
+           renders as plain text - no guessed controller, no fabricated anchor. *@
+        @if (Model.Conversations.State != WorkspacePanelState.Unavailable)
+        {
+            <div class="separator my-4"></div>
+            <div class="d-flex align-items-center mb-3">
+                <i class="ki-outline ki-messages fs-4 text-primary me-2" aria-hidden="true"></i>
+                <span class="fw-bold fs-6 text-gray-900">@(ar ? "محادثات على السجلات" : "Conversations on records")</span>
+                @if (Model.Conversations.Items.Count > 0)
+                {
+                    <span class="badge badge-light-primary ms-2">@Model.Conversations.Items.Count</span>
+                }
+            </div>
+
+            @if (Model.Conversations.State == WorkspacePanelState.Ready)
+            {
+                foreach (var c in Model.Conversations.Items)
+                {
+                    @* The Hub's subject first; the registry's record name only as a fallback, so a thread
+                       that named itself is never relabelled by a generic "Invoice #12". *@
+                    var subject = DisplayName.Or(ar ? c.SubjectAr : c.SubjectEn, ar ? c.SubjectEn : c.SubjectAr);
+                    var kind = DisplayName.Or(ar ? c.EntityLabelAr : c.EntityLabelEn, ar ? c.EntityLabelEn : c.EntityLabelAr);
+                    var heading = !string.IsNullOrWhiteSpace(subject)
+                        ? subject
+                        : (!string.IsNullOrWhiteSpace(kind) ? $"{kind} #{c.EntityId}" : $"{c.EntityType} #{c.EntityId}");
+
+                    <div class="py-3 border-bottom border-gray-200 @(c.Muted ? "opacity-75" : "")"
+                         data-cbw-conversation="@c.ThreadId"
+                         data-cbw-entity="@c.EntityType" data-cbw-entity-id="@c.EntityId">
+                        <div class="d-flex align-items-start">
+                            <div class="symbol symbol-35px me-3 flex-shrink-0">
+                                <span class="symbol-label bg-light-@(c.Color ?? "primary")">
+                                    <i class="@(c.Icon ?? "ki-outline ki-messages") fs-5 text-@(c.Color ?? "primary")"></i>
+                                </span>
+                            </div>
+                            <div class="d-flex flex-column min-w-0 flex-grow-1">
+                                <div>
+                                    @* NAVIGATION TO THE RECORD, which is where the conversation lives: the
+                                       entity screen renders _EntityConversation. Workspace does not host a
+                                       second chat surface, and this is the whole of "navigate to the
+                                       entity-anchored conversation". *@
+                                    @if (!string.IsNullOrWhiteSpace(c.Url))
+                                    {
+                                        <a class="fw-bold text-gray-900 text-hover-primary" href="@c.Url">@heading</a>
+                                    }
+                                    else
+                                    {
+                                        <span class="fw-bold text-gray-900">@heading</span>
+                                    }
+                                    @if (c.Muted)
+                                    {
+                                        <span class="badge badge-light ms-2">@(ar ? "مكتوم" : "Muted")</span>
+                                    }
+                                </div>
+                                <div class="text-gray-700 fs-7">
+                                    @if (!string.IsNullOrWhiteSpace(kind))
+                                    {
+                                        <span>@kind</span><span class="mx-1">·</span>
+                                    }
+                                    <span>@(ar ? $"{c.CommentCount} رسالة" : $"{c.CommentCount} message{(c.CommentCount == 1 ? "" : "s")}")</span>
+                                    @if (c.LastActivityAt.HasValue)
+                                    {
+                                        <span class="mx-1">·</span>
+                                        @* UTC IN, LOCAL SHAPE OUT - a zoneless stamp is UTC by convention here. *@
+                                        <span>@c.LastActivityAt.Value.ToString("yyyy-MM-dd HH:mm")</span>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <p class="text-gray-700 mb-0" role="status">@(Model.Conversations.State switch
+                {
+                    WorkspacePanelState.Empty => ar ? "لا توجد محادثات على سجلات." : "No conversations on records.",
+                    WorkspacePanelState.AccessDenied => ar ? "لا تملك صلاحية عرض المحادثات." : "You don't have access to conversations.",
+                    WorkspacePanelState.TemporaryFailure => ar ? "تعذر تحميل المحادثات مؤقتًا. أعد المحاولة." : "Conversations could not load. Try again.",
+                    _ => ar ? "المحادثات غير متاحة." : "Conversations are not available."
+                })</p>
+            }
+        }
+    </div>
+</div>

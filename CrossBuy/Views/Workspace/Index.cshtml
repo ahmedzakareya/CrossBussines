@@ -12,9 +12,29 @@
     // _MainMenu prepends the Platform category, so an empty list yields a Platform-only sidebar.
     ViewBag.SidebarMenu = new List<CrossBuy.Models.Menu.MenuCategory>();
     var arabic = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+
+    // A PRIORITY AND A STATUS ARE VOCABULARY, NOT DATA. "Urgent" and "InProgress" are the
+    // stored keys, and printing the key is exactly how English reached the Arabic dashboard.
+    // The wording matches Tasks/Detail.cshtml so one task does not change its name between
+    // the task screen and this one.
+    Func<string?, string> PriorityLabel = p => p switch
+    {
+        "Urgent" => arabic ? "عاجلة" : "Urgent",
+        "High" => arabic ? "عالية" : "High",
+        "Low" => arabic ? "منخفضة" : "Low",
+        "Normal" => arabic ? "عادية" : "Normal",
+        _ => p ?? "",
+    };
+    Func<string?, string> StatusLabel = s => s switch
+    {
+        "InProgress" => arabic ? "جارية" : "In progress",
+        "Done" => arabic ? "مكتملة" : "Done",
+        "New" => arabic ? "جديدة" : "New",
+        _ => s ?? "",
+    };
     ViewData["Title"] = Localizer["Workspace"];
 
-    ViewBag.UnreadNotifications = Model.UnreadNotifications;
+    ViewBag.UnreadNotifications = Model.UnreadNotifications + (Model.CommunicationInbox.UnreadTotal ?? 0);
     ViewBag.UnreadMentions = Model.UnreadMentions;
     ViewBag.OpenWork = Model.MyWork.Items.Count;
     ViewBag.CompanyName = Model.CompanyName;
@@ -147,6 +167,17 @@
     variant instead of a bespoke cbw-state stripe.
 *@
 @functions {
+    // Up to two initials from the display name, so a row with no photo still gets a stable,
+    // person-shaped mark. Works the same for Arabic and Latin names. The same helper the full
+    // mentions page uses — a mention should not look like a different thing on two screens.
+    private static string Initials(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) { return "?"; }
+        var parts = name.Trim().Split(' ', System.StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 1) { return parts[0].Substring(0, 1); }
+        return parts[0].Substring(0, 1) + parts[1].Substring(0, 1);
+    }
+
     private (string Colour, string Icon, string Title) StateChrome(WorkspacePanelState state, bool ar) => state switch
     {
         WorkspacePanelState.Unavailable      => ("secondary", "ki-information-5", ar ? "غير متاح في هذه البيئة" : "Not available in this environment"),
@@ -317,11 +348,34 @@
                                                    from, which got it from the owning module. *@
                                                 <a class="d-block fw-bold text-gray-900 @(item.Url == null ? "pe-none" : "text-hover-primary")"
                                                    href="@item.Url">@item.Title</a>
+                                                @if (!string.IsNullOrWhiteSpace(item.PersonName))
+                                                {
+                                                    var pPhoto = string.IsNullOrWhiteSpace(item.PersonAvatarUrl)
+                                                        ? null
+                                                        : Url.Content("~" + item.PersonAvatarUrl!.Replace("\\", "/"));
+                                                    @* WHO IS ASKING. A mention and a waiting approval are both
+                                                       somebody else's request for your attention, and the face
+                                                       answers "from whom" before the sentence is read. A task of
+                                                       your own names nobody, so this draws nothing for it. *@
+                                                    <div class="d-flex align-items-center mt-1">
+                                                        <div class="symbol symbol-20px me-2 flex-shrink-0">
+                                                            @if (pPhoto != null)
+                                                            {
+                                                                <img src="@pPhoto" alt="@item.PersonName" class="rounded-circle object-fit-cover" />
+                                                            }
+                                                            else
+                                                            {
+                                                                <span class="symbol-label bg-light-primary text-primary fw-bold fs-9">@Initials(item.PersonName)</span>
+                                                            }
+                                                        </div>
+                                                        <span class="text-gray-700 fs-8 fw-semibold">@item.PersonName</span>
+                                                    </div>
+                                                }
                                                 <span class="fs-7 text-muted fw-semibold d-block">
                                                     @item.Source(arabic)
                                                     @if (!string.IsNullOrWhiteSpace(item.Priority) && item.Priority != "Normal")
                                                     {
-                                                        <span class="badge badge-light-@PriorityColor(item.Priority) fs-8 ms-2 fw-bold text-gray-800">@item.Priority</span>
+                                                        <span class="badge badge-light-@PriorityColor(item.Priority) fs-8 ms-2 fw-bold text-gray-800">@PriorityLabel(item.Priority)</span>
                                                     }
                                                 </span>
                                             </div>
@@ -537,16 +591,16 @@
                                         {
                                             <tr>
                                                 <td class="min-w-200px">
-                                                    <a class="fw-bold text-gray-900 text-hover-primary" href="@(work.Url ?? Url.Action("Index", "Tasks"))">@work.Title</a>
+                                                    <a class="fw-bold text-gray-900 @(work.Url == null ? "pe-none" : "text-hover-primary")" href="@work.Url">@work.Title</a>
                                                     @if (!string.IsNullOrWhiteSpace(work.Priority) && work.Priority != "Normal")
                                                     {
-                                                        <span class="badge badge-light-@MetricColor(work.Tone) fs-8 ms-2 text-gray-800">@work.Priority</span>
+                                                        <span class="badge badge-light-@MetricColor(work.Tone) fs-8 ms-2 text-gray-800">@PriorityLabel(work.Priority)</span>
                                                     }
                                                 </td>
                                                 <td>
                                                     @if (!string.IsNullOrWhiteSpace(work.Status))
                                                     {
-                                                        <span class="badge badge-light fs-8">@work.Status</span>
+                                                        <span class="badge badge-light fs-8">@StatusLabel(work.Status)</span>
                                                     }
                                                 </td>
                                                 <td class="text-end text-gray-700 fw-semibold">@work.DueHint</td>
@@ -677,7 +731,7 @@
                                         {
                                             <tr class="@(item.Completed ? "text-decoration-line-through" : "")">
                                                 <td class="min-w-200px">
-                                                    <a class="fw-bold text-gray-900 text-hover-primary" href="@(item.DeepLink ?? Url.Action("Agenda", "Workspace"))">@item.Title</a>
+                                                    <a class="fw-bold text-gray-900 @(item.DeepLink == null ? "pe-none" : "text-hover-primary")" href="@item.DeepLink">@item.Title</a>
                                                     @if (item.Overdue)
                                                     {
                                                         <span class="badge badge-light-danger fs-8 ms-2 text-gray-800">@Localizer["Overdue"]</span>
@@ -716,30 +770,77 @@
                         }
                         @if (Model.Activity.HasItems)
                         {
-                            <div class="table-responsive">
-                                <table class="table table-row-dashed align-middle fs-6 gy-3 my-0">
-                                    <thead>
-                                        <tr class="fw-bold fs-7 text-uppercase text-gray-700" data-cb-workspace-heading>
-                                            <th>@Localizer["Activity"]</th>
-                                            <th>@Localizer["Details"]</th>
-                                            <th class="text-end">@Localizer["When"]</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach (var activity in Model.Activity.Items)
-                                        {
-                                            <tr>
-                                                <td>
-                                                    <a class="fw-bold text-gray-900 @(activity.Url == null ? "pe-none" : "text-hover-primary")" href="@activity.Url">
-                                                        <i class="@activity.Icon text-@MetricColor(activity.Tone) me-2"></i>@activity.Title
-                                                    </a>
-                                                </td>
-                                                <td class="text-gray-700 fw-semibold">@activity.Detail</td>
-                                                <td class="text-end text-gray-700 fw-semibold">@Ago(activity.At)</td>
-                                            </tr>
-                                        }
-                                    </tbody>
-                                </table>
+                            @* AN ACTIVITY FEED, NOT A LOG DUMP.
+
+                               The three-column table asked the reader to parse a row before it told
+                               them anything: the same few words repeated down the first column, a
+                               dense technical string in the middle, a time at the end. Nothing in
+                               that shape says "this is what happened recently", which is the panel's
+                               entire purpose.
+
+                               THE TREATMENT IS THE HOUSE'S OWN, not a new one: the document screens
+                               already render this exact kind of content as a timeline (سجل النشاط /
+                               _DocEventTimeline) - a tone-coloured icon tile, the headline in bold,
+                               the detail underneath it, the actor and the time quiet beside them.
+                               Metronic's .timeline classes ship in the bundle this layout already
+                               loads, so this borrows the shape rather than inventing one.
+
+                               THE ACTOR IS SHOWN AT LAST. WorkspaceActivityItem has carried `Actor`
+                               all along and the table dropped it, so a feed whose first question is
+                               "who did this" never answered it.
+
+                               The brand is untouched: the same tone colours, the same type scale,
+                               the same muted greys. What changed is the reading order. *@
+                            <div class="timeline">
+                                @foreach (var activity in Model.Activity.Items)
+                                {
+                                    var aTone = MetricColor(activity.Tone);
+                                    <div class="timeline-item">
+                                        <div class="timeline-line w-40px"></div>
+                                        <div class="timeline-icon symbol symbol-circle symbol-40px">
+                                            <div class="symbol-label bg-light-@aTone">
+                                                <i class="@activity.Icon fs-4 text-@aTone"></i>
+                                            </div>
+                                        </div>
+                                        <div class="timeline-content mb-6 mt-n1 ps-3 min-w-0">
+                                            <div class="d-flex align-items-center flex-wrap gap-2 mb-1">
+                                                <a class="fw-bold text-gray-900 fs-6 @(activity.Url == null ? "pe-none" : "text-hover-primary")"
+                                                   href="@activity.Url">@activity.Title</a>
+                                                @* The time sits with the headline, not in a column of its
+                                                   own: it qualifies the event, and a reader scanning the
+                                                   feed reads them together. The exact stamp is on hover. *@
+                                                <span class="text-muted fs-8" title="@(activity.At?.ToString("yyyy-MM-dd HH:mm"))">@Ago(activity.At)</span>
+                                            </div>
+                                            @if (!string.IsNullOrWhiteSpace(activity.Detail))
+                                            {
+                                                <div class="text-gray-700 fs-7 text-break">@activity.Detail</div>
+                                            }
+                                            @if (!string.IsNullOrWhiteSpace(activity.Actor))
+                                            {
+                                                var aPhoto = string.IsNullOrWhiteSpace(activity.ActorAvatarUrl)
+                                                    ? null
+                                                    : Url.Content("~" + activity.ActorAvatarUrl!.Replace("\\", "/"));
+                                                <div class="d-flex align-items-center mt-2">
+                                                    @* THE PERSON, not a generic glyph. Who did it is the feed's
+                                                       first question, and a face answers it at a glance where a
+                                                       name has to be read. Initials when there is no photo -
+                                                       the ordinary case - and never a broken-image frame. *@
+                                                    <div class="symbol symbol-20px me-2 flex-shrink-0">
+                                                        @if (aPhoto != null)
+                                                        {
+                                                            <img src="@aPhoto" alt="@activity.Actor" class="rounded-circle object-fit-cover" />
+                                                        }
+                                                        else
+                                                        {
+                                                            <span class="symbol-label bg-light-primary text-primary fw-bold fs-9">@Initials(activity.Actor)</span>
+                                                        }
+                                                    </div>
+                                                    <span class="text-muted fs-8">@activity.Actor</span>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                }
                             </div>
                         }
                         else
@@ -784,7 +885,7 @@
                                         {
                                             <tr class="@(notification.IsRead ? "" : "fw-bold")">
                                                 <td>
-                                                    <a class="text-gray-900 text-hover-primary" href="@(notification.Url ?? Url.Action("Notifications", "Workspace"))">@notification.Title</a>
+                                                    <a class="text-gray-900 @(notification.Url == null ? "pe-none" : "text-hover-primary")" href="@notification.Url">@notification.Title</a>
                                                     @if (!string.IsNullOrWhiteSpace(notification.Category))
                                                     {
                                                         <span class="badge badge-light fs-8 ms-2">@notification.Category</span>
@@ -804,6 +905,8 @@
                     </div>
                 </div>
                 <!--end::Notifications-->
+                @await Html.PartialAsync("_CommunicationInbox", Model.CommunicationInbox,
+                    new Microsoft.AspNetCore.Mvc.ViewFeatures.ViewDataDictionary(ViewData) { ["CommunicationSummary"] = true })
 
                 <!--begin::Mentions-->
                 <div class="card card-flush mb-5 mb-xl-10" id="mentions" aria-busy="false">
@@ -831,12 +934,39 @@
                                     <tbody>
                                         @foreach (var mention in Model.Mentions.Items)
                                         {
+                                            // WHO SAID IT, SHOWN AS A PERSON. The name alone made this panel read
+                                            // as a list of records; the full mentions page already draws the face
+                                            // and the model has carried the url all along (MentionedByAvatarUrl,
+                                            // from Employee.ProfileImage). The same mention must not look like two
+                                            // different things on two screens.
+                                            var mWho = string.IsNullOrWhiteSpace(mention.MentionedBy)
+                                                ? "#" + mention.MentionedByEmployeeId
+                                                : mention.MentionedBy!;
+                                            var mPhoto = string.IsNullOrWhiteSpace(mention.MentionedByAvatarUrl)
+                                                ? null
+                                                : Url.Content("~" + mention.MentionedByAvatarUrl!.Replace("\\", "/"));
                                             <tr>
                                                 <td>
-                                                    <a class="fw-bold text-gray-900 text-hover-primary" href="@(mention.Url ?? Url.Action("Mentions", "Workspace"))">@(mention.Excerpt == null ? mention.EntityLabel : NoAt(mention.Excerpt))</a>
-                                                    <div class="text-gray-700 fs-7">@mention.MentionedBy · <span class="badge badge-light-primary fs-8">@mention.EntityLabel</span></div>
+                                                    <div class="d-flex align-items-start">
+                                                        <div class="symbol symbol-35px me-3 flex-shrink-0">
+                                                            @if (mPhoto != null)
+                                                            {
+                                                                <img src="@mPhoto" alt="@mWho" class="rounded-circle object-fit-cover" />
+                                                            }
+                                                            else
+                                                            {
+                                                                @* NO PHOTO IS THE NORMAL CASE. Initials on the brand
+                                                                   tint, never a broken-image frame. *@
+                                                                <span class="symbol-label bg-light-primary text-primary fw-bold fs-8">@Initials(mWho)</span>
+                                                            }
+                                                        </div>
+                                                        <div class="min-w-0">
+                                                            <a class="fw-bold text-gray-900 @(mention.Url == null ? "pe-none" : "text-hover-primary")" href="@mention.Url">@(mention.Excerpt == null ? mention.EntityLabel : NoAt(mention.Excerpt))</a>
+                                                            <div class="text-gray-700 fs-7">@mWho · <span class="badge badge-light-primary fs-8">@mention.EntityLabel</span></div>
+                                                        </div>
+                                                    </div>
                                                 </td>
-                                                <td class="text-end text-gray-700 fw-semibold">@Ago(mention.At)</td>
+                                                <td class="text-end text-gray-700 fw-semibold align-middle">@Ago(mention.At)</td>
                                             </tr>
                                         }
                                     </tbody>
@@ -879,7 +1009,7 @@
                                         {
                                             <tr>
                                                 <td>
-                                                    <a class="fw-bold text-gray-900 text-hover-primary" href="@(report.Url ?? Url.Action("Reports", "Workspace"))">
+                                                    <a class="fw-bold text-gray-900 @(report.Url == null ? "pe-none" : "text-hover-primary")" href="@report.Url">
                                                         <i class="@report.Icon text-warning me-2"></i>@report.Label
                                                     </a>
                                                     @if (!string.IsNullOrWhiteSpace(report.Sub))
@@ -923,7 +1053,7 @@
                                         {
                                             <tr>
                                                 <td>
-                                                    <a class="fw-bold text-gray-900 text-hover-primary" href="@(report.Url ?? Url.Action("Reports", "Workspace"))">
+                                                    <a class="fw-bold text-gray-900 @(report.Url == null ? "pe-none" : "text-hover-primary")" href="@report.Url">
                                                         <i class="@report.Icon text-primary me-2"></i>@report.Label
                                                     </a>
                                                     @if (!string.IsNullOrWhiteSpace(report.Sub))
