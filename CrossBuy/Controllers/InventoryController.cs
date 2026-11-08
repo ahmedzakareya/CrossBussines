@@ -118,7 +118,10 @@ namespace CrossBuy.Controllers
 			var items = await _items.GetItemsAsync(c);
 			var whs = await _warehouses.GetWarehousesAsync(c);
 			var balances = await _stock.GetBalancesAsync(c);
-			var itemName = items.ToDictionary(i => i.ID, i => i.ItemCode + " — " + i.Name);
+			// ItemDisplayName, NOT i.Name: i.Name is the ARABIC name, so an English or French
+			// dashboard read "CD-MIDAZ5 — ميدازولام". The helper already picks the twin
+			// correctly and the manufacturing dashboard below already does this; this path never asked.
+			var itemName = items.ToDictionary(i => i.ID, i => i.ItemCode + " — " + ItemDisplayName(i));
 			var whName = whs.ToDictionary(w => w.ID, w => w.Code);
 
 			var dto = new InventoryDashboardDto

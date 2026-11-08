@@ -6,7 +6,7 @@
     // person-shaped mark. Works the same for Arabic and Latin names.
     private static string Initials(string? name)
     {
-        if (string.IsNullOrWhiteSpace(name)) { return "؟"; }
+        if (string.IsNullOrWhiteSpace(name)) { return System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar" ? "؟" : "?"; }
         var parts = name.Trim().Split(' ', System.StringSplitOptions.RemoveEmptyEntries);
         if (parts.Length == 1) { return parts[0].Substring(0, 1); }
         return parts[0].Substring(0, 1) + parts[1].Substring(0, 1);

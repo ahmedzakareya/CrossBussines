@@ -80,7 +80,7 @@
                                         var st = state.GetValueOrDefault(e.Key);
                                         <tr>
                                             <td><span class="badge hp-code fw-bold fs-8 hp-num">@e.Code</span></td>
-                                            <td><a href="@Url.Action("CatalogEntry", new { key = e.Key })" class="fw-bold text-gray-900 text-hover-primary">@DisplayName.Of(e.Name, e.NameEn)</a><div class="text-muted fs-8" dir="auto">@(DisplayName.IsArabic ? e.NameEn : e.Name)</div></td>
+                                            <td><a href="@Url.Action("CatalogEntry", new { key = e.Key })" class="fw-bold text-gray-900 text-hover-primary">@DisplayName.Of(e.Name, e.NameEn)</a></td>
                                             <td class="fs-7">@(g == HospitalPriceGroups.Service ? T["cat:" + e.Category].Value : T["group:" + g].Value)</td>
                                             <td class="text-end hp-num fw-bold">@fac.Format(e.MainPrice)</td>
                                             @if (g == HospitalPriceGroups.Medicine) {<td class="text-end hp-num">@(e.PublicPrice is decimal pp ? fac.Format(pp) : "—")</td>}

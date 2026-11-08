@@ -516,16 +516,34 @@ namespace CrossBuy.BL.Workspace
             return WorkspaceTone.Neutral;
         }
 
+        // The registry is fetched for this list and was never asked. m.Entity.Key is the storage
+        // key - "JournalEntry#16172" - so the Arabic dashboard showed an English type name nobody
+        // chose, while the conversation rows in this same file resolve the registry correctly.
+        private static string MentionEntityLabel(IEntityRegistry? registry, CommEntityRef entity)
+        {
+            EntityDefinition? definition = null;
+            registry?.TryGetDefinition(entity.EntityCode, out definition);
+            var name = WorkspaceCulture.IsArabic()
+                ? (definition?.DisplayNameAr ?? definition?.DisplayNameEn)
+                : (definition?.DisplayNameEn ?? definition?.DisplayNameAr);
+            return string.IsNullOrWhiteSpace(name)
+                ? entity.Key
+                : name + " #" + entity.EntityId.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        }
+
         private static string? DueHint(DateTime? due, DateTime now)
         {
             if (!due.HasValue) return null;
+            // Display text that was English in every language, on the screen an Arabic user opens
+            // to find late work. Same culture test already used elsewhere in this file.
+            bool isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
             var days = (due.Value.Date - now.Date).Days;
             return days switch
             {
-                < 0 => $"{-days}d late",
-                0 => "today",
-                1 => "tomorrow",
-                <= 7 => $"in {days}d",
+                < 0 => isAr ? $"متأخرة {-days} يوم" : $"{-days}d late",
+                0 => isAr ? "اليوم" : "today",
+                1 => isAr ? "غدًا" : "tomorrow",
+                <= 7 => isAr ? $"خلال {days} يوم" : $"in {days}d",
                 _ => due.Value.ToString("yyyy-MM-dd"),
             };
         }
@@ -792,7 +810,7 @@ namespace CrossBuy.BL.Workspace
             var items = page.Items.Select(m => new WorkspaceMention
             {
                 MentionId = m.MentionId,
-                EntityLabel = m.Entity.Key,
+                EntityLabel = MentionEntityLabel(registry, m.Entity),
                 Excerpt = m.Excerpt,
                 MentionedBy = m.MentionedBy?.Display(WorkspaceCulture.IsArabic()),
                 // Already resolved upstream - carried, not re-fetched.

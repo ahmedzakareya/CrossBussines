@@ -73,7 +73,7 @@
                 <div class="mb-3 mb-md-0 fw-semibold pe-5">
                     <h4 class="text-gray-900 fw-bold mb-1">@T("محجوبة", "Blocked")</h4>
                     <div class="fs-6 text-gray-700">@T("لا تبدأ قبل انتهاء:", "Cannot start until these finish:")
-                        <span class="fw-bold">@string.Join("، ", blocking.BlockedByTitles)</span></div>
+                        <span class="fw-bold">@(string.Join(DisplayName.IsArabic ? "، " : ", ", blocking.BlockedByTitles))</span></div>
                 </div>
                 <span class="badge badge-danger fs-7 fw-bold px-4 py-2 flex-shrink-0">
                     <i class="ki-outline ki-abstract-26 fs-6 text-white me-1"></i>@blocking.BlockedByTitles.Count

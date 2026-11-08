@@ -89,7 +89,7 @@
             <div class="fw-semibold">
                 <h4 class="text-gray-900 fw-bold mb-1">@T("محجوبة", "Blocked")</h4>
                 <div class="fs-6 text-gray-700">@T("لا تبدأ قبل انتهاء:", "Cannot start until these finish:")
-                    <span class="fw-bold">@string.Join("، ", blocking.BlockedByTitles)</span></div>
+                    <span class="fw-bold">@(string.Join(DisplayName.IsArabic ? "، " : ", ", blocking.BlockedByTitles))</span></div>
             </div>
         </div>
     }

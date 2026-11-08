@@ -214,7 +214,7 @@
             var dx = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Diagnoses.Select(d => new { code = d.Code, name = DisplayName.Of(d.Name, d.NameEn), primary = d.IsPrimary })));
             var rx = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Prescription.Select(r => new { drug = r.Drug, itemId = r.ItemId, instructions = r.Instructions, quantity = r.Quantity })));
             // H10: what the pharmacy stocks — the doctor picks from it, or types a drug the hospital does not stock.
-            var formulary = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(((IReadOnlyList<(int Id, string Code, string Name, string NameEn, decimal? Price)>?)ViewBag.Formulary ?? Array.Empty<(int, string, string, string, decimal?)>()).Select(f => new { id = f.Id, name = DisplayName.Of(f.Name, f.NameEn), other = DisplayName.IsArabic ? f.NameEn : f.Name, code = f.Code, price = f.Price })));
+            var formulary = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(((IReadOnlyList<(int Id, string Code, string Name, string NameEn, decimal? Price)>?)ViewBag.Formulary ?? Array.Empty<(int, string, string, string, decimal?)>()).Select(f => new { id = f.Id, name = DisplayName.Of(f.Name, f.NameEn), code = f.Code, price = f.Price })));
             var orders = @Html.Raw(System.Text.Json.JsonSerializer.Serialize((Model.Orders ?? Array.Empty<HospitalEncounterOrder>()).Select(o => new { id = o.ServiceId, code = o.Code, name = DisplayName.Of(o.Name, o.NameEn), price = o.Price })));
             var money = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(new { dp = (ViewBag.Currency as HospitalCurrency)?.Decimals ?? 2, label = (ViewBag.Currency as HospitalCurrency)?.Label(DisplayName.IsArabic) ?? "" }));
             var W = {
@@ -260,7 +260,7 @@
                 if (!rx.length) { rxBody.innerHTML = '<tr><td colspan="4" class="text-muted fs-7 py-3">' + esc(W.noRx) + '</td></tr>'; return; }
                 rxBody.innerHTML = rx.map(function (r, i) {
                     if (!canEdit) return '<tr><td class="fw-semibold text-gray-800">' + esc(r.drug) + (r.itemId ? ' <span class="badge badge-light-success fs-9">' + esc(W.stocked) + '</span>' : '') + '</td><td class="fs-7">' + esc(r.instructions || '') + '</td><td class="hp-num">' + r.quantity + '</td><td></td></tr>';
-                    var opts = '<option value=""></option>' + formulary.map(function (f) { return '<option value="i:' + f.id + '"' + (r.itemId === f.id ? ' selected' : '') + '>' + esc(f.name + ' · ' + f.other + ' · ' + f.code) + '</option>'; }).join('') +
+                    var opts = '<option value=""></option>' + formulary.map(function (f) { return '<option value="i:' + f.id + '"' + (r.itemId === f.id ? ' selected' : '') + '>' + esc(f.name + ' · ' + f.code) + '</option>'; }).join('') +
                         (!r.itemId && r.drug ? '<option value="t:' + esc(r.drug) + '" selected>' + esc(r.drug) + '</option>' : '');
                     return '<tr><td class="min-w-250px"><select class="form-select form-select-sm form-select-solid" data-rx-drug data-i="' + i + '" data-placeholder="' + esc(W.drug) + '">' + opts + '</select></td>' +
                         '<td><input class="form-control form-control-sm form-control-solid" data-rx="instructions" data-i="' + i + '" value="' + esc(r.instructions || '') + '" placeholder="' + esc(W.dose) + '" maxlength="400" /></td>' +
@@ -272,7 +272,7 @@
                     var $s = jQuery(this);
                     $s.select2({ tags: true, insertTag: function (data, tag) { data.push(tag); }, width: '100%', placeholder: $s.data('placeholder'), allowClear: true, dir: document.documentElement.dir || 'ltr',
                         templateResult: function (o) { var f = /^i:/.test(o.id || '') ? formulary.filter(function (x) { return 'i:' + x.id === o.id; })[0] : null;
-                            return f ? jQuery('<span><span class="fw-semibold">' + esc(f.name) + '</span> <span class="text-muted fs-8" dir="auto">' + esc(f.other) + '</span>' + (f.price != null ? ' <span class="text-muted fs-8 hp-num">' + esc(f.price) + '</span>' : '') + ' <span class="badge badge-light-success fs-9">' + esc(W.stocked) + '</span></span>') : o.text; },
+                            return f ? jQuery('<span><span class="fw-semibold">' + esc(f.name) + '</span>' + (f.price != null ? ' <span class="text-muted fs-8 hp-num">' + esc(f.price) + '</span>' : '') + ' <span class="badge badge-light-success fs-9">' + esc(W.stocked) + '</span></span>') : o.text; },
                         // the search matches the Arabic name, the English name and the code; the chosen line shows the reader's name
                         templateSelection: function (o) { var f = /^i:/.test(o.id || '') ? formulary.filter(function (x) { return 'i:' + x.id === o.id; })[0] : null; return f ? f.name : o.text; } })
                       .on('change', function () {

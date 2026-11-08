@@ -183,7 +183,7 @@
                                         @* A blocked card says WHAT blocks it. "Blocked" on its own is a dead end. *@
                                         <div class="d-flex align-items-center text-danger fs-8 mb-2">
                                             <i class="ki-outline ki-lock-2 fs-7 me-1"></i>
-                                            <span>@T("محجوبة بـ:", "Blocked by:") @string.Join("، ", b!.BlockedByTitles)</span>
+                                            <span>@T("محجوبة بـ:", "Blocked by:") @(string.Join(DisplayName.IsArabic ? "، " : ", ", b!.BlockedByTitles))</span>
                                         </div>
                                     }
 

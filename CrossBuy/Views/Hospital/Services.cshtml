@@ -78,7 +78,7 @@
                             {
                                 <tr class="@(s.IsActive ? "" : "opacity-50")">
                                     <td><span class="badge hp-code fw-bold fs-8 hp-num">@s.Code</span></td>
-                                    <td><div class="fw-semibold text-gray-800">@DisplayName.Of(s.Name, s.NameEn)</div><div class="text-muted fs-8" dir="auto">@(DisplayName.IsArabic ? s.NameEn : s.Name)</div></td>
+                                    <td><div class="fw-semibold text-gray-800">@DisplayName.Of(s.Name, s.NameEn)</div></td>
                                     <td class="fs-7">@T["cat:" + s.Category]</td>
                                     <td class="fs-7">@(s.DepartmentId is int d && deptName.TryGetValue(d, out var dn) ? dn : "—")</td>
                                     <td class="text-end hp-num fw-bold">@M(s.Price) <span class="text-muted fs-8 fw-semibold">@cur</span></td>
