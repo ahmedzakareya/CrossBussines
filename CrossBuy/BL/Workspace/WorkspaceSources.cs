@@ -314,35 +314,23 @@ namespace CrossBuy.BL.Workspace
     }
 
     // ---- favourites ----------------------------------------------------------------------------
-    public sealed class ReportFavoritesWorkspaceSource : IWorkspaceFavoritesSource
-    {
-        private readonly IServiceProvider _services;
-        public ReportFavoritesWorkspaceSource(IServiceProvider services) { _services = services; }
-
-        public string SourceName => "Reporting";
-
-        public async Task<IReadOnlyList<WorkspaceFavorite>> GetAsync(
-            BusinessContext context, CancellationToken cancellationToken = default)
-        {
-            // Optional resolution: a deployment without Reporting gets a Workspace with fewer rows, not a
-            // broken one.
-            var library = _services.GetService<IReportLibraryService>();
-            if (library == null) return Array.Empty<WorkspaceFavorite>();
-
-            var arabic = WorkspaceCulture.IsArabic();
-            var favourites = await library.GetFavoritesAsync(context, cancellationToken);
-
-            return favourites.Select(f => new WorkspaceFavorite
-            {
-                Label = f.Definition?.Title(arabic) ?? f.ReportCode,
-                Sub = f.Definition?.Module,
-                Icon = f.Definition?.Icon ?? "ki-outline ki-chart-simple",
-                Url = "/Workspace/Reports",
-                Source = "Reporting",
-                IsStale = f.IsStale,
-            }).ToList();
-        }
-    }
+    //
+    // RETIRED AND REMOVED: ReportFavoritesWorkspaceSource (an IWorkspaceFavoritesSource) used to live here.
+    //
+    // It called IReportLibraryService.GetFavoritesAsync on EVERY dashboard load and projected the rows onto
+    // WorkspaceDashboard.Favorites - a panel NO VIEW RENDERS. One database round trip per load of the first
+    // screen every user sees, for an audience of nobody. Its rows also carried Url = "/Workspace/Reports",
+    // the generic-list destination removed from every other Workspace row, invisible only because the panel
+    // was never drawn.
+    //
+    // The note below spared it when the report SOURCE was withdrawn, on the grounds that it was "a different
+    // seam feeding a different panel". There is no such panel, so that reasoning does not hold and the same
+    // duplicate-producer argument applies: Reporting already contributes pinned reports through
+    // ReportingWorkspaceSource, with working /Reports/Viewer urls.
+    //
+    // The IWorkspaceFavoritesSource SEAM survives - a module may still contribute - but a contributor's rows
+    // would not render either. A Favourites CARD has to come first. See WorkspaceRegistration for the
+    // registration this removal pairs with, and WorkspaceFavouritesWithdrawnTests for the guard.
 
     // ---- reporting links -------------------------------------------------------------------------
     //
@@ -360,8 +348,10 @@ namespace CrossBuy.BL.Workspace
     // Reporting owner rather than re-implemented here, because reviving a second producer of report-library
     // facts inside the Workspace is the defect this removal resolves.
     //
-    // The Favourites PANEL is unaffected: ReportFavoritesWorkspaceSource above is an IWorkspaceFavoritesSource,
-    // a different seam feeding a different panel, and is not a duplicate of anything.
+    // The Favourites panel was ALSO withdrawn, later and for a different reason - see the retirement note
+    // above. This paragraph used to read "the Favourites PANEL is unaffected ... a different seam feeding a
+    // different panel, and is not a duplicate of anything", which was true about the seam and false about
+    // the panel: no view ever rendered it.
 
     // ---- shared culture helpers ------------------------------------------------------------------
     internal static class WorkspaceCulture

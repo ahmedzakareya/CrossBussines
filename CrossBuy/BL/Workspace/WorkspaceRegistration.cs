@@ -74,7 +74,24 @@ namespace CrossBuy.BL.Workspace
             //
             // A module contributes rows by registering one of these AFTER this call. It never edits the
             // Workspace, and the Workspace never learns about the module.
-            services.AddScoped<IWorkspaceFavoritesSource, ReportFavoritesWorkspaceSource>();
+            // NOTE: NO IWorkspaceFavoritesSource is registered here, deliberately. The seam above is an
+            // extension point, not a promise that the Workspace fills it itself.
+            //
+            // ReportFavoritesWorkspaceSource used to be registered on this line. It read Reporting's
+            // favourites through IReportLibraryService.GetFavoritesAsync on EVERY dashboard load - a
+            // database round trip - and projected them onto WorkspaceDashboard.Favorites, which NO VIEW
+            // RENDERS. Its rows also carried Url = "/Workspace/Reports", the generic-list destination
+            // removed from every other Workspace row; nobody ever saw it because nobody drew the panel.
+            //
+            // It was SPARED when ReportLibraryWorkspaceReportSource was withdrawn above, on the reasoning
+            // that it was "a different seam feeding a different panel". That premise was false - there is
+            // no such panel - so the same duplicate-producer argument applies to it. The dashboard already
+            // shows pinned reports from Reporting's own ReportingWorkspaceSource with working
+            // /Reports/Viewer urls.
+            //
+            // IF A FAVOURITES CARD IS EVER WANTED, THE VIEW COMES FIRST. Registering a source again
+            // without one restores exactly this defect: a query per dashboard load for an audience of
+            // nobody. Pinned by WorkspaceFavouritesWithdrawnTests.
             // ONE authoritative producer of "what changed". It was the notification store; it is now the
             // platform business-event timeline. Registering both would put the Notifications panel's own
             // rows beside themselves in the Activity panel - the same duplicate-producer defect the
