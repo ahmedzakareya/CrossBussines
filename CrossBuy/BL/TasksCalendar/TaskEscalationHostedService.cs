@@ -73,6 +73,18 @@ namespace CrossBuy.BL.TasksCalendar
 			using var timer = new PeriodicTimer(Period);
 			do
 			{
+				// D-16. THE LEASE CAN BE LOST MID-TICK — a dropped connection, a failover, another
+				// process taking it. The gate above is asked once at startup, so without this a worker
+				// that lost primacy would keep running beside the new primary and duplicate its output.
+				//
+				// PARK, NEVER RETURN. False means "not right now" and is recoverable; returning would end
+				// this BackgroundService for good, so if the process holding the lease later died nothing
+				// would reacquire it. Only cancellation ends the loop, which is the false below.
+				if (!await _gate.IsStillAllowedAsync(nameof(TaskEscalationHostedService), stoppingToken))
+				{
+					if (!await _gate.WaitUntilAllowedAsync(nameof(TaskEscalationHostedService), stoppingToken)) return;
+				}
+
 				try
 				{
 					using var root = _scopes.CreateScope();
