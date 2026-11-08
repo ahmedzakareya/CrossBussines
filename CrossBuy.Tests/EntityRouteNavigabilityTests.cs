@@ -125,5 +125,49 @@ namespace CrossBuy.Tests
                     $"{def.Code} is routed at the Workspace dashboard, which is not a record destination.");
             }
         }
+
+        // ==========================================================================================
+        // THE REGISTRY'S OWN FAILING PATH
+        //
+        // Found by TAB-1 on 2026-11-08, and pinned here from OUTSIDE on purpose. BuildUrl used to call
+        // GetDefinition, which raises EntityCodeNotRegisteredException, so a single retired entity code
+        // took down whichever caller had not guarded separately - and five of the eight call sites had
+        // not (CommNotificationService, NotificationProjectionConsumer, LegacyReturnTimeline,
+        // MoneyDocLegacyTimeline and the legacy timeline adapters). Every one of those holds HISTORY:
+        // notifications, mentions and timeline rows outlive the vocabulary they were written against,
+        // so this was reached by ordinary ageing, not by a bug.
+        //
+        // WHY THE TEST LIVES HERE AND NOT AT A CALL SITE: the guard is now INSIDE BuildUrl, where it is
+        // invisible to anyone reading a caller. The next person who "simplifies" it back to
+        // GetDefinition will see no local reason not to. This is the fact that tells them.
+        // ==========================================================================================
+
+        [Fact]
+        public void An_unregistered_code_returns_null_rather_than_throwing()
+        {
+            // The declared contract was always "null when the type has no screen". An unregistered type
+            // has no screen, so null is the stated behaviour finally being true - not a new leniency.
+            var registry = Registry();
+
+            Assert.Null(registry.BuildUrl("RetiredThingNobodyRegistered", 7));
+            Assert.Null(registry.BuildUrl("", 7));
+        }
+
+        [Fact]
+        public void One_unknown_code_costs_one_link_and_not_the_batch()
+        {
+            // THE DISTINCTION THE FIX DEFENDS. A throw does not cost the row its link, it costs the
+            // READER the whole panel: one retired code in a page of thirty notifications and the caller
+            // catches, degrades and shows nothing. Resolving a mixed batch must yield a dead link for
+            // the unknown code and a working one for every neighbour.
+            var registry = Registry();
+
+            var codes = new[] { "SalesInvoice", "RetiredThingNobodyRegistered", "Task" };
+            var urls = codes.Select(c => registry.BuildUrl(c, 4120)).ToArray();
+
+            Assert.Equal("/Accounting/SalesInvoiceDetail?id=4120", urls[0]);
+            Assert.Null(urls[1]);
+            Assert.Equal("/Tasks/Detail/4120", urls[2]);
+        }
     }
 }

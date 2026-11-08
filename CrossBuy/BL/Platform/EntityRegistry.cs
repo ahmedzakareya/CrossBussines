@@ -753,7 +753,14 @@ namespace CrossBuy.BL.Platform
 
         public string? BuildUrl(string entityCode, int entityId)
         {
-            var def = GetDefinition(entityCode);
+            // NULL, NOT A THROW, for a code this registry does not know. The declared contract is
+            // "null when the type has no screen", and an unregistered type has no screen; every
+            // caller already treats null as "no link". This used to call GetDefinition, which raises
+            // EntityCodeNotRegisteredException, so one retired code could take down any caller that
+            // had not guarded separately - and five of the eight had not. It is reached by ordinary
+            // ageing rather than by a bug: a mention, a notification and a timeline row are HISTORY
+            // and outlive the vocabulary they were written against.
+            if (!TryGetDefinition(entityCode, out var def) || def == null) return null;
             if (string.IsNullOrEmpty(def.RouteTemplate)) return null;
             // A template without "{id}" is a list-only screen — return it as-is.
             return def.RouteTemplate.Contains("{id}", StringComparison.Ordinal)
