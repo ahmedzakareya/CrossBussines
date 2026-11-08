@@ -157,7 +157,7 @@
                                                     </span>
                                                 </div>
                                                 <div class="d-flex flex-column">
-                                                    <a class="fw-bold text-gray-900 text-hover-primary" href="@(item.DeepLink ?? "#")">@item.Title</a>
+                                                    <a class="fw-bold text-gray-900 @(item.DeepLink == null ? "pe-none" : "text-hover-primary")" href="@item.DeepLink">@item.Title</a>
                                                     <span class="text-gray-700 fs-7">@item.SourceModule</span>
                                                 </div>
                                             </div>

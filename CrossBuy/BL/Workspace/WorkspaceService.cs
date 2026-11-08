@@ -785,6 +785,10 @@ namespace CrossBuy.BL.Workspace
             var page = await mentions.GetHistoryAsync(context,
                 new CommPageRequest { PageSize = Math.Clamp(take, 1, 50) }, cancellationToken);
 
+            // Optional, and resolved ONCE for the page rather than per row: a deployment without the
+            // registry still lists mentions, unlinked, rather than losing the panel.
+            var registry = _services.GetService<IEntityRegistry>();
+
             var items = page.Items.Select(m => new WorkspaceMention
             {
                 MentionId = m.MentionId,
@@ -797,10 +801,37 @@ namespace CrossBuy.BL.Workspace
                 IsRead = m.ReadAt != null,
                 ViaKind = m.ViaKind,
                 At = m.CreatedAt,
-                Url = null,
+                Url = MentionUrl(registry, m.Entity),
             }).ToList();
 
             return WorkspacePanel<WorkspaceMention>.From(items);
+        }
+
+        // THE MENTION'S OWN RECORD, OR NOTHING.
+        //
+        // A mention names a row - "@you on Invoice #4120" - so its link belongs on THAT row. Sending the
+        // reader to the Mentions list instead navigates them to the page they are already standing in and
+        // calls it a link.
+        //
+        // TryGetDefinition FIRST, exactly as the conversations panel does: BuildUrl calls GetDefinition,
+        // which THROWS EntityCodeNotRegisteredException on a code the registry does not know. Asking it
+        // blind would turn one retired entity code into a dead Mentions panel - and a mention can outlive
+        // the vocabulary it was written against, because the row is history.
+        //
+        // NULL IS AN ORDINARY ANSWER, not a failure. An entity with no RouteTemplate has no detail screen
+        // to open yet (the documented CalendarEvent/ProjectBilling pair), and the view renders the row
+        // unlinked rather than guessing a destination the row never named.
+        //
+        // IT BUILDS A ROUTE, IT DOES NOT GRANT REACH. The screen the link opens authorizes on arrival -
+        // the same contract the excerpt already relies on: "Access is re-checked when the caller navigates
+        // to the thread" (CommMentionHistoryItemDto). A link the caller may not follow is a denial on
+        // arrival, which is correct; a link to a list nobody asked for is a wrong answer that looks right.
+        private static string? MentionUrl(IEntityRegistry? registry, CommEntityRef? entity)
+        {
+            if (registry == null || entity is not { IsWellFormed: true }) return null;
+            return registry.TryGetDefinition(entity.EntityCode, out _)
+                ? registry.BuildUrl(entity.EntityCode, entity.EntityId)
+                : null;
         }
 
         private async Task<int> CountUnreadMentionsAsync(BusinessContext context, CancellationToken ct)
