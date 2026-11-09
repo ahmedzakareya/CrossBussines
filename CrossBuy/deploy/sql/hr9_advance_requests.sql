@@ -14,3 +14,7 @@ IF COL_LENGTH(N'dbo.EmployeeLoans', N'SourceRequestId') IS NULL
 GO
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'UX_EmployeeLoans_SourceRequest' AND object_id = OBJECT_ID(N'dbo.EmployeeLoans'))
     CREATE UNIQUE INDEX UX_EmployeeLoans_SourceRequest ON dbo.EmployeeLoans (SourceRequestId) WHERE SourceRequestId IS NOT NULL;
+
+-- HR9 (2026-11-09): a self-service profile change; the proposed values as JSON, applied on final approval.
+IF COL_LENGTH(N'dbo.EmployeeRequests', N'ChangesJson') IS NULL
+    ALTER TABLE dbo.EmployeeRequests ADD ChangesJson nvarchar(max) NULL;

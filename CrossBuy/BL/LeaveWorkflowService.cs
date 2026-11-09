@@ -260,7 +260,33 @@ namespace CrossBuy.BL
 			// position hangs off the company node, and a broken row that resolves to nothing, are no
 			// longer indistinguishable. The climb above is untouched - this reads the tree, it does not
 			// change how the tree is walked.
+			// HR9 (2026-11-09): approval delegation — the last step, on the chain the climb produced.
+			chain = await ApplyDelegationsAsync(chain, employeeId, companyId.Value);
 			return new ApproverChain(chain, defect, dropped, IsUnitHead(employeeId));
+		}
+
+		// An approver with an active delegation today is replaced by their delegate — only when the delegate is an active
+		// employee of the SAME company, is not the requester (separation of duties holds through a delegation too), and is
+		// not already in the chain (no one approves twice). Anything else keeps the original approver.
+		private async Task<List<int>> ApplyDelegationsAsync(List<int> chain, int requesterId, int companyId)
+		{
+			if (chain.Count == 0) return chain;
+			var today = DateTime.Today;
+			var dels = await _context.ApprovalDelegations.AsNoTracking()
+				.Where(d => d.CompanyID == companyId && d.IsActive && d.StartDate <= today && d.EndDate >= today && chain.Contains(d.FromEmployeeID))
+				.OrderByDescending(d => d.ID).ToListAsync();
+			if (dels.Count == 0) return chain;
+			var toIds = dels.Select(d => d.ToEmployeeID).Distinct().ToList();
+			var eligible = (await _context.Employee.AsNoTracking().Where(e => toIds.Contains(e.ID) && e.EmpCompanyID == companyId && e.IsActive)
+				.Select(e => e.ID).ToListAsync()).ToHashSet();
+			var result = new List<int>();
+			foreach (var a in chain)
+			{
+				var d = dels.FirstOrDefault(x => x.FromEmployeeID == a);
+				var who = d != null && d.ToEmployeeID != requesterId && eligible.Contains(d.ToEmployeeID) && !chain.Contains(d.ToEmployeeID) ? d.ToEmployeeID : a;
+				if (!result.Contains(who)) result.Add(who);
+			}
+			return result;
 		}
 
 		// =============================================================================================

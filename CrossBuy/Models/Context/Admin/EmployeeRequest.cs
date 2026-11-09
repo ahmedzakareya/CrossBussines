@@ -27,6 +27,9 @@ namespace CrossBuy.Models.Context.Admin
 		public decimal? AdvanceAmount { get; set; }
 		public decimal? AdvanceInstallment { get; set; }
 
+		// HR9: a profile change — RequestType "ProfileChange"; the proposed values as JSON {field: value}, applied on final approval
+		public string? ChangesJson { get; set; }
+
 		// ---- workflow (same shape as LeaveRequest) ----
 		public int Status { get; set; } = 0;             // 0 pending / 1 approved / 2 rejected
 		public int CurrentLevel { get; set; }            // pending level (0 = finished / no chain)

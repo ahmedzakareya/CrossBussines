@@ -887,6 +887,7 @@ namespace CrossBuy.Models.Context
         public DbSet<Admin.EmployeeLoan> EmployeeLoans { get; set; }                   // HR4 (hr4_employee_loans.sql)
         public DbSet<Admin.EmployeeLoanDeduction> EmployeeLoanDeductions { get; set; } // HR4: one row per loan per posted payroll month
         public DbSet<Admin.OvertimeApproval> OvertimeApprovals { get; set; }           // HR5 (hr5_overtime_approvals.sql)
+        public DbSet<Admin.ApprovalDelegation> ApprovalDelegations { get; set; }   // HR9 (hr9_approval_delegations.sql)
         public DbSet<Admin.EmployeeHistory> EmployeeHistory { get; set; }         // HR1 effective-dated history
         public DbSet<Tasks.TaskAutoRule> TaskAutoRules { get; set; }        // TM-7: auto-task rules
         public DbSet<Tasks.TaskAutoLog> TaskAutoLogs { get; set; }          // TM-7: dedupe log

@@ -191,6 +191,9 @@ builder.Services.AddCrossBusinessReporting(reporting => reporting
     // payroll money ever reaches this data it needs its own tier, and that is a payroll decision.
     .MapPermission(CrossBuy.BL.Reporting.RosterReportPermissions.View,
         "Admin", "SuperAdmin", "Auditor", "HrManager", "HrOfficer")
+    //   hr.payroll.reports.view          the gratuity liability (HR10) - pay data, so administration only until an owner widens it
+    .MapPermission(CrossBuy.BL.Reporting.HrAnalyticsCodes.PayPermission,
+        "Admin", "SuperAdmin")
     //   admin.orgstructure.reports.view   the administrative structure (dbo.Hierarchicals)
     //   admin.orgstructure.reports.notes  additionally reveals the free-text Notes column
     //

@@ -385,7 +385,8 @@ namespace CrossBuy.Controllers
 
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> CreateRequest(string requestType, string? letterType, string? addressee,
-			DateTime? permissionDate, string? fromTime, string? toTime, string? reason, decimal? advanceAmount = null, decimal? advanceInstallment = null)
+			DateTime? permissionDate, string? fromTime, string? toTime, string? reason, decimal? advanceAmount = null, decimal? advanceInstallment = null,
+			Dictionary<string, string?>? change = null)
 		{
 			var emp = CurrentEmployee();
 			if (emp == null) return RedirectToAction("Login", "Account");
@@ -399,7 +400,8 @@ namespace CrossBuy.Controllers
 			var draft = new EmployeeRequest
 			{
 				CompanyID = companyId, EmployeeID = self.Value,
-				RequestType = requestType is "Permission" or "Advance" ? requestType : "Letter",   // HR9: Advance
+				RequestType = requestType is "Permission" or "Advance" or "ProfileChange" ? requestType : "Letter",   // HR9: Advance, ProfileChange
+				ChangesJson = requestType == "ProfileChange" && change != null ? System.Text.Json.JsonSerializer.Serialize(change) : null,
 				AdvanceAmount = requestType == "Advance" ? advanceAmount : null, AdvanceInstallment = requestType == "Advance" ? advanceInstallment : null,
 				LetterType = letterType, Addressee = addressee, PermissionDate = permissionDate, Reason = reason,
 				FromTime = TimeSpan.TryParse(fromTime, out var ft) ? ft : (TimeSpan?)null,
@@ -408,6 +410,59 @@ namespace CrossBuy.Controllers
 			var (ok, error, _) = await _requests.CreateAsync(draft);
 			TempData[ok ? "ReqMsg" : "ReqErr"] = ok ? L["Request submitted"].Value : error;
 			return RedirectToAction(nameof(Requests));
+		}
+
+		// ---- HR9 (2026-11-09): approval delegation, set by the approver for themself ----
+		public sealed record DelegateOption(int Id, string? Name, string? Photo, string Initials);
+		public sealed record DelegationRow(int Id, string? To, int ToId, DateTime Start, DateTime End, string? Reason, bool Active);
+
+		[HttpGet]
+		public async Task<IActionResult> Delegation()
+		{
+			var self = await SelfServiceSubjectAsync();
+			if (self == null) return RedirectToAction(nameof(Dashboard));
+			var company = await _context.Employee.Where(e => e.ID == self.Value).Select(e => e.EmpCompanyID).FirstOrDefaultAsync();
+			var mine = await _context.ApprovalDelegations.AsNoTracking().Where(d => d.CompanyID == company && d.FromEmployeeID == self.Value)
+				.OrderByDescending(d => d.ID).Take(20).ToListAsync();
+			var toIds = mine.Select(d => d.ToEmployeeID).Distinct().ToList();
+			var names = await _context.Employee.AsNoTracking().Where(e => toIds.Contains(e.ID)).ToDictionaryAsync(e => e.ID, e => CrossBuy.BL.EmployeeNames.Of(e.FullName, e.FullNameEn));
+			ViewBag.Rows = mine.Select(d => new DelegationRow(d.ID, names.TryGetValue(d.ToEmployeeID, out var n) ? n : null, d.ToEmployeeID, d.StartDate, d.EndDate, d.Reason,
+				d.IsActive && d.EndDate >= DateTime.Today)).ToList();
+			// A public record, not an anonymous type: a runtime-compiled view cannot bind `dynamic` to an anonymous type.
+			ViewBag.Colleagues = (await _context.Employee.AsNoTracking().Where(e => e.EmpCompanyID == company && e.IsActive && e.ID != self.Value)
+				.OrderBy(e => e.FullName).Select(e => new { e.ID, e.FullName, e.FullNameEn, e.ProfileImage }).ToListAsync())
+				.Select(e => new DelegateOption(e.ID, CrossBuy.BL.EmployeeNames.Of(e.FullName, e.FullNameEn), CrossBuy.BL.Hr.PersonTile.Photo(e.ProfileImage), CrossBuy.BL.Hr.PersonTile.Initials(e.FullName, e.FullNameEn))).ToList();
+			return View();
+		}
+
+		[HttpPost][ValidateAntiForgeryToken]
+		public async Task<IActionResult> CreateDelegation(int toEmployeeId, DateTime startDate, DateTime endDate, string? reason)
+		{
+			var self = await SelfServiceSubjectAsync();
+			if (self == null) return RedirectToAction(nameof(Dashboard));
+			bool ar = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+			var company = await _context.Employee.Where(e => e.ID == self.Value).Select(e => e.EmpCompanyID).FirstOrDefaultAsync();
+			bool colleague = await _context.Employee.AnyAsync(e => e.ID == toEmployeeId && e.EmpCompanyID == company && e.IsActive && e.ID != self.Value);
+			if (!colleague) TempData["ReqErr"] = ar ? "اختر زميلاً نشطاً في الشركة" : "Choose an active colleague in the company";
+			else if (endDate.Date < startDate.Date || endDate.Date < DateTime.Today) TempData["ReqErr"] = ar ? "فترة التفويض غير صحيحة" : "The delegation period is not valid";
+			else
+			{
+				_context.ApprovalDelegations.Add(new CrossBuy.Models.Context.Admin.ApprovalDelegation { CompanyID = company, FromEmployeeID = self.Value, ToEmployeeID = toEmployeeId,
+					StartDate = startDate.Date, EndDate = endDate.Date, Reason = string.IsNullOrWhiteSpace(reason) ? null : reason.Trim(), IsActive = true, CreatedAt = DateTime.UtcNow });
+				await _context.SaveChangesAsync();
+				TempData["ReqMsg"] = ar ? "سُجّل التفويض: الطلبات الجديدة خلال الفترة تذهب إلى من فوّضته." : "Delegation saved: new requests in the period go to your delegate.";
+			}
+			return RedirectToAction(nameof(Delegation));
+		}
+
+		[HttpPost][ValidateAntiForgeryToken]
+		public async Task<IActionResult> EndDelegation(int id)
+		{
+			var self = await SelfServiceSubjectAsync();
+			if (self == null) return RedirectToAction(nameof(Dashboard));
+			var d = await _context.ApprovalDelegations.FirstOrDefaultAsync(x => x.ID == id && x.FromEmployeeID == self.Value);
+			if (d != null) { d.IsActive = false; await _context.SaveChangesAsync(); }
+			return RedirectToAction(nameof(Delegation));
 		}
 
 		[HttpPost][ValidateAntiForgeryToken]

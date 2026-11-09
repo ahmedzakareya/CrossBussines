@@ -228,6 +228,11 @@ namespace CrossBuy.BL.Reporting
             // HR (2026-11-09): the working-hours schedule recorded on Ashal and displayed at the workplace.
             services.AddSingleton<IReportDefinitionProvider, WorkingHoursReportDefinitionProvider>();
             services.AddScoped<IReportDataSource, WorkingHoursScheduleDataSource>();
+            // HR10 (2026-11-09): people analytics — headcount, leavers, gratuity liability.
+            services.AddSingleton<IReportDefinitionProvider, HrAnalyticsReportDefinitionProvider>();
+            services.AddScoped<IReportDataSource, HrHeadcountDataSource>();
+            services.AddScoped<IReportDataSource, HrLeaversDataSource>();
+            services.AddScoped<IReportDataSource, HrGratuityLiabilityDataSource>();
 
             // HR-B3: the planned-vs-actual data source asks the canonical attendance authority what
             // an employee was expected to work, rather than carrying a second copy of the formula.
@@ -280,6 +285,11 @@ namespace CrossBuy.BL.Reporting
             foreach (var hours in HrWorkingHoursDatasets.All())
             {
                 var definition = hours;
+                services.AddScoped<IReportDatasetDefinition>(_ => definition);
+            }
+            foreach (var people in HrAnalyticsDatasets.All())
+            {
+                var definition = people;
                 services.AddScoped<IReportDatasetDefinition>(_ => definition);
             }
 

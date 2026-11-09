@@ -85,10 +85,56 @@ namespace CrossBuy.BL
 			_context.Payslips.AsNoTracking().Where(s => s.EmployeeID == employeeId)
 				.OrderByDescending(s => s.Year).ThenByDescending(s => s.Month).FirstOrDefaultAsync();
 
+		// ---- HR9 (2026-11-09): profile changes an employee proposes and their chain approves ----
+		// Only these fields are self-service; everything else (job, pay, branch) stays HR's own edit.
+		public static readonly IReadOnlyDictionary<string, (string Ar, string En)> ProfileFields = new Dictionary<string, (string, string)>
+		{
+			["PhoneNumber"] = ("الهاتف", "Phone"), ["Address"] = ("العنوان", "Address"),
+			["EmergencyContactName"] = ("جهة الطوارئ", "Emergency contact"), ["EmergencyContactPhone"] = ("هاتف الطوارئ", "Emergency phone"),
+			["EmergencyContactRelation"] = ("صلة القرابة", "Relation"), ["BankName"] = ("البنك", "Bank"), ["Iban"] = ("IBAN", "IBAN"),
+		};
+
+		public static Dictionary<string, string> ParseChanges(string? json)
+		{
+			var result = new Dictionary<string, string>();
+			if (string.IsNullOrWhiteSpace(json)) return result;
+			try
+			{
+				var raw = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string?>>(json) ?? new();
+				foreach (var (k, v) in raw)
+					if (ProfileFields.ContainsKey(k) && !string.IsNullOrWhiteSpace(v))
+						result[k] = k == "Iban" ? v.Replace(" ", "").ToUpperInvariant() : v.Trim();
+			}
+			catch (System.Text.Json.JsonException) { }
+			return result;
+		}
+
+		private async Task ApplyProfileChangeAsync(EmployeeRequest req)
+		{
+			if (req.RequestType != "ProfileChange") return;
+			var changes = ParseChanges(req.ChangesJson);
+			if (changes.Count == 0) return;
+			var emp = await _context.Employee.FirstOrDefaultAsync(e => e.ID == req.EmployeeID && e.EmpCompanyID == req.CompanyID);
+			if (emp == null) return;
+			foreach (var (k, v) in changes)
+				switch (k)
+				{
+					case "PhoneNumber": emp.PhoneNumber = v; break;
+					case "Address": emp.Address = v; break;
+					case "EmergencyContactName": emp.EmergencyContactName = v; break;
+					case "EmergencyContactPhone": emp.EmergencyContactPhone = v; break;
+					case "EmergencyContactRelation": emp.EmergencyContactRelation = v; break;
+					case "BankName": emp.BankName = v; break;
+					case "Iban": emp.Iban = v; break;
+				}
+			await _context.SaveChangesAsync();
+		}
+
 		private static string Label(EmployeeRequest r, bool ar)
 		{
 			if (r.RequestType == "Permission") return ar ? "إذن" : "permission";
 			if (r.RequestType == "Advance") return ar ? "سلفة راتب" : "salary advance";   // HR9
+			if (r.RequestType == "ProfileChange") return ar ? "تعديل بيانات" : "profile change";   // HR9
 			return ar ? "خطاب" : "letter";
 		}
 
@@ -159,6 +205,15 @@ namespace CrossBuy.BL
 					return (false, ar ? "القسط أكبر من المبلغ نفسه" : "The instalment is larger than the amount itself", null);
 				var cap = await new CrossBuy.BL.Hr.HrLoanService(_context).CapRefusalAsync(draft.CompanyID, draft.EmployeeID, draft.AdvanceAmount.Value, draft.AdvanceInstallment.Value, DateTime.Today);
 				if (cap is { } c) return (false, ar ? c.Ar : c.En, null);
+				draft.LetterType = null;
+			}
+			else if (draft.RequestType == "ProfileChange")
+			{
+				// HR9: only the self-service fields, only non-empty values, and at least one of them.
+				bool ar = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+				var changes = ParseChanges(draft.ChangesJson);
+				if (changes.Count == 0) return (false, ar ? "أدخل قيمة جديدة واحدة على الأقل" : "Enter at least one new value", null);
+				draft.ChangesJson = System.Text.Json.JsonSerializer.Serialize(changes);
 				draft.LetterType = null;
 			}
 			else
@@ -234,6 +289,7 @@ namespace CrossBuy.BL
 					level: 0, approver: null, nextLevel: null, nextApprover: null, decidedBy: null);
 				await EmitAsync(draft, CrossBuy.BL.Platform.EmployeeRequestEvents.Approved,
 					level: 0, approver: null, nextLevel: null, nextApprover: null, decidedBy: null);
+				await ApplyProfileChangeAsync(draft);   // HR9: an approved profile change takes effect with the approval
 			}
 
 			await tx.CommitAsync();
@@ -382,6 +438,7 @@ namespace CrossBuy.BL
 				req.Status = 1; req.ApproverEmployeeID = actor; req.DecisionAt = now; req.DecisionNote = note;
 				req.CurrentApproverEmployeeID = null; req.CurrentLevel = 0; req.UpdatedAt = now; req.updatedBy = actor;
 				await _context.SaveChangesAsync();
+				await ApplyProfileChangeAsync(req);   // HR9: inside the decision's transaction, so approval and change land together
 				// The top of the chain approved. Terminal, and the level that took the decision is named so
 				// the rule closes THAT level's work rather than guessing which one was open.
 				await EmitAsync(req, CrossBuy.BL.Platform.EmployeeRequestEvents.Approved,

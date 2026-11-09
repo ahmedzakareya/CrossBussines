@@ -1,0 +1,58 @@
+@{
+    // HR9 (2026-11-09): approval delegation, set by the approver for themself (HR prototype #/ess).
+    Layout = "~/Views/Shared/_LayoutPeople.cshtml";
+    ViewData["Title"] = "Delegation";
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    string L(string ar, string en) => isAr ? ar : en;
+    var rows = ViewBag.Rows as List<CrossBuy.Controllers.PeopleController.DelegationRow> ?? new();
+}
+<link href="~/css/hr.css" rel="stylesheet" asp-append-version="true" />
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid">
+        <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@L("تفويض الموافقة", "Approval delegation")</h1>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (TempData["ReqMsg"] is string msg) { <div class="alert alert-success">@msg</div> }
+        @if (TempData["ReqErr"] is string err) { <div class="alert alert-danger">@err</div> }
+        <div class="hr-notice mb-5"><i class="ki-outline ki-arrows-loop fs-2"></i>
+            <div class="fs-7">@L("إذا كنت ستغيب، فوّض موافقاتك لزميل خلال فترة محددة: طلبات الإجازة والطلبات الجديدة التي تصلك خلال الفترة تذهب إليه بدلاً منك. الطلبات المنتظرة لديك قبل التفويض تبقى عندك. لا يمكن أن يعتمد أحد طلبه بنفسه عبر التفويض.",
+                "If you will be away, hand your approvals to a colleague for a period: new leave and employee requests that would reach you in the period go to them instead. Requests already waiting for you stay with you. Nobody can approve their own request through a delegation.")</div></div>
+        <div class="row g-5">
+            <div class="col-lg-5">
+                <div class="card card-flush"><div class="card-header"><div class="card-title"><h2>@L("تفويض جديد", "New delegation")</h2></div></div>
+                    <div class="card-body pt-2">
+                        <form asp-action="CreateDelegation" method="post">@Html.AntiForgeryToken()
+                            <label class="fw-semibold fs-6 mb-2 required">@L("فوّض إلى", "Delegate to")</label>
+                            <select name="toEmployeeId" class="form-select form-select-solid mb-4" data-person-select required><option value=""></option>
+                                @foreach (var e in ViewBag.Colleagues as List<CrossBuy.Controllers.PeopleController.DelegateOption> ?? new()) { <option value="@e.Id" data-photo="@e.Photo" data-initials="@e.Initials">@e.Name</option> }
+                            </select>
+                            <div class="row">
+                                <div class="col-6 mb-4"><label class="fw-semibold fs-6 mb-2 required">@L("من", "From")</label><input type="date" name="startDate" required value="@DateTime.Today.ToString("yyyy-MM-dd")" class="form-control form-control-solid" /></div>
+                                <div class="col-6 mb-4"><label class="fw-semibold fs-6 mb-2 required">@L("إلى", "To")</label><input type="date" name="endDate" required value="@DateTime.Today.AddDays(7).ToString("yyyy-MM-dd")" class="form-control form-control-solid" /></div>
+                            </div>
+                            <label class="fw-semibold fs-6 mb-2">@L("السبب", "Reason")</label>
+                            <input name="reason" maxlength="400" class="form-control form-control-solid mb-4" />
+                            <button class="btn btn-primary w-100"><i class="ki-outline ki-check fs-3"></i>@L("تفويض", "Delegate")</button>
+                        </form>
+                    </div></div>
+            </div>
+            <div class="col-lg-7">
+                <div class="card card-flush"><div class="card-header"><div class="card-title"><h2>@L("تفويضاتي", "My delegations")</h2></div></div>
+                    <div class="card-body pt-2"><div class="table-responsive"><table class="table align-middle gy-3 hr-table">
+                        <thead><tr class="fw-bold fs-8 text-uppercase text-muted"><th>@L("إلى", "To")</th><th>@L("الفترة", "Period")</th><th>@L("الحالة", "Status")</th><th class="text-end"></th></tr></thead>
+                        <tbody>
+                            @if (rows.Count == 0) { <tr><td colspan="4" class="text-center text-muted py-8">@L("لا تفويضات", "No delegations")</td></tr> }
+                            @foreach (var r in rows)
+                            {
+                                <tr><td class="fw-semibold"><bdi>@(r.To ?? "—")</bdi>@if (!string.IsNullOrWhiteSpace(r.Reason)) { <div class="text-muted fs-8">@r.Reason</div> }</td>
+                                    <td class="hr-num">@r.Start.ToString("yyyy-MM-dd") → @r.End.ToString("yyyy-MM-dd")</td>
+                                    <td>@if (r.Active) { <span class="badge badge-light-success">@L("سارٍ", "Active")</span> } else { <span class="badge badge-light">@L("منتهٍ", "Ended")</span> }</td>
+                                    <td class="text-end">@if (r.Active) { <form asp-action="EndDelegation" method="post" class="d-inline" data-cb-confirm data-cb-action="generic" data-cb-text="@L("إنهاء التفويض الآن؟", "End the delegation now?")">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@r.Id" /><button class="btn btn-sm btn-light-danger">@L("إنهاء", "End")</button></form> }</td></tr>
+                            }
+                        </tbody>
+                    </table></div></div></div>
+            </div>
+        </div>
+    </div></div>
+</div>
+@await Html.PartialAsync("_PersonSelect")

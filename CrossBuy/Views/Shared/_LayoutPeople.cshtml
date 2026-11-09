@@ -224,6 +224,12 @@
                                     </a>
                                 </div>
                                 <div class="menu-item">
+                                    <a class="menu-link @active("Delegation")" href="@Url.Action("Delegation", "People")">
+                                        <span class="menu-icon"><i class="ki-outline ki-arrows-loop fs-2"></i></span>
+                                        <span class="menu-title">@(System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar" ? "تفويض الموافقة" : "Approval delegation")</span>
+                                    </a>
+                                </div>
+                                <div class="menu-item">
                                     <a class="menu-link @active("MyAppraisals")" href="@Url.Action("MyAppraisals", "People")">
                                         <span class="menu-icon"><i class="ki-outline ki-award fs-2"></i></span>
                                         <span class="menu-title">@Localizer["My Appraisals"]</span>
