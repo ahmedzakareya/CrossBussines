@@ -1,8 +1,10 @@
 @model CrossBuy.Controllers.AdminController.BankFilePageModel
 @inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
 @{
-    // HR8 — the salary transfer file for the bank (wage protection), its format a setting (2026-11-09).
-    ViewData["Title"] = "Bank salary file";
+    // HR8 — export files whose shape is a setting (2026-11-09): kind "bank" (the salary transfer, wage protection) and
+    // kind "insurance" (the monthly social-insurance contributions file). One view, one engine, one format editor.
+    var ins = Model.IsInsurance;
+    ViewData["Title"] = ins ? "Social insurance file" : "Bank salary file";
     Layout = "~/Views/Shared/_LayoutBackend.cshtml";
     var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
     string L(string ar, string en) => isAr ? ar : en;
@@ -19,7 +21,8 @@
         _ => "",
     };
     var delim = f.Delimiter == "\t" ? "tab" : f.Delimiter;
-    var fields = CrossBuy.BL.Hr.HrBankFileFields.All;
+    var fields = CrossBuy.BL.Hr.HrBankFileFields.For(Model.Kind);
+    var rk = Model.RouteKind == "insurance" ? "insurance" : null;
     var pay = CrossBuy.BL.Hr.HrBankFileService.PaymentDate(f, m.Year, m.Month);
 }
 <link href="~/css/hr.css" rel="stylesheet" asp-append-version="true" />
@@ -28,7 +31,7 @@
     <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2">
         <div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
             <div class="page-title d-flex flex-column justify-content-center gap-1">
-                <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@L("ملف تحويل الرواتب للبنك", "Bank salary transfer file")</h1>
+                <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@(ins ? L("ملف التأمينات الاجتماعية", "Social insurance file") : L("ملف تحويل الرواتب للبنك", "Bank salary transfer file"))</h1>
                 <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
                     <li class="breadcrumb-item text-muted"><a href="@Url.Action("Index", "Admin")" class="text-muted text-hover-primary">@SR["HumanResources"]</a></li>
                     <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
@@ -36,12 +39,12 @@
                 </ul>
             </div>
             <div class="d-flex align-items-center gap-2 flex-wrap">
-                <a href="@Url.Action("BankFile", new { month = m.AddMonths(isAr ? 1 : -1).ToString("yyyy-MM") })" class="btn btn-icon btn-sm btn-light"><i class="ki-outline ki-arrow-right fs-3"></i></a>
+                <a href="@Url.Action("BankFile", new { month = m.AddMonths(isAr ? 1 : -1).ToString("yyyy-MM"), kind = rk })" class="btn btn-icon btn-sm btn-light"><i class="ki-outline ki-arrow-right fs-3"></i></a>
                 <span class="fw-bold fs-6 px-2">@MonthName(m)</span>
-                <a href="@Url.Action("BankFile", new { month = m.AddMonths(isAr ? -1 : 1).ToString("yyyy-MM") })" class="btn btn-icon btn-sm btn-light"><i class="ki-outline ki-arrow-left fs-3"></i></a>
-                @if (Model.CanManage && Model.Posted && Model.Lines > 0)
+                <a href="@Url.Action("BankFile", new { month = m.AddMonths(isAr ? -1 : 1).ToString("yyyy-MM"), kind = rk })" class="btn btn-icon btn-sm btn-light"><i class="ki-outline ki-arrow-left fs-3"></i></a>
+                @if (Model.CanManage && Model.HasSource && Model.Lines > 0)
                 {
-                    <a href="@Url.Action("DownloadBankFile", new { month = m.ToString("yyyy-MM") })" class="btn btn-sm btn-primary ms-2"><i class="ki-outline ki-file-down fs-4"></i>@L("تنزيل الملف", "Download file")</a>
+                    <a href="@Url.Action("DownloadBankFile", new { month = m.ToString("yyyy-MM"), kind = rk })" class="btn btn-sm btn-primary ms-2"><i class="ki-outline ki-file-down fs-4"></i>@L("تنزيل الملف", "Download file")</a>
                 }
             </div>
         </div>
@@ -52,6 +55,20 @@
             @if (TempData["HrErr"] is string err) { <div class="alert alert-danger d-flex align-items-center py-3 mb-5"><i class="ki-outline ki-information-5 fs-2 me-3 text-danger"></i>@err</div> }
             @if (TempData["HrMsg"] is string msg) { <div class="alert alert-success d-flex align-items-center py-3 mb-5"><i class="ki-outline ki-check-circle fs-2 me-3 text-success"></i>@msg</div> }
 
+            @if (ins)
+            {
+                <div class="hr-notice mb-5">
+                    <i class="ki-outline ki-shield-tick fs-2"></i>
+                    <div class="flex-grow-1">
+                        <div class="fw-bold">@L("ملف الاشتراكات الشهري لمؤسسة التأمينات", "The monthly contributions file for the insurance authority")</div>
+                        <div class="fs-7">@L("سطر لكل موظف عليه اشتراك هذا الشهر: الأجر الخاضع وحصة الموظف وحصة صاحب العمل، بنفس حساب كشف التأمينات والرواتب. شكل الملف كله إعداد كملف البنك، لمطابقة نموذج المؤسسة دون برمجة.",
+                            "One line per employee with a contribution this month: the insurable wage, the employee's and the employer's share, computed exactly as the insurance statement and payroll do. The whole shape is a setting, as for the bank file, to match the authority's template without code.")</div>
+                    </div>
+                    <a href="@Url.Action("SocialInsurance", new { month = m.ToString("yyyy-MM") })" class="btn btn-sm btn-light flex-shrink-0">@L("كشف التأمينات", "Insurance statement")</a>
+                </div>
+            }
+            else
+            {
             <div class="hr-notice mb-5">
                 <i class="ki-outline ki-bank fs-2"></i>
                 <div class="flex-grow-1">
@@ -61,7 +78,8 @@
                 </div>
             </div>
 
-            @if (!Model.Posted)
+            }
+            @if (!Model.HasSource && !ins)
             {
                 <div class="hr-notice mb-5"><i class="ki-outline ki-information fs-2"></i><div><div class="fw-bold">@L("لا رواتب مرحّلة لهذا الشهر", "No posted payroll for this month")</div>
                     <div class="fs-7">@L("رحّل مسير الشهر أولاً من شاشة مسير الرواتب، ثم عُد هنا لتنزيل الملف.", "Post the month's payroll from the payroll run first, then come back to download the file.")</div></div>
@@ -70,7 +88,7 @@
 
             <div class="row g-5 g-xl-8 mb-5">
                 @foreach (var s in new[] { (L("سطور في الملف", "Lines in the file"), Model.Lines.ToString(inv), "ki-row-horizontal", ""),
-                                           (L("إجمالي التحويل", "Transfer total"), Model.Total.ToString("N3", inv) + " " + Model.Currency, "ki-wallet", ""),
+                                           (ins ? L("إجمالي الاشتراكات", "Total contributions") : L("إجمالي التحويل", "Transfer total"), Model.Total.ToString("N3", inv) + " " + Model.Currency, "ki-wallet", ""),
                                            (L("موظفون يحتاجون تصحيحاً", "Employees needing a fix"), Model.Problems.ToString(inv), "ki-information-2", Model.Problems > 0 ? "text-danger" : ""),
                                            (L("تاريخ الدفع", "Payment date"), pay.ToString("yyyy-MM-dd", inv), "ki-calendar", "") })
                 {
@@ -112,10 +130,11 @@
                     <form asp-action="SaveBankFileFormat" method="post" id="fmt_form">
                         @Html.AntiForgeryToken()
                         <input type="hidden" name="month" value="@m.ToString("yyyy-MM")" />
+                        <input type="hidden" name="kind" value="@Model.Kind" />
                         <fieldset @(Model.CanManage ? "" : "disabled")>
                         <div class="row g-5 mb-6">
-                            <div class="col-md-3"><label class="form-label fw-semibold">@L("البنك", "Bank")</label><input name="bankName" value="@f.BankName" class="form-control form-control-solid" placeholder="@L("مثال: البنك الوطني", "e.g. National Bank")" /></div>
-                            <div class="col-md-3"><label class="form-label fw-semibold">@L("حساب الشركة / IBAN", "Company account / IBAN")</label><input name="companyAccount" value="@f.CompanyAccount" class="form-control form-control-solid hr-num" /></div>
+                            <div class="col-md-3 @(ins ? "d-none" : "")"><label class="form-label fw-semibold">@L("البنك", "Bank")</label><input name="bankName" value="@f.BankName" class="form-control form-control-solid" placeholder="@L("مثال: البنك الوطني", "e.g. National Bank")" /></div>
+                            <div class="col-md-3 @(ins ? "d-none" : "")"><label class="form-label fw-semibold">@L("حساب الشركة / IBAN", "Company account / IBAN")</label><input name="companyAccount" value="@f.CompanyAccount" class="form-control form-control-solid hr-num" /></div>
                             <div class="col-md-3"><label class="form-label fw-semibold">@L("رقم صاحب العمل", "Employer code")</label><input name="employerCode" value="@f.EmployerCode" class="form-control form-control-solid hr-num" /></div>
                             <div class="col-md-3"><label class="form-label fw-semibold">@L("اسم الملف", "File name")</label><input name="fileNamePattern" value="@f.FileNamePattern" class="form-control form-control-solid hr-num" /><div class="form-text">{yyyyMM} {yyyy} {MM}</div></div>
                             <div class="col-md-2"><label class="form-label fw-semibold">@L("الفاصل", "Delimiter")</label>
@@ -141,7 +160,7 @@
                         <table class="table align-middle table-row-dashed fs-7 gy-2 mb-3" id="cols">
                             <thead><tr class="text-muted fw-bold fs-8 text-uppercase"><th class="w-40px">#</th><th>@L("الحقل", "Field")</th><th>@L("عنوان العمود في الملف", "Column header in the file")</th><th>@L("النص الثابت", "Fixed text")</th><th class="text-end"></th></tr></thead>
                             <tbody>
-                                @foreach (var c in Model.Columns.Count > 0 ? Model.Columns : CrossBuy.BL.Hr.HrBankFileService.DefaultColumns())
+                                @foreach (var c in Model.Columns.Count > 0 ? Model.Columns : CrossBuy.BL.Hr.HrBankFileService.DefaultColumns(Model.Kind))
                                 {
                                     <tr>
                                         <td class="hr-num text-muted" data-idx></td>
@@ -182,7 +201,7 @@
             <div class="card mb-5">
                 <div class="card-header border-0 pt-6 align-items-center">
                     <div class="card-title flex-column">
-                        <span class="fw-bold text-gray-900 fs-4">@L("سطور التحويل", "Transfer lines")</span>
+                        <span class="fw-bold text-gray-900 fs-4">@(ins ? L("سطور الاشتراكات", "Contribution lines") : L("سطور التحويل", "Transfer lines"))</span>
                         <span class="text-muted fs-7 mt-1"><span id="resultCount">—</span></span>
                     </div>
                     <div class="card-toolbar d-flex align-items-center gap-2 flex-wrap">
@@ -195,7 +214,9 @@
                     <div class="table-responsive">
                         <table class="table align-middle gy-3 mb-0 hr-table">
                             <thead><tr class="fw-bold fs-8 text-uppercase text-muted">
-                                <th class="ps-4">#</th><th style="min-width:200px">@L("الموظف", "Employee")</th><th>@L("الرقم المدني", "Civil ID")</th><th>IBAN</th><th>@L("البنك", "Bank")</th><th class="text-end pe-4">@L("الصافي", "Net")</th>
+                                <th class="ps-4">#</th><th style="min-width:200px">@L("الموظف", "Employee")</th><th>@L("الرقم المدني", "Civil ID")</th>
+                                @if (ins) { <th class="text-end">@L("الأجر الخاضع", "Insurable wage")</th><th class="text-end">@L("حصة الموظف", "Employee")</th><th class="text-end">@L("حصة صاحب العمل", "Employer")</th><th class="text-end pe-4">@L("الإجمالي", "Total")</th> }
+                                else { <th>IBAN</th><th>@L("البنك", "Bank")</th><th class="text-end pe-4">@L("الصافي", "Net")</th> }
                             </tr></thead>
                             <tbody class="fs-6" id="rows"></tbody>
                         </table>
@@ -215,13 +236,14 @@
 cbServerList({
     url: '@Url.Action("BankFileData", "Admin")',
     isAr: @(isAr ? "true" : "false"),
-    addParams: function (p) { p.set('month', '@m.ToString("yyyy-MM")'); }
+    addParams: function (p) { p.set('month', '@m.ToString("yyyy-MM")'); p.set('kind', '@Model.RouteKind'); }
 });
 (function () {
     var body = document.querySelector('#cols tbody'), form = document.getElementById('fmt_form'), pre = document.getElementById('fmt_preview');
     var sample = { Seq: '1', EmployeeId: '1042', NameAr: 'سارة علي', NameEn: 'Sara Ali', CivilId: '290010112345', Iban: 'KW81CBKU0000000000001234560101', BankName: 'NBK',
         Net: (1234.5).toFixed(+form.decimalPlaces.value || 0), Basic: '1000', Allowances: '300', Gross: '1300', Deductions: '65.5', Currency: '@Model.Currency',
-        Month: '@m.ToString("yyyyMM")', PaymentDate: '@pay.ToString("yyyy-MM-dd")', CompanyAccount: form.companyAccount.value, EmployerCode: form.employerCode.value, Constant: '' };
+        Month: '@m.ToString("yyyyMM")', PaymentDate: '@pay.ToString("yyyy-MM-dd")', CompanyAccount: form.companyAccount.value, EmployerCode: form.employerCode.value, Constant: '',
+        Nationality: '1', Wage: '1300.000', EmployeeShare: '136.500', EmployerShare: '162.500', TotalShare: '299.000' };
     function renumber() { body.querySelectorAll('[data-idx]').forEach(function (td, i) { td.textContent = i + 1; }); body.querySelectorAll('tr').forEach(function (tr) { var c = tr.querySelector('[data-col-field]').value === 'Constant'; tr.querySelector('[data-col-value]').classList.toggle('invisible', !c); }); preview(); }
     function preview() {
         var d = form.delimiter.value === 'tab' ? '\t' : form.delimiter.value, rows = [];

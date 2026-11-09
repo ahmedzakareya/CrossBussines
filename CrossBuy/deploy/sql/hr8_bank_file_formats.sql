@@ -27,3 +27,12 @@ BEGIN
     );
     CREATE UNIQUE INDEX UX_HrBankFileFormats_Company ON dbo.HrBankFileFormats (CompanyID);
 END
+-- 2026-11-09: one format per company AND file kind (Bank = the salary transfer, Insurance = the monthly social-insurance file).
+IF COL_LENGTH(N'dbo.HrBankFileFormats', N'Kind') IS NULL
+BEGIN
+    ALTER TABLE dbo.HrBankFileFormats ADD Kind nvarchar(20) NOT NULL CONSTRAINT DF_HrBankFileFormats_Kind DEFAULT N'Bank';
+END
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'UX_HrBankFileFormats_Company' AND object_id = OBJECT_ID(N'dbo.HrBankFileFormats'))
+    DROP INDEX UX_HrBankFileFormats_Company ON dbo.HrBankFileFormats;
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'UX_HrBankFileFormats_CompanyKind' AND object_id = OBJECT_ID(N'dbo.HrBankFileFormats'))
+    EXEC(N'CREATE UNIQUE INDEX UX_HrBankFileFormats_CompanyKind ON dbo.HrBankFileFormats (CompanyID, Kind)');

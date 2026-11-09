@@ -527,4 +527,5 @@
 				new() { LabelAr = "ملف تحويل الرواتب للبنك", LabelEn = "Bank salary file", Action = "BankFile", Controller = "Admin" },   // HR8: wage protection, its format a setting (2026-11-09)
 				new() { LabelAr = "بيانات البنك من Excel", LabelEn = "Bank details from Excel", Action = "BankDetails", Controller = "Admin" },   // civil ID / IBAN / bank in bulk (2026-11-09)
 				new() { LabelAr = "كشف التأمينات الاجتماعية", LabelEn = "Social insurance statement", Action = "SocialInsurance", Controller = "Admin" },   // HR6: per employee, per rule-pack line (2026-11-08)
+				new() { LabelAr = "ملف التأمينات الاجتماعية", LabelEn = "Social insurance file", Action = "InsuranceFile", Controller = "Admin" },   // the monthly contributions file, its shape a setting (2026-11-09)
 				new() { LabelAr = "مخصص مكافأة نهاية الخدمة", LabelEn = "Gratuity provision", Action = "GratuityProvision", Controller = "Admin" },   // the end-of-service provision, booked monthly (2026-11-08)

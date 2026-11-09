@@ -21,24 +21,11 @@ namespace CrossBuy.Controllers
 			IReadOnlyList<InsuranceLineTotal> Totals, int People, int Nationals, decimal Employee, decimal Employer);
 		public sealed record InsuranceRowsModel(IReadOnlyList<InsuranceRow> Rows, Dictionary<int, string> Photos, string Currency);
 
+		// The computation lives in HrInsuranceStatement, shared with the contributions file (BankFile, kind "insurance").
 		private async Task<(List<InsuranceRow> Rows, CrossBuy.BL.Hr.HrRules? Pack, CrossBuy.Models.Context.Admin.HrRulePack? PackRow)> LoadInsuranceAsync(int company, DateTime month, CancellationToken ct)
 		{
-			var eff = await new CrossBuy.BL.Hr.HrRulePackService(Db).EffectiveAsync(company, ct);
-			var pack = eff?.Rules;
-			var emps = await Db.Employee.AsNoTracking().Where(e => e.EmpCompanyID == company && e.IsActive)
-				.Select(e => new { e.ID, e.FullName, e.FullNameEn, e.CountryID }).ToListAsync(ct);
-			var monthEnd = month.AddMonths(1).AddDays(-1);
-			var pay = await new CrossBuy.BL.Hr.HrSalaryService(Db).ForManyAsync(emps.Select(e => e.ID), monthEnd, ct);
-			var nationals = await CrossBuy.BL.Hr.HrInsurance.NationalCountryIdsAsync(Db, pack, ct);
-			var rows = new List<InsuranceRow>();
-			foreach (var e in emps)
-			{
-				if (!pay.TryGetValue(e.ID, out var p) || p.Total <= 0) continue;   // no wage, no contribution
-				bool national = e.CountryID is int c && nationals.Contains(c);
-				var lines = pack == null ? new List<CrossBuy.BL.Hr.InsuranceLineAmount>() : CrossBuy.BL.Hr.HrInsurance.Lines(pack, p.Total, national);
-				rows.Add(new InsuranceRow(e.ID, CrossBuy.BL.EmployeeNames.Of(e.FullName, e.FullNameEn) ?? "", national, p.Total, lines));
-			}
-			return (rows.OrderBy(r => r.Name).ToList(), pack, eff?.Pack);
+			var (rows, pack, packRow) = await CrossBuy.BL.Hr.HrInsuranceStatement.RowsAsync(Db, company, month, ct);
+			return (rows.Select(r => new InsuranceRow(r.EmployeeId, r.Name, r.National, r.Wage, r.Lines)).ToList(), pack, packRow);
 		}
 
 		[HttpGet]

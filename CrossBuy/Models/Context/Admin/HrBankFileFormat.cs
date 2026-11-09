@@ -6,6 +6,7 @@ namespace CrossBuy.Models.Context.Admin
 	{
 		public int ID { get; set; }
 		public int CompanyID { get; set; }
+		public string Kind { get; set; } = "Bank";                 // Bank (the salary transfer) | Insurance (the monthly social-insurance file)
 		public string? BankName { get; set; }
 		public string Delimiter { get; set; } = ",";
 		public bool WithBom { get; set; } = true;

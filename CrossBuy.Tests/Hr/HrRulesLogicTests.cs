@@ -187,6 +187,29 @@ namespace CrossBuy.Tests.Hr
 			Assert.Equal(new DateTime(2026, 2, 28), HrBankFileService.PaymentDate(Format(x => x.PaymentDay = 0), 2026, 2));
 		}
 
+		[Fact]
+		public void Insurance_file_writes_its_named_amounts_and_totals_the_contribution()
+		{
+			var f = Format(x => x.TrailerRow = "CountTotal", ("Seq", "SEQ", null), ("CivilId", "CIVIL_ID", null), ("Nationality", "NAT", null), ("Wage", "WAGE", null),
+				("EmployeeShare", "EE", null), ("EmployerShare", "ER", null), ("TotalShare", "TOTAL", null));
+			f.Kind = HrBankFileFields.Insurance;
+			var line = new HrBankFileLine(1, 2046, "يوسف", "Yousef", "290031412345", null, null, 1350m, 0, 1350m, 204.25m, 484.5m, null,
+				new Dictionary<string, decimal> { ["Wage"] = 1350m, ["EmployeeShare"] = 204.25m, ["EmployerShare"] = 280.25m, ["TotalShare"] = 484.5m }, "1");
+			var r = HrBankFileService.Build(f, new[] { line }, 2026, 11, "KWD");
+			Assert.Equal("SEQ,CIVIL_ID,NAT,WAGE,EE,ER,TOTAL\r\n1,290031412345,1,1350.000,204.250,280.250,484.500\r\nTOTAL,1,484.500\r\n", Text(r));
+		}
+
+		[Fact]
+		public void Each_file_kind_offers_its_own_fields()
+		{
+			Assert.True(HrBankFileFields.Known("Insurance", "EmployerShare"));
+			Assert.False(HrBankFileFields.Known("Insurance", "Iban"));
+			Assert.True(HrBankFileFields.Known("Bank", "Iban"));
+			Assert.False(HrBankFileFields.Known("Bank", "EmployerShare"));
+			Assert.Equal(HrBankFileFields.Bank, HrBankFileFields.Norm(null));
+			Assert.Equal(HrBankFileFields.Insurance, HrBankFileFields.Norm("insurance"));
+		}
+
 		// ---- the Excel import's normalisation ------------------------------------------------------------------------
 		[Fact]
 		public void Imported_values_are_normalised_and_an_iban_is_masked_for_history()

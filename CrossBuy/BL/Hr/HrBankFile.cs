@@ -25,14 +25,34 @@ namespace CrossBuy.BL.Hr
 		public string? Value { get; set; }   // the text of a Constant column
 	}
 
+	/// One line of an export file. Net is the line's AMOUNT — what the trailer totals (the transfer for the bank, the total
+	/// contribution for social insurance). Amounts carries any further money fields a file kind offers, by field key.
 	public sealed record HrBankFileLine(int Seq, int EmployeeId, string NameAr, string? NameEn, string? CivilId, string? Iban, string? BankName,
-		decimal Basic, decimal Allowances, decimal Gross, decimal Deductions, decimal Net, string? Problem);
+		decimal Basic, decimal Allowances, decimal Gross, decimal Deductions, decimal Net, string? Problem,
+		IReadOnlyDictionary<string, decimal>? Amounts = null, string? Nationality = null);
 
 	public sealed record HrBankFileResult(byte[] Content, string FileName, int Lines, decimal Total, int Problems);
 
 	public static class HrBankFileFields
 	{
-		/// The catalogue the column editor offers: key, Arabic, English.
+		public const string Bank = "Bank";
+		public const string Insurance = "Insurance";
+		public static string Norm(string? kind) => string.Equals(kind, Insurance, StringComparison.OrdinalIgnoreCase) ? Insurance : Bank;
+
+		/// The social-insurance file's catalogue (the monthly contributions file, e.g. Kuwait PIFSS).
+		public static readonly (string Key, string Ar, string En)[] InsuranceFields =
+		{
+			("Seq", "مسلسل", "Sequence"), ("EmployeeId", "رقم الموظف", "Employee no."), ("NameAr", "الاسم بالعربي", "Name (Arabic)"),
+			("NameEn", "الاسم بالإنجليزي", "Name (English)"), ("CivilId", "الرقم المدني", "Civil ID"), ("Nationality", "مواطن / وافد", "National / expatriate"),
+			("Wage", "الأجر الخاضع", "Insurable wage"), ("EmployeeShare", "حصة الموظف", "Employee share"), ("EmployerShare", "حصة صاحب العمل", "Employer share"),
+			("TotalShare", "إجمالي الاشتراك", "Total contribution"), ("Currency", "العملة", "Currency"), ("Month", "شهر الاشتراك", "Contribution month"),
+			("PaymentDate", "تاريخ السداد", "Payment date"), ("EmployerCode", "رقم صاحب العمل", "Employer code"), ("Constant", "نص ثابت", "Fixed text"),
+		};
+
+		public static (string Key, string Ar, string En)[] For(string? kind) => Norm(kind) == Insurance ? InsuranceFields : All;
+		public static bool Known(string? kind, string key) => For(kind).Any(f => f.Key == key);
+
+		/// The catalogue the bank file's column editor offers: key, Arabic, English.
 		public static readonly (string Key, string Ar, string En)[] All =
 		{
 			("Seq", "مسلسل", "Sequence"), ("EmployeeId", "رقم الموظف", "Employee no."), ("NameAr", "الاسم بالعربي", "Name (Arabic)"),
@@ -52,6 +72,15 @@ namespace CrossBuy.BL.Hr
 		private readonly CrossDbContext _db;
 		public HrBankFileService(CrossDbContext db) { _db = db; }
 
+		public static List<HrBankFileColumn> DefaultColumns(string? kind) => HrBankFileFields.Norm(kind) == HrBankFileFields.Insurance
+			? new()
+			{
+				new() { Field = "Seq", Header = "SEQ" }, new() { Field = "CivilId", Header = "CIVIL_ID" }, new() { Field = "NameAr", Header = "NAME" },
+				new() { Field = "Wage", Header = "WAGE" }, new() { Field = "EmployeeShare", Header = "EMPLOYEE_SHARE" }, new() { Field = "EmployerShare", Header = "EMPLOYER_SHARE" },
+				new() { Field = "TotalShare", Header = "TOTAL" }, new() { Field = "Month", Header = "MONTH" },
+			}
+			: DefaultColumns();
+
 		public static List<HrBankFileColumn> DefaultColumns() => new()
 		{
 			new() { Field = "Seq", Header = "SEQ" }, new() { Field = "CivilId", Header = "CIVIL_ID" }, new() { Field = "NameEn", Header = "NAME" },
@@ -64,19 +93,29 @@ namespace CrossBuy.BL.Hr
 			try { return JsonSerializer.Deserialize<List<HrBankFileColumn>>(f.ColumnsJson) ?? new(); } catch (JsonException) { return new(); }
 		}
 
-		/// The company's format, or the default one (not saved) when it has none yet.
-		public async Task<(HrBankFileFormat Format, bool Saved)> FormatAsync(int companyId, CancellationToken ct = default)
+		/// The company's format for a file kind, or that kind's default (not saved) when it has none yet.
+		public async Task<(HrBankFileFormat Format, bool Saved)> FormatAsync(int companyId, CancellationToken ct = default) => await FormatAsync(companyId, HrBankFileFields.Bank, ct);
+
+		public async Task<(HrBankFileFormat Format, bool Saved)> FormatAsync(int companyId, string? kind, CancellationToken ct = default)
 		{
-			var f = await _db.HrBankFileFormats.AsNoTracking().FirstOrDefaultAsync(x => x.CompanyID == companyId, ct);
-			return f != null ? (f, true) : (new HrBankFileFormat { CompanyID = companyId, ColumnsJson = JsonSerializer.Serialize(DefaultColumns()) }, false);
+			var k = HrBankFileFields.Norm(kind);
+			var f = await _db.HrBankFileFormats.AsNoTracking().FirstOrDefaultAsync(x => x.CompanyID == companyId && x.Kind == k, ct);
+			return f != null ? (f, true) : (new HrBankFileFormat
+			{
+				CompanyID = companyId, Kind = k, ColumnsJson = JsonSerializer.Serialize(DefaultColumns(k)),
+				FileNamePattern = k == HrBankFileFields.Insurance ? "INSURANCE_{yyyyMM}.csv" : "SALARIES_{yyyyMM}.csv",
+			}, false);
 		}
 
 		public async Task<(bool Ok, string? Ar, string? En)> SaveAsync(int companyId, HrBankFileFormat input, List<HrBankFileColumn> columns, int? by, CancellationToken ct = default)
 		{
+			var kind = HrBankFileFields.Norm(input.Kind);
 			columns = columns.Where(c => !string.IsNullOrWhiteSpace(c.Field)).ToList();
 			if (columns.Count == 0) return (false, "أضف عموداً واحداً على الأقل", "Add at least one column");
-			if (columns.Any(c => !HrBankFileFields.Known(c.Field))) return (false, "حقل غير معروف في الأعمدة", "Unknown field in the columns");
-			if (!columns.Any(c => c.Field == "Net")) return (false, "الملف يحتاج عمود صافي الراتب", "The file needs the net salary column");
+			if (columns.Any(c => !HrBankFileFields.Known(kind, c.Field))) return (false, "حقل غير معروف في الأعمدة", "Unknown field in the columns");
+			if (kind == HrBankFileFields.Bank && !columns.Any(c => c.Field == "Net")) return (false, "الملف يحتاج عمود صافي الراتب", "The file needs the net salary column");
+			if (kind == HrBankFileFields.Insurance && !columns.Any(c => c.Field is "EmployeeShare" or "EmployerShare" or "TotalShare"))
+				return (false, "الملف يحتاج عموداً للاشتراك", "The file needs a contribution column");
 			if (input.Delimiter is not ("," or ";" or "\t" or "|")) return (false, "الفاصل غير مدعوم", "Unsupported delimiter");
 			if (input.DecimalPlaces is < 0 or > 3 || input.PaymentDay is < 0 or > 31) return (false, "القيم خارج النطاق", "Values are out of range");
 			if (input.TrailerRow is not ("None" or "CountTotal")) input.TrailerRow = "None";
@@ -85,8 +124,8 @@ namespace CrossBuy.BL.Hr
 			if (string.IsNullOrWhiteSpace(input.FileNamePattern) || input.FileNamePattern.IndexOfAny(Path.GetInvalidFileNameChars().Where(c => c != '{' && c != '}').ToArray()) >= 0)
 				return (false, "اسم الملف غير صالح", "Invalid file name");
 
-			var row = await _db.HrBankFileFormats.FirstOrDefaultAsync(x => x.CompanyID == companyId, ct);
-			if (row == null) { row = new HrBankFileFormat { CompanyID = companyId }; _db.HrBankFileFormats.Add(row); }
+			var row = await _db.HrBankFileFormats.FirstOrDefaultAsync(x => x.CompanyID == companyId && x.Kind == kind, ct);
+			if (row == null) { row = new HrBankFileFormat { CompanyID = companyId, Kind = kind }; _db.HrBankFileFormats.Add(row); }
 			row.BankName = Clean(input.BankName); row.Delimiter = input.Delimiter; row.WithBom = input.WithBom; row.HeaderRow = input.HeaderRow;
 			row.DateFormat = input.DateFormat.Trim(); row.DecimalPlaces = input.DecimalPlaces; row.TrailerRow = input.TrailerRow;
 			row.FileNamePattern = input.FileNamePattern.Trim(); row.CompanyAccount = Clean(input.CompanyAccount); row.EmployerCode = Clean(input.EmployerCode);
@@ -161,6 +200,8 @@ namespace CrossBuy.BL.Hr
 				"Net" => Money(l.Net), "Basic" => Money(l.Basic), "Allowances" => Money(l.Allowances), "Gross" => Money(l.Gross), "Deductions" => Money(l.Deductions),
 				"Currency" => currency, "Month" => $"{year:D4}{month:D2}", "PaymentDate" => pay.ToString(f.DateFormat, inv),
 				"CompanyAccount" => f.CompanyAccount ?? "", "EmployerCode" => f.EmployerCode ?? "", "Constant" => c.Value ?? "",
+				"Nationality" => l.Nationality ?? "",
+				_ when l.Amounts != null && l.Amounts.TryGetValue(c.Field, out var amount) => Money(amount),
 				_ => "",
 			};
 

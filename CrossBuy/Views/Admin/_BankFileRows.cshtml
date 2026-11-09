@@ -18,9 +18,20 @@
                 <a href="@Url.Action("EmployeeProfile", "Admin", new { id = l.EmployeeId })" class="text-gray-900 text-hover-primary fw-bold fs-7 text-truncate ms-2"><bdi>@name</bdi></a>
             </div>
         </td>
-        <td class="hr-num fs-7">@(l.CivilId ?? "—")</td>
+        <td class="hr-num fs-7">@(l.CivilId ?? "—")@if (l.Problem == "NoCivilId") { <span class="badge badge-light-danger ms-1">@(isAr ? "مفقود" : "missing")</span> }</td>
+        @if (Model.Kind == CrossBuy.BL.Hr.HrBankFileFields.Insurance)
+        {
+            decimal A(string k) => l.Amounts != null && l.Amounts.TryGetValue(k, out var v) ? v : 0m;
+            <td class="text-end hr-num fs-7">@A("Wage").ToString("N3", inv)</td>
+            <td class="text-end hr-num fs-7">@A("EmployeeShare").ToString("N3", inv)</td>
+            <td class="text-end hr-num fs-7">@A("EmployerShare").ToString("N3", inv)</td>
+            <td class="text-end hr-num fw-bold pe-4">@l.Net.ToString("N3", inv)</td>
+        }
+        else
+        {
         <td class="hr-num fs-7">@(l.Iban ?? "—")@if (l.Problem is "NoIban" or "BadIban") { <span class="badge badge-light-danger ms-1">@(l.Problem == "NoIban" ? (isAr ? "مفقود" : "missing") : (isAr ? "غير صحيح" : "invalid"))</span> }</td>
         <td class="fs-7">@(l.BankName ?? "—")</td>
         <td class="text-end hr-num fw-bold pe-4">@l.Net.ToString("N3", inv)</td>
+        }
     </tr>
 }
