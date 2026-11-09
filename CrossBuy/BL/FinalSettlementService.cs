@@ -45,6 +45,11 @@ namespace CrossBuy.BL
 		public FinalSettlementService(CrossDbContext context, IJournalEntryService journals, ILeaveAccrualService leave)
 		{ _context = context; _journals = journals; _leave = leave; }
 
+		// The constructor DI picks (the greediest): with the workflow, a leaver's pending approvals move up (HrApprovalHandover).
+		private readonly ILeaveWorkflowService? _workflow;
+		public FinalSettlementService(CrossDbContext context, IJournalEntryService journals, ILeaveAccrualService leave, ILeaveWorkflowService workflow)
+			: this(context, journals, leave) { _workflow = workflow; }
+
 		private static decimal R(decimal v) => Math.Round(v, 2, MidpointRounding.AwayFromZero);
 
 		private async Task<int?> AccIdAsync(int companyId, string code) =>
@@ -187,6 +192,9 @@ namespace CrossBuy.BL
 					Year = terminationDate.Year, Days = b.RemainingDays, DailyRate = b.DailyRate, Amount = b.Amount,
 					EncashDate = terminationDate.Date, JournalEntryId = entry?.ID, CreatedAt = DateTime.UtcNow,
 				});
+
+			// an approver who leaves hands their pending approvals to the next active manager above them (staged; saved below)
+			if (_workflow != null) await CrossBuy.BL.Hr.HrApprovalHandover.StageAsync(_context, _workflow, employeeId);
 
 			// terminate the employee + close any active contract
 			emp.IsActive = false;
