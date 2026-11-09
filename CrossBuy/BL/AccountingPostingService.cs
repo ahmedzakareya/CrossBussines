@@ -21,6 +21,7 @@ namespace CrossBuy.BL
 		public decimal OvertimePay { get; set; }
 		public decimal LatePenalty { get; set; }
 		public decimal AbsencePenalty { get; set; }
+		public decimal SickLeaveDeduction { get; set; }   // the unpaid part of tiered leave days (Kuwait Art. 69 sick leave), HrLeavePay
 		public decimal SiEmployee { get; set; }
 		public decimal SiCompany { get; set; }
 		public decimal Tax { get; set; }
@@ -29,7 +30,7 @@ namespace CrossBuy.BL
 		public decimal LoanDeduction { get; set; }
 		public List<(int LoanId, decimal Amount)> LoanParts { get; set; } = new();
 		// expense charged to GL = earnings minus penalties (keeps the entry balanced without new accounts)
-		public decimal EarningExpense => Math.Round(Gross + OvertimePay - LatePenalty - AbsencePenalty, 2, MidpointRounding.AwayFromZero);
+		public decimal EarningExpense => Math.Round(Gross + OvertimePay - LatePenalty - AbsencePenalty - SickLeaveDeduction, 2, MidpointRounding.AwayFromZero);
 	}
 
 	public class PayrollRunPreview
@@ -48,6 +49,7 @@ namespace CrossBuy.BL
 		public decimal TotalTax { get; set; }
 		public decimal TotalNet { get; set; }
 		public decimal TotalLoanDeduction { get; set; }   // HR4: loan instalments deducted this month
+		public decimal TotalSickLeaveDeduction { get; set; }   // tiered leave: the unpaid part of approved days
 	}
 
 	// HR-4: accrued vs paid view of a payroll period (net to staff + statutory tax/SI to authorities)
@@ -155,6 +157,13 @@ namespace CrossBuy.BL
 			// legacy flat SalaryPolicies.OvertimeRate per hour stays exactly as it was.
 			var rulePack = (await new CrossBuy.BL.Hr.HrRulePackService(_context).EffectiveAsync(companyId))?.Rules;
 			// HR5: when the pack requires it, only APPROVED overtime is paid (per employee, per month, by day type)
+			// Tiered leave pay (Kuwait Art. 69 sick leave): the unpaid part of each approved day, at the employee's daily wage.
+			var leaveCuts = new Dictionary<int, CrossBuy.BL.Hr.LeavePayCut>();
+			if (rulePack is { WageDaysPerMonth: > 0 } lp)
+			{
+				var daily = payOf.ToDictionary(kv => kv.Key, kv => (CrossBuy.BL.Hr.HrRules.IsBasic(lp) ? kv.Value.Basic : kv.Value.Total) / lp.WageDaysPerMonth);
+				leaveCuts = await CrossBuy.BL.Hr.HrLeavePay.CutsAsync(_context, lp, companyId, year, month, daily);
+			}
 			var otApproved = rulePack?.Overtime.RequiresApproval == true
 				? await new CrossBuy.BL.Hr.HrOvertimeService(_context, _attendance).ApprovedAsync(companyId, year, month) : null;
 			// Nationals of the pack's country (for the "nationals" insurance lines): matched by CountriesLookup.CountryName.
@@ -254,7 +263,8 @@ namespace CrossBuy.BL
 					latePen = R(lateMin * sp.LatePenaltyPerMinute);
 					absPen = R(absDays * sp.AbsencePenaltyPerDay);
 				}
-				var net = R(gross + otPay - siEmp - tax - latePen - absPen);
+				var sickDed = leaveCuts.TryGetValue(e.ID, out var cut) ? R(cut.Amount) : 0m;
+				var net = R(gross + otPay - siEmp - tax - latePen - absPen - sickDed);
 				// HR4: loan instalments, oldest loan first, within the cap of the wage and never past the net pay
 				var loanParts = new List<(int LoanId, decimal Amount)>();
 				if (loansDue.TryGetValue(e.ID, out var dueLoans))
@@ -272,7 +282,7 @@ namespace CrossBuy.BL
 					CostCenterId = ccId, CostCenterName = ccId.HasValue ? costCenters.FirstOrDefault(c => c.ID == ccId)?.Name : null,
 					BaseSalary = R(pay.Basic), Allowances = allowances, Gross = gross,
 					LateMinutes = lateMin, OvertimeMinutes = otMin, AbsentDays = absDays,
-					OvertimePay = otPay, LatePenalty = latePen, AbsencePenalty = absPen,
+					OvertimePay = otPay, LatePenalty = latePen, AbsencePenalty = absPen, SickLeaveDeduction = sickDed,
 					SiEmployee = siEmp, SiCompany = siCo, Tax = tax, Net = net,
 					LoanDeduction = loanDed, LoanParts = loanParts,
 				});
@@ -287,6 +297,7 @@ namespace CrossBuy.BL
 			p.TotalTax = R(p.Employees.Sum(x => x.Tax));
 			p.TotalNet = R(p.Employees.Sum(x => x.Net));
 			p.TotalLoanDeduction = R(p.Employees.Sum(x => x.LoanDeduction));
+			p.TotalSickLeaveDeduction = R(p.Employees.Sum(x => x.SickLeaveDeduction));
 			return p;
 		}
 
@@ -363,7 +374,7 @@ namespace CrossBuy.BL
 					CompanyID = companyId, Year = year, Month = month, EmployeeID = x.EmployeeId, EmployeeName = x.Name, CostCenterId = x.CostCenterId,
 					BaseSalary = x.BaseSalary, Allowances = x.Allowances, OvertimePay = x.OvertimePay, GrossEarnings = R(x.Gross + x.OvertimePay),
 					LateMinutes = x.LateMinutes, LatePenalty = x.LatePenalty, AbsentDays = x.AbsentDays, AbsencePenalty = x.AbsencePenalty,
-					SiEmployee = x.SiEmployee, SiCompany = x.SiCompany, Tax = x.Tax, Net = x.Net, LoanDeduction = x.LoanDeduction,
+					SiEmployee = x.SiEmployee, SiCompany = x.SiCompany, Tax = x.Tax, Net = x.Net, LoanDeduction = x.LoanDeduction, SickLeaveDeduction = x.SickLeaveDeduction,
 					JournalEntryId = entry!.ID, CreatedAt = DateTime.UtcNow,
 				});
 			await _context.SaveChangesAsync();

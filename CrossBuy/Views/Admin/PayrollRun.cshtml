@@ -84,7 +84,7 @@
 
             <div class="row g-5 g-xl-8 mb-5">
                 @foreach (var s in new[] { (L("موظفون", "Employees"), p.Employees.Count.ToString(), "ki-people"), (L("الإجمالي", "Gross"), Money(p.TotalGross + p.TotalOvertime), "ki-dollar"),
-                                           (L("الخصومات", "Deductions"), Money(p.TotalSiEmployee + p.TotalTax + p.TotalLatePenalty + p.TotalAbsencePenalty + p.TotalLoanDeduction), "ki-minus-circle"),
+                                           (L("الخصومات", "Deductions"), Money(p.TotalSiEmployee + p.TotalTax + p.TotalLatePenalty + p.TotalAbsencePenalty + p.TotalLoanDeduction + p.TotalSickLeaveDeduction), "ki-minus-circle"),
                                            (L("الصافي", "Net"), Money(p.TotalNet), "ki-wallet"), (L("تأمينات الشركة", "Employer insurance"), Money(p.TotalSiCompany), "ki-bank") })
                 {
                     <div class="col-sm-6 col-xl"><div class="card card-flush h-100"><div class="card-body py-5">
@@ -110,12 +110,12 @@
                     <div class="table-responsive">
                         <table class="table align-middle gy-3 mb-0 hr-table">
                             <thead><tr class="fw-bold fs-8 text-uppercase text-muted">
-                                <th class="ps-4" style="min-width:200px">@L("الموظف", "Employee")</th><th class="text-end">@L("الأساسي", "Basic")</th><th class="text-end">@L("البدلات", "Allowances")</th><th class="text-end">@L("إضافي", "Overtime")</th><th class="text-end">@L("تأخير/غياب", "Late/absence")</th><th class="text-end">@L("تأمينات", "Insurance")</th><th class="text-end">@L("ضريبة", "Tax")</th><th class="text-end">@L("قسط قرض", "Loan")</th><th class="text-end pe-4">@L("الصافي", "Net")</th>
+                                <th class="ps-4" style="min-width:200px">@L("الموظف", "Employee")</th><th class="text-end">@L("الأساسي", "Basic")</th><th class="text-end">@L("البدلات", "Allowances")</th><th class="text-end">@L("إضافي", "Overtime")</th><th class="text-end">@L("تأخير/غياب", "Late/absence")</th><th class="text-end">@L("إجازة بأجر جزئي", "Part-paid leave")</th><th class="text-end">@L("تأمينات", "Insurance")</th><th class="text-end">@L("ضريبة", "Tax")</th><th class="text-end">@L("قسط قرض", "Loan")</th><th class="text-end pe-4">@L("الصافي", "Net")</th>
                             </tr></thead>
                             <tbody class="fs-6" id="rows"></tbody>
                             <tfoot><tr class="fw-bold fs-6 border-top">
                                 <td class="ps-4">@L("الإجمالي", "Total")</td><td class="text-end hr-num">@Money(p.Employees.Sum(e => e.BaseSalary))</td><td class="text-end hr-num">@Money(p.Employees.Sum(e => e.Allowances))</td><td class="text-end hr-num">@Money(p.TotalOvertime)</td>
-                                <td class="text-end hr-num">@Money(p.TotalLatePenalty + p.TotalAbsencePenalty)</td><td class="text-end hr-num">@Money(p.TotalSiEmployee)</td><td class="text-end hr-num">@Money(p.TotalTax)</td><td class="text-end hr-num">@Money(p.TotalLoanDeduction)</td><td class="text-end hr-num pe-4">@Money(p.TotalNet)</td>
+                                <td class="text-end hr-num">@Money(p.TotalLatePenalty + p.TotalAbsencePenalty)</td><td class="text-end hr-num">@Money(p.TotalSickLeaveDeduction)</td><td class="text-end hr-num">@Money(p.TotalSiEmployee)</td><td class="text-end hr-num">@Money(p.TotalTax)</td><td class="text-end hr-num">@Money(p.TotalLoanDeduction)</td><td class="text-end hr-num pe-4">@Money(p.TotalNet)</td>
                             </tr></tfoot>
                         </table>
                     </div>

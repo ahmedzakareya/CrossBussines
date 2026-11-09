@@ -67,7 +67,16 @@ namespace CrossBuy.BL.Hr
 		public string Accrual { get; set; } = "upfront";
 		/// Only employees of this religion ("Muslim" for Hajj in Kuwait); empty = everyone.
 		public string? Religion { get; set; }
+		/// Pay tiers within a year (Kuwait sick leave: 15 × 100%, 10 × 75%, 10 × 50%, 10 × 25%, 30 × 0%); empty = fully paid.
+		/// Payroll deducts the unpaid part of each approved day (HrLeavePay).
+		public List<HrPayTier> PayTiers { get; set; } = new();
 		public bool AccruesMonthly => string.Equals(Accrual, "monthly", StringComparison.OrdinalIgnoreCase);
+	}
+
+	public sealed class HrPayTier
+	{
+		public int Days { get; set; }
+		public decimal PaidPct { get; set; }
 	}
 
 	public static class HrLeaveMatch
@@ -238,6 +247,7 @@ namespace CrossBuy.BL.Hr
 			if (r.Leave.Any(l => l.Days < 0 || l.Days > 400)) return "Leave days must be between 0 and 400";
 			if (r.Leave.Any(l => string.IsNullOrWhiteSpace(l.NameAr) && string.IsNullOrWhiteSpace(l.NameEn))) return "Every leave type needs a name";
 			if (r.Leave.Any(l => l.MinServiceMonths is < 0 or > 600 || l.MaxTimesPerService is < 0 or > 50)) return "Leave eligibility figures are out of range";
+			if (r.Leave.Any(l => l.PayTiers.Any(t => t.Days is < 0 or > 400 || t.PaidPct is < 0 or > 100))) return "Leave eligibility figures are out of range";
 			if (r.Insurance.Any(i => string.IsNullOrWhiteSpace(i.NameAr) && string.IsNullOrWhiteSpace(i.NameEn))) return "Every insurance line needs a name";
 			if (r.Clearance.Any(c => string.IsNullOrWhiteSpace(c.NameAr) && string.IsNullOrWhiteSpace(c.NameEn))) return "Every clearance item needs a name";
 			if (r.Onboarding.Any(c => string.IsNullOrWhiteSpace(c.NameAr) && string.IsNullOrWhiteSpace(c.NameEn))) return "Every clearance item needs a name";
