@@ -1,0 +1,129 @@
+@model CrossBuy.Controllers.AdminController.BankDetailsPageModel
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    // Bank details from Excel — civil ID, IBAN and bank for many employees at once (2026-11-09).
+    ViewData["Title"] = "Bank details import";
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    string L(string ar, string en) => isAr ? ar : en;
+    var review = Model.Review;
+    string Cell(string? oldV, string? newV, bool mask = false)
+    {
+        string Show(string? v) => string.IsNullOrEmpty(v) ? "—" : (mask && v.Length > 8 ? v[..4] + "…" + v[^4..] : v);
+        return newV == null || newV == oldV ? Show(oldV) : Show(oldV) + (isAr ? " ← " : " → ") + Show(newV);
+    }
+}
+<link href="~/css/hr.css" rel="stylesheet" asp-append-version="true" />
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2">
+        <div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+            <div class="page-title d-flex flex-column justify-content-center gap-1">
+                <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@L("بيانات البنك من Excel", "Bank details from Excel")</h1>
+                <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                    <li class="breadcrumb-item text-muted"><a href="@Url.Action("Index", "Admin")" class="text-muted text-hover-primary">@SR["HumanResources"]</a></li>
+                    <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                    <li class="breadcrumb-item text-muted">@L("الرواتب والمستحقات", "Payroll")</li>
+                </ul>
+            </div>
+            <a href="@Url.Action("BankFile")" class="btn btn-sm btn-light"><i class="ki-outline ki-bank fs-4"></i>@L("ملف تحويل الرواتب", "Bank salary file")</a>
+        </div>
+    </div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid">
+        <div class="app-container container-fluid">
+            @if (TempData["HrErr"] is string err) { <div class="alert alert-danger d-flex align-items-center py-3 mb-5"><i class="ki-outline ki-information-5 fs-2 me-3 text-danger"></i>@err</div> }
+            @if (TempData["HrMsg"] is string msg) { <div class="alert alert-success d-flex align-items-center py-3 mb-5"><i class="ki-outline ki-check-circle fs-2 me-3 text-success"></i>@msg</div> }
+
+            <div class="hr-notice mb-5">
+                <i class="ki-outline ki-file-up fs-2"></i>
+                <div class="flex-grow-1">
+                    <div class="fw-bold">@L("الرقم المدني والـ IBAN والبنك لكل الموظفين مرة واحدة", "Civil ID, IBAN and bank for every employee at once")</div>
+                    <div class="fs-7">@L("نزّل النموذج (فيه كل الموظفين النشطين ببياناتهم الحالية)، املأ الخانات الناقصة، ثم ارفعه. ستراجع كل تغيير قبل حفظه؛ الخانة الفارغة تُبقي القيمة الحالية، والاستيراد لا يمسح شيئاً. كل تغيير يُسجَّل في سجل الموظف.",
+                        "Download the template (every active employee with today's values), fill in what is missing, then upload it. You review every change before it is saved; a blank cell keeps the current value and the import never clears anything. Every change goes into the employee's history.")</div>
+                </div>
+            </div>
+
+            <div class="row g-5 g-xl-8 mb-5">
+                <div class="col-md-4"><div class="card h-100"><div class="card-body d-flex flex-column gap-2 py-5">
+                    <i class="ki-outline ki-people fs-2x text-primary"></i><span class="text-muted fs-7">@L("موظفون نشطون", "Active employees")</span><span class="fw-bold fs-3 hr-num">@Model.Active</span></div></div></div>
+                <div class="col-md-4"><div class="card h-100"><div class="card-body d-flex flex-column gap-2 py-5">
+                    <i class="ki-outline ki-information-2 fs-2x text-primary"></i><span class="text-muted fs-7">@L("ينقصهم IBAN أو رقم مدني", "Missing an IBAN or civil ID")</span><span class="fw-bold fs-3 hr-num @(Model.Missing > 0 ? "text-danger" : "")">@Model.Missing</span></div></div></div>
+                <div class="col-md-4"><div class="card h-100"><div class="card-body d-flex flex-column justify-content-center gap-3 py-5">
+                    <a href="@Url.Action("BankDetailsTemplate")" class="btn btn-light-primary"><i class="ki-outline ki-file-down fs-3"></i>@L("١. تنزيل النموذج", "1. Download the template")</a>
+                    <form asp-action="BankDetailsUpload" method="post" enctype="multipart/form-data" class="d-flex gap-2">
+                        @Html.AntiForgeryToken()
+                        <input type="file" name="file" accept=".xlsx" class="form-control form-control-sm form-control-solid" required />
+                        <button type="submit" class="btn btn-sm btn-primary text-nowrap"><i class="ki-outline ki-file-up fs-4"></i>@L("٢. رفع ومراجعة", "2. Upload & review")</button>
+                    </form>
+                </div></div></div>
+            </div>
+
+            @if (review != null)
+            {
+                var changes = review.Where(r => r.IsChange).ToList();
+                var errors = review.Count(r => r.IsError);
+                <div class="card mb-5">
+                    <div class="card-header min-h-60px">
+                        <div class="card-title flex-column">
+                            <span class="fw-bold">@L("مراجعة: ", "Review: ")<bdi>@Model.FileName</bdi></span>
+                            <span class="text-muted fs-7 mt-1">@L($"{changes.Count} تغيير · {errors} خطأ · {review.Count - changes.Count - errors} بلا تغيير", $"{changes.Count} change(s) · {errors} error(s) · {review.Count - changes.Count - errors} unchanged")</span>
+                        </div>
+                        <div class="card-toolbar gap-2">
+                            <input type="text" id="rv_q" class="form-control form-control-sm form-control-solid w-200px" placeholder="@L("بحث…", "Search…")" autocomplete="off" />
+                            @if (changes.Count > 0)
+                            {
+                                <form asp-action="BankDetailsApply" method="post" class="d-inline" data-cb-confirm data-cb-action="generic"
+                                      data-cb-text="@L($"حفظ تغييرات {changes.Count} موظف؟", $"Save the changes for {changes.Count} employee(s)?")">
+                                    @Html.AntiForgeryToken()
+                                    @foreach (var c in changes)
+                                    {
+                                        <input type="hidden" name="empId" value="@c.EmployeeId" /><input type="hidden" name="civil" value="@c.NewCivilId" />
+                                        <input type="hidden" name="iban" value="@c.NewIban" /><input type="hidden" name="bank" value="@c.NewBank" />
+                                    }
+                                    <button class="btn btn-sm btn-primary"><i class="ki-outline ki-check fs-4"></i>@L($"٣. حفظ {changes.Count} تغيير", $"3. Save {changes.Count} change(s)")</button>
+                                </form>
+                            }
+                        </div>
+                    </div>
+                    <div class="card-body pt-2">
+                        <div class="table-responsive">
+                            <table class="table align-middle table-row-dashed fs-7 gy-3 mb-0" id="rv_table">
+                                <thead><tr class="text-muted fw-bold fs-8 text-uppercase"><th>@L("سطر", "Row")</th><th>@L("الموظف", "Employee")</th><th>@L("الرقم المدني", "Civil ID")</th><th>IBAN</th><th>@L("البنك", "Bank")</th><th>@L("الحالة", "Status")</th></tr></thead>
+                                <tbody>
+                                    @foreach (var r in review)
+                                    {
+                                        <tr class="@(r.IsError ? "bg-light-danger" : "")">
+                                            <td class="hr-num text-muted">@r.RowNo</td>
+                                            <td class="fw-semibold">@if (r.Name != null) { <bdi>@r.Name</bdi> } else { <span class="hr-num">#@r.EmployeeId</span> }</td>
+                                            <td class="hr-num">@Cell(r.OldCivilId, r.NewCivilId)</td>
+                                            <td class="hr-num">@Cell(r.OldIban, r.NewIban, mask: true)</td>
+                                            <td>@Cell(r.OldBank, r.NewBank)</td>
+                                            <td>@if (r.IsError) { <span class="badge badge-light-danger">@(isAr ? r.ErrorAr : r.ErrorEn)</span> }
+                                                else if (r.IsChange) { <span class="badge badge-light-primary">@L("تغيير", "Change")</span> }
+                                                else { <span class="badge badge-light">@L("بلا تغيير", "Unchanged")</span> }</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+(function () {
+    // The review is one uploaded file held only in this page (nothing is stored until it is confirmed), so it is
+    // filtered here rather than by a server list.
+    var q = document.getElementById('rv_q'); if (!q) return;
+    q.addEventListener('input', function () {
+        var t = q.value.trim().toLowerCase();
+        document.querySelectorAll('#rv_table tbody tr').forEach(function (tr) { tr.classList.toggle('d-none', !!t && tr.innerText.toLowerCase().indexOf(t) < 0); });
+    });
+})();
+</script>
+}

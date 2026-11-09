@@ -28,7 +28,7 @@
     var dependants = ViewBag.Dependants as List<CrossBuy.Models.Context.Admin.EmployeeDependant> ?? new();
     var history = ViewBag.History as List<CrossBuy.Controllers.AdminController.ProfileHistoryRow> ?? new();
     var relations = new Dictionary<string, (string ar, string en)> { ["Spouse"] = ("زوج/زوجة", "Spouse"), ["Son"] = ("ابن", "Son"), ["Daughter"] = ("ابنة", "Daughter"), ["Father"] = ("أب", "Father"), ["Mother"] = ("أم", "Mother"), ["Other"] = ("أخرى", "Other") };
-    var fields = new Dictionary<string, (string ar, string en)> { ["Hire"] = ("تعيين", "Hire"), ["JobTitle"] = ("المسمى الوظيفي", "Job title"), ["Branch"] = ("الفرع", "Branch"), ["Department"] = ("الإدارة", "Department"), ["EmploymentType"] = ("نوع التوظيف", "Employment type") };
+    var fields = new Dictionary<string, (string ar, string en)> { ["Hire"] = ("تعيين", "Hire"), ["JobTitle"] = ("المسمى الوظيفي", "Job title"), ["Branch"] = ("الفرع", "Branch"), ["Department"] = ("الإدارة", "Department"), ["EmploymentType"] = ("نوع التوظيف", "Employment type"), ["CivilId"] = ("الرقم المدني", "Civil ID"), ["Iban"] = ("IBAN", "IBAN"), ["BankName"] = ("البنك", "Bank") };
     var expiring = m.Documents.Count(d => d.Expiry.HasValue && (d.Expiry.Value.Date - today).TotalDays <= 60);
 }
 <link href="~/css/hr.css" rel="stylesheet" asp-append-version="true" />

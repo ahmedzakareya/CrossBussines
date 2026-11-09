@@ -85,7 +85,8 @@
             @if (Model.ProblemLines.Count > 0)
             {
                 <div class="card mb-5 border border-danger border-dashed">
-                    <div class="card-header min-h-60px"><div class="card-title fw-bold text-danger"><i class="ki-outline ki-information-2 fs-2 text-danger me-2"></i>@L("لن يدخلوا الملف حتى تُصحَّح بياناتهم", "Left out of the file until their data is fixed")</div></div>
+                    <div class="card-header min-h-60px"><div class="card-title fw-bold text-danger"><i class="ki-outline ki-information-2 fs-2 text-danger me-2"></i>@L("لن يدخلوا الملف حتى تُصحَّح بياناتهم", "Left out of the file until their data is fixed")</div>
+                        <div class="card-toolbar"><a href="@Url.Action("BankDetails")" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-file-up fs-4"></i>@L("إدخال الكل من Excel", "Fill them all from Excel")</a></div></div>
                     <div class="card-body pt-2">
                         <table class="table align-middle table-row-dashed fs-7 gy-3 mb-0">
                             <thead><tr class="text-muted fw-bold fs-8 text-uppercase"><th>@L("الموظف", "Employee")</th><th>@L("المشكلة", "Problem")</th><th class="text-end">@L("الصافي", "Net")</th><th></th></tr></thead>
@@ -226,6 +227,7 @@ cbServerList({
         var d = form.delimiter.value === 'tab' ? '\t' : form.delimiter.value, rows = [];
         var cols = [].map.call(body.querySelectorAll('tr'), function (tr) { return { f: tr.querySelector('[data-col-field]').value, h: tr.querySelector('[name=colHeader]').value, v: tr.querySelector('[data-col-value]').value }; });
         sample.Net = (1234.5).toFixed(Math.max(0, Math.min(3, +form.decimalPlaces.value || 0)));
+        sample.PaymentDate = (form.dateFormat.value || 'dd/MM/yyyy').replace('yyyy', '@pay.ToString("yyyy")').replace('MM', '@pay.ToString("MM")').replace('dd', '@pay.ToString("dd")');
         if (form.headerRow.checked) rows.push(cols.map(function (c) { return c.h; }).join(d));
         rows.push(cols.map(function (c) { return c.f === 'Constant' ? c.v : (sample[c.f] || ''); }).join(d));
         if (form.trailerRow.value === 'CountTotal') rows.push(['TOTAL', '1', sample.Net].join(d));
