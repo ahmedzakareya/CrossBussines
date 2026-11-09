@@ -80,3 +80,8 @@
 .lv-sick { background: var(--cb-blue-300, #7DA9FF); }
 .lv-pending { background: repeating-linear-gradient(45deg, var(--cb-blue-100, #D0E1FF), var(--cb-blue-100, #D0E1FF) 4px, #fff 4px, #fff 8px); border: 1px solid var(--cb-brand, #3A5795); }
 .lv-swatch { display: inline-block; width: 14px; height: 14px; border-radius: 4px; vertical-align: middle; }
+
+/* Approval path designer: the flow of steps (prototype #/workflow). */
+.wf-step { border: 1px solid var(--bs-gray-200); border-radius: .75rem; padding: .8rem 1rem; background: var(--bs-body-bg); min-width: 170px; }
+.wf-step.wf-final { border-color: var(--cb-brand, #3A5795); }
+.wf-arrow { color: var(--cb-blue-300, #7DA9FF); font-size: 1.6rem; align-self: center; }

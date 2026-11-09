@@ -1,0 +1,193 @@
+@model CrossBuy.Controllers.AdminController.ApprovalPathsPageModel
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    // HR — approval path designer (HR prototype #/workflow, adopted 2026-11-09).
+    ViewData["Title"] = "Approval paths";
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    string L(string ar, string en) => isAr ? ar : en;
+    string Levels(int n) => n <= 0 ? L("كل المديرين حتى رئيس الوحدة", "Every manager up to the unit head")
+        : n == 1 ? L("المدير المباشر", "Direct manager") : L($"أول {n} مستويات من المديرين", $"The first {n} manager levels");
+    var configured = Model.Rows.Select(r => r.Path.Kind + ":" + r.Path.LeaveTypeID).ToHashSet();
+}
+<link href="~/css/hr.css" rel="stylesheet" asp-append-version="true" />
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2">
+        <div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+            <div class="page-title d-flex flex-column justify-content-center gap-1">
+                <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@L("مصمم مسارات الموافقة", "Approval path designer")</h1>
+                <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                    <li class="breadcrumb-item text-muted"><a href="@Url.Action("Index", "Admin")" class="text-muted text-hover-primary">@SR["HumanResources"]</a></li>
+                    <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                    <li class="breadcrumb-item text-muted">@L("الإعدادات", "Settings")</li>
+                </ul>
+            </div>
+            @if (Model.CanEdit) { <button type="button" class="btn btn-sm btn-primary" data-path-new><i class="ki-outline ki-plus fs-4"></i>@L("مسار جديد", "New path")</button> }
+        </div>
+    </div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid">
+        <div class="app-container container-fluid">
+            @if (TempData["HrErr"] is string err) { <div class="alert alert-danger d-flex align-items-center py-3 mb-5"><i class="ki-outline ki-information-5 fs-2 me-3 text-danger"></i>@err</div> }
+            @if (TempData["HrMsg"] is string msg) { <div class="alert alert-success d-flex align-items-center py-3 mb-5"><i class="ki-outline ki-check-circle fs-2 me-3 text-success"></i>@msg</div> }
+
+            <div class="hr-notice mb-5">
+                <i class="ki-outline ki-route fs-2"></i>
+                <div class="flex-grow-1">
+                    <div class="fw-bold">@L("مسارات موافقة تُصمم ولا تُبرمج", "Approval paths you design, not code")</div>
+                    <div class="fs-7">@L("الهيكل التنظيمي يحدد من هم المديرون. المسار يحدد لكل نوع طلب كم مستوى منهم يعتمد، ومتى يكفي المدير المباشر، ومن يعتمد أخيراً من الموارد البشرية. نوع بلا مسار يمر على سلسلة المديرين كاملة كما هو اليوم. التغيير يسري على الطلبات الجديدة فقط.",
+                        "The org structure decides who the managers are. A path decides, per request kind, how many of them approve, when the direct manager is enough, and who in HR approves last. A kind with no path goes through the full manager chain, as today. A change applies to new requests only.")</div>
+                </div>
+            </div>
+
+            @if (Model.Rows.Count == 0)
+            {
+                <div class="card mb-5"><div class="card-body text-center py-12">
+                    <i class="ki-outline ki-route fs-3x text-gray-400 mb-4"></i>
+                    <div class="fw-bold fs-5 mb-1">@L("لا توجد مسارات مصممة بعد", "No paths designed yet")</div>
+                    <div class="text-muted fs-7">@L("كل الطلبات تمر على سلسلة المديرين كاملة حتى رئيس الوحدة.", "Every request goes through the full manager chain up to the unit head.")</div>
+                </div></div>
+            }
+            @foreach (var r in Model.Rows)
+            {
+                var p = r.Path;
+                <div class="card mb-5 @(p.IsActive ? "" : "opacity-75")">
+                    <div class="card-header min-h-60px">
+                        <div class="card-title d-flex align-items-center gap-2">
+                            <span class="fw-bold">@L("مسار: ", "Path: ")@(isAr ? r.KindAr : r.KindEn)@if (r.LeaveTypeAr != null) {<span class="text-muted fw-semibold ms-1">· @(isAr ? r.LeaveTypeAr : r.LeaveTypeEn)</span>}</span>
+                            @if (!p.IsActive) { <span class="badge badge-light fs-8">@L("موقوف", "Off")</span> }
+                        </div>
+                        @if (Model.CanEdit)
+                        {
+                            <div class="card-toolbar gap-2">
+                                <button type="button" class="btn btn-sm btn-light" data-path-edit data-id="@p.ID" data-kind="@p.Kind" data-leave="@p.LeaveTypeID" data-levels="@p.ManagerLevels"
+                                        data-direct="@p.DirectOnlyUpToDays" data-final="@p.FinalApproverEmployeeID" data-active="@(p.IsActive ? "1" : "0")"><i class="ki-outline ki-pencil fs-5"></i>@L("تعديل", "Edit")</button>
+                                <form asp-action="DeleteApprovalPath" method="post" class="d-inline" data-cb-confirm data-cb-action="generic"
+                                      data-cb-text="@L("حذف المسار؟ يعود هذا النوع إلى سلسلة المديرين كاملة.", "Remove the path? This kind goes back to the full manager chain.")">
+                                    @Html.AntiForgeryToken()<input type="hidden" name="id" value="@p.ID" />
+                                    <button class="btn btn-sm btn-light-danger"><i class="ki-outline ki-trash fs-5"></i>@L("حذف", "Remove")</button>
+                                </form>
+                            </div>
+                        }
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex flex-wrap gap-3">
+                            <div class="wf-step"><div class="d-flex align-items-center gap-2 mb-1"><i class="ki-outline ki-user fs-2 text-primary"></i><span class="fw-bold">@L("مقدم الطلب", "Requester")</span></div><div class="text-muted fs-8">@L("موظف", "Employee")</div></div>
+                            <div class="wf-arrow"><i class="ki-outline @(isAr ? "ki-arrow-left" : "ki-arrow-right") fs-1"></i></div>
+                            <div class="wf-step"><div class="d-flex align-items-center gap-2 mb-1"><i class="ki-outline ki-people fs-2 text-primary"></i><span class="fw-bold">@Levels(p.ManagerLevels)</span></div>
+                                <div class="text-muted fs-8">@(p.DirectOnlyUpToDays > 0 ? L($"المدير المباشر فقط حتى {p.DirectOnlyUpToDays} أيام", $"Direct manager only up to {p.DirectOnlyUpToDays} days") : L("من الهيكل التنظيمي", "From the org structure"))</div></div>
+                            @if (r.Final != null)
+                            {
+                                <div class="wf-arrow"><i class="ki-outline @(isAr ? "ki-arrow-left" : "ki-arrow-right") fs-1"></i></div>
+                                <div class="wf-step wf-final"><div class="d-flex align-items-center gap-2 mb-1">
+                                    <div class="symbol symbol-30px symbol-circle flex-shrink-0">@if (r.Final.Photo != null) { <img src="@r.Final.Photo" alt="" /> } else { <span class="symbol-label fw-bold fs-9 hr-initials">@r.Final.Initials</span> }</div>
+                                    <span class="fw-bold"><bdi>@r.Final.Name</bdi></span></div>
+                                    <div class="text-muted fs-8">@L("الموارد البشرية · الاعتماد النهائي", "Human resources · final approval")</div></div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+
+            @if (Model.CanEdit)
+            {
+                <div class="card mb-5 d-none" id="path_form_card">
+                    <div class="card-header min-h-60px"><div class="card-title fw-bold" id="path_form_title">@L("مسار جديد", "New path")</div></div>
+                    <div class="card-body">
+                        <form asp-action="SaveApprovalPath" method="post" id="path_form">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="0" />
+                            <div class="row g-5">
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold">@L("نوع الطلب", "Request kind")</label>
+                                    <select name="kind" class="form-select form-select-solid" data-control="select2" data-hide-search="true">
+                                        @foreach (var k in CrossBuy.BL.Hr.HrApprovalKinds.All) { var n = CrossBuy.BL.Hr.HrApprovalKinds.Name(k); <option value="@k">@(isAr ? n.Ar : n.En)</option> }
+                                    </select>
+                                </div>
+                                <div class="col-md-4" data-leave-only>
+                                    <label class="form-label fw-semibold">@L("نوع الإجازة", "Leave type")</label>
+                                    <select name="leaveTypeId" class="form-select form-select-solid" data-control="select2">
+                                        <option value="">@L("كل أنواع الإجازات", "Every leave type")</option>
+                                        @foreach (var t in Model.LeaveTypes) { <option value="@t.Id">@(isAr ? t.Ar : t.En)</option> }
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold">@L("مستويات المديرين", "Manager levels")</label>
+                                    <input type="number" name="managerLevels" min="0" max="20" value="0" class="form-control form-control-solid hr-num" />
+                                    <div class="form-text">@L("0 = كل المديرين حتى رئيس الوحدة", "0 = every manager up to the unit head")</div>
+                                </div>
+                                <div class="col-md-4" data-leave-only>
+                                    <label class="form-label fw-semibold">@L("المدير المباشر فقط حتى (أيام)", "Direct manager only up to (days)")</label>
+                                    <input type="number" name="directOnlyUpToDays" min="0" max="365" value="0" class="form-control form-control-solid hr-num" />
+                                    <div class="form-text">@L("0 = لا يُطبَّق", "0 = off")</div>
+                                </div>
+                                <div class="col-md-5">
+                                    <label class="form-label fw-semibold">@L("المعتمِد النهائي من الموارد البشرية", "Final approver from HR")</label>
+                                    <select name="finalApproverEmployeeId" class="form-select form-select-solid" data-person-select>
+                                        <option value="">@L("بدون", "None")</option>
+                                        @foreach (var e in Model.People) { <option value="@e.Id" data-photo="@e.Photo" data-initials="@e.Initials">@e.Name</option> }
+                                    </select>
+                                </div>
+                                <div class="col-md-3 d-flex align-items-end">
+                                    <label class="form-check form-switch form-check-custom form-check-solid mb-3">
+                                        <input class="form-check-input" type="checkbox" name="isActive" value="true" checked />
+                                        <span class="form-check-label fw-semibold">@L("مفعّل", "Active")</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-end gap-2 mt-6">
+                                <button type="button" class="btn btn-light" data-path-cancel>@L("إلغاء", "Cancel")</button>
+                                <button type="submit" class="btn btn-primary"><i class="ki-outline ki-check fs-4"></i>@L("حفظ", "Save")</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            }
+
+            <div class="card mb-5">
+                <div class="card-header min-h-60px"><div class="card-title fw-bold">@L("قواعد ثابتة لا يغيرها أحد", "Fixed safeguards nobody can switch off")</div></div>
+                <div class="card-body pt-2">
+                    <table class="table align-middle table-row-dashed fs-7 gy-3 mb-0">
+                        <thead><tr class="text-muted fw-bold fs-8 text-uppercase"><th class="w-40">@L("الحالة", "Situation")</th><th>@L("ما يحدث", "What happens")</th></tr></thead>
+                        <tbody>
+                            <tr><td class="fw-semibold">@L("المدير في إجازة", "Manager on leave")</td><td>@L("يذهب الطلب إلى المفوَّض عنه تلقائياً (التفويض).", "The request goes to their delegate automatically (delegation).")</td></tr>
+                            <tr><td class="fw-semibold">@L("المدير انتهت خدمته", "Manager has left")</td><td>@L("يُتخطى إلى المدير الأعلى، وطلباته المعلقة تنتقل عند ترحيل المخالصة.", "Skipped to the next manager up; their pending requests move on when the settlement posts.")</td></tr>
+                            <tr><td class="fw-semibold">@L("مقدم الطلب هو المعتمِد", "The requester is an approver")</td><td>@L("لا يعتمد أحد طلبه بنفسه؛ يُتخطى.", "Nobody approves their own request; skipped.")</td></tr>
+                            <tr><td class="fw-semibold">@L("نفس الشخص في مستويين", "The same person at two levels")</td><td>@L("يعتمد مرة واحدة فقط.", "Approves once only.")</td></tr>
+                            <tr><td class="fw-semibold">@L("هيكل تنظيمي مكسور", "A broken org structure")</td><td>@L("يُرفض الطلب ولا يُعتمد تلقائياً؛ المسار لا يصلح هيكلاً مكسوراً.", "The request is refused, never auto-approved; a path does not repair a broken structure.")</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@await Html.PartialAsync("_PersonSelect")
+@if (Model.CanEdit)
+{
+    <script>
+        (function () {
+            var card = document.getElementById('path_form_card'), form = document.getElementById('path_form');
+            var title = document.getElementById('path_form_title');
+            function setSel(name, v) { var s = form.querySelector('[name="' + name + '"]'); s.value = v == null ? '' : String(v); if (window.jQuery) jQuery(s).trigger('change'); }
+            function leaveOnly() { var leave = form.querySelector('[name="kind"]').value === 'Leave'; form.querySelectorAll('[data-leave-only]').forEach(function (d) { d.classList.toggle('d-none', !leave); }); }
+            function open(d) {
+                form.querySelector('[name="id"]').value = d.id || 0;
+                setSel('kind', d.kind || 'Leave'); setSel('leaveTypeId', d.leave || ''); setSel('finalApproverEmployeeId', d.final || '');
+                form.querySelector('[name="managerLevels"]').value = d.levels || 0;
+                form.querySelector('[name="directOnlyUpToDays"]').value = d.direct || 0;
+                form.querySelector('[name="isActive"]').checked = d.active !== '0';
+                title.textContent = d.id ? '@L("تعديل المسار", "Edit path")' : '@L("مسار جديد", "New path")';
+                leaveOnly(); card.classList.remove('d-none'); card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+            document.querySelectorAll('[data-path-new]').forEach(function (b) { b.addEventListener('click', function () { open({}); }); });
+            document.querySelectorAll('[data-path-edit]').forEach(function (b) { b.addEventListener('click', function () { open(b.dataset); }); });
+            document.querySelector('[data-path-cancel]').addEventListener('click', function () { card.classList.add('d-none'); });
+            if (window.CB && CB.onSelectChange) CB.onSelectChange(form.querySelector('[name="kind"]'), leaveOnly);
+            else if (window.jQuery) jQuery(form.querySelector('[name="kind"]')).on('change', leaveOnly);
+            leaveOnly();
+        })();
+    </script>
+}

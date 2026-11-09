@@ -519,6 +519,7 @@
 }
 				new() { LabelAr = "الإجازات", LabelEn = "Leave", Action = "Leave", Controller = "Admin" },   // HR leave overview (prototype design, 2026-11-08)
 				new() { LabelAr = "حزمة قواعد الدولة", LabelEn = "Country rule pack", Action = "HrRules", Controller = "Admin" },   // every legal figure as a setting (2026-11-08)
+				new() { LabelAr = "مسارات الموافقة", LabelEn = "Approval paths", Action = "ApprovalPaths", Controller = "Admin" },   // approval paths you design, not code (2026-11-09)
 				new() { LabelAr = "القروض والسلف", LabelEn = "Loans & advances", Action = "Loans", Controller = "Admin" },   // HR4: loans with the legal deduction cap (2026-11-08)
 				new() { LabelAr = "اعتماد العمل الإضافي", LabelEn = "Overtime approval", Action = "Overtime", Controller = "Admin" },   // HR5: overtime approved before pay, within the yearly cap (2026-11-08)
 				new() { LabelAr = "جدول ساعات العمل", LabelEn = "Working-hours schedule", Action = "WorkingHours", Controller = "Admin" },   // the Ashal schedule (Kuwait Resolution 15/2025), 2026-11-09

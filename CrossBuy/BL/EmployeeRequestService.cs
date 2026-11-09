@@ -243,6 +243,8 @@ namespace CrossBuy.BL
 			// hierarchy that cannot be trusted produces no request, no business fact and no work.
 			if (chain.Count == 0 && (chainResult.HierarchyDefect || !chainResult.RequesterIsVerifiedRoot))
 				return (false, "The approval chain for this employee cannot be determined — the organisation structure is not correct. Please contact HR.", null);
+			// the company's designed approval path for this request kind (after the refusal test, as on the leave path)
+			chain = await new CrossBuy.BL.Hr.HrApprovalPathService(_context).ApplyAsync(draft.RequestType, null, null, draft.EmployeeID, chain);
 			draft.CreatedAt = DateTime.UtcNow;
 			draft.CreatedBy = draft.EmployeeID;
 			if (chain.Count == 0)

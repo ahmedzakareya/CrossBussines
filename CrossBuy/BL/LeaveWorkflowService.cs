@@ -432,6 +432,9 @@ namespace CrossBuy.BL
 			// A verified root keeps exactly the behaviour it has today; only the unproven case changes.
 			if (chain.Count == 0 && (chainResult.HierarchyDefect || !chainResult.RequesterIsVerifiedRoot))
 				return (false, "The approval chain for this employee cannot be determined — the organisation structure is not correct. Please contact HR.", null);
+			// The company's designed approval path shapes the chain (levels, short-leave rule, HR final approver) AFTER the
+			// refusal test above, so a broken org tree is still refused and never "fixed" by a path.
+			chain = await new CrossBuy.BL.Hr.HrApprovalPathService(_context).ApplyAsync(CrossBuy.BL.Hr.HrApprovalKinds.Leave, leaveTypeId, days, employeeId, chain);
 
 			await using var tx = await ScopedTx.BeginOrJoinAsync(_context);
 
