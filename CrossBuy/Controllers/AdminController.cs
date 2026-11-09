@@ -159,6 +159,8 @@ namespace CrossBuy.Controllers
 			var termDate = terminationDate ?? DateTime.Today;
 			ViewBag.TermDate = termDate;
 			if (employeeId.HasValue) ViewBag.Preview = await SettleSvc.PreviewAsync(hrCompany, employeeId.Value, termDate);
+			// End-of-service clearance (2026-11-09): each checklist item's follow-up task, so the settlement is posted knowingly.
+			if (employeeId.HasValue) ViewBag.Clearance = await new CrossBuy.BL.Hr.HrClearanceService(Db).StatusAsync(hrCompany, employeeId.Value);
 			// HR prototype design (2026-11-08): the selected person shown with their photo and title.
 			if (employeeId.HasValue)
 			{

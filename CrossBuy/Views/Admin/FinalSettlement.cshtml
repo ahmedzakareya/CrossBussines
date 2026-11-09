@@ -83,6 +83,28 @@
 
             @if (selEmp.HasValue && pv != null)
             {
+                var clearance = (ViewBag.Clearance as System.Collections.IEnumerable)?.Cast<dynamic>().ToList() ?? new List<dynamic>();
+                int clearOpen = clearance.Count(c => c.TaskId != null && !(bool)c.Done), clearMissing = clearance.Count(c => c.TaskId == null);
+                <div class="card mb-5">
+                    <div class="card-header border-0 pt-6 flex-wrap gap-3">
+                        <div class="card-title flex-column m-0"><span class="fw-bold text-gray-900 fs-4">@L("إخلاء الطرف", "Clearance")</span>
+                            <span class="text-muted fs-7 mt-1">@(clearMissing == clearance.Count ? L("لم يبدأ بعد — كل بند يصبح مهمة مرتبطة بملف الموظف.", "Not started — each item becomes a task on the employee's record.")
+                                : clearOpen + clearMissing == 0 ? L("كل البنود منجزة.", "Every item is done.") : L("بنود مفتوحة: ", "Open items: ") + (clearOpen + clearMissing))</span></div>
+                        @if (clearMissing > 0 && !pv.AlreadyTerminated)
+                        {
+                            <form asp-action="StartClearance" method="post" class="card-toolbar">@Html.AntiForgeryToken()<input type="hidden" name="employeeId" value="@selEmp" /><input type="hidden" name="terminationDate" value="@termDate.ToString("yyyy-MM-dd")" />
+                                <button class="btn btn-sm btn-light-primary"><i class="ki-outline ki-check-square fs-4"></i>@L("بدء إخلاء الطرف", "Start clearance")</button></form>
+                        }
+                    </div>
+                    <div class="card-body pt-2"><div class="d-flex flex-wrap gap-3">
+                        @foreach (var c in clearance)
+                        {
+                            string name = isAr ? (string)c.Item.NameAr : (string)c.Item.NameEn;
+                            if (c.TaskId == null) { <span class="badge badge-light fs-7 fw-semibold py-3 px-4">@name</span> }
+                            else { <a href="@Url.Action("Detail", "Tasks", new { id = (int)c.TaskId })" class="badge @((bool)c.Done ? "badge-light-success" : "badge-light-primary") fs-7 fw-semibold py-3 px-4">@if ((bool)c.Done) { <i class="ki-outline ki-check fs-6 me-1"></i> }@name</a> }
+                        }
+                    </div></div>
+                </div>
                 if (pv.AlreadyTerminated)
                 {
                     <div class="hr-notice mb-5"><i class="ki-outline ki-information-5 fs-2"></i><div><div class="fw-bold">@L("انتهت خدمة هذا الموظف", "This employee's service has already ended")</div><div class="fs-7">@L("الموظف غير نشط، والمخالصة لا تُرحَّل مرتين.", "The employee is inactive, and a settlement is never posted twice.")</div></div></div>

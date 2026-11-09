@@ -1,0 +1,25 @@
+@model CrossBuy.Controllers.AdminController.GratuityRowsModel
+@{
+    // One page of the gratuity provision (AdminController.GratuityProvisionData), injected by cbServerList.
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+    string Initials(string? name) { var p = (name ?? "?").Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries); return p.Length == 0 ? "?" : string.Concat(p.Take(2).Select(w => w[0])).ToUpperInvariant(); }
+}
+@foreach (var r in Model.Rows)
+{
+    var photo = Model.Photos.TryGetValue(r.EmployeeId, out var ph) ? ph : null;
+    <tr>
+        <td class="ps-4">
+            <div class="d-flex align-items-center min-w-0">
+                <div class="symbol symbol-30px symbol-circle flex-shrink-0">
+                    @if (photo != null) { <img src="@photo" alt="" /> } else { <span class="symbol-label fw-bold fs-9 hr-initials">@Initials(r.Name)</span> }
+                </div>
+                <a href="@Url.Action("FinalSettlement", "Admin", new { employeeId = r.EmployeeId })" class="ms-2 text-gray-900 text-hover-primary fw-bold fs-7 text-truncate"><bdi>@r.Name</bdi></a>
+            </div>
+        </td>
+        <td class="hr-num">@r.Joined.ToString("yyyy-MM-dd")</td>
+        <td class="text-end hr-num">@r.Years.ToString("0.00", inv)</td>
+        <td class="text-end hr-num">@r.Wage.ToString("N3", inv)</td>
+        <td class="text-end hr-num fw-bold pe-4">@r.Amount.ToString("N3", inv)</td>
+    </tr>
+}

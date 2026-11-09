@@ -35,6 +35,15 @@ namespace CrossBuy.BL.Hr
 			return new LoanCap(pack?.LoanCapPct ?? 0, pack?.LoanReference, pack != null && HrRules.IsBasic(pack));
 		}
 
+		/// Arabic agreement for a count of months: شهر واحد · شهران · ٣–١٠ أشهر · ١١+ شهراً.
+		public static string MonthsAr(int n) => n switch
+		{
+			1 => "شهر واحد",
+			2 => "شهرين",
+			>= 3 and <= 10 => $"{n} أشهر",
+			_ => $"{n} شهراً",
+		};
+
 		public async Task<int?> LoanAccountAsync(int companyId, CancellationToken ct = default)
 			=> await _db.PostingRules.AsNoTracking().Where(r => r.CompanyID == companyId && r.SourceType == "Payroll" && r.ComponentCode == RuleComponent)
 				.Select(r => r.CreditAccountId ?? r.DebitAccountId).FirstOrDefaultAsync(ct);
@@ -85,7 +94,7 @@ namespace CrossBuy.BL.Hr
 						return (false, $"أقساط هذا الموظف الحالية ({running:0.###}) تستنفد سقف الاستقطاع {cap.Pct:0.##}% من الأجر{art} = {capAmount:0.###}. لا يمكن إضافة قسط جديد حتى يُسدَّد ما عليه.",
 							$"This employee's running instalments ({running:0.###}) already use the {cap.Pct:0.##}% deduction cap{art} = {capAmount:0.###}. No new instalment fits until they are repaid.");
 					var months = (int)Math.Ceiling(principal / room);
-					return (false, $"القسط {installment:0.###} يتجاوز سقف الاستقطاع {cap.Pct:0.##}% من الأجر{art}: المتاح {room:0.###} شهرياً. المقترح: قسط {room:0.###} لمدة {months} شهراً.",
+					return (false, $"القسط {installment:0.###} يتجاوز سقف الاستقطاع {cap.Pct:0.##}% من الأجر{art}: المتاح {room:0.###} شهرياً. المقترح: قسط {room:0.###} لمدة {MonthsAr(months)}.",
 						$"The instalment {installment:0.###} exceeds the {cap.Pct:0.##}% deduction cap{art}: {room:0.###} a month is available. Proposed: {room:0.###} a month for {months} months.");
 				}
 			}

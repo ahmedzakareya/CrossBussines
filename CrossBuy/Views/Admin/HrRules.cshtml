@@ -68,6 +68,14 @@
             <td class="pe-4 text-end">@{ Del(); }</td>
         </tr>
     }
+    void ClearRow(string k, CrossBuy.BL.Hr.HrClearanceItem c)
+    {
+        <tr data-rp-row>
+            <td class="ps-4"><input type="hidden" name="Clearance.Index" value="@k" /><input type="hidden" name="Clearance[@k].Code" value="@c.Code" />@{ Txt($"Clearance[{k}].NameAr", c.NameAr, "البند بالعربية"); }</td>
+            <td>@{ Txt($"Clearance[{k}].NameEn", c.NameEn, "Item in English"); }</td>
+            <td class="pe-4 text-end">@{ Del(); }</td>
+        </tr>
+    }
     void TierRow(string k, CrossBuy.BL.Hr.HrResignationTier t)
     {
         <tr data-rp-row>
@@ -244,6 +252,19 @@
                     </div>
                 </div>
 
+                @* ── End-of-service clearance checklist (2026-11-09): each item becomes a follow-up task when an exit starts ── *@
+                <div class="card mb-5">
+                    <div class="card-header border-0 pt-6"><div class="card-title flex-column"><span class="fw-bold text-gray-900 fs-4">@L("قائمة إخلاء الطرف", "Clearance checklist")</span>
+                        <span class="text-muted fs-7 mt-1">@L("كل بند يصبح مهمة مرتبطة بالموظف عند بدء إنهاء خدمته (شاشة نهاية الخدمة). فارغة = القائمة الافتراضية.", "Each item becomes a task on the employee when their exit starts (end-of-service screen). Empty = the default list.")</span></div>
+                        @if (Model.CanEdit) { <div class="card-toolbar"><button type="button" class="btn btn-sm btn-light-primary" data-rp-add="clear"><i class="ki-outline ki-plus fs-4"></i>@L("بند", "Item")</button></div> }</div>
+                    <div class="card-body pt-4"><div class="table-responsive">
+                        <table class="table align-top gy-3 mb-0 hr-table">
+                            <thead><tr class="fw-bold fs-8 text-uppercase text-muted"><th class="ps-4">@L("البند بالعربية", "Item (Arabic)")</th><th>@L("البند بالإنجليزية", "Item (English)")</th><th class="pe-4"></th></tr></thead>
+                            <tbody class="fs-6" data-rp-body="clear">@{ var clr = r.Clearance.Count > 0 ? r.Clearance : CrossBuy.BL.Hr.HrClearanceService.Defaults.ToList(); }@for (int i = 0; i < clr.Count; i++) { ClearRow("c" + i, clr[i]); }</tbody>
+                        </table>
+                    </div></div>
+                </div>
+
                 <div class="card mb-5">
                     <div class="card-header border-0 pt-6"><div class="card-title"><span class="fw-bold text-gray-900 fs-4">@L("ملاحظات الحزمة", "Pack notes")</span></div></div>
                     <div class="card-body pt-2"><textarea name="Notes" rows="2" class="form-control form-control-solid" placeholder="@L("مثال: المكافأة تُحسب على الأجر الأساسي", "e.g. the gratuity is computed on the basic wage")" @ro>@r.Notes</textarea></div>
@@ -253,6 +274,7 @@
             @* Row templates for "add" (the key placeholder __K__ becomes a fresh unique key). *@
             <template id="rp-tpl-leave"><table><tbody>@{ LeaveRow("__K__", new CrossBuy.BL.Hr.HrLeaveRule()); }</tbody></table></template>
             <template id="rp-tpl-tier"><table><tbody>@{ TierRow("__K__", new CrossBuy.BL.Hr.HrResignationTier()); }</tbody></table></template>
+            <template id="rp-tpl-clear"><table><tbody>@{ ClearRow("__K__", new CrossBuy.BL.Hr.HrClearanceItem()); }</tbody></table></template>
             <template id="rp-tpl-ins"><table><tbody>@{ InsRow("__K__", new CrossBuy.BL.Hr.HrInsuranceRule()); }</tbody></table></template>
         </div>
     </div>

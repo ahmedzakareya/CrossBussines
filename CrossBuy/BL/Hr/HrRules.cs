@@ -35,6 +35,8 @@ namespace CrossBuy.BL.Hr
 		public bool ResignationCounsel { get; set; }
 		public decimal LoanCapPct { get; set; }
 		public string? LoanReference { get; set; }
+		/// The end-of-service clearance checklist: each item becomes a follow-up task when an employee's exit starts.
+		public List<HrClearanceItem> Clearance { get; set; } = new();
 		public string? Notes { get; set; }   // the pack's own caveats (e.g. "gratuity is on the BASIC wage")
 	}
 	public sealed class HrLeaveRule
@@ -80,6 +82,12 @@ namespace CrossBuy.BL.Hr
 				?? pack.Leave.FirstOrDefault(r => !string.IsNullOrWhiteSpace(r.NameEn) && en.Contains(r.NameEn.ToLowerInvariant()))
 				?? pack.Leave.FirstOrDefault(r => !string.IsNullOrWhiteSpace(r.NameAr) && (typeNameAr ?? "").Contains(r.NameAr));
 		}
+	}
+	public sealed class HrClearanceItem
+	{
+		public string Code { get; set; } = "";
+		public string NameAr { get; set; } = "";
+		public string NameEn { get; set; } = "";
 	}
 	public sealed class HrInsuranceRule
 	{
@@ -223,6 +231,7 @@ namespace CrossBuy.BL.Hr
 			if (r.Leave.Any(l => string.IsNullOrWhiteSpace(l.NameAr) && string.IsNullOrWhiteSpace(l.NameEn))) return "Every leave type needs a name";
 			if (r.Leave.Any(l => l.MinServiceMonths is < 0 or > 600 || l.MaxTimesPerService is < 0 or > 50)) return "Leave eligibility figures are out of range";
 			if (r.Insurance.Any(i => string.IsNullOrWhiteSpace(i.NameAr) && string.IsNullOrWhiteSpace(i.NameEn))) return "Every insurance line needs a name";
+			if (r.Clearance.Any(c => string.IsNullOrWhiteSpace(c.NameAr) && string.IsNullOrWhiteSpace(c.NameEn))) return "Every clearance item needs a name";
 			if (r.Resignation.Any(t => t.ToYears.HasValue && t.ToYears <= t.FromYears)) return "A resignation tier must end after it starts";
 			if (r.Insurance.Any(i => i.EmployeePct is < 0 or > 100 || i.EmployerPct is < 0 or > 100 || i.WageCap < 0)) return "Insurance percentages must be between 0 and 100";
 			var o = r.Overtime;
