@@ -202,6 +202,13 @@ namespace CrossBuy.BL
 				.Select(e => e.ID)
 				.ToListAsync()).ToHashSet();
 
+			// HR3 (2026-11-09): a manager who has LEFT (Employee.IsActive = false) never approves. Their node stays in the
+			// tree until someone re-parents it, so the climb walks THROUGH them to the next level instead of stopping.
+			var activeIds = (await _context.Employee.AsNoTracking()
+				.Where(e => sameCompany.Contains(e.ID) && e.IsActive)
+				.Select(e => e.ID)
+				.ToListAsync()).ToHashSet();
+
 			// the manager directly above: employee node → its position → the parent employee node
 			int? ManagerOf(int empId)
 			{
@@ -248,6 +255,15 @@ namespace CrossBuy.BL
 						"than approved by a foreign manager or auto-approved on an empty chain.",
 						employeeId, companyId.Value, mgr.Value);
 					break;
+				}
+
+				if (!activeIds.Contains(mgr.Value))
+				{
+					dropped++;
+					_log.LogInformation("Leave: approver {Manager} for employee {Employee} is no longer active and is skipped.", mgr.Value, employeeId);
+					if (IsUnitHead(mgr.Value)) break;   // the unit head has left: the chain ends here (an empty chain is refused, never auto-approved)
+					current = mgr.Value;
+					continue;
 				}
 
 				chain.Add(mgr.Value);
