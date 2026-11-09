@@ -180,6 +180,8 @@
                                     <tr><td class="ps-4">@L("السقف (٠ = بلا سقف)", "Cap (0 = none)")</td><td class="pe-4 text-end">@{ Num("Gratuity.CapMonths", r.Gratuity.CapMonths, L("شهراً", "months")); }</td></tr>
                                     <tr><td class="ps-4">@L("أيام الأجر في الشهر", "Wage days per month")</td><td class="pe-4 text-end">@{ Num("WageDaysPerMonth", r.WageDaysPerMonth, L("يوم", "days")); }</td></tr>
                                     <tr><td class="ps-4">@L("ساعات العمل في اليوم", "Working hours per day")</td><td class="pe-4 text-end">@{ Num("HoursPerDay", r.HoursPerDay, L("ساعة", "h")); }</td></tr>
+                                    <tr><td class="ps-4">@L("الحد الأسبوعي لساعات العمل", "Weekly working-hours limit")</td><td class="pe-4 text-end">@{ Num("MaxWeeklyHours", r.MaxWeeklyHours, L("ساعة", "h")); }</td></tr>
+                                    <tr><td class="ps-4">@L("راحة بعد ساعات متصلة", "Rest break after continuous hours")</td><td class="pe-4 text-end">@{ Num("BreakAfterHours", r.BreakAfterHours, L("ساعة", "h")); }</td></tr>
                                     <tr><td class="ps-4">@L("أساس الأجر للمكافأة والعمل الإضافي", "Wage basis for gratuity and overtime")</td><td class="pe-4 text-end">
                                         <select name="WageBasis" class="form-select form-select-solid form-select-sm w-auto d-inline-block" @ro>
                                             <option value="total" selected="@(!CrossBuy.BL.Hr.HrRules.IsBasic(r))">@L("الأجر الشامل (أساسي + بدلات)", "Total wage (basic + allowances)")</option>

@@ -19,6 +19,10 @@ namespace CrossBuy.BL.Hr
 		public List<string> Weekend { get; set; } = new() { "Friday", "Saturday" };
 		public decimal WageDaysPerMonth { get; set; } = 26;
 		public decimal HoursPerDay { get; set; } = 8;
+		/// Working-time limits the Ashal schedule is checked against (2026-11-09): the weekly maximum and the longest
+		/// continuous stretch before a rest break. Settings; Kuwait's Art. 64-65 give 48 hours and 5 hours.
+		public decimal MaxWeeklyHours { get; set; } = 48;
+		public decimal BreakAfterHours { get; set; } = 5;
 		/// Which wage the gratuity and overtime are computed on: "total" (basic + allowances) or "basic". The UAE pays
 		/// both on the basic wage; Kuwait on the total wage. A per-pack setting, never a country branch in code.
 		public string WageBasis { get; set; } = "total";

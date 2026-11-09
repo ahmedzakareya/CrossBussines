@@ -225,6 +225,9 @@ namespace CrossBuy.BL.Reporting
             // HR Product Batch 2 — roster. Two data sources, no new engine and no second store.
             services.AddScoped<IReportDataSource, RosterScheduleDataSource>();
             services.AddScoped<IReportDataSource, RosterPlannedVsActualDataSource>();
+            // HR (2026-11-09): the working-hours schedule recorded on Ashal and displayed at the workplace.
+            services.AddSingleton<IReportDefinitionProvider, WorkingHoursReportDefinitionProvider>();
+            services.AddScoped<IReportDataSource, WorkingHoursScheduleDataSource>();
 
             // HR-B3: the planned-vs-actual data source asks the canonical attendance authority what
             // an employee was expected to work, rather than carrying a second copy of the formula.
@@ -272,6 +275,11 @@ namespace CrossBuy.BL.Reporting
             foreach (var roster in HrRosterDatasets.All())
             {
                 var definition = roster;
+                services.AddScoped<IReportDatasetDefinition>(_ => definition);
+            }
+            foreach (var hours in HrWorkingHoursDatasets.All())
+            {
+                var definition = hours;
                 services.AddScoped<IReportDatasetDefinition>(_ => definition);
             }
 

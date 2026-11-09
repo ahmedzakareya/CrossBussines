@@ -1,0 +1,117 @@
+@model CrossBuy.BL.Hr.WorkingHoursSheet
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    // The working-hours schedule for Ashal (HR prototype design, 2026-11-09). Printing is Report Studio's hr.working-hours.
+    ViewData["Title"] = "Working hours";
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    string L(string ar, string en) => isAr ? ar : en;
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+    int year = ViewBag.Year is int y ? y : DateTime.Today.Year;
+    var dayNames = new Dictionary<DayOfWeek, (string ar, string en)> { [DayOfWeek.Saturday] = ("السبت", "Sat"), [DayOfWeek.Sunday] = ("الأحد", "Sun"), [DayOfWeek.Monday] = ("الاثنين", "Mon"), [DayOfWeek.Tuesday] = ("الثلاثاء", "Tue"), [DayOfWeek.Wednesday] = ("الأربعاء", "Wed"), [DayOfWeek.Thursday] = ("الخميس", "Thu"), [DayOfWeek.Friday] = ("الجمعة", "Fri") };
+    string T(TimeSpan? t) => t.HasValue ? t.Value.ToString(@"hh\:mm") : "—";
+    int warnings = Model.Schedules.Sum(s => s.WarningsEn.Count);
+}
+<link href="~/css/hr.css" rel="stylesheet" asp-append-version="true" />
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2">
+        <div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+            <div class="page-title d-flex flex-column justify-content-center gap-1">
+                <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@L("جدول ساعات العمل", "Working-hours schedule")</h1>
+                <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                    <li class="breadcrumb-item text-muted"><a href="@Url.Action("Index", "Admin")" class="text-muted text-hover-primary">@SR["HumanResources"]</a></li>
+                    <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                    <li class="breadcrumb-item text-muted">@L("الإجازات والحضور", "Leave & attendance")</li>
+                </ul>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <a href="@Url.Action("WorkingHours", new { year = year + (isAr ? 1 : -1) })" class="btn btn-icon btn-sm btn-light"><i class="ki-outline ki-arrow-right fs-3"></i></a>
+                <span class="fw-bold fs-6 px-2 hr-num">@year</span>
+                <a href="@Url.Action("WorkingHours", new { year = year + (isAr ? -1 : 1) })" class="btn btn-icon btn-sm btn-light"><i class="ki-outline ki-arrow-left fs-3"></i></a>
+                <a href="@Url.Action("Viewer", "Reports", new { id = CrossBuy.BL.Reporting.WorkingHoursDatasetCodes.Schedule, run = true })" class="btn btn-sm btn-primary"><i class="ki-outline ki-printer fs-4"></i>@L("طباعة الجدول", "Print the schedule")</a>
+            </div>
+        </div>
+    </div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid">
+        <div class="app-container container-fluid">
+            <div class="hr-notice mb-5">
+                <i class="ki-outline ki-shield-tick fs-2"></i>
+                <div class="flex-grow-1">
+                    <div class="fw-bold">@L("نظام «أسهل» — القرار الوزاري ١٥ لسنة ٢٠٢٥", "Ashal — Ministerial Resolution 15/2025")</div>
+                    <div class="fs-7">@L("منذ ١ نوفمبر ٢٠٢٥ يسجّل صاحب العمل في القطاع الخاص على «أسهل» ساعات العمل اليومية وفترات الراحة وأيام الراحة الأسبوعية والعطل الرسمية، ويحدّثها فور تغيّرها، ثم يطبع الجدول المعتمد ويعلّقه في مكان العمل. هذه الشاشة تجمع تلك البيانات من جداول الدوام والعطل في النظام، وتفحصها مقابل حدود حزمة قواعد الدولة.",
+                        "Since 1 November 2025 a private-sector employer records on Ashal the daily working hours, rest periods, weekly rest days and official holidays, updates them as soon as they change, then prints the approved schedule and displays it at the workplace. This screen assembles those facts from the system's schedules and holidays and checks them against the country rule pack's limits.")</div>
+                </div>
+                <a href="@Url.Action("HrRules")" class="btn btn-sm btn-light flex-shrink-0">@L("حزمة قواعد الدولة", "Country rule pack")</a>
+            </div>
+
+            <div class="row g-5 g-xl-8 mb-5">
+                @foreach (var s in new[] { (L("جداول الدوام", "Schedules"), Model.Schedules.Count.ToString(), "ki-time"), (L("الحد اليومي / الأسبوعي", "Daily / weekly limit"), $"{Model.HoursPerDay.ToString("0.##", inv)} / {Model.MaxWeeklyHours.ToString("0.##", inv)}", "ki-timer"),
+                                           (L("العطل الرسمية", "Official holidays"), Model.Holidays.Count.ToString(), "ki-calendar"), (L("ملاحظات المطابقة", "Compliance notes"), warnings.ToString(), "ki-information-5") })
+                {
+                    <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
+                        <div class="d-flex flex-stack"><div class="text-muted fw-semibold fs-7 mb-1">@s.Item1</div><i class="ki-outline @s.Item3 fs-2 text-gray-400"></i></div>
+                        <div class="fs-2 fw-bold text-gray-900"><span class="hr-num">@s.Item2</span></div>
+                    </div></div></div>
+                }
+            </div>
+
+            @if (Model.Schedules.Count == 0) { <div class="hr-notice mb-5"><i class="ki-outline ki-information-5 fs-2"></i><div class="fs-7">@L("لا جداول دوام مسندة لموظفين نشطين في الشركة.", "No attendance schedule is assigned to an active employee of the company.")</div></div> }
+
+            @foreach (var s in Model.Schedules)
+            {
+                <div class="card mb-5">
+                    <div class="card-header border-0 pt-6 flex-wrap gap-3">
+                        <div class="card-title flex-column m-0">
+                            <span class="fw-bold text-gray-900 fs-4">@(isAr ? s.NameAr : s.NameEn)</span>
+                            <span class="text-muted fs-7 mt-1"><span class="hr-num">@s.Employees</span> @L("موظفاً", "employees") · <span class="hr-num">@s.WeeklyHours.ToString("0.##", inv)</span> @L("ساعة أسبوعياً", "hours a week") · @L("الراحة: ", "Rest: ")@string.Join(isAr ? " و" : ", ", s.RestDays.Select(d => isAr ? dayNames[d].ar : dayNames[d].en))</span>
+                        </div>
+                        <div class="card-toolbar">@if (s.WarningsEn.Count == 0) { <span class="badge badge-light-success fw-bold">@L("مطابق للحدود", "Within the limits")</span> } else { <span class="badge badge-light-danger fw-bold">@L("يحتاج مراجعة", "Needs review")</span> }</div>
+                    </div>
+                    <div class="card-body pt-2">
+                        <div class="table-responsive">
+                            <table class="table align-middle gy-3 mb-0 hr-table">
+                                <thead><tr class="fw-bold fs-8 text-uppercase text-muted"><th class="ps-4">@L("اليوم", "Day")</th><th>@L("البداية", "Start")</th><th>@L("النهاية", "End")</th><th>@L("فترة الراحة", "Rest break")</th><th class="text-end pe-4">@L("صافي الساعات", "Net hours")</th></tr></thead>
+                                <tbody class="fs-6">
+                                    @foreach (var d in s.Days)
+                                    {
+                                        <tr class="@(d.Working ? "" : "bg-light")">
+                                            <td class="ps-4 fw-semibold">@(isAr ? dayNames[d.Day].ar : dayNames[d.Day].en)</td>
+                                            @if (d.Working)
+                                            {
+                                                <td class="hr-num">@T(d.Start)</td><td class="hr-num">@T(d.End)</td>
+                                                <td class="hr-num">@(d.BreakStart.HasValue ? T(d.BreakStart) + "–" + T(d.BreakEnd) : d.BreakMinutes > 0 ? d.BreakMinutes + L(" دقيقة", " min") : "—")</td>
+                                                <td class="text-end hr-num pe-4">@d.NetHours.ToString("0.##", inv)</td>
+                                            }
+                                            else { <td colspan="4" class="text-muted">@L("راحة أسبوعية", "Weekly rest day")</td> }
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                        @if (s.WarningsEn.Count > 0)
+                        {
+                            <div class="alert alert-light-danger py-3 mt-4 mb-0 fs-7">@foreach (var w in isAr ? s.WarningsAr : s.WarningsEn) { <div><i class="ki-outline ki-information-5 fs-6 me-1"></i>@w</div> }</div>
+                        }
+                    </div>
+                </div>
+            }
+
+            <div class="card mb-5">
+                <div class="card-header border-0 pt-6"><div class="card-title flex-column m-0"><span class="fw-bold text-gray-900 fs-4">@L("العطل الرسمية", "Official holidays") <span class="hr-num">@year</span></span>
+                    <span class="text-muted fs-7 mt-1">@L("من شاشة العطلات الرسمية للشركة", "From the company's official holidays screen")</span></div>
+                    <div class="card-toolbar"><a href="@Url.Action("HolidaysList", "Admin")" class="btn btn-sm btn-light">@L("إدارة العطل", "Manage holidays")</a></div></div>
+                <div class="card-body pt-2">
+                    @if (Model.Holidays.Count == 0) { <div class="text-muted fs-7">@L("لا عطل مسجلة لهذه السنة.", "No holidays recorded for this year.")</div> }
+                    <div class="d-flex flex-wrap gap-3">
+                        @foreach (var h in Model.Holidays)
+                        {
+                            <span class="badge badge-light fs-7 fw-semibold py-3 px-4"><span class="hr-num me-2">@h.Date.ToString("yyyy-MM-dd")</span>@(isAr ? h.NameAr : (h.NameEn ?? h.NameAr))@if (h.Recurring) { <i class="ki-outline ki-arrows-loop fs-7 ms-1 text-muted" title="@L("تتكرر سنوياً", "Recurs yearly")"></i> }</span>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
