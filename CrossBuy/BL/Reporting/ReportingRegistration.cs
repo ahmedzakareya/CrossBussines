@@ -233,6 +233,8 @@ namespace CrossBuy.BL.Reporting
             services.AddScoped<IReportDataSource, HrHeadcountDataSource>();
             services.AddScoped<IReportDataSource, HrLeaversDataSource>();
             services.AddScoped<IReportDataSource, HrGratuityLiabilityDataSource>();
+            services.AddScoped<IReportDataSource, HrLeaveLiabilityDataSource>();
+            services.AddScoped<IReportDataSource, HrExpiriesDataSource>();
 
             // HR-B3: the planned-vs-actual data source asks the canonical attendance authority what
             // an employee was expected to work, rather than carrying a second copy of the formula.
