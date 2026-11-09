@@ -87,7 +87,46 @@ namespace CrossBuy.BL.Hr
 				already.Add(key);
 				created++;
 			}
-			return new(items.Count, created, items.Count - created);
+			// Probation (2026-11-09): the end of each employee's probation becomes a review task the same way, due on that day.
+			var (pExamined, pCreated) = await ProbationAsync(companyId, rule?.DefaultAssigneeEmployeeId ?? 0, ct);
+			return new(items.Count + pExamined, created + pCreated, items.Count - created + pExamined - pCreated);
+		}
+
+		public static string ProbationKey(int employeeId, DateTime end) => $"HrProbation:{employeeId}:{end:yyyy-MM-dd}";
+
+		private async Task<(int Examined, int Created)> ProbationAsync(int companyId, int assignee, CancellationToken ct)
+		{
+			var days = (await new HrRulePackService(_db).EffectiveAsync(companyId, ct))?.Rules.ProbationDays ?? 0;
+			if (days <= 0) return (0, 0);
+			var today = DateTime.Today;
+			// joined recently enough that the probation ends between the lookback and the lead window
+			var from = today.AddDays(-LookbackDays - days); var to = today.AddDays(LeadDays - days);
+			var emps = await _db.Employee.AsNoTracking().Where(e => e.EmpCompanyID == companyId && e.IsActive && e.DateOfJoining >= from && e.DateOfJoining <= to)
+				.Select(e => new { e.ID, e.FullName, e.FullNameEn, e.DateOfJoining }).ToListAsync(ct);
+			var keys = emps.Select(e => ProbationKey(e.ID, e.DateOfJoining.Date.AddDays(days))).ToList();
+			var done = (await _db.TaskAutoLogs.AsNoTracking().Where(l => l.CompanyId == companyId && keys.Contains(l.RuleKey)).Select(l => l.RuleKey).ToListAsync(ct)).ToHashSet();
+			int created = 0;
+			foreach (var e in emps)
+			{
+				var end = e.DateOfJoining.Date.AddDays(days);
+				var key = ProbationKey(e.ID, end);
+				if (done.Contains(key)) continue;
+				var who = e.FullName ?? e.FullNameEn ?? ("#" + e.ID); var whoEn = e.FullNameEn ?? e.FullName ?? ("#" + e.ID);
+				var task = new TaskItem
+				{
+					CompanyId = companyId, Title = $"تقييم فترة التجربة — {who}", TitleEn = $"Probation review — {whoEn}",
+					Description = null, AssigneeEmployeeId = assignee, CreatedByEmployeeId = 0, Priority = end < today ? "High" : "Normal",
+					DueDate = end, Status = "New", ActualHours = 0m, EntityType = EntityRegistry.Employee, EntityId = e.ID, CreatedAt = DateTime.UtcNow,
+				};
+				await using var tx = await _db.Database.BeginTransactionAsync(ct);
+				_db.TaskItems.Add(task);
+				await _db.SaveChangesAsync(ct);
+				_db.TaskAutoLogs.Add(new TaskAutoLog { CompanyId = companyId, RuleKey = key, TaskId = task.ID, CreatedAt = DateTime.UtcNow });
+				await _db.SaveChangesAsync(ct);
+				await tx.CommitAsync(ct);
+				created++;
+			}
+			return (emps.Count, created);
 		}
 	}
 }

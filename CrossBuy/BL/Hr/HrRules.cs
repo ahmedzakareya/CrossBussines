@@ -23,6 +23,8 @@ namespace CrossBuy.BL.Hr
 		/// continuous stretch before a rest break. Settings; Kuwait's Art. 64-65 give 48 hours and 5 hours.
 		public decimal MaxWeeklyHours { get; set; } = 48;
 		public decimal BreakAfterHours { get; set; } = 5;
+		/// Probation length in calendar days (Kuwait Art. 32: up to 100 days); its end becomes a review task (0 = none).
+		public int ProbationDays { get; set; } = 100;
 		/// Which wage the gratuity and overtime are computed on: "total" (basic + allowances) or "basic". The UAE pays
 		/// both on the basic wage; Kuwait on the total wage. A per-pack setting, never a country branch in code.
 		public string WageBasis { get; set; } = "total";
@@ -41,6 +43,8 @@ namespace CrossBuy.BL.Hr
 		public string? LoanReference { get; set; }
 		/// The end-of-service clearance checklist: each item becomes a follow-up task when an employee's exit starts.
 		public List<HrClearanceItem> Clearance { get; set; } = new();
+		/// The new-joiner onboarding checklist (2026-11-09): each item becomes a task when onboarding is started.
+		public List<HrClearanceItem> Onboarding { get; set; } = new();
 		public string? Notes { get; set; }   // the pack's own caveats (e.g. "gratuity is on the BASIC wage")
 	}
 	public sealed class HrLeaveRule
@@ -236,6 +240,8 @@ namespace CrossBuy.BL.Hr
 			if (r.Leave.Any(l => l.MinServiceMonths is < 0 or > 600 || l.MaxTimesPerService is < 0 or > 50)) return "Leave eligibility figures are out of range";
 			if (r.Insurance.Any(i => string.IsNullOrWhiteSpace(i.NameAr) && string.IsNullOrWhiteSpace(i.NameEn))) return "Every insurance line needs a name";
 			if (r.Clearance.Any(c => string.IsNullOrWhiteSpace(c.NameAr) && string.IsNullOrWhiteSpace(c.NameEn))) return "Every clearance item needs a name";
+			if (r.Onboarding.Any(c => string.IsNullOrWhiteSpace(c.NameAr) && string.IsNullOrWhiteSpace(c.NameEn))) return "Every clearance item needs a name";
+			if (r.ProbationDays is < 0 or > 400) return "Leave eligibility figures are out of range";
 			if (r.Resignation.Any(t => t.ToYears.HasValue && t.ToYears <= t.FromYears)) return "A resignation tier must end after it starts";
 			if (r.Insurance.Any(i => i.EmployeePct is < 0 or > 100 || i.EmployerPct is < 0 or > 100 || i.WageCap < 0)) return "Insurance percentages must be between 0 and 100";
 			var o = r.Overtime;

@@ -8,6 +8,22 @@ namespace CrossBuy.Controllers
 		/// Arabic agreement for a count of tasks: مهمة واحدة · مهمتان · ٣–١٠ مهام · ١١+ مهمة.
 		private static string TasksAr(int n) => n switch { 1 => "مهمة واحدة", 2 => "مهمتان", >= 3 and <= 10 => $"{n} مهام", _ => $"{n} مهمة" };
 
+		// Onboarding (2026-11-09): one follow-up task per checklist item, created once (employee-manage).
+		[HttpPost]
+		[ValidateAntiForgeryToken]
+		public async Task<IActionResult> StartOnboarding(int employeeId, CancellationToken ct = default)
+		{
+			var gate = await HrGateAsync(CrossBuy.BL.HrActions.EmployeeManage, subjectEmployeeId: employeeId);
+			if (!gate.Ok) return HrDenied(nameof(EmployeeProfile), new { id = employeeId });
+			var ctx = await BusinessContexts.TryGetCurrentAsync();
+			var created = await new CrossBuy.BL.Hr.HrOnboardingService(Db).StartAsync(gate.CompanyId, employeeId, ctx?.EmployeeId, ct);
+			bool ar = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+			TempData["HrMsg"] = created > 0
+				? (ar ? $"أُنشئت {TasksAr(created)} لتهيئة الموظف على ملفه" : $"{created} onboarding task(s) created on the employee's record")
+				: (ar ? "مهام التهيئة موجودة بالفعل" : "The onboarding tasks already exist");
+			return RedirectToAction(nameof(EmployeeProfile), new { id = employeeId });
+		}
+
 		[HttpPost]
 		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> StartClearance(int employeeId, DateTime? terminationDate, CancellationToken ct = default)

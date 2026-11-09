@@ -120,6 +120,8 @@ namespace CrossBuy.Controllers
 				};
 				return (ar ? (n.a ?? n.en) : (n.en ?? n.a)) ?? v;
 			}
+			// Onboarding (2026-11-09): each checklist item's follow-up task on this employee.
+			ViewBag.Onboarding = await new CrossBuy.BL.Hr.HrOnboardingService(Db).StatusAsync(gate.CompanyId, e.ID, ct);
 			ViewBag.History = hist.Select(h => new ProfileHistoryRow(h.Field, Name(h.Field, h.OldValue), Name(h.Field, h.NewValue), h.EffectiveFrom,
 				h.ChangedByEmployeeId is int b && whoNames.TryGetValue(b, out var bn) ? bn : null)).ToList();
 
