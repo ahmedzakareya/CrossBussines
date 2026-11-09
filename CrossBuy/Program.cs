@@ -742,6 +742,9 @@ builder.Services.AddHostedService<TaskScheduleMatchHostedService>();   // TM-9-Ø
 // dispatcher), an invariant asserted by BusinessEventDispatchWorkerCompositionTests. Suppressing
 // inside the worker is also stronger, because it holds however the service is composed.
 builder.Services.AddHostedService<CrossBuy.BL.TasksCalendar.TaskEscalationHostedService>();
+// HR approval SLA (2026-11-09): hourly; escalates a step that passed its path's limit once. Suppresses itself on a
+// certification runtime and parks on a lost lease, like the task escalation worker above.
+builder.Services.AddHostedService<CrossBuy.BL.Hr.HrApprovalEscalationHostedService>();
 builder.Services.AddSignalR();
 
 

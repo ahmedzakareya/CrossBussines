@@ -76,7 +76,7 @@ namespace CrossBuy.BL.Hr
 		{
 			if (!HrApprovalKinds.All.Contains(input.Kind)) return (false, "نوع طلب غير معروف", "Unknown request kind");
 			if (input.Kind != HrApprovalKinds.Leave) { input.LeaveTypeID = null; input.DirectOnlyUpToDays = 0; }
-			if (input.ManagerLevels is < 0 or > 20 || input.DirectOnlyUpToDays is < 0 or > 365) return (false, "القيم خارج النطاق", "Values are out of range");
+			if (input.ManagerLevels is < 0 or > 20 || input.DirectOnlyUpToDays is < 0 or > 365 || input.SlaDays is < 0 or > 90) return (false, "القيم خارج النطاق", "Values are out of range");
 			if (input.LeaveTypeID is int lt && !await _db.LeaveTypes.AsNoTracking().AnyAsync(t => t.ID == lt, ct)) return (false, "نوع الإجازة غير موجود", "Leave type not found");
 			if (input.FinalApproverEmployeeID is int f && f > 0)
 			{
@@ -93,7 +93,7 @@ namespace CrossBuy.BL.Hr
 			else if (await _db.HrApprovalPaths.AnyAsync(p => p.CompanyID == companyId && p.ID != row.ID && p.Kind == input.Kind && p.LeaveTypeID == input.LeaveTypeID, ct))
 				return (false, "يوجد مسار آخر لنفس النوع", "Another path already covers this kind");
 			row.Kind = input.Kind; row.LeaveTypeID = input.LeaveTypeID; row.ManagerLevels = input.ManagerLevels;
-			row.DirectOnlyUpToDays = input.DirectOnlyUpToDays; row.FinalApproverEmployeeID = input.FinalApproverEmployeeID;
+			row.DirectOnlyUpToDays = input.DirectOnlyUpToDays; row.FinalApproverEmployeeID = input.FinalApproverEmployeeID; row.SlaDays = input.SlaDays;
 			row.IsActive = input.IsActive; row.UpdatedAt = DateTime.UtcNow; row.UpdatedByEmployeeID = byEmployeeId;
 			await _db.SaveChangesAsync(ct);
 			return (true, null, null);

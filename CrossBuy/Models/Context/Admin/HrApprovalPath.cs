@@ -11,6 +11,7 @@ namespace CrossBuy.Models.Context.Admin
 		public int ManagerLevels { get; set; }            // 0 = up to the unit head
 		public int DirectOnlyUpToDays { get; set; }       // Leave: a request of this many days or fewer needs the direct manager only; 0 = off
 		public int? FinalApproverEmployeeID { get; set; } // an HR officer appended as the last approver
+		public int SlaDays { get; set; }                  // a step waiting longer than this is escalated once to its approver's manager; 0 = off
 		public bool IsActive { get; set; } = true;
 		public DateTime UpdatedAt { get; set; }
 		public int? UpdatedByEmployeeID { get; set; }

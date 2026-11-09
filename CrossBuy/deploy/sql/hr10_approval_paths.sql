@@ -21,3 +21,7 @@ BEGIN
     );
     CREATE UNIQUE INDEX UX_HrApprovalPaths_Scope ON dbo.HrApprovalPaths (CompanyID, Kind, LeaveTypeID);
 END
+-- SLA (2026-11-09): a step waiting longer than SlaDays is escalated once to its approver's manager (HrApprovalEscalation).
+IF COL_LENGTH(N'dbo.HrApprovalPaths', N'SlaDays') IS NULL
+    ALTER TABLE dbo.HrApprovalPaths ADD SlaDays int NOT NULL CONSTRAINT DF_HrApprovalPaths_Sla DEFAULT 0
+        CONSTRAINT CK_HrApprovalPaths_Sla CHECK (SlaDays BETWEEN 0 AND 90);

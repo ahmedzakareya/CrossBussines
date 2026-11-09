@@ -62,7 +62,7 @@
                         {
                             <div class="card-toolbar gap-2">
                                 <button type="button" class="btn btn-sm btn-light" data-path-edit data-id="@p.ID" data-kind="@p.Kind" data-leave="@p.LeaveTypeID" data-levels="@p.ManagerLevels"
-                                        data-direct="@p.DirectOnlyUpToDays" data-final="@p.FinalApproverEmployeeID" data-active="@(p.IsActive ? "1" : "0")"><i class="ki-outline ki-pencil fs-5"></i>@L("تعديل", "Edit")</button>
+                                        data-direct="@p.DirectOnlyUpToDays" data-final="@p.FinalApproverEmployeeID" data-sla="@p.SlaDays" data-active="@(p.IsActive ? "1" : "0")"><i class="ki-outline ki-pencil fs-5"></i>@L("تعديل", "Edit")</button>
                                 <form asp-action="DeleteApprovalPath" method="post" class="d-inline" data-cb-confirm data-cb-action="generic"
                                       data-cb-text="@L("حذف المسار؟ يعود هذا النوع إلى سلسلة المديرين كاملة.", "Remove the path? This kind goes back to the full manager chain.")">
                                     @Html.AntiForgeryToken()<input type="hidden" name="id" value="@p.ID" />
@@ -76,7 +76,8 @@
                             <div class="wf-step"><div class="d-flex align-items-center gap-2 mb-1"><i class="ki-outline ki-user fs-2 text-primary"></i><span class="fw-bold">@L("مقدم الطلب", "Requester")</span></div><div class="text-muted fs-8">@L("موظف", "Employee")</div></div>
                             <div class="wf-arrow"><i class="ki-outline @(isAr ? "ki-arrow-left" : "ki-arrow-right") fs-1"></i></div>
                             <div class="wf-step"><div class="d-flex align-items-center gap-2 mb-1"><i class="ki-outline ki-people fs-2 text-primary"></i><span class="fw-bold">@Levels(p.ManagerLevels)</span></div>
-                                <div class="text-muted fs-8">@(p.DirectOnlyUpToDays > 0 ? L($"المدير المباشر فقط حتى {p.DirectOnlyUpToDays} أيام", $"Direct manager only up to {p.DirectOnlyUpToDays} days") : L("من الهيكل التنظيمي", "From the org structure"))</div></div>
+                                <div class="text-muted fs-8">@(p.DirectOnlyUpToDays > 0 ? L($"المدير المباشر فقط حتى {p.DirectOnlyUpToDays} أيام", $"Direct manager only up to {p.DirectOnlyUpToDays} days") : L("من الهيكل التنظيمي", "From the org structure"))</div>
+                                @if (p.SlaDays > 0) { <div class="fs-8 mt-1"><i class="ki-outline ki-timer fs-6 text-primary"></i> @L($"مهلة {p.SlaDays} يوم لكل مستوى · تصعيد لمدير المعتمِد", $"{p.SlaDays}-day limit per level · escalate to the approver's manager")</div> }</div>
                             @if (r.Final != null)
                             {
                                 <div class="wf-arrow"><i class="ki-outline @(isAr ? "ki-arrow-left" : "ki-arrow-right") fs-1"></i></div>
@@ -122,6 +123,11 @@
                                     <input type="number" name="directOnlyUpToDays" min="0" max="365" value="0" class="form-control form-control-solid hr-num" />
                                     <div class="form-text">@L("0 = لا يُطبَّق", "0 = off")</div>
                                 </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold">@L("مهلة كل مستوى (أيام)", "Limit per level (days)")</label>
+                                    <input type="number" name="slaDays" min="0" max="90" value="0" class="form-control form-control-solid hr-num" />
+                                    <div class="form-text">@L("بعدها يُصعَّد الطلب مرة واحدة لمدير المعتمِد؛ 0 = بلا مهلة", "After it the request is escalated once to the approver's manager; 0 = no limit")</div>
+                                </div>
                                 <div class="col-md-5">
                                     <label class="form-label fw-semibold">@L("المعتمِد النهائي من الموارد البشرية", "Final approver from HR")</label>
                                     <select name="finalApproverEmployeeId" class="form-select form-select-solid" data-person-select>
@@ -151,6 +157,7 @@
                     <table class="table align-middle table-row-dashed fs-7 gy-3 mb-0">
                         <thead><tr class="text-muted fw-bold fs-8 text-uppercase"><th class="w-40">@L("الحالة", "Situation")</th><th>@L("ما يحدث", "What happens")</th></tr></thead>
                         <tbody>
+                            <tr><td class="fw-semibold">@L("تجاوز المهلة", "A level passes its limit")</td><td>@L("يُصعَّد الطلب مرة واحدة إلى مدير المعتمِد ويُبلَّغ الاثنان؛ إن لم يوجد أعلى منه يُذكَّر المعتمِد.", "The request is escalated once to the approver's manager and both are told; with nobody above, the approver is reminded.")</td></tr>
                             <tr><td class="fw-semibold">@L("المدير في إجازة", "Manager on leave")</td><td>@L("يذهب الطلب إلى المفوَّض عنه تلقائياً (التفويض).", "The request goes to their delegate automatically (delegation).")</td></tr>
                             <tr><td class="fw-semibold">@L("المدير انتهت خدمته", "Manager has left")</td><td>@L("يُتخطى إلى المدير الأعلى، وطلباته المعلقة تنتقل عند ترحيل المخالصة.", "Skipped to the next manager up; their pending requests move on when the settlement posts.")</td></tr>
                             <tr><td class="fw-semibold">@L("مقدم الطلب هو المعتمِد", "The requester is an approver")</td><td>@L("لا يعتمد أحد طلبه بنفسه؛ يُتخطى.", "Nobody approves their own request; skipped.")</td></tr>
@@ -178,6 +185,7 @@
                 setSel('kind', d.kind || 'Leave'); setSel('leaveTypeId', d.leave || ''); setSel('finalApproverEmployeeId', d.final || '');
                 form.querySelector('[name="managerLevels"]').value = d.levels || 0;
                 form.querySelector('[name="directOnlyUpToDays"]').value = d.direct || 0;
+                form.querySelector('[name="slaDays"]').value = d.sla || 0;
                 form.querySelector('[name="isActive"]').checked = d.active !== '0';
                 title.textContent = d.id ? '@L("تعديل المسار", "Edit path")' : '@L("مسار جديد", "New path")';
                 leaveOnly(); card.classList.remove('d-none'); card.scrollIntoView({ behavior: 'smooth', block: 'start' });

@@ -44,14 +44,14 @@ namespace CrossBuy.Controllers
 		[HttpPost]
 		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> SaveApprovalPath(int id, string kind, int? leaveTypeId, int managerLevels, int directOnlyUpToDays,
-			int? finalApproverEmployeeId, bool isActive = true, CancellationToken ct = default)
+			int? finalApproverEmployeeId, int slaDays = 0, bool isActive = true, CancellationToken ct = default)
 		{
 			var gate = await HrGateAsync(CrossBuy.BL.HrActions.OrganizationManage);
 			if (!gate.Ok) return HrDenied(nameof(ApprovalPaths));
 			var (ok, ar, en) = await new CrossBuy.BL.Hr.HrApprovalPathService(Db).SaveAsync(gate.CompanyId, new CrossBuy.Models.Context.Admin.HrApprovalPath
 			{
 				ID = id, Kind = kind ?? "", LeaveTypeID = leaveTypeId is > 0 ? leaveTypeId : null, ManagerLevels = managerLevels,
-				DirectOnlyUpToDays = directOnlyUpToDays, FinalApproverEmployeeID = finalApproverEmployeeId, IsActive = isActive,
+				DirectOnlyUpToDays = directOnlyUpToDays, FinalApproverEmployeeID = finalApproverEmployeeId, SlaDays = slaDays, IsActive = isActive,
 			}, gate.EmployeeId, ct);
 			bool isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
 			TempData[ok ? "HrMsg" : "HrErr"] = ok ? (isAr ? "حُفظ مسار الموافقة" : "Approval path saved") : (isAr ? ar : en);
