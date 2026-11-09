@@ -130,7 +130,57 @@ namespace CrossBuy.BL
 			_db.Appraisals.Add(appr); await _db.SaveChangesAsync();
 			foreach (var c in criteria) _db.AppraisalLines.Add(new AppraisalLine { AppraisalId = appr.ID, CriterionId = c.ID, Score = 0 });
 			await _db.SaveChangesAsync();
+			await OpenReviewTaskAsync(appr, cycle);
 			return (true, null, appr.ID);
+		}
+
+		// HR2 (2026-11-09): an appraisal is WORK for the manager, so it becomes a task: assigned to the reviewing manager, linked
+		// to the employee, due on the cycle's end (Workspace Attention escalates it from there). Idempotent through TaskAutoLog
+		// ("HrAppraisal:<id>"), and closed by SubmitAsync, so the task list and the appraisal list cannot disagree.
+		public static string ReviewTaskKey(int appraisalId) => $"HrAppraisal:{appraisalId}";
+
+		private async Task OpenReviewTaskAsync(Appraisal appr, AppraisalCycle cycle)
+		{
+			if (appr.ManagerEmployeeID <= 0) return;
+			var key = ReviewTaskKey(appr.ID);
+			if (await _db.TaskAutoLogs.AnyAsync(l => l.CompanyId == appr.CompanyID && l.RuleKey == key)) return;
+			var who = await _db.Employee.AsNoTracking().Where(e => e.ID == appr.EmployeeID).Select(e => new { e.FullName, e.FullNameEn }).FirstOrDefaultAsync();
+			var nameAr = who?.FullName ?? ("#" + appr.EmployeeID); var nameEn = who?.FullNameEn ?? nameAr;
+			var due = (cycle.EndDate ?? DateTime.Today.AddDays(30)).Date;
+			var task = new CrossBuy.Models.Context.Tasks.TaskItem
+			{
+				CompanyId = appr.CompanyID,
+				Title = $"تقييم أداء — {nameAr} ({cycle.Name})",
+				TitleEn = $"Performance appraisal — {nameEn} ({cycle.NameEn ?? cycle.Name})",
+				AssigneeEmployeeId = appr.ManagerEmployeeID,
+				CreatedByEmployeeId = 0,
+				Priority = "Normal",
+				DueDate = due,
+				Status = "New",
+				ActualHours = 0m,
+				EntityType = CrossBuy.BL.Platform.EntityRegistry.Employee,
+				EntityId = appr.EmployeeID,
+				CreatedAt = DateTime.UtcNow,
+			};
+			await using var tx = await _db.Database.BeginTransactionAsync();
+			_db.TaskItems.Add(task);
+			await _db.SaveChangesAsync();
+			_db.TaskAutoLogs.Add(new CrossBuy.Models.Context.Tasks.TaskAutoLog { CompanyId = appr.CompanyID, RuleKey = key, TaskId = task.ID, CreatedAt = DateTime.UtcNow });
+			await _db.SaveChangesAsync();
+			await tx.CommitAsync();
+			await _notifications.NotifyAsync(appr.ManagerEmployeeID, "تقييم أداء مطلوب منك", "An appraisal is assigned to you",
+				$"قيّم أداء {nameAr} قبل {due:yyyy-MM-dd}.", $"Appraise {nameEn} by {due:yyyy-MM-dd}.", "appraisal_due", appr.ID);
+		}
+
+		private async Task CloseReviewTaskAsync(Appraisal appr)
+		{
+			var key = ReviewTaskKey(appr.ID);
+			var taskId = await _db.TaskAutoLogs.AsNoTracking().Where(l => l.CompanyId == appr.CompanyID && l.RuleKey == key).Select(l => (int?)l.TaskId).FirstOrDefaultAsync();
+			if (taskId == null) return;
+			var task = await _db.TaskItems.FirstOrDefaultAsync(t => t.ID == taskId.Value && t.CompanyId == appr.CompanyID);
+			if (task == null || task.Status == "Done") return;
+			task.Status = "Done"; task.CompletedAt = DateTime.UtcNow;
+			await _db.SaveChangesAsync();
 		}
 
 		private async Task<decimal> ComputeScoreAsync(int appraisalId, int templateId)
@@ -176,6 +226,7 @@ namespace CrossBuy.BL
 			appr.TotalScore = await ComputeScoreAsync(id, appr.TemplateId);
 			appr.Status = 1; appr.SubmittedAt = DateTime.UtcNow;
 			await _db.SaveChangesAsync();
+			await CloseReviewTaskAsync(appr);
 			await _notifications.NotifyAsync(appr.EmployeeID, "تقييم أداء بانتظار إقرارك", "A performance appraisal awaits your acknowledgment",
 				$"صدر تقييم أداء لك بدرجة {appr.TotalScore:0.#}% — يرجى الاطلاع والإقرار.",
 				$"Your performance appraisal ({appr.TotalScore:0.#}%) is ready — please review and acknowledge.",
