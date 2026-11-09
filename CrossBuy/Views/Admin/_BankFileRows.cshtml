@@ -1,0 +1,26 @@
+@model CrossBuy.Controllers.AdminController.BankFileRowsModel
+@{
+    // One page of the bank transfer lines (AdminController.BankFileData), injected by cbServerList.
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+}
+@foreach (var l in Model.Rows)
+{
+    var photo = Model.Photos.TryGetValue(l.EmployeeId, out var ph) ? ph : null;
+    var name = isAr ? l.NameAr : (l.NameEn ?? l.NameAr);
+    <tr class="@(l.Problem != null ? "bg-light-danger" : "")">
+        <td class="ps-4 hr-num text-muted">@l.Seq</td>
+        <td>
+            <div class="d-flex align-items-center min-w-0">
+                <div class="symbol symbol-30px symbol-circle flex-shrink-0">
+                    @if (photo != null) { <img src="@photo" alt="" /> } else { <span class="symbol-label fw-bold fs-9 hr-initials">@CrossBuy.BL.Hr.PersonTile.Initials(l.NameAr, l.NameEn)</span> }
+                </div>
+                <a href="@Url.Action("EmployeeProfile", "Admin", new { id = l.EmployeeId })" class="text-gray-900 text-hover-primary fw-bold fs-7 text-truncate ms-2"><bdi>@name</bdi></a>
+            </div>
+        </td>
+        <td class="hr-num fs-7">@(l.CivilId ?? "—")</td>
+        <td class="hr-num fs-7">@(l.Iban ?? "—")@if (l.Problem is "NoIban" or "BadIban") { <span class="badge badge-light-danger ms-1">@(l.Problem == "NoIban" ? (isAr ? "مفقود" : "missing") : (isAr ? "غير صحيح" : "invalid"))</span> }</td>
+        <td class="fs-7">@(l.BankName ?? "—")</td>
+        <td class="text-end hr-num fw-bold pe-4">@l.Net.ToString("N3", inv)</td>
+    </tr>
+}

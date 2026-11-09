@@ -1,0 +1,251 @@
+@model CrossBuy.Controllers.AdminController.BankFilePageModel
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    // HR8 — the salary transfer file for the bank (wage protection), its format a setting (2026-11-09).
+    ViewData["Title"] = "Bank salary file";
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    string L(string ar, string en) => isAr ? ar : en;
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+    var monthsAr = new[] { "", "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر" };
+    var monthsEn = new[] { "", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" };
+    var m = Model.Month; var f = Model.Format;
+    string MonthName(DateTime d) => (isAr ? monthsAr[d.Month] : monthsEn[d.Month]) + " " + d.Year;
+    string Problem(string? p) => p switch
+    {
+        "NoIban" => L("لا يوجد IBAN", "No IBAN"),
+        "BadIban" => L("IBAN غير صحيح", "Invalid IBAN"),
+        "NoCivilId" => L("لا يوجد رقم مدني", "No civil ID"),
+        _ => "",
+    };
+    var delim = f.Delimiter == "\t" ? "tab" : f.Delimiter;
+    var fields = CrossBuy.BL.Hr.HrBankFileFields.All;
+    var pay = CrossBuy.BL.Hr.HrBankFileService.PaymentDate(f, m.Year, m.Month);
+}
+<link href="~/css/hr.css" rel="stylesheet" asp-append-version="true" />
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2">
+        <div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+            <div class="page-title d-flex flex-column justify-content-center gap-1">
+                <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@L("ملف تحويل الرواتب للبنك", "Bank salary transfer file")</h1>
+                <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                    <li class="breadcrumb-item text-muted"><a href="@Url.Action("Index", "Admin")" class="text-muted text-hover-primary">@SR["HumanResources"]</a></li>
+                    <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                    <li class="breadcrumb-item text-muted">@L("الرواتب والمستحقات", "Payroll")</li>
+                </ul>
+            </div>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <a href="@Url.Action("BankFile", new { month = m.AddMonths(isAr ? 1 : -1).ToString("yyyy-MM") })" class="btn btn-icon btn-sm btn-light"><i class="ki-outline ki-arrow-right fs-3"></i></a>
+                <span class="fw-bold fs-6 px-2">@MonthName(m)</span>
+                <a href="@Url.Action("BankFile", new { month = m.AddMonths(isAr ? -1 : 1).ToString("yyyy-MM") })" class="btn btn-icon btn-sm btn-light"><i class="ki-outline ki-arrow-left fs-3"></i></a>
+                @if (Model.CanManage && Model.Posted && Model.Lines > 0)
+                {
+                    <a href="@Url.Action("DownloadBankFile", new { month = m.ToString("yyyy-MM") })" class="btn btn-sm btn-primary ms-2"><i class="ki-outline ki-file-down fs-4"></i>@L("تنزيل الملف", "Download file")</a>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid">
+        <div class="app-container container-fluid">
+            @if (TempData["HrErr"] is string err) { <div class="alert alert-danger d-flex align-items-center py-3 mb-5"><i class="ki-outline ki-information-5 fs-2 me-3 text-danger"></i>@err</div> }
+            @if (TempData["HrMsg"] is string msg) { <div class="alert alert-success d-flex align-items-center py-3 mb-5"><i class="ki-outline ki-check-circle fs-2 me-3 text-success"></i>@msg</div> }
+
+            <div class="hr-notice mb-5">
+                <i class="ki-outline ki-bank fs-2"></i>
+                <div class="flex-grow-1">
+                    <div class="fw-bold">@L("حماية الأجور: ملف واحد يرفعه المحاسب على موقع البنك", "Wage protection: one file the accountant uploads to the bank")</div>
+                    <div class="fs-7">@L("الملف يُبنى من رواتب الشهر المرحّلة فقط، سطر لكل موظف صافيه موجب. شكل الملف كله إعداد: الأعمدة وترتيبها وعناوينها والفاصل والتاريخ والإجمالي واسم الملف — لمطابقة نموذج أي بنك دون برمجة. اطلب من البنك «نموذج ملف الرواتب الجماعي» واضبط الأعمدة عليه.",
+                        "Built from the month's POSTED payroll only, one line per employee with a positive net. The whole shape is a setting — columns, order, headers, delimiter, date, total row and file name — to match any bank's template without code. Ask the bank for its bulk salary upload template and set the columns to it.")</div>
+                </div>
+            </div>
+
+            @if (!Model.Posted)
+            {
+                <div class="hr-notice mb-5"><i class="ki-outline ki-information fs-2"></i><div><div class="fw-bold">@L("لا رواتب مرحّلة لهذا الشهر", "No posted payroll for this month")</div>
+                    <div class="fs-7">@L("رحّل مسير الشهر أولاً من شاشة مسير الرواتب، ثم عُد هنا لتنزيل الملف.", "Post the month's payroll from the payroll run first, then come back to download the file.")</div></div>
+                    <a href="@Url.Action("PayrollRun", new { month = m.ToString("yyyy-MM") })" class="btn btn-sm btn-light flex-shrink-0">@L("مسير الرواتب", "Payroll run")</a></div>
+            }
+
+            <div class="row g-5 g-xl-8 mb-5">
+                @foreach (var s in new[] { (L("سطور في الملف", "Lines in the file"), Model.Lines.ToString(inv), "ki-row-horizontal", ""),
+                                           (L("إجمالي التحويل", "Transfer total"), Model.Total.ToString("N3", inv) + " " + Model.Currency, "ki-wallet", ""),
+                                           (L("موظفون يحتاجون تصحيحاً", "Employees needing a fix"), Model.Problems.ToString(inv), "ki-information-2", Model.Problems > 0 ? "text-danger" : ""),
+                                           (L("تاريخ الدفع", "Payment date"), pay.ToString("yyyy-MM-dd", inv), "ki-calendar", "") })
+                {
+                    <div class="col-6 col-xl-3"><div class="card h-100"><div class="card-body d-flex flex-column gap-2 py-5">
+                        <i class="ki-outline @s.Item3 fs-2x text-primary"></i>
+                        <span class="text-muted fs-7">@s.Item1</span>
+                        <span class="fw-bold fs-3 hr-num @s.Item4">@s.Item2</span>
+                    </div></div></div>
+                }
+            </div>
+
+            @if (Model.ProblemLines.Count > 0)
+            {
+                <div class="card mb-5 border border-danger border-dashed">
+                    <div class="card-header min-h-60px"><div class="card-title fw-bold text-danger"><i class="ki-outline ki-information-2 fs-2 text-danger me-2"></i>@L("لن يدخلوا الملف حتى تُصحَّح بياناتهم", "Left out of the file until their data is fixed")</div></div>
+                    <div class="card-body pt-2">
+                        <table class="table align-middle table-row-dashed fs-7 gy-3 mb-0">
+                            <thead><tr class="text-muted fw-bold fs-8 text-uppercase"><th>@L("الموظف", "Employee")</th><th>@L("المشكلة", "Problem")</th><th class="text-end">@L("الصافي", "Net")</th><th></th></tr></thead>
+                            <tbody>
+                                @foreach (var l in Model.ProblemLines)
+                                {
+                                    <tr><td class="fw-semibold"><bdi>@(isAr ? l.NameAr : (l.NameEn ?? l.NameAr))</bdi></td><td><span class="badge badge-light-danger">@Problem(l.Problem)</span></td>
+                                        <td class="text-end hr-num">@l.Net.ToString("N3", inv)</td>
+                                        <td class="text-end"><a href="@Url.Action("EmployeeProfile", new { id = l.EmployeeId })" class="btn btn-sm btn-light">@L("فتح الملف", "Open record")</a></td></tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            }
+
+            <div class="card mb-5">
+                <div class="card-header min-h-60px">
+                    <div class="card-title fw-bold">@L("شكل الملف", "File format")@if (!Model.Saved) { <span class="badge badge-light ms-2 fs-8">@L("الشكل الافتراضي — لم يُحفظ بعد", "Default — not saved yet")</span> }</div>
+                    <div class="card-toolbar text-muted fs-7"><span class="hr-num">@Model.FileName</span></div>
+                </div>
+                <div class="card-body">
+                    <form asp-action="SaveBankFileFormat" method="post" id="fmt_form">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="month" value="@m.ToString("yyyy-MM")" />
+                        <fieldset @(Model.CanManage ? "" : "disabled")>
+                        <div class="row g-5 mb-6">
+                            <div class="col-md-3"><label class="form-label fw-semibold">@L("البنك", "Bank")</label><input name="bankName" value="@f.BankName" class="form-control form-control-solid" placeholder="@L("مثال: البنك الوطني", "e.g. National Bank")" /></div>
+                            <div class="col-md-3"><label class="form-label fw-semibold">@L("حساب الشركة / IBAN", "Company account / IBAN")</label><input name="companyAccount" value="@f.CompanyAccount" class="form-control form-control-solid hr-num" /></div>
+                            <div class="col-md-3"><label class="form-label fw-semibold">@L("رقم صاحب العمل", "Employer code")</label><input name="employerCode" value="@f.EmployerCode" class="form-control form-control-solid hr-num" /></div>
+                            <div class="col-md-3"><label class="form-label fw-semibold">@L("اسم الملف", "File name")</label><input name="fileNamePattern" value="@f.FileNamePattern" class="form-control form-control-solid hr-num" /><div class="form-text">{yyyyMM} {yyyy} {MM}</div></div>
+                            <div class="col-md-2"><label class="form-label fw-semibold">@L("الفاصل", "Delimiter")</label>
+                                <select name="delimiter" class="form-select form-select-solid">
+                                    @foreach (var d in new[] { (",", L("فاصلة ,", "Comma ,")), (";", L("فاصلة منقوطة ;", "Semicolon ;")), ("tab", L("Tab", "Tab")), ("|", "| Pipe") })
+                                    { <option value="@d.Item1" selected="@(delim == d.Item1)">@d.Item2</option> }
+                                </select></div>
+                            <div class="col-md-2"><label class="form-label fw-semibold">@L("صيغة التاريخ", "Date format")</label><input name="dateFormat" value="@f.DateFormat" class="form-control form-control-solid hr-num" /></div>
+                            <div class="col-md-2"><label class="form-label fw-semibold">@L("المنازل العشرية", "Decimals")</label><input type="number" name="decimalPlaces" min="0" max="3" value="@f.DecimalPlaces" class="form-control form-control-solid hr-num" /></div>
+                            <div class="col-md-2"><label class="form-label fw-semibold">@L("يوم الدفع", "Payment day")</label><input type="number" name="paymentDay" min="0" max="31" value="@f.PaymentDay" class="form-control form-control-solid hr-num" /><div class="form-text">@L("0 = آخر الشهر", "0 = month end")</div></div>
+                            <div class="col-md-2"><label class="form-label fw-semibold">@L("سطر الإجمالي", "Total row")</label>
+                                <select name="trailerRow" class="form-select form-select-solid">
+                                    <option value="None" selected="@(f.TrailerRow == "None")">@L("بدون", "None")</option>
+                                    <option value="CountTotal" selected="@(f.TrailerRow == "CountTotal")">@L("العدد والإجمالي", "Count and total")</option>
+                                </select></div>
+                            <div class="col-md-2 d-flex flex-column justify-content-end gap-2">
+                                <label class="form-check form-switch form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" name="headerRow" value="true" @(f.HeaderRow ? "checked" : "") /><span class="form-check-label fw-semibold">@L("سطر العناوين", "Header row")</span></label>
+                                <label class="form-check form-switch form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" name="withBom" value="true" @(f.WithBom ? "checked" : "") /><span class="form-check-label fw-semibold">UTF-8 BOM</span></label>
+                            </div>
+                        </div>
+
+                        <div class="fw-bold mb-3">@L("الأعمدة بالترتيب", "Columns, in order")</div>
+                        <table class="table align-middle table-row-dashed fs-7 gy-2 mb-3" id="cols">
+                            <thead><tr class="text-muted fw-bold fs-8 text-uppercase"><th class="w-40px">#</th><th>@L("الحقل", "Field")</th><th>@L("عنوان العمود في الملف", "Column header in the file")</th><th>@L("النص الثابت", "Fixed text")</th><th class="text-end"></th></tr></thead>
+                            <tbody>
+                                @foreach (var c in Model.Columns.Count > 0 ? Model.Columns : CrossBuy.BL.Hr.HrBankFileService.DefaultColumns())
+                                {
+                                    <tr>
+                                        <td class="hr-num text-muted" data-idx></td>
+                                        <td><select name="colField" class="form-select form-select-sm form-select-solid" data-col-field>
+                                            @foreach (var fl in fields) { <option value="@fl.Key" selected="@(c.Field == fl.Key)">@(isAr ? fl.Ar : fl.En)</option> }
+                                        </select></td>
+                                        <td><input name="colHeader" value="@c.Header" class="form-control form-control-sm form-control-solid hr-num" /></td>
+                                        <td><input name="colValue" value="@c.Value" class="form-control form-control-sm form-control-solid" data-col-value /></td>
+                                        <td class="text-end text-nowrap">
+                                            <button type="button" class="btn btn-icon btn-sm btn-light" data-up title="@L("أعلى", "Up")"><i class="ki-outline ki-arrow-up fs-5"></i></button>
+                                            <button type="button" class="btn btn-icon btn-sm btn-light" data-down title="@L("أسفل", "Down")"><i class="ki-outline ki-arrow-down fs-5"></i></button>
+                                            <button type="button" class="btn btn-icon btn-sm btn-light-danger" data-del title="@L("حذف", "Remove")"><i class="ki-outline ki-trash fs-5"></i></button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                        </fieldset>
+                        @if (Model.CanManage)
+                        {
+                            <div class="d-flex justify-content-between gap-2">
+                                <button type="button" class="btn btn-sm btn-light" id="col_add"><i class="ki-outline ki-plus fs-4"></i>@L("إضافة عمود", "Add column")</button>
+                                <button type="submit" class="btn btn-sm btn-primary"><i class="ki-outline ki-check fs-4"></i>@L("حفظ الشكل", "Save format")</button>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="text-muted fs-7">@L("تعديل الشكل وتنزيل الملف لمسؤول الرواتب.", "Changing the format and downloading the file is for the payroll officer.")</div>
+                        }
+                    </form>
+                    <div class="mt-6">
+                        <div class="fw-bold mb-2">@L("معاينة أول سطور الملف", "Preview of the file's first lines")</div>
+                        <pre class="bg-light rounded p-4 fs-8 mb-0 hr-num" dir="ltr" style="white-space:pre;overflow-x:auto" id="fmt_preview"></pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-5">
+                <div class="card-header border-0 pt-6 align-items-center">
+                    <div class="card-title flex-column">
+                        <span class="fw-bold text-gray-900 fs-4">@L("سطور التحويل", "Transfer lines")</span>
+                        <span class="text-muted fs-7 mt-1"><span id="resultCount">—</span></span>
+                    </div>
+                    <div class="card-toolbar d-flex align-items-center gap-2 flex-wrap">
+                        <div class="w-250px"><input type="text" id="f_q" class="form-control form-control-solid form-control-sm" autocomplete="off" placeholder="@L("ابحث بالاسم أو الرقم المدني أو IBAN…", "Search name, civil ID or IBAN…")" /></div>
+                        <select id="f_size" class="form-select form-select-solid form-select-sm w-auto"><option value="25">25</option><option value="50">50</option><option value="100">100</option></select>
+                        <button type="button" id="f_reset" class="btn btn-sm btn-light" title="@L("إعادة ضبط", "Reset")"><i class="ki-outline ki-arrows-circle fs-4"></i></button>
+                    </div>
+                </div>
+                <div class="card-body pt-4">
+                    <div class="table-responsive">
+                        <table class="table align-middle gy-3 mb-0 hr-table">
+                            <thead><tr class="fw-bold fs-8 text-uppercase text-muted">
+                                <th class="ps-4">#</th><th style="min-width:200px">@L("الموظف", "Employee")</th><th>@L("الرقم المدني", "Civil ID")</th><th>IBAN</th><th>@L("البنك", "Bank")</th><th class="text-end pe-4">@L("الصافي", "Net")</th>
+                            </tr></thead>
+                            <tbody class="fs-6" id="rows"></tbody>
+                        </table>
+                    </div>
+                    <div class="text-center text-muted py-10 d-none" id="loadingRow"><span class="spinner-border spinner-border-sm me-2"></span>@L("جارٍ التحميل…", "Loading…")</div>
+                    <div class="text-center text-muted py-10 d-none" id="emptyRow">@L("لا سطور لهذا الشهر", "No lines for this month")</div>
+                    <div class="d-flex flex-stack flex-wrap pt-5"><div class="fs-7 text-muted" id="pageInfo"></div><ul class="pagination" id="pager"></ul></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script src="~/Backend-assets/js/crossbuy-tagify.js" asp-append-version="true"></script>
+<script>
+cbServerList({
+    url: '@Url.Action("BankFileData", "Admin")',
+    isAr: @(isAr ? "true" : "false"),
+    addParams: function (p) { p.set('month', '@m.ToString("yyyy-MM")'); }
+});
+(function () {
+    var body = document.querySelector('#cols tbody'), form = document.getElementById('fmt_form'), pre = document.getElementById('fmt_preview');
+    var sample = { Seq: '1', EmployeeId: '1042', NameAr: 'سارة علي', NameEn: 'Sara Ali', CivilId: '290010112345', Iban: 'KW81CBKU0000000000001234560101', BankName: 'NBK',
+        Net: (1234.5).toFixed(+form.decimalPlaces.value || 0), Basic: '1000', Allowances: '300', Gross: '1300', Deductions: '65.5', Currency: '@Model.Currency',
+        Month: '@m.ToString("yyyyMM")', PaymentDate: '@pay.ToString("yyyy-MM-dd")', CompanyAccount: form.companyAccount.value, EmployerCode: form.employerCode.value, Constant: '' };
+    function renumber() { body.querySelectorAll('[data-idx]').forEach(function (td, i) { td.textContent = i + 1; }); body.querySelectorAll('tr').forEach(function (tr) { var c = tr.querySelector('[data-col-field]').value === 'Constant'; tr.querySelector('[data-col-value]').classList.toggle('invisible', !c); }); preview(); }
+    function preview() {
+        var d = form.delimiter.value === 'tab' ? '\t' : form.delimiter.value, rows = [];
+        var cols = [].map.call(body.querySelectorAll('tr'), function (tr) { return { f: tr.querySelector('[data-col-field]').value, h: tr.querySelector('[name=colHeader]').value, v: tr.querySelector('[data-col-value]').value }; });
+        sample.Net = (1234.5).toFixed(Math.max(0, Math.min(3, +form.decimalPlaces.value || 0)));
+        if (form.headerRow.checked) rows.push(cols.map(function (c) { return c.h; }).join(d));
+        rows.push(cols.map(function (c) { return c.f === 'Constant' ? c.v : (sample[c.f] || ''); }).join(d));
+        if (form.trailerRow.value === 'CountTotal') rows.push(['TOTAL', '1', sample.Net].join(d));
+        pre.textContent = rows.join('\n');
+    }
+    body.addEventListener('click', function (e) {
+        var b = e.target.closest('button'); if (!b) return; var tr = b.closest('tr');
+        if (b.hasAttribute('data-del')) { if (body.rows.length > 1) tr.remove(); }
+        else if (b.hasAttribute('data-up') && tr.previousElementSibling) body.insertBefore(tr, tr.previousElementSibling);
+        else if (b.hasAttribute('data-down') && tr.nextElementSibling) body.insertBefore(tr.nextElementSibling, tr);
+        renumber();
+    });
+    var add = document.getElementById('col_add');
+    if (add) add.addEventListener('click', function () {
+        var tr = body.rows[body.rows.length - 1].cloneNode(true);
+        tr.querySelector('[data-col-field]').value = 'Constant'; tr.querySelector('[name=colHeader]').value = ''; tr.querySelector('[data-col-value]').value = '';
+        body.appendChild(tr); renumber();
+    });
+    form.addEventListener('input', preview); form.addEventListener('change', renumber);
+    renumber();
+})();
+</script>
+}

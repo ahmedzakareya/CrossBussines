@@ -524,5 +524,6 @@
 				new() { LabelAr = "اعتماد العمل الإضافي", LabelEn = "Overtime approval", Action = "Overtime", Controller = "Admin" },   // HR5: overtime approved before pay, within the yearly cap (2026-11-08)
 				new() { LabelAr = "جدول ساعات العمل", LabelEn = "Working-hours schedule", Action = "WorkingHours", Controller = "Admin" },   // the Ashal schedule (Kuwait Resolution 15/2025), 2026-11-09
 				new() { LabelAr = "مسير الرواتب", LabelEn = "Payroll run", Action = "PayrollRun", Controller = "Admin" },   // HR6: the payroll register in the HR design (2026-11-08)
+				new() { LabelAr = "ملف تحويل الرواتب للبنك", LabelEn = "Bank salary file", Action = "BankFile", Controller = "Admin" },   // HR8: wage protection, its format a setting (2026-11-09)
 				new() { LabelAr = "كشف التأمينات الاجتماعية", LabelEn = "Social insurance statement", Action = "SocialInsurance", Controller = "Admin" },   // HR6: per employee, per rule-pack line (2026-11-08)
 				new() { LabelAr = "مخصص مكافأة نهاية الخدمة", LabelEn = "Gratuity provision", Action = "GratuityProvision", Controller = "Admin" },   // the end-of-service provision, booked monthly (2026-11-08)
