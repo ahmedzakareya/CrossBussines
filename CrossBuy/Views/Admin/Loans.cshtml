@@ -56,6 +56,40 @@
                 }
             </div>
 
+            @{ var toPay = ViewBag.AdvancesToPay as List<CrossBuy.Controllers.AdminController.AdvanceToPay> ?? new(); }
+            @if (toPay.Count > 0)
+            {
+                @* HR9: self-service advance requests approved by the chain, waiting for payroll to pay them out *@
+                <div class="card mb-5">
+                    <div class="card-header border-0 pt-6"><div class="card-title flex-column m-0">
+                        <span class="fw-bold text-gray-900 fs-4">@L("سلف معتمدة بانتظار الصرف", "Approved advances awaiting payment") <span class="badge badge-light-primary ms-1 hr-num">@toPay.Count</span></span>
+                        <span class="text-muted fs-7 mt-1">@L("طلبها الموظفون من بوابتهم واعتمدها مديروهم. الصرف يرحّل القيد ويبدأ الخصم من الشهر المختار.", "Requested by employees from self-service and approved by their managers. Paying posts the entry and starts the deduction from the chosen month.")</span></div></div>
+                    <div class="card-body pt-2"><div class="table-responsive">
+                        <table class="table align-middle gy-3 mb-0 hr-table">
+                            <thead><tr class="fw-bold fs-8 text-uppercase text-muted"><th class="ps-4">@L("الموظف", "Employee")</th><th class="text-end">@L("المبلغ", "Amount")</th><th class="text-end">@L("القسط", "Instalment")</th><th>@L("اعتُمدت", "Approved")</th><th class="pe-4 text-end"></th></tr></thead>
+                            <tbody class="fs-6">
+                                @foreach (var a in toPay)
+                                {
+                                    <tr><td class="ps-4"><a href="@Url.Action("EmployeeProfile", "Admin", new { id = a.EmployeeId })" class="text-gray-900 text-hover-primary fw-bold fs-7"><bdi>@(a.Name ?? "—")</bdi></a>@if (!string.IsNullOrWhiteSpace(a.Reason)) { <div class="text-muted fs-8">@a.Reason</div> }</td>
+                                        <td class="text-end hr-num">@Money(a.Amount)</td><td class="text-end hr-num">@Money(a.Installment)</td><td class="hr-num">@(a.ApprovedAt?.ToString("yyyy-MM-dd") ?? "—")</td>
+                                        <td class="pe-4 text-end">
+                                            @if (Model.CanManage && Model.HasLoanAccount)
+                                            {
+                                                <form asp-action="PayAdvanceRequest" method="post" class="d-inline-flex gap-2 align-items-center" data-cb-confirm data-cb-action="generic" data-cb-text="@L("صرف السلفة وترحيل قيدها؟", "Pay the advance and post its entry?")">
+                                                    @Html.AntiForgeryToken()<input type="hidden" name="requestId" value="@a.RequestId" />
+                                                    <input type="month" name="firstMonth" required value="@next.ToString("yyyy-MM")" class="form-control form-control-solid form-control-sm w-auto" title="@L("يبدأ الخصم من راتب", "First deduction in")" />
+                                                    <select name="paidFromAccountId" class="form-select form-select-solid form-select-sm w-auto" required>@foreach (var acc in Model.PayFrom) { <option value="@acc.Id">@acc.Code — @acc.Name</option> }</select>
+                                                    <button class="btn btn-sm btn-primary text-nowrap"><i class="ki-outline ki-wallet fs-4"></i>@L("صرف", "Pay")</button>
+                                                </form>
+                                            }
+                                        </td></tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div></div>
+                </div>
+            }
+
             <div class="card mb-5">
                 <div class="card-header border-0 pt-6 flex-wrap gap-3">
                     <div class="card-title flex-column m-0">

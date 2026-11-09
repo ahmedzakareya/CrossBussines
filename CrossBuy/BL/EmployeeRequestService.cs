@@ -88,6 +88,7 @@ namespace CrossBuy.BL
 		private static string Label(EmployeeRequest r, bool ar)
 		{
 			if (r.RequestType == "Permission") return ar ? "إذن" : "permission";
+			if (r.RequestType == "Advance") return ar ? "سلفة راتب" : "salary advance";   // HR9
 			return ar ? "خطاب" : "letter";
 		}
 
@@ -146,6 +147,19 @@ namespace CrossBuy.BL
 				if (draft.PermissionDate == null || draft.FromTime == null || draft.ToTime == null)
 					return (false, "The date and the start/end time are required for a permission request", null);
 				if (draft.ToTime <= draft.FromTime) return (false, "The end time must be after the start time", null);
+			}
+			else if (draft.RequestType == "Advance")
+			{
+				// HR9 (2026-11-09): a salary advance. The legal deduction cap is checked HERE, before anyone is asked to
+				// approve it — the same check the loans screen applies when it pays it out (HrLoanService.CapRefusalAsync).
+				bool ar = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+				if (draft.AdvanceAmount is not > 0 || draft.AdvanceInstallment is not > 0)
+					return (false, ar ? "المبلغ والقسط الشهري مطلوبان" : "The amount and the monthly instalment are required", null);
+				if (draft.AdvanceInstallment > draft.AdvanceAmount)
+					return (false, ar ? "القسط أكبر من المبلغ نفسه" : "The instalment is larger than the amount itself", null);
+				var cap = await new CrossBuy.BL.Hr.HrLoanService(_context).CapRefusalAsync(draft.CompanyID, draft.EmployeeID, draft.AdvanceAmount.Value, draft.AdvanceInstallment.Value, DateTime.Today);
+				if (cap is { } c) return (false, ar ? c.Ar : c.En, null);
+				draft.LetterType = null;
 			}
 			else
 			{

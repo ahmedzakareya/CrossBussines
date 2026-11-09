@@ -385,7 +385,7 @@ namespace CrossBuy.Controllers
 
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> CreateRequest(string requestType, string? letterType, string? addressee,
-			DateTime? permissionDate, string? fromTime, string? toTime, string? reason)
+			DateTime? permissionDate, string? fromTime, string? toTime, string? reason, decimal? advanceAmount = null, decimal? advanceInstallment = null)
 		{
 			var emp = CurrentEmployee();
 			if (emp == null) return RedirectToAction("Login", "Account");
@@ -398,7 +398,9 @@ namespace CrossBuy.Controllers
 			var companyId = await _context.Employee.Where(e => e.ID == self.Value).Select(e => e.EmpCompanyID).FirstOrDefaultAsync();
 			var draft = new EmployeeRequest
 			{
-				CompanyID = companyId, EmployeeID = self.Value, RequestType = requestType == "Permission" ? "Permission" : "Letter",
+				CompanyID = companyId, EmployeeID = self.Value,
+				RequestType = requestType is "Permission" or "Advance" ? requestType : "Letter",   // HR9: Advance
+				AdvanceAmount = requestType == "Advance" ? advanceAmount : null, AdvanceInstallment = requestType == "Advance" ? advanceInstallment : null,
 				LetterType = letterType, Addressee = addressee, PermissionDate = permissionDate, Reason = reason,
 				FromTime = TimeSpan.TryParse(fromTime, out var ft) ? ft : (TimeSpan?)null,
 				ToTime = TimeSpan.TryParse(toTime, out var tt) ? tt : (TimeSpan?)null,

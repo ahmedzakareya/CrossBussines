@@ -59,12 +59,43 @@ namespace CrossBuy.BL.Hr
 			return loans.Select(l => new LoanRow(l, paid.TryGetValue(l.ID, out var p) ? p : 0)).ToList();
 		}
 
+		/// The legal-cap check, shared by granting a loan and by a self-service advance request (HR9): null when the
+		/// instalment fits beside the instalments already running, otherwise why not, with the largest instalment that fits.
+		public async Task<(string Ar, string En)?> CapRefusalAsync(int companyId, int employeeId, decimal principal, decimal installment, DateTime onDate, CancellationToken ct = default)
+		{
+			var disbursedOn = onDate;
+			var cap = await CapAsync(companyId, ct);
+			if (cap.Pct > 0)
+			{
+				var pay = await new HrSalaryService(_db).ForAsync(employeeId, disbursedOn, ct);
+				var wage = cap.OnBasic ? pay.Basic : pay.Total;
+				if (wage <= 0) return ("لا يوجد راتب مسجل لهذا الموظف، فلا يمكن حساب سقف الاستقطاع", "No salary is recorded for this employee, so the deduction cap cannot be computed");
+				var running = (await ListAsync(companyId, employeeId, ct)).Where(r => r.Loan.Status == "Active" && r.Outstanding > 0).Sum(r => Math.Min(r.Loan.Installment, r.Outstanding));
+				var capAmount = Math.Floor(wage * cap.Pct / 100m * 1000m) / 1000m;
+				var room = capAmount - running;
+				if (installment > room)
+				{
+					var art = string.IsNullOrWhiteSpace(cap.Reference) ? "" : $" ({cap.Reference})";
+					if (room <= 0)
+						return ($"أقساط هذا الموظف الحالية ({running:0.###}) تستنفد سقف الاستقطاع {cap.Pct:0.##}% من الأجر{art} = {capAmount:0.###}. لا يمكن إضافة قسط جديد حتى يُسدَّد ما عليه.",
+							$"This employee's running instalments ({running:0.###}) already use the {cap.Pct:0.##}% deduction cap{art} = {capAmount:0.###}. No new instalment fits until they are repaid.");
+					var months = (int)Math.Ceiling(principal / room);
+					return ($"القسط {installment:0.###} يتجاوز سقف الاستقطاع {cap.Pct:0.##}% من الأجر{art}: المتاح {room:0.###} شهرياً. المقترح: قسط {room:0.###} لمدة {MonthsAr(months)}.",
+						$"The instalment {installment:0.###} exceeds the {cap.Pct:0.##}% deduction cap{art}: {room:0.###} a month is available. Proposed: {room:0.###} a month for {months} months.");
+				}
+			}
+
+			return null;
+		}
+
 		/// Grants a loan and posts its payment. Every refusal is explained (Ar, En).
 		public async Task<(bool Ok, string? Ar, string? En)> CreateAsync(int companyId, int employeeId, string kind, decimal principal, decimal installment,
 			int firstYear, int firstMonth, DateTime disbursedOn, int paidFromAccountId, string? reason, int? byEmployeeId, int? userId,
-			IJournalEntryService journals, CancellationToken ct = default)
+			IJournalEntryService journals, CancellationToken ct = default, int? sourceRequestId = null)
 		{
 			kind = kind == "Advance" ? "Advance" : "Loan";
+			if (sourceRequestId is int rq && await _db.EmployeeLoans.AsNoTracking().AnyAsync(l => l.SourceRequestId == rq, ct))
+				return (false, "صُرفت هذه السلفة من قبل", "This advance has already been paid out");
 			if (principal <= 0 || installment <= 0) return (false, "المبلغ والقسط يجب أن يكونا أكبر من صفر", "The amount and the instalment must be above zero");
 			if (installment > principal) return (false, "القسط أكبر من المبلغ نفسه", "The instalment is larger than the amount itself");
 			if (firstMonth is < 1 or > 12 || firstYear is < 2000 or > 2100) return (false, "شهر بدء الخصم غير صحيح", "The first deduction month is not valid");
@@ -78,32 +109,15 @@ namespace CrossBuy.BL.Hr
 			if (!payFromOk) return (false, "اختر حساب الخزنة أو البنك الذي يُصرف منه", "Choose the cash or bank account it is paid from");
 
 			// THE CAP: this instalment plus every instalment still running must fit inside the cap of the wage.
-			var cap = await CapAsync(companyId, ct);
-			if (cap.Pct > 0)
-			{
-				var pay = await new HrSalaryService(_db).ForAsync(employeeId, disbursedOn, ct);
-				var wage = cap.OnBasic ? pay.Basic : pay.Total;
-				if (wage <= 0) return (false, "لا يوجد راتب مسجل لهذا الموظف، فلا يمكن حساب سقف الاستقطاع", "No salary is recorded for this employee, so the deduction cap cannot be computed");
-				var running = (await ListAsync(companyId, employeeId, ct)).Where(r => r.Loan.Status == "Active" && r.Outstanding > 0).Sum(r => Math.Min(r.Loan.Installment, r.Outstanding));
-				var capAmount = Math.Floor(wage * cap.Pct / 100m * 1000m) / 1000m;
-				var room = capAmount - running;
-				if (installment > room)
-				{
-					var art = string.IsNullOrWhiteSpace(cap.Reference) ? "" : $" ({cap.Reference})";
-					if (room <= 0)
-						return (false, $"أقساط هذا الموظف الحالية ({running:0.###}) تستنفد سقف الاستقطاع {cap.Pct:0.##}% من الأجر{art} = {capAmount:0.###}. لا يمكن إضافة قسط جديد حتى يُسدَّد ما عليه.",
-							$"This employee's running instalments ({running:0.###}) already use the {cap.Pct:0.##}% deduction cap{art} = {capAmount:0.###}. No new instalment fits until they are repaid.");
-					var months = (int)Math.Ceiling(principal / room);
-					return (false, $"القسط {installment:0.###} يتجاوز سقف الاستقطاع {cap.Pct:0.##}% من الأجر{art}: المتاح {room:0.###} شهرياً. المقترح: قسط {room:0.###} لمدة {MonthsAr(months)}.",
-						$"The instalment {installment:0.###} exceeds the {cap.Pct:0.##}% deduction cap{art}: {room:0.###} a month is available. Proposed: {room:0.###} a month for {months} months.");
-				}
-			}
+			var refusal = await CapRefusalAsync(companyId, employeeId, principal, installment, disbursedOn, ct);
+			if (refusal != null) return (false, refusal.Value.Ar, refusal.Value.En);
 
 			var loan = new EmployeeLoan
 			{
 				CompanyID = companyId, EmployeeID = employeeId, Kind = kind, Principal = principal, Installment = installment,
 				FirstYear = firstYear, FirstMonth = firstMonth, Status = "Active", Reason = string.IsNullOrWhiteSpace(reason) ? null : reason.Trim(),
 				DisbursedOn = disbursedOn.Date, PaidFromAccountId = paidFromAccountId, CreatedAt = DateTime.UtcNow, CreatedByEmployeeId = byEmployeeId,
+				SourceRequestId = sourceRequestId,
 			};
 			_db.EmployeeLoans.Add(loan);
 			await _db.SaveChangesAsync(ct);

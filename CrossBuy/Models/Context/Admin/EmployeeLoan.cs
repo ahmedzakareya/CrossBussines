@@ -19,6 +19,7 @@ namespace CrossBuy.Models.Context.Admin
 		public int? DisbursementEntryId { get; set; }
 		public DateTime CreatedAt { get; set; }
 		public int? CreatedByEmployeeId { get; set; }
+		public int? SourceRequestId { get; set; }   // HR9: the approved self-service advance request it was paid out against
 	}
 
 	/// One loan's deduction in one payroll month, written when that payroll is POSTED.

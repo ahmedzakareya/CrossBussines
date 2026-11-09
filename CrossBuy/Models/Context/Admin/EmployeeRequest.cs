@@ -23,6 +23,10 @@ namespace CrossBuy.Models.Context.Admin
 
 		public string? Reason { get; set; }
 
+		// HR9 (2026-11-09): a salary advance — RequestType "Advance" (hr9_advance_requests.sql)
+		public decimal? AdvanceAmount { get; set; }
+		public decimal? AdvanceInstallment { get; set; }
+
 		// ---- workflow (same shape as LeaveRequest) ----
 		public int Status { get; set; } = 0;             // 0 pending / 1 approved / 2 rejected
 		public int CurrentLevel { get; set; }            // pending level (0 = finished / no chain)
