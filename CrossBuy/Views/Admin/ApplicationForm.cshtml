@@ -118,7 +118,7 @@
                                             @foreach (var c in companies) { <option value="@c.CompanyID" selected="@(Model.EmpCompanyID == c.CompanyID)">@(isAr ? c.ComoanyNameAr : c.CompanyName)</option> }</select></div>
                                     <div class="col-md-6"><label class="fs-6 fw-semibold mb-2">@Localizer["Branch"]</label>
                                         <select name="BranchID" id="branchSel" class="form-select form-select-solid" data-control="select2" data-placeholder="@Localizer["Select the company to load its branches"]"><option value=""></option></select>
-                                        <div class="form-text text-warning d-none" id="noBranchHint"><i class="ki-outline ki-information-5 fs-7 me-1"></i>@Localizer["No branches for this company — pick from the org structure below."]</div></div>
+                                        <div class="form-text text-gray-600 d-none" id="noBranchHint"><i class="ki-outline ki-information-5 fs-7 me-1"></i>@Localizer["No branches for this company — pick from the org structure below."]</div></div>
                                     <div class="col-md-6"><label class="fs-6 fw-semibold mb-2">@Localizer["Department"]</label>
                                         <select name="DepartmentID" id="departSel" class="form-select form-select-solid" data-control="select2" data-placeholder="@Localizer["Select the company to load its structure"]"><option value=""></option></select></div>
                                     <div class="col-md-6"><label class="fs-6 fw-semibold mb-2">@Localizer["Employment type"]</label>

@@ -492,7 +492,7 @@
     <!-- Context menu -->
     <div id="treeActionMenu" style="position:absolute;display:none;z-index:9999;background:#fff;border:1px solid #e4e9f2;border-radius:12px;box-shadow:0 14px 30px rgba(20,32,55,.14);padding:7px;min-width:140px;">
         <a href="javascript:;" class="dropdown-item rounded-2 px-3 py-2 fw-700" id="addItem"><i class="ki-outline ki-plus text-primary me-2"></i>@SR["Add"]</a>
-        <a href="javascript:;" class="dropdown-item rounded-2 px-3 py-2 fw-700" id="editItem"><i class="ki-outline ki-pencil text-warning me-2"></i>@SR["Edit"]</a>
+        <a href="javascript:;" class="dropdown-item rounded-2 px-3 py-2 fw-700" id="editItem"><i class="ki-outline ki-pencil text-primary me-2"></i>@SR["Edit"]</a>
     </div>
 
 
@@ -1191,7 +1191,7 @@ function renderFlowChart(data){
 ══════════════════════════════════════════════════════════ */
 function getTreeIconClass(item){
     var t=getHType(item);
-    return t===1?'ki-outline ki-bank text-warning fs-4'
+    return t===1?'ki-outline ki-bank text-primary fs-4'
         : t===2?'ki-outline ki-shop text-primary fs-4'
         : t===4?'ki-outline ki-briefcase text-primary fs-4'
         : t===5?'ki-outline ki-profile-user text-primary fs-4'
@@ -1373,7 +1373,7 @@ $(document).ready(function(){
 
             $('#kt_docs_jstree_customicons').jstree({
                 core:{data:treeData,themes:{responsive:true}},
-                types:{default:{icon:'ki-outline ki-folder fs-3 text-muted'},file:{icon:'ki-outline ki-file text-warning'}},
+                types:{default:{icon:'ki-outline ki-folder fs-3 text-muted'},file:{icon:'ki-outline ki-file text-primary'}},
                 plugins:['types','search']
             });
             $('#kt_docs_jstree_customicons').on('select_node.jstree',function(e,data){ $('#treeActionMenu').data('nodeId',data.node.id); });
