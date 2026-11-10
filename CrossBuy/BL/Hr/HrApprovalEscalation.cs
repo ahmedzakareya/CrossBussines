@@ -187,6 +187,20 @@ namespace CrossBuy.BL.Hr
 							if (r.Escalated > 0 || r.Reminded > 0)
 								_log.LogInformation("HR approval escalation, company {CompanyId}: {Escalated} escalated, {Reminded} reminded of {Examined} overdue",
 									companyId, r.Escalated, r.Reminded, r.Examined);
+
+							// Year-end leave carry-over (2026-11-10): in January, once, unless HR already ran it. Its own try,
+							// so a carry-over fault never costs the escalation sweep its run, nor the reverse.
+							try
+							{
+								var carry = ActivatorUtilities.CreateInstance<HrCarryOverYearEnd>(scope.ServiceProvider);
+								var c = await carry.RunIfDueAsync(companyId, DateTime.Today, stoppingToken);
+								if (c.Ran) _log.LogInformation("HR leave carry-over, company {CompanyId}: {Rows} line(s), {Days} day(s) carried into {Year}",
+									companyId, c.Rows, c.Days, DateTime.Today.Year);
+							}
+							catch (Exception ex) when (ex is not OperationCanceledException)
+							{
+								_log.LogError(ex, "HR leave carry-over failed for company {CompanyId}", companyId);
+							}
 						},
 						stoppingToken);
 				}

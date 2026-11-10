@@ -204,8 +204,11 @@ namespace CrossBuy.BL
 		{
 			var rows = new List<CarryOverRow>();
 			var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+			// Only people employed by the END of the year being closed: someone who joined later has no balance in it, and
+			// would otherwise be carried the policy's whole entitlement for a year they never worked (2026-11-10).
+			var yearEnd = new DateTime(fromYear, 12, 31);
 			var employees = await _context.Employee.AsNoTracking()
-				.Where(e => e.EmpCompanyID == companyId && e.IsActive).Select(e => new { e.ID, e.FullName, e.FullNameEn }).ToListAsync();
+				.Where(e => e.EmpCompanyID == companyId && e.IsActive && e.DateOfJoining <= yearEnd).Select(e => new { e.ID, e.FullName, e.FullNameEn }).ToListAsync();
 			var typeNames = (await _context.LeaveTypes.AsNoTracking().ToListAsync())
 				.ToDictionary(t => t.ID, t => !isAr && !string.IsNullOrWhiteSpace(t.NameEn) ? t.NameEn : t.NameAr);
 
