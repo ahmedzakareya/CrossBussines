@@ -6,6 +6,7 @@ import 'app_nav.dart';
 import '../models/app_notification.dart';
 import '../models/dashboard.dart';
 import '../models/employee.dart';
+import '../models/rep.dart';
 import '../models/store.dart';
 import '../models/ess.dart';
 import '../models/finance_summary.dart';
@@ -304,6 +305,69 @@ class ApiService {
   // ---- Notifications ----
 
   /// Returns (unreadCount, list).
+  // ---------------- sales-rep mode (/api/rep, receipts via /api/acc/ar/receipts) ----------------
+
+  /// (total, currency, one page of 20 customers with outstanding / headroom)
+  Future<(int, String, List<RepCustomer>)> getRepCustomers({String? q, int page = 1}) async {
+    final res = await _dio.get('/api/rep/customers', queryParameters: {if (q != null && q.isNotEmpty) 'q': q, 'page': page});
+    return ((res.data['total'] as int?) ?? 0, (res.data['currency'] as String?) ?? '', _list(res.data).map(RepCustomer.fromJson).toList());
+  }
+
+  /// (the card, currency, may I take an order, may I collect)
+  Future<(RepCustomer, String, bool, bool)> getRepCustomer(int id) async {
+    final res = await _dio.get('/api/rep/customers/$id');
+    return (RepCustomer.fromJson(res.data['data'] as Map<String, dynamic>), (res.data['currency'] as String?) ?? '', res.data['canOrder'] == true, res.data['canCollect'] == true);
+  }
+
+  Map<String, dynamic> _order(int customerId, Map<int, double> qty, String? notes) => {
+        'customerId': customerId, 'notes': notes,
+        'lines': [for (final e in qty.entries) {'itemId': e.key, 'qty': e.value}],
+      };
+
+  /// The server prices every line for this customer; the phone never sends a price.
+  Future<OrderPreview> previewOrder(int customerId, Map<int, double> qty) async {
+    try {
+      final res = await _dio.post('/api/rep/order/preview', data: _order(customerId, qty, null));
+      return OrderPreview.fromJson(res.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      final d = e.response?.data;
+      return OrderPreview(ok: false, overLimit: false, message: d is Map ? d['message'] as String? : null, lines: const [], total: 0, outstanding: 0);
+    }
+  }
+
+  /// (ok, order number or the refusal, a margin/discount warning)
+  Future<(bool, String?, String?)> saveOrder(int customerId, Map<int, double> qty, {String? notes}) async {
+    try {
+      final res = await _dio.post('/api/rep/order', data: _order(customerId, qty, notes));
+      AppNav.notifyDataChanged();
+      return (true, res.data['orderNo'] as String?, res.data['warning'] as String?);
+    } on DioException catch (e) {
+      final d = e.response?.data;
+      return (false, d is Map ? d['message'] as String? : null, null);
+    }
+  }
+
+  Future<List<CashAccount>> getCashAccounts() async {
+    final res = await _dio.get('/api/rep/cash-accounts');
+    return _list(res.data).map(CashAccount.fromJson).toList();
+  }
+
+  /// A receipt voucher through the accounting API (permission "pay").
+  Future<(bool, String?)> collect(int customerId, double amount, String method, int cashAccountId) async {
+    try {
+      await _dio.post('/api/acc/ar/receipts', data: {
+        'customerId': customerId, 'receiptDate': ymdIso(DateTime.now()), 'amount': amount, 'method': method, 'cashAccountId': cashAccountId,
+      });
+      AppNav.notifyDataChanged();
+      return (true, null);
+    } on DioException catch (e) {
+      final d = e.response?.data;
+      return (false, d is Map ? d['message'] as String? : null);
+    }
+  }
+
+  static String ymdIso(DateTime d) => '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
   // ---------------- storekeeper mode (/api/store) ----------------
 
   /// (warehouses I may post stock documents in, every active warehouse as a transfer target)

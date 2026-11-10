@@ -9,6 +9,7 @@ import 'leave_screen.dart';
 import 'payslips_screen.dart';
 import 'profile_screen.dart';
 import 'requests_screen.dart';
+import 'rep_mode.dart';
 import 'store_mode.dart';
 import 'structure_screen.dart';
 
@@ -39,6 +40,7 @@ class _AppsTabState extends State<AppsTab> {
         _App(Icons.account_balance_outlined, 'المالية', 'Finance', const Color(0xFF0F766E), (c) => PageFrame(title: L(c, 'المالية', 'Finance'), child: const FinanceScreen())),
         _App(Icons.inventory_2_outlined, 'المخزون', 'Inventory', Brand.deep, (c) => PageFrame(title: L(c, 'المخزون', 'Inventory'), child: const InventoryScreen())),
         _App(Icons.warehouse_outlined, 'وضع المخزن', 'Store mode', const Color(0xFF0D9488), (c) => const StoreModeScreen()),
+        _App(Icons.route_outlined, 'وضع المندوب', 'Rep mode', const Color(0xFF4F46E5), (c) => const RepModeScreen()),
         _App(Icons.account_tree_outlined, 'الهيكل', 'Structure', const Color(0xFF9333EA), (c) => PageFrame(title: L(c, 'الهيكل التنظيمي', 'Org structure'), child: const StructureScreen())),
         _App(Icons.badge_outlined, 'ملفي', 'My profile', const Color(0xFF475569), (c) => const ProfileScreen()),
       ];
