@@ -272,6 +272,9 @@ namespace CrossBuy.BL.Reporting
             services.AddSingleton<IReportDefinitionProvider, HrDocumentReportDefinitionProvider>();
             services.AddScoped<IReportDataSource, HrLetterDataSource>();
             services.AddScoped<IReportDataSource, HrEmployeeDocumentsDataSource>();
+            // The HR change log (2026-11-10): job, identity/bank and salary changes, who and when.
+            services.AddSingleton<IReportDefinitionProvider, HrChangeLogReportDefinitionProvider>();
+            services.AddScoped<IReportDataSource, HrChangeLogDataSource>();
             services.AddScoped<IReportDataSource, HrLeaveLiabilityDataSource>();
             services.AddScoped<IReportDataSource, HrExpiriesDataSource>();
 

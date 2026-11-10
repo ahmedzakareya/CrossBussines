@@ -221,7 +221,7 @@ namespace CrossBuy.BL
 			if (model.DateOfJoining.HasValue) emp.DateOfJoining = model.DateOfJoining.Value;
 			emp.ManufHourlyRate = (model.ManufHourlyRate.HasValue && model.ManufHourlyRate.Value > 0) ? model.ManufHourlyRate : null;
 			// HR1: what the tracked fields were BEFORE this save, so a change is written to EmployeeHistory with its date.
-			var before = isNew ? null : new { emp.JobTitleID, emp.BranchID, emp.DepartmentID, emp.EmploymentType };
+			var before = isNew ? null : new { emp.JobTitleID, emp.BranchID, emp.DepartmentID, emp.EmploymentType, emp.Iban, emp.CivilIdNumber, emp.BankName };
 			if (model.JobTitleID.HasValue)    emp.JobTitleID   = model.JobTitleID.Value;
 			if (model.BranchID.HasValue)      emp.BranchID     = model.BranchID.Value;
 			// HR1 identity, bank and emergency contact (each optional; an empty field clears it)
@@ -255,7 +255,8 @@ namespace CrossBuy.BL
 			{
 				if (Equals(oldV, newV)) return;
 				_context.EmployeeHistory.Add(new EmployeeHistory { Employee = emp, CompanyID = emp.EmpCompanyID, Field = field,
-					OldValue = oldV?.ToString(), NewValue = newV?.ToString(), EffectiveFrom = DateTime.Today, ChangedByEmployeeId = callerEmployeeIdForHistory });
+					OldValue = oldV?.ToString(), NewValue = newV?.ToString(), EffectiveFrom = DateTime.Today, ChangedByEmployeeId = callerEmployeeIdForHistory,
+					ChangedAt = DateTime.UtcNow });   // set explicitly: EF sends the CLR default (0001-01-01) over the column's SYSUTCDATETIME() default
 			}
 			if (isNew) Track("Hire", null, emp.DateOfJoining.ToString("yyyy-MM-dd"));
 			else if (before != null)
@@ -264,6 +265,11 @@ namespace CrossBuy.BL
 				Track("Branch", before.BranchID, emp.BranchID);
 				Track("Department", before.DepartmentID, emp.DepartmentID);
 				Track("EmploymentType", before.EmploymentType, emp.EmploymentType);
+				// 2026-11-10: where the salary goes and who it is for. An IBAN edited here used to leave NO trace, so a salary
+				// could be redirected silently; the IBAN is recorded masked to its last four characters (as the Excel import does).
+				if (!Equals(before.Iban, emp.Iban)) Track("Iban", CrossBuy.BL.Hr.HrBankDetailsImport.Mask(before.Iban), CrossBuy.BL.Hr.HrBankDetailsImport.Mask(emp.Iban));
+				Track("CivilId", before.CivilIdNumber, emp.CivilIdNumber);
+				Track("BankName", before.BankName, emp.BankName);
 			}
 
 			try
