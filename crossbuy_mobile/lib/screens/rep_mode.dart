@@ -240,7 +240,8 @@ class _RepOrderScreenState extends State<RepOrderScreen> {
                     RowItem(
                       leading: const IconTile(Icons.inventory_2_outlined, size: 36),
                       title: l.name,
-                      subtitle: '${money(l.unitPrice, widget.currency)} × ${l.qty == l.qty.roundToDouble() ? l.qty.toInt() : l.qty}${l.discount > 0 ? ' − ${money(l.discount, widget.currency)}' : ''}${l.taxRate > 0 ? ' + ${l.taxRate.toStringAsFixed(0)}%' : ''}',
+                      // the price formula is left-to-right inside an Arabic line: isolate it (U+2066 … U+2069) so it reads in order
+                      subtitle: '\u2066${money(l.unitPrice, widget.currency)} × ${l.qty == l.qty.roundToDouble() ? l.qty.toInt() : l.qty}${l.discount > 0 ? ' − ${money(l.discount, widget.currency)}' : ''}${l.taxRate > 0 ? ' + ${l.taxRate.toStringAsFixed(0)}%' : ''}\u2069',
                       trailing: Row(mainAxisSize: MainAxisSize.min, children: [
                         IconButton(visualDensity: VisualDensity.compact, onPressed: () => _set(l.itemId, (_qty[l.itemId] ?? 0) - 1), icon: const Icon(Icons.remove_circle_outline)),
                         IconButton(visualDensity: VisualDensity.compact, onPressed: () => _set(l.itemId, (_qty[l.itemId] ?? 0) + 1), icon: const Icon(Icons.add_circle_outline)),
