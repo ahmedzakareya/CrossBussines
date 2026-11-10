@@ -210,6 +210,17 @@ namespace CrossBuy.Tests.Hr
 			Assert.Equal(HrBankFileFields.Insurance, HrBankFileFields.Norm("insurance"));
 		}
 
+		// ---- who may read a payslip document (Hr.Payslip reads under the public key; the RECORD is enforced) --------
+		private static CrossBuy.Models.Platform.BusinessContext Ctx(int company, int? employee, params string[] roles) =>
+			new() { CompanyId = company, EmployeeId = employee, Roles = roles, UserId = "u" };
+
+		[Fact] public void An_employee_reads_their_own_payslip() => Assert.True(CrossBuy.BL.Reporting.HrPayslipDataSource.MayRead(Ctx(1, 5), 1, 5));
+		[Fact] public void An_employee_never_reads_a_colleagues_payslip() => Assert.False(CrossBuy.BL.Reporting.HrPayslipDataSource.MayRead(Ctx(1, 5), 1, 17));
+		[Fact] public void A_caller_with_no_employee_reads_nothing() => Assert.False(CrossBuy.BL.Reporting.HrPayslipDataSource.MayRead(Ctx(1, null), 1, 5));
+		[Fact] public void Hr_reads_any_payslip_of_its_company() => Assert.True(CrossBuy.BL.Reporting.HrPayslipDataSource.MayRead(Ctx(1, 2046, "HrOfficer"), 1, 17));
+		[Fact] public void Nobody_reads_another_companys_payslip() => Assert.False(CrossBuy.BL.Reporting.HrPayslipDataSource.MayRead(Ctx(1, 5, "Admin"), 2, 5));
+		[Fact] public void An_unresolved_company_reads_nothing() => Assert.False(CrossBuy.BL.Reporting.HrPayslipDataSource.MayRead(Ctx(0, 5), 0, 5));
+
 		// ---- the Excel import's normalisation ------------------------------------------------------------------------
 		[Fact]
 		public void Imported_values_are_normalised_and_an_iban_is_masked_for_history()

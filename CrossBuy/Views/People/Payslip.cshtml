@@ -4,20 +4,32 @@
 @model Payslip
 @{
     Layout = "~/Views/Shared/_LayoutPeople.cshtml";
-    string M(decimal v) => v.ToString("N2");
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    string L(string ar, string en) => isAr ? ar : en;
+    // The company's currency comes from its country rule pack (the controller passes it), never a constant; the three-decimal
+    // currencies (KWD, BHD, OMR, JOD) show three decimals.
+    var currency = ViewBag.Currency as string ?? "";
+    var dec = currency is "KWD" or "BHD" or "OMR" or "JOD" ? 3 : 2;
+    string M(decimal v) => v.ToString("N" + dec, System.Globalization.CultureInfo.InvariantCulture);
     ViewData["Title"] = Localizer["Payslip"].Value;
     var earnings = Model.BaseSalary + Model.Allowances + Model.OvertimePay;
-    var deductions = Model.SiEmployee + Model.Tax + Model.LatePenalty + Model.AbsencePenalty;
+    // every deduction payroll takes, so earnings - deductions = net
+    var deductions = Model.SiEmployee + Model.Tax + Model.LatePenalty + Model.AbsencePenalty + Model.LoanDeduction + Model.SickLeaveDeduction;
 }
 <div class="d-flex flex-column flex-column-fluid">
     <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
         <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["Payslip"]</h1></div>
-        <div class="d-flex gap-2"><a href="@Url.Action("Payslips","People")" class="btn btn-light btn-sm">@SR["Back"]</a><button type="button" class="btn btn-primary btn-sm" onclick="window.print()"><i class="ki-outline ki-printer fs-3"></i>@SR["Print"]</button></div>
+        <div class="d-flex gap-2"><a href="@Url.Action("Payslips","People")" class="btn btn-light btn-sm">@SR["Back"]</a>@await Html.PartialAsync("_ReportPrintMenu", new CrossBuy.BL.Reporting.ReportPrintMenuModel
+            {
+                ScreenKey = "Hr.Payslip",
+                DocumentId = Model.ID.ToString(),
+                DocumentTitle = "PS-" + Model.Year + "-" + Model.ID.ToString("D5"),
+            })</div>
     </div></div>
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
         <div class="card" id="slip"><div class="card-body p-10">
             <div class="d-flex flex-stack border-bottom pb-6 mb-6">
-                <div><h2 class="fw-bold text-gray-900 mb-1">CrossBuy</h2><div class="text-muted fs-6">@Localizer["Salary payslip"]</div></div>
+                <div><h2 class="fw-bold text-gray-900 mb-1">@Localizer["Salary payslip"]</h2></div>
                 <div class="text-end"><div class="fs-3 fw-bold text-gray-800">@Model.Year / @Model.Month.ToString("00")</div><div class="text-muted fs-7">@Localizer["Period"]</div></div>
             </div>
             <div class="row mb-8">
@@ -36,16 +48,21 @@
                     <h3 class="fw-bold text-danger mb-4">@Localizer["Deductions"]</h3>
                     <div class="d-flex justify-content-between py-2 border-bottom"><span class="text-gray-700">@Localizer["Social insurance (employee)"]</span><span class="fw-bold">@M(Model.SiEmployee)</span></div>
                     <div class="d-flex justify-content-between py-2 border-bottom"><span class="text-gray-700">@Localizer["Income tax"]</span><span class="fw-bold">@M(Model.Tax)</span></div>
-                    <div class="d-flex justify-content-between py-2 border-bottom"><span class="text-gray-700">@Localizer["Late penalty"] <span class="text-muted fs-8">(@Model.LateMinutes @Localizer["min"])</span></span><span class="fw-bold text-warning">@M(Model.LatePenalty)</span></div>
+                    <div class="d-flex justify-content-between py-2 border-bottom"><span class="text-gray-700">@Localizer["Late penalty"] <span class="text-muted fs-8">(@Model.LateMinutes @Localizer["min"])</span></span><span class="fw-bold text-danger">@M(Model.LatePenalty)</span></div>
                     <div class="d-flex justify-content-between py-2 border-bottom"><span class="text-gray-700">@Localizer["Absence penalty"] <span class="text-muted fs-8">(@Model.AbsentDays @Localizer["d"])</span></span><span class="fw-bold text-danger">@M(Model.AbsencePenalty)</span></div>
+                    @if (Model.LoanDeduction != 0) { <div class="d-flex justify-content-between py-2 border-bottom"><span class="text-gray-700">@L("قسط قرض / سلفة", "Loan / advance instalment")</span><span class="fw-bold text-danger">@M(Model.LoanDeduction)</span></div> }
+                    @if (Model.SickLeaveDeduction != 0) { <div class="d-flex justify-content-between py-2 border-bottom"><span class="text-gray-700">@L("إجازة بأجر جزئي", "Part-paid leave")</span><span class="fw-bold text-danger">@M(Model.SickLeaveDeduction)</span></div> }
                     <div class="d-flex justify-content-between py-3 mt-2 border-top border-2"><span class="fw-bold text-gray-900">@Localizer["Total deductions"]</span><span class="fw-bold fs-5 text-danger">@M(deductions)</span></div>
                 </div>
             </div>
             <div class="d-flex flex-stack bg-light-success rounded p-6 mt-8">
                 <span class="fw-bold fs-3 text-gray-900">@Localizer["Net pay"]</span>
-                <span class="fw-bolder fs-2 text-primary">@M(Model.Net) <span class="fs-6 text-muted">EGP</span></span>
+                <span class="fw-bolder fs-2 text-primary">@M(Model.Net) <span class="fs-6 text-muted">@currency</span></span>
             </div>
             <div class="text-muted fs-8 mt-4">@Localizer["Employer social insurance"]: @M(Model.SiCompany) — @Localizer["not deducted from employee"].</div>
         </div></div>
     </div></div>
 </div>
+
+@* The shared report dialog the print menu opens. *@
+@await Html.PartialAsync("_ReportPreviewModal", (object)(Localizer["Payslip"].Value + " PS-" + Model.Year + "-" + Model.ID.ToString("D5")))

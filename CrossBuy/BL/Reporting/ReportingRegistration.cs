@@ -265,6 +265,9 @@ namespace CrossBuy.BL.Reporting
             services.AddScoped<IReportDataSource, HrHeadcountDataSource>();
             services.AddScoped<IReportDataSource, HrLeaversDataSource>();
             services.AddScoped<IReportDataSource, HrGratuityLiabilityDataSource>();
+            // The payslip as a Report Studio document (2026-11-10): the employee prints their own, HR anyone's.
+            services.AddSingleton<IReportDefinitionProvider, HrPayslipReportDefinitionProvider>();
+            services.AddScoped<IReportDataSource, HrPayslipDataSource>();
             services.AddScoped<IReportDataSource, HrLeaveLiabilityDataSource>();
             services.AddScoped<IReportDataSource, HrExpiriesDataSource>();
 

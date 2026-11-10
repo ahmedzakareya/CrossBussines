@@ -607,6 +607,7 @@ namespace CrossBuy.Controllers
 			// security: an employee can only open their OWN payslip
 			var slip = await _context.Payslips.AsNoTracking().FirstOrDefaultAsync(s => s.ID == id && s.EmployeeID == emp.ID);
 			if (slip == null) return RedirectToAction(nameof(Payslips));
+			ViewBag.Currency = (await new CrossBuy.BL.Hr.HrRulePackService(_context).EffectiveAsync(slip.CompanyID))?.Rules.Currency;   // the pack's currency, not a constant
 			return View(slip);
 		}
 
