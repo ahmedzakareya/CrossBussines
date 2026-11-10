@@ -50,11 +50,11 @@
                 <div class="col-md-4"><div class="card h-100"><div class="card-body d-flex flex-column gap-2 py-5">
                     <i class="ki-outline ki-information-2 fs-2x text-primary"></i><span class="text-muted fs-7">@L("ينقصهم IBAN أو رقم مدني", "Missing an IBAN or civil ID")</span><span class="fw-bold fs-3 hr-num @(Model.Missing > 0 ? "text-danger" : "")">@Model.Missing</span></div></div></div>
                 <div class="col-md-4"><div class="card h-100"><div class="card-body d-flex flex-column justify-content-center gap-3 py-5">
-                    <a href="@Url.Action("BankDetailsTemplate")" class="btn btn-light-primary"><i class="ki-outline ki-file-down fs-3"></i>@L("١. تنزيل النموذج", "1. Download the template")</a>
+                    <a href="@Url.Action("BankDetailsTemplate")" class="btn btn-light-primary"><i class="ki-outline ki-file-down fs-3"></i>@L("1. تنزيل النموذج", "1. Download the template")</a>
                     <form asp-action="BankDetailsUpload" method="post" enctype="multipart/form-data" class="d-flex gap-2">
                         @Html.AntiForgeryToken()
                         <input type="file" name="file" accept=".xlsx" class="form-control form-control-sm form-control-solid" required />
-                        <button type="submit" class="btn btn-sm btn-primary text-nowrap"><i class="ki-outline ki-file-up fs-4"></i>@L("٢. رفع ومراجعة", "2. Upload & review")</button>
+                        <button type="submit" class="btn btn-sm btn-primary text-nowrap"><i class="ki-outline ki-file-up fs-4"></i>@L("2. رفع ومراجعة", "2. Upload & review")</button>
                     </form>
                 </div></div></div>
             </div>
@@ -81,7 +81,7 @@
                                         <input type="hidden" name="empId" value="@c.EmployeeId" /><input type="hidden" name="civil" value="@c.NewCivilId" />
                                         <input type="hidden" name="iban" value="@c.NewIban" /><input type="hidden" name="bank" value="@c.NewBank" />
                                     }
-                                    <button class="btn btn-sm btn-primary"><i class="ki-outline ki-check fs-4"></i>@L($"٣. حفظ {changes.Count} تغيير", $"3. Save {changes.Count} change(s)")</button>
+                                    <button class="btn btn-sm btn-primary"><i class="ki-outline ki-check fs-4"></i>@L($"3. حفظ {changes.Count} تغيير", $"3. Save {changes.Count} change(s)")</button>
                                 </form>
                             }
                         </div>

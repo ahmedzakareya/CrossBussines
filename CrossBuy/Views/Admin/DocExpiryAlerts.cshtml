@@ -42,7 +42,7 @@
                 </form>
                 @if (Model.Any())
                 {
-                    <form asp-action="CreateExpiryTasks" method="post" data-cb-confirm data-cb-action="generic" data-cb-text="@L("إنشاء مهمة تجديد لكل وثيقة أو عقد ينتهي خلال ٣٠ يوماً أو انتهى؟ لا تُنشأ المهمة مرتين.", "Create a renewal task for every document or contract expiring within 30 days or already expired? A task is never created twice.")">@Html.AntiForgeryToken()
+                    <form asp-action="CreateExpiryTasks" method="post" data-cb-confirm data-cb-action="generic" data-cb-text="@L("إنشاء مهمة تجديد لكل وثيقة أو عقد ينتهي خلال 30 يوماً أو انتهى؟ لا تُنشأ المهمة مرتين.", "Create a renewal task for every document or contract expiring within 30 days or already expired? A task is never created twice.")">@Html.AntiForgeryToken()
                         <input type="hidden" name="days" value="@days" />
                         <button class="btn btn-sm btn-light-primary"><i class="ki-outline ki-check-square fs-4"></i>@L("إنشاء مهام المتابعة", "Create follow-up tasks")</button>
                     </form>
@@ -62,8 +62,8 @@
 
             <div class="row g-5 g-xl-8 mb-5">
                 @foreach (var s in new[] { (L("منتهية", "Expired"), expired, "ki-cross-circle", expired > 0 ? "text-danger" : "text-gray-900"),
-                                           (L("خلال ٣٠ يوماً", "Within 30 days"), in30, "ki-time", in30 > 0 ? "text-danger" : "text-gray-900"),
-                                           (L("خلال ٦٠ يوماً", "Within 60 days"), in60, "ki-calendar", "text-primary"),
+                                           (L("خلال 30 يوماً", "Within 30 days"), in30, "ki-time", in30 > 0 ? "text-danger" : "text-gray-900"),
+                                           (L("خلال 60 يوماً", "Within 60 days"), in60, "ki-calendar", "text-primary"),
                                            (L("بعد ذلك ضمن المدة", "Later in the window"), later, "ki-calendar-2", "text-gray-900") })
                 {
                     <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
@@ -103,7 +103,7 @@
             <div class="hr-notice mb-5">
                 <i class="ki-outline ki-information-5 fs-2"></i>
                 <div><div class="fw-bold">@L("المتابعة الآلية", "Automatic follow-up")</div>
-                <div class="fs-7">@L("كل يوم تُنشأ مهمة «تجديد» لكل وثيقة أو عقد ينتهي خلال ٣٠ يوماً، مرتبطة بملف الموظف وتستحق في تاريخ الانتهاء؛ إن لم تُجدد تصبح متأخرة وتظهر في «ما يحتاج انتباهي» تلقائياً. لا تُنشأ المهمة مرتين، والتجديد بتاريخ جديد ينشئ مهمة جديدة. التشغيل والإيقاف ومن تُسند إليه من قواعد المهام التلقائية (HrDocumentExpiry). الاحتفاظ بجواز الموظف ممنوع قانوناً — النظام يسجل الرقم والانتهاء فقط.", "Every day a \"renew\" task is created for each document or contract expiring within 30 days, linked to the employee and due on the expiry date; if it is not renewed it becomes overdue and shows in Attention by itself. A task is never created twice, and a renewal with a new date creates a new one. On/off and the assignee come from the automatic task rules (HrDocumentExpiry). Keeping an employee's passport is unlawful — the system records only the number and expiry.")</div></div>
+                <div class="fs-7">@L("كل يوم تُنشأ مهمة «تجديد» لكل وثيقة أو عقد ينتهي خلال 30 يوماً، مرتبطة بملف الموظف وتستحق في تاريخ الانتهاء؛ إن لم تُجدد تصبح متأخرة وتظهر في «ما يحتاج انتباهي» تلقائياً. لا تُنشأ المهمة مرتين، والتجديد بتاريخ جديد ينشئ مهمة جديدة. التشغيل والإيقاف ومن تُسند إليه من قواعد المهام التلقائية (HrDocumentExpiry). الاحتفاظ بجواز الموظف ممنوع قانوناً — النظام يسجل الرقم والانتهاء فقط.", "Every day a \"renew\" task is created for each document or contract expiring within 30 days, linked to the employee and due on the expiry date; if it is not renewed it becomes overdue and shows in Attention by itself. A task is never created twice, and a renewal with a new date creates a new one. On/off and the assignee come from the automatic task rules (HrDocumentExpiry). Keeping an employee's passport is unlawful — the system records only the number and expiry.")</div></div>
             </div>
         </div>
     </div>
