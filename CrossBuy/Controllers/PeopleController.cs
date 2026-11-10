@@ -348,7 +348,10 @@ namespace CrossBuy.Controllers
 			bool mayDecide = await _hrAccess.CanAsync(
 				hrContext, HrActions.LeaveApprove,
 				PermissionTarget.ForSubjectEmployee(subjectEmployeeId.Value, hrContext.CompanyId),
-				HttpContext.RequestAborted);
+				HttpContext.RequestAborted)
+				// or it is the caller's TURN: an HR final approver, a delegate or an escalation target holds the current step
+				// without managing the subject (HrApprovalTurn — the workflow placed them there; nothing else is widened).
+				|| (hrContext.EmployeeId is int me && await CrossBuy.BL.Hr.HrApprovalTurn.HoldsLeaveTurnAsync(_context, id, me, hrContext.CompanyId, HttpContext.RequestAborted));
 			if (!mayDecide)
 			{
 				TempData["LeaveErr"] = L["You are not allowed to perform this action"].Value;
@@ -494,7 +497,10 @@ namespace CrossBuy.Controllers
 			bool mayDecide = await _hrAccess.CanAsync(
 				hrContext, HrActions.LeaveApprove,
 				PermissionTarget.ForSubjectEmployee(subjectEmployeeId.Value, hrContext.CompanyId),
-				HttpContext.RequestAborted);
+				HttpContext.RequestAborted)
+				// or it is the caller's TURN: an HR final approver, a delegate or an escalation target holds the current step
+				// without managing the subject (HrApprovalTurn — the workflow placed them there; nothing else is widened).
+				|| (hrContext.EmployeeId is int me && await CrossBuy.BL.Hr.HrApprovalTurn.HoldsRequestTurnAsync(_context, id, me, hrContext.CompanyId, HttpContext.RequestAborted));
 			if (!mayDecide)
 			{
 				TempData["ReqErr"] = L["You are not allowed to perform this action"].Value;

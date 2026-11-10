@@ -219,7 +219,10 @@ namespace CrossBuy.Controllers.Api
 			bool mayDecide = await _hrAccess.CanAsync(
 				hrContext, CrossBuy.BL.HrActions.LeaveApprove,
 				CrossBuy.Models.Platform.PermissionTarget.ForSubjectEmployee(subjectEmployeeId.Value, hrContext.CompanyId),
-				HttpContext.RequestAborted);
+				HttpContext.RequestAborted)
+				// or it is the caller's TURN: an HR final approver, a delegate or an escalation target holds the current step
+				// without managing the subject (HrApprovalTurn — the workflow placed them there; nothing else is widened).
+				|| (hrContext.EmployeeId is int me && await CrossBuy.BL.Hr.HrApprovalTurn.HoldsLeaveTurnAsync(_context, id, me, hrContext.CompanyId, HttpContext.RequestAborted));
 			if (!mayDecide) return NotFound(new { success = false, message = "Not authorised" });
 
 			var (ok, error) = await _workflow.DecideAsync(id, emp.ID, dto.Approve == true, dto.Note);
