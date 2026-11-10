@@ -29,6 +29,8 @@ namespace CrossBuy.BL.Hospital
 		/// H10: the inventory item picked from the pharmacy's stock (null = free text, not stocked).
 		public int? ItemId { get; set; }
 		public string? Instructions { get; set; }
+		/// H33: the instructions' English twin.
+		public string? InstructionsEn { get; set; }
 		public int Quantity { get; set; } = 1;
 	}
 
@@ -122,6 +124,13 @@ namespace CrossBuy.BL.Hospital
 			("F41.9", "اضطراب القلق", "Anxiety disorder, unspecified"),
 			("F32.9", "نوبة اكتئاب", "Major depressive disorder, single episode, unspecified"),
 			("Z34.90", "متابعة حمل طبيعي", "Encounter for supervision of normal pregnancy"),
+			// the dental pack's clinic (ICD-10-CM chapter K00–K14)
+			("K02.9", "تسوس الأسنان", "Dental caries, unspecified"),
+			("K01.1", "ضرس مطمور", "Impacted teeth"),
+			("K05.10", "التهاب اللثة المزمن", "Chronic gingivitis, plaque induced"),
+			("K04.02", "التهاب لب السن غير القابل للعكس", "Irreversible pulpitis"),
+			("K04.7", "خُرّاج حول الذروة", "Periapical abscess without sinus"),
+			("K08.109", "فقدان كامل للأسنان", "Complete loss of teeth, unspecified cause"),
 			("O24.419", "سكري الحمل", "Gestational diabetes mellitus in pregnancy"),
 			("N94.6", "عسر الطمث", "Dysmenorrhoea, unspecified"),
 			("Z00.00", "فحص طبي عام", "General adult medical examination"),
@@ -290,7 +299,13 @@ namespace CrossBuy.BL.Hospital
 			}
 			order = 0;
 			foreach (var r in lines)
-				_db.HospitalPrescriptionLines.Add(new HospitalPrescriptionLine { CompanyId = ctx.CompanyId, EncounterId = e.ID, Drug = r.Drug.Trim()[..Math.Min(200, r.Drug.Trim().Length)], ItemId = r.ItemId is int iid && formulary.Contains(iid) ? iid : null, Instructions = Clean(r.Instructions, 400), Quantity = r.Quantity, SortOrder = order++ });
+			{
+				int? stocked = r.ItemId is int iid && formulary.Contains(iid) ? iid : null;
+				// H33: a stocked drug's English name is its item's; a typed one has none (its words are the doctor's)
+				var drugEn = stocked is int sid ? await _db.Items.AsNoTracking().Where(i => i.ID == sid && i.CompanyID == ctx.CompanyId).Select(i => i.NameEn).FirstOrDefaultAsync(ct) : null;
+				_db.HospitalPrescriptionLines.Add(new HospitalPrescriptionLine { CompanyId = ctx.CompanyId, EncounterId = e.ID, Drug = r.Drug.Trim()[..Math.Min(200, r.Drug.Trim().Length)], ItemId = stocked,
+					DrugEn = Clean(drugEn, 200), Instructions = Clean(r.Instructions, 400), InstructionsEn = Clean(r.InstructionsEn, 400), Quantity = r.Quantity, SortOrder = order++ });
+			}
 
 			if (sign)
 			{

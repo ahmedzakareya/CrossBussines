@@ -1,0 +1,220 @@
+{
+ "unit": "H64 — restricted files and break-glass",
+ "strings": {
+  "A file is restricted from the patient's file page.": {
+   "ar": "يُقيَّد الملف من صفحة ملف المريض.",
+   "en": "A file is restricted from the patient's file page.",
+   "fr": "Un dossier se restreint depuis la page du patient."
+  },
+  "Both files are restricted: lift one restriction first": {
+   "ar": "الملفان مقيّدان: ارفع تقييد أحدهما أولاً",
+   "en": "Both files are restricted: lift one restriction first",
+   "fr": "Les deux dossiers sont restreints : levez d'abord une restriction"
+  },
+  "Break the glass and open": {
+   "ar": "فتح طارئ للملف",
+   "en": "Break the glass and open",
+   "fr": "Ouvrir en urgence"
+  },
+  "Choose whether it was justified": {
+   "ar": "حدد هل كان مبرَّراً",
+   "en": "Choose whether it was justified",
+   "fr": "Indiquez si c'était justifié"
+  },
+  "Emergency access": {
+   "ar": "الوصول الطارئ للملفات",
+   "en": "Emergency access",
+   "fr": "Accès d'urgence"
+  },
+  "Emergency openings": {
+   "ar": "مرات الفتح الطارئ",
+   "en": "Emergency openings",
+   "fr": "Ouvertures d'urgence"
+  },
+  "Lift the restriction": {
+   "ar": "رفع التقييد",
+   "en": "Lift the restriction",
+   "fr": "Lever la restriction"
+  },
+  "Lift the restriction on this file?": {
+   "ar": "رفع التقييد عن هذا الملف؟",
+   "en": "Lift the restriction on this file?",
+   "fr": "Lever la restriction de ce dossier ?"
+  },
+  "Mark this opening justified?": {
+   "ar": "اعتبار هذا الفتح مبرَّراً؟",
+   "en": "Mark this opening justified?",
+   "fr": "Marquer cette ouverture comme justifiée ?"
+  },
+  "No emergency opening yet.": {
+   "ar": "لا توجد مرات فتح طارئ بعد.",
+   "en": "No emergency opening yet.",
+   "fr": "Aucune ouverture d'urgence."
+  },
+  "Only the patient's care team and those allowed to see confidential files open it. In an emergency you can open it now: write why. The opening is recorded and the hospital administrator reviews it.": {
+   "ar": "لا يفتحه إلا الفريق المعالج للمريض ومن لهم صلاحية الملفات السرية. في حالة طارئة يمكنك فتحه الآن بعد كتابة السبب، ويُسجَّل الفتح ويراجعه مدير المستشفى.",
+   "en": "Only the patient's care team and those allowed to see confidential files open it. In an emergency you can open it now: write why. The opening is recorded and the hospital administrator reviews it.",
+   "fr": "Seuls l'équipe soignante et les personnes autorisées aux dossiers confidentiels l'ouvrent. En urgence vous pouvez l'ouvrir maintenant en indiquant pourquoi ; l'ouverture est enregistrée et revue par l'administrateur."
+  },
+  "Open {0}'s restricted file? Your name, the time and your reason are recorded for review.": {
+   "ar": "فتح الملف المقيّد للمريض {0}؟ يُسجَّل اسمك والوقت والسبب للمراجعة.",
+   "en": "Open {0}'s restricted file? Your name, the time and your reason are recorded for review.",
+   "fr": "Ouvrir le dossier restreint de {0} ? Votre nom, l'heure et la raison sont enregistrés pour revue."
+  },
+  "Openings waiting for review": {
+   "ar": "مرات فتح بانتظار المراجعة",
+   "en": "Openings waiting for review",
+   "fr": "Ouvertures à revoir"
+  },
+  "Restrict the file": {
+   "ar": "تقييد الملف",
+   "en": "Restrict the file",
+   "fr": "Restreindre le dossier"
+  },
+  "Restricted file": {
+   "ar": "ملف مقيّد",
+   "en": "Restricted file",
+   "fr": "Dossier restreint"
+  },
+  "Restricted files": {
+   "ar": "الملفات المقيّدة",
+   "en": "Restricted files",
+   "fr": "Dossiers restreints"
+  },
+  "Restricted files are not installed yet (hospital_h64_break_glass.sql).": {
+   "ar": "الملفات المقيّدة غير مثبتة بعد (hospital_h64_break_glass.sql).",
+   "en": "Restricted files are not installed yet (hospital_h64_break_glass.sql).",
+   "fr": "Les dossiers restreints ne sont pas encore installés (hospital_h64_break_glass.sql)."
+  },
+  "Search by patient, MRN or employee…": {
+   "ar": "ابحث بالمريض أو رقم الملف أو الموظف…",
+   "en": "Search by patient, MRN or employee…",
+   "fr": "Rechercher par patient, dossier ou employé…"
+  },
+  "Someone else reviews your own opening": {
+   "ar": "يراجع فتحك شخص آخر غيرك",
+   "en": "Someone else reviews your own opening",
+   "fr": "Quelqu'un d'autre revoit votre propre ouverture"
+  },
+  "Supply & quality": {
+   "ar": "الإمداد والجودة",
+   "en": "Supply & quality",
+   "fr": "Approvisionnement et qualité"
+  },
+  "The emergency that needs this file": {
+   "ar": "الحالة الطارئة التي تحتاج هذا الملف",
+   "en": "The emergency that needs this file",
+   "fr": "L'urgence qui nécessite ce dossier"
+  },
+  "The file opens to you for {0} minutes.": {
+   "ar": "يُفتح لك الملف لمدة {0} دقيقة.",
+   "en": "The file opens to you for {0} minutes.",
+   "fr": "Le dossier vous est ouvert pendant {0} minutes."
+  },
+  "This file is already restricted": {
+   "ar": "هذا الملف مقيّد بالفعل",
+   "en": "This file is already restricted",
+   "fr": "Ce dossier est déjà restreint"
+  },
+  "This file is not restricted": {
+   "ar": "هذا الملف غير مقيّد",
+   "en": "This file is not restricted",
+   "fr": "Ce dossier n'est pas restreint"
+  },
+  "This file is restricted": {
+   "ar": "هذا الملف مقيّد",
+   "en": "This file is restricted",
+   "fr": "Ce dossier est restreint"
+  },
+  "This opening was already reviewed": {
+   "ar": "تمت مراجعة هذا الفتح بالفعل",
+   "en": "This opening was already reviewed",
+   "fr": "Cette ouverture a déjà été revue"
+  },
+  "Why is this file restricted? Only its care team and those allowed confidential files will open it; anyone else needs an emergency opening.": {
+   "ar": "لماذا يُقيَّد هذا الملف؟ لن يفتحه إلا الفريق المعالج ومن لهم صلاحية الملفات السرية، وغيرهم يحتاج فتحاً طارئاً.",
+   "en": "Why is this file restricted? Only its care team and those allowed confidential files will open it; anyone else needs an emergency opening.",
+   "fr": "Pourquoi restreindre ce dossier ? Seuls l'équipe soignante et les personnes autorisées l'ouvriront ; les autres devront faire une ouverture d'urgence."
+  },
+  "Why was this opening not justified?": {
+   "ar": "لماذا لم يكن هذا الفتح مبرَّراً؟",
+   "en": "Why was this opening not justified?",
+   "fr": "Pourquoi cette ouverture n'était-elle pas justifiée ?"
+  },
+  "Write the emergency that needs this file (at least {0} characters)": {
+   "ar": "اكتب الحالة الطارئة التي تحتاج هذا الملف (على الأقل {0} حروف)",
+   "en": "Write the emergency that needs this file (at least {0} characters)",
+   "fr": "Décrivez l'urgence qui nécessite ce dossier (au moins {0} caractères)"
+  },
+  "Write why it was not justified": {
+   "ar": "اكتب سبب عدم التبرير",
+   "en": "Write why it was not justified",
+   "fr": "Indiquez pourquoi ce n'était pas justifié"
+  },
+  "Write why the file is restricted": {
+   "ar": "اكتب سبب تقييد الملف",
+   "en": "Write why the file is restricted",
+   "fr": "Indiquez pourquoi le dossier est restreint"
+  },
+  "You may already open this file": {
+   "ar": "لديك صلاحية فتح هذا الملف بالفعل",
+   "en": "You may already open this file",
+   "fr": "Vous pouvez déjà ouvrir ce dossier"
+  },
+  "You opened it as an emergency until": {
+   "ar": "فتحته فتحاً طارئاً حتى",
+   "en": "You opened it as an emergency until",
+   "fr": "Vous l'avez ouvert en urgence jusqu'à"
+  },
+  "bg:Justified": {
+   "ar": "مبرَّر",
+   "en": "Justified",
+   "fr": "Justifié"
+  },
+  "bg:Unjustified": {
+   "ar": "غير مبرَّر",
+   "en": "Not justified",
+   "fr": "Non justifié"
+  },
+  "bg:review": {
+   "ar": "المراجعة",
+   "en": "Review",
+   "fr": "Revue"
+  },
+  "bg:reviewed": {
+   "ar": "تمت مراجعته",
+   "en": "Reviewed",
+   "fr": "Revu"
+  },
+  "bg:waiting": {
+   "ar": "بانتظار المراجعة",
+   "en": "Waiting for review",
+   "fr": "À revoir"
+  },
+  "bg:when": {
+   "ar": "الوقت",
+   "en": "When",
+   "fr": "Quand"
+  },
+  "bg:who": {
+   "ar": "من فتحه",
+   "en": "Opened by",
+   "fr": "Qui"
+  },
+  "bg:why": {
+   "ar": "السبب",
+   "en": "Why",
+   "fr": "Pourquoi"
+  },
+  "e.g. the patient arrived unconscious in the emergency department and needs their allergies and medicines": {
+   "ar": "مثال: وصل المريض فاقد الوعي إلى الطوارئ ونحتاج معرفة الحساسية والأدوية",
+   "en": "e.g. the patient arrived unconscious in the emergency department and needs their allergies and medicines",
+   "fr": "ex. le patient est arrivé inconscient aux urgences et il faut connaître ses allergies et ses médicaments"
+  },
+  "the opening is reviewed by the hospital administrator.": {
+   "ar": "ويراجع مدير المستشفى هذا الفتح.",
+   "en": "the opening is reviewed by the hospital administrator.",
+   "fr": "l'ouverture est revue par l'administrateur."
+  }
+ }
+}

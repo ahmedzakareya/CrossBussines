@@ -1,0 +1,205 @@
+{
+  "unit": "H24 — patient portal accounts, bookings and requests",
+  "strings": {
+    "A clinic that takes requests, or a patient whose account is not verified yet, asks here: book it in a free time of a doctor of the clinic, or decline it with the reason the patient will read.": {
+      "en": "A clinic that takes requests, or a patient whose account is not verified yet, asks here: book it in a free time of a doctor of the clinic, or decline it with the reason the patient will read.",
+      "ar": "هنا تصل طلبات العيادات التي تعمل بالطلب، وطلبات المرضى الذين لم تُوثَّق حساباتهم بعد: احجزها في وقت متاح لطبيب من العيادة، أو ارفضها بسبب يقرؤه المريض.",
+      "fr": "Ici arrivent les demandes des cliniques sur demande et des patients dont le compte n'est pas encore vérifié : réservez-les sur un créneau libre d'un médecin de la clinique, ou refusez-les avec le motif que le patient lira."
+    },
+    "Book it": {
+      "en": "Book it",
+      "ar": "احجزه",
+      "fr": "Réserver"
+    },
+    "Booking rules": {
+      "en": "Booking rules",
+      "ar": "قواعد الحجز",
+      "fr": "Règles de réservation"
+    },
+    "Check the person's identity, then choose their patient file (register one first if they have none). The account becomes verified and its open requests are for that file.": {
+      "en": "Check the person's identity, then choose their patient file (register one first if they have none). The account becomes verified and its open requests are for that file.",
+      "ar": "تحقّق من هوية الشخص، ثم اختر ملفه (سجّل ملفاً أولاً إن لم يكن له ملف). يصبح الحساب موثّقاً وتنتقل طلباته المفتوحة إلى هذا الملف.",
+      "fr": "Vérifiez l'identité de la personne, puis choisissez son dossier (créez-en un s'il n'en a pas). Le compte devient vérifié et ses demandes ouvertes passent à ce dossier."
+    },
+    "Choose the patient file": {
+      "en": "Choose the patient file",
+      "ar": "اختر ملف المريض",
+      "fr": "Choisissez le dossier du patient"
+    },
+    "Choose the relation": {
+      "en": "Choose the relation",
+      "ar": "اختر صلة القرابة",
+      "fr": "Choisissez le lien de parenté"
+    },
+    "Choose the time of day": {
+      "en": "Choose the time of day",
+      "ar": "اختر الفترة",
+      "fr": "Choisissez le moment de la journée"
+    },
+    "Decline the request of {0}? Write the reason the patient will read:": {
+      "en": "Decline the request of {0}? Write the reason the patient will read:",
+      "ar": "رفض طلب {0}؟ اكتب السبب الذي سيقرؤه المريض:",
+      "fr": "Refuser la demande de {0} ? Écrivez le motif que le patient lira :"
+    },
+    "It is too close to the appointment to change it online: call us": {
+      "en": "It is too close to the appointment to change it online: call us",
+      "ar": "الموعد قريب جداً لتعديله أونلاين: اتصل بنا",
+      "fr": "Le rendez-vous est trop proche pour le modifier en ligne : appelez-nous"
+    },
+    "Match to a file": {
+      "en": "Match to a file",
+      "ar": "مطابقة بملف",
+      "fr": "Rattacher à un dossier"
+    },
+    "No doctor of this clinic can be booked online for this visit": {
+      "en": "No doctor of this clinic can be booked online for this visit",
+      "ar": "لا يوجد طبيب في هذه العيادة يُحجز أونلاين لهذه الزيارة",
+      "fr": "Aucun médecin de cette clinique ne se réserve en ligne pour cette visite"
+    },
+    "No free time on this day.": {
+      "en": "No free time on this day.",
+      "ar": "لا يوجد وقت متاح في هذا اليوم.",
+      "fr": "Aucun créneau libre ce jour-là."
+    },
+    "No requests here.": {
+      "en": "No requests here.",
+      "ar": "لا توجد طلبات هنا.",
+      "fr": "Aucune demande ici."
+    },
+    "Not verified": {
+      "en": "Not verified",
+      "ar": "غير موثّق",
+      "fr": "Non vérifié"
+    },
+    "Only a booked appointment can be cancelled": {
+      "en": "Only a booked appointment can be cancelled",
+      "ar": "لا يُلغى إلا موعد محجوز",
+      "fr": "Seul un rendez-vous réservé peut être annulé"
+    },
+    "Only an open request can be withdrawn": {
+      "en": "Only an open request can be withdrawn",
+      "ar": "لا يُسحب إلا طلب مفتوح",
+      "fr": "Seule une demande ouverte peut être retirée"
+    },
+    "Only an unverified account is verified": {
+      "en": "Only an unverified account is verified",
+      "ar": "لا يُوثّق إلا حساب غير موثّق",
+      "fr": "Seul un compte non vérifié peut être vérifié"
+    },
+    "Portal requests": {
+      "en": "Portal requests",
+      "ar": "طلبات بوابة المريض",
+      "fr": "Demandes du portail"
+    },
+    "Preferred": {
+      "en": "Preferred",
+      "ar": "المفضّل",
+      "fr": "Préférence"
+    },
+    "Register a patient": {
+      "en": "Register a patient",
+      "ar": "تسجيل مريض",
+      "fr": "Enregistrer un patient"
+    },
+    "Requests from the patient portal": {
+      "en": "Requests from the patient portal",
+      "ar": "طلبات من بوابة المريض",
+      "fr": "Demandes depuis le portail patient"
+    },
+    "Say which days suit you": {
+      "en": "Say which days suit you",
+      "ar": "حدّد الأيام المناسبة لك",
+      "fr": "Indiquez les jours qui vous conviennent"
+    },
+    "That time is no longer free": {
+      "en": "That time is no longer free",
+      "ar": "هذا الوقت لم يعد متاحاً",
+      "fr": "Ce créneau n'est plus libre"
+    },
+    "This clinic takes requests: send one and the call centre will book it": {
+      "en": "This clinic takes requests: send one and the call centre will book it",
+      "ar": "هذه العيادة تعمل بالطلب: أرسل طلباً ويحجزه مركز الاتصال",
+      "fr": "Cette clinique fonctionne sur demande : envoyez-en une et le centre d'appels la réservera"
+    },
+    "This doctor cannot be booked online for this visit": {
+      "en": "This doctor cannot be booked online for this visit",
+      "ar": "هذا الطبيب لا يُحجز أونلاين لهذه الزيارة",
+      "fr": "Ce médecin ne se réserve pas en ligne pour cette visite"
+    },
+    "This file is already linked to the account": {
+      "en": "This file is already linked to the account",
+      "ar": "هذا الملف مرتبط بالحساب بالفعل",
+      "fr": "Ce dossier est déjà lié au compte"
+    },
+    "This is the account's own file": {
+      "en": "This is the account's own file",
+      "ar": "هذا هو ملف صاحب الحساب نفسه",
+      "fr": "C'est le dossier du titulaire du compte"
+    },
+    "This patient file already has a portal account": {
+      "en": "This patient file already has a portal account",
+      "ar": "لهذا الملف حساب على البوابة بالفعل",
+      "fr": "Ce dossier a déjà un compte sur le portail"
+    },
+    "This portal account is disabled": {
+      "en": "This portal account is disabled",
+      "ar": "حساب البوابة هذا موقوف",
+      "fr": "Ce compte du portail est désactivé"
+    },
+    "This request is already handled": {
+      "en": "This request is already handled",
+      "ar": "تم التعامل مع هذا الطلب بالفعل",
+      "fr": "Cette demande est déjà traitée"
+    },
+    "Verify the account against a patient file first": {
+      "en": "Verify the account against a patient file first",
+      "ar": "وثّق الحساب بمطابقته بملف مريض أولاً",
+      "fr": "Vérifiez d'abord le compte en le rattachant à un dossier"
+    },
+    "Write why it is declined": {
+      "en": "Write why it is declined",
+      "ar": "اكتب سبب الرفض",
+      "fr": "Indiquez pourquoi elle est refusée"
+    },
+    "Your account is not verified yet: send a request and the call centre will book it": {
+      "en": "Your account is not verified yet: send a request and the call centre will book it",
+      "ar": "حسابك لم يُوثّق بعد: أرسل طلباً ويحجزه لك مركز الاتصال",
+      "fr": "Votre compte n'est pas encore vérifié : envoyez une demande et le centre d'appels la réservera"
+    },
+    "prq:Open": {
+      "en": "Open",
+      "ar": "مفتوحة",
+      "fr": "Ouvertes"
+    },
+    "prq:Booked": {
+      "en": "Booked",
+      "ar": "محجوزة",
+      "fr": "Réservées"
+    },
+    "prq:Declined": {
+      "en": "Declined",
+      "ar": "مرفوضة",
+      "fr": "Refusées"
+    },
+    "prq:Withdrawn": {
+      "en": "Withdrawn",
+      "ar": "مسحوبة",
+      "fr": "Retirées"
+    },
+    "tod:Morning": {
+      "en": "Morning",
+      "ar": "صباحاً",
+      "fr": "Matin"
+    },
+    "tod:Evening": {
+      "en": "Evening",
+      "ar": "مساءً",
+      "fr": "Soir"
+    },
+    "tod:Any": {
+      "en": "Any time",
+      "ar": "أي وقت",
+      "fr": "N'importe quand"
+    }
+  }
+}

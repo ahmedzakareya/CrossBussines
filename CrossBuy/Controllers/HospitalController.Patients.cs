@@ -2,6 +2,7 @@ using CrossBuy.BL;
 using CrossBuy.BL.Hospital;
 using CrossBuy.BL.Platform;
 using CrossBuy.Models;
+using CrossBuy.Models.Context.Hospital;
 using CrossBuy.Models.Platform;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -104,18 +105,50 @@ namespace CrossBuy.Controllers
 		{
 			var ctx = await ContextAsync(ct);
 			if (ctx == null) return RedirectToAction("Index", "Home");
+			// H64: a restricted file opens only for its care team and the privileged — anyone else meets the gate (and
+			// is not logged as having opened it); a break-glass opens it for its window
+			var (fileAccess, glassUntil) = await RestrictedSvc.AccessAsync(ctx, id, ctx.EmployeeId, DateTime.UtcNow, ct);
+			if (!HospitalFileAccess.Allows(fileAccess))
+			{
+				var gated = await _db.HospitalPatients.AsNoTracking().FirstOrDefaultAsync(x => x.ID == id && x.CompanyId == ctx.CompanyId, ct);
+				if (gated == null) return NotFound();
+				Chrome();
+				return View("BreakGlassGate", gated);
+			}
+			ViewBag.FileAccess = fileAccess; ViewBag.GlassUntil = glassUntil;
+			ViewBag.Restriction = await RestrictedSvc.RestrictionAsync(ctx, id, ct);
+			ViewBag.CanManage = await _access.CanAsync(ctx, HospitalActions.Manage, null, ct);
 			var p = await _patients.OpenAsync(ctx, id, ctx.EmployeeId, ct);   // records the open
-			if (p == null) return NotFound();
+			if (p == null)
+			{
+				// H57: a merged file opens the file it was merged into
+				var into = await _db.HospitalPatients.AsNoTracking().Where(x => x.ID == id && x.CompanyId == ctx.CompanyId && x.MergedIntoPatientId != null).Select(x => x.MergedIntoPatientId).FirstOrDefaultAsync(ct);
+				return into is int survivor ? RedirectToAction(nameof(Patient), new { id = survivor }) : NotFound();
+			}
 			Chrome();
 			ViewBag.CanRegister = await _access.CanAsync(ctx, HospitalActions.Register, null, ct);
 			ViewBag.CanAdmit = await _access.CanAsync(ctx, HospitalActions.Admit, null, ct);
 			ViewBag.Current = await _admissions.CurrentAsync(ctx, p.ID, ct);
 			ViewBag.Stays = await _admissions.StaysAsync(ctx, p.ID, ct);
+			var (sick, sickReady) = await SickSvc.ListAsync(ctx, p.ID, ct);   // H56
+			ViewBag.SickLeaves = sick; ViewBag.SickReady = sickReady;
+			ViewBag.CanConsult = await _access.CanAsync(ctx, HospitalActions.Consult, null, ct);
+			var (consents, consentsReady) = await ConsentSvc.ListAsync(ctx, p.ID, ct);   // H60
+			ViewBag.Consents = consents; ViewBag.ConsentsReady = consentsReady;
 			ViewBag.Appointments = await _outpatient.PatientAppointmentsAsync(ctx, p.ID, ct);
 			ViewBag.Visits = await _consult.PatientEncountersAsync(ctx, p.ID, ct);
 			ViewBag.Lab = await _lab.HistoryAsync(ctx, p.ID, false, ct);
 			ViewBag.Rad = await _rad.HistoryAsync(ctx, p.ID, false, ct);
 			ViewBag.Bills = await _billing.BillsAsync(ctx, null, p.ID, DateTime.UtcNow, ct);
+			// printing from the patient's file: the latest bill (invoice / receipt), the latest visit that prescribed
+			// something (prescription) and the latest dental plan (claim form) — all Report Studio layouts
+			ViewBag.PrintBillId = await _db.HospitalBills.AsNoTracking().Where(b => b.CompanyId == ctx.CompanyId && b.PatientId == p.ID
+				&& _db.HospitalBillLines.Any(l => l.CompanyId == ctx.CompanyId && l.BillId == b.ID)).OrderByDescending(b => b.OpenedAt).Select(b => (int?)b.ID).FirstOrDefaultAsync(ct);
+			ViewBag.PrintEncounterId = await _db.Set<HospitalEncounter>().AsNoTracking()
+				.Where(e => e.CompanyId == ctx.CompanyId && e.PatientId == p.ID && _db.Set<HospitalPrescriptionLine>().Any(l => l.CompanyId == ctx.CompanyId && l.EncounterId == e.ID))
+				.OrderByDescending(e => e.StartedAt).Select(e => (int?)e.ID).FirstOrDefaultAsync(ct);
+			ViewBag.PrintPlanId = await _db.Set<HospitalDentalPlan>().AsNoTracking().Where(x => x.CompanyId == ctx.CompanyId && x.PatientId == p.ID)
+				.OrderByDescending(x => x.CreatedAt).Select(x => (int?)x.ID).FirstOrDefaultAsync(ct);
 			ViewBag.Currency = await _facility.CurrencyAsync(ctx, ct);
 			ViewBag.Doctors = (await _outpatient.PractitionersAsync(ctx, ct)).ToDictionary(d => d.Row.ID);
 			ViewBag.Nationality = p.NationalityId is int n ? (await CountriesAsync(ct)).Where(c => c.Id == n).Select(c => c.Label).FirstOrDefault() : null;

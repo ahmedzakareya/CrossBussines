@@ -1,0 +1,80 @@
+{
+ "unit": "H69 — the hospital map's live theatre, imaging and emergency rooms",
+ "strings": {
+  "Staff present": {
+   "ar": "الطاقم الموجود",
+   "en": "Staff present",
+   "fr": "Personnel présent"
+  },
+  "map:elsewhere": {
+   "ar": "في العمليات والأشعة والطوارئ",
+   "en": "in theatre, imaging and emergency",
+   "fr": "au bloc, en imagerie et aux urgences"
+  },
+  "map:maintenance": {
+   "ar": "جهاز في الصيانة",
+   "en": "A unit in maintenance",
+   "fr": "Un appareil en maintenance"
+  },
+  "map:maintenance-note": {
+   "ar": "أحد أجهزة الأشعة في هذه الغرفة متوقف للصيانة.",
+   "en": "One of the imaging units in this room is out for maintenance.",
+   "fr": "Un des appareils d'imagerie de cette salle est en maintenance."
+  },
+  "map:next": {
+   "ar": "التالي:",
+   "en": "Next:",
+   "fr": "Suivant :"
+  },
+  "map:today": {
+   "ar": "حالات اليوم",
+   "en": "Cases today",
+   "fr": "Interventions aujourd'hui"
+  },
+  "map:live:Theatre": {
+   "ar": "داخل العملية",
+   "en": "In surgery",
+   "fr": "En intervention"
+  },
+  "map:live:Imaging": {
+   "ar": "يُصوَّر الآن",
+   "en": "Being scanned",
+   "fr": "En examen"
+  },
+  "map:live:Emergency": {
+   "ar": "تحت العلاج",
+   "en": "Under treatment",
+   "fr": "En soins"
+  },
+  "map:waiting:Theatre": {
+   "ar": "مخطط",
+   "en": "Planned",
+   "fr": "Planifiée"
+  },
+  "map:waiting:Imaging": {
+   "ar": "وصل وينتظر",
+   "en": "Arrived, waiting",
+   "fr": "Arrivé, en attente"
+  },
+  "map:waiting:Emergency": {
+   "ar": "ينتظر",
+   "en": "Waiting",
+   "fr": "En attente"
+  },
+  "map:open:Theatre": {
+   "ar": "جدول العمليات",
+   "en": "Theatre schedule",
+   "fr": "Planning du bloc"
+  },
+  "map:open:Imaging": {
+   "ar": "الأشعة",
+   "en": "Radiology",
+   "fr": "Radiologie"
+  },
+  "map:open:Emergency": {
+   "ar": "لوحة الطوارئ",
+   "en": "Emergency board",
+   "fr": "Tableau des urgences"
+  }
+ }
+}

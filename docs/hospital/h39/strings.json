@@ -1,0 +1,33 @@
+{
+  "unit": "H39 — controlled-drugs register",
+  "strings": {
+    "Controlled drugs register": { "ar": "سجل الأدوية المخدرة", "en": "Controlled drugs register", "fr": "Registre des stupéfiants" },
+    "Every movement signed by two nurses": { "ar": "كل حركة بتوقيع ممرضين", "en": "Every movement signed by two nurses", "fr": "Chaque mouvement signé par deux infirmiers" },
+    "Controlled items": { "ar": "الأصناف المخدرة", "en": "Controlled items", "fr": "Articles contrôlés" },
+    "Record a dose or waste": { "ar": "تسجيل جرعة أو إتلاف", "en": "Record a dose or waste", "fr": "Enregistrer une dose ou une perte" },
+    "No item is marked controlled yet.": { "ar": "لم يُحدَّد أي صنف كمخدر بعد.", "en": "No item is marked controlled yet.", "fr": "Aucun article n'est encore marqué contrôlé." },
+    "No controlled drug in this ward's store today.": { "ar": "لا يوجد دواء مخدر في مستودع هذا القسم اليوم.", "en": "No controlled drug in this ward's store today.", "fr": "Aucun stupéfiant dans le magasin de ce service aujourd'hui." },
+    "cd:Open": { "ar": "افتتاحي", "en": "Open", "fr": "Ouverture" },
+    "cd:In": { "ar": "وارد", "en": "In", "fr": "Entrées" },
+    "cd:Given": { "ar": "أُعطي", "en": "Given", "fr": "Administré" },
+    "cd:Wasted": { "ar": "إتلاف", "en": "Wasted", "fr": "Perte" },
+    "Balance": { "ar": "الرصيد", "en": "Balance", "fr": "Solde" },
+    "Today's entries": { "ar": "قيود اليوم", "en": "Today's entries", "fr": "Saisies du jour" },
+    "Recorded by": { "ar": "سجّلها", "en": "Recorded by", "fr": "Saisi par" },
+    "The witness's password": { "ar": "كلمة سر الشاهد", "en": "The witness's password", "fr": "Mot de passe du témoin" },
+    "The witness types her own password here, on this device. The dose leaves the ward store and is booked to the drug's cost.": { "ar": "يكتب الشاهد كلمة سره بنفسه هنا على نفس الجهاز. تخرج الجرعة من مستودع القسم وتُقيَّد على تكلفة الدواء.", "en": "The witness types her own password here, on this device. The dose leaves the ward store and is booked to the drug's cost.", "fr": "Le témoin saisit son propre mot de passe ici, sur cet appareil. La dose sort du magasin du service et est imputée au coût du médicament." },
+    "Sign & record": { "ar": "وقّع وسجّل", "en": "Sign & record", "fr": "Signer et enregistrer" },
+    "This item will no longer be kept in the register. Continue?": { "ar": "لن يُتابَع هذا الصنف في السجل بعد الآن. متابعة؟", "en": "This item will no longer be kept in the register. Continue?", "fr": "Cet article ne sera plus suivi dans le registre. Continuer ?" },
+    "The controlled-drugs tables are not created yet (hospital_h39_controlled_drugs.sql)": { "ar": "جداول سجل المخدرات لم تُنشأ بعد (hospital_h39_controlled_drugs.sql)", "en": "The controlled-drugs tables are not created yet (hospital_h39_controlled_drugs.sql)", "fr": "Les tables du registre des stupéfiants ne sont pas encore créées (hospital_h39_controlled_drugs.sql)" },
+    "Choose a dose or a waste": { "ar": "اختر جرعة أو إتلاف", "en": "Choose a dose or a waste", "fr": "Choisissez une dose ou une perte" },
+    "Choose the patient the dose was given to": { "ar": "اختر المريض الذي أُعطيت له الجرعة", "en": "Choose the patient the dose was given to", "fr": "Choisissez le patient qui a reçu la dose" },
+    "Write why it was wasted": { "ar": "اكتب سبب الإتلاف", "en": "Write why it was wasted", "fr": "Indiquez la raison de la perte" },
+    "Only a signed-in nurse records the register": { "ar": "يسجّل في السجل ممرض مسجّل الدخول فقط", "en": "Only a signed-in nurse records the register", "fr": "Seul un infirmier connecté saisit le registre" },
+    "Choose the witness": { "ar": "اختر الشاهد", "en": "Choose the witness", "fr": "Choisissez le témoin" },
+    "The witness is a second person, not the nurse who records": { "ar": "الشاهد شخص ثانٍ غير الممرض الذي يسجّل", "en": "The witness is a second person, not the nurse who records", "fr": "Le témoin est une seconde personne, pas l'infirmier qui saisit" },
+    "This item is not a controlled drug": { "ar": "هذا الصنف ليس دواءً مخدرًا", "en": "This item is not a controlled drug", "fr": "Cet article n'est pas un stupéfiant" },
+    "The witness's password is not correct": { "ar": "كلمة سر الشاهد غير صحيحة", "en": "The witness's password is not correct", "fr": "Le mot de passe du témoin est incorrect" },
+    "Map the cost-of-goods account of this drug's inventory category first": { "ar": "اربط أولًا حساب تكلفة البضاعة لفئة مخزون هذا الدواء", "en": "Map the cost-of-goods account of this drug's inventory category first", "fr": "Associez d'abord le compte de coût des ventes de la catégorie de ce médicament" },
+    "The ward store: {0}": { "ar": "مستودع القسم: {0}", "en": "The ward store: {0}", "fr": "Magasin du service : {0}" }
+  }
+}

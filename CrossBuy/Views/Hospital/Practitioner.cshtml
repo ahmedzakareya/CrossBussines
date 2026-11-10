@@ -16,6 +16,15 @@
     var privileges = (p.Privileges ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries).ToHashSet();
     // The week as the clinic reads it: Saturday first.
     var week = new[] { DayOfWeek.Saturday, DayOfWeek.Sunday, DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday };
+    // H19: his fee rules
+    var feeRules = (ViewBag.FeeRules as IReadOnlyList<HospitalFeeRuleRow>) ?? Array.Empty<HospitalFeeRuleRow>();
+    var ruleServices = (ViewBag.RuleServices as List<CrossBuy.Controllers.HospitalController.HospitalChoice>) ?? new();
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+    // H26: his weekly schedule and leave
+    var scheduleRow = ViewBag.Schedule as (HospitalDoctorSchedule Schedule, IReadOnlyList<HospitalLeaveRow> Leaves, bool Ready)?;
+    var schedule = scheduleRow?.Schedule;
+    var leaves = scheduleRow?.Leaves ?? Array.Empty<HospitalLeaveRow>();
+    bool weekly = schedule?.Weekly == true, scheduleReady = scheduleRow?.Ready == true;
 }
 <link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
 
@@ -31,6 +40,7 @@
         </div>
         <div class="d-flex align-items-center gap-2 gap-lg-3 d-print-none">
             <a href="@Url.Action("Appointments")" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-calendar fs-4"></i>@T["Appointments"]</a>
+            @if (feeRules.Count > 0) { <a href="@Url.Action("Fees", new { practitioner = p.ID })" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-wallet fs-4"></i>@T["Fee statement"]</a> }
             @if (canManage) { <a href="@Url.Action("EditPractitioner", new { id = p.ID })" class="btn btn-sm btn-light"><i class="ki-outline ki-pencil fs-4"></i>@T["Edit"]</a> }
         </div>
     </div></div>
@@ -90,6 +100,36 @@
                         }
                     </div>
                 </div>
+                @* H19: what he earns on the work he does *@
+                <div class="card mb-5">
+                    <div class="card-header border-0 pt-6">
+                        <div class="card-title align-items-start flex-column m-0">
+                            <span class="card-label fw-bold text-gray-900 fs-4">@T["Fee rules"]</span>
+                            <span class="text-muted mt-1 fw-semibold fs-7">@(p.PayChannel == HospitalPayChannels.Vendor ? T["Basis: actually collected (cash when paid, insurance when the claim is accepted)"] : T["Basis: actually collected; added as a variable line in the payroll run"])</span>
+                        </div>
+                        @if (canManage) { <div class="card-toolbar"><button type="button" class="btn btn-sm btn-light-primary" data-rule-open><i class="ki-outline ki-plus fs-4"></i>@T["Rule"]</button></div> }
+                    </div>
+                    <div class="card-body pt-2" data-fee-rules>
+                        @if (feeRules.Count == 0) { <div class="text-muted fs-7 py-6 text-center">@T["No fee rules: this doctor earns no fees on his work yet."]</div> }
+                        else
+                        {
+                            <table class="table align-middle table-row-dashed fs-6 gy-3 mb-0">
+                                <thead><tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0"><th>@T["Service"]</th><th>@T["Calculation"]</th><th class="text-end w-50px"></th></tr></thead>
+                                <tbody class="fw-semibold text-gray-700">
+                                    @foreach (var r in feeRules)
+                                    {
+                                        <tr>
+                                            <td class="fw-bold text-gray-800">@if (r.Service != null) {@DisplayName.Of(r.Service, r.ServiceEn ?? r.Service)<div class="text-muted fs-8"><span class="hp-num">@r.ServiceCode</span> · @T["cat:" + r.Rule.Category]</div>} else {@T["All of"] <text> </text>@T["cat:" + r.Rule.Category]}</td>
+                                            <td>@if (r.Rule.Basis == HospitalFeeBasis.Percent) {<span class="hp-num fw-bold">@r.Rule.Value.ToString("0.##", inv)%</span> <span class="text-muted fs-8">@T["of what was collected"]</span>} else {<span class="hp-num fw-bold">@r.Rule.Value.ToString("N3", inv)</span> <span class="text-muted fs-8">@T["per unit"]</span>}</td>
+                                            <td class="text-end">@if (canManage) {<button type="button" class="btn btn-icon btn-sm btn-active-light-danger" data-rule-remove="@r.Rule.ID"><i class="ki-outline ki-trash fs-5"></i></button>}</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        }
+                        <div class="mt-4 text-muted fs-8"><i class="ki-outline ki-information-5 fs-7"></i> @(p.PayChannel == HospitalPayChannels.Vendor ? T["Paid as a vendor: the approved statement posts to his payable."] : T["Paid through payroll: the approved statement goes to the payroll run as a variable line."])</div>
+                    </div>
+                </div>
                 <div class="card">
                     <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Credentials & licences"]</span></div></div>
                     <div class="card-body pt-2">
@@ -120,16 +160,180 @@
                         }
                     </div>
                 </div>
-                <div class="card">
-                    <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Weekly presence"]</span></div></div>
-                    <div class="card-body pt-2"><div class="d-flex flex-wrap gap-2">
+                @* H26: the weekly schedule (the day tiles of "Weekly presence", each with its sessions) and the leave *@
+                <div class="card mb-5">
+                    <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
+                        <span class="card-label fw-bold text-gray-900 fs-4">@T["Weekly presence"]</span>
+                        <span class="text-muted mt-1 fw-semibold fs-7">@(weekly ? T["Each day's sessions and the minutes per patient"] : T["The same hours every working day"])</span>
+                    </div></div>
+                    <div class="card-body pt-2">
+                        @if (!scheduleReady)
+                        {
+                            <div class="notice d-flex rounded border border-dashed p-4 mb-4 hp-notice"><div class="fs-7 text-gray-700">@T[HospitalScheduleService.NoTables]</div></div>
+                        }
                         @foreach (var d in week)
                         {
-                            <div class="rounded px-5 py-4 text-center fw-bold fs-7 hp-day @(days.Contains(d) ? "on" : "off")">@T["day:" + d]</div>
+                            var sessions = schedule?.Sessions.Where(s => s.DayOfWeek == (byte)d).ToList() ?? new();
+                            var spans = schedule?.SessionsOn(d) ?? Array.Empty<(int Start, int End, int Slot)>();
+                            <div class="d-flex align-items-center gap-3 py-2 border-bottom border-gray-200 border-bottom-dashed">
+                                <div class="rounded px-3 py-3 text-center fw-bold fs-7 hp-day @(spans.Count > 0 ? "on" : "off")">@T["day:" + d]</div>
+                                <div class="d-flex flex-wrap gap-2 flex-grow-1">
+                                    @if (spans.Count == 0) { <span class="text-muted fs-7">@T["Not working"]</span> }
+                                    @if (weekly)
+                                    {
+                                        foreach (var s in sessions)
+                                        {
+                                            <span class="badge badge-light-primary fs-7 fw-semibold py-2 px-3"><bdi class="hp-num" dir="ltr">@HospitalUi.Clock(s.StartMinute)–@HospitalUi.Clock(s.EndMinute)</bdi><span class="text-gray-600 ms-2">· <bdi class="hp-num">@s.SlotMinutes</bdi> @T["min"]</span>
+                                                @if (canManage) {<button type="button" class="btn btn-icon btn-active-light-danger w-20px h-20px ms-2" data-session-remove="@s.ID" title="@T["Remove"]"><i class="ki-outline ki-cross fs-5"></i></button>}</span>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        foreach (var s in spans)
+                                        {
+                                            <span class="badge badge-light fs-7 fw-semibold py-2 px-3"><bdi class="hp-num" dir="ltr">@HospitalUi.Clock(s.Start)–@HospitalUi.Clock(s.End)</bdi><span class="text-gray-600 ms-2">· <bdi class="hp-num">@s.Slot</bdi> @T["min"]</span></span>
+                                        }
+                                    }
+                                </div>
+                                @if (canManage && weekly) {<button type="button" class="btn btn-icon btn-sm btn-light-primary flex-shrink-0" data-session-open="@((int)d)" title="@T["Add a session"]"><i class="ki-outline ki-plus fs-4"></i></button>}
+                            </div>
                         }
-                    </div></div>
+                        @if (canManage && !weekly && scheduleReady)
+                        {
+                            <div class="d-flex flex-stack flex-wrap gap-3 mt-4">
+                                <div class="text-muted fs-7">@T["To give each day its own hours, or a morning and an evening session, start the weekly schedule from these hours."]</div>
+                                <button type="button" class="btn btn-sm btn-light-primary" data-schedule-start><i class="ki-outline ki-calendar-edit fs-4"></i>@T["Set each day's hours"]</button>
+                            </div>
+                        }
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header border-0 pt-6">
+                        <div class="card-title align-items-start flex-column m-0">
+                            <span class="card-label fw-bold text-gray-900 fs-4">@T["Leave"]</span>
+                            <span class="text-muted mt-1 fw-semibold fs-7">@T["No booking is offered inside a leave, at the desk or on the portal"]</span>
+                        </div>
+                        @if (canManage && scheduleReady) { <div class="card-toolbar"><button type="button" class="btn btn-sm btn-light-primary" data-leave-open><i class="ki-outline ki-plus fs-4"></i>@T["Add leave"]</button></div> }
+                    </div>
+                    <div class="card-body pt-2">
+                        @if (leaves.Count == 0) { <div class="text-muted fs-7 py-6 text-center">@T["No leave from today on."]</div> }
+                        @foreach (var lr in leaves)
+                        {
+                            var lv = lr.Leave;
+                            <div class="d-flex align-items-center gap-3 py-3 border-bottom border-gray-200 border-bottom-dashed">
+                                <i class="ki-outline ki-calendar-remove fs-2 text-gray-500"></i>
+                                <div class="d-flex flex-column flex-grow-1">
+                                    <span class="fw-bold text-gray-900 fs-7"><bdi class="hp-num" dir="ltr">@lv.FromDate.ToString("yyyy-MM-dd", inv)</bdi>@if (lv.ToDate.Date != lv.FromDate.Date) {<span class="mx-1">–</span><bdi class="hp-num" dir="ltr">@lv.ToDate.ToString("yyyy-MM-dd", inv)</bdi>}</span>
+                                    <span class="text-muted fs-8">@if (lv.StartMinute is int ls && lv.EndMinute is int le) {<bdi class="hp-num" dir="ltr">@HospitalUi.Clock(ls)–@HospitalUi.Clock(le)</bdi>} else {@T["Whole day"]}@if (!string.IsNullOrEmpty(lv.Reason)) {<span> · @lv.Reason</span>}</span>
+                                    @if (lr.BookedInside > 0) {<span class="text-danger fs-8 fw-semibold mt-1"><i class="ki-outline ki-information-5 fs-6 text-danger me-1"></i>@T.GetString("{0} booked appointments fall inside: move them from the appointments screen", lr.BookedInside)</span>}
+                                </div>
+                                @if (canManage) {<button type="button" class="btn btn-icon btn-sm btn-active-light-danger" data-leave-remove="@lv.ID" title="@T["Remove"]"><i class="ki-outline ki-trash fs-5"></i></button>}
+                            </div>
+                        }
+                    </div>
                 </div>
             </div>
         </div>
     </div></div>
 </div>
+
+@if (canManage)
+{
+    @Html.AntiForgeryToken()
+    <div class="modal fade" id="ruleModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-550px"><div class="modal-content">
+        <div class="modal-header"><h2 class="fw-bold m-0 fs-4">@T["Fee rule"]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body py-6 px-lg-10"><div class="row g-4">
+            <div class="col-12"><label class="form-label required">@T["Applies to"]</label>
+                <select class="form-select form-select-solid" data-fr="target" data-control="select2" data-dropdown-parent="#ruleModal">
+                    @foreach (var c in HospitalServiceCategories.All) { <option value="cat:@c">@T["All of"] @T["cat:" + c]</option> }
+                    @foreach (var sv in ruleServices) { var bits = (sv.Label ?? "|").Split('|'); <option value="svc:@sv.Id">@bits[0] — @DisplayName.Of(sv.Name, sv.NameEn ?? sv.Name)</option> }
+                </select></div>
+            <div class="col-md-6"><label class="form-label required">@T["Calculation"]</label>
+                <select class="form-select form-select-solid" data-fr="basis"><option value="Percent">@T["Percent of what was collected"]</option><option value="PerUnit">@T["Fixed amount per unit"]</option></select></div>
+            <div class="col-md-6"><label class="form-label required">@T["Value"]</label><input type="number" min="0" step="0.001" class="form-control form-control-solid hp-num" dir="ltr" data-fr="value" /></div>
+        </div><div class="form-text mt-3">@T["A rule for one service wins over the rule for its category."]</div></div>
+        <div class="modal-footer flex-center"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-fr-save>@T["Save"]</button></div>
+    </div></div></div>
+    @* H26 *@
+    <div class="modal fade" id="sessionModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-500px"><div class="modal-content">
+        <div class="modal-header"><h2 class="fw-bold m-0 fs-4">@T["Add a session"] — <span data-ss-dayname></span></h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body py-6 px-lg-10"><div class="row g-4">
+            <div class="col-md-4"><label class="form-label required">@T["From"]</label><input type="time" class="form-control form-control-solid hp-num" dir="ltr" data-ss="start" value="17:00" /></div>
+            <div class="col-md-4"><label class="form-label required">@T["To"]</label><input type="time" class="form-control form-control-solid hp-num" dir="ltr" data-ss="end" value="21:00" /></div>
+            <div class="col-md-4"><label class="form-label required">@T["Minutes per patient"]</label><input type="number" min="5" max="120" step="5" class="form-control form-control-solid hp-num" dir="ltr" data-ss="slot" value="@p.SlotMinutes" /></div>
+        </div><div class="form-text mt-3">@T["A day can hold a morning and an evening session; two sessions of one day may not overlap."]</div></div>
+        <div class="modal-footer flex-center"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-ss-save>@T["Save"]</button></div>
+    </div></div></div>
+    <div class="modal fade" id="leaveModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-550px"><div class="modal-content">
+        <div class="modal-header"><h2 class="fw-bold m-0 fs-4">@T["Add leave"]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body py-6 px-lg-10"><div class="row g-4">
+            <div class="col-md-6"><label class="form-label required">@T["From date"]</label><input type="date" class="form-control form-control-solid hp-num" dir="ltr" data-lv="from" /></div>
+            <div class="col-md-6"><label class="form-label required">@T["To date"]</label><input type="date" class="form-control form-control-solid hp-num" dir="ltr" data-lv="to" /></div>
+            <div class="col-12"><label class="form-check form-switch form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" data-lv="part" /><span class="form-check-label fw-semibold text-gray-700">@T["Only part of each day"]</span></label></div>
+            <div class="col-md-6 d-none" data-lv-times><label class="form-label required">@T["From"]</label><input type="time" class="form-control form-control-solid hp-num" dir="ltr" data-lv="start" value="08:00" /></div>
+            <div class="col-md-6 d-none" data-lv-times><label class="form-label required">@T["To"]</label><input type="time" class="form-control form-control-solid hp-num" dir="ltr" data-lv="end" value="12:00" /></div>
+            <div class="col-12"><label class="form-label">@T["Reason"]</label><input type="text" maxlength="200" class="form-control form-control-solid" data-lv="reason" /></div>
+        </div><div class="form-text mt-3">@T["A leave does not cancel what is already booked: the page shows how many appointments fall inside, and the front desk moves them."]</div></div>
+        <div class="modal-footer flex-center"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-lv-save>@T["Save"]</button></div>
+    </div></div></div>
+}
+
+@section Scripts {
+    @if (canManage)
+    {
+        <script>
+            (function () {
+                var token = document.querySelector('input[name="__RequestVerificationToken"]').value, root = @Json.Serialize(Url.Content("~/Hospital/Fees"));
+                var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value), save: @Json.Serialize(T["Save this fee rule?"].Value), remove: @Json.Serialize(T["Remove this fee rule?"].Value) };
+                function toast(k, m) { if (window.toastr) toastr[k](m); }
+                function post(url, body) {
+                    return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(body || {}) })
+                        .then(function (r) { return r.json().catch(function () { return { ok: false }; }); });
+                }
+                // In place, never a reload: the rules card is rendered again and swapped.
+                function swap() {
+                    return fetch(location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.text(); }).then(function (html) {
+                        var d = new DOMParser().parseFromString(html, 'text/html'), f = d.getElementById('kt_app_content'), tb = d.getElementById('kt_app_toolbar');
+                        if (f) document.getElementById('kt_app_content').innerHTML = f.innerHTML;
+                        if (tb) document.getElementById('kt_app_toolbar').innerHTML = tb.innerHTML;
+                    });
+                }
+                function done(btn, modal) { return function (res) { if (btn) btn.disabled = false; if (!res.ok) { toast('error', res.error || W.failed); return; } toast('success', W.saved); if (modal) bootstrap.Modal.getOrCreateInstance(modal).hide(); swap(); }; }
+                var m = document.getElementById('ruleModal');
+                document.addEventListener('click', function (e) {
+                    var t = e.target.closest('[data-rule-open],[data-fr-save],[data-rule-remove]'); if (!t) return;
+                    if (t.hasAttribute('data-rule-open')) { m.querySelector('[data-fr=value]').value = ''; bootstrap.Modal.getOrCreateInstance(m).show(); return; }
+                    if (t.hasAttribute('data-rule-remove')) { cbConfirm(W.remove, { kind: 'danger' }).then(function (ok) { if (!ok) return; t.disabled = true; post(root + '/Rule/' + t.getAttribute('data-rule-remove') + '/Remove').then(done(t)); }); return; }
+                    var target = m.querySelector('[data-fr=target]').value.split(':');
+                    var body = { practitionerId: @p.ID, category: target[0] === 'cat' ? target[1] : 'Other', serviceId: target[0] === 'svc' ? +target[1] : null, basis: m.querySelector('[data-fr=basis]').value, value: +m.querySelector('[data-fr=value]').value || 0 };
+                    cbConfirm(W.save).then(function (ok) { if (!ok) return; t.disabled = true; post(root + '/Rule', body).then(done(t, m)); });
+                });
+
+                // H26: the weekly schedule and the leave
+                var proot = @Json.Serialize(Url.Content("~/Hospital/Practitioner")), pid = @p.ID;
+                var S = { start: @Json.Serialize(T["Start the weekly schedule from the current hours?"].Value), session: @Json.Serialize(T["Add this session?"].Value), sessionRemove: @Json.Serialize(T["Remove this session? Booked appointments in it stay booked."].Value),
+                    leave: @Json.Serialize(T["Save this leave?"].Value), leaveRemove: @Json.Serialize(T["Remove this leave? Its times become bookable again."].Value), days: @Json.Serialize(Enum.GetValues<DayOfWeek>().Select(d => T["day:" + d].Value)) };
+                function minutes(v) { var x = (v || '').split(':'); return x.length < 2 ? -1 : (+x[0]) * 60 + (+x[1]); }
+                var sm = document.getElementById('sessionModal'), lm = document.getElementById('leaveModal'), ssDay = 0;
+                lm.querySelector('[data-lv=part]').addEventListener('change', function () { var on = this.checked; lm.querySelectorAll('[data-lv-times]').forEach(function (x) { x.classList.toggle('d-none', !on); }); });
+                document.addEventListener('click', function (e) {
+                    var t = e.target.closest('[data-schedule-start],[data-session-open],[data-ss-save],[data-session-remove],[data-leave-open],[data-lv-save],[data-leave-remove]'); if (!t) return;
+                    if (t.hasAttribute('data-schedule-start')) { cbConfirm(S.start).then(function (ok) { if (!ok) return; t.disabled = true; post(proot + '/' + pid + '/Schedule/Start').then(done(t)); }); return; }
+                    if (t.hasAttribute('data-session-open')) { ssDay = +t.getAttribute('data-session-open'); sm.querySelector('[data-ss-dayname]').textContent = S.days[ssDay]; bootstrap.Modal.getOrCreateInstance(sm).show(); return; }
+                    if (t.hasAttribute('data-ss-save')) {
+                        var sb = { dayOfWeek: ssDay, startMinute: minutes(sm.querySelector('[data-ss=start]').value), endMinute: minutes(sm.querySelector('[data-ss=end]').value), slotMinutes: +sm.querySelector('[data-ss=slot]').value || 0 };
+                        cbConfirm(S.session).then(function (ok) { if (!ok) return; t.disabled = true; post(proot + '/' + pid + '/Sessions', sb).then(done(t, sm)); }); return;
+                    }
+                    if (t.hasAttribute('data-session-remove')) { cbConfirm(S.sessionRemove, { kind: 'danger' }).then(function (ok) { if (!ok) return; t.disabled = true; post(proot + '/Sessions/' + t.getAttribute('data-session-remove') + '/Remove').then(done(t)); }); return; }
+                    if (t.hasAttribute('data-leave-open')) { lm.querySelector('[data-lv=from]').value = lm.querySelector('[data-lv=to]').value = @Json.Serialize(today.ToString("yyyy-MM-dd", inv)); lm.querySelector('[data-lv=reason]').value = ''; bootstrap.Modal.getOrCreateInstance(lm).show(); return; }
+                    if (t.hasAttribute('data-lv-save')) {
+                        var part = lm.querySelector('[data-lv=part]').checked;
+                        var lb = { fromDate: lm.querySelector('[data-lv=from]').value || undefined, toDate: lm.querySelector('[data-lv=to]').value || undefined, startMinute: part ? minutes(lm.querySelector('[data-lv=start]').value) : null, endMinute: part ? minutes(lm.querySelector('[data-lv=end]').value) : null, reason: lm.querySelector('[data-lv=reason]').value };
+                        cbConfirm(S.leave).then(function (ok) { if (!ok) return; t.disabled = true; post(proot + '/' + pid + '/Leaves', lb).then(done(t, lm)); }); return;
+                    }
+                    if (t.hasAttribute('data-leave-remove')) { cbConfirm(S.leaveRemove, { kind: 'danger' }).then(function (ok) { if (!ok) return; t.disabled = true; post(proot + '/Leaves/' + t.getAttribute('data-leave-remove') + '/Remove').then(done(t)); }); }
+                });
+            })();
+        </script>
+    }
+}

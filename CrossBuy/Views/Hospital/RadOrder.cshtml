@@ -11,6 +11,9 @@
     ViewData["Title"] = DisplayName.Of(o.Name, o.NameEn) + " — " + o.AccessionNo;
     bool canRad = ViewBag.CanRad == true, canReport = ViewBag.CanReport == true;
     var previous = (ViewBag.Previous as List<HospitalRadOrder>) ?? new();
+    // H31: the exam's pictures; attached by the radiographer or the radiologist until the report is signed
+    var images = (ViewBag.Images as IReadOnlyList<HospitalRadImageRow>) ?? Array.Empty<HospitalRadImageRow>();
+    bool canAttach = (canRad || canReport) && o.Status != HospitalRadStatus.Signed;
     bool signed = o.Status == HospitalRadStatus.Signed;
     bool writing = canReport && o.Status == HospitalRadStatus.Reporting;
     var age = HospitalPatientService.AgeOn(p.BirthDate, DateTime.UtcNow);
@@ -55,6 +58,7 @@
                 <button type="button" class="btn btn-sm btn-primary" data-sign><i class="ki-outline ki-check-circle fs-4"></i>@T["Sign report"]</button>
             }
             @if (signed) { <span class="badge badge-light-success fs-7 px-4 py-3"><i class="ki-outline ki-shield-tick fs-5 text-success me-1"></i>@T["Signed"] <span class="hp-num ms-1" data-fmt data-utc="@o.SignedAt?.ToString("o")">@o.SignedAt?.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</span></span> }
+            <partial name="_HospitalPortalRelease" model="@((HospitalPortalResultSource.Radiology, o.ID, signed, ViewBag.PortalRelease as HospitalPortalRelease, (bool)(ViewBag.CanConsult == true)))" />
         </div>
     </div></div>
 
@@ -118,19 +122,65 @@
                                     </select></div>
                                 <div class="col-md-6 d-flex align-items-end"><button type="button" class="btn btn-light-primary w-100" disabled title="@T["Not connected yet"]"><i class="ki-outline ki-picture fs-4"></i>@T["Open images in PACS"] <span class="text-muted fs-8 ms-1">— @T["Not connected yet"]</span></button></div>
                             </div>
-                            <label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Findings"]</label>
-                            <textarea class="form-control form-control-solid mb-5" rows="8" maxlength="4000" data-k="findings">@o.Findings</textarea>
-                            <label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Impression"]</label>
-                            <textarea class="form-control form-control-solid" rows="3" maxlength="1000" data-k="impression">@o.Impression</textarea>
+                            @* H33: the patient reads the report in their language — both are written; English is optional *@
+                            <div class="row g-4">
+                                <div class="col-xl-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Findings"] — @T["Arabic"]</label>
+                                    <textarea class="form-control form-control-solid" rows="8" maxlength="4000" dir="auto" data-k="findings">@o.Findings</textarea></div>
+                                <div class="col-xl-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Findings"] — @T["English"]</label>
+                                    <textarea class="form-control form-control-solid" rows="8" maxlength="4000" dir="auto" data-k="findingsEn">@o.FindingsEn</textarea></div>
+                                <div class="col-xl-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Impression"] — @T["Arabic"]</label>
+                                    <textarea class="form-control form-control-solid" rows="3" maxlength="1000" dir="auto" data-k="impression">@o.Impression</textarea></div>
+                                <div class="col-xl-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Impression"] — @T["English"]</label>
+                                    <textarea class="form-control form-control-solid" rows="3" maxlength="1000" dir="auto" data-k="impressionEn">@o.ImpressionEn</textarea></div>
+                            </div>
                         }
                         else
                         {
                             @if (o.ImpressionCategory != null) { <span class="badge @CatClass(o.ImpressionCategory) fs-7 mb-4">@T["imp:" + o.ImpressionCategory]</span> }
                             <div class="text-muted fs-7 fw-semibold mb-1">@T["Findings"]</div>
-                            <div class="text-gray-800 fs-6 mb-5" style="white-space:pre-line">@(o.Findings ?? "—")</div>
+                            <div class="text-gray-800 fs-6 mb-5" style="white-space:pre-line" dir="auto">@(o.Findings == null && o.FindingsEn == null ? "—" : DisplayName.Of(o.Findings ?? "", o.FindingsEn ?? ""))</div>
                             <div class="text-muted fs-7 fw-semibold mb-1">@T["Impression"]</div>
-                            <div class="text-gray-900 fs-5 fw-bold" style="white-space:pre-line">@(o.Impression ?? "—")</div>
+                            <div class="text-gray-900 fs-5 fw-bold" style="white-space:pre-line" dir="auto">@(o.Impression == null && o.ImpressionEn == null ? "—" : DisplayName.Of(o.Impression ?? "", o.ImpressionEn ?? ""))</div>
                             @if (signed) { <div class="text-muted fs-8 mt-5">@T["Signed by"] @Who(o.SignedByEmployeeId)</div> }
+                            @* H34: English added after signing — the signed Arabic is not changed; who added it and when is shown *@
+                            @if (signed && o.TranslatedAt != null) { <div class="text-muted fs-8 mt-1"><i class="ki-outline ki-message-text fs-7 me-1"></i>@T["Translation added by"] @Who(o.TranslatedByEmployeeId) · <span class="hp-num" data-fmt data-utc="@o.TranslatedAt?.ToString("o")">@o.TranslatedAt?.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</span></div> }
+                            @if (signed && canReport)
+                            {
+                                <button type="button" class="btn btn-sm btn-light-primary mt-4" data-translate data-fen="@o.FindingsEn" data-ien="@o.ImpressionEn">
+                                    <i class="ki-outline ki-message-text fs-4"></i>@(o.FindingsEn == null && o.ImpressionEn == null ? T["Add translation"] : T["Edit translation"])</button>
+                            }
+                        }
+                    </div>
+                </div>
+                @* H31: the pictures — on this page, in the dentist's chart, and to the patient once released *@
+                <div class="card mb-5">
+                    <div class="card-header border-0 pt-6">
+                        <div class="card-title align-items-start flex-column m-0">
+                            <span class="card-label fw-bold text-gray-900 fs-4">@T["Images"] <span class="badge badge-light fs-8 hp-num ms-1">@images.Count</span></span>
+                            <span class="text-muted mt-1 fw-semibold fs-7">@(signed ? T["Locked with the signed report"] : T["JPEG, PNG or WebP, up to 15 MB each; the patient sees them once the report is released"])</span>
+                        </div>
+                        @if (canAttach)
+                        {
+                            <div class="card-toolbar"><label class="btn btn-sm btn-light-primary mb-0"><i class="ki-outline ki-picture fs-4"></i>@T["Attach images"]
+                                <input type="file" accept="image/jpeg,image/png,image/webp" multiple class="d-none" data-rad-upload="@o.ID" /></label></div>
+                        }
+                    </div>
+                    <div class="card-body pt-2">
+                        @if (images.Count == 0) { <div class="text-center text-muted py-8">@T["No images attached yet"]</div> }
+                        else
+                        {
+                            <div class="row g-4">
+                                @foreach (var im in images)
+                                {
+                                    var src = Url.Action("RadImage", new { id = im.Id });
+                                    <div class="col-6 col-md-4 col-xxl-3"><div class="position-relative">
+                                        <a href="@src" target="_blank" rel="noopener" class="d-block rounded overflow-hidden bg-dark" style="height:150px"><img src="@src" alt="" style="width:100%;height:100%;object-fit:cover" loading="lazy" /></a>
+                                        @if (canAttach) { <button type="button" class="btn btn-icon btn-sm btn-light-danger position-absolute top-0 end-0 m-2 w-25px h-25px" data-rad-image-remove="@im.Id" title="@T["Remove"]"><i class="ki-outline ki-trash fs-6"></i></button> }
+                                        <div class="text-gray-700 fs-8 mt-2 text-truncate">@(im.Caption ?? im.FileName)</div>
+                                        <div class="text-muted fs-9 hp-num" data-fmt data-utc="@im.UploadedAt.ToString("o")">@im.UploadedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</div>
+                                    </div></div>
+                                }
+                            </div>
                         }
                     </div>
                 </div>
@@ -186,7 +236,31 @@
     </div></div>
 </div>
 
+@if (signed && canReport)
+{
+    @* H34: the English of a signed report — two English texts only; the signed Arabic is shown for reference, read-only *@
+    <div class="modal fade" id="hp_translate" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-750px"><div class="modal-content">
+        <div class="modal-header"><h3 class="fw-bold m-0">@T["Add translation"]</h3><div class="btn btn-icon btn-sm btn-active-light-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body">
+            <div class="notice d-flex rounded border border-dashed p-4 mb-6 hp-notice"><div class="fs-7 text-gray-700">@T["The report stays as it was signed. Only its English is added, with your name and the time."]</div></div>
+            <div class="row g-5">
+                <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Findings"] — @T["Arabic"]</label>
+                    <div class="form-control form-control-solid bg-light h-auto min-h-150px" style="white-space:pre-line" dir="auto">@o.Findings</div></div>
+                <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Findings"] — @T["English"]</label>
+                    <textarea class="form-control form-control-solid" rows="7" maxlength="4000" dir="ltr" data-tr="findingsEn"></textarea></div>
+                <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Impression"] — @T["Arabic"]</label>
+                    <div class="form-control form-control-solid bg-light h-auto" style="white-space:pre-line" dir="auto">@o.Impression</div></div>
+                <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Impression"] — @T["English"]</label>
+                    <textarea class="form-control form-control-solid" rows="3" maxlength="1000" dir="ltr" data-tr="impressionEn"></textarea></div>
+            </div>
+        </div>
+        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button>
+            <button type="button" class="btn btn-primary" data-translate-save><i class="ki-outline ki-check fs-4"></i>@T["Save translation"]</button></div>
+    </div></div></div>
+}
+
 @section Scripts {
+    <partial name="_HospitalPrompt" />
     <script>
         (function () {
             var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
@@ -208,6 +282,38 @@
                     if (window.KTApp && KTApp.createSelect2) KTApp.createSelect2();
                 });
             }
+            // H31: attach pictures (multipart) and take one off; both swap the page in place
+            document.addEventListener('change', function (e) {
+                var t = e.target.closest('[data-rad-upload]'); if (!t || !t.files.length) return;
+                var fd = new FormData(); for (var i = 0; i < t.files.length; i++) fd.append('files', t.files[i]);
+                fd.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]').value);
+                cbConfirm(@Json.Serialize(T["Attach these images to the exam?"].Value)).then(function (ok) {
+                    if (!ok) { t.value = ''; return; }
+                    fetch(@Json.Serialize(Url.Content("~/Hospital/Radiology/")) + t.getAttribute('data-rad-upload') + '/Images', { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' }, body: fd })
+                        .then(function (r) { return r.json().catch(function () { return { ok: false }; }); }).then(done(null));
+                });
+            });
+            document.addEventListener('click', function (e) {
+                var t = e.target.closest('[data-rad-image-remove]'); if (!t) return;
+                cbConfirm(@Json.Serialize(T["Remove this image from the exam?"].Value), { kind: 'danger' }).then(function (ok) {
+                    if (!ok) return; t.disabled = true;
+                    fetch(@Json.Serialize(Url.Content("~/Hospital/Radiology/Images/")) + t.getAttribute('data-rad-image-remove') + '/Remove', { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token } })
+                        .then(function (r) { return r.json().catch(function () { return { ok: false }; }); }).then(done(t));
+                });
+            });
+            // H34: English for the signed report, in place
+            document.addEventListener('click', function (e) {
+                var t = e.target.closest('[data-translate],[data-translate-save]'); if (!t) return;
+                var m = document.getElementById('hp_translate'); if (!m) return;
+                if (t.hasAttribute('data-translate')) {
+                    m.querySelector('[data-tr=findingsEn]').value = t.getAttribute('data-fen') || '';
+                    m.querySelector('[data-tr=impressionEn]').value = t.getAttribute('data-ien') || '';
+                    bootstrap.Modal.getOrCreateInstance(m).show(); return;
+                }
+                t.disabled = true;
+                post('Translate', { findingsEn: m.querySelector('[data-tr=findingsEn]').value || null, impressionEn: m.querySelector('[data-tr=impressionEn]').value || null })
+                    .then(function (res) { t.disabled = false; if (!res.ok) { toast('error', res.error || W.failed); return; } bootstrap.Modal.getOrCreateInstance(m).hide(); toast('success', W.saved); swap(); });
+            });
             function done(btn, msg) { return function (res) { if (btn) btn.disabled = false; if (!res.ok) { toast('error', res.error || W.failed); return; } toast('success', msg || W.saved); swap(); }; }
             function report() {
                 var o = {}; document.querySelectorAll('[data-k]').forEach(function (i) { o[i.getAttribute('data-k')] = i.value || null; }); return o;

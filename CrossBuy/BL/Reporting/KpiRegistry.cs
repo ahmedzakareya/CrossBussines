@@ -50,6 +50,7 @@ public sealed class KpiRegistry : IKpiRegistry
         var keys = new HashSet<string>(StringComparer.Ordinal);
         var allowed = new HashSet<string>(AccountingDatasets.All().Select(d => d.DatasetCode)
             .Concat(ProjectsDatasets.All().Select(d => d.DatasetCode))
+            .Concat(HospitalManagementDatasets.Datasets().Select(d => d.DatasetCode))   // H50: the hospital dashboard
             .Concat(conditional), StringComparer.Ordinal);
         foreach (var k in items)
         {
@@ -199,5 +200,9 @@ public static class KpiCatalog
             "Age in days of the OLDEST pending approval, not the mean",
             "Company and the caller's own approval read scope; days since SubmittedAt",
             Array.Empty<ReportFilter>());
+
+        // H50: the hospital dashboard's tiles over its management reports (HospitalKpis) — last, so the catalogue's
+        // first entry stays the accounting KPI its tests mutate.
+        foreach (var hospital in HospitalKpis.All()) yield return hospital;
     }
 }

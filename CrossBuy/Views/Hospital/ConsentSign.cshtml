@@ -1,0 +1,197 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model HospitalPatient
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H60 — taking a consent: the form and what it is for on one side, the text the signer reads and the signature pad
+    on the other (sized for a tablet). Signing asks first; the consent is final once recorded (it is withdrawn, never
+    edited), and the page returns to the patient's file.
+*@
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["New consent"].Value;
+    bool ready = ViewBag.Ready == true;
+    var forms = (ViewBag.Forms as IReadOnlyList<HospitalConsentForm>) ?? Array.Empty<HospitalConsentForm>();
+    var cases = (ViewBag.Cases as List<HospitalConsentCase>) ?? new();
+    var staff = (ViewBag.Staff as List<(int ID, string Name, string NameEn, string? Photo)>) ?? new();
+    int? surgeryId = ViewBag.SurgeryId as int?;
+    int? age = ViewBag.Age as int?;
+    bool minor = age is < HospitalConsentRules.AdultAge;
+    bool en = !System.Globalization.CultureInfo.CurrentUICulture.Name.StartsWith("ar");
+    var name = DisplayName.Of(Model.Name, Model.NameEn);
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+<style>
+    .hp-sign-pad { width: 100%; height: 220px; border: 2px dashed var(--bs-gray-300); border-radius: .75rem; background: var(--bs-body-bg); touch-action: none; cursor: crosshair; display: block; }
+    .hp-sign-pad.hp-signed { border-style: solid; border-color: var(--bs-primary); }
+    .hp-consent-text { white-space: pre-line; line-height: 1.9; max-height: 340px; overflow-y: auto; }
+</style>
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["New consent"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item text-muted"><a href="@Url.Action("Patient", new { id = Model.ID })" class="text-muted text-hover-primary">@name</a></li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted hp-num">@Model.Mrn</li>
+            </ul>
+        </div>
+        <a href="@Url.Action("Patient", new { id = Model.ID })" class="btn btn-sm btn-light"><i class="ki-outline ki-arrow-left fs-4"></i>@T["The patient's file"]</a>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (!ready) { <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice"><div class="fs-6 text-gray-700">@T[HospitalConsentService.NoTables]</div></div> }
+        else if (Model.DeceasedAt != null) { <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice"><div class="fs-6 text-gray-700">@T["This patient is deceased"]</div></div> }
+        else if (forms.Count == 0) { <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice"><div class="fs-6 text-gray-700">@T["No consent form is set up yet: the hospital administrator adds them in Consent forms."]</div></div> }
+        else
+        {
+            <div class="row g-5" data-consent>
+                <div class="col-xl-5">
+                    <div class="card mb-5">
+                        <div class="card-header border-0 pt-6"><div class="card-title flex-column m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["What the consent is for"]</span>
+                            <span class="text-muted fs-7 mt-1">@T["Explain it to the signer, in a language they understand, before they sign."]</span></div></div>
+                        <div class="card-body pt-2"><div class="row g-4">
+                            <div class="col-12"><label class="form-label required fs-7">@T["Consent form"]</label>
+                                <select class="form-select form-select-solid" data-c="formId">
+                                    @foreach (var f in forms) { <option value="@f.ID" data-kind="@f.Kind">@DisplayName.Of(f.Title, f.TitleEn)</option> }
+                                </select></div>
+                            <div class="col-12"><label class="form-label required fs-7">@T["The signer reads it in"]</label>
+                                <div class="d-flex gap-6">
+                                    <label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="radio" name="cLang" value="ar" @(en ? "" : "checked") data-c-lang /><span class="form-check-label fs-7">العربية</span></label>
+                                    <label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="radio" name="cLang" value="en" @(en ? "checked" : "") data-c-lang /><span class="form-check-label fs-7">English</span></label>
+                                </div></div>
+                            <div class="col-12" data-c-proc-wrap><label class="form-label fs-7" data-c-proc-label>@T["The procedure"]</label>
+                                <input type="text" class="form-control form-control-solid" maxlength="300" dir="auto" data-c="procedureName" /></div>
+                            @if (cases.Count > 0)
+                            {
+                                <div class="col-12"><label class="form-label fs-7">@T["Theatre case"]</label>
+                                    <select class="form-select form-select-solid" data-c="surgeryId"><option value="">@T["Not for a theatre case"]</option>
+                                        @foreach (var c in cases) { <option value="@c.Id" data-name="@DisplayName.Of(c.Name, c.NameEn)" selected="@(surgeryId == c.Id)">@c.CaseNo — @DisplayName.Of(c.Name, c.NameEn) · @c.CaseDate.ToString("yyyy-MM-dd", inv)</option> }
+                                    </select></div>
+                            }
+                            <div class="col-12"><label class="form-label fs-7">@T["Risks and alternatives explained for this patient"]</label>
+                                <textarea class="form-control form-control-solid" rows="3" maxlength="1000" dir="auto" data-c="risks"></textarea></div>
+                        </div></div>
+                    </div>
+                    <div class="card mb-5">
+                        <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Who signs"]</span></div></div>
+                        <div class="card-body pt-2"><div class="row g-4">
+                            <div class="col-12"><div class="d-flex gap-6">
+                                <label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="radio" name="cSigner" value="Patient" @(minor ? "disabled" : "checked") data-c-signer /><span class="form-check-label fs-7">@T["The patient"]</span></label>
+                                <label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="radio" name="cSigner" value="Representative" @(minor ? "checked" : "") data-c-signer /><span class="form-check-label fs-7">@T["A representative"]</span></label>
+                            </div>
+                            @if (minor) { <div class="text-muted fs-8 mt-2">@T["A minor's consent is signed by a parent or guardian"]</div> }</div>
+                            <div class="col-md-6" data-c-proxy><label class="form-label required fs-7">@T["Representative's name"]</label><input type="text" class="form-control form-control-solid" maxlength="200" dir="auto" data-c="signerName" /></div>
+                            <div class="col-md-6" data-c-proxy><label class="form-label required fs-7">@T["Relation to the patient"]</label><input type="text" class="form-control form-control-solid" maxlength="60" dir="auto" data-c="signerRelation" /></div>
+                            <div class="col-12" data-c-proxy><label class="form-label required fs-7">@T["Why the representative signs"]</label>
+                                <select class="form-select form-select-solid" data-c="proxyReason">
+                                    @foreach (var r in HospitalConsentProxyReason.All) { <option value="@r" selected="@(minor && r == HospitalConsentProxyReason.Minor)">@T["cp:" + r]</option> }
+                                </select></div>
+                            <div class="col-12"><label class="form-label fs-7">@T["Interpreter (if any)"]</label><input type="text" class="form-control form-control-solid" maxlength="200" dir="auto" data-c="interpreter" /></div>
+                            <div class="col-12"><label class="form-label required fs-7">@T["Witness"]</label>
+                                <select class="form-select form-select-solid" data-c="witnessEmployeeId" data-person-select data-placeholder="@T["Choose the witness"]"><option value=""></option>
+                                    @foreach (var s in staff) { <option value="@s.ID" data-photo="@s.Photo" data-initials="@HospitalUi.Initials(s.NameEn)">@DisplayName.Of(s.Name, s.NameEn)</option> }
+                                </select>
+                                <div class="text-muted fs-8 mt-1">@T["Someone other than the clinician who explained."]</div></div>
+                        </div></div>
+                    </div>
+                </div>
+                <div class="col-xl-7">
+                    <div class="card mb-5">
+                        <div class="card-header border-0 pt-6"><div class="card-title flex-column m-0"><span class="card-label fw-bold text-gray-900 fs-4" data-c-title></span>
+                            <span class="text-muted fs-7 mt-1"><span class="hp-num">@Model.Mrn</span> · @name</span></div></div>
+                        <div class="card-body pt-2"><div class="hp-consent-text fs-6 text-gray-800" data-c-text dir="auto"></div></div>
+                    </div>
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="d-flex flex-wrap gap-6 mb-5">
+                                <label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="radio" name="cDecision" value="Given" checked data-c-decision /><span class="form-check-label fw-semibold">@T["I give my consent"]</span></label>
+                                <label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="radio" name="cDecision" value="Refused" data-c-decision /><span class="form-check-label fw-semibold">@T["I refuse, having been told the risks of refusing"]</span></label>
+                            </div>
+                            <div class="d-flex flex-stack mb-2"><span class="fw-bold text-gray-900">@T["Signature"]</span>
+                                <button type="button" class="btn btn-sm btn-light" data-c-clear><i class="ki-outline ki-arrows-circle fs-5"></i>@T["Clear"]</button></div>
+                            <canvas class="hp-sign-pad" data-c-pad></canvas>
+                            <div class="text-muted fs-8 mt-2">@T["Sign with a finger, a stylus or the mouse. The signature is kept with the consent and its fingerprint is printed on it."]</div>
+                            <div class="d-flex justify-content-end mt-6"><button type="button" class="btn btn-primary" data-c-sign><i class="ki-outline ki-check fs-4"></i>@T["Record the signed consent"]</button></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div></div>
+</div>
+
+@section Scripts {
+    @await Html.PartialAsync("_PersonSelect")
+    <script>
+        (function () {
+            var root = document.querySelector('[data-consent]'); if (!root) return;
+            if (window.hpPersonSelect) hpPersonSelect(root);
+            var forms = @Json.Serialize(forms.Select(f => new { id = f.ID, kind = f.Kind, title = f.Title, titleEn = f.TitleEn, body = f.Body, bodyEn = f.BodyEn, proc = HospitalConsentKind.NamesAProcedure(f.Kind) }));
+            var P = { name: @Json.Serialize(Model.Name), nameEn: @Json.Serialize(string.IsNullOrWhiteSpace(Model.NameEn) ? Model.Name : Model.NameEn), mrn: @Json.Serialize(Model.Mrn),
+                doctor: @Json.Serialize((string)ViewBag.Doctor), doctorEn: @Json.Serialize((string)ViewBag.DoctorEn), today: @Json.Serialize(HospitalNursingService.UtcToWard(DateTime.UtcNow).ToString("yyyy-MM-dd", inv)) };
+            var W = { given: @Json.Serialize(T["Record this signed consent? It is final: a consent is withdrawn, never edited."].Value),
+                refused: @Json.Serialize(T["Record this signed refusal? It is final and stays on the patient's file."].Value),
+                done: @Json.Serialize(T["The consent is recorded"].Value), failed: @Json.Serialize(T["The change could not be saved"].Value), sign: @Json.Serialize(T["Sign in the box"].Value) };
+            var q = function (k) { return root.querySelector('[data-c=' + k + ']'); };
+            var lang = function () { return root.querySelector('[data-c-lang]:checked').value; };
+            var signer = function () { return (root.querySelector('[data-c-signer]:checked') || {}).value; };
+            function form() { var id = +q('formId').value; return forms.filter(function (f) { return f.id === id; })[0]; }
+            function render() {
+                var f = form(), en = lang() === 'en'; if (!f) return;
+                var proc = q('procedureName').value.trim() || '—';
+                var text = (en ? f.bodyEn : f.body).split('{patient}').join(en ? P.nameEn : P.name).split('{mrn}').join(P.mrn).split('{procedure}').join(proc)
+                    .split('{doctor}').join(en ? P.doctorEn : P.doctor).split('{date}').join(P.today);
+                root.querySelector('[data-c-title]').textContent = en ? f.titleEn : f.title;
+                var box = root.querySelector('[data-c-text]'); box.textContent = text; box.dir = en ? 'ltr' : 'rtl';
+                root.querySelector('[data-c-proc-label]').classList.toggle('required', f.proc);
+            }
+            function proxy() { root.querySelectorAll('[data-c-proxy]').forEach(function (e) { e.classList.toggle('d-none', signer() !== 'Representative'); }); }
+            // picking a theatre case writes its procedure, unless one is written already
+            var sc = q('surgeryId');
+            function fromCase() { if (sc && sc.value && !q('procedureName').value.trim()) q('procedureName').value = sc.selectedOptions[0].getAttribute('data-name'); render(); }
+            if (sc) { sc.addEventListener('change', fromCase); fromCase(); }
+            q('formId').addEventListener('change', render);
+            q('procedureName').addEventListener('input', render);
+            root.querySelectorAll('[data-c-lang]').forEach(function (e) { e.addEventListener('change', render); });
+            root.querySelectorAll('[data-c-signer]').forEach(function (e) { e.addEventListener('change', proxy); });
+            render(); proxy();
+
+            // the pad: pointer strokes at the screen's real resolution
+            var pad = root.querySelector('[data-c-pad]'), g = pad.getContext('2d'), strokes = 0, drawing = false;
+            function size() { var r = pad.getBoundingClientRect(), k = window.devicePixelRatio || 1; pad.width = r.width * k; pad.height = r.height * k; g.setTransform(k, 0, 0, k, 0, 0);
+                g.lineWidth = 2.4; g.lineCap = 'round'; g.lineJoin = 'round'; g.strokeStyle = '#071437'; strokes = 0; pad.classList.remove('hp-signed'); }
+            function at(e) { var r = pad.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
+            pad.addEventListener('pointerdown', function (e) { drawing = true; pad.setPointerCapture(e.pointerId); var p = at(e); g.beginPath(); g.moveTo(p.x, p.y); g.lineTo(p.x + .1, p.y + .1); g.stroke(); });
+            pad.addEventListener('pointermove', function (e) { if (!drawing) return; var p = at(e); g.lineTo(p.x, p.y); g.stroke(); });
+            ['pointerup', 'pointercancel', 'pointerleave'].forEach(function (t) { pad.addEventListener(t, function () { if (drawing) { drawing = false; strokes++; pad.classList.add('hp-signed'); } }); });
+            root.querySelector('[data-c-clear]').addEventListener('click', size);
+            size(); window.addEventListener('resize', function () { if (!strokes) size(); });
+
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            var btn = root.querySelector('[data-c-sign]');
+            btn.addEventListener('click', function () {
+                if (!strokes) { if (window.toastr) toastr.error(W.sign); return; }
+                var decision = root.querySelector('[data-c-decision]:checked').value;
+                cbConfirm(decision === 'Given' ? W.given : W.refused).then(function (ok) {
+                    if (!ok) return; btn.disabled = true;
+                    var body = { formId: +q('formId').value, language: lang(), procedureName: q('procedureName').value || null, risks: q('risks').value || null,
+                        surgeryId: sc && sc.value ? +sc.value : null, decision: decision, signerKind: signer() || null, signerName: q('signerName').value || null,
+                        signerRelation: q('signerRelation').value || null, proxyReason: signer() === 'Representative' ? q('proxyReason').value : null,
+                        interpreter: q('interpreter').value || null, witnessEmployeeId: q('witnessEmployeeId').value ? +q('witnessEmployeeId').value : null, signature: pad.toDataURL('image/png') };
+                    fetch(@Json.Serialize(Url.Action("SignConsent", new { id = Model.ID })), { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(body) })
+                        .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+                        .then(function (res) {
+                            if (!res.ok) { btn.disabled = false; if (window.toastr) toastr.error(res.error || W.failed); return; }
+                            if (window.toastr) toastr.success(W.done);
+                            location.href = @Json.Serialize(Url.Action("Patient", new { id = Model.ID })) + '#pfConsents';
+                        });
+                });
+            });
+        })();
+    </script>
+}

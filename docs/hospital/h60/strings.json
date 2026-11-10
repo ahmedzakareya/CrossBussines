@@ -1,0 +1,475 @@
+{
+ "unit": "H60 — consents & e-signature",
+ "strings": {
+  "A minor's consent is signed by a parent or guardian": {
+   "ar": "موافقة القاصر يوقّعها الوالد أو الولي",
+   "en": "A minor's consent is signed by a parent or guardian",
+   "fr": "Le consentement d'un mineur est signé par un parent ou tuteur"
+  },
+  "A representative": {
+   "ar": "من يمثّل المريض",
+   "en": "A representative",
+   "fr": "Un représentant"
+  },
+  "Add the standard consent forms? You can change their wording afterwards.": {
+   "ar": "إضافة نماذج الموافقة القياسية؟ يمكنك تعديل نصوصها بعد ذلك.",
+   "en": "Add the standard consent forms? You can change their wording afterwards.",
+   "fr": "Ajouter les formulaires de consentement standard ? Vous pourrez modifier leur texte ensuite."
+  },
+  "Add the standard forms": {
+   "ar": "إضافة النماذج القياسية",
+   "en": "Add the standard forms",
+   "fr": "Ajouter les formulaires standard"
+  },
+  "All kinds": {
+   "ar": "كل الأنواع",
+   "en": "All kinds",
+   "fr": "Tous les types"
+  },
+  "Another form has this code": {
+   "ar": "يوجد نموذج آخر بهذا الرمز",
+   "en": "Another form has this code",
+   "fr": "Un autre formulaire porte ce code"
+  },
+  "Changing the title or the wording makes a new version; consents already signed keep the text they were signed on.": {
+   "ar": "تعديل العنوان أو النص يُنشئ إصداراً جديداً؛ والموافقات الموقّعة تحتفظ بالنص الذي وُقّعت عليه.",
+   "en": "Changing the title or the wording makes a new version; consents already signed keep the text they were signed on.",
+   "fr": "Modifier le titre ou le texte crée une nouvelle version ; les consentements déjà signés gardent le texte signé."
+  },
+  "Choose the consent form": {
+   "ar": "اختر نموذج الموافقة",
+   "en": "Choose the consent form",
+   "fr": "Choisissez le formulaire de consentement"
+  },
+  "Choose the kind of consent": {
+   "ar": "اختر نوع الموافقة",
+   "en": "Choose the kind of consent",
+   "fr": "Choisissez le type de consentement"
+  },
+  "Choose the language the signer read": {
+   "ar": "اختر اللغة التي قرأ بها الموقّع",
+   "en": "Choose the language the signer read",
+   "fr": "Choisissez la langue lue par le signataire"
+  },
+  "Choose whether consent is given or refused": {
+   "ar": "حدد هل الموافقة مُعطاة أم مرفوضة",
+   "en": "Choose whether consent is given or refused",
+   "fr": "Indiquez si le consentement est donné ou refusé"
+  },
+  "Choose who signs": {
+   "ar": "حدد من يوقّع",
+   "en": "Choose who signs",
+   "fr": "Indiquez qui signe"
+  },
+  "Choose why the representative signs": {
+   "ar": "حدد سبب توقيع الممثل",
+   "en": "Choose why the representative signs",
+   "fr": "Indiquez pourquoi le représentant signe"
+  },
+  "Choose the witness": {
+   "ar": "اختر الشاهد",
+   "en": "Choose the witness",
+   "fr": "Choisissez le témoin"
+  },
+  "Clear": {
+   "ar": "مسح",
+   "en": "Clear",
+   "fr": "Effacer"
+  },
+  "Consent form": {
+   "ar": "نموذج الموافقة",
+   "en": "Consent form",
+   "fr": "Formulaire de consentement"
+  },
+  "Consent forms": {
+   "ar": "نماذج الموافقات",
+   "en": "Consent forms",
+   "fr": "Formulaires de consentement"
+  },
+  "Consents": {
+   "ar": "الموافقات",
+   "en": "Consents",
+   "fr": "Consentements"
+  },
+  "Consents are not installed yet (hospital_h60_consents.sql).": {
+   "ar": "الموافقات غير مثبتة بعد (hospital_h60_consents.sql).",
+   "en": "Consents are not installed yet (hospital_h60_consents.sql).",
+   "fr": "Les consentements ne sont pas encore installés (hospital_h60_consents.sql)."
+  },
+  "Edit the consent form": {
+   "ar": "تعديل نموذج الموافقة",
+   "en": "Edit the consent form",
+   "fr": "Modifier le formulaire de consentement"
+  },
+  "Explain it to the signer, in a language they understand, before they sign.": {
+   "ar": "اشرحها للموقّع بلغة يفهمها قبل أن يوقّع.",
+   "en": "Explain it to the signer, in a language they understand, before they sign.",
+   "fr": "Expliquez-le au signataire, dans une langue qu'il comprend, avant qu'il signe."
+  },
+  "Form": {
+   "ar": "النموذج",
+   "en": "Form",
+   "fr": "Formulaire"
+  },
+  "Give the form a code of up to 30 characters": {
+   "ar": "أعطِ النموذج رمزاً لا يزيد عن 30 حرفاً",
+   "en": "Give the form a code of up to 30 characters",
+   "fr": "Donnez au formulaire un code de 30 caractères au plus"
+  },
+  "Give the representative's name and relation to the patient": {
+   "ar": "اكتب اسم الممثل وصلته بالمريض",
+   "en": "Give the representative's name and relation to the patient",
+   "fr": "Indiquez le nom du représentant et son lien avec le patient"
+  },
+  "Give the title in Arabic and English": {
+   "ar": "اكتب العنوان بالعربية والإنجليزية",
+   "en": "Give the title in Arabic and English",
+   "fr": "Donnez le titre en arabe et en anglais"
+  },
+  "I give my consent": {
+   "ar": "أوافق",
+   "en": "I give my consent",
+   "fr": "Je donne mon consentement"
+  },
+  "I refuse, having been told the risks of refusing": {
+   "ar": "أرفض، بعد أن شُرحت لي مخاطر الرفض",
+   "en": "I refuse, having been told the risks of refusing",
+   "fr": "Je refuse, après avoir été informé des risques du refus"
+  },
+  "In use: offered when a consent is taken": {
+   "ar": "مُستخدم: يظهر عند أخذ الموافقة",
+   "en": "In use: offered when a consent is taken",
+   "fr": "En usage : proposé lors du recueil d'un consentement"
+  },
+  "Interpreter (if any)": {
+   "ar": "المترجم (إن وُجد)",
+   "en": "Interpreter (if any)",
+   "fr": "Interprète (le cas échéant)"
+  },
+  "Loading…": {
+   "ar": "جارٍ التحميل…",
+   "en": "Loading…",
+   "fr": "Chargement…"
+  },
+  "New consent": {
+   "ar": "موافقة جديدة",
+   "en": "New consent",
+   "fr": "Nouveau consentement"
+  },
+  "New consent form": {
+   "ar": "نموذج موافقة جديد",
+   "en": "New consent form",
+   "fr": "Nouveau formulaire de consentement"
+  },
+  "New form": {
+   "ar": "نموذج جديد",
+   "en": "New form",
+   "fr": "Nouveau formulaire"
+  },
+  "No consent form is set up yet: the hospital administrator adds them in Consent forms.": {
+   "ar": "لا توجد نماذج موافقة بعد: يضيفها مدير المستشفى من «نماذج الموافقات».",
+   "en": "No consent form is set up yet: the hospital administrator adds them in Consent forms.",
+   "fr": "Aucun formulaire de consentement n'est configuré : l'administrateur les ajoute dans Formulaires de consentement."
+  },
+  "No consent form matches.": {
+   "ar": "لا يوجد نموذج مطابق.",
+   "en": "No consent form matches.",
+   "fr": "Aucun formulaire ne correspond."
+  },
+  "No consent signed yet.": {
+   "ar": "لا توجد موافقات موقّعة بعد.",
+   "en": "No consent signed yet.",
+   "fr": "Aucun consentement signé pour l'instant."
+  },
+  "Not for a theatre case": {
+   "ar": "ليست لعملية جراحية",
+   "en": "Not for a theatre case",
+   "fr": "Pas pour une intervention au bloc"
+  },
+  "Only a consent given can be withdrawn": {
+   "ar": "لا يُسحب إلا الموافقة المُعطاة",
+   "en": "Only a consent given can be withdrawn",
+   "fr": "Seul un consentement donné peut être retiré"
+  },
+  "Record the signed consent": {
+   "ar": "تسجيل الموافقة الموقّعة",
+   "en": "Record the signed consent",
+   "fr": "Enregistrer le consentement signé"
+  },
+  "Record this signed consent? It is final: a consent is withdrawn, never edited.": {
+   "ar": "تسجيل هذه الموافقة الموقّعة؟ التسجيل نهائي: الموافقة تُسحب ولا تُعدَّل.",
+   "en": "Record this signed consent? It is final: a consent is withdrawn, never edited.",
+   "fr": "Enregistrer ce consentement signé ? C'est définitif : un consentement se retire, il ne se modifie pas."
+  },
+  "Record this signed refusal? It is final and stays on the patient's file.": {
+   "ar": "تسجيل هذا الرفض الموقّع؟ التسجيل نهائي ويبقى في ملف المريض.",
+   "en": "Record this signed refusal? It is final and stays on the patient's file.",
+   "fr": "Enregistrer ce refus signé ? C'est définitif et reste dans le dossier du patient."
+  },
+  "Relation to the patient": {
+   "ar": "الصلة بالمريض",
+   "en": "Relation to the patient",
+   "fr": "Lien avec le patient"
+  },
+  "Representative's name": {
+   "ar": "اسم الممثل",
+   "en": "Representative's name",
+   "fr": "Nom du représentant"
+  },
+  "Reset": {
+   "ar": "إعادة ضبط",
+   "en": "Reset",
+   "fr": "Réinitialiser"
+  },
+  "Risks and alternatives explained for this patient": {
+   "ar": "المخاطر والبدائل التي شُرحت لهذا المريض",
+   "en": "Risks and alternatives explained for this patient",
+   "fr": "Risques et alternatives expliqués à ce patient"
+  },
+  "Save this consent form?": {
+   "ar": "حفظ نموذج الموافقة هذا؟",
+   "en": "Save this consent form?",
+   "fr": "Enregistrer ce formulaire de consentement ?"
+  },
+  "Search by code or title…": {
+   "ar": "ابحث بالرمز أو العنوان…",
+   "en": "Search by code or title…",
+   "fr": "Rechercher par code ou titre…"
+  },
+  "Sign in the box": {
+   "ar": "وقّع داخل المربع",
+   "en": "Sign in the box",
+   "fr": "Signez dans le cadre"
+  },
+  "Sign with a finger, a stylus or the mouse. The signature is kept with the consent and its fingerprint is printed on it.": {
+   "ar": "وقّع بالإصبع أو القلم أو الفأرة. يُحفظ التوقيع مع الموافقة وتُطبع بصمته عليها.",
+   "en": "Sign with a finger, a stylus or the mouse. The signature is kept with the consent and its fingerprint is printed on it.",
+   "fr": "Signez au doigt, au stylet ou à la souris. La signature est conservée avec le consentement et son empreinte y est imprimée."
+  },
+  "Signature": {
+   "ar": "التوقيع",
+   "en": "Signature",
+   "fr": "Signature"
+  },
+  "Someone other than the clinician who explained.": {
+   "ar": "شخص غير الطبيب الذي شرح الإجراء.",
+   "en": "Someone other than the clinician who explained.",
+   "fr": "Une autre personne que le clinicien qui a expliqué."
+  },
+  "The consent is recorded": {
+   "ar": "سُجّلت الموافقة",
+   "en": "The consent is recorded",
+   "fr": "Le consentement est enregistré"
+  },
+  "The consent is withdrawn": {
+   "ar": "سُحبت الموافقة",
+   "en": "The consent is withdrawn",
+   "fr": "Le consentement est retiré"
+  },
+  "The form is saved": {
+   "ar": "حُفظ النموذج",
+   "en": "The form is saved",
+   "fr": "Le formulaire est enregistré"
+  },
+  "The patient's file": {
+   "ar": "ملف المريض",
+   "en": "The patient's file",
+   "fr": "Le dossier du patient"
+  },
+  "The procedure": {
+   "ar": "الإجراء",
+   "en": "The procedure",
+   "fr": "L'intervention"
+  },
+  "The signer reads it in": {
+   "ar": "يقرؤها الموقّع باللغة",
+   "en": "The signer reads it in",
+   "fr": "Le signataire le lit en"
+  },
+  "The witness must be someone other than the clinician who explained": {
+   "ar": "يجب أن يكون الشاهد شخصاً غير الطبيب الذي شرح الإجراء",
+   "en": "The witness must be someone other than the clinician who explained",
+   "fr": "Le témoin doit être une autre personne que le clinicien qui a expliqué"
+  },
+  "This consent is already withdrawn": {
+   "ar": "هذه الموافقة مسحوبة بالفعل",
+   "en": "This consent is already withdrawn",
+   "fr": "Ce consentement est déjà retiré"
+  },
+  "What the consent is for": {
+   "ar": "موضوع الموافقة",
+   "en": "What the consent is for",
+   "fr": "Objet du consentement"
+  },
+  "Who signs": {
+   "ar": "من يوقّع",
+   "en": "Who signs",
+   "fr": "Qui signe"
+  },
+  "Why is consent {0} withdrawn?": {
+   "ar": "لماذا سُحبت الموافقة {0}؟",
+   "en": "Why is consent {0} withdrawn?",
+   "fr": "Pourquoi le consentement {0} est-il retiré ?"
+  },
+  "Why the representative signs": {
+   "ar": "سبب توقيع الممثل",
+   "en": "Why the representative signs",
+   "fr": "Pourquoi le représentant signe"
+  },
+  "Write the procedure the consent is for": {
+   "ar": "اكتب الإجراء الذي تخصه الموافقة",
+   "en": "Write the procedure the consent is for",
+   "fr": "Indiquez l'intervention concernée"
+  },
+  "Write the wording in Arabic and English": {
+   "ar": "اكتب النص بالعربية والإنجليزية",
+   "en": "Write the wording in Arabic and English",
+   "fr": "Rédigez le texte en arabe et en anglais"
+  },
+  "{0} forms were added": {
+   "ar": "أُضيف {0} نموذج",
+   "en": "{0} forms were added",
+   "fr": "{0} formulaires ajoutés"
+  },
+  "cf:active": {
+   "ar": "مُستخدم",
+   "en": "In use",
+   "fr": "En usage"
+  },
+  "cf:inactive": {
+   "ar": "موقوف",
+   "en": "Not in use",
+   "fr": "Hors usage"
+  },
+  "cf:updated": {
+   "ar": "آخر تعديل",
+   "en": "Updated",
+   "fr": "Modifié le"
+  },
+  "cf:version": {
+   "ar": "الإصدار",
+   "en": "Version",
+   "fr": "Version"
+  },
+  "cn:consent": {
+   "ar": "الموافقة",
+   "en": "Consent",
+   "fr": "Consentement"
+  },
+  "cn:decision": {
+   "ar": "القرار",
+   "en": "Decision",
+   "fr": "Décision"
+  },
+  "cn:inForce": {
+   "ar": "سارية",
+   "en": "In force",
+   "fr": "En vigueur"
+  },
+  "cn:signature": {
+   "ar": "التوقيع",
+   "en": "Signature",
+   "fr": "Signature"
+  },
+  "cn:signedBy": {
+   "ar": "الموقّع",
+   "en": "Signed by",
+   "fr": "Signé par"
+  },
+  "cn:withdraw": {
+   "ar": "سحب",
+   "en": "Withdraw",
+   "fr": "Retirer"
+  },
+  "cn:withdrawn": {
+   "ar": "مسحوبة",
+   "en": "Withdrawn",
+   "fr": "Retiré"
+  },
+  "ck:General": {
+   "ar": "موافقة عامة",
+   "en": "General consent",
+   "fr": "Consentement général"
+  },
+  "ck:Procedure": {
+   "ar": "إجراء طبي أو جراحي",
+   "en": "Medical or surgical procedure",
+   "fr": "Acte médical ou chirurgical"
+  },
+  "ck:Anaesthesia": {
+   "ar": "تخدير",
+   "en": "Anaesthesia",
+   "fr": "Anesthésie"
+  },
+  "ck:Transfusion": {
+   "ar": "نقل دم",
+   "en": "Blood transfusion",
+   "fr": "Transfusion"
+  },
+  "ck:Contrast": {
+   "ar": "صبغة أشعة",
+   "en": "Contrast imaging",
+   "fr": "Produit de contraste"
+  },
+  "ck:Photography": {
+   "ar": "تصوير طبي",
+   "en": "Clinical photography",
+   "fr": "Photographie médicale"
+  },
+  "ck:AgainstAdvice": {
+   "ar": "خروج على مسؤولية المريض",
+   "en": "Leaving against medical advice",
+   "fr": "Sortie contre avis médical"
+  },
+  "cp:Minor": {
+   "ar": "المريض قاصر",
+   "en": "The patient is a minor",
+   "fr": "Patient mineur"
+  },
+  "cp:Unconscious": {
+   "ar": "المريض فاقد الوعي",
+   "en": "The patient is unconscious",
+   "fr": "Patient inconscient"
+  },
+  "cp:NoCapacity": {
+   "ar": "المريض غير قادر على القرار",
+   "en": "The patient lacks capacity",
+   "fr": "Patient incapable de décider"
+  },
+  "cp:Other": {
+   "ar": "سبب آخر",
+   "en": "Another reason",
+   "fr": "Autre raison"
+  },
+  "cns:Given": {
+   "ar": "موافق",
+   "en": "Consent given",
+   "fr": "Donné"
+  },
+  "cns:Refused": {
+   "ar": "رافض",
+   "en": "Consent refused",
+   "fr": "Refusé"
+  },
+  "cn:explainedBy": {
+   "ar": "شرح الإجراء",
+   "en": "Explained by",
+   "fr": "Expliqué par"
+  },
+  "What the signer reads. These are filled in with the patient's facts when the consent is taken:": {
+   "ar": "ما يقرؤه الموقّع. تُستبدل هذه ببيانات المريض عند أخذ الموافقة:",
+   "en": "What the signer reads. These are filled in with the patient's facts when the consent is taken:",
+   "fr": "Ce que lit le signataire. Ces champs sont remplis avec les données du patient au recueil du consentement :"
+  },
+  "Take the patient's signed procedure consent for this operation first": {
+   "ar": "خذ أولاً موافقة المريض الموقّعة على إجراء هذه العملية",
+   "en": "Take the patient's signed procedure consent for this operation first",
+   "fr": "Recueillez d'abord le consentement signé du patient pour cette intervention"
+  },
+  "Take the consent": {
+   "ar": "أخذ الموافقة",
+   "en": "Take the consent",
+   "fr": "Recueillir le consentement"
+  }
+ }
+}

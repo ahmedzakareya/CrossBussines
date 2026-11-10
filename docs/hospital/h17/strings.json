@@ -1,0 +1,525 @@
+{
+  "unit": "H17 — the long dental cases (orthodontics, the implant register)",
+  "strings": {
+    "3–6 months before the crown": {
+      "en": "3–6 months before the crown",
+      "ar": "3–6 أشهر قبل التاج",
+      "fr": "3 à 6 mois avant la couronne"
+    },
+    "A date cannot be in the future": {
+      "en": "A date cannot be in the future",
+      "ar": "التاريخ لا يكون في المستقبل",
+      "fr": "Une date ne peut pas être future"
+    },
+    "A payment is more than zero": {
+      "en": "A payment is more than zero",
+      "ar": "الدفعة أكبر من صفر",
+      "fr": "Un paiement est supérieur à zéro"
+    },
+    "Active ortho cases": {
+      "en": "Active ortho cases",
+      "ar": "حالات تقويم نشطة",
+      "fr": "Cas d'orthodontie actifs"
+    },
+    "Add this implant to the register?": {
+      "en": "Add this implant to the register?",
+      "ar": "إضافة هذه الزرعة إلى السجل؟",
+      "fr": "Ajouter cet implant au registre ?"
+    },
+    "Add to the register": {
+      "en": "Add to the register",
+      "ar": "إضافة إلى السجل",
+      "fr": "Ajouter au registre"
+    },
+    "Adjustment": {
+      "en": "Adjustment",
+      "ar": "زيارة شد",
+      "fr": "Activation"
+    },
+    "Adjustments this week": {
+      "en": "Adjustments this week",
+      "ar": "زيارات الشد هذا الأسبوع",
+      "fr": "Activations cette semaine"
+    },
+    "Aligner stage reached": {
+      "en": "Aligner stage reached",
+      "ar": "المرحلة التي وصلها المصفف",
+      "fr": "Étape de gouttière atteinte"
+    },
+    "Aligner stages": {
+      "en": "Aligner stages",
+      "ar": "مراحل المصففات",
+      "fr": "Étapes de gouttières"
+    },
+    "An amount cannot be negative": {
+      "en": "An amount cannot be negative",
+      "ar": "المبلغ لا يكون سالباً",
+      "fr": "Un montant ne peut pas être négatif"
+    },
+    "Appliance": {
+      "en": "Appliance",
+      "ar": "الجهاز",
+      "fr": "Appareil"
+    },
+    "Choose the appliance": {
+      "en": "Choose the appliance",
+      "ar": "اختر الجهاز",
+      "fr": "Choisissez l'appareil"
+    },
+    "Clear aligners are planned in 1 to 99 stages; other appliances have none": {
+      "en": "Clear aligners are planned in 1 to 99 stages; other appliances have none",
+      "ar": "المصففات الشفافة تُخطط من 1 إلى 99 مرحلة؛ الأجهزة الأخرى بلا مراحل",
+      "fr": "Les gouttières se planifient en 1 à 99 étapes ; les autres appareils n'en ont pas"
+    },
+    "Continues": {
+      "en": "Continues",
+      "ar": "مستمرة",
+      "fr": "Se poursuit"
+    },
+    "Contract total": {
+      "en": "Contract total",
+      "ar": "إجمالي العقد",
+      "fr": "Total du contrat"
+    },
+    "Crown fitted": {
+      "en": "Crown fitted",
+      "ar": "رُكّب التاج",
+      "fr": "Couronne posée"
+    },
+    "Dental implants": {
+      "en": "Dental implants",
+      "ar": "زراعة الأسنان",
+      "fr": "Implants dentaires"
+    },
+    "Diameter (mm)": {
+      "en": "Diameter (mm)",
+      "ar": "القطر (مم)",
+      "fr": "Diamètre (mm)"
+    },
+    "Each implant with its system, size and lot — any lot can be traced if the maker recalls it": {
+      "en": "Each implant with its system, size and lot — any lot can be traced if the maker recalls it",
+      "ar": "كل زرعة بنظامها ومقاسها وتشغيلتها — يمكن تتبع أي تشغيلة عند سحب المصنّع لها",
+      "fr": "Chaque implant avec son système, sa taille et son lot — tout lot se retrouve si le fabricant le rappelle"
+    },
+    "Enter the day it was placed (not in the future)": {
+      "en": "Enter the day it was placed (not in the future)",
+      "ar": "أدخل يوم الزرع (ليس في المستقبل)",
+      "fr": "Saisissez le jour de la pose (pas dans le futur)"
+    },
+    "Enter the implant system": {
+      "en": "Enter the implant system",
+      "ar": "اكتب نظام الزرعة",
+      "fr": "Saisissez le système d'implant"
+    },
+    "Failed": {
+      "en": "Failed",
+      "ar": "فشلت",
+      "fr": "Échec"
+    },
+    "Fixtures in stock": {
+      "en": "Fixtures in stock",
+      "ar": "زرعات بالمخزون",
+      "fr": "Implants en stock"
+    },
+    "Healing now": {
+      "en": "Healing now",
+      "ar": "في فترة الالتئام",
+      "fr": "En cicatrisation"
+    },
+    "ISQ is 1 to 100": {
+      "en": "ISQ is 1 to 100",
+      "ar": "قيمة ISQ من 1 إلى 100",
+      "fr": "L'ISQ va de 1 à 100"
+    },
+    "Implant placed": {
+      "en": "Implant placed",
+      "ar": "تم الزرع",
+      "fr": "Implant posé"
+    },
+    "Implant register": {
+      "en": "Implant register",
+      "ar": "سجل الزرعات",
+      "fr": "Registre des implants"
+    },
+    "Implants": {
+      "en": "Implants",
+      "ar": "الزرعات",
+      "fr": "Implants"
+    },
+    "Implants this year": {
+      "en": "Implants this year",
+      "ar": "زرعات هذا العام",
+      "fr": "Implants cette année"
+    },
+    "Instalments due": {
+      "en": "Instalments due",
+      "ar": "أقساط مستحقة",
+      "fr": "Mensualités dues"
+    },
+    "Inventory by lot and expiry (FEFO)": {
+      "en": "Inventory by lot and expiry (FEFO)",
+      "ar": "المخزون بالتشغيلة والصلاحية (FEFO)",
+      "fr": "Stock par lot et péremption (FEFO)"
+    },
+    "Length (mm)": {
+      "en": "Length (mm)",
+      "ar": "الطول (مم)",
+      "fr": "Longueur (mm)"
+    },
+    "Log the adjustment": {
+      "en": "Log the adjustment",
+      "ar": "تسجيل الزيارة",
+      "fr": "Enregistrer l'activation"
+    },
+    "Log this adjustment on {0}?": {
+      "en": "Log this adjustment on {0}?",
+      "ar": "تسجيل زيارة الشد على {0}؟",
+      "fr": "Enregistrer cette activation sur {0} ?"
+    },
+    "Lot": {
+      "en": "Lot",
+      "ar": "التشغيلة",
+      "fr": "Lot"
+    },
+    "Missed adjustments": {
+      "en": "Missed adjustments",
+      "ar": "متأخرون عن الزيارة",
+      "fr": "Activations manquées"
+    },
+    "Monthly instalment": {
+      "en": "Monthly instalment",
+      "ar": "القسط الشهري",
+      "fr": "Mensualité"
+    },
+    "New ortho case": {
+      "en": "New ortho case",
+      "ar": "حالة تقويم",
+      "fr": "Nouveau cas d'orthodontie"
+    },
+    "Next visit": {
+      "en": "Next visit",
+      "ar": "الزيارة القادمة",
+      "fr": "Prochaine visite"
+    },
+    "No implants in the register yet.": {
+      "en": "No implants in the register yet.",
+      "ar": "لا توجد زرعات في السجل بعد.",
+      "fr": "Aucun implant au registre."
+    },
+    "No orthodontic cases yet.": {
+      "en": "No orthodontic cases yet.",
+      "ar": "لا توجد حالات تقويم بعد.",
+      "fr": "Aucun cas d'orthodontie."
+    },
+    "No.": {
+      "en": "No.",
+      "ar": "الرقم",
+      "fr": "N°"
+    },
+    "One ortho contract with instalments; each adjustment is logged on the case, not billed as a separate visit": {
+      "en": "One ortho contract with instalments; each adjustment is logged on the case, not billed as a separate visit",
+      "ar": "عقد تقويم بقيمة كاملة وأقساط؛ كل زيارة شد تُسجل على الحالة لا كزيارة منفصلة بسعر",
+      "fr": "Un contrat d'orthodontie avec mensualités ; chaque activation s'enregistre sur le cas, sans facturation séparée"
+    },
+    "Open the case": {
+      "en": "Open the case",
+      "ar": "فتح الحالة",
+      "fr": "Ouvrir le cas"
+    },
+    "Open this orthodontic contract?": {
+      "en": "Open this orthodontic contract?",
+      "ar": "فتح عقد التقويم هذا؟",
+      "fr": "Ouvrir ce contrat d'orthodontie ?"
+    },
+    "Orthodontic cases": {
+      "en": "Orthodontic cases",
+      "ar": "حالات التقويم",
+      "fr": "Cas d'orthodontie"
+    },
+    "Orthodontics": {
+      "en": "Orthodontics",
+      "ar": "تقويم الأسنان",
+      "fr": "Orthodontie"
+    },
+    "Orthodontist": {
+      "en": "Orthodontist",
+      "ar": "طبيب التقويم",
+      "fr": "Orthodontiste"
+    },
+    "Paid / total": {
+      "en": "Paid / total",
+      "ar": "المدفوع / الإجمالي",
+      "fr": "Payé / total"
+    },
+    "Payment": {
+      "en": "Payment",
+      "ar": "دفعة",
+      "fr": "Paiement"
+    },
+    "Placed": {
+      "en": "Placed",
+      "ar": "الزرع",
+      "fr": "Posé"
+    },
+    "Plan an implant": {
+      "en": "Plan an implant",
+      "ar": "تخطيط زرعة",
+      "fr": "Planifier un implant"
+    },
+    "Planned months": {
+      "en": "Planned months",
+      "ar": "المدة بالأشهر",
+      "fr": "Durée prévue (mois)"
+    },
+    "Progress": {
+      "en": "Progress",
+      "ar": "التقدم",
+      "fr": "Avancement"
+    },
+    "Record the fixture's lot": {
+      "en": "Record the fixture's lot",
+      "ar": "سجّل تشغيلة الزرعة",
+      "fr": "Enregistrez le lot de l'implant"
+    },
+    "Record {0} as placed?": {
+      "en": "Record {0} as placed?",
+      "ar": "تسجيل زرع {0}؟",
+      "fr": "Enregistrer {0} comme posé ?"
+    },
+    "Say why the implant failed": {
+      "en": "Say why the implant failed",
+      "ar": "اذكر سبب فشل الزرعة",
+      "fr": "Indiquez pourquoi l'implant a échoué"
+    },
+    "Search by patient or lot": {
+      "en": "Search by patient or lot",
+      "ar": "ابحث بالمريض أو التشغيلة",
+      "fr": "Rechercher par patient ou lot"
+    },
+    "Stability ISQ": {
+      "en": "Stability ISQ",
+      "ar": "الثبات ISQ",
+      "fr": "Stabilité ISQ"
+    },
+    "Stability is below {0}: extend the healing before the crown": {
+      "en": "Stability is below {0}: extend the healing before the crown",
+      "ar": "الثبات أقل من {0}: مدّد فترة الالتئام قبل التاج",
+      "fr": "La stabilité est sous {0} : prolongez la cicatrisation avant la couronne"
+    },
+    "Surgeon": {
+      "en": "Surgeon",
+      "ar": "الجراح",
+      "fr": "Chirurgien"
+    },
+    "Survival rate": {
+      "en": "Survival rate",
+      "ar": "نسبة النجاح",
+      "fr": "Taux de survie"
+    },
+    "System": {
+      "en": "System",
+      "ar": "النظام",
+      "fr": "Système"
+    },
+    "System & size": {
+      "en": "System & size",
+      "ar": "النظام والمقاس",
+      "fr": "Système et taille"
+    },
+    "The aligner stage is one of the case's stages": {
+      "en": "The aligner stage is one of the case's stages",
+      "ar": "مرحلة المصفف من مراحل الحالة",
+      "fr": "L'étape de gouttière est l'une des étapes du cas"
+    },
+    "The amount paid on {0}": {
+      "en": "The amount paid on {0}",
+      "ar": "المبلغ المدفوع على {0}",
+      "fr": "Le montant payé sur {0}"
+    },
+    "The case": {
+      "en": "The case",
+      "ar": "الحالة",
+      "fr": "Le cas"
+    },
+    "The fixtures themselves are stock items: their quantities, lots and expiry are kept in Inventory, and a placed fixture's lot is recorded here so a recall finds its patients.": {
+      "en": "The fixtures themselves are stock items: their quantities, lots and expiry are kept in Inventory, and a placed fixture's lot is recorded here so a recall finds its patients.",
+      "ar": "الزرعات نفسها أصناف مخزون: كمياتها وتشغيلاتها وصلاحيتها في المخزون، وتشغيلة الزرعة المزروعة تُسجل هنا ليصل السحب إلى مرضاها.",
+      "fr": "Les implants sont des articles de stock : quantités, lots et péremption sont tenus en stock, et le lot d'un implant posé est noté ici pour qu'un rappel retrouve ses patients."
+    },
+    "The instalment cannot be more than the contract": {
+      "en": "The instalment cannot be more than the contract",
+      "ar": "القسط لا يزيد عن قيمة العقد",
+      "fr": "La mensualité ne peut dépasser le contrat"
+    },
+    "The next visit comes after this one": {
+      "en": "The next visit comes after this one",
+      "ar": "الزيارة القادمة بعد هذه الزيارة",
+      "fr": "La prochaine visite vient après celle-ci"
+    },
+    "The size is 2–8 mm wide and 4–20 mm long": {
+      "en": "The size is 2–8 mm wide and 4–20 mm long",
+      "ar": "المقاس قطر 2–8 مم وطول 4–20 مم",
+      "fr": "La taille est de 2 à 8 mm de large et 4 à 20 mm de long"
+    },
+    "The stability (ISQ) of {0} before the crown": {
+      "en": "The stability (ISQ) of {0} before the crown",
+      "ar": "ثبات {0} (ISQ) قبل التاج",
+      "fr": "La stabilité (ISQ) de {0} avant la couronne"
+    },
+    "The treatment is 1 to 60 months": {
+      "en": "The treatment is 1 to 60 months",
+      "ar": "مدة العلاج من 1 إلى 60 شهراً",
+      "fr": "Le traitement dure de 1 à 60 mois"
+    },
+    "The visit is between the case's start and today": {
+      "en": "The visit is between the case's start and today",
+      "ar": "الزيارة بين بداية الحالة واليوم",
+      "fr": "La visite est entre le début du cas et aujourd'hui"
+    },
+    "This case is closed": {
+      "en": "This case is closed",
+      "ar": "هذه الحالة مغلقة",
+      "fr": "Ce cas est clos"
+    },
+    "This implant cannot make that move": {
+      "en": "This implant cannot make that move",
+      "ar": "هذه الزرعة لا تنتقل لهذه المرحلة",
+      "fr": "Cet implant ne peut pas passer à cette étape"
+    },
+    "This is more than what is left on the contract": {
+      "en": "This is more than what is left on the contract",
+      "ar": "هذا أكثر من المتبقي على العقد",
+      "fr": "C'est plus que le reste du contrat"
+    },
+    "This patient already has an open orthodontic case": {
+      "en": "This patient already has an open orthodontic case",
+      "ar": "لهذا المريض حالة تقويم مفتوحة بالفعل",
+      "fr": "Ce patient a déjà un cas d'orthodontie ouvert"
+    },
+    "This tooth already has an implant in the register": {
+      "en": "This tooth already has an implant in the register",
+      "ar": "لهذا السن زرعة في السجل بالفعل",
+      "fr": "Cette dent a déjà un implant au registre"
+    },
+    "Why did {0} fail?": {
+      "en": "Why did {0} fail?",
+      "ar": "لماذا فشلت {0}؟",
+      "fr": "Pourquoi {0} a-t-il échoué ?"
+    },
+    "appl:ClearAligners": {
+      "en": "Clear aligners",
+      "ar": "تقويم شفاف",
+      "fr": "Gouttières transparentes"
+    },
+    "appl:FixedCeramic": {
+      "en": "Fixed ceramic braces",
+      "ar": "تقويم ثابت خزفي",
+      "fr": "Bagues fixes céramique"
+    },
+    "appl:FixedMetal": {
+      "en": "Fixed metal braces",
+      "ar": "تقويم ثابت معدني",
+      "fr": "Bagues fixes métal"
+    },
+    "appl:Functional": {
+      "en": "Functional appliance",
+      "ar": "جهاز وظيفي",
+      "fr": "Appareil fonctionnel"
+    },
+    "appl:Lingual": {
+      "en": "Lingual braces",
+      "ar": "تقويم لساني",
+      "fr": "Orthodontie linguale"
+    },
+    "appl:Removable": {
+      "en": "Removable appliance",
+      "ar": "جهاز متحرك",
+      "fr": "Appareil amovible"
+    },
+    "appl:Retention": {
+      "en": "Retention phase",
+      "ar": "مثبت بعد التقويم",
+      "fr": "Phase de contention"
+    },
+    "collected at the cashier": {
+      "en": "collected at the cashier",
+      "ar": "تُحصّل من الخزينة",
+      "fr": "encaissées en caisse"
+    },
+    "e.g. wire changed to 0.018 NiTi": {
+      "en": "e.g. wire changed to 0.018 NiTi",
+      "ar": "مثال: تغيير السلك إلى 0.018 NiTi",
+      "fr": "ex. fil changé en 0.018 NiTi"
+    },
+    "from Inventory, by lot and expiry": {
+      "en": "from Inventory, by lot and expiry",
+      "ar": "من المخزون بالتشغيلة والصلاحية",
+      "fr": "depuis le stock, par lot et péremption"
+    },
+    "impl:Failed": {
+      "en": "Failed",
+      "ar": "فشلت",
+      "fr": "Échec"
+    },
+    "impl:Healing": {
+      "en": "Healing",
+      "ar": "فترة الالتئام",
+      "fr": "Cicatrisation"
+    },
+    "impl:Planned": {
+      "en": "Planned",
+      "ar": "مخطط",
+      "fr": "Prévu"
+    },
+    "impl:Restored": {
+      "en": "Restored",
+      "ar": "رُكّب التاج",
+      "fr": "Restauré"
+    },
+    "last 3 years": {
+      "en": "last 3 years",
+      "ar": "آخر 3 سنوات",
+      "fr": "3 dernières années"
+    },
+    "lots recorded": {
+      "en": "lots recorded",
+      "ar": "تشغيلات مسجلة",
+      "fr": "lots enregistrés"
+    },
+    "missed": {
+      "en": "missed",
+      "ar": "فاتت",
+      "fr": "manquée"
+    },
+    "monthly": {
+      "en": "monthly",
+      "ar": "قسط شهري",
+      "fr": "mensuel"
+    },
+    "ortho:Active": {
+      "en": "Active",
+      "ar": "نشطة",
+      "fr": "Actif"
+    },
+    "ortho:Completed": {
+      "en": "Completed",
+      "ar": "اكتملت",
+      "fr": "Terminé"
+    },
+    "ortho:Discontinued": {
+      "en": "Discontinued",
+      "ar": "توقفت",
+      "fr": "Interrompu"
+    },
+    "ortho:Retention": {
+      "en": "Retention",
+      "ar": "مرحلة التثبيت",
+      "fr": "Contention"
+    },
+    "Enter a number": {
+      "en": "Enter a number",
+      "ar": "أدخل رقماً",
+      "fr": "Saisissez un nombre"
+    }
+  }
+}

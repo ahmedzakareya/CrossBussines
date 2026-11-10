@@ -1,0 +1,197 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H44 — the kitchen's setting (`manage`): its store, the four accounts of the allocation journal, the recipe each
+    diet's tray is built on, and who else eats from it (staff groups, cafeteria outlets with their POS branch) — each
+    with its cost centre; a ward is added here only to name its cost centre. Every change swaps in place.
+*@
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Kitchen setting"].Value;
+    bool ready = ViewBag.Ready == true;
+    var s = ViewBag.Setting as HospitalKitchenSetting;
+    var recipes = (ViewBag.Recipes as IReadOnlyDictionary<string, int>) ?? new Dictionary<string, int>();
+    var dests = (ViewBag.Destinations as IReadOnlyList<HospitalKitchenDestination>) ?? Array.Empty<HospitalKitchenDestination>();
+    var names = (ViewBag.ItemNames as Dictionary<int, string>) ?? new();
+    var warehouses = (ViewBag.Warehouses as List<CrossBuy.Controllers.HospitalController.HospitalChoice>) ?? new();
+    var accounts = (ViewBag.Accounts as List<CrossBuy.Controllers.HospitalController.HospitalChoice>) ?? new();
+    var wards = (ViewBag.Wards as List<CrossBuy.Controllers.HospitalController.HospitalChoice>) ?? new();
+    var centres = (ViewBag.CostCenters as List<CrossBuy.Controllers.HospitalController.HospitalChoice>) ?? new();
+    var branches = (ViewBag.Branches as List<CrossBuy.Controllers.HospitalController.HospitalChoice>) ?? new();
+    string Acc(CrossBuy.Controllers.HospitalController.HospitalChoice a) => a.Label!.Split('|')[0] + " · " + DisplayName.Of(a.Name, a.NameEn ?? a.Name);
+    bool IsExp(CrossBuy.Controllers.HospitalController.HospitalChoice a) => a.Label!.EndsWith("|" + HospitalClaimAccounts.Expense);
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Kitchen setting"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item text-muted"><a href="@Url.Action("Kitchen")" class="text-muted text-hover-primary">@T["Kitchen & cafeteria"]</a></li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@T["Setting"]</li>
+            </ul>
+        </div>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (!ready)
+        {
+            <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice"><div class="fs-6 text-gray-700">@T[HospitalKitchenService.NoTables]</div></div>
+        }
+        else
+        {
+            <div class="row g-5 mb-5">
+                <div class="col-xl-6"><div class="card h-100" data-ks-setting>
+                    <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
+                        <span class="card-label fw-bold text-gray-900 fs-4">@T["Store and accounts"]</span>
+                        <span class="text-muted mt-1 fw-semibold fs-7">@T["The allocation journal debits the meals' accounts and credits the pool"]</span>
+                    </div></div>
+                    <div class="card-body pt-2"><div class="row g-4">
+                        <div class="col-12"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Kitchen store"]</label>
+                            <select class="form-select form-select-solid" data-k="kitchenWarehouseId"><option value="">—</option>@foreach (var w in warehouses) { <option value="@w.Id" selected="@(s?.KitchenWarehouseId == w.Id)">@w.Label · @DisplayName.Of(w.Name, w.NameEn ?? w.Name)</option> }</select></div>
+                        @foreach (var (key, label, val, expOnly) in new[] { ("poolAccountId", T["Kitchen cost pool (clearing)"].Value, s?.PoolAccountId, false), ("patientMealsAccountId", T["Patient meals expense"].Value, s?.PatientMealsAccountId, true),
+                            ("staffMealsAccountId", T["Staff benefits: meals"].Value, s?.StaffMealsAccountId, true), ("cafeteriaCogsAccountId", T["Cafeteria cost of sales"].Value, s?.CafeteriaCogsAccountId, true) })
+                        {
+                            <div class="col-12"><label class="fw-semibold fs-7 text-gray-700 mb-2">@label</label>
+                                <select class="form-select form-select-solid" data-k="@key" data-control="select2"><option value="">—</option>@foreach (var a in accounts.Where(a => !expOnly || IsExp(a))) { <option value="@a.Id" selected="@(val == a.Id)">@Acc(a)</option> }</select></div>
+                        }
+                    </div></div>
+                </div></div>
+                <div class="col-xl-6"><div class="card h-100">
+                    <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
+                        <span class="card-label fw-bold text-gray-900 fs-4">@T["A recipe per diet"]</span>
+                        <span class="text-muted mt-1 fw-semibold fs-7">@T["An inventory item whose bill of materials is one tray; a diet with none costs as regular"]</span>
+                    </div></div>
+                    <div class="card-body pt-2">
+                        @foreach (var d in HospitalDiet.All.Where(d => d != HospitalDiet.Npo))
+                        {
+                            <div class="d-flex align-items-center gap-3 py-2">
+                                <span class="fw-semibold text-gray-800 w-125px flex-shrink-0">@T["diet:" + d]</span>
+                                <div class="flex-grow-1"><select class="form-select form-select-sm form-select-solid" data-ks-recipe="@d" data-placeholder="—">
+                                    <option></option>@if (recipes.TryGetValue(d, out var rid)) { <option value="@rid" selected>@(names.GetValueOrDefault(rid) ?? rid.ToString())</option> }
+                                </select></div>
+                            </div>
+                        }
+                    </div>
+                </div></div>
+            </div>
+            <div class="d-flex justify-content-end mb-5"><button type="button" class="btn btn-sm btn-primary" data-ks-save><i class="ki-outline ki-check fs-4"></i>@T["Save the setting"]</button></div>
+
+            <div class="card mb-5">
+                <div class="card-header border-0 pt-6">
+                    <div class="card-title align-items-start flex-column m-0">
+                        <span class="card-label fw-bold text-gray-900 fs-4">@T["Who eats from the kitchen"]</span>
+                        <span class="text-muted mt-1 fw-semibold fs-7">@T["Staff groups and cafeteria outlets are counted by the kitchen; a ward is added only to name its cost centre"]</span>
+                    </div>
+                    <div class="card-toolbar"><button type="button" class="btn btn-sm btn-light-primary" data-ks-new><i class="ki-outline ki-plus fs-4"></i>@T["Add"]</button></div>
+                </div>
+                <div class="card-body pt-2">
+                    @if (dests.Count == 0) { <div class="text-center text-muted py-8">@T["No destination yet."]</div> }
+                    else
+                    {
+                        <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-3 mb-0">
+                            <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0"><th>@T["Name"]</th><th>@T["Stream"]</th><th>@T["Standard meal"]</th><th>@T["Cost centre"]</th><th>@T["POS branch"]</th></tr></thead>
+                            <tbody class="fw-semibold text-gray-700">
+                                @foreach (var d in dests)
+                                {
+                                    var cc = centres.FirstOrDefault(c => c.Id == d.CostCenterId); var br = branches.FirstOrDefault(b => b.Id == d.PosBranchId);
+                                    <tr><td><span class="fw-bold text-gray-800">@DisplayName.Of(d.Name, d.NameEn ?? d.Name)</span></td>
+                                        <td><span class="badge badge-light-@(d.Stream == HospitalKitchenStream.Patient ? "primary" : d.Stream == HospitalKitchenStream.Staff ? "info" : "secondary")">@T["stream:" + d.Stream]</span></td>
+                                        <td>@(d.RecipeItemId is int r ? names.GetValueOrDefault(r) ?? "—" : "—")</td>
+                                        <td>@(cc == null ? "—" : cc.Label + " · " + DisplayName.Of(cc.Name, cc.NameEn ?? cc.Name))</td>
+                                        <td>@(br == null ? "—" : DisplayName.Of(br.Name, br.NameEn ?? br.Name))</td></tr>
+                                }
+                            </tbody>
+                        </table></div>
+                    }
+                </div>
+            </div>
+        }
+    </div></div>
+</div>
+
+@if (ready)
+{
+    <div class="modal fade" id="ksDestModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-550px"><div class="modal-content">
+        <div class="modal-header"><h3 class="fw-bold m-0">@T["Who eats from the kitchen"]</h3><div class="btn btn-icon btn-sm btn-active-light-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body"><div class="row g-4">
+            <div class="col-12 d-flex gap-2">
+                @foreach (var st in HospitalKitchenStream.All) { <label><input type="radio" class="btn-check" name="ksStream" value="@st" @(st == HospitalKitchenStream.Staff ? "checked" : "") /><span class="btn btn-sm btn-outline btn-outline-dashed btn-active-light-primary">@T["stream:" + st]</span></label> }
+            </div>
+            <div class="col-12" data-ks-ward-box><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Ward"]</label>
+                <select class="form-select form-select-solid" data-d="wardId"><option value="">—</option>@foreach (var w in wards) { <option value="@w.Id">@w.Label · @DisplayName.Of(w.Name, w.NameEn ?? w.Name)</option> }</select></div>
+            <div class="col-md-6" data-ks-name-box><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Name (Arabic)"]</label><input class="form-control form-control-solid" dir="rtl" maxlength="150" data-d="name" /></div>
+            <div class="col-md-6" data-ks-name-box><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Name (English)"]</label><input class="form-control form-control-solid" dir="ltr" maxlength="150" data-d="nameEn" /></div>
+            <div class="col-12" data-ks-recipe-box><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Standard meal"]</label><select class="form-select form-select-solid" data-d="recipeItemId" data-ks-item data-placeholder="—"><option></option></select></div>
+            <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Cost centre"]</label>
+                <select class="form-select form-select-solid" data-d="costCenterId"><option value="">—</option>@foreach (var c in centres) { <option value="@c.Id">@c.Label · @DisplayName.Of(c.Name, c.NameEn ?? c.Name)</option> }</select></div>
+            <div class="col-md-6" data-ks-branch-box><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["POS branch"]</label>
+                <select class="form-select form-select-solid" data-d="posBranchId"><option value="">—</option>@foreach (var b in branches) { <option value="@b.Id">@DisplayName.Of(b.Name, b.NameEn ?? b.Name)</option> }</select></div>
+        </div></div>
+        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-ks-dest-save><i class="ki-outline ki-check fs-4"></i>@T["Save"]</button></div>
+    </div></div></div>
+}
+
+@section Scripts {
+    <script>
+        (function () {
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value, root = @Json.Serialize(Url.Content("~/Hospital/Kitchen"));
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value),
+                save: @Json.Serialize(T["Save the kitchen's store, accounts and recipes?"].Value), items: @Json.Serialize(Url.Content("~/Hospital/Supply/Items")) };
+            function toast(k, m) { if (window.toastr) toastr[k](m); }
+            function post(url, body) {
+                return fetch(root + url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(body || {}) })
+                    .then(function (r) { return r.json().catch(function () { return { ok: false }; }); });
+            }
+            function swap() {
+                return fetch(root + '/Setting', { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.text(); }).then(function (html) {
+                    var d = new DOMParser().parseFromString(html, 'text/html'), f = d.getElementById('kt_app_content');
+                    if (f) document.getElementById('kt_app_content').innerHTML = f.innerHTML; wire();
+                });
+            }
+            function items(el, parent) {
+                if (!window.jQuery || el.classList.contains('select2-hidden-accessible')) return;
+                jQuery(el).select2({ dropdownParent: parent ? jQuery(parent) : undefined, placeholder: '—', allowClear: true,
+                    ajax: { url: W.items, delay: 250, data: function (p) { return { q: p.term || '' }; }, processResults: function (r) { return { results: r.items || [] }; } } });
+            }
+            function wire() {
+                document.querySelectorAll('[data-ks-recipe]').forEach(function (el) { items(el); });
+                if (window.jQuery) document.querySelectorAll('#kt_app_content [data-control=select2]').forEach(function (el) { if (!el.classList.contains('select2-hidden-accessible')) jQuery(el).select2(); });
+            }
+            wire();
+            var dm = document.getElementById('ksDestModal');
+            if (dm) items(dm.querySelector('[data-ks-item]'), dm);
+            function shape() {
+                var st = dm.querySelector('input[name=ksStream]:checked').value, p = st === 'Patient';
+                dm.querySelector('[data-ks-ward-box]').style.display = p ? '' : 'none';
+                dm.querySelectorAll('[data-ks-name-box]').forEach(function (b) { b.style.display = p ? 'none' : ''; });
+                dm.querySelector('[data-ks-recipe-box]').style.display = p ? 'none' : '';
+                dm.querySelector('[data-ks-branch-box]').style.display = st === 'Cafeteria' ? '' : 'none';
+            }
+            if (dm) { dm.addEventListener('change', function (e) { if (e.target.name === 'ksStream') shape(); }); shape(); }
+            document.addEventListener('click', function (e) {
+                var t = e.target.closest('[data-ks-save],[data-ks-new],[data-ks-dest-save]'); if (!t) return;
+                if (t.hasAttribute('data-ks-new')) { bootstrap.Modal.getOrCreateInstance(dm).show(); return; }
+                if (t.hasAttribute('data-ks-save')) {
+                    var c = document.querySelector('[data-ks-setting]'), v = function (k) { var x = c.querySelector('[data-k=' + k + ']').value; return x ? +x : null; };
+                    var recipes = {}; document.querySelectorAll('[data-ks-recipe]').forEach(function (el) { recipes[el.getAttribute('data-ks-recipe')] = el.value ? +el.value : null; });
+                    cbConfirm(W.save).then(function (ok) { if (!ok) return; t.disabled = true;
+                        post('/Setting', { kitchenWarehouseId: v('kitchenWarehouseId'), poolAccountId: v('poolAccountId'), patientMealsAccountId: v('patientMealsAccountId'),
+                            staffMealsAccountId: v('staffMealsAccountId'), cafeteriaCogsAccountId: v('cafeteriaCogsAccountId'), recipes: recipes })
+                            .then(function (res) { t.disabled = false; if (!res.ok) { toast('error', res.error || W.failed); return; } toast('success', W.saved); swap(); }); });
+                    return;
+                }
+                var d = function (k) { return dm.querySelector('[data-d=' + k + ']').value; }, n = function (k) { var x = d(k); return x ? +x : null; };
+                t.disabled = true;
+                post('/Destinations', { stream: dm.querySelector('input[name=ksStream]:checked').value, wardId: n('wardId'), name: d('name'), nameEn: d('nameEn') || null,
+                    recipeItemId: n('recipeItemId'), costCenterId: n('costCenterId'), posBranchId: n('posBranchId'), isActive: true })
+                    .then(function (res) { t.disabled = false; if (!res.ok) { toast('error', res.error || W.failed); return; } bootstrap.Modal.getOrCreateInstance(dm).hide(); toast('success', W.saved); swap(); });
+            });
+        })();
+    </script>
+}

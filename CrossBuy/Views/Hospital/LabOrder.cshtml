@@ -45,6 +45,7 @@
             @if (canEnter) { <button type="button" class="btn btn-sm btn-light" data-save><i class="ki-outline ki-save-2 fs-4"></i>@T["Save"]</button> }
             @if (canVerify && o.Status == HospitalLabStatus.Resulted) { <button type="button" class="btn btn-sm btn-primary" data-step="Verify" data-confirm="@T["Verify these results? Once verified they reach the doctor and the patient file and can no longer be changed."]"><i class="ki-outline ki-check-circle fs-4"></i>@T["Verify result"]</button> }
             @if (locked) { <span class="badge badge-light-success fs-7 px-4 py-3"><i class="ki-outline ki-shield-tick fs-5 text-success me-1"></i>@T["Verified"] <span class="hp-num ms-1" data-fmt data-utc="@o.VerifiedAt?.ToString("o")">@o.VerifiedAt?.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</span></span> }
+            <partial name="_HospitalPortalRelease" model="@((HospitalPortalResultSource.Lab, o.ID, locked, ViewBag.PortalRelease as HospitalPortalRelease, (bool)(ViewBag.CanConsult == true)))" />
         </div>
     </div></div>
 
@@ -190,6 +191,7 @@
 </div>
 
 @section Scripts {
+    <partial name="_HospitalPrompt" />
     <script>
         (function () {
             var token = document.querySelector('input[name="__RequestVerificationToken"]').value;

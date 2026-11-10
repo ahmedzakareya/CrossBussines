@@ -1,0 +1,35 @@
+{
+  "unit": "H18 — the bill split by the patient's cover (the bill and the claim on one split)",
+  "strings": {
+    "Covered by": {
+      "en": "Covered by",
+      "ar": "مغطاة من",
+      "fr": "Pris en charge par"
+    },
+    "The split was fixed when the bill closed: the payer is claimed exactly this share.": {
+      "en": "The split was fixed when the bill closed: the payer is claimed exactly this share.",
+      "ar": "ثُبّت التقسيم عند إغلاق الفاتورة: تُطالب الجهة الدافعة بهذه الحصة بالضبط.",
+      "fr": "La répartition a été figée à la clôture : le payeur est réclamé exactement de cette part."
+    },
+    "Split by the patient's cover today: the patient pays the co-pay and what the contract does not cover; the payer is claimed the rest.": {
+      "en": "Split by the patient's cover today: the patient pays the co-pay and what the contract does not cover; the payer is claimed the rest.",
+      "ar": "مقسّمة حسب تغطية المريض اليوم: يدفع المريض نسبة التحمل وما لا يغطيه العقد، وتُطالب الجهة الدافعة بالباقي.",
+      "fr": "Répartie selon la couverture du patient aujourd'hui : le patient paie le ticket modérateur et ce que le contrat ne couvre pas ; le payeur est réclamé du reste."
+    },
+    "Contract discount (paid by neither side):": {
+      "en": "Contract discount (paid by neither side):",
+      "ar": "خصم العقد (لا يدفعه أي طرف):",
+      "fr": "Remise contractuelle (payée par personne) :"
+    },
+    "Priced from the patient's list, in its currency. No cover applies to this bill: the patient pays it in full.": {
+      "en": "Priced from the patient's list, in its currency. No cover applies to this bill: the patient pays it in full.",
+      "ar": "مسعّرة من قائمة المريض وبعملتها. لا تغطية على هذه الفاتورة: يدفعها المريض كاملة.",
+      "fr": "Tarifée sur la liste du patient, dans sa devise. Aucune couverture : le patient paie tout."
+    },
+    "No cover applies to this bill: the patient pays it in full. Tax applies only to services marked taxable.": {
+      "en": "No cover applies to this bill: the patient pays it in full. Tax applies only to services marked taxable.",
+      "ar": "لا تغطية على هذه الفاتورة: يدفعها المريض كاملة. الضريبة على الخدمات الخاضعة لها فقط.",
+      "fr": "Aucune couverture : le patient paie tout. La taxe ne porte que sur les services taxables."
+    }
+  }
+}

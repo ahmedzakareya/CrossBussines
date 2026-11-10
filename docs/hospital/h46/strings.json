@@ -1,0 +1,31 @@
+{
+  "unit": "H46 — patient portal: forgot password (email only)",
+  "strings": {
+    "A link works for {0} minutes and only once": { "ar": "الرابط يعمل {0} دقيقة ومرة واحدة فقط", "en": "A link works for {0} minutes and only once", "fr": "Un lien fonctionne {0} minutes et une seule fois" },
+    "Ask for a new link": { "ar": "اطلب رابطاً جديداً", "en": "Ask for a new link", "fr": "Demander un nouveau lien" },
+    "At least 6 characters with a capital letter, a small letter, a digit and a symbol": { "ar": "٦ أحرف على الأقل، فيها حرف كبير وحرف صغير ورقم ورمز", "en": "At least 6 characters with a capital letter, a small letter, a digit and a symbol", "fr": "Au moins 6 caractères avec une majuscule, une minuscule, un chiffre et un symbole" },
+    "Back to sign in": { "ar": "العودة لتسجيل الدخول", "en": "Back to sign in", "fr": "Retour à la connexion" },
+    "Check your email": { "ar": "افحص بريدك", "en": "Check your email", "fr": "Consultez votre e-mail" },
+    "Forgot your password?": { "ar": "نسيت كلمة المرور؟", "en": "Forgot your password?", "fr": "Mot de passe oublié ?" },
+    "If an account matches that name or email, we have emailed it a link to set a new password. The link works for {0} minutes, once.": { "ar": "إن كان هناك حساب بهذا الاسم أو البريد، فقد أرسلنا له رابطاً لتعيين كلمة مرور جديدة. الرابط يعمل {0} دقيقة ومرة واحدة.", "en": "If an account matches that name or email, we have emailed it a link to set a new password. The link works for {0} minutes, once.", "fr": "Si un compte correspond à ce nom ou cet e-mail, nous lui avons envoyé un lien pour définir un nouveau mot de passe. Le lien fonctionne {0} minutes, une fois." },
+    "New password": { "ar": "كلمة المرور الجديدة", "en": "New password", "fr": "Nouveau mot de passe" },
+    "Reset your patient portal password": { "ar": "تعيين كلمة مرور بوابة المريض", "en": "Reset your patient portal password", "fr": "Réinitialiser votre mot de passe du portail patient" },
+    "Save the password": { "ar": "حفظ كلمة المرور", "en": "Save the password", "fr": "Enregistrer le mot de passe" },
+    "Send the link": { "ar": "أرسل الرابط", "en": "Send the link", "fr": "Envoyer le lien" },
+    "Set a new password": { "ar": "كلمة مرور جديدة", "en": "Set a new password", "fr": "Définir un nouveau mot de passe" },
+    "The link works for {0} minutes, once. If you did not ask for it, ignore this email: your password stays as it is.": { "ar": "الرابط يعمل {0} دقيقة ومرة واحدة. إن لم تطلبه فتجاهل هذا البريد: كلمة مرورك تبقى كما هي.", "en": "The link works for {0} minutes, once. If you did not ask for it, ignore this email: your password stays as it is.", "fr": "Le lien fonctionne {0} minutes, une fois. Si vous ne l'avez pas demandé, ignorez cet e-mail : votre mot de passe reste inchangé." },
+    "The password of your patient portal account was just changed, and every other device was signed out.": { "ar": "تم الآن تغيير كلمة مرور حسابك في بوابة المريض، وخرجنا من حسابك على كل الأجهزة الأخرى.", "en": "The password of your patient portal account was just changed, and every other device was signed out.", "fr": "Le mot de passe de votre compte du portail patient vient d'être changé, et tous les autres appareils ont été déconnectés." },
+    "The portal password tables are not created yet (hospital_h46_portal_password.sql)": { "ar": "جداول كلمات مرور البوابة لم تُنشأ بعد (hospital_h46_portal_password.sql)", "en": "The portal password tables are not created yet (hospital_h46_portal_password.sql)", "fr": "Les tables des mots de passe du portail ne sont pas encore créées (hospital_h46_portal_password.sql)" },
+    "The two passwords are not the same": { "ar": "كلمتا المرور غير متطابقتين", "en": "The two passwords are not the same", "fr": "Les deux mots de passe ne sont pas identiques" },
+    "This is not an email address": { "ar": "هذا ليس عنوان بريد إلكتروني", "en": "This is not an email address", "fr": "Ce n'est pas une adresse e-mail" },
+    "This link has expired": { "ar": "انتهت صلاحية الرابط", "en": "This link has expired", "fr": "Ce lien a expiré" },
+    "Type it again": { "ar": "أعد كتابة كلمة المرور", "en": "Type it again", "fr": "Saisissez-le à nouveau" },
+    "Type your user name or your email, and we will email you a link to set a new password": { "ar": "اكتب اسم المستخدم أو بريدك الإلكتروني، ونرسل لك رابطاً تضع منه كلمة مرور جديدة", "en": "Type your user name or your email, and we will email you a link to set a new password", "fr": "Saisissez votre nom d'utilisateur ou votre e-mail, et nous vous enverrons un lien pour définir un nouveau mot de passe" },
+    "User name or email": { "ar": "اسم المستخدم أو البريد الإلكتروني", "en": "User name or email", "fr": "Nom d'utilisateur ou e-mail" },
+    "Wasn't you? Call the hospital at once.": { "ar": "لم تكن أنت؟ اتصل بالمستشفى فوراً.", "en": "Wasn't you? Call the hospital at once.", "fr": "Ce n'était pas vous ? Appelez l'hôpital immédiatement." },
+    "We were asked to reset the password of your patient portal account": { "ar": "طُلب منا تعيين كلمة مرور جديدة لحسابك في بوابة المريض", "en": "We were asked to reset the password of your patient portal account", "fr": "On nous a demandé de réinitialiser le mot de passe de votre compte du portail patient" },
+    "You are signed out on your other devices, and a notice is in your email": { "ar": "خرجنا من حسابك على الأجهزة الأخرى، وأرسلنا تنبيهاً لبريدك", "en": "You are signed out on your other devices, and a notice is in your email", "fr": "Vous êtes déconnecté de vos autres appareils, et un avis est dans votre e-mail" },
+    "Your password is changed": { "ar": "تم تغيير كلمة المرور", "en": "Your password is changed", "fr": "Votre mot de passe est changé" },
+    "Your patient portal password was changed": { "ar": "تم تغيير كلمة مرور بوابة المريض", "en": "Your patient portal password was changed", "fr": "Votre mot de passe du portail patient a été changé" }
+  }
+}

@@ -1,0 +1,450 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H44 — the central kitchen & cafeteria, as the approved prototype draws it (#/kitchen): the month's four figures, the
+    "one kitchen, three consumers" notice, and four tabs — production today, patient meals, the cafeteria, costing &
+    allocation. Every number is read: trays from the wards (H43), meals the kitchen counts, recipes from the bills of
+    materials, the pool from the ledger, sales from the point of sale. What is not built yet shows a dash, never a
+    made-up figure. Every change swaps in place; the open tab is kept.
+*@
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Central kitchen & cafeteria"].Value;
+    bool ready = ViewBag.Ready == true, canWork = ViewBag.CanWork == true, canManage = ViewBag.CanManage == true;
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+    string Money(decimal v) => v.ToString("N3", inv);
+    string N(int v) => v.ToString("N0", inv);
+    var setting = ViewBag.Setting as HospitalKitchenSetting;
+    var rounds = (ViewBag.Rounds as IReadOnlyList<HospitalKitchenRound>) ?? Array.Empty<HospitalKitchenRound>();
+    var byDiet = (ViewBag.ByDiet as IReadOnlyDictionary<string, int>) ?? new Dictionary<string, int>();
+    var recipes = (ViewBag.Recipes as IReadOnlyDictionary<string, int>) ?? new Dictionary<string, int>();
+    var recipeDiet = ViewBag.RecipeDiet as string;
+    var recipe = ViewBag.Recipe as HospitalRecipeCard;
+    var dests = (ViewBag.Destinations as IReadOnlyList<HospitalKitchenDestination>) ?? Array.Empty<HospitalKitchenDestination>();
+    var m = ViewBag.Month as HospitalKitchenMonth;
+    var cafe = ViewBag.Cafeteria as HospitalCafeteria;
+    DateTime today = ViewBag.Today;
+    var monthLabel = m == null ? "" : m.Month.ToString("MMMM yyyy", DisplayName.IsArabic ? new System.Globalization.CultureInfo("ar-EG") : inv);
+    var times = new Dictionary<string, string> { [HospitalMealRound.Breakfast] = "06:30", [HospitalMealRound.Lunch] = "12:00", [HospitalMealRound.Snack] = "15:30", [HospitalMealRound.Dinner] = "18:00" };
+    decimal Sum(string stream) => m?.Shares.Where(x => x.Stream == stream).Sum(x => x.Allocated) ?? 0;
+    string StreamKind(string s) => s == HospitalKitchenStream.Patient ? "primary" : s == HospitalKitchenStream.Staff ? "info" : "secondary";
+    var counted = dests.Where(d => d.Stream != HospitalKitchenStream.Patient).ToList();
+    bool mapped = setting is { PoolAccountId: not null, PatientMealsAccountId: not null, StaffMealsAccountId: not null, CafeteriaCogsAccountId: not null };
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Central kitchen & cafeteria"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item text-muted">@T["Support services"]</li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@T["Kitchen & cafeteria"]</li>
+            </ul>
+        </div>
+        @if (ready && m != null)
+        {
+            <div class="d-flex align-items-center gap-2 gap-lg-3 d-print-none">
+                <input type="month" class="form-control form-control-sm form-control-solid hp-num w-150px" dir="ltr" value="@m.Month.ToString("yyyy-MM", inv)" max="@today.ToString("yyyy-MM", inv)" data-kt-month />
+                @if (canManage) { <a href="@Url.Action("KitchenSetting")" class="btn btn-sm btn-light"><i class="ki-outline ki-setting-2 fs-4"></i>@T["Kitchen setting"]</a> }
+                @if (canManage && m.Posted == null) { <button type="button" class="btn btn-sm btn-primary" data-kt-allocate><i class="ki-outline ki-calculator fs-4"></i>@T["Run month allocation"]</button> }
+            </div>
+        }
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid" data-kt-board="@(m?.Month.ToString("yyyy-MM", inv))" data-recipe="@recipeDiet">
+        @if (!ready || m == null)
+        {
+            <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice"><div class="fs-6 text-gray-700">@T[HospitalKitchenService.NoTables]</div></div>
+        }
+        else
+        {
+            @if (!mapped || setting?.KitchenWarehouseId == null || recipes.Count == 0)
+            {
+                <div class="notice d-flex rounded border border-dashed p-5 mb-5 hp-notice"><div class="fs-7 text-gray-700"><i class="ki-outline ki-information fs-5 me-1"></i>@T["The kitchen is not fully set up: its store, the four accounts and a recipe per diet are in the kitchen setting."]</div></div>
+            }
+            <div class="row g-5 g-xl-8 mb-5">
+                @foreach (var s in new[] {
+                    (string.Format(T["Meals in {0}"].Value, monthLabel), N(m.Meals), T["patients · staff · cafeteria"].Value, "text-gray-900"),
+                    (T["Total kitchen cost"].Value, Money(m.PoolTotal), "", "text-gray-900"),
+                    (T["Average cost per meal"].Value, m.Meals > 0 ? Money(m.PoolTotal / m.Meals) : "—", T["including labour and running costs"].Value, "text-gray-900"),
+                    (T["Cafeteria margin"].Value, cafe != null && cafe.Sales > 0 ? Math.Round((cafe.Sales - cafe.MealCost) * 100 / cafe.Sales).ToString(inv) + "%" : "—", T["after its share of kitchen cost"].Value, "text-success") })
+                {
+                    <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
+                        <div class="text-muted fw-semibold fs-7 mb-1">@s.Item1</div>
+                        <div class="fs-2hx fw-bold @s.Item4"><bdi class="hp-num" dir="ltr">@s.Item2</bdi></div>
+                        @if (s.Item3 != "") { <div class="text-muted fs-8 mt-1">@s.Item3</div> }
+                    </div></div></div>
+                }
+            </div>
+
+            <div class="notice d-flex rounded border border-primary border-dashed bg-light-primary p-6 mb-5">
+                <i class="ki-outline ki-shop fs-2tx text-primary me-4"></i>
+                <div class="d-flex flex-stack flex-grow-1 flex-wrap flex-md-nowrap">
+                    <div class="mb-3 mb-md-0 fw-semibold pe-5">
+                        <h4 class="text-gray-900 fw-bold mb-1">@T["One kitchen, three consumers"]</h4>
+                        <div class="fs-6 text-gray-700">@T["Every meal is built on a recipe, so its cost is known; at month end the whole kitchen cost is allocated to the cost centres by what they actually consumed."]</div>
+                    </div>
+                    <span class="badge badge-primary fs-7 fw-bold px-4 py-2 flex-shrink-0">@monthLabel</span>
+                </div>
+            </div>
+
+            <ul class="nav nav-tabs nav-line-tabs nav-line-tabs-2x mb-5 fs-6 fw-semibold" role="tablist">
+                @foreach (var (k, label) in new[] { ("p", T["Production today"].Value), ("m", T["Patient meals"].Value), ("c", T["Cafeteria"].Value), ("k", T["Costing & allocation"].Value) })
+                {
+                    <li class="nav-item"><a class="nav-link @(k == "p" ? "active" : "")" data-bs-toggle="tab" href="#kt_tab_@k" data-kt-tab="@k">@label</a></li>
+                }
+            </ul>
+            <div class="tab-content">
+                @* --- production today --- *@
+                <div class="tab-pane fade show active" id="kt_tab_p" role="tabpanel"><div class="row g-5">
+                    <div class="col-xl-7">
+                        <div class="card mb-5">
+                            <div class="card-header border-0 pt-6">
+                                <div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Today's rounds"]</span></div>
+                                @if (canWork)
+                                {
+                                    <div class="card-toolbar gap-2 d-print-none">
+                                        @if (counted.Count > 0) { <button type="button" class="btn btn-sm btn-light" data-kt-count><i class="ki-outline ki-people fs-4"></i>@T["Count meals"]</button> }
+                                        @if (setting?.KitchenWarehouseId != null && setting.PoolAccountId != null) { <button type="button" class="btn btn-sm btn-light-primary" data-kt-issue><i class="ki-outline ki-exit-right fs-4"></i>@T["Issue ingredients"]</button> }
+                                    </div>
+                                }
+                            </div>
+                            <div class="card-body pt-2">
+                                <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-3 mb-0">
+                                    <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0">
+                                        <th>@T["Round"]</th><th>@T["Time"]</th><th class="text-end">@T["Patients"]</th><th class="text-end">@T["Staff"]</th><th class="text-end">@T["Cafeteria"]</th><th>@T["State"]</th>
+                                    </tr></thead>
+                                    <tbody class="fw-semibold text-gray-700">
+                                        @foreach (var r in rounds)
+                                        {
+                                            <tr>
+                                                <td><span class="fw-bold text-gray-800">@T["round:" + r.Round]</span></td>
+                                                <td><span class="hp-num" dir="ltr">@times[r.Round]</span></td>
+                                                @foreach (var n in new[] { r.Patients, r.Staff, r.Cafeteria }) { <td class="text-end">@if (n > 0) {<span class="hp-num">@N(n)</span>} else {<span class="text-gray-400">—</span>}</td> }
+                                                <td>@if (r.State == "Served") {<span class="badge badge-light-success">@T["kt:Served"]</span>} else if (r.State == "Serving") {<span class="badge badge-primary fs-8">@T["kt:Serving"]</span>} else {<span class="badge badge-light-secondary">@T["kt:Planned"]</span>}</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table></div>
+                            </div>
+                        </div>
+                        <div class="card mb-5">
+                            <div class="card-header border-0 pt-6">
+                                <div class="card-title align-items-start flex-column m-0">
+                                    <span class="card-label fw-bold text-gray-900 fs-4">@T["Recipe card"]@if (recipeDiet != null) {<text>: </text>@T["diet:" + recipeDiet]}</span>
+                                    <span class="text-muted mt-1 fw-semibold fs-7">@T["Standard cost comes from the latest ingredient cost"]</span>
+                                </div>
+                                @if (recipes.Count > 1)
+                                {
+                                    <div class="card-toolbar">
+                                        <select class="form-select form-select-sm form-select-solid w-175px" data-kt-recipe>
+                                            @foreach (var d in HospitalDiet.All.Where(recipes.ContainsKey)) { <option value="@d" selected="@(d == recipeDiet)">@T["diet:" + d]</option> }
+                                        </select>
+                                    </div>
+                                }
+                            </div>
+                            <div class="card-body pt-2">
+                                @if (recipe == null) { <div class="text-center text-muted py-8">@T["No recipe is set for a diet yet."]</div> }
+                                else if (recipe.Lines.Count == 0) { <div class="text-center text-muted py-8">@T["This recipe has no ingredients in its bill of materials."]</div> }
+                                else
+                                {
+                                    <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-3 mb-0">
+                                        <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0"><th>@T["Ingredient"]</th><th class="text-end">@T["Qty"]</th><th class="text-end">@T["Cost"]</th></tr></thead>
+                                        <tbody class="fw-semibold text-gray-700">
+                                            @foreach (var l in recipe.Lines) { <tr><td><span class="text-gray-800">@DisplayName.Of(l.Name, l.NameEn)</span></td><td class="text-end"><span class="hp-num">@l.Qty.ToString("0.###", inv)</span></td><td class="text-end"><span class="hp-num">@Money(l.Cost)</span></td></tr> }
+                                        </tbody>
+                                        <tfoot><tr class="fw-bolder fs-6"><td colspan="2" class="text-primary">@T["Ingredient cost per meal"]</td><td class="text-end hp-num">@Money(recipe.Total)</td></tr></tfoot>
+                                    </table></div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-xl-5">
+                        <div class="card mb-5">
+                            <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
+                                <span class="card-label fw-bold text-gray-900 fs-4">@T["Patient meals by diet"]</span>
+                                <span class="text-muted mt-1 fw-semibold fs-7">@T["From doctors' orders in clinical dietary"]</span>
+                            </div></div>
+                            <div class="card-body pt-2">
+                                @foreach (var d in HospitalDiet.All)
+                                {
+                                    <div class="d-flex align-items-center py-3 border-bottom border-gray-200 border-bottom-dashed"><span class="fw-semibold text-gray-800 flex-grow-1">@T["diet:" + d]</span><span class="hp-num fw-bold">@N(byDiet.GetValueOrDefault(d))</span></div>
+                                }
+                                <div class="mt-4"><a href="@Url.Action("Dietary")" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-coffee fs-4"></i>@T["Clinical dietary"]</a></div>
+                            </div>
+                        </div>
+                    </div>
+                </div></div>
+
+                @* --- patient meals --- *@
+                <div class="tab-pane fade" id="kt_tab_m" role="tabpanel">
+                    @{ var pm = m.Shares.Where(x => x.Stream == HospitalKitchenStream.Patient).ToList(); }
+                    <div class="card mb-5">
+                        <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
+                            <span class="card-label fw-bold text-gray-900 fs-4">@T["Patient meals by cost centre"]</span>
+                            <span class="text-muted mt-1 fw-semibold fs-7">@T["A patient meal is part of the ward's cost; only extras are billed to the patient"]</span>
+                        </div></div>
+                        <div class="card-body pt-2">
+                            @if (pm.Count == 0) { <div class="text-center text-muted py-8">@T["No patient tray this month."]</div> }
+                            else
+                            {
+                                <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-3 mb-0">
+                                    <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0"><th>@T["Cost centre"]</th><th class="text-end">@T["Meals"]</th><th class="text-end">@T["Standard cost"]</th><th class="text-end">@T["Allocated cost"]</th></tr></thead>
+                                    <tbody class="fw-semibold text-gray-700">
+                                        @foreach (var x in pm) { <tr><td><span class="fw-bold text-gray-800">@DisplayName.Of(x.Name, x.NameEn)</span></td><td class="text-end hp-num">@N(x.Meals)</td><td class="text-end hp-num">@Money(x.StandardCost)</td><td class="text-end hp-num">@Money(x.Allocated)</td></tr> }
+                                    </tbody>
+                                    <tfoot><tr class="fw-bolder fs-5"><td colspan="3" class="text-primary">@T["Total patient meals"]</td><td class="text-end hp-num">@Money(Sum(HospitalKitchenStream.Patient))</td></tr></tfoot>
+                                </table></div>
+                            }
+                        </div>
+                    </div>
+                    <div class="row g-5">
+                        <div class="col-xl-6"><div class="card h-100">
+                            <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["What is billed to the patient"]</span></div></div>
+                            <div class="card-body pt-2">
+                                @foreach (var (title, value, note) in new[] { (T["Companion meals"].Value, "—", T["A line on the encounter bill at the standard tax rate (not built yet)"].Value), (T["VIP à-la-carte menu"].Value, "—", T["At price-list price (not built yet)"].Value), (T["The patient's standard meal"].Value, "—", T["Inside the room rate — not billed separately"].Value) })
+                                {
+                                    <div class="py-3 border-bottom border-gray-200 border-bottom-dashed"><div class="d-flex flex-stack"><span class="fw-bold text-gray-800">@title</span><span class="fw-semibold text-gray-400">@value</span></div><div class="text-muted fs-8 mt-1">@note</div></div>
+                                }
+                            </div>
+                        </div></div>
+                        <div class="col-xl-6"><div class="card h-100">
+                            <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Patient food safety"]</span></div></div>
+                            <div class="card-body pt-2">
+                                @foreach (var (text, done) in new[] { (T["A patient's allergy shows on the ward's meal list"].Value, true), (T["A nil-by-mouth order stops meals until it is lifted"].Value, true), (T["Tray label with patient, bed and diet"].Value, false), (T["A retained sample of every meal for 72 hours"].Value, false) })
+                                {
+                                    <div class="d-flex align-items-center py-3 border-bottom border-gray-200 border-bottom-dashed">
+                                        @if (done) {<i class="ki-outline ki-check-circle fs-3 text-primary me-3"></i>} else {<i class="ki-outline ki-time fs-3 text-gray-400 me-3"></i>}
+                                        <span class="fw-semibold @(done ? "text-gray-800" : "text-gray-500")">@text</span>@if (!done) {<span class="badge badge-light ms-auto fs-9">@T["Not built yet"]</span>}
+                                    </div>
+                                }
+                            </div>
+                        </div></div>
+                    </div>
+                </div>
+
+                @* --- cafeteria --- *@
+                <div class="tab-pane fade" id="kt_tab_c" role="tabpanel">
+                    @if (cafe == null || cafe.Outlets.Count == 0)
+                    {
+                        <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice"><div class="fs-6 text-gray-700">@T["No cafeteria outlet is set up: add one in the kitchen setting and link it to its point-of-sale branch."]</div></div>
+                    }
+                    else
+                    {
+                        <div class="row g-5 mb-5">
+                            @foreach (var o in cafe.Outlets)
+                            {
+                                <div class="col-md-4"><div class="card h-100"><div class="card-body p-6">
+                                    <div class="d-flex flex-stack mb-2"><span class="fw-bold fs-5 text-gray-900">@DisplayName.Of(o.Name, o.NameEn)</span>@if (o.Branch != null) {<span class="badge badge-light-success">@T["POS linked"]</span>} else {<span class="badge badge-light">@T["No POS branch"]</span>}</div>
+                                    <div class="text-muted fs-7 mb-4">@(o.Branch == null ? "—" : DisplayName.Of(o.BranchAr ?? o.Branch, o.Branch))</div>
+                                    <div class="text-muted fs-8">@string.Format(T["Sales in {0}"].Value, monthLabel) · <span class="hp-num">@N(o.Orders)</span> @T["orders"]</div>
+                                    <div class="fs-2 fw-bold hp-num">@Money(o.Sales)</div>
+                                </div></div></div>
+                            }
+                        </div>
+                        <div class="row g-5">
+                            <div class="col-xl-6"><div class="card h-100">
+                                <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Payment mix"]</span></div></div>
+                                <div class="card-body pt-2">
+                                    @{ var payTotal = cafe.Payments.Sum(p => p.Amount); }
+                                    @if (payTotal <= 0) { <div class="text-center text-muted py-8">@T["No paid order this month."]</div> }
+                                    @foreach (var (method, amount) in cafe.Payments)
+                                    {
+                                        var pct = Math.Round(amount * 100 / payTotal);
+                                        <div class="py-3"><div class="d-flex flex-stack mb-2"><span class="fw-semibold text-gray-800">@method</span><span class="hp-num fw-bold">@pct.ToString(inv)%</span></div>
+                                            <div class="progress h-6px bg-light-primary"><div class="progress-bar bg-primary" style="width:@pct.ToString(inv)%"></div></div></div>
+                                    }
+                                </div>
+                            </div></div>
+                            <div class="col-xl-6"><div class="card h-100">
+                                <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@string.Format(T["Cafeteria P&L — {0}"].Value, monthLabel)</span></div></div>
+                                <div class="card-body pt-2">
+                                    @foreach (var (label, v, total) in new[] { (T["Sales"].Value, cafe.Sales, false), (T["Meal cost (its share of the kitchen)"].Value, -cafe.MealCost, false), (T["Cafeteria net (before its own payroll)"].Value, cafe.Sales - cafe.MealCost, true) })
+                                    {
+                                        <div class="d-flex flex-stack py-3 border-bottom border-gray-200 border-bottom-dashed"><span class="@(total ? "fw-bold text-gray-900" : "fw-semibold text-gray-700")">@label</span><span class="hp-num fw-bold @(total ? "fs-4 text-success" : v < 0 ? "text-danger" : "")" dir="ltr">@Money(v)</span></div>
+                                    }
+                                    <div class="text-muted fs-8 mt-3">@T["The cafeteria is its own profit centre; its staff payroll reaches it from payroll."]</div>
+                                </div>
+                            </div></div>
+                        </div>
+                    }
+                </div>
+
+                @* --- costing & allocation --- *@
+                <div class="tab-pane fade" id="kt_tab_k" role="tabpanel">
+                    <div class="card mb-5">
+                        <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
+                            <span class="card-label fw-bold text-gray-900 fs-4">@T["Kitchen cost pool"]</span>
+                            <span class="text-muted mt-1 fw-semibold fs-7">@T["Everything the kitchen spent in the month, by source"]</span>
+                        </div></div>
+                        <div class="card-body pt-2">
+                            @if (m.Pool.Count == 0 && m.Posted == null) { <div class="text-center text-muted py-8">@T["Nothing is booked to the kitchen cost pool this month"]</div> }
+                            else
+                            {
+                                <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-3 mb-0">
+                                    <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0"><th>@T["Source"]</th><th class="text-end">@T["Amount"]</th></tr></thead>
+                                    <tbody class="fw-semibold text-gray-700">@foreach (var p in m.Pool) { <tr><td><span class="fw-semibold text-gray-800">@T["src:" + p.Source]</span></td><td class="text-end hp-num">@Money(p.Amount)</td></tr> }</tbody>
+                                    <tfoot><tr class="fw-bolder fs-5"><td class="text-primary">@T["Total"]</td><td class="text-end hp-num">@Money(m.PoolTotal)</td></tr></tfoot>
+                                </table></div>
+                            }
+                        </div>
+                    </div>
+                    <div class="card mb-5">
+                        <div class="card-header border-0 pt-6">
+                            <div class="card-title align-items-start flex-column m-0">
+                                <span class="card-label fw-bold text-gray-900 fs-4">@T["Allocation to cost centres"]</span>
+                                <span class="text-muted mt-1 fw-semibold fs-7">@T["Basis: meals × the recipe's standard cost"]</span>
+                            </div>
+                            @if (m.Posted != null) { <div class="card-toolbar"><span class="badge badge-light-success fs-7"><i class="ki-outline ki-check fs-7 me-1 text-success"></i>@T["Posted"] <bdi class="hp-num ms-1">@m.PostedEntryNo</bdi></span></div> }
+                        </div>
+                        <div class="card-body pt-2">
+                            @if (m.Shares.Count == 0) { <div class="text-center text-muted py-8">@T["No meal this month."]</div> }
+                            else
+                            {
+                                <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-3 mb-0">
+                                    <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0"><th>@T["Cost centre"]</th><th>@T["Stream"]</th><th class="text-end">@T["Meals"]</th><th class="text-end">@T["Share"]</th><th class="text-end">@T["Allocated"]</th></tr></thead>
+                                    <tbody class="fw-semibold text-gray-700">
+                                        @foreach (var x in m.Shares)
+                                        {
+                                            <tr><td><span class="fw-bold text-gray-800">@DisplayName.Of(x.Name, x.NameEn)</span>@if (x.CostCenterId == null) {<div class="text-muted fs-9">@T["No cost centre linked"]</div>}</td>
+                                                <td><span class="badge badge-light-@StreamKind(x.Stream)">@T["stream:" + x.Stream]</span></td>
+                                                <td class="text-end hp-num">@N(x.Meals)</td>
+                                                <td class="text-end hp-num">@(m.PoolTotal > 0 ? (x.Allocated * 100 / m.PoolTotal).ToString("0.0", inv) + "%" : "—")</td>
+                                                <td class="text-end hp-num">@Money(x.Allocated)</td></tr>
+                                        }
+                                    </tbody>
+                                    <tfoot><tr class="fw-bolder fs-5"><td colspan="4" class="text-primary">@T["Total = cost pool"]</td><td class="text-end hp-num">@Money(m.Shares.Sum(x => x.Allocated))</td></tr></tfoot>
+                                </table></div>
+                            }
+                        </div>
+                    </div>
+                    <div class="row g-5">
+                        <div class="col-xl-6"><div class="card h-100">
+                            <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Actual vs theoretical ingredients"]</span></div></div>
+                            <div class="card-body pt-2">
+                                @{ var unexplained = m.Actual - m.Theoretical - m.Waste; }
+                                @foreach (var (label, v, red) in new[] { (T["Theoretical (recipes × meals served)"].Value, m.Theoretical, false), (T["Actual (issued from the kitchen store)"].Value, m.Actual, false), (T["Recorded waste"].Value, m.Waste, false), (T["Unexplained variance"].Value, unexplained, true) })
+                                {
+                                    <div class="d-flex flex-stack py-3 border-bottom border-gray-200 border-bottom-dashed"><span class="fw-semibold @(red ? "text-danger fw-bold" : "text-gray-700")">@label</span><span class="hp-num fw-bold @(red ? "text-danger" : "")" dir="ltr">@Money(v)</span></div>
+                                }
+                                @if (m.Theoretical > 0) { <div class="text-muted fs-8 mt-3">@T["Variance"] <bdi class="hp-num" dir="ltr">@((( m.Actual - m.Theoretical) * 100 / m.Theoretical).ToString("0.0", inv))%</bdi> — @T["reviewed monthly with the kitchen supervisor."]</div> }
+                            </div>
+                        </div></div>
+                        <div class="col-xl-6"><div class="card h-100">
+                            <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Monthly allocation journal"]</span></div></div>
+                            <div class="card-body pt-2">
+                                <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-3 mb-0">
+                                    <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0"><th>@T["Account / cost centre"]</th><th class="text-end">@T["Debit"]</th><th class="text-end">@T["Credit"]</th></tr></thead>
+                                    <tbody class="fw-semibold text-gray-700">
+                                        <tr><td>@T["Patient meals expense — ward centres"]</td><td class="text-end hp-num">@Money(Sum(HospitalKitchenStream.Patient))</td><td class="text-end text-gray-400">—</td></tr>
+                                        <tr><td>@T["Staff benefits: meals — department centres"]</td><td class="text-end hp-num">@Money(Sum(HospitalKitchenStream.Staff))</td><td class="text-end text-gray-400">—</td></tr>
+                                        <tr><td>@T["Cafeteria cost of sales"]</td><td class="text-end hp-num">@Money(Sum(HospitalKitchenStream.Cafeteria))</td><td class="text-end text-gray-400">—</td></tr>
+                                        <tr><td>@T["Kitchen cost pool (clearing)"]</td><td class="text-end text-gray-400">—</td><td class="text-end hp-num">@Money(m.PoolTotal)</td></tr>
+                                    </tbody>
+                                    <tfoot><tr class="fw-bolder fs-6"><td class="text-primary">@T["Total"]</td><td class="text-end hp-num">@Money(m.Shares.Sum(x => x.Allocated))</td><td class="text-end hp-num">@Money(m.PoolTotal)</td></tr></tfoot>
+                                </table></div>
+                                <div class="text-muted fs-8 mt-3">@(m.Posted != null ? string.Format(T["Posted as {0}."].Value, m.PostedEntryNo) : T["A preview: nothing is in the ledger until the month's allocation is run."].Value)</div>
+                            </div>
+                        </div></div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div></div>
+</div>
+
+@if (ready && m != null && canWork)
+{
+    <div class="modal fade" id="ktCountModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-500px"><div class="modal-content">
+        <div class="modal-header"><h3 class="fw-bold m-0">@T["Count meals"]</h3><div class="btn btn-icon btn-sm btn-active-light-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body"><div class="row g-4">
+            <div class="col-12"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Who ate"]</label>
+                <select class="form-select form-select-solid" data-c="destinationId">@foreach (var d in counted) { <option value="@d.ID">@T["stream:" + d.Stream] · @DisplayName.Of(d.Name, d.NameEn ?? d.Name)</option> }</select></div>
+            <div class="col-md-7"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Round"]</label>
+                <select class="form-select form-select-solid" data-c="round">@foreach (var r in HospitalMealRound.All) { <option value="@r" selected="@(r == HospitalDietaryRules.RoundAt(HospitalNursingService.UtcToWard(DateTime.UtcNow)))">@T["round:" + r]</option> }</select></div>
+            <div class="col-md-5"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Meals"]</label><input type="number" min="0" step="1" class="form-control form-control-solid hp-num" dir="ltr" data-c="meals" /></div>
+            <div class="col-12 text-muted fs-8">@T["Patients' trays are counted from the wards' meal orders; this is for staff and the cafeteria. Entered again, a count is corrected."]</div>
+        </div></div>
+        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-kt-count-save><i class="ki-outline ki-check fs-4"></i>@T["Save"]</button></div>
+    </div></div></div>
+    <div class="modal fade" id="ktIssueModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-550px"><div class="modal-content">
+        <div class="modal-header"><h3 class="fw-bold m-0">@T["Issue ingredients"]</h3><div class="btn btn-icon btn-sm btn-active-light-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body"><div class="row g-4">
+            <div class="col-12 d-flex gap-2">
+                <label><input type="radio" class="btn-check" name="ktKind" value="0" checked /><span class="btn btn-sm btn-outline btn-outline-dashed btn-active-light-primary">@T["To production"]</span></label>
+                <label><input type="radio" class="btn-check" name="ktKind" value="1" /><span class="btn btn-sm btn-outline btn-outline-dashed btn-active-light-primary">@T["Waste"]</span></label>
+            </div>
+            <div class="col-md-8"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Ingredient"]</label><select class="form-select form-select-solid" data-i="itemId" data-kt-item data-placeholder="@T["Add an item..."]"></select></div>
+            <div class="col-md-4"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Qty"]</label><input type="number" min="0" step="any" class="form-control form-control-solid hp-num" dir="ltr" data-i="qty" /></div>
+            <div class="col-12"><label class="fw-semibold fs-7 text-gray-700 mb-2" data-kt-note-label>@T["Note"]</label><input class="form-control form-control-solid" dir="auto" maxlength="200" data-i="note" /></div>
+            <div class="col-12 text-muted fs-8">@T["It leaves the kitchen store at its cost and is booked to the kitchen cost pool."]</div>
+        </div></div>
+        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-kt-issue-save><i class="ki-outline ki-check fs-4"></i>@T["Issue"]</button></div>
+    </div></div></div>
+}
+
+@section Scripts {
+    <script>
+        (function () {
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value, root = @Json.Serialize(Url.Content("~/Hospital/Kitchen"));
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value),
+                allocate: @Json.Serialize(T["Post the kitchen cost allocation for {0}? One journal entry is posted; it cannot be run again for this month."].Value),
+                issue: @Json.Serialize(T["Issue {0} of this ingredient from the kitchen store?"].Value), count: @Json.Serialize(T["Record {0} meals for this round?"].Value),
+                items: @Json.Serialize(Url.Content("~/Hospital/Supply/Items")) };
+            var tab = 'p';
+            function toast(k, m) { if (window.toastr) toastr[k](m); }
+            function fmt(t) { var a = arguments; return t.replace(/\{(\d)\}/g, function (_, i) { return a[+i + 1]; }); }
+            function board() { var c = document.querySelector('[data-kt-board]'); return { month: c.getAttribute('data-kt-board'), recipe: c.getAttribute('data-recipe') || '' }; }
+            function post(url, body) {
+                return fetch(root + url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(body || {}) })
+                    .then(function (r) { return r.json().catch(function () { return { ok: false }; }); });
+            }
+            // In place, never a reload: the page is rendered again, its content swapped, the open tab kept.
+            function swap(q) {
+                var b = board(), url = root + '?month=' + (q && q.month || b.month) + '&recipe=' + (q && q.recipe !== undefined ? q.recipe : b.recipe);
+                return fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.text(); }).then(function (html) {
+                    var d = new DOMParser().parseFromString(html, 'text/html');
+                    ['kt_app_toolbar', 'kt_app_content'].forEach(function (k) { var f = d.getElementById(k); if (f) document.getElementById(k).innerHTML = f.innerHTML; });
+                    var a = document.querySelector('[data-kt-tab="' + tab + '"]'); if (a) bootstrap.Tab.getOrCreateInstance(a).show();
+                    history.replaceState(null, '', url);
+                });
+            }
+            function done(btn, modal) { return function (res) { if (btn) btn.disabled = false; if (!res.ok) { toast('error', res.error || W.failed); return; } if (modal) bootstrap.Modal.getOrCreateInstance(modal).hide(); toast('success', W.saved); swap(); }; }
+            document.addEventListener('shown.bs.tab', function (e) { var k = e.target.getAttribute('data-kt-tab'); if (k) tab = k; });
+            var it = document.querySelector('[data-kt-item]');
+            if (it && window.jQuery) jQuery(it).select2({ dropdownParent: jQuery('#ktIssueModal'), placeholder: it.getAttribute('data-placeholder'),
+                ajax: { url: W.items, delay: 250, data: function (p) { return { q: p.term || '' }; }, processResults: function (r) { return { results: r.items || [] }; } } });
+            // the month and the recipe card are plain inputs, so their change reaches here
+            document.addEventListener('change', function (e) {
+                if (e.target.matches('[data-kt-month]') && e.target.value) swap({ month: e.target.value });
+                if (e.target.matches('[data-kt-recipe]')) swap({ recipe: e.target.value });
+                if (e.target.name === 'ktKind') { var w = e.target.value === '1'; document.querySelector('[data-kt-note-label]').classList.toggle('required', w); }
+            });
+            document.addEventListener('click', function (e) {
+                var t = e.target.closest('[data-kt-count],[data-kt-count-save],[data-kt-issue],[data-kt-issue-save],[data-kt-allocate]'); if (!t) return;
+                var cm = document.getElementById('ktCountModal'), im = document.getElementById('ktIssueModal');
+                if (t.hasAttribute('data-kt-count')) { bootstrap.Modal.getOrCreateInstance(cm).show(); return; }
+                if (t.hasAttribute('data-kt-issue')) { bootstrap.Modal.getOrCreateInstance(im).show(); return; }
+                if (t.hasAttribute('data-kt-count-save')) {
+                    var c = function (k) { return cm.querySelector('[data-c=' + k + ']').value; };
+                    cbConfirm(fmt(W.count, c('meals') || '0')).then(function (ok) { if (!ok) return; t.disabled = true;
+                        post('/Count', { destinationId: +c('destinationId'), round: c('round'), meals: +c('meals') || 0 }).then(done(t, cm)); });
+                    return;
+                }
+                if (t.hasAttribute('data-kt-issue-save')) {
+                    var i = function (k) { return im.querySelector('[data-i=' + k + ']').value; }, waste = im.querySelector('input[name=ktKind]:checked').value === '1';
+                    cbConfirm(fmt(W.issue, i('qty') || '0'), waste ? { kind: 'danger' } : undefined).then(function (ok) { if (!ok) return; t.disabled = true;
+                        post('/Issue', { itemId: +i('itemId') || 0, qty: +i('qty') || 0, waste: waste, note: i('note') || null }).then(function (res) { done(t, im)(res); if (res.ok) im.querySelector('[data-i=qty]').value = ''; }); });
+                    return;
+                }
+                var b = board();
+                cbConfirm(fmt(W.allocate, b.month)).then(function (ok) { if (!ok) return; t.disabled = true; post('/Allocate', { month: b.month + '-01' }).then(done(t)); });
+            });
+        })();
+    </script>
+}

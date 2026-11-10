@@ -1,0 +1,178 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model IReadOnlyList<HospitalImplantRow>
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Dental implants"].Value;
+    var s = (HospitalImplantStats)ViewBag.Stats;
+    var dentists = (ViewBag.Dentists as IReadOnlyList<HospitalDentist>) ?? Array.Empty<HospitalDentist>();
+    bool canConsult = ViewBag.CanConsult == true;
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+    string Stg(string v) => v switch { HospitalImplantStage.Restored => "success", HospitalImplantStage.Healing => "primary", HospitalImplantStage.Failed => "danger", _ => "secondary" };
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Dental implants"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item"><a href="@Url.Action("Dental")" class="text-muted text-hover-primary">@T["Dentistry"]</a></li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@T["Implants"]</li>
+            </ul>
+        </div>
+        @if (canConsult) { <button type="button" class="btn btn-sm btn-primary" data-imp-open><i class="ki-outline ki-plus fs-4"></i>@T["Plan an implant"]</button> }
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="row g-5 g-xl-8 mb-5">
+            <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
+                <div class="text-muted fw-semibold fs-7 mb-1">@T["Implants this year"]</div><div class="fs-2hx fw-bold hp-num text-gray-900">@s.ThisYear</div></div></div></div>
+            <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
+                <div class="text-muted fw-semibold fs-7 mb-1">@T["Healing now"]</div><div class="fs-2hx fw-bold hp-num text-gray-900">@s.Healing</div>
+                <div class="text-muted fs-8 mt-1">@T["3–6 months before the crown"]</div></div></div></div>
+            <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
+                <div class="text-muted fw-semibold fs-7 mb-1">@T["Survival rate"]</div><div class="fs-2hx fw-bold hp-num text-gray-900">@(s.SurvivalRate == null ? "—" : s.SurvivalRate.Value.ToString("0.#", inv) + "%")</div>
+                <div class="text-muted fs-8 mt-1">@T["last 3 years"]</div></div></div></div>
+            <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
+                <div class="text-muted fw-semibold fs-7 mb-1">@T["Fixtures in stock"]</div><div class="fs-2hx fw-bold hp-num text-gray-900">—</div>
+                <div class="text-muted fs-8 mt-1">@T["from Inventory, by lot and expiry"] · @T["lots recorded"] <span class="hp-num">@s.Lots</span></div></div></div></div>
+        </div>
+
+        <div class="card mb-5">
+            <div class="card-header border-0 pt-6">
+                <div class="card-title align-items-start flex-column m-0">
+                    <span class="card-label fw-bold text-gray-900 fs-4">@T["Implant register"]</span>
+                    <span class="text-muted mt-1 fw-semibold fs-7">@T["Each implant with its system, size and lot — any lot can be traced if the maker recalls it"]</span>
+                </div>
+                <div class="card-toolbar"><div class="position-relative"><i class="ki-outline ki-magnifier fs-4 position-absolute top-50 translate-middle-y ms-3"></i><input class="form-control form-control-sm form-control-solid w-250px ps-10" placeholder="@T["Search by patient or lot"]" data-filter /></div></div>
+            </div>
+            <div class="card-body pt-2">
+                @if (Model.Count == 0) { <div class="text-center text-muted py-10">@T["No implants in the register yet."]</div> }
+                else
+                {
+                    <div class="table-responsive"><table class="table align-middle table-row-dashed fs-6 gy-3 mb-0">
+                        <thead><tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0">
+                            <th class="w-100px">@T["No."]</th><th>@T["Patient"]</th><th>@T["Tooth"]</th><th>@T["System & size"]</th><th>@T["Lot"]</th><th>@T["Placed"]</th><th>@T["Stability ISQ"]</th><th>@T["Stage"]</th><th>@T["Surgeon"]</th><th class="text-end"></th>
+                        </tr></thead>
+                        <tbody class="fw-semibold text-gray-700">
+                            @foreach (var r in Model)
+                            {
+                                var m = r.Implant;
+                                <tr data-row="@m.ImplantNo @r.PatientName @r.PatientNameEn @r.Mrn @m.Lot @m.System">
+                                    <td><span class="badge hp-code fw-bold fs-8 hp-num">@m.ImplantNo</span></td>
+                                    <td><a href="@Url.Action("DentalChart", new { patientId = m.PatientId })" class="d-flex align-items-center gap-2 text-hover-primary">
+                                        <div class="symbol symbol-30px symbol-circle flex-shrink-0">@if (r.Photo != null) {<img src="@r.Photo" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(r.PatientNameEn)" />} else {<span class="symbol-label fw-bold fs-9 hp-initials">@HospitalUi.Initials(r.PatientNameEn)</span>}</div>
+                                        <div><div class="fw-bold text-gray-900 fs-7">@DisplayName.Of(r.PatientName, r.PatientNameEn)</div><div class="text-muted fs-8 hp-num">@r.Mrn</div></div></a></td>
+                                    <td><span class="hp-num fw-bold fs-5">@m.Tooth</span></td>
+                                    <td><div class="fw-semibold text-gray-800">@m.System</div><div class="text-muted fs-8 hp-num">@m.Diameter.ToString("0.0", inv) × @m.Length.ToString("0.#", inv) mm</div></td>
+                                    <td>@if (m.Lot != null) {<span class="badge hp-code hp-num">@m.Lot</span>} else {<span class="text-muted">—</span>}</td>
+                                    <td class="text-nowrap"><span class="hp-num">@(m.PlacedOn?.ToString("yyyy-MM-dd") ?? "—")</span></td>
+                                    <td>@if (m.Isq != null) {<span class="hp-num fw-bold @(m.Isq < HospitalDentalCasesRules.IsqLoadable ? "text-danger" : "text-success")">@m.Isq</span>} else {<span class="text-muted">—</span>}</td>
+                                    <td><span class="badge badge-@Stg(m.Stage) fs-8">@T["impl:" + m.Stage]</span>@if (m.FailureReason != null) {<div class="text-danger fs-8 mt-1">@m.FailureReason</div>}</td>
+                                    <td>@if (r.Surgeon != null) { <div class="d-flex align-items-center gap-2"><div class="symbol symbol-25px symbol-circle flex-shrink-0">@if (r.Surgeon.Photo != null) {<img src="@r.Surgeon.Photo" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(r.Surgeon.NameEn)" />} else {<span class="symbol-label fw-bold fs-9 hp-initials">@HospitalUi.Initials(r.Surgeon.NameEn)</span>}</div><span class="fs-7 text-nowrap">@DisplayName.Of(r.Surgeon.Name, r.Surgeon.NameEn)</span></div> } else {<text>—</text>}</td>
+                                    <td class="text-end text-nowrap">
+                                        @if (canConsult)
+                                        {
+                                            if (m.Stage == HospitalImplantStage.Planned) { <button type="button" class="btn btn-sm btn-light-primary py-1 px-3" data-place="@m.ID" data-what="@m.ImplantNo"><i class="ki-outline ki-check fs-6"></i>@T["Implant placed"]</button> }
+                                            if (m.Stage == HospitalImplantStage.Healing) { <button type="button" class="btn btn-sm btn-light-primary py-1 px-3" data-restore="@m.ID" data-what="@m.ImplantNo" data-isq="@m.Isq">@T["Crown fitted"]</button> }
+                                            if (m.Stage is HospitalImplantStage.Healing or HospitalImplantStage.Restored) { <button type="button" class="btn btn-sm btn-light py-1 px-3" data-fail="@m.ID" data-what="@m.ImplantNo">@T["Failed"]</button> }
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table></div>
+                }
+            </div>
+        </div>
+        <div class="notice d-flex rounded border border-dashed p-5 mb-0 hp-notice">
+            <span class="symbol symbol-40px me-4 flex-shrink-0"><span class="symbol-label"><i class="ki-outline ki-information-5 fs-2 text-white"></i></span></span>
+            <div><h4 class="text-gray-900 fw-bold mb-1">@T["Inventory by lot and expiry (FEFO)"]</h4><div class="fs-7 text-gray-700">@T["The fixtures themselves are stock items: their quantities, lots and expiry are kept in Inventory, and a placed fixture's lot is recorded here so a recall finds its patients."]</div></div>
+        </div>
+    </div></div>
+</div>
+
+@if (canConsult)
+{
+    <div class="modal fade" id="impModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-650px"><div class="modal-content">
+        <div class="modal-header"><h2 class="fw-bold m-0 fs-4">@T["Plan an implant"]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body py-6 px-lg-10"><div class="row g-4">
+            <div class="col-12"><label class="form-label required">@T["Patient"]</label>
+                <select class="form-select form-select-solid" data-im="patient" data-person-select data-person-ajax="@Url.Action("SearchDentalPatients")" data-searching="@T["Searching…"]" data-no-results="@T["No patient matches"]" data-placeholder="@T["Patient"]"><option value=""></option></select></div>
+            <div class="col-md-4"><label class="form-label required">@T["Tooth"]</label><input type="number" min="11" max="48" class="form-control form-control-solid hp-num" dir="ltr" data-im="tooth" /></div>
+            <div class="col-md-8"><label class="form-label required">@T["System"]</label><input class="form-control form-control-solid" dir="ltr" maxlength="60" data-im="system" placeholder="Straumann BLX" /></div>
+            <div class="col-md-4"><label class="form-label required">@T["Diameter (mm)"]</label><input type="number" min="2" max="8" step="0.1" class="form-control form-control-solid hp-num" dir="ltr" data-im="diameter" value="4.0" /></div>
+            <div class="col-md-4"><label class="form-label required">@T["Length (mm)"]</label><input type="number" min="4" max="20" step="0.5" class="form-control form-control-solid hp-num" dir="ltr" data-im="length" value="10" /></div>
+            <div class="col-md-4"><label class="form-label">@T["Surgeon"]</label>
+                <select class="form-select form-select-solid" data-im="surgeon" data-person-select data-allow-clear data-placeholder="@T["Surgeon"]"><option value=""></option>@foreach (var d in dentists) { <option value="@d.Id" data-photo="@d.Photo" data-initials="@HospitalUi.Initials(d.NameEn)">@DisplayName.Of(d.Name, d.NameEn)</option> }</select></div>
+        </div></div>
+        <div class="modal-footer flex-center"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-im-save>@T["Add to the register"]</button></div>
+    </div></div></div>
+    <div class="modal fade" id="placeModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-550px"><div class="modal-content">
+        <div class="modal-header"><h2 class="fw-bold m-0 fs-4">@T["Implant placed"] <span class="text-muted fs-6 hp-num" data-pl-what></span></h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body py-6 px-lg-10"><div class="row g-4">
+            <div class="col-md-6"><label class="form-label required">@T["Lot"]</label><input class="form-control form-control-solid hp-num" dir="ltr" maxlength="40" data-pl="lot" placeholder="STR-24K118" /></div>
+            <div class="col-md-6"><label class="form-label required">@T["Placed"]</label><input type="date" class="form-control form-control-solid hp-num" data-pl="on" value="@DateTime.Now.ToString("yyyy-MM-dd")" max="@DateTime.Now.ToString("yyyy-MM-dd")" /></div>
+            <div class="col-md-6"><label class="form-label">@T["Stability ISQ"]</label><input type="number" min="1" max="100" class="form-control form-control-solid hp-num" dir="ltr" data-pl="isq" /></div>
+        </div></div>
+        <div class="modal-footer flex-center"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-pl-save>@T["Record"]</button></div>
+    </div></div></div>
+}
+
+@section Scripts {
+    <partial name="_PersonSelect" />
+    <partial name="_HospitalPrompt" />
+    <script>
+        (function () {
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value, root = @Json.Serialize(Url.Content("~/Hospital/Dental/Implants"));
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value),
+                add: @Json.Serialize(T["Add this implant to the register?"].Value), place: @Json.Serialize(T["Record {0} as placed?"].Value),
+                isq: @Json.Serialize(T["The stability (ISQ) of {0} before the crown"].Value), fail: @Json.Serialize(T["Why did {0} fail?"].Value), num: @Json.Serialize(T["Enter a number"].Value) };
+            function toast(k, m) { if (window.toastr) toastr[k](m); }
+            // a code inside an Arabic sentence keeps its own direction (first-strong isolate … pop)
+            function iso(x) { return '⁨' + x + '⁩'; }
+            function post(url, body) {
+                return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(body || {}) })
+                    .then(function (r) { return r.json().catch(function () { return { ok: false }; }); });
+            }
+            function swap() {
+                return fetch(location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.text(); }).then(function (html) {
+                    var f = new DOMParser().parseFromString(html, 'text/html').getElementById('kt_app_content');
+                    if (f) document.getElementById('kt_app_content').innerHTML = f.innerHTML;
+                });
+            }
+            function done(btn, modal) { return function (res) { if (btn) btn.disabled = false; if (!res.ok) { toast('error', res.error || W.failed); return; } toast('success', W.saved); if (modal) bootstrap.Modal.getOrCreateInstance(modal).hide(); swap(); }; }
+            var im = document.getElementById('impModal'), pm = document.getElementById('placeModal'), placing = null;
+            document.addEventListener('click', function (e) {
+                var t = e.target.closest('[data-imp-open],[data-im-save],[data-place],[data-pl-save],[data-restore],[data-fail]'); if (!t) return;
+                if (t.hasAttribute('data-imp-open')) { bootstrap.Modal.getOrCreateInstance(im).show(); return; }
+                if (t.hasAttribute('data-im-save')) {
+                    var g = function (k) { return im.querySelector('[data-im=' + k + ']').value.trim(); };
+                    var body = { patientId: +g('patient') || 0, tooth: +g('tooth') || 0, system: g('system'), diameter: +g('diameter') || 0, length: +g('length') || 0, surgeonId: g('surgeon') ? +g('surgeon') : null };
+                    cbConfirm(W.add).then(function (ok) { if (!ok) return; t.disabled = true; post(root, body).then(done(t, im)); });
+                    return;
+                }
+                if (t.hasAttribute('data-place')) { placing = { id: t.getAttribute('data-place'), what: t.getAttribute('data-what') }; pm.querySelector('[data-pl-what]').textContent = placing.what; pm.querySelector('[data-pl=lot]').value = ''; pm.querySelector('[data-pl=isq]').value = ''; bootstrap.Modal.getOrCreateInstance(pm).show(); return; }
+                if (t.hasAttribute('data-pl-save')) {
+                    var p = function (k) { return pm.querySelector('[data-pl=' + k + ']').value.trim(); };
+                    cbConfirm(W.place.replace('{0}', iso(placing.what))).then(function (ok) { if (!ok) return; t.disabled = true; post(root + '/' + placing.id + '/Move', { to: 'Healing', lot: p('lot'), on: p('on') || null, isq: p('isq') ? +p('isq') : null }).then(done(t, pm)); });
+                    return;
+                }
+                if (t.hasAttribute('data-restore')) {
+                    cbPrompt(W.isq.replace('{0}', iso(t.getAttribute('data-what'))), { value: t.getAttribute('data-isq') || '', number: true, numberText: W.num }).then(function (v) { if (!v) return; t.disabled = true; post(root + '/' + t.getAttribute('data-restore') + '/Move', { to: 'Restored', isq: +v || 0 }).then(done(t)); });
+                    return;
+                }
+                cbPrompt(W.fail.replace('{0}', iso(t.getAttribute('data-what'))), { kind: 'danger', textarea: true }).then(function (why) { if (!why) return; t.disabled = true; post(root + '/' + t.getAttribute('data-fail') + '/Move', { to: 'Failed', reason: why }).then(done(t)); });
+            });
+            document.addEventListener('input', function (e) {
+                if (!e.target.matches('[data-filter]')) return; var q = e.target.value.trim().toLowerCase();
+                document.querySelectorAll('[data-row]').forEach(function (r) { r.classList.toggle('d-none', q && r.getAttribute('data-row').toLowerCase().indexOf(q) === -1); });
+            });
+        })();
+    </script>
+}

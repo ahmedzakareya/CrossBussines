@@ -47,6 +47,11 @@ namespace CrossBuy.Controllers
 			ViewBag.CanRad = await _access.CanAsync(ctx, HospitalActions.Rad, null, ct);
 			ViewBag.CanReport = await _access.CanAsync(ctx, HospitalActions.RadReport, null, ct);
 			ViewBag.Previous = (await _rad.SignedForPatientAsync(ctx, v.Patient.ID, 6, ct)).Where(r => r.ID != id).Take(5).ToList();
+			// H27: whether the patient may see it on the portal, and who may let them
+			ViewBag.CanConsult = await _access.CanAsync(ctx, HospitalActions.Consult, null, ct);
+			ViewBag.PortalRelease = await PortalRecordsSvc.ReleaseOfAsync(ctx, HospitalPortalResultSource.Radiology, id, ct);
+			// H31: the exam's pictures, and who may attach them
+			ViewBag.Images = (await RadImageSvc.OfOrdersAsync(ctx, new[] { id }, ct)).GetValueOrDefault(id) ?? Array.Empty<HospitalRadImageRow>();
 			return View(v);
 		}
 
@@ -85,6 +90,11 @@ namespace CrossBuy.Controllers
 				if (r.Ok) await _labAlerts.NotifyAbnormalAsync(ctx, HospitalAlertSource.Radiology, id, ctx.EmployeeId, DateTime.UtcNow, ct);   // an urgent abnormal report tells its doctor
 				return r;
 			}, ct);
+
+		/// H34: English added to a signed report (the Arabic stays as signed).
+		[HttpPost("Radiology/{id:int}/Translate"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.RadReport)]
+		public Task<IActionResult> RadTranslate(int id, [FromBody] HospitalRadTranslationInput input, CancellationToken ct = default)
+			=> RadStep(id, ctx => _rad.TranslateAsync(ctx, id, input?.FindingsEn, input?.ImpressionEn, ctx.EmployeeId, DateTime.UtcNow, ct), ct);
 
 		[HttpGet("Radiology/{id:int}/Critical")]
 		[HospitalPerm(HospitalActions.Read)]

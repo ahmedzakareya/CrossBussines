@@ -1,0 +1,265 @@
+{
+  "unit": "H29 — the theatre schedule",
+  "strings": {
+    "An operation cannot be booked in the past": {
+      "en": "An operation cannot be booked in the past",
+      "ar": "لا يمكن حجز عملية في تاريخ مضى",
+      "fr": "Une opération ne peut pas être programmée dans le passé"
+    },
+    "An operation is 15 minutes to 12 hours, in steps of 5": {
+      "en": "An operation is 15 minutes to 12 hours, in steps of 5",
+      "ar": "مدة العملية من ١٥ دقيقة إلى ١٢ ساعة، بخطوات ٥ دقائق",
+      "fr": "Une opération dure de 15 minutes à 12 heures, par pas de 5"
+    },
+    "Anaesthetist": {
+      "en": "Anaesthetist",
+      "ar": "طبيب التخدير",
+      "fr": "Anesthésiste"
+    },
+    "Another operation is in progress in this theatre": {
+      "en": "Another operation is in progress in this theatre",
+      "ar": "توجد عملية جارية في هذه الغرفة",
+      "fr": "Une autre opération est en cours dans ce bloc"
+    },
+    "Before induction": {
+      "en": "Before induction",
+      "ar": "قبل التخدير",
+      "fr": "Avant l'induction"
+    },
+    "Before leaving theatre": {
+      "en": "Before leaving theatre",
+      "ar": "قبل مغادرة الغرفة",
+      "fr": "Avant la sortie du bloc"
+    },
+    "Book a case": {
+      "en": "Book a case",
+      "ar": "حجز عملية",
+      "fr": "Programmer une opération"
+    },
+    "Book this operation?": {
+      "en": "Book this operation?",
+      "ar": "حجز هذه العملية؟",
+      "fr": "Programmer cette opération ?"
+    },
+    "Case in progress": {
+      "en": "Case in progress",
+      "ar": "العملية الجارية",
+      "fr": "Opération en cours"
+    },
+    "Cases today": {
+      "en": "Cases today",
+      "ar": "عمليات اليوم",
+      "fr": "Opérations du jour"
+    },
+    "Close the case": {
+      "en": "Close the case",
+      "ar": "إنهاء العملية",
+      "fr": "Clôturer l'opération"
+    },
+    "Close this case? The procedure goes on the patient's bill.": {
+      "en": "Close this case? The procedure goes on the patient's bill.",
+      "ar": "إنهاء هذه العملية؟ سيُضاف الإجراء إلى فاتورة المريض.",
+      "fr": "Clôturer cette opération ? L'acte est ajouté à la facture du patient."
+    },
+    "Complete the checklist before induction": {
+      "en": "Complete the checklist before induction",
+      "ar": "أكمل قائمة السلامة قبل التخدير",
+      "fr": "Complétez la check-list avant l'induction"
+    },
+    "Complete the checklist before the patient leaves the theatre": {
+      "en": "Complete the checklist before the patient leaves the theatre",
+      "ar": "أكمل قائمة السلامة قبل خروج المريض من الغرفة",
+      "fr": "Complétez la check-list avant que le patient quitte le bloc"
+    },
+    "Completed": {
+      "en": "Completed",
+      "ar": "منتهية",
+      "fr": "Terminées"
+    },
+    "First-case on-time start": {
+      "en": "First-case on-time start",
+      "ar": "بدء أول عملية في موعدها",
+      "fr": "Première opération à l'heure"
+    },
+    "Minutes": {
+      "en": "Minutes",
+      "ar": "المدة بالدقائق",
+      "fr": "Minutes"
+    },
+    "No operating theatre is set up yet: add a room of kind Theatre in the floor & room designer.": {
+      "en": "No operating theatre is set up yet: add a room of kind Theatre in the floor & room designer.",
+      "ar": "لا توجد غرفة عمليات بعد: أضف غرفة من نوع غرفة عمليات في مصمم الأدوار والغرف.",
+      "fr": "Aucun bloc opératoire n'est configuré : ajoutez une salle de type bloc dans le concepteur d'étages."
+    },
+    "No operation is booked this day.": {
+      "en": "No operation is booked this day.",
+      "ar": "لا توجد عمليات محجوزة في هذا اليوم.",
+      "fr": "Aucune opération programmée ce jour."
+    },
+    "Someone else changed this operation: open it again": {
+      "en": "Someone else changed this operation: open it again",
+      "ar": "غيّر شخص آخر هذه العملية: افتحها من جديد",
+      "fr": "Quelqu'un d'autre a modifié cette opération : rouvrez-la"
+    },
+    "Start this operation? The checklist's before-induction items are done.": {
+      "en": "Start this operation? The checklist's before-induction items are done.",
+      "ar": "بدء هذه العملية؟ بنود ما قبل التخدير مكتملة.",
+      "fr": "Commencer cette opération ? Les points d'avant l'induction sont faits."
+    },
+    "Surgical safety checklist": {
+      "en": "Surgical safety checklist",
+      "ar": "قائمة السلامة الجراحية",
+      "fr": "Check-list de sécurité chirurgicale"
+    },
+    "Target 75%": {
+      "en": "Target 75%",
+      "ar": "الهدف ٧٥٪",
+      "fr": "Objectif 75 %"
+    },
+    "The anaesthetist is in another operation at that time": {
+      "en": "The anaesthetist is in another operation at that time",
+      "ar": "طبيب التخدير في عملية أخرى في هذا الوقت",
+      "fr": "L'anesthésiste est dans une autre opération à cette heure"
+    },
+    "The anaesthetist needs the anaesthesia privilege": {
+      "en": "The anaesthetist needs the anaesthesia privilege",
+      "ar": "طبيب التخدير يحتاج صلاحية التخدير",
+      "fr": "L'anesthésiste doit avoir le privilège d'anesthésie"
+    },
+    "The checklist closes with the operation": {
+      "en": "The checklist closes with the operation",
+      "ar": "قائمة السلامة تُغلق مع العملية",
+      "fr": "La check-list se ferme avec l'opération"
+    },
+    "The operation must end the same day": {
+      "en": "The operation must end the same day",
+      "ar": "يجب أن تنتهي العملية في نفس اليوم",
+      "fr": "L'opération doit finir le même jour"
+    },
+    "The procedure is on the patient's bill.": {
+      "en": "The procedure is on the patient's bill.",
+      "ar": "الإجراء مُضاف إلى فاتورة المريض.",
+      "fr": "L'acte figure sur la facture du patient."
+    },
+    "The surgeon and the anaesthetist are two people": {
+      "en": "The surgeon and the anaesthetist are two people",
+      "ar": "الجراح وطبيب التخدير شخصان مختلفان",
+      "fr": "Le chirurgien et l'anesthésiste sont deux personnes"
+    },
+    "The surgeon is in another operation at that time": {
+      "en": "The surgeon is in another operation at that time",
+      "ar": "الجراح في عملية أخرى في هذا الوقت",
+      "fr": "Le chirurgien est dans une autre opération à cette heure"
+    },
+    "The surgeon needs the surgery privilege": {
+      "en": "The surgeon needs the surgery privilege",
+      "ar": "الجراح يحتاج صلاحية الجراحة",
+      "fr": "Le chirurgien doit avoir le privilège de chirurgie"
+    },
+    "The theatre is booked at that time": {
+      "en": "The theatre is booked at that time",
+      "ar": "الغرفة محجوزة في هذا الوقت",
+      "fr": "Le bloc est réservé à cette heure"
+    },
+    "The theatre tables are not created yet (hospital_h29_theatre.sql)": {
+      "en": "The theatre tables are not created yet (hospital_h29_theatre.sql)",
+      "ar": "جداول العمليات لم تُنشأ بعد (hospital_h29_theatre.sql)",
+      "fr": "Les tables du bloc ne sont pas encore créées (hospital_h29_theatre.sql)"
+    },
+    "Theatre schedule": {
+      "en": "Theatre schedule",
+      "ar": "جدول العمليات",
+      "fr": "Planning du bloc"
+    },
+    "Theatre utilisation": {
+      "en": "Theatre utilisation",
+      "ar": "استغلال الغرف",
+      "fr": "Taux d'occupation du bloc"
+    },
+    "This operation cannot make that move": {
+      "en": "This operation cannot make that move",
+      "ar": "لا يمكن نقل العملية إلى هذه الحالة",
+      "fr": "Cette opération ne peut pas faire ce passage"
+    },
+    "WHO checklist": {
+      "en": "WHO checklist",
+      "ar": "وفق منظمة الصحة العالمية",
+      "fr": "Check-list de l'OMS"
+    },
+    "Why is the operation cancelled?": {
+      "en": "Why is the operation cancelled?",
+      "ar": "لماذا أُلغيت العملية؟",
+      "fr": "Pourquoi l'opération est-elle annulée ?"
+    },
+    "Write why the operation is cancelled": {
+      "en": "Write why the operation is cancelled",
+      "ar": "اكتب سبب إلغاء العملية",
+      "fr": "Écrivez pourquoi l'opération est annulée"
+    },
+    "or:Planned": {
+      "en": "Planned",
+      "ar": "مخططة",
+      "fr": "Programmée"
+    },
+    "or:InProgress": {
+      "en": "In progress",
+      "ar": "جارية",
+      "fr": "En cours"
+    },
+    "or:Done": {
+      "en": "Done",
+      "ar": "منتهية",
+      "fr": "Terminée"
+    },
+    "or:Cancelled": {
+      "en": "Cancelled",
+      "ar": "ملغاة",
+      "fr": "Annulée"
+    },
+    "orc:Identity": {
+      "en": "Patient, procedure and site confirmed",
+      "ar": "تأكيد هوية المريض والإجراء والموضع",
+      "fr": "Patient, acte et site confirmés"
+    },
+    "orc:Consent": {
+      "en": "Consent signed",
+      "ar": "الموافقة موقعة",
+      "fr": "Consentement signé"
+    },
+    "orc:Anaesthesia": {
+      "en": "Anaesthesia machine check",
+      "ar": "فحص جهاز التخدير",
+      "fr": "Vérification de l'appareil d'anesthésie"
+    },
+    "orc:Allergies": {
+      "en": "Allergies confirmed",
+      "ar": "تأكيد الحساسية",
+      "fr": "Allergies confirmées"
+    },
+    "orc:Count": {
+      "en": "Instrument count before closure",
+      "ar": "عدّ الأدوات قبل الإغلاق",
+      "fr": "Comptage des instruments avant fermeture"
+    },
+    "orc:Specimens": {
+      "en": "Specimens labelled",
+      "ar": "توثيق العينات",
+      "fr": "Prélèvements étiquetés"
+    },
+    "The surgeon's professional licence has expired": {
+      "en": "The surgeon's professional licence has expired",
+      "ar": "رخصة مزاولة المهنة للجراح منتهية",
+      "fr": "La licence professionnelle du chirurgien a expiré"
+    },
+    "The anaesthetist's professional licence has expired": {
+      "en": "The anaesthetist's professional licence has expired",
+      "ar": "رخصة مزاولة المهنة لطبيب التخدير منتهية",
+      "fr": "La licence professionnelle de l'anesthésiste a expiré"
+    },
+    "Operation": {
+      "en": "Operation",
+      "ar": "العملية",
+      "fr": "Opération"
+    }
+  }
+}

@@ -1,0 +1,250 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model HospitalBloodBoard
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H41 — the blood bank, as the approved prototype draws it (#/bloodbank): the shelf per blood group (red below the
+    safety level), the low-stock notice, and the transfusion requests with their cross-match. Receiving bags, the bags
+    on the shelf (to discard one) and a new request open in windows, so the page keeps the prototype's shape.
+    Every change swaps in place.
+*@
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Blood bank"].Value;
+    bool ready = ViewBag.Ready == true, canLab = ViewBag.CanLab == true, canConsult = ViewBag.CanConsult == true;
+    var b = Model;
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+    string Kind(string s) => s switch
+    {
+        HospitalTransfusionStatus.Requested => "secondary", HospitalTransfusionStatus.CrossMatching => "primary", HospitalTransfusionStatus.Compatible => "success",
+        HospitalTransfusionStatus.Issued => "info", HospitalTransfusionStatus.Incompatible => "danger", _ => "dark",
+    };
+    bool open(string s) => s is HospitalTransfusionStatus.Requested or HospitalTransfusionStatus.CrossMatching or HospitalTransfusionStatus.Compatible;
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Blood bank"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item text-muted">@T["Diagnostics"]</li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@T["Blood bank"]</li>
+            </ul>
+        </div>
+        @if (ready)
+        {
+            <div class="d-flex align-items-center gap-2 gap-lg-3 d-print-none">
+                <button type="button" class="btn btn-sm btn-light" data-bb-shelf><i class="ki-outline ki-row-horizontal fs-4"></i>@T["Bags on the shelf"]</button>
+                @if (canLab) { <button type="button" class="btn btn-sm btn-light-primary" data-bb-receive><i class="ki-outline ki-entrance-left fs-4"></i>@T["Receive bags"]</button> }
+                @if (canConsult) { <button type="button" class="btn btn-sm btn-primary" data-bb-new><i class="ki-outline ki-plus fs-4"></i>@T["Transfusion request"]</button> }
+            </div>
+        }
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (!ready)
+        {
+            <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice"><div class="fs-6 text-gray-700">@T[HospitalBloodBankService.NoTables]</div></div>
+        }
+
+        <div class="row g-5 mb-5">
+            @foreach (var g in HospitalBloodGroups.All)
+            {
+                var n = b.Shelf.GetValueOrDefault(g); var low = n < HospitalBloodRules.SafetyLevel;
+                <div class="col-6 col-md-3 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5 d-flex align-items-center">
+                    <span class="symbol symbol-50px me-4"><span class="symbol-label fw-bold fs-4 hp-num @(low ? "bg-light-danger text-danger" : "")" dir="ltr" style="@(low ? "" : "background:#E7F0FF;color:#0E4A9E")">@g</span></span>
+                    <div><div class="fs-2hx fw-bold text-gray-900 hp-num">@n</div><div class="text-muted fs-8">@T["whole blood / PRBC units"]</div></div>
+                </div></div></div>
+            }
+        </div>
+
+        @if (ready && b.Low.Count > 0)
+        {
+            <div class="notice d-flex rounded border border-danger border-dashed bg-light-danger p-6 mb-5">
+                <i class="ki-outline ki-drop fs-2tx text-danger me-4"></i>
+                <div class="d-flex flex-stack flex-grow-1 flex-wrap flex-md-nowrap">
+                    <div class="mb-3 mb-md-0 fw-semibold pe-5">
+                        <h4 class="text-gray-900 fw-bold mb-1">@T["Low stock"]</h4>
+                        <div class="fs-6 text-gray-700"><bdi dir="ltr">@string.Join(", ", b.Low)</bdi> — @T["below the safety level; a donor drive is suggested."]</div>
+                    </div>
+                    <span class="badge badge-danger fs-7 fw-bold px-4 py-2 flex-shrink-0"><span class="hp-num">@b.Low.Count</span>&nbsp;@T["groups"]</span>
+                </div>
+            </div>
+        }
+        @if (b.Expired > 0)
+        {
+            <div class="notice d-flex rounded border border-dashed p-5 mb-5 hp-notice"><div class="fs-7 text-gray-700"><i class="ki-outline ki-information fs-5 me-1"></i>@string.Format(T["{0} bags on the shelf have expired: discard them from Bags on the shelf."].Value, b.Expired)</div></div>
+        }
+
+        <div class="card mb-5">
+            <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Transfusion requests"]</span></div></div>
+            <div class="card-body pt-2">
+                @if (b.Requests.Count == 0) { <div class="text-center text-muted py-10">@T["No transfusion request yet."]</div> }
+                else
+                {
+                    <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-3 mb-0">
+                        <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0">
+                            <th>@T["Patient"]</th><th>@T["Product"]</th><th class="text-end">@T["bb:Units"]</th><th>@T["Cross-match"]</th><th class="text-end"></th>
+                        </tr></thead>
+                        <tbody class="fw-semibold text-gray-700">
+                            @foreach (var r in b.Requests)
+                            {
+                                var st = r.Row.Status;
+                                <tr>
+                                    <td><div class="d-flex align-items-center">
+                                        <div class="symbol symbol-35px symbol-circle me-3 flex-shrink-0">@if (r.Photo != null) {<img src="@r.Photo" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(r.PatientEn)" />} else {<span class="symbol-label fw-bold fs-8 hp-initials">@HospitalUi.Initials(r.PatientEn)</span>}</div>
+                                        <div class="d-flex flex-column"><a href="@Url.Action("Patient", new { id = r.Row.PatientId })" class="text-gray-900 text-hover-primary">@DisplayName.Of(r.Patient, r.PatientEn)</a>
+                                            <span class="text-muted fs-8">@if (r.Place != null) {<span>@(r.Place == "ICU" ? T["crumb:ICU"].Value : DisplayName.Of(r.Place, r.PlaceEn ?? r.Place))</span><text> · </text>}<bdi class="hp-num" dir="ltr">@r.BloodGroup</bdi></span></div>
+                                    </div></td>
+                                    <td><span class="text-gray-800">@T["bp:" + r.Row.Product]</span>@if (r.Row.Note != null) {<div class="text-muted fs-8" dir="auto">@r.Row.Note</div>}</td>
+                                    <td class="text-end"><span class="hp-num">@r.Row.Units</span>@if (r.UnitNos.Count > 0) {<div class="text-muted fs-9 hp-num" dir="ltr">@string.Join(" · ", r.UnitNos)</div>}</td>
+                                    <td><span class="badge badge-light-@Kind(st)">@T["tx:" + st]</span>@if (r.Row.Reason != null) {<div class="text-muted fs-8 mt-1" dir="auto">@r.Row.Reason</div>}
+                                        @if (st == HospitalTransfusionStatus.Issued) {<div class="fs-8 mt-1 @(r.Row.BillLineId == null ? "text-muted" : "text-success")" data-bb-billed="@(r.Row.BillLineId != null ? 1 : 0)">@(r.Row.BillLineId == null ? T["Not charged"] : T["Charged to the bill"])</div>}</td>
+                                    <td class="text-end"><div class="d-flex justify-content-end gap-2">
+                                        @if (canLab && st == HospitalTransfusionStatus.Requested) { <button type="button" class="btn btn-sm btn-light-primary" data-bb-move="@r.Row.ID" data-to="CrossMatching">@T["Start cross-match"]</button> }
+                                        @if (canLab && st == HospitalTransfusionStatus.CrossMatching)
+                                        {
+                                            <button type="button" class="btn btn-sm btn-light-danger" data-bb-move="@r.Row.ID" data-to="Incompatible" data-reason="1">@T["tx:Incompatible"]</button>
+                                            <button type="button" class="btn btn-sm btn-primary" data-bb-move="@r.Row.ID" data-to="Compatible">@T["tx:Compatible"]</button>
+                                        }
+                                        @if (canLab && st == HospitalTransfusionStatus.Compatible) { <button type="button" class="btn btn-sm btn-primary" data-bb-move="@r.Row.ID" data-to="Issued" data-confirm="1"><i class="ki-outline ki-delivery fs-5"></i>@T["Issue"]</button> }
+                                        @if ((canLab || canConsult) && open(st)) { <button type="button" class="btn btn-icon btn-sm btn-light w-30px h-30px" data-bb-move="@r.Row.ID" data-to="Cancelled" data-reason="1" title="@T["Cancel request"]"><i class="ki-outline ki-cross fs-5"></i></button> }
+                                    </div></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table></div>
+                }
+            </div>
+        </div>
+
+        @* the bags on the shelf — rendered here, shown in its window (the swap keeps it current) *@
+        <div class="d-none" data-bb-shelf-body>
+            @if (b.Units.Count == 0) { <div class="text-center text-muted py-8">@T["No bag on the shelf."]</div> }
+            else
+            {
+                <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-2 mb-0">
+                    <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0"><th>@T["Bag"]</th><th>@T["Group"]</th><th>@T["Product"]</th><th>@T["Expiry"]</th><th>@T["State"]</th><th></th></tr></thead>
+                    <tbody class="fw-semibold text-gray-700">
+                        @foreach (var u in b.Units)
+                        {
+                            var expired = u.ExpiresOn.Date < DateTime.Today;
+                            <tr>
+                                <td><span class="badge badge-light fs-8 hp-num">@u.UnitNo</span></td>
+                                <td><bdi class="hp-num fw-bold" dir="ltr">@u.BloodGroup</bdi></td>
+                                <td>@T["bp:" + u.Product]</td>
+                                <td><span class="hp-num @(expired ? "text-danger fw-bold" : "")" dir="ltr">@u.ExpiresOn.ToString("yyyy-MM-dd", inv)</span></td>
+                                <td><span class="badge badge-light-@(u.Status == HospitalBloodUnitStatus.Reserved ? "primary" : "success")">@T["bu:" + u.Status]</span></td>
+                                <td class="text-end">@if (canLab && u.Status == HospitalBloodUnitStatus.Available) { <button type="button" class="btn btn-icon btn-sm btn-light w-30px h-30px" data-bb-discard="@u.ID" title="@T["Discard"]"><i class="ki-outline ki-trash fs-5"></i></button> }</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table></div>
+            }
+        </div>
+    </div></div>
+</div>
+
+@if (ready)
+{
+    <div class="modal fade" id="bbShelfModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered modal-dialog-scrollable mw-750px"><div class="modal-content">
+        <div class="modal-header"><h3 class="fw-bold m-0">@T["Bags on the shelf"]</h3><div class="btn btn-icon btn-sm btn-active-light-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body" data-bb-shelf-view></div>
+    </div></div></div>
+}
+@if (ready && canLab)
+{
+    <div class="modal fade" id="bbReceiveModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-550px"><div class="modal-content">
+        <div class="modal-header"><h3 class="fw-bold m-0">@T["Receive bags"]</h3><div class="btn btn-icon btn-sm btn-active-light-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body"><div class="row g-4">
+            <div class="col-md-4"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Group"]</label>
+                <select class="form-select form-select-solid hp-num" dir="ltr" data-r="group">@foreach (var g in HospitalBloodGroups.All) { <option value="@g">@g</option> }</select></div>
+            <div class="col-md-8"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Product"]</label>
+                <select class="form-select form-select-solid" data-r="product">@foreach (var pr in HospitalBloodProduct.All) { <option value="@pr" selected="@(pr == HospitalBloodProduct.PackedCells)">@T["bp:" + pr]</option> }</select></div>
+            <div class="col-12"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Bag numbers (one per line)"]</label>
+                <textarea class="form-control form-control-solid hp-num" rows="4" dir="ltr" data-r="nos"></textarea></div>
+            <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Expiry"]</label><input type="date" class="form-control form-control-solid hp-num" dir="ltr" data-r="expires" /></div>
+            <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Note"]</label><input class="form-control form-control-solid" dir="auto" maxlength="300" data-r="note" /></div>
+        </div></div>
+        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-bb-receive-save><i class="ki-outline ki-check fs-4"></i>@T["Receive"]</button></div>
+    </div></div></div>
+}
+@if (ready && canConsult)
+{
+    <div class="modal fade" id="bbNewModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-550px"><div class="modal-content">
+        <div class="modal-header"><h3 class="fw-bold m-0">@T["Transfusion request"]</h3><div class="btn btn-icon btn-sm btn-active-light-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body"><div class="row g-4">
+            <div class="col-12"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Patient"]</label>
+                <select class="form-select form-select-solid" data-n="patientId" data-bb-patient data-placeholder="@T["Search..."]"></select></div>
+            <div class="col-md-8"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Product"]</label>
+                <select class="form-select form-select-solid" data-n="product">@foreach (var pr in HospitalBloodProduct.All) { <option value="@pr" selected="@(pr == HospitalBloodProduct.PackedCells)">@T["bp:" + pr]</option> }</select></div>
+            <div class="col-md-4"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["bb:Units"]</label><input type="number" min="1" max="10" step="1" value="1" class="form-control form-control-solid hp-num" dir="ltr" data-n="units" /></div>
+            <div class="col-12"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Note"]</label><textarea class="form-control form-control-solid" rows="2" maxlength="500" dir="auto" data-n="note"></textarea></div>
+            <div class="col-12 text-muted fs-8">@T["The patient's blood group is taken from the file; the laboratory cross-matches and reserves compatible bags."]</div>
+        </div></div>
+        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-bb-new-save><i class="ki-outline ki-check fs-4"></i>@T["Send to the laboratory"]</button></div>
+    </div></div></div>
+}
+
+@section Scripts {
+    <partial name="_HospitalPrompt" />
+    <script>
+        (function () {
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value, root = @Json.Serialize(Url.Content("~/Hospital/BloodBank"));
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value), why: @Json.Serialize(T["Write the reason"].Value),
+                issue: @Json.Serialize(T["Issue the reserved bags to the ward now?"].Value), discard: @Json.Serialize(T["Why is this bag discarded?"].Value),
+                patients: @Json.Serialize(Url.Content("~/Hospital/Patients/Search")) };
+            function toast(k, m) { if (window.toastr) toastr[k](m); }
+            function post(url, body) {
+                return fetch(root + url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(body || {}) })
+                    .then(function (r) { return r.json().catch(function () { return { ok: false }; }); });
+            }
+            function shelf() { var s = document.querySelector('[data-bb-shelf-body]'), v = document.querySelector('[data-bb-shelf-view]'); if (s && v) v.innerHTML = s.innerHTML; }
+            // In place, never a reload: the page is rendered again and its content swapped (the shelf window too).
+            function swap() {
+                return fetch(root, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.text(); }).then(function (html) {
+                    var d = new DOMParser().parseFromString(html, 'text/html'), f = d.getElementById('kt_app_content');
+                    if (f) document.getElementById('kt_app_content').innerHTML = f.innerHTML; shelf();
+                });
+            }
+            function done(btn) { return function (res) { if (btn) btn.disabled = false; if (!res.ok) { toast('error', res.error || W.failed); return; } toast('success', W.saved); swap(); }; }
+            shelf();
+            var pp = document.querySelector('[data-bb-patient]');
+            if (pp && window.jQuery) jQuery(pp).select2({ dropdownParent: jQuery('#bbNewModal'), placeholder: pp.getAttribute('data-placeholder'), allowClear: true,
+                ajax: { url: W.patients, delay: 250, data: function (p) { return { q: p.term || '' }; }, processResults: function (r) { return { results: r.results || [] }; } } });
+            document.addEventListener('click', function (e) {
+                var t = e.target.closest('[data-bb-shelf],[data-bb-receive],[data-bb-new],[data-bb-receive-save],[data-bb-new-save],[data-bb-move],[data-bb-discard]'); if (!t) return;
+                var rm = document.getElementById('bbReceiveModal'), nm = document.getElementById('bbNewModal');
+                if (t.hasAttribute('data-bb-shelf')) { bootstrap.Modal.getOrCreateInstance(document.getElementById('bbShelfModal')).show(); return; }
+                if (t.hasAttribute('data-bb-receive')) { bootstrap.Modal.getOrCreateInstance(rm).show(); return; }
+                if (t.hasAttribute('data-bb-new')) { bootstrap.Modal.getOrCreateInstance(nm).show(); return; }
+                if (t.hasAttribute('data-bb-receive-save')) {
+                    var r = function (k) { return rm.querySelector('[data-r=' + k + ']').value; };
+                    t.disabled = true;
+                    post('/Units', { unitNos: r('nos').split(/\r?\n/).map(function (x) { return x.trim(); }).filter(Boolean), bloodGroup: r('group'), product: r('product'), expiresOn: r('expires') || null, note: r('note') || null })
+                        .then(function (res) { t.disabled = false; if (!res.ok) { toast('error', res.error || W.failed); return; } bootstrap.Modal.getOrCreateInstance(rm).hide(); rm.querySelector('[data-r=nos]').value = ''; toast('success', W.saved); swap(); });
+                    return;
+                }
+                if (t.hasAttribute('data-bb-new-save')) {
+                    var n = function (k) { return nm.querySelector('[data-n=' + k + ']').value; };
+                    t.disabled = true;
+                    post('/Requests', { patientId: +n('patientId') || 0, product: n('product'), units: +n('units') || 0, note: n('note') || null })
+                        .then(function (res) { t.disabled = false; if (!res.ok) { toast('error', res.error || W.failed); return; } bootstrap.Modal.getOrCreateInstance(nm).hide(); toast('success', W.saved); swap(); });
+                    return;
+                }
+                if (t.hasAttribute('data-bb-discard')) {
+                    cbPrompt(W.discard, { kind: 'danger' }).then(function (why) { if (!why) return; t.disabled = true; post('/Units/' + t.getAttribute('data-bb-discard') + '/Discard', { reason: why }).then(done(t)); });
+                    return;
+                }
+                var id = t.getAttribute('data-bb-move'), to = t.getAttribute('data-to');
+                if (t.hasAttribute('data-reason')) { cbPrompt(W.why, { kind: 'danger' }).then(function (why) { if (!why) return; t.disabled = true; post('/Requests/' + id + '/Move', { to: to, reason: why }).then(done(t)); }); return; }
+                if (t.hasAttribute('data-confirm')) { cbConfirm(W.issue).then(function (ok) { if (!ok) return; t.disabled = true; post('/Requests/' + id + '/Move', { to: to }).then(done(t)); }); return; }
+                t.disabled = true; post('/Requests/' + id + '/Move', { to: to }).then(done(t));
+            });
+        })();
+    </script>
+}

@@ -1,0 +1,137 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@model IReadOnlyList<HospitalDuplicatePair>
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H57 — duplicate patient files: the suspected pairs (and why each looks like one patient), each opened side by side
+    in a window; the hospital administrator merges from there (it asks first). Below, the merges already done.
+*@
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Duplicate files"].Value;
+    bool ready = ViewBag.Ready == true, canMerge = ViewBag.CanMerge == true;
+    var history = (ViewBag.History as IReadOnlyList<HospitalMergeRow>) ?? Array.Empty<HospitalMergeRow>();
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Duplicate files"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item text-muted">@T["Patients"]</li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@T["Medical records"]</li>
+            </ul>
+        </div>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (!ready) { <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice"><div class="fs-6 text-gray-700">@T[HospitalPatientMergeService.NoTables]</div></div> }
+        <div class="notice d-flex rounded border border-primary border-dashed bg-light-primary p-6 mb-5">
+            <i class="ki-outline ki-abstract-26 fs-2tx text-primary me-4"></i>
+            <div class="d-flex flex-stack flex-grow-1 flex-wrap flex-md-nowrap">
+                <div class="mb-3 mb-md-0 fw-semibold pe-5">
+                    <h4 class="text-gray-900 fw-bold mb-1">@T["One patient, one file"]</h4>
+                    <div class="fs-6 text-gray-700">@T["Two files of one patient split the history: a doctor may miss an allergy recorded on the other. Files that share a mobile and a birth date, or a name and a birth date, are listed here; the hospital administrator merges them."]</div>
+                </div>
+                <span class="badge badge-primary fs-7 fw-bold px-4 py-2 flex-shrink-0"><bdi class="hp-num" dir="ltr">@Model.Count</bdi>&nbsp;@T["suspected pairs"]</span>
+            </div>
+        </div>
+
+        <div class="card mb-5">
+            <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Suspected duplicates"]</span></div></div>
+            <div class="card-body pt-2">
+                @if (Model.Count == 0) { <div class="text-center text-muted py-10">@T["No suspected duplicate."]</div> }
+                else
+                {
+                    <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-3 mb-0">
+                        <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0"><th>@T["File"]</th><th>@T["File"]</th><th>@T["Why"]</th><th class="text-end"></th></tr></thead>
+                        <tbody class="fw-semibold text-gray-700">
+                            @foreach (var p in Model)
+                            {
+                                <tr data-dup-row="@p.A.ID-@p.B.ID">
+                                    @foreach (var x in new[] { p.A, p.B })
+                                    {
+                                        <td><div class="d-flex align-items-center">
+                                            <div class="symbol symbol-35px symbol-circle me-3 flex-shrink-0">@if (x.PhotoPath != null) {<img src="@x.PhotoPath" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(x.NameEn ?? x.Name)" />} else {<span class="symbol-label fw-bold fs-8 hp-initials">@HospitalUi.Initials(x.NameEn ?? x.Name)</span>}</div>
+                                            <div class="d-flex flex-column"><a href="@Url.Action("Patient", new { id = x.ID })" class="text-gray-900 text-hover-primary">@DisplayName.Of(x.Name, x.NameEn ?? x.Name)</a>
+                                                <span class="text-muted fs-8"><span class="badge hp-code fs-9 hp-num">@x.Mrn</span> <span class="hp-num" dir="ltr">@x.BirthDate?.ToString("yyyy-MM-dd", inv)</span> <span class="hp-num" dir="ltr">@x.Phone</span></span></div>
+                                        </div></td>
+                                    }
+                                    <td>@foreach (var w in p.Reasons) { <span class="badge badge-light-primary fs-8 me-1">@T["dupwhy:" + w]</span> }</td>
+                                    <td class="text-end"><button type="button" class="btn btn-sm btn-light-primary" data-dup-open data-a="@p.A.ID" data-b="@p.B.ID">@T["Compare"]</button></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table></div>
+                }
+            </div>
+        </div>
+
+        <div class="card mb-5">
+            <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Merges done"]</span></div></div>
+            <div class="card-body pt-2" data-dup-history>
+                @if (history.Count == 0) { <div class="text-center text-muted py-8">@T["No merge yet."]</div> }
+                @foreach (var h in history)
+                {
+                    var moved = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, int>>(h.Merge.Moved) ?? new();
+                    <div class="d-flex align-items-start py-3 border-bottom border-gray-200 border-bottom-dashed">
+                        <span class="symbol symbol-35px me-3"><span class="symbol-label bg-light-primary"><i class="ki-outline ki-abstract-26 fs-3 text-primary"></i></span></span>
+                        <div class="flex-grow-1">
+                            <div class="fw-semibold text-gray-800"><span class="badge hp-code fs-9 hp-num">@h.Merge.MergedMrn</span> → <a href="@Url.Action("Patient", new { id = h.Merge.SurvivorPatientId })" class="text-gray-900 text-hover-primary">@DisplayName.Of(h.SurvivorName ?? "", h.SurvivorNameEn ?? h.SurvivorName ?? "")</a> <span class="badge hp-code fs-9 hp-num">@h.SurvivorMrn</span></div>
+                            <div class="text-muted fs-8" dir="auto">@h.Merge.Reason</div>
+                            <div class="text-muted fs-9">@DisplayName.Of(h.By ?? "", h.ByEn ?? h.By ?? "") · <span class="hp-num" dir="ltr">@HospitalNursingService.UtcToWard(h.Merge.MergedAt).ToString("yyyy-MM-dd HH:mm", inv)</span> · @T["records moved"] <span class="hp-num">@moved.Values.Sum()</span></div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div></div>
+</div>
+
+<div class="modal fade" id="dupModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered modal-dialog-scrollable mw-900px"><div class="modal-content">
+    <div class="modal-header"><h3 class="fw-bold m-0">@T["Compare two files"]</h3><div class="btn btn-icon btn-sm btn-active-light-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="modal-body" data-dup-body></div>
+</div></div></div>
+
+@section Scripts {
+    <script>
+        (function () {
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), merged: @Json.Serialize(T["The files are merged"].Value),
+                ask: @Json.Serialize(T["Merge file {0} into file {1}? Everything of {0} moves to {1}, and {0} is closed. This cannot be undone from the screen."].Value),
+                compare: @Json.Serialize(Url.Action("DuplicatesCompare")), merge: @Json.Serialize(Url.Action("DuplicatesMerge")) };
+            function toast(k, m) { if (window.toastr) toastr[k](m); }
+            function swap() {
+                return fetch(location.pathname, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.text(); }).then(function (html) {
+                    var d = new DOMParser().parseFromString(html, 'text/html'), f = d.getElementById('kt_app_content');
+                    if (f) document.getElementById('kt_app_content').innerHTML = f.innerHTML;
+                });
+            }
+            document.addEventListener('click', function (e) {
+                var t = e.target.closest('[data-dup-open],[data-dup-merge]'); if (!t) return;
+                var body = document.querySelector('[data-dup-body]');
+                if (t.hasAttribute('data-dup-open')) {
+                    fetch(W.compare + '?a=' + t.getAttribute('data-a') + '&b=' + t.getAttribute('data-b'), { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                        .then(function (r) { return r.ok ? r.text() : ''; })
+                        .then(function (html) { body.innerHTML = html; bootstrap.Modal.getOrCreateInstance(document.getElementById('dupModal')).show(); });
+                    return;
+                }
+                var c = body.querySelector('[data-dup-compare]'), keep = body.querySelector('input[name=dupKeep]:checked');
+                var a = c.getAttribute('data-a'), b = c.getAttribute('data-b'), survivor = keep ? keep.value : a, merged = survivor === a ? b : a;
+                var mrn = function (id) { var r = body.querySelector('input[name=dupKeep][value="' + id + '"]'); return r ? r.closest('label').querySelector('.hp-num').textContent : id; };
+                cbConfirm(W.ask.split('{0}').join(mrn(merged)).split('{1}').join(mrn(survivor)), { kind: 'danger' }).then(function (ok) {
+                    if (!ok) return; t.disabled = true;
+                    fetch(W.merge, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token },
+                        body: JSON.stringify({ survivorId: +survivor, mergedId: +merged, reason: body.querySelector('[data-dup-reason]').value }) })
+                        .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+                        .then(function (res) { t.disabled = false; if (!res.ok) { toast('error', res.error || W.failed); return; }
+                            bootstrap.Modal.getOrCreateInstance(document.getElementById('dupModal')).hide(); toast('success', W.merged); swap(); });
+                });
+            });
+        })();
+    </script>
+}

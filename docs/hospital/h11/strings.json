@@ -351,11 +351,6 @@
       "ar": "أقدمها منذ",
       "fr": "la plus ancienne"
     },
-    "on the main list only": {
-      "en": "on the main list only",
-      "ar": "على القائمة الرئيسية فقط",
-      "fr": "sur la liste principale uniquement"
-    },
     "one per closed bill": {
       "en": "one per closed bill",
       "ar": "واحدة لكل فاتورة مغلقة",
@@ -380,11 +375,6 @@
       "en": "Rejected",
       "ar": "مرفوض",
       "fr": "Refusé"
-    },
-    "paid": {
-      "en": "paid",
-      "ar": "المدفوع",
-      "fr": "payé"
     },
     "Patient policies": {
       "en": "Patient policies",
@@ -651,5 +641,6 @@
       "ar": "{0} بنود تحتاج موافقة الجهة ولا موافقة لها",
       "fr": "{0} lignes exigent l'accord du payeur et n'en ont pas"
     }
-  }
+  },
+  "_case": "Keys that differ from an existing key only by case never resolve in a .resx; the views use the existing key instead."
 }

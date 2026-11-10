@@ -8,6 +8,9 @@
     ViewData["Title"] = T["Hospital map"].Value;
     var occupants = (ViewBag.Occupants as Dictionary<int, HospitalOccupantView>) ?? new();
     var clinics = (ViewBag.Clinics as Dictionary<int, List<CrossBuy.Controllers.HospitalController.HospitalMapClinic>>) ?? new();
+    var live = (ViewBag.Live as Dictionary<int, CrossBuy.Controllers.HospitalController.HospitalMapLive>) ?? new();
+    // a patient counted once: the emergency department's visits show in every emergency room, so count them by person
+    int elsewhere = live.Values.SelectMany(l => l.Cases).Select(c => c.Patient.Id == 0 ? c.Patient.Sub : "p" + c.Patient.Id).Distinct().Count();
     int? want = ViewBag.Floor as int?;
     var current = Model.FirstOrDefault(f => f.Id == want) ?? Model.FirstOrDefault();
     var rooms = Model.SelectMany(f => f.Rooms).ToList();
@@ -48,7 +51,7 @@
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
         <div class="row g-5 g-xl-8 mb-5">
             @foreach (var s in new[] {
-                (T["Patients in the building"].Value, (inBeds + inClinics + waiting).ToString(), T["In beds"].Value + " " + inBeds + " · " + T["in clinics"].Value + " " + (inClinics + waiting), "ki-people", "text-gray-900"),
+                (T["Patients in the building"].Value, (inBeds + inClinics + waiting + elsewhere).ToString(), T["In beds"].Value + " " + inBeds + " · " + T["in clinics"].Value + " " + (inClinics + waiting) + " · " + T["map:elsewhere"].Value + " " + elsewhere, "ki-people", "text-gray-900"),
                 (T["Doctors today"].Value, doctorsToday.ToString(), T["With appointments today"].Value, "ki-briefcase", "text-gray-900"),
                 (T["Beds free"].Value, freeBeds.ToString(), T["of"].Value + " " + allBeds + " " + T["beds (count)"].Value, "ki-home-3", "text-success"),
                 (T["Waiting in clinics"].Value, waiting.ToString(), T["Arrived, not called yet"].Value, "ki-time", waiting > 0 ? "text-primary" : "text-gray-900") })
@@ -102,10 +105,13 @@
                                 {
                                     var beds = r.Beds.Where(b => occupants.ContainsKey(b.Id)).Select(b => (Bed: b, Who: occupants[b.Id])).ToList();
                                     var here = clinics.GetValueOrDefault(r.Id) ?? new();
-                                    bool empty = HoldsBeds(r) ? beds.Count == 0 : r.Kind == HospitalRoomKinds.Clinic ? here.Count == 0 : false;
+                                    var now = live.GetValueOrDefault(r.Id);
+                                    bool empty = HoldsBeds(r) ? beds.Count == 0 : r.Kind == HospitalRoomKinds.Clinic ? here.Count == 0
+                                        : r.Kind is HospitalRoomKinds.Theatre or HospitalRoomKinds.Imaging or HospitalRoomKinds.Emergency ? (now == null || now.Cases.Count == 0) : false;
                                     var search = string.Join(" ", new[] { r.Number, Label(r) }
                                         .Concat(beds.SelectMany(x => new[] { x.Who.Name, x.Who.NameEn, x.Who.Mrn }))
-                                        .Concat(here.SelectMany(c => new[] { c.Doctor.Name, c.Doctor.NameEn, c.InRoom?.Name ?? "", c.InRoom?.NameEn ?? "", c.InRoom?.Sub ?? "" }))).ToLowerInvariant();
+                                        .Concat(here.SelectMany(c => new[] { c.Doctor.Name, c.Doctor.NameEn, c.InRoom?.Name ?? "", c.InRoom?.NameEn ?? "", c.InRoom?.Sub ?? "" }))
+                                        .Concat(now == null ? Array.Empty<string>() : now.Cases.SelectMany(c => new[] { c.Patient.Name, c.Patient.NameEn, c.Patient.Sub ?? "" }).Concat(now.Staff.SelectMany(x => new[] { x.Name, x.NameEn })))).ToLowerInvariant();
                                     <div class="hp-tile hp-k-@r.Kind @(empty ? "hp-tile-empty" : "")" data-room="@r.Id" data-search="@search" data-label="@Label(r)"
                                          style="grid-column:@r.Column / span @r.ColumnSpan; grid-row:@r.Row / span @r.RowSpan">
                                         <div class="fw-bold fs-7 text-gray-900 text-truncate">@Label(r)</div>
@@ -117,6 +123,19 @@
                                                 <div class="d-flex align-items-center gap-2 mt-2">@Face(x.Who.PhotoPath, x.Who.NameEn, 25)<span class="fs-8 fw-bold text-gray-800 text-truncate">@DisplayName.Of(x.Who.Name, x.Who.NameEn)</span></div>
                                             }
                                             @if (beds.Count > 4) { <div class="fs-8 text-muted mt-1">+<span class="hp-num">@(beds.Count - 4)</span></div> }
+                                        }
+                                        else if (now != null)
+                                        {
+                                            @if (now.Maintenance) { <span class="badge badge-light-danger fs-9 mt-1">@T["map:maintenance"]</span> }
+                                            @foreach (var c in now.Cases.Take(3))
+                                            {
+                                                <div class="d-flex align-items-center gap-2 mt-2">@Face(c.Patient.Photo, c.Patient.NameEn, 25)
+                                                    <span class="fs-8 fw-bold text-gray-800 text-truncate">@DisplayName.Of(c.Patient.Name, c.Patient.NameEn)</span>
+                                                    @if (c.Badge != null) { <span class="badge badge-light-danger fs-9 flex-shrink-0">@c.Badge</span> }</div>
+                                            }
+                                            @if (now.Cases.Count > 3) { <div class="fs-8 text-muted mt-1">+<span class="hp-num">@(now.Cases.Count - 3)</span></div> }
+                                            @if (now.Staff.Count > 0) { <div class="d-flex mt-2 ps-2">@foreach (var st in now.Staff.Take(3)) { <span class="ms-n2">@Face(st.Photo, st.NameEn, 25)</span> }</div> }
+                                            @if (now.Cases.Count == 0 && now.Next != null) { <div class="fs-8 text-muted mt-2 text-truncate">@T["map:next"] <bdi>@now.Next</bdi></div> }
                                         }
                                         else if (r.Kind == HospitalRoomKinds.Clinic)
                                         {
@@ -152,6 +171,30 @@
                                                     </div>
                                                 }
                                                 <a href="@Url.Action("Room", new { id = r.Id })" class="btn btn-sm btn-light-primary mt-5">@T["Open the room"]</a>
+                                            }
+                                            else if (now != null && (now.Cases.Count > 0 || now.Next != null || now.Maintenance))
+                                            {
+                                                @if (now.Maintenance) { <div class="notice d-flex rounded border border-dashed p-4 mb-5 hp-notice"><div class="fs-7 text-gray-700">@T["map:maintenance-note"]</div></div> }
+                                                @foreach (var c in now.Cases)
+                                                {
+                                                    <div class="d-flex align-items-center gap-3 py-3 border-bottom border-gray-200 border-bottom-dashed">
+                                                        @if (c.Where != null) { <span class="badge hp-code fs-8 hp-num">@c.Where</span> }
+                                                        @Face(c.Patient.Photo, c.Patient.NameEn, 35)
+                                                        <div class="flex-grow-1">
+                                                            @if (c.Patient.Url != null) { <a href="@c.Patient.Url" class="fw-bold text-gray-900 text-hover-primary">@DisplayName.Of(c.Patient.Name, c.Patient.NameEn)</a> } else { <span class="fw-bold text-gray-900">@DisplayName.Of(c.Patient.Name, c.Patient.NameEn)</span> }
+                                                            <div class="text-muted fs-8"><span class="hp-num">@c.Patient.Sub</span> · <span dir="auto">@DisplayName.Of(c.What, c.WhatEn ?? c.What)</span></div>
+                                                        </div>
+                                                        @if (c.Badge != null) { <span class="badge badge-light-danger fs-8">@c.Badge</span> }
+                                                        <span class="badge @(c.Live ? "badge-light-primary" : "badge-light") fs-8">@T[(c.Live ? "map:live:" : "map:waiting:") + r.Kind]</span>
+                                                    </div>
+                                                }
+                                                @if (now.Staff.Count > 0)
+                                                {
+                                                    <div class="text-muted fs-7 fw-semibold mt-5 mb-2">@T["Staff present"]</div>
+                                                    @foreach (var st in now.Staff) { <a href="@st.Url" class="d-flex align-items-center gap-3 mb-3 text-hover-primary">@Face(st.Photo, st.NameEn, 35)<div><div class="fw-bold text-gray-900">@DisplayName.Of(st.Name, st.NameEn)</div><div class="text-muted fs-8">@st.Sub</div></div></a> }
+                                                }
+                                                @if (now.Next != null) { <div class="fs-7 mt-4"><span class="text-muted">@T["map:next"]</span> <bdi class="fw-semibold">@now.Next</bdi> · <span class="text-muted">@T["map:today"]</span> <span class="hp-num fw-bold">@now.Today</span></div> }
+                                                <a href="@Url.Action(r.Kind == HospitalRoomKinds.Theatre ? "Theatre" : r.Kind == HospitalRoomKinds.Imaging ? "Radiology" : "Emergency")" class="btn btn-sm btn-light-primary mt-5">@T["map:open:" + r.Kind]</a>
                                             }
                                             else if (r.Kind == HospitalRoomKinds.Clinic && here.Count > 0)
                                             {

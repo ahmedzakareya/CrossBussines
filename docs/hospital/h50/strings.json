@@ -1,0 +1,150 @@
+{
+  "unit": "H50 — the hospital dashboard (KPIs over the Report Studio datasets)",
+  "strings": {
+    "Bed board": {
+      "ar": "لوحة الأسرة",
+      "en": "Bed board",
+      "fr": "Tableau des lits"
+    },
+    "Bed occupancy": {
+      "ar": "إشغال الأسرة",
+      "en": "Bed occupancy",
+      "fr": "Occupation des lits"
+    },
+    "Collected {0}": {
+      "ar": "المحصّل {0}",
+      "en": "Collected {0}",
+      "fr": "Encaissé {0}"
+    },
+    "Doctors on duty": {
+      "ar": "الأطباء المناوبون",
+      "en": "Doctors on duty",
+      "fr": "Médecins de garde"
+    },
+    "Door-to-doctor avg {0} min": {
+      "ar": "متوسط الوصول للطبيب {0} دقيقة",
+      "en": "Door-to-doctor avg {0} min",
+      "fr": "Arrivée → médecin : {0} min en moyenne"
+    },
+    "ER board": {
+      "ar": "لوحة الطوارئ",
+      "en": "ER board",
+      "fr": "Tableau des urgences"
+    },
+    "ER — waiting": {
+      "ar": "الطوارئ — في الانتظار",
+      "en": "ER — waiting",
+      "fr": "Urgences — en attente"
+    },
+    "Emergency queue": {
+      "ar": "قائمة الطوارئ",
+      "en": "Emergency queue",
+      "fr": "File des urgences"
+    },
+    "Hospital dashboard": {
+      "ar": "لوحة المستشفى",
+      "en": "Hospital dashboard",
+      "fr": "Tableau de bord de l'hôpital"
+    },
+    "Live from the bed board": {
+      "ar": "لحظي من لوحة الأسرة",
+      "en": "Live from the bed board",
+      "fr": "En direct du tableau des lits"
+    },
+    "No one is in the ER now.": {
+      "ar": "لا أحد في الطوارئ الآن.",
+      "en": "No one is in the ER now.",
+      "fr": "Personne aux urgences pour le moment."
+    },
+    "No operations today.": {
+      "ar": "لا عمليات اليوم.",
+      "en": "No operations today.",
+      "fr": "Aucune opération aujourd'hui."
+    },
+    "No ward yet.": {
+      "ar": "لا أجنحة بعد.",
+      "en": "No ward yet.",
+      "fr": "Aucune unité pour le moment."
+    },
+    "hd:occupancy": {
+      "ar": "الإشغال",
+      "en": "Occupancy",
+      "fr": "Occupation"
+    },
+    "Occupancy by ward": {
+      "ar": "الإشغال حسب الجناح",
+      "en": "Occupancy by ward",
+      "fr": "Occupation par unité"
+    },
+    "Ordered by triage level": {
+      "ar": "مرتبة حسب درجة الفرز",
+      "en": "Ordered by triage level",
+      "fr": "Par niveau de tri"
+    },
+    "Outpatient visits today": {
+      "ar": "زيارات العيادات اليوم",
+      "en": "Outpatient visits today",
+      "fr": "Consultations du jour"
+    },
+    "Revenue today": {
+      "ar": "إيراد اليوم",
+      "en": "Revenue today",
+      "fr": "Recettes du jour"
+    },
+    "hd:schedule": {
+      "ar": "الجدول",
+      "en": "Schedule",
+      "fr": "Planning"
+    },
+    "hd:submitted": {
+      "ar": "مرفوعة",
+      "en": "Submitted",
+      "fr": "Soumises"
+    },
+    "Theatre today": {
+      "ar": "العمليات اليوم",
+      "en": "Theatre today",
+      "fr": "Bloc opératoire aujourd'hui"
+    },
+    "Today's summary": {
+      "ar": "ملخص اليوم",
+      "en": "Today's summary",
+      "fr": "Résumé du jour"
+    },
+    "appts": {
+      "ar": "موعد",
+      "en": "appts",
+      "fr": "rdv"
+    },
+    "hd:crumb": {
+      "ar": "لوحة التحكم",
+      "en": "Dashboard",
+      "fr": "Tableau de bord"
+    },
+    "of which {0} completed": {
+      "ar": "منها {0} مكتملة",
+      "en": "of which {0} completed",
+      "fr": "dont {0} terminées"
+    },
+    "{0} / {1} beds occupied": {
+      "ar": "{0} / {1} سرير مشغول",
+      "en": "{0} / {1} beds occupied",
+      "fr": "{0} / {1} lits occupés"
+    },
+    "{0} critical results not yet acknowledged by the doctor, {1} pre-authorisations waiting for the insurer, and {2} waiting in the ER.": {
+      "ar": "{0} نتيجة حرجة لم يؤكد الطبيب استلامها بعد، و{1} موافقة مسبقة تنتظر رد التأمين، و{2} في انتظار الطوارئ.",
+      "en": "{0} critical results not yet acknowledged by the doctor, {1} pre-authorisations waiting for the insurer, and {2} waiting in the ER.",
+      "fr": "{0} résultats critiques non encore pris en compte par le médecin, {1} accords préalables en attente de l'assureur et {2} en attente aux urgences."
+    },
+    "hd:report": {
+      "ar": "التقرير",
+      "en": "Report",
+      "fr": "Rapport"
+    },
+    "hd:minutes": {
+      "ar": "دقيقة",
+      "en": "min",
+      "fr": "min"
+    }
+  }
+}

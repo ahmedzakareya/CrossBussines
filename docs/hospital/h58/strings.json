@@ -1,0 +1,240 @@
+{
+ "unit": "H58 — births (Report Studio birth notification)",
+ "strings": {
+  "A birth older than {0} days is registered with the civil registry": {
+   "ar": "الولادة الأقدم من {0} يوماً تُسجّل في السجل المدني",
+   "en": "A birth older than {0} days is registered with the civil registry",
+   "fr": "Une naissance de plus de {0} jours s'enregistre à l'état civil"
+  },
+  "A live birth opens the newborn's own file, linked to the mother.": {
+   "ar": "المولود الحي يُفتح له ملف خاص مرتبط بأمه.",
+   "en": "A live birth opens the newborn's own file, linked to the mother.",
+   "fr": "Une naissance vivante ouvre le dossier du nouveau-né, lié à la mère."
+  },
+  "A measure is out of range": {
+   "ar": "أحد القياسات خارج المدى",
+   "en": "A measure is out of range",
+   "fr": "Une mesure est hors limites"
+  },
+  "An Apgar score is 0 to 10": {
+   "ar": "درجة أبجار من 0 إلى 10",
+   "en": "An Apgar score is 0 to 10",
+   "fr": "Un score d'Apgar va de 0 à 10"
+  },
+  "Apgar": {
+   "ar": "أبجار",
+   "en": "Apgar",
+   "fr": "Apgar"
+  },
+  "Apgar at 1 min": {
+   "ar": "أبجار بعد دقيقة",
+   "en": "Apgar at 1 min",
+   "fr": "Apgar à 1 min"
+  },
+  "Apgar at 5 min": {
+   "ar": "أبجار بعد 5 دقائق",
+   "en": "Apgar at 5 min",
+   "fr": "Apgar à 5 min"
+  },
+  "Baby's sex": {
+   "ar": "نوع المولود",
+   "en": "Baby's sex",
+   "fr": "Sexe du bébé"
+  },
+  "Birth order": {
+   "ar": "ترتيب المولود",
+   "en": "Birth order",
+   "fr": "Rang de naissance"
+  },
+  "Births": {
+   "ar": "المواليد",
+   "en": "Births",
+   "fr": "Naissances"
+  },
+  "Births & deaths": {
+   "ar": "المواليد والوفيات",
+   "en": "Births & deaths",
+   "fr": "Naissances et décès"
+  },
+  "Births are not installed yet (hospital_h58_births.sql).": {
+   "ar": "المواليد غير مثبتة بعد (hospital_h58_births.sql).",
+   "en": "Births are not installed yet (hospital_h58_births.sql).",
+   "fr": "Les naissances ne sont pas encore installées (hospital_h58_births.sql)."
+  },
+  "Choose how the baby was delivered": {
+   "ar": "اختر طريقة الولادة",
+   "en": "Choose how the baby was delivered",
+   "fr": "Choisissez le mode d'accouchement"
+  },
+  "Choose live birth or stillbirth": {
+   "ar": "اختر مولود حي أو مولود ميت",
+   "en": "Choose live birth or stillbirth",
+   "fr": "Choisissez naissance vivante ou mort-né"
+  },
+  "Choose the baby's sex": {
+   "ar": "اختر نوع المولود",
+   "en": "Choose the baby's sex",
+   "fr": "Choisissez le sexe du bébé"
+  },
+  "Delivery": {
+   "ar": "الولادة",
+   "en": "Delivery",
+   "fr": "Accouchement"
+  },
+  "Gestation (weeks)": {
+   "ar": "عمر الحمل (أسبوع)",
+   "en": "Gestation (weeks)",
+   "fr": "Âge gestationnel (sem.)"
+  },
+  "Give the time of birth": {
+   "ar": "حدد وقت الولادة",
+   "en": "Give the time of birth",
+   "fr": "Indiquez l'heure de naissance"
+  },
+  "Head (cm)": {
+   "ar": "محيط الرأس (سم)",
+   "en": "Head (cm)",
+   "fr": "Périmètre crânien (cm)"
+  },
+  "Length (cm)": {
+   "ar": "الطول (سم)",
+   "en": "Length (cm)",
+   "fr": "Taille (cm)"
+  },
+  "No birth registered yet.": {
+   "ar": "لا توجد ولادات مسجلة بعد.",
+   "en": "No birth registered yet.",
+   "fr": "Aucune naissance enregistrée."
+  },
+  "Register a birth": {
+   "ar": "تسجيل ولادة",
+   "en": "Register a birth",
+   "fr": "Enregistrer une naissance"
+  },
+  "Register the birth": {
+   "ar": "تسجيل الولادة",
+   "en": "Register the birth",
+   "fr": "Enregistrer la naissance"
+  },
+  "Register this birth on the mother's file? A live birth opens the newborn's file.": {
+   "ar": "تسجيل هذه الولادة في ملف الأم؟ المولود الحي يُفتح له ملف.",
+   "en": "Register this birth on the mother's file? A live birth opens the newborn's file.",
+   "fr": "Enregistrer cette naissance au dossier de la mère ? Une naissance vivante ouvre le dossier du bébé."
+  },
+  "Registration": {
+   "ar": "التسجيل",
+   "en": "Registration",
+   "fr": "Enregistrement"
+  },
+  "The baby": {
+   "ar": "المولود",
+   "en": "The baby",
+   "fr": "Le bébé"
+  },
+  "The birth is registered": {
+   "ar": "سُجّلت الولادة",
+   "en": "The birth is registered",
+   "fr": "La naissance est enregistrée"
+  },
+  "The birth order is 1 to 6": {
+   "ar": "ترتيب المولود من 1 إلى 6",
+   "en": "The birth order is 1 to 6",
+   "fr": "Le rang est de 1 à 6"
+  },
+  "The gestation is 20 to 45 weeks": {
+   "ar": "عمر الحمل من 20 إلى 45 أسبوعاً",
+   "en": "The gestation is 20 to 45 weeks",
+   "fr": "L'âge gestationnel est de 20 à 45 semaines"
+  },
+  "The mother": {
+   "ar": "الأم",
+   "en": "The mother",
+   "fr": "La mère"
+  },
+  "The mother's file must be a woman's": {
+   "ar": "ملف الأم يجب أن يكون لأنثى",
+   "en": "The mother's file must be a woman's",
+   "fr": "Le dossier de la mère doit être celui d'une femme"
+  },
+  "The registration is void": {
+   "ar": "أُلغي التسجيل",
+   "en": "The registration is void",
+   "fr": "L'enregistrement est annulé"
+  },
+  "The time of birth is in the future": {
+   "ar": "وقت الولادة في المستقبل",
+   "en": "The time of birth is in the future",
+   "fr": "L'heure de naissance est dans le futur"
+  },
+  "The weight is 200 to 7000 grams": {
+   "ar": "الوزن من 200 إلى 7000 جرام",
+   "en": "The weight is 200 to 7000 grams",
+   "fr": "Le poids est de 200 à 7000 g"
+  },
+  "This registration is already void": {
+   "ar": "هذا التسجيل ملغى بالفعل",
+   "en": "This registration is already void",
+   "fr": "Cet enregistrement est déjà annulé"
+  },
+  "Time of birth": {
+   "ar": "وقت الولادة",
+   "en": "Time of birth",
+   "fr": "Heure de naissance"
+  },
+  "Weight (g)": {
+   "ar": "الوزن (جم)",
+   "en": "Weight (g)",
+   "fr": "Poids (g)"
+  },
+  "Why is registration {0} void?": {
+   "ar": "لماذا يُلغى التسجيل {0}؟",
+   "en": "Why is registration {0} void?",
+   "fr": "Pourquoi l'enregistrement {0} est-il annulé ?"
+  },
+  "bo:Live": {
+   "ar": "مولود حي",
+   "en": "Live birth",
+   "fr": "Naissance vivante"
+  },
+  "bo:Stillbirth": {
+   "ar": "مولود ميت",
+   "en": "Stillbirth",
+   "fr": "Mort-né"
+  },
+  "dm:Normal": {
+   "ar": "طبيعية",
+   "en": "Normal",
+   "fr": "Voie basse"
+  },
+  "dm:Assisted": {
+   "ar": "مساعدة (شفاط أو جفت)",
+   "en": "Assisted (vacuum or forceps)",
+   "fr": "Instrumentale"
+  },
+  "dm:Caesarean": {
+   "ar": "قيصرية",
+   "en": "Caesarean",
+   "fr": "Césarienne"
+  },
+  "g": {
+   "ar": "جم",
+   "en": "g",
+   "fr": "g"
+  },
+  "weeks": {
+   "ar": "أسبوع",
+   "en": "weeks",
+   "fr": "semaines"
+  },
+  "bs:M": {
+   "ar": "ذكر",
+   "en": "Boy",
+   "fr": "Garçon"
+  },
+  "bs:F": {
+   "ar": "أنثى",
+   "en": "Girl",
+   "fr": "Fille"
+  }
+ }
+}

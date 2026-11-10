@@ -1,0 +1,1210 @@
+{
+  "unit": "H15 — Dentistry (chart, perio, treatment plans, dental setup)",
+  "strings": {
+    " — primary": {
+      "en": " — primary",
+      "ar": " — لبني",
+      "fr": " — temporaire"
+    },
+    "0 = no limit": {
+      "en": "0 = no limit",
+      "ar": "0 = بلا حد",
+      "fr": "0 = sans plafond"
+    },
+    "A cover is 0 to 100%": {
+      "en": "A cover is 0 to 100%",
+      "ar": "نسبة التغطية من 0 إلى 100%",
+      "fr": "Une couverture va de 0 à 100 %"
+    },
+    "A filling on the same surface is not repeated within two years (payer rule).": {
+      "en": "A filling on the same surface is not repeated within two years (payer rule).",
+      "ar": "حشوة السطح الواحد لا تتكرر على نفس السطح قبل سنتين (قاعدة الجهة الدافعة).",
+      "fr": "Une obturation sur la même face n'est pas reprise avant deux ans (règle du payeur)."
+    },
+    "A mark is on surfaces or on the whole tooth, not both": {
+      "en": "A mark is on surfaces or on the whole tooth, not both",
+      "ar": "العلامة تكون على الأسطح أو على السن كله، لا الاثنين",
+      "fr": "Une marque porte sur des faces ou sur la dent entière, pas les deux"
+    },
+    "A new treatment plan…": {
+      "en": "A new treatment plan…",
+      "ar": "خطة علاج جديدة…",
+      "fr": "Un nouveau plan de traitement…"
+    },
+    "A plan has at most 20 phases": {
+      "en": "A plan has at most 20 phases",
+      "ar": "الخطة لها 20 مرحلة كحد أقصى",
+      "fr": "Un plan a au plus 20 phases"
+    },
+    "A procedure works on surfaces or on the whole tooth, not both": {
+      "en": "A procedure works on surfaces or on the whole tooth, not both",
+      "ar": "الإجراء يكون على الأسطح أو على السن كله، لا الاثنين",
+      "fr": "Un acte porte sur des faces ou sur la dent entière, pas les deux"
+    },
+    "A side view with crown and roots over the five-surface view; from the dentist's side": {
+      "en": "A side view with crown and roots over the five-surface view; from the dentist's side",
+      "ar": "منظر جانبي بالتاج والجذور فوق منظر الأسطح الخمسة؛ من منظور الطبيب",
+      "fr": "Une vue latérale avec couronne et racines au-dessus de la vue des cinq faces ; côté praticien"
+    },
+    "A surface code bills 1 to 5 surfaces": {
+      "en": "A surface code bills 1 to 5 surfaces",
+      "ar": "كود الأسطح يفوتر من 1 إلى 5 أسطح",
+      "fr": "Un code de faces facture 1 à 5 faces"
+    },
+    "A tooth is charted twice": {
+      "en": "A tooth is charted twice",
+      "ar": "سن مسجل مرتين",
+      "fr": "Une dent est notée deux fois"
+    },
+    "Accept": {
+      "en": "Accept",
+      "ar": "قبول",
+      "fr": "Accepter"
+    },
+    "Accept a phase with the patient's signature": {
+      "en": "Accept a phase with the patient's signature",
+      "ar": "قبول مرحلة بتوقيع المريض",
+      "fr": "Accepter une phase avec la signature du patient"
+    },
+    "Acceptance rate": {
+      "en": "Acceptance rate",
+      "ar": "نسبة القبول",
+      "fr": "Taux d'acceptation"
+    },
+    "Accepted, not done": {
+      "en": "Accepted, not done",
+      "ar": "قيمة مقبولة غير منفذة",
+      "fr": "Accepté, non réalisé"
+    },
+    "Add a phase": {
+      "en": "Add a phase",
+      "ar": "إضافة مرحلة",
+      "fr": "Ajouter une phase"
+    },
+    "Add a procedure to this tooth": {
+      "en": "Add a procedure to this tooth",
+      "ar": "إضافة إجراء لهذا السن",
+      "fr": "Ajouter un acte sur cette dent"
+    },
+    "Add {0} to the plan?": {
+      "en": "Add {0} to the plan?",
+      "ar": "إضافة {0} إلى الخطة؟",
+      "fr": "Ajouter {0} au plan ?"
+    },
+    "Allergy:": {
+      "en": "Allergy:",
+      "ar": "حساسية:",
+      "fr": "Allergie :"
+    },
+    "An exam cannot be dated in the future": {
+      "en": "An exam cannot be dated in the future",
+      "ar": "لا يمكن تأريخ الفحص في المستقبل",
+      "fr": "Un examen ne peut pas être daté dans le futur"
+    },
+    "An implant replaces a permanent tooth": {
+      "en": "An implant replaces a permanent tooth",
+      "ar": "الزرعة تعوض سناً دائمة",
+      "fr": "Un implant remplace une dent permanente"
+    },
+    "Anatomical odontogram — FDI numbering (ISO 3950)": {
+      "en": "Anatomical odontogram — FDI numbering (ISO 3950)",
+      "ar": "مخطط الأسنان التشريحي — ترقيم FDI (ISO 3950)",
+      "fr": "Odontogramme anatomique — numérotation FDI (ISO 3950)"
+    },
+    "Awaiting the patient": {
+      "en": "Awaiting the patient",
+      "ar": "بانتظار قرار المريض",
+      "fr": "En attente du patient"
+    },
+    "Bleeding": {
+      "en": "Bleeding",
+      "ar": "نزيف",
+      "fr": "Saignement"
+    },
+    "Bleeding on probing": {
+      "en": "Bleeding on probing",
+      "ar": "نسبة النزيف عند السبر",
+      "fr": "Saignement au sondage"
+    },
+    "Buccal": {
+      "en": "Buccal",
+      "ar": "خدي",
+      "fr": "Vestibulaire"
+    },
+    "Buccal / labial": {
+      "en": "Buccal / labial",
+      "ar": "خدي / شفوي",
+      "fr": "Vestibulaire / labiale"
+    },
+    "By": {
+      "en": "By",
+      "ar": "ينفذه",
+      "fr": "Par"
+    },
+    "CAL": {
+      "en": "CAL",
+      "ar": "فقد الارتباط",
+      "fr": "Perte d'attache"
+    },
+    "Canine": {
+      "en": "Canine",
+      "ar": "ناب",
+      "fr": "Canine"
+    },
+    "Chair time (minutes)": {
+      "en": "Chair time (minutes)",
+      "ar": "مدة الكرسي (دقيقة)",
+      "fr": "Temps au fauteuil (minutes)"
+    },
+    "Chart at least one tooth": {
+      "en": "Chart at least one tooth",
+      "ar": "سجّل سناً واحدة على الأقل",
+      "fr": "Notez au moins une dent"
+    },
+    "Child — guardian attends": {
+      "en": "Child — guardian attends",
+      "ar": "طفل — يحضر ولي الأمر",
+      "fr": "Enfant — accompagné d'un tuteur"
+    },
+    "Choose the dental category": {
+      "en": "Choose the dental category",
+      "ar": "اختر تصنيف الأسنان",
+      "fr": "Choisissez la catégorie dentaire"
+    },
+    "Choose the dentition": {
+      "en": "Choose the dentition",
+      "ar": "اختر نوع الأسنان",
+      "fr": "Choisissez la denture"
+    },
+    "Choose the surfaces on the tooth": {
+      "en": "Choose the surfaces on the tooth",
+      "ar": "اختر الأسطح على السن",
+      "fr": "Choisissez les faces de la dent"
+    },
+    "Choose the surfaces or the work on the tooth": {
+      "en": "Choose the surfaces or the work on the tooth",
+      "ar": "اختر الأسطح أو العمل على السن",
+      "fr": "Choisissez les faces ou le travail sur la dent"
+    },
+    "Choose the tooth": {
+      "en": "Choose the tooth",
+      "ar": "اختر السن",
+      "fr": "Choisissez la dent"
+    },
+    "Choose the work it does on the tooth": {
+      "en": "Choose the work it does on the tooth",
+      "ar": "اختر العمل الذي يجريه على السن",
+      "fr": "Choisissez le travail qu'il fait sur la dent"
+    },
+    "Click a tooth to see its state, surfaces and what is planned": {
+      "en": "Click a tooth to see its state, surfaces and what is planned",
+      "ar": "اضغط على سن لعرض حالته وأسطحه وما خُطط له",
+      "fr": "Cliquez sur une dent pour voir son état, ses faces et ce qui est prévu"
+    },
+    "Completed here": {
+      "en": "Completed here",
+      "ar": "نُفذ عندنا",
+      "fr": "Réalisé ici"
+    },
+    "Condition": {
+      "en": "Condition",
+      "ar": "مشكلة قائمة",
+      "fr": "Lésion"
+    },
+    "Cover": {
+      "en": "Cover",
+      "ar": "التغطية",
+      "fr": "Couverture"
+    },
+    "Decline": {
+      "en": "Decline",
+      "ar": "رفض",
+      "fr": "Refuser"
+    },
+    "Declined": {
+      "en": "Declined",
+      "ar": "رفضها المريض",
+      "fr": "Refusée"
+    },
+    "Dental": {
+      "en": "Dental",
+      "ar": "الأسنان",
+      "fr": "Dentaire"
+    },
+    "Dental & perio chart": {
+      "en": "Dental & perio chart",
+      "ar": "مخطط الأسنان واللثة",
+      "fr": "Schéma dentaire et parodontal"
+    },
+    "Dental benefit": {
+      "en": "Dental benefit",
+      "ar": "تغطية الأسنان",
+      "fr": "Garantie dentaire"
+    },
+    "Dental billing rules": {
+      "en": "Dental billing rules",
+      "ar": "قواعد الفوترة على الأسنان",
+      "fr": "Règles de facturation dentaire"
+    },
+    "Dental category": {
+      "en": "Dental category",
+      "ar": "تصنيف الأسنان",
+      "fr": "Catégorie dentaire"
+    },
+    "Dental limit": {
+      "en": "Dental limit",
+      "ar": "حد الأسنان",
+      "fr": "Plafond dentaire"
+    },
+    "Dental procedure": {
+      "en": "Dental procedure",
+      "ar": "إجراء أسنان",
+      "fr": "Acte dentaire"
+    },
+    "Dentist": {
+      "en": "Dentist",
+      "ar": "الطبيب",
+      "fr": "Dentiste"
+    },
+    "Dentistry": {
+      "en": "Dentistry",
+      "ar": "الأسنان",
+      "fr": "Dentisterie"
+    },
+    "Distal": {
+      "en": "Distal",
+      "ar": "وحشي",
+      "fr": "Distale"
+    },
+    "Done": {
+      "en": "Done",
+      "ar": "نُفذ",
+      "fr": "Réalisé"
+    },
+    "Done by": {
+      "en": "Done by",
+      "ar": "ينفذه",
+      "fr": "Réalisé par"
+    },
+    "Done on": {
+      "en": "Done on",
+      "ar": "يُجرى على",
+      "fr": "Porte sur"
+    },
+    "Draw the chart in this dentition from now on?": {
+      "en": "Draw the chart in this dentition from now on?",
+      "ar": "رسم مخطط هذا المريض بهذا النوع من الأسنان من الآن؟",
+      "fr": "Dessiner désormais le schéma dans cette denture ?"
+    },
+    "Enter who signed for the patient": {
+      "en": "Enter who signed for the patient",
+      "ar": "اكتب اسم من وقّع عن المريض",
+      "fr": "Indiquez qui a signé pour le patient"
+    },
+    "Estimated patient share": {
+      "en": "Estimated patient share",
+      "ar": "تقدير حصة المريض",
+      "fr": "Part patient estimée"
+    },
+    "Estimated payer share": {
+      "en": "Estimated payer share",
+      "ar": "تقدير حصة الجهة الدافعة",
+      "fr": "Part payeur estimée"
+    },
+    "Examiner": {
+      "en": "Examiner",
+      "ar": "الفاحص",
+      "fr": "Examinateur"
+    },
+    "Existing (elsewhere)": {
+      "en": "Existing (elsewhere)",
+      "ar": "موجود من قبل",
+      "fr": "Existant (ailleurs)"
+    },
+    "Extraction planned": {
+      "en": "Extraction planned",
+      "ar": "خلع مخطط",
+      "fr": "Extraction prévue"
+    },
+    "Fee": {
+      "en": "Fee",
+      "ar": "السعر",
+      "fr": "Honoraires"
+    },
+    "Filling": {
+      "en": "Filling",
+      "ar": "حشوة",
+      "fr": "Obturation"
+    },
+    "First phase (Arabic)": {
+      "en": "First phase (Arabic)",
+      "ar": "المرحلة الأولى (عربي)",
+      "fr": "Première phase (arabe)"
+    },
+    "First phase (English)": {
+      "en": "First phase (English)",
+      "ar": "المرحلة الأولى (إنجليزي)",
+      "fr": "Première phase (anglais)"
+    },
+    "Furcation": {
+      "en": "Furcation",
+      "ar": "انكشاف الشعب",
+      "fr": "Furcation"
+    },
+    "Has work": {
+      "en": "Has work",
+      "ar": "عليه عمل",
+      "fr": "Traitée"
+    },
+    "How the tooth chart and the treatment plan treat this service": {
+      "en": "How the tooth chart and the treatment plan treat this service",
+      "ar": "كيف يتعامل مخطط الأسنان وخطة العلاج مع هذه الخدمة",
+      "fr": "Comment le schéma dentaire et le plan de traitement traitent ce service"
+    },
+    "Images are ordered, taken and reported in Radiology.": {
+      "en": "Images are ordered, taken and reported in Radiology.",
+      "ar": "الأشعة تُطلب وتُصوّر وتُقرأ في قسم الأشعة.",
+      "fr": "Les clichés sont demandés, réalisés et interprétés en radiologie."
+    },
+    "Impacted": {
+      "en": "Impacted",
+      "ar": "مطمور",
+      "fr": "Incluse"
+    },
+    "Implant": {
+      "en": "Implant",
+      "ar": "زرعة",
+      "fr": "Implant"
+    },
+    "In the treatment plan": {
+      "en": "In the treatment plan",
+      "ar": "في خطة العلاج",
+      "fr": "Dans le plan de traitement"
+    },
+    "Incisal": {
+      "en": "Incisal",
+      "ar": "قاطع",
+      "fr": "Incisive (bord)"
+    },
+    "Incisor": {
+      "en": "Incisor",
+      "ar": "قاطع",
+      "fr": "Incisive"
+    },
+    "Lab": {
+      "en": "Lab",
+      "ar": "معمل",
+      "fr": "Laboratoire"
+    },
+    "Lab work": {
+      "en": "Lab work",
+      "ar": "عمل معمل",
+      "fr": "Travail de laboratoire"
+    },
+    "Last perio exam": {
+      "en": "Last perio exam",
+      "ar": "آخر فحص لثة",
+      "fr": "Dernier examen parodontal"
+    },
+    "Leave a tooth's depths empty to skip it. Opens with the last exam's values.": {
+      "en": "Leave a tooth's depths empty to skip it. Opens with the last exam's values.",
+      "ar": "اترك أعماق السن فارغة لتجاوزه. يفتح بقيم آخر فحص.",
+      "fr": "Laissez les profondeurs d'une dent vides pour l'ignorer. S'ouvre avec les valeurs du dernier examen."
+    },
+    "Lingual": {
+      "en": "Lingual",
+      "ar": "لساني",
+      "fr": "Linguale"
+    },
+    "Lingual / palatal": {
+      "en": "Lingual / palatal",
+      "ar": "لساني / حنكي",
+      "fr": "Linguale / palatine"
+    },
+    "Lower arch": {
+      "en": "Lower arch",
+      "ar": "الفك السفلي",
+      "fr": "Arcade inférieure"
+    },
+    "Make it a dental procedure": {
+      "en": "Make it a dental procedure",
+      "ar": "اجعلها إجراء أسنان",
+      "fr": "En faire un acte dentaire"
+    },
+    "Mesial": {
+      "en": "Mesial",
+      "ar": "أنسي",
+      "fr": "Mésiale"
+    },
+    "Missing": {
+      "en": "Missing",
+      "ar": "مفقود",
+      "fr": "Absente"
+    },
+    "Mixed": {
+      "en": "Mixed",
+      "ar": "مختلطة",
+      "fr": "Mixte"
+    },
+    "Mobile teeth": {
+      "en": "Mobile teeth",
+      "ar": "أسنان متحركة",
+      "fr": "Dents mobiles"
+    },
+    "Mobility (0–3)": {
+      "en": "Mobility (0–3)",
+      "ar": "الحركة (0–3)",
+      "fr": "Mobilité (0–3)"
+    },
+    "Molar": {
+      "en": "Molar",
+      "ar": "ضرس",
+      "fr": "Molaire"
+    },
+    "Name the first phase in both languages": {
+      "en": "Name the first phase in both languages",
+      "ar": "اكتب اسم المرحلة الأولى باللغتين",
+      "fr": "Nommez la première phase dans les deux langues"
+    },
+    "Name the phase in both languages": {
+      "en": "Name the phase in both languages",
+      "ar": "اكتب اسم المرحلة باللغتين",
+      "fr": "Nommez la phase dans les deux langues"
+    },
+    "Needs pre-authorisation": {
+      "en": "Needs pre-authorisation",
+      "ar": "يحتاج موافقة مسبقة",
+      "fr": "Nécessite un accord préalable"
+    },
+    "Never covered": {
+      "en": "Never covered",
+      "ar": "غير مغطى أبداً",
+      "fr": "Jamais couvert"
+    },
+    "New treatment plan": {
+      "en": "New treatment plan",
+      "ar": "خطة علاج جديدة",
+      "fr": "Nouveau plan de traitement"
+    },
+    "No imaging for this patient yet.": {
+      "en": "No imaging for this patient yet.",
+      "ar": "لا توجد أشعة لهذا المريض بعد.",
+      "fr": "Aucune imagerie pour ce patient pour l'instant."
+    },
+    "No periodontal exam for this arch": {
+      "en": "No periodontal exam for this arch",
+      "ar": "لا يوجد فحص لثة لهذا الفك",
+      "fr": "Aucun examen parodontal pour cette arcade"
+    },
+    "No treatment plans yet: a plan is opened from the patient's chart.": {
+      "en": "No treatment plans yet: a plan is opened from the patient's chart.",
+      "ar": "لا توجد خطط علاج بعد: الخطة تُفتح من مخطط المريض.",
+      "fr": "Aucun plan pour l'instant : un plan s'ouvre depuis le schéma du patient."
+    },
+    "No work in this phase yet: add it from the patient's chart.": {
+      "en": "No work in this phase yet: add it from the patient's chart.",
+      "ar": "لا عمل في هذه المرحلة بعد: أضفه من مخطط المريض.",
+      "fr": "Aucun acte dans cette phase : ajoutez-le depuis le schéma du patient."
+    },
+    "Not dental": {
+      "en": "Not dental",
+      "ar": "ليست أسنان",
+      "fr": "Non dentaire"
+    },
+    "Nothing planned": {
+      "en": "Nothing planned",
+      "ar": "لا شيء مخطط",
+      "fr": "Rien de prévu"
+    },
+    "Nothing recorded yet.": {
+      "en": "Nothing recorded yet.",
+      "ar": "لم يُسجل شيء بعد.",
+      "fr": "Rien d'enregistré pour l'instant."
+    },
+    "Occlusal": {
+      "en": "Occlusal",
+      "ar": "إطباقي",
+      "fr": "Occlusale"
+    },
+    "Odontogram": {
+      "en": "Odontogram",
+      "ar": "مخطط الأسنان",
+      "fr": "Odontogramme"
+    },
+    "Only work the patient accepted is done": {
+      "en": "Only work the patient accepted is done",
+      "ar": "لا يُنفذ إلا العمل الذي قبله المريض",
+      "fr": "Seul le travail accepté par le patient est réalisé"
+    },
+    "Open a patient's chart": {
+      "en": "Open a patient's chart",
+      "ar": "افتح مخطط مريض",
+      "fr": "Ouvrir le schéma d'un patient"
+    },
+    "Open a treatment plan for this patient?": {
+      "en": "Open a treatment plan for this patient?",
+      "ar": "فتح خطة علاج لهذا المريض؟",
+      "fr": "Ouvrir un plan de traitement pour ce patient ?"
+    },
+    "Open the plan": {
+      "en": "Open the plan",
+      "ar": "فتح الخطة",
+      "fr": "Ouvrir le plan"
+    },
+    "PD": {
+      "en": "PD",
+      "ar": "عمق الجيب",
+      "fr": "Profondeur de poche"
+    },
+    "Palatal": {
+      "en": "Palatal",
+      "ar": "حنكي",
+      "fr": "Palatine"
+    },
+    "Patient chart": {
+      "en": "Patient chart",
+      "ar": "مخطط مريض",
+      "fr": "Schéma du patient"
+    },
+    "Patient share": {
+      "en": "Patient share",
+      "ar": "حصة المريض",
+      "fr": "Part patient"
+    },
+    "Patient's left": {
+      "en": "Patient's left",
+      "ar": "يسار المريض",
+      "fr": "Gauche du patient"
+    },
+    "Patient's right": {
+      "en": "Patient's right",
+      "ar": "يمين المريض",
+      "fr": "Droite du patient"
+    },
+    "Periodontal chart": {
+      "en": "Periodontal chart",
+      "ar": "مخطط اللثة",
+      "fr": "Charting parodontal"
+    },
+    "Periodontal chart — lower arch": {
+      "en": "Periodontal chart — lower arch",
+      "ar": "مخطط اللثة — الفك السفلي",
+      "fr": "Charting parodontal — arcade inférieure"
+    },
+    "Periodontal chart — upper arch": {
+      "en": "Periodontal chart — upper arch",
+      "ar": "مخطط اللثة — الفك العلوي",
+      "fr": "Charting parodontal — arcade supérieure"
+    },
+    "Permanent (11–48)": {
+      "en": "Permanent (11–48)",
+      "ar": "دائمة (11–48)",
+      "fr": "Permanente (11–48)"
+    },
+    "Phase": {
+      "en": "Phase",
+      "ar": "المرحلة",
+      "fr": "Phase"
+    },
+    "Phases": {
+      "en": "Phases",
+      "ar": "المراحل",
+      "fr": "Phases"
+    },
+    "Plan": {
+      "en": "Plan",
+      "ar": "الخطة",
+      "fr": "Plan"
+    },
+    "Plan phase": {
+      "en": "Plan phase",
+      "ar": "مرحلة الخطة",
+      "fr": "Phase du plan"
+    },
+    "Plan total": {
+      "en": "Plan total",
+      "ar": "إجمالي الخطة",
+      "fr": "Total du plan"
+    },
+    "Planned work is added to a treatment plan": {
+      "en": "Planned work is added to a treatment plan",
+      "ar": "العمل المخطط يُضاف إلى خطة علاج",
+      "fr": "Le travail prévu s'ajoute à un plan de traitement"
+    },
+    "Plans presented": {
+      "en": "Plans presented",
+      "ar": "خطط معروضة",
+      "fr": "Plans présentés"
+    },
+    "Pockets 5 mm or more": {
+      "en": "Pockets 5 mm or more",
+      "ar": "جيوب 5 مم فأكثر",
+      "fr": "Poches de 5 mm ou plus"
+    },
+    "Pre-auth": {
+      "en": "Pre-auth",
+      "ar": "موافقة مسبقة",
+      "fr": "Accord préalable"
+    },
+    "Premolar": {
+      "en": "Premolar",
+      "ar": "ضاحك",
+      "fr": "Prémolaire"
+    },
+    "Presented": {
+      "en": "Presented",
+      "ar": "معروضة على المريض",
+      "fr": "Présenté"
+    },
+    "Primary (51–85)": {
+      "en": "Primary (51–85)",
+      "ar": "لبنية (51–85)",
+      "fr": "Temporaire (51–85)"
+    },
+    "Print quotation & consent": {
+      "en": "Print quotation & consent",
+      "ar": "طباعة العرض والموافقة",
+      "fr": "Imprimer le devis et le consentement"
+    },
+    "Procedure": {
+      "en": "Procedure",
+      "ar": "الإجراء",
+      "fr": "Acte"
+    },
+    "Procedure on a tooth": {
+      "en": "Procedure on a tooth",
+      "ar": "إجراء على سن",
+      "fr": "Acte sur une dent"
+    },
+    "Quotation": {
+      "en": "Quotation",
+      "ar": "عرض السعر",
+      "fr": "Devis"
+    },
+    "Recession": {
+      "en": "Recession",
+      "ar": "انحسار",
+      "fr": "Récession"
+    },
+    "Record a perio exam": {
+      "en": "Record a perio exam",
+      "ar": "تسجيل فحص لثة",
+      "fr": "Saisir un examen parodontal"
+    },
+    "Record this on tooth {0}?": {
+      "en": "Record this on tooth {0}?",
+      "ar": "تسجيل هذا على السن {0}؟",
+      "fr": "Enregistrer ceci sur la dent {0} ?"
+    },
+    "Repeated within two years": {
+      "en": "Repeated within two years",
+      "ar": "تكرار خلال سنتين",
+      "fr": "Répété dans les deux ans"
+    },
+    "Root canal (in the root)": {
+      "en": "Root canal (in the root)",
+      "ar": "علاج عصب (داخل الجذر)",
+      "fr": "Traitement canalaire (dans la racine)"
+    },
+    "Root canal, crown and surgical extraction need pre-authorisation with the X-ray.": {
+      "en": "Root canal, crown and surgical extraction need pre-authorisation with the X-ray.",
+      "ar": "العصب والتاج والخلع الجراحي تحتاج موافقة مسبقة بالأشعة.",
+      "fr": "Traitement canalaire, couronne et extraction chirurgicale nécessitent un accord préalable avec la radio."
+    },
+    "Save the exam": {
+      "en": "Save the exam",
+      "ar": "حفظ الفحص",
+      "fr": "Enregistrer l'examen"
+    },
+    "Save the perio exam of {0} teeth?": {
+      "en": "Save the perio exam of {0} teeth?",
+      "ar": "حفظ فحص اللثة لعدد {0} سن؟",
+      "fr": "Enregistrer l'examen parodontal de {0} dents ?"
+    },
+    "Search": {
+      "en": "Search",
+      "ar": "بحث",
+      "fr": "Rechercher"
+    },
+    "Search by name, file number or phone": {
+      "en": "Search by name, file number or phone",
+      "ar": "ابحث بالاسم أو رقم الملف أو الهاتف",
+      "fr": "Rechercher par nom, numéro de dossier ou téléphone"
+    },
+    "Selected tooth": {
+      "en": "Selected tooth",
+      "ar": "السن المحدد",
+      "fr": "Dent sélectionnée"
+    },
+    "Self-pay: the patient pays the whole plan.": {
+      "en": "Self-pay: the patient pays the whole plan.",
+      "ar": "على حساب المريض: يدفع الخطة كاملة.",
+      "fr": "Sans prise en charge : le patient paie tout le plan."
+    },
+    "Several restorations on one tooth bill as one multi-surface code, never one line per surface.": {
+      "en": "Several restorations on one tooth bill as one multi-surface code, never one line per surface.",
+      "ar": "الحشوات المتعددة على نفس السن تُفوتر بكود متعدد الأسطح، لا سطراً لكل سطح.",
+      "fr": "Plusieurs restaurations sur une dent se facturent en un code multi-faces, jamais une ligne par face."
+    },
+    "Six sites per tooth; attachment loss = pocket depth + recession, calculated": {
+      "en": "Six sites per tooth; attachment loss = pocket depth + recession, calculated",
+      "ar": "6 مواقع لكل سن؛ فقد الارتباط = عمق الجيب + الانحسار، يحسب تلقائياً",
+      "fr": "Six sites par dent ; perte d'attache = profondeur + récession, calculée"
+    },
+    "Sound": {
+      "en": "Sound",
+      "ar": "سليم",
+      "fr": "Saine"
+    },
+    "State of the tooth": {
+      "en": "State of the tooth",
+      "ar": "حالة السن",
+      "fr": "État de la dent"
+    },
+    "Surfaces": {
+      "en": "Surfaces",
+      "ar": "الأسطح",
+      "fr": "Faces"
+    },
+    "Surfaces it bills": {
+      "en": "Surfaces it bills",
+      "ar": "الأسطح التي يفوترها",
+      "fr": "Faces facturées"
+    },
+    "Take out of the plan": {
+      "en": "Take out of the plan",
+      "ar": "إخراج من الخطة",
+      "fr": "Retirer du plan"
+    },
+    "Take this mark off the chart? It stays in the record as made in error.": {
+      "en": "Take this mark off the chart? It stays in the record as made in error.",
+      "ar": "إزالة هذه العلامة من المخطط؟ تبقى في السجل كخطأ في الإدخال.",
+      "fr": "Retirer cette marque du schéma ? Elle reste au dossier comme saisie par erreur."
+    },
+    "The chair time is 5 to 480 minutes": {
+      "en": "The chair time is 5 to 480 minutes",
+      "ar": "مدة الكرسي من 5 إلى 480 دقيقة",
+      "fr": "Le temps au fauteuil va de 5 à 480 minutes"
+    },
+    "The new phase's name in Arabic": {
+      "en": "The new phase's name in Arabic",
+      "ar": "اسم المرحلة الجديدة بالعربي",
+      "fr": "Nom de la nouvelle phase en arabe"
+    },
+    "The new phase's name in English": {
+      "en": "The new phase's name in English",
+      "ar": "اسم المرحلة الجديدة بالإنجليزي",
+      "fr": "Nom de la nouvelle phase en anglais"
+    },
+    "The patient has already decided this phase": {
+      "en": "The patient has already decided this phase",
+      "ar": "قرر المريض هذه المرحلة بالفعل",
+      "fr": "Le patient a déjà statué sur cette phase"
+    },
+    "The patient has decided this phase; add the work to a new phase": {
+      "en": "The patient has decided this phase; add the work to a new phase",
+      "ar": "قرر المريض هذه المرحلة؛ أضف العمل إلى مرحلة جديدة",
+      "fr": "Le patient a statué sur cette phase ; ajoutez l'acte à une nouvelle phase"
+    },
+    "The patient has decided this phase; its work is no longer taken out": {
+      "en": "The patient has decided this phase; its work is no longer taken out",
+      "ar": "قرر المريض هذه المرحلة؛ لم يعد عملها يُخرج من الخطة",
+      "fr": "Le patient a statué sur cette phase ; ses actes ne sont plus retirés"
+    },
+    "The patient's price list is now in another currency; open a new plan": {
+      "en": "The patient's price list is now in another currency; open a new plan",
+      "ar": "قائمة أسعار المريض أصبحت بعملة أخرى؛ افتح خطة جديدة",
+      "fr": "La liste de prix du patient est maintenant dans une autre devise ; ouvrez un nouveau plan"
+    },
+    "The payer share is capped at the yearly dental limit": {
+      "en": "The payer share is capped at the yearly dental limit",
+      "ar": "حصة الجهة محدودة بحد الأسنان السنوي",
+      "fr": "La part du payeur est plafonnée au plafond dentaire annuel"
+    },
+    "The plan's dentist": {
+      "en": "The plan's dentist",
+      "ar": "طبيب الخطة",
+      "fr": "Le dentiste du plan"
+    },
+    "The quotation prints through Report Studio once its dataset is registered.": {
+      "en": "The quotation prints through Report Studio once its dataset is registered.",
+      "ar": "يُطبع العرض من Report Studio بعد تسجيل مصدر بياناته.",
+      "fr": "Le devis s'imprime via Report Studio une fois son jeu de données enregistré."
+    },
+    "The record keeps complaint, diagnosis, plan and procedure with its date — a condition of payment.": {
+      "en": "The record keeps complaint, diagnosis, plan and procedure with its date — a condition of payment.",
+      "ar": "السجل يحفظ الشكوى والتشخيص والخطة والإجراء بتاريخه — شرط للصرف.",
+      "fr": "Le dossier garde plainte, diagnostic, plan et acte datés — une condition de paiement."
+    },
+    "The yearly dental limit cannot be negative": {
+      "en": "The yearly dental limit cannot be negative",
+      "ar": "حد الأسنان السنوي لا يكون سالباً",
+      "fr": "Le plafond dentaire annuel ne peut pas être négatif"
+    },
+    "This code bills {0} surfaces; choose the code for the surfaces chosen": {
+      "en": "This code bills {0} surfaces; choose the code for the surfaces chosen",
+      "ar": "هذا الكود يفوتر {0} أسطح؛ اختر الكود المناسب لعدد الأسطح المختارة",
+      "fr": "Ce code facture {0} faces ; choisissez le code correspondant aux faces choisies"
+    },
+    "This mark belongs to a treatment plan; change it on the plan": {
+      "en": "This mark belongs to a treatment plan; change it on the plan",
+      "ar": "هذه العلامة تتبع خطة علاج؛ عدّلها من الخطة",
+      "fr": "Cette marque appartient à un plan ; modifiez-la sur le plan"
+    },
+    "This payer has no dental benefit set: the cover is shown as none.": {
+      "en": "This payer has no dental benefit set: the cover is shown as none.",
+      "ar": "لا توجد تغطية أسنان معرفة لهذه الجهة: تظهر التغطية صفراً.",
+      "fr": "Ce payeur n'a pas de garantie dentaire : la couverture apparaît nulle."
+    },
+    "This phase has no work to accept": {
+      "en": "This phase has no work to accept",
+      "ar": "لا يوجد عمل في هذه المرحلة لقبوله",
+      "fr": "Cette phase n'a aucun acte à accepter"
+    },
+    "This procedure is not done on one tooth": {
+      "en": "This procedure is not done on one tooth",
+      "ar": "هذا الإجراء لا يُجرى على سن واحدة",
+      "fr": "Cet acte ne porte pas sur une dent"
+    },
+    "This procedure is not done on surfaces": {
+      "en": "This procedure is not done on surfaces",
+      "ar": "هذا الإجراء لا يُجرى على الأسطح",
+      "fr": "Cet acte ne porte pas sur des faces"
+    },
+    "This tooth already has a filling in the plan; use one code for all its surfaces": {
+      "en": "This tooth already has a filling in the plan; use one code for all its surfaces",
+      "ar": "على هذا السن حشوة في الخطة بالفعل؛ استخدم كوداً واحداً لكل أسطحه",
+      "fr": "Cette dent a déjà une obturation dans le plan ; utilisez un seul code pour toutes ses faces"
+    },
+    "Tilted tooth = impacted": {
+      "en": "Tilted tooth = impacted",
+      "ar": "السن المائل = مطمور",
+      "fr": "Dent inclinée = incluse"
+    },
+    "Tooth": {
+      "en": "Tooth",
+      "ar": "السن",
+      "fr": "Dent"
+    },
+    "Tooth {0}: enter six pocket depths of 0 to 15 mm": {
+      "en": "Tooth {0}: enter six pocket depths of 0 to 15 mm",
+      "ar": "السن {0}: أدخل 6 أعماق جيوب من 0 إلى 15 مم",
+      "fr": "Dent {0} : saisissez six profondeurs de 0 à 15 mm"
+    },
+    "Tooth {0}: enter six recession values of -5 to 15 mm": {
+      "en": "Tooth {0}: enter six recession values of -5 to 15 mm",
+      "ar": "السن {0}: أدخل 6 قيم انحسار من -5 إلى 15 مم",
+      "fr": "Dent {0} : saisissez six récessions de -5 à 15 mm"
+    },
+    "Tooth {0}: furcation is graded I to III on a multi-rooted tooth": {
+      "en": "Tooth {0}: furcation is graded I to III on a multi-rooted tooth",
+      "ar": "السن {0}: انكشاف الشعب يُدرّج من I إلى III على سن متعددة الجذور",
+      "fr": "Dent {0} : la furcation se note de I à III sur une dent pluriradiculée"
+    },
+    "Tooth {0}: mark bleeding on the six sites": {
+      "en": "Tooth {0}: mark bleeding on the six sites",
+      "ar": "السن {0}: حدد النزيف على المواقع الستة",
+      "fr": "Dent {0} : notez le saignement sur les six sites"
+    },
+    "Tooth {0}: mobility is graded 0 to 3": {
+      "en": "Tooth {0}: mobility is graded 0 to 3",
+      "ar": "السن {0}: الحركة تُدرّج من 0 إلى 3",
+      "fr": "Dent {0} : la mobilité se note de 0 à 3"
+    },
+    "Tooth {0}: perio is charted on the permanent teeth": {
+      "en": "Tooth {0}: perio is charted on the permanent teeth",
+      "ar": "السن {0}: فحص اللثة يُسجل على الأسنان الدائمة",
+      "fr": "Dent {0} : le charting parodontal porte sur les dents permanentes"
+    },
+    "Treatment history": {
+      "en": "Treatment history",
+      "ar": "سجل العلاج",
+      "fr": "Historique des soins"
+    },
+    "Treatment plan": {
+      "en": "Treatment plan",
+      "ar": "خطة العلاج",
+      "fr": "Plan de traitement"
+    },
+    "Treatment planned": {
+      "en": "Treatment planned",
+      "ar": "مخطط علاجه",
+      "fr": "Traitement prévu"
+    },
+    "Treatment plans": {
+      "en": "Treatment plans",
+      "ar": "خطط العلاج",
+      "fr": "Plans de traitement"
+    },
+    "Treatment plans use this procedure; it cannot stop being a dental procedure": {
+      "en": "Treatment plans use this procedure; it cannot stop being a dental procedure",
+      "ar": "خطط العلاج تستخدم هذا الإجراء؛ لا يمكن إلغاء كونه إجراء أسنان",
+      "fr": "Des plans utilisent cet acte ; il ne peut plus cesser d'être dentaire"
+    },
+    "Upper arch": {
+      "en": "Upper arch",
+      "ar": "الفك العلوي",
+      "fr": "Arcade supérieure"
+    },
+    "Who signs for the patient to accept \"{0}\"?": {
+      "en": "Who signs for the patient to accept \"{0}\"?",
+      "ar": "من يوقّع عن المريض لقبول «{0}»؟",
+      "fr": "Qui signe pour le patient pour accepter « {0} » ?"
+    },
+    "Who signs for the patient to decline \"{0}\"?": {
+      "en": "Who signs for the patient to decline \"{0}\"?",
+      "ar": "من يوقّع عن المريض لرفض «{0}»؟",
+      "fr": "Qui signe pour le patient pour refuser « {0} » ?"
+    },
+    "Take \"{0}\" out of the plan?": {
+      "en": "Take \"{0}\" out of the plan?",
+      "ar": "إخراج «{0}» من الخطة؟",
+      "fr": "Retirer « {0} » du plan ?"
+    },
+    "Mark \"{0}\" done?": {
+      "en": "Mark \"{0}\" done?",
+      "ar": "تسجيل «{0}» كمنفذ؟",
+      "fr": "Marquer « {0} » comme réalisé ?"
+    },
+    "Whole tooth": {
+      "en": "Whole tooth",
+      "ar": "على السن كله",
+      "fr": "Dent entière"
+    },
+    "Work on the tooth": {
+      "en": "Work on the tooth",
+      "ar": "العمل على السن",
+      "fr": "Travail sur la dent"
+    },
+    "X-rays & photos": {
+      "en": "X-rays & photos",
+      "ar": "الأشعة والصور",
+      "fr": "Radios et photos"
+    },
+    "Yearly dental limit": {
+      "en": "Yearly dental limit",
+      "ar": "حد الأسنان السنوي",
+      "fr": "Plafond dentaire annuel"
+    },
+    "accepted work not yet done": {
+      "en": "accepted work not yet done",
+      "ar": "عمل مقبول لم يُنفذ بعد",
+      "fr": "actes acceptés non encore réalisés"
+    },
+    "another clinic": {
+      "en": "another clinic",
+      "ar": "عيادة أخرى",
+      "fr": "un autre cabinet"
+    },
+    "by value": {
+      "en": "by value",
+      "ar": "بالقيمة",
+      "fr": "en valeur"
+    },
+    "click them on the top view": {
+      "en": "click them on the top view",
+      "ar": "اضغط عليها في المنظر العلوي",
+      "fr": "cliquez-les sur la vue occlusale"
+    },
+    "dcat:Cosmetic": {
+      "en": "Cosmetic",
+      "ar": "تجميلي",
+      "fr": "Esthétique"
+    },
+    "dcat:Diagnostic": {
+      "en": "Diagnostic",
+      "ar": "تشخيص",
+      "fr": "Diagnostic"
+    },
+    "dcat:Endodontic": {
+      "en": "Endodontic",
+      "ar": "علاج عصب",
+      "fr": "Endodontie"
+    },
+    "dcat:Implant": {
+      "en": "Implants",
+      "ar": "زراعة",
+      "fr": "Implantologie"
+    },
+    "dcat:Preventive": {
+      "en": "Preventive",
+      "ar": "وقائي",
+      "fr": "Prévention"
+    },
+    "dcat:Prosthetic": {
+      "en": "Prosthetic",
+      "ar": "تركيبات",
+      "fr": "Prothèse"
+    },
+    "dcat:Restorative": {
+      "en": "Restorative",
+      "ar": "ترميمي",
+      "fr": "Restauration"
+    },
+    "dcat:Surgery": {
+      "en": "Oral surgery",
+      "ar": "جراحة فم",
+      "fr": "Chirurgie buccale"
+    },
+    "dscope:mouth": {
+      "en": "The whole mouth (no tooth)",
+      "ar": "الفم كله (بلا سن)",
+      "fr": "Toute la bouche (sans dent)"
+    },
+    "dscope:none": {
+      "en": "Not dental",
+      "ar": "ليست أسنان",
+      "fr": "Non dentaire"
+    },
+    "dscope:surfaces": {
+      "en": "Surfaces of a tooth",
+      "ar": "أسطح سن",
+      "fr": "Faces d'une dent"
+    },
+    "dscope:tooth": {
+      "en": "One tooth, nothing drawn",
+      "ar": "سن واحدة دون رسم",
+      "fr": "Une dent, sans tracé"
+    },
+    "dscope:work": {
+      "en": "The whole tooth",
+      "ar": "السن كله",
+      "fr": "La dent entière"
+    },
+    "grade 2 or more needs review": {
+      "en": "grade 2 or more needs review",
+      "ar": "الدرجة 2 فأكثر تحتاج تقييم",
+      "fr": "un grade 2 ou plus doit être revu"
+    },
+    "mk:cond": {
+      "en": "Condition",
+      "ar": "مشكلة",
+      "fr": "Lésion"
+    },
+    "mk:exist": {
+      "en": "Existing work",
+      "ar": "عمل سابق",
+      "fr": "Travail existant"
+    },
+    "mk:plan": {
+      "en": "Plan a procedure",
+      "ar": "تخطيط إجراء",
+      "fr": "Prévoir un acte"
+    },
+    "mk:state": {
+      "en": "Tooth state",
+      "ar": "حالة السن",
+      "fr": "État de la dent"
+    },
+    "need periodontal care": {
+      "en": "need periodontal care",
+      "ar": "تحتاج علاج لثة",
+      "fr": "nécessitent des soins parodontaux"
+    },
+    "per the payer contract": {
+      "en": "per the payer contract",
+      "ar": "حسب عقد الجهة الدافعة",
+      "fr": "selon le contrat du payeur"
+    },
+    "plan:Accepted": {
+      "en": "Accepted",
+      "ar": "مقبولة",
+      "fr": "Accepté"
+    },
+    "plan:Declined": {
+      "en": "Declined",
+      "ar": "مرفوضة",
+      "fr": "Refusé"
+    },
+    "plan:Partial": {
+      "en": "Partly accepted",
+      "ar": "مقبولة جزئياً",
+      "fr": "Accepté en partie"
+    },
+    "plan:Presented": {
+      "en": "Presented",
+      "ar": "معروضة على المريض",
+      "fr": "Présenté"
+    },
+    "roots": {
+      "en": "roots",
+      "ar": "جذور",
+      "fr": "racines"
+    },
+    "sites": {
+      "en": "sites",
+      "ar": "موقع",
+      "fr": "sites"
+    },
+    "the limit is reached": {
+      "en": "the limit is reached",
+      "ar": "تم بلوغ الحد",
+      "fr": "le plafond est atteint"
+    },
+    "this code bills {0} surfaces": {
+      "en": "this code bills {0} surfaces",
+      "ar": "هذا الكود يفوتر {0} أسطح",
+      "fr": "ce code facture {0} faces"
+    },
+    "this month": {
+      "en": "this month",
+      "ar": "هذا الشهر",
+      "fr": "ce mois-ci"
+    },
+    "used this year": {
+      "en": "used this year",
+      "ar": "المستخدم هذا العام",
+      "fr": "utilisé cette année"
+    },
+    "when not the plan's dentist": {
+      "en": "when not the plan's dentist",
+      "ar": "إن لم يكن طبيب الخطة",
+      "fr": "si ce n'est pas le dentiste du plan"
+    },
+    "work:Crown": {
+      "en": "Crown",
+      "ar": "تاج",
+      "fr": "Couronne"
+    },
+    "work:Extraction": {
+      "en": "Extraction",
+      "ar": "خلع",
+      "fr": "Extraction"
+    },
+    "work:Implant": {
+      "en": "Implant",
+      "ar": "زرعة",
+      "fr": "Implant"
+    },
+    "work:RootCanal": {
+      "en": "Root canal",
+      "ar": "علاج عصب",
+      "fr": "Traitement canalaire"
+    },
+    "— no tooth —": {
+      "en": "— no tooth —",
+      "ar": "— بلا سن —",
+      "fr": "— sans dent —"
+    },
+    "— on surfaces —": {
+      "en": "— on surfaces —",
+      "ar": "— على الأسطح —",
+      "fr": "— sur des faces —"
+    },
+    "Mark done": {
+      "en": "Mark done",
+      "ar": "تسجيل التنفيذ",
+      "fr": "Marquer réalisé"
+    },
+    "Searching…": {
+      "en": "Searching…",
+      "ar": "جارٍ البحث…",
+      "fr": "Recherche…"
+    },
+    "No patient matches": {
+      "en": "No patient matches",
+      "ar": "لا يوجد مريض مطابق",
+      "fr": "Aucun patient ne correspond"
+    }
+  }
+}

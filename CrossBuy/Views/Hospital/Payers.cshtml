@@ -16,6 +16,9 @@
     string Avatar(string? photo, string nameEn) => photo != null
         ? $"<div class=\"symbol symbol-30px symbol-circle flex-shrink-0\"><img src=\"{photo}\" alt=\"\" style=\"object-fit:cover\" data-initials=\"{HospitalUi.Initials(nameEn)}\" /></div>"
         : $"<div class=\"symbol symbol-30px symbol-circle flex-shrink-0\"><span class=\"symbol-label fw-bold fs-9 hp-initials\">{HospitalUi.Initials(nameEn)}</span></div>";
+    var dental = (ViewBag.DentalBenefits as Dictionary<int, HospitalDentalBenefit>) ?? new();
+    object DentalData(HospitalPayer p) { var b = dental.GetValueOrDefault(p.ID); return new { payerId = p.ID, who = DisplayName.Of(p.Name, p.NameEn), limit = b?.YearlyLimit ?? 0,
+        cover = HospitalDentalCategory.All.ToDictionary(c => c, c => HospitalDentalRules.CoverFor(b, c)) }; }
     object PayerData(HospitalPayer p) => new { id = p.ID, code = p.Code, name = p.Name, nameEn = p.NameEn, kind = p.Kind, classes = p.Classes, discountPct = p.DiscountPct, copayPct = p.CopayPct, copayCap = p.CopayCap,
         priceListId = p.PriceListId, preauthCategories = HospitalInsuranceRules.PreauthCategories(p.PreauthCategories).ToArray(), validFrom = Day(p.ValidFrom), validTo = Day(p.ValidTo), isActive = p.IsActive };
 }
@@ -60,7 +63,8 @@
                             {
                                 var p = r.Payer;
                                 <tr data-row="payer">
-                                    <td><div class="fw-bold text-gray-900">@DisplayName.Of(p.Name, p.NameEn)</div><div class="text-muted fs-8"><span class="hp-num">@p.Code</span> · @T["kind:" + p.Kind]</div></td>
+                                    <td><div class="fw-bold text-gray-900">@DisplayName.Of(p.Name, p.NameEn)</div><div class="text-muted fs-8"><span class="hp-num">@p.Code</span> · @T["kind:" + p.Kind]</div>
+                                        @if (dental.GetValueOrDefault(p.ID) is HospitalDentalBenefit db) { <div class="text-muted fs-8 mt-1"><i class="ki-outline ki-emoji-happy fs-8"></i> @T["Dental limit"] <span class="hp-num">@(db.YearlyLimit > 0 ? db.YearlyLimit.ToString("N3", inv) : "∞")</span></div> }</td>
                                     <td class="text-gray-700">@(p.Classes ?? "—")</td>
                                     <td class="text-end hp-num">@(p.PriceListId == null && p.DiscountPct > 0 ? Pct(p.DiscountPct) : "—")</td>
                                     <td class="text-end hp-num">@(p.CopayPct > 0 ? Pct(p.CopayPct) : "—")@if (p.CopayCap > 0) {<div class="text-muted fs-8">@T["cap"] @p.CopayCap.ToString("N3", inv)</div>}</td>
@@ -68,7 +72,7 @@
                                     <td class="hp-num fs-7">@Day(p.ValidFrom) → @(p.ValidTo == null ? "…" : Day(p.ValidTo))</td>
                                     <td class="text-end hp-num @(r.RejectionRate > 8 ? "text-danger fw-bold" : "")">@(r.RejectionRate is decimal rr ? rr.ToString("0.0", inv) + "%" : "—")</td>
                                     <td>@if (!p.IsActive) {<span class="badge badge-light fs-8">@T["Inactive"]</span>} else if (r.Expired) {<span class="badge badge-light-danger fs-8">@T["Expired"]</span>} else {<span class="badge badge-light-success fs-8">@T["Active"]</span>}</td>
-                                    <td class="text-end">@if (canManage) {<button type="button" class="btn btn-sm btn-light" data-edit-payer="@System.Text.Json.JsonSerializer.Serialize(PayerData(p))">@T["Edit"]</button>}</td>
+                                    <td class="text-end text-nowrap">@if (canManage) {<button type="button" class="btn btn-sm btn-light-primary me-1" data-edit-dental="@System.Text.Json.JsonSerializer.Serialize(DentalData(p))">@T["Dental"]</button><button type="button" class="btn btn-sm btn-light" data-edit-payer="@System.Text.Json.JsonSerializer.Serialize(PayerData(p))">@T["Edit"]</button>}</td>
                                 </tr>
                             }
                         </tbody>
@@ -140,7 +144,7 @@
                 <div class="col-md-6"><label class="form-label">@T["Price list"]</label><select class="form-select form-select-solid" data-k="priceListId" data-control="select2" data-dropdown-parent="#payerModal">
                     <option value="">@T["Main list"]</option>
                     @foreach (var l in lists) { <option value="@l.ID">@l.Label</option> }</select></div>
-                <div class="col-md-6"><label class="form-label">@T["Discount"] <span class="text-muted fs-8">@T["on the main list only"]</span></label><div class="input-group input-group-solid"><input class="form-control form-control-solid hp-num" dir="ltr" data-k="discountPct" data-num /><span class="input-group-text">%</span></div></div>
+                <div class="col-md-6"><label class="form-label">@T["Discount"] <span class="text-muted fs-8">@T["On the main list only"]</span></label><div class="input-group input-group-solid"><input class="form-control form-control-solid hp-num" dir="ltr" data-k="discountPct" data-num /><span class="input-group-text">%</span></div></div>
                 <div class="col-md-6"><label class="form-label">@T["Co-pay"]</label><div class="input-group input-group-solid"><input class="form-control form-control-solid hp-num" dir="ltr" data-k="copayPct" data-num /><span class="input-group-text">%</span></div></div>
                 <div class="col-md-6"><label class="form-label">@T["Co-pay cap per bill"] <span class="text-muted fs-8">@T["0 = no cap"]</span></label><div class="input-group input-group-solid"><input class="form-control form-control-solid hp-num" dir="ltr" data-k="copayCap" data-num /><span class="input-group-text">@cur</span></div></div>
                 <div class="col-12"><label class="form-label">@T["Services needing the payer's approval"]</label><select class="form-select form-select-solid" multiple data-k="preauthCategories" data-control="select2" data-close-on-select="false" data-dropdown-parent="#payerModal">
@@ -155,6 +159,21 @@
 }
 @if (canRegister)
 {
+    @* H15: the payer's dental benefit — the cover per dental category and the yearly dental limit *@
+    <div class="modal fade" id="dentalModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-650px"><div class="modal-content">
+        <div class="modal-header"><h2 class="fw-bold m-0 fs-4">@T["Dental benefit"] <span class="text-muted fs-6" data-db-who></span></h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body py-6 px-lg-10">
+            <div class="mb-5"><label class="form-label required">@T["Yearly dental limit"] <span class="text-muted fs-8">@cur</span></label><input type="number" min="0" step="0.001" class="form-control form-control-solid hp-num" dir="ltr" data-db="limit" /><div class="form-text">@T["0 = no limit"]</div></div>
+            <div class="row g-4">
+                @foreach (var c in HospitalDentalCategory.All)
+                {
+                    <div class="col-md-3 col-6"><label class="form-label fs-7">@T["dcat:" + c]</label><div class="input-group input-group-sm input-group-solid"><input type="number" min="0" max="100" step="1" class="form-control hp-num" dir="ltr" data-db-cat="@c" /><span class="input-group-text">%</span></div></div>
+                }
+            </div>
+        </div>
+        <div class="modal-footer flex-center"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-save-dental>@T["Save"]</button></div>
+    </div></div></div>
+
     <div class="modal fade" id="policyModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-650px"><div class="modal-content">
         <div class="modal-header"><h2 class="fw-bold m-0">@T["Patient policy"]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
         <div class="modal-body py-8 px-lg-10" data-policy-form>
@@ -240,6 +259,24 @@
                     t.disabled = false;
                     if (!res.ok) { toast('error', res.error || W.failed); return; }
                     toast('success', W.saved); bootstrap.Modal.getOrCreateInstance(modal).hide(); swap();
+                });
+            });
+            // the dental benefit (H15)
+            var dEl = document.getElementById('dentalModal'), dentalFor = null;
+            document.addEventListener('click', function (e) {
+                var t = e.target.closest('[data-edit-dental],[data-save-dental]'); if (!t || !dEl) return;
+                if (t.hasAttribute('data-edit-dental')) {
+                    var d = JSON.parse(t.getAttribute('data-edit-dental')); dentalFor = d.payerId;
+                    dEl.querySelector('[data-db-who]').textContent = d.who; dEl.querySelector('[data-db=limit]').value = d.limit;
+                    dEl.querySelectorAll('[data-db-cat]').forEach(function (i) { i.value = d.cover[i.getAttribute('data-db-cat')]; });
+                    bootstrap.Modal.getOrCreateInstance(dEl).show(); return;
+                }
+                var cover = {}; dEl.querySelectorAll('[data-db-cat]').forEach(function (i) { cover[i.getAttribute('data-db-cat')] = Number(i.value || 0); });
+                t.disabled = true;
+                post(@Json.Serialize(Url.Action("DentalSaveBenefit")), { payerId: dentalFor, yearlyLimit: Number(dEl.querySelector('[data-db=limit]').value || 0), cover: cover }).then(function (res) {
+                    t.disabled = false;
+                    if (!res.ok) { toast('error', res.error || W.failed); return; }
+                    toast('success', W.saved); bootstrap.Modal.getOrCreateInstance(dEl).hide(); swap();
                 });
             });
             document.addEventListener('input', function (e) {

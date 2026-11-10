@@ -55,6 +55,11 @@ namespace CrossBuy.Controllers
 			ViewBag.CanManage = await _access.CanAsync(ctx, HospitalActions.Manage, null, ct);
 			ViewBag.Today = ClinicToday();
 			ViewBag.Day = (await _outpatient.DayAsync(ctx, ClinicToday(), ct)).Where(a => a.PractitionerId == id).ToList();
+			// H19: his fee rules, and the services a rule may name
+			ViewBag.FeeRules = await FeeSvc.RulesAsync(ctx, id, ct);
+			ViewBag.RuleServices = (await _billing.ServicesAsync(ctx, null, true, ct)).Select(s => new HospitalChoice(s.ID, s.Name, s.NameEn, s.Code + "|" + s.Category)).ToList();
+			// H26: his weekly schedule and leave
+			ViewBag.Schedule = await ScheduleSvc.ScheduleAsync(ctx, id, ClinicToday(), ct);
 			return View(p);
 		}
 
@@ -115,9 +120,14 @@ namespace CrossBuy.Controllers
 			ViewBag.Department = department;
 			ViewBag.Departments = await _outpatient.DepartmentsAsync(ctx, ct);
 			ViewBag.CanBook = await _access.CanAsync(ctx, HospitalActions.Book, null, ct);
-			ViewBag.Appointments = await _outpatient.DayAsync(ctx, day, ct);
-			var docs = (await _outpatient.PractitionersAsync(ctx, ct))
-				.Where(p => p.Row.Days().Contains(day.DayOfWeek) && (department == null || p.Row.DepartmentId == department)).ToList();
+			var appts = await _outpatient.DayAsync(ctx, day, ct);
+			ViewBag.Appointments = appts;
+			// H26: who works that day is the schedule's answer (weekly sessions, leave); a doctor who has appointments
+			// that day still shows, so nothing booked disappears from the grid
+			var all = (await _outpatient.PractitionersAsync(ctx, ct)).Where(p => department == null || p.Row.DepartmentId == department).ToList();
+			var schedules = await HospitalScheduleLoader.LoadAsync(_db, ctx.CompanyId, all.Select(p => p.Row).ToList(), day, day, ct);
+			ViewBag.Schedules = schedules;
+			var docs = all.Where(p => schedules[p.Row.ID].WorksOn(day) || appts.Any(a => a.PractitionerId == p.Row.ID)).ToList();
 			return View(docs);
 		}
 
@@ -134,7 +144,10 @@ namespace CrossBuy.Controllers
 		{
 			var ctx = await ContextAsync(ct);
 			if (ctx == null) return NotFound(new { ok = false, code = "not_found" });
-			return Result(await _outpatient.MoveAsync(ctx, id, input?.To ?? "", ctx.EmployeeId, DateTime.UtcNow, ct));
+			var r = await _outpatient.MoveAsync(ctx, id, input?.To ?? "", ctx.EmployeeId, DateTime.UtcNow, ct);
+			// H48: a cancelled time goes down the earlier-slot waitlist at once
+			if (r.Ok && input?.To == Models.Context.Hospital.HospitalAppointmentStatus.Cancelled) await WaitlistSvc.RunAsync(ctx.CompanyId, WaitlistMail, DateTime.Now, DateTime.UtcNow, null, ct);
+			return Result(r);
 		}
 
 		// ---------------- clinics board ----------------

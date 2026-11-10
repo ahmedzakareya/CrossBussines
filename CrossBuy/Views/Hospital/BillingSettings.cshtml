@@ -16,6 +16,15 @@
         ("vatAccountId", T["Output VAT"].Value, T["Tax on taxable services"].Value, Model.VatAccountId),
         ("cashOverShortAccountId", T["Cash over/short"].Value, T["A difference found when a shift is counted"].Value, Model.CashOverShortAccountId),
         ("fxDifferenceAccountId", T["Exchange differences"].Value, T["A foreign-currency bill paid at a rate other than its closing rate"].Value, Model.FxDifferenceAccountId) };
+    // H20: the insurance accounts (their own tables: Ready = false until hospital_h20_claim_accounting.sql runs)
+    var ins = ViewBag.Insurance is ValueTuple<bool, HospitalInsuranceAccounts?, IReadOnlyDictionary<int, int>> im ? im : (false, null, new Dictionary<int, int>());
+    var payers = (ViewBag.Payers as List<HospitalPayer>) ?? new();
+    var bloodMap = (ViewBag.BloodMap as IReadOnlyDictionary<string, int>) ?? new Dictionary<string, int>();
+    var services = (ViewBag.Services as IReadOnlyList<HospitalService>) ?? Array.Empty<HospitalService>();
+    var insMaps = new (string Key, string Label, string Hint, int? Value)[] {
+        ("payerReceivableAccountId", T["Payer receivables"].Value, T["What payers owe once an insured bill closes; never the patients' account"].Value, ins.Item2?.PayerReceivableAccountId),
+        ("claimAdjustmentAccountId", T["Claim adjustments"].Value, T["What a payer accepts short of what was claimed"].Value, ins.Item2?.ClaimAdjustmentAccountId),
+        ("claimRejectionAccountId", T["Claim rejections"].Value, T["What a payer rejects, and recovers when a resubmission is accepted"].Value, ins.Item2?.ClaimRejectionAccountId) };
 }
 <link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
 @Html.AntiForgeryToken()
@@ -72,6 +81,77 @@
                         }
                     </div></div>
                 </div>
+
+                <div class="card mt-5" data-insurance>
+                    <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
+                        <span class="card-label fw-bold text-gray-900 fs-4">@T["Insurance accounts"]</span>
+                        <span class="text-muted mt-1 fw-semibold fs-7">@T["Until these are mapped, an insured bill cannot close and a payer's answer cannot be recorded"]</span>
+                    </div>
+                    @if (ins.Item1) { <div class="card-toolbar"><button type="button" class="btn btn-sm btn-light-primary" data-save-insurance><i class="ki-outline ki-check fs-4"></i>@T["Save"]</button></div> }
+                    </div>
+                    <div class="card-body pt-2">
+                        @if (!ins.Item1)
+                        {
+                            <div class="notice d-flex rounded border border-dashed border-primary bg-light-primary p-6">
+                                <i class="ki-outline ki-information-5 fs-2tx text-primary me-4"></i>
+                                <div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@T["Insurance accounting is not set up yet"]</h4>
+                                    <div class="fs-7 text-gray-700">@T["Its tables are created by the database update hospital_h20_claim_accounting.sql. Until then, self-pay bills close as before, and insured bills wait."]</div></div>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="row g-6">
+                                @foreach (var m in insMaps)
+                                {
+                                    <div class="col-md-4"><label class="fw-semibold fs-7 text-gray-700 mb-2">@m.Label</label>
+                                        <select name="@m.Key" class="form-select form-select-solid"><option value="">—</option>
+                                            @foreach (var a in accounts) { <option value="@a.Id" selected="@(a.Id == m.Value)">@a.Label · @DisplayName.Of(a.Name, a.NameEn)</option> }
+                                        </select>
+                                        <div class="text-muted fs-8 mt-1">@m.Hint</div></div>
+                                }
+                            </div>
+                            @if (payers.Count > 0)
+                            {
+                                <div class="separator separator-dashed my-6"></div>
+                                <div class="fw-bold text-gray-900 fs-6 mb-1">@T["A payer's own receivable"]</div>
+                                <div class="text-muted fs-8 mb-4">@T["Leave a payer on the company's payer receivable, or give it an account of its own"]</div>
+                                <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-2 mb-0">
+                                    <tbody class="fw-semibold text-gray-700">
+                                        @foreach (var p in payers)
+                                        {
+                                            int? own = ins.Item3.TryGetValue(p.ID, out var o) ? o : null;
+                                            <tr>
+                                                <td class="w-250px"><div class="text-gray-900 fw-bold">@DisplayName.Of(p.Name, p.NameEn)</div><div class="text-muted fs-8 hp-num">@p.Code</div></td>
+                                                <td><select class="form-select form-select-solid form-select-sm" data-payer-account="@p.ID"><option value="">@T["The company's payer receivable"]</option>
+                                                    @foreach (var a in accounts) { <option value="@a.Id" selected="@(a.Id == own)">@a.Label · @DisplayName.Of(a.Name, a.NameEn)</option> }
+                                                </select></td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table></div>
+                            }
+                        }
+                    </div>
+                </div>
+                @* H51: what an issued blood request is charged as *@
+                <div class="card mt-5" data-blood>
+                    <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
+                        <span class="card-label fw-bold text-gray-900 fs-4">@T["Blood products"]</span>
+                        <span class="text-muted mt-1 fw-semibold fs-7">@T["Issuing a blood request charges the bags to the patient's bill as this service; a product with none is issued uncharged"]</span>
+                    </div>
+                    <div class="card-toolbar"><button type="button" class="btn btn-sm btn-light-primary" data-save-blood><i class="ki-outline ki-check fs-4"></i>@T["Save"]</button></div>
+                    </div>
+                    <div class="card-body pt-2"><div class="row g-6">
+                        @foreach (var p in HospitalBloodProduct.All)
+                        {
+                            int? cur = bloodMap.TryGetValue(p, out var sid) ? sid : null;
+                            <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["bp:" + p]</label>
+                                <select class="form-select form-select-solid" data-blood-product="@p"><option value="">@T["Not charged"]</option>
+                                    @foreach (var s in services) { <option value="@s.ID" selected="@(s.ID == cur)">@s.Code · @DisplayName.Of(s.Name, s.NameEn)</option> }
+                                </select></div>
+                        }
+                    </div></div>
+                </div>
             </div>
         </div>
         </form>
@@ -91,6 +171,38 @@
                 fetch(@Json.Serialize(Url.Action("SaveBillingSettings")), { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(body) })
                     .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
                     .then(function (res) { b.disabled = false; if (window.toastr) { if (res.ok) toastr.success(@Json.Serialize(T["Saved"].Value)); else toastr.error(res.error || @Json.Serialize(T["The change could not be saved"].Value)); } });
+            });
+            function post(url, body) {
+                return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(body) })
+                    .then(function (r) { return r.json().catch(function () { return { ok: false }; }); });
+            }
+            function told(res) { if (window.toastr) { if (res.ok) toastr.success(@Json.Serialize(T["Saved"].Value)); else toastr.error(res.error || @Json.Serialize(T["The change could not be saved"].Value)); } return res; }
+            var ins = document.querySelector('[data-save-insurance]');
+            if (ins) ins.addEventListener('click', function () {
+                var b = this; b.disabled = true;
+                post(@Json.Serialize(Url.Action("SaveInsuranceAccounts")), { payerReceivableAccountId: n('payerReceivableAccountId'), claimAdjustmentAccountId: n('claimAdjustmentAccountId'), claimRejectionAccountId: n('claimRejectionAccountId') })
+                    .then(function (res) { b.disabled = false; told(res); });
+            });
+            // H51: the blood products, saved together after a confirmation
+            var blood = document.querySelector('[data-save-blood]');
+            if (blood) blood.addEventListener('click', function () {
+                var b = this;
+                cbConfirm(@Json.Serialize(T["Save what each blood product is charged as?"].Value)).then(function (ok) {
+                    if (!ok) return; b.disabled = true;
+                    var map = {}; document.querySelectorAll('[data-blood-product]').forEach(function (s) { map[s.getAttribute('data-blood-product')] = s.value === '' ? null : +s.value; });
+                    post(@Json.Serialize(Url.Action("SaveBloodProductServices")), { map: map }).then(function (res) { b.disabled = false; told(res); });
+                });
+            });
+            // a payer's override saves on its own, the moment it changes (select2 raises jQuery's change only)
+            var payerUrl = @Json.Serialize(Url.Action("SavePayerReceivable", new { id = 0 }));
+            function payerChanged(sel) {
+                var prev = sel.getAttribute('data-was') || '';
+                post(payerUrl.replace(/0$/, sel.getAttribute('data-payer-account')), { accountId: sel.value === '' ? null : +sel.value })
+                    .then(function (res) { told(res); if (res.ok) sel.setAttribute('data-was', sel.value); else { sel.value = prev; if (window.jQuery) jQuery(sel).trigger('change.select2'); } });
+            }
+            document.querySelectorAll('[data-payer-account]').forEach(function (sel) {
+                sel.setAttribute('data-was', sel.value);
+                if (window.jQuery) jQuery(sel).on('change', function () { payerChanged(sel); }); else sel.addEventListener('change', function () { payerChanged(sel); });
             });
         })();
     </script>

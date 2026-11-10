@@ -409,22 +409,49 @@
 			// The prototype's groups: the front desk first, then inpatient.
 			new() { LabelAr = "لوحة المستشفى", LabelEn = "Hospital dashboard", Icon = "ki-outline ki-element-11", Items = new()
 			{
+				new() { LabelAr = "لوحة التحكم", LabelEn = "Hospital overview", Action = "Dashboard", Controller = "Hospital" },
 				new() { LabelAr = "خريطة المستشفى", LabelEn = "Hospital map", Action = "Map", Controller = "Hospital" },
+				new() { LabelAr = "تقارير المستشفى", LabelEn = "Hospital reports", Action = "Reports", Controller = "Hospital" },
 			}},
 			new() { LabelAr = "المرضى والاستقبال", LabelEn = "Patients & front desk", Icon = "ki-outline ki-profile-user", Items = new()
 			{
 				new() { LabelAr = "سجل المرضى", LabelEn = "Patient registry", Action = "Patients", Controller = "Hospital" },
 				new() { LabelAr = "تسجيل مريض", LabelEn = "Register patient", Action = "RegisterPatient", Controller = "Hospital" },
+				new() { LabelAr = "الملفات المكررة", LabelEn = "Duplicate files", Action = "Duplicates", Controller = "Hospital" },
+				new() { LabelAr = "المواليد والوفيات", LabelEn = "Births & deaths", Action = "Vital", Controller = "Hospital" },
+				new() { LabelAr = "نماذج الموافقات", LabelEn = "Consent forms", Action = "ConsentForms", Controller = "Hospital" },
 				new() { LabelAr = "المواعيد", LabelEn = "Appointments", Action = "Appointments", Controller = "Hospital" },
+				new() { LabelAr = "طلبات بوابة المريض", LabelEn = "Portal requests", Action = "PortalRequests", Controller = "Hospital" },
+				new() { LabelAr = "قائمة الانتظار لموعد أقرب", LabelEn = "Earlier-slot waitlist", Action = "PortalWaitlist", Controller = "Hospital" },
+				new() { LabelAr = "رسائل SMS للمرضى", LabelEn = "Patient SMS", Action = "Sms", Controller = "Hospital" },
 			}},
 			new() { LabelAr = "العيادات", LabelEn = "Clinics", Icon = "ki-outline ki-briefcase", Items = new()
 			{
 				new() { LabelAr = "لوحة العيادات", LabelEn = "Clinics board", Action = "Clinics", Controller = "Hospital" },
 				new() { LabelAr = "قائمة الطبيب", LabelEn = "Doctor worklist", Action = "Worklist", Controller = "Hospital" },
+				new() { LabelAr = "طلبات تجديد الأدوية", LabelEn = "Refill requests", Action = "PortalRefills", Controller = "Hospital" },
+			}},
+			new() { LabelAr = "الطوارئ", LabelEn = "Emergency", Icon = "ki-outline ki-pulse", Items = new()
+			{
+				new() { LabelAr = "لوحة الطوارئ", LabelEn = "Emergency board", Action = "Emergency", Controller = "Hospital" },
+			}},
+			// H15 — the first specialty pack (there is no ki-tooth in this Keenicons build)
+			new() { LabelAr = "الأسنان", LabelEn = "Dentistry", Icon = "ki-outline ki-emoji-happy", Items = new()
+			{
+				new() { LabelAr = "جدول الكراسي", LabelEn = "Chair schedule", Action = "Dental", Controller = "Hospital" },
+				new() { LabelAr = "مخطط الأسنان واللثة", LabelEn = "Dental & perio chart", Action = "DentalChart", Controller = "Hospital" },
+				new() { LabelAr = "خطط العلاج", LabelEn = "Treatment plans", Action = "DentalPlans", Controller = "Hospital" },
+				new() { LabelAr = "معمل التركيبات", LabelEn = "Dental lab cases", Action = "DentalLab", Controller = "Hospital" },
+				new() { LabelAr = "الاستدعاء والتعقيم", LabelEn = "Recall & sterilisation", Action = "DentalRecall", Controller = "Hospital" },
+				new() { LabelAr = "تقويم الأسنان", LabelEn = "Orthodontics", Action = "DentalOrtho", Controller = "Hospital" },
+				new() { LabelAr = "زراعة الأسنان", LabelEn = "Dental implants", Action = "DentalImplants", Controller = "Hospital" },
 			}},
 			new() { LabelAr = "التنويم", LabelEn = "Inpatient", Icon = "ki-outline ki-home-3", Items = new()
 			{
 				new() { LabelAr = "الأسرة والغرف", LabelEn = "Beds & rooms", Action = "Index", Controller = "Hospital" },
+				new() { LabelAr = "محطة التمريض", LabelEn = "Nursing station", Action = "Nursing", Controller = "Hospital" },
+				new() { LabelAr = "العناية المركزة", LabelEn = "Intensive care", Action = "Icu", Controller = "Hospital" },
+				new() { LabelAr = "جدول العمليات", LabelEn = "Theatre schedule", Action = "Theatre", Controller = "Hospital" },
 				new() { LabelAr = "أنواع الغرف", LabelEn = "Room types", Action = "RoomTypes", Controller = "Hospital" },
 				new() { LabelAr = "مصمم الأدوار والغرف", LabelEn = "Floor & room designer", Action = "Designer", Controller = "Hospital" },
 			}},
@@ -434,22 +461,50 @@
 				new() { LabelAr = "التحاليل ومؤشراتها", LabelEn = "Lab tests & analytes", Action = "LabTests", Controller = "Hospital" },
 				new() { LabelAr = "الأشعة", LabelEn = "Radiology", Action = "Radiology", Controller = "Hospital" },
 				new() { LabelAr = "الفحوصات والأجهزة", LabelEn = "Exams & rooms", Action = "RadiologySetup", Controller = "Hospital" },
+				new() { LabelAr = "بنك الدم", LabelEn = "Blood bank", Action = "BloodBank", Controller = "Hospital" },
 			}},
 			new() { LabelAr = "الصيدلية", LabelEn = "Pharmacy", Icon = "ki-outline ki-capsule", Items = new()
 			{
 				new() { LabelAr = "قائمة الصرف", LabelEn = "Dispensing queue", Action = "Pharmacy", Controller = "Hospital" },
+				new() { LabelAr = "توجيه الأدوية", LabelEn = "Medication routing", Action = "MedRouting", Controller = "Hospital" },
+				new() { LabelAr = "تداخلات الأدوية والجرعات", LabelEn = "Drug interactions & doses", Action = "DrugSafety", Controller = "Hospital" },
+				new() { LabelAr = "مجموعات الأوامر", LabelEn = "Order sets", Action = "OrderSets", Controller = "Hospital" },
+			}},
+			new() { LabelAr = "الخدمات المساندة", LabelEn = "Support services", Icon = "ki-outline ki-shop", Items = new()
+			{
+				new() { LabelAr = "المطبخ والكافيتيريا", LabelEn = "Kitchen & cafeteria", Action = "Kitchen", Controller = "Hospital" },
+				new() { LabelAr = "التغذية العلاجية", LabelEn = "Clinical dietary", Action = "Dietary", Controller = "Hospital" },
+				new() { LabelAr = "التعقيم المركزي", LabelEn = "Sterile supply", Action = "Cssd", Controller = "Hospital" },
+				new() { LabelAr = "أوامر عمل الأجهزة", LabelEn = "Equipment work orders", Action = "WorkOrders", Controller = "Hospital" },
+				new() { LabelAr = "النظافة والنقل والمغسلة", LabelEn = "Housekeeping, porters & laundry", Action = "SupportDesk", Controller = "Hospital" },
+			}},
+			new() { LabelAr = "الإمداد والجودة", LabelEn = "Supply & quality", Icon = "ki-outline ki-shield-search", Items = new()
+			{
+				new() { LabelAr = "طلبات الأقسام", LabelEn = "Ward requisitions", Action = "Supply", Controller = "Hospital" },
+				new() { LabelAr = "الوحدات ومن يطلب", LabelEn = "Units & who asks", Action = "SupplyUnits", Controller = "Hospital" },
+				new() { LabelAr = "بلاغات الحوادث", LabelEn = "Incident reports", Action = "Incidents", Controller = "Hospital" },
+				new() { LabelAr = "الوصول الطارئ للملفات", LabelEn = "Emergency file access", Action = "BreakGlassLog", Controller = "Hospital" },
+				new() { LabelAr = "استبيانات رضا المرضى", LabelEn = "Satisfaction surveys", Action = "Surveys", Controller = "Hospital" },
 			}},
 			new() { LabelAr = "الأطباء والعاملون", LabelEn = "Doctors & staff", Icon = "ki-outline ki-people", Items = new()
 			{
 				new() { LabelAr = "الممارسون الصحيون", LabelEn = "Practitioners", Action = "Practitioners", Controller = "Hospital" },
+				new() { LabelAr = "كشوف الأتعاب", LabelEn = "Fee statements", Action = "Fees", Controller = "Hospital" },
+				new() { LabelAr = "المناوبات عند الطلب", LabelEn = "On-call", Action = "OnCall", Controller = "Hospital" },
 			}},
 			new() { LabelAr = "المالية والتأمين", LabelEn = "Finance & insurance", Icon = "ki-outline ki-bill", Items = new()
 			{
 				new() { LabelAr = "الفوترة والخزينة", LabelEn = "Billing & cashier", Action = "Bills", Controller = "Hospital" },
 				new() { LabelAr = "إغلاق الخزينة", LabelEn = "Cashier closing", Action = "Cashier", Controller = "Hospital" },
+				new() { LabelAr = "الحالات الخيرية", LabelEn = "Charity cases", Action = "Charity", Controller = "Hospital" },
 				new() { LabelAr = "الخدمات والأصناف", LabelEn = "Services & items", Action = "Catalog", Controller = "Hospital" },
 				new() { LabelAr = "قوائم الأسعار", LabelEn = "Price lists", Action = "PriceLists", Controller = "Hospital" },
+				new() { LabelAr = "التقديرات والتأمين المقدم", LabelEn = "Estimates & deposits", Action = "Estimates", Controller = "Hospital" },
+				new() { LabelAr = "الموافقات والمطالبات", LabelEn = "Approvals & claims", Action = "Insurance", Controller = "Hospital" },
+				new() { LabelAr = "شركات التأمين والعقود", LabelEn = "Payers & contracts", Action = "Payers", Controller = "Hospital" },
 				new() { LabelAr = "إعدادات الفوترة", LabelEn = "Billing settings", Action = "BillingSettings", Controller = "Hospital" },
+				new() { LabelAr = "بوابة المريض", LabelEn = "Patient portal", Action = "PortalSettings", Controller = "Hospital" },
+				new() { LabelAr = "حسابات بوابة المريض", LabelEn = "Patient portal accounts", Action = "PortalAccounts", Controller = "Hospital" },
 			}},
 		};
 

@@ -44,7 +44,7 @@
         <div class="row g-5 g-xl-8">
             <div class="col-xl-8"><div class="card h-100">
                 <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
-                    <span class="card-label fw-bold text-gray-900 fs-4">@(Model.Row.Package == null ? T["Services"].Value : DisplayName.Of(Model.Row.Package, Model.Row.PackageEn ?? Model.Row.Package))</span>
+                    <span class="card-label fw-bold text-gray-900 fs-4">@(Model.Row.Package == null ? T["Services only"].Value : DisplayName.Of(Model.Row.Package, Model.Row.PackageEn ?? Model.Row.Package))</span>
                     <span class="text-muted mt-1 fw-semibold fs-7">@(Model.Row.Payer == null ? T["Self-pay"].Value : DisplayName.Of(Model.Row.Payer, Model.Row.PayerEn ?? Model.Row.Payer)) · @T["Expected stay (nights)"] <span class="hp-num">@e.ExpectedNights</span></span>
                 </div></div>
                 <div class="card-body pt-2">
@@ -53,7 +53,7 @@
                         <tbody class="fw-semibold text-gray-700">
                             @foreach (var l in Model.Lines)
                             {
-                                <tr><td><div class="text-gray-800">@DisplayName.Of(l.Description, l.DescriptionEn)</div><div class="text-muted fs-8 hp-num">@l.Code @if (e.PayerId != null && !l.Covered) {<text> · <span class="text-danger">@T["not covered"]</span></text>}</div></td>
+                                <tr><td><div class="text-gray-800">@DisplayName.Of(l.Description, l.DescriptionEn)</div><div class="text-muted fs-8 hp-num">@l.Code @if (e.PayerId != null && !l.Covered) {<text> · <span class="text-danger">@T["Not covered"]</span></text>}</div></td>
                                     <td class="text-end hp-num">@l.Quantity.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)</td><td class="text-end hp-num">@Money(l.Amount)</td><td class="text-end hp-num">@(l.PayerAmount > 0 ? Money(l.PayerAmount) : "—")</td></tr>
                             }
                         </tbody>

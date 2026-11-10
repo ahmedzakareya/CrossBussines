@@ -1,0 +1,229 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model HospitalCssdBoard
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H42 — central sterile supply, as the approved prototype draws it (#/cssd): one card, "Instrument-set tracking" —
+    set, description, status, sterile until — with each set's next step on its row. Loading a cycle, the cycles'
+    history and a new set open in windows, so the page keeps the prototype's shape. Every change swaps in place.
+*@
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Central sterile supply"].Value;
+    bool ready = ViewBag.Ready == true, canWork = ViewBag.CanWork == true, canManage = ViewBag.CanManage == true;
+    var b = Model;
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+    string Kind(string s) => s switch
+    {
+        HospitalSetStatus.Sterile => "success", HospitalSetStatus.InAutoclave => "primary", HospitalSetStatus.Packed => "info",
+        HospitalSetStatus.InUse => "dark", HospitalCssdRules.Expired => "danger", _ => "secondary",
+    };
+    var packed = b.Sets.Where(s => s.Set.Status == HospitalSetStatus.Packed).ToList();
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Central sterile supply"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item text-muted">@T["Inpatient"]</li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@T["CSSD"]</li>
+            </ul>
+        </div>
+        @if (ready)
+        {
+            <div class="d-flex align-items-center gap-2 gap-lg-3 d-print-none">
+                <button type="button" class="btn btn-sm btn-light" data-cs-cycles><i class="ki-outline ki-time fs-4"></i>@T["Cycles"]</button>
+                @if (canManage) { <button type="button" class="btn btn-sm btn-light" data-cs-newset><i class="ki-outline ki-plus fs-4"></i>@T["New set"]</button> }
+                @if (canWork) { <button type="button" class="btn btn-sm btn-primary" data-cs-load><i class="ki-outline ki-shield-search fs-4"></i>@T["Start a cycle"]</button> }
+            </div>
+        }
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (!ready)
+        {
+            <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice"><div class="fs-6 text-gray-700">@T[HospitalCssdService.NoTables]</div></div>
+        }
+        <div class="card mb-5">
+            <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Instrument-set tracking"]</span></div></div>
+            <div class="card-body pt-2">
+                @if (b.Sets.Count == 0) { <div class="text-center text-muted py-10">@T["No instrument set yet."]</div> }
+                else
+                {
+                    <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-3 mb-0">
+                        <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0">
+                            <th>@T["Set"]</th><th>@T["Description"]</th><th>@T["Status"]</th><th>@T["Sterile until"]</th><th class="text-end"></th>
+                        </tr></thead>
+                        <tbody class="fw-semibold text-gray-700">
+                            @foreach (var r in b.Sets)
+                            {
+                                var s = r.Set;
+                                <tr>
+                                    <td><span class="badge badge-light fs-8 hp-num">@s.Code</span></td>
+                                    <td><span class="text-gray-800">@DisplayName.Of(s.Name, s.NameEn ?? s.Name)</span></td>
+                                    <td><span class="badge badge-light-@Kind(r.State)">@T["set:" + r.State]</span>
+                                        @if (s.Status == HospitalSetStatus.InAutoclave && r.CycleNo != null) {<span class="text-muted fs-8 hp-num ms-1">@r.CycleNo</span>}
+                                        @if (s.Status == HospitalSetStatus.InUse && r.CaseNo != null) {<span class="text-muted fs-8 hp-num ms-1">@r.CaseNo</span>}</td>
+                                    <td>@if (s.SterileUntil is DateTime u) {<span class="hp-num @(r.State == HospitalCssdRules.Expired ? "text-danger fw-bold" : "")" dir="ltr">@u.ToString("yyyy-MM-dd", inv)</span>} else {<span class="text-gray-400">—</span>}</td>
+                                    <td class="text-end">@if (canWork)
+                                        {
+                                            <div class="d-flex justify-content-end gap-2">
+                                                @switch (r.State)
+                                                {
+                                                    case HospitalSetStatus.AwaitingWash: <button type="button" class="btn btn-sm btn-light-primary" data-cs-step="@s.ID" data-step="Washed"><i class="ki-outline ki-drop fs-5"></i>@T["Washed & packed"]</button> break;
+                                                    case HospitalSetStatus.InAutoclave:
+                                                        <button type="button" class="btn btn-sm btn-light-danger" data-cs-end="@s.CycleId" data-passed="0">@T["Cycle failed"]</button>
+                                                        <button type="button" class="btn btn-sm btn-primary" data-cs-end="@s.CycleId" data-passed="1"><i class="ki-outline ki-check fs-5"></i>@T["Cycle passed"]</button> break;
+                                                    case HospitalSetStatus.Sterile: <button type="button" class="btn btn-sm btn-primary" data-cs-issue="@s.ID"><i class="ki-outline ki-delivery fs-5"></i>@T["Issue to a case"]</button> break;
+                                                    case HospitalSetStatus.InUse: <button type="button" class="btn btn-sm btn-light-primary" data-cs-step="@s.ID" data-step="Returned"><i class="ki-outline ki-exit-left fs-5"></i>@T["Returned from the case"]</button> break;
+                                                    case HospitalCssdRules.Expired: <button type="button" class="btn btn-sm btn-light-danger" data-cs-step="@s.ID" data-step="Reprocess">@T["Reprocess"]</button> break;
+                                                }
+                                            </div>
+                                        }</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table></div>
+                }
+            </div>
+        </div>
+
+        @* rendered here, shown in their windows (the swap keeps them current) *@
+        <div class="d-none" data-cs-packed-body>
+            @if (packed.Count == 0) { <div class="text-muted fs-7">@T["No washed and packed set waits for a cycle."]</div> }
+            @foreach (var r in packed)
+            {
+                <label class="form-check form-check-custom form-check-solid py-2"><input class="form-check-input" type="checkbox" value="@r.Set.ID" data-cs-pick checked /><span class="form-check-label fs-7"><span class="badge badge-light fs-8 hp-num me-2">@r.Set.Code</span>@DisplayName.Of(r.Set.Name, r.Set.NameEn ?? r.Set.Name)</span></label>
+            }
+        </div>
+        <div class="d-none" data-cs-cycles-body>
+            @if (b.Cycles.Count == 0) { <div class="text-center text-muted py-8">@T["No cycle in the last seven days."]</div> }
+            else
+            {
+                <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-2 mb-0">
+                    <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0"><th>@T["Cycle"]</th><th>@T["Autoclave"]</th><th>@T["Started"]</th><th>@T["Sets"]</th><th>@T["Result"]</th></tr></thead>
+                    <tbody class="fw-semibold text-gray-700">
+                        @foreach (var c in b.Cycles)
+                        {
+                            <tr>
+                                <td><span class="badge badge-light fs-8 hp-num">@c.Cycle.CycleNo</span></td>
+                                <td dir="auto">@c.Cycle.Autoclave</td>
+                                <td><span class="hp-num" dir="ltr" data-utc="@c.Cycle.StartedAt.ToString("o", inv)">@c.Cycle.StartedAt.ToString("yyyy-MM-dd HH:mm", inv)</span></td>
+                                <td><span class="hp-num fs-8" dir="ltr">@string.Join(" · ", c.Sets)</span></td>
+                                <td><span class="badge badge-light-@(c.Cycle.Result == HospitalCycleResult.Passed ? "success" : c.Cycle.Result == HospitalCycleResult.Failed ? "danger" : "primary")">@T["cyc:" + c.Cycle.Result]</span>@if (c.Cycle.Note != null) {<div class="text-muted fs-8" dir="auto">@c.Cycle.Note</div>}</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table></div>
+            }
+        </div>
+    </div></div>
+</div>
+
+@if (ready)
+{
+    <div class="modal fade" id="csCyclesModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered modal-dialog-scrollable mw-800px"><div class="modal-content">
+        <div class="modal-header"><h3 class="fw-bold m-0">@T["Cycles"]</h3><div class="btn btn-icon btn-sm btn-active-light-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body" data-cs-cycles-view></div>
+    </div></div></div>
+}
+@if (ready && canWork)
+{
+    <div class="modal fade" id="csLoadModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-500px"><div class="modal-content">
+        <div class="modal-header"><h3 class="fw-bold m-0">@T["Start a cycle"]</h3><div class="btn btn-icon btn-sm btn-active-light-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body">
+            <label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Autoclave"]</label>
+            <input class="form-control form-control-solid mb-5" maxlength="60" dir="auto" data-cs-autoclave value="@T["Autoclave 1"]" />
+            <label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Washed and packed sets"]</label>
+            <div data-cs-packed-view></div>
+        </div>
+        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-cs-load-save><i class="ki-outline ki-check fs-4"></i>@T["Load & start"]</button></div>
+    </div></div></div>
+    <div class="modal fade" id="csIssueModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-500px"><div class="modal-content">
+        <div class="modal-header"><h3 class="fw-bold m-0">@T["Issue to a case"]</h3><div class="btn btn-icon btn-sm btn-active-light-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body">
+            @if (b.Cases.Count == 0) { <div class="text-muted fs-7">@T["No theatre case is planned or in progress around today."]</div> }
+            else
+            {
+                <label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Theatre case"]</label>
+                <select class="form-select form-select-solid" data-cs-case>
+                    @foreach (var c in b.Cases) { <option value="@c.Id">@c.CaseNo · @DisplayName.Of(c.Name, c.NameEn) · @DisplayName.Of(c.Patient, c.PatientEn)</option> }
+                </select>
+            }
+        </div>
+        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button>@if (b.Cases.Count > 0) {<button type="button" class="btn btn-primary" data-cs-issue-save><i class="ki-outline ki-check fs-4"></i>@T["Issue"]</button>}</div>
+    </div></div></div>
+}
+@if (ready && canManage)
+{
+    <div class="modal fade" id="csSetModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-500px"><div class="modal-content">
+        <div class="modal-header"><h3 class="fw-bold m-0">@T["New set"]</h3><div class="btn btn-icon btn-sm btn-active-light-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body"><div class="row g-4">
+            <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Code"]</label><input class="form-control form-control-solid hp-num" dir="ltr" maxlength="30" data-s="code" /></div>
+            <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Shelf life (days)"]</label><input type="number" min="1" max="365" value="30" class="form-control form-control-solid hp-num" dir="ltr" data-s="shelfLifeDays" /></div>
+            <div class="col-12"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Name (Arabic)"]</label><input class="form-control form-control-solid" dir="rtl" maxlength="150" data-s="name" /></div>
+            <div class="col-12"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Name (English)"]</label><input class="form-control form-control-solid" dir="ltr" maxlength="150" data-s="nameEn" /></div>
+        </div></div>
+        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-cs-set-save><i class="ki-outline ki-check fs-4"></i>@T["Save"]</button></div>
+    </div></div></div>
+}
+
+@section Scripts {
+    <partial name="_HospitalPrompt" />
+    <script>
+        (function () {
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value, root = @Json.Serialize(Url.Content("~/Hospital/Cssd"));
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value),
+                passed: @Json.Serialize(T["Mark this cycle passed? Every set in it becomes sterile."].Value), failedWhy: @Json.Serialize(T["Why did the cycle fail?"].Value) };
+            var issueSet = null;
+            function toast(k, m) { if (window.toastr) toastr[k](m); }
+            function post(url, body) {
+                return fetch(root + url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(body || {}) })
+                    .then(function (r) { return r.json().catch(function () { return { ok: false }; }); });
+            }
+            function mirror() {
+                [['[data-cs-packed-body]', '[data-cs-packed-view]'], ['[data-cs-cycles-body]', '[data-cs-cycles-view]']].forEach(function (p) {
+                    var s = document.querySelector(p[0]), v = document.querySelector(p[1]); if (s && v) v.innerHTML = s.innerHTML;
+                });
+            }
+            // In place, never a reload: the page is rendered again and its content swapped (the windows' lists too).
+            function swap() {
+                return fetch(root, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.text(); }).then(function (html) {
+                    var d = new DOMParser().parseFromString(html, 'text/html'), f = d.getElementById('kt_app_content');
+                    if (f) document.getElementById('kt_app_content').innerHTML = f.innerHTML; mirror();
+                });
+            }
+            function done(btn, modal) { return function (res) { if (btn) btn.disabled = false; if (!res.ok) { toast('error', res.error || W.failed); return; } if (modal) bootstrap.Modal.getOrCreateInstance(modal).hide(); toast('success', W.saved); swap(); }; }
+            mirror();
+            document.addEventListener('click', function (e) {
+                var t = e.target.closest('[data-cs-cycles],[data-cs-newset],[data-cs-load],[data-cs-load-save],[data-cs-set-save],[data-cs-step],[data-cs-end],[data-cs-issue],[data-cs-issue-save]'); if (!t) return;
+                var lm = document.getElementById('csLoadModal'), sm = document.getElementById('csSetModal'), im = document.getElementById('csIssueModal');
+                if (t.hasAttribute('data-cs-cycles')) { bootstrap.Modal.getOrCreateInstance(document.getElementById('csCyclesModal')).show(); return; }
+                if (t.hasAttribute('data-cs-newset')) { bootstrap.Modal.getOrCreateInstance(sm).show(); return; }
+                if (t.hasAttribute('data-cs-load')) { bootstrap.Modal.getOrCreateInstance(lm).show(); return; }
+                if (t.hasAttribute('data-cs-issue')) { issueSet = t.getAttribute('data-cs-issue'); bootstrap.Modal.getOrCreateInstance(im).show(); return; }
+                if (t.hasAttribute('data-cs-load-save')) {
+                    var ids = Array.prototype.slice.call(lm.querySelectorAll('[data-cs-pick]:checked')).map(function (c) { return +c.value; });
+                    t.disabled = true; post('/Cycles', { setIds: ids, autoclave: lm.querySelector('[data-cs-autoclave]').value }).then(done(t, lm)); return;
+                }
+                if (t.hasAttribute('data-cs-set-save')) {
+                    var v = function (k) { return sm.querySelector('[data-s=' + k + ']').value; };
+                    t.disabled = true;
+                    post('/Sets', { code: v('code'), name: v('name'), nameEn: v('nameEn') || null, shelfLifeDays: +v('shelfLifeDays') || 0, isActive: true })
+                        .then(function (res) { done(t, sm)(res); if (res.ok) sm.querySelectorAll('[data-s=code],[data-s=name],[data-s=nameEn]').forEach(function (i) { i.value = ''; }); });
+                    return;
+                }
+                if (t.hasAttribute('data-cs-issue-save')) { t.disabled = true; post('/Sets/' + issueSet + '/Step', { step: 'Issued', surgeryId: +im.querySelector('[data-cs-case]').value }).then(done(t, im)); return; }
+                if (t.hasAttribute('data-cs-step')) { t.disabled = true; post('/Sets/' + t.getAttribute('data-cs-step') + '/Step', { step: t.getAttribute('data-step') }).then(done(t)); return; }
+                var cy = t.getAttribute('data-cs-end');
+                if (t.getAttribute('data-passed') === '1') { cbConfirm(W.passed).then(function (ok) { if (!ok) return; t.disabled = true; post('/Cycles/' + cy + '/End', { passed: true }).then(done(t)); }); return; }
+                cbPrompt(W.failedWhy, { kind: 'danger' }).then(function (why) { if (!why) return; t.disabled = true; post('/Cycles/' + cy + '/End', { passed: false, note: why }).then(done(t)); });
+            });
+        })();
+    </script>
+}

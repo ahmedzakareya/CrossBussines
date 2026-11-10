@@ -1,0 +1,53 @@
+@using CrossBuy.BL
+@using CrossBuy.Models.Context.Hospital
+@model (string Source, int OrderId, bool Done, HospitalPortalRelease? Release, bool CanConsult)
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H27 — a lab order's or an imaging report's place on the patient portal: the badge once the doctor released it,
+    or the button that releases it (once verified / signed, for someone with `consult`). The handler is delegated
+    and registered once, so it survives the page swapping its toolbar in place.
+*@
+@if (Model.Release is { } r)
+{
+    <span class="badge badge-light-primary fs-7 px-4 py-3" title="@(r.Note == null && r.NoteEn == null ? "" : DisplayName.Of(r.Note ?? "", r.NoteEn ?? ""))"><i class="ki-outline ki-user-tick fs-5 text-primary me-1"></i>@T["On the patient portal"] <span class="hp-num ms-1" data-fmt data-utc="@r.ReleasedAt.ToString("o")">@r.ReleasedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</span></span>
+    @* H33: the doctor's words to the patient, in both languages; corrected here *@
+    @if (Model.CanConsult) { <button type="button" class="btn btn-sm btn-icon btn-light" title="@T["Edit the words to the patient"]" data-portal-release="@Model.Source" data-order="@Model.OrderId" data-edit="1" data-ar="@r.Note" data-en="@r.NoteEn"><i class="ki-outline ki-pencil fs-5"></i></button> }
+}
+else if (Model.Done && Model.CanConsult)
+{
+    <button type="button" class="btn btn-sm btn-light-primary" data-portal-release="@Model.Source" data-order="@Model.OrderId"><i class="ki-outline ki-user-tick fs-4"></i>@T["Release to the patient"]</button>
+}
+@if (Model.CanConsult)
+{
+    @* registered whether or not the button shows yet: a swap after verifying brings the button without running scripts *@
+    <script>
+        (function () {
+            if (window.__hpPortalRelease) return; window.__hpPortalRelease = true;
+            var W = { ask: @Json.Serialize(T["Your word to the patient with this result (for example: normal, no action needed)"].Value), sure: @Json.Serialize(T["Let the patient see this result on the portal?"].Value),
+                failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Released to the patient"].Value), editTitle: @Json.Serialize(T["Edit the words to the patient"].Value), url: @Json.Serialize(Url.Content("~/Hospital/PortalRelease")) };
+            document.addEventListener('click', function (e) {
+                var t = e.target.closest('[data-portal-release]'); if (!t) return;
+                // one step: the doctor's word to the patient — in Arabic and English (H33) — IS the confirmation (cancel releases nothing)
+                var edit = t.hasAttribute('data-edit');
+                cbPromptBoth(W.ask, { title: edit ? W.editTitle : W.sure, ar: t.getAttribute('data-ar') || '', en: t.getAttribute('data-en') || '' }).then(function (note) {
+                        if (note === null || note === undefined) return null;
+                        t.disabled = true;
+                        var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+                        return fetch(W.url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token },
+                            body: JSON.stringify({ source: t.getAttribute('data-portal-release'), orderId: +t.getAttribute('data-order'), note: note.ar || null, noteEn: note.en || null, edit: edit }) })
+                            .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+                            .then(function (res) {
+                                t.disabled = false;
+                                if (!res.ok) { if (window.toastr) toastr.error(res.error || W.failed); return; }
+                                if (window.toastr) toastr.success(W.saved);
+                                // in place, never a reload
+                                return fetch(location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.text(); }).then(function (html) {
+                                    var d = new DOMParser().parseFromString(html, 'text/html');
+                                    ['kt_app_toolbar', 'kt_app_content'].forEach(function (id) { var f = d.getElementById(id); if (f) document.getElementById(id).innerHTML = f.innerHTML; });
+                                });
+                            });
+                });
+            });
+        })();
+    </script>
+}

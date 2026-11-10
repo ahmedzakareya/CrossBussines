@@ -1,0 +1,20 @@
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    The dental renderer's words (hospital-dental.js: chart, perioArch, toothPanel) — ONE place for the dentist's chart
+    and the patient's dental report. A page adds its own words on top (the dentist's buttons, questions).
+*@
+<script>
+    window.HospitalDentalText = {
+        right: @Json.Serialize(T["Patient's right"].Value), left: @Json.Serialize(T["Patient's left"].Value), upper: @Json.Serialize(T["Upper arch"].Value), lower: @Json.Serialize(T["Lower arch"].Value),
+        noArch: @Json.Serialize(T["No periodontal exam for this arch"].Value), buccal: @Json.Serialize(T["Buccal"].Value), lingual: @Json.Serialize(T["Lingual"].Value), palatal: @Json.Serialize(T["Palatal"].Value),
+        pd: @Json.Serialize(T["PD"].Value), recession: @Json.Serialize(T["Recession"].Value), cal: @Json.Serialize(T["CAL"].Value), bleeding: @Json.Serialize(T["Bleeding"].Value),
+        mobility: @Json.Serialize(T["Mobility (0–3)"].Value), furcation: @Json.Serialize(T["Furcation"].Value),
+        st: { cond: @Json.Serialize(T["Condition"].Value), plan: @Json.Serialize(T["Treatment planned"].Value), done: @Json.Serialize(T["Completed here"].Value), exist: @Json.Serialize(T["Existing (elsewhere)"].Value) },
+        tx: { crown: @Json.Serialize(T["work:Crown"].Value), rct: @Json.Serialize(T["work:RootCanal"].Value), implant: @Json.Serialize(T["work:Implant"].Value), extract: @Json.Serialize(T["work:Extraction"].Value) },
+        surf: { M: @Json.Serialize(T["Mesial"].Value), D: @Json.Serialize(T["Distal"].Value), O: @Json.Serialize(T["Occlusal"].Value), I: @Json.Serialize(T["Incisal"].Value), B: @Json.Serialize(T["Buccal / labial"].Value), L: @Json.Serialize(T["Lingual / palatal"].Value) },
+        kind: { inc: @Json.Serialize(T["Incisor"].Value), can: @Json.Serialize(T["Canine"].Value), pre: @Json.Serialize(T["Premolar"].Value), mol: @Json.Serialize(T["Molar"].Value) },
+        primary: @Json.Serialize(T[" — primary"].Value), roots: @Json.Serialize(T["roots"].Value), surfaces: @Json.Serialize(T["Surfaces"].Value), whole: @Json.Serialize(T["Whole tooth"].Value),
+        inPlan: @Json.Serialize(T["In the treatment plan"].Value), nothing: @Json.Serialize(T["Nothing planned"].Value),
+        missing: @Json.Serialize(T["Missing"].Value), impacted: @Json.Serialize(T["Impacted"].Value), hasWork: @Json.Serialize(T["Has work"].Value), sound: @Json.Serialize(T["Sound"].Value)
+    };
+</script>

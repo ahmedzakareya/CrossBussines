@@ -1,0 +1,68 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model HospitalPatient
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H64 — the gate in front of a restricted file: who the file is (name and number only), and the emergency opening —
+    the reason, asked first, for 60 minutes, recorded and reviewed by the administrator.
+*@
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Restricted file"].Value;
+    var name = DisplayName.Of(Model.Name, Model.NameEn);
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@name</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item text-muted">@T["Patients"]</li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted hp-num">@Model.Mrn</li>
+            </ul>
+        </div>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="row justify-content-center"><div class="col-xl-7">
+            <div class="card" data-gate>
+                <div class="card-body p-10">
+                    <div class="d-flex align-items-start gap-5 mb-8">
+                        <div class="symbol symbol-60px symbol-circle flex-shrink-0"><span class="symbol-label bg-light-danger"><i class="ki-outline ki-lock-2 fs-2x text-danger"></i></span></div>
+                        <div>
+                            <h2 class="fw-bold text-gray-900 mb-2">@T["This file is restricted"]</h2>
+                            <div class="fs-6 text-gray-700">@T["Only the patient's care team and those allowed to see confidential files open it. In an emergency you can open it now: write why. The opening is recorded and the hospital administrator reviews it."]</div>
+                        </div>
+                    </div>
+                    <label class="form-label required fw-semibold">@T["The emergency that needs this file"]</label>
+                    <textarea class="form-control form-control-solid" rows="3" maxlength="500" dir="auto" data-glass-reason placeholder="@T["e.g. the patient arrived unconscious in the emergency department and needs their allergies and medicines"]"></textarea>
+                    <div class="d-flex flex-stack flex-wrap gap-3 mt-6">
+                        <span class="text-muted fs-7"><i class="ki-outline ki-time fs-6 me-1"></i>@string.Format(T["The file opens to you for {0} minutes."].Value, HospitalRestrictedRules.WindowMinutes)</span>
+                        <button type="button" class="btn btn-danger" data-glass-break data-ask="@string.Format(T["Open {0}'s restricted file? Your name, the time and your reason are recorded for review."].Value, name)"><i class="ki-outline ki-lock-3 fs-4"></i>@T["Break the glass and open"]</button>
+                    </div>
+                </div>
+            </div>
+        </div></div>
+    </div></div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            var b = document.querySelector('[data-glass-break]'); if (!b) return;
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            b.addEventListener('click', function () {
+                var reason = document.querySelector('[data-glass-reason]').value;
+                cbConfirm(b.getAttribute('data-ask'), { kind: 'danger' }).then(function (ok) {
+                    if (!ok) return; b.disabled = true;
+                    fetch(@Json.Serialize(Url.Action("BreakGlass", new { id = Model.ID })), { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify({ reason: reason }) })
+                        .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+                        .then(function (res) { b.disabled = false; if (!res.ok) { toastr.error(res.error || @Json.Serialize(T["The change could not be saved"].Value)); return; } location.reload(); });
+                });
+            });
+        })();
+    </script>
+}

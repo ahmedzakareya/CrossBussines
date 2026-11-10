@@ -24,10 +24,11 @@ namespace CrossBuy.Controllers
 			Chrome();
 			var doctors = await _outpatient.PractitionersAsync(ctx, ct);
 			var today = ClinicToday();
-			// Whose list: the one asked for, else the signed-in doctor's own, else the first doctor working today.
+			// Whose list: the one asked for, else the signed-in doctor's own, else the first doctor working today (H26: by his schedule).
+			var sch = await HospitalScheduleLoader.LoadAsync(_db, ctx.CompanyId, doctors.Select(d => d.Row).ToList(), today, today, ct);
 			var chosen = doctors.FirstOrDefault(d => d.Row.ID == doctor)
 				?? doctors.FirstOrDefault(d => d.Row.EmployeeId != null && d.Row.EmployeeId == ctx.EmployeeId)
-				?? doctors.FirstOrDefault(d => d.Row.Days().Contains(today.DayOfWeek))
+				?? doctors.FirstOrDefault(d => sch[d.Row.ID].WorksOn(today))
 				?? doctors.FirstOrDefault();
 			ViewBag.Doctors = doctors;
 			ViewBag.Doctor = chosen;

@@ -1,0 +1,235 @@
+{
+ "unit": "H59 — deaths (Report Studio death certificate)",
+ "strings": {
+  "(a) Immediate cause": {
+   "ar": "(أ) السبب المباشر",
+   "en": "(a) Immediate cause",
+   "fr": "(a) Cause immédiate"
+  },
+  "(b) Due to": {
+   "ar": "(ب) ناتج عن",
+   "en": "(b) Due to",
+   "fr": "(b) Due à"
+  },
+  "(c) Due to": {
+   "ar": "(ج) ناتج عن",
+   "en": "(c) Due to",
+   "fr": "(c) Due à"
+  },
+  "(d) Due to (underlying cause)": {
+   "ar": "(د) ناتج عن (السبب الأساسي)",
+   "en": "(d) Due to (underlying cause)",
+   "fr": "(d) Due à (cause initiale)"
+  },
+  "A death older than {0} days is certified with the civil registry": {
+   "ar": "الوفاة الأقدم من {0} يوماً تُسجّل في السجل المدني",
+   "en": "A death older than {0} days is certified with the civil registry",
+   "fr": "Un décès de plus de {0} jours se certifie à l'état civil"
+  },
+  "Autopsy requested": {
+   "ar": "طُلب تشريح",
+   "en": "Autopsy requested",
+   "fr": "Autopsie demandée"
+  },
+  "Both files have a death certificate: void one first": {
+   "ar": "للملفين شهادة وفاة: ألغِ إحداهما أولاً",
+   "en": "Both files have a death certificate: void one first",
+   "fr": "Les deux dossiers ont un certificat de décès : annulez-en un"
+  },
+  "Cause of death": {
+   "ar": "سبب الوفاة",
+   "en": "Cause of death",
+   "fr": "Cause du décès"
+  },
+  "Certify a death": {
+   "ar": "تسجيل وفاة",
+   "en": "Certify a death",
+   "fr": "Certifier un décès"
+  },
+  "Certify the death": {
+   "ar": "تسجيل الوفاة",
+   "en": "Certify the death",
+   "fr": "Certifier le décès"
+  },
+  "Certify this death? The patient's file is marked deceased, and an open stay is discharged.": {
+   "ar": "تسجيل هذه الوفاة؟ يُعلَّم ملف المريض متوفى، وتُغلق إقامته المفتوحة.",
+   "en": "Certify this death? The patient's file is marked deceased, and an open stay is discharged.",
+   "fr": "Certifier ce décès ? Le dossier est marqué décédé et le séjour ouvert est clôturé."
+  },
+  "Choose the manner of death": {
+   "ar": "اختر طريقة الوفاة",
+   "en": "Choose the manner of death",
+   "fr": "Choisissez la nature du décès"
+  },
+  "Choose where the death happened": {
+   "ar": "اختر مكان الوفاة",
+   "en": "Choose where the death happened",
+   "fr": "Choisissez le lieu du décès"
+  },
+  "Deaths": {
+   "ar": "الوفيات",
+   "en": "Deaths",
+   "fr": "Décès"
+  },
+  "Deaths are not installed yet (hospital_h59_deaths.sql).": {
+   "ar": "الوفيات غير مثبتة بعد (hospital_h59_deaths.sql).",
+   "en": "Deaths are not installed yet (hospital_h59_deaths.sql).",
+   "fr": "Les décès ne sont pas encore installés (hospital_h59_deaths.sql)."
+  },
+  "Deceased": {
+   "ar": "متوفى",
+   "en": "Deceased",
+   "fr": "Décédé"
+  },
+  "Died on": {
+   "ar": "تُوفي في",
+   "en": "Died on",
+   "fr": "Décédé le"
+  },
+  "Fill the causes in order, from the immediate cause down": {
+   "ar": "املأ الأسباب بالترتيب من السبب المباشر نزولاً",
+   "en": "Fill the causes in order, from the immediate cause down",
+   "fr": "Remplissez les causes dans l'ordre, de la cause immédiate vers le bas"
+  },
+  "Give the time of death": {
+   "ar": "حدد وقت الوفاة",
+   "en": "Give the time of death",
+   "fr": "Indiquez l'heure du décès"
+  },
+  "Manner of death": {
+   "ar": "طريقة الوفاة",
+   "en": "Manner of death",
+   "fr": "Nature du décès"
+  },
+  "No death certified.": {
+   "ar": "لا توجد وفيات مسجلة.",
+   "en": "No death certified.",
+   "fr": "Aucun décès certifié."
+  },
+  "Part I — the chain of events": {
+   "ar": "الجزء الأول — تسلسل الأحداث",
+   "en": "Part I — the chain of events",
+   "fr": "Partie I — l'enchaînement"
+  },
+  "Part II — other significant conditions": {
+   "ar": "الجزء الثاني — حالات أخرى ساهمت في الوفاة",
+   "en": "Part II — other significant conditions",
+   "fr": "Partie II — autres états morbides importants"
+  },
+  "Place of death": {
+   "ar": "مكان الوفاة",
+   "en": "Place of death",
+   "fr": "Lieu du décès"
+  },
+  "The cause of death in the international form: the chain from the immediate cause down to the underlying cause.": {
+   "ar": "سبب الوفاة بالنموذج الدولي: التسلسل من السبب المباشر إلى السبب الأساسي.",
+   "en": "The cause of death in the international form: the chain from the immediate cause down to the underlying cause.",
+   "fr": "La cause du décès selon le modèle international : de la cause immédiate à la cause initiale."
+  },
+  "The death certificate": {
+   "ar": "شهادة الوفاة",
+   "en": "The death certificate",
+   "fr": "Le certificat de décès"
+  },
+  "The death is certified": {
+   "ar": "سُجّلت الوفاة",
+   "en": "The death is certified",
+   "fr": "Le décès est certifié"
+  },
+  "The stay could not be discharged: discharge it from the ward.": {
+   "ar": "تعذر إغلاق الإقامة: أغلقها من الجناح.",
+   "en": "The stay could not be discharged: discharge it from the ward.",
+   "fr": "Le séjour n'a pas pu être clôturé : clôturez-le depuis le service."
+  },
+  "The time of death is in the future": {
+   "ar": "وقت الوفاة في المستقبل",
+   "en": "The time of death is in the future",
+   "fr": "L'heure du décès est dans le futur"
+  },
+  "This patient is deceased": {
+   "ar": "هذا المريض متوفى",
+   "en": "This patient is deceased",
+   "fr": "Ce patient est décédé"
+  },
+  "This patient's death is already certified": {
+   "ar": "وفاة هذا المريض مسجلة بالفعل",
+   "en": "This patient's death is already certified",
+   "fr": "Le décès de ce patient est déjà certifié"
+  },
+  "Time of death": {
+   "ar": "وقت الوفاة",
+   "en": "Time of death",
+   "fr": "Heure du décès"
+  },
+  "Underlying": {
+   "ar": "السبب الأساسي",
+   "en": "Underlying",
+   "fr": "Cause initiale"
+  },
+  "Write the immediate cause of death": {
+   "ar": "اكتب السبب المباشر للوفاة",
+   "en": "Write the immediate cause of death",
+   "fr": "Indiquez la cause immédiate du décès"
+  },
+  "dp:Ward": {
+   "ar": "جناح التنويم",
+   "en": "Inpatient ward",
+   "fr": "Service d'hospitalisation"
+  },
+  "dp:Icu": {
+   "ar": "العناية المركزة",
+   "en": "Intensive care",
+   "fr": "Réanimation"
+  },
+  "dp:Er": {
+   "ar": "الطوارئ",
+   "en": "Emergency",
+   "fr": "Urgences"
+  },
+  "dp:Theatre": {
+   "ar": "غرفة العمليات",
+   "en": "Operating theatre",
+   "fr": "Bloc opératoire"
+  },
+  "dp:OnArrival": {
+   "ar": "متوفى عند الوصول",
+   "en": "Dead on arrival",
+   "fr": "Décédé à l'arrivée"
+  },
+  "dp:Other": {
+   "ar": "أخرى",
+   "en": "Other",
+   "fr": "Autre"
+  },
+  "mn:Natural": {
+   "ar": "طبيعية",
+   "en": "Natural",
+   "fr": "Naturelle"
+  },
+  "mn:Accident": {
+   "ar": "حادث",
+   "en": "Accident",
+   "fr": "Accident"
+  },
+  "mn:Suicide": {
+   "ar": "انتحار",
+   "en": "Suicide",
+   "fr": "Suicide"
+  },
+  "mn:Homicide": {
+   "ar": "قتل",
+   "en": "Homicide",
+   "fr": "Homicide"
+  },
+  "mn:Pending": {
+   "ar": "قيد التحقيق",
+   "en": "Pending investigation",
+   "fr": "En cours d'enquête"
+  },
+  "mn:Undetermined": {
+   "ar": "غير محددة",
+   "en": "Could not be determined",
+   "fr": "Indéterminée"
+  }
+ }
+}

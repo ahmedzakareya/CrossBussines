@@ -1,0 +1,275 @@
+{
+  "unit": "H27 — the patient portal's results, bills and medicines; releasing a result; refill requests",
+  "strings": {
+    "A lab result is released once it is verified": {
+      "en": "A lab result is released once it is verified",
+      "ar": "تُتاح نتيجة المختبر بعد اعتمادها",
+      "fr": "Un résultat de laboratoire est publié une fois validé"
+    },
+    "A note for your doctor (optional)": {
+      "en": "A note for your doctor (optional)",
+      "ar": "ملاحظة لطبيبك (اختياري)",
+      "fr": "Une note pour votre médecin (facultatif)"
+    },
+    "A refill request for this medicine is already open": {
+      "en": "A refill request for this medicine is already open",
+      "ar": "يوجد طلب تجديد مفتوح لهذا الدواء بالفعل",
+      "fr": "Une demande de renouvellement de ce médicament est déjà ouverte"
+    },
+    "A result shows here once your doctor has reviewed it": {
+      "en": "A result shows here once your doctor has reviewed it",
+      "ar": "تظهر النتيجة هنا بعد أن يراجعها طبيبك",
+      "fr": "Un résultat s'affiche ici une fois examiné par votre médecin"
+    },
+    "Above range": {
+      "en": "Above range",
+      "ar": "أعلى من الطبيعي",
+      "fr": "Au-dessus de la normale"
+    },
+    "Amount due": {
+      "en": "Amount due",
+      "ar": "المستحق عليك",
+      "fr": "Montant dû"
+    },
+    "An imaging report is released once it is signed": {
+      "en": "An imaging report is released once it is signed",
+      "ar": "يُتاح تقرير الأشعة بعد توقيعه",
+      "fr": "Un compte rendu d'imagerie est publié une fois signé"
+    },
+    "Approve this refill: where and when does the patient collect it?": {
+      "en": "Approve this refill: where and when does the patient collect it?",
+      "ar": "الموافقة على التجديد: أين ومتى يستلم المريض الدواء؟",
+      "fr": "Approuver ce renouvellement : où et quand le patient le récupère-t-il ?"
+    },
+    "Ask your doctor to renew {0}? You can add a note.": {
+      "en": "Ask your doctor to renew {0}? You can add a note.",
+      "ar": "طلب تجديد {0} من طبيبك؟ يمكنك إضافة ملاحظة.",
+      "fr": "Demander à votre médecin de renouveler {0} ? Vous pouvez ajouter une note."
+    },
+    "Asked": {
+      "en": "Asked",
+      "ar": "تاريخ الطلب",
+      "fr": "Demandé le"
+    },
+    "Awaiting the doctor's review": {
+      "en": "Awaiting the doctor's review",
+      "ar": "بانتظار مراجعة الطبيب",
+      "fr": "En attente de l'avis du médecin"
+    },
+    "Below range": {
+      "en": "Below range",
+      "ar": "أقل من الطبيعي",
+      "fr": "En dessous de la normale"
+    },
+    "Decline this refill: the reason the patient will read": {
+      "en": "Decline this refill: the reason the patient will read",
+      "ar": "رفض التجديد: السبب الذي سيقرؤه المريض",
+      "fr": "Refuser ce renouvellement : la raison que lira le patient"
+    },
+    "From the patient portal. Approve with where and when to collect it, or decline with the reason the patient will read; approving does not dispense.": {
+      "en": "From the patient portal. Approve with where and when to collect it, or decline with the reason the patient will read; approving does not dispense.",
+      "ar": "من بوابة المريض. وافق مع ذكر مكان وموعد الاستلام، أو ارفض مع ذكر السبب الذي سيقرؤه المريض؛ الموافقة لا تعني صرف الدواء.",
+      "fr": "Depuis le portail patient. Approuvez en indiquant où et quand récupérer, ou refusez avec la raison que lira le patient ; approuver ne délivre pas le médicament."
+    },
+    "Full report": {
+      "en": "Full report",
+      "ar": "التقرير الكامل",
+      "fr": "Compte rendu complet"
+    },
+    "Let the patient see this result on the portal?": {
+      "en": "Let the patient see this result on the portal?",
+      "ar": "إتاحة هذه النتيجة للمريض على البوابة؟",
+      "fr": "Permettre au patient de voir ce résultat sur le portail ?"
+    },
+    "Medicine": {
+      "en": "Medicine",
+      "ar": "الدواء",
+      "fr": "Médicament"
+    },
+    "My medicines": {
+      "en": "My medicines",
+      "ar": "أدويتي",
+      "fr": "Mes médicaments"
+    },
+    "Normal range": {
+      "en": "Normal range",
+      "ar": "المعدل الطبيعي",
+      "fr": "Valeurs normales"
+    },
+    "On the patient portal": {
+      "en": "On the patient portal",
+      "ar": "متاحة على بوابة المريض",
+      "fr": "Sur le portail patient"
+    },
+    "Outside the normal range": {
+      "en": "Outside the normal range",
+      "ar": "خارج المعدل الطبيعي",
+      "fr": "Hors des valeurs normales"
+    },
+    "Patients asking for a medicine again": {
+      "en": "Patients asking for a medicine again",
+      "ar": "مرضى يطلبون تجديد دواء",
+      "fr": "Patients demandant un renouvellement"
+    },
+    "Pay at the hospital cashier": {
+      "en": "Pay at the hospital cashier",
+      "ar": "السداد لدى خزينة المستشفى",
+      "fr": "À régler à la caisse de l'hôpital"
+    },
+    "Prescribed by": {
+      "en": "Prescribed by",
+      "ar": "وصفه",
+      "fr": "Prescrit par"
+    },
+    "Prescribed medicines": {
+      "en": "Prescribed medicines",
+      "ar": "الأدوية الموصوفة",
+      "fr": "Médicaments prescrits"
+    },
+    "Prescribed more than a year ago: book a visit to renew it": {
+      "en": "Prescribed more than a year ago: book a visit to renew it",
+      "ar": "وُصف منذ أكثر من سنة: احجز كشفاً لتجديده",
+      "fr": "Prescrit il y a plus d'un an : prenez rendez-vous pour le renouveler"
+    },
+    "Quantity": {
+      "en": "Quantity",
+      "ar": "الكمية",
+      "fr": "Quantité"
+    },
+    "Refill request sent to your doctor": {
+      "en": "Refill request sent to your doctor",
+      "ar": "أُرسل طلب التجديد إلى طبيبك",
+      "fr": "Demande de renouvellement envoyée à votre médecin"
+    },
+    "Refill requests": {
+      "en": "Refill requests",
+      "ar": "طلبات تجديد الأدوية",
+      "fr": "Demandes de renouvellement"
+    },
+    "Release to the patient": {
+      "en": "Release to the patient",
+      "ar": "إتاحة للمريض",
+      "fr": "Publier au patient"
+    },
+    "Released to the patient": {
+      "en": "Released to the patient",
+      "ar": "أُتيحت النتيجة للمريض",
+      "fr": "Publié au patient"
+    },
+    "Request a refill": {
+      "en": "Request a refill",
+      "ar": "طلب تجديد",
+      "fr": "Demander un renouvellement"
+    },
+    "Requested by your doctor": {
+      "en": "Requested by your doctor",
+      "ar": "بطلب من طبيبك",
+      "fr": "Demandé par votre médecin"
+    },
+    "Results": {
+      "en": "Results",
+      "ar": "النتائج",
+      "fr": "Résultats"
+    },
+    "The portal records tables are not created yet (hospital_h27_portal_records.sql)": {
+      "en": "The portal records tables are not created yet (hospital_h27_portal_records.sql)",
+      "ar": "جداول سجلات البوابة لم تُنشأ بعد (hospital_h27_portal_records.sql)",
+      "fr": "Les tables des dossiers du portail ne sont pas encore créées (hospital_h27_portal_records.sql)"
+    },
+    "This result is already released to the patient": {
+      "en": "This result is already released to the patient",
+      "ar": "هذه النتيجة متاحة للمريض بالفعل",
+      "fr": "Ce résultat est déjà publié au patient"
+    },
+    "Under review": {
+      "en": "Under review",
+      "ar": "قيد المراجعة",
+      "fr": "En cours d'examen"
+    },
+    "Visit still open": {
+      "en": "Visit still open",
+      "ar": "الزيارة لم تُغلق بعد",
+      "fr": "Visite encore ouverte"
+    },
+    "What your doctors prescribed, and asking for a medicine again": {
+      "en": "What your doctors prescribed, and asking for a medicine again",
+      "ar": "ما وصفه أطباؤك، وطلب تجديد الدواء",
+      "fr": "Ce que vos médecins ont prescrit, et le renouvellement"
+    },
+    "Withdraw this refill request?": {
+      "en": "Withdraw this refill request?",
+      "ar": "سحب طلب التجديد؟",
+      "fr": "Retirer cette demande de renouvellement ?"
+    },
+    "Write the reason the patient will read": {
+      "en": "Write the reason the patient will read",
+      "ar": "اكتب السبب الذي سيقرؤه المريض",
+      "fr": "Écrivez la raison que lira le patient"
+    },
+    "Your bills show here once the front desk has verified your account.": {
+      "en": "Your bills show here once the front desk has verified your account.",
+      "ar": "تظهر فواتيرك هنا بعد أن يوثّق الاستقبال حسابك.",
+      "fr": "Vos factures s'affichent ici une fois votre compte vérifié par l'accueil."
+    },
+    "Your doctor's note": {
+      "en": "Your doctor's note",
+      "ar": "ملاحظة طبيبك",
+      "fr": "La note de votre médecin"
+    },
+    "Your medicines show here once the front desk has verified your account.": {
+      "en": "Your medicines show here once the front desk has verified your account.",
+      "ar": "تظهر أدويتك هنا بعد أن يوثّق الاستقبال حسابك.",
+      "fr": "Vos médicaments s'affichent ici une fois votre compte vérifié par l'accueil."
+    },
+    "Your results show here once the front desk has verified your account.": {
+      "en": "Your results show here once the front desk has verified your account.",
+      "ar": "تظهر نتائجك هنا بعد أن يوثّق الاستقبال حسابك.",
+      "fr": "Vos résultats s'affichent ici une fois votre compte vérifié par l'accueil."
+    },
+    "Your share": {
+      "en": "Your share",
+      "ar": "حصتك",
+      "fr": "Votre part"
+    },
+    "Your share of each visit": {
+      "en": "Your share of each visit",
+      "ar": "حصتك من كل زيارة",
+      "fr": "Votre part de chaque visite"
+    },
+    "Your word to the patient with this result (for example: normal, no action needed)": {
+      "en": "Your word to the patient with this result (for example: normal, no action needed)",
+      "ar": "كلمتك للمريض مع هذه النتيجة (مثلاً: طبيعية، لا يلزم أي إجراء)",
+      "fr": "Votre mot au patient avec ce résultat (par exemple : normal, aucune action nécessaire)"
+    },
+    "co-pay {0}%": {
+      "en": "co-pay {0}%",
+      "ar": "نسبة التحمّل {0}%",
+      "fr": "ticket modérateur {0} %"
+    },
+    "rfl:Open": {
+      "en": "Sent",
+      "ar": "مُرسل",
+      "fr": "Envoyée"
+    },
+    "rfl:Approved": {
+      "en": "Approved",
+      "ar": "تمت الموافقة",
+      "fr": "Approuvée"
+    },
+    "rfl:Declined": {
+      "en": "Declined",
+      "ar": "مرفوض",
+      "fr": "Refusée"
+    },
+    "rfl:Withdrawn": {
+      "en": "Withdrawn",
+      "ar": "مسحوب",
+      "fr": "Retirée"
+    },
+    "Paid in full": {
+      "en": "Paid in full",
+      "ar": "مسددة بالكامل",
+      "fr": "Réglée"
+    }
+  }
+}

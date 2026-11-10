@@ -1,0 +1,305 @@
+{
+  "unit": "H23 — patient portal booking rules (settings)",
+  "strings": {
+    "A clinic needs at least one visit type": {
+      "en": "A clinic needs at least one visit type",
+      "ar": "العيادة تحتاج نوع زيارة واحداً على الأقل",
+      "fr": "Une clinique doit proposer au moins un type de visite"
+    },
+    "A doctor is shown to the patient only where the clinic lets the patient choose; with the first free doctor, the free doctors' times are merged": {
+      "en": "A doctor is shown to the patient only where the clinic lets the patient choose; with the first free doctor, the free doctors' times are merged",
+      "ar": "يظهر الطبيب للمريض فقط حين تسمح العيادة باختيار الطبيب؛ وفي «أول طبيب متاح» تُجمع أوقات الأطباء المتاحين",
+      "fr": "Un médecin n'est montré au patient que si la clinique le laisse choisir ; avec « premier médecin libre », les horaires libres sont fusionnés"
+    },
+    "A follow-up is for patients already seen in this clinic": {
+      "en": "A follow-up is for patients already seen in this clinic",
+      "ar": "المتابعة لمن سبق له الكشف في هذه العيادة",
+      "fr": "Un suivi est réservé aux patients déjà vus dans cette clinique"
+    },
+    "A new visit in this clinic needs a referral": {
+      "en": "A new visit in this clinic needs a referral",
+      "ar": "الكشف الجديد في هذه العيادة يحتاج تحويلاً",
+      "fr": "Une nouvelle visite dans cette clinique exige une orientation"
+    },
+    "After that the patient calls": {
+      "en": "After that the patient calls",
+      "ar": "بعدها يتصل المريض",
+      "fr": "Ensuite le patient appelle"
+    },
+    "An expired policy books as self-pay": {
+      "en": "An expired policy books as self-pay",
+      "ar": "الوثيقة المنتهية تُحجز كمريض نقدي",
+      "fr": "Une police expirée réserve à la charge du patient"
+    },
+    "Apply to every clinic": {
+      "en": "Apply to every clinic",
+      "ar": "تنطبق على كل العيادات",
+      "fr": "S'appliquent à toutes les cliniques"
+    },
+    "Bookable online": {
+      "en": "Bookable online",
+      "ar": "يُحجز أونلاين",
+      "fr": "Réservable en ligne"
+    },
+    "Booking by clinic": {
+      "en": "Booking by clinic",
+      "ar": "الحجز حسب العيادة",
+      "fr": "Réservation par clinique"
+    },
+    "Booking for family members": {
+      "en": "Booking for family members",
+      "ar": "الحجز لأفراد الأسرة",
+      "fr": "Réservation pour la famille"
+    },
+    "Booking mode": {
+      "en": "Booking mode",
+      "ar": "نمط الحجز",
+      "fr": "Mode de réservation"
+    },
+    "Booking window (days)": {
+      "en": "Booking window (days)",
+      "ar": "أقصى مدة للحجز (يوم)",
+      "fr": "Fenêtre de réservation (jours)"
+    },
+    "Check insurance at booking": {
+      "en": "Check insurance at booking",
+      "ar": "التحقق من التأمين عند الحجز",
+      "fr": "Vérifier l'assurance à la réservation"
+    },
+    "Choose how payment is taken": {
+      "en": "Choose how payment is taken",
+      "ar": "اختر طريقة الدفع",
+      "fr": "Choisissez le mode de paiement"
+    },
+    "Choose the booking mode": {
+      "en": "Choose the booking mode",
+      "ar": "اختر نمط الحجز",
+      "fr": "Choisissez le mode de réservation"
+    },
+    "Doctors": {
+      "en": "Doctors",
+      "ar": "الأطباء",
+      "fr": "Médecins"
+    },
+    "Each change is saved at once": {
+      "en": "Each change is saved at once",
+      "ar": "كل تغيير يُحفظ فوراً",
+      "fr": "Chaque changement est enregistré aussitôt"
+    },
+    "Each clinic has a booking mode — the patient chooses the doctor, the first free doctor, a request the call centre confirms, or phone only — and each doctor can be closed to online booking or to new patients. A clinic never saved books by its default.": {
+      "en": "Each clinic has a booking mode — the patient chooses the doctor, the first free doctor, a request the call centre confirms, or phone only — and each doctor can be closed to online booking or to new patients. A clinic never saved books by its default.",
+      "ar": "لكل عيادة نمط حجز — يختار المريض الطبيب، أو أول طبيب متاح، أو طلب يؤكده مركز الاتصال، أو بالهاتف فقط — ويمكن إغلاق أي طبيب أمام الحجز أونلاين أو أمام المرضى الجدد. العيادة التي لم تُحفظ تُحجز بإعدادها الافتراضي.",
+      "fr": "Chaque clinique a un mode de réservation — le patient choisit le médecin, le premier médecin libre, une demande confirmée par le centre d'appels, ou par téléphone seulement — et chaque médecin peut être fermé à la réservation en ligne ou aux nouveaux patients. Une clinique jamais enregistrée suit son défaut."
+    },
+    "Earlier-slot waitlist": {
+      "en": "Earlier-slot waitlist",
+      "ar": "قائمة انتظار لموعد أقرب",
+      "fr": "Liste d'attente pour un créneau plus tôt"
+    },
+    "Follow-up with own doctor": {
+      "en": "Follow-up with own doctor",
+      "ar": "المتابعة مع نفس الطبيب",
+      "fr": "Suivi avec son médecin"
+    },
+    "General rules": {
+      "en": "General rules",
+      "ar": "القواعد العامة",
+      "fr": "Règles générales"
+    },
+    "How a patient books online": {
+      "en": "How a patient books online",
+      "ar": "كيف يحجز المريض أونلاين",
+      "fr": "Comment un patient réserve en ligne"
+    },
+    "Max open bookings": {
+      "en": "Max open bookings",
+      "ar": "أقصى حجوزات مفتوحة",
+      "fr": "Réservations ouvertes max."
+    },
+    "Minimum notice (hours)": {
+      "en": "Minimum notice (hours)",
+      "ar": "أقل مدة قبل الموعد (ساعة)",
+      "fr": "Préavis minimum (heures)"
+    },
+    "New patients register online": {
+      "en": "New patients register online",
+      "ar": "تسجيل المرضى الجدد أونلاين",
+      "fr": "Inscription en ligne des nouveaux patients"
+    },
+    "No slot sooner than this": {
+      "en": "No slot sooner than this",
+      "ar": "لا يُحجز موعد أقرب من ذلك",
+      "fr": "Aucun créneau plus tôt"
+    },
+    "One account books for the spouse and children linked to it": {
+      "en": "One account books for the spouse and children linked to it",
+      "ar": "حساب واحد يحجز للزوجة والأبناء المرتبطين به",
+      "fr": "Un compte réserve pour le conjoint et les enfants qui lui sont liés"
+    },
+    "Online cancel up to (hours)": {
+      "en": "Online cancel up to (hours)",
+      "ar": "الإلغاء أونلاين حتى (ساعة)",
+      "fr": "Annulation en ligne jusqu'à (heures)"
+    },
+    "Online payment at booking": {
+      "en": "Online payment at booking",
+      "ar": "الدفع أونلاين عند الحجز",
+      "fr": "Paiement en ligne à la réservation"
+    },
+    "Open bookings per patient are 1 to 20": {
+      "en": "Open bookings per patient are 1 to 20",
+      "ar": "الحجوزات المفتوحة للمريض من 1 إلى 20",
+      "fr": "Les réservations ouvertes par patient vont de 1 à 20"
+    },
+    "Patient portal": {
+      "en": "Patient portal",
+      "ar": "بوابة المريض",
+      "fr": "Portail patient"
+    },
+    "Per patient at a time": {
+      "en": "Per patient at a time",
+      "ar": "لكل مريض في نفس الوقت",
+      "fr": "Par patient à la fois"
+    },
+    "Referral for a new visit": {
+      "en": "Referral for a new visit",
+      "ar": "تحويل للكشف الجديد",
+      "fr": "Orientation pour une nouvelle visite"
+    },
+    "Show the cost before confirming": {
+      "en": "Show the cost before confirming",
+      "ar": "عرض التكلفة قبل التأكيد",
+      "fr": "Afficher le coût avant de confirmer"
+    },
+    "Takes new patients": {
+      "en": "Takes new patients",
+      "ar": "يستقبل مرضى جدد",
+      "fr": "Accepte de nouveaux patients"
+    },
+    "The account stays unverified until the front desk matches it to a file; until then it books only a new visit": {
+      "en": "The account stays unverified until the front desk matches it to a file; until then it books only a new visit",
+      "ar": "يبقى الحساب غير موثّق حتى يطابقه الاستقبال بملف؛ وحتى ذلك يحجز كشفاً جديداً فقط",
+      "fr": "Le compte reste non vérifié jusqu'à ce que l'accueil le rattache à un dossier ; d'ici là il ne réserve qu'une nouvelle visite"
+    },
+    "The booking window is 1 to 365 days": {
+      "en": "The booking window is 1 to 365 days",
+      "ar": "مدة الحجز من 1 إلى 365 يوماً",
+      "fr": "La fenêtre de réservation va de 1 à 365 jours"
+    },
+    "The furthest slot a patient can book": {
+      "en": "The furthest slot a patient can book",
+      "ar": "أبعد موعد يمكن حجزه",
+      "fr": "Le créneau le plus lointain réservable"
+    },
+    "The minimum notice is 0 to 72 hours": {
+      "en": "The minimum notice is 0 to 72 hours",
+      "ar": "أقل مدة قبل الموعد من 0 إلى 72 ساعة",
+      "fr": "Le préavis minimum va de 0 à 72 heures"
+    },
+    "The online cancel cut-off is 0 to 168 hours": {
+      "en": "The online cancel cut-off is 0 to 168 hours",
+      "ar": "موعد الإلغاء أونلاين من 0 إلى 168 ساعة",
+      "fr": "La limite d'annulation en ligne va de 0 à 168 heures"
+    },
+    "The portal rules are not set up yet": {
+      "en": "The portal rules are not set up yet",
+      "ar": "قواعد البوابة غير مُعدّة بعد",
+      "fr": "Les règles du portail ne sont pas encore configurées"
+    },
+    "The visit fee, the insurer's share and the patient's": {
+      "en": "The visit fee, the insurer's share and the patient's",
+      "ar": "رسوم الزيارة وحصة التأمين وحصة المريض",
+      "fr": "Le prix de la visite, la part de l'assureur et celle du patient"
+    },
+    "Their tables are created by the database update hospital_h23_portal_rules.sql. Until then the defaults below apply and nothing can be saved.": {
+      "en": "Their tables are created by the database update hospital_h23_portal_rules.sql. Until then the defaults below apply and nothing can be saved.",
+      "ar": "جداولها يُنشئها تحديث قاعدة البيانات hospital_h23_portal_rules.sql. حتى ذلك الحين تنطبق الإعدادات الافتراضية أدناه ولا يُحفظ شيء.",
+      "fr": "Ses tables sont créées par la mise à jour hospital_h23_portal_rules.sql. D'ici là les valeurs par défaut ci-dessous s'appliquent et rien ne peut être enregistré."
+    },
+    "This clinic is booked by phone": {
+      "en": "This clinic is booked by phone",
+      "ar": "هذه العيادة تُحجز بالهاتف",
+      "fr": "Cette clinique se réserve par téléphone"
+    },
+    "This clinic offers no video visits": {
+      "en": "This clinic offers no video visits",
+      "ar": "هذه العيادة لا تقدّم كشفاً مرئياً",
+      "fr": "Cette clinique ne propose pas de visite vidéo"
+    },
+    "This time is beyond the booking window": {
+      "en": "This time is beyond the booking window",
+      "ar": "هذا الموعد أبعد من مدة الحجز",
+      "fr": "Ce créneau dépasse la fenêtre de réservation"
+    },
+    "This time is too soon to book online": {
+      "en": "This time is too soon to book online",
+      "ar": "هذا الموعد قريب جداً للحجز أونلاين",
+      "fr": "Ce créneau est trop proche pour réserver en ligne"
+    },
+    "This visit is not booked online in this clinic": {
+      "en": "This visit is not booked online in this clinic",
+      "ar": "هذه الزيارة لا تُحجز أونلاين في هذه العيادة",
+      "fr": "Cette visite ne se réserve pas en ligne dans cette clinique"
+    },
+    "Turn video visits on to offer a video visit": {
+      "en": "Turn video visits on to offer a video visit",
+      "ar": "فعّل الكشف المرئي لتقديم استشارة مرئية",
+      "fr": "Activez la vidéo pour proposer une visite vidéo"
+    },
+    "Video visits": {
+      "en": "Video visits",
+      "ar": "كشف مرئي",
+      "fr": "Visites vidéo"
+    },
+    "Visits offered online": {
+      "en": "Visits offered online",
+      "ar": "الزيارات المتاحة أونلاين",
+      "fr": "Visites proposées en ligne"
+    },
+    "When an earlier slot frees up a message goes out; the first to reply takes it": {
+      "en": "When an earlier slot frees up a message goes out; the first to reply takes it",
+      "ar": "لو فرغ موعد أقرب تصل رسالة، وأول من يرد يأخذه",
+      "fr": "Quand un créneau plus tôt se libère, un message part ; le premier à répondre le prend"
+    },
+    "You have reached the limit of open bookings": {
+      "en": "You have reached the limit of open bookings",
+      "ar": "وصلت للحد الأقصى من الحجوزات المفتوحة",
+      "fr": "Vous avez atteint la limite de réservations ouvertes"
+    },
+    "pm:Doctor": {
+      "en": "Patient chooses the doctor",
+      "ar": "المريض يختار الطبيب",
+      "fr": "Le patient choisit le médecin"
+    },
+    "pm:Next": {
+      "en": "First free doctor",
+      "ar": "أول طبيب متاح",
+      "fr": "Premier médecin libre"
+    },
+    "pm:Request": {
+      "en": "Request, confirmed by phone",
+      "ar": "طلب يؤكده مركز الاتصال",
+      "fr": "Demande confirmée par téléphone"
+    },
+    "pm:Off": {
+      "en": "Phone only",
+      "ar": "بالهاتف فقط",
+      "fr": "Par téléphone seulement"
+    },
+    "pp:None": {
+      "en": "None — pay on arrival",
+      "ar": "لا — الدفع عند الحضور",
+      "fr": "Aucun — paiement à l'arrivée"
+    },
+    "pp:Deposit": {
+      "en": "A deposit taken off the bill",
+      "ar": "عربون يُخصم من الفاتورة",
+      "fr": "Un acompte déduit de la facture"
+    },
+    "pp:Full": {
+      "en": "The patient's full share",
+      "ar": "حصة المريض كاملة",
+      "fr": "La part entière du patient"
+    }
+  }
+}

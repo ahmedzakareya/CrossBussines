@@ -1,0 +1,237 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model IReadOnlyList<HospitalSupplyUnit>
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H32/H36 — the supply setting: each unit's own store and the store it draws from (supplies from the main store,
+    medicines from the pharmacy: two units may share one store), its pars, and WHO asks and WHO approves & dispatches
+    for it (owner ruling: a setting that can change). A duty with nobody named keeps the hospital role it defaults to.
+*@
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Units & who asks"].Value;
+    var u = ViewBag.Unit as HospitalSupplyUnit;
+    var pars = (ViewBag.Pars as IReadOnlyList<HospitalSupplyItemRow>) ?? Array.Empty<HospitalSupplyItemRow>();
+    var people = (ViewBag.People as IReadOnlyList<HospitalSupplyService.PersonRow>) ?? Array.Empty<HospitalSupplyService.PersonRow>();
+    var whs = (ViewBag.Warehouses as List<CrossBuy.Controllers.HospitalController.HospitalChoice>) ?? new();
+    var wards = (ViewBag.Wards as List<CrossBuy.Controllers.HospitalController.HospitalChoice>) ?? new();
+    var staff = (ViewBag.Staff as List<(int ID, string Name, string NameEn, string? Photo)>) ?? new();
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+    string WhName(int id) => whs.FirstOrDefault(w => w.Id == id) is { } w ? w.Label + " · " + DisplayName.Of(w.Name, w.NameEn ?? w.Name) : "—";
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+@functions {
+    private Microsoft.AspNetCore.Html.IHtmlContent Avatar(string name, string nameEn, string? photo, int size = 35)
+    {
+        var ini = HospitalUi.Initials(nameEn);
+        var av = photo != null
+            ? $"<img src=\"{System.Net.WebUtility.HtmlEncode(photo)}\" alt=\"\" style=\"object-fit:cover\" data-initials=\"{System.Net.WebUtility.HtmlEncode(ini)}\" />"
+            : $"<span class=\"symbol-label fw-bold fs-8 hp-initials\">{System.Net.WebUtility.HtmlEncode(ini)}</span>";
+        return new Microsoft.AspNetCore.Html.HtmlString($"<div class=\"symbol symbol-{size}px symbol-circle me-3 flex-shrink-0\">{av}</div><span class=\"text-gray-900 fw-bold fs-7\">{System.Net.WebUtility.HtmlEncode(DisplayName.Of(name, nameEn))}</span>");
+    }
+}
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Units & who asks"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item"><a href="@Url.Action("Supply")" class="text-muted text-hover-primary">@T["Ward requisitions"]</a></li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@T["Units & who asks"]</li>
+            </ul>
+        </div>
+        <div class="d-flex align-items-center gap-2 gap-lg-3"><button type="button" class="btn btn-sm btn-primary" data-unit-new><i class="ki-outline ki-plus fs-4"></i>@T["Add a unit"]</button></div>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="row g-5">
+            <div class="col-xl-4">
+                <div class="card mb-5">
+                    <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Supply units"]</span></div></div>
+                    <div class="card-body pt-2">
+                        @if (Model.Count == 0) { <div class="text-center text-muted py-10">@T["No unit yet: add the first ward's store."]</div> }
+                        @foreach (var x in Model)
+                        {
+                            <a href="@Url.Action("SupplyUnits", new { unit = x.ID })" class="d-flex align-items-center p-3 rounded mb-2 @(u?.ID == x.ID ? "bg-light-primary" : "bg-hover-light")" data-unit-open="@x.ID">
+                                <span class="badge badge-light fs-8 me-3 hp-num">@x.Code</span>
+                                <div class="flex-grow-1"><div class="fw-bold text-gray-900 fs-7">@DisplayName.Of(x.Name, x.NameEn)</div>
+                                    <div class="text-muted fs-8">@WhName(x.SourceWarehouseId) → @WhName(x.StoreWarehouseId)</div></div>
+                                @if (!x.IsActive) { <span class="badge badge-light-danger fs-8">@T["Inactive"]</span> }
+                            </a>
+                        }
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-8">
+                @if (u != null)
+                {
+                    <div class="card mb-5" data-unit="@u.ID" data-unit-json="@System.Text.Json.JsonSerializer.Serialize(new { id = u.ID, code = u.Code, name = u.Name, nameEn = u.NameEn, wardId = u.WardId, storeWarehouseId = u.StoreWarehouseId, sourceWarehouseId = u.SourceWarehouseId, isActive = u.IsActive })">
+                        <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
+                            <span class="card-label fw-bold text-gray-900 fs-4"><bdi class="hp-num">@u.Code</bdi> · @DisplayName.Of(u.Name, u.NameEn)</span>
+                            <span class="text-muted mt-1 fw-semibold fs-7">@T["Draws from"] @WhName(u.SourceWarehouseId) · @T["keeps in"] @WhName(u.StoreWarehouseId)</span>
+                        </div>
+                        <div class="card-toolbar"><button type="button" class="btn btn-sm btn-light" data-unit-edit><i class="ki-outline ki-pencil fs-4"></i>@T["Edit"]</button></div></div>
+                    </div>
+
+                    <div class="card mb-5">
+                        <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
+                            <span class="card-label fw-bold text-gray-900 fs-4">@T["Who asks and who gives"]</span>
+                            <span class="text-muted mt-1 fw-semibold fs-7">@T["A duty with nobody named keeps the hospital role (ward staff ask, the pharmacy gives). The hospital administrator always may."]</span>
+                        </div></div>
+                        <div class="card-body pt-2"><div class="row g-5">
+                            @foreach (var duty in HospitalSupplyDuty.All)
+                            {
+                                var mine = people.Where(p => p.Duty == duty).ToList();
+                                <div class="col-md-6"><div class="border border-dashed rounded p-4 h-100">
+                                    <div class="fw-bold text-gray-800 mb-1">@T["duty:" + duty]</div>
+                                    <div class="text-muted fs-8 mb-4">@T["duty-desc:" + duty]</div>
+                                    @if (mine.Count == 0) { <div class="text-muted fs-8 mb-3"><i class="ki-outline ki-information fs-7 me-1"></i>@T[duty == HospitalSupplyDuty.Approve ? "Nobody named: the pharmacy role gives." : "Nobody named: ward staff ask."]</div> }
+                                    @foreach (var p in mine)
+                                    {
+                                        <div class="d-flex align-items-center justify-content-between py-2">
+                                            <div class="d-flex align-items-center">@Avatar(p.Name, p.NameEn, p.Photo)</div>
+                                            <button type="button" class="btn btn-icon btn-sm btn-light w-30px h-30px" data-person-remove="@p.Id" title="@T["Remove"]"><i class="ki-outline ki-trash fs-5"></i></button>
+                                        </div>
+                                    }
+                                    <div class="d-flex gap-2 mt-3">
+                                        <select class="form-select form-select-sm form-select-solid" data-person-pick="@duty" data-person-select data-placeholder="@T["Add a person..."]">
+                                            <option></option>
+                                            @foreach (var s in staff.Where(s => !mine.Any(m => m.EmployeeId == s.ID))) { <option value="@s.ID" data-photo="@s.Photo" data-initials="@HospitalUi.Initials(s.NameEn)">@DisplayName.Of(s.Name, s.NameEn)</option> }
+                                        </select>
+                                        <button type="button" class="btn btn-sm btn-light-primary flex-shrink-0" data-person-add="@duty"><i class="ki-outline ki-plus fs-4"></i>@T["Add"]</button>
+                                    </div>
+                                </div></div>
+                            }
+                        </div></div>
+                    </div>
+
+                    <div class="card mb-5">
+                        <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
+                            <span class="card-label fw-bold text-gray-900 fs-4">@T["Ward pars"]</span>
+                            <span class="text-muted mt-1 fw-semibold fs-7">@T["Suggested quantity = ward par − ward balance"]</span>
+                        </div></div>
+                        <div class="card-body pt-2">
+                            <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-3 mb-0">
+                                <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0"><th>@T["Item"]</th><th class="text-end">@T["Par"]</th><th class="text-end">@T["On ward"]</th><th class="text-end">@T["Store stock"]</th><th class="w-50px"></th></tr></thead>
+                                <tbody class="fw-semibold text-gray-700">
+                                    @foreach (var p in pars)
+                                    {
+                                        <tr>
+                                            <td><span class="fw-semibold text-gray-800">@DisplayName.Of(p.Name, p.NameEn)</span><div class="text-muted fs-8 hp-num">@p.Code</div></td>
+                                            <td class="text-end"><input class="form-control form-control-sm form-control-solid hp-num w-90px ms-auto text-end" dir="ltr" type="number" min="0" step="any" value="@p.Par.ToString("0.###", inv)" data-par-qty="@p.ItemId" /></td>
+                                            <td class="text-end"><span class="hp-num @(p.OnWard < p.Par * 0.3m ? "text-danger fw-bold" : "")">@p.OnWard.ToString("0.###", inv)</span></td>
+                                            <td class="text-end"><span class="hp-num text-gray-600">@p.StoreStock.ToString("0.###", inv)</span></td>
+                                            <td class="text-end"><button type="button" class="btn btn-icon btn-sm btn-light w-30px h-30px" data-par-remove="@p.ItemId" title="@T["Remove"]"><i class="ki-outline ki-trash fs-5"></i></button></td>
+                                        </tr>
+                                    }
+                                    @if (pars.Count == 0) { <tr><td colspan="5" class="text-center text-muted py-8">@T["No par yet: add the items this unit keeps."]</td></tr> }
+                                </tbody>
+                            </table></div>
+                            <div class="d-flex flex-wrap align-items-center gap-3 mt-5">
+                                <div class="w-350px"><select class="form-select form-select-sm form-select-solid" data-item-pick data-placeholder="@T["Add an item..."]"></select></div>
+                                <input class="form-control form-control-sm form-control-solid hp-num w-100px" dir="ltr" type="number" min="0" step="any" placeholder="@T["Par"]" data-item-qty />
+                                <button type="button" class="btn btn-sm btn-light-primary" data-par-add><i class="ki-outline ki-plus fs-4"></i>@T["Add"]</button>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div></div>
+</div>
+
+<div class="modal fade" id="unitModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-600px"><div class="modal-content">
+    <div class="modal-header"><h3 class="fw-bold m-0" data-unit-title>@T["Add a unit"]</h3><div class="btn btn-icon btn-sm btn-active-light-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="modal-body"><div class="row g-4">
+        <div class="col-md-4"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Code"]</label><input class="form-control form-control-solid" maxlength="20" dir="ltr" data-u="code" /></div>
+        <div class="col-md-8"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Ward"]</label>
+            <select class="form-select form-select-solid" data-u="wardId" data-control="select2" data-dropdown-parent="#unitModal" data-allow-clear="true" data-placeholder="—"><option></option>@foreach (var w in wards) { <option value="@w.Id">@w.Label · @DisplayName.Of(w.Name, w.NameEn ?? w.Name)</option> }</select></div>
+        <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Name"] — @T["Arabic"]</label><input class="form-control form-control-solid" maxlength="100" dir="rtl" data-u="name" /></div>
+        <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Name"] — @T["English"]</label><input class="form-control form-control-solid" maxlength="100" dir="ltr" data-u="nameEn" /></div>
+        <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Draws from"]</label>
+            <select class="form-select form-select-solid" data-u="sourceWarehouseId" data-control="select2" data-dropdown-parent="#unitModal"><option></option>@foreach (var w in whs) { <option value="@w.Id">@w.Label · @DisplayName.Of(w.Name, w.NameEn ?? w.Name)</option> }</select></div>
+        <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Keeps in (the unit's store)"]</label>
+            <select class="form-select form-select-solid" data-u="storeWarehouseId" data-control="select2" data-dropdown-parent="#unitModal"><option></option>@foreach (var w in whs) { <option value="@w.Id">@w.Label · @DisplayName.Of(w.Name, w.NameEn ?? w.Name)</option> }</select></div>
+        <div class="col-12"><label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" data-u="isActive" checked /><span class="form-check-label fs-7">@T["Active"]</span></label></div>
+        <div class="col-12 text-muted fs-8">@T["A ward's store is an inventory warehouse (Inventory › Warehouses). Supplies usually come from the main store and medicines from the pharmacy: make two units sharing the ward's store."]</div>
+    </div></div>
+    <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-unit-save><i class="ki-outline ki-check fs-4"></i>@T["Save"]</button></div>
+</div></div></div>
+
+@section Scripts {
+    <script>
+        (function () {
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value, root = @Json.Serialize(Url.Content("~/Hospital/Supply"));
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value), add: @Json.Serialize(T["Add a unit"].Value), edit: @Json.Serialize(T["Edit"].Value) };
+            function toast(k, m) { if (window.toastr) toastr[k](m); }
+            function post(url, body) {
+                return fetch(root + url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(body || {}) })
+                    .then(function (r) { return r.json().catch(function () { return { ok: false }; }); });
+            }
+            function unitId() { var c = document.querySelector('[data-unit]'); return c ? c.getAttribute('data-unit') : null; }
+            function swap(id) {
+                var url = root + '/Units' + ((id || unitId()) ? '?unit=' + (id || unitId()) : '');
+                return fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.text(); }).then(function (html) {
+                    var d = new DOMParser().parseFromString(html, 'text/html');
+                    ['kt_app_toolbar', 'kt_app_content'].forEach(function (k) { var f = d.getElementById(k); if (f) document.getElementById(k).innerHTML = f.innerHTML; });
+                    history.replaceState(null, '', url); wire();
+                });
+            }
+            function done(btn, id) { return function (res) { if (btn) btn.disabled = false; if (!res.ok) { toast('error', res.error || W.failed); return; } toast('success', W.saved); swap(id); }; }
+            function personTpl(o) {
+                if (!o.id) return o.text;
+                var el = o.element, ph = el && el.getAttribute('data-photo'), ini = el && el.getAttribute('data-initials');
+                var av = ph ? '<img src="' + ph + '" alt="" style="object-fit:cover" />' : '<span class="symbol-label fw-bold fs-9 hp-initials">' + (ini || '') + '</span>';
+                return jQuery('<span class="d-flex align-items-center"><span class="symbol symbol-25px symbol-circle me-2">' + av + '</span><span></span></span>').find('span:last').text(o.text).end();
+            }
+            function wire() {
+                if (!window.jQuery) return;
+                document.querySelectorAll('[data-person-select]').forEach(function (s) { if (!s.classList.contains('select2-hidden-accessible')) jQuery(s).select2({ placeholder: s.getAttribute('data-placeholder'), templateResult: personTpl, templateSelection: personTpl }); });
+                var pick = document.querySelector('[data-item-pick]');
+                if (pick && !pick.classList.contains('select2-hidden-accessible'))
+                    jQuery(pick).select2({ placeholder: pick.getAttribute('data-placeholder'), allowClear: true,
+                        ajax: { url: root + '/Items', delay: 250, data: function (p) { return { q: p.term || '' }; }, processResults: function (r) { return { results: r.items || [] }; } } });
+            }
+            wire();
+            var m = document.getElementById('unitModal');
+            function fill(o) {
+                m.querySelector('[data-unit-title]').textContent = o ? W.edit : W.add;
+                ['code', 'name', 'nameEn'].forEach(function (k) { m.querySelector('[data-u=' + k + ']').value = o ? (o[k] || '') : ''; });
+                ['wardId', 'storeWarehouseId', 'sourceWarehouseId'].forEach(function (k) { jQuery(m.querySelector('[data-u=' + k + ']')).val(o && o[k] ? String(o[k]) : '').trigger('change'); });
+                m.querySelector('[data-u=isActive]').checked = o ? !!o.isActive : true;
+                m.setAttribute('data-editing', o ? o.id : '');
+            }
+            document.addEventListener('change', function (e) {
+                var t = e.target.closest('[data-par-qty]'); if (!t) return;
+                post('/Units/' + unitId() + '/Pars', { itemId: +t.getAttribute('data-par-qty'), parQty: +t.value || 0 }).then(done(null));
+            });
+            document.addEventListener('click', function (e) {
+                var t = e.target.closest('[data-unit-new],[data-unit-edit],[data-unit-save],[data-person-add],[data-person-remove],[data-par-add],[data-par-remove]'); if (!t) return;
+                if (t.hasAttribute('data-unit-new')) { fill(null); bootstrap.Modal.getOrCreateInstance(m).show(); return; }
+                if (t.hasAttribute('data-unit-edit')) { var c = document.querySelector('[data-unit-json]'); fill(c ? JSON.parse(c.getAttribute('data-unit-json')) : null); bootstrap.Modal.getOrCreateInstance(m).show(); return; }
+                if (t.hasAttribute('data-unit-save')) {
+                    var v = function (k) { return m.querySelector('[data-u=' + k + ']').value; }, id = m.getAttribute('data-editing');
+                    t.disabled = true;
+                    post('/Units', { id: id ? +id : null, code: v('code'), name: v('name'), nameEn: v('nameEn'), wardId: v('wardId') ? +v('wardId') : null,
+                        storeWarehouseId: +v('storeWarehouseId') || 0, sourceWarehouseId: +v('sourceWarehouseId') || 0, isActive: m.querySelector('[data-u=isActive]').checked })
+                        .then(function (res) { t.disabled = false; if (!res.ok) { toast('error', res.error || W.failed); return; } bootstrap.Modal.getOrCreateInstance(m).hide(); toast('success', W.saved); swap(res.id); });
+                    return;
+                }
+                if (t.hasAttribute('data-person-add')) {
+                    var duty = t.getAttribute('data-person-add'), sel = document.querySelector('[data-person-pick="' + duty + '"]');
+                    if (!sel.value) return; t.disabled = true; post('/Units/' + unitId() + '/People', { employeeId: +sel.value, duty: duty }).then(done(t)); return;
+                }
+                if (t.hasAttribute('data-person-remove')) { t.disabled = true; post('/People/' + t.getAttribute('data-person-remove') + '/Remove').then(done(t)); return; }
+                if (t.hasAttribute('data-par-add')) {
+                    var it = document.querySelector('[data-item-pick]').value, q = +document.querySelector('[data-item-qty]').value || 0;
+                    if (!it) return; t.disabled = true; post('/Units/' + unitId() + '/Pars', { itemId: +it, parQty: q }).then(done(t)); return;
+                }
+                if (t.hasAttribute('data-par-remove')) { t.disabled = true; post('/Units/' + unitId() + '/Pars/' + t.getAttribute('data-par-remove') + '/Remove').then(done(t)); }
+            });
+        })();
+    </script>
+}

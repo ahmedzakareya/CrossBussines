@@ -1,0 +1,21 @@
+{
+  "unit": "H54 — root-cause analysis follow-up as tasks of the task module",
+  "strings": {
+    "Follow-up tasks": { "ar": "مهام المتابعة", "en": "Follow-up tasks", "fr": "Tâches de suivi" },
+    "No follow-up task yet.": { "ar": "لا توجد مهام متابعة بعد.", "en": "No follow-up task yet.", "fr": "Aucune tâche de suivi pour le moment." },
+    "What is to be done": { "ar": "المطلوب عمله", "en": "What is to be done", "fr": "Ce qui doit être fait" },
+    "Who will do it": { "ar": "المسؤول عنه", "en": "Who will do it", "fr": "Responsable" },
+    "Open a follow-up task": { "ar": "فتح مهمة متابعة", "en": "Open a follow-up task", "fr": "Ouvrir une tâche de suivi" },
+    "Save the root-cause analysis?": { "ar": "حفظ تحليل السبب الجذري؟", "en": "Save the root-cause analysis?", "fr": "Enregistrer l'analyse des causes ?" },
+    "Open a follow-up task for {0} on the task list?": { "ar": "فتح مهمة متابعة لـ {0} في قائمة المهام؟", "en": "Open a follow-up task for {0} on the task list?", "fr": "Ouvrir une tâche de suivi pour {0} dans la liste des tâches ?" },
+    "The task is on the task list": { "ar": "أُضيفت المهمة إلى قائمة المهام", "en": "The task is on the task list", "fr": "La tâche est dans la liste" },
+    "Follow-up tasks are opened during the root-cause analysis": { "ar": "تُفتح مهام المتابعة أثناء تحليل السبب الجذري", "en": "Follow-up tasks are opened during the root-cause analysis", "fr": "Les tâches de suivi s'ouvrent pendant l'analyse des causes" },
+    "Write what is to be done": { "ar": "اكتب المطلوب عمله", "en": "Write what is to be done", "fr": "Indiquez ce qui doit être fait" },
+    "Choose who will do it": { "ar": "اختر المسؤول عنه", "en": "Choose who will do it", "fr": "Choisissez le responsable" },
+    "Give a due date from today on": { "ar": "حدد موعداً نهائياً من اليوم فصاعداً", "en": "Give a due date from today on", "fr": "Indiquez une échéance à partir d'aujourd'hui" },
+    "The task could not be created": { "ar": "تعذر إنشاء المهمة", "en": "The task could not be created", "fr": "La tâche n'a pas pu être créée" },
+    "task:New": { "ar": "جديدة", "en": "New", "fr": "Nouvelle" },
+    "task:InProgress": { "ar": "قيد التنفيذ", "en": "In progress", "fr": "En cours" },
+    "task:Done": { "ar": "منجزة", "en": "Done", "fr": "Terminée" }
+  }
+}

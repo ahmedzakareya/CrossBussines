@@ -1,0 +1,605 @@
+{
+ "unit": "H71 — ward observations (NEWS2), Morse and Braden",
+ "strings": {
+  "An urgent task was opened on the ward board: tell the doctor now.": {
+   "ar": "فُتحت مهمة عاجلة على لوحة الجناح: أبلغ الطبيب الآن.",
+   "en": "An urgent task was opened on the ward board: tell the doctor now.",
+   "fr": "Une tâche urgente a été ouverte sur le tableau du service : prévenez le médecin maintenant."
+  },
+  "Answer every item": {
+   "ar": "أجب عن كل البنود",
+   "en": "Answer every item",
+   "fr": "Répondez à chaque item"
+  },
+  "Assessment due": {
+   "ar": "التقييم مستحق",
+   "en": "Assessment due",
+   "fr": "Évaluation à faire"
+  },
+  "Blood pressure is out of range": {
+   "ar": "ضغط الدم خارج النطاق",
+   "en": "Blood pressure is out of range",
+   "fr": "La tension est hors limites"
+  },
+  "Chart": {
+   "ar": "المخطط",
+   "en": "Chart",
+   "fr": "Courbe"
+  },
+  "Choose the assessment": {
+   "ar": "اختر التقييم",
+   "en": "Choose the assessment",
+   "fr": "Choisissez l'évaluation"
+  },
+  "Choose the level of consciousness": {
+   "ar": "اختر مستوى الوعي",
+   "en": "Choose the level of consciousness",
+   "fr": "Choisissez le niveau de conscience"
+  },
+  "Consciousness (ACVPU)": {
+   "ar": "مستوى الوعي (ACVPU)",
+   "en": "Consciousness (ACVPU)",
+   "fr": "Conscience (ACVPU)"
+  },
+  "Diastolic BP": {
+   "ar": "الضغط الانبساطي",
+   "en": "Diastolic BP",
+   "fr": "PA diastolique"
+  },
+  "Due now": {
+   "ar": "مستحق الآن",
+   "en": "Due now",
+   "fr": "À faire maintenant"
+  },
+  "Enter at least one reading": {
+   "ar": "أدخل قراءة واحدة على الأقل",
+   "en": "Enter at least one reading",
+   "fr": "Saisissez au moins une mesure"
+  },
+  "Falls (Morse)": {
+   "ar": "السقوط (مورس)",
+   "en": "Falls (Morse)",
+   "fr": "Chutes (Morse)"
+  },
+  "Falls risk (Morse)": {
+   "ar": "خطر السقوط (مقياس مورس)",
+   "en": "Falls risk (Morse)",
+   "fr": "Risque de chute (Morse)"
+  },
+  "Incomplete set": {
+   "ar": "قياس غير مكتمل",
+   "en": "Incomplete set",
+   "fr": "Série incomplète"
+  },
+  "Last readings": {
+   "ar": "آخر القراءات",
+   "en": "Last readings",
+   "fr": "Dernières mesures"
+  },
+  "Level": {
+   "ar": "المستوى",
+   "en": "Level",
+   "fr": "Niveau"
+  },
+  "NEWS2 is worked out when all seven readings are entered; a score that needs a response opens an urgent task for the ward.": {
+   "ar": "يُحسب NEWS2 عند إدخال القراءات السبع كاملة، والدرجة التي تستدعي استجابة تفتح مهمة عاجلة للجناح.",
+   "en": "NEWS2 is worked out when all seven readings are entered; a score that needs a response opens an urgent task for the ward.",
+   "fr": "Le NEWS2 est calculé quand les sept mesures sont saisies ; un score qui exige une réponse ouvre une tâche urgente pour le service."
+  },
+  "NEWS2 {0} — {1}": {
+   "ar": "NEWS2 {0} — {1}",
+   "en": "NEWS2 {0} — {1}",
+   "fr": "NEWS2 {0} — {1}"
+  },
+  "Need a response": {
+   "ar": "تحتاج استجابة",
+   "en": "Need a response",
+   "fr": "Nécessitent une réponse"
+  },
+  "Next set": {
+   "ar": "القياس التالي",
+   "en": "Next set",
+   "fr": "Prochaine série"
+  },
+  "No observations yet": {
+   "ar": "لا توجد قياسات بعد",
+   "en": "No observations yet",
+   "fr": "Aucune mesure pour l'instant"
+  },
+  "No patients on this ward.": {
+   "ar": "لا يوجد مرضى في هذا الجناح.",
+   "en": "No patients on this ward.",
+   "fr": "Aucun patient dans ce service."
+  },
+  "None yet.": {
+   "ar": "لا يوجد بعد.",
+   "en": "None yet.",
+   "fr": "Aucune pour l'instant."
+  },
+  "Observation chart": {
+   "ar": "مخطط القياسات",
+   "en": "Observation chart",
+   "fr": "Feuille de surveillance"
+  },
+  "Observations and risk — NEWS2": {
+   "ar": "القياسات والمخاطر — NEWS2",
+   "en": "Observations and risk — NEWS2",
+   "fr": "Surveillance et risques — NEWS2"
+  },
+  "Observations overdue": {
+   "ar": "قياسات متأخرة",
+   "en": "Observations overdue",
+   "fr": "Mesures en retard"
+  },
+  "On oxygen": {
+   "ar": "على أكسجين",
+   "en": "On oxygen",
+   "fr": "Sous oxygène"
+  },
+  "Pain": {
+   "ar": "الألم",
+   "en": "Pain",
+   "fr": "Douleur"
+  },
+  "Pain (0–10)": {
+   "ar": "الألم (0–10)",
+   "en": "Pain (0–10)",
+   "fr": "Douleur (0–10)"
+  },
+  "Pain is scored 0 to 10": {
+   "ar": "يُقيَّم الألم من 0 إلى 10",
+   "en": "Pain is scored 0 to 10",
+   "fr": "La douleur se note de 0 à 10"
+  },
+  "Pressure-injury risk (Braden)": {
+   "ar": "خطر قرح الفراش (مقياس برادن)",
+   "en": "Pressure-injury risk (Braden)",
+   "fr": "Risque d'escarre (Braden)"
+  },
+  "Pulse /min": {
+   "ar": "النبض /دقيقة",
+   "en": "Pulse /min",
+   "fr": "Pouls /min"
+  },
+  "Pulse must be 20 to 250 a minute": {
+   "ar": "النبض من 20 إلى 250 في الدقيقة",
+   "en": "Pulse must be 20 to 250 a minute",
+   "fr": "Le pouls doit être entre 20 et 250 par minute"
+  },
+  "Reassess pain": {
+   "ar": "أعد تقييم الألم",
+   "en": "Reassess pain",
+   "fr": "Réévaluer la douleur"
+  },
+  "Record observations": {
+   "ar": "تسجيل القياسات",
+   "en": "Record observations",
+   "fr": "Saisir les mesures"
+  },
+  "Record these observations for {0}?": {
+   "ar": "تسجيل هذه القياسات لـ {0}؟",
+   "en": "Record these observations for {0}?",
+   "fr": "Enregistrer ces mesures pour {0} ?"
+  },
+  "Respiration /min": {
+   "ar": "التنفس /دقيقة",
+   "en": "Respiration /min",
+   "fr": "Respiration /min"
+  },
+  "Respiration must be 0 to 80 a minute": {
+   "ar": "التنفس من 0 إلى 80 في الدقيقة",
+   "en": "Respiration must be 0 to 80 a minute",
+   "fr": "La respiration doit être entre 0 et 80 par minute"
+  },
+  "Risk assessments": {
+   "ar": "تقييمات المخاطر",
+   "en": "Risk assessments",
+   "fr": "Évaluations des risques"
+  },
+  "Save this assessment for {0}?": {
+   "ar": "حفظ هذا التقييم لـ {0}؟",
+   "en": "Save this assessment for {0}?",
+   "fr": "Enregistrer cette évaluation pour {0} ?"
+  },
+  "Saved. NEWS2 needs all seven readings, so this set is not scored.": {
+   "ar": "حُفظ. يحتاج NEWS2 القراءات السبع كاملة، لذلك لم يُحسب لهذا القياس.",
+   "en": "Saved. NEWS2 needs all seven readings, so this set is not scored.",
+   "fr": "Enregistré. Le NEWS2 exige les sept mesures, cette série n'est donc pas notée."
+  },
+  "Scale": {
+   "ar": "المقياس",
+   "en": "Scale",
+   "fr": "Échelle"
+  },
+  "Score": {
+   "ar": "الدرجة",
+   "en": "Score",
+   "fr": "Score"
+  },
+  "Skin": {
+   "ar": "الجلد",
+   "en": "Skin",
+   "fr": "Peau"
+  },
+  "Skin (Braden)": {
+   "ar": "الجلد (برادن)",
+   "en": "Skin (Braden)",
+   "fr": "Peau (Braden)"
+  },
+  "SpO₂ must be 50 to 100%": {
+   "ar": "تشبع الأكسجين من 50 إلى 100%",
+   "en": "SpO₂ must be 50 to 100%",
+   "fr": "La SpO₂ doit être entre 50 et 100 %"
+  },
+  "SpO₂ scale 2 (target 88–92%)": {
+   "ar": "مقياس SpO₂ رقم 2 (الهدف 88–92%)",
+   "en": "SpO₂ scale 2 (target 88–92%)",
+   "fr": "Échelle SpO₂ 2 (cible 88–92 %)"
+  },
+  "Systolic BP": {
+   "ar": "الضغط الانقباضي",
+   "en": "Systolic BP",
+   "fr": "PA systolique"
+  },
+  "Taken at": {
+   "ar": "وقت القياس",
+   "en": "Taken at",
+   "fr": "Prise à"
+  },
+  "Temperature must be 30 to 45 °C": {
+   "ar": "الحرارة من 30 إلى 45 °م",
+   "en": "Temperature must be 30 to 45 °C",
+   "fr": "La température doit être entre 30 et 45 °C"
+  },
+  "The diastolic pressure must be below the systolic": {
+   "ar": "يجب أن يكون الانبساطي أقل من الانقباضي",
+   "en": "The diastolic pressure must be below the systolic",
+   "fr": "La diastolique doit être inférieure à la systolique"
+  },
+  "The early warning score, falls risk (Morse) and pressure-injury risk (Braden) of every patient on the ward": {
+   "ar": "مؤشر الإنذار المبكر وخطر السقوط (مورس) وخطر قرح الفراش (برادن) لكل مريض في الجناح",
+   "en": "The early warning score, falls risk (Morse) and pressure-injury risk (Braden) of every patient on the ward",
+   "fr": "Le score d'alerte précoce, le risque de chute (Morse) et le risque d'escarre (Braden) de chaque patient du service"
+  },
+  "This admission is not active": {
+   "ar": "هذا التنويم غير نشط",
+   "en": "This admission is not active",
+   "fr": "Cette hospitalisation n'est pas active"
+  },
+  "Ward observations are not installed yet (hospital_h71_observations.sql).": {
+   "ar": "قياسات الجناح غير مثبتة بعد (hospital_h71_observations.sql).",
+   "en": "Ward observations are not installed yet (hospital_h71_observations.sql).",
+   "fr": "La surveillance du service n'est pas encore installée (hospital_h71_observations.sql)."
+  },
+  "news2risk:Low": {
+   "ar": "منخفض",
+   "en": "Low",
+   "fr": "Faible"
+  },
+  "news2risk:LowSingle": {
+   "ar": "منخفض–متوسط (قيمة = 3)",
+   "en": "Low–medium (a single 3)",
+   "fr": "Faible–moyen (un paramètre à 3)"
+  },
+  "news2risk:Medium": {
+   "ar": "متوسط — استجابة عاجلة",
+   "en": "Medium — urgent response",
+   "fr": "Moyen — réponse urgente"
+  },
+  "news2risk:High": {
+   "ar": "عالٍ — استجابة طارئة",
+   "en": "High — emergency response",
+   "fr": "Élevé — réponse d'urgence"
+  },
+  "news2task:High": {
+   "ar": "NEWS2 {0} — طوارئ: أبلغ الطبيب فوراً واطلب فريق الاستجابة السريعة",
+   "en": "NEWS2 {0} — emergency: tell the doctor at once and call the rapid response team",
+   "fr": "NEWS2 {0} — urgence : prévenez immédiatement le médecin et appelez l'équipe d'intervention rapide"
+  },
+  "news2task:Medium": {
+   "ar": "NEWS2 {0} — عاجل: أبلغ الطبيب المعالج الآن وكرر القياس كل ساعة",
+   "en": "NEWS2 {0} — urgent: tell the treating doctor now and repeat every hour",
+   "fr": "NEWS2 {0} — urgent : prévenez le médecin traitant et répétez toutes les heures"
+  },
+  "news2task:LowSingle": {
+   "ar": "NEWS2 {0} (قيمة واحدة = 3) — أبلغ الطبيب المعالج وكرر القياس كل ساعة",
+   "en": "NEWS2 {0} (a single 3) — tell the treating doctor and repeat every hour",
+   "fr": "NEWS2 {0} (un paramètre à 3) — prévenez le médecin traitant et répétez toutes les heures"
+  },
+  "news2task:Low": {
+   "ar": "NEWS2 {0}",
+   "en": "NEWS2 {0}",
+   "fr": "NEWS2 {0}"
+  },
+  "riskKind:Morse": {
+   "ar": "خطر السقوط (مورس)",
+   "en": "Falls (Morse)",
+   "fr": "Chutes (Morse)"
+  },
+  "riskKind:Braden": {
+   "ar": "قرح الفراش (برادن)",
+   "en": "Pressure injury (Braden)",
+   "fr": "Escarre (Braden)"
+  },
+  "riskLevel:Low": {
+   "ar": "منخفض",
+   "en": "Low",
+   "fr": "Faible"
+  },
+  "riskLevel:Moderate": {
+   "ar": "متوسط",
+   "en": "Moderate",
+   "fr": "Modéré"
+  },
+  "riskLevel:High": {
+   "ar": "عالٍ",
+   "en": "High",
+   "fr": "Élevé"
+  },
+  "riskLevel:VeryHigh": {
+   "ar": "عالٍ جداً",
+   "en": "Very high",
+   "fr": "Très élevé"
+  },
+  "riskLevel:Mild": {
+   "ar": "بسيط",
+   "en": "Mild",
+   "fr": "Léger"
+  },
+  "riskLevel:None": {
+   "ar": "لا خطر",
+   "en": "None",
+   "fr": "Aucun"
+  },
+  "acvpu:A": {
+   "ar": "واعٍ",
+   "en": "Alert",
+   "fr": "Alerte"
+  },
+  "acvpu:C": {
+   "ar": "تشوش جديد",
+   "en": "New confusion",
+   "fr": "Confusion récente"
+  },
+  "acvpu:V": {
+   "ar": "يستجيب للصوت",
+   "en": "Voice",
+   "fr": "Voix"
+  },
+  "acvpu:P": {
+   "ar": "يستجيب للألم",
+   "en": "Pain",
+   "fr": "Douleur"
+  },
+  "acvpu:U": {
+   "ar": "لا يستجيب",
+   "en": "Unresponsive",
+   "fr": "Aréactif"
+  },
+  "rk:History of falling (last 3 months)": {
+   "ar": "سقوط سابق (آخر 3 أشهر)",
+   "en": "History of falling (last 3 months)",
+   "fr": "Antécédent de chute (3 derniers mois)"
+  },
+  "rk:Secondary diagnosis": {
+   "ar": "تشخيص ثانوي",
+   "en": "Secondary diagnosis",
+   "fr": "Diagnostic secondaire"
+  },
+  "rk:Ambulatory aid": {
+   "ar": "وسيلة المساعدة على المشي",
+   "en": "Ambulatory aid",
+   "fr": "Aide à la marche"
+  },
+  "rk:IV line or heparin lock": {
+   "ar": "خط وريدي أو قفل هيبارين",
+   "en": "IV line or heparin lock",
+   "fr": "Voie veineuse ou obturateur hépariné"
+  },
+  "rk:Gait": {
+   "ar": "المشية",
+   "en": "Gait",
+   "fr": "Démarche"
+  },
+  "rk:Mental status": {
+   "ar": "الحالة الذهنية",
+   "en": "Mental status",
+   "fr": "État mental"
+  },
+  "rk:No": {
+   "ar": "لا",
+   "en": "No",
+   "fr": "Non"
+  },
+  "rk:Yes": {
+   "ar": "نعم",
+   "en": "Yes",
+   "fr": "Oui"
+  },
+  "rk:None, bed rest or nurse assists": {
+   "ar": "لا شيء / راحة بالسرير / بمساعدة الممرض",
+   "en": "None, bed rest or nurse assists",
+   "fr": "Aucune, alitement ou aide infirmière"
+  },
+  "rk:Crutches, cane or walker": {
+   "ar": "عكازات أو عصا أو مشاية",
+   "en": "Crutches, cane or walker",
+   "fr": "Béquilles, canne ou déambulateur"
+  },
+  "rk:Holds on to furniture": {
+   "ar": "يستند إلى الأثاث",
+   "en": "Holds on to furniture",
+   "fr": "S'appuie sur le mobilier"
+  },
+  "rk:Normal, bed rest or wheelchair": {
+   "ar": "طبيعية / بالسرير / كرسي متحرك",
+   "en": "Normal, bed rest or wheelchair",
+   "fr": "Normale, alité ou fauteuil roulant"
+  },
+  "rk:Weak": {
+   "ar": "ضعيفة",
+   "en": "Weak",
+   "fr": "Faible"
+  },
+  "rk:Impaired": {
+   "ar": "مضطربة",
+   "en": "Impaired",
+   "fr": "Altérée"
+  },
+  "rk:Knows own ability": {
+   "ar": "يعرف قدراته",
+   "en": "Knows own ability",
+   "fr": "Connaît ses capacités"
+  },
+  "rk:Overestimates or forgets limitations": {
+   "ar": "يبالغ في قدراته أو ينسى حدوده",
+   "en": "Overestimates or forgets limitations",
+   "fr": "Surestime ou oublie ses limites"
+  },
+  "rk:Sensory perception": {
+   "ar": "الإدراك الحسي",
+   "en": "Sensory perception",
+   "fr": "Perception sensorielle"
+  },
+  "rk:Moisture": {
+   "ar": "الرطوبة",
+   "en": "Moisture",
+   "fr": "Humidité"
+  },
+  "rk:Activity": {
+   "ar": "النشاط",
+   "en": "Activity",
+   "fr": "Activité"
+  },
+  "rk:Mobility": {
+   "ar": "الحركة",
+   "en": "Mobility",
+   "fr": "Mobilité"
+  },
+  "rk:Nutrition": {
+   "ar": "التغذية",
+   "en": "Nutrition",
+   "fr": "Nutrition"
+  },
+  "rk:Friction and shear": {
+   "ar": "الاحتكاك والقص",
+   "en": "Friction and shear",
+   "fr": "Frottement et cisaillement"
+  },
+  "rk:Completely limited": {
+   "ar": "محدود تماماً",
+   "en": "Completely limited",
+   "fr": "Complètement limitée"
+  },
+  "rk:Very limited": {
+   "ar": "محدود جداً",
+   "en": "Very limited",
+   "fr": "Très limitée"
+  },
+  "rk:Slightly limited": {
+   "ar": "محدود قليلاً",
+   "en": "Slightly limited",
+   "fr": "Légèrement limitée"
+  },
+  "rk:No impairment": {
+   "ar": "لا ضعف",
+   "en": "No impairment",
+   "fr": "Aucune altération"
+  },
+  "rk:Constantly moist": {
+   "ar": "رطب باستمرار",
+   "en": "Constantly moist",
+   "fr": "Constamment humide"
+  },
+  "rk:Very moist": {
+   "ar": "رطب جداً",
+   "en": "Very moist",
+   "fr": "Très humide"
+  },
+  "rk:Occasionally moist": {
+   "ar": "رطب أحياناً",
+   "en": "Occasionally moist",
+   "fr": "Parfois humide"
+  },
+  "rk:Rarely moist": {
+   "ar": "نادراً ما يكون رطباً",
+   "en": "Rarely moist",
+   "fr": "Rarement humide"
+  },
+  "rk:Bedfast": {
+   "ar": "ملازم للسرير",
+   "en": "Bedfast",
+   "fr": "Alité"
+  },
+  "rk:Chairfast": {
+   "ar": "ملازم للكرسي",
+   "en": "Chairfast",
+   "fr": "Au fauteuil"
+  },
+  "rk:Walks occasionally": {
+   "ar": "يمشي أحياناً",
+   "en": "Walks occasionally",
+   "fr": "Marche occasionnellement"
+  },
+  "rk:Walks frequently": {
+   "ar": "يمشي كثيراً",
+   "en": "Walks frequently",
+   "fr": "Marche fréquemment"
+  },
+  "rk:Completely immobile": {
+   "ar": "لا يتحرك تماماً",
+   "en": "Completely immobile",
+   "fr": "Complètement immobile"
+  },
+  "rk:No limitation": {
+   "ar": "لا قيود",
+   "en": "No limitation",
+   "fr": "Aucune limitation"
+  },
+  "rk:Very poor": {
+   "ar": "ضعيفة جداً",
+   "en": "Very poor",
+   "fr": "Très pauvre"
+  },
+  "rk:Probably inadequate": {
+   "ar": "غالباً غير كافية",
+   "en": "Probably inadequate",
+   "fr": "Probablement insuffisante"
+  },
+  "rk:Adequate": {
+   "ar": "كافية",
+   "en": "Adequate",
+   "fr": "Adéquate"
+  },
+  "rk:Excellent": {
+   "ar": "ممتازة",
+   "en": "Excellent",
+   "fr": "Excellente"
+  },
+  "rk:Problem": {
+   "ar": "مشكلة قائمة",
+   "en": "Problem",
+   "fr": "Problème"
+  },
+  "rk:Potential problem": {
+   "ar": "مشكلة محتملة",
+   "en": "Potential problem",
+   "fr": "Problème potentiel"
+  },
+  "rk:No apparent problem": {
+   "ar": "لا مشكلة ظاهرة",
+   "en": "No apparent problem",
+   "fr": "Pas de problème apparent"
+  },
+  "obs:falls": {
+   "ar": "خطر السقوط",
+   "en": "Falls risk",
+   "fr": "Risque de chute"
+  },
+  "obs:skin": {
+   "ar": "قرح الفراش",
+   "en": "Pressure injury",
+   "fr": "Escarre"
+  }
+ }
+}

@@ -1,0 +1,97 @@
+@using System.Globalization
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    PATIENT PORTAL SELF-REGISTRATION (H25): an UNVERIFIED account and its sign-in. It can send requests; the front
+    desk matches it to a patient file (H24) before it books on its own.
+*@
+@{
+    Layout = null;
+    var isAr = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    int company = ViewBag.Company is int c ? c : 0;
+    bool open = ViewBag.Open == true;
+}
+<!DOCTYPE html>
+<html lang="@(isAr ? "ar" : "en")" dir="@(isAr ? "rtl" : "ltr")">
+<head>
+    <title>@T["Create an account"] — @T["Patient portal"]</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="shortcut icon" href="@Url.Content(CrossBuy.BL.Platform.ProductIdentity.Assets.FaviconIco)" asp-append-version="true" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,400,500,600,700" />
+    <link href="/portal-assets/plugins/global/plugins.bundle@(isAr ? ".rtl" : "").css" rel="stylesheet" type="text/css" asp-append-version="true" />
+    <link href="/portal-assets/css/style.bundle@(isAr ? ".rtl" : "").css" rel="stylesheet" type="text/css" asp-append-version="true" />
+    <link href="/Backend-assets/css/crossbuy-brand.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+    <link href="/Backend-assets/css/crossbusiness-portal.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+    @if (isAr)
+    {
+        <link href="/Backend-assets/fonts/cairo/cairo.css" rel="stylesheet" asp-append-version="true">
+        <style>html[lang="ar"] body, html[lang="ar"] .btn, html[lang="ar"] input, html[lang="ar"] h1 { font-family: 'Cairo', sans-serif; }</style>
+    }
+</head>
+<body id="kt_body" class="app-blank">
+    <script>document.documentElement.setAttribute("data-bs-theme", "light");</script>
+    <div class="d-flex flex-column flex-root" id="kt_app_root">
+        <div class="d-flex flex-column flex-lg-row flex-column-fluid">
+            <div class="d-flex flex-column flex-lg-row-fluid w-lg-50 p-10 order-2 order-lg-1">
+                <div class="d-flex flex-center flex-column flex-lg-row-fluid">
+                    <div class="w-lg-500px p-10">
+                        <div class="text-center mb-10">
+                            <img alt="" class="h-40px mb-6" src="@Url.Content(CrossBuy.BL.Platform.ProductIdentity.Assets.LogoOnLight)" asp-append-version="true" />
+                            <h1 class="text-gray-900 fw-bolder mb-3">@T["Create an account"]</h1>
+                            <div class="text-gray-500 fw-semibold fs-6">@T["The hospital checks who you are on your first visit; until then you can send booking requests"]</div>
+                        </div>
+                        @if (!open)
+                        {
+                            <div class="alert alert-primary">@T["Registration online is not open: please visit the hospital"]</div>
+                        }
+                        else
+                        {
+                            <form id="ppRegForm" autocomplete="off">
+                                @Html.AntiForgeryToken()
+                                <div id="ppRegError" class="alert alert-danger d-none" role="alert"></div>
+                                <div class="row g-4 mb-4">
+                                    <div class="col-md-6"><input class="form-control bg-transparent" name="name" dir="rtl" placeholder="@T["Name (Arabic)"]" /></div>
+                                    <div class="col-md-6"><input class="form-control bg-transparent" name="nameEn" dir="ltr" placeholder="@T["Name (English)"]" /></div>
+                                    <div class="col-md-6"><input class="form-control bg-transparent" name="phone" dir="ltr" inputmode="tel" placeholder="@T["Phone"]" /></div>
+                                    <div class="col-md-6"><input class="form-control bg-transparent" name="nationalId" dir="ltr" inputmode="numeric" placeholder="@T["Civil ID"]" /></div>
+                                    <div class="col-md-6"><label class="text-muted fs-8 mb-1">@T["Date of birth"]</label><input class="form-control bg-transparent" name="birthDate" type="date" /></div>
+                                </div>
+                                <div class="separator separator-dashed my-6"></div>
+                                <div class="fv-row mb-4"><input class="form-control bg-transparent" name="userName" dir="ltr" autocomplete="username" placeholder="@T["User name"]" /></div>
+                                <div class="fv-row mb-8"><input class="form-control bg-transparent" name="password" type="password" autocomplete="new-password" placeholder="@T["Password"]" /></div>
+                                <div class="d-grid mb-6"><button type="submit" class="btn btn-primary" id="ppRegSubmit">@T["Create an account"]</button></div>
+                            </form>
+                            <div class="alert alert-success d-none" id="ppRegDone">@T["Your account is ready. Sign in to send your first request."] <a href="@Url.Action("Login", new { c = company })" class="fw-bold">@T["Sign in"]</a></div>
+                        }
+                        <div class="text-gray-500 text-center fw-semibold fs-6 mt-6">@T["Already have an account?"] <a href="@Url.Action("Login", new { c = company })" class="link-primary">@T["Sign in"]</a></div>
+                    </div>
+                </div>
+            </div>
+            <div class="d-flex flex-lg-row-fluid w-lg-50 bgi-size-cover bgi-position-center order-1 order-lg-2" style="background-color: @CrossBuy.BL.Platform.ProductIdentity.Palette.Primary;">
+                <div class="d-flex flex-column flex-center py-15 px-5 px-md-15 w-100">
+                    <img alt="" class="h-60px mb-8" src="@Url.Content(CrossBuy.BL.Platform.ProductIdentity.Assets.LogoOnDark)" asp-append-version="true" />
+                    <h1 class="text-white fs-2qx fw-bolder text-center mb-7">@T["Patient portal"]</h1>
+                    <div class="text-white fs-base text-center opacity-75">@T["Book and follow your visits, and your family's."]</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        (function () {
+            var form = document.getElementById('ppRegForm'); if (!form) return;
+            var box = document.getElementById('ppRegError'), btn = document.getElementById('ppRegSubmit');
+            form.addEventListener('submit', function (e) {
+                e.preventDefault(); box.classList.add('d-none'); btn.disabled = true;
+                var f = form.elements, body = { name: f.name.value, nameEn: f.nameEn.value || null, phone: f.phone.value, nationalId: f.nationalId.value || null, birthDate: f.birthDate.value || null, userName: f.userName.value, password: f.password.value };
+                fetch(@Json.Serialize(Url.Action("Register", new { c = company })), { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': f.__RequestVerificationToken.value }, body: JSON.stringify(body) })
+                    .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+                    .then(function (res) {
+                        btn.disabled = false;
+                        if (res.ok) { form.classList.add('d-none'); document.getElementById('ppRegDone').classList.remove('d-none'); return; }
+                        box.textContent = res.error || ''; box.classList.remove('d-none');
+                    });
+            });
+        })();
+    </script>
+</body>
+</html>

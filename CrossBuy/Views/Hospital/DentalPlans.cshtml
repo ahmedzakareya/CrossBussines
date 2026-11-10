@@ -1,0 +1,97 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@model IReadOnlyList<HospitalDentalPlanRow>
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Treatment plans"].Value;
+    var s = ViewBag.Stats as HospitalDentalPlanStats;
+    string N(decimal v, int dec) => v.ToString("N" + dec, System.Globalization.CultureInfo.InvariantCulture);
+    string St(string state) => state switch { "Accepted" => "success", "Partial" => "info", "Declined" => "secondary", _ => "primary" };
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Treatment plans"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item text-muted">@T["Dentistry"]</li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@T["Treatment plans"]</li>
+            </ul>
+        </div>
+        <a href="@Url.Action("DentalChart")" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-emoji-happy fs-4"></i>@T["Patient chart"]</a>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (s != null)
+        {
+            <div class="row g-5 g-xl-8 mb-5">
+                <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
+                    <div class="text-muted fw-semibold fs-7 mb-1">@T["Plans presented"]</div><div class="fs-2hx fw-bold hp-num text-gray-900">@s.PresentedThisMonth</div>
+                    <div class="text-muted fs-8 mt-1">@T["this month"]</div></div></div></div>
+                <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
+                    <div class="text-muted fw-semibold fs-7 mb-1">@T["Acceptance rate"]</div><div class="fs-2hx fw-bold hp-num text-gray-900">@(s.AcceptanceRate == null ? "—" : s.AcceptanceRate + "%")</div>
+                    <div class="text-muted fs-8 mt-1">@T["by value"]</div></div></div></div>
+                <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
+                    <div class="text-muted fw-semibold fs-7 mb-1">@T["Accepted, not done"]</div><div class="fs-2hx fw-bold hp-num text-gray-900">@N(s.AcceptedNotDone, s.Decimals)</div>
+                    <div class="text-muted fs-8 mt-1">@T["accepted work not yet done"] · <span class="hp-num">@s.Currency</span></div></div></div></div>
+                <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
+                    <div class="text-muted fw-semibold fs-7 mb-1">@T["Yearly dental limit"]</div>
+                    <div class="fs-2hx fw-bold hp-num text-gray-900">@(s.YearlyLimitMin == null ? "—" : s.YearlyLimitMin == s.YearlyLimitMax ? N(s.YearlyLimitMin.Value, s.Decimals) : N(s.YearlyLimitMin.Value, 0) + "–" + N(s.YearlyLimitMax!.Value, 0))</div>
+                    <div class="text-muted fs-8 mt-1">@T["per the payer contract"]</div></div></div></div>
+            </div>
+        }
+
+        <div class="card mb-5">
+            <div class="card-header border-0 pt-6">
+                <div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Treatment plans"]</span></div>
+                <div class="card-toolbar"><div class="position-relative"><i class="ki-outline ki-magnifier fs-4 position-absolute top-50 translate-middle-y ms-3"></i><input class="form-control form-control-sm form-control-solid w-250px ps-10" placeholder="@T["Search"]" data-filter /></div></div>
+            </div>
+            <div class="card-body pt-2">
+                @if (Model.Count == 0) { <div class="text-center text-muted py-10">@T["No treatment plans yet: a plan is opened from the patient's chart."]</div> }
+                else
+                {
+                    <div class="table-responsive"><table class="table align-middle table-row-dashed fs-6 gy-3 mb-0">
+                        <thead><tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0">
+                            <th class="w-130px">@T["Plan"]</th><th>@T["Patient"]</th><th>@T["Dentist"]</th><th class="text-end">@T["Phases"]</th><th class="text-end">@T["Value"]</th><th class="text-end">@T["Patient share"]</th><th>@T["State"]</th><th class="text-end"></th>
+                        </tr></thead>
+                        <tbody class="fw-semibold text-gray-700">
+                            @foreach (var r in Model)
+                            {
+                                <tr data-row="@r.Plan.PlanNo @r.PatientName @r.PatientNameEn @r.Mrn">
+                                    <td><span class="badge hp-code fw-bold fs-8 hp-num">@r.Plan.PlanNo</span></td>
+                                    <td><a href="@Url.Action("DentalChart", new { patientId = r.Plan.PatientId })" class="d-flex align-items-center gap-3 text-hover-primary">
+                                        <div class="symbol symbol-35px symbol-circle flex-shrink-0">@if (r.PatientPhoto != null) {<img src="@r.PatientPhoto" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(r.PatientNameEn)" />} else {<span class="symbol-label fw-bold fs-8 hp-initials">@HospitalUi.Initials(r.PatientNameEn)</span>}</div>
+                                        <div><div class="fw-bold text-gray-900">@DisplayName.Of(r.PatientName, r.PatientNameEn)</div><div class="text-muted fs-8 hp-num">@r.Mrn</div></div></a></td>
+                                    <td>@if (r.Dentist != null)
+                                        {
+                                            <div class="d-flex align-items-center gap-2"><div class="symbol symbol-30px symbol-circle flex-shrink-0">@if (r.Dentist.Photo != null) {<img src="@r.Dentist.Photo" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(r.Dentist.NameEn)" />} else {<span class="symbol-label fw-bold fs-8 hp-initials">@HospitalUi.Initials(r.Dentist.NameEn)</span>}</div><span>@DisplayName.Of(r.Dentist.Name, r.Dentist.NameEn)</span></div>
+                                        } else {<text>—</text>}</td>
+                                    <td class="text-end"><span class="hp-num">@r.Phases</span></td>
+                                    <td class="text-end"><span class="hp-num fw-bold">@N(r.Quote.Gross, r.Decimals)</span> <span class="text-muted fs-8">@r.Currency</span></td>
+                                    <td class="text-end"><span class="hp-num fw-bold">@N(r.Quote.PatientShare, r.Decimals)</span></td>
+                                    <td><span class="badge badge-light-@St(r.State) fs-8">@T["plan:" + r.State]</span></td>
+                                    <td class="text-end"><a href="@Url.Action("DentalPlan", new { id = r.Plan.ID })" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-arrow-left fs-5"></i>@T["Open"]</a></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table></div>
+                }
+            </div>
+        </div>
+    </div></div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            var f = document.querySelector('[data-filter]'); if (!f) return;
+            f.addEventListener('input', function () {
+                var q = f.value.trim().toLowerCase();
+                document.querySelectorAll('[data-row]').forEach(function (r) { r.classList.toggle('d-none', q && r.getAttribute('data-row').toLowerCase().indexOf(q) === -1); });
+            });
+        })();
+    </script>
+}

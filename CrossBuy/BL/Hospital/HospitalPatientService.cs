@@ -229,7 +229,8 @@ namespace CrossBuy.BL.Hospital
 			return HospitalResult.Success(row.ID);
 		}
 
-		/// H3: attaches a stored photo to the file. The caller stores the bytes first (StorePhotoAsync);
+		/// H3: attaches a stored photo to the file. The caller stores the bytes first (HospitalPatientPhotoService, on the
+		/// document platform);
 		/// a refused caller never reaches it, so nothing is written for them.
 		public async Task<HospitalResult> SetPhotoAsync(BusinessContext ctx, int id, string photoPath, int? employeeId, CancellationToken ct = default)
 		{
@@ -241,28 +242,6 @@ namespace CrossBuy.BL.Hospital
 			{ CompanyId = ctx.CompanyId, PatientId = row.ID, EmployeeId = employeeId, Action = HospitalPatientAccessActions.Update, At = DateTime.UtcNow });
 			await _db.SaveChangesAsync(ct);
 			return HospitalResult.Success(row.ID);
-		}
-
-		public const long MaxPhotoBytes = 5 * 1024 * 1024;
-
-		/// Writes a patient photo under wwwroot/uploads/hospital/patients/{company}/ with a random name.
-		/// The TYPE is read from the file's own first bytes (JPEG, PNG or WebP), never trusted from its name.
-		public static async Task<(string? Path, string? Error)> StorePhotoAsync(Microsoft.AspNetCore.Http.IFormFile file, string webRootPath, int companyId, CancellationToken ct = default)
-		{
-			if (file.Length <= 0 || file.Length > MaxPhotoBytes) return (null, "The photo must be an image of up to 5 MB");
-			var head = new byte[12];
-			await using (var s = file.OpenReadStream()) { _ = await s.ReadAsync(head.AsMemory(0, 12), ct); }
-			string? ext = head[0] == 0xFF && head[1] == 0xD8 ? ".jpg"
-				: head[0] == 0x89 && head[1] == 0x50 && head[2] == 0x4E && head[3] == 0x47 ? ".png"
-				: head[0] == 0x52 && head[1] == 0x49 && head[2] == 0x46 && head[3] == 0x46 && head[8] == 0x57 && head[9] == 0x45 && head[10] == 0x42 && head[11] == 0x50 ? ".webp"
-				: null;
-			if (ext == null) return (null, "The photo must be an image of up to 5 MB");
-			var folder = System.IO.Path.Combine(webRootPath, "uploads", "hospital", "patients", companyId.ToString());
-			var name = Guid.NewGuid().ToString("N") + ext;
-			System.IO.Directory.CreateDirectory(folder);
-			await using (var target = System.IO.File.Create(System.IO.Path.Combine(folder, name)))
-				await file.CopyToAsync(target, ct);
-			return ($"/uploads/hospital/patients/{companyId}/{name}", null);
 		}
 
 		/// The next MRN in the company: one past the highest number issued so far.

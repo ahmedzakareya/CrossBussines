@@ -97,6 +97,9 @@ namespace CrossBuy.Models.Context.Hospital
 		public int? ScannedByEmployeeId { get; set; }
 		public string? Findings { get; set; }
 		public string? Impression { get; set; }
+		/// H33: the report's English twins (the portal reads by the reader's language).
+		public string? FindingsEn { get; set; }
+		public string? ImpressionEn { get; set; }
 		public string? ImpressionCategory { get; set; }
 		public DateTime? ReportedAt { get; set; }
 		public int? ReportedByEmployeeId { get; set; }
@@ -106,6 +109,9 @@ namespace CrossBuy.Models.Context.Hospital
 		public DateTime? CriticalAcknowledgedAt { get; set; }
 		public int? CriticalAcknowledgedByEmployeeId { get; set; }
 		public string? CriticalNote { get; set; }
+		/// H34: the English added to a report after it was signed — the signed Arabic is never changed; who and when.
+		public DateTime? TranslatedAt { get; set; }
+		public int? TranslatedByEmployeeId { get; set; }
 	}
 
 	public static class HospitalRadiologyModel

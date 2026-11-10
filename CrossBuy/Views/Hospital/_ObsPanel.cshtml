@@ -1,0 +1,95 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model IReadOnlyList<HospitalObsPatient>
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H71 — the ward's observations and risk panel on the nursing station: per patient the last NEWS2 (coloured by its
+    clinical risk; no amber), the readings it came from, when the next set is due (red when overdue), the falls and
+    pressure-injury scales (flagged when high, "due" when a day old), and a pain reassessment that is due.
+*@
+@{
+    bool ready = ViewBag.Ready == true, canAdmit = ViewBag.CanAdmit == true;
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+    DateTime now = DateTime.UtcNow;
+    string Hm(DateTime u) => HospitalNursingService.UtcToWard(u).ToString("HH:mm", inv);
+    string RiskBadge(string? r, int? n) => r switch
+    {
+        HospitalNews2Risk.High => "badge-danger",
+        HospitalNews2Risk.Medium => "badge-light-danger",
+        HospitalNews2Risk.LowSingle => "badge-light-danger",
+        _ => n == 0 ? "badge-light-success" : "badge-light-primary",
+    };
+    int overdue = Model.Count(p => p.ObsOverdue), high = Model.Count(p => p.Last?.News2Risk is HospitalNews2Risk.High or HospitalNews2Risk.Medium or HospitalNews2Risk.LowSingle);
+}
+<div class="card-header border-0 pt-6">
+    <div class="card-title align-items-start flex-column m-0">
+        <span class="card-label fw-bold text-gray-900 fs-4">@T["Observations and risk — NEWS2"]</span>
+        <span class="text-muted mt-1 fw-semibold fs-7">@T["The early warning score, falls risk (Morse) and pressure-injury risk (Braden) of every patient on the ward"]</span>
+    </div>
+    @if (ready)
+    {
+        <div class="card-toolbar gap-2">
+            <span class="badge @(overdue > 0 ? "badge-light-danger" : "badge-light") fs-7">@T["Observations overdue"] <span class="hp-num ms-1">@overdue</span></span>
+            <span class="badge @(high > 0 ? "badge-light-danger" : "badge-light") fs-7">@T["Need a response"] <span class="hp-num ms-1">@high</span></span>
+        </div>
+    }
+</div>
+<div class="card-body pt-2">
+    @if (!ready) { <div class="notice d-flex rounded border border-dashed p-5 hp-notice"><div class="fs-7 text-gray-700">@T[HospitalObservationService.NoTables]</div></div> }
+    else if (Model.Count == 0) { <div class="text-muted fs-7 py-5">@T["No patients on this ward."]</div> }
+    else
+    {
+        <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-3 mb-0">
+            <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0">
+                <th>@T["Patient"]</th><th>NEWS2</th><th class="min-w-200px">@T["Last readings"]</th><th>@T["Next set"]</th><th>@T["Falls (Morse)"]</th><th>@T["Skin (Braden)"]</th><th class="text-end"></th>
+            </tr></thead>
+            <tbody>
+            @foreach (var p in Model)
+            {
+                var o = p.Last;
+                <tr data-obs-row="@p.AdmissionId">
+                    <td><div class="d-flex align-items-center gap-3">
+                            <div class="symbol symbol-35px symbol-circle flex-shrink-0">@if (!string.IsNullOrEmpty(p.Photo)) {<img src="@p.Photo" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(p.NameEn)" />} else {<span class="symbol-label fw-bold fs-8 hp-initials">@HospitalUi.Initials(p.NameEn)</span>}</div>
+                            <div><div class="fw-bold text-gray-900">@DisplayName.Of(p.Name, p.NameEn)</div><div class="text-muted fs-8"><span class="badge hp-code fs-9 hp-num">@p.Bed</span> <span class="hp-num">@p.Mrn</span></div>
+                                <a href="@Url.Action("MedRec", new { id = p.AdmissionId })" class="badge mt-1 text-nowrap @(p.MedRecSigned ? "badge-light-success" : p.MedRecOverdue ? "badge-light-danger" : "badge-light-primary")"><i class="ki-outline ki-capsule fs-7 me-1 @(p.MedRecSigned ? "text-success" : p.MedRecOverdue ? "text-danger" : "text-primary")"></i>@(p.MedRecSigned ? T["Medicines reconciled"] : p.MedRecOverdue ? T["Reconcile medicines — overdue"] : T["Reconcile medicines"])</a></div>
+                        </div></td>
+                    <td>@if (o?.News2 is int n) {<span class="badge @RiskBadge(o.News2Risk, n) fs-6 hp-num px-3">@n</span><div class="fs-9 text-muted mt-1 text-nowrap">@T["news2risk:" + o.News2Risk]</div>}
+                        else if (o != null) {<span class="badge badge-light fs-8">@T["Incomplete set"]</span>}
+                        else {<span class="text-muted fs-8">—</span>}</td>
+                    <td>@if (o != null)
+                        {
+                            <div class="fs-8 text-gray-800 hp-num" dir="ltr" style="text-align:start">
+                                @if (o.RespRate != null) {<span class="me-2 d-inline-block text-nowrap">RR @o.RespRate</span>}
+                                @if (o.SpO2 != null) {<span class="me-2 d-inline-block text-nowrap">SpO₂ @o.SpO2%@(o.OnOxygen ? " O₂" : "")</span>}
+                                @if (o.SystolicBp != null) {<span class="me-2 d-inline-block text-nowrap">BP @o.SystolicBp@(o.DiastolicBp != null ? "/" + o.DiastolicBp : "")</span>}
+                                @if (o.HeartRate != null) {<span class="me-2 d-inline-block text-nowrap">HR @o.HeartRate</span>}
+                                @if (o.TempC != null) {<span class="me-2 d-inline-block text-nowrap">@o.TempC.Value.ToString("0.0", inv)°</span>}
+                                @if (o.Consciousness != null) {<span class="me-2 d-inline-block text-nowrap">@o.Consciousness</span>}
+                            </div>
+                            @if (o.PainScore != null) {<div class="fs-8 mt-1">@T["Pain"] <span class="hp-num fw-bold @(o.PainScore >= 4 ? "text-danger" : "")">@o.PainScore/10</span></div>}
+                            <div class="text-muted fs-9 mt-1">@T["Taken at"] <span class="hp-num" dir="ltr">@Hm(o.TakenAt)</span></div>
+                        }
+                        else {<span class="text-muted fs-8">@T["No observations yet"]</span>}</td>
+                    <td>@if (p.ObsOverdue) {<span class="badge badge-light-danger text-nowrap">@T["Due now"]</span>}
+                        else if (p.NextDueAt is DateTime nd) {<span class="hp-num fw-semibold" dir="ltr">@Hm(nd)</span>}
+                        @if (p.PainReassessAt is DateTime pr) {<div class="fs-9 mt-1 @(pr <= now ? "text-danger fw-bold" : "text-muted")">@T["Reassess pain"] <span class="hp-num" dir="ltr">@Hm(pr)</span></div>}</td>
+                    <td>@if (p.Morse != null) {<span class="badge @(HospitalRiskRules.Flags(p.Morse) ? "badge-light-danger" : "badge-light") hp-num">@p.Morse.Score</span> <span class="fs-8">@T["riskLevel:" + p.Morse.Level]</span>}
+                        @if (p.MorseDue) {<div class="fs-9 text-danger mt-1">@T["Assessment due"]</div>}</td>
+                    <td>@if (p.Braden != null) {<span class="badge @(HospitalRiskRules.Flags(p.Braden) ? "badge-light-danger" : "badge-light") hp-num">@p.Braden.Score</span> <span class="fs-8">@T["riskLevel:" + p.Braden.Level]</span>}
+                        @if (p.BradenDue) {<div class="fs-9 text-danger mt-1">@T["Assessment due"]</div>}</td>
+                    <td class="text-end"><div class="d-flex justify-content-end flex-wrap gap-2">
+                        @if (canAdmit)
+                        {
+                            <button type="button" class="btn btn-sm btn-primary text-nowrap" data-obs-new="@p.AdmissionId" data-who="@DisplayName.Of(p.Name, p.NameEn)"><i class="ki-outline ki-heart-circle fs-4"></i>@T["Record observations"]</button>
+                            <button type="button" class="btn btn-sm btn-light-primary text-nowrap" data-risk-new="@p.AdmissionId" data-kind="Morse" data-who="@DisplayName.Of(p.Name, p.NameEn)">@T["obs:falls"]</button>
+                            <button type="button" class="btn btn-sm btn-light-primary text-nowrap" data-risk-new="@p.AdmissionId" data-kind="Braden" data-who="@DisplayName.Of(p.Name, p.NameEn)">@T["obs:skin"]</button>
+                        }
+                        <button type="button" class="btn btn-sm btn-light text-nowrap" data-obs-chart="@p.AdmissionId" data-who="@DisplayName.Of(p.Name, p.NameEn)"><i class="ki-outline ki-chart-line fs-4"></i>@T["Chart"]</button>
+                    </div></td>
+                </tr>
+            }
+            </tbody>
+        </table></div>
+    }
+</div>

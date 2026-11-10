@@ -13,6 +13,8 @@
     bool isService = e.ServiceId != null;
     int holding = lists.Count(v => v.Lines.Any(x => x.Entry.Key == e.Key));
     string SrcBadge(string s) => s switch { "rule" => "primary", "override" => "info", "ceiling" => "success", _ => "danger" };
+    var dental = ViewBag.DentalProfile as HospitalDentalProcedure;
+    string scope = dental == null ? "none" : dental.Surfaces != null ? "surfaces" : dental.ToothWork != null ? "work" : dental.NeedsTooth ? "tooth" : "mouth";
 }
 <link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
 @Html.AntiForgeryToken()
@@ -71,6 +73,51 @@
                         @if (isService && canManage) { <button type="button" class="btn btn-primary w-100" data-save-price><i class="ki-outline ki-check fs-4"></i>@T["Save the price"]</button> }
                     </div>
                 </div>
+
+                @if (isService && (dental != null || canManage))
+                {
+                    @* H15: how the tooth chart and the treatment plan treat this service *@
+                    <div class="card mb-5" data-dental>
+                        <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
+                            <span class="card-label fw-bold text-gray-900 fs-4">@T["Dental procedure"]</span>
+                            <span class="text-muted mt-1 fw-semibold fs-7">@T["How the tooth chart and the treatment plan treat this service"]</span>
+                        </div>
+                        @if (dental != null) { <div class="card-toolbar"><span class="badge badge-light-primary fs-8">@T["dcat:" + dental.Category]</span></div> }</div>
+                        <div class="card-body pt-2">
+                            @if (canManage)
+                            {
+                                <div class="row g-3">
+                                    <div class="col-12"><label class="form-label fs-7">@T["Dental category"]</label>
+                                        <select class="form-select form-select-solid form-select-sm" data-dp="category">@foreach (var c in HospitalDentalCategory.All) { <option value="@c" selected="@(dental?.Category == c)">@T["dcat:" + c]</option> }</select></div>
+                                    <div class="col-12"><label class="form-label fs-7">@T["Done on"]</label>
+                                        <select class="form-select form-select-solid form-select-sm" data-dp="scope">
+                                            <option value="mouth" selected="@(scope == "mouth" || scope == "none")">@T["dscope:mouth"]</option>
+                                            <option value="tooth" selected="@(scope == "tooth")">@T["dscope:tooth"]</option>
+                                            <option value="surfaces" selected="@(scope == "surfaces")">@T["dscope:surfaces"]</option>
+                                            <option value="work" selected="@(scope == "work")">@T["dscope:work"]</option>
+                                        </select></div>
+                                    <div class="col-6" data-dp-for="surfaces"><label class="form-label fs-7">@T["Surfaces it bills"]</label><input type="number" min="1" max="5" class="form-control form-control-solid form-control-sm hp-num" dir="ltr" data-dp="surfaces" value="@(dental?.Surfaces ?? 1)" /></div>
+                                    <div class="col-6" data-dp-for="work"><label class="form-label fs-7">@T["Work on the tooth"]</label>
+                                        <select class="form-select form-select-solid form-select-sm" data-dp="work">@foreach (var w in HospitalToothWork.Procedures) { <option value="@w" selected="@(dental?.ToothWork == w)">@T["work:" + w]</option> }</select></div>
+                                    <div class="col-6"><label class="form-label fs-7">@T["Chair time (minutes)"]</label><input type="number" min="5" max="480" class="form-control form-control-solid form-control-sm hp-num" dir="ltr" data-dp="minutes" value="@(dental?.Minutes ?? 30)" /></div>
+                                    <div class="col-12 d-flex flex-wrap gap-5 pt-2">
+                                        <label class="form-check form-check-sm form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" data-dp="preauth" @(dental?.NeedsPreauth == true ? "checked" : "") /><span class="form-check-label fs-7">@T["Needs pre-authorisation"]</span></label>
+                                        <label class="form-check form-check-sm form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" data-dp="lab" @(dental?.NeedsLab == true ? "checked" : "") /><span class="form-check-label fs-7">@T["Lab work"]</span></label>
+                                        <label class="form-check form-check-sm form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" data-dp="notCovered" @(dental?.NotCovered == true ? "checked" : "") /><span class="form-check-label fs-7">@T["Never covered"]</span></label>
+                                    </div>
+                                </div>
+                                <div class="d-flex gap-2 mt-5">
+                                    <button type="button" class="btn btn-light-primary flex-fill" data-dp-save><i class="ki-outline ki-check fs-4"></i>@(dental == null ? T["Make it a dental procedure"] : T["Save"])</button>
+                                    @if (dental != null) { <button type="button" class="btn btn-light" data-dp-remove>@T["Not dental"]</button> }
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="fs-7 text-gray-700">@T["Done on"]: @T["dscope:" + scope]@if (dental!.Surfaces != null) {<text> · </text><span class="hp-num">@dental.Surfaces</span>} · <span class="hp-num">@dental.Minutes</span> @T["min"]</div>
+                            }
+                        </div>
+                    </div>
+                }
 
                 @if (e.Group == HospitalPriceGroups.Medicine)
                 {
@@ -145,7 +192,10 @@
             var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value), mainUpdated: @Json.Serialize(T["The main list is updated"].Value) };
             var key = @Json.Serialize(e.Key);
             var urls = { price: @Json.Serialize(isService ? Url.Action("SaveServicePrice", new { id = e.ServiceId }) : null), pub: @Json.Serialize(e.ItemId != null ? Url.Action("SavePublicPrice", new { id = e.ItemId }) : null),
-                list: @Json.Serialize(Url.Action("PriceList", new { id = 0 })) };
+                list: @Json.Serialize(Url.Action("PriceList", new { id = 0 })), dental: @Json.Serialize(Url.Action("DentalSaveProcedure")) };
+            // the dental card shows the field its scope needs (again after an in-place swap)
+            function dpScope() { var c = document.querySelector('[data-dental]'); if (!c || !c.querySelector('[data-dp=scope]')) return; var v = c.querySelector('[data-dp=scope]').value; c.querySelectorAll('[data-dp-for]').forEach(function (el) { el.classList.toggle('d-none', el.getAttribute('data-dp-for') !== v); }); }
+            dpScope(); document.addEventListener('change', function (ev) { if (ev.target.matches('[data-dp=scope]')) dpScope(); });
             function toast(k, m) { if (window.toastr) toastr[k](m); }
             function post(url, body) {
                 return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(body || {}) })
@@ -154,7 +204,7 @@
             function swap() {
                 return fetch(location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.text(); }).then(function (html) {
                     var fresh = new DOMParser().parseFromString(html, 'text/html').getElementById('kt_app_content');
-                    if (fresh) document.getElementById('kt_app_content').innerHTML = fresh.innerHTML;
+                    if (fresh) { document.getElementById('kt_app_content').innerHTML = fresh.innerHTML; dpScope(); }
                 });
             }
             function done(res, msg) { if (!res.ok) { toast('error', res.error || W.failed); return; } toast('success', msg || W.saved); swap(); }
@@ -163,6 +213,12 @@
                 if ((t = ev.target.closest('[data-save-price]'))) { var v = document.getElementById('sellPrice').value; t.disabled = true; post(urls.price, { price: v === '' ? null : +v }).then(function (r) { t.disabled = false; done(r, W.mainUpdated); }); }
                 else if ((t = ev.target.closest('[data-save-public]'))) { var p = document.getElementById('publicPrice').value; t.disabled = true; post(urls.pub, { price: p === '' ? null : +p }).then(function (r) { t.disabled = false; done(r); }); }
                 else if ((t = ev.target.closest('[data-add-to]'))) { t.disabled = true; post(urls.list.replace(/0$/, t.getAttribute('data-add-to')) + '/AddLines', { keys: [key] }).then(function (r) { t.disabled = false; done(r); }); }
+                else if ((t = ev.target.closest('[data-dp-save],[data-dp-remove]'))) {
+                    var c = document.querySelector('[data-dental]'), g = function (k) { return c.querySelector('[data-dp=' + k + ']'); }, sc = g('scope').value;
+                    var profile = { serviceId: @(e.ServiceId ?? 0), category: g('category').value, surfaces: sc === 'surfaces' ? +g('surfaces').value : null, toothWork: sc === 'work' ? g('work').value : null,
+                        needsTooth: sc !== 'mouth', needsPreauth: g('preauth').checked, needsLab: g('lab').checked, notCovered: g('notCovered').checked, minutes: +g('minutes').value };
+                    t.disabled = true; post(urls.dental, { profile: profile, remove: t.hasAttribute('data-dp-remove') }).then(function (r) { t.disabled = false; done(r); });
+                }
                 else if ((t = ev.target.closest('[data-approve-in]'))) { t.disabled = true; post(urls.list.replace(/0$/, t.getAttribute('data-approve-in')) + '/ApproveLines', { ids: [+t.getAttribute('data-line')] }).then(function (r) { t.disabled = false; done(r); }); }
             });
         })();

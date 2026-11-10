@@ -78,7 +78,18 @@ namespace CrossBuy.Tests
             using var provider = Build(includeKpis: true);
             using var scope = provider.CreateScope();
             var registry = scope.ServiceProvider.GetRequiredService<IKpiRegistry>();
-            Assert.Equal(10, registry.Definitions.Count);
+            // NOT a literal count. This assertion was Assert.Equal(10, ...) and went red the moment the
+            // Hospital pack shipped its KPIs (10 -> 22) - a false failure in a test that is not about
+            // counting anything. The property worth guarding here is the one whose violation stops the
+            // application BOOTING: KpiRegistry validates in its CONSTRUCTOR, so a KPI naming a dataset
+            // nobody registered throws while the container is still being built. Assert that instead,
+            // against the dataset registry resolved from this same container, and it stays true however
+            // many KPIs any module adds later.
+            var datasets = scope.ServiceProvider.GetRequiredService<IReportDatasetRegistry>();
+            Assert.NotEmpty(registry.Definitions);
+            foreach (var kpi in registry.Definitions)
+                Assert.True(datasets.TryResolve(kpi.DatasetCode, out _),
+                    $"KPI '{kpi.Key}' names dataset '{kpi.DatasetCode}', which is not registered.");
             Assert.NotNull(scope.ServiceProvider.GetRequiredService<IKpiEvaluator>());
         }
 

@@ -1,0 +1,195 @@
+{
+  "unit": "H55 — the discharge summary (Report Studio print)",
+  "strings": {
+    "A text is too long": {
+      "ar": "أحد النصوص أطول من المسموح",
+      "en": "A text is too long",
+      "fr": "Un texte est trop long"
+    },
+    "Attending doctor": {
+      "ar": "الطبيب المعالج",
+      "en": "Attending doctor",
+      "fr": "Médecin traitant"
+    },
+    "Choose the condition at discharge": {
+      "ar": "اختر الحالة عند الخروج",
+      "en": "Choose the condition at discharge",
+      "fr": "Choisissez l'état à la sortie"
+    },
+    "Choose the condition at discharge before signing": {
+      "ar": "اختر الحالة عند الخروج قبل التوقيع",
+      "en": "Choose the condition at discharge before signing",
+      "fr": "Choisissez l'état à la sortie avant de signer"
+    },
+    "Condition at discharge": {
+      "ar": "الحالة عند الخروج",
+      "en": "Condition at discharge",
+      "fr": "État à la sortie"
+    },
+    "Course in hospital": {
+      "ar": "سير الحالة أثناء الإقامة",
+      "en": "Course in hospital",
+      "fr": "Évolution pendant le séjour"
+    },
+    "Discharge summary": {
+      "ar": "ملخص الخروج",
+      "en": "Discharge summary",
+      "fr": "Compte rendu de sortie"
+    },
+    "ds:discharged": {
+      "ar": "الخروج",
+      "en": "Discharged",
+      "fr": "Sortie"
+    },
+    "Final diagnosis": {
+      "ar": "التشخيص النهائي",
+      "en": "Final diagnosis",
+      "fr": "Diagnostic final"
+    },
+    "Follow-up on": {
+      "ar": "موعد المتابعة",
+      "en": "Follow-up on",
+      "fr": "Suivi le"
+    },
+    "Follow-up with": {
+      "ar": "المتابعة مع",
+      "en": "Follow-up with",
+      "fr": "Suivi avec"
+    },
+    "Instructions for the patient": {
+      "ar": "تعليمات للمريض",
+      "en": "Instructions for the patient",
+      "fr": "Consignes pour le patient"
+    },
+    "Length of stay": {
+      "ar": "مدة الإقامة",
+      "en": "Length of stay",
+      "fr": "Durée du séjour"
+    },
+    "Medicines to take home": {
+      "ar": "أدوية المنزل",
+      "en": "Medicines to take home",
+      "fr": "Traitement de sortie"
+    },
+    "No operation during this stay.": {
+      "ar": "لا عمليات خلال هذه الإقامة.",
+      "en": "No operation during this stay.",
+      "fr": "Aucune intervention pendant ce séjour."
+    },
+    "Operations during the stay": {
+      "ar": "العمليات خلال الإقامة",
+      "en": "Operations during the stay",
+      "fr": "Interventions pendant le séjour"
+    },
+    "Procedures": {
+      "ar": "العمليات والإجراءات",
+      "en": "Procedures",
+      "fr": "Actes"
+    },
+    "Reason for admission": {
+      "ar": "سبب الدخول",
+      "en": "Reason for admission",
+      "fr": "Motif d'admission"
+    },
+    "Save the summary as a draft?": {
+      "ar": "حفظ الملخص كمسودة؟",
+      "en": "Save the summary as a draft?",
+      "fr": "Enregistrer le compte rendu en brouillon ?"
+    },
+    "Saved as a draft until it is signed.": {
+      "ar": "يُحفظ كمسودة حتى يُوقَّع.",
+      "en": "Saved as a draft until it is signed.",
+      "fr": "Enregistré en brouillon jusqu'à sa signature."
+    },
+    "Sign the discharge summary? Once signed it cannot change.": {
+      "ar": "توقيع ملخص الخروج؟ بعد التوقيع لا يمكن تعديله.",
+      "en": "Sign the discharge summary? Once signed it cannot change.",
+      "fr": "Signer le compte rendu de sortie ? Une fois signé, il ne peut plus changer."
+    },
+    "Sign the summary": {
+      "ar": "توقيع الملخص",
+      "en": "Sign the summary",
+      "fr": "Signer le compte rendu"
+    },
+    "Signed: it cannot change.": {
+      "ar": "موقّع: لا يمكن تعديله.",
+      "en": "Signed: it cannot change.",
+      "fr": "Signé : il ne peut plus changer."
+    },
+    "Still in": {
+      "ar": "ما زال منوّماً",
+      "en": "Still in",
+      "fr": "Toujours hospitalisé"
+    },
+    "The discharge summary is not installed yet (hospital_h55_discharge_summary.sql).": {
+      "ar": "ملخص الخروج غير مثبت بعد (hospital_h55_discharge_summary.sql).",
+      "en": "The discharge summary is not installed yet (hospital_h55_discharge_summary.sql).",
+      "fr": "Le compte rendu de sortie n'est pas encore installé (hospital_h55_discharge_summary.sql)."
+    },
+    "The doctor's summary": {
+      "ar": "ملخص الطبيب",
+      "en": "The doctor's summary",
+      "fr": "Le compte rendu du médecin"
+    },
+    "The follow-up date is in the past": {
+      "ar": "موعد المتابعة في الماضي",
+      "en": "The follow-up date is in the past",
+      "fr": "La date de suivi est passée"
+    },
+    "The stay": {
+      "ar": "الإقامة",
+      "en": "The stay",
+      "fr": "Le séjour"
+    },
+    "The summary is signed": {
+      "ar": "وُقّع الملخص",
+      "en": "The summary is signed",
+      "fr": "Le compte rendu est signé"
+    },
+    "This summary is signed and cannot change": {
+      "ar": "هذا الملخص موقّع ولا يمكن تعديله",
+      "en": "This summary is signed and cannot change",
+      "fr": "Ce compte rendu est signé et ne peut plus changer"
+    },
+    "Write the final diagnosis before signing": {
+      "ar": "اكتب التشخيص النهائي قبل التوقيع",
+      "en": "Write the final diagnosis before signing",
+      "fr": "Indiquez le diagnostic final avant de signer"
+    },
+    "dc:Improved": {
+      "ar": "تحسّن",
+      "en": "Improved",
+      "fr": "Amélioré"
+    },
+    "dc:Stable": {
+      "ar": "مستقر",
+      "en": "Stable",
+      "fr": "Stable"
+    },
+    "dc:Unchanged": {
+      "ar": "دون تغيير",
+      "en": "Unchanged",
+      "fr": "Inchangé"
+    },
+    "dc:Referred": {
+      "ar": "محوّل لمنشأة أخرى",
+      "en": "Referred",
+      "fr": "Transféré"
+    },
+    "dc:AgainstAdvice": {
+      "ar": "خروج على مسؤوليته",
+      "en": "Against medical advice",
+      "fr": "Contre avis médical"
+    },
+    "dc:Deceased": {
+      "ar": "وفاة",
+      "en": "Deceased",
+      "fr": "Décédé"
+    },
+    "ds:admitted": {
+      "ar": "تاريخ الدخول",
+      "en": "Admitted",
+      "fr": "Admission"
+    }
+  }
+}

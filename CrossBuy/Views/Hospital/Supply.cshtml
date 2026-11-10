@@ -1,0 +1,573 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model HospitalSupplyBoard?
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H32 — ward requisitions to stores, as the approved prototype draws them (#/requisitions): the day's figures, the
+    requests with who asked, and the chosen request's lines (par, what the ward holds, asked, approved, what the store
+    holds). Who may ask and who may give is each unit's SETTING (H36, Supply/Units). Every change swaps in place.
+*@
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Ward requisitions"].Value;
+    bool ready = ViewBag.Ready == true, canManage = ViewBag.CanManage == true;
+    bool mayRequest = ViewBag.MayRequest == true, mayApprove = ViewBag.MayApprove == true;
+    var requestUnits = (ViewBag.RequestUnits as List<HospitalSupplyUnit>) ?? new();
+    var sel = ViewBag.Selected as HospitalRequisitionView;
+    var reqs = Model?.Requests ?? Array.Empty<HospitalRequisitionRow>();
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+    string Qty(decimal v) => v.ToString("0.###", inv);
+    string StateKind(string s) => s switch
+    {
+        HospitalRequisitionStatus.Draft => "secondary", HospitalRequisitionStatus.Submitted => "primary", HospitalRequisitionStatus.Approved => "info",
+        HospitalRequisitionStatus.Picking => "primary", HospitalRequisitionStatus.Dispatched => "success", _ => "danger",
+    };
+    string PrioKind(string p) => p == HospitalRequisitionPriority.Stat ? "danger" : p == HospitalRequisitionPriority.Urgent ? "primary" : "secondary";
+    var cons = (ViewBag.Consignments as IReadOnlyList<HospitalConsignmentRow>) ?? Array.Empty<HospitalConsignmentRow>();
+    bool consReady = ViewBag.ConsReady == true, mayStore = ViewBag.MayStore == true;
+    var vendors = (ViewBag.Vendors as List<CrossBuy.Controllers.HospitalController.HospitalChoice>) ?? new();
+    // used, and the supplier's purchase order not yet received / invoiced (procurement raises it approved, never draft)
+    int awaitingPo = cons.Count(c => HospitalConsignmentRules.State(c.Row.Status, c.PoStatus) is "DraftPO" or "POApproved");
+    string ConsKind(string st) => st switch { "Consignment" => "secondary", "DraftPO" => "primary", "Invoiced" => "success", "Returned" => "light", _ => "info" };
+    // H39: the controlled-drugs register
+    var cdStores = (ViewBag.CdStores as IReadOnlyList<(int WarehouseId, string Code, string Name, string NameEn)>) ?? Array.Empty<(int, string, string, string)>();
+    var cdStore = ViewBag.CdStore is ValueTuple<int, string, string, string> cs0 ? cs0 : default;
+    var cdLines = (ViewBag.CdLines as IReadOnlyList<HospitalControlledLine>) ?? Array.Empty<HospitalControlledLine>();
+    var cdEntries = (ViewBag.CdEntries as IReadOnlyList<HospitalControlledEntryRow>) ?? Array.Empty<HospitalControlledEntryRow>();
+    var cdItems = (ViewBag.CdItems as IReadOnlyList<(int Id, string Code, string Name, string NameEn)>) ?? Array.Empty<(int, string, string, string)>();
+    var cdWitnesses = (ViewBag.CdWitnesses as List<(int ID, string Name, string NameEn, string? Photo)>) ?? new();
+    bool cdReady = ViewBag.CdReady == true, cdMayRecord = ViewBag.CdMayRecord == true && cdStore.Item1 != 0;
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Ward requisitions"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item text-muted">@T["Supply"]</li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@T["Requisitions"]</li>
+            </ul>
+        </div>
+        <div class="d-flex align-items-center gap-2 gap-lg-3 d-print-none">
+            @if (canManage) { <a href="@Url.Action("SupplyUnits")" class="btn btn-sm btn-light"><i class="ki-outline ki-setting-2 fs-4"></i>@T["Units & who asks"]</a> }
+            @if (ready && requestUnits.Count > 0) { <button type="button" class="btn btn-sm btn-primary" data-req-new><i class="ki-outline ki-plus fs-4"></i>@T["New requisition"]</button> }
+        </div>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (!ready)
+        {
+            <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice"><div class="fs-6 text-gray-700">@T[HospitalSupplyService.NoTables]</div></div>
+        }
+        else if (((IReadOnlyList<HospitalSupplyUnit>)ViewBag.Units).Count == 0)
+        {
+            <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice"><div class="fs-6 text-gray-700">@T["No supply unit is set up yet: add the wards' stores in Units & who asks."]</div></div>
+        }
+
+        <div class="row g-5 g-xl-8 mb-5">
+            @foreach (var s in new[] {
+                (T["Requests today"].Value, (Model?.Today ?? 0).ToString(inv), "", "text-gray-900"),
+                (T["Average fulfilment"].Value, Model?.AverageHours is double h ? h.ToString("0.#", inv) + " " + T["h"].Value : "—", "", "text-gray-900"),
+                (T["Items below ward par"].Value, (Model?.BelowPar ?? 0).ToString(inv), "", "text-danger"),
+                (T["Consignment implants used"].Value, consReady ? awaitingPo.ToString(inv) : "—", T["awaiting a purchase order"].Value, "text-gray-900") })
+            {
+                <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
+                    <div class="text-muted fw-semibold fs-7 mb-1">@s.Item1</div>
+                    <div class="fs-2hx fw-bold @s.Item4"><bdi class="hp-num" dir="ltr">@s.Item2</bdi></div>
+                    @if (s.Item3 != "") { <div class="text-muted fs-8 mt-1">@s.Item3</div> }
+                </div></div></div>
+            }
+        </div>
+
+        <div class="card mb-5">
+            <div class="card-header border-0 pt-6">
+                <div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Ward requisitions to stores"]</span></div>
+                <div class="card-toolbar"><div class="d-flex align-items-center position-relative">
+                    <i class="ki-outline ki-magnifier fs-3 position-absolute ms-4"></i>
+                    <input type="text" class="form-control form-control-solid w-250px ps-12" placeholder="@T["Search..."]" data-req-search autocomplete="off" />
+                </div></div>
+            </div>
+            <div class="card-body pt-2">
+                @if (reqs.Count == 0) { <div class="text-center text-muted py-10">@T["No requests yet."]</div> }
+                else
+                {
+                    <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-3 mb-0">
+                        <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0">
+                            <th>@T["Request"]</th><th>@T["Ward"]</th><th>@T["Requested by"]</th><th class="text-end">@T["req:Items"]</th><th>@T["Priority"]</th><th>@T["State"]</th>
+                        </tr></thead>
+                        <tbody class="fw-semibold text-gray-700">
+                            @foreach (var r in reqs)
+                            {
+                                <tr role="button" class="@(sel?.Row.Req.ID == r.Req.ID ? "bg-light-primary" : "")" data-req-open="@r.Req.ID">
+                                    <td><span class="badge badge-light fs-8 hp-num">@r.Req.ReqNo</span></td>
+                                    <td><span class="fw-bold text-gray-800">@DisplayName.Of(r.Unit.Name, r.Unit.NameEn)</span></td>
+                                    <td><div class="d-flex align-items-center">
+                                        <div class="symbol symbol-30px symbol-circle me-3 flex-shrink-0">@if (r.RequestedByPhoto != null) {<img src="@r.RequestedByPhoto" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(r.RequestedBy ?? "")" />} else {<span class="symbol-label fw-bold fs-8 hp-initials">@HospitalUi.Initials(r.RequestedBy ?? "")</span>}</div>
+                                        <span class="text-gray-900">@(r.RequestedBy ?? "—")</span></div></td>
+                                    <td class="text-end"><span class="hp-num">@r.Lines</span></td>
+                                    <td><span class="badge badge-light-@PrioKind(r.Req.Priority)">@T["prio:" + r.Req.Priority]</span></td>
+                                    <td><span class="badge badge-light-@StateKind(r.Req.Status)">@T["req:" + r.Req.Status]</span></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table></div>
+                }
+            </div>
+        </div>
+
+        @* H38: the consignment implants — the prototype's lower-left card; H39: the controlled-drugs register beside it *@
+        <div class="row g-5 mb-5">
+        @if (consReady)
+        {
+            <div class="col-xl-6">
+                <div class="card h-100">
+                    <div class="card-header border-0 pt-6">
+                        <div class="card-title align-items-start flex-column m-0">
+                            <span class="card-label fw-bold text-gray-900 fs-4">@T["Consignment implants"]</span>
+                            <span class="text-muted mt-1 fw-semibold fs-7">@T["Owned by the supplier until used; a purchase order is then raised automatically"]</span>
+                        </div>
+                        @if (mayStore) { <div class="card-toolbar"><button type="button" class="btn btn-sm btn-light-primary" data-cons-new><i class="ki-outline ki-entrance-left fs-4"></i>@T["Receive implants"]</button></div> }
+                    </div>
+                    <div class="card-body pt-2">
+                        @if (cons.Count == 0) { <div class="text-center text-muted py-8">@T["No consignment implant yet."]</div> }
+                        else
+                        {
+                            <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-3 mb-0">
+                                <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0"><th>@T["Serial"]</th><th>@T["Item"]</th><th>@T["Patient"]</th><th>@T["State"]</th><th class="w-40px"></th></tr></thead>
+                                <tbody class="fw-semibold text-gray-700">
+                                    @foreach (var c in cons)
+                                    {
+                                        var stt = HospitalConsignmentRules.State(c.Row.Status, c.PoStatus);
+                                        <tr>
+                                            <td><span class="badge badge-light fs-8 hp-num">@c.Row.SerialNo</span></td>
+                                            <td><span class="text-gray-800">@DisplayName.Of(c.Item, c.ItemEn)</span><div class="text-muted fs-8">@DisplayName.Of(c.Vendor, c.VendorEn)</div></td>
+                                            <td>@if (c.PatientName != null)
+                                                {
+                                                    <div class="d-flex align-items-center">
+                                                        <div class="symbol symbol-30px symbol-circle me-2 flex-shrink-0">@if (c.PatientPhoto != null) {<img src="@c.PatientPhoto" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(c.PatientNameEn ?? "")" />} else {<span class="symbol-label fw-bold fs-9 hp-initials">@HospitalUi.Initials(c.PatientNameEn ?? "")</span>}</div>
+                                                        <div class="d-flex flex-column"><span class="text-gray-900">@DisplayName.Of(c.PatientName, c.PatientNameEn ?? "")</span><span class="text-muted fs-8 hp-num">@c.CaseNo</span></div>
+                                                    </div>
+                                                }
+                                                else { <span class="text-muted fs-8">@T[c.Row.Status == HospitalConsignmentStatus.Returned ? "Back with the supplier" : "In store"]</span> }</td>
+                                            <td><span class="badge badge-light-@ConsKind(stt)">@T["cons:" + stt]</span>@if (c.PoNo != null) {<div class="text-muted fs-8 hp-num mt-1">@c.PoNo</div>}</td>
+                                            <td class="text-end">@if (mayStore && c.Row.Status == HospitalConsignmentStatus.InStore) { <button type="button" class="btn btn-icon btn-sm btn-light w-30px h-30px" data-cons-return="@c.Row.ID" title="@T["Return to the supplier"]"><i class="ki-outline ki-exit-left fs-5"></i></button> }</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table></div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+        @if (!cdReady)
+        {
+            <div class="col-xl-6"><div class="notice d-flex rounded border border-dashed p-6 hp-notice h-100"><div class="fs-6 text-gray-700">@T[HospitalControlledService.NoTables]</div></div></div>
+        }
+        else if (cdStore.Item1 != 0)
+        {
+            <div class="col-xl-6" data-cd-ward="@cdStore.Item1">
+                <div class="card h-100">
+                    <div class="card-header border-0 pt-6">
+                        <div class="card-title align-items-start flex-column m-0">
+                            <span class="card-label fw-bold text-gray-900 fs-4">@T["Controlled drugs register"] — @DisplayName.Of(cdStore.Item3, cdStore.Item4)</span>
+                            <span class="text-muted mt-1 fw-semibold fs-7">@T["Every movement signed by two nurses"]</span>
+                        </div>
+                        <div class="card-toolbar gap-2">
+                            @if (cdStores.Count > 1)
+                            {
+                                <select class="form-select form-select-sm form-select-solid w-175px" data-cd-pick>
+                                    @foreach (var s in cdStores) { <option value="@s.WarehouseId" selected="@(s.WarehouseId == cdStore.Item1)">@s.Code · @DisplayName.Of(s.Name, s.NameEn)</option> }
+                                </select>
+                            }
+                            @if (canManage) { <button type="button" class="btn btn-icon btn-sm btn-light" data-cd-items title="@T["Controlled items"]"><i class="ki-outline ki-setting-2 fs-4"></i></button> }
+                            @if (cdMayRecord && cdItems.Count > 0) { <button type="button" class="btn btn-sm btn-light-primary" data-cd-new><i class="ki-outline ki-pencil fs-4"></i>@T["Record a dose or waste"]</button> }
+                        </div>
+                    </div>
+                    <div class="card-body pt-2">
+                        @if (cdItems.Count == 0) { <div class="text-center text-muted py-8">@T["No item is marked controlled yet."]</div> }
+                        else if (cdLines.Count == 0) { <div class="text-center text-muted py-8">@T["No controlled drug in this ward's store today."]</div> }
+                        else
+                        {
+                            <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-3 mb-0">
+                                <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0">
+                                    <th>@T["Drug"]</th><th class="text-end">@T["cd:Open"]</th><th class="text-end">@T["cd:In"]</th><th class="text-end">@T["cd:Given"]</th><th class="text-end">@T["cd:Wasted"]</th><th class="text-end">@T["Balance"]</th>
+                                </tr></thead>
+                                <tbody class="fw-semibold text-gray-700">
+                                    @foreach (var l in cdLines)
+                                    {
+                                        <tr>
+                                            <td><span class="fw-semibold text-gray-800">@DisplayName.Of(l.Name, l.NameEn)</span></td>
+                                            <td class="text-end"><span class="hp-num">@Qty(l.Open)</span></td>
+                                            <td class="text-end"><span class="hp-num">@Qty(l.In)</span></td>
+                                            <td class="text-end"><span class="hp-num">@Qty(l.Given)</span></td>
+                                            <td class="text-end"><span class="hp-num">@Qty(l.Wasted)</span></td>
+                                            <td class="text-end"><span class="hp-num fw-bold text-gray-900">@Qty(l.Balance)</span></td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table></div>
+                        }
+                        @if (cdEntries.Count > 0)
+                        {
+                            <div class="separator separator-dashed my-4"></div>
+                            <div class="text-gray-500 fw-bold fs-8 text-uppercase mb-3">@T["Today's entries"]</div>
+                            @foreach (var en in cdEntries)
+                            {
+                                var given = en.Entry.Kind == HospitalControlledKind.Given;
+                                <div class="d-flex align-items-center gap-3 py-2 border-bottom border-gray-200 border-bottom-dashed">
+                                    <span class="badge badge-light-@(given ? "primary" : "danger") fs-8">@T["cd:" + en.Entry.Kind]</span>
+                                    <div class="flex-grow-1 min-w-0">
+                                        <div class="text-gray-800 fw-semibold fs-7"><bdi class="hp-num" dir="ltr">@Qty(en.Entry.Qty)</bdi> × @DisplayName.Of(en.Item, en.ItemEn)</div>
+                                        <div class="text-muted fs-8 text-truncate">@if (en.Patient != null) {<span>@DisplayName.Of(en.Patient, en.PatientEn ?? en.Patient) · <bdi class="hp-num">@en.Mrn</bdi></span>} else {<span dir="auto">@en.Entry.Note</span>}</div>
+                                    </div>
+                                    <div class="symbol-group symbol-hover flex-shrink-0">
+                                        @foreach (var (who, whoEn, ph, role) in new[] { (en.Nurse, en.NurseEn, en.NursePhoto, T["Recorded by"].Value), (en.Witness, en.WitnessEn, en.WitnessPhoto, T["Witness"].Value) })
+                                        {
+                                            <div class="symbol symbol-30px symbol-circle" title="@role: @DisplayName.Of(who, whoEn)">@if (ph != null) {<img src="@ph" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(whoEn)" />} else {<span class="symbol-label fw-bold fs-9 hp-initials">@HospitalUi.Initials(whoEn)</span>}</div>
+                                        }
+                                    </div>
+                                    <span class="text-muted fs-8 hp-num" dir="ltr" data-utc="@en.Entry.RecordedAt.ToString("o", inv)">@en.Entry.RecordedAt.ToString("HH:mm", inv)</span>
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+        </div>
+
+        @if (sel != null)
+        {
+            var st = sel.Row.Req.Status;
+            bool draft = st == HospitalRequisitionStatus.Draft, submitted = st == HospitalRequisitionStatus.Submitted;
+            <div class="card mb-5" data-req="@sel.Row.Req.ID">
+                <div class="card-header border-0 pt-6">
+                    <div class="card-title align-items-start flex-column m-0">
+                        <span class="card-label fw-bold text-gray-900 fs-4"><bdi class="hp-num">@sel.Row.Req.ReqNo</bdi> · @DisplayName.Of(sel.Row.Unit.Name, sel.Row.Unit.NameEn)</span>
+                        <span class="text-muted mt-1 fw-semibold fs-7">@T["Suggested quantity = ward par − ward balance"]</span>
+                    </div>
+                    <div class="card-toolbar gap-2">
+                        <span class="badge badge-light-@StateKind(st) fs-7">@T["req:" + st]</span>
+                        @if (sel.TransferNo != null) { <span class="badge badge-light-success fs-7"><i class="ki-outline ki-arrow-right-left fs-7 me-1 text-success"></i>@T["Store transfer"] <bdi class="hp-num ms-1">@sel.TransferNo</bdi></span> }
+                        else { <span class="badge badge-light fs-8">@T["Store transfers with approval"]</span> }
+                    </div>
+                </div>
+                <div class="card-body pt-2">
+                    <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-3 mb-0">
+                        <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0">
+                            <th>@T["Item"]</th><th class="text-end">@T["Par"]</th><th class="text-end">@T["On ward"]</th><th class="text-end">@T["Requested"]</th><th class="text-end">@T["Approved"]</th><th class="text-end">@T["Store stock"]</th><th class="w-50px"></th>
+                        </tr></thead>
+                        <tbody class="fw-semibold text-gray-700">
+                            @foreach (var l in sel.Lines)
+                            {
+                                <tr>
+                                    <td><span class="fw-semibold text-gray-800">@DisplayName.Of(l.Name, l.NameEn)</span><div class="text-muted fs-8 hp-num">@l.Code</div></td>
+                                    <td class="text-end"><span class="hp-num">@Qty(l.Par)</span></td>
+                                    <td class="text-end"><span class="hp-num @(l.Par > 0 && l.OnWard < l.Par * 0.3m ? "text-danger fw-bold" : "")">@Qty(l.OnWard)</span></td>
+                                    <td class="text-end">@if (draft && mayRequest) { <input class="form-control form-control-sm form-control-solid hp-num w-90px ms-auto text-end" dir="ltr" type="number" min="0" step="any" value="@Qty(l.Line.RequestedQty)" data-line-qty="@l.Line.ItemId" /> } else { <span class="hp-num">@Qty(l.Line.RequestedQty)</span> }</td>
+                                    <td class="text-end">@if (submitted && mayApprove) { <input class="form-control form-control-sm form-control-solid hp-num w-90px ms-auto text-end" dir="ltr" type="number" min="0" step="any" value="@(l.Line.ApprovedQty is decimal a ? Qty(a) : Qty(Math.Min(l.Line.RequestedQty, Math.Max(0, l.StoreStock))))" data-line-approve="@l.Line.ItemId" /> } else { <span class="hp-num">@(l.Line.ApprovedQty is decimal a2 ? Qty(a2) : "—")</span> }</td>
+                                    <td class="text-end"><span class="hp-num text-gray-600">@Qty(l.StoreStock)</span></td>
+                                    <td class="text-end">@if (draft && mayRequest) { <button type="button" class="btn btn-icon btn-sm btn-light w-30px h-30px" data-line-remove="@l.Line.ItemId" title="@T["Remove"]"><i class="ki-outline ki-trash fs-5"></i></button> }</td>
+                                </tr>
+                            }
+                            @if (sel.Lines.Count == 0) { <tr><td colspan="7" class="text-center text-muted py-8">@T["No items on this request yet."]</td></tr> }
+                        </tbody>
+                    </table></div>
+
+                    @if (draft && mayRequest)
+                    {
+                        <div class="d-flex flex-wrap align-items-center gap-3 mt-5">
+                            <div class="w-350px"><select class="form-select form-select-sm form-select-solid" data-item-pick data-placeholder="@T["Add an item..."]"></select></div>
+                            <input class="form-control form-control-sm form-control-solid hp-num w-100px" dir="ltr" type="number" min="0" step="any" placeholder="@T["Qty"]" data-item-qty />
+                            <button type="button" class="btn btn-sm btn-light-primary" data-item-add><i class="ki-outline ki-plus fs-4"></i>@T["Add"]</button>
+                        </div>
+                    }
+                    @if (sel.Row.Req.CancelReason != null) { <div class="text-muted fs-8 mt-4"><i class="ki-outline ki-information fs-7 me-1"></i>@T["Cancelled"]: @sel.Row.Req.CancelReason</div> }
+
+                    <div class="d-flex flex-wrap justify-content-end gap-2 mt-6">
+                        @if (draft && mayRequest)
+                        {
+                            <button type="button" class="btn btn-sm btn-light-danger" data-req-move="Cancelled" data-reason="1"><i class="ki-outline ki-cross fs-4"></i>@T["Cancel request"]</button>
+                            <button type="button" class="btn btn-sm btn-primary" data-req-move="Submitted"><i class="ki-outline ki-send fs-4"></i>@T["Send to the store"]</button>
+                        }
+                        @if (mayApprove && (submitted || st == HospitalRequisitionStatus.Approved || st == HospitalRequisitionStatus.Picking))
+                        {
+                            <button type="button" class="btn btn-sm btn-light-danger" data-req-move="Cancelled" data-reason="1"><i class="ki-outline ki-cross fs-4"></i>@T["Cancel request"]</button>
+                        }
+                        @if (submitted && mayApprove) { <button type="button" class="btn btn-sm btn-primary" data-req-move="Approved"><i class="ki-outline ki-check fs-4"></i>@T["Approve quantities"]</button> }
+                        @if (st == HospitalRequisitionStatus.Approved && mayApprove) { <button type="button" class="btn btn-sm btn-primary" data-req-move="Picking"><i class="ki-outline ki-basket fs-4"></i>@T["Start picking"]</button> }
+                        @if (st == HospitalRequisitionStatus.Picking && mayApprove) { <button type="button" class="btn btn-sm btn-primary" data-req-move="Dispatched" data-confirm="1"><i class="ki-outline ki-delivery fs-4"></i>@T["Dispatch & post the transfer"]</button> }
+                    </div>
+                </div>
+            </div>
+        }
+    </div></div>
+</div>
+
+@if (ready && requestUnits.Count > 0)
+{
+    <div class="modal fade" id="reqNewModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-500px"><div class="modal-content">
+        <div class="modal-header"><h3 class="fw-bold m-0">@T["New requisition"]</h3><div class="btn btn-icon btn-sm btn-active-light-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body">
+            <label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Ward"]</label>
+            <select class="form-select form-select-solid mb-5" data-new-unit data-control="select2" data-dropdown-parent="#reqNewModal" data-hide-search="true">
+                @foreach (var u in requestUnits) { <option value="@u.ID">@u.Code · @DisplayName.Of(u.Name, u.NameEn)</option> }
+            </select>
+            <label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Priority"]</label>
+            <div class="d-flex gap-2 mb-5">
+                @foreach (var p in HospitalRequisitionPriority.All)
+                {
+                    <label><input type="radio" class="btn-check" name="reqPrio" value="@p" @(p == HospitalRequisitionPriority.Routine ? "checked" : "") /><span class="btn btn-sm btn-outline btn-outline-dashed btn-active-light-primary">@T["prio:" + p]</span></label>
+                }
+            </div>
+            <label class="form-check form-check-custom form-check-solid mb-5"><input class="form-check-input" type="checkbox" checked data-new-frompar /><span class="form-check-label fs-7">@T["Fill from the ward's pars (par − what the ward holds)"]</span></label>
+            <label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Note"]</label>
+            <textarea class="form-control form-control-solid" rows="2" maxlength="500" dir="auto" data-new-note></textarea>
+        </div>
+        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-new-save><i class="ki-outline ki-check fs-4"></i>@T["Create"]</button></div>
+    </div></div></div>
+}
+
+@if (consReady && mayStore)
+{
+    <div class="modal fade" id="consModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-600px"><div class="modal-content">
+        <div class="modal-header"><h3 class="fw-bold m-0">@T["Receive implants"]</h3><div class="btn btn-icon btn-sm btn-active-light-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body"><div class="row g-4">
+            <div class="col-12"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Supplier"]</label>
+                <select class="form-select form-select-solid" data-c="vendorId" data-control="select2" data-dropdown-parent="#consModal" data-placeholder="—"><option></option>@foreach (var v in vendors) { <option value="@v.Id">@DisplayName.Of(v.Name, v.NameEn ?? v.Name)</option> }</select></div>
+            <div class="col-12"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Item"]</label>
+                <select class="form-select form-select-solid" data-c="itemId" data-cons-item data-placeholder="@T["Add an item..."]"></select></div>
+            <div class="col-12"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Serial numbers (one per line)"]</label>
+                <textarea class="form-control form-control-solid hp-num" rows="3" dir="ltr" data-c="serials"></textarea></div>
+            <div class="col-md-4"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Lot"]</label><input class="form-control form-control-solid" dir="ltr" maxlength="60" data-c="lot" /></div>
+            <div class="col-md-4"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Expiry"]</label><input type="date" class="form-control form-control-solid hp-num" dir="ltr" data-c="expiry" /></div>
+            <div class="col-md-4"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Agreed price"]</label><input type="number" min="0" step="any" class="form-control form-control-solid hp-num" dir="ltr" data-c="price" /></div>
+            <div class="col-12 text-muted fs-8">@T["Not the hospital's stock and not in its books until used: using one on a case charges the patient and raises a draft purchase order to the supplier."]</div>
+        </div></div>
+        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-cons-save><i class="ki-outline ki-check fs-4"></i>@T["Receive"]</button></div>
+    </div></div></div>
+}
+
+@if (cdMayRecord && cdItems.Count > 0)
+{
+    <div class="modal fade" id="cdModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-600px"><div class="modal-content">
+        <div class="modal-header"><h3 class="fw-bold m-0">@T["Record a dose or waste"]</h3><div class="btn btn-icon btn-sm btn-active-light-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body"><div class="row g-4">
+            <div class="col-12 d-flex gap-2">
+                @foreach (var k in HospitalControlledKind.All)
+                {
+                    <label><input type="radio" class="btn-check" name="cdKind" value="@k" @(k == HospitalControlledKind.Given ? "checked" : "") /><span class="btn btn-sm btn-outline btn-outline-dashed btn-active-light-primary">@T["cd:" + k]</span></label>
+                }
+            </div>
+            <div class="col-md-8"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Drug"]</label>
+                <select class="form-select form-select-solid" data-d="itemId" data-control="select2" data-dropdown-parent="#cdModal" data-hide-search="true">
+                    @foreach (var i in cdItems) { <option value="@i.Id">@DisplayName.Of(i.Name, i.NameEn)</option> }
+                </select></div>
+            <div class="col-md-4"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Qty"]</label><input type="number" min="0" step="any" class="form-control form-control-solid hp-num" dir="ltr" data-d="qty" value="1" /></div>
+            <div class="col-12" data-cd-patient-box><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Patient"]</label>
+                <select class="form-select form-select-solid" data-d="patientId" data-cd-patient data-placeholder="@T["Search..."]"></select></div>
+            <div class="col-12"><label class="fw-semibold fs-7 text-gray-700 mb-2" data-cd-note-label>@T["Note"]</label>
+                <textarea class="form-control form-control-solid" rows="2" maxlength="300" dir="auto" data-d="note"></textarea></div>
+            <div class="col-12"><div class="separator separator-dashed"></div></div>
+            <div class="col-md-7"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Witness"]</label>
+                <select class="form-select form-select-solid" data-d="witnessId" data-cd-witness data-placeholder="—"><option></option>
+                    @foreach (var w in cdWitnesses) { <option value="@w.ID" data-photo="@w.Photo" data-initials="@HospitalUi.Initials(w.NameEn)">@DisplayName.Of(w.Name, w.NameEn)</option> }
+                </select></div>
+            <div class="col-md-5"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["The witness's password"]</label>
+                <input type="password" class="form-control form-control-solid" dir="ltr" autocomplete="new-password" data-d="password" /></div>
+            <div class="col-12 text-muted fs-8">@T["The witness types her own password here, on this device. The dose leaves the ward store and is booked to the drug's cost."]</div>
+        </div></div>
+        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-cd-save><i class="ki-outline ki-check fs-4"></i>@T["Sign & record"]</button></div>
+    </div></div></div>
+}
+@if (cdReady && canManage)
+{
+    <div class="modal fade" id="cdItemsModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-500px"><div class="modal-content">
+        <div class="modal-header"><h3 class="fw-bold m-0">@T["Controlled items"]</h3><div class="btn btn-icon btn-sm btn-active-light-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body">
+            <div data-cd-item-list>
+            @foreach (var i in cdItems)
+            {
+                <div class="d-flex align-items-center py-2 border-bottom border-gray-200 border-bottom-dashed">
+                    <div class="flex-grow-1"><span class="text-gray-800 fw-semibold">@DisplayName.Of(i.Name, i.NameEn)</span><div class="text-muted fs-8 hp-num">@i.Code</div></div>
+                    <button type="button" class="btn btn-icon btn-sm btn-light w-30px h-30px" data-cd-off="@i.Id" title="@T["Remove"]"><i class="ki-outline ki-trash fs-5"></i></button>
+                </div>
+            }
+            @if (cdItems.Count == 0) { <div class="text-muted fs-7 mb-3">@T["No item is marked controlled yet."]</div> }
+            </div>
+            <div class="d-flex gap-2 mt-4">
+                <div class="flex-grow-1"><select class="form-select form-select-sm form-select-solid" data-cd-item-pick data-placeholder="@T["Add an item..."]"></select></div>
+                <button type="button" class="btn btn-sm btn-light-primary" data-cd-on><i class="ki-outline ki-plus fs-4"></i>@T["Add"]</button>
+            </div>
+        </div>
+    </div></div></div>
+}
+
+@section Scripts {
+    <partial name="_HospitalPrompt" />
+    <script>
+        (function () {
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value, root = @Json.Serialize(Url.Content("~/Hospital/Supply"));
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value), why: @Json.Serialize(T["Why is the request cancelled?"].Value),
+                dispatch: @Json.Serialize(T["Dispatch now? The approved quantities move from the store to the ward (an inventory transfer is posted)."].Value),
+                consReturn: @Json.Serialize(T["Return this implant to its supplier?"].Value), cdOff: @Json.Serialize(T["This item will no longer be kept in the register. Continue?"].Value),
+                patients: @Json.Serialize(Url.Content("~/Hospital/Patients/Search")) };
+            function toast(k, m) { if (window.toastr) toastr[k](m); }
+            function post(url, body) {
+                return fetch(root + url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(body || {}) })
+                    .then(function (r) { return r.json().catch(function () { return { ok: false }; }); });
+            }
+            function reqId() { var c = document.querySelector('[data-req]'); return c ? c.getAttribute('data-req') : null; }
+            // In place, never a reload: the page is rendered again and swapped; the address keeps the open request.
+            function swap(id) {
+                var r = id || reqId(), wd = document.querySelector('[data-cd-ward]'), qs = [];
+                if (r) qs.push('id=' + r); if (wd) qs.push('ward=' + wd.getAttribute('data-cd-ward'));
+                var url = root + (qs.length ? '?' + qs.join('&') : '');
+                return fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.text(); }).then(function (html) {
+                    var d = new DOMParser().parseFromString(html, 'text/html');
+                    ['kt_app_toolbar', 'kt_app_content'].forEach(function (k) { var f = d.getElementById(k); if (f) document.getElementById(k).innerHTML = f.innerHTML; });
+                    // the controlled-items window lists what is controlled: take the new list (its picker stays)
+                    var nl = d.querySelector('[data-cd-item-list]'), ol = document.querySelector('[data-cd-item-list]'); if (nl && ol) ol.innerHTML = nl.innerHTML;
+                    history.replaceState(null, '', url); wire();
+                });
+            }
+            function done(btn) { return function (res) { if (btn) btn.disabled = false; if (!res.ok) { toast('error', res.error || W.failed); return; } toast('success', W.saved); swap(); }; }
+            function face(o) {
+                if (!o.id || !o.element) return o.text;
+                var ph = o.element.getAttribute('data-photo'), s = document.createElement('span'); s.className = 'd-flex align-items-center';
+                var sym = document.createElement('span'); sym.className = 'symbol symbol-25px symbol-circle me-2';
+                var lb = document.createElement('span'); lb.className = 'symbol-label fw-bold fs-9 hp-initials'; lb.textContent = o.element.getAttribute('data-initials') || '';
+                // a photo whose file is gone falls back to the initials, never a broken image
+                if (ph) { var im = document.createElement('img'); im.alt = ''; im.style.objectFit = 'cover'; im.onerror = function () { sym.replaceChild(lb, im); }; im.src = ph; sym.appendChild(im); }
+                else sym.appendChild(lb);
+                s.appendChild(sym); s.appendChild(document.createTextNode(o.text)); return s;
+            }
+            function wire() {
+                var pk = document.querySelector('[data-cd-pick]');
+                if (pk && window.jQuery && !pk.classList.contains('select2-hidden-accessible')) {
+                    jQuery(pk).select2({ minimumResultsForSearch: Infinity });
+                    CB.onSelectChange(pk, function () { document.querySelector('[data-cd-ward]').setAttribute('data-cd-ward', pk.value); swap(); });
+                }
+
+                var ci = document.querySelector('[data-cons-item]');
+                if (ci && window.jQuery && !ci.classList.contains('select2-hidden-accessible'))
+                    jQuery(ci).select2({ dropdownParent: jQuery('#consModal'), placeholder: ci.getAttribute('data-placeholder'),
+                        ajax: { url: root + '/Items', delay: 250, data: function (p) { return { q: p.term || '' }; }, processResults: function (r) { return { results: r.items || [] }; } } });
+                var pick = document.querySelector('[data-item-pick]');
+                if (pick && window.jQuery && !pick.classList.contains('select2-hidden-accessible'))
+                    jQuery(pick).select2({ placeholder: pick.getAttribute('data-placeholder'), allowClear: true, minimumInputLength: 0,
+                        ajax: { url: root + '/Items', delay: 250, data: function (p) { return { q: p.term || '' }; }, processResults: function (r) { return { results: r.items || [] }; } } });
+            }
+            wire();
+            // H39: the two windows sit outside the swapped content, so their pickers are set up once
+            (function () {
+                if (!window.jQuery) return;
+                var ip = document.querySelector('[data-cd-item-pick]');
+                if (ip) jQuery(ip).select2({ dropdownParent: jQuery('#cdItemsModal'), placeholder: ip.getAttribute('data-placeholder'),
+                    ajax: { url: root + '/Items', delay: 250, data: function (p) { return { q: p.term || '' }; }, processResults: function (r) { return { results: r.items || [] }; } } });
+                var m = document.getElementById('cdModal'); if (!m) return;
+                jQuery(m.querySelector('[data-cd-patient]')).select2({ dropdownParent: jQuery('#cdModal'), placeholder: m.querySelector('[data-cd-patient]').getAttribute('data-placeholder'), allowClear: true,
+                    ajax: { url: W.patients, delay: 250, data: function (p) { return { q: p.term || '' }; }, processResults: function (r) { return { results: r.results || [] }; } } });
+                jQuery(m.querySelector('[data-cd-witness]')).select2({ dropdownParent: jQuery('#cdModal'), placeholder: '—', templateResult: face, templateSelection: face });
+                function shape() { var k = m.querySelector('input[name=cdKind]:checked'), g = !k || k.value === 'Given'; m.querySelector('[data-cd-patient-box]').style.display = g ? '' : 'none'; m.querySelector('[data-cd-note-label]').classList.toggle('required', !g); }
+                m.addEventListener('change', function (e) { if (e.target.name === 'cdKind') shape(); });
+                shape();
+            })();
+            document.addEventListener('input', function (e) {
+                var s = e.target.closest('[data-req-search]'); if (!s) return;
+                var q = s.value.trim().toLowerCase();
+                document.querySelectorAll('[data-req-open]').forEach(function (tr) { tr.style.display = !q || tr.innerText.toLowerCase().indexOf(q) >= 0 ? '' : 'none'; });
+            });
+            document.addEventListener('change', function (e) {
+                var t = e.target.closest('[data-line-qty],[data-line-approve]'); if (!t || !reqId()) return;
+                if (t.hasAttribute('data-line-qty')) post('/Requisition/' + reqId() + '/Lines', { itemId: +t.getAttribute('data-line-qty'), qty: +t.value || 0 }).then(done(null));
+                else post('/Requisition/' + reqId() + '/Lines/' + t.getAttribute('data-line-approve') + '/Approve', { qty: +t.value || 0 }).then(function (res) { if (!res.ok) { toast('error', res.error || W.failed); swap(); } });
+            });
+            document.addEventListener('click', function (e) {
+                var row = e.target.closest('[data-req-open]'); if (row) { swap(row.getAttribute('data-req-open')); return; }
+                // H39: the controlled-drugs register — record (two signatures), and which items are controlled
+                var cd = e.target.closest('[data-cd-new],[data-cd-save],[data-cd-items],[data-cd-on],[data-cd-off]');
+                if (cd) {
+                    var dm = document.getElementById('cdModal'), im2 = document.getElementById('cdItemsModal');
+                    if (cd.hasAttribute('data-cd-new')) { dm.querySelector('[data-d=password]').value = ''; bootstrap.Modal.getOrCreateInstance(dm).show(); return; }
+                    if (cd.hasAttribute('data-cd-items')) { bootstrap.Modal.getOrCreateInstance(im2).show(); return; }
+                    if (cd.hasAttribute('data-cd-save')) {
+                        var d = function (k) { return dm.querySelector('[data-d=' + k + ']').value; }, kd = dm.querySelector('input[name=cdKind]:checked').value;
+                        cd.disabled = true;
+                        post('/Controlled/Record', { warehouseId: +document.querySelector('[data-cd-ward]').getAttribute('data-cd-ward'), itemId: +d('itemId') || 0, kind: kd, qty: +d('qty') || 0,
+                            patientId: kd === 'Given' ? (+d('patientId') || null) : null, note: d('note') || null, witnessId: +d('witnessId') || 0, password: d('password') })
+                            .then(function (res) {
+                                cd.disabled = false; dm.querySelector('[data-d=password]').value = '';
+                                if (!res.ok) { toast('error', res.error || W.failed); return; }
+                                bootstrap.Modal.getOrCreateInstance(dm).hide(); dm.querySelector('[data-d=note]').value = ''; toast('success', W.saved); swap();
+                            });
+                        return;
+                    }
+                    if (cd.hasAttribute('data-cd-on')) {
+                        var it2 = im2.querySelector('[data-cd-item-pick]').value; if (!it2) return;
+                        cd.disabled = true;
+                        post('/Controlled/Items', { itemId: +it2, on: true }).then(function (res) { cd.disabled = false; if (!res.ok) { toast('error', res.error || W.failed); return; } jQuery(im2.querySelector('[data-cd-item-pick]')).val(null).trigger('change'); toast('success', W.saved); swap(); });
+                        return;
+                    }
+                    if (cd.hasAttribute('data-cd-off')) {
+                        cbConfirm(W.cdOff, { kind: 'danger' }).then(function (ok) { if (!ok) return; cd.disabled = true; post('/Controlled/Items', { itemId: +cd.getAttribute('data-cd-off'), on: false }).then(done(cd)); });
+                        return;
+                    }
+                }
+                // H38: consignment implants — receive, return
+                var cm = document.getElementById('consModal'), ct = e.target.closest('[data-cons-new],[data-cons-save],[data-cons-return]');
+                if (ct && ct.hasAttribute('data-cons-new')) { bootstrap.Modal.getOrCreateInstance(cm).show(); return; }
+                if (ct && ct.hasAttribute('data-cons-save')) {
+                    var c = function (k) { return cm.querySelector('[data-c=' + k + ']').value; };
+                    ct.disabled = true;
+                    post('/Consignments', { vendorId: +c('vendorId') || 0, itemId: +c('itemId') || 0, serials: c('serials').split(/\r?\n/).map(function (x) { return x.trim(); }).filter(Boolean),
+                        lot: c('lot') || null, expiry: c('expiry') || null, price: +c('price') || 0 })
+                        .then(function (res) { ct.disabled = false; if (!res.ok) { toast('error', res.error || W.failed); return; } bootstrap.Modal.getOrCreateInstance(cm).hide(); toast('success', W.saved); swap(); });
+                    return;
+                }
+                if (ct && ct.hasAttribute('data-cons-return')) {
+                    cbConfirm(W.consReturn, { kind: 'danger' }).then(function (ok) { if (!ok) return; ct.disabled = true; post('/Consignments/' + ct.getAttribute('data-cons-return') + '/Return').then(done(ct)); });
+                    return;
+                }
+                var t = e.target.closest('[data-req-new],[data-new-save],[data-item-add],[data-line-remove],[data-req-move]'); if (!t) return;
+                var m = document.getElementById('reqNewModal');
+                if (t.hasAttribute('data-req-new')) { bootstrap.Modal.getOrCreateInstance(m).show(); return; }
+                if (t.hasAttribute('data-new-save')) {
+                    var prio = m.querySelector('input[name=reqPrio]:checked');
+                    t.disabled = true;
+                    post('/Requisitions', { unitId: +m.querySelector('[data-new-unit]').value, priority: prio ? prio.value : 'Routine', note: m.querySelector('[data-new-note]').value || null, fromPar: m.querySelector('[data-new-frompar]').checked })
+                        .then(function (res) { t.disabled = false; if (!res.ok) { toast('error', res.error || W.failed); return; } bootstrap.Modal.getOrCreateInstance(m).hide(); toast('success', W.saved); swap(res.id); });
+                    return;
+                }
+                if (t.hasAttribute('data-item-add')) {
+                    var it = document.querySelector('[data-item-pick]').value, q = +document.querySelector('[data-item-qty]').value || 0;
+                    if (!it) return; t.disabled = true; post('/Requisition/' + reqId() + '/Lines', { itemId: +it, qty: q }).then(done(t)); return;
+                }
+                if (t.hasAttribute('data-line-remove')) { t.disabled = true; post('/Requisition/' + reqId() + '/Lines/' + t.getAttribute('data-line-remove') + '/Remove').then(done(t)); return; }
+                var to = t.getAttribute('data-req-move');
+                if (t.hasAttribute('data-reason')) {
+                    cbPrompt(W.why, { kind: 'danger' }).then(function (why) { if (!why) return; t.disabled = true; post('/Requisition/' + reqId() + '/Move', { to: to, reason: why }).then(done(t)); });
+                    return;
+                }
+                if (t.hasAttribute('data-confirm')) {
+                    cbConfirm(W.dispatch).then(function (ok) { if (!ok) return; t.disabled = true; post('/Requisition/' + reqId() + '/Move', { to: to }).then(done(t)); });
+                    return;
+                }
+                if (to === 'Approved') {
+                    // every line's quantity as shown (the store's suggestion included), then the approval
+                    var ins = Array.prototype.slice.call(document.querySelectorAll('[data-line-approve]')), chain = Promise.resolve({ ok: true });
+                    t.disabled = true;
+                    ins.forEach(function (i) { chain = chain.then(function (r) { return r.ok ? post('/Requisition/' + reqId() + '/Lines/' + i.getAttribute('data-line-approve') + '/Approve', { qty: +i.value || 0 }) : r; }); });
+                    chain.then(function (r) { if (!r.ok) { t.disabled = false; toast('error', r.error || W.failed); return; } post('/Requisition/' + reqId() + '/Move', { to: to }).then(done(t)); });
+                    return;
+                }
+                t.disabled = true; post('/Requisition/' + reqId() + '/Move', { to: to }).then(done(t));
+            });
+        })();
+    </script>
+}

@@ -38,10 +38,23 @@ namespace CrossBuy.Tests
                 CancellationToken cancellationToken = default) => Task.FromResult(true);
         }
 
+        /// Every UNCONDITIONAL dataset pack, plus the Work pack only when the test asks for it.
+        ///
+        /// HOSPITAL IS HERE BECAUSE IT IS UNCONDITIONAL, not because these tests are about it.
+        /// AddCrossBusinessReporting registers the hospital datasets always, exactly as it does
+        /// Accounting and Projects, so a KpiRegistry built without them is not a configuration the
+        /// product can be in — and KpiRegistry is right to throw for one. Leaving Hospital out made
+        /// these tests fail with "Hospital.DoctorProductivity is not registered" the moment the
+        /// hospital dashboard KPIs were added, which was this helper being stale rather than a defect.
+        ///
+        /// WORK STAYS THE ONLY CONDITIONAL PACK, which is the distinction the suite exists to pin:
+        /// it is opt-in behind Reporting:Work:Enabled, so its KPIs must be DROPPED when absent rather
+        /// than throwing at DI-graph build time.
         private static IReportDatasetRegistry Datasets(bool withWork) =>
             new ReportDatasetRegistry(
                 AccountingDatasets.All()
                     .Concat(ProjectsDatasets.All())
+                    .Concat(HospitalManagementDatasets.Datasets())
                     .Concat(withWork ? WorkReportingDatasets.All() : Enumerable.Empty<ReportDatasetDefinition>())
                     .Cast<IReportDatasetDefinition>(),
                 new AllowAll());

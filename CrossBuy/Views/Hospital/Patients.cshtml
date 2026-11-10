@@ -55,16 +55,16 @@
             <div class="card-header border-0 pt-6">
                 <div class="card-title align-items-start flex-column m-0">
                     <span class="card-label fw-bold text-gray-900 fs-4">@T["Patient registry"]</span>
-                    <span class="text-muted mt-1 fw-semibold fs-7"><span class="hp-num">@Model.Total.ToString("N0")</span> @T["file(s)"]</span>
+                    <span class="text-muted mt-1 fw-semibold fs-7" data-pt-count><span class="hp-num">@Model.Total.ToString("N0")</span> @T["file(s)"]</span>
                 </div>
                 <div class="card-toolbar">
-                    <form method="get" action="@Url.Action("Patients")" class="d-flex align-items-center position-relative my-1">
+                    <form method="get" action="@Url.Action("Patients")" class="d-flex align-items-center position-relative my-1" data-pt-search>
                         <i class="ki-outline ki-magnifier fs-3 position-absolute ms-4"></i>
                         <input type="text" name="q" value="@q" class="form-control form-control-solid w-250px ps-12" placeholder="@T["Name, MRN, ID or mobile..."]" autocomplete="off" />
                     </form>
                 </div>
             </div>
-            <div class="card-body pt-2">
+            <div class="card-body pt-2" data-pt-results>
                 @if (Model.Rows.Count == 0)
                 {
                     <div class="text-center text-muted py-15">
@@ -123,3 +123,25 @@
         </div>
     </div></div>
 </div>
+
+@section Scripts {
+    <script>
+        // The registry searches as the desk types: the list and its count are fetched and swapped in place (never a
+        // reload, the box keeps its focus); the address follows so Back and a shared link land on the same search.
+        (function () {
+            var form = document.querySelector('[data-pt-search]'); if (!form) return;
+            var box = form.querySelector('input[name="q"]'), timer = null, seq = 0;
+            function run() {
+                var q = box.value.trim(), url = form.getAttribute('action') + (q ? '?q=' + encodeURIComponent(q) : ''), mine = ++seq;
+                fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.text(); }).then(function (html) {
+                    if (mine !== seq) return;   // a newer search already went out
+                    var doc = new DOMParser().parseFromString(html, 'text/html');
+                    ['[data-pt-results]', '[data-pt-count]'].forEach(function (sel) { var f = doc.querySelector(sel), t = document.querySelector(sel); if (f && t) t.innerHTML = f.innerHTML; });
+                    history.replaceState(null, '', url);
+                });
+            }
+            box.addEventListener('input', function () { clearTimeout(timer); timer = setTimeout(run, 300); });
+            form.addEventListener('submit', function (e) { e.preventDefault(); clearTimeout(timer); run(); });
+        })();
+    </script>
+}

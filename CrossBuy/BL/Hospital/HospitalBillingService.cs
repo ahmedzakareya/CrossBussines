@@ -54,14 +54,19 @@ namespace CrossBuy.BL.Hospital
 	public sealed record HospitalBillLineView(int? Id, string Code, string Description, string DescriptionEn, string Category, decimal Quantity,
 		decimal UnitPrice, decimal Gross, decimal Insurer, decimal Patient, decimal Vat, string Source, bool Running, int? RevenueAccountId, bool OutsideList = false);
 
-	public sealed record HospitalBillTotals(decimal Gross, decimal Insurer, decimal Patient, decimal Vat, decimal Paid)
+	/// H63: `Waived` = approved charity waivers on the bill — what the patient no longer owes, never collected.
+	public sealed record HospitalBillTotals(decimal Gross, decimal Insurer, decimal Patient, decimal Vat, decimal Paid, decimal Waived = 0)
 	{
-		public decimal Due => Patient + Vat - Paid;
+		public decimal Due => Patient + Vat - Paid - Waived;
 	}
 
 	/// Currency is the bill's (its list's, or the facility's); List is the list that priced it (null = the main list).
+	/// Who covers a bill (H18): the payer, its co-pay, and the contract discount neither side pays.
+	public sealed record HospitalBillCover(string Payer, string PayerEn, decimal CopayPct, decimal Discount, bool Frozen, int PayerId = 0);
+
 	public sealed record HospitalBillView(HospitalBill Bill, HospitalPatient Patient, IReadOnlyList<HospitalBillLineView> Lines,
-		IReadOnlyList<HospitalPayment> Payments, HospitalBillTotals Totals, decimal VatRatePercent, HospitalPriceCurrency? Currency = null, HospitalPriceList? List = null)
+		IReadOnlyList<HospitalPayment> Payments, HospitalBillTotals Totals, decimal VatRatePercent, HospitalPriceCurrency? Currency = null, HospitalPriceList? List = null,
+		HospitalBillCover? Cover = null)
 	{
 		public bool Foreign => Bill.CurrencyId != null;
 	}
@@ -310,6 +315,30 @@ namespace CrossBuy.BL.Hospital
 			return line;
 		}
 
+		/// H29: a catalogue service (an operation) as a bill line, priced through the bill's list like an order.
+		/// Adds without saving; the caller (the theatre, closing the case) authorizes and saves.
+		/// H51: `quantity` — the blood bank charges the bags issued on one line. H53: `agreedPrice` — the fee the patient
+		/// accepted (a dental plan line); on a payer's price list the list still decides, exactly as an order's price does.
+		public async Task<HospitalBillLine?> AddServiceChargeAsync(BusinessContext ctx, HospitalBill bill, int serviceId, int? employeeId, DateTime now, CancellationToken ct = default, decimal quantity = 1, decimal? agreedPrice = null)
+		{
+			var s = await _db.HospitalServices.AsNoTracking().FirstOrDefaultAsync(x => x.ID == serviceId && x.CompanyId == ctx.CompanyId, ct);
+			if (s == null) return null;
+			var line = Line(bill.ID, s, quantity, await SettingsAsync(ctx, ct), HospitalBillLineSources.Order, employeeId, now, await QuoteAsync(ctx, bill, s, agreedPrice, ct));
+			_db.HospitalBillLines.Add(line);
+			return line;
+		}
+
+		/// H51/H52: the bill a charge made on the ward goes on — the stay's bill while the patient is admitted, otherwise the
+		/// patient's own open bill (created if there is none). One answer for the blood bank and the ward's doses.
+		public async Task<HospitalBill> BillForWardChargeAsync(BusinessContext ctx, int patientId, int? employeeId, DateTime now, CancellationToken ct = default)
+		{
+			var adm = await _db.HospitalAdmissions.AsNoTracking().Where(a => a.CompanyId == ctx.CompanyId && a.PatientId == patientId && a.Status == HospitalAdmissionStatus.Active).Select(a => (int?)a.ID).FirstOrDefaultAsync(ct);
+			if (adm is int admId && (await EnsureAdmissionBillAsync(ctx, admId, employeeId, now, ct)).Id is int billId
+				&& await _db.HospitalBills.FirstOrDefaultAsync(b => b.ID == billId && b.CompanyId == ctx.CompanyId && b.Status == HospitalBillStatus.Open, ct) is { } stay)
+				return stay;
+			return await BillForDispenseAsync(ctx, patientId, null, employeeId, now, ct);
+		}
+
 		/// The stay's bill, created the first time it is asked for (on admission, or for a stay that predates billing).
 		public async Task<HospitalResult> EnsureAdmissionBillAsync(BusinessContext ctx, int admissionId, int? employeeId, DateTime now, CancellationToken ct = default)
 		{
@@ -382,7 +411,7 @@ namespace CrossBuy.BL.Hospital
 		private static HospitalBillLineView View(HospitalBillLine l)
 		{
 			decimal gross = Math.Round(l.Quantity * l.UnitPrice, 4);
-			decimal insurer = 0;   // the insurer's share arrives with the insurance unit
+			decimal insurer = 0;   // the payer's part is applied afterwards, by the bill's split (CoverAsync)
 			decimal patient = gross - insurer;
 			decimal vat = l.Taxable ? Math.Round(patient * l.VatRatePercent / 100m, 4) : 0;
 			return new HospitalBillLineView(l.ID, l.Code, l.Description, l.DescriptionEn, l.Category, l.Quantity, l.UnitPrice, gross, insurer, patient, vat, l.Source, false, l.RevenueAccountId, l.OutsideList);
@@ -401,11 +430,44 @@ namespace CrossBuy.BL.Hospital
 			// or a stay being closed would be charged twice.
 			if (!stored.Any(l => l.Source == HospitalBillLineSources.Accommodation))
 				lines.AddRange(await RunningAccommodationAsync(ctx, bill, settings, nowUtc, ct));
+			// H18: the payer's part. A bill split when it closed reads that split back; an open one is split live by the
+			// patient's cover today (HospitalCoverage, the same split the claim uses). VAT is on the patient's part only.
+			var rates = stored.Select(l => l.Taxable ? l.VatRatePercent : 0m).Concat(Enumerable.Repeat(0m, lines.Count - stored.Count)).ToList();
+			var (cover, amounts, insurer) = await CoverAsync(ctx, bill, lines, nowUtc, ct);
+			if (cover != null)
+				lines = lines.Select((l, i) =>
+				{
+					decimal pat = amounts[i] - insurer[i];
+					return l with { Insurer = insurer[i], Patient = pat, Vat = rates[i] == 0 ? 0 : Math.Round(pat * rates[i] / 100m, 4) };
+				}).ToList();
 			var payments = await _db.HospitalPayments.AsNoTracking().Where(p => p.CompanyId == ctx.CompanyId && p.BillId == bill.ID).OrderBy(p => p.ReceivedAt).ToListAsync(ct);
-			var totals = new HospitalBillTotals(lines.Sum(l => l.Gross), lines.Sum(l => l.Insurer), lines.Sum(l => l.Patient), lines.Sum(l => l.Vat), payments.Sum(p => p.Amount));
+			decimal waived = 0;
+			waived = await HospitalCharityService.WaivedAsync(_db, ctx.CompanyId, bill.ID, ct);   // H63
+			var totals = new HospitalBillTotals(lines.Sum(l => l.Gross), lines.Sum(l => l.Insurer), lines.Sum(l => l.Patient), lines.Sum(l => l.Vat), payments.Sum(p => p.Amount), waived);
 			HospitalPriceCurrency? currency = _pricing == null ? null : await _pricing.CurrencyOfAsync(ctx, bill.CurrencyId, ct);
 			var list = bill.PriceListId is int lid ? await _db.HospitalPriceLists.AsNoTracking().FirstOrDefaultAsync(l => l.ID == lid && l.CompanyId == ctx.CompanyId, ct) : null;
-			return new HospitalBillView(bill, patient, lines, payments, totals, settings.VatRatePercent, currency, list);
+			return new HospitalBillView(bill, patient, lines, payments, totals, settings.VatRatePercent, currency, list, cover);
+		}
+
+		/// The split a bill is shown and posted on: frozen at closing if it was split then, live while open, none for a
+		/// bill closed with no split (self-pay, or closed before H18 — the patient owed it all, as it was posted).
+		private async Task<(HospitalBillCover? Cover, decimal[] Amounts, decimal[] Insurer)> CoverAsync(BusinessContext ctx, HospitalBill bill, IReadOnlyList<HospitalBillLineView> lines, DateTime nowUtc, CancellationToken ct)
+		{
+			var none = ((HospitalBillCover?)null, Array.Empty<decimal>(), Array.Empty<decimal>());
+			var frozen = await HospitalCoverage.FrozenAsync(_db, ctx, bill.ID, ct);
+			if (frozen is { } f)
+			{
+				var payer = await _db.Set<HospitalPayer>().AsNoTracking().FirstAsync(p => p.ID == f.Head.PayerId && p.CompanyId == ctx.CompanyId, ct);
+				var amt = lines.Select(l => f.Lines.FirstOrDefault(x => x.BillLineId == l.Id)?.Amount ?? l.Gross).ToArray();
+				var ins = lines.Select(l => f.Lines.FirstOrDefault(x => x.BillLineId == l.Id)?.InsurerAmount ?? 0).ToArray();
+				return (new HospitalBillCover(payer.Name, payer.NameEn, f.Head.CopayPct, lines.Sum(l => l.Gross) - amt.Sum(), true, payer.ID), amt, ins);
+			}
+			if (bill.Status != HospitalBillStatus.Open) return none;
+			var split = await HospitalCoverage.SplitAsync(_db, _pricing, ctx, bill.PatientId, bill.PriceListId, bill.CurrencyId,
+				lines.Select(l => new HospitalSplitLine(l.Id, l.Code, l.Category, l.Quantity, l.UnitPrice, l.OutsideList)).ToList(), nowUtc, null, ct);
+			if (split == null) return none;
+			var amounts = split.Lines.Select(l => l.Amount).ToArray();
+			return (new HospitalBillCover(split.Payer.Name, split.Payer.NameEn, split.Payer.CopayPct, lines.Sum(l => l.Gross) - amounts.Sum(), false, split.Payer.ID), amounts, split.Split.InsurerPerLine.ToArray());
 		}
 
 		public async Task<IReadOnlyList<HospitalBillRow>> BillsAsync(BusinessContext ctx, string? status, int? patientId, DateTime nowUtc, CancellationToken ct = default)
@@ -422,7 +484,7 @@ namespace CrossBuy.BL.Hospital
 			{
 				var v = await BillAsync(ctx, x.b.ID, nowUtc, ct);
 				result.Add(new HospitalBillRow(x.b.ID, x.b.BillNo, x.p.ID, x.p.Name, x.p.NameEn, x.p.Mrn, x.p.PhotoPath, x.b.AdmissionId != null, x.b.Status, x.b.OpenedAt,
-					v!.Totals.Patient + v.Totals.Vat, v.Totals.Paid, v.Currency));
+					v!.Totals.Patient + v.Totals.Vat - v.Totals.Waived, v.Totals.Paid, v.Currency));   // H63: net of charity
 			}
 			return result;
 		}
@@ -461,7 +523,7 @@ namespace CrossBuy.BL.Hospital
 		/// today's for a preview), and a rounding cent lands on the receivable so the entry balances.
 		public async Task<(IReadOnlyList<HospitalLedgerLine> Lines, string? Missing)> PreviewAsync(BusinessContext ctx, HospitalBillView v, CancellationToken ct = default)
 		{
-			if (!v.Foreign) return await PreviewInBillCurrencyAsync(ctx, v, ct);
+			if (!v.Foreign) return await PreviewInBillCurrencyAsync(ctx, v, null, ct);
 			decimal rate;
 			if (v.Bill.ExchangeRate is decimal fixedRate) rate = fixedRate;
 			else
@@ -470,12 +532,12 @@ namespace CrossBuy.BL.Hospital
 				if (!ok) return (Array.Empty<HospitalLedgerLine>(), "There is no exchange rate for the bill's currency. Enter one in Accounting first");
 				rate = r;
 			}
-			return await PreviewAtRateAsync(ctx, v, rate, ct);
+			return await PreviewAtRateAsync(ctx, v, rate, null, ct);
 		}
 
-		private async Task<(IReadOnlyList<HospitalLedgerLine> Lines, string? Missing)> PreviewAtRateAsync(BusinessContext ctx, HospitalBillView v, decimal rate, CancellationToken ct)
+		private async Task<(IReadOnlyList<HospitalLedgerLine> Lines, string? Missing)> PreviewAtRateAsync(BusinessContext ctx, HospitalBillView v, decimal rate, (int? Account, string? Refusal)? payerAr, CancellationToken ct)
 		{
-			var (lines, missing) = await PreviewInBillCurrencyAsync(ctx, v, ct);
+			var (lines, missing) = await PreviewInBillCurrencyAsync(ctx, v, payerAr, ct);
 			if (missing != null || lines.Count == 0) return (lines, missing);
 			int dec = _pricing == null ? 3 : (await _pricing.FacilityCurrencyAsync(ctx, ct)).Decimals;
 			var conv = lines.Select(l => l with { Debit = Math.Round(l.Debit * rate, dec, MidpointRounding.AwayFromZero), Credit = Math.Round(l.Credit * rate, dec, MidpointRounding.AwayFromZero) }).ToList();
@@ -484,17 +546,32 @@ namespace CrossBuy.BL.Hospital
 			return (conv, null);
 		}
 
-		private async Task<(IReadOnlyList<HospitalLedgerLine> Lines, string? Missing)> PreviewInBillCurrencyAsync(BusinessContext ctx, HospitalBillView v, CancellationToken ct)
+		/// `payerAr`: the payer receivable already resolved (closing resolves it before its transaction opens);
+		/// null = resolve it here. An insured bill with no payer receivable has NO preview and cannot close (H20, D2):
+		/// the payer's share never lands on the patients' account.
+		private async Task<(IReadOnlyList<HospitalLedgerLine> Lines, string? Missing)> PreviewInBillCurrencyAsync(BusinessContext ctx, HospitalBillView v, (int? Account, string? Refusal)? payerAr, CancellationToken ct)
 		{
 			var s = await SettingsAsync(ctx, ct);
 			if (s.ReceivableAccountId == null || s.RevenueAccountId == null) return (Array.Empty<HospitalLedgerLine>(), "Map the receivable and revenue accounts in billing settings");
 			if (v.Totals.Vat > 0 && s.VatAccountId == null) return (Array.Empty<HospitalLedgerLine>(), "Map the output VAT account in billing settings");
+			int? payerAccount = null;
+			if (v.Totals.Insurer > 0)
+			{
+				if (v.Cover is not { PayerId: > 0 } cover) return (Array.Empty<HospitalLedgerLine>(), HospitalClaimAccounts.NotSetUp);
+				var (acc, refusal) = payerAr ?? await HospitalClaimAccounts.PayerReceivableAsync(_db, ctx, cover.PayerId, ct);
+				if (refusal != null || acc == null) return (Array.Empty<HospitalLedgerLine>(), refusal ?? HospitalClaimAccounts.NotSetUp);
+				if (acc == s.ReceivableAccountId) return (Array.Empty<HospitalLedgerLine>(), "The payer receivable cannot be the patients' receivable account");
+				payerAccount = acc;
+			}
 			var lines = new List<HospitalLedgerLine>();
 			var due = v.Totals.Patient + v.Totals.Vat;
 			if (due > 0) lines.Add(new HospitalLedgerLine(s.ReceivableAccountId.Value, due, 0, v.Bill.BillNo));
+			// H18: what the payer owes is its own receivable line, referenced by the payer; the contract's discount is
+			// revenue never earned, so revenue is credited net of it (patient + payer, line by line)
+			if (payerAccount is int pa) lines.Add(new HospitalLedgerLine(pa, v.Totals.Insurer, 0, v.Bill.BillNo + " · " + (v.Cover?.PayerEn ?? "payer")));
 			foreach (var g in v.Lines.GroupBy(l => l.RevenueAccountId ?? s.RevenueAccountId.Value))
 			{
-				var amt = g.Sum(l => l.Gross);
+				var amt = g.Sum(l => l.Insurer + l.Patient);
 				if (amt > 0) lines.Add(new HospitalLedgerLine(g.Key, 0, amt, v.Bill.BillNo));
 			}
 			if (v.Totals.Vat > 0) lines.Add(new HospitalLedgerLine(s.VatAccountId!.Value, 0, v.Totals.Vat, v.Bill.BillNo));
@@ -515,6 +592,16 @@ namespace CrossBuy.BL.Hospital
 			if (bill.EncounterId is int enc && !await _db.HospitalEncounters.AnyAsync(e => e.ID == enc && e.CompanyId == ctx.CompanyId && e.Status == HospitalEncounterStatus.Signed, ct))
 				return HospitalResult.Fail("Sign the visit before closing its bill");
 
+			// H20 (D2): an insured bill's payer receivable is resolved BEFORE the transaction opens (a database without
+			// the mapping tables reads as unmapped, and the close is refused rather than posting to the patients' account)
+			var before = (await BillAsync(ctx, bill.ID, nowUtc, ct))!;
+			(int? Account, string? Refusal)? payerAr = null;
+			if (before.Cover is { PayerId: > 0 } bc)
+			{
+				payerAr = await HospitalClaimAccounts.PayerReceivableAsync(_db, ctx, bc.PayerId, ct);
+				if (before.Totals.Insurer > 0 && payerAr.Value.Refusal != null) return HospitalResult.Fail(payerAr.Value.Refusal);
+			}
+
 			await using var tx = await _db.Database.BeginTransactionAsync(ct);
 			// Freeze the running accommodation into stored lines: the bill no longer moves with the clock.
 			var settings = await SettingsAsync(ctx, ct);
@@ -526,6 +613,25 @@ namespace CrossBuy.BL.Hospital
 				});
 			await _db.SaveChangesAsync(ct);
 
+			// H18: freeze the split the journal is about to post, so the claim asks the payer for exactly that
+			var storedNow = await _db.HospitalBillLines.AsNoTracking().Where(l => l.CompanyId == ctx.CompanyId && l.BillId == bill.ID).OrderBy(l => l.ID).ToListAsync(ct);
+			var split = await HospitalCoverage.SplitAsync(_db, _pricing, ctx, bill.PatientId, bill.PriceListId, bill.CurrencyId,
+				storedNow.Select(l => new HospitalSplitLine(l.ID, l.Code, l.Category, l.Quantity, l.UnitPrice, l.OutsideList)).ToList(), nowUtc, null, ct);
+			if (split != null && !await _db.Set<HospitalBillCoverage>().AnyAsync(c => c.CompanyId == ctx.CompanyId && c.BillId == bill.ID, ct))
+			{
+				var head = new HospitalBillCoverage
+				{
+					CompanyId = ctx.CompanyId, BillId = bill.ID, PayerId = split.Payer.ID, PolicyId = split.Policy.ID, CopayPct = split.Payer.CopayPct, CopayCap = split.Payer.CopayCap,
+					DiscountPct = bill.PriceListId == null ? split.Payer.DiscountPct : 0, Amount = split.Split.Gross, Covered = split.Split.Covered, Copay = split.Split.Copay,
+					InsurerShare = split.Split.InsurerShare, PatientShare = split.Split.PatientShare, FrozenAt = nowUtc,
+				};
+				_db.Add(head);
+				await _db.SaveChangesAsync(ct);
+				for (int i = 0; i < storedNow.Count; i++)
+					_db.Add(new HospitalBillCoverageLine { CompanyId = ctx.CompanyId, CoverageId = head.ID, BillLineId = storedNow[i].ID, Amount = split.Lines[i].Amount, Covered = split.Lines[i].Covered, InsurerAmount = split.Split.InsurerPerLine[i] });
+				await _db.SaveChangesAsync(ct);
+			}
+
 			var v = (await BillAsync(ctx, bill.ID, nowUtc, ct))!;
 			if (v.Totals.Gross > 0)
 			{
@@ -536,7 +642,9 @@ namespace CrossBuy.BL.Hospital
 					if (!rok) return HospitalResult.Fail("There is no exchange rate for the bill's currency. Enter one in Accounting first");
 					rate = r; bill.ExchangeRate = r;
 				}
-				var (lines, missing) = v.Foreign ? await PreviewAtRateAsync(ctx, v, rate, ct) : await PreviewInBillCurrencyAsync(ctx, v, ct);
+				// the payer must be the one resolved before the transaction; otherwise refuse rather than query inside it
+				if (v.Totals.Insurer > 0 && (payerAr == null || v.Cover?.PayerId != before.Cover?.PayerId)) return HospitalResult.Fail(HospitalInsuranceService.ConcurrentChange);
+				var (lines, missing) = v.Foreign ? await PreviewAtRateAsync(ctx, v, rate, payerAr ?? (null, null), ct) : await PreviewInBillCurrencyAsync(ctx, v, payerAr ?? (null, null), ct);
 				if (missing != null) return HospitalResult.Fail(missing);
 				var (ok, error, entryId) = await _ledger.PostAsync(ctx, nowUtc, "فاتورة " + bill.BillNo, "Hospital bill " + bill.BillNo, "HospitalBill", bill.ID, lines, ct);
 				if (!ok) return HospitalResult.Fail("The ledger refused the posting: {0}", error ?? "");

@@ -1,0 +1,276 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model HospitalIncidentBoard
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H45 — incident reports & patient safety, as the approved prototype draws it (#/incidents): the month's four figures,
+    "reporting is for learning, not blame", the reports (col-xl-8) and the one-minute form (col-xl-4). A report opens in
+    a window where quality management reviews, analyses and closes it. An anonymous report shows no reporter — none
+    is kept. Every change swaps in place.
+*@
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Incident reports & patient safety"].Value;
+    bool ready = ViewBag.Ready == true, canManage = ViewBag.CanManage == true, canFind = ViewBag.CanFindPatient == true;
+    var wards = (ViewBag.Wards as List<CrossBuy.Controllers.HospitalController.HospitalChoice>) ?? new();
+    var b = Model;
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+    var staff = (ViewBag.Staff as List<(int Id, string Name)>) ?? new List<(int Id, string Name)>();   // H54
+    string HarmBadge(string h) => h switch
+    {
+        HospitalIncidentHarm.NearMiss => "badge-light-secondary", HospitalIncidentHarm.NoHarm => "badge-light-info", HospitalIncidentHarm.Mild => "badge-light-primary",
+        HospitalIncidentHarm.Moderate => "badge-light-danger", _ => "badge-danger",
+    };
+    string StateKind(string s) => s switch { HospitalIncidentStatus.New => "primary", HospitalIncidentStatus.Review => "info", HospitalIncidentStatus.Rca => "danger", _ => "success" };
+    string Place(HospitalIncidentRow r) => r.Row.Place == HospitalIncidentPlace.Ward ? DisplayName.Of(r.Ward ?? "", r.WardEn ?? r.Ward ?? "") : T["place:" + r.Row.Place].Value;
+    string When(DateTime utc) => HospitalNursingService.UtcToWard(utc).ToString("yyyy-MM-dd", inv);
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Incident reports & patient safety"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item text-muted">@T["Quality"]</li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@T["Incidents"]</li>
+            </ul>
+        </div>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (!ready)
+        {
+            <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice"><div class="fs-6 text-gray-700">@T[HospitalIncidentService.NoTables]</div></div>
+        }
+        <div class="row g-5 g-xl-8 mb-5">
+            @foreach (var s in new[] {
+                (T["Reports this month"].Value, b.ThisMonth.ToString(inv), b.ThisMonth > b.LastMonth ? T["Reporting culture: healthy rise"].Value : string.Format(T["{0} last month"].Value, b.LastMonth), "text-gray-900"),
+                (T["Medication errors"].Value, b.MedicationErrors.ToString(inv), "", "text-gray-900"),
+                (T["Falls"].Value, b.Falls.ToString(inv), b.FallsPer1000 is decimal f ? f.ToString("0.0", inv) + " " + T["per 1,000 patient-days"].Value : T["no patient-days yet this month"].Value, "text-gray-900"),
+                (T["Open root-cause analyses"].Value, b.OpenRca.ToString(inv), b.NearestDue is DateTime d ? string.Format(T["next due {0}"].Value, d.ToString("yyyy-MM-dd", inv)) : T["45-day deadline"].Value, b.OpenRca > 0 ? "text-danger" : "text-gray-900") })
+            {
+                <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
+                    <div class="text-muted fw-semibold fs-7 mb-1">@s.Item1</div>
+                    <div class="fs-2hx fw-bold @s.Item4"><bdi class="hp-num" dir="ltr">@s.Item2</bdi></div>
+                    @if (s.Item3 != "") { <div class="text-muted fs-8 mt-1">@s.Item3</div> }
+                </div></div></div>
+            }
+        </div>
+
+        <div class="notice d-flex rounded border border-primary border-dashed bg-light-primary p-6 mb-5">
+            <i class="ki-outline ki-shield-search fs-2tx text-primary me-4"></i>
+            <div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@T["Reporting is for learning, not blame"]</h4>
+                <div class="fs-6 text-gray-700">@T["Any staff member can report in a minute, anonymously if they wish; serious events open a root-cause analysis automatically."]</div></div>
+        </div>
+
+        <div class="row g-5 g-xl-8">
+            <div class="col-xl-8"><div class="card mb-5">
+                <div class="card-header border-0 pt-6">
+                    <div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Reports"]</span></div>
+                    <div class="card-toolbar"><div class="d-flex align-items-center position-relative">
+                        <i class="ki-outline ki-magnifier fs-3 position-absolute ms-4"></i>
+                        <input type="text" class="form-control form-control-solid w-225px ps-12" placeholder="@T["Search..."]" data-inc-search autocomplete="off" />
+                    </div></div>
+                </div>
+                <div class="card-body pt-2">
+                    @if (b.Rows.Count == 0) { <div class="text-center text-muted py-10">@T["No incident reported yet."]</div> }
+                    else
+                    {
+                        <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-3 mb-0">
+                            <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0">
+                                <th>@T["Report"]</th><th>@T["Description"]</th><th>@T["Location"]</th><th>@T["Harm"]</th><th>@T["State"]</th><th class="text-nowrap">@T["Reporter"]</th>
+                            </tr></thead>
+                            <tbody class="fw-semibold text-gray-700">
+                                @foreach (var r in b.Rows)
+                                {
+                                    var i = r.Row;
+                                    <tr role="@(canManage ? "button" : null)" data-inc-row="@i.ID">
+                                        <td><span class="badge badge-light fs-8 hp-num">@i.IncidentNo</span></td>
+                                        <td><div class="fw-semibold text-gray-800">@T["kind:" + i.Kind]</div><div class="text-muted fs-8 text-truncate mw-250px" dir="auto">@i.Description</div><div class="text-muted fs-9 hp-num">@When(i.ReportedAt)</div></td>
+                                        <td class="text-nowrap">@Place(r)</td>
+                                        <td><span class="badge @HarmBadge(i.Harm) fs-8">@T["harm:" + i.Harm]</span></td>
+                                        <td><span class="badge badge-light-@StateKind(i.Status)">@T["inc:" + i.Status]</span>@if (i.Status == HospitalIncidentStatus.Rca && i.RcaDueOn is DateTime due) {<div class="text-muted fs-9 hp-num mt-1">@T["rca:due"] @due.ToString("yyyy-MM-dd", inv)</div>}</td>
+                                        <td>@if (i.Anonymous || r.Reporter == null) {<span class="text-muted fs-8">@T["Anonymous"]</span>}
+                                            else {<div class="symbol symbol-30px symbol-circle" title="@DisplayName.Of(r.Reporter, r.ReporterEn ?? r.Reporter)">@if (r.ReporterPhoto != null) {<img src="@r.ReporterPhoto" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(r.ReporterEn)" />} else {<span class="symbol-label fw-bold fs-9 hp-initials">@HospitalUi.Initials(r.ReporterEn)</span>}</div>}</td>
+                                    </tr>
+                                    @* the report's detail, opened in the window *@
+                                    <template data-inc-detail="@i.ID">
+                                        <div class="d-flex flex-wrap gap-2 mb-4"><span class="badge badge-light fs-7 hp-num">@i.IncidentNo</span><span class="badge @HarmBadge(i.Harm)">@T["harm:" + i.Harm]</span><span class="badge badge-light-@StateKind(i.Status)">@T["inc:" + i.Status]</span></div>
+                                        <div class="row g-3 fs-7 mb-4">
+                                            <div class="col-6"><div class="text-muted fs-8">@T["Incident type"]</div><div class="fw-semibold text-gray-800">@T["kind:" + i.Kind]</div></div>
+                                            <div class="col-6"><div class="text-muted fs-8">@T["Location"]</div><div class="fw-semibold text-gray-800">@Place(r)</div></div>
+                                            <div class="col-6"><div class="text-muted fs-8">@T["Affected patient"]</div><div class="fw-semibold text-gray-800">@(r.Patient == null ? "—" : DisplayName.Of(r.Patient, r.PatientEn ?? r.Patient) + " · " + r.Mrn)</div></div>
+                                            <div class="col-6"><div class="text-muted fs-8">@T["Reporter"]</div><div class="fw-semibold text-gray-800">@(i.Anonymous || r.Reporter == null ? T["Anonymous"].Value : DisplayName.Of(r.Reporter, r.ReporterEn ?? r.Reporter))</div></div>
+                                        </div>
+                                        <div class="text-muted fs-8">@T["What happened?"]</div><div class="fs-6 text-gray-800 mb-4" dir="auto" style="white-space:pre-wrap">@i.Description</div>
+                                        @if (i.Status == HospitalIncidentStatus.Rca || i.RootCause != null)
+                                        {
+                                            <div class="separator separator-dashed my-4"></div>
+                                            <div class="fw-bold text-gray-900 mb-2">@T["Root-cause analysis"] @if (i.RcaDueOn is DateTime dd) {<span class="text-muted fs-8 fw-semibold hp-num ms-2">@T["rca:due"] @dd.ToString("yyyy-MM-dd", inv)</span>}</div>
+                                            <label class="text-muted fs-8 mb-1">@T["Root cause"]</label>
+                                            <textarea class="form-control form-control-solid mb-3" rows="2" dir="auto" maxlength="2000" data-x="rootCause" @(i.Status == HospitalIncidentStatus.Rca && canManage ? "" : "readonly")>@i.RootCause</textarea>
+                                            <label class="text-muted fs-8 mb-1">@T["Actions agreed"]</label>
+                                            <textarea class="form-control form-control-solid mb-3" rows="2" dir="auto" maxlength="2000" data-x="actions" @(i.Status == HospitalIncidentStatus.Rca && canManage ? "" : "readonly")>@i.Actions</textarea>
+                                            @* H54: the actions as real tasks of the task module *@
+                                            <div class="fw-bold text-gray-900 fs-7 mt-2 mb-2">@T["Follow-up tasks"]</div>
+                                            @if ((r.FollowUps?.Count ?? 0) == 0) { <div class="text-muted fs-8 mb-3">@T["No follow-up task yet."]</div> }
+                                            @foreach (var f in r.FollowUps ?? Array.Empty<HospitalIncidentFollowUp>())
+                                            {
+                                                var who = DisplayName.Of(f.Assignee ?? "", f.AssigneeEn ?? f.Assignee ?? "");
+                                                <div class="d-flex align-items-center py-2 border-bottom border-gray-200 border-bottom-dashed" data-inc-task="@f.TaskId">
+                                                    <div class="symbol symbol-30px symbol-circle me-3 flex-shrink-0" title="@who">@if (f.Photo != null) {<img src="@f.Photo" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(f.AssigneeEn ?? who)" />} else {<span class="symbol-label fw-bold fs-9 hp-initials">@HospitalUi.Initials(f.AssigneeEn ?? who)</span>}</div>
+                                                    <div class="flex-grow-1 min-w-0"><a href="@Url.Action("Detail", "Tasks", new { id = f.TaskId })" target="_blank" class="text-gray-800 text-hover-primary fs-7 fw-semibold" dir="auto">@f.Title</a>
+                                                        <div class="text-muted fs-9">@who @if (f.Due is DateTime fd) {<text> · </text><span class="hp-num @(f.Overdue ? "text-danger" : "")" dir="ltr">@fd.ToString("yyyy-MM-dd", inv)</span>}</div></div>
+                                                    <span class="badge @(f.Status == "Done" ? "badge-light-success" : f.Overdue ? "badge-light-danger" : "badge-light-primary") fs-9">@T["task:" + f.Status]</span>
+                                                </div>
+                                            }
+                                            @if (i.Status == HospitalIncidentStatus.Rca && canManage && staff.Count > 0)
+                                            {
+                                                <div class="row g-2 align-items-end mt-2 mb-3" data-inc-followup>
+                                                    <div class="col-12"><input type="text" class="form-control form-control-solid form-control-sm" maxlength="180" dir="auto" placeholder="@T["What is to be done"]" data-y="title" /></div>
+                                                    <div class="col-6"><select class="form-select form-select-solid form-select-sm" data-y="assignee"><option value="">@T["Who will do it"]</option>@foreach (var s in staff) {<option value="@s.Id">@s.Name</option>}</select></div>
+                                                    <div class="col-4"><input type="date" class="form-control form-control-solid form-control-sm" data-y="due" min="@HospitalNursingService.UtcToWard(DateTime.UtcNow).ToString("yyyy-MM-dd", inv)" /></div>
+                                                    <div class="col-2"><button type="button" class="btn btn-sm btn-light-primary w-100" data-inc-addtask title="@T["Open a follow-up task"]"><i class="ki-outline ki-plus fs-4 p-0"></i></button></div>
+                                                </div>
+                                            }
+                                        }
+                                        @if (i.Status != HospitalIncidentStatus.Rca && i.Status != HospitalIncidentStatus.Closed && canManage)
+                                        {
+                                            <label class="text-muted fs-8 mb-1">@T["Outcome (to close without an analysis)"]</label>
+                                            <textarea class="form-control form-control-solid mb-3" rows="2" dir="auto" maxlength="1000" data-x="outcome"></textarea>
+                                        }
+                                        @if (i.Outcome != null) { <div class="text-muted fs-8">@T["Outcome"]</div><div class="fs-7 text-gray-800 mb-3" dir="auto">@i.Outcome</div> }
+                                        @if (canManage && i.Status != HospitalIncidentStatus.Closed)
+                                        {
+                                            <div class="d-flex flex-wrap justify-content-end gap-2 mt-4">
+                                                @if (i.Status == HospitalIncidentStatus.New) { <button type="button" class="btn btn-sm btn-light-primary" data-inc-move="Review">@T["Start review"]</button> }
+                                                @if (i.Status is HospitalIncidentStatus.New or HospitalIncidentStatus.Review) { <button type="button" class="btn btn-sm btn-light-danger" data-inc-move="Rca">@T["Open a root-cause analysis"]</button> }
+                                                @if (i.Status == HospitalIncidentStatus.Rca) { <button type="button" class="btn btn-sm btn-light" data-inc-rca>@T["Save the analysis"]</button> }
+                                                @if (i.Status == HospitalIncidentStatus.Rca || !HospitalIncidentRules.Serious(i.Harm)) { <button type="button" class="btn btn-sm btn-primary" data-inc-move="Closed"><i class="ki-outline ki-check fs-4"></i>@T["Close the report"]</button> }
+                                            </div>
+                                        }
+                                    </template>
+                                }
+                            </tbody>
+                        </table></div>
+                    }
+                </div>
+            </div></div>
+
+            <div class="col-xl-4"><div class="card mb-5" data-inc-form>
+                <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["New report"]</span></div></div>
+                <div class="card-body pt-2">
+                    <div class="row g-5">
+                        <div class="col-12"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Incident type"]</label>
+                            <select class="form-select form-select-solid" data-f="kind"><option value="">—</option>@foreach (var k in HospitalIncidentKind.All) { <option value="@k">@T["kind:" + k]</option> }</select></div>
+                        <div class="col-12"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Harm level"]</label>
+                            <select class="form-select form-select-solid" data-f="harm"><option value="">—</option>@foreach (var h in HospitalIncidentHarm.All) { <option value="@h">@T["harm:" + h]</option> }</select></div>
+                        <div class="col-md-6 col-xl-12"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Location"]</label>
+                            <select class="form-select form-select-solid" data-f="where"><option value="">—</option>
+                                @foreach (var w in wards) { <option value="ward:@w.Id">@DisplayName.Of(w.Name, w.NameEn ?? w.Name)</option> }
+                                @foreach (var p in HospitalIncidentPlace.All.Where(p => p != HospitalIncidentPlace.Ward)) { <option value="@p">@T["place:" + p]</option> }
+                            </select></div>
+                        @if (canFind)
+                        {
+                            <div class="col-md-6 col-xl-12"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Affected patient (optional)"]</label>
+                                <select class="form-select form-select-solid" data-f="patientId" data-inc-patient data-placeholder="—"></select></div>
+                        }
+                        <div class="col-12"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["What happened?"]</label><textarea class="form-control form-control-solid" rows="3" dir="auto" maxlength="2000" data-f="description"></textarea></div>
+                    </div>
+                    <label class="form-check form-check-custom form-check-solid mt-5"><input class="form-check-input" type="checkbox" data-f="anonymous" /><span class="form-check-label text-gray-700">@T["Submit without my name"]</span></label>
+                    <button type="button" class="btn btn-primary w-100 mt-5" data-inc-submit @(ready ? "" : "disabled")><i class="ki-outline ki-send fs-4"></i>@T["Submit report"]</button>
+                </div>
+            </div></div>
+        </div>
+    </div></div>
+</div>
+
+<div class="modal fade" id="incModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered modal-dialog-scrollable mw-650px"><div class="modal-content">
+    <div class="modal-header"><h3 class="fw-bold m-0">@T["Incident report"]</h3><div class="btn btn-icon btn-sm btn-active-light-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="modal-body" data-inc-body></div>
+</div></div></div>
+
+@section Scripts {
+    <script>
+        (function () {
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value, root = @Json.Serialize(Url.Content("~/Hospital/Incidents"));
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), sent: @Json.Serialize(T["Report sent to quality management"].Value), saved: @Json.Serialize(T["Saved"].Value),
+                submit: @Json.Serialize(T["Send this report to quality management?"].Value), anon: @Json.Serialize(T["It will be sent without your name, and your name cannot be added later."].Value),
+                move: { Review: @Json.Serialize(T["Start reviewing this report?"].Value), Rca: @Json.Serialize(T["Open a root-cause analysis (due in 45 days)?"].Value), Closed: @Json.Serialize(T["Close this report?"].Value) },
+                patients: @Json.Serialize(Url.Content("~/Hospital/Patients/Search")),
+                saveRca: @Json.Serialize(T["Save the root-cause analysis?"].Value), addTask: @Json.Serialize(T["Open a follow-up task for {0} on the task list?"].Value),
+                taskOpened: @Json.Serialize(T["The task is on the task list"].Value) };
+            var open = null;
+            function toast(k, m) { if (window.toastr) toastr[k](m); }
+            function post(url, body) {
+                return fetch(root + url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(body || {}) })
+                    .then(function (r) { return r.json().catch(function () { return { ok: false }; }); });
+            }
+            // In place, never a reload: the page is rendered again and its content swapped (the open report too).
+            function swap() {
+                return fetch(root, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.text(); }).then(function (html) {
+                    var d = new DOMParser().parseFromString(html, 'text/html'), f = d.getElementById('kt_app_content');
+                    if (f) document.getElementById('kt_app_content').innerHTML = f.innerHTML;
+                    wire(); if (open) show(open, true);
+                });
+            }
+            function wire() {
+                var pp = document.querySelector('[data-inc-patient]');
+                if (pp && window.jQuery && !pp.classList.contains('select2-hidden-accessible')) jQuery(pp).select2({ placeholder: '—', allowClear: true,
+                    ajax: { url: W.patients, delay: 250, data: function (p) { return { q: p.term || '' }; }, processResults: function (r) { return { results: r.results || [] }; } } });
+            }
+            function show(id, keep) {
+                var t = document.querySelector('template[data-inc-detail="' + id + '"]'); if (!t) return;
+                open = id; document.querySelector('[data-inc-body]').innerHTML = t.innerHTML;
+                if (!keep) bootstrap.Modal.getOrCreateInstance(document.getElementById('incModal')).show();
+            }
+            wire();
+            document.getElementById('incModal').addEventListener('hidden.bs.modal', function () { open = null; });
+            document.addEventListener('input', function (e) {
+                var s = e.target.closest('[data-inc-search]'); if (!s) return;
+                var q = s.value.trim().toLowerCase();
+                document.querySelectorAll('[data-inc-row]').forEach(function (tr) { tr.style.display = !q || tr.innerText.toLowerCase().indexOf(q) >= 0 ? '' : 'none'; });
+            });
+            document.addEventListener('click', function (e) {
+                var row = e.target.closest('[data-inc-row][role=button]'); if (row) { show(row.getAttribute('data-inc-row')); return; }
+                var t = e.target.closest('[data-inc-submit],[data-inc-move],[data-inc-rca],[data-inc-addtask]'); if (!t) return;
+                if (t.hasAttribute('data-inc-submit')) {
+                    var f = document.querySelector('[data-inc-form]'), v = function (k) { var el = f.querySelector('[data-f=' + k + ']'); return el ? el.value : ''; };
+                    var where = v('where'), anon = f.querySelector('[data-f=anonymous]').checked;
+                    cbConfirm(W.submit + (anon ? ' ' + W.anon : '')).then(function (ok) {
+                        if (!ok) return; t.disabled = true;
+                        post('', { kind: v('kind'), harm: v('harm'), place: where.indexOf('ward:') === 0 ? 'Ward' : where, wardId: where.indexOf('ward:') === 0 ? +where.slice(5) : null,
+                            patientId: +v('patientId') || null, description: v('description'), anonymous: anon })
+                            .then(function (res) { t.disabled = false; if (!res.ok) { toast('error', res.error || W.failed); return; } toast('success', W.sent); swap(); });
+                    });
+                    return;
+                }
+                var body = document.querySelector('[data-inc-body]'), x = function (k) { var el = body.querySelector('[data-x=' + k + ']'); return el ? el.value : null; };
+                // every write asks first (the analysis too)
+                if (t.hasAttribute('data-inc-rca')) {
+                    cbConfirm(W.saveRca).then(function (ok) { if (!ok) return; t.disabled = true;
+                        post('/' + open + '/Rca', { rootCause: x('rootCause'), actions: x('actions') }).then(function (res) { t.disabled = false; if (!res.ok) { toast('error', res.error || W.failed); return; } toast('success', W.saved); swap(); }); });
+                    return;
+                }
+                if (t.hasAttribute('data-inc-addtask')) {
+                    var fu = body.querySelector('[data-inc-followup]'), y = function (k) { return fu.querySelector('[data-y=' + k + ']'); };
+                    var who = y('assignee'), whoName = who.selectedIndex > 0 ? who.options[who.selectedIndex].text : '';
+                    cbConfirm(W.addTask.replace('{0}', whoName || '—')).then(function (ok) { if (!ok) return; t.disabled = true;
+                        post('/' + open + '/FollowUps', { title: y('title').value, assigneeEmployeeId: +who.value || 0, dueOn: y('due').value || null })
+                            .then(function (res) { t.disabled = false; if (!res.ok) { toast('error', res.error || W.failed); return; } toast('success', W.taskOpened); swap(); }); });
+                    return;
+                }
+                var to = t.getAttribute('data-inc-move');
+                cbConfirm(W.move[to], to === 'Rca' ? { kind: 'danger' } : undefined).then(function (ok) {
+                    if (!ok) return; t.disabled = true;
+                    post('/' + open + '/Move', { to: to, rootCause: x('rootCause'), actions: x('actions'), outcome: x('outcome') })
+                        .then(function (res) { t.disabled = false; if (!res.ok) { toast('error', res.error || W.failed); return; } toast('success', W.saved); swap(); });
+                });
+            });
+        })();
+    </script>
+}

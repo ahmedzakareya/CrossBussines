@@ -1,0 +1,271 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model HospitalMedBoard
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Medication routing"].Value;
+    var staff = (ViewBag.Staff as IReadOnlyList<(int Id, string Name, string? Photo, string? NameEn)>) ?? Array.Empty<(int, string, string?, string?)>();
+    bool canPharmacy = ViewBag.CanPharmacy == true, canAdmit = ViewBag.CanAdmit == true;
+    var stages = new[] { "Prescribed", "Verified", "Prepared", "Dispatched", "Received", "Administered" };
+    string Clock(DateTime? utc) => utc is DateTime u ? HospitalNursingService.UtcToWard(u).ToString("HH:mm") : "";
+    string PrioBadge(string p) => p switch { HospitalMedPriority.Stat => "danger", HospitalMedPriority.Urgent => "primary", _ => "secondary" };
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@* Progress marks. No amber/yellow (house rule): done is the brand blue, the next step outlined, not needed grey. *@
+<style>
+    .mr-step { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 50%; font-size: .68rem; font-weight: 700; flex-shrink: 0; }
+    .mr-done { background: var(--cb-brand, #3A5795); color: #fff; } .mr-next { box-shadow: inset 0 0 0 2px var(--cb-brand, #3A5795); color: var(--cb-brand, #3A5795); }
+    .mr-skip { background: #F4F6FA; color: #C4C8D4; } .mr-todo { background: #EEF0F4; color: #8A8FA3; }
+    .mr-bar { width: 7px; height: 2px; background: #EEF0F4; flex-shrink: 0; } .mr-bar.on { background: var(--cb-brand, #3A5795); }
+    .mr-stage { background: #F7FAFF; border: 1px dashed var(--cb-brand, #3A5795); }
+    .mr-stage.last { background: #EAF7EF; border-color: #0E7A39; }
+</style>
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Medication routing"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item"><a href="@Url.Action("Pharmacy")" class="text-muted text-hover-primary">@T["Pharmacy"]</a></li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@T["Routing"]</li>
+            </ul>
+        </div>
+        <div class="d-flex align-items-center gap-2 gap-lg-3 d-print-none" data-toolbar-actions>
+            @if (canPharmacy && Model.Orders.Count > 0) { <button type="button" class="btn btn-sm btn-primary" data-new-delivery><i class="ki-outline ki-plus fs-4"></i>@T["Send a medication"]</button> }
+        </div>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="row g-5 g-xl-8 mb-5">
+            <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
+                <div class="text-muted fw-semibold fs-7 mb-1">@T["Active medication orders"]</div><div class="fs-2hx fw-bold hp-num text-gray-900">@Model.Active</div>
+                <div class="text-muted fs-8 mt-1">@T["on their way to the bedside"]</div></div></div></div>
+            <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
+                <div class="text-muted fw-semibold fs-7 mb-1">@T["STAT turnaround"]</div><div class="fs-2hx fw-bold text-gray-900">@if (Model.StatTurnaround is int st) {<span class="hp-num">@st</span> <span class="fs-5">@T["min"]</span>} else {<span>—</span>}</div>
+                <div class="text-muted fs-8 mt-1">@string.Format(T["Target {0} minutes"].Value, HospitalMedRoutingRules.TargetMinutes(HospitalMedPriority.Stat))</div></div></div></div>
+            <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
+                <div class="text-muted fw-semibold fs-7 mb-1">@T["Routine turnaround"]</div><div class="fs-2hx fw-bold text-gray-900">@if (Model.RoutineTurnaround is int rt) {<span class="hp-num">@rt</span> <span class="fs-5">@T["min"]</span>} else {<span>—</span>}</div>
+                <div class="text-muted fs-8 mt-1">@string.Format(T["Target {0} minutes"].Value, HospitalMedRoutingRules.TargetMinutes(HospitalMedPriority.Routine))</div></div></div></div>
+            <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
+                <div class="text-muted fw-semibold fs-7 mb-1">@T["Late against target"]</div><div class="fs-2hx fw-bold hp-num @(Model.Late > 0 ? "text-danger" : "text-gray-900")">@Model.Late</div>
+                <div class="text-muted fs-8 mt-1">@T["still on their way past their target"]</div></div></div></div>
+        </div>
+
+        <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice">
+            <span class="symbol symbol-45px me-4 flex-shrink-0"><span class="symbol-label"><i class="ki-outline ki-route fs-2x text-white"></i></span></span>
+            <div class="d-flex flex-stack flex-grow-1 flex-wrap gap-3">
+                <div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@T["From the prescription to the bedside"]</h4>
+                    <div class="fs-7 text-gray-700">@T["Every medication order is tracked through six steps, each stamped with who did it and when; administration needs a wristband scan."]</div></div>
+                <span class="badge badge-primary fs-7">@T["6 steps"]</span>
+            </div>
+        </div>
+
+        <div class="card mb-5">
+            <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Routing stages now"]</span></div></div>
+            <div class="card-body pt-2"><div class="row g-3">
+                @for (int i = 0; i < stages.Length; i++)
+                {
+                    <div class="col-6 col-md-4 col-xl-2"><div class="rounded p-4 text-center h-100 mr-stage @(i == stages.Length - 1 ? "last" : "")"><div class="fs-2 fw-bold hp-num">@Model.StageCounts[i]</div><div class="fs-8 fw-semibold text-gray-700">@T["mr:" + stages[i]]</div></div></div>
+                }
+            </div></div>
+        </div>
+
+        <div class="card mb-5">
+            <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Medication orders"]</span></div></div>
+            <div class="card-body pt-2">
+                @if (Model.Rows.Count == 0) { <div class="text-center text-muted py-10">@T["No medication is on its way."]</div> }
+                else
+                {
+                <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-3 gx-2 mb-0">
+                    <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0">
+                        <th>@T["Order"]</th><th>@T["Patient"]</th><th>@T["Medication"]</th><th>@T["Priority"]</th><th>@T["Progress"]</th><th>@T["Last step"]</th><th></th>
+                    </tr></thead>
+                    <tbody class="fw-semibold text-gray-700">
+                        @foreach (var r in Model.Rows)
+                        {
+                            var d = r.Delivery;
+                            var last = r.Steps[d.Stage];
+                            byte? next = HospitalMedRoutingRules.Next(d.Via, d.Stage);
+                            bool mine = next is byte n && (n >= HospitalMedStage.Received ? canAdmit : canPharmacy);
+                            var what = r.Drug + " " + r.Dose;
+                            <tr>
+                                <td><span class="badge hp-code fs-8 hp-num">@d.DeliveryNo</span></td>
+                                <td><div class="d-flex align-items-center gap-3">
+                                    <div class="symbol symbol-35px symbol-circle flex-shrink-0">@if (r.PatientPhoto != null) {<img src="@r.PatientPhoto" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(r.PatientNameEn)" />} else {<span class="symbol-label fw-bold fs-8 hp-initials">@HospitalUi.Initials(r.PatientNameEn)</span>}</div>
+                                    <div class="text-nowrap"><a href="@Url.Action("Patient", new { id = r.PatientId })" class="fw-bold text-gray-900 text-hover-primary">@DisplayName.Of(r.PatientName, r.PatientNameEn)</a>
+                                        <div class="text-muted fs-8">@T["Bed"] <span class="hp-num">@(r.Bed ?? "—")</span></div></div></div></td>
+                                <td><div class="fw-semibold text-gray-800"><bdi>@r.Drug</bdi> <span class="hp-num" dir="ltr">@r.Dose</span> <span class="text-muted fs-8">@T["route:" + r.Route]</span></div>
+                                    @if (r.Controlled) {<span class="badge badge-light-danger fs-9">@T["Controlled — two signatures"]</span>}
+                                    @if (r.Late) {<span class="badge badge-light-danger fs-9 ms-1">@T["Late"]</span>}</td>
+                                <td class="text-nowrap">@if (d.Priority == HospitalMedPriority.Stat) {<span class="badge badge-danger fs-8">STAT</span>} else {<span class="badge badge-light-@PrioBadge(d.Priority) fs-8">@T["mp:" + d.Priority]</span>}
+                                    <div class="text-gray-600 fs-8 mt-1">@T["mv:" + d.Via]</div></td>
+                                <td><div class="d-flex align-items-center">
+                                    @for (int i = 0; i < 6; i++)
+                                    {
+                                        var s = r.Steps[i];
+                                        string cls = s.Skipped ? "mr-skip" : i <= d.Stage ? "mr-done" : (next == i ? "mr-next" : "mr-todo");
+                                        string tip = T["mr:" + stages[i]].Value + (s.Skipped ? " · " + T["not needed"].Value : s.At != null ? " · " + Clock(s.At) + (s.By != null ? " · " + DisplayName.Of(s.By.Name, s.By.NameEn) : "") : "");
+                                        <span class="mr-step @cls" data-bs-toggle="tooltip" title="@tip">@(i + 1)</span>
+                                        if (i < 5) { <span class="mr-bar @(i < d.Stage ? "on" : "")"></span> }
+                                    }
+                                </div></td>
+                                <td>@if (last.By != null)
+                                    {
+                                        <div class="d-flex align-items-center gap-2" data-bs-toggle="tooltip" title="@DisplayName.Of(last.By.Name, last.By.NameEn)">
+                                            <div class="symbol symbol-30px symbol-circle">@if (last.By.Photo != null) {<img src="@last.By.Photo" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(last.By.NameEn)" />} else {<span class="symbol-label fw-bold fs-9 hp-initials">@HospitalUi.Initials(last.By.NameEn)</span>}</div>
+                                            <span class="hp-num fs-8 text-muted">@Clock(last.At)</span></div>
+                                    }
+                                    else { <span class="hp-num fs-8 text-muted">@Clock(last.At)</span> }</td>
+                                <td class="text-nowrap" style="text-align:end">
+                                    @if (mine && next is byte nx)
+                                    {
+                                        <button type="button" class="btn btn-sm btn-light-primary py-1 px-3" data-step="@d.ID" data-next="@nx" data-label="@T["mr:" + stages[nx]]" data-what="@what" data-controlled="@(r.Controlled ? "1" : "0")">@T["mra:" + stages[nx]]</button>
+                                    }
+                                    @if (canPharmacy && d.WarehouseId == null && d.Stage < HospitalMedStage.Administered)
+                                    {
+                                        <button type="button" class="btn btn-sm btn-icon btn-light py-1" data-cancel="@d.ID" data-what="@what" title="@T["Cancel the delivery"]"><i class="ki-outline ki-cross fs-5"></i></button>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table></div>
+                }
+            </div>
+        </div>
+
+        <div class="row g-5">
+            <div class="col-xl-6"><div class="card h-100">
+                <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Routing rules"]</span></div></div>
+                <div class="card-body pt-2">
+                    @foreach (var rule in new[] { ("STAT doses", "Direct porter within 15 minutes"), ("Drugs stocked in the ward cabinet", "Cabinet issue after pharmacist review"), ("Controlled drugs", "Porter + two signatures on receipt and administration"), ("Everything else", "Pneumatic tube on dose rounds") })
+                    {
+                        <div class="d-flex flex-stack border-bottom border-gray-200 border-bottom-dashed py-3"><span class="fw-semibold text-gray-800">@T[rule.Item1]</span><span class="text-gray-600 fs-7" style="text-align:end">@T[rule.Item2]</span></div>
+                    }
+                </div>
+            </div></div>
+            <div class="col-xl-6"><div class="card h-100">
+                <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["What happens behind it"]</span></div></div>
+                <div class="card-body pt-2">
+                    @foreach (var line in new[] { "Preparation issues stock from the pharmacy store by batch (FEFO)", "Ward receipt moves custody to nursing", "Administration writes the MAR and adds the bill line", "The cabinet issues from the pharmacy store until it is a store of its own" })
+                    {
+                        <div class="d-flex align-items-center border-bottom border-gray-200 border-bottom-dashed py-3"><i class="ki-outline ki-check-circle fs-3 text-primary me-3"></i><span class="fw-semibold text-gray-800">@T[line]</span></div>
+                    }
+                </div>
+            </div></div>
+        </div>
+    </div></div>
+</div>
+
+<div class="modal fade" id="stepModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-550px"><div class="modal-content">
+    <div class="modal-header"><h2 class="fw-bold m-0 fs-4"><span data-s-label></span> <span class="text-muted fs-6" data-s-what></span></h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="modal-body py-6 px-lg-10">
+        <div class="mb-4 d-none" data-s-band-wrap><label class="form-label required">@T["Scan the patient's wristband"]</label><input class="form-control form-control-solid hp-num" dir="ltr" autocomplete="off" data-s-band placeholder="MRN" />
+            <div class="form-text">@T["The dose is recorded on the medication administration record."]</div></div>
+        <div class="mb-2 d-none" data-s-witness-wrap><label class="form-label required">@T["Witness"]</label><select class="form-select form-select-solid" data-s-witness data-person-select data-allow-clear data-placeholder="@T["Witness"]"><option value=""></option>@foreach (var s in staff) { <option value="@s.Id" data-photo="@s.Photo" data-initials="@HospitalUi.Initials(s.NameEn)">@s.Name</option> }</select>
+            <div class="form-text">@T["A controlled drug is signed for by a second person."]</div></div>
+        <div class="text-gray-700 fs-6" data-s-plain>@T["Stamp this step with your name and the time?"]</div>
+    </div>
+    <div class="modal-footer flex-center"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-s-save>@T["Confirm"]</button></div>
+</div></div></div>
+
+@if (canPharmacy)
+{
+    <div class="modal fade" id="newModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-650px"><div class="modal-content">
+        <div class="modal-header"><h2 class="fw-bold m-0">@T["Send a medication"]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body py-6 px-lg-10">
+            <div class="mb-5"><label class="form-label required">@T["Medication order"]</label>
+                <select class="form-select form-select-solid" data-n-order data-person-select data-placeholder="@T["Medication order"]"><option value=""></option>
+                    @foreach (var o in Model.Orders) { <option value="@o.OrderId" data-photo="@o.Photo" data-initials="@HospitalUi.Initials(o.PatientNameEn)" data-controlled="@(o.Controlled ? "1" : "0")" data-stocked="@(o.Stocked ? "1" : "0")">@DisplayName.Of(o.PatientName, o.PatientNameEn) · @T["Bed"] @(o.Bed ?? "—") — @o.Drug @o.Dose</option> }
+                </select></div>
+            <div class="mb-5"><label class="form-label required">@T["Priority"]</label>
+                <div class="d-flex gap-2">@foreach (var p in HospitalMedPriority.All) { <label class="flex-fill"><input type="radio" class="btn-check" name="n-prio" value="@p" @(p == HospitalMedPriority.Routine ? "checked" : "") /><span class="btn btn-sm btn-light w-100 fw-bold">@(p == HospitalMedPriority.Stat ? "STAT" : T["mp:" + p].Value)</span></label> }</div></div>
+            <div class="row g-4">
+                <div class="col-md-7"><label class="form-label required">@T["Route"]</label><select class="form-select form-select-solid" data-n-via>@foreach (var v in HospitalMedVia.All) { <option value="@v">@T["mv:" + v]</option> }</select>
+                    <div class="form-text" data-n-via-hint>@T["A controlled drug and a STAT dose go by porter"]</div></div>
+                <div class="col-md-5" data-n-qty-wrap><label class="form-label required">@T["Units from the store"]</label><input type="text" inputmode="decimal" dir="ltr" class="form-control form-control-solid hp-num" value="1" data-n-qty /></div>
+            </div>
+        </div>
+        <div class="modal-footer flex-center"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-n-save>@T["Send"]</button></div>
+    </div></div></div>
+}
+
+@section Scripts {
+    <partial name="_PersonSelect" />
+    <partial name="_HospitalPrompt" />
+    <script>
+        (function () {
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value),
+                cancel: @Json.Serialize(T["Cancel the delivery of {0}? Write why:"].Value), send: @Json.Serialize(T["Send {0}?"].Value) };
+            var root = @Json.Serialize(Url.Action("MedRouting"));
+            function toast(k, m) { if (window.toastr) toastr[k](m); }
+            function post(url, body) {
+                return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(body || {}) })
+                    .then(function (r) { return r.json().catch(function () { return { ok: false }; }); });
+            }
+            function tips() { document.querySelectorAll('#kt_app_content [data-bs-toggle="tooltip"]').forEach(function (el) { bootstrap.Tooltip.getOrCreateInstance(el); }); }
+            // In place, never a reload: the page is rendered again and its content and toolbar swapped.
+            function swap() {
+                document.querySelectorAll('.tooltip').forEach(function (t) { t.remove(); });
+                return fetch(location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.text(); }).then(function (html) {
+                    var doc = new DOMParser().parseFromString(html, 'text/html');
+                    var f = doc.getElementById('kt_app_content'); if (f) document.getElementById('kt_app_content').innerHTML = f.innerHTML;
+                    var a = doc.querySelector('[data-toolbar-actions]'); if (a) document.querySelector('[data-toolbar-actions]').innerHTML = a.innerHTML;
+                    tips();
+                });
+            }
+            function done(btn, modal) { return function (res) { if (btn) btn.disabled = false; if (!res.ok) { toast('error', res.error || W.failed); return; } toast('success', W.saved); if (modal) bootstrap.Modal.getOrCreateInstance(modal).hide(); swap(); }; }
+            tips();
+
+            var sEl = document.getElementById('stepModal'), step = null;
+            var nEl = document.getElementById('newModal');
+            function viaFor() {
+                var o = nEl.querySelector('[data-n-order]'), opt = o.options[o.selectedIndex], prio = (nEl.querySelector('[name=n-prio]:checked') || {}).value;
+                var controlled = opt && opt.getAttribute('data-controlled') === '1', stocked = !opt || opt.getAttribute('data-stocked') === '1';
+                var v = nEl.querySelector('[data-n-via]'); v.value = controlled || prio === 'Stat' ? 'Porter' : 'Tube';
+                nEl.querySelector('[data-n-qty-wrap]').classList.toggle('d-none', !stocked);
+            }
+            if (nEl) {
+                nEl.addEventListener('change', function (e) { if (e.target.name === 'n-prio') viaFor(); });
+                if (window.jQuery) jQuery(nEl.querySelector('[data-n-order]')).on('change', viaFor);
+            }
+            document.addEventListener('click', function (e) {
+                var t = e.target.closest('[data-step],[data-cancel],[data-new-delivery]'); if (!t) return;
+                if (t.hasAttribute('data-new-delivery')) { viaFor(); bootstrap.Modal.getOrCreateInstance(nEl).show(); return; }
+                if (t.hasAttribute('data-cancel')) {
+                    cbPrompt(W.cancel.replace('{0}', t.getAttribute('data-what')), { kind: 'danger', textarea: true }).then(function (reason) {
+                        if (reason == null) return; t.disabled = true; post(root + '/' + t.getAttribute('data-cancel') + '/Cancel', { reason: reason }).then(done(t));
+                    });
+                    return;
+                }
+                var next = Number(t.getAttribute('data-next')), controlled = t.getAttribute('data-controlled') === '1';
+                step = { id: t.getAttribute('data-step'), next: next, needWitness: controlled && next >= 4, needBand: next === 5 };
+                sEl.querySelector('[data-s-label]').textContent = t.getAttribute('data-label');
+                sEl.querySelector('[data-s-what]').textContent = t.getAttribute('data-what');
+                sEl.querySelector('[data-s-band-wrap]').classList.toggle('d-none', !step.needBand);
+                sEl.querySelector('[data-s-witness-wrap]').classList.toggle('d-none', !step.needWitness);
+                sEl.querySelector('[data-s-plain]').classList.toggle('d-none', step.needBand || step.needWitness);
+                sEl.querySelector('[data-s-band]').value = ''; $(sEl.querySelector('[data-s-witness]')).val(null).trigger('change');
+                bootstrap.Modal.getOrCreateInstance(sEl).show();
+                if (step.needBand) setTimeout(function () { sEl.querySelector('[data-s-band]').focus(); }, 400);
+            });
+            sEl.querySelector('[data-s-save]').addEventListener('click', function (e) {
+                var btn = e.currentTarget, w = sEl.querySelector('[data-s-witness]').value;
+                btn.disabled = true;
+                post(root + '/' + step.id + '/Step', { stage: step.next, witnessEmployeeId: w ? Number(w) : null, wristband: sEl.querySelector('[data-s-band]').value.trim() || null }).then(done(btn, sEl));
+            });
+            if (nEl) nEl.querySelector('[data-n-save]').addEventListener('click', function (e) {
+                var btn = e.currentTarget, o = nEl.querySelector('[data-n-order]');
+                if (!o.value) { toast('error', @Json.Serialize(T["Choose the medication order"].Value)); return; }
+                var body = { medOrderId: Number(o.value), priority: (nEl.querySelector('[name=n-prio]:checked') || {}).value, via: nEl.querySelector('[data-n-via]').value,
+                    quantity: Number(String(nEl.querySelector('[data-n-qty]').value || '0').replace(',', '.')) };
+                cbConfirm(W.send.replace('{0}', o.options[o.selectedIndex].textContent.trim())).then(function (ok) { if (!ok) return; btn.disabled = true; post(root, body).then(done(btn, nEl)); });
+            });
+        })();
+    </script>
+}

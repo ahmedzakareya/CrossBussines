@@ -48,7 +48,7 @@ namespace CrossBuy.Models.Platform
         /// rather than by the employee session blob — so the bypass and the scheme cannot drift
         /// apart by one being edited without the other.
         public static readonly IReadOnlyList<string> SurfacePathPrefixes =
-            new[] { "/clientportal", "/portalaccount" };
+            new[] { "/clientportal", "/portalaccount", "/patientportal" };   // H25: the hospital's patient portal, same scheme
 
         // ---- the claim contract ----------------------------------------------------------------
 

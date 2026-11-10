@@ -1,0 +1,49 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model HospitalObsChart
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@* H71 — one admission's observation chart (the last 30 sets) and its falls and pressure-injury assessments. *@
+@{
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+    string At(DateTime u) => HospitalNursingService.UtcToWard(u).ToString("dd/MM HH:mm", inv);
+    string Who(int? id) => id is int i && Model.People.TryGetValue(i, out var n) ? n : "—";
+}
+<div class="fs-7 text-muted mb-3">@DisplayName.Of(Model.Name, Model.NameEn) · <span class="hp-num">@Model.Mrn</span></div>
+@if (Model.Observations.Count == 0) { <div class="text-muted fs-7 mb-5">@T["No observations yet"]</div> }
+else
+{
+    <div class="table-responsive mb-6"><table class="table table-row-dashed align-middle fs-8 gy-2 mb-0 hp-num">
+        <thead><tr class="text-gray-500 fw-bold text-uppercase"><th>@T["Time"]</th><th>RR</th><th>SpO₂</th><th>O₂</th><th>BP</th><th>HR</th><th>ACVPU</th><th>°C</th><th>@T["Pain"]</th><th>NEWS2</th><th>@T["By"]</th></tr></thead>
+        <tbody>
+        @foreach (var o in Model.Observations)
+        {
+            <tr>
+                <td class="text-nowrap" dir="ltr">@At(o.TakenAt)</td><td>@(o.RespRate?.ToString() ?? "—")</td>
+                <td>@(o.SpO2?.ToString() ?? "—")@(o.SpO2Scale2 ? " (2)" : "")</td><td>@(o.OnOxygen ? "✓" : "")</td>
+                <td class="text-nowrap" dir="ltr">@(o.SystolicBp?.ToString() ?? "—")@(o.DiastolicBp != null ? "/" + o.DiastolicBp : "")</td>
+                <td>@(o.HeartRate?.ToString() ?? "—")</td><td>@(o.Consciousness ?? "—")</td><td>@(o.TempC?.ToString("0.0", inv) ?? "—")</td><td>@(o.PainScore?.ToString() ?? "—")</td>
+                <td>@if (o.News2 is int n) {<span class="badge @(o.News2Risk is HospitalNews2Risk.High ? "badge-danger" : o.News2Risk is HospitalNews2Risk.Medium or HospitalNews2Risk.LowSingle ? "badge-light-danger" : "badge-light")">@n</span>} else {<span class="text-muted">—</span>}</td>
+                <td class="fs-9 text-muted">@Who(o.RecordedByEmployeeId)</td>
+            </tr>
+            @if (o.Note != null) { <tr><td colspan="11" class="fs-9 text-muted pt-0" dir="auto">@o.Note</td></tr> }
+        }
+        </tbody>
+    </table></div>
+}
+<div class="fw-bold text-gray-900 fs-6 mb-3">@T["Risk assessments"]</div>
+@if (Model.Assessments.Count == 0) { <div class="text-muted fs-7">@T["None yet."]</div> }
+else
+{
+    <div class="table-responsive"><table class="table table-row-dashed align-middle fs-8 gy-2 mb-0">
+        <thead><tr class="text-gray-500 fw-bold text-uppercase"><th>@T["Time"]</th><th>@T["Scale"]</th><th>@T["Score"]</th><th>@T["Level"]</th><th>@T["By"]</th></tr></thead>
+        <tbody>
+        @foreach (var a in Model.Assessments)
+        {
+            <tr><td class="text-nowrap hp-num" dir="ltr">@At(a.AssessedAt)</td><td>@T["riskKind:" + a.Kind]</td>
+                <td><span class="badge @(HospitalRiskRules.Flags(a) ? "badge-light-danger" : "badge-light") hp-num">@a.Score</span></td>
+                <td>@T["riskLevel:" + a.Level]</td><td class="fs-9 text-muted">@Who(a.AssessedByEmployeeId)</td></tr>
+        }
+        </tbody>
+    </table></div>
+}

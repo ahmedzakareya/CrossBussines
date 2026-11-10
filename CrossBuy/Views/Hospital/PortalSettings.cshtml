@@ -1,0 +1,206 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model HospitalPortalSettings
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Patient portal"].Value;
+    bool ready = ViewBag.Ready == true;
+    var clinics = (ViewBag.Clinics as IReadOnlyList<HospitalPortalClinic>) ?? Array.Empty<HospitalPortalClinic>();
+    var doctors = (ViewBag.Doctors as IReadOnlyList<HospitalPortalDoctorRow>) ?? Array.Empty<HospitalPortalDoctorRow>();
+    var s = Model;
+    var numbers = new (string Key, string Label, string Hint, int Value, int Min, int Max)[] {
+        ("windowDays", T["Booking window (days)"].Value, T["The furthest slot a patient can book"].Value, s.WindowDays, 1, 365),
+        ("leadHours", T["Minimum notice (hours)"].Value, T["No slot sooner than this"].Value, s.LeadHours, 0, 72),
+        ("cancelHours", T["Online cancel up to (hours)"].Value, T["After that the patient calls"].Value, s.CancelHours, 0, 168),
+        ("maxActive", T["Max open bookings"].Value, T["Per patient at a time"].Value, s.MaxActive, 1, 20),
+        ("offerMinutes", T["Earlier-slot offer held (minutes)"].Value, T["Then it passes to the next in line"].Value, s.OfferMinutes, 5, 240) };
+    var flags = new (string Key, string Label, string Hint, bool Value)[] {
+        ("familyBooking", T["Booking for family members"].Value, T["One account books for the spouse and children linked to it"].Value, s.FamilyBooking),
+        ("waitlist", T["Earlier-slot waitlist"].Value, T["When an earlier slot frees up an email goes out in turn, each offer held for a set number of minutes"].Value, s.Waitlist),
+        ("selfRegistration", T["New patients register online"].Value, T["The account stays unverified until the front desk matches it to a file; until then it books only a new visit"].Value, s.SelfRegistration),
+        ("showFees", T["Show the cost before confirming"].Value, T["The visit fee, the insurer's share and the patient's"].Value, s.ShowFees),
+        ("insuranceCheck", T["Check insurance at booking"].Value, T["An expired policy books as self-pay"].Value, s.InsuranceCheck) };
+    string ModeLabel(string m) => T["pm:" + m].Value;
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Patient portal"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item text-muted">@T["Finance"]</li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@T["Patient portal"]</li>
+            </ul>
+        </div>
+        <div class="d-flex align-items-center gap-2 gap-lg-3 d-print-none">
+            @if (ready) { <button type="button" class="btn btn-sm btn-primary" data-save-general><i class="ki-outline ki-check fs-4"></i>@T["Save"]</button> }
+        </div>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice">
+            <span class="symbol symbol-45px me-5 flex-shrink-0"><span class="symbol-label"><i class="ki-outline ki-phone fs-2x text-white"></i></span></span>
+            <div class="fw-semibold">
+                <h4 class="text-gray-900 fw-bold mb-1">@T["How a patient books online"]</h4>
+                <div class="fs-6 text-gray-700">@T["Each clinic has a booking mode — the patient chooses the doctor, the first free doctor, a request the call centre confirms, or phone only — and each doctor can be closed to online booking or to new patients. A clinic never saved books by its default."]</div>
+            </div>
+        </div>
+        @if (!ready)
+        {
+            <div class="notice d-flex rounded border border-dashed border-primary bg-light-primary p-6 mb-5">
+                <i class="ki-outline ki-information-5 fs-2tx text-primary me-4"></i>
+                <div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@T["The portal rules are not set up yet"]</h4>
+                    <div class="fs-7 text-gray-700">@T["Their tables are created by the database update hospital_h23_portal_rules.sql. Until then the defaults below apply and nothing can be saved."]</div></div>
+            </div>
+        }
+
+        <div class="card mb-5" id="general">
+            <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
+                <span class="card-label fw-bold text-gray-900 fs-4">@T["General rules"]</span>
+                <span class="text-muted mt-1 fw-semibold fs-7">@T["Apply to every clinic"]</span>
+            </div></div>
+            <div class="card-body pt-2">
+                <div class="row g-6 mb-8">
+                    @foreach (var n in numbers)
+                    {
+                        <div class="col-md-6 col-xl-3"><label class="fw-semibold fs-7 text-gray-700 mb-2">@n.Label</label>
+                            <input type="number" min="@n.Min" max="@n.Max" class="form-control form-control-solid hp-num" name="@n.Key" value="@n.Value" />
+                            <div class="text-muted fs-8 mt-1">@n.Hint</div></div>
+                    }
+                </div>
+                <div class="row g-6">
+                    @foreach (var f in flags)
+                    {
+                        <div class="col-md-6"><label class="form-check form-switch form-check-custom form-check-solid align-items-start">
+                            <input class="form-check-input mt-1" type="checkbox" name="@f.Key" @(f.Value ? "checked" : "") />
+                            <span class="form-check-label"><span class="fw-bold text-gray-800 d-block">@f.Label</span><span class="text-muted fs-7">@f.Hint</span></span></label></div>
+                    }
+                    <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Online payment at booking"]</label>
+                        <select class="form-select form-select-solid" name="payment" data-no-select2>
+                            @foreach (var p in HospitalPortalPayment.All) { <option value="@p" selected="@(s.Payment == p)">@T["pp:" + p]</option> }
+                        </select></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-5">
+            <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
+                <span class="card-label fw-bold text-gray-900 fs-4">@T["Booking by clinic"]</span>
+                <span class="text-muted mt-1 fw-semibold fs-7">@T["Each change is saved at once"]</span>
+            </div></div>
+            <div class="card-body pt-2">
+                <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-4 mb-0">
+                    <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0">
+                        <th class="min-w-125px">@T["Clinic"]</th><th class="min-w-175px">@T["Booking mode"]</th><th class="text-center">@T["Follow-up with own doctor"]</th><th class="text-center">@T["Referral for a new visit"]</th><th class="text-center">@T["Video visits"]</th><th class="min-w-225px">@T["Visits offered online"]</th>
+                    </tr></thead>
+                    <tbody class="fw-semibold text-gray-700">
+                        @foreach (var c in clinics)
+                        {
+                            <tr data-clinic="@c.DepartmentId">
+                                <td><div class="fw-bold text-gray-900">@DisplayName.Of(c.Name, c.NameEn)</div><div class="text-muted fs-8">@(c.Saved ? T["Saved"].Value : T["Default"].Value) · <span class="hp-num">@c.Code</span></div></td>
+                                <td><select class="form-select form-select-sm form-select-solid" data-k="mode" data-no-select2>
+                                    @foreach (var m in HospitalPortalModes.All) { <option value="@m" selected="@(c.Mode == m)">@ModeLabel(m)</option> }
+                                </select></td>
+                                <td><div class="form-check form-switch form-check-custom form-check-solid justify-content-center"><input class="form-check-input" type="checkbox" data-k="followUpOwnDoctor" @(c.FollowUpOwnDoctor ? "checked" : "") /></div></td>
+                                <td><div class="form-check form-switch form-check-custom form-check-solid justify-content-center"><input class="form-check-input" type="checkbox" data-k="referralForNew" @(c.ReferralForNew ? "checked" : "") /></div></td>
+                                <td><div class="form-check form-switch form-check-custom form-check-solid justify-content-center"><input class="form-check-input" type="checkbox" data-k="video" @(c.Video ? "checked" : "") /></div></td>
+                                <td><div class="d-flex flex-wrap gap-2">
+                                    @foreach (var v in HospitalVisitTypes.All)
+                                    {
+                                        bool on = c.VisitTypes.Contains(v);
+                                        <button type="button" class="btn btn-sm py-1 px-3 @(on ? "btn-light-primary" : "btn-outline btn-outline-dashed btn-color-gray-500")" data-type="@v" aria-pressed="@(on ? "true" : "false")"><i class="ki-outline ki-check fs-6 @(on ? "" : "d-none")"></i>@T["visit:" + v]</button>
+                                    }
+                                </div></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
+                <span class="card-label fw-bold text-gray-900 fs-4">@T["Doctors"]</span>
+                <span class="text-muted mt-1 fw-semibold fs-7">@T["A doctor is shown to the patient only where the clinic lets the patient choose; with the first free doctor, the free doctors' times are merged"]</span>
+            </div></div>
+            <div class="card-body pt-2">
+                <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-3 mb-0">
+                    <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0"><th>@T["Doctor"]</th><th>@T["Clinic"]</th><th class="text-center">@T["Bookable online"]</th><th class="text-center">@T["Takes new patients"]</th></tr></thead>
+                    <tbody class="fw-semibold text-gray-700">
+                        @foreach (var d in doctors)
+                        {
+                            var c = clinics.FirstOrDefault(x => x.DepartmentId == d.DepartmentId);
+                            <tr data-doctor="@d.PractitionerId">
+                                <td><div class="d-flex align-items-center gap-3">
+                                    <div class="symbol symbol-40px symbol-circle flex-shrink-0">@if (d.Photo != null) {<img src="@d.Photo" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(d.NameEn)" />} else {<span class="symbol-label fw-bold fs-8 hp-initials">@HospitalUi.Initials(d.NameEn)</span>}</div>
+                                    <div><div class="fw-bold text-gray-900">@DisplayName.Of(d.Name, d.NameEn)</div><div class="text-muted fs-8">@DisplayName.Of(d.Title ?? "", d.TitleEn ?? d.Title ?? "")</div></div></div></td>
+                                <td>@(c == null ? "—" : DisplayName.Of(c.Name, c.NameEn)) @if (c != null) {<span class="text-muted fs-8">· @ModeLabel(c.Mode)</span>}</td>
+                                <td><div class="form-check form-switch form-check-custom form-check-solid justify-content-center"><input class="form-check-input" type="checkbox" data-k="online" @(d.Online ? "checked" : "") /></div></td>
+                                <td><div class="form-check form-switch form-check-custom form-check-solid justify-content-center"><input class="form-check-input" type="checkbox" data-k="newPatients" @(d.NewPatients ? "checked" : "") /></div></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table></div>
+            </div>
+        </div>
+    </div></div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value) };
+            var urls = { general: @Json.Serialize(Url.Action("SavePortalSettings")), clinic: @Json.Serialize(Url.Action("SavePortalClinic", new { id = 0 })), doctor: @Json.Serialize(Url.Action("SavePortalDoctor", new { id = 0 })) };
+            function toast(k, m) { if (window.toastr) toastr[k](m); }
+            function post(url, body) {
+                return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(body) })
+                    .then(function (r) { return r.json().catch(function () { return { ok: false }; }); });
+            }
+            function told(res) { if (res.ok) toast('success', W.saved); else toast('error', res.error || W.failed); return res; }
+            function idUrl(base, id) { return base.replace(/0$/, id); }
+
+            // general rules: one Save
+            document.addEventListener('click', function (e) {
+                var b = e.target.closest('[data-save-general]'); if (!b) return;
+                var g = document.getElementById('general'), body = {};
+                g.querySelectorAll('input[type=number]').forEach(function (i) { body[i.name] = parseInt(i.value || '0', 10); });
+                g.querySelectorAll('input[type=checkbox]').forEach(function (i) { body[i.name] = i.checked; });
+                body.payment = g.querySelector('[name=payment]').value;
+                b.disabled = true; post(urls.general, body).then(function (r) { b.disabled = false; told(r); });
+            });
+
+            // a clinic row saves whole, the moment any of it changes; a refused change is put back
+            function clinicBody(tr) {
+                return { mode: tr.querySelector('[data-k=mode]').value, followUpOwnDoctor: tr.querySelector('[data-k=followUpOwnDoctor]').checked, referralForNew: tr.querySelector('[data-k=referralForNew]').checked,
+                    video: tr.querySelector('[data-k=video]').checked, visitTypes: [].slice.call(tr.querySelectorAll('[data-type][aria-pressed=true]')).map(function (x) { return x.getAttribute('data-type'); }) };
+            }
+            function setType(btn, on) {
+                btn.setAttribute('aria-pressed', on ? 'true' : 'false'); btn.classList.toggle('btn-light-primary', on);
+                ['btn-outline', 'btn-outline-dashed', 'btn-color-gray-500'].forEach(function (c) { btn.classList.toggle(c, !on); }); btn.querySelector('.ki-check').classList.toggle('d-none', !on);
+            }
+            function saveClinic(tr, undo) { post(idUrl(urls.clinic, tr.getAttribute('data-clinic')), clinicBody(tr)).then(function (r) { told(r); if (!r.ok && undo) undo(); }); }
+            document.addEventListener('click', function (e) {
+                var t = e.target.closest('[data-clinic] [data-type]'); if (!t) return;
+                var on = t.getAttribute('aria-pressed') !== 'true'; setType(t, on);
+                saveClinic(t.closest('tr'), function () { setType(t, !on); });
+            });
+            document.addEventListener('change', function (e) {
+                var c = e.target.closest('[data-clinic] [data-k]');
+                if (c) { var prev = c.type === 'checkbox' ? !c.checked : c.getAttribute('data-was'); saveClinic(c.closest('tr'), function () { if (c.type === 'checkbox') c.checked = prev; else c.value = prev; }); if (c.tagName === 'SELECT') c.setAttribute('data-was', c.value); return; }
+                var d = e.target.closest('[data-doctor] [data-k]');
+                if (d) {
+                    var tr = d.closest('tr');
+                    post(idUrl(urls.doctor, tr.getAttribute('data-doctor')), { online: tr.querySelector('[data-k=online]').checked, newPatients: tr.querySelector('[data-k=newPatients]').checked })
+                        .then(function (r) { told(r); if (!r.ok) d.checked = !d.checked; });
+                }
+            });
+            document.querySelectorAll('[data-clinic] select').forEach(function (s) { s.setAttribute('data-was', s.value); });
+        })();
+    </script>
+}

@@ -571,6 +571,49 @@ namespace CrossBuy.Models.Context
 			Hospital.HospitalPharmacyModel.Configure(builder);
 			Hospital.HospitalInsuranceModel.Configure(builder);
 			Hospital.HospitalEstimatesModel.Configure(builder);
+			Hospital.HospitalEmergencyModel.Configure(builder);
+			Hospital.HospitalNursingModel.Configure(builder);
+			Hospital.HospitalDentalModel.Configure(builder);
+			Hospital.HospitalDentalOpsModel.Configure(builder);
+			Hospital.HospitalDentalCasesModel.Configure(builder);
+			Hospital.HospitalBillCoverageModel.Configure(builder);
+			Hospital.HospitalFeesModel.Configure(builder);
+			Hospital.HospitalClaimAccountingModel.Configure(builder);
+			Hospital.HospitalMedRoutingModel.Configure(builder);
+			Hospital.HospitalCatalogItemsModel.Configure(builder);
+			Hospital.HospitalPortalRulesModel.Configure(builder);
+			Hospital.HospitalPortalAccountsModel.Configure(builder);
+			Hospital.HospitalPractitionerScheduleModel.Configure(builder);
+			Hospital.HospitalPortalRecordsModel.Configure(builder);
+			Hospital.HospitalTheatreModel.Configure(builder);
+			Hospital.HospitalRadImagesModel.Configure(builder);
+			Hospital.HospitalSupplyModel.Configure(builder);
+			Hospital.HospitalConsignmentModel.Configure(builder);   // H38
+			Hospital.HospitalControlledModel.Configure(builder);    // H39
+			Hospital.HospitalIcuModel.Configure(builder);           // H40
+			Hospital.HospitalBloodBankModel.Configure(builder);     // H41
+			Hospital.HospitalCssdModel.Configure(builder);          // H42
+			Hospital.HospitalDietaryModel.Configure(builder);       // H43
+			Hospital.HospitalKitchenModel.Configure(builder);       // H44
+			Hospital.HospitalIncidentsModel.Configure(builder);     // H45
+			Hospital.HospitalDischargeSummaryModel.Configure(builder);   // H55
+			Hospital.HospitalSickLeaveModel.Configure(builder);          // H56
+			Hospital.HospitalBirthModel.Configure(builder);              // H58
+			Hospital.HospitalDeathModel.Configure(builder);              // H59
+			Hospital.HospitalConsentModel.Configure(builder);            // H60
+			Hospital.HospitalCharityModel.Configure(builder);            // H63
+			Hospital.HospitalRestrictedAccessModel.Configure(builder);   // H64
+			Hospital.HospitalSurveyModel.Configure(builder);             // H65
+			Hospital.HospitalWorkOrderModel.Configure(builder);          // H66
+			Hospital.HospitalSupportJobModel.Configure(builder);         // H67
+			Hospital.HospitalOnCallModel.Configure(builder);             // H68
+			Hospital.HospitalSmsModel.Configure(builder);                // H70
+			Hospital.HospitalObservationModel.Configure(builder);        // H71
+			Hospital.HospitalMedReconModel.Configure(builder);           // H72
+			Hospital.HospitalDrugSafetyModel.Configure(builder);         // H73
+			Hospital.HospitalOrderSetModel.Configure(builder);           // H74
+			Hospital.HospitalInpatientOrderModel.Configure(builder);     // H75
+			// H57 (HospitalPatientMerge) is configured inside HospitalPatientsModel
 
 			CrossBuy.BL.Platform.CompanyQueryFilters.Apply(builder, this);
 		}

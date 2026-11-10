@@ -54,6 +54,8 @@ namespace CrossBuy.Controllers
 			Chrome();
 			ViewBag.Currency = await _billing.CurrencyLabelAsync(ctx, null, ct);
 			ViewBag.CanBill = await _access.CanAsync(ctx, HospitalActions.Bill, null, ct);
+			ViewBag.Ledger = await ClaimAccountingSvc.BatchLedgerAsync(ctx, id, ct);
+			ViewBag.Scrub = await ActivatorUtilities.CreateInstance<HospitalClaimScrubService>(HttpContext.RequestServices).ScrubAsync(ctx, id, DateTime.UtcNow, ct);   // H62
 			return View(batch);
 		}
 
@@ -70,6 +72,7 @@ namespace CrossBuy.Controllers
 			ViewBag.Currency = await _billing.CurrencyLabelAsync(ctx, null, ct);
 			ViewBag.CanManage = await _access.CanAsync(ctx, HospitalActions.Manage, null, ct);
 			ViewBag.CanRegister = await _access.CanAsync(ctx, HospitalActions.Register, null, ct);
+			ViewBag.DentalBenefits = (await DentalSvc.BenefitsAsync(ctx, ct)).ToDictionary(b => b.PayerId);   // H15
 			return View(await InsuranceSvc.PayersAsync(ctx, DateTime.UtcNow, ct));
 		}
 
@@ -144,6 +147,15 @@ namespace CrossBuy.Controllers
 			var ctx = await ContextAsync(ct);
 			if (ctx == null || input == null) return NotFound(new { ok = false, code = "not_found" });
 			return Result(await InsuranceSvc.BuildBatchAsync(ctx, input.PayerId, input.Period, ctx.EmployeeId, DateTime.UtcNow, ct));
+		}
+
+		/// H62: holds a claim back from its draft batch (its bill returns to the next build).
+		[HttpPost("Insurance/Claims/{id:int}/Hold"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Bill)]
+		public async Task<IActionResult> HoldClaim(int id, CancellationToken ct = default)
+		{
+			var ctx = await ContextAsync(ct);
+			if (ctx == null) return NotFound(new { ok = false, code = "not_found" });
+			return Result(await ActivatorUtilities.CreateInstance<HospitalClaimScrubService>(HttpContext.RequestServices).HoldAsync(ctx, id, ct));
 		}
 
 		[HttpPost("Insurance/Batch/{id:int}/Submit"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Bill)]

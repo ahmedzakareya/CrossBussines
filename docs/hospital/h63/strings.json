@@ -1,0 +1,255 @@
+{
+ "unit": "H63 — charity cases and the patient statement",
+ "strings": {
+  "A foreign-currency bill is not waived here": {
+   "ar": "فواتير العملات الأجنبية لا تُعفى من هنا",
+   "en": "A foreign-currency bill is not waived here",
+   "fr": "Une facture en devise n'est pas exonérée ici"
+  },
+  "A fund waives part of what the patient owes; the administrator approves it.": {
+   "ar": "صندوق يعفي المريض من جزء مما عليه، ويعتمده مدير المستشفى.",
+   "en": "A fund waives part of what the patient owes; the administrator approves it.",
+   "fr": "Un fonds exonère le patient d'une partie de sa dette ; l'administrateur l'approuve."
+  },
+  "A request is made from a closed bill.": {
+   "ar": "يُقدَّم الطلب من فاتورة مغلقة.",
+   "en": "A request is made from a closed bill.",
+   "fr": "La demande se fait depuis une facture clôturée."
+  },
+  "All states": {
+   "ar": "كل الحالات",
+   "en": "All states",
+   "fr": "Tous les états"
+  },
+  "Another fund has this code": {
+   "ar": "يوجد صندوق آخر بهذا الرمز",
+   "en": "Another fund has this code",
+   "fr": "Un autre fonds a ce code"
+  },
+  "Approve waiver {0} of {1} {2}? It posts to the fund and the patient owes that much less.": {
+   "ar": "اعتماد الإعفاء {0} بمبلغ {1} {2}؟ يُرحَّل على الصندوق ويقل المستحق على المريض بقدره.",
+   "en": "Approve waiver {0} of {1} {2}? It posts to the fund and the patient owes that much less.",
+   "fr": "Approuver l'exonération {0} de {1} {2} ? Elle est passée au fonds et le patient doit d'autant moins."
+  },
+  "Ask for a charity waiver": {
+   "ar": "طلب إعفاء خيري",
+   "en": "Ask for a charity waiver",
+   "fr": "Demander une exonération"
+  },
+  "Ask for this charity waiver? The administrator approves or refuses it.": {
+   "ar": "تقديم طلب الإعفاء الخيري هذا؟ يعتمده مدير المستشفى أو يرفضه.",
+   "en": "Ask for this charity waiver? The administrator approves or refuses it.",
+   "fr": "Demander cette exonération ? L'administrateur l'approuve ou la refuse."
+  },
+  "Asked by": {
+   "ar": "طلبه",
+   "en": "Asked by",
+   "fr": "Demandé par"
+  },
+  "Charity": {
+   "ar": "الإعفاء الخيري",
+   "en": "Charity",
+   "fr": "Aide caritative"
+  },
+  "Charity cases": {
+   "ar": "الحالات الخيرية",
+   "en": "Charity cases",
+   "fr": "Cas caritatifs"
+  },
+  "Charity cases are not installed yet (hospital_h63_charity.sql).": {
+   "ar": "الحالات الخيرية غير مثبتة بعد (hospital_h63_charity.sql).",
+   "en": "Charity cases are not installed yet (hospital_h63_charity.sql).",
+   "fr": "Les cas caritatifs ne sont pas encore installés (hospital_h63_charity.sql)."
+  },
+  "Charity funds": {
+   "ar": "صناديق الحالات الخيرية",
+   "en": "Charity funds",
+   "fr": "Fonds caritatifs"
+  },
+  "Charity is granted on a closed bill": {
+   "ar": "يُمنح الإعفاء الخيري على فاتورة مغلقة",
+   "en": "Charity is granted on a closed bill",
+   "fr": "L'aide est accordée sur une facture clôturée"
+  },
+  "Choose the charity fund": {
+   "ar": "اختر الصندوق",
+   "en": "Choose the charity fund",
+   "fr": "Choisissez le fonds"
+  },
+  "Choose the fund's expense account": {
+   "ar": "اختر حساب المصروف للصندوق",
+   "en": "Choose the fund's expense account",
+   "fr": "Choisissez le compte de charge du fonds"
+  },
+  "Decided by": {
+   "ar": "قرّره",
+   "en": "Decided by",
+   "fr": "Décidé par"
+  },
+  "Each fund's waivers are posted to its own expense account.": {
+   "ar": "إعفاءات كل صندوق تُرحَّل على حساب مصروفه.",
+   "en": "Each fund's waivers are posted to its own expense account.",
+   "fr": "Les exonérations de chaque fonds vont sur son propre compte de charge."
+  },
+  "Edit the fund": {
+   "ar": "تعديل الصندوق",
+   "en": "Edit the fund",
+   "fr": "Modifier le fonds"
+  },
+  "Expense account": {
+   "ar": "حساب المصروف",
+   "en": "Expense account",
+   "fr": "Compte de charge"
+  },
+  "Finance & insurance": {
+   "ar": "المالية والتأمين",
+   "en": "Finance & insurance",
+   "fr": "Finances et assurance"
+  },
+  "Fund": {
+   "ar": "الصندوق",
+   "en": "Fund",
+   "fr": "Fonds"
+  },
+  "Funds": {
+   "ar": "الصناديق",
+   "en": "Funds",
+   "fr": "Fonds"
+  },
+  "Give the fund a code of up to 20 characters": {
+   "ar": "أعطِ الصندوق رمزاً لا يزيد عن 20 حرفاً",
+   "en": "Give the fund a code of up to 20 characters",
+   "fr": "Donnez au fonds un code de 20 caractères au plus"
+  },
+  "Give the name in Arabic and English": {
+   "ar": "اكتب الاسم بالعربية والإنجليزية",
+   "en": "Give the name in Arabic and English",
+   "fr": "Donnez le nom en arabe et en anglais"
+  },
+  "Map the fund's expense account and the patients' receivable first": {
+   "ar": "اربط حساب مصروف الصندوق وحساب ذمم المرضى أولاً",
+   "en": "Map the fund's expense account and the patients' receivable first",
+   "fr": "Liez d'abord le compte de charge du fonds et le compte clients patients"
+  },
+  "New fund": {
+   "ar": "صندوق جديد",
+   "en": "New fund",
+   "fr": "Nouveau fonds"
+  },
+  "No account": {
+   "ar": "بدون حساب",
+   "en": "No account",
+   "fr": "Pas de compte"
+  },
+  "No charity fund with an expense account yet.": {
+   "ar": "لا يوجد صندوق خيري مربوط بحساب مصروف بعد.",
+   "en": "No charity fund with an expense account yet.",
+   "fr": "Aucun fonds caritatif avec un compte de charge."
+  },
+  "No charity request yet.": {
+   "ar": "لا توجد طلبات إعفاء بعد.",
+   "en": "No charity request yet.",
+   "fr": "Aucune demande pour l'instant."
+  },
+  "No fund yet.": {
+   "ar": "لا توجد صناديق بعد.",
+   "en": "No fund yet.",
+   "fr": "Aucun fonds."
+  },
+  "Refuse": {
+   "ar": "رفض",
+   "en": "Refuse",
+   "fr": "Refuser"
+  },
+  "Requests and decisions": {
+   "ar": "الطلبات والقرارات",
+   "en": "Requests and decisions",
+   "fr": "Demandes et décisions"
+  },
+  "Save this charity fund?": {
+   "ar": "حفظ هذا الصندوق؟",
+   "en": "Save this charity fund?",
+   "fr": "Enregistrer ce fonds ?"
+  },
+  "Search by patient, MRN or bill…": {
+   "ar": "ابحث بالمريض أو رقم الملف أو الفاتورة…",
+   "en": "Search by patient, MRN or bill…",
+   "fr": "Rechercher par patient, dossier ou facture…"
+  },
+  "The patient now owes less than the waiver ({0}): refuse it and ask again": {
+   "ar": "أصبح المستحق على المريض أقل من الإعفاء ({0}): ارفضه واطلب من جديد",
+   "en": "The patient now owes less than the waiver ({0}): refuse it and ask again",
+   "fr": "Le patient doit désormais moins que l'exonération ({0}) : refusez-la et redemandez"
+  },
+  "The person who asked cannot approve their own request": {
+   "ar": "لا يعتمد صاحب الطلب طلبه بنفسه",
+   "en": "The person who asked cannot approve their own request",
+   "fr": "Le demandeur ne peut pas approuver sa propre demande"
+  },
+  "The waiver is more than the patient still owes ({0})": {
+   "ar": "الإعفاء أكبر مما يتبقى على المريض ({0})",
+   "en": "The waiver is more than the patient still owes ({0})",
+   "fr": "L'exonération dépasse ce que le patient doit encore ({0})"
+  },
+  "This request was already decided": {
+   "ar": "تم البت في هذا الطلب بالفعل",
+   "en": "This request was already decided",
+   "fr": "Cette demande a déjà été tranchée"
+  },
+  "Waiting for a decision": {
+   "ar": "بانتظار القرار",
+   "en": "Waiting for a decision",
+   "fr": "En attente de décision"
+  },
+  "Waiting for another approver": {
+   "ar": "بانتظار معتمد آخر",
+   "en": "Waiting for another approver",
+   "fr": "En attente d'un autre approbateur"
+  },
+  "Waived so far": {
+   "ar": "إجمالي الإعفاءات",
+   "en": "Waived so far",
+   "fr": "Exonéré à ce jour"
+  },
+  "Why is waiver {0} refused?": {
+   "ar": "لماذا رُفض الإعفاء {0}؟",
+   "en": "Why is waiver {0} refused?",
+   "fr": "Pourquoi l'exonération {0} est-elle refusée ?"
+  },
+  "Why the patient needs the help": {
+   "ar": "سبب احتياج المريض للمساعدة",
+   "en": "Why the patient needs the help",
+   "fr": "Pourquoi le patient a besoin d'aide"
+  },
+  "Write why the patient needs the help": {
+   "ar": "اكتب سبب احتياج المريض للمساعدة",
+   "en": "Write why the patient needs the help",
+   "fr": "Indiquez pourquoi le patient a besoin d'aide"
+  },
+  "Write why the request is refused": {
+   "ar": "اكتب سبب رفض الطلب",
+   "en": "Write why the request is refused",
+   "fr": "Indiquez pourquoi la demande est refusée"
+  },
+  "ch:no": {
+   "ar": "رقم الطلب",
+   "en": "Request no.",
+   "fr": "N° de demande"
+  },
+  "ch:Requested": {
+   "ar": "مطلوب",
+   "en": "Requested",
+   "fr": "Demandé"
+  },
+  "ch:Approved": {
+   "ar": "معتمد",
+   "en": "Approved",
+   "fr": "Approuvé"
+  },
+  "ch:Refused": {
+   "ar": "مرفوض",
+   "en": "Refused",
+   "fr": "Refusé"
+  }
+ }
+}

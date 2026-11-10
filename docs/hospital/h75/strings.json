@@ -1,0 +1,115 @@
+{
+ "unit": "H75 — inpatient lab and imaging orders",
+ "strings": {
+  "Add a lab test": {
+   "ar": "إضافة تحليل",
+   "en": "Add a lab test",
+   "fr": "Ajouter une analyse"
+  },
+  "Add an imaging exam": {
+   "ar": "إضافة أشعة",
+   "en": "Add an imaging exam",
+   "fr": "Ajouter un examen d'imagerie"
+  },
+  "At most 30 tests and exams at once": {
+   "ar": "30 تحليلاً وأشعة على الأكثر في المرة الواحدة",
+   "en": "At most 30 tests and exams at once",
+   "fr": "Au plus 30 analyses et examens à la fois"
+  },
+  "Choose at least one test or exam": {
+   "ar": "اختر تحليلاً أو أشعة واحدة على الأقل",
+   "en": "Choose at least one test or exam",
+   "fr": "Choisissez au moins une analyse ou un examen"
+  },
+  "Choose the test or exam": {
+   "ar": "اختر التحليل أو الأشعة",
+   "en": "Choose the test or exam",
+   "fr": "Choisissez l'analyse ou l'examen"
+  },
+  "Contrast exam and the file records a contrast allergy: {0}": {
+   "ar": "أشعة بالصبغة والملف يسجل حساسية من الصبغة: {0}",
+   "en": "Contrast exam and the file records a contrast allergy: {0}",
+   "fr": "Examen avec contraste et le dossier mentionne une allergie au contraste : {0}"
+  },
+  "Each test and exam is charged to the stay's bill and goes to the lab's or radiology's own worklist.": {
+   "ar": "كل تحليل وأشعة يُحسب على فاتورة الإقامة ويذهب إلى قائمة عمل المعمل أو الأشعة.",
+   "en": "Each test and exam is charged to the stay's bill and goes to the lab's or radiology's own worklist.",
+   "fr": "Chaque analyse et examen est facturé au séjour et rejoint la liste de travail du laboratoire ou de la radiologie."
+  },
+  "Find a test or exam…": {
+   "ar": "ابحث عن تحليل أو أشعة…",
+   "en": "Find a test or exam…",
+   "fr": "Trouver une analyse ou un examen…"
+  },
+  "Imaging exam": {
+   "ar": "أشعة",
+   "en": "Imaging exam",
+   "fr": "Examen d'imagerie"
+  },
+  "Inpatient lab and imaging orders are not installed yet (hospital_h75_inpatient_orders.sql).": {
+   "ar": "طلبات التحاليل والأشعة للمنوّمين غير مثبتة بعد (hospital_h75_inpatient_orders.sql).",
+   "en": "Inpatient lab and imaging orders are not installed yet (hospital_h75_inpatient_orders.sql).",
+   "fr": "Les demandes d'analyses et d'imagerie des hospitalisés ne sont pas encore installées (hospital_h75_inpatient_orders.sql)."
+  },
+  "Lab test": {
+   "ar": "تحليل",
+   "en": "Lab test",
+   "fr": "Analyse"
+  },
+  "Lab tests": {
+   "ar": "التحاليل",
+   "en": "Lab tests",
+   "fr": "Analyses"
+  },
+  "Note for the lab or radiology": {
+   "ar": "ملاحظة للمعمل أو الأشعة",
+   "en": "Note for the lab or radiology",
+   "fr": "Note pour le laboratoire ou la radiologie"
+  },
+  "Nothing ordered yet.": {
+   "ar": "لم يُطلب شيء بعد.",
+   "en": "Nothing ordered yet.",
+   "fr": "Rien de demandé pour l'instant."
+  },
+  "Order the ticked": {
+   "ar": "اطلب المختار",
+   "en": "Order the ticked",
+   "fr": "Demander la sélection"
+  },
+  "Order {0} tests and exams for {1}?": {
+   "ar": "طلب {0} تحاليل وأشعة لـ {1}؟",
+   "en": "Order {0} tests and exams for {1}?",
+   "fr": "Demander {0} analyses et examens pour {1} ?"
+  },
+  "Ordered: {0}": {
+   "ar": "تم الطلب: {0}",
+   "en": "Ordered: {0}",
+   "fr": "Demandé : {0}"
+  },
+  "Tests & imaging": {
+   "ar": "تحاليل وأشعة",
+   "en": "Tests & imaging",
+   "fr": "Analyses et imagerie"
+  },
+  "This order is already cancelled": {
+   "ar": "هذا الطلب ملغى بالفعل",
+   "en": "This order is already cancelled",
+   "fr": "Cette demande est déjà annulée"
+  },
+  "This stay's tests and imaging": {
+   "ar": "تحاليل وأشعة هذه الإقامة",
+   "en": "This stay's tests and imaging",
+   "fr": "Analyses et imagerie de ce séjour"
+  },
+  "Work has started on this order: it can no longer be cancelled": {
+   "ar": "بدأ العمل على هذا الطلب: لم يعد ممكناً إلغاؤه",
+   "en": "Work has started on this order: it can no longer be cancelled",
+   "fr": "Le travail a commencé : cette demande ne peut plus être annulée"
+  },
+  "contrast": {
+   "ar": "صبغة",
+   "en": "contrast",
+   "fr": "contraste"
+  }
+ }
+}

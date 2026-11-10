@@ -1,0 +1,325 @@
+{
+ "unit": "H66 — equipment work orders",
+ "strings": {
+  "A device that does not work: biomedical engineering takes it from here.": {
+   "ar": "جهاز لا يعمل: الهندسة الطبية تتولاه من هنا.",
+   "en": "A device that does not work: biomedical engineering takes it from here.",
+   "fr": "Un appareil en panne : le génie biomédical prend le relais."
+  },
+  "A registered device's repair is logged in its maintenance history.": {
+   "ar": "إصلاح الجهاز المسجل يُسجَّل في سجل صيانته.",
+   "en": "A registered device's repair is logged in its maintenance history.",
+   "fr": "La réparation d'un appareil inventorié est inscrite dans son historique de maintenance."
+  },
+  "Assign": {
+   "ar": "تعيين فني",
+   "en": "Assign",
+   "fr": "Affecter"
+  },
+  "Assign {0} to this technician?": {
+   "ar": "تعيين {0} لهذا الفني؟",
+   "en": "Assign {0} to this technician?",
+   "fr": "Affecter {0} à ce technicien ?"
+  },
+  "Average time to fix": {
+   "ar": "متوسط مدة الإصلاح",
+   "en": "Average time to fix",
+   "fr": "Délai moyen de réparation"
+  },
+  "Biomedical engineering": {
+   "ar": "الهندسة الطبية",
+   "en": "Biomedical engineering",
+   "fr": "Génie biomédical"
+  },
+  "Choose how urgent it is": {
+   "ar": "حدد درجة الاستعجال",
+   "en": "Choose how urgent it is",
+   "fr": "Indiquez l'urgence"
+  },
+  "Choose the device": {
+   "ar": "اختر الجهاز",
+   "en": "Choose the device",
+   "fr": "Choisissez l'appareil"
+  },
+  "Choose the device, or describe it": {
+   "ar": "اختر الجهاز أو صِفه",
+   "en": "Choose the device, or describe it",
+   "fr": "Choisissez l'appareil ou décrivez-le"
+  },
+  "Choose the technician": {
+   "ar": "اختر الفني",
+   "en": "Choose the technician",
+   "fr": "Choisissez le technicien"
+  },
+  "Close {0} as fixed?": {
+   "ar": "إغلاق {0} كمُصلَح؟",
+   "en": "Close {0} as fixed?",
+   "fr": "Clore {0} comme réparé ?"
+  },
+  "Describe the problem": {
+   "ar": "صِف المشكلة",
+   "en": "Describe the problem",
+   "fr": "Décrivez le problème"
+  },
+  "Device (from the asset register)": {
+   "ar": "الجهاز (من سجل الأصول)",
+   "en": "Device (from the asset register)",
+   "fr": "Appareil (du registre des immobilisations)"
+  },
+  "Equipment work orders": {
+   "ar": "أوامر عمل الأجهزة",
+   "en": "Equipment work orders",
+   "fr": "Ordres de travail équipements"
+  },
+  "Fixed in 30 days": {
+   "ar": "أُصلح خلال 30 يوماً",
+   "en": "Fixed in 30 days",
+   "fr": "Réparés en 30 jours"
+  },
+  "How urgent": {
+   "ar": "درجة الاستعجال",
+   "en": "How urgent",
+   "fr": "Urgence"
+  },
+  "Logged on the asset": {
+   "ar": "سُجّل على الأصل",
+   "en": "Logged on the asset",
+   "fr": "Inscrit sur l'immobilisation"
+  },
+  "No work order here.": {
+   "ar": "لا توجد أوامر عمل هنا.",
+   "en": "No work order here.",
+   "fr": "Aucun ordre de travail ici."
+  },
+  "Not in the asset register": {
+   "ar": "غير مسجل في الأصول",
+   "en": "Not in the asset register",
+   "fr": "Hors registre"
+  },
+  "Not posted": {
+   "ar": "بدون ترحيل",
+   "en": "Not posted",
+   "fr": "Non comptabilisé"
+  },
+  "Only a registered asset's repair is posted": {
+   "ar": "لا يُرحَّل إلا إصلاح أصل مسجل",
+   "en": "Only a registered asset's repair is posted",
+   "fr": "Seule la réparation d'une immobilisation est comptabilisée"
+  },
+  "Only the assigned technician closes this order": {
+   "ar": "لا يغلق الأمر إلا الفني المعيَّن",
+   "en": "Only the assigned technician closes this order",
+   "fr": "Seul le technicien affecté clôt cet ordre"
+  },
+  "Only the assigned technician starts this order": {
+   "ar": "لا يبدأ الأمر إلا الفني المعيَّن",
+   "en": "Only the assigned technician starts this order",
+   "fr": "Seul le technicien affecté démarre cet ordre"
+  },
+  "Open orders": {
+   "ar": "أوامر مفتوحة",
+   "en": "Open orders",
+   "fr": "Ordres ouverts"
+  },
+  "Or describe it, if it is not registered": {
+   "ar": "أو صِفه إن لم يكن مسجلاً",
+   "en": "Or describe it, if it is not registered",
+   "fr": "Ou décrivez-le s'il n'est pas inventorié"
+  },
+  "Paid from (posts the cost to the asset's maintenance)": {
+   "ar": "مدفوع من (يُرحّل التكلفة على صيانة الأصل)",
+   "en": "Paid from (posts the cost to the asset's maintenance)",
+   "fr": "Payé depuis (comptabilise le coût en maintenance)"
+  },
+  "Reassign": {
+   "ar": "تغيير الفني",
+   "en": "Reassign",
+   "fr": "Réaffecter"
+  },
+  "Report a fault": {
+   "ar": "الإبلاغ عن عطل",
+   "en": "Report a fault",
+   "fr": "Signaler une panne"
+  },
+  "Report the fault": {
+   "ar": "إبلاغ العطل",
+   "en": "Report the fault",
+   "fr": "Signaler"
+  },
+  "Report this fault?": {
+   "ar": "الإبلاغ عن هذا العطل؟",
+   "en": "Report this fault?",
+   "fr": "Signaler cette panne ?"
+  },
+  "Search by number, device, room or problem…": {
+   "ar": "ابحث بالرقم أو الجهاز أو الغرفة أو المشكلة…",
+   "en": "Search by number, device, room or problem…",
+   "fr": "Rechercher par numéro, appareil, salle ou problème…"
+  },
+  "Someone else changed this order: open it again": {
+   "ar": "غيّر شخص آخر هذا الأمر: افتحه من جديد",
+   "en": "Someone else changed this order: open it again",
+   "fr": "Quelqu'un d'autre a modifié cet ordre : rouvrez-le"
+  },
+  "Start work on {0}?": {
+   "ar": "بدء العمل على {0}؟",
+   "en": "Start work on {0}?",
+   "fr": "Commencer {0} ?"
+  },
+  "Technician": {
+   "ar": "الفني",
+   "en": "Technician",
+   "fr": "Technicien"
+  },
+  "The last 30 days": {
+   "ar": "آخر 30 يوماً",
+   "en": "The last 30 days",
+   "fr": "Les 30 derniers jours"
+  },
+  "The problem": {
+   "ar": "المشكلة",
+   "en": "The problem",
+   "fr": "Le problème"
+  },
+  "The repair could not be logged on the asset: {0}": {
+   "ar": "تعذر تسجيل الإصلاح على الأصل: {0}",
+   "en": "The repair could not be logged on the asset: {0}",
+   "fr": "La réparation n'a pas pu être inscrite : {0}"
+  },
+  "This order cannot take that step from where it is": {
+   "ar": "لا يمكن نقل الأمر لهذه الخطوة من حالته الحالية",
+   "en": "This order cannot take that step from where it is",
+   "fr": "Cet ordre ne peut pas passer à cette étape"
+  },
+  "Urgent, still open": {
+   "ar": "عاجلة ما زالت مفتوحة",
+   "en": "Urgent, still open",
+   "fr": "Urgents encore ouverts"
+  },
+  "Vendor": {
+   "ar": "المورّد",
+   "en": "Vendor",
+   "fr": "Fournisseur"
+  },
+  "What was done": {
+   "ar": "ما الذي تم",
+   "en": "What was done",
+   "fr": "Ce qui a été fait"
+  },
+  "Why is {0} cancelled?": {
+   "ar": "لماذا أُلغي {0}؟",
+   "en": "Why is {0} cancelled?",
+   "fr": "Pourquoi {0} est-il annulé ?"
+  },
+  "Work orders": {
+   "ar": "أوامر العمل",
+   "en": "Work orders",
+   "fr": "Ordres de travail"
+  },
+  "Work orders are not installed yet (hospital_h66_work_orders.sql).": {
+   "ar": "أوامر العمل غير مثبتة بعد (hospital_h66_work_orders.sql).",
+   "en": "Work orders are not installed yet (hospital_h66_work_orders.sql).",
+   "fr": "Les ordres de travail ne sont pas encore installés (hospital_h66_work_orders.sql)."
+  },
+  "Write what was done": {
+   "ar": "اكتب ما الذي تم",
+   "en": "Write what was done",
+   "fr": "Indiquez ce qui a été fait"
+  },
+  "Write why it is cancelled": {
+   "ar": "اكتب سبب الإلغاء",
+   "en": "Write why it is cancelled",
+   "fr": "Indiquez pourquoi c'est annulé"
+  },
+  "A cost cannot be negative": {
+   "ar": "لا تكون التكلفة بالسالب",
+   "en": "A cost cannot be negative",
+   "fr": "Un coût ne peut pas être négatif"
+  },
+  "wo:active": {
+   "ar": "المفتوحة",
+   "en": "Active",
+   "fr": "En cours"
+  },
+  "wo:by": {
+   "ar": "أبلغ عنه",
+   "en": "Reported by",
+   "fr": "Signalé par"
+  },
+  "wo:close": {
+   "ar": "إغلاق كمُصلَح",
+   "en": "Close as fixed",
+   "fr": "Clore comme réparé"
+  },
+  "wo:closed": {
+   "ar": "المغلقة",
+   "en": "Closed",
+   "fr": "Clos"
+  },
+  "wo:device": {
+   "ar": "الجهاز",
+   "en": "Device",
+   "fr": "Appareil"
+  },
+  "wo:hours": {
+   "ar": "ساعة",
+   "en": "h",
+   "fr": "h"
+  },
+  "wo:no": {
+   "ar": "رقم الأمر",
+   "en": "Order no.",
+   "fr": "N° d'ordre"
+  },
+  "wo:priority": {
+   "ar": "الاستعجال",
+   "en": "Priority",
+   "fr": "Priorité"
+  },
+  "wo:start": {
+   "ar": "بدء العمل",
+   "en": "Start work",
+   "fr": "Démarrer"
+  },
+  "wop:Urgent": {
+   "ar": "عاجل",
+   "en": "Urgent",
+   "fr": "Urgent"
+  },
+  "wop:High": {
+   "ar": "مرتفع",
+   "en": "High",
+   "fr": "Élevée"
+  },
+  "wop:Normal": {
+   "ar": "عادي",
+   "en": "Normal",
+   "fr": "Normale"
+  },
+  "wos:Open": {
+   "ar": "مفتوح",
+   "en": "Open",
+   "fr": "Ouvert"
+  },
+  "wos:Assigned": {
+   "ar": "معيَّن لفني",
+   "en": "Assigned",
+   "fr": "Affecté"
+  },
+  "wos:InProgress": {
+   "ar": "جارٍ العمل",
+   "en": "In progress",
+   "fr": "En cours"
+  },
+  "wos:Done": {
+   "ar": "تم الإصلاح",
+   "en": "Fixed",
+   "fr": "Réparé"
+  },
+  "wos:Cancelled": {
+   "ar": "ملغى",
+   "en": "Cancelled",
+   "fr": "Annulé"
+  }
+ }
+}

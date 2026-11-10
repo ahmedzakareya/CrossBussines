@@ -1,0 +1,345 @@
+{
+ "unit": "H70 — SMS to patients (no provider yet)",
+ "strings": {
+  "A message is at most 480 characters": {
+   "ar": "الرسالة 480 حرفاً على الأكثر",
+   "en": "A message is at most 480 characters",
+   "fr": "Un message fait au plus 480 caractères"
+  },
+  "A message is at most 640 characters": {
+   "ar": "الرسالة 640 حرفاً على الأكثر",
+   "en": "A message is at most 640 characters",
+   "fr": "Un message fait au plus 640 caractères"
+  },
+  "Add this message to the queue?": {
+   "ar": "إضافة هذه الرسالة لقائمة الإرسال؟",
+   "en": "Add this message to the queue?",
+   "fr": "Ajouter ce message à la file d'envoi ?"
+  },
+  "Add to the queue": {
+   "ar": "أضف لقائمة الإرسال",
+   "en": "Add to the queue",
+   "fr": "Ajouter à la file"
+  },
+  "Allow again": {
+   "ar": "السماح مرة أخرى",
+   "en": "Allow again",
+   "fr": "Autoriser à nouveau"
+  },
+  "Allow messages to {0} again?": {
+   "ar": "السماح بإرسال الرسائل إلى {0} مرة أخرى؟",
+   "en": "Allow messages to {0} again?",
+   "fr": "Autoriser à nouveau les messages à {0} ?"
+  },
+  "As shipped": {
+   "ar": "النص الافتراضي",
+   "en": "As shipped",
+   "fr": "Texte par défaut"
+  },
+  "Asked for no messages": {
+   "ar": "طلبوا عدم المراسلة",
+   "en": "Asked for no messages",
+   "fr": "Ne veulent pas de messages"
+  },
+  "Cancel {0}? It will not be sent.": {
+   "ar": "إلغاء {0}؟ لن تُرسل.",
+   "en": "Cancel {0}? It will not be sent.",
+   "fr": "Annuler {0} ? Il ne sera pas envoyé."
+  },
+  "Choose the patient": {
+   "ar": "اختر المريض",
+   "en": "Choose the patient",
+   "fr": "Choisissez le patient"
+  },
+  "Connected provider:": {
+   "ar": "المزوّد المتصل:",
+   "en": "Connected provider:",
+   "fr": "Fournisseur connecté :"
+  },
+  "Edited": {
+   "ar": "معدّل",
+   "en": "Edited",
+   "fr": "Modifié"
+  },
+  "Every message is written here and waits; nothing goes out until a provider is connected. Then the waiting messages are sent from this screen.": {
+   "ar": "كل رسالة تُكتب هنا وتنتظر، ولا يخرج شيء قبل ربط مزوّد. بعد الربط تُرسل الرسائل المنتظرة من هذه الشاشة.",
+   "en": "Every message is written here and waits; nothing goes out until a provider is connected. Then the waiting messages are sent from this screen.",
+   "fr": "Chaque message est enregistré ici et attend ; rien ne part avant qu'un fournisseur soit connecté. Les messages en attente sont alors envoyés depuis cet écran."
+  },
+  "Message": {
+   "ar": "الرسالة",
+   "en": "Message",
+   "fr": "Message"
+  },
+  "Messages": {
+   "ar": "الرسائل",
+   "en": "Messages",
+   "fr": "Messages"
+  },
+  "Mobile number": {
+   "ar": "رقم الجوال",
+   "en": "Mobile number",
+   "fr": "Numéro de mobile"
+  },
+  "No SMS provider is connected yet": {
+   "ar": "لا يوجد مزوّد رسائل متصل بعد",
+   "en": "No SMS provider is connected yet",
+   "fr": "Aucun fournisseur SMS n'est encore connecté"
+  },
+  "No messages.": {
+   "ar": "لا توجد رسائل.",
+   "en": "No messages.",
+   "fr": "Aucun message."
+  },
+  "Nobody.": {
+   "ar": "لا أحد.",
+   "en": "Nobody.",
+   "fr": "Personne."
+  },
+  "Not reachable (30 days)": {
+   "ar": "تعذّر الوصول إليهم (30 يوماً)",
+   "en": "Not reachable (30 days)",
+   "fr": "Injoignables (30 jours)"
+  },
+  "Nothing is written to them until they are allowed again": {
+   "ar": "لا تُكتب لهم رسائل حتى يُسمح لهم مرة أخرى",
+   "en": "Nothing is written to them until they are allowed again",
+   "fr": "Rien ne leur est écrit tant qu'ils ne sont pas autorisés à nouveau"
+  },
+  "Only a message still waiting to go can be cancelled": {
+   "ar": "لا يُلغى إلا ما زال بانتظار الإرسال",
+   "en": "Only a message still waiting to go can be cancelled",
+   "fr": "Seul un message encore en attente peut être annulé"
+  },
+  "Patient SMS": {
+   "ar": "رسائل SMS للمرضى",
+   "en": "Patient SMS",
+   "fr": "SMS aux patients"
+  },
+  "Patients & front desk": {
+   "ar": "المرضى والاستقبال",
+   "en": "Patients & front desk",
+   "fr": "Patients et accueil"
+  },
+  "SMS is not installed yet (hospital_h70_sms.sql).": {
+   "ar": "الرسائل غير مثبتة بعد (hospital_h70_sms.sql).",
+   "en": "SMS is not installed yet (hospital_h70_sms.sql).",
+   "fr": "Les SMS ne sont pas encore installés (hospital_h70_sms.sql)."
+  },
+  "SMS parts": {
+   "ar": "جزء رسالة",
+   "en": "SMS parts",
+   "fr": "parties SMS"
+  },
+  "Save the words of this message?": {
+   "ar": "حفظ نص هذه الرسالة؟",
+   "en": "Save the words of this message?",
+   "fr": "Enregistrer le texte de ce message ?"
+  },
+  "Search by number, patient, phone or text…": {
+   "ar": "ابحث بالرقم أو المريض أو الجوال أو النص…",
+   "en": "Search by number, patient, phone or text…",
+   "fr": "Rechercher par numéro, patient, téléphone ou texte…"
+  },
+  "Send every waiting message now?": {
+   "ar": "إرسال كل الرسائل المنتظرة الآن؟",
+   "en": "Send every waiting message now?",
+   "fr": "Envoyer maintenant tous les messages en attente ?"
+  },
+  "Send the queue": {
+   "ar": "أرسل المنتظر",
+   "en": "Send the queue",
+   "fr": "Envoyer la file"
+  },
+  "Sent today": {
+   "ar": "أُرسلت اليوم",
+   "en": "Sent today",
+   "fr": "Envoyés aujourd'hui"
+  },
+  "Sent: {0}": {
+   "ar": "أُرسلت: {0}",
+   "en": "Sent: {0}",
+   "fr": "Envoyés : {0}"
+  },
+  "Stop all messages to this patient? What is waiting for them is cancelled.": {
+   "ar": "إيقاف كل الرسائل لهذا المريض؟ ما ينتظر الإرسال له سيُلغى.",
+   "en": "Stop all messages to this patient? What is waiting for them is cancelled.",
+   "fr": "Arrêter tous les messages à ce patient ? Ce qui l'attend est annulé."
+  },
+  "Stop messages to this patient": {
+   "ar": "إيقاف الرسائل لهذا المريض",
+   "en": "Stop messages to this patient",
+   "fr": "Arrêter les messages à ce patient"
+  },
+  "The patient's file number, or write one": {
+   "ar": "رقم ملف المريض، أو اكتب رقماً",
+   "en": "The patient's file number, or write one",
+   "fr": "Le numéro du dossier, ou saisissez-en un"
+  },
+  "The words of each message": {
+   "ar": "نص كل رسالة",
+   "en": "The words of each message",
+   "fr": "Le texte de chaque message"
+  },
+  "This patient already asked for no messages": {
+   "ar": "هذا المريض طلب عدم المراسلة بالفعل",
+   "en": "This patient already asked for no messages",
+   "fr": "Ce patient a déjà demandé à ne pas recevoir de messages"
+  },
+  "This patient asked for no messages": {
+   "ar": "هذا المريض طلب عدم المراسلة",
+   "en": "This patient asked for no messages",
+   "fr": "Ce patient a demandé à ne pas recevoir de messages"
+  },
+  "Tries": {
+   "ar": "المحاولات",
+   "en": "Tries",
+   "fr": "Tentatives"
+  },
+  "Use:": {
+   "ar": "استخدم:",
+   "en": "Use:",
+   "fr": "Utilisez :"
+  },
+  "Waiting to go": {
+   "ar": "بانتظار الإرسال",
+   "en": "Waiting to go",
+   "fr": "En attente d'envoi"
+  },
+  "Why (optional)": {
+   "ar": "السبب (اختياري)",
+   "en": "Why (optional)",
+   "fr": "Pourquoi (facultatif)"
+  },
+  "Write a message": {
+   "ar": "اكتب رسالة",
+   "en": "Write a message",
+   "fr": "Écrire un message"
+  },
+  "Write a valid mobile number": {
+   "ar": "اكتب رقم جوال صحيحاً",
+   "en": "Write a valid mobile number",
+   "fr": "Saisissez un numéro de mobile valide"
+  },
+  "Write the message": {
+   "ar": "اكتب الرسالة",
+   "en": "Write the message",
+   "fr": "Saisissez le message"
+  },
+  "Write the message in Arabic and in English": {
+   "ar": "اكتب الرسالة بالعربية والإنجليزية",
+   "en": "Write the message in Arabic and in English",
+   "fr": "Saisissez le message en arabe et en anglais"
+  },
+  "characters": {
+   "ar": "حرفاً",
+   "en": "characters",
+   "fr": "caractères"
+  },
+  "The patient asked for no messages": {
+   "ar": "المريض طلب عدم المراسلة",
+   "en": "The patient asked for no messages",
+   "fr": "Le patient a demandé à ne pas recevoir de messages"
+  },
+  "No valid mobile number on the patient's file": {
+   "ar": "لا يوجد رقم جوال صحيح في ملف المريض",
+   "en": "No valid mobile number on the patient's file",
+   "fr": "Aucun numéro de mobile valide dans le dossier"
+  },
+  "No SMS provider is connected": {
+   "ar": "لا يوجد مزوّد رسائل متصل",
+   "en": "No SMS provider is connected",
+   "fr": "Aucun fournisseur SMS n'est connecté"
+  },
+  "The provider refused the message": {
+   "ar": "رفض المزوّد الرسالة",
+   "en": "The provider refused the message",
+   "fr": "Le fournisseur a refusé le message"
+  },
+  "No SMS provider is connected yet; the messages stay queued": {
+   "ar": "لا يوجد مزوّد رسائل متصل بعد؛ تبقى الرسائل بانتظار الإرسال",
+   "en": "No SMS provider is connected yet; the messages stay queued",
+   "fr": "Aucun fournisseur SMS n'est encore connecté ; les messages restent en attente"
+  },
+  "smk:Booked": {
+   "ar": "تأكيد حجز",
+   "en": "Booking confirmed",
+   "fr": "Rendez-vous confirmé"
+  },
+  "smk:Reminder": {
+   "ar": "تذكير بالموعد",
+   "en": "Reminder",
+   "fr": "Rappel"
+  },
+  "smk:NoShow": {
+   "ar": "موعد فائت",
+   "en": "Missed appointment",
+   "fr": "Rendez-vous manqué"
+  },
+  "smk:LabReady": {
+   "ar": "نتائج جاهزة",
+   "en": "Results ready",
+   "fr": "Résultats prêts"
+  },
+  "smk:Custom": {
+   "ar": "رسالة مكتوبة",
+   "en": "Typed message",
+   "fr": "Message saisi"
+  },
+  "sms:Queued": {
+   "ar": "بانتظار الإرسال",
+   "en": "Waiting",
+   "fr": "En attente"
+  },
+  "sms:Sent": {
+   "ar": "أُرسلت",
+   "en": "Sent",
+   "fr": "Envoyé"
+  },
+  "sms:Failed": {
+   "ar": "فشلت",
+   "en": "Failed",
+   "fr": "Échec"
+  },
+  "sms:Skipped": {
+   "ar": "لم تُرسل",
+   "en": "Not sent",
+   "fr": "Non envoyé"
+  },
+  "sms:Cancelled": {
+   "ar": "ملغاة",
+   "en": "Cancelled",
+   "fr": "Annulé"
+  },
+  "sms:waiting": {
+   "ar": "بانتظار الإرسال أو فشلت",
+   "en": "Waiting or failed",
+   "fr": "En attente ou en échec"
+  },
+  "sms:kind": {
+   "ar": "النوع",
+   "en": "Kind",
+   "fr": "Type"
+  },
+  "sms:no": {
+   "ar": "رقم الرسالة",
+   "en": "Message no.",
+   "fr": "N° du message"
+  },
+  "sms:to": {
+   "ar": "إلى",
+   "en": "To",
+   "fr": "À"
+  },
+  "Unknown placeholder: {0}": {
+   "ar": "متغير غير معروف: {0}",
+   "en": "Unknown placeholder: {0}",
+   "fr": "Variable inconnue : {0}"
+  },
+  "sms:on": {
+   "ar": "يُرسل",
+   "en": "On",
+   "fr": "Activé"
+  }
+ }
+}

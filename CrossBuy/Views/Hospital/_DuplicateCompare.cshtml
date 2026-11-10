@@ -1,0 +1,67 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@model (HospitalMergeSide A, HospitalMergeSide B)
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H57 — two suspected files side by side: their details (a difference is marked), how many records each holds and of
+    what kind, and — for the administrator — which file survives, why, and the merge (it asks first).
+*@
+@{
+    bool canMerge = ViewBag.CanMerge == true;
+    var a = Model.A.Patient; var b = Model.B.Patient;
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+    // the file with more history is offered as the survivor
+    int keep = Model.A.Total >= Model.B.Total ? a.ID : b.ID;
+    var fields = new (string Label, string? A, string? B)[] {
+        (T["Name (Arabic)"].Value, a.Name, b.Name), (T["Name (English)"].Value, a.NameEn, b.NameEn),
+        (T["ID number"].Value, a.NationalId, b.NationalId), (T["Date of birth"].Value, a.BirthDate?.ToString("yyyy-MM-dd", inv), b.BirthDate?.ToString("yyyy-MM-dd", inv)),
+        (T["Mobile"].Value, a.Phone, b.Phone), (T["Blood group"].Value, a.BloodGroup, b.BloodGroup),
+        (T["Allergies"].Value, a.Allergies, b.Allergies), (T["Chronic conditions"].Value, a.ChronicConditions, b.ChronicConditions) };
+}
+<div data-dup-compare data-a="@a.ID" data-b="@b.ID">
+    <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-2 mb-5">
+        <thead><tr class="text-gray-500 fw-bold fs-8 text-uppercase"><th class="w-150px"></th>
+            @foreach (var s in new[] { Model.A, Model.B })
+            {
+                <th><div class="d-flex align-items-center">
+                    <div class="symbol symbol-35px symbol-circle me-3">@if (s.Patient.PhotoPath != null) {<img src="@s.Patient.PhotoPath" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(s.Patient.NameEn ?? s.Patient.Name)" />} else {<span class="symbol-label fw-bold fs-8 hp-initials">@HospitalUi.Initials(s.Patient.NameEn ?? s.Patient.Name)</span>}</div>
+                    <div><a href="@Url.Action("Patient", new { id = s.Patient.ID })" target="_blank" class="text-gray-900 text-hover-primary fw-bold text-none">@DisplayName.Of(s.Patient.Name, s.Patient.NameEn ?? s.Patient.Name)</a>
+                        <div><span class="badge hp-code fs-9 hp-num">@s.Patient.Mrn</span></div></div></div></th>
+            }
+        </tr></thead>
+        <tbody class="fw-semibold text-gray-700">
+            @foreach (var f in fields)
+            {
+                bool differ = !string.IsNullOrWhiteSpace(f.A) && !string.IsNullOrWhiteSpace(f.B) && HospitalPatientMergeRules.Normalise(f.A) != HospitalPatientMergeRules.Normalise(f.B);
+                <tr class="@(differ ? "bg-light-danger" : "")"><td class="text-muted">@f.Label</td><td dir="auto" style="white-space:pre-line">@(f.A ?? "—")</td><td dir="auto" style="white-space:pre-line">@(f.B ?? "—")</td></tr>
+            }
+            <tr><td class="text-muted">@T["Records"]</td>
+                @foreach (var s in new[] { Model.A, Model.B })
+                {
+                    <td><span class="fw-bold text-gray-900 hp-num">@s.Total</span>
+                        <div class="text-muted fs-9">@string.Join(" · ", s.Records.OrderByDescending(r => r.Value).Take(6).Select(r => T["dup:" + r.Key].Value + " " + r.Value))</div>
+                        @if (s.InNow) {<span class="badge badge-light-primary fs-9 mt-1">@T["In hospital now"]</span>} @if (s.HasPortal) {<span class="badge badge-light-info fs-9 mt-1">@T["Has a portal account"]</span>}</td>
+                }
+            </tr>
+        </tbody>
+    </table></div>
+    @if (canMerge)
+    {
+        <div class="notice d-flex rounded border border-danger border-dashed bg-light-danger p-5 mb-4"><i class="ki-outline ki-information-5 fs-2tx text-danger me-3"></i>
+            <div class="fs-7 text-gray-700">@T["Everything of the other file moves to the file you keep; the other file is closed, not deleted, and opening it opens the file you keep. Allergies and chronic conditions of both are kept."]</div></div>
+        <div class="fw-bold text-gray-900 fs-7 mb-2">@T["The file to keep"]</div>
+        <div class="d-flex gap-5 mb-4">
+            @foreach (var s in new[] { Model.A, Model.B })
+            {
+                <label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="radio" name="dupKeep" value="@s.Patient.ID" @(s.Patient.ID == keep ? "checked" : "") /><span class="form-check-label fw-semibold"><span class="hp-num">@s.Patient.Mrn</span> · @s.Total @T["dup:records"]</span></label>
+            }
+        </div>
+        <label class="form-label required fs-7">@T["Why are these one patient?"]</label>
+        <textarea class="form-control form-control-solid mb-4" rows="2" maxlength="500" dir="auto" data-dup-reason></textarea>
+        <div class="d-flex justify-content-end"><button type="button" class="btn btn-danger" data-dup-merge><i class="ki-outline ki-abstract-26 fs-4"></i>@T["Merge the files"]</button></div>
+    }
+    else
+    {
+        <div class="text-muted fs-7">@T["Only the hospital administrator merges files. Tell them about this pair."]</div>
+    }
+</div>

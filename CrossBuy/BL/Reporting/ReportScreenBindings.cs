@@ -72,6 +72,15 @@ namespace CrossBuy.BL.Reporting
         public const string InventoryTransferDetail = "Inventory.TransferDetail";
         public const string InventoryWriteOffDetail = "Inventory.WriteOffDetail";
         public const string InventoryCountDetail = "Inventory.CountDetail";
+        public const string HospitalBill = "Hospital.Bill";
+        public const string HospitalConsult = "Hospital.Consult";
+        public const string HospitalDentalPlan = "Hospital.DentalPlan";
+        public const string HospitalDischarge = "Hospital.Discharge";   // H55
+        public const string HospitalSickLeave = "Hospital.SickLeave";   // H56
+        public const string HospitalBirth = "Hospital.Birth";           // H58
+        public const string HospitalDeath = "Hospital.Death";           // H59
+        public const string HospitalConsent = "Hospital.Consent";       // H60
+        public const string HospitalPatientStatement = "Hospital.PatientStatement";   // H63
     }
 
     public static class ReportScreenBindings
@@ -171,6 +180,19 @@ namespace CrossBuy.BL.Reporting
                 IdParameter = "CountId",
                 SortOrder = 10,
             },
+
+            // THE HOSPITAL'S PAPERS. The bill carries two layouts (the A4 invoice and the clinic receipt);
+            // the dental plan prints as the insurer's claim form.
+            new() { ScreenKey = ReportScreenKeys.HospitalBill, ReportCode = HospitalDocumentDatasetCodes.Bill, IdParameter = "BillId", SortOrder = 10 },
+            new() { ScreenKey = ReportScreenKeys.HospitalConsult, ReportCode = HospitalDocumentDatasetCodes.PrescriptionForm, IdParameter = "EncounterId", SortOrder = 5 },
+            new() { ScreenKey = ReportScreenKeys.HospitalConsult, ReportCode = HospitalDocumentDatasetCodes.Prescription, IdParameter = "EncounterId", SortOrder = 10 },
+            new() { ScreenKey = ReportScreenKeys.HospitalDentalPlan, ReportCode = HospitalDocumentDatasetCodes.DentalClaim, IdParameter = "PlanId", SortOrder = 10 },
+            new() { ScreenKey = ReportScreenKeys.HospitalDischarge, ReportCode = HospitalDocumentDatasetCodes.DischargeSummary, IdParameter = "AdmissionId", SortOrder = 10 },   // H55
+            new() { ScreenKey = ReportScreenKeys.HospitalSickLeave, ReportCode = HospitalDocumentDatasetCodes.SickLeave, IdParameter = "SickLeaveId", SortOrder = 10 },   // H56
+            new() { ScreenKey = ReportScreenKeys.HospitalBirth, ReportCode = HospitalDocumentDatasetCodes.BirthNotice, IdParameter = "BirthId", SortOrder = 10 },   // H58
+            new() { ScreenKey = ReportScreenKeys.HospitalDeath, ReportCode = HospitalDocumentDatasetCodes.DeathCertificate, IdParameter = "DeathId", SortOrder = 10 },   // H59
+            new() { ScreenKey = ReportScreenKeys.HospitalConsent, ReportCode = HospitalDocumentDatasetCodes.Consent, IdParameter = "ConsentId", SortOrder = 10 },   // H60
+            new() { ScreenKey = ReportScreenKeys.HospitalPatientStatement, ReportCode = HospitalDocumentDatasetCodes.PatientStatement, IdParameter = "PatientId", SortOrder = 10 },   // H63
 
             // THE LISTS print their own rows under their own filters. No IdParameter on any of them:
             // there is no single document to pin, and that absence is what tells the menu it is looking

@@ -150,6 +150,7 @@ namespace CrossBuy.BL.Hospital
 			if (!await CanAdmitAsync(ctx, ct)) return HospitalResult.Fail("forbidden");
 			var patient = await _db.HospitalPatients.AsNoTracking().FirstOrDefaultAsync(p => p.ID == input.PatientId && p.CompanyId == ctx.CompanyId && p.IsActive, ct);
 			if (patient == null) return HospitalResult.Fail("not_found");
+			if (patient.DeceasedAt != null) return HospitalResult.Fail("This patient is deceased");   // H59
 			if (await _db.HospitalAdmissions.AnyAsync(a => a.CompanyId == ctx.CompanyId && a.PatientId == patient.ID && a.Status == HospitalAdmissionStatus.Active, ct))
 				return HospitalResult.Fail("This patient is already admitted");
 			var c = (await CandidatesAsync(ctx, input.BedId, ct)).FirstOrDefault();
@@ -223,6 +224,8 @@ namespace CrossBuy.BL.Hospital
 			if (bed == null) return false;
 			if (status == HospitalBedStatus.Occupied && bed.Status != HospitalBedStatus.Vacant) return false;
 			bed.Status = status; bed.UpdatedAt = DateTime.UtcNow; bed.UpdatedByEmployeeId = employeeId;
+			// H67: a bed left to be cleaned opens its terminal-cleaning job on the support desk, saved with this change
+			if (status == HospitalBedStatus.Cleaning) await HospitalSupportDeskService.OpenTurnoverAsync(_db, ctx, bed, employeeId, DateTime.UtcNow, ct);
 			return true;
 		}
 

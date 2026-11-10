@@ -1,0 +1,405 @@
+{
+  "unit": "H45 — incident reports & patient safety",
+  "strings": {
+    "45-day deadline": {
+      "ar": "مهلة ٤٥ يوماً",
+      "en": "45-day deadline",
+      "fr": "Délai de 45 jours"
+    },
+    "A serious harm is closed only through its root-cause analysis": {
+      "ar": "الضرر الجسيم أو المتوسط لا يُغلق إلا بتحليل السبب الجذري",
+      "en": "A serious harm is closed only through its root-cause analysis",
+      "fr": "Un dommage grave ne se clôt que par son analyse des causes"
+    },
+    "Actions agreed": {
+      "ar": "الإجراءات المتفق عليها",
+      "en": "Actions agreed",
+      "fr": "Actions décidées"
+    },
+    "Affected patient": {
+      "ar": "المريض المتأثر",
+      "en": "Affected patient",
+      "fr": "Patient concerné"
+    },
+    "Affected patient (optional)": {
+      "ar": "المريض المتأثر (اختياري)",
+      "en": "Affected patient (optional)",
+      "fr": "Patient concerné (facultatif)"
+    },
+    "Anonymous": {
+      "ar": "بدون اسم",
+      "en": "Anonymous",
+      "fr": "Anonyme"
+    },
+    "Any staff member can report in a minute, anonymously if they wish; serious events open a root-cause analysis automatically.": {
+      "ar": "أي موظف يبلغ خلال دقيقة، ويمكن الإبلاغ دون ذكر الاسم؛ الحوادث الجسيمة تفتح تحليل سبب جذري تلقائياً.",
+      "en": "Any staff member can report in a minute, anonymously if they wish; serious events open a root-cause analysis automatically.",
+      "fr": "Tout membre du personnel déclare en une minute, anonymement s'il le souhaite ; les événements graves ouvrent automatiquement une analyse des causes."
+    },
+    "Choose the harm level": {
+      "ar": "اختر درجة الضرر",
+      "en": "Choose the harm level",
+      "fr": "Choisissez le niveau de dommage"
+    },
+    "Choose the incident type": {
+      "ar": "اختر نوع الحادث",
+      "en": "Choose the incident type",
+      "fr": "Choisissez le type d'incident"
+    },
+    "Choose the ward": {
+      "ar": "اختر الجناح",
+      "en": "Choose the ward",
+      "fr": "Choisissez le service"
+    },
+    "Choose where it happened": {
+      "ar": "اختر مكان الحادث",
+      "en": "Choose where it happened",
+      "fr": "Choisissez où cela s'est produit"
+    },
+    "Close the report": {
+      "ar": "إغلاق البلاغ",
+      "en": "Close the report",
+      "fr": "Clôturer la déclaration"
+    },
+    "Close this report?": {
+      "ar": "إغلاق هذا البلاغ؟",
+      "en": "Close this report?",
+      "fr": "Clôturer cette déclaration ?"
+    },
+    "Falls": {
+      "ar": "حالات سقوط",
+      "en": "Falls",
+      "fr": "Chutes"
+    },
+    "Harm": {
+      "ar": "الضرر",
+      "en": "Harm",
+      "fr": "Dommage"
+    },
+    "Harm level": {
+      "ar": "درجة الضرر",
+      "en": "Harm level",
+      "fr": "Niveau de dommage"
+    },
+    "Incident report": {
+      "ar": "بلاغ حادث",
+      "en": "Incident report",
+      "fr": "Déclaration d'incident"
+    },
+    "Incident reports & patient safety": {
+      "ar": "بلاغات الحوادث وسلامة المرضى",
+      "en": "Incident reports & patient safety",
+      "fr": "Déclarations d'incidents et sécurité des patients"
+    },
+    "Incident type": {
+      "ar": "نوع الحادث",
+      "en": "Incident type",
+      "fr": "Type d'incident"
+    },
+    "Incidents": {
+      "ar": "البلاغات",
+      "en": "Incidents",
+      "fr": "Incidents"
+    },
+    "It will be sent without your name, and your name cannot be added later.": {
+      "ar": "سيُرسل بدون اسمك، ولا يمكن إضافة اسمك لاحقًا.",
+      "en": "It will be sent without your name, and your name cannot be added later.",
+      "fr": "Elle sera envoyée sans votre nom, qui ne pourra pas être ajouté ensuite."
+    },
+    "Location": {
+      "ar": "المكان",
+      "en": "Location",
+      "fr": "Lieu"
+    },
+    "Medication errors": {
+      "ar": "أخطاء دوائية",
+      "en": "Medication errors",
+      "fr": "Erreurs médicamenteuses"
+    },
+    "New report": {
+      "ar": "بلاغ جديد",
+      "en": "New report",
+      "fr": "Nouvelle déclaration"
+    },
+    "No incident reported yet.": {
+      "ar": "لا توجد بلاغات بعد.",
+      "en": "No incident reported yet.",
+      "fr": "Aucun incident déclaré pour l'instant."
+    },
+    "Only an open analysis is written": {
+      "ar": "لا يُكتب إلا في تحليل مفتوح",
+      "en": "Only an open analysis is written",
+      "fr": "Seule une analyse ouverte se rédige"
+    },
+    "Open a root-cause analysis": {
+      "ar": "فتح تحليل سبب جذري",
+      "en": "Open a root-cause analysis",
+      "fr": "Ouvrir une analyse des causes"
+    },
+    "Open a root-cause analysis (due in 45 days)?": {
+      "ar": "فتح تحليل سبب جذري (مهلته ٤٥ يوماً)؟",
+      "en": "Open a root-cause analysis (due in 45 days)?",
+      "fr": "Ouvrir une analyse des causes (sous 45 jours) ?"
+    },
+    "Open root-cause analyses": {
+      "ar": "تحليل سبب جذري مفتوح",
+      "en": "Open root-cause analyses",
+      "fr": "Analyses des causes ouvertes"
+    },
+    "Outcome (to close without an analysis)": {
+      "ar": "النتيجة (للإغلاق بدون تحليل)",
+      "en": "Outcome (to close without an analysis)",
+      "fr": "Conclusion (pour clôturer sans analyse)"
+    },
+    "Quality": {
+      "ar": "الجودة",
+      "en": "Quality",
+      "fr": "Qualité"
+    },
+    "Report": {
+      "ar": "البلاغ",
+      "en": "Report",
+      "fr": "Déclaration"
+    },
+    "Report sent to quality management": {
+      "ar": "أُرسل البلاغ لإدارة الجودة",
+      "en": "Report sent to quality management",
+      "fr": "Déclaration envoyée à la qualité"
+    },
+    "Reporter": {
+      "ar": "المبلّغ",
+      "en": "Reporter",
+      "fr": "Déclarant"
+    },
+    "Reporting culture: healthy rise": {
+      "ar": "ثقافة الإبلاغ: ارتفاع جيد",
+      "en": "Reporting culture: healthy rise",
+      "fr": "Culture de déclaration : hausse saine"
+    },
+    "Reporting is for learning, not blame": {
+      "ar": "الإبلاغ للتعلم لا للعقاب",
+      "en": "Reporting is for learning, not blame",
+      "fr": "Déclarer pour apprendre, pas pour blâmer"
+    },
+    "Reports": {
+      "ar": "البلاغات",
+      "en": "Reports",
+      "fr": "Déclarations"
+    },
+    "Reports this month": {
+      "ar": "بلاغات هذا الشهر",
+      "en": "Reports this month",
+      "fr": "Déclarations ce mois-ci"
+    },
+    "Root cause": {
+      "ar": "السبب الجذري",
+      "en": "Root cause",
+      "fr": "Cause racine"
+    },
+    "Root-cause analysis": {
+      "ar": "تحليل السبب الجذري",
+      "en": "Root-cause analysis",
+      "fr": "Analyse des causes"
+    },
+    "Save the analysis": {
+      "ar": "حفظ التحليل",
+      "en": "Save the analysis",
+      "fr": "Enregistrer l'analyse"
+    },
+    "Send this report to quality management?": {
+      "ar": "إرسال هذا البلاغ لإدارة الجودة؟",
+      "en": "Send this report to quality management?",
+      "fr": "Envoyer cette déclaration à la qualité ?"
+    },
+    "Start review": {
+      "ar": "بدء المراجعة",
+      "en": "Start review",
+      "fr": "Commencer la revue"
+    },
+    "Start reviewing this report?": {
+      "ar": "بدء مراجعة هذا البلاغ؟",
+      "en": "Start reviewing this report?",
+      "fr": "Commencer la revue de cette déclaration ?"
+    },
+    "Submit report": {
+      "ar": "إرسال البلاغ",
+      "en": "Submit report",
+      "fr": "Envoyer la déclaration"
+    },
+    "Submit without my name": {
+      "ar": "إرسال البلاغ بدون ذكر اسمي",
+      "en": "Submit without my name",
+      "fr": "Envoyer sans mon nom"
+    },
+    "The incident tables are not created yet (hospital_h45_incidents.sql)": {
+      "ar": "جداول البلاغات لم تُنشأ بعد (hospital_h45_incidents.sql)",
+      "en": "The incident tables are not created yet (hospital_h45_incidents.sql)",
+      "fr": "Les tables des incidents ne sont pas encore créées (hospital_h45_incidents.sql)"
+    },
+    "This report cannot move to that step from where it is": {
+      "ar": "لا ينتقل هذا البلاغ إلى تلك الخطوة من حالته الحالية",
+      "en": "This report cannot move to that step from where it is",
+      "fr": "Cette déclaration ne peut pas passer à cette étape depuis son état"
+    },
+    "What happened?": {
+      "ar": "ماذا حدث؟",
+      "en": "What happened?",
+      "fr": "Que s'est-il passé ?"
+    },
+    "Write the actions agreed before closing the analysis": {
+      "ar": "اكتب الإجراءات المتفق عليها قبل إغلاق التحليل",
+      "en": "Write the actions agreed before closing the analysis",
+      "fr": "Indiquez les actions décidées avant de clôturer l'analyse"
+    },
+    "Write the outcome before closing": {
+      "ar": "اكتب النتيجة قبل الإغلاق",
+      "en": "Write the outcome before closing",
+      "fr": "Indiquez la conclusion avant de clôturer"
+    },
+    "Write the root cause before closing the analysis": {
+      "ar": "اكتب السبب الجذري قبل إغلاق التحليل",
+      "en": "Write the root cause before closing the analysis",
+      "fr": "Indiquez la cause racine avant de clôturer l'analyse"
+    },
+    "Write what happened (a sentence at least)": {
+      "ar": "اكتب ماذا حدث (جملة على الأقل)",
+      "en": "Write what happened (a sentence at least)",
+      "fr": "Décrivez ce qui s'est passé (une phrase au moins)"
+    },
+    "harm:Mild": {
+      "ar": "ضرر بسيط",
+      "en": "Mild harm",
+      "fr": "Dommage léger"
+    },
+    "harm:Moderate": {
+      "ar": "ضرر متوسط",
+      "en": "Moderate harm",
+      "fr": "Dommage modéré"
+    },
+    "harm:NearMiss": {
+      "ar": "كاد أن يحدث",
+      "en": "Near miss",
+      "fr": "Presque-incident"
+    },
+    "harm:NoHarm": {
+      "ar": "بدون ضرر",
+      "en": "No harm",
+      "fr": "Sans dommage"
+    },
+    "harm:Severe": {
+      "ar": "ضرر جسيم",
+      "en": "Severe harm",
+      "fr": "Dommage grave"
+    },
+    "inc:Closed": {
+      "ar": "مغلق",
+      "en": "Closed",
+      "fr": "Clôturé"
+    },
+    "inc:New": {
+      "ar": "جديد",
+      "en": "New",
+      "fr": "Nouveau"
+    },
+    "inc:Rca": {
+      "ar": "تحليل السبب الجذري",
+      "en": "Root-cause analysis",
+      "fr": "Analyse des causes"
+    },
+    "inc:Review": {
+      "ar": "قيد المراجعة",
+      "en": "Under review",
+      "fr": "En revue"
+    },
+    "kind:EquipmentFailure": {
+      "ar": "عطل جهاز",
+      "en": "Equipment failure",
+      "fr": "Panne d'équipement"
+    },
+    "kind:Fall": {
+      "ar": "سقوط مريض",
+      "en": "Patient fall",
+      "fr": "Chute de patient"
+    },
+    "kind:Infection": {
+      "ar": "عدوى مكتسبة",
+      "en": "Hospital-acquired infection",
+      "fr": "Infection nosocomiale"
+    },
+    "kind:MedicationError": {
+      "ar": "خطأ دوائي",
+      "en": "Medication error",
+      "fr": "Erreur médicamenteuse"
+    },
+    "kind:Other": {
+      "ar": "أخرى",
+      "en": "Other",
+      "fr": "Autre"
+    },
+    "kind:WrongPatient": {
+      "ar": "خطأ في هوية المريض",
+      "en": "Wrong patient",
+      "fr": "Erreur d'identité du patient"
+    },
+    "next due {0}": {
+      "ar": "أقرب موعد {0}",
+      "en": "next due {0}",
+      "fr": "prochaine échéance {0}"
+    },
+    "no patient-days yet this month": {
+      "ar": "لا توجد أيام مرضى هذا الشهر بعد",
+      "en": "no patient-days yet this month",
+      "fr": "pas encore de journées patients ce mois-ci"
+    },
+    "per 1,000 patient-days": {
+      "ar": "لكل ١٠٠٠ يوم مريض",
+      "en": "per 1,000 patient-days",
+      "fr": "pour 1 000 journées patients"
+    },
+    "place:Clinics": {
+      "ar": "العيادات",
+      "en": "Clinics",
+      "fr": "Consultations"
+    },
+    "place:Emergency": {
+      "ar": "الطوارئ",
+      "en": "Emergency",
+      "fr": "Urgences"
+    },
+    "place:Imaging": {
+      "ar": "الأشعة",
+      "en": "Imaging",
+      "fr": "Imagerie"
+    },
+    "place:Laboratory": {
+      "ar": "المختبر",
+      "en": "Laboratory",
+      "fr": "Laboratoire"
+    },
+    "place:Other": {
+      "ar": "مكان آخر",
+      "en": "Elsewhere",
+      "fr": "Ailleurs"
+    },
+    "place:Pharmacy": {
+      "ar": "الصيدلية",
+      "en": "Pharmacy",
+      "fr": "Pharmacie"
+    },
+    "place:Theatre": {
+      "ar": "العمليات",
+      "en": "Theatre",
+      "fr": "Bloc opératoire"
+    },
+    "{0} last month": {
+      "ar": "{0} الشهر الماضي",
+      "en": "{0} last month",
+      "fr": "{0} le mois dernier"
+    },
+    "rca:due": {
+      "ar": "الموعد النهائي",
+      "en": "due",
+      "fr": "échéance"
+    }
+  }
+}

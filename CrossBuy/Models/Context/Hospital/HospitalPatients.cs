@@ -82,6 +82,11 @@ namespace CrossBuy.Models.Context.Hospital
 		public string? PhotoPath { get; set; }
 		/// H7: the price list the patient's bills use (null = the main list) until insurance contracts assign one.
 		public int? PriceListId { get; set; }
+		/// H57: this file was a duplicate, merged into that one (closed: IsActive = false; opening it opens the survivor).
+		public int? MergedIntoPatientId { get; set; }
+		public DateTime? MergedAt { get; set; }
+		/// H59: when the patient died (from the death certificate); a deceased file is not booked or admitted.
+		public DateTime? DeceasedAt { get; set; }
 
 		public bool IsActive { get; set; } = true;
 		public DateTime CreatedAt { get; set; }
@@ -101,6 +106,20 @@ namespace CrossBuy.Models.Context.Hospital
 		public DateTime At { get; set; }
 	}
 
+	/// H57: one merge of a duplicate file into a surviving one — who, when, why, and what moved (JSON: table → rows).
+	public class HospitalPatientMerge
+	{
+		public int ID { get; set; }
+		public int CompanyId { get; set; }
+		public int SurvivorPatientId { get; set; }
+		public int MergedPatientId { get; set; }
+		public string MergedMrn { get; set; } = "";
+		public string Reason { get; set; } = "";
+		public string Moved { get; set; } = "{}";
+		public DateTime MergedAt { get; set; }
+		public int MergedByEmployeeId { get; set; }
+	}
+
 	public static class HospitalPatientsModel
 	{
 		public static void Configure(ModelBuilder b)
@@ -113,6 +132,14 @@ namespace CrossBuy.Models.Context.Hospital
 				e.HasIndex(x => new { x.CompanyId, x.Phone });
 			});
 			b.Entity<HospitalPatientAccessLog>(e => e.HasIndex(x => new { x.CompanyId, x.PatientId, x.At }));
+			b.Entity<HospitalPatientMerge>(e =>
+			{
+				e.ToTable("HospitalPatientMerges");   // H57 (hospital_h57_patient_merge.sql)
+				e.Property(x => x.MergedMrn).HasMaxLength(20);
+				e.Property(x => x.Reason).HasMaxLength(500);
+				e.HasIndex(x => x.MergedPatientId).IsUnique();
+				e.HasIndex(x => x.CompanyId);
+			});
 		}
 	}
 }

@@ -1,0 +1,383 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model IReadOnlyList<HospitalErRow>
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Emergency"].Value;
+    var stats = (HospitalErStats)ViewBag.Stats;
+    var allBays = (ViewBag.Bays as IReadOnlyList<HospitalErBayRow>) ?? Array.Empty<HospitalErBayRow>();
+    var bays = allBays.Where(b => b.Bay.IsActive).ToList();
+    bool canManage = ViewBag.CanManage == true;
+    var doctors = (ViewBag.Doctors as List<(int ID, string Name, string? Photo, string NameEn)>) ?? new();
+    bool canAdmit = ViewBag.CanAdmit == true, canConsult = ViewBag.CanConsult == true, canRegister = ViewBag.CanRegister == true;
+    string Who(HospitalErRow r) => r.PatientName == null ? (r.Visit.UnknownLabel ?? T["Unknown patient"].Value) : DisplayName.Of(r.PatientName, r.PatientNameEn);
+    string Vitals(HospitalErVisit v)
+    {
+        var parts = new List<string>();
+        if (v.BpSystolic != null) parts.Add($"BP {v.BpSystolic}/{v.BpDiastolic?.ToString() ?? "–"}");
+        if (v.HeartRate != null) parts.Add($"HR {v.HeartRate}");
+        if (v.SpO2 != null) parts.Add($"SpO₂ {v.SpO2}%");
+        if (v.RespRate != null) parts.Add($"RR {v.RespRate}");
+        if (v.TemperatureC != null) parts.Add($"T {v.TemperatureC.Value.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture)}");
+        return string.Join(" · ", parts);
+    }
+    object CardData(HospitalErRow r) => new { id = r.Visit.ID, no = r.Visit.VisitNo, who = Who(r), stage = r.Visit.Stage, esi = r.Visit.Esi, seen = r.Visit.SeenAt != null,         doctorId = r.Visit.PractitionerId, bayId = r.Visit.BayId, known = r.Visit.PatientId != null, bp = r.Visit.BpSystolic, bpd = r.Visit.BpDiastolic, hr = r.Visit.HeartRate, rr = r.Visit.RespRate,
+        t = r.Visit.TemperatureC, spo2 = r.Visit.SpO2, pain = r.Visit.PainScore, note = r.Visit.TriageNote };
+    var resus = Model.Where(r => r.Visit.Esi == 1).ToList();
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@* The ESI palette. The prototype's ESI 3 was yellow: the house bans amber/yellow, so 3 takes the brand blue. *@
+<style>
+    /* the lanes scroll inside the board; the page never widens with them */
+    .er-board { width: 0; min-width: 100%; }   /* width 0: the lanes never push their minimum width up to the page */
+    .er-lane-col { flex: 1 0 230px; min-width: 230px; }
+    .er-lane { background: var(--bs-gray-100, #F9F9F9); border-radius: .75rem; padding: 1rem; min-height: 240px; height: 100%; }
+    .er-card { background: var(--bs-body-bg, #fff); border-radius: .65rem; padding: .85rem; margin-bottom: .75rem; border-inline-start: 4px solid #C4CADA; box-shadow: 0 1px 3px rgba(20,30,60,.06); cursor: pointer; overflow: hidden; }
+    .er-esi-1 { border-inline-start-color: #B91C3B; } .er-esi-2 { border-inline-start-color: #E8496B; } .er-esi-3 { border-inline-start-color: var(--cb-brand, #3A5795); }
+    .er-esi-4 { border-inline-start-color: #17A34A; } .er-esi-5 { border-inline-start-color: #8A94A6; }
+    .er-badge-1 { background: #B91C3B; color: #fff; } .er-badge-2 { background: #E8496B; color: #fff; } .er-badge-3 { background: var(--cb-blue-50, #E7F0FF); color: #145DBF; }
+    .er-badge-4 { background: #DCF7E6; color: #0E7A39; } .er-badge-5 { background: #EEF0F4; color: #4B5468; } .er-badge-0 { background: #EEF0F4; color: #4B5468; }
+    .er-esi-pick .btn-check:checked + .btn { outline: 2px solid var(--cb-brand, #3A5795); outline-offset: 2px; }
+</style>
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Emergency"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted">@T["Emergency"]</li></ul>
+        </div>
+        <div class="d-flex align-items-center gap-2 gap-lg-3 d-print-none">
+            @if (canManage) { <button type="button" class="btn btn-sm btn-light-primary" data-bs-toggle="modal" data-bs-target="#baysModal"><i class="ki-outline ki-setting-3 fs-4"></i>@T["Bays"]</button> }
+            @if (canAdmit) { <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#arriveModal"><i class="ki-outline ki-plus fs-4"></i>@T["New arrival"]</button> }
+        </div>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="row g-5 g-xl-8 mb-5">
+            <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
+                <div class="text-muted fw-semibold fs-7 mb-1">@T["In department now"]</div>
+                <div class="fs-2hx fw-bold hp-num text-gray-900">@stats.InDepartment</div>
+                <div class="text-muted fs-8 mt-1">@T["Bays"] <span class="hp-num">@stats.Capacity</span></div>
+            </div></div></div>
+            <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
+                <div class="text-muted fw-semibold fs-7 mb-1">@T["Door-to-doctor"]</div>
+                <div class="fs-2hx fw-bold hp-num @(stats.DoorToDoctorToday > 30 ? "text-danger" : "text-gray-900")">@(stats.DoorToDoctorToday?.ToString() ?? "—") <span class="fs-6">@T["min"]</span></div>
+                <div class="text-muted fs-8 mt-1">@T["today · target 30 min"]</div>
+            </div></div></div>
+            <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
+                <div class="text-muted fw-semibold fs-7 mb-1">@T["Longest wait"]</div>
+                <div class="fs-2hx fw-bold hp-num @(stats.LongestWaitMinutes > 45 ? "text-danger" : "text-gray-900")">@(stats.LongestWaitMinutes?.ToString() ?? "—") <span class="fs-6">@T["min"]</span></div>
+                <div class="text-muted fs-8 mt-1">@(stats.LongestWaitEsi is int lw ? "ESI " + lw : T["nobody waiting"].Value)</div>
+            </div></div></div>
+            <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
+                <div class="text-muted fw-semibold fs-7 mb-1">@T["Left without being seen"]</div>
+                <div class="fs-2hx fw-bold hp-num text-gray-900">@(stats.LeftWithoutBeingSeenRate30d is decimal lr ? lr.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture) + "%" : "—")</div>
+                <div class="text-muted fs-8 mt-1">@T["last 30 days"]</div>
+            </div></div></div>
+        </div>
+
+        @foreach (var r in resus)
+        {
+            <div class="notice d-flex rounded border border-dashed p-6 mb-5 bg-light-danger border-danger">
+                <span class="symbol symbol-45px me-5 flex-shrink-0"><span class="symbol-label bg-danger"><i class="ki-outline ki-notification-status fs-2x text-white"></i></span></span>
+                <div class="d-flex flex-stack flex-grow-1 flex-wrap flex-md-nowrap">
+                    <div class="fw-semibold pe-5"><h4 class="text-gray-900 fw-bold mb-1">@T["Resuscitation"]@if (r.Bay != null) {<text> — @T["Bay"] <span class="hp-num">@r.Bay</span></text>}</h4>
+                        <div class="fs-6 text-gray-700">@Who(r): @r.Visit.Complaint @if (Vitals(r.Visit).Length > 0) {<bdi dir="ltr" class="hp-num ms-1">@Vitals(r.Visit)</bdi>}</div></div>
+                    <span class="badge er-badge-1 fs-7 flex-shrink-0">ESI 1</span>
+                </div>
+            </div>
+        }
+
+        @if (bays.Count == 0)
+        {
+            <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice">
+                <span class="symbol symbol-45px me-5 flex-shrink-0"><span class="symbol-label"><i class="ki-outline ki-information-5 fs-2x text-white"></i></span></span>
+                <div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@T["No emergency bays yet"]</h4>
+                    <div class="fs-6 text-gray-700">@T["Add the department's bays (resuscitation, acute, minor) to place patients in them."]@if (canManage) {<text> <a href="#" data-bs-toggle="modal" data-bs-target="#baysModal" class="fw-bold">@T["Bays"]</a></text>}</div></div>
+            </div>
+        }
+
+        <div class="card">
+            <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
+                <span class="card-label fw-bold text-gray-900 fs-4">@T["Emergency board"]</span>
+                <span class="text-muted mt-1 fw-semibold fs-7">@T["ESI triage scale from 1 (most urgent) to 5"]</span>
+            </div></div>
+            <div class="card-body pt-2">
+                <div class="d-flex gap-4 overflow-auto pb-3 er-board">
+                    @foreach (var lane in HospitalErStage.Board)
+                    {
+                        var items = Model.Where(r => r.Visit.Stage == lane).ToList();
+                        <div class="er-lane-col"><div class="er-lane">
+                            <div class="d-flex flex-stack mb-4"><span class="fw-bold text-gray-800">@T["er:" + lane]</span><span class="badge badge-light-primary hp-num">@items.Count</span></div>
+                            @foreach (var r in items)
+                            {
+                                var v = r.Visit; int esi = v.Esi ?? 0; var initials = HospitalUi.Initials(r.PatientNameEn ?? r.Visit.UnknownLabel);
+                                <div class="er-card er-esi-@esi" data-card="@System.Text.Json.JsonSerializer.Serialize(CardData(r))">
+                                    <div class="d-flex flex-stack mb-3">
+                                        <span class="badge er-badge-@esi fw-bold">@(v.Esi == null ? T["Not triaged"].Value : "ESI " + v.Esi)</span>
+                                        <span class="text-muted fs-8"><i class="ki-outline ki-time fs-8"></i> <span class="hp-num fw-bold @(r.WaitMinutes > 45 && v.SeenAt == null ? "text-danger" : "")">@r.WaitMinutes</span> @T["min"]</span>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="symbol symbol-35px symbol-circle flex-shrink-0">@if (r.Photo != null) {<img src="@r.Photo" alt="" style="object-fit:cover" data-initials="@initials" />} else {<span class="symbol-label fw-bold fs-8 hp-initials">@initials</span>}</div>
+                                        <div class="min-w-0"><div class="fw-bold text-gray-900 text-break lh-sm">@Who(r)</div>
+                                            <div class="text-muted fs-8">@if (r.Mrn != null) {<span class="hp-num">@r.Mrn</span>} else {<span class="text-danger">@T["not identified"]</span>} · <span class="hp-num">@v.VisitNo</span></div></div>
+                                    </div>
+                                    <div class="fw-semibold text-gray-800 mt-3 fs-7">@v.Complaint</div>
+                                    @if (Vitals(v).Length > 0) {<div class="text-muted fs-8 mt-1"><bdi dir="ltr" class="hp-num">@Vitals(v)</bdi>@if (r.DangerZone) {<span class="badge badge-light-danger fs-9 ms-1">@T["danger-zone vitals"]</span>}</div>}
+                                    @if (r.Allergies != null) {<div class="text-danger fs-8 mt-1"><i class="ki-outline ki-information-5 fs-8 text-danger"></i> @r.Allergies</div>}
+                                    <div class="d-flex flex-stack mt-3 pt-3 border-top border-gray-200">
+                                        <span class="fs-8 text-muted">@T["Bay"] <span class="hp-num fw-bold text-gray-700">@(r.Bay ?? "—")</span></span>
+                                        @if (r.Doctor != null)
+                                        {
+                                            <span class="d-flex align-items-center gap-2"><span class="fs-8 text-gray-700">@DisplayName.Of(r.Doctor, r.DoctorEn)</span>
+                                                <span class="symbol symbol-25px symbol-circle">@if (r.DoctorPhoto != null) {<img src="@r.DoctorPhoto" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(r.DoctorEn)" />} else {<span class="symbol-label fw-bold fs-9 hp-initials">@HospitalUi.Initials(r.DoctorEn)</span>}</span></span>
+                                        }
+                                        else { <span class="fs-8 text-muted">@T["No doctor yet"]</span> }
+                                    </div>
+                                </div>
+                            }
+                        </div></div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div></div>
+</div>
+
+@if (canAdmit)
+{
+    <div class="modal fade" id="arriveModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-650px"><div class="modal-content">
+        <div class="modal-header"><h2 class="fw-bold m-0">@T["Emergency arrival"]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body py-8 px-lg-10">
+            <div class="mb-5"><label class="form-label">@T["Patient"]</label><select class="form-select form-select-solid" data-a-patient data-placeholder="@T["Search by name or MRN"]"></select>
+                <div class="form-text">@T["Leave it empty for an unknown patient and describe them below."]</div></div>
+            <div class="mb-5" data-a-unknown-wrap><label class="form-label">@T["Unknown patient"]</label><input class="form-control form-control-solid" data-a-unknown maxlength="100" placeholder="@T["e.g. unknown man, about 40, brought by ambulance"]" /></div>
+            <div class="row g-5 mb-5">
+                <div class="col-md-5"><label class="form-label required">@T["Arrival mode"]</label><select class="form-select form-select-solid" data-a-mode data-control="select2" data-hide-search="true" data-dropdown-parent="#arriveModal">
+                    @foreach (var m in HospitalErArrival.All) { <option value="@m">@T["arr:" + m]</option> }</select></div>
+                <div class="col-md-7"><label class="form-label required">@T["Complaint"]</label><input class="form-control form-control-solid" data-a-complaint maxlength="300" /></div>
+            </div>
+            <label class="form-label">@T["Triage at the door"] <span class="text-muted fs-8">@T["ESI 1 is triaged on sight; any other level is triaged with vital signs"]</span></label>
+            <div class="d-flex gap-2 er-esi-pick">
+                <label class="flex-fill"><input type="radio" class="btn-check" name="a-esi" value="" checked /><span class="btn btn-sm w-100 er-badge-0 fw-bold">@T["Later"]</span></label>
+                <label class="flex-fill"><input type="radio" class="btn-check" name="a-esi" value="1" /><span class="btn btn-sm w-100 er-badge-1 fw-bold">ESI 1</span></label>
+            </div>
+        </div>
+        <div class="modal-footer flex-center"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-a-save>@T["Register arrival"]</button></div>
+    </div></div></div>
+}
+
+<div class="modal fade" id="visitModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-750px"><div class="modal-content">
+    <div class="modal-header"><h2 class="fw-bold m-0"><span data-v-who></span> <span class="text-muted fs-6 hp-num" data-v-no></span></h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="modal-body py-6 px-lg-10">
+        @if (canAdmit)
+        {
+            <h5 class="fw-bold text-gray-900 mb-3">@T["Triage"]</h5>
+            <div class="d-flex gap-2 er-esi-pick mb-4">
+                @for (int n = 1; n <= 5; n++) { <label class="flex-fill"><input type="radio" class="btn-check" name="v-esi" value="@n" /><span class="btn btn-sm w-100 er-badge-@n fw-bold">ESI @n</span></label> }
+            </div>
+            <div class="row g-3 mb-3">
+                <div class="col-4 col-md-2"><label class="form-label fs-8">BP sys</label><input class="form-control form-control-sm form-control-solid hp-num" dir="ltr" type="number" data-t="bpSystolic" /></div>
+                <div class="col-4 col-md-2"><label class="form-label fs-8">BP dia</label><input class="form-control form-control-sm form-control-solid hp-num" dir="ltr" type="number" data-t="bpDiastolic" /></div>
+                <div class="col-4 col-md-2"><label class="form-label fs-8">HR</label><input class="form-control form-control-sm form-control-solid hp-num" dir="ltr" type="number" data-t="heartRate" /></div>
+                <div class="col-4 col-md-2"><label class="form-label fs-8">SpO₂ %</label><input class="form-control form-control-sm form-control-solid hp-num" dir="ltr" type="number" data-t="spO2" /></div>
+                <div class="col-4 col-md-2"><label class="form-label fs-8">RR</label><input class="form-control form-control-sm form-control-solid hp-num" dir="ltr" type="number" data-t="respRate" /></div>
+                <div class="col-4 col-md-2"><label class="form-label fs-8">T °C</label><input class="form-control form-control-sm form-control-solid hp-num" dir="ltr" type="number" step="0.1" data-t="temperatureC" /></div>
+                <div class="col-4 col-md-2"><label class="form-label fs-8">@T["Pain 0–10"]</label><input class="form-control form-control-sm form-control-solid hp-num" dir="ltr" type="number" min="0" max="10" data-t="painScore" /></div>
+                <div class="col-8 col-md-10"><label class="form-label fs-8">@T["Triage note"]</label><input class="form-control form-control-sm form-control-solid" maxlength="500" data-t="note" /></div>
+            </div>
+            <div class="text-danger fs-8 mb-3 d-none" data-v-danger><i class="ki-outline ki-information-5 fs-8 text-danger"></i> @T["Danger-zone vital signs: consider ESI 2."]</div>
+            <button type="button" class="btn btn-sm btn-light-primary mb-6" data-v-triage>@T["Save triage"]</button>
+
+            <div class="separator mb-5"></div>
+            <div class="row g-4 mb-5">
+                <div class="col-md-6"><label class="form-label">@T["Bay"]</label><select class="form-select form-select-solid" data-v-bay data-placeholder="@T["No bay"]">
+                    <option value="">@T["No bay"]</option>
+                    @foreach (var b in bays) { <option value="@b.Bay.ID">@b.Bay.Code · @DisplayName.Of(b.Bay.Name, b.Bay.NameEn)@(b.VisitId != null ? " (" + T["Occupied"].Value + ")" : "")</option> }</select></div>
+                <div class="col-md-6 d-flex align-items-end"><button type="button" class="btn btn-sm btn-light-primary" data-v-bay-save>@T["Place in bay"]</button></div>
+                <div class="col-md-6"><label class="form-label">@T["Doctor"]</label><select class="form-select form-select-solid" data-v-doctor data-person-select data-allow-clear data-placeholder="—">
+                    <option value="">—</option>
+                    @foreach (var d in doctors) { <option value="@d.ID" data-photo="@d.Photo" data-initials="@HospitalUi.Initials(d.NameEn)">@d.Name</option> }</select></div>
+                <div class="col-md-6"><label class="form-label">@T["Move to"]</label><div class="d-flex flex-wrap gap-2" data-v-moves>
+                    @foreach (var s in HospitalErStage.Board) { <button type="button" class="btn btn-sm btn-light" data-v-move="@s">@T["er:" + s]</button> }
+                </div></div>
+            </div>
+        }
+        @if (canAdmit || canConsult)
+        {
+            <div class="separator mb-5"></div>
+            <h5 class="fw-bold text-gray-900 mb-3">@T["Outcome"]</h5>
+            <div class="row g-4">
+                <div class="col-md-5"><select class="form-select form-select-solid" data-v-outcome>
+                    @foreach (var o in HospitalErOutcome.All) { <option value="@o">@T["out:" + o]</option> }</select></div>
+                <div class="col-md-7"><input class="form-control form-control-solid" maxlength="500" data-v-outcome-note placeholder="@T["Outcome note"]" /></div>
+            </div>
+            <div class="text-muted fs-8 mt-2">@T["An admitted patient is accommodated from the accommodation window; the outcome here records the department's decision."]</div>
+            <button type="button" class="btn btn-sm btn-danger mt-4" data-v-close>@T["Close the visit"]</button>
+        }
+        @if (canRegister)
+        {
+            <div data-v-identify-wrap class="d-none">
+                <div class="separator my-5"></div>
+                <h5 class="fw-bold text-gray-900 mb-3">@T["Identify the patient"]</h5>
+                <div class="d-flex gap-3"><div class="flex-grow-1"><select class="form-select form-select-solid" data-v-identify data-placeholder="@T["Search by name or MRN"]"></select></div>
+                    <button type="button" class="btn btn-sm btn-light-primary" data-v-identify-save>@T["Link the file"]</button></div>
+            </div>
+        }
+    </div>
+</div></div></div>
+
+@if (canManage)
+{
+    <div class="modal fade" id="baysModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-900px"><div class="modal-content">
+        <div class="modal-header"><h2 class="fw-bold m-0">@T["Emergency bays"]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body py-6 px-lg-8">
+            <div class="text-muted fs-7 mb-4">@T["The department's own places. They are not facility beds: a ward never accommodates a patient in an emergency bay."]</div>
+            <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-2 mb-0">
+                <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0"><th class="min-w-80px">@T["Code"]</th><th class="min-w-125px">@T["Name"]</th><th class="min-w-125px">@T["Name (English)"]</th><th class="min-w-100px">@T["Zone"]</th><th class="w-70px">@T["Order"]</th><th class="w-50px">@T["Active"]</th><th class="w-80px"></th></tr></thead>
+                <tbody>
+                    @foreach (var b in allBays.Select(x => x.Bay).Append(null))
+                    {
+                        <tr data-bay-row data-id="@b?.ID">
+                            <td><input class="form-control form-control-sm form-control-solid hp-num" dir="ltr" data-k="code" value="@b?.Code" maxlength="20" placeholder="@(b == null ? T["New"].Value : "")" /></td>
+                            <td><input class="form-control form-control-sm form-control-solid" data-k="name" value="@b?.Name" maxlength="100" /></td>
+                            <td><input class="form-control form-control-sm form-control-solid" dir="ltr" data-k="nameEn" value="@b?.NameEn" maxlength="100" /></td>
+                            <td><select class="form-select form-select-sm form-select-solid" data-k="zone">@foreach (var z in HospitalErZone.All) { <option value="@z" selected="@(b?.Zone == z)">@T["zone:" + z]</option> }</select></td>
+                            <td><input class="form-control form-control-sm form-control-solid hp-num" dir="ltr" type="number" data-k="sortOrder" value="@(b?.SortOrder ?? 0)" /></td>
+                            <td><div class="form-check form-check-sm form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" data-k="isActive" @(b == null || b.IsActive ? "checked" : "") /></div></td>
+                            <td class="text-end"><button type="button" class="btn btn-sm @(b == null ? "btn-primary" : "btn-light")" data-save-bay>@(b == null ? T["Add"] : T["Save"])</button></td>
+                        </tr>
+                    }
+                </tbody>
+            </table></div>
+        </div>
+    </div></div></div>
+}
+
+@section Scripts {
+    <partial name="_PersonSelect" />
+    <script>
+        (function () {
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            var isAr = document.documentElement.dir === 'rtl';
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value),
+                arrive: @Json.Serialize(T["Register the arrival of {0}?"].Value), unknown: @Json.Serialize(T["an unknown patient"].Value), need: @Json.Serialize(T["Enter the presenting complaint"].Value),
+                move: @Json.Serialize(T["Move {0} to {1}?"].Value), close: @Json.Serialize(T["Close the visit of {0} as \"{1}\"? It leaves the board."].Value),
+                identify: @Json.Serialize(T["Link this visit to the file of {0}?"].Value), bay: @Json.Serialize(T["Place {0} in bay {1}?"].Value) };
+            var stageText = @Json.Serialize(HospitalErStage.Board.ToDictionary(s => s, s => T["er:" + s].Value));
+            var root = @Json.Serialize(Url.Action("Emergency")), patients = @Json.Serialize(Url.Action("SearchPatients"));
+            function toast(k, m) { if (window.toastr) toastr[k](m); }
+            function post(url, body) {
+                return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(body || {}) })
+                    .then(function (r) { return r.json().catch(function () { return { ok: false }; }); });
+            }
+            // In place, never a reload: the page is rendered again and its content swapped.
+            function swap() {
+                return fetch(location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.text(); }).then(function (html) {
+                    var f = new DOMParser().parseFromString(html, 'text/html').getElementById('kt_app_content');
+                    if (f) document.getElementById('kt_app_content').innerHTML = f.innerHTML;
+                });
+            }
+            function done(btn, modal) { return function (res) { if (btn) btn.disabled = false; if (!res.ok) { toast('error', res.error || W.failed); return false; } toast('success', W.saved); if (modal) bootstrap.Modal.getOrCreateInstance(modal).hide(); swap(); return true; }; }
+            function picker(el, parent) {
+                if (!el || !window.$ || !$.fn.select2) return;
+                $(el).select2({ width: '100%', dir: isAr ? 'rtl' : 'ltr', dropdownParent: $(parent), placeholder: el.getAttribute('data-placeholder'), allowClear: true,
+                    ajax: { url: patients, dataType: 'json', delay: 200, data: function (p) { return { q: p.term || '' }; }, processResults: function (d) { return { results: d.results || [] }; } } });
+            }
+
+            // ---------------- arrival ----------------
+            var aEl = document.getElementById('arriveModal');
+            if (aEl) {
+                var aPatient = aEl.querySelector('[data-a-patient]');
+                picker(aPatient, aEl);
+                aEl.querySelector('[data-a-save]').addEventListener('click', function (e) {
+                    var btn = e.currentTarget, pid = aPatient.value ? Number(aPatient.value) : null;
+                    var body = { patientId: pid, unknownLabel: aEl.querySelector('[data-a-unknown]').value.trim() || null, arrivalMode: aEl.querySelector('[data-a-mode]').value,
+                        complaint: aEl.querySelector('[data-a-complaint]').value.trim(), esi: (aEl.querySelector('[name=a-esi]:checked') || {}).value ? 1 : null };
+                    if (!body.complaint) { toast('error', W.need); return; }
+                    var who = pid ? $(aPatient).find('option:selected').text() : (body.unknownLabel || W.unknown);
+                    cbConfirm(W.arrive.replace('{0}', who), { kind: body.esi === 1 ? 'danger' : 'primary' }).then(function (ok) {
+                        if (!ok) return; btn.disabled = true; post(root + '/Arrive', body).then(done(btn, aEl));
+                    });
+                });
+            }
+
+            // ---------------- one visit ----------------
+            var vEl = document.getElementById('visitModal'), cur = null;
+            picker(vEl.querySelector('[data-v-identify]'), vEl);
+            document.addEventListener('click', function (e) {
+                var c = e.target.closest('[data-card]'); if (!c) return;
+                cur = JSON.parse(c.getAttribute('data-card'));
+                vEl.querySelector('[data-v-who]').textContent = cur.who; vEl.querySelector('[data-v-no]').textContent = cur.no;
+                vEl.querySelectorAll('[name=v-esi]').forEach(function (r) { r.checked = Number(r.value) === cur.esi; });
+                var map = { bpSystolic: cur.bp, bpDiastolic: cur.bpd, heartRate: cur.hr, spO2: cur.spo2, respRate: cur.rr, temperatureC: cur.t, painScore: cur.pain, note: cur.note };
+                vEl.querySelectorAll('[data-t]').forEach(function (i) { var v = map[i.getAttribute('data-t')]; i.value = v == null ? '' : v; });
+                var bay = vEl.querySelector('[data-v-bay]'); if (bay) bay.value = cur.bayId || '';
+                var doc = vEl.querySelector('[data-v-doctor]'); if (doc) $(doc).val(cur.doctorId ? String(cur.doctorId) : null).trigger('change');
+                vEl.querySelectorAll('[data-v-move]').forEach(function (b) { b.classList.toggle('d-none', b.getAttribute('data-v-move') === cur.stage); });
+                var idw = vEl.querySelector('[data-v-identify-wrap]'); if (idw) idw.classList.toggle('d-none', cur.known);
+                danger();
+                bootstrap.Modal.getOrCreateInstance(vEl).show();
+            });
+            function num(k) { var i = vEl.querySelector('[data-t=' + k + ']'); return i && i.value !== '' ? Number(i.value) : null; }
+            // The ESI danger-zone vitals warn; the nurse decides.
+            function danger() {
+                var hr = num('heartRate'), rr = num('respRate'), sp = num('spO2'), bp = num('bpSystolic'), t = num('temperatureC');
+                var d = (hr != null && hr > 100) || (rr != null && rr > 20) || (sp != null && sp < 92) || (bp != null && bp < 90) || (t != null && t >= 39);
+                var el = vEl.querySelector('[data-v-danger]'); if (el) el.classList.toggle('d-none', !d);
+            }
+            vEl.addEventListener('input', function (e) { if (e.target.matches('[data-t]')) danger(); });
+            vEl.addEventListener('click', function (e) {
+                var t = e.target.closest('[data-v-triage],[data-v-bay-save],[data-v-move],[data-v-close],[data-v-identify-save]'); if (!t || !cur) return;
+                var base = root + '/' + cur.id;
+                if (t.hasAttribute('data-v-triage')) {
+                    var esi = Number((vEl.querySelector('[name=v-esi]:checked') || {}).value || 0);
+                    var body = { esi: esi }; ['bpSystolic', 'bpDiastolic', 'heartRate', 'spO2', 'respRate', 'temperatureC', 'painScore'].forEach(function (k) { body[k] = num(k); });
+                    body.note = vEl.querySelector('[data-t=note]').value.trim() || null;
+                    t.disabled = true; post(base + '/Triage', body).then(done(t, vEl)); return;
+                }
+                if (t.hasAttribute('data-v-bay-save')) {
+                    var sel = vEl.querySelector('[data-v-bay]'), bed = sel.value ? Number(sel.value) : null;
+                    cbConfirm(W.bay.replace('{0}', cur.who).replace('{1}', bed ? sel.options[sel.selectedIndex].text : '—')).then(function (ok) {
+                        if (!ok) return; t.disabled = true; post(base + '/Bay', { bayId: bed }).then(done(t, vEl));
+                    }); return;
+                }
+                if (t.hasAttribute('data-v-move')) {
+                    var to = t.getAttribute('data-v-move'), docSel = vEl.querySelector('[data-v-doctor]');
+                    cbConfirm(W.move.replace('{0}', cur.who).replace('{1}', stageText[to])).then(function (ok) {
+                        if (!ok) return; t.disabled = true; post(base + '/Move', { stage: to, practitionerId: docSel && docSel.value ? Number(docSel.value) : null }).then(done(t, vEl));
+                    }); return;
+                }
+                if (t.hasAttribute('data-v-close')) {
+                    var o = vEl.querySelector('[data-v-outcome]');
+                    cbConfirm(W.close.replace('{0}', cur.who).replace('{1}', o.options[o.selectedIndex].text), { kind: 'danger' }).then(function (ok) {
+                        if (!ok) return; t.disabled = true; post(base + '/Close', { outcome: o.value, note: vEl.querySelector('[data-v-outcome-note]').value.trim() || null }).then(done(t, vEl));
+                    }); return;
+                }
+                var idSel = vEl.querySelector('[data-v-identify]');
+                if (!idSel.value) return;
+                cbConfirm(W.identify.replace('{0}', $(idSel).find('option:selected').text())).then(function (ok) {
+                    if (!ok) return; t.disabled = true; post(base + '/Identify', { patientId: Number(idSel.value) }).then(done(t, vEl));
+                });
+            });
+            // ---------------- bays (setup) ----------------
+            document.addEventListener('click', function (e) {
+                var t = e.target.closest('[data-save-bay]'); if (!t) return;
+                var tr = t.closest('tr'), body = { id: tr.getAttribute('data-id') ? Number(tr.getAttribute('data-id')) : null };
+                tr.querySelectorAll('[data-k]').forEach(function (i) { var k = i.getAttribute('data-k'); body[k] = i.type === 'checkbox' ? i.checked : (k === 'sortOrder' ? Number(i.value || 0) : i.value); });
+                t.disabled = true;
+                post(root + '/Bay', body).then(function (res) {
+                    t.disabled = false; if (!res.ok) { toast('error', res.error || W.failed); return; } toast('success', W.saved);
+                    // never a reload: the page is rendered again, the board and the bay lists swapped in place
+                    fetch(location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.text(); }).then(function (html) {
+                        var doc = new DOMParser().parseFromString(html, 'text/html');
+                        [['#kt_app_content'], ['#baysModal .modal-body'], ['[data-v-bay]']].forEach(function (s) { var f = doc.querySelector(s[0]), m = document.querySelector(s[0]); if (f && m) m.innerHTML = f.innerHTML; });
+                    });
+                });
+            });
+        })();
+    </script>
+}

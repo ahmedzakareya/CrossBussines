@@ -35,7 +35,7 @@ namespace CrossBuy.Tests.SqlServer
 			// The entity carries H3's PhotoPath too, so the schema under test is the one that ships: H2 then H3.
 			await _sql.RunScriptAsync(c, "hospital_h3_admissions.sql");
 			// H7 added nullable columns to patients, bills, lines and payments: the EF model maps them, so the probe needs them.
-			foreach (var s in new[] { "hospital_h4_outpatient.sql", "hospital_h5_consultation.sql", "hospital_h6_billing.sql", "hospital_h7_pricelists.sql" })
+			foreach (var s in new[] { "hospital_h57_patient_merge.sql", "hospital_h59_deaths.sql", "hospital_h4_outpatient.sql", "hospital_h5_consultation.sql", "hospital_h6_billing.sql", "hospital_h7_pricelists.sql" })
 				await _sql.RunScriptAsync(c, s);
 		}
 

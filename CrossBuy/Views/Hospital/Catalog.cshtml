@@ -31,8 +31,9 @@
             <a href="@Url.Action("PriceLists")" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-price-tag fs-4"></i>@T["Price lists"]</a>
             @if (canManage)
             {
+                <button type="button" class="btn btn-sm btn-primary" data-join><i class="ki-outline ki-plus fs-4"></i>@T["Add from the inventory"]</button>
                 <a href="@Url.Action("CreateItem", "Inventory")" class="btn btn-sm btn-light-primary" target="_blank"><i class="ki-outline ki-package fs-4"></i>@T["New item or consumable"]</a>
-                <a href="@Url.Action("Services")" class="btn btn-sm btn-primary"><i class="ki-outline ki-plus fs-4"></i>@T["New service"]</a>
+                <a href="@Url.Action("Services")" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-plus fs-4"></i>@T["New service"]</a>
             }
         </div>
     </div></div>
@@ -43,7 +44,7 @@
             <div class="d-flex flex-stack flex-grow-1 flex-wrap flex-md-nowrap">
                 <div class="mb-3 mb-md-0 fw-semibold pe-5">
                     <h4 class="text-gray-900 fw-bold mb-1">@T["Each item is defined once"]</h4>
-                    <div class="fs-6 text-gray-700">@T["Services are created in the service catalogue; medicines and consumables on the Inventory item card, in a category mapped below. The selling price entered there is recorded on the main list automatically — and only there."]</div>
+                    <div class="fs-6 text-gray-700">@T["Services are created in the service catalogue. Any item already in the inventory joins as a medicine or a consumable, one at a time from the inventory or a whole category below; its selling price is the main-list price."]</div>
                 </div>
                 <span class="badge hp-badge fs-7 fw-bold px-4 py-2 flex-shrink-0"><span class="hp-num me-1">@Model.Count</span>@T["items"]</span>
             </div>
@@ -129,6 +130,24 @@
     </div></div>
 </div>
 
+@if (canManage)
+{
+    <div class="modal fade" id="joinModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered modal-xl"><div class="modal-content">
+        <div class="modal-header"><h2 class="fw-bold m-0">@T["Add from the inventory"]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body py-6 px-lg-10">
+            <div class="text-gray-700 fs-7 mb-4">@T["Any item already in the inventory, whatever its category. Choose whether it is a medicine or a consumable: that decides which of the list's percentages prices it."]</div>
+            <div class="position-relative mb-4"><i class="ki-outline ki-magnifier fs-3 text-gray-500 position-absolute top-50 translate-middle-y ms-4"></i>
+                <input type="text" class="form-control form-control-solid ps-12" data-inv-q autocomplete="off" placeholder="@T["Search by code, barcode or name"]" /></div>
+            <div class="table-responsive mh-350px overflow-auto"><table class="table align-middle table-row-dashed fs-7 gy-2 mb-0">
+                <thead><tr class="text-gray-500 fw-bold fs-8 text-uppercase"><th class="w-30px"></th><th>@T["Item"]</th><th>@T["Category"]</th><th style="text-align:end">@T["Main price"] (<span class="hp-num">@fac.Code</span>)</th><th class="w-175px">@T["Type"]</th></tr></thead>
+                <tbody data-inv-rows><tr><td colspan="5" class="text-center text-muted py-8">@T["Type at least two letters to search."]</td></tr></tbody>
+            </table></div>
+            <div class="text-muted fs-7 mt-3"><span data-inv-count class="hp-num">0</span> @T["items selected"]</div>
+        </div>
+        <div class="modal-footer flex-center"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-join-save>@T["Add selected"]</button></div>
+    </div></div></div>
+}
+
 @section Scripts {
     <script>
         (function () {
@@ -144,7 +163,57 @@
                     if (window.jQuery && jQuery.fn.select2) jQuery('#kt_app_content select.form-select:not([data-no-select2])').select2({ minimumResultsForSearch: Infinity, width: '100%', dir: document.documentElement.dir === 'rtl' ? 'rtl' : 'ltr' });
                 });
             }
+            // Any inventory item joins the catalogue: the same search as a price list's, ticks kept across searches
+            var W2 = { none: @Json.Serialize(T["Nothing matches."].Value), inCat: @Json.Serialize(T["In the hospital catalogue"].Value), notIn: @Json.Serialize(T["Not in the hospital catalogue yet"].Value),
+                choose: @Json.Serialize(T["Choose the items to add"].Value), kinds: { Medicine: @Json.Serialize(T["group:Medicine"].Value), Consumable: @Json.Serialize(T["group:Consumable"].Value) } };
+            var inv = { picked: {}, last: [], timer: null }, searchUrl = @Json.Serialize(Url.Action("CatalogItemSearch")), joinUrl = @Json.Serialize(Url.Action("CatalogAddItems"));
+            function esc(v) { var d = document.createElement('div'); d.textContent = v == null ? '' : String(v); return d.innerHTML; }
+            function render() {
+                var tb = document.querySelector('[data-inv-rows]'); if (!tb) return;
+                document.querySelector('[data-inv-count]').textContent = Object.keys(inv.picked).length;
+                if (!inv.last.length) { if (inv.searched) tb.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-8">' + esc(W2.none) + '</td></tr>'; return; }
+                tb.innerHTML = inv.last.map(function (h) {
+                    var kind = inv.picked[h.id] || h.kind || 'Medicine', on = h.onList;
+                    var opts = ['Medicine', 'Consumable'].map(function (k) { return '<option value="' + k + '"' + (k === kind ? ' selected' : '') + '>' + esc(W2.kinds[k]) + '</option>'; }).join('');
+                    return '<tr><td><input type="checkbox" class="form-check-input" data-inv-pick="' + h.id + '"' + (on ? ' disabled' : '') + (inv.picked[h.id] ? ' checked' : '') + ' /></td>' +
+                        '<td><span class="badge hp-code fw-bold fs-8 hp-num me-2">' + esc(h.code) + '</span>' + esc(h.name) + ' <span class="badge ' + (on ? 'badge-light-success' : 'badge-light-info') + ' fs-9">' + esc(on ? W2.inCat : W2.notIn) + '</span></td>' +
+                        '<td class="text-gray-600">' + esc(h.category) + '</td><td class="hp-num" style="text-align:end">' + Number(h.price).toFixed(3) + '</td>' +
+                        '<td><select class="form-select form-select-sm form-select-solid" data-no-select2 data-inv-kind="' + h.id + '"' + (on ? ' disabled' : '') + '>' + opts + '</select></td></tr>';
+                }).join('');
+            }
+            document.addEventListener('input', function (e) {
+                if (!e.target.matches('[data-inv-q]')) return;
+                clearTimeout(inv.timer); var q = e.target.value.trim();
+                inv.timer = setTimeout(function () {
+                    if (q.length < 2) { inv.last = []; inv.searched = false; render(); return; }
+                    fetch(searchUrl + '?q=' + encodeURIComponent(q), { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.json(); })
+                        .then(function (res) { inv.last = res.items || []; inv.searched = true; render(); });
+                }, 300);
+            });
+            document.addEventListener('change', function (e) {
+                var c = e.target.closest('[data-inv-pick]');
+                if (c) { var id = c.getAttribute('data-inv-pick'); if (c.checked) inv.picked[id] = document.querySelector('[data-inv-kind="' + id + '"]').value; else delete inv.picked[id]; render(); return; }
+                var k = e.target.closest('[data-inv-kind]'); if (k) { var kid = k.getAttribute('data-inv-kind'); if (inv.picked[kid]) inv.picked[kid] = k.value; }
+            });
             document.addEventListener('click', function (e) {
+                var j = e.target.closest('[data-join]');
+                if (j) { bootstrap.Modal.getOrCreateInstance(document.getElementById('joinModal')).show(); return; }
+                var js = e.target.closest('[data-join-save]');
+                if (js) {
+                    var items = Object.keys(inv.picked).map(function (id) { return { itemId: +id, kind: inv.picked[id] }; });
+                    if (!items.length) { toast('error', W2.choose); return; }
+                    js.disabled = true;
+                    fetch(joinUrl, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify({ items: items }) })
+                        .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+                        .then(function (res) {
+                            js.disabled = false;
+                            if (!res.ok) { toast('error', res.error || W.failed); return; }
+                            bootstrap.Modal.getInstance(document.getElementById('joinModal')).hide();
+                            inv.picked = {}; inv.last = []; inv.searched = false; document.querySelector('[data-inv-q]').value = ''; render();
+                            toast('success', W.saved); swap();
+                        });
+                    return;
+                }
                 var t = e.target.closest('[data-save-map]'); if (!t) return;
                 var map = {};
                 document.querySelectorAll('[data-cat]').forEach(function (s) { if (s.value) map[s.getAttribute('data-cat')] = s.value; });

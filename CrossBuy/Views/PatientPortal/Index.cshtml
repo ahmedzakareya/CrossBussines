@@ -1,0 +1,104 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model IReadOnlyList<HospitalPortalVisit>
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@{
+    Layout = "_Layout";
+    var acc = (HospitalPortalAccount)ViewBag.Account;
+    var people = (ViewBag.People as IReadOnlyList<HospitalPortalPerson>) ?? Array.Empty<HospitalPortalPerson>();
+    var requests = (ViewBag.Requests as IReadOnlyList<HospitalPortalRequestRow>) ?? Array.Empty<HospitalPortalRequestRow>();
+    var today = DateTime.Now.Date;
+    var upcoming = Model.Where(v => v.Status == HospitalAppointmentStatus.Booked && v.Date >= today).OrderBy(v => v.Date).ThenBy(v => v.StartMinute).ToList();
+    var openReq = requests.Where(r => r.Request.Status == HospitalPortalRequestStatus.Open).ToList();
+    var next = upcoming.FirstOrDefault();
+    bool verified = acc.Status == HospitalPortalAccountStatus.Verified;
+    ViewData["Title"] = T["Home"].Value;
+    ViewData["BandTitle"] = T["Hello"].Value + " " + DisplayName.Of(acc.Name, acc.NameEn ?? acc.Name).Split(' ')[0];
+    ViewData["BandDesc"] = verified ? string.Join(" · ", people.Where(p => p.Relation == HospitalPortalBookingService.Self).Select(p => p.Mrn)) : T["Not verified"].Value;
+    string Clock(int m) => (m / 60).ToString("00") + ":" + (m % 60).ToString("00");
+    // Gregorian names whatever the culture's default calendar (an Arabic culture can default to the Hijri one)
+    bool ar = DisplayName.IsArabic;
+    string Month(DateTime d) => ar ? new[] { "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر" }[d.Month - 1] : d.ToString("MMM", System.Globalization.CultureInfo.InvariantCulture);
+    string Day(DateTime d) => ar ? new[] { "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت" }[(int)d.DayOfWeek] : d.ToString("dddd", System.Globalization.CultureInfo.InvariantCulture);
+}
+@section Figures {
+    <div class="d-flex flex-column"><span class="text-white fw-bold fs-3 mb-1 pp-num">@upcoming.Count</span><div class="text-white opacity-50 fw-bold">@T["Upcoming visits"]</div></div>
+    <div class="d-flex flex-column"><span class="text-white fw-bold fs-3 mb-1 pp-num">@openReq.Count</span><div class="text-white opacity-50 fw-bold">@T["Open requests"]</div></div>
+    <div class="d-flex flex-column"><span class="text-white fw-bold fs-3 mb-1 pp-num">@people.Count</span><div class="text-white opacity-50 fw-bold">@T["People on this account"]</div></div>
+}
+
+<div class="row g-5 g-xl-10">
+    <div class="col-xl-8">
+        @if (!verified)
+        {
+            <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-6 mb-5">
+                <i class="ki-outline ki-information-4 fs-2tx text-primary me-4"></i>
+                <div class="fw-semibold"><h4 class="text-gray-900 fw-bold">@T["Your account is not verified yet"]</h4>
+                    <div class="fs-6 text-gray-700">@T["Send a booking request and the call centre will call you; on your first visit the front desk checks who you are, and from then on you book directly."]</div></div>
+            </div>
+        }
+        <div class="card card-flush mb-5 mb-xl-10">
+            <div class="card-header pt-7"><h3 class="card-title"><span class="card-label fw-bold text-gray-900">@T["Your next appointment"]</span></h3>
+                <div class="card-toolbar"><a href="@Url.Action("Appointments")" class="btn btn-sm btn-light">@T["All appointments"]</a></div></div>
+            <div class="card-body pt-5">
+                @if (next == null)
+                {
+                    <div class="d-flex align-items-center gap-5"><div class="symbol symbol-50px"><span class="symbol-label bg-light-primary"><i class="ki-outline ki-calendar fs-2x text-primary"></i></span></div>
+                        <div class="flex-grow-1"><div class="fw-bold text-gray-900 fs-5">@T["No upcoming appointments"]</div><div class="text-muted">@T["Book one in a minute"]</div></div>
+                        <a href="@Url.Action("Book")" class="btn btn-primary">@T["Book an appointment"]</a></div>
+                }
+                else
+                {
+                    <div class="d-flex flex-wrap align-items-center gap-6">
+                        <div class="d-flex flex-column flex-center rounded bg-light-primary w-65px h-65px flex-shrink-0"><span class="fs-2 fw-bolder text-primary lh-1 pp-num">@next.Date.Day</span><span class="fs-8 fw-bold text-primary mt-1">@Month(next.Date)</span></div>
+                        <div class="flex-grow-1"><div class="fs-3 fw-bold text-gray-900">@Day(next.Date) · <span class="pp-num">@Clock(next.StartMinute)</span></div>
+                            <div class="text-muted fw-semibold fs-6">@DisplayName.Of(next.Clinic, next.ClinicEn) · @T["visit:" + next.VisitType] · @DisplayName.Of(next.Person.Name, next.Person.NameEn)</div></div>
+                        <div class="d-flex align-items-center gap-4 border border-dashed border-gray-300 rounded px-5 py-3">
+                            <div class="symbol symbol-45px symbol-circle">@if (next.DoctorPhoto != null) {<img src="@Url.Action("DoctorPhoto", new { id = next.PractitionerId })" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(next.DoctorEn)" />} else {<span class="symbol-label bg-light-primary text-primary fw-bold">@HospitalUi.Initials(next.DoctorEn)</span>}</div>
+                            <div><div class="fw-bold text-gray-900">@DisplayName.Of(next.Doctor, next.DoctorEn)</div><div class="text-muted fs-7">@DisplayName.Of(next.Title ?? "", next.TitleEn ?? next.Title ?? "")</div></div></div>
+                    </div>
+                }
+            </div>
+        </div>
+        <div class="card card-flush mb-5 mb-xl-10">
+            <div class="card-header pt-7"><h3 class="card-title"><span class="card-label fw-bold text-gray-900">@T["What would you like to do?"]</span></h3></div>
+            <div class="card-body pt-5"><div class="row g-5">
+                <div class="col-6 col-lg-4"><a href="@Url.Action("Book")" class="d-flex flex-column align-items-center text-center rounded border border-dashed border-gray-300 bg-hover-light-primary px-4 py-7 h-100">
+                    <div class="symbol symbol-60px"><span class="symbol-label bg-light-primary"><i class="ki-outline ki-calendar-add fs-2x text-primary"></i></span></div><span class="fw-bold fs-6 text-gray-900 mt-4">@(verified ? T["Book an appointment"] : T["Send a booking request"])</span></a></div>
+                <div class="col-6 col-lg-4"><a href="@Url.Action("Appointments")" class="d-flex flex-column align-items-center text-center rounded border border-dashed border-gray-300 bg-hover-light-success px-4 py-7 h-100">
+                    <div class="symbol symbol-60px"><span class="symbol-label bg-light-success"><i class="ki-outline ki-calendar-tick fs-2x text-success"></i></span></div><span class="fw-bold fs-6 text-gray-900 mt-4">@T["My appointments"]</span></a></div>
+                <div class="col-6 col-lg-4"><a href="@Url.Action("Appointments")#pp_req" class="d-flex flex-column align-items-center text-center rounded border border-dashed border-gray-300 bg-hover-light-info px-4 py-7 h-100">
+                    <div class="symbol symbol-60px"><span class="symbol-label bg-light-info"><i class="ki-outline ki-call fs-2x text-info"></i></span></div><span class="fw-bold fs-6 text-gray-900 mt-4">@T["My requests"]</span></a></div>
+            </div></div>
+        </div>
+    </div>
+    <div class="col-xl-4">
+        <div class="card card-flush mb-5 mb-xl-10">
+            <div class="card-header pt-7"><h3 class="card-title"><span class="card-label fw-bold text-gray-900">@T["People on this account"]</span></h3></div>
+            <div class="card-body pt-3">
+                @if (people.Count == 0) { <div class="text-muted">@T["Your file is linked on your first visit."]</div> }
+                @foreach (var p in people)
+                {
+                    <div class="d-flex align-items-center py-3">
+                        <div class="symbol symbol-45px symbol-circle">@if (p.Photo != null) {<img src="@Url.Action("PatientPhoto", new { id = p.PatientId })" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(p.NameEn)" />} else {<span class="symbol-label bg-light-primary text-primary fw-bold">@HospitalUi.Initials(p.NameEn)</span>}</div>
+                        <div class="flex-grow-1 ms-4"><div class="fw-bold text-gray-900">@DisplayName.Of(p.Name, p.NameEn)</div><div class="text-muted fs-7"><span class="pp-num">@p.Mrn</span> · @T["rel:" + p.Relation]</div></div>
+                    </div>
+                }
+            </div>
+        </div>
+        @if (openReq.Count > 0)
+        {
+            <div class="card card-flush mb-5 mb-xl-10">
+                <div class="card-header pt-7"><h3 class="card-title"><span class="card-label fw-bold text-gray-900">@T["Open requests"]</span></h3></div>
+                <div class="card-body pt-3">
+                    @foreach (var r in openReq)
+                    {
+                        <div class="d-flex align-items-center py-3"><div class="symbol symbol-40px"><span class="symbol-label bg-light-info"><i class="ki-outline ki-call fs-2 text-info"></i></span></div>
+                            <div class="flex-grow-1 ms-4"><div class="fw-bold text-gray-900">@DisplayName.Of(r.DepartmentName, r.DepartmentNameEn)</div><div class="text-muted fs-7"><span class="pp-num">@r.Request.RequestNo</span> · @T["Awaiting the call centre"]</div></div></div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</div>

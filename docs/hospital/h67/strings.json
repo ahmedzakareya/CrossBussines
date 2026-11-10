@@ -1,0 +1,200 @@
+{
+ "unit": "H67 — housekeeping, porters and laundry",
+ "strings": {
+  "After a patient left": {
+   "ar": "بعد خروج مريض",
+   "en": "After a patient left",
+   "fr": "Après le départ d'un patient"
+  },
+  "Ask for a job": {
+   "ar": "طلب خدمة",
+   "en": "Ask for a job",
+   "fr": "Demander un service"
+  },
+  "Average response today": {
+   "ar": "متوسط الاستجابة اليوم",
+   "en": "Average response today",
+   "fr": "Réponse moyenne aujourd'hui"
+  },
+  "Bags": {
+   "ar": "الأكياس",
+   "en": "Bags",
+   "fr": "Sacs"
+  },
+  "Beds waiting to be cleaned": {
+   "ar": "أسرّة بانتظار التنظيف",
+   "en": "Beds waiting to be cleaned",
+   "fr": "Lits à nettoyer"
+  },
+  "Choose the kind of job": {
+   "ar": "اختر نوع الخدمة",
+   "en": "Choose the kind of job",
+   "fr": "Choisissez le type de service"
+  },
+  "Details": {
+   "ar": "تفاصيل",
+   "en": "Details",
+   "fr": "Détails"
+  },
+  "Done today": {
+   "ar": "أُنجز اليوم",
+   "en": "Done today",
+   "fr": "Faits aujourd'hui"
+  },
+  "Housekeeping, porters & laundry": {
+   "ar": "النظافة والنقل والمغسلة",
+   "en": "Housekeeping, porters & laundry",
+   "fr": "Ménage, brancardage et blanchisserie"
+  },
+  "I'll take it": {
+   "ar": "أنا هاخده",
+   "en": "I'll take it",
+   "fr": "Je m'en charge"
+  },
+  "Jobs": {
+   "ar": "الطلبات",
+   "en": "Jobs",
+   "fr": "Demandes"
+  },
+  "Jobs open": {
+   "ar": "طلبات مفتوحة",
+   "en": "Jobs open",
+   "fr": "Demandes ouvertes"
+  },
+  "No job here.": {
+   "ar": "لا توجد طلبات هنا.",
+   "en": "No job here.",
+   "fr": "Aucune demande ici."
+  },
+  "Patient (optional)": {
+   "ar": "المريض (اختياري)",
+   "en": "Patient (optional)",
+   "fr": "Patient (facultatif)"
+  },
+  "Search by number, room, bed, place or patient…": {
+   "ar": "ابحث بالرقم أو الغرفة أو السرير أو المكان أو المريض…",
+   "en": "Search by number, room, bed, place or patient…",
+   "fr": "Rechercher par numéro, salle, lit, lieu ou patient…"
+  },
+  "Send this request to the support desk?": {
+   "ar": "إرسال هذا الطلب للخدمات المساندة؟",
+   "en": "Send this request to the support desk?",
+   "fr": "Envoyer cette demande aux services ?"
+  },
+  "Someone else took this job a moment ago": {
+   "ar": "أخذ شخص آخر هذا الطلب قبل لحظات",
+   "en": "Someone else took this job a moment ago",
+   "fr": "Quelqu'un d'autre vient de prendre cette demande"
+  },
+  "Take {0}?": {
+   "ar": "أخذ {0}؟",
+   "en": "Take {0}?",
+   "fr": "Prendre {0} ?"
+  },
+  "The support desk is not installed yet (hospital_h67_support_desk.sql).": {
+   "ar": "الخدمات المساندة غير مثبتة بعد (hospital_h67_support_desk.sql).",
+   "en": "The support desk is not installed yet (hospital_h67_support_desk.sql).",
+   "fr": "Le bureau des services n'est pas encore installé (hospital_h67_support_desk.sql)."
+  },
+  "This job cannot take that step from where it is": {
+   "ar": "لا يمكن نقل الطلب لهذه الخطوة من حالته الحالية",
+   "en": "This job cannot take that step from where it is",
+   "fr": "Cette demande ne peut pas passer à cette étape"
+  },
+  "e.g. Radiology": {
+   "ar": "مثال: الأشعة",
+   "en": "e.g. Radiology",
+   "fr": "ex. Radiologie"
+  },
+  "e.g. Ward 2, bed 105-A": {
+   "ar": "مثال: جناح 2، سرير A-105",
+   "en": "e.g. Ward 2, bed 105-A",
+   "fr": "ex. Service 2, lit 105-A"
+  },
+  "{0} is done — anything to note? (optional)": {
+   "ar": "تم {0} — هل من ملاحظة؟ (اختياري)",
+   "en": "{0} is done — anything to note? (optional)",
+   "fr": "{0} est terminé — une remarque ? (facultatif)"
+  },
+  "Choose the room or bed to clean": {
+   "ar": "اختر الغرفة أو السرير المطلوب تنظيفه",
+   "en": "Choose the room or bed to clean",
+   "fr": "Choisissez la salle ou le lit à nettoyer"
+  },
+  "Write where from and where to": {
+   "ar": "اكتب من أين وإلى أين",
+   "en": "Write where from and where to",
+   "fr": "Indiquez d'où et vers où"
+  },
+  "How many bags?": {
+   "ar": "كم كيساً؟",
+   "en": "How many bags?",
+   "fr": "Combien de sacs ?"
+  },
+  "Choose where to collect from": {
+   "ar": "اختر مكان الاستلام",
+   "en": "Choose where to collect from",
+   "fr": "Choisissez où récupérer"
+  },
+  "Only who took the job closes it": {
+   "ar": "لا يغلق الطلب إلا من أخذه",
+   "en": "Only who took the job closes it",
+   "fr": "Seul celui qui a pris la demande la clôt"
+  },
+  "sj:kind": {
+   "ar": "النوع",
+   "en": "Kind",
+   "fr": "Type"
+  },
+  "sj:no": {
+   "ar": "رقم الطلب",
+   "en": "Job no.",
+   "fr": "N° de demande"
+  },
+  "sj:where": {
+   "ar": "المكان",
+   "en": "Where",
+   "fr": "Lieu"
+  },
+  "sj:bags": {
+   "ar": "أكياس",
+   "en": "bags",
+   "fr": "sacs"
+  },
+  "sj:Cleaning": {
+   "ar": "نظافة",
+   "en": "Cleaning",
+   "fr": "Ménage"
+  },
+  "sj:Porter": {
+   "ar": "نقل مريض",
+   "en": "Porter",
+   "fr": "Brancardage"
+  },
+  "sj:Laundry": {
+   "ar": "مغسلة",
+   "en": "Laundry",
+   "fr": "Blanchisserie"
+  },
+  "sjs:Open": {
+   "ar": "مفتوح",
+   "en": "Open",
+   "fr": "Ouvert"
+  },
+  "sjs:Taken": {
+   "ar": "جارٍ",
+   "en": "Taken",
+   "fr": "En cours"
+  },
+  "sjs:Done": {
+   "ar": "تم",
+   "en": "Done",
+   "fr": "Fait"
+  },
+  "sjs:Cancelled": {
+   "ar": "ملغى",
+   "en": "Cancelled",
+   "fr": "Annulé"
+  }
+ }
+}

@@ -28,6 +28,15 @@
     bool canAdmit = ViewBag.CanAdmit == true;
     var current = ViewBag.Current as (HospitalAdmission Admission, HospitalBedStay Stay, string RoomNumber, string BedCode)?;
     var stays = (ViewBag.Stays as IReadOnlyList<HospitalStayView>) ?? Array.Empty<HospitalStayView>();
+    var sick = (ViewBag.SickLeaves as IReadOnlyList<HospitalSickLeaveRow>) ?? Array.Empty<HospitalSickLeaveRow>();   // H56
+    bool sickReady = ViewBag.SickReady == true, canConsult = ViewBag.CanConsult == true;
+    var consents = (ViewBag.Consents as IReadOnlyList<HospitalConsentRow>) ?? Array.Empty<HospitalConsentRow>();   // H60
+    bool consentsReady = ViewBag.ConsentsReady == true;
+    // H64: a restricted file — its banner, how this reader got in, and the administrator's restrict / lift
+    var restriction = ViewBag.Restriction as HospitalRestrictedFile;
+    string fileAccess = ViewBag.FileAccess as string ?? HospitalFileAccess.Open;
+    var glassUntil = ViewBag.GlassUntil as DateTime?;
+    bool canManageFile = ViewBag.CanManage == true;
     var appointments = (ViewBag.Appointments as IReadOnlyList<HospitalAppointmentView>) ?? Array.Empty<HospitalAppointmentView>();
     var doctors = (ViewBag.Doctors as Dictionary<int, HospitalPractitionerView>) ?? new();
     var visits = (ViewBag.Visits as IReadOnlyList<HospitalEncounterSummary>) ?? Array.Empty<HospitalEncounterSummary>();
@@ -52,7 +61,11 @@
             </ul>
         </div>
         <div class="d-flex align-items-center gap-2 gap-lg-3 d-print-none">
-            @if (canAdmit && current == null)
+            @* printing — every paper of this patient in one place (Report Studio layouts, see _ReportPrintMenu) *@
+            @if (ViewBag.PrintBillId is int pBill) { @await Html.PartialAsync("_ReportPrintMenu", new CrossBuy.BL.Reporting.ReportPrintMenuModel { ScreenKey = CrossBuy.BL.Reporting.ReportScreenKeys.HospitalBill, ButtonLabel = T["Bill"].Value, DocumentId = pBill.ToString(), DocumentTitle = T["Bill"].Value }) }
+            @if (ViewBag.PrintEncounterId is int pVisit) { @await Html.PartialAsync("_ReportPrintMenu", new CrossBuy.BL.Reporting.ReportPrintMenuModel { ScreenKey = CrossBuy.BL.Reporting.ReportScreenKeys.HospitalConsult, ButtonLabel = T["Prescription"].Value, DocumentId = pVisit.ToString(), DocumentTitle = T["Prescription"].Value }) }
+            @if (ViewBag.PrintPlanId is int pPlan) { @await Html.PartialAsync("_ReportPrintMenu", new CrossBuy.BL.Reporting.ReportPrintMenuModel { ScreenKey = CrossBuy.BL.Reporting.ReportScreenKeys.HospitalDentalPlan, ButtonLabel = T["Dental claim"].Value, DocumentId = pPlan.ToString(), DocumentTitle = T["Treatment plan"].Value }) }
+            @if (canAdmit && current == null && Model.DeceasedAt == null)
             {
                 <button type="button" class="btn btn-sm btn-primary" data-admit-me><i class="ki-outline ki-entrance-left fs-4"></i>@T["Accommodate a patient"]</button>
             }
@@ -64,6 +77,11 @@
             @if (canRegister)
             {
                 <a href="@Url.Action("EditPatient", new { id = Model.ID })" class="btn btn-sm btn-light"><i class="ki-outline ki-pencil fs-4"></i>@T["Edit file"]</a>
+            }
+            @if (canManageFile)
+            {
+                if (restriction == null) { <button type="button" class="btn btn-sm btn-light" data-file-restrict data-ask="@T["Why is this file restricted? Only its care team and those allowed confidential files will open it; anyone else needs an emergency opening."]"><i class="ki-outline ki-lock fs-4"></i>@T["Restrict the file"]</button> }
+                else { <button type="button" class="btn btn-sm btn-light" data-file-unrestrict data-ask="@T["Lift the restriction on this file?"]"><i class="ki-outline ki-lock-3 fs-4"></i>@T["Lift the restriction"]</button> }
             }
         </div>
     </div></div>
@@ -116,6 +134,29 @@
             </div>
         }
 
+        @if (restriction != null)
+        {
+            @* H64: a restricted file says so, and how this reader got in *@
+            <div class="notice d-flex rounded border border-danger border-dashed bg-light-danger p-5 mb-5" data-restricted>
+                <i class="ki-outline ki-lock-2 fs-2tx text-danger me-4"></i>
+                <div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@T["Restricted file"]</h4>
+                    <div class="fs-7 text-gray-700" dir="auto">@restriction.Reason</div>
+                    @if (fileAccess == HospitalFileAccess.BreakGlass && glassUntil is DateTime gu)
+                    {
+                        <div class="fs-7 text-danger fw-bold mt-1">@T["You opened it as an emergency until"] <span class="hp-num" dir="ltr">@HospitalNursingService.UtcToWard(gu).ToString("HH:mm")</span> — @T["the opening is reviewed by the hospital administrator."]</div>
+                    }
+                </div>
+            </div>
+        }
+        @if (Model.DeceasedAt is DateTime died)
+        {
+            @* H59: the death certificate marks the file *@
+            <div class="notice d-flex rounded border border-dark border-dashed bg-light p-5 mb-5" data-deceased>
+                <i class="ki-outline ki-information-5 fs-2tx text-gray-700 me-4"></i>
+                <div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@T["Deceased"]</h4>
+                    <div class="fs-7 text-gray-700">@T["Died on"] <span class="hp-num" dir="ltr">@HospitalNursingService.UtcToWard(died).ToString("yyyy-MM-dd HH:mm")</span> — <a href="@Url.Action("Vital")" class="link-primary">@T["The death certificate"]</a></div></div>
+            </div>
+        }
         <div class="row g-5 g-xl-8">
             <div class="col-xl-8">
                 <ul class="nav nav-tabs nav-line-tabs nav-line-tabs-2x border-transparent fs-5 fw-bold mb-5">
@@ -125,6 +166,8 @@
                     <li class="nav-item"><a class="nav-link text-active-primary pb-3" data-bs-toggle="tab" href="#pfRad">@T["Imaging"] <span class="badge badge-light-primary ms-1 hp-num">@rad.Signed.Count</span></a></li>
                     <li class="nav-item"><a class="nav-link text-active-primary pb-3" data-bs-toggle="tab" href="#pfAppts">@T["Appointments"] <span class="badge badge-light-primary ms-1 hp-num">@appointments.Count</span></a></li>
                     <li class="nav-item"><a class="nav-link text-active-primary pb-3" data-bs-toggle="tab" href="#pfStays">@T["Admissions"] <span class="badge badge-light-primary ms-1 hp-num">@stays.Count</span></a></li>
+                    <li class="nav-item"><a class="nav-link text-active-primary pb-3" data-bs-toggle="tab" href="#pfSick">@T["Sick leave"] <span class="badge badge-light-primary ms-1 hp-num" data-sick-count>@sick.Count</span></a></li>
+                    <li class="nav-item"><a class="nav-link text-active-primary pb-3" data-bs-toggle="tab" href="#pfConsents">@T["Consents"] <span class="badge badge-light-primary ms-1 hp-num" data-consent-count>@consents.Count</span></a></li>
                     <li class="nav-item"><a class="nav-link text-active-primary pb-3" data-bs-toggle="tab" href="#pfAccount">@T["Account"] <span class="badge badge-light-primary ms-1 hp-num">@bills.Count</span></a></li>
                     <li class="nav-item"><a class="nav-link text-active-primary pb-3" data-bs-toggle="tab" href="#pfAccess">@T["Access log"] <span class="badge badge-light-primary ms-1 hp-num">@log.Count</span></a></li>
                 </ul>
@@ -236,7 +279,7 @@
                             else
                             {
                                 <table class="table align-middle table-row-dashed fs-6 gy-3 mb-0">
-                                    <thead><tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0"><th>@T["Room"]</th><th>@T["Bed"]</th><th>@T["From"]</th><th>@T["To"]</th><th>@T["Diagnosis"]</th></tr></thead>
+                                    <thead><tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0"><th>@T["Room"]</th><th>@T["Bed"]</th><th>@T["From"]</th><th>@T["To"]</th><th>@T["Diagnosis"]</th><th class="text-end"></th></tr></thead>
                                     <tbody class="fw-semibold text-gray-700">
                                         @foreach (var s in stays)
                                         {
@@ -246,6 +289,7 @@
                                                 <td><span class="hp-num" data-utc="@s.StartedAt.ToString("o")">@s.StartedAt.ToString("yyyy-MM-dd HH:mm")</span></td>
                                                 <td>@if (s.EndedAt is DateTime e) {<span class="hp-num" data-utc="@e.ToString("o")">@e.ToString("yyyy-MM-dd HH:mm")</span> <span class="text-muted fs-8">@T["end:" + s.EndReason]</span>} else {<span class="badge badge-light-primary">@T["Current"]</span>}</td>
                                                 <td>@(s.Diagnosis ?? "—")</td>
+                                                <td class="text-end"><a href="@Url.Action("DischargeSummary", new { id = s.AdmissionId })" class="btn btn-sm btn-light-primary" data-ds-open="@s.AdmissionId"><i class="ki-outline ki-document fs-5"></i>@T["Discharge summary"]</a></td>
                                             </tr>
                                         }
                                     </tbody>
@@ -262,6 +306,8 @@
                             }
                         </div>
                         <div class="card"><div class="card-body pt-6">
+                            @* H63: the patient's account statement — bills, payments and charity, with the running balance (Report Studio) *@
+                            <div class="d-flex justify-content-end mb-4">@await Html.PartialAsync("_ReportPrintMenu", new CrossBuy.BL.Reporting.ReportPrintMenuModel { ScreenKey = CrossBuy.BL.Reporting.ReportScreenKeys.HospitalPatientStatement, DocumentId = Model.ID.ToString(), DocumentTitle = Model.Mrn })</div>
                             @if (bills.Count == 0) { <div class="text-center text-muted py-10">@T["No bills yet."]</div> }
                             else
                             {
@@ -282,6 +328,94 @@
                                         }
                                     </tbody>
                                 </table>
+                            }
+                        </div></div>
+                    </div>
+
+                    @* H56: sick leave certificates — issued by a doctor, voided with a reason, printed through Report Studio *@
+                    <div class="tab-pane fade" id="pfSick">
+                        <div class="card"><div class="card-body pt-6" data-sick-body>
+                            @if (!sickReady) { <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice"><div class="fs-6 text-gray-700">@T[HospitalSickLeaveService.NoTables]</div></div> }
+                            @if (sickReady && canConsult)
+                            {
+                                var todayW = HospitalNursingService.UtcToWard(DateTime.UtcNow).ToString("yyyy-MM-dd");
+                                <div class="border border-dashed border-gray-300 rounded p-5 mb-6" data-sick-form>
+                                    <div class="fw-bold text-gray-900 mb-4">@T["New sick leave"]</div>
+                                    <div class="row g-4">
+                                        <div class="col-md-3"><label class="form-label required fs-7">@T["First day"]</label><input type="date" class="form-control form-control-solid" data-s="fromDate" value="@todayW" /></div>
+                                        <div class="col-md-3"><label class="form-label required fs-7">@T["Last day"]</label><input type="date" class="form-control form-control-solid" data-s="toDate" value="@todayW" /></div>
+                                        <div class="col-md-6"><label class="form-label required fs-7">@T["Recommendation"]</label>
+                                            <select class="form-select form-select-solid" data-s="kind">@foreach (var k in HospitalSickLeaveKind.All) { <option value="@k">@T["sl:" + k]</option> }</select></div>
+                                        <div class="col-md-8"><label class="form-label fs-7">@T["Diagnosis"]</label><input type="text" class="form-control form-control-solid" maxlength="500" dir="auto" data-s="diagnosis" /></div>
+                                        <div class="col-md-4 d-flex align-items-end"><label class="form-check form-check-custom form-check-solid mb-3"><input class="form-check-input" type="checkbox" data-s="showDiagnosis" /><span class="form-check-label fs-7">@T["Print the diagnosis on the certificate"]</span></label></div>
+                                        <div class="col-md-9"><label class="form-label fs-7">@T["sl:notes"]</label><input type="text" class="form-control form-control-solid" maxlength="500" dir="auto" data-s="note" /></div>
+                                        <div class="col-md-3 d-flex align-items-end"><button type="button" class="btn btn-primary w-100" data-sick-issue><i class="ki-outline ki-document fs-4"></i>@T["Issue"]</button></div>
+                                    </div>
+                                </div>
+                            }
+                            @if (sick.Count == 0) { <div class="text-center text-muted py-8">@T["No sick leave yet."]</div> }
+                            else
+                            {
+                                <table class="table align-middle table-row-dashed fs-7 gy-3 mb-0" data-sick-list>
+                                    <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0"><th>@T["Certificate"]</th><th>@T["Period"]</th><th>@T["Recommendation"]</th><th>@T["Doctor"]</th><th>@T["State"]</th><th class="text-end"></th></tr></thead>
+                                    <tbody class="fw-semibold text-gray-700">
+                                        @foreach (var r in sick)
+                                        {
+                                            var l = r.Leave; bool isVoid = l.VoidedAt != null;
+                                            <tr data-sick-row="@l.ID" class="@(isVoid ? "opacity-75" : "")">
+                                                <td><span class="badge hp-code fs-8 hp-num">@l.LeaveNo</span><div class="text-muted fs-9 mt-1 hp-num" dir="ltr">@HospitalNursingService.UtcToWard(l.IssuedAt).ToString("yyyy-MM-dd HH:mm")</div></td>
+                                                <td><span class="hp-num" dir="ltr">@l.FromDate.ToString("yyyy-MM-dd") → @l.ToDate.ToString("yyyy-MM-dd")</span><div class="text-muted fs-8"><span class="hp-num">@l.Days</span> @T["days"]</div></td>
+                                                <td>@T["sl:" + l.Kind]@if (l.Diagnosis != null) {<div class="text-muted fs-8" dir="auto">@l.Diagnosis @if (!l.ShowDiagnosis) {<span class="badge badge-light fs-9">@T["not printed"]</span>}</div>}</td>
+                                                <td>@DisplayName.Of(r.Doctor ?? "", r.DoctorEn ?? r.Doctor ?? "")</td>
+                                                <td>@if (isVoid) {<span class="badge badge-light-danger">@T["sl:void"]</span><div class="text-muted fs-9 mt-1" dir="auto">@l.VoidReason</div>} else {<span class="badge badge-light-success">@T["sl:valid"]</span>}</td>
+                                                <td class="text-end"><div class="d-flex justify-content-end gap-2">
+                                                    @await Html.PartialAsync("_ReportPrintMenu", new CrossBuy.BL.Reporting.ReportPrintMenuModel { ScreenKey = CrossBuy.BL.Reporting.ReportScreenKeys.HospitalSickLeave, DocumentId = l.ID.ToString(), DocumentTitle = l.LeaveNo })
+                                                    @if (!isVoid && canConsult) { <button type="button" class="btn btn-sm btn-light-danger" data-sick-void="@l.ID" data-no="@l.LeaveNo">@T["sl:voidAction"]</button> }
+                                                </div></td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            }
+                        </div></div>
+                    </div>
+
+                    @* H60: signed consents (and signed refusals) — taken on their own signing page, the signature shown here,
+                       printed through Report Studio, withdrawn with a reason (never edited) *@
+                    <div class="tab-pane fade" id="pfConsents">
+                        <div class="card"><div class="card-body pt-6" data-consent-body>
+                            @if (!consentsReady) { <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice"><div class="fs-6 text-gray-700">@T[HospitalConsentService.NoTables]</div></div> }
+                            @if (consentsReady && canConsult && Model.DeceasedAt == null)
+                            {
+                                <div class="d-flex justify-content-end mb-5"><a href="@Url.Action("NewConsent", new { id = Model.ID })" class="btn btn-sm btn-primary"><i class="ki-outline ki-pencil fs-4"></i>@T["New consent"]</a></div>
+                            }
+                            @if (consents.Count == 0) { <div class="text-center text-muted py-8">@T["No consent signed yet."]</div> }
+                            else
+                            {
+                                <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-3 mb-0" data-consent-list>
+                                    <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0"><th>@T["cn:consent"]</th><th class="min-w-200px">@T["Form"]</th><th>@T["cn:decision"]</th><th class="min-w-150px">@T["cn:signedBy"]</th></tr></thead>
+                                    <tbody class="fw-semibold text-gray-700">
+                                        @foreach (var r in consents)
+                                        {
+                                            var c = r.Consent; bool withdrawn = c.WithdrawnAt != null;
+                                            <tr data-consent-row="@c.ID" class="@(withdrawn ? "opacity-75" : "")">
+                                                <td><span class="badge hp-code fs-8 hp-num">@c.ConsentNo</span><div class="text-muted fs-9 mt-1 hp-num" dir="ltr">@HospitalNursingService.UtcToWard(c.SignedAt).ToString("yyyy-MM-dd HH:mm")</div></td>
+                                                <td><div class="text-gray-900" dir="auto">@c.Title</div>
+                                                    @if (c.ProcedureName != null) {<div class="text-muted fs-8" dir="auto">@c.ProcedureName</div>}
+                                                    @if (r.CaseNo != null) {<div class="text-muted fs-9 hp-num">@r.CaseNo</div>}
+                                                <div class="d-flex flex-wrap gap-2 mt-3">
+                                                    <button type="button" class="btn btn-sm btn-light" data-consent-sign="@c.ID" data-no="@c.ConsentNo" data-sha="@c.SignatureSha256"><i class="ki-outline ki-pencil fs-5"></i>@T["cn:signature"]</button>
+                                                    @await Html.PartialAsync("_ReportPrintMenu", new CrossBuy.BL.Reporting.ReportPrintMenuModel { ScreenKey = CrossBuy.BL.Reporting.ReportScreenKeys.HospitalConsent, DocumentId = c.ID.ToString(), DocumentTitle = c.ConsentNo })
+                                                    @if (!withdrawn && c.Decision == HospitalConsentDecision.Given && canConsult) { <button type="button" class="btn btn-sm btn-light-danger" data-consent-withdraw="@c.ID" data-no="@c.ConsentNo">@T["cn:withdraw"]</button> }
+                                                </div></td>
+                                                <td>@if (c.Decision == HospitalConsentDecision.Given) {<span class="badge badge-light-success">@T["cns:Given"]</span>} else {<span class="badge badge-light-danger">@T["cns:Refused"]</span>}
+                                                    <div class="mt-1">@if (withdrawn) {<span class="badge badge-light-danger">@T["cn:withdrawn"]</span><div class="text-muted fs-9 mt-1" dir="auto">@c.WithdrawReason</div>} else {<span class="badge badge-light-primary">@T["cn:inForce"]</span>}</div></td>
+                                                <td><div dir="auto">@c.SignerName</div>@if (c.SignerKind == HospitalConsentSigner.Representative) {<div class="text-muted fs-8" dir="auto">@c.SignerRelation · @T["cp:" + c.ProxyReason]</div>}
+                                                    <div class="text-muted fs-8 mt-1">@T["cn:explainedBy"]: @DisplayName.Of(r.ExplainedBy, r.ExplainedByEn)</div><div class="text-muted fs-8">@T["Witness"]: @DisplayName.Of(r.Witness, r.WitnessEn)</div></td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table></div>
                             }
                         </div></div>
                     </div>
@@ -319,12 +453,100 @@
     </div></div>
 </div>
 
+@await Html.PartialAsync("_ReportPreviewModal", (object)(DisplayName.Of(Model.Name, Model.NameEn)))
+
+<div class="modal fade" id="hpConsentSignModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+    <div class="modal-header"><h3 class="modal-title" data-cs-title></h3><button type="button" class="btn btn-icon btn-sm btn-active-light-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></button></div>
+    <div class="modal-body text-center"><img data-cs-img alt="" class="mw-100 border border-gray-300 rounded" style="max-height:260px" />
+        <div class="text-muted fs-9 mt-4">SHA-256</div><div class="fs-9 hp-num text-gray-700 text-break" dir="ltr" data-cs-sha></div></div>
+</div></div></div>
+
 @section Scripts {
     <partial name="_HospitalScripts" />
+    <partial name="_HospitalPrompt" />
     <partial name="_HospitalAdmit" />
     <script>
         (function () {
             var id = @Model.ID;
+            // H56: sick leave — issue and void ask first, and the tab swaps in place (never a reload)
+            (function () {
+                var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+                var W = { issue: @Json.Serialize(T["Issue a sick leave of {0} days for this patient?"].Value), voidWhy: @Json.Serialize(T["Why is certificate {0} void?"].Value),
+                    issued: @Json.Serialize(T["The certificate is issued"].Value), voided: @Json.Serialize(T["The certificate is void"].Value), failed: @Json.Serialize(T["The change could not be saved"].Value) };
+                function post(u, b) { return fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(b) }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); }); }
+                function toast(k, m) { if (window.toastr) toastr[k](m); }
+                function swap() {
+                    return fetch(location.pathname, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.text(); }).then(function (html) {
+                        var d = new DOMParser().parseFromString(html, 'text/html');
+                        var f = d.querySelector('[data-sick-body]'); if (f) document.querySelector('[data-sick-body]').innerHTML = f.innerHTML;
+                        var c = d.querySelector('[data-sick-count]'); if (c) document.querySelector('[data-sick-count]').textContent = c.textContent;
+                        if (window.KTMenu) KTMenu.createInstances();
+                    });
+                }
+                document.addEventListener('click', function (e) {
+                    var t = e.target.closest('[data-sick-issue],[data-sick-void]'); if (!t) return;
+                    if (t.hasAttribute('data-sick-issue')) {
+                        var f = document.querySelector('[data-sick-form]'), v = function (k) { return f.querySelector('[data-s=' + k + ']'); };
+                        var from = v('fromDate').value, to = v('toDate').value;
+                        var days = from && to ? Math.round((new Date(to) - new Date(from)) / 864e5) + 1 : 0;
+                        cbConfirm(W.issue.replace('{0}', days)).then(function (ok) {
+                            if (!ok) return; t.disabled = true;
+                            post(@Json.Serialize(Url.Action("IssueSickLeave", new { id = Model.ID })), { fromDate: from || null, toDate: to || null, kind: v('kind').value, diagnosis: v('diagnosis').value || null, showDiagnosis: v('showDiagnosis').checked, note: v('note').value || null })
+                                .then(function (res) { t.disabled = false; if (!res.ok) { toast('error', res.error || W.failed); return; } toast('success', W.issued); swap(); });
+                        });
+                        return;
+                    }
+                    var lid = t.getAttribute('data-sick-void');
+                    cbPrompt(W.voidWhy.replace('{0}', t.getAttribute('data-no'))).then(function (why) {
+                        if (why == null) return; t.disabled = true;
+                        post(@Json.Serialize(Url.Content("~/Hospital/SickLeaves/"))+ lid + '/Void', { reason: why })
+                            .then(function (res) { t.disabled = false; if (!res.ok) { toast('error', res.error || W.failed); return; } toast('success', W.voided); swap(); });
+                    });
+                });
+            })();
+            // H60: consents — the signature opens in a modal; a withdrawal asks why and the tab swaps in place
+            (function () {
+                var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+                var W = { why: @Json.Serialize(T["Why is consent {0} withdrawn?"].Value), done: @Json.Serialize(T["The consent is withdrawn"].Value), failed: @Json.Serialize(T["The change could not be saved"].Value) };
+                document.addEventListener('click', function (e) {
+                    var t = e.target.closest('[data-consent-sign],[data-consent-withdraw]'); if (!t) return;
+                    if (t.hasAttribute('data-consent-sign')) {
+                        var m = document.getElementById('hpConsentSignModal');
+                        m.querySelector('[data-cs-title]').textContent = t.getAttribute('data-no');
+                        m.querySelector('[data-cs-img]').src = @Json.Serialize(Url.Content("~/Hospital/Consents/")) + t.getAttribute('data-consent-sign') + '/Signature';
+                        m.querySelector('[data-cs-sha]').textContent = t.getAttribute('data-sha');
+                        bootstrap.Modal.getOrCreateInstance(m).show();
+                        return;
+                    }
+                    var cid = t.getAttribute('data-consent-withdraw');
+                    cbPrompt(W.why.replace('{0}', t.getAttribute('data-no'))).then(function (why) {
+                        if (why == null) return; t.disabled = true;
+                        fetch(@Json.Serialize(Url.Content("~/Hospital/Consents/")) + cid + '/Withdraw', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify({ reason: why }) })
+                            .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+                            .then(function (res) {
+                                t.disabled = false; if (!res.ok) { toastr.error(res.error || W.failed); return; }
+                                toastr.success(W.done);
+                                return fetch(location.pathname, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.text(); }).then(function (html) {
+                                    var d = new DOMParser().parseFromString(html, 'text/html');
+                                    var b = d.querySelector('[data-consent-body]'); if (b) document.querySelector('[data-consent-body]').innerHTML = b.innerHTML;
+                                    if (window.KTMenu) KTMenu.createInstances();
+                                });
+                            });
+                    });
+                });
+                // a link to a tab of the file (#pfConsents after signing) opens that tab
+                if (location.hash) { var tab = document.querySelector('[data-bs-toggle="tab"][href="' + location.hash + '"]'); if (tab && window.bootstrap) bootstrap.Tab.getOrCreateInstance(tab).show(); }
+            })();
+            // H64: restrict (with the reason) and lift — both ask first
+            (function () {
+                var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+                function send(u, b) { return fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(b || {}) }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); }); }
+                function done(res) { if (!res.ok) { toastr.error(res.error || @Json.Serialize(T["The change could not be saved"].Value)); return; } location.reload(); }
+                var r = document.querySelector('[data-file-restrict]');
+                if (r) r.addEventListener('click', function () { cbPrompt(r.getAttribute('data-ask')).then(function (why) { if (why != null) send(@Json.Serialize(Url.Action("RestrictFile", new { id = Model.ID })), { reason: why }).then(done); }); });
+                var u = document.querySelector('[data-file-unrestrict]');
+                if (u) u.addEventListener('click', function () { cbConfirm(u.getAttribute('data-ask')).then(function (ok) { if (ok) send(@Json.Serialize(Url.Action("UnrestrictFile", new { id = Model.ID }))).then(done); }); });
+            })();
             var reload = function () { location.reload(); };   // the file's banner, buttons and tabs all change together
             HospitalAdmit.onChange(reload);
             var a = document.querySelector('[data-admit-me]'); if (a) a.addEventListener('click', function () { HospitalAdmit.open({ patientId: id }); });

@@ -1,0 +1,260 @@
+{
+  "unit": "H20 — insurance accounting (payer receivable, claim answers posted, remittances); fail-closed",
+  "strings": {
+    "A payer's own receivable": {
+      "en": "A payer's own receivable",
+      "ar": "حساب ذمم خاص بالجهة الدافعة",
+      "fr": "Créance propre d'un payeur"
+    },
+    "A remittance is more than zero": {
+      "en": "A remittance is more than zero",
+      "ar": "مبلغ السداد يجب أن يكون أكبر من صفر",
+      "fr": "Un règlement est supérieur à zéro"
+    },
+    "Adjustments, rejections, recoveries and payments posted against this batch": {
+      "en": "Adjustments, rejections, recoveries and payments posted against this batch",
+      "ar": "التسويات والرفض والاسترداد والسداد المرحّلة على هذه الدفعة",
+      "fr": "Ajustements, rejets, récupérations et règlements comptabilisés sur ce lot"
+    },
+    "And the payer's payment reference:": {
+      "en": "And the payer's payment reference:",
+      "ar": "ومرجع سداد الجهة الدافعة:",
+      "fr": "Et la référence du paiement du payeur :"
+    },
+    "And the payer's reason:": {
+      "en": "And the payer's reason:",
+      "ar": "وسبب الجهة الدافعة:",
+      "fr": "Et le motif du payeur :"
+    },
+    "Claim adjustments": {
+      "en": "Claim adjustments",
+      "ar": "تسويات المطالبات",
+      "fr": "Ajustements de demandes"
+    },
+    "Claim rejections": {
+      "en": "Claim rejections",
+      "ar": "مرفوضات المطالبات",
+      "fr": "Rejets de demandes"
+    },
+    "Enter the payer's payment reference": {
+      "en": "Enter the payer's payment reference",
+      "ar": "أدخل مرجع سداد الجهة الدافعة",
+      "fr": "Saisissez la référence du paiement du payeur"
+    },
+    "Event": {
+      "en": "Event",
+      "ar": "الحدث",
+      "fr": "Événement"
+    },
+    "Insurance accounting is not set up yet": {
+      "en": "Insurance accounting is not set up yet",
+      "ar": "محاسبة التأمين غير مُعدّة بعد",
+      "fr": "La comptabilité d'assurance n'est pas encore configurée"
+    },
+    "Insurance accounting is not set up: map the payer receivable, rejection and adjustment accounts": {
+      "en": "Insurance accounting is not set up: map the payer receivable, rejection and adjustment accounts",
+      "ar": "محاسبة التأمين غير مُعدّة: اربط حسابات ذمم الجهات الدافعة والمرفوضات والتسويات",
+      "fr": "La comptabilité d'assurance n'est pas configurée : associez les comptes de créances payeurs, de rejets et d'ajustements"
+    },
+    "Insurance accounts": {
+      "en": "Insurance accounts",
+      "ar": "حسابات التأمين",
+      "fr": "Comptes d'assurance"
+    },
+    "Its tables are created by the database update hospital_h20_claim_accounting.sql. Until then, self-pay bills close as before, and insured bills wait.": {
+      "en": "Its tables are created by the database update hospital_h20_claim_accounting.sql. Until then, self-pay bills close as before, and insured bills wait.",
+      "ar": "جداولها يُنشئها تحديث قاعدة البيانات hospital_h20_claim_accounting.sql. حتى ذلك الحين تُغلق فواتير الدفع الذاتي كالمعتاد، وتنتظر الفواتير المؤمَّنة.",
+      "fr": "Ses tables sont créées par la mise à jour hospital_h20_claim_accounting.sql. D'ici là, les factures à la charge du patient se clôturent comme avant, et les factures assurées attendent."
+    },
+    "Leave a payer on the company's payer receivable, or give it an account of its own": {
+      "en": "Leave a payer on the company's payer receivable, or give it an account of its own",
+      "ar": "اترك الجهة الدافعة على حساب ذمم الجهات للشركة، أو خصّص لها حساباً خاصاً",
+      "fr": "Laissez un payeur sur la créance payeurs de la société, ou donnez-lui son propre compte"
+    },
+    "Map the bank account in billing settings first": {
+      "en": "Map the bank account in billing settings first",
+      "ar": "اربط حساب البنك في إعدادات الفوترة أولاً",
+      "fr": "Associez d'abord le compte bancaire dans les paramètres de facturation"
+    },
+    "Map the claim adjustment account first": {
+      "en": "Map the claim adjustment account first",
+      "ar": "اربط حساب تسويات المطالبات أولاً",
+      "fr": "Associez d'abord le compte d'ajustements de demandes"
+    },
+    "Map the claim rejection account first": {
+      "en": "Map the claim rejection account first",
+      "ar": "اربط حساب مرفوضات المطالبات أولاً",
+      "fr": "Associez d'abord le compte de rejets de demandes"
+    },
+    "Map the payer receivable account first: closing an insured bill is refused until it is": {
+      "en": "Map the payer receivable account first: closing an insured bill is refused until it is",
+      "ar": "اربط حساب ذمم الجهات الدافعة أولاً: إغلاق الفاتورة المؤمَّنة مرفوض حتى يُربط",
+      "fr": "Associez d'abord le compte de créances payeurs : la clôture d'une facture assurée est refusée jusque-là"
+    },
+    "No bill can be claimed: {0} closed bills of this payer's patients were posted to the patient in full when they closed (no insurance split), and are not claimed": {
+      "en": "No bill can be claimed: {0} closed bills of this payer's patients were posted to the patient in full when they closed (no insurance split), and are not claimed",
+      "ar": "لا توجد فاتورة يمكن مطالبتها: {0} فواتير مغلقة لمرضى هذه الجهة رُحّلت بالكامل على المريض عند إغلاقها (دون تقسيم تأمين)، فلا تُطالَب",
+      "fr": "Aucune facture ne peut être réclamée : {0} factures clôturées des patients de ce payeur ont été imputées en totalité au patient à la clôture (sans répartition d'assurance), et ne sont pas réclamées"
+    },
+    "Nothing has posted against this batch yet.": {
+      "en": "Nothing has posted against this batch yet.",
+      "ar": "لم يُرحَّل شيء على هذه الدفعة بعد.",
+      "fr": "Rien n'a encore été comptabilisé sur ce lot."
+    },
+    "Payer ledger": {
+      "en": "Payer ledger",
+      "ar": "حساب الجهة الدافعة",
+      "fr": "Compte du payeur"
+    },
+    "Payer receivables": {
+      "en": "Payer receivables",
+      "ar": "ذمم الجهات الدافعة",
+      "fr": "Créances payeurs"
+    },
+    "Record payer payment": {
+      "en": "Record payer payment",
+      "ar": "تسجيل سداد الجهة",
+      "fr": "Enregistrer le paiement du payeur"
+    },
+    "Reference": {
+      "en": "Reference",
+      "ar": "المرجع",
+      "fr": "Référence"
+    },
+    "Still owed by the payer": {
+      "en": "Still owed by the payer",
+      "ar": "المتبقي على الجهة الدافعة",
+      "fr": "Reste dû par le payeur"
+    },
+    "Submit the batch before recording the payer's payment": {
+      "en": "Submit the batch before recording the payer's payment",
+      "ar": "ارفع الدفعة قبل تسجيل سداد الجهة الدافعة",
+      "fr": "Soumettez le lot avant d'enregistrer le paiement du payeur"
+    },
+    "The company's payer receivable": {
+      "en": "The company's payer receivable",
+      "ar": "حساب ذمم الجهات للشركة",
+      "fr": "La créance payeurs de la société"
+    },
+    "The insurance accounting tables are not created yet (hospital_h20_claim_accounting.sql)": {
+      "en": "The insurance accounting tables are not created yet (hospital_h20_claim_accounting.sql)",
+      "ar": "جداول محاسبة التأمين لم تُنشأ بعد (hospital_h20_claim_accounting.sql)",
+      "fr": "Les tables de comptabilité d'assurance ne sont pas encore créées (hospital_h20_claim_accounting.sql)"
+    },
+    "The original rejection was never written off in the ledger: settle this line by hand": {
+      "en": "The original rejection was never written off in the ledger: settle this line by hand",
+      "ar": "الرفض الأصلي لم يُشطب في الدفاتر: سوِّ هذا البند يدوياً",
+      "fr": "Le rejet d'origine n'a jamais été passé en perte : réglez cette ligne manuellement"
+    },
+    "The payer receivable account is not an active posting account of this company": {
+      "en": "The payer receivable account is not an active posting account of this company",
+      "ar": "حساب ذمم الجهات الدافعة ليس حساب ترحيل نشطاً لهذه الشركة",
+      "fr": "Le compte de créances payeurs n'est pas un compte de saisie actif de cette société"
+    },
+    "The payer receivable cannot be the patients' receivable account": {
+      "en": "The payer receivable cannot be the patients' receivable account",
+      "ar": "لا يجوز أن يكون حساب ذمم الجهات هو حساب ذمم المرضى",
+      "fr": "La créance payeurs ne peut pas être le compte de créances patients"
+    },
+    "This answer is already posted": {
+      "en": "This answer is already posted",
+      "ar": "هذا الرد مُرحَّل بالفعل",
+      "fr": "Cette réponse est déjà comptabilisée"
+    },
+    "This bill has no closing journal to settle against": {
+      "en": "This bill has no closing journal to settle against",
+      "ar": "هذه الفاتورة ليس لها قيد إغلاق تُسوّى عليه",
+      "fr": "Cette facture n'a pas d'écriture de clôture sur laquelle régler"
+    },
+    "This bill was not split when it closed: its payer share was never posted": {
+      "en": "This bill was not split when it closed: its payer share was never posted",
+      "ar": "هذه الفاتورة لم تُقسَّم عند إغلاقها: نصيب الجهة الدافعة لم يُرحَّل قط",
+      "fr": "Cette facture n'a pas été répartie à la clôture : la part du payeur n'a jamais été comptabilisée"
+    },
+    "This bill's payer share was not posted to the payer receivable (closed before insurance accounting): settle it by hand": {
+      "en": "This bill's payer share was not posted to the payer receivable (closed before insurance accounting): settle it by hand",
+      "ar": "نصيب الجهة الدافعة في هذه الفاتورة لم يُرحَّل على ذمم الجهات (أُغلقت قبل محاسبة التأمين): سوِّها يدوياً",
+      "fr": "La part du payeur de cette facture n'a pas été imputée à la créance payeurs (clôturée avant la comptabilité d'assurance) : réglez-la manuellement"
+    },
+    "This is more than the payer still owes on the batch ({0})": {
+      "en": "This is more than the payer still owes on the batch ({0})",
+      "ar": "هذا أكثر مما تبقّى على الجهة الدافعة في الدفعة ({0})",
+      "fr": "C'est plus que ce que le payeur doit encore sur le lot ({0})"
+    },
+    "Until these are mapped, an insured bill cannot close and a payer's answer cannot be recorded": {
+      "en": "Until these are mapped, an insured bill cannot close and a payer's answer cannot be recorded",
+      "ar": "حتى تُربط هذه الحسابات لا تُغلق الفاتورة المؤمَّنة ولا يُسجَّل رد الجهة الدافعة",
+      "fr": "Tant qu'ils ne sont pas associés, une facture assurée ne peut se clôturer et la réponse d'un payeur ne peut être enregistrée"
+    },
+    "What a payer accepts short of what was claimed": {
+      "en": "What a payer accepts short of what was claimed",
+      "ar": "ما تقبله الجهة الدافعة أقل مما طولبت به",
+      "fr": "Ce qu'un payeur accepte en deçà du montant réclamé"
+    },
+    "What a payer rejects, and recovers when a resubmission is accepted": {
+      "en": "What a payer rejects, and recovers when a resubmission is accepted",
+      "ar": "ما ترفضه الجهة الدافعة، ويُسترد عند قبول إعادة الرفع",
+      "fr": "Ce qu'un payeur rejette, et récupéré quand une nouvelle soumission est acceptée"
+    },
+    "What payers owe once an insured bill closes; never the patients' account": {
+      "en": "What payers owe once an insured bill closes; never the patients' account",
+      "ar": "ما على الجهات الدافعة عند إغلاق الفاتورة المؤمَّنة؛ وليس حساب المرضى أبداً",
+      "fr": "Ce que doivent les payeurs à la clôture d'une facture assurée ; jamais le compte des patients"
+    },
+    "ce:Adjustment": {
+      "en": "Adjustment",
+      "ar": "تسوية",
+      "fr": "Ajustement"
+    },
+    "ce:Recovery": {
+      "en": "Recovery",
+      "ar": "استرداد",
+      "fr": "Récupération"
+    },
+    "ce:Rejection": {
+      "en": "Rejection",
+      "ar": "رفض",
+      "fr": "Rejet"
+    },
+    "ce:Remittance": {
+      "en": "Payment",
+      "ar": "سداد",
+      "fr": "Règlement"
+    },
+    "{0} lines need the payer's approval and have none": {
+      "en": "{0} lines need the payer's approval and have none",
+      "ar": "{0} بنود تحتاج موافقة الجهة الدافعة وليس لها موافقة",
+      "fr": "{0} lignes nécessitent l'accord du payeur et n'en ont aucun"
+    },
+    "{0} still owes {1} {2} on this batch: enter the amount it paid.": {
+      "en": "{0} still owes {1} {2} on this batch: enter the amount it paid.",
+      "ar": "تبقّى على {0} مبلغ {1} {2} في هذه الدفعة: أدخل المبلغ المسدَّد.",
+      "fr": "{0} doit encore {1} {2} sur ce lot : saisissez le montant payé."
+    },
+    "The payer receivable account is not an active asset posting account of this company": {
+      "en": "The payer receivable account is not an active asset posting account of this company",
+      "ar": "حساب ذمم الجهات الدافعة ليس حساب أصول نشطاً للترحيل في هذه الشركة",
+      "fr": "Le compte de créances payeurs n'est pas un compte d'actif de saisie actif de cette société"
+    },
+    "The payer receivable must be an active asset posting account": {
+      "en": "The payer receivable must be an active asset posting account",
+      "ar": "حساب ذمم الجهات الدافعة يجب أن يكون حساب أصول نشطاً للترحيل",
+      "fr": "La créance payeurs doit être un compte d'actif de saisie actif"
+    },
+    "Claim adjustments and rejections post to an active revenue or expense account": {
+      "en": "Claim adjustments and rejections post to an active revenue or expense account",
+      "ar": "تسويات ومرفوضات المطالبات تُرحَّل على حساب إيرادات أو مصروفات نشط",
+      "fr": "Les ajustements et rejets de demandes vont sur un compte de produits ou de charges actif"
+    },
+    "One account cannot play two roles": {
+      "en": "One account cannot play two roles",
+      "ar": "لا يجوز أن يقوم حساب واحد بدورين",
+      "fr": "Un même compte ne peut tenir deux rôles"
+    },
+    "A foreign-currency bill's payer share is settled by hand for now": {
+      "en": "A foreign-currency bill's payer share is settled by hand for now",
+      "ar": "نصيب الجهة الدافعة في فاتورة بعملة أجنبية يُسوّى يدوياً حالياً",
+      "fr": "La part du payeur d'une facture en devise se règle manuellement pour l'instant"
+    }
+  }
+}

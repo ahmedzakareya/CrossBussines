@@ -51,13 +51,9 @@ namespace CrossBuy.BL.Hospital
 
 		public HospitalLabAlertService(CrossDbContext db, IHospitalAccessService access, HospitalLabService lab) { _db = db; _access = access; _lab = lab; }
 
-		/// A doctor works now when today is one of his days and the clock is inside his session (the clinic
-		/// day is the server's wall clock, as for appointments).
-		public static bool OnDuty(HospitalPractitioner p, DateTime local)
-		{
-			int m = local.Hour * 60 + local.Minute;
-			return p.IsActive && p.Days().Contains(local.DayOfWeek) && m >= p.SessionStartMinute && m < p.SessionEndMinute;
-		}
+		/// A doctor works now when the clock is inside one of today's sessions and he is not on leave (H26: the
+		/// weekly schedule; the clinic day is the server's wall clock, as for appointments).
+		public static bool OnDuty(HospitalPractitioner p, DateTime local) => new HospitalDoctorSchedule(p).OnDutyAt(local);
 
 		/// The value read back: the first critical result as shown, else the first out-of-range one.
 		public static string? ReadBackValue(IEnumerable<HospitalLabResult> results)
@@ -142,7 +138,8 @@ namespace CrossBuy.BL.Hospital
 			var ordering = await OrderingDoctorAsync(ctx, s.EncounterId, ct);
 			var all = await _db.HospitalPractitioners.AsNoTracking().Where(p => p.CompanyId == ctx.CompanyId && p.IsActive).OrderBy(p => p.Name).ToListAsync(ct);
 			string Why(HospitalPractitioner p) => p.ID == ordering?.ID ? HospitalLabAlertReason.Ordering : ordering?.DepartmentId != null && p.DepartmentId == ordering.DepartmentId ? "Department" : "Other";
-			return all.Select(p => new HospitalLabRecipient(p, Why(p), OnDuty(p, local), p.EmployeeId != null))
+			var sch = await HospitalScheduleLoader.LoadAsync(_db, ctx.CompanyId, all, local.Date, local.Date, ct);
+			return all.Select(p => new HospitalLabRecipient(p, Why(p), sch[p.ID].OnDutyAt(local), p.EmployeeId != null))
 				.OrderBy(r => r.Why == HospitalLabAlertReason.Ordering ? 0 : r.Why == "Department" ? 1 : 2).ThenByDescending(r => r.OnDuty).ToList();
 		}
 
@@ -205,7 +202,8 @@ namespace CrossBuy.BL.Hospital
 			return list;
 		}
 
-		/// Another doctor of the recipient's department with a user, not yet told about this order — on duty first.
+		/// Another doctor of the recipient's department with a user, not yet told about this order — the department's on-call
+		/// doctor first (H68), then one in session.
 		private async Task<HospitalPractitioner?> EscalationTargetAsync(BusinessContext ctx, HospitalLabCriticalAlert a, DateTime local, CancellationToken ct)
 		{
 			var from = await _db.HospitalPractitioners.AsNoTracking().FirstOrDefaultAsync(p => p.ID == a.ToPractitionerId && p.CompanyId == ctx.CompanyId, ct);
@@ -214,7 +212,11 @@ namespace CrossBuy.BL.Hospital
 			var peers = await _db.HospitalPractitioners.AsNoTracking()
 				.Where(p => p.CompanyId == ctx.CompanyId && p.IsActive && p.DepartmentId == from.DepartmentId && p.ID != from.ID && p.EmployeeId != null && !told.Contains(p.EmployeeId!.Value))
 				.OrderBy(p => p.ID).ToListAsync(ct);
-			return peers.OrderByDescending(p => OnDuty(p, local)).FirstOrDefault();
+			// H68: the department's on-call doctor first (the first on call, then the backup), when one is not yet told
+			foreach (var shift in await HospitalOnCallService.OnCallAtAsync(_db, ctx.CompanyId, from.DepartmentId.Value, local, ct))
+				if (peers.FirstOrDefault(p => p.ID == shift.PractitionerId) is { } onCall) return onCall;
+			var sch = await HospitalScheduleLoader.LoadAsync(_db, ctx.CompanyId, peers, local.Date, local.Date, ct);
+			return peers.OrderByDescending(p => sch[p.ID].OnDutyAt(local)).FirstOrDefault();
 		}
 
 		/// Reminds and escalates the alerts that waited too long. Idempotent; run on every read.

@@ -1,0 +1,164 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model HospitalDietBoard?
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H43 — clinical dietary, as the approved prototype draws it (#/dietary): one card, "Lunch orders — Ward 3" — the
+    patient and bed, the diet (changed in place), the allergy, the kitchen's state. The round is chosen above the
+    card; sending it orders every tray not sent yet, serving it closes them. Every change swaps in place.
+*@
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Dietary"].Value;
+    bool ready = ViewBag.Ready == true, canAdmit = ViewBag.CanAdmit == true, canDiet = ViewBag.CanDiet == true;
+    var wards = (ViewBag.Wards as IReadOnlyList<HospitalWardOption>) ?? Array.Empty<HospitalWardOption>();
+    var b = Model;
+    string[] Lines(string? s) => (s ?? "").Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+    int unsent = b?.Rows.Count(r => r.Meal == null) ?? 0, toServe = b?.Rows.Count(r => r.Meal?.Status == HospitalMealStatus.Sent) ?? 0;
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Dietary"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item text-muted">@T["Inpatient"]</li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@T["Dietary"]</li>
+            </ul>
+        </div>
+        @if (wards.Count > 0)
+        {
+            <div class="d-flex align-items-center gap-3 d-print-none">
+                <div class="btn-group" role="group">
+                    @foreach (var r in HospitalMealRound.All)
+                    {
+                        <a href="@Url.Action("Dietary", new { ward = b?.Ward.Id, round = r })" class="btn btn-sm @(b?.Round == r ? "btn-primary" : "btn-light")">@T["round:" + r]</a>
+                    }
+                </div>
+                <div style="width:240px">
+                    <select class="form-select form-select-sm form-select-solid" data-dt-ward>
+                        @foreach (var w in wards) { <option value="@w.Id" selected="@(b?.Ward.Id == w.Id)">@w.Code · @DisplayName.Of(w.Name, w.NameEn ?? w.Name)</option> }
+                    </select>
+                </div>
+            </div>
+        }
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid" data-dt-board="@(b?.Ward.Id ?? 0)" data-round="@b?.Round">
+        @if (!ready)
+        {
+            <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice"><div class="fs-6 text-gray-700">@T[HospitalDietaryService.NoTables]</div></div>
+        }
+        @if (b == null)
+        {
+            <div class="card"><div class="card-body text-center text-muted py-15"><i class="ki-outline ki-home-2 fs-3x text-gray-300 d-block mb-4"></i>@T["No wards yet: add them in the facility."]</div></div>
+        }
+        else
+        {
+            <div class="card mb-5">
+                <div class="card-header border-0 pt-6">
+                    <div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@string.Format(T["{0} orders — {1}"].Value, T["round:" + b.Round].Value, DisplayName.Of(b.Ward.Name, b.Ward.NameEn ?? b.Ward.Name))</span></div>
+                    @if (ready && canAdmit && b.Rows.Count > 0)
+                    {
+                        <div class="card-toolbar gap-2 d-print-none">
+                            @if (toServe > 0) { <button type="button" class="btn btn-sm btn-light-primary" data-dt-served><i class="ki-outline ki-check fs-4"></i>@T["Served"] <span class="hp-num ms-1">(@toServe)</span></button> }
+                            @if (unsent > 0) { <button type="button" class="btn btn-sm btn-primary" data-dt-send><i class="ki-outline ki-send fs-4"></i>@T["Send to the kitchen"] <span class="hp-num ms-1">(@unsent)</span></button> }
+                        </div>
+                    }
+                </div>
+                <div class="card-body pt-2">
+                    @if (b.Rows.Count == 0) { <div class="text-center text-muted py-10">@T["No patient is on this ward now."]</div> }
+                    else
+                    {
+                        <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-3 mb-0">
+                            <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0">
+                                <th>@T["Patient"]</th><th style="width:200px">@T["Diet"]</th><th>@T["Allergy"]</th><th>@T["Kitchen"]</th>
+                            </tr></thead>
+                            <tbody class="fw-semibold text-gray-700">
+                                @foreach (var r in b.Rows)
+                                {
+                                    var al = Lines(r.Allergies);
+                                    <tr>
+                                        <td><div class="d-flex align-items-center">
+                                            <div class="symbol symbol-35px symbol-circle me-3 flex-shrink-0">@if (r.Photo != null) {<img src="@r.Photo" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(r.NameEn)" />} else {<span class="symbol-label fw-bold fs-8 hp-initials">@HospitalUi.Initials(r.NameEn)</span>}</div>
+                                            <div class="d-flex flex-column"><a href="@Url.Action("Patient", new { id = r.PatientId })" class="text-gray-900 text-hover-primary">@DisplayName.Of(r.Name, r.NameEn)</a><span class="text-muted fs-8">@T["Bed"] <bdi class="hp-num" dir="ltr">@r.Bed</bdi></span></div>
+                                        </div></td>
+                                        <td>@if (canDiet && ready)
+                                            {
+                                                <select class="form-select form-select-sm form-select-solid" data-dt-diet="@r.AdmissionId" data-was="@r.Diet" data-name="@DisplayName.Of(r.Name, r.NameEn)" data-sent="@(r.Meal != null && r.Meal.Status != HospitalMealStatus.Served ? "1" : "")">
+                                                    @foreach (var d in HospitalDiet.All) { <option value="@d" selected="@(r.Diet == d)">@T["diet:" + d]</option> }
+                                                </select>
+                                            }
+                                            else { <span class="text-gray-800">@T["diet:" + r.Diet]</span> }
+                                            @if (!r.Ordered) { <div class="text-muted fs-9 mt-1">@T["No diet ordered: regular"]</div> }</td>
+                                        <td>@if (al.Length > 0) {<span class="badge badge-light-danger">@string.Join(DisplayName.IsArabic ? "، " : ", ", al)</span>} else {<span class="text-gray-400">—</span>}</td>
+                                        <td>@if (r.Meal == null) {<span class="text-gray-400">—</span>}
+                                            else { <span class="badge badge-light-@(r.Meal.Status == HospitalMealStatus.Served ? "primary" : r.Meal.Status == HospitalMealStatus.Held ? "dark" : "success")">@T["meal:" + r.Meal.Status]</span>
+                                                @if (r.Meal.Diet != r.Diet) {<div class="text-muted fs-9 mt-1">@T["diet:" + r.Meal.Diet]</div>} }</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table></div>
+                    }
+                </div>
+            </div>
+        }
+    </div></div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value, root = @Json.Serialize(Url.Content("~/Hospital/Dietary"));
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value),
+                diet: @Json.Serialize(T["Change {0}'s diet from {1} to {2}?"].Value), tray: @Json.Serialize(T["The tray already sent to the kitchen for this round changes too."].Value),
+                send: @Json.Serialize(T["Send this round's trays to the kitchen ({0})?"].Value), served: @Json.Serialize(T["Mark this round's trays served ({0})? This cannot be undone."].Value) };
+            function fmt(t) { var a = arguments; return t.replace(/\{(\d)\}/g, function (_, i) { return a[+i + 1]; }); }
+            function label(sel, v) { var o = Array.prototype.find.call(sel.options, function (x) { return x.value === v; }); return o ? o.text : v; }
+            function toast(k, m) { if (window.toastr) toastr[k](m); }
+            function board() { var c = document.querySelector('[data-dt-board]'); return { ward: +c.getAttribute('data-dt-board'), round: c.getAttribute('data-round') }; }
+            function post(url, body) {
+                return fetch(root + url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(body || {}) })
+                    .then(function (r) { return r.json().catch(function () { return { ok: false }; }); });
+            }
+            // In place, never a reload: the page is rendered again and its content swapped.
+            function swap() {
+                var bd = board();
+                return fetch(root + '?ward=' + bd.ward + '&round=' + bd.round, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.text(); }).then(function (html) {
+                    var d = new DOMParser().parseFromString(html, 'text/html'), f = d.getElementById('kt_app_content');
+                    if (f) document.getElementById('kt_app_content').innerHTML = f.innerHTML;
+                });
+            }
+            function done(btn) { return function (res) { if (btn) btn.disabled = false; if (!res.ok) { toast('error', res.error || W.failed); swap(); return; } toast('success', W.saved); swap(); }; }
+            // another ward opens its own page (the address names it)
+            var wp = document.querySelector('[data-dt-ward]');
+            if (wp && window.jQuery) {
+                jQuery(wp).select2({ minimumResultsForSearch: Infinity });
+                CB.onSelectChange(wp, function () { location.href = root + '?ward=' + wp.value + '&round=' + board().round; });
+            }
+            // the diet list is a plain select (no select2), so its change event reaches here
+            document.addEventListener('change', function (e) {
+                var s = e.target.closest('[data-dt-diet]'); if (!s) return;
+                var was = s.getAttribute('data-was'), now = s.value;
+                var msg = fmt(W.diet, s.getAttribute('data-name'), label(s, was), label(s, now)) + (s.getAttribute('data-sent') ? ' ' + W.tray : '');
+                // nothing is saved until it is confirmed; a cancel puts the list back as it was
+                cbConfirm(msg).then(function (ok) {
+                    if (!ok) { s.value = was; return; }
+                    s.disabled = true; post('/Diet', { admissionId: +s.getAttribute('data-dt-diet'), diet: now }).then(done(s));
+                });
+            });
+            document.addEventListener('click', function (e) {
+                var t = e.target.closest('[data-dt-send],[data-dt-served]'); if (!t) return;
+                var bd = board(), send = t.hasAttribute('data-dt-send'), n = (t.textContent.match(/\((\d+)\)/) || [])[1] || '';
+                cbConfirm(fmt(send ? W.send : W.served, n)).then(function (ok) {
+                    if (!ok) return; t.disabled = true;
+                    post(send ? '/Send' : '/Served', { wardId: bd.ward, round: bd.round }).then(done(t));
+                });
+            });
+        })();
+    </script>
+}

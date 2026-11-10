@@ -1,0 +1,345 @@
+{
+ "unit": "H72 — medication reconciliation",
+ "strings": {
+  "A decided medicine stays on the record": {
+   "ar": "الدواء الذي اتُّخذ فيه قرار يبقى في السجل",
+   "en": "A decided medicine stays on the record",
+   "fr": "Un médicament décidé reste au dossier"
+  },
+  "A medicine new for home is already on the list": {
+   "ar": "الدواء الجديد للمنزل موجود في القائمة بالفعل",
+   "en": "A medicine new for home is already on the list",
+   "fr": "Un médicament nouveau pour la maison est déjà sur la liste"
+  },
+  "Add a home medicine": {
+   "ar": "إضافة دواء منزلي",
+   "en": "Add a home medicine",
+   "fr": "Ajouter un médicament habituel"
+  },
+  "Add a medicine new for home": {
+   "ar": "إضافة دواء جديد للمنزل",
+   "en": "Add a medicine new for home",
+   "fr": "Ajouter un nouveau médicament pour la maison"
+  },
+  "Add {0} to the list?": {
+   "ar": "إضافة {0} إلى القائمة؟",
+   "en": "Add {0} to the list?",
+   "fr": "Ajouter {0} à la liste ?"
+  },
+  "Choose the decision": {
+   "ar": "اختر القرار",
+   "en": "Choose the decision",
+   "fr": "Choisissez la décision"
+  },
+  "Choose where the history came from": {
+   "ar": "اختر مصدر المعلومة",
+   "en": "Choose where the history came from",
+   "fr": "Choisissez la source de l'information"
+  },
+  "Decide every home medicine first": {
+   "ar": "قرر في كل دواء منزلي أولاً",
+   "en": "Decide every home medicine first",
+   "fr": "Décidez d'abord pour chaque médicament habituel"
+  },
+  "Decide every medicine still given in hospital first": {
+   "ar": "قرر أولاً في كل دواء ما زال يُعطى في المستشفى",
+   "en": "Decide every medicine still given in hospital first",
+   "fr": "Décidez d'abord pour chaque médicament encore donné à l'hôpital"
+  },
+  "Decision": {
+   "ar": "القرار",
+   "en": "Decision",
+   "fr": "Décision"
+  },
+  "Every home medicine and every medicine still given in hospital: continue at home, change, or stop": {
+   "ar": "كل دواء منزلي وكل دواء ما زال يُعطى في المستشفى: يستمر في المنزل، يُعدَّل، أو يُوقف",
+   "en": "Every home medicine and every medicine still given in hospital: continue at home, change, or stop",
+   "fr": "Chaque médicament habituel et chaque médicament encore donné à l'hôpital : poursuivre, modifier ou arrêter"
+  },
+  "For home": {
+   "ar": "للمنزل",
+   "en": "For home",
+   "fr": "Pour la maison"
+  },
+  "Given in hospital": {
+   "ar": "يُعطى في المستشفى",
+   "en": "Given in hospital",
+   "fr": "Donné à l'hôpital"
+  },
+  "Home medicine": {
+   "ar": "دواء منزلي",
+   "en": "Home medicine",
+   "fr": "Médicament habituel"
+  },
+  "Home medicines": {
+   "ar": "الأدوية المنزلية",
+   "en": "Home medicines",
+   "fr": "Médicaments habituels"
+  },
+  "Home medicines are listed: remove them, or clear the no-home-medicines tick": {
+   "ar": "توجد أدوية منزلية مسجلة: احذفها أو ألغِ علامة «لا يتناول أدوية في المنزل»",
+   "en": "Home medicines are listed: remove them, or clear the no-home-medicines tick",
+   "fr": "Des médicaments habituels sont listés : retirez-les ou décochez « aucun médicament à domicile »"
+  },
+  "How long, or what to watch for": {
+   "ar": "المدة، أو ما يجب الانتباه له",
+   "en": "How long, or what to watch for",
+   "fr": "Durée, ou points de vigilance"
+  },
+  "How often": {
+   "ar": "كم مرة",
+   "en": "How often",
+   "fr": "Fréquence"
+  },
+  "Last taken": {
+   "ar": "آخر جرعة",
+   "en": "Last taken",
+   "fr": "Dernière prise"
+  },
+  "List the home medicines, or record that the patient takes none": {
+   "ar": "سجّل الأدوية المنزلية، أو سجّل أن المريض لا يتناول أي دواء",
+   "en": "List the home medicines, or record that the patient takes none",
+   "fr": "Listez les médicaments habituels, ou indiquez que le patient n'en prend aucun"
+  },
+  "Medication reconciliation": {
+   "ar": "مطابقة الأدوية",
+   "en": "Medication reconciliation",
+   "fr": "Conciliation médicamenteuse"
+  },
+  "Medication reconciliation is not installed yet (hospital_h72_med_recon.sql).": {
+   "ar": "مطابقة الأدوية غير مثبتة بعد (hospital_h72_med_recon.sql).",
+   "en": "Medication reconciliation is not installed yet (hospital_h72_med_recon.sql).",
+   "fr": "La conciliation médicamenteuse n'est pas encore installée (hospital_h72_med_recon.sql)."
+  },
+  "Medicines for home": {
+   "ar": "أدوية المنزل",
+   "en": "Medicines for home",
+   "fr": "Médicaments pour la maison"
+  },
+  "Medicines reconciled": {
+   "ar": "الأدوية مطابَقة",
+   "en": "Medicines reconciled",
+   "fr": "Médicaments conciliés"
+  },
+  "More than a day since admission and the home medicines are not reconciled.": {
+   "ar": "مرّ أكثر من يوم على الدخول ولم تُطابَق الأدوية المنزلية.",
+   "en": "More than a day since admission and the home medicines are not reconciled.",
+   "fr": "Plus d'un jour depuis l'admission et les médicaments habituels ne sont pas conciliés."
+  },
+  "New for home": {
+   "ar": "جديد للمنزل",
+   "en": "New for home",
+   "fr": "Nouveau pour la maison"
+  },
+  "No home medicines listed yet.": {
+   "ar": "لم تُسجَّل أدوية منزلية بعد.",
+   "en": "No home medicines listed yet.",
+   "fr": "Aucun médicament habituel listé pour l'instant."
+  },
+  "No medicines for home.": {
+   "ar": "لا توجد أدوية للمنزل.",
+   "en": "No medicines for home.",
+   "fr": "Aucun médicament pour la maison."
+  },
+  "No medicines to reconcile.": {
+   "ar": "لا توجد أدوية للمطابقة.",
+   "en": "No medicines to reconcile.",
+   "fr": "Aucun médicament à concilier."
+  },
+  "On admission": {
+   "ar": "عند الدخول",
+   "en": "On admission",
+   "fr": "À l'admission"
+  },
+  "On admission only the home medicines are reconciled": {
+   "ar": "عند الدخول تُطابَق الأدوية المنزلية فقط",
+   "en": "On admission only the home medicines are reconciled",
+   "fr": "À l'admission, seuls les médicaments habituels sont conciliés"
+  },
+  "On admission:": {
+   "ar": "عند الدخول:",
+   "en": "On admission:",
+   "fr": "À l'admission :"
+  },
+  "On discharge": {
+   "ar": "عند الخروج",
+   "en": "On discharge",
+   "fr": "À la sortie"
+  },
+  "Reconcile medicines": {
+   "ar": "مطابقة الأدوية مطلوبة",
+   "en": "Reconcile medicines",
+   "fr": "Concilier les médicaments"
+  },
+  "Reconcile medicines — overdue": {
+   "ar": "مطابقة الأدوية — متأخرة",
+   "en": "Reconcile medicines — overdue",
+   "fr": "Concilier les médicaments — en retard"
+  },
+  "Record the decision for this medicine?": {
+   "ar": "تسجيل القرار لهذا الدواء؟",
+   "en": "Record the decision for this medicine?",
+   "fr": "Enregistrer la décision pour ce médicament ?"
+  },
+  "Sign the admission reconciliation": {
+   "ar": "توقيع مطابقة الدخول",
+   "en": "Sign the admission reconciliation",
+   "fr": "Signer la conciliation d'admission"
+  },
+  "Sign the admission reconciliation? It cannot change after.": {
+   "ar": "توقيع مطابقة الدخول؟ لا يمكن تعديلها بعد ذلك.",
+   "en": "Sign the admission reconciliation? It cannot change after.",
+   "fr": "Signer la conciliation d'admission ? Elle ne pourra plus changer."
+  },
+  "Sign the discharge reconciliation": {
+   "ar": "توقيع مطابقة الخروج",
+   "en": "Sign the discharge reconciliation",
+   "fr": "Signer la conciliation de sortie"
+  },
+  "Sign the discharge reconciliation first": {
+   "ar": "وقّع مطابقة الخروج أولاً",
+   "en": "Sign the discharge reconciliation first",
+   "fr": "Signez d'abord la conciliation de sortie"
+  },
+  "Sign the discharge reconciliation? It cannot change after.": {
+   "ar": "توقيع مطابقة الخروج؟ لا يمكن تعديلها بعد ذلك.",
+   "en": "Sign the discharge reconciliation? It cannot change after.",
+   "fr": "Signer la conciliation de sortie ? Elle ne pourra plus changer."
+  },
+  "Signed by {0} on {1}": {
+   "ar": "وقّعها {0} في {1}",
+   "en": "Signed by {0} on {1}",
+   "fr": "Signée par {0} le {1}"
+  },
+  "Start the discharge summary first": {
+   "ar": "ابدأ ملخص الخروج أولاً",
+   "en": "Start the discharge summary first",
+   "fr": "Commencez d'abord le résumé de sortie"
+  },
+  "Start the discharge summary to write the list into it": {
+   "ar": "ابدأ ملخص الخروج لتكتب القائمة فيه",
+   "en": "Start the discharge summary to write the list into it",
+   "fr": "Commencez le résumé de sortie pour y écrire la liste"
+  },
+  "Take {0} off the list?": {
+   "ar": "حذف {0} من القائمة؟",
+   "en": "Take {0} off the list?",
+   "fr": "Retirer {0} de la liste ?"
+  },
+  "The discharge summary is signed": {
+   "ar": "ملخص الخروج موقَّع",
+   "en": "The discharge summary is signed",
+   "fr": "Le résumé de sortie est signé"
+  },
+  "The list the patient goes home with": {
+   "ar": "القائمة التي يخرج بها المريض",
+   "en": "The list the patient goes home with",
+   "fr": "La liste avec laquelle le patient rentre"
+  },
+  "The medicine's name is too long": {
+   "ar": "اسم الدواء طويل جداً",
+   "en": "The medicine's name is too long",
+   "fr": "Le nom du médicament est trop long"
+  },
+  "The patient takes no medicines at home": {
+   "ar": "المريض لا يتناول أي أدوية في المنزل",
+   "en": "The patient takes no medicines at home",
+   "fr": "Le patient ne prend aucun médicament à domicile"
+  },
+  "What the patient takes at home, and the doctor's decision for the stay": {
+   "ar": "ما يتناوله المريض في المنزل، وقرار الطبيب أثناء الإقامة",
+   "en": "What the patient takes at home, and the doctor's decision for the stay",
+   "fr": "Ce que le patient prend à domicile, et la décision du médecin pour le séjour"
+  },
+  "Where it comes from": {
+   "ar": "المصدر",
+   "en": "Where it comes from",
+   "fr": "Provenance"
+  },
+  "Why, or the new dose": {
+   "ar": "السبب أو الجرعة الجديدة",
+   "en": "Why, or the new dose",
+   "fr": "Pourquoi, ou la nouvelle dose"
+  },
+  "Write it into the discharge summary": {
+   "ar": "اكتبها في ملخص الخروج",
+   "en": "Write it into the discharge summary",
+   "fr": "L'écrire dans le résumé de sortie"
+  },
+  "Write the dose": {
+   "ar": "اكتب الجرعة",
+   "en": "Write the dose",
+   "fr": "Indiquez la dose"
+  },
+  "Write the home list into the discharge summary? Its medicines field is replaced.": {
+   "ar": "كتابة قائمة المنزل في ملخص الخروج؟ سيُستبدل حقل الأدوية فيه.",
+   "en": "Write the home list into the discharge summary? Its medicines field is replaced.",
+   "fr": "Écrire la liste dans le résumé de sortie ? Son champ médicaments est remplacé."
+  },
+  "Write the medicine": {
+   "ar": "اكتب اسم الدواء",
+   "en": "Write the medicine",
+   "fr": "Indiquez le médicament"
+  },
+  "Write the new dose or how it changes": {
+   "ar": "اكتب الجرعة الجديدة أو كيف تتغير",
+   "en": "Write the new dose or how it changes",
+   "fr": "Indiquez la nouvelle dose ou le changement"
+  },
+  "mrd:Continue": {
+   "ar": "يستمر",
+   "en": "Continue",
+   "fr": "Poursuivre"
+  },
+  "mrd:Change": {
+   "ar": "يُعدَّل",
+   "en": "Change",
+   "fr": "Modifier"
+  },
+  "mrd:Hold": {
+   "ar": "يُعلَّق مؤقتاً",
+   "en": "Hold",
+   "fr": "Suspendre"
+  },
+  "mrd:Stop": {
+   "ar": "يُوقف",
+   "en": "Stop",
+   "fr": "Arrêter"
+  },
+  "mrs:Patient": {
+   "ar": "المريض",
+   "en": "Patient",
+   "fr": "Patient"
+  },
+  "mrs:Family": {
+   "ar": "الأسرة",
+   "en": "Family",
+   "fr": "Famille"
+  },
+  "mrs:Records": {
+   "ar": "سجلات سابقة",
+   "en": "Earlier records",
+   "fr": "Dossiers antérieurs"
+  },
+  "mrs:Pharmacy": {
+   "ar": "الصيدلية",
+   "en": "Pharmacy",
+   "fr": "Pharmacie"
+  },
+  "mrs:Other": {
+   "ar": "أخرى",
+   "en": "Other",
+   "fr": "Autre"
+  },
+  "Write why": {
+   "ar": "اكتب السبب",
+   "en": "Write why",
+   "fr": "Indiquez pourquoi"
+  },
+  "This reconciliation is signed and cannot change": {
+   "ar": "هذه المطابقة موقَّعة ولا يمكن تعديلها",
+   "en": "This reconciliation is signed and cannot change",
+   "fr": "Cette conciliation est signée et ne peut plus changer"
+  }
+ }
+}

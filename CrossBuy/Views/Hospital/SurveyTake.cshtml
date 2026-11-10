@@ -1,0 +1,102 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model HospitalSurveyEpisode
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H65 — the survey on a tablet, handed to the patient: each question 1–5 (large faces to tap), "would you recommend us"
+    0–10, a comment, and anonymous or not. Sending asks first; one survey per visit, stay or emergency visit.
+*@
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Patient survey"].Value;
+    var questions = (ViewBag.Questions as IReadOnlyList<HospitalSurveyQuestion>) ?? Array.Empty<HospitalSurveyQuestion>();
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+<style>
+    /* a five-step scale on one bar: the step's number and its word, the chosen step filled in the brand colour */
+    .hp-scale { display: grid; grid-template-columns: repeat(5, 1fr); gap: .5rem; }
+    .hp-step { border: 1px solid var(--bs-gray-300); border-radius: .75rem; background: var(--bs-body-bg); padding: .75rem .25rem; display: flex; flex-direction: column; align-items: center; gap: .15rem;
+        color: var(--bs-gray-700); transition: background .15s, border-color .15s, color .15s; }
+    .hp-step b { font-size: 1.35rem; line-height: 1; }
+    .hp-step span { font-size: .8rem; }
+    .hp-step:hover { border-color: var(--bs-primary); }
+    .hp-step.active { background: var(--bs-primary); border-color: var(--bs-primary); color: #fff; }
+    .hp-nps { width: 44px; height: 44px; border-radius: .6rem; border: 1px solid var(--bs-gray-300); background: var(--bs-body-bg); font-weight: 700; }
+    .hp-nps.active { border-color: var(--bs-primary); background: var(--bs-primary); color: #fff; }
+</style>
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Patient survey"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item text-muted">@T["sv:" + Model.Kind]</li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@DisplayName.Of(Model.PatientName, Model.PatientNameEn) · <span class="hp-num">@Model.Mrn</span></li>
+            </ul>
+        </div>
+        <a href="@Url.Action("Surveys")" class="btn btn-sm btn-light"><i class="ki-outline ki-arrow-left fs-4"></i>@T["Satisfaction surveys"]</a>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="row justify-content-center"><div class="col-xl-8">
+            @if (questions.Count == 0) { <div class="notice d-flex rounded border border-dashed p-6 hp-notice"><div class="fs-6 text-gray-700">@T["There are no questions for this kind of care yet"]</div></div> }
+            else
+            {
+                <div class="card" data-survey data-kind="@Model.Kind" data-episode="@Model.Id">
+                    <div class="card-body p-10">
+                        <h2 class="fw-bold text-gray-900 mb-1">@T["Thank you for helping us improve"]</h2>
+                        <div class="text-muted fs-6 mb-8">@T["Choose from 1 (very poor) to 5 (excellent). It takes a minute."]</div>
+                        @foreach (var q in questions)
+                        {
+                            <div class="py-5 border-bottom border-gray-200 border-bottom-dashed" data-q="@q.ID">
+                                <div class="fs-5 fw-semibold text-gray-900 mb-4" dir="auto">@DisplayName.Of(q.Text, q.TextEn)</div>
+                                <div class="hp-scale">
+                                    @for (int s = 1; s <= 5; s++) { <button type="button" class="hp-step" data-score="@s"><b class="hp-num">@s</b><span>@T["svr:" + s]</span></button> }
+                                </div>
+                            </div>
+                        }
+                        <div class="py-6">
+                            <div class="fs-5 fw-semibold text-gray-900 mb-4">@T["How likely are you to recommend us to family and friends?"]</div>
+                            <div class="d-flex gap-2 flex-wrap" data-nps>
+                                @for (int n = 0; n <= 10; n++) { <button type="button" class="hp-nps hp-num" data-recommend="@n">@n</button> }
+                            </div>
+                            <div class="d-flex flex-stack text-muted fs-8 mt-2"><span>@T["Not at all likely"]</span><span>@T["Extremely likely"]</span></div>
+                        </div>
+                        <label class="form-label fs-6 fw-semibold">@T["Anything you would like to tell us?"]</label>
+                        <textarea class="form-control form-control-solid" rows="3" maxlength="1000" dir="auto" data-comment></textarea>
+                        <label class="form-check form-check-custom form-check-solid mt-5"><input class="form-check-input" type="checkbox" data-anonymous /><span class="form-check-label fs-6">@T["Send my answers without my name"]</span></label>
+                        <button type="button" class="btn btn-primary btn-lg w-100 mt-8" data-send><i class="ki-outline ki-send fs-3"></i>@T["Send my answers"]</button>
+                    </div>
+                </div>
+            }
+        </div></div>
+    </div></div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            var root = document.querySelector('[data-survey]'); if (!root) return;
+            var scores = {}, recommend = null;
+            root.addEventListener('click', function (e) {
+                var f = e.target.closest('[data-score]');
+                if (f) { var q = f.closest('[data-q]'); q.querySelectorAll('[data-score]').forEach(function (b) { b.classList.toggle('active', b === f); }); scores[q.getAttribute('data-q')] = +f.getAttribute('data-score'); return; }
+                var n = e.target.closest('[data-recommend]');
+                if (n) { root.querySelectorAll('[data-recommend]').forEach(function (b) { b.classList.toggle('active', b === n); }); recommend = +n.getAttribute('data-recommend'); }
+            });
+            var send = root.querySelector('[data-send]');
+            var W = { ask: @Json.Serialize(T["Send your answers?"].Value), thanks: @Json.Serialize(T["Thank you — your answers were received"].Value), failed: @Json.Serialize(T["The change could not be saved"].Value) };
+            send.addEventListener('click', function () {
+                cbConfirm(W.ask).then(function (ok) {
+                    if (!ok) return; send.disabled = true;
+                    fetch(@Json.Serialize(Url.Action("SubmitSurvey")), { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value },
+                        body: JSON.stringify({ kind: root.getAttribute('data-kind'), episodeId: +root.getAttribute('data-episode'), scores: scores, recommend: recommend, comment: root.querySelector('[data-comment]').value || null, anonymous: root.querySelector('[data-anonymous]').checked }) })
+                        .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+                        .then(function (res) { send.disabled = false; if (!res.ok) { toastr.error(res.error || W.failed); return; } toastr.success(W.thanks); setTimeout(function () { location.href = @Json.Serialize(Url.Action("Surveys")); }, 1200); });
+                });
+            });
+        })();
+    </script>
+}

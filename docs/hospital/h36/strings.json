@@ -1,0 +1,390 @@
+{
+  "unit": "H32/H36 — ward requisitions and who asks / who gives per unit",
+  "strings": {
+    "A duty with nobody named keeps the hospital role (ward staff ask, the pharmacy gives). The hospital administrator always may.": {
+      "ar": "المهمة التي لم يُسمَّ لها أحد تبقى لدور المستشفى (طاقم الجناح يطلب، والصيدلية تصرف). ومدير المستشفى يستطيع دائمًا.",
+      "en": "A duty with nobody named keeps the hospital role (ward staff ask, the pharmacy gives). The hospital administrator always may.",
+      "fr": "Une tâche sans personne désignée reste au rôle de l'hôpital (le service demande, la pharmacie délivre). L'administrateur peut toujours."
+    },
+    "A par is more than zero": {
+      "ar": "حد الجناح أكبر من صفر",
+      "en": "A par is more than zero",
+      "fr": "Le niveau doit être supérieur à zéro"
+    },
+    "A quantity is more than zero": {
+      "ar": "الكمية أكبر من صفر",
+      "en": "A quantity is more than zero",
+      "fr": "La quantité doit être supérieure à zéro"
+    },
+    "A ward's store is an inventory warehouse (Inventory › Warehouses). Supplies usually come from the main store and medicines from the pharmacy: make two units sharing the ward's store.": {
+      "ar": "مستودع الجناح هو مستودع في المخزون (المخزون › المستودعات). المستلزمات تأتي عادةً من المستودع الرئيسي والأدوية من الصيدلية: أنشئ وحدتين تشتركان في مستودع الجناح.",
+      "en": "A ward's store is an inventory warehouse (Inventory › Warehouses). Supplies usually come from the main store and medicines from the pharmacy: make two units sharing the ward's store.",
+      "fr": "Le magasin d'un service est un entrepôt de stock (Stock › Entrepôts). Les fournitures viennent du magasin central et les médicaments de la pharmacie : créez deux unités partageant le magasin du service."
+    },
+    "Add a person...": {
+      "ar": "أضف شخصًا...",
+      "en": "Add a person...",
+      "fr": "Ajouter une personne..."
+    },
+    "Add a unit": {
+      "ar": "إضافة وحدة",
+      "en": "Add a unit",
+      "fr": "Ajouter une unité"
+    },
+    "Add an item...": {
+      "ar": "أضف صنفًا...",
+      "en": "Add an item...",
+      "fr": "Ajouter un article..."
+    },
+    "Add at least one item": {
+      "ar": "أضف صنفًا واحدًا على الأقل",
+      "en": "Add at least one item",
+      "fr": "Ajoutez au moins un article"
+    },
+    "Another unit has this code": {
+      "ar": "هذا الكود مستخدم لوحدة أخرى",
+      "en": "Another unit has this code",
+      "fr": "Une autre unité a ce code"
+    },
+    "Approve a quantity on every line (0 for none)": {
+      "ar": "اعتمد كمية لكل بند (صفر لعدم الصرف)",
+      "en": "Approve a quantity on every line (0 for none)",
+      "fr": "Approuvez une quantité sur chaque ligne (0 pour aucune)"
+    },
+    "Approve quantities": {
+      "ar": "اعتماد الكميات",
+      "en": "Approve quantities",
+      "fr": "Approuver les quantités"
+    },
+    "Average fulfilment": {
+      "ar": "متوسط زمن التلبية",
+      "en": "Average fulfilment",
+      "fr": "Délai moyen de satisfaction"
+    },
+    "Cancel request": {
+      "ar": "إلغاء الطلب",
+      "en": "Cancel request",
+      "fr": "Annuler la demande"
+    },
+    "Cancelled": {
+      "ar": "ملغى",
+      "en": "Cancelled",
+      "fr": "Annulée"
+    },
+    "Choose the duty": {
+      "ar": "اختر المهمة",
+      "en": "Choose the duty",
+      "fr": "Choisissez la tâche"
+    },
+    "Choose the unit's store and the store it draws from": {
+      "ar": "اختر مستودع الوحدة والمستودع الذي تُصرف منه",
+      "en": "Choose the unit's store and the store it draws from",
+      "fr": "Choisissez le magasin de l'unité et celui qui l'approvisionne"
+    },
+    "Consignment implants used": {
+      "ar": "زرعات أمانة مستخدمة",
+      "en": "Consignment implants used",
+      "fr": "Implants en dépôt utilisés"
+    },
+    "Consignment stock comes next": {
+      "ar": "مخزون الأمانة في الخطوة التالية",
+      "en": "Consignment stock comes next",
+      "fr": "Le stock en dépôt vient ensuite"
+    },
+    "Dispatch & post the transfer": {
+      "ar": "صرف وترحيل التحويل",
+      "en": "Dispatch & post the transfer",
+      "fr": "Expédier et comptabiliser le transfert"
+    },
+    "Dispatch now? The approved quantities move from the store to the ward (an inventory transfer is posted).": {
+      "ar": "الصرف الآن؟ تنتقل الكميات المعتمدة من المستودع إلى الجناح (يُرحَّل تحويل مخزني).",
+      "en": "Dispatch now? The approved quantities move from the store to the ward (an inventory transfer is posted).",
+      "fr": "Expédier maintenant ? Les quantités approuvées passent du magasin au service (un transfert de stock est comptabilisé)."
+    },
+    "Draws from": {
+      "ar": "تُصرف من",
+      "en": "Draws from",
+      "fr": "S'approvisionne auprès de"
+    },
+    "Enter the unit's code and name": {
+      "ar": "أدخل كود الوحدة واسمها",
+      "en": "Enter the unit's code and name",
+      "fr": "Saisissez le code et le nom de l'unité"
+    },
+    "Fill from the ward's pars (par − what the ward holds)": {
+      "ar": "املأ من حدود الجناح (الحد − الرصيد في الجناح)",
+      "en": "Fill from the ward's pars (par − what the ward holds)",
+      "fr": "Remplir depuis les niveaux du service (niveau − stock du service)"
+    },
+    "Items below ward par": {
+      "ar": "أصناف تحت حد الجناح",
+      "en": "Items below ward par",
+      "fr": "Articles sous le niveau du service"
+    },
+    "Keeps in (the unit's store)": {
+      "ar": "تحفظ في (مستودع الوحدة)",
+      "en": "Keeps in (the unit's store)",
+      "fr": "Stocke dans (magasin de l'unité)"
+    },
+    "New requisition": {
+      "ar": "طلب جديد",
+      "en": "New requisition",
+      "fr": "Nouvelle demande"
+    },
+    "No items on this request yet.": {
+      "ar": "لا أصناف في هذا الطلب بعد.",
+      "en": "No items on this request yet.",
+      "fr": "Aucun article sur cette demande."
+    },
+    "No par yet: add the items this unit keeps.": {
+      "ar": "لا حدود بعد: أضف الأصناف التي تحفظها الوحدة.",
+      "en": "No par yet: add the items this unit keeps.",
+      "fr": "Aucun niveau : ajoutez les articles que garde l'unité."
+    },
+    "No requests yet.": {
+      "ar": "لا طلبات بعد.",
+      "en": "No requests yet.",
+      "fr": "Aucune demande."
+    },
+    "No supply unit is set up yet: add the wards' stores in Units & who asks.": {
+      "ar": "لم تُضبط وحدات إمداد بعد: أضف مستودعات الأجنحة من الوحدات ومن يطلب.",
+      "en": "No supply unit is set up yet: add the wards' stores in Units & who asks.",
+      "fr": "Aucune unité configurée : ajoutez les magasins des services dans Unités et demandeurs."
+    },
+    "No unit yet: add the first ward's store.": {
+      "ar": "لا وحدات بعد: أضف مستودع أول جناح.",
+      "en": "No unit yet: add the first ward's store.",
+      "fr": "Aucune unité : ajoutez le magasin du premier service."
+    },
+    "Nobody named: the pharmacy role gives.": {
+      "ar": "لم يُسمَّ أحد: دور الصيدلية يصرف.",
+      "en": "Nobody named: the pharmacy role gives.",
+      "fr": "Personne : le rôle pharmacie délivre."
+    },
+    "Nobody named: ward staff ask.": {
+      "ar": "لم يُسمَّ أحد: طاقم الجناح يطلب.",
+      "en": "Nobody named: ward staff ask.",
+      "fr": "Personne : le personnel du service demande."
+    },
+    "On ward": {
+      "ar": "الرصيد بالجناح",
+      "en": "On ward",
+      "fr": "Au service"
+    },
+    "Only a draft request is changed": {
+      "ar": "يُعدَّل الطلب وهو مسودة فقط",
+      "en": "Only a draft request is changed",
+      "fr": "Seule une demande en brouillon est modifiée"
+    },
+    "Par": {
+      "ar": "حد الجناح",
+      "en": "Par",
+      "fr": "Niveau"
+    },
+    "Quantities are approved on a submitted request": {
+      "ar": "تُعتمد الكميات على طلب مرسل",
+      "en": "Quantities are approved on a submitted request",
+      "fr": "Les quantités s'approuvent sur une demande envoyée"
+    },
+    "Requested": {
+      "ar": "المطلوب",
+      "en": "Requested",
+      "fr": "Demandé"
+    },
+    "Requested by": {
+      "ar": "مقدم الطلب",
+      "en": "Requested by",
+      "fr": "Demandé par"
+    },
+    "Requests today": {
+      "ar": "طلبات اليوم",
+      "en": "Requests today",
+      "fr": "Demandes du jour"
+    },
+    "Requisitions": {
+      "ar": "طلبات الأقسام",
+      "en": "Requisitions",
+      "fr": "Demandes"
+    },
+    "Send to the store": {
+      "ar": "إرسال للمستودع",
+      "en": "Send to the store",
+      "fr": "Envoyer au magasin"
+    },
+    "Someone else changed this request: open it again": {
+      "ar": "غيّر شخص آخر هذا الطلب: افتحه مرة أخرى",
+      "en": "Someone else changed this request: open it again",
+      "fr": "Quelqu'un d'autre a modifié la demande : rouvrez-la"
+    },
+    "Start picking": {
+      "ar": "بدء التجهيز",
+      "en": "Start picking",
+      "fr": "Commencer la préparation"
+    },
+    "Store stock": {
+      "ar": "رصيد المستودع",
+      "en": "Store stock",
+      "fr": "Stock du magasin"
+    },
+    "Store transfer": {
+      "ar": "تحويل مخزني",
+      "en": "Store transfer",
+      "fr": "Transfert de stock"
+    },
+    "Store transfers with approval": {
+      "ar": "التحويلات بين المستودعات مع الاعتماد",
+      "en": "Store transfers with approval",
+      "fr": "Transferts entre magasins avec approbation"
+    },
+    "Suggested quantity = ward par − ward balance": {
+      "ar": "الكمية المقترحة = حد الجناح − الرصيد في الجناح",
+      "en": "Suggested quantity = ward par − ward balance",
+      "fr": "Quantité suggérée = niveau − stock du service"
+    },
+    "Supply": {
+      "ar": "الإمداد",
+      "en": "Supply",
+      "fr": "Approvisionnement"
+    },
+    "Supply units": {
+      "ar": "وحدات الإمداد",
+      "en": "Supply units",
+      "fr": "Unités d'approvisionnement"
+    },
+    "The approved quantity is 0 or more": {
+      "ar": "الكمية المعتمدة صفر أو أكثر",
+      "en": "The approved quantity is 0 or more",
+      "fr": "La quantité approuvée est 0 ou plus"
+    },
+    "The store gives at most what was asked": {
+      "ar": "المستودع يصرف بحد أقصى المطلوب",
+      "en": "The store gives at most what was asked",
+      "fr": "Le magasin délivre au plus la quantité demandée"
+    },
+    "The unit's store and its source are two warehouses": {
+      "ar": "مستودع الوحدة ومصدرها مستودعان مختلفان",
+      "en": "The unit's store and its source are two warehouses",
+      "fr": "Le magasin de l'unité et sa source sont deux entrepôts"
+    },
+    "This person already has this duty on the unit": {
+      "ar": "هذا الشخص لديه هذه المهمة على الوحدة بالفعل",
+      "en": "This person already has this duty on the unit",
+      "fr": "Cette personne a déjà cette tâche sur l'unité"
+    },
+    "This request cannot make that move": {
+      "ar": "لا يمكن نقل الطلب لهذه المرحلة",
+      "en": "This request cannot make that move",
+      "fr": "Cette demande ne peut pas passer à cette étape"
+    },
+    "Units & who asks": {
+      "ar": "الوحدات ومن يطلب",
+      "en": "Units & who asks",
+      "fr": "Unités et demandeurs"
+    },
+    "Ward pars": {
+      "ar": "حدود الجناح",
+      "en": "Ward pars",
+      "fr": "Niveaux du service"
+    },
+    "Ward requisitions": {
+      "ar": "طلبات الأقسام",
+      "en": "Ward requisitions",
+      "fr": "Demandes des services"
+    },
+    "Ward requisitions to stores": {
+      "ar": "طلبات الأقسام من المستودع",
+      "en": "Ward requisitions to stores",
+      "fr": "Demandes des services aux magasins"
+    },
+    "Who asks and who gives": {
+      "ar": "من يطلب ومن يصرف",
+      "en": "Who asks and who gives",
+      "fr": "Qui demande et qui délivre"
+    },
+    "Why is the request cancelled?": {
+      "ar": "لماذا يُلغى الطلب؟",
+      "en": "Why is the request cancelled?",
+      "fr": "Pourquoi la demande est-elle annulée ?"
+    },
+    "Write why the request is cancelled": {
+      "ar": "اكتب سبب إلغاء الطلب",
+      "en": "Write why the request is cancelled",
+      "fr": "Indiquez pourquoi la demande est annulée"
+    },
+    "duty-desc:Approve": {
+      "ar": "يعتمد الكميات ويجهّز ويصرف (يُرحِّل التحويل المخزني)",
+      "en": "Approves quantities, picks and dispatches (posts the stock transfer)",
+      "fr": "Approuve les quantités, prépare et expédie (comptabilise le transfert)"
+    },
+    "duty-desc:Request": {
+      "ar": "يفتح طلبات الوحدة ويملؤها ويرسلها",
+      "en": "Opens, fills and sends the unit's requests",
+      "fr": "Ouvre, remplit et envoie les demandes de l'unité"
+    },
+    "duty:Approve": {
+      "ar": "من يعتمد ويصرف",
+      "en": "Who approves & dispatches",
+      "fr": "Qui approuve et expédie"
+    },
+    "duty:Request": {
+      "ar": "من يطلب",
+      "en": "Who asks",
+      "fr": "Qui demande"
+    },
+    "keeps in": {
+      "ar": "تحفظ في",
+      "en": "keeps in",
+      "fr": "stocke dans"
+    },
+    "prio:Routine": {
+      "ar": "روتيني",
+      "en": "Routine",
+      "fr": "Routine"
+    },
+    "prio:Stat": {
+      "ar": "فوري STAT",
+      "en": "STAT",
+      "fr": "STAT"
+    },
+    "prio:Urgent": {
+      "ar": "عاجل",
+      "en": "Urgent",
+      "fr": "Urgent"
+    },
+    "req:Approved": {
+      "ar": "معتمد",
+      "en": "Approved",
+      "fr": "Approuvée"
+    },
+    "req:Cancelled": {
+      "ar": "ملغى",
+      "en": "Cancelled",
+      "fr": "Annulée"
+    },
+    "req:Dispatched": {
+      "ar": "أُرسل",
+      "en": "Dispatched",
+      "fr": "Expédiée"
+    },
+    "req:Draft": {
+      "ar": "مسودة",
+      "en": "Draft",
+      "fr": "Brouillon"
+    },
+    "req:Picking": {
+      "ar": "قيد التجهيز",
+      "en": "Picking",
+      "fr": "En préparation"
+    },
+    "req:Submitted": {
+      "ar": "مرسل",
+      "en": "Submitted",
+      "fr": "Envoyée"
+    },
+    "req:Items": {
+      "ar": "الأصناف",
+      "en": "Items",
+      "fr": "Articles"
+    }
+  }
+}

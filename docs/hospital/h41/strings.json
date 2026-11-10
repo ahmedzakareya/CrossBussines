@@ -1,0 +1,265 @@
+{
+  "unit": "H41 — blood bank",
+  "strings": {
+    "A bag number is entered twice": {
+      "ar": "رقم كيس مكرر",
+      "en": "A bag number is entered twice",
+      "fr": "Un numéro de poche est saisi deux fois"
+    },
+    "A bag number is up to 40 characters": {
+      "ar": "رقم الكيس حتى ٤٠ حرفًا",
+      "en": "A bag number is up to 40 characters",
+      "fr": "Un numéro de poche fait au plus 40 caractères"
+    },
+    "Bag": {
+      "ar": "الكيس",
+      "en": "Bag",
+      "fr": "Poche"
+    },
+    "Bag numbers (one per line)": {
+      "ar": "أرقام الأكياس (رقم في كل سطر)",
+      "en": "Bag numbers (one per line)",
+      "fr": "Numéros de poche (un par ligne)"
+    },
+    "Bags on the shelf": {
+      "ar": "الأكياس في المخزون",
+      "en": "Bags on the shelf",
+      "fr": "Poches en stock"
+    },
+    "Between 1 and 10 units are requested at a time": {
+      "ar": "يُطلب من ١ إلى ١٠ وحدات في المرة",
+      "en": "Between 1 and 10 units are requested at a time",
+      "fr": "De 1 à 10 unités par demande"
+    },
+    "Blood bank": {
+      "ar": "بنك الدم",
+      "en": "Blood bank",
+      "fr": "Banque du sang"
+    },
+    "Choose the blood group": {
+      "ar": "اختر فصيلة الدم",
+      "en": "Choose the blood group",
+      "fr": "Choisissez le groupe sanguin"
+    },
+    "Choose the blood product": {
+      "ar": "اختر منتج الدم",
+      "en": "Choose the blood product",
+      "fr": "Choisissez le produit sanguin"
+    },
+    "Cross-match": {
+      "ar": "التوافق",
+      "en": "Cross-match",
+      "fr": "Compatibilité"
+    },
+    "Discard": {
+      "ar": "إتلاف",
+      "en": "Discard",
+      "fr": "Détruire"
+    },
+    "Enter at least one bag number": {
+      "ar": "أدخل رقم كيس واحد على الأقل",
+      "en": "Enter at least one bag number",
+      "fr": "Saisissez au moins un numéro de poche"
+    },
+    "Group": {
+      "ar": "الفصيلة",
+      "en": "Group",
+      "fr": "Groupe"
+    },
+    "Issue": {
+      "ar": "صرف",
+      "en": "Issue",
+      "fr": "Délivrer"
+    },
+    "Issue the reserved bags to the ward now?": {
+      "ar": "صرف الأكياس المحجوزة للقسم الآن؟",
+      "en": "Issue the reserved bags to the ward now?",
+      "fr": "Délivrer maintenant les poches réservées au service ?"
+    },
+    "Low stock": {
+      "ar": "مخزون منخفض",
+      "en": "Low stock",
+      "fr": "Stock bas"
+    },
+    "No bag on the shelf.": {
+      "ar": "لا توجد أكياس في المخزون.",
+      "en": "No bag on the shelf.",
+      "fr": "Aucune poche en stock."
+    },
+    "No transfusion request yet.": {
+      "ar": "لا توجد طلبات نقل بعد.",
+      "en": "No transfusion request yet.",
+      "fr": "Aucune demande de transfusion pour l'instant."
+    },
+    "Not enough compatible bags on the shelf": {
+      "ar": "لا تكفي الأكياس المتوافقة في المخزون",
+      "en": "Not enough compatible bags on the shelf",
+      "fr": "Pas assez de poches compatibles en stock"
+    },
+    "Only a bag on the shelf is discarded": {
+      "ar": "لا يُتلف إلا كيس متاح في المخزون",
+      "en": "Only a bag on the shelf is discarded",
+      "fr": "Seule une poche disponible peut être détruite"
+    },
+    "Product": {
+      "ar": "المنتج",
+      "en": "Product",
+      "fr": "Produit"
+    },
+    "Receive bags": {
+      "ar": "استلام أكياس",
+      "en": "Receive bags",
+      "fr": "Réceptionner des poches"
+    },
+    "Record the patient's blood group on the file first": {
+      "ar": "سجّل فصيلة دم المريض في ملفه أولًا",
+      "en": "Record the patient's blood group on the file first",
+      "fr": "Enregistrez d'abord le groupe sanguin du patient dans son dossier"
+    },
+    "Send to the laboratory": {
+      "ar": "إرسال للمختبر",
+      "en": "Send to the laboratory",
+      "fr": "Envoyer au laboratoire"
+    },
+    "Start cross-match": {
+      "ar": "بدء فحص التوافق",
+      "en": "Start cross-match",
+      "fr": "Lancer l'épreuve de compatibilité"
+    },
+    "The blood bank tables are not created yet (hospital_h41_blood_bank.sql)": {
+      "ar": "جداول بنك الدم لم تُنشأ بعد (hospital_h41_blood_bank.sql)",
+      "en": "The blood bank tables are not created yet (hospital_h41_blood_bank.sql)",
+      "fr": "Les tables de la banque du sang ne sont pas encore créées (hospital_h41_blood_bank.sql)"
+    },
+    "The patient's blood group is taken from the file; the laboratory cross-matches and reserves compatible bags.": {
+      "ar": "تؤخذ فصيلة دم المريض من ملفه؛ ويفحص المختبر التوافق ويحجز الأكياس المتوافقة.",
+      "en": "The patient's blood group is taken from the file; the laboratory cross-matches and reserves compatible bags.",
+      "fr": "Le groupe du patient vient de son dossier ; le laboratoire teste la compatibilité et réserve les poches compatibles."
+    },
+    "This bag has already expired": {
+      "ar": "هذا الكيس منتهي الصلاحية",
+      "en": "This bag has already expired",
+      "fr": "Cette poche est déjà périmée"
+    },
+    "This bag number is already received: {0}": {
+      "ar": "رقم الكيس مستلم من قبل: {0}",
+      "en": "This bag number is already received: {0}",
+      "fr": "Ce numéro de poche est déjà réceptionné : {0}"
+    },
+    "This request cannot move to that step from where it is": {
+      "ar": "لا ينتقل هذا الطلب إلى تلك الخطوة من مرحلته الحالية",
+      "en": "This request cannot move to that step from where it is",
+      "fr": "Cette demande ne peut pas passer à cette étape depuis son état actuel"
+    },
+    "Transfusion request": {
+      "ar": "طلب نقل دم",
+      "en": "Transfusion request",
+      "fr": "Demande de transfusion"
+    },
+    "Transfusion requests": {
+      "ar": "طلبات النقل",
+      "en": "Transfusion requests",
+      "fr": "Demandes de transfusion"
+    },
+    "Why is this bag discarded?": {
+      "ar": "لماذا يُتلف هذا الكيس؟",
+      "en": "Why is this bag discarded?",
+      "fr": "Pourquoi cette poche est-elle détruite ?"
+    },
+    "Write the reason": {
+      "ar": "اكتب السبب",
+      "en": "Write the reason",
+      "fr": "Indiquez la raison"
+    },
+    "Write why the bag is discarded": {
+      "ar": "اكتب سبب إتلاف الكيس",
+      "en": "Write why the bag is discarded",
+      "fr": "Indiquez pourquoi la poche est détruite"
+    },
+    "bb:Units": {
+      "ar": "الوحدات",
+      "en": "Units",
+      "fr": "Unités"
+    },
+    "below the safety level; a donor drive is suggested.": {
+      "ar": "أقل من حد الأمان؛ يُقترح إطلاق حملة تبرع.",
+      "en": "below the safety level; a donor drive is suggested.",
+      "fr": "sous le seuil de sécurité ; une collecte est conseillée."
+    },
+    "bp:PackedCells": {
+      "ar": "كريات حمراء مكثفة",
+      "en": "Packed red cells",
+      "fr": "Concentré de globules rouges"
+    },
+    "bp:Plasma": {
+      "ar": "بلازما طازجة مجمدة",
+      "en": "Fresh frozen plasma",
+      "fr": "Plasma frais congelé"
+    },
+    "bp:Platelets": {
+      "ar": "صفائح دموية",
+      "en": "Platelets",
+      "fr": "Plaquettes"
+    },
+    "bp:WholeBlood": {
+      "ar": "دم كامل",
+      "en": "Whole blood",
+      "fr": "Sang total"
+    },
+    "bu:Available": {
+      "ar": "متاح",
+      "en": "Available",
+      "fr": "Disponible"
+    },
+    "bu:Reserved": {
+      "ar": "محجوز",
+      "en": "Reserved",
+      "fr": "Réservée"
+    },
+    "groups": {
+      "ar": "فصائل",
+      "en": "groups",
+      "fr": "groupes"
+    },
+    "tx:Cancelled": {
+      "ar": "ملغي",
+      "en": "Cancelled",
+      "fr": "Annulée"
+    },
+    "tx:Compatible": {
+      "ar": "متوافق",
+      "en": "Compatible",
+      "fr": "Compatible"
+    },
+    "tx:CrossMatching": {
+      "ar": "قيد الفحص",
+      "en": "In progress",
+      "fr": "En cours"
+    },
+    "tx:Incompatible": {
+      "ar": "غير متوافق",
+      "en": "Incompatible",
+      "fr": "Incompatible"
+    },
+    "tx:Issued": {
+      "ar": "صُرف",
+      "en": "Issued",
+      "fr": "Délivrée"
+    },
+    "tx:Requested": {
+      "ar": "مطلوب",
+      "en": "Requested",
+      "fr": "Demandée"
+    },
+    "whole blood / PRBC units": {
+      "ar": "وحدة دم كامل/مكثف",
+      "en": "whole blood / PRBC units",
+      "fr": "unités sang total / CGR"
+    },
+    "{0} bags on the shelf have expired: discard them from Bags on the shelf.": {
+      "ar": "{0} أكياس في المخزون انتهت صلاحيتها: أتلفها من «الأكياس في المخزون».",
+      "en": "{0} bags on the shelf have expired: discard them from Bags on the shelf.",
+      "fr": "{0} poches en stock sont périmées : détruisez-les depuis Poches en stock."
+    }
+  }
+}

@@ -1,0 +1,182 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.BL.Reporting
+@model CrossBuy.Controllers.HospitalController.HospitalDashboardModel
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H50 — the hospital dashboard, as the approved prototype draws it (#/dashboard): four figures, today's summary,
+    then occupancy by ward and the ER queue beside the doctors on duty, today's theatre and this month's claims.
+    Report Studio is the source: every figure is a KPI over a hospital report, every list is that report's rows,
+    and every card opens the report (or the live board) it comes from. A figure the reader may not see is "—".
+*@
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Hospital dashboard"].Value;
+    var m = Model;
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+    string N(decimal? v, string fmt = "#,##0.###") => v is { } x ? x.ToString(fmt, inv) : "—";
+    decimal? V(string k) => m.Kpi.GetValueOrDefault(k);
+    string Day(DateTime d) => d.ToString("yyyy-MM-dd", inv);
+    string Report(string code, DateTime? from = null, DateTime? to = null) =>
+        Url.Action("Viewer", "Reports", from == null ? new { id = code, run = true } : (object)new { id = code, run = true, From = Day(from.Value), To = Day(to ?? from.Value) })!;
+    decimal? beds = V(HospitalKpis.BedsTotal), occ = V(HospitalKpis.BedsOccupied), claimed = V(HospitalKpis.Claimed), rejected = V(HospitalKpis.ClaimsRejected);
+    decimal? occPct = beds is > 0 && occ is { } o ? Math.Round(o * 100 / beds.Value) : null;
+    decimal? rejPct = claimed is > 0 && rejected is { } rj ? Math.Round(rj * 100 / claimed.Value, 1) : null;
+    string Esi(int? e) => e switch { 1 or 2 => "badge-danger", 3 => "badge-light-primary", 4 => "badge-light-success", _ => "badge-light" };
+    string Status(string? s) => s switch { _ when s == null => "", _ => s };
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Hospital dashboard"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted">@T["hd:crumb"]</li></ul>
+        </div>
+        <div class="d-flex align-items-center gap-2 d-print-none">
+            <a href="@Url.Action("Reports", "Hospital")" class="btn btn-sm btn-light"><i class="ki-outline ki-chart-pie-simple fs-4"></i>@T["Hospital reports"]</a>
+            <a href="@Url.Action("RegisterPatient", "Hospital")" class="btn btn-sm btn-primary"><i class="ki-outline ki-plus fs-4"></i>@T["Register patient"]</a>
+        </div>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="row g-5 g-xl-8 mb-5">
+            @foreach (var s in new[] {
+                (T["Outpatient visits today"].Value, N(V(HospitalKpis.Appointments)), string.Format(T["of which {0} completed"].Value, N(V(HospitalKpis.Seen))), "ki-briefcase", Report(HospitalReportCodes.DoctorProductivity, m.Today)),
+                (T["ER — waiting"].Value, N(V(HospitalKpis.ErWaiting)), string.Format(T["Door-to-doctor avg {0} min"].Value, N(V(HospitalKpis.ErDoorToDoctor), "0")), "ki-pulse", Report(HospitalReportCodes.ErWaiting, m.Today)),
+                (T["Bed occupancy"].Value, occPct == null ? "—" : N(occPct, "0") + "%", string.Format(T["{0} / {1} beds occupied"].Value, N(occ), N(beds)), "ki-home-3", Report(HospitalReportCodes.BedOccupancy, m.Today)),
+                (T["Revenue today"].Value, N(V(HospitalKpis.Revenue)), string.Format(T["Collected {0}"].Value, N(V(HospitalKpis.Collected))), "ki-dollar", Report(HospitalReportCodes.Revenue, m.Today)) })
+            {
+                <div class="col-sm-6 col-xl-3"><a href="@s.Item5" class="card card-flush h-100 text-decoration-none" data-hd-tile><div class="card-body py-5 d-flex align-items-start">
+                    <div class="flex-grow-1">
+                        <div class="text-muted fw-semibold fs-7 mb-1">@s.Item1</div>
+                        <div class="fs-2hx fw-bold text-gray-900"><bdi class="hp-num" dir="ltr">@s.Item2</bdi></div>
+                        <div class="text-muted fs-8 mt-1">@s.Item3</div>
+                    </div>
+                    <span class="symbol symbol-40px"><span class="symbol-label bg-light-primary"><i class="ki-outline @s.Item4 fs-2 text-primary"></i></span></span>
+                </div></a></div>
+            }
+        </div>
+
+        <div class="notice d-flex rounded border border-primary border-dashed bg-light-primary p-6 mb-5">
+            <i class="ki-outline ki-calendar-tick fs-2tx text-primary me-4"></i>
+            <div class="d-flex flex-stack flex-grow-1 flex-wrap flex-md-nowrap">
+                <div class="mb-3 mb-md-0 fw-semibold pe-5">
+                    <h4 class="text-gray-900 fw-bold mb-1">@T["Today's summary"]</h4>
+                    <div class="fs-6 text-gray-700" data-hd-summary>@string.Format(T["{0} critical results not yet acknowledged by the doctor, {1} pre-authorisations waiting for the insurer, and {2} waiting in the ER."].Value, N(V(HospitalKpis.CriticalOpen)), N(V(HospitalKpis.PreauthPending)), N(V(HospitalKpis.ErWaiting)))</div>
+                </div>
+                <span class="badge badge-primary fs-7 fw-bold px-4 py-2 flex-shrink-0"><bdi class="hp-num" dir="ltr">@Day(m.Today)</bdi></span>
+            </div>
+        </div>
+
+        <div class="row g-5 g-xl-8">
+            <div class="col-xl-7">
+                <div class="card mb-5">
+                    <div class="card-header border-0 pt-6">
+                        <div class="card-title flex-column m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Occupancy by ward"]</span><span class="text-muted fs-7 mt-1">@T["Live from the bed board"]</span></div>
+                        <div class="card-toolbar gap-2"><a href="@Report(HospitalReportCodes.BedOccupancy, m.MonthStart, m.Today)" class="btn btn-sm btn-light">@T["hd:report"]</a><a href="@Url.Action("Index", "Hospital")" class="btn btn-sm btn-light-primary">@T["Bed board"]</a></div>
+                    </div>
+                    <div class="card-body pt-2">
+                        @if (m.Wards.Count == 0) { <div class="text-center text-muted py-8">@T["No ward yet."]</div> }
+                        else
+                        {
+                            <table class="table align-middle table-row-dashed fs-7 gy-3 mb-0" data-hd-wards>
+                                <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0"><th>@T["Ward"]</th><th class="text-end w-90px">@T["Occupied"]</th><th class="text-end w-90px">@T["Vacant"]</th><th class="w-200px">@T["hd:occupancy"]</th></tr></thead>
+                                <tbody class="fw-semibold text-gray-700">
+                                    @foreach (var w in m.Wards)
+                                    {
+                                        int b = (int)w["Beds"]!, o2 = (int)w["OccupiedNow"]!; int pct = b == 0 ? 0 : (int)Math.Round(o2 * 100m / b);
+                                        <tr>
+                                            <td><div class="fw-bold text-gray-800">@w["Ward"]</div><div class="text-muted fs-8">@w["Floor"]</div></td>
+                                            <td class="text-end"><span class="hp-num fw-bold">@o2</span></td>
+                                            <td class="text-end">@if (b - o2 > 0) {<span class="hp-num">@(b - o2)</span>} else {<span class="text-muted">—</span>}</td>
+                                            <td><div class="d-flex align-items-center gap-2"><div class="progress h-6px flex-grow-1"><div class="progress-bar @(pct > 85 ? "bg-danger" : "bg-primary")" style="width:@(pct)%"></div></div><span class="hp-num fs-8 text-muted w-35px">@(pct)%</span></div></td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        }
+                    </div>
+                </div>
+                <div class="card mb-5">
+                    <div class="card-header border-0 pt-6">
+                        <div class="card-title flex-column m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Emergency queue"]</span><span class="text-muted fs-7 mt-1">@T["Ordered by triage level"]</span></div>
+                        <div class="card-toolbar gap-2"><a href="@Report(HospitalReportCodes.ErWaiting, m.Today)" class="btn btn-sm btn-light">@T["hd:report"]</a><a href="@Url.Action("Emergency", "Hospital")" class="btn btn-sm btn-light-primary">@T["ER board"]</a></div>
+                    </div>
+                    <div class="card-body pt-2">
+                        @if (m.Er.Count == 0) { <div class="text-center text-muted py-8">@T["No one is in the ER now."]</div> }
+                        else
+                        {
+                            <table class="table align-middle table-row-dashed fs-7 gy-3 mb-0" data-hd-er>
+                                <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0"><th>@T["Patient"]</th><th class="w-70px">ESI</th><th>@T["Complaint"]</th><th class="text-end w-90px">@T["Wait"]</th></tr></thead>
+                                <tbody class="fw-semibold text-gray-700">
+                                    @foreach (var e in m.Er)
+                                    {
+                                        var face = e["PatientId"] is int pid ? m.ErPatients.GetValueOrDefault(pid) : default;
+                                        string initials = HospitalUi.Initials(face.NameEn ?? e["PatientName"] as string ?? "?");
+                                        int wait = e["ArrivedAt"] is DateTime at ? (int)Math.Max(0, (DateTime.Now - at).TotalMinutes) : 0;
+                                        <tr>
+                                            <td><div class="d-flex align-items-center">
+                                                <div class="symbol symbol-35px symbol-circle me-3 flex-shrink-0">@if (face.Photo != null) {<img src="@face.Photo" alt="" style="object-fit:cover" data-initials="@initials" />} else {<span class="symbol-label fw-bold fs-8 hp-initials">@initials</span>}</div>
+                                                <span class="text-gray-900">@e["PatientName"]</span></div></td>
+                                            <td><span class="badge @Esi(e["Esi"] as int?) fw-bold">@(e["Esi"] is int esi ? "ESI " + esi : "—")</span></td>
+                                            <td class="text-gray-700">@e["Complaint"]</td>
+                                            <td class="text-end">@if (wait < 60) {<span class="hp-num fw-bold">@wait</span> @T["hd:minutes"]} else if (wait < 1440) {<span class="hp-num fw-bold">@(wait / 60)</span> @T["h"]} else {<span class="hp-num fw-bold text-danger">@(wait / 1440)</span> @T["days"]}</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        }
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-5">
+                <div class="card mb-5">
+                    <div class="card-header border-0 pt-6">
+                        <div class="card-title flex-column m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Doctors on duty"]</span><span class="text-muted fs-7 mt-1">@T["Today"]</span></div>
+                        <div class="card-toolbar"><a href="@Report(HospitalReportCodes.DoctorProductivity, m.Today)" class="btn btn-sm btn-light">@T["hd:report"]</a></div>
+                    </div>
+                    <div class="card-body pt-2" data-hd-doctors>
+                        @if (m.Doctors.Count == 0) { <div class="text-center text-muted py-8">@T["No appointments today."]</div> }
+                        @foreach (var d in m.Doctors)
+                        {
+                            var photo = m.DoctorPhotos.GetValueOrDefault((int)d["PractitionerId"]!);
+                            string initials = HospitalUi.Initials(d["Doctor"] as string ?? "?");
+                            <div class="d-flex align-items-center py-3 border-bottom border-gray-200 border-bottom-dashed">
+                                <div class="symbol symbol-40px symbol-circle me-3 flex-shrink-0">@if (photo != null) {<img src="@photo" alt="" style="object-fit:cover" data-initials="@initials" />} else {<span class="symbol-label fw-bold fs-8 hp-initials">@initials</span>}</div>
+                                <div class="flex-grow-1 min-w-0"><div class="fw-bold text-gray-800">@d["Doctor"]</div><div class="text-muted fs-8">@d["Department"]</div></div>
+                                <span class="badge badge-light-primary"><bdi class="hp-num">@d["Appointments"]</bdi>&nbsp;@T["appts"]</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+                <div class="card mb-5">
+                    <div class="card-header border-0 pt-6">
+                        <div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Theatre today"]</span></div>
+                        <div class="card-toolbar gap-2"><a href="@Report(HospitalReportCodes.Theatre, m.Today)" class="btn btn-sm btn-light">@T["hd:report"]</a><a href="@Url.Action("Theatre", "Hospital")" class="btn btn-sm btn-light-primary">@T["hd:schedule"]</a></div>
+                    </div>
+                    <div class="card-body pt-2" data-hd-theatre>
+                        @if (m.Theatre.Count == 0) { <div class="text-center text-muted py-8">@T["No operations today."]</div> }
+                        @foreach (var s in m.Theatre)
+                        {
+                            <div class="d-flex align-items-center py-3 border-bottom border-gray-200 border-bottom-dashed">
+                                <div class="flex-grow-1 min-w-0"><div class="fw-bold text-gray-800 text-truncate">@s["Procedure"]</div><div class="text-muted fs-8">@s["PatientName"] · @s["Room"]</div></div>
+                                <span class="badge badge-light-primary">@s["Status"]</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+                <div class="card mb-5">
+                    <div class="card-header border-0 pt-6">
+                        <div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Claims this month"]</span></div>
+                        <div class="card-toolbar"><a href="@Report(HospitalReportCodes.PayerPerformance, m.MonthStart, m.Today)" class="btn btn-sm btn-light">@T["hd:report"]</a></div>
+                    </div>
+                    <div class="card-body pt-2"><div class="row g-5" data-hd-claims>
+                        <div class="col-6"><div class="text-muted fw-semibold fs-7 mb-1">@T["hd:submitted"]</div><div class="fs-2 fw-bold text-gray-900"><bdi class="hp-num" dir="ltr">@N(claimed)</bdi></div></div>
+                        <div class="col-6"><div class="text-muted fw-semibold fs-7 mb-1">@T["Rejection rate"]</div><div class="fs-2 fw-bold @(rejPct > 5 ? "text-danger" : "text-gray-900")"><bdi class="hp-num" dir="ltr">@(rejPct == null ? "—" : N(rejPct, "0.#") + "%")</bdi></div><div class="text-muted fs-8">@T["Target below 5%"]</div></div>
+                    </div></div>
+                </div>
+            </div>
+        </div>
+    </div></div>
+</div>

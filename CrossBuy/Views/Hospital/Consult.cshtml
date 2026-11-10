@@ -39,6 +39,13 @@
             </ul>
         </div>
         <div class="d-flex align-items-center gap-2 gap-lg-3 d-print-none">
+            @* the prescription is a Report Studio layout of this visit — see _ReportPrintMenu *@
+            @await Html.PartialAsync("_ReportPrintMenu", new CrossBuy.BL.Reporting.ReportPrintMenuModel
+            {
+                ScreenKey = CrossBuy.BL.Reporting.ReportScreenKeys.HospitalConsult,
+                DocumentId = e.ID.ToString(),
+                DocumentTitle = name,
+            })
             @if (canEdit)
             {
                 <button type="button" class="btn btn-sm btn-light" data-save><i class="ki-outline ki-save-2 fs-4"></i>@T["Save draft"]</button>
@@ -204,6 +211,8 @@
     </div></div>
 </div>
 
+@await Html.PartialAsync("_ReportPreviewModal", (object)(T["Prescription"].Value + " " + name))
+
 @section Scripts {
     <script>
         (function () {
@@ -212,7 +221,7 @@
             var form = document.getElementById('encForm');
             var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
             var dx = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Diagnoses.Select(d => new { code = d.Code, name = DisplayName.Of(d.Name, d.NameEn), primary = d.IsPrimary })));
-            var rx = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Prescription.Select(r => new { drug = r.Drug, itemId = r.ItemId, instructions = r.Instructions, quantity = r.Quantity })));
+            var rx = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Prescription.Select(r => new { drug = r.Drug, itemId = r.ItemId, instructions = r.Instructions, instructionsEn = r.InstructionsEn, quantity = r.Quantity })));
             // H10: what the pharmacy stocks — the doctor picks from it, or types a drug the hospital does not stock.
             var formulary = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(((IReadOnlyList<(int Id, string Code, string Name, string NameEn, decimal? Price)>?)ViewBag.Formulary ?? Array.Empty<(int, string, string, string, decimal?)>()).Select(f => new { id = f.Id, name = DisplayName.Of(f.Name, f.NameEn), code = f.Code, price = f.Price })));
             var orders = @Html.Raw(System.Text.Json.JsonSerializer.Serialize((Model.Orders ?? Array.Empty<HospitalEncounterOrder>()).Select(o => new { id = o.ServiceId, code = o.Code, name = DisplayName.Of(o.Name, o.NameEn), price = o.Price })));
@@ -221,7 +230,7 @@
                 primary: @Json.Serialize(T["Primary"].Value), secondary: @Json.Serialize(T["Secondary"].Value), makePrimary: @Json.Serialize(T["Make primary"].Value),
                 none: @Json.Serialize(T["No diagnosis yet."].Value), noRx: @Json.Serialize(T["No drug prescribed."].Value),
                 saved: @Json.Serialize(T["Saved"].Value), failed: @Json.Serialize(T["The change could not be saved"].Value), confirm: @Json.Serialize(T["Sign and close this visit? It cannot be changed afterwards."].Value),
-                drug: @Json.Serialize(T["Drug name and strength"].Value), stocked: @Json.Serialize(T["In the pharmacy"].Value), dose: @Json.Serialize(T["e.g. 1 tab twice daily · 30 days"].Value),
+                drug: @Json.Serialize(T["Drug name and strength"].Value), stocked: @Json.Serialize(T["In the pharmacy"].Value), dose: @Json.Serialize(T["e.g. 1 tab twice daily · 30 days"].Value), doseEn: @Json.Serialize(T["In English: e.g. 1 tab twice daily · 30 days"].Value),
                 noOrder: @Json.Serialize(T["Nothing ordered."].Value), cash: @Json.Serialize(T["Cash"].Value)
             };
             var urls = { services: @Json.Serialize(Url.Action("SearchServices", new { orderable = true })), codes: @Json.Serialize(Url.Action("SearchDiagnosisCodes")), save: @Json.Serialize(Url.Action("SaveConsultation", new { id = e.ID })), sign: @Json.Serialize(Url.Action("SignConsultation", new { id = e.ID })), seed: @Json.Serialize(Url.Action("SeedDiagnosisCodes")), worklist: @Json.Serialize(Url.Action("Worklist", new { doctor = e.PractitionerId })) };
@@ -259,11 +268,13 @@
             function drawRx() {
                 if (!rx.length) { rxBody.innerHTML = '<tr><td colspan="4" class="text-muted fs-7 py-3">' + esc(W.noRx) + '</td></tr>'; return; }
                 rxBody.innerHTML = rx.map(function (r, i) {
-                    if (!canEdit) return '<tr><td class="fw-semibold text-gray-800">' + esc(r.drug) + (r.itemId ? ' <span class="badge badge-light-success fs-9">' + esc(W.stocked) + '</span>' : '') + '</td><td class="fs-7">' + esc(r.instructions || '') + '</td><td class="hp-num">' + r.quantity + '</td><td></td></tr>';
+                    if (!canEdit) return '<tr><td class="fw-semibold text-gray-800">' + esc(r.drug) + (r.itemId ? ' <span class="badge badge-light-success fs-9">' + esc(W.stocked) + '</span>' : '') + '</td><td class="fs-7" dir="auto">' + esc(r.instructions || '') + (r.instructionsEn ? '<div class="text-muted fs-8" dir="auto">' + esc(r.instructionsEn) + '</div>' : '') + '</td><td class="hp-num">' + r.quantity + '</td><td></td></tr>';
                     var opts = '<option value=""></option>' + formulary.map(function (f) { return '<option value="i:' + f.id + '"' + (r.itemId === f.id ? ' selected' : '') + '>' + esc(f.name + ' · ' + f.code) + '</option>'; }).join('') +
                         (!r.itemId && r.drug ? '<option value="t:' + esc(r.drug) + '" selected>' + esc(r.drug) + '</option>' : '');
                     return '<tr><td class="min-w-250px"><select class="form-select form-select-sm form-select-solid" data-rx-drug data-i="' + i + '" data-placeholder="' + esc(W.drug) + '">' + opts + '</select></td>' +
-                        '<td><input class="form-control form-control-sm form-control-solid" data-rx="instructions" data-i="' + i + '" value="' + esc(r.instructions || '') + '" placeholder="' + esc(W.dose) + '" maxlength="400" /></td>' +
+                        // H33: the directions in both languages (the patient reads them in theirs on the portal)
+                        '<td><input class="form-control form-control-sm form-control-solid" data-rx="instructions" data-i="' + i + '" value="' + esc(r.instructions || '') + '" placeholder="' + esc(W.dose) + '" maxlength="400" dir="auto" />' +
+                        '<input class="form-control form-control-sm form-control-solid mt-1" data-rx="instructionsEn" data-i="' + i + '" value="' + esc(r.instructionsEn || '') + '" placeholder="' + esc(W.doseEn) + '" maxlength="400" dir="auto" /></td>' +
                         '<td><input type="number" min="1" class="form-control form-control-sm form-control-solid hp-num" data-rx="quantity" data-i="' + i + '" value="' + r.quantity + '" /></td>' +
                         '<td><button type="button" class="btn btn-icon btn-sm btn-light w-30px h-30px" data-rx-remove="' + i + '"><i class="ki-outline ki-trash fs-5"></i></button></td></tr>';
                 }).join('');

@@ -1,0 +1,125 @@
+{
+  "unit": "H22 — any inventory item, or a whole category, onto a price list (the owner's ruling, 2026-11-04)",
+  "strings": {
+    "Add a category": {
+      "en": "Add a category",
+      "ar": "إضافة تصنيف",
+      "fr": "Ajouter une catégorie"
+    },
+    "Add at most 500 items at a time": {
+      "en": "Add at most 500 items at a time",
+      "ar": "أضف 500 صنف بحد أقصى في المرة الواحدة",
+      "fr": "Ajoutez au plus 500 articles à la fois"
+    },
+    "Add every item of {0} to this list?": {
+      "en": "Add every item of {0} to this list?",
+      "ar": "إضافة كل أصناف {0} إلى هذه القائمة؟",
+      "fr": "Ajouter tous les articles de {0} à cette liste ?"
+    },
+    "Add the category": {
+      "en": "Add the category",
+      "ar": "إضافة التصنيف",
+      "fr": "Ajouter la catégorie"
+    },
+    "Any item already in the inventory, whatever its category. Choose whether it is a medicine or a consumable: that decides which of the list's percentages prices it.": {
+      "en": "Any item already in the inventory, whatever its category. Choose whether it is a medicine or a consumable: that decides which of the list's percentages prices it.",
+      "ar": "أي صنف مسجّل في المخزون مهما كان تصنيفه. حدّد هل هو دواء أم مستهلك: هذا يحدد أي نسبة من نسب القائمة تُسعّره.",
+      "fr": "Tout article déjà en stock, quelle que soit sa catégorie. Indiquez s'il s'agit d'un médicament ou d'un consommable : cela décide quel pourcentage de la liste le tarife."
+    },
+    "Choose the items to add": {
+      "en": "Choose the items to add",
+      "ar": "اختر الأصناف المراد إضافتها",
+      "fr": "Choisissez les articles à ajouter"
+    },
+    "Every main-list item is on this list.": {
+      "en": "Every main-list item is on this list.",
+      "ar": "كل أصناف القائمة الرئيسية موجودة في هذه القائمة.",
+      "fr": "Tous les articles de la liste principale sont sur cette liste."
+    },
+    "From the inventory": {
+      "en": "From the inventory",
+      "ar": "من المخزون",
+      "fr": "Depuis le stock"
+    },
+    "Inventory category": {
+      "en": "Inventory category",
+      "ar": "تصنيف المخزون",
+      "fr": "Catégorie de stock"
+    },
+    "Keep it linked: items added to this category later show as new on every list": {
+      "en": "Keep it linked: items added to this category later show as new on every list",
+      "ar": "إبقاؤه مربوطاً: الأصناف التي تُضاف لهذا التصنيف لاحقاً تظهر كجديدة في كل القوائم",
+      "fr": "Le garder lié : les articles ajoutés plus tard à cette catégorie apparaissent comme nouveaux sur chaque liste"
+    },
+    "Main price": {
+      "en": "Main price",
+      "ar": "السعر الرئيسي",
+      "fr": "Prix principal"
+    },
+    "New on the main list": {
+      "en": "New on the main list",
+      "ar": "جديد في القائمة الرئيسية",
+      "fr": "Nouveau sur la liste principale"
+    },
+    "Not in the hospital catalogue yet": {
+      "en": "Not in the hospital catalogue yet",
+      "ar": "غير مضاف لدليل المستشفى بعد",
+      "fr": "Pas encore au catalogue de l'hôpital"
+    },
+    "Nothing matches.": {
+      "en": "Nothing matches.",
+      "ar": "لا توجد نتائج.",
+      "fr": "Aucun résultat."
+    },
+    "On the list": {
+      "en": "On the list",
+      "ar": "موجود في القائمة",
+      "fr": "Sur la liste"
+    },
+    "Search by code, barcode or name": {
+      "en": "Search by code, barcode or name",
+      "ar": "ابحث بالكود أو الباركود أو الاسم",
+      "fr": "Recherchez par code, code-barres ou nom"
+    },
+    "The catalogue table is not created yet (hospital_h22_catalog_items.sql)": {
+      "en": "The catalogue table is not created yet (hospital_h22_catalog_items.sql)",
+      "ar": "جدول الدليل لم يُنشأ بعد (hospital_h22_catalog_items.sql)",
+      "fr": "La table du catalogue n'est pas encore créée (hospital_h22_catalog_items.sql)"
+    },
+    "This category has no active items": {
+      "en": "This category has no active items",
+      "ar": "هذا التصنيف ليس به أصناف نشطة",
+      "fr": "Cette catégorie n'a aucun article actif"
+    },
+    "Type at least two letters to search.": {
+      "en": "Type at least two letters to search.",
+      "ar": "اكتب حرفين على الأقل للبحث.",
+      "fr": "Saisissez au moins deux caractères."
+    },
+    "items selected": {
+      "en": "items selected",
+      "ar": "صنف مختار",
+      "fr": "articles sélectionnés"
+    },
+    "{0} items, {1} not on this list": {
+      "en": "{0} items, {1} not on this list",
+      "ar": "{0} صنف، {1} غير مضاف لهذه القائمة",
+      "fr": "{0} articles, {1} absents de cette liste"
+    },
+    "Add from the inventory": {
+      "en": "Add from the inventory",
+      "ar": "إضافة من المخزون",
+      "fr": "Ajouter depuis le stock"
+    },
+    "In the hospital catalogue": {
+      "en": "In the hospital catalogue",
+      "ar": "موجود في دليل المستشفى",
+      "fr": "Au catalogue de l'hôpital"
+    },
+    "Services are created in the service catalogue. Any item already in the inventory joins as a medicine or a consumable, one at a time from the inventory or a whole category below; its selling price is the main-list price.": {
+      "en": "Services are created in the service catalogue. Any item already in the inventory joins as a medicine or a consumable, one at a time from the inventory or a whole category below; its selling price is the main-list price.",
+      "ar": "الخدمات تُنشأ في دليل الخدمات. وأي صنف مسجّل في المخزون يُضاف كدواء أو مستهلك، صنفاً صنفاً من المخزون أو تصنيفاً كاملاً بالأسفل؛ وسعر بيعه هو سعره في القائمة الرئيسية.",
+      "fr": "Les services se créent dans le catalogue des services. Tout article déjà en stock rejoint comme médicament ou consommable, un à un depuis le stock ou par catégorie entière ci-dessous ; son prix de vente est le prix de la liste principale."
+    }
+  }
+}

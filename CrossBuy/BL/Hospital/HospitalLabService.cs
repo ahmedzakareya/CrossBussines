@@ -279,7 +279,9 @@ namespace CrossBuy.BL.Hospital
 			if (employeeId != null && o.ResultedByEmployeeId == employeeId && !await Can(ctx, HospitalActions.Manage, ct))
 				return HospitalResult.Fail("A different person verifies the results they did not enter");
 			o.Status = HospitalLabStatus.Verified; o.VerifiedAt = nowUtc; o.VerifiedByEmployeeId = employeeId;
-			await _db.SaveChangesAsync(ct); return HospitalResult.Success(o.ID);
+			await _db.SaveChangesAsync(ct);
+			await HospitalSmsService.QueueLabReadyAsync(_db, ctx.CompanyId, o.ID, employeeId, nowUtc, ct);   // H70: "your results are ready"
+			return HospitalResult.Success(o.ID);
 		}
 
 		/// Records that the doctor was told of a critical value — who called, when, and a note (whom they spoke to).

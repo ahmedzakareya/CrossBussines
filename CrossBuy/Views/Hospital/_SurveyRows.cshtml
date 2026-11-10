@@ -1,0 +1,30 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model IReadOnlyList<HospitalSurveyRow>
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@{ bool canManage = ViewBag.CanManage == true; var inv = System.Globalization.CultureInfo.InvariantCulture; }
+@foreach (var row in Model)
+{
+    var r = row.Response;
+    string score = r.Average >= 4 ? "badge-light-success" : r.Average <= HospitalSurveyRules.LowAverage ? "badge-light-danger" : "badge-light-primary";
+    <tr data-survey-row="@r.ID">
+        <td><span class="badge hp-code fs-8 hp-num">@r.ResponseNo</span><div class="text-muted fs-9 mt-1 hp-num" dir="ltr">@HospitalNursingService.UtcToWard(r.At).ToString("yyyy-MM-dd HH:mm", inv)</div></td>
+        <td>@if (r.Anonymous) {<span class="text-muted"><i class="ki-outline ki-eye-slash fs-6 me-1"></i>@T["Anonymous"]</span>} else {<div class="fw-bold text-gray-900">@DisplayName.Of(row.PatientName, row.PatientNameEn)</div><div class="text-muted fs-8 hp-num">@row.Mrn</div>}</td>
+        <td>@T["sv:" + r.Kind]</td>
+        <td><span class="badge @score hp-num">@r.Average.ToString("0.0", inv) / 5</span></td>
+        <td class="hp-num fw-bold">@r.Recommend</td>
+        <td class="mw-300px"><div class="text-gray-800 fs-7" dir="auto">@r.Comment</div></td>
+        <td>
+            @if (r.FollowUp == HospitalSurveyFollowUp.Open)
+            {
+                <span class="badge badge-light-danger">@T["svf:Open"]</span>
+                @if (canManage) { <button type="button" class="btn btn-sm btn-light-primary ms-2" data-survey-follow="@r.ID" data-ask="@string.Format(T["What was done about survey {0}?"].Value, r.ResponseNo)">@T["Close the follow-up"]</button> }
+            }
+            else if (r.FollowUp == HospitalSurveyFollowUp.Done)
+            {
+                <span class="badge badge-light-success">@T["svf:Done"]</span><div class="text-muted fs-9 mt-1" dir="auto">@DisplayName.Of(row.FollowedBy ?? "", row.FollowedByEn ?? row.FollowedBy ?? "") · @r.FollowUpNote</div>
+            }
+        </td>
+    </tr>
+}

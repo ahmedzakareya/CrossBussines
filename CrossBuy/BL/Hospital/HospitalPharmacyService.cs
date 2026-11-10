@@ -35,6 +35,8 @@ namespace CrossBuy.BL.Hospital
 	{
 		public const string MovementSource = "HospitalDispense";
 		public const string WarnAllergy = "allergy", WarnDuplicate = "duplicate", WarnNotStocked = "not-stocked", WarnShort = "short", WarnNearExpiry = "near-expiry";
+		/// H73: the line interacts with another line or with a medicine the patient is still given in hospital.
+		public const string WarnInteraction = "interaction";
 
 		private readonly CrossDbContext _db;
 		private readonly IHospitalAccessService _access;
@@ -179,12 +181,18 @@ namespace CrossBuy.BL.Hospital
 				: d.EncounterId != null ? await _db.HospitalBills.AsNoTracking().FirstOrDefaultAsync(b => b.CompanyId == ctx.CompanyId && b.EncounterId == d.EncounterId, ct) : null;
 			var listId = bill?.PriceListId;
 			var near = nowUtc.Date.AddDays(settings.NearExpiryDays);
+			var (kbPairs, _) = await HospitalDrugSafetyService.KbAsync(_db, ctx.CompanyId, ct);
+			var running = kbPairs.Count == 0 ? new List<string>() : await (from o in _db.Set<HospitalMedOrder>().AsNoTracking()
+				join a in _db.HospitalAdmissions.AsNoTracking() on o.AdmissionId equals a.ID
+				where o.CompanyId == ctx.CompanyId && o.PatientId == d.PatientId && o.Status == HospitalMedOrderStatus.Active && a.Status == HospitalAdmissionStatus.Active
+				select o.Drug).ToListAsync(ct);
 			var views = new List<HospitalRxLineView>();
 			foreach (var l in lines)
 			{
 				var w = new List<string>();
 				if (AllergiesIn(l.Drug, p.Allergies).Count > 0) w.Add(WarnAllergy);
 				if (l.ItemId != null && lines.Count(x => x.ItemId == l.ItemId) > 1) w.Add(WarnDuplicate);
+				if (kbPairs.Count > 0 && HospitalDrugSafetyRules.Interactions(l.Drug, lines.Where(x => x.ID != l.ID).Select(x => x.Drug).Concat(running), kbPairs).Count > 0) w.Add(WarnInteraction);
 				decimal? onHand = null; string? nextBatch = null; DateTime? nextExpiry = null; decimal? price = l.UnitPrice;
 				if (l.ItemId is not int iid) w.Add(WarnNotStocked);
 				else

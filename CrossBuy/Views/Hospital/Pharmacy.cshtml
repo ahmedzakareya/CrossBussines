@@ -19,6 +19,7 @@
     {
         HospitalPharmacyService.WarnAllergy => string.Format(T["{0} — the file records an allergy it mentions: {1}"].Value, l.Line.Drug, string.Join(", ", HospitalPharmacyService.AllergiesIn(l.Line.Drug, sel?.Patient.Allergies))),
         HospitalPharmacyService.WarnDuplicate => string.Format(T["{0} is prescribed twice"].Value, l.Line.Drug),
+        HospitalPharmacyService.WarnInteraction => string.Format(T["{0} interacts with another medicine of this patient — see the drug-safety list"].Value, l.Line.Drug),
         HospitalPharmacyService.WarnNotStocked => string.Format(T["{0} is not stocked — the patient buys it outside; it is not charged"].Value, l.Line.Drug),
         HospitalPharmacyService.WarnShort => string.Format(T["{0}: the store holds {1}, the prescription asks {2}"].Value, l.Line.Drug, HospitalUi.LabNum(l.OnHand ?? 0, 0), HospitalUi.LabNum(l.Line.Quantity, 0)),
         _ => string.Format(T["{0}: the batch that leaves first expires soon"].Value, l.Line.Drug),

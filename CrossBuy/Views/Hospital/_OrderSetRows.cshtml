@@ -1,0 +1,21 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@model List<HospitalOrderSetRow>
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@{ bool canManage = ViewBag.CanManage == true; }
+@foreach (var r in Model)
+{
+    var s = r.Set;
+    <tr class="@(s.IsActive ? "" : "opacity-50")">
+        <td><a href="@Url.Action("OrderSet", new { id = s.ID })" class="badge hp-code fs-8">@s.Code</a></td>
+        <td><a href="@Url.Action("OrderSet", new { id = s.ID })" class="fw-bold text-gray-900 text-hover-primary">@DisplayName.Of(s.Name, s.NameEn)</a></td>
+        <td class="fs-8">@(r.Department != null ? DisplayName.Of(r.Department, r.DepartmentEn ?? r.Department) : T["Any department"].Value)</td>
+        <td class="hp-num">@r.Items</td>
+        <td class="hp-num">@r.Uses</td>
+        <td>@if (s.IsActive) {<span class="badge badge-light-success">@T["In use"]</span>} else {<span class="badge badge-light">@T["Not in use"]</span>}</td>
+        <td class="text-end"><div class="d-flex justify-content-end gap-2">
+            <a href="@Url.Action("OrderSet", new { id = s.ID })" class="btn btn-sm btn-light text-nowrap">@T["Open"]</a>
+            @if (canManage) { <button type="button" class="btn btn-sm btn-light-primary text-nowrap" data-edit-set="@s.ID" data-row="@System.Text.Json.JsonSerializer.Serialize(new { code = s.Code, name = s.Name, nameEn = s.NameEn, departmentId = s.DepartmentId, isActive = s.IsActive })">@T["Edit"]</button> }
+        </div></td>
+    </tr>
+}

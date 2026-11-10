@@ -70,6 +70,10 @@ namespace CrossBuy.BL.Platform
             ("/uploads/applicants", PrivateFilePolicy.RequireAuthenticated),  // applicant photos / CVs
             ("/uploads/library",    PrivateFilePolicy.RequireAuthenticated),  // FileManager library documents
             ("/uploads/employees",  PrivateFilePolicy.RequireAuthenticated),  // employee photographs (PII)
+            // Hospital patient photographs (health PII) were served to ANONYMOUS callers: the prefix had no rule and fell
+            // through to Public (found 2026-11-05: a patient photo returned 200 with no session). Staff screens read the
+            // path while signed in; the patient portal serves its photos through PatientPortalController's own action.
+            ("/uploads/hospital",   PrivateFilePolicy.RequireAuthenticated),
 
             // PORTAL CONTACT PHOTOGRAPHS — A BACKSTOP, NOT THE AUTHORITY, and the distinction matters
             // enough to state here. The Client Portal convergence moved these files OUT of wwwroot

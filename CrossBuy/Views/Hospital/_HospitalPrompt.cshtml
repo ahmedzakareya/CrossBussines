@@ -2,9 +2,15 @@
 @*
     cbConfirm's twin for a step that needs one value typed (an approval reference, a rejection reason, a
     justification): the same house SweetAlert, never the browser's prompt(). window.cbPrompt(text,
-    { kind, title, ok, placeholder, textarea, value }) resolves to the trimmed text, or null when cancelled.
+    { kind, title, ok, placeholder, textarea, value, number }) resolves to the trimmed text, or null when cancelled.
     The value is required: the dialog refuses an empty answer.
 *@
+@* The theme gives .form-control a full width and SweetAlert adds its own side margins: the field then runs out of
+   the window. Inside the dialog the field is as wide as the dialog's content, never wider. *@
+<style>
+    .cb-confirm-top .swal2-input.form-control, .cb-confirm-top .swal2-textarea.form-control { width: calc(100% - 4em); max-width: calc(100% - 4em); margin: 1em 2em .5em; box-sizing: border-box; }
+    .cb-confirm-top .swal2-input.cb-num { direction: ltr; text-align: center; font-variant-numeric: tabular-nums; }
+</style>
 <script>
 (function () {
     if (window.cbPrompt) return;
@@ -14,11 +20,35 @@
         if (!window.Swal) return Promise.resolve(null);
         return Swal.fire({
             title: o.title || '', text: text, input: o.textarea ? 'textarea' : 'text', inputValue: o.value || '', inputPlaceholder: o.placeholder || '',
+            inputAttributes: o.number ? { inputmode: 'decimal', dir: 'ltr', autocomplete: 'off' } : {},
             icon: o.kind === 'danger' ? 'warning' : 'question', iconColor: o.kind === 'danger' ? '#DC2626' : '#3A5795',
             showCancelButton: true, buttonsStyling: false, confirmButtonText: o.ok || okText, cancelButtonText: cancelText,
-            inputValidator: function (v) { return v && v.trim() ? null : need; },
-            customClass: { container: 'cb-confirm-top', input: 'form-control form-control-solid', confirmButton: 'btn fw-bold ' + (o.kind === 'danger' ? 'btn-danger' : 'btn-primary'), cancelButton: 'btn fw-bold btn-light' }
+            inputValidator: function (v) { return !v || !v.trim() ? need : o.number && !/^\d+([.,]\d+)?$/.test(v.trim()) ? (o.numberText || need) : null; },
+            customClass: { container: 'cb-confirm-top', input: 'form-control form-control-solid' + (o.number ? ' cb-num' : ''), confirmButton: 'btn fw-bold ' + (o.kind === 'danger' ? 'btn-danger' : 'btn-primary'), cancelButton: 'btn fw-bold btn-light' }
         }).then(function (r) { return r.isConfirmed ? String(r.value).trim() : null; });
+    };
+
+    // H33 — the owner's rule: a text a patient reads is written in both languages. cbPromptBoth(text, { title, kind,
+    // ar, en }) shows an Arabic and an English field (each lays out by what is typed) and resolves to { ar, en } with
+    // at least one filled — the blank one falls back to the other on screen — or to null when cancelled.
+    var arLabel = @Json.Serialize(PSR["Arabic"].Value), enLabel = @Json.Serialize(PSR["English"].Value), needOne = @Json.Serialize(PSR["Write it in Arabic, English or both"].Value);
+    window.cbPromptBoth = function (text, o) {
+        o = o || {};
+        if (!window.Swal) return Promise.resolve(null);
+        var esc = function (v) { return String(v || '').replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+        var field = function (id, label, v) { return '<div class="text-start mx-8 mt-4"><label class="form-label fw-semibold fs-7" for="' + id + '">' + label + '</label>' +
+            '<textarea id="' + id + '" class="form-control form-control-solid" rows="3" dir="auto" maxlength="500">' + esc(v) + '</textarea></div>'; };
+        return Swal.fire({
+            title: o.title || '', html: '<div class="text-gray-700 mb-2">' + esc(text) + '</div>' + field('cbpb_ar', arLabel, o.ar) + field('cbpb_en', enLabel, o.en),
+            icon: o.kind === 'danger' ? 'warning' : 'question', iconColor: o.kind === 'danger' ? '#DC2626' : '#3A5795',
+            showCancelButton: true, buttonsStyling: false, confirmButtonText: o.ok || okText, cancelButtonText: cancelText,
+            preConfirm: function () {
+                var ar = (document.getElementById('cbpb_ar').value || '').trim(), en = (document.getElementById('cbpb_en').value || '').trim();
+                if (!ar && !en) { Swal.showValidationMessage(needOne); return false; }
+                return { ar: ar, en: en };
+            },
+            customClass: { container: 'cb-confirm-top', confirmButton: 'btn fw-bold ' + (o.kind === 'danger' ? 'btn-danger' : 'btn-primary'), cancelButton: 'btn fw-bold btn-light' }
+        }).then(function (r) { return r.isConfirmed ? r.value : null; });
     };
 })();
 </script>

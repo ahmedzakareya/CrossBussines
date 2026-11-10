@@ -1,0 +1,266 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    BOOKING (H25) — the approved prototype's vertical wizard (the theme's create-account stepper): the step list
+    doubles as the running summary. Every rule is the server's: the doctors offered come from /Book/Doctors, the
+    times from /Book/Slots, the booking from POST /Book — the page only asks and shows.
+*@
+@{
+    Layout = "_Layout";
+    var acc = (HospitalPortalAccount)ViewBag.Account;
+    var people = (ViewBag.People as IReadOnlyList<HospitalPortalPerson>) ?? Array.Empty<HospitalPortalPerson>();
+    var clinics = (ViewBag.Clinics as IReadOnlyList<HospitalPortalClinic>) ?? Array.Empty<HospitalPortalClinic>();
+    // Each clinic's icon, as the approved prototype draws them (portal/rules.js). Only names this theme's Keenicons
+    // set really has: where the prototype named a glyph the set lacks (happy-emoji, profile-user) the nearest one.
+    static string ClinicIcon(string? code) => (code ?? "").ToUpperInvariant() switch
+    {
+        "IM" => "ki-heart-circle", "CARD" => "ki-pulse", "PED" => "ki-sun", "ORTH" => "ki-abstract-26",
+        "OBG" => "ki-people", "DENT" => "ki-emoji-happy", "DERM" => "ki-color-swatch", "SURG" => "ki-bandage",
+        "ENT" => "ki-notepad-edit", "ER" => "ki-shield-cross", _ => "ki-plus-squared",
+    };
+    var doctors = (ViewBag.Doctors as IReadOnlyList<HospitalPortalDoctorRow>) ?? Array.Empty<HospitalPortalDoctorRow>();
+    var s = (HospitalPortalSettings)ViewBag.Settings;
+    bool verified = acc.Status == HospitalPortalAccountStatus.Verified;
+    ViewData["Title"] = T["Book an appointment"].Value;
+    ViewData["BandTitle"] = verified ? T["Book an appointment"].Value : T["Send a booking request"].Value;
+    ViewData["BandDesc"] = T["Choose the clinic and the reason, then the doctor and the time"].Value;
+    bool ar = DisplayName.IsArabic;
+    var data = new
+    {
+        verified,
+        people = people.Select(p => new { id = p.PatientId, name = DisplayName.Of(p.Name, p.NameEn), mrn = p.Mrn, rel = T["rel:" + p.Relation].Value, initials = HospitalUi.Initials(p.NameEn), photo = p.Photo == null ? null : Url.Action("PatientPhoto", new { id = p.PatientId }) }),
+        clinics = clinics.Select(c => new { id = c.DepartmentId, icon = ClinicIcon(c.Code), name = DisplayName.Of(c.Name, c.NameEn), mode = c.Mode, modeLabel = T["pm:" + c.Mode].Value, referral = c.ReferralForNew, types = c.VisitTypes.Where(v => v != HospitalVisitTypes.Video || c.Video) }),
+        doctors = doctors.Select(d => new { id = d.PractitionerId, dept = d.DepartmentId, name = DisplayName.Of(d.Name, d.NameEn), title = DisplayName.Of(d.Title ?? "", d.TitleEn ?? d.Title ?? ""), initials = HospitalUi.Initials(d.NameEn), photo = d.Photo == null ? null : Url.Action("DoctorPhoto", new { id = d.PractitionerId }) }),
+        types = HospitalVisitTypes.All.ToDictionary(v => v, v => T["visit:" + v].Value),
+        days = ar ? new[] { "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت" } : new[] { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" },
+        months = ar ? new[] { "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر" } : new[] { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" },
+        window = Math.Min(s.WindowDays, 21), cancelHours = s.CancelHours, waitlist = s.Waitlist,
+        urls = new { doctors = Url.Action("BookDoctors"), days = Url.Action("BookDays"), slots = Url.Action("BookSlots"), book = Url.Action("BookPost"), request = Url.Action("RequestPost"), appointments = Url.Action("Appointments") },
+        w = new
+        {
+            who = T["Who is it for?"].Value, clinic = T["Clinic"].Value, reason = T["Reason for the visit"].Value, referral = T["Referral number"].Value, referralHint = T["A new visit in this clinic needs a doctor's referral."].Value,
+            next = T["Next"].Value, back = T["Back"].Value, confirm = T["Confirm the booking"].Value, send = T["Send the request"].Value,
+            s1 = T["Patient & reason"].Value, s2 = T["Doctor"].Value, s3 = T["Time"].Value, s4 = T["Confirm"].Value, sReq = T["Preferred time"].Value,
+            d1 = T["Who, and which clinic"].Value, d2 = T["Choose your doctor"].Value, d3 = T["Day and hour"].Value, d4 = T["Review and confirm"].Value,
+            h1 = T["Who is it for, and which clinic?"].Value, h1d = T["Then the reason: it decides how long the visit is"].Value, h2 = T["Choose your doctor"].Value, h3 = T["Choose the day and the hour"].Value,
+            h4 = T["Review and confirm"].Value, hReq = T["When suits you?"].Value, reqNote = T["The call centre calls you within one working day to confirm the time."].Value,
+            choose = T["Choose"].Value, chosen = T["Chosen"].Value, nextAssigned = T["You choose the time; the clinic assigns the first free doctor."].Value,
+            morning = T["Morning"].Value, evening = T["Evening"].Value, any = T["Any time"].Value, days = T["Days that suit you"].Value, daysPh = T["e.g. Sunday or Tuesday"].Value, note = T["A note for the clinic"].Value,
+            noTimes = T["No free times on this day."].Value, patient = T["Patient"].Value, when = T["When"].Value, doctor = T["Doctor"].Value,
+            assigned = T["Assigned by the clinic"].Value, policy = string.Format(T["Cancel or move it online up to {0} hours before; after that, call us."].Value, s.CancelHours),
+            doneBook = T["Your appointment is confirmed"].Value, doneReq = T["Your request is sent"].Value, mine = T["My appointments"].Value, phoneOnly = T["This clinic is booked by phone"].Value,
+            failed = T["The change could not be saved"].Value, rel = T["Relation"].Value,
+            notWorking = T["Not working"].Value, fullyBooked = T["Fully booked"].Value, freeCount = T["{0} free"].Value,
+            booked = T["Booked"].Value, unavailable = T["Unavailable"].Value, legendFree = T["Free time"].Value,
+            waitlist = string.Format(T["Email me if an earlier slot frees up (the offer is held for me {0} minutes)"].Value, s.OfferMinutes),
+            waitlistDone = T["You will get an email if an earlier slot frees up."].Value
+        }
+    };
+}
+@section Figures {
+    <div class="d-flex flex-column"><span class="text-white fw-bold fs-3 mb-1"><span class="pp-num">@s.WindowDays</span> @T["days"]</span><div class="text-white opacity-50 fw-bold">@T["Booking window"]</div></div>
+    <div class="d-flex flex-column"><span class="text-white fw-bold fs-3 mb-1"><span class="pp-num">@s.CancelHours</span> @T["h"]</span><div class="text-white opacity-50 fw-bold">@T["Cancel online up to"]</div></div>
+}
+
+<div id="ppBook"></div>
+
+@section Scripts {
+    <script>
+        (function () {
+            var D = @Json.Serialize(data), W = D.w, esc = pp.esc;
+            var B = { step: 1, who: D.verified && D.people.length ? D.people[0].id : null, clinic: null, type: null, referral: '', mode: null, allowed: [], doc: null, date: null, slot: null, slots: [], pref: { days: '', time: 'Any', note: '' }, error: null, done: null, waitlist: true };
+            function clinic() { return D.clinics.filter(function (c) { return c.id === B.clinic; })[0]; }
+            function isRequest() { return !D.verified || (clinic() && clinic().mode === 'Request'); }
+            function doctorOf(id) { return D.doctors.filter(function (d) { return d.id === id; })[0]; }
+            function av(o, size) {
+                return '<div class="symbol symbol-' + size + 'px symbol-circle flex-shrink-0">' + (o.photo ? '<img src="' + esc(o.photo) + '" alt="" style="object-fit:cover" data-initials="' + esc(o.initials) + '" />' : '<span class="symbol-label bg-light-primary text-primary fw-bold">' + esc(o.initials) + '</span>') + '</div>';
+            }
+            function clock(m) { return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); }
+            function iso(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+            function label(d) { return D.days[d.getDay()] + ' <span class="pp-num">' + d.getDate() + '</span> ' + D.months[d.getMonth()]; }
+
+            function steps() {
+                if (isRequest()) return [{ n: 1, t: W.s1, d: B.clinic ? esc(clinic().name) + (B.type ? ' · ' + esc(D.types[B.type]) : '') : W.d1 }, { n: 2, t: W.sReq, d: B.pref.days ? esc(B.pref.days) : W.d3 }, { n: 4, t: W.s4, d: W.d4 }];
+                var list = [{ n: 1, t: W.s1, d: B.clinic ? esc(clinic().name) + (B.type ? ' · ' + esc(D.types[B.type]) : '') : W.d1 }];
+                if (B.mode !== 'Next') list.push({ n: 2, t: W.s2, d: B.doc ? esc(doctorOf(B.doc).name) : W.d2 });
+                list.push({ n: 3, t: W.s3, d: B.slot ? label(new Date(B.date)) + ' · <span class="pp-num">' + clock(B.slot.minute) + '</span>' : W.d3 });
+                list.push({ n: 4, t: W.s4, d: W.d4 });
+                return list;
+            }
+            function stepper() {
+                var st = steps(), idx = st.map(function (x) { return x.n; }).indexOf(B.step); if (B.step === 5) idx = st.length;
+                return '<div class="card d-flex justify-content-center justify-content-xl-start flex-row-auto w-100 w-xl-300px w-xxl-350px"><div class="card-body px-6 px-lg-10 py-15"><div class="stepper-nav">' + st.map(function (x, i) {
+                    return '<div class="stepper-item ' + (i < idx ? 'completed' : i === idx ? 'current' : '') + '"><div class="stepper-wrapper"><div class="stepper-icon w-40px h-40px"><i class="ki-outline ki-check fs-2 stepper-check"></i><span class="stepper-number">' + (i + 1) + '</span></div>' +
+                        '<div class="stepper-label"><h3 class="stepper-title">' + x.t + '</h3><div class="stepper-desc fw-semibold">' + x.d + '</div></div></div>' + (i < st.length - 1 ? '<div class="stepper-line h-40px"></div>' : '') + '</div>';
+                }).join('') + '</div></div></div>';
+            }
+            function heading(t, d) { return '<div class="pb-8"><h2 class="fw-bold text-gray-900">' + t + '</h2>' + (d ? '<div class="text-muted fw-semibold fs-6">' + d + '</div>' : '') + '</div>'; }
+            function tile(attrs, on, off, icon, title, sub) {
+                return '<label class="btn btn-outline btn-outline-dashed btn-active-light-primary d-flex align-items-center text-start p-5 h-100' + (on ? ' active' : '') + (off ? ' opacity-50' : '') + '" ' + attrs + '>' + icon +
+                    '<span class="d-block fw-semibold ms-4"><span class="text-gray-900 fw-bold d-block fs-5 mb-1">' + title + '</span>' + (sub ? '<span class="text-muted fw-semibold fs-7">' + sub + '</span>' : '') + '</span></label>';
+            }
+            function sym(icon, kind) { return '<div class="symbol symbol-45px flex-shrink-0"><span class="symbol-label bg-light-' + kind + '"><i class="ki-outline ' + icon + ' fs-2x text-' + kind + '"></i></span></div>'; }
+            function nav(back, label, ok) {
+                return '<div class="d-flex flex-stack pt-10 border-top border-gray-200 mt-10">' + (back ? '<button type="button" class="btn btn-lg btn-light-primary" data-b="back">' + W.back + '</button>' : '<span></span>') +
+                    (label ? '<button type="button" class="btn btn-lg btn-primary" data-b="next"' + (ok ? '' : ' disabled') + '>' + label + '</button>' : '') + '</div>';
+            }
+            function error() { return B.error ? '<div class="alert alert-danger mb-6">' + esc(B.error) + '</div>' : ''; }
+
+            function step1() {
+                var h = heading(W.h1, W.h1d) + error();
+                if (D.verified && D.people.length > 1) h += '<div class="fw-bold text-gray-700 fs-6 mb-4">' + W.who + '</div><div class="row g-4 mb-10">' + D.people.map(function (p) {
+                    return '<div class="col-md-4">' + tile('data-who="' + p.id + '"', B.who === p.id, false, av(p, 45), esc(p.name), esc(p.rel) + ' · <span class="pp-num">' + esc(p.mrn) + '</span>') + '</div>';
+                }).join('') + '</div>';
+                h += '<div class="fw-bold text-gray-700 fs-6 mb-4">' + W.clinic + '</div><div class="row g-4 mb-10">' + D.clinics.map(function (c) {
+                    var off = c.mode === 'Off';
+                    return '<div class="col-md-6 col-xxl-4">' + tile('data-clinic="' + c.id + '"' + (off ? ' data-off="1"' : ''), B.clinic === c.id, off, sym(c.icon, off ? 'secondary' : 'primary'), esc(c.name), esc(c.modeLabel)) + '</div>';
+                }).join('') + '</div>';
+                var c = clinic();
+                if (c && c.mode === 'Off') h += '<div class="alert alert-primary">' + esc(W.phoneOnly) + '</div>';
+                if (c && c.mode !== 'Off') {
+                    h += '<div class="fw-bold text-gray-700 fs-6 mb-4">' + W.reason + '</div><div class="row g-4 mb-5">' + c.types.map(function (t) {
+                        return '<div class="col-md-6">' + tile('data-type="' + t + '"', B.type === t, false, sym(t === 'Video' ? 'ki-screen' : t === 'FollowUp' ? 'ki-arrows-loop' : 'ki-notepad-edit', 'info'), esc(D.types[t]), '') + '</div>';
+                    }).join('') + '</div>';
+                    if (c.referral && B.type === 'New' && !isRequest()) h += '<div class="mt-6"><label class="form-label required">' + W.referral + '</label><input class="form-control form-control-solid pp-num w-md-300px" data-referral value="' + esc(B.referral) + '" /><div class="form-text">' + W.referralHint + '</div></div>';
+                }
+                var ok = c && c.mode !== 'Off' && B.type && (!D.verified || B.who) && !(c.referral && B.type === 'New' && !isRequest() && B.referral.trim().length < 3);
+                return h + nav(false, W.next, ok);
+            }
+            function step2() {
+                var h = heading(W.h2, esc(clinic().name) + ' · ' + esc(D.types[B.type])) + error();
+                h += '<div class="row g-6">' + B.allowed.map(function (id) {
+                    var d = doctorOf(id); if (!d) return ''; var on = B.doc === id;
+                    return '<div class="col-md-6 col-xxl-4"><div class="card h-100 border border-dashed ' + (on ? 'border-primary bg-light-primary' : 'border-gray-300') + '"><div class="card-body d-flex flex-center flex-column py-9 px-5">' +
+                        '<div class="mb-5">' + av(d, 75) + '</div><span class="fs-4 text-gray-900 fw-bold text-center">' + esc(d.name) + '</span><div class="fw-semibold text-gray-500 mb-6 text-center">' + esc(d.title) + '</div>' +
+                        '<button type="button" class="btn btn-sm ' + (on ? 'btn-primary' : 'btn-light-primary') + '" data-doc="' + id + '"><i class="ki-outline ' + (on ? 'ki-check' : 'ki-plus') + ' fs-3"></i>' + (on ? W.chosen : W.choose) + '</button></div></div></div>';
+                }).join('') + '</div>';
+                return h + nav(true, W.next, !!B.doc);
+            }
+            function step3() {
+                var h = heading(W.h3, '') + error();
+                if (B.mode === 'Next') h += '<div class="alert alert-primary mb-6">' + W.nextAssigned + '</div>';
+                else h += '<div class="d-flex align-items-center gap-3 mb-6">' + av(doctorOf(B.doc), 45) + '<div><div class="fw-bold text-gray-900">' + esc(doctorOf(B.doc).name) + '</div><div class="text-muted fs-7">' + esc(doctorOf(B.doc).title) + '</div></div></div>';
+                // the strip: the server's days — a day off and a fully booked day show, but cannot be chosen
+                h += '<div class="d-flex gap-3 overflow-auto pb-3 mb-8">' + (B.days || []).map(function (x) {
+                    var d = new Date(x.date + 'T00:00:00'), on = B.date === x.date, open = x.works && x.free > 0;
+                    var sub = !x.works ? W.notWorking : x.free === 0 ? (x.booked > 0 ? W.fullyBooked : W.unavailable) : W.freeCount.replace('{0}', '<span class="pp-num">' + x.free + '</span>');
+                    return '<label class="btn btn-outline btn-outline-dashed btn-active-light-primary d-flex flex-column flex-center min-w-90px py-4' + (on ? ' active' : '') + (open ? '' : ' opacity-50 bg-light pe-none') + '"' + (open ? ' data-date="' + x.date + '"' : '') + '>' +
+                        '<span class="fs-8 fw-semibold text-muted">' + D.days[d.getDay()] + '</span><span class="fs-2 fw-bold text-gray-900 pp-num">' + d.getDate() + '</span><span class="fs-8 text-muted">' + D.months[d.getMonth()] + '</span>' +
+                        '<span class="fs-9 fw-bold mt-1 ' + (open ? 'text-success' : 'text-gray-500') + '">' + sub + '</span></label>';
+                }).join('') + '</div>';
+                if (B.date) {
+                    // the whole session: a free time is chosen; a booked or unavailable one shows, struck through
+                    var list = B.slots;
+                    function cell(x) {
+                        if (x.state === 'Free') {
+                            var on = B.slot && B.slot.minute === x.minute;
+                            return '<label class="btn btn-sm btn-outline btn-outline-dashed btn-active-light-primary px-5 pp-num' + (on ? ' active' : '') + '" data-slot="' + x.minute + '" data-sdoc="' + x.doctor + '">' + esc(x.label) + '</label>';
+                        }
+                        var booked = x.state === 'Booked';
+                        return '<span class="btn btn-sm px-5 pe-none ' + (booked ? 'btn-light-danger' : 'btn-light text-gray-500') + '" title="' + esc(booked ? W.booked : W.unavailable) + '">' +
+                            '<span class="pp-num text-decoration-line-through">' + esc(x.label) + '</span><span class="d-block fs-9">' + esc(booked ? W.booked : W.unavailable) + '</span></span>';
+                    }
+                    function group(t, xs) { return xs.length ? '<h4 class="fw-bold text-gray-700 fs-6 mb-4">' + t + '</h4><div class="d-flex flex-wrap gap-3 mb-8">' + xs.map(cell).join('') + '</div>' : ''; }
+                    var legend = '<div class="d-flex flex-wrap gap-5 fs-8 text-gray-600 mb-6"><span><span class="badge badge-light-primary me-1">&nbsp;</span>' + W.legendFree + '</span><span><span class="badge badge-light-danger me-1">&nbsp;</span>' + W.booked + '</span><span><span class="badge badge-light me-1">&nbsp;</span>' + W.unavailable + '</span></div>';
+                    h += list.length ? legend + group(W.morning, list.filter(function (x) { return x.minute < 14 * 60; })) + group(W.evening, list.filter(function (x) { return x.minute >= 14 * 60; })) : '<div class="text-muted mb-8">' + W.noTimes + '</div>';
+                }
+                // H48: the prototype's waitlist tick, under the times
+                if (D.waitlist && B.date) h += '<label class="form-check form-check-custom form-check-solid mt-2 mb-6"><input class="form-check-input" type="checkbox" data-bk-waitlist ' + (B.waitlist ? 'checked' : '') + ' /><span class="form-check-label text-gray-700">' + esc(W.waitlist) + '</span></label>';
+                return h + nav(true, W.next, !!B.slot);
+            }
+            function stepReq() {
+                var p = B.pref;
+                return heading(W.hReq, esc(clinic().name)) + error() + '<div class="alert alert-primary mb-6">' + W.reqNote + '</div>' +
+                    '<div class="row g-6"><div class="col-md-6"><label class="form-label required">' + W.days + '</label><input class="form-control form-control-solid" data-pref="days" value="' + esc(p.days) + '" placeholder="' + esc(W.daysPh) + '" /></div>' +
+                    '<div class="col-md-6"><label class="form-label required">' + W.when + '</label><div class="d-flex gap-3">' + [['Morning', W.morning], ['Evening', W.evening], ['Any', W.any]].map(function (t) {
+                        return '<label class="btn btn-outline btn-outline-dashed btn-active-light-primary flex-fill' + (p.time === t[0] ? ' active' : '') + '" data-time="' + t[0] + '">' + t[1] + '</label>';
+                    }).join('') + '</div></div><div class="col-12"><label class="form-label">' + W.note + '</label><textarea class="form-control form-control-solid" rows="3" data-pref="note">' + esc(p.note) + '</textarea></div></div>' +
+                    nav(true, W.next, p.days.trim().length > 1);
+            }
+            function step4() {
+                var c = clinic(), who = D.people.filter(function (p) { return p.id === B.who; })[0], rows = [];
+                if (who) rows.push([W.patient, '<div class="d-flex align-items-center gap-3">' + av(who, 30) + esc(who.name) + '</div>']);
+                rows.push([W.clinic, esc(c.name) + ' · ' + esc(D.types[B.type])]);
+                if (isRequest()) rows.push([W.sReq, esc(B.pref.days) + ' · ' + ({ Morning: W.morning, Evening: W.evening, Any: W.any })[B.pref.time]]);
+                else {
+                    var doc = doctorOf(B.mode === 'Next' ? B.slot.doctor : B.doc);
+                    rows.push([W.doctor, '<div class="d-flex align-items-center gap-3">' + av(doc, 40) + '<div><div class="fw-bold">' + esc(doc.name) + '</div><div class="text-muted fs-7">' + (B.mode === 'Next' ? esc(W.assigned) : esc(doc.title)) + '</div></div></div>']);
+                    rows.push([W.when, '<span class="fw-bold">' + label(new Date(B.date)) + ' · <span class="pp-num">' + clock(B.slot.minute) + '</span></span>']);
+                }
+                return heading(W.h4, '') + error() + '<table class="table table-row-dashed align-middle fs-6 gy-4 mb-0"><tbody>' + rows.map(function (r) { return '<tr><td class="text-muted fw-semibold w-125px">' + r[0] + '</td><td class="text-gray-900">' + r[1] + '</td></tr>'; }).join('') + '</tbody></table>' +
+                    (isRequest() ? '' : '<div class="text-muted fs-7 mt-6"><i class="ki-outline ki-information-4 fs-6 me-1"></i>' + esc(W.policy) + '</div>') + nav(true, isRequest() ? W.send : W.confirm, true);
+            }
+            function done() {
+                return '<div class="text-center py-10"><i class="ki-outline ki-check-circle fs-5tx text-success mb-5"></i><h2 class="fw-bold text-gray-900 mb-8">' + (B.done === 'req' ? W.doneReq : W.doneBook) + '</h2>' +
+                    (B.done === 'book' && D.waitlist && B.waitlist ? '<div class="text-gray-700 mb-8"><i class="ki-outline ki-notification-on fs-4 me-1 text-primary"></i>' + esc(W.waitlistDone) + '</div>' : '') + '<a href="' + D.urls.appointments + '" class="btn btn-primary">' + W.mine + '</a></div>';
+            }
+            function render() {
+                var body = B.step === 5 ? done() : B.step === 1 ? step1() : B.step === 2 ? (isRequest() ? stepReq() : step2()) : B.step === 3 ? step3() : step4();
+                document.getElementById('ppBook').innerHTML = '<div class="stepper stepper-pills stepper-column d-flex flex-column flex-xl-row flex-row-fluid gap-10">' + stepper() +
+                    '<div class="card d-flex flex-row-fluid"><div class="card-body py-15 px-6 px-lg-15 w-100">' + body + '</div></div></div>';
+            }
+            function q(o) { return Object.keys(o).filter(function (k) { return o[k] != null; }).map(function (k) { return k + '=' + encodeURIComponent(o[k]); }).join('&'); }
+            function loadSlots() {
+                B.slots = []; B.slot = null; render();
+                pp.get(D.urls.slots + '?' + q({ patientId: B.who, departmentId: B.clinic, visitType: B.type, practitionerId: B.mode === 'Next' ? null : B.doc, date: B.date })).then(function (r) {
+                    B.error = r.ok ? null : r.error; B.slots = r.slots || []; render();
+                });
+            }
+            function loadDays() {
+                B.days = null; B.date = null; B.slot = null; B.slots = []; render();
+                pp.get(D.urls.days + '?' + q({ patientId: B.who, departmentId: B.clinic, visitType: B.type, practitionerId: B.mode === 'Next' ? null : B.doc, count: D.window + 1 })).then(function (r) {
+                    B.error = r.ok ? null : r.error; B.days = r.days || [];
+                    var first = B.days.filter(function (x) { return x.works && x.free > 0; })[0];   // the first day with a free time, for the patient
+                    if (first) { B.date = first.date; loadSlots(); } else render();
+                });
+            }
+            function nextStep() {
+                B.error = null;
+                if (B.step === 1) {
+                    if (isRequest()) { B.step = 2; render(); return; }
+                    pp.get(D.urls.doctors + '?' + q({ patientId: B.who, departmentId: B.clinic, visitType: B.type })).then(function (r) {
+                        if (!r.ok) { B.error = r.error; render(); return; }
+                        B.mode = r.mode; B.allowed = r.doctors; B.doc = r.doctors.length === 1 ? r.doctors[0] : null; B.step = B.mode === 'Next' ? 3 : 2;
+                        if (B.step === 3) loadDays(); else render();
+                    });
+                    return;
+                }
+                if (B.step === 2) { if (isRequest()) { B.step = 4; render(); } else { B.step = 3; loadDays(); } return; }
+                if (B.step === 3) { B.step = 4; render(); return; }
+                // step 4: the write
+                var btn = document.querySelector('[data-b="next"]'); btn.disabled = true;
+                var call = isRequest()
+                    ? pp.post(D.urls.request, { patientId: B.who, departmentId: B.clinic, visitType: B.type, preferredDays: B.pref.days, timeOfDay: B.pref.time, note: B.pref.note || null })
+                    : pp.post(D.urls.book, { patientId: B.who, departmentId: B.clinic, visitType: B.type, practitionerId: B.mode === 'Next' ? null : B.doc, date: B.date, startMinute: B.slot.minute, referral: B.referral || null, waitlist: !!(D.waitlist && B.waitlist) });
+                call.then(function (r) { if (!r.ok) { B.error = r.error || W.failed; render(); return; } B.done = isRequest() ? 'req' : 'book'; B.step = 5; render(); });
+            }
+            function back() {
+                B.error = null;
+                if (B.step === 4) B.step = isRequest() ? 2 : 3;
+                else if (B.step === 3) B.step = B.mode === 'Next' ? 1 : 2;
+                else B.step = 1;
+                render();
+            }
+            document.addEventListener('click', function (e) {
+                var t;
+                if ((t = e.target.closest('[data-off]'))) { B.clinic = +t.getAttribute('data-clinic'); B.type = null; render(); return; }
+                if ((t = e.target.closest('[data-who]'))) { B.who = +t.getAttribute('data-who'); B.doc = null; render(); return; }
+                if ((t = e.target.closest('[data-clinic]'))) { B.clinic = +t.getAttribute('data-clinic'); B.type = null; B.doc = null; B.date = null; B.slot = null; render(); return; }
+                if ((t = e.target.closest('[data-type]'))) { B.type = t.getAttribute('data-type'); B.doc = null; B.date = null; B.slot = null; render(); return; }
+                if ((t = e.target.closest('[data-doc]'))) { B.doc = +t.getAttribute('data-doc'); B.date = null; B.slot = null; render(); return; }
+                if ((t = e.target.closest('[data-date]'))) { B.date = t.getAttribute('data-date'); loadSlots(); return; }
+                if ((t = e.target.closest('[data-slot]'))) { B.slot = { minute: +t.getAttribute('data-slot'), doctor: +t.getAttribute('data-sdoc') }; render(); return; }
+                if ((t = e.target.closest('[data-time]'))) { B.pref.time = t.getAttribute('data-time'); render(); return; }
+                if ((t = e.target.closest('[data-b]'))) { if (t.getAttribute('data-b') === 'back') back(); else nextStep(); }
+            });
+            document.addEventListener('change', function (e) { if (e.target.matches('[data-bk-waitlist]')) B.waitlist = e.target.checked; });
+            document.addEventListener('input', function (e) {
+                if (e.target.matches('[data-referral]')) { B.referral = e.target.value; var b = document.querySelector('[data-b="next"]'); if (b) b.disabled = B.referral.trim().length < 3; }
+                if (e.target.matches('[data-pref]')) { B.pref[e.target.getAttribute('data-pref')] = e.target.value; var n = document.querySelector('[data-b="next"]'); if (n) n.disabled = B.pref.days.trim().length < 2; }
+            });
+            render();
+        })();
+    </script>
+}

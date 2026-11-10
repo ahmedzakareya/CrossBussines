@@ -1,0 +1,35 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model IReadOnlyList<HospitalSmsRow>
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@{ bool canBook = ViewBag.CanBook == true; var inv = System.Globalization.CultureInfo.InvariantCulture; string At(DateTime u) => HospitalNursingService.UtcToWard(u).ToString("yyyy-MM-dd HH:mm", inv); }
+@foreach (var r in Model)
+{
+    var m = r.Message;
+    // one icon per kind, in its own tinted square
+    var (icon, tint) = m.Kind switch
+    {
+        HospitalSmsKind.Booked => ("ki-calendar-tick", "primary"),
+        HospitalSmsKind.Reminder => ("ki-notification-on", "info"),
+        HospitalSmsKind.NoShow => ("ki-calendar-remove", "danger"),
+        HospitalSmsKind.LabReady => ("ki-flask", "success"),
+        _ => ("ki-message-text-2", "primary"),
+    };
+    string st = m.Status switch { HospitalSmsStatus.Sent => "badge-light-success", HospitalSmsStatus.Failed => "badge-light-danger", HospitalSmsStatus.Queued => "badge-light-primary", _ => "badge-light" };
+    <tr data-sms-row="@m.ID" class="@(m.Status == HospitalSmsStatus.Cancelled ? "opacity-75" : "")">
+        <td><span class="badge hp-code fs-8 hp-num">@m.MessageNo</span><div class="text-muted fs-9 mt-1 hp-num text-nowrap" dir="ltr">@At(m.QueuedAt)</div></td>
+        <td>@if (r.PatientName != null) {<div class="fw-bold text-gray-900">@DisplayName.Of(r.PatientName, r.PatientNameEn ?? r.PatientName)</div><div class="text-muted fs-8 hp-num">@r.Mrn</div>}
+            <div class="fs-8 hp-num text-gray-700" dir="ltr" style="text-align:start">@(m.Phone ?? "—")</div></td>
+        <td><div class="d-flex align-items-center gap-3">
+                <span class="symbol symbol-35px flex-shrink-0"><span class="symbol-label bg-light-@tint"><i class="ki-outline @icon fs-3 text-@tint"></i></span></span>
+                <span class="fw-bold text-gray-800 text-nowrap">@T["smk:" + m.Kind]</span></div></td>
+        <td><div class="fs-7 text-gray-800" dir="@(m.Language == "ar" ? "rtl" : "ltr")" style="text-align:start">@m.Body</div>
+            <div class="text-muted fs-9 mt-1"><span class="hp-num">@HospitalSmsRules.Parts(m.Body)</span> @T["SMS parts"]</div></td>
+        <td><span class="badge @st text-nowrap">@T["sms:" + m.Status]</span>
+            @if (m.SentAt is DateTime sa) {<div class="text-muted fs-9 mt-1 hp-num text-nowrap" dir="ltr">@At(sa)</div>}
+            @if (m.Error != null) {<div class="text-muted fs-9 mt-1">@T[m.Error]</div>}
+            @if (m.Attempts > 0 && m.Status != HospitalSmsStatus.Sent) {<div class="text-muted fs-9">@T["Tries"] <span class="hp-num">@m.Attempts</span></div>}
+            @if (canBook && HospitalSmsRules.CanCancel(m.Status)) { <button type="button" class="btn btn-sm btn-light-danger text-nowrap mt-2" data-sms-cancel="@m.ID" data-ask="@string.Format(T["Cancel {0}? It will not be sent."].Value, "⁨" + m.MessageNo + "⁩")">@T["Cancel"]</button> }</td>
+    </tr>
+}

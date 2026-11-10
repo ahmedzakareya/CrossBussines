@@ -1,0 +1,214 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@model HospitalWaitlistBoard?
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H48 — the earlier-slot waitlist, as the approved prototype draws it (#/portal-waitlist): four figures, "a slot freed
+    up? it is offered by email, in turn", the line (patient, clinic and doctor, the appointment they hold, since when,
+    the state, the action), and what happened to the last time that freed up. Every action asks first and swaps in place.
+*@
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Earlier-slot waitlist"].Value;
+    var b = Model;
+    var rows = b?.Rows ?? Array.Empty<HospitalWaitlistRow>();
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+    string Day(DateTime d) => d.ToString("yyyy-MM-dd", inv);
+    string At(DateTime d) => d.ToString("yyyy-MM-dd HH:mm", inv);
+    string Clock(DateTime utc) => HospitalNursingService.UtcToWard(utc).ToString("HH:mm", inv);
+    int mins = b?.OfferMinutes ?? 30;
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Earlier-slot waitlist"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item text-muted">@T["Appointments"]</li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@T["Waitlist"]</li>
+            </ul>
+        </div>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (b == null)
+        {
+            <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice"><div class="fs-6 text-gray-700">@T["The waitlist tables are not installed yet (hospital_h48_portal_waitlist.sql)."]</div></div>
+        }
+        else if (!b.On)
+        {
+            <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice"><div class="fs-6 text-gray-700">@T["The earlier-slot waitlist is turned off in the portal settings"]</div></div>
+        }
+        <div class="row g-5 g-xl-8 mb-5">
+            @foreach (var s in new[] {
+                (T["Waiting for an earlier slot"].Value, b?.Waiting.ToString(inv) ?? "0", "", "text-gray-900"),
+                (T["Offers open now"].Value, b?.OpenOffers.ToString(inv) ?? "0", string.Format(T["Each held {0} minutes"].Value, mins), "text-gray-900"),
+                (T["Slots refilled this month"].Value, b?.Refilled.ToString(inv) ?? "0", string.Format(T["of {0} freed up"].Value, b?.Freed ?? 0), "text-gray-900"),
+                (T["Average days gained"].Value, (b?.AverageDaysGained ?? 0).ToString("0.#", inv), "", "text-success") })
+            {
+                <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
+                    <div class="text-muted fw-semibold fs-7 mb-1">@s.Item1</div>
+                    <div class="fs-2hx fw-bold @s.Item4"><bdi class="hp-num" dir="ltr">@s.Item2</bdi></div>
+                    @if (s.Item3 != "") { <div class="text-muted fs-8 mt-1">@s.Item3</div> }
+                </div></div></div>
+            }
+        </div>
+
+        <div class="notice d-flex rounded border border-primary border-dashed bg-light-primary p-6 mb-5">
+            <i class="ki-outline ki-notification-on fs-2tx text-primary me-4"></i>
+            <div class="d-flex flex-stack flex-grow-1 flex-wrap flex-md-nowrap">
+                <div class="mb-3 mb-md-0 fw-semibold pe-5">
+                    <h4 class="text-gray-900 fw-bold mb-1">@T["A slot freed up? It is offered by email, in turn"]</h4>
+                    <div class="fs-6 text-gray-700">@string.Format(T["When an appointment is cancelled, the first waiting patient of the same doctor whose wishes fit gets an email. The offer is held for them for {0} minutes: if they accept they take the slot and their later appointment is released by itself; if they do not answer, the offer moves to the next. Email only."].Value, mins)</div>
+                </div>
+                <span class="badge badge-primary fs-7 fw-bold px-4 py-2 flex-shrink-0">@T["Email only"]</span>
+            </div>
+        </div>
+
+        <div class="card mb-5">
+            <div class="card-header border-0 pt-6">
+                <div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Waitlist"]</span></div>
+                <div class="card-toolbar">
+                    <div class="d-flex align-items-center position-relative"><i class="ki-outline ki-magnifier fs-3 position-absolute ms-4"></i>
+                        <input type="text" class="form-control form-control-solid w-225px ps-12" placeholder="@T["Search..."]" data-wl-search autocomplete="off" /></div>
+                </div>
+            </div>
+            <div class="card-body pt-2">
+                @if (rows.Count == 0) { <div class="text-center text-muted py-10">@T["No one is waiting for an earlier slot."]</div> }
+                else
+                {
+                    <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-3 mb-0">
+                        <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0">
+                            <th>@T["Patient"]</th><th>@T["Clinic & doctor"]</th><th>@T["Current appointment"]</th><th>@T["Wants"]</th><th>@T["State"]</th><th class="text-end"></th>
+                        </tr></thead>
+                        <tbody class="fw-semibold text-gray-700">
+                            @foreach (var r in rows)
+                            {
+                                var name = DisplayName.Of(r.Name, r.NameEn);
+                                <tr data-wl-row>
+                                    <td><div class="d-flex align-items-center">
+                                        <div class="symbol symbol-35px symbol-circle me-3 flex-shrink-0">@if (r.Photo != null) {<img src="@r.Photo" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(r.NameEn)" />} else {<span class="symbol-label fw-bold fs-8 hp-initials">@HospitalUi.Initials(r.NameEn)</span>}</div>
+                                        <div class="d-flex flex-column"><a href="@Url.Action("Patient", new { id = r.PatientId })" class="text-gray-900 text-hover-primary">@name</a>
+                                            @if (r.Mrn != null) {<span class="badge hp-code fs-9 hp-num align-self-start mt-1">@r.Mrn</span>}</div>
+                                    </div></td>
+                                    <td><div class="fw-semibold text-gray-800">@DisplayName.Of(r.Clinic, r.ClinicEn)</div><div class="text-muted fs-8">@DisplayName.Of(r.Doctor, r.DoctorEn)</div></td>
+                                    <td><span class="hp-num" dir="ltr">@At(r.CurrentStart)</span></td>
+                                    <td><span class="fs-7">@T["Any earlier time with this doctor"]</span><div class="text-muted fs-9">@T["Since"] <span class="hp-num" dir="ltr">@Day(r.Since)</span></div></td>
+                                    <td>
+                                        @switch (r.State)
+                                        {
+                                            case HospitalWaitlistState.Offered:
+                                                <span class="badge badge-primary fs-8">@T["Offer sent"]</span>
+                                                <div class="text-muted fs-9 mt-1"><span class="hp-num" dir="ltr">@At(r.OfferedStart!.Value)</span></div>
+                                                <div class="text-muted fs-9">@string.Format(T["Offer lapses in {0} min"].Value, r.MinutesLeft)</div>
+                                                break;
+                                            case HospitalWaitlistState.Took:
+                                                <span class="badge badge-light-success">@T["Took an earlier slot"]</span>
+                                                <div class="text-muted fs-9 mt-1">@string.Format(T["Gained {0} days"].Value, r.DaysGained.ToString("0.#", inv))</div>
+                                                break;
+                                            case HospitalWaitlistState.Lapsed:
+                                            case HospitalWaitlistState.Passed:
+                                                <span class="badge badge-light-secondary">@(r.State == HospitalWaitlistState.Passed ? T["Passed to the next"] : T["Offer lapsed"])</span>
+                                                <div class="text-muted fs-9 mt-1">@T["Place"] <span class="hp-num">@r.Place</span></div>
+                                                break;
+                                            default:
+                                                <span class="badge badge-light-primary">@T["Waiting"]</span>
+                                                <div class="text-muted fs-9 mt-1">@T["Place"] <span class="hp-num">@r.Place</span></div>
+                                                break;
+                                        }
+                                    </td>
+                                    <td class="text-end">
+                                        @if (r.State == HospitalWaitlistState.Offered && r.OfferId is int oid)
+                                        {
+                                            <button type="button" class="btn btn-sm btn-light" data-wl-pass="@oid" data-name="@name"><i class="ki-outline ki-time fs-4"></i>@T["Pass to the next"]</button>
+                                        }
+                                        else if (r.State is HospitalWaitlistState.Waiting or HospitalWaitlistState.Lapsed or HospitalWaitlistState.Passed && b!.On)
+                                        {
+                                            <button type="button" class="btn btn-sm btn-light-primary" data-wl-offer="@r.BookingId" data-name="@name"><i class="ki-outline ki-sms fs-4"></i>@T["Offer a slot"]</button>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table></div>
+                }
+            </div>
+        </div>
+
+        <div class="card mb-5">
+            <div class="card-header border-0 pt-6"><div class="card-title flex-column m-0">
+                <span class="card-label fw-bold text-gray-900 fs-4">@T["The last slot that freed up — what happened"]</span>
+                @if (b?.LastSlot is DateTime ls) { <span class="text-muted fs-7 mt-1">@DisplayName.Of(b.LastDoctor ?? "", b.LastDoctorEn ?? "") · <span class="hp-num" dir="ltr">@At(ls)</span></span> }
+            </div></div>
+            <div class="card-body pt-2">
+                @if (b == null || b.LastEvents.Count == 0) { <div class="text-center text-muted py-8">@T["No time has been offered yet."]</div> }
+                else
+                {
+                    int n = 0;
+                    foreach (var e in b.LastEvents)
+                    {
+                        var who = DisplayName.Of(e.Name, e.NameEn);
+                        if (e.Kind == "Sent") n++;
+                        var (icon, tone, text) = e.Kind switch
+                        {
+                            "Sent" => ("ki-sms", "primary", string.Format(T["Offer emailed to {0}"].Value, who) + (n == 1 ? " " + T["(first in line)"].Value : "")),
+                            "Taken" => ("ki-check-circle", "success", string.Format(T["{0} took the slot; their later appointment was released"].Value, who)),
+                            "Declined" => ("ki-cross-circle", "danger", string.Format(T["{0} kept their appointment — passed to the next"].Value, who)),
+                            "Passed" => ("ki-send", "primary", T["The desk passed the offer to the next"].Value),
+                            _ => ("ki-time", "secondary", T["The offer lapsed unanswered — passed to the next"].Value),
+                        };
+                        <div class="d-flex align-items-center py-3 border-bottom border-gray-200 border-bottom-dashed">
+                            <span class="symbol symbol-35px me-3"><span class="symbol-label bg-light-@tone"><i class="ki-outline @icon fs-3 text-@tone"></i></span></span>
+                            <span class="hp-num text-muted fs-7 w-50px" dir="ltr">@Clock(e.AtUtc)</span>
+                            <span class="fw-semibold text-gray-800">@text</span>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+    </div></div>
+</div>
+
+@section Scripts {
+    <partial name="_HospitalPrompt" />
+    <script>
+        (function () {
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value, root = @Json.Serialize(Url.Content("~/Hospital/PortalWaitlist"));
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), offered: @Json.Serialize(T["Offer emailed"].Value), passed: @Json.Serialize(T["Passed to the next"].Value),
+                offer: @Json.Serialize(T["Email {0} the earliest free earlier time now?"].Value), pass: @Json.Serialize(T["End {0}'s offer and send it to the next in line?"].Value) };
+            function toast(k, m) { if (window.toastr) toastr[k](m); }
+            function fmt(t) { var a = arguments; return t.replace(/\{(\d)\}/g, function (_, i) { return a[+i + 1]; }); }
+            function post(url) {
+                return fetch(root + url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: '{}' })
+                    .then(function (r) { return r.json().catch(function () { return { ok: false }; }); });
+            }
+            // in place, never a reload
+            function swap() {
+                return fetch(root, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.text(); }).then(function (html) {
+                    var d = new DOMParser().parseFromString(html, 'text/html'), f = d.getElementById('kt_app_content');
+                    if (f) document.getElementById('kt_app_content').innerHTML = f.innerHTML;
+                });
+            }
+            document.addEventListener('input', function (e) {
+                var s = e.target.closest('[data-wl-search]'); if (!s) return;
+                var q = s.value.trim().toLowerCase();
+                document.querySelectorAll('[data-wl-row]').forEach(function (tr) { tr.style.display = !q || tr.innerText.toLowerCase().indexOf(q) >= 0 ? '' : 'none'; });
+            });
+            document.addEventListener('click', function (e) {
+                var t = e.target.closest('[data-wl-offer],[data-wl-pass]'); if (!t) return;
+                var offer = t.hasAttribute('data-wl-offer'), id = t.getAttribute(offer ? 'data-wl-offer' : 'data-wl-pass'), name = t.getAttribute('data-name');
+                cbConfirm(fmt(offer ? W.offer : W.pass, name)).then(function (ok) {
+                    if (!ok) return; t.disabled = true;
+                    post(offer ? '/' + id + '/Offer' : '/Offers/' + id + '/Pass').then(function (res) {
+                        t.disabled = false;
+                        if (!res.ok) { toast('error', res.error || W.failed); swap(); return; }
+                        toast('success', offer ? W.offered : W.passed); swap();
+                    });
+                });
+            });
+        })();
+    </script>
+}

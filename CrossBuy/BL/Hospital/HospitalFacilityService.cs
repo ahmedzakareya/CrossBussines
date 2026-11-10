@@ -523,6 +523,8 @@ namespace CrossBuy.BL.Hospital
 			if (bed == null) return HospitalResult.Fail("not_found");
 			if (HospitalBedStatus.HoldsPatient(bed.Status)) return HospitalResult.Fail("Bed {0} holds a patient", bed.Code);
 			bed.Status = status; bed.UpdatedAt = DateTime.UtcNow; bed.UpdatedByEmployeeId = employeeId;
+			// H67: a bed marked for cleaning by hand opens its cleaning job on the support desk too — one flow, saved together
+			if (status == HospitalBedStatus.Cleaning) await HospitalSupportDeskService.OpenTurnoverAsync(_db, ctx, bed, employeeId, DateTime.UtcNow, ct);
 			await _db.SaveChangesAsync(ct);
 			return HospitalResult.Success(bed.ID);
 		}

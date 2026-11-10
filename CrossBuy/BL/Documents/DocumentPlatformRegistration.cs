@@ -35,6 +35,12 @@ namespace CrossBuy.BL.Documents
         public static IServiceCollection AddDocumentPlatform(IServiceCollection services)
         {
             services.AddScoped<IPlatformDocumentService, PlatformDocumentService>();
+
+            // The hospital patient's documents (its photo first). Registered HERE rather than in Program.cs, beside
+            // the platform that consumes it; the Employee and Customer resolvers stay where their tabs put them.
+            services.AddScoped<CrossBuy.BL.Platform.IDocumentOwnerResolver, CrossBuy.BL.Hospital.HospitalPatientDocumentOwnerResolver>();
+            services.AddScoped<CrossBuy.BL.Platform.IDocumentOwnerResolver, CrossBuy.BL.Hospital.HospitalRadOrderDocumentOwnerResolver>();   // H35: imaging pictures
+            services.AddScoped<CrossBuy.BL.Platform.IDocumentOwnerResolver, CrossBuy.BL.Hospital.HospitalConsentDocumentOwnerResolver>();   // H60: consent signatures
             services.AddScoped<CrossBuy.BL.Platform.IDocumentOwnerResolver, CrossBuy.BL.Hr.JobApplicationDocumentOwnerResolver>();   // HR: applicant photo + documents (2026-11-08)
             services.AddScoped<CrossBuy.BL.Platform.IDocumentOwnerResolver, CrossBuy.BL.Hr.LeaveRequestDocumentOwnerResolver>();    // HR3: medical certificates on leave requests (2026-11-08)
             services.AddScoped<IClientDocumentPublicationService, ClientDocumentPublicationService>();

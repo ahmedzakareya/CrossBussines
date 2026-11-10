@@ -1,0 +1,115 @@
+{
+ "unit": "H62 — claim scrubbing",
+ "strings": {
+  "A claim that resubmits a rejected line cannot be held": {
+   "ar": "لا يمكن تعليق مطالبة تعيد إرسال بند مرفوض",
+   "en": "A claim that resubmits a rejected line cannot be held",
+   "fr": "Une demande qui renvoie une ligne rejetée ne peut pas être suspendue"
+  },
+  "Claim check: nothing stops this batch": {
+   "ar": "فحص المطالبات: لا شيء يمنع رفع هذه الدفعة",
+   "en": "Claim check: nothing stops this batch",
+   "fr": "Contrôle des demandes : rien n'empêche ce lot"
+  },
+  "Claim check: {0} claims have errors that stop the submission": {
+   "ar": "فحص المطالبات: {0} مطالبات بها أخطاء تمنع الرفع",
+   "en": "Claim check: {0} claims have errors that stop the submission",
+   "fr": "Contrôle des demandes : {0} demandes ont des erreurs qui bloquent l'envoi"
+  },
+  "Every claim has its approvals, cover, member number, codes and diagnosis.": {
+   "ar": "كل مطالبة لها موافقاتها وتغطيتها ورقم المؤمَّن والأكواد والتشخيص.",
+   "en": "Every claim has its approvals, cover, member number, codes and diagnosis.",
+   "fr": "Chaque demande a ses accords, sa couverture, son numéro d'adhérent, ses codes et son diagnostic."
+  },
+  "Fix or hold the {0} claims with errors before submitting": {
+   "ar": "أصلح أو علّق المطالبات التي بها أخطاء ({0}) قبل الرفع",
+   "en": "Fix or hold the {0} claims with errors before submitting",
+   "fr": "Corrigez ou suspendez les {0} demandes en erreur avant l'envoi"
+  },
+  "Hold the claim": {
+   "ar": "تعليق المطالبة",
+   "en": "Hold the claim",
+   "fr": "Suspendre la demande"
+  },
+  "Hold the claim of bill {0}? It leaves this batch, and the bill comes back with the next build.": {
+   "ar": "تعليق مطالبة الفاتورة {0}؟ ستخرج من هذه الدفعة وتعود الفاتورة مع التجميع القادم.",
+   "en": "Hold the claim of bill {0}? It leaves this batch, and the bill comes back with the next build.",
+   "fr": "Suspendre la demande de la facture {0} ? Elle quitte ce lot et la facture revient au prochain regroupement."
+  },
+  "Payers reject these. Fix what each claim lists below, or hold the claim: it leaves this batch and its bill comes back with the next build.": {
+   "ar": "هذه ترفضها شركات التأمين. أصلح ما هو مذكور تحت كل مطالبة، أو علّق المطالبة: ستخرج من الدفعة وتعود فاتورتها مع التجميع القادم.",
+   "en": "Payers reject these. Fix what each claim lists below, or hold the claim: it leaves this batch and its bill comes back with the next build.",
+   "fr": "Les payeurs les rejettent. Corrigez ce qui est listé sous chaque demande, ou suspendez-la : elle quitte le lot et sa facture revient au prochain regroupement."
+  },
+  "{0} claims have warnings: read them before submitting.": {
+   "ar": "{0} مطالبات بها تنبيهات: راجعها قبل الرفع.",
+   "en": "{0} claims have warnings: read them before submitting.",
+   "fr": "{0} demandes ont des avertissements : lisez-les avant l'envoi."
+  },
+  "{0} more claims have warnings only.": {
+   "ar": "و{0} مطالبات أخرى بها تنبيهات فقط.",
+   "en": "{0} more claims have warnings only.",
+   "fr": "{0} autres demandes n'ont que des avertissements."
+  },
+  "This line needs the payer's prior approval and has none: {0}": {
+   "ar": "هذا البند يحتاج موافقة مسبقة من شركة التأمين وليس له موافقة: {0}",
+   "en": "This line needs the payer's prior approval and has none: {0}",
+   "fr": "Cette ligne exige l'accord préalable du payeur et n'en a pas : {0}"
+  },
+  "The member number is missing": {
+   "ar": "رقم المؤمَّن عليه غير مسجل",
+   "en": "The member number is missing",
+   "fr": "Le numéro d'adhérent manque"
+  },
+  "A line has no service code: {0}": {
+   "ar": "بند بدون كود خدمة: {0}",
+   "en": "A line has no service code: {0}",
+   "fr": "Une ligne n'a pas de code d'acte : {0}"
+  },
+  "The visit has no diagnosis": {
+   "ar": "الزيارة بدون تشخيص",
+   "en": "The visit has no diagnosis",
+   "fr": "La consultation n'a pas de diagnostic"
+  },
+  "The stay has no final diagnosis (write the discharge summary)": {
+   "ar": "الإقامة بدون تشخيص نهائي (اكتب ملخص الخروج)",
+   "en": "The stay has no final diagnosis (write the discharge summary)",
+   "fr": "Le séjour n'a pas de diagnostic final (rédigez le résumé de sortie)"
+  },
+  "No diagnosis is marked primary": {
+   "ar": "لا يوجد تشخيص محدد كتشخيص رئيسي",
+   "en": "No diagnosis is marked primary",
+   "fr": "Aucun diagnostic n'est marqué principal"
+  },
+  "The bill is not linked to a visit or a stay: the payer may ask for the diagnosis": {
+   "ar": "الفاتورة غير مرتبطة بزيارة أو إقامة: قد تطلب شركة التأمين التشخيص",
+   "en": "The bill is not linked to a visit or a stay: the payer may ask for the diagnosis",
+   "fr": "La facture n'est liée à aucune consultation ni séjour : le payeur peut demander le diagnostic"
+  },
+  "The patient has no national ID": {
+   "ar": "المريض بدون رقم هوية",
+   "en": "The patient has no national ID",
+   "fr": "Le patient n'a pas de numéro d'identité"
+  },
+  "Possibly billed twice: {0} on {1} is also in bill {2}": {
+   "ar": "احتمال تكرار: {0} بتاريخ {1} موجود أيضاً في الفاتورة {2}",
+   "en": "Possibly billed twice: {0} on {1} is also in bill {2}",
+   "fr": "Facturé deux fois ? {0} du {1} figure aussi dans la facture {2}"
+  },
+  "Closed more than {0} days ago: it may be past the payer's submission window": {
+   "ar": "أُغلقت منذ أكثر من {0} يوماً: قد تكون تجاوزت مهلة الرفع لدى شركة التأمين",
+   "en": "Closed more than {0} days ago: it may be past the payer's submission window",
+   "fr": "Clôturée il y a plus de {0} jours : le délai d'envoi du payeur est peut-être dépassé"
+  },
+  "scrub:error": {
+   "ar": "خطأ",
+   "en": "Error",
+   "fr": "Erreur"
+  },
+  "scrub:warning": {
+   "ar": "تنبيه",
+   "en": "Warning",
+   "fr": "Avertissement"
+  }
+ }
+}

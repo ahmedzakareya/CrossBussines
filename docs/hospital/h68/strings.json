@@ -1,0 +1,155 @@
+{
+ "unit": "H68 — on-call",
+ "strings": {
+  "An end at or before the start runs into the next morning.": {
+   "ar": "إذا كان وقت النهاية قبل البداية أو مساوياً لها تمتد المناوبة لصباح اليوم التالي.",
+   "en": "An end at or before the start runs into the next morning.",
+   "fr": "Une fin avant ou égale au début se prolonge jusqu'au lendemain matin."
+  },
+  "Add the shift": {
+   "ar": "إضافة المناوبة",
+   "en": "Add the shift",
+   "fr": "Ajouter la garde"
+  },
+  "Add this on-call shift?": {
+   "ar": "إضافة هذه المناوبة؟",
+   "en": "Add this on-call shift?",
+   "fr": "Ajouter cette garde ?"
+  },
+  "Choose first on call or backup": {
+   "ar": "اختر المناوب الأول أو الاحتياطي",
+   "en": "Choose first on call or backup",
+   "fr": "Choisissez de garde ou en renfort"
+  },
+  "Choose the department": {
+   "ar": "اختر القسم",
+   "en": "Choose the department",
+   "fr": "Choisissez le service"
+  },
+  "Choose the doctor": {
+   "ar": "اختر الطبيب",
+   "en": "Choose the doctor",
+   "fr": "Choisissez le médecin"
+  },
+  "Next week": {
+   "ar": "الأسبوع التالي",
+   "en": "Next week",
+   "fr": "Semaine suivante"
+  },
+  "Nobody is on call right now.": {
+   "ar": "لا يوجد مناوب الآن.",
+   "en": "Nobody is on call right now.",
+   "fr": "Personne n'est de garde en ce moment."
+  },
+  "On call now": {
+   "ar": "المناوبون الآن",
+   "en": "On call now",
+   "fr": "De garde maintenant"
+  },
+  "On-call": {
+   "ar": "المناوبات عند الطلب",
+   "en": "On-call",
+   "fr": "Gardes"
+  },
+  "On-call is not installed yet (hospital_h68_on_call.sql).": {
+   "ar": "المناوبات غير مثبتة بعد (hospital_h68_on_call.sql).",
+   "en": "On-call is not installed yet (hospital_h68_on_call.sql).",
+   "fr": "Les gardes ne sont pas encore installées (hospital_h68_on_call.sql)."
+  },
+  "Plan a shift": {
+   "ar": "تخطيط مناوبة",
+   "en": "Plan a shift",
+   "fr": "Planifier une garde"
+  },
+  "Previous week": {
+   "ar": "الأسبوع السابق",
+   "en": "Previous week",
+   "fr": "Semaine précédente"
+  },
+  "The doctor is already on call then": {
+   "ar": "الطبيب مناوب بالفعل في هذا الوقت",
+   "en": "The doctor is already on call then",
+   "fr": "Le médecin est déjà de garde à ce moment"
+  },
+  "The doctor is on leave then": {
+   "ar": "الطبيب في إجازة في هذا الوقت",
+   "en": "The doctor is on leave then",
+   "fr": "Le médecin est en congé à ce moment"
+  },
+  "The doctor's licence has expired": {
+   "ar": "ترخيص الطبيب منتهي",
+   "en": "The doctor's licence has expired",
+   "fr": "La licence du médecin a expiré"
+  },
+  "The week": {
+   "ar": "الأسبوع",
+   "en": "The week",
+   "fr": "La semaine"
+  },
+  "This doctor is not active": {
+   "ar": "هذا الطبيب غير نشط",
+   "en": "This doctor is not active",
+   "fr": "Ce médecin n'est pas actif"
+  },
+  "This shift has already ended": {
+   "ar": "انتهت هذه المناوبة بالفعل",
+   "en": "This shift has already ended",
+   "fr": "Cette garde est déjà terminée"
+  },
+  "This shift is already cancelled": {
+   "ar": "هذه المناوبة ملغاة بالفعل",
+   "en": "This shift is already cancelled",
+   "fr": "Cette garde est déjà annulée"
+  },
+  "This week": {
+   "ar": "هذا الأسبوع",
+   "en": "This week",
+   "fr": "Cette semaine"
+  },
+  "Whom each department calls at this moment": {
+   "ar": "من يتصل به كل قسم في هذه اللحظة",
+   "en": "Whom each department calls at this moment",
+   "fr": "Qui chaque service appelle en ce moment"
+  },
+  "Why is this shift of {0} cancelled?": {
+   "ar": "لماذا أُلغيت مناوبة {0}؟",
+   "en": "Why is this shift of {0} cancelled?",
+   "fr": "Pourquoi cette garde de {0} est-elle annulée ?"
+  },
+  "Write the day and the times": {
+   "ar": "اكتب اليوم والأوقات",
+   "en": "Write the day and the times",
+   "fr": "Indiquez le jour et les heures"
+  },
+  "The department already has a first on call then": {
+   "ar": "للقسم مناوب أول بالفعل في هذا الوقت",
+   "en": "The department already has a first on call then",
+   "fr": "Le service a déjà un médecin de garde à ce moment"
+  },
+  "The department already has a backup then": {
+   "ar": "للقسم مناوب احتياطي بالفعل في هذا الوقت",
+   "en": "The department already has a backup then",
+   "fr": "Le service a déjà un renfort à ce moment"
+  },
+  "oc:First": {
+   "ar": "المناوب الأول",
+   "en": "First on call",
+   "fr": "De garde"
+  },
+  "oc:Backup": {
+   "ar": "احتياطي",
+   "en": "Backup",
+   "fr": "Renfort"
+  },
+  "shifts": {
+   "ar": "مناوبة",
+   "en": "shifts",
+   "fr": "gardes"
+  },
+  "oc:until": {
+   "ar": "حتى",
+   "en": "Until",
+   "fr": "Jusqu'à"
+  }
+ }
+}

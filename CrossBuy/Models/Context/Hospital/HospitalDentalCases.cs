@@ -1,0 +1,162 @@
+using Microsoft.EntityFrameworkCore;
+
+namespace CrossBuy.Models.Context.Hospital
+{
+	// ==========================================================================================
+	// HOSPITAL DENTISTRY — the long cases (unit H17): orthodontics and implants.
+	//
+	//   · An ORTHODONTIC CASE is one contract: the appliance, the planned months, the full price and the monthly
+	//     instalment. Each adjustment is logged on the case (never billed as a separate visit), with the aligner
+	//     stage for clear aligners and the next visit; what the patient has paid is recorded against it.
+	//   · An IMPLANT is registered with its system, size and lot — so any lot can be traced when its maker recalls
+	//     it — the day it was placed, its stability (ISQ), and its stage: planned, healing, restored, or failed.
+	// CrossBuy/deploy/sql/hospital_h17_dental_cases.sql builds the tables (prepared, not applied).
+	// ==========================================================================================
+
+	public static class HospitalOrthoAppliance
+	{
+		public static readonly IReadOnlyList<string> All = new[] { "FixedMetal", "FixedCeramic", "Lingual", "ClearAligners", "Functional", "Removable", "Retention" };
+		public static bool Staged(string? a) => a == "ClearAligners";
+	}
+
+	public static class HospitalOrthoStatus
+	{
+		public const string Active = "Active";
+		public const string Retention = "Retention";
+		public const string Completed = "Completed";
+		public const string Discontinued = "Discontinued";
+		public static readonly IReadOnlyList<string> All = new[] { Active, Retention, Completed, Discontinued };
+		public static bool Open(string s) => s is Active or Retention;
+	}
+
+	public class HospitalOrthoCase
+	{
+		public int ID { get; set; }
+		public int CompanyId { get; set; }
+		public string CaseNo { get; set; } = "";
+		public int PatientId { get; set; }
+		public int? PractitionerId { get; set; }
+		public string Appliance { get; set; } = "FixedMetal";
+		public DateTime StartDate { get; set; }
+		public int PlannedMonths { get; set; }
+		/// Clear aligners: how many stages, and the one the patient wears now.
+		public int? Stages { get; set; }
+		public int? CurrentStage { get; set; }
+		/// The contract, in the facility's currency.
+		public decimal ContractTotal { get; set; }
+		public decimal MonthlyInstalment { get; set; }
+		public DateTime? NextVisit { get; set; }
+		public string Status { get; set; } = HospitalOrthoStatus.Active;
+		public DateTime CreatedAt { get; set; }
+		public int? CreatedByEmployeeId { get; set; }
+	}
+
+	/// An adjustment visit, logged on its case.
+	public class HospitalOrthoVisit
+	{
+		public int ID { get; set; }
+		public int CompanyId { get; set; }
+		public int CaseId { get; set; }
+		public DateTime VisitDate { get; set; }
+		public int? AlignerStage { get; set; }
+		public string? Note { get; set; }
+		public int? PractitionerId { get; set; }
+		public DateTime CreatedAt { get; set; }
+	}
+
+	/// What the patient paid against the contract.
+	public class HospitalOrthoPayment
+	{
+		public int ID { get; set; }
+		public int CompanyId { get; set; }
+		public int CaseId { get; set; }
+		public DateTime PaidOn { get; set; }
+		public decimal Amount { get; set; }
+		public string? Reference { get; set; }
+		public DateTime CreatedAt { get; set; }
+		public int? CreatedByEmployeeId { get; set; }
+	}
+
+	public static class HospitalImplantStage
+	{
+		public const string Planned = "Planned";
+		public const string Healing = "Healing";
+		public const string Restored = "Restored";
+		public const string Failed = "Failed";
+		public static readonly IReadOnlyList<string> All = new[] { Planned, Healing, Restored, Failed };
+	}
+
+	public class HospitalImplant
+	{
+		public int ID { get; set; }
+		public int CompanyId { get; set; }
+		public string ImplantNo { get; set; } = "";
+		public int PatientId { get; set; }
+		public int Tooth { get; set; }
+		/// "Straumann BLX", "Nobel Biocare N1".
+		public string System { get; set; } = "";
+		public decimal Diameter { get; set; }
+		public decimal Length { get; set; }
+		/// The maker's lot, recorded when it is placed.
+		public string? Lot { get; set; }
+		public DateTime? PlacedOn { get; set; }
+		/// Implant stability quotient, 1–100.
+		public int? Isq { get; set; }
+		public string Stage { get; set; } = HospitalImplantStage.Planned;
+		public int? SurgeonId { get; set; }
+		public DateTime? RestoredOn { get; set; }
+		public DateTime? FailedOn { get; set; }
+		public string? FailureReason { get; set; }
+		public DateTime CreatedAt { get; set; }
+		public int? CreatedByEmployeeId { get; set; }
+	}
+
+	public static class HospitalDentalCasesModel
+	{
+		public static void Configure(ModelBuilder b)
+		{
+			// no DbSet for any of them: each names its table, or EF would look for the singular name
+			b.Entity<HospitalOrthoCase>(e =>
+			{
+				e.ToTable("HospitalOrthoCases");
+				e.Property(x => x.StartDate).HasColumnType("date");
+				e.Property(x => x.NextVisit).HasColumnType("date");
+				e.Property(x => x.ContractTotal).HasPrecision(18, 3);
+				e.Property(x => x.MonthlyInstalment).HasPrecision(18, 3);
+				e.Property(x => x.PlannedMonths).HasColumnType("tinyint").HasConversion<byte>();
+				e.Property(x => x.Stages).HasColumnType("tinyint").HasConversion<byte?>();
+				e.Property(x => x.CurrentStage).HasColumnType("tinyint").HasConversion<byte?>();
+				e.HasIndex(x => new { x.CompanyId, x.CaseNo }).IsUnique();
+				e.HasIndex(x => new { x.CompanyId, x.PatientId });
+			});
+			b.Entity<HospitalOrthoVisit>(e =>
+			{
+				e.ToTable("HospitalOrthoVisits");
+				e.Property(x => x.VisitDate).HasColumnType("date");
+				e.Property(x => x.AlignerStage).HasColumnType("tinyint").HasConversion<byte?>();
+				e.HasIndex(x => new { x.CompanyId, x.CaseId });
+			});
+			b.Entity<HospitalOrthoPayment>(e =>
+			{
+				e.ToTable("HospitalOrthoPayments");
+				e.Property(x => x.PaidOn).HasColumnType("date");
+				e.Property(x => x.Amount).HasPrecision(18, 3);
+				e.HasIndex(x => new { x.CompanyId, x.CaseId });
+			});
+			b.Entity<HospitalImplant>(e =>
+			{
+				e.ToTable("HospitalImplants");
+				e.Property(x => x.Tooth).HasColumnType("tinyint").HasConversion<byte>();
+				e.Property(x => x.Diameter).HasPrecision(4, 1);
+				e.Property(x => x.Length).HasPrecision(4, 1);
+				e.Property(x => x.PlacedOn).HasColumnType("date");
+				e.Property(x => x.RestoredOn).HasColumnType("date");
+				e.Property(x => x.FailedOn).HasColumnType("date");
+				e.Property(x => x.Isq).HasColumnType("tinyint").HasConversion<byte?>();
+				e.HasIndex(x => new { x.CompanyId, x.ImplantNo }).IsUnique();
+				// a recall by the maker is answered by lot
+				e.HasIndex(x => new { x.CompanyId, x.Lot });
+			});
+		}
+	}
+}

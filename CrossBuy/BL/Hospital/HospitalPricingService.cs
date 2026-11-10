@@ -179,16 +179,18 @@ namespace CrossBuy.BL.Hospital
 				.OrderBy(s => s.Category).ThenBy(s => s.SortOrder).ThenBy(s => s.Code).ToListAsync(ct);
 			list.AddRange(services.Select(s => new HospitalCatalogEntry(HospitalPriceGroups.Service, s.ID, null, s.Code, s.Name, s.NameEn, s.Category, s.Price, null, s.CreatedAt)));
 			var cats = await _db.HospitalItemCategories.AsNoTracking().Where(c => c.CompanyId == ctx.CompanyId).ToDictionaryAsync(c => c.ItemCategoryId, c => c.Kind, ct);
-			if (cats.Count > 0)
+			// H22: items that joined on their own, whatever their category (their kind wins over the category's)
+			var own = await EnrolledAsync(ctx, ct);
+			if (cats.Count > 0 || own.Count > 0)
 			{
-				var catIds = cats.Keys.ToList();
-				var items = await _db.Items.AsNoTracking().Where(i => i.CompanyID == ctx.CompanyId && i.IsActive && catIds.Contains(i.ItemCategoryId))
+				var catIds = cats.Keys.ToList(); var ownIds = own.Keys.ToList();
+				var items = await _db.Items.AsNoTracking().Where(i => i.CompanyID == ctx.CompanyId && i.IsActive && (catIds.Contains(i.ItemCategoryId) || ownIds.Contains(i.ID)))
 					.OrderBy(i => i.ItemCode).Select(i => new { i.ID, i.ItemCode, i.Name, i.NameEn, i.ItemCategoryId, i.SalesPrice, i.CreatedAt }).ToListAsync(ct);
 				var ids = items.Select(i => i.ID).ToList();
 				var pub = await _db.HospitalItemPublicPrices.AsNoTracking().Where(p => p.CompanyId == ctx.CompanyId && ids.Contains(p.ItemId)).ToDictionaryAsync(p => p.ItemId, p => p.PublicPrice, ct);
 				foreach (var i in items)
 				{
-					var kind = cats[i.ItemCategoryId];
+					var kind = HospitalCatalogRules.KindOf(cats.TryGetValue(i.ItemCategoryId, out var ck) ? ck : null, own.TryGetValue(i.ID, out var ok) ? ok : null)!;
 					list.Add(new HospitalCatalogEntry(kind, null, i.ID, i.ItemCode, i.Name, i.NameEn ?? i.Name, kind, i.SalesPrice ?? 0m,
 						kind == HospitalPriceGroups.Medicine && pub.TryGetValue(i.ID, out var p) ? p : null, i.CreatedAt));
 				}
@@ -386,6 +388,135 @@ namespace CrossBuy.BL.Hospital
 			foreach (var e in add) _db.HospitalPriceListLines.Add(NewLine(v.List, e, nowUtc));
 			await _db.SaveChangesAsync(ct);
 			return HospitalResult.Success(add.Count);
+		}
+
+		// ---------------- H22: any inventory item, or a whole category, onto a list ----------------
+
+		/// The items that joined the catalogue on their own (item id → kind); empty while the table does not exist.
+		private async Task<Dictionary<int, string>> EnrolledAsync(BusinessContext ctx, CancellationToken ct)
+		{
+			try { return await _db.Set<HospitalCatalogItem>().AsNoTracking().Where(c => c.CompanyId == ctx.CompanyId).ToDictionaryAsync(c => c.ItemId, c => c.Kind, ct); }
+			catch (Microsoft.Data.SqlClient.SqlException ex) when (ex.Number == 208) { return new(); }
+		}
+
+		/// Every active inventory item matching `q` (code, barcode or name), whatever its category, and whether this
+		/// list already holds it.
+		public async Task<IReadOnlyList<HospitalItemHit>> SearchItemsAsync(BusinessContext ctx, int? listId, string? q, CancellationToken ct = default)
+		{
+			q = q?.Trim();
+			if (string.IsNullOrEmpty(q) || q.Length < 2) return Array.Empty<HospitalItemHit>();
+			var hits = await (from i in _db.Items.AsNoTracking() join c in _db.ItemCategories.AsNoTracking() on i.ItemCategoryId equals c.ID
+							  where i.CompanyID == ctx.CompanyId && i.IsActive && (i.ItemCode.Contains(q) || i.Barcode.Contains(q) || i.Name.Contains(q) || (i.NameEn != null && i.NameEn.Contains(q)))
+							  orderby i.ItemCode
+							  select new { i.ID, i.ItemCode, i.Name, i.NameEn, i.ItemCategoryId, CatName = c.Name, CatNameEn = c.NameEn, i.SalesPrice }).Take(30).ToListAsync(ct);
+			var ids = hits.Select(h => h.ID).ToList();
+			var onList = listId == null ? new HashSet<int>() : (await _db.HospitalPriceListLines.AsNoTracking().Where(l => l.CompanyId == ctx.CompanyId && l.PriceListId == listId && l.ItemId != null && ids.Contains(l.ItemId.Value))
+				.Select(l => l.ItemId!.Value).ToListAsync(ct)).ToHashSet();
+			var cats = await _db.HospitalItemCategories.AsNoTracking().Where(c => c.CompanyId == ctx.CompanyId).ToDictionaryAsync(c => c.ItemCategoryId, c => c.Kind, ct);
+			var own = await EnrolledAsync(ctx, ct);
+			return hits.Select(h => new HospitalItemHit(h.ID, h.ItemCode, h.Name, h.NameEn ?? h.Name, h.CatName, h.CatNameEn ?? h.CatName, h.SalesPrice ?? 0m,
+				HospitalCatalogRules.KindOf(cats.TryGetValue(h.ItemCategoryId, out var ck) ? ck : null, own.TryGetValue(h.ID, out var ok) ? ok : null),
+				listId == null ? (cats.ContainsKey(h.ItemCategoryId) || own.ContainsKey(h.ID)) : onList.Contains(h.ID))).ToList();
+		}
+
+		/// Inventory categories with how many active items each has and how many are not on this list yet.
+		public async Task<IReadOnlyList<HospitalCategoryChoice>> CategoryChoicesAsync(BusinessContext ctx, int listId, CancellationToken ct = default)
+		{
+			var onList = await _db.HospitalPriceListLines.AsNoTracking().Where(l => l.CompanyId == ctx.CompanyId && l.PriceListId == listId && l.ItemId != null).Select(l => l.ItemId!.Value).ToListAsync(ct);
+			var counts = await _db.Items.AsNoTracking().Where(i => i.CompanyID == ctx.CompanyId && i.IsActive)
+				.GroupBy(i => i.ItemCategoryId).Select(g => new { g.Key, All = g.Count(), Missing = g.Count(i => !onList.Contains(i.ID)) }).ToDictionaryAsync(x => x.Key, ct);
+			var mapped = await _db.HospitalItemCategories.AsNoTracking().Where(c => c.CompanyId == ctx.CompanyId).ToDictionaryAsync(c => c.ItemCategoryId, c => c.Kind, ct);
+			var cats = await _db.ItemCategories.AsNoTracking().Where(c => c.CompanyID == ctx.CompanyId).OrderBy(c => c.Code).Select(c => new { c.ID, c.Code, c.Name, c.NameEn }).ToListAsync(ct);
+			return cats.Where(c => counts.ContainsKey(c.ID)).Select(c => new HospitalCategoryChoice(c.ID, c.Code, c.Name, c.NameEn ?? c.Name, counts[c.ID].All, counts[c.ID].Missing,
+				mapped.TryGetValue(c.ID, out var k) ? k : null)).ToList();
+		}
+
+		/// Puts chosen inventory items on the list, each as a medicine or a consumable: the item joins the catalogue on
+		/// its own when its category is not mapped as that kind, then gets its line through the rule.
+		public async Task<HospitalResult> AddItemsAsync(BusinessContext ctx, int listId, IReadOnlyList<HospitalItemPick>? picks, int? employeeId, DateTime nowUtc, CancellationToken ct = default)
+		{
+			if (!await CanManage(ctx, ct)) return HospitalResult.Fail("forbidden");
+			if (HospitalCatalogRules.PickRefusal(picks) is string why) return HospitalResult.Fail(why);
+			var pl = await _db.HospitalPriceLists.AsNoTracking().FirstOrDefaultAsync(l => l.ID == listId && l.CompanyId == ctx.CompanyId, ct);
+			if (pl == null) return HospitalResult.Fail("not_found");
+			if (pl.Status == HospitalPriceListStatus.Archived) return HospitalResult.Fail("This list is archived");
+			return await JoinAsync(ctx, picks!, listId, employeeId, nowUtc, ct);
+		}
+
+		/// The catalogue screen: chosen inventory items join the hospital catalogue (each as a medicine or a consumable)
+		/// and so the main list at once; every other list shows them "new — not added" until someone adds them.
+		public async Task<HospitalResult> JoinCatalogAsync(BusinessContext ctx, IReadOnlyList<HospitalItemPick>? picks, int? employeeId, DateTime nowUtc, CancellationToken ct = default)
+		{
+			if (!await CanManage(ctx, ct)) return HospitalResult.Fail("forbidden");
+			if (HospitalCatalogRules.PickRefusal(picks) is string why) return HospitalResult.Fail(why);
+			return await JoinAsync(ctx, picks!, null, employeeId, nowUtc, ct);
+		}
+
+		/// Items join the catalogue on their own unless their category is already mapped as that kind; then, when a list
+		/// is given, they get their lines on it through its rule. One transaction.
+		private async Task<HospitalResult> JoinAsync(BusinessContext ctx, IReadOnlyList<HospitalItemPick> picks, int? listId, int? employeeId, DateTime nowUtc, CancellationToken ct)
+		{
+			var ids = picks.Select(p => p.ItemId).Distinct().ToList();
+			var items = await _db.Items.AsNoTracking().Where(i => i.CompanyID == ctx.CompanyId && i.IsActive && ids.Contains(i.ID)).Select(i => new { i.ID, i.ItemCategoryId }).ToListAsync(ct);
+			if (items.Count != ids.Count) return HospitalResult.Fail("not_found");
+			var mapped = await _db.HospitalItemCategories.AsNoTracking().Where(c => c.CompanyId == ctx.CompanyId).ToDictionaryAsync(c => c.ItemCategoryId, c => c.Kind, ct);
+			await using var tx = await _db.Database.BeginTransactionAsync(ct);
+			try
+			{
+				var own = await _db.Set<HospitalCatalogItem>().Where(c => c.CompanyId == ctx.CompanyId && ids.Contains(c.ItemId)).ToListAsync(ct);
+				int joined = 0;
+				foreach (var p in picks.GroupBy(p => p.ItemId).Select(g => g.Last()))
+				{
+					var cat = items.First(i => i.ID == p.ItemId).ItemCategoryId;
+					var row = own.FirstOrDefault(o => o.ItemId == p.ItemId);
+					if (row != null) row.Kind = p.Kind;
+					else if (!(mapped.TryGetValue(cat, out var mk) && mk == p.Kind))   // the category already says so: nothing to remember
+					{ _db.Add(new HospitalCatalogItem { CompanyId = ctx.CompanyId, ItemId = p.ItemId, Kind = p.Kind, AddedAt = nowUtc, AddedByEmployeeId = employeeId }); joined++; }
+				}
+				await _db.SaveChangesAsync(ct);
+				int n = listId is int lid ? await AddPendingAsync(ctx, lid, e => e.ItemId is int id && ids.Contains(id), nowUtc, ct) : joined;
+				await tx.CommitAsync(ct);
+				return HospitalResult.Success(n);
+			}
+			catch (Microsoft.Data.SqlClient.SqlException ex) when (ex.Number == 208) { await tx.RollbackAsync(ct); _db.ChangeTracker.Clear(); return HospitalResult.Fail("The catalogue table is not created yet (hospital_h22_catalog_items.sql)"); }
+			catch (DbUpdateException) { await tx.RollbackAsync(ct); _db.ChangeTracker.Clear(); return HospitalResult.Fail("Someone else changed this at the same moment; refresh and try again"); }
+		}
+
+		/// Puts a whole inventory category on the list. Kept linked, the category joins the hospital catalogue (its
+		/// later items show "new — not added" on every list); otherwise only its items of today join, one by one.
+		public async Task<HospitalResult> AddCategoryAsync(BusinessContext ctx, int listId, int categoryId, string? kind, bool keepLinked, int? employeeId, DateTime nowUtc, CancellationToken ct = default)
+		{
+			if (!await CanManage(ctx, ct)) return HospitalResult.Fail("forbidden");
+			if (kind == null || !HospitalPriceGroups.ItemKinds.Contains(kind)) return HospitalResult.Fail("A category is a medicine or a consumable");
+			if (!await _db.ItemCategories.AnyAsync(c => c.ID == categoryId && c.CompanyID == ctx.CompanyId, ct)) return HospitalResult.Fail("not_found");
+			var itemIds = await _db.Items.AsNoTracking().Where(i => i.CompanyID == ctx.CompanyId && i.IsActive && i.ItemCategoryId == categoryId).Select(i => i.ID).ToListAsync(ct);
+			if (itemIds.Count == 0) return HospitalResult.Fail("This category has no active items");
+			if (!keepLinked) return await AddItemsAsync(ctx, listId, itemIds.Select(i => new HospitalItemPick { ItemId = i, Kind = kind }).ToList(), employeeId, nowUtc, ct);
+			var pl = await _db.HospitalPriceLists.AsNoTracking().FirstOrDefaultAsync(l => l.ID == listId && l.CompanyId == ctx.CompanyId, ct);
+			if (pl == null) return HospitalResult.Fail("not_found");
+			if (pl.Status == HospitalPriceListStatus.Archived) return HospitalResult.Fail("This list is archived");
+			await using var tx = await _db.Database.BeginTransactionAsync(ct);
+			try
+			{
+				var map = await _db.HospitalItemCategories.FirstOrDefaultAsync(c => c.CompanyId == ctx.CompanyId && c.ItemCategoryId == categoryId, ct);
+				if (map == null) _db.HospitalItemCategories.Add(new HospitalItemCategory { CompanyId = ctx.CompanyId, ItemCategoryId = categoryId, Kind = kind });
+				else map.Kind = kind;
+				await _db.SaveChangesAsync(ct);
+				int n = await AddPendingAsync(ctx, listId, e => e.ItemId is int id && itemIds.Contains(id), nowUtc, ct);
+				await tx.CommitAsync(ct);
+				return HospitalResult.Success(n);
+			}
+			catch (DbUpdateException) { await tx.RollbackAsync(ct); _db.ChangeTracker.Clear(); return HospitalResult.Fail("Someone else changed this at the same moment; refresh and try again"); }
+		}
+
+		/// Adds the catalogue entries `which` selects that the list does not hold yet; returns how many.
+		private async Task<int> AddPendingAsync(BusinessContext ctx, int listId, Func<HospitalCatalogEntry, bool> which, DateTime nowUtc, CancellationToken ct)
+		{
+			var v = await ListAsync(ctx, listId, ct);
+			var add = v!.Pending.Where(which).ToList();
+			foreach (var e in add) _db.HospitalPriceListLines.Add(NewLine(v.List, e, nowUtc));
+			await _db.SaveChangesAsync(ct);
+			return add.Count;
 		}
 
 		/// Confirms lines at the current main price (every not-updated line when `lineIds` is null).

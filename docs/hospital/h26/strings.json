@@ -1,0 +1,170 @@
+{
+  "unit": "H26 — a doctor's weekly schedule (sessions per weekday) and leave",
+  "strings": {
+    "Each day's sessions and the minutes per patient": {
+      "en": "Each day's sessions and the minutes per patient",
+      "ar": "فترات كل يوم ومدة الكشف لكل مريض",
+      "fr": "Les séances de chaque jour et les minutes par patient"
+    },
+    "The same hours every working day": {
+      "en": "The same hours every working day",
+      "ar": "نفس الساعات في كل أيام العمل",
+      "fr": "Les mêmes heures chaque jour travaillé"
+    },
+    "Remove": {
+      "en": "Remove",
+      "ar": "حذف",
+      "fr": "Supprimer"
+    },
+    "Add a session": {
+      "en": "Add a session",
+      "ar": "إضافة فترة",
+      "fr": "Ajouter une séance"
+    },
+    "To give each day its own hours, or a morning and an evening session, start the weekly schedule from these hours.": {
+      "en": "To give each day its own hours, or a morning and an evening session, start the weekly schedule from these hours.",
+      "ar": "لتحديد ساعات خاصة لكل يوم، أو فترة صباحية وأخرى مسائية، ابدأ الجدول الأسبوعي من هذه الساعات.",
+      "fr": "Pour donner à chaque jour ses propres heures, ou une séance du matin et une du soir, démarrez l'horaire hebdomadaire à partir de ces heures."
+    },
+    "Set each day's hours": {
+      "en": "Set each day's hours",
+      "ar": "تحديد ساعات كل يوم",
+      "fr": "Définir les heures de chaque jour"
+    },
+    "Leave": {
+      "en": "Leave",
+      "ar": "الإجازات",
+      "fr": "Congés"
+    },
+    "No booking is offered inside a leave, at the desk or on the portal": {
+      "en": "No booking is offered inside a leave, at the desk or on the portal",
+      "ar": "لا يُعرض أي موعد داخل الإجازة، لا في الاستقبال ولا على البوابة",
+      "fr": "Aucun rendez-vous n'est proposé pendant un congé, ni à l'accueil ni sur le portail"
+    },
+    "No leave from today on.": {
+      "en": "No leave from today on.",
+      "ar": "لا توجد إجازات من اليوم فصاعداً.",
+      "fr": "Aucun congé à partir d'aujourd'hui."
+    },
+    "Whole day": {
+      "en": "Whole day",
+      "ar": "اليوم كاملاً",
+      "fr": "Journée entière"
+    },
+    "{0} booked appointments fall inside: move them from the appointments screen": {
+      "en": "{0} booked appointments fall inside: move them from the appointments screen",
+      "ar": "يقع داخلها {0} موعد محجوز: انقلها من شاشة المواعيد",
+      "fr": "{0} rendez-vous réservés tombent dedans : déplacez-les depuis l'écran des rendez-vous"
+    },
+    "A day can hold a morning and an evening session; two sessions of one day may not overlap.": {
+      "en": "A day can hold a morning and an evening session; two sessions of one day may not overlap.",
+      "ar": "اليوم الواحد يمكن أن يضم فترة صباحية وأخرى مسائية؛ ولا يجوز أن تتداخل فترتان في نفس اليوم.",
+      "fr": "Un jour peut avoir une séance du matin et une du soir ; deux séances d'un même jour ne peuvent pas se chevaucher."
+    },
+    "From date": {
+      "en": "From date",
+      "ar": "من تاريخ",
+      "fr": "Du"
+    },
+    "To date": {
+      "en": "To date",
+      "ar": "إلى تاريخ",
+      "fr": "Au"
+    },
+    "Only part of each day": {
+      "en": "Only part of each day",
+      "ar": "جزء من اليوم فقط",
+      "fr": "Seulement une partie de chaque jour"
+    },
+    "A leave does not cancel what is already booked: the page shows how many appointments fall inside, and the front desk moves them.": {
+      "en": "A leave does not cancel what is already booked: the page shows how many appointments fall inside, and the front desk moves them.",
+      "ar": "الإجازة لا تلغي المواعيد المحجوزة: الصفحة توضح عدد المواعيد الواقعة داخلها، والاستقبال يقوم بنقلها.",
+      "fr": "Un congé n'annule pas ce qui est déjà réservé : la page indique combien de rendez-vous tombent dedans, et l'accueil les déplace."
+    },
+    "Start the weekly schedule from the current hours?": {
+      "en": "Start the weekly schedule from the current hours?",
+      "ar": "بدء الجدول الأسبوعي من الساعات الحالية؟",
+      "fr": "Démarrer l'horaire hebdomadaire à partir des heures actuelles ?"
+    },
+    "Add this session?": {
+      "en": "Add this session?",
+      "ar": "إضافة هذه الفترة؟",
+      "fr": "Ajouter cette séance ?"
+    },
+    "Remove this session? Booked appointments in it stay booked.": {
+      "en": "Remove this session? Booked appointments in it stay booked.",
+      "ar": "حذف هذه الفترة؟ المواعيد المحجوزة فيها تبقى محجوزة.",
+      "fr": "Supprimer cette séance ? Les rendez-vous réservés restent réservés."
+    },
+    "Save this leave?": {
+      "en": "Save this leave?",
+      "ar": "حفظ هذه الإجازة؟",
+      "fr": "Enregistrer ce congé ?"
+    },
+    "Remove this leave? Its times become bookable again.": {
+      "en": "Remove this leave? Its times become bookable again.",
+      "ar": "حذف هذه الإجازة؟ ستعود أوقاتها متاحة للحجز.",
+      "fr": "Supprimer ce congé ? Ses horaires redeviennent réservables."
+    },
+    "The doctor schedule tables are not created yet (hospital_h26_doctor_schedule.sql)": {
+      "en": "The doctor schedule tables are not created yet (hospital_h26_doctor_schedule.sql)",
+      "ar": "جداول مواعيد الأطباء لم تُنشأ بعد (hospital_h26_doctor_schedule.sql)",
+      "fr": "Les tables d'horaires des médecins ne sont pas encore créées (hospital_h26_doctor_schedule.sql)"
+    },
+    "The doctor is on leave that day": {
+      "en": "The doctor is on leave that day",
+      "ar": "الطبيب في إجازة في هذا اليوم",
+      "fr": "Le médecin est en congé ce jour-là"
+    },
+    "That time is not one of the doctor's slots": {
+      "en": "That time is not one of the doctor's slots",
+      "ar": "هذا الوقت ليس من مواعيد الطبيب",
+      "fr": "Cet horaire n'est pas un créneau du médecin"
+    },
+    "The session must start before it ends and hold at least one slot": {
+      "en": "The session must start before it ends and hold at least one slot",
+      "ar": "يجب أن تبدأ الفترة قبل نهايتها وأن تتسع لموعد واحد على الأقل",
+      "fr": "La séance doit commencer avant de finir et contenir au moins un créneau"
+    },
+    "This session overlaps another one on the same day": {
+      "en": "This session overlaps another one on the same day",
+      "ar": "هذه الفترة تتداخل مع فترة أخرى في نفس اليوم",
+      "fr": "Cette séance chevauche une autre le même jour"
+    },
+    "Enter the dates": {
+      "en": "Enter the dates",
+      "ar": "أدخل التواريخ",
+      "fr": "Saisissez les dates"
+    },
+    "A leave is at most a year": {
+      "en": "A leave is at most a year",
+      "ar": "الإجازة لا تزيد عن سنة",
+      "fr": "Un congé dure au plus un an"
+    },
+    "Enter both times, or neither for whole days": {
+      "en": "Enter both times, or neither for whole days",
+      "ar": "أدخل الوقتين معاً، أو اتركهما فارغين للأيام الكاملة",
+      "fr": "Saisissez les deux heures, ou aucune pour des journées entières"
+    },
+    "The leave must start before it ends": {
+      "en": "The leave must start before it ends",
+      "ar": "يجب أن تبدأ الإجازة قبل نهايتها",
+      "fr": "Le congé doit commencer avant de finir"
+    },
+    "The weekly schedule is already started": {
+      "en": "The weekly schedule is already started",
+      "ar": "الجدول الأسبوعي بدأ بالفعل",
+      "fr": "L'horaire hebdomadaire est déjà démarré"
+    },
+    "Choose the day": {
+      "en": "Choose the day",
+      "ar": "اختر اليوم",
+      "fr": "Choisissez le jour"
+    },
+    "Add leave": {
+      "en": "Add leave",
+      "ar": "إضافة إجازة",
+      "fr": "Ajouter un congé"
+    }
+  }
+}

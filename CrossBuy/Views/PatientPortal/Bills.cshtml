@@ -1,0 +1,64 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model IReadOnlyList<HospitalPortalBill>
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@{
+    Layout = "_Layout";
+    var acc = (HospitalPortalAccount)ViewBag.Account;
+    ViewData["Title"] = T["Bills"].Value;
+    ViewData["BandTitle"] = T["Bills"].Value;
+    var cover = Model.FirstOrDefault(b => b.Payer != null);
+    ViewData["BandDesc"] = cover == null ? T["Your share of each visit"].Value
+        : DisplayName.Of(cover.Payer!, cover.PayerEn ?? cover.Payer!) + " · " + string.Format(T["co-pay {0}%"].Value, (cover.CopayPct ?? 0).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture));
+    bool ar = DisplayName.IsArabic;
+    // every bill in its own currency; the band adds up the facility's (the usual case: one currency)
+    var cur = Model.FirstOrDefault()?.Currency;
+    string Money(decimal v, HospitalPriceCurrency c) => c.Format(v) + " " + c.Label(ar);
+    string Up(string s) => s.ToUpperInvariant();
+}
+@section Figures {
+    @* one figure per currency: a bill priced on a foreign list is never added to the facility's money *@
+    @foreach (var g in Model.Where(b => b.Status == HospitalBillStatus.Closed).GroupBy(b => b.Currency.Code))
+    {
+        var c = g.First().Currency;
+        <div class="d-flex flex-column"><span class="text-white fw-bold fs-3 mb-1"><bdi class="pp-num">@c.Format(g.Sum(b => b.Due))</bdi> <span class="fs-6">@c.Label(ar)</span></span><div class="text-white opacity-50 fw-bold">@T["Amount due"]</div></div>
+    }
+    <div class="d-flex flex-column"><span class="text-white fw-bold fs-3 mb-1 pp-num">@Model.Count</span><div class="text-white opacity-50 fw-bold">@T["Bills"]</div></div>
+}
+
+<div class="card card-flush">
+    <div class="card-header pt-7"><h3 class="card-title"><span class="card-label fw-bold text-gray-900">@T["Bills"]</span></h3></div>
+    <div class="card-body pt-2">
+        @if (acc.Status != HospitalPortalAccountStatus.Verified) { <div class="text-center text-muted py-10">@T["Your bills show here once the front desk has verified your account."]</div> }
+        else if (Model.Count == 0) { <div class="text-center text-muted py-10">@T["None."]</div> }
+        else
+        {
+            <div class="table-responsive"><table class="table align-middle table-row-dashed fs-6 gy-5 mb-0">
+                <thead><tr class="text-start text-gray-500 fw-bold fs-7 gs-0">
+                    <th>@Up(T["Bill"].Value)</th><th class="text-end">@Up(T["Total"].Value)</th><th class="text-end">@Up(T["Insurer"].Value)</th><th class="text-end">@Up(T["Your share"].Value)</th><th class="text-end"></th>
+                </tr></thead>
+                <tbody class="fw-semibold text-gray-700">
+                    @foreach (var b in Model)
+                    {
+                        <tr>
+                            <td><div class="d-flex align-items-center gap-3">
+                                <div class="symbol symbol-40px symbol-circle flex-shrink-0">@if (b.Person.Photo != null) {<img src="@Url.Action("PatientPhoto", new { id = b.Person.PatientId })" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(b.Person.NameEn)" />} else {<span class="symbol-label bg-light-primary text-primary fw-bold">@HospitalUi.Initials(b.Person.NameEn)</span>}</div>
+                                <div><div class="fw-bold text-gray-900"><span class="pp-num">@b.BillNo</span></div>
+                                    <div class="text-muted fs-7">@DisplayName.Of(b.Person.Name, b.Person.NameEn) · <span class="pp-num">@b.OpenedAt.ToLocalTime().ToString("yyyy-MM-dd")</span></div></div>
+                            </div></td>
+                            <td class="text-end text-nowrap"><bdi class="pp-num">@b.Currency.Format(b.Gross)</bdi> <span class="text-muted fs-8">@b.Currency.Label(ar)</span></td>
+                            <td class="text-end text-nowrap text-muted"><bdi class="pp-num">@b.Currency.Format(b.Insurer)</bdi></td>
+                            <td class="text-end text-nowrap fw-bold text-gray-900"><bdi class="pp-num">@b.Currency.Format(b.YourShare)</bdi></td>
+                            <td class="text-end text-nowrap">
+                                @if (b.Status == HospitalBillStatus.Open) { <span class="badge badge-light-primary">@T["Visit still open"]</span> }
+                                else if (b.Due > 0) { <span class="badge badge-light-danger">@T["Due"] <bdi class="pp-num ms-1">@Money(b.Due, b.Currency)</bdi></span><div class="text-muted fs-8 mt-1">@T["Pay at the hospital cashier"]</div> }
+                                else { <span class="badge badge-light-success">@T["Paid in full"]</span> }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table></div>
+        }
+    </div>
+</div>

@@ -37,10 +37,31 @@ namespace CrossBuy.BL.Hospital
 		public bool IsActive { get; set; } = true;
 	}
 
+	/// H34: when English may be added to a report — only once it is signed (before that the report itself is edited),
+	/// and with at least one of the two English texts.
+	public static class HospitalRadTranslationRules
+	{
+		public static string? Refusal(string status, string? findingsEn, string? impressionEn)
+		{
+			if (status != HospitalRadStatus.Signed) return "A translation is added to a signed report; before signing, write the English in the report";
+			if (string.IsNullOrWhiteSpace(findingsEn) && string.IsNullOrWhiteSpace(impressionEn)) return "Write the English findings or impression";
+			return null;
+		}
+	}
+
+	public sealed class HospitalRadTranslationInput
+	{
+		public string? FindingsEn { get; set; }
+		public string? ImpressionEn { get; set; }
+	}
+
 	public sealed class HospitalRadReportInput
 	{
 		public string? Findings { get; set; }
 		public string? Impression { get; set; }
+		/// H33: the English twins (optional; the Arabic is the fallback).
+		public string? FindingsEn { get; set; }
+		public string? ImpressionEn { get; set; }
 		public string? Category { get; set; }
 	}
 
@@ -277,6 +298,7 @@ namespace CrossBuy.BL.Hospital
 			if (o.Status != HospitalRadStatus.Reporting) return HospitalResult.Fail("End the scan before writing the report");
 			if (input.Category != null && !HospitalRadImpression.All.Contains(input.Category)) return HospitalResult.Fail("Unknown impression category");
 			o.Findings = Clip(input.Findings, 4000); o.Impression = Clip(input.Impression, 1000); o.ImpressionCategory = input.Category;
+			o.FindingsEn = Clip(input.FindingsEn, 4000); o.ImpressionEn = Clip(input.ImpressionEn, 1000);
 			o.ReportedAt = nowUtc; o.ReportedByEmployeeId = employeeId;
 			await _db.SaveChangesAsync(ct); return HospitalResult.Success(o.ID);
 		}
@@ -291,6 +313,18 @@ namespace CrossBuy.BL.Hospital
 			if (o.ImpressionCategory == null) return HospitalResult.Fail("Choose whether the result is normal, abnormal or critical");
 			o.Status = HospitalRadStatus.Signed; o.SignedAt = nowUtc; o.SignedByEmployeeId = employeeId;
 			o.IsCritical = o.ImpressionCategory == HospitalRadImpression.Critical;
+			await _db.SaveChangesAsync(ct); return HospitalResult.Success(o.ID);
+		}
+
+		/// H34: English for a SIGNED report. Only the English twins are written; the signed Arabic, the category and the
+		/// signature stay as they were. Who added it and when is kept; a later correction replaces it and its stamp.
+		public async Task<HospitalResult> TranslateAsync(BusinessContext ctx, int id, string? findingsEn, string? impressionEn, int? employeeId, DateTime nowUtc, CancellationToken ct = default)
+		{
+			var (o, fail) = await LoadAsync(ctx, id, HospitalActions.RadReport, ct); if (fail != null) return fail;
+			var why = HospitalRadTranslationRules.Refusal(o!.Status, findingsEn, impressionEn);
+			if (why != null) return HospitalResult.Fail(why);
+			o.FindingsEn = Clip(findingsEn, 4000); o.ImpressionEn = Clip(impressionEn, 1000);
+			o.TranslatedAt = nowUtc; o.TranslatedByEmployeeId = employeeId;
 			await _db.SaveChangesAsync(ct); return HospitalResult.Success(o.ID);
 		}
 

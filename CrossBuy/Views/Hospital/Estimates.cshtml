@@ -104,7 +104,7 @@
                                     <td><a href="@Url.Action("Estimate", new { id = e.ID })" class="badge hp-code fw-bold fs-8 hp-num">@e.EstimateNo</a><div class="text-muted fs-8 hp-num mt-1" data-fmt data-utc="@e.CreatedAt.ToString("o")">@e.CreatedAt.ToString("yyyy-MM-dd HH:mm")</div></td>
                                     <td><div class="d-flex align-items-center gap-3">@Html.Raw(Avatar(r.Photo, r.PatientNameEn))
                                         <div><a href="@Url.Action("Patient", new { id = e.PatientId })" class="fw-bold text-gray-900 text-hover-primary">@DisplayName.Of(r.PatientName, r.PatientNameEn)</a><div class="text-muted fs-8 hp-num">@r.Mrn</div></div></div></td>
-                                    <td>@(r.Package == null ? T["Services"].Value : DisplayName.Of(r.Package, r.PackageEn ?? r.Package))</td>
+                                    <td>@(r.Package == null ? T["Services only"].Value : DisplayName.Of(r.Package, r.PackageEn ?? r.Package))</td>
                                     <td>@(r.Payer == null ? T["Self-pay"].Value : DisplayName.Of(r.Payer, r.PayerEn ?? r.Payer))</td>
                                     <td class="text-end hp-num">@Money(e.Gross)</td>
                                     <td class="text-end hp-num fw-bold">@Money(e.Deposit)</td>
@@ -124,7 +124,7 @@
         (function () {
             var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
             var isAr = document.documentElement.dir === 'rtl';
-            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value), outside: @Json.Serialize(T["not covered"].Value),
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value), outside: @Json.Serialize(T["Not covered"].Value),
                 self: @Json.Serialize(T["Self-pay"].Value), uncovered: @Json.Serialize(T["Not covered: {0} — self-pay"].Value), empty: @Json.Serialize(T["Choose a package or services to see the estimate."].Value),
                 save: @Json.Serialize(T["Save this estimate as a draft for {0}? It can be re-priced until it is issued."].Value) };
             var urls = { root: @Json.Serialize(Url.Action("Estimates")), patients: @Json.Serialize(Url.Action("SearchInsurancePatients")), services: @Json.Serialize(Url.Action("SearchServices")), one: @Json.Serialize(Url.Action("Estimate", new { id = 0 })) };

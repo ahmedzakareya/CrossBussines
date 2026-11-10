@@ -3,7 +3,7 @@ using CrossBuy.Models.Platform;
 namespace CrossBuy.BL.Hospital
 {
 	/// One balanced posting the hospital asks the general ledger to make.
-	public sealed record HospitalLedgerLine(int AccountId, decimal Debit, decimal Credit, string? Memo = null);
+	public sealed record HospitalLedgerLine(int AccountId, decimal Debit, decimal Credit, string? Memo = null, int? CostCenterId = null);
 
 	/// The hospital's only door into the general ledger. Production posts through the accounting
 	/// module's JournalEntryService (the ONE writer of the GL: period checks, balance, numbering);
@@ -27,7 +27,7 @@ namespace CrossBuy.BL.Hospital
 			{
 				CompanyID = ctx.CompanyId, EntryDate = date.Date, JournalType = "Auto", SourceType = sourceType, SourceId = sourceId,
 				CurrencyId = 0, Description = description, DescriptionEn = descriptionEn,
-				Lines = lines.Select(l => new JournalLineInput { AccountId = l.AccountId, Debit = l.Debit, Credit = l.Credit, Description = l.Memo, DescriptionEn = l.Memo }).ToList(),
+				Lines = lines.Select(l => new JournalLineInput { AccountId = l.AccountId, Debit = l.Debit, Credit = l.Credit, CostCenterId = l.CostCenterId, Description = l.Memo, DescriptionEn = l.Memo }).ToList(),
 			}, ctx.EmployeeId);
 			return (ok, error, entry?.ID);
 		}

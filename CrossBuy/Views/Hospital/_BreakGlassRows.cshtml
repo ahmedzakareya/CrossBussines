@@ -1,0 +1,30 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model IReadOnlyList<HospitalBreakGlassRow>
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@{ int? me = ViewBag.Me as int?; var inv = System.Globalization.CultureInfo.InvariantCulture; string At(DateTime u) => HospitalNursingService.UtcToWard(u).ToString("yyyy-MM-dd HH:mm", inv); }
+@foreach (var r in Model)
+{
+    var g = r.Entry;
+    <tr data-glass-row="@g.ID">
+        <td><div class="hp-num fw-bold" dir="ltr">@At(g.OpenedAt)</div><div class="text-muted fs-9 hp-num" dir="ltr">→ @At(g.ExpiresAt)</div></td>
+        <td><div class="d-flex align-items-center gap-3">
+            <div class="symbol symbol-35px symbol-circle flex-shrink-0">@if (r.EmployeePhoto != null) {<img src="@r.EmployeePhoto" alt="" style="object-fit:cover" />} else {<span class="symbol-label fw-bold hp-initials fs-8">@HospitalUi.Initials(r.EmployeeEn)</span>}</div>
+            <div class="fw-bold text-gray-900">@DisplayName.Of(r.Employee, r.EmployeeEn)</div></div></td>
+        <td><a href="@Url.Action("Patient", new { id = g.PatientId })" class="fw-bold text-gray-900 text-hover-primary">@DisplayName.Of(r.PatientName, r.PatientNameEn)</a><div class="text-muted fs-8 hp-num">@r.Mrn</div></td>
+        <td class="mw-300px"><div class="text-gray-800" dir="auto">@g.Reason</div></td>
+        <td>@if (g.ReviewedAt == null) {<span class="badge badge-light-primary">@T["bg:waiting"]</span>}
+            else {<span class="badge @(g.Outcome == HospitalBreakGlassOutcome.Justified ? "badge-light-success" : "badge-light-danger")">@T["bg:" + g.Outcome]</span>
+                <div class="text-muted fs-9 mt-1">@DisplayName.Of(r.Reviewer ?? "", r.ReviewerEn ?? r.Reviewer ?? "")@if (g.ReviewNote != null) {<span dir="auto"> · @g.ReviewNote</span>}</div>}</td>
+        <td class="text-end">
+            @if (g.ReviewedAt == null && me != g.EmployeeId)
+            {
+                <div class="d-flex justify-content-end gap-2">
+                    <button type="button" class="btn btn-sm btn-light-success" data-glass-review="@g.ID" data-outcome="@HospitalBreakGlassOutcome.Justified">@T["bg:Justified"]</button>
+                    <button type="button" class="btn btn-sm btn-light-danger" data-glass-review="@g.ID" data-outcome="@HospitalBreakGlassOutcome.Unjustified" data-ask="@T["Why was this opening not justified?"]">@T["bg:Unjustified"]</button>
+                </div>
+            }
+        </td>
+    </tr>
+}

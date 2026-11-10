@@ -88,6 +88,9 @@ namespace CrossBuy.Models.Context.Hospital
 		/// H10: the inventory item picked from the pharmacy's stock; null for a drug the hospital does not stock.
 		public int? ItemId { get; set; }
 		public string? Instructions { get; set; }
+		/// H33: the English twins (a stocked drug takes its item's English name).
+		public string? DrugEn { get; set; }
+		public string? InstructionsEn { get; set; }
 		public int Quantity { get; set; } = 1;
 		public int SortOrder { get; set; }
 	}

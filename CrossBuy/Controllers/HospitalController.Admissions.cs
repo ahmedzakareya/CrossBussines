@@ -87,6 +87,21 @@ namespace CrossBuy.Controllers
 			return Result(await _admissions.DischargeAsync(ctx, id, ctx.EmployeeId, DateTime.UtcNow, ct));
 		}
 
+		private HospitalPatientPhotoService PhotoSvc => Microsoft.Extensions.DependencyInjection.ActivatorUtilities.CreateInstance<HospitalPatientPhotoService>(HttpContext.RequestServices);
+
+		/// The patient's photo, read through the document platform (it authorises the reader on this patient).
+		[HttpGet("Patient/{id:int}/Photo")]
+		[HospitalPerm(HospitalActions.Read)]
+		public async Task<IActionResult> PatientPhotoImage(int id, long d, CancellationToken ct = default)
+		{
+			var ctx = await ContextAsync(ct);
+			if (ctx == null || ctx.CompanyId <= 0) return NotFound();
+			var file = await PhotoSvc.OpenForStaffAsync(ctx, id, d, ct);
+			if (file == null) return NotFound();
+			Response.Headers["Cache-Control"] = "private, max-age=600";   // the URL changes with every new photo
+			return File(file.Content, file.ContentType);
+		}
+
 		[HttpPost("Patient/{id:int}/Photo"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Register)]
 		[RequestSizeLimit(6_000_000)]
 		public async Task<IActionResult> PatientPhoto(int id, IFormFile? photo, CancellationToken ct = default)
@@ -97,10 +112,10 @@ namespace CrossBuy.Controllers
 			// Ask before anything reaches disk: a refused caller or a foreign file never leaves an orphan.
 			if (!await _access.CanAsync(ctx, HospitalActions.Register, null, ct)) return Result(HospitalResult.Fail("forbidden"));
 			if (await _patients.GetAsync(ctx, id, ct) == null) return NotFound(new { ok = false, code = "not_found" });
-			var env = HttpContext.RequestServices.GetService(typeof(Microsoft.AspNetCore.Hosting.IWebHostEnvironment)) as Microsoft.AspNetCore.Hosting.IWebHostEnvironment;
-			if (env == null) return Json(new { ok = false, error = _t["The change could not be saved"].Value });
-			var (path, error) = await HospitalPatientService.StorePhotoAsync(photo, env.WebRootPath, ctx.CompanyId, ct);
-			if (path == null) return Json(new { ok = false, error = _t[error!].Value });
+			// the document platform keeps the bytes (owner ruling: every image goes to the unified attachments)
+			await using var bytes = photo.OpenReadStream();
+			var (path, error) = await PhotoSvc.StoreAsync(ctx, id, bytes, photo.Length, ct);
+			if (path == null) return error == "forbidden" ? Result(HospitalResult.Fail("forbidden")) : Json(new { ok = false, error = _t[error!].Value });
 			var r = await _patients.SetPhotoAsync(ctx, id, path, ctx.EmployeeId, ct);
 			return r.Ok ? Json(new { ok = true, id, photo = path }) : Result(r);
 		}

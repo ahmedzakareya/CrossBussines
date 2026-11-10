@@ -1,0 +1,60 @@
+{
+  "unit": "H49 — the hospital's management reports (Report Studio)",
+  "strings": {
+    "Hospital reports": {
+      "ar": "تقارير المستشفى",
+      "en": "Hospital reports",
+      "fr": "Rapports de l'hôpital"
+    },
+    "Clinical": {
+      "ar": "سريرية",
+      "en": "Clinical",
+      "fr": "Cliniques"
+    },
+    "Operational": {
+      "ar": "تشغيلية",
+      "en": "Operational",
+      "fr": "Opérationnels"
+    },
+    "Financial": {
+      "ar": "مالية",
+      "en": "Financial",
+      "fr": "Financiers"
+    },
+    "Every report and printout runs through Report Studio": {
+      "ar": "كل التقارير والمطبوعات عبر Report Studio",
+      "en": "Every report and printout runs through Report Studio",
+      "fr": "Chaque rapport et impression passe par Report Studio"
+    },
+    "Each report is a registered dataset with its own permission; printouts are designed in the same place.": {
+      "ar": "كل تقرير مجموعة بيانات مسجلة بصلاحياتها، والمطبوعات (روشتة، تقرير خروج، فاتورة) تُصمم من نفس المكان.",
+      "en": "Each report is a registered dataset with its own permission; printouts are designed in the same place.",
+      "fr": "Chaque rapport est un jeu de données enregistré avec sa propre autorisation ; les impressions se conçoivent au même endroit."
+    },
+    "Open": {
+      "ar": "فتح",
+      "en": "Open",
+      "fr": "Ouvrir"
+    },
+    "Billing desk only": {
+      "ar": "لقسم الحسابات فقط",
+      "en": "Billing desk only",
+      "fr": "Facturation uniquement"
+    },
+    "Report Studio": {
+      "ar": "استوديو التقارير",
+      "en": "Report Studio",
+      "fr": "Report Studio"
+    },
+    "hr:count": {
+      "ar": "تقرير",
+      "en": "reports",
+      "fr": "rapports"
+    },
+    "hr:crumb": {
+      "ar": "التقارير",
+      "en": "Reports",
+      "fr": "Rapports"
+    }
+  }
+}

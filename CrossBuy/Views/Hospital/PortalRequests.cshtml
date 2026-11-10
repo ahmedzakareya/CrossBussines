@@ -1,0 +1,196 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model IReadOnlyList<HospitalPortalRequestRow>
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Portal requests"].Value;
+    string status = (ViewBag.Status as string) ?? HospitalPortalRequestStatus.Open;
+    bool canRegister = ViewBag.CanRegister == true;
+    int openCount = ViewBag.OpenCount is int oc ? oc : 0;
+    var doctors = (ViewBag.Doctors as List<(int Id, string Name, string NameEn, int? DepartmentId)>) ?? new();
+    string Badge(string s) => s switch { HospitalPortalRequestStatus.Booked => "success", HospitalPortalRequestStatus.Declined => "danger", HospitalPortalRequestStatus.Withdrawn => "secondary", _ => "primary" };
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Portal requests"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item"><a href="@Url.Action("Appointments")" class="text-muted text-hover-primary">@T["Appointments"]</a></li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@T["Portal requests"]</li>
+            </ul>
+        </div>
+        <div class="d-flex align-items-center gap-2 gap-lg-3 d-print-none">
+            <a href="@Url.Action("PortalSettings")" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-setting-2 fs-4"></i>@T["Booking rules"]</a>
+        </div>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice">
+            <span class="symbol symbol-45px me-5 flex-shrink-0"><span class="symbol-label"><i class="ki-outline ki-call fs-2x text-white"></i></span></span>
+            <div class="d-flex flex-stack flex-grow-1 flex-wrap flex-md-nowrap">
+                <div class="fw-semibold pe-5"><h4 class="text-gray-900 fw-bold mb-1">@T["Requests from the patient portal"]</h4>
+                    <div class="fs-6 text-gray-700">@T["A clinic that takes requests, or a patient whose account is not verified yet, asks here: book it in a free time of a doctor of the clinic, or decline it with the reason the patient will read."]</div></div>
+                <span class="badge hp-badge fs-7 fw-bold px-4 py-2 flex-shrink-0"><span class="hp-num me-1">@openCount</span>@T["prq:Open"]</span>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header border-0 pt-6">
+                <ul class="nav nav-stretch nav-line-tabs nav-line-tabs-2x border-transparent fs-6 fw-bold">
+                    @foreach (var s in HospitalPortalRequestStatus.All)
+                    {
+                        <li class="nav-item"><a class="nav-link text-active-primary py-4 me-6 @(s == status ? "active" : "")" href="@Url.Action("PortalRequests", new { status = s })">@T["prq:" + s]</a></li>
+                    }
+                </ul>
+            </div>
+            <div class="card-body pt-2">
+                @if (Model.Count == 0) { <div class="text-center text-muted py-15"><i class="ki-outline ki-call fs-3x text-gray-300 d-block mb-4"></i>@T["No requests here."]</div> }
+                else
+                {
+                    <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-4 gx-2 mb-0">
+                        <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0">
+                            <th>@T["Request"]</th><th>@T["Patient"]</th><th>@T["Clinic"]</th><th>@T["Preferred"]</th><th>@T["Status"]</th><th></th>
+                        </tr></thead>
+                        <tbody class="fw-semibold text-gray-700">
+                            @foreach (var r in Model)
+                            {
+                                var q = r.Request;
+                                var who = DisplayName.Of(r.WhoName, r.WhoNameEn);
+                                <tr>
+                                    <td class="text-nowrap"><span class="badge hp-code fs-8 hp-num">@q.RequestNo</span><div class="text-muted fs-8 mt-1 hp-num">@q.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</div></td>
+                                    <td><div class="d-flex align-items-center gap-3">
+                                        <div class="symbol symbol-35px symbol-circle flex-shrink-0">@if (r.Photo != null) {<img src="@r.Photo" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(r.WhoNameEn)" />} else {<span class="symbol-label fw-bold fs-8 hp-initials">@HospitalUi.Initials(r.WhoNameEn)</span>}</div>
+                                        <div><div class="fw-bold text-gray-900">@who</div>
+                                            <div class="text-muted fs-8">@if (r.Mrn != null) {<span class="hp-num">@r.Mrn</span>} else {<span class="badge badge-light-danger fs-9">@T["Not verified"]</span>} @if (r.Phone != null) {<span class="hp-num ms-1" dir="ltr">@r.Phone</span>}</div></div></div></td>
+                                    <td><div class="fw-bold text-gray-800">@DisplayName.Of(r.DepartmentName, r.DepartmentNameEn)</div><div class="text-muted fs-8">@T["visit:" + q.VisitType]</div></td>
+                                    <td><div class="text-gray-800">@(q.PreferredDays ?? "—") · @T["tod:" + q.TimeOfDay]</div>@if (q.Note != null) {<div class="text-muted fs-8">@q.Note</div>}</td>
+                                    <td><span class="badge badge-light-@Badge(q.Status) fs-8">@T["prq:" + q.Status]</span>@if (q.DeclineReason != null) {<div class="text-danger fs-8 mt-1">@q.DeclineReason</div>}</td>
+                                    <td class="text-nowrap" style="text-align:end">
+                                        @if (q.Status == HospitalPortalRequestStatus.Open)
+                                        {
+                                            if (r.PatientId == null)
+                                            {
+                                                if (canRegister) { <button type="button" class="btn btn-sm btn-light-primary py-1 px-3" data-verify="@q.AccountId" data-who="@who">@T["Match to a file"]</button> }
+                                            }
+                                            else
+                                            {
+                                                <button type="button" class="btn btn-sm btn-primary py-1 px-3" data-book="@q.ID" data-dept="@q.DepartmentId" data-who="@who">@T["Book it"]</button>
+                                            }
+                                            <button type="button" class="btn btn-sm btn-light-danger py-1 px-3" data-decline="@q.ID" data-who="@who">@T["Decline"]</button>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table></div>
+                }
+            </div>
+        </div>
+    </div></div>
+</div>
+
+<div class="modal fade" id="bookModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-550px"><div class="modal-content">
+    <div class="modal-header"><h2 class="fw-bold m-0 fs-4">@T["Book it"] <span class="text-muted fs-6" data-b-who></span></h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="modal-body py-6 px-lg-10">
+        <div class="mb-5"><label class="form-label required">@T["Doctor"]</label>
+            <select class="form-select form-select-solid" data-b-doc data-no-select2>
+                @foreach (var d in doctors) { <option value="@d.Id" data-dept="@d.DepartmentId">@DisplayName.Of(d.Name, d.NameEn)</option> }
+            </select></div>
+        <div class="row g-4">
+            <div class="col-6"><label class="form-label required">@T["Date"]</label><input type="date" class="form-control form-control-solid hp-num" data-b-date value="@DateTime.Today.AddDays(1).ToString("yyyy-MM-dd")" /></div>
+            <div class="col-6"><label class="form-label required">@T["Time"]</label><select class="form-select form-select-solid hp-num" data-b-time data-no-select2></select></div>
+        </div>
+        <div class="text-muted fs-8 mt-3" data-b-none style="display:none">@T["No free time on this day."]</div>
+    </div>
+    <div class="modal-footer flex-center"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-b-save>@T["Book it"]</button></div>
+</div></div></div>
+
+@if (canRegister)
+{
+    <div class="modal fade" id="verifyModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-550px"><div class="modal-content">
+        <div class="modal-header"><h2 class="fw-bold m-0 fs-4">@T["Match to a file"] <span class="text-muted fs-6" data-v-who></span></h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body py-6 px-lg-10">
+            <div class="text-gray-700 fs-7 mb-4">@T["Check the person's identity, then choose their patient file (register one first if they have none). The account becomes verified and its open requests are for that file."]</div>
+            <select class="form-select form-select-solid" data-v-patient data-person-select data-person-ajax="@Url.Action("SearchDentalPatients")" data-searching="@T["Searching…"]" data-no-results="@T["No patient matches"]" data-placeholder="@T["Patient"]"><option value=""></option></select>
+        </div>
+        <div class="modal-footer flex-center"><a href="@Url.Action("Patients")" class="btn btn-light-primary" target="_blank">@T["Register a patient"]</a><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-v-save>@T["Verify"]</button></div>
+    </div></div></div>
+}
+
+@section Scripts {
+    <partial name="_PersonSelect" />
+    <partial name="_HospitalPrompt" />
+    <script>
+        (function () {
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value), decline: @Json.Serialize(T["Decline the request of {0}? Write the reason the patient will read:"].Value) };
+            var urls = { root: @Json.Serialize(Url.Action("PortalRequests")), slots: @Json.Serialize(Url.Action("PortalRequestSlots")), verify: @Json.Serialize(Url.Action("PortalAccountVerify", new { id = 0 })) };
+            function toast(k, m) { if (window.toastr) toastr[k](m); }
+            function post(url, body) {
+                return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(body || {}) })
+                    .then(function (r) { return r.json().catch(function () { return { ok: false }; }); });
+            }
+            // In place, never a reload: the page is rendered again and its content swapped.
+            function swap() {
+                return fetch(location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.text(); }).then(function (html) {
+                    var f = new DOMParser().parseFromString(html, 'text/html').getElementById('kt_app_content');
+                    if (f) document.getElementById('kt_app_content').innerHTML = f.innerHTML;
+                });
+            }
+            function done(btn, modal) { return function (res) { if (btn) btn.disabled = false; if (!res.ok) { toast('error', res.error || W.failed); return; } toast('success', W.saved); if (modal) bootstrap.Modal.getOrCreateInstance(modal).hide(); swap(); }; }
+
+            var bEl = document.getElementById('bookModal'), booking = null;
+            function loadSlots() {
+                var doc = bEl.querySelector('[data-b-doc]').value, date = bEl.querySelector('[data-b-date]').value, sel = bEl.querySelector('[data-b-time]');
+                sel.innerHTML = ''; bEl.querySelector('[data-b-none]').style.display = 'none';
+                if (!doc || !date) return;
+                fetch(urls.slots + '?practitionerId=' + doc + '&date=' + date, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.json(); }).then(function (res) {
+                    (res.slots || []).forEach(function (s) { var o = document.createElement('option'); o.value = s.minute; o.textContent = s.label; sel.appendChild(o); });
+                    bEl.querySelector('[data-b-none]').style.display = (res.slots || []).length ? 'none' : '';
+                });
+            }
+            bEl.addEventListener('change', function (e) { if (e.target.matches('[data-b-doc],[data-b-date]')) loadSlots(); });
+            document.addEventListener('click', function (e) {
+                var t = e.target.closest('[data-book],[data-decline],[data-verify]'); if (!t) return;
+                if (t.hasAttribute('data-book')) {
+                    booking = { id: t.getAttribute('data-book') };
+                    bEl.querySelector('[data-b-who]').textContent = t.getAttribute('data-who');
+                    // the clinic's doctors first: the request was for that clinic
+                    var dept = t.getAttribute('data-dept'), sel = bEl.querySelector('[data-b-doc]'), first = null;
+                    [].slice.call(sel.options).forEach(function (o) { o.hidden = o.getAttribute('data-dept') !== dept; if (!o.hidden && !first) first = o; });
+                    if (first) sel.value = first.value;
+                    loadSlots(); bootstrap.Modal.getOrCreateInstance(bEl).show(); return;
+                }
+                if (t.hasAttribute('data-decline')) {
+                    cbPrompt(W.decline.replace('{0}', t.getAttribute('data-who')), { kind: 'danger', textarea: true }).then(function (reason) {
+                        if (reason == null) return; t.disabled = true; post(urls.root + '/' + t.getAttribute('data-decline') + '/Decline', { reason: reason }).then(done(t));
+                    });
+                    return;
+                }
+                var vEl = document.getElementById('verifyModal'); if (!vEl) return;
+                vEl.setAttribute('data-account', t.getAttribute('data-verify'));
+                vEl.querySelector('[data-v-who]').textContent = t.getAttribute('data-who');
+                if (window.hpPersonSelect) hpPersonSelect(vEl);
+                bootstrap.Modal.getOrCreateInstance(vEl).show();
+            });
+            bEl.querySelector('[data-b-save]').addEventListener('click', function (e) {
+                var btn = e.currentTarget, time = bEl.querySelector('[data-b-time]').value;
+                if (!time) { toast('error', @Json.Serialize(T["No free time on this day."].Value)); return; }
+                btn.disabled = true;
+                post(urls.root + '/' + booking.id + '/Book', { practitionerId: +bEl.querySelector('[data-b-doc]').value, date: bEl.querySelector('[data-b-date]').value, startMinute: +time }).then(done(btn, bEl));
+            });
+            var vSave = document.querySelector('[data-v-save]');
+            if (vSave) vSave.addEventListener('click', function (e) {
+                var btn = e.currentTarget, vEl = document.getElementById('verifyModal'), pid = vEl.querySelector('[data-v-patient]').value;
+                if (!pid) { toast('error', @Json.Serialize(T["Choose the patient file"].Value)); return; }
+                btn.disabled = true; post(urls.verify.replace(/0\/Verify$/, vEl.getAttribute('data-account') + '/Verify'), { patientId: +pid }).then(done(btn, vEl));
+            });
+        })();
+    </script>
+}

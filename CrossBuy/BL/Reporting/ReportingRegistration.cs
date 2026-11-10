@@ -222,6 +222,38 @@ namespace CrossBuy.BL.Reporting
             services.AddSingleton<IReportDefinitionProvider, OrgStructureReportDefinitionProvider>();
             services.AddScoped<IReportDataSource, OrgStructureDataSource>();
 
+            // The hospital's printed papers: the bill, the prescription and the dental claim. Their key
+            // (hospital.reports.view) is answered by the hospital module, found by scope, never by the role map.
+            services.AddSingleton<IReportDefinitionProvider, HospitalReportDefinitionProvider>();
+            services.AddScoped<IReportDataSource, HospitalBillDocumentSource>();
+            services.AddScoped<IReportDataSource, HospitalPrescriptionDocumentSource>();
+            services.AddScoped<IReportDataSource, HospitalPrescriptionFormSource>();
+            services.AddScoped<IReportDataSource, HospitalDentalClaimDocumentSource>();
+            services.AddScoped<IReportDataSource, HospitalDischargeSummarySource>();   // H55
+            services.AddScoped<IReportDataSource, HospitalSickLeaveSource>();          // H56
+            services.AddScoped<IReportDataSource, HospitalBirthNoticeSource>();        // H58
+            services.AddScoped<IReportDataSource, HospitalDeathCertificateSource>();   // H59
+            services.AddScoped<IReportDataSource, HospitalConsentSource>();            // H60
+            services.AddScoped<IReportDataSource, HospitalPatientStatementSource>();   // H63
+            services.AddScoped<IReportModuleAuthority, HospitalReportModuleAuthority>();
+            // H49: the hospital's fifteen management reports (the prototype's #/reports), on the same authority
+            services.AddSingleton<IReportDefinitionProvider, HospitalManagementReportProvider>();
+            services.AddScoped<IReportDataSource, HospitalTopDiagnosesSource>();
+            services.AddScoped<IReportDataSource, HospitalReadmissionsSource>();
+            services.AddScoped<IReportDataSource, HospitalLabTurnaroundSource>();
+            services.AddScoped<IReportDataSource, HospitalCriticalValuesSource>();
+            services.AddScoped<IReportDataSource, HospitalBedOccupancySource>();
+            services.AddScoped<IReportDataSource, HospitalErWaitingSource>();
+            services.AddScoped<IReportDataSource, HospitalTheatreSource>();
+            services.AddScoped<IReportDataSource, HospitalDoctorProductivitySource>();
+            services.AddScoped<IReportDataSource, HospitalRevenueSource>();
+            services.AddScoped<IReportDataSource, HospitalInsuranceAgeingSource>();
+            services.AddScoped<IReportDataSource, HospitalCashierCollectionSource>();
+            services.AddScoped<IReportDataSource, HospitalServiceProfitabilitySource>();
+            services.AddScoped<IReportDataSource, HospitalRejectionReasonsSource>();
+            services.AddScoped<IReportDataSource, HospitalPendingApprovalsSource>();
+            services.AddScoped<IReportDataSource, HospitalPayerPerformanceSource>();
+
             // HR Product Batch 2 — roster. Two data sources, no new engine and no second store.
             services.AddScoped<IReportDataSource, RosterScheduleDataSource>();
             services.AddScoped<IReportDataSource, RosterPlannedVsActualDataSource>();
@@ -300,6 +332,16 @@ namespace CrossBuy.BL.Reporting
             foreach (var org in OrgStructureDatasets.All())
             {
                 var definition = org;
+                services.AddScoped<IReportDatasetDefinition>(_ => definition);
+            }
+            foreach (var hospital in HospitalDocumentDatasets.All())
+            {
+                var definition = hospital;
+                services.AddScoped<IReportDatasetDefinition>(_ => definition);
+            }
+            foreach (var hospital in HospitalManagementDatasets.Datasets())
+            {
+                var definition = hospital;
                 services.AddScoped<IReportDatasetDefinition>(_ => definition);
             }
 

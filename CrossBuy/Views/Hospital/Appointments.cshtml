@@ -13,8 +13,12 @@
     var appts = (ViewBag.Appointments as IReadOnlyList<HospitalAppointmentView>) ?? Array.Empty<HospitalAppointmentView>();
     var docIds = Model.Select(d => d.Row.ID).ToHashSet();
     var shown = appts.Where(a => docIds.Contains(a.PractitionerId)).ToList();
-    // One time column for every doctor: the union of their slots, in order.
-    var times = Model.SelectMany(d => HospitalOutpatientService.Slots(d.Row)).Distinct().OrderBy(m => m).ToList();
+    // One time column for every doctor: the union of their schedules' times that day (H26: weekly sessions less
+    // leave), and every appointment's own time, in order.
+    var schedules = (ViewBag.Schedules as Dictionary<int, HospitalDoctorSchedule>) ?? new();
+    IReadOnlyList<int> SlotsOf(HospitalPractitioner p) => schedules.TryGetValue(p.ID, out var sc) ? sc.SlotsOn(day).Select(x => x.Minute).ToList() : HospitalOutpatientService.Slots(p);
+    var slotMap = Model.ToDictionary(d => d.Row.ID, d => SlotsOf(d.Row).ToHashSet());
+    var times = slotMap.Values.SelectMany(x => x).Concat(shown.Select(a => a.StartMinute)).Distinct().OrderBy(m => m).ToList();
     var bySlot = shown.GroupBy(a => (a.PractitionerId, a.StartMinute)).ToDictionary(g => g.Key, g => g.First());
     bool past = day < today;
     string dayLabel = day.ToString("dddd d MMMM yyyy", System.Globalization.CultureInfo.CurrentUICulture);
@@ -85,7 +89,7 @@
                 }
                 else
                 {
-                    <div class="overflow-auto">
+                    <div class="hp-sched-wrap">
                         <div class="hp-sched" style="grid-template-columns:70px repeat(@Model.Count, minmax(170px,1fr));">
                             <div class="hd"></div>
                             @foreach (var d in Model)
@@ -101,7 +105,7 @@
                                 <div class="tm hp-num">@HospitalUi.Clock(t)</div>
                                 @foreach (var d in Model)
                                 {
-                                    var offers = HospitalOutpatientService.Slots(d.Row).Contains(t);
+                                    var offers = slotMap[d.Row.ID].Contains(t);
                                     var licensed = HospitalOutpatientService.LicenseValidOn(d.Row, day);
                                     if (bySlot.TryGetValue((d.Row.ID, t), out var a))
                                     {

@@ -78,7 +78,10 @@ namespace CrossBuy.BL.Hospital
 		private readonly IHospitalAccessService _access;
 		private readonly HospitalPricingService? _pricing;
 
-		public HospitalInsuranceService(CrossDbContext db, IHospitalAccessService access, HospitalPricingService? pricing = null) { _db = db; _access = access; _pricing = pricing; }
+		private readonly IHospitalLedger? _ledger;
+
+		/// `ledger`: the payer's answers post through it (H20); without one, an answer that must post is refused.
+		public HospitalInsuranceService(CrossDbContext db, IHospitalAccessService access, HospitalPricingService? pricing = null, IHospitalLedger? ledger = null) { _db = db; _access = access; _pricing = pricing; _ledger = ledger; }
 
 		private Task<bool> Can(BusinessContext ctx, string action, CancellationToken ct) => _access.CanAsync(ctx, action, null, ct);
 		private IQueryable<HospitalPayer> Payers(BusinessContext ctx) => _db.Set<HospitalPayer>().Where(p => p.CompanyId == ctx.CompanyId);
@@ -344,7 +347,7 @@ namespace CrossBuy.BL.Hospital
 			var ids = bills.Select(b => b.ID).ToList();
 			var claimed = (await Claims(ctx).AsNoTracking().Where(c => ids.Contains(c.BillId)).Select(c => c.BillId).ToListAsync(ct)).ToHashSet();
 			var preauthCats = HospitalInsuranceRules.PreauthCategories(payer.PreauthCategories);
-			int added = 0;
+			int added = 0, unsplit = 0;
 			HospitalClaimBatch? batch = null;
 			await using var tx = await ScopedTx.BeginOrJoinAsync(_db);
 			try
@@ -358,9 +361,16 @@ namespace CrossBuy.BL.Hospital
 				if (HospitalInsuranceRules.ClaimRefusal(candidate, ctx.CompanyId, period, contractCurrency, claimed, policy, payer) != null) continue;
 				var billLines = await _db.HospitalBillLines.AsNoTracking().Where(l => l.CompanyId == ctx.CompanyId && l.BillId == bill.ID).OrderBy(l => l.ID).ToListAsync(ct);
 				if (billLines.Count == 0) continue;
-				var claimable = billLines.Select(l => new HospitalClaimableLine(l.ID, l.Code, l.Category,
-					HospitalInsuranceRules.LineAmount(l.Quantity, l.UnitPrice, bill.PriceListId, payer.DiscountPct, decimals), !l.OutsideList)).ToList();
-				var split = HospitalInsuranceRules.Split(claimable, payer.CopayPct, payer.CopayCap, decimals);
+				// H18: a bill is claimed on exactly the split it was posted on when it closed (HospitalCoverage).
+				var frozen = await HospitalCoverage.FrozenAsync(_db, ctx, bill.ID, ct);
+				// a closed bill with no frozen split posted its WHOLE amount to the patient (self-pay, or closed before
+				// H18): claiming the payer too would recover the same services twice
+				if (frozen is not { } f) { unsplit++; continue; }
+				if (f.Head.PayerId != payerId) continue;
+				var fl = billLines.Select(l => f.Lines.FirstOrDefault(x => x.BillLineId == l.ID)).ToList();
+				var claimable = billLines.Select((l, i) => new HospitalClaimableLine(l.ID, l.Code, l.Category, fl[i]?.Amount ?? 0, fl[i]?.Covered ?? false)).ToList();
+				var split = new HospitalCoverageSplit(f.Head.Amount, f.Head.Covered, f.Head.Copay, f.Head.PatientShare, f.Head.InsurerShare, fl.Select(x => x?.InsurerAmount ?? 0).ToList());
+				policy = policies.FirstOrDefault(p => p.ID == f.Head.PolicyId) ?? policy;
 				batch ??= await DraftBatchAsync(ctx, payer, period, employeeId, nowUtc, ct);
 				var claim = new HospitalClaim { CompanyId = ctx.CompanyId, BatchId = batch.ID, BillId = bill.ID, PatientId = bill.PatientId, PolicyId = policy!.ID,
 					Gross = split.Gross, PatientShare = split.PatientShare, InsurerShare = split.InsurerShare };
@@ -389,7 +399,14 @@ namespace CrossBuy.BL.Hospital
 				await tx.RollbackAsync(); _db.ChangeTracker.Clear();
 				return HospitalResult.Fail(ConcurrentChange);
 			}
-			if (added == 0) { await tx.RollbackAsync(); return HospitalResult.Fail("No closed, unclaimed bills of this payer's covered patients in that month"); }
+			if (added == 0)
+			{
+				await tx.RollbackAsync();
+				// D1: say why, when bills were left out because their split was never frozen (closed before H18)
+				return unsplit > 0
+					? HospitalResult.Fail("No bill can be claimed: {0} closed bills of this payer's patients were posted to the patient in full when they closed (no insurance split), and are not claimed", unsplit)
+					: HospitalResult.Fail("No closed, unclaimed bills of this payer's covered patients in that month");
+			}
 			await tx.CommitAsync();
 			return HospitalResult.Success(batch!.ID);
 		}
@@ -401,6 +418,9 @@ namespace CrossBuy.BL.Hospital
 			if (b == null) return HospitalResult.Fail("not_found");
 			if (b.Status != HospitalClaimBatchStatus.Draft) return HospitalResult.Fail("This batch was already submitted");
 			if (!await Claims(ctx).AnyAsync(c => c.BatchId == b.ID, ct)) return HospitalResult.Fail("The batch has no claims");
+			// H62: a batch goes out only when no claim carries a scrubbing error (fix it, or hold the claim)
+			var issues = await new HospitalClaimScrubService(_db, _access).ScrubAsync(ctx, b.ID, nowUtc, ct);
+			if (HospitalClaimScrubRules.SubmitRefusal(issues, out int blocked) is string scrub) return HospitalResult.Fail(scrub, blocked);
 			// conditional on the batch still being a draft: only one submission lands
 			int n = await Batches(ctx).Where(x => x.ID == batchId && x.Status == HospitalClaimBatchStatus.Draft).ExecuteUpdateAsync(u => u
 				.SetProperty(x => x.Status, HospitalClaimBatchStatus.Submitted).SetProperty(x => x.SubmittedAt, nowUtc).SetProperty(x => x.SubmittedByEmployeeId, employeeId), ct);
@@ -420,12 +440,27 @@ namespace CrossBuy.BL.Hospital
 			string status = accept ? HospitalClaimLineStatus.Accepted : HospitalClaimLineStatus.Rejected;
 			decimal paid = accept ? acceptedAmount ?? l.InsurerAmount : 0;
 			string? rc = accept ? null : Clip(code, 20), rr = accept ? null : Clip(reason, 300);
+			// H20 (G1): an answer that posts needs its accounts, resolved BEFORE the transaction; unmapped = not recorded
+			HospitalInsuranceAccounts? accounts = null; int? payerAr = null;
+			if (HospitalClaimAccountingRules.Plan(accept, l.InsurerAmount, acceptedAmount, l.ResubmitsLineId != null) != null)
+			{
+				if (_ledger == null) return HospitalResult.Fail(HospitalClaimAccounts.NotSetUp);
+				string? why;
+				(accounts, why) = await HospitalClaimAccounts.CompanyAsync(_db, ctx, ct);
+				if (why == null) (payerAr, why) = await HospitalClaimAccounts.PayerReceivableAsync(_db, ctx, b.PayerId, ct);
+				if (why != null) return HospitalResult.Fail(why);
+			}
 			await using var tx = await ScopedTx.BeginOrJoinAsync(_db);
 			// the line's answer and the batch's state move together, and only the first answer for a line lands
 			int n = await Lines(ctx).Where(x => x.ID == lineId && x.Status == HospitalClaimLineStatus.Pending).ExecuteUpdateAsync(u => u
 				.SetProperty(x => x.Status, status).SetProperty(x => x.AcceptedAmount, paid).SetProperty(x => x.RejectCode, rc)
 				.SetProperty(x => x.RejectReason, rr).SetProperty(x => x.DecidedAt, nowUtc), ct);
 			if (n != 1) { await tx.RollbackAsync(); return HospitalResult.Fail("The payer's answer for this line is already recorded"); }
+			if (accounts != null)
+			{
+				var posted = await new HospitalClaimAccountingService(_db, _access, _ledger!).PostAnswerAsync(ctx, l, c, b, accept, acceptedAmount, ctx.EmployeeId, nowUtc, accounts, payerAr, ct);
+				if (!posted.Ok) { await tx.RollbackAsync(); return posted; }
+			}
 			var statuses = await (from x in Lines(ctx) join cc in Claims(ctx) on x.ClaimId equals cc.ID where cc.BatchId == b.ID select x.Status).ToListAsync(ct);
 			string batchStatus = HospitalInsuranceRules.BatchStatusAfterResponse(statuses);
 			DateTime? settled = batchStatus == HospitalClaimBatchStatus.Submitted ? null : nowUtc;

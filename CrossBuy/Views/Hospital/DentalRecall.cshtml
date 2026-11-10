@@ -1,0 +1,200 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model IReadOnlyList<HospitalRecallRow>
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Recall & sterilisation"].Value;
+    var s = (HospitalRecallStats)ViewBag.Stats;
+    var cycles = (ViewBag.Cycles as IReadOnlyList<HospitalSterilRow>) ?? Array.Empty<HospitalSterilRow>();
+    bool canBook = ViewBag.CanBook == true, canConsult = ViewBag.CanConsult == true;
+    var failed = cycles.FirstOrDefault(c => c.Cycle.Biological == HospitalIndicator.Fail || c.Cycle.Chemical == HospitalIndicator.Fail);
+    string Ind(string v) => v switch { HospitalIndicator.Pass => "success", HospitalIndicator.Fail => "danger", _ => "primary" };
+    string Av(string? photo, string nameEn, int size) => photo != null
+        ? $"<div class=\"symbol symbol-{size}px symbol-circle flex-shrink-0\"><img src=\"{photo}\" alt=\"\" style=\"object-fit:cover\" data-initials=\"{HospitalUi.Initials(nameEn)}\" /></div>"
+        : $"<div class=\"symbol symbol-{size}px symbol-circle flex-shrink-0\"><span class=\"symbol-label fw-bold fs-9 hp-initials\">{HospitalUi.Initials(nameEn)}</span></div>";
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Recall & sterilisation"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item"><a href="@Url.Action("Dental")" class="text-muted text-hover-primary">@T["Dentistry"]</a></li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@T["Recall & sterilisation"]</li>
+            </ul>
+        </div>
+        @if (canConsult) { <button type="button" class="btn btn-sm btn-primary" data-cycle-open><i class="ki-outline ki-plus fs-4"></i>@T["Sterilisation cycle"]</button> }
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="row g-5 g-xl-8 mb-5">
+            <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
+                <div class="text-muted fw-semibold fs-7 mb-1">@T["Recall pre-booked"]</div><div class="fs-2hx fw-bold hp-num text-gray-900">@(s.PreBookedRate == null ? "—" : s.PreBookedRate + "%")</div>
+                <div class="text-muted fs-8 mt-1">@T["of the recalls due within a month, already booked"]</div></div></div></div>
+            <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
+                <div class="text-muted fw-semibold fs-7 mb-1">@T["Due this month"]</div><div class="fs-2hx fw-bold hp-num text-gray-900">@s.DueThisMonth</div></div></div></div>
+            <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
+                <div class="text-muted fw-semibold fs-7 mb-1">@T["Overdue"]</div><div class="fs-2hx fw-bold hp-num @(s.Overdue > 0 ? "text-danger" : "text-gray-900")">@s.Overdue</div>
+                <div class="text-muted fs-8 mt-1">@T["go into the reactivation campaign"]</div></div></div></div>
+            <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
+                <div class="text-muted fw-semibold fs-7 mb-1">@T["Failed sterilisation cycle"]</div><div class="fs-2hx fw-bold hp-num @(s.FailedCycles > 0 ? "text-danger" : "text-gray-900")">@s.FailedCycles</div>
+                <div class="text-muted fs-8 mt-1">@T["its kits are on hold"]</div></div></div></div>
+        </div>
+
+        @if (failed != null)
+        {
+            <div class="notice d-flex rounded border border-danger border-dashed p-5 mb-5" style="background:#FFF5F5">
+                <span class="symbol symbol-40px me-4 flex-shrink-0"><span class="symbol-label bg-danger"><i class="ki-outline ki-shield-cross fs-2 text-white"></i></span></span>
+                <div class="flex-grow-1"><h4 class="text-gray-900 fw-bold mb-1">@(failed.Cycle.Biological == HospitalIndicator.Fail ? T["A biological indicator failed"] : T["A chemical indicator failed"])</h4>
+                    <div class="fs-7 text-gray-700"><span class="badge hp-code hp-num">@failed.Cycle.CycleNo</span> —
+                        @if (failed.UsedOn.Count == 0) { @T["its kits are held and were used on no patient; they are re-sterilised and the unit is checked."] }
+                        else { @T["its kits reached these patients before the result; they are to be told and followed up:"] <span class="fw-bold">@string.Join(" · ", failed.UsedOn)</span> }</div></div>
+                <span class="badge badge-danger align-self-center">@T["On hold"]</span>
+            </div>
+        }
+
+        <div class="row g-5">
+            <div class="col-xl-6"><div class="card mb-5">
+                <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
+                    <span class="card-label fw-bold text-gray-900 fs-4">@T["Hygiene recall"]</span>
+                    <span class="text-muted mt-1 fw-semibold fs-7">@T["Every 6 months by default; a finished preventive visit sets the next one. Booked before the patient leaves, then a message, a reminder, then reactivation."]</span>
+                </div></div>
+                <div class="card-body pt-2">
+                    @if (Model.Count == 0) { <div class="text-center text-muted py-10">@T["No recalls yet: a finished hygiene visit starts one."]</div> }
+                    else
+                    {
+                        <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-3 mb-0">
+                            <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0"><th>@T["Patient"]</th><th>@T["Last visit"]</th><th>@T["Interval"]</th><th>@T["Due"]</th><th>@T["State"]</th><th class="text-end"></th></tr></thead>
+                            <tbody class="fw-semibold text-gray-700">
+                                @foreach (var r in Model)
+                                {
+                                    <tr>
+                                        <td><a href="@Url.Action("DentalChart", new { patientId = r.Recall.PatientId })" class="d-flex align-items-center gap-2 text-hover-primary">@Html.Raw(Av(r.Photo, r.PatientNameEn, 35))
+                                            <div><div class="fw-bold text-gray-900">@DisplayName.Of(r.PatientName, r.PatientNameEn)</div><div class="text-muted fs-8 hp-num">@(r.Phone ?? r.Mrn)</div></div></a></td>
+                                        <td><span class="hp-num">@(r.Recall.LastVisit?.ToString("yyyy-MM-dd") ?? "—")</span></td>
+                                        <td><span class="hp-num">@r.Recall.IntervalMonths</span> @T["months"]</td>
+                                        <td><span class="hp-num">@r.Recall.DueDate.ToString("yyyy-MM-dd")</span></td>
+                                        <td>@if (r.State == "Booked") {<span class="badge badge-success fs-8">@T["recall:Booked"]</span><div class="text-muted fs-8 hp-num mt-1">@r.NextVisit?.ToString("yyyy-MM-dd HH:mm")</div>}
+                                            else if (r.State == "Overdue") {<span class="badge badge-danger fs-8">@T["recall:Overdue"]</span>}
+                                            else {<span class="badge badge-secondary fs-8">@T["recall:NotDue"]</span>}
+                                            @if (r.Recall.Attempts > 0) { <div class="text-danger fs-8 mt-1">@T["Contact attempts"] <span class="hp-num">@r.Recall.Attempts</span></div> }</td>
+                                        <td class="text-end text-nowrap">@if (canBook && r.State == "Overdue") { <button type="button" class="btn btn-sm btn-light-primary py-1 px-3" data-contact="@r.Recall.ID" data-what="@DisplayName.Of(r.PatientName, r.PatientNameEn)"><i class="ki-outline ki-message-text fs-6"></i>@T["Contact attempt"]</button> }</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table></div>
+                    }
+                    <div class="mt-4 text-muted fs-8"><i class="ki-outline ki-information-5 fs-7"></i> @T["The booking message itself goes from the communication platform (WhatsApp, SMS); here the attempt is recorded."]</div>
+                </div>
+            </div></div>
+
+            <div class="col-xl-6"><div class="card mb-5">
+                <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
+                    <span class="card-label fw-bold text-gray-900 fs-4">@T["Sterilisation cycles"]</span>
+                    <span class="text-muted mt-1 fw-semibold fs-7">@T["Each kit is linked to its cycle, then to the patient it was used on"]</span>
+                </div></div>
+                <div class="card-body pt-2">
+                    @if (cycles.Count == 0) { <div class="text-center text-muted py-10">@T["No cycles recorded yet."]</div> }
+                    else
+                    {
+                        <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-3 mb-0">
+                            <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0"><th>@T["Cycle"]</th><th>@T["Unit"]</th><th>@T["Load"]</th><th>@T["Chemical"]</th><th>@T["Biological"]</th><th>@T["Used"]</th><th>@T["By"]</th></tr></thead>
+                            <tbody class="fw-semibold text-gray-700">
+                                @foreach (var c in cycles)
+                                {
+                                    <tr>
+                                        <td><span class="badge hp-code hp-num">@c.Cycle.CycleNo</span><div class="text-muted fs-8 hp-num mt-1">@c.Cycle.RunAt.ToString("yyyy-MM-dd HH:mm")</div></td>
+                                        <td class="text-nowrap">@c.Cycle.Unit</td>
+                                        <td class="fs-8">@c.Cycle.Load</td>
+                                        @foreach (var kind in new[] { "Chemical", "Biological" })
+                                        {
+                                            var v = kind == "Chemical" ? c.Cycle.Chemical : c.Cycle.Biological;
+                                            <td><span class="badge badge-@Ind(v) fs-9">@T["ind:" + kind + ":" + v]</span>
+                                                @if (canConsult && v == HospitalIndicator.Pending)
+                                                {
+                                                    <div class="d-flex gap-1 mt-1"><button type="button" class="btn btn-sm btn-light-success py-0 px-2 fs-9" data-ind="@c.Cycle.ID" data-kind="@kind" data-result="Pass" data-what="@c.Cycle.CycleNo">@T["Pass"]</button><button type="button" class="btn btn-sm btn-light-danger py-0 px-2 fs-9" data-ind="@c.Cycle.ID" data-kind="@kind" data-result="Fail" data-what="@c.Cycle.CycleNo">@T["Fail"]</button></div>
+                                                }</td>
+                                        }
+                                        <td><span class="hp-num fw-bold">@c.Used</span>
+                                            @if (canConsult && HospitalDentalPracticeRules.UseRefusal(c.Cycle) == null) { <button type="button" class="btn btn-icon btn-sm btn-light-primary w-25px h-25px ms-1" title="@T["A kit used on a patient"]" data-use="@c.Cycle.ID" data-what="@c.Cycle.CycleNo"><i class="ki-outline ki-plus fs-7"></i></button> }</td>
+                                        <td>@if (c.Operator != null) { <div class="d-flex align-items-center gap-2">@Html.Raw(Av(c.OperatorPhoto, c.OperatorEn ?? c.Operator, 25))<span class="fs-8">@c.Operator</span></div> } else {<text>—</text>}</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table></div>
+                    }
+                </div>
+            </div></div>
+        </div>
+    </div></div>
+</div>
+
+@if (canConsult)
+{
+    <div class="modal fade" id="cycleModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-550px"><div class="modal-content">
+        <div class="modal-header"><h2 class="fw-bold m-0 fs-4">@T["Sterilisation cycle"]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body py-6 px-lg-10"><div class="row g-4">
+            <div class="col-md-6"><label class="form-label required">@T["Unit"]</label><input class="form-control form-control-solid" maxlength="60" data-cy="unit" placeholder="@T["Autoclave 1"]" /></div>
+            <div class="col-md-6"><label class="form-label">@T["Run at"]</label><input type="datetime-local" class="form-control form-control-solid hp-num" data-cy="runAt" /></div>
+            <div class="col-12"><label class="form-label required">@T["Load"]</label><input class="form-control form-control-solid" maxlength="300" data-cy="load" placeholder="@T["Exam kits ×12, filling kits ×6"]" /></div>
+        </div></div>
+        <div class="modal-footer flex-center"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-cy-save>@T["Record"]</button></div>
+    </div></div></div>
+    <div class="modal fade" id="useModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-550px"><div class="modal-content">
+        <div class="modal-header"><h2 class="fw-bold m-0 fs-4">@T["A kit used on a patient"] <span class="text-muted fs-6 hp-num" data-use-what></span></h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body py-6 px-lg-10"><label class="form-label required">@T["Patient"]</label>
+            <select class="form-select form-select-solid" data-use-patient data-person-select data-person-ajax="@Url.Action("SearchDentalPatients")" data-searching="@T["Searching…"]" data-no-results="@T["No patient matches"]" data-placeholder="@T["Patient"]"><option value=""></option></select></div>
+        <div class="modal-footer flex-center"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-use-save>@T["Record"]</button></div>
+    </div></div></div>
+}
+
+@section Scripts {
+    <partial name="_PersonSelect" />
+    <script>
+        (function () {
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value, root = @Json.Serialize(Url.Content("~/Hospital/Dental"));
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value),
+                contact: @Json.Serialize(T["Record a contact attempt with {0}?"].Value), ind: @Json.Serialize(T["Record {1} for {0}? A result is not changed afterwards."].Value),
+                pass: @Json.Serialize(T["Pass"].Value), fail: @Json.Serialize(T["Fail"].Value), cycle: @Json.Serialize(T["Record this cycle?"].Value), use: @Json.Serialize(T["Record this kit as used on the patient?"].Value) };
+            function toast(k, m) { if (window.toastr) toastr[k](m); }
+            function post(url, body) {
+                return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(body || {}) })
+                    .then(function (r) { return r.json().catch(function () { return { ok: false }; }); });
+            }
+            function swap() {
+                return fetch(location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.text(); }).then(function (html) {
+                    var f = new DOMParser().parseFromString(html, 'text/html').getElementById('kt_app_content');
+                    if (f) document.getElementById('kt_app_content').innerHTML = f.innerHTML;
+                });
+            }
+            function done(btn, modal) { return function (res) { if (btn) btn.disabled = false; if (!res.ok) { toast('error', res.error || W.failed); return; } toast('success', W.saved); if (modal) bootstrap.Modal.getOrCreateInstance(modal).hide(); swap(); }; }
+            var cy = document.getElementById('cycleModal'), um = document.getElementById('useModal'), useCycle = null;
+            document.addEventListener('click', function (e) {
+                var t = e.target.closest('[data-contact],[data-ind],[data-cycle-open],[data-cy-save],[data-use],[data-use-save]'); if (!t) return;
+                if (t.hasAttribute('data-contact')) { cbConfirm(W.contact.replace('{0}', t.getAttribute('data-what'))).then(function (ok) { if (!ok) return; t.disabled = true; post(root + '/Recall/' + t.getAttribute('data-contact') + '/Contact').then(done(t)); }); return; }
+                if (t.hasAttribute('data-ind')) {
+                    var res = t.getAttribute('data-result');
+                    cbConfirm(W.ind.replace('{0}', t.getAttribute('data-what')).replace('{1}', res === 'Pass' ? W.pass : W.fail), { kind: res === 'Fail' ? 'danger' : 'primary' }).then(function (ok) {
+                        if (!ok) return; t.disabled = true; post(root + '/Steril/' + t.getAttribute('data-ind') + '/Indicator', { kind: t.getAttribute('data-kind'), result: res }).then(done(t));
+                    });
+                    return;
+                }
+                if (t.hasAttribute('data-cycle-open')) { cy.querySelectorAll('[data-cy]').forEach(function (i) { i.value = ''; }); bootstrap.Modal.getOrCreateInstance(cy).show(); return; }
+                if (t.hasAttribute('data-cy-save')) {
+                    var g = function (k) { return cy.querySelector('[data-cy=' + k + ']').value.trim(); };
+                    var body = { unit: g('unit'), load: g('load'), runAt: g('runAt') || null };
+                    cbConfirm(W.cycle).then(function (ok) { if (!ok) return; t.disabled = true; post(root + '/Steril', body).then(done(t, cy)); });
+                    return;
+                }
+                if (t.hasAttribute('data-use')) { useCycle = +t.getAttribute('data-use'); um.querySelector('[data-use-what]').textContent = t.getAttribute('data-what'); $(um.querySelector('[data-use-patient]')).val(null).trigger('change'); bootstrap.Modal.getOrCreateInstance(um).show(); return; }
+                var p = um.querySelector('[data-use-patient]').value;
+                cbConfirm(W.use).then(function (ok) { if (!ok) return; t.disabled = true; post(root + '/Steril/' + useCycle + '/Use', { patientId: +p || 0 }).then(done(t, um)); });
+            });
+        })();
+    </script>
+}

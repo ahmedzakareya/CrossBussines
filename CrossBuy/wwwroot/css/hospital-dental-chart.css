@@ -1,0 +1,20 @@
+/* ==========================================================================================
+   HOSPITAL — the odontogram's drawing (wwwroot/js/hospital/hospital-dental.js, `chart`). ONE stylesheet for both
+   screens that draw it: the dentist's chart and the patient's dental report on the portal, so they look the same.
+   No amber/yellow (house rule): red, red hatch, blue, green.
+   ========================================================================================== */
+.dn-chart { direction: ltr; overflow-x: auto; width: 0; min-width: 100%; }
+.dn-arch { display: flex; justify-content: center; align-items: flex-end; gap: 2px; min-width: 760px; } .dn-arch.dn-lower { align-items: flex-start; }
+.dn-mid { width: 2px; align-self: stretch; background: #CBD5E1; margin: 0 6px; }
+.dn-tooth { display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer; padding: 4px 1px; border-radius: 8px; }
+.dn-tooth:hover { background: #EEF4FF; } .dn-tooth.sel { background: #E7F0FF; box-shadow: inset 0 0 0 2px var(--cb-brand, #3A5795); }
+.dn-num { font-size: 11px; font-weight: 700; color: #475569; } .dn-missing .dn-num { color: #94A3B8; }
+.dn-legend .sw { display: inline-block; width: 14px; height: 14px; border-radius: 3px; margin-inline-end: 5px; vertical-align: -2px; border: 1px solid #CBD5E1; }
+
+/* the periodontal chart (perioArch) and the imaging tiles of the shared dental tabs */
+/* a tooth's three sites stay on one line: the arch scrolls sideways rather than wrapping them */
+#dn_perio_up td, #dn_perio_lo td, #pe_grid td { white-space: nowrap; }
+#dn_perio_up .table-responsive, #dn_perio_lo .table-responsive { width: 0; min-width: 100%; }
+.dn-xray { height: 120px; background: linear-gradient(135deg,#1F2937,#4B5563); display: flex; align-items: center; justify-content: center; }
+.pd-cell { width: 20px; text-align: center; font-weight: 700; font-size: 12px; } .pd-hi { color: #DC2626; }
+.pd-bop { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #DC2626; }

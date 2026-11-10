@@ -1,0 +1,415 @@
+{
+ "unit": "H57 — duplicate patient files",
+ "strings": {
+  "Both files have a dental chart: the dentist must reconcile them first": {
+   "ar": "للملفين مخطط أسنان: على طبيب الأسنان توحيدهما أولاً",
+   "en": "Both files have a dental chart: the dentist must reconcile them first",
+   "fr": "Les deux dossiers ont un schéma dentaire : le dentiste doit les réconcilier"
+  },
+  "Both files have a dental recall: keep one first": {
+   "ar": "للملفين موعد استدعاء أسنان: أبقِ واحداً أولاً",
+   "en": "Both files have a dental recall: keep one first",
+   "fr": "Les deux dossiers ont un rappel dentaire : n'en gardez qu'un"
+  },
+  "Both files have a patient portal account: keep one account first": {
+   "ar": "للملفين حساب في بوابة المريض: أبقِ حساباً واحداً أولاً",
+   "en": "Both files have a patient portal account: keep one account first",
+   "fr": "Les deux dossiers ont un compte portail : n'en gardez qu'un"
+  },
+  "Both files have an open ER visit: close one first": {
+   "ar": "للملفين زيارة طوارئ مفتوحة: أغلق إحداهما أولاً",
+   "en": "Both files have an open ER visit: close one first",
+   "fr": "Les deux dossiers ont une visite aux urgences ouverte : clôturez-en une"
+  },
+  "Both files have an open stay: discharge or transfer one first": {
+   "ar": "للملفين إقامة مفتوحة: أخرِج أو انقل أحدهما أولاً",
+   "en": "Both files have an open stay: discharge or transfer one first",
+   "fr": "Les deux dossiers ont un séjour ouvert : sortez-en un d'abord"
+  },
+  "Both files wait for an approval of the same service: answer one first": {
+   "ar": "للملفين طلب موافقة معلق لنفس الخدمة: أجب على أحدهما أولاً",
+   "en": "Both files wait for an approval of the same service: answer one first",
+   "fr": "Les deux dossiers attendent un accord pour le même service : répondez à l'un"
+  },
+  "Choose two different files": {
+   "ar": "اختر ملفين مختلفين",
+   "en": "Choose two different files",
+   "fr": "Choisissez deux dossiers différents"
+  },
+  "Compare": {
+   "ar": "مقارنة",
+   "en": "Compare",
+   "fr": "Comparer"
+  },
+  "Compare two files": {
+   "ar": "مقارنة ملفين",
+   "en": "Compare two files",
+   "fr": "Comparer deux dossiers"
+  },
+  "Duplicate files": {
+   "ar": "الملفات المكررة",
+   "en": "Duplicate files",
+   "fr": "Dossiers en double"
+  },
+  "Everything of the other file moves to the file you keep; the other file is closed, not deleted, and opening it opens the file you keep. Allergies and chronic conditions of both are kept.": {
+   "ar": "كل ما في الملف الآخر ينتقل إلى الملف الذي تبقيه؛ ويُغلق الملف الآخر دون حذف، وفتحه يفتح الملف الباقي. وتُحفظ حساسية وأمراض الملفين معاً.",
+   "en": "Everything of the other file moves to the file you keep; the other file is closed, not deleted, and opening it opens the file you keep. Allergies and chronic conditions of both are kept.",
+   "fr": "Tout l'autre dossier passe dans celui que vous gardez ; l'autre est fermé, non supprimé, et l'ouvrir ouvre celui gardé. Les allergies et maladies des deux sont conservées."
+  },
+  "Has a portal account": {
+   "ar": "له حساب في البوابة",
+   "en": "Has a portal account",
+   "fr": "A un compte portail"
+  },
+  "In hospital now": {
+   "ar": "منوّم الآن",
+   "en": "In hospital now",
+   "fr": "Hospitalisé"
+  },
+  "Medical records": {
+   "ar": "السجلات الطبية",
+   "en": "Medical records",
+   "fr": "Dossiers médicaux"
+  },
+  "Merge file {0} into file {1}? Everything of {0} moves to {1}, and {0} is closed. This cannot be undone from the screen.": {
+   "ar": "دمج الملف {0} في الملف {1}؟ ينتقل كل ما في {0} إلى {1} ويُغلق {0}. لا يمكن التراجع عن ذلك من الشاشة.",
+   "en": "Merge file {0} into file {1}? Everything of {0} moves to {1}, and {0} is closed. This cannot be undone from the screen.",
+   "fr": "Fusionner le dossier {0} dans le dossier {1} ? Tout {0} passe dans {1}, et {0} est fermé. Irréversible depuis l'écran."
+  },
+  "Merge the files": {
+   "ar": "دمج الملفين",
+   "en": "Merge the files",
+   "fr": "Fusionner les dossiers"
+  },
+  "Merges done": {
+   "ar": "عمليات الدمج السابقة",
+   "en": "Merges done",
+   "fr": "Fusions effectuées"
+  },
+  "Merging files is not installed yet (hospital_h57_patient_merge.sql).": {
+   "ar": "دمج الملفات غير مثبت بعد (hospital_h57_patient_merge.sql).",
+   "en": "Merging files is not installed yet (hospital_h57_patient_merge.sql).",
+   "fr": "La fusion des dossiers n'est pas encore installée (hospital_h57_patient_merge.sql)."
+  },
+  "No merge yet.": {
+   "ar": "لا توجد عمليات دمج بعد.",
+   "en": "No merge yet.",
+   "fr": "Aucune fusion pour le moment."
+  },
+  "No suspected duplicate.": {
+   "ar": "لا توجد ملفات مكررة مشتبه بها.",
+   "en": "No suspected duplicate.",
+   "fr": "Aucun doublon suspecté."
+  },
+  "One patient, one file": {
+   "ar": "مريض واحد، ملف واحد",
+   "en": "One patient, one file",
+   "fr": "Un patient, un dossier"
+  },
+  "Only the hospital administrator merges files. Tell them about this pair.": {
+   "ar": "دمج الملفات لمدير المستشفى فقط. أبلغه بهذين الملفين.",
+   "en": "Only the hospital administrator merges files. Tell them about this pair.",
+   "fr": "Seul l'administrateur fusionne les dossiers. Signalez-lui cette paire."
+  },
+  "Records": {
+   "ar": "السجلات",
+   "en": "Records",
+   "fr": "Enregistrements"
+  },
+  "Suspected duplicates": {
+   "ar": "ملفات مكررة مشتبه بها",
+   "en": "Suspected duplicates",
+   "fr": "Doublons suspectés"
+  },
+  "The file to keep": {
+   "ar": "الملف الذي يبقى",
+   "en": "The file to keep",
+   "fr": "Le dossier à garder"
+  },
+  "The files are merged": {
+   "ar": "دُمج الملفان",
+   "en": "The files are merged",
+   "fr": "Les dossiers sont fusionnés"
+  },
+  "Two files of one patient split the history: a doctor may miss an allergy recorded on the other. Files that share a mobile and a birth date, or a name and a birth date, are listed here; the hospital administrator merges them.": {
+   "ar": "ملفان لمريض واحد يقسمان تاريخه، وقد يفوت الطبيب حساسية مسجلة في الملف الآخر. تظهر هنا الملفات التي تشترك في الموبايل وتاريخ الميلاد، أو في الاسم وتاريخ الميلاد؛ ويدمجها مدير المستشفى.",
+   "en": "Two files of one patient split the history: a doctor may miss an allergy recorded on the other. Files that share a mobile and a birth date, or a name and a birth date, are listed here; the hospital administrator merges them.",
+   "fr": "Deux dossiers d'un patient divisent son historique : un médecin peut manquer une allergie notée dans l'autre. Les dossiers qui partagent un mobile et une date de naissance, ou un nom et une date de naissance, sont listés ici ; l'administrateur les fusionne."
+  },
+  "Why": {
+   "ar": "السبب",
+   "en": "Why",
+   "fr": "Pourquoi"
+  },
+  "Why are these one patient?": {
+   "ar": "لماذا هما مريض واحد؟",
+   "en": "Why are these one patient?",
+   "fr": "Pourquoi s'agit-il d'un seul patient ?"
+  },
+  "Write why these two files are one patient": {
+   "ar": "اكتب لماذا الملفان لمريض واحد",
+   "en": "Write why these two files are one patient",
+   "fr": "Indiquez pourquoi ces deux dossiers sont un seul patient"
+  },
+  "dup:records": {
+   "ar": "سجل",
+   "en": "records",
+   "fr": "enregistrements"
+  },
+  "records moved": {
+   "ar": "السجلات المنقولة",
+   "en": "records moved",
+   "fr": "enregistrements déplacés"
+  },
+  "suspected pairs": {
+   "ar": "زوج مشتبه به",
+   "en": "suspected pairs",
+   "fr": "paires suspectées"
+  },
+  "dupwhy:SamePhoneAndBirth": {
+   "ar": "نفس الموبايل وتاريخ الميلاد",
+   "en": "Same mobile and birth date",
+   "fr": "Même mobile et date de naissance"
+  },
+  "dupwhy:SameNameAndBirth": {
+   "ar": "نفس الاسم وتاريخ الميلاد",
+   "en": "Same name and birth date",
+   "fr": "Même nom et date de naissance"
+  },
+  "dupwhy:SameEnglishNameAndBirth": {
+   "ar": "نفس الاسم الإنجليزي وتاريخ الميلاد",
+   "en": "Same English name and birth date",
+   "fr": "Même nom anglais et date de naissance"
+  },
+  "dupwhy:SamePhoneAndName": {
+   "ar": "نفس الموبايل والاسم",
+   "en": "Same mobile and name",
+   "fr": "Même mobile et nom"
+  },
+  "dup:HospitalAdmissions": {
+   "ar": "إقامات",
+   "en": "Stays",
+   "fr": "Séjours"
+  },
+  "dup:HospitalAppointments": {
+   "ar": "مواعيد",
+   "en": "Appointments",
+   "fr": "Rendez-vous"
+  },
+  "dup:HospitalBedStays": {
+   "ar": "أسرّة",
+   "en": "Bed stays",
+   "fr": "Lits"
+  },
+  "dup:HospitalBills": {
+   "ar": "فواتير",
+   "en": "Bills",
+   "fr": "Factures"
+  },
+  "dup:HospitalClaims": {
+   "ar": "مطالبات",
+   "en": "Claims",
+   "fr": "Réclamations"
+  },
+  "dup:HospitalConsignments": {
+   "ar": "أمانات",
+   "en": "Consignments",
+   "fr": "Consignations"
+  },
+  "dup:HospitalControlledEntries": {
+   "ar": "أدوية خاضعة للرقابة",
+   "en": "Controlled doses",
+   "fr": "Stupéfiants"
+  },
+  "dup:HospitalDentalCharts": {
+   "ar": "مخطط أسنان",
+   "en": "Dental chart",
+   "fr": "Schéma dentaire"
+  },
+  "dup:HospitalDentalFindings": {
+   "ar": "علامات أسنان",
+   "en": "Dental findings",
+   "fr": "Constats dentaires"
+  },
+  "dup:HospitalDentalLabCases": {
+   "ar": "حالات معمل أسنان",
+   "en": "Dental lab cases",
+   "fr": "Cas labo dentaire"
+  },
+  "dup:HospitalDentalPlans": {
+   "ar": "خطط أسنان",
+   "en": "Dental plans",
+   "fr": "Plans dentaires"
+  },
+  "dup:HospitalDentalRecalls": {
+   "ar": "استدعاء أسنان",
+   "en": "Dental recalls",
+   "fr": "Rappels dentaires"
+  },
+  "dup:HospitalDietOrders": {
+   "ar": "أوامر غذائية",
+   "en": "Diet orders",
+   "fr": "Régimes"
+  },
+  "dup:HospitalDischargeSummaries": {
+   "ar": "ملخصات خروج",
+   "en": "Discharge summaries",
+   "fr": "Comptes rendus"
+  },
+  "dup:HospitalDispenses": {
+   "ar": "صرف أدوية",
+   "en": "Dispenses",
+   "fr": "Délivrances"
+  },
+  "dup:HospitalEncounters": {
+   "ar": "كشوفات",
+   "en": "Visits",
+   "fr": "Consultations"
+  },
+  "dup:HospitalErVisits": {
+   "ar": "زيارات طوارئ",
+   "en": "ER visits",
+   "fr": "Urgences"
+  },
+  "dup:HospitalEstimates": {
+   "ar": "تقديرات",
+   "en": "Estimates",
+   "fr": "Devis"
+  },
+  "dup:HospitalFeeStatementLines": {
+   "ar": "أتعاب",
+   "en": "Fee lines",
+   "fr": "Honoraires"
+  },
+  "dup:HospitalIcuAssessments": {
+   "ar": "تقييمات عناية",
+   "en": "ICU assessments",
+   "fr": "Évaluations réa"
+  },
+  "dup:HospitalIcuObservations": {
+   "ar": "ملاحظات عناية",
+   "en": "ICU observations",
+   "fr": "Observations réa"
+  },
+  "dup:HospitalImplants": {
+   "ar": "زرعات",
+   "en": "Implants",
+   "fr": "Implants"
+  },
+  "dup:HospitalIncidents": {
+   "ar": "بلاغات حوادث",
+   "en": "Incidents",
+   "fr": "Incidents"
+  },
+  "dup:HospitalLabOrders": {
+   "ar": "تحاليل",
+   "en": "Lab orders",
+   "fr": "Analyses"
+  },
+  "dup:HospitalMarEntries": {
+   "ar": "جرعات",
+   "en": "Doses given",
+   "fr": "Administrations"
+  },
+  "dup:HospitalMealOrders": {
+   "ar": "وجبات",
+   "en": "Meals",
+   "fr": "Repas"
+  },
+  "dup:HospitalMedDeliveries": {
+   "ar": "توصيل أدوية",
+   "en": "Medicine deliveries",
+   "fr": "Livraisons"
+  },
+  "dup:HospitalMedOrders": {
+   "ar": "أوامر أدوية",
+   "en": "Medicine orders",
+   "fr": "Prescriptions"
+  },
+  "dup:HospitalNursingTasks": {
+   "ar": "مهام تمريض",
+   "en": "Nursing tasks",
+   "fr": "Soins"
+  },
+  "dup:HospitalOrthoCases": {
+   "ar": "حالات تقويم",
+   "en": "Ortho cases",
+   "fr": "Orthodontie"
+  },
+  "dup:HospitalPatientPolicies": {
+   "ar": "وثائق تأمين",
+   "en": "Policies",
+   "fr": "Polices"
+  },
+  "dup:HospitalPerioExams": {
+   "ar": "فحوص لثة",
+   "en": "Perio exams",
+   "fr": "Parodontie"
+  },
+  "dup:HospitalPortalAccounts": {
+   "ar": "حساب البوابة",
+   "en": "Portal account",
+   "fr": "Compte portail"
+  },
+  "dup:HospitalPortalBookings": {
+   "ar": "حجوزات البوابة",
+   "en": "Portal bookings",
+   "fr": "Réservations portail"
+  },
+  "dup:HospitalPortalFamilyLinks": {
+   "ar": "روابط أسرة",
+   "en": "Family links",
+   "fr": "Liens famille"
+  },
+  "dup:HospitalPortalOffers": {
+   "ar": "عروض مواعيد",
+   "en": "Slot offers",
+   "fr": "Offres"
+  },
+  "dup:HospitalPortalRefills": {
+   "ar": "طلبات صرف",
+   "en": "Refills",
+   "fr": "Renouvellements"
+  },
+  "dup:HospitalPortalRequests": {
+   "ar": "طلبات حجز",
+   "en": "Booking requests",
+   "fr": "Demandes"
+  },
+  "dup:HospitalPreauths": {
+   "ar": "موافقات مسبقة",
+   "en": "Pre-authorisations",
+   "fr": "Accords"
+  },
+  "dup:HospitalRadOrders": {
+   "ar": "أشعة",
+   "en": "Imaging",
+   "fr": "Imagerie"
+  },
+  "dup:HospitalSickLeaves": {
+   "ar": "إجازات مرضية",
+   "en": "Sick leave",
+   "fr": "Arrêts"
+  },
+  "dup:HospitalSterilUses": {
+   "ar": "أطقم معقمة",
+   "en": "Sterile sets",
+   "fr": "Sets stériles"
+  },
+  "dup:HospitalSurgeries": {
+   "ar": "عمليات",
+   "en": "Operations",
+   "fr": "Interventions"
+  },
+  "dup:HospitalTransfusionRequests": {
+   "ar": "طلبات دم",
+   "en": "Blood requests",
+   "fr": "Transfusions"
+  },
+  "dup:PlatformDocuments": {
+   "ar": "مستندات",
+   "en": "Documents",
+   "fr": "Documents"
+  }
+ }
+}

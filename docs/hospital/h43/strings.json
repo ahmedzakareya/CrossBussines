@@ -1,0 +1,170 @@
+{
+  "unit": "H43 — clinical dietary",
+  "strings": {
+    "Choose the diet": {
+      "ar": "اختر النظام الغذائي",
+      "en": "Choose the diet",
+      "fr": "Choisissez le régime"
+    },
+    "Choose the round": {
+      "ar": "اختر الوجبة",
+      "en": "Choose the round",
+      "fr": "Choisissez le service"
+    },
+    "Diet": {
+      "ar": "النظام الغذائي",
+      "en": "Diet",
+      "fr": "Régime"
+    },
+    "Dietary": {
+      "ar": "التغذية",
+      "en": "Dietary",
+      "fr": "Diététique"
+    },
+    "Every patient's tray for this round is already sent": {
+      "ar": "أُرسلت صواني كل المرضى لهذه الوجبة من قبل",
+      "en": "Every patient's tray for this round is already sent",
+      "fr": "Les plateaux de tous les patients pour ce service sont déjà envoyés"
+    },
+    "Kitchen": {
+      "ar": "المطبخ",
+      "en": "Kitchen",
+      "fr": "Cuisine"
+    },
+    "No diet ordered: regular": {
+      "ar": "لم يُطلب نظام: عادي",
+      "en": "No diet ordered: regular",
+      "fr": "Aucun régime prescrit : normal"
+    },
+    "No patient is on this ward now.": {
+      "ar": "لا يوجد مرضى في هذا الجناح الآن.",
+      "en": "No patient is on this ward now.",
+      "fr": "Aucun patient dans ce service actuellement."
+    },
+    "No sent tray of this round waits to be served": {
+      "ar": "لا توجد صوانٍ مرسلة لهذه الوجبة بانتظار التوزيع",
+      "en": "No sent tray of this round waits to be served",
+      "fr": "Aucun plateau envoyé pour ce service n'attend d'être servi"
+    },
+    "Send to the kitchen": {
+      "ar": "إرسال للمطبخ",
+      "en": "Send to the kitchen",
+      "fr": "Envoyer en cuisine"
+    },
+    "Served": {
+      "ar": "وُزّعت",
+      "en": "Served",
+      "fr": "Servi"
+    },
+    "The dietary tables are not created yet (hospital_h43_dietary.sql)": {
+      "ar": "جداول التغذية لم تُنشأ بعد (hospital_h43_dietary.sql)",
+      "en": "The dietary tables are not created yet (hospital_h43_dietary.sql)",
+      "fr": "Les tables de diététique ne sont pas encore créées (hospital_h43_dietary.sql)"
+    },
+    "This patient is not admitted": {
+      "ar": "هذا المريض غير منوّم",
+      "en": "This patient is not admitted",
+      "fr": "Ce patient n'est pas hospitalisé"
+    },
+    "diet:ClearFluids": {
+      "ar": "سوائل",
+      "en": "Clear fluids",
+      "fr": "Liquides clairs"
+    },
+    "diet:Diabetic": {
+      "ar": "سكري",
+      "en": "Diabetic",
+      "fr": "Diabétique"
+    },
+    "diet:LowSalt": {
+      "ar": "قليل الملح",
+      "en": "Low salt",
+      "fr": "Pauvre en sel"
+    },
+    "diet:NPO": {
+      "ar": "صائم",
+      "en": "NPO",
+      "fr": "À jeun"
+    },
+    "diet:Regular": {
+      "ar": "عادي",
+      "en": "Regular",
+      "fr": "Normal"
+    },
+    "diet:Renal": {
+      "ar": "كلوي",
+      "en": "Renal",
+      "fr": "Rénal"
+    },
+    "diet:Soft": {
+      "ar": "لين",
+      "en": "Soft",
+      "fr": "Mixé"
+    },
+    "diet:TubeFeed": {
+      "ar": "تغذية أنبوبية",
+      "en": "Tube feed",
+      "fr": "Nutrition entérale"
+    },
+    "meal:Held": {
+      "ar": "موقوفة (صائم)",
+      "en": "Held (NPO)",
+      "fr": "Suspendu (à jeun)"
+    },
+    "meal:Sent": {
+      "ar": "أُرسلت",
+      "en": "Sent",
+      "fr": "Envoyé"
+    },
+    "meal:Served": {
+      "ar": "وُزّعت",
+      "en": "Served",
+      "fr": "Servi"
+    },
+    "round:Breakfast": {
+      "ar": "الإفطار",
+      "en": "Breakfast",
+      "fr": "Petit-déjeuner"
+    },
+    "round:Dinner": {
+      "ar": "العشاء",
+      "en": "Dinner",
+      "fr": "Dîner"
+    },
+    "round:Lunch": {
+      "ar": "الغداء",
+      "en": "Lunch",
+      "fr": "Déjeuner"
+    },
+    "round:Snack": {
+      "ar": "وجبة خفيفة",
+      "en": "Snack",
+      "fr": "Collation"
+    },
+    "{0} orders — {1}": {
+      "ar": "طلبات وجبة {0} — {1}",
+      "en": "{0} orders — {1}",
+      "fr": "Commandes du {0} — {1}"
+    },
+    "Change {0}'s diet from {1} to {2}?": {
+      "ar": "تغيير النظام الغذائي لـ {0} من «{1}» إلى «{2}»؟",
+      "en": "Change {0}'s diet from {1} to {2}?",
+      "fr": "Changer le régime de {0} de {1} à {2} ?"
+    },
+    "The tray already sent to the kitchen for this round changes too.": {
+      "ar": "وستتغير أيضًا الصينية المرسلة للمطبخ لهذه الوجبة.",
+      "en": "The tray already sent to the kitchen for this round changes too.",
+      "fr": "Le plateau déjà envoyé en cuisine pour ce service change aussi."
+    },
+    "Send this round's trays to the kitchen ({0})?": {
+      "ar": "إرسال صواني هذه الوجبة للمطبخ ({0})؟",
+      "en": "Send this round's trays to the kitchen ({0})?",
+      "fr": "Envoyer les plateaux de ce service en cuisine ({0}) ?"
+    },
+    "Mark this round's trays served ({0})? This cannot be undone.": {
+      "ar": "تسجيل توزيع صواني هذه الوجبة ({0})؟ لا يمكن التراجع عن ذلك.",
+      "en": "Mark this round's trays served ({0})? This cannot be undone.",
+      "fr": "Marquer les plateaux de ce service comme servis ({0}) ? C'est définitif."
+    }
+  }
+}

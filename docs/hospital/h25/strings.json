@@ -1,0 +1,515 @@
+{
+  "unit": "H25 — the patient portal (sign-in, registration, home, booking, appointments)",
+  "strings": {
+    "A new visit in this clinic needs a doctor's referral.": {
+      "en": "A new visit in this clinic needs a doctor's referral.",
+      "ar": "الكشف الجديد في هذه العيادة يحتاج تحويلاً من طبيب.",
+      "fr": "Une nouvelle visite dans cette clinique exige l'orientation d'un médecin."
+    },
+    "A note for the clinic": {
+      "en": "A note for the clinic",
+      "ar": "ملاحظة للعيادة",
+      "fr": "Une note pour la clinique"
+    },
+    "A user name has at least 4 characters": {
+      "en": "A user name has at least 4 characters",
+      "ar": "اسم المستخدم 4 أحرف على الأقل",
+      "fr": "Un nom d'utilisateur compte au moins 4 caractères"
+    },
+    "All appointments": {
+      "en": "All appointments",
+      "ar": "كل المواعيد",
+      "fr": "Tous les rendez-vous"
+    },
+    "Already have an account?": {
+      "en": "Already have an account?",
+      "ar": "لديك حساب بالفعل؟",
+      "fr": "Vous avez déjà un compte ?"
+    },
+    "Any time": {
+      "en": "Any time",
+      "ar": "أي وقت",
+      "fr": "N'importe quand"
+    },
+    "Assigned by the clinic": {
+      "en": "Assigned by the clinic",
+      "ar": "حددته العيادة",
+      "fr": "Désigné par la clinique"
+    },
+    "Awaiting the call centre": {
+      "en": "Awaiting the call centre",
+      "ar": "بانتظار مركز الاتصال",
+      "fr": "En attente du centre d'appels"
+    },
+    "Back": {
+      "en": "Back",
+      "ar": "السابق",
+      "fr": "Retour"
+    },
+    "Book and follow your visits, and your family's.": {
+      "en": "Book and follow your visits, and your family's.",
+      "ar": "احجز وتابع زياراتك وزيارات أسرتك.",
+      "fr": "Réservez et suivez vos visites et celles de votre famille."
+    },
+    "Book one in a minute": {
+      "en": "Book one in a minute",
+      "ar": "احجز موعدك في دقيقة",
+      "fr": "Réservez en une minute"
+    },
+    "Booking window": {
+      "en": "Booking window",
+      "ar": "أقصى مدة للحجز",
+      "fr": "Fenêtre de réservation"
+    },
+    "Cancel online up to": {
+      "en": "Cancel online up to",
+      "ar": "الإلغاء أونلاين قبل الموعد بـ",
+      "fr": "Annulation en ligne jusqu'à"
+    },
+    "Cancel or move it online up to {0} hours before; after that, call us.": {
+      "en": "Cancel or move it online up to {0} hours before; after that, call us.",
+      "ar": "الإلغاء أو التعديل أونلاين متاح حتى {0} ساعة قبل الموعد؛ بعدها اتصل بنا.",
+      "fr": "Annulez ou déplacez en ligne jusqu'à {0} heures avant ; ensuite, appelez-nous."
+    },
+    "Cancel this appointment?": {
+      "en": "Cancel this appointment?",
+      "ar": "إلغاء هذا الموعد؟",
+      "fr": "Annuler ce rendez-vous ?"
+    },
+    "Choose": {
+      "en": "Choose",
+      "ar": "اختيار",
+      "fr": "Choisir"
+    },
+    "Choose a password": {
+      "en": "Choose a password",
+      "ar": "اختر كلمة مرور",
+      "fr": "Choisissez un mot de passe"
+    },
+    "Choose a stronger password: at least 6 characters with a capital letter, a small letter, a digit and a symbol": {
+      "en": "Choose a stronger password: at least 6 characters with a capital letter, a small letter, a digit and a symbol",
+      "ar": "اختر كلمة مرور أقوى: 6 أحرف على الأقل فيها حرف كبير وحرف صغير ورقم ورمز",
+      "fr": "Choisissez un mot de passe plus fort : au moins 6 caractères avec une majuscule, une minuscule, un chiffre et un symbole"
+    },
+    "Choose the clinic and the reason, then the doctor and the time": {
+      "en": "Choose the clinic and the reason, then the doctor and the time",
+      "ar": "اختر العيادة وسبب الزيارة، ثم الطبيب والوقت",
+      "fr": "Choisissez la clinique et le motif, puis le médecin et l'heure"
+    },
+    "Choose the day and the hour": {
+      "en": "Choose the day and the hour",
+      "ar": "اختر اليوم والساعة",
+      "fr": "Choisissez le jour et l'heure"
+    },
+    "Choose your doctor": {
+      "en": "Choose your doctor",
+      "ar": "اختر طبيبك",
+      "fr": "Choisissez votre médecin"
+    },
+    "Chosen": {
+      "en": "Chosen",
+      "ar": "تم الاختيار",
+      "fr": "Choisi"
+    },
+    "Civil ID": {
+      "en": "Civil ID",
+      "ar": "الرقم المدني",
+      "fr": "N° d'identité civile"
+    },
+    "Confirm the booking": {
+      "en": "Confirm the booking",
+      "ar": "تأكيد الحجز",
+      "fr": "Confirmer la réservation"
+    },
+    "Create an account": {
+      "en": "Create an account",
+      "ar": "إنشاء حساب",
+      "fr": "Créer un compte"
+    },
+    "Day and hour": {
+      "en": "Day and hour",
+      "ar": "اليوم والساعة",
+      "fr": "Jour et heure"
+    },
+    "Days that suit you": {
+      "en": "Days that suit you",
+      "ar": "الأيام المناسبة لك",
+      "fr": "Les jours qui vous conviennent"
+    },
+    "Enter your name": {
+      "en": "Enter your name",
+      "ar": "أدخل اسمك",
+      "fr": "Saisissez votre nom"
+    },
+    "Enter your phone number": {
+      "en": "Enter your phone number",
+      "ar": "أدخل رقم هاتفك",
+      "fr": "Saisissez votre numéro de téléphone"
+    },
+    "Evening": {
+      "en": "Evening",
+      "ar": "مساءً",
+      "fr": "Soir"
+    },
+    "Hello": {
+      "en": "Hello",
+      "ar": "مرحباً",
+      "fr": "Bonjour"
+    },
+    "Home": {
+      "en": "Home",
+      "ar": "الرئيسية",
+      "fr": "Accueil"
+    },
+    "Less than {0} hours away: call us to change it": {
+      "en": "Less than {0} hours away: call us to change it",
+      "ar": "أقل من {0} ساعة: للتعديل اتصل بنا",
+      "fr": "Dans moins de {0} heures : appelez-nous pour le modifier"
+    },
+    "Morning": {
+      "en": "Morning",
+      "ar": "صباحاً",
+      "fr": "Matin"
+    },
+    "My appointments": {
+      "en": "My appointments",
+      "ar": "مواعيدي",
+      "fr": "Mes rendez-vous"
+    },
+    "My requests": {
+      "en": "My requests",
+      "ar": "طلباتي",
+      "fr": "Mes demandes"
+    },
+    "New to the hospital?": {
+      "en": "New to the hospital?",
+      "ar": "جديد على المستشفى؟",
+      "fr": "Nouveau à l'hôpital ?"
+    },
+    "No": {
+      "en": "No",
+      "ar": "لا",
+      "fr": "Non"
+    },
+    "No free times on this day.": {
+      "en": "No free times on this day.",
+      "ar": "لا توجد مواعيد متاحة في هذا اليوم.",
+      "fr": "Aucun créneau libre ce jour-là."
+    },
+    "No upcoming appointments": {
+      "en": "No upcoming appointments",
+      "ar": "لا توجد مواعيد قادمة",
+      "fr": "Aucun rendez-vous à venir"
+    },
+    "None.": {
+      "en": "None.",
+      "ar": "لا يوجد.",
+      "fr": "Aucun."
+    },
+    "Open requests": {
+      "en": "Open requests",
+      "ar": "طلبات مفتوحة",
+      "fr": "Demandes ouvertes"
+    },
+    "Password": {
+      "en": "Password",
+      "ar": "كلمة المرور",
+      "fr": "Mot de passe"
+    },
+    "Past": {
+      "en": "Past",
+      "ar": "السابقة",
+      "fr": "Passés"
+    },
+    "Patient & reason": {
+      "en": "Patient & reason",
+      "ar": "المريض والسبب",
+      "fr": "Patient et motif"
+    },
+    "Patient sign in": {
+      "en": "Patient sign in",
+      "ar": "دخول المرضى",
+      "fr": "Connexion patient"
+    },
+    "People on this account": {
+      "en": "People on this account",
+      "ar": "المسجّلون على هذا الحساب",
+      "fr": "Personnes sur ce compte"
+    },
+    "Preferred time": {
+      "en": "Preferred time",
+      "ar": "الوقت المفضّل",
+      "fr": "Moment souhaité"
+    },
+    "Reason for the visit": {
+      "en": "Reason for the visit",
+      "ar": "سبب الزيارة",
+      "fr": "Motif de la visite"
+    },
+    "Referral number": {
+      "en": "Referral number",
+      "ar": "رقم التحويل",
+      "fr": "Numéro d'orientation"
+    },
+    "Registration online is not open: please visit the hospital": {
+      "en": "Registration online is not open: please visit the hospital",
+      "ar": "التسجيل أونلاين غير متاح: يُرجى زيارة المستشفى",
+      "fr": "L'inscription en ligne n'est pas ouverte : veuillez vous rendre à l'hôpital"
+    },
+    "Relation": {
+      "en": "Relation",
+      "ar": "صلة القرابة",
+      "fr": "Lien de parenté"
+    },
+    "Remember me": {
+      "en": "Remember me",
+      "ar": "تذكرني",
+      "fr": "Se souvenir de moi"
+    },
+    "Review and confirm": {
+      "en": "Review and confirm",
+      "ar": "راجع وأكّد",
+      "fr": "Vérifier et confirmer"
+    },
+    "Send a booking request": {
+      "en": "Send a booking request",
+      "ar": "إرسال طلب حجز",
+      "fr": "Envoyer une demande de rendez-vous"
+    },
+    "Send a booking request and the call centre will call you; on your first visit the front desk checks who you are, and from then on you book directly.": {
+      "en": "Send a booking request and the call centre will call you; on your first visit the front desk checks who you are, and from then on you book directly.",
+      "ar": "أرسل طلب حجز وسيتصل بك مركز الاتصال؛ وفي أول زيارة يتحقق الاستقبال من هويتك، ومن بعدها تحجز بنفسك مباشرة.",
+      "fr": "Envoyez une demande et le centre d'appels vous rappellera ; à votre première visite l'accueil vérifie votre identité, puis vous réservez directement."
+    },
+    "Send the request": {
+      "en": "Send the request",
+      "ar": "إرسال الطلب",
+      "fr": "Envoyer la demande"
+    },
+    "Sign in": {
+      "en": "Sign in",
+      "ar": "دخول",
+      "fr": "Connexion"
+    },
+    "Sign out": {
+      "en": "Sign out",
+      "ar": "تسجيل الخروج",
+      "fr": "Déconnexion"
+    },
+    "The call centre calls you within one working day to confirm the time.": {
+      "en": "The call centre calls you within one working day to confirm the time.",
+      "ar": "يتصل بك مركز الاتصال خلال يوم عمل لتأكيد الموعد.",
+      "fr": "Le centre d'appels vous appelle sous un jour ouvré pour confirmer l'heure."
+    },
+    "The civil ID is digits only": {
+      "en": "The civil ID is digits only",
+      "ar": "الرقم المدني أرقام فقط",
+      "fr": "Le n° d'identité civile ne contient que des chiffres"
+    },
+    "The hospital checks who you are on your first visit; until then you can send booking requests": {
+      "en": "The hospital checks who you are on your first visit; until then you can send booking requests",
+      "ar": "يتحقق المستشفى من هويتك في أول زيارة؛ وحتى ذلك يمكنك إرسال طلبات حجز",
+      "fr": "L'hôpital vérifie votre identité à votre première visite ; d'ici là vous pouvez envoyer des demandes"
+    },
+    "The sign-in could not be created": {
+      "en": "The sign-in could not be created",
+      "ar": "تعذّر إنشاء بيانات الدخول",
+      "fr": "L'identifiant n'a pas pu être créé"
+    },
+    "The user name or the password is not right": {
+      "en": "The user name or the password is not right",
+      "ar": "اسم المستخدم أو كلمة المرور غير صحيحة",
+      "fr": "Le nom d'utilisateur ou le mot de passe est incorrect"
+    },
+    "Then the reason: it decides how long the visit is": {
+      "en": "Then the reason: it decides how long the visit is",
+      "ar": "ثم سبب الزيارة: هو الذي يحدد مدة الموعد",
+      "fr": "Puis le motif : il fixe la durée de la visite"
+    },
+    "This account already has its sign-in": {
+      "en": "This account already has its sign-in",
+      "ar": "لهذا الحساب بيانات دخول بالفعل",
+      "fr": "Ce compte a déjà son identifiant"
+    },
+    "This user name cannot be used": {
+      "en": "This user name cannot be used",
+      "ar": "لا يمكن استخدام اسم المستخدم هذا",
+      "fr": "Ce nom d'utilisateur ne peut pas être utilisé"
+    },
+    "This user name is taken": {
+      "en": "This user name is taken",
+      "ar": "اسم المستخدم مستخدم بالفعل",
+      "fr": "Ce nom d'utilisateur est déjà pris"
+    },
+    "Upcoming": {
+      "en": "Upcoming",
+      "ar": "القادمة",
+      "fr": "À venir"
+    },
+    "Upcoming visits": {
+      "en": "Upcoming visits",
+      "ar": "مواعيد قادمة",
+      "fr": "Visites à venir"
+    },
+    "User name": {
+      "en": "User name",
+      "ar": "اسم المستخدم",
+      "fr": "Nom d'utilisateur"
+    },
+    "Verified": {
+      "en": "Verified",
+      "ar": "موثّق",
+      "fr": "Vérifié"
+    },
+    "What would you like to do?": {
+      "en": "What would you like to do?",
+      "ar": "ماذا تريد أن تفعل؟",
+      "fr": "Que souhaitez-vous faire ?"
+    },
+    "When suits you?": {
+      "en": "When suits you?",
+      "ar": "متى يناسبك؟",
+      "fr": "Quand cela vous convient-il ?"
+    },
+    "Who is it for, and which clinic?": {
+      "en": "Who is it for, and which clinic?",
+      "ar": "لمن الموعد، وفي أي عيادة؟",
+      "fr": "Pour qui, et dans quelle clinique ?"
+    },
+    "Who is it for?": {
+      "en": "Who is it for?",
+      "ar": "لمن الموعد؟",
+      "fr": "Pour qui ?"
+    },
+    "Who, and which clinic": {
+      "en": "Who, and which clinic",
+      "ar": "المريض والعيادة",
+      "fr": "Qui, et quelle clinique"
+    },
+    "Withdraw": {
+      "en": "Withdraw",
+      "ar": "سحب",
+      "fr": "Retirer"
+    },
+    "Withdraw this request?": {
+      "en": "Withdraw this request?",
+      "ar": "سحب هذا الطلب؟",
+      "fr": "Retirer cette demande ?"
+    },
+    "Yes": {
+      "en": "Yes",
+      "ar": "نعم",
+      "fr": "Oui"
+    },
+    "You choose the time; the clinic assigns the first free doctor.": {
+      "en": "You choose the time; the clinic assigns the first free doctor.",
+      "ar": "تختار الوقت، والعيادة تحدد أول طبيب متاح فيه.",
+      "fr": "Vous choisissez l'heure ; la clinique désigne le premier médecin libre."
+    },
+    "Your account is not verified yet": {
+      "en": "Your account is not verified yet",
+      "ar": "حسابك لم يُوثّق بعد",
+      "fr": "Votre compte n'est pas encore vérifié"
+    },
+    "Your account is ready. Sign in to send your first request.": {
+      "en": "Your account is ready. Sign in to send your first request.",
+      "ar": "حسابك جاهز. سجّل الدخول لإرسال أول طلب.",
+      "fr": "Votre compte est prêt. Connectez-vous pour envoyer votre première demande."
+    },
+    "Your appointment is confirmed": {
+      "en": "Your appointment is confirmed",
+      "ar": "تم تأكيد موعدك",
+      "fr": "Votre rendez-vous est confirmé"
+    },
+    "Your appointments, your family's, in one place": {
+      "en": "Your appointments, your family's, in one place",
+      "ar": "مواعيدك ومواعيد أسرتك في مكان واحد",
+      "fr": "Vos rendez-vous et ceux de votre famille, au même endroit"
+    },
+    "Your file is linked on your first visit.": {
+      "en": "Your file is linked on your first visit.",
+      "ar": "يُربط ملفك في أول زيارة.",
+      "fr": "Votre dossier est rattaché à votre première visite."
+    },
+    "Your next appointment": {
+      "en": "Your next appointment",
+      "ar": "موعدك القادم",
+      "fr": "Votre prochain rendez-vous"
+    },
+    "Your request is sent": {
+      "en": "Your request is sent",
+      "ar": "تم إرسال طلبك",
+      "fr": "Votre demande est envoyée"
+    },
+    "days": {
+      "en": "days",
+      "ar": "يوم",
+      "fr": "jours"
+    },
+    "e.g. Sunday or Tuesday": {
+      "en": "e.g. Sunday or Tuesday",
+      "ar": "مثلاً: الأحد أو الثلاثاء",
+      "fr": "p. ex. dimanche ou mardi"
+    },
+    "h": {
+      "en": "h",
+      "ar": "ساعة",
+      "fr": "h"
+    },
+    "rel:Self": {
+      "en": "Me",
+      "ar": "أنا",
+      "fr": "Moi"
+    },
+    "rel:Spouse": {
+      "en": "Spouse",
+      "ar": "الزوج/الزوجة",
+      "fr": "Conjoint"
+    },
+    "rel:Child": {
+      "en": "Child",
+      "ar": "الابن/الابنة",
+      "fr": "Enfant"
+    },
+    "rel:Parent": {
+      "en": "Parent",
+      "ar": "الأب/الأم",
+      "fr": "Parent"
+    },
+    "rel:Other": {
+      "en": "Relative",
+      "ar": "قريب",
+      "fr": "Autre"
+    },
+    "Not working": {
+      "en": "Not working",
+      "ar": "لا يعمل",
+      "fr": "Absent"
+    },
+    "Fully booked": {
+      "en": "Fully booked",
+      "ar": "مكتمل",
+      "fr": "Complet"
+    },
+    "{0} free": {
+      "en": "{0} free",
+      "ar": "{0} متاح",
+      "fr": "{0} libres"
+    },
+    "Booked": {
+      "en": "Booked",
+      "ar": "محجوز",
+      "fr": "Réservé"
+    },
+    "Unavailable": {
+      "en": "Unavailable",
+      "ar": "غير متاح",
+      "fr": "Indisponible"
+    },
+    "Free time": {
+      "en": "Free",
+      "ar": "متاح",
+      "fr": "Libre"
+    }
+  }
+}

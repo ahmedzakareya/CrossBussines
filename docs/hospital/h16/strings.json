@@ -1,0 +1,765 @@
+{
+  "unit": "H16 — the dental practice (chair schedule, lab cases, recall & sterilisation)",
+  "strings": {
+    "A biological indicator failed": {
+      "en": "A biological indicator failed",
+      "ar": "فشل المؤشر الحيوي",
+      "fr": "Un indicateur biologique a échoué"
+    },
+    "A chemical indicator failed": {
+      "en": "A chemical indicator failed",
+      "ar": "فشل المؤشر الكيميائي",
+      "fr": "Un indicateur chimique a échoué"
+    },
+    "A cost cannot be negative": {
+      "en": "A cost cannot be negative",
+      "ar": "التكلفة لا تكون سالبة",
+      "fr": "Un coût ne peut pas être négatif"
+    },
+    "A cycle cannot be recorded before it runs": {
+      "en": "A cycle cannot be recorded before it runs",
+      "ar": "لا تُسجل الدورة قبل تشغيلها",
+      "fr": "Un cycle ne s'enregistre pas avant d'avoir tourné"
+    },
+    "A dental practice schedules chairs, not only doctors: a dentist moves between two chairs, the hygienist has her own, and sterilisation books the turnover time between patients.": {
+      "en": "A dental practice schedules chairs, not only doctors: a dentist moves between two chairs, the hygienist has her own, and sterilisation books the turnover time between patients.",
+      "ar": "عيادة الأسنان تُجدول على الكراسي لا على الأطباء فقط: الطبيب يتنقل بين كرسيين، وأخصائية صحة الفم لها كرسيها، والتعقيم يحجز وقت التجهيز بين المرضى.",
+      "fr": "Un cabinet dentaire planifie ses fauteuils, pas seulement ses praticiens : un dentiste passe d'un fauteuil à l'autre, l'hygiéniste a le sien, et la stérilisation réserve le temps entre deux patients."
+    },
+    "A kit used on a patient": {
+      "en": "A kit used on a patient",
+      "ar": "طقم استُعمل لمريض",
+      "fr": "Un kit utilisé pour un patient"
+    },
+    "A lab case has not arrived and its fit is close": {
+      "en": "A lab case has not arrived and its fit is close",
+      "ar": "حالة معمل لم تصل وموعد التركيب قريب",
+      "fr": "Un cas de labo n'est pas arrivé et sa pose approche"
+    },
+    "A prescription never leaves incomplete: tooth, type, material, shade, the due date asked": {
+      "en": "A prescription never leaves incomplete: tooth, type, material, shade, the due date asked",
+      "ar": "الوصفة لا تخرج ناقصة: السن، النوع، الخامة، اللون، تاريخ التسليم المطلوب",
+      "fr": "Une prescription ne part jamais incomplète : dent, type, matériau, teinte, date demandée"
+    },
+    "Alert two days before, not on the due day": {
+      "en": "Alert two days before, not on the due day",
+      "ar": "التنبيه قبل يومين لا يوم التسليم",
+      "fr": "Alerte deux jours avant, pas le jour même"
+    },
+    "Another chair uses this code": {
+      "en": "Another chair uses this code",
+      "ar": "كرسي آخر يستخدم هذا الرمز",
+      "fr": "Un autre fauteuil utilise ce code"
+    },
+    "Another patient is in this chair": {
+      "en": "Another patient is in this chair",
+      "ar": "يوجد مريض آخر على هذا الكرسي",
+      "fr": "Un autre patient est sur ce fauteuil"
+    },
+    "Autoclave 1": {
+      "en": "Autoclave 1",
+      "ar": "أوتوكلاف 1",
+      "fr": "Autoclave 1"
+    },
+    "Biological": {
+      "en": "Biological",
+      "ar": "حيوي",
+      "fr": "Biologique"
+    },
+    "Book this chair appointment?": {
+      "en": "Book this chair appointment?",
+      "ar": "حجز موعد الكرسي هذا؟",
+      "fr": "Réserver ce rendez-vous au fauteuil ?"
+    },
+    "Call the lab": {
+      "en": "Call the lab",
+      "ar": "اتصل بالمعمل",
+      "fr": "Appeler le labo"
+    },
+    "Case": {
+      "en": "Case",
+      "ar": "الحالة",
+      "fr": "Cas"
+    },
+    "Case pipeline": {
+      "en": "Case pipeline",
+      "ar": "مراحل الحالات",
+      "fr": "Étapes des cas"
+    },
+    "Chair": {
+      "en": "Chair",
+      "ar": "الكرسي",
+      "fr": "Fauteuil"
+    },
+    "Chair booking": {
+      "en": "Chair booking",
+      "ar": "موعد كرسي",
+      "fr": "Rendez-vous fauteuil"
+    },
+    "Chair occupancy": {
+      "en": "Chair occupancy",
+      "ar": "إشغال الكراسي",
+      "fr": "Occupation des fauteuils"
+    },
+    "Chair schedule": {
+      "en": "Chair schedule",
+      "ar": "جدول الكراسي",
+      "fr": "Planning des fauteuils"
+    },
+    "Chairs": {
+      "en": "Chairs",
+      "ar": "الكراسي",
+      "fr": "Fauteuils"
+    },
+    "Chemical": {
+      "en": "Chemical",
+      "ar": "كيميائي",
+      "fr": "Chimique"
+    },
+    "Choose the lab": {
+      "en": "Choose the lab",
+      "ar": "اختر المعمل",
+      "fr": "Choisissez le labo"
+    },
+    "Choose the type of work": {
+      "en": "Choose the type of work",
+      "ar": "اختر نوع العمل",
+      "fr": "Choisissez le type de travail"
+    },
+    "Contact attempt": {
+      "en": "Contact attempt",
+      "ar": "محاولة تواصل",
+      "fr": "Tentative de contact"
+    },
+    "Contact attempts": {
+      "en": "Contact attempts",
+      "ar": "محاولات تواصل",
+      "fr": "Tentatives de contact"
+    },
+    "Cost": {
+      "en": "Cost",
+      "ar": "التكلفة",
+      "fr": "Coût"
+    },
+    "Cycle": {
+      "en": "Cycle",
+      "ar": "الدورة",
+      "fr": "Cycle"
+    },
+    "Dental clinic": {
+      "en": "Dental clinic",
+      "ar": "عيادة الأسنان",
+      "fr": "Cabinet dentaire"
+    },
+    "Dental lab cases": {
+      "en": "Dental lab cases",
+      "ar": "معمل التركيبات",
+      "fr": "Cas de laboratoire dentaire"
+    },
+    "Due this month": {
+      "en": "Due this month",
+      "ar": "مستحقون هذا الشهر",
+      "fr": "Dus ce mois-ci"
+    },
+    "Each kit is linked to its cycle, then to the patient it was used on": {
+      "en": "Each kit is linked to its cycle, then to the patient it was used on",
+      "ar": "كل طقم يُربط بدورته ثم بالمريض الذي استُعمل له",
+      "fr": "Chaque kit est lié à son cycle, puis au patient pour lequel il a servi"
+    },
+    "Each slot is as long as its procedure: exam 30 min, hygiene 45, root canal 60, surgery 90": {
+      "en": "Each slot is as long as its procedure: exam 30 min, hygiene 45, root canal 60, surgery 90",
+      "ar": "كل موعد بمدة إجرائه: الكشف 30 دقيقة، التنظيف 45، العصب 60، الجراحة 90",
+      "fr": "Chaque créneau dure le temps de son acte : examen 30 min, hygiène 45, endodontie 60, chirurgie 90"
+    },
+    "Enter the material": {
+      "en": "Enter the material",
+      "ar": "اكتب الخامة",
+      "fr": "Saisissez le matériau"
+    },
+    "Enter the unit and what the load holds": {
+      "en": "Enter the unit and what the load holds",
+      "ar": "اكتب الجهاز ومحتوى الحمولة",
+      "fr": "Saisissez l'appareil et le contenu de la charge"
+    },
+    "Every 6 months by default; a finished preventive visit sets the next one. Booked before the patient leaves, then a message, a reminder, then reactivation.": {
+      "en": "Every 6 months by default; a finished preventive visit sets the next one. Booked before the patient leaves, then a message, a reminder, then reactivation.",
+      "ar": "كل 6 أشهر افتراضياً؛ زيارة الوقاية المنتهية تحدد الموعد التالي. يُحجز قبل خروج المريض، ثم رسالة، ثم تذكير، ثم حملة إعادة تنشيط.",
+      "fr": "Tous les 6 mois par défaut ; une visite de prévention terminée fixe la suivante. Réservé avant le départ du patient, puis un message, un rappel, puis la relance."
+    },
+    "Exam kits ×12, filling kits ×6": {
+      "en": "Exam kits ×12, filling kits ×6",
+      "ar": "أطقم فحص ×12، أطقم حشو ×6",
+      "fr": "Kits d'examen ×12, kits d'obturation ×6"
+    },
+    "Fail": {
+      "en": "Fail",
+      "ar": "فشل",
+      "fr": "Échec"
+    },
+    "Failed sterilisation cycle": {
+      "en": "Failed sterilisation cycle",
+      "ar": "دورة تعقيم فاشلة",
+      "fr": "Cycle de stérilisation en échec"
+    },
+    "Fit appointment": {
+      "en": "Fit appointment",
+      "ar": "موعد التركيب",
+      "fr": "Rendez-vous de pose"
+    },
+    "Hygiene recall": {
+      "en": "Hygiene recall",
+      "ar": "الاستدعاء الدوري",
+      "fr": "Rappel d'hygiène"
+    },
+    "If a case has not arrived two days before the fit, the desk is told to call the lab or move the appointment before the patient comes.": {
+      "en": "If a case has not arrived two days before the fit, the desk is told to call the lab or move the appointment before the patient comes.",
+      "ar": "إذا لم تصل الحالة قبل موعد التركيب بيومين يُنبَّه المكتب ليتصل بالمعمل أو يؤجل الموعد قبل حضور المريض.",
+      "fr": "Si un cas n'est pas arrivé deux jours avant la pose, l'accueil est prévenu pour appeler le labo ou déplacer le rendez-vous avant la venue du patient."
+    },
+    "Interval": {
+      "en": "Interval",
+      "ar": "الفترة",
+      "fr": "Intervalle"
+    },
+    "Lab cases": {
+      "en": "Lab cases",
+      "ar": "حالات المعمل",
+      "fr": "Cas de laboratoire"
+    },
+    "Lab cases at risk": {
+      "en": "Lab cases at risk",
+      "ar": "حالات معمل تهدد مواعيد",
+      "fr": "Cas de labo à risque"
+    },
+    "Lab cost this month": {
+      "en": "Lab cost this month",
+      "ar": "تكلفة المعامل هذا الشهر",
+      "fr": "Coût labo ce mois-ci"
+    },
+    "Lab prescription": {
+      "en": "Lab prescription",
+      "ar": "وصفة معمل",
+      "fr": "Prescription de laboratoire"
+    },
+    "Labs": {
+      "en": "Labs",
+      "ar": "المعامل",
+      "fr": "Laboratoires"
+    },
+    "Load": {
+      "en": "Load",
+      "ar": "الحمولة",
+      "fr": "Charge"
+    },
+    "Material": {
+      "en": "Material",
+      "ar": "الخامة",
+      "fr": "Matériau"
+    },
+    "Needs lab case": {
+      "en": "Needs lab case",
+      "ar": "ينتظر حالة المعمل",
+      "fr": "Attend le cas de labo"
+    },
+    "No chairs yet: add the practice's chairs first.": {
+      "en": "No chairs yet: add the practice's chairs first.",
+      "ar": "لا توجد كراسي بعد: أضف كراسي العيادة أولاً.",
+      "fr": "Aucun fauteuil : ajoutez d'abord les fauteuils du cabinet."
+    },
+    "No cycles recorded yet.": {
+      "en": "No cycles recorded yet.",
+      "ar": "لم تُسجل دورات بعد.",
+      "fr": "Aucun cycle enregistré."
+    },
+    "No lab cases yet.": {
+      "en": "No lab cases yet.",
+      "ar": "لا توجد حالات معمل بعد.",
+      "fr": "Aucun cas de labo pour l'instant."
+    },
+    "No recalls yet: a finished hygiene visit starts one.": {
+      "en": "No recalls yet: a finished hygiene visit starts one.",
+      "ar": "لا يوجد استدعاء بعد: زيارة صحة الفم المنتهية تبدأه.",
+      "fr": "Aucun rappel : une visite d'hygiène terminée en crée un."
+    },
+    "Nothing booked": {
+      "en": "Nothing booked",
+      "ar": "لا مواعيد",
+      "fr": "Rien de réservé"
+    },
+    "On hold": {
+      "en": "On hold",
+      "ar": "موقوف",
+      "fr": "En quarantaine"
+    },
+    "On time": {
+      "en": "On time",
+      "ar": "في موعدها",
+      "fr": "À l'heure"
+    },
+    "Open cases": {
+      "en": "Open cases",
+      "ar": "حالات مفتوحة",
+      "fr": "Cas ouverts"
+    },
+    "Pass": {
+      "en": "Pass",
+      "ar": "ناجح",
+      "fr": "Conforme"
+    },
+    "Phone": {
+      "en": "Phone",
+      "ar": "الهاتف",
+      "fr": "Téléphone"
+    },
+    "Plans accepted this month": {
+      "en": "Plans accepted this month",
+      "ar": "خطط مقبولة هذا الشهر",
+      "fr": "Plans acceptés ce mois-ci"
+    },
+    "Recall & sterilisation": {
+      "en": "Recall & sterilisation",
+      "ar": "الاستدعاء الدوري والتعقيم",
+      "fr": "Rappels et stérilisation"
+    },
+    "Recall pre-booked": {
+      "en": "Recall pre-booked",
+      "ar": "حجز مسبق للاستدعاء",
+      "fr": "Rappels pré-réservés"
+    },
+    "Record a contact attempt with {0}?": {
+      "en": "Record a contact attempt with {0}?",
+      "ar": "تسجيل محاولة تواصل مع {0}؟",
+      "fr": "Enregistrer une tentative de contact avec {0} ?"
+    },
+    "Record pass or fail": {
+      "en": "Record pass or fail",
+      "ar": "سجّل ناجح أو فشل",
+      "fr": "Enregistrez conforme ou échec"
+    },
+    "Record this cycle?": {
+      "en": "Record this cycle?",
+      "ar": "تسجيل هذه الدورة؟",
+      "fr": "Enregistrer ce cycle ?"
+    },
+    "Record this kit as used on the patient?": {
+      "en": "Record this kit as used on the patient?",
+      "ar": "تسجيل استعمال هذا الطقم للمريض؟",
+      "fr": "Enregistrer ce kit comme utilisé pour le patient ?"
+    },
+    "Record {1} for {0}? A result is not changed afterwards.": {
+      "en": "Record {1} for {0}? A result is not changed afterwards.",
+      "ar": "تسجيل «{1}» للدورة {0}؟ النتيجة لا تُعدّل بعد ذلك.",
+      "fr": "Enregistrer « {1} » pour {0} ? Un résultat ne se modifie plus ensuite."
+    },
+    "Remake rate": {
+      "en": "Remake rate",
+      "ar": "نسبة إعادة الصنع",
+      "fr": "Taux de refabrication"
+    },
+    "Run at": {
+      "en": "Run at",
+      "ar": "وقت التشغيل",
+      "fr": "Lancé à"
+    },
+    "Save this chair?": {
+      "en": "Save this chair?",
+      "ar": "حفظ هذا الكرسي؟",
+      "fr": "Enregistrer ce fauteuil ?"
+    },
+    "Save this lab?": {
+      "en": "Save this lab?",
+      "ar": "حفظ هذا المعمل؟",
+      "fr": "Enregistrer ce labo ?"
+    },
+    "Say whose fault the remake is, and why": {
+      "en": "Say whose fault the remake is, and why",
+      "ar": "حدد على من خطأ إعادة الصنع ولماذا",
+      "fr": "Indiquez à qui revient la refabrication, et pourquoi"
+    },
+    "Send the prescription": {
+      "en": "Send the prescription",
+      "ar": "إرسال الوصفة",
+      "fr": "Envoyer la prescription"
+    },
+    "Send this prescription to the lab?": {
+      "en": "Send this prescription to the lab?",
+      "ar": "إرسال هذه الوصفة إلى المعمل؟",
+      "fr": "Envoyer cette prescription au labo ?"
+    },
+    "Shade": {
+      "en": "Shade",
+      "ar": "اللون",
+      "fr": "Teinte"
+    },
+    "Stage": {
+      "en": "Stage",
+      "ar": "المرحلة",
+      "fr": "Étape"
+    },
+    "Sterilisation cycle": {
+      "en": "Sterilisation cycle",
+      "ar": "دورة تعقيم",
+      "fr": "Cycle de stérilisation"
+    },
+    "Sterilisation cycles": {
+      "en": "Sterilisation cycles",
+      "ar": "دورات التعقيم",
+      "fr": "Cycles de stérilisation"
+    },
+    "The booking message itself goes from the communication platform (WhatsApp, SMS); here the attempt is recorded.": {
+      "en": "The booking message itself goes from the communication platform (WhatsApp, SMS); here the attempt is recorded.",
+      "ar": "رسالة الحجز نفسها تخرج من منصة الرسائل (واتساب والرسائل القصيرة)؛ هنا تُسجل المحاولة.",
+      "fr": "Le message de réservation part de la plateforme de communication (WhatsApp, SMS) ; ici la tentative est enregistrée."
+    },
+    "The chair is taken at that time": {
+      "en": "The chair is taken at that time",
+      "ar": "الكرسي محجوز في هذا الوقت",
+      "fr": "Le fauteuil est pris à cette heure"
+    },
+    "The chair is the room": {
+      "en": "The chair is the room",
+      "ar": "الكرسي هو الغرفة",
+      "fr": "Le fauteuil est la salle"
+    },
+    "The clinic's": {
+      "en": "The clinic's",
+      "ar": "على العيادة",
+      "fr": "Le cabinet"
+    },
+    "The dentist is with another patient at that time": {
+      "en": "The dentist is with another patient at that time",
+      "ar": "الطبيب مع مريض آخر في هذا الوقت",
+      "fr": "Le dentiste est avec un autre patient à cette heure"
+    },
+    "The due date cannot be in the past": {
+      "en": "The due date cannot be in the past",
+      "ar": "تاريخ التسليم لا يكون في الماضي",
+      "fr": "La date due ne peut pas être passée"
+    },
+    "The lab's": {
+      "en": "The lab's",
+      "ar": "على المعمل",
+      "fr": "Le labo"
+    },
+    "This case cannot make that move": {
+      "en": "This case cannot make that move",
+      "ar": "هذه الحالة لا تنتقل لهذه المرحلة",
+      "fr": "Ce cas ne peut pas passer à cette étape"
+    },
+    "This indicator is already recorded": {
+      "en": "This indicator is already recorded",
+      "ar": "هذا المؤشر مسجل بالفعل",
+      "fr": "Cet indicateur est déjà enregistré"
+    },
+    "This cycle failed its indicator: its kits are held": {
+      "en": "This cycle failed its indicator: its kits are held",
+      "ar": "فشل مؤشر هذه الدورة: أطقمها موقوفة",
+      "fr": "Ce cycle a échoué à son indicateur : ses kits sont bloqués"
+    },
+    "Release the cycle on its chemical indicator first": {
+      "en": "Release the cycle on its chemical indicator first",
+      "ar": "اعتمد الدورة بمؤشرها الكيميائي أولاً",
+      "fr": "Libérez d'abord le cycle sur son indicateur chimique"
+    },
+    "Type & material": {
+      "en": "Type & material",
+      "ar": "النوع والخامة",
+      "fr": "Type et matériau"
+    },
+    "Type of work": {
+      "en": "Type of work",
+      "ar": "نوع العمل",
+      "fr": "Type de travail"
+    },
+    "Used": {
+      "en": "Used",
+      "ar": "استُعمل",
+      "fr": "Utilisés"
+    },
+    "Usually": {
+      "en": "Usually",
+      "ar": "يعمل عليه عادة",
+      "fr": "Habituellement"
+    },
+    "Visit": {
+      "en": "Visit",
+      "ar": "زيارة",
+      "fr": "Visite"
+    },
+    "Whose fault is the remake?": {
+      "en": "Whose fault is the remake?",
+      "ar": "على من خطأ إعادة الصنع؟",
+      "fr": "À qui revient la refabrication ?"
+    },
+    "Why is {0} remade?": {
+      "en": "Why is {0} remade?",
+      "ar": "لماذا يُعاد صنع {0}؟",
+      "fr": "Pourquoi {0} est-il refait ?"
+    },
+    "chairmv:Arrived": {
+      "en": "Arrived",
+      "ar": "وصل",
+      "fr": "Arrivé"
+    },
+    "chairmv:Done": {
+      "en": "Done",
+      "ar": "انتهى",
+      "fr": "Terminé"
+    },
+    "chairmv:InRoom": {
+      "en": "To the chair",
+      "ar": "إلى الكرسي",
+      "fr": "Au fauteuil"
+    },
+    "chairmv:NoShow": {
+      "en": "No-show",
+      "ar": "لم يحضر",
+      "fr": "Absent"
+    },
+    "chairst:Arrived": {
+      "en": "Arrived",
+      "ar": "وصل",
+      "fr": "Arrivé"
+    },
+    "chairst:Booked": {
+      "en": "Booked",
+      "ar": "محجوز",
+      "fr": "Réservé"
+    },
+    "chairst:Done": {
+      "en": "Done",
+      "ar": "انتهى",
+      "fr": "Terminé"
+    },
+    "chairst:InRoom": {
+      "en": "In the chair",
+      "ar": "على الكرسي",
+      "fr": "Au fauteuil"
+    },
+    "chairst:NoShow": {
+      "en": "No-show",
+      "ar": "لم يحضر",
+      "fr": "Absent"
+    },
+    "clinic's fault": {
+      "en": "clinic's fault",
+      "ar": "على العيادة",
+      "fr": "faute du cabinet"
+    },
+    "fit": {
+      "en": "fit",
+      "ar": "التركيب",
+      "fr": "pose"
+    },
+    "fit booked before receipt": {
+      "en": "fit booked before receipt",
+      "ar": "موعد التركيب قبل الاستلام",
+      "fr": "pose prévue avant réception"
+    },
+    "go into the reactivation campaign": {
+      "en": "go into the reactivation campaign",
+      "ar": "يدخلون حملة إعادة التنشيط",
+      "fr": "entrent dans la campagne de relance"
+    },
+    "ind:Biological:Fail": {
+      "en": "Fail",
+      "ar": "فشل",
+      "fr": "Échec"
+    },
+    "ind:Biological:Pass": {
+      "en": "Pass",
+      "ar": "ناجح",
+      "fr": "Conforme"
+    },
+    "ind:Biological:Pending": {
+      "en": "Incubating",
+      "ar": "قيد الحضانة",
+      "fr": "En incubation"
+    },
+    "ind:Chemical:Fail": {
+      "en": "Fail",
+      "ar": "فشل",
+      "fr": "Échec"
+    },
+    "ind:Chemical:Pass": {
+      "en": "Pass",
+      "ar": "ناجح",
+      "fr": "Conforme"
+    },
+    "ind:Chemical:Pending": {
+      "en": "Not read",
+      "ar": "لم يُقرأ",
+      "fr": "Non lu"
+    },
+    "its chair time is the slot's length": {
+      "en": "its chair time is the slot's length",
+      "ar": "مدة الإجراء هي مدة الموعد",
+      "fr": "son temps au fauteuil fait la durée du créneau"
+    },
+    "its kits are held and were used on no patient; they are re-sterilised and the unit is checked.": {
+      "en": "its kits are held and were used on no patient; they are re-sterilised and the unit is checked.",
+      "ar": "أطقم الدورة موقوفة عن الاستخدام ولم تُستعمل على أي مريض؛ يعاد تعقيمها ويُفحص الجهاز.",
+      "fr": "ses kits sont bloqués et n'ont servi à aucun patient ; ils sont restérilisés et l'appareil est vérifié."
+    },
+    "its kits are on hold": {
+      "en": "its kits are on hold",
+      "ar": "أطقمها موقوفة",
+      "fr": "ses kits sont bloqués"
+    },
+    "its kits reached these patients before the result; they are to be told and followed up:": {
+      "en": "its kits reached these patients before the result; they are to be told and followed up:",
+      "ar": "استُعملت أطقمها لهؤلاء المرضى قبل النتيجة؛ يُبلَّغون ويُتابَعون:",
+      "fr": "ses kits ont servi à ces patients avant le résultat ; ils sont à informer et à suivre :"
+    },
+    "lab's fault": {
+      "en": "lab's fault",
+      "ar": "على المعمل",
+      "fr": "faute du labo"
+    },
+    "last 90 days": {
+      "en": "last 90 days",
+      "ar": "آخر 90 يوماً",
+      "fr": "90 derniers jours"
+    },
+    "ltype:Aligner": {
+      "en": "Aligner",
+      "ar": "مصفف شفاف",
+      "fr": "Gouttière d'alignement"
+    },
+    "ltype:Bridge": {
+      "en": "Bridge",
+      "ar": "جسر",
+      "fr": "Bridge"
+    },
+    "ltype:Crown": {
+      "en": "Crown",
+      "ar": "تاج",
+      "fr": "Couronne"
+    },
+    "ltype:Denture": {
+      "en": "Denture",
+      "ar": "طقم أسنان",
+      "fr": "Prothèse amovible"
+    },
+    "ltype:ImplantCrown": {
+      "en": "Implant crown",
+      "ar": "تاج على زرعة",
+      "fr": "Couronne sur implant"
+    },
+    "ltype:Inlay": {
+      "en": "Inlay / onlay",
+      "ar": "حشوة معملية",
+      "fr": "Inlay / onlay"
+    },
+    "ltype:NightGuard": {
+      "en": "Night guard",
+      "ar": "واقي ليلي",
+      "fr": "Gouttière nocturne"
+    },
+    "ltype:Retainer": {
+      "en": "Retainer",
+      "ar": "مثبت تقويم",
+      "fr": "Contention"
+    },
+    "ltype:Veneer": {
+      "en": "Veneers",
+      "ar": "قشور (فينير)",
+      "fr": "Facettes"
+    },
+    "months": {
+      "en": "months",
+      "ar": "أشهر",
+      "fr": "mois"
+    },
+    "of plans worth": {
+      "en": "of plans worth",
+      "ar": "من خطط قيمتها",
+      "fr": "sur des plans de"
+    },
+    "of the open chair hours (08:00–16:00)": {
+      "en": "of the open chair hours (08:00–16:00)",
+      "ar": "من ساعات العمل المتاحة (08:00–16:00)",
+      "fr": "des heures d'ouverture des fauteuils (08:00–16:00)"
+    },
+    "of the recalls due within a month, already booked": {
+      "en": "of the recalls due within a month, already booked",
+      "ar": "من الاستدعاءات المستحقة خلال شهر، محجوزة بالفعل",
+      "fr": "des rappels dus sous un mois, déjà réservés"
+    },
+    "of them the lab's fault": {
+      "en": "of them the lab's fault",
+      "ar": "منها على المعمل",
+      "fr": "dont la faute du labo"
+    },
+    "recall:Booked": {
+      "en": "Booked",
+      "ar": "محجوز",
+      "fr": "Réservé"
+    },
+    "recall:NotDue": {
+      "en": "Not due",
+      "ar": "لم يحن",
+      "fr": "Pas encore dû"
+    },
+    "recall:Overdue": {
+      "en": "Overdue",
+      "ar": "متأخر",
+      "fr": "En retard"
+    },
+    "the patient's coming chair appointments": {
+      "en": "the patient's coming chair appointments",
+      "ar": "مواعيد المريض القادمة على الكراسي",
+      "fr": "les prochains rendez-vous du patient au fauteuil"
+    },
+    "what the labs charge for this month's cases": {
+      "en": "what the labs charge for this month's cases",
+      "ar": "ما تتقاضاه المعامل عن حالات هذا الشهر",
+      "fr": "ce que facturent les labos pour les cas du mois"
+    },
+    "{1}: {0}?": {
+      "en": "{1}: {0}?",
+      "ar": "{1}: {0}؟",
+      "fr": "{1} : {0} ?"
+    },
+    "over {0} chairs": {
+      "en": "over {0} chairs",
+      "ar": "على {0} كراسي",
+      "fr": "sur {0} fauteuils"
+    },
+    "dlab:Fabricating": {
+      "en": "Fabricating",
+      "ar": "قيد التصنيع",
+      "fr": "En fabrication"
+    },
+    "dlab:Fitted": {
+      "en": "Fitted",
+      "ar": "رُكّب",
+      "fr": "Posé"
+    },
+    "dlab:Prescribed": {
+      "en": "Prescribed",
+      "ar": "وصفة",
+      "fr": "Prescrit"
+    },
+    "dlab:Received": {
+      "en": "Received",
+      "ar": "استُلم",
+      "fr": "Reçu"
+    },
+    "dlab:Remake": {
+      "en": "Remake",
+      "ar": "إعادة صنع",
+      "fr": "Refabrication"
+    },
+    "dlab:Sent": {
+      "en": "Sent",
+      "ar": "أُرسل",
+      "fr": "Envoyé"
+    },
+    "dlab:Shipped": {
+      "en": "Shipped",
+      "ar": "في الطريق",
+      "fr": "Expédié"
+    }
+  }
+}

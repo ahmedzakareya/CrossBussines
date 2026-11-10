@@ -1,0 +1,84 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H64 — the break-glass log: every emergency opening of a restricted file, waiting ones first; the administrator marks
+    each justified or not (an unjustified one says why). Searched and paged on the server.
+*@
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Emergency access"].Value;
+    bool ready = ViewBag.Ready == true;
+    int waiting = ViewBag.Waiting as int? ?? 0, restricted = ViewBag.Restricted as int? ?? 0;
+    bool isAr = System.Globalization.CultureInfo.CurrentUICulture.Name.StartsWith("ar");
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Emergency access"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item text-muted">@T["Supply & quality"]</li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@T["Restricted files"]</li>
+            </ul>
+        </div>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (!ready) { <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice"><div class="fs-6 text-gray-700">@T[HospitalRestrictedAccessService.NoTables]</div></div> }
+        else
+        {
+            <div class="row g-5 mb-5">
+                <div class="col-md-6"><div class="card card-flush h-100"><div class="card-body py-5"><div class="text-muted fw-semibold fs-7 mb-1">@T["Openings waiting for review"]</div><div class="fs-2x fw-bold text-primary hp-num">@waiting</div></div></div></div>
+                <div class="col-md-6"><div class="card card-flush h-100"><div class="card-body py-5"><div class="text-muted fw-semibold fs-7 mb-1">@T["Restricted files"]</div><div class="fs-2x fw-bold text-gray-900 hp-num">@restricted</div>
+                    <div class="text-muted fs-8 mt-1">@T["A file is restricted from the patient's file page."]</div></div></div></div>
+            </div>
+            <div class="card">
+                <div class="card-header border-0 pt-6 flex-wrap gap-3">
+                    <div class="card-title flex-column m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Emergency openings"]</span><span class="text-muted fs-7 mt-1"><span id="resultCount">—</span></span></div>
+                    <div class="card-toolbar d-flex flex-wrap align-items-center gap-2">
+                        <div class="w-200px"><input type="text" id="f_q" class="form-control form-control-solid form-control-sm" autocomplete="off" placeholder="@T["Search by patient, MRN or employee…"]" /></div>
+                        <div class="w-150px"><select class="form-select form-select-solid form-select-sm cb-filter" id="f_state"><option value="">@T["All states"]</option><option value="waiting">@T["bg:waiting"]</option><option value="reviewed">@T["bg:reviewed"]</option></select></div>
+                        <div class="w-75px"><select id="f_size" class="form-select form-select-solid form-select-sm"><option value="25">25</option><option value="50">50</option><option value="100">100</option></select></div>
+                        <button type="button" id="f_reset" class="btn btn-sm btn-light" title="@T["Reset"]"><i class="ki-outline ki-arrows-circle fs-4"></i></button>
+                    </div>
+                </div>
+                <div class="card-body pt-2">
+                    <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-3 mb-0">
+                        <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0"><th>@T["bg:when"]</th><th>@T["bg:who"]</th><th>@T["Patient"]</th><th>@T["bg:why"]</th><th>@T["bg:review"]</th><th class="text-end"></th></tr></thead>
+                        <tbody class="fw-semibold text-gray-700" id="rows"></tbody>
+                    </table></div>
+                    <div class="text-center text-muted py-10 d-none" id="loadingRow"><span class="spinner-border spinner-border-sm me-2"></span>@T["Loading…"]</div>
+                    <div class="text-center text-muted py-10 d-none" id="emptyRow">@T["No emergency opening yet."]</div>
+                    <div class="d-flex flex-stack flex-wrap pt-5"><div class="fs-7 text-muted" id="pageInfo"></div><ul class="pagination" id="pager"></ul></div>
+                </div>
+            </div>
+        }
+    </div></div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            if (!document.getElementById('rows')) return;
+            var list = cbServerList({ url: @Json.Serialize(Url.Action("BreakGlassData")), isAr: @(isAr ? "true" : "false"), addParams: function (p) { p.set('state', document.getElementById('f_state').value); } });
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            var W = { saved: @Json.Serialize(T["Saved"].Value), failed: @Json.Serialize(T["The change could not be saved"].Value), ok: @Json.Serialize(T["Mark this opening justified?"].Value) };
+            document.addEventListener('click', function (e) {
+                var t = e.target.closest('[data-glass-review]'); if (!t) return;
+                var outcome = t.getAttribute('data-outcome');
+                var go = function (note) {
+                    t.disabled = true;
+                    fetch(@Json.Serialize(Url.Content("~/Hospital/BreakGlass/")) + t.getAttribute('data-glass-review') + '/Review', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify({ outcome: outcome, note: note }) })
+                        .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+                        .then(function (res) { t.disabled = false; if (!res.ok) { toastr.error(res.error || W.failed); return; } toastr.success(W.saved); list.reload(); });
+                };
+                if (outcome === 'Justified') cbConfirm(W.ok).then(function (ok) { if (ok) go(null); });
+                else cbPrompt(t.getAttribute('data-ask'), { kind: 'danger' }).then(function (why) { if (why != null) go(why); });
+            });
+        })();
+    </script>
+}

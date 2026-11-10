@@ -95,7 +95,22 @@ namespace CrossBuy.Controllers
 			Chrome();
 			ViewBag.Accounts = await PostingAccountsAsync(ctx, ct);
 			ViewBag.Currency = await _facility.CurrencyAsync(ctx, ct);
+			ViewBag.Insurance = await ClaimAccountingSvc.MappingAsync(ctx, ct);
+			ViewBag.Payers = (await InsuranceSvc.PayersAsync(ctx, DateTime.UtcNow, ct)).Select(p => p.Payer).Where(p => p.IsActive).ToList();
+			ViewBag.BloodMap = await BloodSvc.ProductServicesAsync(ctx, ct);   // H51
+			ViewBag.Services = await _billing.ServicesAsync(ctx, null, true, ct);
 			return View(await _billing.SettingsAsync(ctx, ct));
+		}
+
+		public sealed class HospitalBloodServicesInput { public Dictionary<string, int?> Map { get; set; } = new(); }
+
+		/// H51: what each blood product is charged as when a request is issued.
+		[HttpPost("Settings/Billing/Blood"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Manage)]
+		public async Task<IActionResult> SaveBloodProductServices([FromBody] HospitalBloodServicesInput input, CancellationToken ct = default)
+		{
+			var ctx = await ContextAsync(ct);
+			if (ctx == null || input == null) return NotFound(new { ok = false, code = "not_found" });
+			return Result(await BloodSvc.SaveProductServicesAsync(ctx, input.Map, ctx.EmployeeId, DateTime.UtcNow, ct));
 		}
 
 		[HttpPost("Settings/Billing"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Manage)]
@@ -141,6 +156,11 @@ namespace CrossBuy.Controllers
 			ViewBag.Currency = await _facility.CurrencyAsync(ctx, ct);
 			ViewBag.CanBill = await _access.CanAsync(ctx, HospitalActions.Bill, null, ct);
 			ViewBag.MyShift = ctx.EmployeeId is int me ? await _billing.OpenShiftOfAsync(ctx, me, ct) : null;
+			var (charity, charityReady) = await CharitySvc.ForBillAsync(ctx, v.Bill.ID, ct);   // H63
+			ViewBag.Charity = charity; ViewBag.CharityReady = charityReady;
+			ViewBag.CharityFunds = charityReady ? (await CharitySvc.FundsAsync(ctx, true, ct)).Funds.Where(f => f.AccountId != null).ToList() : new List<CrossBuy.Models.Context.Hospital.HospitalCharityFund>();
+			ViewBag.CanManage = await _access.CanAsync(ctx, HospitalActions.Manage, null, ct);
+			ViewBag.Me = ctx.EmployeeId;
 			if (v.Bill.AdmissionId is int adm) ViewBag.Admission = await _db.HospitalAdmissions.AsNoTracking().FirstOrDefaultAsync(a => a.ID == adm && a.CompanyId == ctx.CompanyId, ct);
 			if (v.Bill.EncounterId is int enc) ViewBag.Encounter = await _db.HospitalEncounters.AsNoTracking().FirstOrDefaultAsync(e => e.ID == enc && e.CompanyId == ctx.CompanyId, ct);
 			return View(v);

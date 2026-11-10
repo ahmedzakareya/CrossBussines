@@ -88,6 +88,8 @@ namespace CrossBuy.BL.Hospital
 			("IM", "الباطنة", "Internal medicine"), ("CARD", "القلب", "Cardiology"), ("PED", "الأطفال", "Paediatrics"),
 			("OBG", "النساء والولادة", "Obstetrics & gynaecology"), ("ORTH", "العظام", "Orthopaedics"), ("SURG", "الجراحة العامة", "General surgery"),
 			("ENT", "الأنف والأذن والحنجرة", "ENT"), ("DERM", "الجلدية", "Dermatology"), ("ER", "الطوارئ", "Emergency"),
+			// the dental pack's clinic (its chairs are booked on the chair schedule; the portal takes requests for it)
+			("DENT", "الأسنان", "Dentistry"),
 		};
 
 		/// The standard departments, for a hospital that has none yet. Adds only what is missing.
@@ -226,14 +228,18 @@ namespace CrossBuy.BL.Hospital
 			var day = input.Date.Date;
 			if (!HospitalVisitTypes.IsKnown(input.VisitType)) return HospitalResult.Fail("Unknown visit type");
 			if (day < today.Date) return HospitalResult.Fail("An appointment cannot be booked in the past");
+			if (await _db.HospitalPatients.AnyAsync(p => p.ID == input.PatientId && p.CompanyId == ctx.CompanyId && p.DeceasedAt != null, ct))
+				return HospitalResult.Fail("This patient is deceased");   // H59
 			var doc = await _db.HospitalPractitioners.AsNoTracking().FirstOrDefaultAsync(p => p.ID == input.PractitionerId && p.CompanyId == ctx.CompanyId && p.IsActive, ct);
 			var patient = await _db.HospitalPatients.AsNoTracking().FirstOrDefaultAsync(p => p.ID == input.PatientId && p.CompanyId == ctx.CompanyId && p.IsActive, ct);
 			if (doc == null || patient == null) return HospitalResult.Fail("not_found");
-			if (!doc.Days().Contains(day.DayOfWeek)) return HospitalResult.Fail("The doctor does not see patients on that day");
-			if (!Slots(doc).Contains(input.StartMinute)) return HospitalResult.Fail("That time is not one of the doctor's slots");
 			if (!LicenseValidOn(doc, day)) return HospitalResult.Fail("The doctor's licence has expired; booking is stopped until it is renewed");
+			// H26: the doctor's weekly sessions (or the single window until they are started), less the leave
+			var schedule = await HospitalScheduleLoader.OneAsync(_db, ctx.CompanyId, doc, day, day, ct);
+			if (!schedule.WorksOn(day)) return HospitalResult.Fail(schedule.WholeDayLeave(day) ? "The doctor is on leave that day" : "The doctor does not see patients on that day");
+			if (schedule.DurationAt(day, input.StartMinute) is not int duration) return HospitalResult.Fail("That time is not one of the doctor's slots");
 
-			int end = input.StartMinute + doc.SlotMinutes;
+			int end = input.StartMinute + duration;
 			var live = _db.HospitalAppointments.Where(a => a.CompanyId == ctx.CompanyId && a.AppointmentDate == day && a.Status != HospitalAppointmentStatus.Cancelled);
 			if (await live.AnyAsync(a => a.PractitionerId == doc.ID && a.StartMinute == input.StartMinute, ct))
 				return HospitalResult.Fail("That slot is already booked");
@@ -243,12 +249,13 @@ namespace CrossBuy.BL.Hospital
 			var row = new HospitalAppointment
 			{
 				CompanyId = ctx.CompanyId, PatientId = patient.ID, PractitionerId = doc.ID, AppointmentDate = day, StartMinute = input.StartMinute,
-				DurationMinutes = doc.SlotMinutes, VisitType = input.VisitType, Status = HospitalAppointmentStatus.Booked,
+				DurationMinutes = duration, VisitType = input.VisitType, Status = HospitalAppointmentStatus.Booked,
 				Note = Clean(input.Note, 400), CreatedAt = DateTime.UtcNow, CreatedByEmployeeId = employeeId,
 			};
 			_db.HospitalAppointments.Add(row);
 			try { await _db.SaveChangesAsync(ct); }
 			catch (DbUpdateException) { _db.Entry(row).State = EntityState.Detached; return HospitalResult.Fail("That slot is already booked"); }
+			await HospitalSmsService.QueueAppointmentAsync(_db, ctx.CompanyId, row.ID, HospitalSmsKind.Booked, employeeId, DateTime.UtcNow, ct);   // H70
 			return HospitalResult.Success(row.ID);
 		}
 
@@ -275,6 +282,7 @@ namespace CrossBuy.BL.Hospital
 			if (to == HospitalAppointmentStatus.InRoom) a.StartedAt = now;
 			if (to == HospitalAppointmentStatus.Done) a.FinishedAt = now;
 			await _db.SaveChangesAsync(ct);
+			if (to == HospitalAppointmentStatus.NoShow) await HospitalSmsService.QueueAppointmentAsync(_db, ctx.CompanyId, a.ID, HospitalSmsKind.NoShow, employeeId, DateTime.UtcNow, ct);   // H70
 			return HospitalResult.Success(a.ID);
 		}
 
@@ -296,6 +304,7 @@ namespace CrossBuy.BL.Hospital
 		{
 			var docs = await PractitionersAsync(ctx, ct);
 			var appts = await DayAsync(ctx, day, ct);
+			var sch = await HospitalScheduleLoader.LoadAsync(_db, ctx.CompanyId, docs.Select(d => d.Row).ToList(), day, day, ct);   // H26
 			return docs.Select(p =>
 			{
 				var mine = appts.Where(a => a.PractitionerId == p.Row.ID).ToList();
@@ -309,7 +318,7 @@ namespace CrossBuy.BL.Hospital
 				var late = waiting.Where(a => a.StartMinute < nowMinute)
 					.Select(a => Math.Min(nowMinute - a.StartMinute, a.ArrivedAt is DateTime arr ? Math.Max(0, (int)(nowUtc - arr).TotalMinutes) : nowMinute - a.StartMinute))
 					.DefaultIfEmpty(0).Max();
-				return new HospitalClinicCard(p, current, waiting, mine.Count(a => a.Status == HospitalAppointmentStatus.Done), next, late, p.Row.Days().Contains(day.DayOfWeek));
+				return new HospitalClinicCard(p, current, waiting, mine.Count(a => a.Status == HospitalAppointmentStatus.Done), next, late, sch[p.Row.ID].WorksOn(day));
 			}).Where(c => c.WorksToday || c.Current != null || c.Waiting.Count > 0).ToList();
 		}
 

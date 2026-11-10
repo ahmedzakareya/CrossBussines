@@ -1,0 +1,98 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H74 — the hospital's order sets: each a named protocol of medicines and nursing tasks a doctor places for an
+    inpatient in one step from the nursing station. Searched and paged on the server; a set opens to its lines.
+*@
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Order sets"].Value;
+    bool ready = ViewBag.Ready == true, canManage = ViewBag.CanManage == true;
+    var deps = (ViewBag.Departments as List<HospitalDepartment>) ?? new();
+    bool isAr = System.Globalization.CultureInfo.CurrentUICulture.Name.StartsWith("ar");
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Order sets"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted">@T["Pharmacy"]</li></ul>
+        </div>
+        @if (canManage && ready) { <button type="button" class="btn btn-sm btn-primary" data-new-set><i class="ki-outline ki-plus fs-4"></i>@T["New order set"]</button> }
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (!ready) { <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice"><div class="fs-6 text-gray-700">@T[HospitalOrderSetService.NoTables]</div></div> }
+        else
+        {
+            <div class="notice d-flex align-items-center rounded border border-primary border-dashed bg-light-primary p-5 mb-5">
+                <i class="ki-outline ki-questionnaire-tablet fs-2x text-primary me-4"></i>
+                <div class="fs-7 text-gray-700">@T["An order set is a protocol the hospital agrees once — its medicines and nursing tasks. A doctor places it for an inpatient from the nursing station in one step; every medicine goes through the drug-safety check."]</div>
+            </div>
+            <div class="card">
+                <div class="card-header border-0 pt-6 flex-wrap gap-3">
+                    <div class="card-title flex-column m-0"><span class="text-muted fs-7"><span id="resultCount">—</span></span></div>
+                    <div class="card-toolbar d-flex flex-wrap align-items-center gap-2">
+                        <div class="w-300px"><input type="text" id="f_q" class="form-control form-control-solid form-control-sm" autocomplete="off" placeholder="@T["Search by code or name…"]" /></div>
+                        <div class="w-75px"><select id="f_size" class="form-select form-select-solid form-select-sm"><option value="25">25</option><option value="50">50</option><option value="100">100</option></select></div>
+                        <button type="button" id="f_reset" class="btn btn-sm btn-light" title="@T["Reset"]"><i class="ki-outline ki-arrows-circle fs-4"></i></button>
+                    </div>
+                </div>
+                <div class="card-body pt-2">
+                    <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-3 mb-0">
+                        <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0"><th>@T["Code"]</th><th>@T["Name"]</th><th>@T["Department"]</th><th>@T["Lines"]</th><th>@T["Times placed"]</th><th>@T["State"]</th><th class="text-end"></th></tr></thead>
+                        <tbody id="rows"><tr id="loadingRow"><td colspan="7" class="text-center text-muted py-10">@T["Loading…"]</td></tr><tr id="emptyRow" class="d-none"><td colspan="7" class="text-center text-muted py-10">@T["No order sets yet."]</td></tr></tbody>
+                    </table></div>
+                    <div class="d-flex flex-stack flex-wrap pt-5"><div class="fs-7 text-muted" id="pageInfo"></div><ul class="pagination" id="pager"></ul></div>
+                </div>
+            </div>
+        }
+    </div></div>
+</div>
+
+@if (canManage)
+{
+    <div class="modal fade" id="setModal2" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-600px"><div class="modal-content">
+        <div class="modal-header"><h2 class="fw-bold m-0">@T["Order set"]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body py-6 px-lg-10"><div class="row g-4">
+            <div class="col-5"><label class="form-label required">@T["Code"]</label><input class="form-control form-control-solid" dir="ltr" maxlength="20" data-m="code" placeholder="CHEST-PAIN" /></div>
+            <div class="col-7"><label class="form-label">@T["Department"]</label><select class="form-select form-select-solid" data-m="departmentId"><option value="">@T["Any department"]</option>@foreach (var d in deps) { <option value="@d.ID">@DisplayName.Of(d.Name, d.NameEn ?? d.Name)</option> }</select></div>
+            <div class="col-12"><label class="form-label required">@T["Name (Arabic)"]</label><input class="form-control form-control-solid" dir="rtl" maxlength="150" data-m="name" /></div>
+            <div class="col-12"><label class="form-label required">@T["Name (English)"]</label><input class="form-control form-control-solid" dir="ltr" maxlength="150" data-m="nameEn" /></div>
+            <div class="col-12"><label class="form-check form-switch form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" data-m="isActive" checked /><span class="form-check-label">@T["In use"]</span></label></div>
+        </div></div>
+        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-set-save>@T["Save"]</button></div>
+    </div></div></div>
+}
+
+@section Scripts {
+    <script>
+        (function () {
+            if (!document.getElementById('rows')) return;
+            var list = cbServerList({ url: @Json.Serialize(Url.Action("OrderSetsData")), isAr: @(isAr ? "true" : "false") });
+            var mEl = document.getElementById('setModal2'); if (!mEl) return;
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value, editing = null;
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value), ask: @Json.Serialize(T["Save this order set?"].Value) };
+            function post(u, b) { return fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(b || {}) }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); }); }
+            document.addEventListener('click', function (e) {
+                var t = e.target.closest('[data-new-set],[data-edit-set],[data-set-save]'); if (!t) return;
+                if (t.hasAttribute('data-set-save')) {
+                    var body = editing ? { id: editing } : {};
+                    mEl.querySelectorAll('[data-m]').forEach(function (i) { var k = i.getAttribute('data-m'); body[k] = i.type === 'checkbox' ? i.checked : k === 'departmentId' ? (i.value ? Number(i.value) : null) : (i.value.trim() || null); });
+                    cbConfirm(W.ask).then(function (ok) { if (!ok) return; t.disabled = true;
+                        post(@Json.Serialize(Url.Action("SaveOrderSet")), body).then(function (res) { t.disabled = false; if (!res.ok) { toastr.error(res.error || W.failed); return; }
+                            toastr.success(W.saved); bootstrap.Modal.getOrCreateInstance(mEl).hide();
+                            if (!editing) location.href = @Json.Serialize(Url.Content("~/Hospital/OrderSets/")) + res.id; else list.reload(); }); });
+                    return;
+                }
+                editing = t.hasAttribute('data-edit-set') ? Number(t.getAttribute('data-edit-set')) : null;
+                var data = editing ? JSON.parse(t.getAttribute('data-row')) : null;
+                mEl.querySelectorAll('[data-m]').forEach(function (i) { var k = i.getAttribute('data-m'); if (i.type === 'checkbox') i.checked = data ? !!data[k] : true; else i.value = data && data[k] != null ? data[k] : ''; });
+                bootstrap.Modal.getOrCreateInstance(mEl).show();
+            });
+        })();
+    </script>
+}

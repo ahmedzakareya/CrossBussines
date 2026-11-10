@@ -25,6 +25,12 @@
     string facCur = currency?.Label(isAr) ?? "";
     bool foreign = Model.Foreign;
     var name = DisplayName.Of(p.Name, p.NameEn);
+    // H63: charity waivers on this bill — requested at the desk, decided by the administrator (never the requester)
+    var charity = (ViewBag.Charity as IReadOnlyList<HospitalCharityRow>) ?? Array.Empty<HospitalCharityRow>();
+    bool charityReady = ViewBag.CharityReady == true, canManage = ViewBag.CanManage == true;
+    var funds = (ViewBag.CharityFunds as List<HospitalCharityFund>) ?? new();
+    int? me = ViewBag.Me as int?;
+    bool canAskCharity = charityReady && canBill && !open && !foreign && t.Due > 0;
 }
 <link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
 @Html.AntiForgeryToken()
@@ -40,6 +46,13 @@
             </ul>
         </div>
         <div class="d-flex align-items-center gap-2 gap-lg-3 d-print-none">
+            @* the invoice and the receipt are Report Studio layouts of the bill — see _ReportPrintMenu *@
+            @await Html.PartialAsync("_ReportPrintMenu", new CrossBuy.BL.Reporting.ReportPrintMenuModel
+            {
+                ScreenKey = CrossBuy.BL.Reporting.ReportScreenKeys.HospitalBill,
+                DocumentId = b.ID.ToString(),
+                DocumentTitle = b.BillNo,
+            })
             @if (open && canBill)
             {
                 <button type="button" class="btn btn-sm btn-primary" data-close><i class="ki-outline ki-lock-2 fs-4"></i>@(b.AdmissionId != null ? T["Close the stay & post"] : T["Close the visit & post"])</button>
@@ -81,15 +94,22 @@
                 <span class="symbol symbol-45px me-5 flex-shrink-0"><span class="symbol-label"><i class="ki-outline ki-shield-tick fs-2x text-white"></i></span></span>
                 <div class="d-flex flex-stack flex-grow-1 flex-wrap flex-md-nowrap">
                     <div class="mb-3 mb-md-0 fw-semibold pe-5">
-                        @if (Model.List is HospitalPriceList onList)
+                        @* H18: who covers the bill, and so what the patient is asked for *@
+                        @if (Model.Cover is HospitalBillCover cv)
+                        {
+                            <h4 class="text-gray-900 fw-bold mb-1">@T["Covered by"] @DisplayName.Of(cv.Payer, cv.PayerEn) <span class="text-muted fs-7 fw-semibold">· @T["Co-pay"] <span class="hp-num">@cv.CopayPct.ToString("0.##")%</span></span></h4>
+                            <div class="fs-6 text-gray-700">@(cv.Frozen ? T["The split was fixed when the bill closed: the payer is claimed exactly this share."] : T["Split by the patient's cover today: the patient pays the co-pay and what the contract does not cover; the payer is claimed the rest."])
+                                @if (cv.Discount > 0) { <text> </text>@T["Contract discount (paid by neither side):"] <span class="hp-num fw-bold">@cv.Discount.ToString("N3", System.Globalization.CultureInfo.InvariantCulture)</span> }</div>
+                        }
+                        else if (Model.List is HospitalPriceList onList)
                         {
                             <h4 class="text-gray-900 fw-bold mb-1">@DisplayName.Of(onList.Name, onList.NameEn) <span class="text-muted fs-7 fw-semibold">· @T["kind:" + onList.Kind]</span></h4>
-                            <div class="fs-6 text-gray-700">@T["Priced from the patient's list, in its currency. Insurer shares and co-pays arrive with the insurance unit; until then the patient's share is the whole bill."]</div>
+                            <div class="fs-6 text-gray-700">@T["Priced from the patient's list, in its currency. No cover applies to this bill: the patient pays it in full."]</div>
                         }
                         else
                         {
                             <h4 class="text-gray-900 fw-bold mb-1">@T["Cash patient"]</h4>
-                            <div class="fs-6 text-gray-700">@T["The patient pays the bill in full; insurer shares and co-pays arrive with the insurance unit. Tax applies only to services marked taxable."]</div>
+                            <div class="fs-6 text-gray-700">@T["No cover applies to this bill: the patient pays it in full. Tax applies only to services marked taxable."]</div>
                         }
                     </div>
                     <span class="badge hp-badge fs-7 fw-bold px-4 py-2 flex-shrink-0">@T["VAT"] <span class="hp-num ms-1">@Model.VatRatePercent.ToString("0.##")%</span></span>
@@ -189,6 +209,54 @@
                 </div>
             </div>
             <div class="col-xl-5">
+                @if (charityReady && (charity.Count > 0 || canAskCharity))
+                {
+                    <div class="card mb-5" data-charity-card>
+                        <div class="card-header border-0 pt-6"><div class="card-title flex-column m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Charity"]</span>
+                            <span class="text-muted fs-7 mt-1">@T["A fund waives part of what the patient owes; the administrator approves it."]</span></div></div>
+                        <div class="card-body pt-2">
+                            @foreach (var r in charity)
+                            {
+                                var g = r.Grant;
+                                string badge = g.Status == HospitalCharityStatus.Approved ? "badge-light-success" : g.Status == HospitalCharityStatus.Refused ? "badge-light-danger" : "badge-light-primary";
+                                <div class="border border-dashed border-gray-300 rounded p-4 mb-3" data-charity-row="@g.ID">
+                                    <div class="d-flex flex-stack flex-wrap gap-2">
+                                        <div><span class="badge hp-code fs-8 hp-num">@g.GrantNo</span> <span class="badge @badge fs-8">@T["ch:" + g.Status]</span></div>
+                                        <div class="fw-bold hp-num">@M(g.Amount) <span class="text-muted fs-8">@cur</span></div>
+                                    </div>
+                                    <div class="fs-7 text-gray-700 mt-2">@DisplayName.Of(r.Fund, r.FundEn) · <span dir="auto">@g.Reason</span></div>
+                                    <div class="fs-8 text-muted mt-1">@T["Asked by"] @DisplayName.Of(r.RequestedBy, r.RequestedByEn)@if (r.DecidedBy != null) {<span> · @T["Decided by"] @DisplayName.Of(r.DecidedBy, r.DecidedByEn ?? r.DecidedBy)</span>}@if (g.DecisionNote != null) {<span dir="auto"> · @g.DecisionNote</span>}</div>
+                                    @if (g.Status == HospitalCharityStatus.Requested && canManage && me != g.RequestedByEmployeeId)
+                                    {
+                                        <div class="d-flex gap-2 mt-3">
+                                            <button type="button" class="btn btn-sm btn-primary" data-charity-decide="@g.ID" data-approve="1" data-ask="@string.Format(T["Approve waiver {0} of {1} {2}? It posts to the fund and the patient owes that much less."].Value, g.GrantNo, M(g.Amount), cur)"><i class="ki-outline ki-check fs-5"></i>@T["Approve"]</button>
+                                            <button type="button" class="btn btn-sm btn-light-danger" data-charity-decide="@g.ID" data-approve="0" data-ask="@string.Format(T["Why is waiver {0} refused?"].Value, g.GrantNo)">@T["Refuse"]</button>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            @if (canAskCharity)
+                            {
+                                if (funds.Count == 0)
+                                {
+                                    <div class="text-muted fs-7">@T["No charity fund with an expense account yet."] <a href="@Url.Action("Charity")" class="fw-bold">@T["Charity cases"]</a></div>
+                                }
+                                else
+                                {
+                                    <div class="row g-4 mt-1" data-charity-form>
+                                        <div class="col-7"><label class="form-label fs-7 required">@T["Fund"]</label>
+                                            <select class="form-select form-select-solid" data-ch="fundId">@foreach (var f in funds) { <option value="@f.ID">@DisplayName.Of(f.Name, f.NameEn)</option> }</select></div>
+                                        <div class="col-5"><label class="form-label fs-7 required">@T["Amount"]</label>
+                                            <input class="form-control form-control-solid hp-num" data-ch="amount" value="@M(t.Due).Replace(",", "")" /></div>
+                                        <div class="col-12"><label class="form-label fs-7 required">@T["Why the patient needs the help"]</label>
+                                            <textarea class="form-control form-control-solid" rows="2" maxlength="500" dir="auto" data-ch="reason"></textarea></div>
+                                        <div class="col-12"><button type="button" class="btn btn-light-primary w-100" data-charity-ask data-ask="@T["Ask for this charity waiver? The administrator approves or refuses it."]"><i class="ki-outline ki-heart fs-4"></i>@T["Ask for a charity waiver"]</button></div>
+                                    </div>
+                                }
+                            }
+                        </div>
+                    </div>
+                }
                 @* Money is collected while anything is owed - a closed bill too: a patient often pays after discharge. *@
                 @if (canBill && (open || t.Due > 0))
                 {
@@ -255,6 +323,8 @@
     </div></div>
 </div>
 
+@await Html.PartialAsync("_ReportPreviewModal", (object)(T["Bill"].Value + " " + b.BillNo))
+
 @section Scripts {
     <script>
         (function () {
@@ -302,6 +372,25 @@
                         post(urls.close).then(function (res) { closeBtn.disabled = false; if (!res.ok) { toast('error', res.error || W.failed); return; } toast('success', W.saved); refresh(); });
                     });
                 }
+            });
+            // H63: a charity request (asks first) and the administrator's decision (a refusal says why)
+            document.addEventListener('click', function (e) {
+                var t = e.target.closest('[data-charity-ask],[data-charity-decide]'); if (!t) return;
+                var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+                function send(u, b) {
+                    t.disabled = true;
+                    fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(b) })
+                        .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+                        .then(function (res) { t.disabled = false; if (!res.ok) { toast('error', res.error || W.failed); return; } toast('success', W.saved); location.reload(); });
+                }
+                if (t.hasAttribute('data-charity-ask')) {
+                    var f = document.querySelector('[data-charity-form]'), v = function (k) { return f.querySelector('[data-ch=' + k + ']').value; };
+                    cbConfirm(t.getAttribute('data-ask')).then(function (ok) { if (ok) send(@Json.Serialize(Url.Action("RequestCharity", new { id = b.ID })), { fundId: +v('fundId'), amount: +(v('amount') || 0), reason: v('reason') }); });
+                    return;
+                }
+                var url = @Json.Serialize(Url.Content("~/Hospital/Charity/")) + t.getAttribute('data-charity-decide') + '/Decide';
+                if (t.getAttribute('data-approve') === '1') cbConfirm(t.getAttribute('data-ask')).then(function (ok) { if (ok) send(url, { approve: true }); });
+                else cbPrompt(t.getAttribute('data-ask'), { kind: 'danger' }).then(function (why) { if (why != null) send(url, { approve: false, note: why }); });
             });
             document.querySelectorAll('[data-utc]').forEach(function (el) { var d = new Date(el.getAttribute('data-utc').replace(/Z?$/, 'Z')); if (!isNaN(d)) el.textContent = d.toISOString().slice(0, 10) + ' ' + d.toTimeString().slice(0, 5); });
         })();

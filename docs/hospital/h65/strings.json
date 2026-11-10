@@ -1,0 +1,320 @@
+{
+ "unit": "H65 — satisfaction surveys",
+ "strings": {
+  "A visit, stay or emergency visit of the last {0} days, not surveyed yet. Hand the tablet to the patient.": {
+   "ar": "زيارة أو إقامة أو زيارة طوارئ خلال آخر {0} يوماً ولم يُقيَّم بعد. سلّم الجهاز اللوحي للمريض.",
+   "en": "A visit, stay or emergency visit of the last {0} days, not surveyed yet. Hand the tablet to the patient.",
+   "fr": "Une consultation, un séjour ou un passage aux urgences des {0} derniers jours, pas encore évalué. Donnez la tablette au patient."
+  },
+  "Add the standard questions": {
+   "ar": "إضافة الأسئلة القياسية",
+   "en": "Add the standard questions",
+   "fr": "Ajouter les questions standard"
+  },
+  "Add the standard survey questions? You can change them afterwards.": {
+   "ar": "إضافة أسئلة الاستبيان القياسية؟ يمكنك تعديلها بعد ذلك.",
+   "en": "Add the standard survey questions? You can change them afterwards.",
+   "fr": "Ajouter les questions standard ? Vous pourrez les modifier ensuite."
+  },
+  "Another question has this code": {
+   "ar": "يوجد سؤال آخر بهذا الرمز",
+   "en": "Another question has this code",
+   "fr": "Une autre question a ce code"
+  },
+  "Answer every question": {
+   "ar": "أجب عن كل الأسئلة",
+   "en": "Answer every question",
+   "fr": "Répondez à chaque question"
+  },
+  "Answer how likely you are to recommend us": {
+   "ar": "أجب عن مدى احتمال أن توصي بنا",
+   "en": "Answer how likely you are to recommend us",
+   "fr": "Indiquez si vous nous recommanderiez"
+  },
+  "Anything you would like to tell us?": {
+   "ar": "هل تحب أن تقول لنا شيئاً؟",
+   "en": "Anything you would like to tell us?",
+   "fr": "Souhaitez-vous nous dire quelque chose ?"
+  },
+  "Average satisfaction": {
+   "ar": "متوسط الرضا",
+   "en": "Average satisfaction",
+   "fr": "Satisfaction moyenne"
+  },
+  "Choose the kind of care": {
+   "ar": "اختر نوع الرعاية",
+   "en": "Choose the kind of care",
+   "fr": "Choisissez le type de soins"
+  },
+  "Choose the visit": {
+   "ar": "اختر الزيارة",
+   "en": "Choose the visit",
+   "fr": "Choisissez la visite"
+  },
+  "Close the follow-up": {
+   "ar": "إغلاق المتابعة",
+   "en": "Close the follow-up",
+   "fr": "Clore le suivi"
+  },
+  "Each kind of care has its own questions, answered 1 to 5.": {
+   "ar": "لكل نوع رعاية أسئلته، والإجابة من 1 إلى 5.",
+   "en": "Each kind of care has its own questions, answered 1 to 5.",
+   "fr": "Chaque type de soins a ses questions, notées de 1 à 5."
+  },
+  "Each question": {
+   "ar": "كل سؤال",
+   "en": "Each question",
+   "fr": "Chaque question"
+  },
+  "Extremely likely": {
+   "ar": "بالتأكيد",
+   "en": "Extremely likely",
+   "fr": "Très probable"
+  },
+  "Follow-ups open": {
+   "ar": "متابعات مفتوحة",
+   "en": "Follow-ups open",
+   "fr": "Suivis ouverts"
+  },
+  "Give the question a code of up to 20 characters": {
+   "ar": "أعطِ السؤال رمزاً لا يزيد عن 20 حرفاً",
+   "en": "Give the question a code of up to 20 characters",
+   "fr": "Donnez à la question un code de 20 caractères au plus"
+  },
+  "How likely are you to recommend us to family and friends?": {
+   "ar": "ما مدى احتمال أن توصي بنا لعائلتك وأصدقائك؟",
+   "en": "How likely are you to recommend us to family and friends?",
+   "fr": "Recommanderiez-vous notre hôpital à vos proches ?"
+  },
+  "Net promoter score": {
+   "ar": "صافي نقاط الترويج (NPS)",
+   "en": "Net promoter score",
+   "fr": "Net Promoter Score (NPS)"
+  },
+  "No follow-up needed or done": {
+   "ar": "لا تحتاج متابعة أو تمت",
+   "en": "No follow-up needed or done",
+   "fr": "Sans suivi ou suivi fait"
+  },
+  "No recent visit is waiting for a survey.": {
+   "ar": "لا توجد زيارات حديثة بانتظار التقييم.",
+   "en": "No recent visit is waiting for a survey.",
+   "fr": "Aucune visite récente n'attend d'évaluation."
+  },
+  "No survey yet.": {
+   "ar": "لا توجد استبيانات بعد.",
+   "en": "No survey yet.",
+   "fr": "Aucune enquête pour l'instant."
+  },
+  "Not at all likely": {
+   "ar": "مستبعد تماماً",
+   "en": "Not at all likely",
+   "fr": "Pas du tout probable"
+  },
+  "Open the survey": {
+   "ar": "فتح الاستبيان",
+   "en": "Open the survey",
+   "fr": "Ouvrir l'enquête"
+  },
+  "Patient survey": {
+   "ar": "استبيان المريض",
+   "en": "Patient survey",
+   "fr": "Enquête patient"
+  },
+  "Promoters (9–10) less detractors (0–6)": {
+   "ar": "المروّجون (9–10) ناقص المنتقدين (0–6)",
+   "en": "Promoters (9–10) less detractors (0–6)",
+   "fr": "Promoteurs (9–10) moins détracteurs (0–6)"
+  },
+  "Responses": {
+   "ar": "الإجابات",
+   "en": "Responses",
+   "fr": "Réponses"
+  },
+  "Satisfaction surveys": {
+   "ar": "استبيانات رضا المرضى",
+   "en": "Satisfaction surveys",
+   "fr": "Enquêtes de satisfaction"
+  },
+  "Satisfaction surveys are not installed yet (hospital_h65_surveys.sql).": {
+   "ar": "استبيانات الرضا غير مثبتة بعد (hospital_h65_surveys.sql).",
+   "en": "Satisfaction surveys are not installed yet (hospital_h65_surveys.sql).",
+   "fr": "Les enquêtes de satisfaction ne sont pas encore installées (hospital_h65_surveys.sql)."
+  },
+  "Save this question?": {
+   "ar": "حفظ هذا السؤال؟",
+   "en": "Save this question?",
+   "fr": "Enregistrer cette question ?"
+  },
+  "Search by patient, number or comment…": {
+   "ar": "ابحث بالمريض أو الرقم أو التعليق…",
+   "en": "Search by patient, number or comment…",
+   "fr": "Rechercher par patient, numéro ou commentaire…"
+  },
+  "Send my answers": {
+   "ar": "إرسال إجاباتي",
+   "en": "Send my answers",
+   "fr": "Envoyer mes réponses"
+  },
+  "Send my answers without my name": {
+   "ar": "أرسل إجاباتي بدون اسمي",
+   "en": "Send my answers without my name",
+   "fr": "Envoyer mes réponses sans mon nom"
+  },
+  "Send your answers?": {
+   "ar": "إرسال إجاباتك؟",
+   "en": "Send your answers?",
+   "fr": "Envoyer vos réponses ?"
+  },
+  "Surveys": {
+   "ar": "الاستبيانات",
+   "en": "Surveys",
+   "fr": "Enquêtes"
+  },
+  "Take a survey": {
+   "ar": "بدء استبيان",
+   "en": "Take a survey",
+   "fr": "Faire une enquête"
+  },
+  "Thank you for helping us improve": {
+   "ar": "شكراً لمساعدتنا على التحسن",
+   "en": "Thank you for helping us improve",
+   "fr": "Merci de nous aider à nous améliorer"
+  },
+  "Thank you — your answers were received": {
+   "ar": "شكراً لك — وصلتنا إجاباتك",
+   "en": "Thank you — your answers were received",
+   "fr": "Merci — vos réponses ont été reçues"
+  },
+  "The last {0} days": {
+   "ar": "آخر {0} يوماً",
+   "en": "The last {0} days",
+   "fr": "Les {0} derniers jours"
+  },
+  "The questions": {
+   "ar": "الأسئلة",
+   "en": "The questions",
+   "fr": "Les questions"
+  },
+  "There are no questions for this kind of care yet": {
+   "ar": "لا توجد أسئلة لهذا النوع من الرعاية بعد",
+   "en": "There are no questions for this kind of care yet",
+   "fr": "Pas encore de questions pour ce type de soins"
+  },
+  "This survey has no open follow-up": {
+   "ar": "هذا الاستبيان ليس له متابعة مفتوحة",
+   "en": "This survey has no open follow-up",
+   "fr": "Cette enquête n'a pas de suivi ouvert"
+  },
+  "This visit was already surveyed, or is too old to survey": {
+   "ar": "تم تقييم هذه الزيارة بالفعل، أو مضى عليها وقت طويل",
+   "en": "This visit was already surveyed, or is too old to survey",
+   "fr": "Cette visite a déjà été évaluée, ou est trop ancienne"
+  },
+  "What was done about survey {0}?": {
+   "ar": "ما الذي تم بخصوص الاستبيان {0}؟",
+   "en": "What was done about survey {0}?",
+   "fr": "Qu'a-t-on fait pour l'enquête {0} ?"
+  },
+  "Write the question in Arabic and English": {
+   "ar": "اكتب السؤال بالعربية والإنجليزية",
+   "en": "Write the question in Arabic and English",
+   "fr": "Rédigez la question en arabe et en anglais"
+  },
+  "Write what was done": {
+   "ar": "اكتب ما تم",
+   "en": "Write what was done",
+   "fr": "Indiquez ce qui a été fait"
+  },
+  "{0} questions were added": {
+   "ar": "أُضيف {0} سؤالاً",
+   "en": "{0} questions were added",
+   "fr": "{0} questions ajoutées"
+  },
+  "sv:comment": {
+   "ar": "التعليق",
+   "en": "Comment",
+   "fr": "Commentaire"
+  },
+  "sv:followup": {
+   "ar": "المتابعة",
+   "en": "Follow-up",
+   "fr": "Suivi"
+  },
+  "sv:kind": {
+   "ar": "النوع",
+   "en": "Kind",
+   "fr": "Type"
+  },
+  "sv:no": {
+   "ar": "رقم الاستبيان",
+   "en": "Survey no.",
+   "fr": "N° d'enquête"
+  },
+  "sv:recommend": {
+   "ar": "التوصية (0–10)",
+   "en": "Recommend (0–10)",
+   "fr": "Recommandation (0–10)"
+  },
+  "sv:score": {
+   "ar": "الرضا",
+   "en": "Satisfaction",
+   "fr": "Satisfaction"
+  },
+  "sv:Visit": {
+   "ar": "زيارة عيادة",
+   "en": "Clinic visit",
+   "fr": "Consultation"
+  },
+  "sv:Stay": {
+   "ar": "إقامة",
+   "en": "Stay",
+   "fr": "Séjour"
+  },
+  "sv:Emergency": {
+   "ar": "الطوارئ",
+   "en": "Emergency",
+   "fr": "Urgences"
+  },
+  "svf:Done": {
+   "ar": "تمت المتابعة",
+   "en": "Followed up",
+   "fr": "Suivi fait"
+  },
+  "svf:Open": {
+   "ar": "تحتاج متابعة",
+   "en": "Needs follow-up",
+   "fr": "À suivre"
+  },
+  "svr:1": {
+   "ar": "سيئ جداً",
+   "en": "Very poor",
+   "fr": "Très mauvais"
+  },
+  "svr:2": {
+   "ar": "سيئ",
+   "en": "Poor",
+   "fr": "Mauvais"
+  },
+  "svr:3": {
+   "ar": "مقبول",
+   "en": "Fair",
+   "fr": "Correct"
+  },
+  "svr:4": {
+   "ar": "جيد",
+   "en": "Good",
+   "fr": "Bien"
+  },
+  "svr:5": {
+   "ar": "ممتاز",
+   "en": "Excellent",
+   "fr": "Excellent"
+  },
+  "Choose from 1 (very poor) to 5 (excellent). It takes a minute.": {
+   "ar": "اختر من 1 (سيئ جداً) إلى 5 (ممتاز). لن يستغرق أكثر من دقيقة.",
+   "en": "Choose from 1 (very poor) to 5 (excellent). It takes a minute.",
+   "fr": "Choisissez de 1 (très mauvais) à 5 (excellent). Cela prend une minute."
+  }
+ }
+}

@@ -1,0 +1,138 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H73 — the hospital's drug-safety knowledge base, kept by the pharmacy: the medicines that interact (a pair, its
+    severity, the effect in Arabic and English) and the dose limits (single and daily, by route); and the record of the
+    alerts doctors went past, with their reasons. Each list is searched and paged on the server; every write asks first.
+*@
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Drug interactions & doses"].Value;
+    bool ready = ViewBag.Ready == true, canKeep = ViewBag.CanKeep == true;
+    string tab = ViewBag.Tab as string ?? "interactions";
+    var counts = ViewBag.Counts is ValueTuple<int, int, int> c ? c : (0, 0, 0);
+    bool isAr = System.Globalization.CultureInfo.CurrentUICulture.Name.StartsWith("ar");
+    int cols = tab == "limits" ? 7 : tab == "overrides" ? 5 : 5;
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Drug interactions & doses"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted">@T["Pharmacy"]</li></ul>
+        </div>
+        @if (canKeep && ready && tab != "overrides")
+        {
+            <button type="button" class="btn btn-sm btn-primary" data-ds-new><i class="ki-outline ki-plus fs-4"></i>@(tab == "limits" ? T["Add a dose limit"] : T["Add an interaction"])</button>
+        }
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (!ready) { <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice"><div class="fs-6 text-gray-700">@T[HospitalDrugSafetyService.NoTables]</div></div> }
+        else
+        {
+            <div class="notice d-flex align-items-center rounded border border-primary border-dashed bg-light-primary p-5 mb-5">
+                <i class="ki-outline ki-shield-tick fs-2x text-primary me-4"></i>
+                <div class="fs-7 text-gray-700">@T["A doctor's order that meets a contraindication, a major interaction or a dose above its limit stops until the doctor writes why it is still right. A moderate interaction is shown and does not stop the order. The pharmacist sees every interaction in the review."]</div>
+            </div>
+            <ul class="nav nav-tabs nav-line-tabs nav-line-tabs-2x fs-6 fw-semibold mb-5 border-0">
+                @foreach (var (k, label, n) in new[] { ("interactions", T["Interactions"].Value, counts.Item1), ("limits", T["Dose limits"].Value, counts.Item2), ("overrides", T["Alerts gone past"].Value, counts.Item3) })
+                {
+                    <li class="nav-item"><a class="nav-link text-active-primary @(tab == k ? "active" : "")" href="@Url.Action("DrugSafety", new { tab = k })">@label <span class="badge badge-light ms-2 hp-num">@n</span></a></li>
+                }
+            </ul>
+            <div class="card">
+                <div class="card-header border-0 pt-6 flex-wrap gap-3">
+                    <div class="card-title flex-column m-0"><span class="text-muted fs-7"><span id="resultCount">—</span></span></div>
+                    <div class="card-toolbar d-flex flex-wrap align-items-center gap-2">
+                        <div class="w-300px"><input type="text" id="f_q" class="form-control form-control-solid form-control-sm" autocomplete="off" placeholder="@T["Search by medicine or text…"]" /></div>
+                        @if (tab == "interactions")
+                        {
+                            <div class="w-175px"><select class="form-select form-select-solid form-select-sm cb-filter" id="f_sev"><option value="">@T["All severities"]</option>@foreach (var s in HospitalInteractionSeverity.All) { <option value="@s">@T["sev:" + s]</option> }</select></div>
+                        }
+                        <div class="w-75px"><select id="f_size" class="form-select form-select-solid form-select-sm"><option value="25">25</option><option value="50">50</option><option value="100">100</option></select></div>
+                        <button type="button" id="f_reset" class="btn btn-sm btn-light" title="@T["Reset"]"><i class="ki-outline ki-arrows-circle fs-4"></i></button>
+                    </div>
+                </div>
+                <div class="card-body pt-2">
+                    <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-3 mb-0">
+                        <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0">
+                            @if (tab == "limits") { <th>@T["Medicine"]</th><th>@T["Route"]</th><th>@T["Single dose limit"]</th><th>@T["Daily limit"]</th><th>@T["Note"]</th><th>@T["State"]</th><th class="text-end"></th> }
+                            else if (tab == "overrides") { <th>@T["Time"]</th><th>@T["Patient"]</th><th>@T["Alert"]</th><th class="min-w-250px">@T["Reason"]</th><th>@T["By"]</th> }
+                            else { <th>@T["Medicines"]</th><th>@T["Severity"]</th><th class="min-w-300px">@T["Effect"]</th><th>@T["State"]</th><th class="text-end"></th> }
+                        </tr></thead>
+                        <tbody id="rows"><tr id="loadingRow"><td colspan="@cols" class="text-center text-muted py-10">@T["Loading…"]</td></tr><tr id="emptyRow" class="d-none"><td colspan="@cols" class="text-center text-muted py-10">@T["Nothing yet."]</td></tr></tbody>
+                    </table></div>
+                    <div class="d-flex flex-stack flex-wrap pt-5"><div class="fs-7 text-muted" id="pageInfo"></div><ul class="pagination" id="pager"></ul></div>
+                </div>
+            </div>
+        }
+    </div></div>
+</div>
+
+@if (canKeep && tab == "interactions")
+{
+    <div class="modal fade" id="dsModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-650px"><div class="modal-content">
+        <div class="modal-header"><h2 class="fw-bold m-0">@T["Interaction"]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body py-6 px-lg-10"><div class="row g-4">
+            <div class="col-6"><label class="form-label required">@T["First medicine"]</label><input class="form-control form-control-solid" dir="ltr" maxlength="80" data-m="drugA" placeholder="warfarin" /></div>
+            <div class="col-6"><label class="form-label required">@T["Second medicine"]</label><input class="form-control form-control-solid" dir="ltr" maxlength="80" data-m="drugB" placeholder="aspirin" /></div>
+            <div class="col-12 text-muted fs-8">@T["Write the generic name as it appears in the medicine's name (three letters at least); it matches any name that contains it."]</div>
+            <div class="col-6"><label class="form-label required">@T["Severity"]</label><select class="form-select form-select-solid" data-m="severity">@foreach (var s in HospitalInteractionSeverity.All) { <option value="@s">@T["sev:" + s]</option> }</select></div>
+            <div class="col-6 d-flex align-items-end"><label class="form-check form-switch form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" data-m="isActive" checked /><span class="form-check-label">@T["In use"]</span></label></div>
+            <div class="col-12"><label class="form-label required">@T["Effect (Arabic)"]</label><textarea class="form-control form-control-solid" rows="2" dir="rtl" maxlength="400" data-m="effectAr"></textarea></div>
+            <div class="col-12"><label class="form-label required">@T["Effect (English)"]</label><textarea class="form-control form-control-solid" rows="2" dir="ltr" maxlength="400" data-m="effectEn"></textarea></div>
+        </div></div>
+        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-ds-save>@T["Save"]</button></div>
+    </div></div></div>
+}
+@if (canKeep && tab == "limits")
+{
+    <div class="modal fade" id="dsModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-650px"><div class="modal-content">
+        <div class="modal-header"><h2 class="fw-bold m-0">@T["Dose limit"]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body py-6 px-lg-10"><div class="row g-4">
+            <div class="col-6"><label class="form-label required">@T["Medicine"]</label><input class="form-control form-control-solid" dir="ltr" maxlength="80" data-m="drug" placeholder="paracetamol" /></div>
+            <div class="col-3"><label class="form-label">@T["Route"]</label><select class="form-select form-select-solid" data-m="route"><option value="">@T["Any route"]</option>@foreach (var r in HospitalMedRoute.All) { <option value="@r">@T["route:" + r]</option> }</select></div>
+            <div class="col-3"><label class="form-label required">@T["Unit"]</label><select class="form-select form-select-solid" data-m="unit">@foreach (var u in HospitalDoseUnit.All) { <option value="@u">@u</option> }</select></div>
+            <div class="col-6"><label class="form-label">@T["Single dose limit"]</label><input type="number" step="0.001" min="0" class="form-control form-control-solid hp-num" data-m="maxSingle" /></div>
+            <div class="col-6"><label class="form-label">@T["Daily limit"]</label><input type="number" step="0.001" min="0" class="form-control form-control-solid hp-num" data-m="maxDaily" /></div>
+            <div class="col-12"><label class="form-label">@T["Note"]</label><input class="form-control form-control-solid" dir="auto" maxlength="300" data-m="note" /></div>
+            <div class="col-12"><label class="form-check form-switch form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" data-m="isActive" checked /><span class="form-check-label">@T["In use"]</span></label></div>
+        </div></div>
+        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-ds-save>@T["Save"]</button></div>
+    </div></div></div>
+}
+
+@section Scripts {
+    <script>
+        (function () {
+            if (!document.getElementById('rows')) return;
+            var tab = @Json.Serialize(tab);
+            var list = cbServerList({ url: @Json.Serialize(Url.Action("DrugSafetyData")), isAr: @(isAr ? "true" : "false"),
+                addParams: function (p) { p.set('tab', tab); var s = document.getElementById('f_sev'); if (s) p.set('severity', s.value); } });
+            var mEl = document.getElementById('dsModal'); if (!mEl) return;
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value, editing = null;
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value), ask: @Json.Serialize(T["Save this to the drug-safety list?"].Value) };
+            function post(u, b) { return fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(b || {}) }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); }); }
+            function fill(data) { mEl.querySelectorAll('[data-m]').forEach(function (i) { var k = i.getAttribute('data-m'), v = data ? data[k] : null;
+                if (i.type === 'checkbox') i.checked = data ? !!v : true; else i.value = v == null ? (i.tagName === 'SELECT' && !data ? i.options[0].value : '') : v; }); }
+            document.addEventListener('click', function (e) {
+                var t = e.target.closest('[data-ds-new],[data-ds-edit],[data-ds-save]'); if (!t) return;
+                if (t.hasAttribute('data-ds-save')) {
+                    var body = editing ? { id: editing } : {};
+                    mEl.querySelectorAll('[data-m]').forEach(function (i) { var k = i.getAttribute('data-m'); body[k] = i.type === 'checkbox' ? i.checked : i.type === 'number' ? (i.value === '' ? null : Number(i.value)) : (i.value.trim() || null); });
+                    cbConfirm(W.ask).then(function (ok) { if (!ok) return; t.disabled = true;
+                        post(@Json.Serialize(Url.Content("~/Hospital/DrugSafety/"))+ (tab === 'limits' ? 'Limits' : 'Interactions'), body).then(function (res) { t.disabled = false;
+                            if (!res.ok) { toastr.error(res.error || W.failed); return; } toastr.success(W.saved); bootstrap.Modal.getOrCreateInstance(mEl).hide(); list.reload(); }); });
+                    return;
+                }
+                editing = t.hasAttribute('data-ds-edit') ? Number(t.getAttribute('data-ds-edit')) : null;
+                fill(editing ? JSON.parse(t.getAttribute('data-row')) : null);
+                bootstrap.Modal.getOrCreateInstance(mEl).show();
+            });
+        })();
+    </script>
+}

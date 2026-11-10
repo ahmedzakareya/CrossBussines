@@ -21,6 +21,7 @@
         main = fac.Format(x.Entry.MainPrice), rule = cur.Format(HospitalPricingService.Rule(x.Entry.MainPrice, l.FrozenRate, HospitalPricingService.AdjFor(l, x.Entry.Group), cur.Decimals, l.RoundingStep, x.Entry.Group == HospitalPriceGroups.Service)),
         fixedPrice = x.Line.FixedPrice, excluded = x.Line.IsExcluded, cap = x.Entry.PublicPrice is decimal pp ? cur.Format(Math.Round(pp * l.FrozenRate, cur.Decimals)) : null });
     int stale = Model.StaleCount;
+    var categories = (ViewBag.Categories as IReadOnlyList<HospitalCategoryChoice>) ?? Array.Empty<HospitalCategoryChoice>();
 }
 <link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
 @Html.AntiForgeryToken()
@@ -43,7 +44,11 @@
             {
                 if (draft) { <button type="button" class="btn btn-sm btn-light-primary" data-edit-list><i class="ki-outline ki-pencil fs-4"></i>@T["Edit"]</button> }
                 if (l.Status == HospitalPriceListStatus.Active) { <button type="button" class="btn btn-sm btn-light-primary" data-post="Copy"><i class="ki-outline ki-copy fs-4"></i>@T["Copy as a new version"]</button> }
-                if (!archived) { <button type="button" class="btn btn-sm btn-primary" data-pick @(Model.Pending.Count == 0 ? "disabled" : "")><i class="ki-outline ki-plus fs-4"></i>@T["Add items"]</button> }
+                if (!archived)
+                {
+                    <button type="button" class="btn btn-sm btn-light-primary" data-pick-category><i class="ki-outline ki-category fs-4"></i>@T["Add a category"]</button>
+                    <button type="button" class="btn btn-sm btn-primary" data-pick><i class="ki-outline ki-plus fs-4"></i>@T["Add items"]</button>
+                }
                 if (draft)
                 {
                     if (stale > 0) { <span title="@T["Review the not-updated prices first"]"><button type="button" class="btn btn-sm btn-light" disabled><i class="ki-outline ki-lock fs-4"></i>@T["Approve the list"]</button></span> }
@@ -228,24 +233,57 @@
         <div class="modal-footer flex-center"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-save-line>@T["Save and approve"]</button></div>
     </div></div></div>
 
-    <div class="modal fade" id="pickModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-650px"><div class="modal-content">
+    <div class="modal fade" id="pickModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered modal-xl"><div class="modal-content">
         <div class="modal-header"><h2 class="fw-bold m-0">@T["Add items"]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
         <div class="modal-body py-6 px-lg-10">
-            <div class="text-gray-700 fs-7 mb-4">@T["Items on the main list that are not on this one. They come in at the rule's price and show not updated until you approve them."]</div>
-            <div class="table-responsive mh-400px overflow-auto"><table class="table align-middle table-row-dashed fs-7 gy-2 mb-0">
-                <thead><tr class="text-gray-500 fw-bold fs-8 text-uppercase"><th class="w-30px"><input type="checkbox" class="form-check-input" data-pick-all checked /></th><th>@T["Item"]</th><th>@T["Type"]</th><th class="text-end">@T["By the rule"] (<span class="hp-num">@cur.Code</span>)</th></tr></thead>
-                <tbody>
-                    @foreach (var e in Model.Pending)
-                    {
-                        <tr><td><input type="checkbox" class="form-check-input" data-pick-key="@e.Key" checked /></td>
-                            <td><span class="badge hp-code fw-bold fs-8 hp-num me-2">@e.Code</span>@DisplayName.Of(e.Name, e.NameEn)</td>
-                            <td>@T["group:" + e.Group]</td>
-                            <td class="text-end hp-num">@cur.Format(HospitalPricingService.Rule(e.MainPrice, l.FrozenRate, HospitalPricingService.AdjFor(l, e.Group), cur.Decimals, l.RoundingStep, e.Group == HospitalPriceGroups.Service))</td></tr>
-                    }
-                </tbody>
-            </table></div>
+            <ul class="nav nav-tabs nav-line-tabs nav-stretch fs-6 border-0 mb-5">
+                <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#pick_inv">@T["From the inventory"]</a></li>
+                <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#pick_new">@T["New on the main list"] <span class="badge badge-light-info ms-1 hp-num" data-pending-count>@Model.Pending.Count</span></a></li>
+            </ul>
+            <div class="tab-content">
+                <div class="tab-pane fade show active" id="pick_inv">
+                    <div class="text-gray-700 fs-7 mb-4">@T["Any item already in the inventory, whatever its category. Choose whether it is a medicine or a consumable: that decides which of the list's percentages prices it."]</div>
+                    <div class="position-relative mb-4"><i class="ki-outline ki-magnifier fs-3 text-gray-500 position-absolute top-50 translate-middle-y ms-4"></i>
+                        <input type="text" class="form-control form-control-solid ps-12" data-inv-q autocomplete="off" placeholder="@T["Search by code, barcode or name"]" /></div>
+                    <div class="table-responsive mh-350px overflow-auto"><table class="table align-middle table-row-dashed fs-7 gy-2 mb-0">
+                        <thead><tr class="text-gray-500 fw-bold fs-8 text-uppercase"><th class="w-30px"></th><th>@T["Item"]</th><th>@T["Category"]</th><th style="text-align:end">@T["Main price"] (<span class="hp-num">@fac.Code</span>)</th><th class="w-175px">@T["Type"]</th></tr></thead>
+                        <tbody data-inv-rows><tr><td colspan="5" class="text-center text-muted py-8">@T["Type at least two letters to search."]</td></tr></tbody>
+                    </table></div>
+                    <div class="text-muted fs-7 mt-3"><span data-inv-count class="hp-num">0</span> @T["items selected"]</div>
+                </div>
+                <div class="tab-pane fade" id="pick_new">
+                    <div class="text-gray-700 fs-7 mb-4">@T["Items on the main list that are not on this one. They come in at the rule's price and show not updated until you approve them."]</div>
+                    <div class="table-responsive mh-400px overflow-auto"><table class="table align-middle table-row-dashed fs-7 gy-2 mb-0">
+                        <thead><tr class="text-gray-500 fw-bold fs-8 text-uppercase"><th class="w-30px"><input type="checkbox" class="form-check-input" data-pick-all checked /></th><th>@T["Item"]</th><th>@T["Type"]</th><th style="text-align:end">@T["By the rule"] (<span class="hp-num">@cur.Code</span>)</th></tr></thead>
+                        <tbody data-pending-rows>
+                            @if (Model.Pending.Count == 0) { <tr><td colspan="4" class="text-center text-muted py-8">@T["Every main-list item is on this list."]</td></tr> }
+                            @foreach (var e in Model.Pending)
+                            {
+                                <tr><td><input type="checkbox" class="form-check-input" data-pick-key="@e.Key" checked /></td>
+                                    <td><span class="badge hp-code fw-bold fs-8 hp-num me-2">@e.Code</span>@DisplayName.Of(e.Name, e.NameEn)</td>
+                                    <td>@T["group:" + e.Group]</td>
+                                    <td class="hp-num" style="text-align:end">@cur.Format(HospitalPricingService.Rule(e.MainPrice, l.FrozenRate, HospitalPricingService.AdjFor(l, e.Group), cur.Decimals, l.RoundingStep, e.Group == HospitalPriceGroups.Service))</td></tr>
+                            }
+                        </tbody>
+                    </table></div>
+                </div>
+            </div>
         </div>
-        <div class="modal-footer flex-center"><a href="@Url.Action("Catalog")" class="btn btn-light-primary"><i class="ki-outline ki-plus fs-4"></i>@T["New catalogue item"]</a><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-add-picked>@T["Add selected"]</button></div>
+        <div class="modal-footer flex-center"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-add-picked>@T["Add selected"]</button></div>
+    </div></div></div>
+
+    <div class="modal fade" id="categoryModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-650px"><div class="modal-content">
+        <div class="modal-header"><h2 class="fw-bold m-0">@T["Add a category"]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body py-6 px-lg-10">
+            <div class="mb-5"><label class="form-label required">@T["Inventory category"]</label>
+                <select class="form-select form-select-solid" data-cat-id data-control="select2" data-dropdown-parent="#categoryModal" data-placeholder="@T["Inventory category"]"><option value=""></option>
+                    @foreach (var c in categories) { <option value="@c.Id" data-kind="@c.MappedKind" disabled="@(c.NotOnList == 0)">@(string.IsNullOrWhiteSpace(c.Code) ? "" : c.Code + " · ")@DisplayName.Of(c.Name, c.NameEn) — @string.Format(T["{0} items, {1} not on this list"].Value, c.Items, c.NotOnList)</option> }
+                </select></div>
+            <div class="mb-5"><label class="form-label required">@T["Type"]</label>
+                <div class="d-flex gap-2">@foreach (var k in HospitalPriceGroups.ItemKinds) { <label class="flex-fill"><input type="radio" class="btn-check" name="cat-kind" value="@k" @(k == HospitalPriceGroups.Medicine ? "checked" : "") /><span class="btn btn-sm btn-light w-100 fw-bold">@T["group:" + k]</span></label> }</div></div>
+            <label class="form-check form-switch form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" data-cat-linked checked /><span class="form-check-label text-gray-700">@T["Keep it linked: items added to this category later show as new on every list"]</span></label>
+        </div>
+        <div class="modal-footer flex-center"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-add-category>@T["Add the category"]</button></div>
     </div></div></div>
 
     @if (draft)
@@ -274,7 +312,46 @@
     <script>
         (function () {
             var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
-            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value) };
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value), choose: @Json.Serialize(T["Choose the items to add"].Value),
+                chooseCat: @Json.Serialize(T["Choose the category"].Value), addCat: @Json.Serialize(T["Add every item of {0} to this list?"].Value),
+                none: @Json.Serialize(T["Nothing matches."].Value), onList: @Json.Serialize(T["On the list"].Value), notIn: @Json.Serialize(T["Not in the hospital catalogue yet"].Value),
+                kinds: { Medicine: @Json.Serialize(T["group:Medicine"].Value), Consumable: @Json.Serialize(T["group:Consumable"].Value) } };
+            // H22: search the whole inventory; what is ticked survives a new search, each with its kind
+            var inv = { picked: {}, last: [], timer: null };
+            function esc(v) { var d = document.createElement('div'); d.textContent = v == null ? '' : String(v); return d.innerHTML; }
+            inv.render = function () {
+                var tb = document.querySelector('[data-inv-rows]'); if (!tb) return;
+                document.querySelector('[data-inv-count]').textContent = Object.keys(inv.picked).length;
+                if (!inv.last.length) { if (inv.searched) tb.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-8">' + esc(W.none) + '</td></tr>'; return; }
+                tb.innerHTML = inv.last.map(function (h) {
+                    var kind = inv.picked[h.id] || h.kind || 'Medicine', on = h.onList;
+                    var opts = ['Medicine', 'Consumable'].map(function (k) { return '<option value="' + k + '"' + (k === kind ? ' selected' : '') + '>' + esc(W.kinds[k]) + '</option>'; }).join('');
+                    return '<tr><td><input type="checkbox" class="form-check-input" data-inv-pick="' + h.id + '"' + (on ? ' disabled' : '') + (inv.picked[h.id] ? ' checked' : '') + ' /></td>' +
+                        '<td><span class="badge hp-code fw-bold fs-8 hp-num me-2">' + esc(h.code) + '</span>' + esc(h.name) + (on ? ' <span class="badge badge-light-success fs-9">' + esc(W.onList) + '</span>' : !h.kind ? ' <span class="badge badge-light-info fs-9">' + esc(W.notIn) + '</span>' : '') + '</td>' +
+                        '<td class="text-gray-600">' + esc(h.category) + '</td><td class="hp-num" style="text-align:end">' + Number(h.price).toFixed(3) + '</td>' +
+                        '<td><select class="form-select form-select-sm form-select-solid" data-inv-kind="' + h.id + '"' + (on ? ' disabled' : '') + '>' + opts + '</select></td></tr>';
+                }).join('');
+            };
+            document.addEventListener('input', function (e) {
+                if (!e.target.matches('[data-inv-q]')) return;
+                clearTimeout(inv.timer); var q = e.target.value.trim();
+                inv.timer = setTimeout(function () {
+                    if (q.length < 2) { inv.last = []; inv.searched = false; inv.render(); return; }
+                    fetch(base + '/ItemSearch?q=' + encodeURIComponent(q), { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.json(); })
+                        .then(function (res) { inv.last = res.items || []; inv.searched = true; inv.render(); });
+                }, 300);
+            });
+            document.addEventListener('change', function (e) {
+                var c = e.target.closest('[data-inv-pick]');
+                if (c) { var id = c.getAttribute('data-inv-pick'); if (c.checked) inv.picked[id] = document.querySelector('[data-inv-kind="' + id + '"]').value; else delete inv.picked[id]; inv.render(); return; }
+                var k = e.target.closest('[data-inv-kind]');
+                if (k) { var kid = k.getAttribute('data-inv-kind'); if (inv.picked[kid]) inv.picked[kid] = k.value; }
+            });
+            // a category already mapped brings its kind
+            if (window.jQuery) jQuery(document).on('change', '[data-cat-id]', function () {
+                var o = this.options[this.selectedIndex], k = o && o.getAttribute('data-kind');
+                if (k) { var r = document.querySelector('#categoryModal [name=cat-kind][value=' + k + ']'); if (r) r.checked = true; }
+            });
             var base = @Json.Serialize(Url.Action("PriceList", new { id = l.ID })), lineUrl = @Json.Serialize(Url.Action("SavePriceListLine", new { id = 0 }));
             function toast(k, m) { if (window.toastr) toastr[k](m); }
             function rows() { var el = document.getElementById('lineRows'); return el ? JSON.parse(el.textContent) : []; }
@@ -290,7 +367,9 @@
                     var doc = new DOMParser().parseFromString(html, 'text/html');
                     var fresh = doc.getElementById('kt_app_content'); if (fresh) document.getElementById('kt_app_content').innerHTML = fresh.innerHTML;
                     var tb = doc.querySelector('.app-toolbar .d-print-none'), cur = document.querySelector('.app-toolbar .d-print-none'); if (tb && cur) cur.innerHTML = tb.innerHTML;
-                    var pick = doc.querySelector('#pickModal tbody'), pickCur = document.querySelector('#pickModal tbody'); if (pick && pickCur) pickCur.innerHTML = pick.innerHTML;
+                    var pick = doc.querySelector('[data-pending-rows]'), pickCur = document.querySelector('[data-pending-rows]'); if (pick && pickCur) pickCur.innerHTML = pick.innerHTML;
+                    var pc = doc.querySelector('[data-pending-count]'), pcCur = document.querySelector('[data-pending-count]'); if (pc && pcCur) pcCur.textContent = pc.textContent;
+                    var cs = doc.querySelector('[data-cat-id]'), csCur = document.querySelector('[data-cat-id]'); if (cs && csCur) { csCur.innerHTML = cs.innerHTML; if (window.jQuery) jQuery(csCur).trigger('change.select2'); }
                 });
             }
             function done(res, modal) {
@@ -307,9 +386,27 @@
                 else if ((t = e.target.closest('[data-pick]'))) bootstrap.Modal.getOrCreateInstance(document.getElementById('pickModal')).show();
                 else if ((t = e.target.closest('[data-pick-all]'))) document.querySelectorAll('[data-pick-key]').forEach(function (c) { c.checked = t.checked; });
                 else if ((t = e.target.closest('[data-add-picked]'))) {
+                    var pm = document.getElementById('pickModal');
+                    if (document.getElementById('pick_inv').classList.contains('active')) {
+                        var items = Object.keys(inv.picked).map(function (id) { return { itemId: +id, kind: inv.picked[id] }; });
+                        if (!items.length) { toast('error', W.choose); return; }
+                        t.disabled = true; post(base + '/AddItems', { items: items }).then(function (r) { t.disabled = false; if (done(r, pm)) { inv.picked = {}; inv.render(); } });
+                        return;
+                    }
                     var keys = [].slice.call(document.querySelectorAll('[data-pick-key]:checked')).map(function (c) { return c.getAttribute('data-pick-key'); });
-                    if (!keys.length) return;
-                    t.disabled = true; post(base + '/AddLines', { keys: keys }).then(function (r) { t.disabled = false; done(r, document.getElementById('pickModal')); });
+                    if (!keys.length) { toast('error', W.choose); return; }
+                    t.disabled = true; post(base + '/AddLines', { keys: keys }).then(function (r) { t.disabled = false; done(r, pm); });
+                }
+                else if ((t = e.target.closest('[data-pick-category]'))) bootstrap.Modal.getOrCreateInstance(document.getElementById('categoryModal')).show();
+                else if ((t = e.target.closest('[data-add-category]'))) {
+                    var cm = document.getElementById('categoryModal'), sel = cm.querySelector('[data-cat-id]');
+                    if (!sel.value) { toast('error', W.chooseCat); return; }
+                    var kind = (cm.querySelector('[name=cat-kind]:checked') || {}).value, linked = cm.querySelector('[data-cat-linked]').checked;
+                    var label = sel.options[sel.selectedIndex].textContent.split(' — ')[0];
+                    cbConfirm(W.addCat.replace('{0}', label)).then(function (ok) {
+                        if (!ok) return; t.disabled = true;
+                        post(base + '/AddCategory', { categoryId: +sel.value, kind: kind, keepLinked: linked }).then(function (r) { t.disabled = false; done(r, cm); });
+                    });
                 }
                 else if ((t = e.target.closest('[data-line]'))) {
                     var r = rows().filter(function (x) { return x.id === +t.getAttribute('data-line'); })[0]; if (!r) return;

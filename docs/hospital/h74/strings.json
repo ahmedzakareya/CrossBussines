@@ -1,0 +1,210 @@
+{
+ "unit": "H74 — order sets",
+ "strings": {
+  "A task cannot contain the | sign": {
+   "ar": "لا يحتوي نص المهمة على العلامة |",
+   "en": "A task cannot contain the | sign",
+   "fr": "Une tâche ne peut pas contenir le signe |"
+  },
+  "A task is at most 90 characters": {
+   "ar": "المهمة 90 حرفاً على الأكثر",
+   "en": "A task is at most 90 characters",
+   "fr": "Une tâche fait au plus 90 caractères"
+  },
+  "A task is due 0 to 72 hours after the set is placed": {
+   "ar": "موعد المهمة من 0 إلى 72 ساعة بعد طلب المجموعة",
+   "en": "A task is due 0 to 72 hours after the set is placed",
+   "fr": "Une tâche est due 0 à 72 heures après la prescription du protocole"
+  },
+  "Add a medicine": {
+   "ar": "إضافة دواء",
+   "en": "Add a medicine",
+   "fr": "Ajouter un médicament"
+  },
+  "Add a nursing task": {
+   "ar": "إضافة مهمة تمريض",
+   "en": "Add a nursing task",
+   "fr": "Ajouter un soin infirmier"
+  },
+  "An order set is a protocol the hospital agrees once — its medicines and nursing tasks. A doctor places it for an inpatient from the nursing station in one step; every medicine goes through the drug-safety check.": {
+   "ar": "مجموعة الأوامر بروتوكول يعتمده المستشفى مرة واحدة — بأدويته ومهام التمريض فيه. يطلبه الطبيب لمريض منوّم من محطة التمريض بخطوة واحدة، ويمر كل دواء على فحص سلامة الأدوية.",
+   "en": "An order set is a protocol the hospital agrees once — its medicines and nursing tasks. A doctor places it for an inpatient from the nursing station in one step; every medicine goes through the drug-safety check.",
+   "fr": "Un protocole est convenu une fois par l'hôpital — ses médicaments et ses soins infirmiers. Le médecin le prescrit pour un patient hospitalisé depuis le poste de soins en une étape ; chaque médicament passe le contrôle de sécurité."
+  },
+  "Any department": {
+   "ar": "أي قسم",
+   "en": "Any department",
+   "fr": "Tout service"
+  },
+  "Choose at least one line": {
+   "ar": "اختر بنداً واحداً على الأقل",
+   "en": "Choose at least one line",
+   "fr": "Choisissez au moins une ligne"
+  },
+  "Choose medicine or nursing task": {
+   "ar": "اختر دواء أو مهمة تمريض",
+   "en": "Choose medicine or nursing task",
+   "fr": "Choisissez médicament ou soin infirmier"
+  },
+  "Choose the order set": {
+   "ar": "اختر مجموعة الأوامر",
+   "en": "Choose the order set",
+   "fr": "Choisissez le protocole"
+  },
+  "Due after (hours)": {
+   "ar": "الموعد بعد (ساعات)",
+   "en": "Due after (hours)",
+   "fr": "Dû après (heures)"
+  },
+  "Due {0} hours after placing": {
+   "ar": "مستحقة بعد {0} ساعة من الطلب",
+   "en": "Due {0} hours after placing",
+   "fr": "Due {0} heures après la prescription"
+  },
+  "Lines": {
+   "ar": "البنود",
+   "en": "Lines",
+   "fr": "Lignes"
+  },
+  "Line": {
+   "ar": "البند",
+   "en": "Line",
+   "fr": "Ligne"
+  },
+  "New order set": {
+   "ar": "مجموعة أوامر جديدة",
+   "en": "New order set",
+   "fr": "Nouveau protocole"
+  },
+  "No order sets yet.": {
+   "ar": "لا توجد مجموعات أوامر بعد.",
+   "en": "No order sets yet.",
+   "fr": "Aucun protocole pour l'instant."
+  },
+  "No order sets yet: the administrator writes them under Pharmacy.": {
+   "ar": "لا توجد مجموعات أوامر بعد: يكتبها المسؤول من قائمة الصيدلية.",
+   "en": "No order sets yet: the administrator writes them under Pharmacy.",
+   "fr": "Aucun protocole pour l'instant : l'administrateur les rédige sous Pharmacie."
+  },
+  "Nursing task": {
+   "ar": "مهمة تمريض",
+   "en": "Nursing task",
+   "fr": "Soin infirmier"
+  },
+  "Order set": {
+   "ar": "مجموعة أوامر",
+   "en": "Order set",
+   "fr": "Protocole"
+  },
+  "Order sets": {
+   "ar": "مجموعات الأوامر",
+   "en": "Order sets",
+   "fr": "Protocoles"
+  },
+  "Order sets are not installed yet (hospital_h74_order_sets.sql).": {
+   "ar": "مجموعات الأوامر غير مثبتة بعد (hospital_h74_order_sets.sql).",
+   "en": "Order sets are not installed yet (hospital_h74_order_sets.sql).",
+   "fr": "Les protocoles ne sont pas encore installés (hospital_h74_order_sets.sql)."
+  },
+  "Place the chosen lines": {
+   "ar": "اطلب البنود المختارة",
+   "en": "Place the chosen lines",
+   "fr": "Prescrire les lignes choisies"
+  },
+  "Place {0} lines of this set for {1}?": {
+   "ar": "طلب {0} بنود من هذه المجموعة لـ {1}؟",
+   "en": "Place {0} lines of this set for {1}?",
+   "fr": "Prescrire {0} lignes de ce protocole pour {1} ?"
+  },
+  "Placed: {0} lines": {
+   "ar": "تم طلب {0} بنود",
+   "en": "Placed: {0} lines",
+   "fr": "Prescrites : {0} lignes"
+  },
+  "Remove this line from the set?": {
+   "ar": "حذف هذا البند من المجموعة؟",
+   "en": "Remove this line from the set?",
+   "fr": "Retirer cette ligne du protocole ?"
+  },
+  "Save this line?": {
+   "ar": "حفظ هذا البند؟",
+   "en": "Save this line?",
+   "fr": "Enregistrer cette ligne ?"
+  },
+  "Save this order set?": {
+   "ar": "حفظ مجموعة الأوامر؟",
+   "en": "Save this order set?",
+   "fr": "Enregistrer ce protocole ?"
+  },
+  "Search by code or name…": {
+   "ar": "ابحث بالرمز أو الاسم…",
+   "en": "Search by code or name…",
+   "fr": "Rechercher par code ou nom…"
+  },
+  "Task (Arabic)": {
+   "ar": "المهمة (عربي)",
+   "en": "Task (Arabic)",
+   "fr": "Tâche (arabe)"
+  },
+  "Task (English)": {
+   "ar": "المهمة (إنجليزي)",
+   "en": "Task (English)",
+   "fr": "Tâche (anglais)"
+  },
+  "The code is 2 to 20 letters, digits or dashes": {
+   "ar": "الرمز من 2 إلى 20 حرفاً أو رقماً أو شرطة",
+   "en": "The code is 2 to 20 letters, digits or dashes",
+   "fr": "Le code fait 2 à 20 lettres, chiffres ou tirets"
+  },
+  "The name is too long": {
+   "ar": "الاسم طويل جداً",
+   "en": "The name is too long",
+   "fr": "Le nom est trop long"
+  },
+  "This code is already used": {
+   "ar": "هذا الرمز مستخدم بالفعل",
+   "en": "This code is already used",
+   "fr": "Ce code est déjà utilisé"
+  },
+  "This set is not in use: it is not offered on the nursing station.": {
+   "ar": "هذه المجموعة غير مُفعَّلة: لا تظهر في محطة التمريض.",
+   "en": "This set is not in use: it is not offered on the nursing station.",
+   "fr": "Ce protocole est inactif : il n'est pas proposé au poste de soins."
+  },
+  "Ticked": {
+   "ar": "مُعلَّم",
+   "en": "Ticked",
+   "fr": "Coché"
+  },
+  "Ticked when the set is opened": {
+   "ar": "مُعلَّم عند فتح المجموعة",
+   "en": "Ticked when the set is opened",
+   "fr": "Coché à l'ouverture du protocole"
+  },
+  "Times placed": {
+   "ar": "مرات الطلب",
+   "en": "Times placed",
+   "fr": "Fois prescrit"
+  },
+  "Untick what does not fit this patient. Every medicine goes through the drug-safety check; the tasks go on the ward board.": {
+   "ar": "ألغِ ما لا يناسب هذا المريض. يمر كل دواء على فحص سلامة الأدوية، وتذهب المهام إلى لوحة الجناح.",
+   "en": "Untick what does not fit this patient. Every medicine goes through the drug-safety check; the tasks go on the ward board.",
+   "fr": "Décochez ce qui ne convient pas à ce patient. Chaque médicament passe le contrôle de sécurité ; les soins vont au tableau du service."
+  },
+  "Write the name in Arabic and in English": {
+   "ar": "اكتب الاسم بالعربية والإنجليزية",
+   "en": "Write the name in Arabic and in English",
+   "fr": "Indiquez le nom en arabe et en anglais"
+  },
+  "This order set meets a safety alert": {
+   "ar": "مجموعة الأوامر هذه تصطدم بتنبيه سلامة",
+   "en": "This order set meets a safety alert",
+   "fr": "Ce protocole rencontre une alerte de sécurité"
+  },
+  "Kind": {
+   "ar": "النوع",
+   "en": "Kind",
+   "fr": "Type"
+  }
+ }
+}

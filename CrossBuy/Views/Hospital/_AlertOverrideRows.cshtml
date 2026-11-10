@@ -1,0 +1,15 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@model List<HospitalOverrideRow>
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@{ var inv = System.Globalization.CultureInfo.InvariantCulture; }
+@foreach (var r in Model)
+{
+    <tr>
+        <td class="hp-num text-nowrap fs-8" dir="ltr">@HospitalNursingService.UtcToWard(r.Row.At).ToString("yyyy-MM-dd HH:mm", inv)</td>
+        <td><a href="@Url.Action("Patient", new { id = r.Row.PatientId })" class="fw-bold text-gray-900 text-hover-primary">@DisplayName.Of(r.Patient, r.PatientEn)</a><div class="text-muted fs-8 hp-num">@r.Mrn</div></td>
+        <td><span class="badge badge-light-danger">@T["alertKind:" + r.Row.Kind]</span><div class="fs-8 text-gray-700 mt-1" dir="ltr" style="text-align:start"><bdi>@r.Row.Detail</bdi></div></td>
+        <td class="fs-7 text-gray-800" dir="auto">@r.Row.Reason</td>
+        <td class="fs-8">@(r.By ?? "—")</td>
+    </tr>
+}

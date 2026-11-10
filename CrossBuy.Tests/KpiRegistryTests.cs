@@ -15,7 +15,7 @@ public class KpiRegistryTests
             => Task.FromResult(!denied.Contains(key));
     }
     private static ReportDatasetRegistry Datasets(IReportPermissionEvaluator? p = null)
-        => new(AccountingDatasets.All().Concat(ProjectsDatasets.All()), p ?? new Permissions());
+        => new(AccountingDatasets.All().Concat(ProjectsDatasets.All()).Concat(HospitalManagementDatasets.Datasets()), p ?? new Permissions());   // H50: the hospital KPIs
     private static readonly FixedReportClock Clock = new(new DateTime(2026, 10, 11));
     private static BusinessContext Actor(int company = 7) => new()
         { CompanyId = company, EmployeeId = 8, Source = BusinessContextSource.Test };

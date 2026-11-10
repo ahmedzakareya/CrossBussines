@@ -18,6 +18,9 @@ namespace CrossBuy.BL
 		public static async Task<ScopedTx> BeginOrJoinAsync(DbContext ctx)
 			=> new ScopedTx(ctx, ctx.Database.CurrentTransaction == null ? await ctx.Database.BeginTransactionAsync() : null);
 
+		public static async Task<ScopedTx> BeginOrJoinAsync(DbContext ctx, System.Data.IsolationLevel isolation)
+			=> new ScopedTx(ctx, ctx.Database.CurrentTransaction == null ? await ctx.Database.BeginTransactionAsync(isolation) : null);
+
 		public bool Owns => _tx != null;
 		public async Task CommitAsync() { if (_tx != null) { await _tx.CommitAsync(); _settled = true; } }
 

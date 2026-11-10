@@ -1,0 +1,127 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model IReadOnlyList<HospitalConsentForm>
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H60 — the hospital's consent forms (the administrator): the wording per kind in Arabic and English, with the
+    patient's facts written in at signing ({patient} {mrn} {procedure} {doctor} {date}). Changing the wording raises
+    the form's version; a consent already signed keeps the text it was signed on. Searched and paged on the server.
+*@
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Consent forms"].Value;
+    bool ready = ViewBag.Ready == true;
+    var missing = HospitalConsentRules.Standard().Count(s => !Model.Any(f => f.Code == s.Code));
+    bool isAr = System.Globalization.CultureInfo.CurrentUICulture.Name.StartsWith("ar");
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Consent forms"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item text-muted">@T["Patients"]</li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@T["Medical records"]</li>
+            </ul>
+        </div>
+        @if (ready)
+        {
+            <div class="d-flex gap-2">
+                @if (missing > 0) { <button type="button" class="btn btn-sm btn-light-primary" data-forms-standard><i class="ki-outline ki-document fs-4"></i>@T["Add the standard forms"] <span class="badge badge-primary ms-1 hp-num">@missing</span></button> }
+                <button type="button" class="btn btn-sm btn-primary" data-form-new><i class="ki-outline ki-plus fs-4"></i>@T["New form"]</button>
+            </div>
+        }
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (!ready) { <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice"><div class="fs-6 text-gray-700">@T[HospitalConsentService.NoTables]</div></div> }
+        else
+        {
+            <div class="card">
+                <div class="card-header border-0 pt-6 flex-wrap gap-3">
+                    <div class="card-title flex-column m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Consent forms"]</span>
+                        <span class="text-muted fs-7 mt-1">@T["What the signer reads. These are filled in with the patient's facts when the consent is taken:"] <bdi dir="ltr" class="hp-num">{patient} {mrn} {procedure} {doctor} {date}</bdi> · <span id="resultCount">—</span></span></div>
+                    <div class="card-toolbar d-flex flex-wrap align-items-center gap-2">
+                        <div class="w-250px"><input type="text" id="f_q" class="form-control form-control-solid form-control-sm" autocomplete="off" placeholder="@T["Search by code or title…"]" /></div>
+                        <div class="w-200px"><select class="form-select form-select-solid form-select-sm cb-filter" id="f_kind"><option value="">@T["All kinds"]</option>@foreach (var k in HospitalConsentKind.All) { <option value="@k">@T["ck:" + k]</option> }</select></div>
+                        <div class="w-75px"><select id="f_size" class="form-select form-select-solid form-select-sm"><option value="25">25</option><option value="50">50</option><option value="100">100</option></select></div>
+                        <button type="button" id="f_reset" class="btn btn-sm btn-light" title="@T["Reset"]"><i class="ki-outline ki-arrows-circle fs-4"></i></button>
+                    </div>
+                </div>
+                <div class="card-body pt-2">
+                    <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-3 mb-0">
+                        <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0"><th>@T["Code"]</th><th>@T["Form"]</th><th>@T["cf:version"]</th><th>@T["State"]</th><th>@T["cf:updated"]</th><th class="text-end"></th></tr></thead>
+                        <tbody class="fw-semibold text-gray-700" id="rows"></tbody>
+                    </table></div>
+                    <div class="text-center text-muted py-10 d-none" id="loadingRow"><span class="spinner-border spinner-border-sm me-2"></span>@T["Loading…"]</div>
+                    <div class="text-center text-muted py-10 d-none" id="emptyRow">@T["No consent form matches."]</div>
+                    <div class="d-flex flex-stack flex-wrap pt-5"><div class="fs-7 text-muted" id="pageInfo"></div><ul class="pagination" id="pager"></ul></div>
+                </div>
+            </div>
+        }
+    </div></div>
+</div>
+
+<div class="modal fade" id="hpConsentFormModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered modal-xl"><div class="modal-content">
+    <div class="modal-header"><h3 class="modal-title" data-f-heading></h3><button type="button" class="btn btn-icon btn-sm btn-active-light-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></button></div>
+    <div class="modal-body"><div class="row g-4">
+        <div class="col-md-3"><label class="form-label required fs-7">@T["Code"]</label><input type="text" class="form-control form-control-solid" maxlength="30" dir="ltr" data-f="code" /></div>
+        <div class="col-md-3"><label class="form-label required fs-7">@T["Kind"]</label>
+            <select class="form-select form-select-solid" data-f="kind">@foreach (var k in HospitalConsentKind.All) { <option value="@k">@T["ck:" + k]</option> }</select></div>
+        <div class="col-md-6 d-flex align-items-end"><label class="form-check form-check-custom form-check-solid mb-3"><input class="form-check-input" type="checkbox" data-f="isActive" checked /><span class="form-check-label fs-7">@T["In use: offered when a consent is taken"]</span></label></div>
+        <div class="col-md-6"><label class="form-label required fs-7">العنوان (عربي)</label><input type="text" class="form-control form-control-solid" maxlength="200" dir="rtl" data-f="title" /></div>
+        <div class="col-md-6"><label class="form-label required fs-7">Title (English)</label><input type="text" class="form-control form-control-solid" maxlength="200" dir="ltr" data-f="titleEn" /></div>
+        <div class="col-md-6"><label class="form-label required fs-7">النص (عربي)</label><textarea class="form-control form-control-solid" rows="12" dir="rtl" data-f="body"></textarea></div>
+        <div class="col-md-6"><label class="form-label required fs-7">Wording (English)</label><textarea class="form-control form-control-solid" rows="12" dir="ltr" data-f="bodyEn"></textarea></div>
+        <div class="col-12 text-muted fs-8">@T["Changing the title or the wording makes a new version; consents already signed keep the text they were signed on."]</div>
+    </div></div>
+    <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-f-save><i class="ki-outline ki-check fs-4"></i>@T["Save"]</button></div>
+</div></div></div>
+
+@section Scripts {
+    <script>
+        (function () {
+            if (!document.getElementById('rows')) return;
+            var list = cbServerList({ url: @Json.Serialize(Url.Action("ConsentFormsData")), isAr: @(isAr ? "true" : "false"), addParams: function (p) { p.set('kind', document.getElementById('f_kind').value); } });
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            var W = { add: @Json.Serialize(T["Add the standard consent forms? You can change their wording afterwards."].Value), added: @Json.Serialize(T["{0} forms were added"].Value),
+                save: @Json.Serialize(T["Save this consent form?"].Value), saved: @Json.Serialize(T["The form is saved"].Value), failed: @Json.Serialize(T["The change could not be saved"].Value),
+                newForm: @Json.Serialize(T["New consent form"].Value), editForm: @Json.Serialize(T["Edit the consent form"].Value) };
+            function post(u, b) { return fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(b || {}) }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); }); }
+            var modalEl = document.getElementById('hpConsentFormModal'), modal = bootstrap.Modal.getOrCreateInstance(modalEl), editing = null;
+            var f = function (k) { return modalEl.querySelector('[data-f=' + k + ']'); };
+            function open(d) {
+                editing = d ? d.id : null;
+                modalEl.querySelector('[data-f-heading]').textContent = d ? W.editForm : W.newForm;
+                ['code', 'title', 'titleEn', 'body', 'bodyEn'].forEach(function (k) { f(k).value = d ? d[k] : ''; });
+                f('kind').value = d ? d.kind : 'Procedure'; f('isActive').checked = d ? d.isActive : true;
+                modal.show();
+            }
+            document.addEventListener('click', function (e) {
+                var t = e.target.closest('[data-form-new],[data-form-edit],[data-forms-standard],[data-f-save]'); if (!t) return;
+                if (t.hasAttribute('data-form-new')) { open(null); return; }
+                if (t.hasAttribute('data-form-edit')) { open(JSON.parse(t.getAttribute('data-form-edit'))); return; }
+                if (t.hasAttribute('data-forms-standard')) {
+                    cbConfirm(W.add).then(function (ok) {
+                        if (!ok) return; t.disabled = true;
+                        post(@Json.Serialize(Url.Action("AddStandardConsentForms"))).then(function (res) {
+                            if (!res.ok) { t.disabled = false; toastr.error(res.error || W.failed); return; }
+                            toastr.success(W.added.replace('{0}', res.added)); t.remove(); list.reload();
+                        });
+                    });
+                    return;
+                }
+                cbConfirm(W.save).then(function (ok) {
+                    if (!ok) return; t.disabled = true;
+                    var u = @Json.Serialize(Url.Action("SaveConsentForm")) + (editing ? '?id=' + editing : '');
+                    post(u, { code: f('code').value, kind: f('kind').value, title: f('title').value, titleEn: f('titleEn').value, body: f('body').value, bodyEn: f('bodyEn').value, isActive: f('isActive').checked })
+                        .then(function (res) { t.disabled = false; if (!res.ok) { toastr.error(res.error || W.failed); return; } toastr.success(W.saved); modal.hide(); list.reload(); });
+                });
+            });
+        })();
+    </script>
+}

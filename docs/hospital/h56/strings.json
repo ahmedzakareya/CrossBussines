@@ -1,0 +1,145 @@
+{
+  "unit": "H56 — sick leave certificates (Report Studio print)",
+  "strings": {
+    "A sick leave cannot start more than {0} days ago": {
+      "ar": "لا يمكن أن تبدأ الإجازة المرضية قبل أكثر من {0} أيام",
+      "en": "A sick leave cannot start more than {0} days ago",
+      "fr": "Un arrêt ne peut pas commencer il y a plus de {0} jours"
+    },
+    "Certificate": {
+      "ar": "الشهادة",
+      "en": "Certificate",
+      "fr": "Certificat"
+    },
+    "Choose rest, light duty or in hospital": {
+      "ar": "اختر راحة تامة أو عمل خفيف أو منوّم",
+      "en": "Choose rest, light duty or in hospital",
+      "fr": "Choisissez repos, travail léger ou hospitalisé"
+    },
+    "First day": {
+      "ar": "أول يوم",
+      "en": "First day",
+      "fr": "Premier jour"
+    },
+    "Give the first and the last day": {
+      "ar": "حدد أول يوم وآخر يوم",
+      "en": "Give the first and the last day",
+      "fr": "Indiquez le premier et le dernier jour"
+    },
+    "Issue a sick leave of {0} days for this patient?": {
+      "ar": "إصدار إجازة مرضية لمدة {0} يوم لهذا المريض؟",
+      "en": "Issue a sick leave of {0} days for this patient?",
+      "fr": "Délivrer un arrêt de {0} jours pour ce patient ?"
+    },
+    "Last day": {
+      "ar": "آخر يوم",
+      "en": "Last day",
+      "fr": "Dernier jour"
+    },
+    "New sick leave": {
+      "ar": "إجازة مرضية جديدة",
+      "en": "New sick leave",
+      "fr": "Nouvel arrêt maladie"
+    },
+    "No sick leave yet.": {
+      "ar": "لا توجد إجازات مرضية بعد.",
+      "en": "No sick leave yet.",
+      "fr": "Aucun arrêt maladie pour le moment."
+    },
+    "sl:notes": {
+      "ar": "ملاحظات",
+      "en": "Notes",
+      "fr": "Remarques"
+    },
+    "One certificate covers at most {0} days": {
+      "ar": "الشهادة الواحدة تغطي {0} يوماً على الأكثر",
+      "en": "One certificate covers at most {0} days",
+      "fr": "Un certificat couvre au plus {0} jours"
+    },
+    "Print the diagnosis on the certificate": {
+      "ar": "طباعة التشخيص على الشهادة",
+      "en": "Print the diagnosis on the certificate",
+      "fr": "Imprimer le diagnostic sur le certificat"
+    },
+    "Recommendation": {
+      "ar": "التوصية",
+      "en": "Recommendation",
+      "fr": "Recommandation"
+    },
+    "Sick leave": {
+      "ar": "الإجازات المرضية",
+      "en": "Sick leave",
+      "fr": "Arrêts maladie"
+    },
+    "Sick leave is not installed yet (hospital_h56_sick_leave.sql).": {
+      "ar": "الإجازات المرضية غير مثبتة بعد (hospital_h56_sick_leave.sql).",
+      "en": "Sick leave is not installed yet (hospital_h56_sick_leave.sql).",
+      "fr": "Les arrêts maladie ne sont pas encore installés (hospital_h56_sick_leave.sql)."
+    },
+    "The certificate is issued": {
+      "ar": "صدرت الشهادة",
+      "en": "The certificate is issued",
+      "fr": "Le certificat est délivré"
+    },
+    "The certificate is void": {
+      "ar": "أُلغيت الشهادة",
+      "en": "The certificate is void",
+      "fr": "Le certificat est annulé"
+    },
+    "The last day is before the first": {
+      "ar": "آخر يوم قبل أول يوم",
+      "en": "The last day is before the first",
+      "fr": "Le dernier jour est avant le premier"
+    },
+    "This certificate is already void": {
+      "ar": "هذه الشهادة ملغاة بالفعل",
+      "en": "This certificate is already void",
+      "fr": "Ce certificat est déjà annulé"
+    },
+    "sl:void": {
+      "ar": "ملغاة",
+      "en": "Void",
+      "fr": "Annulé"
+    },
+    "sl:voidAction": {
+      "ar": "إلغاء",
+      "en": "Void",
+      "fr": "Annuler"
+    },
+    "Why is certificate {0} void?": {
+      "ar": "لماذا تُلغى الشهادة {0}؟",
+      "en": "Why is certificate {0} void?",
+      "fr": "Pourquoi le certificat {0} est-il annulé ?"
+    },
+    "Write the diagnosis to print it": {
+      "ar": "اكتب التشخيص لطباعته",
+      "en": "Write the diagnosis to print it",
+      "fr": "Indiquez le diagnostic pour l'imprimer"
+    },
+    "not printed": {
+      "ar": "لا يُطبع",
+      "en": "not printed",
+      "fr": "non imprimé"
+    },
+    "sl:Rest": {
+      "ar": "راحة تامة من العمل",
+      "en": "Off work, at rest",
+      "fr": "Repos, sans travail"
+    },
+    "sl:LightDuty": {
+      "ar": "عمل خفيف",
+      "en": "Light duties",
+      "fr": "Travail léger"
+    },
+    "sl:Hospitalised": {
+      "ar": "منوّم بالمستشفى",
+      "en": "In hospital",
+      "fr": "Hospitalisé"
+    },
+    "sl:valid": {
+      "ar": "سارية",
+      "en": "Valid",
+      "fr": "Valide"
+    }
+  }
+}

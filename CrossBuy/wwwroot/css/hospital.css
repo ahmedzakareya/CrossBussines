@@ -66,7 +66,18 @@ a.hp-bed:hover, .hp-bed.clickable:hover { transform: translateY(-1px); box-shado
 .hp-code { background: var(--cb-blue-50, #E7F0FF); color: #145DBF; }
 .hp-pbanner { background: #F7FAFF; border: 1px solid #DCE7FA; border-radius: .85rem; }
 .hp-chip { display: inline-flex; align-items: center; gap: .35rem; padding: .25rem .65rem; border-radius: 2rem; background: var(--bs-gray-100); font-size: .8rem; font-weight: 600; color: var(--bs-gray-700); }
-.hp-initials { background: var(--cb-blue-50, #E7F0FF); color: var(--cb-brand, #3A5795); }
+/* The initials disc never actually carried its tint. `.symbol .symbol-label` in style.bundle sets
+   `background-color: var(--bs-symbol-label-bg)` and `color: var(--bs-symbol-label-color)` — two
+   variables nothing in this product defines — and at (0,2,0) it beat this single class, so the
+   declarations below lost and the circle computed to rgba(0,0,0,0) with near-black text wherever a
+   patient or practitioner had no photograph. Setting Metronic's own variables on the element the
+   rule matches needs no specificity; the plain properties stay for any use outside a `.symbol`. */
+.hp-initials {
+    --bs-symbol-label-bg: var(--cb-blue-50, #E7F0FF);
+    --bs-symbol-label-color: var(--cb-brand, #3A5795);
+    background: var(--cb-blue-50, #E7F0FF);
+    color: var(--cb-brand, #3A5795);
+}
 .hp-similar { border: 1px solid #DCE7FA; border-radius: .6rem; }
 
 /* ---- the person in the bed (H3), as the prototype draws them ---- */
@@ -83,9 +94,13 @@ a.hp-bed:hover, .hp-bed.clickable:hover { transform: translateY(-1px); box-shado
 .hp-photo-edit .hp-photo-btn { position: absolute; bottom: -2px; inset-inline-end: -2px; width: 26px; height: 26px; border-radius: 50%; background: var(--cb-brand, #3A5795); color: #fff; display: flex; align-items: center; justify-content: center; border: 2px solid #fff; }
 
 /* ---- outpatient (H4): the doctor schedule grid and its slots, from the prototype ---- */
-.hp-sched { display: grid; border: 1px solid var(--bs-gray-200); border-radius: .75rem; overflow: hidden; }
+/* The day scrolls inside this box, not with the page, so the doctor row can stay put. The border and
+   the radius live here rather than on the grid: a sticky cell is dead inside an ancestor that has
+   overflow hidden, which is all that rule was ever doing. */
+.hp-sched-wrap { overflow: auto; max-height: calc(100vh - 240px); min-height: 380px; border: 1px solid var(--bs-gray-200); border-radius: .75rem; }
+.hp-sched { display: grid; }
 .hp-sched > div { border-bottom: 1px dashed #eef1f6; border-inline-start: 1px solid #eff2f5; min-height: 46px; padding: .25rem .35rem; position: relative; }
-.hp-sched .hd { background: #F7FAFF; border-bottom: 2px solid var(--cb-brand, #3A5795); font-weight: 700; padding: .6rem; }
+.hp-sched .hd { background: #F7FAFF; border-bottom: 2px solid var(--cb-brand, #3A5795); font-weight: 700; padding: .6rem; position: sticky; top: 0; z-index: 3; }
 .hp-sched .tm { color: var(--bs-gray-600); font-size: .8rem; text-align: center; padding-top: .7rem; }
 .hp-sched .free { cursor: pointer; }
 .hp-sched .free:hover { background: #F7FAFF; }
@@ -143,3 +158,16 @@ a.hp-bed:hover, .hp-bed.clickable:hover { transform: translateY(-1px); box-shado
 .hp-crit-step:last-child:before { display: none; }
 .hp-crit-step .ic { position: absolute; inset-inline-start: 0; top: 0; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
 .hp-crit-level { border-radius: .75rem; padding: 14px 16px; border: 1px solid var(--bs-gray-200); }
+
+/* H29 — the theatre timeline (the prototype's .hms-or-block): a case is a block across its hours */
+.hp-or-row { position: relative; min-height: 74px; }
+.hp-or-block { position: absolute; top: 4px; bottom: 4px; border-radius: .5rem; padding: .35rem .6rem; font-size: .8rem; overflow: hidden; background: #E7F0FF; color: var(--cb-brand, #3A5795); border-inline-start: 3px solid var(--cb-brand, #3A5795); cursor: pointer; }
+.hp-or-block.InProgress { background: var(--cb-brand, #3A5795); color: #fff; }
+.hp-or-block.Done { background: var(--bs-light-success); color: #0e7a39; border-inline-start-color: var(--bs-success); }
+.hp-or-block.sel { box-shadow: 0 0 0 2px var(--cb-brand, #3A5795); }
+
+/* a list toolbar's search (cbServerList makes it a tagify field): keep the hint on one line so the box keeps its height */
+/* (clipping the field itself, as first written, shrank it to 12px and cut the hint in half — the owner saw it) */
+.card-toolbar .tagify { overflow: hidden; flex-wrap: nowrap; }
+.card-toolbar .tagify .tagify__input { white-space: nowrap; flex: 1 1 0; min-width: 0; }
+.card-toolbar .tagify .tagify__input::before { display: inline; white-space: nowrap; }

@@ -1,0 +1,143 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model IReadOnlyList<HospitalCharityFund>
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H63 — charity cases: the requests to decide (oldest first) and the decisions, searched and paged on the server; the
+    funds and their expense accounts (the administrator). A request is made from a closed bill.
+*@
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Charity cases"].Value;
+    bool ready = ViewBag.Ready == true, canManage = ViewBag.CanManage == true;
+    var accounts = (ViewBag.Accounts as List<CrossBuy.Controllers.HospitalController.HospitalChoice>) ?? new();
+    string? cur = ViewBag.Currency as string;
+    int pending = ViewBag.Pending as int? ?? 0; decimal approved = ViewBag.Approved as decimal? ?? 0;
+    bool isAr = System.Globalization.CultureInfo.CurrentUICulture.Name.StartsWith("ar");
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Charity cases"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item text-muted">@T["Finance & insurance"]</li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@T["Billing & cashier"]</li>
+            </ul>
+        </div>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (!ready) { <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice"><div class="fs-6 text-gray-700">@T[HospitalCharityService.NoTables]</div></div> }
+        else
+        {
+            <div class="row g-5 mb-5">
+                <div class="col-md-4"><div class="card card-flush h-100"><div class="card-body py-5"><div class="text-muted fw-semibold fs-7 mb-1">@T["Waiting for a decision"]</div><div class="fs-2x fw-bold text-primary hp-num">@pending</div></div></div></div>
+                <div class="col-md-4"><div class="card card-flush h-100"><div class="card-body py-5"><div class="text-muted fw-semibold fs-7 mb-1">@T["Waived so far"]</div><div class="fs-2x fw-bold text-gray-900 hp-num">@approved.ToString("N3", inv)</div><div class="text-muted fs-8 mt-1">@cur</div></div></div></div>
+                <div class="col-md-4"><div class="card card-flush h-100"><div class="card-body py-5"><div class="text-muted fw-semibold fs-7 mb-1">@T["Funds"]</div><div class="fs-2x fw-bold text-gray-900 hp-num">@Model.Count(f => f.IsActive)</div><div class="text-muted fs-8 mt-1">@T["A request is made from a closed bill."]</div></div></div></div>
+            </div>
+            <div class="row g-5">
+                <div class="col-xl-8">
+                    <div class="card">
+                        <div class="card-header border-0 pt-6 flex-wrap gap-3">
+                            <div class="card-title flex-column m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Requests and decisions"]</span><span class="text-muted fs-7 mt-1"><span id="resultCount">—</span></span></div>
+                            <div class="card-toolbar d-flex flex-wrap align-items-center gap-2">
+                                <div class="w-200px"><input type="text" id="f_q" class="form-control form-control-solid form-control-sm" autocomplete="off" placeholder="@T["Search by patient, MRN or bill…"]" /></div>
+                                <div class="w-150px"><select class="form-select form-select-solid form-select-sm cb-filter" id="f_status"><option value="">@T["All states"]</option>@foreach (var st in HospitalCharityStatus.All) { <option value="@st">@T["ch:" + st]</option> }</select></div>
+                                <div class="w-75px"><select id="f_size" class="form-select form-select-solid form-select-sm"><option value="25">25</option><option value="50">50</option><option value="100">100</option></select></div>
+                                <button type="button" id="f_reset" class="btn btn-sm btn-light" title="@T["Reset"]"><i class="ki-outline ki-arrows-circle fs-4"></i></button>
+                            </div>
+                        </div>
+                        <div class="card-body pt-2">
+                            <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-3 mb-0">
+                                <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0"><th>@T["ch:no"]</th><th>@T["Patient"]</th><th>@T["Fund"]</th><th class="text-end">@T["Amount"]</th><th>@T["State"]</th><th class="text-end"></th></tr></thead>
+                                <tbody class="fw-semibold text-gray-700" id="rows"></tbody>
+                            </table></div>
+                            <div class="text-center text-muted py-10 d-none" id="loadingRow"><span class="spinner-border spinner-border-sm me-2"></span>@T["Loading…"]</div>
+                            <div class="text-center text-muted py-10 d-none" id="emptyRow">@T["No charity request yet."]</div>
+                            <div class="d-flex flex-stack flex-wrap pt-5"><div class="fs-7 text-muted" id="pageInfo"></div><ul class="pagination" id="pager"></ul></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-4">
+                    <div class="card">
+                        <div class="card-header border-0 pt-6"><div class="card-title flex-column m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Charity funds"]</span>
+                            <span class="text-muted fs-7 mt-1">@T["Each fund's waivers are posted to its own expense account."]</span></div></div>
+                        <div class="card-body pt-2">
+                            @foreach (var f in Model)
+                            {
+                                var acc = accounts.FirstOrDefault(a => a.Id == f.AccountId);
+                                <div class="d-flex flex-stack py-3 border-bottom border-gray-200 border-bottom-dashed">
+                                    <div><div class="fw-bold text-gray-900">@DisplayName.Of(f.Name, f.NameEn) <span class="badge hp-code fs-9 hp-num ms-1">@f.Code</span>@if (!f.IsActive) {<span class="badge badge-light fs-9 ms-1">@T["cf:inactive"]</span>}</div>
+                                        <div class="text-muted fs-8">@(acc == null ? T["No account"].Value : acc.Label + " · " + DisplayName.Of(acc.Name, acc.NameEn))</div></div>
+                                    @if (canManage) { <button type="button" class="btn btn-sm btn-icon btn-light" data-fund-edit='@Json.Serialize(new { id = f.ID, code = f.Code, name = f.Name, nameEn = f.NameEn, accountId = f.AccountId, isActive = f.IsActive })' title="@T["Edit"]"><i class="ki-outline ki-pencil fs-5"></i></button> }
+                                </div>
+                            }
+                            @if (Model.Count == 0) { <div class="text-muted fs-7 py-3">@T["No fund yet."]</div> }
+                            @if (canManage)
+                            {
+                                <div class="border border-dashed border-gray-300 rounded p-4 mt-5" data-fund-form>
+                                    <div class="fw-bold text-gray-900 mb-3" data-fund-heading>@T["New fund"]</div>
+                                    <div class="row g-3">
+                                        <div class="col-4"><label class="form-label fs-8 required">@T["Code"]</label><input class="form-control form-control-solid form-control-sm" maxlength="20" dir="ltr" data-fd="code" /></div>
+                                        <div class="col-8"><label class="form-label fs-8 required">الاسم (عربي)</label><input class="form-control form-control-solid form-control-sm" maxlength="150" dir="rtl" data-fd="name" /></div>
+                                        <div class="col-12"><label class="form-label fs-8 required">Name (English)</label><input class="form-control form-control-solid form-control-sm" maxlength="150" dir="ltr" data-fd="nameEn" /></div>
+                                        <div class="col-12"><label class="form-label fs-8 required">@T["Expense account"]</label>
+                                            <select class="form-select form-select-solid form-select-sm" data-fd="accountId" data-placeholder="—"><option value=""></option>@foreach (var a in accounts) { <option value="@a.Id">@a.Label · @DisplayName.Of(a.Name, a.NameEn)</option> }</select></div>
+                                        <div class="col-12"><label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" data-fd="isActive" checked /><span class="form-check-label fs-8">@T["cf:active"]</span></label></div>
+                                        <div class="col-12"><button type="button" class="btn btn-sm btn-primary w-100" data-fund-save><i class="ki-outline ki-check fs-5"></i>@T["Save"]</button></div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div></div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            if (!document.getElementById('rows')) return;
+            var list = cbServerList({ url: @Json.Serialize(Url.Action("CharityData")), isAr: @(isAr ? "true" : "false"), addParams: function (p) { p.set('status', document.getElementById('f_status').value); } });
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            var W = { saved: @Json.Serialize(T["Saved"].Value), failed: @Json.Serialize(T["The change could not be saved"].Value), save: @Json.Serialize(T["Save this charity fund?"].Value),
+                edit: @Json.Serialize(T["Edit the fund"].Value) };
+            function post(u, b) { return fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(b || {}) }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); }); }
+            var form = document.querySelector('[data-fund-form]'), editing = null;
+            var fd = function (k) { return form.querySelector('[data-fd=' + k + ']'); };
+            var acc = form ? fd('accountId') : null;
+            if (acc && window.jQuery) jQuery(acc).select2({ width: '100%', allowClear: true, placeholder: '—' });
+            document.addEventListener('click', function (e) {
+                var t = e.target.closest('[data-fund-edit],[data-fund-save],[data-charity-decide]'); if (!t) return;
+                if (t.hasAttribute('data-fund-edit')) {
+                    var d = JSON.parse(t.getAttribute('data-fund-edit')); editing = d.id;
+                    form.querySelector('[data-fund-heading]').textContent = W.edit;
+                    fd('code').value = d.code; fd('name').value = d.name; fd('nameEn').value = d.nameEn; fd('isActive').checked = d.isActive;
+                    if (window.jQuery) jQuery(acc).val(d.accountId ? String(d.accountId) : '').trigger('change'); else acc.value = d.accountId || '';
+                    form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    return;
+                }
+                if (t.hasAttribute('data-fund-save')) {
+                    cbConfirm(W.save).then(function (ok) {
+                        if (!ok) return; t.disabled = true;
+                        post(@Json.Serialize(Url.Action("SaveCharityFund")) + (editing ? '?id=' + editing : ''), { code: fd('code').value, name: fd('name').value, nameEn: fd('nameEn').value, accountId: acc.value ? +acc.value : null, isActive: fd('isActive').checked })
+                            .then(function (res) { t.disabled = false; if (!res.ok) { toastr.error(res.error || W.failed); return; } toastr.success(W.saved); location.reload(); });
+                    });
+                    return;
+                }
+                var url = @Json.Serialize(Url.Content("~/Hospital/Charity/")) + t.getAttribute('data-charity-decide') + '/Decide';
+                var go = function (b) { t.disabled = true; post(url, b).then(function (res) { t.disabled = false; if (!res.ok) { toastr.error(res.error || W.failed); return; } toastr.success(W.saved); list.reload(); }); };
+                if (t.getAttribute('data-approve') === '1') cbConfirm(t.getAttribute('data-ask')).then(function (ok) { if (ok) go({ approve: true }); });
+                else cbPrompt(t.getAttribute('data-ask'), { kind: 'danger' }).then(function (why) { if (why != null) go({ approve: false, note: why }); });
+            });
+        })();
+    </script>
+}

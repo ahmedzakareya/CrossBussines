@@ -29,5 +29,9 @@ namespace CrossBuy.BL.Reporting
         // Shown as the dialog's title. The document's own name reads better than the report's: a person
         // pressing Print on entry JV-2026-003615 is looking for that number, not for "Journal voucher".
         public string? DocumentTitle { get; init; }
+
+        // Names WHICH paper the control prints, beside "Print". A screen that carries several menus (a patient's file:
+        // the bill, the prescription, the claim) otherwise shows identical buttons. Null keeps the plain "Print".
+        public string? ButtonLabel { get; init; }
     }
 }

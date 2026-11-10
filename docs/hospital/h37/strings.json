@@ -1,0 +1,24 @@
+{
+  "unit": "H37 — the procedure kit consumed from inventory (and one H29 key that was missing)",
+  "strings": {
+    "Choose a kit item that has a bill of materials": { "ar": "اختر صنف طقم له مكونات (BOM)", "en": "Choose a kit item that has a bill of materials", "fr": "Choisissez un article-kit ayant une nomenclature" },
+    "Choose the theatre store first": { "ar": "اختر مستودع العمليات أولاً", "en": "Choose the theatre store first", "fr": "Choisissez d'abord le magasin du bloc" },
+    "From the theatre store": { "ar": "من مستودع العمليات", "en": "From the theatre store", "fr": "Depuis le magasin du bloc" },
+    "In the theatre store": { "ar": "في مستودع العمليات", "en": "In the theatre store", "fr": "Au magasin du bloc" },
+    "Issue the kit now": { "ar": "صرف الطقم الآن", "en": "Issue the kit now", "fr": "Délivrer le kit maintenant" },
+    "Issue this case's kit from the theatre store now?": { "ar": "صرف طقم هذه العملية من مستودع العمليات الآن؟", "en": "Issue this case's kit from the theatre store now?", "fr": "Délivrer maintenant le kit de cette intervention depuis le magasin du bloc ?" },
+    "Issued from the store": { "ar": "صُرف من المستودع", "en": "Issued from the store", "fr": "Délivré par le magasin" },
+    "Leaves the store when the case closes": { "ar": "يُصرف من المستودع عند إغلاق العملية", "en": "Leaves the store when the case closes", "fr": "Sort du magasin à la clôture" },
+    "No operating theatre is set up yet: add a room of kind Theatre in the floor & room designer.": { "ar": "لم تُضبط غرفة عمليات بعد: أضف غرفة من نوع عمليات في مصمم الأدوار والغرف.", "en": "No operating theatre is set up yet: add a room of kind Theatre in the floor & room designer.", "fr": "Aucune salle d'opération : ajoutez une salle de type Bloc dans le concepteur." },
+    "Procedure kit": { "ar": "طقم العملية", "en": "Procedure kit", "fr": "Kit de l'intervention" },
+    "The case is closed, but its kit did not leave the store:": { "ar": "أُغلقت العملية، لكن طقمها لم يُصرف من المستودع:", "en": "The case is closed, but its kit did not leave the store:", "fr": "L'intervention est close, mais son kit n'est pas sorti du magasin :" },
+    "The kit is issued when the case is closed": { "ar": "يُصرف الطقم عند إغلاق العملية", "en": "The kit is issued when the case is closed", "fr": "Le kit est délivré à la clôture" },
+    "The kit item has no components (Inventory › the item's BOM)": { "ar": "صنف الطقم بلا مكونات (المخزون › مكونات الصنف)", "en": "The kit item has no components (Inventory › the item's BOM)", "fr": "L'article-kit n'a pas de composants (Stock › nomenclature)" },
+    "The procedure's kit...": { "ar": "طقم العملية...", "en": "The procedure's kit...", "fr": "Kit de l'intervention..." },
+    "The theatre kit tables are not created yet (hospital_h37_theatre_kits.sql)": { "ar": "جداول أطقم العمليات غير منشأة بعد (hospital_h37_theatre_kits.sql)", "en": "The theatre kit tables are not created yet (hospital_h37_theatre_kits.sql)", "fr": "Les tables des kits ne sont pas créées (hospital_h37_theatre_kits.sql)" },
+    "The theatre store...": { "ar": "مستودع العمليات...", "en": "The theatre store...", "fr": "Magasin du bloc..." },
+    "This case's kit has already left the store": { "ar": "طقم هذه العملية صُرف من المستودع بالفعل", "en": "This case's kit has already left the store", "fr": "Le kit de cette intervention est déjà sorti" },
+    "This procedure has no kit set": { "ar": "لم يُحدَّد طقم لهذا الإجراء", "en": "This procedure has no kit set", "fr": "Aucun kit défini pour cet acte" },
+    "not set": { "ar": "غير محدد", "en": "not set", "fr": "non défini" }
+  }
+}

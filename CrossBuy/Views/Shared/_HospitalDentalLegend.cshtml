@@ -1,0 +1,13 @@
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@* The odontogram's legend — ONE place for the dentist's chart and the patient's dental report (H30). *@
+    <div class="dn-legend d-flex flex-wrap gap-4 fs-8 fw-semibold text-gray-700 mt-5">
+        <span><span class="sw" style="background:#DC2626"></span>@T["Condition"]</span>
+        <span><span class="sw" style="background:repeating-linear-gradient(45deg,#fff 0 2px,#DC2626 2px 4px)"></span>@T["Treatment planned"]</span>
+        <span><span class="sw" style="background:#1D4ED8"></span>@T["Completed here"]</span>
+        <span><span class="sw" style="background:#15803D"></span>@T["Existing (elsewhere)"]</span>
+        <span><svg width="14" height="14" class="me-1" style="vertical-align:-2px"><line x1="2" y1="2" x2="12" y2="12" stroke="#475569" stroke-width="2"/><line x1="12" y1="2" x2="2" y2="12" stroke="#475569" stroke-width="2"/></svg>@T["Missing"]</span>
+        <span><svg width="14" height="14" class="me-1" style="vertical-align:-2px"><line x1="7" y1="1" x2="7" y2="13" stroke="#1D4ED8" stroke-width="3"/></svg>@T["Root canal (in the root)"]</span>
+        <span><svg width="14" height="14" class="me-1" style="vertical-align:-2px"><rect x="4" y="1" width="6" height="12" fill="#E2E8F0" stroke="#15803D"/><line x1="4" y1="5" x2="10" y2="7" stroke="#15803D"/><line x1="4" y1="9" x2="10" y2="11" stroke="#15803D"/></svg>@T["Implant"]</span>
+        <span><svg width="14" height="14" class="me-1" style="vertical-align:-2px"><line x1="2" y1="2" x2="12" y2="12" stroke="#DC2626" stroke-width="2"/><line x1="12" y1="2" x2="2" y2="12" stroke="#DC2626" stroke-width="2"/></svg>@T["Extraction planned"]</span>
+        <span>@T["Tilted tooth = impacted"]</span>
+    </div>

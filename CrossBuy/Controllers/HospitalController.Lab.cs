@@ -48,6 +48,9 @@ namespace CrossBuy.Controllers
 			ViewBag.CanVerify = await _access.CanAsync(ctx, HospitalActions.LabVerify, null, ct);
 			ViewBag.CanManage = await _access.CanAsync(ctx, HospitalActions.Manage, null, ct);
 			ViewBag.Me = ctx.EmployeeId;
+			// H27: whether the patient may see it on the portal, and who may let them
+			ViewBag.CanConsult = await _access.CanAsync(ctx, HospitalActions.Consult, null, ct);
+			ViewBag.PortalRelease = await PortalRecordsSvc.ReleaseOfAsync(ctx, HospitalPortalResultSource.Lab, id, ct);
 			return View(v);
 		}
 

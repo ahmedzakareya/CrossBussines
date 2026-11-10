@@ -15,6 +15,13 @@
     string BatchBadge(string s) => s switch { HospitalClaimBatchStatus.Paid => "success", HospitalClaimBatchStatus.Partial => "info", HospitalClaimBatchStatus.Rejected => "danger", HospitalClaimBatchStatus.Submitted => "primary", _ => "secondary" };
     string LineBadge(string s) => s switch { HospitalClaimLineStatus.Accepted => "success", HospitalClaimLineStatus.Rejected => "danger", HospitalClaimLineStatus.Resubmitted => "info", _ => "primary" };
     int flagged = Model.Claims.Sum(c => c.Lines.Count(l => l.MissingPreauth));
+    // H62: the claim check of a draft batch — errors block the submission (fix, or hold the claim); warnings do not
+    var scrub = (ViewBag.Scrub as IReadOnlyList<HospitalScrubIssue>) ?? Array.Empty<HospitalScrubIssue>();
+    int errClaims = scrub.Where(i => i.Severity == HospitalScrubSeverity.Error).Select(i => i.ClaimId).Distinct().Count();
+    int warnClaims = scrub.Where(i => i.Severity == HospitalScrubSeverity.Warning).Select(i => i.ClaimId).Distinct().Count();
+    string Issue(HospitalScrubIssue i) => i.Args.Length == 0 ? T[i.Message].Value : string.Format(T[i.Message].Value, i.Args.Select(a => a is string str ? T[str].Value : a).ToArray());
+    // H20: what posted against the batch and what the payer still owes (null = insurance accounting not set up yet)
+    var ledger = ViewBag.Ledger is ValueTuple<decimal, IReadOnlyList<HospitalClaimPosting>> lg ? lg : ((decimal, IReadOnlyList<HospitalClaimPosting>)?)null;
 }
 <link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
 @Html.AntiForgeryToken()
@@ -30,9 +37,17 @@
             </ul>
         </div>
         <div class="d-flex align-items-center gap-2 gap-lg-3 d-print-none">
-            @if (canBill && draft && Model.Claims.Count > 0)
+            @if (canBill && draft && Model.Claims.Count > 0 && errClaims > 0)
+            {
+                <button type="button" class="btn btn-sm btn-primary" disabled title="@string.Format(T["Fix or hold the {0} claims with errors before submitting"].Value, errClaims)"><i class="ki-outline ki-send fs-4"></i>@T["Submit batch"]</button>
+            }
+            else if (canBill && draft && Model.Claims.Count > 0)
             {
                 <button type="button" class="btn btn-sm btn-primary" data-submit-batch data-ask="@string.Format(T["Submit {0} to {1}? {2} claims for {3} {4}; the batch can no longer change."].Value, b.BatchNo, DisplayName.Of(Model.Row.Payer, Model.Row.PayerEn), Model.Row.Claims, Money(Model.Row.Amount), cur)"><i class="ki-outline ki-send fs-4"></i>@T["Submit batch"]</button>
+            }
+            @if (canBill && !draft && ledger is { } lr && lr.Item1 > 0)
+            {
+                <button type="button" class="btn btn-sm btn-primary" data-remit data-owed="@Plain(lr.Item1)" data-ask="@string.Format(T["{0} still owes {1} {2} on this batch: enter the amount it paid."].Value, DisplayName.Of(Model.Row.Payer, Model.Row.PayerEn), Money(lr.Item1), cur)" data-ask2="@T["And the payer's payment reference:"]"><i class="ki-outline ki-bank fs-4"></i>@T["Record payer payment"]</button>
             }
         </div>
     </div></div>
@@ -53,12 +68,65 @@
                 <div class="text-muted fs-8 mt-1">@cur</div></div></div></div>
         </div>
 
-        @if (flagged > 0)
+        @if (draft && Model.Claims.Count > 0)
+        {
+            if (errClaims > 0)
+            {
+                <div class="notice d-flex rounded border border-dashed p-6 mb-5 bg-light-danger border-danger" data-scrub-summary>
+                    <i class="ki-outline ki-shield-cross fs-2tx text-danger me-4"></i>
+                    <div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@string.Format(T["Claim check: {0} claims have errors that stop the submission"].Value, errClaims)</h4>
+                        <div class="fs-6 text-gray-700">@T["Payers reject these. Fix what each claim lists below, or hold the claim: it leaves this batch and its bill comes back with the next build."]@if (warnClaims > 0) {<span> @string.Format(T["{0} more claims have warnings only."].Value, warnClaims)</span>}</div></div>
+                </div>
+            }
+            else
+            {
+                <div class="notice d-flex rounded border border-dashed p-6 mb-5 bg-light-success border-success" data-scrub-summary>
+                    <i class="ki-outline ki-shield-tick fs-2tx text-success me-4"></i>
+                    <div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@T["Claim check: nothing stops this batch"]</h4>
+                        <div class="fs-6 text-gray-700">@(warnClaims > 0 ? string.Format(T["{0} claims have warnings: read them before submitting."].Value, warnClaims) : T["Every claim has its approvals, cover, member number, codes and diagnosis."].Value)</div></div>
+                </div>
+            }
+        }
+        else if (flagged > 0)
         {
             <div class="notice d-flex rounded border border-dashed p-6 mb-5 bg-light-danger border-danger">
                 <i class="ki-outline ki-shield-cross fs-2tx text-danger me-4"></i>
                 <div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@string.Format(T["{0} lines need the payer's approval and have none"].Value, flagged)</h4>
                     <div class="fs-6 text-gray-700">@T["They go out flagged; the payer is likely to reject them. Request the approval before submitting, or expect to resubmit with a justification."]</div></div>
+            </div>
+        }
+
+        @if (!draft && ledger is { } led)
+        {
+            <div class="card mb-5">
+                <div class="card-header border-0 pt-5">
+                    <div class="card-title align-items-start flex-column m-0">
+                        <span class="card-label fw-bold text-gray-900 fs-5">@T["Payer ledger"]</span>
+                        <span class="text-muted mt-1 fw-semibold fs-7">@T["Adjustments, rejections, recoveries and payments posted against this batch"]</span>
+                    </div>
+                    <div class="card-toolbar fs-7"><div class="text-end"><div class="text-muted">@T["Still owed by the payer"]</div><div class="fw-bold hp-num fs-4" style="color:var(--cb-brand, #3A5795)">@Money(led.Item1) <span class="fs-8 text-muted">@cur</span></div></div></div>
+                </div>
+                <div class="card-body pt-2">
+                    @if (led.Item2.Count == 0) { <div class="text-muted fs-7">@T["Nothing has posted against this batch yet."]</div> }
+                    else
+                    {
+                        <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-2 mb-0">
+                            <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0"><th>@T["Event"]</th><th>@T["Reference"]</th><th>@T["Date"]</th><th class="text-end">@T["Amount"]</th></tr></thead>
+                            <tbody class="fw-semibold text-gray-700">
+                                @foreach (var pst in led.Item2)
+                                {
+                                    var code = pst.ClaimLineId is int cl ? Model.Claims.SelectMany(c => c.Lines).FirstOrDefault(x => x.ID == cl)?.Code : null;
+                                    <tr>
+                                        <td><span class="badge badge-light-@(pst.Event == HospitalClaimEvent.Remittance || pst.Event == HospitalClaimEvent.Recovery ? "success" : pst.Event == HospitalClaimEvent.Rejection ? "danger" : "secondary") fs-8">@T["ce:" + pst.Event]</span></td>
+                                        <td class="hp-num">@(pst.Reference ?? code ?? "—")</td>
+                                        <td class="hp-num">@pst.PostedAt.ToString("yyyy-MM-dd")</td>
+                                        <td class="text-end hp-num fw-bold">@Money(pst.Amount)</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table></div>
+                    }
+                </div>
             </div>
         }
 
@@ -78,6 +146,23 @@
                     </div>
                 </div>
                 <div class="card-body pt-2">
+                    @{ var mine = scrub.Where(i => i.ClaimId == c.Claim.ID).OrderBy(i => i.Severity == HospitalScrubSeverity.Error ? 0 : 1).ToList(); }
+                    @if (mine.Count > 0)
+                    {
+                        <div class="border border-dashed rounded p-4 mb-4 @(mine.Any(i => i.Severity == HospitalScrubSeverity.Error) ? "border-danger" : "border-gray-300")" data-claim-issues="@c.Claim.ID">
+                            <div class="d-flex flex-stack flex-wrap gap-3">
+                                <div class="d-flex flex-column gap-2">
+                                    @foreach (var i in mine)
+                                    {
+                                        bool err = i.Severity == HospitalScrubSeverity.Error;
+                                        <div class="d-flex align-items-center gap-2 fs-7"><i class="ki-outline @(err ? "ki-cross-circle text-danger" : "ki-information-5 text-primary") fs-5"></i>
+                                            <span class="badge @(err ? "badge-light-danger" : "badge-light-primary") fs-9">@T[err ? "scrub:error" : "scrub:warning"]</span><span class="text-gray-800" dir="auto">@Issue(i)</span></div>
+                                    }
+                                </div>
+                                @if (canBill && draft) { <button type="button" class="btn btn-sm btn-light-danger" data-hold="@c.Claim.ID" data-ask="@string.Format(T["Hold the claim of bill {0}? It leaves this batch, and the bill comes back with the next build."].Value, c.BillNo)"><i class="ki-outline ki-time fs-5"></i>@T["Hold the claim"]</button> }
+                            </div>
+                        </div>
+                    }
                     <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-2 mb-0">
                         <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0">
                             <th class="w-100px">@T["Code"]</th><th>@T["Line"]</th><th>@T["Category"]</th><th class="text-end">@T["Amount"]</th><th class="text-end">@T["Claimed"]</th><th>@T["Status"]</th><th class="text-end w-200px"></th>
@@ -95,7 +180,7 @@
                                         @if (l.RejectCode != null) {<div class="fs-8"><span class="badge hp-code fs-9 hp-num">@l.RejectCode</span> <span class="text-danger">@l.RejectReason</span></div>}</td>
                                     <td>@T["cat:" + l.Category]</td>
                                     <td class="text-end hp-num">@Money(l.Amount)</td>
-                                    <td class="text-end hp-num fw-bold">@Money(l.InsurerAmount)@if (l.Status == HospitalClaimLineStatus.Accepted && l.AcceptedAmount != l.InsurerAmount) {<div class="text-success fs-8">@T["paid"] @Money(l.AcceptedAmount ?? 0)</div>}</td>
+                                    <td class="text-end hp-num fw-bold">@Money(l.InsurerAmount)@if (l.Status == HospitalClaimLineStatus.Accepted && l.AcceptedAmount != l.InsurerAmount) {<div class="text-success fs-8">@T["Paid"] @Money(l.AcceptedAmount ?? 0)</div>}</td>
                                     <td><span class="badge badge-light-@LineBadge(l.Status) fs-8">@T["cl:" + l.Status]</span></td>
                                     <td class="text-end">
                                         @if (canBill && !draft && l.Status == HospitalClaimLineStatus.Pending)
@@ -139,9 +224,21 @@
             }
             function done(t, after) { return function (res) { t.disabled = false; if (!res.ok) { toast('error', res.error || W.failed); return; } toast('success', W.saved); (after || swap)(res); }; }
             document.addEventListener('click', function (e) {
-                var t = e.target.closest('[data-submit-batch],[data-accept],[data-reject],[data-resubmit]'); if (!t) return;
+                var t = e.target.closest('[data-submit-batch],[data-accept],[data-reject],[data-resubmit],[data-remit],[data-hold]'); if (!t) return;
                 var ask = t.getAttribute('data-ask');
-                if (t.hasAttribute('data-submit-batch')) {
+                if (t.hasAttribute('data-hold')) {
+                    // H62: the claim leaves the draft batch; the page is rendered again in place
+                    cbConfirm(ask, { kind: 'danger' }).then(function (ok) { if (!ok) return; t.disabled = true; post(root + '/Claims/' + t.getAttribute('data-hold') + '/Hold').then(done(t)); });
+                } else if (t.hasAttribute('data-remit')) {
+                    // H20: the payer's payment, full or partial, against its reference
+                    cbPrompt(ask, { value: t.getAttribute('data-owed'), number: true }).then(function (v) {
+                        if (v == null) return;
+                        return cbPrompt(t.getAttribute('data-ask2')).then(function (ref) {
+                            if (ref == null) return; t.disabled = true;
+                            post(root + '/Batch/' + @b.ID + '/Remit', { amount: Number(String(v).replace(',', '.')), reference: ref }).then(done(t));
+                        });
+                    });
+                } else if (t.hasAttribute('data-submit-batch')) {
                     cbConfirm(ask).then(function (ok) { if (!ok) return; t.disabled = true; post(root + '/Batch/' + @b.ID + '/Submit').then(done(t)); });
                 } else if (t.hasAttribute('data-accept')) {
                     cbPrompt(ask, { value: t.getAttribute('data-full') }).then(function (v) {

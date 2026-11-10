@@ -32,8 +32,9 @@ namespace CrossBuy.Tests.SqlServer
 			await using var c = new SqlConnection(_probe!.ConnectionString);
 			await c.OpenAsync();
 			// The model maps every hospital slice's columns (H10 adds HospitalPrescriptionLines.ItemId), so the probe needs them all.
-			foreach (var s in new[] { "hospital_h1_facility.sql", "hospital_h2_patients.sql", "hospital_h3_admissions.sql", "hospital_h4_outpatient.sql",
-				"hospital_h5_consultation.sql", "hospital_h6_billing.sql", "hospital_h7_pricelists.sql", "hospital_h8_lab.sql", "hospital_h9_radiology.sql", "hospital_h10_pharmacy.sql" })
+			foreach (var s in new[] { "hospital_h1_facility.sql", "hospital_h2_patients.sql", "hospital_h3_admissions.sql", "hospital_h57_patient_merge.sql", "hospital_h59_deaths.sql", "hospital_h4_outpatient.sql",
+				"hospital_h5_consultation.sql", "hospital_h6_billing.sql", "hospital_h7_pricelists.sql", "hospital_h8_lab.sql", "hospital_h9_radiology.sql", "hospital_h10_pharmacy.sql",
+				"hospital_h11_insurance.sql", "hospital_h15_dental.sql", "hospital_h24_portal_accounts.sql", "hospital_h27_portal_records.sql", "hospital_h33_bilingual_text.sql" })   // h33 (bilingual text) and its chain
 				await _sql.RunScriptAsync(c, s);
 		}
 

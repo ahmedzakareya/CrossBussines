@@ -1,0 +1,255 @@
+{
+ "unit": "H73 — drug interactions and dose limits",
+ "strings": {
+  "A doctor's order that meets a contraindication, a major interaction or a dose above its limit stops until the doctor writes why it is still right. A moderate interaction is shown and does not stop the order. The pharmacist sees every interaction in the review.": {
+   "ar": "أمر الطبيب الذي يصطدم بموانع استعمال أو تداخل شديد أو جرعة أعلى من حدها يتوقف حتى يكتب الطبيب لماذا ما زال صحيحاً. التداخل المتوسط يُعرض ولا يوقف الأمر. ويرى الصيدلي كل تداخل في المراجعة.",
+   "en": "A doctor's order that meets a contraindication, a major interaction or a dose above its limit stops until the doctor writes why it is still right. A moderate interaction is shown and does not stop the order. The pharmacist sees every interaction in the review.",
+   "fr": "Une prescription qui rencontre une contre-indication, une interaction majeure ou une dose au-dessus de sa limite s'arrête jusqu'à ce que le médecin écrive pourquoi elle reste justifiée. Une interaction modérée est affichée sans bloquer. Le pharmacien voit chaque interaction lors de la validation."
+  },
+  "A limit is above zero": {
+   "ar": "الحد أكبر من صفر",
+   "en": "A limit is above zero",
+   "fr": "Une limite est supérieure à zéro"
+  },
+  "Add a dose limit": {
+   "ar": "إضافة حد جرعة",
+   "en": "Add a dose limit",
+   "fr": "Ajouter une limite de dose"
+  },
+  "Add an interaction": {
+   "ar": "إضافة تداخل",
+   "en": "Add an interaction",
+   "fr": "Ajouter une interaction"
+  },
+  "Alert": {
+   "ar": "التنبيه",
+   "en": "Alert",
+   "fr": "Alerte"
+  },
+  "Alerts gone past": {
+   "ar": "تنبيهات تم تجاوزها",
+   "en": "Alerts gone past",
+   "fr": "Alertes passées outre"
+  },
+  "All severities": {
+   "ar": "كل الدرجات",
+   "en": "All severities",
+   "fr": "Toutes les gravités"
+  },
+  "Any route": {
+   "ar": "أي طريق",
+   "en": "Any route",
+   "fr": "Toute voie"
+  },
+  "Choose the severity": {
+   "ar": "اختر الدرجة",
+   "en": "Choose the severity",
+   "fr": "Choisissez la gravité"
+  },
+  "Choose the unit": {
+   "ar": "اختر الوحدة",
+   "en": "Choose the unit",
+   "fr": "Choisissez l'unité"
+  },
+  "Daily limit": {
+   "ar": "الحد اليومي",
+   "en": "Daily limit",
+   "fr": "Limite journalière"
+  },
+  "Dose limit": {
+   "ar": "حد الجرعة",
+   "en": "Dose limit",
+   "fr": "Limite de dose"
+  },
+  "Dose limits": {
+   "ar": "حدود الجرعات",
+   "en": "Dose limits",
+   "fr": "Limites de dose"
+  },
+  "Drug interactions & doses": {
+   "ar": "تداخلات الأدوية والجرعات",
+   "en": "Drug interactions & doses",
+   "fr": "Interactions et doses"
+  },
+  "Drug safety is not installed yet (hospital_h73_drug_safety.sql).": {
+   "ar": "سلامة الأدوية غير مثبتة بعد (hospital_h73_drug_safety.sql).",
+   "en": "Drug safety is not installed yet (hospital_h73_drug_safety.sql).",
+   "fr": "La sécurité médicamenteuse n'est pas encore installée (hospital_h73_drug_safety.sql)."
+  },
+  "Effect": {
+   "ar": "الأثر",
+   "en": "Effect",
+   "fr": "Effet"
+  },
+  "Effect (Arabic)": {
+   "ar": "الأثر (عربي)",
+   "en": "Effect (Arabic)",
+   "fr": "Effet (arabe)"
+  },
+  "Effect (English)": {
+   "ar": "الأثر (إنجليزي)",
+   "en": "Effect (English)",
+   "fr": "Effet (anglais)"
+  },
+  "First medicine": {
+   "ar": "الدواء الأول",
+   "en": "First medicine",
+   "fr": "Premier médicament"
+  },
+  "In use": {
+   "ar": "مُفعَّل",
+   "en": "In use",
+   "fr": "Actif"
+  },
+  "Interaction": {
+   "ar": "تداخل",
+   "en": "Interaction",
+   "fr": "Interaction"
+  },
+  "Interactions": {
+   "ar": "التداخلات",
+   "en": "Interactions",
+   "fr": "Interactions"
+  },
+  "Not in use": {
+   "ar": "غير مُفعَّل",
+   "en": "Not in use",
+   "fr": "Inactif"
+  },
+  "Nothing yet.": {
+   "ar": "لا شيء بعد.",
+   "en": "Nothing yet.",
+   "fr": "Rien pour l'instant."
+  },
+  "Order anyway": {
+   "ar": "اطلب رغم ذلك",
+   "en": "Order anyway",
+   "fr": "Prescrire quand même"
+  },
+  "Save this to the drug-safety list?": {
+   "ar": "حفظ هذا في قائمة سلامة الأدوية؟",
+   "en": "Save this to the drug-safety list?",
+   "fr": "Enregistrer dans la liste de sécurité médicamenteuse ?"
+  },
+  "Search by medicine or text…": {
+   "ar": "ابحث بالدواء أو النص…",
+   "en": "Search by medicine or text…",
+   "fr": "Rechercher par médicament ou texte…"
+  },
+  "Second medicine": {
+   "ar": "الدواء الثاني",
+   "en": "Second medicine",
+   "fr": "Second médicament"
+  },
+  "Severity": {
+   "ar": "الدرجة",
+   "en": "Severity",
+   "fr": "Gravité"
+  },
+  "Single dose limit": {
+   "ar": "حد الجرعة الواحدة",
+   "en": "Single dose limit",
+   "fr": "Limite par prise"
+  },
+  "The daily limit cannot be below the single one": {
+   "ar": "لا يكون الحد اليومي أقل من حد الجرعة الواحدة",
+   "en": "The daily limit cannot be below the single one",
+   "fr": "La limite journalière ne peut être inférieure à la limite par prise"
+  },
+  "This pair is already in the list": {
+   "ar": "هذا الزوج موجود في القائمة بالفعل",
+   "en": "This pair is already in the list",
+   "fr": "Cette paire est déjà dans la liste"
+  },
+  "Write a single or a daily limit": {
+   "ar": "اكتب حد جرعة واحدة أو حداً يومياً",
+   "en": "Write a single or a daily limit",
+   "fr": "Indiquez une limite par prise ou journalière"
+  },
+  "Write both medicines (three letters at least)": {
+   "ar": "اكتب الدواءين (ثلاثة أحرف على الأقل)",
+   "en": "Write both medicines (three letters at least)",
+   "fr": "Indiquez les deux médicaments (trois lettres au moins)"
+  },
+  "Write the effect in Arabic and in English": {
+   "ar": "اكتب الأثر بالعربية والإنجليزية",
+   "en": "Write the effect in Arabic and in English",
+   "fr": "Indiquez l'effet en arabe et en anglais"
+  },
+  "Write the generic name as it appears in the medicine's name (three letters at least); it matches any name that contains it.": {
+   "ar": "اكتب الاسم العلمي كما يظهر في اسم الدواء (ثلاثة أحرف على الأقل)، ويطابق أي اسم يحتويه.",
+   "en": "Write the generic name as it appears in the medicine's name (three letters at least); it matches any name that contains it.",
+   "fr": "Écrivez le nom générique tel qu'il apparaît dans le nom du médicament (trois lettres au moins) ; il correspond à tout nom qui le contient."
+  },
+  "Write the medicine (three letters at least)": {
+   "ar": "اكتب الدواء (ثلاثة أحرف على الأقل)",
+   "en": "Write the medicine (three letters at least)",
+   "fr": "Indiquez le médicament (trois lettres au moins)"
+  },
+  "Write two different medicines": {
+   "ar": "اكتب دواءين مختلفين",
+   "en": "Write two different medicines",
+   "fr": "Indiquez deux médicaments différents"
+  },
+  "Write why this order is still right (it is kept with the order)": {
+   "ar": "اكتب لماذا ما زال هذا الأمر صحيحاً (يُحفظ مع الأمر)",
+   "en": "Write why this order is still right (it is kept with the order)",
+   "fr": "Écrivez pourquoi cette prescription reste justifiée (conservé avec elle)"
+  },
+  "{0} interacts with another medicine of this patient — see the drug-safety list": {
+   "ar": "{0} يتداخل مع دواء آخر لهذا المريض — راجع قائمة سلامة الأدوية",
+   "en": "{0} interacts with another medicine of this patient — see the drug-safety list",
+   "fr": "{0} interagit avec un autre médicament de ce patient — voir la liste de sécurité"
+  },
+  "This order meets a safety alert": {
+   "ar": "هذا الأمر يصطدم بتنبيه سلامة",
+   "en": "This order meets a safety alert",
+   "fr": "Cette prescription rencontre une alerte de sécurité"
+  },
+  "{0} with {1}": {
+   "ar": "{0} مع {1}",
+   "en": "{0} with {1}",
+   "fr": "{0} avec {1}"
+  },
+  "{0}: {1} {2} is above the single-dose limit of {3} {2}": {
+   "ar": "{0}: ‏{1} {2} أعلى من حد الجرعة الواحدة {3} {2}",
+   "en": "{0}: {1} {2} is above the single-dose limit of {3} {2}",
+   "fr": "{0} : {1} {2} dépasse la limite par prise de {3} {2}"
+  },
+  "{0}: {1} {2} a day is above the daily limit of {3} {2}": {
+   "ar": "{0}: ‏{1} {2} في اليوم أعلى من الحد اليومي {3} {2}",
+   "en": "{0}: {1} {2} a day is above the daily limit of {3} {2}",
+   "fr": "{0} : {1} {2} par jour dépasse la limite journalière de {3} {2}"
+  },
+  "sev:Contra": {
+   "ar": "مانع استعمال",
+   "en": "Contraindicated",
+   "fr": "Contre-indiqué"
+  },
+  "sev:Major": {
+   "ar": "شديد",
+   "en": "Major",
+   "fr": "Majeur"
+  },
+  "sev:Moderate": {
+   "ar": "متوسط",
+   "en": "Moderate",
+   "fr": "Modéré"
+  },
+  "alertKind:Interaction": {
+   "ar": "تداخل دوائي",
+   "en": "Drug interaction",
+   "fr": "Interaction"
+  },
+  "alertKind:Dose": {
+   "ar": "جرعة فوق الحد",
+   "en": "Dose above limit",
+   "fr": "Dose au-dessus de la limite"
+  },
+  "alertKind:Allergy": {
+   "ar": "حساسية",
+   "en": "Allergy",
+   "fr": "Allergie"
+  }
+ }
+}

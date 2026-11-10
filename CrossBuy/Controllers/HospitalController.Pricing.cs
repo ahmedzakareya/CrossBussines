@@ -80,6 +80,8 @@ namespace CrossBuy.Controllers
 			foreach (var row in await _pricing.ListsAsync(ctx, ct))
 				if (row.List.Status != HospitalPriceListStatus.Archived) lists.Add((await _pricing.ListAsync(ctx, row.List.ID, ct))!);
 			ViewBag.Lists = lists;
+			// H15: a service may be a dental procedure; its profile is edited on this card
+			if (entry.ServiceId is int sid) ViewBag.DentalProfile = await DentalSvc.ProcedureOfAsync(ctx, sid, ct);
 			return View(entry);
 		}
 
@@ -139,6 +141,7 @@ namespace CrossBuy.Controllers
 			ViewBag.Versions = await _db.HospitalPriceLists.AsNoTracking().Where(l => l.CompanyId == ctx.CompanyId && l.Code == v.List.Code).OrderByDescending(l => l.Version).ToListAsync(ct);
 			ViewBag.Patients = await _db.HospitalPatients.AsNoTracking().Where(p => p.CompanyId == ctx.CompanyId && p.PriceListId == id).OrderBy(p => p.Mrn).Take(50)
 				.Select(p => new HospitalListPatient(p.ID, p.Mrn, p.Name, p.NameEn, p.PhotoPath)).ToListAsync(ct);
+			ViewBag.Categories = await _pricing.CategoryChoicesAsync(ctx, id, ct);
 			return View(v);
 		}
 
@@ -164,6 +167,55 @@ namespace CrossBuy.Controllers
 			var ctx = await ContextAsync(ct);
 			if (ctx == null) return NotFound(new { ok = false, code = "not_found" });
 			return Result(await _pricing.AddLinesAsync(ctx, id, input?.Keys, DateTime.UtcNow, ct));
+		}
+
+		// ---------------- H22: any inventory item, or a whole category ----------------
+
+		public sealed class HospitalItemPicksInput { public List<HospitalItemPick>? Items { get; set; } }
+		public sealed class HospitalCategoryAddInput { public int CategoryId { get; set; } public string? Kind { get; set; } public bool KeepLinked { get; set; } }
+
+		[HttpGet("PriceList/{id:int}/ItemSearch")]
+		[HospitalPerm(HospitalActions.Manage)]
+		public async Task<IActionResult> PriceListItemSearch(int id, string? q, CancellationToken ct = default)
+		{
+			var ctx = await ContextAsync(ct);
+			if (ctx == null) return NotFound(new { ok = false, code = "not_found" });
+			var hits = await _pricing.SearchItemsAsync(ctx, id, q, ct);
+			return Json(new { ok = true, items = hits.Select(h => new { id = h.ItemId, code = h.Code, name = DisplayName.Of(h.Name, h.NameEn), category = DisplayName.Of(h.Category, h.CategoryEn), price = h.MainPrice, kind = h.Kind, onList = h.OnList }) });
+		}
+
+		[HttpGet("Catalog/ItemSearch")]
+		[HospitalPerm(HospitalActions.Manage)]
+		public async Task<IActionResult> CatalogItemSearch(string? q, CancellationToken ct = default)
+		{
+			var ctx = await ContextAsync(ct);
+			if (ctx == null) return NotFound(new { ok = false, code = "not_found" });
+			var hits = await _pricing.SearchItemsAsync(ctx, null, q, ct);
+			return Json(new { ok = true, items = hits.Select(h => new { id = h.ItemId, code = h.Code, name = DisplayName.Of(h.Name, h.NameEn), category = DisplayName.Of(h.Category, h.CategoryEn), price = h.MainPrice, kind = h.Kind, onList = h.OnList }) });
+		}
+
+		[HttpPost("Catalog/AddItems"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Manage)]
+		public async Task<IActionResult> CatalogAddItems([FromBody] HospitalItemPicksInput input, CancellationToken ct = default)
+		{
+			var ctx = await ContextAsync(ct);
+			if (ctx == null) return NotFound(new { ok = false, code = "not_found" });
+			return Result(await _pricing.JoinCatalogAsync(ctx, input?.Items, ctx.EmployeeId, DateTime.UtcNow, ct));
+		}
+
+		[HttpPost("PriceList/{id:int}/AddItems"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Manage)]
+		public async Task<IActionResult> AddPriceListItems(int id, [FromBody] HospitalItemPicksInput input, CancellationToken ct = default)
+		{
+			var ctx = await ContextAsync(ct);
+			if (ctx == null) return NotFound(new { ok = false, code = "not_found" });
+			return Result(await _pricing.AddItemsAsync(ctx, id, input?.Items, ctx.EmployeeId, DateTime.UtcNow, ct));
+		}
+
+		[HttpPost("PriceList/{id:int}/AddCategory"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Manage)]
+		public async Task<IActionResult> AddPriceListCategory(int id, [FromBody] HospitalCategoryAddInput input, CancellationToken ct = default)
+		{
+			var ctx = await ContextAsync(ct);
+			if (ctx == null || input == null) return NotFound(new { ok = false, code = "not_found" });
+			return Result(await _pricing.AddCategoryAsync(ctx, id, input.CategoryId, input.Kind, input.KeepLinked, ctx.EmployeeId, DateTime.UtcNow, ct));
 		}
 
 		[HttpPost("PriceList/{id:int}/ApproveLines"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Manage)]

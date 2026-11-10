@@ -1,0 +1,75 @@
+{
+  "unit": "H31 — an imaging order's pictures (radiology page, dentist's chart, patient portal)",
+  "strings": {
+    "Images": {
+      "en": "Images",
+      "ar": "الصور",
+      "fr": "Images"
+    },
+    "Locked with the signed report": {
+      "en": "Locked with the signed report",
+      "ar": "مقفلة مع التقرير الموقّع",
+      "fr": "Verrouillées avec le compte rendu signé"
+    },
+    "JPEG, PNG or WebP, up to 15 MB each; the patient sees them once the report is released": {
+      "en": "JPEG, PNG or WebP, up to 15 MB each; the patient sees them once the report is released",
+      "ar": "JPEG أو PNG أو WebP، حتى ١٥ ميجابايت للصورة؛ يراها المريض بعد إتاحة التقرير له",
+      "fr": "JPEG, PNG ou WebP, jusqu'à 15 Mo chacune ; le patient les voit une fois le compte rendu publié"
+    },
+    "Attach images": {
+      "en": "Attach images",
+      "ar": "إرفاق صور",
+      "fr": "Joindre des images"
+    },
+    "No images attached yet": {
+      "en": "No images attached yet",
+      "ar": "لا توجد صور مرفقة بعد",
+      "fr": "Aucune image jointe"
+    },
+    "Attach these images to the exam?": {
+      "en": "Attach these images to the exam?",
+      "ar": "إرفاق هذه الصور بالفحص؟",
+      "fr": "Joindre ces images à l'examen ?"
+    },
+    "Remove this image from the exam?": {
+      "en": "Remove this image from the exam?",
+      "ar": "حذف هذه الصورة من الفحص؟",
+      "fr": "Retirer cette image de l'examen ?"
+    },
+    "Choose the images to attach": {
+      "en": "Choose the images to attach",
+      "ar": "اختر الصور المراد إرفاقها",
+      "fr": "Choisissez les images à joindre"
+    },
+    "A signed report's images are locked": {
+      "en": "A signed report's images are locked",
+      "ar": "صور التقرير الموقّع مقفلة",
+      "fr": "Les images d'un compte rendu signé sont verrouillées"
+    },
+    "An image is up to 15 MB": {
+      "en": "An image is up to 15 MB",
+      "ar": "حجم الصورة حتى ١٥ ميجابايت",
+      "fr": "Une image fait au plus 15 Mo"
+    },
+    "Only JPEG, PNG or WebP images are attached": {
+      "en": "Only JPEG, PNG or WebP images are attached",
+      "ar": "تُرفق صور JPEG أو PNG أو WebP فقط",
+      "fr": "Seules les images JPEG, PNG ou WebP sont acceptées"
+    },
+    "The imaging pictures table is not created yet (hospital_h31_rad_images.sql)": {
+      "en": "The imaging pictures table is not created yet (hospital_h31_rad_images.sql)",
+      "ar": "جدول صور الأشعة لم يُنشأ بعد (hospital_h31_rad_images.sql)",
+      "fr": "La table des images d'imagerie n'est pas encore créée (hospital_h31_rad_images.sql)"
+    },
+    "Remove": {
+      "en": "Remove",
+      "ar": "حذف",
+      "fr": "Supprimer"
+    },
+    "attached images": {
+      "en": "images",
+      "ar": "صور",
+      "fr": "images"
+    }
+  }
+}

@@ -1,0 +1,796 @@
+{
+  "_about": "H13 emergency + H14 nursing strings for CrossBuy/Resources/HospitalResources{,.ar,.en,.fr}.resx. Key = resx data name; 'en' is the English text shown.",
+  "strings": {
+    "A controlled drug is given with a second signature.": {
+      "en": "A controlled drug is given with a second signature.",
+      "ar": "الدواء المخدِّر يُعطى بتوقيع ثانٍ.",
+      "fr": "Un stupéfiant s'administre avec une seconde signature."
+    },
+    "A controlled drug needs a witness": {
+      "en": "A controlled drug needs a witness",
+      "ar": "الدواء المخدِّر يحتاج شاهداً",
+      "fr": "Un stupéfiant exige un témoin"
+    },
+    "A patient a doctor has seen did not leave without being seen": {
+      "en": "A patient a doctor has seen did not leave without being seen",
+      "ar": "مريض رآه الطبيب لم يغادر دون أن يُرى",
+      "fr": "Un patient vu par un médecin n'est pas parti sans être vu"
+    },
+    "A patient is in this bay; move them before closing it": {
+      "en": "A patient is in this bay; move them before closing it",
+      "ar": "يوجد مريض في هذا المكان؛ انقله قبل إغلاقه",
+      "fr": "Un patient occupe ce box ; déplacez-le avant de le fermer"
+    },
+    "A vital sign is out of the possible range": {
+      "en": "A vital sign is out of the possible range",
+      "ar": "إحدى العلامات الحيوية خارج المدى الممكن",
+      "fr": "Un signe vital est hors des valeurs possibles"
+    },
+    "Add the department's bays (resuscitation, acute, minor) to place patients in them.": {
+      "en": "Add the department's bays (resuscitation, acute, minor) to place patients in them.",
+      "ar": "أضف أماكن القسم (إنعاش، حادة، بسيطة) لوضع المرضى فيها.",
+      "fr": "Ajoutez les box du service (déchocage, aigus, légers) pour y placer les patients."
+    },
+    "An admitted patient is accommodated from the accommodation window; the outcome here records the department's decision.": {
+      "en": "An admitted patient is accommodated from the accommodation window; the outcome here records the department's decision.",
+      "ar": "المريض المقرر تنويمه يُسكَّن من نافذة التسكين؛ والنتيجة هنا تسجّل قرار القسم.",
+      "fr": "Un patient hospitalisé est installé depuis la fenêtre d'hébergement ; l'issue ici enregistre la décision du service."
+    },
+    "An as-needed order has no fixed hours": {
+      "en": "An as-needed order has no fixed hours",
+      "ar": "الأمر عند الحاجة ليس له ساعات ثابتة",
+      "fr": "Une prescription si besoin n'a pas d'heures fixes"
+    },
+    "Another bay uses this code": {
+      "en": "Another bay uses this code",
+      "ar": "هذا الرمز مستخدم لمكان آخر",
+      "fr": "Un autre box utilise ce code"
+    },
+    "Another patient is in this bay": {
+      "en": "Another patient is in this bay",
+      "ar": "يوجد مريض آخر في هذا المكان",
+      "fr": "Un autre patient occupe ce box"
+    },
+    "Arrival mode": {
+      "en": "Arrival mode",
+      "ar": "طريقة الوصول",
+      "fr": "Mode d'arrivée"
+    },
+    "As needed": {
+      "en": "As needed",
+      "ar": "عند الحاجة",
+      "fr": "Si besoin"
+    },
+    "As needed (PRN)": {
+      "en": "As needed (PRN)",
+      "ar": "عند الحاجة (PRN)",
+      "fr": "Si besoin (PRN)"
+    },
+    "Bay": {
+      "en": "Bay",
+      "ar": "المكان",
+      "fr": "Box"
+    },
+    "Bays": {
+      "en": "Bays",
+      "ar": "الأماكن",
+      "fr": "Box"
+    },
+    "Choose how the patient arrived": {
+      "en": "Choose how the patient arrived",
+      "ar": "اختر طريقة وصول المريض",
+      "fr": "Choisissez le mode d'arrivée du patient"
+    },
+    "Choose the doctor who takes the patient": {
+      "en": "Choose the doctor who takes the patient",
+      "ar": "اختر الطبيب الذي يستلم المريض",
+      "fr": "Choisissez le médecin qui prend le patient"
+    },
+    "Choose the outcome": {
+      "en": "Choose the outcome",
+      "ar": "اختر النتيجة",
+      "fr": "Choisissez l'issue"
+    },
+    "Choose the patient, or describe the unknown patient": {
+      "en": "Choose the patient, or describe the unknown patient",
+      "ar": "اختر المريض، أو صِف المريض المجهول",
+      "fr": "Choisissez le patient, ou décrivez le patient inconnu"
+    },
+    "Choose the route": {
+      "en": "Choose the route",
+      "ar": "اختر طريقة الإعطاء",
+      "fr": "Choisissez la voie"
+    },
+    "Choose the scheduled dose": {
+      "en": "Choose the scheduled dose",
+      "ar": "اختر الجرعة المجدولة",
+      "fr": "Choisissez la dose prévue"
+    },
+    "Choose the zone": {
+      "en": "Choose the zone",
+      "ar": "اختر المنطقة",
+      "fr": "Choisissez la zone"
+    },
+    "Choose what happened to the dose": {
+      "en": "Choose what happened to the dose",
+      "ar": "اختر ما حدث للجرعة",
+      "fr": "Choisissez ce qu'il est advenu de la dose"
+    },
+    "Choose where the patient goes": {
+      "en": "Choose where the patient goes",
+      "ar": "اختر إلى أين يذهب المريض",
+      "fr": "Choisissez où va le patient"
+    },
+    "Click a due dose to record what happened to it": {
+      "en": "Click a due dose to record what happened to it",
+      "ar": "اضغط الجرعة المستحقة لتسجيل ما حدث لها",
+      "fr": "Cliquez une dose due pour enregistrer ce qu'il en est"
+    },
+    "Close the visit": {
+      "en": "Close the visit",
+      "ar": "إغلاق الزيارة",
+      "fr": "Clôturer le passage"
+    },
+    "Complaint": {
+      "en": "Complaint",
+      "ar": "الشكوى",
+      "fr": "Motif"
+    },
+    "Controlled drug": {
+      "en": "Controlled drug",
+      "ar": "دواء مخدِّر",
+      "fr": "Stupéfiant"
+    },
+    "Controlled — two signatures": {
+      "en": "Controlled — two signatures",
+      "ar": "مخدِّر — توقيع شاهدين",
+      "fr": "Stupéfiant — deux signatures"
+    },
+    "Danger-zone vital signs: consider ESI 2.": {
+      "en": "Danger-zone vital signs: consider ESI 2.",
+      "ar": "علامات حيوية في منطقة الخطر: فكّر في ESI 2.",
+      "fr": "Signes vitaux en zone de danger : envisagez ESI 2."
+    },
+    "Door-to-doctor": {
+      "en": "Door-to-doctor",
+      "ar": "من الباب للطبيب",
+      "fr": "Porte-médecin"
+    },
+    "Dose": {
+      "en": "Dose",
+      "ar": "الجرعة",
+      "fr": "Dose"
+    },
+    "Doses due now": {
+      "en": "Doses due now",
+      "ar": "جرعات مستحقة الآن",
+      "fr": "Doses dues maintenant"
+    },
+    "ESI 1 is triaged on sight; any other level is triaged with vital signs": {
+      "en": "ESI 1 is triaged on sight; any other level is triaged with vital signs",
+      "ar": "ESI 1 يُفرز فوراً عند الرؤية؛ وأي مستوى آخر يُفرز بالعلامات الحيوية",
+      "fr": "ESI 1 se trie à vue ; tout autre niveau se trie avec les signes vitaux"
+    },
+    "ESI triage scale from 1 (most urgent) to 5": {
+      "en": "ESI triage scale from 1 (most urgent) to 5",
+      "ar": "مقياس الفرز ESI من ١ (الأخطر) إلى ٥",
+      "fr": "Échelle de tri ESI de 1 (le plus urgent) à 5"
+    },
+    "Emergency arrival": {
+      "en": "Emergency arrival",
+      "ar": "تسجيل وصول للطوارئ",
+      "fr": "Arrivée aux urgences"
+    },
+    "Emergency bays": {
+      "en": "Emergency bays",
+      "ar": "أماكن الطوارئ",
+      "fr": "Box des urgences"
+    },
+    "Emergency board": {
+      "en": "Emergency board",
+      "ar": "لوحة الطوارئ",
+      "fr": "Tableau des urgences"
+    },
+    "Enter at least the heart rate and SpO2": {
+      "en": "Enter at least the heart rate and SpO2",
+      "ar": "أدخل نبض القلب والتشبع بالأكسجين على الأقل",
+      "fr": "Saisissez au moins la fréquence cardiaque et la SpO2"
+    },
+    "Enter the dose": {
+      "en": "Enter the dose",
+      "ar": "أدخل الجرعة",
+      "fr": "Saisissez la dose"
+    },
+    "Enter the drug": {
+      "en": "Enter the drug",
+      "ar": "أدخل الدواء",
+      "fr": "Saisissez le médicament"
+    },
+    "Enter the presenting complaint": {
+      "en": "Enter the presenting complaint",
+      "ar": "أدخل الشكوى الرئيسية",
+      "fr": "Saisissez le motif de consultation"
+    },
+    "Give": {
+      "en": "Give",
+      "ar": "إعطاء",
+      "fr": "Administrer"
+    },
+    "Give the hours of the doses, or mark the order as needed": {
+      "en": "Give the hours of the doses, or mark the order as needed",
+      "ar": "حدد ساعات الجرعات، أو اجعل الأمر عند الحاجة",
+      "fr": "Indiquez les heures des doses, ou marquez la prescription si besoin"
+    },
+    "Hours": {
+      "en": "Hours",
+      "ar": "الساعات",
+      "fr": "Heures"
+    },
+    "Identify the patient": {
+      "en": "Identify the patient",
+      "ar": "تعريف المريض",
+      "fr": "Identifier le patient"
+    },
+    "In department now": {
+      "en": "In department now",
+      "ar": "في القسم الآن",
+      "fr": "Dans le service maintenant"
+    },
+    "Later": {
+      "en": "Later",
+      "ar": "لاحقاً",
+      "fr": "Plus tard"
+    },
+    "Leave it empty for an unknown patient and describe them below.": {
+      "en": "Leave it empty for an unknown patient and describe them below.",
+      "ar": "اتركه فارغاً للمريض المجهول وصِفه بالأسفل.",
+      "fr": "Laissez vide pour un patient inconnu et décrivez-le ci-dessous."
+    },
+    "Left without being seen": {
+      "en": "Left without being seen",
+      "ar": "غادر دون رؤية الطبيب",
+      "fr": "Parti sans être vu"
+    },
+    "Link the file": {
+      "en": "Link the file",
+      "ar": "ربط الملف",
+      "fr": "Lier le dossier"
+    },
+    "Link this visit to the file of {0}?": {
+      "en": "Link this visit to the file of {0}?",
+      "ar": "ربط هذه الزيارة بملف {0}؟",
+      "fr": "Lier ce passage au dossier de {0} ?"
+    },
+    "Longest wait": {
+      "en": "Longest wait",
+      "ar": "أطول انتظار",
+      "fr": "Attente la plus longue"
+    },
+    "Medication": {
+      "en": "Medication",
+      "ar": "الدواء",
+      "fr": "Médicament"
+    },
+    "Medication administration record — {0}": {
+      "en": "Medication administration record — {0}",
+      "ar": "سجل إعطاء الأدوية — {0}",
+      "fr": "Registre d'administration des médicaments — {0}"
+    },
+    "Medication order": {
+      "en": "Medication order",
+      "ar": "أمر دوائي",
+      "fr": "Prescription"
+    },
+    "Move to": {
+      "en": "Move to",
+      "ar": "نقل إلى",
+      "fr": "Déplacer vers"
+    },
+    "Move {0} to {1}?": {
+      "en": "Move {0} to {1}?",
+      "ar": "نقل {0} إلى {1}؟",
+      "fr": "Déplacer {0} vers {1} ?"
+    },
+    "New arrival": {
+      "en": "New arrival",
+      "ar": "وصول حالة جديدة",
+      "fr": "Nouvelle arrivée"
+    },
+    "No bay": {
+      "en": "No bay",
+      "ar": "بدون مكان",
+      "fr": "Sans box"
+    },
+    "No doctor yet": {
+      "en": "No doctor yet",
+      "ar": "بدون طبيب بعد",
+      "fr": "Pas encore de médecin"
+    },
+    "No emergency bays yet": {
+      "en": "No emergency bays yet",
+      "ar": "لا توجد أماكن طوارئ بعد",
+      "fr": "Aucun box d'urgence pour l'instant"
+    },
+    "No medication orders.": {
+      "en": "No medication orders.",
+      "ar": "لا توجد أوامر دوائية.",
+      "fr": "Aucune prescription."
+    },
+    "No nursing tasks.": {
+      "en": "No nursing tasks.",
+      "ar": "لا توجد مهام تمريض.",
+      "fr": "Aucun soin prévu."
+    },
+    "No wards yet: add them in the facility.": {
+      "en": "No wards yet: add them in the facility.",
+      "ar": "لا توجد أجنحة بعد: أضفها من إعداد المنشأة.",
+      "fr": "Aucune unité pour l'instant : ajoutez-les dans l'établissement."
+    },
+    "Nobody is accommodated on this ward.": {
+      "en": "Nobody is accommodated on this ward.",
+      "ar": "لا يوجد مرضى منوّمون في هذا الجناح.",
+      "fr": "Personne n'est hospitalisé dans cette unité."
+    },
+    "Not triaged": {
+      "en": "Not triaged",
+      "ar": "لم يُفرز",
+      "fr": "Non trié"
+    },
+    "Nursing": {
+      "en": "Nursing",
+      "ar": "التمريض",
+      "fr": "Soins infirmiers"
+    },
+    "Nursing station": {
+      "en": "Nursing station",
+      "ar": "محطة التمريض",
+      "fr": "Poste de soins"
+    },
+    "Nursing tasks": {
+      "en": "Nursing tasks",
+      "ar": "مهام التمريض",
+      "fr": "Soins à faire"
+    },
+    "Nursing tasks due": {
+      "en": "Nursing tasks due",
+      "ar": "مهام تمريض مستحقة",
+      "fr": "Soins dus"
+    },
+    "Outcome": {
+      "en": "Outcome",
+      "ar": "النتيجة",
+      "fr": "Issue"
+    },
+    "Outcome note": {
+      "en": "Outcome note",
+      "ar": "ملاحظة النتيجة",
+      "fr": "Note sur l'issue"
+    },
+    "Overdue": {
+      "en": "Overdue",
+      "ar": "متأخرة",
+      "fr": "En retard"
+    },
+    "Overdue doses": {
+      "en": "Overdue doses",
+      "ar": "جرعات متأخرة",
+      "fr": "Doses en retard"
+    },
+    "Pain 0–10": {
+      "en": "Pain 0–10",
+      "ar": "الألم ٠–١٠",
+      "fr": "Douleur 0–10"
+    },
+    "Patients on the ward": {
+      "en": "Patients on the ward",
+      "ar": "المرضى في الجناح",
+      "fr": "Patients de l'unité"
+    },
+    "Place in bay": {
+      "en": "Place in bay",
+      "ar": "وضع في المكان",
+      "fr": "Placer dans le box"
+    },
+    "Place {0} in bay {1}?": {
+      "en": "Place {0} in bay {1}?",
+      "ar": "وضع {0} في المكان {1}؟",
+      "fr": "Placer {0} dans le box {1} ?"
+    },
+    "Record": {
+      "en": "Record",
+      "ar": "تسجيل",
+      "fr": "Enregistrer"
+    },
+    "Register arrival": {
+      "en": "Register arrival",
+      "ar": "تسجيل الوصول",
+      "fr": "Enregistrer l'arrivée"
+    },
+    "Register the arrival of {0}?": {
+      "en": "Register the arrival of {0}?",
+      "ar": "تسجيل وصول {0}؟",
+      "fr": "Enregistrer l'arrivée de {0} ?"
+    },
+    "Resuscitation": {
+      "en": "Resuscitation",
+      "ar": "إنعاش",
+      "fr": "Déchocage"
+    },
+    "Route": {
+      "en": "Route",
+      "ar": "طريقة الإعطاء",
+      "fr": "Voie"
+    },
+    "Save handover": {
+      "en": "Save handover",
+      "ar": "حفظ التسليم",
+      "fr": "Enregistrer la relève"
+    },
+    "Save triage": {
+      "en": "Save triage",
+      "ar": "حفظ الفرز",
+      "fr": "Enregistrer le tri"
+    },
+    "Shift handover": {
+      "en": "Shift handover",
+      "ar": "تسليم المناوبة",
+      "fr": "Relève d'équipe"
+    },
+    "Stop": {
+      "en": "Stop",
+      "ar": "إيقاف",
+      "fr": "Arrêter"
+    },
+    "Stop the order {0}? Its future doses are no longer given.": {
+      "en": "Stop the order {0}? Its future doses are no longer given.",
+      "ar": "إيقاف الأمر {0}؟ لن تُعطى جرعاته القادمة.",
+      "fr": "Arrêter la prescription {0} ? Ses prochaines doses ne seront plus administrées."
+    },
+    "Stopped": {
+      "en": "Stopped",
+      "ar": "موقوف",
+      "fr": "Arrêtée"
+    },
+    "The department's own places. They are not facility beds: a ward never accommodates a patient in an emergency bay.": {
+      "en": "The department's own places. They are not facility beds: a ward never accommodates a patient in an emergency bay.",
+      "ar": "أماكن خاصة بالقسم وليست أسرّة المنشأة: لا يُسكَّن مريض جناح في مكان طوارئ.",
+      "fr": "Les places propres au service, pas des lits de l'établissement : une unité n'héberge jamais un patient dans un box d'urgence."
+    },
+    "The hours are a list like 06,14,22": {
+      "en": "The hours are a list like 06,14,22",
+      "ar": "الساعات قائمة مثل 06,14,22",
+      "fr": "Les heures sont une liste comme 06,14,22"
+    },
+    "The pain score is 0 to 10": {
+      "en": "The pain score is 0 to 10",
+      "ar": "درجة الألم من ٠ إلى ١٠",
+      "fr": "Le score de douleur va de 0 à 10"
+    },
+    "The patient cannot go there from this lane": {
+      "en": "The patient cannot go there from this lane",
+      "ar": "لا يمكن نقل المريض إلى هناك من هذا المسار",
+      "fr": "Le patient ne peut pas aller là depuis cette colonne"
+    },
+    "The patient is no longer admitted": {
+      "en": "The patient is no longer admitted",
+      "ar": "المريض لم يعد منوّماً",
+      "fr": "Le patient n'est plus hospitalisé"
+    },
+    "The triage level is 1 to 5": {
+      "en": "The triage level is 1 to 5",
+      "ar": "مستوى الفرز من ١ إلى ٥",
+      "fr": "Le niveau de tri va de 1 à 5"
+    },
+    "The witness must be someone else": {
+      "en": "The witness must be someone else",
+      "ar": "يجب أن يكون الشاهد شخصاً آخر",
+      "fr": "Le témoin doit être une autre personne"
+    },
+    "This dose is already recorded": {
+      "en": "This dose is already recorded",
+      "ar": "هذه الجرعة مسجلة بالفعل",
+      "fr": "Cette dose est déjà enregistrée"
+    },
+    "This dose is not due yet": {
+      "en": "This dose is not due yet",
+      "ar": "هذه الجرعة لم يحن موعدها بعد",
+      "fr": "Cette dose n'est pas encore due"
+    },
+    "This is not one of the order's doses": {
+      "en": "This is not one of the order's doses",
+      "ar": "هذه ليست من جرعات الأمر",
+      "fr": "Ce n'est pas une dose de cette prescription"
+    },
+    "This order is already stopped": {
+      "en": "This order is already stopped",
+      "ar": "هذا الأمر موقوف بالفعل",
+      "fr": "Cette prescription est déjà arrêtée"
+    },
+    "This order is stopped": {
+      "en": "This order is stopped",
+      "ar": "هذا الأمر موقوف",
+      "fr": "Cette prescription est arrêtée"
+    },
+    "This patient is already in the department": {
+      "en": "This patient is already in the department",
+      "ar": "هذا المريض موجود في القسم بالفعل",
+      "fr": "Ce patient est déjà dans le service"
+    },
+    "This task is already done": {
+      "en": "This task is already done",
+      "ar": "هذه المهمة منجزة بالفعل",
+      "fr": "Ce soin est déjà fait"
+    },
+    "This visit already has its patient": {
+      "en": "This visit already has its patient",
+      "ar": "هذه الزيارة مربوطة بمريضها بالفعل",
+      "fr": "Ce passage a déjà son patient"
+    },
+    "This visit is already closed": {
+      "en": "This visit is already closed",
+      "ar": "هذه الزيارة مغلقة بالفعل",
+      "fr": "Ce passage est déjà clôturé"
+    },
+    "Triage": {
+      "en": "Triage",
+      "ar": "الفرز",
+      "fr": "Tri"
+    },
+    "Triage at the door": {
+      "en": "Triage at the door",
+      "ar": "الفرز عند الباب",
+      "fr": "Tri à l'arrivée"
+    },
+    "Triage note": {
+      "en": "Triage note",
+      "ar": "ملاحظة الفرز",
+      "fr": "Note de tri"
+    },
+    "Triage the patient first": {
+      "en": "Triage the patient first",
+      "ar": "افرز المريض أولاً",
+      "fr": "Triez d'abord le patient"
+    },
+    "Unknown patient": {
+      "en": "Unknown patient",
+      "ar": "مريض مجهول",
+      "fr": "Patient inconnu"
+    },
+    "Witness": {
+      "en": "Witness",
+      "ar": "الشاهد",
+      "fr": "Témoin"
+    },
+    "Write the handover": {
+      "en": "Write the handover",
+      "ar": "اكتب التسليم",
+      "fr": "Rédigez la relève"
+    },
+    "Write the order": {
+      "en": "Write the order",
+      "ar": "كتابة الأمر",
+      "fr": "Rédiger la prescription"
+    },
+    "Write the order {0} for {1}?": {
+      "en": "Write the order {0} for {1}?",
+      "ar": "كتابة الأمر {0} لـ {1}؟",
+      "fr": "Rédiger la prescription {0} pour {1} ?"
+    },
+    "Write the task": {
+      "en": "Write the task",
+      "ar": "اكتب المهمة",
+      "fr": "Rédigez le soin"
+    },
+    "Write why the dose was not given": {
+      "en": "Write why the dose was not given",
+      "ar": "اكتب سبب عدم إعطاء الجرعة",
+      "fr": "Indiquez pourquoi la dose n'a pas été administrée"
+    },
+    "Zone": {
+      "en": "Zone",
+      "ar": "المنطقة",
+      "fr": "Zone"
+    },
+    "an unknown patient": {
+      "en": "an unknown patient",
+      "ar": "مريض مجهول",
+      "fr": "un patient inconnu"
+    },
+    "arr:Ambulance": {
+      "en": "Ambulance",
+      "ar": "إسعاف",
+      "fr": "Ambulance"
+    },
+    "arr:Referral": {
+      "en": "Referral",
+      "ar": "تحويل",
+      "fr": "Adressé"
+    },
+    "arr:WalkIn": {
+      "en": "Walk-in",
+      "ar": "مشياً",
+      "fr": "Venu seul"
+    },
+    "danger-zone vitals": {
+      "en": "danger-zone vitals",
+      "ar": "علامات في منطقة الخطر",
+      "fr": "signes vitaux à risque"
+    },
+    "e.g. BP 85/50, doctor informed": {
+      "en": "e.g. BP 85/50, doctor informed",
+      "ar": "مثلاً: الضغط 85/50، أُبلغ الطبيب",
+      "fr": "ex. TA 85/50, médecin prévenu"
+    },
+    "e.g. dressing change": {
+      "en": "e.g. dressing change",
+      "ar": "مثلاً: تغيير ضماد",
+      "fr": "ex. réfection du pansement"
+    },
+    "e.g. unknown man, about 40, brought by ambulance": {
+      "en": "e.g. unknown man, about 40, brought by ambulance",
+      "ar": "مثلاً: رجل مجهول حوالي ٤٠ سنة، بالإسعاف",
+      "fr": "ex. homme inconnu, la quarantaine, amené en ambulance"
+    },
+    "er:Disposition": {
+      "en": "Disposition",
+      "ar": "القرار",
+      "fr": "Orientation"
+    },
+    "er:Observation": {
+      "en": "Observation",
+      "ar": "ملاحظة",
+      "fr": "Observation"
+    },
+    "er:Treatment": {
+      "en": "In treatment",
+      "ar": "تحت العلاج",
+      "fr": "En soins"
+    },
+    "er:Triage": {
+      "en": "Triage",
+      "ar": "الفرز",
+      "fr": "Tri"
+    },
+    "er:Waiting": {
+      "en": "Waiting for doctor",
+      "ar": "انتظار الطبيب",
+      "fr": "Attente du médecin"
+    },
+    "last 30 days": {
+      "en": "last 30 days",
+      "ar": "آخر ٣٠ يوماً",
+      "fr": "30 derniers jours"
+    },
+    "mar:Given": {
+      "en": "Given",
+      "ar": "أُعطيت",
+      "fr": "Administrée"
+    },
+    "mar:Held": {
+      "en": "Held",
+      "ar": "موقوفة",
+      "fr": "Suspendue"
+    },
+    "mar:Missed": {
+      "en": "Missed",
+      "ar": "فائتة",
+      "fr": "Manquée"
+    },
+    "need recording or a documented reason": {
+      "en": "need recording or a documented reason",
+      "ar": "تحتاج تسجيلاً أو سبباً موثقاً",
+      "fr": "à enregistrer ou à justifier"
+    },
+    "nobody waiting": {
+      "en": "nobody waiting",
+      "ar": "لا أحد ينتظر",
+      "fr": "personne n'attend"
+    },
+    "not identified": {
+      "en": "not identified",
+      "ar": "غير معرَّف",
+      "fr": "non identifié"
+    },
+    "out:Admitted": {
+      "en": "Admitted",
+      "ar": "تنويم",
+      "fr": "Hospitalisé"
+    },
+    "out:Deceased": {
+      "en": "Deceased",
+      "ar": "وفاة",
+      "fr": "Décédé"
+    },
+    "out:Discharged": {
+      "en": "Discharged",
+      "ar": "خروج",
+      "fr": "Sorti"
+    },
+    "out:LeftWithoutBeingSeen": {
+      "en": "Left without being seen",
+      "ar": "غادر دون رؤية الطبيب",
+      "fr": "Parti sans être vu"
+    },
+    "out:Transferred": {
+      "en": "Transferred",
+      "ar": "تحويل لمنشأة أخرى",
+      "fr": "Transféré"
+    },
+    "route:IM": {
+      "en": "IM",
+      "ar": "عضلي",
+      "fr": "IM"
+    },
+    "route:INH": {
+      "en": "Inhaled",
+      "ar": "استنشاق",
+      "fr": "Inhalé"
+    },
+    "route:IV": {
+      "en": "IV",
+      "ar": "وريدي",
+      "fr": "IV"
+    },
+    "route:PO": {
+      "en": "Oral",
+      "ar": "بالفم",
+      "fr": "Orale"
+    },
+    "route:SC": {
+      "en": "SC",
+      "ar": "تحت الجلد",
+      "fr": "SC"
+    },
+    "route:TOP": {
+      "en": "Topical",
+      "ar": "موضعي",
+      "fr": "Locale"
+    },
+    "shift:Day": {
+      "en": "Day shift 07:00–15:00",
+      "ar": "المناوبة الصباحية (07:00–15:00)",
+      "fr": "Équipe de jour 07:00–15:00"
+    },
+    "shift:Evening": {
+      "en": "Evening shift 15:00–23:00",
+      "ar": "المناوبة المسائية (15:00–23:00)",
+      "fr": "Équipe du soir 15:00–23:00"
+    },
+    "shift:Night": {
+      "en": "Night shift 23:00–07:00",
+      "ar": "المناوبة الليلية (23:00–07:00)",
+      "fr": "Équipe de nuit 23:00–07:00"
+    },
+    "today · target 30 min": {
+      "en": "today · target 30 min",
+      "ar": "اليوم · الهدف ٣٠ دقيقة",
+      "fr": "aujourd'hui · objectif 30 min"
+    },
+    "within the next hour": {
+      "en": "within the next hour",
+      "ar": "خلال الساعة القادمة",
+      "fr": "dans l'heure qui vient"
+    },
+    "within {0} minutes of their hour": {
+      "en": "within {0} minutes of their hour",
+      "ar": "خلال {0} دقيقة من موعدها",
+      "fr": "à {0} minutes de leur heure"
+    },
+    "zone:Acute": {
+      "en": "Acute",
+      "ar": "حادة",
+      "fr": "Aigus"
+    },
+    "zone:Minor": {
+      "en": "Minor",
+      "ar": "بسيطة",
+      "fr": "Légers"
+    },
+    "zone:Resus": {
+      "en": "Resuscitation",
+      "ar": "إنعاش",
+      "fr": "Déchocage"
+    }
+  },
+  "_case": "Keys that differ from an existing key only by case never resolve in a .resx; the views use the existing key instead."
+}

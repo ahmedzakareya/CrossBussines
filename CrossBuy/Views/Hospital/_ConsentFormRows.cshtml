@@ -1,0 +1,18 @@
+@using CrossBuy.BL
+@using CrossBuy.Models.Context.Hospital
+@model List<HospitalConsentForm>
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@foreach (var f in Model)
+{
+    <tr data-form-row="@f.ID">
+        <td><span class="badge hp-code fs-8 hp-num">@f.Code</span></td>
+        <td><div class="fw-bold text-gray-900">@DisplayName.Of(f.Title, f.TitleEn)</div><div class="text-muted fs-8">@T["ck:" + f.Kind]</div></td>
+        <td class="hp-num">v@(f.Version)</td>
+        <td>@if (f.IsActive) {<span class="badge badge-light-success">@T["cf:active"]</span>} else {<span class="badge badge-light">@T["cf:inactive"]</span>}</td>
+        <td class="text-muted fs-8 hp-num" dir="ltr">@HospitalNursingServiceTime(f.UpdatedAt)</td>
+        <td class="text-end"><button type="button" class="btn btn-sm btn-light-primary" data-form-edit='@Json.Serialize(new { id = f.ID, code = f.Code, kind = f.Kind, title = f.Title, titleEn = f.TitleEn, body = f.Body, bodyEn = f.BodyEn, isActive = f.IsActive })'><i class="ki-outline ki-pencil fs-5"></i>@T["Edit"]</button></td>
+    </tr>
+}
+@functions {
+    private static string HospitalNursingServiceTime(DateTime utc) => CrossBuy.BL.Hospital.HospitalNursingService.UtcToWard(utc).ToString("yyyy-MM-dd HH:mm", System.Globalization.CultureInfo.InvariantCulture);
+}

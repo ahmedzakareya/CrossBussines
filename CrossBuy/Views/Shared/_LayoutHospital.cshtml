@@ -4599,6 +4599,10 @@ License: For each use you must have a valid license purchased only from above li
 	<script src="~/Backend-assets/js/crossbuy-confirm.js" asp-append-version="true"></script>
 	@await Html.PartialAsync("_CbToastr")
 	@await Html.PartialAsync("_LabCriticalAlerts")
+	@* The assistant. A floating control on every back-office screen rather than a page: a question
+	   arrives while you are looking at something, and making someone navigate away to ask it is the
+	   same as not having it. Renders nothing at all for a user whose question catalogue is empty. *@
+	@await Html.PartialAsync("_AiAssistant")
 	@* A stored stamp is UTC with no zone. An element with data-utc AND data-fmt shows it in the reader's clock
 	   (data-fmt=auto keeps the server text's shape: HH:mm, yyyy-MM-dd or yyyy-MM-dd HH:mm); content swapped in place is caught too. *@
 	<script>
@@ -4637,6 +4641,10 @@ License: For each use you must have a valid license purchased only from above li
 		sweep(); window.addEventListener('load', sweep);
 	})();
 </script>
+@* Every hospital screen gets cbPrompt (a reason, a reference) here once, so a screen that forgets its own include
+   can never leave a reject/cancel button that does nothing. The partial is guarded, so a page that also includes it
+   keeps working. *@
+<partial name="~/Views/Hospital/_HospitalPrompt.cshtml" />
 @await RenderSectionAsync("Scripts", required: false)
 		<!--end::Custom Javascript-->
 
@@ -4763,7 +4771,18 @@ License: For each use you must have a valid license purchased only from above li
 					root.querySelectorAll('#kt_app_content input[type="date"], #kt_app_toolbar input[type="date"], .modal input[type="date"]').forEach(function (el) { initFp(el, false); });
 					root.querySelectorAll('#kt_app_content input[type="datetime-local"], #kt_app_toolbar input[type="datetime-local"], .modal input[type="datetime-local"]').forEach(function (el) { initFp(el, true); });
 				}
-				document.addEventListener('DOMContentLoaded', function () { enhance(document); });
+				document.addEventListener('DOMContentLoaded', function () {
+					enhance(document);
+					// Hospital screens swap their toolbar / content in place (fetch + innerHTML) after a change: a date field
+					// that comes back that way is a fresh native input, so watch for added nodes and give them the theme's picker.
+					var pending = false;
+					new MutationObserver(function (list) {
+						if (pending) return;
+						for (var i = 0; i < list.length; i++) {
+							if (list[i].addedNodes.length) { pending = true; requestAnimationFrame(function () { pending = false; enhance(document); }); return; }
+						}
+					}).observe(document.body, { childList: true, subtree: true });
+				});
 				document.addEventListener('shown.bs.modal', function (e) { enhance(e.target); });
 			})();
 			</script>

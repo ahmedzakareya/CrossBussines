@@ -55,6 +55,8 @@ namespace CrossBuy.BL.Platform
         public const string HospitalRoom = "HospitalRoom";
         // Hospital H2: the care team discusses a patient on the patient's file.
         public const string HospitalPatient = "HospitalPatient";
+        public const string HospitalRadOrder = "HospitalRadOrder";
+        public const string HospitalConsent = "HospitalConsent";   // H60: a signed consent, files only (its signature)
         public const string JobApplication = "JobApplication";   // HR recruitment: an applicant, files only (2026-11-08)
 
         // Stage 2A Batch A. The grant store becomes an event PRODUCER: IPlatformGrantWriter records
@@ -605,12 +607,42 @@ namespace CrossBuy.BL.Platform
                 // Hospital H2. Comments only, like the room. NOT in the record picker: a picker anywhere in
                 // the system would let anyone who can comment search patient names, and a patient's
                 // identity is clinical data. The file is reached from the hospital's own registry.
+                // FILES since 2026-11-05: the patient's photo lives on the document platform, owned through
+                // HospitalPatientDocumentOwnerResolver (read to view, register to upload).
                 Code = HospitalPatient,
                 DisplayNameAr = "مريض", DisplayNameEn = "Patient",
                 Module = "Hospital", Icon = "ki-outline ki-profile-user", Color = "primary",
                 RouteTemplate = "/Hospital/Patient/{id}",
                 SupportsSearch = true, SupportsTimeline = false, SupportsComments = true,
-                SupportsFiles = false, SupportsFollowers = false,
+                SupportsFiles = true, SupportsFollowers = false,
+                PermissionScope = ScopeHospital,
+                ListedInRecordPicker = false,
+            },
+            new EntityDefinition
+            {
+                // Hospital H35. An imaging order, FILES ONLY: its pictures live on the document platform, owned through
+                // HospitalRadOrderDocumentOwnerResolver (read to view, rad to attach). No search, comments or picker:
+                // an order is reached from the patient's file and the radiology worklist.
+                Code = HospitalRadOrder,
+                DisplayNameAr = "طلب أشعة", DisplayNameEn = "Imaging order",
+                Module = "Hospital", Icon = "ki-outline ki-scan-barcode", Color = "primary",
+                RouteTemplate = "/Hospital/Radiology/{id}",
+                SupportsSearch = false, SupportsTimeline = false, SupportsComments = false,
+                SupportsFiles = true, SupportsFollowers = false,
+                PermissionScope = ScopeHospital,
+                ListedInRecordPicker = false,
+            },
+            new EntityDefinition
+            {
+                // Hospital H60. A signed consent, FILES ONLY: its signature picture lives on the document platform, owned
+                // through HospitalConsentDocumentOwnerResolver (read to view, consult to sign; never replaced or deleted).
+                // No search, comments or picker: a consent is reached from the patient's file.
+                Code = HospitalConsent,
+                DisplayNameAr = "موافقة مريض", DisplayNameEn = "Patient consent",
+                Module = "Hospital", Icon = "ki-outline ki-pencil", Color = "primary",
+                RouteTemplate = "/Hospital/Consents/{id}",
+                SupportsSearch = false, SupportsTimeline = false, SupportsComments = false,
+                SupportsFiles = true, SupportsFollowers = false,
                 PermissionScope = ScopeHospital,
                 ListedInRecordPicker = false,
             },
@@ -1085,6 +1117,17 @@ namespace CrossBuy.BL.Platform
                     label = await _db.HospitalPatients.AsNoTracking()
                         .Where(p => p.ID == entityId && p.CompanyId == companyId)
                         .Select(p => p.Mrn + " — " + p.Name).FirstOrDefaultAsync(cancellationToken);
+                    break;
+
+                case HospitalRadOrder:
+                    label = await _db.HospitalRadOrders.AsNoTracking()
+                        .Where(o => o.ID == entityId && o.CompanyId == companyId)
+                        .Select(o => o.AccessionNo + " — " + o.Name).FirstOrDefaultAsync(cancellationToken);
+                    break;
+                case HospitalConsent:
+                    label = await _db.Set<CrossBuy.Models.Context.Hospital.HospitalConsent>().AsNoTracking()
+                        .Where(c => c.ID == entityId && c.CompanyId == companyId)
+                        .Select(c => c.ConsentNo + " — " + c.Title).FirstOrDefaultAsync(cancellationToken);
                     break;
 
                 case JobApplication:

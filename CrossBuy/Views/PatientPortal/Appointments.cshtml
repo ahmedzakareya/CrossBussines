@@ -1,0 +1,125 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model IReadOnlyList<HospitalPortalVisit>
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@{
+    Layout = "_Layout";
+    var acc = (HospitalPortalAccount)ViewBag.Account;
+    var s = (HospitalPortalSettings)ViewBag.Settings;
+    var requests = (ViewBag.Requests as IReadOnlyList<HospitalPortalRequestRow>) ?? Array.Empty<HospitalPortalRequestRow>();
+    var now = DateTime.Now;
+    var upcoming = Model.Where(v => v.Status == HospitalAppointmentStatus.Booked && v.Date.AddMinutes(v.StartMinute) >= now).OrderBy(v => v.Date).ThenBy(v => v.StartMinute).ToList();
+    var past = Model.Except(upcoming).OrderByDescending(v => v.Date).ThenByDescending(v => v.StartMinute).ToList();
+    ViewData["Title"] = T["My appointments"].Value;
+    ViewData["BandTitle"] = T["My appointments"].Value;
+    ViewData["BandDesc"] = DisplayName.Of(acc.Name, acc.NameEn ?? acc.Name);
+    bool ar = DisplayName.IsArabic;
+    string Month(DateTime d) => ar ? new[] { "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر" }[d.Month - 1] : d.ToString("MMM", System.Globalization.CultureInfo.InvariantCulture);
+    string Day(DateTime d) => ar ? new[] { "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت" }[(int)d.DayOfWeek] : d.ToString("dddd", System.Globalization.CultureInfo.InvariantCulture);
+    string Clock(int m) => (m / 60).ToString("00") + ":" + (m % 60).ToString("00");
+    string Kind(string st) => st switch { HospitalAppointmentStatus.Cancelled or HospitalAppointmentStatus.NoShow => "danger", HospitalAppointmentStatus.Done => "success", _ => "primary" };
+}
+@section Figures {
+    <div class="d-flex flex-column"><span class="text-white fw-bold fs-3 mb-1 pp-num">@upcoming.Count</span><div class="text-white opacity-50 fw-bold">@T["Upcoming"]</div></div>
+    <div class="d-flex flex-column"><span class="text-white fw-bold fs-3 mb-1 pp-num">@past.Count</span><div class="text-white opacity-50 fw-bold">@T["Past"]</div></div>
+    <div class="d-flex flex-column"><span class="text-white fw-bold fs-3 mb-1 pp-num">@requests.Count(r => r.Request.Status == HospitalPortalRequestStatus.Open)</span><div class="text-white opacity-50 fw-bold">@T["Open requests"]</div></div>
+}
+
+<div class="card card-flush">
+    <div class="card-header pt-7">
+        <div class="card-title"><ul class="nav nav-tabs nav-line-tabs nav-line-tabs-2x border-transparent fs-5 fw-bold">
+            <li class="nav-item"><a class="nav-link active text-active-primary pb-4" data-bs-toggle="tab" href="#pp_up">@T["Upcoming"] <span class="badge badge-light-primary ms-1 pp-num">@upcoming.Count</span></a></li>
+            <li class="nav-item"><a class="nav-link text-active-primary pb-4" data-bs-toggle="tab" href="#pp_past">@T["Past"] <span class="badge badge-light ms-1 pp-num">@past.Count</span></a></li>
+            <li class="nav-item"><a class="nav-link text-active-primary pb-4" data-bs-toggle="tab" href="#pp_req">@T["My requests"] <span class="badge badge-light-info ms-1 pp-num">@requests.Count</span></a></li>
+        </ul></div>
+        <div class="card-toolbar"><a href="@Url.Action("Book")" class="btn btn-sm btn-primary"><i class="ki-outline ki-plus fs-4"></i>@T["Book an appointment"]</a></div>
+    </div>
+    <div class="card-body pt-2"><div class="tab-content">
+        @foreach (var (pane, list, active) in new[] { ("pp_up", upcoming, true), ("pp_past", past, false) })
+        {
+            <div class="tab-pane fade @(active ? "show active" : "")" id="@pane">
+                @if (list.Count == 0) { <div class="text-center text-muted py-10">@T["None."]</div> }
+                @foreach (var v in list)
+                {
+                    var when = v.Date.AddMinutes(v.StartMinute);
+                    bool canChange = v.Status == HospitalAppointmentStatus.Booked && HospitalPortalPolicy.CanChangeOnline(s, when, now);
+                    <div class="row g-4 align-items-center py-6 border-bottom border-gray-200 border-bottom-dashed">
+                        <div class="col-md-5 d-flex align-items-center gap-5">
+                            <div class="d-flex flex-column flex-center rounded bg-light-@Kind(v.Status) w-65px h-65px flex-shrink-0"><span class="fs-2 fw-bolder text-@Kind(v.Status) lh-1 pp-num">@v.Date.Day</span><span class="fs-8 fw-bold text-@Kind(v.Status) mt-1">@Month(v.Date)</span></div>
+                            <div><div class="fs-5 fw-bold text-gray-900">@Day(v.Date) · <span class="pp-num">@Clock(v.StartMinute)</span></div>
+                                <div class="text-muted fw-semibold fs-7">@DisplayName.Of(v.Clinic, v.ClinicEn) · @T["visit:" + v.VisitType]</div>
+                                <div class="mt-2"><span class="badge badge-light-@Kind(v.Status)">@T["appt:" + v.Status]</span></div></div>
+                        </div>
+                        <div class="col-md-3"><div class="d-flex align-items-center gap-3">
+                            <div class="symbol symbol-40px symbol-circle flex-shrink-0">@if (v.DoctorPhoto != null) {<img src="@Url.Action("DoctorPhoto", new { id = v.PractitionerId })" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(v.DoctorEn)" />} else {<span class="symbol-label bg-light-primary text-primary fw-bold">@HospitalUi.Initials(v.DoctorEn)</span>}</div>
+                            <div><div class="fw-bold text-gray-900 fs-7">@DisplayName.Of(v.Doctor, v.DoctorEn)</div><div class="text-muted fs-8">@DisplayName.Of(v.Person.Name, v.Person.NameEn)</div></div></div></div>
+                        <div class="col-md-4 d-flex flex-wrap align-items-center justify-content-md-end gap-2">
+                            @if (canChange)
+                            {
+                                <button type="button" class="btn btn-sm btn-light-danger" data-cancel="@v.AppointmentId">@T["Cancel"]</button>
+                            }
+                            else if (v.Status == HospitalAppointmentStatus.Booked)
+                            {
+                                <span class="text-muted fs-8">@string.Format(T["Less than {0} hours away: call us to change it"].Value, s.CancelHours)</span>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        <div class="tab-pane fade" id="pp_req">
+            @if (requests.Count == 0) { <div class="text-center text-muted py-10">@T["None."]</div> }
+            @foreach (var r in requests)
+            {
+                var q = r.Request;
+                <div class="row g-4 align-items-center py-6 border-bottom border-gray-200 border-bottom-dashed">
+                    <div class="col-md-5 d-flex align-items-center gap-5">
+                        <div class="d-flex flex-center rounded bg-light-info w-65px h-65px flex-shrink-0"><i class="ki-outline ki-call fs-2x text-info"></i></div>
+                        <div><div class="fs-5 fw-bold text-gray-900">@DisplayName.Of(r.DepartmentName, r.DepartmentNameEn) · @T["visit:" + q.VisitType]</div>
+                            <div class="text-muted fw-semibold fs-7"><span class="pp-num">@q.RequestNo</span> · @(q.PreferredDays ?? "") · @T["tod:" + q.TimeOfDay]</div>
+                            <div class="mt-2"><span class="badge badge-light-@(q.Status == HospitalPortalRequestStatus.Booked ? "success" : q.Status == HospitalPortalRequestStatus.Declined ? "danger" : q.Status == HospitalPortalRequestStatus.Withdrawn ? "secondary" : "info")">@T["prq:" + q.Status]</span></div></div>
+                    </div>
+                    <div class="col-md-4">@if (q.DeclineReason != null) {<div class="text-danger fs-7">@q.DeclineReason</div>}</div>
+                    <div class="col-md-3 d-flex justify-content-md-end">
+                        @if (q.Status == HospitalPortalRequestStatus.Open) { <button type="button" class="btn btn-sm btn-light-danger" data-withdraw="@q.ID">@T["Withdraw"]</button> }
+                    </div>
+                </div>
+            }
+        </div>
+    </div></div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            var W = { cancel: @Json.Serialize(T["Cancel this appointment?"].Value), withdraw: @Json.Serialize(T["Withdraw this request?"].Value), yes: @Json.Serialize(T["Yes"].Value), no: @Json.Serialize(T["No"].Value),
+                failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value) };
+            var urls = { cancel: @Json.Serialize(Url.Action("Cancel", new { id = 0 })), withdraw: @Json.Serialize(Url.Action("Withdraw", new { id = 0 })) };
+            // In place, never a reload: the page is rendered again and the card swapped, keeping the open tab.
+            function swap() {
+                var tab = document.querySelector('.nav-line-tabs .nav-link.active'), href = tab ? tab.getAttribute('href') : null;
+                return fetch(location.pathname, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.text(); }).then(function (html) {
+                    var doc = new DOMParser().parseFromString(html, 'text/html');
+                    ['kt_app_content', 'kt_app_toolbar'].forEach(function (id) { var f = doc.getElementById(id); if (f) document.getElementById(id).innerHTML = f.innerHTML; });
+                    if (href) { var a = document.querySelector('.nav-line-tabs [href="' + href + '"]'); if (a) bootstrap.Tab.getOrCreateInstance(a).show(); }
+                });
+            }
+            function ask(text) {
+                return Swal.fire({ text: text, icon: 'question', showCancelButton: true, buttonsStyling: false, confirmButtonText: W.yes, cancelButtonText: W.no,
+                    customClass: { confirmButton: 'btn btn-danger', cancelButton: 'btn btn-light' } }).then(function (r) { return r.isConfirmed; });
+            }
+            document.addEventListener('click', function (e) {
+                var t = e.target.closest('[data-cancel],[data-withdraw]'); if (!t) return;
+                var isCancel = t.hasAttribute('data-cancel'), id = t.getAttribute(isCancel ? 'data-cancel' : 'data-withdraw');
+                ask(isCancel ? W.cancel : W.withdraw).then(function (ok) {
+                    if (!ok) return; t.disabled = true;
+                    pp.post((isCancel ? urls.cancel.replace(/0\/Cancel$/, id + '/Cancel') : urls.withdraw.replace(/0\/Withdraw$/, id + '/Withdraw'))).then(function (r) {
+                        t.disabled = false; if (!r.ok) { pp.toast('error', r.error || W.failed); return; } pp.toast('success', W.saved); swap();
+                    });
+                });
+            });
+            if (location.hash === '#pp_req') { var a = document.querySelector('[href="#pp_req"]'); if (a) bootstrap.Tab.getOrCreateInstance(a).show(); }
+        })();
+    </script>
+}

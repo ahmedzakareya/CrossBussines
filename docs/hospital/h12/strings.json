@@ -1,69 +1,321 @@
 {
   "_about": "H12 estimates & packages strings for CrossBuy/Resources/HospitalResources{,.ar,.en,.fr}.resx (TAB-1 owns Resources/**). Key = resx data name. Four keys H12 uses come with H11 (docs/hospital/h11/strings.json): Approvals & claims, Payer, Payer's share, Search by code or name. 22 keys already exist in the resx; 'Any' was NOT reused (it means 'Both sexes').",
   "strings": {
-    "A draft can be re-priced; an issued estimate is what the patient was told": { "en": "A draft can be re-priced; an issued estimate is what the patient was told", "ar": "المسودة يُعاد تسعيرها؛ والتقدير الصادر هو ما أُبلغ به المريض", "fr": "Un brouillon peut être réévalué ; un devis émis est ce qui a été annoncé au patient" },
-    "A package has a fixed price; anything beyond its limits (extra nights, complications, a second implant) is billed outside it.": { "en": "A package has a fixed price; anything beyond its limits (extra nights, complications, a second implant) is billed outside it.", "ar": "الباقة لها سعر ثابت؛ ما يتجاوز حدودها (ليالٍ إضافية، مضاعفات، زرعة ثانية) يُفوتر خارجها.", "fr": "Un forfait a un prix fixe ; tout ce qui dépasse ses limites (nuits supplémentaires, complications, un second implant) est facturé en dehors." },
-    "A package is priced in the facility's currency; this patient's price list is in another": { "en": "A package is priced in the facility's currency; this patient's price list is in another", "ar": "سعر الباقة بعملة المنشأة؛ وقائمة أسعار هذا المريض بعملة أخرى", "fr": "Un forfait est tarifé dans la devise de l'établissement ; la liste de prix de ce patient est dans une autre" },
-    "A procedure at a fixed price: its main service, the nights it includes and what it covers": { "en": "A procedure at a fixed price: its main service, the nights it includes and what it covers", "ar": "إجراء بسعر ثابت: خدمته الرئيسية، والليالي المشمولة، وما يغطيه", "fr": "Un acte à prix fixe : son service principal, les nuits incluses et ce qu'il couvre" },
-    "A quantity must be more than zero": { "en": "A quantity must be more than zero", "ar": "يجب أن تكون الكمية أكبر من صفر", "fr": "Une quantité doit être supérieure à zéro" },
-    "An estimate stays with its patient": { "en": "An estimate stays with its patient", "ar": "التقدير يبقى لمريضه", "fr": "Un devis reste attaché à son patient" },
-    "An issued estimate cannot change; make a new one": { "en": "An issued estimate cannot change; make a new one", "ar": "لا يُعدّل التقدير الصادر؛ أنشئ تقديراً جديداً", "fr": "Un devis émis ne peut plus changer ; créez-en un nouveau" },
-    "Another package uses this code": { "en": "Another package uses this code", "ar": "هذا الرمز مستخدم في باقة أخرى", "fr": "Un autre forfait utilise ce code" },
-    "Any room class": { "en": "Any", "ar": "أي درجة", "fr": "Toute catégorie" },
-    "Approval request": { "en": "Approval request", "ar": "طلب الموافقة", "fr": "Demande d'accord" },
-    "Cancel estimate": { "en": "Cancel estimate", "ar": "إلغاء التقدير", "fr": "Annuler le devis" },
-    "Cancel estimate {0}? It stays on record, cancelled.": { "en": "Cancel estimate {0}? It stays on record, cancelled.", "ar": "إلغاء التقدير {0}؟ يبقى محفوظاً بحالة ملغى.", "fr": "Annuler le devis {0} ? Il reste enregistré, annulé." },
-    "Choose a package or at least one service": { "en": "Choose a package or at least one service", "ar": "اختر باقة أو خدمة واحدة على الأقل", "fr": "Choisissez un forfait ou au moins un service" },
-    "Choose a package or services to see the estimate.": { "en": "Choose a package or services to see the estimate.", "ar": "اختر باقة أو خدمات لعرض التقدير.", "fr": "Choisissez un forfait ou des services pour voir le devis." },
-    "Choose the patient: the estimate is priced on their price list and split by their cover today": { "en": "Choose the patient: the estimate is priced on their price list and split by their cover today", "ar": "اختر المريض: يُسعَّر التقدير بقائمة أسعاره ويُقسم حسب تغطيته اليوم", "fr": "Choisissez le patient : le devis est tarifé sur sa liste de prix et réparti selon sa couverture du jour" },
-    "Choose the room class for the stay": { "en": "Choose the room class for the stay", "ar": "اختر درجة الغرفة للإقامة", "fr": "Choisissez la catégorie de chambre pour le séjour" },
-    "Collecting the deposit is done on the patient's bill; the estimate only states it.": { "en": "Collecting the deposit is done on the patient's bill; the estimate only states it.", "ar": "تحصيل التأمين المقدم يتم على فاتورة المريض؛ التقدير يحدده فقط.", "fr": "L'acompte s'encaisse sur la facture du patient ; le devis ne fait que l'indiquer." },
-    "Deposit margin": { "en": "Deposit margin", "ar": "هامش التأمين المقدم", "fr": "Marge de l'acompte" },
-    "Deposit required": { "en": "Deposit required", "ar": "التأمين المطلوب", "fr": "Acompte requis" },
-    "Estimate": { "en": "Estimate", "ar": "التقدير", "fr": "Devis" },
-    "Estimated total": { "en": "Estimated total", "ar": "إجمالي التقدير", "fr": "Total estimé" },
-    "Estimates": { "en": "Estimates", "ar": "التقديرات", "fr": "Devis" },
-    "Estimates & deposits": { "en": "Estimates & deposits", "ar": "التقديرات والتأمين المقدم", "fr": "Devis et acomptes" },
-    "Expected patient share": { "en": "Expected patient share", "ar": "حصة المريض المتوقعة", "fr": "Part du patient prévue" },
-    "Expected stay (nights)": { "en": "Expected stay (nights)", "ar": "مدة الإقامة المتوقعة (ليالٍ)", "fr": "Séjour prévu (nuits)" },
-    "Expired — re-price it": { "en": "Expired — re-price it", "ar": "منتهي — أعد تسعيره", "fr": "Expiré — à réévaluer" },
-    "Included nights": { "en": "Included nights", "ar": "الليالي المشمولة", "fr": "Nuits incluses" },
-    "Issue estimate": { "en": "Issue estimate", "ar": "إصدار التقدير", "fr": "Émettre le devis" },
-    "Issue {0} to {1}? It no longer changes, and the payer is asked for approval when its contract needs it.": { "en": "Issue {0} to {1}? It no longer changes, and the payer is asked for approval when its contract needs it.", "ar": "إصدار {0} لـ {1}؟ لن يتغير بعد ذلك، ويُطلب من الجهة الدافعة الموافقة إن كان عقدها يشترطها.", "fr": "Émettre {0} pour {1} ? Il ne changera plus, et l'accord du payeur est demandé si son contrat l'exige." },
-    "Issued": { "en": "Issued", "ar": "صدر في", "fr": "Émis le" },
-    "Issuing the estimate sends the payer an approval request.": { "en": "Issuing the estimate sends the payer an approval request.", "ar": "إصدار التقدير يرسل للجهة الدافعة طلب موافقة.", "fr": "L'émission du devis envoie au payeur une demande d'accord." },
-    "Main service": { "en": "Main service", "ar": "الخدمة الرئيسية", "fr": "Service principal" },
-    "New package": { "en": "New package", "ar": "باقة جديدة", "fr": "Nouveau forfait" },
-    "No estimates yet.": { "en": "No estimates yet.", "ar": "لا توجد تقديرات بعد.", "fr": "Aucun devis pour l'instant." },
-    "No package": { "en": "No package", "ar": "بدون باقة", "fr": "Sans forfait" },
-    "No packages yet.": { "en": "No packages yet.", "ar": "لا توجد باقات بعد.", "fr": "Aucun forfait pour l'instant." },
-    "No stay": { "en": "No stay", "ar": "بدون إقامة", "fr": "Sans séjour" },
-    "Not covered: {0} — self-pay": { "en": "Not covered: {0} — self-pay", "ar": "غير مغطى: {0} — على نفقته", "fr": "Non couvert : {0} — à ses frais" },
-    "Other expected services": { "en": "Other expected services", "ar": "خدمات أخرى متوقعة", "fr": "Autres services prévus" },
-    "Package": { "en": "Package", "ar": "الباقة", "fr": "Forfait" },
-    "Package / procedure": { "en": "Package / procedure", "ar": "الباقة / الإجراء", "fr": "Forfait / acte" },
-    "Packages": { "en": "Packages", "ar": "الباقات", "fr": "Forfaits" },
-    "Payer share": { "en": "Payer share", "ar": "حصة الجهة الدافعة", "fr": "Part du payeur" },
-    "Pre-authorisation needed": { "en": "Pre-authorisation needed", "ar": "موافقة مسبقة مطلوبة", "fr": "Accord préalable requis" },
-    "Procedure estimate": { "en": "Procedure estimate", "ar": "تقدير تكلفة إجراء", "fr": "Devis d'acte" },
-    "Required deposit": { "en": "Required deposit", "ar": "التأمين المقدم المطلوب", "fr": "Acompte requis" },
-    "Room class": { "en": "Room class", "ar": "درجة الغرفة", "fr": "Catégorie de chambre" },
-    "Save estimate": { "en": "Save estimate", "ar": "حفظ التقدير", "fr": "Enregistrer le devis" },
-    "Save this estimate as a draft for {0}? It can be re-priced until it is issued.": { "en": "Save this estimate as a draft for {0}? It can be re-priced until it is issued.", "ar": "حفظ هذا التقدير كمسودة لـ {0}؟ يمكن إعادة تسعيره حتى يصدر.", "fr": "Enregistrer ce devis en brouillon pour {0} ? Il peut être réévalué jusqu'à son émission." },
-    "Self-pay": { "en": "Self-pay", "ar": "على نفقته", "fr": "À ses frais" },
-    "Services": { "en": "Services", "ar": "خدمات", "fr": "Services" },
-    "The deposit margin is 0 to 200%": { "en": "The deposit margin is 0 to 200%", "ar": "هامش التأمين المقدم من 0 إلى 200%", "fr": "La marge de l'acompte va de 0 à 200 %" },
-    "The expected nights are 0 to 365": { "en": "The expected nights are 0 to 365", "ar": "الليالي المتوقعة من 0 إلى 365", "fr": "Les nuits prévues vont de 0 à 365" },
-    "The included nights are 0 to 365": { "en": "The included nights are 0 to 365", "ar": "الليالي المشمولة من 0 إلى 365", "fr": "Les nuits incluses vont de 0 à 365" },
-    "This estimate is already cancelled": { "en": "This estimate is already cancelled", "ar": "هذا التقدير ملغى بالفعل", "fr": "Ce devis est déjà annulé" },
-    "This estimate was already issued": { "en": "This estimate was already issued", "ar": "صدر هذا التقدير بالفعل", "fr": "Ce devis a déjà été émis" },
-    "What it covers": { "en": "What it covers", "ar": "ما تغطيه", "fr": "Ce qu'il couvre" },
-    "What it covers (English)": { "en": "What it covers (English)", "ar": "ما تغطيه (بالإنجليزية)", "fr": "Ce qu'il couvre (anglais)" },
-    "est:Cancelled": { "en": "Cancelled", "ar": "ملغى", "fr": "Annulé" },
-    "est:Draft": { "en": "Draft", "ar": "مسودة", "fr": "Brouillon" },
-    "est:Issued": { "en": "Issued", "ar": "صادر", "fr": "Émis" },
-    "not covered": { "en": "not covered", "ar": "غير مغطى", "fr": "non couvert" },
-    "the procedure the payer approves": { "en": "the procedure the payer approves", "ar": "الإجراء الذي توافق عليه الجهة الدافعة", "fr": "l'acte que le payeur accorde" },
-    "valid {0} days": { "en": "valid {0} days", "ar": "صالح {0} يوماً", "fr": "valable {0} jours" }
-  }
+    "A draft can be re-priced; an issued estimate is what the patient was told": {
+      "en": "A draft can be re-priced; an issued estimate is what the patient was told",
+      "ar": "المسودة يُعاد تسعيرها؛ والتقدير الصادر هو ما أُبلغ به المريض",
+      "fr": "Un brouillon peut être réévalué ; un devis émis est ce qui a été annoncé au patient"
+    },
+    "A package has a fixed price; anything beyond its limits (extra nights, complications, a second implant) is billed outside it.": {
+      "en": "A package has a fixed price; anything beyond its limits (extra nights, complications, a second implant) is billed outside it.",
+      "ar": "الباقة لها سعر ثابت؛ ما يتجاوز حدودها (ليالٍ إضافية، مضاعفات، زرعة ثانية) يُفوتر خارجها.",
+      "fr": "Un forfait a un prix fixe ; tout ce qui dépasse ses limites (nuits supplémentaires, complications, un second implant) est facturé en dehors."
+    },
+    "A package is priced in the facility's currency; this patient's price list is in another": {
+      "en": "A package is priced in the facility's currency; this patient's price list is in another",
+      "ar": "سعر الباقة بعملة المنشأة؛ وقائمة أسعار هذا المريض بعملة أخرى",
+      "fr": "Un forfait est tarifé dans la devise de l'établissement ; la liste de prix de ce patient est dans une autre"
+    },
+    "A procedure at a fixed price: its main service, the nights it includes and what it covers": {
+      "en": "A procedure at a fixed price: its main service, the nights it includes and what it covers",
+      "ar": "إجراء بسعر ثابت: خدمته الرئيسية، والليالي المشمولة، وما يغطيه",
+      "fr": "Un acte à prix fixe : son service principal, les nuits incluses et ce qu'il couvre"
+    },
+    "A quantity must be more than zero": {
+      "en": "A quantity must be more than zero",
+      "ar": "يجب أن تكون الكمية أكبر من صفر",
+      "fr": "Une quantité doit être supérieure à zéro"
+    },
+    "An estimate stays with its patient": {
+      "en": "An estimate stays with its patient",
+      "ar": "التقدير يبقى لمريضه",
+      "fr": "Un devis reste attaché à son patient"
+    },
+    "An issued estimate cannot change; make a new one": {
+      "en": "An issued estimate cannot change; make a new one",
+      "ar": "لا يُعدّل التقدير الصادر؛ أنشئ تقديراً جديداً",
+      "fr": "Un devis émis ne peut plus changer ; créez-en un nouveau"
+    },
+    "Another package uses this code": {
+      "en": "Another package uses this code",
+      "ar": "هذا الرمز مستخدم في باقة أخرى",
+      "fr": "Un autre forfait utilise ce code"
+    },
+    "Any room class": {
+      "en": "Any",
+      "ar": "أي درجة",
+      "fr": "Toute catégorie"
+    },
+    "Approval request": {
+      "en": "Approval request",
+      "ar": "طلب الموافقة",
+      "fr": "Demande d'accord"
+    },
+    "Cancel estimate": {
+      "en": "Cancel estimate",
+      "ar": "إلغاء التقدير",
+      "fr": "Annuler le devis"
+    },
+    "Cancel estimate {0}? It stays on record, cancelled.": {
+      "en": "Cancel estimate {0}? It stays on record, cancelled.",
+      "ar": "إلغاء التقدير {0}؟ يبقى محفوظاً بحالة ملغى.",
+      "fr": "Annuler le devis {0} ? Il reste enregistré, annulé."
+    },
+    "Choose a package or at least one service": {
+      "en": "Choose a package or at least one service",
+      "ar": "اختر باقة أو خدمة واحدة على الأقل",
+      "fr": "Choisissez un forfait ou au moins un service"
+    },
+    "Choose a package or services to see the estimate.": {
+      "en": "Choose a package or services to see the estimate.",
+      "ar": "اختر باقة أو خدمات لعرض التقدير.",
+      "fr": "Choisissez un forfait ou des services pour voir le devis."
+    },
+    "Choose the patient: the estimate is priced on their price list and split by their cover today": {
+      "en": "Choose the patient: the estimate is priced on their price list and split by their cover today",
+      "ar": "اختر المريض: يُسعَّر التقدير بقائمة أسعاره ويُقسم حسب تغطيته اليوم",
+      "fr": "Choisissez le patient : le devis est tarifé sur sa liste de prix et réparti selon sa couverture du jour"
+    },
+    "Choose the room class for the stay": {
+      "en": "Choose the room class for the stay",
+      "ar": "اختر درجة الغرفة للإقامة",
+      "fr": "Choisissez la catégorie de chambre pour le séjour"
+    },
+    "Collecting the deposit is done on the patient's bill; the estimate only states it.": {
+      "en": "Collecting the deposit is done on the patient's bill; the estimate only states it.",
+      "ar": "تحصيل التأمين المقدم يتم على فاتورة المريض؛ التقدير يحدده فقط.",
+      "fr": "L'acompte s'encaisse sur la facture du patient ; le devis ne fait que l'indiquer."
+    },
+    "Deposit margin": {
+      "en": "Deposit margin",
+      "ar": "هامش التأمين المقدم",
+      "fr": "Marge de l'acompte"
+    },
+    "Deposit required": {
+      "en": "Deposit required",
+      "ar": "التأمين المطلوب",
+      "fr": "Acompte requis"
+    },
+    "Estimate": {
+      "en": "Estimate",
+      "ar": "التقدير",
+      "fr": "Devis"
+    },
+    "Estimated total": {
+      "en": "Estimated total",
+      "ar": "إجمالي التقدير",
+      "fr": "Total estimé"
+    },
+    "Estimates": {
+      "en": "Estimates",
+      "ar": "التقديرات",
+      "fr": "Devis"
+    },
+    "Estimates & deposits": {
+      "en": "Estimates & deposits",
+      "ar": "التقديرات والتأمين المقدم",
+      "fr": "Devis et acomptes"
+    },
+    "Expected patient share": {
+      "en": "Expected patient share",
+      "ar": "حصة المريض المتوقعة",
+      "fr": "Part du patient prévue"
+    },
+    "Expected stay (nights)": {
+      "en": "Expected stay (nights)",
+      "ar": "مدة الإقامة المتوقعة (ليالٍ)",
+      "fr": "Séjour prévu (nuits)"
+    },
+    "Expired — re-price it": {
+      "en": "Expired — re-price it",
+      "ar": "منتهي — أعد تسعيره",
+      "fr": "Expiré — à réévaluer"
+    },
+    "Included nights": {
+      "en": "Included nights",
+      "ar": "الليالي المشمولة",
+      "fr": "Nuits incluses"
+    },
+    "Issue estimate": {
+      "en": "Issue estimate",
+      "ar": "إصدار التقدير",
+      "fr": "Émettre le devis"
+    },
+    "Issue {0} to {1}? It no longer changes, and the payer is asked for approval when its contract needs it.": {
+      "en": "Issue {0} to {1}? It no longer changes, and the payer is asked for approval when its contract needs it.",
+      "ar": "إصدار {0} لـ {1}؟ لن يتغير بعد ذلك، ويُطلب من الجهة الدافعة الموافقة إن كان عقدها يشترطها.",
+      "fr": "Émettre {0} pour {1} ? Il ne changera plus, et l'accord du payeur est demandé si son contrat l'exige."
+    },
+    "Issued": {
+      "en": "Issued",
+      "ar": "صدر في",
+      "fr": "Émis le"
+    },
+    "Issuing the estimate sends the payer an approval request.": {
+      "en": "Issuing the estimate sends the payer an approval request.",
+      "ar": "إصدار التقدير يرسل للجهة الدافعة طلب موافقة.",
+      "fr": "L'émission du devis envoie au payeur une demande d'accord."
+    },
+    "Main service": {
+      "en": "Main service",
+      "ar": "الخدمة الرئيسية",
+      "fr": "Service principal"
+    },
+    "New package": {
+      "en": "New package",
+      "ar": "باقة جديدة",
+      "fr": "Nouveau forfait"
+    },
+    "No estimates yet.": {
+      "en": "No estimates yet.",
+      "ar": "لا توجد تقديرات بعد.",
+      "fr": "Aucun devis pour l'instant."
+    },
+    "No package": {
+      "en": "No package",
+      "ar": "بدون باقة",
+      "fr": "Sans forfait"
+    },
+    "No packages yet.": {
+      "en": "No packages yet.",
+      "ar": "لا توجد باقات بعد.",
+      "fr": "Aucun forfait pour l'instant."
+    },
+    "No stay": {
+      "en": "No stay",
+      "ar": "بدون إقامة",
+      "fr": "Sans séjour"
+    },
+    "Not covered: {0} — self-pay": {
+      "en": "Not covered: {0} — self-pay",
+      "ar": "غير مغطى: {0} — على نفقته",
+      "fr": "Non couvert : {0} — à ses frais"
+    },
+    "Other expected services": {
+      "en": "Other expected services",
+      "ar": "خدمات أخرى متوقعة",
+      "fr": "Autres services prévus"
+    },
+    "Package": {
+      "en": "Package",
+      "ar": "الباقة",
+      "fr": "Forfait"
+    },
+    "Package / procedure": {
+      "en": "Package / procedure",
+      "ar": "الباقة / الإجراء",
+      "fr": "Forfait / acte"
+    },
+    "Packages": {
+      "en": "Packages",
+      "ar": "الباقات",
+      "fr": "Forfaits"
+    },
+    "Payer share": {
+      "en": "Payer share",
+      "ar": "حصة الجهة الدافعة",
+      "fr": "Part du payeur"
+    },
+    "Pre-authorisation needed": {
+      "en": "Pre-authorisation needed",
+      "ar": "موافقة مسبقة مطلوبة",
+      "fr": "Accord préalable requis"
+    },
+    "Procedure estimate": {
+      "en": "Procedure estimate",
+      "ar": "تقدير تكلفة إجراء",
+      "fr": "Devis d'acte"
+    },
+    "Required deposit": {
+      "en": "Required deposit",
+      "ar": "التأمين المقدم المطلوب",
+      "fr": "Acompte requis"
+    },
+    "Room class": {
+      "en": "Room class",
+      "ar": "درجة الغرفة",
+      "fr": "Catégorie de chambre"
+    },
+    "Save estimate": {
+      "en": "Save estimate",
+      "ar": "حفظ التقدير",
+      "fr": "Enregistrer le devis"
+    },
+    "Save this estimate as a draft for {0}? It can be re-priced until it is issued.": {
+      "en": "Save this estimate as a draft for {0}? It can be re-priced until it is issued.",
+      "ar": "حفظ هذا التقدير كمسودة لـ {0}؟ يمكن إعادة تسعيره حتى يصدر.",
+      "fr": "Enregistrer ce devis en brouillon pour {0} ? Il peut être réévalué jusqu'à son émission."
+    },
+    "Self-pay": {
+      "en": "Self-pay",
+      "ar": "على نفقته",
+      "fr": "À ses frais"
+    },
+    "The deposit margin is 0 to 200%": {
+      "en": "The deposit margin is 0 to 200%",
+      "ar": "هامش التأمين المقدم من 0 إلى 200%",
+      "fr": "La marge de l'acompte va de 0 à 200 %"
+    },
+    "The expected nights are 0 to 365": {
+      "en": "The expected nights are 0 to 365",
+      "ar": "الليالي المتوقعة من 0 إلى 365",
+      "fr": "Les nuits prévues vont de 0 à 365"
+    },
+    "The included nights are 0 to 365": {
+      "en": "The included nights are 0 to 365",
+      "ar": "الليالي المشمولة من 0 إلى 365",
+      "fr": "Les nuits incluses vont de 0 à 365"
+    },
+    "This estimate is already cancelled": {
+      "en": "This estimate is already cancelled",
+      "ar": "هذا التقدير ملغى بالفعل",
+      "fr": "Ce devis est déjà annulé"
+    },
+    "This estimate was already issued": {
+      "en": "This estimate was already issued",
+      "ar": "صدر هذا التقدير بالفعل",
+      "fr": "Ce devis a déjà été émis"
+    },
+    "What it covers": {
+      "en": "What it covers",
+      "ar": "ما تغطيه",
+      "fr": "Ce qu'il couvre"
+    },
+    "What it covers (English)": {
+      "en": "What it covers (English)",
+      "ar": "ما تغطيه (بالإنجليزية)",
+      "fr": "Ce qu'il couvre (anglais)"
+    },
+    "est:Cancelled": {
+      "en": "Cancelled",
+      "ar": "ملغى",
+      "fr": "Annulé"
+    },
+    "est:Draft": {
+      "en": "Draft",
+      "ar": "مسودة",
+      "fr": "Brouillon"
+    },
+    "est:Issued": {
+      "en": "Issued",
+      "ar": "صادر",
+      "fr": "Émis"
+    },
+    "the procedure the payer approves": {
+      "en": "the procedure the payer approves",
+      "ar": "الإجراء الذي توافق عليه الجهة الدافعة",
+      "fr": "l'acte que le payeur accorde"
+    },
+    "valid {0} days": {
+      "en": "valid {0} days",
+      "ar": "صالح {0} يوماً",
+      "fr": "valable {0} jours"
+    },
+    "Services only": {
+      "en": "Services",
+      "ar": "خدمات بدون باقة",
+      "fr": "Services seuls"
+    }
+  },
+  "_case": "Keys that differ from an existing key only by case never resolve in a .resx; the views use the existing key instead."
 }

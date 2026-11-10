@@ -192,7 +192,7 @@ namespace CrossBuy.Models.Context.Hospital
 				e.HasIndex(x => new { x.CompanyId, x.RequestNo }).IsUnique();
 				e.HasIndex(x => new { x.CompanyId, x.PatientId, x.ServiceId });
 				// one waiting request per patient and service: a twin sent at the same moment is refused
-				e.HasIndex(x => new { x.CompanyId, x.PatientId, x.ServiceId }, "UX_HospitalPreauths_Pending").IsUnique().HasFilter("[Status] = N'Pending'");
+				e.HasIndex(x => new { x.CompanyId, x.PatientId, x.ServiceId }, "UX_HospitalPreauths_Pending").IsUnique().HasFilter("[Status] = 'Pending'");
 			});
 			b.Entity<HospitalClaimBatch>(e =>
 			{
@@ -200,7 +200,7 @@ namespace CrossBuy.Models.Context.Hospital
 				e.HasOne<HospitalPayer>().WithMany().HasForeignKey(x => x.PayerId).OnDelete(DeleteBehavior.NoAction);
 				e.HasIndex(x => new { x.CompanyId, x.BatchNo }).IsUnique();
 				// one draft per payer and month, so two builds at the same moment meet in the same batch
-				e.HasIndex(x => new { x.CompanyId, x.PayerId, x.Period }, "UX_HospitalClaimBatches_Draft").IsUnique().HasFilter("[Status] = N'Draft'");
+				e.HasIndex(x => new { x.CompanyId, x.PayerId, x.Period }, "UX_HospitalClaimBatches_Draft").IsUnique().HasFilter("[Status] = 'Draft'");
 			});
 			b.Entity<HospitalClaim>(e =>
 			{

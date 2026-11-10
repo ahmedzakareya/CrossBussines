@@ -1,0 +1,10 @@
+{
+  "unit": "H51 — charging issued blood to the bill",
+  "strings": {
+    "Blood products": { "ar": "منتجات الدم", "en": "Blood products", "fr": "Produits sanguins" },
+    "Issuing a blood request charges the bags to the patient's bill as this service; a product with none is issued uncharged": { "ar": "صرف طلب الدم يحسب الأكياس على فاتورة المريض بهذه الخدمة؛ والمنتج الذي لم تُربط له خدمة يُصرف دون حساب", "en": "Issuing a blood request charges the bags to the patient's bill as this service; a product with none is issued uncharged", "fr": "La délivrance d'une demande facture les poches au patient sous ce service ; un produit sans service est délivré sans facturation" },
+    "Not charged": { "ar": "غير محسوب", "en": "Not charged", "fr": "Non facturé" },
+    "Save what each blood product is charged as?": { "ar": "حفظ الخدمة التي يُحسب بها كل منتج دم؟", "en": "Save what each blood product is charged as?", "fr": "Enregistrer le service facturé pour chaque produit sanguin ?" },
+    "Charged to the bill": { "ar": "حُسب على الفاتورة", "en": "Charged to the bill", "fr": "Facturé" }
+  }
+}
