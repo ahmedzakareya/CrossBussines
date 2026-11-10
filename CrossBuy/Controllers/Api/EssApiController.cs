@@ -98,8 +98,15 @@ namespace CrossBuy.Controllers.Api
 				success = true, year = y, month = m,
 				summary = summary == null ? null : new { workDays = summary.WorkDays, presentDays = summary.PresentDays, lateCount = summary.LateCount, lateMinutes = summary.LateMinutes,
 					overtimeMinutes = summary.OvertimeMinutes, leaveDays = summary.LeaveDays, absentDays = summary.AbsentDays },
-				days = days.OrderBy(d => d.WorkDate).Select(d => new { date = d.WorkDate.ToString("yyyy-MM-dd"), checkIn = d.CheckIn, checkOut = d.CheckOut, status = d.Status,
-					lateMinutes = d.LateMinutes, overtimeMinutes = d.OvertimeMinutes, workedHours = d.WorkedHours, source = d.Source }),
+				// Every day of the month: the punches where there are any, and the verdict the summary itself reached for that
+				// day (so a counted absence is a marked day, not a number with nothing behind it).
+				days = Enumerable.Range(1, DateTime.DaysInMonth(y, m)).Select(n => new DateTime(y, m, n)).Select(dt =>
+				{
+					var rec = days.FirstOrDefault(d => d.WorkDate.Date == dt);
+					var verdict = summary != null && summary.Days.TryGetValue(dt, out var v) ? v : rec?.Status;
+					return new { date = dt.ToString("yyyy-MM-dd"), checkIn = rec?.CheckIn, checkOut = rec?.CheckOut, status = verdict ?? "",
+						lateMinutes = rec?.LateMinutes ?? 0, overtimeMinutes = rec?.OvertimeMinutes ?? 0, workedHours = rec?.WorkedHours ?? 0m, source = rec?.Source };
+				}).Where(d => d.status != "" || d.checkIn != null),
 			});
 		}
 

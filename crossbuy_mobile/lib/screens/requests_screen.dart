@@ -33,6 +33,7 @@ class _RequestsScreenState extends State<RequestsScreen> {
         child: FutureBuilder<List<MyRequest>>(
           future: _future,
           builder: (context, s) {
+            if (s.hasError) return Padding(padding: const EdgeInsets.all(16), child: SectionCard(child: EmptyNote(icon: Icons.cloud_off_outlined, title: L(context, 'تعذّر تحميل الطلبات', 'Could not load requests'), text: L(context, 'تحقق من الاتصال ثم أعد المحاولة.', 'Check the connection and try again.'))));
             if (!s.hasData) return const Center(child: CircularProgressIndicator());
             if (s.data!.isEmpty) return Padding(padding: const EdgeInsets.all(16), child: SectionCard(child: EmptyNote(icon: Icons.description_outlined, title: L(context, 'لا طلبات', 'No requests'), text: L(context, 'اضغط + لطلب خطاب أو إذن أو سلفة.', 'Tap + for a letter, a permission or an advance.'))));
             return ListView(padding: const EdgeInsets.all(16), children: [

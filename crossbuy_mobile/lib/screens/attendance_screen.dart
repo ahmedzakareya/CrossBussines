@@ -75,7 +75,8 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                   for (var d = 1; d <= count; d++)
                     Container(
                       decoration: BoxDecoration(
-                        color: byDay[d] == null || _dot(byDay[d]!.status) == null ? const Color(0xFFF8FAFC) : Colors.white,
+                        // rest days and holidays are shaded; work days (done or upcoming) are white
+                        color: const ['Rest', 'Holiday'].contains(byDay[d]?.status) ? const Color(0xFFEEF2F7) : Colors.white,
                         borderRadius: BorderRadius.circular(11),
                         border: Border.all(color: const Color(0xFFEEF2F7)),
                       ),

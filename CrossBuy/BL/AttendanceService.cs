@@ -20,6 +20,10 @@ namespace CrossBuy.BL
 		// entirely, so a Friday worked was never paid.
 		public int RestDayOvertimeMinutes { get; set; }
 		public int HolidayOvertimeMinutes { get; set; }
+		// The verdict for every day of the month, decided by the SAME loop that counts the totals (2026-11-10), so a
+		// calendar drawn from it can never disagree with AbsentDays (which payroll penalises). Values: Present, Late,
+		// Leave, Absent, Upcoming (a work day not yet reached), Rest, Holiday.
+		public Dictionary<DateTime, string> Days { get; } = new();
 	}
 
 	public interface IAttendanceService
@@ -153,11 +157,13 @@ namespace CrossBuy.BL
 				var policy = await PolicyForAsync(emp.ID);
 				if (policy == null) continue;   // only employees with a schedule are summarized
 				var myRecs = recs.Where(r => r.EmployeeID == emp.ID).ToDictionary(r => r.WorkDate.Date);
+				var days = new Dictionary<DateTime, string>();
 				int workDays = 0, present = 0, lateCnt = 0, lateMin = 0, ot = 0, leaveDays = 0, absent = 0, restOt = 0, holOt = 0;
 				for (var d = s; d <= e; d = d.AddDays(1))
 				{
 					if (holidays.Contains(d) || !IsWorkDay(policy, d))            // not a scheduled work day
 					{
+						days[d] = holidays.Contains(d) ? "Holiday" : "Rest";
 						// …but work done on it is overtime of its own kind (rest day / official holiday)
 						if (myRecs.TryGetValue(d, out var off) && off.WorkedHours > 0)
 						{
@@ -170,18 +176,21 @@ namespace CrossBuy.BL
 					bool onLeave = leaves.Any(l => l.EmployeeID == emp.ID && l.StartDate.Date <= d && l.EndDate.Date >= d);
 					if (myRecs.TryGetValue(d, out var r) && (r.Status == "Present" || r.Status == "Late"))
 					{
-						present++; ot += Math.Min(r.OvertimeMinutes, dailyOtCap);
+						present++; ot += Math.Min(r.OvertimeMinutes, dailyOtCap); days[d] = r.Status;
 						var permitted = permMap.TryGetValue((emp.ID, d.Date), out var pm) ? pm : 0;   // HR-8: waive late within permission window
 						var effLate = Math.Max(0, r.LateMinutes - permitted);
 						lateMin += effLate; if (effLate > 0) lateCnt++;
 					}
-					else if (onLeave) leaveDays++;
+					else if (onLeave) { leaveDays++; days[d] = "Leave"; }
 					// A day that has not happened yet is not an absence (2026-11-08): before this, a summary taken mid-month
 					// counted every remaining work day as absent, and payroll (AccountingPostingService) reads AbsentDays for its
 					// absence penalty. A month-end run is unchanged — by then no day is in the future.
-					else if (d <= DateTime.Today) absent++;
+					else if (d <= DateTime.Today) { absent++; days[d] = "Absent"; }
+					else days[d] = "Upcoming";
 				}
-				rows.Add(new AttendanceMonthRow { EmployeeID = emp.ID, EmployeeName = !isAr && !string.IsNullOrWhiteSpace(emp.FullNameEn) ? emp.FullNameEn : emp.FullName, WorkDays = workDays, PresentDays = present, LateCount = lateCnt, LateMinutes = lateMin, OvertimeMinutes = ot, LeaveDays = leaveDays, AbsentDays = absent, RestDayOvertimeMinutes = restOt, HolidayOvertimeMinutes = holOt });
+				var row = new AttendanceMonthRow { EmployeeID = emp.ID, EmployeeName = !isAr && !string.IsNullOrWhiteSpace(emp.FullNameEn) ? emp.FullNameEn : emp.FullName, WorkDays = workDays, PresentDays = present, LateCount = lateCnt, LateMinutes = lateMin, OvertimeMinutes = ot, LeaveDays = leaveDays, AbsentDays = absent, RestDayOvertimeMinutes = restOt, HolidayOvertimeMinutes = holOt };
+				foreach (var kv in days) row.Days[kv.Key] = kv.Value;
+				rows.Add(row);
 			}
 			return rows.OrderBy(r => r.EmployeeName).ToList();
 		}
