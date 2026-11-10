@@ -6,6 +6,7 @@ import 'app_nav.dart';
 import '../models/app_notification.dart';
 import '../models/dashboard.dart';
 import '../models/employee.dart';
+import '../models/store.dart';
 import '../models/ess.dart';
 import '../models/finance_summary.dart';
 import '../models/inventory_item.dart';
@@ -34,6 +35,8 @@ class ApiService {
         if (_token != null) {
           options.headers['Authorization'] = 'Bearer $_token';
         }
+        // names (items, warehouses, units) come back in the app's language
+        options.headers['Accept-Language'] = language;
         handler.next(options);
       },
       // An expired or revoked token used to leave the app stuck on empty screens. A 401 now signs the user out and
@@ -55,6 +58,9 @@ class ApiService {
   static const _tokenKey = 'auth_token';
 
   String? get token => _token;
+
+  /// The app's language, sent as Accept-Language (set by LocaleProvider).
+  String language = 'ar';
 
   /// Called after a 401 has signed the user out.
   void Function()? onUnauthorized;
@@ -291,11 +297,51 @@ class ApiService {
     } on DioException {
       return null;
     }
-  }
-
+  }
+
+
+
   // ---- Notifications ----
 
   /// Returns (unreadCount, list).
+  // ---------------- storekeeper mode (/api/store) ----------------
+
+  /// (warehouses I may post stock documents in, every active warehouse as a transfer target)
+  Future<(List<StoreWarehouse>, List<StoreWarehouse>)> getStoreWarehouses() async {
+    final res = await _dio.get('/api/store/warehouses');
+    List<StoreWarehouse> parse(dynamic l) => (l as List? ?? []).map((e) => StoreWarehouse.fromJson(e as Map<String, dynamic>)).toList();
+    return (parse(res.data['data']), parse(res.data['targets']));
+  }
+
+  /// The blind count sheet: the items held in a warehouse, with no quantities.
+  Future<List<CountSheetItem>> getCountSheet(int warehouseId) async {
+    final res = await _dio.get('/api/store/count-sheet', queryParameters: {'warehouseId': warehouseId});
+    return _list(res.data).map(CountSheetItem.fromJson).toList();
+  }
+
+  /// Posts a count (or sends it for approval above the company threshold). The result reveals the variance.
+  Future<StoreResult> postCount(int warehouseId, Map<int, double> counted, {String? notes}) =>
+      _storePost('/api/store/count', {
+        'warehouseId': warehouseId, 'notes': notes,
+        'lines': [for (final e in counted.entries) {'itemId': e.key, 'countedQty': e.value}],
+      });
+
+  Future<StoreResult> postTransfer(int fromId, int toId, Map<int, double> qty, {String? notes}) =>
+      _storePost('/api/store/transfer', {
+        'fromWarehouseId': fromId, 'toWarehouseId': toId, 'notes': notes,
+        'lines': [for (final e in qty.entries) {'itemId': e.key, 'qty': e.value}],
+      });
+
+  Future<StoreResult> _storePost(String path, Map<String, dynamic> body) async {
+    try {
+      final res = await _dio.post(path, data: body);
+      return StoreResult.fromJson(res.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      final d = e.response?.data;
+      return StoreResult(ok: false, message: d is Map ? d['message'] as String? : null);
+    }
+  }
+
   Future<(int, List<AppNotification>)> getNotifications() async {
     final res = await _dio.get('/api/notifications');
     final list = (res.data['data'] as List? ?? [])

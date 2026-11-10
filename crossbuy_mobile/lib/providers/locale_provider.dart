@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../services/api_service.dart';
+
 /// Holds the selected app language and persists it.
 class LocaleProvider extends ChangeNotifier {
   Locale _locale = const Locale('ar');
@@ -12,10 +14,12 @@ class LocaleProvider extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     final code = prefs.getString(_key);
     if (code != null) _locale = Locale(code);
+    ApiService.instance.language = _locale.languageCode;
   }
 
   Future<void> setLocale(Locale locale) async {
     _locale = locale;
+    ApiService.instance.language = locale.languageCode;
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_key, locale.languageCode);
