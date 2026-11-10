@@ -6,6 +6,11 @@ import '../services/api_service.dart';
 class AuthProvider extends ChangeNotifier {
   final ApiService _api = ApiService.instance;
 
+  AuthProvider() {
+    // A 401 anywhere (expired / revoked token) signs out inside ApiService; this sends the app back to login.
+    _api.onUnauthorized = notifyListeners;
+  }
+
   bool _loading = false;
   bool get loading => _loading;
   bool get isLoggedIn => _api.isLoggedIn;

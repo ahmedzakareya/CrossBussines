@@ -6,9 +6,10 @@ import 'l10n/app_localizations.dart';
 import 'providers/auth_provider.dart';
 import 'providers/locale_provider.dart';
 import 'providers/notification_provider.dart';
-import 'screens/home_screen.dart';
+import 'screens/shell.dart';
 import 'screens/login_screen.dart';
 import 'services/app_nav.dart';
+import 'theme/brand.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -37,8 +38,6 @@ class CrossBuyApp extends StatelessWidget {
     final localeProvider = context.watch<LocaleProvider>();
     final auth = context.watch<AuthProvider>();
 
-    const seed = Color(0xFF1B84FF); // Metronic primary blue
-
     return MaterialApp(
       title: 'CrossBuy',
       debugShowCheckedModeBanner: false,
@@ -51,18 +50,8 @@ class CrossBuyApp extends StatelessWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      theme: ThemeData(
-        useMaterial3: true,
-        colorSchemeSeed: seed,
-        scaffoldBackgroundColor: const Color(0xFFF5F8FA),
-        appBarTheme: const AppBarTheme(centerTitle: true),
-        inputDecorationTheme: const InputDecorationTheme(
-          border: OutlineInputBorder(),
-          filled: true,
-          fillColor: Colors.white,
-        ),
-      ),
-      home: auth.isLoggedIn ? const HomeScreen() : const LoginScreen(),
+      theme: Brand.theme(),
+      home: auth.isLoggedIn ? const Shell() : const LoginScreen(),
     );
   }
 }

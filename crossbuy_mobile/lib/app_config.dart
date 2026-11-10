@@ -3,28 +3,21 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 /// Central app configuration.
 ///
 /// ── PRODUCTION ──────────────────────────────────────────────────────────
-/// Set [useProduction] = true and put your real HTTPS domain in [prodBaseUrl],
-/// then rebuild the app (`flutter build apk --release` / `flutter build web`).
-/// The server must be reachable over HTTPS (valid certificate) — SignalR and
-/// JWT login both run over the same host.
+/// Build with the real HTTPS host:
+///   flutter build apk --release --dart-define=API_BASE=https://erp.yourcompany.com
+/// The server must be reachable over HTTPS (valid certificate) — SignalR and JWT login both run over the same host.
 ///
-/// ── DEVELOPMENT (useProduction = false) ─────────────────────────────────
-///  - Web (Chrome on this PC) -> http://localhost:5000
-///  - Android emulator        -> http://10.0.2.2:5000   (10.0.2.2 = host machine)
-///  - Real device             -> http://<your-PC-LAN-IP>:5000  (same Wi-Fi)
+/// ── DEVELOPMENT ─────────────────────────────────────────────────────────
+///  - API_BASE given            -> that host (e.g. --dart-define=API_BASE=https://localhost:7183)
+///  - Web (Chrome on this PC)   -> http://localhost:5000
+///  - Android emulator          -> http://10.0.2.2:5000   (10.0.2.2 = host machine)
+///  - Real device               -> pass API_BASE=http://<your-PC-LAN-IP>:5000  (same Wi-Fi)
 class AppConfig {
-  /// Flip to true for production builds.
-  /// Can also be overridden at build time:
-  ///   flutter build apk --release --dart-define=PRODUCTION=true
-  static const bool useProduction =
-      bool.fromEnvironment('PRODUCTION', defaultValue: false);
-
-  /// REAL production host — replace with your domain (keep the https:// scheme,
-  /// no trailing slash). Example: 'https://erp.yourcompany.com'
-  static const String prodBaseUrl = 'https://YOUR-DOMAIN.com';
+  /// The API host, set at build time. Empty means "development default".
+  static const String apiBase = String.fromEnvironment('API_BASE', defaultValue: '');
 
   static String get apiBaseUrl {
-    if (useProduction) return prodBaseUrl;
+    if (apiBase.isNotEmpty) return apiBase;
     return kIsWeb ? 'http://localhost:5000' : 'http://10.0.2.2:5000';
   }
 

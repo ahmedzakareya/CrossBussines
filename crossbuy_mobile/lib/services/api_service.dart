@@ -6,6 +6,7 @@ import 'app_nav.dart';
 import '../models/app_notification.dart';
 import '../models/dashboard.dart';
 import '../models/employee.dart';
+import '../models/ess.dart';
 import '../models/finance_summary.dart';
 import '../models/inventory_item.dart';
 import '../models/leave.dart';
@@ -35,6 +36,15 @@ class ApiService {
         }
         handler.next(options);
       },
+      // An expired or revoked token used to leave the app stuck on empty screens. A 401 now signs the user out and
+      // the app returns to the login screen (onUnauthorized is wired by AuthProvider).
+      onError: (e, handler) async {
+        if (e.response?.statusCode == 401 && _token != null && !e.requestOptions.path.endsWith('/api/auth/login')) {
+          await logout();
+          onUnauthorized?.call();
+        }
+        handler.next(e);
+      },
     ));
   }
 
@@ -45,6 +55,9 @@ class ApiService {
   static const _tokenKey = 'auth_token';
 
   String? get token => _token;
+
+  /// Called after a 401 has signed the user out.
+  void Function()? onUnauthorized;
   bool get isLoggedIn => _token != null;
 
   Future<void> loadToken() async {
@@ -121,8 +134,9 @@ class ApiService {
 
   // ---- Accounting / Finance ----
 
-  Future<FinanceSummary> getFinanceSummary({int companyId = 1}) async {
-    final res = await _dio.get('/api/acc/summary', queryParameters: {'companyId': companyId});
+  Future<FinanceSummary> getFinanceSummary() async {
+    // No companyId: the server resolves the signed-in user's company (a hardcoded company is forbidden).
+    final res = await _dio.get('/api/acc/summary');
     return FinanceSummary.fromJson(res.data['data'] as Map<String, dynamic>);
   }
 
@@ -215,6 +229,70 @@ class ApiService {
     }
   }
 
+  // ---- Employee self-service (/api/ess) ----
+
+  List<Map<String, dynamic>> _list(dynamic data) => ((data?['data'] as List?) ?? []).map((e) => Map<String, dynamic>.from(e as Map)).toList();
+
+  /// (currency, my posted payslips newest first)
+  Future<(String, List<PayslipSummary>)> getPayslips() async {
+    final res = await _dio.get('/api/ess/payslips');
+    return ((res.data['currency'] as String?) ?? '', _list(res.data).map(PayslipSummary.fromJson).toList());
+  }
+
+  Future<(String, PayslipDetail)> getPayslip(int id) async {
+    final res = await _dio.get('/api/ess/payslips/$id');
+    return ((res.data['currency'] as String?) ?? '', PayslipDetail.fromJson(Map<String, dynamic>.from(res.data['data'])));
+  }
+
+  Future<AttendanceMonth> getAttendance(int year, int month) async {
+    final res = await _dio.get('/api/ess/attendance', queryParameters: {'year': year, 'month': month});
+    return AttendanceMonth.fromJson(Map<String, dynamic>.from(res.data));
+  }
+
+  Future<List<MyRequest>> getMyRequests() async {
+    final res = await _dio.get('/api/ess/requests');
+    return _list(res.data).map(MyRequest.fromJson).toList();
+  }
+
+  Future<(bool, String?)> createRequest(Map<String, dynamic> body) async {
+    try {
+      final res = await _dio.post('/api/ess/requests', data: body);
+      final ok = res.data?['success'] == true;
+      if (ok) AppNav.notifyDataChanged();
+      return (ok, null);
+    } on DioException catch (e) {
+      return (false, e.response?.data is Map ? e.response?.data['message'] as String? : null);
+    }
+  }
+
+  /// (currency, everything whose current approval step is mine: leave AND employee requests)
+  Future<(String, List<ApprovalItem>)> getApprovals() async {
+    final res = await _dio.get('/api/ess/approvals');
+    return ((res.data['currency'] as String?) ?? '', _list(res.data).map(ApprovalItem.fromJson).toList());
+  }
+
+  /// Decide an inbox item: a leave goes to /api/leave, an employee request to /api/ess.
+  Future<(bool, String?)> decide(ApprovalItem item, bool approve, {String? note}) async {
+    if (item.kind == 'leave') return decideLeave(item.id, approve, note: note);
+    try {
+      final res = await _dio.post('/api/ess/requests/${item.id}/decision', data: {'approve': approve, 'note': note});
+      final ok = res.data?['success'] == true;
+      if (ok) AppNav.notifyDataChanged();
+      return (ok, null);
+    } on DioException catch (e) {
+      return (false, e.response?.data is Map ? e.response?.data['message'] as String? : null);
+    }
+  }
+
+  /// Is the signed-in user allowed the company's financial summary? (drives the owner's KPI cards)
+  Future<FinanceSummary?> tryFinanceSummary() async {
+    try {
+      return await getFinanceSummary();
+    } on DioException {
+      return null;
+    }
+  }
+
   // ---- Notifications ----
 
   /// Returns (unreadCount, list).
