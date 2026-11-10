@@ -115,9 +115,22 @@
                                                             <div class="text-muted fs-8">@T["Bed"] <span class="hp-num fw-bold">@p.Bed</span> · <span class="hp-num">@p.Mrn</span></div></div>
                                                     </div>
                                                     @if (p.Allergies != null) {<div class="text-danger fs-8 mt-2"><i class="ki-outline ki-information-5 fs-8 text-danger"></i> @p.Allergies</div>}
+                                                    @{ var ic = (ViewBag.Ic as IReadOnlyDictionary<int, HospitalIcBadge>) is { } icAll && icAll.TryGetValue(p.AdmissionId, out var icOne) ? icOne : null; }
+                                                    @if (ic != null) {<div class="d-flex flex-wrap gap-1 mt-2">
+                                                        @foreach (var iso in ic.Isolations) {<span class="badge badge-light-danger fs-9" title="@iso.Reason"><i class="ki-outline ki-shield-cross fs-9 text-danger me-1"></i>@T["prec:" + iso.Precaution]@if (iso.Organism != null) {<text> · <bdi dir="ltr">@iso.Organism</bdi></text>}</span>}
+                                                        @foreach (var dv in ic.Devices) {if (canAdmit || canConsult) {<button type="button" class="badge @(dv.Day >= 7 ? "badge-light-danger" : "badge-light-primary") fs-9 border-0" data-ic-remove="@dv.Id" data-what="@DisplayName.Of(p.Name, p.NameEn) — @T["dev:" + dv.Kind]" title="@T["Record its removal"]">@T["dev:" + dv.Kind] · @T["Day {0}", dv.Day] <i class="ki-outline ki-cross fs-9 ms-1"></i></button>} else {<span class="badge @(dv.Day >= 7 ? "badge-light-danger" : "badge-light-primary") fs-9">@T["dev:" + dv.Kind] · @T["Day {0}", dv.Day]</span>}}
+                                                    </div>}
+                                                    @{ var cr = (ViewBag.Cr as IReadOnlyDictionary<int, IReadOnlyList<HospitalConsultBadge>>) is { } crAll && crAll.TryGetValue(p.AdmissionId, out var crOne) ? crOne : null; }
+                                                    @if (cr != null) {<div class="d-flex flex-wrap gap-1 mt-2">@foreach (var c in cr) {<a href="@Url.Action("Consults", new { scope = "all" })" class="badge @(c.Overdue ? "badge-light-danger" : c.Status == HospitalConsultRequestStatus.Answered ? "badge-light-success" : "badge-light-info") fs-9" title="@c.RequestNo"><i class="ki-outline ki-messages fs-9 me-1 @(c.Overdue ? "text-danger" : c.Status == HospitalConsultRequestStatus.Answered ? "text-success" : "text-info")"></i>@DisplayName.Of(c.Department, c.DepartmentEn) · @(c.Overdue ? T["Overdue"].Value : T["crs:" + c.Status].Value)</a>}</div>}
+                                                    @if ((ViewBag.Fb as IReadOnlyDictionary<int, HospitalFluidBadge>) is { } fbAll && fbAll.TryGetValue(p.AdmissionId, out var fb)) {<div class="mt-2"><button type="button" class="badge badge-light fs-9 border-0" data-fluid="@p.AdmissionId" data-who="@DisplayName.Of(p.Name, p.NameEn)"><i class="ki-outline ki-drop fs-9 text-primary me-1"></i>@T["Fluid balance"] <bdi dir="ltr" class="hp-num ms-1 @(fb.Balance < 0 ? "text-danger" : "text-success")">@((fb.Balance > 0 ? "+" : fb.Balance < 0 ? "−" : "") + Math.Abs(fb.Balance).ToString("#,0", System.Globalization.CultureInfo.InvariantCulture))</bdi></button></div>}
+                                                    @if ((ViewBag.Cp as IReadOnlyDictionary<int, HospitalCareBadge>) is { } cpAll && cpAll.TryGetValue(p.AdmissionId, out var cpb)) {<div class="mt-2"><button type="button" class="badge @(cpb.ReviewDue > 0 || cpb.Suggested > 0 ? "badge-light-danger" : "badge-light-primary") fs-9 border-0" data-careplan="@p.AdmissionId" data-who="@DisplayName.Of(p.Name, p.NameEn)"><i class="ki-outline ki-notepad-edit fs-9 me-1"></i>@T["Care plan"] · <span class="hp-num">@cpb.ActivePlans</span>@if (cpb.ReviewDue > 0) {<text> · @T["Review due"]</text>}@if (cpb.Suggested > 0) {<text> · @T["Plan suggested"]</text>}</button></div>}
                                                     @if (canConsult) {<button type="button" class="btn btn-sm btn-light-primary py-1 px-3 mt-3" data-new-order="@p.AdmissionId" data-who="@DisplayName.Of(p.Name, p.NameEn)"><i class="ki-outline ki-plus fs-6"></i>@T["Medication order"]</button>
                                                         <button type="button" class="btn btn-sm btn-light-primary py-1 px-3 mt-3 ms-1" data-set-order="@p.AdmissionId" data-who="@DisplayName.Of(p.Name, p.NameEn)"><i class="ki-outline ki-questionnaire-tablet fs-6"></i>@T["Order set"]</button>
-                                                        <button type="button" class="btn btn-sm btn-light-primary py-1 px-3 mt-3 ms-1" data-diag-order="@p.AdmissionId" data-who="@DisplayName.Of(p.Name, p.NameEn)"><i class="ki-outline ki-flask fs-6"></i>@T["Tests & imaging"]</button>}
+                                                        <button type="button" class="btn btn-sm btn-light-primary py-1 px-3 mt-3 ms-1" data-diag-order="@p.AdmissionId" data-who="@DisplayName.Of(p.Name, p.NameEn)"><i class="ki-outline ki-flask fs-6"></i>@T["Tests & imaging"]</button>
+                                                        <button type="button" class="btn btn-sm btn-light-primary py-1 px-3 mt-3 ms-1" data-cr-new="@p.AdmissionId" data-who="@DisplayName.Of(p.Name, p.NameEn)"><i class="ki-outline ki-messages fs-6"></i>@T["Ask a specialty"]</button>}
+                                                    @if (canAdmit || canConsult) {<button type="button" class="btn btn-sm btn-light-danger py-1 px-3 mt-3 @(canConsult ? "ms-1" : "")" data-ic="@p.AdmissionId" data-who="@DisplayName.Of(p.Name, p.NameEn)"><i class="ki-outline ki-shield-cross fs-6"></i>@T["Infection control"]</button>}
+                                                    @if (canAdmit || canConsult) {<button type="button" class="btn btn-sm btn-light-primary py-1 px-3 mt-3 ms-1" data-fluid="@p.AdmissionId" data-who="@DisplayName.Of(p.Name, p.NameEn)"><i class="ki-outline ki-drop fs-6"></i>@T["Fluids"]</button>}
+                                                    @if (canAdmit || canConsult) {<button type="button" class="btn btn-sm btn-light-primary py-1 px-3 mt-3 ms-1" data-careplan="@p.AdmissionId" data-who="@DisplayName.Of(p.Name, p.NameEn)"><i class="ki-outline ki-notepad-edit fs-6"></i>@T["Problems & care plan"]</button>}
                                                 </td>
                                             }
                                             @if (line == null)
@@ -327,6 +340,69 @@
         <input class="form-control form-control-solid mt-4" maxlength="300" dir="auto" data-risk-note placeholder="@T["Note"]" />
     </div>
     <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-risk-save>@T["Save"]</button></div>
+</div></div></div>
+<div class="modal fade" id="careModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered modal-dialog-scrollable mw-800px"><div class="modal-content">
+    <div class="modal-header"><div><h2 class="fw-bold m-0">@T["Problems & care plan"]</h2><div class="text-muted fs-7 mt-1" data-care-who></div></div><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="modal-body py-6 px-lg-10"><div data-care-body><div class="text-muted fs-7 py-8 text-center">@T["Loading…"]</div></div></div>
+</div></div></div>
+<div class="modal fade" id="fluidModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered modal-dialog-scrollable mw-750px"><div class="modal-content">
+    <div class="modal-header"><div><h2 class="fw-bold m-0">@T["Fluid chart"]</h2><div class="text-muted fs-7 mt-1" data-fluid-who></div></div><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="modal-body py-6 px-lg-10">
+        @if (canAdmit || canConsult) {<div class="row g-3 align-items-end mb-6 pb-6 border-bottom border-dashed" data-fluid-form>
+            <div class="col-md-4"><label class="form-label required fs-7">@T["In or out"]</label><select class="form-select form-select-solid form-select-sm" data-ff="kind">
+                <optgroup label="@T["Fluid in"]">@foreach (var k in HospitalFluidKind.In) {<option value="@k">@T["fluid:" + k]</option>}</optgroup>
+                <optgroup label="@T["Fluid out"]">@foreach (var k in HospitalFluidKind.Out) {<option value="@k">@T["fluid:" + k]</option>}</optgroup></select></div>
+            <div class="col-md-2"><label class="form-label required fs-7">ml</label><input type="number" min="1" max="5000" step="1" class="form-control form-control-solid form-control-sm" dir="ltr" data-ff="volumeMl" /></div>
+            <div class="col-md-3"><label class="form-label fs-7">@T["Time"]</label><input type="datetime-local" class="form-control form-control-solid form-control-sm" dir="ltr" data-ff="at" /></div>
+            <div class="col-md-3"><button type="button" class="btn btn-sm btn-primary w-100" data-fluid-save><i class="ki-outline ki-plus fs-5"></i>@T["Record"]</button></div>
+            <div class="col-12"><input class="form-control form-control-solid form-control-sm" maxlength="200" data-ff="note" placeholder="@T["Note (optional) — e.g. normal saline 0.9%"]" /></div>
+        </div>}
+        <div data-fluid-body><div class="text-muted fs-7 py-8 text-center">@T["Loading…"]</div></div>
+    </div>
+</div></div></div>
+<div class="modal fade" id="crModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-600px"><div class="modal-content">
+    <div class="modal-header"><div><h2 class="fw-bold m-0">@T["Ask for a consultation"]</h2><div class="text-muted fs-7 mt-1" data-cr-who></div></div><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="modal-body py-6 px-lg-10"><div class="row g-4">
+        <div class="col-6"><label class="form-label required">@T["Specialty"]</label><select class="form-select form-select-solid" data-cr="departmentId"></select></div>
+        <div class="col-6"><label class="form-label">@T["Doctor"]</label><select class="form-select form-select-solid" data-cr="practitionerId"><option value="">@T["Any doctor of the specialty"]</option></select></div>
+        <div class="col-12"><label class="form-label required">@T["How urgent"]</label><div class="d-flex flex-wrap gap-5">
+            @foreach (var u in HospitalConsultUrgency.All) {<label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="radio" name="crUrgency" value="@u" @(u == HospitalConsultUrgency.Routine ? "checked" : "") /><span class="form-check-label">@T["cru:" + u] <span class="text-muted fs-8">(@T["cruw:" + u])</span></span></label>}
+        </div></div>
+        <div class="col-12"><label class="form-label required">@T["Question"]</label><textarea class="form-control form-control-solid" rows="4" maxlength="1000" data-cr="question" placeholder="@T["The problem and what you want the consultant to answer"]"></textarea></div>
+    </div></div>
+    <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-cr-save>@T["Send the request"]</button></div>
+</div></div></div>
+<div class="modal fade" id="icModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-650px"><div class="modal-content">
+    <div class="modal-header"><div><h2 class="fw-bold m-0">@T["Infection control"]</h2><div class="text-muted fs-7 mt-1" data-ic-who></div></div><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="modal-body py-6 px-lg-10">
+        <ul class="nav nav-tabs nav-line-tabs mb-6 fs-6">
+            <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#icIso">@T["Isolation"]</a></li>
+            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#icDev">@T["Device"]</a></li>
+            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#icCase">@T["Report an infection"]</a></li>
+        </ul>
+        <div class="tab-content">
+            <div class="tab-pane fade show active" id="icIso" data-ic-form="iso"><div class="row g-4">
+                <div class="col-6"><label class="form-label required">@T["Precautions"]</label><select class="form-select form-select-solid" data-f="precaution">@foreach (var x in HospitalPrecaution.All) { <option value="@x">@T["prec:" + x]</option> }</select></div>
+                <div class="col-6"><label class="form-label">@T["Organism"]</label><input class="form-control form-control-solid" dir="ltr" maxlength="100" data-f="organism" placeholder="MRSA" /></div>
+                <div class="col-12"><label class="form-label">@T["Why"]</label><input class="form-control form-control-solid" maxlength="300" data-f="reason" placeholder="@T["Suspected, awaiting the culture"]" /></div>
+                <div class="col-12 text-end"><button type="button" class="btn btn-danger" data-ic-save="iso">@T["Start isolation"]</button></div>
+            </div></div>
+            <div class="tab-pane fade" id="icDev" data-ic-form="dev"><div class="row g-4">
+                <div class="col-6"><label class="form-label required">@T["Device"]</label><select class="form-select form-select-solid" data-f="kind">@foreach (var x in HospitalDeviceKind.All) { <option value="@x">@T["dev:" + x]</option> }</select></div>
+                <div class="col-6"><label class="form-label">@T["Inserted at"]</label><input type="datetime-local" class="form-control form-control-solid" dir="ltr" data-f="at" /><div class="form-text">@T["Empty means now."]</div></div>
+                <div class="col-12"><label class="form-label">@T["Site"]</label><input class="form-control form-control-solid" maxlength="100" data-f="site" placeholder="@T["Right subclavian"]" /></div>
+                <div class="col-12 text-end"><button type="button" class="btn btn-primary" data-ic-save="dev">@T["Record the device"]</button></div>
+            </div></div>
+            <div class="tab-pane fade" id="icCase" data-ic-form="case"><div class="row g-4">
+                <div class="col-6"><label class="form-label required">@T["Infection"]</label><select class="form-select form-select-solid" data-f="kind">@foreach (var x in HospitalInfectionKind.All) { <option value="@x">@T["ick:" + x]</option> }</select></div>
+                <div class="col-6"><label class="form-label required">@T["Date of the event"]</label><input type="date" class="form-control form-control-solid" dir="ltr" data-f="onsetDate" /></div>
+                <div class="col-12"><label class="form-label">@T["Organism"]</label><input class="form-control form-control-solid" dir="ltr" maxlength="100" data-f="organism" placeholder="Klebsiella pneumoniae (ESBL)" /></div>
+                <div class="col-12"><label class="form-label">@T["Notes"]</label><textarea class="form-control form-control-solid" rows="2" maxlength="1000" data-f="notes" placeholder="@T["Fever, the specimen sent, what was seen"]"></textarea></div>
+                <div class="col-12 text-muted fs-8">@T["Infection control confirms or rules it out. Whether it is hospital-acquired follows from the dates."]</div>
+                <div class="col-12 text-end"><button type="button" class="btn btn-primary" data-ic-save="case">@T["Report"]</button></div>
+            </div></div>
+        </div>
+    </div>
 </div></div></div>
 <div class="modal fade" id="chartModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered modal-dialog-scrollable mw-900px"><div class="modal-content">
     <div class="modal-header"><h2 class="fw-bold m-0">@T["Observation chart"] — <span data-chart-who></span></h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
@@ -624,5 +700,147 @@
                         load(); }); });
             });
         })();
-    </script>
+    
+    // H76 — infection control from the nursing station
+    (function () {
+        var mEl = document.getElementById('icModal'); if (!mEl) return;
+        var tok = document.querySelector('input[name="__RequestVerificationToken"]'), adm = 0;
+        var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value),
+            iso: @Json.Serialize(T["Start isolation for this patient?"].Value), dev: @Json.Serialize(T["Record this device?"].Value),
+            kase: @Json.Serialize(T["Report this infection to infection control?"].Value), remove: @Json.Serialize(T["Record that this device was removed now?"].Value) };
+        var urls = { iso: @Json.Serialize(Url.Content("~/Hospital/Infection/Isolation")), dev: @Json.Serialize(Url.Content("~/Hospital/Infection/Device")), kase: @Json.Serialize(Url.Content("~/Hospital/Infection/Case")) };
+        function post(u, b) { return fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': tok ? tok.value : '' }, body: JSON.stringify(b || {}) }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); }); }
+        function today() { var d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+        document.addEventListener('click', function (e) {
+            var o = e.target.closest('[data-ic]');
+            if (o) {
+                adm = Number(o.getAttribute('data-ic'));
+                mEl.querySelector('[data-ic-who]').textContent = o.getAttribute('data-who') || '';
+                mEl.querySelectorAll('[data-f]').forEach(function (i) { if (i.tagName !== 'SELECT') i.value = ''; else i.selectedIndex = 0; });
+                mEl.querySelector('#icCase [data-f="onsetDate"]').value = today();
+                bootstrap.Modal.getOrCreateInstance(mEl).show();
+                return;
+            }
+            var r = e.target.closest('[data-ic-remove]');
+            if (r) {
+                cbConfirm(W.remove + '\n' + (r.getAttribute('data-what') || '')).then(function (ok) { if (!ok) return;
+                    post(urls.dev + '/' + r.getAttribute('data-ic-remove') + '/Remove', {}).then(function (res) { if (!res.ok) { toastr.error(res.error || W.failed); return; } toastr.success(W.saved); location.reload(); }); });
+                return;
+            }
+            var s = e.target.closest('[data-ic-save]'); if (!s) return;
+            var k = s.getAttribute('data-ic-save'), pane = mEl.querySelector('[data-ic-form="' + k + '"]'), body = { admissionId: adm };
+            pane.querySelectorAll('[data-f]').forEach(function (i) { body[i.getAttribute('data-f')] = i.value.trim() || null; });
+            var key = k === 'case' ? 'kase' : k;
+            cbConfirm(W[key]).then(function (ok) { if (!ok) return; s.disabled = true;
+                post(urls[key], body).then(function (res) { s.disabled = false; if (!res.ok) { toastr.error(res.error || W.failed); return; }
+                    toastr.success(W.saved); bootstrap.Modal.getOrCreateInstance(mEl).hide(); location.reload(); }); });
+        });
+    })();
+
+    // H77 — consultation requests from the nursing station
+    (function () {
+        var mEl = document.getElementById('crModal'); if (!mEl) return;
+        var tok = document.querySelector('input[name="__RequestVerificationToken"]'), adm = 0, specs = null;
+        var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value), ask: @Json.Serialize(T["Send this consultation request?"].Value),
+            any: @Json.Serialize(T["Any doctor of the specialty"].Value), pick: @Json.Serialize(T["Choose the specialty"].Value) };
+        var dep = mEl.querySelector('[data-cr="departmentId"]'), doc = mEl.querySelector('[data-cr="practitionerId"]');
+        function opt(v, l) { var o = document.createElement('option'); o.value = v; o.textContent = l; return o; }
+        function fillDocs() { doc.innerHTML = ''; doc.appendChild(opt('', W.any)); var s = (specs || []).find(function (x) { return String(x.id) === dep.value; });
+            (s ? s.doctors : []).forEach(function (d) { doc.appendChild(opt(d.id, d.name)); }); }
+        dep.addEventListener('change', fillDocs);
+        function loadSpecs() { if (specs) return Promise.resolve();
+            return fetch(@Json.Serialize(Url.Action("ConsultSpecialties")), { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.json(); }).then(function (d) {
+                specs = d; dep.innerHTML = ''; dep.appendChild(opt('', W.pick)); d.forEach(function (s) { dep.appendChild(opt(s.id, s.name)); }); fillDocs(); }); }
+        function post(u, b) { return fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': tok ? tok.value : '' }, body: JSON.stringify(b || {}) }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); }); }
+        document.addEventListener('click', function (e) {
+            var o = e.target.closest('[data-cr-new]');
+            if (o) {
+                adm = Number(o.getAttribute('data-cr-new'));
+                mEl.querySelector('[data-cr-who]').textContent = o.getAttribute('data-who') || '';
+                loadSpecs().then(function () { dep.value = ''; fillDocs(); mEl.querySelector('[data-cr="question"]').value = '';
+                    mEl.querySelector('input[name="crUrgency"][value="Routine"]').checked = true; bootstrap.Modal.getOrCreateInstance(mEl).show(); });
+                return;
+            }
+            var s = e.target.closest('[data-cr-save]'); if (!s) return;
+            var u = mEl.querySelector('input[name="crUrgency"]:checked');
+            var body = { admissionId: adm, departmentId: Number(dep.value || 0), practitionerId: doc.value ? Number(doc.value) : null, urgency: u ? u.value : null, question: mEl.querySelector('[data-cr="question"]').value.trim() || null };
+            cbConfirm(W.ask).then(function (ok) { if (!ok) return; s.disabled = true;
+                post(@Json.Serialize(Url.Action("RequestConsult")), body).then(function (res) { s.disabled = false; if (!res.ok) { toastr.error(res.error || W.failed); return; }
+                    toastr.success(W.saved); bootstrap.Modal.getOrCreateInstance(mEl).hide(); location.reload(); }); });
+        });
+    })();
+
+    // H78 — the fluid chart from the nursing station
+    (function () {
+        var mEl = document.getElementById('fluidModal'); if (!mEl) return;
+        var tok = document.querySelector('input[name="__RequestVerificationToken"]'), adm = 0, back = 0, dirty = false;
+        var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value), ask: @Json.Serialize(T["Record this volume on the fluid chart?"].Value),
+            voidTitle: @Json.Serialize(T["Void this entry"].Value), voidWhy: @Json.Serialize(T["Why it is voided"].Value) };
+        var body = mEl.querySelector('[data-fluid-body]');
+        function load() { fetch(@Json.Serialize(Url.Content("~/Hospital/Admissions/"))+ adm + '/Fluids?back=' + back, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function (r) { return r.text(); }).then(function (h) { body.innerHTML = h; }); }
+        function post(u, b) { return fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': tok ? tok.value : '' }, body: JSON.stringify(b || {}) }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); }); }
+        mEl.addEventListener('hidden.bs.modal', function () { if (dirty) location.reload(); });
+        document.addEventListener('click', function (e) {
+            var o = e.target.closest('[data-fluid]');
+            if (o) { adm = Number(o.getAttribute('data-fluid')); back = 0; dirty = false;
+                mEl.querySelector('[data-fluid-who]').textContent = o.getAttribute('data-who') || '';
+                mEl.querySelectorAll('[data-ff]').forEach(function (i) { if (i.tagName !== 'SELECT') i.value = ''; });
+                body.innerHTML = '<div class="text-muted fs-7 py-8 text-center">…</div>'; load(); bootstrap.Modal.getOrCreateInstance(mEl).show(); return; }
+            var d = e.target.closest('[data-fluid-day]'); if (d && mEl.contains(d)) { back = Number(d.getAttribute('data-fluid-day')); load(); return; }
+            var v = e.target.closest('[data-fluid-void]');
+            if (v) { cbPrompt(v.getAttribute('data-what') || '', { title: W.voidTitle, placeholder: W.voidWhy, kind: 'danger' }).then(function (why) { if (!why) return;
+                post(@Json.Serialize(Url.Content("~/Hospital/Admissions/Fluids/")) + v.getAttribute('data-fluid-void') + '/Void', { reason: why }).then(function (res) {
+                    if (!res.ok) { toastr.error(res.error || W.failed); return; } toastr.success(W.saved); dirty = true; load(); }); }); return; }
+            var s = e.target.closest('[data-fluid-save]'); if (!s) return;
+            var f = { admissionId: adm }; mEl.querySelectorAll('[data-ff]').forEach(function (i) { var k = i.getAttribute('data-ff'); f[k] = k === 'volumeMl' ? Number(i.value || 0) : (i.value.trim() || null); });
+            cbConfirm(W.ask).then(function (ok) { if (!ok) return; s.disabled = true;
+                post(@Json.Serialize(Url.Action("AddFluid")), f).then(function (res) { s.disabled = false; if (!res.ok) { toastr.error(res.error || W.failed); return; }
+                    toastr.success(W.saved); dirty = true; back = 0; mEl.querySelector('[data-ff="volumeMl"]').value = ''; mEl.querySelector('[data-ff="note"]').value = ''; load(); }); });
+        });
+    })();
+
+    // H79 — the problem list and the care plan from the nursing station
+    (function () {
+        var mEl = document.getElementById('careModal'); if (!mEl) return;
+        var tok = document.querySelector('input[name="__RequestVerificationToken"]'), adm = 0, dirty = false, tab = '#cpPlan';
+        var body = mEl.querySelector('[data-care-body]'), isAr = document.documentElement.getAttribute('dir') === 'rtl';
+        var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value),
+            addPlan: @Json.Serialize(T["Add this to the care plan?"].Value), addProblem: @Json.Serialize(T["Add this problem to the patient's list?"].Value),
+            resolve: @Json.Serialize(T["Mark this problem as resolved?"].Value), closeTitle: @Json.Serialize(T["Close this plan"].Value), outcome: @Json.Serialize(T["The outcome"].Value) };
+        var base = @Json.Serialize(Url.Content("~/Hospital/Admissions/"));
+        function post(u, b) { return fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': tok ? tok.value : '' }, body: JSON.stringify(b || {}) }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); }); }
+        function fill(need) { var f = mEl.querySelector('[data-cp-form]'); if (!f) return; var s = f.querySelector('[data-cp="need"]'); if (need) s.value = need;
+            var o = s.options[s.selectedIndex]; f.querySelector('[data-cp="goal"]').value = o.getAttribute('data-goal') || ''; f.querySelector('[data-cp="interventions"]').value = o.getAttribute('data-iv') || ''; }
+        function wire() {
+            var s = mEl.querySelector('[data-cp="need"]'); if (s) { s.addEventListener('change', function () { fill(); }); fill(); }
+            var a = mEl.querySelector('a[href="' + tab + '"]'); if (a) bootstrap.Tab.getOrCreateInstance(a).show();
+            mEl.querySelectorAll('a[data-bs-toggle="tab"]').forEach(function (x) { x.addEventListener('shown.bs.tab', function () { tab = x.getAttribute('href'); }); });
+            var pk = mEl.querySelector('[data-pb="code"]');
+            if (pk && window.jQuery && jQuery.fn.select2) jQuery(pk).select2({ width: '100%', dir: isAr ? 'rtl' : 'ltr', allowClear: true, dropdownParent: jQuery(mEl), placeholder: pk.getAttribute('data-placeholder'),
+                ajax: { url: @Json.Serialize(Url.Action("SearchDiagnosisCodes")), dataType: 'json', delay: 200, data: function (p) { return { q: p.term || '' }; }, processResults: function (d) { return { results: d.results || [] }; } } });
+        }
+        function load() { fetch(base + adm + '/CarePlan', { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.text(); }).then(function (h) { body.innerHTML = h; wire(); }); }
+        function done(res) { if (!res.ok) { toastr.error(res.error || W.failed); return; } toastr.success(W.saved); dirty = true; load(); }
+        mEl.addEventListener('hidden.bs.modal', function () { if (dirty) location.reload(); });
+        document.addEventListener('click', function (e) {
+            var o = e.target.closest('[data-careplan]');
+            if (o) { adm = Number(o.getAttribute('data-careplan')); dirty = false; tab = '#cpPlan'; mEl.querySelector('[data-care-who]').textContent = o.getAttribute('data-who') || '';
+                body.innerHTML = '<div class="text-muted fs-7 py-8 text-center">…</div>'; load(); bootstrap.Modal.getOrCreateInstance(mEl).show(); return; }
+            if (!mEl.contains(e.target)) return;
+            var u = e.target.closest('[data-cp-use]'); if (u) { fill(u.getAttribute('data-cp-use')); mEl.querySelector('[data-cp="goal"]').focus(); return; }
+            var s = e.target.closest('[data-cp-save]');
+            if (s) { var f = { admissionId: adm }; mEl.querySelectorAll('[data-cp]').forEach(function (i) { f[i.getAttribute('data-cp')] = i.value.trim() || null; });
+                cbConfirm(W.addPlan).then(function (ok) { if (ok) post(base + 'CarePlan', f).then(done); }); return; }
+            var c = e.target.closest('[data-cp-close]');
+            if (c) { cbPrompt(c.getAttribute('data-what') || '', { title: W.closeTitle, placeholder: W.outcome, textarea: true }).then(function (why) { if (!why) return;
+                post(base + 'CarePlan/' + c.getAttribute('data-cp-close') + '/Close', { status: c.getAttribute('data-status'), outcome: why }).then(done); }); return; }
+            var p = e.target.closest('[data-pb-save]');
+            if (p) { var g = { admissionId: adm }; mEl.querySelectorAll('[data-pb]').forEach(function (i) { var v = window.jQuery && i.tagName === 'SELECT' && i.getAttribute('data-pb') === 'code' ? jQuery(i).val() : i.value; g[i.getAttribute('data-pb')] = (v || '').trim() || null; });
+                tab = '#cpProblems'; cbConfirm(W.addProblem).then(function (ok) { if (ok) post(base + 'Problems', g).then(done); }); return; }
+            var r = e.target.closest('[data-pb-resolve]');
+            if (r) { tab = '#cpProblems'; cbConfirm(W.resolve + '\n' + (r.getAttribute('data-what') || '')).then(function (ok) { if (ok) post(base + 'Problems/' + r.getAttribute('data-pb-resolve') + '/Resolve').then(done); }); }
+        });
+    })();
+</script>
 }

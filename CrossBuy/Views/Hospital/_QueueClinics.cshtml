@@ -1,0 +1,25 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@model HospitalQueueBoard
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@* H83 — the display's clinics (refreshed every few seconds). Numbers and rooms only: never a name. *@
+<div data-stamp="@Model.Stamp" class="qd-grid">
+    @if (Model.Clinics.Count == 0) { <div class="qd-empty">@T["No patient is waiting now."]</div> }
+    @foreach (var c in Model.Clinics)
+    {
+        <div class="qd-card">
+            <div class="qd-head">
+                <div class="qd-doc">@DisplayName.Of(c.Doctor, c.DoctorEn)</div>
+                <div class="qd-dep">@(c.Department == null ? "" : DisplayName.Of(c.Department, c.DepartmentEn ?? c.Department))@if (c.Room != null) {<text> · @T["Room"] <bdi>@c.Room</bdi></text>}</div>
+            </div>
+            <div class="qd-now">
+                <div class="qd-label">@T["Serving now"]</div>
+                <div class="qd-num" data-now="@(c.NowServing?.ToString() ?? "")">@(c.NowServing?.ToString() ?? "—")</div>
+            </div>
+            <div class="qd-next">
+                <div class="qd-label">@T["Waiting"]</div>
+                <div class="qd-chips">@if (c.Waiting.Count == 0) {<span class="qd-none">—</span>}@foreach (var n in c.Waiting.Take(8)) {<span class="qd-chip">@n</span>}@if (c.Waiting.Count > 8) {<span class="qd-more">+@(c.Waiting.Count - 8)</span>}</div>
+            </div>
+        </div>
+    }
+</div>

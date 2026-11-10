@@ -1,0 +1,205 @@
+{
+ "unit": "H78 — fluid balance",
+ "strings": {
+  "An entry older than three days cannot be added": {
+   "ar": "لا يمكن إضافة قيد أقدم من ثلاثة أيام",
+   "en": "An entry older than three days cannot be added",
+   "fr": "Impossible d'ajouter une entrée de plus de trois jours"
+  },
+  "Choose what went in or came out": {
+   "ar": "اختر ما دخل أو خرج",
+   "en": "Choose what went in or came out",
+   "fr": "Choisissez ce qui est entré ou sorti"
+  },
+  "Fluid balance": {
+   "ar": "توازن السوائل",
+   "en": "Fluid balance",
+   "fr": "Bilan hydrique"
+  },
+  "Fluid chart": {
+   "ar": "جدول السوائل",
+   "en": "Fluid chart",
+   "fr": "Feuille de bilan hydrique"
+  },
+  "Fluid day": {
+   "ar": "يوم السوائل",
+   "en": "Fluid day",
+   "fr": "Journée de bilan"
+  },
+  "Fluid in": {
+   "ar": "الداخل",
+   "en": "Fluid in",
+   "fr": "Entrées"
+  },
+  "Fluid out": {
+   "ar": "الخارج",
+   "en": "Fluid out",
+   "fr": "Sorties"
+  },
+  "Fluids": {
+   "ar": "السوائل",
+   "en": "Fluids",
+   "fr": "Liquides"
+  },
+  "In or out": {
+   "ar": "الداخل أو الخارج",
+   "en": "In or out",
+   "fr": "Entrée ou sortie"
+  },
+  "Low urine output: {0} ml in the last 6 hours — under 0.5 ml/kg/h.": {
+   "ar": "إدرار بول منخفض: {0} مل في آخر 6 ساعات — أقل من 0.5 مل/كجم/ساعة.",
+   "en": "Low urine output: {0} ml in the last 6 hours — under 0.5 ml/kg/h.",
+   "fr": "Diurèse faible : {0} ml sur les 6 dernières heures — moins de 0,5 ml/kg/h."
+  },
+  "Net": {
+   "ar": "الصافي",
+   "en": "Net",
+   "fr": "Bilan"
+  },
+  "No weight on file: low urine output is not checked.": {
+   "ar": "لا يوجد وزن مسجل: لا يتم فحص انخفاض إدرار البول.",
+   "en": "No weight on file: low urine output is not checked.",
+   "fr": "Aucun poids enregistré : la diurèse faible n'est pas vérifiée."
+  },
+  "Note (optional) — e.g. normal saline 0.9%": {
+   "ar": "ملاحظة (اختيارية) — مثل محلول ملحي 0.9%",
+   "en": "Note (optional) — e.g. normal saline 0.9%",
+   "fr": "Note (facultative) — ex. sérum physiologique 0,9 %"
+  },
+  "Nothing recorded in this fluid day.": {
+   "ar": "لا شيء مسجل في يوم السوائل هذا.",
+   "en": "Nothing recorded in this fluid day.",
+   "fr": "Rien d'enregistré pour cette journée."
+  },
+  "Only who wrote it or a doctor can void it": {
+   "ar": "لا يلغيه إلا من سجّله أو الطبيب",
+   "en": "Only who wrote it or a doctor can void it",
+   "fr": "Seul l'auteur ou un médecin peut l'annuler"
+  },
+  "Record this volume on the fluid chart?": {
+   "ar": "تسجيل هذه الكمية في جدول السوائل؟",
+   "en": "Record this volume on the fluid chart?",
+   "fr": "Enregistrer ce volume sur la feuille de bilan ?"
+  },
+  "The day after": {
+   "ar": "اليوم التالي",
+   "en": "The day after",
+   "fr": "Le jour suivant"
+  },
+  "The day before": {
+   "ar": "اليوم السابق",
+   "en": "The day before",
+   "fr": "Le jour précédent"
+  },
+  "The fluid chart is not installed yet (hospital_h78_fluid_balance.sql).": {
+   "ar": "جدول السوائل غير مثبت بعد (hospital_h78_fluid_balance.sql).",
+   "en": "The fluid chart is not installed yet (hospital_h78_fluid_balance.sql).",
+   "fr": "La feuille de bilan hydrique n'est pas encore installée (hospital_h78_fluid_balance.sql)."
+  },
+  "The last five days": {
+   "ar": "آخر خمسة أيام",
+   "en": "The last five days",
+   "fr": "Les cinq derniers jours"
+  },
+  "The volume is between 1 and 5,000 ml": {
+   "ar": "الكمية بين 1 و5,000 مل",
+   "en": "The volume is between 1 and 5,000 ml",
+   "fr": "Le volume est compris entre 1 et 5 000 ml"
+  },
+  "This entry is already voided": {
+   "ar": "هذا القيد ملغى بالفعل",
+   "en": "This entry is already voided",
+   "fr": "Cette entrée est déjà annulée"
+  },
+  "Void": {
+   "ar": "إلغاء القيد",
+   "en": "Void",
+   "fr": "Annuler"
+  },
+  "Void this entry": {
+   "ar": "إلغاء هذا القيد",
+   "en": "Void this entry",
+   "fr": "Annuler cette entrée"
+  },
+  "Voided": {
+   "ar": "ملغى",
+   "en": "Voided",
+   "fr": "Annulée"
+  },
+  "Weight used: {0} kg ({1})": {
+   "ar": "الوزن المستخدم: {0} كجم ({1})",
+   "en": "Weight used: {0} kg ({1})",
+   "fr": "Poids utilisé : {0} kg ({1})"
+  },
+  "Why it is voided": {
+   "ar": "سبب الإلغاء",
+   "en": "Why it is voided",
+   "fr": "Motif de l'annulation"
+  },
+  "Write why it is voided": {
+   "ar": "اكتب سبب الإلغاء",
+   "en": "Write why it is voided",
+   "fr": "Indiquez le motif de l'annulation"
+  },
+  "fluid:Blood": {
+   "ar": "دم",
+   "en": "Blood",
+   "fr": "Sang"
+  },
+  "fluid:BloodLoss": {
+   "ar": "فقد دم",
+   "en": "Blood loss",
+   "fr": "Pertes sanguines"
+  },
+  "fluid:Drain": {
+   "ar": "درنقة",
+   "en": "Drain",
+   "fr": "Drain"
+  },
+  "fluid:Enteral": {
+   "ar": "تغذية بالأنبوب",
+   "en": "Tube feed",
+   "fr": "Nutrition entérale"
+  },
+  "fluid:IV": {
+   "ar": "وريدي",
+   "en": "IV",
+   "fr": "IV"
+  },
+  "fluid:NG": {
+   "ar": "أنبوب أنفي معدي",
+   "en": "Nasogastric",
+   "fr": "Sonde nasogastrique"
+  },
+  "fluid:Oral": {
+   "ar": "فموي",
+   "en": "Oral",
+   "fr": "Per os"
+  },
+  "fluid:OtherIn": {
+   "ar": "داخل آخر",
+   "en": "Other in",
+   "fr": "Autre entrée"
+  },
+  "fluid:OtherOut": {
+   "ar": "خارج آخر",
+   "en": "Other out",
+   "fr": "Autre sortie"
+  },
+  "fluid:Stool": {
+   "ar": "براز",
+   "en": "Stool",
+   "fr": "Selles"
+  },
+  "fluid:Urine": {
+   "ar": "بول",
+   "en": "Urine",
+   "fr": "Urines"
+  },
+  "fluid:Vomit": {
+   "ar": "قيء",
+   "en": "Vomit",
+   "fr": "Vomissements"
+  }
+ }
+}

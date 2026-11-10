@@ -1,0 +1,680 @@
+{
+ "unit": "H88 — oncology",
+ "strings": {
+  "A check stops this cycle: write the reason to give it anyway": {
+   "ar": "يوجد فحص يمنع هذه الدورة: اكتب سبب إعطائها رغم ذلك",
+   "en": "A check stops this cycle: write the reason to give it anyway",
+   "fr": "Un contrôle bloque ce cycle : indiquez pourquoi le donner quand même"
+  },
+  "A count is not plausible": {
+   "ar": "قيمة في العدّ الدموي غير منطقية",
+   "en": "A count is not plausible",
+   "fr": "Une valeur de numération n'est pas plausible"
+  },
+  "A cycle is recorded on its day, or up to three days back": {
+   "ar": "تُسجَّل الدورة في يومها أو بأثر رجعي حتى ثلاثة أيام",
+   "en": "A cycle is recorded on its day, or up to three days back",
+   "fr": "Un cycle s'enregistre le jour même, ou jusqu'à trois jours après"
+  },
+  "A cycle lasts between 7 and 56 days": {
+   "ar": "مدة الدورة بين 7 و56 يومًا",
+   "en": "A cycle lasts between 7 and 56 days",
+   "fr": "Un cycle dure entre 7 et 56 jours"
+  },
+  "A drug is written twice": {
+   "ar": "دواء مكتوب مرتين",
+   "en": "A drug is written twice",
+   "fr": "Un médicament est saisi deux fois"
+  },
+  "A drug's day falls after the cycle ends": {
+   "ar": "يوم الدواء يقع بعد نهاية الدورة",
+   "en": "A drug's day falls after the cycle ends",
+   "fr": "Le jour d'un médicament tombe après la fin du cycle"
+  },
+  "A lifetime limit is kept for a mg/m² dose only": {
+   "ar": "الحد التراكمي مدى الحياة للجرعات بالمجم/م² فقط",
+   "en": "A lifetime limit is kept for a mg/m² dose only",
+   "fr": "Une limite cumulative ne vaut que pour une dose en mg/m²"
+  },
+  "A lifetime limit must be above zero": {
+   "ar": "الحد التراكمي يجب أن يكون أكبر من صفر",
+   "en": "A lifetime limit must be above zero",
+   "fr": "La limite cumulative doit être supérieure à zéro"
+  },
+  "Add a drug": {
+   "ar": "إضافة دواء",
+   "en": "Add a drug",
+   "fr": "Ajouter un médicament"
+  },
+  "Add at least one drug": {
+   "ar": "أضف دواءً واحدًا على الأقل",
+   "en": "Add at least one drug",
+   "fr": "Ajoutez au moins un médicament"
+  },
+  "All cycles given": {
+   "ar": "أُعطيت كل الدورات",
+   "en": "All cycles given",
+   "fr": "Tous les cycles donnés"
+  },
+  "An AUC is between 1 and 10": {
+   "ar": "قيمة AUC بين 1 و10",
+   "en": "An AUC is between 1 and 10",
+   "fr": "Une AUC est entre 1 et 10"
+  },
+  "Another regimen has this code": {
+   "ar": "يوجد بروتوكول آخر بنفس الرمز",
+   "en": "Another regimen has this code",
+   "fr": "Un autre protocole a ce code"
+  },
+  "At the start": {
+   "ar": "عند البداية",
+   "en": "At the start",
+   "fr": "Au début"
+  },
+  "Basis": {
+   "ar": "أساس الجرعة",
+   "en": "Basis",
+   "fr": "Base"
+  },
+  "Body surface": {
+   "ar": "مساحة سطح الجسم",
+   "en": "Body surface",
+   "fr": "Surface corporelle"
+  },
+  "Change the regimen": {
+   "ar": "تعديل البروتوكول",
+   "en": "Change the regimen",
+   "fr": "Modifier le protocole"
+  },
+  "Chemo cycles": {
+   "ar": "الدورات",
+   "en": "Chemo cycles",
+   "fr": "Cycles"
+  },
+  "Chemotherapy": {
+   "ar": "العلاج الكيماوي",
+   "en": "Chemotherapy",
+   "fr": "Chimiothérapie"
+  },
+  "Chemotherapy course": {
+   "ar": "كورس العلاج الكيماوي",
+   "en": "Chemotherapy course",
+   "fr": "Cure de chimiothérapie"
+  },
+  "Chemotherapy regimens": {
+   "ar": "بروتوكولات العلاج الكيماوي",
+   "en": "Chemotherapy regimens",
+   "fr": "Protocoles de chimiothérapie"
+  },
+  "Choose an active regimen": {
+   "ar": "اختر بروتوكولًا مُفعّلًا",
+   "en": "Choose an active regimen",
+   "fr": "Choisissez un protocole actif"
+  },
+  "Choose each drug's dose basis": {
+   "ar": "اختر أساس الجرعة لكل دواء",
+   "en": "Choose each drug's dose basis",
+   "fr": "Choisissez la base de dose de chaque médicament"
+  },
+  "Choose each drug's route": {
+   "ar": "اختر طريقة الإعطاء لكل دواء",
+   "en": "Choose each drug's route",
+   "fr": "Choisissez la voie de chaque médicament"
+  },
+  "Choose the intent of the treatment": {
+   "ar": "اختر هدف العلاج",
+   "en": "Choose the intent of the treatment",
+   "fr": "Choisissez l'intention du traitement"
+  },
+  "Complete the course": {
+   "ar": "إنهاء الكورس كمكتمل",
+   "en": "Complete the course",
+   "fr": "Terminer la cure"
+  },
+  "Counts": {
+   "ar": "العدّ الدموي",
+   "en": "Counts",
+   "fr": "Numération"
+  },
+  "Courses in progress": {
+   "ar": "الكورسات الجارية",
+   "en": "Courses in progress",
+   "fr": "Cures en cours"
+  },
+  "Courses on it": {
+   "ar": "كورسات جارية عليه",
+   "en": "Courses on it",
+   "fr": "Cures en cours"
+  },
+  "Creatinine mg/dL": {
+   "ar": "الكرياتينين مجم/دسل",
+   "en": "Creatinine mg/dL",
+   "fr": "Créatinine mg/dL"
+  },
+  "Cycle {0}": {
+   "ar": "الدورة {0}",
+   "en": "Cycle {0}",
+   "fr": "Cycle {0}"
+  },
+  "Days of the cycle": {
+   "ar": "أيام الدورة",
+   "en": "Days of the cycle",
+   "fr": "Jours du cycle"
+  },
+  "Days per cycle": {
+   "ar": "أيام الدورة الواحدة",
+   "en": "Days per cycle",
+   "fr": "Jours par cycle"
+  },
+  "Dose reduction": {
+   "ar": "تخفيض الجرعة",
+   "en": "Dose reduction",
+   "fr": "Réduction de dose"
+  },
+  "Dose to give": {
+   "ar": "الجرعة المطلوب إعطاؤها",
+   "en": "Dose to give",
+   "fr": "Dose à donner"
+  },
+  "Doses": {
+   "ar": "الجرعات",
+   "en": "Doses",
+   "fr": "Doses"
+  },
+  "Drugs": {
+   "ar": "الأدوية",
+   "en": "Drugs",
+   "fr": "Médicaments"
+  },
+  "Due within a week": {
+   "ar": "مستحقة خلال أسبوع",
+   "en": "Due within a week",
+   "fr": "Dus dans la semaine"
+  },
+  "Each drug needs a dose above zero": {
+   "ar": "كل دواء يحتاج جرعة أكبر من صفر",
+   "en": "Each drug needs a dose above zero",
+   "fr": "Chaque médicament doit avoir une dose supérieure à zéro"
+  },
+  "Every {0} days": {
+   "ar": "كل {0} يومًا",
+   "en": "Every {0} days",
+   "fr": "Tous les {0} jours"
+  },
+  "First cycle on": {
+   "ar": "موعد الدورة الأولى",
+   "en": "First cycle on",
+   "fr": "Premier cycle le"
+  },
+  "Give cycle {0}": {
+   "ar": "إعطاء الدورة {0}",
+   "en": "Give cycle {0}",
+   "fr": "Donner le cycle {0}"
+  },
+  "Give this cycle with these doses?": {
+   "ar": "إعطاء هذه الدورة بهذه الجرعات؟",
+   "en": "Give this cycle with these doses?",
+   "fr": "Donner ce cycle avec ces doses ?"
+  },
+  "Given on": {
+   "ar": "تاريخ الإعطاء",
+   "en": "Given on",
+   "fr": "Donné le"
+  },
+  "Grade {0}": {
+   "ar": "الدرجة {0}",
+   "en": "Grade {0}",
+   "fr": "Grade {0}"
+  },
+  "Height (cm)": {
+   "ar": "الطول (سم)",
+   "en": "Height (cm)",
+   "fr": "Taille (cm)"
+  },
+  "Held": {
+   "ar": "مؤجلة",
+   "en": "Held",
+   "fr": "Reporté"
+  },
+  "Hold the cycle": {
+   "ar": "تأجيل الدورة",
+   "en": "Hold the cycle",
+   "fr": "Reporter le cycle"
+  },
+  "Hold the cycle to a day within six weeks": {
+   "ar": "أجّل الدورة إلى يوم خلال ستة أسابيع",
+   "en": "Hold the cycle to a day within six weeks",
+   "fr": "Reportez le cycle à un jour dans les six semaines"
+  },
+  "Hold this cycle?": {
+   "ar": "تأجيل هذه الدورة؟",
+   "en": "Hold this cycle?",
+   "fr": "Reporter ce cycle ?"
+  },
+  "In the library": {
+   "ar": "ضمن المكتبة",
+   "en": "In the library",
+   "fr": "Dans la bibliothèque"
+  },
+  "Intent": {
+   "ar": "هدف العلاج",
+   "en": "Intent",
+   "fr": "Intention"
+  },
+  "Last toxicity": {
+   "ar": "آخر سمية",
+   "en": "Last toxicity",
+   "fr": "Dernière toxicité"
+  },
+  "Lifetime after": {
+   "ar": "التراكمي بعدها",
+   "en": "Lifetime after",
+   "fr": "Cumul après"
+  },
+  "Lifetime limit (mg/m²)": {
+   "ar": "الحد التراكمي (مجم/م²)",
+   "en": "Lifetime limit (mg/m²)",
+   "fr": "Limite cumulative (mg/m²)"
+  },
+  "Lifetime limits": {
+   "ar": "الحدود التراكمية",
+   "en": "Lifetime limits",
+   "fr": "Limites cumulatives"
+  },
+  "Lifetime {0} mg/m²": {
+   "ar": "حد تراكمي {0} مجم/م²",
+   "en": "Lifetime {0} mg/m²",
+   "fr": "Cumul max {0} mg/m²"
+  },
+  "Mark the course completed?": {
+   "ar": "تسجيل الكورس كمكتمل؟",
+   "en": "Mark the course completed?",
+   "fr": "Marquer la cure comme terminée ?"
+  },
+  "Name in English": {
+   "ar": "الاسم بالإنجليزية",
+   "en": "Name in English",
+   "fr": "Nom en anglais"
+  },
+  "Neutropenic fever, mucositis, neuropathy…": {
+   "ar": "حمى مع نقص العدلات، التهاب الأغشية المخاطية، اعتلال الأعصاب…",
+   "en": "Neutropenic fever, mucositis, neuropathy…",
+   "fr": "Neutropénie fébrile, mucite, neuropathie…"
+  },
+  "Neutrophils ×10⁹/L": {
+   "ar": "العدلات ×10⁹/لتر",
+   "en": "Neutrophils ×10⁹/L",
+   "fr": "Neutrophiles ×10⁹/L"
+  },
+  "New regimen": {
+   "ar": "بروتوكول جديد",
+   "en": "New regimen",
+   "fr": "Nouveau protocole"
+  },
+  "Next cycle": {
+   "ar": "الدورة القادمة",
+   "en": "Next cycle",
+   "fr": "Prochain cycle"
+  },
+  "No course in progress.": {
+   "ar": "لا توجد كورسات جارية.",
+   "en": "No course in progress.",
+   "fr": "Aucune cure en cours."
+  },
+  "No cycle yet.": {
+   "ar": "لا توجد دورات بعد.",
+   "en": "No cycle yet.",
+   "fr": "Pas encore de cycle."
+  },
+  "No regimen yet.": {
+   "ar": "لا توجد بروتوكولات بعد.",
+   "en": "No regimen yet.",
+   "fr": "Pas encore de protocole."
+  },
+  "Oncology": {
+   "ar": "الأورام",
+   "en": "Oncology",
+   "fr": "Oncologie"
+  },
+  "Oncology is not installed yet (hospital_h88_oncology.sql).": {
+   "ar": "وحدة الأورام غير مثبتة بعد (hospital_h88_oncology.sql).",
+   "en": "Oncology is not installed yet (hospital_h88_oncology.sql).",
+   "fr": "L'oncologie n'est pas encore installée (hospital_h88_oncology.sql)."
+  },
+  "Out of the library": {
+   "ar": "خارج المكتبة",
+   "en": "Out of the library",
+   "fr": "Hors bibliothèque"
+  },
+  "Overruled": {
+   "ar": "تم التجاوز",
+   "en": "Overruled",
+   "fr": "Passé outre"
+  },
+  "Platelets ×10⁹/L": {
+   "ar": "الصفائح ×10⁹/لتر",
+   "en": "Platelets ×10⁹/L",
+   "fr": "Plaquettes ×10⁹/L"
+  },
+  "Premedication, hydration, reference…": {
+   "ar": "الأدوية المسبقة، الترطيب، المرجع…",
+   "en": "Premedication, hydration, reference…",
+   "fr": "Prémédication, hydratation, référence…"
+  },
+  "Prescribed": {
+   "ar": "الموصوف",
+   "en": "Prescribed",
+   "fr": "Prescrit"
+  },
+  "Put off to": {
+   "ar": "التأجيل إلى",
+   "en": "Put off to",
+   "fr": "Reporté au"
+  },
+  "Regimen": {
+   "ar": "البروتوكول",
+   "en": "Regimen",
+   "fr": "Protocole"
+  },
+  "Regimens": {
+   "ar": "البروتوكولات",
+   "en": "Regimens",
+   "fr": "Protocoles"
+  },
+  "Save this regimen?": {
+   "ar": "حفظ هذا البروتوكول؟",
+   "en": "Save this regimen?",
+   "fr": "Enregistrer ce protocole ?"
+  },
+  "Search by code, name or drug…": {
+   "ar": "ابحث بالرمز أو الاسم أو الدواء…",
+   "en": "Search by code, name or drug…",
+   "fr": "Rechercher par code, nom ou médicament…"
+  },
+  "Search by name, file, regimen or diagnosis…": {
+   "ar": "ابحث بالاسم أو رقم الملف أو البروتوكول أو التشخيص…",
+   "en": "Search by name, file, regimen or diagnosis…",
+   "fr": "Rechercher par nom, dossier, protocole ou diagnostic…"
+  },
+  "Start a course": {
+   "ar": "بدء كورس",
+   "en": "Start a course",
+   "fr": "Démarrer une cure"
+  },
+  "Start the course": {
+   "ar": "بدء الكورس",
+   "en": "Start the course",
+   "fr": "Démarrer la cure"
+  },
+  "Start this chemotherapy course?": {
+   "ar": "بدء كورس العلاج الكيماوي هذا؟",
+   "en": "Start this chemotherapy course?",
+   "fr": "Démarrer cette cure de chimiothérapie ?"
+  },
+  "Stop the course": {
+   "ar": "إيقاف الكورس",
+   "en": "Stop the course",
+   "fr": "Arrêter la cure"
+  },
+  "The carboplatin dose needs the creatinine and the patient's age": {
+   "ar": "جرعة الكاربوبلاتين تحتاج الكرياتينين وعمر المريض",
+   "en": "The carboplatin dose needs the creatinine and the patient's age",
+   "fr": "La dose de carboplatine demande la créatinine et l'âge du patient"
+  },
+  "The cycles are between 1 and 52": {
+   "ar": "عدد الدورات بين 1 و52",
+   "en": "The cycles are between 1 and 52",
+   "fr": "Les cycles sont entre 1 et 52"
+  },
+  "The day is before the previous cycle": {
+   "ar": "اليوم قبل الدورة السابقة",
+   "en": "The day is before the previous cycle",
+   "fr": "Le jour est avant le cycle précédent"
+  },
+  "The dose reduction is between 0 and 75 %": {
+   "ar": "تخفيض الجرعة بين 0 و75٪",
+   "en": "The dose reduction is between 0 and 75 %",
+   "fr": "La réduction de dose est entre 0 et 75 %"
+  },
+  "The height is between 40 and 250 cm": {
+   "ar": "الطول بين 40 و250 سم",
+   "en": "The height is between 40 and 250 cm",
+   "fr": "La taille est entre 40 et 250 cm"
+  },
+  "The library ships empty: the oncologists and the pharmacy enter the hospital's own protocols, and each dose is computed from them.": {
+   "ar": "المكتبة تبدأ فارغة: أطباء الأورام والصيدلية يُدخلون بروتوكولات المستشفى، وكل جرعة تُحسب منها.",
+   "en": "The library ships empty: the oncologists and the pharmacy enter the hospital's own protocols, and each dose is computed from them.",
+   "fr": "La bibliothèque est livrée vide : les oncologues et la pharmacie saisissent les protocoles de l'hôpital, et chaque dose en est calculée."
+  },
+  "The patient is already on this regimen": {
+   "ar": "المريض على هذا البروتوكول بالفعل",
+   "en": "The patient is already on this regimen",
+   "fr": "Le patient suit déjà ce protocole"
+  },
+  "The regimen library is empty: a regimen must be entered first.": {
+   "ar": "مكتبة البروتوكولات فارغة: يجب إدخال بروتوكول أولًا.",
+   "en": "The regimen library is empty: a regimen must be entered first.",
+   "fr": "La bibliothèque est vide : saisissez d'abord un protocole."
+  },
+  "The regimen's cycles are all given": {
+   "ar": "أُعطيت كل دورات البروتوكول",
+   "en": "The regimen's cycles are all given",
+   "fr": "Tous les cycles du protocole sont donnés"
+  },
+  "The start is within a month back and two months ahead": {
+   "ar": "البداية خلال شهر سابق وحتى شهرين قادمين",
+   "en": "The start is within a month back and two months ahead",
+   "fr": "Le début est entre un mois avant et deux mois après"
+  },
+  "The toxicity grade is between 0 and 4": {
+   "ar": "درجة السمية بين 0 و4",
+   "en": "The toxicity grade is between 0 and 4",
+   "fr": "Le grade de toxicité est entre 0 et 4"
+  },
+  "The weight is between 2 and 300 kg": {
+   "ar": "الوزن بين 2 و300 كجم",
+   "en": "The weight is between 2 and 300 kg",
+   "fr": "Le poids est entre 2 et 300 kg"
+  },
+  "This course is closed": {
+   "ar": "هذا الكورس مُغلق",
+   "en": "This course is closed",
+   "fr": "Cette cure est close"
+  },
+  "This cycle was just given by someone else": {
+   "ar": "هذه الدورة سُجّلت للتو من مستخدم آخر",
+   "en": "This cycle was just given by someone else",
+   "fr": "Ce cycle vient d'être donné par quelqu'un d'autre"
+  },
+  "This regimen is in use: save the change under a new code": {
+   "ar": "هذا البروتوكول مستخدم: احفظ التعديل برمز جديد",
+   "en": "This regimen is in use: save the change under a new code",
+   "fr": "Ce protocole est utilisé : enregistrez la modification sous un nouveau code"
+  },
+  "Toxicity": {
+   "ar": "السمية",
+   "en": "Toxicity",
+   "fr": "Toxicité"
+  },
+  "Toxicity grade": {
+   "ar": "درجة السمية",
+   "en": "Toxicity grade",
+   "fr": "Grade de toxicité"
+  },
+  "Toxicity grade 3–4": {
+   "ar": "سمية درجة 3–4",
+   "en": "Toxicity grade 3–4",
+   "fr": "Toxicité grade 3–4"
+  },
+  "Toxicity since the last": {
+   "ar": "السمية منذ الدورة السابقة",
+   "en": "Toxicity since the last",
+   "fr": "Toxicité depuis le dernier"
+  },
+  "Weigh the patient: the dose is computed on today's weight": {
+   "ar": "سجّل وزن المريض: الجرعة تُحسب على وزن اليوم",
+   "en": "Weigh the patient: the dose is computed on today's weight",
+   "fr": "Pesez le patient : la dose se calcule sur le poids du jour"
+  },
+  "Weight / BSA": {
+   "ar": "الوزن / مساحة الجسم",
+   "en": "Weight / BSA",
+   "fr": "Poids / SC"
+  },
+  "What toxicity": {
+   "ar": "نوع السمية",
+   "en": "What toxicity",
+   "fr": "Quelle toxicité"
+  },
+  "Why give it anyway": {
+   "ar": "سبب الإعطاء رغم ذلك",
+   "en": "Why give it anyway",
+   "fr": "Pourquoi le donner quand même"
+  },
+  "Why is the course stopped?": {
+   "ar": "لماذا أُوقف الكورس؟",
+   "en": "Why is the course stopped?",
+   "fr": "Pourquoi la cure est-elle arrêtée ?"
+  },
+  "Write each drug's name": {
+   "ar": "اكتب اسم كل دواء",
+   "en": "Write each drug's name",
+   "fr": "Saisissez le nom de chaque médicament"
+  },
+  "Write the days as numbers, like 1 or 1,8": {
+   "ar": "اكتب الأيام أرقامًا، مثل 1 أو 1,8",
+   "en": "Write the days as numbers, like 1 or 1,8",
+   "fr": "Saisissez les jours en chiffres, comme 1 ou 1,8"
+  },
+  "Write the diagnosis": {
+   "ar": "اكتب التشخيص",
+   "en": "Write the diagnosis",
+   "fr": "Saisissez le diagnostic"
+  },
+  "Write the regimen's code": {
+   "ar": "اكتب رمز البروتوكول",
+   "en": "Write the regimen's code",
+   "fr": "Saisissez le code du protocole"
+  },
+  "Write the regimen's name": {
+   "ar": "اكتب اسم البروتوكول",
+   "en": "Write the regimen's name",
+   "fr": "Saisissez le nom du protocole"
+  },
+  "Write today's weight and counts: the doses and the checks follow.": {
+   "ar": "اكتب وزن اليوم والعدّ الدموي: الجرعات والفحوصات تُحسب تلقائيًا.",
+   "en": "Write today's weight and counts: the doses and the checks follow.",
+   "fr": "Saisissez le poids et la numération du jour : les doses et les contrôles suivent."
+  },
+  "Write why the course is stopped": {
+   "ar": "اكتب سبب إيقاف الكورس",
+   "en": "Write why the course is stopped",
+   "fr": "Indiquez pourquoi la cure est arrêtée"
+  },
+  "Write why the cycle is held": {
+   "ar": "اكتب سبب تأجيل الدورة",
+   "en": "Write why the cycle is held",
+   "fr": "Indiquez pourquoi le cycle est reporté"
+  },
+  "cbs:AUC": {
+   "ar": "AUC (كالفرت)",
+   "en": "AUC (Calvert)",
+   "fr": "AUC (Calvert)"
+  },
+  "cbs:Mg": {
+   "ar": "مجم (ثابتة)",
+   "en": "mg (flat)",
+   "fr": "mg (fixe)"
+  },
+  "cbs:MgKg": {
+   "ar": "مجم/كجم",
+   "en": "mg/kg",
+   "fr": "mg/kg"
+  },
+  "cbs:MgM2": {
+   "ar": "مجم/م²",
+   "en": "mg/m²",
+   "fr": "mg/m²"
+  },
+  "ccs:Active": {
+   "ar": "جارٍ",
+   "en": "Active",
+   "fr": "En cours"
+  },
+  "ccs:Completed": {
+   "ar": "مكتمل",
+   "en": "Completed",
+   "fr": "Terminée"
+  },
+  "ccs:Stopped": {
+   "ar": "موقوف",
+   "en": "Stopped",
+   "fr": "Arrêtée"
+  },
+  "chk:Early": {
+   "ar": "مبكر عن موعد الدورة",
+   "en": "Too early for the next cycle",
+   "fr": "Trop tôt pour le cycle"
+  },
+  "chk:Lifetime": {
+   "ar": "تجاوز الحد التراكمي",
+   "en": "Over the lifetime limit",
+   "fr": "Au-delà de la limite cumulative"
+  },
+  "chk:LowAnc": {
+   "ar": "العدلات أقل من 1.5",
+   "en": "Neutrophils under 1.5",
+   "fr": "Neutrophiles < 1,5"
+  },
+  "chk:LowPlatelets": {
+   "ar": "الصفائح أقل من 100",
+   "en": "Platelets under 100",
+   "fr": "Plaquettes < 100"
+  },
+  "chk:NoCounts": {
+   "ar": "لا يوجد عدّ دموي",
+   "en": "No blood counts",
+   "fr": "Pas de numération"
+  },
+  "chk:Toxicity": {
+   "ar": "سمية درجة 3–4 بدون تخفيض الجرعة",
+   "en": "Grade 3–4 toxicity without a reduction",
+   "fr": "Toxicité grade 3–4 sans réduction"
+  },
+  "chk:WeightChange": {
+   "ar": "تغيّر الوزن أكثر من 10٪ منذ البداية",
+   "en": "Weight changed more than 10 % since the start",
+   "fr": "Poids changé de plus de 10 % depuis le début"
+  },
+  "cin:Adjuvant": {
+   "ar": "مساعد بعد الجراحة",
+   "en": "Adjuvant",
+   "fr": "Adjuvant"
+  },
+  "cin:Curative": {
+   "ar": "علاجي شافٍ",
+   "en": "Curative",
+   "fr": "Curatif"
+  },
+  "cin:Neoadjuvant": {
+   "ar": "قبل الجراحة",
+   "en": "Neoadjuvant",
+   "fr": "Néoadjuvant"
+  },
+  "cin:Palliative": {
+   "ar": "تلطيفي",
+   "en": "Palliative",
+   "fr": "Palliatif"
+  },
+  "{0} cycles": {
+   "ar": "{0} دورات",
+   "en": "{0} cycles",
+   "fr": "{0} cycles"
+  },
+  "{0} years": {
+   "ar": "{0} سنة",
+   "en": "{0} years",
+   "fr": "{0} ans"
+  }
+ }
+}

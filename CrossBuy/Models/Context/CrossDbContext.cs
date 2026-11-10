@@ -613,6 +613,19 @@ namespace CrossBuy.Models.Context
 			Hospital.HospitalDrugSafetyModel.Configure(builder);         // H73
 			Hospital.HospitalOrderSetModel.Configure(builder);           // H74
 			Hospital.HospitalInpatientOrderModel.Configure(builder);     // H75
+			Hospital.HospitalInfectionModel.Configure(builder);         // H76
+			Hospital.HospitalConsultRequestModel.Configure(builder);     // H77
+			Hospital.HospitalFluidModel.Configure(builder);             // H78
+			Hospital.HospitalCarePlanModel.Configure(builder);          // H79
+			Hospital.HospitalChartReviewModel.Configure(builder);        // H80
+			Hospital.HospitalQualityModel.Configure(builder);           // H81
+			Hospital.HospitalImmunizationModel.Configure(builder);      // H84
+			Hospital.HospitalAntenatalModel.Configure(builder);         // H85
+			Hospital.HospitalLabourModel.Configure(builder);            // H86
+			Hospital.HospitalDialysisModel.Configure(builder);          // H87
+			Hospital.HospitalOncologyModel.Configure(builder);          // H88
+			Hospital.HospitalRehabModel.Configure(builder);             // H89
+			Hospital.HospitalMorgueModel.Configure(builder);            // H90
 			// H57 (HospitalPatientMerge) is configured inside HospitalPatientsModel
 
 			CrossBuy.BL.Platform.CompanyQueryFilters.Apply(builder, this);

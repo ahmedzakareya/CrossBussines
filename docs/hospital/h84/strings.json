@@ -1,0 +1,315 @@
+{
+ "unit": "H84 — immunizations",
+ "strings": {
+  "A dose outside the schedule": {
+   "ar": "جرعة خارج الجدول",
+   "en": "A dose outside the schedule",
+   "fr": "Une dose hors calendrier"
+  },
+  "Add a dose": {
+   "ar": "إضافة جرعة",
+   "en": "Add a dose",
+   "fr": "Ajouter une dose"
+  },
+  "Adverse event": {
+   "ar": "عَرَض جانبي",
+   "en": "Adverse event",
+   "fr": "Effet indésirable"
+  },
+  "Age": {
+   "ar": "العمر",
+   "en": "Age",
+   "fr": "Âge"
+  },
+  "Age in days": {
+   "ar": "العمر بالأيام",
+   "en": "Age in days",
+   "fr": "Âge en jours"
+  },
+  "An adverse event is already recorded for this dose": {
+   "ar": "تم تسجيل عَرَض جانبي لهذه الجرعة بالفعل",
+   "en": "An adverse event is already recorded for this dose",
+   "fr": "Un effet indésirable est déjà enregistré pour cette dose"
+  },
+  "At birth": {
+   "ar": "عند الولادة",
+   "en": "At birth",
+   "fr": "À la naissance"
+  },
+  "Born {0}": {
+   "ar": "مواليد {0}",
+   "en": "Born {0}",
+   "fr": "Né le {0}"
+  },
+  "Describe the adverse event": {
+   "ar": "صِف العَرَض الجانبي",
+   "en": "Describe the adverse event",
+   "fr": "Décrivez l'effet indésirable"
+  },
+  "Dose {0}": {
+   "ar": "الجرعة {0}",
+   "en": "Dose {0}",
+   "fr": "Dose {0}"
+  },
+  "Doses outside the schedule": {
+   "ar": "جرعات خارج الجدول",
+   "en": "Doses outside the schedule",
+   "fr": "Doses hors calendrier"
+  },
+  "Due and overdue": {
+   "ar": "المستحقة والمتأخرة",
+   "en": "Due and overdue",
+   "fr": "Dues et en retard"
+  },
+  "Due on": {
+   "ar": "تاريخ الاستحقاق",
+   "en": "Due on",
+   "fr": "Due le"
+  },
+  "Each row is one dose at an age from birth. Change it to your country's schedule.": {
+   "ar": "كل صف جرعة واحدة في عمر محدد من الولادة. عدّله ليطابق جدول بلدك.",
+   "en": "Each row is one dose at an age from birth. Change it to your country's schedule.",
+   "fr": "Chaque ligne est une dose à un âge donné depuis la naissance. Adaptez-le au calendrier de votre pays."
+  },
+  "Given": {
+   "ar": "أُعطيت",
+   "en": "Given",
+   "fr": "Administrée"
+  },
+  "Given at": {
+   "ar": "وقت الإعطاء",
+   "en": "Given at",
+   "fr": "Administrée le"
+  },
+  "Immunization card": {
+   "ar": "بطاقة التطعيمات",
+   "en": "Immunization card",
+   "fr": "Carnet de vaccination"
+  },
+  "Immunizations": {
+   "ar": "التطعيمات",
+   "en": "Immunizations",
+   "fr": "Vaccinations"
+  },
+  "Immunizations are not installed yet (hospital_h84_immunizations.sql).": {
+   "ar": "التطعيمات غير مثبتة بعد (hospital_h84_immunizations.sql).",
+   "en": "Immunizations are not installed yet (hospital_h84_immunizations.sql).",
+   "fr": "Les vaccinations ne sont pas encore installées (hospital_h84_immunizations.sql)."
+  },
+  "Left thigh": {
+   "ar": "الفخذ الأيسر",
+   "en": "Left thigh",
+   "fr": "Cuisse gauche"
+  },
+  "Load the default schedule": {
+   "ar": "تحميل الجدول الافتراضي",
+   "en": "Load the default schedule",
+   "fr": "Charger le calendrier par défaut"
+  },
+  "Load the default schedule? You can change every dose afterwards.": {
+   "ar": "تحميل الجدول الافتراضي؟ يمكنك تعديل كل جرعة بعد ذلك.",
+   "en": "Load the default schedule? You can change every dose afterwards.",
+   "fr": "Charger le calendrier par défaut ? Vous pourrez modifier chaque dose ensuite."
+  },
+  "Lot expiry": {
+   "ar": "انتهاء التشغيلة",
+   "en": "Lot expiry",
+   "fr": "Péremption du lot"
+  },
+  "No birth date on file": {
+   "ar": "لا يوجد تاريخ ميلاد في الملف",
+   "en": "No birth date on file",
+   "fr": "Pas de date de naissance au dossier"
+  },
+  "No dose in the schedule yet.": {
+   "ar": "لا توجد جرعات في الجدول بعد.",
+   "en": "No dose in the schedule yet.",
+   "fr": "Aucune dose dans le calendrier pour l'instant."
+  },
+  "No dose is due.": {
+   "ar": "لا توجد جرعات مستحقة.",
+   "en": "No dose is due.",
+   "fr": "Aucune dose n'est due."
+  },
+  "Open the card": {
+   "ar": "فتح البطاقة",
+   "en": "Open the card",
+   "fr": "Ouvrir le carnet"
+  },
+  "Record a dose": {
+   "ar": "تسجيل جرعة",
+   "en": "Record a dose",
+   "fr": "Enregistrer une dose"
+  },
+  "Record an adverse event": {
+   "ar": "تسجيل عَرَض جانبي",
+   "en": "Record an adverse event",
+   "fr": "Enregistrer un effet indésirable"
+  },
+  "Record the dose": {
+   "ar": "تسجيل الجرعة",
+   "en": "Record the dose",
+   "fr": "Enregistrer la dose"
+  },
+  "Record this dose as given?": {
+   "ar": "تسجيل هذه الجرعة كمُعطاة؟",
+   "en": "Record this dose as given?",
+   "fr": "Enregistrer cette dose comme administrée ?"
+  },
+  "Save this schedule dose?": {
+   "ar": "حفظ جرعة الجدول هذه؟",
+   "en": "Save this schedule dose?",
+   "fr": "Enregistrer cette dose du calendrier ?"
+  },
+  "Schedule dose": {
+   "ar": "جرعة في الجدول",
+   "en": "Schedule dose",
+   "fr": "Dose du calendrier"
+  },
+  "Search by name, file or phone…": {
+   "ar": "ابحث بالاسم أو رقم الملف أو الهاتف…",
+   "en": "Search by name, file or phone…",
+   "fr": "Rechercher par nom, dossier ou téléphone…"
+  },
+  "The age is out of range": {
+   "ar": "العمر خارج النطاق",
+   "en": "The age is out of range",
+   "fr": "L'âge est hors limites"
+  },
+  "The dose cannot be before the patient's birth": {
+   "ar": "لا يمكن أن تكون الجرعة قبل ولادة المريض",
+   "en": "The dose cannot be before the patient's birth",
+   "fr": "La dose ne peut pas précéder la naissance du patient"
+  },
+  "The dose number is between 1 and 10": {
+   "ar": "رقم الجرعة بين 1 و10",
+   "en": "The dose number is between 1 and 10",
+   "fr": "Le numéro de dose est compris entre 1 et 10"
+  },
+  "The immunization schedule": {
+   "ar": "جدول التطعيمات",
+   "en": "The immunization schedule",
+   "fr": "Le calendrier vaccinal"
+  },
+  "The patient is too young for this dose": {
+   "ar": "عمر المريض أصغر من موعد هذه الجرعة",
+   "en": "The patient is too young for this dose",
+   "fr": "Le patient est trop jeune pour cette dose"
+  },
+  "The schedule": {
+   "ar": "الجدول",
+   "en": "The schedule",
+   "fr": "Le calendrier"
+  },
+  "The schedule already has doses: change them instead": {
+   "ar": "الجدول به جرعات بالفعل: عدّلها بدلاً من ذلك",
+   "en": "The schedule already has doses: change them instead",
+   "fr": "Le calendrier contient déjà des doses : modifiez-les plutôt"
+  },
+  "There is no schedule yet: load the default one in the schedule tab, then adjust it to your country's.": {
+   "ar": "لا يوجد جدول بعد: حمّل الجدول الافتراضي من تبويب الجدول، ثم عدّله ليطابق بلدك.",
+   "en": "There is no schedule yet: load the default one in the schedule tab, then adjust it to your country's.",
+   "fr": "Il n'y a pas encore de calendrier : chargez celui par défaut dans l'onglet calendrier, puis adaptez-le à votre pays."
+  },
+  "This lot has expired: it cannot be given": {
+   "ar": "هذه التشغيلة منتهية الصلاحية: لا يمكن إعطاؤها",
+   "en": "This lot has expired: it cannot be given",
+   "fr": "Ce lot est périmé : il ne peut pas être administré"
+  },
+  "This vaccine already has that dose": {
+   "ar": "هذا التطعيم له هذه الجرعة بالفعل",
+   "en": "This vaccine already has that dose",
+   "fr": "Ce vaccin a déjà cette dose"
+  },
+  "Vaccine": {
+   "ar": "التطعيم",
+   "en": "Vaccine",
+   "fr": "Vaccin"
+  },
+  "What was seen (fever, swelling, rash…)": {
+   "ar": "ما لوحظ (حرارة، تورم، طفح…)",
+   "en": "What was seen (fever, swelling, rash…)",
+   "fr": "Ce qui a été observé (fièvre, gonflement, éruption…)"
+  },
+  "Without a birth date the due dates cannot be worked out: add it to the patient's file.": {
+   "ar": "بدون تاريخ ميلاد لا يمكن حساب مواعيد الجرعات: أضفه إلى ملف المريض.",
+   "en": "Without a birth date the due dates cannot be worked out: add it to the patient's file.",
+   "fr": "Sans date de naissance, les échéances ne peuvent pas être calculées : ajoutez-la au dossier du patient."
+  },
+  "Write the vaccine code (up to 12 characters)": {
+   "ar": "اكتب رمز التطعيم (حتى 12 حرفاً)",
+   "en": "Write the vaccine code (up to 12 characters)",
+   "fr": "Saisissez le code du vaccin (12 caractères au plus)"
+  },
+  "Write the vaccine's name in Arabic and English": {
+   "ar": "اكتب اسم التطعيم بالعربية والإنجليزية",
+   "en": "Write the vaccine's name in Arabic and English",
+   "fr": "Saisissez le nom du vaccin en arabe et en anglais"
+  },
+  "Write the vaccine, its name and the dose number": {
+   "ar": "اكتب التطعيم واسمه ورقم الجرعة",
+   "en": "Write the vaccine, its name and the dose number",
+   "fr": "Saisissez le vaccin, son nom et le numéro de dose"
+  },
+  "vxr:ID": {
+   "ar": "في الأدمة",
+   "en": "Intradermal",
+   "fr": "Intradermique"
+  },
+  "vxr:IM": {
+   "ar": "في العضل",
+   "en": "Intramuscular",
+   "fr": "Intramusculaire"
+  },
+  "vxr:Nasal": {
+   "ar": "بالأنف",
+   "en": "Nasal",
+   "fr": "Nasale"
+  },
+  "vxr:Oral": {
+   "ar": "بالفم",
+   "en": "Oral",
+   "fr": "Orale"
+  },
+  "vxr:SC": {
+   "ar": "تحت الجلد",
+   "en": "Subcutaneous",
+   "fr": "Sous-cutanée"
+  },
+  "vxs:Due": {
+   "ar": "مستحقة",
+   "en": "Due",
+   "fr": "Due"
+  },
+  "vxs:Given": {
+   "ar": "أُعطيت",
+   "en": "Given",
+   "fr": "Administrée"
+  },
+  "vxs:Overdue": {
+   "ar": "متأخرة",
+   "en": "Overdue",
+   "fr": "En retard"
+  },
+  "vxs:Upcoming": {
+   "ar": "قادمة",
+   "en": "Upcoming",
+   "fr": "À venir"
+  },
+  "{0} days late": {
+   "ar": "متأخرة {0} يوم",
+   "en": "{0} days late",
+   "fr": "{0} jours de retard"
+  },
+  "{0} month(s)": {
+   "ar": "{0} شهر",
+   "en": "{0} month(s)",
+   "fr": "{0} mois"
+  },
+  "{0} year(s)": {
+   "ar": "{0} سنة",
+   "en": "{0} year(s)",
+   "fr": "{0} an(s)"
+  }
+ }
+}

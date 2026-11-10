@@ -33,7 +33,16 @@ namespace CrossBuy.Controllers
 			ViewBag.Staff = await NursingSvc.StaffAsync(ctx, ct);
 			ViewBag.CanAdmit = await _access.CanAsync(ctx, HospitalActions.Admit, null, ct);
 			ViewBag.CanConsult = await _access.CanAsync(ctx, HospitalActions.Consult, null, ct);
-			return View(pick == null ? null : await NursingSvc.BoardAsync(ctx, pick.Value, DateTime.UtcNow, ct));
+			var board = pick == null ? null : await NursingSvc.BoardAsync(ctx, pick.Value, DateTime.UtcNow, ct);
+			// H76: each patient's isolation and the devices in place, beside the name
+			if (board != null) ViewBag.Ic = await HospitalInfectionService.BadgesAsync(_db, ctx.CompanyId, board.Patients.Select(p => (p.AdmissionId, p.PatientId)).ToList(), DateTime.UtcNow, ct);
+			// H77: the open consultation requests and the fresh answers
+			if (board != null) ViewBag.Cr = await HospitalConsultRequestService.BadgesAsync(_db, ctx.CompanyId, board.Patients.Select(p => p.AdmissionId).ToList(), DateTime.UtcNow, ct);
+			// H78: today's fluid balance
+			if (board != null) ViewBag.Fb = await HospitalFluidService.BadgesAsync(_db, ctx.CompanyId, board.Patients.Select(p => p.AdmissionId).ToList(), DateTime.UtcNow, ct);
+			// H79: active care plans, reviews due and suggestions
+			if (board != null) ViewBag.Cp = await HospitalCarePlanService.BadgesAsync(_db, ctx.CompanyId, board.Patients.Select(p => p.AdmissionId).ToList(), DateTime.UtcNow, ct);
+			return View(board);
 		}
 
 		[HttpPost("Nursing/Order"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Consult)]

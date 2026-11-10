@@ -180,13 +180,17 @@
                                         @if (l.RejectCode != null) {<div class="fs-8"><span class="badge hp-code fs-9 hp-num">@l.RejectCode</span> <span class="text-danger">@l.RejectReason</span></div>}</td>
                                     <td>@T["cat:" + l.Category]</td>
                                     <td class="text-end hp-num">@Money(l.Amount)</td>
-                                    <td class="text-end hp-num fw-bold">@Money(l.InsurerAmount)@if (l.Status == HospitalClaimLineStatus.Accepted && l.AcceptedAmount != l.InsurerAmount) {<div class="text-success fs-8">@T["Paid"] @Money(l.AcceptedAmount ?? 0)</div>}</td>
+                                    <td class="text-end hp-num fw-bold">@Money(l.InsurerAmount)@if (l.Status == HospitalClaimLineStatus.Accepted && l.AcceptedAmount != l.InsurerAmount) {<div class="text-success fs-8">@T["Paid"] @Money(l.AcceptedAmount ?? 0)</div>}@if (l.RecoupedAmount is decimal rc) {<div class="text-danger fs-8" title="@l.RecoupReason">@T["Recouped"] @Money(rc)</div>}</td>
                                     <td><span class="badge badge-light-@LineBadge(l.Status) fs-8">@T["cl:" + l.Status]</span></td>
                                     <td class="text-end">
                                         @if (canBill && !draft && l.Status == HospitalClaimLineStatus.Pending)
                                         {
                                             <button type="button" class="btn btn-sm btn-light-success py-1 px-3" data-accept="@l.ID" data-full="@Plain(l.InsurerAmount)" data-ask="@string.Format(T["The payer accepted {0}: enter the amount it pays."].Value, what)">@T["Accepted"]</button>
                                             <button type="button" class="btn btn-sm btn-light-danger py-1 px-3" data-reject="@l.ID" data-ask="@string.Format(T["The payer rejected {0}: enter its rejection code."].Value, what)" data-ask2="@T["And the payer's reason:"]">@T["Rejected"]</button>
+                                        }
+                                        else if (canBill && l.Status == HospitalClaimLineStatus.Accepted && l.RecoupedAmount == null)
+                                        {
+                                            <button type="button" class="btn btn-sm btn-light-danger py-1 px-3" data-recoup="@l.ID" data-full="@Plain(l.AcceptedAmount ?? l.InsurerAmount)" data-ask="@string.Format(T["The payer takes back part of {0} after an audit: enter the amount."].Value, what)" data-ask2="@T["And the payer's reason:"]"><i class="ki-outline ki-arrow-circle-left fs-5"></i>@T["Recoupment"]</button>
                                         }
                                         else if (canBill && l.Status == HospitalClaimLineStatus.Rejected)
                                         {
@@ -224,7 +228,7 @@
             }
             function done(t, after) { return function (res) { t.disabled = false; if (!res.ok) { toast('error', res.error || W.failed); return; } toast('success', W.saved); (after || swap)(res); }; }
             document.addEventListener('click', function (e) {
-                var t = e.target.closest('[data-submit-batch],[data-accept],[data-reject],[data-resubmit],[data-remit],[data-hold]'); if (!t) return;
+                var t = e.target.closest('[data-submit-batch],[data-accept],[data-reject],[data-resubmit],[data-remit],[data-hold],[data-recoup]'); if (!t) return;
                 var ask = t.getAttribute('data-ask');
                 if (t.hasAttribute('data-hold')) {
                     // H62: the claim leaves the draft batch; the page is rendered again in place
@@ -244,6 +248,15 @@
                     cbPrompt(ask, { value: t.getAttribute('data-full') }).then(function (v) {
                         if (v == null) return; t.disabled = true;
                         post(root + '/Line/' + t.getAttribute('data-accept') + '/Response', { accept: true, acceptedAmount: Number(v) }).then(done(t));
+                    });
+                } else if (t.hasAttribute('data-recoup')) {
+                    // H82: the payer takes back part or all of an accepted line; the doctor's share follows in the next statement
+                    cbPrompt(ask, { kind: 'danger', value: t.getAttribute('data-full'), number: true }).then(function (v) {
+                        if (v == null) return;
+                        return cbPrompt(t.getAttribute('data-ask2'), { kind: 'danger', textarea: true }).then(function (reason) {
+                            if (reason == null) return; t.disabled = true;
+                            post(root + '/Line/' + t.getAttribute('data-recoup') + '/Recoup', { amount: Number(String(v).replace(',', '.')), reason: reason }).then(done(t));
+                        });
                     });
                 } else if (t.hasAttribute('data-reject')) {
                     cbPrompt(ask, { kind: 'danger' }).then(function (code) {

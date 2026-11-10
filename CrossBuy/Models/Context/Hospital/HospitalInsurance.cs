@@ -165,6 +165,12 @@ namespace CrossBuy.Models.Context.Hospital
 		public string? Justification { get; set; }
 		/// On a resubmitted line: the line it resubmits.
 		public int? ResubmitsLineId { get; set; }
+		/// H82: a recoupment — after accepting (and often paying) the line, the payer takes part or all of it back after an
+		/// audit. Once per line; never more than was accepted.
+		public decimal? RecoupedAmount { get; set; }
+		public DateTime? RecoupedAt { get; set; }
+		public string? RecoupReason { get; set; }
+		public int? RecoupedByEmployeeId { get; set; }
 	}
 
 	public static class HospitalInsuranceModel
@@ -215,6 +221,8 @@ namespace CrossBuy.Models.Context.Hospital
 			{
 				e.ToTable("HospitalClaimLines");   // no DbSet: without this EF would look for dbo.HospitalClaimLine
 				foreach (var p in new[] { nameof(HospitalClaimLine.Amount), nameof(HospitalClaimLine.InsurerAmount), nameof(HospitalClaimLine.AcceptedAmount) }) e.Property(p).HasPrecision(18, 4);
+				e.Property(x => x.RecoupedAmount).HasPrecision(18, 4);   // H82
+				e.Property(x => x.RecoupReason).HasMaxLength(300);
 				e.HasOne<HospitalClaim>().WithMany().HasForeignKey(x => x.ClaimId).OnDelete(DeleteBehavior.NoAction);
 				e.HasIndex(x => new { x.CompanyId, x.ClaimId });
 				// a rejected line is resubmitted once

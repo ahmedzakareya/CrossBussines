@@ -1,0 +1,92 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H89 — physiotherapy: the referrals waiting for an assessment first, then the active episodes with their warnings
+    (searched, filtered, paged; the ended ones on their own filter), and referring a patient.
+*@
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Physiotherapy"].Value;
+    bool ready = ViewBag.Ready == true, canRefer = ViewBag.CanRefer == true;
+    bool isAr = System.Globalization.CultureInfo.CurrentUICulture.Name.StartsWith("ar");
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Physiotherapy"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted">@T["Rehabilitation"]</li></ul>
+        </div>
+        @if (ready && canRefer) {<button type="button" class="btn btn-sm btn-primary" data-refer-new><i class="ki-outline ki-plus fs-4"></i>@T["Refer to physiotherapy"]</button>}
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (!ready) { <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice"><div class="fs-6 text-gray-700">@T[HospitalRehabService.NoTables]</div></div> }
+        else
+        {
+            <div class="card">
+                <div class="card-header border-0 pt-6 flex-wrap gap-3">
+                    <div class="card-title flex-column m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Episodes"]</span><span class="text-muted fs-7 mt-1"><span id="resultCount">—</span></span></div>
+                    <div class="card-toolbar d-flex flex-wrap align-items-center gap-2">
+                        <div class="w-250px"><input type="text" id="f_q" class="form-control form-control-solid form-control-sm" autocomplete="off" placeholder="@T["Search by name, file or problem…"]" /></div>
+                        <div class="w-175px"><select class="form-select form-select-solid form-select-sm cb-filter" id="f_filter">
+                            <option value="">@T["Open episodes"]</option><option value="referred">@T["Waiting for assessment"]</option><option value="warning">@T["With a warning"]</option><option value="ended">@T["Discharged or cancelled"]</option>
+                        </select></div>
+                        <div class="w-75px"><select id="f_size" class="form-select form-select-solid form-select-sm"><option value="25">25</option><option value="50">50</option><option value="100">100</option></select></div>
+                        <button type="button" id="f_reset" class="btn btn-sm btn-light" title="@T["Reset"]"><i class="ki-outline ki-arrows-circle fs-4"></i></button>
+                    </div>
+                </div>
+                <div class="card-body pt-2">
+                    <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-3 mb-0">
+                        <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0"><th>@T["Patient"]</th><th>@T["Problem"]</th><th>@T["State"]</th><th>@T["Sessions done"]</th><th>@T["Outcome"]</th><th class="min-w-150px">@T["Warnings"]</th><th class="text-end"></th></tr></thead>
+                        <tbody id="rows"><tr id="loadingRow"><td colspan="7" class="text-center text-muted py-10">@T["Loading…"]</td></tr><tr id="emptyRow" class="d-none"><td colspan="7" class="text-center text-muted py-10">@T["No physiotherapy episode."]</td></tr></tbody>
+                    </table></div>
+                    <div class="d-flex flex-stack flex-wrap pt-5"><div class="fs-7 text-muted" id="pageInfo"></div><ul class="pagination" id="pager"></ul></div>
+                </div>
+            </div>
+        }
+    </div></div>
+</div>
+
+@if (ready && canRefer)
+{
+    <div class="modal fade" id="referModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-600px"><div class="modal-content">
+        <div class="modal-header"><h2 class="fw-bold m-0">@T["Refer to physiotherapy"]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body py-6 px-lg-10"><div class="row g-4">
+            <div class="col-12"><label class="form-label required">@T["Patient"]</label><select class="form-select form-select-solid" data-r="patientId" data-placeholder="@T["Search by name or file…"]"><option></option></select></div>
+            <div class="col-6"><label class="form-label required">@T["Body region"]</label><select class="form-select form-select-solid" data-r="region">@foreach (var g in HospitalRehabRegion.All) {<option value="@g">@T["rgn:" + g]</option>}</select></div>
+            <div class="col-3"><label class="form-label required">@T["Sessions"]</label><input type="number" min="1" max="60" value="10" class="form-control form-control-solid" dir="ltr" data-r="plannedSessions" /></div>
+            <div class="col-3"><label class="form-label required">@T["A week"]</label><input type="number" min="1" max="7" value="2" class="form-control form-control-solid" dir="ltr" data-r="perWeek" /></div>
+            <div class="col-12"><label class="form-label required">@T["Problem"]</label><textarea rows="2" maxlength="300" class="form-control form-control-solid" data-r="problem" placeholder="@T["Low back pain with sciatica, after a knee replacement…"]"></textarea></div>
+            <div class="col-12"><label class="form-label">@T["Precautions"]</label><input type="text" maxlength="300" class="form-control form-control-solid" data-r="precautions" placeholder="@T["No weight on the left leg, osteoporosis…"]" /></div>
+        </div></div>
+        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-refer-save>@T["Refer"]</button></div>
+    </div></div></div>
+}
+
+@section Scripts {
+    <script>
+        (function () {
+            if (!document.getElementById('rows')) return;
+            cbServerList({ url: @Json.Serialize(Url.Action("RehabData")), isAr: @(isAr ? "true" : "false"), addParams: function (p) { p.set('filter', document.getElementById('f_filter').value); } });
+            var mEl = document.getElementById('referModal'); if (!mEl) return;
+            var tok = document.querySelector('input[name="__RequestVerificationToken"]').value, pick = mEl.querySelector('[data-r="patientId"]');
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), ask: @Json.Serialize(T["Send this referral to physiotherapy?"].Value) };
+            if (window.jQuery && jQuery.fn.select2) jQuery(pick).select2({ width: '100%', dir: @Json.Serialize(isAr ? "rtl" : "ltr"), dropdownParent: jQuery(mEl), placeholder: pick.getAttribute('data-placeholder'),
+                ajax: { url: @Json.Serialize(Url.Action("SearchPatients")), dataType: 'json', delay: 200, data: function (p) { return { q: p.term || '' }; }, processResults: function (d) { return { results: d.results || [] }; } } });
+            document.addEventListener('click', function (e) {
+                if (e.target.closest('[data-refer-new]')) { bootstrap.Modal.getOrCreateInstance(mEl).show(); return; }
+                var s = e.target.closest('[data-refer-save]'); if (!s) return;
+                var b = {}; mEl.querySelectorAll('[data-r]').forEach(function (i) { var k = i.getAttribute('data-r'), v = (window.jQuery && (k === 'patientId' || k === 'region')) ? (jQuery(i).val() || '') : (i.value || '').trim();
+                    b[k] = (k === 'patientId' || k === 'plannedSessions' || k === 'perWeek') ? Number(v || 0) : (v || null); });
+                cbConfirm(W.ask).then(function (ok) { if (!ok) return; s.disabled = true;
+                    fetch(@Json.Serialize(Url.Action("ReferRehab")), { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': tok }, body: JSON.stringify(b) })
+                        .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+                        .then(function (res) { s.disabled = false; if (!res.ok) { toastr.error(res.error || W.failed); return; } location.href = @Json.Serialize(Url.Content("~/Hospital/Rehab/")) + res.id; }); });
+            });
+        })();
+    </script>
+}

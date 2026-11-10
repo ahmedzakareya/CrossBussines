@@ -1,0 +1,198 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model HospitalChemoCoursePage
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H88 — one chemotherapy course: the patient and the regimen, the lifetime limits used so far, every cycle given or held
+    with what cleared it and the doses as given, and the next cycle: today's weight and counts in, the doses and the
+    checks out (computed by the server as they are typed), given — with a reason when a check is overruled — or held.
+*@
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Chemotherapy course"].Value;
+    bool canTreat = ViewBag.CanTreat == true;
+    var today = (DateTime)ViewBag.Today;
+    var c = Model.Course; var r = Model.Regimen;
+    bool active = c.Status == HospitalChemoCourseStatus.Active, more = active && Model.Given < r.MaxCycles;
+    string Who(int? id) => id is int i && Model.People.TryGetValue(i, out var n) ? n : "";
+    var lastWeight = Model.Cycles.Where(x => x.Cycle.WeightKg != null).Select(x => x.Cycle.WeightKg).LastOrDefault() ?? c.WeightKg;
+    string V(decimal? d) => d?.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture) ?? "";
+    bool needsCr = Model.Drugs.Any(d => d.Basis == HospitalChemoBasis.Auc);
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Chemotherapy course"] <span class="badge hp-code fs-7 hp-num ms-2">@c.CourseNo</span></h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item"><a href="@Url.Action("Oncology")" class="text-muted text-hover-primary">@T["Oncology"]</a></li></ul>
+        </div>
+        @if (active && canTreat)
+        {
+            <div class="d-flex gap-2">
+                @if (!more) {<button type="button" class="btn btn-sm btn-primary" data-end="complete"><i class="ki-outline ki-check-circle fs-4"></i>@T["Complete the course"]</button>}
+                <button type="button" class="btn btn-sm btn-light-danger" data-end="stop"><i class="ki-outline ki-cross-circle fs-4"></i>@T["Stop the course"]</button>
+            </div>
+        }
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="row g-5 mb-5">
+            <div class="col-xl-4"><div class="card h-100"><div class="card-body py-6">
+                <div class="d-flex align-items-center gap-4 mb-5">
+                    <div class="symbol symbol-55px symbol-circle">@if (Model.Photo != null) {<img src="@Model.Photo" alt="" style="object-fit:cover" />} else {<span class="symbol-label fw-bold hp-initials">@HospitalUi.Initials(Model.NameEn)</span>}</div>
+                    <div><a href="@Url.Action("Patient", new { id = c.PatientId })" class="fs-4 fw-bold text-gray-900 text-hover-primary">@DisplayName.Of(Model.Name, Model.NameEn)</a>
+                        <div class="text-muted fs-7"><bdi class="hp-num">@Model.Mrn</bdi>@if (Model.Age != null) {<text> · @T["{0} years", Model.Age]</text>}</div></div>
+                </div>
+                <div class="d-flex flex-stack py-2 border-bottom border-dashed"><span class="text-muted fs-7">@T["Regimen"]</span><span class="fw-bold"><span class="badge hp-code hp-num">@r.Code</span> @DisplayName.Of(r.Name, r.NameEn ?? r.Name)</span></div>
+                <div class="d-flex flex-stack py-2 border-bottom border-dashed"><span class="text-muted fs-7">@T["Diagnosis"]</span><span class="fw-semibold text-end"><bdi>@c.Diagnosis</bdi>@if (c.Stage != null) {<div class="text-muted fs-8"><bdi dir="ltr">@c.Stage</bdi></div>}</span></div>
+                <div class="d-flex flex-stack py-2 border-bottom border-dashed"><span class="text-muted fs-7">@T["Intent"]</span><span class="fw-semibold">@T["cin:" + c.Intent]</span></div>
+                <div class="d-flex flex-stack py-2 border-bottom border-dashed"><span class="text-muted fs-7">@T["At the start"]</span><span class="hp-num">@V(c.HeightCm) cm · @V(c.WeightKg) kg · @HospitalOncologyRules.Bsa(c.HeightCm, c.WeightKg).ToString("0.00") m²</span></div>
+                <div class="d-flex flex-stack py-2 border-bottom border-dashed"><span class="text-muted fs-7">@T["Chemo cycles"]</span><span class="fw-bold fs-4 hp-num">@Model.Given / @r.MaxCycles</span></div>
+                <div class="d-flex flex-stack py-2"><span class="text-muted fs-7">@T["Next cycle"]</span>
+                    @if (Model.NextDue is DateTime nd) {<span class="fw-bold hp-num @(nd < today ? "text-danger" : "text-primary")">@nd.ToString("yyyy-MM-dd")</span>} else {<span class="text-muted">@(active ? T["All cycles given"] : T["ccs:" + c.Status])</span>}</div>
+                @if (!active && c.EndReason != null) {<div class="text-muted fs-8 mt-2"><bdi>@c.EndReason</bdi></div>}
+                @{ var limited = Model.Drugs.Where(d => d.LifetimeMgM2 != null).ToList(); }
+                @if (limited.Count > 0)
+                {
+                    <div class="separator separator-dashed my-4"></div>
+                    <div class="fw-bold fs-6 mb-3">@T["Lifetime limits"]</div>
+                    foreach (var d in limited)
+                    {
+                        var used = Model.Lifetime.TryGetValue(d.DrugName.Trim().ToUpperInvariant(), out var u) ? u : 0m;
+                        int pct = (int)Math.Min(100, used / d.LifetimeMgM2!.Value * 100);
+                        <div class="mb-3"><div class="d-flex flex-stack fs-8 mb-1"><bdi dir="ltr" class="fw-semibold">@d.DrugName</bdi><span class="hp-num @(pct >= 85 ? "text-danger fw-bold" : "text-muted")">@used.ToString("0") / @d.LifetimeMgM2.Value.ToString("0") mg/m²</span></div>
+                            <div class="progress h-6px bg-light"><div class="progress-bar @(pct >= 85 ? "bg-danger" : "bg-primary")" style="width:@pct%"></div></div></div>
+                    }
+                }
+            </div></div></div>
+
+            <div class="col-xl-8">
+                @if (more && canTreat)
+                {
+                    <div class="card mb-5 border border-primary border-dashed" id="givePanel">
+                        <div class="card-header border-0 pt-6"><div class="card-title flex-column m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Cycle {0}", Model.Given + 1]</span>
+                            <span class="text-muted fs-8 mt-1">@T["Write today's weight and counts: the doses and the checks follow."]</span></div></div>
+                        <div class="card-body pt-2">
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-2 col-4"><label class="form-label fs-8 required">@T["Weight (kg)"]</label><input type="number" step="0.1" class="form-control form-control-sm form-control-solid" dir="ltr" data-g="weightKg" value="@V(lastWeight)" /></div>
+                                <div class="col-md-2 col-4"><label class="form-label fs-8">@T["Neutrophils ×10⁹/L"]</label><input type="number" step="0.01" class="form-control form-control-sm form-control-solid" dir="ltr" data-g="anc" /></div>
+                                <div class="col-md-2 col-4"><label class="form-label fs-8">@T["Platelets ×10⁹/L"]</label><input type="number" step="1" class="form-control form-control-sm form-control-solid" dir="ltr" data-g="platelets" /></div>
+                                <div class="col-md-2 col-4"><label class="form-label fs-8 @(needsCr ? "required" : "")">@T["Creatinine mg/dL"]</label><input type="number" step="0.01" class="form-control form-control-sm form-control-solid" dir="ltr" data-g="creatinine" /></div>
+                                <div class="col-md-2 col-4"><label class="form-label fs-8">@T["Dose reduction"]</label><div class="input-group input-group-sm input-group-solid" dir="ltr"><input type="number" min="0" max="75" step="5" value="0" class="form-control form-control-sm form-control-solid" data-g="doseReductionPct" /><span class="input-group-text">%</span></div></div>
+                                <div class="col-md-2 col-4"><label class="form-label fs-8">@T["Toxicity since the last"]</label><select class="form-select form-select-sm form-select-solid" data-g="toxicityGrade" data-control="none"><option value="">—</option>@for (int g = 0; g <= 4; g++) {<option value="@g">@T["Grade {0}", g]</option>}</select></div>
+                                <div class="col-md-8"><label class="form-label fs-8">@T["What toxicity"]</label><input type="text" maxlength="300" class="form-control form-control-sm form-control-solid" data-g="toxicityNote" placeholder="@T["Neutropenic fever, mucositis, neuropathy…"]" /></div>
+                                <div class="col-md-4"><label class="form-label fs-8">@T["Given on"]</label><input type="date" class="form-control form-control-sm form-control-solid" dir="ltr" data-g="date" value="@today.ToString("yyyy-MM-dd")" max="@today.ToString("yyyy-MM-dd")" /></div>
+                            </div>
+                            <div id="pvBox" class="rounded bg-light p-4 mb-4">
+                                <div class="d-flex flex-wrap gap-6 mb-3 hp-num fs-7"><div><span class="text-muted">@T["Body surface"]</span> <span class="fw-bold fs-5" id="pvBsa">—</span> m²</div><div id="pvGfrBox"><span class="text-muted">GFR</span> <span class="fw-bold fs-5" id="pvGfr">—</span> ml/min</div></div>
+                                <table class="table table-row-dashed align-middle fs-7 gy-2 mb-2"><thead><tr class="text-gray-500 fw-bold fs-8"><th>@T["Drug"]</th><th>@T["Prescribed"]</th><th>@T["Route"]</th><th>@T["Days of the cycle"]</th><th class="text-end">@T["Dose to give"]</th><th class="text-end">@T["Lifetime after"]</th></tr></thead><tbody id="pvRows"></tbody></table>
+                                <div id="pvChecks" class="d-flex flex-wrap gap-2"></div>
+                                <div id="pvRefusal" class="text-danger fw-semibold fs-7 mt-2 d-none"></div>
+                            </div>
+                            <div id="ovBox" class="mb-4 d-none"><label class="form-label fs-8 required text-danger">@T["Why give it anyway"]</label><textarea rows="2" maxlength="300" class="form-control form-control-sm form-control-solid" data-g="overrideReason"></textarea></div>
+                            <div class="d-flex gap-2 justify-content-end">
+                                <button type="button" class="btn btn-sm btn-light" data-modal="holdModal"><i class="ki-outline ki-time fs-4"></i>@T["Hold the cycle"]</button>
+                                <button type="button" class="btn btn-sm btn-primary" data-give><i class="ki-outline ki-check fs-4"></i>@T["Give cycle {0}", Model.Given + 1]</button>
+                            </div>
+                        </div>
+                    </div>
+                }
+                <div class="card">
+                    <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Chemo cycles"]</span></div></div>
+                    <div class="card-body pt-2">
+                        @if (Model.Cycles.Count == 0) { <div class="text-center text-muted py-8">@T["No cycle yet."]</div> }
+                        else
+                        {
+                            <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-3 mb-0">
+                                <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0"><th>@T["Cycle"]</th><th>@T["Date"]</th><th>@T["Weight / BSA"]</th><th>@T["Counts"]</th><th>@T["Toxicity"]</th><th class="min-w-200px">@T["Doses"]</th></tr></thead>
+                                <tbody>
+                                @foreach (var v in Model.Cycles.AsEnumerable().Reverse())
+                                {
+                                    var y = v.Cycle; bool held = y.Status == HospitalChemoCycleStatus.Held;
+                                    <tr class="@(held ? "bg-light" : "")">
+                                        <td class="fw-bold hp-num">@y.CycleNo @if (held) {<div><span class="badge badge-light-primary fs-9" style="font-family:inherit">@T["Held"]</span></div>}</td>
+                                        <td class="hp-num text-nowrap">@y.CycleDate.ToString("yyyy-MM-dd")@if (held) {<div class="text-muted fs-9">→ @y.HeldUntil?.ToString("yyyy-MM-dd")</div>}<div class="text-muted fs-9" style="font-family:inherit">@Who(y.CreatedByEmployeeId)</div></td>
+                                        <td class="hp-num text-nowrap">@if (!held) {<span>@V(y.WeightKg) kg</span><div class="text-muted fs-8">@y.BsaM2?.ToString("0.00") m² @if (y.DoseReductionPct > 0) {<span class="badge badge-light-danger fs-9 ms-1">−@y.DoseReductionPct %</span>}</div>} else {<span class="text-muted">—</span>}</td>
+                                        <td class="hp-num fs-8 text-nowrap"><div class="@(y.Anc < HospitalOncologyRules.MinAnc ? "text-danger fw-bold" : "")">ANC @(y.Anc?.ToString("0.0#") ?? "—")</div><div class="@(y.Platelets < HospitalOncologyRules.MinPlatelets ? "text-danger fw-bold" : "")">PLT @(y.Platelets?.ToString() ?? "—")</div>@if (y.Creatinine != null) {<div class="text-muted">Cr @y.Creatinine.Value.ToString("0.0#")</div>}</td>
+                                        <td>@if (y.ToxicityGrade is int g) {<span class="badge @(g >= 3 ? "badge-light-danger" : "badge-light") fs-8">@T["Grade {0}", g]</span>}@if (y.ToxicityNote != null) {<div class="text-muted fs-8"><bdi>@y.ToxicityNote</bdi></div>}</td>
+                                        <td class="fs-8">@if (held) {<span class="text-muted"><bdi>@y.Reason</bdi></span>}
+                                            else
+                                            {
+                                                foreach (var d in v.Doses) {<div class="d-flex gap-2"><bdi dir="ltr" class="fw-semibold">@d.DrugName</bdi><span class="hp-num" dir="ltr">@d.DoseMg.ToString("0.#") mg @d.Route</span><span class="text-muted">@T["Day {0}", d.Days]</span></div>}
+                                                if (y.OverrideReason != null) {<div class="text-danger fs-9 mt-1">@T["Overruled"]: <bdi>@y.OverrideReason</bdi></div>}
+                                            }</td>
+                                    </tr>
+                                }
+                                </tbody>
+                            </table></div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div></div>
+</div>
+
+@if (more && canTreat)
+{
+    <div class="modal fade" id="holdModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-500px"><div class="modal-content">
+        <div class="modal-header"><h2 class="fw-bold m-0">@T["Hold the cycle"]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body py-6 px-lg-10"><div class="row g-4">
+            <div class="col-6"><label class="form-label required">@T["Put off to"]</label><input type="date" class="form-control form-control-solid" dir="ltr" data-h="until" min="@today.AddDays(1).ToString("yyyy-MM-dd")" value="@today.AddDays(7).ToString("yyyy-MM-dd")" /></div>
+            <div class="col-6"><label class="form-label">@T["Toxicity grade"]</label><select class="form-select form-select-solid" data-h="toxicityGrade" data-control="none"><option value="">—</option>@for (int g = 0; g <= 4; g++) {<option value="@g">@T["Grade {0}", g]</option>}</select></div>
+            <div class="col-6"><label class="form-label">@T["Neutrophils ×10⁹/L"]</label><input type="number" step="0.01" class="form-control form-control-solid" dir="ltr" data-h="anc" /></div>
+            <div class="col-6"><label class="form-label">@T["Platelets ×10⁹/L"]</label><input type="number" class="form-control form-control-solid" dir="ltr" data-h="platelets" /></div>
+            <div class="col-12"><label class="form-label required">@T["Why"]</label><textarea rows="2" maxlength="300" class="form-control form-control-solid" data-h="reason"></textarea></div>
+        </div></div>
+        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-hold-save>@T["Hold the cycle"]</button></div>
+    </div></div></div>
+}
+
+@section Scripts {
+    <script>
+        (function () {
+            var tokEl = document.querySelector('input[name="__RequestVerificationToken"]'); if (!tokEl) return; var tok = tokEl.value;
+            var base = @Json.Serialize(Url.Content("~/Hospital/Oncology/Course/" + c.ID));
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value), give: @Json.Serialize(T["Give this cycle with these doses?"].Value),
+                      hold: @Json.Serialize(T["Hold this cycle?"].Value), complete: @Json.Serialize(T["Mark the course completed?"].Value), stop: @Json.Serialize(T["Why is the course stopped?"].Value),
+                      stopTitle: @Json.Serialize(T["Stop the course"].Value), noLimit: '—' };
+            function post(u, b) { return fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': tok }, body: JSON.stringify(b) })
+                .then(function (r) { return r.json().catch(function () { return { ok: false }; }); }); }
+            function done(btn) { return function (res) { if (btn) btn.disabled = false; if (!res.ok) { toastr.error(res.error || W.failed); return; } toastr.success(W.saved); location.reload(); }; }
+            function num(v) { return v === '' ? null : Number(v); }
+            function esc(s) { var d = document.createElement('div'); d.textContent = s == null ? '' : String(s); return d.innerHTML; }
+            var panel = document.getElementById('givePanel'), blocks = false, timer = null;
+            function form() { var b = {}; panel.querySelectorAll('[data-g]').forEach(function (i) { var k = i.getAttribute('data-g'), v = (i.value || '').trim();
+                b[k] = (k === 'toxicityNote' || k === 'overrideReason' || k === 'date') ? (v || null) : (k === 'doseReductionPct' ? Number(v || 0) : num(v)); }); return b; }
+            function preview() {
+                post(base + '/Preview', form()).then(function (p) {
+                    if (!p.ok) return;
+                    document.getElementById('pvBsa').textContent = p.bsa.toFixed(2);
+                    document.getElementById('pvGfr').textContent = p.gfr == null ? '—' : p.gfr;
+                    document.getElementById('pvRows').innerHTML = p.doses.map(function (d) {
+                        var after = d.lifetimeMgM2 == null ? W.noLimit : '<span class="' + (d.priorMgM2 + d.cycleMgM2 > d.lifetimeMgM2 ? 'text-danger fw-bold' : 'text-muted') + '">' + (d.priorMgM2 + d.cycleMgM2).toFixed(0) + ' / ' + d.lifetimeMgM2.toFixed(0) + '</span>';
+                        return '<tr><td><bdi dir="ltr" class="fw-semibold">' + esc(d.drugName) + '</bdi></td><td class="hp-num" dir="ltr">' + esc(d.dose) + ' ' + esc(d.basis) + '</td><td>' + esc(d.route) + '</td><td class="hp-num">' + esc(d.days) +
+                            '</td><td class="text-end hp-num fw-bold fs-6" dir="ltr">' + d.doseMg.toFixed(1) + ' mg</td><td class="text-end hp-num fs-8">' + after + '</td></tr>'; }).join('');
+                    blocks = p.checks.some(function (x) { return x.blocks; });
+                    document.getElementById('pvChecks').innerHTML = p.checks.map(function (x) { return '<span class="badge ' + (x.blocks ? 'badge-danger' : 'badge-light-primary') + ' fs-8">' + esc(x.text) + '</span>'; }).join('');
+                    var rf = document.getElementById('pvRefusal'); rf.textContent = p.refusal || ''; rf.classList.toggle('d-none', !p.refusal);
+                    document.getElementById('ovBox').classList.toggle('d-none', !blocks);
+                });
+            }
+            if (panel) { panel.addEventListener('input', function () { clearTimeout(timer); timer = setTimeout(preview, 300); }); panel.addEventListener('change', function () { clearTimeout(timer); timer = setTimeout(preview, 100); }); preview(); }
+            document.addEventListener('click', function (e) {
+                var o = e.target.closest('[data-modal]'); if (o) { bootstrap.Modal.getOrCreateInstance(document.getElementById(o.getAttribute('data-modal'))).show(); return; }
+                var g = e.target.closest('[data-give]');
+                if (g) { cbConfirm(W.give).then(function (ok) { if (!ok) return; g.disabled = true; post(base + '/Give', form()).then(done(g)); }); return; }
+                var h = e.target.closest('[data-hold-save]');
+                if (h) { var m = document.getElementById('holdModal'), b = {}; m.querySelectorAll('[data-h]').forEach(function (i) { var k = i.getAttribute('data-h'), v = (i.value || '').trim(); b[k] = (k === 'until' || k === 'reason') ? (v || null) : num(v); });
+                    cbConfirm(W.hold).then(function (ok) { if (!ok) return; h.disabled = true; post(base + '/Hold', b).then(done(h)); }); return; }
+                var en = e.target.closest('[data-end]'); if (!en) return;
+                if (en.getAttribute('data-end') === 'complete') cbConfirm(W.complete).then(function (ok) { if (ok) post(base + '/End', { completed: true }).then(done(en)); });
+                else cbPrompt(W.stop, { title: W.stopTitle, kind: 'danger', textarea: true }).then(function (why) { if (why) post(base + '/End', { completed: false, reason: why }).then(done(en)); });
+            });
+        })();
+    </script>
+}

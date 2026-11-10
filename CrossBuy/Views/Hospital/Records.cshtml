@@ -1,0 +1,86 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model HospitalChartStats
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H80 — chart completion (medical records): every stay discharged in the window, what its chart still lacks and who owes
+    it, delinquent charts (incomplete 14 days after discharge) first. A complete chart is signed off here.
+*@
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Medical records"].Value;
+    bool ready = ViewBag.Ready == true;
+    bool isAr = System.Globalization.CultureInfo.CurrentUICulture.Name.StartsWith("ar");
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Medical records"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted">@T["Chart completion"]</li></ul>
+        </div>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (!ready) { <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice"><div class="fs-6 text-gray-700">@T[HospitalChartReviewService.NoTables]</div></div> }
+        else
+        {
+            <div class="row g-5 mb-5">
+                @foreach (var (n, label, icon, tone, st) in new[] {
+                    (Model.Incomplete, "Incomplete charts", "ki-file-deleted", "primary", "incomplete"),
+                    (Model.Delinquent, "Delinquent (over 14 days)", "ki-time", "danger", "delinquent"),
+                    (Model.ReadyToSign, "Complete, waiting for sign-off", "ki-file-added", "info", "ready"),
+                    (Model.SignedThisMonth, "Signed this month", "ki-check-circle", "success", "signed") })
+                {
+                    <div class="col-sm-6 col-xl-3"><a href="#" class="card card-flush h-100 text-hover-primary" data-pick-state="@st"><div class="card-body py-5 d-flex align-items-center gap-4">
+                        <div class="symbol symbol-50px flex-shrink-0"><span class="symbol-label bg-light-@tone"><i class="ki-outline @icon fs-2x text-@tone"></i></span></div>
+                        <div><div class="fs-2hx fw-bold text-gray-900 hp-num lh-1">@n</div><div class="text-muted fs-7 mt-1">@T[label]</div></div></div></a></div>
+                }
+            </div>
+            <div class="card">
+                <div class="card-header border-0 pt-6 flex-wrap gap-3">
+                    <div class="card-title flex-column m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Discharged stays"]</span><span class="text-muted fs-7 mt-1"><span id="resultCount">—</span></span></div>
+                    <div class="card-toolbar d-flex flex-wrap align-items-center gap-2">
+                        <div class="w-250px"><input type="text" id="f_q" class="form-control form-control-solid form-control-sm" autocomplete="off" placeholder="@T["Search by patient or file…"]" /></div>
+                        <div class="w-175px"><select class="form-select form-select-solid form-select-sm cb-filter" id="f_state">
+                            <option value="incomplete">@T["Incomplete"]</option><option value="delinquent">@T["Delinquent"]</option><option value="ready">@T["Waiting for sign-off"]</option><option value="signed">@T["Signed"]</option><option value="">@T["All"]</option>
+                        </select></div>
+                        <div class="w-125px"><select class="form-select form-select-solid form-select-sm cb-filter" id="f_days"><option value="30">@T["Past 30 days"]</option><option value="90" selected>@T["Past 90 days"]</option><option value="365">@T["Past year"]</option></select></div>
+                        <div class="w-75px"><select id="f_size" class="form-select form-select-solid form-select-sm"><option value="25">25</option><option value="50">50</option><option value="100">100</option></select></div>
+                        <button type="button" id="f_reset" class="btn btn-sm btn-light" title="@T["Reset"]"><i class="ki-outline ki-arrows-circle fs-4"></i></button>
+                    </div>
+                </div>
+                <div class="card-body pt-2">
+                    <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-3 mb-0">
+                        <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0"><th>@T["Patient"]</th><th>@T["Discharged on"]</th><th>@T["Attending"]</th><th class="min-w-300px">@T["Missing from the chart"]</th><th>@T["State"]</th><th class="text-end"></th></tr></thead>
+                        <tbody id="rows"><tr id="loadingRow"><td colspan="6" class="text-center text-muted py-10">@T["Loading…"]</td></tr><tr id="emptyRow" class="d-none"><td colspan="6" class="text-center text-muted py-10">@T["No chart here."]</td></tr></tbody>
+                    </table></div>
+                    <div class="d-flex flex-stack flex-wrap pt-5"><div class="fs-7 text-muted" id="pageInfo"></div><ul class="pagination" id="pager"></ul></div>
+                </div>
+            </div>
+        }
+    </div></div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            if (!document.getElementById('rows')) return;
+            var st = document.getElementById('f_state');
+            var list = cbServerList({ url: @Json.Serialize(Url.Action("RecordsData")), isAr: @(isAr ? "true" : "false"),
+                addParams: function (p) { p.set('state', st.value); p.set('days', document.getElementById('f_days').value); } });
+            document.querySelectorAll('[data-pick-state]').forEach(function (a) { a.addEventListener('click', function (e) { e.preventDefault(); st.value = a.getAttribute('data-pick-state'); list.reload(); }); });
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value), sign: @Json.Serialize(T["Sign this chart complete?"].Value) };
+            document.addEventListener('click', function (e) {
+                var t = e.target.closest('[data-sign-chart]'); if (!t) return;
+                cbConfirm(W.sign + '\n' + (t.getAttribute('data-what') || '')).then(function (ok) { if (!ok) return; t.disabled = true;
+                    fetch(@Json.Serialize(Url.Content("~/Hospital/Records/")) + t.getAttribute('data-sign-chart') + '/Sign', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: '{}' })
+                        .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+                        .then(function (res) { t.disabled = false; if (!res.ok) { toastr.error(res.error || W.failed); return; } toastr.success(W.saved); list.reload(); }); });
+            });
+        })();
+    </script>
+}

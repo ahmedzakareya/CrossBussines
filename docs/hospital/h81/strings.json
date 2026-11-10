@@ -1,0 +1,235 @@
+{
+ "unit": "H81 — quality indicators",
+ "strings": {
+  "A percentage target is between 0 and 100": {
+   "ar": "المستهدف النسبي بين 0 و100",
+   "en": "A percentage target is between 0 and 100",
+   "fr": "Une cible en pourcentage est comprise entre 0 et 100"
+  },
+  "A satisfaction target is between 1 and 5": {
+   "ar": "مستهدف الرضا بين 1 و5",
+   "en": "A satisfaction target is between 1 and 5",
+   "fr": "Une cible de satisfaction est comprise entre 1 et 5"
+  },
+  "An NPS target is between -100 and 100": {
+   "ar": "مستهدف NPS بين -100 و100",
+   "en": "An NPS target is between -100 and 100",
+   "fr": "Une cible NPS est comprise entre -100 et 100"
+  },
+  "Change": {
+   "ar": "تعديل",
+   "en": "Change",
+   "fr": "Modifier"
+  },
+  "Computed from the hospital's own records": {
+   "ar": "محسوبة من سجلات المستشفى نفسها",
+   "en": "Computed from the hospital's own records",
+   "fr": "Calculés à partir des dossiers de l'hôpital"
+  },
+  "Quality indicators": {
+   "ar": "مؤشرات الجودة",
+   "en": "Quality indicators",
+   "fr": "Indicateurs qualité"
+  },
+  "Quality targets are not installed yet (hospital_h81_quality_targets.sql).": {
+   "ar": "مستهدفات الجودة غير مثبتة بعد (hospital_h81_quality_targets.sql).",
+   "en": "Quality targets are not installed yet (hospital_h81_quality_targets.sql).",
+   "fr": "Les cibles qualité ne sont pas encore installées (hospital_h81_quality_targets.sql)."
+  },
+  "Target": {
+   "ar": "المستهدف",
+   "en": "Target",
+   "fr": "Cible"
+  },
+  "Targets cannot be changed until hospital_h81_quality_targets.sql is installed; the published defaults apply.": {
+   "ar": "لا يمكن تعديل المستهدفات قبل تثبيت hospital_h81_quality_targets.sql؛ وتُطبَّق القيم المرجعية المنشورة.",
+   "en": "Targets cannot be changed until hospital_h81_quality_targets.sql is installed; the published defaults apply.",
+   "fr": "Les cibles ne peuvent pas être modifiées avant l'installation de hospital_h81_quality_targets.sql ; les valeurs de référence s'appliquent."
+  },
+  "The hospital's target": {
+   "ar": "مستهدف المستشفى",
+   "en": "The hospital's target",
+   "fr": "La cible de l'hôpital"
+  },
+  "The last six months": {
+   "ar": "آخر ستة أشهر",
+   "en": "The last six months",
+   "fr": "Les six derniers mois"
+  },
+  "The target is out of range": {
+   "ar": "المستهدف خارج النطاق",
+   "en": "The target is out of range",
+   "fr": "La cible est hors limites"
+  },
+  "Write a number": {
+   "ar": "اكتب رقماً",
+   "en": "Write a number",
+   "fr": "Saisissez un nombre"
+  },
+  "Write the target": {
+   "ar": "اكتب المستهدف",
+   "en": "Write the target",
+   "fr": "Saisissez la cible"
+  },
+  "qd:Alos": {
+   "ar": "الأيام من الدخول للخروج لحالات خروج الشهر",
+   "en": "Days from admission to discharge, of the month's discharges",
+   "fr": "Jours de l'entrée à la sortie, sorties du mois"
+  },
+  "qd:ChartOnTime": {
+   "ar": "المعتمدة خلال 14 يوماً من الخروج",
+   "en": "Signed complete within 14 days of discharge",
+   "fr": "Validés sous 14 jours après la sortie"
+  },
+  "qd:ConsultOnTime": {
+   "ar": "المُجاب عليها قبل موعدها",
+   "en": "Answered by their due time",
+   "fr": "Rendus avant l'échéance"
+  },
+  "qd:Falls": {
+   "ar": "حالات السقوط المبلغ عنها لكل 1,000 يوم مريض",
+   "en": "Reported falls per 1,000 patient-days",
+   "fr": "Chutes déclarées pour 1 000 jours-patients"
+  },
+  "qd:Hai": {
+   "ar": "المؤكدة، لكل 1,000 يوم مريض",
+   "en": "Confirmed, per 1,000 patient-days",
+   "fr": "Confirmées, pour 1 000 jours-patients"
+  },
+  "qd:MedErrors": {
+   "ar": "المبلغ عنها لكل 1,000 يوم مريض",
+   "en": "Reported per 1,000 patient-days",
+   "fr": "Déclarées pour 1 000 jours-patients"
+  },
+  "qd:MedRec24h": {
+   "ar": "حالات دخول الشهر الموقّعة خلال يوم",
+   "en": "Stays admitted this month, signed within a day",
+   "fr": "Séjours du mois signés sous un jour"
+  },
+  "qd:Mortality": {
+   "ar": "وفيات المنومين ÷ حالات الخروج",
+   "en": "Inpatient deaths ÷ discharges",
+   "fr": "Décès hospitaliers ÷ sorties"
+  },
+  "qd:Nps": {
+   "ar": "المروجون (9–10) ناقص المنتقدون (0–6)",
+   "en": "Promoters (9–10) minus detractors (0–6)",
+   "fr": "Promoteurs (9–10) moins détracteurs (0–6)"
+  },
+  "qd:Occupancy": {
+   "ar": "أيام المرضى ÷ (الأسرّة × الأيام)",
+   "en": "Patient-days ÷ (beds × days)",
+   "fr": "Jours-patients ÷ (lits × jours)"
+  },
+  "qd:Readmission30": {
+   "ar": "حالات خروج تلاها تنويم جديد خلال 30 يوماً",
+   "en": "Discharges followed by a new stay within 30 days",
+   "fr": "Sorties suivies d'un nouveau séjour sous 30 jours"
+  },
+  "qd:Satisfaction": {
+   "ar": "متوسط استبيانات الشهر (1–5)",
+   "en": "Average of the month's surveys (1–5)",
+   "fr": "Moyenne des enquêtes du mois (1–5)"
+  },
+  "qi:Alos": {
+   "ar": "متوسط مدة الإقامة",
+   "en": "Average length of stay",
+   "fr": "Durée moyenne de séjour"
+  },
+  "qi:ChartOnTime": {
+   "ar": "ملفات مكتملة خلال 14 يوماً",
+   "en": "Charts completed within 14 days",
+   "fr": "Dossiers complétés sous 14 jours"
+  },
+  "qi:ConsultOnTime": {
+   "ar": "الاستشارات المُجاب عليها في الموعد",
+   "en": "Consultations answered on time",
+   "fr": "Avis rendus dans les délais"
+  },
+  "qi:Falls": {
+   "ar": "سقوط المرضى",
+   "en": "Patient falls",
+   "fr": "Chutes de patients"
+  },
+  "qi:Hai": {
+   "ar": "العدوى المكتسبة في المستشفى",
+   "en": "Hospital-acquired infections",
+   "fr": "Infections nosocomiales"
+  },
+  "qi:MedErrors": {
+   "ar": "أخطاء الأدوية المبلغ عنها",
+   "en": "Medication errors reported",
+   "fr": "Erreurs médicamenteuses déclarées"
+  },
+  "qi:MedRec24h": {
+   "ar": "مطابقة الأدوية عند الدخول خلال 24 ساعة",
+   "en": "Admission reconciliation within 24 hours",
+   "fr": "Conciliation d'entrée sous 24 heures"
+  },
+  "qi:Mortality": {
+   "ar": "معدل الوفيات للمنومين",
+   "en": "Inpatient mortality",
+   "fr": "Mortalité hospitalière"
+  },
+  "qi:Nps": {
+   "ar": "صافي نقاط الترويج (NPS)",
+   "en": "Net promoter score",
+   "fr": "Net promoter score"
+  },
+  "qi:Occupancy": {
+   "ar": "نسبة إشغال الأسرّة",
+   "en": "Bed occupancy",
+   "fr": "Taux d'occupation des lits"
+  },
+  "qi:Readmission30": {
+   "ar": "إعادة الدخول خلال 30 يوماً",
+   "en": "Readmission within 30 days",
+   "fr": "Réhospitalisation à 30 jours"
+  },
+  "qi:Satisfaction": {
+   "ar": "رضا المرضى",
+   "en": "Patient satisfaction",
+   "fr": "Satisfaction des patients"
+  },
+  "qs:Met": {
+   "ar": "محقق",
+   "en": "Met",
+   "fr": "Atteint"
+  },
+  "qs:NoData": {
+   "ar": "لا توجد بيانات",
+   "en": "No data",
+   "fr": "Pas de données"
+  },
+  "qs:NotMet": {
+   "ar": "غير محقق",
+   "en": "Not met",
+   "fr": "Non atteint"
+  },
+  "qu:%": {
+   "ar": "",
+   "en": "",
+   "fr": ""
+  },
+  "qu:days": {
+   "ar": "يوم",
+   "en": "days",
+   "fr": "jours"
+  },
+  "qu:of5": {
+   "ar": "من 5",
+   "en": "of 5",
+   "fr": "sur 5"
+  },
+  "qu:per1000": {
+   "ar": "لكل 1,000 يوم مريض",
+   "en": "per 1,000 patient-days",
+   "fr": "pour 1 000 jours-patients"
+  },
+  "qu:score": {
+   "ar": "نقطة",
+   "en": "score",
+   "fr": "points"
+  }
+ }
+}

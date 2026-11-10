@@ -1,0 +1,132 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model HospitalPregnancyPage
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H85 — one pregnancy: the dates (LMP, due date, weeks today), G/P/A and risks, every antenatal visit with its
+    gestational age and warnings, recording a visit, and closing the pregnancy (delivered — linked to the mother's H58
+    birth — or lost).
+*@
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Pregnancy"].Value;
+    bool canVisit = ViewBag.CanVisit == true, canEnd = ViewBag.CanEnd == true;
+    var p = Model.Pregnancy; bool active = p.Status == HospitalPregnancyStatus.Active;
+    string Who(int? id) => id is int i && Model.People.TryGetValue(i, out var n) ? n : "";
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Pregnancy"] <span class="badge hp-code fs-7 hp-num ms-2">@p.PregnancyNo</span></h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item"><a href="@Url.Action("Antenatal")" class="text-muted text-hover-primary">@T["Antenatal care"]</a></li></ul>
+        </div>
+        <div class="d-flex gap-2">
+            @if (active && canVisit) {<button type="button" class="btn btn-sm btn-primary" data-v-new><i class="ki-outline ki-plus fs-4"></i>@T["Record a visit"]</button>}
+            @if (active && canEnd) {<button type="button" class="btn btn-sm btn-light" data-end><i class="ki-outline ki-check-square fs-4"></i>@T["Close the pregnancy"]</button>}
+        </div>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="row g-5 mb-5">
+            <div class="col-xl-4"><div class="card h-100"><div class="card-body py-6">
+                <div class="d-flex align-items-center gap-4 mb-5">
+                    <div class="symbol symbol-55px symbol-circle">@if (Model.Photo != null) {<img src="@Model.Photo" alt="" style="object-fit:cover" />} else {<span class="symbol-label fw-bold hp-initials">@HospitalUi.Initials(Model.NameEn)</span>}</div>
+                    <div><a href="@Url.Action("Patient", new { id = p.PatientId })" class="fs-4 fw-bold text-gray-900 text-hover-primary">@DisplayName.Of(Model.Name, Model.NameEn)</a>
+                        <div class="text-muted fs-7"><bdi class="hp-num">@Model.Mrn</bdi>@if (Model.BloodGroup != null) {<text> · <bdi dir="ltr">@Model.BloodGroup</bdi></text>}</div></div>
+                </div>
+                <div class="d-flex flex-stack py-2 border-bottom border-dashed"><span class="text-muted fs-7">@T["Weeks today"]</span><span class="fw-bold fs-3 hp-num" dir="ltr">@(active ? HospitalAntenatalRules.Ga(Math.Max(0, Model.GaDays)) : "—")</span></div>
+                <div class="d-flex flex-stack py-2 border-bottom border-dashed"><span class="text-muted fs-7">@T["Due date"]</span><span class="fw-bold hp-num">@Model.Edd.ToString("yyyy-MM-dd")</span></div>
+                <div class="d-flex flex-stack py-2 border-bottom border-dashed"><span class="text-muted fs-7">@T["Last menstrual period"]</span><span class="hp-num">@(p.Lmp?.ToString("yyyy-MM-dd") ?? "—")</span></div>
+                @if (p.UltrasoundEdd != null) {<div class="d-flex flex-stack py-2 border-bottom border-dashed"><span class="text-muted fs-7">@T["Ultrasound due date"]</span><span class="hp-num">@p.UltrasoundEdd.Value.ToString("yyyy-MM-dd")</span></div>}
+                <div class="d-flex flex-stack py-2 border-bottom border-dashed"><span class="text-muted fs-7">@T["Gravida / para / abortions"]</span><span class="hp-num fw-bold" dir="ltr">G@(p.Gravida) P@(p.Para) A@(p.Abortions)</span></div>
+                @if (p.Risks != null) {<div class="py-2"><div class="text-muted fs-7">@T["Risks at booking"]</div><div class="text-danger fs-7"><bdi>@p.Risks</bdi></div></div>}
+                @if (!active) {<div class="mt-4"><span class="badge @(p.Status == HospitalPregnancyStatus.Delivered ? "badge-light-success" : "badge-light") fs-7">@T["pgs:" + p.Status]</span>@if (p.EndNote != null) {<div class="text-muted fs-8 mt-1"><bdi>@p.EndNote</bdi></div>}</div>}
+            </div></div></div>
+            <div class="col-xl-8"><div class="card h-100">
+                <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Antenatal visits"]</span></div></div>
+                <div class="card-body pt-2">
+                    @if (Model.Visits.Count == 0) { <div class="text-center text-muted py-10">@T["No visit yet"]</div> }
+                    else
+                    {
+                        <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-3 mb-0">
+                            <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0"><th>@T["Date"]</th><th>@T["Gestation"]</th><th>@T["BP"]</th><th>@T["Weight"]</th><th>@T["Fundal height"]</th><th>@T["Fetal heart"]</th><th>@T["Urine protein"]</th><th>@T["Warnings"]</th></tr></thead>
+                            <tbody class="hp-num">
+                            @foreach (var (v, ga, warn) in Model.Visits)
+                            {
+                                <tr>
+                                    <td class="text-nowrap">@v.VisitDate.ToString("yyyy-MM-dd")<div class="text-muted fs-9" style="font-family:inherit">@Who(v.CreatedByEmployeeId)</div></td>
+                                    <td dir="ltr" class="text-start">@HospitalAntenatalRules.Ga(Math.Max(0, ga))</td>
+                                    <td dir="ltr" class="text-start @(v.BpSystolic >= 140 || v.BpDiastolic >= 90 ? "text-danger fw-bold" : "")">@(v.BpSystolic == null ? "—" : v.BpSystolic + "/" + v.BpDiastolic)</td>
+                                    <td>@(v.WeightKg?.ToString("0.0") ?? "—")</td>
+                                    <td>@(v.FundalHeightCm?.ToString("0.#") ?? "—")</td>
+                                    <td class="@(v.FetalHeartRate is int f && (f < 110 || f > 160) ? "text-danger fw-bold" : "")">@(v.FetalHeartRate?.ToString() ?? "—")</td>
+                                    <td>@(v.UrineProtein ?? "—")</td>
+                                    <td style="font-family:inherit">@foreach (var w in warn) {<span class="badge badge-light-danger fs-9 me-1">@T["anw:" + w]</span>}
+                                        @if (v.Note != null) {<div class="text-muted fs-8"><bdi>@v.Note</bdi></div>}
+                                        @if (v.NextVisitOn != null) {<div class="text-muted fs-9">@T["Next"]: <span class="hp-num">@v.NextVisitOn.Value.ToString("yyyy-MM-dd")</span></div>}</td>
+                                </tr>
+                            }
+                            </tbody>
+                        </table></div>
+                    }
+                </div>
+            </div></div>
+        </div>
+    </div></div>
+</div>
+
+@if (active && canVisit)
+{
+    <div class="modal fade" id="visitModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-650px"><div class="modal-content">
+        <div class="modal-header"><h2 class="fw-bold m-0">@T["Antenatal visit"]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body py-6 px-lg-10"><div class="row g-4">
+            <div class="col-4"><label class="form-label">@T["Date"]</label><input type="date" class="form-control form-control-solid" dir="ltr" data-v="visitDate" /></div>
+            <div class="col-4"><label class="form-label">@T["BP (systolic)"]</label><input type="number" class="form-control form-control-solid" dir="ltr" data-v="bpSystolic" /></div>
+            <div class="col-4"><label class="form-label">@T["BP (diastolic)"]</label><input type="number" class="form-control form-control-solid" dir="ltr" data-v="bpDiastolic" /></div>
+            <div class="col-4"><label class="form-label">@T["Weight (kg)"]</label><input type="number" step="0.1" class="form-control form-control-solid" dir="ltr" data-v="weightKg" /></div>
+            <div class="col-4"><label class="form-label">@T["Fundal height (cm)"]</label><input type="number" step="0.5" class="form-control form-control-solid" dir="ltr" data-v="fundalHeightCm" /></div>
+            <div class="col-4"><label class="form-label">@T["Fetal heart (bpm)"]</label><input type="number" class="form-control form-control-solid" dir="ltr" data-v="fetalHeartRate" /></div>
+            <div class="col-6"><label class="form-label">@T["Urine protein"]</label><select class="form-select form-select-solid" data-v="urineProtein"><option value="">—</option>@foreach (var u in HospitalUrineProtein.All) {<option value="@u">@u</option>}</select></div>
+            <div class="col-6"><label class="form-label">@T["Next visit"]</label><input type="date" class="form-control form-control-solid" dir="ltr" data-v="nextVisitOn" /></div>
+            <div class="col-12"><label class="form-label">@T["Notes"]</label><textarea class="form-control form-control-solid" rows="2" maxlength="500" data-v="note"></textarea></div>
+        </div></div>
+        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-v-save>@T["Save"]</button></div>
+    </div></div></div>
+}
+@if (active && canEnd)
+{
+    <div class="modal fade" id="endModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-500px"><div class="modal-content">
+        <div class="modal-header"><h2 class="fw-bold m-0">@T["Close the pregnancy"]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body py-6 px-lg-10"><div class="row g-4">
+            <div class="col-12"><label class="form-label required">@T["Outcome"]</label><select class="form-select form-select-solid" data-e="status"><option value="Delivered">@T["pgs:Delivered"]</option><option value="Loss">@T["pgs:Loss"]</option></select></div>
+            <div class="col-12"><label class="form-label">@T["The birth"]</label><select class="form-select form-select-solid" data-e="birthId"><option value="">—</option>@foreach (var b in Model.Births) {<option value="@b.Id">@b.No · @HospitalNursingService.UtcToWard(b.BornAt).ToString("yyyy-MM-dd")</option>}</select><div class="form-text">@T["The mother's births registered on her file."]</div></div>
+            <div class="col-12"><label class="form-label">@T["Notes"]</label><textarea class="form-control form-control-solid" rows="2" maxlength="300" data-e="note"></textarea></div>
+        </div></div>
+        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-e-save>@T["Close"]</button></div>
+    </div></div></div>
+}
+
+@section Scripts {
+    <script>
+        (function () {
+            var tok = document.querySelector('input[name="__RequestVerificationToken"]').value, vEl = document.getElementById('visitModal'), eEl = document.getElementById('endModal');
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value), visit: @Json.Serialize(T["Save this antenatal visit?"].Value), end: @Json.Serialize(T["Close this pregnancy?"].Value) };
+            function post(u, b) { return fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': tok }, body: JSON.stringify(b || {}) }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); }); }
+            function done(res) { if (!res.ok) { toastr.error(res.error || W.failed); return; } toastr.success(W.saved); location.reload(); }
+            var nums = ['bpSystolic', 'bpDiastolic', 'weightKg', 'fundalHeightCm', 'fetalHeartRate'];
+            document.addEventListener('click', function (e) {
+                if (e.target.closest('[data-v-new]') && vEl) { vEl.querySelectorAll('[data-v]').forEach(function (i) { i.value = ''; }); bootstrap.Modal.getOrCreateInstance(vEl).show(); return; }
+                if (e.target.closest('[data-end]') && eEl) { bootstrap.Modal.getOrCreateInstance(eEl).show(); return; }
+                var s = e.target.closest('[data-v-save]');
+                if (s) { var b = { pregnancyId: @p.ID }; vEl.querySelectorAll('[data-v]').forEach(function (i) { var k = i.getAttribute('data-v'), v = i.value.trim(); b[k] = v === '' ? null : (nums.indexOf(k) >= 0 ? Number(v) : v); });
+                    cbConfirm(W.visit).then(function (ok) { if (ok) post(@Json.Serialize(Url.Action("AddAntenatalVisit")), b).then(done); }); return; }
+                var x = e.target.closest('[data-e-save]');
+                if (x) { var c = {}; eEl.querySelectorAll('[data-e]').forEach(function (i) { var k = i.getAttribute('data-e'); c[k] = k === 'birthId' ? (i.value ? Number(i.value) : null) : (i.value.trim() || null); });
+                    cbConfirm(W.end).then(function (ok) { if (ok) post(@Json.Serialize(Url.Content("~/Hospital/Pregnancies/" + p.ID + "/End")), c).then(done); }); }
+            });
+        })();
+    </script>
+}

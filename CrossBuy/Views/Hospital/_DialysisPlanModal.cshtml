@@ -1,0 +1,61 @@
+@using CrossBuy.Models.Context.Hospital
+@model HospitalDialysisPlan?
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H87 — the dialysis plan form: a new plan (with the patient picker) on the patients list, or the patient's active plan
+    changed in place on their page. Shared by both, with its own script (it runs after the layout's scripts load).
+*@
+@{
+    var p = Model; bool isNew = p == null;
+    int fixedPatient = ViewData["DxPatientId"] as int? ?? 0;   // the patient's own page: no picker
+    bool pick = isNew && fixedPatient == 0;
+    bool isAr = System.Globalization.CultureInfo.CurrentUICulture.Name.StartsWith("ar");
+    var names = System.Globalization.CultureInfo.CurrentUICulture.DateTimeFormat.DayNames;
+    string V(decimal? d) => d?.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture) ?? "";
+}
+<div class="modal fade" id="planModal" tabindex="-1" aria-hidden="true" data-plan-id="@(p?.ID ?? 0)" data-patient-id="@(p?.PatientId ?? fixedPatient)"><div class="modal-dialog modal-dialog-centered mw-650px"><div class="modal-content">
+    <div class="modal-header"><h2 class="fw-bold m-0">@(isNew ? T["New dialysis plan"] : T["Change the dialysis plan"])</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="modal-body py-6 px-lg-10"><div class="row g-4">
+        @if (pick) {<div class="col-12"><label class="form-label required">@T["Patient"]</label><select class="form-select form-select-solid" data-pl="patientId" data-placeholder="@T["Search by name or file…"]"><option></option></select></div>}
+        <div class="col-4"><label class="form-label required">@T["Dry weight (kg)"]</label><input type="number" step="0.1" min="20" max="250" class="form-control form-control-solid" dir="ltr" data-pl="dryWeightKg" value="@V(p?.DryWeightKg)" /></div>
+        <div class="col-4"><label class="form-label required">@T["Vascular access"]</label><select class="form-select form-select-solid" data-pl="access">@foreach (var a in HospitalDialysisAccess.All) {<option value="@a" selected="@(p?.Access == a)">@T["dxa:" + a]</option>}</select></div>
+        <div class="col-4"><label class="form-label required">@T["Hours"]</label><select class="form-select form-select-solid" data-pl="durationMin">@foreach (var m in new[] { 120, 150, 180, 210, 240, 270, 300, 360, 480 }) {<option value="@m" selected="@((p?.DurationMin ?? 240) == m)">@((m / 60m).ToString("0.#"))</option>}</select></div>
+        <div class="col-4"><label class="form-label required">@T["Blood flow (ml/min)"]</label><input type="number" min="100" max="600" step="10" class="form-control form-control-solid" dir="ltr" data-pl="bloodFlow" value="@(p?.BloodFlow ?? 300)" /></div>
+        <div class="col-4"><label class="form-label">@T["Dialysate flow (ml/min)"]</label><input type="number" min="300" max="1000" step="50" class="form-control form-control-solid" dir="ltr" data-pl="dialysateFlow" value="@(p?.DialysateFlow ?? 500)" /></div>
+        <div class="col-4"><label class="form-label required">@T["Shift"]</label><select class="form-select form-select-solid" data-pl="shift">@for (int s = 1; s <= 3; s++) {<option value="@s" selected="@((p?.Shift ?? 1) == s)">@T["Shift {0}", s]</option>}</select></div>
+        <div class="col-12"><label class="form-label required">@T["Dialysis days"]</label>
+            <div class="d-flex flex-wrap gap-2">@for (int i = 0; i < 7; i++) {
+                bool on = p != null ? (p.DaysMask & (1 << i)) != 0 : false;
+                <label class="btn btn-sm btn-outline btn-outline-dashed btn-active-light-primary @(on ? "active" : "") mb-0"><input type="checkbox" class="d-none" data-day="@(1 << i)" checked="@on" />@names[i]</label>}</div>
+            <div class="d-flex gap-2 mt-2"><button type="button" class="btn btn-link btn-sm p-0" data-days="@(2 | 8 | 32)">@T["Mon · Wed · Fri"]</button><span class="text-muted">|</span><button type="button" class="btn btn-link btn-sm p-0" data-days="@(1 | 4 | 16)">@T["Sun · Tue · Thu"]</button><span class="text-muted">|</span><button type="button" class="btn btn-link btn-sm p-0" data-days="@(64 | 2 | 8)">@T["Sat · Mon · Wed"]</button></div></div>
+        <div class="col-6"><label class="form-label">@T["Dialyser"]</label><input type="text" maxlength="60" class="form-control form-control-solid" dir="ltr" data-pl="dialyzer" value="@p?.Dialyzer" /></div>
+        <div class="col-6"><label class="form-label">@T["Anticoagulation"]</label><input type="text" maxlength="100" class="form-control form-control-solid" data-pl="anticoagulation" value="@p?.Anticoagulation" placeholder="@T["Heparin 2000 units, then 1000 an hour…"]" /></div>
+        <div class="col-12"><label class="form-label">@T["Note"]</label><textarea class="form-control form-control-solid" rows="2" maxlength="500" data-pl="note">@p?.Note</textarea></div>
+    </div></div>
+    <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-plan-save>@T["Save"]</button></div>
+</div></div></div>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var mEl = document.getElementById('planModal'); if (!mEl) return;
+        var tok = document.querySelector('input[name="__RequestVerificationToken"]').value, pick = mEl.querySelector('[data-pl="patientId"]');
+        var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value), ask: @Json.Serialize(T["Save this dialysis plan?"].Value) };
+        if (pick && window.jQuery && jQuery.fn.select2) jQuery(pick).select2({ width: '100%', dir: @Json.Serialize(isAr ? "rtl" : "ltr"), dropdownParent: jQuery(mEl), placeholder: pick.getAttribute('data-placeholder'),
+            ajax: { url: @Json.Serialize(Url.Action("SearchPatients")), dataType: 'json', delay: 200, data: function (q) { return { q: q.term || '' }; }, processResults: function (d) { return { results: d.results || [] }; } } });
+        function setDays(mask) { mEl.querySelectorAll('[data-day]').forEach(function (c) { var on = (mask & Number(c.getAttribute('data-day'))) !== 0; c.checked = on; c.parentElement.classList.toggle('active', on); }); }
+        mEl.querySelectorAll('[data-day]').forEach(function (c) { c.addEventListener('change', function () { c.parentElement.classList.toggle('active', c.checked); }); });
+        document.addEventListener('click', function (e) {
+            if (e.target.closest('[data-plan-open]')) { bootstrap.Modal.getOrCreateInstance(mEl).show(); return; }
+            var d = e.target.closest('[data-days]'); if (d) { setDays(Number(d.getAttribute('data-days'))); return; }
+            var s = e.target.closest('[data-plan-save]'); if (!s) return;
+            var b = { id: Number(mEl.getAttribute('data-plan-id')), patientId: Number(mEl.getAttribute('data-patient-id')), daysMask: 0 };
+            mEl.querySelectorAll('[data-pl]').forEach(function (i) { var k = i.getAttribute('data-pl'), v = (window.jQuery && k === 'patientId') ? (jQuery(i).val() || '') : (i.value || '').trim();
+                b[k] = (k === 'patientId' || k === 'durationMin' || k === 'bloodFlow' || k === 'shift' || k === 'dryWeightKg') ? Number(v || 0) : (k === 'dialysateFlow' ? (v === '' ? null : Number(v)) : (v || null)); });
+            mEl.querySelectorAll('[data-day]').forEach(function (c) { if (c.checked) b.daysMask |= Number(c.getAttribute('data-day')); });
+            cbConfirm(W.ask).then(function (ok) { if (!ok) return; s.disabled = true;
+                fetch(@Json.Serialize(Url.Action("SaveDialysisPlan")), { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': tok }, body: JSON.stringify(b) })
+                    .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+                    .then(function (res) { s.disabled = false; if (!res.ok) { toastr.error(res.error || W.failed); return; } toastr.success(W.saved);
+                        location.href = @Json.Serialize(Url.Content("~/Hospital/Dialysis/Patient/")) + (b.patientId || 0); }); });
+        });
+    });
+</script>

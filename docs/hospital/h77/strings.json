@@ -1,0 +1,255 @@
+{
+ "unit": "H77 — inpatient consultation requests",
+ "strings": {
+  "A doctor asks another specialty from the nursing station. A doctor of that specialty — or the one named — accepts and answers. Emergency is due in 1 hour, urgent in 4, routine in 24.": {
+   "ar": "يطلب الطبيب رأي تخصص آخر من محطة التمريض، فيقبله طبيب من ذلك التخصص — أو الطبيب المسمّى — ويرد عليه. الطارئة يُرد عليها خلال ساعة، والعاجلة خلال 4 ساعات، والعادية خلال 24 ساعة.",
+   "en": "A doctor asks another specialty from the nursing station. A doctor of that specialty — or the one named — accepts and answers. Emergency is due in 1 hour, urgent in 4, routine in 24.",
+   "fr": "Un médecin sollicite une autre spécialité depuis le poste de soins. Un médecin de cette spécialité — ou celui désigné — l'accepte et répond. Urgence vitale : 1 heure, urgent : 4 heures, routine : 24 heures."
+  },
+  "Accept this consultation? The team will see that you are on it.": {
+   "ar": "قبول هذه الاستشارة؟ سيرى الفريق أنك تتابعها.",
+   "en": "Accept this consultation? The team will see that you are on it.",
+   "fr": "Accepter cette demande d'avis ? L'équipe verra que vous la prenez en charge."
+  },
+  "Answer": {
+   "ar": "الرد",
+   "en": "Answer",
+   "fr": "Répondre"
+  },
+  "Answer due": {
+   "ar": "موعد الرد",
+   "en": "Answer due",
+   "fr": "Réponse attendue"
+  },
+  "Answer the consultation": {
+   "ar": "الرد على الاستشارة",
+   "en": "Answer the consultation",
+   "fr": "Répondre à la demande d'avis"
+  },
+  "Any doctor of the specialty": {
+   "ar": "أي طبيب من التخصص",
+   "en": "Any doctor of the specialty",
+   "fr": "N'importe quel médecin de la spécialité"
+  },
+  "Ask a specialty": {
+   "ar": "طلب استشارة",
+   "en": "Ask a specialty",
+   "fr": "Demander un avis"
+  },
+  "Ask for a consultation": {
+   "ar": "طلب استشارة تخصص",
+   "en": "Ask for a consultation",
+   "fr": "Demande d'avis spécialisé"
+  },
+  "Asked by me": {
+   "ar": "طلباتي",
+   "en": "Asked by me",
+   "fr": "Mes demandes"
+  },
+  "Asked by {0}": {
+   "ar": "طلبها {0}",
+   "en": "Asked by {0}",
+   "fr": "Demandé par {0}"
+  },
+  "Asked of me": {
+   "ar": "المطلوبة مني",
+   "en": "Asked of me",
+   "fr": "Demandées à moi"
+  },
+  "Cancel this consultation request": {
+   "ar": "إلغاء طلب الاستشارة",
+   "en": "Cancel this consultation request",
+   "fr": "Annuler cette demande d'avis"
+  },
+  "Choose the specialty": {
+   "ar": "اختر التخصص",
+   "en": "Choose the specialty",
+   "fr": "Choisissez la spécialité"
+  },
+  "Consultation requests are not installed yet (hospital_h77_consult_requests.sql).": {
+   "ar": "طلبات الاستشارة غير مثبتة بعد (hospital_h77_consult_requests.sql).",
+   "en": "Consultation requests are not installed yet (hospital_h77_consult_requests.sql).",
+   "fr": "Les demandes d'avis ne sont pas encore installées (hospital_h77_consult_requests.sql)."
+  },
+  "Consultations": {
+   "ar": "الاستشارات",
+   "en": "Consultations",
+   "fr": "Demandes d'avis"
+  },
+  "I will keep following the patient": {
+   "ar": "سأستمر في متابعة المريض",
+   "en": "I will keep following the patient",
+   "fr": "Je continue à suivre le patient"
+  },
+  "No consultation here.": {
+   "ar": "لا توجد استشارات هنا.",
+   "en": "No consultation here.",
+   "fr": "Aucune demande d'avis ici."
+  },
+  "Only a doctor of the specialty asked can answer": {
+   "ar": "لا يرد إلا طبيب من التخصص المطلوب",
+   "en": "Only a doctor of the specialty asked can answer",
+   "fr": "Seul un médecin de la spécialité sollicitée peut répondre"
+  },
+  "Only the doctor who asked can cancel it": {
+   "ar": "لا يلغيها إلا الطبيب الذي طلبها",
+   "en": "Only the doctor who asked can cancel it",
+   "fr": "Seul le médecin demandeur peut l'annuler"
+  },
+  "Question": {
+   "ar": "السؤال",
+   "en": "Question",
+   "fr": "Question"
+  },
+  "Recommendations": {
+   "ar": "التوصيات",
+   "en": "Recommendations",
+   "fr": "Recommandations"
+  },
+  "Search by number, patient or file…": {
+   "ar": "ابحث بالرقم أو المريض أو رقم الملف…",
+   "en": "Search by number, patient or file…",
+   "fr": "Rechercher par numéro, patient ou dossier…"
+  },
+  "Send the answer": {
+   "ar": "إرسال الرد",
+   "en": "Send the answer",
+   "fr": "Envoyer la réponse"
+  },
+  "Send this answer to the team?": {
+   "ar": "إرسال هذا الرد إلى الفريق؟",
+   "en": "Send this answer to the team?",
+   "fr": "Envoyer cette réponse à l'équipe ?"
+  },
+  "Send this consultation request?": {
+   "ar": "إرسال طلب الاستشارة هذا؟",
+   "en": "Send this consultation request?",
+   "fr": "Envoyer cette demande d'avis ?"
+  },
+  "Specialty": {
+   "ar": "التخصص",
+   "en": "Specialty",
+   "fr": "Spécialité"
+  },
+  "Still open": {
+   "ar": "المفتوحة",
+   "en": "Still open",
+   "fr": "En cours"
+  },
+  "The answer is too long": {
+   "ar": "الرد طويل جداً",
+   "en": "The answer is too long",
+   "fr": "La réponse est trop longue"
+  },
+  "The problem and what you want the consultant to answer": {
+   "ar": "المشكلة وما تريد أن يجيب عنه الاستشاري",
+   "en": "The problem and what you want the consultant to answer",
+   "fr": "Le problème et la question posée au consultant"
+  },
+  "The question is too long": {
+   "ar": "السؤال طويل جداً",
+   "en": "The question is too long",
+   "fr": "La question est trop longue"
+  },
+  "This consultation is already accepted or closed": {
+   "ar": "هذه الاستشارة مقبولة أو مغلقة بالفعل",
+   "en": "This consultation is already accepted or closed",
+   "fr": "Cette demande est déjà acceptée ou close"
+  },
+  "This consultation is closed": {
+   "ar": "هذه الاستشارة مغلقة",
+   "en": "This consultation is closed",
+   "fr": "Cette demande est close"
+  },
+  "This doctor is not in the chosen specialty": {
+   "ar": "هذا الطبيب ليس من التخصص المختار",
+   "en": "This doctor is not in the chosen specialty",
+   "fr": "Ce médecin n'appartient pas à la spécialité choisie"
+  },
+  "This specialty already has an open request for the patient": {
+   "ar": "يوجد طلب مفتوح لهذا التخصص للمريض بالفعل",
+   "en": "This specialty already has an open request for the patient",
+   "fr": "Une demande est déjà ouverte auprès de cette spécialité pour ce patient"
+  },
+  "What the team should do": {
+   "ar": "ما يجب أن يفعله الفريق",
+   "en": "What the team should do",
+   "fr": "Ce que l'équipe doit faire"
+  },
+  "What you found on examination and in the results": {
+   "ar": "ما وجدته في الفحص والنتائج",
+   "en": "What you found on examination and in the results",
+   "fr": "Ce que vous avez constaté à l'examen et dans les résultats"
+  },
+  "Why it is cancelled": {
+   "ar": "سبب الإلغاء",
+   "en": "Why it is cancelled",
+   "fr": "Motif de l'annulation"
+  },
+  "Will keep following": {
+   "ar": "سيتابع المريض",
+   "en": "Will keep following",
+   "fr": "Continue le suivi"
+  },
+  "Write the question for the consultant": {
+   "ar": "اكتب السؤال للاستشاري",
+   "en": "Write the question for the consultant",
+   "fr": "Rédigez la question pour le consultant"
+  },
+  "Write the recommendations": {
+   "ar": "اكتب التوصيات",
+   "en": "Write the recommendations",
+   "fr": "Rédigez les recommandations"
+  },
+  "crs:Accepted": {
+   "ar": "قيد المتابعة",
+   "en": "Accepted",
+   "fr": "Acceptée"
+  },
+  "crs:Answered": {
+   "ar": "تم الرد",
+   "en": "Answered",
+   "fr": "Répondue"
+  },
+  "crs:Cancelled": {
+   "ar": "ملغاة",
+   "en": "Cancelled",
+   "fr": "Annulée"
+  },
+  "crs:Requested": {
+   "ar": "بانتظار القبول",
+   "en": "Waiting",
+   "fr": "En attente"
+  },
+  "cru:Emergency": {
+   "ar": "طارئة",
+   "en": "Emergency",
+   "fr": "Urgence vitale"
+  },
+  "cru:Routine": {
+   "ar": "عادية",
+   "en": "Routine",
+   "fr": "Routine"
+  },
+  "cru:Urgent": {
+   "ar": "عاجلة",
+   "en": "Urgent",
+   "fr": "Urgent"
+  },
+  "cruw:Emergency": {
+   "ar": "خلال ساعة",
+   "en": "within 1 hour",
+   "fr": "sous 1 heure"
+  },
+  "cruw:Routine": {
+   "ar": "خلال 24 ساعة",
+   "en": "within 24 hours",
+   "fr": "sous 24 heures"
+  },
+  "cruw:Urgent": {
+   "ar": "خلال 4 ساعات",
+   "en": "within 4 hours",
+   "fr": "sous 4 heures"
+  }
+ }
+}

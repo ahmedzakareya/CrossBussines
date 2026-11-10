@@ -1,0 +1,25 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model IReadOnlyList<HospitalChartRow>
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@{ bool canSign = ViewBag.CanSign == true; }
+@foreach (var r in Model)
+{
+    var who = DisplayName.Of(r.Name, r.NameEn);
+    <tr>
+        <td><a href="@Url.Action("Patient", new { id = r.PatientId })" class="fw-bold text-gray-900 text-hover-primary">@who</a><div class="text-muted fs-8"><bdi class="hp-num">@r.Mrn</bdi></div></td>
+        <td class="text-nowrap"><span class="hp-num">@HospitalNursingService.UtcToWard(r.DischargedAt).ToString("yyyy-MM-dd")</span>
+            <div class="fs-8 @(r.Delinquent ? "text-danger fw-bold" : "text-muted")">@T["{0} days ago", r.DaysSince]</div></td>
+        <td class="fs-8">@(r.Attending ?? "—")</td>
+        <td>
+            @if (r.Deficiencies.Count == 0) {<span class="text-success fs-8"><i class="ki-outline ki-check fs-7 text-success"></i> @T["Nothing missing"]</span>}
+            else {<div class="d-flex flex-wrap gap-1">@foreach (var d in r.Deficiencies) {<span class="badge badge-light-primary fs-9" title="@T["owner:" + HospitalChartDeficiency.OwnerOf(d)]">@T["chd:" + d] <span class="text-muted ms-1">· @T["owner:" + HospitalChartDeficiency.OwnerOf(d)]</span></span>}</div>}
+        </td>
+        <td>@if (r.Review != null) {<span class="badge badge-light-success">@T["Signed"]</span><div class="fs-9 hp-num text-muted">@HospitalNursingService.UtcToWard(r.Review.ReviewedAt).ToString("yyyy-MM-dd")</div>}
+            else if (r.Delinquent) {<span class="badge badge-danger">@T["Delinquent"]</span>}
+            else if (r.Deficiencies.Count > 0) {<span class="badge badge-light-primary">@T["Incomplete"]</span>}
+            else {<span class="badge badge-light-info">@T["Waiting for sign-off"]</span>}</td>
+        <td class="text-end">@if (canSign && r.Review == null && r.Deficiencies.Count == 0) {<button type="button" class="btn btn-sm btn-primary text-nowrap" data-sign-chart="@r.AdmissionId" data-what="@who">@T["Sign complete"]</button>}</td>
+    </tr>
+}

@@ -1,0 +1,740 @@
+{
+ "unit": "H87 — haemodialysis",
+ "strings": {
+  "A day that has not come cannot be missed": {
+   "ar": "لا يمكن تسجيل غياب عن يوم لم يأتِ بعد",
+   "en": "A day that has not come cannot be missed",
+   "fr": "Un jour qui n'est pas encore venu ne peut pas être manqué"
+  },
+  "A missed session can be written back a week at most": {
+   "ar": "يمكن تسجيل الغياب بأثر رجعي لأسبوع واحد فقط",
+   "en": "A missed session can be written back a week at most",
+   "fr": "Une séance manquée peut être saisie au plus une semaine après"
+  },
+  "A session lasts between 1 and 8 hours": {
+   "ar": "مدة الجلسة بين ساعة و8 ساعات",
+   "en": "A session lasts between 1 and 8 hours",
+   "fr": "Une séance dure entre 1 et 8 heures"
+  },
+  "A session's start can be written back 12 hours at most": {
+   "ar": "يمكن تسجيل بداية الجلسة بأثر رجعي 12 ساعة فقط",
+   "en": "A session's start can be written back 12 hours at most",
+   "fr": "Le début d'une séance peut être saisi au plus 12 heures après"
+  },
+  "Adequacy": {
+   "ar": "كفاءة الغسيل",
+   "en": "Adequacy",
+   "fr": "Adéquation"
+  },
+  "After": {
+   "ar": "بعد الجلسة",
+   "en": "After",
+   "fr": "Après"
+  },
+  "All shifts": {
+   "ar": "كل الورديات",
+   "en": "All shifts",
+   "fr": "Toutes les équipes"
+  },
+  "Anticoagulation": {
+   "ar": "مضاد التجلط",
+   "en": "Anticoagulation",
+   "fr": "Anticoagulation"
+  },
+  "Before": {
+   "ar": "قبل الجلسة",
+   "en": "Before",
+   "fr": "Avant"
+  },
+  "Blood / dialysate flow": {
+   "ar": "تدفق الدم / المحلول",
+   "en": "Blood / dialysate flow",
+   "fr": "Débit sang / dialysat"
+  },
+  "Blood flow": {
+   "ar": "تدفق الدم",
+   "en": "Blood flow",
+   "fr": "Débit sanguin"
+  },
+  "Blood flow (ml/min)": {
+   "ar": "تدفق الدم (مل/دقيقة)",
+   "en": "Blood flow (ml/min)",
+   "fr": "Débit sanguin (ml/min)"
+  },
+  "Blood pressure": {
+   "ar": "ضغط الدم",
+   "en": "Blood pressure",
+   "fr": "Pression artérielle"
+  },
+  "Both files have a dialysis session on the same day: the unit must reconcile them first": {
+   "ar": "الملفان فيهما جلسة غسيل في نفس اليوم: على الوحدة توحيدهما أولًا",
+   "en": "Both files have a dialysis session on the same day: the unit must reconcile them first",
+   "fr": "Les deux dossiers ont une séance de dialyse le même jour : l'unité doit d'abord les réconcilier"
+  },
+  "Both files have an active dialysis plan: stop one first": {
+   "ar": "الملفان لكل منهما خطة غسيل نشطة: أوقف إحداهما أولًا",
+   "en": "Both files have an active dialysis plan: stop one first",
+   "fr": "Les deux dossiers ont un plan de dialyse actif : arrêtez-en un d'abord"
+  },
+  "Change the dialysis plan": {
+   "ar": "تعديل خطة الغسيل",
+   "en": "Change the dialysis plan",
+   "fr": "Modifier le plan de dialyse"
+  },
+  "Change the plan": {
+   "ar": "تعديل الخطة",
+   "en": "Change the plan",
+   "fr": "Modifier le plan"
+  },
+  "Choose the complications from the list": {
+   "ar": "اختر المضاعفات من القائمة",
+   "en": "Choose the complications from the list",
+   "fr": "Choisissez les complications dans la liste"
+  },
+  "Choose the dialysis days": {
+   "ar": "اختر أيام الغسيل",
+   "en": "Choose the dialysis days",
+   "fr": "Choisissez les jours de dialyse"
+  },
+  "Choose the shift": {
+   "ar": "اختر الوردية",
+   "en": "Choose the shift",
+   "fr": "Choisissez l'équipe"
+  },
+  "Choose the vascular access": {
+   "ar": "اختر الوصلة الوعائية",
+   "en": "Choose the vascular access",
+   "fr": "Choisissez l'abord vasculaire"
+  },
+  "Complications": {
+   "ar": "المضاعفات",
+   "en": "Complications",
+   "fr": "Complications"
+  },
+  "Dialysate flow (ml/min)": {
+   "ar": "تدفق المحلول (مل/دقيقة)",
+   "en": "Dialysate flow (ml/min)",
+   "fr": "Débit du dialysat (ml/min)"
+  },
+  "Dialyser": {
+   "ar": "الفلتر",
+   "en": "Dialyser",
+   "fr": "Dialyseur"
+  },
+  "Dialysis": {
+   "ar": "الغسيل الكلوي",
+   "en": "Dialysis",
+   "fr": "Dialyse"
+  },
+  "Dialysis days": {
+   "ar": "أيام الغسيل",
+   "en": "Dialysis days",
+   "fr": "Jours de dialyse"
+  },
+  "Dialysis is not installed yet (hospital_h87_dialysis.sql).": {
+   "ar": "الغسيل الكلوي غير مثبت بعد (hospital_h87_dialysis.sql).",
+   "en": "Dialysis is not installed yet (hospital_h87_dialysis.sql).",
+   "fr": "La dialyse n'est pas encore installée (hospital_h87_dialysis.sql)."
+  },
+  "Dialysis patients": {
+   "ar": "مرضى الغسيل",
+   "en": "Dialysis patients",
+   "fr": "Patients dialysés"
+  },
+  "Dialysis session": {
+   "ar": "جلسة غسيل",
+   "en": "Dialysis session",
+   "fr": "Séance de dialyse"
+  },
+  "Dialysis unit": {
+   "ar": "وحدة الغسيل الكلوي",
+   "en": "Dialysis unit",
+   "fr": "Unité de dialyse"
+  },
+  "Diastolic": {
+   "ar": "الانبساطي",
+   "en": "Diastolic",
+   "fr": "Diastolique"
+  },
+  "Draw the urea before and after to measure the dose (usually once a month).": {
+   "ar": "اسحب اليوريا قبل الجلسة وبعدها لقياس جرعة الغسيل (عادةً مرة في الشهر).",
+   "en": "Draw the urea before and after to measure the dose (usually once a month).",
+   "fr": "Prélevez l'urée avant et après pour mesurer la dose (en général une fois par mois)."
+  },
+  "Dry weight": {
+   "ar": "الوزن الجاف",
+   "en": "Dry weight",
+   "fr": "Poids sec"
+  },
+  "Dry weight (kg)": {
+   "ar": "الوزن الجاف (كجم)",
+   "en": "Dry weight (kg)",
+   "fr": "Poids sec (kg)"
+  },
+  "Ended": {
+   "ar": "انتهت",
+   "en": "Ended",
+   "fr": "Fin"
+  },
+  "Ended at": {
+   "ar": "وقت الانتهاء",
+   "en": "Ended at",
+   "fr": "Terminée à"
+  },
+  "Finish the running session first": {
+   "ar": "أنهِ الجلسة الجارية أولًا",
+   "en": "Finish the running session first",
+   "fr": "Terminez d'abord la séance en cours"
+  },
+  "Finish the session": {
+   "ar": "إنهاء الجلسة",
+   "en": "Finish the session",
+   "fr": "Terminer la séance"
+  },
+  "Finish this session? It cannot be reopened.": {
+   "ar": "إنهاء هذه الجلسة؟ لا يمكن إعادة فتحها.",
+   "en": "Finish this session? It cannot be reopened.",
+   "fr": "Terminer cette séance ? Elle ne pourra pas être rouverte."
+  },
+  "Gain": {
+   "ar": "الزيادة",
+   "en": "Gain",
+   "fr": "Prise"
+  },
+  "Gain since the last session": {
+   "ar": "الزيادة منذ آخر جلسة",
+   "en": "Gain since the last session",
+   "fr": "Prise depuis la dernière séance"
+  },
+  "Haemodialysis": {
+   "ar": "الغسيل الدموي",
+   "en": "Haemodialysis",
+   "fr": "Hémodialyse"
+  },
+  "Heparin 2000 units, then 1000 an hour…": {
+   "ar": "هيبارين 2000 وحدة، ثم 1000 كل ساعة…",
+   "en": "Heparin 2000 units, then 1000 an hour…",
+   "fr": "Héparine 2000 unités, puis 1000 par heure…"
+  },
+  "Kt/V, mean of the last three": {
+   "ar": "Kt/V، متوسط آخر ثلاث",
+   "en": "Kt/V, mean of the last three",
+   "fr": "Kt/V, moyenne des trois derniers"
+  },
+  "Last Kt/V": {
+   "ar": "آخر Kt/V",
+   "en": "Last Kt/V",
+   "fr": "Dernier Kt/V"
+  },
+  "Last session": {
+   "ar": "آخر جلسة",
+   "en": "Last session",
+   "fr": "Dernière séance"
+  },
+  "Lowest pressure": {
+   "ar": "أقل ضغط",
+   "en": "Lowest pressure",
+   "fr": "Pression la plus basse"
+  },
+  "Mark missed": {
+   "ar": "تسجيل غياب",
+   "en": "Mark missed",
+   "fr": "Marquer manquée"
+  },
+  "Mark the day missed": {
+   "ar": "تسجيل غياب عن الجلسة",
+   "en": "Mark the day missed",
+   "fr": "Marquer la séance manquée"
+  },
+  "Missed in 30 days": {
+   "ar": "غياب في 30 يومًا",
+   "en": "Missed in 30 days",
+   "fr": "Manquées en 30 jours"
+  },
+  "Mon · Wed · Fri": {
+   "ar": "اثنين · أربعاء · جمعة",
+   "en": "Mon · Wed · Fri",
+   "fr": "Lun · Mer · Ven"
+  },
+  "New dialysis plan": {
+   "ar": "خطة غسيل جديدة",
+   "en": "New dialysis plan",
+   "fr": "Nouveau plan de dialyse"
+  },
+  "No dialysis plan yet.": {
+   "ar": "لا توجد خطة غسيل بعد.",
+   "en": "No dialysis plan yet.",
+   "fr": "Pas encore de plan de dialyse."
+  },
+  "No reading yet": {
+   "ar": "لا توجد قراءة بعد",
+   "en": "No reading yet",
+   "fr": "Pas encore de mesure"
+  },
+  "No reading yet.": {
+   "ar": "لا توجد قراءات بعد.",
+   "en": "No reading yet.",
+   "fr": "Pas encore de mesure."
+  },
+  "No session yet.": {
+   "ar": "لا توجد جلسات بعد.",
+   "en": "No session yet.",
+   "fr": "Pas encore de séance."
+  },
+  "Nobody is on a dialysis plan.": {
+   "ar": "لا يوجد مرضى على خطة غسيل.",
+   "en": "Nobody is on a dialysis plan.",
+   "fr": "Personne n'a de plan de dialyse."
+  },
+  "Nobody is scheduled on this day.": {
+   "ar": "لا يوجد مرضى مجدولون في هذا اليوم.",
+   "en": "Nobody is scheduled on this day.",
+   "fr": "Personne n'est prévu ce jour-là."
+  },
+  "On a dialysis plan": {
+   "ar": "على خطة غسيل",
+   "en": "On a dialysis plan",
+   "fr": "Sous plan de dialyse"
+  },
+  "On the machine": {
+   "ar": "على الجهاز",
+   "en": "On the machine",
+   "fr": "En séance"
+  },
+  "Readings": {
+   "ar": "القراءات",
+   "en": "Readings",
+   "fr": "Mesures"
+  },
+  "Record a reading": {
+   "ar": "تسجيل قراءة",
+   "en": "Record a reading",
+   "fr": "Enregistrer une mesure"
+  },
+  "Sat · Mon · Wed": {
+   "ar": "سبت · اثنين · أربعاء",
+   "en": "Sat · Mon · Wed",
+   "fr": "Sam · Lun · Mer"
+  },
+  "Save this dialysis plan?": {
+   "ar": "حفظ خطة الغسيل؟",
+   "en": "Save this dialysis plan?",
+   "fr": "Enregistrer ce plan de dialyse ?"
+  },
+  "Save this reading?": {
+   "ar": "حفظ هذه القراءة؟",
+   "en": "Save this reading?",
+   "fr": "Enregistrer cette mesure ?"
+  },
+  "Search by name, file, phone or station…": {
+   "ar": "ابحث بالاسم أو رقم الملف أو الهاتف أو المحطة…",
+   "en": "Search by name, file, phone or station…",
+   "fr": "Rechercher par nom, dossier, téléphone ou poste…"
+  },
+  "Sessions": {
+   "ar": "الجلسات",
+   "en": "Sessions",
+   "fr": "Séances"
+  },
+  "Sessions in 30 days": {
+   "ar": "جلسات في 30 يومًا",
+   "en": "Sessions in 30 days",
+   "fr": "Séances en 30 jours"
+  },
+  "Shift {0}": {
+   "ar": "الوردية {0}",
+   "en": "Shift {0}",
+   "fr": "Équipe {0}"
+  },
+  "Start a session": {
+   "ar": "بدء جلسة",
+   "en": "Start a session",
+   "fr": "Démarrer une séance"
+  },
+  "Start dialysis": {
+   "ar": "ابدأ الجلسة",
+   "en": "Start dialysis",
+   "fr": "Démarrer"
+  },
+  "Start the session": {
+   "ar": "بدء الجلسة",
+   "en": "Start the session",
+   "fr": "Démarrer la séance"
+  },
+  "Start this patient's session?": {
+   "ar": "بدء جلسة الغسيل لهذا المريض؟",
+   "en": "Start this patient's session?",
+   "fr": "Démarrer la séance de ce patient ?"
+  },
+  "Started at": {
+   "ar": "وقت البدء",
+   "en": "Started at",
+   "fr": "Débutée à"
+  },
+  "Station": {
+   "ar": "المحطة",
+   "en": "Station",
+   "fr": "Poste"
+  },
+  "Stop the plan": {
+   "ar": "إيقاف الخطة",
+   "en": "Stop the plan",
+   "fr": "Arrêter le plan"
+  },
+  "Stop this patient's dialysis plan? The sessions stay on the file.": {
+   "ar": "إيقاف خطة الغسيل لهذا المريض؟ الجلسات تبقى في الملف.",
+   "en": "Stop this patient's dialysis plan? The sessions stay on the file.",
+   "fr": "Arrêter le plan de dialyse de ce patient ? Les séances restent au dossier."
+  },
+  "Sun · Tue · Thu": {
+   "ar": "أحد · ثلاثاء · خميس",
+   "en": "Sun · Tue · Thu",
+   "fr": "Dim · Mar · Jeu"
+  },
+  "Systolic": {
+   "ar": "الانقباضي",
+   "en": "Systolic",
+   "fr": "Systolique"
+  },
+  "Systolic pressure on the machine": {
+   "ar": "الضغط الانقباضي أثناء الجلسة",
+   "en": "Systolic pressure on the machine",
+   "fr": "Pression systolique en séance"
+  },
+  "Targets: Kt/V at least 1.2, URR at least 65 %, ultrafiltration under 13 ml/kg/h, a gain under 4 % of the dry weight.": {
+   "ar": "الأهداف: Kt/V لا يقل عن 1.2، وURR لا يقل عن 65٪، وسحب السوائل أقل من 13 مل/كجم/ساعة، والزيادة أقل من 4٪ من الوزن الجاف.",
+   "en": "Targets: Kt/V at least 1.2, URR at least 65 %, ultrafiltration under 13 ml/kg/h, a gain under 4 % of the dry weight.",
+   "fr": "Cibles : Kt/V d'au moins 1,2, URR d'au moins 65 %, ultrafiltration sous 13 ml/kg/h, prise sous 4 % du poids sec."
+  },
+  "The blood flow is between 0 and 600 ml/min": {
+   "ar": "تدفق الدم بين 0 و600 مل/دقيقة",
+   "en": "The blood flow is between 0 and 600 ml/min",
+   "fr": "Le débit sanguin est entre 0 et 600 ml/min"
+  },
+  "The blood flow is between 100 and 600 ml/min": {
+   "ar": "تدفق الدم بين 100 و600 مل/دقيقة",
+   "en": "The blood flow is between 100 and 600 ml/min",
+   "fr": "Le débit sanguin est entre 100 et 600 ml/min"
+  },
+  "The day's sessions": {
+   "ar": "جلسات اليوم",
+   "en": "The day's sessions",
+   "fr": "Séances du jour"
+  },
+  "The dialysate flow is between 300 and 1000 ml/min": {
+   "ar": "تدفق المحلول بين 300 و1000 مل/دقيقة",
+   "en": "The dialysate flow is between 300 and 1000 ml/min",
+   "fr": "Le débit du dialysat est entre 300 et 1000 ml/min"
+  },
+  "The dry weight is between 20 and 250 kg": {
+   "ar": "الوزن الجاف بين 20 و250 كجم",
+   "en": "The dry weight is between 20 and 250 kg",
+   "fr": "Le poids sec est entre 20 et 250 kg"
+  },
+  "The end is before the start": {
+   "ar": "وقت الانتهاء قبل البداية",
+   "en": "The end is before the start",
+   "fr": "La fin est avant le début"
+  },
+  "The patient already had a session that day": {
+   "ar": "للمريض جلسة مسجلة في هذا اليوم",
+   "en": "The patient already had a session that day",
+   "fr": "Le patient a déjà une séance ce jour-là"
+  },
+  "The patient is not scheduled on that day": {
+   "ar": "المريض غير مجدول في هذا اليوم",
+   "en": "The patient is not scheduled on that day",
+   "fr": "Le patient n'est pas prévu ce jour-là"
+  },
+  "The patient's sessions": {
+   "ar": "جلسات المريض",
+   "en": "The patient's sessions",
+   "fr": "Séances du patient"
+  },
+  "The plan is stopped": {
+   "ar": "الخطة موقوفة",
+   "en": "The plan is stopped",
+   "fr": "Le plan est arrêté"
+  },
+  "The pulse is not plausible": {
+   "ar": "قيمة النبض غير منطقية",
+   "en": "The pulse is not plausible",
+   "fr": "Le pouls n'est pas plausible"
+  },
+  "The session is on the machine.": {
+   "ar": "الجلسة جارية على الجهاز.",
+   "en": "The session is on the machine.",
+   "fr": "La séance est en cours."
+  },
+  "The time is before the session started": {
+   "ar": "الوقت قبل بداية الجلسة",
+   "en": "The time is before the session started",
+   "fr": "L'heure est avant le début de la séance"
+  },
+  "The urea after must be below the urea before": {
+   "ar": "يجب أن تكون اليوريا بعد الجلسة أقل منها قبلها",
+   "en": "The urea after must be below the urea before",
+   "fr": "L'urée après doit être inférieure à l'urée avant"
+  },
+  "The venous pressure is not plausible": {
+   "ar": "قيمة الضغط الوريدي غير منطقية",
+   "en": "The venous pressure is not plausible",
+   "fr": "La pression veineuse n'est pas plausible"
+  },
+  "The volume removed is between 0 and 6000 ml": {
+   "ar": "حجم السوائل المسحوبة بين 0 و6000 مل",
+   "en": "The volume removed is between 0 and 6000 ml",
+   "fr": "Le volume retiré est entre 0 et 6000 ml"
+  },
+  "The volume to remove is between 0 and 6000 ml": {
+   "ar": "حجم السوائل المطلوب سحبها بين 0 و6000 مل",
+   "en": "The volume to remove is between 0 and 6000 ml",
+   "fr": "Le volume à retirer est entre 0 et 6000 ml"
+  },
+  "The weight after is more than a kilo above the weight before: check it": {
+   "ar": "الوزن بعد الجلسة أعلى من الوزن قبلها بأكثر من كيلو: راجعه",
+   "en": "The weight after is more than a kilo above the weight before: check it",
+   "fr": "Le poids après dépasse le poids avant de plus d'un kilo : vérifiez-le"
+  },
+  "The weight lost": {
+   "ar": "الوزن المفقود",
+   "en": "The weight lost",
+   "fr": "Le poids perdu"
+  },
+  "This dialysis plan is stopped": {
+   "ar": "خطة الغسيل هذه موقوفة",
+   "en": "This dialysis plan is stopped",
+   "fr": "Ce plan de dialyse est arrêté"
+  },
+  "This patient already has an active dialysis plan": {
+   "ar": "لهذا المريض خطة غسيل نشطة بالفعل",
+   "en": "This patient already has an active dialysis plan",
+   "fr": "Ce patient a déjà un plan de dialyse actif"
+  },
+  "This session is not running": {
+   "ar": "هذه الجلسة ليست جارية",
+   "en": "This session is not running",
+   "fr": "Cette séance n'est pas en cours"
+  },
+  "UF": {
+   "ar": "السحب",
+   "en": "UF",
+   "fr": "UF"
+  },
+  "UF so far": {
+   "ar": "المسحوب حتى الآن",
+   "en": "UF so far",
+   "fr": "UF jusqu'ici"
+  },
+  "UF so far (ml)": {
+   "ar": "المسحوب حتى الآن (مل)",
+   "en": "UF so far (ml)",
+   "fr": "UF jusqu'ici (ml)"
+  },
+  "Under 90 is intradialytic hypotension; so is a fall of 20 from the pressure before with cramps, nausea, headache or chest pain.": {
+   "ar": "أقل من 90 يعني هبوط ضغط أثناء الغسيل؛ وكذلك نزول 20 عن ضغط ما قبل الجلسة مع تقلصات أو غثيان أو صداع أو ألم في الصدر.",
+   "en": "Under 90 is intradialytic hypotension; so is a fall of 20 from the pressure before with cramps, nausea, headache or chest pain.",
+   "fr": "Sous 90, c'est une hypotension per-dialytique ; de même une chute de 20 par rapport à avant, avec crampes, nausées, céphalée ou douleur thoracique."
+  },
+  "Urea after": {
+   "ar": "اليوريا بعد",
+   "en": "Urea after",
+   "fr": "Urée après"
+  },
+  "Urea before": {
+   "ar": "اليوريا قبل",
+   "en": "Urea before",
+   "fr": "Urée avant"
+  },
+  "Urea {0} → {1}": {
+   "ar": "اليوريا {0} ← {1}",
+   "en": "Urea {0} → {1}",
+   "fr": "Urée {0} → {1}"
+  },
+  "Vascular access": {
+   "ar": "الوصلة الوعائية",
+   "en": "Vascular access",
+   "fr": "Abord vasculaire"
+  },
+  "Venous pressure": {
+   "ar": "الضغط الوريدي",
+   "en": "Venous pressure",
+   "fr": "Pression veineuse"
+  },
+  "Volume removed": {
+   "ar": "السوائل المسحوبة",
+   "en": "Volume removed",
+   "fr": "Volume retiré"
+  },
+  "Volume removed (ml)": {
+   "ar": "السوائل المسحوبة (مل)",
+   "en": "Volume removed (ml)",
+   "fr": "Volume retiré (ml)"
+  },
+  "Volume to remove": {
+   "ar": "السوائل المطلوب سحبها",
+   "en": "Volume to remove",
+   "fr": "Volume à retirer"
+  },
+  "Volume to remove (ml)": {
+   "ar": "السوائل المطلوب سحبها (مل)",
+   "en": "Volume to remove (ml)",
+   "fr": "Volume à retirer (ml)"
+  },
+  "Weigh the patient after the session": {
+   "ar": "سجّل وزن المريض بعد الجلسة",
+   "en": "Weigh the patient after the session",
+   "fr": "Pesez le patient après la séance"
+  },
+  "Weigh the patient before the session": {
+   "ar": "سجّل وزن المريض قبل الجلسة",
+   "en": "Weigh the patient before the session",
+   "fr": "Pesez le patient avant la séance"
+  },
+  "Weight above the dry weight": {
+   "ar": "الزيادة فوق الوزن الجاف",
+   "en": "Weight above the dry weight",
+   "fr": "Poids au-dessus du poids sec"
+  },
+  "Weight after (kg)": {
+   "ar": "الوزن بعد (كجم)",
+   "en": "Weight after (kg)",
+   "fr": "Poids après (kg)"
+  },
+  "Weight before (kg)": {
+   "ar": "الوزن قبل (كجم)",
+   "en": "Weight before (kg)",
+   "fr": "Poids avant (kg)"
+  },
+  "Why was the session missed?": {
+   "ar": "لماذا غاب المريض عن الجلسة؟",
+   "en": "Why was the session missed?",
+   "fr": "Pourquoi la séance a-t-elle été manquée ?"
+  },
+  "Write both urea values, before and after": {
+   "ar": "اكتب قيمتي اليوريا قبل الجلسة وبعدها",
+   "en": "Write both urea values, before and after",
+   "fr": "Saisissez les deux urées, avant et après"
+  },
+  "Write why the session was missed": {
+   "ar": "اكتب سبب الغياب",
+   "en": "Write why the session was missed",
+   "fr": "Indiquez pourquoi la séance a été manquée"
+  },
+  "dxa:AVF": {
+   "ar": "ناسور شرياني وريدي",
+   "en": "Fistula",
+   "fr": "Fistule"
+  },
+  "dxa:AVG": {
+   "ar": "وصلة صناعية",
+   "en": "Graft",
+   "fr": "Pontage"
+  },
+  "dxa:CVC": {
+   "ar": "قسطرة وريدية",
+   "en": "Catheter",
+   "fr": "Cathéter"
+  },
+  "dxc:Access": {
+   "ar": "مشكلة في الوصلة",
+   "en": "Access problem",
+   "fr": "Problème d'abord"
+  },
+  "dxc:ChestPain": {
+   "ar": "ألم في الصدر",
+   "en": "Chest pain",
+   "fr": "Douleur thoracique"
+  },
+  "dxc:Clotting": {
+   "ar": "تجلط الدائرة",
+   "en": "Circuit clotting",
+   "fr": "Coagulation du circuit"
+  },
+  "dxc:Cramps": {
+   "ar": "تقلصات عضلية",
+   "en": "Cramps",
+   "fr": "Crampes"
+  },
+  "dxc:Fever": {
+   "ar": "حرارة",
+   "en": "Fever",
+   "fr": "Fièvre"
+  },
+  "dxc:Headache": {
+   "ar": "صداع",
+   "en": "Headache",
+   "fr": "Céphalée"
+  },
+  "dxc:Nausea": {
+   "ar": "غثيان",
+   "en": "Nausea",
+   "fr": "Nausées"
+  },
+  "dxs:Done": {
+   "ar": "انتهت",
+   "en": "Done",
+   "fr": "Terminée"
+  },
+  "dxs:Due": {
+   "ar": "منتظر",
+   "en": "Due",
+   "fr": "Attendu"
+  },
+  "dxs:Missed": {
+   "ar": "غائب",
+   "en": "Missed",
+   "fr": "Manquée"
+  },
+  "dxs:Running": {
+   "ar": "على الجهاز",
+   "en": "On the machine",
+   "fr": "En séance"
+  },
+  "dxw:AboveDry": {
+   "ar": "انتهت فوق الوزن الجاف",
+   "en": "Left above the dry weight",
+   "fr": "Au-dessus du poids sec"
+  },
+  "dxw:HighGain": {
+   "ar": "زيادة وزن أكثر من 4٪",
+   "en": "Gain over 4 %",
+   "fr": "Prise > 4 %"
+  },
+  "dxw:HighUfRate": {
+   "ar": "سحب سوائل سريع",
+   "en": "Ultrafiltration too fast",
+   "fr": "Ultrafiltration trop rapide"
+  },
+  "dxw:Hypotension": {
+   "ar": "هبوط ضغط أثناء الجلسة",
+   "en": "Low pressure on the machine",
+   "fr": "Hypotension en séance"
+  },
+  "dxw:LowKtv": {
+   "ar": "Kt/V أقل من 1.2",
+   "en": "Kt/V under 1.2",
+   "fr": "Kt/V < 1,2"
+  },
+  "dxw:LowUrr": {
+   "ar": "URR أقل من 65٪",
+   "en": "URR under 65 %",
+   "fr": "URR < 65 %"
+  },
+  "dxw:Short": {
+   "ar": "جلسة أقصر من المقرر",
+   "en": "Session cut short",
+   "fr": "Séance écourtée"
+  },
+  "{0} h": {
+   "ar": "{0} س",
+   "en": "{0} h",
+   "fr": "{0} h"
+  },
+  "{0} of {1} min": {
+   "ar": "{0} من {1} دقيقة",
+   "en": "{0} of {1} min",
+   "fr": "{0} sur {1} min"
+  }
+ }
+}

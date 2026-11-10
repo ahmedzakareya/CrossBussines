@@ -115,7 +115,7 @@
                                             <div class="symbol symbol-30px symbol-circle flex-shrink-0">@if (r.Photo != null) {<img src="@r.Photo" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(r.PatientNameEn)" />} else {<span class="symbol-label fw-bold fs-9 hp-initials">@HospitalUi.Initials(r.PatientNameEn)</span>}</div>
                                             <span class="fw-bold text-gray-900 fs-7">@DisplayName.Of(r.PatientName, r.PatientNameEn)</span></a></td>
                                         <td class="fs-7">@DisplayName.Of(l.Description, l.DescriptionEn)</td>
-                                        <td class="fs-7">@(l.Part == HospitalFeePart.Payer ? DisplayName.Of(r.Payer ?? "", r.PayerEn ?? r.Payer ?? "") : T["The patient"].Value)</td>
+                                        <td class="fs-7">@(l.Part != HospitalFeePart.Patient ? DisplayName.Of(r.Payer ?? "", r.PayerEn ?? r.Payer ?? "") : T["The patient"].Value)@if (l.Part == HospitalFeePart.Recoup) {<span class="badge badge-light-danger fs-9 ms-1">@T["Recouped"]</span>}</td>
                                         <td class="text-end hp-num">@N(l.Billed)</td>
                                         <td class="text-end hp-num">@N(l.Collected)</td>
                                         <td class="text-end">@if (l.Basis == HospitalFeeBasis.Percent) {<span class="hp-num">@l.Rate.ToString("0.##", inv)%</span>} else {<span class="text-gray-600 fs-8"><span class="hp-num">@N(l.Rate)</span> @T["per unit"]</span>}</td>

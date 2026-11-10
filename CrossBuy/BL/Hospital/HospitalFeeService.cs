@@ -166,7 +166,7 @@ namespace CrossBuy.BL.Hospital
 								  join c in _db.Set<HospitalClaim>().AsNoTracking() on cl.ClaimId equals c.ID
 								  join bt in _db.Set<HospitalClaimBatch>().AsNoTracking() on c.BatchId equals bt.ID
 								  where cl.CompanyId == ctx.CompanyId && bills.Contains(c.BillId) && cl.Status == HospitalClaimLineStatus.Accepted && cl.BillLineId != null && cl.DecidedAt != null
-								  select new { BillLineId = cl.BillLineId!.Value, cl.AcceptedAmount, cl.InsurerAmount, DecidedAt = cl.DecidedAt!.Value, bt.PayerId }).ToListAsync(ct);
+								  select new { BillLineId = cl.BillLineId!.Value, cl.AcceptedAmount, cl.InsurerAmount, DecidedAt = cl.DecidedAt!.Value, bt.PayerId, cl.RecoupedAmount, cl.RecoupedAt }).ToListAsync(ct);
 
 			var lines = new List<HospitalFeeStatementLine>();
 			foreach (var billId in bills)
@@ -190,7 +190,18 @@ namespace CrossBuy.BL.Hospital
 					// the payer's part: collected when its claim line was accepted, in this month
 					foreach (var a in accepted.Where(a => a.BillLineId == l.Id && HospitalFeeRules.Period(a.DecidedAt) == period && HospitalFeeRules.PayerPartCounts(l.Insurer, v.Cover?.PayerId, a.PayerId)))
 						if (!counted.Contains((l.Id!.Value, HospitalFeePart.Payer)))
-							lines.Add(Line(ctx, l, v, HospitalFeePart.Payer, a.PayerId, a.DecidedAt, a.InsurerAmount, a.AcceptedAmount ?? a.InsurerAmount, rule, owes, dec));
+							// H82: a part not counted yet is counted net of what the payer already took back
+							lines.Add(Line(ctx, l, v, HospitalFeePart.Payer, a.PayerId, a.DecidedAt, a.InsurerAmount, HospitalRecoupRules.NetAccepted(a.AcceptedAmount ?? a.InsurerAmount, a.RecoupedAmount), rule, owes, dec));
+					// H82: the payer took back, this month, part of a line whose payer part an EARLIER statement already counted
+					foreach (var a in accepted.Where(a => a.BillLineId == l.Id && a.RecoupedAmount is decimal && a.RecoupedAt is DateTime ra && HospitalFeeRules.Period(ra) == period
+						&& HospitalFeeRules.PayerPartCounts(l.Insurer, v.Cover?.PayerId, a.PayerId)))
+						if (counted.Contains((l.Id!.Value, HospitalFeePart.Payer)) && !counted.Contains((l.Id!.Value, HospitalFeePart.Recoup)))
+							lines.Add(new HospitalFeeStatementLine
+							{
+								CompanyId = ctx.CompanyId, BillLineId = l.Id!.Value, Part = HospitalFeePart.Recoup, PatientId = v.Bill.PatientId, PayerId = a.PayerId, CollectedOn = a.RecoupedAt!.Value.Date,
+								Description = l.Description, DescriptionEn = l.DescriptionEn, Billed = 0, Collected = -a.RecoupedAmount!.Value, Basis = rule.Basis, Rate = rule.Value,
+								Share = HospitalRecoupRules.RecoupShare(rule, a.RecoupedAmount!.Value, a.AcceptedAmount ?? a.InsurerAmount, l.Quantity, owes, dec),
+							});
 				}
 			}
 

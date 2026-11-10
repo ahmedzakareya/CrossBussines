@@ -27,6 +27,8 @@ namespace CrossBuy.Models.Context.Hospital
 		public const string Rejection = "Rejection";
 		public const string Recovery = "Recovery";
 		public const string Remittance = "Remittance";
+		/// H82: the payer takes back what it accepted: Dr claim rejections / Cr payer receivable, once per line.
+		public const string Recoupment = "Recoupment";
 		public static readonly IReadOnlyList<string> All = new[] { Adjustment, Rejection, Recovery, Remittance };
 	}
 

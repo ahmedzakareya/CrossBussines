@@ -1613,6 +1613,7 @@
   <data name="A surface code bills 1 to 5 surfaces" xml:space="preserve"><value>كود الأسطح يفوتر من 1 إلى 5 أسطح</value></data>
   <data name="A tooth is charted twice" xml:space="preserve"><value>سن مسجل مرتين</value></data>
   <data name="Accept" xml:space="preserve"><value>قبول</value></data>
+  <data name="Actions" xml:space="preserve"><value>الإجراءات</value></data>
   <data name="Accept a phase with the patient's signature" xml:space="preserve"><value>قبول مرحلة بتوقيع المريض</value></data>
   <data name="Acceptance rate" xml:space="preserve"><value>نسبة القبول</value></data>
   <data name="Accepted, not done" xml:space="preserve"><value>قيمة مقبولة غير منفذة</value></data>
@@ -4499,4 +4500,1099 @@
   <data name="This stay's tests and imaging" xml:space="preserve"><value>تحاليل وأشعة هذه الإقامة</value></data>
   <data name="Work has started on this order: it can no longer be cancelled" xml:space="preserve"><value>بدأ العمل على هذا الطلب: لم يعد ممكناً إلغاؤه</value></data>
   <data name="contrast" xml:space="preserve"><value>صبغة</value></data>
+  <data name="Acquired" xml:space="preserve"><value>مصدر العدوى</value></data>
+  <data name="All hospital-acquired" xml:space="preserve"><value>كل العدوى المكتسبة في المستشفى</value></data>
+  <data name="Cases" xml:space="preserve"><value>الحالات</value></data>
+  <data name="Choose the kind of infection" xml:space="preserve"><value>اختر نوع العدوى</value></data>
+  <data name="Choose the precautions" xml:space="preserve"><value>اختر نوع الاحتياطات</value></data>
+  <data name="Community" xml:space="preserve"><value>من المجتمع</value></data>
+  <data name="Confirm this infection? It counts in the rates from now on." xml:space="preserve"><value>تأكيد هذه العدوى؟ ستُحسب في المعدلات من الآن.</value></data>
+  <data name="Confirmed hospital-acquired infections per 1,000 patient-days and per 1,000 device-days (NHSN). Utilisation is device-days over patient-days." xml:space="preserve"><value>العدوى المكتسبة في المستشفى المؤكدة لكل 1,000 يوم مريض ولكل 1,000 يوم جهاز (NHSN). نسبة الاستخدام = أيام الجهاز ÷ أيام المرضى.</value></data>
+  <data name="Date of the event" xml:space="preserve"><value>تاريخ الحدث</value></data>
+  <data name="Day {0}" xml:space="preserve"><value>اليوم {0}</value></data>
+  <data name="Device" xml:space="preserve"><value>الجهاز</value></data>
+  <data name="Device-days" xml:space="preserve"><value>أيام الجهاز</value></data>
+  <data name="Devices in place" xml:space="preserve"><value>الأجهزة المركّبة</value></data>
+  <data name="Empty means now." xml:space="preserve"><value>اتركه فارغاً ليكون الآن.</value></data>
+  <data name="End" xml:space="preserve"><value>إنهاء</value></data>
+  <data name="End these precautions?" xml:space="preserve"><value>إنهاء هذه الاحتياطات؟</value></data>
+  <data name="Fever, the specimen sent, what was seen" xml:space="preserve"><value>الحرارة، العينة المرسلة، ما لوحظ</value></data>
+  <data name="Hospital-acquired per 1,000 patient-days this month" xml:space="preserve"><value>مكتسبة في المستشفى لكل 1,000 يوم مريض هذا الشهر</value></data>
+  <data name="Infection" xml:space="preserve"><value>العدوى</value></data>
+  <data name="Infection cases" xml:space="preserve"><value>حالات العدوى</value></data>
+  <data name="Infection control" xml:space="preserve"><value>مكافحة العدوى</value></data>
+  <data name="Infection control confirms or rules it out. Whether it is hospital-acquired follows from the dates." xml:space="preserve"><value>فريق مكافحة العدوى يؤكدها أو ينفيها. وكونها مكتسبة في المستشفى يُحدَّد من التواريخ.</value></data>
+  <data name="Infection control is not installed yet (hospital_h76_infection.sql)." xml:space="preserve"><value>مكافحة العدوى غير مثبتة بعد (hospital_h76_infection.sql).</value></data>
+  <data name="Infection rates" xml:space="preserve"><value>معدلات العدوى</value></data>
+  <data name="Inserted at" xml:space="preserve"><value>وقت التركيب</value></data>
+  <data name="Isolation" xml:space="preserve"><value>العزل</value></data>
+  <data name="Isolation now" xml:space="preserve"><value>المعزولون الآن</value></data>
+  <data name="Longest first: every day a line stays in, ask whether it is still needed." xml:space="preserve"><value>الأطول أولاً: كل يوم يبقى فيه الجهاز، اسأل هل ما زال لازماً.</value></data>
+  <data name="No device was in place long enough for this kind of infection" xml:space="preserve"><value>لم يكن هناك جهاز مركّب مدة كافية لهذا النوع من العدوى</value></data>
+  <data name="No infection case yet." xml:space="preserve"><value>لا توجد حالات عدوى بعد.</value></data>
+  <data name="No invasive device is in place." xml:space="preserve"><value>لا توجد أجهزة تداخلية مركّبة.</value></data>
+  <data name="No ward" xml:space="preserve"><value>بدون جناح</value></data>
+  <data name="Nobody is in isolation." xml:space="preserve"><value>لا يوجد مريض في العزل.</value></data>
+  <data name="Nobody lay on a ward this month." xml:space="preserve"><value>لم يُنوَّم أحد في الأجنحة هذا الشهر.</value></data>
+  <data name="Notes" xml:space="preserve"><value>ملاحظات</value></data>
+  <data name="One is already in place: record its removal first" xml:space="preserve"><value>يوجد جهاز مركّب بالفعل: سجّل إزالته أولاً</value></data>
+  <data name="Organism" xml:space="preserve"><value>الميكروب</value></data>
+  <data name="Patient-days" xml:space="preserve"><value>أيام المرضى</value></data>
+  <data name="Patients in isolation" xml:space="preserve"><value>مرضى في العزل</value></data>
+  <data name="Precautions" xml:space="preserve"><value>الاحتياطات</value></data>
+  <data name="Record its removal" xml:space="preserve"><value>تسجيل إزالته</value></data>
+  <data name="Record that this device was removed now?" xml:space="preserve"><value>تسجيل إزالة هذا الجهاز الآن؟</value></data>
+  <data name="Record the device" xml:space="preserve"><value>تسجيل الجهاز</value></data>
+  <data name="Record this device?" xml:space="preserve"><value>تسجيل هذا الجهاز؟</value></data>
+  <data name="Removed" xml:space="preserve"><value>تمت الإزالة</value></data>
+  <data name="Report an infection" xml:space="preserve"><value>الإبلاغ عن عدوى</value></data>
+  <data name="Report this infection to infection control?" xml:space="preserve"><value>إبلاغ فريق مكافحة العدوى بهذه العدوى؟</value></data>
+  <data name="Right subclavian" xml:space="preserve"><value>تحت الترقوة الأيمن</value></data>
+  <data name="Rule out" xml:space="preserve"><value>نفي</value></data>
+  <data name="Rule out this infection" xml:space="preserve"><value>نفي هذه العدوى</value></data>
+  <data name="Search by case, patient, file or organism…" xml:space="preserve"><value>ابحث برقم الحالة أو المريض أو رقم الملف أو الميكروب…</value></data>
+  <data name="Site" xml:space="preserve"><value>الموضع</value></data>
+  <data name="Start isolation" xml:space="preserve"><value>بدء العزل</value></data>
+  <data name="Start isolation for this patient?" xml:space="preserve"><value>بدء عزل هذا المريض؟</value></data>
+  <data name="Started from the nursing station; ended by a doctor or infection control." xml:space="preserve"><value>يبدأ من محطة التمريض، وينهيه الطبيب أو فريق مكافحة العدوى.</value></data>
+  <data name="Suspected cases to review" xml:space="preserve"><value>حالات مشتبهة للمراجعة</value></data>
+  <data name="Suspected, awaiting the culture" xml:space="preserve"><value>مشتبه، في انتظار المزرعة</value></data>
+  <data name="The date is after the discharge" xml:space="preserve"><value>التاريخ بعد الخروج</value></data>
+  <data name="The date is before the admission" xml:space="preserve"><value>التاريخ قبل الدخول</value></data>
+  <data name="The date is in the future" xml:space="preserve"><value>التاريخ في المستقبل</value></data>
+  <data name="The device cannot come out before it went in" xml:space="preserve"><value>لا يمكن إزالة الجهاز قبل تركيبه</value></data>
+  <data name="The organism's name is too long" xml:space="preserve"><value>اسم الميكروب طويل جداً</value></data>
+  <data name="The patient is already under these precautions" xml:space="preserve"><value>المريض تحت هذه الاحتياطات بالفعل</value></data>
+  <data name="The time is before the admission" xml:space="preserve"><value>الوقت قبل الدخول</value></data>
+  <data name="The time is in the future" xml:space="preserve"><value>الوقت في المستقبل</value></data>
+  <data name="These precautions have already ended" xml:space="preserve"><value>هذه الاحتياطات انتهت بالفعل</value></data>
+  <data name="This case is already decided" xml:space="preserve"><value>تم البت في هذه الحالة بالفعل</value></data>
+  <data name="This device is already out" xml:space="preserve"><value>هذا الجهاز أُزيل بالفعل</value></data>
+  <data name="Use" xml:space="preserve"><value>الاستخدام</value></data>
+  <data name="Why it is ruled out" xml:space="preserve"><value>سبب النفي</value></data>
+  <data name="Why they end" xml:space="preserve"><value>سبب الإنهاء</value></data>
+  <data name="Write the date of the event" xml:space="preserve"><value>اكتب تاريخ الحدث</value></data>
+  <data name="Write the organism or why the patient is isolated" xml:space="preserve"><value>اكتب الميكروب أو سبب العزل</value></data>
+  <data name="Write the resistant organism" xml:space="preserve"><value>اكتب الميكروب المقاوم</value></data>
+  <data name="Write why it is ruled out" xml:space="preserve"><value>اكتب سبب النفي</value></data>
+  <data name="dev:CentralLine" xml:space="preserve"><value>قسطرة وريدية مركزية</value></data>
+  <data name="dev:UrinaryCatheter" xml:space="preserve"><value>قسطرة بولية</value></data>
+  <data name="dev:Ventilator" xml:space="preserve"><value>جهاز تنفس صناعي</value></data>
+  <data name="ick:CAUTI" xml:space="preserve"><value>عدوى المسالك المرتبطة بالقسطرة البولية (CAUTI)</value></data>
+  <data name="ick:CDI" xml:space="preserve"><value>عدوى المطثية العسيرة (C. difficile)</value></data>
+  <data name="ick:CLABSI" xml:space="preserve"><value>عدوى الدم المرتبطة بالقسطرة المركزية (CLABSI)</value></data>
+  <data name="ick:MDRO" xml:space="preserve"><value>ميكروب مقاوم للأدوية المتعددة (MDRO)</value></data>
+  <data name="ick:Other" xml:space="preserve"><value>عدوى أخرى</value></data>
+  <data name="ick:SSI" xml:space="preserve"><value>عدوى موضع الجراحة (SSI)</value></data>
+  <data name="ick:VAP" xml:space="preserve"><value>الالتهاب الرئوي المرتبط بجهاز التنفس (VAP)</value></data>
+  <data name="ics:Confirmed" xml:space="preserve"><value>مؤكدة</value></data>
+  <data name="ics:RuledOut" xml:space="preserve"><value>منفية</value></data>
+  <data name="ics:Suspected" xml:space="preserve"><value>مشتبه</value></data>
+  <data name="prec:Airborne" xml:space="preserve"><value>احتياطات الهواء</value></data>
+  <data name="prec:Contact" xml:space="preserve"><value>احتياطات التلامس</value></data>
+  <data name="prec:Droplet" xml:space="preserve"><value>احتياطات الرذاذ</value></data>
+  <data name="prec:Protective" xml:space="preserve"><value>عزل وقائي</value></data>
+  <data name="Per 1,000" xml:space="preserve"><value>لكل 1,000</value></data>
+  <data name="A doctor asks another specialty from the nursing station. A doctor of that specialty — or the one named — accepts and answers. Emergency is due in 1 hour, urgent in 4, routine in 24." xml:space="preserve"><value>يطلب الطبيب رأي تخصص آخر من محطة التمريض، فيقبله طبيب من ذلك التخصص — أو الطبيب المسمّى — ويرد عليه. الطارئة يُرد عليها خلال ساعة، والعاجلة خلال 4 ساعات، والعادية خلال 24 ساعة.</value></data>
+  <data name="Accept this consultation? The team will see that you are on it." xml:space="preserve"><value>قبول هذه الاستشارة؟ سيرى الفريق أنك تتابعها.</value></data>
+  <data name="Answer" xml:space="preserve"><value>الرد</value></data>
+  <data name="Answer due" xml:space="preserve"><value>موعد الرد</value></data>
+  <data name="Answer the consultation" xml:space="preserve"><value>الرد على الاستشارة</value></data>
+  <data name="Any doctor of the specialty" xml:space="preserve"><value>أي طبيب من التخصص</value></data>
+  <data name="Ask a specialty" xml:space="preserve"><value>طلب استشارة</value></data>
+  <data name="Ask for a consultation" xml:space="preserve"><value>طلب استشارة تخصص</value></data>
+  <data name="Asked by me" xml:space="preserve"><value>طلباتي</value></data>
+  <data name="Asked by {0}" xml:space="preserve"><value>طلبها {0}</value></data>
+  <data name="Asked of me" xml:space="preserve"><value>المطلوبة مني</value></data>
+  <data name="Cancel this consultation request" xml:space="preserve"><value>إلغاء طلب الاستشارة</value></data>
+  <data name="Choose the specialty" xml:space="preserve"><value>اختر التخصص</value></data>
+  <data name="Consultation requests are not installed yet (hospital_h77_consult_requests.sql)." xml:space="preserve"><value>طلبات الاستشارة غير مثبتة بعد (hospital_h77_consult_requests.sql).</value></data>
+  <data name="Consultations" xml:space="preserve"><value>الاستشارات</value></data>
+  <data name="I will keep following the patient" xml:space="preserve"><value>سأستمر في متابعة المريض</value></data>
+  <data name="No consultation here." xml:space="preserve"><value>لا توجد استشارات هنا.</value></data>
+  <data name="Only a doctor of the specialty asked can answer" xml:space="preserve"><value>لا يرد إلا طبيب من التخصص المطلوب</value></data>
+  <data name="Only the doctor who asked can cancel it" xml:space="preserve"><value>لا يلغيها إلا الطبيب الذي طلبها</value></data>
+  <data name="Question" xml:space="preserve"><value>السؤال</value></data>
+  <data name="Recommendations" xml:space="preserve"><value>التوصيات</value></data>
+  <data name="Search by number, patient or file…" xml:space="preserve"><value>ابحث بالرقم أو المريض أو رقم الملف…</value></data>
+  <data name="Send the answer" xml:space="preserve"><value>إرسال الرد</value></data>
+  <data name="Send this answer to the team?" xml:space="preserve"><value>إرسال هذا الرد إلى الفريق؟</value></data>
+  <data name="Send this consultation request?" xml:space="preserve"><value>إرسال طلب الاستشارة هذا؟</value></data>
+  <data name="Specialty" xml:space="preserve"><value>التخصص</value></data>
+  <data name="Still open" xml:space="preserve"><value>المفتوحة</value></data>
+  <data name="The answer is too long" xml:space="preserve"><value>الرد طويل جداً</value></data>
+  <data name="The problem and what you want the consultant to answer" xml:space="preserve"><value>المشكلة وما تريد أن يجيب عنه الاستشاري</value></data>
+  <data name="The question is too long" xml:space="preserve"><value>السؤال طويل جداً</value></data>
+  <data name="This consultation is already accepted or closed" xml:space="preserve"><value>هذه الاستشارة مقبولة أو مغلقة بالفعل</value></data>
+  <data name="This consultation is closed" xml:space="preserve"><value>هذه الاستشارة مغلقة</value></data>
+  <data name="This doctor is not in the chosen specialty" xml:space="preserve"><value>هذا الطبيب ليس من التخصص المختار</value></data>
+  <data name="This specialty already has an open request for the patient" xml:space="preserve"><value>يوجد طلب مفتوح لهذا التخصص للمريض بالفعل</value></data>
+  <data name="What the team should do" xml:space="preserve"><value>ما يجب أن يفعله الفريق</value></data>
+  <data name="What you found on examination and in the results" xml:space="preserve"><value>ما وجدته في الفحص والنتائج</value></data>
+  <data name="Why it is cancelled" xml:space="preserve"><value>سبب الإلغاء</value></data>
+  <data name="Will keep following" xml:space="preserve"><value>سيتابع المريض</value></data>
+  <data name="Write the question for the consultant" xml:space="preserve"><value>اكتب السؤال للاستشاري</value></data>
+  <data name="Write the recommendations" xml:space="preserve"><value>اكتب التوصيات</value></data>
+  <data name="crs:Accepted" xml:space="preserve"><value>قيد المتابعة</value></data>
+  <data name="crs:Answered" xml:space="preserve"><value>تم الرد</value></data>
+  <data name="crs:Cancelled" xml:space="preserve"><value>ملغاة</value></data>
+  <data name="crs:Requested" xml:space="preserve"><value>بانتظار القبول</value></data>
+  <data name="cru:Emergency" xml:space="preserve"><value>طارئة</value></data>
+  <data name="cru:Routine" xml:space="preserve"><value>عادية</value></data>
+  <data name="cru:Urgent" xml:space="preserve"><value>عاجلة</value></data>
+  <data name="cruw:Emergency" xml:space="preserve"><value>خلال ساعة</value></data>
+  <data name="cruw:Routine" xml:space="preserve"><value>خلال 24 ساعة</value></data>
+  <data name="cruw:Urgent" xml:space="preserve"><value>خلال 4 ساعات</value></data>
+  <data name="An entry older than three days cannot be added" xml:space="preserve"><value>لا يمكن إضافة قيد أقدم من ثلاثة أيام</value></data>
+  <data name="Choose what went in or came out" xml:space="preserve"><value>اختر ما دخل أو خرج</value></data>
+  <data name="Fluid balance" xml:space="preserve"><value>توازن السوائل</value></data>
+  <data name="Fluid chart" xml:space="preserve"><value>جدول السوائل</value></data>
+  <data name="Fluid day" xml:space="preserve"><value>يوم السوائل</value></data>
+  <data name="Fluid in" xml:space="preserve"><value>الداخل</value></data>
+  <data name="Fluid out" xml:space="preserve"><value>الخارج</value></data>
+  <data name="Fluids" xml:space="preserve"><value>السوائل</value></data>
+  <data name="In or out" xml:space="preserve"><value>الداخل أو الخارج</value></data>
+  <data name="Low urine output: {0} ml in the last 6 hours — under 0.5 ml/kg/h." xml:space="preserve"><value>إدرار بول منخفض: {0} مل في آخر 6 ساعات — أقل من 0.5 مل/كجم/ساعة.</value></data>
+  <data name="Net" xml:space="preserve"><value>الصافي</value></data>
+  <data name="No weight on file: low urine output is not checked." xml:space="preserve"><value>لا يوجد وزن مسجل: لا يتم فحص انخفاض إدرار البول.</value></data>
+  <data name="Note (optional) — e.g. normal saline 0.9%" xml:space="preserve"><value>ملاحظة (اختيارية) — مثل محلول ملحي 0.9%</value></data>
+  <data name="Nothing recorded in this fluid day." xml:space="preserve"><value>لا شيء مسجل في يوم السوائل هذا.</value></data>
+  <data name="Only who wrote it or a doctor can void it" xml:space="preserve"><value>لا يلغيه إلا من سجّله أو الطبيب</value></data>
+  <data name="Record this volume on the fluid chart?" xml:space="preserve"><value>تسجيل هذه الكمية في جدول السوائل؟</value></data>
+  <data name="The day after" xml:space="preserve"><value>اليوم التالي</value></data>
+  <data name="The day before" xml:space="preserve"><value>اليوم السابق</value></data>
+  <data name="The fluid chart is not installed yet (hospital_h78_fluid_balance.sql)." xml:space="preserve"><value>جدول السوائل غير مثبت بعد (hospital_h78_fluid_balance.sql).</value></data>
+  <data name="The last five days" xml:space="preserve"><value>آخر خمسة أيام</value></data>
+  <data name="The volume is between 1 and 5,000 ml" xml:space="preserve"><value>الكمية بين 1 و5,000 مل</value></data>
+  <data name="This entry is already voided" xml:space="preserve"><value>هذا القيد ملغى بالفعل</value></data>
+  <data name="Void" xml:space="preserve"><value>إلغاء القيد</value></data>
+  <data name="Void this entry" xml:space="preserve"><value>إلغاء هذا القيد</value></data>
+  <data name="Voided" xml:space="preserve"><value>ملغى</value></data>
+  <data name="Weight used: {0} kg ({1})" xml:space="preserve"><value>الوزن المستخدم: {0} كجم ({1})</value></data>
+  <data name="Why it is voided" xml:space="preserve"><value>سبب الإلغاء</value></data>
+  <data name="Write why it is voided" xml:space="preserve"><value>اكتب سبب الإلغاء</value></data>
+  <data name="fluid:Blood" xml:space="preserve"><value>دم</value></data>
+  <data name="fluid:BloodLoss" xml:space="preserve"><value>فقد دم</value></data>
+  <data name="fluid:Drain" xml:space="preserve"><value>درنقة</value></data>
+  <data name="fluid:Enteral" xml:space="preserve"><value>تغذية بالأنبوب</value></data>
+  <data name="fluid:IV" xml:space="preserve"><value>وريدي</value></data>
+  <data name="fluid:NG" xml:space="preserve"><value>أنبوب أنفي معدي</value></data>
+  <data name="fluid:Oral" xml:space="preserve"><value>فموي</value></data>
+  <data name="fluid:OtherIn" xml:space="preserve"><value>داخل آخر</value></data>
+  <data name="fluid:OtherOut" xml:space="preserve"><value>خارج آخر</value></data>
+  <data name="fluid:Stool" xml:space="preserve"><value>براز</value></data>
+  <data name="fluid:Urine" xml:space="preserve"><value>بول</value></data>
+  <data name="fluid:Vomit" xml:space="preserve"><value>قيء</value></data>
+  <data name="Add this problem to the patient's list?" xml:space="preserve"><value>إضافة هذه المشكلة إلى قائمة المريض؟</value></data>
+  <data name="Add this to the care plan?" xml:space="preserve"><value>إضافة هذا إلى خطة الرعاية؟</value></data>
+  <data name="Add to the list" xml:space="preserve"><value>إضافة إلى القائمة</value></data>
+  <data name="Add to the plan" xml:space="preserve"><value>إضافة إلى الخطة</value></data>
+  <data name="Care plan" xml:space="preserve"><value>خطة الرعاية</value></data>
+  <data name="Choose chronic or acute" xml:space="preserve"><value>اختر مزمنة أو حادة</value></data>
+  <data name="Choose met or discontinued" xml:space="preserve"><value>اختر تحقق الهدف أو أُوقفت</value></data>
+  <data name="Choose the diagnosis or write the problem" xml:space="preserve"><value>اختر التشخيص أو اكتب المشكلة</value></data>
+  <data name="Choose the nursing need" xml:space="preserve"><value>اختر الاحتياج التمريضي</value></data>
+  <data name="Choose when it is reviewed" xml:space="preserve"><value>اختر موعد المراجعة</value></data>
+  <data name="Close this plan" xml:space="preserve"><value>إغلاق هذه الخطة</value></data>
+  <data name="Diagnosis (ICD-10)" xml:space="preserve"><value>التشخيص (ICD-10)</value></data>
+  <data name="Discontinue" xml:space="preserve"><value>إيقاف</value></data>
+  <data name="Goal" xml:space="preserve"><value>الهدف</value></data>
+  <data name="Goal met" xml:space="preserve"><value>تحقق الهدف</value></data>
+  <data name="Interventions" xml:space="preserve"><value>التدخلات</value></data>
+  <data name="Mark this problem as resolved?" xml:space="preserve"><value>تسجيل هذه المشكلة كمحلولة؟</value></data>
+  <data name="Need in your words" xml:space="preserve"><value>الاحتياج بكلماتك</value></data>
+  <data name="No care plan for this stay yet." xml:space="preserve"><value>لا توجد خطة رعاية لهذا التنويم بعد.</value></data>
+  <data name="No problem on the patient's list yet." xml:space="preserve"><value>لا توجد مشكلات في قائمة المريض بعد.</value></data>
+  <data name="Nursing need" xml:space="preserve"><value>الاحتياج التمريضي</value></data>
+  <data name="Or write the problem" xml:space="preserve"><value>أو اكتب المشكلة</value></data>
+  <data name="Plan suggested" xml:space="preserve"><value>خطة مقترحة</value></data>
+  <data name="Problem" xml:space="preserve"><value>المشكلة</value></data>
+  <data name="Problem list" xml:space="preserve"><value>قائمة المشكلات</value></data>
+  <data name="Problems &amp; care plan" xml:space="preserve"><value>المشكلات وخطة الرعاية</value></data>
+  <data name="Resolved" xml:space="preserve"><value>تم حلها</value></data>
+  <data name="Review by" xml:space="preserve"><value>المراجعة قبل</value></data>
+  <data name="Review by {0}" xml:space="preserve"><value>المراجعة قبل {0}</value></data>
+  <data name="Review due" xml:space="preserve"><value>حان موعد المراجعة</value></data>
+  <data name="Review it within 30 days" xml:space="preserve"><value>راجعها خلال 30 يوماً</value></data>
+  <data name="Suggested: a {0} plan — the latest {1} is {2} ({3})." xml:space="preserve"><value>مقترح: خطة {0} — آخر تقييم {1} هو {2} ({3}).</value></data>
+  <data name="The outcome" xml:space="preserve"><value>النتيجة</value></data>
+  <data name="The problem list and care plans are not installed yet (hospital_h79_care_plans.sql)." xml:space="preserve"><value>قائمة المشكلات وخطط الرعاية غير مثبتة بعد (hospital_h79_care_plans.sql).</value></data>
+  <data name="The problem's name is too long" xml:space="preserve"><value>اسم المشكلة طويل جداً</value></data>
+  <data name="The review date has passed" xml:space="preserve"><value>موعد المراجعة فات</value></data>
+  <data name="This need already has an active plan: review or close it" xml:space="preserve"><value>يوجد خطة نشطة لهذا الاحتياج بالفعل: راجعها أو أغلقها</value></data>
+  <data name="This plan is already closed" xml:space="preserve"><value>هذه الخطة مغلقة بالفعل</value></data>
+  <data name="This problem is already on the list" xml:space="preserve"><value>هذه المشكلة موجودة في القائمة بالفعل</value></data>
+  <data name="This problem is already resolved" xml:space="preserve"><value>هذه المشكلة محلولة بالفعل</value></data>
+  <data name="Write the goal" xml:space="preserve"><value>اكتب الهدف</value></data>
+  <data name="Write the interventions" xml:space="preserve"><value>اكتب التدخلات</value></data>
+  <data name="Write the nursing need" xml:space="preserve"><value>اكتب الاحتياج التمريضي</value></data>
+  <data name="Write the outcome" xml:space="preserve"><value>اكتب النتيجة</value></data>
+  <data name="Write the plan" xml:space="preserve"><value>كتابة الخطة</value></data>
+  <data name="cpg:Falls" xml:space="preserve"><value>عدم حدوث سقوط أثناء التنويم</value></data>
+  <data name="cpg:Infection" xml:space="preserve"><value>لا علامات عدوى؛ الحرارة طبيعية</value></data>
+  <data name="cpg:Mobility" xml:space="preserve"><value>يمشي إلى الحمام بمساعدة بحلول اليوم الثالث</value></data>
+  <data name="cpg:Nutrition" xml:space="preserve"><value>يتناول نصف كل وجبة على الأقل؛ الوزن مستقر</value></data>
+  <data name="cpg:Other" xml:space="preserve"><value></value></data>
+  <data name="cpg:Pain" xml:space="preserve"><value>الألم 3/10 أو أقل أثناء الراحة</value></data>
+  <data name="cpg:PressureInjury" xml:space="preserve"><value>جلد سليم بدون قرح فراش جديدة</value></data>
+  <data name="cpi:Falls" xml:space="preserve"><value>السرير منخفض والفرامل مفعّلة؛ الجرس في متناول اليد؛ جوارب مانعة للانزلاق؛ المساعدة للحمام؛ إعادة تقييم مورس يومياً</value></data>
+  <data name="cpi:Infection" xml:space="preserve"><value>نظافة اليدين؛ عناية معقمة بالقساطر والجروح؛ قياس الحرارة كل 4 ساعات؛ الإبلاغ عن الحمى</value></data>
+  <data name="cpi:Mobility" xml:space="preserve"><value>الجلوس خارج السرير مرتين يومياً؛ المشي بمساعدة كل وردية؛ إحالة للعلاج الطبيعي</value></data>
+  <data name="cpi:Nutrition" xml:space="preserve"><value>تسجيل ما يؤكل في كل وجبة؛ الوزن مرتين أسبوعياً؛ إحالة لأخصائي التغذية إذا أقل من النصف</value></data>
+  <data name="cpi:Other" xml:space="preserve"><value></value></data>
+  <data name="cpi:Pain" xml:space="preserve"><value>تقييم الألم كل 4 ساعات؛ إعطاء المسكن حسب الوصفة وإعادة التقييم بعد ساعة؛ وضعية مريحة</value></data>
+  <data name="cpi:PressureInjury" xml:space="preserve"><value>تغيير الوضع كل ساعتين؛ مرتبة مخففة للضغط؛ الجلد نظيف وجاف؛ فحص الكعبين والعجز كل وردية؛ إعادة تقييم برادن يومياً</value></data>
+  <data name="cps:Active" xml:space="preserve"><value>نشطة</value></data>
+  <data name="cps:Discontinued" xml:space="preserve"><value>أُوقفت</value></data>
+  <data name="cps:Met" xml:space="preserve"><value>تحقق الهدف</value></data>
+  <data name="need:Falls" xml:space="preserve"><value>الوقاية من السقوط</value></data>
+  <data name="need:Infection" xml:space="preserve"><value>العدوى</value></data>
+  <data name="need:Mobility" xml:space="preserve"><value>الحركة</value></data>
+  <data name="need:Nutrition" xml:space="preserve"><value>التغذية</value></data>
+  <data name="need:Other" xml:space="preserve"><value>أخرى</value></data>
+  <data name="need:Pain" xml:space="preserve"><value>الألم</value></data>
+  <data name="need:PressureInjury" xml:space="preserve"><value>الوقاية من قرح الفراش</value></data>
+  <data name="pbs:Active" xml:space="preserve"><value>نشطة</value></data>
+  <data name="pbs:Resolved" xml:space="preserve"><value>تم حلها</value></data>
+  <data name="pk:Acute" xml:space="preserve"><value>حادة</value></data>
+  <data name="pk:Chronic" xml:space="preserve"><value>مزمنة</value></data>
+  <data name="Attending" xml:space="preserve"><value>الطبيب المعالج</value></data>
+  <data name="Chart completion" xml:space="preserve"><value>اكتمال الملف</value></data>
+  <data name="Chart completion is not installed yet (hospital_h80_chart_review.sql)." xml:space="preserve"><value>مراجعة اكتمال الملفات غير مثبتة بعد (hospital_h80_chart_review.sql).</value></data>
+  <data name="Complete, waiting for sign-off" xml:space="preserve"><value>مكتملة بانتظار الاعتماد</value></data>
+  <data name="Delinquent" xml:space="preserve"><value>متأخرة</value></data>
+  <data name="Delinquent (over 14 days)" xml:space="preserve"><value>متأخرة (أكثر من 14 يوماً)</value></data>
+  <data name="Discharged on" xml:space="preserve"><value>تاريخ الخروج</value></data>
+  <data name="Discharged stays" xml:space="preserve"><value>حالات الخروج</value></data>
+  <data name="Incomplete" xml:space="preserve"><value>غير مكتملة</value></data>
+  <data name="Incomplete charts" xml:space="preserve"><value>ملفات غير مكتملة</value></data>
+  <data name="Missing from the chart" xml:space="preserve"><value>الناقص في الملف</value></data>
+  <data name="No chart here." xml:space="preserve"><value>لا توجد ملفات هنا.</value></data>
+  <data name="Nothing missing" xml:space="preserve"><value>لا شيء ناقص</value></data>
+  <data name="Only a discharged stay's chart is reviewed" xml:space="preserve"><value>لا يُراجع إلا ملف حالة خرجت</value></data>
+  <data name="Past 30 days" xml:space="preserve"><value>آخر 30 يوماً</value></data>
+  <data name="Past 90 days" xml:space="preserve"><value>آخر 90 يوماً</value></data>
+  <data name="Past year" xml:space="preserve"><value>آخر سنة</value></data>
+  <data name="Search by patient or file…" xml:space="preserve"><value>ابحث بالمريض أو رقم الملف…</value></data>
+  <data name="Sign complete" xml:space="preserve"><value>اعتماد الاكتمال</value></data>
+  <data name="Sign this chart complete?" xml:space="preserve"><value>اعتماد هذا الملف كمكتمل؟</value></data>
+  <data name="Signed this month" xml:space="preserve"><value>معتمدة هذا الشهر</value></data>
+  <data name="The chart still has deficiencies" xml:space="preserve"><value>الملف ما زال به نواقص</value></data>
+  <data name="This chart is already signed complete" xml:space="preserve"><value>هذا الملف معتمد كمكتمل بالفعل</value></data>
+  <data name="Waiting for sign-off" xml:space="preserve"><value>بانتظار الاعتماد</value></data>
+  <data name="chd:CarePlanOpen" xml:space="preserve"><value>خطة رعاية ما زالت مفتوحة</value></data>
+  <data name="chd:ConsultOpen" xml:space="preserve"><value>استشارة ما زالت مفتوحة</value></data>
+  <data name="chd:DeviceInPlace" xml:space="preserve"><value>جهاز لم تُسجّل إزالته</value></data>
+  <data name="chd:InfectionUndecided" xml:space="preserve"><value>عدوى لم تُؤكد أو تُنفَ</value></data>
+  <data name="chd:MedRecOpen" xml:space="preserve"><value>مطابقة أدوية الخروج غير موقّعة</value></data>
+  <data name="chd:NoSummary" xml:space="preserve"><value>لا يوجد ملخص خروج</value></data>
+  <data name="chd:SummaryUnsigned" xml:space="preserve"><value>ملخص الخروج غير موقّع</value></data>
+  <data name="owner:Attending" xml:space="preserve"><value>الطبيب المعالج</value></data>
+  <data name="owner:Consultant" xml:space="preserve"><value>الاستشاري</value></data>
+  <data name="owner:InfectionControl" xml:space="preserve"><value>مكافحة العدوى</value></data>
+  <data name="owner:Ward" xml:space="preserve"><value>الجناح</value></data>
+  <data name="{0} days ago" xml:space="preserve"><value>منذ {0} يوم</value></data>
+  <data name="A percentage target is between 0 and 100" xml:space="preserve"><value>المستهدف النسبي بين 0 و100</value></data>
+  <data name="A satisfaction target is between 1 and 5" xml:space="preserve"><value>مستهدف الرضا بين 1 و5</value></data>
+  <data name="An NPS target is between -100 and 100" xml:space="preserve"><value>مستهدف NPS بين -100 و100</value></data>
+  <data name="Computed from the hospital's own records" xml:space="preserve"><value>محسوبة من سجلات المستشفى نفسها</value></data>
+  <data name="Quality indicators" xml:space="preserve"><value>مؤشرات الجودة</value></data>
+  <data name="Quality targets are not installed yet (hospital_h81_quality_targets.sql)." xml:space="preserve"><value>مستهدفات الجودة غير مثبتة بعد (hospital_h81_quality_targets.sql).</value></data>
+  <data name="Target" xml:space="preserve"><value>المستهدف</value></data>
+  <data name="Targets cannot be changed until hospital_h81_quality_targets.sql is installed; the published defaults apply." xml:space="preserve"><value>لا يمكن تعديل المستهدفات قبل تثبيت hospital_h81_quality_targets.sql؛ وتُطبَّق القيم المرجعية المنشورة.</value></data>
+  <data name="The hospital's target" xml:space="preserve"><value>مستهدف المستشفى</value></data>
+  <data name="The last six months" xml:space="preserve"><value>آخر ستة أشهر</value></data>
+  <data name="The target is out of range" xml:space="preserve"><value>المستهدف خارج النطاق</value></data>
+  <data name="Write a number" xml:space="preserve"><value>اكتب رقماً</value></data>
+  <data name="Write the target" xml:space="preserve"><value>اكتب المستهدف</value></data>
+  <data name="qd:Alos" xml:space="preserve"><value>الأيام من الدخول للخروج لحالات خروج الشهر</value></data>
+  <data name="qd:ChartOnTime" xml:space="preserve"><value>المعتمدة خلال 14 يوماً من الخروج</value></data>
+  <data name="qd:ConsultOnTime" xml:space="preserve"><value>المُجاب عليها قبل موعدها</value></data>
+  <data name="qd:Falls" xml:space="preserve"><value>حالات السقوط المبلغ عنها لكل 1,000 يوم مريض</value></data>
+  <data name="qd:Hai" xml:space="preserve"><value>المؤكدة، لكل 1,000 يوم مريض</value></data>
+  <data name="qd:MedErrors" xml:space="preserve"><value>المبلغ عنها لكل 1,000 يوم مريض</value></data>
+  <data name="qd:MedRec24h" xml:space="preserve"><value>حالات دخول الشهر الموقّعة خلال يوم</value></data>
+  <data name="qd:Mortality" xml:space="preserve"><value>وفيات المنومين ÷ حالات الخروج</value></data>
+  <data name="qd:Nps" xml:space="preserve"><value>المروجون (9–10) ناقص المنتقدون (0–6)</value></data>
+  <data name="qd:Occupancy" xml:space="preserve"><value>أيام المرضى ÷ (الأسرّة × الأيام)</value></data>
+  <data name="qd:Readmission30" xml:space="preserve"><value>حالات خروج تلاها تنويم جديد خلال 30 يوماً</value></data>
+  <data name="qd:Satisfaction" xml:space="preserve"><value>متوسط استبيانات الشهر (1–5)</value></data>
+  <data name="qi:Alos" xml:space="preserve"><value>متوسط مدة الإقامة</value></data>
+  <data name="qi:ChartOnTime" xml:space="preserve"><value>ملفات مكتملة خلال 14 يوماً</value></data>
+  <data name="qi:ConsultOnTime" xml:space="preserve"><value>الاستشارات المُجاب عليها في الموعد</value></data>
+  <data name="qi:Falls" xml:space="preserve"><value>سقوط المرضى</value></data>
+  <data name="qi:Hai" xml:space="preserve"><value>العدوى المكتسبة في المستشفى</value></data>
+  <data name="qi:MedErrors" xml:space="preserve"><value>أخطاء الأدوية المبلغ عنها</value></data>
+  <data name="qi:MedRec24h" xml:space="preserve"><value>مطابقة الأدوية عند الدخول خلال 24 ساعة</value></data>
+  <data name="qi:Mortality" xml:space="preserve"><value>معدل الوفيات للمنومين</value></data>
+  <data name="qi:Nps" xml:space="preserve"><value>صافي نقاط الترويج (NPS)</value></data>
+  <data name="qi:Occupancy" xml:space="preserve"><value>نسبة إشغال الأسرّة</value></data>
+  <data name="qi:Readmission30" xml:space="preserve"><value>إعادة الدخول خلال 30 يوماً</value></data>
+  <data name="qi:Satisfaction" xml:space="preserve"><value>رضا المرضى</value></data>
+  <data name="qs:Met" xml:space="preserve"><value>محقق</value></data>
+  <data name="qs:NoData" xml:space="preserve"><value>لا توجد بيانات</value></data>
+  <data name="qs:NotMet" xml:space="preserve"><value>غير محقق</value></data>
+  <data name="qu:%" xml:space="preserve"><value></value></data>
+  <data name="qu:days" xml:space="preserve"><value>يوم</value></data>
+  <data name="qu:of5" xml:space="preserve"><value>من 5</value></data>
+  <data name="qu:per1000" xml:space="preserve"><value>لكل 1,000 يوم مريض</value></data>
+  <data name="qu:score" xml:space="preserve"><value>نقطة</value></data>
+  <data name="Only an accepted line can be recouped" xml:space="preserve"><value>لا يُسترد إلا من بند مقبول</value></data>
+  <data name="Recouped" xml:space="preserve"><value>مُسترد</value></data>
+  <data name="Recoupment" xml:space="preserve"><value>استرداد</value></data>
+  <data name="The payer cannot take back more than it accepted" xml:space="preserve"><value>لا يمكن لشركة التأمين استرداد أكثر مما قبلته</value></data>
+  <data name="The payer takes back part of {0} after an audit: enter the amount." xml:space="preserve"><value>شركة التأمين تسترد جزءاً من {0} بعد المراجعة: اكتب المبلغ.</value></data>
+  <data name="This line was already recouped" xml:space="preserve"><value>تم تسجيل استرداد لهذا البند بالفعل</value></data>
+  <data name="Write the amount the payer takes back" xml:space="preserve"><value>اكتب المبلغ الذي تسترده شركة التأمين</value></data>
+  <data name="Write the payer's reason" xml:space="preserve"><value>اكتب سبب شركة التأمين</value></data>
+  <data name="ce:Recoupment" xml:space="preserve"><value>استرداد شركة التأمين</value></data>
+  <data name="All clinics" xml:space="preserve"><value>كل العيادات</value></data>
+  <data name="All done" xml:space="preserve"><value>تم</value></data>
+  <data name="Already checked in — number" xml:space="preserve"><value>تم تسجيل وصولك — رقمك</value></data>
+  <data name="Confirm my arrival" xml:space="preserve"><value>تأكيد وصولي</value></data>
+  <data name="Enter your file number" xml:space="preserve"><value>اكتب رقم ملفك</value></data>
+  <data name="Enter your file number and your year of birth" xml:space="preserve"><value>اكتب رقم ملفك وسنة ميلادك</value></data>
+  <data name="Enter your year of birth" xml:space="preserve"><value>اكتب سنة ميلادك</value></data>
+  <data name="File number" xml:space="preserve"><value>رقم الملف</value></data>
+  <data name="Find my appointment" xml:space="preserve"><value>ابحث عن موعدي</value></data>
+  <data name="Full screen" xml:space="preserve"><value>ملء الشاشة</value></data>
+  <data name="Hello {0}" xml:space="preserve"><value>أهلاً {0}</value></data>
+  <data name="It is too early: check in from an hour before your appointment" xml:space="preserve"><value>الوقت مبكر: سجّل وصولك قبل موعدك بساعة على الأكثر</value></data>
+  <data name="No patient is waiting now." xml:space="preserve"><value>لا يوجد مرضى في الانتظار الآن.</value></data>
+  <data name="Please take a seat: your number will appear on the screen." xml:space="preserve"><value>تفضل بالجلوس: سيظهر رقمك على الشاشة.</value></data>
+  <data name="Something went wrong: please go to the desk" xml:space="preserve"><value>حدث خطأ: من فضلك توجّه إلى الاستقبال</value></data>
+  <data name="Start the display (with sound)" xml:space="preserve"><value>تشغيل الشاشة (مع الصوت)</value></data>
+  <data name="This appointment cannot be checked in here: please go to the desk" xml:space="preserve"><value>لا يمكن تسجيل الوصول لهذا الموعد هنا: من فضلك توجّه إلى الاستقبال</value></data>
+  <data name="Too early — check in from an hour before" xml:space="preserve"><value>مبكر — سجّل قبل الموعد بساعة</value></data>
+  <data name="Waiting room" xml:space="preserve"><value>صالة الانتظار</value></data>
+  <data name="We could not find your appointment: please go to the desk" xml:space="preserve"><value>لم نجد موعدك: من فضلك توجّه إلى الاستقبال</value></data>
+  <data name="Welcome — check in for your appointment" xml:space="preserve"><value>أهلاً بك — سجّل وصولك لموعدك</value></data>
+  <data name="Year of birth" xml:space="preserve"><value>سنة الميلاد</value></data>
+  <data name="You are checked in. Your number is" xml:space="preserve"><value>تم تسجيل وصولك. رقمك هو</value></data>
+  <data name="at" xml:space="preserve"><value>الساعة</value></data>
+  <data name="Serving now" xml:space="preserve"><value>يُخدم الآن</value></data>
+  <data name="A dose outside the schedule" xml:space="preserve"><value>جرعة خارج الجدول</value></data>
+  <data name="Add a dose" xml:space="preserve"><value>إضافة جرعة</value></data>
+  <data name="Adverse event" xml:space="preserve"><value>عَرَض جانبي</value></data>
+  <data name="Age" xml:space="preserve"><value>العمر</value></data>
+  <data name="Age in days" xml:space="preserve"><value>العمر بالأيام</value></data>
+  <data name="An adverse event is already recorded for this dose" xml:space="preserve"><value>تم تسجيل عَرَض جانبي لهذه الجرعة بالفعل</value></data>
+  <data name="At birth" xml:space="preserve"><value>عند الولادة</value></data>
+  <data name="Born {0}" xml:space="preserve"><value>مواليد {0}</value></data>
+  <data name="Describe the adverse event" xml:space="preserve"><value>صِف العَرَض الجانبي</value></data>
+  <data name="Dose {0}" xml:space="preserve"><value>الجرعة {0}</value></data>
+  <data name="Doses outside the schedule" xml:space="preserve"><value>جرعات خارج الجدول</value></data>
+  <data name="Due and overdue" xml:space="preserve"><value>المستحقة والمتأخرة</value></data>
+  <data name="Due on" xml:space="preserve"><value>تاريخ الاستحقاق</value></data>
+  <data name="Each row is one dose at an age from birth. Change it to your country's schedule." xml:space="preserve"><value>كل صف جرعة واحدة في عمر محدد من الولادة. عدّله ليطابق جدول بلدك.</value></data>
+  <data name="Given" xml:space="preserve"><value>أُعطيت</value></data>
+  <data name="Given at" xml:space="preserve"><value>وقت الإعطاء</value></data>
+  <data name="Immunization card" xml:space="preserve"><value>بطاقة التطعيمات</value></data>
+  <data name="Immunizations" xml:space="preserve"><value>التطعيمات</value></data>
+  <data name="Immunizations are not installed yet (hospital_h84_immunizations.sql)." xml:space="preserve"><value>التطعيمات غير مثبتة بعد (hospital_h84_immunizations.sql).</value></data>
+  <data name="Left thigh" xml:space="preserve"><value>الفخذ الأيسر</value></data>
+  <data name="Load the default schedule" xml:space="preserve"><value>تحميل الجدول الافتراضي</value></data>
+  <data name="Load the default schedule? You can change every dose afterwards." xml:space="preserve"><value>تحميل الجدول الافتراضي؟ يمكنك تعديل كل جرعة بعد ذلك.</value></data>
+  <data name="Lot expiry" xml:space="preserve"><value>انتهاء التشغيلة</value></data>
+  <data name="No birth date on file" xml:space="preserve"><value>لا يوجد تاريخ ميلاد في الملف</value></data>
+  <data name="No dose in the schedule yet." xml:space="preserve"><value>لا توجد جرعات في الجدول بعد.</value></data>
+  <data name="No dose is due." xml:space="preserve"><value>لا توجد جرعات مستحقة.</value></data>
+  <data name="Open the card" xml:space="preserve"><value>فتح البطاقة</value></data>
+  <data name="Record a dose" xml:space="preserve"><value>تسجيل جرعة</value></data>
+  <data name="Record an adverse event" xml:space="preserve"><value>تسجيل عَرَض جانبي</value></data>
+  <data name="Record the dose" xml:space="preserve"><value>تسجيل الجرعة</value></data>
+  <data name="Record this dose as given?" xml:space="preserve"><value>تسجيل هذه الجرعة كمُعطاة؟</value></data>
+  <data name="Save this schedule dose?" xml:space="preserve"><value>حفظ جرعة الجدول هذه؟</value></data>
+  <data name="Schedule dose" xml:space="preserve"><value>جرعة في الجدول</value></data>
+  <data name="Search by name, file or phone…" xml:space="preserve"><value>ابحث بالاسم أو رقم الملف أو الهاتف…</value></data>
+  <data name="The age is out of range" xml:space="preserve"><value>العمر خارج النطاق</value></data>
+  <data name="The dose cannot be before the patient's birth" xml:space="preserve"><value>لا يمكن أن تكون الجرعة قبل ولادة المريض</value></data>
+  <data name="The dose number is between 1 and 10" xml:space="preserve"><value>رقم الجرعة بين 1 و10</value></data>
+  <data name="The immunization schedule" xml:space="preserve"><value>جدول التطعيمات</value></data>
+  <data name="The patient is too young for this dose" xml:space="preserve"><value>عمر المريض أصغر من موعد هذه الجرعة</value></data>
+  <data name="The schedule" xml:space="preserve"><value>الجدول</value></data>
+  <data name="The schedule already has doses: change them instead" xml:space="preserve"><value>الجدول به جرعات بالفعل: عدّلها بدلاً من ذلك</value></data>
+  <data name="There is no schedule yet: load the default one in the schedule tab, then adjust it to your country's." xml:space="preserve"><value>لا يوجد جدول بعد: حمّل الجدول الافتراضي من تبويب الجدول، ثم عدّله ليطابق بلدك.</value></data>
+  <data name="This lot has expired: it cannot be given" xml:space="preserve"><value>هذه التشغيلة منتهية الصلاحية: لا يمكن إعطاؤها</value></data>
+  <data name="This vaccine already has that dose" xml:space="preserve"><value>هذا التطعيم له هذه الجرعة بالفعل</value></data>
+  <data name="Vaccine" xml:space="preserve"><value>التطعيم</value></data>
+  <data name="What was seen (fever, swelling, rash…)" xml:space="preserve"><value>ما لوحظ (حرارة، تورم، طفح…)</value></data>
+  <data name="Without a birth date the due dates cannot be worked out: add it to the patient's file." xml:space="preserve"><value>بدون تاريخ ميلاد لا يمكن حساب مواعيد الجرعات: أضفه إلى ملف المريض.</value></data>
+  <data name="Write the vaccine code (up to 12 characters)" xml:space="preserve"><value>اكتب رمز التطعيم (حتى 12 حرفاً)</value></data>
+  <data name="Write the vaccine's name in Arabic and English" xml:space="preserve"><value>اكتب اسم التطعيم بالعربية والإنجليزية</value></data>
+  <data name="Write the vaccine, its name and the dose number" xml:space="preserve"><value>اكتب التطعيم واسمه ورقم الجرعة</value></data>
+  <data name="vxr:ID" xml:space="preserve"><value>في الأدمة</value></data>
+  <data name="vxr:IM" xml:space="preserve"><value>في العضل</value></data>
+  <data name="vxr:Nasal" xml:space="preserve"><value>بالأنف</value></data>
+  <data name="vxr:Oral" xml:space="preserve"><value>بالفم</value></data>
+  <data name="vxr:SC" xml:space="preserve"><value>تحت الجلد</value></data>
+  <data name="vxs:Due" xml:space="preserve"><value>مستحقة</value></data>
+  <data name="vxs:Given" xml:space="preserve"><value>أُعطيت</value></data>
+  <data name="vxs:Overdue" xml:space="preserve"><value>متأخرة</value></data>
+  <data name="vxs:Upcoming" xml:space="preserve"><value>قادمة</value></data>
+  <data name="{0} days late" xml:space="preserve"><value>متأخرة {0} يوم</value></data>
+  <data name="{0} month(s)" xml:space="preserve"><value>{0} شهر</value></data>
+  <data name="{0} year(s)" xml:space="preserve"><value>{0} سنة</value></data>
+  <data name="37 weeks or more" xml:space="preserve"><value>37 أسبوعاً فأكثر</value></data>
+  <data name="A pregnancy is opened on a female patient's file" xml:space="preserve"><value>يُفتح الحمل على ملف مريضة أنثى</value></data>
+  <data name="Abortions" xml:space="preserve"><value>الإجهاض</value></data>
+  <data name="Active pregnancies" xml:space="preserve"><value>حالات الحمل الجارية</value></data>
+  <data name="Antenatal care" xml:space="preserve"><value>متابعة الحمل</value></data>
+  <data name="Antenatal care is not installed yet (hospital_h85_antenatal.sql)." xml:space="preserve"><value>متابعة الحمل غير مثبتة بعد (hospital_h85_antenatal.sql).</value></data>
+  <data name="Antenatal visit" xml:space="preserve"><value>زيارة متابعة حمل</value></data>
+  <data name="Antenatal visits" xml:space="preserve"><value>زيارات المتابعة</value></data>
+  <data name="BP" xml:space="preserve"><value>الضغط</value></data>
+  <data name="BP (diastolic)" xml:space="preserve"><value>الضغط (الانبساطي)</value></data>
+  <data name="BP (systolic)" xml:space="preserve"><value>الضغط (الانقباضي)</value></data>
+  <data name="Choose delivered or lost" xml:space="preserve"><value>اختر ولادة أو فقدان</value></data>
+  <data name="Choose the urine protein" xml:space="preserve"><value>اختر نتيجة الزلال</value></data>
+  <data name="Close the pregnancy" xml:space="preserve"><value>إغلاق الحمل</value></data>
+  <data name="Close this pregnancy?" xml:space="preserve"><value>إغلاق هذا الحمل؟</value></data>
+  <data name="Due date" xml:space="preserve"><value>موعد الولادة المتوقع</value></data>
+  <data name="Fetal heart" xml:space="preserve"><value>نبض الجنين</value></data>
+  <data name="Fetal heart (bpm)" xml:space="preserve"><value>نبض الجنين (نبضة/دقيقة)</value></data>
+  <data name="Fundal height" xml:space="preserve"><value>ارتفاع قاع الرحم</value></data>
+  <data name="Fundal height (cm)" xml:space="preserve"><value>ارتفاع قاع الرحم (سم)</value></data>
+  <data name="Gestation" xml:space="preserve"><value>عمر الحمل</value></data>
+  <data name="Gravida" xml:space="preserve"><value>عدد مرات الحمل</value></data>
+  <data name="Gravida / para / abortions" xml:space="preserve"><value>الحمل / الولادة / الإجهاض</value></data>
+  <data name="Gravida counts this pregnancy: births and losses before it are fewer" xml:space="preserve"><value>عدد مرات الحمل يشمل هذا الحمل: الولادات والإجهاضات السابقة أقل منه</value></data>
+  <data name="Last menstrual period" xml:space="preserve"><value>آخر دورة شهرية</value></data>
+  <data name="Maternity" xml:space="preserve"><value>الولادة</value></data>
+  <data name="Missed the visit" xml:space="preserve"><value>فاتها موعد الزيارة</value></data>
+  <data name="Mother" xml:space="preserve"><value>الأم</value></data>
+  <data name="No active pregnancy." xml:space="preserve"><value>لا توجد حالات حمل جارية.</value></data>
+  <data name="No visit yet" xml:space="preserve"><value>لا توجد زيارات بعد</value></data>
+  <data name="Open a pregnancy" xml:space="preserve"><value>فتح ملف حمل</value></data>
+  <data name="Open this pregnancy on the mother's file?" xml:space="preserve"><value>فتح هذا الحمل على ملف الأم؟</value></data>
+  <data name="Para" xml:space="preserve"><value>عدد الولادات</value></data>
+  <data name="Pregnancy" xml:space="preserve"><value>الحمل</value></data>
+  <data name="Previous caesarean, diabetes, twins…" xml:space="preserve"><value>قيصرية سابقة، سكري، توأم…</value></data>
+  <data name="Record a visit" xml:space="preserve"><value>تسجيل زيارة</value></data>
+  <data name="Risks at booking" xml:space="preserve"><value>عوامل الخطورة عند التسجيل</value></data>
+  <data name="Save this antenatal visit?" xml:space="preserve"><value>حفظ زيارة المتابعة هذه؟</value></data>
+  <data name="Search by name or file…" xml:space="preserve"><value>ابحث بالاسم أو رقم الملف…</value></data>
+  <data name="That birth is not this mother's" xml:space="preserve"><value>هذه الولادة ليست لهذه الأم</value></data>
+  <data name="The birth" xml:space="preserve"><value>الولادة</value></data>
+  <data name="The blood pressure is not plausible" xml:space="preserve"><value>قراءة الضغط غير منطقية</value></data>
+  <data name="The fetal heart rate is not plausible" xml:space="preserve"><value>نبض الجنين غير منطقي</value></data>
+  <data name="The fundal height is not plausible" xml:space="preserve"><value>ارتفاع قاع الرحم غير منطقي</value></data>
+  <data name="The last menstrual period must be within the last 44 weeks" xml:space="preserve"><value>يجب أن تكون آخر دورة خلال آخر 44 أسبوعاً</value></data>
+  <data name="The mother's births registered on her file." xml:space="preserve"><value>الولادات المسجلة على ملف الأم.</value></data>
+  <data name="The ultrasound due date is out of range" xml:space="preserve"><value>موعد الولادة بالسونار خارج النطاق</value></data>
+  <data name="The ultrasound due date, when written, wins over the last period's." xml:space="preserve"><value>موعد السونار عند كتابته يُقدَّم على حساب آخر دورة.</value></data>
+  <data name="The visit cannot be before the pregnancy" xml:space="preserve"><value>لا يمكن أن تكون الزيارة قبل بداية الحمل</value></data>
+  <data name="The weight is not plausible" xml:space="preserve"><value>الوزن غير منطقي</value></data>
+  <data name="This patient already has an active pregnancy" xml:space="preserve"><value>هذه المريضة لديها حمل جارٍ بالفعل</value></data>
+  <data name="This pregnancy is already closed" xml:space="preserve"><value>هذا الحمل مغلق بالفعل</value></data>
+  <data name="Trimester {0}" xml:space="preserve"><value>الثلث {0}</value></data>
+  <data name="Ultrasound due date" xml:space="preserve"><value>موعد الولادة بالسونار</value></data>
+  <data name="Urine protein" xml:space="preserve"><value>الزلال في البول</value></data>
+  <data name="Visit missed" xml:space="preserve"><value>فاتت</value></data>
+  <data name="Warnings" xml:space="preserve"><value>التنبيهات</value></data>
+  <data name="Weeks today" xml:space="preserve"><value>عمر الحمل اليوم</value></data>
+  <data name="Weight" xml:space="preserve"><value>الوزن</value></data>
+  <data name="Weight (kg)" xml:space="preserve"><value>الوزن (كجم)</value></data>
+  <data name="With a warning" xml:space="preserve"><value>بها تنبيه</value></data>
+  <data name="Write both blood pressure numbers" xml:space="preserve"><value>اكتب رقمي الضغط</value></data>
+  <data name="Write the last menstrual period or the ultrasound due date" xml:space="preserve"><value>اكتب آخر دورة أو موعد الولادة بالسونار</value></data>
+  <data name="Write what happened" xml:space="preserve"><value>اكتب ما حدث</value></data>
+  <data name="anw:FetalHeart" xml:space="preserve"><value>نبض الجنين خارج المعدل</value></data>
+  <data name="anw:FundalHeight" xml:space="preserve"><value>ارتفاع قاع الرحم لا يناسب عمر الحمل</value></data>
+  <data name="anw:Hypertension" xml:space="preserve"><value>ارتفاع الضغط</value></data>
+  <data name="anw:PreEclampsia" xml:space="preserve"><value>اشتباه تسمم الحمل</value></data>
+  <data name="anw:SevereHypertension" xml:space="preserve"><value>ارتفاع شديد في الضغط</value></data>
+  <data name="pgs:Active" xml:space="preserve"><value>جارٍ</value></data>
+  <data name="pgs:Delivered" xml:space="preserve"><value>تمت الولادة</value></data>
+  <data name="pgs:Loss" xml:space="preserve"><value>فقدان الحمل</value></data>
+  <data name="A labour is opened on a female patient's stay" xml:space="preserve"><value>تُفتح الولادة على تنويم مريضة أنثى</value></data>
+  <data name="Action line" xml:space="preserve"><value>خط التدخل</value></data>
+  <data name="Alert line" xml:space="preserve"><value>الخط الإرشادي</value></data>
+  <data name="Alert line from {0} cm at 1 cm an hour; action line four hours to its right." xml:space="preserve"><value>الخط الإرشادي من {0} سم بمعدل سم كل ساعة؛ وخط التدخل بعده بأربع ساعات.</value></data>
+  <data name="Cervicograph" xml:space="preserve"><value>منحنى اتساع عنق الرحم</value></data>
+  <data name="Cervix" xml:space="preserve"><value>عنق الرحم</value></data>
+  <data name="Cervix (cm)" xml:space="preserve"><value>اتساع عنق الرحم (سم)</value></data>
+  <data name="Choose an admitted woman…" xml:space="preserve"><value>اختر مريضة منوّمة…</value></data>
+  <data name="Choose how the labour ended" xml:space="preserve"><value>اختر كيف انتهت الولادة</value></data>
+  <data name="Choose the liquor" xml:space="preserve"><value>اختر حالة السائل</value></data>
+  <data name="Close the labour" xml:space="preserve"><value>إغلاق الولادة</value></data>
+  <data name="Close this labour?" xml:space="preserve"><value>إغلاق هذه الولادة؟</value></data>
+  <data name="Contractions" xml:space="preserve"><value>الانقباضات</value></data>
+  <data name="Contractions in 10 min" xml:space="preserve"><value>الانقباضات في 10 دقائق</value></data>
+  <data name="Descent" xml:space="preserve"><value>نزول الرأس</value></data>
+  <data name="Descent (fifths)" xml:space="preserve"><value>نزول الرأس (أخماس)</value></data>
+  <data name="Each lasts (s)" xml:space="preserve"><value>مدة كل انقباضة (ث)</value></data>
+  <data name="How it ended" xml:space="preserve"><value>كيف انتهت</value></data>
+  <data name="Labour observation" xml:space="preserve"><value>قراءة أثناء الولادة</value></data>
+  <data name="Labour ward" xml:space="preserve"><value>غرفة الولادة</value></data>
+  <data name="Liquor" xml:space="preserve"><value>السائل الأمنيوسي</value></data>
+  <data name="No labour in progress." xml:space="preserve"><value>لا توجد ولادات جارية.</value></data>
+  <data name="No observation yet." xml:space="preserve"><value>لا توجد قراءات بعد.</value></data>
+  <data name="Observations" xml:space="preserve"><value>القراءات</value></data>
+  <data name="Open the partograph" xml:space="preserve"><value>فتح البارتوجراف</value></data>
+  <data name="Partograph" xml:space="preserve"><value>البارتوجراف</value></data>
+  <data name="Pulse" xml:space="preserve"><value>النبض</value></data>
+  <data name="Record an observation" xml:space="preserve"><value>تسجيل قراءة</value></data>
+  <data name="Save this observation?" xml:space="preserve"><value>حفظ هذه القراءة؟</value></data>
+  <data name="Start a partograph" xml:space="preserve"><value>بدء بارتوجراف</value></data>
+  <data name="Start a partograph for this woman?" xml:space="preserve"><value>بدء بارتوجراف لهذه المريضة؟</value></data>
+  <data name="Started {0}" xml:space="preserve"><value>بدأت {0}</value></data>
+  <data name="Temperature (°C)" xml:space="preserve"><value>الحرارة (°م)</value></data>
+  <data name="The active phase starts at 4 cm: the lines appear from then." xml:space="preserve"><value>المرحلة النشطة تبدأ عند 4 سم: يظهر الخطان من وقتها.</value></data>
+  <data name="The baby is registered from the births screen, on the mother's file." xml:space="preserve"><value>يُسجَّل المولود من شاشة المواليد على ملف الأم.</value></data>
+  <data name="The cervix cannot close by more than a centimetre: check the reading" xml:space="preserve"><value>لا يمكن أن يضيق عنق الرحم بأكثر من سنتيمتر: راجع القراءة</value></data>
+  <data name="The cervix is between 0 and 10 cm" xml:space="preserve"><value>اتساع عنق الرحم بين 0 و10 سم</value></data>
+  <data name="The contractions are between 0 and 10 in ten minutes" xml:space="preserve"><value>الانقباضات بين 0 و10 في عشر دقائق</value></data>
+  <data name="The descent is between 0 and 5 fifths" xml:space="preserve"><value>نزول الرأس بين 0 و5 أخماس</value></data>
+  <data name="The partograph is not installed yet (hospital_h86_labour.sql)." xml:space="preserve"><value>البارتوجراف غير مثبت بعد (hospital_h86_labour.sql).</value></data>
+  <data name="The temperature is not plausible" xml:space="preserve"><value>الحرارة غير منطقية</value></data>
+  <data name="The time is before the labour started" xml:space="preserve"><value>الوقت قبل بداية الولادة</value></data>
+  <data name="This labour is already closed" xml:space="preserve"><value>هذه الولادة مغلقة بالفعل</value></data>
+  <data name="lbo:Assisted" xml:space="preserve"><value>ولادة بمساعدة</value></data>
+  <data name="lbo:Caesarean" xml:space="preserve"><value>قيصرية</value></data>
+  <data name="lbo:Transferred" xml:space="preserve"><value>تحويل</value></data>
+  <data name="lbo:Vaginal" xml:space="preserve"><value>ولادة طبيعية</value></data>
+  <data name="lbw:ActionLine" xml:space="preserve"><value>تجاوز خط التدخل</value></data>
+  <data name="lbw:AlertLine" xml:space="preserve"><value>تجاوز الخط الإرشادي</value></data>
+  <data name="lbw:FetalHeart" xml:space="preserve"><value>نبض الجنين خارج المعدل</value></data>
+  <data name="lbw:Fever" xml:space="preserve"><value>حرارة</value></data>
+  <data name="lbw:Hypertension" xml:space="preserve"><value>ارتفاع الضغط</value></data>
+  <data name="lbw:Meconium" xml:space="preserve"><value>عِقي في السائل</value></data>
+  <data name="lbw:Tachysystole" xml:space="preserve"><value>انقباضات زائدة</value></data>
+  <data name="liq:B" xml:space="preserve"><value>مدمم</value></data>
+  <data name="liq:C" xml:space="preserve"><value>صافٍ</value></data>
+  <data name="liq:I" xml:space="preserve"><value>الأغشية سليمة</value></data>
+  <data name="liq:M" xml:space="preserve"><value>عِقي</value></data>
+  <data name="{0} min since the last look" xml:space="preserve"><value>{0} دقيقة منذ آخر قراءة</value></data>
+  <data name="Labour started at (empty means now)" xml:space="preserve"><value>بدأ المخاض في (فارغ = الآن)</value></data>
+  <data name="The labour's start can be written back a day at most" xml:space="preserve"><value>يمكن تسجيل بداية المخاض بأثر رجعي ليوم واحد فقط</value></data>
+  <data name="Write at least one measure or a note" xml:space="preserve">
+    <value>اكتب قراءة واحدة على الأقل أو ملاحظة</value>
+  </data>
+  <data name="A day that has not come cannot be missed" xml:space="preserve"><value>لا يمكن تسجيل غياب عن يوم لم يأتِ بعد</value></data>
+  <data name="A missed session can be written back a week at most" xml:space="preserve"><value>يمكن تسجيل الغياب بأثر رجعي لأسبوع واحد فقط</value></data>
+  <data name="A session lasts between 1 and 8 hours" xml:space="preserve"><value>مدة الجلسة بين ساعة و8 ساعات</value></data>
+  <data name="A session's start can be written back 12 hours at most" xml:space="preserve"><value>يمكن تسجيل بداية الجلسة بأثر رجعي 12 ساعة فقط</value></data>
+  <data name="Adequacy" xml:space="preserve"><value>كفاءة الغسيل</value></data>
+  <data name="After" xml:space="preserve"><value>بعد الجلسة</value></data>
+  <data name="All shifts" xml:space="preserve"><value>كل الورديات</value></data>
+  <data name="Anticoagulation" xml:space="preserve"><value>مضاد التجلط</value></data>
+  <data name="Before" xml:space="preserve"><value>قبل الجلسة</value></data>
+  <data name="Under 90 is intradialytic hypotension; so is a fall of 20 from the pressure before with cramps, nausea, headache or chest pain." xml:space="preserve">
+    <value>أقل من 90 يعني هبوط ضغط أثناء الغسيل؛ وكذلك نزول 20 عن ضغط ما قبل الجلسة مع تقلصات أو غثيان أو صداع أو ألم في الصدر.</value>
+  </data>
+  <data name="Blood / dialysate flow" xml:space="preserve"><value>تدفق الدم / المحلول</value></data>
+  <data name="Blood flow" xml:space="preserve"><value>تدفق الدم</value></data>
+  <data name="Blood flow (ml/min)" xml:space="preserve"><value>تدفق الدم (مل/دقيقة)</value></data>
+  <data name="Blood pressure" xml:space="preserve"><value>ضغط الدم</value></data>
+  <data name="Both files have a dialysis session on the same day: the unit must reconcile them first" xml:space="preserve"><value>الملفان فيهما جلسة غسيل في نفس اليوم: على الوحدة توحيدهما أولًا</value></data>
+  <data name="Both files have an active dialysis plan: stop one first" xml:space="preserve"><value>الملفان لكل منهما خطة غسيل نشطة: أوقف إحداهما أولًا</value></data>
+  <data name="Change the dialysis plan" xml:space="preserve"><value>تعديل خطة الغسيل</value></data>
+  <data name="Change the plan" xml:space="preserve"><value>تعديل الخطة</value></data>
+  <data name="Choose the complications from the list" xml:space="preserve"><value>اختر المضاعفات من القائمة</value></data>
+  <data name="Choose the dialysis days" xml:space="preserve"><value>اختر أيام الغسيل</value></data>
+  <data name="Choose the shift" xml:space="preserve"><value>اختر الوردية</value></data>
+  <data name="Choose the vascular access" xml:space="preserve"><value>اختر الوصلة الوعائية</value></data>
+  <data name="Complications" xml:space="preserve"><value>المضاعفات</value></data>
+  <data name="Dialysate flow (ml/min)" xml:space="preserve"><value>تدفق المحلول (مل/دقيقة)</value></data>
+  <data name="Dialyser" xml:space="preserve"><value>الفلتر</value></data>
+  <data name="Dialysis" xml:space="preserve"><value>الغسيل الكلوي</value></data>
+  <data name="Dialysis days" xml:space="preserve"><value>أيام الغسيل</value></data>
+  <data name="Dialysis is not installed yet (hospital_h87_dialysis.sql)." xml:space="preserve"><value>الغسيل الكلوي غير مثبت بعد (hospital_h87_dialysis.sql).</value></data>
+  <data name="Dialysis patients" xml:space="preserve"><value>مرضى الغسيل</value></data>
+  <data name="Dialysis session" xml:space="preserve"><value>جلسة غسيل</value></data>
+  <data name="Dialysis unit" xml:space="preserve"><value>وحدة الغسيل الكلوي</value></data>
+  <data name="Diastolic" xml:space="preserve"><value>الانبساطي</value></data>
+  <data name="Draw the urea before and after to measure the dose (usually once a month)." xml:space="preserve"><value>اسحب اليوريا قبل الجلسة وبعدها لقياس جرعة الغسيل (عادةً مرة في الشهر).</value></data>
+  <data name="Dry weight" xml:space="preserve"><value>الوزن الجاف</value></data>
+  <data name="Dry weight (kg)" xml:space="preserve"><value>الوزن الجاف (كجم)</value></data>
+  <data name="Ended" xml:space="preserve"><value>انتهت</value></data>
+  <data name="Ended at" xml:space="preserve"><value>وقت الانتهاء</value></data>
+  <data name="Finish the running session first" xml:space="preserve"><value>أنهِ الجلسة الجارية أولًا</value></data>
+  <data name="Finish the session" xml:space="preserve"><value>إنهاء الجلسة</value></data>
+  <data name="Finish this session? It cannot be reopened." xml:space="preserve"><value>إنهاء هذه الجلسة؟ لا يمكن إعادة فتحها.</value></data>
+  <data name="Gain" xml:space="preserve"><value>الزيادة</value></data>
+  <data name="Gain since the last session" xml:space="preserve"><value>الزيادة منذ آخر جلسة</value></data>
+  <data name="Haemodialysis" xml:space="preserve"><value>الغسيل الدموي</value></data>
+  <data name="Heparin 2000 units, then 1000 an hour…" xml:space="preserve"><value>هيبارين 2000 وحدة، ثم 1000 كل ساعة…</value></data>
+  <data name="Kt/V, mean of the last three" xml:space="preserve"><value>Kt/V، متوسط آخر ثلاث</value></data>
+  <data name="Last Kt/V" xml:space="preserve"><value>آخر Kt/V</value></data>
+  <data name="Last session" xml:space="preserve"><value>آخر جلسة</value></data>
+  <data name="Lowest pressure" xml:space="preserve"><value>أقل ضغط</value></data>
+  <data name="Mark missed" xml:space="preserve"><value>تسجيل غياب</value></data>
+  <data name="Mark the day missed" xml:space="preserve"><value>تسجيل غياب عن الجلسة</value></data>
+  <data name="Missed in 30 days" xml:space="preserve"><value>غياب في 30 يومًا</value></data>
+  <data name="Mon · Wed · Fri" xml:space="preserve"><value>اثنين · أربعاء · جمعة</value></data>
+  <data name="New dialysis plan" xml:space="preserve"><value>خطة غسيل جديدة</value></data>
+  <data name="No dialysis plan yet." xml:space="preserve"><value>لا توجد خطة غسيل بعد.</value></data>
+  <data name="No reading yet" xml:space="preserve"><value>لا توجد قراءة بعد</value></data>
+  <data name="No reading yet." xml:space="preserve"><value>لا توجد قراءات بعد.</value></data>
+  <data name="No session yet." xml:space="preserve"><value>لا توجد جلسات بعد.</value></data>
+  <data name="Nobody is on a dialysis plan." xml:space="preserve"><value>لا يوجد مرضى على خطة غسيل.</value></data>
+  <data name="Nobody is scheduled on this day." xml:space="preserve"><value>لا يوجد مرضى مجدولون في هذا اليوم.</value></data>
+  <data name="On a dialysis plan" xml:space="preserve"><value>على خطة غسيل</value></data>
+  <data name="On the machine" xml:space="preserve"><value>على الجهاز</value></data>
+  <data name="Readings" xml:space="preserve"><value>القراءات</value></data>
+  <data name="Record a reading" xml:space="preserve"><value>تسجيل قراءة</value></data>
+  <data name="Sat · Mon · Wed" xml:space="preserve"><value>سبت · اثنين · أربعاء</value></data>
+  <data name="Save this dialysis plan?" xml:space="preserve"><value>حفظ خطة الغسيل؟</value></data>
+  <data name="Save this reading?" xml:space="preserve"><value>حفظ هذه القراءة؟</value></data>
+  <data name="Search by name, file, phone or station…" xml:space="preserve"><value>ابحث بالاسم أو رقم الملف أو الهاتف أو المحطة…</value></data>
+  <data name="Sessions" xml:space="preserve"><value>الجلسات</value></data>
+  <data name="Sessions in 30 days" xml:space="preserve"><value>جلسات في 30 يومًا</value></data>
+  <data name="Shift {0}" xml:space="preserve"><value>الوردية {0}</value></data>
+  <data name="Start a session" xml:space="preserve"><value>بدء جلسة</value></data>
+  <data name="Start dialysis" xml:space="preserve"><value>ابدأ الجلسة</value></data>
+  <data name="Start the session" xml:space="preserve"><value>بدء الجلسة</value></data>
+  <data name="Start this patient's session?" xml:space="preserve"><value>بدء جلسة الغسيل لهذا المريض؟</value></data>
+  <data name="Started at" xml:space="preserve"><value>وقت البدء</value></data>
+  <data name="Station" xml:space="preserve"><value>المحطة</value></data>
+  <data name="Stop the plan" xml:space="preserve"><value>إيقاف الخطة</value></data>
+  <data name="Stop this patient's dialysis plan? The sessions stay on the file." xml:space="preserve"><value>إيقاف خطة الغسيل لهذا المريض؟ الجلسات تبقى في الملف.</value></data>
+  <data name="Sun · Tue · Thu" xml:space="preserve"><value>أحد · ثلاثاء · خميس</value></data>
+  <data name="Systolic" xml:space="preserve"><value>الانقباضي</value></data>
+  <data name="Systolic pressure on the machine" xml:space="preserve"><value>الضغط الانقباضي أثناء الجلسة</value></data>
+  <data name="Targets: Kt/V at least 1.2, URR at least 65 %, ultrafiltration under 13 ml/kg/h, a gain under 4 % of the dry weight." xml:space="preserve"><value>الأهداف: Kt/V لا يقل عن 1.2، وURR لا يقل عن 65٪، وسحب السوائل أقل من 13 مل/كجم/ساعة، والزيادة أقل من 4٪ من الوزن الجاف.</value></data>
+  <data name="The blood flow is between 0 and 600 ml/min" xml:space="preserve"><value>تدفق الدم بين 0 و600 مل/دقيقة</value></data>
+  <data name="The blood flow is between 100 and 600 ml/min" xml:space="preserve"><value>تدفق الدم بين 100 و600 مل/دقيقة</value></data>
+  <data name="The day's sessions" xml:space="preserve"><value>جلسات اليوم</value></data>
+  <data name="The dialysate flow is between 300 and 1000 ml/min" xml:space="preserve"><value>تدفق المحلول بين 300 و1000 مل/دقيقة</value></data>
+  <data name="The dry weight is between 20 and 250 kg" xml:space="preserve"><value>الوزن الجاف بين 20 و250 كجم</value></data>
+  <data name="The end is before the start" xml:space="preserve"><value>وقت الانتهاء قبل البداية</value></data>
+  <data name="The patient already had a session that day" xml:space="preserve"><value>للمريض جلسة مسجلة في هذا اليوم</value></data>
+  <data name="The patient is not scheduled on that day" xml:space="preserve"><value>المريض غير مجدول في هذا اليوم</value></data>
+  <data name="The patient's sessions" xml:space="preserve"><value>جلسات المريض</value></data>
+  <data name="The plan is stopped" xml:space="preserve"><value>الخطة موقوفة</value></data>
+  <data name="The pulse is not plausible" xml:space="preserve"><value>قيمة النبض غير منطقية</value></data>
+  <data name="The session is on the machine." xml:space="preserve"><value>الجلسة جارية على الجهاز.</value></data>
+  <data name="The time is before the session started" xml:space="preserve"><value>الوقت قبل بداية الجلسة</value></data>
+  <data name="The urea after must be below the urea before" xml:space="preserve"><value>يجب أن تكون اليوريا بعد الجلسة أقل منها قبلها</value></data>
+  <data name="The venous pressure is not plausible" xml:space="preserve"><value>قيمة الضغط الوريدي غير منطقية</value></data>
+  <data name="The volume removed is between 0 and 6000 ml" xml:space="preserve"><value>حجم السوائل المسحوبة بين 0 و6000 مل</value></data>
+  <data name="The volume to remove is between 0 and 6000 ml" xml:space="preserve"><value>حجم السوائل المطلوب سحبها بين 0 و6000 مل</value></data>
+  <data name="The weight after is more than a kilo above the weight before: check it" xml:space="preserve"><value>الوزن بعد الجلسة أعلى من الوزن قبلها بأكثر من كيلو: راجعه</value></data>
+  <data name="The weight lost" xml:space="preserve"><value>الوزن المفقود</value></data>
+  <data name="This dialysis plan is stopped" xml:space="preserve"><value>خطة الغسيل هذه موقوفة</value></data>
+  <data name="This patient already has an active dialysis plan" xml:space="preserve"><value>لهذا المريض خطة غسيل نشطة بالفعل</value></data>
+  <data name="This session is not running" xml:space="preserve"><value>هذه الجلسة ليست جارية</value></data>
+  <data name="UF" xml:space="preserve"><value>السحب</value></data>
+  <data name="UF so far" xml:space="preserve"><value>المسحوب حتى الآن</value></data>
+  <data name="UF so far (ml)" xml:space="preserve"><value>المسحوب حتى الآن (مل)</value></data>
+  <data name="Urea after" xml:space="preserve"><value>اليوريا بعد</value></data>
+  <data name="Urea before" xml:space="preserve"><value>اليوريا قبل</value></data>
+  <data name="Urea {0} → {1}" xml:space="preserve"><value>اليوريا {0} ← {1}</value></data>
+  <data name="Vascular access" xml:space="preserve"><value>الوصلة الوعائية</value></data>
+  <data name="Venous pressure" xml:space="preserve"><value>الضغط الوريدي</value></data>
+  <data name="Volume removed" xml:space="preserve"><value>السوائل المسحوبة</value></data>
+  <data name="Volume removed (ml)" xml:space="preserve"><value>السوائل المسحوبة (مل)</value></data>
+  <data name="Volume to remove" xml:space="preserve"><value>السوائل المطلوب سحبها</value></data>
+  <data name="Volume to remove (ml)" xml:space="preserve"><value>السوائل المطلوب سحبها (مل)</value></data>
+  <data name="Weigh the patient after the session" xml:space="preserve"><value>سجّل وزن المريض بعد الجلسة</value></data>
+  <data name="Weigh the patient before the session" xml:space="preserve"><value>سجّل وزن المريض قبل الجلسة</value></data>
+  <data name="Weight above the dry weight" xml:space="preserve"><value>الزيادة فوق الوزن الجاف</value></data>
+  <data name="Weight after (kg)" xml:space="preserve"><value>الوزن بعد (كجم)</value></data>
+  <data name="Weight before (kg)" xml:space="preserve"><value>الوزن قبل (كجم)</value></data>
+  <data name="Why was the session missed?" xml:space="preserve"><value>لماذا غاب المريض عن الجلسة؟</value></data>
+  <data name="Write both urea values, before and after" xml:space="preserve"><value>اكتب قيمتي اليوريا قبل الجلسة وبعدها</value></data>
+  <data name="Write why the session was missed" xml:space="preserve"><value>اكتب سبب الغياب</value></data>
+  <data name="dxa:AVF" xml:space="preserve"><value>ناسور شرياني وريدي</value></data>
+  <data name="dxa:AVG" xml:space="preserve"><value>وصلة صناعية</value></data>
+  <data name="dxa:CVC" xml:space="preserve"><value>قسطرة وريدية</value></data>
+  <data name="dxc:Access" xml:space="preserve"><value>مشكلة في الوصلة</value></data>
+  <data name="dxc:ChestPain" xml:space="preserve"><value>ألم في الصدر</value></data>
+  <data name="dxc:Clotting" xml:space="preserve"><value>تجلط الدائرة</value></data>
+  <data name="dxc:Cramps" xml:space="preserve"><value>تقلصات عضلية</value></data>
+  <data name="dxc:Fever" xml:space="preserve"><value>حرارة</value></data>
+  <data name="dxc:Headache" xml:space="preserve"><value>صداع</value></data>
+  <data name="dxc:Nausea" xml:space="preserve"><value>غثيان</value></data>
+  <data name="dxs:Done" xml:space="preserve"><value>انتهت</value></data>
+  <data name="dxs:Due" xml:space="preserve"><value>منتظر</value></data>
+  <data name="dxs:Missed" xml:space="preserve"><value>غائب</value></data>
+  <data name="dxs:Running" xml:space="preserve"><value>على الجهاز</value></data>
+  <data name="dxw:AboveDry" xml:space="preserve"><value>انتهت فوق الوزن الجاف</value></data>
+  <data name="dxw:HighGain" xml:space="preserve"><value>زيادة وزن أكثر من 4٪</value></data>
+  <data name="dxw:HighUfRate" xml:space="preserve"><value>سحب سوائل سريع</value></data>
+  <data name="dxw:Hypotension" xml:space="preserve"><value>هبوط ضغط أثناء الجلسة</value></data>
+  <data name="dxw:LowKtv" xml:space="preserve"><value>Kt/V أقل من 1.2</value></data>
+  <data name="dxw:LowUrr" xml:space="preserve"><value>URR أقل من 65٪</value></data>
+  <data name="dxw:Short" xml:space="preserve"><value>جلسة أقصر من المقرر</value></data>
+  <data name="{0} h" xml:space="preserve"><value>{0} س</value></data>
+  <data name="{0} of {1} min" xml:space="preserve"><value>{0} من {1} دقيقة</value></data>
+  <data name="A check stops this cycle: write the reason to give it anyway" xml:space="preserve"><value>يوجد فحص يمنع هذه الدورة: اكتب سبب إعطائها رغم ذلك</value></data>
+  <data name="A count is not plausible" xml:space="preserve"><value>قيمة في العدّ الدموي غير منطقية</value></data>
+  <data name="A cycle is recorded on its day, or up to three days back" xml:space="preserve"><value>تُسجَّل الدورة في يومها أو بأثر رجعي حتى ثلاثة أيام</value></data>
+  <data name="A cycle lasts between 7 and 56 days" xml:space="preserve"><value>مدة الدورة بين 7 و56 يومًا</value></data>
+  <data name="A drug is written twice" xml:space="preserve"><value>دواء مكتوب مرتين</value></data>
+  <data name="A drug's day falls after the cycle ends" xml:space="preserve"><value>يوم الدواء يقع بعد نهاية الدورة</value></data>
+  <data name="A lifetime limit is kept for a mg/m² dose only" xml:space="preserve"><value>الحد التراكمي مدى الحياة للجرعات بالمجم/م² فقط</value></data>
+  <data name="A lifetime limit must be above zero" xml:space="preserve"><value>الحد التراكمي يجب أن يكون أكبر من صفر</value></data>
+  <data name="Add a drug" xml:space="preserve"><value>إضافة دواء</value></data>
+  <data name="Add at least one drug" xml:space="preserve"><value>أضف دواءً واحدًا على الأقل</value></data>
+  <data name="All cycles given" xml:space="preserve"><value>أُعطيت كل الدورات</value></data>
+  <data name="An AUC is between 1 and 10" xml:space="preserve"><value>قيمة AUC بين 1 و10</value></data>
+  <data name="Another regimen has this code" xml:space="preserve"><value>يوجد بروتوكول آخر بنفس الرمز</value></data>
+  <data name="At the start" xml:space="preserve"><value>عند البداية</value></data>
+  <data name="Basis" xml:space="preserve"><value>أساس الجرعة</value></data>
+  <data name="Body surface" xml:space="preserve"><value>مساحة سطح الجسم</value></data>
+  <data name="Change the regimen" xml:space="preserve"><value>تعديل البروتوكول</value></data>
+  <data name="Chemo cycles" xml:space="preserve"><value>الدورات</value></data>
+  <data name="Chemotherapy" xml:space="preserve"><value>العلاج الكيماوي</value></data>
+  <data name="Chemotherapy course" xml:space="preserve"><value>كورس العلاج الكيماوي</value></data>
+  <data name="Chemotherapy regimens" xml:space="preserve"><value>بروتوكولات العلاج الكيماوي</value></data>
+  <data name="Choose an active regimen" xml:space="preserve"><value>اختر بروتوكولًا مُفعّلًا</value></data>
+  <data name="Choose each drug's dose basis" xml:space="preserve"><value>اختر أساس الجرعة لكل دواء</value></data>
+  <data name="Choose each drug's route" xml:space="preserve"><value>اختر طريقة الإعطاء لكل دواء</value></data>
+  <data name="Choose the intent of the treatment" xml:space="preserve"><value>اختر هدف العلاج</value></data>
+  <data name="Complete the course" xml:space="preserve"><value>إنهاء الكورس كمكتمل</value></data>
+  <data name="Counts" xml:space="preserve"><value>العدّ الدموي</value></data>
+  <data name="Courses in progress" xml:space="preserve"><value>الكورسات الجارية</value></data>
+  <data name="Courses on it" xml:space="preserve"><value>كورسات جارية عليه</value></data>
+  <data name="Creatinine mg/dL" xml:space="preserve"><value>الكرياتينين مجم/دسل</value></data>
+  <data name="Cycle {0}" xml:space="preserve"><value>الدورة {0}</value></data>
+  <data name="Days of the cycle" xml:space="preserve"><value>أيام الدورة</value></data>
+  <data name="Days per cycle" xml:space="preserve"><value>أيام الدورة الواحدة</value></data>
+  <data name="Dose reduction" xml:space="preserve"><value>تخفيض الجرعة</value></data>
+  <data name="Dose to give" xml:space="preserve"><value>الجرعة المطلوب إعطاؤها</value></data>
+  <data name="Doses" xml:space="preserve"><value>الجرعات</value></data>
+  <data name="Drugs" xml:space="preserve"><value>الأدوية</value></data>
+  <data name="Due within a week" xml:space="preserve"><value>مستحقة خلال أسبوع</value></data>
+  <data name="Each drug needs a dose above zero" xml:space="preserve"><value>كل دواء يحتاج جرعة أكبر من صفر</value></data>
+  <data name="Every {0} days" xml:space="preserve"><value>كل {0} يومًا</value></data>
+  <data name="First cycle on" xml:space="preserve"><value>موعد الدورة الأولى</value></data>
+  <data name="Give cycle {0}" xml:space="preserve"><value>إعطاء الدورة {0}</value></data>
+  <data name="Give this cycle with these doses?" xml:space="preserve"><value>إعطاء هذه الدورة بهذه الجرعات؟</value></data>
+  <data name="Given on" xml:space="preserve"><value>تاريخ الإعطاء</value></data>
+  <data name="Grade {0}" xml:space="preserve"><value>الدرجة {0}</value></data>
+  <data name="Height (cm)" xml:space="preserve"><value>الطول (سم)</value></data>
+  <data name="Held" xml:space="preserve"><value>مؤجلة</value></data>
+  <data name="Hold the cycle" xml:space="preserve"><value>تأجيل الدورة</value></data>
+  <data name="Hold the cycle to a day within six weeks" xml:space="preserve"><value>أجّل الدورة إلى يوم خلال ستة أسابيع</value></data>
+  <data name="Hold this cycle?" xml:space="preserve"><value>تأجيل هذه الدورة؟</value></data>
+  <data name="In the library" xml:space="preserve"><value>ضمن المكتبة</value></data>
+  <data name="Intent" xml:space="preserve"><value>هدف العلاج</value></data>
+  <data name="Last toxicity" xml:space="preserve"><value>آخر سمية</value></data>
+  <data name="Lifetime after" xml:space="preserve"><value>التراكمي بعدها</value></data>
+  <data name="Lifetime limit (mg/m²)" xml:space="preserve"><value>الحد التراكمي (مجم/م²)</value></data>
+  <data name="Lifetime limits" xml:space="preserve"><value>الحدود التراكمية</value></data>
+  <data name="Lifetime {0} mg/m²" xml:space="preserve"><value>حد تراكمي {0} مجم/م²</value></data>
+  <data name="Mark the course completed?" xml:space="preserve"><value>تسجيل الكورس كمكتمل؟</value></data>
+  <data name="Name in English" xml:space="preserve"><value>الاسم بالإنجليزية</value></data>
+  <data name="Neutropenic fever, mucositis, neuropathy…" xml:space="preserve"><value>حمى مع نقص العدلات، التهاب الأغشية المخاطية، اعتلال الأعصاب…</value></data>
+  <data name="Neutrophils ×10⁹/L" xml:space="preserve"><value>العدلات ×10⁹/لتر</value></data>
+  <data name="New regimen" xml:space="preserve"><value>بروتوكول جديد</value></data>
+  <data name="Next cycle" xml:space="preserve"><value>الدورة القادمة</value></data>
+  <data name="No course in progress." xml:space="preserve"><value>لا توجد كورسات جارية.</value></data>
+  <data name="No cycle yet." xml:space="preserve"><value>لا توجد دورات بعد.</value></data>
+  <data name="No regimen yet." xml:space="preserve"><value>لا توجد بروتوكولات بعد.</value></data>
+  <data name="Oncology" xml:space="preserve"><value>الأورام</value></data>
+  <data name="Oncology is not installed yet (hospital_h88_oncology.sql)." xml:space="preserve"><value>وحدة الأورام غير مثبتة بعد (hospital_h88_oncology.sql).</value></data>
+  <data name="Out of the library" xml:space="preserve"><value>خارج المكتبة</value></data>
+  <data name="Overruled" xml:space="preserve"><value>تم التجاوز</value></data>
+  <data name="Platelets ×10⁹/L" xml:space="preserve"><value>الصفائح ×10⁹/لتر</value></data>
+  <data name="Premedication, hydration, reference…" xml:space="preserve"><value>الأدوية المسبقة، الترطيب، المرجع…</value></data>
+  <data name="Prescribed" xml:space="preserve"><value>الموصوف</value></data>
+  <data name="Put off to" xml:space="preserve"><value>التأجيل إلى</value></data>
+  <data name="Regimen" xml:space="preserve"><value>البروتوكول</value></data>
+  <data name="Regimens" xml:space="preserve"><value>البروتوكولات</value></data>
+  <data name="Save this regimen?" xml:space="preserve"><value>حفظ هذا البروتوكول؟</value></data>
+  <data name="Search by code, name or drug…" xml:space="preserve"><value>ابحث بالرمز أو الاسم أو الدواء…</value></data>
+  <data name="Search by name, file, regimen or diagnosis…" xml:space="preserve"><value>ابحث بالاسم أو رقم الملف أو البروتوكول أو التشخيص…</value></data>
+  <data name="Start a course" xml:space="preserve"><value>بدء كورس</value></data>
+  <data name="Start the course" xml:space="preserve"><value>بدء الكورس</value></data>
+  <data name="Start this chemotherapy course?" xml:space="preserve"><value>بدء كورس العلاج الكيماوي هذا؟</value></data>
+  <data name="Stop the course" xml:space="preserve"><value>إيقاف الكورس</value></data>
+  <data name="The carboplatin dose needs the creatinine and the patient's age" xml:space="preserve"><value>جرعة الكاربوبلاتين تحتاج الكرياتينين وعمر المريض</value></data>
+  <data name="The cycles are between 1 and 52" xml:space="preserve"><value>عدد الدورات بين 1 و52</value></data>
+  <data name="The day is before the previous cycle" xml:space="preserve"><value>اليوم قبل الدورة السابقة</value></data>
+  <data name="The dose reduction is between 0 and 75 %" xml:space="preserve"><value>تخفيض الجرعة بين 0 و75٪</value></data>
+  <data name="The height is between 40 and 250 cm" xml:space="preserve"><value>الطول بين 40 و250 سم</value></data>
+  <data name="The library ships empty: the oncologists and the pharmacy enter the hospital's own protocols, and each dose is computed from them." xml:space="preserve"><value>المكتبة تبدأ فارغة: أطباء الأورام والصيدلية يُدخلون بروتوكولات المستشفى، وكل جرعة تُحسب منها.</value></data>
+  <data name="The patient is already on this regimen" xml:space="preserve"><value>المريض على هذا البروتوكول بالفعل</value></data>
+  <data name="The regimen library is empty: a regimen must be entered first." xml:space="preserve"><value>مكتبة البروتوكولات فارغة: يجب إدخال بروتوكول أولًا.</value></data>
+  <data name="The regimen's cycles are all given" xml:space="preserve"><value>أُعطيت كل دورات البروتوكول</value></data>
+  <data name="The start is within a month back and two months ahead" xml:space="preserve"><value>البداية خلال شهر سابق وحتى شهرين قادمين</value></data>
+  <data name="The toxicity grade is between 0 and 4" xml:space="preserve"><value>درجة السمية بين 0 و4</value></data>
+  <data name="The weight is between 2 and 300 kg" xml:space="preserve"><value>الوزن بين 2 و300 كجم</value></data>
+  <data name="This course is closed" xml:space="preserve"><value>هذا الكورس مُغلق</value></data>
+  <data name="This cycle was just given by someone else" xml:space="preserve"><value>هذه الدورة سُجّلت للتو من مستخدم آخر</value></data>
+  <data name="This regimen is in use: save the change under a new code" xml:space="preserve"><value>هذا البروتوكول مستخدم: احفظ التعديل برمز جديد</value></data>
+  <data name="Toxicity" xml:space="preserve"><value>السمية</value></data>
+  <data name="Toxicity grade" xml:space="preserve"><value>درجة السمية</value></data>
+  <data name="Toxicity grade 3–4" xml:space="preserve"><value>سمية درجة 3–4</value></data>
+  <data name="Toxicity since the last" xml:space="preserve"><value>السمية منذ الدورة السابقة</value></data>
+  <data name="Weigh the patient: the dose is computed on today's weight" xml:space="preserve"><value>سجّل وزن المريض: الجرعة تُحسب على وزن اليوم</value></data>
+  <data name="Weight / BSA" xml:space="preserve"><value>الوزن / مساحة الجسم</value></data>
+  <data name="What toxicity" xml:space="preserve"><value>نوع السمية</value></data>
+  <data name="Why give it anyway" xml:space="preserve"><value>سبب الإعطاء رغم ذلك</value></data>
+  <data name="Why is the course stopped?" xml:space="preserve"><value>لماذا أُوقف الكورس؟</value></data>
+  <data name="Write each drug's name" xml:space="preserve"><value>اكتب اسم كل دواء</value></data>
+  <data name="Write the days as numbers, like 1 or 1,8" xml:space="preserve"><value>اكتب الأيام أرقامًا، مثل 1 أو 1,8</value></data>
+  <data name="Write the diagnosis" xml:space="preserve"><value>اكتب التشخيص</value></data>
+  <data name="Write the regimen's code" xml:space="preserve"><value>اكتب رمز البروتوكول</value></data>
+  <data name="Write the regimen's name" xml:space="preserve"><value>اكتب اسم البروتوكول</value></data>
+  <data name="Write today's weight and counts: the doses and the checks follow." xml:space="preserve"><value>اكتب وزن اليوم والعدّ الدموي: الجرعات والفحوصات تُحسب تلقائيًا.</value></data>
+  <data name="Write why the course is stopped" xml:space="preserve"><value>اكتب سبب إيقاف الكورس</value></data>
+  <data name="Write why the cycle is held" xml:space="preserve"><value>اكتب سبب تأجيل الدورة</value></data>
+  <data name="cbs:AUC" xml:space="preserve"><value>AUC (كالفرت)</value></data>
+  <data name="cbs:Mg" xml:space="preserve"><value>مجم (ثابتة)</value></data>
+  <data name="cbs:MgKg" xml:space="preserve"><value>مجم/كجم</value></data>
+  <data name="cbs:MgM2" xml:space="preserve"><value>مجم/م²</value></data>
+  <data name="ccs:Active" xml:space="preserve"><value>جارٍ</value></data>
+  <data name="ccs:Completed" xml:space="preserve"><value>مكتمل</value></data>
+  <data name="ccs:Stopped" xml:space="preserve"><value>موقوف</value></data>
+  <data name="chk:Early" xml:space="preserve"><value>مبكر عن موعد الدورة</value></data>
+  <data name="chk:Lifetime" xml:space="preserve"><value>تجاوز الحد التراكمي</value></data>
+  <data name="chk:LowAnc" xml:space="preserve"><value>العدلات أقل من 1.5</value></data>
+  <data name="chk:LowPlatelets" xml:space="preserve"><value>الصفائح أقل من 100</value></data>
+  <data name="chk:NoCounts" xml:space="preserve"><value>لا يوجد عدّ دموي</value></data>
+  <data name="chk:Toxicity" xml:space="preserve"><value>سمية درجة 3–4 بدون تخفيض الجرعة</value></data>
+  <data name="chk:WeightChange" xml:space="preserve"><value>تغيّر الوزن أكثر من 10٪ منذ البداية</value></data>
+  <data name="cin:Adjuvant" xml:space="preserve"><value>مساعد بعد الجراحة</value></data>
+  <data name="cin:Curative" xml:space="preserve"><value>علاجي شافٍ</value></data>
+  <data name="cin:Neoadjuvant" xml:space="preserve"><value>قبل الجراحة</value></data>
+  <data name="cin:Palliative" xml:space="preserve"><value>تلطيفي</value></data>
+  <data name="{0} cycles" xml:space="preserve"><value>{0} دورات</value></data>
+  <data name="{0} years" xml:space="preserve"><value>{0} سنة</value></data>
+  <data name="A change of {0} or more is one the patient notices; the dashed line marks it." xml:space="preserve"><value>التغيّر بمقدار {0} أو أكثر يشعر به المريض فعلًا؛ الخط المتقطع يحدده.</value></data>
+  <data name="A goal is 300 characters at most" xml:space="preserve"><value>الهدف 300 حرف بحد أقصى</value></data>
+  <data name="A missed session has no treatment to record" xml:space="preserve"><value>الجلسة الفائتة ليس لها علاج يُسجَّل</value></data>
+  <data name="A session can be written back two weeks at most" xml:space="preserve"><value>يمكن تسجيل الجلسة بأثر رجعي أسبوعين فقط</value></data>
+  <data name="A session is already recorded that day" xml:space="preserve"><value>توجد جلسة مسجلة في هذا اليوم</value></data>
+  <data name="A session is recorded on its day or after it" xml:space="preserve"><value>تُسجَّل الجلسة في يومها أو بعده</value></data>
+  <data name="A week" xml:space="preserve"><value>في الأسبوع</value></data>
+  <data name="Add a goal" xml:space="preserve"><value>إضافة هدف</value></data>
+  <data name="Assess the patient" xml:space="preserve"><value>تقييم المريض</value></data>
+  <data name="Assessment" xml:space="preserve"><value>التقييم</value></data>
+  <data name="Attendance" xml:space="preserve"><value>الحضور</value></data>
+  <data name="Attendance {0}%" xml:space="preserve"><value>الحضور {0}٪</value></data>
+  <data name="Baseline score" xml:space="preserve"><value>الدرجة الأساسية</value></data>
+  <data name="Body region" xml:space="preserve"><value>منطقة الجسم</value></data>
+  <data name="By {0}" xml:space="preserve"><value>بحلول {0}</value></data>
+  <data name="Cancel the referral" xml:space="preserve"><value>إلغاء الإحالة</value></data>
+  <data name="Change in {0}" xml:space="preserve"><value>التغيّر في {0}</value></data>
+  <data name="Choose met or not met" xml:space="preserve"><value>اختر تحقق أو لم يتحقق</value></data>
+  <data name="Choose the body region" xml:space="preserve"><value>اختر منطقة الجسم</value></data>
+  <data name="Choose the outcome measure" xml:space="preserve"><value>اختر مقياس النتيجة</value></data>
+  <data name="Choose what was done" xml:space="preserve"><value>اختر ما تم في الجلسة</value></data>
+  <data name="Choose what was done from the list" xml:space="preserve"><value>اختر ما تم من القائمة</value></data>
+  <data name="Choose whether the patient came" xml:space="preserve"><value>اختر هل حضر المريض</value></data>
+  <data name="Choose why the patient is discharged" xml:space="preserve"><value>اختر سبب إنهاء العلاج</value></data>
+  <data name="Close this goal?" xml:space="preserve"><value>إغلاق هذا الهدف؟</value></data>
+  <data name="Discharge the patient from physiotherapy?" xml:space="preserve"><value>إنهاء العلاج الطبيعي لهذا المريض؟</value></data>
+  <data name="Discharged or cancelled" xml:space="preserve"><value>منتهية أو ملغاة</value></data>
+  <data name="End physiotherapy" xml:space="preserve"><value>إنهاء العلاج الطبيعي</value></data>
+  <data name="Episodes" xml:space="preserve"><value>حالات العلاج</value></data>
+  <data name="Goals" xml:space="preserve"><value>الأهداف</value></data>
+  <data name="Goals (one a line)" xml:space="preserve"><value>الأهداف (هدف في كل سطر)</value></data>
+  <data name="Goals are added to an active episode" xml:space="preserve"><value>تُضاف الأهداف إلى حالة علاج جارية</value></data>
+  <data name="Higher is better." xml:space="preserve"><value>الأعلى أفضل.</value></data>
+  <data name="Low back pain with sciatica, after a knee replacement…" xml:space="preserve"><value>ألم أسفل الظهر مع عرق النسا، بعد تغيير مفصل الركبة…</value></data>
+  <data name="Lower is better." xml:space="preserve"><value>الأقل أفضل.</value></data>
+  <data name="No goal yet." xml:space="preserve"><value>لا توجد أهداف بعد.</value></data>
+  <data name="No physiotherapy episode." xml:space="preserve"><value>لا توجد حالات علاج طبيعي.</value></data>
+  <data name="No weight on the left leg, osteoporosis…" xml:space="preserve"><value>ممنوع التحميل على الرجل اليسرى، هشاشة العظام…</value></data>
+  <data name="One standard measure scored now and again during the sessions shows whether the change is real." xml:space="preserve"><value>مقياس معياري واحد يُسجَّل الآن ويُعاد أثناء الجلسات يوضح هل التحسن حقيقي.</value></data>
+  <data name="Only a referral not yet assessed can be cancelled" xml:space="preserve"><value>لا تُلغى إلا الإحالة التي لم تُقيَّم بعد</value></data>
+  <data name="Only an active episode is discharged" xml:space="preserve"><value>لا يُنهى إلا العلاج الجاري</value></data>
+  <data name="Open episodes" xml:space="preserve"><value>الحالات المفتوحة</value></data>
+  <data name="Outcome measure" xml:space="preserve"><value>مقياس النتيجة</value></data>
+  <data name="Pain after" xml:space="preserve"><value>الألم بعد</value></data>
+  <data name="Pain before" xml:space="preserve"><value>الألم قبل</value></data>
+  <data name="Pain now (0–10)" xml:space="preserve"><value>الألم الآن (0–10)</value></data>
+  <data name="Physiotherapy" xml:space="preserve"><value>العلاج الطبيعي</value></data>
+  <data name="Physiotherapy episode" xml:space="preserve"><value>حالة علاج طبيعي</value></data>
+  <data name="Physiotherapy is not installed yet (hospital_h89_rehab.sql)." xml:space="preserve"><value>العلاج الطبيعي غير مثبت بعد (hospital_h89_rehab.sql).</value></data>
+  <data name="Range of motion, strength, function, special tests…" xml:space="preserve"><value>مدى الحركة، القوة، الوظيفة، الاختبارات الخاصة…</value></data>
+  <data name="Re-scored today (optional)" xml:space="preserve"><value>إعادة القياس اليوم (اختياري)</value></data>
+  <data name="Record a session" xml:space="preserve"><value>تسجيل جلسة</value></data>
+  <data name="Refer" xml:space="preserve"><value>إحالة</value></data>
+  <data name="Refer to physiotherapy" xml:space="preserve"><value>إحالة للعلاج الطبيعي</value></data>
+  <data name="Referred by" xml:space="preserve"><value>المحيل</value></data>
+  <data name="Rehabilitation" xml:space="preserve"><value>التأهيل</value></data>
+  <data name="Save this session?" xml:space="preserve"><value>حفظ هذه الجلسة؟</value></data>
+  <data name="Search by name, file or problem…" xml:space="preserve"><value>ابحث بالاسم أو رقم الملف أو المشكلة…</value></data>
+  <data name="Send this referral to physiotherapy?" xml:space="preserve"><value>إرسال هذه الإحالة للعلاج الطبيعي؟</value></data>
+  <data name="Sessions are recorded on an active episode" xml:space="preserve"><value>تُسجَّل الجلسات على حالة علاج جارية</value></data>
+  <data name="Sessions done" xml:space="preserve"><value>الجلسات المنجزة</value></data>
+  <data name="Start the episode" xml:space="preserve"><value>بدء العلاج</value></data>
+  <data name="Start the episode with this assessment?" xml:space="preserve"><value>بدء العلاج بهذا التقييم؟</value></data>
+  <data name="The day is before the assessment" xml:space="preserve"><value>اليوم قبل التقييم</value></data>
+  <data name="The pain is between 0 and 10" xml:space="preserve"><value>الألم بين 0 و10</value></data>
+  <data name="The patient already has an open episode for this region" xml:space="preserve"><value>للمريض حالة علاج مفتوحة لنفس المنطقة</value></data>
+  <data name="The planned sessions are between 1 and 60" xml:space="preserve"><value>عدد الجلسات بين 1 و60</value></data>
+  <data name="The score is outside the measure's range" xml:space="preserve"><value>الدرجة خارج نطاق المقياس</value></data>
+  <data name="The sessions a week are between 1 and 7" xml:space="preserve"><value>الجلسات في الأسبوع بين 1 و7</value></data>
+  <data name="The target date has passed" xml:space="preserve"><value>تاريخ الهدف فات</value></data>
+  <data name="Therapist" xml:space="preserve"><value>المعالج</value></data>
+  <data name="This goal is already closed" xml:space="preserve"><value>هذا الهدف مُغلق بالفعل</value></data>
+  <data name="This referral is already assessed or closed" xml:space="preserve"><value>هذه الإحالة قُيّمت أو أُغلقت بالفعل</value></data>
+  <data name="Waiting for assessment" xml:space="preserve"><value>بانتظار التقييم</value></data>
+  <data name="Walk 500 m without pain, climb stairs with one rail…" xml:space="preserve"><value>المشي 500 م بدون ألم، صعود السلم بدرابزين واحد…</value></data>
+  <data name="Where the patient is now, the home programme, when to come back…" xml:space="preserve"><value>حالة المريض الآن، البرنامج المنزلي، متى يعود…</value></data>
+  <data name="Why is the referral cancelled?" xml:space="preserve"><value>لماذا أُلغيت الإحالة؟</value></data>
+  <data name="Write the baseline score" xml:space="preserve"><value>اكتب الدرجة الأساسية</value></data>
+  <data name="Write the discharge summary" xml:space="preserve"><value>اكتب ملخص إنهاء العلاج</value></data>
+  <data name="Write the minutes of the session (5 to 240)" xml:space="preserve"><value>اكتب مدة الجلسة بالدقائق (5 إلى 240)</value></data>
+  <data name="Write the problem to treat" xml:space="preserve"><value>اكتب المشكلة المطلوب علاجها</value></data>
+  <data name="Write why the referral is cancelled" xml:space="preserve"><value>اكتب سبب إلغاء الإحالة</value></data>
+  <data name="msr:BI" xml:space="preserve"><value>مؤشر بارثل للأنشطة اليومية (BI)</value></data>
+  <data name="msr:DASH" xml:space="preserve"><value>مقياس إعاقة الذراع والكتف واليد (DASH)</value></data>
+  <data name="msr:LEFS" xml:space="preserve"><value>مقياس وظيفة الطرف السفلي (LEFS)</value></data>
+  <data name="msr:NDI" xml:space="preserve"><value>مؤشر إعاقة الرقبة (NDI)</value></data>
+  <data name="msr:ODI" xml:space="preserve"><value>مؤشر أوزوستري للإعاقة (ODI)</value></data>
+  <data name="rgn:Ankle" xml:space="preserve"><value>الكاحل والقدم</value></data>
+  <data name="rgn:Back" xml:space="preserve"><value>الظهر</value></data>
+  <data name="rgn:Cardio" xml:space="preserve"><value>قلبي رئوي</value></data>
+  <data name="rgn:Elbow" xml:space="preserve"><value>الكوع</value></data>
+  <data name="rgn:General" xml:space="preserve"><value>عام</value></data>
+  <data name="rgn:Hand" xml:space="preserve"><value>الرسغ واليد</value></data>
+  <data name="rgn:Hip" xml:space="preserve"><value>الحوض</value></data>
+  <data name="rgn:Knee" xml:space="preserve"><value>الركبة</value></data>
+  <data name="rgn:Neck" xml:space="preserve"><value>الرقبة</value></data>
+  <data name="rgn:Neuro" xml:space="preserve"><value>عصبي</value></data>
+  <data name="rgn:Shoulder" xml:space="preserve"><value>الكتف</value></data>
+  <data name="rgs:Met" xml:space="preserve"><value>تحقق</value></data>
+  <data name="rgs:NotMet" xml:space="preserve"><value>لم يتحقق</value></data>
+  <data name="rgs:Open" xml:space="preserve"><value>مفتوح</value></data>
+  <data name="rha:Attended" xml:space="preserve"><value>حضر</value></data>
+  <data name="rha:Cancelled" xml:space="preserve"><value>أُلغيت</value></data>
+  <data name="rha:NoShow" xml:space="preserve"><value>لم يحضر</value></data>
+  <data name="rhd:GoalsMet" xml:space="preserve"><value>تحققت الأهداف</value></data>
+  <data name="rhd:Medical" xml:space="preserve"><value>سبب طبي</value></data>
+  <data name="rhd:NonAttendance" xml:space="preserve"><value>عدم الحضور</value></data>
+  <data name="rhd:PatientRequest" xml:space="preserve"><value>طلب المريض</value></data>
+  <data name="rhd:Plateau" xml:space="preserve"><value>توقف التحسن</value></data>
+  <data name="rhd:Referred" xml:space="preserve"><value>أُحيل لجهة أخرى</value></data>
+  <data name="rhi:Balance" xml:space="preserve"><value>توازن</value></data>
+  <data name="rhi:Breathing" xml:space="preserve"><value>تمارين تنفس</value></data>
+  <data name="rhi:Education" xml:space="preserve"><value>توعية</value></data>
+  <data name="rhi:Electro" xml:space="preserve"><value>علاج كهربائي</value></data>
+  <data name="rhi:Exercise" xml:space="preserve"><value>تمارين</value></data>
+  <data name="rhi:Gait" xml:space="preserve"><value>تدريب المشي</value></data>
+  <data name="rhi:Heat" xml:space="preserve"><value>حرارة / برودة</value></data>
+  <data name="rhi:Hydro" xml:space="preserve"><value>علاج مائي</value></data>
+  <data name="rhi:Manual" xml:space="preserve"><value>علاج يدوي</value></data>
+  <data name="rhi:Taping" xml:space="preserve"><value>شريط لاصق علاجي</value></data>
+  <data name="rhs:Active" xml:space="preserve"><value>جارٍ</value></data>
+  <data name="rhs:Cancelled" xml:space="preserve"><value>مُلغى</value></data>
+  <data name="rhs:Discharged" xml:space="preserve"><value>منتهٍ</value></data>
+  <data name="rhs:Referred" xml:space="preserve"><value>محال</value></data>
+  <data name="rht:Improved" xml:space="preserve"><value>تحسن حقيقي</value></data>
+  <data name="rht:Same" xml:space="preserve"><value>لا تغيّر حقيقي</value></data>
+  <data name="rht:Worse" xml:space="preserve"><value>أسوأ</value></data>
+  <data name="rhw:NoProgress" xml:space="preserve"><value>لا تحسن حقيقي بعد 6 جلسات</value></data>
+  <data name="rhw:OverPlan" xml:space="preserve"><value>جلسات أكثر من المخطط</value></data>
+  <data name="rhw:PainWorse" xml:space="preserve"><value>زيادة الألم 2 أو أكثر</value></data>
+  <data name="rhw:TwoNoShows" xml:space="preserve"><value>غياب مرتين متتاليتين</value></data>
+  <data name="rhw:Unassessed" xml:space="preserve"><value>بانتظار التقييم أكثر من 3 أيام</value></data>
+  <data name="rhw:Worse" xml:space="preserve"><value>أسوأ من البداية</value></data>
+  <data name="{0} min" xml:space="preserve"><value>{0} دقيقة</value></data>
+  <data name="{0} sessions, {1} a week" xml:space="preserve"><value>{0} جلسات، {1} في الأسبوع</value></data>
+  <data name="A certificate whose manner is not natural becomes a police case, and its autopsy request carries over." xml:space="preserve"><value>شهادة الوفاة غير الطبيعية تصبح قضية شرطة، وطلب التشريح فيها ينتقل تلقائيًا.</value></data>
+  <data name="A range like A1-A6, or codes separated by commas." xml:space="preserve"><value>مدى مثل A1-A6، أو رموز تفصلها فواصل.</value></data>
+  <data name="Add an item" xml:space="preserve"><value>إضافة غرض</value></data>
+  <data name="Add compartments" xml:space="preserve"><value>إضافة أدراج</value></data>
+  <data name="Add these compartments?" xml:space="preserve"><value>إضافة هذه الأدراج؟</value></data>
+  <data name="An autopsy is already requested" xml:space="preserve"><value>التشريح مطلوب بالفعل</value></data>
+  <data name="An unknown body is always a police case." xml:space="preserve"><value>الجثمان المجهول قضية شرطة دائمًا.</value></data>
+  <data name="Another body in the mortuary has this tag" xml:space="preserve"><value>يوجد جثمان آخر في المشرحة بنفس رقم البطاقة</value></data>
+  <data name="Autopsy" xml:space="preserve"><value>التشريح</value></data>
+  <data name="Belongings" xml:space="preserve"><value>المتعلقات</value></data>
+  <data name="Belongings (one a line: item × quantity)" xml:space="preserve"><value>المتعلقات (سطر لكل غرض: الغرض × العدد)</value></data>
+  <data name="Brought from" xml:space="preserve"><value>وارد من</value></data>
+  <data name="Choose a free compartment" xml:space="preserve"><value>اختر درجًا فارغًا</value></data>
+  <data name="Choose the death certificate, or describe an unknown body" xml:space="preserve"><value>اختر شهادة الوفاة، أو صِف الجثمان المجهول</value></data>
+  <data name="Choose the kind of compartment" xml:space="preserve"><value>اختر نوع الدرج</value></data>
+  <data name="Cleared {0}" xml:space="preserve"><value>أُفرج عنه {0}</value></data>
+  <data name="Codes" xml:space="preserve"><value>الرموز</value></data>
+  <data name="Compartment" xml:space="preserve"><value>الدرج</value></data>
+  <data name="Death certificate" xml:space="preserve"><value>شهادة الوفاة</value></data>
+  <data name="Description of the unknown body" xml:space="preserve"><value>وصف الجثمان المجهول</value></data>
+  <data name="Died at" xml:space="preserve"><value>وقت الوفاة</value></data>
+  <data name="Each belonging needs a name and a quantity" xml:space="preserve"><value>كل غرض يحتاج اسمًا وعددًا</value></data>
+  <data name="Each hold is lifted by its own step; the release opens when none is left. A transfer (to forensic medicine, another hospital) is not held." xml:space="preserve"><value>كل قيد يُرفع بخطوته؛ ويُفتح التسليم عندما لا يبقى قيد. التحويل (للطب الشرعي أو مستشفى آخر) غير مقيّد.</value></data>
+  <data name="Funeral home" xml:space="preserve"><value>دار الجنازات / التغسيل</value></data>
+  <data name="Hand the belongings over with the body" xml:space="preserve"><value>سلّم المتعلقات مع الجثمان</value></data>
+  <data name="Handed over with the body" xml:space="preserve"><value>سُلّمت مع الجثمان</value></data>
+  <data name="Identified and certified" xml:space="preserve"><value>تم التعرف والتوثيق</value></data>
+  <data name="Identity" xml:space="preserve"><value>الهوية</value></data>
+  <data name="Identity and certificate" xml:space="preserve"><value>الهوية وشهادة الوفاة</value></data>
+  <data name="Identity number" xml:space="preserve"><value>رقم الهوية</value></data>
+  <data name="In the mortuary" xml:space="preserve"><value>في المشرحة</value></data>
+  <data name="Kept" xml:space="preserve"><value>مدة الحفظ</value></data>
+  <data name="Mortuary" xml:space="preserve"><value>المشرحة</value></data>
+  <data name="Mortuary case" xml:space="preserve"><value>حالة بالمشرحة</value></data>
+  <data name="Mortuary register" xml:space="preserve"><value>سجل المشرحة</value></data>
+  <data name="Move" xml:space="preserve"><value>نقل</value></data>
+  <data name="Move to which compartment? Free:" xml:space="preserve"><value>النقل إلى أي درج؟ الفارغة:</value></data>
+  <data name="No autopsy is waiting" xml:space="preserve"><value>لا يوجد تشريح منتظر</value></data>
+  <data name="No compartment yet: add the cold chambers' places first." xml:space="preserve"><value>لا توجد أدراج بعد: أضف أماكن الثلاجات أولًا.</value></data>
+  <data name="Nothing holds the body: it may be released" xml:space="preserve"><value>لا يوجد قيد على الجثمان: يمكن تسليمه</value></data>
+  <data name="Nothing was found with the body." xml:space="preserve"><value>لم يوجد شيء مع الجثمان.</value></data>
+  <data name="Occupied {0} of {1}" xml:space="preserve"><value>مشغول {0} من {1}</value></data>
+  <data name="Police case" xml:space="preserve"><value>قضية شرطة</value></data>
+  <data name="Police clearance" xml:space="preserve"><value>إذن الشرطة</value></data>
+  <data name="Police hold" xml:space="preserve"><value>قيد الشرطة</value></data>
+  <data name="Police report number" xml:space="preserve"><value>رقم المحضر</value></data>
+  <data name="Receive a body" xml:space="preserve"><value>استلام جثمان</value></data>
+  <data name="Receive this body into the mortuary?" xml:space="preserve"><value>استلام هذا الجثمان في المشرحة؟</value></data>
+  <data name="Received" xml:space="preserve"><value>الاستلام</value></data>
+  <data name="Received by (full name)" xml:space="preserve"><value>المستلم (الاسم الكامل)</value></data>
+  <data name="Record it done" xml:space="preserve"><value>تسجيل الإتمام</value></data>
+  <data name="Record the clearance" xml:space="preserve"><value>تسجيل إذن الشرطة</value></data>
+  <data name="Recorded" xml:space="preserve"><value>سُجّل</value></data>
+  <data name="Relation to the deceased" xml:space="preserve"><value>صلة القرابة</value></data>
+  <data name="Release the body" xml:space="preserve"><value>تسليم الجثمان</value></data>
+  <data name="Release the body to this person?" xml:space="preserve"><value>تسليم الجثمان لهذا الشخص؟</value></data>
+  <data name="Released or transferred" xml:space="preserve"><value>مُسلّم أو مُحوّل</value></data>
+  <data name="Released to" xml:space="preserve"><value>سُلّم إلى</value></data>
+  <data name="Request an autopsy" xml:space="preserve"><value>طلب تشريح</value></data>
+  <data name="Search by name, file, tag or receiver…" xml:space="preserve"><value>ابحث بالاسم أو رقم الملف أو البطاقة أو المستلم…</value></data>
+  <data name="Sex, apparent age, height, marks, clothing, where found…" xml:space="preserve"><value>الجنس، العمر التقريبي، الطول، العلامات، الملابس، مكان العثور…</value></data>
+  <data name="Something still holds the body: lift it first" xml:space="preserve"><value>يوجد قيد على الجثمان: ارفعه أولًا</value></data>
+  <data name="Son, wife, brother…" xml:space="preserve"><value>ابن، زوجة، أخ…</value></data>
+  <data name="Tag number" xml:space="preserve"><value>رقم البطاقة</value></data>
+  <data name="The certificate is voided: certify the death again." xml:space="preserve"><value>شهادة الوفاة ملغاة: وثّق الوفاة من جديد.</value></data>
+  <data name="The item (and quantity, like: watch × 1)" xml:space="preserve"><value>الغرض (والعدد، مثل: ساعة × 1)</value></data>
+  <data name="The mortuary is not installed yet (hospital_h90_morgue.sql)." xml:space="preserve"><value>المشرحة غير مثبتة بعد (hospital_h90_morgue.sql).</value></data>
+  <data name="The police report number" xml:space="preserve"><value>رقم محضر الشرطة</value></data>
+  <data name="The register is empty." xml:space="preserve"><value>السجل فارغ.</value></data>
+  <data name="The {0} belongings were handed over and signed for" xml:space="preserve"><value>سُلّمت المتعلقات ({0}) ووُقّع على استلامها</value></data>
+  <data name="There is no police hold to lift" xml:space="preserve"><value>لا يوجد قيد شرطة لرفعه</value></data>
+  <data name="This body is already in the mortuary register" xml:space="preserve"><value>هذا الجثمان مسجل بالفعل في سجل المشرحة</value></data>
+  <data name="This body is no longer in the mortuary" xml:space="preserve"><value>هذا الجثمان لم يعد في المشرحة</value></data>
+  <data name="This death certificate is voided" xml:space="preserve"><value>شهادة الوفاة هذه ملغاة</value></data>
+  <data name="Transfer the body?" xml:space="preserve"><value>تحويل الجثمان؟</value></data>
+  <data name="Transferred to" xml:space="preserve"><value>حُوّل إلى</value></data>
+  <data name="Transferred to (facility)" xml:space="preserve"><value>حُوّل إلى (الجهة)</value></data>
+  <data name="Unknown" xml:space="preserve"><value>مجهول</value></data>
+  <data name="Unknown body (no certificate)" xml:space="preserve"><value>جثمان مجهول (بدون شهادة)</value></data>
+  <data name="Unknown body: released only by transfer to the authorities, or once identified and certified." xml:space="preserve"><value>جثمان مجهول: لا يُسلّم إلا بالتحويل للجهات الرسمية، أو بعد التعرف عليه وتوثيق الوفاة.</value></data>
+  <data name="Ward, ER, ambulance…" xml:space="preserve"><value>القسم، الطوارئ، الإسعاف…</value></data>
+  <data name="Wedding ring × 1, wristwatch × 1, mobile phone × 1…" xml:space="preserve"><value>خاتم زواج × 1، ساعة يد × 1، هاتف محمول × 1…</value></data>
+  <data name="What still holds the body" xml:space="preserve"><value>ما يمنع تسليم الجثمان</value></data>
+  <data name="Who performed the autopsy, and where is the report?" xml:space="preserve"><value>من أجرى التشريح، وأين التقرير؟</value></data>
+  <data name="Why is an autopsy requested?" xml:space="preserve"><value>لماذا طُلب التشريح؟</value></data>
+  <data name="Write the body tag number" xml:space="preserve"><value>اكتب رقم بطاقة الجثمان</value></data>
+  <data name="Write the codes, like A1-A6 or F1,F2" xml:space="preserve"><value>اكتب الرموز، مثل A1-A6 أو F1,F2</value></data>
+  <data name="Write the police report number" xml:space="preserve"><value>اكتب رقم المحضر</value></data>
+  <data name="Write the receiver's identity number" xml:space="preserve"><value>اكتب رقم هوية المستلم</value></data>
+  <data name="Write the receiver's relation to the deceased" xml:space="preserve"><value>اكتب صلة قرابة المستلم بالمتوفى</value></data>
+  <data name="Write where the body is transferred" xml:space="preserve"><value>اكتب الجهة المحوّل إليها الجثمان</value></data>
+  <data name="Write who performed the autopsy and where the report is" xml:space="preserve"><value>اكتب من أجرى التشريح وأين التقرير</value></data>
+  <data name="Write who receives the body" xml:space="preserve"><value>اكتب اسم مستلم الجثمان</value></data>
+  <data name="aut:Done" xml:space="preserve"><value>تم</value></data>
+  <data name="aut:None" xml:space="preserve"><value>غير مطلوب</value></data>
+  <data name="aut:Requested" xml:space="preserve"><value>مطلوب — بانتظار التنفيذ</value></data>
+  <data name="mgk:Cold" xml:space="preserve"><value>ثلاجة</value></data>
+  <data name="mgk:Freezer" xml:space="preserve"><value>تجميد</value></data>
+  <data name="mgs:InStorage" xml:space="preserve"><value>في المشرحة</value></data>
+  <data name="mgs:Released" xml:space="preserve"><value>سُلّم</value></data>
+  <data name="mgs:Transferred" xml:space="preserve"><value>حُوّل</value></data>
+  <data name="mgw:Autopsy" xml:space="preserve"><value>تشريح منتظر</value></data>
+  <data name="mgw:NoCertificate" xml:space="preserve"><value>لا توجد شهادة وفاة سارية</value></data>
+  <data name="mgw:Over72h" xml:space="preserve"><value>أكثر من 72 ساعة</value></data>
+  <data name="mgw:OverWeek" xml:space="preserve"><value>أكثر من أسبوع</value></data>
+  <data name="mgw:PoliceHold" xml:space="preserve"><value>قيد الشرطة</value></data>
+  <data name="mgw:Unidentified" xml:space="preserve"><value>مجهول الهوية</value></data>
 </root>

@@ -1,0 +1,540 @@
+{
+ "unit": "H90 — mortuary",
+ "strings": {
+  "A certificate whose manner is not natural becomes a police case, and its autopsy request carries over.": {
+   "ar": "شهادة الوفاة غير الطبيعية تصبح قضية شرطة، وطلب التشريح فيها ينتقل تلقائيًا.",
+   "en": "A certificate whose manner is not natural becomes a police case, and its autopsy request carries over.",
+   "fr": "Un certificat dont la cause n'est pas naturelle devient une affaire de police, et sa demande d'autopsie suit."
+  },
+  "A range like A1-A6, or codes separated by commas.": {
+   "ar": "مدى مثل A1-A6، أو رموز تفصلها فواصل.",
+   "en": "A range like A1-A6, or codes separated by commas.",
+   "fr": "Une plage comme A1-A6, ou des codes séparés par des virgules."
+  },
+  "Add an item": {
+   "ar": "إضافة غرض",
+   "en": "Add an item",
+   "fr": "Ajouter un objet"
+  },
+  "Add compartments": {
+   "ar": "إضافة أدراج",
+   "en": "Add compartments",
+   "fr": "Ajouter des cases"
+  },
+  "Add these compartments?": {
+   "ar": "إضافة هذه الأدراج؟",
+   "en": "Add these compartments?",
+   "fr": "Ajouter ces cases ?"
+  },
+  "An autopsy is already requested": {
+   "ar": "التشريح مطلوب بالفعل",
+   "en": "An autopsy is already requested",
+   "fr": "Une autopsie est déjà demandée"
+  },
+  "An unknown body is always a police case.": {
+   "ar": "الجثمان المجهول قضية شرطة دائمًا.",
+   "en": "An unknown body is always a police case.",
+   "fr": "Un corps non identifié est toujours une affaire de police."
+  },
+  "Another body in the mortuary has this tag": {
+   "ar": "يوجد جثمان آخر في المشرحة بنفس رقم البطاقة",
+   "en": "Another body in the mortuary has this tag",
+   "fr": "Un autre corps à la morgue porte ce bracelet"
+  },
+  "Autopsy": {
+   "ar": "التشريح",
+   "en": "Autopsy",
+   "fr": "Autopsie"
+  },
+  "Belongings": {
+   "ar": "المتعلقات",
+   "en": "Belongings",
+   "fr": "Effets personnels"
+  },
+  "Belongings (one a line: item × quantity)": {
+   "ar": "المتعلقات (سطر لكل غرض: الغرض × العدد)",
+   "en": "Belongings (one a line: item × quantity)",
+   "fr": "Effets (un par ligne : objet × quantité)"
+  },
+  "Brought from": {
+   "ar": "وارد من",
+   "en": "Brought from",
+   "fr": "Venant de"
+  },
+  "Choose a free compartment": {
+   "ar": "اختر درجًا فارغًا",
+   "en": "Choose a free compartment",
+   "fr": "Choisissez une case libre"
+  },
+  "Choose the death certificate, or describe an unknown body": {
+   "ar": "اختر شهادة الوفاة، أو صِف الجثمان المجهول",
+   "en": "Choose the death certificate, or describe an unknown body",
+   "fr": "Choisissez le certificat de décès, ou décrivez le corps inconnu"
+  },
+  "Choose the kind of compartment": {
+   "ar": "اختر نوع الدرج",
+   "en": "Choose the kind of compartment",
+   "fr": "Choisissez le type de case"
+  },
+  "Cleared {0}": {
+   "ar": "أُفرج عنه {0}",
+   "en": "Cleared {0}",
+   "fr": "Levé le {0}"
+  },
+  "Codes": {
+   "ar": "الرموز",
+   "en": "Codes",
+   "fr": "Codes"
+  },
+  "Compartment": {
+   "ar": "الدرج",
+   "en": "Compartment",
+   "fr": "Case"
+  },
+  "Death certificate": {
+   "ar": "شهادة الوفاة",
+   "en": "Death certificate",
+   "fr": "Certificat de décès"
+  },
+  "Description of the unknown body": {
+   "ar": "وصف الجثمان المجهول",
+   "en": "Description of the unknown body",
+   "fr": "Description du corps inconnu"
+  },
+  "Died at": {
+   "ar": "وقت الوفاة",
+   "en": "Died at",
+   "fr": "Décédé le"
+  },
+  "Each belonging needs a name and a quantity": {
+   "ar": "كل غرض يحتاج اسمًا وعددًا",
+   "en": "Each belonging needs a name and a quantity",
+   "fr": "Chaque objet doit avoir un nom et une quantité"
+  },
+  "Each hold is lifted by its own step; the release opens when none is left. A transfer (to forensic medicine, another hospital) is not held.": {
+   "ar": "كل قيد يُرفع بخطوته؛ ويُفتح التسليم عندما لا يبقى قيد. التحويل (للطب الشرعي أو مستشفى آخر) غير مقيّد.",
+   "en": "Each hold is lifted by its own step; the release opens when none is left. A transfer (to forensic medicine, another hospital) is not held.",
+   "fr": "Chaque blocage se lève par son étape ; la remise s'ouvre quand il n'en reste aucun. Un transfert (médecine légale, autre hôpital) n'est pas bloqué."
+  },
+  "Funeral home": {
+   "ar": "دار الجنازات / التغسيل",
+   "en": "Funeral home",
+   "fr": "Pompes funèbres"
+  },
+  "Hand the belongings over with the body": {
+   "ar": "سلّم المتعلقات مع الجثمان",
+   "en": "Hand the belongings over with the body",
+   "fr": "Remettez les effets avec le corps"
+  },
+  "Handed over with the body": {
+   "ar": "سُلّمت مع الجثمان",
+   "en": "Handed over with the body",
+   "fr": "Remis avec le corps"
+  },
+  "Identified and certified": {
+   "ar": "تم التعرف والتوثيق",
+   "en": "Identified and certified",
+   "fr": "Identifié et certifié"
+  },
+  "Identity": {
+   "ar": "الهوية",
+   "en": "Identity",
+   "fr": "Identité"
+  },
+  "Identity and certificate": {
+   "ar": "الهوية وشهادة الوفاة",
+   "en": "Identity and certificate",
+   "fr": "Identité et certificat"
+  },
+  "Identity number": {
+   "ar": "رقم الهوية",
+   "en": "Identity number",
+   "fr": "Numéro d'identité"
+  },
+  "In the mortuary": {
+   "ar": "في المشرحة",
+   "en": "In the mortuary",
+   "fr": "À la morgue"
+  },
+  "Kept": {
+   "ar": "مدة الحفظ",
+   "en": "Kept",
+   "fr": "Durée de garde"
+  },
+  "Mortuary": {
+   "ar": "المشرحة",
+   "en": "Mortuary",
+   "fr": "Morgue"
+  },
+  "Mortuary case": {
+   "ar": "حالة بالمشرحة",
+   "en": "Mortuary case",
+   "fr": "Dossier morgue"
+  },
+  "Mortuary register": {
+   "ar": "سجل المشرحة",
+   "en": "Mortuary register",
+   "fr": "Registre de la morgue"
+  },
+  "Move": {
+   "ar": "نقل",
+   "en": "Move",
+   "fr": "Déplacer"
+  },
+  "Move to which compartment? Free:": {
+   "ar": "النقل إلى أي درج؟ الفارغة:",
+   "en": "Move to which compartment? Free:",
+   "fr": "Déplacer vers quelle case ? Libres :"
+  },
+  "No autopsy is waiting": {
+   "ar": "لا يوجد تشريح منتظر",
+   "en": "No autopsy is waiting",
+   "fr": "Aucune autopsie en attente"
+  },
+  "No compartment yet: add the cold chambers' places first.": {
+   "ar": "لا توجد أدراج بعد: أضف أماكن الثلاجات أولًا.",
+   "en": "No compartment yet: add the cold chambers' places first.",
+   "fr": "Pas encore de case : ajoutez d'abord les places des chambres froides."
+  },
+  "Nothing holds the body: it may be released": {
+   "ar": "لا يوجد قيد على الجثمان: يمكن تسليمه",
+   "en": "Nothing holds the body: it may be released",
+   "fr": "Rien ne bloque le corps : il peut être remis"
+  },
+  "Nothing was found with the body.": {
+   "ar": "لم يوجد شيء مع الجثمان.",
+   "en": "Nothing was found with the body.",
+   "fr": "Rien n'a été trouvé avec le corps."
+  },
+  "Occupied {0} of {1}": {
+   "ar": "مشغول {0} من {1}",
+   "en": "Occupied {0} of {1}",
+   "fr": "Occupées {0} sur {1}"
+  },
+  "Police case": {
+   "ar": "قضية شرطة",
+   "en": "Police case",
+   "fr": "Affaire de police"
+  },
+  "Police clearance": {
+   "ar": "إذن الشرطة",
+   "en": "Police clearance",
+   "fr": "Levée de la police"
+  },
+  "Police hold": {
+   "ar": "قيد الشرطة",
+   "en": "Police hold",
+   "fr": "Blocage police"
+  },
+  "Police report number": {
+   "ar": "رقم المحضر",
+   "en": "Police report number",
+   "fr": "Numéro du procès-verbal"
+  },
+  "Receive a body": {
+   "ar": "استلام جثمان",
+   "en": "Receive a body",
+   "fr": "Recevoir un corps"
+  },
+  "Receive this body into the mortuary?": {
+   "ar": "استلام هذا الجثمان في المشرحة؟",
+   "en": "Receive this body into the mortuary?",
+   "fr": "Recevoir ce corps à la morgue ?"
+  },
+  "Received": {
+   "ar": "الاستلام",
+   "en": "Received",
+   "fr": "Reçu"
+  },
+  "Received by (full name)": {
+   "ar": "المستلم (الاسم الكامل)",
+   "en": "Received by (full name)",
+   "fr": "Reçu par (nom complet)"
+  },
+  "Record it done": {
+   "ar": "تسجيل الإتمام",
+   "en": "Record it done",
+   "fr": "Enregistrer comme fait"
+  },
+  "Record the clearance": {
+   "ar": "تسجيل إذن الشرطة",
+   "en": "Record the clearance",
+   "fr": "Enregistrer la levée"
+  },
+  "Recorded": {
+   "ar": "سُجّل",
+   "en": "Recorded",
+   "fr": "Enregistré"
+  },
+  "Relation to the deceased": {
+   "ar": "صلة القرابة",
+   "en": "Relation to the deceased",
+   "fr": "Lien avec le défunt"
+  },
+  "Release the body": {
+   "ar": "تسليم الجثمان",
+   "en": "Release the body",
+   "fr": "Remettre le corps"
+  },
+  "Release the body to this person?": {
+   "ar": "تسليم الجثمان لهذا الشخص؟",
+   "en": "Release the body to this person?",
+   "fr": "Remettre le corps à cette personne ?"
+  },
+  "Released or transferred": {
+   "ar": "مُسلّم أو مُحوّل",
+   "en": "Released or transferred",
+   "fr": "Remis ou transférés"
+  },
+  "Released to": {
+   "ar": "سُلّم إلى",
+   "en": "Released to",
+   "fr": "Remis à"
+  },
+  "Request an autopsy": {
+   "ar": "طلب تشريح",
+   "en": "Request an autopsy",
+   "fr": "Demander une autopsie"
+  },
+  "Search by name, file, tag or receiver…": {
+   "ar": "ابحث بالاسم أو رقم الملف أو البطاقة أو المستلم…",
+   "en": "Search by name, file, tag or receiver…",
+   "fr": "Rechercher par nom, dossier, bracelet ou receveur…"
+  },
+  "Sex, apparent age, height, marks, clothing, where found…": {
+   "ar": "الجنس، العمر التقريبي، الطول، العلامات، الملابس، مكان العثور…",
+   "en": "Sex, apparent age, height, marks, clothing, where found…",
+   "fr": "Sexe, âge apparent, taille, marques, vêtements, lieu de découverte…"
+  },
+  "Something still holds the body: lift it first": {
+   "ar": "يوجد قيد على الجثمان: ارفعه أولًا",
+   "en": "Something still holds the body: lift it first",
+   "fr": "Un blocage subsiste : levez-le d'abord"
+  },
+  "Son, wife, brother…": {
+   "ar": "ابن، زوجة، أخ…",
+   "en": "Son, wife, brother…",
+   "fr": "Fils, épouse, frère…"
+  },
+  "Tag number": {
+   "ar": "رقم البطاقة",
+   "en": "Tag number",
+   "fr": "Numéro de bracelet"
+  },
+  "The certificate is voided: certify the death again.": {
+   "ar": "شهادة الوفاة ملغاة: وثّق الوفاة من جديد.",
+   "en": "The certificate is voided: certify the death again.",
+   "fr": "Le certificat est annulé : certifiez à nouveau le décès."
+  },
+  "The item (and quantity, like: watch × 1)": {
+   "ar": "الغرض (والعدد، مثل: ساعة × 1)",
+   "en": "The item (and quantity, like: watch × 1)",
+   "fr": "L'objet (et la quantité, comme : montre × 1)"
+  },
+  "The mortuary is not installed yet (hospital_h90_morgue.sql).": {
+   "ar": "المشرحة غير مثبتة بعد (hospital_h90_morgue.sql).",
+   "en": "The mortuary is not installed yet (hospital_h90_morgue.sql).",
+   "fr": "La morgue n'est pas encore installée (hospital_h90_morgue.sql)."
+  },
+  "The police report number": {
+   "ar": "رقم محضر الشرطة",
+   "en": "The police report number",
+   "fr": "Le numéro du procès-verbal"
+  },
+  "The register is empty.": {
+   "ar": "السجل فارغ.",
+   "en": "The register is empty.",
+   "fr": "Le registre est vide."
+  },
+  "The {0} belongings were handed over and signed for": {
+   "ar": "سُلّمت المتعلقات ({0}) ووُقّع على استلامها",
+   "en": "The {0} belongings were handed over and signed for",
+   "fr": "Les {0} effets ont été remis et signés"
+  },
+  "There is no police hold to lift": {
+   "ar": "لا يوجد قيد شرطة لرفعه",
+   "en": "There is no police hold to lift",
+   "fr": "Aucun blocage police à lever"
+  },
+  "This body is already in the mortuary register": {
+   "ar": "هذا الجثمان مسجل بالفعل في سجل المشرحة",
+   "en": "This body is already in the mortuary register",
+   "fr": "Ce corps est déjà au registre de la morgue"
+  },
+  "This body is no longer in the mortuary": {
+   "ar": "هذا الجثمان لم يعد في المشرحة",
+   "en": "This body is no longer in the mortuary",
+   "fr": "Ce corps n'est plus à la morgue"
+  },
+  "This death certificate is voided": {
+   "ar": "شهادة الوفاة هذه ملغاة",
+   "en": "This death certificate is voided",
+   "fr": "Ce certificat de décès est annulé"
+  },
+  "Transfer the body?": {
+   "ar": "تحويل الجثمان؟",
+   "en": "Transfer the body?",
+   "fr": "Transférer le corps ?"
+  },
+  "Transferred to": {
+   "ar": "حُوّل إلى",
+   "en": "Transferred to",
+   "fr": "Transféré à"
+  },
+  "Transferred to (facility)": {
+   "ar": "حُوّل إلى (الجهة)",
+   "en": "Transferred to (facility)",
+   "fr": "Transféré à (établissement)"
+  },
+  "Unknown": {
+   "ar": "مجهول",
+   "en": "Unknown",
+   "fr": "Inconnu"
+  },
+  "Unknown body (no certificate)": {
+   "ar": "جثمان مجهول (بدون شهادة)",
+   "en": "Unknown body (no certificate)",
+   "fr": "Corps inconnu (sans certificat)"
+  },
+  "Unknown body: released only by transfer to the authorities, or once identified and certified.": {
+   "ar": "جثمان مجهول: لا يُسلّم إلا بالتحويل للجهات الرسمية، أو بعد التعرف عليه وتوثيق الوفاة.",
+   "en": "Unknown body: released only by transfer to the authorities, or once identified and certified.",
+   "fr": "Corps inconnu : remis seulement par transfert aux autorités, ou une fois identifié et certifié."
+  },
+  "Ward, ER, ambulance…": {
+   "ar": "القسم، الطوارئ، الإسعاف…",
+   "en": "Ward, ER, ambulance…",
+   "fr": "Service, urgences, ambulance…"
+  },
+  "Wedding ring × 1, wristwatch × 1, mobile phone × 1…": {
+   "ar": "خاتم زواج × 1، ساعة يد × 1، هاتف محمول × 1…",
+   "en": "Wedding ring × 1, wristwatch × 1, mobile phone × 1…",
+   "fr": "Alliance × 1, montre × 1, téléphone × 1…"
+  },
+  "What still holds the body": {
+   "ar": "ما يمنع تسليم الجثمان",
+   "en": "What still holds the body",
+   "fr": "Ce qui bloque encore le corps"
+  },
+  "Who performed the autopsy, and where is the report?": {
+   "ar": "من أجرى التشريح، وأين التقرير؟",
+   "en": "Who performed the autopsy, and where is the report?",
+   "fr": "Qui a pratiqué l'autopsie, et où est le rapport ?"
+  },
+  "Why is an autopsy requested?": {
+   "ar": "لماذا طُلب التشريح؟",
+   "en": "Why is an autopsy requested?",
+   "fr": "Pourquoi une autopsie est-elle demandée ?"
+  },
+  "Write the body tag number": {
+   "ar": "اكتب رقم بطاقة الجثمان",
+   "en": "Write the body tag number",
+   "fr": "Saisissez le numéro du bracelet"
+  },
+  "Write the codes, like A1-A6 or F1,F2": {
+   "ar": "اكتب الرموز، مثل A1-A6 أو F1,F2",
+   "en": "Write the codes, like A1-A6 or F1,F2",
+   "fr": "Saisissez les codes, comme A1-A6 ou F1,F2"
+  },
+  "Write the police report number": {
+   "ar": "اكتب رقم المحضر",
+   "en": "Write the police report number",
+   "fr": "Saisissez le numéro du procès-verbal"
+  },
+  "Write the receiver's identity number": {
+   "ar": "اكتب رقم هوية المستلم",
+   "en": "Write the receiver's identity number",
+   "fr": "Saisissez le numéro d'identité du receveur"
+  },
+  "Write the receiver's relation to the deceased": {
+   "ar": "اكتب صلة قرابة المستلم بالمتوفى",
+   "en": "Write the receiver's relation to the deceased",
+   "fr": "Indiquez le lien du receveur avec le défunt"
+  },
+  "Write where the body is transferred": {
+   "ar": "اكتب الجهة المحوّل إليها الجثمان",
+   "en": "Write where the body is transferred",
+   "fr": "Indiquez où le corps est transféré"
+  },
+  "Write who performed the autopsy and where the report is": {
+   "ar": "اكتب من أجرى التشريح وأين التقرير",
+   "en": "Write who performed the autopsy and where the report is",
+   "fr": "Indiquez qui a pratiqué l'autopsie et où est le rapport"
+  },
+  "Write who receives the body": {
+   "ar": "اكتب اسم مستلم الجثمان",
+   "en": "Write who receives the body",
+   "fr": "Indiquez qui reçoit le corps"
+  },
+  "aut:Done": {
+   "ar": "تم",
+   "en": "Done",
+   "fr": "Faite"
+  },
+  "aut:None": {
+   "ar": "غير مطلوب",
+   "en": "Not requested",
+   "fr": "Non demandée"
+  },
+  "aut:Requested": {
+   "ar": "مطلوب — بانتظار التنفيذ",
+   "en": "Requested — waiting",
+   "fr": "Demandée — en attente"
+  },
+  "mgk:Cold": {
+   "ar": "ثلاجة",
+   "en": "Cold chamber",
+   "fr": "Chambre froide"
+  },
+  "mgk:Freezer": {
+   "ar": "تجميد",
+   "en": "Freezer",
+   "fr": "Congélateur"
+  },
+  "mgs:InStorage": {
+   "ar": "في المشرحة",
+   "en": "In the mortuary",
+   "fr": "À la morgue"
+  },
+  "mgs:Released": {
+   "ar": "سُلّم",
+   "en": "Released",
+   "fr": "Remis"
+  },
+  "mgs:Transferred": {
+   "ar": "حُوّل",
+   "en": "Transferred",
+   "fr": "Transféré"
+  },
+  "mgw:Autopsy": {
+   "ar": "تشريح منتظر",
+   "en": "Autopsy waiting",
+   "fr": "Autopsie en attente"
+  },
+  "mgw:NoCertificate": {
+   "ar": "لا توجد شهادة وفاة سارية",
+   "en": "No valid certificate",
+   "fr": "Pas de certificat valide"
+  },
+  "mgw:Over72h": {
+   "ar": "أكثر من 72 ساعة",
+   "en": "Over 72 hours",
+   "fr": "Plus de 72 h"
+  },
+  "mgw:OverWeek": {
+   "ar": "أكثر من أسبوع",
+   "en": "Over a week",
+   "fr": "Plus d'une semaine"
+  },
+  "mgw:PoliceHold": {
+   "ar": "قيد الشرطة",
+   "en": "Police hold",
+   "fr": "Blocage police"
+  },
+  "mgw:Unidentified": {
+   "ar": "مجهول الهوية",
+   "en": "Unidentified",
+   "fr": "Non identifié"
+  }
+ }
+}

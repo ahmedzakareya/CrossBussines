@@ -1613,6 +1613,7 @@
   <data name="A surface code bills 1 to 5 surfaces" xml:space="preserve"><value>A surface code bills 1 to 5 surfaces</value></data>
   <data name="A tooth is charted twice" xml:space="preserve"><value>A tooth is charted twice</value></data>
   <data name="Accept" xml:space="preserve"><value>Accept</value></data>
+  <data name="Actions" xml:space="preserve"><value>Actions</value></data>
   <data name="Accept a phase with the patient's signature" xml:space="preserve"><value>Accept a phase with the patient's signature</value></data>
   <data name="Acceptance rate" xml:space="preserve"><value>Acceptance rate</value></data>
   <data name="Accepted, not done" xml:space="preserve"><value>Accepted, not done</value></data>
@@ -4499,4 +4500,1097 @@
   <data name="This stay's tests and imaging" xml:space="preserve"><value>This stay's tests and imaging</value></data>
   <data name="Work has started on this order: it can no longer be cancelled" xml:space="preserve"><value>Work has started on this order: it can no longer be cancelled</value></data>
   <data name="contrast" xml:space="preserve"><value>contrast</value></data>
+  <data name="Acquired" xml:space="preserve"><value>Acquired</value></data>
+  <data name="All hospital-acquired" xml:space="preserve"><value>All hospital-acquired</value></data>
+  <data name="Cases" xml:space="preserve"><value>Cases</value></data>
+  <data name="Choose the kind of infection" xml:space="preserve"><value>Choose the kind of infection</value></data>
+  <data name="Choose the precautions" xml:space="preserve"><value>Choose the precautions</value></data>
+  <data name="Community" xml:space="preserve"><value>Community</value></data>
+  <data name="Confirm this infection? It counts in the rates from now on." xml:space="preserve"><value>Confirm this infection? It counts in the rates from now on.</value></data>
+  <data name="Confirmed hospital-acquired infections per 1,000 patient-days and per 1,000 device-days (NHSN). Utilisation is device-days over patient-days." xml:space="preserve"><value>Confirmed hospital-acquired infections per 1,000 patient-days and per 1,000 device-days (NHSN). Utilisation is device-days over patient-days.</value></data>
+  <data name="Date of the event" xml:space="preserve"><value>Date of the event</value></data>
+  <data name="Day {0}" xml:space="preserve"><value>Day {0}</value></data>
+  <data name="Device" xml:space="preserve"><value>Device</value></data>
+  <data name="Device-days" xml:space="preserve"><value>Device-days</value></data>
+  <data name="Devices in place" xml:space="preserve"><value>Devices in place</value></data>
+  <data name="Empty means now." xml:space="preserve"><value>Empty means now.</value></data>
+  <data name="End" xml:space="preserve"><value>End</value></data>
+  <data name="End these precautions?" xml:space="preserve"><value>End these precautions?</value></data>
+  <data name="Fever, the specimen sent, what was seen" xml:space="preserve"><value>Fever, the specimen sent, what was seen</value></data>
+  <data name="Hospital-acquired per 1,000 patient-days this month" xml:space="preserve"><value>Hospital-acquired per 1,000 patient-days this month</value></data>
+  <data name="Infection" xml:space="preserve"><value>Infection</value></data>
+  <data name="Infection cases" xml:space="preserve"><value>Infection cases</value></data>
+  <data name="Infection control" xml:space="preserve"><value>Infection control</value></data>
+  <data name="Infection control confirms or rules it out. Whether it is hospital-acquired follows from the dates." xml:space="preserve"><value>Infection control confirms or rules it out. Whether it is hospital-acquired follows from the dates.</value></data>
+  <data name="Infection control is not installed yet (hospital_h76_infection.sql)." xml:space="preserve"><value>Infection control is not installed yet (hospital_h76_infection.sql).</value></data>
+  <data name="Infection rates" xml:space="preserve"><value>Infection rates</value></data>
+  <data name="Inserted at" xml:space="preserve"><value>Inserted at</value></data>
+  <data name="Isolation" xml:space="preserve"><value>Isolation</value></data>
+  <data name="Isolation now" xml:space="preserve"><value>Isolation now</value></data>
+  <data name="Longest first: every day a line stays in, ask whether it is still needed." xml:space="preserve"><value>Longest first: every day a line stays in, ask whether it is still needed.</value></data>
+  <data name="No device was in place long enough for this kind of infection" xml:space="preserve"><value>No device was in place long enough for this kind of infection</value></data>
+  <data name="No infection case yet." xml:space="preserve"><value>No infection case yet.</value></data>
+  <data name="No invasive device is in place." xml:space="preserve"><value>No invasive device is in place.</value></data>
+  <data name="No ward" xml:space="preserve"><value>No ward</value></data>
+  <data name="Nobody is in isolation." xml:space="preserve"><value>Nobody is in isolation.</value></data>
+  <data name="Nobody lay on a ward this month." xml:space="preserve"><value>Nobody lay on a ward this month.</value></data>
+  <data name="Notes" xml:space="preserve"><value>Notes</value></data>
+  <data name="One is already in place: record its removal first" xml:space="preserve"><value>One is already in place: record its removal first</value></data>
+  <data name="Organism" xml:space="preserve"><value>Organism</value></data>
+  <data name="Patient-days" xml:space="preserve"><value>Patient-days</value></data>
+  <data name="Patients in isolation" xml:space="preserve"><value>Patients in isolation</value></data>
+  <data name="Precautions" xml:space="preserve"><value>Precautions</value></data>
+  <data name="Record its removal" xml:space="preserve"><value>Record its removal</value></data>
+  <data name="Record that this device was removed now?" xml:space="preserve"><value>Record that this device was removed now?</value></data>
+  <data name="Record the device" xml:space="preserve"><value>Record the device</value></data>
+  <data name="Record this device?" xml:space="preserve"><value>Record this device?</value></data>
+  <data name="Removed" xml:space="preserve"><value>Removed</value></data>
+  <data name="Report an infection" xml:space="preserve"><value>Report an infection</value></data>
+  <data name="Report this infection to infection control?" xml:space="preserve"><value>Report this infection to infection control?</value></data>
+  <data name="Right subclavian" xml:space="preserve"><value>Right subclavian</value></data>
+  <data name="Rule out" xml:space="preserve"><value>Rule out</value></data>
+  <data name="Rule out this infection" xml:space="preserve"><value>Rule out this infection</value></data>
+  <data name="Search by case, patient, file or organism…" xml:space="preserve"><value>Search by case, patient, file or organism…</value></data>
+  <data name="Site" xml:space="preserve"><value>Site</value></data>
+  <data name="Start isolation" xml:space="preserve"><value>Start isolation</value></data>
+  <data name="Start isolation for this patient?" xml:space="preserve"><value>Start isolation for this patient?</value></data>
+  <data name="Started from the nursing station; ended by a doctor or infection control." xml:space="preserve"><value>Started from the nursing station; ended by a doctor or infection control.</value></data>
+  <data name="Suspected cases to review" xml:space="preserve"><value>Suspected cases to review</value></data>
+  <data name="Suspected, awaiting the culture" xml:space="preserve"><value>Suspected, awaiting the culture</value></data>
+  <data name="The date is after the discharge" xml:space="preserve"><value>The date is after the discharge</value></data>
+  <data name="The date is before the admission" xml:space="preserve"><value>The date is before the admission</value></data>
+  <data name="The date is in the future" xml:space="preserve"><value>The date is in the future</value></data>
+  <data name="The device cannot come out before it went in" xml:space="preserve"><value>The device cannot come out before it went in</value></data>
+  <data name="The organism's name is too long" xml:space="preserve"><value>The organism's name is too long</value></data>
+  <data name="The patient is already under these precautions" xml:space="preserve"><value>The patient is already under these precautions</value></data>
+  <data name="The time is before the admission" xml:space="preserve"><value>The time is before the admission</value></data>
+  <data name="The time is in the future" xml:space="preserve"><value>The time is in the future</value></data>
+  <data name="These precautions have already ended" xml:space="preserve"><value>These precautions have already ended</value></data>
+  <data name="This case is already decided" xml:space="preserve"><value>This case is already decided</value></data>
+  <data name="This device is already out" xml:space="preserve"><value>This device is already out</value></data>
+  <data name="Use" xml:space="preserve"><value>Use</value></data>
+  <data name="Why it is ruled out" xml:space="preserve"><value>Why it is ruled out</value></data>
+  <data name="Why they end" xml:space="preserve"><value>Why they end</value></data>
+  <data name="Write the date of the event" xml:space="preserve"><value>Write the date of the event</value></data>
+  <data name="Write the organism or why the patient is isolated" xml:space="preserve"><value>Write the organism or why the patient is isolated</value></data>
+  <data name="Write the resistant organism" xml:space="preserve"><value>Write the resistant organism</value></data>
+  <data name="Write why it is ruled out" xml:space="preserve"><value>Write why it is ruled out</value></data>
+  <data name="dev:CentralLine" xml:space="preserve"><value>Central line</value></data>
+  <data name="dev:UrinaryCatheter" xml:space="preserve"><value>Urinary catheter</value></data>
+  <data name="dev:Ventilator" xml:space="preserve"><value>Ventilator</value></data>
+  <data name="ick:CAUTI" xml:space="preserve"><value>Catheter urinary tract infection (CAUTI)</value></data>
+  <data name="ick:CDI" xml:space="preserve"><value>C. difficile infection</value></data>
+  <data name="ick:CLABSI" xml:space="preserve"><value>Central line bloodstream infection (CLABSI)</value></data>
+  <data name="ick:MDRO" xml:space="preserve"><value>Multidrug-resistant organism (MDRO)</value></data>
+  <data name="ick:Other" xml:space="preserve"><value>Other infection</value></data>
+  <data name="ick:SSI" xml:space="preserve"><value>Surgical site infection (SSI)</value></data>
+  <data name="ick:VAP" xml:space="preserve"><value>Ventilator-associated pneumonia (VAP)</value></data>
+  <data name="ics:Confirmed" xml:space="preserve"><value>Confirmed</value></data>
+  <data name="ics:RuledOut" xml:space="preserve"><value>Ruled out</value></data>
+  <data name="ics:Suspected" xml:space="preserve"><value>Suspected</value></data>
+  <data name="prec:Airborne" xml:space="preserve"><value>Airborne precautions</value></data>
+  <data name="prec:Contact" xml:space="preserve"><value>Contact precautions</value></data>
+  <data name="prec:Droplet" xml:space="preserve"><value>Droplet precautions</value></data>
+  <data name="prec:Protective" xml:space="preserve"><value>Protective isolation</value></data>
+  <data name="Per 1,000" xml:space="preserve"><value>Per 1,000</value></data>
+  <data name="A doctor asks another specialty from the nursing station. A doctor of that specialty — or the one named — accepts and answers. Emergency is due in 1 hour, urgent in 4, routine in 24." xml:space="preserve"><value>A doctor asks another specialty from the nursing station. A doctor of that specialty — or the one named — accepts and answers. Emergency is due in 1 hour, urgent in 4, routine in 24.</value></data>
+  <data name="Accept this consultation? The team will see that you are on it." xml:space="preserve"><value>Accept this consultation? The team will see that you are on it.</value></data>
+  <data name="Answer" xml:space="preserve"><value>Answer</value></data>
+  <data name="Answer due" xml:space="preserve"><value>Answer due</value></data>
+  <data name="Answer the consultation" xml:space="preserve"><value>Answer the consultation</value></data>
+  <data name="Any doctor of the specialty" xml:space="preserve"><value>Any doctor of the specialty</value></data>
+  <data name="Ask a specialty" xml:space="preserve"><value>Ask a specialty</value></data>
+  <data name="Ask for a consultation" xml:space="preserve"><value>Ask for a consultation</value></data>
+  <data name="Asked by me" xml:space="preserve"><value>Asked by me</value></data>
+  <data name="Asked by {0}" xml:space="preserve"><value>Asked by {0}</value></data>
+  <data name="Asked of me" xml:space="preserve"><value>Asked of me</value></data>
+  <data name="Cancel this consultation request" xml:space="preserve"><value>Cancel this consultation request</value></data>
+  <data name="Choose the specialty" xml:space="preserve"><value>Choose the specialty</value></data>
+  <data name="Consultation requests are not installed yet (hospital_h77_consult_requests.sql)." xml:space="preserve"><value>Consultation requests are not installed yet (hospital_h77_consult_requests.sql).</value></data>
+  <data name="Consultations" xml:space="preserve"><value>Consultations</value></data>
+  <data name="I will keep following the patient" xml:space="preserve"><value>I will keep following the patient</value></data>
+  <data name="No consultation here." xml:space="preserve"><value>No consultation here.</value></data>
+  <data name="Only a doctor of the specialty asked can answer" xml:space="preserve"><value>Only a doctor of the specialty asked can answer</value></data>
+  <data name="Only the doctor who asked can cancel it" xml:space="preserve"><value>Only the doctor who asked can cancel it</value></data>
+  <data name="Question" xml:space="preserve"><value>Question</value></data>
+  <data name="Recommendations" xml:space="preserve"><value>Recommendations</value></data>
+  <data name="Search by number, patient or file…" xml:space="preserve"><value>Search by number, patient or file…</value></data>
+  <data name="Send the answer" xml:space="preserve"><value>Send the answer</value></data>
+  <data name="Send this answer to the team?" xml:space="preserve"><value>Send this answer to the team?</value></data>
+  <data name="Send this consultation request?" xml:space="preserve"><value>Send this consultation request?</value></data>
+  <data name="Specialty" xml:space="preserve"><value>Specialty</value></data>
+  <data name="Still open" xml:space="preserve"><value>Still open</value></data>
+  <data name="The answer is too long" xml:space="preserve"><value>The answer is too long</value></data>
+  <data name="The problem and what you want the consultant to answer" xml:space="preserve"><value>The problem and what you want the consultant to answer</value></data>
+  <data name="The question is too long" xml:space="preserve"><value>The question is too long</value></data>
+  <data name="This consultation is already accepted or closed" xml:space="preserve"><value>This consultation is already accepted or closed</value></data>
+  <data name="This consultation is closed" xml:space="preserve"><value>This consultation is closed</value></data>
+  <data name="This doctor is not in the chosen specialty" xml:space="preserve"><value>This doctor is not in the chosen specialty</value></data>
+  <data name="This specialty already has an open request for the patient" xml:space="preserve"><value>This specialty already has an open request for the patient</value></data>
+  <data name="What the team should do" xml:space="preserve"><value>What the team should do</value></data>
+  <data name="What you found on examination and in the results" xml:space="preserve"><value>What you found on examination and in the results</value></data>
+  <data name="Why it is cancelled" xml:space="preserve"><value>Why it is cancelled</value></data>
+  <data name="Will keep following" xml:space="preserve"><value>Will keep following</value></data>
+  <data name="Write the question for the consultant" xml:space="preserve"><value>Write the question for the consultant</value></data>
+  <data name="Write the recommendations" xml:space="preserve"><value>Write the recommendations</value></data>
+  <data name="crs:Accepted" xml:space="preserve"><value>Accepted</value></data>
+  <data name="crs:Answered" xml:space="preserve"><value>Answered</value></data>
+  <data name="crs:Cancelled" xml:space="preserve"><value>Cancelled</value></data>
+  <data name="crs:Requested" xml:space="preserve"><value>Waiting</value></data>
+  <data name="cru:Emergency" xml:space="preserve"><value>Emergency</value></data>
+  <data name="cru:Routine" xml:space="preserve"><value>Routine</value></data>
+  <data name="cru:Urgent" xml:space="preserve"><value>Urgent</value></data>
+  <data name="cruw:Emergency" xml:space="preserve"><value>within 1 hour</value></data>
+  <data name="cruw:Routine" xml:space="preserve"><value>within 24 hours</value></data>
+  <data name="cruw:Urgent" xml:space="preserve"><value>within 4 hours</value></data>
+  <data name="An entry older than three days cannot be added" xml:space="preserve"><value>An entry older than three days cannot be added</value></data>
+  <data name="Choose what went in or came out" xml:space="preserve"><value>Choose what went in or came out</value></data>
+  <data name="Fluid balance" xml:space="preserve"><value>Fluid balance</value></data>
+  <data name="Fluid chart" xml:space="preserve"><value>Fluid chart</value></data>
+  <data name="Fluid day" xml:space="preserve"><value>Fluid day</value></data>
+  <data name="Fluid in" xml:space="preserve"><value>Fluid in</value></data>
+  <data name="Fluid out" xml:space="preserve"><value>Fluid out</value></data>
+  <data name="Fluids" xml:space="preserve"><value>Fluids</value></data>
+  <data name="In or out" xml:space="preserve"><value>In or out</value></data>
+  <data name="Low urine output: {0} ml in the last 6 hours — under 0.5 ml/kg/h." xml:space="preserve"><value>Low urine output: {0} ml in the last 6 hours — under 0.5 ml/kg/h.</value></data>
+  <data name="Net" xml:space="preserve"><value>Net</value></data>
+  <data name="No weight on file: low urine output is not checked." xml:space="preserve"><value>No weight on file: low urine output is not checked.</value></data>
+  <data name="Note (optional) — e.g. normal saline 0.9%" xml:space="preserve"><value>Note (optional) — e.g. normal saline 0.9%</value></data>
+  <data name="Nothing recorded in this fluid day." xml:space="preserve"><value>Nothing recorded in this fluid day.</value></data>
+  <data name="Only who wrote it or a doctor can void it" xml:space="preserve"><value>Only who wrote it or a doctor can void it</value></data>
+  <data name="Record this volume on the fluid chart?" xml:space="preserve"><value>Record this volume on the fluid chart?</value></data>
+  <data name="The day after" xml:space="preserve"><value>The day after</value></data>
+  <data name="The day before" xml:space="preserve"><value>The day before</value></data>
+  <data name="The fluid chart is not installed yet (hospital_h78_fluid_balance.sql)." xml:space="preserve"><value>The fluid chart is not installed yet (hospital_h78_fluid_balance.sql).</value></data>
+  <data name="The last five days" xml:space="preserve"><value>The last five days</value></data>
+  <data name="The volume is between 1 and 5,000 ml" xml:space="preserve"><value>The volume is between 1 and 5,000 ml</value></data>
+  <data name="This entry is already voided" xml:space="preserve"><value>This entry is already voided</value></data>
+  <data name="Void" xml:space="preserve"><value>Void</value></data>
+  <data name="Void this entry" xml:space="preserve"><value>Void this entry</value></data>
+  <data name="Voided" xml:space="preserve"><value>Voided</value></data>
+  <data name="Weight used: {0} kg ({1})" xml:space="preserve"><value>Weight used: {0} kg ({1})</value></data>
+  <data name="Why it is voided" xml:space="preserve"><value>Why it is voided</value></data>
+  <data name="Write why it is voided" xml:space="preserve"><value>Write why it is voided</value></data>
+  <data name="fluid:Blood" xml:space="preserve"><value>Blood</value></data>
+  <data name="fluid:BloodLoss" xml:space="preserve"><value>Blood loss</value></data>
+  <data name="fluid:Drain" xml:space="preserve"><value>Drain</value></data>
+  <data name="fluid:Enteral" xml:space="preserve"><value>Tube feed</value></data>
+  <data name="fluid:IV" xml:space="preserve"><value>IV</value></data>
+  <data name="fluid:NG" xml:space="preserve"><value>Nasogastric</value></data>
+  <data name="fluid:Oral" xml:space="preserve"><value>Oral</value></data>
+  <data name="fluid:OtherIn" xml:space="preserve"><value>Other in</value></data>
+  <data name="fluid:OtherOut" xml:space="preserve"><value>Other out</value></data>
+  <data name="fluid:Stool" xml:space="preserve"><value>Stool</value></data>
+  <data name="fluid:Urine" xml:space="preserve"><value>Urine</value></data>
+  <data name="fluid:Vomit" xml:space="preserve"><value>Vomit</value></data>
+  <data name="Add this problem to the patient's list?" xml:space="preserve"><value>Add this problem to the patient's list?</value></data>
+  <data name="Add this to the care plan?" xml:space="preserve"><value>Add this to the care plan?</value></data>
+  <data name="Add to the list" xml:space="preserve"><value>Add to the list</value></data>
+  <data name="Add to the plan" xml:space="preserve"><value>Add to the plan</value></data>
+  <data name="Care plan" xml:space="preserve"><value>Care plan</value></data>
+  <data name="Choose chronic or acute" xml:space="preserve"><value>Choose chronic or acute</value></data>
+  <data name="Choose met or discontinued" xml:space="preserve"><value>Choose met or discontinued</value></data>
+  <data name="Choose the diagnosis or write the problem" xml:space="preserve"><value>Choose the diagnosis or write the problem</value></data>
+  <data name="Choose the nursing need" xml:space="preserve"><value>Choose the nursing need</value></data>
+  <data name="Choose when it is reviewed" xml:space="preserve"><value>Choose when it is reviewed</value></data>
+  <data name="Close this plan" xml:space="preserve"><value>Close this plan</value></data>
+  <data name="Diagnosis (ICD-10)" xml:space="preserve"><value>Diagnosis (ICD-10)</value></data>
+  <data name="Discontinue" xml:space="preserve"><value>Discontinue</value></data>
+  <data name="Goal" xml:space="preserve"><value>Goal</value></data>
+  <data name="Goal met" xml:space="preserve"><value>Goal met</value></data>
+  <data name="Interventions" xml:space="preserve"><value>Interventions</value></data>
+  <data name="Mark this problem as resolved?" xml:space="preserve"><value>Mark this problem as resolved?</value></data>
+  <data name="Need in your words" xml:space="preserve"><value>Need in your words</value></data>
+  <data name="No care plan for this stay yet." xml:space="preserve"><value>No care plan for this stay yet.</value></data>
+  <data name="No problem on the patient's list yet." xml:space="preserve"><value>No problem on the patient's list yet.</value></data>
+  <data name="Nursing need" xml:space="preserve"><value>Nursing need</value></data>
+  <data name="Or write the problem" xml:space="preserve"><value>Or write the problem</value></data>
+  <data name="Plan suggested" xml:space="preserve"><value>Plan suggested</value></data>
+  <data name="Problem" xml:space="preserve"><value>Problem</value></data>
+  <data name="Problem list" xml:space="preserve"><value>Problem list</value></data>
+  <data name="Problems &amp; care plan" xml:space="preserve"><value>Problems &amp; care plan</value></data>
+  <data name="Resolved" xml:space="preserve"><value>Resolved</value></data>
+  <data name="Review by" xml:space="preserve"><value>Review by</value></data>
+  <data name="Review by {0}" xml:space="preserve"><value>Review by {0}</value></data>
+  <data name="Review due" xml:space="preserve"><value>Review due</value></data>
+  <data name="Review it within 30 days" xml:space="preserve"><value>Review it within 30 days</value></data>
+  <data name="Suggested: a {0} plan — the latest {1} is {2} ({3})." xml:space="preserve"><value>Suggested: a {0} plan — the latest {1} is {2} ({3}).</value></data>
+  <data name="The outcome" xml:space="preserve"><value>The outcome</value></data>
+  <data name="The problem list and care plans are not installed yet (hospital_h79_care_plans.sql)." xml:space="preserve"><value>The problem list and care plans are not installed yet (hospital_h79_care_plans.sql).</value></data>
+  <data name="The problem's name is too long" xml:space="preserve"><value>The problem's name is too long</value></data>
+  <data name="The review date has passed" xml:space="preserve"><value>The review date has passed</value></data>
+  <data name="This need already has an active plan: review or close it" xml:space="preserve"><value>This need already has an active plan: review or close it</value></data>
+  <data name="This plan is already closed" xml:space="preserve"><value>This plan is already closed</value></data>
+  <data name="This problem is already on the list" xml:space="preserve"><value>This problem is already on the list</value></data>
+  <data name="This problem is already resolved" xml:space="preserve"><value>This problem is already resolved</value></data>
+  <data name="Write the goal" xml:space="preserve"><value>Write the goal</value></data>
+  <data name="Write the interventions" xml:space="preserve"><value>Write the interventions</value></data>
+  <data name="Write the nursing need" xml:space="preserve"><value>Write the nursing need</value></data>
+  <data name="Write the outcome" xml:space="preserve"><value>Write the outcome</value></data>
+  <data name="Write the plan" xml:space="preserve"><value>Write the plan</value></data>
+  <data name="cpg:Falls" xml:space="preserve"><value>No fall during the stay</value></data>
+  <data name="cpg:Infection" xml:space="preserve"><value>No sign of infection; temperature normal</value></data>
+  <data name="cpg:Mobility" xml:space="preserve"><value>Walks to the bathroom with help by day 3</value></data>
+  <data name="cpg:Nutrition" xml:space="preserve"><value>Eats at least half of each meal; weight stable</value></data>
+  <data name="cpg:Other" xml:space="preserve"><value></value></data>
+  <data name="cpg:Pain" xml:space="preserve"><value>Pain 3/10 or less at rest</value></data>
+  <data name="cpg:PressureInjury" xml:space="preserve"><value>Skin intact, no new pressure injury</value></data>
+  <data name="cpi:Falls" xml:space="preserve"><value>Bed low and brakes on; call bell in reach; non-slip socks; help to the bathroom; reassess Morse daily</value></data>
+  <data name="cpi:Infection" xml:space="preserve"><value>Hand hygiene; aseptic care of lines and wounds; temperature every 4 hours; report fever</value></data>
+  <data name="cpi:Mobility" xml:space="preserve"><value>Sit out of bed twice a day; assisted walk each shift; physiotherapy referral</value></data>
+  <data name="cpi:Nutrition" xml:space="preserve"><value>Record what is eaten each meal; weigh twice a week; dietitian referral if under half</value></data>
+  <data name="cpi:Other" xml:space="preserve"><value></value></data>
+  <data name="cpi:Pain" xml:space="preserve"><value>Score pain every 4 hours; give analgesia as prescribed and reassess after an hour; position for comfort</value></data>
+  <data name="cpi:PressureInjury" xml:space="preserve"><value>Turn every 2 hours; pressure-relieving mattress; keep skin clean and dry; check heels and sacrum each shift; reassess Braden daily</value></data>
+  <data name="cps:Active" xml:space="preserve"><value>Active</value></data>
+  <data name="cps:Discontinued" xml:space="preserve"><value>Discontinued</value></data>
+  <data name="cps:Met" xml:space="preserve"><value>Goal met</value></data>
+  <data name="need:Falls" xml:space="preserve"><value>Fall prevention</value></data>
+  <data name="need:Infection" xml:space="preserve"><value>Infection</value></data>
+  <data name="need:Mobility" xml:space="preserve"><value>Mobility</value></data>
+  <data name="need:Nutrition" xml:space="preserve"><value>Nutrition</value></data>
+  <data name="need:Other" xml:space="preserve"><value>Other</value></data>
+  <data name="need:Pain" xml:space="preserve"><value>Pain</value></data>
+  <data name="need:PressureInjury" xml:space="preserve"><value>Pressure injury prevention</value></data>
+  <data name="pbs:Active" xml:space="preserve"><value>Active</value></data>
+  <data name="pbs:Resolved" xml:space="preserve"><value>Resolved</value></data>
+  <data name="pk:Acute" xml:space="preserve"><value>Acute</value></data>
+  <data name="pk:Chronic" xml:space="preserve"><value>Chronic</value></data>
+  <data name="Attending" xml:space="preserve"><value>Attending</value></data>
+  <data name="Chart completion" xml:space="preserve"><value>Chart completion</value></data>
+  <data name="Chart completion is not installed yet (hospital_h80_chart_review.sql)." xml:space="preserve"><value>Chart completion is not installed yet (hospital_h80_chart_review.sql).</value></data>
+  <data name="Complete, waiting for sign-off" xml:space="preserve"><value>Complete, waiting for sign-off</value></data>
+  <data name="Delinquent" xml:space="preserve"><value>Delinquent</value></data>
+  <data name="Delinquent (over 14 days)" xml:space="preserve"><value>Delinquent (over 14 days)</value></data>
+  <data name="Discharged on" xml:space="preserve"><value>Discharged on</value></data>
+  <data name="Discharged stays" xml:space="preserve"><value>Discharged stays</value></data>
+  <data name="Incomplete" xml:space="preserve"><value>Incomplete</value></data>
+  <data name="Incomplete charts" xml:space="preserve"><value>Incomplete charts</value></data>
+  <data name="Missing from the chart" xml:space="preserve"><value>Missing from the chart</value></data>
+  <data name="No chart here." xml:space="preserve"><value>No chart here.</value></data>
+  <data name="Nothing missing" xml:space="preserve"><value>Nothing missing</value></data>
+  <data name="Only a discharged stay's chart is reviewed" xml:space="preserve"><value>Only a discharged stay's chart is reviewed</value></data>
+  <data name="Past 30 days" xml:space="preserve"><value>Past 30 days</value></data>
+  <data name="Past 90 days" xml:space="preserve"><value>Past 90 days</value></data>
+  <data name="Past year" xml:space="preserve"><value>Past year</value></data>
+  <data name="Search by patient or file…" xml:space="preserve"><value>Search by patient or file…</value></data>
+  <data name="Sign complete" xml:space="preserve"><value>Sign complete</value></data>
+  <data name="Sign this chart complete?" xml:space="preserve"><value>Sign this chart complete?</value></data>
+  <data name="Signed this month" xml:space="preserve"><value>Signed this month</value></data>
+  <data name="The chart still has deficiencies" xml:space="preserve"><value>The chart still has deficiencies</value></data>
+  <data name="This chart is already signed complete" xml:space="preserve"><value>This chart is already signed complete</value></data>
+  <data name="Waiting for sign-off" xml:space="preserve"><value>Waiting for sign-off</value></data>
+  <data name="chd:CarePlanOpen" xml:space="preserve"><value>Care plan left open</value></data>
+  <data name="chd:ConsultOpen" xml:space="preserve"><value>Consultation still open</value></data>
+  <data name="chd:DeviceInPlace" xml:space="preserve"><value>Device never recorded out</value></data>
+  <data name="chd:InfectionUndecided" xml:space="preserve"><value>Infection not confirmed or ruled out</value></data>
+  <data name="chd:MedRecOpen" xml:space="preserve"><value>Discharge medication reconciliation not signed</value></data>
+  <data name="chd:NoSummary" xml:space="preserve"><value>No discharge summary</value></data>
+  <data name="chd:SummaryUnsigned" xml:space="preserve"><value>Discharge summary not signed</value></data>
+  <data name="owner:Attending" xml:space="preserve"><value>attending doctor</value></data>
+  <data name="owner:Consultant" xml:space="preserve"><value>consultant</value></data>
+  <data name="owner:InfectionControl" xml:space="preserve"><value>infection control</value></data>
+  <data name="owner:Ward" xml:space="preserve"><value>ward</value></data>
+  <data name="{0} days ago" xml:space="preserve"><value>{0} days ago</value></data>
+  <data name="A percentage target is between 0 and 100" xml:space="preserve"><value>A percentage target is between 0 and 100</value></data>
+  <data name="A satisfaction target is between 1 and 5" xml:space="preserve"><value>A satisfaction target is between 1 and 5</value></data>
+  <data name="An NPS target is between -100 and 100" xml:space="preserve"><value>An NPS target is between -100 and 100</value></data>
+  <data name="Computed from the hospital's own records" xml:space="preserve"><value>Computed from the hospital's own records</value></data>
+  <data name="Quality indicators" xml:space="preserve"><value>Quality indicators</value></data>
+  <data name="Quality targets are not installed yet (hospital_h81_quality_targets.sql)." xml:space="preserve"><value>Quality targets are not installed yet (hospital_h81_quality_targets.sql).</value></data>
+  <data name="Target" xml:space="preserve"><value>Target</value></data>
+  <data name="Targets cannot be changed until hospital_h81_quality_targets.sql is installed; the published defaults apply." xml:space="preserve"><value>Targets cannot be changed until hospital_h81_quality_targets.sql is installed; the published defaults apply.</value></data>
+  <data name="The hospital's target" xml:space="preserve"><value>The hospital's target</value></data>
+  <data name="The last six months" xml:space="preserve"><value>The last six months</value></data>
+  <data name="The target is out of range" xml:space="preserve"><value>The target is out of range</value></data>
+  <data name="Write a number" xml:space="preserve"><value>Write a number</value></data>
+  <data name="Write the target" xml:space="preserve"><value>Write the target</value></data>
+  <data name="qd:Alos" xml:space="preserve"><value>Days from admission to discharge, of the month's discharges</value></data>
+  <data name="qd:ChartOnTime" xml:space="preserve"><value>Signed complete within 14 days of discharge</value></data>
+  <data name="qd:ConsultOnTime" xml:space="preserve"><value>Answered by their due time</value></data>
+  <data name="qd:Falls" xml:space="preserve"><value>Reported falls per 1,000 patient-days</value></data>
+  <data name="qd:Hai" xml:space="preserve"><value>Confirmed, per 1,000 patient-days</value></data>
+  <data name="qd:MedErrors" xml:space="preserve"><value>Reported per 1,000 patient-days</value></data>
+  <data name="qd:MedRec24h" xml:space="preserve"><value>Stays admitted this month, signed within a day</value></data>
+  <data name="qd:Mortality" xml:space="preserve"><value>Inpatient deaths ÷ discharges</value></data>
+  <data name="qd:Nps" xml:space="preserve"><value>Promoters (9–10) minus detractors (0–6)</value></data>
+  <data name="qd:Occupancy" xml:space="preserve"><value>Patient-days ÷ (beds × days)</value></data>
+  <data name="qd:Readmission30" xml:space="preserve"><value>Discharges followed by a new stay within 30 days</value></data>
+  <data name="qd:Satisfaction" xml:space="preserve"><value>Average of the month's surveys (1–5)</value></data>
+  <data name="qi:Alos" xml:space="preserve"><value>Average length of stay</value></data>
+  <data name="qi:ChartOnTime" xml:space="preserve"><value>Charts completed within 14 days</value></data>
+  <data name="qi:ConsultOnTime" xml:space="preserve"><value>Consultations answered on time</value></data>
+  <data name="qi:Falls" xml:space="preserve"><value>Patient falls</value></data>
+  <data name="qi:Hai" xml:space="preserve"><value>Hospital-acquired infections</value></data>
+  <data name="qi:MedErrors" xml:space="preserve"><value>Medication errors reported</value></data>
+  <data name="qi:MedRec24h" xml:space="preserve"><value>Admission reconciliation within 24 hours</value></data>
+  <data name="qi:Mortality" xml:space="preserve"><value>Inpatient mortality</value></data>
+  <data name="qi:Nps" xml:space="preserve"><value>Net promoter score</value></data>
+  <data name="qi:Occupancy" xml:space="preserve"><value>Bed occupancy</value></data>
+  <data name="qi:Readmission30" xml:space="preserve"><value>Readmission within 30 days</value></data>
+  <data name="qi:Satisfaction" xml:space="preserve"><value>Patient satisfaction</value></data>
+  <data name="qs:Met" xml:space="preserve"><value>Met</value></data>
+  <data name="qs:NoData" xml:space="preserve"><value>No data</value></data>
+  <data name="qs:NotMet" xml:space="preserve"><value>Not met</value></data>
+  <data name="qu:%" xml:space="preserve"><value></value></data>
+  <data name="qu:days" xml:space="preserve"><value>days</value></data>
+  <data name="qu:of5" xml:space="preserve"><value>of 5</value></data>
+  <data name="qu:per1000" xml:space="preserve"><value>per 1,000 patient-days</value></data>
+  <data name="qu:score" xml:space="preserve"><value>score</value></data>
+  <data name="Only an accepted line can be recouped" xml:space="preserve"><value>Only an accepted line can be recouped</value></data>
+  <data name="Recouped" xml:space="preserve"><value>Recouped</value></data>
+  <data name="Recoupment" xml:space="preserve"><value>Recoupment</value></data>
+  <data name="The payer cannot take back more than it accepted" xml:space="preserve"><value>The payer cannot take back more than it accepted</value></data>
+  <data name="The payer takes back part of {0} after an audit: enter the amount." xml:space="preserve"><value>The payer takes back part of {0} after an audit: enter the amount.</value></data>
+  <data name="This line was already recouped" xml:space="preserve"><value>This line was already recouped</value></data>
+  <data name="Write the amount the payer takes back" xml:space="preserve"><value>Write the amount the payer takes back</value></data>
+  <data name="Write the payer's reason" xml:space="preserve"><value>Write the payer's reason</value></data>
+  <data name="ce:Recoupment" xml:space="preserve"><value>Payer recoupment</value></data>
+  <data name="All clinics" xml:space="preserve"><value>All clinics</value></data>
+  <data name="All done" xml:space="preserve"><value>All done</value></data>
+  <data name="Already checked in — number" xml:space="preserve"><value>Already checked in — number</value></data>
+  <data name="Confirm my arrival" xml:space="preserve"><value>Confirm my arrival</value></data>
+  <data name="Enter your file number" xml:space="preserve"><value>Enter your file number</value></data>
+  <data name="Enter your file number and your year of birth" xml:space="preserve"><value>Enter your file number and your year of birth</value></data>
+  <data name="Enter your year of birth" xml:space="preserve"><value>Enter your year of birth</value></data>
+  <data name="File number" xml:space="preserve"><value>File number</value></data>
+  <data name="Find my appointment" xml:space="preserve"><value>Find my appointment</value></data>
+  <data name="Full screen" xml:space="preserve"><value>Full screen</value></data>
+  <data name="Hello {0}" xml:space="preserve"><value>Hello {0}</value></data>
+  <data name="It is too early: check in from an hour before your appointment" xml:space="preserve"><value>It is too early: check in from an hour before your appointment</value></data>
+  <data name="No patient is waiting now." xml:space="preserve"><value>No patient is waiting now.</value></data>
+  <data name="Please take a seat: your number will appear on the screen." xml:space="preserve"><value>Please take a seat: your number will appear on the screen.</value></data>
+  <data name="Something went wrong: please go to the desk" xml:space="preserve"><value>Something went wrong: please go to the desk</value></data>
+  <data name="Start the display (with sound)" xml:space="preserve"><value>Start the display (with sound)</value></data>
+  <data name="This appointment cannot be checked in here: please go to the desk" xml:space="preserve"><value>This appointment cannot be checked in here: please go to the desk</value></data>
+  <data name="Too early — check in from an hour before" xml:space="preserve"><value>Too early — check in from an hour before</value></data>
+  <data name="Waiting room" xml:space="preserve"><value>Waiting room</value></data>
+  <data name="We could not find your appointment: please go to the desk" xml:space="preserve"><value>We could not find your appointment: please go to the desk</value></data>
+  <data name="Welcome — check in for your appointment" xml:space="preserve"><value>Welcome — check in for your appointment</value></data>
+  <data name="Year of birth" xml:space="preserve"><value>Year of birth</value></data>
+  <data name="You are checked in. Your number is" xml:space="preserve"><value>You are checked in. Your number is</value></data>
+  <data name="at" xml:space="preserve"><value>at</value></data>
+  <data name="Serving now" xml:space="preserve"><value>Serving now</value></data>
+  <data name="A dose outside the schedule" xml:space="preserve"><value>A dose outside the schedule</value></data>
+  <data name="Add a dose" xml:space="preserve"><value>Add a dose</value></data>
+  <data name="Adverse event" xml:space="preserve"><value>Adverse event</value></data>
+  <data name="Age" xml:space="preserve"><value>Age</value></data>
+  <data name="Age in days" xml:space="preserve"><value>Age in days</value></data>
+  <data name="An adverse event is already recorded for this dose" xml:space="preserve"><value>An adverse event is already recorded for this dose</value></data>
+  <data name="At birth" xml:space="preserve"><value>At birth</value></data>
+  <data name="Born {0}" xml:space="preserve"><value>Born {0}</value></data>
+  <data name="Describe the adverse event" xml:space="preserve"><value>Describe the adverse event</value></data>
+  <data name="Dose {0}" xml:space="preserve"><value>Dose {0}</value></data>
+  <data name="Doses outside the schedule" xml:space="preserve"><value>Doses outside the schedule</value></data>
+  <data name="Due and overdue" xml:space="preserve"><value>Due and overdue</value></data>
+  <data name="Due on" xml:space="preserve"><value>Due on</value></data>
+  <data name="Each row is one dose at an age from birth. Change it to your country's schedule." xml:space="preserve"><value>Each row is one dose at an age from birth. Change it to your country's schedule.</value></data>
+  <data name="Given" xml:space="preserve"><value>Given</value></data>
+  <data name="Given at" xml:space="preserve"><value>Given at</value></data>
+  <data name="Immunization card" xml:space="preserve"><value>Immunization card</value></data>
+  <data name="Immunizations" xml:space="preserve"><value>Immunizations</value></data>
+  <data name="Immunizations are not installed yet (hospital_h84_immunizations.sql)." xml:space="preserve"><value>Immunizations are not installed yet (hospital_h84_immunizations.sql).</value></data>
+  <data name="Left thigh" xml:space="preserve"><value>Left thigh</value></data>
+  <data name="Load the default schedule" xml:space="preserve"><value>Load the default schedule</value></data>
+  <data name="Load the default schedule? You can change every dose afterwards." xml:space="preserve"><value>Load the default schedule? You can change every dose afterwards.</value></data>
+  <data name="Lot expiry" xml:space="preserve"><value>Lot expiry</value></data>
+  <data name="No birth date on file" xml:space="preserve"><value>No birth date on file</value></data>
+  <data name="No dose in the schedule yet." xml:space="preserve"><value>No dose in the schedule yet.</value></data>
+  <data name="No dose is due." xml:space="preserve"><value>No dose is due.</value></data>
+  <data name="Open the card" xml:space="preserve"><value>Open the card</value></data>
+  <data name="Record a dose" xml:space="preserve"><value>Record a dose</value></data>
+  <data name="Record an adverse event" xml:space="preserve"><value>Record an adverse event</value></data>
+  <data name="Record the dose" xml:space="preserve"><value>Record the dose</value></data>
+  <data name="Record this dose as given?" xml:space="preserve"><value>Record this dose as given?</value></data>
+  <data name="Save this schedule dose?" xml:space="preserve"><value>Save this schedule dose?</value></data>
+  <data name="Schedule dose" xml:space="preserve"><value>Schedule dose</value></data>
+  <data name="Search by name, file or phone…" xml:space="preserve"><value>Search by name, file or phone…</value></data>
+  <data name="The age is out of range" xml:space="preserve"><value>The age is out of range</value></data>
+  <data name="The dose cannot be before the patient's birth" xml:space="preserve"><value>The dose cannot be before the patient's birth</value></data>
+  <data name="The dose number is between 1 and 10" xml:space="preserve"><value>The dose number is between 1 and 10</value></data>
+  <data name="The immunization schedule" xml:space="preserve"><value>The immunization schedule</value></data>
+  <data name="The patient is too young for this dose" xml:space="preserve"><value>The patient is too young for this dose</value></data>
+  <data name="The schedule" xml:space="preserve"><value>The schedule</value></data>
+  <data name="The schedule already has doses: change them instead" xml:space="preserve"><value>The schedule already has doses: change them instead</value></data>
+  <data name="There is no schedule yet: load the default one in the schedule tab, then adjust it to your country's." xml:space="preserve"><value>There is no schedule yet: load the default one in the schedule tab, then adjust it to your country's.</value></data>
+  <data name="This lot has expired: it cannot be given" xml:space="preserve"><value>This lot has expired: it cannot be given</value></data>
+  <data name="This vaccine already has that dose" xml:space="preserve"><value>This vaccine already has that dose</value></data>
+  <data name="Vaccine" xml:space="preserve"><value>Vaccine</value></data>
+  <data name="What was seen (fever, swelling, rash…)" xml:space="preserve"><value>What was seen (fever, swelling, rash…)</value></data>
+  <data name="Without a birth date the due dates cannot be worked out: add it to the patient's file." xml:space="preserve"><value>Without a birth date the due dates cannot be worked out: add it to the patient's file.</value></data>
+  <data name="Write the vaccine code (up to 12 characters)" xml:space="preserve"><value>Write the vaccine code (up to 12 characters)</value></data>
+  <data name="Write the vaccine's name in Arabic and English" xml:space="preserve"><value>Write the vaccine's name in Arabic and English</value></data>
+  <data name="Write the vaccine, its name and the dose number" xml:space="preserve"><value>Write the vaccine, its name and the dose number</value></data>
+  <data name="vxr:ID" xml:space="preserve"><value>Intradermal</value></data>
+  <data name="vxr:IM" xml:space="preserve"><value>Intramuscular</value></data>
+  <data name="vxr:Nasal" xml:space="preserve"><value>Nasal</value></data>
+  <data name="vxr:Oral" xml:space="preserve"><value>Oral</value></data>
+  <data name="vxr:SC" xml:space="preserve"><value>Subcutaneous</value></data>
+  <data name="vxs:Due" xml:space="preserve"><value>Due</value></data>
+  <data name="vxs:Given" xml:space="preserve"><value>Given</value></data>
+  <data name="vxs:Overdue" xml:space="preserve"><value>Overdue</value></data>
+  <data name="vxs:Upcoming" xml:space="preserve"><value>Upcoming</value></data>
+  <data name="{0} days late" xml:space="preserve"><value>{0} days late</value></data>
+  <data name="{0} month(s)" xml:space="preserve"><value>{0} month(s)</value></data>
+  <data name="{0} year(s)" xml:space="preserve"><value>{0} year(s)</value></data>
+  <data name="37 weeks or more" xml:space="preserve"><value>37 weeks or more</value></data>
+  <data name="A pregnancy is opened on a female patient's file" xml:space="preserve"><value>A pregnancy is opened on a female patient's file</value></data>
+  <data name="Abortions" xml:space="preserve"><value>Abortions</value></data>
+  <data name="Active pregnancies" xml:space="preserve"><value>Active pregnancies</value></data>
+  <data name="Antenatal care" xml:space="preserve"><value>Antenatal care</value></data>
+  <data name="Antenatal care is not installed yet (hospital_h85_antenatal.sql)." xml:space="preserve"><value>Antenatal care is not installed yet (hospital_h85_antenatal.sql).</value></data>
+  <data name="Antenatal visit" xml:space="preserve"><value>Antenatal visit</value></data>
+  <data name="Antenatal visits" xml:space="preserve"><value>Antenatal visits</value></data>
+  <data name="BP" xml:space="preserve"><value>BP</value></data>
+  <data name="BP (diastolic)" xml:space="preserve"><value>BP (diastolic)</value></data>
+  <data name="BP (systolic)" xml:space="preserve"><value>BP (systolic)</value></data>
+  <data name="Choose delivered or lost" xml:space="preserve"><value>Choose delivered or lost</value></data>
+  <data name="Choose the urine protein" xml:space="preserve"><value>Choose the urine protein</value></data>
+  <data name="Close the pregnancy" xml:space="preserve"><value>Close the pregnancy</value></data>
+  <data name="Close this pregnancy?" xml:space="preserve"><value>Close this pregnancy?</value></data>
+  <data name="Due date" xml:space="preserve"><value>Due date</value></data>
+  <data name="Fetal heart" xml:space="preserve"><value>Fetal heart</value></data>
+  <data name="Fetal heart (bpm)" xml:space="preserve"><value>Fetal heart (bpm)</value></data>
+  <data name="Fundal height" xml:space="preserve"><value>Fundal height</value></data>
+  <data name="Fundal height (cm)" xml:space="preserve"><value>Fundal height (cm)</value></data>
+  <data name="Gestation" xml:space="preserve"><value>Gestation</value></data>
+  <data name="Gravida" xml:space="preserve"><value>Gravida</value></data>
+  <data name="Gravida / para / abortions" xml:space="preserve"><value>Gravida / para / abortions</value></data>
+  <data name="Gravida counts this pregnancy: births and losses before it are fewer" xml:space="preserve"><value>Gravida counts this pregnancy: births and losses before it are fewer</value></data>
+  <data name="Last menstrual period" xml:space="preserve"><value>Last menstrual period</value></data>
+  <data name="Maternity" xml:space="preserve"><value>Maternity</value></data>
+  <data name="Missed the visit" xml:space="preserve"><value>Missed the visit</value></data>
+  <data name="Mother" xml:space="preserve"><value>Mother</value></data>
+  <data name="No active pregnancy." xml:space="preserve"><value>No active pregnancy.</value></data>
+  <data name="No visit yet" xml:space="preserve"><value>No visit yet</value></data>
+  <data name="Open a pregnancy" xml:space="preserve"><value>Open a pregnancy</value></data>
+  <data name="Open this pregnancy on the mother's file?" xml:space="preserve"><value>Open this pregnancy on the mother's file?</value></data>
+  <data name="Para" xml:space="preserve"><value>Para</value></data>
+  <data name="Pregnancy" xml:space="preserve"><value>Pregnancy</value></data>
+  <data name="Previous caesarean, diabetes, twins…" xml:space="preserve"><value>Previous caesarean, diabetes, twins…</value></data>
+  <data name="Record a visit" xml:space="preserve"><value>Record a visit</value></data>
+  <data name="Risks at booking" xml:space="preserve"><value>Risks at booking</value></data>
+  <data name="Save this antenatal visit?" xml:space="preserve"><value>Save this antenatal visit?</value></data>
+  <data name="Search by name or file…" xml:space="preserve"><value>Search by name or file…</value></data>
+  <data name="That birth is not this mother's" xml:space="preserve"><value>That birth is not this mother's</value></data>
+  <data name="The birth" xml:space="preserve"><value>The birth</value></data>
+  <data name="The blood pressure is not plausible" xml:space="preserve"><value>The blood pressure is not plausible</value></data>
+  <data name="The fetal heart rate is not plausible" xml:space="preserve"><value>The fetal heart rate is not plausible</value></data>
+  <data name="The fundal height is not plausible" xml:space="preserve"><value>The fundal height is not plausible</value></data>
+  <data name="The last menstrual period must be within the last 44 weeks" xml:space="preserve"><value>The last menstrual period must be within the last 44 weeks</value></data>
+  <data name="The mother's births registered on her file." xml:space="preserve"><value>The mother's births registered on her file.</value></data>
+  <data name="The ultrasound due date is out of range" xml:space="preserve"><value>The ultrasound due date is out of range</value></data>
+  <data name="The ultrasound due date, when written, wins over the last period's." xml:space="preserve"><value>The ultrasound due date, when written, wins over the last period's.</value></data>
+  <data name="The visit cannot be before the pregnancy" xml:space="preserve"><value>The visit cannot be before the pregnancy</value></data>
+  <data name="The weight is not plausible" xml:space="preserve"><value>The weight is not plausible</value></data>
+  <data name="This patient already has an active pregnancy" xml:space="preserve"><value>This patient already has an active pregnancy</value></data>
+  <data name="This pregnancy is already closed" xml:space="preserve"><value>This pregnancy is already closed</value></data>
+  <data name="Trimester {0}" xml:space="preserve"><value>Trimester {0}</value></data>
+  <data name="Ultrasound due date" xml:space="preserve"><value>Ultrasound due date</value></data>
+  <data name="Urine protein" xml:space="preserve"><value>Urine protein</value></data>
+  <data name="Visit missed" xml:space="preserve"><value>Visit missed</value></data>
+  <data name="Warnings" xml:space="preserve"><value>Warnings</value></data>
+  <data name="Weeks today" xml:space="preserve"><value>Weeks today</value></data>
+  <data name="Weight" xml:space="preserve"><value>Weight</value></data>
+  <data name="Weight (kg)" xml:space="preserve"><value>Weight (kg)</value></data>
+  <data name="With a warning" xml:space="preserve"><value>With a warning</value></data>
+  <data name="Write both blood pressure numbers" xml:space="preserve"><value>Write both blood pressure numbers</value></data>
+  <data name="Write the last menstrual period or the ultrasound due date" xml:space="preserve"><value>Write the last menstrual period or the ultrasound due date</value></data>
+  <data name="Write what happened" xml:space="preserve"><value>Write what happened</value></data>
+  <data name="anw:FetalHeart" xml:space="preserve"><value>Fetal heart out of range</value></data>
+  <data name="anw:FundalHeight" xml:space="preserve"><value>Fundal height does not fit the dates</value></data>
+  <data name="anw:Hypertension" xml:space="preserve"><value>High blood pressure</value></data>
+  <data name="anw:PreEclampsia" xml:space="preserve"><value>Suspected pre-eclampsia</value></data>
+  <data name="anw:SevereHypertension" xml:space="preserve"><value>Severe high blood pressure</value></data>
+  <data name="pgs:Active" xml:space="preserve"><value>Active</value></data>
+  <data name="pgs:Delivered" xml:space="preserve"><value>Delivered</value></data>
+  <data name="pgs:Loss" xml:space="preserve"><value>Loss</value></data>
+  <data name="A labour is opened on a female patient's stay" xml:space="preserve"><value>A labour is opened on a female patient's stay</value></data>
+  <data name="Action line" xml:space="preserve"><value>Action line</value></data>
+  <data name="Alert line" xml:space="preserve"><value>Alert line</value></data>
+  <data name="Alert line from {0} cm at 1 cm an hour; action line four hours to its right." xml:space="preserve"><value>Alert line from {0} cm at 1 cm an hour; action line four hours to its right.</value></data>
+  <data name="Cervicograph" xml:space="preserve"><value>Cervicograph</value></data>
+  <data name="Cervix" xml:space="preserve"><value>Cervix</value></data>
+  <data name="Cervix (cm)" xml:space="preserve"><value>Cervix (cm)</value></data>
+  <data name="Choose an admitted woman…" xml:space="preserve"><value>Choose an admitted woman…</value></data>
+  <data name="Choose how the labour ended" xml:space="preserve"><value>Choose how the labour ended</value></data>
+  <data name="Choose the liquor" xml:space="preserve"><value>Choose the liquor</value></data>
+  <data name="Close the labour" xml:space="preserve"><value>Close the labour</value></data>
+  <data name="Close this labour?" xml:space="preserve"><value>Close this labour?</value></data>
+  <data name="Contractions" xml:space="preserve"><value>Contractions</value></data>
+  <data name="Contractions in 10 min" xml:space="preserve"><value>Contractions in 10 min</value></data>
+  <data name="Descent" xml:space="preserve"><value>Descent</value></data>
+  <data name="Descent (fifths)" xml:space="preserve"><value>Descent (fifths)</value></data>
+  <data name="Each lasts (s)" xml:space="preserve"><value>Each lasts (s)</value></data>
+  <data name="How it ended" xml:space="preserve"><value>How it ended</value></data>
+  <data name="Labour observation" xml:space="preserve"><value>Labour observation</value></data>
+  <data name="Labour ward" xml:space="preserve"><value>Labour ward</value></data>
+  <data name="Liquor" xml:space="preserve"><value>Liquor</value></data>
+  <data name="No labour in progress." xml:space="preserve"><value>No labour in progress.</value></data>
+  <data name="No observation yet." xml:space="preserve"><value>No observation yet.</value></data>
+  <data name="Observations" xml:space="preserve"><value>Observations</value></data>
+  <data name="Open the partograph" xml:space="preserve"><value>Open the partograph</value></data>
+  <data name="Partograph" xml:space="preserve"><value>Partograph</value></data>
+  <data name="Pulse" xml:space="preserve"><value>Pulse</value></data>
+  <data name="Record an observation" xml:space="preserve"><value>Record an observation</value></data>
+  <data name="Save this observation?" xml:space="preserve"><value>Save this observation?</value></data>
+  <data name="Start a partograph" xml:space="preserve"><value>Start a partograph</value></data>
+  <data name="Start a partograph for this woman?" xml:space="preserve"><value>Start a partograph for this woman?</value></data>
+  <data name="Started {0}" xml:space="preserve"><value>Started {0}</value></data>
+  <data name="Temperature (°C)" xml:space="preserve"><value>Temperature (°C)</value></data>
+  <data name="The active phase starts at 4 cm: the lines appear from then." xml:space="preserve"><value>The active phase starts at 4 cm: the lines appear from then.</value></data>
+  <data name="The baby is registered from the births screen, on the mother's file." xml:space="preserve"><value>The baby is registered from the births screen, on the mother's file.</value></data>
+  <data name="The cervix cannot close by more than a centimetre: check the reading" xml:space="preserve"><value>The cervix cannot close by more than a centimetre: check the reading</value></data>
+  <data name="The cervix is between 0 and 10 cm" xml:space="preserve"><value>The cervix is between 0 and 10 cm</value></data>
+  <data name="The contractions are between 0 and 10 in ten minutes" xml:space="preserve"><value>The contractions are between 0 and 10 in ten minutes</value></data>
+  <data name="The descent is between 0 and 5 fifths" xml:space="preserve"><value>The descent is between 0 and 5 fifths</value></data>
+  <data name="The partograph is not installed yet (hospital_h86_labour.sql)." xml:space="preserve"><value>The partograph is not installed yet (hospital_h86_labour.sql).</value></data>
+  <data name="The temperature is not plausible" xml:space="preserve"><value>The temperature is not plausible</value></data>
+  <data name="The time is before the labour started" xml:space="preserve"><value>The time is before the labour started</value></data>
+  <data name="This labour is already closed" xml:space="preserve"><value>This labour is already closed</value></data>
+  <data name="lbo:Assisted" xml:space="preserve"><value>Assisted birth</value></data>
+  <data name="lbo:Caesarean" xml:space="preserve"><value>Caesarean</value></data>
+  <data name="lbo:Transferred" xml:space="preserve"><value>Transferred</value></data>
+  <data name="lbo:Vaginal" xml:space="preserve"><value>Vaginal birth</value></data>
+  <data name="lbw:ActionLine" xml:space="preserve"><value>Crossed the action line</value></data>
+  <data name="lbw:AlertLine" xml:space="preserve"><value>Crossed the alert line</value></data>
+  <data name="lbw:FetalHeart" xml:space="preserve"><value>Fetal heart out of range</value></data>
+  <data name="lbw:Fever" xml:space="preserve"><value>Fever</value></data>
+  <data name="lbw:Hypertension" xml:space="preserve"><value>High blood pressure</value></data>
+  <data name="lbw:Meconium" xml:space="preserve"><value>Meconium in the liquor</value></data>
+  <data name="lbw:Tachysystole" xml:space="preserve"><value>Too many contractions</value></data>
+  <data name="liq:B" xml:space="preserve"><value>Blood-stained</value></data>
+  <data name="liq:C" xml:space="preserve"><value>Clear</value></data>
+  <data name="liq:I" xml:space="preserve"><value>Membranes intact</value></data>
+  <data name="liq:M" xml:space="preserve"><value>Meconium</value></data>
+  <data name="{0} min since the last look" xml:space="preserve"><value>{0} min since the last look</value></data>
+  <data name="Labour started at (empty means now)" xml:space="preserve"><value>Labour started at (empty means now)</value></data>
+  <data name="The labour's start can be written back a day at most" xml:space="preserve"><value>The labour's start can be written back a day at most</value></data>
+  <data name="Write at least one measure or a note" xml:space="preserve">
+    <value>Write at least one measure or a note</value>
+  </data>
+  <data name="A day that has not come cannot be missed" xml:space="preserve"><value>A day that has not come cannot be missed</value></data>
+  <data name="A missed session can be written back a week at most" xml:space="preserve"><value>A missed session can be written back a week at most</value></data>
+  <data name="A session lasts between 1 and 8 hours" xml:space="preserve"><value>A session lasts between 1 and 8 hours</value></data>
+  <data name="A session's start can be written back 12 hours at most" xml:space="preserve"><value>A session's start can be written back 12 hours at most</value></data>
+  <data name="Adequacy" xml:space="preserve"><value>Adequacy</value></data>
+  <data name="After" xml:space="preserve"><value>After</value></data>
+  <data name="All shifts" xml:space="preserve"><value>All shifts</value></data>
+  <data name="Anticoagulation" xml:space="preserve"><value>Anticoagulation</value></data>
+  <data name="Before" xml:space="preserve"><value>Before</value></data>
+  <data name="Below 90, or 20 under the pressure before, is intradialytic hypotension." xml:space="preserve"><value>Below 90, or 20 under the pressure before, is intradialytic hypotension.</value></data>
+  <data name="Blood / dialysate flow" xml:space="preserve"><value>Blood / dialysate flow</value></data>
+  <data name="Blood flow" xml:space="preserve"><value>Blood flow</value></data>
+  <data name="Blood flow (ml/min)" xml:space="preserve"><value>Blood flow (ml/min)</value></data>
+  <data name="Blood pressure" xml:space="preserve"><value>Blood pressure</value></data>
+  <data name="Both files have a dialysis session on the same day: the unit must reconcile them first" xml:space="preserve"><value>Both files have a dialysis session on the same day: the unit must reconcile them first</value></data>
+  <data name="Both files have an active dialysis plan: stop one first" xml:space="preserve"><value>Both files have an active dialysis plan: stop one first</value></data>
+  <data name="Change the dialysis plan" xml:space="preserve"><value>Change the dialysis plan</value></data>
+  <data name="Change the plan" xml:space="preserve"><value>Change the plan</value></data>
+  <data name="Choose the complications from the list" xml:space="preserve"><value>Choose the complications from the list</value></data>
+  <data name="Choose the dialysis days" xml:space="preserve"><value>Choose the dialysis days</value></data>
+  <data name="Choose the shift" xml:space="preserve"><value>Choose the shift</value></data>
+  <data name="Choose the vascular access" xml:space="preserve"><value>Choose the vascular access</value></data>
+  <data name="Complications" xml:space="preserve"><value>Complications</value></data>
+  <data name="Dialysate flow (ml/min)" xml:space="preserve"><value>Dialysate flow (ml/min)</value></data>
+  <data name="Dialyser" xml:space="preserve"><value>Dialyser</value></data>
+  <data name="Dialysis" xml:space="preserve"><value>Dialysis</value></data>
+  <data name="Dialysis days" xml:space="preserve"><value>Dialysis days</value></data>
+  <data name="Dialysis is not installed yet (hospital_h87_dialysis.sql)." xml:space="preserve"><value>Dialysis is not installed yet (hospital_h87_dialysis.sql).</value></data>
+  <data name="Dialysis patients" xml:space="preserve"><value>Dialysis patients</value></data>
+  <data name="Dialysis session" xml:space="preserve"><value>Dialysis session</value></data>
+  <data name="Dialysis unit" xml:space="preserve"><value>Dialysis unit</value></data>
+  <data name="Diastolic" xml:space="preserve"><value>Diastolic</value></data>
+  <data name="Draw the urea before and after to measure the dose (usually once a month)." xml:space="preserve"><value>Draw the urea before and after to measure the dose (usually once a month).</value></data>
+  <data name="Dry weight" xml:space="preserve"><value>Dry weight</value></data>
+  <data name="Dry weight (kg)" xml:space="preserve"><value>Dry weight (kg)</value></data>
+  <data name="Ended" xml:space="preserve"><value>Ended</value></data>
+  <data name="Ended at" xml:space="preserve"><value>Ended at</value></data>
+  <data name="Finish the running session first" xml:space="preserve"><value>Finish the running session first</value></data>
+  <data name="Finish the session" xml:space="preserve"><value>Finish the session</value></data>
+  <data name="Finish this session? It cannot be reopened." xml:space="preserve"><value>Finish this session? It cannot be reopened.</value></data>
+  <data name="Gain" xml:space="preserve"><value>Gain</value></data>
+  <data name="Gain since the last session" xml:space="preserve"><value>Gain since the last session</value></data>
+  <data name="Haemodialysis" xml:space="preserve"><value>Haemodialysis</value></data>
+  <data name="Heparin 2000 units, then 1000 an hour…" xml:space="preserve"><value>Heparin 2000 units, then 1000 an hour…</value></data>
+  <data name="Kt/V, mean of the last three" xml:space="preserve"><value>Kt/V, mean of the last three</value></data>
+  <data name="Last Kt/V" xml:space="preserve"><value>Last Kt/V</value></data>
+  <data name="Last session" xml:space="preserve"><value>Last session</value></data>
+  <data name="Lowest pressure" xml:space="preserve"><value>Lowest pressure</value></data>
+  <data name="Mark missed" xml:space="preserve"><value>Mark missed</value></data>
+  <data name="Mark the day missed" xml:space="preserve"><value>Mark the day missed</value></data>
+  <data name="Missed in 30 days" xml:space="preserve"><value>Missed in 30 days</value></data>
+  <data name="Mon · Wed · Fri" xml:space="preserve"><value>Mon · Wed · Fri</value></data>
+  <data name="New dialysis plan" xml:space="preserve"><value>New dialysis plan</value></data>
+  <data name="No dialysis plan yet." xml:space="preserve"><value>No dialysis plan yet.</value></data>
+  <data name="No reading yet" xml:space="preserve"><value>No reading yet</value></data>
+  <data name="No reading yet." xml:space="preserve"><value>No reading yet.</value></data>
+  <data name="No session yet." xml:space="preserve"><value>No session yet.</value></data>
+  <data name="Nobody is on a dialysis plan." xml:space="preserve"><value>Nobody is on a dialysis plan.</value></data>
+  <data name="Nobody is scheduled on this day." xml:space="preserve"><value>Nobody is scheduled on this day.</value></data>
+  <data name="On a dialysis plan" xml:space="preserve"><value>On a dialysis plan</value></data>
+  <data name="On the machine" xml:space="preserve"><value>On the machine</value></data>
+  <data name="Readings" xml:space="preserve"><value>Readings</value></data>
+  <data name="Record a reading" xml:space="preserve"><value>Record a reading</value></data>
+  <data name="Sat · Mon · Wed" xml:space="preserve"><value>Sat · Mon · Wed</value></data>
+  <data name="Save this dialysis plan?" xml:space="preserve"><value>Save this dialysis plan?</value></data>
+  <data name="Save this reading?" xml:space="preserve"><value>Save this reading?</value></data>
+  <data name="Search by name, file, phone or station…" xml:space="preserve"><value>Search by name, file, phone or station…</value></data>
+  <data name="Sessions" xml:space="preserve"><value>Sessions</value></data>
+  <data name="Sessions in 30 days" xml:space="preserve"><value>Sessions in 30 days</value></data>
+  <data name="Shift {0}" xml:space="preserve"><value>Shift {0}</value></data>
+  <data name="Start a session" xml:space="preserve"><value>Start a session</value></data>
+  <data name="Start dialysis" xml:space="preserve"><value>Start dialysis</value></data>
+  <data name="Start the session" xml:space="preserve"><value>Start the session</value></data>
+  <data name="Start this patient's session?" xml:space="preserve"><value>Start this patient's session?</value></data>
+  <data name="Started at" xml:space="preserve"><value>Started at</value></data>
+  <data name="Station" xml:space="preserve"><value>Station</value></data>
+  <data name="Stop the plan" xml:space="preserve"><value>Stop the plan</value></data>
+  <data name="Stop this patient's dialysis plan? The sessions stay on the file." xml:space="preserve"><value>Stop this patient's dialysis plan? The sessions stay on the file.</value></data>
+  <data name="Sun · Tue · Thu" xml:space="preserve"><value>Sun · Tue · Thu</value></data>
+  <data name="Systolic" xml:space="preserve"><value>Systolic</value></data>
+  <data name="Systolic pressure on the machine" xml:space="preserve"><value>Systolic pressure on the machine</value></data>
+  <data name="Targets: Kt/V at least 1.2, URR at least 65 %, ultrafiltration under 13 ml/kg/h, a gain under 4 % of the dry weight." xml:space="preserve"><value>Targets: Kt/V at least 1.2, URR at least 65 %, ultrafiltration under 13 ml/kg/h, a gain under 4 % of the dry weight.</value></data>
+  <data name="The blood flow is between 0 and 600 ml/min" xml:space="preserve"><value>The blood flow is between 0 and 600 ml/min</value></data>
+  <data name="The blood flow is between 100 and 600 ml/min" xml:space="preserve"><value>The blood flow is between 100 and 600 ml/min</value></data>
+  <data name="The day's sessions" xml:space="preserve"><value>The day's sessions</value></data>
+  <data name="The dialysate flow is between 300 and 1000 ml/min" xml:space="preserve"><value>The dialysate flow is between 300 and 1000 ml/min</value></data>
+  <data name="The dry weight is between 20 and 250 kg" xml:space="preserve"><value>The dry weight is between 20 and 250 kg</value></data>
+  <data name="The end is before the start" xml:space="preserve"><value>The end is before the start</value></data>
+  <data name="The patient already had a session that day" xml:space="preserve"><value>The patient already had a session that day</value></data>
+  <data name="The patient is not scheduled on that day" xml:space="preserve"><value>The patient is not scheduled on that day</value></data>
+  <data name="The patient's sessions" xml:space="preserve"><value>The patient's sessions</value></data>
+  <data name="The plan is stopped" xml:space="preserve"><value>The plan is stopped</value></data>
+  <data name="The pulse is not plausible" xml:space="preserve"><value>The pulse is not plausible</value></data>
+  <data name="The session is on the machine." xml:space="preserve"><value>The session is on the machine.</value></data>
+  <data name="The time is before the session started" xml:space="preserve"><value>The time is before the session started</value></data>
+  <data name="The urea after must be below the urea before" xml:space="preserve"><value>The urea after must be below the urea before</value></data>
+  <data name="The venous pressure is not plausible" xml:space="preserve"><value>The venous pressure is not plausible</value></data>
+  <data name="The volume removed is between 0 and 6000 ml" xml:space="preserve"><value>The volume removed is between 0 and 6000 ml</value></data>
+  <data name="The volume to remove is between 0 and 6000 ml" xml:space="preserve"><value>The volume to remove is between 0 and 6000 ml</value></data>
+  <data name="The weight after is more than a kilo above the weight before: check it" xml:space="preserve"><value>The weight after is more than a kilo above the weight before: check it</value></data>
+  <data name="The weight lost" xml:space="preserve"><value>The weight lost</value></data>
+  <data name="This dialysis plan is stopped" xml:space="preserve"><value>This dialysis plan is stopped</value></data>
+  <data name="This patient already has an active dialysis plan" xml:space="preserve"><value>This patient already has an active dialysis plan</value></data>
+  <data name="This session is not running" xml:space="preserve"><value>This session is not running</value></data>
+  <data name="UF" xml:space="preserve"><value>UF</value></data>
+  <data name="UF so far" xml:space="preserve"><value>UF so far</value></data>
+  <data name="UF so far (ml)" xml:space="preserve"><value>UF so far (ml)</value></data>
+  <data name="Urea after" xml:space="preserve"><value>Urea after</value></data>
+  <data name="Urea before" xml:space="preserve"><value>Urea before</value></data>
+  <data name="Urea {0} → {1}" xml:space="preserve"><value>Urea {0} → {1}</value></data>
+  <data name="Vascular access" xml:space="preserve"><value>Vascular access</value></data>
+  <data name="Venous pressure" xml:space="preserve"><value>Venous pressure</value></data>
+  <data name="Volume removed" xml:space="preserve"><value>Volume removed</value></data>
+  <data name="Volume removed (ml)" xml:space="preserve"><value>Volume removed (ml)</value></data>
+  <data name="Volume to remove" xml:space="preserve"><value>Volume to remove</value></data>
+  <data name="Volume to remove (ml)" xml:space="preserve"><value>Volume to remove (ml)</value></data>
+  <data name="Weigh the patient after the session" xml:space="preserve"><value>Weigh the patient after the session</value></data>
+  <data name="Weigh the patient before the session" xml:space="preserve"><value>Weigh the patient before the session</value></data>
+  <data name="Weight above the dry weight" xml:space="preserve"><value>Weight above the dry weight</value></data>
+  <data name="Weight after (kg)" xml:space="preserve"><value>Weight after (kg)</value></data>
+  <data name="Weight before (kg)" xml:space="preserve"><value>Weight before (kg)</value></data>
+  <data name="Why was the session missed?" xml:space="preserve"><value>Why was the session missed?</value></data>
+  <data name="Write both urea values, before and after" xml:space="preserve"><value>Write both urea values, before and after</value></data>
+  <data name="Write why the session was missed" xml:space="preserve"><value>Write why the session was missed</value></data>
+  <data name="dxa:AVF" xml:space="preserve"><value>Fistula</value></data>
+  <data name="dxa:AVG" xml:space="preserve"><value>Graft</value></data>
+  <data name="dxa:CVC" xml:space="preserve"><value>Catheter</value></data>
+  <data name="dxc:Access" xml:space="preserve"><value>Access problem</value></data>
+  <data name="dxc:ChestPain" xml:space="preserve"><value>Chest pain</value></data>
+  <data name="dxc:Clotting" xml:space="preserve"><value>Circuit clotting</value></data>
+  <data name="dxc:Cramps" xml:space="preserve"><value>Cramps</value></data>
+  <data name="dxc:Fever" xml:space="preserve"><value>Fever</value></data>
+  <data name="dxc:Headache" xml:space="preserve"><value>Headache</value></data>
+  <data name="dxc:Nausea" xml:space="preserve"><value>Nausea</value></data>
+  <data name="dxs:Done" xml:space="preserve"><value>Done</value></data>
+  <data name="dxs:Due" xml:space="preserve"><value>Due</value></data>
+  <data name="dxs:Missed" xml:space="preserve"><value>Missed</value></data>
+  <data name="dxs:Running" xml:space="preserve"><value>On the machine</value></data>
+  <data name="dxw:AboveDry" xml:space="preserve"><value>Left above the dry weight</value></data>
+  <data name="dxw:HighGain" xml:space="preserve"><value>Gain over 4 %</value></data>
+  <data name="dxw:HighUfRate" xml:space="preserve"><value>Ultrafiltration too fast</value></data>
+  <data name="dxw:Hypotension" xml:space="preserve"><value>Low pressure on the machine</value></data>
+  <data name="dxw:LowKtv" xml:space="preserve"><value>Kt/V under 1.2</value></data>
+  <data name="dxw:LowUrr" xml:space="preserve"><value>URR under 65 %</value></data>
+  <data name="dxw:Short" xml:space="preserve"><value>Session cut short</value></data>
+  <data name="{0} h" xml:space="preserve"><value>{0} h</value></data>
+  <data name="{0} of {1} min" xml:space="preserve"><value>{0} of {1} min</value></data>
+  <data name="A check stops this cycle: write the reason to give it anyway" xml:space="preserve"><value>A check stops this cycle: write the reason to give it anyway</value></data>
+  <data name="A count is not plausible" xml:space="preserve"><value>A count is not plausible</value></data>
+  <data name="A cycle is recorded on its day, or up to three days back" xml:space="preserve"><value>A cycle is recorded on its day, or up to three days back</value></data>
+  <data name="A cycle lasts between 7 and 56 days" xml:space="preserve"><value>A cycle lasts between 7 and 56 days</value></data>
+  <data name="A drug is written twice" xml:space="preserve"><value>A drug is written twice</value></data>
+  <data name="A drug's day falls after the cycle ends" xml:space="preserve"><value>A drug's day falls after the cycle ends</value></data>
+  <data name="A lifetime limit is kept for a mg/m² dose only" xml:space="preserve"><value>A lifetime limit is kept for a mg/m² dose only</value></data>
+  <data name="A lifetime limit must be above zero" xml:space="preserve"><value>A lifetime limit must be above zero</value></data>
+  <data name="Add a drug" xml:space="preserve"><value>Add a drug</value></data>
+  <data name="Add at least one drug" xml:space="preserve"><value>Add at least one drug</value></data>
+  <data name="All cycles given" xml:space="preserve"><value>All cycles given</value></data>
+  <data name="An AUC is between 1 and 10" xml:space="preserve"><value>An AUC is between 1 and 10</value></data>
+  <data name="Another regimen has this code" xml:space="preserve"><value>Another regimen has this code</value></data>
+  <data name="At the start" xml:space="preserve"><value>At the start</value></data>
+  <data name="Basis" xml:space="preserve"><value>Basis</value></data>
+  <data name="Body surface" xml:space="preserve"><value>Body surface</value></data>
+  <data name="Change the regimen" xml:space="preserve"><value>Change the regimen</value></data>
+  <data name="Chemo cycles" xml:space="preserve"><value>Chemo cycles</value></data>
+  <data name="Chemotherapy" xml:space="preserve"><value>Chemotherapy</value></data>
+  <data name="Chemotherapy course" xml:space="preserve"><value>Chemotherapy course</value></data>
+  <data name="Chemotherapy regimens" xml:space="preserve"><value>Chemotherapy regimens</value></data>
+  <data name="Choose an active regimen" xml:space="preserve"><value>Choose an active regimen</value></data>
+  <data name="Choose each drug's dose basis" xml:space="preserve"><value>Choose each drug's dose basis</value></data>
+  <data name="Choose each drug's route" xml:space="preserve"><value>Choose each drug's route</value></data>
+  <data name="Choose the intent of the treatment" xml:space="preserve"><value>Choose the intent of the treatment</value></data>
+  <data name="Complete the course" xml:space="preserve"><value>Complete the course</value></data>
+  <data name="Counts" xml:space="preserve"><value>Counts</value></data>
+  <data name="Courses in progress" xml:space="preserve"><value>Courses in progress</value></data>
+  <data name="Courses on it" xml:space="preserve"><value>Courses on it</value></data>
+  <data name="Creatinine mg/dL" xml:space="preserve"><value>Creatinine mg/dL</value></data>
+  <data name="Cycle {0}" xml:space="preserve"><value>Cycle {0}</value></data>
+  <data name="Days of the cycle" xml:space="preserve"><value>Days of the cycle</value></data>
+  <data name="Days per cycle" xml:space="preserve"><value>Days per cycle</value></data>
+  <data name="Dose reduction" xml:space="preserve"><value>Dose reduction</value></data>
+  <data name="Dose to give" xml:space="preserve"><value>Dose to give</value></data>
+  <data name="Doses" xml:space="preserve"><value>Doses</value></data>
+  <data name="Drugs" xml:space="preserve"><value>Drugs</value></data>
+  <data name="Due within a week" xml:space="preserve"><value>Due within a week</value></data>
+  <data name="Each drug needs a dose above zero" xml:space="preserve"><value>Each drug needs a dose above zero</value></data>
+  <data name="Every {0} days" xml:space="preserve"><value>Every {0} days</value></data>
+  <data name="First cycle on" xml:space="preserve"><value>First cycle on</value></data>
+  <data name="Give cycle {0}" xml:space="preserve"><value>Give cycle {0}</value></data>
+  <data name="Give this cycle with these doses?" xml:space="preserve"><value>Give this cycle with these doses?</value></data>
+  <data name="Given on" xml:space="preserve"><value>Given on</value></data>
+  <data name="Grade {0}" xml:space="preserve"><value>Grade {0}</value></data>
+  <data name="Height (cm)" xml:space="preserve"><value>Height (cm)</value></data>
+  <data name="Held" xml:space="preserve"><value>Held</value></data>
+  <data name="Hold the cycle" xml:space="preserve"><value>Hold the cycle</value></data>
+  <data name="Hold the cycle to a day within six weeks" xml:space="preserve"><value>Hold the cycle to a day within six weeks</value></data>
+  <data name="Hold this cycle?" xml:space="preserve"><value>Hold this cycle?</value></data>
+  <data name="In the library" xml:space="preserve"><value>In the library</value></data>
+  <data name="Intent" xml:space="preserve"><value>Intent</value></data>
+  <data name="Last toxicity" xml:space="preserve"><value>Last toxicity</value></data>
+  <data name="Lifetime after" xml:space="preserve"><value>Lifetime after</value></data>
+  <data name="Lifetime limit (mg/m²)" xml:space="preserve"><value>Lifetime limit (mg/m²)</value></data>
+  <data name="Lifetime limits" xml:space="preserve"><value>Lifetime limits</value></data>
+  <data name="Lifetime {0} mg/m²" xml:space="preserve"><value>Lifetime {0} mg/m²</value></data>
+  <data name="Mark the course completed?" xml:space="preserve"><value>Mark the course completed?</value></data>
+  <data name="Name in English" xml:space="preserve"><value>Name in English</value></data>
+  <data name="Neutropenic fever, mucositis, neuropathy…" xml:space="preserve"><value>Neutropenic fever, mucositis, neuropathy…</value></data>
+  <data name="Neutrophils ×10⁹/L" xml:space="preserve"><value>Neutrophils ×10⁹/L</value></data>
+  <data name="New regimen" xml:space="preserve"><value>New regimen</value></data>
+  <data name="Next cycle" xml:space="preserve"><value>Next cycle</value></data>
+  <data name="No course in progress." xml:space="preserve"><value>No course in progress.</value></data>
+  <data name="No cycle yet." xml:space="preserve"><value>No cycle yet.</value></data>
+  <data name="No regimen yet." xml:space="preserve"><value>No regimen yet.</value></data>
+  <data name="Oncology" xml:space="preserve"><value>Oncology</value></data>
+  <data name="Oncology is not installed yet (hospital_h88_oncology.sql)." xml:space="preserve"><value>Oncology is not installed yet (hospital_h88_oncology.sql).</value></data>
+  <data name="Out of the library" xml:space="preserve"><value>Out of the library</value></data>
+  <data name="Overruled" xml:space="preserve"><value>Overruled</value></data>
+  <data name="Platelets ×10⁹/L" xml:space="preserve"><value>Platelets ×10⁹/L</value></data>
+  <data name="Premedication, hydration, reference…" xml:space="preserve"><value>Premedication, hydration, reference…</value></data>
+  <data name="Prescribed" xml:space="preserve"><value>Prescribed</value></data>
+  <data name="Put off to" xml:space="preserve"><value>Put off to</value></data>
+  <data name="Regimen" xml:space="preserve"><value>Regimen</value></data>
+  <data name="Regimens" xml:space="preserve"><value>Regimens</value></data>
+  <data name="Save this regimen?" xml:space="preserve"><value>Save this regimen?</value></data>
+  <data name="Search by code, name or drug…" xml:space="preserve"><value>Search by code, name or drug…</value></data>
+  <data name="Search by name, file, regimen or diagnosis…" xml:space="preserve"><value>Search by name, file, regimen or diagnosis…</value></data>
+  <data name="Start a course" xml:space="preserve"><value>Start a course</value></data>
+  <data name="Start the course" xml:space="preserve"><value>Start the course</value></data>
+  <data name="Start this chemotherapy course?" xml:space="preserve"><value>Start this chemotherapy course?</value></data>
+  <data name="Stop the course" xml:space="preserve"><value>Stop the course</value></data>
+  <data name="The carboplatin dose needs the creatinine and the patient's age" xml:space="preserve"><value>The carboplatin dose needs the creatinine and the patient's age</value></data>
+  <data name="The cycles are between 1 and 52" xml:space="preserve"><value>The cycles are between 1 and 52</value></data>
+  <data name="The day is before the previous cycle" xml:space="preserve"><value>The day is before the previous cycle</value></data>
+  <data name="The dose reduction is between 0 and 75 %" xml:space="preserve"><value>The dose reduction is between 0 and 75 %</value></data>
+  <data name="The height is between 40 and 250 cm" xml:space="preserve"><value>The height is between 40 and 250 cm</value></data>
+  <data name="The library ships empty: the oncologists and the pharmacy enter the hospital's own protocols, and each dose is computed from them." xml:space="preserve"><value>The library ships empty: the oncologists and the pharmacy enter the hospital's own protocols, and each dose is computed from them.</value></data>
+  <data name="The patient is already on this regimen" xml:space="preserve"><value>The patient is already on this regimen</value></data>
+  <data name="The regimen library is empty: a regimen must be entered first." xml:space="preserve"><value>The regimen library is empty: a regimen must be entered first.</value></data>
+  <data name="The regimen's cycles are all given" xml:space="preserve"><value>The regimen's cycles are all given</value></data>
+  <data name="The start is within a month back and two months ahead" xml:space="preserve"><value>The start is within a month back and two months ahead</value></data>
+  <data name="The toxicity grade is between 0 and 4" xml:space="preserve"><value>The toxicity grade is between 0 and 4</value></data>
+  <data name="The weight is between 2 and 300 kg" xml:space="preserve"><value>The weight is between 2 and 300 kg</value></data>
+  <data name="This course is closed" xml:space="preserve"><value>This course is closed</value></data>
+  <data name="This cycle was just given by someone else" xml:space="preserve"><value>This cycle was just given by someone else</value></data>
+  <data name="This regimen is in use: save the change under a new code" xml:space="preserve"><value>This regimen is in use: save the change under a new code</value></data>
+  <data name="Toxicity" xml:space="preserve"><value>Toxicity</value></data>
+  <data name="Toxicity grade" xml:space="preserve"><value>Toxicity grade</value></data>
+  <data name="Toxicity grade 3–4" xml:space="preserve"><value>Toxicity grade 3–4</value></data>
+  <data name="Toxicity since the last" xml:space="preserve"><value>Toxicity since the last</value></data>
+  <data name="Weigh the patient: the dose is computed on today's weight" xml:space="preserve"><value>Weigh the patient: the dose is computed on today's weight</value></data>
+  <data name="Weight / BSA" xml:space="preserve"><value>Weight / BSA</value></data>
+  <data name="What toxicity" xml:space="preserve"><value>What toxicity</value></data>
+  <data name="Why give it anyway" xml:space="preserve"><value>Why give it anyway</value></data>
+  <data name="Why is the course stopped?" xml:space="preserve"><value>Why is the course stopped?</value></data>
+  <data name="Write each drug's name" xml:space="preserve"><value>Write each drug's name</value></data>
+  <data name="Write the days as numbers, like 1 or 1,8" xml:space="preserve"><value>Write the days as numbers, like 1 or 1,8</value></data>
+  <data name="Write the diagnosis" xml:space="preserve"><value>Write the diagnosis</value></data>
+  <data name="Write the regimen's code" xml:space="preserve"><value>Write the regimen's code</value></data>
+  <data name="Write the regimen's name" xml:space="preserve"><value>Write the regimen's name</value></data>
+  <data name="Write today's weight and counts: the doses and the checks follow." xml:space="preserve"><value>Write today's weight and counts: the doses and the checks follow.</value></data>
+  <data name="Write why the course is stopped" xml:space="preserve"><value>Write why the course is stopped</value></data>
+  <data name="Write why the cycle is held" xml:space="preserve"><value>Write why the cycle is held</value></data>
+  <data name="cbs:AUC" xml:space="preserve"><value>AUC (Calvert)</value></data>
+  <data name="cbs:Mg" xml:space="preserve"><value>mg (flat)</value></data>
+  <data name="cbs:MgKg" xml:space="preserve"><value>mg/kg</value></data>
+  <data name="cbs:MgM2" xml:space="preserve"><value>mg/m²</value></data>
+  <data name="ccs:Active" xml:space="preserve"><value>Active</value></data>
+  <data name="ccs:Completed" xml:space="preserve"><value>Completed</value></data>
+  <data name="ccs:Stopped" xml:space="preserve"><value>Stopped</value></data>
+  <data name="chk:Early" xml:space="preserve"><value>Too early for the next cycle</value></data>
+  <data name="chk:Lifetime" xml:space="preserve"><value>Over the lifetime limit</value></data>
+  <data name="chk:LowAnc" xml:space="preserve"><value>Neutrophils under 1.5</value></data>
+  <data name="chk:LowPlatelets" xml:space="preserve"><value>Platelets under 100</value></data>
+  <data name="chk:NoCounts" xml:space="preserve"><value>No blood counts</value></data>
+  <data name="chk:Toxicity" xml:space="preserve"><value>Grade 3–4 toxicity without a reduction</value></data>
+  <data name="chk:WeightChange" xml:space="preserve"><value>Weight changed more than 10 % since the start</value></data>
+  <data name="cin:Adjuvant" xml:space="preserve"><value>Adjuvant</value></data>
+  <data name="cin:Curative" xml:space="preserve"><value>Curative</value></data>
+  <data name="cin:Neoadjuvant" xml:space="preserve"><value>Neoadjuvant</value></data>
+  <data name="cin:Palliative" xml:space="preserve"><value>Palliative</value></data>
+  <data name="{0} cycles" xml:space="preserve"><value>{0} cycles</value></data>
+  <data name="{0} years" xml:space="preserve"><value>{0} years</value></data>
+  <data name="A change of {0} or more is one the patient notices; the dashed line marks it." xml:space="preserve"><value>A change of {0} or more is one the patient notices; the dashed line marks it.</value></data>
+  <data name="A goal is 300 characters at most" xml:space="preserve"><value>A goal is 300 characters at most</value></data>
+  <data name="A missed session has no treatment to record" xml:space="preserve"><value>A missed session has no treatment to record</value></data>
+  <data name="A session can be written back two weeks at most" xml:space="preserve"><value>A session can be written back two weeks at most</value></data>
+  <data name="A session is already recorded that day" xml:space="preserve"><value>A session is already recorded that day</value></data>
+  <data name="A session is recorded on its day or after it" xml:space="preserve"><value>A session is recorded on its day or after it</value></data>
+  <data name="A week" xml:space="preserve"><value>A week</value></data>
+  <data name="Add a goal" xml:space="preserve"><value>Add a goal</value></data>
+  <data name="Assess the patient" xml:space="preserve"><value>Assess the patient</value></data>
+  <data name="Assessment" xml:space="preserve"><value>Assessment</value></data>
+  <data name="Attendance" xml:space="preserve"><value>Attendance</value></data>
+  <data name="Attendance {0}%" xml:space="preserve"><value>Attendance {0}%</value></data>
+  <data name="Baseline score" xml:space="preserve"><value>Baseline score</value></data>
+  <data name="Body region" xml:space="preserve"><value>Body region</value></data>
+  <data name="By {0}" xml:space="preserve"><value>By {0}</value></data>
+  <data name="Cancel the referral" xml:space="preserve"><value>Cancel the referral</value></data>
+  <data name="Change in {0}" xml:space="preserve"><value>Change in {0}</value></data>
+  <data name="Choose met or not met" xml:space="preserve"><value>Choose met or not met</value></data>
+  <data name="Choose the body region" xml:space="preserve"><value>Choose the body region</value></data>
+  <data name="Choose the outcome measure" xml:space="preserve"><value>Choose the outcome measure</value></data>
+  <data name="Choose what was done" xml:space="preserve"><value>Choose what was done</value></data>
+  <data name="Choose what was done from the list" xml:space="preserve"><value>Choose what was done from the list</value></data>
+  <data name="Choose whether the patient came" xml:space="preserve"><value>Choose whether the patient came</value></data>
+  <data name="Choose why the patient is discharged" xml:space="preserve"><value>Choose why the patient is discharged</value></data>
+  <data name="Close this goal?" xml:space="preserve"><value>Close this goal?</value></data>
+  <data name="Discharge the patient from physiotherapy?" xml:space="preserve"><value>Discharge the patient from physiotherapy?</value></data>
+  <data name="Discharged or cancelled" xml:space="preserve"><value>Discharged or cancelled</value></data>
+  <data name="End physiotherapy" xml:space="preserve"><value>End physiotherapy</value></data>
+  <data name="Episodes" xml:space="preserve"><value>Episodes</value></data>
+  <data name="Goals" xml:space="preserve"><value>Goals</value></data>
+  <data name="Goals (one a line)" xml:space="preserve"><value>Goals (one a line)</value></data>
+  <data name="Goals are added to an active episode" xml:space="preserve"><value>Goals are added to an active episode</value></data>
+  <data name="Higher is better." xml:space="preserve"><value>Higher is better.</value></data>
+  <data name="Low back pain with sciatica, after a knee replacement…" xml:space="preserve"><value>Low back pain with sciatica, after a knee replacement…</value></data>
+  <data name="Lower is better." xml:space="preserve"><value>Lower is better.</value></data>
+  <data name="No goal yet." xml:space="preserve"><value>No goal yet.</value></data>
+  <data name="No physiotherapy episode." xml:space="preserve"><value>No physiotherapy episode.</value></data>
+  <data name="No weight on the left leg, osteoporosis…" xml:space="preserve"><value>No weight on the left leg, osteoporosis…</value></data>
+  <data name="One standard measure scored now and again during the sessions shows whether the change is real." xml:space="preserve"><value>One standard measure scored now and again during the sessions shows whether the change is real.</value></data>
+  <data name="Only a referral not yet assessed can be cancelled" xml:space="preserve"><value>Only a referral not yet assessed can be cancelled</value></data>
+  <data name="Only an active episode is discharged" xml:space="preserve"><value>Only an active episode is discharged</value></data>
+  <data name="Open episodes" xml:space="preserve"><value>Open episodes</value></data>
+  <data name="Outcome measure" xml:space="preserve"><value>Outcome measure</value></data>
+  <data name="Pain after" xml:space="preserve"><value>Pain after</value></data>
+  <data name="Pain before" xml:space="preserve"><value>Pain before</value></data>
+  <data name="Pain now (0–10)" xml:space="preserve"><value>Pain now (0–10)</value></data>
+  <data name="Physiotherapy" xml:space="preserve"><value>Physiotherapy</value></data>
+  <data name="Physiotherapy episode" xml:space="preserve"><value>Physiotherapy episode</value></data>
+  <data name="Physiotherapy is not installed yet (hospital_h89_rehab.sql)." xml:space="preserve"><value>Physiotherapy is not installed yet (hospital_h89_rehab.sql).</value></data>
+  <data name="Range of motion, strength, function, special tests…" xml:space="preserve"><value>Range of motion, strength, function, special tests…</value></data>
+  <data name="Re-scored today (optional)" xml:space="preserve"><value>Re-scored today (optional)</value></data>
+  <data name="Record a session" xml:space="preserve"><value>Record a session</value></data>
+  <data name="Refer" xml:space="preserve"><value>Refer</value></data>
+  <data name="Refer to physiotherapy" xml:space="preserve"><value>Refer to physiotherapy</value></data>
+  <data name="Referred by" xml:space="preserve"><value>Referred by</value></data>
+  <data name="Rehabilitation" xml:space="preserve"><value>Rehabilitation</value></data>
+  <data name="Save this session?" xml:space="preserve"><value>Save this session?</value></data>
+  <data name="Search by name, file or problem…" xml:space="preserve"><value>Search by name, file or problem…</value></data>
+  <data name="Send this referral to physiotherapy?" xml:space="preserve"><value>Send this referral to physiotherapy?</value></data>
+  <data name="Sessions are recorded on an active episode" xml:space="preserve"><value>Sessions are recorded on an active episode</value></data>
+  <data name="Sessions done" xml:space="preserve"><value>Sessions done</value></data>
+  <data name="Start the episode" xml:space="preserve"><value>Start the episode</value></data>
+  <data name="Start the episode with this assessment?" xml:space="preserve"><value>Start the episode with this assessment?</value></data>
+  <data name="The day is before the assessment" xml:space="preserve"><value>The day is before the assessment</value></data>
+  <data name="The pain is between 0 and 10" xml:space="preserve"><value>The pain is between 0 and 10</value></data>
+  <data name="The patient already has an open episode for this region" xml:space="preserve"><value>The patient already has an open episode for this region</value></data>
+  <data name="The planned sessions are between 1 and 60" xml:space="preserve"><value>The planned sessions are between 1 and 60</value></data>
+  <data name="The score is outside the measure's range" xml:space="preserve"><value>The score is outside the measure's range</value></data>
+  <data name="The sessions a week are between 1 and 7" xml:space="preserve"><value>The sessions a week are between 1 and 7</value></data>
+  <data name="The target date has passed" xml:space="preserve"><value>The target date has passed</value></data>
+  <data name="Therapist" xml:space="preserve"><value>Therapist</value></data>
+  <data name="This goal is already closed" xml:space="preserve"><value>This goal is already closed</value></data>
+  <data name="This referral is already assessed or closed" xml:space="preserve"><value>This referral is already assessed or closed</value></data>
+  <data name="Waiting for assessment" xml:space="preserve"><value>Waiting for assessment</value></data>
+  <data name="Walk 500 m without pain, climb stairs with one rail…" xml:space="preserve"><value>Walk 500 m without pain, climb stairs with one rail…</value></data>
+  <data name="Where the patient is now, the home programme, when to come back…" xml:space="preserve"><value>Where the patient is now, the home programme, when to come back…</value></data>
+  <data name="Why is the referral cancelled?" xml:space="preserve"><value>Why is the referral cancelled?</value></data>
+  <data name="Write the baseline score" xml:space="preserve"><value>Write the baseline score</value></data>
+  <data name="Write the discharge summary" xml:space="preserve"><value>Write the discharge summary</value></data>
+  <data name="Write the minutes of the session (5 to 240)" xml:space="preserve"><value>Write the minutes of the session (5 to 240)</value></data>
+  <data name="Write the problem to treat" xml:space="preserve"><value>Write the problem to treat</value></data>
+  <data name="Write why the referral is cancelled" xml:space="preserve"><value>Write why the referral is cancelled</value></data>
+  <data name="msr:BI" xml:space="preserve"><value>Barthel index of daily living (BI)</value></data>
+  <data name="msr:DASH" xml:space="preserve"><value>Disabilities of the arm, shoulder and hand (DASH)</value></data>
+  <data name="msr:LEFS" xml:space="preserve"><value>Lower extremity functional scale (LEFS)</value></data>
+  <data name="msr:NDI" xml:space="preserve"><value>Neck disability index (NDI)</value></data>
+  <data name="msr:ODI" xml:space="preserve"><value>Oswestry disability index (ODI)</value></data>
+  <data name="rgn:Ankle" xml:space="preserve"><value>Ankle and foot</value></data>
+  <data name="rgn:Back" xml:space="preserve"><value>Back</value></data>
+  <data name="rgn:Cardio" xml:space="preserve"><value>Cardiopulmonary</value></data>
+  <data name="rgn:Elbow" xml:space="preserve"><value>Elbow</value></data>
+  <data name="rgn:General" xml:space="preserve"><value>General</value></data>
+  <data name="rgn:Hand" xml:space="preserve"><value>Wrist and hand</value></data>
+  <data name="rgn:Hip" xml:space="preserve"><value>Hip</value></data>
+  <data name="rgn:Knee" xml:space="preserve"><value>Knee</value></data>
+  <data name="rgn:Neck" xml:space="preserve"><value>Neck</value></data>
+  <data name="rgn:Neuro" xml:space="preserve"><value>Neurological</value></data>
+  <data name="rgn:Shoulder" xml:space="preserve"><value>Shoulder</value></data>
+  <data name="rgs:Met" xml:space="preserve"><value>Met</value></data>
+  <data name="rgs:NotMet" xml:space="preserve"><value>Not met</value></data>
+  <data name="rgs:Open" xml:space="preserve"><value>Open</value></data>
+  <data name="rha:Attended" xml:space="preserve"><value>Attended</value></data>
+  <data name="rha:Cancelled" xml:space="preserve"><value>Cancelled</value></data>
+  <data name="rha:NoShow" xml:space="preserve"><value>No-show</value></data>
+  <data name="rhd:GoalsMet" xml:space="preserve"><value>Goals met</value></data>
+  <data name="rhd:Medical" xml:space="preserve"><value>Medical reason</value></data>
+  <data name="rhd:NonAttendance" xml:space="preserve"><value>Did not attend</value></data>
+  <data name="rhd:PatientRequest" xml:space="preserve"><value>Patient's request</value></data>
+  <data name="rhd:Plateau" xml:space="preserve"><value>Plateau</value></data>
+  <data name="rhd:Referred" xml:space="preserve"><value>Referred elsewhere</value></data>
+  <data name="rhi:Balance" xml:space="preserve"><value>Balance</value></data>
+  <data name="rhi:Breathing" xml:space="preserve"><value>Breathing</value></data>
+  <data name="rhi:Education" xml:space="preserve"><value>Education</value></data>
+  <data name="rhi:Electro" xml:space="preserve"><value>Electrotherapy</value></data>
+  <data name="rhi:Exercise" xml:space="preserve"><value>Exercise</value></data>
+  <data name="rhi:Gait" xml:space="preserve"><value>Gait training</value></data>
+  <data name="rhi:Heat" xml:space="preserve"><value>Heat / cold</value></data>
+  <data name="rhi:Hydro" xml:space="preserve"><value>Hydrotherapy</value></data>
+  <data name="rhi:Manual" xml:space="preserve"><value>Manual therapy</value></data>
+  <data name="rhi:Taping" xml:space="preserve"><value>Taping</value></data>
+  <data name="rhs:Active" xml:space="preserve"><value>Active</value></data>
+  <data name="rhs:Cancelled" xml:space="preserve"><value>Cancelled</value></data>
+  <data name="rhs:Discharged" xml:space="preserve"><value>Discharged</value></data>
+  <data name="rhs:Referred" xml:space="preserve"><value>Referred</value></data>
+  <data name="rht:Improved" xml:space="preserve"><value>Real improvement</value></data>
+  <data name="rht:Same" xml:space="preserve"><value>No real change</value></data>
+  <data name="rht:Worse" xml:space="preserve"><value>Worse</value></data>
+  <data name="rhw:NoProgress" xml:space="preserve"><value>No real progress after 6 sessions</value></data>
+  <data name="rhw:OverPlan" xml:space="preserve"><value>More sessions than planned</value></data>
+  <data name="rhw:PainWorse" xml:space="preserve"><value>Pain up by 2 or more</value></data>
+  <data name="rhw:TwoNoShows" xml:space="preserve"><value>Two no-shows in a row</value></data>
+  <data name="rhw:Unassessed" xml:space="preserve"><value>Waiting over 3 days for assessment</value></data>
+  <data name="rhw:Worse" xml:space="preserve"><value>Worse than the baseline</value></data>
+  <data name="{0} min" xml:space="preserve"><value>{0} min</value></data>
+  <data name="{0} sessions, {1} a week" xml:space="preserve"><value>{0} sessions, {1} a week</value></data>
+  <data name="A certificate whose manner is not natural becomes a police case, and its autopsy request carries over." xml:space="preserve"><value>A certificate whose manner is not natural becomes a police case, and its autopsy request carries over.</value></data>
+  <data name="A range like A1-A6, or codes separated by commas." xml:space="preserve"><value>A range like A1-A6, or codes separated by commas.</value></data>
+  <data name="Add an item" xml:space="preserve"><value>Add an item</value></data>
+  <data name="Add compartments" xml:space="preserve"><value>Add compartments</value></data>
+  <data name="Add these compartments?" xml:space="preserve"><value>Add these compartments?</value></data>
+  <data name="An autopsy is already requested" xml:space="preserve"><value>An autopsy is already requested</value></data>
+  <data name="An unknown body is always a police case." xml:space="preserve"><value>An unknown body is always a police case.</value></data>
+  <data name="Another body in the mortuary has this tag" xml:space="preserve"><value>Another body in the mortuary has this tag</value></data>
+  <data name="Autopsy" xml:space="preserve"><value>Autopsy</value></data>
+  <data name="Belongings" xml:space="preserve"><value>Belongings</value></data>
+  <data name="Belongings (one a line: item × quantity)" xml:space="preserve"><value>Belongings (one a line: item × quantity)</value></data>
+  <data name="Brought from" xml:space="preserve"><value>Brought from</value></data>
+  <data name="Choose a free compartment" xml:space="preserve"><value>Choose a free compartment</value></data>
+  <data name="Choose the death certificate, or describe an unknown body" xml:space="preserve"><value>Choose the death certificate, or describe an unknown body</value></data>
+  <data name="Choose the kind of compartment" xml:space="preserve"><value>Choose the kind of compartment</value></data>
+  <data name="Cleared {0}" xml:space="preserve"><value>Cleared {0}</value></data>
+  <data name="Codes" xml:space="preserve"><value>Codes</value></data>
+  <data name="Compartment" xml:space="preserve"><value>Compartment</value></data>
+  <data name="Death certificate" xml:space="preserve"><value>Death certificate</value></data>
+  <data name="Description of the unknown body" xml:space="preserve"><value>Description of the unknown body</value></data>
+  <data name="Died at" xml:space="preserve"><value>Died at</value></data>
+  <data name="Each belonging needs a name and a quantity" xml:space="preserve"><value>Each belonging needs a name and a quantity</value></data>
+  <data name="Each hold is lifted by its own step; the release opens when none is left. A transfer (to forensic medicine, another hospital) is not held." xml:space="preserve"><value>Each hold is lifted by its own step; the release opens when none is left. A transfer (to forensic medicine, another hospital) is not held.</value></data>
+  <data name="Funeral home" xml:space="preserve"><value>Funeral home</value></data>
+  <data name="Hand the belongings over with the body" xml:space="preserve"><value>Hand the belongings over with the body</value></data>
+  <data name="Handed over with the body" xml:space="preserve"><value>Handed over with the body</value></data>
+  <data name="Identified and certified" xml:space="preserve"><value>Identified and certified</value></data>
+  <data name="Identity" xml:space="preserve"><value>Identity</value></data>
+  <data name="Identity and certificate" xml:space="preserve"><value>Identity and certificate</value></data>
+  <data name="Identity number" xml:space="preserve"><value>Identity number</value></data>
+  <data name="In the mortuary" xml:space="preserve"><value>In the mortuary</value></data>
+  <data name="Kept" xml:space="preserve"><value>Kept</value></data>
+  <data name="Mortuary" xml:space="preserve"><value>Mortuary</value></data>
+  <data name="Mortuary case" xml:space="preserve"><value>Mortuary case</value></data>
+  <data name="Mortuary register" xml:space="preserve"><value>Mortuary register</value></data>
+  <data name="Move" xml:space="preserve"><value>Move</value></data>
+  <data name="Move to which compartment? Free:" xml:space="preserve"><value>Move to which compartment? Free:</value></data>
+  <data name="No autopsy is waiting" xml:space="preserve"><value>No autopsy is waiting</value></data>
+  <data name="No compartment yet: add the cold chambers' places first." xml:space="preserve"><value>No compartment yet: add the cold chambers' places first.</value></data>
+  <data name="Nothing holds the body: it may be released" xml:space="preserve"><value>Nothing holds the body: it may be released</value></data>
+  <data name="Nothing was found with the body." xml:space="preserve"><value>Nothing was found with the body.</value></data>
+  <data name="Occupied {0} of {1}" xml:space="preserve"><value>Occupied {0} of {1}</value></data>
+  <data name="Police case" xml:space="preserve"><value>Police case</value></data>
+  <data name="Police clearance" xml:space="preserve"><value>Police clearance</value></data>
+  <data name="Police hold" xml:space="preserve"><value>Police hold</value></data>
+  <data name="Police report number" xml:space="preserve"><value>Police report number</value></data>
+  <data name="Receive a body" xml:space="preserve"><value>Receive a body</value></data>
+  <data name="Receive this body into the mortuary?" xml:space="preserve"><value>Receive this body into the mortuary?</value></data>
+  <data name="Received" xml:space="preserve"><value>Received</value></data>
+  <data name="Received by (full name)" xml:space="preserve"><value>Received by (full name)</value></data>
+  <data name="Record it done" xml:space="preserve"><value>Record it done</value></data>
+  <data name="Record the clearance" xml:space="preserve"><value>Record the clearance</value></data>
+  <data name="Recorded" xml:space="preserve"><value>Recorded</value></data>
+  <data name="Relation to the deceased" xml:space="preserve"><value>Relation to the deceased</value></data>
+  <data name="Release the body" xml:space="preserve"><value>Release the body</value></data>
+  <data name="Release the body to this person?" xml:space="preserve"><value>Release the body to this person?</value></data>
+  <data name="Released or transferred" xml:space="preserve"><value>Released or transferred</value></data>
+  <data name="Released to" xml:space="preserve"><value>Released to</value></data>
+  <data name="Request an autopsy" xml:space="preserve"><value>Request an autopsy</value></data>
+  <data name="Search by name, file, tag or receiver…" xml:space="preserve"><value>Search by name, file, tag or receiver…</value></data>
+  <data name="Sex, apparent age, height, marks, clothing, where found…" xml:space="preserve"><value>Sex, apparent age, height, marks, clothing, where found…</value></data>
+  <data name="Something still holds the body: lift it first" xml:space="preserve"><value>Something still holds the body: lift it first</value></data>
+  <data name="Son, wife, brother…" xml:space="preserve"><value>Son, wife, brother…</value></data>
+  <data name="Tag number" xml:space="preserve"><value>Tag number</value></data>
+  <data name="The certificate is voided: certify the death again." xml:space="preserve"><value>The certificate is voided: certify the death again.</value></data>
+  <data name="The item (and quantity, like: watch × 1)" xml:space="preserve"><value>The item (and quantity, like: watch × 1)</value></data>
+  <data name="The mortuary is not installed yet (hospital_h90_morgue.sql)." xml:space="preserve"><value>The mortuary is not installed yet (hospital_h90_morgue.sql).</value></data>
+  <data name="The police report number" xml:space="preserve"><value>The police report number</value></data>
+  <data name="The register is empty." xml:space="preserve"><value>The register is empty.</value></data>
+  <data name="The {0} belongings were handed over and signed for" xml:space="preserve"><value>The {0} belongings were handed over and signed for</value></data>
+  <data name="There is no police hold to lift" xml:space="preserve"><value>There is no police hold to lift</value></data>
+  <data name="This body is already in the mortuary register" xml:space="preserve"><value>This body is already in the mortuary register</value></data>
+  <data name="This body is no longer in the mortuary" xml:space="preserve"><value>This body is no longer in the mortuary</value></data>
+  <data name="This death certificate is voided" xml:space="preserve"><value>This death certificate is voided</value></data>
+  <data name="Transfer the body?" xml:space="preserve"><value>Transfer the body?</value></data>
+  <data name="Transferred to" xml:space="preserve"><value>Transferred to</value></data>
+  <data name="Transferred to (facility)" xml:space="preserve"><value>Transferred to (facility)</value></data>
+  <data name="Unknown" xml:space="preserve"><value>Unknown</value></data>
+  <data name="Unknown body (no certificate)" xml:space="preserve"><value>Unknown body (no certificate)</value></data>
+  <data name="Unknown body: released only by transfer to the authorities, or once identified and certified." xml:space="preserve"><value>Unknown body: released only by transfer to the authorities, or once identified and certified.</value></data>
+  <data name="Ward, ER, ambulance…" xml:space="preserve"><value>Ward, ER, ambulance…</value></data>
+  <data name="Wedding ring × 1, wristwatch × 1, mobile phone × 1…" xml:space="preserve"><value>Wedding ring × 1, wristwatch × 1, mobile phone × 1…</value></data>
+  <data name="What still holds the body" xml:space="preserve"><value>What still holds the body</value></data>
+  <data name="Who performed the autopsy, and where is the report?" xml:space="preserve"><value>Who performed the autopsy, and where is the report?</value></data>
+  <data name="Why is an autopsy requested?" xml:space="preserve"><value>Why is an autopsy requested?</value></data>
+  <data name="Write the body tag number" xml:space="preserve"><value>Write the body tag number</value></data>
+  <data name="Write the codes, like A1-A6 or F1,F2" xml:space="preserve"><value>Write the codes, like A1-A6 or F1,F2</value></data>
+  <data name="Write the police report number" xml:space="preserve"><value>Write the police report number</value></data>
+  <data name="Write the receiver's identity number" xml:space="preserve"><value>Write the receiver's identity number</value></data>
+  <data name="Write the receiver's relation to the deceased" xml:space="preserve"><value>Write the receiver's relation to the deceased</value></data>
+  <data name="Write where the body is transferred" xml:space="preserve"><value>Write where the body is transferred</value></data>
+  <data name="Write who performed the autopsy and where the report is" xml:space="preserve"><value>Write who performed the autopsy and where the report is</value></data>
+  <data name="Write who receives the body" xml:space="preserve"><value>Write who receives the body</value></data>
+  <data name="aut:Done" xml:space="preserve"><value>Done</value></data>
+  <data name="aut:None" xml:space="preserve"><value>Not requested</value></data>
+  <data name="aut:Requested" xml:space="preserve"><value>Requested — waiting</value></data>
+  <data name="mgk:Cold" xml:space="preserve"><value>Cold chamber</value></data>
+  <data name="mgk:Freezer" xml:space="preserve"><value>Freezer</value></data>
+  <data name="mgs:InStorage" xml:space="preserve"><value>In the mortuary</value></data>
+  <data name="mgs:Released" xml:space="preserve"><value>Released</value></data>
+  <data name="mgs:Transferred" xml:space="preserve"><value>Transferred</value></data>
+  <data name="mgw:Autopsy" xml:space="preserve"><value>Autopsy waiting</value></data>
+  <data name="mgw:NoCertificate" xml:space="preserve"><value>No valid certificate</value></data>
+  <data name="mgw:Over72h" xml:space="preserve"><value>Over 72 hours</value></data>
+  <data name="mgw:OverWeek" xml:space="preserve"><value>Over a week</value></data>
+  <data name="mgw:PoliceHold" xml:space="preserve"><value>Police hold</value></data>
+  <data name="mgw:Unidentified" xml:space="preserve"><value>Unidentified</value></data>
 </root>

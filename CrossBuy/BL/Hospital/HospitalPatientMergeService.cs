@@ -68,6 +68,29 @@ namespace CrossBuy.BL.Hospital
 			(typeof(HospitalAlertOverride), "HospitalAlertOverrides"),     // H73: the alerts a doctor went past
 			(typeof(HospitalOrderSetUse), "HospitalOrderSetUses"),         // H74: the sets placed for the patient
 			(typeof(HospitalInpatientOrder), "HospitalInpatientOrders"),   // H75: the stay's lab tests and imaging
+			(typeof(HospitalIsolation), "HospitalIsolations"),             // H76: the precautions follow the patient
+			(typeof(HospitalInvasiveDevice), "HospitalInvasiveDevices"),   // H76: the devices of the stay
+			(typeof(HospitalInfectionCase), "HospitalInfectionCases"),     // H76: the infections
+			(typeof(HospitalConsultRequest), "HospitalConsultRequests"),   // H77: the consultations asked for the patient
+			(typeof(HospitalFluidEntry), "HospitalFluidEntries"),         // H78: the fluid chart
+			(typeof(HospitalProblem), "HospitalProblems"),                 // H79: the problem list follows the patient
+			(typeof(HospitalCarePlanItem), "HospitalCarePlanItems"),       // H79: the care plans
+			(typeof(HospitalChartReview), "HospitalChartReviews"),         // H80: the chart sign-offs
+			(typeof(HospitalImmunization), "HospitalImmunizations"),       // H84: the doses given follow the patient
+			(typeof(HospitalPregnancy), "HospitalPregnancies"),             // H85: the pregnancies
+			(typeof(HospitalAntenatalVisit), "HospitalAntenatalVisits"),   // H85: the antenatal visits
+			(typeof(HospitalLabour), "HospitalLabours"),                     // H86: the labours
+			(typeof(HospitalLabourObservation), "HospitalLabourObservations"),   // H86: the partograph
+			(typeof(HospitalDialysisPlan), "HospitalDialysisPlans"),           // H87: the dialysis prescription
+			(typeof(HospitalDialysisSession), "HospitalDialysisSessions"),     // H87: the sessions
+			(typeof(HospitalDialysisObservation), "HospitalDialysisObservations"),   // H87: the readings during them
+			(typeof(HospitalChemoCourse), "HospitalChemoCourses"),             // H88: the chemotherapy courses
+			(typeof(HospitalChemoCycle), "HospitalChemoCycles"),               // H88: the cycles given and held
+			(typeof(HospitalChemoDose), "HospitalChemoDoses"),                 // H88: the doses (the lifetime limits follow the patient)
+			(typeof(HospitalRehabEpisode), "HospitalRehabEpisodes"),           // H89: the physiotherapy episodes
+			(typeof(HospitalRehabGoal), "HospitalRehabGoals"),                 // H89: their goals
+			(typeof(HospitalRehabSession), "HospitalRehabSessions"),           // H89: their sessions
+			(typeof(HospitalMorgueCase), "HospitalMorgueCases"),               // H90: the mortuary register
 		};
 
 		/// Patient columns NOT named PatientId (a test holds this list to every such column too). The merge history and the
@@ -221,6 +244,10 @@ namespace CrossBuy.BL.Hospital
 			if (await Both(p => _db.Set<HospitalDentalRecall>().AnyAsync(x => x.CompanyId == c && x.PatientId == p, ct))) return "Both files have a dental recall: keep one first";
 			if (await Both(p => _db.Set<HospitalDeath>().AnyAsync(x => x.CompanyId == c && x.PatientId == p && x.VoidedAt == null, ct))) return "Both files have a death certificate: void one first";   // H59
 			if (await Both(p => _db.Set<HospitalRestrictedFile>().AnyAsync(x => x.CompanyId == c && x.PatientId == p && x.LiftedAt == null, ct))) return "Both files are restricted: lift one restriction first";   // H64
+			// H87: one standing dialysis plan per patient, and one session per patient per day
+			if (await Both(p => _db.Set<HospitalDialysisPlan>().AnyAsync(x => x.CompanyId == c && x.PatientId == p && x.Status == HospitalDialysisPlanStatus.Active, ct))) return "Both files have an active dialysis plan: stop one first";
+			var dDays = await _db.Set<HospitalDialysisSession>().AsNoTracking().Where(x => x.CompanyId == c && x.PatientId == d).Select(x => x.SessionDate).ToListAsync(ct);
+			if (dDays.Count > 0 && await _db.Set<HospitalDialysisSession>().AnyAsync(x => x.CompanyId == c && x.PatientId == s && dDays.Contains(x.SessionDate), ct)) return "Both files have a dialysis session on the same day: the unit must reconcile them first";
 			var pend = await _db.Set<HospitalPreauth>().AsNoTracking().Where(x => x.CompanyId == c && (x.PatientId == s || x.PatientId == d) && x.Status == HospitalPreauthStatus.Pending)
 				.Select(x => new { x.PatientId, x.ServiceId }).ToListAsync(ct);
 			if (pend.GroupBy(x => x.ServiceId).Any(g => g.Select(x => x.PatientId).Distinct().Count() == 2)) return "Both files wait for an approval of the same service: answer one first";

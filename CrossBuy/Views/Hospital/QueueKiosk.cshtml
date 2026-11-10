@@ -1,0 +1,106 @@
+@using CrossBuy.BL
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H83 — the self check-in kiosk: a full screen a patient uses. Step 1: the file number and the year of birth find today's
+    appointment. Step 2: the patient confirms (the confirming tap). Step 3: his queue number, large, then the screen
+    clears itself for the next patient. Nothing is printed (printing goes through Report Studio only).
+*@
+@{
+    Layout = null;
+    bool isAr = System.Globalization.CultureInfo.CurrentUICulture.Name.StartsWith("ar");
+}
+<!DOCTYPE html>
+<html lang="@(isAr ? "ar" : "en")" dir="@(isAr ? "rtl" : "ltr")">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@T["Check in"]</title>
+    <link rel="shortcut icon" href="@Url.Content(CrossBuy.BL.Platform.ProductIdentity.Assets.FaviconIco)" asp-append-version="true" />
+    <link href="~/Backend-assets/plugins/global/plugins.bundle@(isAr ? ".rtl" : "").css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/Backend-assets/css/style.bundle@(isAr ? ".rtl" : "").css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/Backend-assets/css/crossbuy-brand.css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/Backend-assets/fonts/cairo/cairo.css" rel="stylesheet" asp-append-version="true" />
+    <style>
+        body { background: #f4f6fb; font-family: 'Cairo', Inter, sans-serif; margin: 0; min-height: 100vh; display: flex; flex-direction: column; }
+        .kq-top { padding: 22px 36px; background: #1e2f5a; color: #fff; font-size: 2rem; font-weight: 700; }
+        .kq-main { flex: 1; display: flex; align-items: center; justify-content: center; padding: 30px; }
+        .kq-box { width: min(720px, 100%); background: #fff; border-radius: 22px; box-shadow: 0 6px 26px rgba(30,47,90,.1); padding: 40px; }
+        .kq-box h2 { font-size: 1.9rem; font-weight: 700; color: #1e2f5a; margin-bottom: 26px; }
+        .kq-box label { font-size: 1.25rem; font-weight: 600; margin-bottom: 8px; }
+        .kq-box input { font-size: 1.6rem; padding: 14px 18px; height: auto; direction: ltr; text-align: center; letter-spacing: .04em; }
+        .kq-btn { font-size: 1.5rem; padding: 16px 30px; border-radius: 14px; }
+        .kq-appt { display: flex; justify-content: space-between; align-items: center; gap: 16px; border: 2px solid #e5e9f4; border-radius: 16px; padding: 18px 22px; margin-bottom: 14px; }
+        .kq-appt .d { font-size: 1.4rem; font-weight: 700; color: #1e2f5a; }
+        .kq-appt .s { font-size: 1.1rem; color: #6b7280; }
+        .kq-num { font-size: 9rem; font-weight: 800; line-height: 1; color: #16a34a; text-align: center; font-variant-numeric: tabular-nums; }
+        .kq-msg { font-size: 1.3rem; text-align: center; color: #374151; }
+        .kq-err { font-size: 1.25rem; color: #dc2626; margin-top: 16px; text-align: center; min-height: 1.5em; }
+        .kq-step { display: none; } .kq-step.on { display: block; }
+    </style>
+</head>
+<body>
+    @Html.AntiForgeryToken()
+    <div class="kq-top">@T["Welcome — check in for your appointment"]</div>
+    <div class="kq-main"><div class="kq-box">
+        <div class="kq-step on" data-step="find">
+            <h2>@T["Enter your file number and your year of birth"]</h2>
+            <div class="mb-6"><label class="form-label">@T["File number"]</label><input class="form-control form-control-solid" id="kqMrn" autocomplete="off" placeholder="MRN-100001" /></div>
+            <div class="mb-8"><label class="form-label">@T["Year of birth"]</label><input class="form-control form-control-solid" id="kqYear" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="1985" /></div>
+            <button type="button" class="btn btn-primary kq-btn w-100" id="kqFind">@T["Find my appointment"]</button>
+        </div>
+        <div class="kq-step" data-step="pick">
+            <h2 id="kqHello"></h2>
+            <div id="kqList"></div>
+            <button type="button" class="btn btn-light kq-btn w-100 mt-4" data-restart>@T["Back"]</button>
+        </div>
+        <div class="kq-step" data-step="done">
+            <div class="kq-msg mb-4">@T["You are checked in. Your number is"]</div>
+            <div class="kq-num" id="kqNum">—</div>
+            <div class="kq-msg mt-6">@T["Please take a seat: your number will appear on the screen."]</div>
+            <button type="button" class="btn btn-light kq-btn w-100 mt-8" data-restart>@T["All done"]</button>
+        </div>
+        <div class="kq-err" id="kqErr"></div>
+    </div></div>
+    <script>
+        (function () {
+            var tok = document.querySelector('input[name="__RequestVerificationToken"]').value, mrn = '', year = 0, idle = null;
+            var W = { failed: @Json.Serialize(T["Something went wrong: please go to the desk"].Value), checkIn: @Json.Serialize(T["Confirm my arrival"].Value), already: @Json.Serialize(T["Already checked in — number"].Value),
+                early: @Json.Serialize(T["Too early — check in from an hour before"].Value), hello: @Json.Serialize(T["Hello {0}"].Value), at: @Json.Serialize(T["at"].Value) };
+            function step(s) { document.querySelectorAll('.kq-step').forEach(function (x) { x.classList.toggle('on', x.getAttribute('data-step') === s); }); }
+            function err(m) { document.getElementById('kqErr').textContent = m || ''; }
+            function esc(v) { return String(v == null ? '' : v).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+            function restart() { mrn = ''; year = 0; document.getElementById('kqMrn').value = ''; document.getElementById('kqYear').value = ''; err(''); step('find'); }
+            // a kiosk forgets the patient: back to the start a minute after the last touch
+            function touch() { clearTimeout(idle); idle = setTimeout(restart, 60000); }
+            document.addEventListener('pointerdown', touch); document.addEventListener('keydown', touch);
+            function post(u, b) { return fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': tok }, body: JSON.stringify(b) })
+                .then(function (r) { return r.json().catch(function () { return { ok: false }; }); }); }
+            document.getElementById('kqFind').addEventListener('click', function () {
+                mrn = document.getElementById('kqMrn').value.trim(); year = Number(document.getElementById('kqYear').value.trim()) || null; err('');
+                post(@Json.Serialize(Url.Action("KioskFind")), { mrn: mrn, birthYear: year }).then(function (res) {
+                    if (!res.ok) { err(res.error || W.failed); return; }
+                    document.getElementById('kqHello').textContent = W.hello.replace('{0}', res.name || '');
+                    document.getElementById('kqList').innerHTML = res.appointments.map(function (a) {
+                        var act = a.arrived ? '<span class="badge badge-light-success fs-4 p-3">' + esc(W.already) + ' ' + esc(a.queue) + '</span>'
+                            : a.tooEarly ? '<span class="badge badge-light fs-5 p-3">' + esc(W.early) + '</span>'
+                            : '<button type="button" class="btn btn-success kq-btn" data-check="' + a.id + '">' + esc(W.checkIn) + '</button>';
+                        return '<div class="kq-appt"><div><div class="d">' + esc(a.doctor) + '</div><div class="s">' + esc(a.department || '') + ' · ' + esc(W.at) + ' <bdi>' + esc(a.time) + '</bdi></div></div>' + act + '</div>';
+                    }).join('');
+                    step('pick');
+                });
+            });
+            document.addEventListener('click', function (e) {
+                if (e.target.closest('[data-restart]')) { restart(); return; }
+                var b = e.target.closest('[data-check]'); if (!b) return;
+                b.disabled = true; err('');
+                post(@Json.Serialize(Url.Action("KioskCheckIn")), { appointmentId: Number(b.getAttribute('data-check')), mrn: mrn, birthYear: year }).then(function (res) {
+                    b.disabled = false;
+                    if (!res.ok) { err(res.error || W.failed); return; }
+                    document.getElementById('kqNum').textContent = res.queue == null ? '—' : res.queue; step('done');
+                    clearTimeout(idle); idle = setTimeout(restart, 20000);
+                });
+            });
+        })();
+    </script>
+</body>
+</html>

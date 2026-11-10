@@ -1,0 +1,680 @@
+{
+ "unit": "H89 — physiotherapy",
+ "strings": {
+  "A change of {0} or more is one the patient notices; the dashed line marks it.": {
+   "ar": "التغيّر بمقدار {0} أو أكثر يشعر به المريض فعلًا؛ الخط المتقطع يحدده.",
+   "en": "A change of {0} or more is one the patient notices; the dashed line marks it.",
+   "fr": "Un changement de {0} ou plus est ressenti par le patient ; la ligne pointillée le marque."
+  },
+  "A goal is 300 characters at most": {
+   "ar": "الهدف 300 حرف بحد أقصى",
+   "en": "A goal is 300 characters at most",
+   "fr": "Un objectif fait 300 caractères au plus"
+  },
+  "A missed session has no treatment to record": {
+   "ar": "الجلسة الفائتة ليس لها علاج يُسجَّل",
+   "en": "A missed session has no treatment to record",
+   "fr": "Une séance manquée n'a pas de soin à enregistrer"
+  },
+  "A session can be written back two weeks at most": {
+   "ar": "يمكن تسجيل الجلسة بأثر رجعي أسبوعين فقط",
+   "en": "A session can be written back two weeks at most",
+   "fr": "Une séance peut être saisie au plus deux semaines après"
+  },
+  "A session is already recorded that day": {
+   "ar": "توجد جلسة مسجلة في هذا اليوم",
+   "en": "A session is already recorded that day",
+   "fr": "Une séance est déjà enregistrée ce jour-là"
+  },
+  "A session is recorded on its day or after it": {
+   "ar": "تُسجَّل الجلسة في يومها أو بعده",
+   "en": "A session is recorded on its day or after it",
+   "fr": "Une séance s'enregistre le jour même ou après"
+  },
+  "A week": {
+   "ar": "في الأسبوع",
+   "en": "A week",
+   "fr": "Par semaine"
+  },
+  "Add a goal": {
+   "ar": "إضافة هدف",
+   "en": "Add a goal",
+   "fr": "Ajouter un objectif"
+  },
+  "Assess the patient": {
+   "ar": "تقييم المريض",
+   "en": "Assess the patient",
+   "fr": "Évaluer le patient"
+  },
+  "Assessment": {
+   "ar": "التقييم",
+   "en": "Assessment",
+   "fr": "Bilan"
+  },
+  "Attendance": {
+   "ar": "الحضور",
+   "en": "Attendance",
+   "fr": "Présence"
+  },
+  "Attendance {0}%": {
+   "ar": "الحضور {0}٪",
+   "en": "Attendance {0}%",
+   "fr": "Présence {0} %"
+  },
+  "Baseline score": {
+   "ar": "الدرجة الأساسية",
+   "en": "Baseline score",
+   "fr": "Score initial"
+  },
+  "Body region": {
+   "ar": "منطقة الجسم",
+   "en": "Body region",
+   "fr": "Région du corps"
+  },
+  "By {0}": {
+   "ar": "بحلول {0}",
+   "en": "By {0}",
+   "fr": "Avant le {0}"
+  },
+  "Cancel the referral": {
+   "ar": "إلغاء الإحالة",
+   "en": "Cancel the referral",
+   "fr": "Annuler l'orientation"
+  },
+  "Change in {0}": {
+   "ar": "التغيّر في {0}",
+   "en": "Change in {0}",
+   "fr": "Évolution du {0}"
+  },
+  "Choose met or not met": {
+   "ar": "اختر تحقق أو لم يتحقق",
+   "en": "Choose met or not met",
+   "fr": "Choisissez atteint ou non atteint"
+  },
+  "Choose the body region": {
+   "ar": "اختر منطقة الجسم",
+   "en": "Choose the body region",
+   "fr": "Choisissez la région du corps"
+  },
+  "Choose the outcome measure": {
+   "ar": "اختر مقياس النتيجة",
+   "en": "Choose the outcome measure",
+   "fr": "Choisissez l'échelle de résultat"
+  },
+  "Choose what was done": {
+   "ar": "اختر ما تم في الجلسة",
+   "en": "Choose what was done",
+   "fr": "Choisissez ce qui a été fait"
+  },
+  "Choose what was done from the list": {
+   "ar": "اختر ما تم من القائمة",
+   "en": "Choose what was done from the list",
+   "fr": "Choisissez ce qui a été fait dans la liste"
+  },
+  "Choose whether the patient came": {
+   "ar": "اختر هل حضر المريض",
+   "en": "Choose whether the patient came",
+   "fr": "Indiquez si le patient est venu"
+  },
+  "Choose why the patient is discharged": {
+   "ar": "اختر سبب إنهاء العلاج",
+   "en": "Choose why the patient is discharged",
+   "fr": "Choisissez le motif de fin"
+  },
+  "Close this goal?": {
+   "ar": "إغلاق هذا الهدف؟",
+   "en": "Close this goal?",
+   "fr": "Clore cet objectif ?"
+  },
+  "Discharge the patient from physiotherapy?": {
+   "ar": "إنهاء العلاج الطبيعي لهذا المريض؟",
+   "en": "Discharge the patient from physiotherapy?",
+   "fr": "Terminer la kinésithérapie de ce patient ?"
+  },
+  "Discharged or cancelled": {
+   "ar": "منتهية أو ملغاة",
+   "en": "Discharged or cancelled",
+   "fr": "Terminés ou annulés"
+  },
+  "End physiotherapy": {
+   "ar": "إنهاء العلاج الطبيعي",
+   "en": "End physiotherapy",
+   "fr": "Terminer la kinésithérapie"
+  },
+  "Episodes": {
+   "ar": "حالات العلاج",
+   "en": "Episodes",
+   "fr": "Épisodes"
+  },
+  "Goals": {
+   "ar": "الأهداف",
+   "en": "Goals",
+   "fr": "Objectifs"
+  },
+  "Goals (one a line)": {
+   "ar": "الأهداف (هدف في كل سطر)",
+   "en": "Goals (one a line)",
+   "fr": "Objectifs (un par ligne)"
+  },
+  "Goals are added to an active episode": {
+   "ar": "تُضاف الأهداف إلى حالة علاج جارية",
+   "en": "Goals are added to an active episode",
+   "fr": "Les objectifs s'ajoutent à un épisode actif"
+  },
+  "Higher is better.": {
+   "ar": "الأعلى أفضل.",
+   "en": "Higher is better.",
+   "fr": "Plus haut est meilleur."
+  },
+  "Low back pain with sciatica, after a knee replacement…": {
+   "ar": "ألم أسفل الظهر مع عرق النسا، بعد تغيير مفصل الركبة…",
+   "en": "Low back pain with sciatica, after a knee replacement…",
+   "fr": "Lombalgie avec sciatique, après une prothèse de genou…"
+  },
+  "Lower is better.": {
+   "ar": "الأقل أفضل.",
+   "en": "Lower is better.",
+   "fr": "Plus bas est meilleur."
+  },
+  "No goal yet.": {
+   "ar": "لا توجد أهداف بعد.",
+   "en": "No goal yet.",
+   "fr": "Pas encore d'objectif."
+  },
+  "No physiotherapy episode.": {
+   "ar": "لا توجد حالات علاج طبيعي.",
+   "en": "No physiotherapy episode.",
+   "fr": "Aucun épisode de kinésithérapie."
+  },
+  "No weight on the left leg, osteoporosis…": {
+   "ar": "ممنوع التحميل على الرجل اليسرى، هشاشة العظام…",
+   "en": "No weight on the left leg, osteoporosis…",
+   "fr": "Pas d'appui sur la jambe gauche, ostéoporose…"
+  },
+  "One standard measure scored now and again during the sessions shows whether the change is real.": {
+   "ar": "مقياس معياري واحد يُسجَّل الآن ويُعاد أثناء الجلسات يوضح هل التحسن حقيقي.",
+   "en": "One standard measure scored now and again during the sessions shows whether the change is real.",
+   "fr": "Une échelle standard notée maintenant puis pendant les séances montre si le changement est réel."
+  },
+  "Only a referral not yet assessed can be cancelled": {
+   "ar": "لا تُلغى إلا الإحالة التي لم تُقيَّم بعد",
+   "en": "Only a referral not yet assessed can be cancelled",
+   "fr": "Seule une orientation non évaluée peut être annulée"
+  },
+  "Only an active episode is discharged": {
+   "ar": "لا يُنهى إلا العلاج الجاري",
+   "en": "Only an active episode is discharged",
+   "fr": "Seul un épisode actif peut être terminé"
+  },
+  "Open episodes": {
+   "ar": "الحالات المفتوحة",
+   "en": "Open episodes",
+   "fr": "Épisodes ouverts"
+  },
+  "Outcome measure": {
+   "ar": "مقياس النتيجة",
+   "en": "Outcome measure",
+   "fr": "Échelle de résultat"
+  },
+  "Pain after": {
+   "ar": "الألم بعد",
+   "en": "Pain after",
+   "fr": "Douleur après"
+  },
+  "Pain before": {
+   "ar": "الألم قبل",
+   "en": "Pain before",
+   "fr": "Douleur avant"
+  },
+  "Pain now (0–10)": {
+   "ar": "الألم الآن (0–10)",
+   "en": "Pain now (0–10)",
+   "fr": "Douleur actuelle (0–10)"
+  },
+  "Physiotherapy": {
+   "ar": "العلاج الطبيعي",
+   "en": "Physiotherapy",
+   "fr": "Kinésithérapie"
+  },
+  "Physiotherapy episode": {
+   "ar": "حالة علاج طبيعي",
+   "en": "Physiotherapy episode",
+   "fr": "Épisode de kinésithérapie"
+  },
+  "Physiotherapy is not installed yet (hospital_h89_rehab.sql).": {
+   "ar": "العلاج الطبيعي غير مثبت بعد (hospital_h89_rehab.sql).",
+   "en": "Physiotherapy is not installed yet (hospital_h89_rehab.sql).",
+   "fr": "La kinésithérapie n'est pas encore installée (hospital_h89_rehab.sql)."
+  },
+  "Range of motion, strength, function, special tests…": {
+   "ar": "مدى الحركة، القوة، الوظيفة، الاختبارات الخاصة…",
+   "en": "Range of motion, strength, function, special tests…",
+   "fr": "Amplitudes, force, fonction, tests spécifiques…"
+  },
+  "Re-scored today (optional)": {
+   "ar": "إعادة القياس اليوم (اختياري)",
+   "en": "Re-scored today (optional)",
+   "fr": "Renoté aujourd'hui (facultatif)"
+  },
+  "Record a session": {
+   "ar": "تسجيل جلسة",
+   "en": "Record a session",
+   "fr": "Enregistrer une séance"
+  },
+  "Refer": {
+   "ar": "إحالة",
+   "en": "Refer",
+   "fr": "Orienter"
+  },
+  "Refer to physiotherapy": {
+   "ar": "إحالة للعلاج الطبيعي",
+   "en": "Refer to physiotherapy",
+   "fr": "Orienter en kinésithérapie"
+  },
+  "Referred by": {
+   "ar": "المحيل",
+   "en": "Referred by",
+   "fr": "Orienté par"
+  },
+  "Rehabilitation": {
+   "ar": "التأهيل",
+   "en": "Rehabilitation",
+   "fr": "Rééducation"
+  },
+  "Save this session?": {
+   "ar": "حفظ هذه الجلسة؟",
+   "en": "Save this session?",
+   "fr": "Enregistrer cette séance ?"
+  },
+  "Search by name, file or problem…": {
+   "ar": "ابحث بالاسم أو رقم الملف أو المشكلة…",
+   "en": "Search by name, file or problem…",
+   "fr": "Rechercher par nom, dossier ou problème…"
+  },
+  "Send this referral to physiotherapy?": {
+   "ar": "إرسال هذه الإحالة للعلاج الطبيعي؟",
+   "en": "Send this referral to physiotherapy?",
+   "fr": "Envoyer cette orientation en kinésithérapie ?"
+  },
+  "Sessions are recorded on an active episode": {
+   "ar": "تُسجَّل الجلسات على حالة علاج جارية",
+   "en": "Sessions are recorded on an active episode",
+   "fr": "Les séances s'enregistrent sur un épisode actif"
+  },
+  "Sessions done": {
+   "ar": "الجلسات المنجزة",
+   "en": "Sessions done",
+   "fr": "Séances faites"
+  },
+  "Start the episode": {
+   "ar": "بدء العلاج",
+   "en": "Start the episode",
+   "fr": "Démarrer l'épisode"
+  },
+  "Start the episode with this assessment?": {
+   "ar": "بدء العلاج بهذا التقييم؟",
+   "en": "Start the episode with this assessment?",
+   "fr": "Démarrer l'épisode avec ce bilan ?"
+  },
+  "The day is before the assessment": {
+   "ar": "اليوم قبل التقييم",
+   "en": "The day is before the assessment",
+   "fr": "Le jour est avant le bilan"
+  },
+  "The pain is between 0 and 10": {
+   "ar": "الألم بين 0 و10",
+   "en": "The pain is between 0 and 10",
+   "fr": "La douleur est entre 0 et 10"
+  },
+  "The patient already has an open episode for this region": {
+   "ar": "للمريض حالة علاج مفتوحة لنفس المنطقة",
+   "en": "The patient already has an open episode for this region",
+   "fr": "Le patient a déjà un épisode ouvert pour cette région"
+  },
+  "The planned sessions are between 1 and 60": {
+   "ar": "عدد الجلسات بين 1 و60",
+   "en": "The planned sessions are between 1 and 60",
+   "fr": "Les séances prévues sont entre 1 et 60"
+  },
+  "The score is outside the measure's range": {
+   "ar": "الدرجة خارج نطاق المقياس",
+   "en": "The score is outside the measure's range",
+   "fr": "Le score est hors de l'échelle"
+  },
+  "The sessions a week are between 1 and 7": {
+   "ar": "الجلسات في الأسبوع بين 1 و7",
+   "en": "The sessions a week are between 1 and 7",
+   "fr": "Les séances par semaine sont entre 1 et 7"
+  },
+  "The target date has passed": {
+   "ar": "تاريخ الهدف فات",
+   "en": "The target date has passed",
+   "fr": "La date cible est passée"
+  },
+  "Therapist": {
+   "ar": "المعالج",
+   "en": "Therapist",
+   "fr": "Kinésithérapeute"
+  },
+  "This goal is already closed": {
+   "ar": "هذا الهدف مُغلق بالفعل",
+   "en": "This goal is already closed",
+   "fr": "Cet objectif est déjà clos"
+  },
+  "This referral is already assessed or closed": {
+   "ar": "هذه الإحالة قُيّمت أو أُغلقت بالفعل",
+   "en": "This referral is already assessed or closed",
+   "fr": "Cette orientation est déjà évaluée ou close"
+  },
+  "Waiting for assessment": {
+   "ar": "بانتظار التقييم",
+   "en": "Waiting for assessment",
+   "fr": "En attente de bilan"
+  },
+  "Walk 500 m without pain, climb stairs with one rail…": {
+   "ar": "المشي 500 م بدون ألم، صعود السلم بدرابزين واحد…",
+   "en": "Walk 500 m without pain, climb stairs with one rail…",
+   "fr": "Marcher 500 m sans douleur, monter l'escalier avec une rampe…"
+  },
+  "Where the patient is now, the home programme, when to come back…": {
+   "ar": "حالة المريض الآن، البرنامج المنزلي، متى يعود…",
+   "en": "Where the patient is now, the home programme, when to come back…",
+   "fr": "Où en est le patient, le programme à domicile, quand revenir…"
+  },
+  "Why is the referral cancelled?": {
+   "ar": "لماذا أُلغيت الإحالة؟",
+   "en": "Why is the referral cancelled?",
+   "fr": "Pourquoi l'orientation est-elle annulée ?"
+  },
+  "Write the baseline score": {
+   "ar": "اكتب الدرجة الأساسية",
+   "en": "Write the baseline score",
+   "fr": "Saisissez le score initial"
+  },
+  "Write the discharge summary": {
+   "ar": "اكتب ملخص إنهاء العلاج",
+   "en": "Write the discharge summary",
+   "fr": "Rédigez le résumé de fin"
+  },
+  "Write the minutes of the session (5 to 240)": {
+   "ar": "اكتب مدة الجلسة بالدقائق (5 إلى 240)",
+   "en": "Write the minutes of the session (5 to 240)",
+   "fr": "Indiquez la durée de la séance (5 à 240 min)"
+  },
+  "Write the problem to treat": {
+   "ar": "اكتب المشكلة المطلوب علاجها",
+   "en": "Write the problem to treat",
+   "fr": "Décrivez le problème à traiter"
+  },
+  "Write why the referral is cancelled": {
+   "ar": "اكتب سبب إلغاء الإحالة",
+   "en": "Write why the referral is cancelled",
+   "fr": "Indiquez pourquoi l'orientation est annulée"
+  },
+  "msr:BI": {
+   "ar": "مؤشر بارثل للأنشطة اليومية (BI)",
+   "en": "Barthel index of daily living (BI)",
+   "fr": "Indice de Barthel (BI)"
+  },
+  "msr:DASH": {
+   "ar": "مقياس إعاقة الذراع والكتف واليد (DASH)",
+   "en": "Disabilities of the arm, shoulder and hand (DASH)",
+   "fr": "Score DASH (bras, épaule, main)"
+  },
+  "msr:LEFS": {
+   "ar": "مقياس وظيفة الطرف السفلي (LEFS)",
+   "en": "Lower extremity functional scale (LEFS)",
+   "fr": "Échelle fonctionnelle du membre inférieur (LEFS)"
+  },
+  "msr:NDI": {
+   "ar": "مؤشر إعاقة الرقبة (NDI)",
+   "en": "Neck disability index (NDI)",
+   "fr": "Neck Disability Index (NDI)"
+  },
+  "msr:ODI": {
+   "ar": "مؤشر أوزوستري للإعاقة (ODI)",
+   "en": "Oswestry disability index (ODI)",
+   "fr": "Indice d'Oswestry (ODI)"
+  },
+  "rgn:Ankle": {
+   "ar": "الكاحل والقدم",
+   "en": "Ankle and foot",
+   "fr": "Cheville et pied"
+  },
+  "rgn:Back": {
+   "ar": "الظهر",
+   "en": "Back",
+   "fr": "Dos"
+  },
+  "rgn:Cardio": {
+   "ar": "قلبي رئوي",
+   "en": "Cardiopulmonary",
+   "fr": "Cardio-respiratoire"
+  },
+  "rgn:Elbow": {
+   "ar": "الكوع",
+   "en": "Elbow",
+   "fr": "Coude"
+  },
+  "rgn:General": {
+   "ar": "عام",
+   "en": "General",
+   "fr": "Général"
+  },
+  "rgn:Hand": {
+   "ar": "الرسغ واليد",
+   "en": "Wrist and hand",
+   "fr": "Poignet et main"
+  },
+  "rgn:Hip": {
+   "ar": "الحوض",
+   "en": "Hip",
+   "fr": "Hanche"
+  },
+  "rgn:Knee": {
+   "ar": "الركبة",
+   "en": "Knee",
+   "fr": "Genou"
+  },
+  "rgn:Neck": {
+   "ar": "الرقبة",
+   "en": "Neck",
+   "fr": "Cou"
+  },
+  "rgn:Neuro": {
+   "ar": "عصبي",
+   "en": "Neurological",
+   "fr": "Neurologique"
+  },
+  "rgn:Shoulder": {
+   "ar": "الكتف",
+   "en": "Shoulder",
+   "fr": "Épaule"
+  },
+  "rgs:Met": {
+   "ar": "تحقق",
+   "en": "Met",
+   "fr": "Atteint"
+  },
+  "rgs:NotMet": {
+   "ar": "لم يتحقق",
+   "en": "Not met",
+   "fr": "Non atteint"
+  },
+  "rgs:Open": {
+   "ar": "مفتوح",
+   "en": "Open",
+   "fr": "Ouvert"
+  },
+  "rha:Attended": {
+   "ar": "حضر",
+   "en": "Attended",
+   "fr": "Présent"
+  },
+  "rha:Cancelled": {
+   "ar": "أُلغيت",
+   "en": "Cancelled",
+   "fr": "Annulée"
+  },
+  "rha:NoShow": {
+   "ar": "لم يحضر",
+   "en": "No-show",
+   "fr": "Absent"
+  },
+  "rhd:GoalsMet": {
+   "ar": "تحققت الأهداف",
+   "en": "Goals met",
+   "fr": "Objectifs atteints"
+  },
+  "rhd:Medical": {
+   "ar": "سبب طبي",
+   "en": "Medical reason",
+   "fr": "Raison médicale"
+  },
+  "rhd:NonAttendance": {
+   "ar": "عدم الحضور",
+   "en": "Did not attend",
+   "fr": "Absences"
+  },
+  "rhd:PatientRequest": {
+   "ar": "طلب المريض",
+   "en": "Patient's request",
+   "fr": "Demande du patient"
+  },
+  "rhd:Plateau": {
+   "ar": "توقف التحسن",
+   "en": "Plateau",
+   "fr": "Plateau"
+  },
+  "rhd:Referred": {
+   "ar": "أُحيل لجهة أخرى",
+   "en": "Referred elsewhere",
+   "fr": "Orienté ailleurs"
+  },
+  "rhi:Balance": {
+   "ar": "توازن",
+   "en": "Balance",
+   "fr": "Équilibre"
+  },
+  "rhi:Breathing": {
+   "ar": "تمارين تنفس",
+   "en": "Breathing",
+   "fr": "Respiratoire"
+  },
+  "rhi:Education": {
+   "ar": "توعية",
+   "en": "Education",
+   "fr": "Éducation"
+  },
+  "rhi:Electro": {
+   "ar": "علاج كهربائي",
+   "en": "Electrotherapy",
+   "fr": "Électrothérapie"
+  },
+  "rhi:Exercise": {
+   "ar": "تمارين",
+   "en": "Exercise",
+   "fr": "Exercices"
+  },
+  "rhi:Gait": {
+   "ar": "تدريب المشي",
+   "en": "Gait training",
+   "fr": "Rééducation à la marche"
+  },
+  "rhi:Heat": {
+   "ar": "حرارة / برودة",
+   "en": "Heat / cold",
+   "fr": "Chaud / froid"
+  },
+  "rhi:Hydro": {
+   "ar": "علاج مائي",
+   "en": "Hydrotherapy",
+   "fr": "Balnéothérapie"
+  },
+  "rhi:Manual": {
+   "ar": "علاج يدوي",
+   "en": "Manual therapy",
+   "fr": "Thérapie manuelle"
+  },
+  "rhi:Taping": {
+   "ar": "شريط لاصق علاجي",
+   "en": "Taping",
+   "fr": "Taping"
+  },
+  "rhs:Active": {
+   "ar": "جارٍ",
+   "en": "Active",
+   "fr": "Actif"
+  },
+  "rhs:Cancelled": {
+   "ar": "مُلغى",
+   "en": "Cancelled",
+   "fr": "Annulé"
+  },
+  "rhs:Discharged": {
+   "ar": "منتهٍ",
+   "en": "Discharged",
+   "fr": "Terminé"
+  },
+  "rhs:Referred": {
+   "ar": "محال",
+   "en": "Referred",
+   "fr": "Orienté"
+  },
+  "rht:Improved": {
+   "ar": "تحسن حقيقي",
+   "en": "Real improvement",
+   "fr": "Amélioration réelle"
+  },
+  "rht:Same": {
+   "ar": "لا تغيّر حقيقي",
+   "en": "No real change",
+   "fr": "Pas de changement réel"
+  },
+  "rht:Worse": {
+   "ar": "أسوأ",
+   "en": "Worse",
+   "fr": "Aggravation"
+  },
+  "rhw:NoProgress": {
+   "ar": "لا تحسن حقيقي بعد 6 جلسات",
+   "en": "No real progress after 6 sessions",
+   "fr": "Pas de progrès réel après 6 séances"
+  },
+  "rhw:OverPlan": {
+   "ar": "جلسات أكثر من المخطط",
+   "en": "More sessions than planned",
+   "fr": "Plus de séances que prévu"
+  },
+  "rhw:PainWorse": {
+   "ar": "زيادة الألم 2 أو أكثر",
+   "en": "Pain up by 2 or more",
+   "fr": "Douleur augmentée de 2 ou plus"
+  },
+  "rhw:TwoNoShows": {
+   "ar": "غياب مرتين متتاليتين",
+   "en": "Two no-shows in a row",
+   "fr": "Deux absences de suite"
+  },
+  "rhw:Unassessed": {
+   "ar": "بانتظار التقييم أكثر من 3 أيام",
+   "en": "Waiting over 3 days for assessment",
+   "fr": "En attente de bilan depuis plus de 3 jours"
+  },
+  "rhw:Worse": {
+   "ar": "أسوأ من البداية",
+   "en": "Worse than the baseline",
+   "fr": "Pire qu'au départ"
+  },
+  "{0} min": {
+   "ar": "{0} دقيقة",
+   "en": "{0} min",
+   "fr": "{0} min"
+  },
+  "{0} sessions, {1} a week": {
+   "ar": "{0} جلسات، {1} في الأسبوع",
+   "en": "{0} sessions, {1} a week",
+   "fr": "{0} séances, {1} par semaine"
+  }
+ }
+}

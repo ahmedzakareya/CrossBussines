@@ -1,0 +1,365 @@
+{
+ "unit": "H85 — antenatal care",
+ "strings": {
+  "37 weeks or more": {
+   "ar": "37 أسبوعاً فأكثر",
+   "en": "37 weeks or more",
+   "fr": "37 semaines ou plus"
+  },
+  "A pregnancy is opened on a female patient's file": {
+   "ar": "يُفتح الحمل على ملف مريضة أنثى",
+   "en": "A pregnancy is opened on a female patient's file",
+   "fr": "Une grossesse s'ouvre sur le dossier d'une patiente"
+  },
+  "Abortions": {
+   "ar": "الإجهاض",
+   "en": "Abortions",
+   "fr": "Avortements"
+  },
+  "Active pregnancies": {
+   "ar": "حالات الحمل الجارية",
+   "en": "Active pregnancies",
+   "fr": "Grossesses en cours"
+  },
+  "Antenatal care": {
+   "ar": "متابعة الحمل",
+   "en": "Antenatal care",
+   "fr": "Suivi de grossesse"
+  },
+  "Antenatal care is not installed yet (hospital_h85_antenatal.sql).": {
+   "ar": "متابعة الحمل غير مثبتة بعد (hospital_h85_antenatal.sql).",
+   "en": "Antenatal care is not installed yet (hospital_h85_antenatal.sql).",
+   "fr": "Le suivi de grossesse n'est pas encore installé (hospital_h85_antenatal.sql)."
+  },
+  "Antenatal visit": {
+   "ar": "زيارة متابعة حمل",
+   "en": "Antenatal visit",
+   "fr": "Consultation prénatale"
+  },
+  "Antenatal visits": {
+   "ar": "زيارات المتابعة",
+   "en": "Antenatal visits",
+   "fr": "Consultations prénatales"
+  },
+  "BP": {
+   "ar": "الضغط",
+   "en": "BP",
+   "fr": "TA"
+  },
+  "BP (diastolic)": {
+   "ar": "الضغط (الانبساطي)",
+   "en": "BP (diastolic)",
+   "fr": "TA (diastolique)"
+  },
+  "BP (systolic)": {
+   "ar": "الضغط (الانقباضي)",
+   "en": "BP (systolic)",
+   "fr": "TA (systolique)"
+  },
+  "Choose delivered or lost": {
+   "ar": "اختر ولادة أو فقدان",
+   "en": "Choose delivered or lost",
+   "fr": "Choisissez accouchement ou perte"
+  },
+  "Choose the urine protein": {
+   "ar": "اختر نتيجة الزلال",
+   "en": "Choose the urine protein",
+   "fr": "Choisissez la protéinurie"
+  },
+  "Close the pregnancy": {
+   "ar": "إغلاق الحمل",
+   "en": "Close the pregnancy",
+   "fr": "Clore la grossesse"
+  },
+  "Close this pregnancy?": {
+   "ar": "إغلاق هذا الحمل؟",
+   "en": "Close this pregnancy?",
+   "fr": "Clore cette grossesse ?"
+  },
+  "Due date": {
+   "ar": "موعد الولادة المتوقع",
+   "en": "Due date",
+   "fr": "Date prévue d'accouchement"
+  },
+  "Fetal heart": {
+   "ar": "نبض الجنين",
+   "en": "Fetal heart",
+   "fr": "Cœur fœtal"
+  },
+  "Fetal heart (bpm)": {
+   "ar": "نبض الجنين (نبضة/دقيقة)",
+   "en": "Fetal heart (bpm)",
+   "fr": "Cœur fœtal (bpm)"
+  },
+  "Fundal height": {
+   "ar": "ارتفاع قاع الرحم",
+   "en": "Fundal height",
+   "fr": "Hauteur utérine"
+  },
+  "Fundal height (cm)": {
+   "ar": "ارتفاع قاع الرحم (سم)",
+   "en": "Fundal height (cm)",
+   "fr": "Hauteur utérine (cm)"
+  },
+  "Gestation": {
+   "ar": "عمر الحمل",
+   "en": "Gestation",
+   "fr": "Âge gestationnel"
+  },
+  "Gravida": {
+   "ar": "عدد مرات الحمل",
+   "en": "Gravida",
+   "fr": "Gestité"
+  },
+  "Gravida / para / abortions": {
+   "ar": "الحمل / الولادة / الإجهاض",
+   "en": "Gravida / para / abortions",
+   "fr": "Gestité / parité / avortements"
+  },
+  "Gravida counts this pregnancy: births and losses before it are fewer": {
+   "ar": "عدد مرات الحمل يشمل هذا الحمل: الولادات والإجهاضات السابقة أقل منه",
+   "en": "Gravida counts this pregnancy: births and losses before it are fewer",
+   "fr": "La gestité compte cette grossesse : les naissances et pertes antérieures sont moins nombreuses"
+  },
+  "Last menstrual period": {
+   "ar": "آخر دورة شهرية",
+   "en": "Last menstrual period",
+   "fr": "Dernières règles"
+  },
+  "Maternity": {
+   "ar": "الولادة",
+   "en": "Maternity",
+   "fr": "Maternité"
+  },
+  "Missed the visit": {
+   "ar": "فاتها موعد الزيارة",
+   "en": "Missed the visit",
+   "fr": "Consultation manquée"
+  },
+  "Mother": {
+   "ar": "الأم",
+   "en": "Mother",
+   "fr": "Mère"
+  },
+  "No active pregnancy.": {
+   "ar": "لا توجد حالات حمل جارية.",
+   "en": "No active pregnancy.",
+   "fr": "Aucune grossesse en cours."
+  },
+  "No visit yet": {
+   "ar": "لا توجد زيارات بعد",
+   "en": "No visit yet",
+   "fr": "Aucune consultation pour l'instant"
+  },
+  "Open a pregnancy": {
+   "ar": "فتح ملف حمل",
+   "en": "Open a pregnancy",
+   "fr": "Ouvrir une grossesse"
+  },
+  "Open this pregnancy on the mother's file?": {
+   "ar": "فتح هذا الحمل على ملف الأم؟",
+   "en": "Open this pregnancy on the mother's file?",
+   "fr": "Ouvrir cette grossesse sur le dossier de la mère ?"
+  },
+  "Para": {
+   "ar": "عدد الولادات",
+   "en": "Para",
+   "fr": "Parité"
+  },
+  "Pregnancy": {
+   "ar": "الحمل",
+   "en": "Pregnancy",
+   "fr": "Grossesse"
+  },
+  "Previous caesarean, diabetes, twins…": {
+   "ar": "قيصرية سابقة، سكري، توأم…",
+   "en": "Previous caesarean, diabetes, twins…",
+   "fr": "Césarienne antérieure, diabète, jumeaux…"
+  },
+  "Record a visit": {
+   "ar": "تسجيل زيارة",
+   "en": "Record a visit",
+   "fr": "Enregistrer une consultation"
+  },
+  "Risks at booking": {
+   "ar": "عوامل الخطورة عند التسجيل",
+   "en": "Risks at booking",
+   "fr": "Risques à l'inscription"
+  },
+  "Save this antenatal visit?": {
+   "ar": "حفظ زيارة المتابعة هذه؟",
+   "en": "Save this antenatal visit?",
+   "fr": "Enregistrer cette consultation prénatale ?"
+  },
+  "Search by name or file…": {
+   "ar": "ابحث بالاسم أو رقم الملف…",
+   "en": "Search by name or file…",
+   "fr": "Rechercher par nom ou dossier…"
+  },
+  "That birth is not this mother's": {
+   "ar": "هذه الولادة ليست لهذه الأم",
+   "en": "That birth is not this mother's",
+   "fr": "Cette naissance n'est pas celle de cette mère"
+  },
+  "The birth": {
+   "ar": "الولادة",
+   "en": "The birth",
+   "fr": "La naissance"
+  },
+  "The blood pressure is not plausible": {
+   "ar": "قراءة الضغط غير منطقية",
+   "en": "The blood pressure is not plausible",
+   "fr": "La tension n'est pas plausible"
+  },
+  "The fetal heart rate is not plausible": {
+   "ar": "نبض الجنين غير منطقي",
+   "en": "The fetal heart rate is not plausible",
+   "fr": "Le rythme cardiaque fœtal n'est pas plausible"
+  },
+  "The fundal height is not plausible": {
+   "ar": "ارتفاع قاع الرحم غير منطقي",
+   "en": "The fundal height is not plausible",
+   "fr": "La hauteur utérine n'est pas plausible"
+  },
+  "The last menstrual period must be within the last 44 weeks": {
+   "ar": "يجب أن تكون آخر دورة خلال آخر 44 أسبوعاً",
+   "en": "The last menstrual period must be within the last 44 weeks",
+   "fr": "Les dernières règles doivent dater des 44 dernières semaines"
+  },
+  "The mother's births registered on her file.": {
+   "ar": "الولادات المسجلة على ملف الأم.",
+   "en": "The mother's births registered on her file.",
+   "fr": "Les naissances enregistrées sur le dossier de la mère."
+  },
+  "The ultrasound due date is out of range": {
+   "ar": "موعد الولادة بالسونار خارج النطاق",
+   "en": "The ultrasound due date is out of range",
+   "fr": "La date prévue à l'échographie est hors limites"
+  },
+  "The ultrasound due date, when written, wins over the last period's.": {
+   "ar": "موعد السونار عند كتابته يُقدَّم على حساب آخر دورة.",
+   "en": "The ultrasound due date, when written, wins over the last period's.",
+   "fr": "La date échographique, si elle est saisie, prime sur celle des dernières règles."
+  },
+  "The visit cannot be before the pregnancy": {
+   "ar": "لا يمكن أن تكون الزيارة قبل بداية الحمل",
+   "en": "The visit cannot be before the pregnancy",
+   "fr": "La consultation ne peut pas précéder la grossesse"
+  },
+  "The weight is not plausible": {
+   "ar": "الوزن غير منطقي",
+   "en": "The weight is not plausible",
+   "fr": "Le poids n'est pas plausible"
+  },
+  "This patient already has an active pregnancy": {
+   "ar": "هذه المريضة لديها حمل جارٍ بالفعل",
+   "en": "This patient already has an active pregnancy",
+   "fr": "Cette patiente a déjà une grossesse en cours"
+  },
+  "This pregnancy is already closed": {
+   "ar": "هذا الحمل مغلق بالفعل",
+   "en": "This pregnancy is already closed",
+   "fr": "Cette grossesse est déjà close"
+  },
+  "Trimester {0}": {
+   "ar": "الثلث {0}",
+   "en": "Trimester {0}",
+   "fr": "Trimestre {0}"
+  },
+  "Ultrasound due date": {
+   "ar": "موعد الولادة بالسونار",
+   "en": "Ultrasound due date",
+   "fr": "Date prévue à l'échographie"
+  },
+  "Urine protein": {
+   "ar": "الزلال في البول",
+   "en": "Urine protein",
+   "fr": "Protéinurie"
+  },
+  "Visit missed": {
+   "ar": "فاتت",
+   "en": "Visit missed",
+   "fr": "Manquée"
+  },
+  "Warnings": {
+   "ar": "التنبيهات",
+   "en": "Warnings",
+   "fr": "Alertes"
+  },
+  "Weeks today": {
+   "ar": "عمر الحمل اليوم",
+   "en": "Weeks today",
+   "fr": "Semaines aujourd'hui"
+  },
+  "Weight": {
+   "ar": "الوزن",
+   "en": "Weight",
+   "fr": "Poids"
+  },
+  "Weight (kg)": {
+   "ar": "الوزن (كجم)",
+   "en": "Weight (kg)",
+   "fr": "Poids (kg)"
+  },
+  "With a warning": {
+   "ar": "بها تنبيه",
+   "en": "With a warning",
+   "fr": "Avec une alerte"
+  },
+  "Write both blood pressure numbers": {
+   "ar": "اكتب رقمي الضغط",
+   "en": "Write both blood pressure numbers",
+   "fr": "Saisissez les deux valeurs de tension"
+  },
+  "Write the last menstrual period or the ultrasound due date": {
+   "ar": "اكتب آخر دورة أو موعد الولادة بالسونار",
+   "en": "Write the last menstrual period or the ultrasound due date",
+   "fr": "Saisissez les dernières règles ou la date échographique"
+  },
+  "Write what happened": {
+   "ar": "اكتب ما حدث",
+   "en": "Write what happened",
+   "fr": "Indiquez ce qui s'est passé"
+  },
+  "anw:FetalHeart": {
+   "ar": "نبض الجنين خارج المعدل",
+   "en": "Fetal heart out of range",
+   "fr": "Rythme fœtal anormal"
+  },
+  "anw:FundalHeight": {
+   "ar": "ارتفاع قاع الرحم لا يناسب عمر الحمل",
+   "en": "Fundal height does not fit the dates",
+   "fr": "Hauteur utérine discordante"
+  },
+  "anw:Hypertension": {
+   "ar": "ارتفاع الضغط",
+   "en": "High blood pressure",
+   "fr": "Hypertension"
+  },
+  "anw:PreEclampsia": {
+   "ar": "اشتباه تسمم الحمل",
+   "en": "Suspected pre-eclampsia",
+   "fr": "Suspicion de prééclampsie"
+  },
+  "anw:SevereHypertension": {
+   "ar": "ارتفاع شديد في الضغط",
+   "en": "Severe high blood pressure",
+   "fr": "Hypertension sévère"
+  },
+  "pgs:Active": {
+   "ar": "جارٍ",
+   "en": "Active",
+   "fr": "En cours"
+  },
+  "pgs:Delivered": {
+   "ar": "تمت الولادة",
+   "en": "Delivered",
+   "fr": "Accouchée"
+  },
+  "pgs:Loss": {
+   "ar": "فقدان الحمل",
+   "en": "Loss",
+   "fr": "Perte de grossesse"
+  }
+ }
+}

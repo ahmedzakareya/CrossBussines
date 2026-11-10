@@ -1,0 +1,50 @@
+{
+ "unit": "H82 — payer recoupment",
+ "strings": {
+  "Only an accepted line can be recouped": {
+   "ar": "لا يُسترد إلا من بند مقبول",
+   "en": "Only an accepted line can be recouped",
+   "fr": "Seule une ligne acceptée peut faire l'objet d'une reprise"
+  },
+  "Recouped": {
+   "ar": "مُسترد",
+   "en": "Recouped",
+   "fr": "Repris"
+  },
+  "Recoupment": {
+   "ar": "استرداد",
+   "en": "Recoupment",
+   "fr": "Reprise"
+  },
+  "The payer cannot take back more than it accepted": {
+   "ar": "لا يمكن لشركة التأمين استرداد أكثر مما قبلته",
+   "en": "The payer cannot take back more than it accepted",
+   "fr": "Le payeur ne peut pas reprendre plus qu'il n'a accepté"
+  },
+  "The payer takes back part of {0} after an audit: enter the amount.": {
+   "ar": "شركة التأمين تسترد جزءاً من {0} بعد المراجعة: اكتب المبلغ.",
+   "en": "The payer takes back part of {0} after an audit: enter the amount.",
+   "fr": "Le payeur reprend une partie de {0} après audit : saisissez le montant."
+  },
+  "This line was already recouped": {
+   "ar": "تم تسجيل استرداد لهذا البند بالفعل",
+   "en": "This line was already recouped",
+   "fr": "Une reprise est déjà enregistrée pour cette ligne"
+  },
+  "Write the amount the payer takes back": {
+   "ar": "اكتب المبلغ الذي تسترده شركة التأمين",
+   "en": "Write the amount the payer takes back",
+   "fr": "Saisissez le montant repris par le payeur"
+  },
+  "Write the payer's reason": {
+   "ar": "اكتب سبب شركة التأمين",
+   "en": "Write the payer's reason",
+   "fr": "Saisissez le motif du payeur"
+  },
+  "ce:Recoupment": {
+   "ar": "استرداد شركة التأمين",
+   "en": "Payer recoupment",
+   "fr": "Reprise du payeur"
+  }
+ }
+}

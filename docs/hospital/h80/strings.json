@@ -1,0 +1,185 @@
+{
+ "unit": "H80 — chart completion",
+ "strings": {
+  "Attending": {
+   "ar": "الطبيب المعالج",
+   "en": "Attending",
+   "fr": "Médecin référent"
+  },
+  "Chart completion": {
+   "ar": "اكتمال الملف",
+   "en": "Chart completion",
+   "fr": "Complétude du dossier"
+  },
+  "Chart completion is not installed yet (hospital_h80_chart_review.sql).": {
+   "ar": "مراجعة اكتمال الملفات غير مثبتة بعد (hospital_h80_chart_review.sql).",
+   "en": "Chart completion is not installed yet (hospital_h80_chart_review.sql).",
+   "fr": "La complétude des dossiers n'est pas encore installée (hospital_h80_chart_review.sql)."
+  },
+  "Complete, waiting for sign-off": {
+   "ar": "مكتملة بانتظار الاعتماد",
+   "en": "Complete, waiting for sign-off",
+   "fr": "Complets, en attente de validation"
+  },
+  "Delinquent": {
+   "ar": "متأخرة",
+   "en": "Delinquent",
+   "fr": "En retard"
+  },
+  "Delinquent (over 14 days)": {
+   "ar": "متأخرة (أكثر من 14 يوماً)",
+   "en": "Delinquent (over 14 days)",
+   "fr": "En retard (plus de 14 jours)"
+  },
+  "Discharged on": {
+   "ar": "تاريخ الخروج",
+   "en": "Discharged on",
+   "fr": "Sorti le"
+  },
+  "Discharged stays": {
+   "ar": "حالات الخروج",
+   "en": "Discharged stays",
+   "fr": "Séjours terminés"
+  },
+  "Incomplete": {
+   "ar": "غير مكتملة",
+   "en": "Incomplete",
+   "fr": "Incomplet"
+  },
+  "Incomplete charts": {
+   "ar": "ملفات غير مكتملة",
+   "en": "Incomplete charts",
+   "fr": "Dossiers incomplets"
+  },
+  "Missing from the chart": {
+   "ar": "الناقص في الملف",
+   "en": "Missing from the chart",
+   "fr": "Manquant au dossier"
+  },
+  "No chart here.": {
+   "ar": "لا توجد ملفات هنا.",
+   "en": "No chart here.",
+   "fr": "Aucun dossier ici."
+  },
+  "Nothing missing": {
+   "ar": "لا شيء ناقص",
+   "en": "Nothing missing",
+   "fr": "Rien ne manque"
+  },
+  "Only a discharged stay's chart is reviewed": {
+   "ar": "لا يُراجع إلا ملف حالة خرجت",
+   "en": "Only a discharged stay's chart is reviewed",
+   "fr": "Seul le dossier d'un séjour terminé est révisé"
+  },
+  "Past 30 days": {
+   "ar": "آخر 30 يوماً",
+   "en": "Past 30 days",
+   "fr": "30 derniers jours"
+  },
+  "Past 90 days": {
+   "ar": "آخر 90 يوماً",
+   "en": "Past 90 days",
+   "fr": "90 derniers jours"
+  },
+  "Past year": {
+   "ar": "آخر سنة",
+   "en": "Past year",
+   "fr": "Dernière année"
+  },
+  "Search by patient or file…": {
+   "ar": "ابحث بالمريض أو رقم الملف…",
+   "en": "Search by patient or file…",
+   "fr": "Rechercher par patient ou dossier…"
+  },
+  "Sign complete": {
+   "ar": "اعتماد الاكتمال",
+   "en": "Sign complete",
+   "fr": "Valider complet"
+  },
+  "Sign this chart complete?": {
+   "ar": "اعتماد هذا الملف كمكتمل؟",
+   "en": "Sign this chart complete?",
+   "fr": "Valider ce dossier comme complet ?"
+  },
+  "Signed this month": {
+   "ar": "معتمدة هذا الشهر",
+   "en": "Signed this month",
+   "fr": "Validés ce mois-ci"
+  },
+  "The chart still has deficiencies": {
+   "ar": "الملف ما زال به نواقص",
+   "en": "The chart still has deficiencies",
+   "fr": "Le dossier a encore des manques"
+  },
+  "This chart is already signed complete": {
+   "ar": "هذا الملف معتمد كمكتمل بالفعل",
+   "en": "This chart is already signed complete",
+   "fr": "Ce dossier est déjà validé complet"
+  },
+  "Waiting for sign-off": {
+   "ar": "بانتظار الاعتماد",
+   "en": "Waiting for sign-off",
+   "fr": "En attente de validation"
+  },
+  "chd:CarePlanOpen": {
+   "ar": "خطة رعاية ما زالت مفتوحة",
+   "en": "Care plan left open",
+   "fr": "Plan de soins laissé ouvert"
+  },
+  "chd:ConsultOpen": {
+   "ar": "استشارة ما زالت مفتوحة",
+   "en": "Consultation still open",
+   "fr": "Demande d'avis encore ouverte"
+  },
+  "chd:DeviceInPlace": {
+   "ar": "جهاز لم تُسجّل إزالته",
+   "en": "Device never recorded out",
+   "fr": "Dispositif jamais déclaré retiré"
+  },
+  "chd:InfectionUndecided": {
+   "ar": "عدوى لم تُؤكد أو تُنفَ",
+   "en": "Infection not confirmed or ruled out",
+   "fr": "Infection ni confirmée ni écartée"
+  },
+  "chd:MedRecOpen": {
+   "ar": "مطابقة أدوية الخروج غير موقّعة",
+   "en": "Discharge medication reconciliation not signed",
+   "fr": "Conciliation de sortie non signée"
+  },
+  "chd:NoSummary": {
+   "ar": "لا يوجد ملخص خروج",
+   "en": "No discharge summary",
+   "fr": "Pas de compte rendu de sortie"
+  },
+  "chd:SummaryUnsigned": {
+   "ar": "ملخص الخروج غير موقّع",
+   "en": "Discharge summary not signed",
+   "fr": "Compte rendu de sortie non signé"
+  },
+  "owner:Attending": {
+   "ar": "الطبيب المعالج",
+   "en": "attending doctor",
+   "fr": "médecin référent"
+  },
+  "owner:Consultant": {
+   "ar": "الاستشاري",
+   "en": "consultant",
+   "fr": "consultant"
+  },
+  "owner:InfectionControl": {
+   "ar": "مكافحة العدوى",
+   "en": "infection control",
+   "fr": "équipe d'hygiène"
+  },
+  "owner:Ward": {
+   "ar": "الجناح",
+   "en": "ward",
+   "fr": "unité"
+  },
+  "{0} days ago": {
+   "ar": "منذ {0} يوم",
+   "en": "{0} days ago",
+   "fr": "il y a {0} jours"
+  }
+ }
+}

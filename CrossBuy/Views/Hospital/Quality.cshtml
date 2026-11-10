@@ -1,0 +1,95 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model HospitalQualityPage
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H81 — the month's quality indicators, each computed from the records, against the hospital's target (a setting), with
+    the five months before it. Met is green, not met is red, no data is grey — there is no third colour.
+*@
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Quality indicators"].Value;
+    bool canManage = ViewBag.CanManage == true;
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+    string F(decimal? v, string unit) => v == null ? "—" : unit switch
+    {
+        "%" => v.Value.ToString("0.#", inv) + "%",
+        "per1000" => v.Value.ToString("0.##", inv),
+        "of5" => v.Value.ToString("0.0#", inv),
+        "score" => (v.Value > 0 ? "+" : "") + v.Value.ToString("0", inv),
+        _ => v.Value.ToString("0.#", inv),
+    };
+    string Cmp(HospitalQualityValue q) => (q.LowerBetter ? "≤ " : "≥ ") + F(q.Target, q.Unit);
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Quality indicators"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted">@T["Computed from the hospital's own records"]</li></ul>
+        </div>
+        <input type="month" id="f_month" class="form-control form-control-solid form-control-sm w-175px" dir="ltr" value="@($"{Model.Year:0000}-{Model.Month:00}")" />
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (!Model.TargetsReady) { <div class="notice d-flex rounded border border-dashed p-5 mb-5 hp-notice"><div class="fs-7 text-gray-700">@T["Targets cannot be changed until hospital_h81_quality_targets.sql is installed; the published defaults apply."]</div></div> }
+        <div class="d-flex flex-wrap gap-4 mb-5 fs-7">
+            <span><span class="badge badge-light-success me-1">@Model.Values.Count(v => v.Status == "Met")</span>@T["qs:Met"]</span>
+            <span><span class="badge badge-light-danger me-1">@Model.Values.Count(v => v.Status == "NotMet")</span>@T["qs:NotMet"]</span>
+            <span><span class="badge badge-light me-1">@Model.Values.Count(v => v.Status == "NoData")</span>@T["qs:NoData"]</span>
+        </div>
+        <div class="row g-5">
+            @foreach (var q in Model.Values)
+            {
+                string tone = q.Status == "Met" ? "success" : q.Status == "NotMet" ? "danger" : "gray-500";
+                <div class="col-md-6 col-xl-4"><div class="card card-flush h-100 border-top border-3 border-@(q.Status == "NoData" ? "gray-300" : tone)">
+                    <div class="card-body py-5">
+                        <div class="d-flex flex-stack mb-3">
+                            <div class="fw-bold text-gray-900 fs-6">@T["qi:" + q.Code]</div>
+                            <span class="badge @(q.Status == "Met" ? "badge-light-success" : q.Status == "NotMet" ? "badge-light-danger" : "badge-light") fs-9">@T["qs:" + q.Status]</span>
+                        </div>
+                        <div class="d-flex align-items-baseline gap-2 mb-1">
+                            <span class="fs-2hx fw-bold hp-num lh-1 text-@(q.Status == "NoData" ? "gray-400" : tone)" dir="ltr">@F(q.Value, q.Unit)</span>
+                            <span class="text-muted fs-8">@T["qu:" + q.Unit]</span>
+                        </div>
+                        <div class="text-muted fs-8 mb-4">@T["qd:" + q.Code]@if (q.Denominator != null) {<text> · <bdi class="hp-num" dir="ltr">@(q.Numerator != null ? q.Numerator + " / " : "")@q.Denominator</bdi></text>}</div>
+                        <div class="d-flex flex-stack fs-8 mb-3">
+                            <span class="text-gray-700">@T["Target"]: <bdi class="hp-num fw-bold" dir="ltr">@Cmp(q)</bdi>@if (q.TargetIsDefault) {<span class="text-muted"> (@T["Default"])</span>}</span>
+                            @if (canManage && Model.TargetsReady) {<button type="button" class="btn btn-sm btn-light py-1 px-2 fs-9" data-target="@q.Code" data-current="@q.Target.ToString("0.##", inv)" data-what="@T["qi:" + q.Code]">@T["Change"]</button>}
+                        </div>
+                        <div class="d-flex gap-1 align-items-end" dir="ltr" title="@T["The last six months"]">
+                            @for (int i = 0; i < q.Trend.Count; i++)
+                            {
+                                var v = q.Trend[i]; var mm = Model.TrendMonths[i];
+                                string st = HospitalQualityRules.Status(v, q.Target, q.LowerBetter);
+                                <div class="flex-grow-1 text-center rounded py-1 @(st == "Met" ? "bg-light-success" : st == "NotMet" ? "bg-light-danger" : "bg-light") @(i == q.Trend.Count - 1 ? "border border-gray-400" : "")">
+                                    <div class="fs-9 fw-bold hp-num">@F(v, q.Unit)</div><div class="fs-9 text-muted hp-num">@($"{mm.Month:00}/{mm.Year % 100:00}")</div></div>
+                            }
+                        </div>
+                    </div>
+                </div></div>
+            }
+        </div>
+    </div></div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            var m = document.getElementById('f_month');
+            m.addEventListener('change', function () { var v = (m.value || '').split('-'); if (v.length === 2) location.href = @Json.Serialize(Url.Action("Quality")) + '?year=' + v[0] + '&month=' + Number(v[1]); });
+            var tok = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            var W = { title: @Json.Serialize(T["The hospital's target"].Value), failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value), num: @Json.Serialize(T["Write a number"].Value) };
+            document.addEventListener('click', function (e) {
+                var t = e.target.closest('[data-target]'); if (!t) return;
+                cbPrompt(t.getAttribute('data-what') || '', { title: W.title, value: t.getAttribute('data-current'), number: true, numberText: W.num }).then(function (v) { if (v == null) return;
+                    fetch(@Json.Serialize(Url.Action("SetQualityTarget")), { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': tok },
+                        body: JSON.stringify({ indicator: t.getAttribute('data-target'), target: Number(String(v).replace(',', '.')) }) })
+                        .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+                        .then(function (res) { if (!res.ok) { toastr.error(res.error || W.failed); return; } toastr.success(W.saved); location.reload(); }); });
+            });
+        })();
+    </script>
+}

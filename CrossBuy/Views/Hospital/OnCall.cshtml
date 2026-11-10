@@ -28,6 +28,18 @@
     .hp-oc-grid th, .hp-oc-grid td { vertical-align: top; padding-inline: .3rem !important; }
     .hp-oc-grid col.hp-oc-dept { width: 120px; }
     .hp-oc-grid .hp-oc-today { background: var(--bs-primary-light); }
+    /* the week is its own bounded scroll box: the day header and the department column stay put while the shifts move.
+       Sticky needs the SCROLLING ancestor to be this box, so nothing between it and the table may carry overflow. */
+    .hp-oc-scroll { overflow: auto; max-height: calc(100vh - 190px); min-height: 240px; border: 1px solid var(--bs-gray-200); border-radius: .75rem; }
+    .hp-oc-grid { border-collapse: separate; border-spacing: 0; }
+    /* header band = the doctor schedule's .hp-sched .hd (Appointments): pale band, brand underline, bold title over a muted line */
+    .hp-oc-grid thead th { position: sticky; top: 0; z-index: 2; background: #F7FAFF; padding: .6rem !important; border-inline-start: 1px solid #eff2f5; box-shadow: inset 0 -2px 0 var(--cb-brand, #3A5795); }
+    .hp-oc-grid thead th:first-child { border-inline-start: 0; }
+    .hp-oc-grid thead th.hp-oc-today { background: linear-gradient(var(--bs-primary-light), var(--bs-primary-light)), #F7FAFF; border-radius: 0 !important; }
+    .hp-oc-grid tbody td:first-child { position: sticky; inset-inline-start: 0; z-index: 1; background: var(--bs-body-bg); }
+    .hp-oc-grid thead th:first-child { inset-inline-start: 0; z-index: 3; }
+    .hp-oc-grid tbody td { border-bottom: 1px dashed var(--bs-gray-200); }
+    .hp-oc-grid tbody tr { border-bottom: 0 !important; }
     .hp-oc-chip { border-radius: .6rem; padding: .45rem .5rem; overflow: hidden; margin-bottom: .4rem; border: 1px solid var(--bs-gray-200); background: var(--bs-body-bg); }
     .hp-oc-chip.is-first { border-inline-start: 3px solid var(--bs-primary); }
     .hp-oc-chip.is-backup { border-inline-start: 3px solid var(--bs-gray-400); }
@@ -109,11 +121,11 @@
             <div class="card">
                 <div class="card-header border-0 pt-6"><div class="card-title flex-column m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["The week"]</span>
                     <span class="text-muted fs-7 mt-1"><span class="hp-num">@Model.Shifts.Count(s => s.Shift.CancelledAt == null)</span> @T["shifts"]</span></div></div>
-                <div class="card-body pt-2"><div class="table-responsive"><table class="table table-row-dashed align-top fs-7 gy-3 mb-0 hp-oc-grid">
+                <div class="card-body pt-2"><div class="hp-oc-scroll"><table class="table table-row-dashed align-top fs-7 gy-3 mb-0 hp-oc-grid">
                     <colgroup><col class="hp-oc-dept" />@foreach (var d in days) {<col />}</colgroup>
-                    <thead><tr class="text-gray-500 fw-bold fs-8 text-uppercase">
-                        <th>@T["Department"]</th>
-                        @foreach (var d in days) { <th class="@(d == today ? "hp-oc-today rounded" : "")">@T["day:" + d.DayOfWeek]<div class="hp-num fw-semibold text-gray-600" dir="ltr">@d.ToString("dd/MM", inv)</div></th> }
+                    <thead><tr>
+                        <th class="text-gray-900 fs-7 fw-bold align-middle">@T["Department"]</th>
+                        @foreach (var d in days) { <th class="@(d == today ? "hp-oc-today" : "")"><div class="text-gray-900 fs-7 fw-bold">@T["day:" + d.DayOfWeek]</div><div class="text-muted fw-semibold fs-8"><bdi class="hp-num" dir="ltr">@d.ToString("dd/MM", inv)</bdi></div></th> }
                     </tr></thead>
                     <tbody>
                         @foreach (var dep in Model.Departments)

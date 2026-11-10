@@ -36,6 +36,8 @@ namespace CrossBuy.Models.Context.Hospital
 	{
 		public const string Patient = "Patient";
 		public const string Payer = "Payer";
+		/// H82: the payer took back what it had paid on a line whose payer part was already counted — a negative line.
+		public const string Recoup = "Recoup";
 	}
 
 	public class HospitalFeeRule

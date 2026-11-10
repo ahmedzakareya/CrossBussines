@@ -1,0 +1,134 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model IReadOnlyList<HospitalVaccineScheduleItem>
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H84 — immunizations: who is overdue, due or coming in two weeks (searched, filtered, paged), and the schedule — a
+    setting the administrator loads from a default and changes to the country's own.
+*@
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Immunizations"].Value;
+    bool ready = ViewBag.Ready == true, canManage = ViewBag.CanManage == true;
+    bool isAr = System.Globalization.CultureInfo.CurrentUICulture.Name.StartsWith("ar");
+    string Age(int d) => d == 0 ? T["At birth"].Value : d % 365 == 0 ? string.Format(T["{0} year(s)"].Value, d / 365) : d >= 28 ? string.Format(T["{0} month(s)"].Value, (int)Math.Round(d / 30.4)) : string.Format(T["{0} days"].Value, d);
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Immunizations"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted">@T["Clinics"]</li></ul>
+        </div>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (!ready) { <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice"><div class="fs-6 text-gray-700">@T[HospitalImmunizationService.NoTables]</div></div> }
+        else
+        {
+            <ul class="nav nav-tabs nav-line-tabs mb-5 fs-6">
+                <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#vxDue">@T["Due and overdue"]</a></li>
+                <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#vxSchedule">@T["The schedule"] <span class="badge badge-light ms-1 hp-num">@Model.Count(x => x.IsActive)</span></a></li>
+            </ul>
+            <div class="tab-content">
+                <div class="tab-pane fade show active" id="vxDue">
+                    @if (Model.Count == 0) { <div class="notice d-flex rounded border border-primary border-dashed bg-light-primary p-5 mb-5"><div class="fs-7 text-gray-700">@T["There is no schedule yet: load the default one in the schedule tab, then adjust it to your country's."]</div></div> }
+                    <div class="card">
+                        <div class="card-header border-0 pt-6 flex-wrap gap-3">
+                            <div class="card-title flex-column m-0"><span class="text-muted fs-7"><span id="resultCount">—</span></span></div>
+                            <div class="card-toolbar d-flex flex-wrap align-items-center gap-2">
+                                <div class="w-250px"><input type="text" id="f_q" class="form-control form-control-solid form-control-sm" autocomplete="off" placeholder="@T["Search by name, file or phone…"]" /></div>
+                                <div class="w-150px"><select class="form-select form-select-solid form-select-sm cb-filter" id="f_state">
+                                    <option value="">@T["All states"]</option>
+                                    @foreach (var s in new[] { HospitalImmunizationStatus.Overdue, HospitalImmunizationStatus.Due, HospitalImmunizationStatus.Upcoming }) { <option value="@s">@T["vxs:" + s]</option> }
+                                </select></div>
+                                <div class="w-75px"><select id="f_size" class="form-select form-select-solid form-select-sm"><option value="25">25</option><option value="50">50</option><option value="100">100</option></select></div>
+                                <button type="button" id="f_reset" class="btn btn-sm btn-light" title="@T["Reset"]"><i class="ki-outline ki-arrows-circle fs-4"></i></button>
+                            </div>
+                        </div>
+                        <div class="card-body pt-2">
+                            <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-3 mb-0">
+                                <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0"><th>@T["Patient"]</th><th>@T["Age"]</th><th>@T["Vaccine"]</th><th>@T["Due on"]</th><th>@T["State"]</th><th class="text-end"></th></tr></thead>
+                                <tbody id="rows"><tr id="loadingRow"><td colspan="6" class="text-center text-muted py-10">@T["Loading…"]</td></tr><tr id="emptyRow" class="d-none"><td colspan="6" class="text-center text-muted py-10">@T["No dose is due."]</td></tr></tbody>
+                            </table></div>
+                            <div class="d-flex flex-stack flex-wrap pt-5"><div class="fs-7 text-muted" id="pageInfo"></div><ul class="pagination" id="pager"></ul></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="tab-pane fade" id="vxSchedule">
+                    <div class="card">
+                        <div class="card-header border-0 pt-6">
+                            <div class="card-title flex-column m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["The immunization schedule"]</span>
+                                <span class="text-muted fs-7 mt-1">@T["Each row is one dose at an age from birth. Change it to your country's schedule."]</span></div>
+                            <div class="card-toolbar gap-2">
+                                @if (canManage && Model.Count == 0) {<button type="button" class="btn btn-sm btn-light-primary" data-vx-seed><i class="ki-outline ki-file-down fs-5"></i>@T["Load the default schedule"]</button>}
+                                @if (canManage) {<button type="button" class="btn btn-sm btn-primary" data-vx-edit="0"><i class="ki-outline ki-plus fs-5"></i>@T["Add a dose"]</button>}
+                            </div>
+                        </div>
+                        <div class="card-body pt-2">
+                            <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-3 mb-0">
+                                <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0"><th>@T["Age"]</th><th>@T["Vaccine"]</th><th>@T["Dose"]</th><th>@T["Route"]</th><th>@T["State"]</th><th class="text-end"></th></tr></thead>
+                                <tbody>
+                                @if (Model.Count == 0) { <tr><td colspan="6" class="text-center text-muted py-8">@T["No dose in the schedule yet."]</td></tr> }
+                                @foreach (var s in Model)
+                                {
+                                    <tr class="@(s.IsActive ? "" : "opacity-50")">
+                                        <td class="fw-semibold">@Age(s.AgeDays)<div class="text-muted fs-9 hp-num">@T["{0} days", s.AgeDays]</div></td>
+                                        <td><span class="badge hp-code fs-9 hp-num me-2">@s.Code</span><span class="fw-bold text-gray-900">@DisplayName.Of(s.Name, s.NameEn)</span></td>
+                                        <td class="hp-num">@s.DoseNo</td>
+                                        <td>@T["vxr:" + s.Route]</td>
+                                        <td>@if (s.IsActive) {<span class="badge badge-light-success">@T["In use"]</span>} else {<span class="badge badge-light">@T["Not in use"]</span>}</td>
+                                        <td class="text-end">@if (canManage) {<button type="button" class="btn btn-sm btn-light" data-vx-edit="@s.ID" data-row="@System.Text.Json.JsonSerializer.Serialize(new { id = s.ID, code = s.Code, name = s.Name, nameEn = s.NameEn, doseNo = s.DoseNo, ageDays = s.AgeDays, route = s.Route, isActive = s.IsActive })">@T["Edit"]</button>}</td>
+                                    </tr>
+                                }
+                                </tbody>
+                            </table></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div></div>
+</div>
+
+@if (canManage)
+{
+    <div class="modal fade" id="vxModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-600px"><div class="modal-content">
+        <div class="modal-header"><h2 class="fw-bold m-0">@T["Schedule dose"]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body py-6 px-lg-10"><div class="row g-4">
+            <div class="col-4"><label class="form-label required">@T["Code"]</label><input class="form-control form-control-solid" dir="ltr" maxlength="12" data-v="code" placeholder="MMR" /></div>
+            <div class="col-4"><label class="form-label required">@T["Dose"]</label><input type="number" min="1" max="10" class="form-control form-control-solid" dir="ltr" data-v="doseNo" /></div>
+            <div class="col-4"><label class="form-label required">@T["Age in days"]</label><input type="number" min="0" max="36500" class="form-control form-control-solid" dir="ltr" data-v="ageDays" /></div>
+            <div class="col-12"><label class="form-label required">@T["Name (Arabic)"]</label><input class="form-control form-control-solid" dir="rtl" maxlength="100" data-v="name" /></div>
+            <div class="col-12"><label class="form-label required">@T["Name (English)"]</label><input class="form-control form-control-solid" dir="ltr" maxlength="100" data-v="nameEn" /></div>
+            <div class="col-6"><label class="form-label required">@T["Route"]</label><select class="form-select form-select-solid" data-v="route">@foreach (var r in HospitalVaccineRoute.All) {<option value="@r">@T["vxr:" + r]</option>}</select></div>
+            <div class="col-6 d-flex align-items-end"><label class="form-check form-switch form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" data-v="isActive" checked /><span class="form-check-label">@T["In use"]</span></label></div>
+        </div></div>
+        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-vx-save>@T["Save"]</button></div>
+    </div></div></div>
+}
+
+@section Scripts {
+    <script>
+        (function () {
+            if (!document.getElementById('rows')) return;
+            var list = cbServerList({ url: @Json.Serialize(Url.Action("VaccinesDue")), isAr: @(isAr ? "true" : "false"), addParams: function (p) { p.set('state', document.getElementById('f_state').value); } });
+            var tok = document.querySelector('input[name="__RequestVerificationToken"]').value, mEl = document.getElementById('vxModal'), editing = null;
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value), seed: @Json.Serialize(T["Load the default schedule? You can change every dose afterwards."].Value), save: @Json.Serialize(T["Save this schedule dose?"].Value) };
+            function post(u, b) { return fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': tok }, body: JSON.stringify(b || {}) }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); }); }
+            function done(res) { if (!res.ok) { toastr.error(res.error || W.failed); return; } toastr.success(W.saved); location.reload(); }
+            document.addEventListener('click', function (e) {
+                var s = e.target.closest('[data-vx-seed]'); if (s) { cbConfirm(W.seed).then(function (ok) { if (ok) post(@Json.Serialize(Url.Action("SeedVaccineSchedule"))).then(done); }); return; }
+                var ed = e.target.closest('[data-vx-edit]');
+                if (ed && mEl) { var d = ed.getAttribute('data-row') ? JSON.parse(ed.getAttribute('data-row')) : null; editing = d ? d.id : null;
+                    mEl.querySelectorAll('[data-v]').forEach(function (i) { var k = i.getAttribute('data-v'); if (i.type === 'checkbox') i.checked = d ? !!d[k] : true; else if (i.tagName === 'SELECT') i.value = d ? d[k] : 'IM'; else i.value = d && d[k] != null ? d[k] : ''; });
+                    bootstrap.Modal.getOrCreateInstance(mEl).show(); return; }
+                var sv = e.target.closest('[data-vx-save]');
+                if (sv) { var b = { id: editing }; mEl.querySelectorAll('[data-v]').forEach(function (i) { var k = i.getAttribute('data-v'); b[k] = i.type === 'checkbox' ? i.checked : (k === 'doseNo' || k === 'ageDays') ? Number(i.value || -1) : i.value.trim(); });
+                    cbConfirm(W.save).then(function (ok) { if (ok) post(@Json.Serialize(Url.Action("SaveVaccineItem")), b).then(done); }); }
+            });
+        })();
+    </script>
+}

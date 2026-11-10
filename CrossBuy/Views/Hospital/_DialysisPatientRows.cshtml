@@ -1,0 +1,24 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@model IReadOnlyList<HospitalDialysisPatientRow>
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@{
+    var names = System.Globalization.CultureInfo.CurrentUICulture.DateTimeFormat.AbbreviatedDayNames;
+    string Days(int mask) => string.Join(" · ", Enumerable.Range(0, 7).Where(i => (mask & (1 << i)) != 0).Select(i => names[i]));
+}
+@foreach (var r in Model)
+{
+    var p = r.Plan;
+    <tr>
+        <td><a href="@Url.Action("DialysisPatient", new { patientId = p.PatientId })" class="fw-bold text-gray-900 text-hover-primary">@DisplayName.Of(r.Name, r.NameEn)</a>
+            <div class="text-muted fs-8"><bdi class="hp-num">@r.Mrn</bdi></div></td>
+        <td class="text-nowrap fs-8">@Days(p.DaysMask)<div class="text-muted">@T["Shift {0}", p.Shift]</div></td>
+        <td class="fs-8">@T["dxa:" + p.Access] · <span class="text-nowrap">@T["{0} h", (p.DurationMin / 60m).ToString("0.#")]</span>
+            <div class="text-muted">@T["Dry weight"] <bdi class="hp-num">@p.DryWeightKg.ToString("0.0") kg</bdi> · <bdi class="hp-num">Qb @p.BloodFlow</bdi></div></td>
+        <td class="hp-num text-nowrap">@(r.LastSession?.ToString("yyyy-MM-dd") ?? "—")</td>
+        <td class="hp-num">@if (r.LastKtV is decimal k) {<span class="fw-bold @(k < HospitalDialysisRules.MinKtV ? "text-danger" : "text-success")">@k.ToString("0.00")</span>} else {<span class="text-muted">—</span>}</td>
+        <td class="hp-num">@if (r.Missed30 > 0) {<span class="badge badge-light-danger">@r.Missed30</span>} else {<span class="text-muted">0</span>}</td>
+        <td>@if (r.LastWarnings.Count == 0) {<span class="text-muted fs-8">—</span>} else {<div class="d-flex flex-wrap gap-1">@foreach (var w in r.LastWarnings) {<span class="badge badge-light-danger fs-9">@T["dxw:" + w]</span>}</div>}</td>
+        <td class="text-end"><a href="@Url.Action("DialysisPatient", new { patientId = p.PatientId })" class="btn btn-sm btn-light-primary text-nowrap">@T["Open"]</a></td>
+    </tr>
+}

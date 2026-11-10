@@ -1,0 +1,18 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model IReadOnlyList<HospitalMorgueRow>
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@foreach (var r in Model)
+{
+    var c = r.Case; bool inside = c.Status == HospitalMorgueStatus.InStorage;
+    <tr>
+        <td><a href="@Url.Action("MorgueCase", new { id = c.ID })" class="fw-bold text-gray-900 text-hover-primary">@(r.Name == null ? T["Unknown"].Value : DisplayName.Of(r.Name, r.NameEn ?? r.Name))</a>
+            <div class="text-muted fs-8"><span class="badge hp-code fs-9 hp-num me-1">@c.CaseNo</span>@if (r.Mrn != null) {<bdi class="hp-num">@r.Mrn</bdi>} else {<bdi>@c.Description</bdi>}</div></td>
+        <td><span class="fw-bold hp-num">@r.Compartment</span><div class="text-muted fs-9 hp-num">@c.TagNo</div></td>
+        <td class="hp-num text-nowrap">@HospitalNursingService.UtcToWard(c.ReceivedAt).ToString("yyyy-MM-dd HH:mm")<div class="fs-9 @(inside && r.Hours >= HospitalMorgueRules.AlertHours ? "text-danger fw-bold" : "text-muted")" style="font-family:inherit">@T["{0} h", r.Hours]</div></td>
+        <td><span class="badge @(inside ? "badge-light-primary" : "badge-light") fs-8">@T["mgs:" + c.Status]</span>@if (!inside) {<div class="text-muted fs-9"><bdi>@c.ReleasedTo</bdi>@if (c.Destination != null) {<text> · <bdi>@c.Destination</bdi></text>}</div>}</td>
+        <td>@if (r.Warnings.Count == 0) {<span class="text-muted fs-8">—</span>} else {<div class="d-flex flex-wrap gap-1">@foreach (var w in r.Warnings) {<span class="badge badge-light-danger fs-9">@T["mgw:" + w]</span>}</div>}</td>
+        <td class="text-end"><a href="@Url.Action("MorgueCase", new { id = c.ID })" class="btn btn-sm btn-light-primary text-nowrap">@T["Open"]</a></td>
+    </tr>
+}

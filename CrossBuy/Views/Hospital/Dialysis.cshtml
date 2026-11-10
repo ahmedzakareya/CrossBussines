@@ -1,0 +1,128 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model HospitalDialysisBoard
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H87 — the dialysis unit's day: who is due in which shift, who is on the machine (with the last reading), who has
+    finished (with the adequacy and the risks), who did not come. The counts are over the whole day; the list is
+    searched, filtered by shift and state, and paged. Starting a session weighs the patient first; a missed day needs a reason.
+*@
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Dialysis unit"].Value;
+    bool ready = ViewBag.Ready == true, canTreat = ViewBag.CanTreat == true;
+    var today = (DateTime)ViewBag.Today;
+    bool isAr = System.Globalization.CultureInfo.CurrentUICulture.Name.StartsWith("ar");
+    var tiles = new (string Key, string Label, int N, string Tone)[] {
+        (HospitalDialysisDayState.Due, "dxs:Due", Model.Due, "primary"), (HospitalDialysisDayState.Running, "dxs:Running", Model.Running, "info"),
+        (HospitalDialysisDayState.Done, "dxs:Done", Model.Done, "success"), (HospitalDialysisDayState.Missed, "dxs:Missed", Model.Missed, "gray-600"), ("warning", "With a warning", Model.Warned, "danger") };
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Dialysis unit"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted">@T["Haemodialysis"]</li></ul>
+        </div>
+        <div class="d-flex gap-2 align-items-center">
+            <input type="date" id="f_date" class="form-control form-control-solid form-control-sm w-175px" dir="ltr" value="@Model.Day.ToString("yyyy-MM-dd")" max="@today.AddDays(7).ToString("yyyy-MM-dd")" title="@T["Day"]" />
+            @if (Model.Day != today) {<a href="@Url.Action("Dialysis")" class="btn btn-sm btn-light text-nowrap">@T["Today"]</a>}
+            <a href="@Url.Action("DialysisPatients")" class="btn btn-sm btn-light-primary text-nowrap"><i class="ki-outline ki-people fs-4"></i>@T["Dialysis patients"]</a>
+        </div>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (!ready) { <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice"><div class="fs-6 text-gray-700">@T[HospitalDialysisService.NoTables]</div></div> }
+        else
+        {
+            <div class="row g-4 mb-5">
+                @foreach (var t in tiles)
+                {
+                    <div class="col-6 col-md"><button type="button" class="card card-flush h-100 w-100 border-0 text-start border-top border-3 border-@t.Tone" data-tile="@t.Key">
+                        <div class="card-body py-4 px-5"><div class="fs-2hx fw-bold hp-num text-@(t.N > 0 ? t.Tone : "gray-400")">@t.N</div><div class="text-muted fs-7 fw-semibold">@T[t.Label]</div></div>
+                    </button></div>
+                }
+            </div>
+            <div class="card">
+                <div class="card-header border-0 pt-6 flex-wrap gap-3">
+                    <div class="card-title flex-column m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["The day's sessions"] <span class="text-muted fs-6 hp-num ms-1">@Model.Day.ToString("yyyy-MM-dd")</span></span><span class="text-muted fs-7 mt-1"><span id="resultCount">—</span></span></div>
+                    <div class="card-toolbar d-flex flex-wrap align-items-center gap-2">
+                        <div class="w-225px"><input type="text" id="f_q" class="form-control form-control-solid form-control-sm" autocomplete="off" placeholder="@T["Search by name, file, phone or station…"]" /></div>
+                        <div class="w-125px"><select class="form-select form-select-solid form-select-sm cb-filter" id="f_shift">
+                            <option value="">@T["All shifts"]</option>@for (int s = 1; s <= 3; s++) {<option value="@s">@T["Shift {0}", s]</option>}
+                        </select></div>
+                        <div class="w-150px"><select class="form-select form-select-solid form-select-sm cb-filter" id="f_state">
+                            <option value="">@T["All"]</option>@foreach (var t in tiles) {<option value="@t.Key">@T[t.Label]</option>}
+                        </select></div>
+                        <div class="w-75px"><select id="f_size" class="form-select form-select-solid form-select-sm"><option value="25">25</option><option value="50">50</option><option value="100">100</option></select></div>
+                        <button type="button" id="f_reset" class="btn btn-sm btn-light" title="@T["Reset"]"><i class="ki-outline ki-arrows-circle fs-4"></i></button>
+                    </div>
+                </div>
+                <div class="card-body pt-2">
+                    <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-3 mb-0">
+                        <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0"><th>@T["Patient"]</th><th>@T["Shift"]</th><th>@T["State"]</th><th>@T["Before"]</th><th>@T["On the machine"]</th><th>@T["Adequacy"]</th><th class="min-w-150px">@T["Warnings"]</th><th class="text-end"></th></tr></thead>
+                        <tbody id="rows"><tr id="loadingRow"><td colspan="8" class="text-center text-muted py-10">@T["Loading…"]</td></tr><tr id="emptyRow" class="d-none"><td colspan="8" class="text-center text-muted py-10">@T["Nobody is scheduled on this day."]</td></tr></tbody>
+                    </table></div>
+                    <div class="d-flex flex-stack flex-wrap pt-5"><div class="fs-7 text-muted" id="pageInfo"></div><ul class="pagination" id="pager"></ul></div>
+                </div>
+            </div>
+        }
+    </div></div>
+</div>
+
+@if (ready && canTreat)
+{
+    <div class="modal fade" id="startModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-550px"><div class="modal-content">
+        <div class="modal-header"><div><h2 class="fw-bold m-0">@T["Start a session"]</h2><div class="text-muted fs-7 mt-1" id="startWho"></div></div><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body py-6 px-lg-10"><div class="row g-4">
+            <div class="col-6"><label class="form-label required">@T["Weight before (kg)"]</label><input type="number" step="0.1" min="20" max="260" class="form-control form-control-solid" dir="ltr" data-s="preWeightKg" /></div>
+            <div class="col-6"><label class="form-label">@T["Dry weight (kg)"]</label><input type="text" class="form-control form-control-solid bg-light" dir="ltr" id="startDry" readonly /></div>
+            <div class="col-4"><label class="form-label">@T["Systolic"]</label><input type="number" min="50" max="260" class="form-control form-control-solid" dir="ltr" data-s="preSbp" /></div>
+            <div class="col-4"><label class="form-label">@T["Diastolic"]</label><input type="number" min="20" max="160" class="form-control form-control-solid" dir="ltr" data-s="preDbp" /></div>
+            <div class="col-4"><label class="form-label">@T["Pulse"]</label><input type="number" min="20" max="250" class="form-control form-control-solid" dir="ltr" data-s="prePulse" /></div>
+            <div class="col-6"><label class="form-label">@T["Volume to remove (ml)"]</label><input type="number" min="0" max="6000" step="50" class="form-control form-control-solid" dir="ltr" data-s="ufGoalMl" placeholder="@T["Weight above the dry weight"]" /></div>
+            <div class="col-6"><label class="form-label">@T["Station"]</label><input type="text" maxlength="20" class="form-control form-control-solid" data-s="station" /></div>
+            <div class="col-12"><label class="form-label">@T["Started at"]</label><input type="datetime-local" class="form-control form-control-solid" dir="ltr" data-s="at" /><div class="text-muted fs-8 mt-1">@T["Empty means now."]</div></div>
+        </div></div>
+        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-start-save>@T["Start the session"]</button></div>
+    </div></div></div>
+}
+
+@section Scripts {
+    <script>
+        (function () {
+            var dateEl = document.getElementById('f_date');
+            dateEl.addEventListener('change', function () { if (dateEl.value) location.href = @Json.Serialize(Url.Action("Dialysis")) + '?date=' + dateEl.value; });
+            if (!document.getElementById('rows')) return;
+            var list = cbServerList({ url: @Json.Serialize(Url.Action("DialysisData")), isAr: @(isAr ? "true" : "false"),
+                addParams: function (p) { p.set('date', @Json.Serialize(Model.Day.ToString("yyyy-MM-dd"))); p.set('shift', document.getElementById('f_shift').value); p.set('state', document.getElementById('f_state').value); } });
+            document.querySelectorAll('[data-tile]').forEach(function (b) { b.addEventListener('click', function () {
+                var s = document.getElementById('f_state'); s.value = s.value === b.getAttribute('data-tile') ? '' : b.getAttribute('data-tile');
+                if (window.jQuery) jQuery(s).trigger('change'); else s.dispatchEvent(new Event('change')); }); });
+            var tokEl = document.querySelector('input[name="__RequestVerificationToken"]'), tok = tokEl ? tokEl.value : '';
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value), ask: @Json.Serialize(T["Start this patient's session?"].Value),
+                      miss: @Json.Serialize(T["Why was the session missed?"].Value), missTitle: @Json.Serialize(T["Mark the day missed"].Value) };
+            function post(url, body) { return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': tok }, body: JSON.stringify(body) })
+                .then(function (r) { return r.json().catch(function () { return { ok: false }; }); }); }
+            var mEl = document.getElementById('startModal'), planId = 0;
+            document.addEventListener('click', function (e) {
+                var st = e.target.closest('[data-dx-start]');
+                if (st && mEl) { planId = Number(st.getAttribute('data-dx-start')); mEl.querySelectorAll('[data-s]').forEach(function (i) { i.value = ''; });
+                    document.getElementById('startWho').textContent = st.getAttribute('data-who'); document.getElementById('startDry').value = st.getAttribute('data-dry');
+                    bootstrap.Modal.getOrCreateInstance(mEl).show(); return; }
+                var ms = e.target.closest('[data-dx-miss]');
+                if (ms) { cbPrompt(W.miss, { title: W.missTitle, textarea: true }).then(function (why) { if (!why) return; ms.disabled = true;
+                    post(@Json.Serialize(Url.Action("MissDialysis")), { planId: Number(ms.getAttribute('data-dx-miss')), date: @Json.Serialize(Model.Day.ToString("yyyy-MM-dd")), reason: why })
+                        .then(function (res) { ms.disabled = false; if (!res.ok) { toastr.error(res.error || W.failed); return; } toastr.success(W.saved); location.reload(); }); }); return; }
+                var sv = e.target.closest('[data-start-save]'); if (!sv) return;
+                var b = { planId: planId }; mEl.querySelectorAll('[data-s]').forEach(function (i) { var k = i.getAttribute('data-s'), v = (i.value || '').trim();
+                    b[k] = v === '' ? null : (i.type === 'number' ? Number(v) : v); });
+                cbConfirm(W.ask).then(function (ok) { if (!ok) return; sv.disabled = true;
+                    post(@Json.Serialize(Url.Action("StartDialysis")), b).then(function (res) { sv.disabled = false; if (!res.ok) { toastr.error(res.error || W.failed); return; }
+                        location.href = @Json.Serialize(Url.Content("~/Hospital/Dialysis/Session/")) + res.id; }); });
+            });
+        })();
+    </script>
+}

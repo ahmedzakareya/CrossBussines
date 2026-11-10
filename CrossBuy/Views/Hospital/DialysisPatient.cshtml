@@ -1,0 +1,128 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model HospitalDialysisPatientPage
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H87 — one dialysis patient: the standing plan (changed in place, or stopped), the month at a glance (sessions done,
+    days missed, the mean of the last three Kt/V), and the last sixty sessions, each with its gain, volume, rate,
+    adequacy, lowest pressure and warnings.
+*@
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Dialysis"].Value + " — " + DisplayName.Of(Model.Name, Model.NameEn);
+    bool canPlan = ViewBag.CanPlan == true;
+    var p = Model.Plan; bool active = p?.Status == HospitalDialysisPlanStatus.Active;
+    var names = System.Globalization.CultureInfo.CurrentUICulture.DateTimeFormat.DayNames;
+    string Days(int mask) => string.Join(" · ", Enumerable.Range(0, 7).Where(i => (mask & (1 << i)) != 0).Select(i => names[i]));
+    string F1(decimal? x) => x?.ToString("0.#") ?? "—";
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Dialysis"] — @DisplayName.Of(Model.Name, Model.NameEn)</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item"><a href="@Url.Action("DialysisPatients")" class="text-muted text-hover-primary">@T["Dialysis patients"]</a></li></ul>
+        </div>
+        @if (canPlan)
+        {
+            <div class="d-flex gap-2">
+                @if (active) {<button type="button" class="btn btn-sm btn-primary" data-plan-open><i class="ki-outline ki-pencil fs-4"></i>@T["Change the plan"]</button>
+                    <button type="button" class="btn btn-sm btn-light-danger" data-plan-stop="@p!.ID"><i class="ki-outline ki-cross-circle fs-4"></i>@T["Stop the plan"]</button>}
+                else {<button type="button" class="btn btn-sm btn-primary" data-plan-open><i class="ki-outline ki-plus fs-4"></i>@T["New dialysis plan"]</button>}
+            </div>
+        }
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="row g-5 mb-5">
+            <div class="col-xl-4"><div class="card h-100"><div class="card-body py-6">
+                <div class="d-flex align-items-center gap-4 mb-5">
+                    <div class="symbol symbol-55px symbol-circle">@if (Model.Photo != null) {<img src="@Model.Photo" alt="" style="object-fit:cover" />} else {<span class="symbol-label fw-bold hp-initials">@HospitalUi.Initials(Model.NameEn)</span>}</div>
+                    <div><a href="@Url.Action("Patient", new { id = Model.PatientId })" class="fs-4 fw-bold text-gray-900 text-hover-primary">@DisplayName.Of(Model.Name, Model.NameEn)</a>
+                        <div class="text-muted fs-7"><bdi class="hp-num">@Model.Mrn</bdi></div></div>
+                </div>
+                @if (p == null) { <div class="text-muted text-center py-6">@T["No dialysis plan yet."]</div> }
+                else
+                {
+                    if (!active) {<div class="mb-3"><span class="badge badge-light fs-7">@T["The plan is stopped"]</span> <span class="text-muted fs-8 hp-num">@p.StoppedAt?.ToString("yyyy-MM-dd")</span></div>}
+                    <div class="d-flex flex-stack py-2 border-bottom border-dashed"><span class="text-muted fs-7">@T["Dry weight"]</span><span class="fw-bold fs-3 hp-num">@p.DryWeightKg.ToString("0.0") <span class="fs-8 text-muted">kg</span></span></div>
+                    <div class="d-flex flex-stack py-2 border-bottom border-dashed"><span class="text-muted fs-7">@T["Dialysis days"]</span><span class="fw-semibold fs-7 text-end">@Days(p.DaysMask)<div class="text-muted fs-8">@T["Shift {0}", p.Shift]</div></span></div>
+                    <div class="d-flex flex-stack py-2 border-bottom border-dashed"><span class="text-muted fs-7">@T["Vascular access"]</span><span class="fw-semibold">@T["dxa:" + p.Access]</span></div>
+                    <div class="d-flex flex-stack py-2 border-bottom border-dashed"><span class="text-muted fs-7">@T["Hours"]</span><span class="fw-semibold hp-num">@((p.DurationMin / 60m).ToString("0.#"))</span></div>
+                    <div class="d-flex flex-stack py-2 border-bottom border-dashed"><span class="text-muted fs-7">@T["Blood / dialysate flow"]</span><span class="fw-semibold hp-num" dir="ltr">@p.BloodFlow / @(p.DialysateFlow?.ToString() ?? "—") ml/min</span></div>
+                    if (p.Dialyzer != null) {<div class="d-flex flex-stack py-2 border-bottom border-dashed"><span class="text-muted fs-7">@T["Dialyser"]</span><bdi class="fw-semibold">@p.Dialyzer</bdi></div>}
+                    if (p.Anticoagulation != null) {<div class="py-2 border-bottom border-dashed"><div class="text-muted fs-7">@T["Anticoagulation"]</div><div class="fs-7"><bdi>@p.Anticoagulation</bdi></div></div>}
+                    if (p.Note != null) {<div class="py-2"><div class="text-muted fs-7">@T["Note"]</div><div class="fs-7"><bdi>@p.Note</bdi></div></div>}
+                }
+            </div></div></div>
+            <div class="col-xl-8 d-flex flex-column gap-5">
+                <div class="row g-4">
+                    <div class="col-4"><div class="card card-flush h-100 border-top border-3 border-success"><div class="card-body py-4 px-5"><div class="fs-2hx fw-bold hp-num">@Model.Done30</div><div class="text-muted fs-7">@T["Sessions in 30 days"]</div></div></div></div>
+                    <div class="col-4"><div class="card card-flush h-100 border-top border-3 border-@(Model.Missed30 > 0 ? "danger" : "gray-300")"><div class="card-body py-4 px-5"><div class="fs-2hx fw-bold hp-num @(Model.Missed30 > 0 ? "text-danger" : "")">@Model.Missed30</div><div class="text-muted fs-7">@T["Missed in 30 days"]</div></div></div></div>
+                    <div class="col-4"><div class="card card-flush h-100 border-top border-3 border-@(Model.AvgKtV == null ? "gray-300" : Model.AvgKtV < HospitalDialysisRules.MinKtV ? "danger" : "success")"><div class="card-body py-4 px-5">
+                        <div class="fs-2hx fw-bold hp-num @(Model.AvgKtV < HospitalDialysisRules.MinKtV ? "text-danger" : "")">@(Model.AvgKtV?.ToString("0.00") ?? "—")</div><div class="text-muted fs-7">@T["Kt/V, mean of the last three"]</div></div></div></div>
+                </div>
+                <div class="card flex-grow-1">
+                    <div class="card-header border-0 pt-6"><div class="card-title flex-column m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Sessions"]</span><span class="text-muted fs-8 mt-1">@T["Targets: Kt/V at least 1.2, URR at least 65 %, ultrafiltration under 13 ml/kg/h, a gain under 4 % of the dry weight."]</span></div></div>
+                    <div class="card-body pt-2">
+                        @if (Model.History.Count == 0) { <div class="text-center text-muted py-10">@T["No session yet."]</div> }
+                        else
+                        {
+                            <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-3 mb-0">
+                                <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0"><th>@T["Date"]</th><th>@T["Weight"]</th><th>@T["Gain"]</th><th>@T["UF"]</th><th>@T["Minutes"]</th><th>URR</th><th>Kt/V</th><th>@T["Lowest pressure"]</th><th>@T["Warnings"]</th></tr></thead>
+                                <tbody class="hp-num">
+                                @foreach (var h in Model.History)
+                                {
+                                    var s = h.Session; var o = h.Outcome;
+                                    <tr>
+                                        <td class="text-nowrap">@if (s.Status != HospitalDialysisSessionStatus.Missed) {<a href="@Url.Action("DialysisSession", new { id = s.ID })" class="fw-bold text-gray-900 text-hover-primary">@s.SessionDate.ToString("yyyy-MM-dd")</a>} else {<span class="fw-bold">@s.SessionDate.ToString("yyyy-MM-dd")</span>}
+                                            @if (s.Status != HospitalDialysisSessionStatus.Done) {<div><span class="badge badge-light-@(s.Status == HospitalDialysisSessionStatus.Missed ? "secondary" : "info") fs-9">@T["dxs:" + s.Status]</span></div>}</td>
+                                        @if (s.Status == HospitalDialysisSessionStatus.Missed)
+                                        {
+                                            <td colspan="8" class="text-muted fs-8" style="font-family:inherit"><bdi>@s.MissedReason</bdi></td>
+                                        }
+                                        else
+                                        {
+                                            <td class="text-nowrap" dir="ltr">@F1(s.PreWeightKg) → @F1(s.PostWeightKg)</td>
+                                            <td class="@(o.GainPct > HospitalDialysisRules.MaxGainPct ? "text-danger fw-bold" : "")">@(o.GainPct == null ? "—" : F1(o.GainPct) + " %")</td>
+                                            <td class="text-nowrap">@(o.UfMl?.ToString() ?? "—")<div class="text-muted fs-9 @(o.UfRate > HospitalDialysisRules.MaxUfRate ? "text-danger fw-bold" : "")">@(o.UfRate == null ? "" : F1(o.UfRate) + " ml/kg/h")</div></td>
+                                            <td>@(o.Minutes?.ToString() ?? "—")</td>
+                                            <td class="text-nowrap @(o.Urr < HospitalDialysisRules.MinUrr ? "text-danger fw-bold" : "")">@(o.Urr == null ? "—" : F1(o.Urr) + " %")</td>
+                                            <td class="fw-bold @(o.KtV < HospitalDialysisRules.MinKtV ? "text-danger" : o.KtV != null ? "text-success" : "")">@(o.KtV?.ToString("0.00") ?? "—")</td>
+                                            <td class="@(o.NadirSbp < HospitalDialysisRules.HypotensionNadir ? "text-danger fw-bold" : "")">@(o.NadirSbp?.ToString() ?? "—")</td>
+                                            <td style="font-family:inherit">@if (o.Warnings.Count == 0) {<span class="text-muted">—</span>} else {<div class="d-flex flex-wrap gap-1">@foreach (var w in o.Warnings) {<span class="badge badge-light-danger fs-9">@T["dxw:" + w]</span>}</div>}</td>
+                                        }
+                                    </tr>
+                                }
+                                </tbody>
+                            </table></div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div></div>
+</div>
+@if (canPlan)
+{
+    ViewData["DxPatientId"] = Model.PatientId;
+    <partial name="_DialysisPlanModal" model="@(active ? p : null)" />
+}
+
+@section Scripts {
+    <script>
+        (function () {
+            var tok = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value), stop: @Json.Serialize(T["Stop this patient's dialysis plan? The sessions stay on the file."].Value) };
+            document.addEventListener('click', function (e) {
+                var b = e.target.closest('[data-plan-stop]'); if (!b) return;
+                cbConfirm(W.stop, { kind: 'danger' }).then(function (ok) { if (!ok) return; b.disabled = true;
+                    fetch(@Json.Serialize(Url.Content("~/Hospital/Dialysis/Plan/")) + b.getAttribute('data-plan-stop') + '/Stop', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': tok }, body: '{}' })
+                        .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+                        .then(function (res) { b.disabled = false; if (!res.ok) { toastr.error(res.error || W.failed); return; } toastr.success(W.saved); location.reload(); }); });
+            });
+        })();
+    </script>
+}

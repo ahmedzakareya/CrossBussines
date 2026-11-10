@@ -1,0 +1,208 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model HospitalIcPage
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H76 — infection prevention and control: who is isolated now, which invasive devices are in and for how many days
+    (a line kept a week is the one to question), the case register (suspected, confirmed, ruled out; searched and paged),
+    and the month's rates per ward per 1,000 patient-days and device-days.
+*@
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Infection control"].Value;
+    bool canManage = ViewBag.CanManage == true, canEnd = ViewBag.CanEnd == true, canWard = ViewBag.CanWard == true;
+    int year = ViewBag.Year, month = ViewBag.Month;
+    var rates = (ViewBag.Rates as IReadOnlyList<HospitalIcRateRow>) ?? Array.Empty<HospitalIcRateRow>();
+    bool isAr = System.Globalization.CultureInfo.CurrentUICulture.Name.StartsWith("ar");
+    var total = new HospitalIcRateRow(null, "", "", rates.Sum(r => r.PatientDays), rates.Sum(r => r.LineDays), rates.Sum(r => r.CatheterDays), rates.Sum(r => r.VentDays),
+        rates.Sum(r => r.Hai), rates.Sum(r => r.Clabsi), rates.Sum(r => r.Cauti), rates.Sum(r => r.Vap));
+    string R(double? v) => v == null ? "—" : v.Value.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture);
+    string U(double? v) => v == null ? "—" : v.Value.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture);
+    string Local(DateTime utc) => HospitalNursingService.UtcToWard(utc).ToString("yyyy-MM-dd HH:mm");
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Infection control"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted">@T["Inpatient"]</li></ul>
+        </div>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (!Model.Ready) { <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice"><div class="fs-6 text-gray-700">@T[HospitalInfectionService.NoTables]</div></div> }
+        else
+        {
+            <div class="row g-5 mb-5">
+                <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5 d-flex align-items-center gap-4">
+                    <div class="symbol symbol-50px flex-shrink-0"><span class="symbol-label bg-light-danger"><i class="ki-outline ki-shield-cross fs-2x text-danger"></i></span></div>
+                    <div><div class="fs-2hx fw-bold text-gray-900 hp-num lh-1">@Model.Isolations.Select(i => i.Patient.PatientId).Distinct().Count()</div><div class="text-muted fs-7 mt-1">@T["Patients in isolation"]</div></div></div></div></div>
+                <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5 d-flex align-items-center gap-4">
+                    <div class="symbol symbol-50px flex-shrink-0"><span class="symbol-label bg-light-primary"><i class="ki-outline ki-syringe fs-2x text-primary"></i></span></div>
+                    <div><div class="fs-2hx fw-bold text-gray-900 hp-num lh-1">@Model.Devices.Count</div><div class="text-muted fs-7 mt-1">@T["Devices in place"]</div></div></div></div></div>
+                <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5 d-flex align-items-center gap-4">
+                    <div class="symbol symbol-50px flex-shrink-0"><span class="symbol-label bg-light-info"><i class="ki-outline ki-search-list fs-2x text-info"></i></span></div>
+                    <div><div class="fs-2hx fw-bold text-gray-900 hp-num lh-1">@Model.Suspected</div><div class="text-muted fs-7 mt-1">@T["Suspected cases to review"]</div></div></div></div></div>
+                <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5 d-flex align-items-center gap-4">
+                    <div class="symbol symbol-50px flex-shrink-0"><span class="symbol-label bg-light-success"><i class="ki-outline ki-chart-line-down fs-2x text-success"></i></span></div>
+                    <div><div class="fs-2hx fw-bold text-gray-900 hp-num lh-1">@R(total.HaiRate)</div><div class="text-muted fs-7 mt-1">@T["Hospital-acquired per 1,000 patient-days this month"]</div></div></div></div></div>
+            </div>
+
+            <div class="row g-5 mb-5">
+                <div class="col-xl-6"><div class="card h-100">
+                    <div class="card-header border-0 pt-6"><div class="card-title flex-column m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Isolation now"]</span>
+                        <span class="text-muted fs-7 mt-1">@T["Started from the nursing station; ended by a doctor or infection control."]</span></div></div>
+                    <div class="card-body pt-2">
+                        @if (Model.Isolations.Count == 0) { <div class="text-center text-muted py-10">@T["Nobody is in isolation."]</div> }
+                        else
+                        {
+                            <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-3 mb-0">
+                                <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0"><th>@T["Patient"]</th><th>@T["Precautions"]</th><th>@T["Since"]</th><th class="text-end"></th></tr></thead>
+                                <tbody>
+                                @foreach (var r in Model.Isolations)
+                                {
+                                    var p = r.Patient; var i = r.Isolation;
+                                    <tr>
+                                        <td><a href="@Url.Action("Patient", new { id = p.PatientId })" class="fw-bold text-gray-900 text-hover-primary">@DisplayName.Of(p.Name, p.NameEn)</a>
+                                            <div class="text-muted fs-8"><span class="hp-num">@p.Mrn</span>@if (p.Bed != null) {<text> · @DisplayName.Of(p.Ward ?? "", p.WardEn ?? p.Ward ?? "") · @T["Bed"] <span class="hp-num fw-bold">@p.Bed</span></text>}</div></td>
+                                        <td><span class="badge badge-light-danger"><i class="ki-outline ki-shield-cross fs-8 text-danger me-1"></i>@T["prec:" + i.Precaution]</span>
+                                            <div class="fs-8 mt-1">@if (i.Organism != null) {<bdi dir="ltr" class="fw-semibold">@i.Organism</bdi>} @if (i.Reason != null) {<span class="text-muted">@(i.Organism != null ? " · " : "")<bdi>@i.Reason</bdi></span>}</div></td>
+                                        <td class="text-nowrap"><span class="hp-num">@Local(i.StartedAt)</span>@if (i.StartedByEmployeeId is int sb && Model.People.TryGetValue(sb, out var who)) {<div class="text-muted fs-8">@who</div>}</td>
+                                        <td class="text-end">@if (canEnd) {<button type="button" class="btn btn-sm btn-light text-nowrap" data-end-iso="@i.ID" data-what="@DisplayName.Of(p.Name, p.NameEn) — @T["prec:" + i.Precaution]">@T["End"]</button>}</td>
+                                    </tr>
+                                }
+                                </tbody>
+                            </table></div>
+                        }
+                    </div>
+                </div></div>
+                <div class="col-xl-6"><div class="card h-100">
+                    <div class="card-header border-0 pt-6"><div class="card-title flex-column m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Devices in place"]</span>
+                        <span class="text-muted fs-7 mt-1">@T["Longest first: every day a line stays in, ask whether it is still needed."]</span></div></div>
+                    <div class="card-body pt-2">
+                        @if (Model.Devices.Count == 0) { <div class="text-center text-muted py-10">@T["No invasive device is in place."]</div> }
+                        else
+                        {
+                            <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-3 mb-0">
+                                <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0"><th>@T["Patient"]</th><th>@T["Device"]</th><th>@T["Day"]</th><th class="text-end"></th></tr></thead>
+                                <tbody>
+                                @foreach (var r in Model.Devices)
+                                {
+                                    var p = r.Patient; var d = r.Device;
+                                    <tr>
+                                        <td><a href="@Url.Action("Patient", new { id = p.PatientId })" class="fw-bold text-gray-900 text-hover-primary">@DisplayName.Of(p.Name, p.NameEn)</a>
+                                            <div class="text-muted fs-8">@if (p.Bed != null) {<text>@DisplayName.Of(p.Ward ?? "", p.WardEn ?? p.Ward ?? "") · @T["Bed"] <span class="hp-num fw-bold">@p.Bed</span></text>}</div></td>
+                                        <td><span class="fw-semibold text-gray-800">@T["dev:" + d.Kind]</span>@if (d.Site != null) {<div class="text-muted fs-8"><bdi>@d.Site</bdi></div>}</td>
+                                        <td><span class="badge @(d.Day >= 7 ? "badge-light-danger" : "badge-light-primary") hp-num">@T["Day {0}", d.Day]</span></td>
+                                        <td class="text-end">@if (canWard) {<button type="button" class="btn btn-sm btn-light text-nowrap" data-remove-dev="@d.Id" data-what="@DisplayName.Of(p.Name, p.NameEn) — @T["dev:" + d.Kind]">@T["Removed"]</button>}</td>
+                                    </tr>
+                                }
+                                </tbody>
+                            </table></div>
+                        }
+                    </div>
+                </div></div>
+            </div>
+
+            <div class="card mb-5">
+                <div class="card-header border-0 pt-6 flex-wrap gap-3">
+                    <div class="card-title flex-column m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Infection cases"]</span><span class="text-muted fs-7 mt-1"><span id="resultCount">—</span></span></div>
+                    <div class="card-toolbar d-flex flex-wrap align-items-center gap-2">
+                        <div class="w-300px"><input type="text" id="f_q" class="form-control form-control-solid form-control-sm" autocomplete="off" placeholder="@T["Search by case, patient, file or organism…"]" /></div>
+                        <div class="w-150px"><select class="form-select form-select-solid form-select-sm cb-filter" id="f_status"><option value="">@T["All states"]</option>@foreach (var st in HospitalInfectionStatus.All) { <option value="@st">@T["ics:" + st]</option> }</select></div>
+                        <div class="w-75px"><select id="f_size" class="form-select form-select-solid form-select-sm"><option value="25">25</option><option value="50">50</option><option value="100">100</option></select></div>
+                        <button type="button" id="f_reset" class="btn btn-sm btn-light" title="@T["Reset"]"><i class="ki-outline ki-arrows-circle fs-4"></i></button>
+                    </div>
+                </div>
+                <div class="card-body pt-2">
+                    <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-3 mb-0">
+                        <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0"><th>@T["Case"]</th><th>@T["Patient"]</th><th>@T["Infection"]</th><th>@T["Date of the event"]</th><th>@T["Acquired"]</th><th>@T["Ward"]</th><th>@T["State"]</th><th class="text-end"></th></tr></thead>
+                        <tbody id="rows"><tr id="loadingRow"><td colspan="8" class="text-center text-muted py-10">@T["Loading…"]</td></tr><tr id="emptyRow" class="d-none"><td colspan="8" class="text-center text-muted py-10">@T["No infection case yet."]</td></tr></tbody>
+                    </table></div>
+                    <div class="d-flex flex-stack flex-wrap pt-5"><div class="fs-7 text-muted" id="pageInfo"></div><ul class="pagination" id="pager"></ul></div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header border-0 pt-6 flex-wrap gap-3">
+                    <div class="card-title flex-column m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Infection rates"]</span>
+                        <span class="text-muted fs-7 mt-1">@T["Confirmed hospital-acquired infections per 1,000 patient-days and per 1,000 device-days (NHSN). Utilisation is device-days over patient-days."]</span></div>
+                    <div class="card-toolbar"><form method="get" class="d-flex gap-2 align-items-center">
+                        <input type="month" name="ym" id="f_month" class="form-control form-control-solid form-control-sm w-175px" dir="ltr" value="@($"{year:0000}-{month:00}")" />
+                    </form></div>
+                </div>
+                <div class="card-body pt-2">
+                    <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-3 mb-0 text-nowrap">
+                        <thead>
+                            <tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0">
+                                <th rowspan="2" class="align-bottom">@T["Ward"]</th>
+                                <th colspan="3" class="text-center border-bottom">@T["All hospital-acquired"]</th>
+                                <th colspan="4" class="text-center border-bottom">@T["dev:CentralLine"] — CLABSI</th>
+                                <th colspan="4" class="text-center border-bottom">@T["dev:UrinaryCatheter"] — CAUTI</th>
+                                <th colspan="4" class="text-center border-bottom">@T["dev:Ventilator"] — VAP</th>
+                            </tr>
+                            <tr class="text-start text-gray-500 fw-bold fs-9 text-uppercase gs-0">
+                                <th class="text-end">@T["Patient-days"]</th><th class="text-end">@T["Cases"]</th><th class="text-end">@T["Per 1,000"]</th>
+                                @for (int k = 0; k < 3; k++) { <th class="text-end">@T["Device-days"]</th><th class="text-end">@T["Use"]</th><th class="text-end">@T["Cases"]</th><th class="text-end">@T["Per 1,000"]</th> }
+                            </tr>
+                        </thead>
+                        <tbody class="hp-num">
+                            @if (rates.Count == 0) { <tr><td colspan="16" class="text-center text-muted py-10" style="font-family:inherit">@T["Nobody lay on a ward this month."]</td></tr> }
+                            @foreach (var r in rates.Append(total))
+                            {
+                                bool isTotal = ReferenceEquals(r, total);
+                                <tr class="@(isTotal ? "fw-bold border-top border-gray-400" : "")">
+                                    <td style="font-family:inherit">@(isTotal ? T["Total"].Value : r.WardId == null ? T["No ward"].Value : DisplayName.Of(r.Ward, r.WardEn))</td>
+                                    <td class="text-end">@r.PatientDays</td><td class="text-end">@r.Hai</td><td class="text-end">@R(r.HaiRate)</td>
+                                    <td class="text-end">@r.LineDays</td><td class="text-end">@U(r.LineUse)</td><td class="text-end">@r.Clabsi</td><td class="text-end">@R(r.ClabsiRate)</td>
+                                    <td class="text-end">@r.CatheterDays</td><td class="text-end">@U(r.CatheterUse)</td><td class="text-end">@r.Cauti</td><td class="text-end">@R(r.CautiRate)</td>
+                                    <td class="text-end">@r.VentDays</td><td class="text-end">@U(r.VentUse)</td><td class="text-end">@r.Vap</td><td class="text-end">@R(r.VapRate)</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table></div>
+                </div>
+            </div>
+        }
+    </div></div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            var m = document.getElementById('f_month');
+            if (m) m.addEventListener('change', function () { var v = (m.value || '').split('-'); if (v.length === 2) location.href = @Json.Serialize(Url.Action("Infection")) + '?year=' + v[0] + '&month=' + Number(v[1]); });
+            if (!document.getElementById('rows')) return;
+            var list = cbServerList({ url: @Json.Serialize(Url.Action("InfectionCases")), isAr: @(isAr ? "true" : "false"), addParams: function (p) { p.set('status', document.getElementById('f_status').value); } });
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            var W = {
+                failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value),
+                endIso: @Json.Serialize(T["End these precautions?"].Value), endNote: @Json.Serialize(T["Why they end"].Value),
+                removeDev: @Json.Serialize(T["Record that this device was removed now?"].Value),
+                confirm: @Json.Serialize(T["Confirm this infection? It counts in the rates from now on."].Value),
+                ruleOut: @Json.Serialize(T["Rule out this infection"].Value), ruleOutWhy: @Json.Serialize(T["Why it is ruled out"].Value)
+            };
+            function post(u, b) { return fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(b || {}) }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); }); }
+            function done(res, reloadPage) { if (!res.ok) { toastr.error(res.error || W.failed); return; } toastr.success(W.saved); if (reloadPage) location.reload(); else list.reload(); }
+            document.addEventListener('click', function (e) {
+                var t = e.target.closest('[data-end-iso],[data-remove-dev],[data-confirm-case],[data-ruleout-case]'); if (!t) return;
+                var what = t.getAttribute('data-what') || '';
+                if (t.hasAttribute('data-end-iso')) {
+                    cbPrompt(what, { title: W.endIso, placeholder: W.endNote }).then(function (note) { if (!note) return;
+                        post(@Json.Serialize(Url.Content("~/Hospital/Infection/Isolation/")) + t.getAttribute('data-end-iso') + '/End', { note: note }).then(function (r) { done(r, true); }); });
+                } else if (t.hasAttribute('data-remove-dev')) {
+                    cbConfirm(W.removeDev + '\n' + what).then(function (ok) { if (!ok) return;
+                        post(@Json.Serialize(Url.Content("~/Hospital/Infection/Device/")) + t.getAttribute('data-remove-dev') + '/Remove', {}).then(function (r) { done(r, true); }); });
+                } else if (t.hasAttribute('data-confirm-case')) {
+                    cbConfirm(W.confirm + '\n' + what).then(function (ok) { if (!ok) return;
+                        post(@Json.Serialize(Url.Content("~/Hospital/Infection/Case/")) + t.getAttribute('data-confirm-case') + '/Decide', { decision: 'Confirmed' }).then(function (r) { done(r, true); }); });
+                } else {
+                    cbPrompt(what, { title: W.ruleOut, placeholder: W.ruleOutWhy, kind: 'danger' }).then(function (note) { if (!note) return;
+                        post(@Json.Serialize(Url.Content("~/Hospital/Infection/Case/")) + t.getAttribute('data-ruleout-case') + '/Decide', { decision: 'RuledOut', note: note }).then(function (r) { done(r, false); }); });
+                }
+            });
+        })();
+    </script>
+}

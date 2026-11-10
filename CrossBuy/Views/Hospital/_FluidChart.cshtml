@@ -1,0 +1,67 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model HospitalFluidChart
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H78 — one fluid day of an admission's chart, loaded into the nursing station's window: the totals in, out and the
+    balance, each kind's sum, every entry (a voided one struck through, with why), and the last five days. Low urine output
+    shows only with a recorded weight, and says which weight.
+*@
+@{
+    bool canWard = ViewBag.CanWard == true; int back = ViewBag.Back;
+    string Ml(int v) => v.ToString("#,0", System.Globalization.CultureInfo.InvariantCulture);
+    string Signed(int v) => (v > 0 ? "+" : v < 0 ? "−" : "") + Ml(Math.Abs(v));
+    string Local(DateTime utc) => HospitalNursingService.UtcToWard(utc).ToString("HH:mm");
+}
+@if (!Model.Ready) { <div class="notice d-flex rounded border border-dashed p-6 hp-notice"><div class="fs-6 text-gray-700">@T[HospitalFluidService.NoTables]</div></div> }
+else
+{
+    <div data-fluid-back="@back">
+        <div class="d-flex flex-stack flex-wrap gap-3 mb-5">
+            <div class="d-flex align-items-center gap-2">
+                <button type="button" class="btn btn-sm btn-icon btn-light" data-fluid-day="@(back + 1)" @(back >= 30 ? "disabled" : "") title="@T["The day before"]"><i class="ki-outline @(System.Globalization.CultureInfo.CurrentUICulture.TextInfo.IsRightToLeft ? "ki-arrow-right" : "ki-arrow-left") fs-4"></i></button>
+                <div class="fw-bold text-gray-900 fs-6"><bdi class="hp-num" dir="ltr">@Model.DayStart.ToString("yyyy-MM-dd HH:mm") → @Model.DayStart.AddDays(1).ToString("MM-dd HH:mm")</bdi>@if (Model.IsCurrentDay) {<span class="badge badge-light-primary ms-2">@T["Today"]</span>}</div>
+                <button type="button" class="btn btn-sm btn-icon btn-light" data-fluid-day="@(back - 1)" @(back == 0 ? "disabled" : "") title="@T["The day after"]"><i class="ki-outline @(System.Globalization.CultureInfo.CurrentUICulture.TextInfo.IsRightToLeft ? "ki-arrow-left" : "ki-arrow-right") fs-4"></i></button>
+            </div>
+            @if (Model.WeightKg != null) {<div class="text-muted fs-8">@T["Weight used: {0} kg ({1})", Model.WeightKg.Value.ToString("0.#"), Model.WeightOn?.ToString("yyyy-MM-dd") ?? ""]</div>}
+            else {<div class="text-muted fs-8">@T["No weight on file: low urine output is not checked."]</div>}
+        </div>
+        @if (Model.LowUrine) {
+            <div class="notice d-flex align-items-center rounded border border-danger border-dashed bg-light-danger p-4 mb-5"><i class="ki-outline ki-drop fs-2x text-danger me-3"></i>
+                <div class="fs-7 text-gray-800">@T["Low urine output: {0} ml in the last 6 hours — under 0.5 ml/kg/h.", Ml(Model.UrineLast6h ?? 0)]</div></div>
+        }
+        <div class="row g-4 mb-5">
+            <div class="col-4"><div class="border border-dashed rounded p-4 text-center"><div class="text-muted fs-8">@T["Fluid in"]</div><div class="fs-2 fw-bold text-primary hp-num">@Ml(Model.Today.In)</div><div class="text-muted fs-9">ml</div></div></div>
+            <div class="col-4"><div class="border border-dashed rounded p-4 text-center"><div class="text-muted fs-8">@T["Fluid out"]</div><div class="fs-2 fw-bold text-info hp-num">@Ml(Model.Today.Out)</div><div class="text-muted fs-9">ml</div></div></div>
+            <div class="col-4"><div class="border border-dashed rounded p-4 text-center"><div class="text-muted fs-8">@T["Net"]</div><div class="fs-2 fw-bold hp-num @(Model.Today.Balance < 0 ? "text-danger" : "text-success")" dir="ltr">@Signed(Model.Today.Balance)</div><div class="text-muted fs-9">ml</div></div></div>
+        </div>
+        @if (Model.ByKind.Count > 0) {
+            <div class="d-flex flex-wrap gap-2 mb-5">@foreach (var k in HospitalFluidKind.All.Where(Model.ByKind.ContainsKey)) {<span class="badge @(HospitalFluidKind.In.Contains(k) ? "badge-light-primary" : "badge-light-info") fs-8">@T["fluid:" + k] · <bdi class="hp-num">@Ml(Model.ByKind[k])</bdi></span>}</div>
+        }
+        <div class="table-responsive mb-5"><table class="table align-middle table-row-dashed fs-7 gy-2 mb-0">
+            <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0"><th>@T["Time"]</th><th>@T["In or out"]</th><th class="text-end">ml</th><th>@T["Recorded by"]</th><th class="text-end"></th></tr></thead>
+            <tbody>
+            @if (Model.Entries.Count == 0) { <tr><td colspan="5" class="text-center text-muted py-6">@T["Nothing recorded in this fluid day."]</td></tr> }
+            @foreach (var e in Model.Entries)
+            {
+                bool voided = e.VoidedAt != null;
+                <tr class="@(voided ? "text-muted" : "")">
+                    <td class="hp-num">@Local(e.At)</td>
+                    <td><span class="@(voided ? "text-decoration-line-through" : "")"><i class="ki-outline @(e.Direction == HospitalFluidDirection.In ? "ki-arrow-down text-primary" : "ki-arrow-up text-info") fs-7 me-1"></i>@T["fluid:" + e.Kind]</span>
+                        @if (e.Note != null) {<div class="fs-8 text-muted"><bdi>@e.Note</bdi></div>}
+                        @if (voided) {<div class="fs-8 text-danger">@T["Voided"]: <bdi>@e.VoidReason</bdi></div>}</td>
+                    <td class="text-end hp-num fw-semibold @(voided ? "text-decoration-line-through" : "")">@Ml(e.VolumeMl)</td>
+                    <td class="fs-8">@(e.CreatedByEmployeeId is int c && Model.People.TryGetValue(c, out var who) ? who : "")</td>
+                    <td class="text-end">@if (canWard && !voided) {<button type="button" class="btn btn-sm btn-light py-1 px-2 fs-8" data-fluid-void="@e.ID" data-what="@Local(e.At) — @T["fluid:" + e.Kind] @Ml(e.VolumeMl) ml">@T["Void"]</button>}</td>
+                </tr>
+            }
+            </tbody>
+        </table></div>
+        <div class="fw-bold text-gray-800 fs-7 mb-2">@T["The last five days"]</div>
+        <div class="table-responsive"><table class="table table-row-dashed fs-8 gy-1 mb-0">
+            <thead><tr class="text-gray-500 fw-bold"><th>@T["Fluid day"]</th><th class="text-end">@T["Fluid in"]</th><th class="text-end">@T["Fluid out"]</th><th class="text-end">@T["Net"]</th></tr></thead>
+            <tbody class="hp-num">@foreach (var d in Model.Days) {<tr><td dir="ltr" class="text-start">@d.DayStart.ToString("MM-dd")</td><td class="text-end">@Ml(d.In)</td><td class="text-end">@Ml(d.Out)</td><td class="text-end fw-semibold @(d.Balance < 0 ? "text-danger" : "")" dir="ltr">@Signed(d.Balance)</td></tr>}</tbody>
+        </table></div>
+    </div>
+}

@@ -201,6 +201,21 @@ namespace CrossBuy.BL.Hospital
 				"تسوية مطالبة " + batch.BatchNo, "Claim answer " + batch.BatchNo + " (" + plan.Event + ")", employeeId, nowUtc, ct);
 		}
 
+		/// H82: a recoupment — the payer takes back part or all of an accepted line. Dr claim rejections / Cr payer receivable
+		/// (the receivable falls by what the payer no longer owes, or turns to its credit when it had already paid).
+		public async Task<HospitalResult> PostRecoupAsync(BusinessContext ctx, HospitalClaimLine line, HospitalClaim claim, HospitalClaimBatch batch, decimal amount,
+			int? employeeId, DateTime nowUtc, HospitalInsuranceAccounts accounts, int payerReceivable, CancellationToken ct = default)
+		{
+			if (accounts.ClaimRejectionAccountId is not int cn) return HospitalResult.Fail("Map the claim rejection account first");
+			if (!await HospitalClaimAccounts.OfKindAsync(_db, ctx, cn, ct, HospitalClaimAccounts.Revenue, HospitalClaimAccounts.Expense))
+				return HospitalResult.Fail("Claim adjustments and rejections post to an active revenue or expense account");
+			var bill = await _db.HospitalBills.AsNoTracking().FirstAsync(b => b.ID == claim.BillId && b.CompanyId == ctx.CompanyId, ct);
+			if (await OriginRefusalAsync(ctx, bill, payerReceivable, ct) is string origin) return HospitalResult.Fail(origin);
+			string memo = bill.BillNo + " · " + batch.BatchNo + " · " + line.Code;
+			return await PostAsync(ctx, batch.ID, line.ID, HospitalClaimEvent.Recoupment, null, amount, bill, HospitalClaimAccountingRules.Lines(HospitalClaimEvent.Recoupment, amount, payerReceivable, cn, memo),
+				"استرداد شركة التأمين " + batch.BatchNo, "Payer recoupment " + batch.BatchNo, employeeId, nowUtc, ct);
+		}
+
 		/// A payer's payment against a batch, full or partial: Dr bank / Cr payer receivable, once per reference.
 		public async Task<HospitalResult> RemitAsync(BusinessContext ctx, int batchId, decimal amount, string? reference, int? employeeId, DateTime nowUtc, CancellationToken ct = default)
 		{

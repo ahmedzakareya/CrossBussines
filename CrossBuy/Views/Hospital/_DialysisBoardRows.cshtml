@@ -1,0 +1,41 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model HospitalDialysisBoard
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@{
+    bool canTreat = ViewBag.CanTreat == true;
+    var today = (DateTime)ViewBag.Today;
+    string F1(decimal? x) => x?.ToString("0.#") ?? "—";
+}
+@foreach (var r in Model.Rows)
+{
+    var s = r.Session; var o = r.Outcome; var p = r.Plan;
+    string tone = r.State == HospitalDialysisDayState.Running ? "info" : r.State == HospitalDialysisDayState.Done ? "success" : r.State == HospitalDialysisDayState.Missed ? "secondary" : "primary";
+    <tr>
+        <td><a href="@Url.Action("DialysisPatient", new { patientId = p.PatientId })" class="fw-bold text-gray-900 text-hover-primary">@DisplayName.Of(r.Name, r.NameEn)</a>
+            <div class="text-muted fs-8"><bdi class="hp-num">@r.Mrn</bdi> · @T["dxa:" + p.Access] · <span class="text-nowrap">@T["{0} h", (p.DurationMin / 60m).ToString("0.#")]</span></div></td>
+        <td class="text-nowrap">@T["Shift {0}", s?.Shift ?? p.Shift]@if (s?.Station != null) {<div class="text-muted fs-8">@T["Station"] <bdi class="hp-num fw-bold">@s.Station</bdi></div>}</td>
+        <td><span class="badge badge-light-@tone fs-8">@T["dxs:" + r.State]</span>
+            @if (r.MinutesOn is int m) {<div class="text-muted fs-9 mt-1">@T["{0} of {1} min", m, s!.PlannedMin]</div>}
+            @if (s?.MissedReason != null) {<div class="text-muted fs-9 mt-1"><bdi>@s.MissedReason</bdi></div>}</td>
+        <td class="hp-num fs-8">@if (s?.PreWeightKg != null) {<div><span class="fw-bold fs-7">@F1(s.PreWeightKg)</span> kg</div>
+                @if (o?.GainPct != null) {<div class="@(o.GainPct > HospitalDialysisRules.MaxGainPct ? "text-danger fw-bold" : "text-muted")">+@F1(o.GainKg) kg (@F1(o.GainPct) %)</div>}
+                @if (s.PreSbp != null) {<div class="text-muted" dir="ltr">@s.PreSbp/@s.PreDbp</div>}} else {<span class="text-muted">—</span>}</td>
+        <td class="fs-8">@if (r.State == HospitalDialysisDayState.Running) {
+                if (r.Last != null) {<div dir="ltr" class="hp-num @(r.Last.Sbp < HospitalDialysisRules.HypotensionNadir ? "text-danger fw-bold" : "")">@(r.Last.Sbp != null ? r.Last.Sbp + "/" + r.Last.Dbp : "—")</div>
+                    <div class="text-muted">@T["UF"] <bdi class="hp-num">@(r.Last.UfMl?.ToString() ?? "—") / @(s!.UfGoalMl?.ToString() ?? "—") ml</bdi></div>} else {<span class="text-muted">@T["No reading yet"]</span>}
+            } else if (r.State == HospitalDialysisDayState.Done) {<div class="hp-num"><span class="fw-bold fs-7">@F1(s!.PostWeightKg)</span> kg</div><div class="text-muted">@T["UF"] <bdi class="hp-num">@o!.UfMl ml · @F1(o.UfRate) ml/kg/h</bdi></div>
+            } else {<span class="text-muted">—</span>}</td>
+        <td class="hp-num fs-8">@if (o?.KtV != null || o?.Urr != null) {<div>Kt/V <span class="fw-bold @(o.KtV < HospitalDialysisRules.MinKtV ? "text-danger" : "text-success")">@(o.KtV?.ToString("0.00") ?? "—")</span></div><div class="text-muted">URR @F1(o.Urr) %</div>} else {<span class="text-muted">—</span>}</td>
+        <td>@if (o == null || o.Warnings.Count == 0) {<span class="text-muted fs-8">—</span>} else {<div class="d-flex flex-wrap gap-1">@foreach (var w in o.Warnings) {<span class="badge badge-light-danger fs-9">@T["dxw:" + w]</span>}</div>}</td>
+        <td class="text-end text-nowrap">
+            @if (s != null && s.Status != HospitalDialysisSessionStatus.Missed) {<a href="@Url.Action("DialysisSession", new { id = s.ID })" class="btn btn-sm btn-light-primary">@T["Open"]</a>}
+            else if (s == null && canTreat)
+            {
+                if (Model.Day == today) {<button type="button" class="btn btn-sm btn-primary" data-dx-start="@p.ID" data-who="@DisplayName.Of(r.Name, r.NameEn) — @r.Mrn" data-dry="@p.DryWeightKg.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture)">@T["Start dialysis"]</button>}
+                if (Model.Day <= today) {<button type="button" class="btn btn-sm btn-light ms-1" data-dx-miss="@p.ID">@T["Mark missed"]</button>}
+            }
+        </td>
+    </tr>
+}

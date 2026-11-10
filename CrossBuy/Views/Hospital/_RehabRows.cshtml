@@ -1,0 +1,23 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model IReadOnlyList<HospitalRehabRow>
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@foreach (var r in Model)
+{
+    var e = r.Episode; var p = r.Progress;
+    string tone = e.Status == HospitalRehabStatus.Referred ? "primary" : e.Status == HospitalRehabStatus.Active ? "success" : "secondary";
+    <tr>
+        <td><a href="@Url.Action("RehabEpisode", new { id = e.ID })" class="fw-bold text-gray-900 text-hover-primary">@DisplayName.Of(r.Name, r.NameEn)</a>
+            <div class="text-muted fs-8"><span class="badge hp-code fs-9 hp-num me-1">@e.EpisodeNo</span><bdi class="hp-num">@r.Mrn</bdi></div></td>
+        <td class="fs-8"><span class="fw-semibold">@T["rgn:" + e.Region]</span><div class="text-muted"><bdi>@e.Problem</bdi></div></td>
+        <td><span class="badge badge-light-@tone fs-8">@T["rhs:" + e.Status]</span></td>
+        <td class="text-nowrap"><span class="fw-bold hp-num">@p.Attended / @e.PlannedSessions</span>
+            @if (p.AttendancePct is int a) {<div class="fs-9 @(a < 80 ? "text-danger" : "text-muted")">@T["Attendance {0}%", a]</div>}</td>
+        <td class="fs-8">@if (p.Trend != null) {<span class="badge @(p.Trend == HospitalRehabTrend.Improved ? "badge-light-success" : p.Trend == HospitalRehabTrend.Worse ? "badge-light-danger" : "badge-light") fs-8">@T["rht:" + p.Trend]</span>
+                <div class="text-muted mt-1"><bdi dir="ltr" class="hp-num">@e.MeasureCode @e.BaselineScore?.ToString("0.#") → @p.LatestScore?.ToString("0.#")</bdi></div>}
+            else if (e.MeasureCode != null) {<span class="text-muted"><bdi dir="ltr" class="hp-num">@e.MeasureCode @e.BaselineScore?.ToString("0.#")</bdi></span>} else {<span class="text-muted">—</span>}</td>
+        <td>@if (p.Warnings.Count == 0) {<span class="text-muted fs-8">—</span>} else {<div class="d-flex flex-wrap gap-1">@foreach (var w in p.Warnings) {<span class="badge badge-light-danger fs-9">@T["rhw:" + w]</span>}</div>}</td>
+        <td class="text-end"><a href="@Url.Action("RehabEpisode", new { id = e.ID })" class="btn btn-sm btn-light-primary text-nowrap">@T["Open"]</a></td>
+    </tr>
+}

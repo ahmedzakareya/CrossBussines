@@ -1,0 +1,94 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H85 — antenatal care: every active pregnancy with its weeks, due date, last visit's warnings and a missed visit
+    (warnings and missed visits first; searched, filtered, paged), and opening a new pregnancy on a mother's file.
+*@
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Antenatal care"].Value;
+    bool ready = ViewBag.Ready == true, canOpen = ViewBag.CanOpen == true;
+    bool isAr = System.Globalization.CultureInfo.CurrentUICulture.Name.StartsWith("ar");
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Antenatal care"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted">@T["Maternity"]</li></ul>
+        </div>
+        @if (ready && canOpen) {<button type="button" class="btn btn-sm btn-primary" data-preg-new><i class="ki-outline ki-plus fs-4"></i>@T["Open a pregnancy"]</button>}
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (!ready) { <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice"><div class="fs-6 text-gray-700">@T[HospitalAntenatalService.NoTables]</div></div> }
+        else
+        {
+            <div class="card">
+                <div class="card-header border-0 pt-6 flex-wrap gap-3">
+                    <div class="card-title flex-column m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Active pregnancies"]</span><span class="text-muted fs-7 mt-1"><span id="resultCount">—</span></span></div>
+                    <div class="card-toolbar d-flex flex-wrap align-items-center gap-2">
+                        <div class="w-250px"><input type="text" id="f_q" class="form-control form-control-solid form-control-sm" autocomplete="off" placeholder="@T["Search by name, file or phone…"]" /></div>
+                        <div class="w-175px"><select class="form-select form-select-solid form-select-sm cb-filter" id="f_filter">
+                            <option value="">@T["All"]</option><option value="warning">@T["With a warning"]</option><option value="missed">@T["Missed the visit"]</option><option value="term">@T["37 weeks or more"]</option>
+                        </select></div>
+                        <div class="w-75px"><select id="f_size" class="form-select form-select-solid form-select-sm"><option value="25">25</option><option value="50">50</option><option value="100">100</option></select></div>
+                        <button type="button" id="f_reset" class="btn btn-sm btn-light" title="@T["Reset"]"><i class="ki-outline ki-arrows-circle fs-4"></i></button>
+                    </div>
+                </div>
+                <div class="card-body pt-2">
+                    <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-3 mb-0">
+                        <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0"><th>@T["Mother"]</th><th>@T["Gestation"]</th><th>@T["Due date"]</th><th>@T["Last visit"]</th><th class="min-w-200px">@T["Warnings"]</th><th class="text-end"></th></tr></thead>
+                        <tbody id="rows"><tr id="loadingRow"><td colspan="6" class="text-center text-muted py-10">@T["Loading…"]</td></tr><tr id="emptyRow" class="d-none"><td colspan="6" class="text-center text-muted py-10">@T["No active pregnancy."]</td></tr></tbody>
+                    </table></div>
+                    <div class="d-flex flex-stack flex-wrap pt-5"><div class="fs-7 text-muted" id="pageInfo"></div><ul class="pagination" id="pager"></ul></div>
+                </div>
+            </div>
+        }
+    </div></div>
+</div>
+
+@if (canOpen)
+{
+    <div class="modal fade" id="pregModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-600px"><div class="modal-content">
+        <div class="modal-header"><h2 class="fw-bold m-0">@T["Open a pregnancy"]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body py-6 px-lg-10"><div class="row g-4">
+            <div class="col-12"><label class="form-label required">@T["Mother"]</label><select class="form-select form-select-solid" data-p="patientId" data-placeholder="@T["Search by name or file…"]"><option></option></select></div>
+            <div class="col-6"><label class="form-label">@T["Last menstrual period"]</label><input type="date" class="form-control form-control-solid" dir="ltr" data-p="lmp" /></div>
+            <div class="col-6"><label class="form-label">@T["Ultrasound due date"]</label><input type="date" class="form-control form-control-solid" dir="ltr" data-p="ultrasoundEdd" /></div>
+            <div class="col-12 text-muted fs-8">@T["The ultrasound due date, when written, wins over the last period's."]</div>
+            <div class="col-4"><label class="form-label required">@T["Gravida"]</label><input type="number" min="1" max="30" class="form-control form-control-solid" dir="ltr" data-p="gravida" value="1" /></div>
+            <div class="col-4"><label class="form-label required">@T["Para"]</label><input type="number" min="0" max="29" class="form-control form-control-solid" dir="ltr" data-p="para" value="0" /></div>
+            <div class="col-4"><label class="form-label required">@T["Abortions"]</label><input type="number" min="0" max="29" class="form-control form-control-solid" dir="ltr" data-p="abortions" value="0" /></div>
+            <div class="col-12"><label class="form-label">@T["Risks at booking"]</label><textarea class="form-control form-control-solid" rows="2" maxlength="500" data-p="risks" placeholder="@T["Previous caesarean, diabetes, twins…"]"></textarea></div>
+        </div></div>
+        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-preg-save>@T["Open"]</button></div>
+    </div></div></div>
+}
+
+@section Scripts {
+    <script>
+        (function () {
+            if (!document.getElementById('rows')) return;
+            var list = cbServerList({ url: @Json.Serialize(Url.Action("AntenatalData")), isAr: @(isAr ? "true" : "false"), addParams: function (p) { p.set('filter', document.getElementById('f_filter').value); } });
+            var mEl = document.getElementById('pregModal'); if (!mEl) return;
+            var tok = document.querySelector('input[name="__RequestVerificationToken"]').value, pick = mEl.querySelector('[data-p="patientId"]');
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value), ask: @Json.Serialize(T["Open this pregnancy on the mother's file?"].Value) };
+            if (window.jQuery && jQuery.fn.select2) jQuery(pick).select2({ width: '100%', dir: @Json.Serialize(isAr ? "rtl" : "ltr"), dropdownParent: jQuery(mEl), placeholder: pick.getAttribute('data-placeholder'),
+                ajax: { url: @Json.Serialize(Url.Action("SearchPatients")), dataType: 'json', delay: 200, data: function (p) { return { q: p.term || '' }; }, processResults: function (d) { return { results: d.results || [] }; } } });
+            document.addEventListener('click', function (e) {
+                if (e.target.closest('[data-preg-new]')) { bootstrap.Modal.getOrCreateInstance(mEl).show(); return; }
+                var s = e.target.closest('[data-preg-save]'); if (!s) return;
+                var b = {}; mEl.querySelectorAll('[data-p]').forEach(function (i) { var k = i.getAttribute('data-p'), v = (window.jQuery && k === 'patientId') ? jQuery(i).val() : i.value;
+                    b[k] = (k === 'patientId' || k === 'gravida' || k === 'para' || k === 'abortions') ? Number(v || 0) : ((v || '').trim() || null); });
+                cbConfirm(W.ask).then(function (ok) { if (!ok) return; s.disabled = true;
+                    fetch(@Json.Serialize(Url.Action("OpenPregnancy")), { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': tok }, body: JSON.stringify(b) })
+                        .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+                        .then(function (res) { s.disabled = false; if (!res.ok) { toastr.error(res.error || W.failed); return; } toastr.success(W.saved); location.href = @Json.Serialize(Url.Content("~/Hospital/Pregnancies/")) + res.id; }); });
+            });
+        })();
+    </script>
+}

@@ -171,3 +171,7 @@ a.hp-bed:hover, .hp-bed.clickable:hover { transform: translateY(-1px); box-shado
 .card-toolbar .tagify { overflow: hidden; flex-wrap: nowrap; }
 .card-toolbar .tagify .tagify__input { white-space: nowrap; flex: 1 1 0; min-width: 0; }
 .card-toolbar .tagify .tagify__input::before { display: inline; white-space: nowrap; }
+
+/* A dashed row separator ("border-bottom border-dashed"): the theme dashes all four sides, so the three without a width
+   took the default medium width and drew a box around every row (H85 pregnancy, H87 dialysis, the nursing form). */
+.border-bottom.border-dashed:not(.border) { border-top-width: 0 !important; border-left-width: 0 !important; border-right-width: 0 !important; }

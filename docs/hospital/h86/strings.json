@@ -1,0 +1,315 @@
+{
+ "unit": "H86 — partograph",
+ "strings": {
+  "A labour is opened on a female patient's stay": {
+   "ar": "تُفتح الولادة على تنويم مريضة أنثى",
+   "en": "A labour is opened on a female patient's stay",
+   "fr": "Un travail s'ouvre sur le séjour d'une patiente"
+  },
+  "Action line": {
+   "ar": "خط التدخل",
+   "en": "Action line",
+   "fr": "Ligne d'action"
+  },
+  "Alert line": {
+   "ar": "الخط الإرشادي",
+   "en": "Alert line",
+   "fr": "Ligne d'alerte"
+  },
+  "Alert line from {0} cm at 1 cm an hour; action line four hours to its right.": {
+   "ar": "الخط الإرشادي من {0} سم بمعدل سم كل ساعة؛ وخط التدخل بعده بأربع ساعات.",
+   "en": "Alert line from {0} cm at 1 cm an hour; action line four hours to its right.",
+   "fr": "Ligne d'alerte à partir de {0} cm à 1 cm par heure ; ligne d'action quatre heures plus à droite."
+  },
+  "Cervicograph": {
+   "ar": "منحنى اتساع عنق الرحم",
+   "en": "Cervicograph",
+   "fr": "Cervicogramme"
+  },
+  "Cervix": {
+   "ar": "عنق الرحم",
+   "en": "Cervix",
+   "fr": "Col"
+  },
+  "Cervix (cm)": {
+   "ar": "اتساع عنق الرحم (سم)",
+   "en": "Cervix (cm)",
+   "fr": "Dilatation (cm)"
+  },
+  "Choose an admitted woman…": {
+   "ar": "اختر مريضة منوّمة…",
+   "en": "Choose an admitted woman…",
+   "fr": "Choisissez une patiente hospitalisée…"
+  },
+  "Choose how the labour ended": {
+   "ar": "اختر كيف انتهت الولادة",
+   "en": "Choose how the labour ended",
+   "fr": "Choisissez l'issue du travail"
+  },
+  "Choose the liquor": {
+   "ar": "اختر حالة السائل",
+   "en": "Choose the liquor",
+   "fr": "Choisissez le liquide"
+  },
+  "Close the labour": {
+   "ar": "إغلاق الولادة",
+   "en": "Close the labour",
+   "fr": "Clore le travail"
+  },
+  "Close this labour?": {
+   "ar": "إغلاق هذه الولادة؟",
+   "en": "Close this labour?",
+   "fr": "Clore ce travail ?"
+  },
+  "Contractions": {
+   "ar": "الانقباضات",
+   "en": "Contractions",
+   "fr": "Contractions"
+  },
+  "Contractions in 10 min": {
+   "ar": "الانقباضات في 10 دقائق",
+   "en": "Contractions in 10 min",
+   "fr": "Contractions en 10 min"
+  },
+  "Descent": {
+   "ar": "نزول الرأس",
+   "en": "Descent",
+   "fr": "Descente"
+  },
+  "Descent (fifths)": {
+   "ar": "نزول الرأس (أخماس)",
+   "en": "Descent (fifths)",
+   "fr": "Descente (cinquièmes)"
+  },
+  "Each lasts (s)": {
+   "ar": "مدة كل انقباضة (ث)",
+   "en": "Each lasts (s)",
+   "fr": "Durée de chacune (s)"
+  },
+  "How it ended": {
+   "ar": "كيف انتهت",
+   "en": "How it ended",
+   "fr": "Issue"
+  },
+  "Labour observation": {
+   "ar": "قراءة أثناء الولادة",
+   "en": "Labour observation",
+   "fr": "Observation du travail"
+  },
+  "Labour started at (empty means now)": {
+   "ar": "بدأ المخاض في (فارغ = الآن)",
+   "en": "Labour started at (empty means now)",
+   "fr": "Début du travail (vide = maintenant)"
+  },
+  "Labour ward": {
+   "ar": "غرفة الولادة",
+   "en": "Labour ward",
+   "fr": "Salle de naissance"
+  },
+  "Liquor": {
+   "ar": "السائل الأمنيوسي",
+   "en": "Liquor",
+   "fr": "Liquide amniotique"
+  },
+  "No labour in progress.": {
+   "ar": "لا توجد ولادات جارية.",
+   "en": "No labour in progress.",
+   "fr": "Aucun travail en cours."
+  },
+  "No observation yet.": {
+   "ar": "لا توجد قراءات بعد.",
+   "en": "No observation yet.",
+   "fr": "Aucune observation pour l'instant."
+  },
+  "Observations": {
+   "ar": "القراءات",
+   "en": "Observations",
+   "fr": "Observations"
+  },
+  "Open the partograph": {
+   "ar": "فتح البارتوجراف",
+   "en": "Open the partograph",
+   "fr": "Ouvrir le partogramme"
+  },
+  "Partograph": {
+   "ar": "البارتوجراف",
+   "en": "Partograph",
+   "fr": "Partogramme"
+  },
+  "Pulse": {
+   "ar": "النبض",
+   "en": "Pulse",
+   "fr": "Pouls"
+  },
+  "Record an observation": {
+   "ar": "تسجيل قراءة",
+   "en": "Record an observation",
+   "fr": "Enregistrer une observation"
+  },
+  "Save this observation?": {
+   "ar": "حفظ هذه القراءة؟",
+   "en": "Save this observation?",
+   "fr": "Enregistrer cette observation ?"
+  },
+  "Start a partograph": {
+   "ar": "بدء بارتوجراف",
+   "en": "Start a partograph",
+   "fr": "Démarrer un partogramme"
+  },
+  "Start a partograph for this woman?": {
+   "ar": "بدء بارتوجراف لهذه المريضة؟",
+   "en": "Start a partograph for this woman?",
+   "fr": "Démarrer un partogramme pour cette patiente ?"
+  },
+  "Started {0}": {
+   "ar": "بدأت {0}",
+   "en": "Started {0}",
+   "fr": "Débuté le {0}"
+  },
+  "Temperature (°C)": {
+   "ar": "الحرارة (°م)",
+   "en": "Temperature (°C)",
+   "fr": "Température (°C)"
+  },
+  "The active phase starts at 4 cm: the lines appear from then.": {
+   "ar": "المرحلة النشطة تبدأ عند 4 سم: يظهر الخطان من وقتها.",
+   "en": "The active phase starts at 4 cm: the lines appear from then.",
+   "fr": "La phase active commence à 4 cm : les lignes apparaissent à partir de là."
+  },
+  "The baby is registered from the births screen, on the mother's file.": {
+   "ar": "يُسجَّل المولود من شاشة المواليد على ملف الأم.",
+   "en": "The baby is registered from the births screen, on the mother's file.",
+   "fr": "Le bébé est enregistré depuis l'écran des naissances, sur le dossier de la mère."
+  },
+  "The cervix cannot close by more than a centimetre: check the reading": {
+   "ar": "لا يمكن أن يضيق عنق الرحم بأكثر من سنتيمتر: راجع القراءة",
+   "en": "The cervix cannot close by more than a centimetre: check the reading",
+   "fr": "Le col ne peut pas se refermer de plus d'un centimètre : vérifiez la mesure"
+  },
+  "The cervix is between 0 and 10 cm": {
+   "ar": "اتساع عنق الرحم بين 0 و10 سم",
+   "en": "The cervix is between 0 and 10 cm",
+   "fr": "La dilatation est comprise entre 0 et 10 cm"
+  },
+  "The contractions are between 0 and 10 in ten minutes": {
+   "ar": "الانقباضات بين 0 و10 في عشر دقائق",
+   "en": "The contractions are between 0 and 10 in ten minutes",
+   "fr": "Les contractions sont entre 0 et 10 en dix minutes"
+  },
+  "The descent is between 0 and 5 fifths": {
+   "ar": "نزول الرأس بين 0 و5 أخماس",
+   "en": "The descent is between 0 and 5 fifths",
+   "fr": "La descente est comprise entre 0 et 5 cinquièmes"
+  },
+  "The labour's start can be written back a day at most": {
+   "ar": "يمكن تسجيل بداية المخاض بأثر رجعي ليوم واحد فقط",
+   "en": "The labour's start can be written back a day at most",
+   "fr": "Le début du travail peut être antidaté d'un jour au plus"
+  },
+  "The partograph is not installed yet (hospital_h86_labour.sql).": {
+   "ar": "البارتوجراف غير مثبت بعد (hospital_h86_labour.sql).",
+   "en": "The partograph is not installed yet (hospital_h86_labour.sql).",
+   "fr": "Le partogramme n'est pas encore installé (hospital_h86_labour.sql)."
+  },
+  "The temperature is not plausible": {
+   "ar": "الحرارة غير منطقية",
+   "en": "The temperature is not plausible",
+   "fr": "La température n'est pas plausible"
+  },
+  "The time is before the admission": {
+   "ar": "الوقت قبل الدخول",
+   "en": "The time is before the admission",
+   "fr": "L'heure est antérieure à l'admission"
+  },
+  "The time is before the labour started": {
+   "ar": "الوقت قبل بداية الولادة",
+   "en": "The time is before the labour started",
+   "fr": "L'heure précède le début du travail"
+  },
+  "This labour is already closed": {
+   "ar": "هذه الولادة مغلقة بالفعل",
+   "en": "This labour is already closed",
+   "fr": "Ce travail est déjà clos"
+  },
+  "lbo:Assisted": {
+   "ar": "ولادة بمساعدة",
+   "en": "Assisted birth",
+   "fr": "Accouchement instrumental"
+  },
+  "lbo:Caesarean": {
+   "ar": "قيصرية",
+   "en": "Caesarean",
+   "fr": "Césarienne"
+  },
+  "lbo:Transferred": {
+   "ar": "تحويل",
+   "en": "Transferred",
+   "fr": "Transférée"
+  },
+  "lbo:Vaginal": {
+   "ar": "ولادة طبيعية",
+   "en": "Vaginal birth",
+   "fr": "Accouchement voie basse"
+  },
+  "lbw:ActionLine": {
+   "ar": "تجاوز خط التدخل",
+   "en": "Crossed the action line",
+   "fr": "Ligne d'action franchie"
+  },
+  "lbw:AlertLine": {
+   "ar": "تجاوز الخط الإرشادي",
+   "en": "Crossed the alert line",
+   "fr": "Ligne d'alerte franchie"
+  },
+  "lbw:FetalHeart": {
+   "ar": "نبض الجنين خارج المعدل",
+   "en": "Fetal heart out of range",
+   "fr": "Rythme fœtal anormal"
+  },
+  "lbw:Fever": {
+   "ar": "حرارة",
+   "en": "Fever",
+   "fr": "Fièvre"
+  },
+  "lbw:Hypertension": {
+   "ar": "ارتفاع الضغط",
+   "en": "High blood pressure",
+   "fr": "Hypertension"
+  },
+  "lbw:Meconium": {
+   "ar": "عِقي في السائل",
+   "en": "Meconium in the liquor",
+   "fr": "Liquide méconial"
+  },
+  "lbw:Tachysystole": {
+   "ar": "انقباضات زائدة",
+   "en": "Too many contractions",
+   "fr": "Hypercinésie"
+  },
+  "liq:B": {
+   "ar": "مدمم",
+   "en": "Blood-stained",
+   "fr": "Teinté de sang"
+  },
+  "liq:C": {
+   "ar": "صافٍ",
+   "en": "Clear",
+   "fr": "Clair"
+  },
+  "liq:I": {
+   "ar": "الأغشية سليمة",
+   "en": "Membranes intact",
+   "fr": "Membranes intactes"
+  },
+  "liq:M": {
+   "ar": "عِقي",
+   "en": "Meconium",
+   "fr": "Méconial"
+  },
+  "{0} min since the last look": {
+   "ar": "{0} دقيقة منذ آخر قراءة",
+   "en": "{0} min since the last look",
+   "fr": "{0} min depuis la dernière observation"
+  }
+ }
+}

@@ -1,0 +1,28 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model IReadOnlyList<HospitalIcCaseRow>
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@{ bool canManage = ViewBag.CanManage == true; }
+@foreach (var r in Model)
+{
+    var c = r.Case;
+    var who = DisplayName.Of(r.Name, r.NameEn);
+    string state = c.Status == HospitalInfectionStatus.Confirmed ? "badge-light-danger" : c.Status == HospitalInfectionStatus.RuledOut ? "badge-light" : "badge-light-info";
+    <tr class="@(c.Status == HospitalInfectionStatus.RuledOut ? "opacity-75" : "")">
+        <td><span class="badge hp-code fs-8 hp-num">@c.CaseNo</span></td>
+        <td><a href="@Url.Action("Patient", new { id = c.PatientId })" class="fw-bold text-gray-900 text-hover-primary">@who</a><div class="text-muted fs-8 hp-num">@r.Mrn</div></td>
+        <td><span class="fw-semibold text-gray-800">@T["ick:" + c.Kind]</span>
+            @if (c.Organism != null) {<div class="fs-8"><bdi dir="ltr">@c.Organism</bdi></div>}
+            @if (r.Device != null) {<div class="text-muted fs-8">@T["dev:" + r.Device]</div>}</td>
+        <td class="hp-num text-nowrap">@c.OnsetDate.ToString("yyyy-MM-dd")</td>
+        <td>@if (c.HospitalAcquired) {<span class="badge badge-light-danger">@T["Hospital"]</span>} else {<span class="badge badge-light">@T["Community"]</span>}</td>
+        <td class="fs-8">@(r.Ward == null ? "—" : DisplayName.Of(r.Ward, r.WardEn ?? r.Ward))</td>
+        <td><span class="badge @state">@T["ics:" + c.Status]</span>@if (c.DecisionNote != null) {<div class="text-muted fs-8 mt-1"><bdi>@c.DecisionNote</bdi></div>}</td>
+        <td class="text-end">@if (canManage && c.Status == HospitalInfectionStatus.Suspected)
+            {<div class="d-flex justify-content-end gap-2">
+                <button type="button" class="btn btn-sm btn-light-danger text-nowrap" data-confirm-case="@c.ID" data-what="@c.CaseNo — @who — @T["ick:" + c.Kind]">@T["Confirm"]</button>
+                <button type="button" class="btn btn-sm btn-light text-nowrap" data-ruleout-case="@c.ID" data-what="@c.CaseNo — @who — @T["ick:" + c.Kind]">@T["Rule out"]</button>
+            </div>}</td>
+    </tr>
+}

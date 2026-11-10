@@ -428,6 +428,15 @@
 			new() { LabelAr = "العيادات", LabelEn = "Clinics", Icon = "ki-outline ki-briefcase", Items = new()
 			{
 				new() { LabelAr = "لوحة العيادات", LabelEn = "Clinics board", Action = "Clinics", Controller = "Hospital" },
+				new() { LabelAr = "شاشة صالة الانتظار", LabelEn = "Waiting-room display", Action = "QueueDisplay", Controller = "Hospital" },   // H83
+				new() { LabelAr = "كشك تسجيل الوصول", LabelEn = "Check-in kiosk", Action = "QueueKiosk", Controller = "Hospital" },   // H83
+				new() { LabelAr = "التطعيمات", LabelEn = "Immunizations", Action = "Vaccines", Controller = "Hospital" },   // H84
+				new() { LabelAr = "متابعة الحمل", LabelEn = "Antenatal care", Action = "Antenatal", Controller = "Hospital" },   // H85
+				new() { LabelAr = "غرفة الولادة", LabelEn = "Labour ward", Action = "LabourWard", Controller = "Hospital" },   // H86
+				new() { LabelAr = "وحدة الغسيل الكلوي", LabelEn = "Dialysis unit", Action = "Dialysis", Controller = "Hospital" },   // H87
+				new() { LabelAr = "الأورام", LabelEn = "Oncology", Action = "Oncology", Controller = "Hospital" },   // H88
+				new() { LabelAr = "العلاج الطبيعي", LabelEn = "Physiotherapy", Action = "Rehab", Controller = "Hospital" },   // H89
+				new() { LabelAr = "المشرحة", LabelEn = "Mortuary", Action = "Morgue", Controller = "Hospital" },   // H90
 				new() { LabelAr = "قائمة الطبيب", LabelEn = "Doctor worklist", Action = "Worklist", Controller = "Hospital" },
 				new() { LabelAr = "طلبات تجديد الأدوية", LabelEn = "Refill requests", Action = "PortalRefills", Controller = "Hospital" },
 			}},
@@ -451,6 +460,10 @@
 				new() { LabelAr = "الأسرة والغرف", LabelEn = "Beds & rooms", Action = "Index", Controller = "Hospital" },
 				new() { LabelAr = "محطة التمريض", LabelEn = "Nursing station", Action = "Nursing", Controller = "Hospital" },
 				new() { LabelAr = "العناية المركزة", LabelEn = "Intensive care", Action = "Icu", Controller = "Hospital" },
+				new() { LabelAr = "مكافحة العدوى", LabelEn = "Infection control", Action = "Infection", Controller = "Hospital" },   // H76
+				new() { LabelAr = "الاستشارات", LabelEn = "Consultations", Action = "Consults", Controller = "Hospital" },   // H77
+				new() { LabelAr = "السجلات الطبية", LabelEn = "Medical records", Action = "Records", Controller = "Hospital" },   // H80
+				new() { LabelAr = "مؤشرات الجودة", LabelEn = "Quality indicators", Action = "Quality", Controller = "Hospital" },   // H81
 				new() { LabelAr = "جدول العمليات", LabelEn = "Theatre schedule", Action = "Theatre", Controller = "Hospital" },
 				new() { LabelAr = "أنواع الغرف", LabelEn = "Room types", Action = "RoomTypes", Controller = "Hospital" },
 				new() { LabelAr = "مصمم الأدوار والغرف", LabelEn = "Floor & room designer", Action = "Designer", Controller = "Hospital" },

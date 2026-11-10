@@ -1,0 +1,199 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model HospitalDialysisSessionPage
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H87 — one dialysis session: before (weight against the dry weight and the last session, the volume to remove,
+    pressure), the readings on the machine with the systolic pressure drawn against 90, and after (weight, volume and
+    rate, minutes, urea, URR and Kt/V, complications). Recording a reading and finishing the session.
+*@
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Dialysis session"].Value;
+    bool canTreat = ViewBag.CanTreat == true;
+    var s = Model.Session; var o = Model.Outcome; bool running = s.Status == HospitalDialysisSessionStatus.Running;
+    string Who(int? id) => id is int i && Model.People.TryGetValue(i, out var n) ? n : "";
+    string Local(DateTime? utc) => utc == null ? "—" : HospitalNursingService.UtcToWard(utc.Value).ToString("HH:mm");
+    string F1(decimal? x) => x?.ToString("0.#") ?? "—";
+    string F(double v) => v.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture);
+    // the systolic chart: minutes from the start across (at least the planned time), 60–200 mmHg up
+    const double W = 760, H = 210, PL = 40, PR = 16, PT = 12, PB = 28;
+    var start = s.StartedAt ?? DateTime.UtcNow;
+    var pts = new List<(double Min, int Sbp)>();
+    if (s.PreSbp is int ps) pts.Add((0, ps));
+    foreach (var x in Model.Observations.Where(x => x.Sbp != null)) pts.Add(((x.At - start).TotalMinutes, x.Sbp!.Value));
+    if (s.PostSbp is int qs && s.EndedAt != null) pts.Add(((s.EndedAt.Value - start).TotalMinutes, qs));
+    double maxM = Math.Max(s.PlannedMin, pts.Count == 0 ? 0 : pts.Max(x => x.Min));
+    double X(double m) => PL + (W - PL - PR) * Math.Max(0, m) / maxM;
+    double Y(double v) => PT + (H - PT - PB) * (200 - Math.Clamp(v, 60, 200)) / 140;
+    Microsoft.AspNetCore.Html.IHtmlContent Svg(double x, double y, string anchor, string fill, string content) =>
+        new Microsoft.AspNetCore.Html.HtmlString("<" + "text x=\"" + F(x) + "\" y=\"" + F(y) + "\" font-size=\"11\" text-anchor=\"" + anchor + "\" fill=\"" + fill + "\">" + System.Net.WebUtility.HtmlEncode(content) + "</" + "text>");
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Dialysis session"] — @DisplayName.Of(Model.Name, Model.NameEn)</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item"><a href="@Url.Action("Dialysis", new { date = s.SessionDate.ToString("yyyy-MM-dd") })" class="text-muted text-hover-primary">@T["Dialysis unit"]</a></li>
+                <li class="breadcrumb-item text-muted"><bdi class="hp-num">@Model.Mrn</bdi> · <span class="hp-num">@s.SessionDate.ToString("yyyy-MM-dd")</span> · @T["Shift {0}", s.Shift]@if (s.Station != null) {<text> · @T["Station"] <bdi class="hp-num">@s.Station</bdi></text>}</li>
+            </ul>
+        </div>
+        <div class="d-flex gap-2 align-items-center">
+            <span class="badge badge-light-@(running ? "info" : "success") fs-7">@T["dxs:" + s.Status]</span>
+            <a href="@Url.Action("DialysisPatient", new { patientId = s.PatientId })" class="btn btn-sm btn-light">@T["The patient's sessions"]</a>
+            @if (running && canTreat) {<button type="button" class="btn btn-sm btn-light-primary" data-modal="obsModal"><i class="ki-outline ki-plus fs-4"></i>@T["Record a reading"]</button>
+                <button type="button" class="btn btn-sm btn-primary" data-modal="finishModal"><i class="ki-outline ki-check-square fs-4"></i>@T["Finish the session"]</button>}
+        </div>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (o.Warnings.Count > 0)
+        {
+            <div class="notice d-flex align-items-center rounded border border-danger border-dashed bg-light-danger p-4 mb-5 gap-3"><i class="ki-outline ki-information-5 fs-2x text-danger"></i>
+                <div class="d-flex flex-wrap gap-2">@foreach (var w in o.Warnings) {<span class="badge badge-danger fs-7">@T["dxw:" + w]</span>}</div></div>
+        }
+        <div class="row g-5 mb-5">
+            <div class="col-md-4"><div class="card h-100"><div class="card-body py-5">
+                <div class="fw-bold fs-5 mb-3">@T["Before"]</div>
+                <div class="d-flex flex-stack py-2 border-bottom border-dashed"><span class="text-muted fs-7">@T["Weight"]</span><span class="fw-bold fs-3 hp-num">@F1(s.PreWeightKg) <span class="fs-8 text-muted">kg</span></span></div>
+                <div class="d-flex flex-stack py-2 border-bottom border-dashed"><span class="text-muted fs-7">@T["Dry weight"]</span><span class="hp-num">@s.DryWeightKg.ToString("0.0") kg</span></div>
+                <div class="d-flex flex-stack py-2 border-bottom border-dashed"><span class="text-muted fs-7">@T["Gain since the last session"]</span>
+                    <span class="hp-num @(o.GainPct > HospitalDialysisRules.MaxGainPct ? "text-danger fw-bold" : "")">@(o.GainKg == null ? "—" : "+" + F1(o.GainKg) + " kg · " + F1(o.GainPct) + " %")</span></div>
+                <div class="d-flex flex-stack py-2 border-bottom border-dashed"><span class="text-muted fs-7">@T["Volume to remove"]</span><span class="hp-num fw-semibold">@(s.UfGoalMl?.ToString() ?? "—") ml</span></div>
+                <div class="d-flex flex-stack py-2 border-bottom border-dashed"><span class="text-muted fs-7">@T["Blood pressure"]</span><span class="hp-num" dir="ltr">@(s.PreSbp != null ? s.PreSbp + "/" + s.PreDbp : "—")</span></div>
+                <div class="d-flex flex-stack py-2"><span class="text-muted fs-7">@T["Started"]</span><span class="hp-num">@Local(s.StartedAt) <span class="text-muted fs-8" style="font-family:inherit">@Who(s.CreatedByEmployeeId)</span></span></div>
+            </div></div></div>
+            <div class="col-md-4"><div class="card h-100"><div class="card-body py-5">
+                <div class="fw-bold fs-5 mb-3">@T["After"]</div>
+                @if (running) { <div class="text-muted text-center py-8">@T["The session is on the machine."]<div class="fs-8 mt-1">@T["{0} of {1} min", (int)Math.Round((DateTime.UtcNow - start).TotalMinutes), s.PlannedMin]</div></div> }
+                else
+                {
+                    <div class="d-flex flex-stack py-2 border-bottom border-dashed"><span class="text-muted fs-7">@T["Weight"]</span><span class="fw-bold fs-3 hp-num @(s.PostWeightKg > s.DryWeightKg + HospitalDialysisRules.AboveDryKg ? "text-danger" : "")">@F1(s.PostWeightKg) <span class="fs-8 text-muted">kg</span></span></div>
+                    <div class="d-flex flex-stack py-2 border-bottom border-dashed"><span class="text-muted fs-7">@T["Volume removed"]</span><span class="hp-num">@(o.UfMl?.ToString() ?? "—") ml · <span class="@(o.UfRate > HospitalDialysisRules.MaxUfRate ? "text-danger fw-bold" : "")">@F1(o.UfRate) ml/kg/h</span></span></div>
+                    <div class="d-flex flex-stack py-2 border-bottom border-dashed"><span class="text-muted fs-7">@T["Minutes"]</span><span class="hp-num @(o.Warnings.Contains(HospitalDialysisWarning.Short) ? "text-danger fw-bold" : "")">@o.Minutes / @s.PlannedMin</span></div>
+                    <div class="d-flex flex-stack py-2 border-bottom border-dashed"><span class="text-muted fs-7">@T["Blood pressure"]</span><span class="hp-num" dir="ltr">@(s.PostSbp != null ? s.PostSbp + "/" + s.PostDbp : "—")</span></div>
+                    <div class="d-flex flex-stack py-2"><span class="text-muted fs-7">@T["Ended"]</span><span class="hp-num">@Local(s.EndedAt) <span class="text-muted fs-8" style="font-family:inherit">@Who(s.ClosedByEmployeeId)</span></span></div>
+                }
+            </div></div></div>
+            <div class="col-md-4"><div class="card h-100"><div class="card-body py-5">
+                <div class="fw-bold fs-5 mb-3">@T["Adequacy"]</div>
+                <div class="d-flex gap-8 mb-3 hp-num">
+                    <div><div class="text-muted fs-8">Kt/V</div><div class="fs-2hx fw-bold @(o.KtV < HospitalDialysisRules.MinKtV ? "text-danger" : o.KtV != null ? "text-success" : "text-gray-400")">@(o.KtV?.ToString("0.00") ?? "—")</div></div>
+                    <div><div class="text-muted fs-8">URR</div><div class="fs-2hx fw-bold @(o.Urr < HospitalDialysisRules.MinUrr ? "text-danger" : o.Urr != null ? "text-success" : "text-gray-400")">@(o.Urr == null ? "—" : F1(o.Urr) + "%")</div></div>
+                </div>
+                <div class="text-muted fs-8 mb-3">@if (s.PreUrea != null) {<span class="hp-num">@T["Urea {0} → {1}", F1(s.PreUrea), F1(s.PostUrea)]</span>} else {@T["Draw the urea before and after to measure the dose (usually once a month)."]}</div>
+                @if (s.Complications != null) {<div class="text-muted fs-7 mb-1">@T["Complications"]</div><div class="d-flex flex-wrap gap-1">@foreach (var c in s.Complications.Split(',')) {<span class="badge badge-light-danger fs-8">@T["dxc:" + c]</span>}</div>}
+                @if (s.Note != null) {<div class="text-muted fs-7 mt-3">@T["Note"]</div><div class="fs-7"><bdi>@s.Note</bdi></div>}
+            </div></div></div>
+        </div>
+
+        <div class="card mb-5">
+            <div class="card-header border-0 pt-6"><div class="card-title flex-column m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Systolic pressure on the machine"]</span><span class="text-muted fs-8 mt-1">@T["Under 90 is intradialytic hypotension; so is a fall of 20 from the pressure before with cramps, nausea, headache or chest pain."]</span></div></div>
+            <div class="card-body pt-0">
+                @if (pts.Count == 0) { <div class="text-center text-muted py-8">@T["No reading yet."]</div> }
+                else
+                {
+                    <svg viewBox="0 0 @F(W) @F(H)" class="w-100" style="max-height:260px" dir="ltr" role="img" aria-label="@T["Systolic pressure on the machine"]">
+                        @for (int v = 60; v <= 200; v += 20) {<line x1="@F(PL)" x2="@F(W - PR)" y1="@F(Y(v))" y2="@F(Y(v))" stroke="#eef0f6" />@Svg(PL - 6, Y(v) + 4, "end", "#6b7280", v.ToString())}
+                        @for (int m = 0; m <= maxM; m += 60) {@Svg(X(m), H - 8, "middle", "#6b7280", (m / 60) + " h")}
+                        <line x1="@F(PL)" x2="@F(W - PR)" y1="@F(Y(90))" y2="@F(Y(90))" stroke="#DC2626" stroke-dasharray="6 4" />
+                        @if (s.PreSbp is int pre0) {<line x1="@F(PL)" x2="@F(W - PR)" y1="@F(Y(pre0 - 20))" y2="@F(Y(pre0 - 20))" stroke="#F1416C" stroke-opacity=".35" stroke-dasharray="2 4" />}
+                        <polyline fill="none" stroke="#3A5795" stroke-width="2" points="@string.Join(" ", pts.Select(x => F(X(x.Min)) + "," + F(Y(x.Sbp))))" />
+                        @foreach (var x in pts) {<circle cx="@F(X(x.Min))" cy="@F(Y(x.Sbp))" r="4" fill="@(x.Sbp < HospitalDialysisRules.HypotensionNadir ? "#DC2626" : "#3A5795")" />}
+                    </svg>
+                }
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Readings"]</span></div></div>
+            <div class="card-body pt-2">
+                @if (Model.Observations.Count == 0) { <div class="text-center text-muted py-8">@T["No reading yet."]</div> }
+                else
+                {
+                    <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-3 mb-0">
+                        <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0"><th>@T["Time"]</th><th>@T["Blood pressure"]</th><th>@T["Pulse"]</th><th>@T["Blood flow"]</th><th>@T["Venous pressure"]</th><th>@T["UF so far"]</th><th>@T["Note"]</th><th>@T["Recorded by"]</th></tr></thead>
+                        <tbody class="hp-num">
+                        @foreach (var x in Model.Observations)
+                        {
+                            bool low = x.Sbp < HospitalDialysisRules.HypotensionNadir;
+                            <tr>
+                                <td>@Local(x.At)</td>
+                                <td dir="ltr" class="@(low ? "text-danger fw-bold" : "")">@(x.Sbp != null ? x.Sbp + "/" + x.Dbp : "—")</td>
+                                <td>@(x.Pulse?.ToString() ?? "—")</td>
+                                <td>@(x.BloodFlow?.ToString() ?? "—")</td>
+                                <td>@(x.VenousPressure?.ToString() ?? "—")</td>
+                                <td>@(x.UfMl?.ToString() ?? "—")</td>
+                                <td style="font-family:inherit"><bdi>@x.Note</bdi></td>
+                                <td class="text-muted fs-8" style="font-family:inherit">@Who(x.CreatedByEmployeeId)</td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table></div>
+                }
+            </div>
+        </div>
+    </div></div>
+</div>
+
+@if (running && canTreat)
+{
+    <div class="modal fade" id="obsModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-550px"><div class="modal-content">
+        <div class="modal-header"><h2 class="fw-bold m-0">@T["Record a reading"]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body py-6 px-lg-10"><div class="row g-4">
+            <div class="col-4"><label class="form-label">@T["Systolic"]</label><input type="number" class="form-control form-control-solid" dir="ltr" data-o="sbp" /></div>
+            <div class="col-4"><label class="form-label">@T["Diastolic"]</label><input type="number" class="form-control form-control-solid" dir="ltr" data-o="dbp" /></div>
+            <div class="col-4"><label class="form-label">@T["Pulse"]</label><input type="number" class="form-control form-control-solid" dir="ltr" data-o="pulse" /></div>
+            <div class="col-4"><label class="form-label">@T["Blood flow"]</label><input type="number" class="form-control form-control-solid" dir="ltr" data-o="bloodFlow" placeholder="@Model.Plan.BloodFlow" /></div>
+            <div class="col-4"><label class="form-label">@T["Venous pressure"]</label><input type="number" class="form-control form-control-solid" dir="ltr" data-o="venousPressure" /></div>
+            <div class="col-4"><label class="form-label">@T["UF so far (ml)"]</label><input type="number" class="form-control form-control-solid" dir="ltr" data-o="ufMl" /></div>
+            <div class="col-12"><label class="form-label">@T["Note"]</label><input type="text" maxlength="300" class="form-control form-control-solid" data-o="note" /></div>
+            <div class="col-12"><label class="form-label">@T["Time"]</label><input type="datetime-local" class="form-control form-control-solid" dir="ltr" data-o="at" /><div class="text-muted fs-8 mt-1">@T["Empty means now."]</div></div>
+        </div></div>
+        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-save="obsModal">@T["Save"]</button></div>
+    </div></div></div>
+
+    <div class="modal fade" id="finishModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-600px"><div class="modal-content">
+        <div class="modal-header"><h2 class="fw-bold m-0">@T["Finish the session"]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body py-6 px-lg-10"><div class="row g-4">
+            <div class="col-4"><label class="form-label required">@T["Weight after (kg)"]</label><input type="number" step="0.1" class="form-control form-control-solid" dir="ltr" data-f="postWeightKg" /></div>
+            <div class="col-4"><label class="form-label">@T["Systolic"]</label><input type="number" class="form-control form-control-solid" dir="ltr" data-f="postSbp" /></div>
+            <div class="col-4"><label class="form-label">@T["Diastolic"]</label><input type="number" class="form-control form-control-solid" dir="ltr" data-f="postDbp" /></div>
+            <div class="col-4"><label class="form-label">@T["Volume removed (ml)"]</label><input type="number" step="50" class="form-control form-control-solid" dir="ltr" data-f="ufMl" placeholder="@T["The weight lost"]" /></div>
+            <div class="col-4"><label class="form-label">@T["Urea before"]</label><input type="number" step="0.1" class="form-control form-control-solid" dir="ltr" data-f="preUrea" /></div>
+            <div class="col-4"><label class="form-label">@T["Urea after"]</label><input type="number" step="0.1" class="form-control form-control-solid" dir="ltr" data-f="postUrea" /></div>
+            <div class="col-12"><label class="form-label">@T["Complications"]</label>
+                <div class="d-flex flex-wrap gap-2">@foreach (var c in HospitalDialysisComplication.All) {<label class="form-check form-check-sm form-check-custom form-check-solid me-3"><input class="form-check-input" type="checkbox" data-c="@c" /><span class="form-check-label">@T["dxc:" + c]</span></label>}</div></div>
+            <div class="col-12"><label class="form-label">@T["Note"]</label><textarea rows="2" maxlength="500" class="form-control form-control-solid" data-f="note"></textarea></div>
+            <div class="col-12"><label class="form-label">@T["Ended at"]</label><input type="datetime-local" class="form-control form-control-solid" dir="ltr" data-f="at" /><div class="text-muted fs-8 mt-1">@T["Empty means now."]</div></div>
+        </div></div>
+        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-save="finishModal">@T["Finish the session"]</button></div>
+    </div></div></div>
+}
+
+@section Scripts {
+    <script>
+        (function () {
+            var tokEl = document.querySelector('input[name="__RequestVerificationToken"]'); if (!tokEl) return; var tok = tokEl.value;
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value),
+                      obs: @Json.Serialize(T["Save this reading?"].Value), fin: @Json.Serialize(T["Finish this session? It cannot be reopened."].Value) };
+            function collect(m, attr) { var b = {}; m.querySelectorAll('[' + attr + ']').forEach(function (i) { var k = i.getAttribute(attr), v = (i.value || '').trim();
+                b[k] = v === '' ? null : (i.type === 'number' ? Number(v) : v); }); return b; }
+            document.addEventListener('click', function (e) {
+                var o = e.target.closest('[data-modal]'); if (o) { bootstrap.Modal.getOrCreateInstance(document.getElementById(o.getAttribute('data-modal'))).show(); return; }
+                var s = e.target.closest('[data-save]'); if (!s) return;
+                var id = s.getAttribute('data-save'), m = document.getElementById(id), url, body, ask;
+                if (id === 'obsModal') { body = collect(m, 'data-o'); body.sessionId = @s.ID; url = @Json.Serialize(Url.Action("ObserveDialysis")); ask = W.obs; }
+                else { body = collect(m, 'data-f'); body.complications = Array.from(m.querySelectorAll('[data-c]:checked')).map(function (c) { return c.getAttribute('data-c'); });
+                       url = @Json.Serialize(Url.Content("~/Hospital/Dialysis/Session/" + s.ID + "/Finish")); ask = W.fin; }
+                cbConfirm(ask).then(function (ok) { if (!ok) return; s.disabled = true;
+                    fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': tok }, body: JSON.stringify(body) })
+                        .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+                        .then(function (res) { s.disabled = false; if (!res.ok) { toastr.error(res.error || W.failed); return; } toastr.success(W.saved); location.reload(); }); });
+            });
+        })();
+    </script>
+}

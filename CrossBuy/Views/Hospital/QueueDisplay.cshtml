@@ -1,0 +1,92 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model HospitalQueueBoard
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H83 — the waiting-room display: a full screen (no menus) for a TV in the waiting room. It refreshes itself every few
+    seconds and plays a short chime when a new number is called. Numbers and rooms only — the waiting room is public.
+*@
+@{
+    Layout = null;
+    bool isAr = System.Globalization.CultureInfo.CurrentUICulture.Name.StartsWith("ar");
+    var deps = (ViewBag.Departments as List<HospitalDepartment>) ?? new();
+    int? dep = ViewBag.Department;
+}
+<!DOCTYPE html>
+<html lang="@(isAr ? "ar" : "en")" dir="@(isAr ? "rtl" : "ltr")">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@T["Waiting room"]</title>
+    <link rel="shortcut icon" href="@Url.Content(CrossBuy.BL.Platform.ProductIdentity.Assets.FaviconIco)" asp-append-version="true" />
+    <link href="~/Backend-assets/plugins/global/plugins.bundle@(isAr ? ".rtl" : "").css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/Backend-assets/css/style.bundle@(isAr ? ".rtl" : "").css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/Backend-assets/css/crossbuy-brand.css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/Backend-assets/fonts/cairo/cairo.css" rel="stylesheet" asp-append-version="true" />
+    <style>
+        body { background: #f4f6fb; font-family: 'Cairo', Inter, sans-serif; margin: 0; }
+        .qd-top { display: flex; align-items: center; justify-content: space-between; padding: 18px 32px; background: #1e2f5a; color: #fff; }
+        .qd-title { font-size: 2rem; font-weight: 700; }
+        .qd-clock { font-size: 2rem; font-weight: 700; font-variant-numeric: tabular-nums; direction: ltr; }
+        .qd-tools { display: flex; gap: 10px; align-items: center; }
+        .qd-tools select, .qd-tools button { font-size: .95rem; }
+        .qd-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 22px; padding: 28px 32px; }
+        .qd-card { background: #fff; border-radius: 18px; box-shadow: 0 4px 18px rgba(30,47,90,.08); overflow: hidden; display: flex; flex-direction: column; }
+        .qd-head { padding: 16px 22px; border-bottom: 1px solid #eef0f6; }
+        .qd-doc { font-size: 1.45rem; font-weight: 700; color: #1e2f5a; }
+        .qd-dep { font-size: 1.05rem; color: #6b7280; }
+        .qd-now { padding: 14px 22px 8px; text-align: center; }
+        .qd-label { font-size: 1rem; color: #6b7280; font-weight: 600; }
+        .qd-num { font-size: 6rem; line-height: 1.05; font-weight: 800; color: #1e2f5a; font-variant-numeric: tabular-nums; }
+        .qd-num.qd-flash { animation: qdflash 1.2s ease-in-out 4; }
+        @@keyframes qdflash { 0%,100% { color: #1e2f5a; } 50% { color: #16a34a; } }
+        .qd-next { padding: 10px 22px 20px; background: #f8f9fc; }
+        .qd-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+        .qd-chip { display: inline-block; min-width: 54px; padding: 6px 10px; text-align: center; border-radius: 10px; background: #e8edf9; color: #1e2f5a; font-size: 1.35rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+        .qd-more, .qd-none { font-size: 1.2rem; color: #6b7280; align-self: center; }
+        .qd-empty { grid-column: 1 / -1; text-align: center; color: #6b7280; font-size: 1.8rem; padding: 80px 0; }
+        .qd-sound { position: fixed; inset: 0; background: rgba(30,47,90,.6); display: flex; align-items: center; justify-content: center; z-index: 10; }
+        .qd-sound button { font-size: 1.5rem; padding: 18px 36px; }
+    </style>
+</head>
+<body>
+    <div class="qd-top">
+        <div class="qd-title">@T["Waiting room"]</div>
+        <div class="qd-tools">
+            <select id="qdDep" class="form-select form-select-sm w-auto"><option value="">@T["All clinics"]</option>@foreach (var d in deps) {<option value="@d.ID" selected="@(dep == d.ID)">@DisplayName.Of(d.Name, d.NameEn ?? d.Name)</option>}</select>
+            <button type="button" id="qdFull" class="btn btn-sm btn-light text-gray-800"><i class="ki-outline ki-maximize fs-4 text-gray-800"></i>@T["Full screen"]</button>
+        </div>
+        <div class="qd-clock" id="qdClock">@Model.NowLocal.ToString("HH:mm")</div>
+    </div>
+    <div id="qdBody"><partial name="_QueueClinics" model="Model" /></div>
+    <div class="qd-sound" id="qdSound"><button type="button" class="btn btn-primary">@T["Start the display (with sound)"]</button></div>
+    <script>
+        (function () {
+            var url = @Json.Serialize(Url.Action("QueueDisplayData")), body = document.getElementById('qdBody'), dep = document.getElementById('qdDep');
+            var stamp = (body.querySelector('[data-stamp]') || {}).getAttribute ? body.querySelector('[data-stamp]').getAttribute('data-stamp') : '', ctx = null;
+            // a browser plays sound only after a tap: the overlay asks for one tap when the screen is switched on
+            document.querySelector('#qdSound button').addEventListener('click', function () { try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { } document.getElementById('qdSound').remove(); });
+            function chime() { if (!ctx) return; [660, 880].forEach(function (f, i) { var o = ctx.createOscillator(), g = ctx.createGain(); o.frequency.value = f; o.connect(g); g.connect(ctx.destination);
+                var t = ctx.currentTime + i * 0.35; g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.4, t + 0.03); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.3); o.start(t); o.stop(t + 0.32); }); }
+            function refresh() {
+                fetch(url + (dep.value ? '?department=' + dep.value : ''), { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.ok ? r.text() : null; }).then(function (h) {
+                    if (h == null) return;
+                    var old = {}; body.querySelectorAll('[data-now]').forEach(function (n) { old[n.closest('.qd-card').querySelector('.qd-doc').textContent] = n.getAttribute('data-now'); });
+                    body.innerHTML = h;
+                    var s = body.querySelector('[data-stamp]').getAttribute('data-stamp');
+                    if (s !== stamp) {
+                        body.querySelectorAll('[data-now]').forEach(function (n) { var k = n.closest('.qd-card').querySelector('.qd-doc').textContent; if (n.getAttribute('data-now') && old[k] !== n.getAttribute('data-now')) n.classList.add('qd-flash'); });
+                        if (stamp !== null) chime();
+                        stamp = s;
+                    }
+                }).catch(function () { });
+            }
+            setInterval(refresh, 5000);
+            setInterval(function () { var d = new Date(); document.getElementById('qdClock').textContent = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }, 10000);
+            dep.addEventListener('change', function () { var u = new URL(location.href); if (dep.value) u.searchParams.set('department', dep.value); else u.searchParams.delete('department'); history.replaceState(null, '', u); stamp = null; refresh(); });
+            document.getElementById('qdFull').addEventListener('click', function () { if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen(); });
+        })();
+    </script>
+</body>
+</html>

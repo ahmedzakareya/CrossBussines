@@ -1,0 +1,370 @@
+{
+ "unit": "H79 — problem list and nursing care plan",
+ "strings": {
+  "Add this problem to the patient's list?": {
+   "ar": "إضافة هذه المشكلة إلى قائمة المريض؟",
+   "en": "Add this problem to the patient's list?",
+   "fr": "Ajouter ce problème à la liste du patient ?"
+  },
+  "Add this to the care plan?": {
+   "ar": "إضافة هذا إلى خطة الرعاية؟",
+   "en": "Add this to the care plan?",
+   "fr": "Ajouter ceci au plan de soins ?"
+  },
+  "Add to the list": {
+   "ar": "إضافة إلى القائمة",
+   "en": "Add to the list",
+   "fr": "Ajouter à la liste"
+  },
+  "Add to the plan": {
+   "ar": "إضافة إلى الخطة",
+   "en": "Add to the plan",
+   "fr": "Ajouter au plan"
+  },
+  "Care plan": {
+   "ar": "خطة الرعاية",
+   "en": "Care plan",
+   "fr": "Plan de soins"
+  },
+  "Choose chronic or acute": {
+   "ar": "اختر مزمنة أو حادة",
+   "en": "Choose chronic or acute",
+   "fr": "Choisissez chronique ou aigu"
+  },
+  "Choose met or discontinued": {
+   "ar": "اختر تحقق الهدف أو أُوقفت",
+   "en": "Choose met or discontinued",
+   "fr": "Choisissez atteint ou arrêté"
+  },
+  "Choose the diagnosis or write the problem": {
+   "ar": "اختر التشخيص أو اكتب المشكلة",
+   "en": "Choose the diagnosis or write the problem",
+   "fr": "Choisissez le diagnostic ou rédigez le problème"
+  },
+  "Choose the nursing need": {
+   "ar": "اختر الاحتياج التمريضي",
+   "en": "Choose the nursing need",
+   "fr": "Choisissez le besoin infirmier"
+  },
+  "Choose when it is reviewed": {
+   "ar": "اختر موعد المراجعة",
+   "en": "Choose when it is reviewed",
+   "fr": "Choisissez la date de réévaluation"
+  },
+  "Close this plan": {
+   "ar": "إغلاق هذه الخطة",
+   "en": "Close this plan",
+   "fr": "Clore ce plan"
+  },
+  "Diagnosis (ICD-10)": {
+   "ar": "التشخيص (ICD-10)",
+   "en": "Diagnosis (ICD-10)",
+   "fr": "Diagnostic (CIM-10)"
+  },
+  "Discontinue": {
+   "ar": "إيقاف",
+   "en": "Discontinue",
+   "fr": "Arrêter"
+  },
+  "Goal": {
+   "ar": "الهدف",
+   "en": "Goal",
+   "fr": "Objectif"
+  },
+  "Goal met": {
+   "ar": "تحقق الهدف",
+   "en": "Goal met",
+   "fr": "Objectif atteint"
+  },
+  "Interventions": {
+   "ar": "التدخلات",
+   "en": "Interventions",
+   "fr": "Interventions"
+  },
+  "Mark this problem as resolved?": {
+   "ar": "تسجيل هذه المشكلة كمحلولة؟",
+   "en": "Mark this problem as resolved?",
+   "fr": "Marquer ce problème comme résolu ?"
+  },
+  "Need in your words": {
+   "ar": "الاحتياج بكلماتك",
+   "en": "Need in your words",
+   "fr": "Le besoin en vos mots"
+  },
+  "No care plan for this stay yet.": {
+   "ar": "لا توجد خطة رعاية لهذا التنويم بعد.",
+   "en": "No care plan for this stay yet.",
+   "fr": "Aucun plan de soins pour ce séjour pour l'instant."
+  },
+  "No problem on the patient's list yet.": {
+   "ar": "لا توجد مشكلات في قائمة المريض بعد.",
+   "en": "No problem on the patient's list yet.",
+   "fr": "Aucun problème dans la liste du patient pour l'instant."
+  },
+  "Nursing need": {
+   "ar": "الاحتياج التمريضي",
+   "en": "Nursing need",
+   "fr": "Besoin infirmier"
+  },
+  "Or write the problem": {
+   "ar": "أو اكتب المشكلة",
+   "en": "Or write the problem",
+   "fr": "Ou rédigez le problème"
+  },
+  "Plan suggested": {
+   "ar": "خطة مقترحة",
+   "en": "Plan suggested",
+   "fr": "Plan suggéré"
+  },
+  "Problem": {
+   "ar": "المشكلة",
+   "en": "Problem",
+   "fr": "Problème"
+  },
+  "Problem list": {
+   "ar": "قائمة المشكلات",
+   "en": "Problem list",
+   "fr": "Liste des problèmes"
+  },
+  "Problems & care plan": {
+   "ar": "المشكلات وخطة الرعاية",
+   "en": "Problems & care plan",
+   "fr": "Problèmes et plan de soins"
+  },
+  "Resolved": {
+   "ar": "تم حلها",
+   "en": "Resolved",
+   "fr": "Résolu"
+  },
+  "Review by": {
+   "ar": "المراجعة قبل",
+   "en": "Review by",
+   "fr": "À réévaluer avant"
+  },
+  "Review by {0}": {
+   "ar": "المراجعة قبل {0}",
+   "en": "Review by {0}",
+   "fr": "À réévaluer avant le {0}"
+  },
+  "Review due": {
+   "ar": "حان موعد المراجعة",
+   "en": "Review due",
+   "fr": "Réévaluation due"
+  },
+  "Review it within 30 days": {
+   "ar": "راجعها خلال 30 يوماً",
+   "en": "Review it within 30 days",
+   "fr": "Réévaluez-le sous 30 jours"
+  },
+  "Suggested: a {0} plan — the latest {1} is {2} ({3}).": {
+   "ar": "مقترح: خطة {0} — آخر تقييم {1} هو {2} ({3}).",
+   "en": "Suggested: a {0} plan — the latest {1} is {2} ({3}).",
+   "fr": "Suggéré : un plan « {0} » — le dernier {1} est de {2} ({3})."
+  },
+  "The outcome": {
+   "ar": "النتيجة",
+   "en": "The outcome",
+   "fr": "Le résultat"
+  },
+  "The problem list and care plans are not installed yet (hospital_h79_care_plans.sql).": {
+   "ar": "قائمة المشكلات وخطط الرعاية غير مثبتة بعد (hospital_h79_care_plans.sql).",
+   "en": "The problem list and care plans are not installed yet (hospital_h79_care_plans.sql).",
+   "fr": "La liste des problèmes et les plans de soins ne sont pas encore installés (hospital_h79_care_plans.sql)."
+  },
+  "The problem's name is too long": {
+   "ar": "اسم المشكلة طويل جداً",
+   "en": "The problem's name is too long",
+   "fr": "Le nom du problème est trop long"
+  },
+  "The review date has passed": {
+   "ar": "موعد المراجعة فات",
+   "en": "The review date has passed",
+   "fr": "La date de réévaluation est passée"
+  },
+  "This need already has an active plan: review or close it": {
+   "ar": "يوجد خطة نشطة لهذا الاحتياج بالفعل: راجعها أو أغلقها",
+   "en": "This need already has an active plan: review or close it",
+   "fr": "Ce besoin a déjà un plan actif : réévaluez-le ou clôturez-le"
+  },
+  "This plan is already closed": {
+   "ar": "هذه الخطة مغلقة بالفعل",
+   "en": "This plan is already closed",
+   "fr": "Ce plan est déjà clos"
+  },
+  "This problem is already on the list": {
+   "ar": "هذه المشكلة موجودة في القائمة بالفعل",
+   "en": "This problem is already on the list",
+   "fr": "Ce problème figure déjà dans la liste"
+  },
+  "This problem is already resolved": {
+   "ar": "هذه المشكلة محلولة بالفعل",
+   "en": "This problem is already resolved",
+   "fr": "Ce problème est déjà résolu"
+  },
+  "Write the goal": {
+   "ar": "اكتب الهدف",
+   "en": "Write the goal",
+   "fr": "Rédigez l'objectif"
+  },
+  "Write the interventions": {
+   "ar": "اكتب التدخلات",
+   "en": "Write the interventions",
+   "fr": "Rédigez les interventions"
+  },
+  "Write the nursing need": {
+   "ar": "اكتب الاحتياج التمريضي",
+   "en": "Write the nursing need",
+   "fr": "Rédigez le besoin infirmier"
+  },
+  "Write the outcome": {
+   "ar": "اكتب النتيجة",
+   "en": "Write the outcome",
+   "fr": "Rédigez le résultat"
+  },
+  "Write the plan": {
+   "ar": "كتابة الخطة",
+   "en": "Write the plan",
+   "fr": "Rédiger le plan"
+  },
+  "cpg:Falls": {
+   "ar": "عدم حدوث سقوط أثناء التنويم",
+   "en": "No fall during the stay",
+   "fr": "Aucune chute pendant le séjour"
+  },
+  "cpg:Infection": {
+   "ar": "لا علامات عدوى؛ الحرارة طبيعية",
+   "en": "No sign of infection; temperature normal",
+   "fr": "Aucun signe d'infection ; température normale"
+  },
+  "cpg:Mobility": {
+   "ar": "يمشي إلى الحمام بمساعدة بحلول اليوم الثالث",
+   "en": "Walks to the bathroom with help by day 3",
+   "fr": "Se rend aux toilettes avec aide au 3e jour"
+  },
+  "cpg:Nutrition": {
+   "ar": "يتناول نصف كل وجبة على الأقل؛ الوزن مستقر",
+   "en": "Eats at least half of each meal; weight stable",
+   "fr": "Mange au moins la moitié de chaque repas ; poids stable"
+  },
+  "cpg:Other": {
+   "ar": "",
+   "en": "",
+   "fr": ""
+  },
+  "cpg:Pain": {
+   "ar": "الألم 3/10 أو أقل أثناء الراحة",
+   "en": "Pain 3/10 or less at rest",
+   "fr": "Douleur ≤ 3/10 au repos"
+  },
+  "cpg:PressureInjury": {
+   "ar": "جلد سليم بدون قرح فراش جديدة",
+   "en": "Skin intact, no new pressure injury",
+   "fr": "Peau intacte, pas de nouvelle escarre"
+  },
+  "cpi:Falls": {
+   "ar": "السرير منخفض والفرامل مفعّلة؛ الجرس في متناول اليد؛ جوارب مانعة للانزلاق؛ المساعدة للحمام؛ إعادة تقييم مورس يومياً",
+   "en": "Bed low and brakes on; call bell in reach; non-slip socks; help to the bathroom; reassess Morse daily",
+   "fr": "Lit bas et freiné ; sonnette à portée ; chaussettes antidérapantes ; aide aux toilettes ; réévaluer Morse chaque jour"
+  },
+  "cpi:Infection": {
+   "ar": "نظافة اليدين؛ عناية معقمة بالقساطر والجروح؛ قياس الحرارة كل 4 ساعات؛ الإبلاغ عن الحمى",
+   "en": "Hand hygiene; aseptic care of lines and wounds; temperature every 4 hours; report fever",
+   "fr": "Hygiène des mains ; soins aseptiques des cathéters et plaies ; température toutes les 4 heures ; signaler la fièvre"
+  },
+  "cpi:Mobility": {
+   "ar": "الجلوس خارج السرير مرتين يومياً؛ المشي بمساعدة كل وردية؛ إحالة للعلاج الطبيعي",
+   "en": "Sit out of bed twice a day; assisted walk each shift; physiotherapy referral",
+   "fr": "Fauteuil deux fois par jour ; marche aidée à chaque poste ; kinésithérapie"
+  },
+  "cpi:Nutrition": {
+   "ar": "تسجيل ما يؤكل في كل وجبة؛ الوزن مرتين أسبوعياً؛ إحالة لأخصائي التغذية إذا أقل من النصف",
+   "en": "Record what is eaten each meal; weigh twice a week; dietitian referral if under half",
+   "fr": "Noter les repas consommés ; peser deux fois par semaine ; diététicien si moins de la moitié"
+  },
+  "cpi:Other": {
+   "ar": "",
+   "en": "",
+   "fr": ""
+  },
+  "cpi:Pain": {
+   "ar": "تقييم الألم كل 4 ساعات؛ إعطاء المسكن حسب الوصفة وإعادة التقييم بعد ساعة؛ وضعية مريحة",
+   "en": "Score pain every 4 hours; give analgesia as prescribed and reassess after an hour; position for comfort",
+   "fr": "Évaluer la douleur toutes les 4 heures ; antalgiques selon prescription et réévaluer après une heure ; installation confortable"
+  },
+  "cpi:PressureInjury": {
+   "ar": "تغيير الوضع كل ساعتين؛ مرتبة مخففة للضغط؛ الجلد نظيف وجاف؛ فحص الكعبين والعجز كل وردية؛ إعادة تقييم برادن يومياً",
+   "en": "Turn every 2 hours; pressure-relieving mattress; keep skin clean and dry; check heels and sacrum each shift; reassess Braden daily",
+   "fr": "Retourner toutes les 2 heures ; matelas anti-escarres ; peau propre et sèche ; vérifier talons et sacrum à chaque poste ; réévaluer Braden chaque jour"
+  },
+  "cps:Active": {
+   "ar": "نشطة",
+   "en": "Active",
+   "fr": "Actif"
+  },
+  "cps:Discontinued": {
+   "ar": "أُوقفت",
+   "en": "Discontinued",
+   "fr": "Arrêté"
+  },
+  "cps:Met": {
+   "ar": "تحقق الهدف",
+   "en": "Goal met",
+   "fr": "Objectif atteint"
+  },
+  "need:Falls": {
+   "ar": "الوقاية من السقوط",
+   "en": "Fall prevention",
+   "fr": "Prévention des chutes"
+  },
+  "need:Infection": {
+   "ar": "العدوى",
+   "en": "Infection",
+   "fr": "Infection"
+  },
+  "need:Mobility": {
+   "ar": "الحركة",
+   "en": "Mobility",
+   "fr": "Mobilité"
+  },
+  "need:Nutrition": {
+   "ar": "التغذية",
+   "en": "Nutrition",
+   "fr": "Nutrition"
+  },
+  "need:Other": {
+   "ar": "أخرى",
+   "en": "Other",
+   "fr": "Autre"
+  },
+  "need:Pain": {
+   "ar": "الألم",
+   "en": "Pain",
+   "fr": "Douleur"
+  },
+  "need:PressureInjury": {
+   "ar": "الوقاية من قرح الفراش",
+   "en": "Pressure injury prevention",
+   "fr": "Prévention des escarres"
+  },
+  "pbs:Active": {
+   "ar": "نشطة",
+   "en": "Active",
+   "fr": "Actif"
+  },
+  "pbs:Resolved": {
+   "ar": "تم حلها",
+   "en": "Resolved",
+   "fr": "Résolu"
+  },
+  "pk:Acute": {
+   "ar": "حادة",
+   "en": "Acute",
+   "fr": "Aigu"
+  },
+  "pk:Chronic": {
+   "ar": "مزمنة",
+   "en": "Chronic",
+   "fr": "Chronique"
+  }
+ }
+}

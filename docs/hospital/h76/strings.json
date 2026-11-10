@@ -1,0 +1,480 @@
+{
+ "unit": "H76 — infection prevention and control",
+ "strings": {
+  "Acquired": {
+   "ar": "مصدر العدوى",
+   "en": "Acquired",
+   "fr": "Acquisition"
+  },
+  "All hospital-acquired": {
+   "ar": "كل العدوى المكتسبة في المستشفى",
+   "en": "All hospital-acquired",
+   "fr": "Toutes les infections nosocomiales"
+  },
+  "Cases": {
+   "ar": "الحالات",
+   "en": "Cases",
+   "fr": "Cas"
+  },
+  "Choose the decision": {
+   "ar": "اختر القرار",
+   "en": "Choose the decision",
+   "fr": "Choisissez la décision"
+  },
+  "Choose the device": {
+   "ar": "اختر الجهاز",
+   "en": "Choose the device",
+   "fr": "Choisissez le dispositif"
+  },
+  "Choose the kind of infection": {
+   "ar": "اختر نوع العدوى",
+   "en": "Choose the kind of infection",
+   "fr": "Choisissez le type d'infection"
+  },
+  "Choose the precautions": {
+   "ar": "اختر نوع الاحتياطات",
+   "en": "Choose the precautions",
+   "fr": "Choisissez les précautions"
+  },
+  "Community": {
+   "ar": "من المجتمع",
+   "en": "Community",
+   "fr": "Communautaire"
+  },
+  "Confirm this infection? It counts in the rates from now on.": {
+   "ar": "تأكيد هذه العدوى؟ ستُحسب في المعدلات من الآن.",
+   "en": "Confirm this infection? It counts in the rates from now on.",
+   "fr": "Confirmer cette infection ? Elle compte désormais dans les taux."
+  },
+  "Confirmed hospital-acquired infections per 1,000 patient-days and per 1,000 device-days (NHSN). Utilisation is device-days over patient-days.": {
+   "ar": "العدوى المكتسبة في المستشفى المؤكدة لكل 1,000 يوم مريض ولكل 1,000 يوم جهاز (NHSN). نسبة الاستخدام = أيام الجهاز ÷ أيام المرضى.",
+   "en": "Confirmed hospital-acquired infections per 1,000 patient-days and per 1,000 device-days (NHSN). Utilisation is device-days over patient-days.",
+   "fr": "Infections nosocomiales confirmées pour 1 000 jours-patients et pour 1 000 jours-dispositifs (NHSN). L'utilisation = jours-dispositifs / jours-patients."
+  },
+  "Date of the event": {
+   "ar": "تاريخ الحدث",
+   "en": "Date of the event",
+   "fr": "Date de l'événement"
+  },
+  "Day {0}": {
+   "ar": "اليوم {0}",
+   "en": "Day {0}",
+   "fr": "Jour {0}"
+  },
+  "Device": {
+   "ar": "الجهاز",
+   "en": "Device",
+   "fr": "Dispositif"
+  },
+  "Device-days": {
+   "ar": "أيام الجهاز",
+   "en": "Device-days",
+   "fr": "Jours-dispositifs"
+  },
+  "Devices in place": {
+   "ar": "الأجهزة المركّبة",
+   "en": "Devices in place",
+   "fr": "Dispositifs en place"
+  },
+  "Empty means now.": {
+   "ar": "اتركه فارغاً ليكون الآن.",
+   "en": "Empty means now.",
+   "fr": "Vide signifie maintenant."
+  },
+  "End": {
+   "ar": "إنهاء",
+   "en": "End",
+   "fr": "Terminer"
+  },
+  "End these precautions?": {
+   "ar": "إنهاء هذه الاحتياطات؟",
+   "en": "End these precautions?",
+   "fr": "Mettre fin à ces précautions ?"
+  },
+  "Fever, the specimen sent, what was seen": {
+   "ar": "الحرارة، العينة المرسلة، ما لوحظ",
+   "en": "Fever, the specimen sent, what was seen",
+   "fr": "Fièvre, prélèvement envoyé, observations"
+  },
+  "Hospital-acquired per 1,000 patient-days this month": {
+   "ar": "مكتسبة في المستشفى لكل 1,000 يوم مريض هذا الشهر",
+   "en": "Hospital-acquired per 1,000 patient-days this month",
+   "fr": "Nosocomiales pour 1 000 jours-patients ce mois-ci"
+  },
+  "Infection": {
+   "ar": "العدوى",
+   "en": "Infection",
+   "fr": "Infection"
+  },
+  "Infection cases": {
+   "ar": "حالات العدوى",
+   "en": "Infection cases",
+   "fr": "Cas d'infection"
+  },
+  "Infection control": {
+   "ar": "مكافحة العدوى",
+   "en": "Infection control",
+   "fr": "Prévention des infections"
+  },
+  "Infection control confirms or rules it out. Whether it is hospital-acquired follows from the dates.": {
+   "ar": "فريق مكافحة العدوى يؤكدها أو ينفيها. وكونها مكتسبة في المستشفى يُحدَّد من التواريخ.",
+   "en": "Infection control confirms or rules it out. Whether it is hospital-acquired follows from the dates.",
+   "fr": "L'équipe d'hygiène la confirme ou l'écarte. Son caractère nosocomial découle des dates."
+  },
+  "Infection control is not installed yet (hospital_h76_infection.sql).": {
+   "ar": "مكافحة العدوى غير مثبتة بعد (hospital_h76_infection.sql).",
+   "en": "Infection control is not installed yet (hospital_h76_infection.sql).",
+   "fr": "La prévention des infections n'est pas encore installée (hospital_h76_infection.sql)."
+  },
+  "Infection rates": {
+   "ar": "معدلات العدوى",
+   "en": "Infection rates",
+   "fr": "Taux d'infection"
+  },
+  "Inserted at": {
+   "ar": "وقت التركيب",
+   "en": "Inserted at",
+   "fr": "Posé le"
+  },
+  "Isolation": {
+   "ar": "العزل",
+   "en": "Isolation",
+   "fr": "Isolement"
+  },
+  "Isolation now": {
+   "ar": "المعزولون الآن",
+   "en": "Isolation now",
+   "fr": "Isolements en cours"
+  },
+  "Longest first: every day a line stays in, ask whether it is still needed.": {
+   "ar": "الأطول أولاً: كل يوم يبقى فيه الجهاز، اسأل هل ما زال لازماً.",
+   "en": "Longest first: every day a line stays in, ask whether it is still needed.",
+   "fr": "Les plus anciens d'abord : chaque jour, demandez si le dispositif est encore nécessaire."
+  },
+  "No device was in place long enough for this kind of infection": {
+   "ar": "لم يكن هناك جهاز مركّب مدة كافية لهذا النوع من العدوى",
+   "en": "No device was in place long enough for this kind of infection",
+   "fr": "Aucun dispositif n'était en place assez longtemps pour ce type d'infection"
+  },
+  "No infection case yet.": {
+   "ar": "لا توجد حالات عدوى بعد.",
+   "en": "No infection case yet.",
+   "fr": "Aucun cas d'infection pour l'instant."
+  },
+  "No invasive device is in place.": {
+   "ar": "لا توجد أجهزة تداخلية مركّبة.",
+   "en": "No invasive device is in place.",
+   "fr": "Aucun dispositif invasif en place."
+  },
+  "No ward": {
+   "ar": "بدون جناح",
+   "en": "No ward",
+   "fr": "Sans unité"
+  },
+  "Nobody is in isolation.": {
+   "ar": "لا يوجد مريض في العزل.",
+   "en": "Nobody is in isolation.",
+   "fr": "Personne n'est en isolement."
+  },
+  "Nobody lay on a ward this month.": {
+   "ar": "لم يُنوَّم أحد في الأجنحة هذا الشهر.",
+   "en": "Nobody lay on a ward this month.",
+   "fr": "Personne n'a séjourné dans une unité ce mois-ci."
+  },
+  "Notes": {
+   "ar": "ملاحظات",
+   "en": "Notes",
+   "fr": "Notes"
+  },
+  "One is already in place: record its removal first": {
+   "ar": "يوجد جهاز مركّب بالفعل: سجّل إزالته أولاً",
+   "en": "One is already in place: record its removal first",
+   "fr": "Un dispositif est déjà en place : enregistrez d'abord son retrait"
+  },
+  "Organism": {
+   "ar": "الميكروب",
+   "en": "Organism",
+   "fr": "Micro-organisme"
+  },
+  "Patient-days": {
+   "ar": "أيام المرضى",
+   "en": "Patient-days",
+   "fr": "Jours-patients"
+  },
+  "Patients in isolation": {
+   "ar": "مرضى في العزل",
+   "en": "Patients in isolation",
+   "fr": "Patients en isolement"
+  },
+  "Per 1,000": {
+   "ar": "لكل 1,000",
+   "en": "Per 1,000",
+   "fr": "Pour 1 000"
+  },
+  "Precautions": {
+   "ar": "الاحتياطات",
+   "en": "Precautions",
+   "fr": "Précautions"
+  },
+  "Record its removal": {
+   "ar": "تسجيل إزالته",
+   "en": "Record its removal",
+   "fr": "Enregistrer son retrait"
+  },
+  "Record that this device was removed now?": {
+   "ar": "تسجيل إزالة هذا الجهاز الآن؟",
+   "en": "Record that this device was removed now?",
+   "fr": "Enregistrer le retrait de ce dispositif maintenant ?"
+  },
+  "Record the device": {
+   "ar": "تسجيل الجهاز",
+   "en": "Record the device",
+   "fr": "Enregistrer le dispositif"
+  },
+  "Record this device?": {
+   "ar": "تسجيل هذا الجهاز؟",
+   "en": "Record this device?",
+   "fr": "Enregistrer ce dispositif ?"
+  },
+  "Removed": {
+   "ar": "تمت الإزالة",
+   "en": "Removed",
+   "fr": "Retiré"
+  },
+  "Report an infection": {
+   "ar": "الإبلاغ عن عدوى",
+   "en": "Report an infection",
+   "fr": "Signaler une infection"
+  },
+  "Report this infection to infection control?": {
+   "ar": "إبلاغ فريق مكافحة العدوى بهذه العدوى؟",
+   "en": "Report this infection to infection control?",
+   "fr": "Signaler cette infection à l'équipe d'hygiène ?"
+  },
+  "Right subclavian": {
+   "ar": "تحت الترقوة الأيمن",
+   "en": "Right subclavian",
+   "fr": "Sous-clavière droite"
+  },
+  "Rule out": {
+   "ar": "نفي",
+   "en": "Rule out",
+   "fr": "Écarter"
+  },
+  "Rule out this infection": {
+   "ar": "نفي هذه العدوى",
+   "en": "Rule out this infection",
+   "fr": "Écarter cette infection"
+  },
+  "Search by case, patient, file or organism…": {
+   "ar": "ابحث برقم الحالة أو المريض أو رقم الملف أو الميكروب…",
+   "en": "Search by case, patient, file or organism…",
+   "fr": "Rechercher par cas, patient, dossier ou micro-organisme…"
+  },
+  "Site": {
+   "ar": "الموضع",
+   "en": "Site",
+   "fr": "Site"
+  },
+  "Start isolation": {
+   "ar": "بدء العزل",
+   "en": "Start isolation",
+   "fr": "Démarrer l'isolement"
+  },
+  "Start isolation for this patient?": {
+   "ar": "بدء عزل هذا المريض؟",
+   "en": "Start isolation for this patient?",
+   "fr": "Démarrer l'isolement de ce patient ?"
+  },
+  "Started from the nursing station; ended by a doctor or infection control.": {
+   "ar": "يبدأ من محطة التمريض، وينهيه الطبيب أو فريق مكافحة العدوى.",
+   "en": "Started from the nursing station; ended by a doctor or infection control.",
+   "fr": "Démarré au poste de soins ; levé par un médecin ou l'équipe d'hygiène."
+  },
+  "Suspected cases to review": {
+   "ar": "حالات مشتبهة للمراجعة",
+   "en": "Suspected cases to review",
+   "fr": "Cas suspects à examiner"
+  },
+  "Suspected, awaiting the culture": {
+   "ar": "مشتبه، في انتظار المزرعة",
+   "en": "Suspected, awaiting the culture",
+   "fr": "Suspicion, en attente de la culture"
+  },
+  "The date is after the discharge": {
+   "ar": "التاريخ بعد الخروج",
+   "en": "The date is after the discharge",
+   "fr": "La date est postérieure à la sortie"
+  },
+  "The date is before the admission": {
+   "ar": "التاريخ قبل الدخول",
+   "en": "The date is before the admission",
+   "fr": "La date est antérieure à l'admission"
+  },
+  "The date is in the future": {
+   "ar": "التاريخ في المستقبل",
+   "en": "The date is in the future",
+   "fr": "La date est dans le futur"
+  },
+  "The device cannot come out before it went in": {
+   "ar": "لا يمكن إزالة الجهاز قبل تركيبه",
+   "en": "The device cannot come out before it went in",
+   "fr": "Le dispositif ne peut pas être retiré avant d'avoir été posé"
+  },
+  "The organism's name is too long": {
+   "ar": "اسم الميكروب طويل جداً",
+   "en": "The organism's name is too long",
+   "fr": "Le nom du micro-organisme est trop long"
+  },
+  "The patient is already under these precautions": {
+   "ar": "المريض تحت هذه الاحتياطات بالفعل",
+   "en": "The patient is already under these precautions",
+   "fr": "Le patient est déjà sous ces précautions"
+  },
+  "The time is before the admission": {
+   "ar": "الوقت قبل الدخول",
+   "en": "The time is before the admission",
+   "fr": "L'heure est antérieure à l'admission"
+  },
+  "The time is in the future": {
+   "ar": "الوقت في المستقبل",
+   "en": "The time is in the future",
+   "fr": "L'heure est dans le futur"
+  },
+  "These precautions have already ended": {
+   "ar": "هذه الاحتياطات انتهت بالفعل",
+   "en": "These precautions have already ended",
+   "fr": "Ces précautions sont déjà levées"
+  },
+  "This case is already decided": {
+   "ar": "تم البت في هذه الحالة بالفعل",
+   "en": "This case is already decided",
+   "fr": "Ce cas est déjà tranché"
+  },
+  "This device is already out": {
+   "ar": "هذا الجهاز أُزيل بالفعل",
+   "en": "This device is already out",
+   "fr": "Ce dispositif est déjà retiré"
+  },
+  "Use": {
+   "ar": "الاستخدام",
+   "en": "Use",
+   "fr": "Utilisation"
+  },
+  "Why it is ruled out": {
+   "ar": "سبب النفي",
+   "en": "Why it is ruled out",
+   "fr": "Pourquoi elle est écartée"
+  },
+  "Why they end": {
+   "ar": "سبب الإنهاء",
+   "en": "Why they end",
+   "fr": "Pourquoi elles sont levées"
+  },
+  "Write the date of the event": {
+   "ar": "اكتب تاريخ الحدث",
+   "en": "Write the date of the event",
+   "fr": "Indiquez la date de l'événement"
+  },
+  "Write the organism or why the patient is isolated": {
+   "ar": "اكتب الميكروب أو سبب العزل",
+   "en": "Write the organism or why the patient is isolated",
+   "fr": "Indiquez le micro-organisme ou la raison de l'isolement"
+  },
+  "Write the resistant organism": {
+   "ar": "اكتب الميكروب المقاوم",
+   "en": "Write the resistant organism",
+   "fr": "Indiquez le micro-organisme résistant"
+  },
+  "Write why it is ruled out": {
+   "ar": "اكتب سبب النفي",
+   "en": "Write why it is ruled out",
+   "fr": "Indiquez pourquoi elle est écartée"
+  },
+  "dev:CentralLine": {
+   "ar": "قسطرة وريدية مركزية",
+   "en": "Central line",
+   "fr": "Cathéter veineux central"
+  },
+  "dev:UrinaryCatheter": {
+   "ar": "قسطرة بولية",
+   "en": "Urinary catheter",
+   "fr": "Sonde urinaire"
+  },
+  "dev:Ventilator": {
+   "ar": "جهاز تنفس صناعي",
+   "en": "Ventilator",
+   "fr": "Ventilateur"
+  },
+  "ick:CAUTI": {
+   "ar": "عدوى المسالك المرتبطة بالقسطرة البولية (CAUTI)",
+   "en": "Catheter urinary tract infection (CAUTI)",
+   "fr": "Infection urinaire sur sonde (CAUTI)"
+  },
+  "ick:CDI": {
+   "ar": "عدوى المطثية العسيرة (C. difficile)",
+   "en": "C. difficile infection",
+   "fr": "Infection à C. difficile"
+  },
+  "ick:CLABSI": {
+   "ar": "عدوى الدم المرتبطة بالقسطرة المركزية (CLABSI)",
+   "en": "Central line bloodstream infection (CLABSI)",
+   "fr": "Bactériémie sur cathéter central (CLABSI)"
+  },
+  "ick:MDRO": {
+   "ar": "ميكروب مقاوم للأدوية المتعددة (MDRO)",
+   "en": "Multidrug-resistant organism (MDRO)",
+   "fr": "Bactérie multirésistante (BMR)"
+  },
+  "ick:Other": {
+   "ar": "عدوى أخرى",
+   "en": "Other infection",
+   "fr": "Autre infection"
+  },
+  "ick:SSI": {
+   "ar": "عدوى موضع الجراحة (SSI)",
+   "en": "Surgical site infection (SSI)",
+   "fr": "Infection du site opératoire (SSI)"
+  },
+  "ick:VAP": {
+   "ar": "الالتهاب الرئوي المرتبط بجهاز التنفس (VAP)",
+   "en": "Ventilator-associated pneumonia (VAP)",
+   "fr": "Pneumopathie sous ventilation (VAP)"
+  },
+  "ics:Confirmed": {
+   "ar": "مؤكدة",
+   "en": "Confirmed",
+   "fr": "Confirmé"
+  },
+  "ics:RuledOut": {
+   "ar": "منفية",
+   "en": "Ruled out",
+   "fr": "Écarté"
+  },
+  "ics:Suspected": {
+   "ar": "مشتبه",
+   "en": "Suspected",
+   "fr": "Suspect"
+  },
+  "prec:Airborne": {
+   "ar": "احتياطات الهواء",
+   "en": "Airborne precautions",
+   "fr": "Précautions air"
+  },
+  "prec:Contact": {
+   "ar": "احتياطات التلامس",
+   "en": "Contact precautions",
+   "fr": "Précautions contact"
+  },
+  "prec:Droplet": {
+   "ar": "احتياطات الرذاذ",
+   "en": "Droplet precautions",
+   "fr": "Précautions gouttelettes"
+  },
+  "prec:Protective": {
+   "ar": "عزل وقائي",
+   "en": "Protective isolation",
+   "fr": "Isolement protecteur"
+  }
+ }
+}

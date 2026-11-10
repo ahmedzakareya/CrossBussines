@@ -1,0 +1,168 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model HospitalMorgueCasePage
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H90 — one body in the mortuary register: who (or the description), the certificate, where it lies and for how long,
+    what still holds it (each with the step that lifts it), the belongings, and the release or the transfer.
+*@
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Mortuary case"].Value;
+    bool canWork = ViewBag.CanWork == true;
+    var c = Model.Case; bool inside = c.Status == HospitalMorgueStatus.InStorage;
+    string Who(int? id) => id is int i && Model.People.TryGetValue(i, out var n) ? n : "";
+    string L(DateTime? utc) => utc == null ? "—" : HospitalNursingService.UtcToWard(utc.Value).ToString("yyyy-MM-dd HH:mm");
+    bool policeOpen = c.MedicoLegal && c.PoliceClearedAt == null;
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Mortuary case"] <span class="badge hp-code fs-7 hp-num ms-2">@c.CaseNo</span></h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item"><a href="@Url.Action("Morgue")" class="text-muted text-hover-primary">@T["Mortuary"]</a></li></ul>
+        </div>
+        @if (inside && canWork)
+        {
+            <div class="d-flex gap-2">
+                @if (Model.FreeCompartments.Count > 0) {<button type="button" class="btn btn-sm btn-light" data-move><i class="ki-outline ki-arrows-loop fs-4"></i>@T["Move"]</button>}
+                <button type="button" class="btn btn-sm btn-light-primary" data-modal="relModal" data-transfer="1"><i class="ki-outline ki-delivery fs-4"></i>@T["Transfer"]</button>
+                <button type="button" class="btn btn-sm btn-primary" data-modal="relModal" data-transfer="0" @(Model.Holds.Count > 0 ? "disabled" : "")><i class="ki-outline ki-exit-right fs-4"></i>@T["Release the body"]</button>
+            </div>
+        }
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="row g-5">
+            <div class="col-xl-4"><div class="card h-100"><div class="card-body py-6">
+                <div class="d-flex align-items-center gap-4 mb-5">
+                    <div class="symbol symbol-55px symbol-circle">@if (Model.Photo != null) {<img src="@Model.Photo" alt="" style="object-fit:cover;filter:grayscale(1)" />} else {<span class="symbol-label fw-bold hp-initials">@(Model.NameEn == null ? "?" : HospitalUi.Initials(Model.NameEn))</span>}</div>
+                    <div>@if (c.PatientId != null) {<a href="@Url.Action("Patient", new { id = c.PatientId })" class="fs-4 fw-bold text-gray-900 text-hover-primary">@DisplayName.Of(Model.Name!, Model.NameEn ?? Model.Name!)</a><div class="text-muted fs-7"><bdi class="hp-num">@Model.Mrn</bdi></div>}
+                        else {<div class="fs-4 fw-bold text-gray-900">@T["Unknown"]</div><div class="text-muted fs-7"><bdi>@c.Description</bdi></div>}</div>
+                </div>
+                <div class="d-flex flex-stack py-2 border-bottom border-dashed"><span class="text-muted fs-7">@T["State"]</span><span class="badge @(inside ? "badge-light-primary" : "badge-light") fs-7">@T["mgs:" + c.Status]</span></div>
+                <div class="d-flex flex-stack py-2 border-bottom border-dashed"><span class="text-muted fs-7">@T["Compartment"]</span><span class="fw-bold fs-4 hp-num">@Model.Compartment</span></div>
+                <div class="d-flex flex-stack py-2 border-bottom border-dashed"><span class="text-muted fs-7">@T["Tag number"]</span><span class="fw-semibold hp-num">@c.TagNo</span></div>
+                <div class="d-flex flex-stack py-2 border-bottom border-dashed"><span class="text-muted fs-7">@T["Received"]</span><span class="hp-num fs-7">@L(c.ReceivedAt) <span class="text-muted" style="font-family:inherit">@Who(c.ReceivedByEmployeeId)</span></span></div>
+                <div class="d-flex flex-stack py-2 border-bottom border-dashed"><span class="text-muted fs-7">@T["Kept"]</span><span class="fw-bold @(inside && Model.Hours >= HospitalMorgueRules.AlertHours ? "text-danger" : "")">@T["{0} h", Model.Hours]</span></div>
+                @if (c.BroughtFrom != null) {<div class="d-flex flex-stack py-2 border-bottom border-dashed"><span class="text-muted fs-7">@T["Brought from"]</span><bdi class="fs-7">@c.BroughtFrom</bdi></div>}
+                @if (Model.Death != null)
+                {
+                    <div class="d-flex flex-stack py-2 border-bottom border-dashed"><span class="text-muted fs-7">@T["Death certificate"]</span><span class="fs-7"><span class="badge hp-code hp-num">@Model.Death.DeathNo</span>@if (Model.Death.VoidedAt != null) {<span class="badge badge-light-danger ms-1">@T["Voided"]</span>}</span></div>
+                    <div class="d-flex flex-stack py-2 border-bottom border-dashed"><span class="text-muted fs-7">@T["Died at"]</span><span class="hp-num fs-7">@L(Model.Death.DiedAt)</span></div>
+                    <div class="py-2 border-bottom border-dashed"><div class="text-muted fs-7">@T["Cause of death"]</div><div class="fs-7 fw-semibold"><bdi>@Model.Death.ImmediateCause</bdi></div></div>
+                }
+                @if (!inside)
+                {
+                    <div class="separator separator-dashed my-3"></div>
+                    <div class="fw-bold fs-6 mb-2">@T[c.Status == HospitalMorgueStatus.Transferred ? "Transferred to" : "Released to"]</div>
+                    <div class="fs-7"><bdi class="fw-semibold">@c.ReleasedTo</bdi>@if (c.ReleasedToRelation != null) {<text> · <bdi>@c.ReleasedToRelation</bdi></text>}</div>
+                    <div class="text-muted fs-8">@T["Identity"] <bdi class="hp-num">@c.ReleasedToIdNo</bdi>@if (c.ReleasedToPhone != null) {<text> · <bdi class="hp-num" dir="ltr">@c.ReleasedToPhone</bdi></text>}</div>
+                    if (c.Destination != null) {<div class="fs-7 mt-1"><bdi>@c.Destination</bdi></div>}
+                    <div class="text-muted fs-8 mt-1"><span class="hp-num">@L(c.ReleasedAt)</span> · @Who(c.ReleasedByEmployeeId)</div>
+                }
+                @if (c.Note != null) {<div class="py-2"><div class="text-muted fs-7">@T["Note"]</div><div class="fs-7"><bdi>@c.Note</bdi></div></div>}
+            </div></div></div>
+
+            <div class="col-xl-8 d-flex flex-column gap-5">
+                @if (inside)
+                {
+                    <div class="card @(Model.Holds.Count > 0 ? "border border-danger border-dashed" : "border border-success border-dashed")"><div class="card-body py-6">
+                        <div class="fw-bold fs-4 mb-1">@(Model.Holds.Count > 0 ? T["What still holds the body"] : T["Nothing holds the body: it may be released"])</div>
+                        <div class="text-muted fs-8 mb-4">@T["Each hold is lifted by its own step; the release opens when none is left. A transfer (to forensic medicine, another hospital) is not held."]</div>
+                        @if (c.MedicoLegal)
+                        {
+                            <div class="d-flex flex-stack py-3 border-bottom border-dashed">
+                                <div><div class="fw-semibold">@T["Police clearance"]</div><div class="text-muted fs-8">@if (c.PoliceRef != null) {<span>@T["Report"] <bdi class="hp-num">@c.PoliceRef</bdi></span>}@if (c.PoliceClearedAt != null) {<span> · @T["Cleared {0}", L(c.PoliceClearedAt)] · @Who(c.PoliceClearedByEmployeeId)</span>}</div></div>
+                                @if (policeOpen) {if (canWork) {<button type="button" class="btn btn-sm btn-light-danger" data-police>@T["Record the clearance"]</button>} else {<span class="badge badge-light-danger">@T["mgw:PoliceHold"]</span>}} else {<i class="ki-outline ki-check-circle text-success fs-2"></i>}
+                            </div>
+                        }
+                        <div class="d-flex flex-stack py-3 border-bottom border-dashed">
+                            <div><div class="fw-semibold">@T["Autopsy"]</div><div class="text-muted fs-8">@T["aut:" + c.AutopsyStatus]@if (c.AutopsyNote != null) {<span> · <bdi>@c.AutopsyNote</bdi></span>}</div></div>
+                            @if (canWork && c.AutopsyStatus == HospitalAutopsyStatus.Requested) {<button type="button" class="btn btn-sm btn-light-danger" data-autopsy="AutopsyDone">@T["Record it done"]</button>}
+                            else if (canWork && c.AutopsyStatus == HospitalAutopsyStatus.None) {<button type="button" class="btn btn-sm btn-light" data-autopsy="AutopsyRequest">@T["Request an autopsy"]</button>}
+                            else {<i class="ki-outline ki-check-circle text-success fs-2"></i>}
+                        </div>
+                        <div class="d-flex flex-stack py-3">
+                            <div><div class="fw-semibold">@T["Identity and certificate"]</div><div class="text-muted fs-8">@(c.PatientId == null ? T["Unknown body: released only by transfer to the authorities, or once identified and certified."] : Model.Holds.Contains(HospitalMorgueWarning.NoCertificate) ? T["The certificate is voided: certify the death again."] : T["Identified and certified"])</div></div>
+                            @if (Model.Holds.Contains(HospitalMorgueWarning.Unidentified) || Model.Holds.Contains(HospitalMorgueWarning.NoCertificate)) {<i class="ki-outline ki-cross-circle text-danger fs-2"></i>} else {<i class="ki-outline ki-check-circle text-success fs-2"></i>}
+                        </div>
+                    </div></div>
+                }
+                <div class="card flex-grow-1">
+                    <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Belongings"]</span></div>
+                        @if (inside && canWork) {<div class="card-toolbar"><button type="button" class="btn btn-sm btn-light-primary" data-item><i class="ki-outline ki-plus fs-5"></i>@T["Add an item"]</button></div>}</div>
+                    <div class="card-body pt-2">
+                        @if (Model.Belongings.Count == 0) { <div class="text-center text-muted py-6">@T["Nothing was found with the body."]</div> }
+                        else
+                        {
+                            <table class="table table-row-dashed align-middle fs-7 gy-2 mb-0"><thead><tr class="text-gray-500 fw-bold fs-8"><th>@T["Item"]</th><th>@T["Quantity"]</th><th>@T["Note"]</th><th>@T["Recorded"]</th></tr></thead><tbody>
+                                @foreach (var b in Model.Belongings) {<tr><td class="fw-semibold"><bdi>@b.Item</bdi></td><td class="hp-num">@b.Quantity</td><td class="text-muted"><bdi>@b.Note</bdi></td><td class="hp-num text-muted fs-8">@L(b.RecordedAt)</td></tr>}
+                            </tbody></table>
+                            @if (!inside) {<div class="text-success fs-8 mt-3"><i class="ki-outline ki-check fs-6 text-success"></i> @T["Handed over with the body"]</div>}
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div></div>
+</div>
+
+@if (inside && canWork)
+{
+    <div class="modal fade" id="relModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-600px"><div class="modal-content">
+        <div class="modal-header"><h2 class="fw-bold m-0" id="relTitle">@T["Release the body"]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body py-6 px-lg-10"><div class="row g-4">
+            <div class="col-7"><label class="form-label required">@T["Received by (full name)"]</label><input type="text" maxlength="150" class="form-control form-control-solid" data-l="releasedTo" /></div>
+            <div class="col-5" data-rel-only><label class="form-label required">@T["Relation to the deceased"]</label><input type="text" maxlength="50" class="form-control form-control-solid" data-l="relation" placeholder="@T["Son, wife, brother…"]" /></div>
+            <div class="col-6"><label class="form-label required">@T["Identity number"]</label><input type="text" maxlength="30" class="form-control form-control-solid" dir="ltr" data-l="idNo" /></div>
+            <div class="col-6"><label class="form-label">@T["Phone"]</label><input type="text" maxlength="30" class="form-control form-control-solid" dir="ltr" data-l="phone" /></div>
+            <div class="col-12"><label class="form-label" id="destLabel">@T["Funeral home"]</label><input type="text" maxlength="150" class="form-control form-control-solid" data-l="destination" /></div>
+            @if (Model.Belongings.Count > 0) {<div class="col-12"><label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" data-l="belongingsHandedOver" /><span class="form-check-label">@T["The {0} belongings were handed over and signed for", Model.Belongings.Count]</span></label></div>}
+            <div class="col-12"><label class="form-label">@T["Note"]</label><input type="text" maxlength="200" class="form-control form-control-solid" data-l="note" /></div>
+        </div></div>
+        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-rel-save>@T["Confirm"]</button></div>
+    </div></div></div>
+}
+
+@section Scripts {
+    <script>
+        (function () {
+            var tokEl = document.querySelector('input[name="__RequestVerificationToken"]'); if (!tokEl) return; var tok = tokEl.value;
+            var base = @Json.Serialize(Url.Content("~/Hospital/Morgue/" + c.ID + "/"));
+            var free = @Json.Serialize(Model.FreeCompartments.Select(f => new { id = f.Id, code = f.Code }));
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value),
+                      police: @Json.Serialize(T["The police report number"].Value), policeT: @Json.Serialize(T["Record the clearance"].Value),
+                      autoDone: @Json.Serialize(T["Who performed the autopsy, and where is the report?"].Value), autoReq: @Json.Serialize(T["Why is an autopsy requested?"].Value),
+                      item: @Json.Serialize(T["The item (and quantity, like: watch × 1)"].Value), itemT: @Json.Serialize(T["Add an item"].Value),
+                      move: @Json.Serialize(T["Move to which compartment? Free:"].Value), moveT: @Json.Serialize(T["Move"].Value),
+                      rel: @Json.Serialize(T["Release the body to this person?"].Value), tra: @Json.Serialize(T["Transfer the body?"].Value),
+                      relT: @Json.Serialize(T["Release the body"].Value), traT: @Json.Serialize(T["Transfer"].Value), funeral: @Json.Serialize(T["Funeral home"].Value), dest: @Json.Serialize(T["Transferred to (facility)"].Value) };
+            function post(u, b) { return fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': tok }, body: JSON.stringify(b) })
+                .then(function (r) { return r.json().catch(function () { return { ok: false }; }); }); }
+            function done(btn) { return function (res) { if (btn) btn.disabled = false; if (!res.ok) { toastr.error(res.error || W.failed); return; } toastr.success(W.saved); location.reload(); }; }
+            var transfer = false, rm = document.getElementById('relModal');
+            document.addEventListener('click', function (e) {
+                var o = e.target.closest('[data-modal]');
+                if (o && rm) { transfer = o.getAttribute('data-transfer') === '1'; document.getElementById('relTitle').textContent = transfer ? W.traT : W.relT;
+                    document.getElementById('destLabel').textContent = transfer ? W.dest : W.funeral; document.getElementById('destLabel').classList.toggle('required', transfer);
+                    rm.querySelector('[data-rel-only]').classList.toggle('d-none', transfer); bootstrap.Modal.getOrCreateInstance(rm).show(); return; }
+                var p = e.target.closest('[data-police]');
+                if (p) { cbPrompt(W.police, { title: W.policeT, value: @Json.Serialize(c.PoliceRef ?? "") }).then(function (v) { if (v) post(base + 'Police', { policeRef: v }).then(done(p)); }); return; }
+                var a = e.target.closest('[data-autopsy]');
+                if (a) { var step = a.getAttribute('data-autopsy'); cbPrompt(step === 'AutopsyDone' ? W.autoDone : W.autoReq, { textarea: true }).then(function (v) { if (v) post(base + step, { note: v }).then(done(a)); }); return; }
+                var it = e.target.closest('[data-item]');
+                if (it) { cbPrompt(W.item, { title: W.itemT }).then(function (v) { if (!v) return; var m = v.match(/^(.*?)\s*[×x\*]\s*(\d+)$/); post(base + 'Belonging', m ? { item: m[1], quantity: Number(m[2]) } : { item: v, quantity: 1 }).then(done(it)); }); return; }
+                var mv = e.target.closest('[data-move]');
+                if (mv) { cbPrompt(W.move + ' ' + free.map(function (f) { return f.code; }).join(', '), { title: W.moveT }).then(function (v) { if (!v) return;
+                    var f = free.find(function (x) { return x.code.toLowerCase() === v.trim().toLowerCase(); }); post(base + 'Move', { compartmentId: f ? f.id : 0 }).then(done(mv)); }); return; }
+                var s = e.target.closest('[data-rel-save]'); if (!s) return;
+                var b = { transfer: transfer }; rm.querySelectorAll('[data-l]').forEach(function (i) { var k = i.getAttribute('data-l'); b[k] = i.type === 'checkbox' ? i.checked : ((i.value || '').trim() || null); });
+                if (transfer) b.relation = null;
+                cbConfirm(transfer ? W.tra : W.rel).then(function (ok) { if (!ok) return; s.disabled = true; post(base + 'Release', b).then(done(s)); });
+            });
+        })();
+    </script>
+}

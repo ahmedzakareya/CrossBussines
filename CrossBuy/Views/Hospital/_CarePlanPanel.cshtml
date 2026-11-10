@@ -1,0 +1,106 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model HospitalCarePanel
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H79 — the patient's problem list (all visits) and this stay's nursing care plan, loaded into the nursing station's
+    window. Suggestions from the latest Morse / Braden come first; the forms add a problem (doctors) or a plan (the ward).
+*@
+@{
+    bool canConsult = ViewBag.CanConsult == true, canWard = ViewBag.CanWard == true;
+    string Who(int? id) => id is int i && Model.People.TryGetValue(i, out var n) ? n : "";
+    string D(DateTime utc) => HospitalNursingService.UtcToWard(utc).ToString("yyyy-MM-dd");
+}
+@if (!Model.Ready) { <div class="notice d-flex rounded border border-dashed p-6 hp-notice"><div class="fs-6 text-gray-700">@T[HospitalCarePlanService.NoTables]</div></div> }
+else
+{
+    <ul class="nav nav-tabs nav-line-tabs mb-6 fs-6">
+        <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#cpPlan">@T["Care plan"] <span class="badge badge-light-primary ms-1 hp-num">@Model.Plan.Count(p => p.Status == HospitalCarePlanStatus.Active)</span></a></li>
+        <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#cpProblems">@T["Problem list"] <span class="badge badge-light ms-1 hp-num">@Model.Problems.Count(p => p.Status == HospitalProblemStatus.Active)</span></a></li>
+    </ul>
+    <div class="tab-content">
+        <div class="tab-pane fade show active" id="cpPlan">
+            @foreach (var s in Model.Suggestions)
+            {
+                <div class="notice d-flex align-items-center rounded border border-primary border-dashed bg-light-primary p-4 mb-4">
+                    <i class="ki-outline ki-information-5 fs-2x text-primary me-3"></i>
+                    <div class="flex-grow-1 fs-7 text-gray-800">@T["Suggested: a {0} plan — the latest {1} is {2} ({3}).", T["need:" + s.Need].Value, s.Kind, s.Score, T["riskLevel:" + s.Level].Value]</div>
+                    @if (canWard && Model.Active) {<button type="button" class="btn btn-sm btn-primary ms-3 text-nowrap" data-cp-use="@s.Need">@T["Write the plan"]</button>}
+                </div>
+            }
+            @if (canWard && Model.Active)
+            {
+                <div class="border border-dashed rounded p-5 mb-6" data-cp-form>
+                    <div class="row g-3">
+                        <div class="col-md-5"><label class="form-label required fs-7">@T["Nursing need"]</label><select class="form-select form-select-solid form-select-sm" data-cp="need">@foreach (var n in HospitalCareNeed.All) {<option value="@n" data-goal="@T["cpg:" + n]" data-iv="@T["cpi:" + n]">@T["need:" + n]</option>}</select></div>
+                        <div class="col-md-4"><label class="form-label fs-7">@T["Need in your words"]</label><input class="form-control form-control-solid form-control-sm" maxlength="200" data-cp="needText" /></div>
+                        <div class="col-md-3"><label class="form-label required fs-7">@T["Review by"]</label><input type="date" class="form-control form-control-solid form-control-sm" dir="ltr" data-cp="reviewBy" value="@Model.Today.AddDays(2).ToString("yyyy-MM-dd")" min="@Model.Today.ToString("yyyy-MM-dd")" max="@Model.Today.AddDays(30).ToString("yyyy-MM-dd")" /></div>
+                        <div class="col-12"><label class="form-label required fs-7">@T["Goal"]</label><input class="form-control form-control-solid form-control-sm" maxlength="500" data-cp="goal" /></div>
+                        <div class="col-12"><label class="form-label required fs-7">@T["Interventions"]</label><textarea class="form-control form-control-solid form-control-sm" rows="3" maxlength="2000" data-cp="interventions"></textarea></div>
+                        <div class="col-12 text-end"><button type="button" class="btn btn-sm btn-primary" data-cp-save><i class="ki-outline ki-plus fs-5"></i>@T["Add to the plan"]</button></div>
+                    </div>
+                </div>
+            }
+            @if (Model.Plan.Count == 0) { <div class="text-center text-muted py-6 fs-7">@T["No care plan for this stay yet."]</div> }
+            @foreach (var p in Model.Plan)
+            {
+                bool open = p.Status == HospitalCarePlanStatus.Active, due = HospitalCarePlanRules.ReviewDue(p, Model.Today);
+                <div class="border rounded p-4 mb-3 @(open ? "" : "bg-light opacity-75")">
+                    <div class="d-flex flex-stack flex-wrap gap-2 mb-2">
+                        <div class="fw-bold text-gray-900">@T["need:" + p.Need]@if (p.NeedText != null) {<span class="text-muted fw-semibold"> — <bdi>@p.NeedText</bdi></span>}</div>
+                        <div class="d-flex align-items-center gap-2">
+                            @if (open) {<span class="badge @(due ? "badge-light-danger" : "badge-light-primary") fs-9">@if (due) {@T["Review due"]} else {@T["Review by {0}", p.ReviewBy.ToString("yyyy-MM-dd")]}</span>}
+                            else {<span class="badge @(p.Status == HospitalCarePlanStatus.Met ? "badge-light-success" : "badge-light") fs-9">@T["cps:" + p.Status]</span>}
+                        </div>
+                    </div>
+                    <div class="fs-7 mb-1"><span class="text-muted">@T["Goal"]:</span> <bdi class="text-gray-800">@p.Goal</bdi></div>
+                    <div class="fs-7" style="white-space:pre-wrap"><span class="text-muted">@T["Interventions"]:</span> <bdi class="text-gray-800">@p.Interventions</bdi></div>
+                    @if (!open) {<div class="fs-7 mt-2"><span class="text-muted">@T["Outcome"]:</span> <bdi class="text-gray-800">@p.Outcome</bdi></div>}
+                    <div class="d-flex flex-stack mt-3">
+                        <div class="text-muted fs-8">@Who(p.CreatedByEmployeeId) · <span class="hp-num">@D(p.CreatedAt)</span>@if (!open) {<text> → @Who(p.ClosedByEmployeeId) · <span class="hp-num">@D(p.ClosedAt!.Value)</span></text>}</div>
+                        @if (open && canWard) {<div class="d-flex gap-2">
+                            <button type="button" class="btn btn-sm btn-light-success py-1 px-3 fs-8" data-cp-close="@p.ID" data-status="Met" data-what="@T["need:" + p.Need]">@T["Goal met"]</button>
+                            <button type="button" class="btn btn-sm btn-light py-1 px-3 fs-8" data-cp-close="@p.ID" data-status="Discontinued" data-what="@T["need:" + p.Need]">@T["Discontinue"]</button></div>}
+                    </div>
+                </div>
+            }
+        </div>
+        <div class="tab-pane fade" id="cpProblems">
+            @if (canConsult)
+            {
+                <div class="border border-dashed rounded p-5 mb-6" data-pb-form>
+                    <div class="row g-3">
+                        <div class="col-12"><label class="form-label fs-7">@T["Diagnosis (ICD-10)"]</label><select class="form-select form-select-solid form-select-sm" data-pb="code" data-placeholder="@T["Search by code or name…"]"><option></option></select></div>
+                        <div class="col-md-8"><label class="form-label fs-7">@T["Or write the problem"]</label><input class="form-control form-control-solid form-control-sm" maxlength="200" data-pb="name" /></div>
+                        <div class="col-md-4"><label class="form-label required fs-7">@T["Kind"]</label><select class="form-select form-select-solid form-select-sm" data-pb="kind">@foreach (var k in HospitalProblemKind.All) {<option value="@k">@T["pk:" + k]</option>}</select></div>
+                        <div class="col-md-4"><label class="form-label fs-7">@T["Since"]</label><input type="date" class="form-control form-control-solid form-control-sm" dir="ltr" data-pb="onsetDate" max="@Model.Today.ToString("yyyy-MM-dd")" /></div>
+                        <div class="col-md-8"><label class="form-label fs-7">@T["Notes"]</label><input class="form-control form-control-solid form-control-sm" maxlength="500" data-pb="note" /></div>
+                        <div class="col-12 text-end"><button type="button" class="btn btn-sm btn-primary" data-pb-save><i class="ki-outline ki-plus fs-5"></i>@T["Add to the list"]</button></div>
+                    </div>
+                </div>
+            }
+            @if (Model.Problems.Count == 0) { <div class="text-center text-muted py-6 fs-7">@T["No problem on the patient's list yet."]</div> }
+            else
+            {
+                <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-2 mb-0">
+                    <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0"><th>@T["Problem"]</th><th>@T["Kind"]</th><th>@T["Since"]</th><th>@T["State"]</th><th class="text-end"></th></tr></thead>
+                    <tbody>
+                    @foreach (var p in Model.Problems)
+                    {
+                        bool active = p.Status == HospitalProblemStatus.Active;
+                        <tr class="@(active ? "" : "text-muted")">
+                            <td>@if (p.Code != null) {<span class="badge hp-code fs-9 hp-num me-2">@p.Code</span>}<span class="fw-semibold @(active ? "text-gray-900" : "")">@DisplayName.Of(p.Name, p.NameEn ?? p.Name)</span>
+                                @if (p.Note != null) {<div class="fs-8 text-muted"><bdi>@p.Note</bdi></div>}</td>
+                            <td><span class="badge @(p.Kind == HospitalProblemKind.Chronic ? "badge-light-info" : "badge-light-primary") fs-9">@T["pk:" + p.Kind]</span></td>
+                            <td class="hp-num">@(p.OnsetDate?.ToString("yyyy-MM-dd") ?? "—")</td>
+                            <td>@if (active) {<span class="badge badge-light-danger fs-9">@T["pbs:Active"]</span>} else {<span class="badge badge-light fs-9">@T["pbs:Resolved"]</span><div class="fs-9 hp-num">@D(p.ResolvedAt!.Value)</div>}</td>
+                            <td class="text-end">@if (active && canConsult) {<button type="button" class="btn btn-sm btn-light py-1 px-2 fs-8" data-pb-resolve="@p.ID" data-what="@DisplayName.Of(p.Name, p.NameEn ?? p.Name)">@T["Resolved"]</button>}</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table></div>
+            }
+        </div>
+    </div>
+}
