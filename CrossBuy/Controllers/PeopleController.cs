@@ -513,12 +513,9 @@ namespace CrossBuy.Controllers
 			if (emp == null) return RedirectToAction("Login", "Account");
 			var req = await _context.EmployeeRequests.AsNoTracking().FirstOrDefaultAsync(r => r.ID == id && r.EmployeeID == emp.ID);
 			if (req == null || req.RequestType != "Letter" || req.Status != 1) return RedirectToAction(nameof(Requests));
-			var ent = await _context.Employee.AsNoTracking().FirstOrDefaultAsync(e => e.ID == emp.ID);
-			var company = emp.EmpCompanyID.HasValue ? await _context.Companies.AsNoTracking().FirstOrDefaultAsync(c => c.CompanyID == emp.EmpCompanyID.Value) : null;
-			var jobTitle = emp.JobTitleID.HasValue ? await _context.JobTitles.AsNoTracking().FirstOrDefaultAsync(j => j.ID == emp.JobTitleID.Value) : null;
-			ViewBag.Employee = emp; ViewBag.Entity = ent; ViewBag.Company = company; ViewBag.JobTitle = jobTitle;
-			ViewBag.Payslip = await _requests.LatestPayslipAsync(emp.ID);
-			return View(req);
+			// Printing is Report Studio's (owner rule): the letter is the Hr.Letter document, which re-checks that the
+			// letter is approved and the caller's own (or the caller is HR) before it shows anything.
+			return Redirect(Url.Action("Viewer", "Reports", new { id = "Hr.Letter", RequestId = req.ID, run = true })!);
 		}
 
 		// ---------------- My Appraisals (ESS / HR-9) ----------------
@@ -597,6 +594,8 @@ namespace CrossBuy.Controllers
 			var slips = await _context.Payslips.AsNoTracking()
 				.Where(s => s.EmployeeID == emp.ID)
 				.OrderByDescending(s => s.Year).ThenByDescending(s => s.Month).ToListAsync();
+			var companyId = slips.FirstOrDefault()?.CompanyID ?? await _context.Employee.Where(e => e.ID == emp.ID).Select(e => e.EmpCompanyID).FirstOrDefaultAsync();
+			ViewBag.Currency = (await new CrossBuy.BL.Hr.HrRulePackService(_context).EffectiveAsync(companyId))?.Rules.Currency;   // the pack's currency, not a constant
 			return View(slips);
 		}
 

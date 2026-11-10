@@ -57,7 +57,7 @@
                                 </select>
                                 <label class="fw-semibold fs-6 mb-2">@Localizer["Addressee (optional)"]</label>
                                 <input name="addressee" class="form-control form-control-solid mb-4" placeholder="@Localizer["e.g. Bank"]" />
-                                @if (!Model.HasPayslip) { <div class="text-warning fs-8 mb-3">@Localizer["No payslip yet — the salary certificate will have no figures until the first payslip is posted."]</div> }
+                                @if (!Model.HasPayslip) { <div class="text-gray-600 fs-8 mb-3">@Localizer["No payslip yet — the salary certificate will have no figures until the first payslip is posted."]</div> }
                             </div>
 
                             <div id="rq_perm" class="d-none">

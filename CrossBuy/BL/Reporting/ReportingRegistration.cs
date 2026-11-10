@@ -268,6 +268,10 @@ namespace CrossBuy.BL.Reporting
             // The payslip as a Report Studio document (2026-11-10): the employee prints their own, HR anyone's.
             services.AddSingleton<IReportDefinitionProvider, HrPayslipReportDefinitionProvider>();
             services.AddScoped<IReportDataSource, HrPayslipDataSource>();
+            // The HR letter and the employee documents register as Report Studio documents (2026-11-10).
+            services.AddSingleton<IReportDefinitionProvider, HrDocumentReportDefinitionProvider>();
+            services.AddScoped<IReportDataSource, HrLetterDataSource>();
+            services.AddScoped<IReportDataSource, HrEmployeeDocumentsDataSource>();
             services.AddScoped<IReportDataSource, HrLeaveLiabilityDataSource>();
             services.AddScoped<IReportDataSource, HrExpiriesDataSource>();
 

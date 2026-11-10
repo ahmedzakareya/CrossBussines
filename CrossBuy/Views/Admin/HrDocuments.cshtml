@@ -40,8 +40,12 @@
             </ul>
         </div>
         <div class="d-flex align-items-center gap-2 gap-lg-3 d-print-none">
-            <a href="@Url.Action("DocExpiryAlerts","Admin")" class="btn btn-sm btn-light-warning"><i class="ki-outline ki-notification-status fs-4"></i>@Localizer["Document & contract expiry alerts"]</a>
-            @if (selEmp.HasValue) { <button onclick="window.print()" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-printer fs-4"></i>@SR["Print"]</button> }
+            <a href="@Url.Action("DocExpiryAlerts","Admin")" class="btn btn-sm btn-light"><i class="ki-outline ki-notification-status fs-4"></i>@Localizer["Document & contract expiry alerts"]</a>
+            @* Printing is Report Studio's (owner rule): the employee's register is the Hr.EmployeeDocuments document. *@
+            @if (selEmp.HasValue)
+            {
+                @await Html.PartialAsync("_ReportPrintMenu", new CrossBuy.BL.Reporting.ReportPrintMenuModel { ScreenKey = "Hr.EmployeeDocuments", DocumentId = selEmp.Value.ToString() })
+            }
         </div>
     </div></div>
     <!--end::Toolbar-->
@@ -98,8 +102,8 @@
                         </div>
                         <div class="col-6 col-lg-3">
                             <div class="card card-dashed flex-center min-w-125px my-3 p-6">
-                                <span class="fs-4 fw-semibold @(attention > 0 ? "text-warning" : "text-primary") pb-1 px-2">@Localizer["Needs attention"]</span>
-                                <span class="fs-lg-2tx fw-bold d-flex justify-content-center @(attention > 0 ? "text-warning" : "")" data-kt-countup="true" data-kt-countup-value="@attention">@attention</span>
+                                <span class="fs-4 fw-semibold @(attention > 0 ? "text-danger" : "text-primary") pb-1 px-2">@Localizer["Needs attention"]</span>
+                                <span class="fs-lg-2tx fw-bold d-flex justify-content-center @(attention > 0 ? "text-danger" : "")" data-kt-countup="true" data-kt-countup-value="@attention">@attention</span>
                             </div>
                         </div>
                     </div>
@@ -119,7 +123,7 @@
                     }
                     else
                     {
-                        <div class="notice d-flex bg-light-warning rounded border-warning border border-dashed p-6 mt-4">
+                        <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-6 mt-4">
                             <span class="symbol symbol-45px me-5"><span class="symbol-label bg-warning"><i class="ki-outline ki-information-5 fs-2x text-white"></i></span></span>
                             <div class="d-flex flex-stack flex-grow-1 flex-wrap flex-md-nowrap">
                                 <div class="mb-3 mb-md-0 fw-semibold pe-5">
@@ -256,6 +260,9 @@
 
 @{ ViewData["GalleryManage"] = true; ViewData["GalleryEmployeeId"] = selEmp; }
 @await Html.PartialAsync("_HrDocGallery")
+
+@* The shared report dialog the print menu opens (Hr.EmployeeDocuments). *@
+@if (selEmp.HasValue) { @await Html.PartialAsync("_ReportPreviewModal", (object)(Localizer["Employee contracts & documents"].Value)) }
 
 @section Scripts {
 @await Html.PartialAsync("_PersonSelect")

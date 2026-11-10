@@ -30,7 +30,7 @@
                             <td class="fw-bold text-gray-800">@months[s.Month] @s.Year</td>
                             <td class="text-primary">@M(s.GrossEarnings)</td>
                             <td class="text-danger">@M(ded)</td>
-                            <td class="fw-bold fs-5">@M(s.Net) <span class="fs-8 text-muted">EGP</span></td>
+                            <td class="fw-bold fs-5">@M(s.Net) <span class="fs-8 text-muted">@(ViewBag.Currency as string)</span></td>
                             <td class="text-end"><a href="@Url.Action("Payslip","People", new { id = s.ID })" class="btn btn-sm btn-light-primary">@Localizer["View / print"]</a></td>
                         </tr>
                     }

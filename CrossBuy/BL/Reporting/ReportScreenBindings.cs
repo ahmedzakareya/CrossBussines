@@ -82,6 +82,8 @@ namespace CrossBuy.BL.Reporting
         public const string HospitalConsent = "Hospital.Consent";       // H60
         public const string HospitalPatientStatement = "Hospital.PatientStatement";   // H63
         public const string HrPayslip = "Hr.Payslip";                   // the employee's payslip (2026-11-10)
+        public const string HrLetter = "Hr.Letter";                     // an approved HR letter (2026-11-10)
+        public const string HrEmployeeDocuments = "Hr.EmployeeDocuments";   // one employee's documents register (2026-11-10)
     }
 
     public static class ReportScreenBindings
@@ -195,6 +197,8 @@ namespace CrossBuy.BL.Reporting
             new() { ScreenKey = ReportScreenKeys.HospitalConsent, ReportCode = HospitalDocumentDatasetCodes.Consent, IdParameter = "ConsentId", SortOrder = 10 },   // H60
             new() { ScreenKey = ReportScreenKeys.HospitalPatientStatement, ReportCode = HospitalDocumentDatasetCodes.PatientStatement, IdParameter = "PatientId", SortOrder = 10 },   // H63
             new() { ScreenKey = ReportScreenKeys.HrPayslip, ReportCode = HrPayslipDatasetCodes.Payslip, IdParameter = HrPayslipDatasetCodes.IdParameter, SortOrder = 10 },   // 2026-11-10
+            new() { ScreenKey = ReportScreenKeys.HrLetter, ReportCode = HrDocumentDatasetCodes.Letter, IdParameter = HrDocumentDatasetCodes.LetterId, SortOrder = 10 },   // 2026-11-10
+            new() { ScreenKey = ReportScreenKeys.HrEmployeeDocuments, ReportCode = HrDocumentDatasetCodes.EmployeeDocuments, IdParameter = HrDocumentDatasetCodes.EmployeeId, SortOrder = 10 },   // 2026-11-10
 
             // THE LISTS print their own rows under their own filters. No IdParameter on any of them:
             // there is no single document to pin, and that absence is what tells the menu it is looking
