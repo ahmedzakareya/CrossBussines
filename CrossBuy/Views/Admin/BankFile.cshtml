@@ -63,6 +63,12 @@
                         <div class="fw-bold">@L("ملف الاشتراكات الشهري لمؤسسة التأمينات", "The monthly contributions file for the insurance authority")</div>
                         <div class="fs-7">@L("سطر لكل موظف عليه اشتراك هذا الشهر: الأجر الخاضع وحصة الموظف وحصة صاحب العمل، بنفس حساب كشف التأمينات والرواتب. شكل الملف كله إعداد كملف البنك، لمطابقة نموذج المؤسسة دون برمجة.",
                             "One line per employee with a contribution this month: the insurable wage, the employee's and the employer's share, computed exactly as the insurance statement and payroll do. The whole shape is a setting, as for the bank file, to match the authority's template without code.")</div>
+                        @if (ViewBag.InsurancePosted is bool posted)
+                        {
+                            <div class="fs-7 fw-semibold mt-1">@(posted
+                                ? L("مصدر هذا الشهر: الرواتب المرحّلة — ما خُصم فعلاً من كل موظف.", "This month's source: the posted payroll — what was actually deducted from each employee.")
+                                : L("مصدر هذا الشهر: الحساب الحالي — رواتب الشهر لم تُرحَّل بعد.", "This month's source: the current computation — the month's payroll is not posted yet."))</div>
+                        }
                     </div>
                     <a href="@Url.Action("SocialInsurance", new { month = m.ToString("yyyy-MM") })" class="btn btn-sm btn-light flex-shrink-0">@L("كشف التأمينات", "Insurance statement")</a>
                 </div>

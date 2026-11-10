@@ -47,6 +47,7 @@ namespace CrossBuy.Controllers
 			var good = lines.Where(l => l.Problem == null).ToList();
 			var ctx = await BusinessContexts.TryGetCurrentAsync();
 			bool canManage = ctx != null && await HrAccess.CanAsync(ctx, CrossBuy.BL.HrActions.PayrollManage, null);
+			if (k == CrossBuy.BL.Hr.HrBankFileFields.Insurance) ViewBag.InsurancePosted = await CrossBuy.BL.Hr.HrInsuranceStatement.PostedAsync(Db, gate.CompanyId, m, ct);
 			return View("BankFile", new BankFilePageModel(k, m, fmt, saved, CrossBuy.BL.Hr.HrBankFileService.Columns(fmt), good.Count, good.Sum(l => l.Net),
 				lines.Count - good.Count, lines.Count > 0, await PackCurrencyAsync(gate.CompanyId, ct),
 				CrossBuy.BL.Hr.HrBankFileService.FileName(fmt, m.Year, m.Month), canManage, lines.Where(l => l.Problem != null).ToList()));

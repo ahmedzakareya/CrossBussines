@@ -45,10 +45,41 @@ namespace CrossBuy.BL.Hr
 			return (rows.OrderBy(r => r.Name).ToList(), pack, eff?.Pack);
 		}
 
+		/// Whether the month's payroll is posted (any payslip exists for it).
+		public static Task<bool> PostedAsync(CrossDbContext db, int company, DateTime month, CancellationToken ct = default) =>
+			db.Payslips.AsNoTracking().AnyAsync(p => p.CompanyID == company && p.Year == month.Year && p.Month == month.Month, ct);
+
 		/// The file's lines: employees with a contribution, as export lines (Net = the total contribution, which the trailer
 		/// totals; Wage / EmployeeShare / EmployerShare / TotalShare as named amounts).
+		///
+		/// A POSTED month reports what was posted (owner, 2026-11-10): each payslip's SiEmployee / SiCompany and the wage payroll
+		/// insured (basic + allowances), so the authority sees exactly what was deducted. A month not yet posted reports the
+		/// statement's computation, i.e. what payroll will deduct.
 		public static async Task<List<HrBankFileLine>> FileLinesAsync(CrossDbContext db, int company, DateTime month, CancellationToken ct = default)
 		{
+			if (await PostedAsync(db, company, month, ct))
+			{
+				var pack = (await new HrRulePackService(db).EffectiveAsync(company, ct))?.Rules;
+				var nationals = await HrInsurance.NationalCountryIdsAsync(db, pack, ct);
+				var slips = await db.Payslips.AsNoTracking()
+					.Where(p => p.CompanyID == company && p.Year == month.Year && p.Month == month.Month && p.SiEmployee + p.SiCompany > 0)
+					.Join(db.Employee.AsNoTracking(), p => p.EmployeeID, e => e.ID, (p, e) => new
+					{
+						p.EmployeeID, e.FullName, e.FullNameEn, e.CivilIdNumber, e.CountryID, Wage = p.BaseSalary + p.Allowances, p.SiEmployee, p.SiCompany,
+					})
+					.OrderBy(x => x.FullName).ToListAsync(ct);
+				int n = 0;
+				return slips.Select(x =>
+				{
+					var total = x.SiEmployee + x.SiCompany;
+					bool national = x.CountryID is int c && nationals.Contains(c);
+					return new HrBankFileLine(++n, x.EmployeeID, x.FullName, x.FullNameEn, x.CivilIdNumber, null, null, x.Wage, 0, x.Wage, x.SiEmployee, total,
+						string.IsNullOrWhiteSpace(x.CivilIdNumber) ? "NoCivilId" : null,
+						new Dictionary<string, decimal> { ["Wage"] = x.Wage, ["EmployeeShare"] = x.SiEmployee, ["EmployerShare"] = x.SiCompany, ["TotalShare"] = total },
+						national ? "1" : "0");
+				}).ToList();
+			}
+
 			var (rows, _, _) = await RowsAsync(db, company, month, ct);
 			int seq = 0;
 			return rows.Where(r => r.Employee + r.Employer > 0).OrderBy(r => r.NameAr).Select(r =>
