@@ -20,7 +20,9 @@ namespace CrossBuy.BL.Reporting
 		public const string Letter = "Hr.Letter";
 		public const string LetterId = "RequestId";
 		public const string EmployeeDocuments = "Hr.EmployeeDocuments";
-		public const string EmployeeId = "EmployeeId";
+		// NOT "EmployeeId": that name is a SYSTEM parameter (ReportSystemParameters.EmployeeId, the caller), filled by the
+		// platform and never read from the URL, so the screen's value was silently dropped.
+		public const string EmployeeId = "SubjectEmployeeId";
 	}
 
 	public static class HrDocumentDatasets

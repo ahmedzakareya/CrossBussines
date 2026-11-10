@@ -221,6 +221,18 @@ namespace CrossBuy.Tests.Hr
 		[Fact] public void Nobody_reads_another_companys_payslip() => Assert.False(CrossBuy.BL.Reporting.HrPayslipDataSource.MayRead(Ctx(1, 5, "Admin"), 2, 5));
 		[Fact] public void An_unresolved_company_reads_nothing() => Assert.False(CrossBuy.BL.Reporting.HrPayslipDataSource.MayRead(Ctx(0, 5), 0, 5));
 
+		// ---- HR report parameters never take a name the platform reserves (it fills those itself and ignores the URL) ----
+		[Fact]
+		public void Hr_report_parameters_avoid_the_reserved_system_names()
+		{
+			var reserved = typeof(CrossBuy.BL.Reporting.ReportSystemParameters).GetFields()
+				.Where(f => f.IsLiteral && f.FieldType == typeof(string)).Select(f => (string)f.GetRawConstantValue()!).ToHashSet();
+			var datasets = new[] { CrossBuy.BL.Reporting.HrPayslipDataset.Definition(), CrossBuy.BL.Reporting.HrDocumentDatasets.Letter(), CrossBuy.BL.Reporting.HrDocumentDatasets.EmployeeDocuments() };
+			foreach (var d in datasets)
+				foreach (var p in d.Parameters.Where(p => !p.SystemSupplied))
+					Assert.False(reserved.Contains(p.Key), $"{d.DatasetCode}: parameter '{p.Key}' is a reserved system name");
+		}
+
 		// ---- the Excel import's normalisation ------------------------------------------------------------------------
 		[Fact]
 		public void Imported_values_are_normalised_and_an_iban_is_masked_for_history()
