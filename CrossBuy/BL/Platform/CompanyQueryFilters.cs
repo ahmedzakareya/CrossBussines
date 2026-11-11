@@ -59,6 +59,9 @@ namespace CrossBuy.BL.Platform
             nameof(Item), nameof(Warehouse), nameof(Quotation), nameof(Lead), nameof(Opportunity),
             nameof(CrmAccount), nameof(BusinessEvent), nameof(Notification),
             nameof(Tag), nameof(TagAssignment),
+            // HR0 (2026-11-11): the HR set-up tables, shared by every company until now.
+            nameof(Hierarchical), nameof(JobTitle), nameof(LeaveTypes), nameof(Policies),
+            nameof(LeavePolicies), nameof(AttendancePolicies), nameof(SalaryPolicies),
         };
 
         // The pilot membership test, used by B4's write guard so the read filter and the write guard cover exactly
@@ -125,6 +128,23 @@ namespace CrossBuy.BL.Platform
                 || e.CompanyID == db.CompanyScope.FilterCompanyId);
 
             builder.Entity<Warehouse>().HasQueryFilter(e => db.CompanyScope.AllowsCrossCompany
+                || e.CompanyID == db.CompanyScope.FilterCompanyId);
+            // HR0 (2026-11-11): the organisation tree, job titles, leave types and the policy groups with their
+            // leave / attendance / salary policies. Until now every company read and edited the same rows. A row
+            // with no company (CompanyID null — orphans of deleted or test companies) is seen by no company.
+            builder.Entity<Hierarchical>().HasQueryFilter(e => db.CompanyScope.AllowsCrossCompany
+                || e.CompanyID == db.CompanyScope.FilterCompanyId);
+            builder.Entity<JobTitle>().HasQueryFilter(e => db.CompanyScope.AllowsCrossCompany
+                || e.CompanyID == db.CompanyScope.FilterCompanyId);
+            builder.Entity<LeaveTypes>().HasQueryFilter(e => db.CompanyScope.AllowsCrossCompany
+                || e.CompanyID == db.CompanyScope.FilterCompanyId);
+            builder.Entity<Policies>().HasQueryFilter(e => db.CompanyScope.AllowsCrossCompany
+                || e.CompanyID == db.CompanyScope.FilterCompanyId);
+            builder.Entity<LeavePolicies>().HasQueryFilter(e => db.CompanyScope.AllowsCrossCompany
+                || e.CompanyID == db.CompanyScope.FilterCompanyId);
+            builder.Entity<AttendancePolicies>().HasQueryFilter(e => db.CompanyScope.AllowsCrossCompany
+                || e.CompanyID == db.CompanyScope.FilterCompanyId);
+            builder.Entity<SalaryPolicies>().HasQueryFilter(e => db.CompanyScope.AllowsCrossCompany
                 || e.CompanyID == db.CompanyScope.FilterCompanyId);
 
             // Quotation holds ZERO rows live, so it is the one pilot entity where the filter cannot change any

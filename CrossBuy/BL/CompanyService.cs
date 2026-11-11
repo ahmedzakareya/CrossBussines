@@ -349,6 +349,28 @@ namespace CrossBuy.BL
 
 
 
+		// HR0 (2026-11-11): THE ORGANISATION TREE IS COMPANY-SCOPED NOW (Hierarchical carries a CompanyID under the global
+		// company filter and the write guard). A company's or a branch's node belongs to THAT company, which is often not
+		// the company the administrator is operating as — and a new company's node may hang under its parent company's.
+		// Reading or writing those nodes is a cross-company act, so it runs inside an audited CrossCompanyAdministration
+		// grant (platform admins only). Inside the grant the lookups see every company's nodes, exactly as they did before
+		// the filter existed, so their behaviour does not change; outside it a lookup would miss the node and a duplicate
+		// would be created in the wrong company. When the node is the operator's own company and no parent crosses over,
+		// no grant is taken and nothing changes for a company administrator editing their own branches.
+		//
+		// `sp` is the DI scope the save runs in (these methods open their own scope): its company holder starts empty
+		// and is set by resolving the signed-in identity there, which is done first — otherwise every tree lookup in that
+		// scope would filter on company 0 and find nothing.
+		private static async Task<IDisposable?> TreeWriteScopeAsync(IServiceProvider sp, int companyId, bool crossesCompanies)
+		{
+			var ctx = await sp.GetRequiredService<IBusinessContextAccessor>().GetCurrentAsync();   // sets the scope's company
+			var scope = sp.GetRequiredService<ICompanyScopeHolder>();
+			if (scope.ActiveBypass != null) return null;   // already inside a grant
+			if (!crossesCompanies && scope.CompanyId == companyId) return null;
+			return sp.GetRequiredService<ICompanyIsolationBypass>().Begin(
+				CompanyBypassKind.CrossCompanyAdministration, ctx, $"organisation tree node of company {companyId}");
+		}
+
 		public async Task<CompanyDto> SaveCompanyAsync(CompanyDto model, List<Models.Context.Admin.Attachment> attachments)
 		{
 			try
@@ -392,6 +414,8 @@ namespace CrossBuy.BL
 								context.Companies.Add(company);
 								await context.SaveChangesAsync();
 
+                                // HR0: the tree is company-scoped now — see TreeWriteScopeAsync
+                                using var treeScopeCreate = await TreeWriteScopeAsync(scope.ServiceProvider, company.CompanyID, crossesCompanies: company.ParentCompany != null);
                                 int? ParentID = null;
 
                                 if (company.ParentCompany != null)
@@ -408,6 +432,7 @@ namespace CrossBuy.BL
 									H_Name = company.ComoanyNameAr,
 									H_NameEn = company.CompanyName,
 									H_ObjectID = company.CompanyID,
+									CompanyID = company.CompanyID,   // HR0: the node belongs to that company
 									H_Type = 1,
 									H_Parent = ParentID
 								};
@@ -689,6 +714,8 @@ namespace CrossBuy.BL
 
 								await context.SaveChangesAsync();
 
+								// HR0: the tree is company-scoped now — see TreeWriteScopeAsync
+								using var treeScopeUpdate = await TreeWriteScopeAsync(scope.ServiceProvider, company.CompanyID, crossesCompanies: company.ParentCompany != null);
 								// Retrieve the parent company ID (if any)
 								int? ParentID = context.Hierarchicals
 									.Where(c => c.H_ObjectID == company.ParentCompany)
@@ -705,6 +732,7 @@ namespace CrossBuy.BL
 										H_Name = company.ComoanyNameAr,
 										H_NameEn = company.CompanyName,
 										H_ObjectID = company.CompanyID,
+										CompanyID = company.CompanyID,   // HR0: the node belongs to that company
 										H_Type = 1,
 										H_Parent = ParentID
 									};
@@ -721,6 +749,7 @@ namespace CrossBuy.BL
 										H_Name = company.ComoanyNameAr,
 										H_NameEn = company.CompanyName,
 										H_ObjectID = company.CompanyID,
+										CompanyID = company.CompanyID,   // HR0: the node belongs to that company
 										H_Type = 1,
 										H_Parent = ParentID
 									};
@@ -978,6 +1007,8 @@ namespace CrossBuy.BL
 								await context.SaveChangesAsync();
 
 								// Retrieve the parent company ID (if any)
+								// HR0: the tree is company-scoped now — see TreeWriteScopeAsync
+								using var treeScopeBranch = await TreeWriteScopeAsync(scope.ServiceProvider, branch.CompanyID, crossesCompanies: false);
 								int? ParentID = context.Hierarchicals.Where(c => c.H_ObjectID == branch.CompanyID).Select(c => c.H_ID).FirstOrDefault();
 
 								// Create and initialize a new hierarchical entity
@@ -986,6 +1017,7 @@ namespace CrossBuy.BL
 									H_Name = branch.NameAr,
 									H_NameEn = branch.Name,
 									H_ObjectID = branch.CompanyID,
+									CompanyID = branch.CompanyID,   // HR0: the node belongs to that company
 									H_Type = 2,
 									H_Parent = ParentID
 								};
@@ -1033,6 +1065,8 @@ namespace CrossBuy.BL
 								await context.SaveChangesAsync();
 
 								// Retrieve the parent company ID (if any)
+								// HR0: the tree is company-scoped now — see TreeWriteScopeAsync
+								using var treeScopeBranchUpdate = await TreeWriteScopeAsync(scope.ServiceProvider, branch.CompanyID, crossesCompanies: false);
 								int? ParentID =context.Hierarchicals.Where(c=>c.H_ObjectID == branch.CompanyID).Select(c=>c.H_ID).FirstOrDefault();
 
 								var CompanyisInHierarchicals = context.Hierarchicals.Where(c => c.H_ObjectID == model.ID).FirstOrDefault();
@@ -1045,6 +1079,7 @@ namespace CrossBuy.BL
 										H_Name = branch.NameAr,
 										H_NameEn = branch.Name,
 										H_ObjectID = branch.CompanyID,
+										CompanyID = branch.CompanyID,   // HR0: the node belongs to that company
 										H_Type = 2,
 										H_Parent = ParentID
 									};
@@ -1061,6 +1096,7 @@ namespace CrossBuy.BL
 										H_Name = branch.NameAr,
 										H_NameEn = branch.Name,
 										H_ObjectID = branch.CompanyID,
+										CompanyID = branch.CompanyID,   // HR0: the node belongs to that company
 										H_Type = 1,
 										H_Parent = ParentID
 									};

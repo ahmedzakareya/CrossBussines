@@ -3,6 +3,9 @@
 	public class Hierarchical : BaseEntity
 	{
 		public int H_ID { get; set; } // Primary Key
+		// HR0 (2026-11-11): the owning company. Filtered by CompanyQueryFilters and guarded on write; null = no company
+		// (an orphan no company sees). Set by deploy/sql/hr0_company_isolation.sql for existing rows.
+		public int? CompanyID { get; set; }
 		public string? H_Name { get; set; } // Arabic Name
 		public string? H_NameEn { get; set; } // English Name
 		public int? H_Parent { get; set; } // Parent ID (Self-referencing)

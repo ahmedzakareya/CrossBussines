@@ -186,6 +186,16 @@ function Get-Rank([string]$relative, [string]$name) {
 # Reviewed 2026-08-03 for Stage 0 Batch B. Re-review whenever the scan flags a new batch.
 # ---------------------------------------------------------------------------------------------
 $reviewLedger = @{
+    'CrossBuy/deploy/sql/hr0_company_isolation.sql' = @{
+        verdict = 'idempotent'
+        sha256 = 'ac7ab6414e78d36e49ec715dde6af132307563052f7e1373f232773333de95e5'
+        evidence = 'Reviewed by its author (TAB-0, 2026-11-11). Each ALTER is guarded by COL_LENGTH IS NULL; every UPDATE fills only rows WHERE CompanyID IS NULL; the index is IF NOT EXISTS. Applied to CrossBuyDB2 2026-11-11 and re-run: all 8 statements affected 0 rows.'
+    }
+    'CrossBuy/deploy/sql/hr_rule_packs_leave_eligibility.sql' = @{
+        verdict = 'idempotent'
+        sha256 = '4f4759b5a9d89ff707279cac1ed4f9b1be76c9bde0b9273a299b63eea95419de'
+        evidence = 'Reviewed by its author (TAB-0, 2026-11-10). The only INSERT targets a table variable (@set). Each UPDATE of dbo.HrRulePacks fills one JSON field addressed by array index, guarded by that line''s code AND by JSON_VALUE(RulesJson, path) IS NULL, so a re-run matches no row and a company''s own edit is never overwritten. The Version bump only touches IDs output by those updates (@touched), so a re-run bumps nothing. Single transaction, XACT_ABORT ON.'
+    }
     'CrossBuy/deploy/sql/hr_document_attachments.sql' = @{
         verdict = 'idempotent'
         sha256 = '49224c72aa826cff09ed4e09f4c7c146eadb751036052e66e645fd9d2d9558f6'

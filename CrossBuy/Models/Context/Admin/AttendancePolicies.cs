@@ -5,6 +5,9 @@ namespace CrossBuy.Models.Context.Admin
     public class AttendancePolicies : BaseEntity
     {
         public int ID { get; set; }
+        // HR0 (2026-11-11): the owning company. Filtered by CompanyQueryFilters and guarded on write; null = no company
+        // (an orphan no company sees). Set by deploy/sql/hr0_company_isolation.sql for existing rows.
+        public int? CompanyID { get; set; }
         public int LeavePolicyTypeID { get; set; }
 
         public int AllowedGraceMinutes { get; set; }
