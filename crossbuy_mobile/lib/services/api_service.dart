@@ -256,9 +256,10 @@ class ApiService {
     return AttendanceMonth.fromJson(Map<String, dynamic>.from(res.data));
   }
 
-  Future<List<MyRequest>> getMyRequests() async {
+  /// (currency, my requests) — the currency is the company's, for the amount of an advance
+  Future<(String, List<MyRequest>)> getMyRequests() async {
     final res = await _dio.get('/api/ess/requests');
-    return _list(res.data).map(MyRequest.fromJson).toList();
+    return ((res.data['currency'] as String?) ?? '', _list(res.data).map(MyRequest.fromJson).toList());
   }
 
   Future<(bool, String?)> createRequest(Map<String, dynamic> body) async {

@@ -7,8 +7,9 @@ import '../theme/brand.dart';
 import '../widgets/ui.dart';
 import 'inbox_tab.dart' show requestTitle, requestPill;
 
-/// MY REQUESTS — letters, permissions and advances with their status; and the form to raise one. The server routes it
-/// through the company's approval path and checks the advance against the legal cap; its refusal is shown as is.
+/// MY REQUESTS (the owner's reference): letters, permissions and advances as request cards with their status; and
+/// the form to raise one. The server routes it through the company's approval path and checks an advance against the
+/// legal cap; its refusal is shown as it is.
 class RequestsScreen extends StatefulWidget {
   const RequestsScreen({super.key});
   @override
@@ -16,43 +17,51 @@ class RequestsScreen extends StatefulWidget {
 }
 
 class _RequestsScreenState extends State<RequestsScreen> {
-  late Future<List<MyRequest>> _future = ApiService.instance.getMyRequests();
+  late Future<(String, List<MyRequest>)> _future = ApiService.instance.getMyRequests();
+
+  IconData _icon(String? t) => switch (t) { 'Advance' => Lu.handCoins, 'Permission' => Lu.clock3, 'ProfileChange' => Lu.userPen, _ => Lu.fileText };
 
   @override
-  Widget build(BuildContext context) => PageFrame(
-        title: L(context, 'طلباتي', 'My requests'),
-        actions: [
-          IconButton(
-            onPressed: () async {
-              await Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NewRequestScreen()));
-              if (mounted) setState(() => _future = ApiService.instance.getMyRequests());
-            },
-            icon: const Icon(Icons.add),
-          ),
-        ],
-        child: FutureBuilder<List<MyRequest>>(
-          future: _future,
-          builder: (context, s) {
-            if (s.hasError) return Padding(padding: const EdgeInsets.all(16), child: SectionCard(child: EmptyNote(icon: Icons.cloud_off_outlined, title: L(context, 'تعذّر تحميل الطلبات', 'Could not load requests'), text: L(context, 'تحقق من الاتصال ثم أعد المحاولة.', 'Check the connection and try again.'))));
-            if (!s.hasData) return const Center(child: CircularProgressIndicator());
-            if (s.data!.isEmpty) return Padding(padding: const EdgeInsets.all(16), child: SectionCard(child: EmptyNote(icon: Icons.description_outlined, title: L(context, 'لا طلبات', 'No requests'), text: L(context, 'اضغط + لطلب خطاب أو إذن أو سلفة.', 'Tap + for a letter, a permission or an advance.'))));
-            return ListView(padding: const EdgeInsets.all(16), children: [
-              SectionCard(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                child: Column(children: [
-                  for (final r in s.data!)
-                    RowItem(
-                      leading: IconTile(Icons.description_outlined, fg: r.status == 1 ? Brand.ok : Brand.brand, bg: r.status == 1 ? Brand.okTint : Brand.tint2),
-                      title: requestTitle(context, r),
-                      subtitle: r.createdAt != null ? ymd(r.createdAt!) : null,
-                      trailing: requestPill(context, r.status),
-                    ),
-                ]),
+  Widget build(BuildContext context) {
+    return ExecFrame(
+      child: FutureBuilder<(String, List<MyRequest>)>(
+        future: _future,
+        builder: (context, s) {
+          final head = [
+            BackLink(L(context, 'رجوع', 'Back')),
+            PageHead(L(context, 'طلباتي', 'My requests'), eyebrow: L(context, 'خطابات · سلف · أذونات', 'Letters · advances · permissions')),
+            FilledButton.icon(
+              onPressed: () async {
+                await Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NewRequestScreen()));
+                if (mounted) setState(() => _future = ApiService.instance.getMyRequests());
+              },
+              icon: const Icon(Lu.plus, size: 16),
+              label: Text(L(context, 'طلب جديد', 'New request')),
+            ),
+            const SizedBox(height: 18),
+          ];
+          if (s.hasError) {
+            return ExecBody(children: [...head, EmptyNote(icon: Lu.wifiOff, title: L(context, 'تعذّر تحميل الطلبات', 'Could not load requests'), text: L(context, 'تحقق من الاتصال ثم أعد المحاولة.', 'Check the connection and try again.'))]);
+          }
+          if (!s.hasData) return const Center(child: CircularProgressIndicator());
+          final (cur, list) = s.data!;
+          return ExecBody(children: [
+            ...head,
+            if (list.isEmpty) EmptyNote(icon: Lu.fileText, title: L(context, 'لا طلبات', 'No requests'), text: L(context, 'اطلب خطاباً أو إذناً أو سلفة من الزر أعلاه.', 'Ask for a letter, a permission or an advance with the button above.')),
+            for (final r in list)
+              RequestCard(
+                leading: IconBox(icon: _icon(r.type)),
+                title: requestTitle(context, r),
+                subtitle: r.createdAt != null ? '${L(context, 'قُدّم في ', 'Submitted ')}${ymd(r.createdAt!)}' : '',
+                tag: requestPill(context, r.status),
+                amount: r.amount == null ? '' : money(r.amount!, cur),
+                unit: r.amount == null ? '' : curLabel(cur, isAr(context)),
               ),
-            ]);
-          },
-        ),
-      );
+          ]);
+        },
+      ),
+    );
+  }
 }
 
 class NewRequestScreen extends StatefulWidget {
@@ -92,75 +101,61 @@ class _NewRequestScreenState extends State<NewRequestScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final kinds = [('Letter', Icons.description_outlined, 'خطاب', 'Letter'), ('Permission', Icons.schedule_outlined, 'إذن', 'Permission'), ('Advance', Icons.payments_outlined, 'سلفة', 'Advance')];
-    return PageFrame(
-      title: L(context, 'طلب جديد', 'New request'),
-      child: ListView(padding: const EdgeInsets.all(16), children: [
-        SectionCard(
-          child: Row(children: [
-            for (final k in kinds)
-              Expanded(
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(14),
-                  onTap: () => setState(() => _type = k.$1),
-                  child: Column(children: [
-                    IconTile(k.$2, size: 52, fg: _type == k.$1 ? Colors.white : Brand.brand, bg: _type == k.$1 ? Brand.brand : Brand.tint2),
-                    const SizedBox(height: 6),
-                    Text(L(context, k.$3, k.$4), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-                  ]),
-                ),
-              ),
-          ]),
+    const types = ['Letter', 'Permission', 'Advance'];
+    const letters = ['Salary', 'Experience', 'Employment'];
+    final letterNames = [L(context, 'شهادة راتب', 'Salary certificate'), L(context, 'شهادة خبرة', 'Experience certificate'), L(context, 'تعريف بالعمل', 'Employment letter')];
+    InputDecoration dec(String label, {String? hint}) => InputDecoration(labelText: label, hintText: hint);
+    return ExecFrame(
+      child: ExecBody(children: [
+        BackLink(L(context, 'طلباتي', 'My requests')),
+        PageHead(L(context, 'طلب جديد', 'New request'), eyebrow: L(context, 'يُرسل عبر مسار الاعتماد في شركتك', "Sent through your company's approval path")),
+        ChipTabs(
+          items: [L(context, 'خطاب', 'Letter'), L(context, 'إذن', 'Permission'), L(context, 'سلفة', 'Advance')],
+          index: types.indexOf(_type),
+          onTap: (i) => setState(() => _type = types[i]),
         ),
-        SectionCard(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            if (_type == 'Letter') ...[
-              DropdownButtonFormField<String>(
-                initialValue: _letter,
-                decoration: InputDecoration(labelText: L(context, 'نوع الخطاب', 'Letter type')),
-                items: [
-                  DropdownMenuItem(value: 'Salary', child: Text(L(context, 'شهادة راتب', 'Salary certificate'))),
-                  DropdownMenuItem(value: 'Experience', child: Text(L(context, 'شهادة خبرة', 'Experience certificate'))),
-                  DropdownMenuItem(value: 'Employment', child: Text(L(context, 'تعريف بالعمل', 'Employment letter'))),
-                ],
-                onChanged: (v) => setState(() => _letter = v ?? 'Salary'),
+        if (_type == 'Letter') ...[
+          ChipTabs(items: letterNames, index: letters.indexOf(_letter), onTap: (i) => setState(() => _letter = letters[i])),
+          TextField(controller: _addressee, decoration: dec(L(context, 'موجّه إلى', 'Addressed to'), hint: L(context, 'مثال: بنك الكويت الوطني', 'e.g. National Bank of Kuwait'))),
+        ],
+        if (_type == 'Permission') ...[
+          FieldBox(
+            label: L(context, 'التاريخ', 'Date'),
+            onTap: () async {
+              final d = await showDatePicker(context: context, initialDate: _date, firstDate: DateTime.now().subtract(const Duration(days: 30)), lastDate: DateTime.now().add(const Duration(days: 90)));
+              if (d != null) setState(() => _date = d);
+            },
+            child: Row(children: [Expanded(child: Text(dayMonth(context, _date))), const Icon(Lu.calendar, size: 15, color: Brand.support)]),
+          ),
+          Row(children: [
+            Expanded(
+              child: FieldBox(
+                label: L(context, 'من', 'From'),
+                onTap: () async { final t = await showTimePicker(context: context, initialTime: _from); if (t != null) setState(() => _from = t); },
+                child: Text(_t(_from), textDirection: TextDirection.ltr),
               ),
-              const SizedBox(height: 12),
-              TextField(controller: _addressee, decoration: InputDecoration(labelText: L(context, 'موجّه إلى', 'Addressed to'), hintText: L(context, 'مثال: بنك الكويت الوطني', 'e.g. National Bank of Kuwait'))),
-            ],
-            if (_type == 'Permission') ...[
-              OutlinedButton.icon(
-                onPressed: () async {
-                  final d = await showDatePicker(context: context, initialDate: _date, firstDate: DateTime.now().subtract(const Duration(days: 30)), lastDate: DateTime.now().add(const Duration(days: 90)));
-                  if (d != null) setState(() => _date = d);
-                },
-                icon: const Icon(Icons.calendar_today_outlined),
-                label: Text(ymd(_date)),
+            ),
+            const SizedBox(width: 9),
+            Expanded(
+              child: FieldBox(
+                label: L(context, 'إلى', 'To'),
+                onTap: () async { final t = await showTimePicker(context: context, initialTime: _to); if (t != null) setState(() => _to = t); },
+                child: Text(_t(_to), textDirection: TextDirection.ltr),
               ),
-              const SizedBox(height: 8),
-              Row(children: [
-                Expanded(child: OutlinedButton(onPressed: () async { final t = await showTimePicker(context: context, initialTime: _from); if (t != null) setState(() => _from = t); }, child: Text('${L(context, 'من ', 'From ')}${_t(_from)}'))),
-                const SizedBox(width: 8),
-                Expanded(child: OutlinedButton(onPressed: () async { final t = await showTimePicker(context: context, initialTime: _to); if (t != null) setState(() => _to = t); }, child: Text('${L(context, 'إلى ', 'To ')}${_t(_to)}'))),
-              ]),
-            ],
-            if (_type == 'Advance') ...[
-              TextField(controller: _amount, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: InputDecoration(labelText: L(context, 'المبلغ', 'Amount'))),
-              const SizedBox(height: 12),
-              TextField(controller: _instalment, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: InputDecoration(labelText: L(context, 'القسط الشهري', 'Monthly instalment'))),
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(color: Brand.tint2, borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0xFFA8C5FF))),
-                child: Text(L(context, 'يُفحص القسط مقابل السقف القانوني من الأجر؛ إن تجاوزه يقترح النظام القسط المسموح.', 'The instalment is checked against the legal cap on pay; above it, the system suggests the allowed one.'), style: const TextStyle(fontSize: 12, color: Brand.deep)),
-              ),
-            ],
-            const SizedBox(height: 12),
-            TextField(controller: _reason, maxLines: 3, decoration: InputDecoration(labelText: L(context, 'السبب / ملاحظة', 'Reason / note'))),
-            const SizedBox(height: 14),
-            FilledButton(onPressed: _busy ? null : _send, child: Text(L(context, 'إرسال', 'Send'))),
+            ),
           ]),
-        ),
+        ],
+        if (_type == 'Advance') ...[
+          TextField(controller: _amount, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: dec(L(context, 'المبلغ', 'Amount'))),
+          const SizedBox(height: 9),
+          TextField(controller: _instalment, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: dec(L(context, 'القسط الشهري', 'Monthly instalment'))),
+          const SizedBox(height: 9),
+          SoftNote(L(context, 'يُفحص القسط مقابل السقف القانوني من الأجر؛ إن تجاوزه يقترح النظام القسط المسموح.', 'The instalment is checked against the legal cap on pay; above it, the system suggests the allowed one.')),
+        ],
+        const SizedBox(height: 9),
+        TextField(controller: _reason, maxLines: 3, decoration: dec(L(context, 'السبب / ملاحظة', 'Reason / note'))),
+        const SizedBox(height: 16),
+        FilledButton(onPressed: _busy ? null : _send, child: Text(L(context, 'إرسال الطلب', 'Send request'))),
       ]),
     );
   }

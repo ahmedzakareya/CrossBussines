@@ -120,7 +120,7 @@ namespace CrossBuy.Controllers.Api
 				.OrderByDescending(r => r.ID).Take(100)
 				.Select(r => new { id = r.ID, type = r.RequestType, letterType = r.LetterType, addressee = r.Addressee, amount = r.AdvanceAmount, instalment = r.AdvanceInstallment,
 					status = r.Status, currentLevel = r.CurrentLevel, createdAt = r.CreatedAt }).ToListAsync();
-			return Ok(new { success = true, data = rows });
+			return Ok(new { success = true, currency = await CurrencyAsync(me.CompanyId), data = rows });   // an advance is an amount: say in what
 		}
 
 		public sealed class CreateRequestDto

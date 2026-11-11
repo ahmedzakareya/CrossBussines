@@ -5,8 +5,8 @@ import '../services/api_service.dart';
 import '../theme/brand.dart';
 import '../widgets/ui.dart';
 
-/// MY PAYSLIPS — the list (amounts hidden until asked for) and one payslip in full, every earning and deduction, so the
-/// lines reconcile to the net. The PDF itself prints from Report Studio (Hr.Payslip), never from the phone's HTML.
+/// MY PAYSLIPS (the owner's reference): the latest net pay on the financial card, earnings and deductions in its
+/// footer, then every earlier month as a row. The PDF itself prints from Report Studio (Hr.Payslip) on the web.
 class PayslipsScreen extends StatefulWidget {
   const PayslipsScreen({super.key});
   @override
@@ -15,97 +15,119 @@ class PayslipsScreen extends StatefulWidget {
 
 class _PayslipsScreenState extends State<PayslipsScreen> {
   final _future = ApiService.instance.getPayslips();
-  bool _reveal = false;
+
+  void _open(int id) => Navigator.of(context).push(MaterialPageRoute(builder: (_) => PayslipDetailScreen(id: id)));
 
   @override
-  Widget build(BuildContext context) => PageFrame(
-        title: L(context, 'قسائمي', 'My payslips'),
-        actions: [IconButton(onPressed: () => setState(() => _reveal = !_reveal), icon: Icon(_reveal ? Icons.visibility_off_outlined : Icons.visibility_outlined))],
-        child: FutureBuilder<(String, List<PayslipSummary>)>(
-          future: _future,
-          builder: (context, s) {
-            if (s.hasError) return Center(child: Text(L(context, 'تعذّر تحميل القسائم', 'Could not load payslips')));
-            if (!s.hasData) return const Center(child: CircularProgressIndicator());
-            final (cur, list) = s.data!;
-            if (list.isEmpty) return Padding(padding: const EdgeInsets.all(16), child: SectionCard(child: EmptyNote(icon: Icons.receipt_long_outlined, title: L(context, 'لا قسائم بعد', 'No payslips yet'), text: L(context, 'تظهر هنا بعد ترحيل رواتب الشهر.', "They appear here once the month's payroll is posted."))));
-            return ListView(padding: const EdgeInsets.all(16), children: [
-              SectionCard(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                child: Column(children: [
-                  for (final p in list)
-                    RowItem(
-                      leading: const IconTile(Icons.account_balance_wallet_outlined),
-                      title: '${monthName(context, p.month)} ${p.year}',
-                      subtitle: '${L(context, 'الصافي ', 'Net ')}${_reveal ? '${money(p.net, cur)} $cur' : '••••••'}',
-                      trailing: Icon(isAr(context) ? Icons.chevron_left : Icons.chevron_right, color: Brand.muted),
-                      onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => PayslipDetailScreen(id: p.id))),
-                    ),
-                ]),
+  Widget build(BuildContext context) {
+    return ExecFrame(
+      child: FutureBuilder<(String, List<PayslipSummary>)>(
+        future: _future,
+        builder: (context, s) {
+          final head = [BackLink(L(context, 'رجوع', 'Back')), PageHead(L(context, 'قسائمي', 'My payslips'), eyebrow: L(context, 'الرواتب الشهرية', 'Monthly pay'))];
+          if (s.hasError) {
+            return ExecBody(children: [...head, EmptyNote(icon: Lu.wifiOff, title: L(context, 'تعذّر التحميل', 'Could not load'), text: L(context, 'تحقق من الاتصال ثم أعد المحاولة.', 'Check the connection and try again.'))]);
+          }
+          if (!s.hasData) return const Center(child: CircularProgressIndicator());
+          final (cur, list) = s.data!;
+          final unit = curLabel(cur, isAr(context));
+          if (list.isEmpty) {
+            return ExecBody(children: [...head, EmptyNote(icon: Lu.receiptText, title: L(context, 'لا قسائم بعد', 'No payslips yet'), text: L(context, 'تظهر هنا بعد ترحيل رواتب الشهر.', "They appear here once the month's payroll is posted."))]);
+          }
+          final latest = list.first;
+          return ExecBody(children: [
+            ...head,
+            GestureDetector(
+              onTap: () => _open(latest.id),
+              child: FinancialCard(
+                label: '${L(context, 'صافي راتب ', 'Net pay · ')}${monthName(context, latest.month)} ${latest.year}',
+                icon: Lu.receiptText,
+                amount: Amount(money(latest.net, cur), unit),
+                note: L(context, 'اضغط لعرض التفاصيل', 'Tap for the full payslip'),
               ),
-            ]);
-          },
-        ),
-      );
+            ),
+            if (list.length > 1) ...[
+              SectionHeading(L(context, 'الأشهر السابقة', 'Earlier months'), count: list.length - 1),
+              DataList(children: [
+                for (final p in list.skip(1))
+                  ItemRow(
+                    leading: const IconBox(icon: Lu.calendarDays),
+                    title: '${monthName(context, p.month)} ${p.year}',
+                    subtitle: L(context, 'صافي الراتب', 'Net pay'),
+                    end: Row(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.baseline, textBaseline: TextBaseline.alphabetic, children: [
+                      Text(money(p.net, cur), textDirection: TextDirection.ltr, style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Brand.inkC)),
+                      const SizedBox(width: 4),
+                      Text(unit, style: T.small),
+                    ]),
+                    onTap: () => _open(p.id),
+                  ),
+              ]),
+            ],
+          ]);
+        },
+      ),
+    );
+  }
 }
 
+/// One payslip in full: the net on the card with earnings / deductions under it, then every line, reconciling to
+/// the net.
 class PayslipDetailScreen extends StatelessWidget {
   final int id;
   const PayslipDetailScreen({super.key, required this.id});
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<(String, PayslipDetail)>(
-      future: ApiService.instance.getPayslip(id),
-      builder: (context, s) {
-        if (s.hasError) return PageFrame(title: L(context, 'القسيمة', 'Payslip'), child: Center(child: Text(L(context, 'تعذّر تحميل القسيمة', 'Could not load the payslip'))));
-        if (!s.hasData) return PageFrame(title: L(context, 'القسيمة', 'Payslip'), child: const Center(child: CircularProgressIndicator()));
-        final (cur, p) = s.data!;
-        String m(num v) => '${money(v, cur)} $cur';
-        Widget kv(String ar, String en, num v, {String? note}) => Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Row(children: [
-                Expanded(child: Text('${L(context, ar, en)}${note == null ? '' : ' ($note)'}', style: const TextStyle(color: Brand.muted))),
-                Text(m(v), style: const TextStyle(fontWeight: FontWeight.w700)),
-              ]),
-            );
-        return PageFrame(
-          title: '${L(context, 'قسيمة ', 'Payslip · ')}${monthName(context, p.month)} ${p.year}',
-          child: ListView(padding: const EdgeInsets.all(16), children: [
-            SectionCard(
-              child: Column(children: [
-                Text(L(context, 'صافي الراتب', 'Net pay'), style: const TextStyle(color: Brand.muted)),
-                const SizedBox(height: 4),
-                Text(m(p.net), style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w800, color: Brand.deep)),
-                Text(p.slipNo, style: const TextStyle(fontSize: 12, color: Brand.muted)),
-              ]),
+    return ExecFrame(
+      child: FutureBuilder<(String, PayslipDetail)>(
+        future: ApiService.instance.getPayslip(id),
+        builder: (context, s) {
+          if (s.hasError) {
+            return ExecBody(children: [
+              BackLink(L(context, 'قسائمي', 'My payslips')),
+              EmptyNote(icon: Lu.wifiOff, title: L(context, 'تعذّر تحميل القسيمة', 'Could not load the payslip'), text: L(context, 'تحقق من الاتصال ثم أعد المحاولة.', 'Check the connection and try again.')),
+            ]);
+          }
+          if (!s.hasData) return const Center(child: CircularProgressIndicator());
+          final (cur, p) = s.data!;
+          final unit = curLabel(cur, isAr(context));
+          String m(num v) => money(v, cur);
+          String minus(num v) => v == 0 ? m(0) : '− ${m(v)}';
+          return ExecBody(children: [
+            BackLink(L(context, 'قسائمي', 'My payslips')),
+            PageHead(L(context, 'قسيمة الراتب', 'Payslip'), eyebrow: '${monthName(context, p.month)} ${p.year} · ${p.slipNo}'),
+            FinancialCard(
+              label: L(context, 'صافي الراتب', 'Net pay'),
+              icon: Lu.receiptText,
+              amount: Amount(m(p.net), unit),
+              footer: [
+                (L(context, 'الاستحقاقات', 'Earnings'), m(p.earnings), ''),
+                (L(context, 'الاستقطاعات', 'Deductions'), m(p.deductions), ''),
+              ],
             ),
-            SectionCard(
-              title: L(context, 'الاستحقاقات', 'Earnings'),
-              child: Column(children: [
-                kv('الأساسي', 'Basic', p.basic),
-                kv('البدلات', 'Allowances', p.allowances),
-                kv('العمل الإضافي', 'Overtime', p.overtime),
-                const Divider(),
-                kv('الإجمالي', 'Total', p.earnings),
-              ]),
+            SectionHeading(L(context, 'الاستحقاقات', 'Earnings')),
+            DataList(children: [
+              KV(L(context, 'الراتب الأساسي', 'Basic salary'), m(p.basic)),
+              KV(L(context, 'البدلات', 'Allowances'), m(p.allowances)),
+              KV(L(context, 'العمل الإضافي', 'Overtime'), m(p.overtime)),
+            ]),
+            SectionHeading(L(context, 'الاستقطاعات', 'Deductions')),
+            DataList(children: [
+              KV(L(context, 'التأمينات الاجتماعية', 'Social insurance'), minus(p.socialInsurance)),
+              if (p.tax != 0) KV(L(context, 'ضريبة الدخل', 'Income tax'), minus(p.tax)),
+              KV('${L(context, 'التأخير', 'Late')}${p.lateMinutes > 0 ? ' · ${p.lateMinutes} ${L(context, 'دقيقة', 'min')}' : ''}', minus(p.late)),
+              KV('${L(context, 'الغياب', 'Absence')}${p.absentDays > 0 ? ' · ${p.absentDays} ${L(context, 'يوم', 'd')}' : ''}', minus(p.absence)),
+              if (p.loan != 0) KV(L(context, 'قسط قرض / سلفة', 'Loan / advance'), minus(p.loan)),
+              if (p.partPaidLeave != 0) KV(L(context, 'إجازة بأجر جزئي', 'Part-paid leave'), minus(p.partPaidLeave)),
+              KV(L(context, 'الصافي', 'Net'), '${m(p.net)} $unit', total: true),
+            ]),
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: Text('${L(context, 'حصة صاحب العمل في التأمينات: ', 'Employer social insurance: ')}${m(p.employerInsurance)} $unit', style: T.small),
             ),
-            SectionCard(
-              title: L(context, 'الاستقطاعات', 'Deductions'),
-              child: Column(children: [
-                kv('التأمينات الاجتماعية', 'Social insurance', p.socialInsurance),
-                if (p.tax != 0) kv('ضريبة الدخل', 'Income tax', p.tax),
-                kv('التأخير', 'Late', p.late, note: p.lateMinutes > 0 ? '${p.lateMinutes} ${L(context, 'د', 'min')}' : null),
-                kv('الغياب', 'Absence', p.absence, note: p.absentDays > 0 ? '${p.absentDays} ${L(context, 'يوم', 'd')}' : null),
-                if (p.loan != 0) kv('قسط قرض / سلفة', 'Loan / advance', p.loan),
-                if (p.partPaidLeave != 0) kv('إجازة بأجر جزئي', 'Part-paid leave', p.partPaidLeave),
-                const Divider(),
-                kv('الإجمالي', 'Total', p.deductions),
-              ]),
-            ),
-            Text('${L(context, 'حصة صاحب العمل في التأمينات: ', 'Employer social insurance: ')}${m(p.employerInsurance)}', style: const TextStyle(fontSize: 12, color: Brand.muted)),
-          ]),
-        );
-      },
+          ]);
+        },
+      ),
     );
   }
 }

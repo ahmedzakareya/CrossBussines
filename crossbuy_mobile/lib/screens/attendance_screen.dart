@@ -5,7 +5,9 @@ import '../services/api_service.dart';
 import '../theme/brand.dart';
 import '../widgets/ui.dart';
 
-/// MY ATTENDANCE — the month as a calendar coloured by day (present, late/absent, leave, rest), with the summary above.
+/// MY ATTENDANCE (the owner's reference): the month's present days on the financial card with lateness, absence and
+/// overtime in its footer, then the month as a calendar — each day marked by the verdict the server's own summary
+/// reached for it (present, late / absent, leave), rest days and holidays shaded.
 class AttendanceScreen extends StatefulWidget {
   const AttendanceScreen({super.key});
   @override
@@ -24,77 +26,97 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
       });
 
   Color? _dot(String st) => switch (st) {
-        'Present' => Brand.ok,
-        'Late' || 'Absent' => Brand.bad,
-        'Leave' => Brand.violet,
+        'Present' => Brand.support,
+        'Late' || 'Absent' => Brand.badC,
+        'Leave' => Brand.gold,
         _ => null,
       };
 
   @override
   Widget build(BuildContext context) {
     final ar = isAr(context);
-    return PageFrame(
-      title: L(context, 'حضوري', 'My attendance'),
+    final monthBar = Row(children: [
+      GestureDetector(onTap: () => _shift(-1), child: Padding(padding: const EdgeInsets.all(6), child: Icon(ar ? Lu.chevronRight : Lu.chevronLeft, size: 18, color: Brand.support))),
+      Expanded(child: Text('${monthName(context, _month.month)} ${_month.year}', textAlign: TextAlign.center, style: T.h2)),
+      GestureDetector(onTap: () => _shift(1), child: Padding(padding: const EdgeInsets.all(6), child: Icon(ar ? Lu.chevronLeft : Lu.chevronRight, size: 18, color: Brand.support))),
+    ]);
+    return ExecFrame(
       child: FutureBuilder<AttendanceMonth>(
         future: _future,
         builder: (context, s) {
-          final head = Row(children: [
-            IconButton(onPressed: () => _shift(-1), icon: Icon(ar ? Icons.chevron_right : Icons.chevron_left)),
-            Expanded(child: Text('${monthName(context, _month.month)} ${_month.year}', textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16))),
-            IconButton(onPressed: () => _shift(1), icon: Icon(ar ? Icons.chevron_left : Icons.chevron_right)),
-          ]);
-          if (s.hasError) return ListView(padding: const EdgeInsets.all(16), children: [head, Text(L(context, 'تعذّر تحميل الحضور', 'Could not load attendance'))]);
+          final head = [BackLink(L(context, 'رجوع', 'Back')), PageHead(L(context, 'حضوري', 'My attendance'), eyebrow: '${monthName(context, _month.month)} ${_month.year}')];
+          if (s.hasError) {
+            return ExecBody(children: [...head, monthBar, EmptyNote(icon: Lu.wifiOff, title: L(context, 'تعذّر تحميل الحضور', 'Could not load attendance'), text: L(context, 'تحقق من الاتصال ثم أعد المحاولة.', 'Check the connection and try again.'))]);
+          }
           if (!s.hasData) return const Center(child: CircularProgressIndicator());
           final a = s.data!;
-          final byDay = {for (final d in a.days) d.date.day: d};
-          final first = DateTime(a.year, a.month, 1);
-          final lead = first.weekday % 7; // Sunday-first weeks, as in the Gulf
+          final byDay = {for (final d in a.days) d.date.day: d.status};
+          final lead = DateTime(a.year, a.month, 1).weekday % 7;   // weeks start on Sunday, as in the Gulf
           final count = DateTime(a.year, a.month + 1, 0).day;
           final heads = ar ? ['أحد', 'إثن', 'ثلا', 'أرب', 'خمي', 'جمع', 'سبت'] : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-          Widget kpi(String arT, String enT, String v, {bool bad = false}) => Expanded(
-                child: Container(
-                  margin: const EdgeInsets.all(4), padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text(L(context, arT, enT), style: const TextStyle(fontSize: 11.5, color: Brand.muted)),
-                    Text(v, style: TextStyle(fontSize: 19, fontWeight: FontWeight.w700, color: bad ? Brand.bad : Brand.ink)),
-                  ]),
-                ),
-              );
-          return ListView(padding: const EdgeInsets.all(16), children: [
-            head,
-            Row(children: [kpi('حاضر', 'Present', '${a.presentDays}/${a.workDays}'), kpi('العمل الإضافي', 'Overtime', '${a.overtimeMinutes ~/ 60}:${(a.overtimeMinutes % 60).toString().padLeft(2, '0')}')]),
-            Row(children: [kpi('مرات التأخير', 'Late', '${a.lateCount}', bad: a.lateCount > 0), kpi('الغياب', 'Absent', '${a.absentDays}', bad: a.absentDays > 0)]),
-            const SizedBox(height: 10),
-            SectionCard(
-              child: GridView.count(
-                crossAxisCount: 7, shrinkWrap: true, physics: const NeverScrollableScrollPhysics(), mainAxisSpacing: 6, crossAxisSpacing: 6, childAspectRatio: .95,
-                children: [
-                  for (final h in heads) Center(child: Text(h, style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: Brand.muted))),
-                  for (var i = 0; i < lead; i++) const SizedBox.shrink(),
-                  for (var d = 1; d <= count; d++)
-                    Container(
-                      decoration: BoxDecoration(
-                        // rest days and holidays are shaded; work days (done or upcoming) are white
-                        color: const ['Rest', 'Holiday'].contains(byDay[d]?.status) ? const Color(0xFFEEF2F7) : Colors.white,
-                        borderRadius: BorderRadius.circular(11),
-                        border: Border.all(color: const Color(0xFFEEF2F7)),
-                      ),
-                      child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                        Text('$d', style: const TextStyle(fontSize: 12.5)),
-                        if (byDay[d] != null && _dot(byDay[d]!.status) != null)
-                          Container(width: 6, height: 6, margin: const EdgeInsets.only(top: 2), decoration: BoxDecoration(color: _dot(byDay[d]!.status), shape: BoxShape.circle)),
-                      ]),
-                    ),
+          final today = DateTime.now();
+          final ot = '${a.overtimeMinutes ~/ 60}:${(a.overtimeMinutes % 60).toString().padLeft(2, '0')}';
+          Widget legend(Color c, String t) => Row(mainAxisSize: MainAxisSize.min, children: [
+                Container(width: 6, height: 6, decoration: BoxDecoration(color: c, shape: BoxShape.circle)),
+                const SizedBox(width: 5),
+                Text(t, style: const TextStyle(fontSize: 9.5, color: Brand.mutedC)),
+              ]);
+          return ExecBody(
+            onRefresh: () async => setState(() => _future = _load()),
+            children: [
+              ...head,
+              FinancialCard(
+                label: L(context, 'أيام الحضور هذا الشهر', 'Days present this month'),
+                icon: Lu.clock3,
+                amount: Amount('${a.presentDays}', '${L(context, 'من', 'of')} ${a.workDays}'),
+                note: a.absentDays > 0 ? L(context, 'غياب ${a.absentDays} يوم بلا إجازة', '${a.absentDays} day(s) absent without leave') : L(context, 'لا غياب هذا الشهر', 'No absence this month'),
+                footer: [
+                  (L(context, 'تأخير', 'Late'), '${a.lateCount}', L(context, 'مرة', 'times')),
+                  (L(context, 'غياب', 'Absent'), '${a.absentDays}', L(context, 'يوم', 'days')),
+                  (L(context, 'إضافي', 'Overtime'), ot, ''),
                 ],
               ),
-            ),
-            Wrap(spacing: 8, runSpacing: 6, children: [
-              Pill.ok(L(context, 'حاضر', 'Present')),
-              Pill.bad(L(context, 'تأخير / غياب', 'Late / absent')),
-              Pill.violet(L(context, 'إجازة', 'Leave')),
-            ]),
-          ]);
+              SectionHeading(L(context, 'الشهر', 'The month')),
+              monthBar,
+              const SizedBox(height: 10),
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(color: Brand.paper, border: Border.all(color: Brand.lineC), borderRadius: BorderRadius.circular(18)),
+                child: GridView.count(
+                  crossAxisCount: 7, shrinkWrap: true, physics: const NeverScrollableScrollPhysics(), padding: EdgeInsets.zero,
+                  mainAxisSpacing: 6, crossAxisSpacing: 6, childAspectRatio: .95,
+                  children: [
+                    for (final h in heads) Center(child: Text(h, style: const TextStyle(fontSize: 9.5, color: Brand.mutedC))),
+                    for (var i = 0; i < lead; i++) const SizedBox.shrink(),
+                    for (var d = 1; d <= count; d++)
+                      () {
+                        final st = byDay[d] ?? '';
+                        final off = st == 'Rest' || st == 'Holiday' || st == 'RestDay';
+                        final isToday = a.year == today.year && a.month == today.month && d == today.day;
+                        final dot = _dot(st);
+                        return Container(
+                          decoration: BoxDecoration(
+                            color: off ? Colors.transparent : Brand.page,
+                            borderRadius: BorderRadius.circular(9),
+                            border: isToday ? Border.all(color: Brand.blue, width: 1.5) : null,
+                          ),
+                          child: Stack(alignment: Alignment.center, children: [
+                            Text('$d', style: TextStyle(fontSize: 11, color: off ? const Color(0xFFB3BCCB) : Brand.inkC)),
+                            if (dot != null) Positioned(bottom: 4, child: Container(width: 4, height: 4, decoration: BoxDecoration(color: dot, shape: BoxShape.circle))),
+                          ]),
+                        );
+                      }(),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 10),
+              Wrap(alignment: WrapAlignment.center, spacing: 14, children: [
+                legend(Brand.support, L(context, 'حضور', 'Present')),
+                legend(Brand.badC, L(context, 'تأخير / غياب', 'Late / absent')),
+                legend(Brand.gold, L(context, 'إجازة', 'Leave')),
+              ]),
+            ],
+          );
         },
       ),
     );
