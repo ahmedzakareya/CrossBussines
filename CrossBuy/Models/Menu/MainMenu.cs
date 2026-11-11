@@ -564,6 +564,18 @@
 			}},
 			new() { LabelAr = "الإجازات والحضور", LabelEn = "Leave & attendance", Icon = "ki-outline ki-calendar-tick", Items = new()
 			{
+				new() { LabelAr = "الإجازات", LabelEn = "Leave", Action = "Leave", Controller = "Admin" },   // HR leave overview (prototype design, 2026-11-08)
+				new() { LabelAr = "حزمة قواعد الدولة", LabelEn = "Country rule pack", Action = "HrRules", Controller = "Admin" },   // every legal figure as a setting (2026-11-08)
+				new() { LabelAr = "مسارات الموافقة", LabelEn = "Approval paths", Action = "ApprovalPaths", Controller = "Admin" },   // approval paths you design, not code (2026-11-09)
+				new() { LabelAr = "القروض والسلف", LabelEn = "Loans & advances", Action = "Loans", Controller = "Admin" },   // HR4: loans with the legal deduction cap (2026-11-08)
+				new() { LabelAr = "اعتماد العمل الإضافي", LabelEn = "Overtime approval", Action = "Overtime", Controller = "Admin" },   // HR5: overtime approved before pay, within the yearly cap (2026-11-08)
+				new() { LabelAr = "جدول ساعات العمل", LabelEn = "Working-hours schedule", Action = "WorkingHours", Controller = "Admin" },   // the Ashal schedule (Kuwait Resolution 15/2025), 2026-11-09
+				new() { LabelAr = "مسير الرواتب", LabelEn = "Payroll run", Action = "PayrollRun", Controller = "Admin" },   // HR6: the payroll register in the HR design (2026-11-08)
+				new() { LabelAr = "ملف تحويل الرواتب للبنك", LabelEn = "Bank salary file", Action = "BankFile", Controller = "Admin" },   // HR8: wage protection, its format a setting (2026-11-09)
+				new() { LabelAr = "بيانات البنك من Excel", LabelEn = "Bank details from Excel", Action = "BankDetails", Controller = "Admin" },   // civil ID / IBAN / bank in bulk (2026-11-09)
+				new() { LabelAr = "كشف التأمينات الاجتماعية", LabelEn = "Social insurance statement", Action = "SocialInsurance", Controller = "Admin" },   // HR6: per employee, per rule-pack line (2026-11-08)
+				new() { LabelAr = "ملف التأمينات الاجتماعية", LabelEn = "Social insurance file", Action = "InsuranceFile", Controller = "Admin" },   // the monthly contributions file, its shape a setting (2026-11-09)
+				new() { LabelAr = "مخصص مكافأة نهاية الخدمة", LabelEn = "Gratuity provision", Action = "GratuityProvision", Controller = "Admin" },   // the end-of-service provision, booked monthly (2026-11-08)
 				new() { LabelAr = "أنواع الإجازات", LabelEn = "Leave types", Action = "LeaveTypesList", Controller = "Admin" },
 				new() { LabelAr = "السياسات", LabelEn = "Policies", Action = "Polices", Controller = "Admin" },
 				new() { LabelAr = "العطلات الرسمية", LabelEn = "Official holidays", Action = "HolidaysList", Controller = "Admin" },
@@ -585,15 +597,3 @@
 		};
 	}
 }
-				new() { LabelAr = "الإجازات", LabelEn = "Leave", Action = "Leave", Controller = "Admin" },   // HR leave overview (prototype design, 2026-11-08)
-				new() { LabelAr = "حزمة قواعد الدولة", LabelEn = "Country rule pack", Action = "HrRules", Controller = "Admin" },   // every legal figure as a setting (2026-11-08)
-				new() { LabelAr = "مسارات الموافقة", LabelEn = "Approval paths", Action = "ApprovalPaths", Controller = "Admin" },   // approval paths you design, not code (2026-11-09)
-				new() { LabelAr = "القروض والسلف", LabelEn = "Loans & advances", Action = "Loans", Controller = "Admin" },   // HR4: loans with the legal deduction cap (2026-11-08)
-				new() { LabelAr = "اعتماد العمل الإضافي", LabelEn = "Overtime approval", Action = "Overtime", Controller = "Admin" },   // HR5: overtime approved before pay, within the yearly cap (2026-11-08)
-				new() { LabelAr = "جدول ساعات العمل", LabelEn = "Working-hours schedule", Action = "WorkingHours", Controller = "Admin" },   // the Ashal schedule (Kuwait Resolution 15/2025), 2026-11-09
-				new() { LabelAr = "مسير الرواتب", LabelEn = "Payroll run", Action = "PayrollRun", Controller = "Admin" },   // HR6: the payroll register in the HR design (2026-11-08)
-				new() { LabelAr = "ملف تحويل الرواتب للبنك", LabelEn = "Bank salary file", Action = "BankFile", Controller = "Admin" },   // HR8: wage protection, its format a setting (2026-11-09)
-				new() { LabelAr = "بيانات البنك من Excel", LabelEn = "Bank details from Excel", Action = "BankDetails", Controller = "Admin" },   // civil ID / IBAN / bank in bulk (2026-11-09)
-				new() { LabelAr = "كشف التأمينات الاجتماعية", LabelEn = "Social insurance statement", Action = "SocialInsurance", Controller = "Admin" },   // HR6: per employee, per rule-pack line (2026-11-08)
-				new() { LabelAr = "ملف التأمينات الاجتماعية", LabelEn = "Social insurance file", Action = "InsuranceFile", Controller = "Admin" },   // the monthly contributions file, its shape a setting (2026-11-09)
-				new() { LabelAr = "مخصص مكافأة نهاية الخدمة", LabelEn = "Gratuity provision", Action = "GratuityProvision", Controller = "Admin" },   // the end-of-service provision, booked monthly (2026-11-08)

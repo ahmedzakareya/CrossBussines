@@ -732,20 +732,20 @@ namespace CrossBuy.Controllers
 
 		public async Task<IActionResult> AdministrativeBodiesCompanyList()
 		{
+			var gate = await HrGateAsync(CrossBuy.BL.HrActions.Read);
+			if (!gate.Ok) return HrDenied(nameof(Index));
 			var model = await administrativeBodiesCompanyService.GetAll();
 			return View(model);
 		}
-			var gate = await HrGateAsync(CrossBuy.BL.HrActions.Read);
-			if (!gate.Ok) return HrDenied(nameof(Index));
 
 
 		public async Task<IActionResult> AdministrativeBodiesCompany(int id)
 		{
+			var gate = await HrGateAsync(CrossBuy.BL.HrActions.Read);
+			if (!gate.Ok) return HrDenied(nameof(Index));
 			var model = await this.administrativeBodiesCompanyService.GetById(id);
 			return View(model);
 		}
-			var gate = await HrGateAsync(CrossBuy.BL.HrActions.Read);
-			if (!gate.Ok) return HrDenied(nameof(Index));
 
 		[HttpPost]
 		public async Task<IActionResult> AdministrativeBodiesCompany(AdministrativeBodiesCompanyDto model)
@@ -789,6 +789,7 @@ namespace CrossBuy.Controllers
 
 		public async Task<JsonResult> GetParentInfo(int parentId)
 		{
+			if (!(await HrGateAsync(CrossBuy.BL.HrActions.Read)).Ok) return Json(new { success = false, message = HrDeniedMessage });
 			var parent = await administrativeStructureService.GetParentData(parentId);
 			if (parent == null)
 			{
@@ -797,7 +798,6 @@ namespace CrossBuy.Controllers
 
 			return Json(new
 			{
-			if (!(await HrGateAsync(CrossBuy.BL.HrActions.Read)).Ok) return Json(new { success = false, message = HrDeniedMessage });
 				success = true,
 				nameAr = parent.H_Name,
 				nameEn = parent.H_NameEn
@@ -831,6 +831,8 @@ namespace CrossBuy.Controllers
 
 		public async Task<IActionResult> Polices()
 		{
+			var gate = await HrGateAsync(CrossBuy.BL.HrActions.Read);
+			if (!gate.Ok) return HrDenied(nameof(Index));
 			List<PoliciesDto> model = await policesService.GetAllPoliciesAsync();
 			return View(model);
 		}
@@ -839,6 +841,7 @@ namespace CrossBuy.Controllers
         [HttpGet]
         public async Task<IActionResult> GetLeaveTypes(CancellationToken ct)
         {
+            if (!(await HrGateAsync(CrossBuy.BL.HrActions.Read)).Ok) return Json(new { ok = true, data = Array.Empty<object>() });
             try
             {
                 var types = await policesService.GetLeaveTypesAsync(ct);
@@ -858,8 +861,6 @@ namespace CrossBuy.Controllers
         {
 			var gate = await HrGateAsync(CrossBuy.BL.HrActions.LeaveManage);
 			if (!gate.Ok) return Json(new { ok = false, message = HrDeniedMessage });
-			var gate = await HrGateAsync(CrossBuy.BL.HrActions.Read);
-			if (!gate.Ok) return HrDenied(nameof(Index));
 
             if (model == null)
                 return Json(new { ok = false, message = L["Invalid data"].Value });
@@ -868,7 +869,6 @@ namespace CrossBuy.Controllers
             {
                 var result = await policesService.SaveLeavePolicyAsync(model, ct);
                 var verb = model.ID == 0 ? L["Added"].Value : L["Updated"].Value;
-            if (!(await HrGateAsync(CrossBuy.BL.HrActions.Read)).Ok) return Json(new { ok = true, data = Array.Empty<object>() });
                 return Json(new { ok = true, message = verb + L[" successfully."].Value, data = result });
             }
             catch (KeyNotFoundException knf)
@@ -892,11 +892,15 @@ namespace CrossBuy.Controllers
 
         public async Task<IActionResult> PolicesData()
 		{
+			var gate = await HrGateAsync(CrossBuy.BL.HrActions.Read);
+			if (!gate.Ok) return HrDenied(nameof(Index));
 			return View();
 		}
 
 		public async Task<IActionResult> LeaveTypesList()
 		{
+			var gate = await HrGateAsync(CrossBuy.BL.HrActions.Read);
+			if (!gate.Ok) return HrDenied(nameof(Index));
 			List<LeaveTypesDto> model = await policesService.GetAllLeaveTypesAsync();
 
 			return View(model);
@@ -919,15 +923,12 @@ namespace CrossBuy.Controllers
 				return Json(new { success = false, message = ex.Message });
 			}
 		}
-			var gate = await HrGateAsync(CrossBuy.BL.HrActions.Read);
-			if (!gate.Ok) return HrDenied(nameof(Index));
 		[HttpGet]
 		public async Task<IActionResult> GetLeaveTypeById(int id)
 		{
+			if (!(await HrGateAsync(CrossBuy.BL.HrActions.Read)).Ok) return Json(new { success = false, message = HrDeniedMessage });
 			try
 			{
-			var gate = await HrGateAsync(CrossBuy.BL.HrActions.Read);
-			if (!gate.Ok) return HrDenied(nameof(Index));
 				var leaveType = await policesService.GetLeaveTypeByIDAsync(id);
 
 				if (leaveType == null)
@@ -949,11 +950,12 @@ namespace CrossBuy.Controllers
         [HttpGet]
         public async Task<IActionResult> GetSalaryPolicy(int id)
         {
+            // Salary figures are payroll data: payroll-view, not the general HR read.
+            if (!(await HrGateAsync(CrossBuy.BL.HrActions.PayrollView)).Ok) return Json(new { ok = false, message = HrDeniedMessage });
             try
             {
                 if (id <= 0)
                     return Json(new { ok = false, message = L["Invalid identifier."].Value });
-			if (!(await HrGateAsync(CrossBuy.BL.HrActions.Read)).Ok) return Json(new { success = false, message = HrDeniedMessage });
 
                 var result = await policesService.GetSalaryPolicyAsync(id);
                 if (result == null)
@@ -977,8 +979,6 @@ namespace CrossBuy.Controllers
         {
             try
             {
-            // Salary figures are payroll data: payroll-view, not the general HR read.
-            if (!(await HrGateAsync(CrossBuy.BL.HrActions.PayrollView)).Ok) return Json(new { ok = false, message = HrDeniedMessage });
                 if (model == null)
                     return Json(new { ok = false, message = L["Invalid data"].Value });
 
@@ -1114,6 +1114,7 @@ namespace CrossBuy.Controllers
         [HttpGet]
 		public async Task<IActionResult> GetPolicy(int id, CancellationToken ct = default)
 		{
+			if (!(await HrGateAsync(CrossBuy.BL.HrActions.Read)).Ok) return Json(new { ok = false, message = HrDeniedMessage });
 			if (id <= 0)
 			{
 				Response.StatusCode = 400;
@@ -1140,14 +1141,18 @@ namespace CrossBuy.Controllers
         // Employees list screen (mirrors Service/BranchesList)
         public async Task<IActionResult> EmployeesList()
         {
+            var gate = await HrGateAsync(CrossBuy.BL.HrActions.Read);
+            if (!gate.Ok) return HrDenied(nameof(Index));
             var svc = HttpContext.RequestServices.GetService(typeof(BL.IEmployeeService)) as BL.IEmployeeService;
-			if (!(await HrGateAsync(CrossBuy.BL.HrActions.Read)).Ok) return Json(new { ok = false, message = HrDeniedMessage });
             var model = svc != null ? await svc.GetAllAsync() : new List<ViewModel.EmployeeListItemDto>();
             return View(model);
         }
 
         public async Task<IActionResult> EmployeeData(int? id, int? fromApplication)
         {
+			var gate = await HrGateAsync(CrossBuy.BL.HrActions.EmployeeView);
+			if (!gate.Ok) return HrDenied(nameof(EmployeesList));
+			var hrCompany = gate.CompanyId;
             EmployeeViewModel model;
             if (id.HasValue && id.Value > 0)
             {
@@ -1170,8 +1175,6 @@ namespace CrossBuy.Controllers
                     FullNameEn = app.FullNameEn, Email = app.Email, PhoneNumber = app.PhoneNumber, Address = app.Address,
                     DateOfBirth = app.DateOfBirth, Gender = app.Gender, MaritalStatus = app.MaritalStatus,
                     CountryID = app.CountryID, JobTitleID = app.JobTitleID, BranchID = app.BranchID,
-            var gate = await HrGateAsync(CrossBuy.BL.HrActions.Read);
-            if (!gate.Ok) return HrDenied(nameof(Index));
                     EmpCompanyID = app.EmpCompanyID, DepartmentID = app.DepartmentID, EmploymentType = app.EmploymentType,
                     ProfileImage = app.PhotoPath,   // carry the applicant photo → shown in the wizard, no re-upload needed
                     DateOfJoining = DateTime.Today
@@ -1179,9 +1182,6 @@ namespace CrossBuy.Controllers
                 ViewBag.ApplicationId = app.ID;
             }
             else
-			var gate = await HrGateAsync(CrossBuy.BL.HrActions.EmployeeView);
-			if (!gate.Ok) return HrDenied(nameof(EmployeesList));
-			var hrCompany = gate.CompanyId;
             {
                 model = new EmployeeViewModel();
             }
@@ -1191,6 +1191,7 @@ namespace CrossBuy.Controllers
         [HttpGet]
         public async Task<IActionResult> GetPolicies()
         {
+            if (!(await HrGateAsync(CrossBuy.BL.HrActions.Read)).Ok) return Json(new { ok = true, data = Array.Empty<object>() });
             try
             {
                 var list = await policesService.GetAllPoliciesAsync();
@@ -1207,6 +1208,8 @@ namespace CrossBuy.Controllers
 	public async Task<IActionResult> GetEmployeeByUserId(string userId)
 	{
 		if (string.IsNullOrEmpty(userId)) return Json(new { ok = false, message = "missing userId" });
+		var gate = await HrGateAsync(CrossBuy.BL.HrActions.EmployeeView);
+		if (!gate.Ok) return Json(new { ok = false, message = HrDeniedMessage });
 		try
 		{
          // resolve IEmployeeService from DI
@@ -1219,7 +1222,6 @@ namespace CrossBuy.Controllers
 		}
 		catch (Exception ex)
 		{
-            if (!(await HrGateAsync(CrossBuy.BL.HrActions.Read)).Ok) return Json(new { ok = true, data = Array.Empty<object>() });
 			return Json(new { ok = false, message = ex.Message });
 		}
 	}
@@ -1236,8 +1238,6 @@ namespace CrossBuy.Controllers
 			// JSON actions in this controller already answer HrDeniedMessage; this one did not.
 			if (!gate.Ok) return Json(new { success = false, message = HrDeniedMessage });
 
-		var gate = await HrGateAsync(CrossBuy.BL.HrActions.EmployeeView);
-		if (!gate.Ok) return Json(new { ok = false, message = HrDeniedMessage });
       if (model == null)
 			return Json(new { success = false, message = "Invalid data" });
 
@@ -1312,6 +1312,12 @@ namespace CrossBuy.Controllers
 				}
 			}
 
+			// HR5: the attendance-device ID is unique per company — refuse a duplicate here, in words, before the index does.
+			var deviceId = model.AttendanceDeviceId?.Trim();
+			if (!string.IsNullOrEmpty(deviceId) && await Db.Employee.AsNoTracking().AnyAsync(e => e.EmpCompanyID == gate.CompanyId && e.AttendanceDeviceId == deviceId && e.ID != model.ID))
+				return Json(new { success = false, message = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar"
+					? $"رقم جهاز البصمة {deviceId} مستخدم لموظف آخر في الشركة" : $"Attendance device ID {deviceId} is already used by another employee in the company" });
+
 			var webRoot = HttpContext.RequestServices.GetService(typeof(Microsoft.AspNetCore.Hosting.IWebHostEnvironment)) as Microsoft.AspNetCore.Hosting.IWebHostEnvironment;
 			// The photo is NOT handed to the service: it goes to the Central Document Platform (owner rule — every file,
 			// pictures included, lives in the File Manager), which needs the saved employee id. So: save, then store.
@@ -1349,12 +1355,6 @@ namespace CrossBuy.Controllers
 
 	}
 
-
-			// HR5: the attendance-device ID is unique per company — refuse a duplicate here, in words, before the index does.
-			var deviceId = model.AttendanceDeviceId?.Trim();
-			if (!string.IsNullOrEmpty(deviceId) && await Db.Employee.AsNoTracking().AnyAsync(e => e.EmpCompanyID == gate.CompanyId && e.AttendanceDeviceId == deviceId && e.ID != model.ID))
-				return Json(new { success = false, message = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar"
-					? $"رقم جهاز البصمة {deviceId} مستخدم لموظف آخر في الشركة" : $"Attendance device ID {deviceId} is already used by another employee in the company" });
 
 
 }
