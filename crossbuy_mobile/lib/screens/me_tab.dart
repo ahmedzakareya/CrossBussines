@@ -6,7 +6,6 @@ import '../providers/auth_provider.dart';
 import '../providers/locale_provider.dart';
 import '../services/api_service.dart';
 import '../services/app_nav.dart';
-import '../theme/brand.dart';
 import '../widgets/ui.dart';
 import 'attendance_screen.dart';
 import 'leave_screen.dart';
@@ -14,8 +13,8 @@ import 'payslips_screen.dart';
 import 'profile_screen.dart';
 import 'requests_screen.dart';
 
-/// ME — everything about me in one place (Workday "Menu", Oracle "Me"): profile, payslips, leave, attendance,
-/// requests, language and sign-out.
+/// ACCOUNT (the reference's "حسابي"): the photo, the name and the post; the facts as a data list; my services; the
+/// language; sign-out.
 class MeTab extends StatefulWidget {
   const MeTab({super.key});
   @override
@@ -29,61 +28,54 @@ class _MeTabState extends State<MeTab> {
 
   @override
   Widget build(BuildContext context) {
-    final rows = <(IconData, String, String, VoidCallback)>[
-      (Icons.badge_outlined, 'ملفي الشخصي', 'My profile', () => _open(const ProfileScreen())),
-      (Icons.account_balance_wallet_outlined, 'قسائمي', 'My payslips', () => _open(const PayslipsScreen())),
-      (Icons.event_available_outlined, 'إجازاتي', 'My leave', () => _open(PageFrame(title: L(context, 'الإجازات', 'Leave'), child: const LeaveScreen()))),
-      (Icons.schedule_outlined, 'حضوري', 'My attendance', () => _open(const AttendanceScreen())),
-      (Icons.description_outlined, 'طلباتي (خطابات، سلف، أذونات)', 'My requests (letters, advances, permissions)', () => _open(const RequestsScreen())),
-      (Icons.translate, 'English', 'العربية', () => context.read<LocaleProvider>().toggle()),
-    ];
     return FutureBuilder<Employee?>(
       future: _me,
       builder: (context, s) {
         final me = s.data;
         final ar = isAr(context);
-        final name = (ar ? me?.fullName : (me?.fullNameEn ?? me?.fullName)) ?? '';
-        final job = (ar ? me?.jobTitleAr : (me?.jobTitleEn ?? me?.jobTitleAr)) ?? '';
-        return ListView(padding: EdgeInsets.zero, children: [
-          HeroBand(
-            bottom: 70,
+        String pick(String? a, String? e) => ((ar ? a : (e ?? a)) ?? '').trim();
+        final name = pick(me?.fullName, me?.fullNameEn);
+        final job = pick(me?.jobTitleAr, me?.jobTitleEn);
+        final branch = pick(me?.branchAr, me?.branchEn);
+        return ExecBody(children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 10, bottom: 25),
             child: Column(children: [
-              PersonAvatar(photo: me?.profileImage, name: name, size: 72),
-              const SizedBox(height: 10),
-              Text(name, style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w700, color: Colors.white)),
-              Text(job, style: const TextStyle(fontSize: 13, color: Colors.white70)),
+              PersonAvatar(photo: me?.profileImage, name: name, size: 68, ring: true),
+              const SizedBox(height: 14),
+              Text(name, textAlign: TextAlign.center, style: T.h1),
+              Text([job, branch].where((x) => x.isNotEmpty).join(' · '), textAlign: TextAlign.center, style: T.sub),
             ]),
           ),
-          Transform.translate(
-            offset: const Offset(0, -50),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Column(children: [
-                SectionCard(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                  child: Column(children: [
-                    for (final r in rows)
-                      RowItem(
-                        leading: IconTile(r.$1),
-                        title: L(context, r.$2, r.$3),
-                        trailing: Icon(ar ? Icons.chevron_left : Icons.chevron_right, color: Brand.muted),
-                        onTap: r.$4,
-                      ),
-                  ]),
-                ),
-                SizedBox(
-                  width: double.infinity,
-                  child: TextButton.icon(
-                    onPressed: () async {
-                      AppNav.resetTabs();
-                      await context.read<AuthProvider>().logout();
-                    },
-                    icon: const Icon(Icons.logout, color: Brand.bad),
-                    label: Text(L(context, 'تسجيل الخروج', 'Sign out'), style: const TextStyle(color: Brand.bad, fontWeight: FontWeight.w700)),
-                  ),
-                ),
+          DataList(children: [
+            KV(L(context, 'الشركة', 'Company'), pick(me?.companyAr, me?.companyEn)),
+            KV(L(context, 'الإدارة', 'Department'), pick(me?.departmentAr, me?.departmentEn)),
+            KV(L(context, 'البريد', 'Email'), me?.email ?? ''),
+            KV(L(context, 'اللغة', 'Language'), '', trailing: GestureDetector(
+              onTap: () => context.read<LocaleProvider>().toggle(),
+              child: Row(children: [
+                Text(ar ? 'العربية' : 'English', style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w500)),
+                const SizedBox(width: 6),
+                Text(ar ? 'English ↔' : '↔ العربية', style: const TextStyle(fontSize: 10.5, color: Color(0xFF3A5795))),
               ]),
-            ),
+            )),
+          ]),
+          SectionHeading(L(context, 'خدماتي', 'My services')),
+          DataList(children: [
+            ItemRow(leading: const IconBox(icon: Lu.badge), title: L(context, 'ملفي الشخصي', 'My profile'), subtitle: L(context, 'البيانات · الطوارئ · المستندات', 'Details · emergency · documents'), onTap: () => _open(const ProfileScreen())),
+            ItemRow(leading: const IconBox(icon: Lu.receiptText), title: L(context, 'قسائمي', 'My payslips'), subtitle: L(context, 'الرواتب الشهرية', 'Monthly pay'), onTap: () => _open(const PayslipsScreen())),
+            ItemRow(leading: const IconBox(icon: Lu.clock3), title: L(context, 'حضوري', 'My attendance'), subtitle: L(context, 'الشهر والبصمات', 'The month and punches'), onTap: () => _open(const AttendanceScreen())),
+            ItemRow(leading: const IconBox(icon: Lu.calendarDays), title: L(context, 'إجازاتي', 'My leave'), subtitle: L(context, 'الأرصدة والطلبات', 'Balances and requests'), onTap: () => _open(PageFrame(title: L(context, 'الإجازات', 'Leave'), child: const LeaveScreen()))),
+            ItemRow(leading: const IconBox(icon: Lu.fileText), title: L(context, 'طلباتي', 'My requests'), subtitle: L(context, 'خطابات · سلف · أذونات', 'Letters · advances · permissions'), onTap: () => _open(const RequestsScreen())),
+          ]),
+          const SizedBox(height: 18),
+          OutlinedButton.icon(
+            onPressed: () async {
+              AppNav.resetTabs();
+              await context.read<AuthProvider>().logout();
+            },
+            icon: const Icon(Lu.logOut, size: 16),
+            label: Text(L(context, 'تسجيل الخروج', 'Sign out')),
           ),
         ]);
       },

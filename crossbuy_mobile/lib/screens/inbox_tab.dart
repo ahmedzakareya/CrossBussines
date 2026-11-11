@@ -7,10 +7,11 @@ import '../services/api_service.dart';
 import '../services/app_nav.dart';
 import '../theme/brand.dart';
 import '../widgets/ui.dart';
-import 'home_tab.dart' show approvalTitle, approvalSub;
+import 'home_tab.dart' show approvalCard, approvalTitle, approvalSub;
 
-/// INBOX — one place for everything that needs me: approvals (leave AND employee requests whose current step is mine),
-/// updates (notifications) and what I sent. Every swipe-worthy action also has a button (research: never swipe-only).
+/// APPROVALS (the reference's "الموافقات" tab): the decision centre — every item whose current approval step is mine,
+/// leave and employee requests alike, as request cards; a card opens its detail with the approval timeline and the
+/// decision. The bell's notifications are their own page (NotificationsPage).
 class InboxTab extends StatefulWidget {
   const InboxTab({super.key});
   @override
@@ -18,163 +19,188 @@ class InboxTab extends StatefulWidget {
 }
 
 class _InboxTabState extends State<InboxTab> {
-  late Future<(String, List<ApprovalItem>)> _approvals;
-  late Future<List<MyRequest>> _sent;
+  late Future<(String, List<ApprovalItem>)> _f = ApiService.instance.getApprovals();
 
   @override
   void initState() {
     super.initState();
-    _load();
     AppNav.dataChanged.addListener(_reload);
-    AppNav.inboxFilter.addListener(_refresh);
   }
 
   @override
   void dispose() {
     AppNav.dataChanged.removeListener(_reload);
-    AppNav.inboxFilter.removeListener(_refresh);
     super.dispose();
   }
 
-  void _load() {
-    _approvals = ApiService.instance.getApprovals().catchError((_) => ('', <ApprovalItem>[]));
-    _sent = ApiService.instance.getMyRequests().catchError((_) => <MyRequest>[]);
-  }
-
   void _reload() {
-    if (mounted) setState(_load);
-  }
-
-  void _refresh() {
-    if (mounted) setState(() {});
-  }
-
-  Future<void> _decide(ApprovalItem a, bool approve) async {
-    final (ok, err) = await ApiService.instance.decide(a, approve);
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(ok ? (approve ? L(context, 'تم الاعتماد', 'Approved') : L(context, 'رُفض الطلب', 'Rejected')) : (err ?? L(context, 'تعذّر تنفيذ القرار', 'The decision could not be saved')))));
-    if (ok) _reload();
+    if (mounted) setState(() => _f = ApiService.instance.getApprovals());
   }
 
   @override
   Widget build(BuildContext context) {
-    final f = AppNav.inboxFilter.value;
-    final filters = [('الكل', 'All'), ('اعتمادات', 'Approvals'), ('تحديثات', 'Updates'), ('طلباتي المرسلة', 'Sent')];
-    return Scaffold(
-      appBar: AppBar(title: Text(L(context, 'الوارد', 'Inbox')), shape: const Border(bottom: BorderSide(color: Brand.line))),
-      body: Column(children: [
-        SizedBox(
-          height: 56,
-          child: ListView(scrollDirection: Axis.horizontal, padding: const EdgeInsets.fromLTRB(16, 12, 16, 4), children: [
-            for (var i = 0; i < filters.length; i++)
-              Padding(
-                padding: const EdgeInsetsDirectional.only(end: 6),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(999),
-                  onTap: () => AppNav.inboxFilter.value = i,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: f == i ? Brand.deep : Colors.white,
-                      borderRadius: BorderRadius.circular(999),
-                      border: Border.all(color: f == i ? Brand.deep : Brand.line),
-                    ),
-                    child: Text(L(context, filters[i].$1, filters[i].$2), style: TextStyle(color: f == i ? Colors.white : Brand.ink2, fontWeight: FontWeight.w600, fontSize: 13)),
-                  ),
-                ),
-              ),
-          ]),
-        ),
-        Expanded(
-          child: RefreshIndicator(
-            onRefresh: () async => _reload(),
-            child: ListView(padding: const EdgeInsets.all(16), children: [
-              if (f == 0 || f == 1) _approvalsBlock(context, showEmpty: f == 1),
-              if (f == 0 || f == 2) _updatesBlock(context),
-              if (f == 3) _sentBlock(context),
-            ]),
-          ),
-        ),
-      ]),
+    return FutureBuilder<(String, List<ApprovalItem>)>(
+      future: _f,
+      builder: (context, s) {
+        if (s.hasError) {
+          return ExecBody(children: [
+            PageHead(L(context, 'الموافقات', 'Approvals'), eyebrow: L(context, 'مركز القرارات', 'Decision centre')),
+            EmptyNote(icon: Lu.wifiOff, title: L(context, 'تعذّر التحميل', 'Could not load'), text: L(context, 'تحقق من الاتصال ثم اسحب للتحديث.', 'Check the connection, then pull to refresh.')),
+          ]);
+        }
+        if (!s.hasData) return const Center(child: CircularProgressIndicator());
+        final (cur, list) = s.data!;
+        return ExecBody(
+          onRefresh: () async => _reload(),
+          children: [
+            PageHead(L(context, 'الموافقات', 'Approvals'), eyebrow: L(context, 'مركز القرارات', 'Decision centre'),
+                sub: list.isEmpty ? L(context, 'لا شيء ينتظر مراجعتك', 'Nothing is waiting for you') : L(context, '${list.length} طلبات تنتظر مراجعتك', '${list.length} requests wait for your review')),
+            if (list.isEmpty) SoftNote(L(context, 'تمت مراجعة جميع الطلبات', 'Everything has been reviewed')),
+            for (final a in list)
+              approvalCard(context, a, cur, () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => ApprovalDetailPage(item: a, currency: cur)))),
+          ],
+        );
+      },
     );
   }
-
-  Widget _approvalsBlock(BuildContext context, {required bool showEmpty}) => FutureBuilder<(String, List<ApprovalItem>)>(
-        future: _approvals,
-        builder: (context, s) {
-          if (!s.hasData) return const Padding(padding: EdgeInsets.all(24), child: Center(child: CircularProgressIndicator()));
-          final (cur, list) = s.data!;
-          if (list.isEmpty) {
-            return showEmpty
-                ? SectionCard(child: EmptyNote(title: L(context, 'لا شيء ينتظرك', 'All caught up'), text: L(context, 'سنبلغك حين يصل طلب جديد.', "We'll tell you when something new arrives.")))
-                : const SizedBox.shrink();
-          }
-          final ar = isAr(context);
-          return SectionCard(
-            title: '${L(context, 'اعتمادات', 'Approvals')} ${list.length}',
-            child: Column(children: [
-              for (final a in list)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Column(children: [
-                    RowItem(
-                      leading: PersonAvatar(name: a.requester(ar), size: 36),
-                      title: approvalTitle(context, a),
-                      subtitle: '${a.requester(ar)} · ${approvalSub(context, a, cur)}',
-                    ),
-                    Row(children: [
-                      Expanded(child: OutlinedButton(onPressed: () => _decide(a, false), style: OutlinedButton.styleFrom(foregroundColor: Brand.bad, side: const BorderSide(color: Color(0xFFFECACA))), child: Text(L(context, 'رفض', 'Reject')))),
-                      const SizedBox(width: 8),
-                      Expanded(child: FilledButton(onPressed: () => _decide(a, true), style: FilledButton.styleFrom(backgroundColor: Brand.ok, minimumSize: const Size(0, 40)), child: Text(L(context, 'اعتماد', 'Approve')))),
-                    ]),
-                    const Divider(height: 18, color: Color(0xFFF1F5F9)),
-                  ]),
-                ),
-            ]),
-          );
-        },
-      );
-
-  Widget _updatesBlock(BuildContext context) {
-    final n = context.watch<NotificationProvider>();
-    final ar = isAr(context);
-    if (n.items.isEmpty) return SectionCard(child: EmptyNote(icon: Icons.notifications_none, title: L(context, 'لا تحديثات', 'No updates'), text: L(context, 'كل شيء منجز.', 'All caught up.')));
-    return SectionCard(
-      title: L(context, 'التحديثات', 'Updates'),
-      action: TextButton(onPressed: () => ApiService.instance.markAllNotificationsRead().then((_) => n.load()), child: Text(L(context, 'تعليم الكل كمقروء', 'Mark all read'))),
-      child: Column(children: [
-        for (final i in n.items.take(30))
-          RowItem(
-            leading: const IconTile(Icons.notifications_active_outlined),
-            title: (ar ? i.titleAr : (i.titleEn ?? i.titleAr)) ?? '',
-            subtitle: (ar ? i.bodyAr : (i.bodyEn ?? i.bodyAr)) ?? '',
-            onTap: () => AppNav.routeForNotification(i.type),
-          ),
-      ]),
-    );
-  }
-
-  Widget _sentBlock(BuildContext context) => FutureBuilder<List<MyRequest>>(
-        future: _sent,
-        builder: (context, s) {
-          if (!s.hasData) return const Padding(padding: EdgeInsets.all(24), child: Center(child: CircularProgressIndicator()));
-          if (s.data!.isEmpty) return SectionCard(child: EmptyNote(icon: Icons.send_outlined, title: L(context, 'لا طلبات', 'No requests'), text: L(context, 'طلباتك المرسلة تظهر هنا.', 'Requests you send appear here.')));
-          return SectionCard(
-            child: Column(children: [
-              for (final r in s.data!)
-                RowItem(
-                  leading: IconTile(Icons.description_outlined, fg: r.status == 1 ? Brand.ok : Brand.brand, bg: r.status == 1 ? Brand.okTint : Brand.tint2),
-                  title: requestTitle(context, r),
-                  subtitle: r.createdAt != null ? ymd(r.createdAt!) : null,
-                  trailing: requestPill(context, r.status),
-                ),
-            ]),
-          );
-        },
-      );
 }
 
+/// One request in full (the reference's detail page): its number and type, the amount or days with the status,
+/// the facts, the approval timeline with the current step, and the decision.
+class ApprovalDetailPage extends StatefulWidget {
+  final ApprovalItem item;
+  final String currency;
+  const ApprovalDetailPage({super.key, required this.item, required this.currency});
+  @override
+  State<ApprovalDetailPage> createState() => _ApprovalDetailPageState();
+}
+
+class _ApprovalDetailPageState extends State<ApprovalDetailPage> {
+  bool _busy = false;
+  String? _done;   // the decision taken here, shown in place of the buttons
+
+  Future<void> _decide(bool approve) async {
+    setState(() => _busy = true);
+    final (ok, err) = await ApiService.instance.decide(widget.item, approve);
+    if (!mounted) return;
+    setState(() {
+      _busy = false;
+      if (ok) _done = approve ? L(context, 'تم الاعتماد', 'Approved') : L(context, 'تم الرفض', 'Rejected');
+    });
+    if (!ok) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err ?? L(context, 'تعذّر تنفيذ القرار', 'The decision could not be saved'))));
+    if (ok) AppNav.notifyDataChanged();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final a = widget.item;
+    final ar = isAr(context);
+    final isLeave = a.kind == 'leave';
+    final value = isLeave ? '${a.days ?? 0}' : (a.amount == null ? '—' : money(a.amount!, widget.currency));
+    final unit = isLeave ? L(context, 'أيام', 'days') : curLabel(widget.currency, ar);
+    final code = '${isLeave ? 'LV' : 'RQ'}-${a.id.toString().padLeft(4, '0')}';
+    Widget step(String label, {bool current = false}) => Column(mainAxisSize: MainAxisSize.min, children: [
+          Container(
+            width: 7, height: 7,
+            decoration: BoxDecoration(color: current ? Brand.gold : Brand.support, shape: BoxShape.circle,
+                boxShadow: current ? const [BoxShadow(color: Color(0x1AD4AF37), spreadRadius: 4)] : null),
+          ),
+          const SizedBox(height: 8),
+          Text(label, style: const TextStyle(fontSize: 9.5, color: Brand.mutedC)),
+        ]);
+    Widget hr() => Expanded(child: Container(height: 1, color: Brand.lineC, margin: const EdgeInsets.only(bottom: 17)));
+    return ExecFrame(
+      onBell: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NotificationsPage())),
+      child: ExecBody(children: [
+        BackLink(L(context, 'كل الموافقات', 'All approvals')),
+        Text(code, style: T.eyebrow),
+        const SizedBox(height: 3),
+        Text(isLeave ? L(context, 'طلب إجازة', 'Leave request') : approvalTitle(context, a), style: T.h1),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 22),
+          child: Column(children: [
+            _done == null ? Tag(L(context, 'بانتظار اعتمادك', 'Awaiting your approval')) : (_done!.contains(L(context, 'اعتماد', 'Approved')) ? Tag.ok(_done!) : Tag.bad(_done!)),
+            const SizedBox(height: 12),
+            Row(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.baseline, textBaseline: TextBaseline.alphabetic, children: [
+              Text(value, textDirection: TextDirection.ltr, style: const TextStyle(fontSize: 35, fontWeight: FontWeight.w700, letterSpacing: -1, color: Brand.inkC)),
+              const SizedBox(width: 7),
+              Text(unit, style: const TextStyle(fontSize: 12, color: Brand.mutedC)),
+            ]),
+            const SizedBox(height: 8),
+            Text('${approvalTitle(context, a)} · ${a.requester(ar)}', style: const TextStyle(fontSize: 12, color: Brand.mutedC)),
+          ]),
+        ),
+        DataList(children: [
+          KV(L(context, 'مقدم الطلب', 'Requested by'), a.requester(ar)),
+          if (a.from != null) KV(L(context, 'التاريخ', 'Dates'), approvalSub(context, a, widget.currency)),
+          if (a.createdAt != null) KV(L(context, 'قُدّم في', 'Submitted on'), ymd(a.createdAt!)),
+          KV(L(context, 'مرحلة الاعتماد', 'Approval step'), '${L(context, 'المستوى ', 'Level ')}${a.level}'),
+        ]),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 6),
+          child: Row(children: [
+            step(L(context, 'تقديم الطلب', 'Submitted')),
+            hr(),
+            step(L(context, 'أنت', 'You'), current: _done == null),
+            hr(),
+            step(L(context, 'الإجراء النهائي', 'Final action'), current: _done != null),
+          ]),
+        ),
+        if (_done != null)
+          SoftNote('${_done!} · ${L(context, 'أُبلغ صاحب الطلب', 'the requester is notified')}')
+        else
+          Row(children: [
+            Expanded(flex: 3, child: FilledButton(onPressed: _busy ? null : () => _decide(true), child: Text(L(context, 'اعتماد الطلب', 'Approve')))),
+            const SizedBox(width: 9),
+            Expanded(flex: 2, child: OutlinedButton(onPressed: _busy ? null : () => _decide(false), child: Text(L(context, 'رفض', 'Reject')))),
+          ]),
+      ]),
+    );
+  }
+}
+
+/// The bell: the latest updates, newest first; tapping one routes to where it belongs.
+class NotificationsPage extends StatelessWidget {
+  const NotificationsPage({super.key});
+  @override
+  Widget build(BuildContext context) {
+    final n = context.watch<NotificationProvider>();
+    final ar = isAr(context);
+    return ExecFrame(
+      child: ExecBody(
+        onRefresh: () => n.load(),
+        children: [
+          BackLink(L(context, 'العودة', 'Back')),
+          PageHead(L(context, 'الإشعارات', 'Notifications'), eyebrow: L(context, 'آخر التحديثات', 'Latest updates'),
+              sub: n.unread > 0 ? L(context, '${n.unread} غير مقروءة', '${n.unread} unread') : null),
+          if (n.unread > 0)
+            Align(
+              alignment: AlignmentDirectional.centerEnd,
+              child: TextButton(onPressed: () => ApiService.instance.markAllNotificationsRead().then((_) => n.load()), child: Text(L(context, 'تعليم الكل كمقروء', 'Mark all read'))),
+            ),
+          if (n.items.isEmpty)
+            EmptyNote(icon: Lu.bell, title: L(context, 'لا إشعارات', 'No notifications'), text: L(context, 'كل شيء هادئ.', 'All quiet.'))
+          else
+            DataList(children: [
+              for (final i in n.items.take(40))
+                ItemRow(
+                  leading: IconBox(icon: i.isRead ? Lu.bell : Lu.bellDot, fg: i.isRead ? Brand.support : Brand.blue),
+                  title: ((ar ? i.titleAr : (i.titleEn ?? i.titleAr)) ?? '').trim(),
+                  subtitle: ((ar ? i.bodyAr : (i.bodyEn ?? i.bodyAr)) ?? '').trim(),
+                  end: i.createdAt == null ? null : Text(ymd(i.createdAt!.toLocal()), style: T.small),
+                  onTap: () {
+                    Navigator.of(context).maybePop();
+                    AppNav.routeForNotification(i.type);
+                  },
+                ),
+            ]),
+        ],
+      ),
+    );
+  }
+}
+
+/// Title and status of one of MY requests (letters, permissions, advances), shared with the requests screen.
 String requestTitle(BuildContext context, MyRequest r) {
   switch (r.type) {
     case 'Advance':
@@ -189,7 +215,7 @@ String requestTitle(BuildContext context, MyRequest r) {
 }
 
 Widget requestPill(BuildContext context, int status) => status == 1
-    ? Pill.ok(L(context, 'معتمد', 'Approved'))
+    ? Tag.ok(L(context, 'معتمد', 'Approved'))
     : status == 2
-        ? Pill.bad(L(context, 'مرفوض', 'Rejected'))
-        : Pill(L(context, 'قيد الاعتماد', 'Pending'));
+        ? Tag.bad(L(context, 'مرفوض', 'Rejected'))
+        : Tag(L(context, 'قيد الاعتماد', 'Pending'));

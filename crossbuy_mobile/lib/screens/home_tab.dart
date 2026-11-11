@@ -8,14 +8,16 @@ import '../services/api_service.dart';
 import '../services/app_nav.dart';
 import '../theme/brand.dart';
 import '../widgets/ui.dart';
+import 'attendance_screen.dart';
+import 'inbox_tab.dart' show ApprovalDetailPage;
 import 'leave_screen.dart';
 import 'payslips_screen.dart';
-import 'requests_screen.dart';
-import 'attendance_screen.dart';
+import 'structure_screen.dart';
 
-/// HOME — "what needs me now" (owner-approved prototype). The cards follow what the signed-in user can actually see:
-/// approvals appear when something waits for them, the business KPIs when the server grants the financial summary,
-/// leave balances and the last payslip for everyone. No role is guessed on the phone; the server's answers decide.
+/// HOME — the owner's reference, screen for screen: the date and the greeting with the photo; the financial card
+/// (cash & banks with receivables / payables — or, for an employee without the financial summary, the last net pay);
+/// quick access; and "needs your attention" — the approvals waiting for me as request cards. What appears is decided
+/// by the server's answers, never by a role guessed on the phone.
 class HomeTab extends StatefulWidget {
   const HomeTab({super.key});
   @override
@@ -33,7 +35,6 @@ class _HomeData {
 
 class _HomeTabState extends State<HomeTab> {
   late Future<_HomeData> _future;
-  bool _revealPay = false;
 
   @override
   void initState() {
@@ -55,28 +56,18 @@ class _HomeTabState extends State<HomeTab> {
   Future<_HomeData> _load() async {
     final api = ApiService.instance;
     final d = _HomeData();
-    // each card is independent: one failing endpoint never blanks the whole Home
+    // each part is independent: one failing endpoint never blanks Home
     await Future.wait([
       api.getProfile().then<void>((v) { d.me = v; }).catchError((_) {}),
       api.getDashboard().then<void>((v) { d.dash = v; }).catchError((_) {}),
-      api.getApprovals().then((v) { d.currency = v.$1; d.approvals = v.$2; }).catchError((_) {}),
-      api.getPayslips().then((v) { if (d.currency.isEmpty) d.currency = v.$1; d.payslips = v.$2; }).catchError((_) {}),
-      api.tryFinanceSummary().then((v) => d.finance = v),
+      api.getApprovals().then<void>((v) { d.currency = v.$1; d.approvals = v.$2; }).catchError((_) {}),
+      api.getPayslips().then<void>((v) { if (d.currency.isEmpty) d.currency = v.$1; d.payslips = v.$2; }).catchError((_) {}),
+      api.tryFinanceSummary().then<void>((v) { d.finance = v; }),
     ]);
     return d;
   }
 
-  Future<void> _decide(ApprovalItem a, bool approve) async {
-    final (ok, err) = await ApiService.instance.decide(a, approve);
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(ok ? (approve ? L(context, 'تم الاعتماد وأُبلغ صاحب الطلب', 'Approved — the requester is notified') : L(context, 'رُفض الطلب وأُبلغ صاحبه', 'Rejected — the requester is notified'))
-          : (err ?? L(context, 'تعذّر تنفيذ القرار', 'The decision could not be saved'))),
-    ));
-    if (ok) _reload();
-  }
-
-  void _open(Widget page) => Navigator.of(context).push(MaterialPageRoute(builder: (_) => page));
+  void _open(Widget page) => Navigator.of(context).push(MaterialPageRoute(builder: (_) => page)).then((_) => _reload());
 
   @override
   Widget build(BuildContext context) {
@@ -86,182 +77,105 @@ class _HomeTabState extends State<HomeTab> {
         final d = snap.data;
         if (d == null) return const Center(child: CircularProgressIndicator());
         final ar = isAr(context);
-        final name = (ar ? d.me?.fullName : (d.me?.fullNameEn ?? d.me?.fullName)) ?? '';
+        final first = ((ar ? d.me?.fullName : (d.me?.fullNameEn ?? d.me?.fullName)) ?? '').trim().split(RegExp(r'\s+')).first;
         final now = DateTime.now();
-        return RefreshIndicator(
+        final greet = now.hour < 12 ? L(context, 'صباح الخير', 'Good morning') : L(context, 'مساء الخير', 'Good evening');
+        final cur = curLabel(d.currency, ar);
+        return ExecBody(
           onRefresh: () async => _reload(),
-          child: ListView(padding: EdgeInsets.zero, children: [
-            HeroBand(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Row(children: [
-                  PersonAvatar(photo: d.me?.profileImage, name: name, size: 46),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text(L(context, 'صباح الخير', 'Good morning'), style: const TextStyle(fontSize: 13, color: Colors.white70)),
-                      Text(name, style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w700, color: Colors.white)),
-                    ]),
-                  ),
-                  IconButton(onPressed: () => AppNav.goInbox(filter: 2), icon: const Icon(Icons.notifications_none, color: Colors.white)),
-                ]),
-                const SizedBox(height: 12),
-                Text('${now.day} ${monthName(context, now.month)} ${now.year}', style: const TextStyle(fontSize: 12.5, color: Colors.white70)),
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(bottom: 20),
+              child: Row(children: [
+                Expanded(
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text('${weekdayName(context, now.weekday)}، ${now.day} ${monthName(context, now.month)}', style: T.eyebrow),
+                    const SizedBox(height: 3),
+                    Text(first.isEmpty ? greet : '$greet، $first', style: T.h1),
+                  ]),
+                ),
+                PersonAvatar(photo: d.me?.profileImage, name: (ar ? d.me?.fullName : d.me?.fullNameEn) ?? '', size: 46, ring: true),
               ]),
             ),
-            Transform.translate(
-              offset: const Offset(0, -44),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                  _quickActions(context),
-                  if (d.finance != null) _kpis(context, d),
-                  if (d.approvals.isNotEmpty) _approvals(context, d),
-                  if (d.dash != null && d.dash!.balances.isNotEmpty) _balances(context, d.dash!),
-                  if (d.payslips.isNotEmpty) _payslip(context, d),
-                ]),
-              ),
-            ),
-          ]),
+            _financial(context, d, cur),
+            SectionHeading(L(context, 'وصول سريع', 'Quick access'), action: L(context, 'كل الأقسام', 'All sections'), onAction: () => AppNav.tabIndex.value = AppNav.apps),
+            Row(children: [
+              Expanded(child: QuickTile(icon: Lu.calendarPlus, label: L(context, 'طلب إجازة', 'Request leave'), onTap: () => _open(PageFrame(title: L(context, 'الإجازات', 'Leave'), child: const LeaveScreen())))),
+              Expanded(child: QuickTile(icon: Lu.fingerprint, label: L(context, 'حضوري', 'Attendance'), onTap: () => _open(const AttendanceScreen()))),
+              Expanded(child: QuickTile(icon: Lu.receiptText, label: L(context, 'قسيمتي', 'My payslip'), onTap: () => _open(const PayslipsScreen()))),
+              Expanded(child: QuickTile(icon: Lu.usersRound, label: L(context, 'فريق العمل', 'My team'), onTap: () => _open(PageFrame(title: L(context, 'الهيكل التنظيمي', 'Org structure'), child: const StructureScreen())))),
+            ]),
+            SectionHeading(L(context, 'يحتاج انتباهك', 'Needs your attention'), count: d.approvals.length,
+                action: L(context, 'عرض الكل', 'See all'), onAction: () => AppNav.tabIndex.value = AppNav.inbox),
+            if (d.approvals.isEmpty) SoftNote(L(context, 'تمت مراجعة جميع الطلبات', 'Everything has been reviewed')),
+            for (final a in d.approvals.take(2)) approvalCard(context, a, d.currency, () => _open(ApprovalDetailPage(item: a, currency: d.currency))),
+          ],
         );
       },
     );
   }
 
-  Widget _quickActions(BuildContext context) {
-    final acts = <(IconData, String, String, Widget)>[
-      (Icons.event_available_outlined, 'طلب إجازة', 'Leave', PageFrame(title: L(context, 'الإجازات', 'Leave'), child: const LeaveScreen())),
-      (Icons.schedule_outlined, 'حضوري', 'Attendance', const AttendanceScreen()),
-      (Icons.account_balance_wallet_outlined, 'قسائمي', 'Payslips', const PayslipsScreen()),
-      (Icons.description_outlined, 'خطاب / سلفة', 'Letter / advance', const NewRequestScreen()),
-    ];
-    return SectionCard(
-      child: Row(children: [
-        for (final a in acts)
-          Expanded(
-            child: InkWell(
-              borderRadius: BorderRadius.circular(14),
-              onTap: () => _open(a.$4),
-              child: Column(children: [
-                IconTile(a.$1, size: 52),
-                const SizedBox(height: 6),
-                Text(L(context, a.$2, a.$3), textAlign: TextAlign.center, style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: Brand.ink2)),
-              ]),
-            ),
-          ),
-      ]),
-    );
-  }
-
-  Widget _kpis(BuildContext context, _HomeData d) {
-    final f = d.finance!;
-    final cur = d.currency.isEmpty ? '' : ' ${d.currency}';
-    Widget tile(String ar, String en, double v, {bool bad = false}) => Expanded(
-          child: Container(
-            margin: const EdgeInsets.all(4),
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(L(context, ar, en), style: const TextStyle(fontSize: 11.5, color: Brand.muted)),
-              const SizedBox(height: 4),
-              Text('${money(v, d.currency)}$cur', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: bad ? Brand.bad : Brand.ink)),
-            ]),
-          ),
-        );
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Padding(padding: const EdgeInsets.fromLTRB(4, 4, 4, 6), child: Text(L(context, 'أعمالك', 'Your business'), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Brand.muted))),
-        Row(children: [tile('النقدية', 'Cash', f.cash), tile('إيرادات السنة', 'Revenue YTD', f.revenue)]),
-        Row(children: [tile('مستحقات العملاء', 'Receivables', f.arTotal), tile('مستحقات الموردين', 'Payables', f.apTotal, bad: true)]),
-      ]),
-    );
-  }
-
-  Widget _approvals(BuildContext context, _HomeData d) {
-    final ar = isAr(context);
-    return SectionCard(
-      title: '${L(context, 'بانتظار اعتمادك', 'Waiting for you')} ${d.approvals.length}',
-      action: TextButton(onPressed: () => AppNav.goInbox(filter: 1), child: Text(L(context, 'الكل', 'All'))),
-      child: Column(children: [
-        for (final a in d.approvals.take(3))
-          Container(
-            margin: const EdgeInsets.only(bottom: 10),
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(border: Border.all(color: Brand.line), borderRadius: BorderRadius.circular(16)),
-            child: Column(children: [
-              Row(children: [
-                PersonAvatar(photo: null, name: a.requester(ar), size: 34),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text(approvalTitle(context, a), style: const TextStyle(fontWeight: FontWeight.w600)),
-                    Text('${a.requester(ar)} · ${approvalSub(context, a, d.currency)}', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12, color: Brand.muted)),
-                  ]),
-                ),
-              ]),
-              const SizedBox(height: 10),
-              Row(children: [
-                Expanded(child: OutlinedButton(onPressed: () => _decide(a, false), style: OutlinedButton.styleFrom(foregroundColor: Brand.bad, side: const BorderSide(color: Color(0xFFFECACA))), child: Text(L(context, 'رفض', 'Reject')))),
-                const SizedBox(width: 8),
-                Expanded(child: FilledButton(onPressed: () => _decide(a, true), style: FilledButton.styleFrom(backgroundColor: Brand.ok, minimumSize: const Size(0, 40)), child: Text(L(context, 'اعتماد', 'Approve')))),
-              ]),
-            ]),
-          ),
-      ]),
-    );
-  }
-
-  Widget _balances(BuildContext context, DashboardData dash) {
-    final ar = isAr(context);
-    return SectionCard(
-      title: L(context, 'أرصدة إجازاتي', 'My leave balances'),
-      child: SizedBox(
-        height: 104,
-        child: ListView(scrollDirection: Axis.horizontal, children: [
-          for (final b in dash.balances)
-            Container(
-              width: 120, margin: const EdgeInsetsDirectional.only(end: 10), padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(color: Brand.tint2, borderRadius: BorderRadius.circular(14)),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text((ar ? b.nameAr : (b.nameEn ?? b.nameAr)) ?? '', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 11.5, color: Brand.muted)),
-                Text('${b.remaining}', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: Brand.deep)),
-                Text('${L(context, 'من ', 'of ')}${b.entitlement}', style: const TextStyle(fontSize: 11.5, color: Brand.muted)),
-                const Spacer(),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(99),
-                  child: LinearProgressIndicator(value: b.entitlement == 0 ? 0 : (b.remaining / b.entitlement).clamp(0, 1).toDouble(), minHeight: 6, backgroundColor: Brand.line, color: Brand.brand),
-                ),
-              ]),
-            ),
-        ]),
-      ),
-    );
-  }
-
-  Widget _payslip(BuildContext context, _HomeData d) {
-    final p = d.payslips.first;
-    return SectionCard(
-      onTap: () => _open(PayslipDetailScreen(id: p.id)),
-      child: Row(children: [
-        const IconTile(Icons.account_balance_wallet_outlined),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('${L(context, 'قسيمة ', 'Payslip · ')}${monthName(context, p.month)} ${p.year}', style: const TextStyle(fontWeight: FontWeight.w600)),
-            Text('${L(context, 'الصافي ', 'Net ')}${_revealPay ? '${money(p.net, d.currency)} ${d.currency}' : '••••••'}', style: const TextStyle(fontSize: 12.5, color: Brand.muted)),
-          ]),
+  Widget _financial(BuildContext context, _HomeData d, String cur) {
+    final f = d.finance;
+    if (f != null) {
+      return FinancialCard(
+        label: L(context, 'النقدية والبنوك', 'Cash & banks'),
+        icon: Lu.wallet,
+        amount: Amount(money(f.cash, d.currency), cur),
+        note: '${L(context, 'المركز المالي · ', 'Financial position · ')}${monthName(context, DateTime.now().month)} ${DateTime.now().year}',
+        footer: [
+          (L(context, 'مستحقات العملاء', 'Receivables'), whole(f.arTotal), cur),
+          (L(context, 'مستحقات الموردين', 'Payables'), whole(f.apTotal), cur),
+        ],
+      );
+    }
+    if (d.payslips.isNotEmpty) {
+      final p = d.payslips.first;
+      return GestureDetector(
+        onTap: () => _open(PayslipDetailScreen(id: p.id)),
+        child: FinancialCard(
+          label: L(context, 'صافي الراتب', 'Net pay'),
+          icon: Lu.receiptText,
+          amount: Amount(money(p.net, d.currency), cur),
+          note: '${monthName(context, p.month)} ${p.year}',
         ),
-        // the amount stays hidden until asked for (shoulder-surfing, screen sharing)
-        IconButton(onPressed: () => setState(() => _revealPay = !_revealPay), icon: Icon(_revealPay ? Icons.visibility_off_outlined : Icons.visibility_outlined, color: Brand.brand)),
-      ]),
+      );
+    }
+    final b = d.dash?.balances.isNotEmpty == true ? d.dash!.balances.first : null;
+    return FinancialCard(
+      label: b == null ? L(context, 'اليوم', 'Today') : ((isAr(context) ? b.nameAr : (b.nameEn ?? b.nameAr)) ?? ''),
+      icon: Lu.calendarDays,
+      amount: b == null
+          ? Text('${DateTime.now().day} ${monthName(context, DateTime.now().month)}', textAlign: TextAlign.end, style: T.h1.copyWith(fontSize: 32))
+          : Amount('${b.remaining}', L(context, 'يوماً', 'days')),
+      note: b == null ? '' : '${L(context, 'من ', 'of ')}${b.entitlement}',
     );
   }
 }
 
-/// Title and subtitle of an approvals-inbox item, shared by Home and Inbox.
+/// A waiting approval as the reference's request card (shared by Home and Approvals).
+Widget approvalCard(BuildContext context, ApprovalItem a, String currency, VoidCallback onTap) {
+  final ar = isAr(context);
+  final isLeave = a.kind == 'leave';
+  return RequestCard(
+    leading: IconBox(photo: a.photo, name: a.requester(ar)),
+    title: approvalTitle(context, a),
+    subtitle: a.requester(ar),
+    tag: Tag(L(context, 'بانتظار اعتمادك', 'Awaiting your approval')),
+    amount: isLeave ? '${a.days ?? 0}' : (a.amount == null ? '' : money(a.amount!, currency)),
+    unit: isLeave ? L(context, 'أيام', 'days') : (a.amount == null ? '' : curLabel(currency, ar)),
+    onTap: onTap,
+  );
+}
+
+/// Title of an approvals-inbox item, shared by Home and Approvals.
 String approvalTitle(BuildContext context, ApprovalItem a) {
   final ar = isAr(context);
-  if (a.kind == 'leave') return '${L(context, 'إجازة', 'Leave')} ${(ar ? a.typeAr : a.type) ?? ''}'.trim();
+  if (a.kind == 'leave') {
+    final t = ((ar ? a.typeAr : a.type) ?? '').trim();
+    final says = RegExp(r'[إا]جاز|leave', caseSensitive: false).hasMatch(t);
+    return t.isEmpty ? L(context, 'إجازة', 'Leave') : (says ? t : '${L(context, 'إجازة', 'Leave')} $t');
+  }
   switch (a.type) {
     case 'Advance':
       return L(context, 'سلفة راتب', 'Salary advance');
@@ -274,11 +188,14 @@ String approvalTitle(BuildContext context, ApprovalItem a) {
   }
 }
 
+/// The dates (leave) or the amount (requests) of an approvals-inbox item.
 String approvalSub(BuildContext context, ApprovalItem a, String currency) {
   if (a.kind == 'leave' && a.from != null) {
     final days = a.days ?? 0;
-    return '${ymd(a.from!)}${a.to != null && a.to != a.from ? ' → ${ymd(a.to!)}' : ''} · $days ${L(context, 'يوم', days == 1 ? 'day' : 'days')}';
+    // words, not a numeric range: "من 2 نوفمبر إلى 4 نوفمبر" reads the same in both directions
+    final range = a.to == null || a.to == a.from ? dayMonth(context, a.from!) : '${L(context, 'من ', 'From ')}${dayMonth(context, a.from!)}${L(context, ' إلى ', ' to ')}${dayMonth(context, a.to!)}';
+    return '$range · $days ${L(context, 'يوم', days == 1 ? 'day' : 'days')}';
   }
-  if (a.amount != null) return '${money(a.amount!, currency)} $currency';
+  if (a.amount != null) return '${money(a.amount!, currency)} ${curLabel(currency, isAr(context))}';
   return a.createdAt != null ? ymd(a.createdAt!) : '';
 }
