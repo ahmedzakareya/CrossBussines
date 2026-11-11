@@ -1,0 +1,280 @@
+{
+ "unit": "H97 — allergy visit (sc-allergy)",
+ "strings": {
+  "Allergen": {
+   "ar": "المادة",
+   "en": "Allergen",
+   "fr": "Allergène"
+  },
+  "Build-up schedule; a systemic reaction holds the next dose until the doctor decides": {
+   "ar": "جدول تصاعدي؛ رد فعل جهازي يوقف الجرعة التالية تلقائياً حتى يقرر الطبيب",
+   "en": "Build-up schedule; a systemic reaction holds the next dose until the doctor decides",
+   "fr": "Schéma progressif ; une réaction systémique suspend la dose suivante jusqu'à la décision du médecin"
+  },
+  "Choose the reaction": {
+   "ar": "اختر رد الفعل",
+   "en": "Choose the reaction",
+   "fr": "Choisissez la réaction"
+  },
+  "Control": {
+   "ar": "ضابط",
+   "en": "Control",
+   "fr": "Témoin"
+  },
+  "Course held": {
+   "ar": "الكورس معلّق",
+   "en": "Course held",
+   "fr": "Cure suspendue"
+  },
+  "Describe the systemic reaction and its treatment": {
+   "ar": "اوصف رد الفعل الجهازي وعلاجه",
+   "en": "Describe the systemic reaction and its treatment",
+   "fr": "Décrivez la réaction systémique et son traitement"
+  },
+  "Extract": {
+   "ar": "المستخلص",
+   "en": "Extract",
+   "fr": "Extrait"
+  },
+  "Extract in English": {
+   "ar": "المستخلص بالإنجليزية",
+   "en": "Extract in English",
+   "fr": "Extrait en anglais"
+  },
+  "Flare mm": {
+   "ar": "الاحمرار مم",
+   "en": "Flare mm",
+   "fr": "Érythème mm"
+  },
+  "Give + 30-min timer": {
+   "ar": "إعطاء + مؤقت ٣٠ د",
+   "en": "Give + 30-min timer",
+   "fr": "Administrer + minuterie 30 min"
+  },
+  "Give this dose now? The patient stays 30 minutes under observation.": {
+   "ar": "إعطاء هذه الجرعة الآن؟ يبقى المريض ٣٠ دقيقة تحت الملاحظة.",
+   "en": "Give this dose now? The patient stays 30 minutes under observation.",
+   "fr": "Administrer cette dose ? Le patient reste 30 minutes en observation."
+  },
+  "Held after a systemic reaction": {
+   "ar": "معلّق بعد رد فعل جهازي",
+   "en": "Held after a systemic reaction",
+   "fr": "Suspendue après une réaction systémique"
+  },
+  "House dust mite": {
+   "ar": "عثة غبار المنزل",
+   "en": "House dust mite",
+   "fr": "Acarien de la poussière"
+  },
+  "Immunotherapy": {
+   "ar": "العلاج المناعي",
+   "en": "Immunotherapy",
+   "fr": "Immunothérapie"
+  },
+  "Immunotherapy is not installed yet (hospital_h97_allergy.sql).": {
+   "ar": "العلاج المناعي غير مثبت بعد (hospital_h97_allergy.sql).",
+   "en": "Immunotherapy is not installed yet (hospital_h97_allergy.sql).",
+   "fr": "L'immunothérapie n'est pas encore installée (hospital_h97_allergy.sql)."
+  },
+  "Immunotherapy — {0}": {
+   "ar": "العلاج المناعي — {0}",
+   "en": "Immunotherapy — {0}",
+   "fr": "Immunothérapie — {0}"
+  },
+  "Local wheal mm": {
+   "ar": "الانتفاخ الموضعي مم",
+   "en": "Local wheal mm",
+   "fr": "Papule locale mm"
+  },
+  "Negative": {
+   "ar": "سالب",
+   "en": "Negative",
+   "fr": "Négatif"
+  },
+  "No course yet: start one with the extract the skin test shows.": {
+   "ar": "لا يوجد كورس بعد: ابدأه بالمستخلص الذي أظهره اختبار الجلد.",
+   "en": "No course yet: start one with the extract the skin test shows.",
+   "fr": "Aucune cure : commencez-en une avec l'extrait que montre le test cutané."
+  },
+  "Note (required for a systemic reaction: what happened and its treatment)": {
+   "ar": "ملاحظة (إلزامية لرد الفعل الجهازي: ما حدث وعلاجه)",
+   "en": "Note (required for a systemic reaction: what happened and its treatment)",
+   "fr": "Note (obligatoire pour une réaction systémique : ce qui s'est passé et le traitement)"
+  },
+  "Observation over": {
+   "ar": "انتهت الملاحظة",
+   "en": "Observation over",
+   "fr": "Observation terminée"
+  },
+  "Observation: {0} min left": {
+   "ar": "الملاحظة: باقي {0} دقيقة",
+   "en": "Observation: {0} min left",
+   "fr": "Observation : {0} min restantes"
+  },
+  "Only a held course is resumed": {
+   "ar": "لا يُستأنف إلا كورس معلّق",
+   "en": "Only a held course is resumed",
+   "fr": "Seule une cure suspendue reprend"
+  },
+  "Positive": {
+   "ar": "موجب",
+   "en": "Positive",
+   "fr": "Positif"
+  },
+  "Positive = wheal 3 mm or more above the negative control — computed": {
+   "ar": "الموجب = انتفاخ أعلى من الضابط السالب بـ ٣ مم فأكثر — يُحسب تلقائياً",
+   "en": "Positive = wheal 3 mm or more above the negative control — computed",
+   "fr": "Positif = papule de 3 mm ou plus au-dessus du témoin négatif — calculé"
+  },
+  "Reaction": {
+   "ar": "رد الفعل",
+   "en": "Reaction",
+   "fr": "Réaction"
+  },
+  "Record the reaction": {
+   "ar": "تسجيل رد الفعل",
+   "en": "Record the reaction",
+   "fr": "Noter la réaction"
+  },
+  "Record the reaction to dose {0} first": {
+   "ar": "سجّل رد الفعل على الجرعة {0} أولاً",
+   "en": "Record the reaction to dose {0} first",
+   "fr": "Notez d'abord la réaction à la dose {0}"
+  },
+  "Record this reaction?": {
+   "ar": "تسجيل رد الفعل هذا؟",
+   "en": "Record this reaction?",
+   "fr": "Noter cette réaction ?"
+  },
+  "Resume the course two steps lower?": {
+   "ar": "استئناف الكورس بجرعة أقل بخطوتين؟",
+   "en": "Resume the course two steps lower?",
+   "fr": "Reprendre la cure deux paliers plus bas ?"
+  },
+  "Resume two steps lower": {
+   "ar": "استئناف بخطوتين أقل",
+   "en": "Resume two steps lower",
+   "fr": "Reprendre deux paliers plus bas"
+  },
+  "Skin prick test": {
+   "ar": "اختبار وخز الجلد",
+   "en": "Skin prick test",
+   "fr": "Prick-test cutané"
+  },
+  "Start the course": {
+   "ar": "بدء الكورس",
+   "en": "Start the course",
+   "fr": "Commencer la cure"
+  },
+  "Start this immunotherapy course?": {
+   "ar": "بدء كورس العلاج المناعي هذا؟",
+   "en": "Start this immunotherapy course?",
+   "fr": "Commencer cette cure d'immunothérapie ?"
+  },
+  "Stop this course?": {
+   "ar": "إيقاف هذا الكورس؟",
+   "en": "Stop this course?",
+   "fr": "Arrêter cette cure ?"
+  },
+  "Test invalid: read no result — repeat it (check antihistamines, the controls)": {
+   "ar": "الاختبار غير صالح: لا تُقرأ النتيجة — أعِده (راجع مضادات الهيستامين والضوابط)",
+   "en": "Test invalid: read no result — repeat it (check antihistamines, the controls)",
+   "fr": "Test non valide : pas de lecture — à refaire (antihistaminiques, témoins)"
+  },
+  "Test valid: saline ≤ 3 and histamine 3 mm or more above it": {
+   "ar": "الاختبار صالح: الملحي ≤ ٣ والهيستامين أعلى منه بـ ٣ مم فأكثر",
+   "en": "Test valid: saline ≤ 3 and histamine 3 mm or more above it",
+   "fr": "Test valide : sérum ≤ 3 et histamine 3 mm ou plus au-dessus"
+  },
+  "The 30-minute observation is not over: the patient stays until {0}": {
+   "ar": "لم تنتهِ ملاحظة الـ ٣٠ دقيقة: يبقى المريض حتى {0}",
+   "en": "The 30-minute observation is not over: the patient stays until {0}",
+   "fr": "L'observation de 30 minutes n'est pas finie : le patient reste jusqu'à {0}"
+  },
+  "The doctor's decision": {
+   "ar": "قرار الطبيب",
+   "en": "The doctor's decision",
+   "fr": "La décision du médecin"
+  },
+  "The schedule starts at 0.05 mL of the 1:1000 vial and climbs one step a dose.": {
+   "ar": "يبدأ الجدول بـ ٠٫٠٥ مل من قارورة ١:١٠٠٠ ويصعد خطوة مع كل جرعة.",
+   "en": "The schedule starts at 0.05 mL of the 1:1000 vial and climbs one step a dose.",
+   "fr": "Le schéma commence à 0,05 mL du flacon 1:1000 et monte d'un palier par dose."
+  },
+  "This course is held after a systemic reaction: the doctor must resume it first": {
+   "ar": "الكورس معلّق بعد رد فعل جهازي: يجب أن يستأنفه الطبيب أولاً",
+   "en": "This course is held after a systemic reaction: the doctor must resume it first",
+   "fr": "Cure suspendue après une réaction systémique : le médecin doit d'abord la reprendre"
+  },
+  "This course is stopped": {
+   "ar": "هذا الكورس موقوف",
+   "en": "This course is stopped",
+   "fr": "Cette cure est arrêtée"
+  },
+  "This dose's reaction is already recorded": {
+   "ar": "رد فعل هذه الجرعة مسجّل بالفعل",
+   "en": "This dose's reaction is already recorded",
+   "fr": "La réaction à cette dose est déjà notée"
+  },
+  "This patient already has a course of this extract": {
+   "ar": "لدى المريض كورس بنفس المستخلص",
+   "en": "This patient already has a course of this extract",
+   "fr": "Ce patient a déjà une cure de cet extrait"
+  },
+  "Vial": {
+   "ar": "القارورة",
+   "en": "Vial",
+   "fr": "Flacon"
+  },
+  "Wheal mm": {
+   "ar": "الانتفاخ مم",
+   "en": "Wheal mm",
+   "fr": "Papule mm"
+  },
+  "Write both controls to read the test": {
+   "ar": "اكتب الضابطين لقراءة الاختبار",
+   "en": "Write both controls to read the test",
+   "fr": "Saisissez les deux témoins pour lire le test"
+  },
+  "Write the extract, in Arabic and in English": {
+   "ar": "اكتب المستخلص بالعربية والإنجليزية",
+   "en": "Write the extract, in Arabic and in English",
+   "fr": "Saisissez l'extrait, en arabe et en anglais"
+  },
+  "Write the local wheal in mm": {
+   "ar": "اكتب الانتفاخ الموضعي بالمليمتر",
+   "en": "Write the local wheal in mm",
+   "fr": "Indiquez la papule locale en mm"
+  },
+  "imr:LargeLocal": {
+   "ar": "موضعي كبير",
+   "en": "Large local",
+   "fr": "Locale étendue"
+  },
+  "imr:Local": {
+   "ar": "موضعي",
+   "en": "Local",
+   "fr": "Locale"
+  },
+  "imr:None": {
+   "ar": "لا شيء",
+   "en": "None",
+   "fr": "Aucune"
+  },
+  "imr:Pending": {
+   "ar": "بانتظار التسجيل",
+   "en": "Pending",
+   "fr": "En attente"
+  },
+  "imr:Systemic": {
+   "ar": "جهازي",
+   "en": "Systemic",
+   "fr": "Systémique"
+  },
+  "repeat dose": {
+   "ar": "تكرار الجرعة",
+   "en": "repeat dose",
+   "fr": "répéter la dose"
+  }
+ }
+}

@@ -175,3 +175,9 @@ a.hp-bed:hover, .hp-bed.clickable:hover { transform: translateY(-1px); box-shado
 /* A dashed row separator ("border-bottom border-dashed"): the theme dashes all four sides, so the three without a width
    took the default medium width and drew a box around every row (H85 pregnancy, H87 dialysis, the nursing form). */
 .border-bottom.border-dashed:not(.border) { border-top-width: 0 !important; border-left-width: 0 !important; border-right-width: 0 !important; }
+
+/* H93 — the template designer's field and template cards (the prototype's .sc-field) */
+.hp-tf { border: 1px dashed #D1D5DB; border-radius: .6rem; padding: 10px 12px; margin-bottom: 8px; cursor: pointer; background: #fff; color: inherit; }
+.hp-tf:hover { border-color: var(--cb-brand, #3A5795); }
+.hp-tf.on { border: 2px solid var(--cb-brand, #3A5795); background: #F5F8FF; }
+.hp-tf[draggable="true"] { cursor: grab; }

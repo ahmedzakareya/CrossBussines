@@ -1,0 +1,235 @@
+{
+ "unit": "H95 — paediatric visit (sc-peds)",
+ "strings": {
+  "A child's dose by weight (optional)": {
+   "ar": "جرعة الطفل بالوزن (اختياري)",
+   "en": "A child's dose by weight (optional)",
+   "fr": "Dose de l'enfant au poids (facultatif)"
+  },
+  "A dose per kg is written in mg": {
+   "ar": "الجرعة لكل كجم تُكتب بالمليجرام",
+   "en": "A dose per kg is written in mg",
+   "fr": "Une dose par kg s'écrit en mg"
+  },
+  "A dose per kg needs the adult single limit as its cap": {
+   "ar": "الجرعة لكل كجم تحتاج حد الجرعة الواحدة للكبار كسقف لها",
+   "en": "A dose per kg needs the adult single limit as its cap",
+   "fr": "Une dose par kg demande la limite adulte par prise comme plafond"
+  },
+  "Achieved": {
+   "ar": "حققه",
+   "en": "Achieved",
+   "fr": "Acquis"
+  },
+  "Age (years)": {
+   "ar": "العمر (سنوات)",
+   "en": "Age (years)",
+   "fr": "Âge (années)"
+  },
+  "Capped at the adult single dose of {0} mg.": {
+   "ar": "قُصرت على جرعة الكبار الواحدة {0} مجم.",
+   "en": "Capped at the adult single dose of {0} mg.",
+   "fr": "Plafonnée à la dose adulte de {0} mg."
+  },
+  "Computed dose": {
+   "ar": "الجرعة المحسوبة",
+   "en": "Computed dose",
+   "fr": "Dose calculée"
+  },
+  "Computed from the child's last weight and never above the single limit.": {
+   "ar": "تُحسب من آخر وزن للطفل ولا تتجاوز حد الجرعة الواحدة أبداً.",
+   "en": "Computed from the child's last weight and never above the single limit.",
+   "fr": "Calculée sur le dernier poids de l'enfant, jamais au-dessus de la limite par prise."
+  },
+  "Development — age {0}": {
+   "ar": "التطور — عمر {0} سنوات",
+   "en": "Development — age {0}",
+   "fr": "Développement — {0} ans"
+  },
+  "Dose per kg": {
+   "ar": "الجرعة لكل كجم",
+   "en": "Dose per kg",
+   "fr": "Dose par kg"
+  },
+  "Every (hours)": {
+   "ar": "كل (ساعة)",
+   "en": "Every (hours)",
+   "fr": "Toutes les (heures)"
+  },
+  "Every {0} hours, at most {1} doses a day.": {
+   "ar": "كل {0} ساعات، بحد أقصى {1} جرعات يومياً.",
+   "en": "Every {0} hours, at most {1} doses a day.",
+   "fr": "Toutes les {0} heures, au plus {1} prises par jour."
+  },
+  "From P{0} at age {1} to P{2} today — a gradual fall that needs a nutrition review and a cause.": {
+   "ar": "من P{0} عند عمر {1} إلى P{2} اليوم — انحدار تدريجي يحتاج تقييم تغذية وسبب.",
+   "en": "From P{0} at age {1} to P{2} today — a gradual fall that needs a nutrition review and a cause.",
+   "fr": "De P{0} à {1} ans à P{2} aujourd'hui — une baisse progressive qui demande un bilan nutritionnel et une cause."
+  },
+  "From P{0} at age {1} to P{2} today — a gradual rise that needs a nutrition review and a cause.": {
+   "ar": "من P{0} عند عمر {1} إلى P{2} اليوم — صعود تدريجي يحتاج تقييم تغذية وسبب.",
+   "en": "From P{0} at age {1} to P{2} today — a gradual rise that needs a nutrition review and a cause.",
+   "fr": "De P{0} à {1} ans à P{2} aujourd'hui — une hausse progressive qui demande un bilan nutritionnel et une cause."
+  },
+  "Growth chart — WHO": {
+   "ar": "منحنى النمو — منظمة الصحة العالمية",
+   "en": "Growth chart — WHO",
+   "fr": "Courbe de croissance — OMS"
+  },
+  "Liquid strength mg/mL": {
+   "ar": "تركيز الشراب مجم/مل",
+   "en": "Liquid strength mg/mL",
+   "fr": "Concentration mg/mL"
+  },
+  "Measurements": {
+   "ar": "القياسات",
+   "en": "Measurements",
+   "fr": "Mesures"
+  },
+  "No medicine has a dose per kg yet: add it to the drug's dose limit.": {
+   "ar": "لا يوجد دواء له جرعة لكل كجم بعد: أضفها إلى حد جرعة الدواء.",
+   "en": "No medicine has a dose per kg yet: add it to the drug's dose limit.",
+   "fr": "Aucun médicament n'a de dose par kg : ajoutez-la à sa limite de dose."
+  },
+  "No weight recorded": {
+   "ar": "لا يوجد وزن مسجّل",
+   "en": "No weight recorded",
+   "fr": "Aucun poids enregistré"
+  },
+  "No weight recorded: the dose cannot be computed. Weigh the child first.": {
+   "ar": "لا يوجد وزن مسجّل: لا يمكن حساب الجرعة. زِن الطفل أولاً.",
+   "en": "No weight recorded: the dose cannot be computed. Weigh the child first.",
+   "fr": "Aucun poids : la dose ne peut pas être calculée. Pesez d'abord l'enfant."
+  },
+  "Not assessed": {
+   "ar": "لم يُقيّم",
+   "en": "Not assessed",
+   "fr": "Non évalué"
+  },
+  "Not recorded yet: it is stored when the visit is signed.": {
+   "ar": "لم يُسجّل بعد: يُحفظ عند توقيع الزيارة.",
+   "en": "Not recorded yet: it is stored when the visit is signed.",
+   "fr": "Pas encore enregistré : il l'est à la signature."
+  },
+  "Not yet": {
+   "ar": "لم يحققه بعد",
+   "en": "Not yet",
+   "fr": "Pas encore"
+  },
+  "Percentile": {
+   "ar": "المئين",
+   "en": "Percentile",
+   "fr": "Percentile"
+  },
+  "Points from the observations of every visit; z and percentile computed by the LMS method": {
+   "ar": "النقاط من القياسات المحفوظة في كل الزيارات؛ z والمئين محسوبان بطريقة LMS",
+   "en": "Points from the observations of every visit; z and percentile computed by the LMS method",
+   "fr": "Points issus des observations de chaque visite ; z et percentile par la méthode LMS"
+  },
+  "Stored as an observation, so every clinic sees it.": {
+   "ar": "يُحفظ قياساً فتراه كل العيادات.",
+   "en": "Stored as an observation, so every clinic sees it.",
+   "fr": "Enregistré comme observation : toutes les consultations le voient."
+  },
+  "The adult maximum of {0} mg is never exceeded.": {
+   "ar": "الجرعة القصوى للكبار {0} مجم لا تُتجاوز.",
+   "en": "The adult maximum of {0} mg is never exceeded.",
+   "fr": "Le maximum adulte de {0} mg n'est jamais dépassé."
+  },
+  "The score": {
+   "ar": "النتيجة",
+   "en": "The score",
+   "fr": "Le score"
+  },
+  "The strength is above zero": {
+   "ar": "التركيز أكبر من صفر",
+   "en": "The strength is above zero",
+   "fr": "La concentration est supérieure à zéro"
+  },
+  "Threshold": {
+   "ar": "الحد",
+   "en": "Threshold",
+   "fr": "Seuil"
+  },
+  "Vaccine doses due: {0}": {
+   "ar": "جرعات تطعيم مستحقة: {0}",
+   "en": "Vaccine doses due: {0}",
+   "fr": "Doses de vaccin dues : {0}"
+  },
+  "Vaccine doses overdue: {0}": {
+   "ar": "جرعات تطعيم متأخرة: {0}",
+   "en": "Vaccine doses overdue: {0}",
+   "fr": "Doses de vaccin en retard : {0}"
+  },
+  "Vaccines": {
+   "ar": "التطعيمات",
+   "en": "Vaccines",
+   "fr": "Vaccins"
+  },
+  "Vaccines up to date": {
+   "ar": "التطعيمات مكتملة",
+   "en": "Vaccines up to date",
+   "fr": "Vaccins à jour"
+  },
+  "Weight has crossed two percentile lines": {
+   "ar": "عبر الوزن خطّين مئويين",
+   "en": "Weight has crossed two percentile lines",
+   "fr": "Le poids a croisé deux lignes de percentile"
+  },
+  "Weight today": {
+   "ar": "الوزن اليوم",
+   "en": "Weight today",
+   "fr": "Poids du jour"
+  },
+  "Weight-based dosing": {
+   "ar": "حساب الجرعة بالوزن",
+   "en": "Weight-based dosing",
+   "fr": "Posologie au poids"
+  },
+  "Write the mg per kg and every how many hours": {
+   "ar": "اكتب المليجرام لكل كجم وكل كم ساعة",
+   "en": "Write the mg per kg and every how many hours",
+   "fr": "Indiquez les mg par kg et toutes les combien d'heures"
+  },
+  "boys": {
+   "ar": "أولاد",
+   "en": "boys",
+   "fr": "garçons"
+  },
+  "gi:bfa": {
+   "ar": "مؤشر الكتلة للعمر",
+   "en": "BMI-for-age",
+   "fr": "IMC pour l'âge"
+  },
+  "gi:hcfa": {
+   "ar": "محيط الرأس",
+   "en": "Head circumference",
+   "fr": "Périmètre crânien"
+  },
+  "gi:hfa": {
+   "ar": "الطول للعمر",
+   "en": "Height-for-age",
+   "fr": "Taille pour l'âge"
+  },
+  "gi:wfa": {
+   "ar": "الوزن للعمر",
+   "en": "Weight-for-age",
+   "fr": "Poids pour l'âge"
+  },
+  "girls": {
+   "ar": "بنات",
+   "en": "girls",
+   "fr": "filles"
+  },
+  "mg per kg per dose": {
+   "ar": "مجم لكل كجم للجرعة",
+   "en": "mg per kg per dose",
+   "fr": "mg par kg par prise"
+  },
+  "out of range": {
+   "ar": "خارج المدى",
+   "en": "out of range",
+   "fr": "hors norme"
+  }
+ }
+}

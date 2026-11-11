@@ -1,4 +1,4 @@
-using CrossBuy.Models.Context;
+﻿using CrossBuy.Models.Context;
 using CrossBuy.Models.Context.Hospital;
 using CrossBuy.BL.Platform;
 using CrossBuy.Models.Platform;
@@ -232,13 +232,23 @@ namespace CrossBuy.BL.Hospital
 				if (a.RemindedAt == null && a.SentAt <= remindBefore) a.RemindedAt = nowUtc;
 				if (a.EscalatedAt == null && a.SentAt <= escalateBefore)
 				{
-					a.EscalatedAt = nowUtc;
+					// STAMPED ONLY WHEN SOMEONE WAS ACTUALLY TOLD.
+					//
+					// This used to set EscalatedAt first and look for a target second, so a critical
+					// result with nobody to escalate to was recorded as escalated and then stopped
+					// being due — the one unacknowledged result most in need of chasing was the one
+					// that went quiet. Leaving the stamp off keeps it due, and this method is
+					// documented as idempotent and run on every read, so it simply tries again. An
+					// alert that keeps asking is the correct failure for a critical value.
 					if (await EscalationTargetAsync(ctx, a, local, ct) is { } t)
+					{
+						a.EscalatedAt = nowUtc;
 						_db.HospitalLabCriticalAlerts.Add(new HospitalLabCriticalAlert
 						{
 							CompanyId = a.CompanyId, LabOrderId = a.LabOrderId, RadOrderId = a.RadOrderId, Level = a.Level, Reason = HospitalLabAlertReason.Escalation, ToEmployeeId = t.EmployeeId!.Value,
 							ToPractitionerId = t.ID, Value = a.Value, ViaSms = a.ViaSms, SentAt = nowUtc, SentByEmployeeId = a.SentByEmployeeId, EscalatedFromAlertId = a.ID,
 						});
+					}
 				}
 			}
 			try { await _db.SaveChangesAsync(ct); }

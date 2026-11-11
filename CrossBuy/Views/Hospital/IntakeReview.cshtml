@@ -1,0 +1,157 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model HospitalIntakePage
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H91 — one self-intake at the desk: what the patient entered (the danger signs on top, to acknowledge), the files
+    that may be theirs (scored, the matching details marked), and the decision — link, new file, or reject — taken
+    only after checking two identifiers against the identity document.
+*@
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Self-intake"].Value + " " + Model.Intake.TicketNo;
+    bool canDesk = ViewBag.CanDesk == true;
+    var s = Model.Intake; bool open = s.Status == HospitalIntakeStatus.Submitted; bool alarm = open && s.Urgent && s.AlertAckAt == null;
+    string Who(int? id) => id is int i && Model.People.TryGetValue(i, out var n) ? n : "";
+    string L(DateTime? utc) => utc == null ? "—" : HospitalNursingService.UtcToWard(utc.Value).ToString("yyyy-MM-dd HH:mm");
+    var best = Model.Candidates.Select(c => c.Score).DefaultIfEmpty(0).Max();
+    string Mark(IReadOnlyList<string> m, string f) => m.Contains(f) ? "text-success fw-bold" : "text-gray-700";
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Self-intake"] <span class="badge hp-code fs-5 hp-num ms-2" dir="ltr">@s.TicketNo</span></h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item"><a href="@Url.Action("Intake")" class="text-muted text-hover-primary">@T["Self-intake"]</a></li><li class="breadcrumb-item text-muted"><span class="hp-num">@s.IntakeNo</span> · <span class="hp-num">@L(s.SubmittedAt)</span></li></ul>
+        </div>
+        <div class="d-flex gap-2 align-items-center">
+            <span class="badge @(open ? "badge-light-primary" : "badge-light") fs-7">@T["ist:" + s.Status]</span>
+            @if (open && canDesk && !alarm) {<button type="button" class="btn btn-sm btn-light-danger" data-reject><i class="ki-outline ki-cross-circle fs-4"></i>@T["Reject"]</button>}
+        </div>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (s.Urgent)
+        {
+            <div class="notice d-flex flex-stack flex-wrap rounded border border-danger border-dashed @(alarm ? "bg-light-danger" : "") p-5 mb-5 gap-3">
+                <div class="d-flex align-items-center gap-3"><i class="ki-outline ki-information-5 fs-2x text-danger"></i>
+                    <div><div class="fw-bold fs-5 text-danger">@T["The patient reported danger signs"]</div>
+                        <div class="d-flex flex-wrap gap-2 mt-2">@foreach (var f in (s.RedFlags ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries)) {<span class="badge badge-danger fs-7">@T["irf:" + f]</span>}</div>
+                        @if (s.AlertAckAt != null) {<div class="text-muted fs-8 mt-2">@T["Acknowledged {0}", L(s.AlertAckAt)] · @Who(s.AlertAckByEmployeeId)</div>}</div></div>
+                @if (alarm && canDesk) {<button type="button" class="btn btn-danger" data-ack><i class="ki-outline ki-check fs-3"></i>@T["I have seen the patient — send to the nurse"]</button>}
+            </div>
+        }
+        <div class="row g-5">
+            <div class="col-xl-5"><div class="card h-100"><div class="card-body py-6">
+                <div class="fw-bold fs-4 mb-4">@T["What the patient entered"]</div>
+                @if (s.Name == null) { <div class="text-muted">@T["Not given — sent to the desk"]</div> }
+                else
+                {
+                    <div class="d-flex flex-stack py-2 border-bottom border-dashed"><span class="text-muted fs-7">@T["Name"]</span><span class="fw-bold fs-5"><bdi>@s.Name</bdi></span></div>
+                    if (s.NameEn != null) {<div class="d-flex flex-stack py-2 border-bottom border-dashed"><span class="text-muted fs-7">@T["Name in English"]</span><bdi dir="ltr" class="fw-semibold">@s.NameEn</bdi></div>}
+                    <div class="d-flex flex-stack py-2 border-bottom border-dashed"><span class="text-muted fs-7">@T["Identity document"]</span><span class="fw-semibold">@T["iid:" + (s.IdType ?? "None")] <bdi class="hp-num" dir="ltr">@s.IdNumber</bdi></span></div>
+                    <div class="d-flex flex-stack py-2 border-bottom border-dashed"><span class="text-muted fs-7">@T["Date of birth"]</span><span class="hp-num fw-semibold">@s.BirthDate?.ToString("yyyy-MM-dd")</span></div>
+                    <div class="d-flex flex-stack py-2 border-bottom border-dashed"><span class="text-muted fs-7">@T["Sex"]</span><span class="fw-semibold">@(s.Sex == "F" ? T["sex:F"] : T["sex:M"])</span></div>
+                    <div class="d-flex flex-stack py-2 border-bottom border-dashed"><span class="text-muted fs-7">@T["Mobile number"]</span><bdi class="hp-num fw-semibold" dir="ltr">@s.Phone</bdi></div>
+                    <div class="d-flex flex-stack py-2 border-bottom border-dashed"><span class="text-muted fs-7">@T["Visit"]</span><span class="fw-semibold">@T["ivt:" + s.VisitType]</span></div>
+                    if (s.Reason != null) {<div class="py-2 border-bottom border-dashed"><div class="text-muted fs-7">@T["What brings you today?"]</div><div class="fs-7"><bdi>@s.Reason</bdi></div></div>}
+                    if (s.Allergies != null) {<div class="py-2 border-bottom border-dashed"><div class="text-muted fs-7">@T["Allergies (medicines, food)"]</div><div class="fs-7 text-danger fw-semibold"><bdi>@s.Allergies</bdi></div></div>}
+                    if (s.Medications != null) {<div class="py-2 border-bottom border-dashed"><div class="text-muted fs-7">@T["Medicines you take"]</div><div class="fs-7"><bdi>@s.Medications</bdi></div></div>}
+                    if (s.Pregnant == true) {<div class="py-2 border-bottom border-dashed"><span class="badge badge-light-danger">@T["I am or may be pregnant"]</span></div>}
+                    if (s.Infection != null) {<div class="py-2 border-bottom border-dashed"><div class="text-muted fs-7">@T["Infection signs in two weeks"]</div><div class="d-flex flex-wrap gap-1 mt-1">@foreach (var x in s.Infection.Split(',')) {<span class="badge badge-light-danger fs-8">@T["iin:" + x]</span>}</div></div>}
+                    if (s.EmergencyName != null) {<div class="d-flex flex-stack py-2 border-bottom border-dashed"><span class="text-muted fs-7">@T["Someone to call in an emergency"]</span><span class="fs-7"><bdi>@s.EmergencyName</bdi> <bdi class="hp-num" dir="ltr">@s.EmergencyPhone</bdi></span></div>}
+                    <div class="text-muted fs-8 mt-3">@(s.ConsentAt != null ? T["Consent given {0} (version {1})", L(s.ConsentAt), s.ConsentVersion ?? ""] : T["No consent recorded"])</div>
+                }
+                @if (!open)
+                {
+                    <div class="separator separator-dashed my-4"></div>
+                    <div class="fw-bold fs-6 mb-1">@T["ist:" + s.Status] · <span class="text-muted fs-8 hp-num">@L(s.ReconciledAt)</span> · <span class="text-muted fs-8">@Who(s.ReconciledByEmployeeId)</span></div>
+                    if (Model.Linked != null) {<a href="@Url.Action("Patient", new { id = Model.Linked.ID })" class="fw-bold text-primary"><bdi>@DisplayName.Of(Model.Linked.Name, Model.Linked.NameEn)</bdi> · <bdi class="hp-num">@Model.Linked.Mrn</bdi></a>}
+                    if (s.MatchScore != null && s.Status == HospitalIntakeStatus.Linked) {<div class="text-muted fs-8">@T["Match {0} — {1}", s.MatchScore.Value.ToString("0"), T["imm:" + (s.MatchMethod ?? "None")].Value]</div>}
+                    if (s.DecisionNote != null) {<div class="fs-7 mt-1"><bdi>@s.DecisionNote</bdi></div>}
+                }
+            </div></div></div>
+
+            <div class="col-xl-7 d-flex flex-column gap-5">
+                @if (open && s.Name != null)
+                {
+                    <div class="card"><div class="card-header border-0 pt-6"><div class="card-title flex-column m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Files that may be this patient"]</span>
+                        <span class="text-muted fs-8 mt-1">@T["Scored on the identity number, the date of birth, the mobile and the name's parts in any order. The patient never sees this."]</span></div></div>
+                        <div class="card-body pt-2">
+                            @if (Model.Candidates.Count == 0) { <div class="text-center text-muted py-6">@T["No existing file looks like this patient."]</div> }
+                            @foreach (var c in Model.Candidates)
+                            {
+                                var p = c.Patient; bool strong = c.Score >= HospitalIntakeRules.Strong;
+                                <div class="d-flex flex-stack gap-4 py-4 border-bottom border-dashed">
+                                    <div class="d-flex align-items-center gap-4">
+                                        <div class="text-center" style="min-width:64px"><div class="fs-2 fw-bold hp-num @(strong ? "text-success" : "text-primary")">@c.Score.ToString("0")</div><div class="fs-9 text-muted">@T["imm:" + c.Method]</div></div>
+                                        <div><a href="@Url.Action("Patient", new { id = p.ID })" target="_blank" class="fw-bold fs-5 @Mark(c.Matched, "Name")"><bdi>@p.Name</bdi></a> <span class="badge hp-code hp-num ms-1">@p.Mrn</span>
+                                            <div class="fs-7 mt-1 hp-num"><span class="@Mark(c.Matched, "BirthDate")">@p.BirthDate?.ToString("yyyy-MM-dd")</span> · <bdi dir="ltr" class="@Mark(c.Matched, "Phone")">@p.Phone</bdi> · <bdi dir="ltr" class="@Mark(c.Matched, "IdNumber")">@p.NationalId</bdi></div></div>
+                                    </div>
+                                    @if (canDesk && !alarm) {<button type="button" class="btn btn-sm @(strong ? "btn-success" : "btn-light-success") text-nowrap" data-link="@p.ID" data-who="@p.Name — @p.Mrn">@T["Link to this file"]</button>}
+                                </div>
+                            }
+                        </div></div>
+                    if (canDesk && !alarm)
+                    {
+                        <div class="card border border-dashed @(best >= HospitalIntakeRules.Strong ? "border-danger" : "border-primary")"><div class="card-body py-6">
+                            <div class="fw-bold fs-5 mb-1">@T["Open a new file"]</div>
+                            <div class="text-muted fs-8 mb-4">@(best >= HospitalIntakeRules.Strong ? T["A file above very likely belongs to this patient: a new one needs a reason."] : T["When none of the files above is this patient."])</div>
+                            <div class="row g-3">
+                                <div class="col-md-6"><label class="form-label fs-8 required">@T["Name in English"]</label><input type="text" maxlength="200" class="form-control form-control-sm form-control-solid" dir="ltr" data-n="nameEn" value="@s.NameEn" /></div>
+                                <div class="col-md-6"><label class="form-label fs-8 @(best >= HospitalIntakeRules.Strong ? "required" : "")">@T["Why a new file"]</label><input type="text" maxlength="300" class="form-control form-control-sm form-control-solid" data-n="reason" /></div>
+                            </div>
+                            <div class="d-flex justify-content-end mt-4"><button type="button" class="btn btn-sm btn-primary" data-new><i class="ki-outline ki-plus fs-4"></i>@T["Open a new file"]</button></div>
+                        </div></div>
+                    }
+                }
+                @if (open && alarm) { <div class="card"><div class="card-body text-center text-muted py-10">@T["Acknowledge the danger signs first"]</div></div> }
+            </div>
+        </div>
+    </div></div>
+</div>
+
+@if (open && canDesk)
+{
+    <div class="modal fade" id="verifyModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-550px"><div class="modal-content">
+        <div class="modal-header"><h2 class="fw-bold m-0" id="vTitle">@T["Confirm the identity"]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body py-6 px-lg-10">
+            <div class="fs-6 mb-4" id="vWho"></div>
+            <label class="form-check form-check-custom form-check-solid mb-4"><input class="form-check-input" type="checkbox" id="vChecked" /><span class="form-check-label fw-semibold">@T["I checked two identifiers (name, date of birth or ID number) against the patient's identity document"]</span></label>
+            <label class="form-check form-check-custom form-check-solid" id="vPhoneRow"><input class="form-check-input" type="checkbox" id="vPhone" /><span class="form-check-label">@T["Update the file's mobile number to the one entered"]</span></label>
+            <div class="text-muted fs-8 mt-3">@T["The allergies entered are added to the file's list; none are removed."]</div>
+        </div>
+        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-verify-go>@T["Confirm"]</button></div>
+    </div></div></div>
+}
+
+@section Scripts {
+    <script>
+        (function () {
+            var tokEl = document.querySelector('input[name="__RequestVerificationToken"]'); if (!tokEl) return; var tok = tokEl.value;
+            var base = @Json.Serialize(Url.Content("~/Hospital/Intake/" + s.ID + "/"));
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value), ack: @Json.Serialize(T["You saw the patient and passed them to the nurse?"].Value),
+                      reject: @Json.Serialize(T["Why is the intake rejected?"].Value), rejectT: @Json.Serialize(T["Reject"].Value), link: @Json.Serialize(T["Link the intake to this file:"].Value),
+                      nw: @Json.Serialize(T["Open a new file for this patient:"].Value), verify: @Json.Serialize(T["Check two identifiers against the identity document first"].Value) };
+            function post(u, b) { return fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': tok }, body: JSON.stringify(b) })
+                .then(function (r) { return r.json().catch(function () { return { ok: false }; }); }); }
+            function done(btn, go) { return function (res) { if (btn) btn.disabled = false; if (!res.ok) { toastr.error(res.error || W.failed); return; } toastr.success(W.saved);
+                if (go && res.id) location.href = @Json.Serialize(Url.Content("~/Hospital/Patient/")) + res.id; else location.reload(); }; }
+            var vm = document.getElementById('verifyModal'), pending = null;
+            function ask(kind, label, body) { pending = { kind: kind, body: body }; document.getElementById('vWho').textContent = label; document.getElementById('vChecked').checked = false;
+                document.getElementById('vPhone').checked = false; document.getElementById('vPhoneRow').classList.toggle('d-none', kind !== 'Link'); bootstrap.Modal.getOrCreateInstance(vm).show(); }
+            document.addEventListener('click', function (e) {
+                var a = e.target.closest('[data-ack]'); if (a) { cbConfirm(W.ack).then(function (ok) { if (ok) post(base + 'Ack', {}).then(done(a)); }); return; }
+                var r = e.target.closest('[data-reject]'); if (r) { cbPrompt(W.reject, { title: W.rejectT, kind: 'danger', textarea: true }).then(function (why) { if (why) post(base + 'Reject', { reason: why, verified: true }).then(done(r)); }); return; }
+                var l = e.target.closest('[data-link]'); if (l) { ask('Link', W.link + ' ' + l.getAttribute('data-who'), { patientId: Number(l.getAttribute('data-link')) }); return; }
+                var n = e.target.closest('[data-new]'); if (n) { var b = {}; document.querySelectorAll('[data-n]').forEach(function (i) { b[i.getAttribute('data-n')] = (i.value || '').trim() || null; }); ask('NewFile', W.nw + ' ' + (b.nameEn || ''), b); return; }
+                var g = e.target.closest('[data-verify-go]'); if (!g || !pending) return;
+                if (!document.getElementById('vChecked').checked) { toastr.error(W.verify); return; }
+                var body = Object.assign({}, pending.body, { verified: true, updatePhone: document.getElementById('vPhone').checked });
+                g.disabled = true; post(base + pending.kind, body).then(done(g, true));
+            });
+        })();
+    </script>
+}

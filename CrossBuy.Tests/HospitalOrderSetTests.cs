@@ -68,6 +68,7 @@ namespace CrossBuy.Tests
 			// H75 adds a column (ServiceId) and two kinds of line: the model reads both slices
 			var s74 = HospitalSliceParity.Slice("hospital_h74_order_sets.sql");
 			var s = s74 + Environment.NewLine + HospitalSliceParity.Slice("hospital_h75_inpatient_orders.sql");
+			s += Environment.NewLine + HospitalSliceParity.Slice("hospital_h94_specialty_visit.sql");   // H94: the diagnosis codes
 			var m = HospitalSliceParity.Model(HospitalOrderSetModel.Configure);
 			foreach (var (t, n) in new[] { (typeof(HospitalOrderSet), "HospitalOrderSets"), (typeof(HospitalOrderSetItem), "HospitalOrderSetItems"), (typeof(HospitalOrderSetUse), "HospitalOrderSetUses") })
 			{ HospitalSliceParity.NamesItsTable(m, s, t, n); HospitalSliceParity.ColumnsMatch(m, s, t, n); }

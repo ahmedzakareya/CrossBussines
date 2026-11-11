@@ -1,0 +1,310 @@
+{
+ "unit": "H94 — specialty visit (internal medicine, sc-im)",
+ "strings": {
+  "(from the lab {0})": {
+   "ar": "(من المختبر {0})",
+   "en": "(from the lab {0})",
+   "fr": "(du labo {0})"
+  },
+  "Add a diagnosis to the visit first": {
+   "ar": "أضف تشخيصاً للزيارة أولاً",
+   "en": "Add a diagnosis to the visit first",
+   "fr": "Ajoutez d'abord un diagnostic à la visite"
+  },
+  "Add a template": {
+   "ar": "إضافة نموذج",
+   "en": "Add a template",
+   "fr": "Ajouter un modèle"
+  },
+  "Add the ticked lines to this visit's orders?": {
+   "ar": "إضافة البنود المحددة إلى طلبات هذه الزيارة؟",
+   "en": "Add the ticked lines to this visit's orders?",
+   "fr": "Ajouter les lignes cochées aux prescriptions de la visite ?"
+  },
+  "Add the ticked to orders": {
+   "ar": "إضافة المحدد للطلبات",
+   "en": "Add the ticked to orders",
+   "fr": "Ajouter la sélection aux prescriptions"
+  },
+  "Add the visit's diagnosis in the consultation: its order set appears here.": {
+   "ar": "أضف تشخيص الزيارة في شاشة الكشف: تظهر مجموعة طلباته هنا.",
+   "en": "Add the visit's diagnosis in the consultation: its order set appears here.",
+   "fr": "Ajoutez le diagnostic dans la consultation : son ensemble de prescriptions apparaîtra ici."
+  },
+  "Add this template to the visit?": {
+   "ar": "إضافة هذا النموذج إلى الزيارة؟",
+   "en": "Add this template to the visit?",
+   "fr": "Ajouter ce modèle à la visite ?"
+  },
+  "Add this visit's diagnoses to the patient's problem list?": {
+   "ar": "إضافة تشخيصات هذه الزيارة إلى قائمة مشاكل المريض؟",
+   "en": "Add this visit's diagnoses to the patient's problem list?",
+   "fr": "Ajouter les diagnostics de la visite à la liste des problèmes du patient ?"
+  },
+  "Add to problem list": {
+   "ar": "إضافة للمشاكل",
+   "en": "Add to problem list",
+   "fr": "Ajouter aux problèmes"
+  },
+  "Allergy: {0}": {
+   "ar": "حساسية: {0}",
+   "en": "Allergy: {0}",
+   "fr": "Allergie : {0}"
+  },
+  "Care gaps": {
+   "ar": "متابعات فائتة",
+   "en": "Care gaps",
+   "fr": "Suivis manqués"
+  },
+  "Care gaps & alerts": {
+   "ar": "متابعات فائتة وتنبيهات",
+   "en": "Care gaps & alerts",
+   "fr": "Suivis manqués et alertes"
+  },
+  "Computed from eGFR and ACR": {
+   "ar": "تُحسب من eGFR وACR",
+   "en": "Computed from eGFR and ACR",
+   "fr": "Calculé à partir du DFGe et du RAC"
+  },
+  "Diagnoses that propose it on a visit": {
+   "ar": "التشخيصات التي تقترحها في الزيارة",
+   "en": "Diagnoses that propose it on a visit",
+   "fr": "Diagnostics qui la proposent en consultation"
+  },
+  "Everything ticked is already on the visit": {
+   "ar": "كل المحدد موجود بالفعل في الزيارة",
+   "en": "Everything ticked is already on the visit",
+   "fr": "Tout ce qui est coché est déjà sur la visite"
+  },
+  "Heads the visit: a figure on top and a trend": {
+   "ar": "يظهر في رأس الزيارة: رقم في الأعلى ومنحنى",
+   "en": "Heads the visit: a figure on top and a trend",
+   "fr": "En tête de visite : un chiffre en haut et une courbe"
+  },
+  "ICD-10 codes or their beginnings, separated by commas: E11 covers E11.21.": {
+   "ar": "أكواد ICD-10 أو بداياتها مفصولة بفواصل: E11 تشمل E11.21.",
+   "en": "ICD-10 codes or their beginnings, separated by commas: E11 covers E11.21.",
+   "fr": "Codes CIM-10 ou leur début, séparés par des virgules : E11 couvre E11.21."
+  },
+  "Kidney stage — KDIGO 2024": {
+   "ar": "مرحلة الكلى — KDIGO 2024",
+   "en": "Kidney stage — KDIGO 2024",
+   "fr": "Stade rénal — KDIGO 2024"
+  },
+  "Known values come from the lab and earlier visits; red is out of range": {
+   "ar": "القيم المعروفة تأتي من المختبر والزيارات السابقة؛ الأحمر خارج المدى",
+   "en": "Known values come from the lab and earlier visits; red is out of range",
+   "fr": "Les valeurs connues viennent du labo et des visites précédentes ; le rouge est hors norme"
+  },
+  "Last {0}": {
+   "ar": "آخر مرة {0}",
+   "en": "Last {0}",
+   "fr": "Dernière fois {0}"
+  },
+  "Last: {0} on {1}": {
+   "ar": "آخر قيمة: {0} في {1}",
+   "en": "Last: {0} on {1}",
+   "fr": "Dernière : {0} le {1}"
+  },
+  "Latest {0} on {1}": {
+   "ar": "آخر {0} في {1}",
+   "en": "Latest {0} on {1}",
+   "fr": "Dernier {0} le {1}"
+  },
+  "Lines added: {0}": {
+   "ar": "أضيفت بنود: {0}",
+   "en": "Lines added: {0}",
+   "fr": "Lignes ajoutées : {0}"
+  },
+  "No KDIGO stage recorded yet: it is computed when the visit is signed.": {
+   "ar": "لم تُسجّل مرحلة KDIGO بعد: تُحسب عند توقيع الزيارة.",
+   "en": "No KDIGO stage recorded yet: it is computed when the visit is signed.",
+   "fr": "Aucun stade KDIGO enregistré : il est calculé à la signature."
+  },
+  "No order set for this visit's diagnoses.": {
+   "ar": "لا توجد مجموعة طلبات لتشخيصات هذه الزيارة.",
+   "en": "No order set for this visit's diagnoses.",
+   "fr": "Aucun ensemble de prescriptions pour ces diagnostics."
+  },
+  "No range to compare with": {
+   "ar": "لا يوجد مدى للمقارنة",
+   "en": "No range to compare with",
+   "fr": "Aucune plage de comparaison"
+  },
+  "No template on this visit yet: add one of the clinic's templates.": {
+   "ar": "لا يوجد نموذج في هذه الزيارة بعد: أضف أحد نماذج العيادة.",
+   "en": "No template on this visit yet: add one of the clinic's templates.",
+   "fr": "Aucun modèle sur cette visite : ajoutez un modèle de la consultation."
+  },
+  "No value on any visit": {
+   "ar": "لا توجد قيمة في أي زيارة",
+   "en": "No value on any visit",
+   "fr": "Aucune valeur sur aucune visite"
+  },
+  "No value recorded yet": {
+   "ar": "لم تُسجّل قيمة بعد",
+   "en": "No value recorded yet",
+   "fr": "Aucune valeur enregistrée"
+  },
+  "Not a diagnosis code: {0}": {
+   "ar": "ليس كود تشخيص: {0}",
+   "en": "Not a diagnosis code: {0}",
+   "fr": "Pas un code diagnostic : {0}"
+  },
+  "Nothing overdue": {
+   "ar": "لا يوجد شيء متأخر",
+   "en": "Nothing overdue",
+   "fr": "Rien en retard"
+  },
+  "Order it": {
+   "ar": "طلب",
+   "en": "Order it",
+   "fr": "Prescrire"
+  },
+  "Order set by diagnosis": {
+   "ar": "مجموعة الطلبات حسب التشخيص",
+   "en": "Order set by diagnosis",
+   "fr": "Ensemble de prescriptions par diagnostic"
+  },
+  "Order this test on this visit?": {
+   "ar": "طلب هذا التحليل في هذه الزيارة؟",
+   "en": "Order this test on this visit?",
+   "fr": "Prescrire cet examen sur cette visite ?"
+  },
+  "Sign the visit": {
+   "ar": "توقيع الزيارة",
+   "en": "Sign the visit",
+   "fr": "Signer la visite"
+  },
+  "Sign this visit? The consultation and its forms are signed together and cannot change afterwards.": {
+   "ar": "توقيع هذه الزيارة؟ يُوقّع الكشف ونماذجه معاً ولا يمكن تغييرها بعد ذلك.",
+   "en": "Sign this visit? The consultation and its forms are signed together and cannot change afterwards.",
+   "fr": "Signer cette visite ? La consultation et ses formulaires sont signés ensemble et ne changent plus."
+  },
+  "Specialty forms": {
+   "ar": "نماذج التخصص",
+   "en": "Specialty forms",
+   "fr": "Formulaires de spécialité"
+  },
+  "Template": {
+   "ar": "النموذج",
+   "en": "Template",
+   "fr": "Modèle"
+  },
+  "The problem list is full": {
+   "ar": "قائمة المشاكل ممتلئة",
+   "en": "The problem list is full",
+   "fr": "La liste des problèmes est pleine"
+  },
+  "These diagnoses are already on the problem list": {
+   "ar": "هذه التشخيصات موجودة بالفعل في قائمة المشاكل",
+   "en": "These diagnoses are already on the problem list",
+   "fr": "Ces diagnostics sont déjà dans la liste des problèmes"
+  },
+  "This order set is not proposed by this visit's diagnoses": {
+   "ar": "مجموعة الطلبات هذه لا تقترحها تشخيصات هذه الزيارة",
+   "en": "This order set is not proposed by this visit's diagnoses",
+   "fr": "Cet ensemble n'est pas proposé par les diagnostics de la visite"
+  },
+  "This template is not published for this clinic": {
+   "ar": "هذا النموذج غير منشور لهذه العيادة",
+   "en": "This template is not published for this clinic",
+   "fr": "Ce modèle n'est pas publié pour cette consultation"
+  },
+  "This test is already ordered on this visit": {
+   "ar": "هذا التحليل مطلوب بالفعل في هذه الزيارة",
+   "en": "This test is already ordered on this visit",
+   "fr": "Cet examen est déjà prescrit sur cette visite"
+  },
+  "Tick at least one line": {
+   "ar": "حدد بنداً واحداً على الأقل",
+   "en": "Tick at least one line",
+   "fr": "Cochez au moins une ligne"
+  },
+  "Too many diagnosis codes": {
+   "ar": "أكواد التشخيص كثيرة جداً",
+   "en": "Too many diagnosis codes",
+   "fr": "Trop de codes diagnostic"
+  },
+  "Trends — from the stored observations": {
+   "ar": "المنحنيات — من القياسات المحفوظة",
+   "en": "Trends — from the stored observations",
+   "fr": "Courbes — à partir des observations enregistrées"
+  },
+  "Visit form": {
+   "ar": "نموذج الزيارة",
+   "en": "Visit form",
+   "fr": "Formulaire de visite"
+  },
+  "What changed, in English": {
+   "ar": "ما الذي تغيّر، بالإنجليزية",
+   "en": "What changed, in English",
+   "fr": "Ce qui a changé, en anglais"
+  },
+  "Write what changed in this version, in Arabic and in English": {
+   "ar": "اكتب ما تغيّر في هذا الإصدار بالعربية والإنجليزية",
+   "en": "Write what changed in this version, in Arabic and in English",
+   "fr": "Indiquez ce qui a changé, en arabe et en anglais"
+  },
+  "kdigo:High": {
+   "ar": "خطر مرتفع: متابعة كل ٣–٤ أشهر، مثبطات SGLT2 ومثبط ACE، وتحويل لطبيب الكلى إن هبط eGFR بأكثر من ٢٥٪.",
+   "en": "High risk: review every 3–4 months, SGLT2 inhibitor and ACE inhibitor, refer to nephrology if eGFR falls more than 25%.",
+   "fr": "Risque élevé : revoir tous les 3–4 mois, inhibiteur SGLT2 et IEC, adresser en néphrologie si le DFGe baisse de plus de 25 %."
+  },
+  "kdigo:Low": {
+   "ar": "خطر منخفض: فحص eGFR وACR مرة كل سنة.",
+   "en": "Low risk: check eGFR and ACR once a year.",
+   "fr": "Risque faible : DFGe et RAC une fois par an."
+  },
+  "kdigo:Moderate": {
+   "ar": "خطر متوسط: متابعة سنوية؛ ضبط الضغط والسكر على الهدف.",
+   "en": "Moderate risk: check yearly; bring blood pressure and glucose to target.",
+   "fr": "Risque modéré : contrôle annuel ; tension et glycémie à l'objectif."
+  },
+  "kdigo:VeryHigh": {
+   "ar": "خطر مرتفع جداً: متابعة كل ١–٣ أشهر وتحويل لطبيب الكلى.",
+   "en": "Very high risk: review every 1–3 months and refer to nephrology.",
+   "fr": "Risque très élevé : revoir tous les 1–3 mois et adresser en néphrologie."
+  },
+  "shown because {0} > {1}": {
+   "ar": "ظهر لأن {0} > {1}",
+   "en": "shown because {0} > {1}",
+   "fr": "affiché car {0} > {1}"
+  },
+  "{0} done {1}": {
+   "ar": "{0} تم {1}",
+   "en": "{0} done {1}",
+   "fr": "{0} fait le {1}"
+  },
+  "{0} overdue {1} days": {
+   "ar": "{0} متأخر {1} يوماً",
+   "en": "{0} overdue {1} days",
+   "fr": "{0} en retard de {1} jours"
+  },
+  "{0} — follow-up visit": {
+   "ar": "عيادة {0} — زيارة متابعة",
+   "en": "{0} — follow-up visit",
+   "fr": "{0} — visite de suivi"
+  },
+  "{0}: never recorded": {
+   "ar": "{0}: لم يُسجّل أبداً",
+   "en": "{0}: never recorded",
+   "fr": "{0} : jamais enregistré"
+  },
+  "“{0}” proposes:": {
+   "ar": "تشخيص «{0}» يقترح:",
+   "en": "“{0}” proposes:",
+   "fr": "« {0} » propose :"
+  },
+  "↑ from {0}": {
+   "ar": "↑ من {0}",
+   "en": "↑ from {0}",
+   "fr": "↑ depuis {0}"
+  },
+  "↓ from {0}": {
+   "ar": "↓ من {0}",
+   "en": "↓ from {0}",
+   "fr": "↓ depuis {0}"
+  }
+ }
+}

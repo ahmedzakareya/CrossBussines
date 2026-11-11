@@ -1,0 +1,60 @@
+{
+ "unit": "H96 — eye visit (sc-eye)",
+ "strings": {
+  "The left eye": {
+   "ar": "العين اليسرى",
+   "en": "The left eye",
+   "fr": "L'œil gauche"
+  },
+  "The right eye": {
+   "ar": "العين اليمنى",
+   "en": "The right eye",
+   "fr": "L'œil droit"
+  },
+  "Write the vision as Snellen (6/12, 20/40) or CF / HM": {
+   "ar": "اكتب النظر بطريقة سنلن (6/12، 20/40) أو CF / HM",
+   "en": "Write the vision as Snellen (6/12, 20/40) or CF / HM",
+   "fr": "Écrivez l'acuité en Snellen (6/12, 20/40) ou CF / HM"
+  },
+  "glau:cup": {
+   "ar": "تجويف ٠٫٦ أو أكثر",
+   "en": "a cup of 0.6 or more",
+   "fr": "une excavation de 0,6 ou plus"
+  },
+  "glau:cup-asym": {
+   "ar": "فرق التجويف بين العينين ٠٫٢ أو أكثر",
+   "en": "cups 0.2 apart or more",
+   "fr": "excavations différentes de 0,2 ou plus"
+  },
+  "glau:iop": {
+   "ar": "فوق ٢١",
+   "en": "Above 21",
+   "fr": "Au-dessus de 21"
+  },
+  "glau:iop-asym": {
+   "ar": "فرق ٤ أو أكثر بين العينين",
+   "en": "4 mmHg or more between the eyes",
+   "fr": "4 mmHg ou plus entre les yeux"
+  },
+  "glaucoma suspected: visual fields, an optic-nerve OCT and a review in 6 weeks.": {
+   "ar": "اشتباه جلوكوما: مجال إبصار وOCT للعصب ومتابعة بعد ٦ أسابيع.",
+   "en": "glaucoma suspected: visual fields, an optic-nerve OCT and a review in 6 weeks.",
+   "fr": "suspicion de glaucome : champ visuel, OCT du nerf optique et contrôle à 6 semaines."
+  },
+  "{0}: a {1} cup": {
+   "ar": "{0}: تجويف {1}",
+   "en": "{0}: a {1} cup",
+   "fr": "{0} : excavation de {1}"
+  },
+  "{0}: pressure {1}": {
+   "ar": "{0}: الضغط {1}",
+   "en": "{0}: pressure {1}",
+   "fr": "{0} : pression {1}"
+  },
+  "{0}: pressure {1} with a {2} cup": {
+   "ar": "{0}: الضغط {1} ومعه تجويف {2}",
+   "en": "{0}: pressure {1} with a {2} cup",
+   "fr": "{0} : pression {1} avec une excavation de {2}"
+  }
+ }
+}

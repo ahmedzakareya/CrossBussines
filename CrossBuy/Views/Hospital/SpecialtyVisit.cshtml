@@ -1,0 +1,646 @@
+@using System.Globalization
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model HospitalVisitModel
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H94 — the specialty visit (the approved prototype screen sc-im): the patient, the templates, the doctor and the
+    alerts; the figures on top; the visit form (the templates filled together); the trends from the stored
+    observations; the care gaps; the KDIGO kidney stage; the order sets the visit's diagnoses propose. One signature
+    with the consultation.
+*@
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    bool isAr = CultureInfo.CurrentUICulture.Name.StartsWith("ar");
+    var e = Model.Visit.Encounter; var p = Model.Patient; bool canEdit = Model.CanEdit;
+    var name = DisplayName.Of(p.Name, p.NameEn);
+    string Nm(string ar, string? en) => isAr ? ar : (en ?? ar);
+    string clinic = Model.Clinic == null ? T["Clinic"].Value : Nm(Model.Clinic.Name, Model.Clinic.NameEn);
+    var W = ViewBag.Widgets as HospitalVisitWidgets;
+    string heading = Model.Forms.Count == 0 ? string.Format(T["{0} — follow-up visit"].Value, clinic) : clinic + " — " + Nm(Model.Forms[0].Template.Name, Model.Forms[0].Template.NameEn);
+    ViewData["Title"] = heading + " — " + name;
+    var age = HospitalPatientService.AgeOn(p.BirthDate, DateTime.UtcNow);
+    string[] Lines(string? s) => (s ?? "").Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+    string Val(HospitalConcept c, HospitalObsPoint? o)
+    {
+        if (o == null) return "—";
+        if (o.Code != null) { var ch = HospitalConceptRules.Choices(c.Choices).FirstOrDefault(x => x.Code == o.Code); return ch.Code == null ? o.Code : (isAr ? ch.Ar : ch.En); }
+        if (c.Unit == "logMAR" && o.Value is decimal lm) return HospitalVision.Snellen6(lm) + " (" + HospitalConceptRules.Num(lm, 2) + ")";
+        var v = o.Value is decimal a ? HospitalConceptRules.Num(a, c.Decimals) : "";
+        return o.Value2 is decimal b ? v + "/" + HospitalConceptRules.Num(b, c.Decimals) : v;
+    }
+    string D(decimal? d) => d?.ToString("0.####", CultureInfo.InvariantCulture) ?? "";
+    var tplNames = string.Join(" + ", Model.Forms.Select(f => Nm(f.Template.Name, f.Template.NameEn) + " v" + f.Version.Version));
+    var kdc = Model.Kdigo;
+    string[][] KG = { new[] { "G1", "≥90", "lo", "mo", "hi" }, new[] { "G2", "60–89", "lo", "mo", "hi" }, new[] { "G3a", "45–59", "mo", "hi", "vh" }, new[] { "G3b", "30–44", "hi", "vh", "vh" }, new[] { "G4", "15–29", "vh", "vh", "vh" }, new[] { "G5", "<15", "vh", "vh", "vh" } };
+    string[] AC = { "A1", "A2", "A3" };
+    var primary = Model.Visit.Diagnoses.FirstOrDefault(d => d.IsPrimary) ?? Model.Visit.Diagnoses.FirstOrDefault();
+    var seenConcepts = new HashSet<int>();   // a concept two templates ask is asked once: the second mirrors the first
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+<style>
+    .hp-kd td { width: 25%; text-align: center; font-weight: 700; padding: .55rem .3rem !important; border: 2px solid #fff; }
+    .hp-kd .lo { background: #DCFCE7; color: #166534; } .hp-kd .mo { background: #DBEAFE; color: #1E40AF; } .hp-kd .hi { background: #FECACA; color: #991B1B; } .hp-kd .vh { background: #DC2626; color: #fff; }
+    .hp-kd .me { outline: 3px solid #111827; outline-offset: -3px; }
+    .hp-gap { display: flex; gap: 12px; align-items: flex-start; padding: 10px 0; border-bottom: 1px dashed #E4E6EF; }
+</style>
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@heading</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item text-muted">@T["Specialty clinics"]</li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted"><a href="@Url.Action("Consult", new { id = e.ID })" class="text-muted text-hover-primary">@T["Consultation"]</a></li>
+            </ul>
+        </div>
+        <div class="d-flex gap-2">
+            @if (W?.Child == true) {<a href="@Url.Content("~/Hospital/Patients/" + p.ID + "/Vaccines")" class="btn btn-sm btn-light"><i class="ki-outline ki-shield-tick fs-4"></i>@T["Vaccines"]</a>}
+            @if (canEdit)
+            {
+                <span class="text-muted fs-8 align-self-center" id="saveState"></span>
+                <button type="button" class="btn btn-sm btn-light" data-problems><i class="ki-outline ki-plus fs-4"></i>@T["Add to problem list"]</button>
+                <button type="button" class="btn btn-sm btn-primary" data-sign><i class="ki-outline ki-check fs-4"></i>@T["Sign the visit"]</button>
+            }
+            else if (e.Status == HospitalEncounterStatus.Signed)
+            {
+                <span class="badge badge-light-success fs-7 px-4 py-3"><i class="ki-outline ki-check-circle fs-5 text-success me-1"></i>@T["Signed"]</span>
+            }
+        </div>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @* the visit head: the person, the templates, the doctor, the alerts *@
+        <div class="card mb-5"><div class="card-body d-flex flex-wrap align-items-center gap-5 py-5">
+            <div class="d-flex align-items-center gap-3">
+                <div class="symbol symbol-55px symbol-circle flex-shrink-0">@if (p.PhotoPath != null) {<img src="@p.PhotoPath" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(p.NameEn)" />} else {<span class="symbol-label fw-bold hp-initials">@HospitalUi.Initials(p.NameEn)</span>}</div>
+                <div><a href="@Url.Action("Patient", new { id = p.ID })" class="fw-bold text-gray-900 text-hover-primary fs-5">@name</a>
+                    <div class="text-muted fs-8"><bdi class="hp-num">@p.Mrn</bdi> · @if (age != null) {<bdi class="hp-num">@age</bdi> @T["y"]<text> · </text>}@T["sex:" + p.Sex]</div></div>
+            </div>
+            <div class="d-flex flex-column"><span class="text-muted fs-8">@T["Template"]</span><span class="fw-bold">@(tplNames.Length == 0 ? "—" : tplNames)</span></div>
+            <div class="d-flex flex-column"><span class="text-muted fs-8">@T["Doctor"]</span><span class="fw-bold">@(Model.Doctor == null ? "—" : DisplayName.Of(Model.Doctor.Name, Model.Doctor.NameEn))</span></div>
+            <div class="ms-auto d-flex flex-wrap gap-2">
+                @foreach (var a in Lines(p.Allergies)) {<span class="badge badge-light-danger fw-bold fs-8">@T["Allergy: {0}", a]</span>}
+                @foreach (var d in Model.Visit.Diagnoses) {<span class="badge badge-light-primary fw-bold fs-8">@Nm(d.Name, d.NameEn)</span>}
+                @if (kdc != null) {<span class="badge badge-light-danger fw-bold fs-8 hp-num">CKD @kdc.G @kdc.A</span>}
+                @if (W?.Child == true && W.VaccinesReady)
+                {
+                    if (W.VaccinesOverdue > 0) {<span class="badge badge-light-danger fw-bold fs-8">@T["Vaccine doses overdue: {0}", W.VaccinesOverdue]</span>}
+                    else if (W.VaccinesDue > 0) {<span class="badge badge-light-primary fw-bold fs-8">@T["Vaccine doses due: {0}", W.VaccinesDue]</span>}
+                    else {<span class="badge badge-light-info fw-bold fs-8">@T["Vaccines up to date"]</span>}
+                }
+            </div>
+        </div></div>
+
+        @if (W != null && W.Crossing.Crossed && W.Crossing.From != null && W.Crossing.To != null)
+        {
+            var cf = W.Crossing.From; var ctp = W.Crossing.To; bool falling = ctp.Z < cf.Z;
+            string crossKey = falling ? "From P{0} at age {1} to P{2} today — a gradual fall that needs a nutrition review and a cause." : "From P{0} at age {1} to P{2} today — a gradual rise that needs a nutrition review and a cause.";
+            <div class="notice d-flex rounded border border-dashed p-6 mb-5 bg-light-danger border-danger">
+                <span class="symbol symbol-45px me-5 flex-shrink-0"><span class="symbol-label bg-danger"><i class="ki-outline ki-information-5 fs-2x text-white"></i></span></span>
+                <div class="d-flex flex-stack flex-grow-1 flex-wrap flex-md-nowrap">
+                    <div class="mb-3 mb-md-0 fw-semibold pe-5"><h4 class="text-gray-900 fw-bold mb-1">@T["Weight has crossed two percentile lines"]</h4>
+                        <div class="fs-6 text-gray-700">@T[crossKey, cf.Percentile?.ToString("0") ?? "—", (cf.AgeDays / 365.25).ToString("0.#"), ctp.Percentile?.ToString("0") ?? "—"]</div></div>
+                    <span class="badge badge-danger fs-7 fw-bold px-4 py-2 flex-shrink-0 hp-num">z @(ctp.Z?.ToString("+0.00;-0.00"))</span>
+                </div>
+            </div>
+        }
+
+        @if (W?.Glaucoma is { Suspect: true } gl)
+        {
+            decimal? iop = gl.Side == "R" ? gl.IopR : gl.IopL; decimal? cd = gl.Side == "R" ? gl.CdR : gl.CdL;
+            string eye = gl.Side == "R" ? T["The right eye"].Value : T["The left eye"].Value;
+            string title = iop != null && cd != null ? string.Format(T["{0}: pressure {1} with a {2} cup"].Value, eye, HospitalConceptRules.Num(iop.Value, 0), HospitalConceptRules.Num(cd.Value, 1))
+                : iop != null ? string.Format(T["{0}: pressure {1}"].Value, eye, HospitalConceptRules.Num(iop.Value, 0)) : string.Format(T["{0}: a {1} cup"].Value, eye, HospitalConceptRules.Num(cd!.Value, 1));
+            string reasons = string.Join(isAr ? "، " : ", ", gl.Reasons.Select(r => T["glau:" + r].Value));
+            <div class="notice d-flex rounded border border-dashed p-6 mb-5 bg-light-danger border-danger">
+                <span class="symbol symbol-45px me-5 flex-shrink-0"><span class="symbol-label bg-danger"><i class="ki-outline ki-eye fs-2x text-white"></i></span></span>
+                <div class="d-flex flex-stack flex-grow-1 flex-wrap flex-md-nowrap">
+                    <div class="mb-3 mb-md-0 fw-semibold pe-5"><h4 class="text-gray-900 fw-bold mb-1">@title</h4>
+                        <div class="fs-6 text-gray-700">@reasons — @T["glaucoma suspected: visual fields, an optic-nerve OCT and a review in 6 weeks."]</div></div>
+                    <span class="badge badge-danger fs-7 fw-bold px-4 py-2 flex-shrink-0 hp-num" dir="ltr">OD @(gl.IopR is decimal a ? HospitalConceptRules.Num(a, 0) : "—") / OS @(gl.IopL is decimal b ? HospitalConceptRules.Num(b, 0) : "—")</span>
+                </div>
+            </div>
+        }
+
+        @* the figures on top: the fields marked to head the visit, and the care gaps *@
+        @if (Model.Headlines.Count > 0)
+        {
+        <div class="row g-5 g-xl-8 mb-5">
+            @foreach (var h in Model.Headlines)
+            {
+                bool bad = h.Last != null && HospitalObsFlag.Abnormal(h.Last.Flag);
+                string sub = "";
+                if (h.Last != null && h.Previous != null && h.Last.Value is decimal lv && h.Previous.Value is decimal pv && lv != pv)
+                    sub = string.Format(T[lv > pv ? "↑ from {0}" : "↓ from {0}"].Value, Val(h.Concept, h.Previous));
+                bool alerted = h.Last?.Value is decimal av && (h.Field.AlertAbove <= av || h.Field.AlertBelow >= av);
+                if (alerted) sub += (sub.Length > 0 ? " — " : "") + (isAr ? h.Field.AlertText : h.Field.AlertTextEn ?? h.Field.AlertText);
+                else if (sub.Length == 0) sub = h.Last?.Flag == HospitalObsFlag.Unknown ? T["No range to compare with"].Value : T["Normal"].Value + " " + HospitalConceptRules.NormalDisplay(h.Concept, isAr);
+                if (h.Concept.HasLaterality)
+                {
+                    var lr = h.Points.LastOrDefault(x => x.Side == "R"); var ll = h.Points.LastOrDefault(x => x.Side == "L");
+                    bool badR = lr != null && HospitalObsFlag.Abnormal(lr.Flag), badL = ll != null && HospitalObsFlag.Abnormal(ll.Flag);
+                    <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
+                        <div class="text-muted fw-semibold fs-7 mb-1">@Nm(h.Concept.Name, h.Concept.NameEn)</div>
+                        <div class="fs-2hx fw-bold" dir="ltr">@{ string Tv(decimal? x) => x is decimal d ? (h.Concept.Unit == "logMAR" ? HospitalVision.Snellen6(d) : HospitalConceptRules.Num(d, h.Concept.Decimals)) : "—"; }<span class="@(badR ? "text-danger" : "text-gray-900")">@Tv(lr?.Value)</span><span class="text-gray-400"> / </span><span class="@(badL ? "text-danger" : "text-gray-900")">@Tv(ll?.Value)</span></div>
+                        <div class="text-muted fs-8 mt-1">OD / OS @(h.Concept.Unit != null ? "· " + h.Concept.Unit : "")</div>
+                    </div></div></div>
+                    continue;
+                }
+                <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
+                    <div class="text-muted fw-semibold fs-7 mb-1">@Nm(h.Concept.Name, h.Concept.NameEn)</div>
+                    <div class="fs-2hx fw-bold @(bad ? "text-danger" : "text-gray-900")"><bdi class="hp-num">@Val(h.Concept, h.Last)@(h.Last != null && (h.Concept.Unit == "%" || (h.Concept.Unit ?? "").StartsWith("/")) ? h.Concept.Unit : "")</bdi></div>
+                    <div class="text-muted fs-8 mt-1">@sub</div>
+                </div></div></div>
+            }
+            @{ int gaps = Model.Care.Count(c => c.Kind == "Gap"); }
+            <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
+                <div class="text-muted fw-semibold fs-7 mb-1">@T["Care gaps"]</div>
+                <div class="fs-2hx fw-bold @(gaps > 0 ? "text-danger" : "text-gray-900")"><bdi class="hp-num">@gaps</bdi></div>
+                <div class="text-muted fs-8 mt-1">@(gaps == 0 ? T["Nothing overdue"].Value : string.Join(isAr ? "، " : ", ", Model.Care.Where(c => c.Kind == "Gap").Select(c => isAr ? c.Text : c.TextEn)))</div>
+            </div></div></div>
+        </div>
+        }
+
+        <div class="row g-5">
+            <div class="col-xl-@(W?.Growth.Count > 0 ? 8 : 7)">
+                @if (W?.Spt != null)
+                {
+                    <div class="card mb-5 mb-xl-8">
+                        <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Skin prick test"]</span>
+                            <span class="text-muted mt-1 fw-semibold fs-7">@T["Positive = wheal 3 mm or more above the negative control — computed"]</span></div></div>
+                        <div class="card-body pt-2">
+                            <div class="table-responsive"><table class="table table-row-dashed align-middle fs-7 mb-0">
+                                <thead><tr class="text-gray-500 fw-bold fs-8 text-uppercase"><th>@T["Allergen"]</th><th class="text-center">@T["Wheal mm"]</th><th class="text-center">@T["Flare mm"]</th><th class="text-center">@T["Result"]</th></tr></thead>
+                                <tbody>
+                                    @foreach (var r in W.Spt.Rows)
+                                    {
+                                        <tr class="@(r.Control ? "bg-light" : "")"><td class="fw-semibold">@(isAr ? r.Label : r.LabelEn)</td>
+                                            <td class="text-center hp-num @(r.Positive == true ? "text-danger fw-bold" : "")">@(r.Wheal?.ToString("0.#") ?? "—")</td><td class="text-center hp-num">@(r.Flare?.ToString("0.#") ?? "—")</td>
+                                            <td class="text-center">@if (r.Control) {<span class="badge badge-light fs-8">@T["Control"]</span>} else if (r.Positive == true) {<span class="badge badge-light-danger fs-8">@T["Positive"]</span>} else if (r.Positive == false) {<span class="badge badge-light-success fs-8">@T["Negative"]</span>} else {<span class="text-muted">—</span>}</td></tr>
+                                    }
+                                </tbody>
+                            </table></div>
+                            <div class="mt-3">@if (W.Spt.Valid == true) {<span class="badge badge-light-success fs-8">@T["Test valid: saline ≤ 3 and histamine 3 mm or more above it"]</span>} else if (W.Spt.Valid == false) {<span class="badge badge-light-danger fs-8">@T["Test invalid: read no result — repeat it (check antihistamines, the controls)"]</span>} else {<span class="badge badge-light fs-8">@T["Write both controls to read the test"]</span>}</div>
+                        </div>
+                    </div>
+                }
+                @if (W?.Growth.Count > 0)
+                {
+                    <div class="card mb-5 mb-xl-8">
+                        <div class="card-header border-0 pt-6">
+                            <div class="card-title align-items-start flex-column m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Growth chart — WHO"] (@(p.Sex == "F" ? T["girls"] : T["boys"]))</span>
+                                <span class="text-muted mt-1 fw-semibold fs-7">@T["Points from the observations of every visit; z and percentile computed by the LMS method"]</span></div>
+                            <div class="card-toolbar"><select class="form-select form-select-solid form-select-sm w-200px" id="growthPick" data-control="none">@foreach (var g in W.Growth) {<option value="@g.Indicator">@T["gi:" + g.Indicator]</option>}</select></div>
+                        </div>
+                        <div class="card-body pt-2"><div id="growthChart"></div></div>
+                    </div>
+                    <div class="card mb-5 mb-xl-8">
+                        <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Measurements"]</span></div></div>
+                        <div class="card-body pt-2"><div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-3 mb-0">
+                            <thead><tr class="text-gray-500 fw-bold fs-8 text-uppercase"><th>@T["Date"]</th><th>@T["Age"]</th><th>@T["Value"]</th><th>z</th><th>@T["Percentile"]</th></tr></thead>
+                            <tbody id="growthRows"></tbody></table></div></div>
+                    </div>
+                }
+                <div class="card mb-5 mb-xl-8">
+                    <div class="card-header border-0 pt-6">
+                        <div class="card-title align-items-start flex-column m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Visit form"]</span>
+                            <span class="text-muted mt-1 fw-semibold fs-7">@T["Known values come from the lab and earlier visits; red is out of range"]</span></div>
+                        @if (canEdit && Model.Offer.Count > 0)
+                        {
+                            <div class="card-toolbar gap-2"><select class="form-select form-select-solid form-select-sm w-200px" id="addTpl" data-control="none">@foreach (var t in Model.Offer) {<option value="@t.ID">@Nm(t.Name, t.NameEn)</option>}</select>
+                                <button type="button" class="btn btn-sm btn-light-primary" data-addtpl><i class="ki-outline ki-plus fs-4"></i>@T["Add a template"]</button></div>
+                        }
+                    </div>
+                    <div class="card-body pt-4" id="visitForm">
+                        @if (Model.Forms.Count == 0) {<div class="text-muted fs-7 py-6 text-center">@T["No template on this visit yet: add one of the clinic's templates."]</div>}
+                        @foreach (var vf in Model.Forms)
+                        {
+                            bool signed = vf.Form.Status == HospitalFormStatus.Signed; string dis = signed || !canEdit ? "disabled" : "";
+                            var all = vf.Fields.ToDictionary(x => x.Field.ID, x => x.Field);
+                            bool gridOn = false;
+                            if (Model.Forms.Count > 1) {<div class="fw-bold text-gray-500 fs-8 text-uppercase mb-3 @(vf == Model.Forms[0] ? "" : "mt-6")">@Nm(vf.Template.Name, vf.Template.NameEn) <span class="hp-num">v@(vf.Version.Version)</span>@if (signed) {<span class="badge badge-light-success fs-9 ms-1">@T["Signed"]</span>}</div>}
+                            <div class="row g-4" data-form="@vf.Form.ID">
+                                @foreach (var fv in vf.Fields)
+                                {
+                                    var f = fv.Field; var c = fv.Concept; string label = isAr ? f.Label ?? c.Name : f.LabelEn ?? c.NameEn;
+                                    bool calc = c.ValueType is HospitalConceptType.Calculated || (c.ValueType == HospitalConceptType.Score && c.Calculator == HospitalConceptCalculator.Sum);
+                                    var depLabel = fv.ShowWhen == null ? null : (isAr ? fv.ShowWhen.Label : fv.ShowWhen.LabelEn) ?? Nm(vf.Fields.First(x => x.Field.ID == fv.ShowWhen.ID).Concept.Name, vf.Fields.First(x => x.Field.ID == fv.ShowWhen.ID).Concept.NameEn);
+                                    Model.LastByConcept.TryGetValue(c.ID, out var lastObs);
+                                    Model.Prefill.TryGetValue(f.ID, out var pre);
+                                    bool repeat = !seenConcepts.Add(c.ID) && !calc;
+                                    bool grid = c.HasLaterality && !repeat && !calc;
+                                    if (grid)
+                                    {
+                                        if (!gridOn)
+                                        {
+                                            gridOn = true;
+                                            <div class="col-4"></div>
+                                            <div class="col-4 text-center"><span class="badge badge-light-primary fs-9 fw-bold">OD</span> <span class="fs-8 fw-bold text-gray-600">@T["Right"]</span></div>
+                                            <div class="col-4 text-center"><span class="badge badge-light-info fs-9 fw-bold">OS</span> <span class="fs-8 fw-bold text-gray-600">@T["Left"]</span></div>
+                                        }
+                                        <div class="col-4 d-flex flex-column justify-content-center" data-when="@f.ShowWhenFieldId" data-above="@D(f.ShowWhenAbove)">
+                                            <span class="fw-semibold fs-7 text-gray-700 @(f.Required ? "required" : "")">@label @if (!string.IsNullOrEmpty(c.Unit)) {<span class="text-muted fs-9 hp-num">(@c.Unit)</span>}</span>
+                                        </div>
+                                    }
+                                    else if (!repeat) { gridOn = false; }
+                                    foreach (var side in HospitalFormRules.Sides(c))
+                                    {
+                                        var key = HospitalFormRules.Key(f.ID, side);
+                                        vf.Answers.TryGetValue(key, out var ans);
+                                        bool fromLab = ans == null && pre != null && !signed;
+                                        var value = ans ?? (fromLab ? pre!.Value : null);
+                                        string col = grid ? "col-4" : c.HasLaterality ? (c.ValueType == HospitalConceptType.Choice ? "col-md-6" : "col-md-3") : (calc || c.ValueType == HospitalConceptType.Choice ? "col-md-6" : "col-md-4");
+                                        if (repeat) { <input type="hidden" data-key="@key" data-code="@c.Code" data-side="@side" data-mirror="1" value="@value" /> continue; }
+                                        <div class="@col" data-when="@f.ShowWhenFieldId" data-above="@D(f.ShowWhenAbove)">
+                                            @if (!grid) {
+                                            <label class="fw-semibold fs-7 text-gray-700 mb-2 @(f.Required && !calc ? "required" : "")">@label@(side == null ? "" : " — " + (side == "R" ? T["Right"].Value : T["Left"].Value))
+                                                @if (!string.IsNullOrEmpty(c.Unit) && c.ValueType != HospitalConceptType.Score) {<span class="text-muted fs-9 hp-num">(@c.Unit)</span>}
+                                                @if (fromLab) {<span class="text-muted fs-9">@T["(from the lab {0})", pre!.At.ToString("yyyy-MM-dd")]</span>}
+                                                @if (lastObs != null && !calc && !signed) {<span class="d-block text-muted fs-9 fw-normal">@T["Last: {0} on {1}", Val(c, lastObs), lastObs.At.ToString("yyyy-MM-dd")]</span>}
+                                                @if (depLabel != null) {<span class="badge badge-light-primary fs-9">@T["shown because {0} > {1}", depLabel, D(f.ShowWhenAbove)]</span>}</label>
+                                            }
+                                            @if (calc)
+                                            {
+                                                <input class="form-control form-control-solid" readonly dir="ltr" value="@(lastObs == null ? "" : Val(c, lastObs) + (c.Calculator == HospitalConceptCalculator.EgfrCkdEpi2021 && lastObs.Value is decimal eg ? " → " + HospitalClinicalCalc.GCategory(eg) : ""))" placeholder="@T["Computed at sign-off"]" />
+                                            }
+                                            else if (c.ValueType == HospitalConceptType.Choice)
+                                            {
+                                                <select class="form-select form-select-solid" data-control="none" data-key="@key" data-code="@c.Code" data-side="@side" @dis><option value="">—</option>@foreach (var ch in HospitalConceptRules.Choices(c.Choices)) {<option value="@ch.Code" selected="@(ch.Code == value)">@(isAr ? ch.Ar : ch.En)</option>}</select>
+                                            }
+                                            else
+                                            {
+                                                <input class="form-control form-control-solid @(HospitalVisitRules.OutOfRange(c, value) ? "is-invalid" : "")" dir="ltr" data-key="@key" data-code="@c.Code" data-side="@side" value="@value" @dis
+                                                       data-lo="@D(c.NormalLow)" data-hi="@D(c.NormalHigh)" data-hi2="@D(c.NormalHigh2)" data-panel="@(c.ValueType == HospitalConceptType.Panel ? "1" : "")"
+                                                       data-alert-above="@D(f.AlertAbove)" data-alert-below="@D(f.AlertBelow)" data-alert-text="@(isAr ? f.AlertText : f.AlertTextEn ?? f.AlertText)"
+                                                       placeholder="@(c.ValueType == HospitalConceptType.Panel ? "120/80" : c.Unit == "logMAR" ? "6/6" : "")" />
+                                            }
+                                        </div>
+                                    }
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                @if (Model.Headlines.Count > 0)
+                {
+                    <div class="card mb-5 mb-xl-8">
+                        <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Trends — from the stored observations"]</span></div></div>
+                        <div class="card-body pt-4">
+                            <ul class="nav nav-tabs nav-line-tabs mb-5 fs-6">
+                                @for (int i = 0; i < Model.Headlines.Count; i++) {<li class="nav-item"><a class="nav-link @(i == 0 ? "active" : "")" data-bs-toggle="tab" href="#trend@(i)">@Nm(Model.Headlines[i].Concept.Name, Model.Headlines[i].Concept.NameEn)</a></li>}
+                            </ul>
+                            <div class="tab-content">
+                                @for (int i = 0; i < Model.Headlines.Count; i++)
+                                {
+                                    var h = Model.Headlines[i];
+                                    <div class="tab-pane fade @(i == 0 ? "show active" : "")" id="trend@(i)"><div data-chart="@i"></div>@if (h.Points.Count == 0) {<div class="text-muted fs-7 py-6 text-center">@T["No value recorded yet"]</div>}</div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <div class="col-xl-@(W?.Growth.Count > 0 ? 4 : 5)">
+                @if (W?.Immuno != null)
+                {
+                    foreach (var cv in W.Immuno)
+                    {
+                        var co = cv.Course; bool held = co.Status == HospitalImmunoStatus.Held, stopped = co.Status == HospitalImmunoStatus.Stopped;
+                        <div class="card mb-5 mb-xl-8" data-course="@co.ID">
+                            <div class="card-header border-0 pt-6">
+                                <div class="card-title align-items-start flex-column m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Immunotherapy — {0}", isAr ? co.Extract : co.ExtractEn]</span>
+                                    <span class="text-muted mt-1 fw-semibold fs-7">@T["Build-up schedule; a systemic reaction holds the next dose until the doctor decides"]</span></div>
+                                <div class="card-toolbar">@if (held) {<span class="badge badge-light-danger fs-8">@T["Course held"]</span>} else if (stopped) {<span class="badge badge-light fs-8">@T["Stopped"]</span>}</div>
+                            </div>
+                            <div class="card-body pt-2">
+                                <div class="table-responsive"><table class="table table-row-dashed align-middle fs-7 mb-0">
+                                    <thead><tr class="text-gray-500 fw-bold fs-8 text-uppercase"><th>#</th><th>@T["Date"]</th><th>@T["Vial"]</th><th>@T["Dose"]</th><th>@T["Reaction"]</th></tr></thead>
+                                    <tbody>
+                                        @foreach (var d in cv.Doses.TakeLast(6))
+                                        {
+                                            <tr><td class="hp-num">@d.Seq</td><td class="hp-num text-nowrap">@HospitalNursingService.UtcToWard(d.GivenAt).ToString("yyyy-MM-dd")</td><td class="hp-num">@d.Vial</td><td class="hp-num">@d.DoseMl.ToString("0.00") mL</td>
+                                                <td>@if (d.Reaction == HospitalImmunoReaction.Pending)
+                                                    {
+                                                        <button type="button" class="btn btn-sm btn-light-primary py-1 px-3 fs-8" data-react="@d.ID" data-until="@d.ObserveUntil.ToString("o")">@T["Record the reaction"]</button>
+                                                        <div class="text-muted fs-9 mt-1" data-timer="@d.ObserveUntil.ToString("o")"></div>
+                                                    }
+                                                    else
+                                                    {
+                                                        string kind = d.Reaction switch { HospitalImmunoReaction.Systemic => "danger", HospitalImmunoReaction.LargeLocal => "primary", _ => "success" };
+                                                        <span class="badge badge-light-@kind fs-8">@T["imr:" + d.Reaction]@if (d.WhealMm != null) {<text> <bdi class="hp-num">@d.WhealMm mm</bdi></text>}@if (d.Reaction == HospitalImmunoReaction.LargeLocal) {<text> — @T["repeat dose"]</text>}</span>
+                                                    }</td></tr>
+                                        }
+                                        @if (cv.Next.Refusal == null && Model.CanEdit)
+                                        {
+                                            <tr class="bg-light-primary"><td class="hp-num">@(cv.Doses.Count + 1)</td><td class="fw-bold">@T["Today"]</td><td class="hp-num">@cv.Next.Vial</td><td class="hp-num fw-bold">@cv.Next.DoseMl?.ToString("0.00") mL</td>
+                                                <td><button type="button" class="btn btn-sm btn-primary py-1 px-3 fs-8" data-give="@co.ID">@T["Give + 30-min timer"]</button></td></tr>
+                                        }
+                                    </tbody>
+                                </table></div>
+                                @if (cv.Next.Refusal != null) {<div class="fs-8 text-muted mt-3">@T[cv.Next.Refusal, cv.Next.Args ?? Array.Empty<object>()]</div>}
+                                @if (held && Model.CanEdit)
+                                {
+                                    <div class="rounded bg-light-danger p-3 mt-3 fs-8"><div class="fw-bold mb-1">@T["Held after a systemic reaction"]</div><div>@co.StatusNote</div>
+                                        <div class="d-flex gap-2 mt-2"><button type="button" class="btn btn-sm btn-light-primary py-1 px-3 fs-8" data-decide="@co.ID" data-resume="1">@T["Resume two steps lower"]</button><button type="button" class="btn btn-sm btn-light-danger py-1 px-3 fs-8" data-decide="@co.ID" data-resume="0">@T["Stop the course"]</button></div></div>
+                                }
+                            </div>
+                        </div>
+                    }
+                    if (Model.CanEdit && !W.Immuno.Any(x => x.Course.Status != HospitalImmunoStatus.Stopped))
+                    {
+                        <div class="card mb-5 mb-xl-8"><div class="card-body d-flex flex-stack flex-wrap gap-3 py-5"><div><div class="fw-bold text-gray-900">@T["Immunotherapy"]</div><div class="text-muted fs-8">@T["No course yet: start one with the extract the skin test shows."]</div></div>
+                            <button type="button" class="btn btn-sm btn-light-primary" data-bs-toggle="modal" data-bs-target="#imStart"><i class="ki-outline ki-plus fs-4"></i>@T["Start a course"]</button></div></div>
+                    }
+                }
+                @if (W?.Dosing != null)
+                {
+                    var dz = W.Dosing;
+                    <div class="card mb-5 mb-xl-8">
+                        <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Weight-based dosing"]</span></div></div>
+                        <div class="card-body pt-4">
+                            @if (dz.Drugs.Count == 0)
+                            {
+                                <div class="text-muted fs-7">@T["No medicine has a dose per kg yet: add it to the drug's dose limit."]</div>
+                            }
+                            else
+                            {
+                                <div class="row g-3">
+                                    <div class="col-12"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Drug"]</label><select class="form-select form-select-solid" id="doseDrug" data-control="none">@foreach (var d in dz.Drugs) {<option value="@d.ID" data-perkg="@d.PerKgMg" data-every="@d.EveryHours" data-max="@d.MaxSingle" data-daily="@d.MaxDaily" data-strength="@d.StrengthMgPerMl">@d.Drug@(d.StrengthMgPerMl is decimal sm ? " — " + HospitalDrugSafetyRules.Num(sm) + " mg/mL" : "")</option>}</select></div>
+                                    <div class="col-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Dose per kg"]</label><input class="form-control form-control-solid" id="dosePerKg" dir="ltr" readonly /></div>
+                                    <div class="col-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Weight today"]</label><input class="form-control form-control-solid" id="doseKg" dir="ltr" readonly value="@(dz.WeightKg is decimal wk ? HospitalDrugSafetyRules.Num(wk) + " kg" : "")" data-kg="@dz.WeightKg" placeholder="@T["No weight recorded"]" /></div>
+                                </div>
+                                <div class="rounded bg-light-primary p-4 mt-4"><div class="fs-8 text-muted">@T["Computed dose"]</div><div class="fs-2 fw-bold hp-num" dir="ltr" id="doseOut">—</div><div class="fs-8 text-gray-700" id="doseNote"></div></div>
+                            }
+                        </div>
+                    </div>
+                }
+                @if (W?.Development.Count > 0)
+                {
+                    <div class="card mb-5 mb-xl-8">
+                        <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Development — age {0}", Math.Floor(W.AgeYears ?? 0)]</span></div></div>
+                        <div class="card-body pt-2">
+                            @foreach (var ms in W.Development)
+                            {
+                                bool ok = ms.Answer == "Y";
+                                <div class="hp-gap" data-milestone="@ms.Key" data-mform="@ms.FormId"><i class="ki-outline @(ok ? "ki-check-circle text-success" : "ki-time text-primary") fs-2"></i><div><div class="fw-bold fs-7">@(isAr ? ms.Label : ms.LabelEn)</div><div class="text-muted fs-8">@(ok ? T["Achieved"] : ms.Answer == "N" ? T["Not yet"] : T["Not assessed"])</div></div></div>
+                            }
+                        </div>
+                    </div>
+                }
+                @foreach (var sc in W?.Scores ?? Array.Empty<HospitalVisitScore>())
+                {
+                    bool badScore = sc.Last != null && HospitalObsFlag.Abnormal(sc.Last.Flag);
+                    <div class="card mb-5 mb-xl-8">
+                        <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@Nm(sc.Concept.Name, sc.Concept.NameEn)</span></div></div>
+                        <div class="card-body pt-2">
+                            <div class="d-flex flex-stack py-2 border-bottom border-gray-200"><span class="text-muted fs-7">@T["The score"]</span><span class="fw-bold hp-num @(badScore ? "text-danger" : "text-gray-900")">@(sc.Last?.Value is decimal sv ? HospitalConceptRules.Num(sv, sc.Concept.Decimals) + " " + sc.Concept.Unit : "—")@if (HospitalConceptRules.Band(sc.Concept, sc.Last?.Value) is var band && band != null) {<span class="badge badge-light-@(badScore ? "danger" : "primary") fs-8 ms-2">@(isAr ? band.Value.Ar : band.Value.En)</span>}</span></div>
+                            <div class="d-flex flex-stack py-2 border-bottom border-gray-200"><span class="text-muted fs-7">@T["Threshold"]</span><span class="fw-bold hp-num">@HospitalConceptRules.NormalDisplay(sc.Concept, isAr)@if (badScore) {<span class="text-danger ms-1">@T["out of range"]</span>}</span></div>
+                            @if (sc.Items?.Count > 0)
+                            {
+                                <div class="fw-bold fs-8 text-gray-500 text-uppercase mt-3 mb-1">@T["The questions"]</div>
+                                foreach (var it in sc.Items)
+                                {
+                                    <div class="d-flex flex-stack py-2 border-bottom border-gray-200"><span class="fs-7">@(isAr ? it.Label : it.LabelEn)</span><span class="hp-num fw-bold">@(it.Answer ?? "—")@(it.Unit)</span></div>
+                                }
+                            }
+                            <div class="fs-8 text-muted mt-2">@(sc.Last == null ? T["Not recorded yet: it is stored when the visit is signed."] : T["Stored as an observation, so every clinic sees it."])</div>
+                        </div>
+                    </div>
+                }
+                <div class="card mb-5 mb-xl-8">
+                    <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Care gaps & alerts"]</span></div></div>
+                    <div class="card-body pt-2">
+                        @if (Model.Care.Count == 0 && Model.Done.Count == 0) {<div class="text-muted fs-7 py-4">@T["Nothing overdue"]</div>}
+                        @foreach (var g in Model.Care)
+                        {
+                            string what = g.Kind == "Gap"
+                                ? (g.LastAt == null ? string.Format(T["{0}: never recorded"].Value, isAr ? g.Text : g.TextEn) : string.Format(T["{0} overdue {1} days"].Value, isAr ? g.Text : g.TextEn, g.DaysOverdue))
+                                : (isAr ? g.Text : g.TextEn);
+                            <div class="hp-gap"><span class="bullet bullet-dot bg-danger mt-2" style="width:9px;height:9px"></span>
+                                <div class="flex-grow-1"><div class="fw-bold text-gray-900 fs-7">@what</div>
+                                    <div class="text-muted fs-8">@(g.Kind == "Gap" ? (g.LastAt == null ? T["No value on any visit"].Value : string.Format(T["Last {0}"].Value, g.LastAt.Value.ToString("yyyy-MM-dd"))) : string.Format(T["Latest {0} on {1}"].Value, Nm(g.Concept.Name, g.Concept.NameEn), g.LastAt?.ToString("yyyy-MM-dd")))</div></div>
+                                @if (canEdit && g.Kind == "Gap" && Model.GapServices.TryGetValue(g.Concept.ID, out var svc)) {<button type="button" class="btn btn-sm btn-light-primary py-1 px-3 fs-8" data-order="@svc">@T["Order it"]</button>}
+                            </div>
+                        }
+                        @foreach (var d in Model.Done)
+                        {
+                            <div class="hp-gap"><span class="bullet bullet-dot bg-success mt-2" style="width:9px;height:9px"></span>
+                                <div class="flex-grow-1"><div class="fw-bold text-gray-900 fs-7">@T["{0} done {1}", Nm(d.Concept.Name, d.Concept.NameEn), d.At.ToString("yyyy-MM-dd")]</div><div class="text-muted fs-8"><bdi class="hp-num">@d.Value</bdi></div></div>
+                                <i class="ki-outline ki-check-circle text-success fs-3"></i></div>
+                        }
+                    </div>
+                </div>
+
+                @if (kdc != null || Model.Forms.SelectMany(f => f.Fields).Any(f => f.Concept.Calculator == HospitalConceptCalculator.Kdigo))
+                {
+                    <div class="card mb-5 mb-xl-8">
+                        <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Kidney stage — KDIGO 2024"]</span><span class="text-muted mt-1 fw-semibold fs-7">@T["Computed from eGFR and ACR"]</span></div></div>
+                        <div class="card-body pt-4">
+                            <table class="table hp-kd mb-2 fs-8"><thead><tr><th></th>@foreach (var a in new[] { ("A1", "<30"), ("A2", "30–300"), ("A3", ">300") }) {<th class="text-center fs-9">@a.Item1<br />@a.Item2</th>}</tr></thead>
+                                <tbody>@foreach (var r in KG) {<tr><th class="fs-9 text-nowrap">@r[0] <span class="text-muted">@r[1]</span></th>@for (int j = 0; j < 3; j++) { bool me = kdc != null && kdc.G == r[0] && kdc.A == AC[j]; <td class="@r[j + 2] @(me ? "me" : "")">@(me ? "●" : "")</td> }</tr>}</tbody></table>
+                            <div class="fs-8 text-muted">@(kdc == null ? T["No KDIGO stage recorded yet: it is computed when the visit is signed."] : T[HospitalVisitRules.AdviceKey(kdc.Risk)])</div>
+                        </div>
+                    </div>
+                }
+
+                <div class="card mb-5 mb-xl-8">
+                    <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Order set by diagnosis"]</span></div></div>
+                    <div class="card-body pt-4">
+                        @if (Model.OrderSets.Count == 0) {<div class="text-muted fs-7">@(Model.Visit.Diagnoses.Count == 0 ? T["Add the visit's diagnosis in the consultation: its order set appears here."] : T["No order set for this visit's diagnoses."])</div>}
+                        @foreach (var os in Model.OrderSets)
+                        {
+                            <div class="mb-5" data-set="@os.Set.ID">
+                                <div class="fs-7 text-gray-700 mb-3">@T["“{0}” proposes:", primary == null ? Nm(os.Set.Name, os.Set.NameEn) : Nm(primary.Name, primary.NameEn)] <span class="text-muted fs-8">(@Nm(os.Set.Name, os.Set.NameEn))</span></div>
+                                @foreach (var it in os.Items)
+                                {
+                                    string title = it.Kind == HospitalOrderSetItemKind.Medication ? string.Join(" ", new[] { it.Drug, it.Dose, it.Note }.Where(x => !string.IsNullOrWhiteSpace(x)))
+                                        : it.ServiceId is int sid && Model.Services.TryGetValue(sid, out var svcRow) ? Nm(svcRow.Name, svcRow.NameEn) : Nm(it.TitleAr ?? it.TitleEn ?? "", it.TitleEn);
+                                    <label class="d-flex align-items-center gap-2 py-1"><input type="checkbox" class="form-check-input m-0" data-item="@it.ID" checked="@it.Preselected" @(canEdit ? "" : "disabled") /><span class="fs-7">@title</span></label>
+                                }
+                                @if (canEdit) {<button type="button" class="btn btn-sm btn-primary w-100 mt-3" data-apply="@os.Set.ID">@T["Add the ticked to orders"]</button>}
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div></div>
+</div>
+
+@if (W?.Immuno != null && Model.CanEdit)
+{
+    <div class="modal fade" id="imStart" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-550px"><div class="modal-content">
+        <div class="modal-header"><h2 class="fw-bold m-0">@T["Start a course"]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body py-6 px-lg-10"><div class="row g-4">
+            <div class="col-12"><label class="form-label required">@T["Extract"]</label><input class="form-control form-control-solid" dir="rtl" maxlength="150" id="imExtract" placeholder="@T["House dust mite"]" /></div>
+            <div class="col-12"><label class="form-label required">@T["Extract in English"]</label><input class="form-control form-control-solid" dir="ltr" maxlength="150" id="imExtractEn" placeholder="House dust mite" /></div>
+            <div class="col-12 text-muted fs-8">@T["The schedule starts at 0.05 mL of the 1:1000 vial and climbs one step a dose."]</div>
+        </div></div>
+        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-imstart>@T["Start the course"]</button></div>
+    </div></div></div>
+    <div class="modal fade" id="imReact" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-550px"><div class="modal-content">
+        <div class="modal-header"><h2 class="fw-bold m-0">@T["Record the reaction"]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body py-6 px-lg-10"><div class="row g-4">
+            <div class="col-12 d-flex flex-wrap gap-3">
+                @foreach (var k in new[] { HospitalImmunoReaction.None, HospitalImmunoReaction.Local, HospitalImmunoReaction.Systemic })
+                {
+                    <label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="radio" name="imKind" value="@k" @(k == HospitalImmunoReaction.None ? "checked" : "") /><span class="form-check-label">@T["imr:" + k]</span></label>
+                }
+            </div>
+            <div class="col-6"><label class="form-label">@T["Local wheal mm"]</label><input type="number" min="1" max="200" class="form-control form-control-solid" dir="ltr" id="imWheal" /></div>
+            <div class="col-12"><label class="form-label">@T["Note (required for a systemic reaction: what happened and its treatment)"]</label><textarea rows="2" maxlength="300" class="form-control form-control-solid" id="imNote"></textarea></div>
+        </div></div>
+        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-imreact>@T["Save"]</button></div>
+    </div></div></div>
+    <div class="modal fade" id="imDecide" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-500px"><div class="modal-content">
+        <div class="modal-header"><h2 class="fw-bold m-0">@T["The doctor's decision"]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body py-6 px-lg-10"><label class="form-label required">@T["Write the reason"]</label><textarea rows="3" maxlength="300" class="form-control form-control-solid" id="imDecideNote"></textarea></div>
+        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-imdecide>@T["Save"]</button></div>
+    </div></div></div>
+}
+
+@section Scripts {
+    <script>
+        (function () {
+            var tokEl = document.querySelector('input[name="__RequestVerificationToken"]'); if (!tokEl) return; var tok = tokEl.value;
+            var base = @Json.Serialize(Url.Content("~/Hospital/Consult/" + e.ID + "/Specialty"));
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value), sign: @Json.Serialize(T["Sign this visit? The consultation and its forms are signed together and cannot change afterwards."].Value),
+                      tpl: @Json.Serialize(T["Add this template to the visit?"].Value), set: @Json.Serialize(T["Add the ticked lines to this visit's orders?"].Value), added: @Json.Serialize(T["Lines added: {0}"].Value),
+                      order: @Json.Serialize(T["Order this test on this visit?"].Value), probs: @Json.Serialize(T["Add this visit's diagnoses to the patient's problem list?"].Value) };
+            function post(u, b) { return fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': tok }, body: JSON.stringify(b || {}) })
+                .then(function (r) { return r.json().catch(function () { return { ok: false }; }); }); }
+            function run(msg, u, b, then) { cbConfirm(msg).then(function (ok) { if (!ok) return; post(u, b).then(function (res) { if (!res.ok) { toastr.error(res.error || W.failed); return; } then(res); }); }); }
+            var form = document.getElementById('visitForm');
+            function answers() { var all = {}; form.querySelectorAll('[data-form]').forEach(function (f) { var a = {}; f.querySelectorAll('[data-key]').forEach(function (i) {
+                var box = i.closest('[data-when]'); if (box && box.classList.contains('d-none')) return; var v = (i.value || '').trim(); if (v) a[i.getAttribute('data-key')] = v; }); all[f.getAttribute('data-form')] = a; }); return { forms: all }; }
+            // a conditional field shows when the field it depends on is above its value
+            function cond() { form.querySelectorAll('[data-when]').forEach(function (b) { var w = b.getAttribute('data-when'); if (!w) return;
+                var vals = Array.prototype.map.call(form.querySelectorAll('[data-key="' + w + '"],[data-key^="' + w + '."]'), function (i) { return parseFloat(i.value); });
+                b.classList.toggle('d-none', !vals.some(function (v) { return v > parseFloat(b.getAttribute('data-above') || '0'); })); }); }
+            // red when out of the concept's normal range
+            function range(i) { var v = (i.value || '').trim(); if (!v) { i.classList.remove('is-invalid'); return; } var lo = parseFloat(i.dataset.lo), hi = parseFloat(i.dataset.hi), hi2 = parseFloat(i.dataset.hi2), bad = false;
+                if (i.dataset.panel) { var p = v.split('/'); var a = parseFloat(p[0]), b = parseFloat(p[1]); bad = (!isNaN(hi) && a > hi) || (!isNaN(hi2) && b > hi2) || (!isNaN(lo) && a < lo); }
+                else { var x = parseFloat(v); bad = !isNaN(x) && ((!isNaN(hi) && x > hi) || (!isNaN(lo) && x < lo)); }
+                i.classList.toggle('is-invalid', bad); }
+            // H98: a field with an alert says so the moment its value crosses it (PHQ-9 item 9 — before the patient leaves)
+            function alertOf(i) { var box = i.parentNode, msg = box.querySelector('[data-alert-msg]'), v = parseFloat(i.value), a = parseFloat(i.dataset.alertAbove), b = parseFloat(i.dataset.alertBelow);
+                var hit = !isNaN(v) && ((!isNaN(a) && v >= a) || (!isNaN(b) && v <= b));
+                if (hit && !msg) { msg = document.createElement('div'); msg.setAttribute('data-alert-msg', ''); msg.className = 'rounded bg-light-danger text-danger fw-bold fs-8 px-3 py-2 mt-2'; box.appendChild(msg); }
+                if (msg) { msg.textContent = hit ? '⚠ ' + i.dataset.alertText : ''; msg.classList.toggle('d-none', !hit); } }
+            if (form) form.querySelectorAll('[data-alert-text]').forEach(function (i) { if (i.dataset.alertText) alertOf(i); });
+            function mirror(i) { if (!i.dataset.code || i.dataset.mirror) return; form.querySelectorAll('[data-mirror][data-code="' + i.dataset.code + '"][data-side="' + (i.dataset.side || '') + '"]').forEach(function (m) { m.value = i.value; }); }
+            var timer = null, st = document.getElementById('saveState');
+            function autosave() { clearTimeout(timer); timer = setTimeout(function () { post(base + '/Save', answers()).then(function (res) { if (st) st.textContent = res.ok ? W.saved : (res.error || W.failed); if (!res.ok) toastr.error(res.error || W.failed); }); }, 900); }
+            if (form) { cond();
+                form.addEventListener('input', function (e) { if (e.target.matches('[data-key]')) { mirror(e.target); range(e.target); if (e.target.dataset.alertText) alertOf(e.target); cond(); if (document.querySelector('[data-sign]')) autosave(); } });
+                form.addEventListener('change', function (e) { if (e.target.matches('[data-key]')) { mirror(e.target); cond(); if (document.querySelector('[data-sign]')) autosave(); } });
+                if (window.jQuery) jQuery(form).find('select[data-key]').on('change', function () { mirror(this); cond(); if (document.querySelector('[data-sign]')) autosave(); });   // select2 changes never reach addEventListener
+            }
+            // H95: the WHO growth chart and its table
+            var growth = @Json.Serialize((W?.Growth ?? Array.Empty<HospitalGrowthSeries>()).Select(g => new { ind = g.Indicator, unit = g.Concept.Unit, ages = g.Curves.AgeDays, lines = g.Curves.Lines,
+                pts = g.Points.Select(x => new { at = x.At.ToString("yyyy-MM-dd"), age = x.AgeDays, v = x.Value, z = x.Z, p = x.Percentile }) }));
+            var GT = { age: @Json.Serialize(T["Age (years)"].Value), none: @Json.Serialize(T["No value recorded yet"].Value) };
+            function growthDraw(ind) {
+                var g = growth.filter(function (x) { return x.ind === ind; })[0], box = document.getElementById('growthChart'); if (!g || !box) return;
+                var W3 = 640, H3 = 330, PL = 42, PR = 58, PT = 12, PB = 30, xs = g.ages.map(function (a) { return a / 365.25; }), vals = [];
+                Object.keys(g.lines).forEach(function (k) { g.lines[k].forEach(function (v) { vals.push(v); }); }); g.pts.forEach(function (q) { vals.push(q.v); });
+                var a0 = Math.min.apply(null, xs.concat(g.pts.map(function (q) { return q.age / 365.25; }))), a1 = Math.max.apply(null, xs), v0 = Math.min.apply(null, vals), v1 = Math.max.apply(null, vals), pad = (v1 - v0) * 0.06; v0 -= pad; v1 += pad;
+                function X(a) { return PL + (W3 - PL - PR) * (a - a0) / ((a1 - a0) || 1); }
+                function Y(v) { return PT + (H3 - PT - PB) * (v1 - v) / ((v1 - v0) || 1); }
+                var s = '', vs = Math.pow(10, Math.floor(Math.log10((v1 - v0) / 5))), vstep = (v1 - v0) / vs > 10 ? vs * 2 : vs;
+                for (var v = Math.ceil(v0 / vstep) * vstep; v <= v1; v += vstep) s += '<line x1="' + PL + '" x2="' + (W3 - PR) + '" y1="' + Y(v) + '" y2="' + Y(v) + '" stroke="#EEF0F6"/><text x="' + (PL - 6) + '" y="' + (Y(v) + 4) + '" font-size="10" text-anchor="end" fill="#6B7280">' + (+v.toFixed(1)) + '</text>';
+                for (var a = Math.ceil(a0); a <= a1; a++) s += '<line x1="' + X(a) + '" x2="' + X(a) + '" y1="' + PT + '" y2="' + (H3 - PB) + '" stroke="#F4F5F9"/><text x="' + X(a) + '" y="' + (H3 - 12) + '" font-size="10" text-anchor="middle" fill="#6B7280">' + a + '</text>';
+                var col = { P3: '#DC2626', P15: '#9CA3AF', P50: '#16A34A', P85: '#9CA3AF', P97: '#DC2626' };
+                Object.keys(g.lines).forEach(function (k) {
+                    var d = g.lines[k].map(function (v, i) { return (i ? 'L' : 'M') + X(xs[i]).toFixed(1) + ',' + Y(v).toFixed(1); }).join(' ');
+                    s += '<path d="' + d + '" fill="none" stroke="' + col[k] + '" stroke-width="' + (k === 'P50' ? 2 : 1.3) + '"' + (k === 'P15' || k === 'P85' ? ' stroke-dasharray="4 4"' : '') + '/><text x="' + (W3 - PR + 4) + '" y="' + (Y(g.lines[k][g.lines[k].length - 1]) + 4) + '" font-size="10" fill="' + col[k] + '">' + k + '</text>';
+                });
+                if (g.pts.length) {
+                    s += '<polyline fill="none" stroke="#3A5795" stroke-width="2.5" points="' + g.pts.map(function (q) { return X(q.age / 365.25) + ',' + Y(q.v); }).join(' ') + '"/>';
+                    g.pts.forEach(function (q) { s += '<circle cx="' + X(q.age / 365.25) + '" cy="' + Y(q.v) + '" r="4.5" fill="' + (q.z != null && q.z < -1 ? '#DC2626' : '#3A5795') + '"/>'; });
+                }
+                box.innerHTML = '<svg viewBox="0 0 ' + W3 + ' ' + H3 + '" class="w-100" dir="ltr" style="max-height:360px">' + s + '<text x="' + (W3 / 2) + '" y="' + H3 + '" font-size="10" text-anchor="middle" fill="#6B7280">' + GT.age + '</text></svg>';
+                document.getElementById('growthRows').innerHTML = g.pts.length ? g.pts.slice().reverse().map(function (q) {
+                    return '<tr><td><bdi class="hp-num">' + q.at + '</bdi></td><td><bdi class="hp-num">' + (q.age / 365.25).toFixed(1) + '</bdi></td><td><bdi class="hp-num">' + q.v + ' ' + (g.unit || '') + '</bdi></td><td><bdi class="hp-num ' + (q.z != null && q.z < -1 ? 'text-danger fw-bold' : '') + '">' + (q.z == null ? '—' : (q.z >= 0 ? '+' : '') + q.z.toFixed(2)) + '</bdi></td><td><bdi class="hp-num">' + (q.p == null ? '—' : 'P' + Math.round(q.p)) + '</bdi></td></tr>';
+                }).join('') : '<tr><td colspan="5" class="text-center text-muted py-6">' + GT.none + '</td></tr>';
+            }
+            var gp = document.getElementById('growthPick');
+            if (gp) { growthDraw(gp.value); gp.addEventListener('change', function () { growthDraw(gp.value); }); if (window.jQuery) jQuery(gp).on('change', function () { growthDraw(gp.value); }); }
+            // H95: the dose by weight — per kg, never above the adult single limit; with no weight it says so
+            var DT = { noKg: @Json.Serialize(T["No weight recorded: the dose cannot be computed. Weigh the child first."].Value), every: @Json.Serialize(T["Every {0} hours, at most {1} doses a day."].Value),
+                       capped: @Json.Serialize(T["Capped at the adult single dose of {0} mg."].Value), never: @Json.Serialize(T["The adult maximum of {0} mg is never exceeded."].Value) };
+            var dd = document.getElementById('doseDrug');
+            function dose() {
+                if (!dd) return; var o = dd.options[dd.selectedIndex], perkg = parseFloat(o.dataset.perkg), every = parseInt(o.dataset.every, 10), max = parseFloat(o.dataset.max), daily = parseFloat(o.dataset.daily), str = parseFloat(o.dataset.strength);
+                var kgIn = form && form.querySelector('[data-code="29463-7"]'), kg = parseFloat((kgIn && kgIn.value) || document.getElementById('doseKg').dataset.kg);
+                document.getElementById('dosePerKg').value = perkg + ' mg/kg';
+                if (kgIn && kgIn.value) document.getElementById('doseKg').value = kgIn.value + ' kg';
+                if (isNaN(kg) || kg <= 0) { document.getElementById('doseOut').textContent = '—'; document.getElementById('doseNote').textContent = DT.noKg; return; }
+                var mg = Math.round(perkg * kg * 10) / 10, capped = !isNaN(max) && mg > max; if (capped) mg = max;
+                var perDay = every > 0 ? Math.floor(24 / every) : null; if (perDay && !isNaN(daily)) perDay = Math.max(0, Math.min(perDay, Math.floor(daily / mg)));
+                document.getElementById('doseOut').textContent = mg + ' mg' + (!isNaN(str) && str > 0 ? ' = ' + (Math.round(mg / str * 10) / 10) + ' mL' : '');
+                document.getElementById('doseNote').textContent = DT.every.replace('{0}', every).replace('{1}', perDay) + ' ' + (capped ? DT.capped : DT.never).replace('{0}', max);
+            }
+            if (dd) { dose(); dd.addEventListener('change', dose); if (window.jQuery) jQuery(dd).on('change', dose); if (form) form.addEventListener('input', function (e) { if (e.target.dataset && e.target.dataset.code === '29463-7') dose(); }); }
+            // H95: the development card follows the answers as they are given
+            var MT = { yes: @Json.Serialize(T["Achieved"].Value), no: @Json.Serialize(T["Not yet"].Value), none: @Json.Serialize(T["Not assessed"].Value) };
+            function devTicks() {
+                document.querySelectorAll('[data-milestone]').forEach(function (m) {
+                    var i = form.querySelector('[data-form="' + m.dataset.mform + '"] [data-key="' + m.dataset.milestone + '"]'); if (!i) return;
+                    m.querySelector('i').className = 'ki-outline ' + (i.value === 'Y' ? 'ki-check-circle text-success' : 'ki-time text-primary') + ' fs-2';
+                    m.querySelector('.text-muted').textContent = i.value === 'Y' ? MT.yes : i.value === 'N' ? MT.no : MT.none;
+                });
+            }
+            if (form && document.querySelector('[data-milestone]')) { form.addEventListener('change', devTicks); if (window.jQuery) jQuery(form).find('select[data-key]').on('change', devTicks); }
+            // H97: immunotherapy — start, give (and its 30-minute timer), the reaction, resume / stop
+            var IM = { start: @Json.Serialize(T["Start this immunotherapy course?"].Value), give: @Json.Serialize(T["Give this dose now? The patient stays 30 minutes under observation."].Value),
+                       react: @Json.Serialize(T["Record this reaction?"].Value), resume: @Json.Serialize(T["Resume the course two steps lower?"].Value), stop: @Json.Serialize(T["Stop this course?"].Value),
+                       why: @Json.Serialize(T["Write the reason"].Value), left: @Json.Serialize(T["Observation: {0} min left"].Value), over: @Json.Serialize(T["Observation over"].Value) };
+            var ibase = @Json.Serialize(Url.Content("~/Hospital/Immuno/")), reactId = 0, decide = null;
+            function timers() { document.querySelectorAll('[data-timer]').forEach(function (t) { var ms = new Date(t.dataset.timer) - new Date(); t.textContent = ms > 0 ? IM.left.replace('{0}', Math.ceil(ms / 60000)) : IM.over; }); }
+            timers(); setInterval(timers, 30000);
+            document.addEventListener('click', function (e) {
+                if (e.target.closest('[data-imstart]')) { run(IM.start, ibase + 'Start', { patientId: @p.ID, extract: document.getElementById('imExtract').value, extractEn: document.getElementById('imExtractEn').value }, function () { location.reload(); }); return; }
+                var g = e.target.closest('[data-give]'); if (g) { run(IM.give, ibase + 'Courses/' + g.dataset.give + '/Give', {}, function () { location.reload(); }); return; }
+                var r = e.target.closest('[data-react]'); if (r) { reactId = Number(r.dataset.react); bootstrap.Modal.getOrCreateInstance(document.getElementById('imReact')).show(); return; }
+                if (e.target.closest('[data-imreact]')) { var kind = document.querySelector('input[name="imKind"]:checked').value, w = document.getElementById('imWheal').value;
+                    run(IM.react, ibase + 'Doses/' + reactId + '/Reaction', { reaction: kind, whealMm: w ? Number(w) : null, note: document.getElementById('imNote').value }, function () { location.reload(); }); return; }
+                var dc = e.target.closest('[data-decide]'); if (dc) { decide = { id: dc.dataset.decide, resume: dc.dataset.resume === '1' }; document.getElementById('imDecideNote').value = '';
+                    bootstrap.Modal.getOrCreateInstance(document.getElementById('imDecide')).show(); return; }
+                if (e.target.closest('[data-imdecide]')) { run(decide.resume ? IM.resume : IM.stop, ibase + 'Courses/' + decide.id + '/Decide', { resume: decide.resume, note: document.getElementById('imDecideNote').value }, function () { location.reload(); }); return; }
+            });
+            // the charts: the stored observations, oldest first
+            var heads = @Json.Serialize(Model.Headlines.Select(h => new { pts = h.Concept.HasLaterality
+                ? h.Points.GroupBy(x => x.At.ToString("yyyy-MM-dd")).Select(g => new { at = g.Key.Substring(0, 7), v = g.FirstOrDefault(x => x.Side == "R")?.Value, v2 = g.FirstOrDefault(x => x.Side == "L")?.Value, f = g.Any(x => HospitalObsFlag.Abnormal(x.Flag)) ? "H" : "N" }).Cast<object>()
+                : h.Points.Select(x => new { at = x.At.ToString("yyyy-MM"), v = x.Value, v2 = x.Value2, f = x.Flag }).Cast<object>(), lo = h.Concept.NormalLow, hi = h.Concept.NormalHigh, hi2 = h.Concept.NormalHigh2, alert = h.Field.AlertAbove, alertText = isAr ? h.Field.AlertText : h.Field.AlertTextEn, panel = h.Concept.ValueType == HospitalConceptType.Panel, lat = h.Concept.HasLaterality }));
+            var LG = { od: 'OD — ' + @Json.Serialize(T["Right"].Value), os: 'OS — ' + @Json.Serialize(T["Left"].Value), sys: @Json.Serialize(T["Systolic"].Value), dia: @Json.Serialize(T["Diastolic"].Value) };
+            heads.forEach(function (h, k) { var box = document.querySelector('[data-chart="' + k + '"]'); if (!box || !h.pts.length) return;
+                var W2 = 560, H2 = 210, PL = 40, PR = 14, PT = 12, PB = 26, vals = []; h.pts.forEach(function (p) { if (p.v != null) vals.push(p.v); if (p.v2 != null) vals.push(p.v2); });
+                [h.lo, h.hi, h.hi2, h.alert].forEach(function (x) { if (x != null) vals.push(x); });
+                var mn = Math.min.apply(null, vals), mx = Math.max.apply(null, vals), pad = (mx - mn) * 0.15 || 1; mn -= pad; mx += pad;
+                function X(i) { return PL + (W2 - PL - PR) * (h.pts.length < 2 ? 0.5 : i / (h.pts.length - 1)); } function Y(v) { return PT + (H2 - PT - PB) * (mx - v) / (mx - mn); }
+                var g = '', step = Math.pow(10, Math.floor(Math.log10((mx - mn) / 4))), t0 = Math.ceil(mn / step) * step;
+                for (var t = t0; t <= mx; t += step * (((mx - mn) / step) > 8 ? 2 : 1)) g += '<line x1="' + PL + '" x2="' + (W2 - PR) + '" y1="' + Y(t) + '" y2="' + Y(t) + '" stroke="#EEF0F6"/><text x="' + (PL - 6) + '" y="' + (Y(t) + 4) + '" font-size="10" text-anchor="end" fill="#6B7280">' + (+t.toFixed(2)) + '</text>';
+                if (h.lo != null && h.hi != null && !h.panel) g += '<rect x="' + PL + '" width="' + (W2 - PL - PR) + '" y="' + Y(h.hi) + '" height="' + (Y(h.lo) - Y(h.hi)) + '" fill="#DCFCE7" opacity=".5"/>';
+                [[h.hi, h.panel ? '#DC2626' : null], [h.hi2, '#DC2626'], [h.alert, '#DC2626', h.alertText]].forEach(function (l) { if (l[0] == null || !l[1]) return; g += '<line x1="' + PL + '" x2="' + (W2 - PR) + '" y1="' + Y(l[0]) + '" y2="' + Y(l[0]) + '" stroke="' + l[1] + '" stroke-dasharray="5 4"/>' + (l[2] ? '<text x="' + (W2 - PR - 2) + '" y="' + (Y(l[0]) - 4 < 12 ? Y(l[0]) + 13 : Y(l[0]) - 4) + '" font-size="10" text-anchor="end" fill="' + l[1] + '">' + l[2] + '</text>' : ''); });
+                h.pts.forEach(function (p, i) { if (i % Math.ceil(h.pts.length / 8) === 0) g += '<text x="' + X(i) + '" y="' + (H2 - 8) + '" font-size="10" text-anchor="' + (h.pts.length > 1 && i === h.pts.length - 1 ? 'end' : i === 0 && h.pts.length > 1 ? 'start' : 'middle') + '" fill="#6B7280">' + p.at + '</text>'; });
+                [['v', '#3A5795'], ['v2', '#7239EA']].forEach(function (s) { var pts = h.pts.map(function (p, i) { return p[s[0]] == null ? null : X(i) + ',' + Y(p[s[0]]); }).filter(Boolean); if (!pts.length) return;
+                    g += '<polyline fill="none" stroke="' + s[1] + '" stroke-width="2.2" points="' + pts.join(' ') + '"/>';
+                    h.pts.forEach(function (p, i) { if (p[s[0]] != null) g += '<circle cx="' + X(i) + '" cy="' + Y(p[s[0]]) + '" r="4" fill="' + (['L','H','LL','HH'].indexOf(p.f) >= 0 ? '#DC2626' : s[1]) + '"/>'; }); });
+                var legend = (h.lat || h.panel) ? '<div class="d-flex gap-4 fs-8 mt-1"><span><span class="d-inline-block rounded-circle me-1" style="width:9px;height:9px;background:#3A5795"></span>' + (h.lat ? LG.od : LG.sys) + '</span><span><span class="d-inline-block rounded-circle me-1" style="width:9px;height:9px;background:#7239EA"></span>' + (h.lat ? LG.os : LG.dia) + '</span></div>' : '';
+                box.innerHTML = '<svg viewBox="0 0 ' + W2 + ' ' + H2 + '" class="w-100" dir="ltr" style="max-height:240px">' + g + '</svg>' + legend; });
+            document.addEventListener('click', function (e) {
+                if (e.target.closest('[data-sign]')) { cbConfirm(W.sign).then(function (ok) { if (!ok) return; post(base + '/Sign', answers()).then(function (res) { if (!res.ok) { toastr.error(res.error || W.failed); return; } location.reload(); }); }); return; }
+                if (e.target.closest('[data-addtpl]')) { run(W.tpl, base + '/Template', { templateId: Number(document.getElementById('addTpl').value) }, function () { location.reload(); }); return; }
+                if (e.target.closest('[data-problems]')) { run(W.probs, base + '/Problems', {}, function () { toastr.success(W.saved); }); return; }
+                var o = e.target.closest('[data-order]'); if (o) { run(W.order, base + '/Order', { serviceId: Number(o.getAttribute('data-order')) }, function () { location.reload(); }); return; }
+                var a = e.target.closest('[data-apply]'); if (a) { var box = a.closest('[data-set]'); var ids = Array.prototype.map.call(box.querySelectorAll('[data-item]:checked'), function (c) { return Number(c.getAttribute('data-item')); });
+                    run(W.set, base + '/OrderSet', { setId: Number(a.getAttribute('data-apply')), itemIds: ids }, function (res) { toastr.success(W.added.replace('{0}', res.id)); }); return; }
+            });
+        })();
+    </script>
+}

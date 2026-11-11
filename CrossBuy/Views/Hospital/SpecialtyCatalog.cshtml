@@ -1,0 +1,61 @@
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model IReadOnlyList<HospitalSpecialtyCard>
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H98 — the specialty catalogue (the approved prototype screen sc-catalog): the specialties built on the engine, and
+    every other one with what it records and its key alert — its clinic, templates and visits read from the system.
+*@
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Specialty catalogue"].Value;
+    bool isAr = System.Globalization.CultureInfo.CurrentUICulture.Name.StartsWith("ar");
+    var built = (IReadOnlyList<HospitalSpecialtyCard>)ViewBag.Built;
+    string Nm(HospitalDepartment? d, string key) => d == null ? T["spc:" + key].Value : (isAr ? d.Name : d.NameEn ?? d.Name);
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+<style>.hp-spec { border: 1px solid #E4E6EF; border-radius: .85rem; padding: 18px; height: 100%; background: #fff; display: block; } .hp-spec ul { padding-inline-start: 18px; margin: 0; } .hp-spec li { font-size: .85rem; color: #4B5563; margin-bottom: 3px; }</style>
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Specialty catalogue"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted">@T["Specialty clinics"]</li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@T["The catalogue"]</li></ul>
+        </div>
+        <a href="@Url.Action("Templates")" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-notepad-edit fs-4"></i>@T["Template designer"]</a>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice">
+            <span class="symbol symbol-45px me-5 flex-shrink-0"><span class="symbol-label"><i class="ki-outline ki-information-5 fs-2x text-white"></i></span></span>
+            <div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@T["Most specialties are templates only"]</h4><div class="fs-6 text-gray-700">@T["Once the engine exists, a specialty like psychiatry or cardiology is built from templates and scores with no code; code goes only to the 8 drawn widgets."]</div></div>
+        </div>
+        <div class="row g-4 mb-6">
+            @foreach (var b in built)
+            {
+                string href = b.Entry.Kind == "DentalChart" ? Url.Action("DentalChart")! : Url.Action("SpecialtyClinic", new { code = b.Entry.Dept })!;
+                <div class="col-md-4 col-xl"><a href="@href" class="hp-spec text-hover-primary">
+                    <i class="ki-outline @b.Entry.Icon fs-2x text-primary"></i><h4 class="mt-3 text-gray-900">@Nm(b.Clinic, b.Entry.Dept)</h4>
+                    <div class="text-muted fs-8">@(b.Entry.Dept == "DENT" ? T["Exists and built"] : T["Built: {0} visits", b.Visits])</div></a></div>
+            }
+        </div>
+        <div class="row g-5">
+            @foreach (var c in Model)
+            {
+                var e = c.Entry;
+                string kindKey = e.Kind == "Built" ? "Exists (H85)" : e.Kind == "Widget" ? "spc:" + e.Key + ":widget" : "Template only";
+                <div class="col-md-6 col-xl-4"><div class="hp-spec">
+                    <div class="d-flex flex-stack mb-2"><i class="ki-outline @e.Icon fs-2x text-primary"></i><span class="badge badge-light-@(e.Kind == "Built" ? "success" : e.Kind == "Widget" ? "info" : "secondary") fw-bold fs-8">@T[kindKey]</span></div>
+                    <h4 class="text-gray-900">@Nm(c.Clinic, e.Key)</h4>
+                    <ul>@foreach (var i in e.Items) {<li>@T["spc:" + e.Key + ":" + i]</li>}</ul>
+                    <div class="mt-3 fs-8"><i class="ki-outline ki-notification-bing text-danger fs-6"></i> <span class="text-danger fw-semibold">@T["spc:" + e.Key + ":alert"]</span></div>
+                    <div class="separator separator-dashed my-3"></div>
+                    <div class="d-flex flex-wrap gap-2 fs-8">
+                        @if (c.Clinic == null) {<span class="badge badge-light fs-8">@T["No clinic yet"]</span>}
+                        else {<a href="@Url.Action("SpecialtyClinic", new { code = e.Dept })" class="badge badge-light-primary fs-8">@T["Clinic: {0} visits", c.Visits]</a>}
+                        <span class="badge badge-light-@(c.Templates > 0 ? "success" : "secondary") fs-8">@T["Published templates: {0}", c.Templates]</span>
+                    </div>
+                </div></div>
+            }
+        </div>
+    </div></div>
+</div>

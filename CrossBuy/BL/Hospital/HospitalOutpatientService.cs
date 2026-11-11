@@ -88,6 +88,8 @@ namespace CrossBuy.BL.Hospital
 			("IM", "الباطنة", "Internal medicine"), ("CARD", "القلب", "Cardiology"), ("PED", "الأطفال", "Paediatrics"),
 			("OBG", "النساء والولادة", "Obstetrics & gynaecology"), ("ORTH", "العظام", "Orthopaedics"), ("SURG", "الجراحة العامة", "General surgery"),
 			("ENT", "الأنف والأذن والحنجرة", "ENT"), ("DERM", "الجلدية", "Dermatology"), ("ER", "الطوارئ", "Emergency"),
+			// H96/H97 — the specialty clinics of the approved prototype
+			("OPH", "العيون", "Ophthalmology"), ("ALG", "الحساسية والمناعة", "Allergy & immunology"),
 			// the dental pack's clinic (its chairs are booked on the chair schedule; the portal takes requests for it)
 			("DENT", "الأسنان", "Dentistry"),
 		};

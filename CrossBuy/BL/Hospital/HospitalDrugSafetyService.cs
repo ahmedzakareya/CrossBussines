@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Text.RegularExpressions;
 using CrossBuy.Models.Context;
 using CrossBuy.Models.Context.Hospital;
@@ -39,6 +39,9 @@ namespace CrossBuy.BL.Hospital
 		public decimal? MaxDaily { get; set; }
 		public string? Note { get; set; }
 		public bool IsActive { get; set; } = true;
+		public decimal? PerKgMg { get; set; }
+		public int? EveryHours { get; set; }
+		public decimal? StrengthMgPerMl { get; set; }
 	}
 
 	public sealed record HospitalOverrideRow(HospitalAlertOverride Row, string Patient, string PatientEn, string Mrn, string? By);
@@ -55,8 +58,49 @@ namespace CrossBuy.BL.Hospital
 			return string.CompareOrdinal(x, y) <= 0 ? (x, y) : (y, x);
 		}
 
-		/// A medicine's name mentions a knowledge-base word (three letters at least, so "a" never matches everything).
-		public static bool Mentions(string drugName, string word) => word.Length >= 3 && (drugName ?? "").Contains(word, StringComparison.OrdinalIgnoreCase);
+		/// A medicine's name mentions a knowledge-base word — as a WHOLE WORD, not anywhere inside one.
+		///
+		/// This was a bare substring test with a three-letter floor, and the floor is not enough. A
+		/// knowledge-base entry written as "met" matches Metoprolol, Metformin AND Methotrexate; one
+		/// written as "ace" matches Paracetamol. A pharmacist adding a short generic name would have
+		/// armed an alert on every medicine that happens to contain those letters, and alerts that
+		/// fire on the wrong drug are how prescribers learn to dismiss them without reading.
+		///
+		/// Measured before changing it: on this database the two rules agree exactly — all 8 real
+		/// matches are whole words and substring finds no extra. So this costs nothing today and
+		/// closes the trap for whoever extends the table next.
+		///
+		/// It does NOT fix the opposite miss: a brand name still matches no generic entry, silently.
+		/// That one cannot be fixed by matching — it needs the brand recorded — and it is why
+		/// CheckOrderAsync now says out loud which medicines the table has never heard of.
+		public static bool Mentions(string drugName, string word)
+		{
+			if (word == null || word.Length < 3) return false;
+			var name = drugName ?? "";
+			var from = 0;
+			while (true)
+			{
+				var at = name.IndexOf(word, from, StringComparison.OrdinalIgnoreCase);
+				if (at < 0) return false;
+				// A letter or digit on either side means this is the middle of a longer name.
+				var beforeOk = at == 0 || !char.IsLetterOrDigit(name[at - 1]);
+				var afterAt = at + word.Length;
+				var afterOk = afterAt >= name.Length || !char.IsLetterOrDigit(name[afterAt]);
+				if (beforeOk && afterOk) return true;
+				from = at + 1;
+			}
+		}
+
+		/// WHETHER THE TABLE HAS HEARD OF THIS MEDICINE AT ALL — in either check.
+		///
+		/// The one question the service could not answer before, and the one a prescriber needs most:
+		/// an empty alert list meant "nothing found" and "nothing could be looked for" at the same
+		/// time, and those are opposite claims.
+		public static bool KnownToPairs(string drug, IEnumerable<HospitalDrugInteraction> kb) =>
+			kb.Any(k => k.IsActive && (Mentions(drug, k.DrugA) || Mentions(drug, k.DrugB)));
+
+		public static bool KnownToLimits(string drug, string route, IEnumerable<HospitalDoseLimit> limits) =>
+			limits.Any(l => l.IsActive && Mentions(drug, l.Drug) && (l.Route == null || l.Route == route));
 
 		/// The interactions of a medicine with each of the others: (the other medicine, the interaction).
 		public static IReadOnlyList<(string Other, HospitalDrugInteraction Hit)> Interactions(string drug, IEnumerable<string> others, IEnumerable<HospitalDrugInteraction> kb)
@@ -132,6 +176,14 @@ namespace CrossBuy.BL.Hospital
 			if (i.MaxSingle is null && i.MaxDaily is null) return "Write a single or a daily limit";
 			if (i.MaxSingle is <= 0 || i.MaxDaily is <= 0) return "A limit is above zero";
 			if (i.MaxSingle is decimal s && i.MaxDaily is decimal d && d < s) return "The daily limit cannot be below the single one";
+			// H95: a child's dose is per kg and every so many hours, in mg, and never above the adult single limit
+			if (i.PerKgMg != null || i.EveryHours != null)
+			{
+				if (i.Unit != HospitalDoseUnit.Mg) return "A dose per kg is written in mg";
+				if (i.PerKgMg is not (> 0 and <= 1000) || i.EveryHours is not (>= 1 and <= 72)) return "Write the mg per kg and every how many hours";
+				if (i.MaxSingle is null) return "A dose per kg needs the adult single limit as its cap";
+			}
+			if (i.StrengthMgPerMl is <= 0) return "The strength is above zero";
 			return null;
 		}
 
@@ -162,7 +214,6 @@ namespace CrossBuy.BL.Hospital
 		public async Task<IReadOnlyList<HospitalDrugAlert>> CheckOrderAsync(BusinessContext ctx, int admissionId, string drug, string? dose, string route, string? hours, bool asNeeded, CancellationToken ct = default, IEnumerable<string>? alsoRunning = null)
 		{
 			var (pairs, limits) = await KbAsync(_db, ctx.CompanyId, ct);
-			if (pairs.Count == 0 && limits.Count == 0) return Array.Empty<HospitalDrugAlert>();
 			var running = await _db.Set<HospitalMedOrder>().AsNoTracking().Where(o => o.CompanyId == ctx.CompanyId && o.AdmissionId == admissionId && o.Status == HospitalMedOrderStatus.Active)
 				.Select(o => o.Drug).ToListAsync(ct);
 			if (alsoRunning != null) running.AddRange(alsoRunning);
@@ -178,6 +229,60 @@ namespace CrossBuy.BL.Hospital
 					new[] { drug, HospitalDrugSafetyRules.Num(value), limit.Unit, HospitalDrugSafetyRules.Num(max) }, null, null,
 					$"{limit.Drug} {(daily ? "daily" : "single")} {HospitalDrugSafetyRules.Num(value)} > {HospitalDrugSafetyRules.Num(max)} {limit.Unit}"));
 			}
+			// ---- WHAT THIS CHECK COULD NOT CHECK --------------------------------------------------
+			//
+			// SILENCE USED TO MEAN TWO OPPOSITE THINGS. An empty list came back both when the pair
+			// was checked and found safe and when the table had never heard of either medicine, and
+			// the prescribing screen rendered the two identically: the order simply went through.
+			//
+			// This is not a hypothetical. Counted on 2026-11-11 against this database: 12 distinct
+			// medicines have been ordered, the table holds 8 interaction pairs and 4 dose limits,
+			// and of the 66 pairs those medicines could form it can speak about TWO. Sixty-four
+			// pairs — 97% — produced confident silence. Four of the twelve medicines (amoxicillin,
+			// atorvastatin, ceftriaxone, insulin glargine) are invisible to both checks, and ten of
+			// the twelve have no dose limit at all.
+			//
+			// The programme chose an internal table on purpose, because a licensed knowledge base
+			// counts as an integration and those are deferred. That decision is sound; presenting
+			// its coverage as completeness is not. So the gap is now stated rather than closed.
+			//
+			// NEVER BLOCKING, AND ONE LINE. A notice on every order that stopped the order, or that
+			// listed all 64 unknown pairs, would be read once and ignored afterwards — and alert
+			// fatigue would cost more than the silence it replaced.
+			if (pairs.Count == 0 && limits.Count == 0)
+			{
+				alerts.Add(new(HospitalAlertKind.NotChecked, HospitalInteractionSeverity.Unknown, false,
+					"No drug safety table is installed, so nothing about {0} was checked",
+					new[] { drug }, null, null, "kb-empty"));
+				return alerts;
+			}
+
+			var unknownWith = running
+				.Where(o => !string.IsNullOrWhiteSpace(o))
+				.Distinct(StringComparer.OrdinalIgnoreCase)
+				.Where(o => !HospitalDrugSafetyRules.KnownToPairs(o, pairs))
+				.ToList();
+
+			if (!HospitalDrugSafetyRules.KnownToPairs(drug, pairs))
+				alerts.Add(new(HospitalAlertKind.NotChecked, HospitalInteractionSeverity.Unknown, false,
+					"{0} is not in the interaction table, so no interaction was checked for it",
+					new[] { drug }, null, null, "pairs-unknown-drug"));
+			else if (unknownWith.Count > 0)
+				alerts.Add(new(HospitalAlertKind.NotChecked, HospitalInteractionSeverity.Unknown, false,
+					"Not in the interaction table, so these were not checked against {0}: {1}",
+					new[] { drug, string.Join(", ", unknownWith) }, null, null, "pairs-unknown-others"));
+
+			// THE DOSE IS A SEPARATE SILENCE WITH TWO CAUSES, and the prescriber can act on each:
+			// a dose nobody wrote in a readable form, and a medicine with no limit recorded.
+			if (!string.IsNullOrWhiteSpace(dose) && HospitalDrugSafetyRules.ParseDose(dose) == null)
+				alerts.Add(new(HospitalAlertKind.NotChecked, HospitalInteractionSeverity.Unknown, false,
+					"The dose {0} could not be read as an amount, so no dose limit was checked",
+					new[] { dose! }, null, null, "dose-unreadable"));
+			else if (!HospitalDrugSafetyRules.KnownToLimits(drug, route, limits))
+				alerts.Add(new(HospitalAlertKind.NotChecked, HospitalInteractionSeverity.Unknown, false,
+					"No dose limit is recorded for {0} by {1}, so the dose was not checked",
+					new[] { drug, route }, null, null, "limits-unknown-drug"));
+
 			return alerts;
 		}
 
@@ -233,6 +338,7 @@ namespace CrossBuy.BL.Hospital
 				else { row = new HospitalDoseLimit { CompanyId = ctx.CompanyId }; set.Add(row); }
 				row.Drug = HospitalDrugSafetyRules.Key(input.Drug); row.Route = string.IsNullOrEmpty(input.Route) ? null : input.Route; row.Unit = input.Unit!;
 				row.MaxSingle = input.MaxSingle; row.MaxDaily = input.MaxDaily; row.Note = Clip(input.Note, 300); row.IsActive = input.IsActive; row.UpdatedAt = nowUtc; row.UpdatedByEmployeeId = employeeId;
+				row.PerKgMg = input.PerKgMg; row.EveryHours = input.PerKgMg == null ? null : input.EveryHours; row.StrengthMgPerMl = input.StrengthMgPerMl;
 				await _db.SaveChangesAsync(ct);
 				return HospitalResult.Success(row.ID);
 			}

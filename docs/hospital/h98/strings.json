@@ -1,0 +1,285 @@
+{
+ "unit": "H98 — specialty catalogue (sc-catalog), score bands, immediate field alerts",
+ "strings": {
+  "A score's band starts with the lowest value of the band": {
+   "ar": "درجة النقاط تبدأ بأقل قيمة فيها",
+   "en": "A score's band starts with the lowest value of the band",
+   "fr": "Un palier de score commence par sa plus petite valeur"
+  },
+  "Built: {0} visits": {
+   "ar": "مبنية: {0} زيارة",
+   "en": "Built: {0} visits",
+   "fr": "Construite : {0} visites"
+  },
+  "Clinic: {0} visits": {
+   "ar": "العيادة: {0} زيارة",
+   "en": "Clinic: {0} visits",
+   "fr": "Consultation : {0} visites"
+  },
+  "Exists (H85)": {
+   "ar": "موجود (H85)",
+   "en": "Exists (H85)",
+   "fr": "Existe (H85)"
+  },
+  "Exists and built": {
+   "ar": "موجودة ومبنية",
+   "en": "Exists and built",
+   "fr": "Existe et construite"
+  },
+  "For a score, its bands: the lowest value of each band|Arabic|English (PHQ-9: 0|لا يوجد|None, 5|خفيف|Mild …)": {
+   "ar": "للنقاط: درجاتها — أقل قيمة في كل درجة|عربي|إنجليزي (PHQ-9: 0|لا يوجد|None، 5|خفيف|Mild …)",
+   "en": "For a score, its bands: the lowest value of each band|Arabic|English (PHQ-9: 0|لا يوجد|None, 5|خفيف|Mild …)",
+   "fr": "Pour un score, ses paliers : la plus petite valeur de chaque palier|arabe|anglais (PHQ-9 : 0|…|None, 5|…|Mild …)"
+  },
+  "Most specialties are templates only": {
+   "ar": "أغلب التخصصات نماذج فقط",
+   "en": "Most specialties are templates only",
+   "fr": "La plupart des spécialités ne sont que des modèles"
+  },
+  "No clinic yet": {
+   "ar": "لا توجد عيادة بعد",
+   "en": "No clinic yet",
+   "fr": "Pas encore de consultation"
+  },
+  "Once the engine exists, a specialty like psychiatry or cardiology is built from templates and scores with no code; code goes only to the 8 drawn widgets.": {
+   "ar": "بعد بناء المحرك، تخصص كالنفسية أو القلب يُبنى بالنماذج والنقاط بلا برمجة؛ البرمجة لـ ٨ أدوات مرسومة فقط.",
+   "en": "Once the engine exists, a specialty like psychiatry or cardiology is built from templates and scores with no code; code goes only to the 8 drawn widgets.",
+   "fr": "Une fois le moteur en place, une spécialité comme la psychiatrie ou la cardiologie se construit avec des modèles et des scores, sans code ; le code ne va qu'aux 8 widgets dessinés."
+  },
+  "Published templates: {0}": {
+   "ar": "نماذج منشورة: {0}",
+   "en": "Published templates: {0}",
+   "fr": "Modèles publiés : {0}"
+  },
+  "Specialty catalogue": {
+   "ar": "كتالوج التخصصات",
+   "en": "Specialty catalogue",
+   "fr": "Catalogue des spécialités"
+  },
+  "Template only": {
+   "ar": "نموذج فقط",
+   "en": "Template only",
+   "fr": "Modèle seulement"
+  },
+  "The catalogue": {
+   "ar": "الكتالوج",
+   "en": "The catalogue",
+   "fr": "Le catalogue"
+  },
+  "spc:card": {
+   "ar": "القلب",
+   "en": "Cardiology",
+   "fr": "Cardiologie"
+  },
+  "spc:card:1": {
+   "ar": "درجة NYHA وكسر القذف LVEF",
+   "en": "NYHA class and LVEF",
+   "fr": "Classe NYHA et FEVG"
+  },
+  "spc:card:2": {
+   "ar": "تخطيط القلب: النظم وQTc",
+   "en": "ECG: rhythm and QTc",
+   "fr": "ECG : rythme et QTc"
+  },
+  "spc:card:3": {
+   "ar": "CHA₂DS₂-VASc وHAS-BLED",
+   "en": "CHA₂DS₂-VASc and HAS-BLED",
+   "fr": "CHA₂DS₂-VASc et HAS-BLED"
+  },
+  "spc:card:4": {
+   "ar": "INR ونسبة الوقت في المدى",
+   "en": "INR and time in range",
+   "fr": "INR et temps dans la cible"
+  },
+  "spc:card:alert": {
+   "ar": "QTc > ٥٠٠ مللي ثانية",
+   "en": "QTc > 500 ms",
+   "fr": "QTc > 500 ms"
+  },
+  "spc:derm": {
+   "ar": "الجلدية",
+   "en": "Dermatology",
+   "fr": "Dermatologie"
+  },
+  "spc:derm:1": {
+   "ar": "خريطة الجسم بالآفات وصورها",
+   "en": "Body map with lesions and photos",
+   "fr": "Carte corporelle des lésions et photos"
+  },
+  "spc:derm:2": {
+   "ar": "PASI وBSA% للصدفية",
+   "en": "PASI and BSA% for psoriasis",
+   "fr": "PASI et SC% pour le psoriasis"
+  },
+  "spc:derm:3": {
+   "ar": "EASI / SCORAD للإكزيما",
+   "en": "EASI / SCORAD for eczema",
+   "fr": "EASI / SCORAD pour l'eczéma"
+  },
+  "spc:derm:4": {
+   "ar": "تتبع الخزعات",
+   "en": "Biopsy tracking",
+   "fr": "Suivi des biopsies"
+  },
+  "spc:derm:alert": {
+   "ar": "آفة تغيرت (ABCDE)",
+   "en": "A lesion that changed (ABCDE)",
+   "fr": "Une lésion qui a changé (ABCDE)"
+  },
+  "spc:derm:widget": {
+   "ar": "أداة: خريطة الجسم",
+   "en": "Widget: body map",
+   "fr": "Widget : carte corporelle"
+  },
+  "spc:endo": {
+   "ar": "الغدد",
+   "en": "Endocrinology",
+   "fr": "Endocrinologie"
+  },
+  "spc:endo:1": {
+   "ar": "السكر التراكمي وزمن المدى من الحساس",
+   "en": "HbA1c and time-in-range from the sensor",
+   "fr": "HbA1c et temps dans la cible du capteur"
+  },
+  "spc:endo:2": {
+   "ar": "TSH وFT4",
+   "en": "TSH and FT4",
+   "fr": "TSH et T4L"
+  },
+  "spc:endo:3": {
+   "ar": "عقد الغدة TI-RADS",
+   "en": "Thyroid nodule TI-RADS",
+   "fr": "Nodule thyroïdien TI-RADS"
+  },
+  "spc:endo:4": {
+   "ar": "كثافة العظام T-score",
+   "en": "Bone density T-score",
+   "fr": "Densité osseuse T-score"
+  },
+  "spc:endo:alert": {
+   "ar": "TSH خارج المدى مع الحمل",
+   "en": "TSH out of range in pregnancy",
+   "fr": "TSH hors norme pendant la grossesse"
+  },
+  "spc:ent": {
+   "ar": "الأنف والأذن",
+   "en": "ENT",
+   "fr": "ORL"
+  },
+  "spc:ent:1": {
+   "ar": "مخطط السمع لكل أذن",
+   "en": "Audiogram per ear",
+   "fr": "Audiogramme par oreille"
+  },
+  "spc:ent:2": {
+   "ar": "قياس طبلة الأذن A/B/C",
+   "en": "Tympanometry A/B/C",
+   "fr": "Tympanométrie A/B/C"
+  },
+  "spc:ent:3": {
+   "ar": "منظار الأنف",
+   "en": "Nasal endoscopy",
+   "fr": "Endoscopie nasale"
+  },
+  "spc:ent:4": {
+   "ar": "SNOT-22",
+   "en": "SNOT-22",
+   "fr": "SNOT-22"
+  },
+  "spc:ent:alert": {
+   "ar": "فقد سمع مفاجئ أحادي",
+   "en": "Sudden one-sided hearing loss",
+   "fr": "Surdité brusque unilatérale"
+  },
+  "spc:ent:widget": {
+   "ar": "أداة: مخطط السمع",
+   "en": "Widget: audiogram",
+   "fr": "Widget : audiogramme"
+  },
+  "spc:obg": {
+   "ar": "النساء والولادة",
+   "en": "OB / GYN",
+   "fr": "Gynécologie-obstétrique"
+  },
+  "spc:obg:1": {
+   "ar": "عمر الحمل في كل زيارة",
+   "en": "Gestational age on every visit",
+   "fr": "Âge gestationnel à chaque visite"
+  },
+  "spc:obg:2": {
+   "ar": "جدول متابعة الحمل",
+   "en": "Antenatal grid",
+   "fr": "Grille prénatale"
+  },
+  "spc:obg:3": {
+   "ar": "فصيلة الدم وRh",
+   "en": "Blood group and Rh",
+   "fr": "Groupe sanguin et Rh"
+  },
+  "spc:obg:alert": {
+   "ar": "ضغط ≥ ١٤٠/٩٠ بعد ٢٠ أسبوعاً",
+   "en": "BP ≥ 140/90 after 20 weeks",
+   "fr": "TA ≥ 140/90 après 20 semaines"
+  },
+  "spc:orth": {
+   "ar": "العظام",
+   "en": "Orthopaedics",
+   "fr": "Orthopédie"
+  },
+  "spc:orth:1": {
+   "ar": "المفصل والجهة ومدى الحركة بالدرجات",
+   "en": "Joint, side and range of motion in degrees",
+   "fr": "Articulation, côté et amplitude en degrés"
+  },
+  "spc:orth:2": {
+   "ar": "القوة ٠–٥",
+   "en": "Strength 0–5",
+   "fr": "Force 0–5"
+  },
+  "spc:orth:3": {
+   "ar": "تصنيف الكسر",
+   "en": "Fracture classification",
+   "fr": "Classification de la fracture"
+  },
+  "spc:orth:4": {
+   "ar": "أكسفورد للركبة/الورك، DASH",
+   "en": "Oxford knee/hip, DASH",
+   "fr": "Oxford genou/hanche, DASH"
+  },
+  "spc:orth:alert": {
+   "ar": "علامات متلازمة الحيز",
+   "en": "Compartment syndrome signs",
+   "fr": "Signes de syndrome des loges"
+  },
+  "spc:psy": {
+   "ar": "النفسية",
+   "en": "Psychiatry",
+   "fr": "Psychiatrie"
+  },
+  "spc:psy:1": {
+   "ar": "PHQ-9 للاكتئاب",
+   "en": "PHQ-9 depression",
+   "fr": "PHQ-9 dépression"
+  },
+  "spc:psy:2": {
+   "ar": "GAD-7 للقلق",
+   "en": "GAD-7 anxiety",
+   "fr": "GAD-7 anxiété"
+  },
+  "spc:psy:3": {
+   "ar": "فحص الحالة العقلية",
+   "en": "Mental status exam",
+   "fr": "Examen de l'état mental"
+  },
+  "spc:psy:4": {
+   "ar": "C-SSRS للانتحار",
+   "en": "C-SSRS suicide risk",
+   "fr": "C-SSRS risque suicidaire"
+  },
+  "spc:psy:alert": {
+   "ar": "السؤال ٩ في PHQ-9 > ٠ — تنبيه فوري",
+   "en": "PHQ-9 item 9 > 0 — immediate alert",
+   "fr": "PHQ-9 item 9 > 0 — alerte immédiate"
+  }
+ }
+}

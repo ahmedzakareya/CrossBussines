@@ -21,6 +21,8 @@ namespace CrossBuy.BL.Hospital
 		public string? NameEn { get; set; }
 		public int? DepartmentId { get; set; }
 		public bool IsActive { get; set; } = true;
+		/// H94: ICD-10 prefixes, comma-separated ("E11, I10"): a visit with such a diagnosis proposes the set.
+		public string? DiagnosisCodes { get; set; }
 	}
 
 	public sealed class HospitalOrderSetItemInput
@@ -65,6 +67,25 @@ namespace CrossBuy.BL.Hospital
 			if (i.Name.Trim().Length > 150 || i.NameEn.Trim().Length > 150) return "The name is too long";
 			return null;
 		}
+
+		private static readonly System.Text.RegularExpressions.Regex IcdPrefix = new(@"^[A-Z][0-9]{2}(\.[0-9A-Z]{1,4})?$");
+
+		/// H94: the diagnosis prefixes, upper-cased, de-duplicated and comma-joined; Bad = the first unreadable one.
+		public static (string? Codes, string? Error, string? Bad) DiagnosisCodes(string? raw)
+		{
+			var list = (raw ?? "").Split(new[] { ',', ' ', ';', '\n', '،' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+				.Select(x => x.ToUpperInvariant()).Distinct().ToList();
+			if (list.Count == 0) return (null, null, null);
+			var bad = list.FirstOrDefault(x => !IcdPrefix.IsMatch(x));
+			if (bad != null) return (null, "Not a diagnosis code: {0}", bad);
+			var joined = string.Join(", ", list);
+			return joined.Length > 200 ? (null, "Too many diagnosis codes", null) : (joined, null, null);
+		}
+
+		/// H94: a set whose prefixes match one of the visit's diagnoses (E11 matches E11.21; E11.2 does not match E11.9).
+		public static bool Proposes(string? setCodes, IEnumerable<string> visitCodes) =>
+			!string.IsNullOrWhiteSpace(setCodes) && visitCodes.Any(v => setCodes.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+				.Any(p => (v ?? "").Trim().ToUpperInvariant().StartsWith(p, StringComparison.Ordinal)));
 
 		public static string? ItemRefusal(HospitalOrderSetItemInput i)
 		{
@@ -117,6 +138,9 @@ namespace CrossBuy.BL.Hospital
 				if (input.Id is int id) { row = await set.FirstOrDefaultAsync(x => x.ID == id && x.CompanyId == ctx.CompanyId, ct); if (row == null) return HospitalResult.Fail("not_found"); }
 				else { row = new HospitalOrderSet { CompanyId = ctx.CompanyId }; set.Add(row); }
 				row.Code = code; row.Name = Clip(input.Name, 150)!; row.NameEn = Clip(input.NameEn, 150)!; row.DepartmentId = input.DepartmentId; row.IsActive = input.IsActive;
+				var (dx, dxErr, dxBad) = HospitalOrderSetRules.DiagnosisCodes(input.DiagnosisCodes);
+				if (dxErr != null) return HospitalResult.Fail(dxErr, dxBad ?? "");
+				row.DiagnosisCodes = dx;
 				row.UpdatedAt = nowUtc; row.UpdatedByEmployeeId = employeeId;
 				await _db.SaveChangesAsync(ct);
 				return HospitalResult.Success(row.ID);

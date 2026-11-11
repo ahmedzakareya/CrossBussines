@@ -1,0 +1,24 @@
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model IReadOnlyList<HospitalConceptRow>
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@{
+    bool isAr = System.Globalization.CultureInfo.CurrentUICulture.Name.StartsWith("ar");
+    bool canManage = ViewBag.CanManage == true;
+}
+@foreach (var r in Model)
+{
+    var c = r.Concept; bool calc = c.ValueType is HospitalConceptType.Calculated or HospitalConceptType.Score;
+    var used = isAr ? r.UsedBy : r.UsedByEn;
+    <tr class="@(c.IsActive ? "" : "opacity-50")">
+        <td><span class="badge hp-code fw-bold fs-8 hp-num">@c.Code</span><div class="text-muted fs-9 mt-1">@c.CodeSystem</div></td>
+        <td><div class="fw-bold text-gray-900">@(isAr ? c.Name : c.NameEn)</div>@if (!c.IsActive) {<div class="text-muted fs-9">@T["Inactive"]</div>}</td>
+        <td><span class="badge badge-light-@(calc ? "primary" : "secondary") fw-bold fs-8">@T["ctype:" + c.ValueType]</span></td>
+        <td class="text-nowrap"><bdi class="hp-num">@(c.Unit ?? "—")</bdi></td>
+        <td class="text-success text-nowrap"><bdi class="hp-num">@HospitalConceptRules.NormalDisplay(c, isAr)</bdi></td>
+        <td class="text-danger text-nowrap"><bdi class="hp-num">@HospitalConceptRules.CriticalDisplay(c, isAr)</bdi></td>
+        <td>@if (c.HasLaterality) {<span class="badge badge-light-info fw-bold fs-8">@T["Right / left"]</span>} else {<span>—</span>}</td>
+        <td><span class="fs-8 text-muted">@(used.Count == 0 ? "—" : string.Join(" · ", used))</span></td>
+        <td class="text-end">@if (canManage) {<button type="button" class="btn btn-sm btn-icon btn-light-primary" data-edit="@c.ID" title="@T["Edit"]"><i class="ki-outline ki-pencil fs-5"></i></button>}</td>
+    </tr>
+}

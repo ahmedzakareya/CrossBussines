@@ -91,6 +91,12 @@ namespace CrossBuy.BL.Hospital
 			(typeof(HospitalRehabGoal), "HospitalRehabGoals"),                 // H89: their goals
 			(typeof(HospitalRehabSession), "HospitalRehabSessions"),           // H89: their sessions
 			(typeof(HospitalMorgueCase), "HospitalMorgueCases"),               // H90: the mortuary register
+			(typeof(HospitalSelfIntake), "HospitalSelfIntakes"),               // H91: the reception intakes linked to the file
+			(typeof(HospitalUnidentified), "HospitalUnidentifiedPatients"),    // H92: the temporary identity follows the file it was merged into
+			(typeof(HospitalClinicalForm), "HospitalClinicalForms"),           // H93: the filled specialty templates
+			(typeof(HospitalClinicalObservation), "HospitalClinicalObservations"), // H93: every signed value
+			(typeof(HospitalImmunoCourse), "HospitalImmunoCourses"),           // H97: immunotherapy courses
+			(typeof(HospitalImmunoDose), "HospitalImmunoDoses"),               // H97: and their doses
 		};
 
 		/// Patient columns NOT named PatientId (a test holds this list to every such column too). The merge history and the

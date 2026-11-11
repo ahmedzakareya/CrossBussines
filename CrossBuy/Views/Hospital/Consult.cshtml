@@ -46,6 +46,7 @@
                 DocumentId = e.ID.ToString(),
                 DocumentTitle = name,
             })
+            <a href="@Url.Action("SpecialtyVisit", new { id = e.ID })" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-abstract-26 fs-4"></i>@T["Specialty forms"]</a>
             @if (canEdit)
             {
                 <button type="button" class="btn btn-sm btn-light" data-save><i class="ki-outline ki-save-2 fs-4"></i>@T["Save draft"]</button>

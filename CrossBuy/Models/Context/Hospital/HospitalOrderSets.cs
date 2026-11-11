@@ -30,6 +30,8 @@ namespace CrossBuy.Models.Context.Hospital
 		public string NameEn { get; set; } = "";
 		/// The department it belongs to (null: any).
 		public int? DepartmentId { get; set; }
+		/// H94: the diagnosis codes (ICD-10 prefixes, comma-separated) whose visit proposes this set.
+		public string? DiagnosisCodes { get; set; }
 		public bool IsActive { get; set; } = true;
 		public DateTime UpdatedAt { get; set; }
 		public int? UpdatedByEmployeeId { get; set; }
@@ -83,6 +85,7 @@ namespace CrossBuy.Models.Context.Hospital
 				e.Property(x => x.Code).HasMaxLength(20);
 				e.Property(x => x.Name).HasMaxLength(150);
 				e.Property(x => x.NameEn).HasMaxLength(150);
+				e.Property(x => x.DiagnosisCodes).HasMaxLength(200);
 				e.HasIndex(x => new { x.CompanyId, x.Code }).IsUnique();
 			});
 			b.Entity<HospitalOrderSetItem>(e =>

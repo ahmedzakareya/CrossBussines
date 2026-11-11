@@ -1,4 +1,4 @@
-using CrossBuy.BL.Hospital;
+﻿using CrossBuy.BL.Hospital;
 using CrossBuy.Models.Context.Hospital;
 using Xunit;
 
@@ -85,10 +85,90 @@ namespace CrossBuy.Tests
 			Assert.Equal("A limit is above zero", HospitalDrugSafetyRules.LimitRefusal(new HospitalDoseLimitInput { Drug = "paracetamol", Unit = "mg", MaxSingle = 0 }));
 		}
 
+		// ==================================================================================
+		// MATCHING A MEDICINE BY NAME. The rule was a bare substring test with a three-letter
+		// floor, and the floor does not stop the thing it was meant to stop: a knowledge-base
+		// entry written as "met" matched Metoprolol, Metformin AND Methotrexate at once, and
+		// "ace" matched Paracetamol. An alert that fires on the wrong medicine is how a
+		// prescriber learns to dismiss alerts without reading them.
+		//
+		// Measured on the live database before the change: all eight real matches there are
+		// whole words and substring found no extra, so this cost nothing and closed the trap
+		// for whoever extends the table next.
+		// ==================================================================================
+		[Fact]
+		public void A_knowledge_base_word_matches_a_whole_word_only()
+		{
+			// the real matches, which must keep working
+			Assert.True(HospitalDrugSafetyRules.Mentions("Aspirin", "aspirin"));
+			Assert.True(HospitalDrugSafetyRules.Mentions("Paracetamol", "paracetamol"));
+			Assert.True(HospitalDrugSafetyRules.Mentions("aspirin 300 mg", "aspirin"));
+			Assert.True(HospitalDrugSafetyRules.Mentions("Paracetamol/Codeine", "paracetamol"));   // punctuation is a boundary
+			Assert.True(HospitalDrugSafetyRules.Mentions("Insulin glargine", "insulin glargine")); // a two-word entry
+
+			// letters inside a longer name are NOT the medicine
+			Assert.False(HospitalDrugSafetyRules.Mentions("Paracetamol", "ace"));
+			Assert.False(HospitalDrugSafetyRules.Mentions("Metoprolol", "met"));
+			Assert.False(HospitalDrugSafetyRules.Mentions("Methotrexate", "met"));
+			Assert.False(HospitalDrugSafetyRules.Mentions("Ciprofloxacin", "pro"));
+
+			// the floor stays: one and two letters never match anything
+			Assert.False(HospitalDrugSafetyRules.Mentions("Aspirin", "as"));
+			Assert.False(HospitalDrugSafetyRules.Mentions("Aspirin", "a"));
+		}
+
+		// ==================================================================================
+		// WHETHER THE TABLE HAS HEARD OF A MEDICINE AT ALL — the question CheckOrderAsync
+		// could not answer, and the reason an empty alert list used to mean both "checked and
+		// safe" and "nothing could be checked".
+		// ==================================================================================
+		[Fact]
+		public void The_table_says_which_medicines_it_does_not_know()
+		{
+			var pairs = new[]
+			{
+				new HospitalDrugInteraction { DrugA = "aspirin", DrugB = "warfarin", Severity = HospitalInteractionSeverity.Major, IsActive = true },
+				new HospitalDrugInteraction { DrugA = "lisinopril", DrugB = "spironolactone", Severity = HospitalInteractionSeverity.Moderate, IsActive = true },
+			};
+			var limits = new[]
+			{
+				new HospitalDoseLimit { Drug = "paracetamol", Unit = HospitalDoseUnit.Mg, MaxSingle = 1000m, IsActive = true },
+				new HospitalDoseLimit { Drug = "morphine", Route = "IV", Unit = HospitalDoseUnit.Mg, MaxSingle = 10m, IsActive = true },
+			};
+
+			Assert.True(HospitalDrugSafetyRules.KnownToPairs("Aspirin", pairs));
+			Assert.False(HospitalDrugSafetyRules.KnownToPairs("Ceftriaxone", pairs));
+
+			// A ROUTE IS PART OF THE QUESTION. Morphine has an IV limit and no oral one, so an
+			// oral order is unchecked even though the medicine is in the table — which is the
+			// case a "do we know this drug" test would miss by asking only about the name.
+			Assert.True(HospitalDrugSafetyRules.KnownToLimits("Morphine", "IV", limits));
+			Assert.False(HospitalDrugSafetyRules.KnownToLimits("Morphine", "PO", limits));
+			Assert.True(HospitalDrugSafetyRules.KnownToLimits("Paracetamol", "PO", limits));   // no route on the limit: any route
+			Assert.False(HospitalDrugSafetyRules.KnownToLimits("Ceftriaxone", "IV", limits));
+
+			// an inactive row is not knowledge
+			var off = new[] { new HospitalDrugInteraction { DrugA = "aspirin", DrugB = "warfarin", Severity = HospitalInteractionSeverity.Major, IsActive = false } };
+			Assert.False(HospitalDrugSafetyRules.KnownToPairs("Aspirin", off));
+		}
+
+		// A dose nobody can read must not be reported as a dose within its limits.
+		[Fact]
+		public void An_unreadable_dose_produces_no_hits_and_is_detectable_as_unread()
+		{
+			var limits = new[] { new HospitalDoseLimit { Drug = "paracetamol", Unit = HospitalDoseUnit.Mg, MaxSingle = 1000m, IsActive = true } };
+			Assert.Null(HospitalDrugSafetyRules.ParseDose("one tablet"));
+			Assert.Empty(HospitalDrugSafetyRules.DoseHits("Paracetamol", "one tablet", "PO", 4, limits));
+			// the same drug with a readable dose over the limit DOES hit, so the emptiness above
+			// is about the dose and not about the drug
+			Assert.NotEmpty(HospitalDrugSafetyRules.DoseHits("Paracetamol", "2 g", "PO", 4, limits));
+		}
+
 		[Fact]
 		public void The_tables_match_their_slice()
 		{
 			var s = HospitalSliceParity.Slice("hospital_h73_drug_safety.sql");
+			s += Environment.NewLine + HospitalSliceParity.Slice("hospital_h95_paediatrics.sql");   // H95: a child's dose by weight
 			var m = HospitalSliceParity.Model(HospitalDrugSafetyModel.Configure);
 			foreach (var (t, n) in new[] { (typeof(HospitalDrugInteraction), "HospitalDrugInteractions"), (typeof(HospitalDoseLimit), "HospitalDoseLimits"), (typeof(HospitalAlertOverride), "HospitalAlertOverrides") })
 			{ HospitalSliceParity.NamesItsTable(m, s, t, n); HospitalSliceParity.ColumnsMatch(m, s, t, n); }

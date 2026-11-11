@@ -1,0 +1,20 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model IReadOnlyList<HospitalUnidentifiedRow>
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@{ bool canReg = ViewBag.CanRegister == true; }
+@foreach (var r in Model)
+{
+    var u = r.Row; bool open = u.IdentifiedAt == null;
+    <tr>
+        <td><a href="@Url.Action("Patient", new { id = u.MergedIntoPatientId ?? u.PatientId })" class="fw-bold text-gray-900 text-hover-primary"><bdi>@r.Name</bdi></a>
+            <div class="text-muted fs-8"><bdi class="hp-num">@r.Mrn</bdi> · @T["About {0} years", u.EstimatedAge]@if (r.InEmergency) {<span class="badge badge-light-danger fs-9 ms-1">@T["In the emergency department"]</span>}</div></td>
+        <td class="fs-8"><bdi>@u.Description</bdi>@if (u.BroughtBy != null) {<div class="text-muted">@T["Brought by"]: <bdi>@u.BroughtBy</bdi></div>}</td>
+        <td class="text-nowrap fs-8"><span class="hp-num">@HospitalNursingService.UtcToWard(u.CreatedAt).ToString("yyyy-MM-dd HH:mm")</span><div class="@(open && r.Hours >= 24 ? "text-danger fw-bold" : "text-muted")">@T["{0} h", r.Hours]</div></td>
+        <td>@if (u.MedicoLegal) {<span class="badge badge-light-danger fs-8">@T["Police case"]</span>@if (u.PoliceRef != null) {<div class="text-muted fs-9"><bdi dir="ltr">@u.PoliceRef</bdi></div>}} else {<span class="text-muted">—</span>}</td>
+        <td>@if (open) {<span class="badge badge-light-primary fs-8">@T["Not yet identified"]</span>}
+            else {<span class="badge badge-light-success fs-8">@T["unr:" + u.Resolution]</span><div class="text-muted fs-9"><bdi>@u.IdentifiedHow</bdi></div>}</td>
+        <td class="text-end">@if (open && canReg) {<button type="button" class="btn btn-sm btn-primary text-nowrap" data-identify="@u.ID" data-who="@r.Name — @r.Mrn" data-sex="@(r.Name.Contains("أنثى") || r.Name.Contains("female") ? "F" : "M")">@T["Identify"]</button>}</td>
+    </tr>
+}

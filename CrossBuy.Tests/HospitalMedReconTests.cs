@@ -1,4 +1,4 @@
-using CrossBuy.BL.Hospital;
+﻿using CrossBuy.BL.Hospital;
 using CrossBuy.Models.Context.Hospital;
 using Xunit;
 
@@ -12,6 +12,33 @@ namespace CrossBuy.Tests
 	public class HospitalMedReconTests
 	{
 		private static HospitalMedReconLine Home(string? admit = null, string? discharge = null) => new() { Kind = HospitalMedLineKind.Home, Drug = "Metformin", Dose = "500 mg", Route = "PO", Frequency = "twice a day", AdmitDecision = admit, DischargeDecision = discharge };
+
+		// ==================================================================================
+		// AN UNINSTALLED MODULE MUST NOT CERTIFY A WARD.
+		//
+		// AdmissionSignedAsync used to answer "all of these admissions are signed" when its
+		// tables were missing, under the comment "not installed: nothing to flag". The intent
+		// was to keep a ward from going red over a feature nobody had installed; the effect was
+		// that _ObsPanel rendered a green "Medicines reconciled" badge for every patient on it.
+		// A missing safety module did not fall silent — it cleared everyone.
+		// ==================================================================================
+		[Fact]
+		public void A_board_that_cannot_check_claims_neither_green_nor_red()
+		{
+			var now = new DateTime(2026, 11, 11, 12, 0, 0, DateTimeKind.Utc);
+			var old = now.AddHours(-30);     // admitted long enough ago to be overdue
+			var fresh = now.AddHours(-2);
+
+			// not installed: no claim either way, whatever the set says
+			Assert.Equal((false, false), HospitalMedReconRules.Badge(false, true, old, now));
+			Assert.Equal((false, false), HospitalMedReconRules.Badge(false, false, old, now));
+			Assert.Equal((false, false), HospitalMedReconRules.Badge(false, false, fresh, now));
+
+			// installed: the board says what it found
+			Assert.Equal((true, false), HospitalMedReconRules.Badge(true, true, old, now));
+			Assert.Equal((false, true), HospitalMedReconRules.Badge(true, false, old, now));
+			Assert.Equal((false, false), HospitalMedReconRules.Badge(true, false, fresh, now));   // not yet a day
+		}
 
 		[Fact]
 		public void A_line_needs_its_medicine_and_a_new_one_its_dose()

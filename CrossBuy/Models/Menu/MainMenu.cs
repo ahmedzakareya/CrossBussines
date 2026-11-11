@@ -417,6 +417,8 @@
 			{
 				new() { LabelAr = "سجل المرضى", LabelEn = "Patient registry", Action = "Patients", Controller = "Hospital" },
 				new() { LabelAr = "تسجيل مريض", LabelEn = "Register patient", Action = "RegisterPatient", Controller = "Hospital" },
+				new() { LabelAr = "التسجيل الذاتي", LabelEn = "Self-intake", Action = "Intake", Controller = "Hospital" },   // H91
+				new() { LabelAr = "المرضى المجهولون", LabelEn = "Unidentified patients", Action = "Unidentified", Controller = "Hospital" },   // H92
 				new() { LabelAr = "الملفات المكررة", LabelEn = "Duplicate files", Action = "Duplicates", Controller = "Hospital" },
 				new() { LabelAr = "المواليد والوفيات", LabelEn = "Births & deaths", Action = "Vital", Controller = "Hospital" },
 				new() { LabelAr = "نماذج الموافقات", LabelEn = "Consent forms", Action = "ConsentForms", Controller = "Hospital" },
@@ -439,6 +441,17 @@
 				new() { LabelAr = "المشرحة", LabelEn = "Mortuary", Action = "Morgue", Controller = "Hospital" },   // H90
 				new() { LabelAr = "قائمة الطبيب", LabelEn = "Doctor worklist", Action = "Worklist", Controller = "Hospital" },
 				new() { LabelAr = "طلبات تجديد الأدوية", LabelEn = "Refill requests", Action = "PortalRefills", Controller = "Hospital" },
+			}},
+			// H93 — the specialty clinics, built on one dictionary and clinician-built templates (the approved prototype)
+			new() { LabelAr = "العيادات التخصصية", LabelEn = "Specialty clinics", Icon = "ki-outline ki-abstract-26", Items = new()
+			{
+				new() { LabelAr = "قاموس القياسات", LabelEn = "Concept dictionary", Action = "Concepts", Controller = "Hospital" },   // H93
+				new() { LabelAr = "مصمم النماذج", LabelEn = "Template designer", Action = "Templates", Controller = "Hospital" },   // H93
+				new() { LabelAr = "الباطنة", LabelEn = "Internal medicine", Action = "SpecialtyClinic", Controller = "Hospital", RouteValues = new() { ["code"] = "IM" } },   // H94
+				new() { LabelAr = "الأطفال", LabelEn = "Paediatrics", Action = "SpecialtyClinic", Controller = "Hospital", RouteValues = new() { ["code"] = "PED" } },   // H95
+				new() { LabelAr = "العيون", LabelEn = "Ophthalmology", Action = "SpecialtyClinic", Controller = "Hospital", RouteValues = new() { ["code"] = "OPH" } },   // H96
+				new() { LabelAr = "الحساسية", LabelEn = "Allergy", Action = "SpecialtyClinic", Controller = "Hospital", RouteValues = new() { ["code"] = "ALG" } },   // H97
+				new() { LabelAr = "باقي التخصصات", LabelEn = "Other specialties", Action = "SpecialtyCatalog", Controller = "Hospital" },   // H98
 			}},
 			new() { LabelAr = "الطوارئ", LabelEn = "Emergency", Icon = "ki-outline ki-pulse", Items = new()
 			{

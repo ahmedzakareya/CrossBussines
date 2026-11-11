@@ -1,0 +1,25 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model IReadOnlyList<HospitalClinicVisitRow>
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@foreach (var r in Model)
+{
+    var age = HospitalPatientService.AgeOn(r.BirthDate, DateTime.UtcNow);
+    bool signed = r.Status == HospitalEncounterStatus.Signed;
+    <tr>
+        <td><div class="d-flex align-items-center gap-3">
+            <div class="symbol symbol-40px symbol-circle flex-shrink-0">@if (r.Photo != null) {<img src="@r.Photo" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(r.NameEn)" />} else {<span class="symbol-label fw-bold fs-7 hp-initials">@HospitalUi.Initials(r.NameEn)</span>}</div>
+            <div><a href="@Url.Action("Patient", new { id = r.PatientId })" class="fw-bold text-gray-900 text-hover-primary">@DisplayName.Of(r.Name, r.NameEn)</a>
+                <div class="text-muted fs-8"><bdi class="hp-num">@r.Mrn</bdi> · @if (age != null) {<bdi class="hp-num">@age</bdi> @T["y"]<text> · </text>}@T["sex:" + r.Sex]</div></div>
+        </div></td>
+        <td class="text-nowrap"><bdi class="hp-num">@HospitalNursingService.UtcToWard(r.StartedAt).ToString("yyyy-MM-dd HH:mm")</bdi></td>
+        <td><div class="d-flex align-items-center">
+            <div class="symbol symbol-35px symbol-circle flex-shrink-0 me-3">@if (!string.IsNullOrEmpty(r.DoctorPhoto)) {<img src="@r.DoctorPhoto" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(r.DoctorEn)" />} else {<span class="symbol-label fw-bold fs-8 hp-initials">@HospitalUi.Initials(r.DoctorEn)</span>}</div>
+            <span class="text-gray-800 fw-semibold">@DisplayName.Of(r.Doctor, r.DoctorEn)</span></div></td>
+        <td class="fs-8 text-gray-700">@(r.Complaint ?? "—")</td>
+        <td>@if (r.Forms == 0) {<span class="text-muted fs-8">—</span>} else {<span class="badge badge-light-@(r.SignedForms == r.Forms ? "success" : "primary") fs-8 hp-num">@r.SignedForms / @r.Forms</span>}</td>
+        <td>@if (signed) {<span class="badge badge-light-success fs-8">@T["Signed"]</span>} else {<span class="badge badge-light-primary fs-8">@T["Visit open"]</span>}</td>
+        <td class="text-end"><a href="@Url.Action("SpecialtyVisit", new { id = r.EncounterId })" class="btn btn-sm btn-light-primary text-nowrap"><i class="ki-outline ki-abstract-26 fs-5"></i>@T["Open the visit"]</a></td>
+    </tr>
+}

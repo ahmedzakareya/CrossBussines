@@ -514,7 +514,9 @@
             function loadPanel() {
                 var el = document.querySelector('[data-obs-panel]:not([data-loaded])'); if (!el) return;
                 el.setAttribute('data-loaded', '1');
-                fetch(base + '/Ward/' + el.getAttribute('data-obs-panel'), { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.text(); }).then(function (h) { el.innerHTML = h; });
+                fetch(base + '/Ward/' + el.getAttribute('data-obs-panel'), { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.text(); }).then(function (h) { el.innerHTML = h;
+                    // the rows carry Metronic "Actions" menus; injected markup needs the menus bound
+                    if (window.KTMenu && KTMenu.createInstances) { try { KTMenu.createInstances(); } catch (x) { } } });
             }
             // the escalation task belongs to the board's own list: the page is rendered again and its content swapped (never a reload)
             function swapPage() {
@@ -531,6 +533,7 @@
             function num(v) { return v === '' || v == null ? null : Number(v); }
             document.addEventListener('click', function (e) {
                 var t = e.target.closest('[data-obs-new],[data-risk-new],[data-obs-chart],[data-acvpu]'); if (!t) return;
+                if (t.tagName === 'A') e.preventDefault();
                 if (t.hasAttribute('data-acvpu')) {
                     acvpu = acvpu === t.getAttribute('data-acvpu') ? '' : t.getAttribute('data-acvpu');
                     oEl.querySelectorAll('[data-acvpu]').forEach(function (b) { var on = b.getAttribute('data-acvpu') === acvpu; b.classList.toggle('btn-primary', on); b.classList.toggle('btn-light', !on); });

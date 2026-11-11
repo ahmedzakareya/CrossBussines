@@ -1,0 +1,181 @@
+@using CrossBuy.BL
+@using CrossBuy.Models.Context.Hospital
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H91 — the reception tablet: the patient's own intake. Full screen, large, Arabic first.
+      1. the danger signs FIRST: any one sends the patient to the desk at once (and the desk is alerted);
+      2. who: the identity document, the name, the date of birth, the sex, the mobile;
+      3. the visit: why, allergies, medicines, pregnancy, infection signs, an emergency contact;
+      4. consent, and the send (the confirming tap);
+      5. the ticket and what happens next. Nothing about an existing file is ever shown here.
+    The screen wipes itself after 90 seconds untouched, and 30 seconds after the ticket.
+*@
+@{
+    Layout = null;
+    bool isAr = System.Globalization.CultureInfo.CurrentUICulture.Name.StartsWith("ar");
+    string other = isAr ? "en" : "ar";
+}
+<!DOCTYPE html>
+<html lang="@(isAr ? "ar" : "en")" dir="@(isAr ? "rtl" : "ltr")">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@T["Reception — your details"]</title>
+    <link rel="shortcut icon" href="@Url.Content(CrossBuy.BL.Platform.ProductIdentity.Assets.FaviconIco)" asp-append-version="true" />
+    <link href="~/Backend-assets/plugins/global/plugins.bundle@(isAr ? ".rtl" : "").css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/Backend-assets/css/style.bundle@(isAr ? ".rtl" : "").css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/Backend-assets/css/crossbuy-brand.css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/Backend-assets/fonts/cairo/cairo.css" rel="stylesheet" asp-append-version="true" />
+    <style>
+        body { background: #f4f6fb; font-family: 'Cairo', Inter, sans-serif; margin: 0; min-height: 100vh; display: flex; flex-direction: column; }
+        .ki-top { padding: 18px 32px; background: #1e2f5a; color: #fff; display: flex; justify-content: space-between; align-items: center; }
+        .ki-top h1 { color: #fff; font-size: 1.8rem; font-weight: 700; margin: 0; }
+        .ki-top a { color: #fff; font-size: 1.15rem; border: 1px solid rgba(255,255,255,.5); border-radius: 10px; padding: 6px 16px; text-decoration: none; }
+        .ki-main { flex: 1; display: flex; align-items: flex-start; justify-content: center; padding: 26px; }
+        .ki-box { width: min(860px, 100%); background: #fff; border-radius: 22px; box-shadow: 0 6px 26px rgba(30,47,90,.1); padding: 34px 38px; }
+        .ki-box h2 { font-size: 1.8rem; font-weight: 700; color: #1e2f5a; margin-bottom: 6px; }
+        .ki-box .sub { font-size: 1.15rem; color: #6b7280; margin-bottom: 22px; }
+        .ki-box label.l { font-size: 1.15rem; font-weight: 600; margin-bottom: 6px; display: block; }
+        .ki-box input.form-control, .ki-box select.form-select, .ki-box textarea { font-size: 1.35rem; padding: 12px 16px; height: auto; }
+        .ki-btn { font-size: 1.4rem; padding: 14px 28px; border-radius: 14px; font-weight: 700; }
+        .ki-choice { display: flex; align-items: center; gap: 14px; border: 2px solid #e5e9f4; border-radius: 14px; padding: 14px 18px; font-size: 1.3rem; font-weight: 600; cursor: pointer; user-select: none; margin: 0; }
+        .ki-choice input { width: 26px; height: 26px; flex: 0 0 26px; }
+        .ki-choice.on { border-color: #DC2626; background: #FEF2F2; }
+        .ki-opt.on { border-color: #3A5795; background: #EEF2FA; }
+        .ki-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+        .ki-dots { display: flex; gap: 8px; justify-content: center; margin-bottom: 18px; }
+        .ki-dots span { width: 12px; height: 12px; border-radius: 50%; background: #dfe3ee; } .ki-dots span.on { background: #3A5795; }
+        .ki-num { font-size: 7.5rem; font-weight: 800; line-height: 1; color: #16a34a; text-align: center; font-variant-numeric: tabular-nums; direction: ltr; }
+        .ki-urgent { font-size: 2.2rem; font-weight: 800; color: #DC2626; text-align: center; }
+        .ki-steps { list-style: none; padding: 0; margin: 22px 0 0; counter-reset: s; }
+        .ki-steps li { font-size: 1.3rem; padding: 10px 0 10px 0; border-bottom: 1px dashed #e5e9f4; counter-increment: s; }
+        .ki-steps li::before { content: counter(s); display: inline-flex; width: 34px; height: 34px; border-radius: 50%; background: #3A5795; color: #fff; align-items: center; justify-content: center; margin-inline-end: 12px; font-weight: 700; }
+        .ki-err { font-size: 1.2rem; color: #dc2626; margin-top: 14px; min-height: 1.5em; text-align: center; }
+        .ki-step { display: none; } .ki-step.on { display: block; }
+        .ki-nav { display: flex; justify-content: space-between; gap: 12px; margin-top: 24px; }
+    </style>
+</head>
+<body>
+    @Html.AntiForgeryToken()
+    <div class="ki-top"><h1>@T["Welcome — your details before the visit"]</h1><a href="@Url.Action("SetLanguage", "Account", new { culture = other, returnUrl = Url.Action("IntakeKiosk") })">@(isAr ? "English" : "العربية")</a></div>
+    <div class="ki-main"><div class="ki-box">
+        <div class="ki-dots"><span data-dot="0"></span><span data-dot="1"></span><span data-dot="2"></span><span data-dot="3"></span><span data-dot="4"></span></div>
+
+        <div class="ki-step on" data-step="0">
+            <h2>@T["Before anything: do you have any of these now?"]</h2>
+            <div class="sub">@T["Tick each one you have. If you have none, press “None of these”."]</div>
+            <div class="ki-grid">@foreach (var f in HospitalIntakeRedFlag.All) {<label class="ki-choice"><input type="checkbox" data-flag="@f" />@T["irf:" + f]</label>}</div>
+            <div class="ki-nav"><button type="button" class="btn btn-danger ki-btn" data-urgent>@T["I have one of these"]</button><button type="button" class="btn btn-primary ki-btn" data-go="1">@T["None of these"]</button></div>
+        </div>
+
+        <div class="ki-step" data-step="1">
+            <h2>@T["Who are you?"]</h2><div class="sub">@T["As written on your identity document."]</div>
+            <div class="row g-4">
+                <div class="col-md-5"><label class="l">@T["Identity document"]</label><select class="form-select form-select-solid" data-f="idType">@foreach (var t in HospitalIntakeIdType.All) {<option value="@t">@T["iid:" + t]</option>}</select></div>
+                <div class="col-md-7"><label class="l">@T["Its number"]</label><input class="form-control form-control-solid" dir="ltr" inputmode="numeric" maxlength="30" data-f="idNumber" autocomplete="off" /></div>
+                <div class="col-12"><label class="l">@T["Full name (four parts)"]</label><input class="form-control form-control-solid" maxlength="200" data-f="name" autocomplete="off" /></div>
+                <div class="col-12"><label class="l">@T["Name in English (optional)"]</label><input class="form-control form-control-solid" dir="ltr" maxlength="200" data-f="nameEn" autocomplete="off" /></div>
+                <div class="col-md-6"><label class="l">@T["Date of birth"]</label><input type="date" class="form-control form-control-solid" dir="ltr" data-f="birthDate" /></div>
+                <div class="col-md-6"><label class="l">@T["Sex"]</label><div class="d-flex gap-3"><label class="ki-choice ki-opt flex-fill"><input type="radio" name="sex" value="M" />@T["sex:M"]</label><label class="ki-choice ki-opt flex-fill"><input type="radio" name="sex" value="F" />@T["sex:F"]</label></div></div>
+                <div class="col-12"><label class="l">@T["Mobile number"]</label><input class="form-control form-control-solid" dir="ltr" inputmode="tel" maxlength="20" data-f="phone" autocomplete="off" /></div>
+            </div>
+            <div class="ki-nav"><button type="button" class="btn btn-light ki-btn" data-go="0">@T["Back"]</button><button type="button" class="btn btn-primary ki-btn" data-go="2">@T["Next"]</button></div>
+        </div>
+
+        <div class="ki-step" data-step="2">
+            <h2>@T["About this visit"]</h2>
+            <div class="row g-4">
+                <div class="col-12"><label class="l">@T["You came for"]</label><div class="ki-grid">@foreach (var v in HospitalIntakeVisit.All) {<label class="ki-choice ki-opt"><input type="radio" name="visit" value="@v" checked="@(v == HospitalIntakeVisit.WalkIn)" />@T["ivt:" + v]</label>}</div></div>
+                <div class="col-12"><label class="l">@T["What brings you today?"]</label><textarea rows="2" maxlength="300" class="form-control form-control-solid" data-f="reason"></textarea></div>
+                <div class="col-md-6"><label class="l">@T["Allergies (medicines, food)"]</label><input class="form-control form-control-solid" maxlength="300" data-f="allergies" placeholder="@T["None"]" /></div>
+                <div class="col-md-6"><label class="l">@T["Medicines you take"]</label><input class="form-control form-control-solid" maxlength="300" data-f="medications" /></div>
+                <div class="col-12" data-preg><label class="ki-choice ki-opt"><input type="checkbox" data-f="pregnant" />@T["I am or may be pregnant"]</label></div>
+                <div class="col-12"><label class="l">@T["In the last two weeks, have you had…"]</label><div class="ki-grid">@foreach (var x in HospitalIntakeInfection.All) {<label class="ki-choice ki-opt"><input type="checkbox" data-inf="@x" />@T["iin:" + x]</label>}</div></div>
+                <div class="col-md-6"><label class="l">@T["Someone to call in an emergency"]</label><input class="form-control form-control-solid" maxlength="100" data-f="emergencyName" /></div>
+                <div class="col-md-6"><label class="l">@T["Their phone"]</label><input class="form-control form-control-solid" dir="ltr" inputmode="tel" maxlength="20" data-f="emergencyPhone" /></div>
+            </div>
+            <div class="ki-nav"><button type="button" class="btn btn-light ki-btn" data-go="1">@T["Back"]</button><button type="button" class="btn btn-primary ki-btn" data-go="3">@T["Next"]</button></div>
+        </div>
+
+        <div class="ki-step" data-step="3">
+            <h2>@T["Your agreement"]</h2>
+            <div class="sub fs-4 text-gray-700">@T["Your details are used only to open or update your medical file and to care for you here. The reception checks them against your identity document before anything is saved to a file."]</div>
+            <label class="ki-choice ki-opt"><input type="checkbox" data-f="consent" />@T["I agree, and the details I gave are correct"]</label>
+            <div class="ki-err" data-err></div>
+            <div class="ki-nav"><button type="button" class="btn btn-light ki-btn" data-go="2">@T["Back"]</button><button type="button" class="btn btn-success ki-btn" data-send>@T["Send to the reception"]</button></div>
+        </div>
+
+        <div class="ki-step" data-step="4">
+            <div data-done-urgent class="d-none"><div class="ki-urgent mb-4">@T["Please go to the reception desk now"]</div><div class="sub text-center fs-3">@T["The staff have been alerted. Show them this number:"]</div></div>
+            <div data-done-normal><h2 class="text-center">@T["Thank you — please take a seat"]</h2><div class="sub text-center">@T["Your number:"]</div></div>
+            <div class="ki-num" data-ticket>—</div>
+            <ol class="ki-steps" data-next>
+                <li>@T["The reception calls your number and checks your identity document"]</li>
+                <li>@T["Your file is opened or updated, and payment or insurance is settled"]</li>
+                <li>@T["The nurse takes your vital signs"]</li>
+                <li>@T["You see the doctor; tests or medicines follow if needed"]</li>
+            </ol>
+            <div class="text-center mt-6"><button type="button" class="btn btn-light ki-btn" data-reset>@T["Finish"]</button></div>
+        </div>
+    </div></div>
+
+    <script>
+        (function () {
+            var tok = document.querySelector('input[name="__RequestVerificationToken"]').value, step = 0, idle = null, after = null;
+            var W = { name: @Json.Serialize(T["Write your full name"].Value), dob: @Json.Serialize(T["Write your date of birth"].Value), sex: @Json.Serialize(T["Choose the sex"].Value),
+                      phone: @Json.Serialize(T["Write your mobile number"].Value), failed: @Json.Serialize(T["The change could not be saved"].Value) };
+            function $(s) { return document.querySelector(s); }
+            function show(n) { step = n; document.querySelectorAll('[data-step]').forEach(function (e) { e.classList.toggle('on', Number(e.getAttribute('data-step')) === n); });
+                document.querySelectorAll('[data-dot]').forEach(function (d) { d.classList.toggle('on', Number(d.getAttribute('data-dot')) <= n); }); window.scrollTo(0, 0); poke(); }
+            function wipe() { document.querySelectorAll('input[type=checkbox], input[type=radio]').forEach(function (i) { i.checked = i.name === 'visit' && i.value === 'WalkIn'; i.closest('label') && i.closest('label').classList.toggle('on', i.checked); });
+                document.querySelectorAll('[data-f]').forEach(function (i) { if (i.type !== 'checkbox') i.value = i.tagName === 'SELECT' ? i.options[0].value : ''; });
+                $('[data-err]').textContent = ''; clearTimeout(after); show(0); }
+            function poke() { clearTimeout(idle); idle = setTimeout(wipe, 90000); }
+            ['click', 'keydown', 'touchstart', 'input'].forEach(function (e) { document.addEventListener(e, poke, true); });
+            document.querySelectorAll('.ki-choice input').forEach(function (i) { i.addEventListener('change', function () {
+                if (i.type === 'radio') document.querySelectorAll('input[name="' + i.name + '"]').forEach(function (r) { r.closest('label').classList.toggle('on', r.checked); });
+                else i.closest('label').classList.toggle('on', i.checked);
+                if (i.name === 'sex') $('[data-preg]').classList.toggle('d-none', i.value !== 'F'); }); });
+            $('[data-preg]').classList.add('d-none');
+            function val(k) { var i = $('[data-f="' + k + '"]'); return i.type === 'checkbox' ? i.checked : (i.value || '').trim(); }
+            function body(urgent) {
+                var flags = Array.from(document.querySelectorAll('[data-flag]:checked')).map(function (c) { return c.getAttribute('data-flag'); });
+                if (urgent) return { language: @Json.Serialize(isAr ? "ar" : "en"), redFlags: flags };
+                var sex = document.querySelector('input[name="sex"]:checked'), visit = document.querySelector('input[name="visit"]:checked');
+                return { language: @Json.Serialize(isAr ? "ar" : "en"), redFlags: [], visitType: visit ? visit.value : 'WalkIn', idType: val('idType'), idNumber: val('idNumber') || null, name: val('name') || null,
+                    nameEn: val('nameEn') || null, birthDate: val('birthDate') || null, sex: sex ? sex.value : null, phone: val('phone') || null, reason: val('reason') || null, allergies: val('allergies') || null,
+                    medications: val('medications') || null, pregnant: sex && sex.value === 'F' ? val('pregnant') : null,
+                    infection: Array.from(document.querySelectorAll('[data-inf]:checked')).map(function (c) { return c.getAttribute('data-inf'); }),
+                    emergencyName: val('emergencyName') || null, emergencyPhone: val('emergencyPhone') || null, consent: val('consent') };
+            }
+            function send(urgent, btn) {
+                btn.disabled = true;
+                fetch(@Json.Serialize(Url.Action("SubmitIntake")), { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': tok }, body: JSON.stringify(body(urgent)) })
+                    .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+                    .then(function (res) { btn.disabled = false;
+                        if (!res.ok) { $('[data-err]').textContent = res.error || W.failed; if (urgent) { show(3); } return; }
+                        $('[data-ticket]').textContent = res.ticket; $('[data-done-urgent]').classList.toggle('d-none', !res.urgent); $('[data-done-normal]').classList.toggle('d-none', !!res.urgent);
+                        $('[data-next]').classList.toggle('d-none', !!res.urgent); show(4); clearTimeout(after); after = setTimeout(wipe, 30000); });
+            }
+            document.addEventListener('click', function (e) {
+                var g = e.target.closest('[data-go]');
+                if (g) { var to = Number(g.getAttribute('data-go'));
+                    if (to === 2 && step === 1) { // the identity must be there before moving on
+                        if (val('name').split(/\s+/).filter(Boolean).length < 2) { alertField('name', W.name); return; }
+                        if (!val('birthDate')) { alertField('birthDate', W.dob); return; }
+                        if (!document.querySelector('input[name="sex"]:checked')) { alertField(null, W.sex); return; }
+                        if (val('phone').replace(/\D/g, '').length < 8) { alertField('phone', W.phone); return; } }
+                    show(to); return; }
+                var u = e.target.closest('[data-urgent]');
+                if (u) { if (!document.querySelector('[data-flag]:checked')) { document.querySelectorAll('[data-flag]').forEach(function (c) { c.closest('label').animate([{ transform: 'scale(1)' }, { transform: 'scale(1.03)' }, { transform: 'scale(1)' }], 400); }); return; }
+                    send(true, u); return; }
+                var s = e.target.closest('[data-send]'); if (s) { send(false, s); return; }
+                if (e.target.closest('[data-reset]')) wipe();
+            });
+            function alertField(k, msg) { var i = k ? $('[data-f="' + k + '"]') : null; if (i) { i.focus(); i.classList.add('is-invalid'); setTimeout(function () { i.classList.remove('is-invalid'); }, 2500); }
+                var n = document.createElement('div'); n.className = 'ki-err'; n.textContent = msg; var st = document.querySelector('[data-step="1"] .ki-nav'); st.parentNode.insertBefore(n, st); setTimeout(function () { n.remove(); }, 3000); }
+            show(0);
+        })();
+    </script>
+</body>
+</html>

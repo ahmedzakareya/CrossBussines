@@ -1,0 +1,129 @@
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H93 — the concept dictionary (the approved prototype screen sc-concepts): every measurable thing defined once —
+    the international code, Arabic and English, type, unit, normal and critical limits, the side, and the clinics whose
+    templates ask it.
+*@
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Concept dictionary"].Value;
+    bool ready = ViewBag.Ready == true, canManage = ViewBag.CanManage == true; int total = ViewBag.Total is int n ? n : 0;
+    bool isAr = System.Globalization.CultureInfo.CurrentUICulture.Name.StartsWith("ar");
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Concept dictionary"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted">@T["Specialty clinics"]</li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@T["Dictionary"]</li></ul>
+        </div>
+        @if (ready && canManage) {<button type="button" class="btn btn-sm btn-primary" data-new><i class="ki-outline ki-plus fs-4"></i>@T["New concept"]</button>}
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (!ready) { <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice"><div class="fs-6 text-gray-700">@T[HospitalClinicalContentService.NoTables]</div></div> }
+        else
+        {
+            <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice">
+                <span class="symbol symbol-45px me-5 flex-shrink-0"><span class="symbol-label"><i class="ki-outline ki-information-5 fs-2x text-white"></i></span></span>
+                <div class="d-flex flex-stack flex-grow-1 flex-wrap flex-md-nowrap">
+                    <div class="mb-3 mb-md-0 fw-semibold pe-5">
+                        <h4 class="text-gray-900 fw-bold mb-1">@T["One dictionary for every specialty"]</h4>
+                        <div class="fs-6 text-gray-700">@T["Blood pressure is defined once and used by the internist, the cardiologist, obstetrics and nursing — so it draws one trend whichever clinic measured it."]</div>
+                    </div>
+                    <span class="badge hp-badge fs-7 fw-bold px-4 py-2 flex-shrink-0"><bdi class="hp-num me-1">@total</bdi> @T["concepts"]</span>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header border-0 pt-6 flex-wrap gap-3">
+                    <div class="card-title flex-column m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Concept dictionary"]</span><span class="text-muted fs-7 mt-1">@T["The international code makes reports, insurance and device links possible"] · <span id="resultCount">—</span></span></div>
+                    <div class="card-toolbar d-flex flex-wrap align-items-center gap-2">
+                        <div class="d-flex align-items-center position-relative"><i class="ki-outline ki-magnifier fs-3 position-absolute ms-4"></i><input type="text" id="f_q" class="form-control form-control-solid w-250px ps-12" autocomplete="off" placeholder="@T["Search by name or code…"]" /></div>
+                        <div class="w-75px"><select id="f_size" class="form-select form-select-solid form-select-sm"><option value="25">25</option><option value="50">50</option><option value="100">100</option></select></div>
+                        <button type="button" id="f_reset" class="btn btn-sm btn-light" title="@T["Reset"]"><i class="ki-outline ki-arrows-circle fs-4"></i></button>
+                    </div>
+                </div>
+                <div class="card-body pt-4">
+                    <div class="table-responsive"><table class="table align-middle gy-4 mb-0 table-row-dashed">
+                        <thead><tr class="fw-bold fs-8 text-uppercase text-muted"><th class="w-120px">@T["The code"]</th><th>@T["Concept"]</th><th>@T["Type"]</th><th>@T["Unit"]</th><th>@T["Normal"]</th><th>@T["Critical limit"]</th><th>@T["Side"]</th><th>@T["Used by"]</th><th class="text-end"></th></tr></thead>
+                        <tbody id="rows" class="fs-6"><tr id="loadingRow"><td colspan="9" class="text-center text-muted py-10">@T["Loading…"]</td></tr><tr id="emptyRow" class="d-none"><td colspan="9" class="text-center text-muted py-10">@T["No records"]</td></tr></tbody>
+                    </table></div>
+                    <div class="d-flex flex-stack flex-wrap pt-5"><div class="fs-7 text-muted" id="pageInfo"></div><ul class="pagination" id="pager"></ul></div>
+                </div>
+            </div>
+        }
+    </div></div>
+</div>
+
+@if (ready && canManage)
+{
+    <div class="modal fade" id="cModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-800px"><div class="modal-content">
+        <div class="modal-header"><h2 class="fw-bold m-0" id="cTitle">@T["New concept"]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body py-6 px-lg-10"><div class="row g-4">
+            <div class="col-4"><label class="form-label required">@T["The code"]</label><input type="text" maxlength="30" class="form-control form-control-solid" dir="ltr" data-c="code" placeholder="4548-4" /></div>
+            <div class="col-4"><label class="form-label required">@T["Code system"]</label><select class="form-select form-select-solid" data-c="codeSystem" data-control="none">@foreach (var s in HospitalCodeSystem.All) {<option value="@s">@s</option>}</select></div>
+            <div class="col-4"><label class="form-label required">@T["Type"]</label><select class="form-select form-select-solid" data-c="valueType" data-control="none">@foreach (var s in HospitalConceptType.All) {<option value="@s">@T["ctype:" + s]</option>}</select></div>
+            <div class="col-6"><label class="form-label required">@T["Name"]</label><input type="text" maxlength="150" class="form-control form-control-solid" data-c="name" dir="rtl" /></div>
+            <div class="col-6"><label class="form-label required">@T["Name in English"]</label><input type="text" maxlength="150" class="form-control form-control-solid" dir="ltr" data-c="nameEn" /></div>
+            <div class="col-4"><label class="form-label">@T["Unit"]</label><input type="text" maxlength="30" class="form-control form-control-solid" dir="ltr" data-c="unit" placeholder="mmHg" /></div>
+            <div class="col-4"><label class="form-label">@T["Decimals"]</label><input type="number" min="0" max="4" class="form-control form-control-solid" dir="ltr" data-c="decimals" value="1" /></div>
+            <div class="col-4"><label class="form-label">@T["Lab analyte code"]</label><input type="text" maxlength="20" class="form-control form-control-solid" dir="ltr" data-c="labAnalyteCode" placeholder="HBA1C" /></div>
+            <div class="col-12"><div class="separator separator-dashed"></div></div>
+            <div class="col-4"><label class="form-label text-success">@T["Normal low"]</label><input type="number" step="any" class="form-control form-control-solid" dir="ltr" data-c="normalLow" /></div>
+            <div class="col-4"><label class="form-label text-success">@T["Normal high"]</label><input type="number" step="any" class="form-control form-control-solid" dir="ltr" data-c="normalHigh" /></div>
+            <div class="col-4" data-panel><label class="form-label text-success">@T["Normal high — second number"]</label><input type="number" step="any" class="form-control form-control-solid" dir="ltr" data-c="normalHigh2" /></div>
+            <div class="col-4"><label class="form-label text-danger">@T["Critical low"]</label><input type="number" step="any" class="form-control form-control-solid" dir="ltr" data-c="criticalLow" /></div>
+            <div class="col-4"><label class="form-label text-danger">@T["Critical high"]</label><input type="number" step="any" class="form-control form-control-solid" dir="ltr" data-c="criticalHigh" /></div>
+            <div class="col-4" data-panel><label class="form-label text-danger">@T["Critical high — second number"]</label><input type="number" step="any" class="form-control form-control-solid" dir="ltr" data-c="criticalHigh2" /></div>
+            <div class="col-6"><label class="form-label">@T["Normal, as written"]</label><div class="d-flex gap-2"><input type="text" maxlength="60" class="form-control form-control-solid" data-c="normalText" dir="rtl" placeholder="@T["by age"]" /><input type="text" maxlength="60" class="form-control form-control-solid" dir="ltr" data-c="normalTextEn" placeholder="by age" /></div></div>
+            <div class="col-6"><label class="form-label">@T["Critical, as written"]</label><div class="d-flex gap-2"><input type="text" maxlength="60" class="form-control form-control-solid" data-c="criticalText" dir="rtl" /><input type="text" maxlength="60" class="form-control form-control-solid" dir="ltr" data-c="criticalTextEn" placeholder="± 2 SD" /></div></div>
+            <div class="col-12" data-choice><label class="form-label">@T["Answers — one per line: code|Arabic|English"]</label><div class="text-muted fs-8 mb-2">@T["For a score, its bands: the lowest value of each band|Arabic|English (PHQ-9: 0|لا يوجد|None, 5|خفيف|Mild …)"]</div><textarea rows="3" maxlength="2000" class="form-control form-control-solid" dir="ltr" data-c="choices" placeholder="N|طبيعي|Normal"></textarea></div>
+            <div class="col-4" data-calc><label class="form-label required">@T["Calculator"]</label><select class="form-select form-select-solid" data-c="calculator" data-control="none"><option value="">—</option>@foreach (var s in HospitalConceptCalculator.All) {<option value="@s">@T["calc:" + s]</option>}</select></div>
+            <div class="col-8" data-calc><label class="form-label required">@T["The codes it reads, comma-separated"]</label><input type="text" maxlength="200" class="form-control form-control-solid" dir="ltr" data-c="calcInputs" placeholder="62238-1, 9318-7" /></div>
+            <div class="col-6"><label class="form-check form-switch form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" data-c="hasLaterality" /><span class="form-check-label">@T["Recorded per side (right / left)"]</span></label></div>
+            <div class="col-6"><label class="form-check form-switch form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" data-c="isActive" checked /><span class="form-check-label">@T["Active"]</span></label></div>
+        </div></div>
+        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-save>@T["Save"]</button></div>
+    </div></div></div>
+}
+
+@section Scripts {
+    <script>
+        (function () {
+            if (!document.getElementById('rows')) return;
+            var list = cbServerList({ url: @Json.Serialize(Url.Action("ConceptsData")), isAr: @(isAr ? "true" : "false") });
+            var m = document.getElementById('cModal'); if (!m) return;
+            var tok = document.querySelector('input[name="__RequestVerificationToken"]').value, editing = null;
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), save: @Json.Serialize(T["Save this concept to the dictionary?"].Value), nw: @Json.Serialize(T["New concept"].Value), ed: @Json.Serialize(T["Edit the concept"].Value) };
+            var nums = ['decimals', 'normalLow', 'normalHigh', 'normalHigh2', 'criticalLow', 'criticalHigh', 'criticalHigh2'];
+            function shape() { var t = m.querySelector('[data-c="valueType"]').value;
+                m.querySelectorAll('[data-panel]').forEach(function (x) { x.classList.toggle('d-none', t !== 'Panel'); });
+                m.querySelectorAll('[data-choice]').forEach(function (x) { x.classList.toggle('d-none', t !== 'Choice' && t !== 'Score'); });
+                m.querySelectorAll('[data-calc]').forEach(function (x) { x.classList.toggle('d-none', t !== 'Calculated' && t !== 'Score'); }); }
+            var vt = m.querySelector('[data-c="valueType"]'); vt.addEventListener('change', shape); if (window.jQuery) jQuery(vt).on('change', shape);   // select2 changes never reach addEventListener
+            function fill(c) { m.querySelectorAll('[data-c]').forEach(function (i) { var k = i.getAttribute('data-c'), v = c ? c[k] : null;
+                if (i.type === 'checkbox') i.checked = c ? !!v : (k === 'isActive'); else i.value = v == null ? (k === 'decimals' ? '1' : (i.tagName === 'SELECT' ? i.options[0].value : '')) : v;
+                if (i.tagName === 'SELECT' && window.jQuery) jQuery(i).trigger('change.select2'); }); shape(); }
+            function open(c) { editing = c ? c.id : null; document.getElementById('cTitle').textContent = c ? W.ed : W.nw; fill(c); bootstrap.Modal.getOrCreateInstance(m).show(); }
+            document.addEventListener('click', function (e) {
+                if (e.target.closest('[data-new]')) { open(null); return; }
+                var ed = e.target.closest('[data-edit]');
+                if (ed) { fetch(@Json.Serialize(Url.Content("~/Hospital/Concepts/")) + ed.getAttribute('data-edit')).then(function (r) { return r.json(); }).then(function (c) {
+                    var o = {}; Object.keys(c).forEach(function (k) { o[k.charAt(0).toLowerCase() + k.slice(1)] = c[k]; }); o.id = c.id != null ? c.id : c.ID; open(o); }); return; }
+                var s = e.target.closest('[data-save]'); if (!s) return;
+                var b = { id: editing };
+                m.querySelectorAll('[data-c]').forEach(function (i) { var k = i.getAttribute('data-c');
+                    b[k] = i.type === 'checkbox' ? i.checked : (nums.indexOf(k) >= 0 ? (i.value === '' ? null : Number(i.value)) : ((i.value || '').trim() || null)); });
+                if (b.decimals == null) b.decimals = 1;
+                cbConfirm(W.save).then(function (ok) { if (!ok) return; s.disabled = true;
+                    fetch(@Json.Serialize(Url.Action("ConceptSave")), { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': tok }, body: JSON.stringify(b) })
+                        .then(function (r) { return r.json().catch(function () { return { ok: false }; }); }).then(function (res) { s.disabled = false;
+                            if (!res.ok) { toastr.error(res.error || W.failed); return; }
+                            bootstrap.Modal.getOrCreateInstance(m).hide(); location.reload(); }); });
+            });
+        })();
+    </script>
+}

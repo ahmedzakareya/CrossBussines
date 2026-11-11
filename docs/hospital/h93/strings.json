@@ -1,0 +1,710 @@
+{
+ "unit": "H93 — clinical content platform (concept dictionary, template designer, observations)",
+ "strings": {
+  "A choice needs at least two answers": {
+   "ar": "الاختيار يحتاج إجابتين على الأقل",
+   "en": "A choice needs at least two answers",
+   "fr": "Un choix demande au moins deux réponses"
+  },
+  "A code the calculator reads is not in the dictionary: {0}": {
+   "ar": "كود تقرأه الحاسبة غير موجود في القاموس: {0}",
+   "en": "A code the calculator reads is not in the dictionary: {0}",
+   "fr": "Un code lu par le calcul n'est pas dans le dictionnaire : {0}"
+  },
+  "A field can only depend on another field of the same template": {
+   "ar": "الحقل يعتمد فقط على حقل آخر في نفس النموذج",
+   "en": "A field can only depend on another field of the same template",
+   "fr": "Un champ ne dépend que d'un autre champ du même modèle"
+  },
+  "A published version cannot change: make a new version": {
+   "ar": "الإصدار المنشور لا يتغير: اعمل نسخة جديدة",
+   "en": "A published version cannot change: make a new version",
+   "fr": "Une version publiée ne change pas : créez une nouvelle version"
+  },
+  "A score is the sum of its items: choose Sum": {
+   "ar": "النقاط هي مجموع البنود: اختر «مجموع»",
+   "en": "A score is the sum of its items: choose Sum",
+   "fr": "Un score est la somme de ses items : choisissez Somme"
+  },
+  "Add a field": {
+   "ar": "إضافة حقل",
+   "en": "Add a field",
+   "fr": "Ajouter un champ"
+  },
+  "Add at least one field before publishing": {
+   "ar": "أضف حقلاً واحداً على الأقل قبل النشر",
+   "en": "Add at least one field before publishing",
+   "fr": "Ajoutez au moins un champ avant de publier"
+  },
+  "Add this field to the draft?": {
+   "ar": "إضافة هذا الحقل إلى المسودة؟",
+   "en": "Add this field to the draft?",
+   "fr": "Ajouter ce champ au brouillon ?"
+  },
+  "Alert at or above": {
+   "ar": "تنبيه عند أو فوق",
+   "en": "Alert at or above",
+   "fr": "Alerte à partir de"
+  },
+  "Alert at or below": {
+   "ar": "تنبيه عند أو تحت",
+   "en": "Alert at or below",
+   "fr": "Alerte jusqu'à"
+  },
+  "Alert rule": {
+   "ar": "قاعدة تنبيه",
+   "en": "Alert rule",
+   "fr": "Règle d'alerte"
+  },
+  "Always shown": {
+   "ar": "يظهر دائماً",
+   "en": "Always shown",
+   "fr": "Toujours affiché"
+  },
+  "Another concept already has this code": {
+   "ar": "قياس آخر يحمل نفس الكود",
+   "en": "Another concept already has this code",
+   "fr": "Un autre concept a déjà ce code"
+  },
+  "Another field depends on this one: change it first": {
+   "ar": "حقل آخر يعتمد على هذا: عدّله أولاً",
+   "en": "Another field depends on this one: change it first",
+   "fr": "Un autre champ en dépend : modifiez-le d'abord"
+  },
+  "Another template already has this code": {
+   "ar": "نموذج آخر يحمل نفس الكود",
+   "en": "Another template already has this code",
+   "fr": "Un autre modèle a déjà ce code"
+  },
+  "Answers — one per line: code|Arabic|English": {
+   "ar": "الإجابات — سطر لكل إجابة: الكود|عربي|إنجليزي",
+   "en": "Answers — one per line: code|Arabic|English",
+   "fr": "Réponses — une par ligne : code|arabe|anglais"
+  },
+  "At sign-off": {
+   "ar": "بعد التوقيع",
+   "en": "At sign-off",
+   "fr": "À la signature"
+  },
+  "Blood pressure is defined once and used by the internist, the cardiologist, obstetrics and nursing — so it draws one trend whichever clinic measured it.": {
+   "ar": "ضغط الدم يُعرّف مرة واحدة ويستخدمه الباطني وطبيب القلب والنساء والتمريض — فيُرسم في منحنى واحد مهما كانت العيادة التي قاسته.",
+   "en": "Blood pressure is defined once and used by the internist, the cardiologist, obstetrics and nursing — so it draws one trend whichever clinic measured it.",
+   "fr": "La pression artérielle est définie une fois et utilisée par l'interniste, le cardiologue, l'obstétrique et les soins — une seule courbe, quelle que soit la consultation qui l'a mesurée."
+  },
+  "Calculator": {
+   "ar": "الحاسبة",
+   "en": "Calculator",
+   "fr": "Calcul"
+  },
+  "Care gap when not recorded in (days)": {
+   "ar": "متابعة فائتة إن لم يُسجّل خلال (يوم)",
+   "en": "Care gap when not recorded in (days)",
+   "fr": "Suivi manqué sans mesure depuis (jours)"
+  },
+  "Choose a concept from the dictionary": {
+   "ar": "اختر قياساً من القاموس",
+   "en": "Choose a concept from the dictionary",
+   "fr": "Choisissez un concept du dictionnaire"
+  },
+  "Choose the calculator": {
+   "ar": "اختر الحاسبة",
+   "en": "Choose the calculator",
+   "fr": "Choisissez le calcul"
+  },
+  "Choose the code system": {
+   "ar": "اختر نظام الكود",
+   "en": "Choose the code system",
+   "fr": "Choisissez le système de codes"
+  },
+  "Choose the value type": {
+   "ar": "اختر نوع القيمة",
+   "en": "Choose the value type",
+   "fr": "Choisissez le type de valeur"
+  },
+  "Choose where the value comes from": {
+   "ar": "اختر مصدر القيمة",
+   "en": "Choose where the value comes from",
+   "fr": "Choisissez la source de la valeur"
+  },
+  "Clinicians build their templates without code": {
+   "ar": "الأطباء يبنون نماذجهم بلا برمجة",
+   "en": "Clinicians build their templates without code",
+   "fr": "Les cliniciens construisent leurs modèles sans programmer"
+  },
+  "Code system": {
+   "ar": "نظام الكود",
+   "en": "Code system",
+   "fr": "Système de codes"
+  },
+  "Computed at sign-off": {
+   "ar": "يُحسب عند التوقيع",
+   "en": "Computed at sign-off",
+   "fr": "Calculé à la signature"
+  },
+  "Concept": {
+   "ar": "القياس",
+   "en": "Concept",
+   "fr": "Concept"
+  },
+  "Concept dictionary": {
+   "ar": "قاموس القياسات",
+   "en": "Concept dictionary",
+   "fr": "Dictionnaire des concepts"
+  },
+  "Concept from the dictionary": {
+   "ar": "القياس من القاموس",
+   "en": "Concept from the dictionary",
+   "fr": "Concept du dictionnaire"
+  },
+  "Conditional": {
+   "ar": "شرطي",
+   "en": "Conditional",
+   "fr": "Conditionnel"
+  },
+  "Create this template?": {
+   "ar": "إنشاء هذا النموذج؟",
+   "en": "Create this template?",
+   "fr": "Créer ce modèle ?"
+  },
+  "Critical high": {
+   "ar": "الحرج الأعلى",
+   "en": "Critical high",
+   "fr": "Critique haut"
+  },
+  "Critical high — second number": {
+   "ar": "الحرج الأعلى — الرقم الثاني",
+   "en": "Critical high — second number",
+   "fr": "Critique haut — second nombre"
+  },
+  "Critical limit": {
+   "ar": "حرج",
+   "en": "Critical limit",
+   "fr": "Critique"
+  },
+  "Critical low": {
+   "ar": "الحرج الأدنى",
+   "en": "Critical low",
+   "fr": "Critique bas"
+  },
+  "Critical, as written": {
+   "ar": "الحرج كما يُكتب",
+   "en": "Critical, as written",
+   "fr": "Critique, en texte"
+  },
+  "Days are between 1 and 3650": {
+   "ar": "الأيام بين ١ و٣٦٥٠",
+   "en": "Days are between 1 and 3650",
+   "fr": "Les jours vont de 1 à 3650"
+  },
+  "Decimals are between 0 and 4": {
+   "ar": "الخانات العشرية بين ٠ و٤",
+   "en": "Decimals are between 0 and 4",
+   "fr": "Les décimales vont de 0 à 4"
+  },
+  "Dictionary": {
+   "ar": "القاموس",
+   "en": "Dictionary",
+   "fr": "Dictionnaire"
+  },
+  "Draft": {
+   "ar": "مسودة",
+   "en": "Draft",
+   "fr": "Brouillon"
+  },
+  "Drag a field from the dictionary into a section": {
+   "ar": "اسحب حقلاً من القاموس إلى القسم",
+   "en": "Drag a field from the dictionary into a section",
+   "fr": "Glissez un champ du dictionnaire dans une section"
+  },
+  "Edit the concept": {
+   "ar": "تعديل القياس",
+   "en": "Edit the concept",
+   "fr": "Modifier le concept"
+  },
+  "Every field comes from the dictionary; publishing makes a new version and never changes an old visit.": {
+   "ar": "كل حقل يأتي من القاموس؛ النشر يصنع إصداراً جديداً ولا يغيّر زيارة قديمة.",
+   "en": "Every field comes from the dictionary; publishing makes a new version and never changes an old visit.",
+   "fr": "Chaque champ vient du dictionnaire ; publier crée une nouvelle version et ne change jamais une ancienne visite."
+  },
+  "Field properties": {
+   "ar": "خصائص الحقل",
+   "en": "Field properties",
+   "fr": "Propriétés du champ"
+  },
+  "Fill the required field: {0}": {
+   "ar": "املأ الحقل الإلزامي: {0}",
+   "en": "Fill the required field: {0}",
+   "fr": "Remplissez le champ obligatoire : {0}"
+  },
+  "From the last lab result": {
+   "ar": "من آخر نتيجة مختبر",
+   "en": "From the last lab result",
+   "fr": "Du dernier résultat de laboratoire"
+  },
+  "How the doctor sees the form": {
+   "ar": "كما يراه الطبيب في الزيارة",
+   "en": "How the doctor sees the form",
+   "fr": "Le formulaire tel que le voit le médecin"
+  },
+  "Lab analyte code": {
+   "ar": "كود التحليل في المختبر",
+   "en": "Lab analyte code",
+   "fr": "Code de l'analyte"
+  },
+  "Last lab result within {0} days, typed when none": {
+   "ar": "آخر نتيجة مختبر خلال {0} يوماً، ويُكتب يدوياً إن لم توجد",
+   "en": "Last lab result within {0} days, typed when none",
+   "fr": "Dernier résultat de labo sous {0} jours, saisi s'il n'y en a pas"
+  },
+  "Left": {
+   "ar": "يسار",
+   "en": "Left",
+   "fr": "Gauche"
+  },
+  "List the codes the calculator reads": {
+   "ar": "اكتب الأكواد التي تقرأها الحاسبة",
+   "en": "List the codes the calculator reads",
+   "fr": "Indiquez les codes que lit le calcul"
+  },
+  "Look back (days)": {
+   "ar": "المدة للخلف (يوم)",
+   "en": "Look back (days)",
+   "fr": "Recul (jours)"
+  },
+  "Make a new draft version from the published one?": {
+   "ar": "عمل نسخة مسودة جديدة من الإصدار المنشور؟",
+   "en": "Make a new draft version from the published one?",
+   "fr": "Créer un nouveau brouillon à partir de la version publiée ?"
+  },
+  "Manual entry": {
+   "ar": "إدخال يدوي",
+   "en": "Manual entry",
+   "fr": "Saisie manuelle"
+  },
+  "New concept": {
+   "ar": "قياس جديد",
+   "en": "New concept",
+   "fr": "Nouveau concept"
+  },
+  "New template": {
+   "ar": "نموذج جديد",
+   "en": "New template",
+   "fr": "Nouveau modèle"
+  },
+  "New version": {
+   "ar": "نسخة جديدة",
+   "en": "New version",
+   "fr": "Nouvelle version"
+  },
+  "No field yet: add the first one from the dictionary.": {
+   "ar": "لا توجد حقول بعد: أضف أول حقل من القاموس.",
+   "en": "No field yet: add the first one from the dictionary.",
+   "fr": "Aucun champ : ajoutez le premier depuis le dictionnaire."
+  },
+  "No records": {
+   "ar": "لا توجد سجلات",
+   "en": "No records",
+   "fr": "Aucun enregistrement"
+  },
+  "No template yet.": {
+   "ar": "لا توجد نماذج بعد.",
+   "en": "No template yet.",
+   "fr": "Aucun modèle."
+  },
+  "Normal high": {
+   "ar": "الطبيعي الأعلى",
+   "en": "Normal high",
+   "fr": "Normal haut"
+  },
+  "Normal high — second number": {
+   "ar": "الطبيعي الأعلى — الرقم الثاني",
+   "en": "Normal high — second number",
+   "fr": "Normal haut — second nombre"
+  },
+  "Normal low": {
+   "ar": "الطبيعي الأدنى",
+   "en": "Normal low",
+   "fr": "Normal bas"
+  },
+  "Normal, as written": {
+   "ar": "الطبيعي كما يُكتب",
+   "en": "Normal, as written",
+   "fr": "Normal, en texte"
+  },
+  "Note in English": {
+   "ar": "الملاحظة بالإنجليزية",
+   "en": "Note in English",
+   "fr": "Note en anglais"
+  },
+  "Once published, this version is frozen; visits already taken keep the version they were taken on.": {
+   "ar": "بعد النشر يُجمّد هذا الإصدار؛ والزيارات المسجلة تحتفظ بالإصدار الذي سُجلت به.",
+   "en": "Once published, this version is frozen; visits already taken keep the version they were taken on.",
+   "fr": "Une fois publiée, cette version est figée ; les visites gardent la version sur laquelle elles ont été prises."
+  },
+  "One dictionary for every specialty": {
+   "ar": "قاموس واحد لكل التخصصات",
+   "en": "One dictionary for every specialty",
+   "fr": "Un dictionnaire pour toutes les spécialités"
+  },
+  "Only a draft can be published": {
+   "ar": "المسودة فقط هي التي تُنشر",
+   "en": "Only a draft can be published",
+   "fr": "Seul un brouillon peut être publié"
+  },
+  "Only a published template can be filled": {
+   "ar": "لا يُملأ إلا نموذج منشور",
+   "en": "Only a published template can be filled",
+   "fr": "Seul un modèle publié peut être rempli"
+  },
+  "Order saved": {
+   "ar": "حُفظ الترتيب",
+   "en": "Order saved",
+   "fr": "Ordre enregistré"
+  },
+  "Preview": {
+   "ar": "معاينة",
+   "en": "Preview",
+   "fr": "Aperçu"
+  },
+  "Publish this version? It cannot change afterwards.": {
+   "ar": "نشر هذا الإصدار؟ لن يمكن تغييره بعد ذلك.",
+   "en": "Publish this version? It cannot change afterwards.",
+   "fr": "Publier cette version ? Elle ne pourra plus changer."
+  },
+  "Publish v{0}": {
+   "ar": "نشر v{0}",
+   "en": "Publish v{0}",
+   "fr": "Publier v{0}"
+  },
+  "Published": {
+   "ar": "منشور",
+   "en": "Published",
+   "fr": "Publié"
+  },
+  "Question in English": {
+   "ar": "السؤال بالإنجليزية",
+   "en": "Question in English",
+   "fr": "Question en anglais"
+  },
+  "R/L": {
+   "ar": "يمين/يسار",
+   "en": "R/L",
+   "fr": "D/G"
+  },
+  "Recorded per side (right / left)": {
+   "ar": "يُسجّل لكل جهة (يمين / يسار)",
+   "en": "Recorded per side (right / left)",
+   "fr": "Saisi par côté (droit / gauche)"
+  },
+  "Remove this field from the draft?": {
+   "ar": "حذف هذا الحقل من المسودة؟",
+   "en": "Remove this field from the draft?",
+   "fr": "Retirer ce champ du brouillon ?"
+  },
+  "Required to sign": {
+   "ar": "إلزامي للتوقيع",
+   "en": "Required to sign",
+   "fr": "Obligatoire pour signer"
+  },
+  "Retired": {
+   "ar": "مُستبدَل",
+   "en": "Retired",
+   "fr": "Remplacée"
+  },
+  "Right": {
+   "ar": "يمين",
+   "en": "Right",
+   "fr": "Droit"
+  },
+  "Right / left": {
+   "ar": "يمين / يسار",
+   "en": "Right / left",
+   "fr": "Droit / gauche"
+  },
+  "Save the field's properties?": {
+   "ar": "حفظ خصائص الحقل؟",
+   "en": "Save the field's properties?",
+   "fr": "Enregistrer les propriétés du champ ?"
+  },
+  "Save this concept to the dictionary?": {
+   "ar": "حفظ هذا القياس في القاموس؟",
+   "en": "Save this concept to the dictionary?",
+   "fr": "Enregistrer ce concept dans le dictionnaire ?"
+  },
+  "Search by name or code…": {
+   "ar": "ابحث بالاسم أو الكود…",
+   "en": "Search by name or code…",
+   "fr": "Rechercher par nom ou code…"
+  },
+  "Section in English": {
+   "ar": "القسم بالإنجليزية",
+   "en": "Section in English",
+   "fr": "Section en anglais"
+  },
+  "Shown only when": {
+   "ar": "يظهر فقط عندما",
+   "en": "Shown only when",
+   "fr": "Affiché seulement si"
+  },
+  "Shown when {0} > {1}": {
+   "ar": "يظهر عندما {0} > {1}",
+   "en": "Shown when {0} > {1}",
+   "fr": "Affiché quand {0} > {1}"
+  },
+  "Side": {
+   "ar": "الجهة",
+   "en": "Side",
+   "fr": "Côté"
+  },
+  "Specialty clinics": {
+   "ar": "العيادات التخصصية",
+   "en": "Specialty clinics",
+   "fr": "Consultations spécialisées"
+  },
+  "Specialty template designer": {
+   "ar": "مصمم نماذج التخصص",
+   "en": "Specialty template designer",
+   "fr": "Concepteur de modèles de spécialité"
+  },
+  "Template designer": {
+   "ar": "مصمم النماذج",
+   "en": "Template designer",
+   "fr": "Concepteur de modèles"
+  },
+  "Templates": {
+   "ar": "النماذج",
+   "en": "Templates",
+   "fr": "Modèles"
+  },
+  "The alert": {
+   "ar": "نص التنبيه",
+   "en": "The alert",
+   "fr": "L'alerte"
+  },
+  "The change": {
+   "ar": "التغيير",
+   "en": "The change",
+   "fr": "Changement"
+  },
+  "The code": {
+   "ar": "الكود",
+   "en": "The code",
+   "fr": "Code"
+  },
+  "The codes it reads, comma-separated": {
+   "ar": "الأكواد التي تقرأها، مفصولة بفواصل",
+   "en": "The codes it reads, comma-separated",
+   "fr": "Les codes lus, séparés par des virgules"
+  },
+  "The critical high must be at or above the normal range": {
+   "ar": "الحرج الأعلى يجب أن يكون عند أو فوق المدى الطبيعي",
+   "en": "The critical high must be at or above the normal range",
+   "fr": "Le critique haut doit être au-dessus de la plage normale"
+  },
+  "The critical low must be at or below the normal range": {
+   "ar": "الحرج الأدنى يجب أن يكون عند أو تحت المدى الطبيعي",
+   "en": "The critical low must be at or below the normal range",
+   "fr": "Le critique bas doit être sous la plage normale"
+  },
+  "The international code makes reports, insurance and device links possible": {
+   "ar": "الكود العالمي يجعل التقارير والتأمين والربط مع الأجهزة ممكناً",
+   "en": "The international code makes reports, insurance and device links possible",
+   "fr": "Le code international rend possibles rapports, assurance et liaison aux appareils"
+  },
+  "The list of fields changed: reload the page": {
+   "ar": "تغيّرت قائمة الحقول: أعد تحميل الصفحة",
+   "en": "The list of fields changed: reload the page",
+   "fr": "La liste des champs a changé : rechargez la page"
+  },
+  "The low alert must be below the high alert": {
+   "ar": "التنبيه الأدنى يجب أن يكون تحت الأعلى",
+   "en": "The low alert must be below the high alert",
+   "fr": "L'alerte basse doit être sous l'alerte haute"
+  },
+  "The normal low is above the normal high": {
+   "ar": "الطبيعي الأدنى أعلى من الطبيعي الأعلى",
+   "en": "The normal low is above the normal high",
+   "fr": "Le normal bas dépasse le normal haut"
+  },
+  "The specialty clinic content is not installed yet (hospital_h93_clinical_content.sql).": {
+   "ar": "محتوى العيادات التخصصية غير مثبت بعد (hospital_h93_clinical_content.sql).",
+   "en": "The specialty clinic content is not installed yet (hospital_h93_clinical_content.sql).",
+   "fr": "Le contenu des consultations spécialisées n'est pas encore installé (hospital_h93_clinical_content.sql)."
+  },
+  "The value is stored as its own observation for the patient, so it shows on the {0} trend in every clinic.": {
+   "ar": "تُحفظ القيمة كقياس منفصل (Observation) لهذا المريض فتظهر في منحنى {0} في كل العيادات.",
+   "en": "The value is stored as its own observation for the patient, so it shows on the {0} trend in every clinic.",
+   "fr": "La valeur est enregistrée comme observation du patient : elle apparaît sur la courbe {0} dans toutes les consultations."
+  },
+  "This concept already has recorded values: its type cannot change": {
+   "ar": "هذا القياس له قيم مسجلة: لا يتغير نوعه",
+   "en": "This concept already has recorded values: its type cannot change",
+   "fr": "Ce concept a des valeurs : son type ne peut changer"
+  },
+  "This concept is already on the template": {
+   "ar": "هذا القياس موجود بالفعل في النموذج",
+   "en": "This concept is already on the template",
+   "fr": "Ce concept est déjà dans le modèle"
+  },
+  "This concept is not linked to a lab test": {
+   "ar": "هذا القياس غير مربوط بتحليل مختبر",
+   "en": "This concept is not linked to a lab test",
+   "fr": "Ce concept n'est lié à aucun test de laboratoire"
+  },
+  "This form is already signed": {
+   "ar": "هذا النموذج موقّع بالفعل",
+   "en": "This form is already signed",
+   "fr": "Ce formulaire est déjà signé"
+  },
+  "This form is signed: it cannot change": {
+   "ar": "هذا النموذج موقّع: لا يتغير",
+   "en": "This form is signed: it cannot change",
+   "fr": "Ce formulaire est signé : il ne peut changer"
+  },
+  "This template already has a draft: finish or publish it first": {
+   "ar": "هذا النموذج له مسودة بالفعل: أكملها أو انشرها أولاً",
+   "en": "This template already has a draft: finish or publish it first",
+   "fr": "Ce modèle a déjà un brouillon : terminez-le ou publiez-le"
+  },
+  "This visit already has this template on another version": {
+   "ar": "هذه الزيارة بها النموذج نفسه بإصدار آخر",
+   "en": "This visit already has this template on another version",
+   "fr": "Cette visite a déjà ce modèle dans une autre version"
+  },
+  "This visit is signed: its forms cannot change": {
+   "ar": "هذه الزيارة موقّعة: نماذجها لا تتغير",
+   "en": "This visit is signed: its forms cannot change",
+   "fr": "Cette visite est signée : ses formulaires ne changent plus"
+  },
+  "Used by": {
+   "ar": "يستخدمه",
+   "en": "Used by",
+   "fr": "Utilisé par"
+  },
+  "Value source": {
+   "ar": "مصدر القيمة",
+   "en": "Value source",
+   "fr": "Source de la valeur"
+  },
+  "Version": {
+   "ar": "الإصدار",
+   "en": "Version",
+   "fr": "Version"
+  },
+  "What changed in this version": {
+   "ar": "ما الذي تغيّر في هذا الإصدار",
+   "en": "What changed in this version",
+   "fr": "Ce qui a changé dans cette version"
+  },
+  "Write the alert, in Arabic and in English": {
+   "ar": "اكتب نص التنبيه بالعربية والإنجليزية",
+   "en": "Write the alert, in Arabic and in English",
+   "fr": "Saisissez l'alerte, en arabe et en anglais"
+  },
+  "Write the concept's code": {
+   "ar": "اكتب كود القياس",
+   "en": "Write the concept's code",
+   "fr": "Saisissez le code du concept"
+  },
+  "Write the name, in Arabic and in English": {
+   "ar": "اكتب الاسم بالعربية والإنجليزية",
+   "en": "Write the name, in Arabic and in English",
+   "fr": "Saisissez le nom, en arabe et en anglais"
+  },
+  "Write the section, in Arabic and in English": {
+   "ar": "اكتب القسم بالعربية والإنجليزية",
+   "en": "Write the section, in Arabic and in English",
+   "fr": "Saisissez la section, en arabe et en anglais"
+  },
+  "Write the template's code": {
+   "ar": "اكتب كود النموذج",
+   "en": "Write the template's code",
+   "fr": "Saisissez le code du modèle"
+  },
+  "Write the value the other field must be above": {
+   "ar": "اكتب القيمة التي يجب أن يتجاوزها الحقل الآخر",
+   "en": "Write the value the other field must be above",
+   "fr": "Saisissez la valeur que l'autre champ doit dépasser"
+  },
+  "Write what changed in this version": {
+   "ar": "اكتب ما تغيّر في هذا الإصدار",
+   "en": "Write what changed in this version",
+   "fr": "Indiquez ce qui a changé dans cette version"
+  },
+  "by age": {
+   "ar": "حسب العمر",
+   "en": "by age",
+   "fr": "selon l'âge"
+  },
+  "calc:Bmi": {
+   "ar": "مؤشر كتلة الجسم",
+   "en": "BMI",
+   "fr": "IMC"
+  },
+  "calc:EgfrCkdEpi2021": {
+   "ar": "eGFR — CKD-EPI 2021",
+   "en": "eGFR — CKD-EPI 2021",
+   "fr": "DFGe — CKD-EPI 2021"
+  },
+  "calc:Kdigo": {
+   "ar": "مرحلة KDIGO (eGFR × ACR)",
+   "en": "KDIGO stage (eGFR × ACR)",
+   "fr": "Stade KDIGO (DFGe × RAC)"
+  },
+  "calc:Sum": {
+   "ar": "مجموع البنود",
+   "en": "Sum of items",
+   "fr": "Somme des items"
+  },
+  "concepts": {
+   "ar": "قياس",
+   "en": "concepts",
+   "fr": "concepts"
+  },
+  "ctype:Calculated": {
+   "ar": "محسوب",
+   "en": "Calculated",
+   "fr": "Calculé"
+  },
+  "ctype:Choice": {
+   "ar": "اختيار",
+   "en": "Choice",
+   "fr": "Choix"
+  },
+  "ctype:Number": {
+   "ar": "رقم",
+   "en": "Number",
+   "fr": "Nombre"
+  },
+  "ctype:Panel": {
+   "ar": "مجموعة",
+   "en": "Panel",
+   "fr": "Panel"
+  },
+  "ctype:Score": {
+   "ar": "نقاط",
+   "en": "Score",
+   "fr": "Score"
+  },
+  "{0} visits": {
+   "ar": "{0} زيارة",
+   "en": "{0} visits",
+   "fr": "{0} visites"
+  },
+  "{0}: Choose one of the answers": {
+   "ar": "{0}: اختر إحدى الإجابات",
+   "en": "{0}: Choose one of the answers",
+   "fr": "{0} : choisissez une des réponses"
+  },
+  "{0}: Write a number": {
+   "ar": "{0}: اكتب رقماً",
+   "en": "{0}: Write a number",
+   "fr": "{0} : saisissez un nombre"
+  },
+  "{0}: Write it as two numbers: 120/80": {
+   "ar": "{0}: اكتبه رقمين: 120/80",
+   "en": "{0}: Write it as two numbers: 120/80",
+   "fr": "{0} : écrivez deux nombres : 120/80"
+  }
+ }
+}

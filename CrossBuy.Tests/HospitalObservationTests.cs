@@ -1,4 +1,4 @@
-using CrossBuy.BL.Hospital;
+﻿using CrossBuy.BL.Hospital;
 using CrossBuy.Models.Context.Hospital;
 using Xunit;
 
@@ -151,6 +151,38 @@ namespace CrossBuy.Tests
 			Assert.Equal(new[] { "HospitalAdmissions", "HospitalPatients" }, HospitalSliceParity.CheckedPrerequisites(s).OrderBy(x => x));
 			Assert.Contains(HospitalPatientMergeRules.PatientTables, t => t.Entity == typeof(HospitalObservation));
 			Assert.Contains(HospitalPatientMergeRules.PatientTables, t => t.Entity == typeof(HospitalRiskAssessment));
+		}
+
+		// ==================================================================================
+		// AN INCOMPLETE SET IS NOT A WELL PATIENT.
+		//
+		// Score() already returns null for a set missing any parameter. What the ward board did
+		// with that null was the defect: it gave an incomplete set FOUR HOURS until the next
+		// reading — the interval for a patient scored 1–4 — which is a claim about the risk of a
+		// patient who was never scored. The code's own comment said "an incomplete one: the next
+		// is due now" and the code did something else; the comment was the specification.
+		// ==================================================================================
+		[Fact]
+		public void A_set_that_could_not_be_scored_is_due_at_once()
+		{
+			var taken = new DateTime(2026, 11, 11, 8, 0, 0, DateTimeKind.Utc);
+
+			// nothing recorded yet
+			Assert.Null(HospitalNews2Rules.NextDueAt(null));
+
+			// pulse and temperature only: no score, so no interval is earned
+			var partial = new HospitalObservation { TakenAt = taken, HeartRate = 88, TempC = 37.4m, News2 = null, News2Risk = null };
+			Assert.Equal(taken, HospitalNews2Rules.NextDueAt(partial));
+
+			// a scored set earns its band: 0 buys twelve hours, a single 3 buys one
+			var well = new HospitalObservation { TakenAt = taken, News2 = 0, News2Risk = HospitalNews2Risk.Low };
+			Assert.Equal(taken.AddHours(12), HospitalNews2Rules.NextDueAt(well));
+
+			var single3 = new HospitalObservation { TakenAt = taken, News2 = 3, News2Risk = HospitalNews2Risk.LowSingle };
+			Assert.Equal(taken.AddHours(1), HospitalNews2Rules.NextDueAt(single3));
+
+			// the incomplete set must NEVER be treated as the 1-4 band, which is what it used to get
+			Assert.NotEqual(taken.AddHours(4), HospitalNews2Rules.NextDueAt(partial));
 		}
 	}
 }

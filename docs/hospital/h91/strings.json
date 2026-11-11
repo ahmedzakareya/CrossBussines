@@ -1,0 +1,615 @@
+{
+ "unit": "H91 — reception self-intake",
+ "strings": {
+  "A file above very likely belongs to this patient: a new one needs a reason.": {
+   "ar": "يوجد ملف أعلاه غالبًا يخص هذا المريض: الملف الجديد يحتاج سببًا.",
+   "en": "A file above very likely belongs to this patient: a new one needs a reason.",
+   "fr": "Un dossier ci-dessus appartient très probablement à ce patient : un nouveau demande une raison."
+  },
+  "A file very likely already exists: link it, or write why a new file is right": {
+   "ar": "غالبًا يوجد ملف بالفعل: اربطه، أو اكتب سبب فتح ملف جديد",
+   "en": "A file very likely already exists: link it, or write why a new file is right",
+   "fr": "Un dossier existe très probablement : liez-le, ou expliquez pourquoi en ouvrir un nouveau"
+  },
+  "About this visit": {
+   "ar": "عن هذه الزيارة",
+   "en": "About this visit",
+   "fr": "À propos de cette visite"
+  },
+  "Acknowledge the danger signs first": {
+   "ar": "أكّد رؤية العلامات الخطيرة أولًا",
+   "en": "Acknowledge the danger signs first",
+   "fr": "Prenez d'abord acte des signes de danger"
+  },
+  "Acknowledged {0}": {
+   "ar": "تم التأكيد {0}",
+   "en": "Acknowledged {0}",
+   "fr": "Pris en compte le {0}"
+  },
+  "Agree to the use of your data to continue": {
+   "ar": "وافق على استخدام بياناتك للمتابعة",
+   "en": "Agree to the use of your data to continue",
+   "fr": "Acceptez l'utilisation de vos données pour continuer"
+  },
+  "Allergies (medicines, food)": {
+   "ar": "الحساسية (أدوية، أطعمة)",
+   "en": "Allergies (medicines, food)",
+   "fr": "Allergies (médicaments, aliments)"
+  },
+  "As written on your identity document.": {
+   "ar": "كما هي مكتوبة في إثبات الهوية.",
+   "en": "As written on your identity document.",
+   "fr": "Comme sur votre pièce d'identité."
+  },
+  "Before anything: do you have any of these now?": {
+   "ar": "قبل أي شيء: هل تعاني الآن من أي مما يلي؟",
+   "en": "Before anything: do you have any of these now?",
+   "fr": "Avant tout : avez-vous l'un de ces signes maintenant ?"
+  },
+  "Check two identifiers against the identity document first": {
+   "ar": "تحقق أولًا من معرّفين اثنين مقابل إثبات الهوية",
+   "en": "Check two identifiers against the identity document first",
+   "fr": "Vérifiez d'abord deux identifiants sur la pièce d'identité"
+  },
+  "Choose from the list": {
+   "ar": "اختر من القائمة",
+   "en": "Choose from the list",
+   "fr": "Choisissez dans la liste"
+  },
+  "Choose the file to link": {
+   "ar": "اختر الملف المراد الربط به",
+   "en": "Choose the file to link",
+   "fr": "Choisissez le dossier à lier"
+  },
+  "Choose the identity document": {
+   "ar": "اختر نوع إثبات الهوية",
+   "en": "Choose the identity document",
+   "fr": "Choisissez la pièce d'identité"
+  },
+  "Choose why you came": {
+   "ar": "اختر سبب الحضور",
+   "en": "Choose why you came",
+   "fr": "Choisissez le motif de venue"
+  },
+  "Confirm the identity": {
+   "ar": "تأكيد الهوية",
+   "en": "Confirm the identity",
+   "fr": "Confirmer l'identité"
+  },
+  "Consent given {0} (version {1})": {
+   "ar": "تمت الموافقة {0} (الإصدار {1})",
+   "en": "Consent given {0} (version {1})",
+   "fr": "Consentement donné le {0} (version {1})"
+  },
+  "Danger signs": {
+   "ar": "علامات خطيرة",
+   "en": "Danger signs",
+   "fr": "Signes de danger"
+  },
+  "Danger signs waiting:": {
+   "ar": "علامات خطيرة بانتظار الاستقبال:",
+   "en": "Danger signs waiting:",
+   "fr": "Signes de danger en attente :"
+  },
+  "Danger signs — seen": {
+   "ar": "علامات خطيرة — تمت رؤيتها",
+   "en": "Danger signs — seen",
+   "fr": "Signes de danger — vus"
+  },
+  "Files that may be this patient": {
+   "ar": "ملفات قد تخص هذا المريض",
+   "en": "Files that may be this patient",
+   "fr": "Dossiers pouvant être ce patient"
+  },
+  "Full name (four parts)": {
+   "ar": "الاسم الرباعي",
+   "en": "Full name (four parts)",
+   "fr": "Nom complet (quatre parties)"
+  },
+  "I agree, and the details I gave are correct": {
+   "ar": "أوافق، والبيانات التي أدخلتها صحيحة",
+   "en": "I agree, and the details I gave are correct",
+   "fr": "J'accepte, et mes informations sont exactes"
+  },
+  "I am or may be pregnant": {
+   "ar": "أنا حامل أو قد أكون حاملًا",
+   "en": "I am or may be pregnant",
+   "fr": "Je suis ou pourrais être enceinte"
+  },
+  "I checked two identifiers (name, date of birth or ID number) against the patient's identity document": {
+   "ar": "تحققت من معرّفين اثنين (الاسم، تاريخ الميلاد أو رقم الهوية) مقابل إثبات هوية المريض",
+   "en": "I checked two identifiers (name, date of birth or ID number) against the patient's identity document",
+   "fr": "J'ai vérifié deux identifiants (nom, date de naissance ou numéro) sur la pièce d'identité du patient"
+  },
+  "I have one of these": {
+   "ar": "أعاني من أحدها",
+   "en": "I have one of these",
+   "fr": "J'ai l'un de ces signes"
+  },
+  "I have seen the patient — send to the nurse": {
+   "ar": "رأيت المريض — تحويل للتمريض",
+   "en": "I have seen the patient — send to the nurse",
+   "fr": "J'ai vu le patient — vers l'infirmière"
+  },
+  "Identity document": {
+   "ar": "إثبات الهوية",
+   "en": "Identity document",
+   "fr": "Pièce d'identité"
+  },
+  "In the last two weeks, have you had…": {
+   "ar": "خلال الأسبوعين الماضيين، هل عانيت من…",
+   "en": "In the last two weeks, have you had…",
+   "fr": "Ces deux dernières semaines, avez-vous eu…"
+  },
+  "Infection signs in two weeks": {
+   "ar": "علامات عدوى خلال أسبوعين",
+   "en": "Infection signs in two weeks",
+   "fr": "Signes d'infection en deux semaines"
+  },
+  "Intakes": {
+   "ar": "البيانات الواردة",
+   "en": "Intakes",
+   "fr": "Saisies"
+  },
+  "Its number": {
+   "ar": "رقمه",
+   "en": "Its number",
+   "fr": "Son numéro"
+  },
+  "Link the intake to this file:": {
+   "ar": "ربط البيانات بهذا الملف:",
+   "en": "Link the intake to this file:",
+   "fr": "Lier la saisie à ce dossier :"
+  },
+  "Link to this file": {
+   "ar": "ربط بهذا الملف",
+   "en": "Link to this file",
+   "fr": "Lier à ce dossier"
+  },
+  "Linked or new file": {
+   "ar": "رُبطت أو ملف جديد",
+   "en": "Linked or new file",
+   "fr": "Liées ou nouveau dossier"
+  },
+  "Match {0} — {1}": {
+   "ar": "التطابق {0} — {1}",
+   "en": "Match {0} — {1}",
+   "fr": "Correspondance {0} — {1}"
+  },
+  "Medicines you take": {
+   "ar": "الأدوية التي تتناولها",
+   "en": "Medicines you take",
+   "fr": "Médicaments que vous prenez"
+  },
+  "Name entered": {
+   "ar": "الاسم المُدخل",
+   "en": "Name entered",
+   "fr": "Nom saisi"
+  },
+  "Name in English (optional)": {
+   "ar": "الاسم بالإنجليزية (اختياري)",
+   "en": "Name in English (optional)",
+   "fr": "Nom en anglais (facultatif)"
+  },
+  "No consent recorded": {
+   "ar": "لا توجد موافقة مسجلة",
+   "en": "No consent recorded",
+   "fr": "Aucun consentement enregistré"
+  },
+  "No existing file looks like this patient.": {
+   "ar": "لا يوجد ملف مشابه لهذا المريض.",
+   "en": "No existing file looks like this patient.",
+   "fr": "Aucun dossier existant ne ressemble à ce patient."
+  },
+  "No intake waiting.": {
+   "ar": "لا توجد بيانات بانتظار الاستقبال.",
+   "en": "No intake waiting.",
+   "fr": "Aucune saisie en attente."
+  },
+  "None of these": {
+   "ar": "لا شيء مما سبق",
+   "en": "None of these",
+   "fr": "Aucun de ces signes"
+  },
+  "Not given — sent to the desk": {
+   "ar": "لم تُدخل — أُرسل للاستقبال",
+   "en": "Not given — sent to the desk",
+   "fr": "Non saisi — envoyé à l'accueil"
+  },
+  "Open a new file": {
+   "ar": "فتح ملف جديد",
+   "en": "Open a new file",
+   "fr": "Ouvrir un nouveau dossier"
+  },
+  "Open a new file for this patient:": {
+   "ar": "فتح ملف جديد لهذا المريض:",
+   "en": "Open a new file for this patient:",
+   "fr": "Ouvrir un nouveau dossier pour ce patient :"
+  },
+  "Open the tablet screen": {
+   "ar": "فتح شاشة الجهاز اللوحي",
+   "en": "Open the tablet screen",
+   "fr": "Ouvrir l'écran de la tablette"
+  },
+  "Please go to the reception desk now": {
+   "ar": "من فضلك توجّه إلى الاستقبال الآن",
+   "en": "Please go to the reception desk now",
+   "fr": "Allez à l'accueil maintenant, s'il vous plaît"
+  },
+  "Reception — your details": {
+   "ar": "الاستقبال — بياناتك",
+   "en": "Reception — your details",
+   "fr": "Accueil — vos informations"
+  },
+  "Reject": {
+   "ar": "رفض",
+   "en": "Reject",
+   "fr": "Rejeter"
+  },
+  "Rejected or expired": {
+   "ar": "مرفوضة أو منتهية",
+   "en": "Rejected or expired",
+   "fr": "Rejetées ou expirées"
+  },
+  "Scored on the identity number, the date of birth, the mobile and the name's parts in any order. The patient never sees this.": {
+   "ar": "الدرجة محسوبة على رقم الهوية وتاريخ الميلاد والجوال وأجزاء الاسم بأي ترتيب. المريض لا يرى هذا أبدًا.",
+   "en": "Scored on the identity number, the date of birth, the mobile and the name's parts in any order. The patient never sees this.",
+   "fr": "Score sur le numéro d'identité, la date de naissance, le mobile et les parties du nom dans tout ordre. Le patient ne le voit jamais."
+  },
+  "Search by number, name, mobile or ID…": {
+   "ar": "ابحث بالرقم أو الاسم أو الجوال أو الهوية…",
+   "en": "Search by number, name, mobile or ID…",
+   "fr": "Rechercher par numéro, nom, mobile ou identité…"
+  },
+  "Self-intake": {
+   "ar": "التسجيل الذاتي",
+   "en": "Self-intake",
+   "fr": "Préadmission libre-service"
+  },
+  "Send to the reception": {
+   "ar": "إرسال للاستقبال",
+   "en": "Send to the reception",
+   "fr": "Envoyer à l'accueil"
+  },
+  "Someone to call in an emergency": {
+   "ar": "شخص يُتصل به في الطوارئ",
+   "en": "Someone to call in an emergency",
+   "fr": "Personne à prévenir en urgence"
+  },
+  "Thank you — please take a seat": {
+   "ar": "شكرًا — تفضل بالجلوس",
+   "en": "Thank you — please take a seat",
+   "fr": "Merci — veuillez vous asseoir"
+  },
+  "The allergies entered are added to the file's list; none are removed.": {
+   "ar": "الحساسية المُدخلة تُضاف لقائمة الملف؛ ولا يُحذف شيء.",
+   "en": "The allergies entered are added to the file's list; none are removed.",
+   "fr": "Les allergies saisies s'ajoutent à la liste du dossier ; rien n'est retiré."
+  },
+  "The identity number is 5 to 20 letters or digits": {
+   "ar": "رقم الهوية من 5 إلى 20 حرفًا أو رقمًا",
+   "en": "The identity number is 5 to 20 letters or digits",
+   "fr": "Le numéro d'identité fait 5 à 20 lettres ou chiffres"
+  },
+  "The intake has no name or date of birth: register the patient at the desk": {
+   "ar": "البيانات بلا اسم أو تاريخ ميلاد: سجّل المريض من الاستقبال",
+   "en": "The intake has no name or date of birth: register the patient at the desk",
+   "fr": "La saisie n'a ni nom ni date de naissance : enregistrez le patient à l'accueil"
+  },
+  "The nurse takes your vital signs": {
+   "ar": "التمريض يقيس العلامات الحيوية",
+   "en": "The nurse takes your vital signs",
+   "fr": "L'infirmière prend vos constantes"
+  },
+  "The patient reported danger signs": {
+   "ar": "المريض أبلغ عن علامات خطيرة",
+   "en": "The patient reported danger signs",
+   "fr": "Le patient a signalé des signes de danger"
+  },
+  "The reception calls your number and checks your identity document": {
+   "ar": "الاستقبال ينادي رقمك ويتحقق من إثبات هويتك",
+   "en": "The reception calls your number and checks your identity document",
+   "fr": "L'accueil appelle votre numéro et vérifie votre pièce d'identité"
+  },
+  "The self-intake is not installed yet (hospital_h91_self_intake.sql).": {
+   "ar": "التسجيل الذاتي غير مثبت بعد (hospital_h91_self_intake.sql).",
+   "en": "The self-intake is not installed yet (hospital_h91_self_intake.sql).",
+   "fr": "La préadmission libre-service n'est pas encore installée (hospital_h91_self_intake.sql)."
+  },
+  "The staff have been alerted. Show them this number:": {
+   "ar": "تم تنبيه الموظفين. أرِهم هذا الرقم:",
+   "en": "The staff have been alerted. Show them this number:",
+   "fr": "Le personnel a été alerté. Montrez-lui ce numéro :"
+  },
+  "Their phone": {
+   "ar": "هاتفه",
+   "en": "Their phone",
+   "fr": "Son téléphone"
+  },
+  "There is no alert to acknowledge": {
+   "ar": "لا يوجد تنبيه لتأكيده",
+   "en": "There is no alert to acknowledge",
+   "fr": "Aucune alerte à prendre en compte"
+  },
+  "This intake is already settled": {
+   "ar": "تمت معالجة هذه البيانات بالفعل",
+   "en": "This intake is already settled",
+   "fr": "Cette saisie est déjà traitée"
+  },
+  "Tick each one you have. If you have none, press “None of these”.": {
+   "ar": "اختر كل ما تعاني منه. إن لم يكن لديك شيء، اضغط «لا شيء مما سبق».",
+   "en": "Tick each one you have. If you have none, press “None of these”.",
+   "fr": "Cochez chacun de ceux que vous avez. Sinon, appuyez sur « Aucun de ces signes »."
+  },
+  "Update the file's mobile number to the one entered": {
+   "ar": "تحديث جوال الملف بالرقم المُدخل",
+   "en": "Update the file's mobile number to the one entered",
+   "fr": "Mettre à jour le mobile du dossier avec celui saisi"
+  },
+  "Waited": {
+   "ar": "مدة الانتظار",
+   "en": "Waited",
+   "fr": "Attente"
+  },
+  "Waiting for the desk": {
+   "ar": "بانتظار الاستقبال",
+   "en": "Waiting for the desk",
+   "fr": "En attente de l'accueil"
+  },
+  "Welcome — your details before the visit": {
+   "ar": "أهلًا بك — بياناتك قبل الزيارة",
+   "en": "Welcome — your details before the visit",
+   "fr": "Bienvenue — vos informations avant la visite"
+  },
+  "What brings you today?": {
+   "ar": "ما سبب زيارتك اليوم؟",
+   "en": "What brings you today?",
+   "fr": "Qu'est-ce qui vous amène aujourd'hui ?"
+  },
+  "What patients entered on the reception tablet, for the desk to confirm": {
+   "ar": "ما أدخله المرضى على جهاز الاستقبال، ليؤكده الموظف",
+   "en": "What patients entered on the reception tablet, for the desk to confirm",
+   "fr": "Ce que les patients ont saisi sur la tablette, à confirmer par l'accueil"
+  },
+  "What the patient entered": {
+   "ar": "ما أدخله المريض",
+   "en": "What the patient entered",
+   "fr": "Ce que le patient a saisi"
+  },
+  "When none of the files above is this patient.": {
+   "ar": "عندما لا يكون أي ملف أعلاه لهذا المريض.",
+   "en": "When none of the files above is this patient.",
+   "fr": "Quand aucun dossier ci-dessus n'est ce patient."
+  },
+  "Who are you?": {
+   "ar": "من أنت؟",
+   "en": "Who are you?",
+   "fr": "Qui êtes-vous ?"
+  },
+  "Why a new file": {
+   "ar": "سبب فتح ملف جديد",
+   "en": "Why a new file",
+   "fr": "Pourquoi un nouveau dossier"
+  },
+  "Why is the intake rejected?": {
+   "ar": "لماذا رُفضت البيانات؟",
+   "en": "Why is the intake rejected?",
+   "fr": "Pourquoi la saisie est-elle rejetée ?"
+  },
+  "Write a valid emergency phone": {
+   "ar": "اكتب رقم طوارئ صحيحًا",
+   "en": "Write a valid emergency phone",
+   "fr": "Saisissez un téléphone d'urgence valide"
+  },
+  "Write why the intake is rejected": {
+   "ar": "اكتب سبب الرفض",
+   "en": "Write why the intake is rejected",
+   "fr": "Indiquez pourquoi la saisie est rejetée"
+  },
+  "Write your date of birth": {
+   "ar": "اكتب تاريخ ميلادك",
+   "en": "Write your date of birth",
+   "fr": "Saisissez votre date de naissance"
+  },
+  "Write your full name": {
+   "ar": "اكتب اسمك كاملًا",
+   "en": "Write your full name",
+   "fr": "Saisissez votre nom complet"
+  },
+  "Write your mobile number": {
+   "ar": "اكتب رقم جوالك",
+   "en": "Write your mobile number",
+   "fr": "Saisissez votre numéro de mobile"
+  },
+  "You came for": {
+   "ar": "سبب الحضور",
+   "en": "You came for",
+   "fr": "Vous venez pour"
+  },
+  "You saw the patient and passed them to the nurse?": {
+   "ar": "رأيت المريض وحوّلته للتمريض؟",
+   "en": "You saw the patient and passed them to the nurse?",
+   "fr": "Vous avez vu le patient et l'avez confié à l'infirmière ?"
+  },
+  "You see the doctor; tests or medicines follow if needed": {
+   "ar": "تقابل الطبيب؛ ثم التحاليل أو الأدوية إن لزم",
+   "en": "You see the doctor; tests or medicines follow if needed",
+   "fr": "Vous voyez le médecin ; examens ou médicaments si besoin"
+  },
+  "Your agreement": {
+   "ar": "موافقتك",
+   "en": "Your agreement",
+   "fr": "Votre accord"
+  },
+  "Your details are used only to open or update your medical file and to care for you here. The reception checks them against your identity document before anything is saved to a file.": {
+   "ar": "تُستخدم بياناتك فقط لفتح ملفك الطبي أو تحديثه ولرعايتك هنا. ويتحقق الاستقبال منها مقابل إثبات هويتك قبل حفظ أي شيء في الملف.",
+   "en": "Your details are used only to open or update your medical file and to care for you here. The reception checks them against your identity document before anything is saved to a file.",
+   "fr": "Vos informations servent uniquement à ouvrir ou mettre à jour votre dossier et à vous soigner ici. L'accueil les vérifie sur votre pièce d'identité avant tout enregistrement."
+  },
+  "Your file is opened or updated, and payment or insurance is settled": {
+   "ar": "يُفتح ملفك أو يُحدّث، وتُسوّى المدفوعات أو التأمين",
+   "en": "Your file is opened or updated, and payment or insurance is settled",
+   "fr": "Votre dossier est ouvert ou mis à jour, et le paiement ou l'assurance réglé"
+  },
+  "Your number:": {
+   "ar": "رقمك:",
+   "en": "Your number:",
+   "fr": "Votre numéro :"
+  },
+  "iid:NationalId": {
+   "ar": "الهوية الوطنية",
+   "en": "National ID",
+   "fr": "Carte nationale"
+  },
+  "iid:None": {
+   "ar": "لا أحمل إثباتًا",
+   "en": "I have none with me",
+   "fr": "Je n'en ai pas sur moi"
+  },
+  "iid:Passport": {
+   "ar": "جواز السفر",
+   "en": "Passport",
+   "fr": "Passeport"
+  },
+  "iid:Residency": {
+   "ar": "الإقامة",
+   "en": "Residency (iqama)",
+   "fr": "Titre de séjour"
+  },
+  "iin:Cough": {
+   "ar": "كحة",
+   "en": "Cough",
+   "fr": "Toux"
+  },
+  "iin:Diarrhoea": {
+   "ar": "إسهال",
+   "en": "Diarrhoea",
+   "fr": "Diarrhée"
+  },
+  "iin:Fever": {
+   "ar": "حرارة",
+   "en": "Fever",
+   "fr": "Fièvre"
+  },
+  "iin:Rash": {
+   "ar": "طفح جلدي",
+   "en": "Rash",
+   "fr": "Éruption cutanée"
+  },
+  "iin:Travel": {
+   "ar": "سفر للخارج",
+   "en": "Travel abroad",
+   "fr": "Voyage à l'étranger"
+  },
+  "imm:Deterministic": {
+   "ar": "الهوية وتاريخ الميلاد",
+   "en": "ID and birth date",
+   "fr": "Identité et date de naissance"
+  },
+  "imm:None": {
+   "ar": "لا تطابق",
+   "en": "No match",
+   "fr": "Aucune correspondance"
+  },
+  "imm:Probabilistic": {
+   "ar": "مرجّح",
+   "en": "Weighted",
+   "fr": "Pondéré"
+  },
+  "irf:Allergic": {
+   "ar": "تورم الوجه أو الحلق",
+   "en": "Swelling of the face or throat",
+   "fr": "Gonflement du visage ou de la gorge"
+  },
+  "irf:Bleeding": {
+   "ar": "نزيف شديد",
+   "en": "Heavy bleeding",
+   "fr": "Saignement abondant"
+  },
+  "irf:Breathing": {
+   "ar": "صعوبة في التنفس",
+   "en": "Hard to breathe",
+   "fr": "Difficulté à respirer"
+  },
+  "irf:ChestPain": {
+   "ar": "ألم أو ضغط في الصدر",
+   "en": "Chest pain or pressure",
+   "fr": "Douleur ou oppression thoracique"
+  },
+  "irf:Fainting": {
+   "ar": "إغماء أو تشوش",
+   "en": "Fainting or confusion",
+   "fr": "Évanouissement ou confusion"
+  },
+  "irf:PregnancyBleeding": {
+   "ar": "حامل مع نزيف أو ألم شديد",
+   "en": "Pregnant with bleeding or strong pain",
+   "fr": "Enceinte avec saignement ou forte douleur"
+  },
+  "irf:SelfHarm": {
+   "ar": "أفكار لإيذاء نفسك",
+   "en": "Thoughts of harming yourself",
+   "fr": "Idées de vous faire du mal"
+  },
+  "irf:Stroke": {
+   "ar": "ميل الوجه أو ضعف الذراع أو تلعثم الكلام",
+   "en": "Face drooping, arm weakness or slurred speech",
+   "fr": "Visage affaissé, bras faible ou parole troublée"
+  },
+  "ist:Expired": {
+   "ar": "منتهية",
+   "en": "Expired",
+   "fr": "Expirée"
+  },
+  "ist:Linked": {
+   "ar": "رُبطت بملف",
+   "en": "Linked to a file",
+   "fr": "Liée à un dossier"
+  },
+  "ist:NewFile": {
+   "ar": "فُتح ملف جديد",
+   "en": "New file opened",
+   "fr": "Nouveau dossier ouvert"
+  },
+  "ist:Rejected": {
+   "ar": "مرفوضة",
+   "en": "Rejected",
+   "fr": "Rejetée"
+  },
+  "ist:Submitted": {
+   "ar": "بانتظار الاستقبال",
+   "en": "Waiting",
+   "fr": "En attente"
+  },
+  "ivt:Appointment": {
+   "ar": "موعد محجوز",
+   "en": "An appointment",
+   "fr": "Un rendez-vous"
+  },
+  "ivt:Services": {
+   "ar": "تحاليل أو أشعة أو صيدلية",
+   "en": "Lab, X-ray or pharmacy",
+   "fr": "Labo, radio ou pharmacie"
+  },
+  "ivt:WalkIn": {
+   "ar": "بدون موعد",
+   "en": "Without an appointment",
+   "fr": "Sans rendez-vous"
+  },
+  "see the patient now and acknowledge": {
+   "ar": "قابل المريض الآن وأكّد",
+   "en": "see the patient now and acknowledge",
+   "fr": "voyez le patient maintenant et confirmez"
+  },
+  "sex:F": {
+   "ar": "أنثى",
+   "en": "Female",
+   "fr": "Femme"
+  },
+  "sex:M": {
+   "ar": "ذكر",
+   "en": "Male",
+   "fr": "Homme"
+  }
+ }
+}

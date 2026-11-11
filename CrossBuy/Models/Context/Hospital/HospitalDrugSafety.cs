@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 
 namespace CrossBuy.Models.Context.Hospital
 {
@@ -16,6 +16,8 @@ namespace CrossBuy.Models.Context.Hospital
 		public const string Contraindicated = "Contra";
 		public const string Major = "Major";
 		public const string Moderate = "Moderate";
+		/// Carries no clinical weight and never stops an order: it reports coverage, not risk.
+		public const string Unknown = "Unknown";
 		public static readonly IReadOnlyList<string> All = new[] { Contraindicated, Major, Moderate };
 		/// Stops an order until a reason is written.
 		public static bool Blocks(string s) => s is Contraindicated or Major;
@@ -36,6 +38,11 @@ namespace CrossBuy.Models.Context.Hospital
 		public const string Interaction = "Interaction";
 		public const string Dose = "Dose";
 		public const string Allergy = "Allergy";
+
+		/// WHAT THE CHECK COULD NOT CHECK. Not a clinical finding — the opposite: a statement that
+		/// no finding was possible, so that silence stops meaning safety. See the comment on
+		/// HospitalDrugSafetyService.CheckOrderAsync for the measurement that made it necessary.
+		public const string NotChecked = "NotChecked";
 	}
 
 	public class HospitalDrugInteraction
@@ -68,6 +75,11 @@ namespace CrossBuy.Models.Context.Hospital
 		public bool IsActive { get; set; } = true;
 		public DateTime UpdatedAt { get; set; }
 		public int? UpdatedByEmployeeId { get; set; }
+		/// H95: the child's dose — mg per kg per dose, every so many hours; capped by MaxSingle / MaxDaily (the adult limits).
+		public decimal? PerKgMg { get; set; }
+		public int? EveryHours { get; set; }
+		/// H95: the liquid's strength (mg in 1 mL), so a dose in mg is also given in mL.
+		public decimal? StrengthMgPerMl { get; set; }
 	}
 
 	/// A doctor went ahead past a stopping alert, and why.
@@ -111,6 +123,8 @@ namespace CrossBuy.Models.Context.Hospital
 				e.Property(x => x.MaxSingle).HasPrecision(12, 3);
 				e.Property(x => x.MaxDaily).HasPrecision(12, 3);
 				e.Property(x => x.Note).HasMaxLength(300);
+				e.Property(x => x.PerKgMg).HasPrecision(12, 3);
+				e.Property(x => x.StrengthMgPerMl).HasPrecision(12, 3);
 				e.HasIndex(x => new { x.CompanyId, x.Drug });
 			});
 			b.Entity<HospitalAlertOverride>(e =>

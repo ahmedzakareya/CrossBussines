@@ -4438,6 +4438,13 @@
   <data name="{0} interacts with another medicine of this patient — see the drug-safety list" xml:space="preserve"><value>{0} interagit avec un autre médicament de ce patient — voir la liste de sécurité</value></data>
   <data name="{0} with {1}" xml:space="preserve"><value>{0} avec {1}</value></data>
   <data name="{0}: {1} {2} a day is above the daily limit of {3} {2}" xml:space="preserve"><value>{0} : {1} {2} par jour dépasse la limite journalière de {3} {2}</value></data>
+  <data name="No drug safety table is installed, so nothing about {0} was checked" xml:space="preserve"><value>Aucune table de sécurité médicamenteuse n'est installée : rien n'a été vérifié pour {0}</value></data>
+  <data name="{0} is not in the interaction table, so no interaction was checked for it" xml:space="preserve"><value>{0} ne figure pas dans la table des interactions : aucune interaction n'a été vérifiée</value></data>
+  <data name="Not in the interaction table, so these were not checked against {0}: {1}" xml:space="preserve"><value>Absents de la table des interactions, donc non vérifiés avec {0} : {1}</value></data>
+  <data name="The dose {0} could not be read as an amount, so no dose limit was checked" xml:space="preserve"><value>La dose {0} n'a pas pu être lue comme une quantité : aucune limite n'a été vérifiée</value></data>
+  <data name="No dose limit is recorded for {0} by {1}, so the dose was not checked" xml:space="preserve"><value>Aucune limite de dose enregistrée pour {0} par {1} : la dose n'a pas été vérifiée</value></data>
+  <data name="sev:Unknown" xml:space="preserve"><value>Inconnu</value></data>
+  <data name="Medication reconciliation is not installed" xml:space="preserve"><value>Le module de conciliation médicamenteuse n'est pas installé</value></data>
   <data name="{0}: {1} {2} is above the single-dose limit of {3} {2}" xml:space="preserve"><value>{0} : {1} {2} dépasse la limite par prise de {3} {2}</value></data>
   <data name="A task cannot contain the | sign" xml:space="preserve"><value>Une tâche ne peut pas contenir le signe |</value></data>
   <data name="A task is at most 90 characters" xml:space="preserve"><value>Une tâche fait au plus 90 caractères</value></data>
@@ -5595,4 +5602,550 @@
   <data name="mgw:OverWeek" xml:space="preserve"><value>Plus d'une semaine</value></data>
   <data name="mgw:PoliceHold" xml:space="preserve"><value>Blocage police</value></data>
   <data name="mgw:Unidentified" xml:space="preserve"><value>Non identifié</value></data>
+  <data name="A file above very likely belongs to this patient: a new one needs a reason." xml:space="preserve"><value>Un dossier ci-dessus appartient très probablement à ce patient : un nouveau demande une raison.</value></data>
+  <data name="A file very likely already exists: link it, or write why a new file is right" xml:space="preserve"><value>Un dossier existe très probablement : liez-le, ou expliquez pourquoi en ouvrir un nouveau</value></data>
+  <data name="About this visit" xml:space="preserve"><value>À propos de cette visite</value></data>
+  <data name="Acknowledge the danger signs first" xml:space="preserve"><value>Prenez d'abord acte des signes de danger</value></data>
+  <data name="Acknowledged {0}" xml:space="preserve"><value>Pris en compte le {0}</value></data>
+  <data name="Agree to the use of your data to continue" xml:space="preserve"><value>Acceptez l'utilisation de vos données pour continuer</value></data>
+  <data name="Allergies (medicines, food)" xml:space="preserve"><value>Allergies (médicaments, aliments)</value></data>
+  <data name="As written on your identity document." xml:space="preserve"><value>Comme sur votre pièce d'identité.</value></data>
+  <data name="Before anything: do you have any of these now?" xml:space="preserve"><value>Avant tout : avez-vous l'un de ces signes maintenant ?</value></data>
+  <data name="Check two identifiers against the identity document first" xml:space="preserve"><value>Vérifiez d'abord deux identifiants sur la pièce d'identité</value></data>
+  <data name="Choose from the list" xml:space="preserve"><value>Choisissez dans la liste</value></data>
+  <data name="Choose the file to link" xml:space="preserve"><value>Choisissez le dossier à lier</value></data>
+  <data name="Choose the identity document" xml:space="preserve"><value>Choisissez la pièce d'identité</value></data>
+  <data name="Choose why you came" xml:space="preserve"><value>Choisissez le motif de venue</value></data>
+  <data name="Confirm the identity" xml:space="preserve"><value>Confirmer l'identité</value></data>
+  <data name="Consent given {0} (version {1})" xml:space="preserve"><value>Consentement donné le {0} (version {1})</value></data>
+  <data name="Danger signs" xml:space="preserve"><value>Signes de danger</value></data>
+  <data name="Danger signs waiting:" xml:space="preserve"><value>Signes de danger en attente :</value></data>
+  <data name="Danger signs — seen" xml:space="preserve"><value>Signes de danger — vus</value></data>
+  <data name="Files that may be this patient" xml:space="preserve"><value>Dossiers pouvant être ce patient</value></data>
+  <data name="Full name (four parts)" xml:space="preserve"><value>Nom complet (quatre parties)</value></data>
+  <data name="I agree, and the details I gave are correct" xml:space="preserve"><value>J'accepte, et mes informations sont exactes</value></data>
+  <data name="I am or may be pregnant" xml:space="preserve"><value>Je suis ou pourrais être enceinte</value></data>
+  <data name="I checked two identifiers (name, date of birth or ID number) against the patient's identity document" xml:space="preserve"><value>J'ai vérifié deux identifiants (nom, date de naissance ou numéro) sur la pièce d'identité du patient</value></data>
+  <data name="I have one of these" xml:space="preserve"><value>J'ai l'un de ces signes</value></data>
+  <data name="I have seen the patient — send to the nurse" xml:space="preserve"><value>J'ai vu le patient — vers l'infirmière</value></data>
+  <data name="Identity document" xml:space="preserve"><value>Pièce d'identité</value></data>
+  <data name="In the last two weeks, have you had…" xml:space="preserve"><value>Ces deux dernières semaines, avez-vous eu…</value></data>
+  <data name="Infection signs in two weeks" xml:space="preserve"><value>Signes d'infection en deux semaines</value></data>
+  <data name="Intakes" xml:space="preserve"><value>Saisies</value></data>
+  <data name="Its number" xml:space="preserve"><value>Son numéro</value></data>
+  <data name="Link the intake to this file:" xml:space="preserve"><value>Lier la saisie à ce dossier :</value></data>
+  <data name="Link to this file" xml:space="preserve"><value>Lier à ce dossier</value></data>
+  <data name="Linked or new file" xml:space="preserve"><value>Liées ou nouveau dossier</value></data>
+  <data name="Match {0} — {1}" xml:space="preserve"><value>Correspondance {0} — {1}</value></data>
+  <data name="Medicines you take" xml:space="preserve"><value>Médicaments que vous prenez</value></data>
+  <data name="Name entered" xml:space="preserve"><value>Nom saisi</value></data>
+  <data name="Name in English (optional)" xml:space="preserve"><value>Nom en anglais (facultatif)</value></data>
+  <data name="No consent recorded" xml:space="preserve"><value>Aucun consentement enregistré</value></data>
+  <data name="No existing file looks like this patient." xml:space="preserve"><value>Aucun dossier existant ne ressemble à ce patient.</value></data>
+  <data name="No intake waiting." xml:space="preserve"><value>Aucune saisie en attente.</value></data>
+  <data name="None of these" xml:space="preserve"><value>Aucun de ces signes</value></data>
+  <data name="Not given — sent to the desk" xml:space="preserve"><value>Non saisi — envoyé à l'accueil</value></data>
+  <data name="Open a new file" xml:space="preserve"><value>Ouvrir un nouveau dossier</value></data>
+  <data name="Open a new file for this patient:" xml:space="preserve"><value>Ouvrir un nouveau dossier pour ce patient :</value></data>
+  <data name="Open the tablet screen" xml:space="preserve"><value>Ouvrir l'écran de la tablette</value></data>
+  <data name="Please go to the reception desk now" xml:space="preserve"><value>Allez à l'accueil maintenant, s'il vous plaît</value></data>
+  <data name="Reception — your details" xml:space="preserve"><value>Accueil — vos informations</value></data>
+  <data name="Reject" xml:space="preserve"><value>Rejeter</value></data>
+  <data name="Rejected or expired" xml:space="preserve"><value>Rejetées ou expirées</value></data>
+  <data name="Scored on the identity number, the date of birth, the mobile and the name's parts in any order. The patient never sees this." xml:space="preserve"><value>Score sur le numéro d'identité, la date de naissance, le mobile et les parties du nom dans tout ordre. Le patient ne le voit jamais.</value></data>
+  <data name="Search by number, name, mobile or ID…" xml:space="preserve"><value>Rechercher par numéro, nom, mobile ou identité…</value></data>
+  <data name="Self-intake" xml:space="preserve"><value>Préadmission libre-service</value></data>
+  <data name="Send to the reception" xml:space="preserve"><value>Envoyer à l'accueil</value></data>
+  <data name="Someone to call in an emergency" xml:space="preserve"><value>Personne à prévenir en urgence</value></data>
+  <data name="Thank you — please take a seat" xml:space="preserve"><value>Merci — veuillez vous asseoir</value></data>
+  <data name="The allergies entered are added to the file's list; none are removed." xml:space="preserve"><value>Les allergies saisies s'ajoutent à la liste du dossier ; rien n'est retiré.</value></data>
+  <data name="The identity number is 5 to 20 letters or digits" xml:space="preserve"><value>Le numéro d'identité fait 5 à 20 lettres ou chiffres</value></data>
+  <data name="The intake has no name or date of birth: register the patient at the desk" xml:space="preserve"><value>La saisie n'a ni nom ni date de naissance : enregistrez le patient à l'accueil</value></data>
+  <data name="The nurse takes your vital signs" xml:space="preserve"><value>L'infirmière prend vos constantes</value></data>
+  <data name="The patient reported danger signs" xml:space="preserve"><value>Le patient a signalé des signes de danger</value></data>
+  <data name="The reception calls your number and checks your identity document" xml:space="preserve"><value>L'accueil appelle votre numéro et vérifie votre pièce d'identité</value></data>
+  <data name="The self-intake is not installed yet (hospital_h91_self_intake.sql)." xml:space="preserve"><value>La préadmission libre-service n'est pas encore installée (hospital_h91_self_intake.sql).</value></data>
+  <data name="The staff have been alerted. Show them this number:" xml:space="preserve"><value>Le personnel a été alerté. Montrez-lui ce numéro :</value></data>
+  <data name="Their phone" xml:space="preserve"><value>Son téléphone</value></data>
+  <data name="There is no alert to acknowledge" xml:space="preserve"><value>Aucune alerte à prendre en compte</value></data>
+  <data name="This intake is already settled" xml:space="preserve"><value>Cette saisie est déjà traitée</value></data>
+  <data name="Tick each one you have. If you have none, press “None of these”." xml:space="preserve"><value>Cochez chacun de ceux que vous avez. Sinon, appuyez sur « Aucun de ces signes ».</value></data>
+  <data name="Update the file's mobile number to the one entered" xml:space="preserve"><value>Mettre à jour le mobile du dossier avec celui saisi</value></data>
+  <data name="Waited" xml:space="preserve"><value>Attente</value></data>
+  <data name="Waiting for the desk" xml:space="preserve"><value>En attente de l'accueil</value></data>
+  <data name="Welcome — your details before the visit" xml:space="preserve"><value>Bienvenue — vos informations avant la visite</value></data>
+  <data name="What brings you today?" xml:space="preserve"><value>Qu'est-ce qui vous amène aujourd'hui ?</value></data>
+  <data name="What patients entered on the reception tablet, for the desk to confirm" xml:space="preserve"><value>Ce que les patients ont saisi sur la tablette, à confirmer par l'accueil</value></data>
+  <data name="What the patient entered" xml:space="preserve"><value>Ce que le patient a saisi</value></data>
+  <data name="When none of the files above is this patient." xml:space="preserve"><value>Quand aucun dossier ci-dessus n'est ce patient.</value></data>
+  <data name="Who are you?" xml:space="preserve"><value>Qui êtes-vous ?</value></data>
+  <data name="Why a new file" xml:space="preserve"><value>Pourquoi un nouveau dossier</value></data>
+  <data name="Why is the intake rejected?" xml:space="preserve"><value>Pourquoi la saisie est-elle rejetée ?</value></data>
+  <data name="Write a valid emergency phone" xml:space="preserve"><value>Saisissez un téléphone d'urgence valide</value></data>
+  <data name="Write why the intake is rejected" xml:space="preserve"><value>Indiquez pourquoi la saisie est rejetée</value></data>
+  <data name="Write your date of birth" xml:space="preserve"><value>Saisissez votre date de naissance</value></data>
+  <data name="Write your full name" xml:space="preserve"><value>Saisissez votre nom complet</value></data>
+  <data name="Write your mobile number" xml:space="preserve"><value>Saisissez votre numéro de mobile</value></data>
+  <data name="You came for" xml:space="preserve"><value>Vous venez pour</value></data>
+  <data name="You saw the patient and passed them to the nurse?" xml:space="preserve"><value>Vous avez vu le patient et l'avez confié à l'infirmière ?</value></data>
+  <data name="You see the doctor; tests or medicines follow if needed" xml:space="preserve"><value>Vous voyez le médecin ; examens ou médicaments si besoin</value></data>
+  <data name="Your agreement" xml:space="preserve"><value>Votre accord</value></data>
+  <data name="Your details are used only to open or update your medical file and to care for you here. The reception checks them against your identity document before anything is saved to a file." xml:space="preserve"><value>Vos informations servent uniquement à ouvrir ou mettre à jour votre dossier et à vous soigner ici. L'accueil les vérifie sur votre pièce d'identité avant tout enregistrement.</value></data>
+  <data name="Your file is opened or updated, and payment or insurance is settled" xml:space="preserve"><value>Votre dossier est ouvert ou mis à jour, et le paiement ou l'assurance réglé</value></data>
+  <data name="Your number:" xml:space="preserve"><value>Votre numéro :</value></data>
+  <data name="iid:NationalId" xml:space="preserve"><value>Carte nationale</value></data>
+  <data name="iid:None" xml:space="preserve"><value>Je n'en ai pas sur moi</value></data>
+  <data name="iid:Passport" xml:space="preserve"><value>Passeport</value></data>
+  <data name="iid:Residency" xml:space="preserve"><value>Titre de séjour</value></data>
+  <data name="iin:Cough" xml:space="preserve"><value>Toux</value></data>
+  <data name="iin:Diarrhoea" xml:space="preserve"><value>Diarrhée</value></data>
+  <data name="iin:Fever" xml:space="preserve"><value>Fièvre</value></data>
+  <data name="iin:Rash" xml:space="preserve"><value>Éruption cutanée</value></data>
+  <data name="iin:Travel" xml:space="preserve"><value>Voyage à l'étranger</value></data>
+  <data name="imm:Deterministic" xml:space="preserve"><value>Identité et date de naissance</value></data>
+  <data name="imm:None" xml:space="preserve"><value>Aucune correspondance</value></data>
+  <data name="imm:Probabilistic" xml:space="preserve"><value>Pondéré</value></data>
+  <data name="irf:Allergic" xml:space="preserve"><value>Gonflement du visage ou de la gorge</value></data>
+  <data name="irf:Bleeding" xml:space="preserve"><value>Saignement abondant</value></data>
+  <data name="irf:Breathing" xml:space="preserve"><value>Difficulté à respirer</value></data>
+  <data name="irf:ChestPain" xml:space="preserve"><value>Douleur ou oppression thoracique</value></data>
+  <data name="irf:Fainting" xml:space="preserve"><value>Évanouissement ou confusion</value></data>
+  <data name="irf:PregnancyBleeding" xml:space="preserve"><value>Enceinte avec saignement ou forte douleur</value></data>
+  <data name="irf:SelfHarm" xml:space="preserve"><value>Idées de vous faire du mal</value></data>
+  <data name="irf:Stroke" xml:space="preserve"><value>Visage affaissé, bras faible ou parole troublée</value></data>
+  <data name="ist:Expired" xml:space="preserve"><value>Expirée</value></data>
+  <data name="ist:Linked" xml:space="preserve"><value>Liée à un dossier</value></data>
+  <data name="ist:NewFile" xml:space="preserve"><value>Nouveau dossier ouvert</value></data>
+  <data name="ist:Rejected" xml:space="preserve"><value>Rejetée</value></data>
+  <data name="ist:Submitted" xml:space="preserve"><value>En attente</value></data>
+  <data name="ivt:Appointment" xml:space="preserve"><value>Un rendez-vous</value></data>
+  <data name="ivt:Services" xml:space="preserve"><value>Labo, radio ou pharmacie</value></data>
+  <data name="ivt:WalkIn" xml:space="preserve"><value>Sans rendez-vous</value></data>
+  <data name="see the patient now and acknowledge" xml:space="preserve"><value>voyez le patient maintenant et confirmez</value></data>
+  <data name="sex:F" xml:space="preserve"><value>Femme</value></data>
+  <data name="sex:M" xml:space="preserve"><value>Homme</value></data>
+  <data name="A patient who cannot say who they are gets a real file at once, under a temporary name, so tests, medicines, blood and an admission can start without waiting. When identified, the file becomes theirs, or joins the file they already had." xml:space="preserve"><value>Un patient qui ne peut pas dire qui il est reçoit aussitôt un vrai dossier sous un nom provisoire, pour que examens, médicaments, sang et hospitalisation commencent sans attendre. Une fois identifié, le dossier devient le sien, ou rejoint celui qu'il avait déjà.</value></data>
+  <data name="About {0} years" xml:space="preserve"><value>Environ {0} ans</value></data>
+  <data name="Ambulance, police, a passer-by…" xml:space="preserve"><value>Ambulance, police, un passant…</value></data>
+  <data name="Brought by" xml:space="preserve"><value>Amené par</value></data>
+  <data name="Build, height, hair, marks or tattoos, clothing, where found…" xml:space="preserve"><value>Corpulence, taille, cheveux, marques ou tatouages, vêtements, lieu…</value></data>
+  <data name="Came by" xml:space="preserve"><value>Arrivé par</value></data>
+  <data name="Choose how the patient came" xml:space="preserve"><value>Choisissez comment le patient est arrivé</value></data>
+  <data name="Choose the person's own file, not the temporary one" xml:space="preserve"><value>Choisissez le dossier de la personne, pas le provisoire</value></data>
+  <data name="Describe the patient: build, marks, clothing, where found" xml:space="preserve"><value>Décrivez le patient : corpulence, marques, vêtements, lieu</value></data>
+  <data name="Estimated age" xml:space="preserve"><value>Âge estimé</value></data>
+  <data name="Everything recorded on the temporary file — visits, orders, medicines, results, the bill — moves to the person's file; the temporary file is closed and points to it." xml:space="preserve"><value>Tout ce qui est sur le dossier provisoire — visites, prescriptions, médicaments, résultats, facture — passe au dossier de la personne ; le provisoire est clos et y renvoie.</value></data>
+  <data name="His brother, with his ID card…" xml:space="preserve"><value>Son frère, avec sa carte d'identité…</value></data>
+  <data name="Identified" xml:space="preserve"><value>Identifiés</value></data>
+  <data name="Identify" xml:space="preserve"><value>Identifier</value></data>
+  <data name="In the emergency department" xml:space="preserve"><value>Aux urgences</value></data>
+  <data name="Merging files needs the hospital administrator's permission." xml:space="preserve"><value>La fusion de dossiers demande l'autorisation de l'administrateur.</value></data>
+  <data name="No unidentified patient." xml:space="preserve"><value>Aucun patient non identifié.</value></data>
+  <data name="Nobody had a file: make this file theirs" xml:space="preserve"><value>Aucun dossier : ce dossier devient le sien</value></data>
+  <data name="Not yet identified" xml:space="preserve"><value>Pas encore identifié</value></data>
+  <data name="Not yet identified: {0}" xml:space="preserve"><value>Pas encore identifiés : {0}</value></data>
+  <data name="Open a file for this unidentified patient?" xml:space="preserve"><value>Ouvrir un dossier pour ce patient non identifié ?</value></data>
+  <data name="Open the emergency visit now" xml:space="preserve"><value>Ouvrir la visite aux urgences maintenant</value></data>
+  <data name="Open the file" xml:space="preserve"><value>Ouvrir le dossier</value></data>
+  <data name="Police" xml:space="preserve"><value>Police</value></data>
+  <data name="Real name" xml:space="preserve"><value>Vrai nom</value></data>
+  <data name="Register an unidentified patient" xml:space="preserve"><value>Enregistrer un patient non identifié</value></data>
+  <data name="Search by name, file, description or police report…" xml:space="preserve"><value>Rechercher par nom, dossier, description ou procès-verbal…</value></data>
+  <data name="Settle this patient's identity? It cannot be undone." xml:space="preserve"><value>Fixer l'identité de ce patient ? C'est irréversible.</value></data>
+  <data name="Temporary file" xml:space="preserve"><value>Dossier provisoire</value></data>
+  <data name="Temporary identities" xml:space="preserve"><value>Identités provisoires</value></data>
+  <data name="The estimated age is between 0 and 120" xml:space="preserve"><value>L'âge estimé est entre 0 et 120</value></data>
+  <data name="The file is open, but the emergency visit was not:" xml:space="preserve"><value>Le dossier est ouvert, mais pas la visite aux urgences :</value></data>
+  <data name="The person's own file" xml:space="preserve"><value>Le dossier de la personne</value></data>
+  <data name="The triage level is between 1 and 5" xml:space="preserve"><value>Le niveau de tri est entre 1 et 5</value></data>
+  <data name="They already have a file: merge into it" xml:space="preserve"><value>Il a déjà un dossier : fusionner</value></data>
+  <data name="This patient is already identified" xml:space="preserve"><value>Ce patient est déjà identifié</value></data>
+  <data name="Triage level" xml:space="preserve"><value>Niveau de tri</value></data>
+  <data name="Unconscious, road accident…" xml:space="preserve"><value>Inconscient, accident de la route…</value></data>
+  <data name="Unidentified patients" xml:space="preserve"><value>Patients non identifiés</value></data>
+  <data name="Unidentified-patient registration is not installed yet (hospital_h92_unidentified.sql)." xml:space="preserve"><value>L'enregistrement des patients non identifiés n'est pas encore installé (hospital_h92_unidentified.sql).</value></data>
+  <data name="Who identified the patient, and how" xml:space="preserve"><value>Qui a identifié le patient, et comment</value></data>
+  <data name="Why here" xml:space="preserve"><value>Motif</value></data>
+  <data name="Write the real name, in Arabic and in English" xml:space="preserve"><value>Saisissez le vrai nom, en arabe et en anglais</value></data>
+  <data name="Write who identified the patient, and how" xml:space="preserve"><value>Indiquez qui a identifié le patient, et comment</value></data>
+  <data name="Write why the patient is here" xml:space="preserve"><value>Indiquez pourquoi le patient est là</value></data>
+  <data name="era:Ambulance" xml:space="preserve"><value>Ambulance</value></data>
+  <data name="era:Referral" xml:space="preserve"><value>Transfert</value></data>
+  <data name="era:WalkIn" xml:space="preserve"><value>À pied</value></data>
+  <data name="unr:Merged" xml:space="preserve"><value>Fusionné dans son dossier</value></data>
+  <data name="unr:Renamed" xml:space="preserve"><value>Dossier attribué</value></data>
+  <data name="A choice needs at least two answers" xml:space="preserve"><value>Un choix demande au moins deux réponses</value></data>
+  <data name="A code the calculator reads is not in the dictionary: {0}" xml:space="preserve"><value>Un code lu par le calcul n'est pas dans le dictionnaire : {0}</value></data>
+  <data name="A field can only depend on another field of the same template" xml:space="preserve"><value>Un champ ne dépend que d'un autre champ du même modèle</value></data>
+  <data name="A published version cannot change: make a new version" xml:space="preserve"><value>Une version publiée ne change pas : créez une nouvelle version</value></data>
+  <data name="A score is the sum of its items: choose Sum" xml:space="preserve"><value>Un score est la somme de ses items : choisissez Somme</value></data>
+  <data name="Add a field" xml:space="preserve"><value>Ajouter un champ</value></data>
+  <data name="Add at least one field before publishing" xml:space="preserve"><value>Ajoutez au moins un champ avant de publier</value></data>
+  <data name="Add this field to the draft?" xml:space="preserve"><value>Ajouter ce champ au brouillon ?</value></data>
+  <data name="Alert at or above" xml:space="preserve"><value>Alerte à partir de</value></data>
+  <data name="Alert at or below" xml:space="preserve"><value>Alerte jusqu'à</value></data>
+  <data name="Alert rule" xml:space="preserve"><value>Règle d'alerte</value></data>
+  <data name="Always shown" xml:space="preserve"><value>Toujours affiché</value></data>
+  <data name="Another concept already has this code" xml:space="preserve"><value>Un autre concept a déjà ce code</value></data>
+  <data name="Another field depends on this one: change it first" xml:space="preserve"><value>Un autre champ en dépend : modifiez-le d'abord</value></data>
+  <data name="Another template already has this code" xml:space="preserve"><value>Un autre modèle a déjà ce code</value></data>
+  <data name="Answers — one per line: code|Arabic|English" xml:space="preserve"><value>Réponses — une par ligne : code|arabe|anglais</value></data>
+  <data name="At sign-off" xml:space="preserve"><value>À la signature</value></data>
+  <data name="Blood pressure is defined once and used by the internist, the cardiologist, obstetrics and nursing — so it draws one trend whichever clinic measured it." xml:space="preserve"><value>La pression artérielle est définie une fois et utilisée par l'interniste, le cardiologue, l'obstétrique et les soins — une seule courbe, quelle que soit la consultation qui l'a mesurée.</value></data>
+  <data name="Calculator" xml:space="preserve"><value>Calcul</value></data>
+  <data name="Care gap when not recorded in (days)" xml:space="preserve"><value>Suivi manqué sans mesure depuis (jours)</value></data>
+  <data name="Choose a concept from the dictionary" xml:space="preserve"><value>Choisissez un concept du dictionnaire</value></data>
+  <data name="Choose the calculator" xml:space="preserve"><value>Choisissez le calcul</value></data>
+  <data name="Choose the code system" xml:space="preserve"><value>Choisissez le système de codes</value></data>
+  <data name="Choose the value type" xml:space="preserve"><value>Choisissez le type de valeur</value></data>
+  <data name="Choose where the value comes from" xml:space="preserve"><value>Choisissez la source de la valeur</value></data>
+  <data name="Clinicians build their templates without code" xml:space="preserve"><value>Les cliniciens construisent leurs modèles sans programmer</value></data>
+  <data name="Code system" xml:space="preserve"><value>Système de codes</value></data>
+  <data name="Computed at sign-off" xml:space="preserve"><value>Calculé à la signature</value></data>
+  <data name="Concept" xml:space="preserve"><value>Concept</value></data>
+  <data name="Concept dictionary" xml:space="preserve"><value>Dictionnaire des concepts</value></data>
+  <data name="Concept from the dictionary" xml:space="preserve"><value>Concept du dictionnaire</value></data>
+  <data name="Conditional" xml:space="preserve"><value>Conditionnel</value></data>
+  <data name="Create this template?" xml:space="preserve"><value>Créer ce modèle ?</value></data>
+  <data name="Critical high — second number" xml:space="preserve"><value>Critique haut — second nombre</value></data>
+  <data name="Critical, as written" xml:space="preserve"><value>Critique, en texte</value></data>
+  <data name="Days are between 1 and 3650" xml:space="preserve"><value>Les jours vont de 1 à 3650</value></data>
+  <data name="Decimals are between 0 and 4" xml:space="preserve"><value>Les décimales vont de 0 à 4</value></data>
+  <data name="Dictionary" xml:space="preserve"><value>Dictionnaire</value></data>
+  <data name="Draft" xml:space="preserve"><value>Brouillon</value></data>
+  <data name="Drag a field from the dictionary into a section" xml:space="preserve"><value>Glissez un champ du dictionnaire dans une section</value></data>
+  <data name="Edit the concept" xml:space="preserve"><value>Modifier le concept</value></data>
+  <data name="Every field comes from the dictionary; publishing makes a new version and never changes an old visit." xml:space="preserve"><value>Chaque champ vient du dictionnaire ; publier crée une nouvelle version et ne change jamais une ancienne visite.</value></data>
+  <data name="Field properties" xml:space="preserve"><value>Propriétés du champ</value></data>
+  <data name="Fill the required field: {0}" xml:space="preserve"><value>Remplissez le champ obligatoire : {0}</value></data>
+  <data name="From the last lab result" xml:space="preserve"><value>Du dernier résultat de laboratoire</value></data>
+  <data name="How the doctor sees the form" xml:space="preserve"><value>Le formulaire tel que le voit le médecin</value></data>
+  <data name="Lab analyte code" xml:space="preserve"><value>Code de l'analyte</value></data>
+  <data name="Last lab result within {0} days, typed when none" xml:space="preserve"><value>Dernier résultat de labo sous {0} jours, saisi s'il n'y en a pas</value></data>
+  <data name="Left" xml:space="preserve"><value>Gauche</value></data>
+  <data name="List the codes the calculator reads" xml:space="preserve"><value>Indiquez les codes que lit le calcul</value></data>
+  <data name="Look back (days)" xml:space="preserve"><value>Recul (jours)</value></data>
+  <data name="Make a new draft version from the published one?" xml:space="preserve"><value>Créer un nouveau brouillon à partir de la version publiée ?</value></data>
+  <data name="Manual entry" xml:space="preserve"><value>Saisie manuelle</value></data>
+  <data name="New concept" xml:space="preserve"><value>Nouveau concept</value></data>
+  <data name="New template" xml:space="preserve"><value>Nouveau modèle</value></data>
+  <data name="New version" xml:space="preserve"><value>Nouvelle version</value></data>
+  <data name="No field yet: add the first one from the dictionary." xml:space="preserve"><value>Aucun champ : ajoutez le premier depuis le dictionnaire.</value></data>
+  <data name="No records" xml:space="preserve"><value>Aucun enregistrement</value></data>
+  <data name="No template yet." xml:space="preserve"><value>Aucun modèle.</value></data>
+  <data name="Normal high" xml:space="preserve"><value>Normal haut</value></data>
+  <data name="Normal high — second number" xml:space="preserve"><value>Normal haut — second nombre</value></data>
+  <data name="Normal low" xml:space="preserve"><value>Normal bas</value></data>
+  <data name="Normal, as written" xml:space="preserve"><value>Normal, en texte</value></data>
+  <data name="Note in English" xml:space="preserve"><value>Note en anglais</value></data>
+  <data name="Once published, this version is frozen; visits already taken keep the version they were taken on." xml:space="preserve"><value>Une fois publiée, cette version est figée ; les visites gardent la version sur laquelle elles ont été prises.</value></data>
+  <data name="One dictionary for every specialty" xml:space="preserve"><value>Un dictionnaire pour toutes les spécialités</value></data>
+  <data name="Only a draft can be published" xml:space="preserve"><value>Seul un brouillon peut être publié</value></data>
+  <data name="Only a published template can be filled" xml:space="preserve"><value>Seul un modèle publié peut être rempli</value></data>
+  <data name="Order saved" xml:space="preserve"><value>Ordre enregistré</value></data>
+  <data name="Preview" xml:space="preserve"><value>Aperçu</value></data>
+  <data name="Publish this version? It cannot change afterwards." xml:space="preserve"><value>Publier cette version ? Elle ne pourra plus changer.</value></data>
+  <data name="Publish v{0}" xml:space="preserve"><value>Publier v{0}</value></data>
+  <data name="Published" xml:space="preserve"><value>Publié</value></data>
+  <data name="Question in English" xml:space="preserve"><value>Question en anglais</value></data>
+  <data name="R/L" xml:space="preserve"><value>D/G</value></data>
+  <data name="Recorded per side (right / left)" xml:space="preserve"><value>Saisi par côté (droit / gauche)</value></data>
+  <data name="Remove this field from the draft?" xml:space="preserve"><value>Retirer ce champ du brouillon ?</value></data>
+  <data name="Required to sign" xml:space="preserve"><value>Obligatoire pour signer</value></data>
+  <data name="Retired" xml:space="preserve"><value>Remplacée</value></data>
+  <data name="Right" xml:space="preserve"><value>Droit</value></data>
+  <data name="Right / left" xml:space="preserve"><value>Droit / gauche</value></data>
+  <data name="Save the field's properties?" xml:space="preserve"><value>Enregistrer les propriétés du champ ?</value></data>
+  <data name="Save this concept to the dictionary?" xml:space="preserve"><value>Enregistrer ce concept dans le dictionnaire ?</value></data>
+  <data name="Search by name or code…" xml:space="preserve"><value>Rechercher par nom ou code…</value></data>
+  <data name="Section in English" xml:space="preserve"><value>Section en anglais</value></data>
+  <data name="Shown only when" xml:space="preserve"><value>Affiché seulement si</value></data>
+  <data name="Shown when {0} &gt; {1}" xml:space="preserve"><value>Affiché quand {0} &gt; {1}</value></data>
+  <data name="Side" xml:space="preserve"><value>Côté</value></data>
+  <data name="Specialty clinics" xml:space="preserve"><value>Consultations spécialisées</value></data>
+  <data name="Specialty template designer" xml:space="preserve"><value>Concepteur de modèles de spécialité</value></data>
+  <data name="Template designer" xml:space="preserve"><value>Concepteur de modèles</value></data>
+  <data name="Templates" xml:space="preserve"><value>Modèles</value></data>
+  <data name="The alert" xml:space="preserve"><value>L'alerte</value></data>
+  <data name="The change" xml:space="preserve"><value>Changement</value></data>
+  <data name="The code" xml:space="preserve"><value>Code</value></data>
+  <data name="The codes it reads, comma-separated" xml:space="preserve"><value>Les codes lus, séparés par des virgules</value></data>
+  <data name="The critical high must be at or above the normal range" xml:space="preserve"><value>Le critique haut doit être au-dessus de la plage normale</value></data>
+  <data name="The critical low must be at or below the normal range" xml:space="preserve"><value>Le critique bas doit être sous la plage normale</value></data>
+  <data name="The international code makes reports, insurance and device links possible" xml:space="preserve"><value>Le code international rend possibles rapports, assurance et liaison aux appareils</value></data>
+  <data name="The list of fields changed: reload the page" xml:space="preserve"><value>La liste des champs a changé : rechargez la page</value></data>
+  <data name="The low alert must be below the high alert" xml:space="preserve"><value>L'alerte basse doit être sous l'alerte haute</value></data>
+  <data name="The normal low is above the normal high" xml:space="preserve"><value>Le normal bas dépasse le normal haut</value></data>
+  <data name="The specialty clinic content is not installed yet (hospital_h93_clinical_content.sql)." xml:space="preserve"><value>Le contenu des consultations spécialisées n'est pas encore installé (hospital_h93_clinical_content.sql).</value></data>
+  <data name="The value is stored as its own observation for the patient, so it shows on the {0} trend in every clinic." xml:space="preserve"><value>La valeur est enregistrée comme observation du patient : elle apparaît sur la courbe {0} dans toutes les consultations.</value></data>
+  <data name="This concept already has recorded values: its type cannot change" xml:space="preserve"><value>Ce concept a des valeurs : son type ne peut changer</value></data>
+  <data name="This concept is already on the template" xml:space="preserve"><value>Ce concept est déjà dans le modèle</value></data>
+  <data name="This concept is not linked to a lab test" xml:space="preserve"><value>Ce concept n'est lié à aucun test de laboratoire</value></data>
+  <data name="This form is already signed" xml:space="preserve"><value>Ce formulaire est déjà signé</value></data>
+  <data name="This form is signed: it cannot change" xml:space="preserve"><value>Ce formulaire est signé : il ne peut changer</value></data>
+  <data name="This template already has a draft: finish or publish it first" xml:space="preserve"><value>Ce modèle a déjà un brouillon : terminez-le ou publiez-le</value></data>
+  <data name="This visit already has this template on another version" xml:space="preserve"><value>Cette visite a déjà ce modèle dans une autre version</value></data>
+  <data name="This visit is signed: its forms cannot change" xml:space="preserve"><value>Cette visite est signée : ses formulaires ne changent plus</value></data>
+  <data name="Used by" xml:space="preserve"><value>Utilisé par</value></data>
+  <data name="Value source" xml:space="preserve"><value>Source de la valeur</value></data>
+  <data name="Version" xml:space="preserve"><value>Version</value></data>
+  <data name="What changed in this version" xml:space="preserve"><value>Ce qui a changé dans cette version</value></data>
+  <data name="Write the alert, in Arabic and in English" xml:space="preserve"><value>Saisissez l'alerte, en arabe et en anglais</value></data>
+  <data name="Write the concept's code" xml:space="preserve"><value>Saisissez le code du concept</value></data>
+  <data name="Write the name, in Arabic and in English" xml:space="preserve"><value>Saisissez le nom, en arabe et en anglais</value></data>
+  <data name="Write the section, in Arabic and in English" xml:space="preserve"><value>Saisissez la section, en arabe et en anglais</value></data>
+  <data name="Write the template's code" xml:space="preserve"><value>Saisissez le code du modèle</value></data>
+  <data name="Write the value the other field must be above" xml:space="preserve"><value>Saisissez la valeur que l'autre champ doit dépasser</value></data>
+  <data name="Write what changed in this version" xml:space="preserve"><value>Indiquez ce qui a changé dans cette version</value></data>
+  <data name="by age" xml:space="preserve"><value>selon l'âge</value></data>
+  <data name="calc:Bmi" xml:space="preserve"><value>IMC</value></data>
+  <data name="calc:EgfrCkdEpi2021" xml:space="preserve"><value>DFGe — CKD-EPI 2021</value></data>
+  <data name="calc:Kdigo" xml:space="preserve"><value>Stade KDIGO (DFGe × RAC)</value></data>
+  <data name="calc:Sum" xml:space="preserve"><value>Somme des items</value></data>
+  <data name="concepts" xml:space="preserve"><value>concepts</value></data>
+  <data name="ctype:Calculated" xml:space="preserve"><value>Calculé</value></data>
+  <data name="ctype:Choice" xml:space="preserve"><value>Choix</value></data>
+  <data name="ctype:Number" xml:space="preserve"><value>Nombre</value></data>
+  <data name="ctype:Panel" xml:space="preserve"><value>Panel</value></data>
+  <data name="ctype:Score" xml:space="preserve"><value>Score</value></data>
+  <data name="{0} visits" xml:space="preserve"><value>{0} visites</value></data>
+  <data name="{0}: Choose one of the answers" xml:space="preserve"><value>{0} : choisissez une des réponses</value></data>
+  <data name="{0}: Write a number" xml:space="preserve"><value>{0} : saisissez un nombre</value></data>
+  <data name="{0}: Write it as two numbers: 120/80" xml:space="preserve"><value>{0} : écrivez deux nombres : 120/80</value></data>
+  <data name="(from the lab {0})" xml:space="preserve"><value>(du labo {0})</value></data>
+  <data name="Add a diagnosis to the visit first" xml:space="preserve"><value>Ajoutez d'abord un diagnostic à la visite</value></data>
+  <data name="Add a template" xml:space="preserve"><value>Ajouter un modèle</value></data>
+  <data name="Add the ticked lines to this visit's orders?" xml:space="preserve"><value>Ajouter les lignes cochées aux prescriptions de la visite ?</value></data>
+  <data name="Add the ticked to orders" xml:space="preserve"><value>Ajouter la sélection aux prescriptions</value></data>
+  <data name="Add the visit's diagnosis in the consultation: its order set appears here." xml:space="preserve"><value>Ajoutez le diagnostic dans la consultation : son ensemble de prescriptions apparaîtra ici.</value></data>
+  <data name="Add this template to the visit?" xml:space="preserve"><value>Ajouter ce modèle à la visite ?</value></data>
+  <data name="Add this visit's diagnoses to the patient's problem list?" xml:space="preserve"><value>Ajouter les diagnostics de la visite à la liste des problèmes du patient ?</value></data>
+  <data name="Add to problem list" xml:space="preserve"><value>Ajouter aux problèmes</value></data>
+  <data name="Allergy: {0}" xml:space="preserve"><value>Allergie : {0}</value></data>
+  <data name="Care gaps" xml:space="preserve"><value>Suivis manqués</value></data>
+  <data name="Care gaps &amp; alerts" xml:space="preserve"><value>Suivis manqués et alertes</value></data>
+  <data name="Computed from eGFR and ACR" xml:space="preserve"><value>Calculé à partir du DFGe et du RAC</value></data>
+  <data name="Diagnoses that propose it on a visit" xml:space="preserve"><value>Diagnostics qui la proposent en consultation</value></data>
+  <data name="Everything ticked is already on the visit" xml:space="preserve"><value>Tout ce qui est coché est déjà sur la visite</value></data>
+  <data name="Heads the visit: a figure on top and a trend" xml:space="preserve"><value>En tête de visite : un chiffre en haut et une courbe</value></data>
+  <data name="ICD-10 codes or their beginnings, separated by commas: E11 covers E11.21." xml:space="preserve"><value>Codes CIM-10 ou leur début, séparés par des virgules : E11 couvre E11.21.</value></data>
+  <data name="Kidney stage — KDIGO 2024" xml:space="preserve"><value>Stade rénal — KDIGO 2024</value></data>
+  <data name="Known values come from the lab and earlier visits; red is out of range" xml:space="preserve"><value>Les valeurs connues viennent du labo et des visites précédentes ; le rouge est hors norme</value></data>
+  <data name="Last {0}" xml:space="preserve"><value>Dernière fois {0}</value></data>
+  <data name="Latest {0} on {1}" xml:space="preserve"><value>Dernier {0} le {1}</value></data>
+  <data name="Lines added: {0}" xml:space="preserve"><value>Lignes ajoutées : {0}</value></data>
+  <data name="No KDIGO stage recorded yet: it is computed when the visit is signed." xml:space="preserve"><value>Aucun stade KDIGO enregistré : il est calculé à la signature.</value></data>
+  <data name="No order set for this visit's diagnoses." xml:space="preserve"><value>Aucun ensemble de prescriptions pour ces diagnostics.</value></data>
+  <data name="No template on this visit yet: add one of the clinic's templates." xml:space="preserve"><value>Aucun modèle sur cette visite : ajoutez un modèle de la consultation.</value></data>
+  <data name="No value on any visit" xml:space="preserve"><value>Aucune valeur sur aucune visite</value></data>
+  <data name="No value recorded yet" xml:space="preserve"><value>Aucune valeur enregistrée</value></data>
+  <data name="Not a diagnosis code: {0}" xml:space="preserve"><value>Pas un code diagnostic : {0}</value></data>
+  <data name="Nothing overdue" xml:space="preserve"><value>Rien en retard</value></data>
+  <data name="Order it" xml:space="preserve"><value>Prescrire</value></data>
+  <data name="Order set by diagnosis" xml:space="preserve"><value>Ensemble de prescriptions par diagnostic</value></data>
+  <data name="Order this test on this visit?" xml:space="preserve"><value>Prescrire cet examen sur cette visite ?</value></data>
+  <data name="Sign the visit" xml:space="preserve"><value>Signer la visite</value></data>
+  <data name="Sign this visit? The consultation and its forms are signed together and cannot change afterwards." xml:space="preserve"><value>Signer cette visite ? La consultation et ses formulaires sont signés ensemble et ne changent plus.</value></data>
+  <data name="Specialty forms" xml:space="preserve"><value>Formulaires de spécialité</value></data>
+  <data name="Template" xml:space="preserve"><value>Modèle</value></data>
+  <data name="The problem list is full" xml:space="preserve"><value>La liste des problèmes est pleine</value></data>
+  <data name="These diagnoses are already on the problem list" xml:space="preserve"><value>Ces diagnostics sont déjà dans la liste des problèmes</value></data>
+  <data name="This order set is not proposed by this visit's diagnoses" xml:space="preserve"><value>Cet ensemble n'est pas proposé par les diagnostics de la visite</value></data>
+  <data name="This template is not published for this clinic" xml:space="preserve"><value>Ce modèle n'est pas publié pour cette consultation</value></data>
+  <data name="This test is already ordered on this visit" xml:space="preserve"><value>Cet examen est déjà prescrit sur cette visite</value></data>
+  <data name="Tick at least one line" xml:space="preserve"><value>Cochez au moins une ligne</value></data>
+  <data name="Too many diagnosis codes" xml:space="preserve"><value>Trop de codes diagnostic</value></data>
+  <data name="Trends — from the stored observations" xml:space="preserve"><value>Courbes — à partir des observations enregistrées</value></data>
+  <data name="Visit form" xml:space="preserve"><value>Formulaire de visite</value></data>
+  <data name="What changed, in English" xml:space="preserve"><value>Ce qui a changé, en anglais</value></data>
+  <data name="Write what changed in this version, in Arabic and in English" xml:space="preserve"><value>Indiquez ce qui a changé, en arabe et en anglais</value></data>
+  <data name="kdigo:High" xml:space="preserve"><value>Risque élevé : revoir tous les 3–4 mois, inhibiteur SGLT2 et IEC, adresser en néphrologie si le DFGe baisse de plus de 25 %.</value></data>
+  <data name="kdigo:Low" xml:space="preserve"><value>Risque faible : DFGe et RAC une fois par an.</value></data>
+  <data name="kdigo:Moderate" xml:space="preserve"><value>Risque modéré : contrôle annuel ; tension et glycémie à l'objectif.</value></data>
+  <data name="kdigo:VeryHigh" xml:space="preserve"><value>Risque très élevé : revoir tous les 1–3 mois et adresser en néphrologie.</value></data>
+  <data name="shown because {0} &gt; {1}" xml:space="preserve"><value>affiché car {0} &gt; {1}</value></data>
+  <data name="{0} done {1}" xml:space="preserve"><value>{0} fait le {1}</value></data>
+  <data name="{0} overdue {1} days" xml:space="preserve"><value>{0} en retard de {1} jours</value></data>
+  <data name="{0} — follow-up visit" xml:space="preserve"><value>{0} — visite de suivi</value></data>
+  <data name="{0}: never recorded" xml:space="preserve"><value>{0} : jamais enregistré</value></data>
+  <data name="“{0}” proposes:" xml:space="preserve"><value>« {0} » propose :</value></data>
+  <data name="↑ from {0}" xml:space="preserve"><value>↑ depuis {0}</value></data>
+  <data name="↓ from {0}" xml:space="preserve"><value>↓ depuis {0}</value></data>
+  <data name="No range to compare with" xml:space="preserve"><value>Aucune plage de comparaison</value></data>
+  <data name="Last: {0} on {1}" xml:space="preserve"><value>Dernière : {0} le {1}</value></data>
+  <data name="A child's dose by weight (optional)" xml:space="preserve"><value>Dose de l'enfant au poids (facultatif)</value></data>
+  <data name="A dose per kg is written in mg" xml:space="preserve"><value>Une dose par kg s'écrit en mg</value></data>
+  <data name="A dose per kg needs the adult single limit as its cap" xml:space="preserve"><value>Une dose par kg demande la limite adulte par prise comme plafond</value></data>
+  <data name="Achieved" xml:space="preserve"><value>Acquis</value></data>
+  <data name="Age (years)" xml:space="preserve"><value>Âge (années)</value></data>
+  <data name="Capped at the adult single dose of {0} mg." xml:space="preserve"><value>Plafonnée à la dose adulte de {0} mg.</value></data>
+  <data name="Computed dose" xml:space="preserve"><value>Dose calculée</value></data>
+  <data name="Computed from the child's last weight and never above the single limit." xml:space="preserve"><value>Calculée sur le dernier poids de l'enfant, jamais au-dessus de la limite par prise.</value></data>
+  <data name="Development — age {0}" xml:space="preserve"><value>Développement — {0} ans</value></data>
+  <data name="Dose per kg" xml:space="preserve"><value>Dose par kg</value></data>
+  <data name="Every (hours)" xml:space="preserve"><value>Toutes les (heures)</value></data>
+  <data name="Every {0} hours, at most {1} doses a day." xml:space="preserve"><value>Toutes les {0} heures, au plus {1} prises par jour.</value></data>
+  <data name="From P{0} at age {1} to P{2} today — a gradual fall that needs a nutrition review and a cause." xml:space="preserve"><value>De P{0} à {1} ans à P{2} aujourd'hui — une baisse progressive qui demande un bilan nutritionnel et une cause.</value></data>
+  <data name="From P{0} at age {1} to P{2} today — a gradual rise that needs a nutrition review and a cause." xml:space="preserve"><value>De P{0} à {1} ans à P{2} aujourd'hui — une hausse progressive qui demande un bilan nutritionnel et une cause.</value></data>
+  <data name="Growth chart — WHO" xml:space="preserve"><value>Courbe de croissance — OMS</value></data>
+  <data name="Liquid strength mg/mL" xml:space="preserve"><value>Concentration mg/mL</value></data>
+  <data name="Measurements" xml:space="preserve"><value>Mesures</value></data>
+  <data name="No medicine has a dose per kg yet: add it to the drug's dose limit." xml:space="preserve"><value>Aucun médicament n'a de dose par kg : ajoutez-la à sa limite de dose.</value></data>
+  <data name="No weight recorded" xml:space="preserve"><value>Aucun poids enregistré</value></data>
+  <data name="No weight recorded: the dose cannot be computed. Weigh the child first." xml:space="preserve"><value>Aucun poids : la dose ne peut pas être calculée. Pesez d'abord l'enfant.</value></data>
+  <data name="Not assessed" xml:space="preserve"><value>Non évalué</value></data>
+  <data name="Not recorded yet: it is stored when the visit is signed." xml:space="preserve"><value>Pas encore enregistré : il l'est à la signature.</value></data>
+  <data name="Not yet" xml:space="preserve"><value>Pas encore</value></data>
+  <data name="Percentile" xml:space="preserve"><value>Percentile</value></data>
+  <data name="Points from the observations of every visit; z and percentile computed by the LMS method" xml:space="preserve"><value>Points issus des observations de chaque visite ; z et percentile par la méthode LMS</value></data>
+  <data name="Stored as an observation, so every clinic sees it." xml:space="preserve"><value>Enregistré comme observation : toutes les consultations le voient.</value></data>
+  <data name="The adult maximum of {0} mg is never exceeded." xml:space="preserve"><value>Le maximum adulte de {0} mg n'est jamais dépassé.</value></data>
+  <data name="The score" xml:space="preserve"><value>Le score</value></data>
+  <data name="The strength is above zero" xml:space="preserve"><value>La concentration est supérieure à zéro</value></data>
+  <data name="Threshold" xml:space="preserve"><value>Seuil</value></data>
+  <data name="Vaccine doses due: {0}" xml:space="preserve"><value>Doses de vaccin dues : {0}</value></data>
+  <data name="Vaccine doses overdue: {0}" xml:space="preserve"><value>Doses de vaccin en retard : {0}</value></data>
+  <data name="Vaccines" xml:space="preserve"><value>Vaccins</value></data>
+  <data name="Vaccines up to date" xml:space="preserve"><value>Vaccins à jour</value></data>
+  <data name="Weight has crossed two percentile lines" xml:space="preserve"><value>Le poids a croisé deux lignes de percentile</value></data>
+  <data name="Weight today" xml:space="preserve"><value>Poids du jour</value></data>
+  <data name="Weight-based dosing" xml:space="preserve"><value>Posologie au poids</value></data>
+  <data name="Write the mg per kg and every how many hours" xml:space="preserve"><value>Indiquez les mg par kg et toutes les combien d'heures</value></data>
+  <data name="boys" xml:space="preserve"><value>garçons</value></data>
+  <data name="gi:bfa" xml:space="preserve"><value>IMC pour l'âge</value></data>
+  <data name="gi:hcfa" xml:space="preserve"><value>Périmètre crânien</value></data>
+  <data name="gi:hfa" xml:space="preserve"><value>Taille pour l'âge</value></data>
+  <data name="gi:wfa" xml:space="preserve"><value>Poids pour l'âge</value></data>
+  <data name="girls" xml:space="preserve"><value>filles</value></data>
+  <data name="mg per kg per dose" xml:space="preserve"><value>mg par kg par prise</value></data>
+  <data name="out of range" xml:space="preserve"><value>hors norme</value></data>
+  <data name="All visits" xml:space="preserve"><value>Toutes les visites</value></data>
+  <data name="Each visit opens with the clinic's templates, its figures and trends, its care gaps and the order sets of its diagnoses. A visit starts from the clinic board, when the doctor calls the patient in." xml:space="preserve"><value>Chaque visite s'ouvre avec les modèles de la consultation, ses chiffres et courbes, ses suivis manqués et les ensembles de prescriptions de ses diagnostics. Elle commence au tableau des consultations, quand le médecin appelle le patient.</value></data>
+  <data name="Forms signed" xml:space="preserve"><value>Formulaires signés</value></data>
+  <data name="No visit in this clinic yet." xml:space="preserve"><value>Aucune visite dans cette consultation.</value></data>
+  <data name="Open visits" xml:space="preserve"><value>Visites ouvertes</value></data>
+  <data name="The clinic's visits" xml:space="preserve"><value>Les visites de la consultation</value></data>
+  <data name="Visit open" xml:space="preserve"><value>Ouverte</value></data>
+  <data name="{0} clinic" xml:space="preserve"><value>Consultation {0}</value></data>
+  <data name="The left eye" xml:space="preserve"><value>L'œil gauche</value></data>
+  <data name="The right eye" xml:space="preserve"><value>L'œil droit</value></data>
+  <data name="Write the vision as Snellen (6/12, 20/40) or CF / HM" xml:space="preserve"><value>Écrivez l'acuité en Snellen (6/12, 20/40) ou CF / HM</value></data>
+  <data name="glau:cup" xml:space="preserve"><value>une excavation de 0,6 ou plus</value></data>
+  <data name="glau:cup-asym" xml:space="preserve"><value>excavations différentes de 0,2 ou plus</value></data>
+  <data name="glau:iop" xml:space="preserve"><value>Au-dessus de 21</value></data>
+  <data name="glau:iop-asym" xml:space="preserve"><value>4 mmHg ou plus entre les yeux</value></data>
+  <data name="glaucoma suspected: visual fields, an optic-nerve OCT and a review in 6 weeks." xml:space="preserve"><value>suspicion de glaucome : champ visuel, OCT du nerf optique et contrôle à 6 semaines.</value></data>
+  <data name="{0}: a {1} cup" xml:space="preserve"><value>{0} : excavation de {1}</value></data>
+  <data name="{0}: pressure {1}" xml:space="preserve"><value>{0} : pression {1}</value></data>
+  <data name="{0}: pressure {1} with a {2} cup" xml:space="preserve"><value>{0} : pression {1} avec une excavation de {2}</value></data>
+  <data name="Allergen" xml:space="preserve"><value>Allergène</value></data>
+  <data name="Build-up schedule; a systemic reaction holds the next dose until the doctor decides" xml:space="preserve"><value>Schéma progressif ; une réaction systémique suspend la dose suivante jusqu'à la décision du médecin</value></data>
+  <data name="Choose the reaction" xml:space="preserve"><value>Choisissez la réaction</value></data>
+  <data name="Control" xml:space="preserve"><value>Témoin</value></data>
+  <data name="Course held" xml:space="preserve"><value>Cure suspendue</value></data>
+  <data name="Describe the systemic reaction and its treatment" xml:space="preserve"><value>Décrivez la réaction systémique et son traitement</value></data>
+  <data name="Extract" xml:space="preserve"><value>Extrait</value></data>
+  <data name="Extract in English" xml:space="preserve"><value>Extrait en anglais</value></data>
+  <data name="Flare mm" xml:space="preserve"><value>Érythème mm</value></data>
+  <data name="Give + 30-min timer" xml:space="preserve"><value>Administrer + minuterie 30 min</value></data>
+  <data name="Give this dose now? The patient stays 30 minutes under observation." xml:space="preserve"><value>Administrer cette dose ? Le patient reste 30 minutes en observation.</value></data>
+  <data name="Held after a systemic reaction" xml:space="preserve"><value>Suspendue après une réaction systémique</value></data>
+  <data name="House dust mite" xml:space="preserve"><value>Acarien de la poussière</value></data>
+  <data name="Immunotherapy" xml:space="preserve"><value>Immunothérapie</value></data>
+  <data name="Immunotherapy is not installed yet (hospital_h97_allergy.sql)." xml:space="preserve"><value>L'immunothérapie n'est pas encore installée (hospital_h97_allergy.sql).</value></data>
+  <data name="Immunotherapy — {0}" xml:space="preserve"><value>Immunothérapie — {0}</value></data>
+  <data name="Local wheal mm" xml:space="preserve"><value>Papule locale mm</value></data>
+  <data name="Negative" xml:space="preserve"><value>Négatif</value></data>
+  <data name="No course yet: start one with the extract the skin test shows." xml:space="preserve"><value>Aucune cure : commencez-en une avec l'extrait que montre le test cutané.</value></data>
+  <data name="Note (required for a systemic reaction: what happened and its treatment)" xml:space="preserve"><value>Note (obligatoire pour une réaction systémique : ce qui s'est passé et le traitement)</value></data>
+  <data name="Observation over" xml:space="preserve"><value>Observation terminée</value></data>
+  <data name="Observation: {0} min left" xml:space="preserve"><value>Observation : {0} min restantes</value></data>
+  <data name="Only a held course is resumed" xml:space="preserve"><value>Seule une cure suspendue reprend</value></data>
+  <data name="Positive" xml:space="preserve"><value>Positif</value></data>
+  <data name="Positive = wheal 3 mm or more above the negative control — computed" xml:space="preserve"><value>Positif = papule de 3 mm ou plus au-dessus du témoin négatif — calculé</value></data>
+  <data name="Reaction" xml:space="preserve"><value>Réaction</value></data>
+  <data name="Record the reaction" xml:space="preserve"><value>Noter la réaction</value></data>
+  <data name="Record the reaction to dose {0} first" xml:space="preserve"><value>Notez d'abord la réaction à la dose {0}</value></data>
+  <data name="Record this reaction?" xml:space="preserve"><value>Noter cette réaction ?</value></data>
+  <data name="Resume the course two steps lower?" xml:space="preserve"><value>Reprendre la cure deux paliers plus bas ?</value></data>
+  <data name="Resume two steps lower" xml:space="preserve"><value>Reprendre deux paliers plus bas</value></data>
+  <data name="Skin prick test" xml:space="preserve"><value>Prick-test cutané</value></data>
+  <data name="Start this immunotherapy course?" xml:space="preserve"><value>Commencer cette cure d'immunothérapie ?</value></data>
+  <data name="Stop this course?" xml:space="preserve"><value>Arrêter cette cure ?</value></data>
+  <data name="Test invalid: read no result — repeat it (check antihistamines, the controls)" xml:space="preserve"><value>Test non valide : pas de lecture — à refaire (antihistaminiques, témoins)</value></data>
+  <data name="Test valid: saline ≤ 3 and histamine 3 mm or more above it" xml:space="preserve"><value>Test valide : sérum ≤ 3 et histamine 3 mm ou plus au-dessus</value></data>
+  <data name="The 30-minute observation is not over: the patient stays until {0}" xml:space="preserve"><value>L'observation de 30 minutes n'est pas finie : le patient reste jusqu'à {0}</value></data>
+  <data name="The doctor's decision" xml:space="preserve"><value>La décision du médecin</value></data>
+  <data name="The schedule starts at 0.05 mL of the 1:1000 vial and climbs one step a dose." xml:space="preserve"><value>Le schéma commence à 0,05 mL du flacon 1:1000 et monte d'un palier par dose.</value></data>
+  <data name="This course is held after a systemic reaction: the doctor must resume it first" xml:space="preserve"><value>Cure suspendue après une réaction systémique : le médecin doit d'abord la reprendre</value></data>
+  <data name="This course is stopped" xml:space="preserve"><value>Cette cure est arrêtée</value></data>
+  <data name="This dose's reaction is already recorded" xml:space="preserve"><value>La réaction à cette dose est déjà notée</value></data>
+  <data name="This patient already has a course of this extract" xml:space="preserve"><value>Ce patient a déjà une cure de cet extrait</value></data>
+  <data name="Vial" xml:space="preserve"><value>Flacon</value></data>
+  <data name="Wheal mm" xml:space="preserve"><value>Papule mm</value></data>
+  <data name="Write both controls to read the test" xml:space="preserve"><value>Saisissez les deux témoins pour lire le test</value></data>
+  <data name="Write the extract, in Arabic and in English" xml:space="preserve"><value>Saisissez l'extrait, en arabe et en anglais</value></data>
+  <data name="Write the local wheal in mm" xml:space="preserve"><value>Indiquez la papule locale en mm</value></data>
+  <data name="imr:LargeLocal" xml:space="preserve"><value>Locale étendue</value></data>
+  <data name="imr:Local" xml:space="preserve"><value>Locale</value></data>
+  <data name="imr:None" xml:space="preserve"><value>Aucune</value></data>
+  <data name="imr:Pending" xml:space="preserve"><value>En attente</value></data>
+  <data name="imr:Systemic" xml:space="preserve"><value>Systémique</value></data>
+  <data name="repeat dose" xml:space="preserve"><value>répéter la dose</value></data>
+  <data name="A score's band starts with the lowest value of the band" xml:space="preserve"><value>Un palier de score commence par sa plus petite valeur</value></data>
+  <data name="Built: {0} visits" xml:space="preserve"><value>Construite : {0} visites</value></data>
+  <data name="Clinic: {0} visits" xml:space="preserve"><value>Consultation : {0} visites</value></data>
+  <data name="Exists (H85)" xml:space="preserve"><value>Existe (H85)</value></data>
+  <data name="Exists and built" xml:space="preserve"><value>Existe et construite</value></data>
+  <data name="For a score, its bands: the lowest value of each band|Arabic|English (PHQ-9: 0|لا يوجد|None, 5|خفيف|Mild …)" xml:space="preserve"><value>Pour un score, ses paliers : la plus petite valeur de chaque palier|arabe|anglais (PHQ-9 : 0|…|None, 5|…|Mild …)</value></data>
+  <data name="Most specialties are templates only" xml:space="preserve"><value>La plupart des spécialités ne sont que des modèles</value></data>
+  <data name="No clinic yet" xml:space="preserve"><value>Pas encore de consultation</value></data>
+  <data name="Once the engine exists, a specialty like psychiatry or cardiology is built from templates and scores with no code; code goes only to the 8 drawn widgets." xml:space="preserve"><value>Une fois le moteur en place, une spécialité comme la psychiatrie ou la cardiologie se construit avec des modèles et des scores, sans code ; le code ne va qu'aux 8 widgets dessinés.</value></data>
+  <data name="Published templates: {0}" xml:space="preserve"><value>Modèles publiés : {0}</value></data>
+  <data name="Specialty catalogue" xml:space="preserve"><value>Catalogue des spécialités</value></data>
+  <data name="Template only" xml:space="preserve"><value>Modèle seulement</value></data>
+  <data name="The catalogue" xml:space="preserve"><value>Le catalogue</value></data>
+  <data name="spc:card" xml:space="preserve"><value>Cardiologie</value></data>
+  <data name="spc:card:1" xml:space="preserve"><value>Classe NYHA et FEVG</value></data>
+  <data name="spc:card:2" xml:space="preserve"><value>ECG : rythme et QTc</value></data>
+  <data name="spc:card:3" xml:space="preserve"><value>CHA₂DS₂-VASc et HAS-BLED</value></data>
+  <data name="spc:card:4" xml:space="preserve"><value>INR et temps dans la cible</value></data>
+  <data name="spc:card:alert" xml:space="preserve"><value>QTc &gt; 500 ms</value></data>
+  <data name="spc:derm" xml:space="preserve"><value>Dermatologie</value></data>
+  <data name="spc:derm:1" xml:space="preserve"><value>Carte corporelle des lésions et photos</value></data>
+  <data name="spc:derm:2" xml:space="preserve"><value>PASI et SC% pour le psoriasis</value></data>
+  <data name="spc:derm:3" xml:space="preserve"><value>EASI / SCORAD pour l'eczéma</value></data>
+  <data name="spc:derm:4" xml:space="preserve"><value>Suivi des biopsies</value></data>
+  <data name="spc:derm:alert" xml:space="preserve"><value>Une lésion qui a changé (ABCDE)</value></data>
+  <data name="spc:derm:widget" xml:space="preserve"><value>Widget : carte corporelle</value></data>
+  <data name="spc:endo" xml:space="preserve"><value>Endocrinologie</value></data>
+  <data name="spc:endo:1" xml:space="preserve"><value>HbA1c et temps dans la cible du capteur</value></data>
+  <data name="spc:endo:2" xml:space="preserve"><value>TSH et T4L</value></data>
+  <data name="spc:endo:3" xml:space="preserve"><value>Nodule thyroïdien TI-RADS</value></data>
+  <data name="spc:endo:4" xml:space="preserve"><value>Densité osseuse T-score</value></data>
+  <data name="spc:endo:alert" xml:space="preserve"><value>TSH hors norme pendant la grossesse</value></data>
+  <data name="spc:ent" xml:space="preserve"><value>ORL</value></data>
+  <data name="spc:ent:1" xml:space="preserve"><value>Audiogramme par oreille</value></data>
+  <data name="spc:ent:2" xml:space="preserve"><value>Tympanométrie A/B/C</value></data>
+  <data name="spc:ent:3" xml:space="preserve"><value>Endoscopie nasale</value></data>
+  <data name="spc:ent:4" xml:space="preserve"><value>SNOT-22</value></data>
+  <data name="spc:ent:alert" xml:space="preserve"><value>Surdité brusque unilatérale</value></data>
+  <data name="spc:ent:widget" xml:space="preserve"><value>Widget : audiogramme</value></data>
+  <data name="spc:obg" xml:space="preserve"><value>Gynécologie-obstétrique</value></data>
+  <data name="spc:obg:1" xml:space="preserve"><value>Âge gestationnel à chaque visite</value></data>
+  <data name="spc:obg:2" xml:space="preserve"><value>Grille prénatale</value></data>
+  <data name="spc:obg:3" xml:space="preserve"><value>Groupe sanguin et Rh</value></data>
+  <data name="spc:obg:alert" xml:space="preserve"><value>TA ≥ 140/90 après 20 semaines</value></data>
+  <data name="spc:orth" xml:space="preserve"><value>Orthopédie</value></data>
+  <data name="spc:orth:1" xml:space="preserve"><value>Articulation, côté et amplitude en degrés</value></data>
+  <data name="spc:orth:2" xml:space="preserve"><value>Force 0–5</value></data>
+  <data name="spc:orth:3" xml:space="preserve"><value>Classification de la fracture</value></data>
+  <data name="spc:orth:4" xml:space="preserve"><value>Oxford genou/hanche, DASH</value></data>
+  <data name="spc:orth:alert" xml:space="preserve"><value>Signes de syndrome des loges</value></data>
+  <data name="spc:psy" xml:space="preserve"><value>Psychiatrie</value></data>
+  <data name="spc:psy:1" xml:space="preserve"><value>PHQ-9 dépression</value></data>
+  <data name="spc:psy:2" xml:space="preserve"><value>GAD-7 anxiété</value></data>
+  <data name="spc:psy:3" xml:space="preserve"><value>Examen de l'état mental</value></data>
+  <data name="spc:psy:4" xml:space="preserve"><value>C-SSRS risque suicidaire</value></data>
+  <data name="spc:psy:alert" xml:space="preserve"><value>PHQ-9 item 9 &gt; 0 — alerte immédiate</value></data>
 </root>

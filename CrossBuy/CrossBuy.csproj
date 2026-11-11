@@ -133,6 +133,7 @@
   -->
   <ItemGroup>
     <EmbeddedResource Include="BL\Reporting\Fonts\*.ttf" />
+    <EmbeddedResource Include="BL\Hospital\Growth\*.txt" />   <!-- H95: the WHO growth references (LMS) -->
   </ItemGroup>
 
 </Project>

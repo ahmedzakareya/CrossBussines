@@ -62,6 +62,7 @@
             <div class="col-7"><label class="form-label">@T["Department"]</label><select class="form-select form-select-solid" data-m="departmentId"><option value="">@T["Any department"]</option>@foreach (var d in deps) { <option value="@d.ID">@DisplayName.Of(d.Name, d.NameEn ?? d.Name)</option> }</select></div>
             <div class="col-12"><label class="form-label required">@T["Name (Arabic)"]</label><input class="form-control form-control-solid" dir="rtl" maxlength="150" data-m="name" /></div>
             <div class="col-12"><label class="form-label required">@T["Name (English)"]</label><input class="form-control form-control-solid" dir="ltr" maxlength="150" data-m="nameEn" /></div>
+            <div class="col-12"><label class="form-label">@T["Diagnoses that propose it on a visit"]</label><input class="form-control form-control-solid" dir="ltr" maxlength="200" data-m="diagnosisCodes" placeholder="E11, I10" /><div class="text-muted fs-8 mt-1">@T["ICD-10 codes or their beginnings, separated by commas: E11 covers E11.21."]</div></div>
             <div class="col-12"><label class="form-check form-switch form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" data-m="isActive" checked /><span class="form-check-label">@T["In use"]</span></label></div>
         </div></div>
         <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-set-save>@T["Save"]</button></div>
@@ -90,7 +91,7 @@
                 }
                 editing = t.hasAttribute('data-edit-set') ? Number(t.getAttribute('data-edit-set')) : null;
                 var data = editing ? JSON.parse(t.getAttribute('data-row')) : null;
-                mEl.querySelectorAll('[data-m]').forEach(function (i) { var k = i.getAttribute('data-m'); if (i.type === 'checkbox') i.checked = data ? !!data[k] : true; else i.value = data && data[k] != null ? data[k] : ''; });
+                mEl.querySelectorAll('[data-m]').forEach(function (i) { var k = i.getAttribute('data-m'); if (i.type === 'checkbox') i.checked = data ? !!data[k] : true; else i.value = data && data[k] != null ? data[k] : ''; if (i.tagName === 'SELECT' && window.jQuery) jQuery(i).trigger('change.select2'); });
                 bootstrap.Modal.getOrCreateInstance(mEl).show();
             });
         })();

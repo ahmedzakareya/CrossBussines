@@ -1,0 +1,255 @@
+{
+ "unit": "H92 — unidentified patient",
+ "strings": {
+  "A patient who cannot say who they are gets a real file at once, under a temporary name, so tests, medicines, blood and an admission can start without waiting. When identified, the file becomes theirs, or joins the file they already had.": {
+   "ar": "المريض الذي لا يستطيع التعريف بنفسه يُفتح له ملف حقيقي فورًا باسم مؤقت، لتبدأ التحاليل والأدوية والدم والتنويم دون انتظار. وعند التعرّف عليه يصبح الملف باسمه، أو يُدمج في ملفه السابق.",
+   "en": "A patient who cannot say who they are gets a real file at once, under a temporary name, so tests, medicines, blood and an admission can start without waiting. When identified, the file becomes theirs, or joins the file they already had.",
+   "fr": "Un patient qui ne peut pas dire qui il est reçoit aussitôt un vrai dossier sous un nom provisoire, pour que examens, médicaments, sang et hospitalisation commencent sans attendre. Une fois identifié, le dossier devient le sien, ou rejoint celui qu'il avait déjà."
+  },
+  "About {0} years": {
+   "ar": "حوالي {0} سنة",
+   "en": "About {0} years",
+   "fr": "Environ {0} ans"
+  },
+  "Ambulance, police, a passer-by…": {
+   "ar": "الإسعاف، الشرطة، أحد المارة…",
+   "en": "Ambulance, police, a passer-by…",
+   "fr": "Ambulance, police, un passant…"
+  },
+  "Brought by": {
+   "ar": "أحضره",
+   "en": "Brought by",
+   "fr": "Amené par"
+  },
+  "Build, height, hair, marks or tattoos, clothing, where found…": {
+   "ar": "البنية، الطول، الشعر، العلامات أو الوشم، الملابس، مكان العثور…",
+   "en": "Build, height, hair, marks or tattoos, clothing, where found…",
+   "fr": "Corpulence, taille, cheveux, marques ou tatouages, vêtements, lieu…"
+  },
+  "Came by": {
+   "ar": "وسيلة الوصول",
+   "en": "Came by",
+   "fr": "Arrivé par"
+  },
+  "Choose how the patient came": {
+   "ar": "اختر وسيلة وصول المريض",
+   "en": "Choose how the patient came",
+   "fr": "Choisissez comment le patient est arrivé"
+  },
+  "Choose the person's own file, not the temporary one": {
+   "ar": "اختر ملف الشخص الأصلي وليس الملف المؤقت",
+   "en": "Choose the person's own file, not the temporary one",
+   "fr": "Choisissez le dossier de la personne, pas le provisoire"
+  },
+  "Describe the patient: build, marks, clothing, where found": {
+   "ar": "صِف المريض: البنية، العلامات، الملابس، مكان العثور",
+   "en": "Describe the patient: build, marks, clothing, where found",
+   "fr": "Décrivez le patient : corpulence, marques, vêtements, lieu"
+  },
+  "Estimated age": {
+   "ar": "العمر التقريبي",
+   "en": "Estimated age",
+   "fr": "Âge estimé"
+  },
+  "Everything recorded on the temporary file — visits, orders, medicines, results, the bill — moves to the person's file; the temporary file is closed and points to it.": {
+   "ar": "كل ما سُجّل على الملف المؤقت — الزيارات والطلبات والأدوية والنتائج والفاتورة — ينتقل لملف الشخص؛ ويُغلق الملف المؤقت ويشير إليه.",
+   "en": "Everything recorded on the temporary file — visits, orders, medicines, results, the bill — moves to the person's file; the temporary file is closed and points to it.",
+   "fr": "Tout ce qui est sur le dossier provisoire — visites, prescriptions, médicaments, résultats, facture — passe au dossier de la personne ; le provisoire est clos et y renvoie."
+  },
+  "His brother, with his ID card…": {
+   "ar": "أخوه، ومعه بطاقة هويته…",
+   "en": "His brother, with his ID card…",
+   "fr": "Son frère, avec sa carte d'identité…"
+  },
+  "Identified": {
+   "ar": "تم التعرّف عليه",
+   "en": "Identified",
+   "fr": "Identifiés"
+  },
+  "Identify": {
+   "ar": "تعرّف",
+   "en": "Identify",
+   "fr": "Identifier"
+  },
+  "In the emergency department": {
+   "ar": "في الطوارئ",
+   "en": "In the emergency department",
+   "fr": "Aux urgences"
+  },
+  "Merging files needs the hospital administrator's permission.": {
+   "ar": "دمج الملفات يحتاج صلاحية مدير المستشفى.",
+   "en": "Merging files needs the hospital administrator's permission.",
+   "fr": "La fusion de dossiers demande l'autorisation de l'administrateur."
+  },
+  "No unidentified patient.": {
+   "ar": "لا يوجد مرضى مجهولون.",
+   "en": "No unidentified patient.",
+   "fr": "Aucun patient non identifié."
+  },
+  "Nobody had a file: make this file theirs": {
+   "ar": "ليس له ملف: يصبح هذا الملف باسمه",
+   "en": "Nobody had a file: make this file theirs",
+   "fr": "Aucun dossier : ce dossier devient le sien"
+  },
+  "Not yet identified": {
+   "ar": "لم يُتعرّف عليه بعد",
+   "en": "Not yet identified",
+   "fr": "Pas encore identifié"
+  },
+  "Not yet identified: {0}": {
+   "ar": "لم يُتعرّف عليهم بعد: {0}",
+   "en": "Not yet identified: {0}",
+   "fr": "Pas encore identifiés : {0}"
+  },
+  "Open a file for this unidentified patient?": {
+   "ar": "فتح ملف لهذا المريض المجهول؟",
+   "en": "Open a file for this unidentified patient?",
+   "fr": "Ouvrir un dossier pour ce patient non identifié ?"
+  },
+  "Open the emergency visit now": {
+   "ar": "فتح زيارة الطوارئ الآن",
+   "en": "Open the emergency visit now",
+   "fr": "Ouvrir la visite aux urgences maintenant"
+  },
+  "Open the file": {
+   "ar": "فتح الملف",
+   "en": "Open the file",
+   "fr": "Ouvrir le dossier"
+  },
+  "Police": {
+   "ar": "الشرطة",
+   "en": "Police",
+   "fr": "Police"
+  },
+  "Real name": {
+   "ar": "الاسم الحقيقي",
+   "en": "Real name",
+   "fr": "Vrai nom"
+  },
+  "Register an unidentified patient": {
+   "ar": "تسجيل مريض مجهول",
+   "en": "Register an unidentified patient",
+   "fr": "Enregistrer un patient non identifié"
+  },
+  "Search by name, file, description or police report…": {
+   "ar": "ابحث بالاسم أو رقم الملف أو الوصف أو رقم المحضر…",
+   "en": "Search by name, file, description or police report…",
+   "fr": "Rechercher par nom, dossier, description ou procès-verbal…"
+  },
+  "Settle this patient's identity? It cannot be undone.": {
+   "ar": "تثبيت هوية هذا المريض؟ لا يمكن التراجع.",
+   "en": "Settle this patient's identity? It cannot be undone.",
+   "fr": "Fixer l'identité de ce patient ? C'est irréversible."
+  },
+  "Temporary file": {
+   "ar": "الملف المؤقت",
+   "en": "Temporary file",
+   "fr": "Dossier provisoire"
+  },
+  "Temporary identities": {
+   "ar": "الهويات المؤقتة",
+   "en": "Temporary identities",
+   "fr": "Identités provisoires"
+  },
+  "The estimated age is between 0 and 120": {
+   "ar": "العمر التقريبي بين 0 و120",
+   "en": "The estimated age is between 0 and 120",
+   "fr": "L'âge estimé est entre 0 et 120"
+  },
+  "The file is open, but the emergency visit was not:": {
+   "ar": "فُتح الملف، لكن لم تُفتح زيارة الطوارئ:",
+   "en": "The file is open, but the emergency visit was not:",
+   "fr": "Le dossier est ouvert, mais pas la visite aux urgences :"
+  },
+  "The person's own file": {
+   "ar": "ملف الشخص الأصلي",
+   "en": "The person's own file",
+   "fr": "Le dossier de la personne"
+  },
+  "The triage level is between 1 and 5": {
+   "ar": "مستوى الفرز بين 1 و5",
+   "en": "The triage level is between 1 and 5",
+   "fr": "Le niveau de tri est entre 1 et 5"
+  },
+  "They already have a file: merge into it": {
+   "ar": "له ملف سابق: الدمج فيه",
+   "en": "They already have a file: merge into it",
+   "fr": "Il a déjà un dossier : fusionner"
+  },
+  "This patient is already identified": {
+   "ar": "تم التعرّف على هذا المريض بالفعل",
+   "en": "This patient is already identified",
+   "fr": "Ce patient est déjà identifié"
+  },
+  "Triage level": {
+   "ar": "مستوى الفرز",
+   "en": "Triage level",
+   "fr": "Niveau de tri"
+  },
+  "Unconscious, road accident…": {
+   "ar": "فاقد الوعي، حادث طريق…",
+   "en": "Unconscious, road accident…",
+   "fr": "Inconscient, accident de la route…"
+  },
+  "Unidentified patients": {
+   "ar": "المرضى المجهولون",
+   "en": "Unidentified patients",
+   "fr": "Patients non identifiés"
+  },
+  "Unidentified-patient registration is not installed yet (hospital_h92_unidentified.sql).": {
+   "ar": "تسجيل المرضى المجهولين غير مثبت بعد (hospital_h92_unidentified.sql).",
+   "en": "Unidentified-patient registration is not installed yet (hospital_h92_unidentified.sql).",
+   "fr": "L'enregistrement des patients non identifiés n'est pas encore installé (hospital_h92_unidentified.sql)."
+  },
+  "Who identified the patient, and how": {
+   "ar": "من تعرّف على المريض، وكيف",
+   "en": "Who identified the patient, and how",
+   "fr": "Qui a identifié le patient, et comment"
+  },
+  "Why here": {
+   "ar": "سبب الحضور",
+   "en": "Why here",
+   "fr": "Motif"
+  },
+  "Write the real name, in Arabic and in English": {
+   "ar": "اكتب الاسم الحقيقي بالعربية والإنجليزية",
+   "en": "Write the real name, in Arabic and in English",
+   "fr": "Saisissez le vrai nom, en arabe et en anglais"
+  },
+  "Write who identified the patient, and how": {
+   "ar": "اكتب من تعرّف على المريض وكيف",
+   "en": "Write who identified the patient, and how",
+   "fr": "Indiquez qui a identifié le patient, et comment"
+  },
+  "Write why the patient is here": {
+   "ar": "اكتب سبب حضور المريض",
+   "en": "Write why the patient is here",
+   "fr": "Indiquez pourquoi le patient est là"
+  },
+  "era:Ambulance": {
+   "ar": "الإسعاف",
+   "en": "Ambulance",
+   "fr": "Ambulance"
+  },
+  "era:Referral": {
+   "ar": "تحويل",
+   "en": "Referral",
+   "fr": "Transfert"
+  },
+  "era:WalkIn": {
+   "ar": "حضر بنفسه",
+   "en": "On foot",
+   "fr": "À pied"
+  },
+  "unr:Merged": {
+   "ar": "دُمج في ملفه",
+   "en": "Merged into their file",
+   "fr": "Fusionné dans son dossier"
+  },
+  "unr:Renamed": {
+   "ar": "أصبح الملف باسمه",
+   "en": "File made theirs",
+   "fr": "Dossier attribué"
+  }
+ }
+}

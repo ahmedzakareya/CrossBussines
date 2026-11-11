@@ -1,4 +1,4 @@
-using CrossBuy.Models.Context;
+﻿using CrossBuy.Models.Context;
 using CrossBuy.Models.Context.Hospital;
 using CrossBuy.Models.Platform;
 using Microsoft.EntityFrameworkCore;
@@ -42,6 +42,21 @@ namespace CrossBuy.BL.Hospital
 
 	public static class HospitalMedReconRules
 	{
+		/// THE WARD BOARD'S BADGE, AS A DECISION THAT CAN BE TESTED WITHOUT A DATABASE.
+		///
+		/// Three states, not two. The green one is a claim that this patient's home medicines were
+		/// reconciled and signed; the red one is a claim that they were not and are overdue. When
+		/// the module is not installed the board is entitled to neither, and the bug this replaces
+		/// made it assert the GREEN one for every patient on the ward.
+		///
+		/// Written as a rule rather than inline so the invariant has somewhere to be proved: not
+		/// ready can never produce signed, whatever the set behind it says.
+		public static (bool Signed, bool Overdue) Badge(bool ready, bool inSignedSet, DateTime admittedAt, DateTime nowUtc)
+		{
+			if (!ready) return (false, false);
+			return (inSignedSet, !inSignedSet && admittedAt <= nowUtc.AddHours(-24));
+		}
+
 		public static string? LineRefusal(HospitalMedLineInput i)
 		{
 			if (i.Kind is not (HospitalMedLineKind.Home or HospitalMedLineKind.New)) return "not_found";
@@ -116,15 +131,25 @@ namespace CrossBuy.BL.Hospital
 		private Task<HospitalAdmission?> AdmissionAsync(BusinessContext ctx, int id, CancellationToken ct) =>
 			_db.HospitalAdmissions.AsNoTracking().FirstOrDefaultAsync(a => a.ID == id && a.CompanyId == ctx.CompanyId, ct);
 
-		/// The admissions of this list whose admission reconciliation is signed (the nursing station flags the rest).
-		public static async Task<HashSet<int>> AdmissionSignedAsync(CrossDbContext db, int companyId, IReadOnlyCollection<int> admissionIds, CancellationToken ct)
+		/// The admissions of this list whose admission reconciliation is signed, and whether the
+		/// question could be answered at all (the nursing station flags the rest).
+		///
+		/// IT USED TO ANSWER "ALL OF THEM" WHEN THE TABLES WERE MISSING, with the comment "not
+		/// installed: nothing to flag". The intent was sound — do not paint a ward red over a
+		/// feature nobody installed — but the ward board reads this set as PROOF: _ObsPanel renders
+		/// a green "Medicines reconciled" badge for every admission it contains. So an uninstalled
+		/// module did not go quiet, it certified every patient on the ward.
+		///
+		/// The readiness travels with the answer instead. The board still shows no red when the
+		/// module is absent, and it no longer shows green either.
+		public static async Task<(HashSet<int> Signed, bool Ready)> AdmissionSignedAsync(CrossDbContext db, int companyId, IReadOnlyCollection<int> admissionIds, CancellationToken ct)
 		{
 			try
 			{
-				return (await db.Set<HospitalMedRecon>().AsNoTracking().Where(r => r.CompanyId == companyId && r.Stage == HospitalMedReconStage.Admission && admissionIds.Contains(r.AdmissionId))
-					.Select(r => r.AdmissionId).ToListAsync(ct)).ToHashSet();
+				return ((await db.Set<HospitalMedRecon>().AsNoTracking().Where(r => r.CompanyId == companyId && r.Stage == HospitalMedReconStage.Admission && admissionIds.Contains(r.AdmissionId))
+					.Select(r => r.AdmissionId).ToListAsync(ct)).ToHashSet(), true);
 			}
-			catch (Microsoft.Data.SqlClient.SqlException ex) when (Missing(ex)) { return admissionIds.ToHashSet(); }   // not installed: nothing to flag
+			catch (Microsoft.Data.SqlClient.SqlException ex) when (Missing(ex)) { return (new HashSet<int>(), false); }
 		}
 
 		public async Task<HospitalMedReconView?> PageAsync(BusinessContext ctx, int admissionId, CancellationToken ct = default)

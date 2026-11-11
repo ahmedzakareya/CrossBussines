@@ -1,0 +1,22 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model IReadOnlyList<HospitalIntakeRow>
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@foreach (var r in Model)
+{
+    var s = r.Intake; bool waiting = s.Status == HospitalIntakeStatus.Submitted; bool alarm = waiting && s.Urgent && s.AlertAckAt == null;
+    <tr class="@(alarm ? "bg-light-danger" : "")">
+        <td><span class="fs-3 fw-bold hp-num @(alarm ? "text-danger" : "text-gray-900")" dir="ltr">@s.TicketNo</span><div class="text-muted fs-9 hp-num">@s.IntakeNo</div></td>
+        <td>@if (s.Name != null) {<span class="fw-semibold"><bdi>@s.Name</bdi></span><div class="text-muted fs-8"><bdi class="hp-num" dir="ltr">@s.Phone</bdi>@if (s.BirthDate != null) {<text> · <span class="hp-num">@s.BirthDate.Value.ToString("yyyy-MM-dd")</span></text>}</div>}
+            else {<span class="text-muted">@T["Not given — sent to the desk"]</span>}
+            @if (r.PatientName != null) {<div class="fs-8 text-success">→ <bdi>@r.PatientName</bdi> <bdi class="hp-num">@r.PatientMrn</bdi></div>}</td>
+        <td class="fs-8">@T["ivt:" + s.VisitType]@if (s.Reason != null) {<div class="text-muted text-truncate mw-250px"><bdi>@s.Reason</bdi></div>}</td>
+        <td class="text-nowrap fs-8"><span class="@(waiting && r.Minutes > 20 ? "text-danger fw-bold" : "")">@T["{0} min", r.Minutes]</span></td>
+        <td>@if (alarm) {<span class="badge badge-danger fs-8">@T["Danger signs"]</span>}
+            else if (s.Urgent) {<span class="badge badge-light-danger fs-8">@T["Danger signs — seen"]</span>}
+            <span class="badge @(waiting ? "badge-light-primary" : s.Status == HospitalIntakeStatus.Linked || s.Status == HospitalIntakeStatus.NewFile ? "badge-light-success" : "badge-light") fs-8">@T["ist:" + s.Status]</span>
+            @if (s.RedFlags != null) {<div class="d-flex flex-wrap gap-1 mt-1">@foreach (var f in s.RedFlags.Split(',')) {<span class="badge badge-light-danger fs-9">@T["irf:" + f]</span>}</div>}</td>
+        <td class="text-end"><a href="@Url.Action("IntakeReview", new { id = s.ID })" class="btn btn-sm @(alarm ? "btn-danger" : "btn-light-primary") text-nowrap">@T["Open"]</a></td>
+    </tr>
+}

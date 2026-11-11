@@ -86,7 +86,8 @@ namespace CrossBuy.Controllers
 		{
 			var ctx = await ContextAsync(ct);
 			if (ctx == null) return NotFound(new { ok = false, code = "not_found" });
-			return Result(await _consult.SignAsync(ctx, id, input ?? new(), ctx.EmployeeId, DateTime.UtcNow, ct));
+			// H94: one signature — the visit's specialty forms are checked first and signed with it
+			return Result(await VisitSvc.SignAsync(ctx, _consult, id, input ?? new(), UiEnglish, ctx.EmployeeId, DateTime.UtcNow, ct));
 		}
 
 		/// The diagnosis picker (select2, as the doctor types a code or a word).

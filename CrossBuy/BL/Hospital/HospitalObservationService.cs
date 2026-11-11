@@ -1,4 +1,4 @@
-using CrossBuy.Models.Context;
+﻿using CrossBuy.Models.Context;
 using CrossBuy.Models.Context.Hospital;
 using CrossBuy.Models.Platform;
 using Microsoft.EntityFrameworkCore;
@@ -37,7 +37,9 @@ namespace CrossBuy.BL.Hospital
 	/// One patient's line on the ward's observation panel.
 	public sealed record HospitalObsPatient(int AdmissionId, int PatientId, string Name, string NameEn, string Mrn, string? Photo, string Bed,
 		HospitalObservation? Last, DateTime? NextDueAt, bool ObsOverdue, HospitalRiskAssessment? Morse, bool MorseDue, HospitalRiskAssessment? Braden, bool BradenDue,
-		DateTime? PainReassessAt, bool MedRecSigned, bool MedRecOverdue);
+		// MedRecReady false = the reconciliation module is not installed, so neither the green nor
+		// the red badge is a claim this board is entitled to make about this patient.
+		DateTime? PainReassessAt, bool MedRecSigned, bool MedRecOverdue, bool MedRecReady = true);
 
 	public sealed record HospitalObsChart(int AdmissionId, string Name, string NameEn, string Mrn, IReadOnlyList<HospitalObservation> Observations,
 		IReadOnlyList<HospitalRiskAssessment> Assessments, IReadOnlyDictionary<int, string> People);
@@ -87,6 +89,26 @@ namespace CrossBuy.BL.Hospital
 			if (i.PainScore is < 0 or > 10) return "Pain is scored 0 to 10";
 			if (!string.IsNullOrEmpty(i.Consciousness) && !HospitalConsciousness.All.Contains(i.Consciousness)) return "Choose the level of consciousness";
 			return null;
+		}
+
+		/// WHEN THE NEXT SET IS DUE — and an incomplete one is due AT ONCE.
+		///
+		/// Score() returns null for a set missing any parameter, which is right: an incomplete set
+		/// is not a NEWS2. What the ward board then does with that null is the question, and the
+		/// code and its own comment disagreed. The comment said "no set yet, or an incomplete one:
+		/// the next is due now"; the code gave an incomplete set FOUR HOURS — the interval for a
+		/// patient scored 1–4, which is a claim about a patient who was never scored at all.
+		///
+		/// The comment is the specification and the safer side of the argument. A set with the
+		/// pulse and the temperature and nothing else means nobody knows this patient's risk, and
+		/// the answer to that is to finish the set, not to wait on it. Measured first: 1 of the 4
+		/// sets recorded here is incomplete, so this is not a theoretical branch.
+		public static DateTime? NextDueAt(HospitalObservation? last)
+		{
+			if (last == null) return null;                                     // nothing yet: overdue
+			if (last.News2 is int n && last.News2Risk != null)
+				return last.TakenAt.AddHours(HoursToNext(n, last.News2Risk));
+			return last.TakenAt;                                               // incomplete: due when it was taken
 		}
 
 		/// A pain of 4 or more is reassessed within the hour.
@@ -237,7 +259,7 @@ namespace CrossBuy.BL.Hospital
 							  select new { s.AdmissionId, p.ID, p.Name, p.NameEn, p.Mrn, p.PhotoPath, Bed = b.Code, a.AdmittedAt }).ToListAsync(ct);
 			var ids = here.Select(h => h.AdmissionId).ToList();
 			// H72: whose home medicines are reconciled (the panel flags the rest, red after a day)
-			var reconciled = await HospitalMedReconService.AdmissionSignedAsync(_db, ctx.CompanyId, ids, ct);
+			var (reconciled, medRecReady) = await HospitalMedReconService.AdmissionSignedAsync(_db, ctx.CompanyId, ids, ct);
 			List<HospitalObservation> obs; List<HospitalRiskAssessment> risks;
 			try
 			{
@@ -253,13 +275,14 @@ namespace CrossBuy.BL.Hospital
 				var last = obs.FirstOrDefault(o => o.AdmissionId == h.AdmissionId);
 				var morse = risks.FirstOrDefault(r => r.AdmissionId == h.AdmissionId && r.Kind == HospitalRiskKind.Morse);
 				var braden = risks.FirstOrDefault(r => r.AdmissionId == h.AdmissionId && r.Kind == HospitalRiskKind.Braden);
-				// no set yet, or an incomplete one: the next is due now
-				DateTime? next = last?.News2 is int n && last.News2Risk != null ? last.TakenAt.AddHours(HospitalNews2Rules.HoursToNext(n, last.News2Risk)) : last == null ? null : last.TakenAt.AddHours(4);
+				DateTime? next = HospitalNews2Rules.NextDueAt(last);
 				bool overdue = last == null || next <= nowUtc;
 				var pain = HospitalNews2Rules.PainReassessAt(last);
 				return new HospitalObsPatient(h.AdmissionId, h.ID, h.Name, h.NameEn, h.Mrn, h.PhotoPath, h.Bed, last, next, overdue,
 					morse, HospitalRiskRules.Due(morse, nowUtc), braden, HospitalRiskRules.Due(braden, nowUtc), pain,
-					reconciled.Contains(h.AdmissionId), !reconciled.Contains(h.AdmissionId) && h.AdmittedAt <= nowUtc.AddHours(-24));
+					HospitalMedReconRules.Badge(medRecReady, reconciled.Contains(h.AdmissionId), h.AdmittedAt, nowUtc).Signed,
+					HospitalMedReconRules.Badge(medRecReady, reconciled.Contains(h.AdmissionId), h.AdmittedAt, nowUtc).Overdue,
+					medRecReady);
 			}).ToList();
 			return (list, true);
 		}
