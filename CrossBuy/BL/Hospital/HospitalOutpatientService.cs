@@ -275,16 +275,32 @@ namespace CrossBuy.BL.Hospital
 				return HospitalResult.Fail("The doctor already has a patient in the room");
 
 			a.Status = to; a.UpdatedAt = DateTime.UtcNow; a.UpdatedByEmployeeId = employeeId;
-			if (to == HospitalAppointmentStatus.Arrived)
-			{
-				a.ArrivedAt = now;
-				int last = await _db.HospitalAppointments.Where(x => x.CompanyId == ctx.CompanyId && x.AppointmentDate == a.AppointmentDate && x.QueueNumber != null)
-					.Select(x => (int?)x.QueueNumber).MaxAsync(ct) ?? 0;
-				a.QueueNumber = last + 1;
-			}
 			if (to == HospitalAppointmentStatus.InRoom) a.StartedAt = now;
 			if (to == HospitalAppointmentStatus.Done) a.FinishedAt = now;
-			await _db.SaveChangesAsync(ct);
+			if (to == HospitalAppointmentStatus.Arrived)
+			{
+				// THE QUEUE NUMBER IS ONE SEQUENCE FOR THE WHOLE HOSPITAL'S DAY (so a ticket never repeats in the waiting room),
+				// and "the day's largest + 1" is a read-then-write: two desks — or a desk and the self check-in kiosk — marking
+				// patients arrived in the same instant both read the same largest and handed out the SAME ticket. On SQL Server
+				// the read and the save now run under an application lock per company and day, so arrivals take numbers one at
+				// a time. (SQLite, used by the unit tests, has no such lock and runs single-writer anyway.)
+				a.ArrivedAt = now;
+				bool sql = _db.Database.IsSqlServer();
+				var own = sql && _db.Database.CurrentTransaction == null ? await _db.Database.BeginTransactionAsync(ct) : null;
+				try
+				{
+					if (sql)
+						await _db.Database.ExecuteSqlInterpolatedAsync(
+							$"EXEC sp_getapplock @Resource = {"hospital-queue-" + ctx.CompanyId + "-" + a.AppointmentDate.ToString("yyyyMMdd", System.Globalization.CultureInfo.InvariantCulture)}, @LockMode = 'Exclusive', @LockOwner = 'Transaction', @LockTimeout = 10000", ct);
+					int last = await _db.HospitalAppointments.Where(x => x.CompanyId == ctx.CompanyId && x.AppointmentDate == a.AppointmentDate && x.QueueNumber != null)
+						.Select(x => (int?)x.QueueNumber).MaxAsync(ct) ?? 0;
+					a.QueueNumber = last + 1;
+					await _db.SaveChangesAsync(ct);
+					if (own != null) await own.CommitAsync(ct);
+				}
+				finally { if (own != null) await own.DisposeAsync(); }
+			}
+			else await _db.SaveChangesAsync(ct);
 			if (to == HospitalAppointmentStatus.NoShow) await HospitalSmsService.QueueAppointmentAsync(_db, ctx.CompanyId, a.ID, HospitalSmsKind.NoShow, employeeId, DateTime.UtcNow, ct);   // H70
 			return HospitalResult.Success(a.ID);
 		}

@@ -148,6 +148,10 @@ namespace CrossBuy.Models.Context.Hospital
 			{
 				e.HasIndex(x => new { x.CompanyId, x.PractitionerId, x.AppointmentDate, x.StartMinute }).IsUnique()
 					.HasFilter("[Status] <> 'Cancelled'").HasDatabaseName("UX_HospitalAppointments_OneLivePerSlot");
+				// H83: a queue ticket is one per hospital day — the database refuses a duplicate from any writer
+				// (deploy/sql/hospital_h83_queue_ticket_unique.sql); MoveAsync's applock only orders its own callers
+				e.HasIndex(x => new { x.CompanyId, x.AppointmentDate, x.QueueNumber }).IsUnique()
+					.HasFilter("[QueueNumber] IS NOT NULL").HasDatabaseName("UX_HospitalAppointments_OneTicketPerDay");
 				e.HasIndex(x => new { x.CompanyId, x.AppointmentDate });
 				e.HasIndex(x => new { x.CompanyId, x.PatientId, x.AppointmentDate });
 			});

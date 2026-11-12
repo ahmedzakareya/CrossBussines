@@ -15,10 +15,13 @@ namespace CrossBuy.BL.Hospital
 	//     the appointment, a second tap confirms, and he gets his queue number — exactly what the desk's "arrived" does.
 	// ==========================================================================================
 	public sealed record HospitalQueueClinic(int PractitionerId, string Doctor, string DoctorEn, string? Department, string? DepartmentEn, string? Room,
-		int? NowServing, DateTime? CalledAt, IReadOnlyList<int> Waiting);
+		int? NowServing, DateTime? CalledAt, IReadOnlyList<int> Waiting, string? Photo = null);
+
+	/// One call of the day, for the "recently called" strip — a patient who missed the chime finds his number here.
+	public sealed record HospitalQueueCall(int Number, string Doctor, string DoctorEn, string? Room, DateTime CalledAtLocal);
 
 	/// The display's state; Stamp changes whenever a new number is called (the screen chimes on a change).
-	public sealed record HospitalQueueBoard(IReadOnlyList<HospitalQueueClinic> Clinics, string Stamp, DateTime NowLocal);
+	public sealed record HospitalQueueBoard(IReadOnlyList<HospitalQueueClinic> Clinics, string Stamp, DateTime NowLocal, IReadOnlyList<HospitalQueueCall>? Recent = null);
 
 	public sealed record HospitalKioskAppointment(int Id, string Doctor, string DoctorEn, string? Department, string? DepartmentEn, int StartMinute, string Status, int? QueueNumber, bool TooEarly);
 
@@ -60,8 +63,11 @@ namespace CrossBuy.BL.Hospital
 		{
 			var d = day.Date;
 			var appts = await _db.HospitalAppointments.AsNoTracking()
-				.Where(a => a.CompanyId == ctx.CompanyId && a.AppointmentDate == d && (a.Status == HospitalAppointmentStatus.Arrived || a.Status == HospitalAppointmentStatus.InRoom))
+				.Where(a => a.CompanyId == ctx.CompanyId && a.AppointmentDate == d
+					&& (a.Status == HospitalAppointmentStatus.Arrived || a.Status == HospitalAppointmentStatus.InRoom || (a.Status == HospitalAppointmentStatus.Done && a.StartedAt != null)))
 				.Select(a => new { a.PractitionerId, a.Status, a.QueueNumber, a.StartedAt }).ToListAsync(ct);
+			// a clinic card is shown only while it has someone arrived or in the room; a finished call still feeds "recently called"
+			var live = appts.Where(a => a.Status != HospitalAppointmentStatus.Done).Select(a => a.PractitionerId).Distinct().ToHashSet();
 			var docIds = appts.Select(a => a.PractitionerId).Distinct().ToList();
 			var docs = await (from p in _db.HospitalPractitioners.AsNoTracking()
 							  join dep in _db.HospitalDepartments.AsNoTracking() on p.DepartmentId equals dep.ID into dj
@@ -69,15 +75,22 @@ namespace CrossBuy.BL.Hospital
 							  join r in _db.HospitalRooms.AsNoTracking() on p.ClinicRoomId equals r.ID into rj
 							  from r in rj.DefaultIfEmpty()
 							  where p.CompanyId == ctx.CompanyId && docIds.Contains(p.ID) && (departmentId == null || p.DepartmentId == departmentId)
-							  select new { p.ID, p.Name, p.NameEn, Dep = dep == null ? null : dep.Name, DepEn = dep == null ? null : dep.NameEn, Room = r == null ? null : r.Number }).ToListAsync(ct);
-			var clinics = docs.Select(p =>
+							  select new { p.ID, p.Name, p.NameEn, p.EmployeeId, Dep = dep == null ? null : dep.Name, DepEn = dep == null ? null : dep.NameEn, Room = r == null ? null : r.Number }).ToListAsync(ct);
+			// doctors are staff, so the public screen may show their faces (patients stay numbers only)
+			var faces = await CrossBuy.BL.Platform.EmployeePhotos.ResolveAsync(_db, ctx, docs.Where(p => p.EmployeeId != null).Select(p => p.EmployeeId!.Value), ct);
+			var clinics = docs.Where(p => live.Contains(p.ID)).Select(p =>
 			{
 				var mine = appts.Where(a => a.PractitionerId == p.ID).ToList();
 				var now = mine.FirstOrDefault(a => a.Status == HospitalAppointmentStatus.InRoom);
 				var waiting = mine.Where(a => a.Status == HospitalAppointmentStatus.Arrived && a.QueueNumber != null).Select(a => a.QueueNumber!.Value).OrderBy(n => n).ToList();
-				return new HospitalQueueClinic(p.ID, p.Name, p.NameEn, p.Dep, p.DepEn, p.Room, now?.QueueNumber, now?.StartedAt, waiting);
+				return new HospitalQueueClinic(p.ID, p.Name, p.NameEn, p.Dep, p.DepEn, p.Room, now?.QueueNumber, now?.StartedAt, waiting,
+					p.EmployeeId is int e ? faces.GetValueOrDefault(e) : null);
 			}).OrderBy(c => c.DepartmentEn).ThenBy(c => c.DoctorEn).ToList();
-			return new HospitalQueueBoard(clinics, HospitalKioskRules.Stamp(clinics.Select(c => (c.PractitionerId, c.NowServing, c.CalledAt))), HospitalNursingService.UtcToWard(nowUtc));
+			var docById = docs.ToDictionary(p => p.ID);
+			var recent = appts.Where(a => a.StartedAt != null && a.QueueNumber != null && docById.ContainsKey(a.PractitionerId))
+				.OrderByDescending(a => a.StartedAt).Take(5)
+				.Select(a => { var p = docById[a.PractitionerId]; return new HospitalQueueCall(a.QueueNumber!.Value, p.Name, p.NameEn, p.Room, HospitalNursingService.UtcToWard(a.StartedAt!.Value)); }).ToList();
+			return new HospitalQueueBoard(clinics, HospitalKioskRules.Stamp(clinics.Select(c => (c.PractitionerId, c.NowServing, c.CalledAt))), HospitalNursingService.UtcToWard(nowUtc), recent);
 		}
 
 		private async Task<(HospitalPatient? Patient, string? Why)> IdentifyAsync(BusinessContext ctx, string? mrn, int? birthYear, DateTime nowLocal, CancellationToken ct)

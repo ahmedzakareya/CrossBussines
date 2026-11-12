@@ -131,6 +131,34 @@ namespace CrossBuy.Controllers
 			return View(docs);
 		}
 
+		/// The booking modal's calendar: for one doctor, the days ahead on which he has a FREE slot and those slots —
+		/// his schedule (weekly sessions less leave, H26) minus what is already booked (anything not cancelled), and on
+		/// today minus the times already past. The calendar enables only these days; the time list shows only these slots.
+		/// BookAsync still refuses a taken slot, so this is a guide for the picker, never the authority.
+		[HttpGet("Appointments/Availability")]
+		[HospitalPerm(HospitalActions.Book)]
+		public async Task<IActionResult> AppointmentAvailability(int practitionerId, int days = 60, CancellationToken ct = default)
+		{
+			var ctx = await ContextAsync(ct);
+			if (ctx == null) return NotFound(new { ok = false, code = "not_found" });
+			var doc = await _db.HospitalPractitioners.AsNoTracking().FirstOrDefaultAsync(p => p.ID == practitionerId && p.CompanyId == ctx.CompanyId, ct);
+			if (doc == null) return NotFound(new { ok = false, code = "not_found" });
+			var from = ClinicToday(); var to = from.AddDays(Math.Clamp(days, 1, 120));
+			var sched = (await HospitalScheduleLoader.LoadAsync(_db, ctx.CompanyId, new[] { doc }, from, to, ct))[doc.ID];
+			var taken = (await _db.HospitalAppointments.AsNoTracking()
+					.Where(a => a.CompanyId == ctx.CompanyId && a.PractitionerId == doc.ID && a.AppointmentDate >= from && a.AppointmentDate <= to && a.Status != HospitalAppointmentStatus.Cancelled)
+					.Select(a => new { a.AppointmentDate, a.StartMinute }).ToListAsync(ct))
+				.Select(a => (a.AppointmentDate.Date, a.StartMinute)).ToHashSet();
+			int nowMinute = ClinicMinute();
+			var result = new Dictionary<string, List<int>>();
+			for (var d = from; d <= to; d = d.AddDays(1))
+			{
+				var free = sched.SlotsOn(d).Select(s => s.Minute).Where(m => !taken.Contains((d, m)) && (d > from || m > nowMinute)).ToList();
+				if (free.Count > 0) result[d.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture)] = free;
+			}
+			return Json(new { ok = true, days = result });
+		}
+
 		[HttpPost("Appointments/Book"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Book)]
 		public async Task<IActionResult> BookAppointment([FromBody] HospitalBookingInput input, CancellationToken ct = default)
 		{

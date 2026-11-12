@@ -10,6 +10,10 @@ namespace CrossBuy.BL.Hospital
 			return ((p.Length > 0 ? p[0][..1] : "") + (p.Length > 1 ? p[1][..1] : "")).ToUpperInvariant();
 		}
 
+		/// A queue number as the patient's ticket reads it, "A-004" — the one spelling the desk, the clinics board, the
+		/// kiosk and the waiting-room display share (it used to be formatted inline in each view, and the display showed a bare "4").
+		public static string Ticket(int? n) => n is int v ? "A-" + v.ToString("000", System.Globalization.CultureInfo.InvariantCulture) : "—";
+
 		/// A wall-clock minute of the day as "09:30".
 		public static string Clock(int minute) => $"{minute / 60:00}:{minute % 60:00}";
 

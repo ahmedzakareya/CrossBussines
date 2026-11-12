@@ -2,24 +2,106 @@
 @using CrossBuy.BL.Hospital
 @model HospitalQueueBoard
 @inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
-@* H83 — the display's clinics (refreshed every few seconds). Numbers and rooms only: never a name. *@
-<div data-stamp="@Model.Stamp" class="qd-grid">
-    @if (Model.Clinics.Count == 0) { <div class="qd-empty">@T["No patient is waiting now."]</div> }
-    @foreach (var c in Model.Clinics)
+@*
+    H83 — the display's content (pushed over SignalR, fetched on each signal). Metronic's own parts: card card-flush,
+    symbol, badge, the dashed list separator — the page only scales the theme's rem for a TV.
+    PATIENTS ARE TICKETS ONLY ("A-004", HospitalUi.Ticket — the desk's own spelling), never a name: the room is public.
+    Doctors are staff and are shown by name and face. Each card carries what the page needs to ANNOUNCE a call — the
+    ticket, the room, and the clinic and doctor in both languages (the voice speaks Arabic, then English).
+*@
+@{
+    var recent = Model.Recent ?? Array.Empty<HospitalQueueCall>();
+    int n = Model.Clinics.Count;
+}
+<div data-stamp="@Model.Stamp" data-updated="@Model.NowLocal.ToString("HH:mm")" class="qd-main @(recent.Count == 0 ? "qd-no-aside" : "")">
+    <section class="qd-grid" style="--qd-cols:@(n <= 1 ? 1 : n == 2 ? 2 : n == 3 ? 3 : n == 4 ? 2 : 3)">
+        @if (n == 0)
+        {
+            <div class="card card-flush qd-empty"><div class="card-body d-flex flex-column flex-center text-center">
+                <div class="symbol symbol-100px symbol-circle mb-7"><span class="symbol-label bg-light-primary"><i class="ki-outline ki-people fs-5x text-primary"></i></span></div>
+                <div class="fs-1 fw-bold text-gray-800">@T["No patient is waiting now."]</div>
+            </div></div>
+        }
+        @foreach (var c in Model.Clinics)
+        {
+            var doc = DisplayName.Of(c.Doctor, c.DoctorEn);
+            var depName = c.Department == null ? "" : DisplayName.Of(c.Department, c.DepartmentEn ?? c.Department);
+            <article class="card card-flush qd-card" data-doc="@c.PractitionerId" data-now="@(c.NowServing is int ns0 ? HospitalUi.Ticket(ns0) : "")" data-num="@c.NowServing"
+                     data-room="@c.Room" data-photo="@c.Photo" data-name="@doc"
+                     data-doc-ar="@c.Doctor" data-doc-en="@(c.DoctorEn ?? c.Doctor)" data-dep-ar="@c.Department" data-dep-en="@(c.DepartmentEn ?? c.Department)">
+                <div class="card-header align-items-center border-bottom border-gray-200 py-5 gap-4">
+                    <div class="d-flex align-items-center gap-4 min-w-0">
+                        <div class="symbol symbol-65px symbol-circle flex-shrink-0">
+                            @if (!string.IsNullOrEmpty(c.Photo)) {<img src="@c.Photo" alt="" style="object-fit:cover" />}
+                            else {<span class="symbol-label fs-2 fw-bold hp-initials">@HospitalUi.Initials(c.DoctorEn)</span>}
+                        </div>
+                        <div class="d-flex flex-column min-w-0">
+                            <span class="text-gray-900 fw-bold fs-2 qd-clamp">@doc</span>
+                            <span class="text-gray-500 fw-semibold fs-5">@depName</span>
+                        </div>
+                    </div>
+                    @if (c.Room != null)
+                    {
+                        <div class="card-toolbar m-0"><span class="badge badge-light-primary fw-bold fs-3 px-4 py-3">@T["Room"]&nbsp;<bdi>@c.Room</bdi></span></div>
+                    }
+                </div>
+                <div class="card-body d-flex flex-column flex-center py-5">
+                    <span class="text-gray-500 fw-semibold fs-3 mb-2">@T["Serving now"]</span>
+                    @if (c.NowServing is int ns)
+                    {
+                        <span class="qd-ticket text-primary fw-bolder"><bdi>@HospitalUi.Ticket(ns)</bdi></span>
+                    }
+                    else
+                    {
+                        <div class="symbol symbol-75px symbol-circle my-4"><span class="symbol-label bg-light"><i class="ki-outline ki-time fs-2hx text-gray-500"></i></span></div>
+                        <span class="text-gray-600 fw-semibold fs-3">@T["Waiting for the next call"]</span>
+                    }
+                </div>
+                <div class="card-footer d-flex align-items-center gap-3 py-5 bg-light rounded-bottom">
+                    <span class="text-gray-700 fw-bold fs-4 flex-shrink-0">@T["Next"]</span>
+                    @if (c.Waiting.Count == 0)
+                    {
+                        <span class="text-gray-500 fw-semibold fs-4">@T["Nobody in the queue"]</span>
+                    }
+                    else
+                    {
+                        <div class="d-flex flex-wrap gap-2">
+                            @foreach (var w in c.Waiting.Take(4)) {<span class="badge badge-white border border-gray-300 text-gray-900 fw-bold fs-3 px-4 py-3"><bdi>@HospitalUi.Ticket(w)</bdi></span>}
+                            @if (c.Waiting.Count > 4) {<span class="badge badge-light-primary fw-bold fs-3 px-4 py-3"><bdi dir="ltr">+@(c.Waiting.Count - 4)</bdi></span>}
+                        </div>
+                    }
+                </div>
+            </article>
+        }
+    </section>
+    @if (recent.Count > 0)
     {
-        <div class="qd-card">
-            <div class="qd-head">
-                <div class="qd-doc">@DisplayName.Of(c.Doctor, c.DoctorEn)</div>
-                <div class="qd-dep">@(c.Department == null ? "" : DisplayName.Of(c.Department, c.DepartmentEn ?? c.Department))@if (c.Room != null) {<text> · @T["Room"] <bdi>@c.Room</bdi></text>}</div>
+        @* Metronic demo39 widgets/lists.html "Activities": card-title over a muted line, then timeline-label — the time,
+           a bullet on the rail, the content. The latest call takes the brand colour. *@
+        <aside class="card card-flush qd-aside">
+            <div class="card-header align-items-center border-0 mt-4">
+                <h3 class="card-title align-items-start flex-column">
+                    <span class="fw-bold mb-2 text-gray-900 fs-2">@T["Recently called"]</span>
+                    <span class="text-muted fw-semibold fs-6">@T["Today"]</span>
+                </h3>
             </div>
-            <div class="qd-now">
-                <div class="qd-label">@T["Serving now"]</div>
-                <div class="qd-num" data-now="@(c.NowServing?.ToString() ?? "")">@(c.NowServing?.ToString() ?? "—")</div>
+            <div class="card-body pt-5">
+                <div class="timeline-label">
+                    @for (int i = 0; i < recent.Count; i++)
+                    {
+                        var r = recent[i];
+                        bool latest = i == 0;
+                        <div class="timeline-item">
+                            <div class="timeline-label fw-bold text-gray-800 fs-5"><bdi>@r.CalledAtLocal.ToString("HH:mm")</bdi></div>
+                            <div class="timeline-badge"><i class="fa fa-genderless fs-1 @(latest ? "text-primary" : "qd-old-dot")"></i></div>
+                            <div class="timeline-content ps-3">
+                                <div class="fw-bolder fs-2 text-primary lh-1 @(latest ? "" : "qd-old")"><bdi>@HospitalUi.Ticket(r.Number)</bdi></div>
+                                <div class="text-muted fw-semibold fs-6 mt-1">@DisplayName.Of(r.Doctor, r.DoctorEn)@if (r.Room != null) {<text> · @T["Room"] <bdi>@r.Room</bdi></text>}</div>
+                            </div>
+                        </div>
+                    }
+                </div>
             </div>
-            <div class="qd-next">
-                <div class="qd-label">@T["Waiting"]</div>
-                <div class="qd-chips">@if (c.Waiting.Count == 0) {<span class="qd-none">—</span>}@foreach (var n in c.Waiting.Take(8)) {<span class="qd-chip">@n</span>}@if (c.Waiting.Count > 8) {<span class="qd-more">+@(c.Waiting.Count - 8)</span>}</div>
-            </div>
-        </div>
+        </aside>
     }
 </div>

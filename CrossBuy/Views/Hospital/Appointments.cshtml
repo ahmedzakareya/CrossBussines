@@ -139,11 +139,15 @@
         <div class="row g-5">
             <div class="col-12"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Patient"]</label>
                 <select class="form-select form-select-solid" data-no-select2 data-book-patient data-placeholder="@T["Search by name, MRN or ID"]"></select></div>
-            <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Visit type"]</label>
+            @* the theme's own controls only: flatpickr for the day (enabled on the doctor's free days), select2 for the time
+               (that day's free slots) and the visit type *@
+            <div class="col-md-4"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Day"]</label>
+                <input class="form-control form-control-solid hp-num" data-book-day readonly /></div>
+            <div class="col-md-4"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Time"]</label><select class="form-select form-select-solid hp-num" data-book-time></select></div>
+            <div class="col-md-4"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Visit type"]</label>
                 <select class="form-select form-select-solid" data-book-type>
                     @foreach (var v in HospitalVisitTypes.All) { <option value="@v">@T["visit:" + v]</option> }
                 </select></div>
-            <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Time"]</label><div class="form-control form-control-solid hp-num" data-book-time></div></div>
             <div class="col-12"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Note"]</label><textarea class="form-control form-control-solid" rows="2" maxlength="400" data-book-note></textarea></div>
         </div>
     </div>
@@ -166,13 +170,13 @@
             var docs = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ToDictionary(d => d.Row.ID.ToString(), d => new { name = DisplayName.Of(d.Row.Name, d.Row.NameEn), title = DisplayName.Of(d.Row.Title, d.Row.TitleEn), photo = d.PhotoPath, initials = HospitalUi.Initials(d.Row.NameEn) })));
             var appts = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(shown.ToDictionary(a => a.Id.ToString(), a => new { id = a.Id, patientId = a.PatientId, name = DisplayName.Of(a.PatientName, a.PatientNameEn), mrn = a.Mrn, photo = a.PatientPhoto, initials = HospitalUi.Initials(a.PatientNameEn), doc = a.PractitionerId, time = HospitalUi.Clock(a.StartMinute), status = a.Status, visit = a.VisitType, queue = a.QueueNumber, note = a.Note })));
             var W = {
-                failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value), choose: @Json.Serialize(T["Choose a patient first"].Value),
+                failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value), choose: @Json.Serialize(T["Choose a patient first"].Value), pickTime: @Json.Serialize(T["Choose a day and a time"].Value),
                 open: @Json.Serialize(T["Open file"].Value), close: @Json.Serialize(T["Close"].Value), queue: @Json.Serialize(T["Queue number"].Value),
                 status: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(HospitalAppointmentStatus.All.ToDictionary(s => s, s => T["appt:" + s].Value))),
                 visit: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(HospitalVisitTypes.All.ToDictionary(s => s, s => T["visit:" + s].Value))),
                 act: { Arrived: @Json.Serialize(T["Check in"].Value), InRoom: @Json.Serialize(T["Send in to the doctor"].Value), Done: @Json.Serialize(T["Finish the visit"].Value), NoShow: @Json.Serialize(T["Did not come"].Value), Cancelled: @Json.Serialize(T["Cancel the appointment"].Value) }
             };
-            var urls = { book: @Json.Serialize(Url.Action("BookAppointment")), move: @Json.Serialize(Url.Action("MoveAppointment", new { id = 0 })), search: @Json.Serialize(Url.Action("SearchPatients")), patient: @Json.Serialize(Url.Action("Patient", new { id = 0 })) };
+            var urls = { availability: @Json.Serialize(Url.Action("AppointmentAvailability")), book: @Json.Serialize(Url.Action("BookAppointment")), move: @Json.Serialize(Url.Action("MoveAppointment", new { id = 0 })), search: @Json.Serialize(Url.Action("SearchPatients")), patient: @Json.Serialize(Url.Action("Patient", new { id = 0 })) };
             var moves = { Booked: ['Arrived', 'NoShow', 'Cancelled'], Arrived: ['InRoom', 'Cancelled'], InRoom: ['Done'] };
             function toast(k, m) { if (window.toastr) toastr[k](m); }
             function post(url, body) { return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(body) }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); }); }
@@ -188,6 +192,47 @@
 
             // ---------------- book ----------------
             var bookEl = document.getElementById('bookModal'), picker = bookEl.querySelector('[data-book-patient]'), slot = null;
+            // each doctor's FREE slots of THIS page's day (his schedule minus what is booked) — shown at once; the other days
+            // come from Appointments/Availability: the calendar enables only the days he has a free slot, the time list
+            // only that day's free slots. BookAsync still refuses a taken slot, so the picker guides, it does not decide.
+            var freeSlots = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(slotMap.ToDictionary(kv => kv.Key.ToString(), kv => kv.Value.Where(m => !bySlot.ContainsKey((kv.Key, m))).OrderBy(m => m).ToList())));
+            var timeSel = bookEl.querySelector('[data-book-time]'), dayInput = bookEl.querySelector('[data-book-day]'), typeSel = bookEl.querySelector('[data-book-type]');
+            var bookDay = day, avail = {}, fp = null;
+            function hhmm(m) { return ('0' + Math.floor(m / 60)).slice(-2) + ':' + ('0' + m % 60).slice(-2); }
+            function fillTimes(list, chosen) {
+                list = (list || []).slice();
+                if (chosen == null || list.indexOf(chosen) < 0) chosen = list.length ? list[0] : null;
+                timeSel.innerHTML = list.map(function (m) { return '<option value="' + m + '"' + (m === chosen ? ' selected' : '') + '>' + hhmm(m) + '</option>'; }).join('');
+                if (slot) slot.minute = chosen;
+                var c = bookEl.querySelector('[data-book-clock]'); if (c) c.textContent = chosen == null ? '—' : hhmm(chosen);
+                if ($ && $(timeSel).data('select2')) $(timeSel).trigger('change.select2');   // repaint the theme box, no app 'change'
+            }
+            // the theme's select2 for both lists (a select2 change is a jQuery event: never addEventListener)
+            function onTime() { if (!slot) return; slot.minute = +timeSel.value; var c = bookEl.querySelector('[data-book-clock]'); if (c) c.textContent = hhmm(slot.minute); }
+            if ($ && $.fn.select2) {
+                $(timeSel).select2({ width: '100%', dir: 'ltr', dropdownParent: $(bookEl), minimumResultsForSearch: Infinity }); $(timeSel).on('change', onTime);
+                $(typeSel).select2({ width: '100%', dir: isAr ? 'rtl' : 'ltr', dropdownParent: $(bookEl), minimumResultsForSearch: Infinity });
+            } else timeSel.addEventListener('change', onTime);
+            // the theme's calendar (flatpickr), opened only on the doctor's free days
+            function openDays(enabled, chosen) {
+                if (!window.flatpickr) { dayInput.value = chosen; return; }
+                if (fp) fp.destroy();
+                fp = flatpickr(dayInput, { dateFormat: 'Y-m-d', defaultDate: chosen, minDate: @Json.Serialize(today.ToString("yyyy-MM-dd")), enable: enabled,
+                    disableMobile: true, locale: isAr && flatpickr.l10ns && flatpickr.l10ns.ar ? flatpickr.l10ns.ar : 'default', static: true,   // opens under the field, inside the modal (appendTo placed it off the dialog in RTL)
+                   
+                    onChange: function (sel, str) { if (!str) return; bookDay = str; fillTimes(str === day ? freeSlots[String(slot.doc)] : avail[str], null); } });
+            }
+            function loadAvailability(doc, chosenMinute) {
+                openDays([day], day);
+                fetch(urls.availability + '?practitionerId=' + doc, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                    .then(function (r) { return r.ok ? r.json() : null; })
+                    .then(function (j) {
+                        if (!j || !j.ok || !slot || slot.doc !== doc) return;
+                        avail = j.days || {};
+                        var days = Object.keys(avail); if (days.indexOf(day) < 0) days.push(day);
+                        openDays(days, bookDay);
+                    }).catch(function () { });
+            }
             if ($ && $.fn.select2) $(picker).select2({ width: '100%', dir: isAr ? 'rtl' : 'ltr', dropdownParent: $(bookEl), placeholder: picker.getAttribute('data-placeholder'),
                 ajax: { url: urls.search, dataType: 'json', delay: 250, data: function (p) { return { q: p.term || '' }; }, processResults: function (d) { return { results: d.results || [] }; } } });
             // One delegated handler, so a refreshed grid needs no re-binding.
@@ -197,8 +242,8 @@
                     var d = docs[cell.getAttribute('data-doc')], m = +cell.getAttribute('data-minute');
                     slot = { doc: +cell.getAttribute('data-doc'), minute: m };
                     var clock = ('0' + Math.floor(m / 60)).slice(-2) + ':' + ('0' + m % 60).slice(-2);
-                    bookEl.querySelector('[data-book-doc]').innerHTML = person({ name: d.name, photo: d.photo, initials: d.initials, sub: esc(d.title) + ' · <span class="hp-num">' + clock + '</span>' }, 50);
-                    bookEl.querySelector('[data-book-time]').textContent = day + '  ' + clock;
+                    bookEl.querySelector('[data-book-doc]').innerHTML = person({ name: d.name, photo: d.photo, initials: d.initials, sub: esc(d.title) + ' · <span class="hp-num" data-book-clock>' + clock + '</span>' }, 50);
+                    bookDay = day; fillTimes(freeSlots[cell.getAttribute('data-doc')], m); loadAvailability(+cell.getAttribute('data-doc'), m);
                     bookEl.querySelector('[data-book-note]').value = '';
                     if ($) $(picker).val(null).trigger('change');
                     bootstrap.Modal.getOrCreateInstance(bookEl).show();
@@ -207,8 +252,9 @@
             bookEl.querySelector('[data-book-confirm]').addEventListener('click', function () {
                 var b = this, pid = picker.value;
                 if (!pid) { toast('error', W.choose); return; }
+                if (!slot || slot.minute == null || !bookDay) { toast('error', W.pickTime); return; }
                 b.disabled = true;
-                post(urls.book, { patientId: +pid, practitionerId: slot.doc, date: day, startMinute: slot.minute, visitType: bookEl.querySelector('[data-book-type]').value, note: bookEl.querySelector('[data-book-note]').value || null })
+                post(urls.book, { patientId: +pid, practitionerId: slot.doc, date: bookDay, startMinute: slot.minute, visitType: bookEl.querySelector('[data-book-type]').value, note: bookEl.querySelector('[data-book-note]').value || null })
                     .then(function (res) {
                         b.disabled = false;
                         if (!res.ok) { toast('error', res.error || W.failed); return; }

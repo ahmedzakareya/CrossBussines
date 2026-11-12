@@ -4,8 +4,17 @@
 @model HospitalQueueBoard
 @inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
 @*
-    H83 — the waiting-room display: a full screen (no menus) for a TV in the waiting room. It refreshes itself every few
-    seconds and plays a short chime when a new number is called. Numbers and rooms only — the waiting room is public.
+    H83 — the waiting-room display: a full screen (no menus) for a TV in the waiting room.
+    LOOK: Metronic's own (owner 2026-11-12: "take it from Metronic") — card card-flush, symbol, badge, select2, the theme's
+    light page — with ONE change for a TV: the root font size follows the screen, so every theme rem (fs-*, padding,
+    symbol sizes) scales together and a ticket reads from ~8 m on a 55" panel. No hand-drawn widgets.
+    LOGIC (research: Qmatic, Wavetec/Gulf MOH, Qminder, ADA/WCAG signage):
+      * pushed, not polled — NotificationsHub's company group signals "hospitalQueueChanged" after an appointment's status
+        commits (HospitalQueueSignalInterceptor); the screen then fetches its content once; 2-minute safety refresh;
+      * a call takes the screen for 10 s: chime, then spoken in Arabic and English — the TICKET ("A-004", the desk's own
+        spelling), the CLINIC, the room when there is one, and the doctor; the "recently called" card keeps it;
+      * patients are tickets only — the room is public; doctors (staff) by name and face;
+      * resilience: last-update time, reconnect with back-off that never gives up, wake lock, a few-pixel drift.
 *@
 @{
     Layout = null;
@@ -24,68 +33,277 @@
     <link href="~/Backend-assets/css/style.bundle@(isAr ? ".rtl" : "").css" rel="stylesheet" asp-append-version="true" />
     <link href="~/Backend-assets/css/crossbuy-brand.css" rel="stylesheet" asp-append-version="true" />
     <link href="~/Backend-assets/fonts/cairo/cairo.css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
     <style>
-        body { background: #f4f6fb; font-family: 'Cairo', Inter, sans-serif; margin: 0; }
-        .qd-top { display: flex; align-items: center; justify-content: space-between; padding: 18px 32px; background: #1e2f5a; color: #fff; }
-        .qd-title { font-size: 2rem; font-weight: 700; }
-        .qd-clock { font-size: 2rem; font-weight: 700; font-variant-numeric: tabular-nums; direction: ltr; }
-        .qd-tools { display: flex; gap: 10px; align-items: center; }
-        .qd-tools select, .qd-tools button { font-size: .95rem; }
-        .qd-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 22px; padding: 28px 32px; }
-        .qd-card { background: #fff; border-radius: 18px; box-shadow: 0 4px 18px rgba(30,47,90,.08); overflow: hidden; display: flex; flex-direction: column; }
-        .qd-head { padding: 16px 22px; border-bottom: 1px solid #eef0f6; }
-        .qd-doc { font-size: 1.45rem; font-weight: 700; color: #1e2f5a; }
-        .qd-dep { font-size: 1.05rem; color: #6b7280; }
-        .qd-now { padding: 14px 22px 8px; text-align: center; }
-        .qd-label { font-size: 1rem; color: #6b7280; font-weight: 600; }
-        .qd-num { font-size: 6rem; line-height: 1.05; font-weight: 800; color: #1e2f5a; font-variant-numeric: tabular-nums; }
-        .qd-num.qd-flash { animation: qdflash 1.2s ease-in-out 4; }
-        @@keyframes qdflash { 0%,100% { color: #1e2f5a; } 50% { color: #16a34a; } }
-        .qd-next { padding: 10px 22px 20px; background: #f8f9fc; }
-        .qd-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
-        .qd-chip { display: inline-block; min-width: 54px; padding: 6px 10px; text-align: center; border-radius: 10px; background: #e8edf9; color: #1e2f5a; font-size: 1.35rem; font-weight: 700; font-variant-numeric: tabular-nums; }
-        .qd-more, .qd-none { font-size: 1.2rem; color: #6b7280; align-self: center; }
-        .qd-empty { grid-column: 1 / -1; text-align: center; color: #6b7280; font-size: 1.8rem; padding: 80px 0; }
-        .qd-sound { position: fixed; inset: 0; background: rgba(30,47,90,.6); display: flex; align-items: center; justify-content: center; z-index: 10; }
-        .qd-sound button { font-size: 1.5rem; padding: 18px 36px; }
+        /* the ONE TV adaptation: Metronic sizes everything in rem, so the root size scales the whole theme with the screen
+           (the smaller of height and width, so a narrow window shrinks instead of overflowing) */
+        /* Metronic pins `html, body { font-size: 13px !important }`, so the TV scale needs its own !important (html only;
+           body text stays the theme's, but every rem — fs-*, spacing, symbols — now follows the screen) */
+        html:root { font-size: clamp(12px, min(1.45vh, 1.05vw), 22px) !important; }
+        html, body { height: 100%; }
+        body { margin: 0; overflow: hidden; background: var(--bs-app-bg-color, #F5F8FA); font-family: 'Cairo', Inter, sans-serif; }
+        body.qd-idle-cursor { cursor: none; }
+        body.qd-idle-cursor .qd-tools { opacity: 0; pointer-events: none; }
+        .qd-tools { transition: opacity .4s; }
+        bdi { unicode-bidi: isolate; }
+        .qd-shell { height: 100vh; display: flex; flex-direction: column; gap: 1.25rem; padding: 1.25rem 1.5rem; transition: transform 2s ease; }
+        .qd-clock { font-variant-numeric: tabular-nums; direction: ltr; unicode-bidi: isolate; line-height: 1; }
+        #qdBody { flex: 1 1 auto; min-height: 0; }
+        .qd-main { height: 100%; display: grid; grid-template-columns: minmax(0, 1fr) minmax(300px, 24%); gap: 1.25rem; }
+        .qd-main.qd-no-aside { grid-template-columns: minmax(0, 1fr); }
+        .qd-grid { display: grid; grid-template-columns: repeat(var(--qd-cols, 2), minmax(0, 1fr)); grid-auto-rows: minmax(0, 1fr); gap: 1.25rem; min-height: 0; }
+        .qd-card, .qd-aside { min-height: 0; overflow: hidden; }
+        .qd-empty { grid-column: 1 / -1; }
+        /* the theme's timeline sizes its time column in px (50px, rail at 51px); on a scaled TV the time is wider, so the
+           column and its rail move together in rem */
+        .qd-aside .timeline-label .timeline-label { width: 4.25rem; }
+        [dir=rtl] .qd-aside .timeline-label:before { right: calc(4.25rem + 1px); }
+        [dir=ltr] .qd-aside .timeline-label:before { left: calc(4.25rem + 1px); }
+        .qd-aside .timeline-label .timeline-item { margin-bottom: 1.6rem; }
+        /* older calls step back: the brand CSS raises text greys for AA, so the dot (decoration) takes an explicit light grey and
+           the ticket (large bold text, 3:1 is enough) fades instead of turning grey */
+        .qd-aside .qd-old-dot { color: var(--bs-gray-300) !important; }
+        .qd-aside .qd-old { opacity: .55; }
+        .qd-clamp { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .qd-ticket { font-size: min(9.5rem, 52cqh, 28cqw); line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: .02em; }
+        /* the body shrinks, the header and footer never do: a big ticket in a short card used to push "Next" out of it */
+        .qd-card > .card-body { flex: 1 1 auto; min-height: 0; overflow: hidden; container-type: size; }
+        /* everything in the middle is sized from the CARD's own space (container units), so a short card shrinks its
+           ticket instead of cropping it */
+        .qd-card > .card-body .symbol-label { width: min(75px, 30cqh); height: min(75px, 30cqh); }
+        .qd-card > .card-body > span:first-child { font-size: min(1.5rem, 11cqh) !important; }
+        .qd-card > .card-header, .qd-card > .card-footer { flex-shrink: 0; }
+        /* the called card: the system's own blue (owner: green does not belong to this product), a slow pulse
+           (well under 3 flashes/s) */
+        .qd-card.is-called { box-shadow: 0 0 0 3px var(--bs-primary) !important; }
+        .qd-card.is-called .qd-ticket { animation: qdpulse 1.6s ease-in-out 6; }
+        @@keyframes qdpulse { 0%,100% { opacity: 1; } 50% { opacity: .5; } }
+        .qd-status.is-offline .bullet { background-color: var(--bs-gray-400) !important; animation: qdpulse 1.6s infinite; }
+        .qd-status .qd-off { display: none; }
+        .qd-status.is-offline .qd-off { display: inline; }
+        /* the call: a Metronic modal-content, centred, for 10 s */
+        .qd-call { position: fixed; inset: 0; z-index: 1060; display: none; align-items: center; justify-content: center; background: rgba(0, 0, 0, .45); }
+        .qd-call.is-on { display: flex; animation: qdin .3s ease-out; }
+        @@keyframes qdin { from { opacity: 0; transform: scale(.97); } to { opacity: 1; transform: none; } }
+        .qd-call .modal-content { width: min(86vw, 1400px); }
+        /* Metronic puts the dialog's colours on .modal; these stand alone, so they take the surface explicitly */
+        .qd-call .modal-content, .qd-sound .modal-content { background-color: var(--bs-body-bg, #fff); border-radius: 1rem; }
+        .qd-call-ticket { font-size: min(13rem, 26vh); line-height: 1; font-variant-numeric: tabular-nums; animation: qdpulse 1.6s ease-in-out 5; }
+        .qd-call-row + .qd-call-row { border-top: 1px dashed var(--bs-gray-300); }
+        .qd-call-row .qd-row-ticket { font-size: min(5.5rem, 9vh); line-height: 1; font-variant-numeric: tabular-nums; min-width: 5.2em; }
+        .qd-sound { position: fixed; inset: 0; z-index: 1070; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, .45); }
+        @@media (max-width: 1100px) {
+            .qd-main { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; }
+            .qd-aside .card-body > .d-flex { flex-wrap: wrap; }
+        }
+        @@media (max-width: 700px) { .qd-grid { grid-template-columns: minmax(0, 1fr) !important; } }
     </style>
 </head>
 <body>
-    <div class="qd-top">
-        <div class="qd-title">@T["Waiting room"]</div>
-        <div class="qd-tools">
-            <select id="qdDep" class="form-select form-select-sm w-auto"><option value="">@T["All clinics"]</option>@foreach (var d in deps) {<option value="@d.ID" selected="@(dep == d.ID)">@DisplayName.Of(d.Name, d.NameEn ?? d.Name)</option>}</select>
-            <button type="button" id="qdFull" class="btn btn-sm btn-light text-gray-800"><i class="ki-outline ki-maximize fs-4 text-gray-800"></i>@T["Full screen"]</button>
+    <div class="qd-shell" id="qdShell">
+        <div class="card card-flush">
+            <div class="card-body d-flex align-items-center flex-wrap gap-5 py-5">
+                <div class="d-flex align-items-center gap-4 flex-grow-1 min-w-0">
+                    <div class="symbol symbol-60px"><span class="symbol-label bg-light-primary"><i class="ki-outline ki-people fs-2x text-primary"></i></span></div>
+                    <div class="d-flex flex-column">
+                        <span class="text-gray-900 fw-bolder fs-1">@T["Waiting room"]</span>
+                        <span class="text-gray-500 fw-semibold fs-5" id="qdScope">@(dep is int sel && deps.FirstOrDefault(x => x.ID == sel) is { } sd ? DisplayName.Of(sd.Name, sd.NameEn ?? sd.Name) : T["All clinics"].Value)</span>
+                    </div>
+                </div>
+                <div class="qd-tools d-flex align-items-center gap-3">
+                    <div class="w-250px">
+                        <select id="qdDep" class="form-select form-select-solid"><option value="">@T["All clinics"]</option>@foreach (var d in deps) {<option value="@d.ID" selected="@(dep == d.ID)">@DisplayName.Of(d.Name, d.NameEn ?? d.Name)</option>}</select>
+                    </div>
+                    <button type="button" id="qdFull" class="btn btn-light-primary text-nowrap"><i class="ki-outline ki-maximize fs-3"></i>@T["Full screen"]</button>
+                </div>
+                <div class="d-flex flex-column align-items-end">
+                    <div class="qd-clock text-gray-900 fw-bolder fs-2hx" id="qdClock">@Model.NowLocal.ToString("HH:mm")</div>
+                    <div class="text-gray-500 fw-semibold fs-6 mt-1 text-nowrap" id="qdDate"></div>
+                </div>
+            </div>
         </div>
-        <div class="qd-clock" id="qdClock">@Model.NowLocal.ToString("HH:mm")</div>
+        <div id="qdBody"><partial name="_QueueClinics" model="Model" /></div>
+        <div class="qd-status d-flex align-items-center text-gray-500 fw-semibold fs-7" id="qdStatus">
+            <span class="bullet bullet-dot bg-primary h-8px w-8px me-2"></span>@T["Updated"]&nbsp;<bdi id="qdUpdated">@Model.NowLocal.ToString("HH:mm")</bdi><span class="qd-off">&nbsp;· @T["Reconnecting…"]</span>
+        </div>
     </div>
-    <div id="qdBody"><partial name="_QueueClinics" model="Model" /></div>
-    <div class="qd-sound" id="qdSound"><button type="button" class="btn btn-primary">@T["Start the display (with sound)"]</button></div>
+
+    <div class="qd-call" id="qdCall" aria-live="assertive">
+        <div class="modal-content shadow-lg">
+            <div class="modal-header justify-content-center border-0 pt-10 pb-0">
+                <span class="badge badge-light-primary fw-bolder fs-1 px-6 py-4"><i class="ki-outline ki-notification-on fs-1 text-primary me-3"></i>@T["Now calling"]</span>
+            </div>
+            <div class="modal-body text-center px-10 pt-8 pb-12" id="qcSingle">
+                <div class="qd-call-ticket text-primary fw-bolder"><bdi id="qcNum"></bdi></div>
+                <div class="text-gray-800 fw-bold fs-2hx mt-8"><span>@T["Please go to"]</span> <span id="qcClinic"></span></div>
+                <div class="mt-6" id="qcRoomWrap"><span class="badge badge-light-primary fw-bolder fs-2hx px-8 py-5">@T["Room"]&nbsp;<bdi id="qcRoom"></bdi></span></div>
+                <div class="d-inline-flex align-items-center gap-4 mt-8">
+                    <div class="symbol symbol-70px symbol-circle" id="qcFace"></div>
+                    <span class="text-gray-600 fw-bold fs-1" id="qcDoc"></span>
+                </div>
+            </div>
+            @* several doctors called in the same instant: ONE window lists them all (ticket, clinic, room, doctor) instead
+               of making the last patient wait 10 s per call ahead of him *@
+            <div class="modal-body px-10 pt-6 pb-10 d-none" id="qcMulti"></div>
+        </div>
+    </div>
+
+    <div class="qd-sound" id="qdSound">
+        <div class="modal-content mw-600px">
+            <div class="modal-body text-center py-12 px-10">
+                <div class="symbol symbol-90px symbol-circle mb-7"><span class="symbol-label bg-light-primary"><i class="ki-outline ki-speaker fs-3x text-primary"></i></span></div>
+                <div class="text-gray-900 fw-bolder fs-1 mb-8">@T["Waiting room"]</div>
+                <button type="button" class="btn btn-primary btn-lg fs-3"><i class="ki-outline ki-speaker fs-2"></i>@T["Start the display (with sound)"]</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="~/Backend-assets/plugins/global/plugins.bundle.js" asp-append-version="true"></script>
     <script>
         (function () {
             var url = @Json.Serialize(Url.Action("QueueDisplayData")), body = document.getElementById('qdBody'), dep = document.getElementById('qdDep');
-            var stamp = (body.querySelector('[data-stamp]') || {}).getAttribute ? body.querySelector('[data-stamp]').getAttribute('data-stamp') : '', ctx = null;
-            // a browser plays sound only after a tap: the overlay asks for one tap when the screen is switched on
-            document.querySelector('#qdSound button').addEventListener('click', function () { try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { } document.getElementById('qdSound').remove(); });
-            function chime() { if (!ctx) return; [660, 880].forEach(function (f, i) { var o = ctx.createOscillator(), g = ctx.createGain(); o.frequency.value = f; o.connect(g); g.connect(ctx.destination);
-                var t = ctx.currentTime + i * 0.35; g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.4, t + 0.03); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.3); o.start(t); o.stop(t + 0.32); }); }
-            function refresh() {
-                fetch(url + (dep.value ? '?department=' + dep.value : ''), { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.ok ? r.text() : null; }).then(function (h) {
-                    if (h == null) return;
-                    var old = {}; body.querySelectorAll('[data-now]').forEach(function (n) { old[n.closest('.qd-card').querySelector('.qd-doc').textContent] = n.getAttribute('data-now'); });
-                    body.innerHTML = h;
-                    var s = body.querySelector('[data-stamp]').getAttribute('data-stamp');
-                    if (s !== stamp) {
-                        body.querySelectorAll('[data-now]').forEach(function (n) { var k = n.closest('.qd-card').querySelector('.qd-doc').textContent; if (n.getAttribute('data-now') && old[k] !== n.getAttribute('data-now')) n.classList.add('qd-flash'); });
-                        if (stamp !== null) chime();
-                        stamp = s;
-                    }
-                }).catch(function () { });
+            var status = document.getElementById('qdStatus'), updated = document.getElementById('qdUpdated');
+            var lang = document.documentElement.lang, isAr = lang === 'ar', $ = window.jQuery, ctx = null, sound = false;
+
+            // ---- clock: re-armed on every whole second (never drifts); the Gregorian + Umm al-Qura Hijri line once a day ----
+            var clockEl = document.getElementById('qdClock'), dayShown = '';
+            function pad(n) { return String(n).padStart(2, '0'); }
+            function tick() {
+                var d = new Date();
+                clockEl.innerHTML = pad(d.getHours()) + ':' + pad(d.getMinutes()) + '<span class="text-gray-400 fs-2 ms-2">' + pad(d.getSeconds()) + '</span>';
+                var day = d.toDateString();
+                if (day !== dayShown) {
+                    dayShown = day;
+                    try {
+                        var loc = isAr ? 'ar' : 'en';
+                        var g = new Intl.DateTimeFormat(loc + '-u-nu-latn', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(d);
+                        var h = new Intl.DateTimeFormat(loc + '-u-ca-islamic-umalqura-nu-latn', { day: 'numeric', month: 'long', year: 'numeric' }).format(d);
+                        document.getElementById('qdDate').textContent = g + '  ·  ' + h;
+                    } catch (e) { }
+                }
+                setTimeout(tick, 1000 - d.getMilliseconds() + 5);
             }
-            setInterval(refresh, 5000);
-            setInterval(function () { var d = new Date(); document.getElementById('qdClock').textContent = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }, 10000);
-            dep.addEventListener('change', function () { var u = new URL(location.href); if (dep.value) u.searchParams.set('department', dep.value); else u.searchParams.delete('department'); history.replaceState(null, '', u); stamp = null; refresh(); });
+            tick();
+
+            // ---- sound: a browser plays audio only after one tap ----
+            document.querySelector('#qdSound button').addEventListener('click', function () {
+                try { ctx = new (window.AudioContext || window.webkitAudioContext)(); sound = true; } catch (e) { }
+                if (window.speechSynthesis) { try { speechSynthesis.getVoices(); } catch (e) { } }
+                document.getElementById('qdSound').remove(); wake();
+                if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(function () { });
+            });
+            function chime() { if (!ctx) return; [660, 880, 1100].forEach(function (f, i) { var o = ctx.createOscillator(), g = ctx.createGain(); o.type = 'sine'; o.frequency.value = f; o.connect(g); g.connect(ctx.destination);
+                var t = ctx.currentTime + i * 0.28; g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.35, t + 0.03); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.5); o.start(t); o.stop(t + 0.52); }); }
+            function voice(code) { var vs = (window.speechSynthesis && speechSynthesis.getVoices()) || []; return vs.filter(function (v) { return v.lang && v.lang.toLowerCase().indexOf(code) === 0; })[0] || null; }
+            function say(text, code) { if (!sound || !window.speechSynthesis) return; var u = new SpeechSynthesisUtterance(text), v = voice(code); if (v) u.voice = v; u.lang = v ? v.lang : (code === 'ar' ? 'ar-SA' : 'en-US'); u.rate = 0.9; speechSynthesis.speak(u); }
+
+            // ---- the call: one at a time, 10 s each. Shown and spoken in full: ticket, clinic, room (when there is one),
+            //      doctor — Arabic first, then English. The ticket is spoken as "A 4", not "A zero zero four". ----
+            var queue = [], showing = false, callEl = document.getElementById('qdCall');
+            var single = document.getElementById('qcSingle'), multi = document.getElementById('qcMulti');
+            var roomWord = @Json.Serialize(T["Room"].Value);
+            function esc(t) { var d = document.createElement('div'); d.textContent = t == null ? '' : t; return d.innerHTML; }
+            // a BATCH is every call one refresh found: one call keeps the big single view, several share one window
+            function announce(batch) { if (!batch.length) return; queue.push(batch); if (!showing) next(); }
+            function sayAll(batch) {
+                // Arabic first, then English; with several calls each sentence is short (ticket, clinic, room)
+                var one = batch.length === 1;
+                batch.forEach(function (c) { var t = 'A ' + c.num;
+                    say('التذكرة ' + t + (one ? '، تفضل إلى عيادة ' : '، عيادة ') + c.depAr + (c.room ? '، غرفة ' + c.room : '') + (one && c.docAr ? '، ' + c.docAr : ''), 'ar'); });
+                batch.forEach(function (c) { var t = 'A ' + c.num;
+                    say('Ticket ' + t + (one ? ', please go to the ' : ', ') + c.depEn + ' clinic' + (c.room ? ', room ' + c.room : '') + (one && c.docEn ? ', ' + c.docEn : ''), 'en'); });
+            }
+            function next() {
+                var batch = queue.shift(); if (!batch) { showing = false; callEl.classList.remove('is-on'); return; }
+                showing = true;
+                if (batch.length === 1) {
+                    var c = batch[0];
+                    single.classList.remove('d-none'); multi.classList.add('d-none');
+                    document.getElementById('qcNum').textContent = c.ticket;
+                    document.getElementById('qcClinic').textContent = (isAr ? 'عيادة ' + c.depAr : c.depEn + ' clinic');
+                    document.getElementById('qcRoom').textContent = c.room || '';
+                    document.getElementById('qcRoomWrap').style.display = c.room ? '' : 'none';
+                    document.getElementById('qcDoc').textContent = c.name || '';
+                    var face = document.getElementById('qcFace'); face.innerHTML = c.photo ? '<img alt="" style="object-fit:cover" src="' + c.photo.replace(/"/g, '') + '">' : '';
+                    face.style.display = c.photo ? '' : 'none';
+                } else {
+                    single.classList.add('d-none'); multi.classList.remove('d-none');
+                    multi.innerHTML = batch.map(function (c) {
+                        var face = c.photo ? '<div class="symbol symbol-60px symbol-circle flex-shrink-0"><img alt="" style="object-fit:cover" src="' + c.photo.replace(/"/g, '') + '"></div>' : '';
+                        return '<div class="qd-call-row d-flex align-items-center gap-6 py-5">'
+                            + '<span class="qd-row-ticket text-primary fw-bolder text-center"><bdi>' + esc(c.ticket) + '</bdi></span>'
+                            + '<div class="d-flex flex-column flex-grow-1 min-w-0"><span class="text-gray-900 fw-bold fs-1">' + esc(isAr ? 'عيادة ' + c.depAr : c.depEn + ' clinic') + '</span>'
+                            + '<span class="text-gray-600 fw-semibold fs-3">' + esc(c.name) + '</span></div>'
+                            + (c.room ? '<span class="badge badge-light-primary fw-bolder fs-1 px-6 py-4 flex-shrink-0">' + esc(roomWord) + '&nbsp;<bdi>' + esc(c.room) + '</bdi></span>' : '')
+                            + face + '</div>';
+                    }).join('');
+                }
+                callEl.classList.add('is-on'); chime();
+                setTimeout(function () { sayAll(batch); }, 900);
+                // long enough to read and hear every call in the window: 10 s, plus 4 s for each further call (max 22 s)
+                setTimeout(next, Math.min(22000, 10000 + (batch.length - 1) * 4000));
+            }
+
+            // ---- PUSHED, not polled (see the header comment) ----
+            function cards() { var m = {}; body.querySelectorAll('[data-doc]').forEach(function (n) { m[n.getAttribute('data-doc')] = n.getAttribute('data-now'); }); return m; }
+            var stamp = (body.querySelector('[data-stamp]') || { getAttribute: function () { return ''; } }).getAttribute('data-stamp');
+            var busy = false, again = false, soon = null;
+            function online(on) { status.classList.toggle('is-offline', !on); }
+            function refresh() {
+                if (busy) { again = true; return; }        // a burst of signals collapses into one fetch + one follow-up
+                busy = true;
+                fetch(url + (dep.value ? '?department=' + dep.value : ''), { headers: { 'X-Requested-With': 'XMLHttpRequest' }, cache: 'no-store' })
+                    .then(function (r) { if (!r.ok) throw new Error(r.status); return r.text(); })
+                    .then(function (h) {
+                        var before = cards(); body.innerHTML = h;
+                        var root = body.querySelector('[data-stamp]'), s = root.getAttribute('data-stamp');
+                        updated.textContent = root.getAttribute('data-updated');
+                        if (s !== stamp && stamp !== null) {
+                            var batch = [];
+                            body.querySelectorAll('[data-doc]').forEach(function (n) { var now = n.getAttribute('data-now');
+                                if (now && before[n.getAttribute('data-doc')] !== now) { n.classList.add('is-called');
+                                    batch.push({ ticket: now, num: n.getAttribute('data-num'), room: n.getAttribute('data-room'), name: n.getAttribute('data-name'), photo: n.getAttribute('data-photo'),
+                                        depAr: n.getAttribute('data-dep-ar') || '', depEn: n.getAttribute('data-dep-en') || '', docAr: n.getAttribute('data-doc-ar') || '', docEn: n.getAttribute('data-doc-en') || '' }); } });
+                            announce(batch);
+                        }
+                        stamp = s;
+                    })
+                    .catch(function () { online(false); })
+                    .then(function () { busy = false; if (again) { again = false; refresh(); } });
+            }
+            function nudge() { clearTimeout(soon); soon = setTimeout(refresh, 250); }
+            setInterval(refresh, 120000);
+
+            function live() {
+                if (!window.signalR) { online(false); return; }
+                var hub = new signalR.HubConnectionBuilder().withUrl('/hubs/notifications')
+                    .withAutomaticReconnect({ nextRetryDelayInMilliseconds: function (c) { return Math.min(30000, 1000 * Math.pow(2, Math.min(c.previousRetryCount, 5))); } }).build();
+                hub.on('hospitalQueueChanged', nudge);
+                hub.onreconnecting(function () { online(false); });
+                hub.onreconnected(function () { online(true); refresh(); });
+                // automatic reconnect gives up after its schedule; a TV must not, so start again from scratch
+                hub.onclose(function () { online(false); setTimeout(start, 5000); });
+                function start() { hub.start().then(function () { online(true); refresh(); }).catch(function () { online(false); setTimeout(start, 5000); }); }
+                start();
+            }
+            if (window.signalR) live();
+            else { var s2 = document.createElement('script'); s2.src = @Json.Serialize(Url.Content("~/Backend-assets/plugins/signalr.min.js")); s2.onload = live; s2.onerror = function () { online(false); }; document.head.appendChild(s2); }
+
+            // ---- the clinic picker: the theme's select2 (a select2 change is a jQuery event, never addEventListener) ----
+            function onDep() { var u = new URL(location.href); if (dep.value) u.searchParams.set('department', dep.value); else u.searchParams.delete('department'); history.replaceState(null, '', u);
+                document.getElementById('qdScope').textContent = dep.options[dep.selectedIndex].text; stamp = null; refresh(); }
+            if ($ && $.fn.select2) { $(dep).select2({ width: '100%', dir: isAr ? 'rtl' : 'ltr', minimumResultsForSearch: Infinity }); $(dep).on('change', onDep); }
+            else dep.addEventListener('change', onDep);
             document.getElementById('qdFull').addEventListener('click', function () { if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen(); });
+
+            // ---- a TV that is on all day: keep it awake, hide the cursor and tools, drift a few pixels ----
+            var lock = null;
+            function wake() { if ('wakeLock' in navigator) navigator.wakeLock.request('screen').then(function (l) { lock = l; }).catch(function () { }); }
+            document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') wake(); });
+            var idle; function awake() { document.body.classList.remove('qd-idle-cursor'); clearTimeout(idle); idle = setTimeout(function () { if (!document.querySelector('.select2-container--open')) document.body.classList.add('qd-idle-cursor'); }, 4000); }
+            ['mousemove', 'keydown', 'touchstart'].forEach(function (e) { document.addEventListener(e, awake, { passive: true }); }); awake();
+            var shifts = [[0, 0], [2, 1], [1, 3], [-2, 2], [-1, -2], [2, -1]], si = 0;
+            setInterval(function () { si = (si + 1) % shifts.length; document.getElementById('qdShell').style.transform = 'translate(' + shifts[si][0] + 'px,' + shifts[si][1] + 'px)'; }, 600000);
         })();
     </script>
 </body>

@@ -91,8 +91,11 @@ CultureInfo.DefaultThreadCurrentCulture   = enCulture;
 CultureInfo.DefaultThreadCurrentUICulture = enCulture;
 
 
-builder.Services.AddDbContext<CrossDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")),
+// H83: the waiting-room display is pushed over SignalR when an appointment's status is saved (see the interceptor).
+builder.Services.AddSingleton<CrossBuy.BL.Hospital.HospitalQueueSignalInterceptor>();
+builder.Services.AddDbContext<CrossDbContext>((sp, options) =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
+           .AddInterceptors(sp.GetRequiredService<CrossBuy.BL.Hospital.HospitalQueueSignalInterceptor>()),
 	ServiceLifetime.Scoped 
 );
 
