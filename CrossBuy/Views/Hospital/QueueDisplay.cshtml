@@ -47,8 +47,12 @@
         .qd-tools { transition: opacity .4s; }
         .qd-hero-clock { background: rgba(255, 255, 255, .1); border: 1px solid rgba(255, 255, 255, .18); }
         .qd-hero-clock .qd-sec { font-size: .45em; opacity: .6; margin-inline-start: .25em; vertical-align: baseline; }
-        .qd-hero-btn { background: rgba(255, 255, 255, .12) !important; border: 1px solid rgba(255, 255, 255, .2) !important; }
-        .qd-hero-btn:hover i { color: var(--bs-primary) !important; }
+        /* the hero's icon button stays on the hero in EVERY state: Metronic's hover/focus/active turned it light, and the
+           white icon vanished on it */
+        .qd-hero-btn, .qd-hero-btn:hover, .qd-hero-btn:focus, .qd-hero-btn:active, .qd-hero-btn.active {
+            background-color: rgba(255, 255, 255, .12) !important; border: 1px solid rgba(255, 255, 255, .25) !important; box-shadow: none !important; }
+        .qd-hero-btn:hover, .qd-hero-btn:focus-visible { background-color: rgba(255, 255, 255, .24) !important; }
+        .qd-hero-btn i, .qd-hero-btn:hover i, .qd-hero-btn:focus i, .qd-hero-btn:active i { color: #fff !important; }
         /* the select2 box on the hero reads as part of it: white surface, the theme's own dropdown below */
         .qd-hero .select2-container--bootstrap5 .select2-selection { background-color: #fff !important; border: 0 !important; }
         bdi { unicode-bidi: isolate; }
@@ -125,7 +129,7 @@
                     <div class="w-250px">
                         <select id="qdDep" class="form-select form-select-solid"><option value="">@T["All clinics"]</option>@foreach (var d in deps) {<option value="@d.ID" selected="@(dep == d.ID)">@DisplayName.Of(d.Name, d.NameEn ?? d.Name)</option>}</select>
                     </div>
-                    <button type="button" id="qdFull" class="btn btn-icon btn-active-light-primary w-45px h-45px qd-hero-btn" title="@T["Full screen"]" aria-label="@T["Full screen"]"
+                    <button type="button" id="qdFull" class="btn btn-icon w-45px h-45px qd-hero-btn" title="@T["Full screen"]" aria-label="@T["Full screen"]"
                             data-on="@T["Full screen"]" data-off="@T["Exit full screen"]"><i class="ki-outline ki-maximize fs-1 text-white"></i></button>
                 </div>
                 <div class="qd-hero-clock d-flex flex-column align-items-end rounded-3 px-6 py-3">
