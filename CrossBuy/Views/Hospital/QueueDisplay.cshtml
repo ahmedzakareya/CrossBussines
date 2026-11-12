@@ -23,7 +23,7 @@
     int? dep = ViewBag.Department;
 }
 <!DOCTYPE html>
-<html lang="@(isAr ? "ar" : "en")" dir="@(isAr ? "rtl" : "ltr")">
+<html lang="@(isAr ? "ar" : "en")" dir="@(isAr ? "rtl" : "ltr")" data-bs-theme="light">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -45,6 +45,12 @@
         body.qd-idle-cursor { cursor: none; }
         body.qd-idle-cursor .qd-tools { opacity: 0; pointer-events: none; }
         .qd-tools { transition: opacity .4s; }
+        .qd-hero-clock { background: rgba(255, 255, 255, .1); border: 1px solid rgba(255, 255, 255, .18); }
+        .qd-hero-clock .qd-sec { font-size: .45em; opacity: .6; margin-inline-start: .25em; vertical-align: baseline; }
+        .qd-hero-btn { background: rgba(255, 255, 255, .12) !important; border: 1px solid rgba(255, 255, 255, .2) !important; }
+        .qd-hero-btn:hover i { color: var(--bs-primary) !important; }
+        /* the select2 box on the hero reads as part of it: white surface, the theme's own dropdown below */
+        .qd-hero .select2-container--bootstrap5 .select2-selection { background-color: #fff !important; border: 0 !important; }
         bdi { unicode-bidi: isolate; }
         .qd-shell { height: 100vh; display: flex; flex-direction: column; gap: 1.25rem; padding: 1.25rem 1.5rem; transition: transform 2s ease; }
         .qd-clock { font-variant-numeric: tabular-nums; direction: ltr; unicode-bidi: isolate; line-height: 1; }
@@ -101,24 +107,30 @@
 </head>
 <body>
     <div class="qd-shell" id="qdShell">
-        <div class="card card-flush">
-            <div class="card-body d-flex align-items-center flex-wrap gap-5 py-5">
-                <div class="d-flex align-items-center gap-4 flex-grow-1 min-w-0">
-                    <div class="symbol symbol-60px"><span class="symbol-label bg-light-primary"><i class="ki-outline ki-people fs-2x text-primary"></i></span></div>
-                    <div class="d-flex flex-column">
-                        <span class="text-gray-900 fw-bolder fs-1">@T["Waiting room"]</span>
-                        <span class="text-gray-500 fw-semibold fs-5" id="qdScope">@(dep is int sel && deps.FirstOrDefault(x => x.ID == sel) is { } sd ? DisplayName.Of(sd.Name, sd.NameEn ?? sd.Name) : T["All clinics"].Value)</span>
+        @* Metronic demo39 dashboards/call-center hero card: the brand colour with the theme's wave, a dashed icon ring,
+           white type; the clock is the hero's big figure *@
+        <div class="card card-flush border-0 bgi-no-repeat bgi-size-contain bgi-position-x-end qd-hero"
+             style="background-color: var(--bs-primary); background-image: url('@Url.Content("~/Backend-assets/media/svg/shapes/wave-bg-dark.svg")')">
+            <div class="card-body d-flex align-items-center flex-wrap gap-6 py-6">
+                <div class="d-flex align-items-center gap-5 flex-grow-1 min-w-0">
+                    <div class="d-flex flex-center rounded-circle h-70px w-70px flex-shrink-0" style="border: 1px dashed rgba(255, 255, 255, .4); background-color: rgba(255, 255, 255, .08)">
+                        <i class="ki-outline ki-people text-white fs-2qx lh-0"></i>
+                    </div>
+                    <div class="d-flex flex-column min-w-0">
+                        <span class="text-white fw-bolder fs-2x lh-1">@T["Waiting room"]</span>
+                        <span class="text-white opacity-75 fw-semibold fs-4 mt-2" id="qdScope">@(dep is int sel && deps.FirstOrDefault(x => x.ID == sel) is { } sd ? DisplayName.Of(sd.Name, sd.NameEn ?? sd.Name) : T["All clinics"].Value)</span>
                     </div>
                 </div>
                 <div class="qd-tools d-flex align-items-center gap-3">
                     <div class="w-250px">
                         <select id="qdDep" class="form-select form-select-solid"><option value="">@T["All clinics"]</option>@foreach (var d in deps) {<option value="@d.ID" selected="@(dep == d.ID)">@DisplayName.Of(d.Name, d.NameEn ?? d.Name)</option>}</select>
                     </div>
-                    <button type="button" id="qdFull" class="btn btn-light-primary text-nowrap"><i class="ki-outline ki-maximize fs-3"></i>@T["Full screen"]</button>
+                    <button type="button" id="qdFull" class="btn btn-icon btn-active-light-primary w-45px h-45px qd-hero-btn" title="@T["Full screen"]" aria-label="@T["Full screen"]"
+                            data-on="@T["Full screen"]" data-off="@T["Exit full screen"]"><i class="ki-outline ki-maximize fs-1 text-white"></i></button>
                 </div>
-                <div class="d-flex flex-column align-items-end">
-                    <div class="qd-clock text-gray-900 fw-bolder fs-2hx" id="qdClock">@Model.NowLocal.ToString("HH:mm")</div>
-                    <div class="text-gray-500 fw-semibold fs-6 mt-1 text-nowrap" id="qdDate"></div>
+                <div class="qd-hero-clock d-flex flex-column align-items-end rounded-3 px-6 py-3">
+                    <div class="qd-clock text-white fw-bolder fs-3hx" id="qdClock">@Model.NowLocal.ToString("HH:mm")</div>
+                    <div class="text-white opacity-75 fw-semibold fs-6 text-nowrap" id="qdDate"></div>
                 </div>
             </div>
         </div>
@@ -170,7 +182,7 @@
             function pad(n) { return String(n).padStart(2, '0'); }
             function tick() {
                 var d = new Date();
-                clockEl.innerHTML = pad(d.getHours()) + ':' + pad(d.getMinutes()) + '<span class="text-gray-400 fs-2 ms-2">' + pad(d.getSeconds()) + '</span>';
+                clockEl.innerHTML = pad(d.getHours()) + ':' + pad(d.getMinutes()) + '<span class="qd-sec">' + pad(d.getSeconds()) + '</span>';
                 var day = d.toDateString();
                 if (day !== dayShown) {
                     dayShown = day;
@@ -294,7 +306,16 @@
                 document.getElementById('qdScope').textContent = dep.options[dep.selectedIndex].text; stamp = null; refresh(); }
             if ($ && $.fn.select2) { $(dep).select2({ width: '100%', dir: isAr ? 'rtl' : 'ltr', minimumResultsForSearch: Infinity }); $(dep).on('change', onDep); }
             else dep.addEventListener('change', onDep);
-            document.getElementById('qdFull').addEventListener('click', function () { if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen(); });
+            var fullBtn = document.getElementById('qdFull');
+            function isFull() { return !!(document.fullscreenElement || document.webkitFullscreenElement); }
+            function paintFull() { var on = isFull(), t = fullBtn.getAttribute(on ? 'data-off' : 'data-on');
+                fullBtn.querySelector('i').className = 'ki-outline ' + (on ? 'ki-cross-square' : 'ki-maximize') + ' fs-1 text-white';
+                fullBtn.title = t; fullBtn.setAttribute('aria-label', t); }
+            fullBtn.addEventListener('click', function () {
+                if (isFull()) { (document.exitFullscreen || document.webkitExitFullscreen).call(document); }
+                else { var el = document.documentElement; (el.requestFullscreen || el.webkitRequestFullscreen).call(el); }
+            });
+            document.addEventListener('fullscreenchange', paintFull); document.addEventListener('webkitfullscreenchange', paintFull);
 
             // ---- a TV that is on all day: keep it awake, hide the cursor and tools, drift a few pixels ----
             var lock = null;
