@@ -532,7 +532,11 @@
                     Object.keys(fam).forEach(function (k) { var kids = fam[k], par = k.split('-').map(Number).filter(Boolean).map(function (id) { return pos[id]; }).filter(Boolean); if (!par.length) return;
                         var mx = par.reduce(function (s, q) { return s + q.x; }, 0) / par.length, py = par[0].y, ky = pos[kids[0].id].y, by = ky - 45;
                         var xs = kids.map(function (x) { return pos[x.id].x; }).concat([mx]);
-                        g += '<line x1="' + mx + '" y1="' + (par.length > 1 ? py : py + 16) + '" x2="' + mx + '" y2="' + by + '"/><line x1="' + Math.min.apply(null, xs) + '" y1="' + by + '" x2="' + Math.max.apply(null, xs) + '" y2="' + by + '"/>';
+                        // ONE known parent: the drop leaves from under that parent's own label (name at +32, condition at +45),
+                        // not from under the symbol — starting at +16 ran the line straight through the name.
+                        var lone = par.length > 1 ? null : P.filter(function (x) { return pos[x.id] === par[0]; })[0];
+                        var top = par.length > 1 ? py : py + (lone && lone.affected && lone.cond ? 52 : 40);
+                        g += '<line x1="' + mx + '" y1="' + top + '" x2="' + mx + '" y2="' + by + '"/><line x1="' + Math.min.apply(null, xs) + '" y1="' + by + '" x2="' + Math.max.apply(null, xs) + '" y2="' + by + '"/>';
                         kids.forEach(function (x) { g += '<line x1="' + pos[x.id].x + '" y1="' + by + '" x2="' + pos[x.id].x + '" y2="' + (ky - 16) + '"/>'; }); });
                     g += '</g>';
                     P.forEach(function (x) { var q = pos[x.id], fill = x.affected ? '#1E2F5A' : '#fff';

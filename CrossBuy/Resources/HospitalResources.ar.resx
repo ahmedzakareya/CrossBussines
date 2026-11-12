@@ -6376,4 +6376,36 @@
   <data name="{0} with eGFR {1}" xml:space="preserve"><value>{0} مع ⁨eGFR {1}⁩</value></data>
   <data name="{0} with eGFR {1}: review the dose below {2}" xml:space="preserve"><value>{0} مع ⁨eGFR {1}⁩: تُراجع الجرعة تحت {2}</value></data>
   <data name="{0} with eGFR {1}: stop it below {2}" xml:space="preserve"><value>{0} مع ⁨eGFR {1}⁩: يوقف تحت {2}</value></data>
+  <data name="An alert opened another template on this visit" xml:space="preserve"><value>التنبيه فتح نموذجاً آخر على هذه الزيارة</value></data>
+  <data name="Fill it before the patient leaves: the visit cannot be signed without it." xml:space="preserve"><value>املأه قبل خروج المريض: لا يمكن توقيع الزيارة بدونه.</value></data>
+  <data name="No template" xml:space="preserve"><value>بدون نموذج</value></data>
+  <data name="Nobody is on call for this department now: tell a doctor yourself" xml:space="preserve"><value>لا يوجد طبيب مناوب لهذا القسم الآن: بلّغ طبيباً بنفسك</value></data>
+  <data name="Notify the on-call doctor at once" xml:space="preserve"><value>بلّغ الطبيب المناوب فوراً</value></data>
+  <data name="Notifying or opening a template needs the alert rule first" xml:space="preserve"><value>الإبلاغ أو فتح نموذج يحتاج قاعدة التنبيه أولاً</value></data>
+  <data name="Open it" xml:space="preserve"><value>افتحه</value></data>
+  <data name="The on-call doctor was notified: {0}" xml:space="preserve"><value>تم إبلاغ الطبيب المناوب: {0}</value></data>
+  <data name="Then open on the visit" xml:space="preserve"><value>ثم افتح على الزيارة</value></data>
+  <data name="Adrenaline auto-injector: not prescribed" xml:space="preserve"><value>حقنة الأدرينالين: غير موصوفة</value></data>
+  <data name="Adrenaline auto-injector: prescribed" xml:space="preserve"><value>حقنة الأدرينالين: موصوفة</value></data>
+  <data name="Previous anaphylaxis" xml:space="preserve"><value>صدمة تحسسية سابقة</value></data>
+  <data name="Glasses prescription (from the readings)" xml:space="preserve"><value>وصفة النظارة (من القياسات)</value></data>
+  <data name="Letter to the diabetes doctor" xml:space="preserve"><value>تقرير لطبيب السكري</value></data>
+  <data name="No AF — not scored" xml:space="preserve"><value>لا يوجد رجفان — لا يُحسب</value></data>
+  <data name="Order OCT + visual fields" xml:space="preserve"><value>طلب OCT + مجال إبصار</value></data>
+  <data name="Order OCT and visual fields on this visit?" xml:space="preserve"><value>طلب OCT ومجال الإبصار على هذه الزيارة؟</value></data>
+  <data name="Outputs" xml:space="preserve"><value>المخرجات</value></data>
+  <data name="Read from the diagnoses on file: atrial fibrillation (I48) is not among them." xml:space="preserve"><value>مقروء من التشخيصات المسجلة: الرجفان الأذيني (I48) ليس منها.</value></data>
+  <data name="To order OCT and visual fields here, add them to the price list with the codes OCT and VF." xml:space="preserve"><value>لطلب ⁨OCT⁩ ومجال الإبصار من هنا، أضفهما لقائمة الأسعار بالكودين ⁨OCT⁩ و⁨VF⁩.</value></data>
+  <data name="chads:age65" xml:space="preserve"><value>العمر ٦٥–٧٤</value></data>
+  <data name="chads:age75" xml:space="preserve"><value>العمر ≥ ٧٥</value></data>
+  <data name="chads:chf" xml:space="preserve"><value>قصور القلب</value></data>
+  <data name="chads:consider" xml:space="preserve"><value>يُنظر في مضاد تخثر</value></data>
+  <data name="chads:dm" xml:space="preserve"><value>سكري</value></data>
+  <data name="chads:female" xml:space="preserve"><value>أنثى</value></data>
+  <data name="chads:htn" xml:space="preserve"><value>ضغط مرتفع</value></data>
+  <data name="chads:none" xml:space="preserve"><value>لا يُنصح بمضاد تخثر</value></data>
+  <data name="chads:recommended" xml:space="preserve"><value>يُنصح بمضاد تخثر</value></data>
+  <data name="chads:stroke" xml:space="preserve"><value>جلطة دماغية أو نقص تروية عابر سابق</value></data>
+  <data name="chads:vasc" xml:space="preserve"><value>مرض وعائي</value></data>
+  <data name="{0} of 9" xml:space="preserve"><value>{0} من ٩</value></data>
 </root>

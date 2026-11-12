@@ -270,7 +270,8 @@ namespace CrossBuy.BL.Hospital
 			if (a == null) return HospitalResult.Fail("not_found");
 			if (!HospitalAppointmentStatus.CanMove(a.Status, to)) return HospitalResult.Fail("This appointment cannot make that move");
 			if (to == HospitalAppointmentStatus.InRoom &&
-				await _db.HospitalAppointments.AnyAsync(x => x.CompanyId == ctx.CompanyId && x.PractitionerId == a.PractitionerId && x.Status == HospitalAppointmentStatus.InRoom && x.ID != a.ID, ct))
+				// H105: only the same day's room counts (a stale "in the room" from an earlier day blocked the doctor)
+				await _db.HospitalAppointments.AnyAsync(x => x.CompanyId == ctx.CompanyId && x.PractitionerId == a.PractitionerId && x.Status == HospitalAppointmentStatus.InRoom && x.ID != a.ID && x.AppointmentDate == a.AppointmentDate, ct))
 				return HospitalResult.Fail("The doctor already has a patient in the room");
 
 			a.Status = to; a.UpdatedAt = DateTime.UtcNow; a.UpdatedByEmployeeId = employeeId;

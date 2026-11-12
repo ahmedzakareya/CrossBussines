@@ -143,6 +143,27 @@ namespace CrossBuy.Tests
 			Assert.Equal("Nobody is waiting for this doctor", (await w.Op.CallNextAsync(Ctx(7), dr, Today, 7, Now.AddMinutes(14))).Error);
 		}
 
+		// H105: found live on 2026-11-11 — appointment 68 stayed "in the room" from the day before and blocked the doctor
+		// all of the next day. The room holds one patient per DAY: yesterday's leftover blocks nobody, today's still does.
+		[Fact]
+		public async Task A_patient_left_in_the_room_yesterday_does_not_block_the_doctor_today()
+		{
+			using var host = new PlatformTestHost(); var w = Make(host);
+			var dr = await DoctorAsync(w, "Ali"); var omar = await PatientAsync(w, "Omar"); var sara = await PatientAsync(w, "Sara"); var hana = await PatientAsync(w, "Hana");
+			var stale = (await Book(w, omar, dr, 9 * 60)).Id!.Value;
+			Assert.True((await w.Op.MoveAsync(Ctx(7), stale, HospitalAppointmentStatus.Arrived, 7, Now)).Ok);
+			Assert.True((await w.Op.MoveAsync(Ctx(7), stale, HospitalAppointmentStatus.InRoom, 7, Now)).Ok);
+			// it was yesterday's, and nobody closed it
+			await host.Db.HospitalAppointments.Where(x => x.ID == stale).ExecuteUpdateAsync(u => u.SetProperty(x => x.AppointmentDate, Today.AddDays(-1)));
+			var a = (await Book(w, sara, dr, 10 * 60)).Id!.Value;
+			Assert.True((await w.Op.MoveAsync(Ctx(7), a, HospitalAppointmentStatus.Arrived, 7, Now)).Ok);
+			Assert.True((await w.Op.MoveAsync(Ctx(7), a, HospitalAppointmentStatus.InRoom, 7, Now)).Ok);
+			// today's room still holds one patient
+			var b = (await Book(w, hana, dr, 10 * 60 + 15)).Id!.Value;
+			Assert.True((await w.Op.MoveAsync(Ctx(7), b, HospitalAppointmentStatus.Arrived, 7, Now)).Ok);
+			Assert.Equal("The doctor already has a patient in the room", (await w.Op.MoveAsync(Ctx(7), b, HospitalAppointmentStatus.InRoom, 7, Now)).Error);
+		}
+
 		[Fact]
 		public async Task The_board_shows_who_is_in_the_room_who_waits_who_is_next_and_the_delay()
 		{

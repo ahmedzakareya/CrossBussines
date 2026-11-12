@@ -123,6 +123,9 @@
                         if (f.AlertAbove != null) rule.Add($"IF {c.NameEn} ≥ {D(f.AlertAbove)} THEN alert \"{f.AlertTextEn}\"");
                         if (f.AlertBelow != null) rule.Add($"IF {c.NameEn} ≤ {D(f.AlertBelow)} THEN alert \"{f.AlertTextEn}\"");
                         if (f.CareGapDays != null) rule.Add($"IF no {c.NameEn} in {f.CareGapDays} d THEN care-gap");
+                        // H106: what else the alert does (the rule box reads the same for a published version, which has no inputs)
+                        if (f.AlertNotify) rule.Add("AND notify the on-call doctor");
+                        if (f.AlertTemplateId is int otid && Model.Templates.FirstOrDefault(x => x.Template.ID == otid) is { } ot) rule.Add($"AND open \"{ot.Template.NameEn}\" on the visit");
                         <div class="card mb-5 mb-xl-8" id="props" data-id="@f.ID">
                             <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Field properties"]</span></div></div>
                             <div class="card-body pt-4"><div class="d-flex flex-column gap-4">
@@ -156,6 +159,12 @@
                                         <div class="col-6"><input type="number" step="any" class="form-control form-control-solid form-control-sm" dir="ltr" data-p="alertBelow" value="@D(f.AlertBelow)" placeholder="≤ @unit" title="@T["Alert at or below"]" @dis /></div>
                                         <div class="col-6"><input type="text" maxlength="150" class="form-control form-control-solid form-control-sm" data-p="alertText" dir="rtl" value="@f.AlertText" placeholder="@T["The alert"]" @dis /></div>
                                         <div class="col-6"><input type="text" maxlength="150" class="form-control form-control-solid form-control-sm" dir="ltr" data-p="alertTextEn" value="@f.AlertTextEn" placeholder="Above target" @dis /></div>
+                                        @* H106: an alert that cannot wait — the on-call doctor is told at once, and a template opens on the visit *@
+                                        <div class="col-12"><label class="form-check form-check-custom form-check-solid form-check-sm"><input class="form-check-input" type="checkbox" data-p="alertNotify" @(f.AlertNotify ? "checked" : "") @dis /><span class="form-check-label fs-8">@T["Notify the on-call doctor at once"]</span></label></div>
+                                        <div class="col-12 d-flex align-items-center gap-2"><span class="fs-8 text-muted text-nowrap">@T["Then open on the visit"]</span>
+                                            <select class="form-select form-select-solid form-select-sm" data-p="alertTemplateId" @dis><option value="">@T["No template"]</option>
+                                                @foreach (var oc in Model.Templates.Where(x => x.Template.ID != sel?.Template.ID && x.Current?.Status == HospitalTemplateStatus.Published)) {<option value="@oc.Template.ID" selected="@(f.AlertTemplateId == oc.Template.ID)">@Nm(oc.Template.Name, oc.Template.NameEn)</option>}
+                                            </select></div>
                                         <div class="col-12 d-flex align-items-center gap-2"><span class="fs-8 text-muted">@T["Care gap when not recorded in (days)"]</span><input type="number" min="1" max="3650" class="form-control form-control-solid form-control-sm w-100px" dir="ltr" data-p="careGapDays" value="@f.CareGapDays" @dis /></div>
                                     </div>
                                     }
@@ -286,7 +295,7 @@
                     run(W.add, base + '/Versions/' + here.v + '/Fields', a, function (res) { go(here.t, here.v, res.id); }); return; }
                 if (e.target.closest('[data-pubsave]')) { run(W.pub, base + '/Versions/' + here.v + '/Publish', { note: document.getElementById('pubNote').value, noteEn: document.getElementById('pubNoteEn').value }, function (res) { go(here.t, res.id); }); return; }
                 var rm = e.target.closest('[data-remove]'); if (rm) { run(W.rm, base + '/Fields/' + rm.getAttribute('data-remove') + '/Remove', {}, function () { go(here.t, here.v); }); return; }
-                if (e.target.closest('[data-saveprops]')) { var p = {}, nums = ['lookbackDays', 'showWhenFieldId', 'showWhenAbove', 'alertAbove', 'alertBelow', 'careGapDays'];
+                if (e.target.closest('[data-saveprops]')) { var p = {}, nums = ['lookbackDays', 'showWhenFieldId', 'showWhenAbove', 'alertAbove', 'alertBelow', 'careGapDays', 'alertTemplateId'];
                     document.querySelectorAll('[data-p]').forEach(function (i) { var k = i.getAttribute('data-p'); p[k] = i.type === 'checkbox' ? i.checked : k === 'required' ? i.value === '1' : (nums.indexOf(k) >= 0 ? (i.value === '' ? null : Number(i.value)) : ((i.value || '').trim() || null)); });
                     run(W.save, base + '/Fields/' + here.f, p, function () { go(here.t, here.v, here.f); }); return; }
             });

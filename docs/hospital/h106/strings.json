@@ -1,0 +1,14 @@
+{
+ "unit": "H105–H106 — a stale in-room patient no longer blocks the doctor; a field alert notifies the on-call doctor and opens a template (PHQ-9 item 9 → C-SSRS)",
+ "strings": {
+  "An alert opened another template on this visit": { "ar": "التنبيه فتح نموذجاً آخر على هذه الزيارة", "en": "An alert opened another template on this visit", "fr": "Une alerte a ouvert un autre modèle sur cette visite" },
+  "Fill it before the patient leaves: the visit cannot be signed without it.": { "ar": "املأه قبل خروج المريض: لا يمكن توقيع الزيارة بدونه.", "en": "Fill it before the patient leaves: the visit cannot be signed without it.", "fr": "Remplissez-le avant le départ du patient : la visite ne peut pas être signée sans lui." },
+  "No template": { "ar": "بدون نموذج", "en": "No template", "fr": "Aucun modèle" },
+  "Nobody is on call for this department now: tell a doctor yourself": { "ar": "لا يوجد طبيب مناوب لهذا القسم الآن: بلّغ طبيباً بنفسك", "en": "Nobody is on call for this department now: tell a doctor yourself", "fr": "Personne n'est de garde pour ce service : prévenez vous-même un médecin" },
+  "Notify the on-call doctor at once": { "ar": "بلّغ الطبيب المناوب فوراً", "en": "Notify the on-call doctor at once", "fr": "Prévenir immédiatement le médecin de garde" },
+  "Notifying or opening a template needs the alert rule first": { "ar": "الإبلاغ أو فتح نموذج يحتاج قاعدة التنبيه أولاً", "en": "Notifying or opening a template needs the alert rule first", "fr": "Prévenir ou ouvrir un modèle exige d'abord la règle d'alerte" },
+  "Open it": { "ar": "افتحه", "en": "Open it", "fr": "L'ouvrir" },
+  "The on-call doctor was notified: {0}": { "ar": "تم إبلاغ الطبيب المناوب: {0}", "en": "The on-call doctor was notified: {0}", "fr": "Le médecin de garde a été prévenu : {0}" },
+  "Then open on the visit": { "ar": "ثم افتح على الزيارة", "en": "Then open on the visit", "fr": "Puis ouvrir sur la visite" }
+ }
+}

@@ -192,6 +192,10 @@ namespace CrossBuy.Models.Context.Hospital
 		public int? CareGapDays { get; set; }
 		/// H94: the field heads the visit — a figure on top and a trend tab.
 		public bool ShowTrend { get; set; }
+		/// H106: when the alert fires, the department's on-call doctor is notified at once …
+		public bool AlertNotify { get; set; }
+		/// … and this template opens on the visit (C-SSRS after PHQ-9 item 9).
+		public int? AlertTemplateId { get; set; }
 	}
 
 	public class HospitalClinicalForm

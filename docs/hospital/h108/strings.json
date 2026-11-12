@@ -1,0 +1,110 @@
+{
+ "unit": "H108 — CHA2DS2-VASc on the visit (sc-im) and the eye visit's outputs card (sc-eye)",
+ "strings": {
+  "{0} of 9": {
+   "ar": "{0} من ٩",
+   "en": "{0} of 9",
+   "fr": "{0} sur 9"
+  },
+  "No AF — not scored": {
+   "ar": "لا يوجد رجفان — لا يُحسب",
+   "en": "No AF — not scored",
+   "fr": "Pas de FA — non calculé"
+  },
+  "Read from the diagnoses on file: atrial fibrillation (I48) is not among them.": {
+   "ar": "مقروء من التشخيصات المسجلة: الرجفان الأذيني (I48) ليس منها.",
+   "en": "Read from the diagnoses on file: atrial fibrillation (I48) is not among them.",
+   "fr": "Lu dans les diagnostics enregistrés : la fibrillation auriculaire (I48) n'y figure pas."
+  },
+  "chads:none": {
+   "ar": "لا يُنصح بمضاد تخثر",
+   "en": "No anticoagulant",
+   "fr": "Pas d'anticoagulant"
+  },
+  "chads:consider": {
+   "ar": "يُنظر في مضاد تخثر",
+   "en": "Consider an anticoagulant",
+   "fr": "Envisager un anticoagulant"
+  },
+  "chads:recommended": {
+   "ar": "يُنصح بمضاد تخثر",
+   "en": "Anticoagulant recommended",
+   "fr": "Anticoagulant recommandé"
+  },
+  "chads:chf": {
+   "ar": "قصور القلب",
+   "en": "Heart failure",
+   "fr": "Insuffisance cardiaque"
+  },
+  "chads:htn": {
+   "ar": "ضغط مرتفع",
+   "en": "Hypertension",
+   "fr": "Hypertension"
+  },
+  "chads:age75": {
+   "ar": "العمر ≥ ٧٥",
+   "en": "Age ≥ 75",
+   "fr": "Âge ≥ 75"
+  },
+  "chads:age65": {
+   "ar": "العمر ٦٥–٧٤",
+   "en": "Age 65–74",
+   "fr": "Âge 65–74"
+  },
+  "chads:dm": {
+   "ar": "سكري",
+   "en": "Diabetes",
+   "fr": "Diabète"
+  },
+  "chads:stroke": {
+   "ar": "جلطة دماغية أو نقص تروية عابر سابق",
+   "en": "Previous stroke or TIA",
+   "fr": "AVC ou AIT antérieur"
+  },
+  "chads:vasc": {
+   "ar": "مرض وعائي",
+   "en": "Vascular disease",
+   "fr": "Maladie vasculaire"
+  },
+  "chads:female": {
+   "ar": "أنثى",
+   "en": "Female",
+   "fr": "Femme"
+  },
+  "Outputs": {
+   "ar": "المخرجات",
+   "en": "Outputs",
+   "fr": "Sorties"
+  },
+  "Glasses prescription (from the readings)": {
+   "ar": "وصفة النظارة (من القياسات)",
+   "en": "Glasses prescription (from the readings)",
+   "fr": "Ordonnance de lunettes (d'après les mesures)"
+  },
+  "Order OCT + visual fields": {
+   "ar": "طلب OCT + مجال إبصار",
+   "en": "Order OCT + visual fields",
+   "fr": "Prescrire OCT + champ visuel"
+  },
+  "Letter to the diabetes doctor": {
+   "ar": "تقرير لطبيب السكري",
+   "en": "Letter to the diabetes doctor",
+   "fr": "Courrier au diabétologue"
+  },
+  "To order OCT and visual fields here, add them to the price list with the codes OCT and VF.": {
+   "ar": "لطلب ⁨OCT⁩ ومجال الإبصار من هنا، أضفهما لقائمة الأسعار بالكودين ⁨OCT⁩ و⁨VF⁩.",
+   "en": "To order OCT and visual fields here, add them to the price list with the codes OCT and VF.",
+   "fr": "Pour prescrire l'OCT et le champ visuel ici, ajoutez-les à la liste des prix avec les codes OCT et VF."
+  },
+  "Price list": {
+   "ar": "قائمة الأسعار",
+   "en": "Price list",
+   "fr": "Liste des prix"
+  },
+  "Order OCT and visual fields on this visit?": {
+   "ar": "طلب OCT ومجال الإبصار على هذه الزيارة؟",
+   "en": "Order OCT and visual fields on this visit?",
+   "fr": "Prescrire l'OCT et le champ visuel pour cette visite ?"
+  }
+ }
+}

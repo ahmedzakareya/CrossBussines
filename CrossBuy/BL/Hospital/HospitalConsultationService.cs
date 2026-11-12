@@ -191,7 +191,8 @@ namespace CrossBuy.BL.Hospital
 
 			if (a.Status == HospitalAppointmentStatus.Arrived)
 			{
-				if (await _db.HospitalAppointments.AnyAsync(x => x.CompanyId == ctx.CompanyId && x.PractitionerId == a.PractitionerId && x.Status == HospitalAppointmentStatus.InRoom && x.ID != a.ID, ct))
+				// H105: only TODAY's room counts — a patient left "in the room" on an earlier day must not block the doctor
+				if (await _db.HospitalAppointments.AnyAsync(x => x.CompanyId == ctx.CompanyId && x.PractitionerId == a.PractitionerId && x.Status == HospitalAppointmentStatus.InRoom && x.ID != a.ID && x.AppointmentDate == a.AppointmentDate, ct))
 					return HospitalResult.Fail("The doctor already has a patient in the room");
 				a.Status = HospitalAppointmentStatus.InRoom; a.StartedAt = now; a.UpdatedAt = DateTime.UtcNow; a.UpdatedByEmployeeId = employeeId;
 			}

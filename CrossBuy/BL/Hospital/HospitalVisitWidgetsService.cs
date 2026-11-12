@@ -32,7 +32,38 @@ namespace CrossBuy.BL.Hospital
 		HospitalSpt? Spt = null
 		, IReadOnlyList<HospitalImmunoCourseView>? Immuno = null, bool ImmunoReady = false
 		, IReadOnlyList<HospitalRenalAlert>? Renal = null
+		, HospitalAdrenaline? Adrenaline = null
+		, HospitalChadsVasc? Chads = null
+		, HospitalEyeOutputs? EyeOutputs = null
 		);
+
+	/// H108: the eye visit's outputs — the OCT and visual-field services of the price list (codes OCT, VF), null when missing.
+	public sealed record HospitalEyeOutputs(HospitalService? Oct, HospitalService? Vf)
+	{
+		public static readonly IReadOnlyList<string> Codes = new[] { "OCT", "VF" };
+	}
+
+	/// H107: an allergy patient who may need an adrenaline auto-injector — the history that says so, and whether one is prescribed.
+	public sealed record HospitalAdrenaline(bool Anaphylaxis, bool Needed, bool Prescribed, DateTime? PrescribedAt);
+
+	public static class HospitalAdrenalineRules
+	{
+		/// The words that name a previous anaphylaxis in the patient's allergy record (Arabic and English).
+		public static readonly IReadOnlyList<string> AnaphylaxisWords = new[] { "صدمة تحسسية", "تأق", "صدمه تحسسيه", "anaphyla" };
+		/// The words that name an adrenaline auto-injector in a prescription line.
+		public static readonly IReadOnlyList<string> AdrenalineWords = new[] { "adrenaline", "epinephrine", "epipen", "jext", "anapen", "أدرينالين", "ادرينالين", "إبينفرين", "ابينفرين" };
+
+		public static bool Mentions(string? text, IEnumerable<string> words) =>
+			!string.IsNullOrWhiteSpace(text) && words.Any(w => text.Contains(w, StringComparison.OrdinalIgnoreCase));
+
+		/// Needed when the record names anaphylaxis, or the visit is an allergy visit (immunotherapy or a skin test).
+		public static HospitalAdrenaline? Read(string? allergies, bool allergyVisit, DateTime? prescribedAt)
+		{
+			bool ana = Mentions(allergies, AnaphylaxisWords), needed = ana || allergyVisit;
+			if (!needed && prescribedAt == null) return null;
+			return new HospitalAdrenaline(ana, needed, prescribedAt != null, prescribedAt);
+		}
+	}
 
 	public static class HospitalVisitWidgetRules
 	{
@@ -188,7 +219,26 @@ namespace CrossBuy.BL.Hospital
 			bool showImmuno = spt != null || immuno.Count > 0;
 			// H104: the kidney — the medicines of the last 180 days against the last stored eGFR
 			var renal = await HospitalRenalRules.VisitAlertsAsync(_db, ctx.CompanyId, p.ID, nowUtc, ct);
-			return new HospitalVisitWidgets(child, years, growth, crossing, dosing, dev, scores, overdue, due, vReady, glaucoma, spt, showImmuno ? immuno : null, iReady, renal);
+			// H107: the adrenaline auto-injector — prescribed to this patient in the last year (by either name of the medicine)
+			var since = nowUtc.AddDays(-365);
+			var rx = await (from l in _db.Set<HospitalPrescriptionLine>().AsNoTracking()
+							join e in Q<HospitalEncounter>(ctx) on l.EncounterId equals e.ID
+							where e.PatientId == p.ID && e.StartedAt >= since
+							select new { l.Drug, l.DrugEn, e.StartedAt }).ToListAsync(ct);
+			var epi = rx.Where(x => HospitalAdrenalineRules.Mentions(x.Drug + " " + x.DrugEn, HospitalAdrenalineRules.AdrenalineWords)).OrderByDescending(x => x.StartedAt).FirstOrDefault();
+			var adrenaline = HospitalAdrenalineRules.Read(p.Allergies, spt != null || showImmuno, epi?.StartedAt);
+			// H108: CHA2DS2-VASc — read from age, sex and the coded conditions; shown on the internal-medicine visit of an
+			// adult, and on any visit of a patient with atrial fibrillation
+			var chads = child ? null : await HospitalChadsRules.ForPatientAsync(_db, ctx.CompanyId, p, nowUtc, ct);
+			if (chads != null && !chads.Af && m.Clinic?.Code != "IM") chads = null;
+			// H108: the eye visit's outputs (the price list's OCT and VF services)
+			HospitalEyeOutputs? eye = null;
+			if (m.Clinic?.Code == "OPH")
+			{
+				var svc = await Q<HospitalService>(ctx).AsNoTracking().Where(s => s.IsActive && HospitalEyeOutputs.Codes.Contains(s.Code)).ToListAsync(ct);
+				eye = new HospitalEyeOutputs(svc.FirstOrDefault(s => s.Code == "OCT"), svc.FirstOrDefault(s => s.Code == "VF"));
+			}
+			return new HospitalVisitWidgets(child, years, growth, crossing, dosing, dev, scores, overdue, due, vReady, glaucoma, spt, showImmuno ? immuno : null, iReady, renal, adrenaline, chads, eye);
 		}
 	}
 }

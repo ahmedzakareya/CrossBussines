@@ -6374,4 +6374,36 @@
   <data name="{0} with eGFR {1}" xml:space="preserve"><value>{0} with eGFR {1}</value></data>
   <data name="{0} with eGFR {1}: review the dose below {2}" xml:space="preserve"><value>{0} with eGFR {1}: review the dose below {2}</value></data>
   <data name="{0} with eGFR {1}: stop it below {2}" xml:space="preserve"><value>{0} with eGFR {1}: stop it below {2}</value></data>
+  <data name="An alert opened another template on this visit" xml:space="preserve"><value>An alert opened another template on this visit</value></data>
+  <data name="Fill it before the patient leaves: the visit cannot be signed without it." xml:space="preserve"><value>Fill it before the patient leaves: the visit cannot be signed without it.</value></data>
+  <data name="No template" xml:space="preserve"><value>No template</value></data>
+  <data name="Nobody is on call for this department now: tell a doctor yourself" xml:space="preserve"><value>Nobody is on call for this department now: tell a doctor yourself</value></data>
+  <data name="Notify the on-call doctor at once" xml:space="preserve"><value>Notify the on-call doctor at once</value></data>
+  <data name="Notifying or opening a template needs the alert rule first" xml:space="preserve"><value>Notifying or opening a template needs the alert rule first</value></data>
+  <data name="Open it" xml:space="preserve"><value>Open it</value></data>
+  <data name="The on-call doctor was notified: {0}" xml:space="preserve"><value>The on-call doctor was notified: {0}</value></data>
+  <data name="Then open on the visit" xml:space="preserve"><value>Then open on the visit</value></data>
+  <data name="Adrenaline auto-injector: not prescribed" xml:space="preserve"><value>Adrenaline auto-injector: not prescribed</value></data>
+  <data name="Adrenaline auto-injector: prescribed" xml:space="preserve"><value>Adrenaline auto-injector: prescribed</value></data>
+  <data name="Previous anaphylaxis" xml:space="preserve"><value>Previous anaphylaxis</value></data>
+  <data name="Glasses prescription (from the readings)" xml:space="preserve"><value>Glasses prescription (from the readings)</value></data>
+  <data name="Letter to the diabetes doctor" xml:space="preserve"><value>Letter to the diabetes doctor</value></data>
+  <data name="No AF — not scored" xml:space="preserve"><value>No AF — not scored</value></data>
+  <data name="Order OCT + visual fields" xml:space="preserve"><value>Order OCT + visual fields</value></data>
+  <data name="Order OCT and visual fields on this visit?" xml:space="preserve"><value>Order OCT and visual fields on this visit?</value></data>
+  <data name="Outputs" xml:space="preserve"><value>Outputs</value></data>
+  <data name="Read from the diagnoses on file: atrial fibrillation (I48) is not among them." xml:space="preserve"><value>Read from the diagnoses on file: atrial fibrillation (I48) is not among them.</value></data>
+  <data name="To order OCT and visual fields here, add them to the price list with the codes OCT and VF." xml:space="preserve"><value>To order OCT and visual fields here, add them to the price list with the codes OCT and VF.</value></data>
+  <data name="chads:age65" xml:space="preserve"><value>Age 65–74</value></data>
+  <data name="chads:age75" xml:space="preserve"><value>Age ≥ 75</value></data>
+  <data name="chads:chf" xml:space="preserve"><value>Heart failure</value></data>
+  <data name="chads:consider" xml:space="preserve"><value>Consider an anticoagulant</value></data>
+  <data name="chads:dm" xml:space="preserve"><value>Diabetes</value></data>
+  <data name="chads:female" xml:space="preserve"><value>Female</value></data>
+  <data name="chads:htn" xml:space="preserve"><value>Hypertension</value></data>
+  <data name="chads:none" xml:space="preserve"><value>No anticoagulant</value></data>
+  <data name="chads:recommended" xml:space="preserve"><value>Anticoagulant recommended</value></data>
+  <data name="chads:stroke" xml:space="preserve"><value>Previous stroke or TIA</value></data>
+  <data name="chads:vasc" xml:space="preserve"><value>Vascular disease</value></data>
+  <data name="{0} of 9" xml:space="preserve"><value>{0} of 9</value></data>
 </root>

@@ -6376,4 +6376,36 @@
   <data name="{0} with eGFR {1}" xml:space="preserve"><value>{0} avec un DFGe de {1}</value></data>
   <data name="{0} with eGFR {1}: review the dose below {2}" xml:space="preserve"><value>{0} avec un DFGe de {1} : revoir la dose sous {2}</value></data>
   <data name="{0} with eGFR {1}: stop it below {2}" xml:space="preserve"><value>{0} avec un DFGe de {1} : l'arrêter sous {2}</value></data>
+  <data name="An alert opened another template on this visit" xml:space="preserve"><value>Une alerte a ouvert un autre modèle sur cette visite</value></data>
+  <data name="Fill it before the patient leaves: the visit cannot be signed without it." xml:space="preserve"><value>Remplissez-le avant le départ du patient : la visite ne peut pas être signée sans lui.</value></data>
+  <data name="No template" xml:space="preserve"><value>Aucun modèle</value></data>
+  <data name="Nobody is on call for this department now: tell a doctor yourself" xml:space="preserve"><value>Personne n'est de garde pour ce service : prévenez vous-même un médecin</value></data>
+  <data name="Notify the on-call doctor at once" xml:space="preserve"><value>Prévenir immédiatement le médecin de garde</value></data>
+  <data name="Notifying or opening a template needs the alert rule first" xml:space="preserve"><value>Prévenir ou ouvrir un modèle exige d'abord la règle d'alerte</value></data>
+  <data name="Open it" xml:space="preserve"><value>L'ouvrir</value></data>
+  <data name="The on-call doctor was notified: {0}" xml:space="preserve"><value>Le médecin de garde a été prévenu : {0}</value></data>
+  <data name="Then open on the visit" xml:space="preserve"><value>Puis ouvrir sur la visite</value></data>
+  <data name="Adrenaline auto-injector: not prescribed" xml:space="preserve"><value>Stylo d'adrénaline : non prescrit</value></data>
+  <data name="Adrenaline auto-injector: prescribed" xml:space="preserve"><value>Stylo d'adrénaline : prescrit</value></data>
+  <data name="Previous anaphylaxis" xml:space="preserve"><value>Anaphylaxie antérieure</value></data>
+  <data name="Glasses prescription (from the readings)" xml:space="preserve"><value>Ordonnance de lunettes (d'après les mesures)</value></data>
+  <data name="Letter to the diabetes doctor" xml:space="preserve"><value>Courrier au diabétologue</value></data>
+  <data name="No AF — not scored" xml:space="preserve"><value>Pas de FA — non calculé</value></data>
+  <data name="Order OCT + visual fields" xml:space="preserve"><value>Prescrire OCT + champ visuel</value></data>
+  <data name="Order OCT and visual fields on this visit?" xml:space="preserve"><value>Prescrire l'OCT et le champ visuel pour cette visite ?</value></data>
+  <data name="Outputs" xml:space="preserve"><value>Sorties</value></data>
+  <data name="Read from the diagnoses on file: atrial fibrillation (I48) is not among them." xml:space="preserve"><value>Lu dans les diagnostics enregistrés : la fibrillation auriculaire (I48) n'y figure pas.</value></data>
+  <data name="To order OCT and visual fields here, add them to the price list with the codes OCT and VF." xml:space="preserve"><value>Pour prescrire l'OCT et le champ visuel ici, ajoutez-les à la liste des prix avec les codes OCT et VF.</value></data>
+  <data name="chads:age65" xml:space="preserve"><value>Âge 65–74</value></data>
+  <data name="chads:age75" xml:space="preserve"><value>Âge ≥ 75</value></data>
+  <data name="chads:chf" xml:space="preserve"><value>Insuffisance cardiaque</value></data>
+  <data name="chads:consider" xml:space="preserve"><value>Envisager un anticoagulant</value></data>
+  <data name="chads:dm" xml:space="preserve"><value>Diabète</value></data>
+  <data name="chads:female" xml:space="preserve"><value>Femme</value></data>
+  <data name="chads:htn" xml:space="preserve"><value>Hypertension</value></data>
+  <data name="chads:none" xml:space="preserve"><value>Pas d'anticoagulant</value></data>
+  <data name="chads:recommended" xml:space="preserve"><value>Anticoagulant recommandé</value></data>
+  <data name="chads:stroke" xml:space="preserve"><value>AVC ou AIT antérieur</value></data>
+  <data name="chads:vasc" xml:space="preserve"><value>Maladie vasculaire</value></data>
+  <data name="{0} of 9" xml:space="preserve"><value>{0} sur 9</value></data>
 </root>

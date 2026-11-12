@@ -70,6 +70,8 @@ namespace CrossBuy.BL.Hospital
 		public string? AlertTextEn { get; set; }
 		public int? CareGapDays { get; set; }
 		public bool ShowTrend { get; set; }
+		public bool AlertNotify { get; set; }
+		public int? AlertTemplateId { get; set; }
 	}
 
 	public sealed record HospitalConceptRow(HospitalConcept Concept, IReadOnlyList<string> UsedBy, IReadOnlyList<string> UsedByEn);
@@ -184,6 +186,7 @@ namespace CrossBuy.BL.Hospital
 			}
 			if (i.AlertAbove != null && i.AlertBelow != null && i.AlertBelow >= i.AlertAbove) return "The low alert must be below the high alert";
 			if ((i.AlertAbove != null || i.AlertBelow != null) && (string.IsNullOrWhiteSpace(i.AlertText) || string.IsNullOrWhiteSpace(i.AlertTextEn))) return "Write the alert, in Arabic and in English";
+			if ((i.AlertNotify || i.AlertTemplateId != null) && i.AlertAbove == null && i.AlertBelow == null) return "Notifying or opening a template needs the alert rule first";
 			return null;
 		}
 	}
@@ -345,6 +348,7 @@ namespace CrossBuy.BL.Hospital
 						AlertAbove = f.AlertAbove, AlertBelow = f.AlertBelow, AlertText = f.AlertText, AlertTextEn = f.AlertTextEn, CareGapDays = f.CareGapDays,
 					};
 					n.ShowTrend = f.ShowTrend;
+					n.AlertNotify = f.AlertNotify; n.AlertTemplateId = f.AlertTemplateId;
 					map[f.ID] = n; _db.Add(n);
 				}
 				await _db.SaveChangesAsync(ct);
@@ -393,6 +397,7 @@ namespace CrossBuy.BL.Hospital
 			f.AlertAbove = i.AlertAbove; f.AlertBelow = i.AlertBelow; bool alert = i.AlertAbove != null || i.AlertBelow != null;
 			f.AlertText = alert ? Clip(i.AlertText, 150) : null; f.AlertTextEn = alert ? Clip(i.AlertTextEn, 150) : null; f.CareGapDays = i.CareGapDays;
 			f.ShowTrend = i.ShowTrend;
+			f.AlertNotify = alert && i.AlertNotify; f.AlertTemplateId = alert ? i.AlertTemplateId : null;
 		}
 
 		public async Task<HospitalResult> AddFieldAsync(BusinessContext ctx, int versionId, HospitalTemplateFieldInput i, CancellationToken ct = default)

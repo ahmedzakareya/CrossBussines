@@ -214,7 +214,7 @@ namespace CrossBuy.BL.Hospital
 				var a = await Appts(ctx).AsNoTracking().FirstAsync(x => x.ID == appointmentId, ct);
 				if (!HospitalAppointmentStatus.CanMove(a.Status, to)) return HospitalResult.Fail("This appointment cannot make that move");
 				bool busy = await (from x in Visits(ctx) join b in Appts(ctx) on x.AppointmentId equals b.ID
-								   where x.ChairId == v.ChairId && b.Status == HospitalAppointmentStatus.InRoom && b.ID != appointmentId select b.ID).AnyAsync(ct);
+								   where x.ChairId == v.ChairId && b.Status == HospitalAppointmentStatus.InRoom && b.ID != appointmentId && b.AppointmentDate == a.AppointmentDate select b.ID).AnyAsync(ct);   // H105: the same day only
 				if (busy) return HospitalResult.Fail("Another patient is in this chair");
 				int n = await Appts(ctx).Where(x => x.ID == appointmentId && x.Status == a.Status).ExecuteUpdateAsync(u => u
 					.SetProperty(x => x.Status, to).SetProperty(x => x.StartedAt, nowLocal).SetProperty(x => x.UpdatedAt, DateTime.UtcNow).SetProperty(x => x.UpdatedByEmployeeId, employeeId), ct);

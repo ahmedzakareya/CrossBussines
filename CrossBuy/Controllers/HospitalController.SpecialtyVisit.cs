@@ -90,7 +90,13 @@ namespace CrossBuy.Controllers
 		{
 			var ctx = await ContextAsync(ct);
 			if (ctx == null || input == null) return NotFound(new { ok = false, code = "not_found" });
-			return Result(await VisitSvc.SaveAsync(ctx, id, input.Forms, ctx.EmployeeId, DateTime.UtcNow, ct));
+			var now = DateTime.UtcNow;
+			var saved = await VisitSvc.SaveAsync(ctx, id, input.Forms, ctx.EmployeeId, now, ct);
+			if (!saved.Ok) return Result(saved);
+			// H106: an alert that cannot wait — the on-call doctor is told now, its template opens on the visit
+			var esc = await ActivatorUtilities.CreateInstance<HospitalFieldAlertEscalation>(HttpContext.RequestServices).RunAsync(ctx, VisitSvc, id, ctx.EmployeeId, now, ct);
+			return Json(new { ok = true, id, notified = esc.NotifiedAr == null ? null : (UiEnglish ? DisplayName.Of(esc.NotifiedEn, esc.NotifiedAr) : esc.NotifiedAr),
+				nobodyOnCall = esc.NobodyOnCall, added = esc.TemplatesAdded.Count });
 		}
 
 		[HttpPost("Consult/{id:int}/Specialty/Sign"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Consult)]
@@ -101,6 +107,8 @@ namespace CrossBuy.Controllers
 			var now = DateTime.UtcNow;
 			var saved = await VisitSvc.SaveAsync(ctx, id, input.Forms, ctx.EmployeeId, now, ct);
 			if (!saved.Ok) return Result(saved);
+			// H106: the alert is sent, and its template opened, BEFORE the signature — which then needs that template filled
+			await ActivatorUtilities.CreateInstance<HospitalFieldAlertEscalation>(HttpContext.RequestServices).RunAsync(ctx, VisitSvc, id, ctx.EmployeeId, now, ct);
 			return Result(await VisitSvc.SignAsync(ctx, _consult, id, null, UiEnglish, ctx.EmployeeId, now, ct));
 		}
 
