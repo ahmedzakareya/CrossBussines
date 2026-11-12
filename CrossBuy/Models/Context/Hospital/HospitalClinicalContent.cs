@@ -93,7 +93,9 @@ namespace CrossBuy.Models.Context.Hospital
 	{
 		public const string Form = "Form";
 		public const string Lab = "Lab";
-		public static readonly IReadOnlyList<string> All = new[] { Form, Lab };
+		/// H110: a canvas calculator's result (burn %, DAS28, hearing average), written when the visit is signed.
+		public const string Canvas = "Canvas";
+		public static readonly IReadOnlyList<string> All = new[] { Form, Lab, Canvas };
 	}
 
 	public class HospitalConcept

@@ -20,7 +20,11 @@ namespace CrossBuy.BL.Hospital
 	public sealed record HospitalCanvasRegion(string Key, string Ar, string En, decimal X, decimal Y, decimal W, decimal H, decimal Nines);
 	public sealed record HospitalCanvasMarkView(HospitalCanvasMark Mark, HospitalCanvasMark? Previous);
 	public sealed record HospitalCanvasPage(HospitalEncounterView Visit, HospitalPatient Patient, string Kind, HospitalCanvasSheet? Sheet,
-		IReadOnlyList<HospitalCanvasMark> Marks, IReadOnlyList<HospitalCanvasMark> Last, DateTime? LastAt, bool CanEdit, int NextLesion);
+		IReadOnlyList<HospitalCanvasMark> Marks, IReadOnlyList<HospitalCanvasMark> Last, DateTime? LastAt, bool CanEdit, int NextLesion
+		, IReadOnlyList<HospitalCanvasResult>? History = null
+		);
+	/// H110: one stored result of a drawing's calculator — the concept's code, the side (R/L or none), the value, when.
+	public sealed record HospitalCanvasResult(string Code, string? Side, decimal Value, DateTime At, int? EncounterId);
 
 	public sealed class HospitalCanvasMarkInput
 	{
@@ -110,6 +114,39 @@ namespace CrossBuy.BL.Hospital
 			string zone = r < 60 ? "PP" : r < 105 ? "MP" : "FP";
 			int clock = (int)Math.Round(((Math.Atan2(dx, -dy) * 180 / Math.PI + 360) % 360) / 30);
 			return zone + "@" + (clock == 0 ? 12 : clock);
+		}
+
+		/// H110: the dictionary codes a drawing's results are stored under.
+		public static IReadOnlyList<string> ResultCodes(string kind) => kind switch
+		{
+			HospitalCanvasKind.Burn => new[] { "TBSA" },
+			HospitalCanvasKind.Audio => new[] { "PTA" },
+			HospitalCanvasKind.Joints => new[] { "DAS28" },
+			_ => Array.Empty<string>(),
+		};
+
+		/// H110: the results a SAVED drawing holds — read from the state the server stored (its own figures), never
+		/// recomputed from the browser: (code, side, value).
+		public static IReadOnlyList<(string Code, string? Side, decimal Value)> Results(string kind, string? stateJson)
+		{
+			var outp = new List<(string, string?, decimal)>();
+			if (string.IsNullOrEmpty(stateJson)) return outp;
+			try
+			{
+				using var d = JsonDocument.Parse(stateJson);
+				decimal? N(string k) => d.RootElement.TryGetProperty(k, out var v) && v.ValueKind == JsonValueKind.Number ? v.GetDecimal() : null;
+				switch (kind)
+				{
+					case HospitalCanvasKind.Burn: if (N("tbsa") is decimal t && t > 0) outp.Add(("TBSA", null, t)); break;
+					case HospitalCanvasKind.Audio:
+						if (N("ptaR") is decimal r) outp.Add(("PTA", "R", r));
+						if (N("ptaL") is decimal l) outp.Add(("PTA", "L", l));
+						break;
+					case HospitalCanvasKind.Joints: if (N("das28") is decimal das) outp.Add(("DAS28", null, das)); break;
+				}
+			}
+			catch (JsonException) { }
+			return outp;
 		}
 
 		/// The marks as the server places them, or the first refusal.
@@ -227,7 +264,14 @@ namespace CrossBuy.BL.Hospital
 				if (sheet == null && canEdit && kind == HospitalCanvasKind.Body)
 					// a first opening brings the last visit's marks forward — grey, "carried, unverified", until confirmed
 					marks = last.Marks.Select(m => new HospitalCanvasMark { Finding = m.Finding, FindingCode = m.FindingCode, Region = m.Region, Side = m.Side, X = m.X, Y = m.Y, SizeMm = m.SizeMm, LesionNo = m.LesionNo, Carried = true, CarriedFromMarkId = m.ID }).ToList();
-				return (new HospitalCanvasPage(visit, patient, kind, sheet, marks, last.Marks, last.Sheet?.SignedAt, canEdit && sheet?.Status != HospitalCanvasStatus.Signed, next), true);
+				// H110: the patient's earlier results of this drawing's measures (the trend), newest first
+				var codes = HospitalCanvasRules.ResultCodes(kind);
+				var history = codes.Count == 0 ? new List<HospitalCanvasResult>() : await (from o in Q<HospitalClinicalObservation>(ctx).AsNoTracking().Where(o => o.PatientId == patient.ID && o.Value != null)
+									join c in Q<HospitalConcept>(ctx).AsNoTracking() on o.ConceptId equals c.ID
+									where codes.Contains(c.Code)
+									orderby o.ObservedAt descending
+									select new HospitalCanvasResult(c.Code, o.Side, o.Value!.Value, o.ObservedAt, o.EncounterId)).Take(12).ToListAsync(ct);
+				return (new HospitalCanvasPage(visit, patient, kind, sheet, marks, last.Marks, last.Sheet?.SignedAt, canEdit && sheet?.Status != HospitalCanvasStatus.Signed, next, history), true);
 			}
 			catch (Microsoft.Data.SqlClient.SqlException ex) when (Missing(ex)) { return (new HospitalCanvasPage(visit, patient, kind, null, Array.Empty<HospitalCanvasMark>(), Array.Empty<HospitalCanvasMark>(), null, false, 1), false); }
 		}
@@ -348,7 +392,26 @@ namespace CrossBuy.BL.Hospital
 		{
 			try
 			{
-				foreach (var s in await Q<HospitalCanvasSheet>(ctx).Where(s => s.EncounterId == encounterId && s.Status == HospitalCanvasStatus.Draft).ToListAsync(ct))
+				var sheets = await Q<HospitalCanvasSheet>(ctx).Where(s => s.EncounterId == encounterId && s.Status == HospitalCanvasStatus.Draft).ToListAsync(ct);
+				// H110: each drawing's results become observations — stored, searchable and trended like any reading. A
+				// result whose concept is not in the dictionary is not invented: it stays in the drawing only.
+				var results = sheets.SelectMany(s => HospitalCanvasRules.Results(s.Kind, s.StateJson).Select(r => (Sheet: s, r.Code, r.Side, r.Value))).ToList();
+				if (results.Count > 0)
+				{
+					var rc = results.Select(r => r.Code).Distinct().ToList();
+					var concepts = await Q<HospitalConcept>(ctx).AsNoTracking().Where(c => rc.Contains(c.Code) && c.IsActive).ToListAsync(ct);
+					foreach (var r in results)
+					{
+						var c = concepts.FirstOrDefault(x => x.Code == r.Code);
+						if (c == null) continue;
+						_db.Add(new HospitalClinicalObservation
+						{
+							CompanyId = ctx.CompanyId, PatientId = r.Sheet.PatientId, ConceptId = c.ID, EncounterId = encounterId, Value = r.Value, Side = r.Side, Unit = c.Unit,
+							Flag = HospitalConceptRules.Flag(c, r.Value), ObservedAt = nowUtc, Source = HospitalObsSource.Canvas, RecordedAt = nowUtc, RecordedByEmployeeId = employeeId,
+						});
+					}
+				}
+				foreach (var s in sheets)
 				{ s.Status = HospitalCanvasStatus.Signed; s.SignedAt = nowUtc; s.SignedByEmployeeId = employeeId; }
 				await _db.SaveChangesAsync(ct);
 			}

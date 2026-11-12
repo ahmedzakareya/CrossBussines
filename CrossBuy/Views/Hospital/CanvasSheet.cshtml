@@ -169,6 +169,17 @@
                             <div class="rounded bg-light-primary p-4 mt-4"><div class="fw-bold">@T["Parkland fluids (24 h)"]</div><div class="fs-2 fw-bold hp-num" dir="ltr" id="bn_fl">—</div><div class="fs-8 text-gray-700" id="bn_half"></div></div>
                             <div class="mt-4" id="bn_list"></div>
                             <div class="text-muted fs-9 mt-3">@T["The server recomputes these figures when the drawing is saved."]</div>
+                            @* H110: this measure on earlier signed visits — stored as observations, so it trends *@
+                            @if (Model.History is { Count: > 0 } hx)
+                            {
+                                <div class="separator separator-dashed my-4"></div>
+                                <div class="fw-semibold fs-7 text-gray-700 mb-2">@T["Earlier results"]</div>
+                                @foreach (var r in hx.Take(8))
+                                {
+                                    <div class="d-flex flex-stack fs-8 py-1 border-bottom border-gray-200"><span class="text-muted hp-num" dir="ltr">@r.At.ToLocalTime().ToString("yyyy-MM-dd")</span>
+                                        <span class="fw-bold text-gray-900">@(r.Side == "R" ? T["right ear"].Value + " · " : r.Side == "L" ? T["left ear"].Value + " · " : "")<bdi class="hp-num" dir="ltr">@r.Value.ToString("0.##", CultureInfo.InvariantCulture)@(r.Code == "TBSA" ? "%" : r.Code == "PTA" ? " dB" : "")</bdi></span></div>
+                                }
+                            }
                         </div></div>
                 </div>
             </div>
@@ -196,7 +207,18 @@
                 <div class="col-xl-4">
                     <div class="card mb-5"><div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["The calculation"]</span></div></div>
                         <div class="card-body pt-2"><div id="au_out"></div>
-                            <div class="text-muted fs-9 mt-3">@T["The server recomputes these figures when the drawing is saved."]</div></div></div>
+                            <div class="text-muted fs-9 mt-3">@T["The server recomputes these figures when the drawing is saved."]</div>
+                            @* H110: this measure on earlier signed visits — stored as observations, so it trends *@
+                            @if (Model.History is { Count: > 0 } hx)
+                            {
+                                <div class="separator separator-dashed my-4"></div>
+                                <div class="fw-semibold fs-7 text-gray-700 mb-2">@T["Earlier results"]</div>
+                                @foreach (var r in hx.Take(8))
+                                {
+                                    <div class="d-flex flex-stack fs-8 py-1 border-bottom border-gray-200"><span class="text-muted hp-num" dir="ltr">@r.At.ToLocalTime().ToString("yyyy-MM-dd")</span>
+                                        <span class="fw-bold text-gray-900">@(r.Side == "R" ? T["right ear"].Value + " · " : r.Side == "L" ? T["left ear"].Value + " · " : "")<bdi class="hp-num" dir="ltr">@r.Value.ToString("0.##", CultureInfo.InvariantCulture)@(r.Code == "TBSA" ? "%" : r.Code == "PTA" ? " dB" : "")</bdi></span></div>
+                                }
+                            }</div></div>
                 </div>
             </div>
         }
@@ -223,6 +245,17 @@
                             </div>
                             <div id="jt_out" class="mt-4"></div>
                             <div class="text-muted fs-9 mt-3">@T["The server recomputes these figures when the drawing is saved."]</div>
+                            @* H110: this measure on earlier signed visits — stored as observations, so it trends *@
+                            @if (Model.History is { Count: > 0 } hx)
+                            {
+                                <div class="separator separator-dashed my-4"></div>
+                                <div class="fw-semibold fs-7 text-gray-700 mb-2">@T["Earlier results"]</div>
+                                @foreach (var r in hx.Take(8))
+                                {
+                                    <div class="d-flex flex-stack fs-8 py-1 border-bottom border-gray-200"><span class="text-muted hp-num" dir="ltr">@r.At.ToLocalTime().ToString("yyyy-MM-dd")</span>
+                                        <span class="fw-bold text-gray-900">@(r.Side == "R" ? T["right ear"].Value + " · " : r.Side == "L" ? T["left ear"].Value + " · " : "")<bdi class="hp-num" dir="ltr">@r.Value.ToString("0.##", CultureInfo.InvariantCulture)@(r.Code == "TBSA" ? "%" : r.Code == "PTA" ? " dB" : "")</bdi></span></div>
+                                }
+                            }
                         </div></div>
                 </div>
             </div>
