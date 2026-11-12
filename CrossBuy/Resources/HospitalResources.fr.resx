@@ -6148,4 +6148,232 @@
   <data name="spc:psy:3" xml:space="preserve"><value>Examen de l'état mental</value></data>
   <data name="spc:psy:4" xml:space="preserve"><value>C-SSRS risque suicidaire</value></data>
   <data name="spc:psy:alert" xml:space="preserve"><value>PHQ-9 item 9 &gt; 0 — alerte immédiate</value></data>
+  <data name="%TBSA, DAS28, pure-tone average, spinal level, PASI" xml:space="preserve"><value>%SCT, DAS28, moyenne tonale, niveau médullaire, PASI</value></data>
+  <data name="A carried mark does not belong to this patient's last drawing" xml:space="preserve"><value>Une marque reportée n'appartient pas au dernier dessin de ce patient</value></data>
+  <data name="A detailed coloured fundus drawing is the proof the exam was done" xml:space="preserve"><value>Un dessin détaillé et coloré du fond d'œil prouve que l'examen a été fait</value></data>
+  <data name="A drawing belongs to a visit" xml:space="preserve"><value>Un dessin appartient à une visite</value></data>
+  <data name="A drawing holds at most {0} marks" xml:space="preserve"><value>Un dessin contient au plus {0} marques</value></data>
+  <data name="A lesion is drawn twice" xml:space="preserve"><value>Une lésion est dessinée deux fois</value></data>
+  <data name="A mark must sit inside the fundus" xml:space="preserve"><value>Une marque doit se trouver dans le fond d'œil</value></data>
+  <data name="A mark must sit on the body itself" xml:space="preserve"><value>Une marque doit se trouver sur le corps</value></data>
+  <data name="A mole growing, a wound healing, a child growing" xml:space="preserve"><value>Un grain de beauté qui grandit, une plaie qui guérit, un enfant qui grandit</value></data>
+  <data name="A size is between 0 and 500 mm" xml:space="preserve"><value>Une taille est comprise entre 0 et 500 mm</value></data>
+  <data name="A versioned SVG; each region has a SNOMED code and a side; age and sex variants" xml:space="preserve"><value>Un SVG versionné ; chaque région a un code SNOMED et un côté ; variantes selon l'âge et le sexe</value></data>
+  <data name="ASHA audiogram" xml:space="preserve"><value>Audiogramme ASHA</value></data>
+  <data name="Anatomical map" xml:space="preserve"><value>Carte anatomique</value></data>
+  <data name="Attach a photo to a mark" xml:space="preserve"><value>Joindre une photo à une marque</value></data>
+  <data name="Attach this photo to mark {0}?" xml:space="preserve"><value>Joindre cette photo à la marque {0} ?</value></data>
+  <data name="Base template" xml:space="preserve"><value>Modèle de base</value></data>
+  <data name="Body map" xml:space="preserve"><value>Carte du corps</value></data>
+  <data name="Body map + ink" xml:space="preserve"><value>Carte du corps + encre</value></data>
+  <data name="Body map — {0}" xml:space="preserve"><value>Carte du corps — {0}</value></data>
+  <data name="Burn chart" xml:space="preserve"><value>Carte des brûlures</value></data>
+  <data name="Burn chart → %TBSA; joints → DAS28" xml:space="preserve"><value>Carte des brûlures → %SCT ; articulations → DAS28</value></data>
+  <data name="Calculators" xml:space="preserve"><value>Calculateurs</value></data>
+  <data name="Carried — unverified" xml:space="preserve"><value>Reportée — non vérifiée</value></data>
+  <data name="Choose &quot;mark&quot; and tap the body; or &quot;pen&quot; and draw freely. Grey marks are carried from the last visit, not yet verified." xml:space="preserve"><value>Choisissez « marque » et touchez le corps, ou « stylo » et dessinez librement. Les marques grises viennent de la dernière visite et ne sont pas encore vérifiées.</value></data>
+  <data name="Choose a saved mark from the list first" xml:space="preserve"><value>Choisissez d'abord une marque enregistrée dans la liste</value></data>
+  <data name="Choose an open visit" xml:space="preserve"><value>Choisissez une visite ouverte</value></data>
+  <data name="Choose the finding of every mark" xml:space="preserve"><value>Choisissez le constat de chaque marque</value></data>
+  <data name="Choose the open visit above: the {0} opens on it." xml:space="preserve"><value>Choisissez la visite ouverte ci-dessus : {0} s'ouvre sur elle.</value></data>
+  <data name="Choose the open visit to draw on first" xml:space="preserve"><value>Choisissez d'abord la visite ouverte sur laquelle dessiner</value></data>
+  <data name="Clinical canvas" xml:space="preserve"><value>Canevas clinique</value></data>
+  <data name="Coded mark" xml:space="preserve"><value>Marque codée</value></data>
+  <data name="Coded marks" xml:space="preserve"><value>Marques codées</value></data>
+  <data name="Coded marks on a picture of the body or an organ" xml:space="preserve"><value>Marques codées sur une image du corps ou d'un organe</value></data>
+  <data name="Compare &amp; versions" xml:space="preserve"><value>Comparaison et versions</value></data>
+  <data name="Compare with last visit" xml:space="preserve"><value>Comparer avec la dernière visite</value></data>
+  <data name="Confirm or remove the {0} marks carried from the last visit before signing" xml:space="preserve"><value>Confirmez ou retirez les {0} marques reportées de la dernière visite avant de signer</value></data>
+  <data name="Consent sketch, operative sketch" xml:space="preserve"><value>Croquis de consentement, croquis opératoire</value></data>
+  <data name="Coordinate plot" xml:space="preserve"><value>Graphique à axes</value></data>
+  <data name="DAS28 joints" xml:space="preserve"><value>Articulations DAS28</value></data>
+  <data name="Draw on the visit" xml:space="preserve"><value>Dessiner sur la visite</value></data>
+  <data name="Drawings signed with the visit" xml:space="preserve"><value>Dessins signés avec la visite</value></data>
+  <data name="Each mark = a finding with place, side and size, stored as an observation to search and trend; a lesion keeps one number across visits" xml:space="preserve"><value>Chaque marque = un constat avec lieu, côté et taille, enregistré comme observation ; une lésion garde un numéro d'une visite à l'autre</value></data>
+  <data name="Eye" xml:space="preserve"><value>Œil</value></data>
+  <data name="Finding" xml:space="preserve"><value>Constat</value></data>
+  <data name="Findings written automatically" xml:space="preserve"><value>Constats écrits automatiquement</value></data>
+  <data name="Free ink" xml:space="preserve"><value>Encre libre</value></data>
+  <data name="Free pen" xml:space="preserve"><value>Stylo libre</value></data>
+  <data name="Free sheet" xml:space="preserve"><value>Feuille libre</value></data>
+  <data name="Fundus" xml:space="preserve"><value>Fond d'œil</value></data>
+  <data name="Fundus drawing" xml:space="preserve"><value>Dessin du fond d'œil</value></data>
+  <data name="Fundus — {0}" xml:space="preserve"><value>Fond d'œil — {0}</value></data>
+  <data name="Fundus, CMS colours" xml:space="preserve"><value>Fond d'œil, couleurs CMS</value></data>
+  <data name="Grew since the last visit" xml:space="preserve"><value>A grandi depuis la dernière visite</value></data>
+  <data name="Growth chart" xml:space="preserve"><value>Courbe de croissance</value></data>
+  <data name="Into the File Manager with the patient's consent and its scope, and a calibrated measure" xml:space="preserve"><value>Dans le gestionnaire de fichiers avec le consentement du patient et sa portée, et une mesure étalonnée</value></data>
+  <data name="Last drawing {0}" xml:space="preserve"><value>Dernier dessin {0}</value></data>
+  <data name="Last visit: {0} mm" xml:space="preserve"><value>Dernière visite : {0} mm</value></data>
+  <data name="Layer" xml:space="preserve"><value>Couche</value></data>
+  <data name="Legal &amp; billing evidence" xml:space="preserve"><value>Preuve légale et de facturation</value></data>
+  <data name="Mark type" xml:space="preserve"><value>Type de marque</value></data>
+  <data name="Marking the operation site on a body diagram" xml:space="preserve"><value>Marquer le site opératoire sur un schéma du corps</value></data>
+  <data name="Marks (stored as observations)" xml:space="preserve"><value>Marques (enregistrées comme observations)</value></data>
+  <data name="NSGC pedigree" xml:space="preserve"><value>Arbre généalogique NSGC</value></data>
+  <data name="Next mark" xml:space="preserve"><value>Marque suivante</value></data>
+  <data name="Next step" xml:space="preserve"><value>Étape suivante</value></data>
+  <data name="No marks yet" xml:space="preserve"><value>Aucune marque pour l'instant</value></data>
+  <data name="No single widget covers them all: free ink for legal, explaining and thinking; coded marks for calculating, tracking and safety — most sheets need both." xml:space="preserve"><value>Aucun outil ne couvre tout : l'encre libre pour le légal, l'explication et la réflexion ; les marques codées pour calculer, suivre et sécuriser — la plupart des feuilles ont besoin des deux.</value></data>
+  <data name="Not drawn on this visit" xml:space="preserve"><value>Pas dessiné lors de cette visite</value></data>
+  <data name="One engine — four kinds" xml:space="preserve"><value>Un moteur — quatre types</value></data>
+  <data name="Patient communication" xml:space="preserve"><value>Communication avec le patient</value></data>
+  <data name="Patient mode" xml:space="preserve"><value>Mode patient</value></data>
+  <data name="People and relations" xml:space="preserve"><value>Personnes et relations</value></data>
+  <data name="Photos" xml:space="preserve"><value>Photos</value></data>
+  <data name="Pick the finding, then tap its place; drawn inverted as the indirect ophthalmoscope shows it" xml:space="preserve"><value>Choisissez le constat puis touchez son emplacement ; dessiné inversé comme le montre l'ophtalmoscope indirect</value></data>
+  <data name="Points on clinical axes" xml:space="preserve"><value>Des points sur des axes cliniques</value></data>
+  <data name="Relational graph" xml:space="preserve"><value>Graphe relationnel</value></data>
+  <data name="Safety" xml:space="preserve"><value>Sécurité</value></data>
+  <data name="Save the drawing to the visit" xml:space="preserve"><value>Enregistrer le dessin dans la visite</value></data>
+  <data name="Save this drawing to the visit? It is signed with the visit." xml:space="preserve"><value>Enregistrer ce dessin dans la visite ? Il est signé avec la visite.</value></data>
+  <data name="Save this visit's version" xml:space="preserve"><value>Enregistrer la version de cette visite</value></data>
+  <data name="Say which eye every mark is on" xml:space="preserve"><value>Indiquez l'œil de chaque marque</value></data>
+  <data name="Size mm" xml:space="preserve"><value>Taille mm</value></data>
+  <data name="Tap on the body itself" xml:space="preserve"><value>Touchez le corps lui-même</value></data>
+  <data name="The CMS retinal colour code is enforced: haemorrhage red, detachment blue, exudate yellow, new vessels purple. Each mark writes a SNOMED-coded finding into the visit." xml:space="preserve"><value>Le code couleur rétinien CMS est imposé : hémorragie rouge, décollement bleu, exsudat jaune, néovaisseaux violet. Chaque marque écrit un constat codé SNOMED dans la visite.</value></data>
+  <data name="The clinical canvas" xml:space="preserve"><value>Le canevas clinique</value></data>
+  <data name="The clinical canvas is not installed yet (hospital_h99_canvas.sql)." xml:space="preserve"><value>Le canevas clinique n'est pas encore installé (hospital_h99_canvas.sql).</value></data>
+  <data name="The drawing's data could not be read" xml:space="preserve"><value>Les données du dessin sont illisibles</value></data>
+  <data name="The drawing's data is too large to keep" xml:space="preserve"><value>Les données du dessin sont trop volumineuses</value></data>
+  <data name="The finding sets the colour, not the doctor" xml:space="preserve"><value>Le constat fixe la couleur, pas le médecin</value></data>
+  <data name="The free drawing could not be read" xml:space="preserve"><value>Le dessin libre est illisible</value></data>
+  <data name="The free drawing is too large to keep" xml:space="preserve"><value>Le dessin libre est trop volumineux</value></data>
+  <data name="The ink layer" xml:space="preserve"><value>La couche d'encre</value></data>
+  <data name="The layers of every canvas" xml:space="preserve"><value>Les couches de chaque canevas</value></data>
+  <data name="The margin doodle — free ink, kept" xml:space="preserve"><value>Le gribouillis de marge — encre libre, conservée</value></data>
+  <data name="The patient draws their pain on the tablet — kept apart as &quot;patient-reported&quot;" xml:space="preserve"><value>Le patient dessine sa douleur sur la tablette — conservé à part comme « rapporté par le patient »</value></data>
+  <data name="The sketch made while consenting" xml:space="preserve"><value>Le croquis fait lors du consentement</value></data>
+  <data name="The visit" xml:space="preserve"><value>La visite</value></data>
+  <data name="The whole drawing in the report through Report Studio" xml:space="preserve"><value>Le dessin entier dans le rapport via Report Studio</value></data>
+  <data name="Thinking aid" xml:space="preserve"><value>Aide à la réflexion</value></data>
+  <data name="This drawing has no marks" xml:space="preserve"><value>Ce dessin n'a pas de marques</value></data>
+  <data name="This visit is signed: its drawings no longer change" xml:space="preserve"><value>Cette visite est signée : ses dessins ne changent plus</value></data>
+  <data name="Tracker over time" xml:space="preserve"><value>Suivi dans le temps</value></data>
+  <data name="Undo" xml:space="preserve"><value>Annuler</value></data>
+  <data name="Vector strokes with pressure and time (InkML-like), never flattened to a picture" xml:space="preserve"><value>Traits vectoriels avec pression et temps (type InkML), jamais aplatis en image</value></data>
+  <data name="What a paper drawing does — six jobs" xml:space="preserve"><value>Ce que fait un dessin papier — six rôles</value></data>
+  <data name="What is carried from the last visit is marked &quot;carried — unverified&quot; until the doctor confirms it" xml:space="preserve"><value>Ce qui est reporté de la dernière visite est marqué « reporté — non vérifié » jusqu'à confirmation par le médecin</value></data>
+  <data name="What it keeps" xml:space="preserve"><value>Ce qu'elle conserve</value></data>
+  <data name="Where" xml:space="preserve"><value>Où</value></data>
+  <data name="at {0} o'clock" xml:space="preserve"><value>à {0} heures</value></data>
+  <data name="far periphery" xml:space="preserve"><value>périphérie lointaine</value></data>
+  <data name="mid-periphery" xml:space="preserve"><value>moyenne périphérie</value></data>
+  <data name="posterior pole" xml:space="preserve"><value>pôle postérieur</value></data>
+  <data name="{0} carried — unverified" xml:space="preserve"><value>{0} reportées — non vérifiées</value></data>
+  <data name="{0} marks" xml:space="preserve"><value>{0} marques</value></data>
+  <data name="Back view" xml:space="preserve"><value>Vue de dos</value></data>
+  <data name="Front view" xml:space="preserve"><value>Vue de face</value></data>
+  <data name="back side" xml:space="preserve"><value>dos</value></data>
+  <data name="front side" xml:space="preserve"><value>face</value></data>
+  <data name="Burn chart — Lund–Browder (age {0})" xml:space="preserve"><value>Carte des brûlures — Lund–Browder (âge {0})</value></data>
+  <data name="Burn chart — rule of nines (adult)" xml:space="preserve"><value>Carte des brûlures — règle des neuf (adulte)</value></data>
+  <data name="Burns" xml:space="preserve"><value>Brûlures</value></data>
+  <data name="Deep partial" xml:space="preserve"><value>Partielle profonde</value></data>
+  <data name="Depth" xml:space="preserve"><value>Profondeur</value></data>
+  <data name="Full thickness" xml:space="preserve"><value>Épaisseur totale</value></data>
+  <data name="Half ({0} mL) in the first 8 h from the burn, the rest over 16 h" xml:space="preserve"><value>La moitié ({0} mL) dans les 8 premières heures après la brûlure, le reste sur 16 h</value></data>
+  <data name="In studies manual %TBSA was wrong more often than apps, especially for non-specialists — and the % sets the fluids." xml:space="preserve"><value>Dans les études, le %SCT manuel était plus souvent faux que celui des applications, surtout chez les non-spécialistes — et le % fixe les liquides.</value></data>
+  <data name="No burn" xml:space="preserve"><value>Aucune</value></data>
+  <data name="Parkland fluids (24 h)" xml:space="preserve"><value>Liquides de Parkland (24 h)</value></data>
+  <data name="Region" xml:space="preserve"><value>Région</value></data>
+  <data name="Superficial partial" xml:space="preserve"><value>Partielle superficielle</value></data>
+  <data name="TBSA (partial + full)" xml:space="preserve"><value>SCT (partielle + totale)</value></data>
+  <data name="Tap a region to cycle the depth: none → superficial → deep → full. A child uses the Lund–Browder table for their age." xml:space="preserve"><value>Touchez une région pour changer la profondeur : aucune → superficielle → profonde → totale. Un enfant suit la table de Lund–Browder selon son âge.</value></data>
+  <data name="The calculation" xml:space="preserve"><value>Le calcul</value></data>
+  <data name="The calculator beats the paper" xml:space="preserve"><value>Le calculateur bat le papier</value></data>
+  <data name="The server recomputes these figures when the drawing is saved." xml:space="preserve"><value>Le serveur recalcule ces chiffres à l'enregistrement du dessin.</value></data>
+  <data name="The weight is between 0 and 400 kg" xml:space="preserve"><value>Le poids est compris entre 0 et 400 kg</value></data>
+  <data name="Write the weight to compute the fluids" xml:space="preserve"><value>Saisissez le poids pour calculer les liquides</value></data>
+  <data name="≥ 20%: refer to a burn centre" xml:space="preserve"><value>≥ 20 % : orienter vers un centre des brûlés</value></data>
+  <data name="A family tree holds 1 to 60 people" xml:space="preserve"><value>Un arbre contient de 1 à 60 personnes</value></data>
+  <data name="A father is a man one generation up" xml:space="preserve"><value>Un père est un homme d'une génération au-dessus</value></data>
+  <data name="A mother is a woman one generation up" xml:space="preserve"><value>Une mère est une femme d'une génération au-dessus</value></data>
+  <data name="A threshold is between -10 and 120 dB, in 5 dB steps" xml:space="preserve"><value>Un seuil est compris entre -10 et 120 dB, par pas de 5 dB</value></data>
+  <data name="ASHA symbols: O right / X left air, &lt; right / &gt; left bone; red right, blue left. Tap to place; snaps to the frequency and nearest 5 dB." xml:space="preserve"><value>Symboles ASHA : O droite / X gauche en aérien, &lt; droite / &gt; gauche en osseux ; rouge à droite, bleu à gauche. Touchez pour placer ; aligné sur la fréquence et les 5 dB les plus proches.</value></data>
+  <data name="Add a relative" xml:space="preserve"><value>Ajouter un parent</value></data>
+  <data name="Affected" xml:space="preserve"><value>Atteint</value></data>
+  <data name="Air — left" xml:space="preserve"><value>Aérien — gauche</value></data>
+  <data name="Air — right" xml:space="preserve"><value>Aérien — droite</value></data>
+  <data name="Audiogram" xml:space="preserve"><value>Audiogramme</value></data>
+  <data name="Average of 500–4000 Hz; grade per WHO 2021" xml:space="preserve"><value>Moyenne de 500 à 4000 Hz ; degré selon l'OMS 2021</value></data>
+  <data name="Bone — left" xml:space="preserve"><value>Osseux — gauche</value></data>
+  <data name="Bone — right" xml:space="preserve"><value>Osseux — droite</value></data>
+  <data name="Both" xml:space="preserve"><value>Les deux</value></data>
+  <data name="Carrier" xml:space="preserve"><value>Porteur</value></data>
+  <data name="Consanguinity in the family" xml:space="preserve"><value>Consanguinité dans la famille</value></data>
+  <data name="DAS28" xml:space="preserve"><value>DAS28</value></data>
+  <data name="Ear difference ≥ 15 — rule out a retrocochlear cause" xml:space="preserve"><value>Différence entre les oreilles ≥ 15 — éliminer une cause rétrocochléaire</value></data>
+  <data name="Edit the relative" xml:space="preserve"><value>Modifier le parent</value></data>
+  <data name="Left air-bone gap ≥ 15 — conductive loss" xml:space="preserve"><value>Écart aérien-osseux gauche ≥ 15 — surdité de transmission</value></data>
+  <data name="Note (age, cause of death)" xml:space="preserve"><value>Note (âge, cause du décès)</value></data>
+  <data name="Nothing to read yet: add the relatives" xml:space="preserve"><value>Rien à lire pour l'instant : ajoutez les parents</value></data>
+  <data name="Partners are two people of one generation" xml:space="preserve"><value>Les conjoints sont deux personnes d'une même génération</value></data>
+  <data name="Patient global 0–100" xml:space="preserve"><value>Évaluation globale du patient 0–100</value></data>
+  <data name="Pedigree" xml:space="preserve"><value>Arbre généalogique</value></data>
+  <data name="Relative of" xml:space="preserve"><value>Parent de</value></data>
+  <data name="Remove from the tree" xml:space="preserve"><value>Retirer de l'arbre</value></data>
+  <data name="Remove this relative from the tree?" xml:space="preserve"><value>Retirer ce parent de l'arbre ?</value></data>
+  <data name="Rheumatoid joints — DAS28" xml:space="preserve"><value>Articulations rhumatoïdes — DAS28</value></data>
+  <data name="Right air-bone gap ≥ 15 — conductive loss" xml:space="preserve"><value>Écart aérien-osseux droit ≥ 15 — surdité de transmission</value></data>
+  <data name="Square male, circle female, filled = affected, slash = deceased, arrow = proband, double line = consanguinity — very important in the Gulf and Egypt for inherited disease." xml:space="preserve"><value>Carré homme, cercle femme, plein = atteint, barre = décédé, flèche = proposant, double trait = consanguinité — très important dans le Golfe et en Égypte pour les maladies héréditaires.</value></data>
+  <data name="Standard NSGC symbols (2022 revision)" xml:space="preserve"><value>Symboles NSGC standard (révision 2022)</value></data>
+  <data name="Suggest: screen for {0} — {1}" xml:space="preserve"><value>Suggestion : dépister {0} — {1}</value></data>
+  <data name="Swollen" xml:space="preserve"><value>Gonflée</value></data>
+  <data name="Tap a joint: tender → swollen → both → clear" xml:space="preserve"><value>Touchez une articulation : douloureuse → gonflée → les deux → normale</value></data>
+  <data name="Tap a person to edit them." xml:space="preserve"><value>Touchez une personne pour la modifier.</value></data>
+  <data name="Tap a point again to remove it." xml:space="preserve"><value>Touchez à nouveau un point pour le retirer.</value></data>
+  <data name="Tender" xml:space="preserve"><value>Douloureuse</value></data>
+  <data name="The 28-joint map" xml:space="preserve"><value>La carte des 28 articulations</value></data>
+  <data name="The ESR is between 1 and 150 mm/h" xml:space="preserve"><value>La VS est comprise entre 1 et 150 mm/h</value></data>
+  <data name="The family tree could not be read" xml:space="preserve"><value>L'arbre généalogique est illisible</value></data>
+  <data name="The partners are relatives (consanguinity)" xml:space="preserve"><value>Les conjoints sont apparentés (consanguinité)</value></data>
+  <data name="The patient's global assessment is between 0 and 100" xml:space="preserve"><value>L'évaluation globale du patient est comprise entre 0 et 100</value></data>
+  <data name="The tree has exactly one patient" xml:space="preserve"><value>L'arbre a exactement un patient</value></data>
+  <data name="This person already has a father in the tree" xml:space="preserve"><value>Cette personne a déjà un père dans l'arbre</value></data>
+  <data name="This person already has a mother in the tree" xml:space="preserve"><value>Cette personne a déjà une mère dans l'arbre</value></data>
+  <data name="What the tree yields" xml:space="preserve"><value>Ce que révèle l'arbre</value></data>
+  <data name="Write the ESR and the patient's global assessment to score" xml:space="preserve"><value>Saisissez la VS et l'évaluation globale du patient pour calculer le score</value></data>
+  <data name="Write the condition of every affected relative" xml:space="preserve"><value>Indiquez la maladie de chaque parent atteint</value></data>
+  <data name="das:High" xml:space="preserve"><value>Activité élevée</value></data>
+  <data name="das:Low" xml:space="preserve"><value>Activité faible</value></data>
+  <data name="das:Moderate" xml:space="preserve"><value>Activité modérée</value></data>
+  <data name="das:Remission" xml:space="preserve"><value>Rémission</value></data>
+  <data name="hl:Complete" xml:space="preserve"><value>Totale</value></data>
+  <data name="hl:Mild" xml:space="preserve"><value>Légère</value></data>
+  <data name="hl:Moderate" xml:space="preserve"><value>Modérée</value></data>
+  <data name="hl:Moderately severe" xml:space="preserve"><value>Modérément sévère</value></data>
+  <data name="hl:Normal" xml:space="preserve"><value>Normale</value></data>
+  <data name="hl:Profound" xml:space="preserve"><value>Profonde</value></data>
+  <data name="hl:Severe" xml:space="preserve"><value>Sévère</value></data>
+  <data name="left ear" xml:space="preserve"><value>gauche</value></data>
+  <data name="rel:brother" xml:space="preserve"><value>Frère</value></data>
+  <data name="rel:daughter" xml:space="preserve"><value>Fille</value></data>
+  <data name="rel:father" xml:space="preserve"><value>Père</value></data>
+  <data name="rel:husband" xml:space="preserve"><value>Mari</value></data>
+  <data name="rel:mother" xml:space="preserve"><value>Mère</value></data>
+  <data name="rel:patient" xml:space="preserve"><value>Le patient</value></data>
+  <data name="rel:relative" xml:space="preserve"><value>Parent</value></data>
+  <data name="rel:sister" xml:space="preserve"><value>Sœur</value></data>
+  <data name="rel:son" xml:space="preserve"><value>Fils</value></data>
+  <data name="rel:wife" xml:space="preserve"><value>Épouse</value></data>
+  <data name="right ear" xml:space="preserve"><value>droite</value></data>
+  <data name="{0} across {1} generations" xml:space="preserve"><value>{0} sur {1} générations</value></data>
+  <data name="An eGFR threshold is between 5 and 120" xml:space="preserve"><value>Un seuil de DFGe est compris entre 5 et 120</value></data>
+  <data name="By the kidney (optional)" xml:space="preserve"><value>Selon le rein (facultatif)</value></data>
+  <data name="Kidney" xml:space="preserve"><value>Rein</value></data>
+  <data name="No eGFR in the last year, so the kidney dose of {0} was not checked" xml:space="preserve"><value>Aucun DFGe dans l'année : la dose rénale de {0} n'a pas été vérifiée</value></data>
+  <data name="Read against the patient's last stored eGFR; a rule by the kidney alone needs no dose limit." xml:space="preserve"><value>Lu face au dernier DFGe enregistré du patient ; une règle rénale seule n'exige pas de limite de dose.</value></data>
+  <data name="Review dose" xml:space="preserve"><value>Revoir la dose</value></data>
+  <data name="Review the dose below eGFR" xml:space="preserve"><value>Revoir la dose sous un DFGe de</value></data>
+  <data name="Review the dose below {0}" xml:space="preserve"><value>Revoir la dose sous {0}</value></data>
+  <data name="Stop below eGFR" xml:space="preserve"><value>Arrêter sous un DFGe de</value></data>
+  <data name="Stopping comes below the review threshold" xml:space="preserve"><value>L'arrêt se situe sous le seuil de révision</value></data>
+  <data name="review the dose" xml:space="preserve"><value>revoir la dose</value></data>
+  <data name="stop below {0}" xml:space="preserve"><value>arrêter sous {0}</value></data>
+  <data name="stop the medicine" xml:space="preserve"><value>arrêter le médicament</value></data>
+  <data name="the trend is falling" xml:space="preserve"><value>la tendance baisse</value></data>
+  <data name="{0} with eGFR {1}" xml:space="preserve"><value>{0} avec un DFGe de {1}</value></data>
+  <data name="{0} with eGFR {1}: review the dose below {2}" xml:space="preserve"><value>{0} avec un DFGe de {1} : revoir la dose sous {2}</value></data>
+  <data name="{0} with eGFR {1}: stop it below {2}" xml:space="preserve"><value>{0} avec un DFGe de {1} : l'arrêter sous {2}</value></data>
 </root>

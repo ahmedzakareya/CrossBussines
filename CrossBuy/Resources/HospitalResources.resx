@@ -6146,4 +6146,232 @@
   <data name="spc:psy:3" xml:space="preserve"><value>Mental status exam</value></data>
   <data name="spc:psy:4" xml:space="preserve"><value>C-SSRS suicide risk</value></data>
   <data name="spc:psy:alert" xml:space="preserve"><value>PHQ-9 item 9 &gt; 0 — immediate alert</value></data>
+  <data name="%TBSA, DAS28, pure-tone average, spinal level, PASI" xml:space="preserve"><value>%TBSA, DAS28, pure-tone average, spinal level, PASI</value></data>
+  <data name="A carried mark does not belong to this patient's last drawing" xml:space="preserve"><value>A carried mark does not belong to this patient's last drawing</value></data>
+  <data name="A detailed coloured fundus drawing is the proof the exam was done" xml:space="preserve"><value>A detailed coloured fundus drawing is the proof the exam was done</value></data>
+  <data name="A drawing belongs to a visit" xml:space="preserve"><value>A drawing belongs to a visit</value></data>
+  <data name="A drawing holds at most {0} marks" xml:space="preserve"><value>A drawing holds at most {0} marks</value></data>
+  <data name="A lesion is drawn twice" xml:space="preserve"><value>A lesion is drawn twice</value></data>
+  <data name="A mark must sit inside the fundus" xml:space="preserve"><value>A mark must sit inside the fundus</value></data>
+  <data name="A mark must sit on the body itself" xml:space="preserve"><value>A mark must sit on the body itself</value></data>
+  <data name="A mole growing, a wound healing, a child growing" xml:space="preserve"><value>A mole growing, a wound healing, a child growing</value></data>
+  <data name="A size is between 0 and 500 mm" xml:space="preserve"><value>A size is between 0 and 500 mm</value></data>
+  <data name="A versioned SVG; each region has a SNOMED code and a side; age and sex variants" xml:space="preserve"><value>A versioned SVG; each region has a SNOMED code and a side; age and sex variants</value></data>
+  <data name="ASHA audiogram" xml:space="preserve"><value>ASHA audiogram</value></data>
+  <data name="Anatomical map" xml:space="preserve"><value>Anatomical map</value></data>
+  <data name="Attach a photo to a mark" xml:space="preserve"><value>Attach a photo to a mark</value></data>
+  <data name="Attach this photo to mark {0}?" xml:space="preserve"><value>Attach this photo to mark {0}?</value></data>
+  <data name="Base template" xml:space="preserve"><value>Base template</value></data>
+  <data name="Body map" xml:space="preserve"><value>Body map</value></data>
+  <data name="Body map + ink" xml:space="preserve"><value>Body map + ink</value></data>
+  <data name="Body map — {0}" xml:space="preserve"><value>Body map — {0}</value></data>
+  <data name="Burn chart" xml:space="preserve"><value>Burn chart</value></data>
+  <data name="Burn chart → %TBSA; joints → DAS28" xml:space="preserve"><value>Burn chart → %TBSA; joints → DAS28</value></data>
+  <data name="Calculators" xml:space="preserve"><value>Calculators</value></data>
+  <data name="Carried — unverified" xml:space="preserve"><value>Carried — unverified</value></data>
+  <data name="Choose &quot;mark&quot; and tap the body; or &quot;pen&quot; and draw freely. Grey marks are carried from the last visit, not yet verified." xml:space="preserve"><value>Choose "mark" and tap the body; or "pen" and draw freely. Grey marks are carried from the last visit, not yet verified.</value></data>
+  <data name="Choose a saved mark from the list first" xml:space="preserve"><value>Choose a saved mark from the list first</value></data>
+  <data name="Choose an open visit" xml:space="preserve"><value>Choose an open visit</value></data>
+  <data name="Choose the finding of every mark" xml:space="preserve"><value>Choose the finding of every mark</value></data>
+  <data name="Choose the open visit above: the {0} opens on it." xml:space="preserve"><value>Choose the open visit above: the {0} opens on it.</value></data>
+  <data name="Choose the open visit to draw on first" xml:space="preserve"><value>Choose the open visit to draw on first</value></data>
+  <data name="Clinical canvas" xml:space="preserve"><value>Clinical canvas</value></data>
+  <data name="Coded mark" xml:space="preserve"><value>Coded mark</value></data>
+  <data name="Coded marks" xml:space="preserve"><value>Coded marks</value></data>
+  <data name="Coded marks on a picture of the body or an organ" xml:space="preserve"><value>Coded marks on a picture of the body or an organ</value></data>
+  <data name="Compare &amp; versions" xml:space="preserve"><value>Compare &amp; versions</value></data>
+  <data name="Compare with last visit" xml:space="preserve"><value>Compare with last visit</value></data>
+  <data name="Confirm or remove the {0} marks carried from the last visit before signing" xml:space="preserve"><value>Confirm or remove the {0} marks carried from the last visit before signing</value></data>
+  <data name="Consent sketch, operative sketch" xml:space="preserve"><value>Consent sketch, operative sketch</value></data>
+  <data name="Coordinate plot" xml:space="preserve"><value>Coordinate plot</value></data>
+  <data name="DAS28 joints" xml:space="preserve"><value>DAS28 joints</value></data>
+  <data name="Draw on the visit" xml:space="preserve"><value>Draw on the visit</value></data>
+  <data name="Drawings signed with the visit" xml:space="preserve"><value>Drawings signed with the visit</value></data>
+  <data name="Each mark = a finding with place, side and size, stored as an observation to search and trend; a lesion keeps one number across visits" xml:space="preserve"><value>Each mark = a finding with place, side and size, stored as an observation to search and trend; a lesion keeps one number across visits</value></data>
+  <data name="Eye" xml:space="preserve"><value>Eye</value></data>
+  <data name="Finding" xml:space="preserve"><value>Finding</value></data>
+  <data name="Findings written automatically" xml:space="preserve"><value>Findings written automatically</value></data>
+  <data name="Free ink" xml:space="preserve"><value>Free ink</value></data>
+  <data name="Free pen" xml:space="preserve"><value>Free pen</value></data>
+  <data name="Free sheet" xml:space="preserve"><value>Free sheet</value></data>
+  <data name="Fundus" xml:space="preserve"><value>Fundus</value></data>
+  <data name="Fundus drawing" xml:space="preserve"><value>Fundus drawing</value></data>
+  <data name="Fundus — {0}" xml:space="preserve"><value>Fundus — {0}</value></data>
+  <data name="Fundus, CMS colours" xml:space="preserve"><value>Fundus, CMS colours</value></data>
+  <data name="Grew since the last visit" xml:space="preserve"><value>Grew since the last visit</value></data>
+  <data name="Growth chart" xml:space="preserve"><value>Growth chart</value></data>
+  <data name="Into the File Manager with the patient's consent and its scope, and a calibrated measure" xml:space="preserve"><value>Into the File Manager with the patient's consent and its scope, and a calibrated measure</value></data>
+  <data name="Last drawing {0}" xml:space="preserve"><value>Last drawing {0}</value></data>
+  <data name="Last visit: {0} mm" xml:space="preserve"><value>Last visit: {0} mm</value></data>
+  <data name="Layer" xml:space="preserve"><value>Layer</value></data>
+  <data name="Legal &amp; billing evidence" xml:space="preserve"><value>Legal &amp; billing evidence</value></data>
+  <data name="Mark type" xml:space="preserve"><value>Mark type</value></data>
+  <data name="Marking the operation site on a body diagram" xml:space="preserve"><value>Marking the operation site on a body diagram</value></data>
+  <data name="Marks (stored as observations)" xml:space="preserve"><value>Marks (stored as observations)</value></data>
+  <data name="NSGC pedigree" xml:space="preserve"><value>NSGC pedigree</value></data>
+  <data name="Next mark" xml:space="preserve"><value>Next mark</value></data>
+  <data name="Next step" xml:space="preserve"><value>Next step</value></data>
+  <data name="No marks yet" xml:space="preserve"><value>No marks yet</value></data>
+  <data name="No single widget covers them all: free ink for legal, explaining and thinking; coded marks for calculating, tracking and safety — most sheets need both." xml:space="preserve"><value>No single widget covers them all: free ink for legal, explaining and thinking; coded marks for calculating, tracking and safety — most sheets need both.</value></data>
+  <data name="Not drawn on this visit" xml:space="preserve"><value>Not drawn on this visit</value></data>
+  <data name="One engine — four kinds" xml:space="preserve"><value>One engine — four kinds</value></data>
+  <data name="Patient communication" xml:space="preserve"><value>Patient communication</value></data>
+  <data name="Patient mode" xml:space="preserve"><value>Patient mode</value></data>
+  <data name="People and relations" xml:space="preserve"><value>People and relations</value></data>
+  <data name="Photos" xml:space="preserve"><value>Photos</value></data>
+  <data name="Pick the finding, then tap its place; drawn inverted as the indirect ophthalmoscope shows it" xml:space="preserve"><value>Pick the finding, then tap its place; drawn inverted as the indirect ophthalmoscope shows it</value></data>
+  <data name="Points on clinical axes" xml:space="preserve"><value>Points on clinical axes</value></data>
+  <data name="Relational graph" xml:space="preserve"><value>Relational graph</value></data>
+  <data name="Safety" xml:space="preserve"><value>Safety</value></data>
+  <data name="Save the drawing to the visit" xml:space="preserve"><value>Save the drawing to the visit</value></data>
+  <data name="Save this drawing to the visit? It is signed with the visit." xml:space="preserve"><value>Save this drawing to the visit? It is signed with the visit.</value></data>
+  <data name="Save this visit's version" xml:space="preserve"><value>Save this visit's version</value></data>
+  <data name="Say which eye every mark is on" xml:space="preserve"><value>Say which eye every mark is on</value></data>
+  <data name="Size mm" xml:space="preserve"><value>Size mm</value></data>
+  <data name="Tap on the body itself" xml:space="preserve"><value>Tap on the body itself</value></data>
+  <data name="The CMS retinal colour code is enforced: haemorrhage red, detachment blue, exudate yellow, new vessels purple. Each mark writes a SNOMED-coded finding into the visit." xml:space="preserve"><value>The CMS retinal colour code is enforced: haemorrhage red, detachment blue, exudate yellow, new vessels purple. Each mark writes a SNOMED-coded finding into the visit.</value></data>
+  <data name="The clinical canvas" xml:space="preserve"><value>The clinical canvas</value></data>
+  <data name="The clinical canvas is not installed yet (hospital_h99_canvas.sql)." xml:space="preserve"><value>The clinical canvas is not installed yet (hospital_h99_canvas.sql).</value></data>
+  <data name="The drawing's data could not be read" xml:space="preserve"><value>The drawing's data could not be read</value></data>
+  <data name="The drawing's data is too large to keep" xml:space="preserve"><value>The drawing's data is too large to keep</value></data>
+  <data name="The finding sets the colour, not the doctor" xml:space="preserve"><value>The finding sets the colour, not the doctor</value></data>
+  <data name="The free drawing could not be read" xml:space="preserve"><value>The free drawing could not be read</value></data>
+  <data name="The free drawing is too large to keep" xml:space="preserve"><value>The free drawing is too large to keep</value></data>
+  <data name="The ink layer" xml:space="preserve"><value>The ink layer</value></data>
+  <data name="The layers of every canvas" xml:space="preserve"><value>The layers of every canvas</value></data>
+  <data name="The margin doodle — free ink, kept" xml:space="preserve"><value>The margin doodle — free ink, kept</value></data>
+  <data name="The patient draws their pain on the tablet — kept apart as &quot;patient-reported&quot;" xml:space="preserve"><value>The patient draws their pain on the tablet — kept apart as "patient-reported"</value></data>
+  <data name="The sketch made while consenting" xml:space="preserve"><value>The sketch made while consenting</value></data>
+  <data name="The visit" xml:space="preserve"><value>The visit</value></data>
+  <data name="The whole drawing in the report through Report Studio" xml:space="preserve"><value>The whole drawing in the report through Report Studio</value></data>
+  <data name="Thinking aid" xml:space="preserve"><value>Thinking aid</value></data>
+  <data name="This drawing has no marks" xml:space="preserve"><value>This drawing has no marks</value></data>
+  <data name="This visit is signed: its drawings no longer change" xml:space="preserve"><value>This visit is signed: its drawings no longer change</value></data>
+  <data name="Tracker over time" xml:space="preserve"><value>Tracker over time</value></data>
+  <data name="Undo" xml:space="preserve"><value>Undo</value></data>
+  <data name="Vector strokes with pressure and time (InkML-like), never flattened to a picture" xml:space="preserve"><value>Vector strokes with pressure and time (InkML-like), never flattened to a picture</value></data>
+  <data name="What a paper drawing does — six jobs" xml:space="preserve"><value>What a paper drawing does — six jobs</value></data>
+  <data name="What is carried from the last visit is marked &quot;carried — unverified&quot; until the doctor confirms it" xml:space="preserve"><value>What is carried from the last visit is marked "carried — unverified" until the doctor confirms it</value></data>
+  <data name="What it keeps" xml:space="preserve"><value>What it keeps</value></data>
+  <data name="Where" xml:space="preserve"><value>Where</value></data>
+  <data name="at {0} o'clock" xml:space="preserve"><value>at {0} o'clock</value></data>
+  <data name="far periphery" xml:space="preserve"><value>far periphery</value></data>
+  <data name="mid-periphery" xml:space="preserve"><value>mid-periphery</value></data>
+  <data name="posterior pole" xml:space="preserve"><value>posterior pole</value></data>
+  <data name="{0} carried — unverified" xml:space="preserve"><value>{0} carried — unverified</value></data>
+  <data name="{0} marks" xml:space="preserve"><value>{0} marks</value></data>
+  <data name="Back view" xml:space="preserve"><value>Back view</value></data>
+  <data name="Front view" xml:space="preserve"><value>Front view</value></data>
+  <data name="back side" xml:space="preserve"><value>back</value></data>
+  <data name="front side" xml:space="preserve"><value>front</value></data>
+  <data name="Burn chart — Lund–Browder (age {0})" xml:space="preserve"><value>Burn chart — Lund–Browder (age {0})</value></data>
+  <data name="Burn chart — rule of nines (adult)" xml:space="preserve"><value>Burn chart — rule of nines (adult)</value></data>
+  <data name="Burns" xml:space="preserve"><value>Burns</value></data>
+  <data name="Deep partial" xml:space="preserve"><value>Deep partial</value></data>
+  <data name="Depth" xml:space="preserve"><value>Depth</value></data>
+  <data name="Full thickness" xml:space="preserve"><value>Full thickness</value></data>
+  <data name="Half ({0} mL) in the first 8 h from the burn, the rest over 16 h" xml:space="preserve"><value>Half ({0} mL) in the first 8 h from the burn, the rest over 16 h</value></data>
+  <data name="In studies manual %TBSA was wrong more often than apps, especially for non-specialists — and the % sets the fluids." xml:space="preserve"><value>In studies manual %TBSA was wrong more often than apps, especially for non-specialists — and the % sets the fluids.</value></data>
+  <data name="No burn" xml:space="preserve"><value>None</value></data>
+  <data name="Parkland fluids (24 h)" xml:space="preserve"><value>Parkland fluids (24 h)</value></data>
+  <data name="Region" xml:space="preserve"><value>Region</value></data>
+  <data name="Superficial partial" xml:space="preserve"><value>Superficial partial</value></data>
+  <data name="TBSA (partial + full)" xml:space="preserve"><value>TBSA (partial + full)</value></data>
+  <data name="Tap a region to cycle the depth: none → superficial → deep → full. A child uses the Lund–Browder table for their age." xml:space="preserve"><value>Tap a region to cycle the depth: none → superficial → deep → full. A child uses the Lund–Browder table for their age.</value></data>
+  <data name="The calculation" xml:space="preserve"><value>The calculation</value></data>
+  <data name="The calculator beats the paper" xml:space="preserve"><value>The calculator beats the paper</value></data>
+  <data name="The server recomputes these figures when the drawing is saved." xml:space="preserve"><value>The server recomputes these figures when the drawing is saved.</value></data>
+  <data name="The weight is between 0 and 400 kg" xml:space="preserve"><value>The weight is between 0 and 400 kg</value></data>
+  <data name="Write the weight to compute the fluids" xml:space="preserve"><value>Write the weight to compute the fluids</value></data>
+  <data name="≥ 20%: refer to a burn centre" xml:space="preserve"><value>≥ 20%: refer to a burn centre</value></data>
+  <data name="A family tree holds 1 to 60 people" xml:space="preserve"><value>A family tree holds 1 to 60 people</value></data>
+  <data name="A father is a man one generation up" xml:space="preserve"><value>A father is a man one generation up</value></data>
+  <data name="A mother is a woman one generation up" xml:space="preserve"><value>A mother is a woman one generation up</value></data>
+  <data name="A threshold is between -10 and 120 dB, in 5 dB steps" xml:space="preserve"><value>A threshold is between -10 and 120 dB, in 5 dB steps</value></data>
+  <data name="ASHA symbols: O right / X left air, &lt; right / &gt; left bone; red right, blue left. Tap to place; snaps to the frequency and nearest 5 dB." xml:space="preserve"><value>ASHA symbols: O right / X left air, &lt; right / &gt; left bone; red right, blue left. Tap to place; snaps to the frequency and nearest 5 dB.</value></data>
+  <data name="Add a relative" xml:space="preserve"><value>Add a relative</value></data>
+  <data name="Affected" xml:space="preserve"><value>Affected</value></data>
+  <data name="Air — left" xml:space="preserve"><value>Air — left</value></data>
+  <data name="Air — right" xml:space="preserve"><value>Air — right</value></data>
+  <data name="Audiogram" xml:space="preserve"><value>Audiogram</value></data>
+  <data name="Average of 500–4000 Hz; grade per WHO 2021" xml:space="preserve"><value>Average of 500–4000 Hz; grade per WHO 2021</value></data>
+  <data name="Bone — left" xml:space="preserve"><value>Bone — left</value></data>
+  <data name="Bone — right" xml:space="preserve"><value>Bone — right</value></data>
+  <data name="Both" xml:space="preserve"><value>Both</value></data>
+  <data name="Carrier" xml:space="preserve"><value>Carrier</value></data>
+  <data name="Consanguinity in the family" xml:space="preserve"><value>Consanguinity in the family</value></data>
+  <data name="DAS28" xml:space="preserve"><value>DAS28</value></data>
+  <data name="Ear difference ≥ 15 — rule out a retrocochlear cause" xml:space="preserve"><value>Ear difference ≥ 15 — rule out a retrocochlear cause</value></data>
+  <data name="Edit the relative" xml:space="preserve"><value>Edit the relative</value></data>
+  <data name="Left air-bone gap ≥ 15 — conductive loss" xml:space="preserve"><value>Left air-bone gap ≥ 15 — conductive loss</value></data>
+  <data name="Note (age, cause of death)" xml:space="preserve"><value>Note (age, cause of death)</value></data>
+  <data name="Nothing to read yet: add the relatives" xml:space="preserve"><value>Nothing to read yet: add the relatives</value></data>
+  <data name="Partners are two people of one generation" xml:space="preserve"><value>Partners are two people of one generation</value></data>
+  <data name="Patient global 0–100" xml:space="preserve"><value>Patient global 0–100</value></data>
+  <data name="Pedigree" xml:space="preserve"><value>Pedigree</value></data>
+  <data name="Relative of" xml:space="preserve"><value>Relative of</value></data>
+  <data name="Remove from the tree" xml:space="preserve"><value>Remove from the tree</value></data>
+  <data name="Remove this relative from the tree?" xml:space="preserve"><value>Remove this relative from the tree?</value></data>
+  <data name="Rheumatoid joints — DAS28" xml:space="preserve"><value>Rheumatoid joints — DAS28</value></data>
+  <data name="Right air-bone gap ≥ 15 — conductive loss" xml:space="preserve"><value>Right air-bone gap ≥ 15 — conductive loss</value></data>
+  <data name="Square male, circle female, filled = affected, slash = deceased, arrow = proband, double line = consanguinity — very important in the Gulf and Egypt for inherited disease." xml:space="preserve"><value>Square male, circle female, filled = affected, slash = deceased, arrow = proband, double line = consanguinity — very important in the Gulf and Egypt for inherited disease.</value></data>
+  <data name="Standard NSGC symbols (2022 revision)" xml:space="preserve"><value>Standard NSGC symbols (2022 revision)</value></data>
+  <data name="Suggest: screen for {0} — {1}" xml:space="preserve"><value>Suggest: screen for {0} — {1}</value></data>
+  <data name="Swollen" xml:space="preserve"><value>Swollen</value></data>
+  <data name="Tap a joint: tender → swollen → both → clear" xml:space="preserve"><value>Tap a joint: tender → swollen → both → clear</value></data>
+  <data name="Tap a person to edit them." xml:space="preserve"><value>Tap a person to edit them.</value></data>
+  <data name="Tap a point again to remove it." xml:space="preserve"><value>Tap a point again to remove it.</value></data>
+  <data name="Tender" xml:space="preserve"><value>Tender</value></data>
+  <data name="The 28-joint map" xml:space="preserve"><value>The 28-joint map</value></data>
+  <data name="The ESR is between 1 and 150 mm/h" xml:space="preserve"><value>The ESR is between 1 and 150 mm/h</value></data>
+  <data name="The family tree could not be read" xml:space="preserve"><value>The family tree could not be read</value></data>
+  <data name="The partners are relatives (consanguinity)" xml:space="preserve"><value>The partners are relatives (consanguinity)</value></data>
+  <data name="The patient's global assessment is between 0 and 100" xml:space="preserve"><value>The patient's global assessment is between 0 and 100</value></data>
+  <data name="The tree has exactly one patient" xml:space="preserve"><value>The tree has exactly one patient</value></data>
+  <data name="This person already has a father in the tree" xml:space="preserve"><value>This person already has a father in the tree</value></data>
+  <data name="This person already has a mother in the tree" xml:space="preserve"><value>This person already has a mother in the tree</value></data>
+  <data name="What the tree yields" xml:space="preserve"><value>What the tree yields</value></data>
+  <data name="Write the ESR and the patient's global assessment to score" xml:space="preserve"><value>Write the ESR and the patient's global assessment to score</value></data>
+  <data name="Write the condition of every affected relative" xml:space="preserve"><value>Write the condition of every affected relative</value></data>
+  <data name="das:High" xml:space="preserve"><value>High activity</value></data>
+  <data name="das:Low" xml:space="preserve"><value>Low activity</value></data>
+  <data name="das:Moderate" xml:space="preserve"><value>Moderate activity</value></data>
+  <data name="das:Remission" xml:space="preserve"><value>Remission</value></data>
+  <data name="hl:Complete" xml:space="preserve"><value>Complete</value></data>
+  <data name="hl:Mild" xml:space="preserve"><value>Mild</value></data>
+  <data name="hl:Moderate" xml:space="preserve"><value>Moderate</value></data>
+  <data name="hl:Moderately severe" xml:space="preserve"><value>Moderately severe</value></data>
+  <data name="hl:Normal" xml:space="preserve"><value>Normal</value></data>
+  <data name="hl:Profound" xml:space="preserve"><value>Profound</value></data>
+  <data name="hl:Severe" xml:space="preserve"><value>Severe</value></data>
+  <data name="left ear" xml:space="preserve"><value>left</value></data>
+  <data name="rel:brother" xml:space="preserve"><value>brother</value></data>
+  <data name="rel:daughter" xml:space="preserve"><value>daughter</value></data>
+  <data name="rel:father" xml:space="preserve"><value>father</value></data>
+  <data name="rel:husband" xml:space="preserve"><value>husband</value></data>
+  <data name="rel:mother" xml:space="preserve"><value>mother</value></data>
+  <data name="rel:patient" xml:space="preserve"><value>patient</value></data>
+  <data name="rel:relative" xml:space="preserve"><value>relative</value></data>
+  <data name="rel:sister" xml:space="preserve"><value>sister</value></data>
+  <data name="rel:son" xml:space="preserve"><value>son</value></data>
+  <data name="rel:wife" xml:space="preserve"><value>wife</value></data>
+  <data name="right ear" xml:space="preserve"><value>right</value></data>
+  <data name="{0} across {1} generations" xml:space="preserve"><value>{0} across {1} generations</value></data>
+  <data name="An eGFR threshold is between 5 and 120" xml:space="preserve"><value>An eGFR threshold is between 5 and 120</value></data>
+  <data name="By the kidney (optional)" xml:space="preserve"><value>By the kidney (optional)</value></data>
+  <data name="Kidney" xml:space="preserve"><value>Kidney</value></data>
+  <data name="No eGFR in the last year, so the kidney dose of {0} was not checked" xml:space="preserve"><value>No eGFR in the last year, so the kidney dose of {0} was not checked</value></data>
+  <data name="Read against the patient's last stored eGFR; a rule by the kidney alone needs no dose limit." xml:space="preserve"><value>Read against the patient's last stored eGFR; a rule by the kidney alone needs no dose limit.</value></data>
+  <data name="Review dose" xml:space="preserve"><value>Review dose</value></data>
+  <data name="Review the dose below eGFR" xml:space="preserve"><value>Review the dose below eGFR</value></data>
+  <data name="Review the dose below {0}" xml:space="preserve"><value>Review the dose below {0}</value></data>
+  <data name="Stop below eGFR" xml:space="preserve"><value>Stop below eGFR</value></data>
+  <data name="Stopping comes below the review threshold" xml:space="preserve"><value>Stopping comes below the review threshold</value></data>
+  <data name="review the dose" xml:space="preserve"><value>review the dose</value></data>
+  <data name="stop below {0}" xml:space="preserve"><value>stop below {0}</value></data>
+  <data name="stop the medicine" xml:space="preserve"><value>stop the medicine</value></data>
+  <data name="the trend is falling" xml:space="preserve"><value>the trend is falling</value></data>
+  <data name="{0} with eGFR {1}" xml:space="preserve"><value>{0} with eGFR {1}</value></data>
+  <data name="{0} with eGFR {1}: review the dose below {2}" xml:space="preserve"><value>{0} with eGFR {1}: review the dose below {2}</value></data>
+  <data name="{0} with eGFR {1}: stop it below {2}" xml:space="preserve"><value>{0} with eGFR {1}: stop it below {2}</value></data>
 </root>

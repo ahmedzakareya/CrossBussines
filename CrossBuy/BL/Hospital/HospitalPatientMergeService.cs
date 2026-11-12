@@ -97,6 +97,8 @@ namespace CrossBuy.BL.Hospital
 			(typeof(HospitalClinicalObservation), "HospitalClinicalObservations"), // H93: every signed value
 			(typeof(HospitalImmunoCourse), "HospitalImmunoCourses"),           // H97: immunotherapy courses
 			(typeof(HospitalImmunoDose), "HospitalImmunoDoses"),               // H97: and their doses
+			(typeof(HospitalCanvasSheet), "HospitalCanvasSheets"),             // H99: the visit drawings
+			(typeof(HospitalCanvasMark), "HospitalCanvasMarks"),               // H99: and their marks (a lesion number may repeat after a merge; the place tells them apart)
 		};
 
 		/// Patient columns NOT named PatientId (a test holds this list to every such column too). The merge history and the

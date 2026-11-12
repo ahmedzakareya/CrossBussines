@@ -1,0 +1,605 @@
+{
+ "unit": "H99 — the clinical canvas: engine, body map, fundus (cv-home, cv-body, cv-fundus)",
+ "strings": {
+  "A carried mark does not belong to this patient's last drawing": {
+   "ar": "العلامة المنقولة ليست من آخر رسمة لهذا المريض",
+   "en": "A carried mark does not belong to this patient's last drawing",
+   "fr": "Une marque reportée n'appartient pas au dernier dessin de ce patient"
+  },
+  "A drawing belongs to a visit": {
+   "ar": "الرسمة تخص زيارة",
+   "en": "A drawing belongs to a visit",
+   "fr": "Un dessin appartient à une visite"
+  },
+  "A drawing holds at most {0} marks": {
+   "ar": "الرسمة تحمل {0} علامة على الأكثر",
+   "en": "A drawing holds at most {0} marks",
+   "fr": "Un dessin contient au plus {0} marques"
+  },
+  "A lesion is drawn twice": {
+   "ar": "نفس الآفة مرسومة مرتين",
+   "en": "A lesion is drawn twice",
+   "fr": "Une lésion est dessinée deux fois"
+  },
+  "A mark must sit inside the fundus": {
+   "ar": "العلامة لازم تكون داخل قاع العين",
+   "en": "A mark must sit inside the fundus",
+   "fr": "Une marque doit se trouver dans le fond d'œil"
+  },
+  "A mark must sit on the body itself": {
+   "ar": "العلامة لازم تكون على الجسم نفسه",
+   "en": "A mark must sit on the body itself",
+   "fr": "Une marque doit se trouver sur le corps"
+  },
+  "A size is between 0 and 500 mm": {
+   "ar": "المقاس بين ٠ و٥٠٠ مم",
+   "en": "A size is between 0 and 500 mm",
+   "fr": "Une taille est comprise entre 0 et 500 mm"
+  },
+  "Attach a photo to a mark": {
+   "ar": "إرفاق صورة لعلامة",
+   "en": "Attach a photo to a mark",
+   "fr": "Joindre une photo à une marque"
+  },
+  "Attach this photo to mark {0}?": {
+   "ar": "إرفاق هذه الصورة بالعلامة {0}؟",
+   "en": "Attach this photo to mark {0}?",
+   "fr": "Joindre cette photo à la marque {0} ?"
+  },
+  "Body map": {
+   "ar": "خريطة الجسم",
+   "en": "Body map",
+   "fr": "Carte du corps"
+  },
+  "Body map — {0}": {
+   "ar": "خريطة الجسم — {0}",
+   "en": "Body map — {0}",
+   "fr": "Carte du corps — {0}"
+  },
+  "Carried — unverified": {
+   "ar": "منقولة — لم تُراجع",
+   "en": "Carried — unverified",
+   "fr": "Reportée — non vérifiée"
+  },
+  "Choose \"mark\" and tap the body; or \"pen\" and draw freely. Grey marks are carried from the last visit, not yet verified.": {
+   "ar": "اختر «علامة» واضغط على الجسم؛ أو «قلم» وارسم بحرية. العلامات الرمادية منقولة من الزيارة السابقة ولم تُراجع بعد.",
+   "en": "Choose \"mark\" and tap the body; or \"pen\" and draw freely. Grey marks are carried from the last visit, not yet verified.",
+   "fr": "Choisissez « marque » et touchez le corps, ou « stylo » et dessinez librement. Les marques grises viennent de la dernière visite et ne sont pas encore vérifiées."
+  },
+  "Choose a saved mark from the list first": {
+   "ar": "اختر علامة محفوظة من القائمة أولاً",
+   "en": "Choose a saved mark from the list first",
+   "fr": "Choisissez d'abord une marque enregistrée dans la liste"
+  },
+  "Choose an open visit": {
+   "ar": "اختر زيارة مفتوحة",
+   "en": "Choose an open visit",
+   "fr": "Choisissez une visite ouverte"
+  },
+  "Choose the open visit above: the {0} opens on it.": {
+   "ar": "اختر الزيارة المفتوحة بالأعلى: تُفتح {0} عليها.",
+   "en": "Choose the open visit above: the {0} opens on it.",
+   "fr": "Choisissez la visite ouverte ci-dessus : {0} s'ouvre sur elle."
+  },
+  "Choose the open visit to draw on first": {
+   "ar": "اختر الزيارة المفتوحة التي سترسم عليها أولاً",
+   "en": "Choose the open visit to draw on first",
+   "fr": "Choisissez d'abord la visite ouverte sur laquelle dessiner"
+  },
+  "Choose the finding of every mark": {
+   "ar": "اختر الاكتشاف لكل علامة",
+   "en": "Choose the finding of every mark",
+   "fr": "Choisissez le constat de chaque marque"
+  },
+  "Clinical canvas": {
+   "ar": "اللوحة الإكلينيكية",
+   "en": "Clinical canvas",
+   "fr": "Canevas clinique"
+  },
+  "Coded mark": {
+   "ar": "علامة بكود",
+   "en": "Coded mark",
+   "fr": "Marque codée"
+  },
+  "Compare with last visit": {
+   "ar": "مقارنة بالزيارة السابقة",
+   "en": "Compare with last visit",
+   "fr": "Comparer avec la dernière visite"
+  },
+  "Confirm or remove the {0} marks carried from the last visit before signing": {
+   "ar": "أكّد أو احذف العلامات المنقولة من الزيارة السابقة ({0}) قبل التوقيع",
+   "en": "Confirm or remove the {0} marks carried from the last visit before signing",
+   "fr": "Confirmez ou retirez les {0} marques reportées de la dernière visite avant de signer"
+  },
+  "Draw on the visit": {
+   "ar": "الرسم على الزيارة",
+   "en": "Draw on the visit",
+   "fr": "Dessiner sur la visite"
+  },
+  "Drawings signed with the visit": {
+   "ar": "رسومات تُوقَّع مع الزيارة",
+   "en": "Drawings signed with the visit",
+   "fr": "Dessins signés avec la visite"
+  },
+  "Eye": {
+   "ar": "العين",
+   "en": "Eye",
+   "fr": "Œil"
+  },
+  "Finding": {
+   "ar": "الاكتشاف",
+   "en": "Finding",
+   "fr": "Constat"
+  },
+  "Findings written automatically": {
+   "ar": "النتائج المكتوبة تلقائياً",
+   "en": "Findings written automatically",
+   "fr": "Constats écrits automatiquement"
+  },
+  "Free pen": {
+   "ar": "قلم حر",
+   "en": "Free pen",
+   "fr": "Stylo libre"
+  },
+  "Fundus": {
+   "ar": "قاع العين",
+   "en": "Fundus",
+   "fr": "Fond d'œil"
+  },
+  "Fundus drawing": {
+   "ar": "رسم قاع العين",
+   "en": "Fundus drawing",
+   "fr": "Dessin du fond d'œil"
+  },
+  "Fundus — {0}": {
+   "ar": "قاع العين — {0}",
+   "en": "Fundus — {0}",
+   "fr": "Fond d'œil — {0}"
+  },
+  "Grew since the last visit": {
+   "ar": "كبرت منذ الزيارة السابقة",
+   "en": "Grew since the last visit",
+   "fr": "A grandi depuis la dernière visite"
+  },
+  "Last drawing {0}": {
+   "ar": "آخر رسمة {0}",
+   "en": "Last drawing {0}",
+   "fr": "Dernier dessin {0}"
+  },
+  "Last visit: {0} mm": {
+   "ar": "الزيارة السابقة: {0} مم",
+   "en": "Last visit: {0} mm",
+   "fr": "Dernière visite : {0} mm"
+  },
+  "Layer": {
+   "ar": "الطبقة",
+   "en": "Layer",
+   "fr": "Couche"
+  },
+  "Mark type": {
+   "ar": "نوع العلامة",
+   "en": "Mark type",
+   "fr": "Type de marque"
+  },
+  "Marks (stored as observations)": {
+   "ar": "العلامات (تُحفظ قياسات)",
+   "en": "Marks (stored as observations)",
+   "fr": "Marques (enregistrées comme observations)"
+  },
+  "Next mark": {
+   "ar": "العلامة التالية",
+   "en": "Next mark",
+   "fr": "Marque suivante"
+  },
+  "Next step": {
+   "ar": "الخطوة التالية",
+   "en": "Next step",
+   "fr": "Étape suivante"
+  },
+  "No marks yet": {
+   "ar": "لا توجد علامات بعد",
+   "en": "No marks yet",
+   "fr": "Aucune marque pour l'instant"
+  },
+  "No single widget covers them all: free ink for legal, explaining and thinking; coded marks for calculating, tracking and safety — most sheets need both.": {
+   "ar": "لا توجد أداة واحدة تغطيها كلها: الرسم الحر للقانوني والشرح والتفكير، والعلامات بكود للحساب والمتابعة والسلامة، وأغلب الأوراق تحتاج الاثنين.",
+   "en": "No single widget covers them all: free ink for legal, explaining and thinking; coded marks for calculating, tracking and safety — most sheets need both.",
+   "fr": "Aucun outil ne couvre tout : l'encre libre pour le légal, l'explication et la réflexion ; les marques codées pour calculer, suivre et sécuriser — la plupart des feuilles ont besoin des deux."
+  },
+  "Not drawn on this visit": {
+   "ar": "لم تُرسم في هذه الزيارة",
+   "en": "Not drawn on this visit",
+   "fr": "Pas dessiné lors de cette visite"
+  },
+  "One engine — four kinds": {
+   "ar": "محرك واحد — أربعة أنواع",
+   "en": "One engine — four kinds",
+   "fr": "Un moteur — quatre types"
+  },
+  "Pick the finding, then tap its place; drawn inverted as the indirect ophthalmoscope shows it": {
+   "ar": "اختر الاكتشاف ثم اضغط مكانه؛ الرسم مقلوب كما يراه منظار العين غير المباشر",
+   "en": "Pick the finding, then tap its place; drawn inverted as the indirect ophthalmoscope shows it",
+   "fr": "Choisissez le constat puis touchez son emplacement ; dessiné inversé comme le montre l'ophtalmoscope indirect"
+  },
+  "Save the drawing to the visit": {
+   "ar": "حفظ الرسم في الزيارة",
+   "en": "Save the drawing to the visit",
+   "fr": "Enregistrer le dessin dans la visite"
+  },
+  "Save this drawing to the visit? It is signed with the visit.": {
+   "ar": "حفظ هذه الرسمة في الزيارة؟ تُوقَّع مع الزيارة.",
+   "en": "Save this drawing to the visit? It is signed with the visit.",
+   "fr": "Enregistrer ce dessin dans la visite ? Il est signé avec la visite."
+  },
+  "Save this visit's version": {
+   "ar": "حفظ إصدار الزيارة",
+   "en": "Save this visit's version",
+   "fr": "Enregistrer la version de cette visite"
+  },
+  "Say which eye every mark is on": {
+   "ar": "حدّد العين لكل علامة",
+   "en": "Say which eye every mark is on",
+   "fr": "Indiquez l'œil de chaque marque"
+  },
+  "Size mm": {
+   "ar": "المقاس مم",
+   "en": "Size mm",
+   "fr": "Taille mm"
+  },
+  "Tap on the body itself": {
+   "ar": "اضغط على الجسم نفسه",
+   "en": "Tap on the body itself",
+   "fr": "Touchez le corps lui-même"
+  },
+  "The CMS retinal colour code is enforced: haemorrhage red, detachment blue, exudate yellow, new vessels purple. Each mark writes a SNOMED-coded finding into the visit.": {
+   "ar": "كود ألوان CMS لرسم الشبكية مفروض: النزيف أحمر، الانفصال أزرق، الإفراز أصفر، الأوعية الجديدة بنفسجي. كل علامة تكتب نتيجة بكود SNOMED في الزيارة.",
+   "en": "The CMS retinal colour code is enforced: haemorrhage red, detachment blue, exudate yellow, new vessels purple. Each mark writes a SNOMED-coded finding into the visit.",
+   "fr": "Le code couleur rétinien CMS est imposé : hémorragie rouge, décollement bleu, exsudat jaune, néovaisseaux violet. Chaque marque écrit un constat codé SNOMED dans la visite."
+  },
+  "The clinical canvas": {
+   "ar": "اللوحة الإكلينيكية",
+   "en": "The clinical canvas",
+   "fr": "Le canevas clinique"
+  },
+  "The clinical canvas is not installed yet (hospital_h99_canvas.sql).": {
+   "ar": "اللوحة الإكلينيكية غير مثبتة بعد (hospital_h99_canvas.sql).",
+   "en": "The clinical canvas is not installed yet (hospital_h99_canvas.sql).",
+   "fr": "Le canevas clinique n'est pas encore installé (hospital_h99_canvas.sql)."
+  },
+  "The drawing's data could not be read": {
+   "ar": "تعذّرت قراءة بيانات الرسمة",
+   "en": "The drawing's data could not be read",
+   "fr": "Les données du dessin sont illisibles"
+  },
+  "The drawing's data is too large to keep": {
+   "ar": "بيانات الرسمة أكبر من أن تُحفظ",
+   "en": "The drawing's data is too large to keep",
+   "fr": "Les données du dessin sont trop volumineuses"
+  },
+  "The finding sets the colour, not the doctor": {
+   "ar": "اللون يحدده الاكتشاف لا الطبيب",
+   "en": "The finding sets the colour, not the doctor",
+   "fr": "Le constat fixe la couleur, pas le médecin"
+  },
+  "The free drawing could not be read": {
+   "ar": "تعذّرت قراءة الرسم الحر",
+   "en": "The free drawing could not be read",
+   "fr": "Le dessin libre est illisible"
+  },
+  "The free drawing is too large to keep": {
+   "ar": "الرسم الحر أكبر من أن يُحفظ",
+   "en": "The free drawing is too large to keep",
+   "fr": "Le dessin libre est trop volumineux"
+  },
+  "The layers of every canvas": {
+   "ar": "طبقات كل لوحة",
+   "en": "The layers of every canvas",
+   "fr": "Les couches de chaque canevas"
+  },
+  "The visit": {
+   "ar": "الزيارة",
+   "en": "The visit",
+   "fr": "La visite"
+  },
+  "This drawing has no marks": {
+   "ar": "هذه الرسمة بلا علامات",
+   "en": "This drawing has no marks",
+   "fr": "Ce dessin n'a pas de marques"
+  },
+  "This visit is signed: its drawings no longer change": {
+   "ar": "الزيارة موقّعة: رسوماتها لا تتغير بعد الآن",
+   "en": "This visit is signed: its drawings no longer change",
+   "fr": "Cette visite est signée : ses dessins ne changent plus"
+  },
+  "Undo": {
+   "ar": "تراجع",
+   "en": "Undo",
+   "fr": "Annuler"
+  },
+  "What a paper drawing does — six jobs": {
+   "ar": "ما تفعله الورقة المرسومة — ست وظائف",
+   "en": "What a paper drawing does — six jobs",
+   "fr": "Ce que fait un dessin papier — six rôles"
+  },
+  "What it keeps": {
+   "ar": "ماذا تحفظ",
+   "en": "What it keeps",
+   "fr": "Ce qu'elle conserve"
+  },
+  "Where": {
+   "ar": "المكان",
+   "en": "Where",
+   "fr": "Où"
+  },
+  "at {0} o'clock": {
+   "ar": "الساعة {0}",
+   "en": "at {0} o'clock",
+   "fr": "à {0} heures"
+  },
+  "far periphery": {
+   "ar": "المحيط البعيد",
+   "en": "far periphery",
+   "fr": "périphérie lointaine"
+  },
+  "mid-periphery": {
+   "ar": "المحيط المتوسط",
+   "en": "mid-periphery",
+   "fr": "moyenne périphérie"
+  },
+  "posterior pole": {
+   "ar": "القطب الخلفي",
+   "en": "posterior pole",
+   "fr": "pôle postérieur"
+  },
+  "{0} carried — unverified": {
+   "ar": "{0} منقولة — لم تُراجع",
+   "en": "{0} carried — unverified",
+   "fr": "{0} reportées — non vérifiées"
+  },
+  "{0} marks": {
+   "ar": "{0} علامة",
+   "en": "{0} marks",
+   "fr": "{0} marques"
+  },
+  "Legal & billing evidence": {
+   "ar": "دليل قانوني ومطالبة",
+   "en": "Legal & billing evidence",
+   "fr": "Preuve légale et de facturation"
+  },
+  "A detailed coloured fundus drawing is the proof the exam was done": {
+   "ar": "رسم قاع العين المفصّل بالألوان دليل أن الفحص تم",
+   "en": "A detailed coloured fundus drawing is the proof the exam was done",
+   "fr": "Un dessin détaillé et coloré du fond d'œil prouve que l'examen a été fait"
+  },
+  "Calculator": {
+   "ar": "آلة حاسبة",
+   "en": "Calculator",
+   "fr": "Calculateur"
+  },
+  "Burn chart → %TBSA; joints → DAS28": {
+   "ar": "خريطة الحروق ← نسبة الحرق؛ المفاصل ← DAS28",
+   "en": "Burn chart → %TBSA; joints → DAS28",
+   "fr": "Carte des brûlures → %SCT ; articulations → DAS28"
+  },
+  "Tracker over time": {
+   "ar": "متابعة عبر الزمن",
+   "en": "Tracker over time",
+   "fr": "Suivi dans le temps"
+  },
+  "A mole growing, a wound healing, a child growing": {
+   "ar": "شامة تكبر، جرح يصغر، نمو طفل",
+   "en": "A mole growing, a wound healing, a child growing",
+   "fr": "Un grain de beauté qui grandit, une plaie qui guérit, un enfant qui grandit"
+  },
+  "Safety": {
+   "ar": "سلامة",
+   "en": "Safety",
+   "fr": "Sécurité"
+  },
+  "Marking the operation site on a body diagram": {
+   "ar": "تحديد موضع العملية على رسم الجسم",
+   "en": "Marking the operation site on a body diagram",
+   "fr": "Marquer le site opératoire sur un schéma du corps"
+  },
+  "Patient communication": {
+   "ar": "شرح للمريض",
+   "en": "Patient communication",
+   "fr": "Communication avec le patient"
+  },
+  "The sketch made while consenting": {
+   "ar": "الرسم وقت الموافقة",
+   "en": "The sketch made while consenting",
+   "fr": "Le croquis fait lors du consentement"
+  },
+  "Thinking aid": {
+   "ar": "تفكير الطبيب",
+   "en": "Thinking aid",
+   "fr": "Aide à la réflexion"
+  },
+  "The margin doodle — free ink, kept": {
+   "ar": "خربشة الهامش — رسم حر محفوظ",
+   "en": "The margin doodle — free ink, kept",
+   "fr": "Le gribouillis de marge — encre libre, conservée"
+  },
+  "Anatomical map": {
+   "ar": "خريطة تشريحية",
+   "en": "Anatomical map",
+   "fr": "Carte anatomique"
+  },
+  "Coded marks on a picture of the body or an organ": {
+   "ar": "علامات بكود على رسم الجسم أو العضو",
+   "en": "Coded marks on a picture of the body or an organ",
+   "fr": "Marques codées sur une image du corps ou d'un organe"
+  },
+  "Body map + ink": {
+   "ar": "خريطة الجسم + رسم حر",
+   "en": "Body map + ink",
+   "fr": "Carte du corps + encre"
+  },
+  "Fundus, CMS colours": {
+   "ar": "قاع العين بألوان CMS",
+   "en": "Fundus, CMS colours",
+   "fr": "Fond d'œil, couleurs CMS"
+  },
+  "Burn chart": {
+   "ar": "خريطة الحروق",
+   "en": "Burn chart",
+   "fr": "Carte des brûlures"
+  },
+  "DAS28 joints": {
+   "ar": "مفاصل DAS28",
+   "en": "DAS28 joints",
+   "fr": "Articulations DAS28"
+  },
+  "Coordinate plot": {
+   "ar": "رسم بمحاور",
+   "en": "Coordinate plot",
+   "fr": "Graphique à axes"
+  },
+  "Points on clinical axes": {
+   "ar": "نقاط على محاور طبية",
+   "en": "Points on clinical axes",
+   "fr": "Des points sur des axes cliniques"
+  },
+  "ASHA audiogram": {
+   "ar": "مخطط السمع ASHA",
+   "en": "ASHA audiogram",
+   "fr": "Audiogramme ASHA"
+  },
+  "Growth chart": {
+   "ar": "منحنى النمو",
+   "en": "Growth chart",
+   "fr": "Courbe de croissance"
+  },
+  "Relational graph": {
+   "ar": "شجرة علاقات",
+   "en": "Relational graph",
+   "fr": "Graphe relationnel"
+  },
+  "People and relations": {
+   "ar": "أشخاص وعلاقات",
+   "en": "People and relations",
+   "fr": "Personnes et relations"
+  },
+  "NSGC pedigree": {
+   "ar": "شجرة العائلة NSGC",
+   "en": "NSGC pedigree",
+   "fr": "Arbre généalogique NSGC"
+  },
+  "Free sheet": {
+   "ar": "ورقة حرة",
+   "en": "Free sheet",
+   "fr": "Feuille libre"
+  },
+  "Consent sketch, operative sketch": {
+   "ar": "رسم الموافقة، رسم العملية",
+   "en": "Consent sketch, operative sketch",
+   "fr": "Croquis de consentement, croquis opératoire"
+  },
+  "The ink layer": {
+   "ar": "طبقة القلم",
+   "en": "The ink layer",
+   "fr": "La couche d'encre"
+  },
+  "Base template": {
+   "ar": "الرسم الأساسي",
+   "en": "Base template",
+   "fr": "Modèle de base"
+  },
+  "A versioned SVG; each region has a SNOMED code and a side; age and sex variants": {
+   "ar": "رسم SVG بإصدار؛ كل منطقة لها كود SNOMED وجهة؛ نسخة حسب العمر والجنس",
+   "en": "A versioned SVG; each region has a SNOMED code and a side; age and sex variants",
+   "fr": "Un SVG versionné ; chaque région a un code SNOMED et un côté ; variantes selon l'âge et le sexe"
+  },
+  "Coded marks": {
+   "ar": "علامات بكود",
+   "en": "Coded marks",
+   "fr": "Marques codées"
+  },
+  "Each mark = a finding with place, side and size, stored as an observation to search and trend; a lesion keeps one number across visits": {
+   "ar": "كل علامة = نتيجة طبية بمكان وجهة ومقاس، وتُحفظ قياساً يُبحث ويُرسم منحنى؛ للآفة رقم ثابت عبر الزيارات",
+   "en": "Each mark = a finding with place, side and size, stored as an observation to search and trend; a lesion keeps one number across visits",
+   "fr": "Chaque marque = un constat avec lieu, côté et taille, enregistré comme observation ; une lésion garde un numéro d'une visite à l'autre"
+  },
+  "Free ink": {
+   "ar": "رسم حر بالقلم",
+   "en": "Free ink",
+   "fr": "Encre libre"
+  },
+  "Vector strokes with pressure and time (InkML-like), never flattened to a picture": {
+   "ar": "خطوط متجهة بالضغط والوقت (مثل InkML)، لا تتحول لصورة أبداً",
+   "en": "Vector strokes with pressure and time (InkML-like), never flattened to a picture",
+   "fr": "Traits vectoriels avec pression et temps (type InkML), jamais aplatis en image"
+  },
+  "Photos": {
+   "ar": "صور",
+   "en": "Photos",
+   "fr": "Photos"
+  },
+  "Into the File Manager with the patient's consent and its scope, and a calibrated measure": {
+   "ar": "على مدير الملفات بموافقة المريض ونطاقها، وأداة قياس معايرة",
+   "en": "Into the File Manager with the patient's consent and its scope, and a calibrated measure",
+   "fr": "Dans le gestionnaire de fichiers avec le consentement du patient et sa portée, et une mesure étalonnée"
+  },
+  "Calculators": {
+   "ar": "حاسبات",
+   "en": "Calculators",
+   "fr": "Calculateurs"
+  },
+  "%TBSA, DAS28, pure-tone average, spinal level, PASI": {
+   "ar": "نسبة الحرق، DAS28، متوسط السمع، مستوى إصابة النخاع، PASI",
+   "en": "%TBSA, DAS28, pure-tone average, spinal level, PASI",
+   "fr": "%SCT, DAS28, moyenne tonale, niveau médullaire, PASI"
+  },
+  "Compare & versions": {
+   "ar": "مقارنة وإصدارات",
+   "en": "Compare & versions",
+   "fr": "Comparaison et versions"
+  },
+  "What is carried from the last visit is marked \"carried — unverified\" until the doctor confirms it": {
+   "ar": "ما يُنقل من الزيارة السابقة يُعلَّم «منقول — لم يُراجع» حتى يؤكده الطبيب",
+   "en": "What is carried from the last visit is marked \"carried — unverified\" until the doctor confirms it",
+   "fr": "Ce qui est reporté de la dernière visite est marqué « reporté — non vérifié » jusqu'à confirmation par le médecin"
+  },
+  "Print": {
+   "ar": "طباعة",
+   "en": "Print",
+   "fr": "Impression"
+  },
+  "The whole drawing in the report through Report Studio": {
+   "ar": "الرسم كامل في التقرير عبر Report Studio",
+   "en": "The whole drawing in the report through Report Studio",
+   "fr": "Le dessin entier dans le rapport via Report Studio"
+  },
+  "Patient mode": {
+   "ar": "وضع المريض",
+   "en": "Patient mode",
+   "fr": "Mode patient"
+  },
+  "The patient draws their pain on the tablet — kept apart as \"patient-reported\"": {
+   "ar": "المريض يرسم ألمه على الجهاز اللوحي — يُحفظ «من المريض» منفصلاً",
+   "en": "The patient draws their pain on the tablet — kept apart as \"patient-reported\"",
+   "fr": "Le patient dessine sa douleur sur la tablette — conservé à part comme « rapporté par le patient »"
+  },
+  "Front view": {
+   "ar": "أمامي",
+   "en": "Front view",
+   "fr": "Vue de face"
+  },
+  "Back view": {
+   "ar": "خلفي",
+   "en": "Back view",
+   "fr": "Vue de dos"
+  },
+  "front side": {
+   "ar": "أمامي",
+   "en": "front",
+   "fr": "face"
+  },
+  "back side": {
+   "ar": "خلفي",
+   "en": "back",
+   "fr": "dos"
+  }
+ }
+}

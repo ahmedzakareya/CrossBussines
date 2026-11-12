@@ -1,0 +1,90 @@
+{
+ "unit": "H104 — dosing by the kidney (sc-im: metformin with eGFR)",
+ "strings": {
+  "An eGFR threshold is between 5 and 120": {
+   "ar": "حد eGFR بين ٥ و١٢٠",
+   "en": "An eGFR threshold is between 5 and 120",
+   "fr": "Un seuil de DFGe est compris entre 5 et 120"
+  },
+  "By the kidney (optional)": {
+   "ar": "حسب الكلى (اختياري)",
+   "en": "By the kidney (optional)",
+   "fr": "Selon le rein (facultatif)"
+  },
+  "Kidney": {
+   "ar": "الكلى",
+   "en": "Kidney",
+   "fr": "Rein"
+  },
+  "Read against the patient's last stored eGFR; a rule by the kidney alone needs no dose limit.": {
+   "ar": "تُقرأ على آخر eGFR محفوظ للمريض؛ قاعدة الكلى وحدها لا تحتاج حداً للجرعة.",
+   "en": "Read against the patient's last stored eGFR; a rule by the kidney alone needs no dose limit.",
+   "fr": "Lu face au dernier DFGe enregistré du patient ; une règle rénale seule n'exige pas de limite de dose."
+  },
+  "Review dose": {
+   "ar": "مراجعة الجرعة",
+   "en": "Review dose",
+   "fr": "Revoir la dose"
+  },
+  "Review the dose below eGFR": {
+   "ar": "مراجعة الجرعة تحت eGFR",
+   "en": "Review the dose below eGFR",
+   "fr": "Revoir la dose sous un DFGe de"
+  },
+  "Review the dose below {0}": {
+   "ar": "تُراجع الجرعة تحت {0}",
+   "en": "Review the dose below {0}",
+   "fr": "Revoir la dose sous {0}"
+  },
+  "Stop below eGFR": {
+   "ar": "إيقاف الدواء تحت eGFR",
+   "en": "Stop below eGFR",
+   "fr": "Arrêter sous un DFGe de"
+  },
+  "Stopping comes below the review threshold": {
+   "ar": "حد الإيقاف يكون أقل من حد المراجعة",
+   "en": "Stopping comes below the review threshold",
+   "fr": "L'arrêt se situe sous le seuil de révision"
+  },
+  "review the dose": {
+   "ar": "مراجعة الجرعة",
+   "en": "review the dose",
+   "fr": "revoir la dose"
+  },
+  "stop the medicine": {
+   "ar": "إيقاف الدواء",
+   "en": "stop the medicine",
+   "fr": "arrêter le médicament"
+  },
+  "stop below {0}": {
+   "ar": "ويوقف تحت {0}",
+   "en": "stop below {0}",
+   "fr": "arrêter sous {0}"
+  },
+  "the trend is falling": {
+   "ar": "الاتجاه هابط",
+   "en": "the trend is falling",
+   "fr": "la tendance baisse"
+  },
+  "{0} with eGFR {1}": {
+   "ar": "{0} مع ⁨eGFR {1}⁩",
+   "en": "{0} with eGFR {1}",
+   "fr": "{0} avec un DFGe de {1}"
+  },
+  "No eGFR in the last year, so the kidney dose of {0} was not checked": {
+   "ar": "لا يوجد eGFR خلال السنة الأخيرة، لذلك لم تُفحص جرعة {0} حسب الكلى",
+   "en": "No eGFR in the last year, so the kidney dose of {0} was not checked",
+   "fr": "Aucun DFGe dans l'année : la dose rénale de {0} n'a pas été vérifiée"
+  },
+  "{0} with eGFR {1}: review the dose below {2}": {
+   "ar": "{0} مع ⁨eGFR {1}⁩: تُراجع الجرعة تحت {2}",
+   "en": "{0} with eGFR {1}: review the dose below {2}",
+   "fr": "{0} avec un DFGe de {1} : revoir la dose sous {2}"
+  },
+  "{0} with eGFR {1}: stop it below {2}": {
+   "ar": "{0} مع ⁨eGFR {1}⁩: يوقف تحت {2}",
+   "en": "{0} with eGFR {1}: stop it below {2}",
+   "fr": "{0} avec un DFGe de {1} : l'arrêter sous {2}"
+  }
+ }
+}

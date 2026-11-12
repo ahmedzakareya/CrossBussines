@@ -630,6 +630,7 @@ namespace CrossBuy.Models.Context
 			Hospital.HospitalUnidentifiedModel.Configure(builder);      // H92
 			Hospital.HospitalClinicalContentModel.Configure(builder);   // H93
 			Hospital.HospitalImmunotherapyModel.Configure(builder);     // H97
+			Hospital.HospitalCanvasModel.Configure(builder);            // H99
 			// H57 (HospitalPatientMerge) is configured inside HospitalPatientsModel
 
 			CrossBuy.BL.Platform.CompanyQueryFilters.Apply(builder, this);

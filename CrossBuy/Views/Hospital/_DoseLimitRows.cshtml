@@ -6,12 +6,12 @@
 @foreach (var r in Model)
 {
     <tr class="@(r.IsActive ? "" : "opacity-50")">
-        <td><bdi class="fw-bold text-gray-900">@r.Drug</bdi>@if (r.PerKgMg is decimal pk) {<div class="text-muted fs-8 hp-num" dir="ltr">@HospitalDrugSafetyRules.Num(pk) mg/kg · q@(r.EveryHours)h@(r.StrengthMgPerMl is decimal sm ? " · " + HospitalDrugSafetyRules.Num(sm) + " mg/mL" : "")</div>}</td>
+        <td><bdi class="fw-bold text-gray-900">@r.Drug</bdi>@if (r.PerKgMg is decimal pk) {<div class="text-muted fs-8 hp-num" dir="ltr">@HospitalDrugSafetyRules.Num(pk) mg/kg · q@(r.EveryHours)h@(r.StrengthMgPerMl is decimal sm ? " · " + HospitalDrugSafetyRules.Num(sm) + " mg/mL" : "")</div>}@if (r.RenalReviewBelow is decimal rv) {<div class="text-muted fs-8">@T["review the dose"]: <bdi class="hp-num" dir="ltr">eGFR &lt; @HospitalDrugSafetyRules.Num(rv)</bdi></div>}@if (r.RenalStopBelow is decimal sb) {<div class="text-danger fs-8">@T["stop the medicine"]: <bdi class="hp-num" dir="ltr">eGFR &lt; @HospitalDrugSafetyRules.Num(sb)</bdi></div>}</td>
         <td>@(r.Route != null ? T["route:" + r.Route] : T["Any route"])</td>
         <td class="hp-num text-nowrap" dir="ltr">@(r.MaxSingle is decimal s ? HospitalDrugSafetyRules.Num(s) + " " + r.Unit : "—")</td>
         <td class="hp-num text-nowrap" dir="ltr">@(r.MaxDaily is decimal d ? HospitalDrugSafetyRules.Num(d) + " " + r.Unit : "—")</td>
         <td class="fs-8 text-gray-700" dir="auto">@r.Note</td>
         <td>@if (r.IsActive) {<span class="badge badge-light-success">@T["In use"]</span>} else {<span class="badge badge-light">@T["Not in use"]</span>}</td>
-        <td class="text-end">@if (canKeep) { <button type="button" class="btn btn-sm btn-light-primary text-nowrap" data-ds-edit="@r.ID" data-row="@System.Text.Json.JsonSerializer.Serialize(new { drug = r.Drug, route = r.Route ?? "", unit = r.Unit, maxSingle = r.MaxSingle, maxDaily = r.MaxDaily, perKgMg = r.PerKgMg, everyHours = r.EveryHours, strengthMgPerMl = r.StrengthMgPerMl, note = r.Note, isActive = r.IsActive })">@T["Edit"]</button> }</td>
+        <td class="text-end">@if (canKeep) { <button type="button" class="btn btn-sm btn-light-primary text-nowrap" data-ds-edit="@r.ID" data-row="@System.Text.Json.JsonSerializer.Serialize(new { drug = r.Drug, route = r.Route ?? "", unit = r.Unit, maxSingle = r.MaxSingle, maxDaily = r.MaxDaily, perKgMg = r.PerKgMg, everyHours = r.EveryHours, strengthMgPerMl = r.StrengthMgPerMl, renalReviewBelow = r.RenalReviewBelow, renalStopBelow = r.RenalStopBelow, note = r.Note, isActive = r.IsActive })">@T["Edit"]</button> }</td>
     </tr>
 }

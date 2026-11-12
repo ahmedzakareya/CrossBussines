@@ -1,0 +1,623 @@
+@using System.Globalization
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model HospitalCanvasPage
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H99 — one drawing of a visit (the approved prototype screens cv-body and cv-fundus).
+    Body map: coded marks on the front and back figures, free ink on top, marks carried from the last visit shown grey
+    until the doctor confirms them, a photo per mark, compare with the last visit. Fundus: the CMS colour code is
+    enforced — the finding sets the colour — and every mark is written with its SNOMED code, eye, zone and clock hour.
+    The drawing is saved as the visit's draft and signed with the visit.
+*@
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    bool isAr = CultureInfo.CurrentUICulture.Name.StartsWith("ar");
+    var e = Model.Visit.Encounter; var p = Model.Patient; bool canEdit = Model.CanEdit; bool ready = ViewBag.Ready ?? true;
+    var name = DisplayName.Of(p.Name, p.NameEn);
+    bool body = Model.Kind == HospitalCanvasKind.Body, burn = Model.Kind == HospitalCanvasKind.Burn, audio = Model.Kind == HospitalCanvasKind.Audio, joints = Model.Kind == HospitalCanvasKind.Joints, pedigree = Model.Kind == HospitalCanvasKind.Pedigree;
+    string title = body ? T["Body map"].Value : burn ? T["Burn chart"].Value : audio ? T["Audiogram"].Value : joints ? T["Rheumatoid joints — DAS28"].Value : pedigree ? T["Pedigree"].Value : T["Fundus drawing"].Value;
+    var treeNow = pedigree ? HospitalPedigreeRules.Read(Model.Sheet?.StateJson, p.Sex).Result : null;
+    var dasNow = joints ? HospitalDas28Rules.Read(Model.Sheet?.StateJson).Result : null;
+    var audioNow = audio ? HospitalAudioRules.Read(Model.Sheet?.StateJson).Result : null;
+    // H100: the burn chart reads its depths and weight back; the shares follow the patient's age (Lund–Browder under 15)
+    int? ageYears = HospitalPatientService.AgeOn(p.BirthDate, e.StartedAt);
+    var burnNow = burn ? HospitalBurnRules.Read(Model.Sheet?.StateJson, ageYears).Result : null;
+    decimal? burnKg = burnNow?.Kg ?? e.WeightKg;
+    string[] depthCol = { "#F6E7DD", "#FCA5A5", "#EF4444", "#7F1D1D" };
+    string[] depthKey = { "No burn", "Superficial partial", "Deep partial", "Full thickness" };
+    ViewData["Title"] = title + " — " + name;
+    var findings = HospitalCanvasRules.FindingsOf(Model.Kind);
+    string D(decimal? d) => d?.ToString("0.##", CultureInfo.InvariantCulture) ?? "";
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+<style>
+    .cv-wrap { position: relative; background: #fff; border: 1px solid #E4E6EF; border-radius: .75rem; touch-action: none; user-select: none; }
+    .cv-wrap svg { display: block; width: 100%; height: auto; direction: ltr; }
+    .cv-tools { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+    .cv-tool { border: 1px solid #E4E6EF; background: #fff; border-radius: .6rem; padding: 6px 12px; font-size: .85rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+    .cv-tool.on { border-color: #3A5795; background: #EEF2FA; color: #1E2F5A; }
+    .cv-sw { width: 14px; height: 14px; border-radius: 50%; display: inline-block; border: 1px solid rgba(0,0,0,.15); }
+    .cv-mark { display: flex; align-items: center; gap: 10px; padding: 8px 6px; border-bottom: 1px dashed #E4E6EF; font-size: .85rem; border-radius: .5rem; cursor: pointer; }
+    .cv-mark.sel { background: #EEF2FA; }
+    .cv-mark .n { width: 24px; height: 24px; border-radius: 50%; background: #3A5795; color: #fff; font-weight: 700; display: flex; align-items: center; justify-content: center; font-size: .75rem; flex: 0 0 24px; }
+    .cv-mark.carried .n { background: #9CA3AF; }
+    .cv-skin { fill: #F6E7DD; stroke: #C9A68F; stroke-width: 1.5; }
+</style>
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@title</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item text-muted"><a href="@Url.Action("CanvasHome")" class="text-muted text-hover-primary">@T["Clinical canvas"]</a></li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted"><a href="@Url.Action("SpecialtyVisit", new { id = e.ID })" class="text-muted text-hover-primary">@T["The visit"]</a></li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@(body ? T["Body map"] : burn ? T["Burns"] : audio ? T["Audiogram"] : joints ? T["DAS28"] : pedigree ? T["Pedigree"] : T["Fundus"])</li>
+            </ul>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            @if (body)
+            {
+                if (canEdit) {<button type="button" class="btn btn-sm btn-light" data-photo-btn><i class="ki-outline ki-picture fs-4"></i>@T["Attach a photo to a mark"]</button>}
+                <button type="button" class="btn btn-sm btn-light" data-compare @(Model.Last.Count == 0 ? "disabled" : "")><i class="ki-outline ki-switch fs-4"></i>@T["Compare with last visit"]</button>
+            }
+            @if (canEdit)
+            {
+                <span class="text-muted fs-8 align-self-center" id="saveState"></span>
+                <button type="button" class="btn btn-sm btn-primary" data-save><i class="ki-outline ki-check fs-4"></i>@(body ? T["Save this visit's version"] : T["Save the drawing to the visit"])</button>
+            }
+            else if (Model.Sheet?.Status == HospitalCanvasStatus.Signed)
+            {
+                <span class="badge badge-light-success fs-7 px-4 py-3"><i class="ki-outline ki-check-circle fs-5 text-success me-1"></i>@T["Signed"]</span>
+            }
+        </div>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (!ready)
+        {
+            <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice"><div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@T["The clinical canvas is not installed yet (hospital_h99_canvas.sql)."]</h4></div></div>
+        }
+        else if (body)
+        {
+            <div class="row g-5">
+                <div class="col-xl-8">
+                    <div class="card mb-5"><div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
+                        <span class="card-label fw-bold text-gray-900 fs-4">@T["Body map — {0}", name]</span>
+                        <span class="text-muted mt-1 fw-semibold fs-7">@T["Choose \"mark\" and tap the body; or \"pen\" and draw freely. Grey marks are carried from the last visit, not yet verified."]</span></div></div>
+                        <div class="card-body pt-3">
+                            @if (canEdit)
+                            {
+                                <div class="cv-tools" id="bm_tools">
+                                    <button type="button" class="cv-tool on" data-k="mark"><i class="ki-outline ki-geolocation fs-5"></i>@T["Coded mark"]</button>
+                                    <button type="button" class="cv-tool" data-k="pen"><i class="ki-outline ki-pencil fs-5"></i>@T["Free pen"]</button>
+                                    <button type="button" class="cv-tool" data-k="undo"><i class="ki-outline ki-arrow-circle-left fs-5"></i>@T["Undo"]</button>
+                                </div>
+                            }
+                            <div class="cv-wrap" id="cv_wrap"><svg id="cv" viewBox="0 0 440 460">
+                                @foreach (var (ox, lbl) in new[] { (0, T["Front view"].Value), (230, T["Back view"].Value) })
+                                {
+                                    <g transform="translate(@ox,0)">
+                                        <ellipse cx="100" cy="34" rx="24" ry="28" class="cv-skin" /><rect x="90" y="58" width="20" height="14" class="cv-skin" />
+                                        <path d="M62 74 Q100 64 138 74 L136 206 Q100 214 64 206 Z" class="cv-skin" />
+                                        <path d="M62 76 L40 90 L24 210 L38 214 L54 110 L62 104 Z" class="cv-skin" /><path d="M138 76 L160 90 L176 210 L162 214 L146 110 L138 104 Z" class="cv-skin" />
+                                        <path d="M64 206 L98 214 L96 428 L72 430 L66 300 Z" class="cv-skin" /><path d="M136 206 L102 214 L104 428 L128 430 L134 300 Z" class="cv-skin" />
+                                        <text x="100" y="452" text-anchor="middle" font-size="13" fill="#6B7280">@lbl</text>
+                                    </g>
+                                }
+                                <g id="cv_prev"></g><g id="cv_ink"></g><g id="cv_marks"></g>
+                            </svg></div>
+                        </div></div>
+                </div>
+                <div class="col-xl-4">
+                    @if (canEdit)
+                    {
+                        <div class="card mb-5"><div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Next mark"]</span></div></div>
+                            <div class="card-body pt-3"><div class="row g-3">
+                                <div class="col-7"><label class="form-label">@T["Mark type"]</label>
+                                    <select class="form-select form-select-solid" id="bm_type" data-control="select2" data-hide-search="true">
+                                        @foreach (var f in findings) {<option value="@f.Key">@(isAr ? f.Ar : f.En)</option>}
+                                    </select></div>
+                                <div class="col-5"><label class="form-label">@T["Size mm"]</label><input type="number" min="0" max="500" step="0.5" class="form-control form-control-solid" dir="ltr" id="bm_size" value="4" /></div>
+                            </div></div></div>
+                    }
+                    <div class="card mb-5"><div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Marks (stored as observations)"]</span>
+                        @if (Model.LastAt != null) {<span class="text-muted mt-1 fw-semibold fs-7">@T["Last drawing {0}", Model.LastAt.Value.ToString("yyyy-MM-dd")]</span>}</div></div>
+                        <div class="card-body pt-2"><div id="cv_list"></div></div></div>
+                </div>
+            </div>
+            <input type="file" accept="image/jpeg,image/png,image/webp" class="d-none" id="cv_photo" />
+        }
+        else if (burn)
+        {
+            <div class="notice d-flex rounded border border-danger border-dashed bg-light-danger p-6 mb-5">
+                <i class="ki-outline ki-information-5 fs-2tx text-danger me-4"></i>
+                <div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@T["The calculator beats the paper"]</h4><div class="fs-6 text-gray-700">@T["In studies manual %TBSA was wrong more often than apps, especially for non-specialists — and the % sets the fluids."]</div></div>
+            </div>
+            <div class="row g-5">
+                <div class="col-xl-7">
+                    <div class="card mb-5"><div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
+                        <span class="card-label fw-bold text-gray-900 fs-4">@(ageYears is < 15 ? T["Burn chart — Lund–Browder (age {0})", ageYears] : T["Burn chart — rule of nines (adult)"])</span>
+                        <span class="text-muted mt-1 fw-semibold fs-7">@T["Tap a region to cycle the depth: none → superficial → deep → full. A child uses the Lund–Browder table for their age."]</span></div></div>
+                        <div class="card-body pt-3">
+                            <div class="d-flex flex-wrap gap-4 mb-3 fs-8">
+                                @for (int i = 0; i < 4; i++) {<span><span class="cv-sw me-1" style="background:@depthCol[i]"></span>@T[depthKey[i]]</span>}
+                            </div>
+                            <div class="cv-wrap"><svg id="cv" viewBox="0 0 440 460">
+                                @foreach (var (ox, lbl) in new[] { (0, T["Front view"].Value), (230, T["Back view"].Value) })
+                                {
+                                    <g transform="translate(@ox,0)">
+                                        <ellipse cx="100" cy="34" rx="24" ry="28" class="cv-skin" /><rect x="90" y="58" width="20" height="14" class="cv-skin" />
+                                        <path d="M62 74 Q100 64 138 74 L136 206 Q100 214 64 206 Z" class="cv-skin" />
+                                        <path d="M62 76 L40 90 L24 210 L38 214 L54 110 L62 104 Z" class="cv-skin" /><path d="M138 76 L160 90 L176 210 L162 214 L146 110 L138 104 Z" class="cv-skin" />
+                                        <path d="M64 206 L98 214 L96 428 L72 430 L66 300 Z" class="cv-skin" /><path d="M136 206 L102 214 L104 428 L128 430 L134 300 Z" class="cv-skin" />
+                                        <text x="100" y="452" text-anchor="middle" font-size="13" fill="#6B7280">@lbl</text>
+                                    </g>
+                                }
+                                <g id="bn_regs"></g>
+                            </svg></div>
+                        </div></div>
+                </div>
+                <div class="col-xl-5">
+                    <div class="card mb-5"><div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["The calculation"]</span></div></div>
+                        <div class="card-body pt-2">
+                            <div class="text-muted fs-8">@T["TBSA (partial + full)"]</div>
+                            <div class="fw-bolder lh-1 hp-num" style="font-size:2.4rem" id="bn_tbsa">0%</div>
+                            <div class="row g-3 mt-3"><div class="col-6"><label class="form-label">@T["Weight kg"]</label>
+                                <input type="number" min="1" max="400" step="0.1" class="form-control form-control-solid" dir="ltr" id="bn_kg" value="@(burnKg?.ToString("0.#", CultureInfo.InvariantCulture))" @(canEdit ? "" : "disabled") /></div></div>
+                            <div class="rounded bg-light-primary p-4 mt-4"><div class="fw-bold">@T["Parkland fluids (24 h)"]</div><div class="fs-2 fw-bold hp-num" dir="ltr" id="bn_fl">—</div><div class="fs-8 text-gray-700" id="bn_half"></div></div>
+                            <div class="mt-4" id="bn_list"></div>
+                            <div class="text-muted fs-9 mt-3">@T["The server recomputes these figures when the drawing is saved."]</div>
+                        </div></div>
+                </div>
+            </div>
+        }
+        else if (audio)
+        {
+            <div class="row g-5">
+                <div class="col-xl-8">
+                    <div class="card mb-5"><div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
+                        <span class="card-label fw-bold text-gray-900 fs-4">@T["Audiogram"]</span>
+                        <span class="text-muted mt-1 fw-semibold fs-7">@T["ASHA symbols: O right / X left air, < right / > left bone; red right, blue left. Tap to place; snaps to the frequency and nearest 5 dB."] @T["Tap a point again to remove it."]</span></div></div>
+                        <div class="card-body pt-3">
+                            @if (canEdit)
+                            {
+                                <div class="cv-tools" id="au_tools">
+                                    @foreach (var (k, sym, col, lbl) in new[] { ("AR", "O", "#DC2626", "Air — right"), ("AL", "X", "#2563EB", "Air — left"), ("BR", "<", "#DC2626", "Bone — right"), ("BL", ">", "#2563EB", "Bone — left") })
+                                    {
+                                        <button type="button" class="cv-tool @(k == "AR" ? "on" : "")" data-k="@k"><b style="color:@col" dir="ltr">@sym</b> @T[lbl]</button>
+                                    }
+                                </div>
+                            }
+                            <div class="cv-wrap"><svg id="au" viewBox="0 0 520 420"></svg></div>
+                        </div></div>
+                </div>
+                <div class="col-xl-4">
+                    <div class="card mb-5"><div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["The calculation"]</span></div></div>
+                        <div class="card-body pt-2"><div id="au_out"></div>
+                            <div class="text-muted fs-9 mt-3">@T["The server recomputes these figures when the drawing is saved."]</div></div></div>
+                </div>
+            </div>
+        }
+        else if (joints)
+        {
+            <div class="row g-5">
+                <div class="col-xl-7">
+                    <div class="card mb-5"><div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
+                        <span class="card-label fw-bold text-gray-900 fs-4">@T["The 28-joint map"]</span>
+                        <span class="text-muted mt-1 fw-semibold fs-7">@T["Tap a joint: tender → swollen → both → clear"]</span></div></div>
+                        <div class="card-body pt-3">
+                            <div class="d-flex flex-wrap gap-4 mb-3 fs-8">
+                                <span><span class="cv-sw me-1" style="background:#F87171"></span>@T["Tender"]</span><span><span class="cv-sw me-1" style="background:#60A5FA"></span>@T["Swollen"]</span><span><span class="cv-sw me-1" style="background:#7C3AED"></span>@T["Both"]</span>
+                            </div>
+                            <div class="cv-wrap"><svg id="jt" viewBox="0 0 400 420"></svg></div>
+                        </div></div>
+                </div>
+                <div class="col-xl-5">
+                    <div class="card mb-5"><div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">DAS28-ESR</span></div></div>
+                        <div class="card-body pt-2">
+                            <div class="row g-3">
+                                <div class="col-6"><label class="form-label">ESR mm/h</label><input type="number" min="1" max="150" class="form-control form-control-solid" dir="ltr" id="jt_esr" value="@dasNow?.Esr?.ToString("0", CultureInfo.InvariantCulture)" @(canEdit ? "" : "disabled") /></div>
+                                <div class="col-6"><label class="form-label">@T["Patient global 0–100"]</label><input type="number" min="0" max="100" class="form-control form-control-solid" dir="ltr" id="jt_pga" value="@dasNow?.Global" @(canEdit ? "" : "disabled") /></div>
+                            </div>
+                            <div id="jt_out" class="mt-4"></div>
+                            <div class="text-muted fs-9 mt-3">@T["The server recomputes these figures when the drawing is saved."]</div>
+                        </div></div>
+                </div>
+            </div>
+        }
+        else if (pedigree)
+        {
+            <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice">
+                <span class="symbol symbol-45px me-5 flex-shrink-0"><span class="symbol-label"><i class="ki-outline ki-information-5 fs-2x text-white"></i></span></span>
+                <div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@T["Standard NSGC symbols (2022 revision)"]</h4><div class="fs-6 text-gray-700">@T["Square male, circle female, filled = affected, slash = deceased, arrow = proband, double line = consanguinity — very important in the Gulf and Egypt for inherited disease."]</div></div>
+            </div>
+            <div class="row g-5">
+                <div class="col-xl-8">
+                    <div class="card mb-5"><div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Pedigree"]</span></div>
+                        @if (canEdit) {<div class="card-toolbar"><button type="button" class="btn btn-sm btn-light-primary" data-add-rel><i class="ki-outline ki-plus fs-4"></i>@T["Add a relative"]</button></div>}</div>
+                        <div class="card-body pt-3">
+                            @if (canEdit) {<div class="text-muted fs-8 mb-3">@T["Tap a person to edit them."]</div>}
+                            <div class="cv-wrap p-3" style="overflow-x:auto"><svg id="pd" viewBox="0 0 640 360"></svg></div>
+                        </div></div>
+                </div>
+                <div class="col-xl-4">
+                    <div class="card mb-5"><div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["What the tree yields"]</span></div></div>
+                        <div class="card-body pt-2"><div id="pd_yield"></div></div></div>
+                </div>
+            </div>
+            <div class="modal fade" id="pd_modal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-550px"><div class="modal-content">
+                <div class="modal-header"><h2 class="fw-bold m-0" id="pd_title">@T["Add a relative"]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+                <div class="modal-body py-6 px-lg-10"><div class="row g-4">
+                    <div class="col-6" data-new><label class="form-label required">@T["Relative of"]</label><select class="form-select form-select-solid" id="pd_of"></select></div>
+                    <div class="col-6" data-new><label class="form-label required">@T["Relation"]</label><select class="form-select form-select-solid" id="pd_rel">
+                        @foreach (var r in new[] { "father", "mother", "brother", "sister", "son", "daughter", "husband", "wife" }) {<option value="@r">@T["rel:" + r]</option>}
+                    </select></div>
+                    <div class="col-12" data-new><label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" id="pd_cons" /><span class="form-check-label">@T["The partners are relatives (consanguinity)"]</span></label></div>
+                    <div class="col-12 d-flex flex-wrap gap-5">
+                        <label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" id="pd_aff" /><span class="form-check-label">@T["Affected"]</span></label>
+                        <label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" id="pd_dead" /><span class="form-check-label">@T["Deceased"]</span></label>
+                        <label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" id="pd_car" /><span class="form-check-label">@T["Carrier"]</span></label>
+                    </div>
+                    <div class="col-6"><label class="form-label">@T["Condition"]</label><input type="text" maxlength="60" class="form-control form-control-solid" id="pd_cond" /></div>
+                    <div class="col-6"><label class="form-label">@T["Note (age, cause of death)"]</label><input type="text" maxlength="60" class="form-control form-control-solid" id="pd_note" /></div>
+                </div></div>
+                <div class="modal-footer"><button type="button" class="btn btn-light-danger me-auto d-none" id="pd_del">@T["Remove from the tree"]</button><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" id="pd_ok">@T["Save"]</button></div>
+            </div></div></div>
+        }
+        else
+        {
+            <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice">
+                <span class="symbol symbol-45px me-5 flex-shrink-0"><span class="symbol-label"><i class="ki-outline ki-information-5 fs-2x text-white"></i></span></span>
+                <div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@T["The finding sets the colour, not the doctor"]</h4><div class="fs-6 text-gray-700">@T["The CMS retinal colour code is enforced: haemorrhage red, detachment blue, exudate yellow, new vessels purple. Each mark writes a SNOMED-coded finding into the visit."]</div></div>
+            </div>
+            <div class="card mb-5"><div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
+                <span class="card-label fw-bold text-gray-900 fs-4">@T["Fundus — {0}", name]</span>
+                <span class="text-muted mt-1 fw-semibold fs-7">@T["Pick the finding, then tap its place; drawn inverted as the indirect ophthalmoscope shows it"]</span></div></div>
+                <div class="card-body pt-3">
+                    @if (canEdit)
+                    {
+                        <div class="cv-tools" id="fd_tools">
+                            @foreach (var f in findings) {<button type="button" class="cv-tool @(f == findings[0] ? "on" : "")" data-k="@f.Key"><span class="cv-sw" style="background:@f.Color"></span>@(isAr ? f.Ar : f.En)</button>}
+                            <button type="button" class="cv-tool" data-k="undo"><i class="ki-outline ki-arrow-circle-left fs-5"></i>@T["Undo"]</button>
+                        </div>
+                    }
+                    <div class="row g-4">
+                        @foreach (var (id, side, lbl) in new[] { ("od", "R", "OD — " + T["Right"].Value), ("os", "L", "OS — " + T["Left"].Value) })
+                        {
+                            int disc = id == "od" ? 120 : 180, mac = id == "od" ? 168 : 132, far = id == "od" ? 240 : 60, mid = id == "od" ? 170 : 130;
+                            <div class="col-md-6"><div class="text-center fw-bold mb-2">@lbl</div><div class="cv-wrap"><svg id="@id" data-side="@side" viewBox="0 0 300 300">
+                                <circle cx="150" cy="150" r="140" fill="#FFF7ED" stroke="#9CA3AF" /><circle cx="150" cy="150" r="105" fill="none" stroke="#D1D5DB" stroke-dasharray="4 4" /><circle cx="150" cy="150" r="60" fill="none" stroke="#E5E7EB" stroke-dasharray="2 4" />
+                                <circle cx="@disc" cy="150" r="13" fill="#FDE68A" stroke="#D97706" /><circle cx="@mac" cy="152" r="5" fill="#9A3412" opacity=".5" />
+                                <path d="M@(disc) 140 Q@(mid) 90 @(far) 70" stroke="#DC2626" fill="none" stroke-width="2" /><path d="M@(disc) 160 Q@(mid) 210 @(far) 232" stroke="#2563EB" fill="none" stroke-width="2" />
+                                <g class="fm"></g></svg></div></div>
+                        }
+                    </div>
+                </div></div>
+            <div class="card mb-5"><div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Findings written automatically"]</span></div></div>
+                <div class="card-body pt-2"><div id="cv_list"></div></div></div>
+        }
+    </div></div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            var tokEl = document.querySelector('input[name="__RequestVerificationToken"]'); if (!tokEl) return; var tok = tokEl.value;
+            var KIND = @Json.Serialize(Model.Kind), canEdit = @Json.Serialize(canEdit), isAr = @Json.Serialize(isAr), NS = 'http://www.w3.org/2000/svg';
+            var saveUrl = @Json.Serialize(Url.Content("~/Hospital/Consult/" + e.ID + "/Canvas/" + Model.Kind + "/Save"));
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), save: @Json.Serialize(T["Save this drawing to the visit? It is signed with the visit."].Value), saved: @Json.Serialize(T["Saved"].Value),
+                      onBody: @Json.Serialize(T["Tap on the body itself"].Value), unsaved: @Json.Serialize(T["Choose a saved mark from the list first"].Value), photo: @Json.Serialize(T["Attach this photo to mark {0}?"].Value),
+                      confirm: @Json.Serialize(T["Confirm"].Value), verified: @Json.Serialize(T["Verified"].Value), carried: @Json.Serialize(T["Carried — unverified"].Value), was: @Json.Serialize(T["Last visit: {0} mm"].Value),
+                      grew: @Json.Serialize(T["Grew since the last visit"].Value), none: @Json.Serialize(T["No marks yet"].Value), remove: @Json.Serialize(T["Remove"].Value), eye: @Json.Serialize(T["Eye"].Value),
+                      finding: @Json.Serialize(T["Finding"].Value), where: @Json.Serialize(T["Where"].Value), code: @Json.Serialize(T["Code"].Value), front: @Json.Serialize(T["front side"].Value), back: @Json.Serialize(T["back side"].Value),
+                      pp: @Json.Serialize(T["posterior pole"].Value), mp: @Json.Serialize(T["mid-periphery"].Value), fp: @Json.Serialize(T["far periphery"].Value), at: @Json.Serialize(T["at {0} o'clock"].Value) };
+            var F = @Json.Serialize(findings.Select(f => new { k = f.Key, t = isAr ? f.Ar : f.En, c = f.Color, code = f.Code }));
+            var REG = @Json.Serialize(HospitalCanvasRules.BodyRegions.Select(r => new { k = r.Key, t = isAr ? r.Ar : r.En, r = new[] { r.X, r.Y, r.W, r.H } }));
+            var marks = @Json.Serialize(Model.Marks.Select(m => new { id = m.ID == 0 ? (int?)null : m.ID, f = m.Finding, v = m.Side, x = m.X, y = m.Y, s = m.SizeMm, no = m.LesionNo, carried = m.Carried, from = m.CarriedFromMarkId, photo = m.PhotoDocumentId != null }));
+            var last = @Json.Serialize(Model.Last.Select(m => new { id = m.ID, f = m.Finding, v = m.Side, x = m.X, y = m.Y, s = m.SizeMm, no = m.LesionNo }));
+            var ink = @Json.Serialize(System.Text.Json.JsonDocument.Parse(string.IsNullOrEmpty(Model.Sheet?.InkJson) ? "[]" : Model.Sheet!.InkJson).RootElement);
+            var nextNo = @Model.NextLesion, hist = [], sel = null, compare = false;
+            function fOf(k) { return F.filter(function (x) { return x.k === k; })[0] || { t: k, c: '#3A5795' }; }
+            function fmt(s, a) { return s.replace('{0}', a); }
+            function esc(s) { var d = document.createElement('div'); d.textContent = s == null ? '' : String(s); return d.innerHTML; }
+            function pt(svg, ev) { var r = svg.getBoundingClientRect(), vb = svg.viewBox.baseVal; return [(ev.clientX - r.left) * vb.width / r.width, (ev.clientY - r.top) * vb.height / r.height]; }
+            function post(u, b) { return fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': tok }, body: JSON.stringify(b || {}) })
+                .then(function (r) { return r.json().catch(function () { return { ok: false }; }); }); }
+            function regionAt(x, y) { var side = x < 220 ? 'F' : 'B', lx = side === 'F' ? x : x - 230;
+                var hit = REG.filter(function (r) { return lx >= r.r[0] && lx <= r.r[0] + r.r[2] && y >= r.r[1] && y <= r.r[1] + r.r[3]; })[0];
+                // from behind the patient's right is on the viewer's right (the server places it the same way)
+                var MIR = { armR: 'armL', armL: 'armR', legR: 'legL', legL: 'legR' };
+                if (hit && side === 'B' && MIR[hit.k]) hit = REG.filter(function (r) { return r.k === MIR[hit.k]; })[0];
+                return hit ? hit.t + ' — ' + (side === 'F' ? W.front : W.back) : null; }
+            function fundusAt(x, y) { var dx = x - 150, dy = y - 150, r = Math.sqrt(dx * dx + dy * dy); if (r > 140) return null;
+                var cl = Math.round(((Math.atan2(dx, -dy) * 180 / Math.PI + 360) % 360) / 30) || 12; return (r < 60 ? W.pp : r < 105 ? W.mp : W.fp) + ' · ' + fmt(W.at, cl); }
+            function numberOf(m) { return m.no || m.tmp; }
+
+            // ---- the ink layer: Pointer Events, pressure, kept as vector strokes
+            function strokeEl(s) { var el = document.createElementNS(NS, 'polyline'); el.setAttribute('fill', 'none'); el.setAttribute('stroke', s.c); el.setAttribute('stroke-linecap', 'round'); el.setAttribute('stroke-linejoin', 'round');
+                el.setAttribute('stroke-width', s.w || 2.5); el.setAttribute('points', s.p.map(function (q) { return q[0].toFixed(1) + ',' + q[1].toFixed(1); }).join(' ')); return el; }
+            function inkLayer(svg, layer, isOn) { var cur = null;
+                svg.addEventListener('pointerdown', function (ev) { if (!isOn()) return; ev.preventDefault(); svg.setPointerCapture(ev.pointerId); var q = pt(svg, ev);
+                    cur = { c: '#7239EA', w: ev.pointerType === 'pen' ? +(1 + 3 * (ev.pressure || 0.5)).toFixed(1) : 2.5, p: [[+q[0].toFixed(1), +q[1].toFixed(1), +(ev.pressure || 0.5).toFixed(2)]] }; cur.el = strokeEl(cur); layer.appendChild(cur.el); });
+                svg.addEventListener('pointermove', function (ev) { if (!cur) return; (ev.getCoalescedEvents ? ev.getCoalescedEvents() : [ev]).forEach(function (ce) { var q = pt(svg, ce); cur.p.push([+q[0].toFixed(1), +q[1].toFixed(1), +(ce.pressure || 0.5).toFixed(2)]); });
+                    cur.el.setAttribute('points', cur.p.map(function (q) { return q[0] + ',' + q[1]; }).join(' ')); });
+                function end() { if (!cur) return; if (cur.p.length > 1) { var s = { c: cur.c, w: cur.w, p: cur.p }; ink.push(s); hist.push({ ink: s, el: cur.el }); } else cur.el.remove(); cur = null; }
+                svg.addEventListener('pointerup', end); svg.addEventListener('pointercancel', function () { if (cur) { cur.el.remove(); cur = null; } }); }
+
+            function payload() { return { marks: marks.map(function (m) { return { finding: m.f, view: m.v, x: m.x, y: m.y, sizeMm: m.s, carriedFromMarkId: m.from, carried: !!m.carried }; }), ink: JSON.stringify(ink.map(function (s) { return { c: s.c, w: s.w, p: s.p }; })), state: KIND === 'Burn' ? JSON.stringify(burnState()) : KIND === 'Audio' ? JSON.stringify(audioState()) : KIND === 'Joints' ? JSON.stringify(jointState()) : KIND === 'Pedigree' ? JSON.stringify(treeState()) : '{}' }; }
+            var treeState = function () { return {}; };
+            var jointState = function () { return {}; };
+            var audioState = function () { return {}; };
+            var burnState = function () { return {}; };
+            var saveBtn = document.querySelector('[data-save]');
+            if (saveBtn) saveBtn.addEventListener('click', function () { cbConfirm(W.save).then(function (ok) { if (!ok) return;
+                post(saveUrl, payload()).then(function (r) { if (!r.ok) { toastr.error(r.error || W.failed); return; } toastr.success(W.saved); location.reload(); }); }); });
+
+            if (KIND === 'Body') {
+                var s = document.getElementById('cv'), g = document.getElementById('cv_marks'), gi = document.getElementById('cv_ink'), gp = document.getElementById('cv_prev'), mode = 'mark';
+                ink.forEach(function (st) { gi.appendChild(strokeEl(st)); });
+                function draw() {
+                    var tmp = nextNo; marks.forEach(function (m) { if (!m.no) m.tmp = tmp++; });
+                    g.innerHTML = marks.map(function (m, i) { return '<g data-i="' + i + '"><circle cx="' + m.x + '" cy="' + m.y + '" r="9" fill="' + (m.carried ? '#9CA3AF' : '#3A5795') + '" stroke="' + (sel === i ? '#111827' : '#fff') + '" stroke-width="2"/><text x="' + m.x + '" y="' + (+m.y + 4) + '" text-anchor="middle" font-size="10" font-weight="700" fill="#fff">' + numberOf(m) + '</text></g>'; }).join('');
+                    gp.innerHTML = compare ? last.map(function (m) { return '<circle cx="' + m.x + '" cy="' + m.y + '" r="13" fill="none" stroke="#7239EA" stroke-width="1.5" stroke-dasharray="3 3"/>'; }).join('') : '';
+                    document.getElementById('cv_list').innerHTML = marks.map(function (m, i) {
+                        var prev = m.from ? last.filter(function (x) { return x.id === m.from; })[0] : null, grew = prev && prev.s != null && m.s != null && +m.s > +prev.s;
+                        return '<div class="cv-mark ' + (m.carried ? 'carried ' : '') + (sel === i ? 'sel' : '') + '" data-pick="' + i + '"><span class="n">' + numberOf(m) + '</span><div class="flex-grow-1"><div class="fw-bold text-gray-900">' + esc(fOf(m.f).t) + (m.s != null ? ' · <bdi class="hp-num">' + m.s + ' mm</bdi>' : '') + '</div>' +
+                            '<div class="text-muted fs-8">' + esc(regionAt(+m.x, +m.y) || '—') + '</div>' +
+                            ((compare || grew) && prev && prev.s != null ? '<div class="fs-8 ' + (grew ? 'text-danger fw-bold' : 'text-muted') + '">' + fmt(W.was, prev.s) + (grew ? ' · ' + W.grew : '') + '</div>' : '') + '</div>' +
+                            (m.photo && m.id ? '<a href="@Url.Content("~/Hospital/Canvas/Marks/")' + m.id + '/Photo" target="_blank" class="btn btn-icon btn-sm btn-light"><i class="ki-outline ki-picture fs-4"></i></a>' : '') +
+                            (m.carried ? (canEdit ? '<button type="button" class="btn btn-sm btn-light-primary py-1 px-2 fs-9" data-ok="' + i + '">' + W.confirm + '</button>' : '<span class="badge badge-light fs-9">' + W.carried + '</span>') : '<span class="badge badge-light-success fs-9">' + W.verified + '</span>') +
+                            (canEdit ? '<button type="button" class="btn btn-icon btn-sm btn-light" data-rm="' + i + '" title="' + W.remove + '"><i class="ki-outline ki-trash fs-5"></i></button>' : '') + '</div>';
+                    }).join('') || '<div class="text-muted fs-7 py-3">' + W.none + '</div>';
+                }
+                document.getElementById('cv_list').addEventListener('click', function (ev) {
+                    var ok = ev.target.closest('[data-ok]'), rm = ev.target.closest('[data-rm]'), pick = ev.target.closest('[data-pick]');
+                    if (ok) { marks[+ok.getAttribute('data-ok')].carried = false; draw(); return; }
+                    if (rm) { marks.splice(+rm.getAttribute('data-rm'), 1); sel = null; draw(); return; }
+                    if (pick) { sel = +pick.getAttribute('data-pick'); draw(); }
+                });
+                if (canEdit) {
+                    s.addEventListener('click', function (ev) { if (mode !== 'mark') return; var q = pt(s, ev);
+                        if (!regionAt(q[0], q[1])) { toastr.info(W.onBody); return; }
+                        var sz = parseFloat(document.getElementById('bm_size').value);
+                        marks.push({ id: null, f: document.getElementById('bm_type').value, v: q[0] < 220 ? 'F' : 'B', x: +q[0].toFixed(2), y: +q[1].toFixed(2), s: isNaN(sz) ? null : sz, no: 0, carried: false, from: null }); hist.push({ mark: true }); draw(); });
+                    inkLayer(s, gi, function () { return mode === 'pen'; });
+                    document.getElementById('bm_tools').addEventListener('click', function (ev) { var b = ev.target.closest('.cv-tool'); if (!b) return; var k = b.getAttribute('data-k');
+                        if (k === 'undo') { var h = hist.pop(); if (h && h.mark) marks.pop(); else if (h && h.ink) { ink.splice(ink.indexOf(h.ink), 1); h.el.remove(); } draw(); return; }
+                        mode = k; this.querySelectorAll('.cv-tool').forEach(function (x) { x.classList.toggle('on', x === b); }); document.getElementById('cv_wrap').style.cursor = k === 'pen' ? 'crosshair' : 'pointer'; });
+                    var file = document.getElementById('cv_photo');
+                    document.querySelector('[data-photo-btn]').addEventListener('click', function () { var m = sel == null ? null : marks[sel]; if (!m || !m.id) { toastr.info(W.unsaved); return; } file.value = ''; file.click(); });
+                    file.addEventListener('change', function () { var m = marks[sel]; if (!file.files.length || !m) return;
+                        cbConfirm(fmt(W.photo, numberOf(m))).then(function (ok) { if (!ok) return; var fd = new FormData(); fd.append('photo', file.files[0]);
+                            fetch('@Url.Content("~/Hospital/Canvas/Marks/")' + m.id + '/Photo', { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': tok }, body: fd })
+                                .then(function (r) { return r.json().catch(function () { return { ok: false }; }); }).then(function (r) { if (!r.ok) { toastr.error(r.error || W.failed); return; } m.photo = true; toastr.success(W.saved); draw(); }); }); });
+                }
+                var cmp = document.querySelector('[data-compare]'); if (cmp) cmp.addEventListener('click', function () { compare = !compare; cmp.classList.toggle('btn-light-primary', compare); draw(); });
+                draw();
+            } else if (KIND === 'Burn') {
+                // H100: tap a region to cycle its depth; %TBSA and Parkland follow (the server recomputes them on save)
+                var SH = @Json.Serialize(burn ? HospitalBurnRules.Share(ageYears) : new Dictionary<string, decimal>());
+                var DCOL = @Json.Serialize(depthCol), DT = @Json.Serialize(depthKey.Select(k => T[k].Value));
+                var BT = { half: @Json.Serialize(T["Half ({0} mL) in the first 8 h from the burn, the rest over 16 h"].Value), refer: @Json.Serialize(T["≥ 20%: refer to a burn centre"].Value),
+                           noKg: @Json.Serialize(T["Write the weight to compute the fluids"].Value), region: @Json.Serialize(T["Region"].Value), depth: @Json.Serialize(T["Depth"].Value) };
+                var st = @Json.Serialize(burnNow?.Depths ?? new Dictionary<string, int>()), g = document.getElementById('bn_regs');
+                var RN = {}; REG.forEach(function (r) { RN[r.k] = r; });
+                var MIR = { armR: 'armL', armL: 'armR', legR: 'legL', legL: 'legR' };
+                burnState = function () { var kg = parseFloat(document.getElementById('bn_kg').value); var d = {}; Object.keys(st).forEach(function (k) { if (st[k]) d[k] = st[k]; }); return isNaN(kg) ? { d: d } : { d: d, kg: kg }; };
+                function draw() {
+                    g.innerHTML = Object.keys(SH).map(function (k) { var key = k.slice(0, -1), side = k.slice(-1), r = RN[side === 'B' && MIR[key] ? MIR[key] : key], ox = side === 'F' ? 0 : 230, v = st[k] || 0;
+                        return '<rect data-r="' + k + '" x="' + (r.r[0] + ox) + '" y="' + r.r[1] + '" width="' + r.r[2] + '" height="' + r.r[3] + '" rx="8" fill="' + DCOL[v] + '" fill-opacity="' + (v ? .85 : .05) + '" stroke="#3A5795" stroke-opacity=".25" style="cursor:' + (canEdit ? 'pointer' : 'default') + '"/>'; }).join('');
+                    var tb = 0, rows = [];
+                    Object.keys(SH).forEach(function (k) { var v = st[k] || 0; if (!v) return; tb += +SH[k]; var key = k.slice(0, -1);
+                        rows.push('<tr><td>' + esc(RN[key].t) + ' — ' + (k.slice(-1) === 'F' ? W.front : W.back) + '</td><td>' + esc(DT[v]) + '</td><td class="hp-num">' + (+SH[k]) + '%</td></tr>'); });
+                    tb = Math.round(tb * 100) / 100;
+                    var kg = parseFloat(document.getElementById('bn_kg').value), fl = isNaN(kg) ? null : Math.round(4 * kg * tb);
+                    var big = document.getElementById('bn_tbsa'); big.textContent = tb + '%'; big.className = 'fw-bolder lh-1 hp-num ' + (tb >= 20 ? 'text-danger' : 'text-gray-900');
+                    document.getElementById('bn_fl').textContent = fl == null ? '—' : fl.toLocaleString('en') + ' mL';
+                    document.getElementById('bn_half').textContent = !tb ? '' : fl == null ? BT.noKg : fmt(BT.half, Math.round(fl / 2).toLocaleString('en')) + (tb >= 20 ? ' · ' + BT.refer : '');
+                    document.getElementById('bn_list').innerHTML = rows.length ? '<table class="table align-middle table-row-dashed fs-7 gy-2 mb-0"><thead><tr class="text-muted fw-bold fs-8"><th>' + BT.region + '</th><th>' + BT.depth + '</th><th>%</th></tr></thead><tbody>' + rows.join('') + '</tbody></table>' : '';
+                }
+                if (canEdit) g.addEventListener('click', function (ev) { var r = ev.target.closest('[data-r]'); if (!r) return; var k = r.getAttribute('data-r'); st[k] = ((st[k] || 0) + 1) % 4; draw(); });
+                document.getElementById('bn_kg').addEventListener('input', draw);
+                draw();
+            } else if (KIND === 'Audio') {
+                // H101: tap to place the chosen symbol; it snaps to the frequency and the nearest 5 dB (the server re-reads it)
+                var FREQ = [250, 500, 1000, 2000, 4000, 8000], s = document.getElementById('au'), PL = 60, PR = 20, PT = 30, PB = 20, WW = 520, HH = 420, sym = 'AR';
+                var SY = { AR: { t: 'O', c: '#DC2626' }, AL: { t: 'X', c: '#2563EB' }, BR: { t: '<', c: '#DC2626' }, BL: { t: '>', c: '#2563EB' } };
+                var pts = @Json.Serialize(audioNow?.Points ?? new Dictionary<string, int>());
+                var AT = { right: @Json.Serialize(T["right ear"].Value), left: @Json.Serialize(T["left ear"].Value), avg: @Json.Serialize(T["Average of 500–4000 Hz; grade per WHO 2021"].Value),
+                           gapR: @Json.Serialize(T["Right air-bone gap ≥ 15 — conductive loss"].Value), gapL: @Json.Serialize(T["Left air-bone gap ≥ 15 — conductive loss"].Value),
+                           asym: @Json.Serialize(T["Ear difference ≥ 15 — rule out a retrocochlear cause"].Value),
+                           g: @Json.Serialize(new[] { "Normal", "Mild", "Moderate", "Moderately severe", "Severe", "Profound", "Complete" }.ToDictionary(k => k, k => T["hl:" + k].Value)) };
+                audioState = function () { return { p: pts }; };
+                function X(i) { return PL + (WW - PL - PR) * i / (FREQ.length - 1); } function Y(db) { return PT + (HH - PT - PB) * (db + 10) / 130; }
+                function pta(k) { var v = [500, 1000, 2000, 4000].map(function (f) { return pts[k + f]; }); if (v.some(function (x) { return x == null; })) return null; return Math.round(v.reduce(function (a, b) { return a + b; }, 0) / 4 * 10) / 10; }
+                function grade(v) { return v == null ? '—' : AT.g[v < 20 ? 'Normal' : v < 35 ? 'Mild' : v < 50 ? 'Moderate' : v < 65 ? 'Moderately severe' : v < 80 ? 'Severe' : v < 95 ? 'Profound' : 'Complete']; }
+                function gap(a, b) { return [500, 1000, 2000, 4000].some(function (f) { return pts[a + f] != null && pts[b + f] != null && pts[a + f] - pts[b + f] >= 15; }); }
+                function draw() {
+                    var g = '<rect x="' + PL + '" y="' + Y(-10) + '" width="' + (WW - PL - PR) + '" height="' + (Y(25) - Y(-10)) + '" fill="#DCFCE7" opacity=".5"/>';
+                    for (var db = -10; db <= 120; db += 10) g += '<line x1="' + PL + '" x2="' + (WW - PR) + '" y1="' + Y(db) + '" y2="' + Y(db) + '" stroke="#E5E7EB"/><text x="' + (PL - 8) + '" y="' + (Y(db) + 4) + '" font-size="11" text-anchor="end" fill="#6B7280">' + db + '</text>';
+                    FREQ.forEach(function (f, i) { g += '<line x1="' + X(i) + '" x2="' + X(i) + '" y1="' + PT + '" y2="' + (HH - PB) + '" stroke="#E5E7EB"/><text x="' + X(i) + '" y="' + (PT - 10) + '" font-size="11" text-anchor="middle" fill="#6B7280">' + (f >= 1000 ? f / 1000 + 'k' : f) + '</text>'; });
+                    Object.keys(SY).forEach(function (k) { var sy = SY[k];
+                        var line = FREQ.map(function (f, i) { var v = pts[k + f]; return v == null ? null : X(i) + ',' + Y(v); }).filter(Boolean);
+                        if (k === 'AR' || k === 'AL') g += '<polyline points="' + line.join(' ') + '" fill="none" stroke="' + sy.c + '" stroke-width="1.8"' + (k === 'AL' ? ' stroke-dasharray="6 4"' : '') + '/>';
+                        FREQ.forEach(function (f, i) { var v = pts[k + f]; if (v == null) return; var dx = k === 'BR' ? -12 : k === 'BL' ? 12 : 0;
+                            g += '<text x="' + (X(i) + dx) + '" y="' + (Y(v) + 6) + '" font-size="18" font-weight="700" text-anchor="middle" fill="' + sy.c + '">' + (sy.t === '<' ? '&lt;' : sy.t === '>' ? '&gt;' : sy.t) + '</text>'; }); });
+                    s.innerHTML = g;
+                    var r = pta('AR'), l = pta('AL');
+                    document.getElementById('au_out').innerHTML = '<div class="d-flex gap-6 mb-3"><div><div class="text-muted fs-8">PTA ' + AT.right + '</div><div class="fw-bolder lh-1 hp-num" style="font-size:2.4rem;color:#DC2626">' + (r == null ? '—' : Math.round(r)) + '</div><div class="fs-8">' + grade(r) + '</div></div>' +
+                        '<div><div class="text-muted fs-8">PTA ' + AT.left + '</div><div class="fw-bolder lh-1 hp-num" style="font-size:2.4rem;color:#2563EB">' + (l == null ? '—' : Math.round(l)) + '</div><div class="fs-8">' + grade(l) + '</div></div></div>' +
+                        '<div class="fs-8 text-muted mb-2">' + AT.avg + '</div>' +
+                        (gap('AR', 'BR') ? '<div class="mb-2"><span class="badge badge-light-danger">' + AT.gapR + '</span></div>' : '') + (gap('AL', 'BL') ? '<div class="mb-2"><span class="badge badge-light-danger">' + AT.gapL + '</span></div>' : '') +
+                        (r != null && l != null && Math.abs(r - l) >= 15 ? '<div class="mb-2"><span class="badge badge-light-danger">' + AT.asym + '</span></div>' : '');
+                }
+                if (canEdit) {
+                    s.addEventListener('click', function (ev) { var q = pt(s, ev), i = Math.round((q[0] - PL) / ((WW - PL - PR) / (FREQ.length - 1))); if (i < 0 || i >= FREQ.length) return;
+                        var db = Math.max(-10, Math.min(120, Math.round(((q[1] - PT) * 130 / (HH - PT - PB) - 10) / 5) * 5));
+                        if (pts[sym + FREQ[i]] === db) delete pts[sym + FREQ[i]]; else pts[sym + FREQ[i]] = db;   // the same point again removes it
+                        draw(); });
+                    document.getElementById('au_tools').addEventListener('click', function (ev) { var b = ev.target.closest('.cv-tool'); if (!b) return; sym = b.getAttribute('data-k'); this.querySelectorAll('.cv-tool').forEach(function (x) { x.classList.toggle('on', x === b); }); });
+                }
+                draw();
+            } else if (KIND === 'Joints') {
+                // H102: tap a joint to cycle tender → swollen → both → clear; DAS28-ESR follows (the server recomputes it on save)
+                var J = [], s = document.getElementById('jt'), COL = ['#fff', '#F87171', '#60A5FA', '#7C3AED'], st = @Json.Serialize(dasNow?.Joints ?? new Dictionary<string, int>());
+                var JT = { tender: @Json.Serialize(T["Tender"].Value), swollen: @Json.Serialize(T["Swollen"].Value), noEsr: @Json.Serialize(T["Write the ESR and the patient's global assessment to score"].Value),
+                           b: @Json.Serialize(new[] { "High", "Moderate", "Low", "Remission" }.ToDictionary(k => k, k => T["das:" + k].Value)) };
+                function add(k, x, y) { J.push({ k: k, x: x, y: y }); }
+                add('ShR', 120, 95); add('ShL', 280, 95); add('ElR', 100, 165); add('ElL', 300, 165); add('WrR', 85, 230); add('WrL', 315, 230); add('KnR', 165, 340); add('KnL', 235, 340);
+                for (var i = 0; i < 5; i++) { add('MCP' + (i + 1) + 'R', 40 + i * 16, 262); add('MCP' + (i + 1) + 'L', 296 + i * 16, 262); add('PIP' + (i + 1) + 'R', 40 + i * 16, 290); add('PIP' + (i + 1) + 'L', 296 + i * 16, 290); }
+                jointState = function () { var e = parseFloat(document.getElementById('jt_esr').value), g = parseInt(document.getElementById('jt_pga').value, 10), j = {};
+                    Object.keys(st).forEach(function (k) { if (st[k]) j[k] = st[k]; }); var o = { j: j }; if (!isNaN(e)) o.esr = e; if (!isNaN(g)) o.pga = g; return o; };
+                function draw() {
+                    var g = '<path d="M200 30 m-22 0 a22 22 0 1 0 44 0 a22 22 0 1 0 -44 0 M200 52 L200 230 M120 95 L280 95 M120 95 L100 165 L85 230 M280 95 L300 165 L315 230 M200 230 L165 340 L160 400 M200 230 L235 340 L240 400" stroke="#C9A68F" stroke-width="5" fill="none" stroke-linecap="round"/>';
+                    g += '<rect x="30" y="250" width="90" height="56" rx="12" fill="none" stroke="#E5E7EB"/><rect x="286" y="250" width="90" height="56" rx="12" fill="none" stroke="#E5E7EB"/>';
+                    J.forEach(function (j) { var small = j.k.indexOf('MCP') === 0 || j.k.indexOf('PIP') === 0; g += '<circle data-j="' + j.k + '" cx="' + j.x + '" cy="' + j.y + '" r="' + (small ? 6.5 : 11) + '" fill="' + COL[st[j.k] || 0] + '" stroke="#3A5795" stroke-width="1.5" style="cursor:' + (canEdit ? 'pointer' : 'default') + '"/>'; });
+                    s.innerHTML = g;
+                    var tj = J.filter(function (j) { return st[j.k] === 1 || st[j.k] === 3; }).length, sj = J.filter(function (j) { return st[j.k] === 2 || st[j.k] === 3; }).length;
+                    var esr = parseFloat(document.getElementById('jt_esr').value), pga = parseInt(document.getElementById('jt_pga').value, 10), ok = esr >= 1 && pga >= 0;
+                    var das = ok ? 0.56 * Math.sqrt(tj) + 0.28 * Math.sqrt(sj) + 0.70 * Math.log(esr) + 0.014 * pga : null;
+                    var band = das == null ? null : das > 5.1 ? ['High', 'danger'] : das > 3.2 ? ['Moderate', 'primary'] : das >= 2.6 ? ['Low', 'info'] : ['Remission', 'success'];
+                    document.getElementById('jt_out').innerHTML = '<div class="d-flex gap-6"><div><div class="text-muted fs-8">' + JT.tender + '</div><div class="fs-2 fw-bold hp-num">' + tj + '/28</div></div><div><div class="text-muted fs-8">' + JT.swollen + '</div><div class="fs-2 fw-bold hp-num">' + sj + '/28</div></div>' +
+                        '<div><div class="text-muted fs-8">DAS28</div><div class="fw-bolder lh-1 hp-num" style="font-size:2.4rem">' + (das == null ? '—' : das.toFixed(2)) + '</div></div></div>' +
+                        (band ? '<div class="mt-3"><span class="badge badge-light-' + band[1] + '">' + JT.b[band[0]] + '</span></div>' : '<div class="mt-3 text-muted fs-8">' + JT.noEsr + '</div>') +
+                        '<div class="text-muted fs-8 mt-2" dir="ltr">0.56√TJC + 0.28√SJC + 0.70 ln(ESR) + 0.014 PGA</div>';
+                }
+                if (canEdit) s.addEventListener('click', function (ev) { var c = ev.target.closest('[data-j]'); if (!c) return; var k = c.getAttribute('data-j'); st[k] = ((st[k] || 0) + 1) % 4; draw(); });
+                ['jt_esr', 'jt_pga'].forEach(function (id) { document.getElementById(id).addEventListener('input', draw); });
+                draw();
+            } else if (KIND === 'Pedigree') {
+                // H103: people and links; laid out by generation, children under their parents (the server keeps only the links)
+                var tree = @Json.Serialize(treeNow == null ? null : (object)new { people = treeNow.People.Select(x => new { id = x.Id, sex = x.Sex, gen = x.Gen, father = x.Father, mother = x.Mother, proband = x.Proband, affected = x.Affected, deceased = x.Deceased, carrier = x.Carrier, cond = x.Cond, note = x.Note }), couples = treeNow.Couples.Select(c => new { a = c.A, b = c.B, cons = c.Cons }) });
+                var P = tree.people, C = tree.couples, svg = document.getElementById('pd'), editing = null;
+                var PT = { rel: @Json.Serialize(new[] { "father", "mother", "brother", "sister", "son", "daughter", "husband", "wife", "patient", "relative" }.ToDictionary(k => k, k => T["rel:" + k].Value)),
+                           cons: @Json.Serialize(T["Consanguinity in the family"].Value), gens: @Json.Serialize(T["{0} across {1} generations"].Value), screen: @Json.Serialize(T["Suggest: screen for {0} — {1}"].Value),
+                           none: @Json.Serialize(T["Nothing to read yet: add the relatives"].Value), add: @Json.Serialize(T["Add a relative"].Value), edit: @Json.Serialize(T["Edit the relative"].Value),
+                           hasFather: @Json.Serialize(T["This person already has a father in the tree"].Value), hasMother: @Json.Serialize(T["This person already has a mother in the tree"].Value),
+                           cond: @Json.Serialize(T["Write the condition of every affected relative"].Value), del: @Json.Serialize(T["Remove this relative from the tree?"].Value) };
+                treeState = function () { return { people: P, couples: C }; };
+                function byId(id) { return P.filter(function (x) { return x.id === id; })[0]; }
+                function pr() { return P.filter(function (x) { return x.proband; })[0]; }
+                function partners(x) { return C.filter(function (c) { return c.a === x.id || c.b === x.id; }).map(function (c) { return byId(c.a === x.id ? c.b : c.a); }).filter(Boolean); }
+                function role(x) { var q = pr(); if (x.proband) return PT.rel.patient; if (x.id === q.father) return PT.rel.father; if (x.id === q.mother) return PT.rel.mother;
+                    if (x.father === q.id || x.mother === q.id) return x.sex === 'F' ? PT.rel.daughter : PT.rel.son;
+                    if (x.gen === q.gen && ((x.father && x.father === q.father) || (x.mother && x.mother === q.mother))) return x.sex === 'F' ? PT.rel.sister : PT.rel.brother;
+                    if (partners(q).indexOf(x) >= 0) return x.sex === 'F' ? PT.rel.wife : PT.rel.husband; return PT.rel.relative; }
+                function label(x) { return x.note || role(x); }
+                function layout() {
+                    var gens = P.map(function (x) { return x.gen; }).filter(function (v, i, a) { return a.indexOf(v) === i; }).sort(function (a, b) { return a - b; }), pos = {}, rows = [];
+                    gens.forEach(function (g) {
+                        var row = P.filter(function (x) { return x.gen === g; });
+                        function key(x) { var ps = [x.father, x.mother].filter(Boolean).map(function (id) { return pos[id] && pos[id].x; }).filter(function (v) { return v != null; });
+                            if (ps.length) return ps.reduce(function (a, b) { return a + b; }, 0) / ps.length;
+                            var pk = partners(x).map(function (q) { return [q.father, q.mother].filter(Boolean).map(function (id) { return pos[id] && pos[id].x; }).filter(function (v) { return v != null; }); }).filter(function (a) { return a.length; })[0];
+                            return pk ? pk[0] + 0.5 : 1e6 + x.id; }
+                        row.sort(function (a, b) { return key(a) - key(b) || a.id - b.id; });
+                        var ord = []; row.forEach(function (x) { if (ord.indexOf(x) >= 0) return; ord.push(x); partners(x).forEach(function (q) { if (q.gen === g && ord.indexOf(q) < 0) ord.push(q); }); });
+                        rows.push(ord);
+                        ord.forEach(function (x, i) { pos[x.id] = { x: 70 + i * 100, y: 50 + (g - gens[0]) * 115 }; });
+                    });
+                    var width = Math.max(640, 140 + Math.max.apply(null, rows.map(function (r) { return r.length; })) * 100);
+                    rows.forEach(function (r) { var shift = (width - (r.length - 1) * 100) / 2 - 70; r.forEach(function (x) { pos[x.id].x += shift; }); });
+                    return { pos: pos, w: width, h: 100 + (gens.length - 1) * 115 + 40 };
+                }
+                function draw() {
+                    var L = layout(), pos = L.pos, g = '<defs><marker id="pd_ar" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#DC2626"/></marker></defs><g stroke="#1E2F5A" stroke-width="2" fill="none">';
+                    C.forEach(function (c) { var a = pos[c.a], b = pos[c.b]; if (!a || !b) return; var x1 = Math.min(a.x, b.x) + 16, x2 = Math.max(a.x, b.x) - 16;
+                        g += c.cons ? '<line x1="' + x1 + '" y1="' + (a.y - 3) + '" x2="' + x2 + '" y2="' + (a.y - 3) + '"/><line x1="' + x1 + '" y1="' + (a.y + 3) + '" x2="' + x2 + '" y2="' + (a.y + 3) + '"/>' : '<line x1="' + x1 + '" y1="' + a.y + '" x2="' + x2 + '" y2="' + a.y + '"/>'; });
+                    // sibships: children of the same parents hang from one line under the couple (or the one known parent)
+                    var fam = {}; P.forEach(function (x) { if (!x.father && !x.mother) return; var k = (x.father || 0) + '-' + (x.mother || 0); (fam[k] = fam[k] || []).push(x); });
+                    Object.keys(fam).forEach(function (k) { var kids = fam[k], par = k.split('-').map(Number).filter(Boolean).map(function (id) { return pos[id]; }).filter(Boolean); if (!par.length) return;
+                        var mx = par.reduce(function (s, q) { return s + q.x; }, 0) / par.length, py = par[0].y, ky = pos[kids[0].id].y, by = ky - 45;
+                        var xs = kids.map(function (x) { return pos[x.id].x; }).concat([mx]);
+                        g += '<line x1="' + mx + '" y1="' + (par.length > 1 ? py : py + 16) + '" x2="' + mx + '" y2="' + by + '"/><line x1="' + Math.min.apply(null, xs) + '" y1="' + by + '" x2="' + Math.max.apply(null, xs) + '" y2="' + by + '"/>';
+                        kids.forEach(function (x) { g += '<line x1="' + pos[x.id].x + '" y1="' + by + '" x2="' + pos[x.id].x + '" y2="' + (ky - 16) + '"/>'; }); });
+                    g += '</g>';
+                    P.forEach(function (x) { var q = pos[x.id], fill = x.affected ? '#1E2F5A' : '#fff';
+                        g += '<g data-p="' + x.id + '" style="cursor:' + (canEdit ? 'pointer' : 'default') + '">';
+                        if (x.sex === 'M') g += '<rect x="' + (q.x - 14) + '" y="' + (q.y - 14) + '" width="28" height="28" fill="' + fill + '" stroke="#1E2F5A" stroke-width="2"/>';
+                        else if (x.sex === 'F') g += '<circle cx="' + q.x + '" cy="' + q.y + '" r="15" fill="' + fill + '" stroke="#1E2F5A" stroke-width="2"/>';
+                        else g += '<path d="M' + q.x + ' ' + (q.y - 17) + ' L' + (q.x + 17) + ' ' + q.y + ' L' + q.x + ' ' + (q.y + 17) + ' L' + (q.x - 17) + ' ' + q.y + ' Z" fill="' + fill + '" stroke="#1E2F5A" stroke-width="2"/>';
+                        if (x.carrier && !x.affected) g += '<circle cx="' + q.x + '" cy="' + q.y + '" r="4" fill="#1E2F5A"/>';
+                        if (x.deceased) g += '<line x1="' + (q.x - 20) + '" y1="' + (q.y + 20) + '" x2="' + (q.x + 20) + '" y2="' + (q.y - 20) + '" stroke="#1E2F5A" stroke-width="2"/>';
+                        if (x.proband) g += '<path d="M' + (q.x - 40) + ' ' + (q.y + 26) + ' l18 -18" stroke="#DC2626" stroke-width="2.5" marker-end="url(#pd_ar)"/>';
+                        g += '<text x="' + q.x + '" y="' + (q.y + 32) + '" font-size="11" text-anchor="middle" fill="#374151">' + esc(label(x)) + '</text>';
+                        if (x.affected && x.cond) g += '<text x="' + q.x + '" y="' + (q.y + 45) + '" font-size="10" text-anchor="middle" fill="#6B7280">' + esc(x.cond) + '</text>';
+                        g += '</g>'; });
+                    svg.setAttribute('viewBox', '0 0 ' + L.w + ' ' + L.h); svg.innerHTML = g;
+                    yieldOf();
+                }
+                function yieldOf() {
+                    var out = [], conds = {};
+                    if (C.some(function (c) { return c.cons; })) out.push('<div class="py-2 border-bottom border-gray-200"><span class="badge badge-light-danger">' + PT.cons + '</span></div>');
+                    P.forEach(function (x) { if (!x.affected || !x.cond) return; var k = x.cond.trim().toLowerCase(); (conds[k] = conds[k] || { t: x.cond, g: [] }); if (conds[k].g.indexOf(x.gen) < 0) conds[k].g.push(x.gen); });
+                    var q = pr(), first = P.filter(function (x) { return x.id !== q.id && (x.id === q.father || x.id === q.mother || x.father === q.id || x.mother === q.id || (x.gen === q.gen && ((x.father && x.father === q.father) || (x.mother && x.mother === q.mother)))); });
+                    Object.keys(conds).sort(function (a, b) { return conds[b].g.length - conds[a].g.length; }).forEach(function (k) { var c = conds[k];
+                        out.push('<div class="py-2 border-bottom border-gray-200"><span class="badge badge-light-primary">' + esc(fmt(PT.gens, c.t).replace('{1}', c.g.length)) + '</span></div>');
+                        if (c.g.length < 2) return;
+                        var who = first.filter(function (x) { return !x.deceased && !(x.affected && x.cond && x.cond.trim().toLowerCase() === k); }).map(label);
+                        if (who.length) out.push('<div class="py-2 border-bottom border-gray-200"><span class="badge badge-light-info text-wrap text-start lh-base">' + esc(fmt(PT.screen, c.t).replace('{1}', who.join('، '))) + '</span></div>'); });
+                    document.getElementById('pd_yield').innerHTML = out.join('') || '<div class="text-muted fs-7 py-3">' + PT.none + '</div>';
+                }
+                if (canEdit) {
+                    var modal = new bootstrap.Modal(document.getElementById('pd_modal')), $ = function (id) { return document.getElementById(id); };
+                    function open(x) { editing = x || null; $('pd_title').textContent = x ? PT.edit : PT.add;
+                        document.querySelectorAll('#pd_modal [data-new]').forEach(function (e) { e.classList.toggle('d-none', !!x); });
+                        $('pd_del').classList.toggle('d-none', !x || x.proband);
+                        $('pd_of').innerHTML = P.map(function (q) { return '<option value="' + q.id + '"' + (q.proband ? ' selected' : '') + '>' + esc(label(q)) + '</option>'; }).join('');
+                        $('pd_aff').checked = !!(x && x.affected); $('pd_dead').checked = !!(x && x.deceased); $('pd_car').checked = !!(x && x.carrier); $('pd_cons').checked = false;
+                        $('pd_cond').value = (x && x.cond) || ''; $('pd_note').value = (x && x.note) || ''; modal.show(); }
+                    document.querySelector('[data-add-rel]').addEventListener('click', function () { open(null); });
+                    svg.addEventListener('click', function (ev) { var gp = ev.target.closest('[data-p]'); if (gp) open(byId(+gp.getAttribute('data-p'))); });
+                    $('pd_del').addEventListener('click', function () { var x = editing; if (!x) return; cbConfirm(PT.del).then(function (ok) { if (!ok) return;
+                        P = P.filter(function (q) { return q !== x; }); P.forEach(function (q) { if (q.father === x.id) q.father = null; if (q.mother === x.id) q.mother = null; });
+                        C = C.filter(function (c) { return c.a !== x.id && c.b !== x.id; }); modal.hide(); draw(); }); });
+                    $('pd_ok').addEventListener('click', function () {
+                        var aff = $('pd_aff').checked, cond = $('pd_cond').value.trim(); if (aff && !cond) { toastr.error(PT.cond); return; }
+                        var x = editing;
+                        if (!x) {
+                            var of = byId(+$('pd_of').value), rel = $('pd_rel').value, id = P.reduce(function (m, q) { return Math.max(m, q.id); }, 0) + 1;
+                            x = { id: id, sex: /^(father|brother|son|husband)$/.test(rel) ? 'M' : 'F', gen: of.gen, father: null, mother: null, proband: false };
+                            if (rel === 'father') { if (of.father) { toastr.error(PT.hasFather); return; } x.gen = of.gen - 1; of.father = id; if (of.mother) C.push({ a: id, b: of.mother, cons: $('pd_cons').checked }); }
+                            else if (rel === 'mother') { if (of.mother) { toastr.error(PT.hasMother); return; } x.gen = of.gen - 1; of.mother = id; if (of.father) C.push({ a: of.father, b: id, cons: $('pd_cons').checked }); }
+                            else if (rel === 'brother' || rel === 'sister') { x.father = of.father; x.mother = of.mother; }
+                            else if (rel === 'son' || rel === 'daughter') { x.gen = of.gen + 1; var sp = partners(of)[0]; var m = of.sex === 'F' ? of : sp, f = of.sex === 'F' ? sp : of;
+                                x.father = f && f.sex !== 'F' ? f.id : null; x.mother = m && m.sex !== 'M' ? m.id : null; }
+                            else { C.push({ a: of.id, b: id, cons: $('pd_cons').checked }); }
+                            P.push(x);
+                        }
+                        x.affected = aff; x.cond = aff ? cond : null; x.deceased = $('pd_dead').checked; x.carrier = $('pd_car').checked; x.note = $('pd_note').value.trim() || null;
+                        modal.hide(); draw(); });
+                }
+                draw();
+            } else {
+                var cur = F[0];
+                function shape(m) { var f = fOf(m.f), x = +m.x, y = +m.y;
+                    switch (m.f) {
+                        case 'ma': return '<circle cx="' + x + '" cy="' + y + '" r="3" fill="' + f.c + '"/>';
+                        case 'nv': return '<circle cx="' + x + '" cy="' + y + '" r="9" fill="none" stroke="' + f.c + '" stroke-width="3"/>';
+                        case 'detach': return '<ellipse cx="' + x + '" cy="' + y + '" rx="22" ry="14" fill="' + f.c + '" opacity=".55"/>';
+                        case 'vh': return '<ellipse cx="' + x + '" cy="' + y + '" rx="22" ry="14" fill="' + f.c + '" opacity=".55" stroke="#16A34A" stroke-width="3"/>';
+                        case 'break': return '<path d="M' + (x - 10) + ' ' + y + ' l10 -12 l10 12 z" fill="' + f.c + '" stroke="#2563EB" stroke-width="2.5"/>';
+                        default: return '<circle cx="' + x + '" cy="' + y + '" r="7" fill="' + f.c + '"/>';
+                    } }
+                function draw() {
+                    ['od', 'os'].forEach(function (id) { var svg = document.getElementById(id), side = svg.getAttribute('data-side'); svg.querySelector('.fm').innerHTML = marks.filter(function (m) { return m.v === side; }).map(shape).join(''); });
+                    document.getElementById('cv_list').innerHTML = marks.length ? '<div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-3 mb-0"><thead><tr class="text-start text-muted fw-bold fs-8 text-uppercase"><th>' + W.eye + '</th><th>' + W.finding + '</th><th>' + W.where + '</th><th>' + W.code + '</th></tr></thead><tbody>' +
+                        marks.map(function (m) { var f = fOf(m.f); return '<tr><td><span class="badge badge-light-' + (m.v === 'R' ? 'primary' : 'info') + '">' + (m.v === 'R' ? 'OD' : 'OS') + '</span></td><td><span class="cv-sw me-2" style="background:' + f.c + '"></span>' + esc(f.t) + '</td><td>' + esc(fundusAt(+m.x, +m.y)) + '</td><td><code dir="ltr">' + esc(f.code || '') + '</code></td></tr>'; }).join('') + '</tbody></table></div>'
+                        : '<div class="text-muted fs-7 py-3">' + W.none + '</div>';
+                }
+                if (canEdit) {
+                    document.getElementById('fd_tools').addEventListener('click', function (ev) { var b = ev.target.closest('.cv-tool'); if (!b) return; var k = b.getAttribute('data-k');
+                        if (k === 'undo') { marks.pop(); draw(); return; }
+                        cur = fOf(k); this.querySelectorAll('.cv-tool').forEach(function (x) { x.classList.toggle('on', x === b); }); });
+                    ['od', 'os'].forEach(function (id) { var svg = document.getElementById(id); svg.addEventListener('click', function (ev) { var q = pt(svg, ev); if (!fundusAt(q[0], q[1])) return;
+                        marks.push({ id: null, f: cur.k, v: svg.getAttribute('data-side'), x: +q[0].toFixed(2), y: +q[1].toFixed(2), s: null, no: 0, carried: false, from: null }); draw(); }); });
+                }
+                draw();
+            }
+        })();
+    </script>
+}

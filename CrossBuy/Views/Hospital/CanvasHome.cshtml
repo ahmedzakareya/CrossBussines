@@ -1,0 +1,130 @@
+@using System.Globalization
+@using CrossBuy.BL
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H99 — the clinical canvas overview (the approved prototype screen cv-home): the six jobs a paper drawing does, the
+    one engine with its four kinds, and the layers every canvas has. A drawing belongs to a visit: the picker chooses
+    the open visit the links open on.
+*@
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["The clinical canvas"].Value;
+    bool isAr = CultureInfo.CurrentUICulture.Name.StartsWith("ar");
+    var visits = (IReadOnlyList<(int EncounterId, DateTime StartedAt, string Patient, string PatientEn, string Mrn, string Doctor, string? DoctorEn)>)ViewBag.Visits;
+    var jobs = new[]
+    {
+        ("ki-shield-tick", "Legal & billing evidence", "A detailed coloured fundus drawing is the proof the exam was done"),
+        ("ki-calculator", "Calculator", "Burn chart → %TBSA; joints → DAS28"),
+        ("ki-chart-line", "Tracker over time", "A mole growing, a wound healing, a child growing"),
+        ("ki-shield-cross", "Safety", "Marking the operation site on a body diagram"),
+        ("ki-message-text", "Patient communication", "The sketch made while consenting"),
+        ("ki-pencil", "Thinking aid", "The margin doodle — free ink, kept"),
+    };
+    // a link: (label, the visit drawing's kind — or a fixed URL)
+    var kinds = new[]
+    {
+        ("ki-user-square", "Anatomical map", "Coded marks on a picture of the body or an organ", new[] { ("Body map + ink", "Body", (string?)null), ("Fundus, CMS colours", "Fundus", null), ("Burn chart", "Burn", null), ("DAS28 joints", "Joints", null) }),
+        ("ki-graph-3", "Coordinate plot", "Points on clinical axes", new[] { ("ASHA audiogram", "Audio", (string?)null), ("Growth chart", "", Url.Action("SpecialtyClinic", new { code = "PED" })) }),
+        ("ki-people", "Relational graph", "People and relations", new[] { ("NSGC pedigree", "Pedigree", (string?)null) }),
+        ("ki-notepad-edit", "Free sheet", "Consent sketch, operative sketch", new[] { ("The ink layer", "Body", (string?)null) }),
+    };
+    var built = new HashSet<string> { "Body", "Fundus", "Burn", "Audio", "Joints", "Pedigree" };
+    string? want = ViewBag.Kind as string;
+    var layers = new[]
+    {
+        ("Base template", "A versioned SVG; each region has a SNOMED code and a side; age and sex variants"),
+        ("Coded marks", "Each mark = a finding with place, side and size, stored as an observation to search and trend; a lesion keeps one number across visits"),
+        ("Free ink", "Vector strokes with pressure and time (InkML-like), never flattened to a picture"),
+        ("Photos", "Into the File Manager with the patient's consent and its scope, and a calibrated measure"),
+        ("Calculators", "%TBSA, DAS28, pure-tone average, spinal level, PASI"),
+        ("Compare & versions", "What is carried from the last visit is marked \"carried — unverified\" until the doctor confirms it"),
+        ("Print", "The whole drawing in the report through Report Studio"),
+        ("Patient mode", "The patient draws their pain on the tablet — kept apart as \"patient-reported\""),
+    };
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+<style>
+    .cv-job { border: 1px solid #E4E6EF; border-radius: .85rem; padding: 16px; height: 100%; background: #fff; }
+    .cv-kind { border: 1px solid #E4E6EF; border-radius: .85rem; padding: 18px; height: 100%; background: #fff; display: block; }
+    .cv-kind:hover { border-color: #3A5795; }
+</style>
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["The clinical canvas"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted">@T["Specialty clinics"]</li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@T["Clinical canvas"]</li></ul>
+        </div>
+        <div class="d-flex align-items-center gap-2 mw-450px w-100">
+            <label class="fw-semibold fs-7 text-gray-700 text-nowrap">@T["Draw on the visit"]</label>
+            <select class="form-select form-select-sm form-select-solid" id="cv_visit" data-control="select2" data-placeholder="@T["Choose an open visit"]">
+                <option></option>
+                @foreach (var v in visits)
+                {
+                    <option value="@v.EncounterId">@(isAr ? v.Patient : v.PatientEn) · @v.Mrn · @(isAr ? v.Doctor : (v.DoctorEn ?? v.Doctor)) · @v.StartedAt.ToString("yyyy-MM-dd")</option>
+                }
+            </select>
+        </div>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (want != null)
+        {
+            <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice">
+                <span class="symbol symbol-45px me-5 flex-shrink-0"><span class="symbol-label"><i class="ki-outline ki-pencil fs-2x text-white"></i></span></span>
+                <div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@T["A drawing belongs to a visit"]</h4><div class="fs-6 text-gray-700">@T["Choose the open visit above: the {0} opens on it.", want == "Body" ? T["Body map"].Value : want == "Burn" ? T["Burn chart"].Value : want == "Audio" ? T["Audiogram"].Value : want == "Joints" ? T["Rheumatoid joints — DAS28"].Value : want == "Pedigree" ? T["Pedigree"].Value : T["Fundus drawing"].Value]</div></div>
+            </div>
+        }
+        <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice">
+            <span class="symbol symbol-45px me-5 flex-shrink-0"><span class="symbol-label"><i class="ki-outline ki-information-5 fs-2x text-white"></i></span></span>
+            <div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@T["What a paper drawing does — six jobs"]</h4><div class="fs-6 text-gray-700">@T["No single widget covers them all: free ink for legal, explaining and thinking; coded marks for calculating, tracking and safety — most sheets need both."]</div></div>
+        </div>
+        <div class="row g-4 mb-6">
+            @foreach (var (icon, t, d) in jobs)
+            {
+                <div class="col-md-4 col-xl-2"><div class="cv-job"><i class="ki-outline @icon fs-2x text-primary"></i><div class="fw-bold mt-2 text-gray-900">@T[t]</div><div class="text-muted fs-8 mt-1">@T[d]</div></div></div>
+            }
+        </div>
+        <h3 class="fw-bold text-gray-900 mb-4">@T["One engine — four kinds"]</h3>
+        <div class="row g-5 mb-6">
+            @foreach (var (icon, t, d, links) in kinds)
+            {
+                <div class="col-md-6 col-xl-3"><div class="cv-kind"><i class="ki-outline @icon fs-2x text-primary"></i><div class="fw-bold fs-5 mt-2 text-gray-900">@T[t]</div><div class="text-muted fs-8 mb-3">@T[d]</div>
+                    @foreach (var (label, kind, url) in links)
+                    {
+                        if (url != null) {<a href="@url" class="d-block fs-7 fw-semibold py-1">@T[label] ←</a>}
+                        else if (built.Contains(kind)) {<a href="#" data-kind="@kind" class="d-block fs-7 fw-semibold py-1">@T[label] ←</a>}
+                        else {<span class="d-flex align-items-center gap-2 fs-7 fw-semibold py-1 text-gray-500">@T[label] <span class="badge badge-light fs-9">@T["Next step"]</span></span>}
+                    }
+                </div></div>
+            }
+        </div>
+        <div class="card mb-5">
+            <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["The layers of every canvas"]</span></div></div>
+            <div class="card-body pt-2"><div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-3 mb-0">
+                <thead><tr class="text-start text-muted fw-bold fs-8 text-uppercase"><th class="w-40px">#</th><th>@T["Layer"]</th><th>@T["What it keeps"]</th></tr></thead>
+                <tbody>
+                    @for (int i = 0; i < layers.Length; i++)
+                    {
+                        <tr><td><span class="hp-num">@(i + 1)</span></td><td class="fw-bold text-gray-900">@T[layers[i].Item1]</td><td>@T[layers[i].Item2]</td></tr>
+                    }
+                </tbody>
+            </table></div></div>
+        </div>
+    </div></div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            var pick = @Json.Serialize(T["Choose the open visit to draw on first"].Value), base = @Json.Serialize(Url.Content("~/Hospital/Consult/")), want = @Json.Serialize(want);
+            // from the menu: the chosen visit opens the drawing at once (select2 changes reach jQuery only)
+            if (want && window.jQuery) jQuery('#cv_visit').on('change', function () { if (this.value) location.href = base + this.value + '/Canvas/' + want; });
+            document.addEventListener('click', function (ev) {
+                var a = ev.target.closest('[data-kind]'); if (!a) return; ev.preventDefault();
+                var v = document.getElementById('cv_visit').value;
+                if (!v) { toastr.info(pick); return; }
+                location.href = base + v + '/Canvas/' + a.getAttribute('data-kind');
+            });
+        })();
+    </script>
+}

@@ -169,6 +169,7 @@ namespace CrossBuy.Tests
 		{
 			var s = HospitalSliceParity.Slice("hospital_h73_drug_safety.sql");
 			s += Environment.NewLine + HospitalSliceParity.Slice("hospital_h95_paediatrics.sql");   // H95: a child's dose by weight
+			s += Environment.NewLine + HospitalSliceParity.Slice("hospital_h104_renal_dosing.sql");   // H104: the kidney thresholds
 			var m = HospitalSliceParity.Model(HospitalDrugSafetyModel.Configure);
 			foreach (var (t, n) in new[] { (typeof(HospitalDrugInteraction), "HospitalDrugInteractions"), (typeof(HospitalDoseLimit), "HospitalDoseLimits"), (typeof(HospitalAlertOverride), "HospitalAlertOverrides") })
 			{ HospitalSliceParity.NamesItsTable(m, s, t, n); HospitalSliceParity.ColumnsMatch(m, s, t, n); }

@@ -1,0 +1,25 @@
+{
+ "unit": "H100 — the burn chart (cv-burn): rule of nines / Lund–Browder, %TBSA, Parkland",
+ "strings": {
+  "Burn chart — Lund–Browder (age {0})": { "ar": "خريطة الحروق — جدول لوند-براودر (العمر {0})", "en": "Burn chart — Lund–Browder (age {0})", "fr": "Carte des brûlures — Lund–Browder (âge {0})" },
+  "Burn chart — rule of nines (adult)": { "ar": "خريطة الحروق — قاعدة التسعات (بالغ)", "en": "Burn chart — rule of nines (adult)", "fr": "Carte des brûlures — règle des neuf (adulte)" },
+  "Burns": { "ar": "الحروق", "en": "Burns", "fr": "Brûlures" },
+  "Depth": { "ar": "العمق", "en": "Depth", "fr": "Profondeur" },
+  "Half ({0} mL) in the first 8 h from the burn, the rest over 16 h": { "ar": "نصفها ({0} مل) في أول ٨ ساعات من وقت الحرق، والباقي على ١٦ ساعة", "en": "Half ({0} mL) in the first 8 h from the burn, the rest over 16 h", "fr": "La moitié ({0} mL) dans les 8 premières heures après la brûlure, le reste sur 16 h" },
+  "In studies manual %TBSA was wrong more often than apps, especially for non-specialists — and the % sets the fluids.": { "ar": "في الدراسات أخطأ الحساب اليدوي لنسبة الحرق أكثر من التطبيقات، خصوصاً عند غير المتخصصين — والنسبة تحدد كمية السوائل.", "en": "In studies manual %TBSA was wrong more often than apps, especially for non-specialists — and the % sets the fluids.", "fr": "Dans les études, le %SCT manuel était plus souvent faux que celui des applications, surtout chez les non-spécialistes — et le % fixe les liquides." },
+  "Parkland fluids (24 h)": { "ar": "سوائل باركلاند (٢٤ ساعة)", "en": "Parkland fluids (24 h)", "fr": "Liquides de Parkland (24 h)" },
+  "Region": { "ar": "المنطقة", "en": "Region", "fr": "Région" },
+  "TBSA (partial + full)": { "ar": "نسبة الحرق (جزئي + كامل)", "en": "TBSA (partial + full)", "fr": "SCT (partielle + totale)" },
+  "Tap a region to cycle the depth: none → superficial → deep → full. A child uses the Lund–Browder table for their age.": { "ar": "اضغط على المنطقة لتغيير العمق: لا شيء ← سطحي ← عميق ← كامل. الطفل يأخذ جدول لوند-براودر حسب عمره.", "en": "Tap a region to cycle the depth: none → superficial → deep → full. A child uses the Lund–Browder table for their age.", "fr": "Touchez une région pour changer la profondeur : aucune → superficielle → profonde → totale. Un enfant suit la table de Lund–Browder selon son âge." },
+  "The calculation": { "ar": "الحساب", "en": "The calculation", "fr": "Le calcul" },
+  "The calculator beats the paper": { "ar": "الحساب يغلب الورق", "en": "The calculator beats the paper", "fr": "Le calculateur bat le papier" },
+  "The server recomputes these figures when the drawing is saved.": { "ar": "الخادم يعيد حساب هذه الأرقام عند حفظ الرسمة.", "en": "The server recomputes these figures when the drawing is saved.", "fr": "Le serveur recalcule ces chiffres à l'enregistrement du dessin." },
+  "Write the weight to compute the fluids": { "ar": "اكتب الوزن لحساب السوائل", "en": "Write the weight to compute the fluids", "fr": "Saisissez le poids pour calculer les liquides" },
+  "≥ 20%: refer to a burn centre": { "ar": "≥ ٢٠٪: تحويل لمركز حروق", "en": "≥ 20%: refer to a burn centre", "fr": "≥ 20 % : orienter vers un centre des brûlés" },
+  "No burn": { "ar": "لا يوجد", "en": "None", "fr": "Aucune" },
+  "Superficial partial": { "ar": "جزئي سطحي", "en": "Superficial partial", "fr": "Partielle superficielle" },
+  "Deep partial": { "ar": "جزئي عميق", "en": "Deep partial", "fr": "Partielle profonde" },
+  "Full thickness": { "ar": "كامل السمك", "en": "Full thickness", "fr": "Épaisseur totale" },
+  "The weight is between 0 and 400 kg": { "ar": "الوزن بين ٠ و٤٠٠ كجم", "en": "The weight is between 0 and 400 kg", "fr": "Le poids est compris entre 0 et 400 kg" }
+ }
+}

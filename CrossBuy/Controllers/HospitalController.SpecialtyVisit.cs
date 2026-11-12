@@ -73,6 +73,7 @@ namespace CrossBuy.Controllers
 			Chrome();
 			// H95: growth, dosing, development, scores and vaccines — shown by what the visit holds
 			ViewBag.Widgets = await ActivatorUtilities.CreateInstance<HospitalVisitWidgetsService>(HttpContext.RequestServices).BuildAsync(ctx, m, DateTime.UtcNow, ct);
+			ViewBag.Canvas = await CanvasSvc.SummaryAsync(ctx, id, ct);   // H99: the visit's drawings
 			return View(m);
 		}
 

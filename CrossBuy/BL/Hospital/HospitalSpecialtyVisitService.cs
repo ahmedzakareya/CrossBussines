@@ -105,6 +105,7 @@ namespace CrossBuy.BL.Hospital
 		private IQueryable<T> Q<T>(BusinessContext ctx) where T : class => _db.Set<T>().Where(x => EF.Property<int>(x, "CompanyId") == ctx.CompanyId);
 		private HospitalClinicalFormService Forms => new(_db, _access);
 		private HospitalClinicalContentService Content => new(_db, _access);
+		private HospitalCanvasService Canvas => new(_db, _access);   // H99: the visit's drawings share its signature
 
 		private async Task<int?> ClinicOfAsync(BusinessContext ctx, HospitalEncounter e, CancellationToken ct) =>
 			await Q<HospitalPractitioner>(ctx).Where(p => p.ID == e.PractitionerId).Select(p => p.DepartmentId).FirstOrDefaultAsync(ct);
@@ -298,6 +299,8 @@ namespace CrossBuy.BL.Hospital
 				}
 			}
 			catch (Microsoft.Data.SqlClient.SqlException ex) when (Missing(ex)) { }
+			var drawn = await Canvas.CheckAsync(ctx, encounterId, ct);
+			if (!drawn.Ok) return drawn;
 			return HospitalResult.Success(encounterId);
 		}
 
@@ -312,6 +315,7 @@ namespace CrossBuy.BL.Hospital
 				}
 			}
 			catch (Microsoft.Data.SqlClient.SqlException ex) when (Missing(ex)) { }
+			await Canvas.SignAsync(ctx, encounterId, employeeId, nowUtc, ct);
 			return HospitalResult.Success(encounterId);
 		}
 

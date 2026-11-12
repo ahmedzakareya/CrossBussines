@@ -453,6 +453,17 @@
 				new() { LabelAr = "الحساسية", LabelEn = "Allergy", Action = "SpecialtyClinic", Controller = "Hospital", RouteValues = new() { ["code"] = "ALG" } },   // H97
 				new() { LabelAr = "باقي التخصصات", LabelEn = "Other specialties", Action = "SpecialtyCatalog", Controller = "Hospital" },   // H98
 			}},
+			// H99 — the clinical canvas (the approved prototype): every drawing a clinic makes on paper, on the visit
+			new() { LabelAr = "اللوحة الإكلينيكية", LabelEn = "Clinical canvas", Icon = "ki-outline ki-pencil", Items = new()
+			{
+				new() { LabelAr = "المحرك والطبقات", LabelEn = "Engine & layers", Action = "CanvasHome", Controller = "Hospital" },   // H99
+				new() { LabelAr = "خريطة الجسم + القلم", LabelEn = "Body map + pen", Action = "CanvasHome", Controller = "Hospital", RouteValues = new() { ["kind"] = "Body" } },   // H99
+				new() { LabelAr = "قاع العين", LabelEn = "Fundus", Action = "CanvasHome", Controller = "Hospital", RouteValues = new() { ["kind"] = "Fundus" } },   // H99
+				new() { LabelAr = "خريطة الحروق", LabelEn = "Burn chart", Action = "CanvasHome", Controller = "Hospital", RouteValues = new() { ["kind"] = "Burn" } },   // H100
+				new() { LabelAr = "مخطط السمع", LabelEn = "Audiogram", Action = "CanvasHome", Controller = "Hospital", RouteValues = new() { ["kind"] = "Audio" } },   // H101
+				new() { LabelAr = "مفاصل DAS28", LabelEn = "DAS28 joints", Action = "CanvasHome", Controller = "Hospital", RouteValues = new() { ["kind"] = "Joints" } },   // H102
+				new() { LabelAr = "شجرة العائلة", LabelEn = "Pedigree", Action = "CanvasHome", Controller = "Hospital", RouteValues = new() { ["kind"] = "Pedigree" } },   // H103
+			}},
 			new() { LabelAr = "الطوارئ", LabelEn = "Emergency", Icon = "ki-outline ki-pulse", Items = new()
 			{
 				new() { LabelAr = "لوحة الطوارئ", LabelEn = "Emergency board", Action = "Emergency", Controller = "Hospital" },

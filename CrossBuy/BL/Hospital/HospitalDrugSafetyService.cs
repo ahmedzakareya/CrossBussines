@@ -42,6 +42,8 @@ namespace CrossBuy.BL.Hospital
 		public decimal? PerKgMg { get; set; }
 		public int? EveryHours { get; set; }
 		public decimal? StrengthMgPerMl { get; set; }
+		public decimal? RenalReviewBelow { get; set; }
+		public decimal? RenalStopBelow { get; set; }
 	}
 
 	public sealed record HospitalOverrideRow(HospitalAlertOverride Row, string Patient, string PatientEn, string Mrn, string? By);
@@ -173,6 +175,13 @@ namespace CrossBuy.BL.Hospital
 			if (Key(i.Drug).Length < 3) return "Write the medicine (three letters at least)";
 			if (!HospitalDoseUnit.All.Contains(i.Unit ?? "")) return "Choose the unit";
 			if (!string.IsNullOrEmpty(i.Route) && !HospitalMedRoute.All.Contains(i.Route)) return "Choose the route";
+			// H104: a rule by the kidney alone (metformin) needs no dose limit
+			if (i.RenalReviewBelow != null || i.RenalStopBelow != null)
+			{
+				if (i.RenalReviewBelow is not (null or (>= 5 and <= 120)) || i.RenalStopBelow is not (null or (>= 5 and <= 120))) return "An eGFR threshold is between 5 and 120";
+				if (i.RenalReviewBelow is decimal rv && i.RenalStopBelow is decimal st && st >= rv) return "Stopping comes below the review threshold";
+			}
+			else
 			if (i.MaxSingle is null && i.MaxDaily is null) return "Write a single or a daily limit";
 			if (i.MaxSingle is <= 0 || i.MaxDaily is <= 0) return "A limit is above zero";
 			if (i.MaxSingle is decimal s && i.MaxDaily is decimal d && d < s) return "The daily limit cannot be below the single one";
@@ -228,6 +237,22 @@ namespace CrossBuy.BL.Hospital
 				alerts.Add(new(HospitalAlertKind.Dose, HospitalInteractionSeverity.Major, true, daily ? "{0}: {1} {2} a day is above the daily limit of {3} {2}" : "{0}: {1} {2} is above the single-dose limit of {3} {2}",
 					new[] { drug, HospitalDrugSafetyRules.Num(value), limit.Unit, HospitalDrugSafetyRules.Num(max) }, null, null,
 					$"{limit.Drug} {(daily ? "daily" : "single")} {HospitalDrugSafetyRules.Num(value)} > {HospitalDrugSafetyRules.Num(max)} {limit.Unit}"));
+			}
+			// H104: the kidney — the admission's patient's last stored eGFR against the medicine's thresholds
+			if (HospitalRenalRules.Rules(drug, route, limits).Any())
+			{
+				var patientId = await _db.Set<HospitalAdmission>().AsNoTracking().Where(a => a.ID == admissionId && a.CompanyId == ctx.CompanyId).Select(a => a.PatientId).FirstOrDefaultAsync(ct);
+				var egfr = await HospitalRenalRules.EgfrAsync(_db, ctx.CompanyId, patientId, DateTime.UtcNow, ct);
+				if (egfr == null)
+					alerts.Add(new(HospitalAlertKind.NotChecked, HospitalInteractionSeverity.Unknown, false,
+						"No eGFR in the last year, so the kidney dose of {0} was not checked", new[] { drug }, null, null, "renal-no-egfr"));
+				else foreach (var (limit, stop, approaching) in HospitalRenalRules.Hits(drug, route, egfr, limits))
+					if (stop)
+						alerts.Add(new(HospitalAlertKind.Dose, HospitalInteractionSeverity.Major, true, "{0} with eGFR {1}: stop it below {2}",
+							new[] { drug, HospitalDrugSafetyRules.Num(egfr.Value), HospitalDrugSafetyRules.Num(limit.RenalStopBelow!.Value) }, null, null, $"{limit.Drug} renal stop {egfr.Value} < {limit.RenalStopBelow}"));
+					else if (!approaching)
+						alerts.Add(new(HospitalAlertKind.Dose, HospitalInteractionSeverity.Moderate, false, "{0} with eGFR {1}: review the dose below {2}",
+							new[] { drug, HospitalDrugSafetyRules.Num(egfr.Value), HospitalDrugSafetyRules.Num(limit.RenalReviewBelow!.Value) }, null, null, $"{limit.Drug} renal review {egfr.Value} < {limit.RenalReviewBelow}"));
 			}
 			// ---- WHAT THIS CHECK COULD NOT CHECK --------------------------------------------------
 			//
@@ -339,6 +364,7 @@ namespace CrossBuy.BL.Hospital
 				row.Drug = HospitalDrugSafetyRules.Key(input.Drug); row.Route = string.IsNullOrEmpty(input.Route) ? null : input.Route; row.Unit = input.Unit!;
 				row.MaxSingle = input.MaxSingle; row.MaxDaily = input.MaxDaily; row.Note = Clip(input.Note, 300); row.IsActive = input.IsActive; row.UpdatedAt = nowUtc; row.UpdatedByEmployeeId = employeeId;
 				row.PerKgMg = input.PerKgMg; row.EveryHours = input.PerKgMg == null ? null : input.EveryHours; row.StrengthMgPerMl = input.StrengthMgPerMl;
+				row.RenalReviewBelow = input.RenalReviewBelow; row.RenalStopBelow = input.RenalStopBelow;
 				await _db.SaveChangesAsync(ct);
 				return HospitalResult.Success(row.ID);
 			}

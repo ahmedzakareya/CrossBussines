@@ -80,6 +80,9 @@ namespace CrossBuy.Models.Context.Hospital
 		public int? EveryHours { get; set; }
 		/// H95: the liquid's strength (mg in 1 mL), so a dose in mg is also given in mL.
 		public decimal? StrengthMgPerMl { get; set; }
+		/// H104: the kidney — review the dose below this eGFR, stop the medicine below that one (mL/min/1.73 m²).
+		public decimal? RenalReviewBelow { get; set; }
+		public decimal? RenalStopBelow { get; set; }
 	}
 
 	/// A doctor went ahead past a stopping alert, and why.
@@ -125,6 +128,8 @@ namespace CrossBuy.Models.Context.Hospital
 				e.Property(x => x.Note).HasMaxLength(300);
 				e.Property(x => x.PerKgMg).HasPrecision(12, 3);
 				e.Property(x => x.StrengthMgPerMl).HasPrecision(12, 3);
+				e.Property(x => x.RenalReviewBelow).HasPrecision(5, 1);
+				e.Property(x => x.RenalStopBelow).HasPrecision(5, 1);
 				e.HasIndex(x => new { x.CompanyId, x.Drug });
 			});
 			b.Entity<HospitalAlertOverride>(e =>

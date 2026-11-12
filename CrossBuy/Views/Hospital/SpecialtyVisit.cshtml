@@ -411,10 +411,44 @@
                         </div>
                     </div>
                 }
+                @* H99: the visit's drawings — the clinical canvas *@
+                @{ var cvs = ViewBag.Canvas as IReadOnlyDictionary<string, (int Marks, int Carried, bool Signed)>; }
+                @if (cvs != null)
+                {
+                    <div class="card mb-5 mb-xl-8">
+                        <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Clinical canvas"]</span><span class="text-muted mt-1 fw-semibold fs-7">@T["Drawings signed with the visit"]</span></div></div>
+                        <div class="card-body pt-2">
+                            @foreach (var (k, lbl, icon) in new[] { (HospitalCanvasKind.Body, "Body map", "ki-user-square"), (HospitalCanvasKind.Fundus, "Fundus drawing", "ki-eye"), (HospitalCanvasKind.Burn, "Burn chart", "ki-sun"), (HospitalCanvasKind.Audio, "Audiogram", "ki-graph-3"), (HospitalCanvasKind.Joints, "Rheumatoid joints — DAS28", "ki-abstract-14"), (HospitalCanvasKind.Pedigree, "Pedigree", "ki-people") })
+                            {
+                                cvs.TryGetValue(k, out var cs);
+                                <a href="@Url.Action("CanvasSheet", new { id = e.ID, kind = k })" class="hp-gap text-hover-primary">
+                                    <i class="ki-outline @icon fs-2 text-primary"></i>
+                                    <div class="flex-grow-1"><div class="fw-bold text-gray-900 fs-7">@T[lbl]</div>
+                                        <div class="text-muted fs-8">@(cs.Marks == 0 ? T["Not drawn on this visit"] : T["{0} marks", cs.Marks])</div></div>
+                                    @if (cs.Carried > 0) {<span class="badge badge-light-danger fs-9">@T["{0} carried — unverified", cs.Carried]</span>}
+                                </a>
+                            }
+                        </div>
+                    </div>
+                }
                 <div class="card mb-5 mb-xl-8">
                     <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Care gaps & alerts"]</span></div></div>
                     <div class="card-body pt-2">
-                        @if (Model.Care.Count == 0 && Model.Done.Count == 0) {<div class="text-muted fs-7 py-4">@T["Nothing overdue"]</div>}
+                        @* H104: the kidney — a medicine of the last 180 days against the last stored eGFR (the prototype's metformin line) *@
+                        @foreach (var rn in W?.Renal ?? Array.Empty<HospitalRenalAlert>())
+                        {
+                            var lim = rn.Limit;
+                            string rule = (lim.RenalReviewBelow is decimal rv ? string.Format(T["Review the dose below {0}"].Value, HospitalDrugSafetyRules.Num(rv)) : "")
+                                + (lim.RenalReviewBelow != null && lim.RenalStopBelow != null ? " · " : "")
+                                + (lim.RenalStopBelow is decimal sb ? string.Format(T["stop below {0}"].Value, HospitalDrugSafetyRules.Num(sb)) : "")
+                                + (rn.Egfr.Falling ? " — " + T["the trend is falling"].Value : "");
+                            <div class="hp-gap"><span class="bullet bullet-dot bg-danger mt-2" style="width:9px;height:9px"></span>
+                                <div class="flex-grow-1"><div class="fw-bold text-gray-900 fs-7">@T["{0} with eGFR {1}", "\u2068" + rn.Drug + "\u2069", "\u2068" + HospitalDrugSafetyRules.Num(rn.Egfr.Value) + "\u2069"]</div>
+                                    <div class="text-muted fs-8">@rule</div></div>
+                                <a href="@Url.Action("Consult", new { id = e.ID })" class="btn btn-sm btn-light-primary py-1 px-3 fs-8">@T["Review dose"]</a>
+                            </div>
+                        }
+                        @if (Model.Care.Count == 0 && Model.Done.Count == 0 && (W?.Renal?.Count ?? 0) == 0) {<div class="text-muted fs-7 py-4">@T["Nothing overdue"]</div>}
                         @foreach (var g in Model.Care)
                         {
                             string what = g.Kind == "Gap"

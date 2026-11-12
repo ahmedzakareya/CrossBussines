@@ -1,0 +1,375 @@
+{
+ "unit": "H101–H103 — audiogram (cv-audio), DAS28 joints (cv-joints), pedigree (cv-pedigree)",
+ "strings": {
+  "ASHA symbols: O right / X left air, < right / > left bone; red right, blue left. Tap to place; snaps to the frequency and nearest 5 dB.": {
+   "ar": "رموز ASHA: O يمين / X يسار للهواء، < يمين / > يسار للعظم؛ الأحمر يمين والأزرق يسار. اضغط لوضع النقطة؛ تُثبّت على التردد وأقرب ٥ ديسيبل.",
+   "en": "ASHA symbols: O right / X left air, < right / > left bone; red right, blue left. Tap to place; snaps to the frequency and nearest 5 dB.",
+   "fr": "Symboles ASHA : O droite / X gauche en aérien, < droite / > gauche en osseux ; rouge à droite, bleu à gauche. Touchez pour placer ; aligné sur la fréquence et les 5 dB les plus proches."
+  },
+  "Tap a point again to remove it.": {
+   "ar": "اضغط على النقطة مرة أخرى لحذفها.",
+   "en": "Tap a point again to remove it.",
+   "fr": "Touchez à nouveau un point pour le retirer."
+  },
+  "Audiogram": {
+   "ar": "مخطط السمع",
+   "en": "Audiogram",
+   "fr": "Audiogramme"
+  },
+  "Air — right": {
+   "ar": "هواء — يمين",
+   "en": "Air — right",
+   "fr": "Aérien — droite"
+  },
+  "Air — left": {
+   "ar": "هواء — يسار",
+   "en": "Air — left",
+   "fr": "Aérien — gauche"
+  },
+  "Bone — right": {
+   "ar": "عظم — يمين",
+   "en": "Bone — right",
+   "fr": "Osseux — droite"
+  },
+  "Bone — left": {
+   "ar": "عظم — يسار",
+   "en": "Bone — left",
+   "fr": "Osseux — gauche"
+  },
+  "right ear": {
+   "ar": "يمين",
+   "en": "right",
+   "fr": "droite"
+  },
+  "left ear": {
+   "ar": "يسار",
+   "en": "left",
+   "fr": "gauche"
+  },
+  "Average of 500–4000 Hz; grade per WHO 2021": {
+   "ar": "متوسط ٥٠٠–٤٠٠٠ هرتز؛ التصنيف حسب WHO 2021",
+   "en": "Average of 500–4000 Hz; grade per WHO 2021",
+   "fr": "Moyenne de 500 à 4000 Hz ; degré selon l'OMS 2021"
+  },
+  "Right air-bone gap ≥ 15 — conductive loss": {
+   "ar": "فجوة هواء-عظم يمين ≥ ١٥ — فقد توصيلي",
+   "en": "Right air-bone gap ≥ 15 — conductive loss",
+   "fr": "Écart aérien-osseux droit ≥ 15 — surdité de transmission"
+  },
+  "Left air-bone gap ≥ 15 — conductive loss": {
+   "ar": "فجوة هواء-عظم يسار ≥ ١٥ — فقد توصيلي",
+   "en": "Left air-bone gap ≥ 15 — conductive loss",
+   "fr": "Écart aérien-osseux gauche ≥ 15 — surdité de transmission"
+  },
+  "Ear difference ≥ 15 — rule out a retrocochlear cause": {
+   "ar": "فرق بين الأذنين ≥ ١٥ — يستبعد السبب العصبي",
+   "en": "Ear difference ≥ 15 — rule out a retrocochlear cause",
+   "fr": "Différence entre les oreilles ≥ 15 — éliminer une cause rétrocochléaire"
+  },
+  "hl:Normal": {
+   "ar": "طبيعي",
+   "en": "Normal",
+   "fr": "Normale"
+  },
+  "hl:Mild": {
+   "ar": "خفيف",
+   "en": "Mild",
+   "fr": "Légère"
+  },
+  "hl:Moderate": {
+   "ar": "متوسط",
+   "en": "Moderate",
+   "fr": "Modérée"
+  },
+  "hl:Moderately severe": {
+   "ar": "متوسط إلى شديد",
+   "en": "Moderately severe",
+   "fr": "Modérément sévère"
+  },
+  "hl:Severe": {
+   "ar": "شديد",
+   "en": "Severe",
+   "fr": "Sévère"
+  },
+  "hl:Profound": {
+   "ar": "عميق",
+   "en": "Profound",
+   "fr": "Profonde"
+  },
+  "hl:Complete": {
+   "ar": "كامل",
+   "en": "Complete",
+   "fr": "Totale"
+  },
+  "A threshold is between -10 and 120 dB, in 5 dB steps": {
+   "ar": "العتبة بين -١٠ و١٢٠ ديسيبل، بخطوات ٥ ديسيبل",
+   "en": "A threshold is between -10 and 120 dB, in 5 dB steps",
+   "fr": "Un seuil est compris entre -10 et 120 dB, par pas de 5 dB"
+  },
+  "Rheumatoid joints — DAS28": {
+   "ar": "مفاصل الروماتويد — DAS28",
+   "en": "Rheumatoid joints — DAS28",
+   "fr": "Articulations rhumatoïdes — DAS28"
+  },
+  "DAS28": {
+   "ar": "DAS28",
+   "en": "DAS28",
+   "fr": "DAS28"
+  },
+  "The 28-joint map": {
+   "ar": "خريطة المفاصل الـ ٢٨",
+   "en": "The 28-joint map",
+   "fr": "La carte des 28 articulations"
+  },
+  "Tap a joint: tender → swollen → both → clear": {
+   "ar": "اضغط على المفصل: مؤلم ← متورم ← الاثنان ← سليم",
+   "en": "Tap a joint: tender → swollen → both → clear",
+   "fr": "Touchez une articulation : douloureuse → gonflée → les deux → normale"
+  },
+  "Tender": {
+   "ar": "مؤلم",
+   "en": "Tender",
+   "fr": "Douloureuse"
+  },
+  "Swollen": {
+   "ar": "متورم",
+   "en": "Swollen",
+   "fr": "Gonflée"
+  },
+  "Both": {
+   "ar": "الاثنان",
+   "en": "Both",
+   "fr": "Les deux"
+  },
+  "Patient global 0–100": {
+   "ar": "تقييم المريض ٠–١٠٠",
+   "en": "Patient global 0–100",
+   "fr": "Évaluation globale du patient 0–100"
+  },
+  "Write the ESR and the patient's global assessment to score": {
+   "ar": "اكتب سرعة الترسيب وتقييم المريض لحساب الدرجة",
+   "en": "Write the ESR and the patient's global assessment to score",
+   "fr": "Saisissez la VS et l'évaluation globale du patient pour calculer le score"
+  },
+  "das:High": {
+   "ar": "نشاط مرتفع",
+   "en": "High activity",
+   "fr": "Activité élevée"
+  },
+  "das:Moderate": {
+   "ar": "نشاط متوسط",
+   "en": "Moderate activity",
+   "fr": "Activité modérée"
+  },
+  "das:Low": {
+   "ar": "نشاط منخفض",
+   "en": "Low activity",
+   "fr": "Activité faible"
+  },
+  "das:Remission": {
+   "ar": "هدأة",
+   "en": "Remission",
+   "fr": "Rémission"
+  },
+  "The ESR is between 1 and 150 mm/h": {
+   "ar": "سرعة الترسيب بين ١ و١٥٠ مم/ساعة",
+   "en": "The ESR is between 1 and 150 mm/h",
+   "fr": "La VS est comprise entre 1 et 150 mm/h"
+  },
+  "The patient's global assessment is between 0 and 100": {
+   "ar": "تقييم المريض بين ٠ و١٠٠",
+   "en": "The patient's global assessment is between 0 and 100",
+   "fr": "L'évaluation globale du patient est comprise entre 0 et 100"
+  },
+  "Pedigree": {
+   "ar": "شجرة العائلة",
+   "en": "Pedigree",
+   "fr": "Arbre généalogique"
+  },
+  "Standard NSGC symbols (2022 revision)": {
+   "ar": "رموز NSGC المعيارية (مراجعة ٢٠٢٢)",
+   "en": "Standard NSGC symbols (2022 revision)",
+   "fr": "Symboles NSGC standard (révision 2022)"
+  },
+  "Square male, circle female, filled = affected, slash = deceased, arrow = proband, double line = consanguinity — very important in the Gulf and Egypt for inherited disease.": {
+   "ar": "مربع ذكر، دائرة أنثى، مملوء = مصاب، خط مائل = متوفى، سهم = المريض، خطان على خط الزواج = زواج أقارب — وهو مهم جداً في الخليج ومصر للأمراض الوراثية.",
+   "en": "Square male, circle female, filled = affected, slash = deceased, arrow = proband, double line = consanguinity — very important in the Gulf and Egypt for inherited disease.",
+   "fr": "Carré homme, cercle femme, plein = atteint, barre = décédé, flèche = proposant, double trait = consanguinité — très important dans le Golfe et en Égypte pour les maladies héréditaires."
+  },
+  "Add a relative": {
+   "ar": "إضافة قريب",
+   "en": "Add a relative",
+   "fr": "Ajouter un parent"
+  },
+  "Edit the relative": {
+   "ar": "تعديل القريب",
+   "en": "Edit the relative",
+   "fr": "Modifier le parent"
+  },
+  "Tap a person to edit them.": {
+   "ar": "اضغط على أي شخص لتعديله.",
+   "en": "Tap a person to edit them.",
+   "fr": "Touchez une personne pour la modifier."
+  },
+  "What the tree yields": {
+   "ar": "ما تستخرجه الشجرة",
+   "en": "What the tree yields",
+   "fr": "Ce que révèle l'arbre"
+  },
+  "Relative of": {
+   "ar": "قريب لـ",
+   "en": "Relative of",
+   "fr": "Parent de"
+  },
+  "Relation": {
+   "ar": "العلاقة",
+   "en": "Relation",
+   "fr": "Lien"
+  },
+  "rel:father": {
+   "ar": "أب",
+   "en": "father",
+   "fr": "Père"
+  },
+  "rel:mother": {
+   "ar": "أم",
+   "en": "mother",
+   "fr": "Mère"
+  },
+  "rel:brother": {
+   "ar": "أخ",
+   "en": "brother",
+   "fr": "Frère"
+  },
+  "rel:sister": {
+   "ar": "أخت",
+   "en": "sister",
+   "fr": "Sœur"
+  },
+  "rel:son": {
+   "ar": "ابن",
+   "en": "son",
+   "fr": "Fils"
+  },
+  "rel:daughter": {
+   "ar": "ابنة",
+   "en": "daughter",
+   "fr": "Fille"
+  },
+  "rel:husband": {
+   "ar": "زوج",
+   "en": "husband",
+   "fr": "Mari"
+  },
+  "rel:wife": {
+   "ar": "زوجة",
+   "en": "wife",
+   "fr": "Épouse"
+  },
+  "rel:patient": {
+   "ar": "المريض",
+   "en": "patient",
+   "fr": "Le patient"
+  },
+  "rel:relative": {
+   "ar": "قريب",
+   "en": "relative",
+   "fr": "Parent"
+  },
+  "The partners are relatives (consanguinity)": {
+   "ar": "الزوجان أقارب (زواج أقارب)",
+   "en": "The partners are relatives (consanguinity)",
+   "fr": "Les conjoints sont apparentés (consanguinité)"
+  },
+  "Affected": {
+   "ar": "مصاب",
+   "en": "Affected",
+   "fr": "Atteint"
+  },
+  "Carrier": {
+   "ar": "حامل",
+   "en": "Carrier",
+   "fr": "Porteur"
+  },
+  "Note (age, cause of death)": {
+   "ar": "ملاحظة (العمر، سبب الوفاة)",
+   "en": "Note (age, cause of death)",
+   "fr": "Note (âge, cause du décès)"
+  },
+  "Remove from the tree": {
+   "ar": "حذف من الشجرة",
+   "en": "Remove from the tree",
+   "fr": "Retirer de l'arbre"
+  },
+  "Remove this relative from the tree?": {
+   "ar": "حذف هذا القريب من الشجرة؟",
+   "en": "Remove this relative from the tree?",
+   "fr": "Retirer ce parent de l'arbre ?"
+  },
+  "Consanguinity in the family": {
+   "ar": "زواج أقارب في العائلة",
+   "en": "Consanguinity in the family",
+   "fr": "Consanguinité dans la famille"
+  },
+  "{0} across {1} generations": {
+   "ar": "{0} في {1} أجيال",
+   "en": "{0} across {1} generations",
+   "fr": "{0} sur {1} générations"
+  },
+  "Suggest: screen for {0} — {1}": {
+   "ar": "اقتراح: فحص {0} — {1}",
+   "en": "Suggest: screen for {0} — {1}",
+   "fr": "Suggestion : dépister {0} — {1}"
+  },
+  "Nothing to read yet: add the relatives": {
+   "ar": "لا شيء بعد: أضف الأقارب",
+   "en": "Nothing to read yet: add the relatives",
+   "fr": "Rien à lire pour l'instant : ajoutez les parents"
+  },
+  "This person already has a father in the tree": {
+   "ar": "هذا الشخص له أب في الشجرة بالفعل",
+   "en": "This person already has a father in the tree",
+   "fr": "Cette personne a déjà un père dans l'arbre"
+  },
+  "This person already has a mother in the tree": {
+   "ar": "هذا الشخص له أم في الشجرة بالفعل",
+   "en": "This person already has a mother in the tree",
+   "fr": "Cette personne a déjà une mère dans l'arbre"
+  },
+  "Write the condition of every affected relative": {
+   "ar": "اكتب المرض لكل قريب مصاب",
+   "en": "Write the condition of every affected relative",
+   "fr": "Indiquez la maladie de chaque parent atteint"
+  },
+  "A family tree holds 1 to 60 people": {
+   "ar": "شجرة العائلة تحمل من ١ إلى ٦٠ شخصاً",
+   "en": "A family tree holds 1 to 60 people",
+   "fr": "Un arbre contient de 1 à 60 personnes"
+  },
+  "The tree has exactly one patient": {
+   "ar": "الشجرة فيها مريض واحد فقط",
+   "en": "The tree has exactly one patient",
+   "fr": "L'arbre a exactement un patient"
+  },
+  "A father is a man one generation up": {
+   "ar": "الأب رجل من الجيل الأعلى مباشرة",
+   "en": "A father is a man one generation up",
+   "fr": "Un père est un homme d'une génération au-dessus"
+  },
+  "A mother is a woman one generation up": {
+   "ar": "الأم امرأة من الجيل الأعلى مباشرة",
+   "en": "A mother is a woman one generation up",
+   "fr": "Une mère est une femme d'une génération au-dessus"
+  },
+  "Partners are two people of one generation": {
+   "ar": "الزوجان شخصان من نفس الجيل",
+   "en": "Partners are two people of one generation",
+   "fr": "Les conjoints sont deux personnes d'une même génération"
+  },
+  "The family tree could not be read": {
+   "ar": "تعذّرت قراءة شجرة العائلة",
+   "en": "The family tree could not be read",
+   "fr": "L'arbre généalogique est illisible"
+  }
+ }
+}

@@ -31,6 +31,7 @@ namespace CrossBuy.BL.Hospital
 		HospitalVisitDosing? Dosing, IReadOnlyList<HospitalVisitMilestone> Development, IReadOnlyList<HospitalVisitScore> Scores, int? VaccinesOverdue, int? VaccinesDue, bool VaccinesReady, HospitalVisitGlaucoma? Glaucoma = null,
 		HospitalSpt? Spt = null
 		, IReadOnlyList<HospitalImmunoCourseView>? Immuno = null, bool ImmunoReady = false
+		, IReadOnlyList<HospitalRenalAlert>? Renal = null
 		);
 
 	public static class HospitalVisitWidgetRules
@@ -185,7 +186,9 @@ namespace CrossBuy.BL.Hospital
 			// immunotherapy: the patient's courses, when the visit holds a skin test or the patient already has a course
 			var (immuno, iReady) = await new HospitalImmunotherapyService(_db, _access).PatientAsync(ctx, p.ID, ct);
 			bool showImmuno = spt != null || immuno.Count > 0;
-			return new HospitalVisitWidgets(child, years, growth, crossing, dosing, dev, scores, overdue, due, vReady, glaucoma, spt, showImmuno ? immuno : null, iReady);
+			// H104: the kidney — the medicines of the last 180 days against the last stored eGFR
+			var renal = await HospitalRenalRules.VisitAlertsAsync(_db, ctx.CompanyId, p.ID, nowUtc, ct);
+			return new HospitalVisitWidgets(child, years, growth, crossing, dosing, dev, scores, overdue, due, vReady, glaucoma, spt, showImmuno ? immuno : null, iReady, renal);
 		}
 	}
 }

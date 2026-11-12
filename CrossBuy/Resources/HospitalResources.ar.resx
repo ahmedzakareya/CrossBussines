@@ -6148,4 +6148,232 @@
   <data name="spc:psy:3" xml:space="preserve"><value>فحص الحالة العقلية</value></data>
   <data name="spc:psy:4" xml:space="preserve"><value>C-SSRS للانتحار</value></data>
   <data name="spc:psy:alert" xml:space="preserve"><value>السؤال ٩ في PHQ-9 &gt; ٠ — تنبيه فوري</value></data>
+  <data name="%TBSA, DAS28, pure-tone average, spinal level, PASI" xml:space="preserve"><value>نسبة الحرق، DAS28، متوسط السمع، مستوى إصابة النخاع، PASI</value></data>
+  <data name="A carried mark does not belong to this patient's last drawing" xml:space="preserve"><value>العلامة المنقولة ليست من آخر رسمة لهذا المريض</value></data>
+  <data name="A detailed coloured fundus drawing is the proof the exam was done" xml:space="preserve"><value>رسم قاع العين المفصّل بالألوان دليل أن الفحص تم</value></data>
+  <data name="A drawing belongs to a visit" xml:space="preserve"><value>الرسمة تخص زيارة</value></data>
+  <data name="A drawing holds at most {0} marks" xml:space="preserve"><value>الرسمة تحمل {0} علامة على الأكثر</value></data>
+  <data name="A lesion is drawn twice" xml:space="preserve"><value>نفس الآفة مرسومة مرتين</value></data>
+  <data name="A mark must sit inside the fundus" xml:space="preserve"><value>العلامة لازم تكون داخل قاع العين</value></data>
+  <data name="A mark must sit on the body itself" xml:space="preserve"><value>العلامة لازم تكون على الجسم نفسه</value></data>
+  <data name="A mole growing, a wound healing, a child growing" xml:space="preserve"><value>شامة تكبر، جرح يصغر، نمو طفل</value></data>
+  <data name="A size is between 0 and 500 mm" xml:space="preserve"><value>المقاس بين ٠ و٥٠٠ مم</value></data>
+  <data name="A versioned SVG; each region has a SNOMED code and a side; age and sex variants" xml:space="preserve"><value>رسم SVG بإصدار؛ كل منطقة لها كود SNOMED وجهة؛ نسخة حسب العمر والجنس</value></data>
+  <data name="ASHA audiogram" xml:space="preserve"><value>مخطط السمع ASHA</value></data>
+  <data name="Anatomical map" xml:space="preserve"><value>خريطة تشريحية</value></data>
+  <data name="Attach a photo to a mark" xml:space="preserve"><value>إرفاق صورة لعلامة</value></data>
+  <data name="Attach this photo to mark {0}?" xml:space="preserve"><value>إرفاق هذه الصورة بالعلامة {0}؟</value></data>
+  <data name="Base template" xml:space="preserve"><value>الرسم الأساسي</value></data>
+  <data name="Body map" xml:space="preserve"><value>خريطة الجسم</value></data>
+  <data name="Body map + ink" xml:space="preserve"><value>خريطة الجسم + رسم حر</value></data>
+  <data name="Body map — {0}" xml:space="preserve"><value>خريطة الجسم — {0}</value></data>
+  <data name="Burn chart" xml:space="preserve"><value>خريطة الحروق</value></data>
+  <data name="Burn chart → %TBSA; joints → DAS28" xml:space="preserve"><value>خريطة الحروق ← نسبة الحرق؛ المفاصل ← DAS28</value></data>
+  <data name="Calculators" xml:space="preserve"><value>حاسبات</value></data>
+  <data name="Carried — unverified" xml:space="preserve"><value>منقولة — لم تُراجع</value></data>
+  <data name="Choose &quot;mark&quot; and tap the body; or &quot;pen&quot; and draw freely. Grey marks are carried from the last visit, not yet verified." xml:space="preserve"><value>اختر «علامة» واضغط على الجسم؛ أو «قلم» وارسم بحرية. العلامات الرمادية منقولة من الزيارة السابقة ولم تُراجع بعد.</value></data>
+  <data name="Choose a saved mark from the list first" xml:space="preserve"><value>اختر علامة محفوظة من القائمة أولاً</value></data>
+  <data name="Choose an open visit" xml:space="preserve"><value>اختر زيارة مفتوحة</value></data>
+  <data name="Choose the finding of every mark" xml:space="preserve"><value>اختر الاكتشاف لكل علامة</value></data>
+  <data name="Choose the open visit above: the {0} opens on it." xml:space="preserve"><value>اختر الزيارة المفتوحة بالأعلى: تُفتح {0} عليها.</value></data>
+  <data name="Choose the open visit to draw on first" xml:space="preserve"><value>اختر الزيارة المفتوحة التي سترسم عليها أولاً</value></data>
+  <data name="Clinical canvas" xml:space="preserve"><value>اللوحة الإكلينيكية</value></data>
+  <data name="Coded mark" xml:space="preserve"><value>علامة بكود</value></data>
+  <data name="Coded marks" xml:space="preserve"><value>علامات بكود</value></data>
+  <data name="Coded marks on a picture of the body or an organ" xml:space="preserve"><value>علامات بكود على رسم الجسم أو العضو</value></data>
+  <data name="Compare &amp; versions" xml:space="preserve"><value>مقارنة وإصدارات</value></data>
+  <data name="Compare with last visit" xml:space="preserve"><value>مقارنة بالزيارة السابقة</value></data>
+  <data name="Confirm or remove the {0} marks carried from the last visit before signing" xml:space="preserve"><value>أكّد أو احذف العلامات المنقولة من الزيارة السابقة ({0}) قبل التوقيع</value></data>
+  <data name="Consent sketch, operative sketch" xml:space="preserve"><value>رسم الموافقة، رسم العملية</value></data>
+  <data name="Coordinate plot" xml:space="preserve"><value>رسم بمحاور</value></data>
+  <data name="DAS28 joints" xml:space="preserve"><value>مفاصل DAS28</value></data>
+  <data name="Draw on the visit" xml:space="preserve"><value>الرسم على الزيارة</value></data>
+  <data name="Drawings signed with the visit" xml:space="preserve"><value>رسومات تُوقَّع مع الزيارة</value></data>
+  <data name="Each mark = a finding with place, side and size, stored as an observation to search and trend; a lesion keeps one number across visits" xml:space="preserve"><value>كل علامة = نتيجة طبية بمكان وجهة ومقاس، وتُحفظ قياساً يُبحث ويُرسم منحنى؛ للآفة رقم ثابت عبر الزيارات</value></data>
+  <data name="Eye" xml:space="preserve"><value>العين</value></data>
+  <data name="Finding" xml:space="preserve"><value>الاكتشاف</value></data>
+  <data name="Findings written automatically" xml:space="preserve"><value>النتائج المكتوبة تلقائياً</value></data>
+  <data name="Free ink" xml:space="preserve"><value>رسم حر بالقلم</value></data>
+  <data name="Free pen" xml:space="preserve"><value>قلم حر</value></data>
+  <data name="Free sheet" xml:space="preserve"><value>ورقة حرة</value></data>
+  <data name="Fundus" xml:space="preserve"><value>قاع العين</value></data>
+  <data name="Fundus drawing" xml:space="preserve"><value>رسم قاع العين</value></data>
+  <data name="Fundus — {0}" xml:space="preserve"><value>قاع العين — {0}</value></data>
+  <data name="Fundus, CMS colours" xml:space="preserve"><value>قاع العين بألوان CMS</value></data>
+  <data name="Grew since the last visit" xml:space="preserve"><value>كبرت منذ الزيارة السابقة</value></data>
+  <data name="Growth chart" xml:space="preserve"><value>منحنى النمو</value></data>
+  <data name="Into the File Manager with the patient's consent and its scope, and a calibrated measure" xml:space="preserve"><value>على مدير الملفات بموافقة المريض ونطاقها، وأداة قياس معايرة</value></data>
+  <data name="Last drawing {0}" xml:space="preserve"><value>آخر رسمة {0}</value></data>
+  <data name="Last visit: {0} mm" xml:space="preserve"><value>الزيارة السابقة: {0} مم</value></data>
+  <data name="Layer" xml:space="preserve"><value>الطبقة</value></data>
+  <data name="Legal &amp; billing evidence" xml:space="preserve"><value>دليل قانوني ومطالبة</value></data>
+  <data name="Mark type" xml:space="preserve"><value>نوع العلامة</value></data>
+  <data name="Marking the operation site on a body diagram" xml:space="preserve"><value>تحديد موضع العملية على رسم الجسم</value></data>
+  <data name="Marks (stored as observations)" xml:space="preserve"><value>العلامات (تُحفظ قياسات)</value></data>
+  <data name="NSGC pedigree" xml:space="preserve"><value>شجرة العائلة NSGC</value></data>
+  <data name="Next mark" xml:space="preserve"><value>العلامة التالية</value></data>
+  <data name="Next step" xml:space="preserve"><value>الخطوة التالية</value></data>
+  <data name="No marks yet" xml:space="preserve"><value>لا توجد علامات بعد</value></data>
+  <data name="No single widget covers them all: free ink for legal, explaining and thinking; coded marks for calculating, tracking and safety — most sheets need both." xml:space="preserve"><value>لا توجد أداة واحدة تغطيها كلها: الرسم الحر للقانوني والشرح والتفكير، والعلامات بكود للحساب والمتابعة والسلامة، وأغلب الأوراق تحتاج الاثنين.</value></data>
+  <data name="Not drawn on this visit" xml:space="preserve"><value>لم تُرسم في هذه الزيارة</value></data>
+  <data name="One engine — four kinds" xml:space="preserve"><value>محرك واحد — أربعة أنواع</value></data>
+  <data name="Patient communication" xml:space="preserve"><value>شرح للمريض</value></data>
+  <data name="Patient mode" xml:space="preserve"><value>وضع المريض</value></data>
+  <data name="People and relations" xml:space="preserve"><value>أشخاص وعلاقات</value></data>
+  <data name="Photos" xml:space="preserve"><value>صور</value></data>
+  <data name="Pick the finding, then tap its place; drawn inverted as the indirect ophthalmoscope shows it" xml:space="preserve"><value>اختر الاكتشاف ثم اضغط مكانه؛ الرسم مقلوب كما يراه منظار العين غير المباشر</value></data>
+  <data name="Points on clinical axes" xml:space="preserve"><value>نقاط على محاور طبية</value></data>
+  <data name="Relational graph" xml:space="preserve"><value>شجرة علاقات</value></data>
+  <data name="Safety" xml:space="preserve"><value>سلامة</value></data>
+  <data name="Save the drawing to the visit" xml:space="preserve"><value>حفظ الرسم في الزيارة</value></data>
+  <data name="Save this drawing to the visit? It is signed with the visit." xml:space="preserve"><value>حفظ هذه الرسمة في الزيارة؟ تُوقَّع مع الزيارة.</value></data>
+  <data name="Save this visit's version" xml:space="preserve"><value>حفظ إصدار الزيارة</value></data>
+  <data name="Say which eye every mark is on" xml:space="preserve"><value>حدّد العين لكل علامة</value></data>
+  <data name="Size mm" xml:space="preserve"><value>المقاس مم</value></data>
+  <data name="Tap on the body itself" xml:space="preserve"><value>اضغط على الجسم نفسه</value></data>
+  <data name="The CMS retinal colour code is enforced: haemorrhage red, detachment blue, exudate yellow, new vessels purple. Each mark writes a SNOMED-coded finding into the visit." xml:space="preserve"><value>كود ألوان CMS لرسم الشبكية مفروض: النزيف أحمر، الانفصال أزرق، الإفراز أصفر، الأوعية الجديدة بنفسجي. كل علامة تكتب نتيجة بكود SNOMED في الزيارة.</value></data>
+  <data name="The clinical canvas" xml:space="preserve"><value>اللوحة الإكلينيكية</value></data>
+  <data name="The clinical canvas is not installed yet (hospital_h99_canvas.sql)." xml:space="preserve"><value>اللوحة الإكلينيكية غير مثبتة بعد (hospital_h99_canvas.sql).</value></data>
+  <data name="The drawing's data could not be read" xml:space="preserve"><value>تعذّرت قراءة بيانات الرسمة</value></data>
+  <data name="The drawing's data is too large to keep" xml:space="preserve"><value>بيانات الرسمة أكبر من أن تُحفظ</value></data>
+  <data name="The finding sets the colour, not the doctor" xml:space="preserve"><value>اللون يحدده الاكتشاف لا الطبيب</value></data>
+  <data name="The free drawing could not be read" xml:space="preserve"><value>تعذّرت قراءة الرسم الحر</value></data>
+  <data name="The free drawing is too large to keep" xml:space="preserve"><value>الرسم الحر أكبر من أن يُحفظ</value></data>
+  <data name="The ink layer" xml:space="preserve"><value>طبقة القلم</value></data>
+  <data name="The layers of every canvas" xml:space="preserve"><value>طبقات كل لوحة</value></data>
+  <data name="The margin doodle — free ink, kept" xml:space="preserve"><value>خربشة الهامش — رسم حر محفوظ</value></data>
+  <data name="The patient draws their pain on the tablet — kept apart as &quot;patient-reported&quot;" xml:space="preserve"><value>المريض يرسم ألمه على الجهاز اللوحي — يُحفظ «من المريض» منفصلاً</value></data>
+  <data name="The sketch made while consenting" xml:space="preserve"><value>الرسم وقت الموافقة</value></data>
+  <data name="The visit" xml:space="preserve"><value>الزيارة</value></data>
+  <data name="The whole drawing in the report through Report Studio" xml:space="preserve"><value>الرسم كامل في التقرير عبر Report Studio</value></data>
+  <data name="Thinking aid" xml:space="preserve"><value>تفكير الطبيب</value></data>
+  <data name="This drawing has no marks" xml:space="preserve"><value>هذه الرسمة بلا علامات</value></data>
+  <data name="This visit is signed: its drawings no longer change" xml:space="preserve"><value>الزيارة موقّعة: رسوماتها لا تتغير بعد الآن</value></data>
+  <data name="Tracker over time" xml:space="preserve"><value>متابعة عبر الزمن</value></data>
+  <data name="Undo" xml:space="preserve"><value>تراجع</value></data>
+  <data name="Vector strokes with pressure and time (InkML-like), never flattened to a picture" xml:space="preserve"><value>خطوط متجهة بالضغط والوقت (مثل InkML)، لا تتحول لصورة أبداً</value></data>
+  <data name="What a paper drawing does — six jobs" xml:space="preserve"><value>ما تفعله الورقة المرسومة — ست وظائف</value></data>
+  <data name="What is carried from the last visit is marked &quot;carried — unverified&quot; until the doctor confirms it" xml:space="preserve"><value>ما يُنقل من الزيارة السابقة يُعلَّم «منقول — لم يُراجع» حتى يؤكده الطبيب</value></data>
+  <data name="What it keeps" xml:space="preserve"><value>ماذا تحفظ</value></data>
+  <data name="Where" xml:space="preserve"><value>المكان</value></data>
+  <data name="at {0} o'clock" xml:space="preserve"><value>الساعة {0}</value></data>
+  <data name="far periphery" xml:space="preserve"><value>المحيط البعيد</value></data>
+  <data name="mid-periphery" xml:space="preserve"><value>المحيط المتوسط</value></data>
+  <data name="posterior pole" xml:space="preserve"><value>القطب الخلفي</value></data>
+  <data name="{0} carried — unverified" xml:space="preserve"><value>{0} منقولة — لم تُراجع</value></data>
+  <data name="{0} marks" xml:space="preserve"><value>{0} علامة</value></data>
+  <data name="Back view" xml:space="preserve"><value>خلفي</value></data>
+  <data name="Front view" xml:space="preserve"><value>أمامي</value></data>
+  <data name="back side" xml:space="preserve"><value>خلفي</value></data>
+  <data name="front side" xml:space="preserve"><value>أمامي</value></data>
+  <data name="Burn chart — Lund–Browder (age {0})" xml:space="preserve"><value>خريطة الحروق — جدول لوند-براودر (العمر {0})</value></data>
+  <data name="Burn chart — rule of nines (adult)" xml:space="preserve"><value>خريطة الحروق — قاعدة التسعات (بالغ)</value></data>
+  <data name="Burns" xml:space="preserve"><value>الحروق</value></data>
+  <data name="Deep partial" xml:space="preserve"><value>جزئي عميق</value></data>
+  <data name="Depth" xml:space="preserve"><value>العمق</value></data>
+  <data name="Full thickness" xml:space="preserve"><value>كامل السمك</value></data>
+  <data name="Half ({0} mL) in the first 8 h from the burn, the rest over 16 h" xml:space="preserve"><value>نصفها ({0} مل) في أول ٨ ساعات من وقت الحرق، والباقي على ١٦ ساعة</value></data>
+  <data name="In studies manual %TBSA was wrong more often than apps, especially for non-specialists — and the % sets the fluids." xml:space="preserve"><value>في الدراسات أخطأ الحساب اليدوي لنسبة الحرق أكثر من التطبيقات، خصوصاً عند غير المتخصصين — والنسبة تحدد كمية السوائل.</value></data>
+  <data name="No burn" xml:space="preserve"><value>لا يوجد</value></data>
+  <data name="Parkland fluids (24 h)" xml:space="preserve"><value>سوائل باركلاند (٢٤ ساعة)</value></data>
+  <data name="Region" xml:space="preserve"><value>المنطقة</value></data>
+  <data name="Superficial partial" xml:space="preserve"><value>جزئي سطحي</value></data>
+  <data name="TBSA (partial + full)" xml:space="preserve"><value>نسبة الحرق (جزئي + كامل)</value></data>
+  <data name="Tap a region to cycle the depth: none → superficial → deep → full. A child uses the Lund–Browder table for their age." xml:space="preserve"><value>اضغط على المنطقة لتغيير العمق: لا شيء ← سطحي ← عميق ← كامل. الطفل يأخذ جدول لوند-براودر حسب عمره.</value></data>
+  <data name="The calculation" xml:space="preserve"><value>الحساب</value></data>
+  <data name="The calculator beats the paper" xml:space="preserve"><value>الحساب يغلب الورق</value></data>
+  <data name="The server recomputes these figures when the drawing is saved." xml:space="preserve"><value>الخادم يعيد حساب هذه الأرقام عند حفظ الرسمة.</value></data>
+  <data name="The weight is between 0 and 400 kg" xml:space="preserve"><value>الوزن بين ٠ و٤٠٠ كجم</value></data>
+  <data name="Write the weight to compute the fluids" xml:space="preserve"><value>اكتب الوزن لحساب السوائل</value></data>
+  <data name="≥ 20%: refer to a burn centre" xml:space="preserve"><value>≥ ٢٠٪: تحويل لمركز حروق</value></data>
+  <data name="A family tree holds 1 to 60 people" xml:space="preserve"><value>شجرة العائلة تحمل من ١ إلى ٦٠ شخصاً</value></data>
+  <data name="A father is a man one generation up" xml:space="preserve"><value>الأب رجل من الجيل الأعلى مباشرة</value></data>
+  <data name="A mother is a woman one generation up" xml:space="preserve"><value>الأم امرأة من الجيل الأعلى مباشرة</value></data>
+  <data name="A threshold is between -10 and 120 dB, in 5 dB steps" xml:space="preserve"><value>العتبة بين -١٠ و١٢٠ ديسيبل، بخطوات ٥ ديسيبل</value></data>
+  <data name="ASHA symbols: O right / X left air, &lt; right / &gt; left bone; red right, blue left. Tap to place; snaps to the frequency and nearest 5 dB." xml:space="preserve"><value>رموز ASHA: O يمين / X يسار للهواء، &lt; يمين / &gt; يسار للعظم؛ الأحمر يمين والأزرق يسار. اضغط لوضع النقطة؛ تُثبّت على التردد وأقرب ٥ ديسيبل.</value></data>
+  <data name="Add a relative" xml:space="preserve"><value>إضافة قريب</value></data>
+  <data name="Affected" xml:space="preserve"><value>مصاب</value></data>
+  <data name="Air — left" xml:space="preserve"><value>هواء — يسار</value></data>
+  <data name="Air — right" xml:space="preserve"><value>هواء — يمين</value></data>
+  <data name="Audiogram" xml:space="preserve"><value>مخطط السمع</value></data>
+  <data name="Average of 500–4000 Hz; grade per WHO 2021" xml:space="preserve"><value>متوسط ٥٠٠–٤٠٠٠ هرتز؛ التصنيف حسب WHO 2021</value></data>
+  <data name="Bone — left" xml:space="preserve"><value>عظم — يسار</value></data>
+  <data name="Bone — right" xml:space="preserve"><value>عظم — يمين</value></data>
+  <data name="Both" xml:space="preserve"><value>الاثنان</value></data>
+  <data name="Carrier" xml:space="preserve"><value>حامل</value></data>
+  <data name="Consanguinity in the family" xml:space="preserve"><value>زواج أقارب في العائلة</value></data>
+  <data name="DAS28" xml:space="preserve"><value>DAS28</value></data>
+  <data name="Ear difference ≥ 15 — rule out a retrocochlear cause" xml:space="preserve"><value>فرق بين الأذنين ≥ ١٥ — يستبعد السبب العصبي</value></data>
+  <data name="Edit the relative" xml:space="preserve"><value>تعديل القريب</value></data>
+  <data name="Left air-bone gap ≥ 15 — conductive loss" xml:space="preserve"><value>فجوة هواء-عظم يسار ≥ ١٥ — فقد توصيلي</value></data>
+  <data name="Note (age, cause of death)" xml:space="preserve"><value>ملاحظة (العمر، سبب الوفاة)</value></data>
+  <data name="Nothing to read yet: add the relatives" xml:space="preserve"><value>لا شيء بعد: أضف الأقارب</value></data>
+  <data name="Partners are two people of one generation" xml:space="preserve"><value>الزوجان شخصان من نفس الجيل</value></data>
+  <data name="Patient global 0–100" xml:space="preserve"><value>تقييم المريض ٠–١٠٠</value></data>
+  <data name="Pedigree" xml:space="preserve"><value>شجرة العائلة</value></data>
+  <data name="Relative of" xml:space="preserve"><value>قريب لـ</value></data>
+  <data name="Remove from the tree" xml:space="preserve"><value>حذف من الشجرة</value></data>
+  <data name="Remove this relative from the tree?" xml:space="preserve"><value>حذف هذا القريب من الشجرة؟</value></data>
+  <data name="Rheumatoid joints — DAS28" xml:space="preserve"><value>مفاصل الروماتويد — DAS28</value></data>
+  <data name="Right air-bone gap ≥ 15 — conductive loss" xml:space="preserve"><value>فجوة هواء-عظم يمين ≥ ١٥ — فقد توصيلي</value></data>
+  <data name="Square male, circle female, filled = affected, slash = deceased, arrow = proband, double line = consanguinity — very important in the Gulf and Egypt for inherited disease." xml:space="preserve"><value>مربع ذكر، دائرة أنثى، مملوء = مصاب، خط مائل = متوفى، سهم = المريض، خطان على خط الزواج = زواج أقارب — وهو مهم جداً في الخليج ومصر للأمراض الوراثية.</value></data>
+  <data name="Standard NSGC symbols (2022 revision)" xml:space="preserve"><value>رموز NSGC المعيارية (مراجعة ٢٠٢٢)</value></data>
+  <data name="Suggest: screen for {0} — {1}" xml:space="preserve"><value>اقتراح: فحص {0} — {1}</value></data>
+  <data name="Swollen" xml:space="preserve"><value>متورم</value></data>
+  <data name="Tap a joint: tender → swollen → both → clear" xml:space="preserve"><value>اضغط على المفصل: مؤلم ← متورم ← الاثنان ← سليم</value></data>
+  <data name="Tap a person to edit them." xml:space="preserve"><value>اضغط على أي شخص لتعديله.</value></data>
+  <data name="Tap a point again to remove it." xml:space="preserve"><value>اضغط على النقطة مرة أخرى لحذفها.</value></data>
+  <data name="Tender" xml:space="preserve"><value>مؤلم</value></data>
+  <data name="The 28-joint map" xml:space="preserve"><value>خريطة المفاصل الـ ٢٨</value></data>
+  <data name="The ESR is between 1 and 150 mm/h" xml:space="preserve"><value>سرعة الترسيب بين ١ و١٥٠ مم/ساعة</value></data>
+  <data name="The family tree could not be read" xml:space="preserve"><value>تعذّرت قراءة شجرة العائلة</value></data>
+  <data name="The partners are relatives (consanguinity)" xml:space="preserve"><value>الزوجان أقارب (زواج أقارب)</value></data>
+  <data name="The patient's global assessment is between 0 and 100" xml:space="preserve"><value>تقييم المريض بين ٠ و١٠٠</value></data>
+  <data name="The tree has exactly one patient" xml:space="preserve"><value>الشجرة فيها مريض واحد فقط</value></data>
+  <data name="This person already has a father in the tree" xml:space="preserve"><value>هذا الشخص له أب في الشجرة بالفعل</value></data>
+  <data name="This person already has a mother in the tree" xml:space="preserve"><value>هذا الشخص له أم في الشجرة بالفعل</value></data>
+  <data name="What the tree yields" xml:space="preserve"><value>ما تستخرجه الشجرة</value></data>
+  <data name="Write the ESR and the patient's global assessment to score" xml:space="preserve"><value>اكتب سرعة الترسيب وتقييم المريض لحساب الدرجة</value></data>
+  <data name="Write the condition of every affected relative" xml:space="preserve"><value>اكتب المرض لكل قريب مصاب</value></data>
+  <data name="das:High" xml:space="preserve"><value>نشاط مرتفع</value></data>
+  <data name="das:Low" xml:space="preserve"><value>نشاط منخفض</value></data>
+  <data name="das:Moderate" xml:space="preserve"><value>نشاط متوسط</value></data>
+  <data name="das:Remission" xml:space="preserve"><value>هدأة</value></data>
+  <data name="hl:Complete" xml:space="preserve"><value>كامل</value></data>
+  <data name="hl:Mild" xml:space="preserve"><value>خفيف</value></data>
+  <data name="hl:Moderate" xml:space="preserve"><value>متوسط</value></data>
+  <data name="hl:Moderately severe" xml:space="preserve"><value>متوسط إلى شديد</value></data>
+  <data name="hl:Normal" xml:space="preserve"><value>طبيعي</value></data>
+  <data name="hl:Profound" xml:space="preserve"><value>عميق</value></data>
+  <data name="hl:Severe" xml:space="preserve"><value>شديد</value></data>
+  <data name="left ear" xml:space="preserve"><value>يسار</value></data>
+  <data name="rel:brother" xml:space="preserve"><value>أخ</value></data>
+  <data name="rel:daughter" xml:space="preserve"><value>ابنة</value></data>
+  <data name="rel:father" xml:space="preserve"><value>أب</value></data>
+  <data name="rel:husband" xml:space="preserve"><value>زوج</value></data>
+  <data name="rel:mother" xml:space="preserve"><value>أم</value></data>
+  <data name="rel:patient" xml:space="preserve"><value>المريض</value></data>
+  <data name="rel:relative" xml:space="preserve"><value>قريب</value></data>
+  <data name="rel:sister" xml:space="preserve"><value>أخت</value></data>
+  <data name="rel:son" xml:space="preserve"><value>ابن</value></data>
+  <data name="rel:wife" xml:space="preserve"><value>زوجة</value></data>
+  <data name="right ear" xml:space="preserve"><value>يمين</value></data>
+  <data name="{0} across {1} generations" xml:space="preserve"><value>{0} في {1} أجيال</value></data>
+  <data name="An eGFR threshold is between 5 and 120" xml:space="preserve"><value>حد eGFR بين ٥ و١٢٠</value></data>
+  <data name="By the kidney (optional)" xml:space="preserve"><value>حسب الكلى (اختياري)</value></data>
+  <data name="Kidney" xml:space="preserve"><value>الكلى</value></data>
+  <data name="No eGFR in the last year, so the kidney dose of {0} was not checked" xml:space="preserve"><value>لا يوجد eGFR خلال السنة الأخيرة، لذلك لم تُفحص جرعة {0} حسب الكلى</value></data>
+  <data name="Read against the patient's last stored eGFR; a rule by the kidney alone needs no dose limit." xml:space="preserve"><value>تُقرأ على آخر eGFR محفوظ للمريض؛ قاعدة الكلى وحدها لا تحتاج حداً للجرعة.</value></data>
+  <data name="Review dose" xml:space="preserve"><value>مراجعة الجرعة</value></data>
+  <data name="Review the dose below eGFR" xml:space="preserve"><value>مراجعة الجرعة تحت eGFR</value></data>
+  <data name="Review the dose below {0}" xml:space="preserve"><value>تُراجع الجرعة تحت {0}</value></data>
+  <data name="Stop below eGFR" xml:space="preserve"><value>إيقاف الدواء تحت eGFR</value></data>
+  <data name="Stopping comes below the review threshold" xml:space="preserve"><value>حد الإيقاف يكون أقل من حد المراجعة</value></data>
+  <data name="review the dose" xml:space="preserve"><value>مراجعة الجرعة</value></data>
+  <data name="stop below {0}" xml:space="preserve"><value>ويوقف تحت {0}</value></data>
+  <data name="stop the medicine" xml:space="preserve"><value>إيقاف الدواء</value></data>
+  <data name="the trend is falling" xml:space="preserve"><value>الاتجاه هابط</value></data>
+  <data name="{0} with eGFR {1}" xml:space="preserve"><value>{0} مع ⁨eGFR {1}⁩</value></data>
+  <data name="{0} with eGFR {1}: review the dose below {2}" xml:space="preserve"><value>{0} مع ⁨eGFR {1}⁩: تُراجع الجرعة تحت {2}</value></data>
+  <data name="{0} with eGFR {1}: stop it below {2}" xml:space="preserve"><value>{0} مع ⁨eGFR {1}⁩: يوقف تحت {2}</value></data>
 </root>
