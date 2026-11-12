@@ -483,7 +483,13 @@ namespace CrossBuy.BL.Reporting
                     // THE UPLOADED ASSET WINS. An author who chose a picture chose it; the role is the
                     // fallback, not an override.
                     string? uri = null;
-                    if (e.AssetId is > 0) ctx.Assets.TryGetValue(e.AssetId.Value, out uri);
+                    // A PICTURE THE DOCUMENT CARRIES (H111): a bound field whose value is an image data URI — a
+                    // clinical drawing, made when its record was saved. Only a strict base64 data URI of an
+                    // image type is accepted (ReportImageData), so the value can only ever be an <img> source:
+                    // no URL to fetch, nothing that runs. A bound field wins: it is this row's own picture.
+                    if (!string.IsNullOrWhiteSpace(e.FieldKey) && ReportImageData.IsSafe(Text(Value(row, e.FieldKey))))
+                        uri = Text(Value(row, e.FieldKey));
+                    if (string.IsNullOrEmpty(uri) && e.AssetId is > 0) ctx.Assets.TryGetValue(e.AssetId.Value, out uri);
                     if (string.IsNullOrEmpty(uri) && e.ImageRole != ReportImageRole.Custom)
                         ctx.RoleImages.TryGetValue(e.ImageRole, out uri);
                     if (string.IsNullOrEmpty(uri)) return;

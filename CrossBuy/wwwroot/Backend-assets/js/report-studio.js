@@ -1558,6 +1558,11 @@
                 { v: 2, t: AR ? "توقيع" : "Signature" },
                 { v: 3, t: AR ? "ختم" : "Stamp" }, { v: 0, t: AR ? "أخرى" : "Other" }
             ], e.imageRole)));
+            // A PICTURE THE ROW CARRIES (H111): bound to a field, the image prints that row's own drawing; "none" keeps the
+            // library picture or the role. Only image data URIs print — the server checks every value it is given.
+            h.push(row(AR ? "صورة من الحقل" : "Image from field", select("p-field", [{ v: "", t: AR ? "— بدون —" : "— none —" }].concat(S.fields.map(function (f) {
+                return { v: f.key, t: f.title };
+            })), e.fieldKey || "")));
             // THE UPLOAD BUTTON BELONGS HERE TOO, beside the picker that needs it.
             //
             // The only other one is at the bottom of the toolbox rail, ~235px below the fold behind

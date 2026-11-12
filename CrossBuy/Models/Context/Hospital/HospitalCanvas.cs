@@ -42,6 +42,8 @@ namespace CrossBuy.Models.Context.Hospital
 		public string InkJson { get; set; } = "[]";
 		/// The kind's own state (burn depths, audiogram points, joints, the family tree); "{}" for a map of marks only.
 		public string StateJson { get; set; } = "{}";
+		/// H111: the picture of the drawing as the doctor saw it when it was saved (cleaned SVG) — for its printed paper.
+		public string? SnapshotSvg { get; set; }
 		public DateTime CreatedAt { get; set; }
 		public int? CreatedByEmployeeId { get; set; }
 		public DateTime? UpdatedAt { get; set; }

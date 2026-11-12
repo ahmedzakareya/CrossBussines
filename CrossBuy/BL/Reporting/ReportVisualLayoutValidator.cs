@@ -336,6 +336,14 @@ namespace CrossBuy.BL.Reporting
 
                 case ReportElementKind.Image:
                 {
+                    // H111: an image may be bound to a field (a drawing the row carries). The binding goes
+                    // through the same Bind as every other one — a picture must not become the one element
+                    // that can read a column the caller may not see.
+                    if (!string.IsNullOrWhiteSpace(e.FieldKey))
+                    {
+                        if (!Bind(e.FieldKey, fields, permitted, result, strict, out var imgField)) return null;
+                        clean.FieldKey = imgField!.Key;
+                    }
                     // AN ASSET ID, AND NOTHING ELSE. There is no URL and no path on the contract, so there is
                     // nothing for a server-side fetch or a filesystem read to act on — the class of bug §18
                     // names twice cannot be expressed here.

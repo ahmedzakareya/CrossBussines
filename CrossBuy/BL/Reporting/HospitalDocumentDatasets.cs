@@ -32,6 +32,8 @@ namespace CrossBuy.BL.Reporting
         public const string GlassesRx = "Hospital.GlassesRx";
         public const string EyeLetter = "Hospital.EyeLetter";
         public const string AllergyPlan = "Hospital.AllergyPlan";
+        /// H111: one signed clinical drawing (the canvas) — its picture, its marks and its results.
+        public const string CanvasDrawing = "Hospital.CanvasDrawing";
         public const string CategoryKey = "hospital.reporting";
     }
 
@@ -382,6 +384,21 @@ namespace CrossBuy.BL.Reporting
             },
             Params("EncounterId", "رقم الزيارة الداخلي", "Visit id"));
 
+        public static ReportDatasetDefinition CanvasDrawing() => Doc(HospitalDocumentDatasetCodes.CanvasDrawing,
+            "رسم إكلينيكي", "Clinical drawing",
+            "رسم واحد من زيارة موقّعة (خريطة الجسم، قاع العين، الحروق، السمع، المفاصل، شجرة العائلة): الرسم كما رآه الطبيب، وعلاماته، ونتائج حسابه.",
+            "One drawing of a signed visit (body map, fundus, burns, audiogram, joints, pedigree): the drawing as the doctor saw it, its marks and its results.",
+            new[] { F("LineNo", "م", "#", ReportFieldType.Integer, 10, false, ReportAlign.Center) },
+            new[]
+            {
+                F("DrawingTitle", "الرسم", "Drawing", width: 60, visible: true),
+                F("Drawing", "صورة الرسم", "Drawing picture", width: 20),
+                F("Findings", "العلامات", "Marks", width: 140),
+                F("Results", "النتائج", "Results", width: 140),
+                F("SignedAt", "وقت التوقيع", "Signed at", ReportFieldType.DateTime),
+            },
+            Params("SheetId", "رقم الرسم الداخلي", "Drawing id"));
+
         public static IEnumerable<ReportDatasetDefinition> All()
         {
             yield return Bill();
@@ -396,6 +413,7 @@ namespace CrossBuy.BL.Reporting
             yield return GlassesRx();
             yield return EyeLetter();
             yield return AllergyPlan();
+            yield return CanvasDrawing();
             yield return DentalClaim();
         }
     }

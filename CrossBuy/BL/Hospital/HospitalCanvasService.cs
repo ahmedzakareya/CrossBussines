@@ -43,6 +43,8 @@ namespace CrossBuy.BL.Hospital
 		public List<HospitalCanvasMarkInput> Marks { get; set; } = new();
 		public string? Ink { get; set; }
 		public string? State { get; set; }
+		/// H111: the SVG the screen shows, kept (cleaned) as the drawing's picture for printing.
+		public string? Svg { get; set; }
 	}
 
 	public static class HospitalCanvasRules
@@ -295,7 +297,8 @@ namespace CrossBuy.BL.Hospital
 			var placed = HospitalCanvasRules.Place(kind, input.Marks ?? new());
 			if (placed.Error != null) return HospitalResult.Fail(placed.Error, placed.Args ?? Array.Empty<object>());
 			var ink = HospitalCanvasRules.Ink(input.Ink);
-			var bad = ink.Error ?? HospitalCanvasRules.StateRefusal(input.State);
+			var picture = HospitalCanvasSnapshot.Clean(input.Svg);
+			var bad = ink.Error ?? HospitalCanvasRules.StateRefusal(input.State) ?? picture.Error;
 			if (bad != null) return HospitalResult.Fail(bad);
 			try
 			{
@@ -361,6 +364,7 @@ namespace CrossBuy.BL.Hospital
 					if (!m.Carried && m.CarriedFromMarkId != null && m.VerifiedAt == null) { m.VerifiedAt = nowUtc; m.VerifiedByEmployeeId = employeeId; }
 				}
 				sheet.InkJson = ink.Ink!;
+				if (picture.Svg != null) sheet.SnapshotSvg = picture.Svg;   // a save with no picture keeps the last one
 				sheet.StateJson = state;
 				sheet.UpdatedAt = nowUtc;
 				await using var tx = await _db.Database.BeginTransactionAsync(ct);

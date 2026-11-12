@@ -71,6 +71,8 @@
             else if (Model.Sheet?.Status == HospitalCanvasStatus.Signed)
             {
                 <span class="badge badge-light-success fs-7 px-4 py-3"><i class="ki-outline ki-check-circle fs-5 text-success me-1"></i>@T["Signed"]</span>
+                @* H111: the signed drawing's paper — through Report Studio only *@
+                @await Html.PartialAsync("_ReportPrintMenu", new CrossBuy.BL.Reporting.ReportPrintMenuModel { ScreenKey = CrossBuy.BL.Reporting.ReportScreenKeys.HospitalCanvasSheet, DocumentId = Model.Sheet.ID.ToString(), DocumentTitle = title })
             }
         </div>
     </div></div>
@@ -334,6 +336,8 @@
     </div></div>
 </div>
 
+@await Html.PartialAsync("_ReportPreviewModal", (object)name)
+
 @section Scripts {
     <script>
         (function () {
@@ -379,7 +383,23 @@
                 function end() { if (!cur) return; if (cur.p.length > 1) { var s = { c: cur.c, w: cur.w, p: cur.p }; ink.push(s); hist.push({ ink: s, el: cur.el }); } else cur.el.remove(); cur = null; }
                 svg.addEventListener('pointerup', end); svg.addEventListener('pointercancel', function () { if (cur) { cur.el.remove(); cur = null; } }); }
 
-            function payload() { return { marks: marks.map(function (m) { return { finding: m.f, view: m.v, x: m.x, y: m.y, sizeMm: m.s, carriedFromMarkId: m.from, carried: !!m.carried }; }), ink: JSON.stringify(ink.map(function (s) { return { c: s.c, w: s.w, p: s.p }; })), state: KIND === 'Burn' ? JSON.stringify(burnState()) : KIND === 'Audio' ? JSON.stringify(audioState()) : KIND === 'Joints' ? JSON.stringify(jointState()) : KIND === 'Pedigree' ? JSON.stringify(treeState()) : '{}' }; }
+            // H111: the drawing as the doctor sees it, kept (cleaned by the server) as the picture its paper prints
+            function snapshot() {
+                var ids = { Body: ['cv'], Burn: ['cv'], Audio: ['au'], Joints: ['jt'], Pedigree: ['pd'], Fundus: ['od', 'os'] }[KIND]; if (!ids) return null;
+                var css = '.cv-skin{fill:#F6E7DD;stroke:#C9A68F;stroke-width:1.5}text{font-family:Cairo,Tahoma,Arial,sans-serif}';
+                function copy(id) { var el = document.getElementById(id); if (!el) return null; var c = el.cloneNode(true);
+                    var prev = c.querySelector('#cv_prev'); if (prev) prev.innerHTML = '';   // the comparison overlay is not part of the drawing
+                    c.removeAttribute('id'); c.removeAttribute('style'); var st = document.createElementNS(NS, 'style'); st.textContent = css; c.insertBefore(st, c.firstChild); return c; }
+                var ser = new XMLSerializer();
+                if (KIND === 'Fundus') {
+                    var parts = ids.map(function (id, i) { var c = copy(id); if (!c) return ''; c.setAttribute('x', i * 320); c.setAttribute('y', 22); c.setAttribute('width', 300); c.setAttribute('height', 300); return ser.serializeToString(c); }).join('');
+                    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 620 330" width="620" height="330"><text x="150" y="15" text-anchor="middle" font-size="13" font-family="Arial">OD</text><text x="470" y="15" text-anchor="middle" font-size="13" font-family="Arial">OS</text>' + parts + '</svg>';
+                }
+                var c = copy(ids[0]); if (!c) return null;
+                var vb = (c.getAttribute('viewBox') || '0 0 400 400').split(/\s+/); c.setAttribute('width', vb[2]); c.setAttribute('height', vb[3]);
+                return ser.serializeToString(c);
+            }
+            function payload() { return { marks: marks.map(function (m) { return { finding: m.f, view: m.v, x: m.x, y: m.y, sizeMm: m.s, carriedFromMarkId: m.from, carried: !!m.carried }; }), ink: JSON.stringify(ink.map(function (s) { return { c: s.c, w: s.w, p: s.p }; })), state: KIND === 'Burn' ? JSON.stringify(burnState()) : KIND === 'Audio' ? JSON.stringify(audioState()) : KIND === 'Joints' ? JSON.stringify(jointState()) : KIND === 'Pedigree' ? JSON.stringify(treeState()) : '{}', svg: snapshot() }; }
             var treeState = function () { return {}; };
             var jointState = function () { return {}; };
             var audioState = function () { return {}; };

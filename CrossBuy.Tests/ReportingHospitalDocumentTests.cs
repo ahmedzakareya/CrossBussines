@@ -73,6 +73,7 @@ namespace CrossBuy.Tests
             HospitalDocumentDatasetCodes.GlassesRx,          // H109
             HospitalDocumentDatasetCodes.EyeLetter,          // H109
             HospitalDocumentDatasetCodes.AllergyPlan,        // H109
+            HospitalDocumentDatasetCodes.CanvasDrawing,      // H111
         };
 
         // ---- the datasets are declared, and declared legally ------------------------------------

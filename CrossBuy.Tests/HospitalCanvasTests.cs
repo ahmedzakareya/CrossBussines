@@ -78,6 +78,7 @@ namespace CrossBuy.Tests
 		public void The_tables_match_their_slice_and_follow_a_merge()
 		{
 			var s = HospitalSliceParity.Slice("hospital_h99_canvas.sql");
+			s += Environment.NewLine + HospitalSliceParity.Slice("hospital_h111_canvas_print.sql");   // H111: the drawing's picture
 			var m = HospitalSliceParity.Model(HospitalCanvasModel.Configure);
 			foreach (var (t, n) in new (Type, string)[] { (typeof(HospitalCanvasSheet), "HospitalCanvasSheets"), (typeof(HospitalCanvasMark), "HospitalCanvasMarks") })
 			{ HospitalSliceParity.NamesItsTable(m, s, t, n); HospitalSliceParity.ColumnsMatch(m, s, t, n); }
