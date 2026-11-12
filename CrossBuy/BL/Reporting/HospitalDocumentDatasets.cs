@@ -28,6 +28,10 @@ namespace CrossBuy.BL.Reporting
         public const string Consent = "Hospital.Consent";
         /// H63: a patient's account statement — bills, payments and charity waivers with a running balance.
         public const string PatientStatement = "Hospital.PatientStatement";
+        /// H109: the specialty visit's papers, each ONE row from the signed visit.
+        public const string GlassesRx = "Hospital.GlassesRx";
+        public const string EyeLetter = "Hospital.EyeLetter";
+        public const string AllergyPlan = "Hospital.AllergyPlan";
         public const string CategoryKey = "hospital.reporting";
     }
 
@@ -341,6 +345,43 @@ namespace CrossBuy.BL.Reporting
             },
             Params("PlanId", "رقم الخطة الداخلي", "Plan id"));
 
+        // ---- H109: the specialty visit's papers (the approved prototype's outputs), from the SIGNED visit ----
+        private static IEnumerable<ReportDatasetField> Eyes(params (string Key, string Ar, string En)[] fields) =>
+            new[] { ("Od", "العين اليمنى", "right eye"), ("Os", "العين اليسرى", "left eye") }
+                .SelectMany(s => fields.Select(f => F(s.Item1 + f.Key, f.Ar + " — " + s.Item2, f.En + " — " + s.Item3, width: 22)));
+
+        public static ReportDatasetDefinition GlassesRx() => Doc(HospitalDocumentDatasetCodes.GlassesRx,
+            "وصفة نظارة", "Glasses prescription",
+            "وصفة نظارة من قياسات زيارة العيون الموقّعة: الكروي والأسطواني والمحور والإضافة للقراءة لكل عين، والنظر بالنظارة.",
+            "A glasses prescription from the signed eye visit's readings: sphere, cylinder, axis and near add for each eye, and the corrected vision.",
+            new[] { F("LineNo", "م", "#", ReportFieldType.Integer, 10, false, ReportAlign.Center) },
+            Eyes(("Sph", "كروي", "Sphere"), ("Cyl", "أسطواني", "Cylinder"), ("Axis", "المحور", "Axis"), ("Add", "إضافة القراءة", "Near add"), ("Va", "النظر بالنظارة", "Corrected vision"))
+                .Append(F("Notes", "ملاحظات", "Notes", width: 120)),
+            Params("EncounterId", "رقم الزيارة الداخلي", "Visit id"));
+
+        public static ReportDatasetDefinition EyeLetter() => Doc(HospitalDocumentDatasetCodes.EyeLetter,
+            "تقرير العيون لطبيب السكري", "Eye report to the diabetes doctor",
+            "تقرير من زيارة العيون الموقّعة لطبيب السكري: النظر وضغط العين ودرجة اعتلال الشبكية ونسبة الكأس للقرص لكل عين، ونتائج رسم قاع العين، والتشخيص والخطة.",
+            "A report from the signed eye visit to the diabetes doctor: vision, eye pressure, retinopathy grade and cup-to-disc ratio for each eye, the fundus drawing's findings, the diagnosis and the plan.",
+            new[] { F("LineNo", "م", "#", ReportFieldType.Integer, 10, false, ReportAlign.Center) },
+            Eyes(("Va", "النظر", "Vision"), ("Iop", "ضغط العين", "Eye pressure"), ("Dr", "اعتلال الشبكية", "Retinopathy"), ("Cdr", "الكأس للقرص", "Cup-to-disc"))
+                .Concat(new[] { F("FundusFindings", "نتائج قاع العين", "Fundus findings", width: 140), F("Assessment", "التشخيص", "Assessment", width: 140), F("Plan", "الخطة", "Plan", width: 140) }),
+            Params("EncounterId", "رقم الزيارة الداخلي", "Visit id"));
+
+        public static ReportDatasetDefinition AllergyPlan() => Doc(HospitalDocumentDatasetCodes.AllergyPlan,
+            "خطة طوارئ الحساسية", "Allergy emergency plan",
+            "خطة الطوارئ لمريض الحساسية من زيارته الموقّعة: مسببات الحساسية، والربو، وحقنة الأدرينالين الموصوفة وطريقة استخدامها، وخطوات التصرف.",
+            "The allergy patient's emergency action plan from the signed visit: the triggers, asthma, the adrenaline auto-injector prescribed and how to use it, and the steps to take.",
+            new[] { F("LineNo", "م", "#", ReportFieldType.Integer, 10, false, ReportAlign.Center) },
+            new[]
+            {
+                F("Triggers", "مسببات الحساسية", "Triggers", width: 140),
+                F("Asthma", "ربو", "Asthma", width: 80),
+                F("AdrenalineDevice", "حقنة الأدرينالين", "Adrenaline auto-injector", width: 80),
+                F("AdrenalineUse", "طريقة الاستخدام", "How to use it", width: 140),
+            },
+            Params("EncounterId", "رقم الزيارة الداخلي", "Visit id"));
+
         public static IEnumerable<ReportDatasetDefinition> All()
         {
             yield return Bill();
@@ -352,6 +393,9 @@ namespace CrossBuy.BL.Reporting
             yield return DeathCertificate();
             yield return Consent();
             yield return PatientStatement();
+            yield return GlassesRx();
+            yield return EyeLetter();
+            yield return AllergyPlan();
             yield return DentalClaim();
         }
     }

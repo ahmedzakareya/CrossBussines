@@ -231,6 +231,9 @@ namespace CrossBuy.BL.Reporting
             services.AddScoped<IReportDataSource, HospitalDentalClaimDocumentSource>();
             services.AddScoped<IReportDataSource, HospitalDischargeSummarySource>();   // H55
             services.AddScoped<IReportDataSource, HospitalSickLeaveSource>();          // H56
+            services.AddScoped<IReportDataSource, HospitalGlassesRxSource>();          // H109
+            services.AddScoped<IReportDataSource, HospitalEyeLetterSource>();          // H109
+            services.AddScoped<IReportDataSource, HospitalAllergyPlanSource>();        // H109
             services.AddScoped<IReportDataSource, HospitalBirthNoticeSource>();        // H58
             services.AddScoped<IReportDataSource, HospitalDeathCertificateSource>();   // H59
             services.AddScoped<IReportDataSource, HospitalConsentSource>();            // H60

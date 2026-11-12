@@ -58,6 +58,12 @@
         </div>
         <div class="d-flex gap-2">
             @if (W?.Child == true) {<a href="@Url.Content("~/Hospital/Patients/" + p.ID + "/Vaccines")" class="btn btn-sm btn-light"><i class="ki-outline ki-shield-tick fs-4"></i>@T["Vaccines"]</a>}
+            @* H109: the patient's emergency plan — an allergy visit, once signed *@
+            @if (e.Status == HospitalEncounterStatus.Signed && (W?.Adrenaline?.Needed == true || W?.Spt != null || W?.Immuno != null))
+            {
+                <span class="align-self-center fs-7 text-gray-700">@T["Patient emergency plan"]</span>
+                @await Html.PartialAsync("_ReportPrintMenu", new CrossBuy.BL.Reporting.ReportPrintMenuModel { ScreenKey = CrossBuy.BL.Reporting.ReportScreenKeys.HospitalAllergyVisit, DocumentId = e.ID.ToString(), DocumentTitle = "V-" + e.ID.ToString("D6") })
+            }
             @if (canEdit)
             {
                 <span class="text-muted fs-8 align-self-center" id="saveState"></span>
@@ -442,7 +448,16 @@
                     <div class="card mb-5 mb-xl-8">
                         <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Outputs"]</span></div></div>
                         <div class="card-body pt-2 d-flex flex-column gap-2">
-                            <button type="button" class="btn btn-light-primary btn-sm text-start" disabled><i class="ki-outline ki-glasses fs-4"></i>@T["Glasses prescription (from the readings)"] <span class="badge badge-light fs-9 ms-2">@T["Next step"]</span></button>
+                            @* H109: the glasses prescription and the letter are Report Studio papers, read from the SIGNED visit *@
+                            @if (e.Status == HospitalEncounterStatus.Signed)
+                            {
+                                <div class="d-flex align-items-center gap-2"><span class="fs-7 text-gray-700 flex-grow-1">@T["Glasses prescription · letter to the diabetes doctor"]</span>
+                                    @await Html.PartialAsync("_ReportPrintMenu", new CrossBuy.BL.Reporting.ReportPrintMenuModel { ScreenKey = CrossBuy.BL.Reporting.ReportScreenKeys.HospitalEyeVisit, DocumentId = e.ID.ToString(), DocumentTitle = "V-" + e.ID.ToString("D6") })</div>
+                            }
+                            else
+                            {
+                                <div class="rounded border border-dashed p-3 fs-8 text-gray-700"><i class="ki-outline ki-information-5 fs-5 text-primary me-1"></i>@T["The glasses prescription and the letter print once the visit is signed: they say what was signed."]</div>
+                            }
                             @if (eo.Oct != null && eo.Vf != null)
                             {
                                 <button type="button" class="btn btn-light-primary btn-sm text-start" data-order-many="@eo.Oct.ID,@eo.Vf.ID" @(canEdit ? "" : "disabled")><i class="ki-outline ki-scan-barcode fs-4"></i>@T["Order OCT + visual fields"]</button>
@@ -451,7 +466,6 @@
                             {
                                 <div class="rounded border border-dashed p-3 fs-8 text-gray-700"><i class="ki-outline ki-information-5 fs-5 text-primary me-1"></i>@T["To order OCT and visual fields here, add them to the price list with the codes OCT and VF."] <a href="@Url.Action("Services")" class="fw-semibold">@T["Price list"]</a></div>
                             }
-                            <button type="button" class="btn btn-light-primary btn-sm text-start" disabled><i class="ki-outline ki-document fs-4"></i>@T["Letter to the diabetes doctor"] <span class="badge badge-light fs-9 ms-2">@T["Next step"]</span></button>
                         </div>
                     </div>
                 }
@@ -580,6 +594,8 @@
         <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-imdecide>@T["Save"]</button></div>
     </div></div></div>
 }
+
+@await Html.PartialAsync("_ReportPreviewModal", (object)name)
 
 @section Scripts {
     <script>

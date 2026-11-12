@@ -70,6 +70,9 @@ namespace CrossBuy.Tests
             HospitalDocumentDatasetCodes.Consent,            // H60
             HospitalDocumentDatasetCodes.PatientStatement,   // H63
             HospitalDocumentDatasetCodes.DentalClaim,
+            HospitalDocumentDatasetCodes.GlassesRx,          // H109
+            HospitalDocumentDatasetCodes.EyeLetter,          // H109
+            HospitalDocumentDatasetCodes.AllergyPlan,        // H109
         };
 
         // ---- the datasets are declared, and declared legally ------------------------------------
