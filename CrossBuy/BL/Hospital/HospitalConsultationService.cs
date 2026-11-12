@@ -286,7 +286,8 @@ namespace CrossBuy.BL.Hospital
 			e.FollowUpDays = input.FollowUpDays; e.ReferToDepartmentId = input.ReferToDepartmentId;
 			e.UpdatedAt = DateTime.UtcNow; e.UpdatedByEmployeeId = employeeId;
 
-			await using var tx = await _db.Database.BeginTransactionAsync(ct);
+			// H112: own-or-join — alone it owns its transaction as before; inside the visit's ONE signature it joins it
+			await using var tx = await ScopedTx.BeginOrJoinAsync(_db);
 			_db.HospitalEncounterDiagnoses.RemoveRange(await _db.HospitalEncounterDiagnoses.Where(d => d.CompanyId == ctx.CompanyId && d.EncounterId == e.ID).ToListAsync(ct));
 			_db.HospitalPrescriptionLines.RemoveRange(await _db.HospitalPrescriptionLines.Where(r => r.CompanyId == ctx.CompanyId && r.EncounterId == e.ID).ToListAsync(ct));
 			_db.HospitalEncounterOrders.RemoveRange(await _db.HospitalEncounterOrders.Where(o => o.CompanyId == ctx.CompanyId && o.EncounterId == e.ID).ToListAsync(ct));
@@ -318,7 +319,7 @@ namespace CrossBuy.BL.Hospital
 				if (_billing != null) await _billing.AddEncounterChargesAsync(ctx, e, orderRows, employeeId, now, ct);
 			}
 			await _db.SaveChangesAsync(ct);
-			await tx.CommitAsync(ct);
+			await tx.CommitAsync();
 			return HospitalResult.Success(e.ID);
 		}
 

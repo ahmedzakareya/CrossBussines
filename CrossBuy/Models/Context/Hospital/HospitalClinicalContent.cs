@@ -95,7 +95,9 @@ namespace CrossBuy.Models.Context.Hospital
 		public const string Lab = "Lab";
 		/// H110: a canvas calculator's result (burn %, DAS28, hearing average), written when the visit is signed.
 		public const string Canvas = "Canvas";
-		public static readonly IReadOnlyList<string> All = new[] { Form, Lab, Canvas };
+		/// H112: reported by the patient (their pain on the tablet) — never mixed with what a clinician measured.
+		public const string Patient = "Patient";
+		public static readonly IReadOnlyList<string> All = new[] { Form, Lab, Canvas, Patient };
 	}
 
 	public class HospitalConcept
@@ -313,7 +315,7 @@ namespace CrossBuy.Models.Context.Hospital
 				e.Property(x => x.Side).HasMaxLength(1);
 				e.Property(x => x.Unit).HasMaxLength(30);
 				e.Property(x => x.Flag).HasMaxLength(2);
-				e.Property(x => x.Source).HasMaxLength(6);
+				e.Property(x => x.Source).HasMaxLength(10);   // H112: 'Patient' is seven letters
 				e.HasIndex(x => new { x.CompanyId, x.PatientId, x.ConceptId, x.ObservedAt });
 				e.HasIndex(x => new { x.CompanyId, x.FormId });
 			});

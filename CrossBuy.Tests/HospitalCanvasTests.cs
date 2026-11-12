@@ -79,6 +79,7 @@ namespace CrossBuy.Tests
 		{
 			var s = HospitalSliceParity.Slice("hospital_h99_canvas.sql");
 			s += Environment.NewLine + HospitalSliceParity.Slice("hospital_h111_canvas_print.sql");   // H111: the drawing's picture
+			s += Environment.NewLine + HospitalSliceParity.Slice("hospital_h112_patient_pain.sql");   // H112: the patient's pain drawing
 			var m = HospitalSliceParity.Model(HospitalCanvasModel.Configure);
 			foreach (var (t, n) in new (Type, string)[] { (typeof(HospitalCanvasSheet), "HospitalCanvasSheets"), (typeof(HospitalCanvasMark), "HospitalCanvasMarks") })
 			{ HospitalSliceParity.NamesItsTable(m, s, t, n); HospitalSliceParity.ColumnsMatch(m, s, t, n); }

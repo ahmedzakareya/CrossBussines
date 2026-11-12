@@ -1,0 +1,223 @@
+@using System.Globalization
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model HospitalCanvasPage
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H112 — the patient draws their pain (the prototype's canvas layer 8: "the patient draws their pain on the tablet —
+    kept apart as patient-reported"). The doctor opens it from the body map and hands the clinic's tablet over:
+      1. where: tap the places on the figures, or draw with a finger or the pen;
+      2. how strong now: 0 to 10, large buttons, blue to red (never amber);
+      3. what it feels like: a fixed list of words;
+      4. a review, and the send (it confirms first);
+      5. thanks — hand the device back. Nothing else of the file is shown here.
+    It is saved as the visit's separate "Pain" drawing; when the visit is signed the strength becomes a measurement
+    whose source is the patient.
+*@
+@{
+    Layout = null;
+    bool isAr = CultureInfo.CurrentUICulture.Name.StartsWith("ar");
+    string other = isAr ? "en" : "ar";
+    var e = Model.Visit.Encounter; bool canEdit = Model.CanEdit;
+    var now = HospitalPainRules.Read(Model.Sheet?.StateJson).Result;
+    string[] wordKeys = { "burning", "stabbing", "throbbing", "aching", "pressing", "tingling", "cramping", "spreading" };
+    string Nrs(int i) { int r = 58 + (220 - 58) * i / 10, g = 87 + (38 - 87) * i / 10, b = 149 + (38 - 149) * i / 10; return $"#{r:X2}{g:X2}{b:X2}"; }   // brand blue to red
+}
+<!DOCTYPE html>
+<html lang="@(isAr ? "ar" : "en")" dir="@(isAr ? "rtl" : "ltr")">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@T["Show us where it hurts"]</title>
+    <link rel="shortcut icon" href="@Url.Content(CrossBuy.BL.Platform.ProductIdentity.Assets.FaviconIco)" asp-append-version="true" />
+    <link href="~/Backend-assets/plugins/global/plugins.bundle@(isAr ? ".rtl" : "").css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/Backend-assets/css/style.bundle@(isAr ? ".rtl" : "").css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/Backend-assets/css/crossbuy-brand.css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/Backend-assets/fonts/cairo/cairo.css" rel="stylesheet" asp-append-version="true" />
+    <style>
+        body { background: #f4f6fb; font-family: 'Cairo', Inter, sans-serif; margin: 0; min-height: 100vh; display: flex; flex-direction: column; }
+        .ki-top { padding: 18px 32px; background: #1e2f5a; color: #fff; display: flex; justify-content: space-between; align-items: center; }
+        .ki-top h1 { color: #fff; font-size: 1.8rem; font-weight: 700; margin: 0; }
+        .ki-top a { color: #fff; font-size: 1.15rem; border: 1px solid rgba(255,255,255,.5); border-radius: 10px; padding: 6px 16px; text-decoration: none; }
+        .ki-main { flex: 1; display: flex; align-items: flex-start; justify-content: center; padding: 22px; }
+        .ki-box { width: min(980px, 100%); background: #fff; border-radius: 22px; box-shadow: 0 6px 26px rgba(30,47,90,.1); padding: 30px 34px; }
+        .ki-box h2 { font-size: 1.8rem; font-weight: 700; color: #1e2f5a; margin-bottom: 6px; }
+        .ki-box .sub { font-size: 1.15rem; color: #6b7280; margin-bottom: 18px; }
+        .ki-btn { font-size: 1.4rem; padding: 14px 28px; border-radius: 14px; font-weight: 700; }
+        .ki-dots { display: flex; gap: 8px; justify-content: center; margin-bottom: 18px; }
+        .ki-dots span { width: 12px; height: 12px; border-radius: 50%; background: #dfe3ee; } .ki-dots span.on { background: #3A5795; }
+        .ki-step { display: none; } .ki-step.on { display: block; }
+        .ki-nav { display: flex; justify-content: space-between; gap: 12px; margin-top: 22px; }
+        .ki-err { font-size: 1.2rem; color: #dc2626; margin-top: 12px; min-height: 1.5em; text-align: center; }
+        .pp-tools { display: flex; gap: 10px; justify-content: center; margin-bottom: 12px; flex-wrap: wrap; }
+        .pp-tool { border: 2px solid #e5e9f4; background: #fff; border-radius: 14px; padding: 10px 20px; font-size: 1.2rem; font-weight: 700; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
+        .pp-tool.on { border-color: #3A5795; background: #EEF2FA; color: #1E2F5A; }
+        .pp-wrap { background: #fff; border: 1px solid #E4E6EF; border-radius: 16px; touch-action: none; user-select: none; max-width: 640px; margin: 0 auto; }
+        .pp-wrap svg { display: block; width: 100%; height: auto; direction: ltr; }
+        .cv-skin { fill: #F6E7DD; stroke: #C9A68F; stroke-width: 1.5; }
+        .pp-nrs { display: grid; grid-template-columns: repeat(11, 1fr); gap: 8px; direction: ltr; }
+        .pp-nrs button { border: 3px solid transparent; border-radius: 14px; color: #fff; font-size: 1.9rem; font-weight: 800; padding: 18px 0; cursor: pointer; opacity: .55; }
+        .pp-nrs button.on { opacity: 1; border-color: #111827; transform: scale(1.08); }
+        .pp-ends { display: flex; justify-content: space-between; font-size: 1.1rem; color: #6b7280; margin-top: 8px; direction: ltr; }
+        .pp-words { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+        .pp-word { border: 2px solid #e5e9f4; border-radius: 14px; padding: 16px 18px; font-size: 1.35rem; font-weight: 700; cursor: pointer; text-align: center; background: #fff; }
+        .pp-word.on { border-color: #DC2626; background: #FEF2F2; color: #991B1B; }
+        .pp-sum { font-size: 1.35rem; } .pp-sum dt { color: #6b7280; font-weight: 600; } .pp-sum dd { font-weight: 700; margin-bottom: 14px; }
+        @@media (max-width: 640px) { .pp-nrs { grid-template-columns: repeat(6, 1fr); } }
+    </style>
+</head>
+<body>
+    @Html.AntiForgeryToken()
+    <div class="ki-top"><h1>@T["Show us where it hurts"]</h1><a href="@Url.Action("SetLanguage", "Account", new { culture = other, returnUrl = Url.Action("CanvasPatient", new { id = e.ID }) })">@(isAr ? "English" : "العربية")</a></div>
+    <div class="ki-main"><div class="ki-box">
+        @if (!canEdit)
+        {
+            <h2 class="text-center">@T["This visit is closed"]</h2>
+            <div class="sub text-center">@T["Please hand the device back to the doctor."]</div>
+            <div class="text-center"><a class="btn btn-light ki-btn" href="@Url.Action("CanvasSheet", new { id = e.ID, kind = HospitalCanvasKind.Body })">@T["For the doctor: back to the visit"]</a></div>
+        }
+        else
+        {
+            <div class="ki-dots">@for (int i = 0; i < 4; i++) { <span data-dot="@i"></span> }</div>
+
+            <div class="ki-step" data-step="0">
+                <h2>@T["Where does it hurt?"]</h2>
+                <div class="sub">@T["Tap each place that hurts. You can also draw with your finger or the pen — for example, where the pain spreads."]</div>
+                <div class="pp-tools" id="pp_tools">
+                    <button type="button" class="pp-tool on" data-k="mark"><i class="ki-outline ki-geolocation fs-2"></i>@T["Tap a place"]</button>
+                    <button type="button" class="pp-tool" data-k="pen"><i class="ki-outline ki-pencil fs-2"></i>@T["Draw"]</button>
+                    <button type="button" class="pp-tool" data-k="undo"><i class="ki-outline ki-arrow-circle-left fs-2"></i>@T["Undo"]</button>
+                </div>
+                <div class="pp-wrap" id="pp_wrap"><svg id="cv" viewBox="0 0 440 460">
+                    @foreach (var (ox, lbl) in new[] { (0, T["Front view"].Value), (230, T["Back view"].Value) })
+                    {
+                        <g transform="translate(@ox,0)">
+                            <ellipse cx="100" cy="34" rx="24" ry="28" class="cv-skin" /><rect x="90" y="58" width="20" height="14" class="cv-skin" />
+                            <path d="M62 74 Q100 64 138 74 L136 206 Q100 214 64 206 Z" class="cv-skin" />
+                            <path d="M62 76 L40 90 L24 210 L38 214 L54 110 L62 104 Z" class="cv-skin" /><path d="M138 76 L160 90 L176 210 L162 214 L146 110 L138 104 Z" class="cv-skin" />
+                            <path d="M64 206 L98 214 L96 428 L72 430 L66 300 Z" class="cv-skin" /><path d="M136 206 L102 214 L104 428 L128 430 L134 300 Z" class="cv-skin" />
+                            <text x="100" y="452" text-anchor="middle" font-size="13" fill="#6B7280">@lbl</text>
+                        </g>
+                    }
+                    <g id="cv_ink"></g><g id="cv_marks"></g>
+                </svg></div>
+                <div class="ki-nav"><span></span><button type="button" class="btn btn-primary ki-btn" data-go="1">@T["Next"]</button></div>
+            </div>
+
+            <div class="ki-step" data-step="1">
+                <h2>@T["How strong is the pain right now?"]</h2>
+                <div class="sub">@T["0 means no pain at all; 10 means the worst pain you can imagine."]</div>
+                <div class="pp-nrs" id="pp_nrs">@for (int i = 0; i <= 10; i++) { <button type="button" data-n="@i" style="background:@Nrs(i)">@i</button> }</div>
+                <div class="pp-ends"><span>@T["No pain"]</span><span>@T["Worst pain imaginable"]</span></div>
+                <div class="ki-err" data-err></div>
+                <div class="ki-nav"><button type="button" class="btn btn-light ki-btn" data-go="0">@T["Back"]</button><button type="button" class="btn btn-primary ki-btn" data-go="2">@T["Next"]</button></div>
+            </div>
+
+            <div class="ki-step" data-step="2">
+                <h2>@T["What does it feel like?"]</h2>
+                <div class="sub">@T["Choose every word that fits, or none."]</div>
+                <div class="pp-words" id="pp_words">@foreach (var w in wordKeys) { <div class="pp-word" data-w="@w">@T["pain:" + w]</div> }</div>
+                <div class="ki-nav"><button type="button" class="btn btn-light ki-btn" data-go="1">@T["Back"]</button><button type="button" class="btn btn-primary ki-btn" data-go="3">@T["Next"]</button></div>
+            </div>
+
+            <div class="ki-step" data-step="3">
+                <h2>@T["Check before you send"]</h2>
+                <dl class="pp-sum mt-4">
+                    <dt>@T["Places"]</dt><dd data-sum-places></dd>
+                    <dt>@T["Strength now"]</dt><dd data-sum-nrs></dd>
+                    <dt>@T["What it feels like"]</dt><dd data-sum-words></dd>
+                </dl>
+                <div class="ki-err" data-err2></div>
+                <div class="ki-nav"><button type="button" class="btn btn-light ki-btn" data-go="2">@T["Back"]</button><button type="button" class="btn btn-success ki-btn" data-send>@T["Send to the doctor"]</button></div>
+            </div>
+
+            <div class="ki-step text-center" data-step="4">
+                <i class="ki-outline ki-check-circle text-success" style="font-size:6rem"></i>
+                <h2 class="mt-4">@T["Thank you"]</h2>
+                <div class="sub fs-3">@T["Please hand the device back to the doctor."]</div>
+                <a class="btn btn-light ki-btn mt-4" href="@Url.Action("CanvasSheet", new { id = e.ID, kind = HospitalCanvasKind.Body })">@T["For the doctor: back to the visit"]</a>
+            </div>
+        }
+    </div></div>
+
+    <script src="~/Backend-assets/plugins/global/plugins.bundle.js" asp-append-version="true"></script>
+    @await Html.PartialAsync("_CbConfirm")
+    @if (canEdit)
+    {
+    <script>
+        (function () {
+            var tok = document.querySelector('input[name="__RequestVerificationToken"]').value, NS = 'http://www.w3.org/2000/svg', step = 0, mode = 'mark', hist = [];
+            var saveUrl = @Json.Serialize(Url.Content("~/Hospital/Consult/" + e.ID + "/Canvas/" + HospitalCanvasKind.Pain + "/Save"));
+            var W = { onBody: @Json.Serialize(T["Tap on the body itself"].Value), nrs: @Json.Serialize(T["Choose how strong the pain is, from 0 to 10"].Value), failed: @Json.Serialize(T["The change could not be saved"].Value),
+                      send: @Json.Serialize(T["Send your answers to the doctor?"].Value), of: @Json.Serialize(T["{0} out of 10"].Value), none: @Json.Serialize(T["None"].Value), drawn: @Json.Serialize(T["drawn by hand"].Value),
+                      front: @Json.Serialize(T["front side"].Value), back: @Json.Serialize(T["back side"].Value) };
+            var REG = @Json.Serialize(HospitalCanvasRules.BodyRegions.Select(r => new { k = r.Key, t = isAr ? r.Ar : r.En, r = new[] { r.X, r.Y, r.W, r.H } }));
+            var WORDS = {}; document.querySelectorAll('[data-w]').forEach(function (d) { WORDS[d.getAttribute('data-w')] = d.textContent; });
+            var marks = @Json.Serialize(Model.Marks.Select(m => new { x = m.X, y = m.Y, v = m.Side }));
+            var ink = @Json.Serialize(System.Text.Json.JsonDocument.Parse(string.IsNullOrEmpty(Model.Sheet?.InkJson) ? "[]" : Model.Sheet!.InkJson).RootElement);
+            var nrs = @Json.Serialize(now?.Nrs), words = @Json.Serialize(now?.Words ?? Array.Empty<string>());
+            function $(s) { return document.querySelector(s); }
+            function pt(svg, ev) { var r = svg.getBoundingClientRect(), vb = svg.viewBox.baseVal; return [(ev.clientX - r.left) * vb.width / r.width, (ev.clientY - r.top) * vb.height / r.height]; }
+            function regionAt(x, y) { var side = x < 220 ? 'F' : 'B', lx = side === 'F' ? x : x - 230;
+                var hit = REG.filter(function (r) { return lx >= r.r[0] && lx <= r.r[0] + r.r[2] && y >= r.r[1] && y <= r.r[1] + r.r[3]; })[0];
+                var MIR = { armR: 'armL', armL: 'armR', legR: 'legL', legL: 'legR' };   // seen from behind (the server places it the same way)
+                if (hit && side === 'B' && MIR[hit.k]) hit = REG.filter(function (r) { return r.k === MIR[hit.k]; })[0];
+                return hit ? hit.t + ' — ' + (side === 'F' ? W.front : W.back) : null; }
+            var s = $('#cv'), g = $('#cv_marks'), gi = $('#cv_ink');
+            function strokeEl(st) { var el = document.createElementNS(NS, 'polyline'); el.setAttribute('fill', 'none'); el.setAttribute('stroke', st.c); el.setAttribute('stroke-linecap', 'round'); el.setAttribute('stroke-linejoin', 'round');
+                el.setAttribute('stroke-width', st.w || 3); el.setAttribute('points', st.p.map(function (q) { return q[0].toFixed(1) + ',' + q[1].toFixed(1); }).join(' ')); return el; }
+            ink.forEach(function (st) { gi.appendChild(strokeEl(st)); });
+            function draw() { g.innerHTML = marks.map(function (m) { return '<circle cx="' + m.x + '" cy="' + m.y + '" r="11" fill="#DC2626" fill-opacity=".85" stroke="#fff" stroke-width="2.5"/>'; }).join(''); }
+            draw();
+            s.addEventListener('click', function (ev) { if (mode !== 'mark') return; var q = pt(s, ev);
+                if (!regionAt(q[0], q[1])) { toastr.info(W.onBody); return; }
+                marks.push({ x: +q[0].toFixed(2), y: +q[1].toFixed(2), v: q[0] < 220 ? 'F' : 'B' }); hist.push({ mark: true }); draw(); });
+            var cur = null;
+            s.addEventListener('pointerdown', function (ev) { if (mode !== 'pen') return; ev.preventDefault(); s.setPointerCapture(ev.pointerId); var q = pt(s, ev);
+                cur = { c: '#DC2626', w: ev.pointerType === 'pen' ? +(1.5 + 3 * (ev.pressure || 0.5)).toFixed(1) : 3.5, p: [[+q[0].toFixed(1), +q[1].toFixed(1), +(ev.pressure || 0.5).toFixed(2)]] }; cur.el = strokeEl(cur); gi.appendChild(cur.el); });
+            s.addEventListener('pointermove', function (ev) { if (!cur) return; (ev.getCoalescedEvents ? ev.getCoalescedEvents() : [ev]).forEach(function (ce) { var q = pt(s, ce); cur.p.push([+q[0].toFixed(1), +q[1].toFixed(1), +(ce.pressure || 0.5).toFixed(2)]); });
+                cur.el.setAttribute('points', cur.p.map(function (q) { return q[0] + ',' + q[1]; }).join(' ')); });
+            s.addEventListener('pointerup', function () { if (!cur) return; if (cur.p.length > 1) { var st = { c: cur.c, w: cur.w, p: cur.p }; ink.push(st); hist.push({ ink: st, el: cur.el }); } else cur.el.remove(); cur = null; });
+            s.addEventListener('pointercancel', function () { if (cur) { cur.el.remove(); cur = null; } });
+            $('#pp_tools').addEventListener('click', function (ev) { var b = ev.target.closest('.pp-tool'); if (!b) return; var k = b.getAttribute('data-k');
+                if (k === 'undo') { var h = hist.pop(); if (h && h.mark) marks.pop(); else if (h && h.ink) { ink.splice(ink.indexOf(h.ink), 1); h.el.remove(); } draw(); return; }
+                mode = k; this.querySelectorAll('.pp-tool').forEach(function (x) { x.classList.toggle('on', x === b); }); $('#pp_wrap').style.cursor = k === 'pen' ? 'crosshair' : 'pointer'; });
+
+            function paintNrs() { document.querySelectorAll('#pp_nrs button').forEach(function (b) { b.classList.toggle('on', +b.getAttribute('data-n') === nrs); }); }
+            $('#pp_nrs').addEventListener('click', function (ev) { var b = ev.target.closest('[data-n]'); if (!b) return; nrs = +b.getAttribute('data-n'); $('[data-err]').textContent = ''; paintNrs(); });
+            function paintWords() { document.querySelectorAll('[data-w]').forEach(function (d) { d.classList.toggle('on', words.indexOf(d.getAttribute('data-w')) >= 0); }); }
+            $('#pp_words').addEventListener('click', function (ev) { var d = ev.target.closest('[data-w]'); if (!d) return; var k = d.getAttribute('data-w'), i = words.indexOf(k);
+                if (i >= 0) words.splice(i, 1); else words.push(k); paintWords(); });
+            paintNrs(); paintWords();
+
+            function summary() {
+                var places = marks.map(function (m) { return regionAt(m.x, m.y); }).filter(Boolean).filter(function (v, i, a) { return a.indexOf(v) === i; });
+                if (ink.length) places.push(W.drawn);
+                $('[data-sum-places]').textContent = places.length ? places.join('، ') : W.none;
+                $('[data-sum-nrs]').textContent = nrs == null ? '—' : W.of.replace('{0}', nrs);
+                $('[data-sum-words]').textContent = words.length ? words.map(function (w) { return WORDS[w]; }).join('، ') : W.none;
+            }
+            function show(n) { step = n; document.querySelectorAll('[data-step]').forEach(function (el) { el.classList.toggle('on', +el.getAttribute('data-step') === n); });
+                document.querySelectorAll('[data-dot]').forEach(function (d) { d.classList.toggle('on', +d.getAttribute('data-dot') <= n); }); if (n === 3) summary(); window.scrollTo(0, 0); }
+            function snapshot() { var c = s.cloneNode(true); c.removeAttribute('id'); var st = document.createElementNS(NS, 'style');
+                st.textContent = '.cv-skin{fill:#F6E7DD;stroke:#C9A68F;stroke-width:1.5}text{font-family:Cairo,Tahoma,Arial,sans-serif}'; c.insertBefore(st, c.firstChild);
+                c.setAttribute('width', 440); c.setAttribute('height', 460); return new XMLSerializer().serializeToString(c); }
+            document.addEventListener('click', function (ev) {
+                var go = ev.target.closest('[data-go]');
+                if (go) { var to = +go.getAttribute('data-go'); if (to === 2 && step === 1 && nrs == null) { $('[data-err]').textContent = W.nrs; return; } show(to); return; }
+                var sb = ev.target.closest('[data-send]'); if (!sb) return;
+                cbConfirm(W.send, { kind: 'primary' }).then(function (ok) { if (!ok) return; sb.disabled = true;
+                    fetch(saveUrl, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': tok },
+                        body: JSON.stringify({ marks: marks.map(function (m) { return { finding: 'Pain', view: m.v, x: m.x, y: m.y }; }), ink: JSON.stringify(ink.map(function (st) { return { c: st.c, w: st.w, p: st.p }; })),
+                            state: JSON.stringify({ nrs: nrs, words: words }), svg: snapshot() }) })
+                        .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+                        .then(function (r) { sb.disabled = false; if (!r.ok) { $('[data-err2]').textContent = r.error || W.failed; return; } show(4); });
+                });
+            });
+            show(0);
+        })();
+    </script>
+    }
+</body>
+</html>

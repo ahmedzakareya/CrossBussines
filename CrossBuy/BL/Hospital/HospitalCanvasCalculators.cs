@@ -299,4 +299,44 @@ namespace CrossBuy.BL.Hospital
 			couples = r.Couples.Select(c => new { a = c.A, b = c.B, cons = c.Cons }),
 		});
 	}
+	// ==========================================================================================
+	// HOSPITAL H112 — the patient's pain report (the prototype's canvas layer 8): where it hurts (marks on the figures),
+	// how strong NOW on the 0–10 numeric rating scale (NRS, LOINC 72514-3), and the words for it (a fixed list, as on
+	// the McGill / Brief Pain Inventory diagrams). Patient-reported: stored apart, never as a clinician's measurement.
+	// ==========================================================================================
+	public sealed record HospitalPainReport(int? Nrs, IReadOnlyList<string> Words);
+
+	public static class HospitalPainRules
+	{
+		public const string NrsCode = "72514-3";
+		public static readonly IReadOnlyList<string> Words = new[] { "burning", "stabbing", "throbbing", "aching", "pressing", "tingling", "cramping", "spreading" };
+
+		/// Reads {"nrs":7,"words":["burning"]}; the strength is required (0–10), the words come from the fixed list only.
+		public static (HospitalPainReport? Result, string? Error) Read(string? state)
+		{
+			if (string.IsNullOrEmpty(state) || state == "{}") return (null, "Choose how strong the pain is, from 0 to 10");
+			try
+			{
+				using var doc = JsonDocument.Parse(state);
+				var r = doc.RootElement;
+				if (r.ValueKind != JsonValueKind.Object) return (null, "The drawing's data could not be read");
+				if (!r.TryGetProperty("nrs", out var n) || n.ValueKind != JsonValueKind.Number || !n.TryGetInt32(out var nrs) || nrs is < 0 or > 10)
+					return (null, "Choose how strong the pain is, from 0 to 10");
+				var words = new List<string>();
+				if (r.TryGetProperty("words", out var w))
+				{
+					if (w.ValueKind != JsonValueKind.Array) return (null, "The drawing's data could not be read");
+					foreach (var x in w.EnumerateArray())
+					{
+						if (x.ValueKind != JsonValueKind.String || !Words.Contains(x.GetString()!)) return (null, "The drawing's data could not be read");
+						if (!words.Contains(x.GetString()!)) words.Add(x.GetString()!);
+					}
+				}
+				return (new HospitalPainReport(nrs, words), null);
+			}
+			catch (JsonException) { return (null, "The drawing's data could not be read"); }
+		}
+
+		public static string Store(HospitalPainReport r) => JsonSerializer.Serialize(new { nrs = r.Nrs, words = r.Words });
+	}
 }

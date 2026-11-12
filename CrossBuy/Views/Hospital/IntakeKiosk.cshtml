@@ -53,6 +53,9 @@
         .ki-err { font-size: 1.2rem; color: #dc2626; margin-top: 14px; min-height: 1.5em; text-align: center; }
         .ki-step { display: none; } .ki-step.on { display: block; }
         .ki-nav { display: flex; justify-content: space-between; gap: 12px; margin-top: 24px; }
+        .flatpickr-calendar { font-size: 1.15rem; }
+        .ki-box .select2-container .select2-selection--single { font-size: 1.35rem; min-height: 54px; padding: 10px 16px; }
+        .select2-results__option { font-size: 1.25rem; padding: 10px 16px; }
     </style>
 </head>
 <body>
@@ -71,11 +74,11 @@
         <div class="ki-step" data-step="1">
             <h2>@T["Who are you?"]</h2><div class="sub">@T["As written on your identity document."]</div>
             <div class="row g-4">
-                <div class="col-md-5"><label class="l">@T["Identity document"]</label><select class="form-select form-select-solid" data-f="idType">@foreach (var t in HospitalIntakeIdType.All) {<option value="@t">@T["iid:" + t]</option>}</select></div>
+                <div class="col-md-5"><label class="l">@T["Identity document"]</label><select class="form-select form-select-solid form-select-lg" data-f="idType" data-control="select2" data-hide-search="true">@foreach (var t in HospitalIntakeIdType.All) {<option value="@t">@T["iid:" + t]</option>}</select></div>
                 <div class="col-md-7"><label class="l">@T["Its number"]</label><input class="form-control form-control-solid" dir="ltr" inputmode="numeric" maxlength="30" data-f="idNumber" autocomplete="off" /></div>
                 <div class="col-12"><label class="l">@T["Full name (four parts)"]</label><input class="form-control form-control-solid" maxlength="200" data-f="name" autocomplete="off" /></div>
                 <div class="col-12"><label class="l">@T["Name in English (optional)"]</label><input class="form-control form-control-solid" dir="ltr" maxlength="200" data-f="nameEn" autocomplete="off" /></div>
-                <div class="col-md-6"><label class="l">@T["Date of birth"]</label><input type="date" class="form-control form-control-solid" dir="ltr" data-f="birthDate" /></div>
+                <div class="col-md-6"><label class="l">@T["Date of birth"]</label><input type="text" class="form-control form-control-solid" dir="ltr" data-f="birthDate" placeholder="YYYY-MM-DD" autocomplete="off" /></div>
                 <div class="col-md-6"><label class="l">@T["Sex"]</label><div class="d-flex gap-3"><label class="ki-choice ki-opt flex-fill"><input type="radio" name="sex" value="M" />@T["sex:M"]</label><label class="ki-choice ki-opt flex-fill"><input type="radio" name="sex" value="F" />@T["sex:F"]</label></div></div>
                 <div class="col-12"><label class="l">@T["Mobile number"]</label><input class="form-control form-control-solid" dir="ltr" inputmode="tel" maxlength="20" data-f="phone" autocomplete="off" /></div>
             </div>
@@ -119,9 +122,13 @@
         </div>
     </div></div>
 
+    <script src="~/Backend-assets/plugins/global/plugins.bundle.js" asp-append-version="true"></script>
     <script>
         (function () {
             var tok = document.querySelector('input[name="__RequestVerificationToken"]').value, step = 0, idle = null, after = null;
+            var dob = document.querySelector('[data-f="birthDate"]');
+            if (window.jQuery && jQuery.fn.select2) jQuery('[data-f="idType"]').select2({ minimumResultsForSearch: Infinity, dir: document.dir, width: '100%' });
+            if (window.flatpickr) flatpickr(dob, { dateFormat: 'Y-m-d', maxDate: 'today', allowInput: true, disableMobile: true, locale: { firstDayOfWeek: 6 } });
             var W = { name: @Json.Serialize(T["Write your full name"].Value), dob: @Json.Serialize(T["Write your date of birth"].Value), sex: @Json.Serialize(T["Choose the sex"].Value),
                       phone: @Json.Serialize(T["Write your mobile number"].Value), failed: @Json.Serialize(T["The change could not be saved"].Value) };
             function $(s) { return document.querySelector(s); }
@@ -129,6 +136,8 @@
                 document.querySelectorAll('[data-dot]').forEach(function (d) { d.classList.toggle('on', Number(d.getAttribute('data-dot')) <= n); }); window.scrollTo(0, 0); poke(); }
             function wipe() { document.querySelectorAll('input[type=checkbox], input[type=radio]').forEach(function (i) { i.checked = i.name === 'visit' && i.value === 'WalkIn'; i.closest('label') && i.closest('label').classList.toggle('on', i.checked); });
                 document.querySelectorAll('[data-f]').forEach(function (i) { if (i.type !== 'checkbox') i.value = i.tagName === 'SELECT' ? i.options[0].value : ''; });
+                if (dob._flatpickr) dob._flatpickr.clear();
+                if (window.jQuery) jQuery('[data-f="idType"]').trigger('change.select2');
                 $('[data-err]').textContent = ''; clearTimeout(after); show(0); }
             function poke() { clearTimeout(idle); idle = setTimeout(wipe, 90000); }
             ['click', 'keydown', 'touchstart', 'input'].forEach(function (e) { document.addEventListener(e, poke, true); });

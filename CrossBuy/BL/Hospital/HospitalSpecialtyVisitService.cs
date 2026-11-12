@@ -282,9 +282,15 @@ namespace CrossBuy.BL.Hospital
 				if (v == null) return HospitalResult.Fail("not_found");
 				input = HospitalVisitRules.InputOf(v);
 			}
+			// H112: ONE unit — the consultation, its forms and its drawings are signed together or not at all. Before this a
+			// drawing that failed to sign left the visit Signed with its drawings Draft and their results never written.
+			await using var tx = await ScopedTx.BeginOrJoinAsync(_db);
 			var signed = await consult.SignAsync(ctx, encounterId, input, employeeId, nowUtc, ct);
-			if (!signed.Ok) return signed;
-			return await SignFormsAsync(ctx, encounterId, en, employeeId, nowUtc, ct);
+			if (!signed.Ok) { await tx.RollbackAsync(); return signed; }
+			var all = await SignFormsAsync(ctx, encounterId, en, employeeId, nowUtc, ct);
+			if (!all.Ok) { await tx.RollbackAsync(); return all; }
+			await tx.CommitAsync();
+			return all;
 		}
 
 		/// Refuses with the first form field that would stop the forms' signature.

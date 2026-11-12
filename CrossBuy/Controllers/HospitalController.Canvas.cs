@@ -35,11 +35,26 @@ namespace CrossBuy.Controllers
 			var ctx = await ContextAsync(ct);
 			if (ctx == null) return RedirectToAction("Index", "Home");
 			kind = HospitalCanvasKind.All.FirstOrDefault(k => string.Equals(k, kind, StringComparison.OrdinalIgnoreCase)) ?? "";
+			if (kind == HospitalCanvasKind.Pain) return RedirectToAction("CanvasPatient", new { id });   // the patient's own screen
 			if (await _patients.OpenAsync(ctx, (await _consult.GetAsync(ctx, id, ct))?.Encounter.PatientId ?? 0, ctx.EmployeeId, ct) == null) return NotFound();   // reading a visit opens the file: logged
 			var (m, ready) = await CanvasSvc.SheetAsync(ctx, _consult, id, kind, ct);
 			if (m == null) return NotFound();
 			ViewBag.Ready = ready;
 			Chrome();
+			return View(m);
+		}
+
+		/// H112: the patient's pain screen — handed to the patient on the clinic's tablet (a signed-in device): full screen,
+		/// no menu, large, Arabic first; what they draw is kept apart as patient-reported.
+		[HttpGet("Consult/{id:int}/Canvas/Pain/Patient")]
+		[HospitalPerm(HospitalActions.Consult)]
+		public async Task<IActionResult> CanvasPatient(int id, CancellationToken ct = default)
+		{
+			var ctx = await ContextAsync(ct);
+			if (ctx == null) return RedirectToAction("Index", "Home");
+			var (m, ready) = await CanvasSvc.SheetAsync(ctx, _consult, id, HospitalCanvasKind.Pain, ct);
+			if (m == null) return NotFound();
+			ViewBag.Ready = ready;
 			return View(m);
 		}
 

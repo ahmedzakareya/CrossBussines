@@ -22,7 +22,10 @@ namespace CrossBuy.BL.Hospital
 	public sealed record HospitalCanvasPage(HospitalEncounterView Visit, HospitalPatient Patient, string Kind, HospitalCanvasSheet? Sheet,
 		IReadOnlyList<HospitalCanvasMark> Marks, IReadOnlyList<HospitalCanvasMark> Last, DateTime? LastAt, bool CanEdit, int NextLesion
 		, IReadOnlyList<HospitalCanvasResult>? History = null
+		, HospitalCanvasPatientPain? PatientPain = null
 		);
+	/// H112: what the patient drew on the tablet for this visit — the places, the strength 0–10, the words.
+	public sealed record HospitalCanvasPatientPain(HospitalCanvasSheet Sheet, IReadOnlyList<HospitalCanvasMark> Marks, HospitalPainReport Report);
 	/// H110: one stored result of a drawing's calculator — the concept's code, the side (R/L or none), the value, when.
 	public sealed record HospitalCanvasResult(string Code, string? Side, decimal Value, DateTime At, int? EncounterId);
 
@@ -73,6 +76,9 @@ namespace CrossBuy.BL.Hospital
 			new HospitalCanvasFinding("Wound", "جرح", "Wound", null, "#3A5795"),
 		};
 
+		/// H112: a place where the patient feels pain (SNOMED 22253000 pain).
+		public static readonly IReadOnlyList<HospitalCanvasFinding> PainFindings = new[] { new HospitalCanvasFinding("Pain", "ألم", "Pain", "SNOMED 22253000", "#DC2626") };
+
 		/// The CMS retinal-drawing colour code: the finding sets the colour, never the doctor.
 		public static readonly IReadOnlyList<HospitalCanvasFinding> FundusFindings = new[]
 		{
@@ -90,6 +96,7 @@ namespace CrossBuy.BL.Hospital
 		{
 			HospitalCanvasKind.Body => BodyFindings,
 			HospitalCanvasKind.Fundus => FundusFindings,
+			HospitalCanvasKind.Pain => PainFindings,
 			_ => Array.Empty<HospitalCanvasFinding>(),
 		};
 
@@ -124,6 +131,7 @@ namespace CrossBuy.BL.Hospital
 			HospitalCanvasKind.Burn => new[] { "TBSA" },
 			HospitalCanvasKind.Audio => new[] { "PTA" },
 			HospitalCanvasKind.Joints => new[] { "DAS28" },
+			HospitalCanvasKind.Pain => new[] { HospitalPainRules.NrsCode },
 			_ => Array.Empty<string>(),
 		};
 
@@ -145,6 +153,7 @@ namespace CrossBuy.BL.Hospital
 						if (N("ptaL") is decimal l) outp.Add(("PTA", "L", l));
 						break;
 					case HospitalCanvasKind.Joints: if (N("das28") is decimal das) outp.Add(("DAS28", null, das)); break;
+					case HospitalCanvasKind.Pain: if (N("nrs") is decimal nrs) outp.Add((HospitalPainRules.NrsCode, null, nrs)); break;
 				}
 			}
 			catch (JsonException) { }
@@ -163,7 +172,7 @@ namespace CrossBuy.BL.Hospital
 				if (f == null) return (null, "Choose the finding of every mark", null);
 				if (m.SizeMm is < 0 or > 500) return (null, "A size is between 0 and 500 mm", null);
 				var mark = new HospitalCanvasMark { Finding = f.Key, FindingCode = f.Code, X = Math.Round(m.X, 2), Y = Math.Round(m.Y, 2), SizeMm = m.SizeMm, Carried = m.Carried && m.CarriedFromMarkId != null, CarriedFromMarkId = m.CarriedFromMarkId };
-				if (kind == HospitalCanvasKind.Body)
+				if (kind is HospitalCanvasKind.Body or HospitalCanvasKind.Pain)   // H112: the patient's pain sits on the same figures
 				{
 					var at = BodyAt(m.X, m.Y);
 					if (at == null) return (null, "A mark must sit on the body itself", null);
@@ -273,7 +282,13 @@ namespace CrossBuy.BL.Hospital
 									where codes.Contains(c.Code)
 									orderby o.ObservedAt descending
 									select new HospitalCanvasResult(c.Code, o.Side, o.Value!.Value, o.ObservedAt, o.EncounterId)).Take(12).ToListAsync(ct);
-				return (new HospitalCanvasPage(visit, patient, kind, sheet, marks, last.Marks, last.Sheet?.SignedAt, canEdit && sheet?.Status != HospitalCanvasStatus.Signed, next, history), true);
+				// H112: on the body map, what the patient drew of their pain on this visit (a separate, patient-reported layer)
+				HospitalCanvasPatientPain? patientPain = null;
+				if (kind == HospitalCanvasKind.Body
+					&& await Q<HospitalCanvasSheet>(ctx).AsNoTracking().FirstOrDefaultAsync(s => s.EncounterId == encounterId && s.Kind == HospitalCanvasKind.Pain, ct) is { } ps)
+					patientPain = new HospitalCanvasPatientPain(ps, await Q<HospitalCanvasMark>(ctx).AsNoTracking().Where(m => m.SheetId == ps.ID).OrderBy(m => m.ID).ToListAsync(ct),
+						HospitalPainRules.Read(ps.StateJson).Result ?? new HospitalPainReport(null, Array.Empty<string>()));
+				return (new HospitalCanvasPage(visit, patient, kind, sheet, marks, last.Marks, last.Sheet?.SignedAt, canEdit && sheet?.Status != HospitalCanvasStatus.Signed, next, history, patientPain), true);
 			}
 			catch (Microsoft.Data.SqlClient.SqlException ex) when (Missing(ex)) { return (new HospitalCanvasPage(visit, patient, kind, null, Array.Empty<HospitalCanvasMark>(), Array.Empty<HospitalCanvasMark>(), null, false, 1), false); }
 		}
@@ -325,6 +340,12 @@ namespace CrossBuy.BL.Hospital
 					var das = HospitalDas28Rules.Read(input.State);
 					if (das.Error != null) return HospitalResult.Fail(das.Error);
 					state = HospitalDas28Rules.Store(das.Result!);
+				}
+				if (kind == HospitalCanvasKind.Pain)
+				{
+					var pain = HospitalPainRules.Read(input.State);
+					if (pain.Error != null) return HospitalResult.Fail(pain.Error);
+					state = HospitalPainRules.Store(pain.Result!);
 				}
 				if (kind == HospitalCanvasKind.Pedigree)
 				{
@@ -411,7 +432,8 @@ namespace CrossBuy.BL.Hospital
 						_db.Add(new HospitalClinicalObservation
 						{
 							CompanyId = ctx.CompanyId, PatientId = r.Sheet.PatientId, ConceptId = c.ID, EncounterId = encounterId, Value = r.Value, Side = r.Side, Unit = c.Unit,
-							Flag = HospitalConceptRules.Flag(c, r.Value), ObservedAt = nowUtc, Source = HospitalObsSource.Canvas, RecordedAt = nowUtc, RecordedByEmployeeId = employeeId,
+							Flag = HospitalConceptRules.Flag(c, r.Value), ObservedAt = nowUtc, Source = r.Sheet.Kind == HospitalCanvasKind.Pain ? HospitalObsSource.Patient : HospitalObsSource.Canvas,
+							RecordedAt = nowUtc, RecordedByEmployeeId = employeeId,
 						});
 					}
 				}

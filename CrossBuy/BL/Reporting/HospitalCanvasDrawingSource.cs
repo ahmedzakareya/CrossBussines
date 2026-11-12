@@ -44,6 +44,13 @@ namespace CrossBuy.BL.Reporting
     /// The words of a drawing's paper, in the print's language.
     public static class HospitalCanvasPaper
     {
+        /// H112: a pain word in the print's language.
+        public static string PainWord(string w, bool ar) => w switch
+        {
+            "burning" => ar ? "حارق" : "burning", "stabbing" => ar ? "طاعن" : "stabbing", "throbbing" => ar ? "نابض" : "throbbing",
+            "aching" => ar ? "وجع مستمر" : "aching", "pressing" => ar ? "ضاغط" : "pressing", "tingling" => ar ? "تنميل" : "tingling",
+            "cramping" => ar ? "مغص" : "cramping", "spreading" => ar ? "ينتشر" : "spreading", _ => w,
+        };
         public static string Title(string kind, bool ar) => kind switch
         {
             HospitalCanvasKind.Body => ar ? "خريطة الجسم" : "Body map",
@@ -52,6 +59,7 @@ namespace CrossBuy.BL.Reporting
             HospitalCanvasKind.Audio => ar ? "مخطط السمع" : "Audiogram",
             HospitalCanvasKind.Joints => ar ? "مفاصل الروماتويد — DAS28" : "Rheumatoid joints — DAS28",
             HospitalCanvasKind.Pedigree => ar ? "شجرة العائلة" : "Pedigree",
+            HospitalCanvasKind.Pain => ar ? "خريطة الألم — كما رسمها المريض" : "Pain map — as the patient drew it",
             _ => kind,
         };
 
@@ -123,6 +131,13 @@ namespace CrossBuy.BL.Reporting
                     if (r.Yield.Consanguinity) lines.Add(ar ? "زواج أقارب في العائلة" : "Consanguinity in the family");
                     lines.AddRange(r.Yield.Conditions.Select(c => c.Cond + (ar ? " في " + c.Generations + " أجيال" : " across " + c.Generations + " generations")));
                     return lines.Count == 0 ? null : string.Join("\n", lines);
+                }
+                case HospitalCanvasKind.Pain:
+                {
+                    var r = HospitalPainRules.Read(state).Result;
+                    if (r == null) return null;
+                    var words = r.Words.Select(w => PainWord(w, ar)).ToList();
+                    return (ar ? "شدة الألم (من المريض): " : "Pain now (patient-reported): ") + (ar ? r.Nrs + " من 10" : Ltr(r.Nrs + "/10")) + (words.Count > 0 ? " · " + string.Join(ar ? "، " : ", ", words) : "");
                 }
                 default: return null;
             }

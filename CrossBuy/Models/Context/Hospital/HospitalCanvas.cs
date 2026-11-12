@@ -20,7 +20,9 @@ namespace CrossBuy.Models.Context.Hospital
 		public const string Audio = "Audio";
 		public const string Joints = "Joints";
 		public const string Pedigree = "Pedigree";
-		public static readonly IReadOnlyList<string> All = new[] { Body, Fundus, Burn, Audio, Joints, Pedigree };
+		/// H112: the patient's own pain drawing on the tablet — patient-reported, kept apart from the doctor's.
+		public const string Pain = "Pain";
+		public static readonly IReadOnlyList<string> All = new[] { Body, Fundus, Burn, Audio, Joints, Pedigree, Pain };
 	}
 
 	public static class HospitalCanvasStatus

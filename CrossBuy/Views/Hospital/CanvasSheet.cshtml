@@ -30,6 +30,8 @@
     ViewData["Title"] = title + " — " + name;
     var findings = HospitalCanvasRules.FindingsOf(Model.Kind);
     string D(decimal? d) => d?.ToString("0.##", CultureInfo.InvariantCulture) ?? "";
+    // H112: what the patient drew of their pain on the tablet — a separate, patient-reported layer
+    var pain = body ? Model.PatientPain : null;
 }
 <link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
 <style>
@@ -62,6 +64,10 @@
             {
                 if (canEdit) {<button type="button" class="btn btn-sm btn-light" data-photo-btn><i class="ki-outline ki-picture fs-4"></i>@T["Attach a photo to a mark"]</button>}
                 <button type="button" class="btn btn-sm btn-light" data-compare @(Model.Last.Count == 0 ? "disabled" : "")><i class="ki-outline ki-switch fs-4"></i>@T["Compare with last visit"]</button>
+                @if (canEdit || (pain != null && pain.Sheet.Status != HospitalCanvasStatus.Signed))
+                {
+                    <a class="btn btn-sm btn-light-primary" href="@Url.Action("CanvasPatient", new { id = e.ID })"><i class="ki-outline ki-tablet fs-4"></i>@T["Patient mode — hand the tablet over"]</a>
+                }
             }
             @if (canEdit)
             {
@@ -108,7 +114,21 @@
                                         <text x="100" y="452" text-anchor="middle" font-size="13" fill="#6B7280">@lbl</text>
                                     </g>
                                 }
-                                <g id="cv_prev"></g><g id="cv_ink"></g><g id="cv_marks"></g>
+                                <g id="cv_prev"></g>
+                                @if (pain != null)
+                                {
+                                    <g id="cv_pat" opacity=".55">
+                                        @foreach (var st in System.Text.Json.JsonDocument.Parse(string.IsNullOrEmpty(pain.Sheet.InkJson) ? "[]" : pain.Sheet.InkJson).RootElement.EnumerateArray())
+                                        {
+                                            <polyline fill="none" stroke="#DC2626" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" points="@string.Join(" ", st.GetProperty("p").EnumerateArray().Select(q => q[0].GetDecimal().ToString("0.#", CultureInfo.InvariantCulture) + "," + q[1].GetDecimal().ToString("0.#", CultureInfo.InvariantCulture)))" />
+                                        }
+                                        @foreach (var m in pain.Marks)
+                                        {
+                                            <circle cx="@D(m.X)" cy="@D(m.Y)" r="14" fill="#DC2626" fill-opacity=".35" stroke="#DC2626" stroke-width="1.5" stroke-dasharray="4 3" />
+                                        }
+                                    </g>
+                                }
+                                <g id="cv_ink"></g><g id="cv_marks"></g>
                             </svg></div>
                         </div></div>
                 </div>
@@ -123,6 +143,35 @@
                                     </select></div>
                                 <div class="col-5"><label class="form-label">@T["Size mm"]</label><input type="number" min="0" max="500" step="0.5" class="form-control form-control-solid" dir="ltr" id="bm_size" value="4" /></div>
                             </div></div></div>
+                    }
+                    @if (pain != null)
+                    {
+                        var painPlaces = pain.Marks.Select(m => HospitalCanvasRules.BodyRegions.FirstOrDefault(r => r.Key == m.Region) is { } r ? (isAr ? r.Ar : r.En) + " — " + (m.Side == "B" ? T["back side"].Value : T["front side"].Value) : m.Region ?? "").Distinct().ToList();
+                        <div class="card mb-5 border border-danger border-dashed"><div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
+                            <span class="card-label fw-bold text-gray-900 fs-4"><i class="ki-outline ki-user fs-3 text-danger me-1"></i>@T["From the patient"]</span>
+                            <span class="text-muted mt-1 fw-semibold fs-7">@T["Patient-reported on the tablet — kept apart from your marks"]</span></div>
+                            <div class="card-toolbar gap-2"><button type="button" class="btn btn-sm btn-light" data-pat-toggle><i class="ki-outline ki-eye fs-5"></i>@T["Show on the figures"]</button>
+                                @if (pain.Sheet.Status == HospitalCanvasStatus.Signed)
+                                {
+                                    @* the patient's signed drawing has its own paper, apart from the body map's *@
+                                    @await Html.PartialAsync("_ReportPrintMenu", new CrossBuy.BL.Reporting.ReportPrintMenuModel { ScreenKey = CrossBuy.BL.Reporting.ReportScreenKeys.HospitalCanvasSheet, DocumentId = pain.Sheet.ID.ToString(), DocumentTitle = T["From the patient"].Value })
+                                }
+                            </div></div>
+                            <div class="card-body pt-2">
+                                <div class="d-flex align-items-center gap-3 mb-3">
+                                    @if (pain.Report.Nrs is int n)
+                                    {
+                                        <span class="badge fs-3 px-4 py-3 text-white" style="background:@(n >= 7 ? "#DC2626" : n >= 4 ? "#7239EA" : "#3A5795")">@T["{0} out of 10", n]</span>
+                                    }
+                                    <span class="fw-semibold text-gray-700">@T["Pain now"]</span>
+                                </div>
+                                @if (pain.Report.Words.Count > 0)
+                                {
+                                    <div class="d-flex flex-wrap gap-2 mb-3">@foreach (var w in pain.Report.Words) {<span class="badge badge-light-danger fs-7">@T["pain:" + w]</span>}</div>
+                                }
+                                <div class="text-gray-800 fs-7">@(painPlaces.Count > 0 ? string.Join(isAr ? "، " : ", ", painPlaces) : T["No places tapped"].Value)@(pain.Sheet.InkJson is { Length: > 2 } ? " · " + T["drawn by hand"].Value : "")</div>
+                                <div class="text-muted fs-8 mt-2">@(pain.Sheet.Status == HospitalCanvasStatus.Signed ? T["Signed with the visit"] : T["Saved as a measurement from the patient when the visit is signed"])</div>
+                            </div></div>
                     }
                     <div class="card mb-5"><div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Marks (stored as observations)"]</span>
                         @if (Model.LastAt != null) {<span class="text-muted mt-1 fw-semibold fs-7">@T["Last drawing {0}", Model.LastAt.Value.ToString("yyyy-MM-dd")]</span>}</div></div>
@@ -389,6 +438,7 @@
                 var css = '.cv-skin{fill:#F6E7DD;stroke:#C9A68F;stroke-width:1.5}text{font-family:Cairo,Tahoma,Arial,sans-serif}';
                 function copy(id) { var el = document.getElementById(id); if (!el) return null; var c = el.cloneNode(true);
                     var prev = c.querySelector('#cv_prev'); if (prev) prev.innerHTML = '';   // the comparison overlay is not part of the drawing
+                    var pat = c.querySelector('#cv_pat'); if (pat) pat.remove();             // H112: nor is the patient's own layer
                     c.removeAttribute('id'); c.removeAttribute('style'); var st = document.createElementNS(NS, 'style'); st.textContent = css; c.insertBefore(st, c.firstChild); return c; }
                 var ser = new XMLSerializer();
                 if (KIND === 'Fundus') {
@@ -447,6 +497,8 @@
                             fetch('@Url.Content("~/Hospital/Canvas/Marks/")' + m.id + '/Photo', { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': tok }, body: fd })
                                 .then(function (r) { return r.json().catch(function () { return { ok: false }; }); }).then(function (r) { if (!r.ok) { toastr.error(r.error || W.failed); return; } m.photo = true; toastr.success(W.saved); draw(); }); }); });
                 }
+                var pt2 = document.querySelector('[data-pat-toggle]'), patG = document.getElementById('cv_pat');
+                if (pt2 && patG) { pt2.classList.add('btn-light-danger'); pt2.addEventListener('click', function () { var on = patG.style.display === 'none'; patG.style.display = on ? '' : 'none'; pt2.classList.toggle('btn-light-danger', on); }); }
                 var cmp = document.querySelector('[data-compare]'); if (cmp) cmp.addEventListener('click', function () { compare = !compare; cmp.classList.toggle('btn-light-primary', compare); draw(); });
                 draw();
             } else if (KIND === 'Burn') {
