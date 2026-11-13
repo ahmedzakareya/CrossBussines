@@ -129,6 +129,10 @@
                     <div class="w-250px">
                         <select id="qdDep" class="form-select form-select-solid"><option value="">@T["All clinics"]</option>@foreach (var d in deps) {<option value="@d.ID" selected="@(dep == d.ID)">@DisplayName.Of(d.Name, d.NameEn ?? d.Name)</option>}</select>
                     </div>
+                    @* the system's own language switch (Account/SetLanguage writes the culture cookie and comes back here) *@
+                    <a class="btn h-45px px-5 fw-bold fs-5 text-white text-nowrap qd-hero-btn"
+                       href="@Url.Action("SetLanguage", "Account", new { culture = isAr ? "en" : "ar", returnUrl = Context.Request.Path + Context.Request.QueryString })"
+                       title="@(isAr ? "English" : "العربية")"><i class="ki-outline ki-flag fs-2 me-2 text-white"></i>@(isAr ? "English" : "العربية")</a>
                     <button type="button" id="qdFull" class="btn btn-icon w-45px h-45px qd-hero-btn" title="@T["Full screen"]" aria-label="@T["Full screen"]"
                             data-on="@T["Full screen"]" data-off="@T["Exit full screen"]"><i class="ki-outline ki-maximize fs-1 text-white"></i></button>
                 </div>
@@ -222,12 +226,9 @@
             // a BATCH is every call one refresh found: one call keeps the big single view, several share one window
             function announce(batch) { if (!batch.length) return; queue.push(batch); if (!showing) next(); }
             function sayAll(batch) {
-                // Arabic first, then English; with several calls each sentence is short (ticket, clinic, room)
-                var one = batch.length === 1;
-                batch.forEach(function (c) { var t = 'A ' + c.num;
-                    say('التذكرة ' + t + (one ? '، تفضل إلى عيادة ' : '، عيادة ') + c.depAr + (c.room ? '، غرفة ' + c.room : '') + (one && c.docAr ? '، ' + c.docAr : ''), 'ar'); });
-                batch.forEach(function (c) { var t = 'A ' + c.num;
-                    say('Ticket ' + t + (one ? ', please go to the ' : ', ') + c.depEn + ' clinic' + (c.room ? ', room ' + c.room : '') + (one && c.docEn ? ', ' + c.docEn : ''), 'en'); });
+                // owner 2026-11-13: the call is spoken in ENGLISH and says only the ticket and the clinic ("Ticket A 4,
+                // Paediatrics clinic"); the window still shows the room and the doctor
+                batch.forEach(function (c) { say('Ticket A ' + c.num + ', ' + c.depEn + ' clinic', 'en'); });
             }
             function next() {
                 var batch = queue.shift(); if (!batch) { showing = false; callEl.classList.remove('is-on'); return; }
