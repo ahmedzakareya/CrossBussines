@@ -75,6 +75,10 @@ namespace CrossBuy.Models.Context.Hospital
 		public int? CarriedFromMarkId { get; set; }
 		/// A photo of the mark, in the File Manager (the patient's documents).
 		public long? PhotoDocumentId { get; set; }
+		/// H113: the photography consent the photo was taken under, and the size measured on the photo (its ruler, its
+		/// lines and the result — HospitalPhotoMeasureRules).
+		public int? PhotoConsentId { get; set; }
+		public string? MeasureJson { get; set; }
 		public DateTime CreatedAt { get; set; }
 		public int? CreatedByEmployeeId { get; set; }
 		public DateTime? VerifiedAt { get; set; }
@@ -97,6 +101,7 @@ namespace CrossBuy.Models.Context.Hospital
 			{
 				e.ToTable("HospitalCanvasMarks");
 				e.Property(x => x.Finding).HasMaxLength(20);
+				e.Property(x => x.MeasureJson).HasMaxLength(1000);
 				e.Property(x => x.FindingCode).HasMaxLength(30);
 				e.Property(x => x.Region).HasMaxLength(20);
 				e.Property(x => x.Side).HasMaxLength(1);

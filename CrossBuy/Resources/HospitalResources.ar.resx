@@ -6461,4 +6461,43 @@
   <data name="pain:tingling" xml:space="preserve"><value>تنميل</value></data>
   <data name="Pain now" xml:space="preserve"><value>شدة الألم الآن</value></data>
   <data name="{0} out of 10" xml:space="preserve"><value>{0} من 10</value></data>
+  <data name="1 · The ruler: tap both ends of a known length" xml:space="preserve"><value>أولًا: المسطرة — المس طرفي طول معروف عليها</value></data>
+  <data name="2 · The lesion's longest length" xml:space="preserve"><value>ثانيًا: أطول امتداد للآفة</value></data>
+  <data name="3 · Its widest across (optional)" xml:space="preserve"><value>ثالثًا: أعرض عرض لها (اختياري)</value></data>
+  <data name="A photo of a mark is taken only under the patient's signed photography consent, within its scope." xml:space="preserve"><value>صورة العلامة تُلتقط فقط بموافقة تصوير موقّعة من المريض، وفي حدود نطاقها.</value></data>
+  <data name="Attach a photo to the mark first" xml:space="preserve"><value>أرفق صورة للعلامة أولًا</value></data>
+  <data name="Choose what the photographs may be used for" xml:space="preserve"><value>اختر فيمَ تُستخدم الصور</value></data>
+  <data name="Consent {0}" xml:space="preserve"><value>الموافقة {0}</value></data>
+  <data name="Give the ruler's length in millimetres (1 to 300)" xml:space="preserve"><value>اكتب طول المسطرة بالمليمتر (من ١ إلى ٣٠٠)</value></data>
+  <data name="Lay a ruler beside the lesion, in the same plane, when taking the photo. The server computes the size from your points; the margin is one pixel at each end." xml:space="preserve"><value>ضع مسطرة بجانب الآفة وفي نفس مستواها عند التصوير. الخادم يحسب المقاس من نقاطك، وهامش الخطأ بكسل واحد عند كل طرف.</value></data>
+  <data name="Mark a longer stretch of the ruler: at least 50 pixels on the photo" xml:space="preserve"><value>حدّد جزءًا أطول من المسطرة: ٥٠ بكسل على الأقل في الصورة</value></data>
+  <data name="Mark the ruler and the lesion's length first" xml:space="preserve"><value>حدّد المسطرة وطول الآفة أولًا</value></data>
+  <data name="Mark the two ends of the lesion's length" xml:space="preserve"><value>حدّد طرفي طول الآفة</value></data>
+  <data name="Mark the two ends of the lesion's width" xml:space="preserve"><value>حدّد طرفي عرض الآفة</value></data>
+  <data name="Mark the two ends of the ruler's length on the photo" xml:space="preserve"><value>حدّد طرفي طول المسطرة على الصورة</value></data>
+  <data name="Measure on the photo" xml:space="preserve"><value>القياس على الصورة</value></data>
+  <data name="Measured size" xml:space="preserve"><value>المقاس المحسوب</value></data>
+  <data name="No photography consent on file" xml:space="preserve"><value>لا توجد موافقة تصوير في الملف</value></data>
+  <data name="Photos under consent {0} — {1}" xml:space="preserve"><value>الصور بموافقة {0} — {1}</value></data>
+  <data name="Record the patient's photography consent first" xml:space="preserve"><value>سجّل موافقة المريض على التصوير أولًا</value></data>
+  <data name="Record the photography consent" xml:space="preserve"><value>تسجيل موافقة التصوير</value></data>
+  <data name="Save the measured size to mark {0}? It replaces the size typed by hand." xml:space="preserve"><value>حفظ المقاس المحسوب للعلامة {0}؟ سيحل محل المقاس المكتوب يدويًا.</value></data>
+  <data name="Save the size to the mark" xml:space="preserve"><value>حفظ المقاس للعلامة</value></data>
+  <data name="Start again" xml:space="preserve"><value>ابدأ من جديد</value></data>
+  <data name="The measured length is out of range: check the ruler" xml:space="preserve"><value>الطول المحسوب خارج المدى: راجع المسطرة</value></data>
+  <data name="The ruler's length you marked (mm)" xml:space="preserve"><value>طول المسطرة الذي حدّدته (مم)</value></data>
+  <data name="The width is across the length: it cannot be longer than the length" xml:space="preserve"><value>العرض عمودي على الطول: لا يمكن أن يكون أطول منه</value></data>
+  <data name="What the photographs may be used for" xml:space="preserve"><value>فيمَ تُستخدم الصور</value></data>
+  <data name="consent withdrawn" xml:space="preserve"><value>الموافقة مسحوبة</value></data>
+  <data name="on the photo" xml:space="preserve"><value>على الصورة</value></data>
+  <data name="photo-scope-hint:Publication" xml:space="preserve"><value>ويُسمح بنشرها في مجلة أو مؤتمر طبي، دون ما يدل على هويتي</value></data>
+  <data name="photo-scope-hint:Record" xml:space="preserve"><value>تُحفظ في ملفي ويراها من يعالجني فقط</value></data>
+  <data name="photo-scope-hint:Teaching" xml:space="preserve"><value>ويُسمح بعرضها في تعليم الأطباء داخل المستشفى، دون إظهار الوجه</value></data>
+  <data name="photo-scope-short:Publication" xml:space="preserve"><value>للملف والتعليم والنشر</value></data>
+  <data name="photo-scope-short:Record" xml:space="preserve"><value>للملف الطبي فقط</value></data>
+  <data name="photo-scope-short:Teaching" xml:space="preserve"><value>للملف والتعليم</value></data>
+  <data name="photo-scope:Publication" xml:space="preserve"><value>الملف والتعليم والنشر العلمي</value></data>
+  <data name="photo-scope:Record" xml:space="preserve"><value>الملف الطبي فقط</value></data>
+  <data name="photo-scope:Teaching" xml:space="preserve"><value>الملف الطبي والتعليم داخل المستشفى</value></data>
+  <data name="{0} mm per pixel on this photo" xml:space="preserve"><value>{0} مم لكل بكسل في هذه الصورة</value></data>
 </root>

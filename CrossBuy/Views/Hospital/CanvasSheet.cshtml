@@ -32,6 +32,14 @@
     string D(decimal? d) => d?.ToString("0.##", CultureInfo.InvariantCulture) ?? "";
     // H112: what the patient drew of their pain on the tablet — a separate, patient-reported layer
     var pain = body ? Model.PatientPain : null;
+    // H113: a mark's measure on its photo, read again from its own points; the consent its photo was taken under
+    object? Measured(HospitalCanvasMark m)
+    {
+        if (HospitalPhotoMeasureRules.Read(m.MeasureJson) is not { } r) return null;
+        var i = System.Text.Json.JsonSerializer.Deserialize<HospitalPhotoMeasureInput>(m.MeasureJson!, new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
+        return new { ruler = i.Ruler, rulerMm = i.RulerMm, length = i.Length, width = i.Width, l = r.LengthMm, w = r.WidthMm, pm = r.PlusMinusMm };
+    }
+    object? ConsentOf(HospitalCanvasMark m) => m.PhotoConsentId is int c && Model.MarkConsents != null && Model.MarkConsents.TryGetValue(c, out var v) ? new { no = v.No, scope = v.Scope, wd = v.Withdrawn } : null;
 }
 <link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
 <style>
@@ -91,8 +99,20 @@
         {
             <div class="row g-5">
                 <div class="col-xl-8">
+                    @if (canEdit && Model.PhotoConsent == null)
+                    {
+                        <div class="notice d-flex align-items-center rounded border border-primary border-dashed bg-light-primary p-5 mb-5">
+                            <i class="ki-outline ki-picture fs-2tx text-primary me-4"></i>
+                            <div class="flex-grow-1 fw-semibold"><div class="fs-6 text-gray-900 fw-bold">@T["No photography consent on file"]</div><div class="fs-7 text-gray-700">@T["A photo of a mark is taken only under the patient's signed photography consent, within its scope."]</div></div>
+                            <a class="btn btn-sm btn-primary ms-4" href="@Url.Action("NewConsent", new { id = p.ID, kind = HospitalConsentKind.Photography })"><i class="ki-outline ki-notepad-edit fs-4"></i>@T["Record the photography consent"]</a>
+                        </div>
+                    }
                     <div class="card mb-5"><div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
                         <span class="card-label fw-bold text-gray-900 fs-4">@T["Body map — {0}", name]</span>
+                        @if (Model.PhotoConsent is { } pcn)
+                        {
+                            <span class="text-muted mt-1 fw-semibold fs-8"><i class="ki-outline ki-shield-tick fs-6 text-success"></i> @T["Photos under consent {0} — {1}", pcn.No, T["photo-scope-short:" + pcn.Scope].Value]</span>
+                        }
                         <span class="text-muted mt-1 fw-semibold fs-7">@T["Choose \"mark\" and tap the body; or \"pen\" and draw freely. Grey marks are carried from the last visit, not yet verified."]</span></div></div>
                         <div class="card-body pt-3">
                             @if (canEdit)
@@ -179,6 +199,26 @@
                 </div>
             </div>
             <input type="file" accept="image/jpeg,image/png,image/webp" class="d-none" id="cv_photo" />
+            <div class="modal fade" id="ms_modal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered modal-xl"><div class="modal-content">
+                <div class="modal-header"><h3 class="modal-title fw-bold">@T["Measure on the photo"] <span class="text-muted fs-6" data-ms-title></span></h3>
+                    <button type="button" class="btn btn-icon btn-sm btn-active-light-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></button></div>
+                <div class="modal-body"><div class="row g-5">
+                    <div class="col-lg-8"><div class="cv-wrap" style="cursor:crosshair"><svg id="ms_svg" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet"><image id="ms_img" x="0" y="0" /><g id="ms_lines"></g></svg></div></div>
+                    <div class="col-lg-4">
+                        <div class="d-flex flex-column gap-2 mb-4" id="ms_steps">
+                            <button type="button" class="cv-tool on justify-content-start" data-ms-step="ruler"><span class="cv-sw" style="background:#3A5795"></span>@T["1 · The ruler: tap both ends of a known length"]</button>
+                            <button type="button" class="cv-tool justify-content-start" data-ms-step="length"><span class="cv-sw" style="background:#DC2626"></span>@T["2 · The lesion's longest length"]</button>
+                            <button type="button" class="cv-tool justify-content-start" data-ms-step="width"><span class="cv-sw" style="background:#7239EA"></span>@T["3 · Its widest across (optional)"]</button>
+                        </div>
+                        <label class="form-label fs-7">@T["The ruler's length you marked (mm)"]</label>
+                        <input type="number" min="1" max="300" step="0.5" class="form-control form-control-solid mb-4" dir="ltr" id="ms_mm" value="10" />
+                        <div class="rounded border border-dashed p-4 mb-3"><div class="text-muted fs-8 mb-1">@T["Measured size"]</div><div class="fs-2 fw-bold text-gray-900"><bdi data-ms-out>—</bdi></div><div class="text-muted fs-8 mt-1" data-ms-note></div></div>
+                        <div class="text-muted fs-8">@T["Lay a ruler beside the lesion, in the same plane, when taking the photo. The server computes the size from your points; the margin is one pixel at each end."]</div>
+                        <button type="button" class="btn btn-sm btn-light mt-3" data-ms-clear><i class="ki-outline ki-arrow-circle-left fs-5"></i>@T["Start again"]</button>
+                    </div>
+                </div></div>
+                <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-ms-save><i class="ki-outline ki-check fs-4"></i>@T["Save the size to the mark"]</button></div>
+            </div></div></div>
         }
         else if (burn)
         {
@@ -401,10 +441,18 @@
                       pp: @Json.Serialize(T["posterior pole"].Value), mp: @Json.Serialize(T["mid-periphery"].Value), fp: @Json.Serialize(T["far periphery"].Value), at: @Json.Serialize(T["at {0} o'clock"].Value) };
             var F = @Json.Serialize(findings.Select(f => new { k = f.Key, t = isAr ? f.Ar : f.En, c = f.Color, code = f.Code }));
             var REG = @Json.Serialize(HospitalCanvasRules.BodyRegions.Select(r => new { k = r.Key, t = isAr ? r.Ar : r.En, r = new[] { r.X, r.Y, r.W, r.H } }));
-            var marks = @Json.Serialize(Model.Marks.Select(m => new { id = m.ID == 0 ? (int?)null : m.ID, f = m.Finding, v = m.Side, x = m.X, y = m.Y, s = m.SizeMm, no = m.LesionNo, carried = m.Carried, from = m.CarriedFromMarkId, photo = m.PhotoDocumentId != null }));
+            var marks = @Json.Serialize(Model.Marks.Select(m => new { id = m.ID == 0 ? (int?)null : m.ID, f = m.Finding, v = m.Side, x = m.X, y = m.Y, s = m.SizeMm, no = m.LesionNo, carried = m.Carried, from = m.CarriedFromMarkId, photo = m.PhotoDocumentId != null, ms = Measured(m), pc = ConsentOf(m) }));
             var last = @Json.Serialize(Model.Last.Select(m => new { id = m.ID, f = m.Finding, v = m.Side, x = m.X, y = m.Y, s = m.SizeMm, no = m.LesionNo }));
             var ink = @Json.Serialize(System.Text.Json.JsonDocument.Parse(string.IsNullOrEmpty(Model.Sheet?.InkJson) ? "[]" : Model.Sheet!.InkJson).RootElement);
             var nextNo = @Model.NextLesion, hist = [], sel = null, compare = false;
+            // H113: photos under the patient's consent; the measure on a photo
+            var hasConsent = @Json.Serialize(Model.PhotoConsent != null);
+            W.onPhoto = @Json.Serialize(T["on the photo"].Value); W.underConsent = @Json.Serialize(T["Consent {0}"].Value); W.withdrawn = @Json.Serialize(T["consent withdrawn"].Value);
+            W.measure = @Json.Serialize(T["Measure on the photo"].Value); W.noConsent = @Json.Serialize(T["Record the patient's photography consent first"].Value);
+            W.msSave = @Json.Serialize(T["Save the measured size to mark {0}? It replaces the size typed by hand."].Value);
+            W.msNeed = @Json.Serialize(T["Mark the ruler and the lesion's length first"].Value); W.msShort = @Json.Serialize(T["Mark a longer stretch of the ruler: at least 50 pixels on the photo"].Value);
+            W.msWide = @Json.Serialize(T["The width is across the length: it cannot be longer than the length"].Value); W.msScale = @Json.Serialize(T["{0} mm per pixel on this photo"].Value);
+            W.scope = @Json.Serialize(HospitalConsentPhotoScope.All.ToDictionary(s => s, s => T["photo-scope-short:" + s].Value));
             function fOf(k) { return F.filter(function (x) { return x.k === k; })[0] || { t: k, c: '#3A5795' }; }
             function fmt(s, a) { return s.replace('{0}', a); }
             function esc(s) { var d = document.createElement('div'); d.textContent = s == null ? '' : String(s); return d.innerHTML; }
@@ -467,16 +515,20 @@
                     gp.innerHTML = compare ? last.map(function (m) { return '<circle cx="' + m.x + '" cy="' + m.y + '" r="13" fill="none" stroke="#7239EA" stroke-width="1.5" stroke-dasharray="3 3"/>'; }).join('') : '';
                     document.getElementById('cv_list').innerHTML = marks.map(function (m, i) {
                         var prev = m.from ? last.filter(function (x) { return x.id === m.from; })[0] : null, grew = prev && prev.s != null && m.s != null && +m.s > +prev.s;
-                        return '<div class="cv-mark ' + (m.carried ? 'carried ' : '') + (sel === i ? 'sel' : '') + '" data-pick="' + i + '"><span class="n">' + numberOf(m) + '</span><div class="flex-grow-1"><div class="fw-bold text-gray-900">' + esc(fOf(m.f).t) + (m.s != null ? ' · <bdi class="hp-num">' + m.s + ' mm</bdi>' : '') + '</div>' +
+                        return '<div class="cv-mark ' + (m.carried ? 'carried ' : '') + (sel === i ? 'sel' : '') + '" data-pick="' + i + '"><span class="n">' + numberOf(m) + '</span><div class="flex-grow-1"><div class="fw-bold text-gray-900">' + esc(fOf(m.f).t) + (m.s != null ? ' · <bdi class="hp-num">' + (m.ms && +m.ms.l === +m.s ? m.ms.l + (m.ms.w != null ? ' × ' + m.ms.w : '') + ' mm ±' + m.ms.pm : m.s + ' mm') + '</bdi>' : '') +
+                            (m.ms && +m.ms.l === +m.s ? ' <span class="badge badge-light-primary fs-9">' + W.onPhoto + '</span>' : '') + '</div>' +
+                            (m.photo && m.pc ? '<div class="fs-9 ' + (m.pc.wd ? 'text-danger fw-bold' : 'text-muted') + '">' + esc(fmt(W.underConsent, m.pc.no)) + ' · ' + esc(m.pc.wd ? W.withdrawn : (W.scope[m.pc.scope] || m.pc.scope)) + '</div>' : '') +
                             '<div class="text-muted fs-8">' + esc(regionAt(+m.x, +m.y) || '—') + '</div>' +
                             ((compare || grew) && prev && prev.s != null ? '<div class="fs-8 ' + (grew ? 'text-danger fw-bold' : 'text-muted') + '">' + fmt(W.was, prev.s) + (grew ? ' · ' + W.grew : '') + '</div>' : '') + '</div>' +
                             (m.photo && m.id ? '<a href="@Url.Content("~/Hospital/Canvas/Marks/")' + m.id + '/Photo" target="_blank" class="btn btn-icon btn-sm btn-light"><i class="ki-outline ki-picture fs-4"></i></a>' : '') +
+                            (m.photo && m.id && canEdit ? '<button type="button" class="btn btn-icon btn-sm btn-light-primary" data-ms="' + i + '" title="' + esc(W.measure) + '"><i class="ki-outline ki-size fs-4"></i></button>' : '') +
                             (m.carried ? (canEdit ? '<button type="button" class="btn btn-sm btn-light-primary py-1 px-2 fs-9" data-ok="' + i + '">' + W.confirm + '</button>' : '<span class="badge badge-light fs-9">' + W.carried + '</span>') : '<span class="badge badge-light-success fs-9">' + W.verified + '</span>') +
                             (canEdit ? '<button type="button" class="btn btn-icon btn-sm btn-light" data-rm="' + i + '" title="' + W.remove + '"><i class="ki-outline ki-trash fs-5"></i></button>' : '') + '</div>';
                     }).join('') || '<div class="text-muted fs-7 py-3">' + W.none + '</div>';
                 }
                 document.getElementById('cv_list').addEventListener('click', function (ev) {
-                    var ok = ev.target.closest('[data-ok]'), rm = ev.target.closest('[data-rm]'), pick = ev.target.closest('[data-pick]');
+                    var ok = ev.target.closest('[data-ok]'), rm = ev.target.closest('[data-rm]'), pick = ev.target.closest('[data-pick]'), msb = ev.target.closest('[data-ms]');
+                    if (msb) { measure(marks[+msb.getAttribute('data-ms')]); return; }
                     if (ok) { marks[+ok.getAttribute('data-ok')].carried = false; draw(); return; }
                     if (rm) { marks.splice(+rm.getAttribute('data-rm'), 1); sel = null; draw(); return; }
                     if (pick) { sel = +pick.getAttribute('data-pick'); draw(); }
@@ -491,7 +543,7 @@
                         if (k === 'undo') { var h = hist.pop(); if (h && h.mark) marks.pop(); else if (h && h.ink) { ink.splice(ink.indexOf(h.ink), 1); h.el.remove(); } draw(); return; }
                         mode = k; this.querySelectorAll('.cv-tool').forEach(function (x) { x.classList.toggle('on', x === b); }); document.getElementById('cv_wrap').style.cursor = k === 'pen' ? 'crosshair' : 'pointer'; });
                     var file = document.getElementById('cv_photo');
-                    document.querySelector('[data-photo-btn]').addEventListener('click', function () { var m = sel == null ? null : marks[sel]; if (!m || !m.id) { toastr.info(W.unsaved); return; } file.value = ''; file.click(); });
+                    document.querySelector('[data-photo-btn]').addEventListener('click', function () { var m = sel == null ? null : marks[sel]; if (!m || !m.id) { toastr.info(W.unsaved); return; } if (!hasConsent) { toastr.info(W.noConsent); return; } file.value = ''; file.click(); });
                     file.addEventListener('change', function () { var m = marks[sel]; if (!file.files.length || !m) return;
                         cbConfirm(fmt(W.photo, numberOf(m))).then(function (ok) { if (!ok) return; var fd = new FormData(); fd.append('photo', file.files[0]);
                             fetch('@Url.Content("~/Hospital/Canvas/Marks/")' + m.id + '/Photo', { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': tok }, body: fd })
@@ -499,6 +551,56 @@
                 }
                 var pt2 = document.querySelector('[data-pat-toggle]'), patG = document.getElementById('cv_pat');
                 if (pt2 && patG) { pt2.classList.add('btn-light-danger'); pt2.addEventListener('click', function () { var on = patG.style.display === 'none'; patG.style.display = on ? '' : 'none'; pt2.classList.toggle('btn-light-danger', on); }); }
+                // ---- H113: the measure on the photo. Points are the photo's own pixels; the server computes the result again.
+                var msEl = document.getElementById('ms_modal'), msSvg = document.getElementById('ms_svg'), msImg = document.getElementById('ms_img'), msG = document.getElementById('ms_lines');
+                var msMark = null, msStep = 'ruler', msPts = { ruler: [], length: [], width: [] }, msW = 100, msH = 100, COL = { ruler: '#3A5795', length: '#DC2626', width: '#7239EA' };
+                function msLen(a) { return a.length === 2 ? Math.sqrt(Math.pow(a[1][0] - a[0][0], 2) + Math.pow(a[1][1] - a[0][1], 2)) : 0; }
+                function msFlat(a) { return a.length === 2 ? [a[0][0], a[0][1], a[1][0], a[1][1]].map(function (v) { return +v.toFixed(1); }) : null; }
+                function msCalc() {
+                    var mm = parseFloat(document.getElementById('ms_mm').value), r = msLen(msPts.ruler), l = msLen(msPts.length), w = msLen(msPts.width);
+                    if (!(mm >= 1 && mm <= 300) || !r || !l) return { err: W.msNeed };
+                    if (r < 50) return { err: W.msShort };
+                    if (w && w > l) return { err: W.msWide };
+                    var per = mm / r, rd = function (v) { return Math.round(v * 10) / 10; };
+                    return { l: rd(l * per), w: w ? Math.max(0.1, rd(w * per)) : null, pm: Math.max(0.1, rd(2 * per + l * per * 2 / r)), per: per };
+                }
+                function msDraw() {
+                    var k = Math.max(msW, msH) / 160;
+                    msG.innerHTML = ['ruler', 'length', 'width'].map(function (s) { var a = msPts[s], c = COL[s];
+                        return a.map(function (q) { return '<circle cx="' + q[0] + '" cy="' + q[1] + '" r="' + (k * 1.6) + '" fill="' + c + '" stroke="#fff" stroke-width="' + (k * .5) + '"/>'; }).join('') +
+                            (a.length === 2 ? '<line x1="' + a[0][0] + '" y1="' + a[0][1] + '" x2="' + a[1][0] + '" y2="' + a[1][1] + '" stroke="' + c + '" stroke-width="' + (k * .7) + '" stroke-linecap="round"/>' : ''); }).join('');
+                    var r = msCalc();
+                    document.querySelector('[data-ms-out]').textContent = r.err ? '—' : r.l + (r.w != null ? ' × ' + r.w : '') + ' mm ±' + r.pm;
+                    document.querySelector('[data-ms-note]').textContent = r.err ? r.err : fmt(W.msScale, r.per.toFixed(3));
+                    document.querySelectorAll('[data-ms-step]').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-ms-step') === msStep); });
+                }
+                function measure(m) {
+                    if (!m || !m.id || !m.photo) return; msMark = m; msStep = 'ruler';
+                    var pt4 = function (a) { return a ? [[+a[0], +a[1]], [+a[2], +a[3]]] : []; };
+                    msPts = m.ms ? { ruler: pt4(m.ms.ruler), length: pt4(m.ms.length), width: pt4(m.ms.width) } : { ruler: [], length: [], width: [] };
+                    if (m.ms) document.getElementById('ms_mm').value = m.ms.rulerMm;
+                    document.querySelector('[data-ms-title]').textContent = '— ' + numberOf(m) + ' · ' + fOf(m.f).t;
+                    var url = '@Url.Content("~/Hospital/Canvas/Marks/")' + m.id + '/Photo', probe = new Image();
+                    probe.onload = function () { msW = probe.naturalWidth; msH = probe.naturalHeight; msSvg.setAttribute('viewBox', '0 0 ' + msW + ' ' + msH);
+                        msImg.setAttribute('width', msW); msImg.setAttribute('height', msH); msImg.setAttribute('href', url); msDraw(); };
+                    probe.src = url;
+                    bootstrap.Modal.getOrCreateInstance(msEl).show();
+                }
+                msSvg.addEventListener('click', function (ev) {
+                    var q = pt(msSvg, ev); if (q[0] < 0 || q[1] < 0 || q[0] > msW || q[1] > msH) return;
+                    var a = msPts[msStep]; if (a.length === 2) a.length = 0; a.push([q[0], q[1]]);
+                    if (a.length === 2) msStep = msStep === 'ruler' ? 'length' : msStep === 'length' ? 'width' : 'width';
+                    msDraw();
+                });
+                document.getElementById('ms_steps').addEventListener('click', function (ev) { var b = ev.target.closest('[data-ms-step]'); if (!b) return; msStep = b.getAttribute('data-ms-step'); msDraw(); });
+                document.getElementById('ms_mm').addEventListener('input', msDraw);
+                document.querySelector('[data-ms-clear]').addEventListener('click', function () { msPts = { ruler: [], length: [], width: [] }; msStep = 'ruler'; msDraw(); });
+                document.querySelector('[data-ms-save]').addEventListener('click', function () {
+                    var r = msCalc(); if (r.err) { toastr.error(r.err); return; }
+                    cbConfirm(fmt(W.msSave, numberOf(msMark))).then(function (ok) { if (!ok) return;
+                        post('@Url.Content("~/Hospital/Canvas/Marks/")' + msMark.id + '/Measure', { ruler: msFlat(msPts.ruler), rulerMm: parseFloat(document.getElementById('ms_mm').value), length: msFlat(msPts.length), width: msFlat(msPts.width) })
+                            .then(function (res) { if (!res.ok) { toastr.error(res.error || W.failed); return; } toastr.success(W.saved); location.reload(); }); });
+                });
                 var cmp = document.querySelector('[data-compare]'); if (cmp) cmp.addEventListener('click', function () { compare = !compare; cmp.classList.toggle('btn-light-primary', compare); draw(); });
                 draw();
             } else if (KIND === 'Burn') {

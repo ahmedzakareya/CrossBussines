@@ -79,6 +79,15 @@ namespace CrossBuy.Controllers
 			return Result(await CanvasSvc.PhotoAsync(ctx, docs, id, bytes, photo.Length, ct));
 		}
 
+		/// H113: the mark's size measured on its photo against the ruler in the picture.
+		[HttpPost("Canvas/Marks/{id:int}/Measure"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Consult)]
+		public async Task<IActionResult> CanvasMarkMeasure(int id, [FromBody] HospitalPhotoMeasureInput? input, CancellationToken ct = default)
+		{
+			var ctx = await ContextAsync(ct);
+			if (ctx == null) return Unauthorized();
+			return Result(await CanvasSvc.MeasureAsync(ctx, id, input ?? new(), ct));
+		}
+
 		[HttpGet("Canvas/Marks/{id:int}/Photo")]
 		[HospitalPerm(HospitalActions.Read)]
 		public async Task<IActionResult> CanvasMarkPhotoImage(int id, CancellationToken ct = default)

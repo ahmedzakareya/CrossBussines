@@ -339,4 +339,74 @@ namespace CrossBuy.BL.Hospital
 
 		public static string Store(HospitalPainReport r) => JsonSerializer.Serialize(new { nrs = r.Nrs, words = r.Words });
 	}
+	// ==========================================================================================
+	// HOSPITAL H113 — a calibrated measure on a clinical photo (the prototype's canvas layer 4). A photo has no scale
+	// of its own: the doctor marks a known length on a ruler lying in the picture (the calibration), then the lesion's
+	// longest length and, optionally, its widest across it. All points are the photo's own pixels. The margin of error
+	// is one pixel at each end of the lesion's line plus one at each end of the ruler's, carried through the scale.
+	// ==========================================================================================
+	public sealed class HospitalPhotoMeasureInput
+	{
+		/// x1, y1, x2, y2 in the photo's pixels.
+		public decimal[]? Ruler { get; set; }
+		public decimal? RulerMm { get; set; }
+		public decimal[]? Length { get; set; }
+		public decimal[]? Width { get; set; }
+	}
+
+	public sealed record HospitalPhotoMeasure(decimal LengthMm, decimal? WidthMm, decimal PlusMinusMm, decimal MmPerPx);
+
+	public static class HospitalPhotoMeasureRules
+	{
+		public const decimal MinRulerPx = 50, MaxPx = 20000;
+
+		private static decimal? Px(decimal[]? l)
+		{
+			if (l == null || l.Length != 4 || l.Any(v => v < 0 || v > MaxPx)) return null;
+			double dx = (double)(l[2] - l[0]), dy = (double)(l[3] - l[1]);
+			return (decimal)Math.Sqrt(dx * dx + dy * dy);
+		}
+
+		public static (HospitalPhotoMeasure? Result, string? Error) Measure(HospitalPhotoMeasureInput i)
+		{
+			if (i.RulerMm is not decimal mm || mm < 1 || mm > 300) return (null, "Give the ruler's length in millimetres (1 to 300)");
+			if (Px(i.Ruler) is not decimal ruler) return (null, "Mark the two ends of the ruler's length on the photo");
+			if (ruler < MinRulerPx) return (null, "Mark a longer stretch of the ruler: at least 50 pixels on the photo");
+			if (Px(i.Length) is not decimal len || len < 2) return (null, "Mark the two ends of the lesion's length");
+			decimal? wid = null;
+			if (i.Width != null)
+			{
+				if (Px(i.Width) is not decimal w || w < 2) return (null, "Mark the two ends of the lesion's width");
+				if (w > len) return (null, "The width is across the length: it cannot be longer than the length");
+				wid = w;
+			}
+			decimal per = mm / ruler;
+			decimal L = Math.Round(len * per, 1, MidpointRounding.AwayFromZero);
+			if (L < 0.1m || L > 500) return (null, "The measured length is out of range: check the ruler");
+			decimal? W = wid is decimal ww ? Math.Max(0.1m, Math.Round(ww * per, 1, MidpointRounding.AwayFromZero)) : null;
+			decimal pm = Math.Max(0.1m, Math.Round(2 * per + len * per * 2 / ruler, 1, MidpointRounding.AwayFromZero));
+			return (new HospitalPhotoMeasure(L, W, pm, Math.Round(per, 4, MidpointRounding.AwayFromZero)), null);
+		}
+
+		public static string Store(HospitalPhotoMeasureInput i, HospitalPhotoMeasure r) => JsonSerializer.Serialize(new
+		{
+			ruler = i.Ruler, rulerMm = i.RulerMm, length = i.Length, width = i.Width,
+			lengthMm = r.LengthMm, widthMm = r.WidthMm, pm = r.PlusMinusMm,
+		});
+
+		/// The stored measure read again from its own points (never trusted from its stored results).
+		public static HospitalPhotoMeasure? Read(string? json)
+		{
+			if (string.IsNullOrEmpty(json)) return null;
+			try
+			{
+				var i = JsonSerializer.Deserialize<HospitalPhotoMeasureInput>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+				return i == null ? null : Measure(i).Result;
+			}
+			catch (JsonException) { return null; }
+		}
+
+		/// A saved-again mark keeps its measure only while its size is still the measured one.
+		public static string? KeepIfSame(string? json, decimal? sizeMm) => Read(json) is { } r && sizeMm == r.LengthMm ? json : null;
+	}
 }

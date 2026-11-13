@@ -35,6 +35,19 @@ namespace CrossBuy.Models.Context.Hospital
 		public static readonly IReadOnlyList<string> All = new[] { Given, Refused };
 	}
 
+	/// H113: what a photography consent allows, each wider than the one before (the GMC's three uses of a clinical
+	/// photograph): the patient's own record; also teaching inside the hospital; also publication.
+	public static class HospitalConsentPhotoScope
+	{
+		public const string Record = "Record";
+		public const string Teaching = "Teaching";
+		public const string Publication = "Publication";
+		public static readonly IReadOnlyList<string> All = new[] { Record, Teaching, Publication };
+		/// Whether a consent of scope `given` allows the use `need`.
+		public static bool Covers(string? given, string need) => Rank(given) >= 0 && Rank(need) >= 0 && Rank(given) >= Rank(need);
+		private static int Rank(string? s) => s switch { Record => 0, Teaching => 1, Publication => 2, _ => -1 };
+	}
+
 	public static class HospitalConsentSigner
 	{
 		public const string Patient = "Patient";
@@ -104,6 +117,8 @@ namespace CrossBuy.Models.Context.Hospital
 		public DateTime? WithdrawnAt { get; set; }
 		public int? WithdrawnByEmployeeId { get; set; }
 		public string? WithdrawReason { get; set; }
+		/// H113: a photography consent's scope (HospitalConsentPhotoScope); null for every other kind and for a refusal.
+		public string? PhotoScope { get; set; }
 	}
 
 	public static class HospitalConsentModel
@@ -128,6 +143,7 @@ namespace CrossBuy.Models.Context.Hospital
 				e.Property(x => x.Language).HasMaxLength(2);
 				e.Property(x => x.ProcedureName).HasMaxLength(300);
 				e.Property(x => x.Risks).HasMaxLength(1000);
+				e.Property(x => x.PhotoScope).HasMaxLength(12);
 				e.Property(x => x.Decision).HasMaxLength(10);
 				e.Property(x => x.SignerKind).HasMaxLength(20);
 				e.Property(x => x.SignerName).HasMaxLength(200);

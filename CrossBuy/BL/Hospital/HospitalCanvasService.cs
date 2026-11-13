@@ -23,7 +23,11 @@ namespace CrossBuy.BL.Hospital
 		IReadOnlyList<HospitalCanvasMark> Marks, IReadOnlyList<HospitalCanvasMark> Last, DateTime? LastAt, bool CanEdit, int NextLesion
 		, IReadOnlyList<HospitalCanvasResult>? History = null
 		, HospitalCanvasPatientPain? PatientPain = null
+		, HospitalPhotoConsentView? PhotoConsent = null
+		, IReadOnlyDictionary<int, HospitalPhotoConsentView>? MarkConsents = null
 		);
+	/// H113: a photography consent as the drawing shows it — its number, its scope, whether it has been withdrawn.
+	public sealed record HospitalPhotoConsentView(int Id, string No, string Scope, bool Withdrawn);
 	/// H112: what the patient drew on the tablet for this visit — the places, the strength 0–10, the words.
 	public sealed record HospitalCanvasPatientPain(HospitalCanvasSheet Sheet, IReadOnlyList<HospitalCanvasMark> Marks, HospitalPainReport Report);
 	/// H110: one stored result of a drawing's calculator — the concept's code, the side (R/L or none), the value, when.
@@ -231,6 +235,20 @@ namespace CrossBuy.BL.Hospital
 		}
 
 		/// Lesion numbers: a carried mark keeps its lesion's number; a new one takes the patient's next.
+		/// H113: which of the sheet's earlier marks each newly saved mark continues — the same finding on the same spot —
+		/// each earlier mark taken ONCE: two new marks on one spot are two lesions, never one number twice.
+		public static IReadOnlyDictionary<HospitalCanvasMark, HospitalCanvasMark> SameAsBefore(IReadOnlyList<HospitalCanvasMark> placed, IReadOnlyList<HospitalCanvasMark> old)
+		{
+			var taken = new HashSet<HospitalCanvasMark>(ReferenceEqualityComparer.Instance);
+			var map = new Dictionary<HospitalCanvasMark, HospitalCanvasMark>(ReferenceEqualityComparer.Instance);
+			foreach (var m in placed.Where(m => m.CarriedFromMarkId == null))
+			{
+				var same = old.FirstOrDefault(o => o.CarriedFromMarkId == null && o.X == m.X && o.Y == m.Y && o.Finding == m.Finding && !taken.Contains(o));
+				if (same != null) { taken.Add(same); map[m] = same; }
+			}
+			return map;
+		}
+
 		public static void Number(IList<HospitalCanvasMark> marks, IReadOnlyDictionary<int, int> lesionOfMark, int patientMax)
 		{
 			int next = patientMax;
@@ -288,7 +306,16 @@ namespace CrossBuy.BL.Hospital
 					&& await Q<HospitalCanvasSheet>(ctx).AsNoTracking().FirstOrDefaultAsync(s => s.EncounterId == encounterId && s.Kind == HospitalCanvasKind.Pain, ct) is { } ps)
 					patientPain = new HospitalCanvasPatientPain(ps, await Q<HospitalCanvasMark>(ctx).AsNoTracking().Where(m => m.SheetId == ps.ID).OrderBy(m => m.ID).ToListAsync(ct),
 						HospitalPainRules.Read(ps.StateJson).Result ?? new HospitalPainReport(null, Array.Empty<string>()));
-				return (new HospitalCanvasPage(visit, patient, kind, sheet, marks, last.Marks, last.Sheet?.SignedAt, canEdit && sheet?.Status != HospitalCanvasStatus.Signed, next, history, patientPain), true);
+				HospitalPhotoConsentView? photoConsent = null; IReadOnlyDictionary<int, HospitalPhotoConsentView>? markConsents = null;
+				if (kind == HospitalCanvasKind.Body)
+				{
+					var all = Q<HospitalConsent>(ctx).AsNoTracking();
+					photoConsent = await HospitalConsentRules.CoveringPhotos(all, ctx.CompanyId, patient.ID).Select(c => new HospitalPhotoConsentView(c.ID, c.ConsentNo, c.PhotoScope!, false)).FirstOrDefaultAsync(ct);
+					var ids = marks.Where(m => m.PhotoConsentId != null).Select(m => m.PhotoConsentId!.Value).Distinct().ToList();
+					markConsents = ids.Count == 0 ? new Dictionary<int, HospitalPhotoConsentView>()
+						: await all.Where(c => ids.Contains(c.ID)).ToDictionaryAsync(c => c.ID, c => new HospitalPhotoConsentView(c.ID, c.ConsentNo, c.PhotoScope ?? HospitalConsentPhotoScope.Record, c.WithdrawnAt != null), ct);
+				}
+				return (new HospitalCanvasPage(visit, patient, kind, sheet, marks, last.Marks, last.Sheet?.SignedAt, canEdit && sheet?.Status != HospitalCanvasStatus.Signed, next, history, patientPain, photoConsent, markConsents), true);
 			}
 			catch (Microsoft.Data.SqlClient.SqlException ex) when (Missing(ex)) { return (new HospitalCanvasPage(visit, patient, kind, null, Array.Empty<HospitalCanvasMark>(), Array.Empty<HospitalCanvasMark>(), null, false, 1), false); }
 		}
@@ -371,8 +398,14 @@ namespace CrossBuy.BL.Hospital
 				{
 					var old = await Q<HospitalCanvasMark>(ctx).Where(m => m.SheetId == sheet.ID).ToListAsync(ct);
 					// a lesion first drawn on THIS sheet keeps its number when the sheet is saved again
-					foreach (var m in placed.Marks!) if (m.CarriedFromMarkId == null) { var same = old.FirstOrDefault(o => o.CarriedFromMarkId == null && o.X == m.X && o.Y == m.Y && o.Finding == m.Finding); if (same != null) { m.LesionNo = same.LesionNo; m.PhotoDocumentId = same.PhotoDocumentId; m.CreatedAt = same.CreatedAt; m.CreatedByEmployeeId = same.CreatedByEmployeeId; } }
-					foreach (var m in placed.Marks!) if (m.CarriedFromMarkId is int src) { var same = old.FirstOrDefault(o => o.CarriedFromMarkId == src); if (same != null) { m.PhotoDocumentId = same.PhotoDocumentId; m.VerifiedAt = same.VerifiedAt; m.VerifiedByEmployeeId = same.VerifiedByEmployeeId; } }
+					var before = HospitalCanvasRules.SameAsBefore(placed.Marks!, old);
+					foreach (var m in placed.Marks!) if (m.CarriedFromMarkId == null) { var same = before.GetValueOrDefault(m); if (same != null) {
+						m.LesionNo = same.LesionNo; m.PhotoDocumentId = same.PhotoDocumentId; m.CreatedAt = same.CreatedAt; m.CreatedByEmployeeId = same.CreatedByEmployeeId;
+						m.PhotoConsentId = same.PhotoConsentId; m.MeasureJson = HospitalPhotoMeasureRules.KeepIfSame(same.MeasureJson, m.SizeMm);
+						} }
+					foreach (var m in placed.Marks!) if (m.CarriedFromMarkId is int src) { var same = old.FirstOrDefault(o => o.CarriedFromMarkId == src); if (same != null) { m.PhotoDocumentId = same.PhotoDocumentId; m.VerifiedAt = same.VerifiedAt; m.VerifiedByEmployeeId = same.VerifiedByEmployeeId;
+						m.PhotoConsentId = same.PhotoConsentId; m.MeasureJson = HospitalPhotoMeasureRules.KeepIfSame(same.MeasureJson, m.SizeMm);
+						} }
 					max = Math.Max(max, old.Count == 0 ? 0 : old.Max(o => o.LesionNo));
 					_db.RemoveRange(old);
 				}
@@ -468,6 +501,8 @@ namespace CrossBuy.BL.Hospital
 				if (m == null) return HospitalResult.Fail("not_found");
 				var s = await Q<HospitalCanvasSheet>(ctx).AsNoTracking().FirstAsync(x => x.ID == m.SheetId, ct);
 				if (s.Status == HospitalCanvasStatus.Signed) return HospitalResult.Fail("This visit is signed: its drawings no longer change");
+				var consent = await HospitalConsentRules.CoveringPhotos(Q<HospitalConsent>(ctx).AsNoTracking(), ctx.CompanyId, m.PatientId).Select(c => new { c.ID, c.ConsentNo, c.PhotoScope }).FirstOrDefaultAsync(ct);
+				if (consent == null) return HospitalResult.Fail(HospitalConsentRules.NoPhotoConsent);
 				using var buffer = new MemoryStream();
 				await content.CopyToAsync(buffer, ct);
 				var kind = HospitalPatientPhotoRules.Sniff(buffer.GetBuffer().AsSpan(0, (int)Math.Min(12, buffer.Length)));
@@ -479,6 +514,30 @@ namespace CrossBuy.BL.Hospital
 					: await docs.UploadAsync(new DocumentUploadRequest { EntityType = EntityRegistry.HospitalPatient, EntityId = m.PatientId, FileName = name, ContentType = k.ContentType, Metadata = PhotoMetadata, Reason = "Photo of lesion " + m.LesionNo }, buffer, ct);
 				if (!r.Ok) return HospitalResult.Fail(r.ReasonCode == DocumentAccessReasons.Allowed ? "The change could not be saved" : "forbidden");
 				m.PhotoDocumentId = r.DocumentId;
+				m.PhotoConsentId = consent.ID;
+				m.MeasureJson = null;   // a new photo: the old measure was made on another picture
+				await _db.SaveChangesAsync(ct);
+				return HospitalResult.Success(m.ID);
+			}
+			catch (Microsoft.Data.SqlClient.SqlException ex) when (Missing(ex)) { return HospitalResult.Fail(NoTables); }
+		}
+
+		/// H113: the mark's size measured on its photo against a ruler in the picture. The server computes it from the
+		/// points; the size becomes the mark's, with its margin of error kept beside it.
+		public async Task<HospitalResult> MeasureAsync(BusinessContext ctx, int markId, HospitalPhotoMeasureInput input, CancellationToken ct = default)
+		{
+			if (!await _access.CanAsync(ctx, HospitalActions.Consult, null, ct)) return HospitalResult.Fail("forbidden");
+			try
+			{
+				var m = await Q<HospitalCanvasMark>(ctx).FirstOrDefaultAsync(x => x.ID == markId, ct);
+				if (m == null) return HospitalResult.Fail("not_found");
+				var s = await Q<HospitalCanvasSheet>(ctx).AsNoTracking().FirstAsync(x => x.ID == m.SheetId, ct);
+				if (s.Status == HospitalCanvasStatus.Signed) return HospitalResult.Fail("This visit is signed: its drawings no longer change");
+				if (m.PhotoDocumentId == null) return HospitalResult.Fail("Attach a photo to the mark first");
+				var (r, err) = HospitalPhotoMeasureRules.Measure(input);
+				if (err != null) return HospitalResult.Fail(err);
+				m.SizeMm = r!.LengthMm;
+				m.MeasureJson = HospitalPhotoMeasureRules.Store(input, r);
 				await _db.SaveChangesAsync(ct);
 				return HospitalResult.Success(m.ID);
 			}

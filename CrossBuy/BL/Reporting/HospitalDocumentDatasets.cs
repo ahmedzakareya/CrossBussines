@@ -388,7 +388,8 @@ namespace CrossBuy.BL.Reporting
             "رسم إكلينيكي", "Clinical drawing",
             "رسم واحد من زيارة موقّعة (خريطة الجسم، قاع العين، الحروق، السمع، المفاصل، شجرة العائلة): الرسم كما رآه الطبيب، وعلاماته، ونتائج حسابه.",
             "One drawing of a signed visit (body map, fundus, burns, audiogram, joints, pedigree): the drawing as the doctor saw it, its marks and its results.",
-            new[] { F("LineNo", "م", "#", ReportFieldType.Integer, 10, false, ReportAlign.Center) },
+            // H113: one row per mark — a box of fixed height cut the list off after four lines; rows flow onto new pages
+            new[] { F("LineNo", "م", "#", ReportFieldType.Integer, 10, true, ReportAlign.Center), F("Mark", "العلامة", "Mark", width: 170, visible: true) },
             new[]
             {
                 F("DrawingTitle", "الرسم", "Drawing", width: 60, visible: true),

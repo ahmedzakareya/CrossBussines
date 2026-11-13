@@ -21,6 +21,9 @@
     bool en = !System.Globalization.CultureInfo.CurrentUICulture.Name.StartsWith("ar");
     var name = DisplayName.Of(Model.Name, Model.NameEn);
     var inv = System.Globalization.CultureInfo.InvariantCulture;
+    // H113: opened from a drawing as ?kind=Photography — that kind's form comes first-chosen
+    string wantKind = Context.Request.Query["kind"].ToString();
+    int? wantForm = forms.FirstOrDefault(f => f.Kind == wantKind)?.ID;
 }
 <link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
 <style>
@@ -57,7 +60,7 @@
                         <div class="card-body pt-2"><div class="row g-4">
                             <div class="col-12"><label class="form-label required fs-7">@T["Consent form"]</label>
                                 <select class="form-select form-select-solid" data-c="formId">
-                                    @foreach (var f in forms) { <option value="@f.ID" data-kind="@f.Kind">@DisplayName.Of(f.Title, f.TitleEn)</option> }
+                                    @foreach (var f in forms) { <option value="@f.ID" data-kind="@f.Kind" selected="@(wantForm == f.ID)">@DisplayName.Of(f.Title, f.TitleEn)</option> }
                                 </select></div>
                             <div class="col-12"><label class="form-label required fs-7">@T["The signer reads it in"]</label>
                                 <div class="d-flex gap-6">
@@ -66,6 +69,14 @@
                                 </div></div>
                             <div class="col-12" data-c-proc-wrap><label class="form-label fs-7" data-c-proc-label>@T["The procedure"]</label>
                                 <input type="text" class="form-control form-control-solid" maxlength="300" dir="auto" data-c="procedureName" /></div>
+                            <div class="col-12 d-none" data-c-scope-wrap><label class="form-label required fs-7">@T["What the photographs may be used for"]</label>
+                                <div class="d-flex flex-column gap-3">
+                                    @foreach (var sc in HospitalConsentPhotoScope.All)
+                                    {
+                                        <label class="form-check form-check-custom form-check-solid align-items-start"><input class="form-check-input" type="radio" name="cScope" value="@sc" data-c-scope />
+                                            <span class="form-check-label fs-7"><span class="fw-bold text-gray-900 d-block">@T["photo-scope:" + sc]</span><span class="text-muted">@T["photo-scope-hint:" + sc]</span></span></label>
+                                    }
+                                </div></div>
                             @if (cases.Count > 0)
                             {
                                 <div class="col-12"><label class="form-label fs-7">@T["Theatre case"]</label>
@@ -139,6 +150,8 @@
                 done: @Json.Serialize(T["The consent is recorded"].Value), failed: @Json.Serialize(T["The change could not be saved"].Value), sign: @Json.Serialize(T["Sign in the box"].Value) };
             var q = function (k) { return root.querySelector('[data-c=' + k + ']'); };
             var lang = function () { return root.querySelector('[data-c-lang]:checked').value; };
+            var decision = function () { return (root.querySelector('[data-c-decision]:checked') || {}).value; };
+            var scope = function () { return (root.querySelector('[data-c-scope]:checked') || {}).value || null; };
             var signer = function () { return (root.querySelector('[data-c-signer]:checked') || {}).value; };
             function form() { var id = +q('formId').value; return forms.filter(function (f) { return f.id === id; })[0]; }
             function render() {
@@ -149,6 +162,7 @@
                 root.querySelector('[data-c-title]').textContent = en ? f.titleEn : f.title;
                 var box = root.querySelector('[data-c-text]'); box.textContent = text; box.dir = en ? 'ltr' : 'rtl';
                 root.querySelector('[data-c-proc-label]').classList.toggle('required', f.proc);
+                root.querySelector('[data-c-scope-wrap]').classList.toggle('d-none', !(f.kind === 'Photography' && decision() === 'Given'));
             }
             function proxy() { root.querySelectorAll('[data-c-proxy]').forEach(function (e) { e.classList.toggle('d-none', signer() !== 'Representative'); }); }
             // picking a theatre case writes its procedure, unless one is written already
@@ -159,6 +173,7 @@
             q('procedureName').addEventListener('input', render);
             root.querySelectorAll('[data-c-lang]').forEach(function (e) { e.addEventListener('change', render); });
             root.querySelectorAll('[data-c-signer]').forEach(function (e) { e.addEventListener('change', proxy); });
+            root.querySelectorAll('[data-c-decision]').forEach(function (e) { e.addEventListener('change', render); });
             render(); proxy();
 
             // the pad: pointer strokes at the screen's real resolution
@@ -182,7 +197,8 @@
                     var body = { formId: +q('formId').value, language: lang(), procedureName: q('procedureName').value || null, risks: q('risks').value || null,
                         surgeryId: sc && sc.value ? +sc.value : null, decision: decision, signerKind: signer() || null, signerName: q('signerName').value || null,
                         signerRelation: q('signerRelation').value || null, proxyReason: signer() === 'Representative' ? q('proxyReason').value : null,
-                        interpreter: q('interpreter').value || null, witnessEmployeeId: q('witnessEmployeeId').value ? +q('witnessEmployeeId').value : null, signature: pad.toDataURL('image/png') };
+                        interpreter: q('interpreter').value || null, witnessEmployeeId: q('witnessEmployeeId').value ? +q('witnessEmployeeId').value : null, signature: pad.toDataURL('image/png'),
+                        photoScope: form().kind === 'Photography' && decision === 'Given' ? scope() : null };
                     fetch(@Json.Serialize(Url.Action("SignConsent", new { id = Model.ID })), { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(body) })
                         .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
                         .then(function (res) {

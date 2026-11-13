@@ -36,8 +36,15 @@ namespace CrossBuy.BL.Reporting
             h["Findings"] = HospitalCanvasPaper.Findings(s.Kind, marks, ar);
             h["Results"] = HospitalCanvasPaper.Results(s.Kind, s.StateJson, patient, enc.StartedAt, ar);
             h["SignedAt"] = s.SignedAt?.ToLocalTime();
-            builder.AddRow(h);
-            return builder.Build(totalRowCount: 1);
+            // H113: one row per mark (the header repeats), so a long list paginates instead of being cut off
+            var lines = HospitalCanvasPaper.MarkLines(s.Kind, marks, ar);
+            if (lines.Count == 0) { h["Mark"] = null; builder.AddRow(h); return builder.Build(totalRowCount: 1); }
+            for (int i = 0; i < lines.Count; i++)
+            {
+                var row = new Dictionary<string, object?>(h) { ["LineNo"] = i + 1, ["Mark"] = lines[i] };
+                builder.AddRow(row);
+            }
+            return builder.Build(totalRowCount: lines.Count);
         }
     }
 
@@ -68,10 +75,13 @@ namespace CrossBuy.BL.Reporting
 
         /// Each coded mark as a line: the lesion, the finding, the size and where.
         public static string? Findings(string kind, IReadOnlyList<HospitalCanvasMark> marks, bool ar)
+            => marks.Count == 0 ? null : string.Join("\n", MarkLines(kind, marks, ar));
+
+        /// H113: the marks' lines, one per mark — the paper's rows.
+        public static IReadOnlyList<string> MarkLines(string kind, IReadOnlyList<HospitalCanvasMark> marks, bool ar)
         {
-            if (marks.Count == 0) return null;
             var list = HospitalCanvasRules.FindingsOf(kind);
-            return string.Join("\n", marks.Select(m =>
+            return marks.Select(m =>
             {
                 var f = list.FirstOrDefault(x => x.Key == m.Finding);
                 string what = f == null ? m.Finding : ar ? f.Ar : f.En;
@@ -80,9 +90,11 @@ namespace CrossBuy.BL.Reporting
                     : (HospitalCanvasRules.BodyRegions.FirstOrDefault(r => r.Key == m.Region) is { } r ? (ar ? r.Ar : r.En) : m.Region ?? "")
                       + " — " + (m.Side == "B" ? (ar ? "خلفي" : "back") : (ar ? "أمامي" : "front"));
                 string size = m.SizeMm is decimal sz ? " · " + Ltr(N(sz) + " mm") : "";
+                if (m.SizeMm != null && HospitalPhotoMeasureRules.Read(m.MeasureJson) is { } pm && pm.LengthMm == m.SizeMm)   // H113: measured on a calibrated photo
+                    size = " · " + Ltr(N(pm.LengthMm) + (pm.WidthMm is decimal w ? " × " + N(w) : "") + " mm ±" + N(pm.PlusMinusMm)) + (ar ? " (على صورة معايرة)" : " (calibrated photo)");
                 string code = string.IsNullOrEmpty(m.FindingCode) ? "" : " · " + Ltr(m.FindingCode!);
                 return (kind == HospitalCanvasKind.Body ? m.LesionNo + " · " : "") + what + size + " · " + where + code;
-            }));
+            }).ToList();
         }
 
         /// The drawing's results, read again by the server's rules from the state it stored.

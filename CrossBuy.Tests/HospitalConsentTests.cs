@@ -124,6 +124,7 @@ namespace CrossBuy.Tests
 		public void The_tables_match_their_slice()
 		{
 			var s = HospitalSliceParity.Slice("hospital_h60_consents.sql");
+			s += Environment.NewLine + HospitalSliceParity.Slice("hospital_h113_photo_consent_measure.sql");   // H113: a photography consent's scope
 			var m = HospitalSliceParity.Model(HospitalConsentModel.Configure);
 			HospitalSliceParity.NamesItsTable(m, s, typeof(HospitalConsentForm), "HospitalConsentForms");
 			HospitalSliceParity.ColumnsMatch(m, s, typeof(HospitalConsentForm), "HospitalConsentForms");

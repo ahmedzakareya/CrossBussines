@@ -1,0 +1,200 @@
+{
+ "unit": "H113 — clinical photos under the patient's consent and its scope, and a calibrated measure on the photo (canvas layer 4)",
+ "strings": {
+  "1 · The ruler: tap both ends of a known length": {
+   "ar": "أولًا: المسطرة — المس طرفي طول معروف عليها",
+   "en": "1 · The ruler: tap both ends of a known length",
+   "fr": "1 · La règle : touchez les deux bouts d'une longueur connue"
+  },
+  "2 · The lesion's longest length": {
+   "ar": "ثانيًا: أطول امتداد للآفة",
+   "en": "2 · The lesion's longest length",
+   "fr": "2 · La plus grande longueur de la lésion"
+  },
+  "3 · Its widest across (optional)": {
+   "ar": "ثالثًا: أعرض عرض لها (اختياري)",
+   "en": "3 · Its widest across (optional)",
+   "fr": "3 · Sa plus grande largeur (facultatif)"
+  },
+  "A photo of a mark is taken only under the patient's signed photography consent, within its scope.": {
+   "ar": "صورة العلامة تُلتقط فقط بموافقة تصوير موقّعة من المريض، وفي حدود نطاقها.",
+   "en": "A photo of a mark is taken only under the patient's signed photography consent, within its scope.",
+   "fr": "La photo d'une marque n'est prise qu'avec le consentement photographique signé du patient, dans sa portée."
+  },
+  "Attach a photo to the mark first": {
+   "ar": "أرفق صورة للعلامة أولًا",
+   "en": "Attach a photo to the mark first",
+   "fr": "Joignez d'abord une photo à la marque"
+  },
+  "Choose what the photographs may be used for": {
+   "ar": "اختر فيمَ تُستخدم الصور",
+   "en": "Choose what the photographs may be used for",
+   "fr": "Choisissez l'usage autorisé des photos"
+  },
+  "Consent {0}": {
+   "ar": "الموافقة {0}",
+   "en": "Consent {0}",
+   "fr": "Consentement {0}"
+  },
+  "Give the ruler's length in millimetres (1 to 300)": {
+   "ar": "اكتب طول المسطرة بالمليمتر (من ١ إلى ٣٠٠)",
+   "en": "Give the ruler's length in millimetres (1 to 300)",
+   "fr": "Indiquez la longueur de la règle en millimètres (1 à 300)"
+  },
+  "Lay a ruler beside the lesion, in the same plane, when taking the photo. The server computes the size from your points; the margin is one pixel at each end.": {
+   "ar": "ضع مسطرة بجانب الآفة وفي نفس مستواها عند التصوير. الخادم يحسب المقاس من نقاطك، وهامش الخطأ بكسل واحد عند كل طرف.",
+   "en": "Lay a ruler beside the lesion, in the same plane, when taking the photo. The server computes the size from your points; the margin is one pixel at each end.",
+   "fr": "Posez une règle à côté de la lésion, dans le même plan, lors de la prise de vue. Le serveur calcule la taille à partir de vos points ; la marge est d'un pixel à chaque extrémité."
+  },
+  "Mark a longer stretch of the ruler: at least 50 pixels on the photo": {
+   "ar": "حدّد جزءًا أطول من المسطرة: ٥٠ بكسل على الأقل في الصورة",
+   "en": "Mark a longer stretch of the ruler: at least 50 pixels on the photo",
+   "fr": "Marquez une plus grande portion de la règle : au moins 50 pixels sur la photo"
+  },
+  "Mark the ruler and the lesion's length first": {
+   "ar": "حدّد المسطرة وطول الآفة أولًا",
+   "en": "Mark the ruler and the lesion's length first",
+   "fr": "Marquez d'abord la règle et la longueur de la lésion"
+  },
+  "Mark the two ends of the lesion's length": {
+   "ar": "حدّد طرفي طول الآفة",
+   "en": "Mark the two ends of the lesion's length",
+   "fr": "Marquez les deux extrémités de la longueur de la lésion"
+  },
+  "Mark the two ends of the lesion's width": {
+   "ar": "حدّد طرفي عرض الآفة",
+   "en": "Mark the two ends of the lesion's width",
+   "fr": "Marquez les deux extrémités de la largeur de la lésion"
+  },
+  "Mark the two ends of the ruler's length on the photo": {
+   "ar": "حدّد طرفي طول المسطرة على الصورة",
+   "en": "Mark the two ends of the ruler's length on the photo",
+   "fr": "Marquez les deux extrémités de la règle sur la photo"
+  },
+  "Measure on the photo": {
+   "ar": "القياس على الصورة",
+   "en": "Measure on the photo",
+   "fr": "Mesurer sur la photo"
+  },
+  "Measured size": {
+   "ar": "المقاس المحسوب",
+   "en": "Measured size",
+   "fr": "Taille mesurée"
+  },
+  "No photography consent on file": {
+   "ar": "لا توجد موافقة تصوير في الملف",
+   "en": "No photography consent on file",
+   "fr": "Aucun consentement photographique au dossier"
+  },
+  "Photos under consent {0} — {1}": {
+   "ar": "الصور بموافقة {0} — {1}",
+   "en": "Photos under consent {0} — {1}",
+   "fr": "Photos sous le consentement {0} — {1}"
+  },
+  "Record the patient's photography consent first": {
+   "ar": "سجّل موافقة المريض على التصوير أولًا",
+   "en": "Record the patient's photography consent first",
+   "fr": "Enregistrez d'abord le consentement photographique du patient"
+  },
+  "Record the photography consent": {
+   "ar": "تسجيل موافقة التصوير",
+   "en": "Record the photography consent",
+   "fr": "Enregistrer le consentement photographique"
+  },
+  "Save the measured size to mark {0}? It replaces the size typed by hand.": {
+   "ar": "حفظ المقاس المحسوب للعلامة {0}؟ سيحل محل المقاس المكتوب يدويًا.",
+   "en": "Save the measured size to mark {0}? It replaces the size typed by hand.",
+   "fr": "Enregistrer la taille mesurée pour la marque {0} ? Elle remplace la taille saisie à la main."
+  },
+  "Save the size to the mark": {
+   "ar": "حفظ المقاس للعلامة",
+   "en": "Save the size to the mark",
+   "fr": "Enregistrer la taille sur la marque"
+  },
+  "Start again": {
+   "ar": "ابدأ من جديد",
+   "en": "Start again",
+   "fr": "Recommencer"
+  },
+  "The measured length is out of range: check the ruler": {
+   "ar": "الطول المحسوب خارج المدى: راجع المسطرة",
+   "en": "The measured length is out of range: check the ruler",
+   "fr": "La longueur mesurée est hors limites : vérifiez la règle"
+  },
+  "The ruler's length you marked (mm)": {
+   "ar": "طول المسطرة الذي حدّدته (مم)",
+   "en": "The ruler's length you marked (mm)",
+   "fr": "Longueur de règle marquée (mm)"
+  },
+  "The width is across the length: it cannot be longer than the length": {
+   "ar": "العرض عمودي على الطول: لا يمكن أن يكون أطول منه",
+   "en": "The width is across the length: it cannot be longer than the length",
+   "fr": "La largeur est transversale : elle ne peut pas dépasser la longueur"
+  },
+  "What the photographs may be used for": {
+   "ar": "فيمَ تُستخدم الصور",
+   "en": "What the photographs may be used for",
+   "fr": "Usage autorisé des photos"
+  },
+  "consent withdrawn": {
+   "ar": "الموافقة مسحوبة",
+   "en": "consent withdrawn",
+   "fr": "consentement retiré"
+  },
+  "on the photo": {
+   "ar": "على الصورة",
+   "en": "on the photo",
+   "fr": "sur la photo"
+  },
+  "photo-scope:Record": {
+   "ar": "الملف الطبي فقط",
+   "en": "The medical record only",
+   "fr": "Le dossier médical seulement"
+  },
+  "photo-scope:Teaching": {
+   "ar": "الملف الطبي والتعليم داخل المستشفى",
+   "en": "The record, and teaching in the hospital",
+   "fr": "Le dossier et l'enseignement à l'hôpital"
+  },
+  "photo-scope:Publication": {
+   "ar": "الملف والتعليم والنشر العلمي",
+   "en": "The record, teaching and publication",
+   "fr": "Le dossier, l'enseignement et la publication"
+  },
+  "photo-scope-hint:Record": {
+   "ar": "تُحفظ في ملفي ويراها من يعالجني فقط",
+   "en": "Kept in my file, seen only by those treating me",
+   "fr": "Gardées dans mon dossier, vues seulement par ceux qui me soignent"
+  },
+  "photo-scope-hint:Teaching": {
+   "ar": "ويُسمح بعرضها في تعليم الأطباء داخل المستشفى، دون إظهار الوجه",
+   "en": "Also shown when teaching doctors in the hospital, without my face",
+   "fr": "Aussi montrées pour l'enseignement à l'hôpital, sans le visage"
+  },
+  "photo-scope-hint:Publication": {
+   "ar": "ويُسمح بنشرها في مجلة أو مؤتمر طبي، دون ما يدل على هويتي",
+   "en": "Also published in a medical journal or conference, with nothing that identifies me",
+   "fr": "Aussi publiées dans une revue ou un congrès médical, sans rien qui m'identifie"
+  },
+  "photo-scope-short:Record": {
+   "ar": "للملف الطبي فقط",
+   "en": "medical record only",
+   "fr": "dossier médical seulement"
+  },
+  "photo-scope-short:Teaching": {
+   "ar": "للملف والتعليم",
+   "en": "record and teaching",
+   "fr": "dossier et enseignement"
+  },
+  "photo-scope-short:Publication": {
+   "ar": "للملف والتعليم والنشر",
+   "en": "record, teaching and publication",
+   "fr": "dossier, enseignement et publication"
+  },
+  "{0} mm per pixel on this photo": {
+   "ar": "{0} مم لكل بكسل في هذه الصورة",
+   "en": "{0} mm per pixel on this photo",
+   "fr": "{0} mm par pixel sur cette photo"
+  }
+ }
+}

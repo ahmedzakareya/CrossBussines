@@ -6459,4 +6459,43 @@
   <data name="pain:tingling" xml:space="preserve"><value>Tingling</value></data>
   <data name="Pain now" xml:space="preserve"><value>Pain now</value></data>
   <data name="{0} out of 10" xml:space="preserve"><value>{0} out of 10</value></data>
+  <data name="1 · The ruler: tap both ends of a known length" xml:space="preserve"><value>1 · The ruler: tap both ends of a known length</value></data>
+  <data name="2 · The lesion's longest length" xml:space="preserve"><value>2 · The lesion's longest length</value></data>
+  <data name="3 · Its widest across (optional)" xml:space="preserve"><value>3 · Its widest across (optional)</value></data>
+  <data name="A photo of a mark is taken only under the patient's signed photography consent, within its scope." xml:space="preserve"><value>A photo of a mark is taken only under the patient's signed photography consent, within its scope.</value></data>
+  <data name="Attach a photo to the mark first" xml:space="preserve"><value>Attach a photo to the mark first</value></data>
+  <data name="Choose what the photographs may be used for" xml:space="preserve"><value>Choose what the photographs may be used for</value></data>
+  <data name="Consent {0}" xml:space="preserve"><value>Consent {0}</value></data>
+  <data name="Give the ruler's length in millimetres (1 to 300)" xml:space="preserve"><value>Give the ruler's length in millimetres (1 to 300)</value></data>
+  <data name="Lay a ruler beside the lesion, in the same plane, when taking the photo. The server computes the size from your points; the margin is one pixel at each end." xml:space="preserve"><value>Lay a ruler beside the lesion, in the same plane, when taking the photo. The server computes the size from your points; the margin is one pixel at each end.</value></data>
+  <data name="Mark a longer stretch of the ruler: at least 50 pixels on the photo" xml:space="preserve"><value>Mark a longer stretch of the ruler: at least 50 pixels on the photo</value></data>
+  <data name="Mark the ruler and the lesion's length first" xml:space="preserve"><value>Mark the ruler and the lesion's length first</value></data>
+  <data name="Mark the two ends of the lesion's length" xml:space="preserve"><value>Mark the two ends of the lesion's length</value></data>
+  <data name="Mark the two ends of the lesion's width" xml:space="preserve"><value>Mark the two ends of the lesion's width</value></data>
+  <data name="Mark the two ends of the ruler's length on the photo" xml:space="preserve"><value>Mark the two ends of the ruler's length on the photo</value></data>
+  <data name="Measure on the photo" xml:space="preserve"><value>Measure on the photo</value></data>
+  <data name="Measured size" xml:space="preserve"><value>Measured size</value></data>
+  <data name="No photography consent on file" xml:space="preserve"><value>No photography consent on file</value></data>
+  <data name="Photos under consent {0} — {1}" xml:space="preserve"><value>Photos under consent {0} — {1}</value></data>
+  <data name="Record the patient's photography consent first" xml:space="preserve"><value>Record the patient's photography consent first</value></data>
+  <data name="Record the photography consent" xml:space="preserve"><value>Record the photography consent</value></data>
+  <data name="Save the measured size to mark {0}? It replaces the size typed by hand." xml:space="preserve"><value>Save the measured size to mark {0}? It replaces the size typed by hand.</value></data>
+  <data name="Save the size to the mark" xml:space="preserve"><value>Save the size to the mark</value></data>
+  <data name="Start again" xml:space="preserve"><value>Start again</value></data>
+  <data name="The measured length is out of range: check the ruler" xml:space="preserve"><value>The measured length is out of range: check the ruler</value></data>
+  <data name="The ruler's length you marked (mm)" xml:space="preserve"><value>The ruler's length you marked (mm)</value></data>
+  <data name="The width is across the length: it cannot be longer than the length" xml:space="preserve"><value>The width is across the length: it cannot be longer than the length</value></data>
+  <data name="What the photographs may be used for" xml:space="preserve"><value>What the photographs may be used for</value></data>
+  <data name="consent withdrawn" xml:space="preserve"><value>consent withdrawn</value></data>
+  <data name="on the photo" xml:space="preserve"><value>on the photo</value></data>
+  <data name="photo-scope-hint:Publication" xml:space="preserve"><value>Also published in a medical journal or conference, with nothing that identifies me</value></data>
+  <data name="photo-scope-hint:Record" xml:space="preserve"><value>Kept in my file, seen only by those treating me</value></data>
+  <data name="photo-scope-hint:Teaching" xml:space="preserve"><value>Also shown when teaching doctors in the hospital, without my face</value></data>
+  <data name="photo-scope-short:Publication" xml:space="preserve"><value>record, teaching and publication</value></data>
+  <data name="photo-scope-short:Record" xml:space="preserve"><value>medical record only</value></data>
+  <data name="photo-scope-short:Teaching" xml:space="preserve"><value>record and teaching</value></data>
+  <data name="photo-scope:Publication" xml:space="preserve"><value>The record, teaching and publication</value></data>
+  <data name="photo-scope:Record" xml:space="preserve"><value>The medical record only</value></data>
+  <data name="photo-scope:Teaching" xml:space="preserve"><value>The record, and teaching in the hospital</value></data>
+  <data name="{0} mm per pixel on this photo" xml:space="preserve"><value>{0} mm per pixel on this photo</value></data>
 </root>

@@ -48,6 +48,8 @@ namespace CrossBuy.BL.Hospital
 		public string? SignerRelation { get; set; } public string? ProxyReason { get; set; } public string? Interpreter { get; set; } public int? WitnessEmployeeId { get; set; }
 		/// The signature as the pad drew it: a PNG data URL.
 		public string? Signature { get; set; }
+		/// H113: what the photographs may be used for (a photography consent that is given).
+		public string? PhotoScope { get; set; }
 	}
 
 	public sealed record HospitalConsentRow(HospitalConsent Consent, string ExplainedBy, string ExplainedByEn, string Witness, string WitnessEn, string? CaseNo, string? WithdrawnBy, string? WithdrawnByEn);
@@ -63,6 +65,13 @@ namespace CrossBuy.BL.Hospital
 		public static IQueryable<HospitalConsent> CoveringCase(IQueryable<HospitalConsent> all, int companyId, int surgeryId) =>
 			all.Where(c => c.CompanyId == companyId && c.SurgeryId == surgeryId && c.Kind == HospitalConsentKind.Procedure
 				&& c.Decision == HospitalConsentDecision.Given && c.WithdrawnAt == null && c.SignatureDocumentId != null);
+
+		/// H113: the photography consents that allow a clinical photo of this patient: given, signed, not withdrawn.
+		public static IQueryable<HospitalConsent> CoveringPhotos(IQueryable<HospitalConsent> all, int companyId, int patientId) =>
+			all.Where(c => c.CompanyId == companyId && c.PatientId == patientId && c.Kind == HospitalConsentKind.Photography
+				&& c.Decision == HospitalConsentDecision.Given && c.WithdrawnAt == null && c.SignatureDocumentId != null && c.PhotoScope != null)
+			   .OrderByDescending(c => c.SignedAt);
+		public const string NoPhotoConsent = "Record the patient's photography consent first";
 
 		public const int MaxSignatureBytes = 512 * 1024, MaxBody = 20000, AdultAge = 18;
 		public const string Metadata = "{\"hospital\":\"consent-signature\"}";   // the platform takes a JSON object
@@ -94,6 +103,8 @@ namespace CrossBuy.BL.Hospital
 				if (string.IsNullOrWhiteSpace(i.SignerName) || string.IsNullOrWhiteSpace(i.SignerRelation)) return "Give the representative's name and relation to the patient";
 				if (!HospitalConsentProxyReason.All.Contains(i.ProxyReason ?? "")) return "Choose why the representative signs";
 			}
+			if (form.Kind == HospitalConsentKind.Photography && i.Decision == HospitalConsentDecision.Given && !HospitalConsentPhotoScope.All.Contains(i.PhotoScope ?? ""))
+				return "Choose what the photographs may be used for";
 			if (i.WitnessEmployeeId is not int w || w <= 0) return "Choose the witness";
 			if (w == me) return "The witness must be someone other than the clinician who explained";
 			if ((i.ProcedureName?.Length ?? 0) > 300 || (i.Risks?.Length ?? 0) > 1000 || (i.SignerName?.Length ?? 0) > 200
@@ -285,6 +296,7 @@ namespace CrossBuy.BL.Hospital
 						SignerName = proxy ? Clip(input.SignerName, 200)! : (en ? PatientEn(p) : p.Name), SignerRelation = proxy ? Clip(input.SignerRelation, 60) : null,
 						ProxyReason = proxy ? input.ProxyReason : null, Interpreter = Clip(input.Interpreter, 200), ExplainedByEmployeeId = me, PractitionerId = doctor?.ID,
 						WitnessEmployeeId = input.WitnessEmployeeId!.Value, SignedAt = nowUtc,
+						PhotoScope = form.Kind == HospitalConsentKind.Photography && input.Decision == HospitalConsentDecision.Given ? input.PhotoScope : null,
 					};
 					_db.Add(r);
 					try { await _db.SaveChangesAsync(ct); row = r; }
