@@ -18,6 +18,7 @@
     string Nm(string ar, string? en) => isAr ? ar : (en ?? ar);
     string clinic = Model.Clinic == null ? T["Clinic"].Value : Nm(Model.Clinic.Name, Model.Clinic.NameEn);
     var W = ViewBag.Widgets as HospitalVisitWidgets;
+    var facts = ViewBag.Facts as HospitalPatientFacts;   // H116: her sex, age and trimester — whether a range alert applies
     string heading = Model.Forms.Count == 0 ? string.Format(T["{0} — follow-up visit"].Value, clinic) : clinic + " — " + Nm(Model.Forms[0].Template.Name, Model.Forms[0].Template.NameEn);
     ViewData["Title"] = heading + " — " + name;
     var age = HospitalPatientService.AgeOn(p.BirthDate, DateTime.UtcNow);
@@ -153,7 +154,7 @@
                 string sub = "";
                 if (h.Last != null && h.Previous != null && h.Last.Value is decimal lv && h.Previous.Value is decimal pv && lv != pv)
                     sub = string.Format(T[lv > pv ? "↑ from {0}" : "↓ from {0}"].Value, Val(h.Concept, h.Previous));
-                bool alerted = h.Last?.Value is decimal av && (h.Field.AlertAbove <= av || h.Field.AlertBelow >= av);
+                bool alerted = h.Last?.Value is decimal av && (h.Field.AlertAbove <= av || h.Field.AlertBelow >= av || HospitalFieldAlertRules.OutsideRange(h.Field, h.Last.Flag, facts));   // H116
                 if (alerted) sub += (sub.Length > 0 ? " — " : "") + (isAr ? h.Field.AlertText : h.Field.AlertTextEn ?? h.Field.AlertText);
                 else if (sub.Length == 0) sub = h.Last?.Flag == HospitalObsFlag.Unknown ? T["No range to compare with"].Value : T["Normal"].Value + " " + HospitalConceptRules.NormalDisplay(h.Concept, isAr);
                 if (h.Concept.HasLaterality)
@@ -292,7 +293,7 @@
                                             {
                                                 <input class="form-control form-control-solid @(HospitalVisitRules.OutOfRange(c, value) ? "is-invalid" : "")" dir="ltr" data-key="@key" data-code="@c.Code" data-side="@side" value="@value" @dis
                                                        data-lo="@D(c.NormalLow)" data-hi="@D(c.NormalHigh)" data-hi2="@D(c.NormalHigh2)" data-panel="@(c.ValueType == HospitalConceptType.Panel ? "1" : "")"
-                                                       data-alert-above="@D(f.AlertAbove)" data-alert-below="@D(f.AlertBelow)" data-alert-text="@(isAr ? f.AlertText : f.AlertTextEn ?? f.AlertText)"
+                                                       data-alert-above="@D(f.AlertAbove)" data-alert-below="@D(f.AlertBelow)" data-alert-range="@(f.AlertRange != null && (f.AlertRange != HospitalAlertRange.Pregnant || facts?.Trimester != null) ? "1" : "")" data-alert-text="@(isAr ? f.AlertText : f.AlertTextEn ?? f.AlertText)"
                                                        placeholder="@(c.ValueType == HospitalConceptType.Panel ? "120/80" : c.Unit == "logMAR" ? "6/6" : "")" />
                                             }
                                         </div>
@@ -621,8 +622,12 @@
                 else { var x = parseFloat(v); bad = !isNaN(x) && ((!isNaN(hi) && x > hi) || (!isNaN(lo) && x < lo)); }
                 i.classList.toggle('is-invalid', bad); }
             // H98: a field with an alert says so the moment its value crosses it (PHQ-9 item 9 — before the patient leaves)
+            // H116: outside THIS patient's range (the limits on the field are already hers: sex, age, pregnancy)
+            function outside(i) { var v = (i.value || '').trim(); if (!v) return false; var lo = parseFloat(i.dataset.lo), hi = parseFloat(i.dataset.hi), hi2 = parseFloat(i.dataset.hi2);
+                if (i.dataset.panel) { var p = v.split('/'); var a = parseFloat(p[0]), b = parseFloat(p[1]); return (!isNaN(a) && ((!isNaN(hi) && a > hi) || (!isNaN(lo) && a < lo))) || (!isNaN(b) && !isNaN(hi2) && b > hi2); }
+                var x = parseFloat(v); return !isNaN(x) && ((!isNaN(hi) && x > hi) || (!isNaN(lo) && x < lo)); }
             function alertOf(i) { var box = i.parentNode, msg = box.querySelector('[data-alert-msg]'), v = parseFloat(i.value), a = parseFloat(i.dataset.alertAbove), b = parseFloat(i.dataset.alertBelow);
-                var hit = !isNaN(v) && ((!isNaN(a) && v >= a) || (!isNaN(b) && v <= b));
+                var hit = (!isNaN(v) && ((!isNaN(a) && v >= a) || (!isNaN(b) && v <= b))) || (i.dataset.alertRange === '1' && outside(i));
                 if (hit && !msg) { msg = document.createElement('div'); msg.setAttribute('data-alert-msg', ''); msg.className = 'rounded bg-light-danger text-danger fw-bold fs-8 px-3 py-2 mt-2'; box.appendChild(msg); }
                 if (msg) { msg.textContent = hit ? '⚠ ' + i.dataset.alertText : ''; msg.classList.toggle('d-none', !hit); } }
             if (form) form.querySelectorAll('[data-alert-text]').forEach(function (i) { if (i.dataset.alertText) alertOf(i); });

@@ -114,6 +114,9 @@ namespace CrossBuy.BL.Hospital
 		private readonly CrossDbContext _db;
 		private readonly IHospitalAccessService _access;
 		public HospitalConceptRangeService(CrossDbContext db, IHospitalAccessService access) { _db = db; _access = access; }
+		/// H116: for READING ranges only (the alert escalation); saving or removing through it is refused.
+		public HospitalConceptRangeService(CrossDbContext db) { _db = db; _access = null!; }
+		private bool ReadOnly => _access == null;
 		private static bool Missing(Microsoft.Data.SqlClient.SqlException ex) => ex.Number is 207 or 208;
 		private IQueryable<HospitalConceptRange> Q(BusinessContext ctx) => _db.Set<HospitalConceptRange>().Where(r => r.CompanyId == ctx.CompanyId);
 
@@ -160,6 +163,7 @@ namespace CrossBuy.BL.Hospital
 
 		public async Task<HospitalResult> SaveAsync(BusinessContext ctx, int conceptId, int? id, HospitalConceptRangeInput i, int? employeeId, DateTime nowUtc, CancellationToken ct = default)
 		{
+			if (ReadOnly) return HospitalResult.Fail("forbidden");
 			if (!await _access.CanAsync(ctx, HospitalActions.Manage, null, ct)) return HospitalResult.Fail("forbidden");
 			try
 			{
@@ -190,6 +194,7 @@ namespace CrossBuy.BL.Hospital
 
 		public async Task<HospitalResult> RemoveAsync(BusinessContext ctx, int id, CancellationToken ct = default)
 		{
+			if (ReadOnly) return HospitalResult.Fail("forbidden");
 			if (!await _access.CanAsync(ctx, HospitalActions.Manage, null, ct)) return HospitalResult.Fail("forbidden");
 			try
 			{

@@ -32,6 +32,33 @@ namespace CrossBuy.BL.Hospital
 		}
 
 		public static string Key(int formId, int fieldId) => $"hosp-field-alert:{formId}:{fieldId}";
+
+		/// H116: the fixed lines OR — when the field says so — a value outside this patient's own range (eff: the concept
+		/// as it reads for them, H115), always or only while she is pregnant.
+		public static bool Fires(HospitalClinicalTemplateField f, IReadOnlyDictionary<string, string> answers, HospitalConcept? eff, HospitalPatientFacts? facts)
+		{
+			if (Fires(f, answers)) return true;
+			return OutsideRange(f, eff, facts, answers.Where(a => a.Key == f.ID.ToString(CultureInfo.InvariantCulture) || a.Key == f.ID + ".R" || a.Key == f.ID + ".L").Select(a => a.Value));
+		}
+
+		/// The range half of the rule, for raw answers ("132/85" for a pair).
+		public static bool OutsideRange(HospitalClinicalTemplateField f, HospitalConcept? eff, HospitalPatientFacts? facts, IEnumerable<string?> raws)
+		{
+			if (f.AlertRange == null || eff == null) return false;
+			if (f.AlertRange == HospitalAlertRange.Pregnant && facts?.Trimester == null) return false;
+			foreach (var raw in raws)
+			{
+				var parts = (raw ?? "").Split('/');
+				if (!decimal.TryParse(parts[0].Trim(), NumberStyles.Number, CultureInfo.InvariantCulture, out var v)) continue;
+				decimal? v2 = parts.Length > 1 && decimal.TryParse(parts[1].Trim(), NumberStyles.Number, CultureInfo.InvariantCulture, out var w) ? w : null;
+				if (HospitalObsFlag.Abnormal(HospitalConceptRules.Flag(eff, v, v2))) return true;
+			}
+			return false;
+		}
+
+		/// The same, for a stored reading's flag (it was already judged against the patient's range when it was signed).
+		public static bool OutsideRange(HospitalClinicalTemplateField f, string? storedFlag, HospitalPatientFacts? facts) =>
+			f.AlertRange != null && (f.AlertRange != HospitalAlertRange.Pregnant || facts?.Trimester != null) && HospitalObsFlag.Abnormal(storedFlag ?? HospitalObsFlag.Unknown);
 	}
 
 	public sealed class HospitalFieldAlertEscalation
@@ -54,10 +81,20 @@ namespace CrossBuy.BL.Hospital
 				var fields = await Q<HospitalClinicalTemplateField>(ctx).AsNoTracking().Where(f => versions.Contains(f.VersionId) && (f.AlertNotify || f.AlertTemplateId != null)).ToListAsync(ct);
 				if (fields.Count == 0) return new(null, null, false, Array.Empty<int>());
 				var firing = new List<(HospitalClinicalForm Form, HospitalClinicalTemplateField Field)>();
+				// H116: a range alert is judged against this patient's own range today (sex, age, pregnancy)
+				Dictionary<int, HospitalConcept> eff = new(); HospitalPatientFacts? facts = null;
+				if (fields.Any(x => x.AlertRange != null))
+				{
+					var patient = await Q<HospitalPatient>(ctx).AsNoTracking().FirstAsync(p => p.ID == e.PatientId, ct);
+					var ranges = new HospitalConceptRangeService(_db);
+					var cids = fields.Where(x => x.AlertRange != null).Select(x => x.ConceptId).Distinct().ToList();
+					eff = (await ranges.ForPatientAsync(ctx, await Q<HospitalConcept>(ctx).AsNoTracking().Where(c => cids.Contains(c.ID)).ToListAsync(ct), patient, nowUtc, ct)).ToDictionary(c => c.ID);
+					facts = await ranges.FactsAsync(ctx, patient, nowUtc, ct);
+				}
 				foreach (var f in forms)
 				{
 					var answers = HospitalFormRules.Answers(f.AnswersJson);
-					foreach (var x in fields.Where(x => x.VersionId == f.TemplateVersionId && HospitalFieldAlertRules.Fires(x, answers))) firing.Add((f, x));
+					foreach (var x in fields.Where(x => x.VersionId == f.TemplateVersionId && HospitalFieldAlertRules.Fires(x, answers, eff.GetValueOrDefault(x.ConceptId), facts))) firing.Add((f, x));
 				}
 				if (firing.Count == 0) return new(null, null, false, Array.Empty<int>());
 

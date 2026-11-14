@@ -156,6 +156,7 @@ namespace CrossBuy.Tests
 			s += Environment.NewLine + HospitalSliceParity.Slice("hospital_h106_field_alert_escalation.sql");   // H106: the alert notifies, opens a template
 			s += Environment.NewLine + HospitalSliceParity.Slice("hospital_h110_canvas_results.sql");   // H110: the canvas source
 			s += Environment.NewLine + HospitalSliceParity.Slice("hospital_h112_patient_pain.sql");   // H112: the patient's own report
+			s += Environment.NewLine + HospitalSliceParity.Slice("hospital_h116_range_alert.sql");   // H116: the alert on the patient's range
 			var m = HospitalSliceParity.Model(HospitalClinicalContentModel.Configure);
 			foreach (var (t, n) in new (Type, string)[] { (typeof(HospitalConcept), "HospitalConcepts"), (typeof(HospitalClinicalTemplate), "HospitalClinicalTemplates"),
 				(typeof(HospitalClinicalTemplateVersion), "HospitalClinicalTemplateVersions"), (typeof(HospitalClinicalTemplateField), "HospitalClinicalTemplateFields"),

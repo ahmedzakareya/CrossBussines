@@ -200,6 +200,16 @@ namespace CrossBuy.Models.Context.Hospital
 		public bool AlertNotify { get; set; }
 		/// … and this template opens on the visit (C-SSRS after PHQ-9 item 9).
 		public int? AlertTemplateId { get; set; }
+		/// H116: also alert when the value is outside THIS patient's normal range (H115: by sex, age, pregnancy) — always
+		/// (Any) or only while she is pregnant (Pregnant: "TSH out of range in pregnancy"). Null = the fixed lines only.
+		public string? AlertRange { get; set; }
+	}
+
+	public static class HospitalAlertRange
+	{
+		public const string Any = "Any";
+		public const string Pregnant = "Pregnant";
+		public static readonly IReadOnlyList<string> All = new[] { Any, Pregnant };
 	}
 
 	public class HospitalClinicalForm
@@ -296,6 +306,7 @@ namespace CrossBuy.Models.Context.Hospital
 				e.Property(x => x.NoteEn).HasMaxLength(300);
 				e.Property(x => x.AlertAbove).HasPrecision(18, 4);
 				e.Property(x => x.AlertBelow).HasPrecision(18, 4);
+				e.Property(x => x.AlertRange).HasMaxLength(8);
 				e.Property(x => x.AlertText).HasMaxLength(150);
 				e.Property(x => x.AlertTextEn).HasMaxLength(150);
 				e.HasIndex(x => new { x.VersionId, x.SortOrder });

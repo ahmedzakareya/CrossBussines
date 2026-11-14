@@ -334,7 +334,10 @@ namespace CrossBuy.BL.Hospital
 					.Join(Q<HospitalClinicalTemplateVersion>(ctx), f => f.TemplateVersionId, v => v.ID, (f, v) => v.TemplateId).Distinct().ToListAsync(ct);
 				if (extraTemplates != null) templateIds = templateIds.Union(extraTemplates).ToList();
 				var versionIds = await Q<HospitalClinicalTemplateVersion>(ctx).Where(v => templateIds.Contains(v.TemplateId) && v.Status == HospitalTemplateStatus.Published).Select(v => v.ID).ToListAsync(ct);
-				var fields = await Q<HospitalClinicalTemplateField>(ctx).Where(f => versionIds.Contains(f.VersionId) && (f.CareGapDays != null || f.AlertAbove != null || f.AlertBelow != null)).ToListAsync(ct);
+				var fields = await Q<HospitalClinicalTemplateField>(ctx).Where(f => versionIds.Contains(f.VersionId) && (f.CareGapDays != null || f.AlertAbove != null || f.AlertBelow != null || f.AlertRange != null)).ToListAsync(ct);
+				HospitalPatientFacts? facts = null;
+				if (fields.Any(f => f.AlertRange == HospitalAlertRange.Pregnant))
+					facts = await new HospitalConceptRangeService(_db, _access).FactsAsync(ctx, await _db.Set<HospitalPatient>().AsNoTracking().FirstAsync(p => p.ID == patientId, ct), nowUtc, ct);
 				var cids = fields.Select(f => f.ConceptId).Distinct().ToList();
 				var concepts = await Q<HospitalConcept>(ctx).Where(c => cids.Contains(c.ID)).ToDictionaryAsync(c => c.ID, ct);
 				var latest = await Q<HospitalClinicalObservation>(ctx).Where(o => o.PatientId == patientId && cids.Contains(o.ConceptId))
@@ -347,7 +350,7 @@ namespace CrossBuy.BL.Hospital
 					if (gap is int days && (last == null || last.ObservedAt < nowUtc.AddDays(-days)))
 						items.Add(new HospitalCareItem(c, "Gap", c.Name, c.NameEn, last?.ObservedAt, last == null ? null : Math.Max(1, (int)Math.Ceiling((nowUtc - last.ObservedAt.AddDays(days)).TotalDays))));
 					if (last?.Value is decimal v)
-						foreach (var f in g.Where(f => f.AlertAbove <= v || f.AlertBelow >= v))
+						foreach (var f in g.Where(f => f.AlertAbove <= v || f.AlertBelow >= v || HospitalFieldAlertRules.OutsideRange(f, last.Flag, facts)))
 							items.Add(new HospitalCareItem(c, "Alert", f.AlertText ?? c.Name, f.AlertTextEn ?? c.NameEn, last.ObservedAt, null));
 				}
 			}

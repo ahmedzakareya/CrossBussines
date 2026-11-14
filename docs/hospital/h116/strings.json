@@ -1,0 +1,30 @@
+{
+ "unit": "H116 — a field alert on the patient's own range (always, or only in pregnancy)",
+ "strings": {
+  "No alert on the patient's range": {
+   "ar": "بدون تنبيه على مدى المريض",
+   "en": "No alert on the patient's range",
+   "fr": "Pas d'alerte sur la plage du patient"
+  },
+  "Also alert outside the patient's normal range": {
+   "ar": "نبّه أيضًا خارج المدى الطبيعي للمريض",
+   "en": "Also alert outside the patient's normal range",
+   "fr": "Alerter aussi hors de la plage normale du patient"
+  },
+  "Alert outside her normal range while she is pregnant": {
+   "ar": "نبّه خارج مداها الطبيعي أثناء الحمل",
+   "en": "Alert outside her normal range while she is pregnant",
+   "fr": "Alerter hors de sa plage normale pendant la grossesse"
+  },
+  "Choose when the alert fires": {
+   "ar": "اختر متى يعمل التنبيه",
+   "en": "Choose when the alert fires",
+   "fr": "Choisissez quand l'alerte se déclenche"
+  },
+  "An alert on the patient's range needs a measured number": {
+   "ar": "التنبيه على مدى المريض يحتاج قياسًا رقميًا",
+   "en": "An alert on the patient's range needs a measured number",
+   "fr": "Une alerte sur la plage du patient demande une valeur mesurée"
+  }
+ }
+}

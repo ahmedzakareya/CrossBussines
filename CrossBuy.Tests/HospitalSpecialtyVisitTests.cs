@@ -139,6 +139,7 @@ namespace CrossBuy.Tests
 		{
 			var s93 = HospitalSliceParity.Slice("hospital_h93_clinical_content.sql") + Environment.NewLine + HospitalSliceParity.Slice("hospital_h94_specialty_visit.sql");
 			s93 += Environment.NewLine + HospitalSliceParity.Slice("hospital_h106_field_alert_escalation.sql");   // H106: the alert notifies, opens a template
+			s93 += Environment.NewLine + HospitalSliceParity.Slice("hospital_h116_range_alert.sql");   // H116: the alert on the patient's range
 			var m = HospitalSliceParity.Model(HospitalClinicalContentModel.Configure);
 			HospitalSliceParity.ColumnsMatch(m, s93, typeof(HospitalClinicalTemplateVersion), "HospitalClinicalTemplateVersions");
 			HospitalSliceParity.ColumnsMatch(m, s93, typeof(HospitalClinicalTemplateField), "HospitalClinicalTemplateFields");

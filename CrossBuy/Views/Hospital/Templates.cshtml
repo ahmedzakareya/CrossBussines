@@ -122,6 +122,7 @@
                         var rule = new List<string>();
                         if (f.AlertAbove != null) rule.Add($"IF {c.NameEn} ≥ {D(f.AlertAbove)} THEN alert \"{f.AlertTextEn}\"");
                         if (f.AlertBelow != null) rule.Add($"IF {c.NameEn} ≤ {D(f.AlertBelow)} THEN alert \"{f.AlertTextEn}\"");
+                        if (f.AlertRange != null) rule.Add($"IF {c.NameEn} outside the patient's range{(f.AlertRange == HospitalAlertRange.Pregnant ? " AND pregnant" : "")} THEN alert \"{f.AlertTextEn}\"");   // H116
                         if (f.CareGapDays != null) rule.Add($"IF no {c.NameEn} in {f.CareGapDays} d THEN care-gap");
                         // H106: what else the alert does (the rule box reads the same for a published version, which has no inputs)
                         if (f.AlertNotify) rule.Add("AND notify the on-call doctor");
@@ -157,6 +158,12 @@
                                     <div class="row g-2">
                                         <div class="col-6"><input type="number" step="any" class="form-control form-control-solid form-control-sm" dir="ltr" data-p="alertAbove" value="@D(f.AlertAbove)" placeholder="≥ @unit" title="@T["Alert at or above"]" @dis /></div>
                                         <div class="col-6"><input type="number" step="any" class="form-control form-control-solid form-control-sm" dir="ltr" data-p="alertBelow" value="@D(f.AlertBelow)" placeholder="≤ @unit" title="@T["Alert at or below"]" @dis /></div>
+                                        @* H116: or when the value is outside the patient's own range (by sex, age, pregnancy) *@
+                                        <div class="col-12"><select class="form-select form-select-solid form-select-sm" data-p="alertRange" data-control="select2" data-hide-search="true" @dis>
+                                            <option value="">@T["No alert on the patient's range"]</option>
+                                            <option value="@HospitalAlertRange.Any" selected="@(f.AlertRange == HospitalAlertRange.Any)">@T["Also alert outside the patient's normal range"]</option>
+                                            <option value="@HospitalAlertRange.Pregnant" selected="@(f.AlertRange == HospitalAlertRange.Pregnant)">@T["Alert outside her normal range while she is pregnant"]</option>
+                                        </select></div>
                                         <div class="col-6"><input type="text" maxlength="150" class="form-control form-control-solid form-control-sm" data-p="alertText" dir="rtl" value="@f.AlertText" placeholder="@T["The alert"]" @dis /></div>
                                         <div class="col-6"><input type="text" maxlength="150" class="form-control form-control-solid form-control-sm" dir="ltr" data-p="alertTextEn" value="@f.AlertTextEn" placeholder="Above target" @dis /></div>
                                         @* H106: an alert that cannot wait — the on-call doctor is told at once, and a template opens on the visit *@

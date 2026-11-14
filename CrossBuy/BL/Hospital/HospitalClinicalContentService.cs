@@ -72,6 +72,7 @@ namespace CrossBuy.BL.Hospital
 		public bool ShowTrend { get; set; }
 		public bool AlertNotify { get; set; }
 		public int? AlertTemplateId { get; set; }
+		public string? AlertRange { get; set; }
 	}
 
 	public sealed record HospitalConceptRow(HospitalConcept Concept, IReadOnlyList<string> UsedBy, IReadOnlyList<string> UsedByEn);
@@ -185,8 +186,12 @@ namespace CrossBuy.BL.Hospital
 				if (i.ShowWhenAbove == null) return "Write the value the other field must be above";
 			}
 			if (i.AlertAbove != null && i.AlertBelow != null && i.AlertBelow >= i.AlertAbove) return "The low alert must be below the high alert";
-			if ((i.AlertAbove != null || i.AlertBelow != null) && (string.IsNullOrWhiteSpace(i.AlertText) || string.IsNullOrWhiteSpace(i.AlertTextEn))) return "Write the alert, in Arabic and in English";
-			if ((i.AlertNotify || i.AlertTemplateId != null) && i.AlertAbove == null && i.AlertBelow == null) return "Notifying or opening a template needs the alert rule first";
+			if (i.AlertRange != null && !HospitalAlertRange.All.Contains(i.AlertRange)) return "Choose when the alert fires";
+			if (i.AlertRange != null && c.ValueType is not (HospitalConceptType.Number or HospitalConceptType.Panel or HospitalConceptType.Score or HospitalConceptType.Calculated))
+				return "An alert on the patient's range needs a measured number";
+			bool anyRule = i.AlertAbove != null || i.AlertBelow != null || i.AlertRange != null;
+			if (anyRule && (string.IsNullOrWhiteSpace(i.AlertText) || string.IsNullOrWhiteSpace(i.AlertTextEn))) return "Write the alert, in Arabic and in English";
+			if ((i.AlertNotify || i.AlertTemplateId != null) && !anyRule) return "Notifying or opening a template needs the alert rule first";
 			return null;
 		}
 	}
@@ -346,6 +351,7 @@ namespace CrossBuy.BL.Hospital
 						CompanyId = ctx.CompanyId, VersionId = draft.ID, SortOrder = f.SortOrder, Section = f.Section, SectionEn = f.SectionEn, ConceptId = f.ConceptId, Label = f.Label, LabelEn = f.LabelEn,
 						Required = f.Required, ValueSource = f.ValueSource, LookbackDays = f.LookbackDays, ShowWhenAbove = f.ShowWhenAbove, Note = f.Note, NoteEn = f.NoteEn,
 						AlertAbove = f.AlertAbove, AlertBelow = f.AlertBelow, AlertText = f.AlertText, AlertTextEn = f.AlertTextEn, CareGapDays = f.CareGapDays,
+						AlertRange = f.AlertRange,
 					};
 					n.ShowTrend = f.ShowTrend;
 					n.AlertNotify = f.AlertNotify; n.AlertTemplateId = f.AlertTemplateId;
@@ -394,7 +400,7 @@ namespace CrossBuy.BL.Hospital
 			f.ConceptId = i.ConceptId!.Value; f.Section = Clip(i.Section, 100)!; f.SectionEn = Clip(i.SectionEn, 100)!; f.Label = Clip(i.Label, 200); f.LabelEn = Clip(i.LabelEn, 200);
 			f.Required = i.Required; f.ValueSource = i.ValueSource ?? HospitalValueSource.Manual; f.LookbackDays = f.ValueSource == HospitalValueSource.LastLab ? i.LookbackDays ?? 90 : null;
 			f.ShowWhenFieldId = i.ShowWhenFieldId; f.ShowWhenAbove = i.ShowWhenFieldId == null ? null : i.ShowWhenAbove; f.Note = Clip(i.Note, 300); f.NoteEn = Clip(i.NoteEn, 300);
-			f.AlertAbove = i.AlertAbove; f.AlertBelow = i.AlertBelow; bool alert = i.AlertAbove != null || i.AlertBelow != null;
+			f.AlertAbove = i.AlertAbove; f.AlertBelow = i.AlertBelow; f.AlertRange = i.AlertRange; bool alert = i.AlertAbove != null || i.AlertBelow != null || i.AlertRange != null;
 			f.AlertText = alert ? Clip(i.AlertText, 150) : null; f.AlertTextEn = alert ? Clip(i.AlertTextEn, 150) : null; f.CareGapDays = i.CareGapDays;
 			f.ShowTrend = i.ShowTrend;
 			f.AlertNotify = alert && i.AlertNotify; f.AlertTemplateId = alert ? i.AlertTemplateId : null;

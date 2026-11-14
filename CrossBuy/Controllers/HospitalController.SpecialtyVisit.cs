@@ -69,6 +69,7 @@ namespace CrossBuy.Controllers
 			if (ctx == null) return RedirectToAction("Index", "Home");
 			if (await _patients.OpenAsync(ctx, (await _consult.GetAsync(ctx, id, ct))?.Encounter.PatientId ?? 0, ctx.EmployeeId, ct) == null) return NotFound();   // reading a visit opens the file: logged
 			var m = await VisitSvc.VisitAsync(ctx, _consult, id, ctx.EmployeeId, DateTime.UtcNow, ct);
+			if (m != null) ViewBag.Facts = await new HospitalConceptRangeService(_db).FactsAsync(ctx, m.Patient, DateTime.UtcNow, ct);   // H116
 			if (m == null) return NotFound();
 			Chrome();
 			// H95: growth, dosing, development, scores and vaccines — shown by what the visit holds
