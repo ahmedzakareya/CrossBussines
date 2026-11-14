@@ -6577,4 +6577,19 @@
   <data name="This session is already charged, or is not one that is charged" xml:space="preserve"><value>هذه الجلسة محسوبة بالفعل، أو ليست مما يُحسب</value></data>
   <data name="Not billed" xml:space="preserve"><value>غير محسوبة</value></data>
   <data name="no price for" xml:space="preserve"><value>لا سعر لـ</value></data>
+  <data name="A cycle given sends its drugs to the pharmacy: each is prepared from the item linked here, in whole units — a vial is never shared between patients." xml:space="preserve"><value>الدورة المُعطاة ترسل أدويتها للصيدلية: كل دواء يُحضَّر من الصنف المربوط هنا، بوحدات كاملة — الفيال لا يُقسم بين مريضين.</value></data>
+  <data name="Choose a medicine the pharmacy stocks" xml:space="preserve"><value>اختر دواءً تخزّنه الصيدلية</value></data>
+  <data name="Choose the drug" xml:space="preserve"><value>اختر الدواء</value></data>
+  <data name="Choose the stock item" xml:space="preserve"><value>اختر صنف المخزون</value></data>
+  <data name="No regimen names a drug yet." xml:space="preserve"><value>لا يوجد بروتوكول يذكر دواءً بعد.</value></data>
+  <data name="Not linked" xml:space="preserve"><value>غير مربوط</value></data>
+  <data name="Pharmacy stock for each drug" xml:space="preserve"><value>مخزون الصيدلية لكل دواء</value></data>
+  <data name="Save this drug's pharmacy stock link?" xml:space="preserve"><value>حفظ ربط هذا الدواء بمخزون الصيدلية؟</value></data>
+  <data name="Stock item" xml:space="preserve"><value>صنف المخزون</value></data>
+  <data name="The chemotherapy pharmacy link is not installed yet (hospital_h120_chemo_pharmacy.sql)." xml:space="preserve"><value>ربط الكيماوي بالصيدلية غير مثبت بعد (hospital_h120_chemo_pharmacy.sql).</value></data>
+  <data name="Write how many mg one unit holds" xml:space="preserve"><value>اكتب كم مجم في الوحدة الواحدة</value></data>
+  <data name="mg per unit" xml:space="preserve"><value>مجم لكل وحدة</value></data>
+  <data name="rxs:Dispensed" xml:space="preserve"><value>صُرف</value></data>
+  <data name="rxs:New" xml:space="preserve"><value>بانتظار الصيدلي</value></data>
+  <data name="rxs:Verified" xml:space="preserve"><value>راجعه الصيدلي</value></data>
 </root>

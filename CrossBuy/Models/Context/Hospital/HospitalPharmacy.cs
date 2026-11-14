@@ -27,6 +27,8 @@ namespace CrossBuy.Models.Context.Hospital
 		public const string Outpatient = "Outpatient";
 		public const string Inpatient = "Inpatient";
 		public const string Emergency = "Emergency";
+		/// H120: a chemotherapy cycle's drugs, sent to the pharmacy when the cycle is given.
+		public const string Oncology = "Oncology";
 	}
 
 	/// The company's pharmacy: which warehouse it dispenses from, and how near an expiry counts as "near".

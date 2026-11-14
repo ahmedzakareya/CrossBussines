@@ -113,6 +113,8 @@ namespace CrossBuy.Models.Context.Hospital
 		public int? BillLineId { get; set; }
 		public int CompanyId { get; set; }
 		public int CourseId { get; set; }
+		/// H120: the pharmacy request that carries this cycle's drugs (stock and bill follow the pharmacy's own dispensing).
+		public int? DispenseId { get; set; }
 		public int PatientId { get; set; }
 		public int CycleNo { get; set; }
 		public string Status { get; set; } = HospitalChemoCycleStatus.Given;
@@ -159,6 +161,7 @@ namespace CrossBuy.Models.Context.Hospital
 	{
 		public static void Configure(ModelBuilder b)
 		{
+			HospitalChemoDrugItemModel.Configure(b);   // H120: the pharmacy's stock link for each drug
 			b.Entity<HospitalChemoRegimen>(e =>
 			{
 				e.ToTable("HospitalChemoRegimens");   // no DbSet: each names its table

@@ -45,6 +45,47 @@
                     <div class="d-flex flex-stack flex-wrap pt-5"><div class="fs-7 text-muted" id="pageInfo"></div><ul class="pagination" id="pager"></ul></div>
                 </div>
             </div>
+            @* H120: the pharmacy's stock for each drug — a cycle given sends its drugs to the pharmacy, prepared from these *@
+            @if (ViewBag.DrugLinksReady == true)
+            {
+                var dlinks = (ViewBag.DrugLinks as IReadOnlyList<HospitalChemoDrugLinkRow>) ?? Array.Empty<HospitalChemoDrugLinkRow>();
+                var meds = (ViewBag.Medicines as IReadOnlyList<(int Id, string Code, string Name, string NameEn, decimal? Price)>) ?? Array.Empty<(int, string, string, string, decimal?)>();
+                bool canPh = ViewBag.CanPharmacy == true;
+                <div class="card mt-5">
+                    <div class="card-header border-0 pt-6"><div class="card-title flex-column m-0">
+                        <span class="card-label fw-bold text-gray-900 fs-4"><i class="ki-outline ki-capsule fs-3 text-primary me-1"></i>@T["Pharmacy stock for each drug"]</span>
+                        <span class="text-muted fs-7 mt-1">@T["A cycle given sends its drugs to the pharmacy: each is prepared from the item linked here, in whole units — a vial is never shared between patients."]</span></div></div>
+                    <div class="card-body pt-2">
+                        @if (dlinks.Count == 0) { <div class="text-center text-muted py-8">@T["No regimen names a drug yet."]</div> }
+                        else
+                        {
+                            <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-3 mb-0">
+                                <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0"><th>@T["Drug"]</th><th>@T["Regimens"]</th><th class="min-w-250px">@T["Stock item"]</th><th class="w-125px">@T["mg per unit"]</th><th class="text-end"></th></tr></thead>
+                                <tbody>
+                                @foreach (var d in dlinks)
+                                {
+                                    <tr data-dl="@d.DrugName">
+                                        <td><bdi dir="ltr" class="fw-bold text-gray-900">@d.DrugName</bdi>@if (d.Link == null) {<div><span class="badge badge-light-danger fs-9 mt-1">@T["Not linked"]</span></div>}</td>
+                                        <td class="hp-num">@d.Regimens</td>
+                                        <td>@if (canPh)
+                                            {
+                                                <select class="form-select form-select-sm form-select-solid" data-dl-item data-control="select2" data-placeholder="@T["Choose the stock item"]">
+                                                    <option value="">@T["Not linked"]</option>
+                                                    @foreach (var m in meds) {<option value="@m.Id" selected="@(d.Link?.ItemId == m.Id)">@m.Code — @DisplayName.Of(m.Name, m.NameEn)</option>}
+                                                </select>
+                                            }
+                                            else {<span>@(d.ItemName == null ? "—" : d.ItemCode + " — " + d.ItemName)</span>}</td>
+                                        <td>@if (canPh) {<input type="number" min="0" step="any" class="form-control form-control-sm form-control-solid" dir="ltr" data-dl-mg value="@(d.Link?.MgPerUnit.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))" placeholder="50" />}
+                                            else {<span class="hp-num">@(d.Link?.MgPerUnit.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) ?? "—")</span>}</td>
+                                        <td class="text-end">@if (canPh) {<button type="button" class="btn btn-sm btn-light-primary" data-dl-save><i class="ki-outline ki-check fs-5"></i>@T["Save"]</button>}</td>
+                                    </tr>
+                                }
+                                </tbody>
+                            </table></div>
+                        }
+                    </div>
+                </div>
+            }
         }
     </div></div>
 </div>
@@ -82,6 +123,21 @@
 
 @section Scripts {
     <script>
+        // H120: a drug's pharmacy stock link, saved row by row
+        (function () {
+            var WL = { ask: @Json.Serialize(T["Save this drug's pharmacy stock link?"].Value), failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value) };
+            document.addEventListener('click', function (e) {
+                var b = e.target.closest('[data-dl-save]'); if (!b) return;
+                var row = b.closest('[data-dl]'), item = row.querySelector('[data-dl-item]').value, mg = row.querySelector('[data-dl-mg]').value;
+                cbConfirm(WL.ask).then(function (ok) { if (!ok) return; b.disabled = true;
+                    var tok = (document.querySelector('input[name="__RequestVerificationToken"]') || {}).value;
+                    fetch(@Json.Serialize(Url.Action("ChemoDrugLink")), { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': tok },
+                        body: JSON.stringify({ drug: row.getAttribute('data-dl'), itemId: item ? +item : null, mgPerUnit: mg === '' ? null : Number(mg) }) })
+                        .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+                        .then(function (res) { b.disabled = false; if (!res.ok) { toastr.error(res.error || WL.failed); return; } toastr.success(WL.saved); location.reload(); });
+                });
+            });
+        })();
         (function () {
             if (!document.getElementById('rows')) return;
             var list = cbServerList({ url: @Json.Serialize(Url.Action("ChemoRegimensData")), isAr: @(isAr ? "true" : "false") });

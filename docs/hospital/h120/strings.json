@@ -1,0 +1,80 @@
+{
+ "unit": "H120 — a chemotherapy cycle's drugs go to the pharmacy (stock links, whole units, the cycle's request)",
+ "strings": {
+  "Pharmacy stock for each drug": {
+   "ar": "مخزون الصيدلية لكل دواء",
+   "en": "Pharmacy stock for each drug",
+   "fr": "Stock pharmacie par médicament"
+  },
+  "A cycle given sends its drugs to the pharmacy: each is prepared from the item linked here, in whole units — a vial is never shared between patients.": {
+   "ar": "الدورة المُعطاة ترسل أدويتها للصيدلية: كل دواء يُحضَّر من الصنف المربوط هنا، بوحدات كاملة — الفيال لا يُقسم بين مريضين.",
+   "en": "A cycle given sends its drugs to the pharmacy: each is prepared from the item linked here, in whole units — a vial is never shared between patients.",
+   "fr": "Une cure administrée envoie ses médicaments à la pharmacie : chacun est préparé à partir de l'article lié ici, en unités entières — un flacon n'est jamais partagé."
+  },
+  "No regimen names a drug yet.": {
+   "ar": "لا يوجد بروتوكول يذكر دواءً بعد.",
+   "en": "No regimen names a drug yet.",
+   "fr": "Aucun protocole ne nomme encore de médicament."
+  },
+  "Stock item": {
+   "ar": "صنف المخزون",
+   "en": "Stock item",
+   "fr": "Article en stock"
+  },
+  "mg per unit": {
+   "ar": "مجم لكل وحدة",
+   "en": "mg per unit",
+   "fr": "mg par unité"
+  },
+  "Not linked": {
+   "ar": "غير مربوط",
+   "en": "Not linked",
+   "fr": "Non lié"
+  },
+  "Choose the stock item": {
+   "ar": "اختر صنف المخزون",
+   "en": "Choose the stock item",
+   "fr": "Choisissez l'article"
+  },
+  "Save this drug's pharmacy stock link?": {
+   "ar": "حفظ ربط هذا الدواء بمخزون الصيدلية؟",
+   "en": "Save this drug's pharmacy stock link?",
+   "fr": "Enregistrer le lien de stock de ce médicament ?"
+  },
+  "rxs:New": {
+   "ar": "بانتظار الصيدلي",
+   "en": "Awaiting the pharmacist",
+   "fr": "En attente du pharmacien"
+  },
+  "rxs:Verified": {
+   "ar": "راجعه الصيدلي",
+   "en": "Verified",
+   "fr": "Vérifiée"
+  },
+  "rxs:Dispensed": {
+   "ar": "صُرف",
+   "en": "Dispensed",
+   "fr": "Délivrée"
+  },
+  "Choose the drug": {
+   "ar": "اختر الدواء",
+   "en": "Choose the drug",
+   "fr": "Choisissez le médicament"
+  },
+  "Choose a medicine the pharmacy stocks": {
+   "ar": "اختر دواءً تخزّنه الصيدلية",
+   "en": "Choose a medicine the pharmacy stocks",
+   "fr": "Choisissez un médicament stocké par la pharmacie"
+  },
+  "Write how many mg one unit holds": {
+   "ar": "اكتب كم مجم في الوحدة الواحدة",
+   "en": "Write how many mg one unit holds",
+   "fr": "Indiquez combien de mg contient une unité"
+  },
+  "The chemotherapy pharmacy link is not installed yet (hospital_h120_chemo_pharmacy.sql).": {
+   "ar": "ربط الكيماوي بالصيدلية غير مثبت بعد (hospital_h120_chemo_pharmacy.sql).",
+   "en": "The chemotherapy pharmacy link is not installed yet (hospital_h120_chemo_pharmacy.sql).",
+   "fr": "Le lien chimiothérapie-pharmacie n'est pas encore installé (hospital_h120_chemo_pharmacy.sql)."
+  }
+ }
+}

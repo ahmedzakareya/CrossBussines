@@ -457,6 +457,9 @@ namespace CrossBuy.BL.Hospital
 				// H119: the cycle's administration is charged with it (the drugs follow the pharmacy's own dispensing)
 				if (_billing != null && await HospitalSessionCharges.ChargeAsync(_db, _billing, ctx, c.PatientId, HospitalSessionServiceCodes.Chemo, employeeId, nowUtc, ct) is { } line)
 				{ cy.BillLineId = line.ID; await _db.SaveChangesAsync(ct); }
+				// H120: the cycle's drugs go to the pharmacy as one request, line by line — stock and bill follow its dispensing
+				if (await HospitalChemoPharmacyService.OpenRequestAsync(_db, ctx, c.PatientId, employeeId, nowUtc, pv.Doses.Select(x => (x.DrugName, x.DoseMg, x.Route, x.Days)).ToList(), ct) is { } rx)
+				{ cy.DispenseId = rx.ID; await _db.SaveChangesAsync(ct); }
 				await tx.CommitAsync(ct);
 				return HospitalResult.Success(cy.ID);
 			}

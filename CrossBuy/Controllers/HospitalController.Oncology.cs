@@ -53,7 +53,24 @@ namespace CrossBuy.Controllers
 			var (_, _, ready) = await OncSvc.RegimensAsync(ctx, null, 1, 1, ct);
 			ViewBag.Ready = ready;
 			ViewBag.CanLibrary = await OncSvc.CanLibraryAsync(ctx, ct);
+			// H120: the pharmacy's stock link for each drug the regimens name
+			var (links, linksReady) = await ChemoPharmacySvc.LinksAsync(ctx, ct);
+			ViewBag.DrugLinks = links; ViewBag.DrugLinksReady = linksReady;
+			ViewBag.CanPharmacy = await _access.CanAsync(ctx, HospitalActions.Pharmacy, null, ct);
+			ViewBag.Medicines = await _pharmacy.FormularyAsync(ctx, ct);
 			return View();
+		}
+
+		private HospitalChemoPharmacyService? _chemoPharmacySvc;
+		private HospitalChemoPharmacyService ChemoPharmacySvc => _chemoPharmacySvc ??= ActivatorUtilities.CreateInstance<HospitalChemoPharmacyService>(HttpContext.RequestServices);
+
+		/// H120: links a chemotherapy drug to the stock item the pharmacy prepares it from (no item = unlink).
+		[HttpPost("Oncology/DrugLinks"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Pharmacy)]
+		public async Task<IActionResult> ChemoDrugLink([FromBody] HospitalChemoDrugLinkInput? input, CancellationToken ct = default)
+		{
+			var ctx = await ContextAsync(ct);
+			if (ctx == null || input == null) return NotFound(new { ok = false, code = "not_found" });
+			return Result(await ChemoPharmacySvc.SaveLinkAsync(ctx, input, ctx.EmployeeId, DateTime.UtcNow, ct));
 		}
 
 		[HttpGet("Oncology/Regimens/Data")]

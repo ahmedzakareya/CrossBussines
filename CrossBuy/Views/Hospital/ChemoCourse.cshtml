@@ -3,12 +3,17 @@
 @using CrossBuy.Models.Context.Hospital
 @model HospitalChemoCoursePage
 @inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@inject CrossBuy.Models.Context.CrossDbContext Db
+@using Microsoft.EntityFrameworkCore
 @*
     H88 — one chemotherapy course: the patient and the regimen, the lifetime limits used so far, every cycle given or held
     with what cleared it and the doses as given, and the next cycle: today's weight and counts in, the doses and the
     checks out (computed by the server as they are typed), given — with a reason when a check is overruled — or held.
 *@
 @{
+    // H120: each cycle's pharmacy request — its number and where it stands
+    var rxIds = Model.Cycles.Where(cv => cv.Cycle.DispenseId != null).Select(cv => cv.Cycle.DispenseId!.Value).ToList();
+    var rxs = rxIds.Count == 0 ? new Dictionary<int, HospitalDispense>() : Db.HospitalDispenses.AsNoTracking().Where(d => rxIds.Contains(d.ID)).ToDictionary(d => d.ID);
     Layout = "~/Views/Shared/_LayoutHospital.cshtml";
     ViewData["Title"] = T["Chemotherapy course"].Value;
     bool canTreat = ViewBag.CanTreat == true;
@@ -123,7 +128,7 @@
                                                 foreach (var d in v.Doses) {<div class="d-flex gap-2"><bdi dir="ltr" class="fw-semibold">@d.DrugName</bdi><span class="hp-num" dir="ltr">@d.DoseMg.ToString("0.#") mg @d.Route</span><span class="text-muted">@T["Day {0}", d.Days]</span></div>}
                                                 if (y.OverrideReason != null) {<div class="text-danger fs-9 mt-1">@T["Overruled"]: <bdi>@y.OverrideReason</bdi></div>}
                                             }</td>
-                                        <td>@await Html.PartialAsync("_SessionCharge", new HospitalSessionChargeCell(HospitalSessionKinds.Chemo, y.ID, y.BillLineId, y.Status == HospitalChemoCycleStatus.Given))</td>
+                                        <td>@await Html.PartialAsync("_SessionCharge", new HospitalSessionChargeCell(HospitalSessionKinds.Chemo, y.ID, y.BillLineId, y.Status == HospitalChemoCycleStatus.Given))@if (y.DispenseId is int rxId && rxs.TryGetValue(rxId, out var rx)) {<a href="@Url.Action("Pharmacy")" class="d-block mt-2 fs-8 text-nowrap"><i class="ki-outline ki-capsule fs-7 text-primary"></i> <bdi class="hp-num">@rx.RxNo</bdi> · <span class="@(rx.Status == HospitalDispenseStatus.Dispensed ? "text-success" : "text-primary")">@T["rxs:" + rx.Status]</span></a>}</td>
                                     </tr>
                                 }
                                 </tbody>

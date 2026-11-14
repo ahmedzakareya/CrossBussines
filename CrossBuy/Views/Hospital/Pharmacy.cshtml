@@ -12,7 +12,8 @@
     var warehouses = (ViewBag.Warehouses as IReadOnlyList<(int Id, string Code, string Name, string? NameEn)>) ?? Array.Empty<(int, string, string, string?)>();
     string? status = ViewBag.Status as string;
     bool canPharmacy = ViewBag.CanPharmacy == true, canManage = ViewBag.CanManage == true;
-    string Src(string s) => s == HospitalDispenseSource.Inpatient ? T["Inpatient"].Value : s == HospitalDispenseSource.Emergency ? T["Emergency"].Value : T["Outpatient"].Value;
+    string Src(string s) => s == HospitalDispenseSource.Inpatient ? T["Inpatient"].Value : s == HospitalDispenseSource.Emergency ? T["Emergency"].Value
+        : s == HospitalDispenseSource.Oncology ? T["Oncology"].Value : T["Outpatient"].Value;   // H120: a chemotherapy cycle's drugs
     string St(string s) => s switch { "New" => "<span class=\"badge badge-light fs-8\">" + T["rx:New"].Value + "</span>", "Verified" => "<span class=\"badge badge-light-primary fs-8\">" + T["rx:Verified"].Value + "</span>", _ => "<span class=\"badge badge-light-success fs-8\">" + T["rx:Dispensed"].Value + "</span>" };
     string Money(decimal v) => v.ToString("N3", System.Globalization.CultureInfo.InvariantCulture);
     string WarnText(string w, HospitalRxLineView l) => w switch
