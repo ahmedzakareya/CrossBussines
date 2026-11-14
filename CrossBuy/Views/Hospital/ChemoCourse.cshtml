@@ -106,7 +106,7 @@
                         else
                         {
                             <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-3 mb-0">
-                                <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0"><th>@T["Cycle"]</th><th>@T["Date"]</th><th>@T["Weight / BSA"]</th><th>@T["Counts"]</th><th>@T["Toxicity"]</th><th class="min-w-200px">@T["Doses"]</th></tr></thead>
+                                <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0"><th>@T["Cycle"]</th><th>@T["Date"]</th><th>@T["Weight / BSA"]</th><th>@T["Counts"]</th><th>@T["Toxicity"]</th><th class="min-w-200px">@T["Doses"]</th><th>@T["The bill"]</th></tr></thead>
                                 <tbody>
                                 @foreach (var v in Model.Cycles.AsEnumerable().Reverse())
                                 {
@@ -123,6 +123,7 @@
                                                 foreach (var d in v.Doses) {<div class="d-flex gap-2"><bdi dir="ltr" class="fw-semibold">@d.DrugName</bdi><span class="hp-num" dir="ltr">@d.DoseMg.ToString("0.#") mg @d.Route</span><span class="text-muted">@T["Day {0}", d.Days]</span></div>}
                                                 if (y.OverrideReason != null) {<div class="text-danger fs-9 mt-1">@T["Overruled"]: <bdi>@y.OverrideReason</bdi></div>}
                                             }</td>
+                                        <td>@await Html.PartialAsync("_SessionCharge", new HospitalSessionChargeCell(HospitalSessionKinds.Chemo, y.ID, y.BillLineId, y.Status == HospitalChemoCycleStatus.Given))</td>
                                     </tr>
                                 }
                                 </tbody>

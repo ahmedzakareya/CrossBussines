@@ -246,6 +246,10 @@ namespace CrossBuy.BL.Hospital
 		private readonly CrossDbContext _db;
 		private readonly IHospitalAccessService _access;
 		public HospitalOncologyService(CrossDbContext db, IHospitalAccessService access) { _db = db; _access = access; }
+		// H119: with the billing service a completed session is charged; without it (a test's hand-made service) it is not
+		private readonly HospitalBillingService? _billing;
+		[ActivatorUtilitiesConstructor]
+		public HospitalOncologyService(CrossDbContext db, IHospitalAccessService access, HospitalBillingService billing) : this(db, access) { _billing = billing; }
 		private static bool Missing(Microsoft.Data.SqlClient.SqlException ex) => ex.Number is 207 or 208;
 		private static string? Clip(string? s, int max) => string.IsNullOrWhiteSpace(s) ? null : s.Trim()[..Math.Min(max, s.Trim().Length)];
 		private static DateTime Today(DateTime nowUtc) => HospitalNursingService.UtcToWard(nowUtc).Date;
@@ -450,6 +454,9 @@ namespace CrossBuy.BL.Hospital
 				foreach (var x in pv.Doses)
 					_db.Add(new HospitalChemoDose { CompanyId = ctx.CompanyId, CycleId = cy.ID, PatientId = c.PatientId, DrugName = x.DrugName, Dose = x.Dose, Basis = x.Basis, Route = x.Route, Days = x.Days, DoseMg = x.DoseMg, CumulativeMgM2 = x.CycleMgM2 });
 				await _db.SaveChangesAsync(ct);
+				// H119: the cycle's administration is charged with it (the drugs follow the pharmacy's own dispensing)
+				if (_billing != null && await HospitalSessionCharges.ChargeAsync(_db, _billing, ctx, c.PatientId, HospitalSessionServiceCodes.Chemo, employeeId, nowUtc, ct) is { } line)
+				{ cy.BillLineId = line.ID; await _db.SaveChangesAsync(ct); }
 				await tx.CommitAsync(ct);
 				return HospitalResult.Success(cy.ID);
 			}

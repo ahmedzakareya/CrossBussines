@@ -103,6 +103,7 @@ namespace CrossBuy.Tests
 		public void The_tables_match_their_slice_and_move_in_a_merge()
 		{
 			var s = HospitalSliceParity.Slice("hospital_h89_rehab.sql");
+			s += Environment.NewLine + HospitalSliceParity.Slice("hospital_h119_session_charges.sql");   // H119: the bill line a session was charged on
 			var m = HospitalSliceParity.Model(HospitalRehabModel.Configure);
 			foreach (var (t, n) in new[] { (typeof(HospitalRehabEpisode), "HospitalRehabEpisodes"), (typeof(HospitalRehabGoal), "HospitalRehabGoals"), (typeof(HospitalRehabSession), "HospitalRehabSessions") })
 			{
@@ -111,7 +112,7 @@ namespace CrossBuy.Tests
 				Assert.Contains(HospitalPatientMergeRules.PatientTables, x => x.Entity == t);
 			}
 			foreach (var x in HospitalRehabStatus.All.Concat(HospitalRehabAttendance.All).Concat(HospitalRehabGoalStatus.All).Concat(HospitalRehabMeasure.All.Select(d => d.Code))) Assert.Contains("'" + x + "'", s);
-			Assert.Equal(new[] { "HospitalPatients" }, HospitalSliceParity.CheckedPrerequisites(s));
+			Assert.Equal(new[] { "HospitalPatients" }, HospitalSliceParity.CheckedPrerequisites(HospitalSliceParity.Slice("hospital_h89_rehab.sql")));   // each slice guards its own prerequisites
 		}
 	}
 }

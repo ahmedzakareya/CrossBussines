@@ -1,0 +1,45 @@
+{
+ "unit": "H119 — every treatment session is charged (dialysis, chemotherapy, physiotherapy)",
+ "strings": {
+  "The bill": {
+   "ar": "الفاتورة",
+   "en": "The bill",
+   "fr": "La facture"
+  },
+  "Add the service {0} with its price to the services list: this session is charged then, from here.": {
+   "ar": "أضف الخدمة {0} بسعرها في قائمة الخدمات، وعندها تُحسب هذه الجلسة من هنا.",
+   "en": "Add the service {0} with its price to the services list: this session is charged then, from here.",
+   "fr": "Ajoutez le service {0} avec son prix à la liste des services : la séance sera alors facturée d'ici."
+  },
+  "Charge it now": {
+   "ar": "احسبها الآن",
+   "en": "Charge it now",
+   "fr": "Facturer maintenant"
+  },
+  "Charge this session to the patient's bill?": {
+   "ar": "إضافة هذه الجلسة إلى فاتورة المريض؟",
+   "en": "Charge this session to the patient's bill?",
+   "fr": "Facturer cette séance au patient ?"
+  },
+  "This session is already charged, or is not one that is charged": {
+   "ar": "هذه الجلسة محسوبة بالفعل، أو ليست مما يُحسب",
+   "en": "This session is already charged, or is not one that is charged",
+   "fr": "Cette séance est déjà facturée, ou ne se facture pas"
+  },
+  "No price is set for {0} in the services list": {
+   "ar": "لا يوجد سعر لـ {0} في قائمة الخدمات",
+   "en": "No price is set for {0} in the services list",
+   "fr": "Aucun prix pour {0} dans la liste des services"
+  },
+  "Not billed": {
+   "ar": "غير محسوبة",
+   "en": "Not billed",
+   "fr": "Non facturée"
+  },
+  "no price for": {
+   "ar": "لا سعر لـ",
+   "en": "no price for",
+   "fr": "pas de prix pour"
+  }
+ }
+}

@@ -1,0 +1,55 @@
+@using CrossBuy.BL.Hospital
+@using Microsoft.EntityFrameworkCore
+@model HospitalSessionChargeCell
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@inject CrossBuy.Models.Context.CrossDbContext Db
+@inject CrossBuy.BL.Platform.IBusinessContextAccessor Contexts
+@*
+    H119 — a treatment session's charge: the bill it is on, or why it is not (not completed / no price yet), and the way
+    to charge it once its price exists. One cell for dialysis, chemotherapy and physiotherapy.
+*@
+@{
+    var ctx = await Contexts.TryGetCurrentAsync();
+    string code = HospitalSessionKinds.Code(Model.Kind);
+    var bill = Model.BillLineId is int lid
+        ? await (from l in Db.HospitalBillLines.AsNoTracking() join b in Db.HospitalBills.AsNoTracking() on l.BillId equals b.ID where l.ID == lid select new { b.ID, b.BillNo }).FirstOrDefaultAsync()
+        : null;
+    bool priced = bill == null && Model.Chargeable && ctx != null && await Db.HospitalServices.AsNoTracking().AnyAsync(s => s.CompanyId == ctx.CompanyId && s.Code == code && s.IsActive);
+}
+@if (bill != null)
+{
+    <a href="@Url.Action("Bill", "Hospital", new { id = bill.ID })" class="badge badge-light-success fs-8 text-nowrap"><i class="ki-outline ki-bill fs-7 text-success me-1"></i><bdi class="hp-num">@bill.BillNo</bdi></a>
+}
+else if (!Model.Chargeable)
+{
+    <span class="text-muted fs-8">—</span>
+}
+else if (!priced)
+{
+    <div title="@T["Add the service {0} with its price to the services list: this session is charged then, from here.", code]"><span class="badge badge-light fs-9">@T["Not billed"]</span>
+        <div class="text-muted fs-9 mt-1">@T["no price for"]</div><div class="text-muted fs-9 hp-num text-nowrap" dir="ltr">@code</div></div>
+}
+else
+{
+    <button type="button" class="btn btn-sm btn-light-primary py-1 px-3 fs-8 text-nowrap" data-sess-charge="@Model.Kind" data-id="@Model.Id"><i class="ki-outline ki-bill fs-6"></i>@T["Charge it now"]</button>
+    @if (ViewData["__sessChargeScript"] == null)
+    {
+        ViewData["__sessChargeScript"] = true;
+        <script>
+            (function () {
+                if (window.__sessCharge) return; window.__sessCharge = true;
+                var W = { ask: @Json.Serialize(T["Charge this session to the patient's bill?"].Value), failed: @Json.Serialize(T["The change could not be saved"].Value) };
+                document.addEventListener('click', function (e) {
+                    var b = e.target.closest('[data-sess-charge]'); if (!b) return;
+                    cbConfirm(W.ask).then(function (ok) { if (!ok) return; b.disabled = true;
+                        var tok = (document.querySelector('input[name="__RequestVerificationToken"]') || {}).value;
+                        fetch(@Json.Serialize(Url.Content("~/Hospital/Sessions/"))+ b.getAttribute('data-sess-charge') + '/' + b.getAttribute('data-id') + '/Charge',
+                            { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': tok }, body: '{}' })
+                            .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+                            .then(function (res) { if (!res.ok) { b.disabled = false; toastr.error(res.error || W.failed); return; } location.reload(); });
+                    });
+                });
+            })();
+        </script>
+    }
+}

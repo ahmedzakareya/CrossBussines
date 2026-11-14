@@ -247,6 +247,10 @@ namespace CrossBuy.BL.Hospital
 		private readonly CrossDbContext _db;
 		private readonly IHospitalAccessService _access;
 		public HospitalDialysisService(CrossDbContext db, IHospitalAccessService access) { _db = db; _access = access; }
+		// H119: with the billing service a completed session is charged; without it (a test's hand-made service) it is not
+		private readonly HospitalBillingService? _billing;
+		[ActivatorUtilitiesConstructor]
+		public HospitalDialysisService(CrossDbContext db, IHospitalAccessService access, HospitalBillingService billing) : this(db, access) { _billing = billing; }
 		private static bool Missing(Microsoft.Data.SqlClient.SqlException ex) => ex.Number is 207 or 208;
 		private static string? Clip(string? s, int max) => string.IsNullOrWhiteSpace(s) ? null : s.Trim()[..Math.Min(max, s.Trim().Length)];
 		private static DateTime Today(DateTime nowUtc) => HospitalNursingService.UtcToWard(nowUtc).Date;
@@ -371,7 +375,12 @@ namespace CrossBuy.BL.Hospital
 				s.PreUrea = input.PreUrea; s.PostUrea = input.PostUrea;
 				s.Complications = input.Complications == null || input.Complications.Count == 0 ? null : string.Join(",", input.Complications.Distinct());
 				s.Note = Clip(input.Note, 500); s.ClosedByEmployeeId = employeeId;
+				// H119: the session and its charge are one step
+				await using var tx = await ScopedTx.BeginOrJoinAsync(_db);
 				await _db.SaveChangesAsync(ct);
+				if (_billing != null && s.BillLineId == null && await HospitalSessionCharges.ChargeAsync(_db, _billing, ctx, s.PatientId, HospitalSessionServiceCodes.Dialysis, employeeId, nowUtc, ct) is { } line)
+				{ s.BillLineId = line.ID; await _db.SaveChangesAsync(ct); }
+				await tx.CommitAsync();
 				return HospitalResult.Success(s.ID);
 			}
 			catch (Microsoft.Data.SqlClient.SqlException ex) when (Missing(ex)) { return HospitalResult.Fail(NoTables); }

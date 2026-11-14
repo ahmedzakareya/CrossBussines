@@ -109,6 +109,8 @@ namespace CrossBuy.Models.Context.Hospital
 	public class HospitalChemoCycle
 	{
 		public int ID { get; set; }
+		/// H119: the bill line this session was charged on (null = not charged: not done, or no price yet).
+		public int? BillLineId { get; set; }
 		public int CompanyId { get; set; }
 		public int CourseId { get; set; }
 		public int PatientId { get; set; }
