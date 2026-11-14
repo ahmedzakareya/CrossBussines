@@ -107,6 +107,31 @@
             .qd-aside .card-body > .d-flex { flex-wrap: wrap; }
         }
         @@media (max-width: 700px) { .qd-grid { grid-template-columns: minmax(0, 1fr) !important; } }
+        /* SMALLER THAN A TV (a desk monitor, a laptop, a half-screen window): the fit-to-screen layout crushed the cards —
+           a two-line header took half the height and the ticket shrank to a few pixels. Here the page scrolls instead,
+           the header stays one compact row, and every card keeps a readable height. The TV layout above is untouched. */
+        @@media (max-width: 1100px), (max-height: 760px) {
+            body { overflow-y: auto; }
+            .qd-shell { height: auto; min-height: 100vh; }
+            #qdBody { flex: none; }
+            .qd-main { height: auto; }
+            .qd-grid { grid-auto-rows: auto; }
+            .qd-card > .card-body { container-type: inline-size; min-height: 15rem; }
+            .qd-ticket { font-size: min(7rem, 26cqw); }
+            .qd-hero .card-body { flex-wrap: nowrap; gap: 1rem; padding-top: 1rem !important; padding-bottom: 1rem !important; }
+            .qd-hero .rounded-circle { display: none !important; }
+            .qd-hero .fs-2x { font-size: 1.6rem !important; }
+            .qd-hero #qdScope { font-size: 1rem !important; margin-top: .25rem !important; }
+            .qd-hero .qd-tools .w-250px { width: 13rem !important; }
+            .qd-hero .qd-tools a.qd-hero-btn { padding-inline: .9rem !important; }
+            .qd-hero-clock { padding: .5rem 1rem !important; }
+            .qd-hero-clock .qd-clock { font-size: 2.2rem !important; }
+            .qd-hero-clock #qdDate { font-size: .85rem !important; }
+        }
+        @@media (max-width: 760px) {
+            .qd-hero .card-body { flex-wrap: wrap; }
+            .qd-hero-clock #qdDate { display: none; }
+        }
     </style>
 </head>
 <body>
