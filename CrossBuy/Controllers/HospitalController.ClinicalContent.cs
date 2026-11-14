@@ -1,6 +1,9 @@
 using CrossBuy.BL;
 using CrossBuy.BL.Hospital;
 using CrossBuy.Models;
+using CrossBuy.Models.Context.Hospital;
+using CrossBuy.Models.Platform;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CrossBuy.Controllers
@@ -39,7 +42,82 @@ namespace CrossBuy.Controllers
 			var (rows, total, _) = await ContentSvc.ConceptsAsync(ctx, q, page, pageSize, ct);
 			PageHeaders(total, page, pageSize);
 			ViewBag.CanManage = await ContentSvc.CanManageAsync(ctx, ct);
+			ViewBag.RangeCounts = await RangeCountsAsync(ctx, rows.Select(r => r.Concept.ID).ToList(), ct);   // H115
 			return PartialView("_ConceptRows", rows);
+		}
+
+		// ---------------- H115: ranges by who the patient is ----------------
+		private HospitalConceptRangeService? _rangeSvc;
+		private HospitalConceptRangeService RangeSvc => _rangeSvc ??= ActivatorUtilities.CreateInstance<HospitalConceptRangeService>(HttpContext.RequestServices);
+
+		private async Task<Dictionary<int, int>> RangeCountsAsync(BusinessContext ctx, List<int> ids, CancellationToken ct)
+		{
+			try
+			{
+				return await _db.Set<HospitalConceptRange>().AsNoTracking().Where(r => r.CompanyId == ctx.CompanyId && ids.Contains(r.ConceptId))
+					.GroupBy(r => r.ConceptId).Select(g => new { g.Key, N = g.Count() }).ToDictionaryAsync(x => x.Key, x => x.N, ct);
+			}
+			catch (Microsoft.Data.SqlClient.SqlException ex) when (ex.Number is 207 or 208) { return new(); }
+		}
+
+		/// An age in days, said in the unit a person would use.
+		private string AgeSaid(int days)
+		{
+			string N(decimal v) => v.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture);
+			return days >= 730 ? string.Format(_t["{0} years"].Value, N(Math.Round(days / 365.25m, 1))) : days >= 60 ? string.Format(_t["{0} months"].Value, N(Math.Round(days / 30.4375m, 1))) : string.Format(_t["{0} days"].Value, days);
+		}
+
+		/// Who a range is for, in words.
+		private string WhoSaid(HospitalConceptRange r)
+		{
+			var parts = new List<string>();
+			if (r.Sex != null) parts.Add(_t[r.Sex == "M" ? "Male" : "Female"].Value);
+			if (r.Pregnancy != null) parts.Add(_t["preg:" + r.Pregnancy].Value);
+			if (r.AgeFromDays != null || r.AgeToDays != null)
+				parts.Add(r.AgeFromDays is int f && r.AgeToDays is int to ? string.Format(_t["age {0} to under {1}"].Value, AgeSaid(f), AgeSaid(to))
+					: r.AgeFromDays is int f2 ? string.Format(_t["age {0} and over"].Value, AgeSaid(f2)) : string.Format(_t["under {0}"].Value, AgeSaid(r.AgeToDays!.Value)));
+			return string.Join(" · ", parts);
+		}
+
+		private static string Limits(decimal? lo, decimal? hi)
+		{
+			string N(decimal? v) => v?.ToString("0.####", System.Globalization.CultureInfo.InvariantCulture) ?? "";
+			return lo != null && hi != null ? N(lo) + " – " + N(hi) : lo != null ? "≥ " + N(lo) : hi != null ? "≤ " + N(hi) : "—";
+		}
+
+		[HttpGet("Concepts/{id:int}/Ranges")]
+		[HospitalPerm(HospitalActions.Read)]
+		public async Task<IActionResult> ConceptRanges(int id, CancellationToken ct = default)
+		{
+			var ctx = await ContextAsync(ct);
+			if (ctx == null) return NotFound();
+			var (rows, ready) = await RangeSvc.ListAsync(ctx, id, ct);
+			return Json(new
+			{
+				ok = ready, error = ready ? null : _t[HospitalConceptRangeService.NoTables].Value,
+				rows = rows.Select(r => new
+				{
+					id = r.ID, who = WhoSaid(r), normal = Limits(r.NormalLow, r.NormalHigh) + (r.NormalHigh2 is decimal n2 ? " / ≤ " + n2.ToString("0.####", System.Globalization.CultureInfo.InvariantCulture) : ""),
+					critical = r.CriticalLow == null && r.CriticalHigh == null ? "—" : (r.CriticalLow != null ? "≤ " + r.CriticalLow.Value.ToString("0.####", System.Globalization.CultureInfo.InvariantCulture) : "") + (r.CriticalLow != null && r.CriticalHigh != null ? " · " : "") + (r.CriticalHigh != null ? "≥ " + r.CriticalHigh.Value.ToString("0.####", System.Globalization.CultureInfo.InvariantCulture) : "") + (r.CriticalHigh2 is decimal c2 ? " / ≥ " + c2.ToString("0.####", System.Globalization.CultureInfo.InvariantCulture) : ""),
+					source = r.Source,
+				}),
+			});
+		}
+
+		[HttpPost("Concepts/{id:int}/Ranges"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Manage)]
+		public async Task<IActionResult> ConceptRangeSave(int id, [FromBody] HospitalConceptRangeInput? input, CancellationToken ct = default)
+		{
+			var ctx = await ContextAsync(ct);
+			if (ctx == null || input == null) return NotFound(new { ok = false, code = "not_found" });
+			return Result(await RangeSvc.SaveAsync(ctx, id, null, input, ctx.EmployeeId, DateTime.UtcNow, ct));
+		}
+
+		[HttpPost("Concepts/Ranges/{rid:int}/Remove"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Manage)]
+		public async Task<IActionResult> ConceptRangeRemove(int rid, CancellationToken ct = default)
+		{
+			var ctx = await ContextAsync(ct);
+			if (ctx == null) return NotFound(new { ok = false, code = "not_found" });
+			return Result(await RangeSvc.RemoveAsync(ctx, rid, ct));
 		}
 
 		[HttpGet("Concepts/{id:int}")]

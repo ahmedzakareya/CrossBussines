@@ -6526,4 +6526,41 @@
   <data name="where:Theatre" xml:space="preserve"><value>في العمليات</value></data>
   <data name="where:Ward" xml:space="preserve"><value>منوَّم</value></data>
   <data name="Now:" xml:space="preserve"><value>الآن:</value></data>
+  <data name="+{0} by patient" xml:space="preserve"><value>+{0} حسب المريض</value></data>
+  <data name="A critical high lies above the normal range" xml:space="preserve"><value>الحد الحرج الأعلى يكون فوق المدى الطبيعي</value></data>
+  <data name="A critical low lies below the normal range" xml:space="preserve"><value>الحد الحرج الأدنى يكون تحت المدى الطبيعي</value></data>
+  <data name="A pregnancy range is for a female patient" xml:space="preserve"><value>مدى الحمل يكون لأنثى</value></data>
+  <data name="A range applies to a measured number" xml:space="preserve"><value>المدى يخص قياسًا رقميًا</value></data>
+  <data name="A second number's limits are for a pair of values" xml:space="preserve"><value>حدود الرقم الثاني تخص قياسًا من رقمين</value></data>
+  <data name="Add a range" xml:space="preserve"><value>إضافة مدى</value></data>
+  <data name="Add the range" xml:space="preserve"><value>أضف المدى</value></data>
+  <data name="Add this range to the concept?" xml:space="preserve"><value>إضافة هذا المدى للقياس؟</value></data>
+  <data name="Age from" xml:space="preserve"><value>العمر من</value></data>
+  <data name="Age in" xml:space="preserve"><value>العمر بـ</value></data>
+  <data name="Choose the age unit" xml:space="preserve"><value>اختر وحدة العمر</value></data>
+  <data name="Choose the pregnancy state" xml:space="preserve"><value>اختر حالة الحمل</value></data>
+  <data name="Either" xml:space="preserve"><value>الكل</value></data>
+  <data name="For whom" xml:space="preserve"><value>لمن</value></data>
+  <data name="Give at least one limit" xml:space="preserve"><value>اكتب حدًا واحدًا على الأقل</value></data>
+  <data name="No range by patient yet: the concept's own range applies to everyone." xml:space="preserve"><value>لا توجد مديات حسب المريض بعد: مدى القياس العام يُطبَّق على الجميع.</value></data>
+  <data name="Ranges by patient" xml:space="preserve"><value>المديات حسب المريض</value></data>
+  <data name="Remove this range?" xml:space="preserve"><value>حذف هذا المدى؟</value></data>
+  <data name="Say who the range is for: a sex, an age band or a pregnancy" xml:space="preserve"><value>حدّد لمن هذا المدى: الجنس، أو فئة عمرية، أو الحمل</value></data>
+  <data name="The age band must end after it starts" xml:space="preserve"><value>نهاية الفئة العمرية يجب أن تكون بعد بدايتها</value></data>
+  <data name="The guideline or the laboratory's own validation" xml:space="preserve"><value>الدليل الإرشادي أو تحقق المختبر نفسه</value></data>
+  <data name="The most specific range that fits the patient replaces the concept's own range for that reading: a trimester before &quot;pregnant&quot;, an age band and a sex before either alone. None fits: the concept's own range." xml:space="preserve"><value>أدق مدى ينطبق على المريض يحل محل المدى العام لهذه القراءة: الثلث المحدد من الحمل قبل «حامل»، والفئة العمرية مع الجنس قبل أي منهما وحده. وإن لم ينطبق شيء فالمدى العام.</value></data>
+  <data name="The normal range's low must be below its high" xml:space="preserve"><value>الحد الأدنى الطبيعي يجب أن يكون أقل من الأعلى</value></data>
+  <data name="The patient-specific ranges are not installed yet (hospital_h115_concept_ranges.sql)." xml:space="preserve"><value>المديات حسب المريض غير مثبتة بعد (hospital_h115_concept_ranges.sql).</value></data>
+  <data name="This concept already has a range for the same patients" xml:space="preserve"><value>لهذا القياس مدى بالفعل لنفس المرضى</value></data>
+  <data name="age {0} and over" xml:space="preserve"><value>العمر {0} فأكثر</value></data>
+  <data name="age {0} to under {1}" xml:space="preserve"><value>العمر من {0} إلى أقل من {1}</value></data>
+  <data name="preg:Any" xml:space="preserve"><value>حامل</value></data>
+  <data name="preg:No" xml:space="preserve"><value>غير حامل</value></data>
+  <data name="preg:T1" xml:space="preserve"><value>الثلث الأول من الحمل</value></data>
+  <data name="preg:T2" xml:space="preserve"><value>الثلث الثاني من الحمل</value></data>
+  <data name="preg:T3" xml:space="preserve"><value>الثلث الثالث من الحمل</value></data>
+  <data name="to under" xml:space="preserve"><value>إلى أقل من</value></data>
+  <data name="under {0}" xml:space="preserve"><value>أقل من {0}</value></data>
+  <data name="years" xml:space="preserve"><value>سنوات</value></data>
+  <data name="{0} months" xml:space="preserve"><value>{0} شهر</value></data>
 </root>

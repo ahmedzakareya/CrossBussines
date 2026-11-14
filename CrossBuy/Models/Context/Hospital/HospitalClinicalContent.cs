@@ -246,6 +246,7 @@ namespace CrossBuy.Models.Context.Hospital
 	{
 		public static void Configure(ModelBuilder b)
 		{
+			HospitalConceptRangeModel.Configure(b);   // H115: ranges by who the patient is
 			b.Entity<HospitalConcept>(e =>
 			{
 				e.ToTable("HospitalConcepts");   // no DbSet: each names its table

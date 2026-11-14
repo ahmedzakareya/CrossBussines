@@ -239,6 +239,10 @@ namespace CrossBuy.BL.Hospital
 				if (form == null) return HospitalResult.Fail("not_found");
 				if (form.Status == HospitalFormStatus.Signed) return HospitalResult.Fail("This form is already signed");
 				var fields = await Content.FieldViewsAsync(ctx, form.TemplateVersionId, null, ct);
+				// H115: each value is flagged against the range for this patient on this day (sex, age, pregnancy)
+				var who = await _db.Set<HospitalPatient>().AsNoTracking().FirstAsync(p => p.ID == form.PatientId, ct);
+				var eff = (await new HospitalConceptRangeService(_db, _access).ForPatientAsync(ctx, fields.Select(f => f.Concept).DistinctBy(c => c.ID).ToList(), who, nowUtc, ct)).ToDictionary(c => c.ID);
+				fields = fields.Select(f => f with { Concept = eff[f.Concept.ID] }).ToList();
 				var answers = HospitalFormRules.Answers(form.AnswersJson);
 				var (values, err, args) = HospitalFormRules.Read(fields, answers, en);
 				if (err != null) return HospitalResult.Fail(err, args!);

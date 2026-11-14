@@ -1,0 +1,190 @@
+{
+ "unit": "H115 — reference ranges by who the patient is (sex, age band, pregnancy and trimester)",
+ "strings": {
+  "+{0} by patient": {
+   "ar": "+{0} حسب المريض",
+   "en": "+{0} by patient",
+   "fr": "+{0} selon le patient"
+  },
+  "A critical high lies above the normal range": {
+   "ar": "الحد الحرج الأعلى يكون فوق المدى الطبيعي",
+   "en": "A critical high lies above the normal range",
+   "fr": "Le seuil critique haut est au-dessus de la normale"
+  },
+  "A critical low lies below the normal range": {
+   "ar": "الحد الحرج الأدنى يكون تحت المدى الطبيعي",
+   "en": "A critical low lies below the normal range",
+   "fr": "Le seuil critique bas est en dessous de la normale"
+  },
+  "A pregnancy range is for a female patient": {
+   "ar": "مدى الحمل يكون لأنثى",
+   "en": "A pregnancy range is for a female patient",
+   "fr": "Une plage de grossesse concerne une patiente"
+  },
+  "A range applies to a measured number": {
+   "ar": "المدى يخص قياسًا رقميًا",
+   "en": "A range applies to a measured number",
+   "fr": "Une plage s'applique à une valeur mesurée"
+  },
+  "A second number's limits are for a pair of values": {
+   "ar": "حدود الرقم الثاني تخص قياسًا من رقمين",
+   "en": "A second number's limits are for a pair of values",
+   "fr": "Les limites du second nombre concernent une paire de valeurs"
+  },
+  "Add a range": {
+   "ar": "إضافة مدى",
+   "en": "Add a range",
+   "fr": "Ajouter une plage"
+  },
+  "Add the range": {
+   "ar": "أضف المدى",
+   "en": "Add the range",
+   "fr": "Ajouter la plage"
+  },
+  "Add this range to the concept?": {
+   "ar": "إضافة هذا المدى للقياس؟",
+   "en": "Add this range to the concept?",
+   "fr": "Ajouter cette plage au concept ?"
+  },
+  "Age from": {
+   "ar": "العمر من",
+   "en": "Age from",
+   "fr": "Âge de"
+  },
+  "Age in": {
+   "ar": "العمر بـ",
+   "en": "Age in",
+   "fr": "Âge en"
+  },
+  "Choose the age unit": {
+   "ar": "اختر وحدة العمر",
+   "en": "Choose the age unit",
+   "fr": "Choisissez l'unité d'âge"
+  },
+  "Choose the pregnancy state": {
+   "ar": "اختر حالة الحمل",
+   "en": "Choose the pregnancy state",
+   "fr": "Choisissez l'état de grossesse"
+  },
+  "Either": {
+   "ar": "الكل",
+   "en": "Either",
+   "fr": "Tous"
+  },
+  "For whom": {
+   "ar": "لمن",
+   "en": "For whom",
+   "fr": "Pour qui"
+  },
+  "Give at least one limit": {
+   "ar": "اكتب حدًا واحدًا على الأقل",
+   "en": "Give at least one limit",
+   "fr": "Indiquez au moins une limite"
+  },
+  "No range by patient yet: the concept's own range applies to everyone.": {
+   "ar": "لا توجد مديات حسب المريض بعد: مدى القياس العام يُطبَّق على الجميع.",
+   "en": "No range by patient yet: the concept's own range applies to everyone.",
+   "fr": "Aucune plage par patient : la plage du concept s'applique à tous."
+  },
+  "Ranges by patient": {
+   "ar": "المديات حسب المريض",
+   "en": "Ranges by patient",
+   "fr": "Plages selon le patient"
+  },
+  "Remove this range?": {
+   "ar": "حذف هذا المدى؟",
+   "en": "Remove this range?",
+   "fr": "Supprimer cette plage ?"
+  },
+  "Say who the range is for: a sex, an age band or a pregnancy": {
+   "ar": "حدّد لمن هذا المدى: الجنس، أو فئة عمرية، أو الحمل",
+   "en": "Say who the range is for: a sex, an age band or a pregnancy",
+   "fr": "Indiquez pour qui : un sexe, une tranche d'âge ou une grossesse"
+  },
+  "The age band must end after it starts": {
+   "ar": "نهاية الفئة العمرية يجب أن تكون بعد بدايتها",
+   "en": "The age band must end after it starts",
+   "fr": "La tranche d'âge doit finir après son début"
+  },
+  "The guideline or the laboratory's own validation": {
+   "ar": "الدليل الإرشادي أو تحقق المختبر نفسه",
+   "en": "The guideline or the laboratory's own validation",
+   "fr": "La recommandation ou la validation du laboratoire"
+  },
+  "The most specific range that fits the patient replaces the concept's own range for that reading: a trimester before \"pregnant\", an age band and a sex before either alone. None fits: the concept's own range.": {
+   "ar": "أدق مدى ينطبق على المريض يحل محل المدى العام لهذه القراءة: الثلث المحدد من الحمل قبل «حامل»، والفئة العمرية مع الجنس قبل أي منهما وحده. وإن لم ينطبق شيء فالمدى العام.",
+   "en": "The most specific range that fits the patient replaces the concept's own range for that reading: a trimester before \"pregnant\", an age band and a sex before either alone. None fits: the concept's own range.",
+   "fr": "La plage la plus précise qui convient remplace celle du concept pour cette lecture : un trimestre avant « enceinte », une tranche d'âge et un sexe avant l'un des deux seul. Sinon : la plage du concept."
+  },
+  "The normal range's low must be below its high": {
+   "ar": "الحد الأدنى الطبيعي يجب أن يكون أقل من الأعلى",
+   "en": "The normal range's low must be below its high",
+   "fr": "Le bas de la normale doit être sous le haut"
+  },
+  "The patient-specific ranges are not installed yet (hospital_h115_concept_ranges.sql).": {
+   "ar": "المديات حسب المريض غير مثبتة بعد (hospital_h115_concept_ranges.sql).",
+   "en": "The patient-specific ranges are not installed yet (hospital_h115_concept_ranges.sql).",
+   "fr": "Les plages par patient ne sont pas encore installées (hospital_h115_concept_ranges.sql)."
+  },
+  "This concept already has a range for the same patients": {
+   "ar": "لهذا القياس مدى بالفعل لنفس المرضى",
+   "en": "This concept already has a range for the same patients",
+   "fr": "Ce concept a déjà une plage pour les mêmes patients"
+  },
+  "age {0} and over": {
+   "ar": "العمر {0} فأكثر",
+   "en": "age {0} and over",
+   "fr": "âge {0} et plus"
+  },
+  "age {0} to under {1}": {
+   "ar": "العمر من {0} إلى أقل من {1}",
+   "en": "age {0} to under {1}",
+   "fr": "âge de {0} à moins de {1}"
+  },
+  "preg:Any": {
+   "ar": "حامل",
+   "en": "Pregnant",
+   "fr": "Enceinte"
+  },
+  "preg:No": {
+   "ar": "غير حامل",
+   "en": "Not pregnant",
+   "fr": "Non enceinte"
+  },
+  "preg:T1": {
+   "ar": "الثلث الأول من الحمل",
+   "en": "First trimester",
+   "fr": "Premier trimestre"
+  },
+  "preg:T2": {
+   "ar": "الثلث الثاني من الحمل",
+   "en": "Second trimester",
+   "fr": "Deuxième trimestre"
+  },
+  "preg:T3": {
+   "ar": "الثلث الثالث من الحمل",
+   "en": "Third trimester",
+   "fr": "Troisième trimestre"
+  },
+  "to under": {
+   "ar": "إلى أقل من",
+   "en": "to under",
+   "fr": "à moins de"
+  },
+  "under {0}": {
+   "ar": "أقل من {0}",
+   "en": "under {0}",
+   "fr": "moins de {0}"
+  },
+  "years": {
+   "ar": "سنوات",
+   "en": "years",
+   "fr": "ans"
+  },
+  "{0} months": {
+   "ar": "{0} شهر",
+   "en": "{0} months",
+   "fr": "{0} mois"
+  }
+ }
+}

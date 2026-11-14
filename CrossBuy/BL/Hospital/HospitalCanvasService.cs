@@ -458,6 +458,9 @@ namespace CrossBuy.BL.Hospital
 				{
 					var rc = results.Select(r => r.Code).Distinct().ToList();
 					var concepts = await Q<HospitalConcept>(ctx).AsNoTracking().Where(c => rc.Contains(c.Code) && c.IsActive).ToListAsync(ct);
+					// H115: a drawing's result holds against the range for this patient too
+					var who = await Q<HospitalPatient>(ctx).AsNoTracking().FirstAsync(p => p.ID == sheets[0].PatientId, ct);
+					concepts = await new HospitalConceptRangeService(_db, _access).ForPatientAsync(ctx, concepts, who, nowUtc, ct);
 					foreach (var r in results)
 					{
 						var c = concepts.FirstOrDefault(x => x.Code == r.Code);

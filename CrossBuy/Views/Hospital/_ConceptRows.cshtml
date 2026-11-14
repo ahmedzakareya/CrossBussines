@@ -5,6 +5,7 @@
 @{
     bool isAr = System.Globalization.CultureInfo.CurrentUICulture.Name.StartsWith("ar");
     bool canManage = ViewBag.CanManage == true;
+    var rangeCounts = ViewBag.RangeCounts as Dictionary<int, int> ?? new();   // H115
 }
 @foreach (var r in Model)
 {
@@ -15,10 +16,10 @@
         <td><div class="fw-bold text-gray-900">@(isAr ? c.Name : c.NameEn)</div>@if (!c.IsActive) {<div class="text-muted fs-9">@T["Inactive"]</div>}</td>
         <td><span class="badge badge-light-@(calc ? "primary" : "secondary") fw-bold fs-8">@T["ctype:" + c.ValueType]</span></td>
         <td class="text-nowrap"><bdi class="hp-num">@(c.Unit ?? "—")</bdi></td>
-        <td class="text-success text-nowrap"><bdi class="hp-num">@HospitalConceptRules.NormalDisplay(c, isAr)</bdi></td>
+        <td class="text-success text-nowrap"><bdi class="hp-num">@HospitalConceptRules.NormalDisplay(c, isAr)</bdi>@if (rangeCounts.TryGetValue(c.ID, out var rn)) {<div class="fs-9 text-primary fw-semibold mt-1">@T["+{0} by patient", rn]</div>}</td>
         <td class="text-danger text-nowrap"><bdi class="hp-num">@HospitalConceptRules.CriticalDisplay(c, isAr)</bdi></td>
         <td>@if (c.HasLaterality) {<span class="badge badge-light-info fw-bold fs-8">@T["Right / left"]</span>} else {<span>—</span>}</td>
         <td><span class="fs-8 text-muted">@(used.Count == 0 ? "—" : string.Join(" · ", used))</span></td>
-        <td class="text-end">@if (canManage) {<button type="button" class="btn btn-sm btn-icon btn-light-primary" data-edit="@c.ID" title="@T["Edit"]"><i class="ki-outline ki-pencil fs-5"></i></button>}</td>
+        <td class="text-end text-nowrap">@if (c.ValueType is HospitalConceptType.Number or HospitalConceptType.Score or HospitalConceptType.Panel) {<button type="button" class="btn btn-sm btn-icon btn-light-info me-1" data-ranges="@c.ID" data-pair="@(c.ValueType == HospitalConceptType.Panel ? "1" : "")" data-name="@(isAr ? c.Name : c.NameEn)" data-unit="@c.Unit" title="@T["Ranges by patient"]"><i class="ki-outline ki-people fs-5"></i></button>}@if (canManage) {<button type="button" class="btn btn-sm btn-icon btn-light-primary" data-edit="@c.ID" title="@T["Edit"]"><i class="ki-outline ki-pencil fs-5"></i></button>}</td>
     </tr>
 }

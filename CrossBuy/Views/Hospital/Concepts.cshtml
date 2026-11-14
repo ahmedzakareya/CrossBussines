@@ -90,11 +90,86 @@
     </div></div></div>
 }
 
+@if (ready)
+{
+    @* H115: the ranges by who the patient is — a sex, an age band, a pregnancy; the most specific that fits wins *@
+    <div class="modal fade" id="rModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-900px"><div class="modal-content">
+        <div class="modal-header"><div><h2 class="fw-bold m-0">@T["Ranges by patient"] <span class="text-muted fs-5" data-r-name></span></h2>
+            <div class="text-muted fs-8 mt-1">@T["The most specific range that fits the patient replaces the concept's own range for that reading: a trimester before \"pregnant\", an age band and a sex before either alone. None fits: the concept's own range."]</div></div>
+            <div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body py-6 px-lg-10">
+            <div class="table-responsive mb-6"><table class="table align-middle table-row-dashed fs-7 gy-3 mb-0">
+                <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0"><th>@T["For whom"]</th><th class="text-success">@T["Normal"]</th><th class="text-danger">@T["Critical"]</th><th>@T["Source"]</th><th class="text-end"></th></tr></thead>
+                <tbody data-r-rows><tr><td colspan="5" class="text-center text-muted py-6">@T["Loading…"]</td></tr></tbody>
+            </table></div>
+            @if (canManage)
+            {
+                <div class="rounded border border-dashed p-5">
+                    <div class="fw-bold text-gray-900 fs-6 mb-4">@T["Add a range"]</div>
+                    <div class="row g-4">
+                        <div class="col-md-3"><label class="form-label">@T["Sex"]</label><select class="form-select form-select-solid" data-r="sex" data-control="select2" data-hide-search="true" data-dropdown-parent="#rModal"><option value="">@T["Either"]</option><option value="M">@T["Male"]</option><option value="F">@T["Female"]</option></select></div>
+                        <div class="col-md-3"><label class="form-label">@T["Pregnancy"]</label><select class="form-select form-select-solid" data-r="pregnancy" data-control="select2" data-hide-search="true" data-dropdown-parent="#rModal"><option value="">@T["Either"]</option>@foreach (var pg in HospitalRangePregnancy.All) {<option value="@pg">@T["preg:" + pg]</option>}</select></div>
+                        <div class="col-md-2"><label class="form-label">@T["Age from"]</label><input type="number" min="0" class="form-control form-control-solid" dir="ltr" data-r="ageFrom" /></div>
+                        <div class="col-md-2"><label class="form-label">@T["to under"]</label><input type="number" min="0" class="form-control form-control-solid" dir="ltr" data-r="ageTo" /></div>
+                        <div class="col-md-2"><label class="form-label">@T["Age in"]</label><select class="form-select form-select-solid" data-r="ageUnit" data-control="select2" data-hide-search="true" data-dropdown-parent="#rModal"><option value="years">@T["years"]</option><option value="months">@T["months"]</option><option value="days">@T["days"]</option></select></div>
+                        <div class="col-6 col-md-3"><label class="form-label text-success">@T["Normal low"]</label><input type="number" step="any" class="form-control form-control-solid" dir="ltr" data-r="normalLow" /></div>
+                        <div class="col-6 col-md-3"><label class="form-label text-success">@T["Normal high"]</label><input type="number" step="any" class="form-control form-control-solid" dir="ltr" data-r="normalHigh" /></div>
+                        <div class="col-6 col-md-3"><label class="form-label text-danger">@T["Critical low"]</label><input type="number" step="any" class="form-control form-control-solid" dir="ltr" data-r="criticalLow" /></div>
+                        <div class="col-6 col-md-3"><label class="form-label text-danger">@T["Critical high"]</label><input type="number" step="any" class="form-control form-control-solid" dir="ltr" data-r="criticalHigh" /></div>
+                        <div class="col-6 col-md-3" data-r-pair><label class="form-label text-success">@T["Normal high — second number"]</label><input type="number" step="any" class="form-control form-control-solid" dir="ltr" data-r="normalHigh2" /></div>
+                        <div class="col-6 col-md-3" data-r-pair><label class="form-label text-danger">@T["Critical high — second number"]</label><input type="number" step="any" class="form-control form-control-solid" dir="ltr" data-r="criticalHigh2" /></div>
+                        <div class="col-12"><label class="form-label">@T["Source"]</label><input type="text" maxlength="200" class="form-control form-control-solid" data-r="source" placeholder="@T["The guideline or the laboratory's own validation"]" /></div>
+                    </div>
+                    <div class="d-flex justify-content-end mt-4"><button type="button" class="btn btn-sm btn-primary" data-r-add><i class="ki-outline ki-plus fs-4"></i>@T["Add the range"]</button></div>
+                </div>
+            }
+        </div>
+    </div></div></div>
+}
+
 @section Scripts {
     <script>
         (function () {
             if (!document.getElementById('rows')) return;
             var list = cbServerList({ url: @Json.Serialize(Url.Action("ConceptsData")), isAr: @(isAr ? "true" : "false") });
+            // ---- H115: the ranges by patient
+            var rm = document.getElementById('rModal'), rConcept = null, rtok = (document.querySelector('input[name="__RequestVerificationToken"]') || {}).value;
+            var RW = { none: @Json.Serialize(T["No range by patient yet: the concept's own range applies to everyone."].Value), add: @Json.Serialize(T["Add this range to the concept?"].Value),
+                       remove: @Json.Serialize(T["Remove this range?"].Value), failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value), rm: @Json.Serialize(T["Remove"].Value) };
+            var canManage = @Json.Serialize(canManage);
+            function resc(s) { var d = document.createElement('div'); d.textContent = s == null ? '' : String(s); return d.innerHTML; }
+            function rload() {
+                fetch(@Json.Serialize(Url.Content("~/Hospital/Concepts/")) + rConcept + '/Ranges', { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.json(); }).then(function (res) {
+                    var tb = rm.querySelector('[data-r-rows]');
+                    if (!res.ok) { tb.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-6">' + resc(res.error) + '</td></tr>'; return; }
+                    tb.innerHTML = res.rows.length ? res.rows.map(function (r) { return '<tr><td class="fw-semibold text-gray-900">' + resc(r.who) + '</td><td class="text-success"><bdi class="hp-num" dir="ltr">' + resc(r.normal) + '</bdi></td><td class="text-danger"><bdi class="hp-num" dir="ltr">' + resc(r.critical) + '</bdi></td>' +
+                        '<td class="text-muted fs-8">' + resc(r.source || '—') + '</td><td class="text-end">' + (canManage ? '<button type="button" class="btn btn-sm btn-icon btn-light" data-r-rm="' + r.id + '" title="' + resc(RW.rm) + '"><i class="ki-outline ki-trash fs-5"></i></button>' : '') + '</td></tr>'; }).join('')
+                        : '<tr><td colspan="5" class="text-center text-muted py-6">' + resc(RW.none) + '</td></tr>';
+                });
+            }
+            function rpost(u, b) { return fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': rtok }, body: JSON.stringify(b || {}) })
+                .then(function (r) { return r.json().catch(function () { return { ok: false }; }); }); }
+            document.addEventListener('click', function (e) {
+                var rb = e.target.closest('[data-ranges]');
+                if (rb && rm) { rConcept = rb.getAttribute('data-ranges'); rm.querySelector('[data-r-name]').textContent = '— ' + rb.getAttribute('data-name') + (rb.getAttribute('data-unit') ? ' (' + rb.getAttribute('data-unit') + ')' : '');
+                    rm.querySelectorAll('[data-r-pair]').forEach(function (x) { x.classList.toggle('d-none', rb.getAttribute('data-pair') !== '1'); });
+                    rload(); bootstrap.Modal.getOrCreateInstance(rm).show(); return; }
+                var del = e.target.closest('[data-r-rm]');
+                if (del) { cbConfirm(RW.remove, { kind: 'danger' }).then(function (ok) { if (!ok) return;
+                    rpost(@Json.Serialize(Url.Content("~/Hospital/Concepts/Ranges/")) + del.getAttribute('data-r-rm') + '/Remove').then(function (res) { if (!res.ok) { toastr.error(res.error || RW.failed); return; } rload(); list.reload(); }); }); return; }
+                var add = e.target.closest('[data-r-add]');
+                if (add) {
+                    var b = {}; rm.querySelectorAll('[data-r]').forEach(function (i) { var k = i.getAttribute('data-r'), v = (i.value || '').trim();
+                        b[k] = ['ageFrom', 'ageTo', 'normalLow', 'normalHigh', 'criticalLow', 'criticalHigh', 'normalHigh2', 'criticalHigh2'].indexOf(k) >= 0 ? (v === '' ? null : Number(v)) : (v || null); });
+                    cbConfirm(RW.add).then(function (ok) { if (!ok) return; add.disabled = true;
+                        rpost(@Json.Serialize(Url.Content("~/Hospital/Concepts/")) + rConcept + '/Ranges', b).then(function (res) { add.disabled = false;
+                            if (!res.ok) { toastr.error(res.error || RW.failed); return; }
+                            toastr.success(RW.saved);
+                            rm.querySelectorAll('input[data-r]').forEach(function (i) { i.value = ''; });
+                            rm.querySelectorAll('select[data-r]').forEach(function (s) { s.value = s.options[0].value; if (window.jQuery) jQuery(s).trigger('change.select2'); });
+                            rload(); list.reload(); }); });
+                }
+            });
             var m = document.getElementById('cModal'); if (!m) return;
             var tok = document.querySelector('input[name="__RequestVerificationToken"]').value, editing = null;
             var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), save: @Json.Serialize(T["Save this concept to the dictionary?"].Value), nw: @Json.Serialize(T["New concept"].Value), ed: @Json.Serialize(T["Edit the concept"].Value) };

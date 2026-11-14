@@ -142,6 +142,8 @@ namespace CrossBuy.BL.Hospital
 			var versions = await Q<HospitalClinicalTemplateVersion>(ctx).Where(v => forms.Select(f => f.TemplateVersionId).Contains(v.ID)).ToDictionaryAsync(v => v.ID, ct);
 			var templates = await Q<HospitalClinicalTemplate>(ctx).Where(t => versions.Values.Select(v => v.TemplateId).Contains(t.ID)).ToDictionaryAsync(t => t.ID, ct);
 			var concepts = await Q<HospitalConcept>(ctx).ToListAsync(ct);
+			// H115: every reading on this page holds against the range for THIS patient (sex, age, pregnancy)
+			concepts = await new HospitalConceptRangeService(_db, _access).ForPatientAsync(ctx, concepts, patient, nowUtc, ct);
 			var vf = new List<HospitalVisitForm>();
 			foreach (var f in forms)
 			{

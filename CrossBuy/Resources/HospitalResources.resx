@@ -6524,4 +6524,41 @@
   <data name="where:Theatre" xml:space="preserve"><value>In theatre</value></data>
   <data name="where:Ward" xml:space="preserve"><value>Admitted</value></data>
   <data name="Now:" xml:space="preserve"><value>Now:</value></data>
+  <data name="+{0} by patient" xml:space="preserve"><value>+{0} by patient</value></data>
+  <data name="A critical high lies above the normal range" xml:space="preserve"><value>A critical high lies above the normal range</value></data>
+  <data name="A critical low lies below the normal range" xml:space="preserve"><value>A critical low lies below the normal range</value></data>
+  <data name="A pregnancy range is for a female patient" xml:space="preserve"><value>A pregnancy range is for a female patient</value></data>
+  <data name="A range applies to a measured number" xml:space="preserve"><value>A range applies to a measured number</value></data>
+  <data name="A second number's limits are for a pair of values" xml:space="preserve"><value>A second number's limits are for a pair of values</value></data>
+  <data name="Add a range" xml:space="preserve"><value>Add a range</value></data>
+  <data name="Add the range" xml:space="preserve"><value>Add the range</value></data>
+  <data name="Add this range to the concept?" xml:space="preserve"><value>Add this range to the concept?</value></data>
+  <data name="Age from" xml:space="preserve"><value>Age from</value></data>
+  <data name="Age in" xml:space="preserve"><value>Age in</value></data>
+  <data name="Choose the age unit" xml:space="preserve"><value>Choose the age unit</value></data>
+  <data name="Choose the pregnancy state" xml:space="preserve"><value>Choose the pregnancy state</value></data>
+  <data name="Either" xml:space="preserve"><value>Either</value></data>
+  <data name="For whom" xml:space="preserve"><value>For whom</value></data>
+  <data name="Give at least one limit" xml:space="preserve"><value>Give at least one limit</value></data>
+  <data name="No range by patient yet: the concept's own range applies to everyone." xml:space="preserve"><value>No range by patient yet: the concept's own range applies to everyone.</value></data>
+  <data name="Ranges by patient" xml:space="preserve"><value>Ranges by patient</value></data>
+  <data name="Remove this range?" xml:space="preserve"><value>Remove this range?</value></data>
+  <data name="Say who the range is for: a sex, an age band or a pregnancy" xml:space="preserve"><value>Say who the range is for: a sex, an age band or a pregnancy</value></data>
+  <data name="The age band must end after it starts" xml:space="preserve"><value>The age band must end after it starts</value></data>
+  <data name="The guideline or the laboratory's own validation" xml:space="preserve"><value>The guideline or the laboratory's own validation</value></data>
+  <data name="The most specific range that fits the patient replaces the concept's own range for that reading: a trimester before &quot;pregnant&quot;, an age band and a sex before either alone. None fits: the concept's own range." xml:space="preserve"><value>The most specific range that fits the patient replaces the concept's own range for that reading: a trimester before "pregnant", an age band and a sex before either alone. None fits: the concept's own range.</value></data>
+  <data name="The normal range's low must be below its high" xml:space="preserve"><value>The normal range's low must be below its high</value></data>
+  <data name="The patient-specific ranges are not installed yet (hospital_h115_concept_ranges.sql)." xml:space="preserve"><value>The patient-specific ranges are not installed yet (hospital_h115_concept_ranges.sql).</value></data>
+  <data name="This concept already has a range for the same patients" xml:space="preserve"><value>This concept already has a range for the same patients</value></data>
+  <data name="age {0} and over" xml:space="preserve"><value>age {0} and over</value></data>
+  <data name="age {0} to under {1}" xml:space="preserve"><value>age {0} to under {1}</value></data>
+  <data name="preg:Any" xml:space="preserve"><value>Pregnant</value></data>
+  <data name="preg:No" xml:space="preserve"><value>Not pregnant</value></data>
+  <data name="preg:T1" xml:space="preserve"><value>First trimester</value></data>
+  <data name="preg:T2" xml:space="preserve"><value>Second trimester</value></data>
+  <data name="preg:T3" xml:space="preserve"><value>Third trimester</value></data>
+  <data name="to under" xml:space="preserve"><value>to under</value></data>
+  <data name="under {0}" xml:space="preserve"><value>under {0}</value></data>
+  <data name="years" xml:space="preserve"><value>years</value></data>
+  <data name="{0} months" xml:space="preserve"><value>{0} months</value></data>
 </root>
