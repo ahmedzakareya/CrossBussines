@@ -813,12 +813,6 @@
   <data name="VAT" xml:space="preserve">
     <value>ضريبة القيمة المضافة</value>
   </data>
-  <data name="Sales invoices" xml:space="preserve">
-    <value>فواتير المبيعات</value>
-  </data>
-  <data name="Purchase invoices" xml:space="preserve">
-    <value>فواتير المشتريات</value>
-  </data>
   <data name="Edit invoice" xml:space="preserve">
     <value>تعديل الفاتورة</value>
   </data>
@@ -3688,10 +3682,10 @@
   <data name="TemporaryPassword" xml:space="preserve"><value>كلمة مرور مؤقتة</value></data>
   <data name="AdministratorCredentialsOnce" xml:space="preserve"><value>سلّم هذه البيانات للمدير الآن. كلمة المرور تُعرض مرة واحدة ولا يمكن استرجاعها بعد ذلك — يمكن فقط إعادة تعيينها.</value></data>
   <data name="Sales Invoices" xml:space="preserve">
-    <value>فواتير البيع</value>
+    <value>فواتير المبيعات</value>
   </data>
   <data name="Purchase Invoices" xml:space="preserve">
-    <value>فواتير الشراء</value>
+    <value>فواتير المشتريات</value>
   </data>
   <data name="Customer analytics" xml:space="preserve">
     <value>تحليلات العملاء</value>
