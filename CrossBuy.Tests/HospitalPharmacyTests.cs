@@ -182,5 +182,41 @@ namespace CrossBuy.Tests
 			Assert.True((await w.Pharmacy.VerifyAsync(Ctx(50), id, "Patient told about the allergy", 50, Now)).Ok);
 			Assert.Equal("forbidden", (await w.Pharmacy.SaveSettingsAsync(Ctx(50), null, 60)).Error);   // the store is the administrator's choice
 		}
+
+		/// H121, found reading the H120 dispense: a chemotherapy cycle's request has no visit behind it, so it went on the
+		/// patient's own outpatient bill even while they were admitted — the cycle's administration charge on the stay's
+		/// bill, its drugs on another, priced by another list. It now follows the stay, and the pharmacist sees which bill.
+		[Fact]
+		public async Task A_request_with_no_visit_goes_on_the_stays_bill_while_the_patient_is_admitted()
+		{
+			using var host = new PlatformTestHost(); var w = Make(host);
+			var ctx = Ctx();
+			var pid = (await w.Patients.SaveAsync(ctx, new HospitalPatientInput { Name = "م ورم", NameEn = "P Onc", Sex = "F" }, 7, Now)).Id!.Value;
+			host.Seed.HospitalDispenses.Add(new HospitalDispense { CompanyId = CompanyOne, RxNo = "RX-000001", PatientId = pid, Source = HospitalDispenseSource.Oncology, PrescribedAt = Now });
+			await host.Seed.SaveChangesAsync();
+			var rx = await host.Db.HospitalDispenses.AsNoTracking().SingleAsync();
+			Assert.True(HospitalPharmacyService.BillsLikeAWardCharge(rx));
+			Assert.False(HospitalPharmacyService.BillsLikeAWardCharge(new HospitalDispense { EncounterId = 5 }));   // a visit's request stays on the visit's bill
+
+			Assert.Null((await w.Pharmacy.RxAsync(ctx, rx.ID, Now))!.BillNo);   // no bill yet: the preview creates none
+			Assert.Equal(0, await host.Db.HospitalBills.CountAsync());
+
+			var own = await w.Billing.BillForWardChargeAsync(ctx, pid, 7, Now);   // not admitted: the patient's own bill
+			var v = (await w.Pharmacy.RxAsync(ctx, rx.ID, Now))!;
+			Assert.Equal((own.BillNo, false), (v.BillNo, v.OnStay));
+
+			host.Seed.HospitalAdmissions.Add(new HospitalAdmission { ID = 40, CompanyId = CompanyOne, PatientId = pid, Status = HospitalAdmissionStatus.Active, AdmittedAt = Now, CreatedAt = Now });
+			await host.Seed.SaveChangesAsync();
+			var stay = await w.Billing.BillForWardChargeAsync(ctx, pid, 7, Now);   // where the cycle's administration charge goes
+			Assert.Equal(40, stay.AdmissionId);
+			v = (await w.Pharmacy.RxAsync(ctx, rx.ID, Now))!;
+			Assert.Equal((stay.BillNo, true), (v.BillNo, v.OnStay));
+			Assert.Equal(stay.ID, (await w.Billing.PeekWardChargeBillAsync(ctx, pid))!.ID);
+
+			var adm = await host.Seed.HospitalAdmissions.SingleAsync(a => a.ID == 40);
+			adm.Status = HospitalAdmissionStatus.Discharged; await host.Seed.SaveChangesAsync();
+			Assert.Equal(own.ID, (await w.Billing.PeekWardChargeBillAsync(ctx, pid))!.ID);   // discharged: back to the patient's own
+			Assert.Null(await w.Billing.PeekWardChargeBillAsync(Ctx(9, CompanyTwo), pid));   // never another company's
+		}
 	}
 }

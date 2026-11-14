@@ -328,6 +328,16 @@ namespace CrossBuy.BL.Hospital
 			return line;
 		}
 
+		/// H121: the bill BillForWardChargeAsync would put a charge on, if there is one yet — read only, creates nothing (the
+		/// pharmacy's preview prices by it and names it).
+		public async Task<HospitalBill?> PeekWardChargeBillAsync(BusinessContext ctx, int patientId, CancellationToken ct = default)
+		{
+			var adm = await _db.HospitalAdmissions.AsNoTracking().Where(a => a.CompanyId == ctx.CompanyId && a.PatientId == patientId && a.Status == HospitalAdmissionStatus.Active).Select(a => (int?)a.ID).FirstOrDefaultAsync(ct);
+			if (adm != null && await _db.HospitalBills.AsNoTracking().FirstOrDefaultAsync(b => b.CompanyId == ctx.CompanyId && b.AdmissionId == adm && b.Status == HospitalBillStatus.Open, ct) is { } stay)
+				return stay;
+			return await _db.HospitalBills.AsNoTracking().FirstOrDefaultAsync(b => b.CompanyId == ctx.CompanyId && b.PatientId == patientId && b.EncounterId == null && b.AdmissionId == null && b.Status == HospitalBillStatus.Open, ct);
+		}
+
 		/// H51/H52: the bill a charge made on the ward goes on — the stay's bill while the patient is admitted, otherwise the
 		/// patient's own open bill (created if there is none). One answer for the blood bank and the ward's doses.
 		public async Task<HospitalBill> BillForWardChargeAsync(BusinessContext ctx, int patientId, int? employeeId, DateTime now, CancellationToken ct = default)

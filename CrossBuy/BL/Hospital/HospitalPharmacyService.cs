@@ -27,13 +27,18 @@ namespace CrossBuy.BL.Hospital
 	public sealed record HospitalRxLineView(HospitalDispenseLine Line, string? ItemCode, decimal? OnHand, string? NextBatch, DateTime? NextExpiry, decimal? Price, IReadOnlyList<string> Warnings);
 
 	public sealed record HospitalRxView(HospitalDispense Dispense, HospitalPatient Patient, IReadOnlyList<HospitalRxLineView> Lines, IReadOnlyDictionary<int, string> People,
-		string? WarehouseName, string? PriceListName, string? CurrencyLabel, decimal Total);
+		string? WarehouseName, string? PriceListName, string? CurrencyLabel, decimal Total, string? BillNo = null, bool OnStay = false);
 
 	public sealed record HospitalPharmacyStats(int Waiting, int? AvgDispenseMinutes, int NearExpiry, int BelowReorder, int NearExpiryDays);
 
 	public sealed class HospitalPharmacyService
 	{
 		public const string MovementSource = "HospitalDispense";
+
+		/// H121: a request with no visit behind it (a chemotherapy cycle's) is charged like a ward charge — on the stay's
+		/// bill while the patient is admitted, beside the cycle's own administration charge. A visit's request stays on the
+		/// visit's bill.
+		public static bool BillsLikeAWardCharge(HospitalDispense d) => d.EncounterId == null;
 		public const string WarnAllergy = "allergy", WarnDuplicate = "duplicate", WarnNotStocked = "not-stocked", WarnShort = "short", WarnNearExpiry = "near-expiry";
 		/// H73: the line interacts with another line or with a medicine the patient is still given in hospital.
 		public const string WarnInteraction = "interaction";
@@ -178,7 +183,8 @@ namespace CrossBuy.BL.Hospital
 				.Where(b => b.CompanyID == ctx.CompanyId && b.WarehouseId == wh && itemIds.Contains(b.ItemId)).ToDictionaryAsync(b => b.ItemId, b => b.QtyOnHand, ct);
 			var batches = wh == null ? new() : await BatchesAsync(ctx, wh.Value, itemIds, ct);
 			var bill = d.BillId != null ? await _db.HospitalBills.AsNoTracking().FirstOrDefaultAsync(b => b.ID == d.BillId && b.CompanyId == ctx.CompanyId, ct)
-				: d.EncounterId != null ? await _db.HospitalBills.AsNoTracking().FirstOrDefaultAsync(b => b.CompanyId == ctx.CompanyId && b.EncounterId == d.EncounterId, ct) : null;
+				: d.EncounterId != null ? await _db.HospitalBills.AsNoTracking().FirstOrDefaultAsync(b => b.CompanyId == ctx.CompanyId && b.EncounterId == d.EncounterId, ct)
+				: await _billing.PeekWardChargeBillAsync(ctx, d.PatientId, ct);   // H121: the bill it will go on, priced by that bill's list
 			var listId = bill?.PriceListId;
 			var near = nowUtc.Date.AddDays(settings.NearExpiryDays);
 			var (kbPairs, _) = await HospitalDrugSafetyService.KbAsync(_db, ctx.CompanyId, ct);
@@ -212,7 +218,7 @@ namespace CrossBuy.BL.Hospital
 			var whName = wh == null ? null : await _db.Warehouses.AsNoTracking().Where(x => x.ID == wh && x.CompanyID == ctx.CompanyId).Select(x => x.Code + " · " + (DisplayName.IsArabic ? x.Name : x.NameEn ?? x.Name)).FirstOrDefaultAsync(ct);
 			var listName = listId == null ? null : await _db.HospitalPriceLists.AsNoTracking().Where(x => x.ID == listId && x.CompanyId == ctx.CompanyId).Select(x => DisplayName.IsArabic ? x.Name : x.NameEn).FirstOrDefaultAsync(ct);
 			var total = views.Where(v => v.Line.ItemId != null).Sum(v => (v.Price ?? 0) * (v.Line.DispensedQty ?? v.Line.Quantity));
-			return new HospitalRxView(d, p, views, people, whName, listName, await _billing.CurrencyLabelAsync(ctx, bill, ct), total);
+			return new HospitalRxView(d, p, views, people, whName, listName, await _billing.CurrencyLabelAsync(ctx, bill, ct), total, bill?.BillNo, bill?.AdmissionId != null);
 		}
 
 		public async Task<HospitalPharmacyStats> StatsAsync(BusinessContext ctx, DateTime dayStartUtc, DateTime nowUtc, CancellationToken ct = default)
@@ -288,7 +294,8 @@ namespace CrossBuy.BL.Hospital
 			await using var tx = await ScopedTx.BeginOrJoinAsync(_db);
 			try
 			{
-				var bill = stocked.Count == 0 ? null : await _billing.BillForDispenseAsync(ctx, d.PatientId, d.EncounterId, employeeId, nowUtc, ct);
+				var bill = stocked.Count == 0 ? null : BillsLikeAWardCharge(d) ? await _billing.BillForWardChargeAsync(ctx, d.PatientId, employeeId, nowUtc, ct)
+					: await _billing.BillForDispenseAsync(ctx, d.PatientId, d.EncounterId, employeeId, nowUtc, ct);
 				foreach (var l in stocked)
 				{
 					var it = items[l.ItemId!.Value];

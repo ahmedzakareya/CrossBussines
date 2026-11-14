@@ -121,7 +121,7 @@
                         <div class="card-header border-0 pt-6">
                             <div class="card-title align-items-start flex-column m-0">
                                 <span class="card-label fw-bold text-gray-900 fs-4">@T["Dispense"] <span class="badge hp-code fw-bold fs-8 hp-num ms-1">@d.RxNo</span></span>
-                                <span class="text-muted mt-1 fw-semibold fs-7"><a href="@Url.Action("Patient", new { id = p.ID })" class="text-gray-700 text-hover-primary">@DisplayName.Of(p.Name, p.NameEn)</a> · <span class="hp-num">@p.Mrn</span> · @(sel.PriceListName ?? T["Main price list"].Value)</span>
+                                <span class="text-muted mt-1 fw-semibold fs-7"><a href="@Url.Action("Patient", new { id = p.ID })" class="text-gray-700 text-hover-primary">@DisplayName.Of(p.Name, p.NameEn)</a> · <span class="hp-num">@p.Mrn</span> · @(sel.PriceListName ?? T["Main price list"].Value)@if (sel.BillNo != null) {<text> · </text><span class="text-nowrap"><i class="ki-outline ki-bill fs-7"></i> @(sel.OnStay ? T["The stay's bill"] : T["Bill"]) <bdi class="hp-num">@sel.BillNo</bdi></span>}</span>
                             </div>
                             <div class="card-toolbar">@Html.Raw(St(d.Status))</div>
                         </div>
