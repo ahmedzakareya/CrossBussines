@@ -8,7 +8,8 @@
 *@
 @{
     Layout = "~/Views/Shared/_LayoutHospital.cshtml";
-    ViewData["Title"] = T["Self-intake"].Value;
+    ViewData["Title"] = T["Reception desk"].Value;
+    var counts = ViewBag.Counts as HospitalDeskCounts;   // H114
     bool ready = ViewBag.Ready == true; int urgent = ViewBag.Urgent is int u ? u : 0;
     bool isAr = System.Globalization.CultureInfo.CurrentUICulture.Name.StartsWith("ar");
 }
@@ -18,10 +19,14 @@
 <div class="d-flex flex-column flex-column-fluid">
     <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
         <div class="page-title d-flex flex-column justify-content-center gap-1">
-            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Self-intake"]</h1>
-            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted">@T["What patients entered on the reception tablet, for the desk to confirm"]</li></ul>
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Reception desk"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted">@T["Where a patient is now, today at a glance, and what patients entered on the reception tablet"]</li></ul>
         </div>
-        <a href="@Url.Action("IntakeKiosk")" target="_blank" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-tablet fs-4"></i>@T["Open the tablet screen"]</a>
+        <div class="d-flex gap-2 flex-wrap">
+            <a href="@Url.Action("Map")" class="btn btn-sm btn-light"><i class="ki-outline ki-map fs-4"></i>@T["Hospital map"]</a>
+            <a href="@Url.Action("RegisterPatient")" class="btn btn-sm btn-light"><i class="ki-outline ki-user-tick fs-4"></i>@T["Register patient"]</a>
+            <a href="@Url.Action("IntakeKiosk")" target="_blank" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-tablet fs-4"></i>@T["Open the tablet screen"]</a>
+        </div>
     </div></div>
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
         @if (!ready) { <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice"><div class="fs-6 text-gray-700">@T[HospitalSelfIntakeService.NoTables]</div></div> }
@@ -29,9 +34,41 @@
         {
             <div id="urgentBar" class="notice d-flex align-items-center rounded border border-danger border-dashed bg-light-danger p-4 mb-5 gap-3 @(urgent == 0 ? "d-none" : "")"><i class="ki-outline ki-information-5 fs-2x text-danger"></i>
                 <div class="fs-5 fw-bold text-danger">@T["Danger signs waiting:"] <span id="urgentN" class="hp-num">@urgent</span> — @T["see the patient now and acknowledge"]</div></div>
+            @if (counts != null)
+            {
+                var tiles = new (string Icon, string Color, int N, string Label)[]
+                {
+                    ("ki-home-2", "primary", counts.Admitted, T["Admitted now"].Value),
+                    ("ki-user-tick", "success", counts.InClinic, T["With a doctor now"].Value),
+                    ("ki-time", "info", counts.WaitingClinic, T["Waiting for a clinic"].Value),
+                    ("ki-pulse", "danger", counts.InEmergency, T["In the emergency department"].Value),
+                    ("ki-heart-circle", "danger", counts.InTheatre, T["In an operation"].Value),
+                    ("ki-scan-barcode", "primary", counts.InImaging, T["At imaging"].Value),
+                    ("ki-calendar-tick", "success", counts.ArrivalsToday, T["Clinic arrivals today"].Value),
+                };
+                <div class="row g-4 mb-5">
+                    @foreach (var x in tiles)
+                    {
+                        <div class="col-6 col-md-4 col-xl"><div class="card h-100"><div class="card-body d-flex align-items-center gap-4 p-5">
+                            <span class="symbol symbol-45px flex-shrink-0"><span class="symbol-label bg-light-@x.Color"><i class="ki-outline @x.Icon fs-2x text-@x.Color"></i></span></span>
+                            <div><div class="fs-2 fw-bold text-gray-900 hp-num lh-1">@x.N</div><div class="fs-8 text-muted fw-semibold mt-1">@x.Label</div></div>
+                        </div></div></div>
+                    }
+                </div>
+            }
+            <div class="card mb-5">
+                <div class="card-header border-0 pt-6"><div class="card-title flex-column m-0">
+                    <span class="card-label fw-bold text-gray-900 fs-4"><i class="ki-outline ki-geolocation fs-3 text-primary me-1"></i>@T["Where is the patient now?"]</span>
+                    <span class="text-muted fs-7 mt-1">@T["Name, file number, mobile or ID number: the ward bed, the clinic, imaging, an operation or the emergency department, as it is this minute."]</span></div></div>
+                <div class="card-body pt-2">
+                    <div class="position-relative mb-4"><i class="ki-outline ki-magnifier fs-3 position-absolute top-50 translate-middle-y ms-4"></i>
+                        <input type="text" id="w_q" class="form-control form-control-solid ps-12" autocomplete="off" placeholder="@T["Type at least two letters or digits…"]" /></div>
+                    <div id="w_out"><div class="text-muted fs-7 text-center py-4">@T["Results appear as you type."]</div></div>
+                </div>
+            </div>
             <div class="card">
                 <div class="card-header border-0 pt-6 flex-wrap gap-3">
-                    <div class="card-title flex-column m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Intakes"]</span><span class="text-muted fs-7 mt-1"><span id="resultCount">—</span></span></div>
+                    <div class="card-title flex-column m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Self-intake"]</span><span class="text-muted fs-7 mt-1"><span id="resultCount">—</span></span></div>
                     <div class="card-toolbar d-flex flex-wrap align-items-center gap-2">
                         <div class="w-250px"><input type="text" id="f_q" class="form-control form-control-solid form-control-sm" autocomplete="off" placeholder="@T["Search by number, name, mobile or ID…"]" /></div>
                         <div class="w-175px"><select class="form-select form-select-solid form-select-sm cb-filter" id="f_filter">
@@ -57,6 +94,39 @@
     <script>
         (function () {
             if (!document.getElementById('rows')) return;
+            // H114: where is the patient now — searched as the desk types
+            var W = { none: @Json.Serialize(T["No patient matches."].Value), out: @Json.Serialize(T["Not in the hospital now"].Value), live: @Json.Serialize(T["now"].Value),
+                      since: @Json.Serialize(T["since {0}"].Value), map: @Json.Serialize(T["On the map"].Value), file: @Json.Serialize(T["Open file"].Value),
+                      restricted: @Json.Serialize(T["Restricted file: the location is not given at the desk — ask the care team"].Value), hint: @Json.Serialize(T["Results appear as you type."].Value),
+                      kind: @Json.Serialize(new[] { "Theatre", "Emergency", "Imaging", "ClinicInRoom", "ClinicWaiting", "Ward" }.ToDictionary(k => k, k => T["where:" + k].Value)) };
+            var ICON = { Theatre: 'ki-heart-circle text-danger', Emergency: 'ki-pulse text-danger', Imaging: 'ki-scan-barcode text-primary', ClinicInRoom: 'ki-user-tick text-success', ClinicWaiting: 'ki-time text-info', Ward: 'ki-home-2 text-primary' };
+            function esc(s) { var d = document.createElement('div'); d.textContent = s == null ? '' : String(s); return d.innerHTML; }
+            function ini(n) { return (n || '?').trim().split(/\s+/).slice(0, 2).map(function (x) { return x[0]; }).join(''); }
+            var wq = document.getElementById('w_q'), wo = document.getElementById('w_out'), wt = null, wseq = 0;
+            function wrender(rows) {
+                if (!rows.length) { wo.innerHTML = '<div class="text-muted fs-7 text-center py-4">' + esc(W.none) + '</div>'; return; }
+                wo.innerHTML = rows.map(function (r) {
+                    var face = r.photo ? '<img src="' + esc(r.photo) + '" alt="" style="object-fit:cover" />' : '<span class="symbol-label fw-bold hp-initials">' + esc(ini(r.name)) + '</span>';
+                    var now = r.restricted ? '<span class="badge badge-light fs-8"><i class="ki-outline ki-lock fs-7 me-1"></i>' + esc(W.restricted) + '</span>'
+                        : !r.now.length ? '<span class="text-muted fs-7">' + esc(W.out) + '</span>'
+                        : r.now.map(function (w) { return '<div class="d-flex align-items-start gap-3 py-2"><i class="ki-outline ' + (ICON[w.kind] || 'ki-geolocation') + ' fs-2 mt-1"></i><div class="flex-grow-1">' +
+                            '<div class="fw-bold text-gray-900 fs-6">' + esc(W.kind[w.kind] || w.kind) + (w.live ? ' <span class="badge badge-light-success fs-9 ms-1">' + esc(W.live) + '</span>' : '') + '</div>' +
+                            '<div class="fs-7 text-gray-800"><bdi>' + esc(w.place) + '</bdi></div>' +
+                            (w.detail || w.since ? '<div class="fs-8 text-muted">' + (w.detail ? '<bdi>' + esc(w.detail) + '</bdi>' : '') + (w.since ? (w.detail ? ' · ' : '') + esc(W.since.replace('{0}', w.since)) : '') + '</div>' : '') + '</div>' +
+                            (w.map ? '<a class="btn btn-sm btn-light-primary py-1 px-3 fs-8" href="' + esc(w.map) + '"><i class="ki-outline ki-map fs-6"></i>' + esc(W.map) + '</a>' : '') + '</div>'; }).join('');
+                    return '<div class="d-flex align-items-start gap-4 border border-dashed rounded p-4 mb-3">' +
+                        '<div class="symbol symbol-45px symbol-circle flex-shrink-0">' + face + '</div>' +
+                        '<div class="flex-grow-1"><div class="d-flex flex-wrap align-items-center gap-2 mb-1"><a class="fw-bold fs-5 text-gray-900 text-hover-primary" href="' + esc(r.url) + '"><bdi>' + esc(r.name) + '</bdi></a><span class="text-muted fs-8 hp-num" dir="ltr">' + esc(r.mrn) + '</span></div>' + now + '</div></div>';
+                }).join('');
+            }
+            function wsearch() {
+                var q = wq.value.trim(), my = ++wseq;
+                if (q.length < 2) { wo.innerHTML = '<div class="text-muted fs-7 text-center py-4">' + esc(W.hint) + '</div>'; return; }
+                fetch(@Json.Serialize(Url.Action("IntakeWhere")) + '?q=' + encodeURIComponent(q), { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                    .then(function (r) { return r.json(); }).then(function (res) { if (my === wseq && res.ok) wrender(res.rows); });
+            }
+            wq.addEventListener('input', function () { clearTimeout(wt); wt = setTimeout(wsearch, 250); });
+
             var list = cbServerList({ url: @Json.Serialize(Url.Action("IntakeData")), isAr: @(isAr ? "true" : "false"), addParams: function (p) { p.set('filter', document.getElementById('f_filter').value); } });
             // the desk sees a new intake (and a danger sign) without reloading
             setInterval(function () { if (document.hidden) return; list.reload();

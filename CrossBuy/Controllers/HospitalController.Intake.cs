@@ -46,7 +46,33 @@ namespace CrossBuy.Controllers
 			var (_, _, ready, urgent) = await IntakeSvc.ListAsync(ctx, null, null, 1, 1, DateTime.UtcNow, ct);
 			ViewBag.Ready = ready;
 			ViewBag.Urgent = urgent;
+			ViewBag.Counts = await WhereSvc.CountsAsync(ctx, DateTime.Now, ct);   // H114: the desk's day at a glance
 			return View();
+		}
+
+		private HospitalWhereaboutsService? _whereSvc;
+		private HospitalWhereaboutsService WhereSvc => _whereSvc ??= ActivatorUtilities.CreateInstance<HospitalWhereaboutsService>(HttpContext.RequestServices);
+
+		/// H114: "where is the patient now?" — the desk's search: each match with every place they are in right now.
+		[HttpGet("Intake/Where")]
+		[HospitalPerm(HospitalActions.Read)]
+		public async Task<IActionResult> IntakeWhere(string? q, CancellationToken ct = default)
+		{
+			var ctx = await ContextAsync(ct);
+			if (ctx == null) return Unauthorized();
+			bool en = UiEnglish;
+			var rows = await WhereSvc.SearchAsync(ctx, q, 8, DateTime.Now, ct);
+			return Json(new
+			{
+				ok = true,
+				rows = rows.Select(r => new
+				{
+					id = r.PatientId, mrn = r.Mrn, name = en ? (string.IsNullOrWhiteSpace(r.NameEn) ? r.Name : r.NameEn) : r.Name, photo = r.PhotoPath,
+					url = Url.Action("Patient", new { id = r.PatientId }), restricted = r.Restricted,
+					now = r.Now.Select(w => new { kind = w.Kind, place = en ? w.PlaceEn : w.Place, detail = en ? w.DetailEn : w.Detail, live = w.Live,
+						since = w.Since?.ToString("HH:mm"), map = w.FloorId is int f ? Url.Action("Map", new { floor = f }) : null }),
+				}),
+			});
 		}
 
 		[HttpGet("Intake/Data")]

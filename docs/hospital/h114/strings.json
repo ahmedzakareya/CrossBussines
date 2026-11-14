@@ -1,0 +1,135 @@
+{
+ "unit": "H114 — the reception desk: where a patient is now (ward, clinic, imaging, theatre, emergency), today's counters, and the self-intake list",
+ "strings": {
+  "Admitted now": {
+   "ar": "منوَّمون الآن",
+   "en": "Admitted now",
+   "fr": "Hospitalisés"
+  },
+  "At imaging": {
+   "ar": "في الأشعة",
+   "en": "At imaging",
+   "fr": "En imagerie"
+  },
+  "Clinic arrivals today": {
+   "ar": "وصلوا للعيادات اليوم",
+   "en": "Clinic arrivals today",
+   "fr": "Arrivées aux consultations aujourd'hui"
+  },
+  "In an operation": {
+   "ar": "في عملية",
+   "en": "In an operation",
+   "fr": "En intervention"
+  },
+  "Name, file number, mobile or ID number: the ward bed, the clinic, imaging, an operation or the emergency department, as it is this minute.": {
+   "ar": "الاسم أو رقم الملف أو الجوال أو رقم الهوية: سرير التنويم، أو العيادة، أو الأشعة، أو العمليات، أو الطوارئ — كما هو في هذه اللحظة.",
+   "en": "Name, file number, mobile or ID number: the ward bed, the clinic, imaging, an operation or the emergency department, as it is this minute.",
+   "fr": "Nom, numéro de dossier, mobile ou pièce d'identité : le lit, la consultation, l'imagerie, le bloc ou les urgences, à cette minute."
+  },
+  "No patient matches.": {
+   "ar": "لا يوجد مريض مطابق.",
+   "en": "No patient matches.",
+   "fr": "Aucun patient ne correspond."
+  },
+  "Not in the hospital now": {
+   "ar": "ليس في المستشفى الآن",
+   "en": "Not in the hospital now",
+   "fr": "Pas à l'hôpital actuellement"
+  },
+  "On the map": {
+   "ar": "على الخريطة",
+   "en": "On the map",
+   "fr": "Sur le plan"
+  },
+  "Reception desk": {
+   "ar": "مكتب الاستقبال",
+   "en": "Reception desk",
+   "fr": "Accueil"
+  },
+  "Restricted file: the location is not given at the desk — ask the care team": {
+   "ar": "ملف مقيّد: لا يُعطى مكانه من الاستقبال — اسأل الفريق المعالج",
+   "en": "Restricted file: the location is not given at the desk — ask the care team",
+   "fr": "Dossier restreint : l'emplacement n'est pas donné à l'accueil — demandez à l'équipe soignante"
+  },
+  "Results appear as you type.": {
+   "ar": "تظهر النتائج أثناء الكتابة.",
+   "en": "Results appear as you type.",
+   "fr": "Les résultats s'affichent pendant la saisie."
+  },
+  "Type at least two letters or digits…": {
+   "ar": "اكتب حرفين أو رقمين على الأقل…",
+   "en": "Type at least two letters or digits…",
+   "fr": "Saisissez au moins deux lettres ou chiffres…"
+  },
+  "Waiting for a clinic": {
+   "ar": "ينتظرون العيادات",
+   "en": "Waiting for a clinic",
+   "fr": "En attente de consultation"
+  },
+  "When a patient fills in the reception tablet, it appears here for the desk to confirm.": {
+   "ar": "عندما يملأ مريض بياناته على جهاز الاستقبال تظهر هنا ليؤكدها الموظف.",
+   "en": "When a patient fills in the reception tablet, it appears here for the desk to confirm.",
+   "fr": "Quand un patient remplit la tablette d'accueil, cela apparaît ici pour confirmation."
+  },
+  "Where a patient is now, today at a glance, and what patients entered on the reception tablet": {
+   "ar": "أين المريض الآن، واليوم بنظرة واحدة، وما أدخله المرضى على جهاز الاستقبال",
+   "en": "Where a patient is now, today at a glance, and what patients entered on the reception tablet",
+   "fr": "Où est un patient, la journée en un coup d'œil, et la tablette d'accueil"
+  },
+  "Where is the patient now?": {
+   "ar": "أين المريض الآن؟",
+   "en": "Where is the patient now?",
+   "fr": "Où est le patient ?"
+  },
+  "With a doctor now": {
+   "ar": "مع الطبيب الآن",
+   "en": "With a doctor now",
+   "fr": "En consultation"
+  },
+  "now": {
+   "ar": "الآن",
+   "en": "now",
+   "fr": "en cours"
+  },
+  "since {0}": {
+   "ar": "منذ {0}",
+   "en": "since {0}",
+   "fr": "depuis {0}"
+  },
+  "where:ClinicInRoom": {
+   "ar": "في العيادة",
+   "en": "In clinic",
+   "fr": "En consultation"
+  },
+  "where:ClinicWaiting": {
+   "ar": "ينتظر العيادة",
+   "en": "Waiting for clinic",
+   "fr": "Attend la consultation"
+  },
+  "where:Emergency": {
+   "ar": "في الطوارئ",
+   "en": "In emergency",
+   "fr": "Aux urgences"
+  },
+  "where:Imaging": {
+   "ar": "في الأشعة",
+   "en": "At imaging",
+   "fr": "En imagerie"
+  },
+  "where:Theatre": {
+   "ar": "في العمليات",
+   "en": "In theatre",
+   "fr": "Au bloc"
+  },
+  "where:Ward": {
+   "ar": "منوَّم",
+   "en": "Admitted",
+   "fr": "Hospitalisé"
+  },
+  "Now:": {
+   "ar": "الآن:",
+   "en": "Now:",
+   "fr": "Maintenant :"
+  }
+ }
+}

@@ -27,6 +27,8 @@
     var initials = ((parts.Length > 0 ? parts[0][..1] : "") + (parts.Length > 1 ? parts[1][..1] : "")).ToUpperInvariant();
     bool canAdmit = ViewBag.CanAdmit == true;
     var current = ViewBag.Current as (HospitalAdmission Admission, HospitalBedStay Stay, string RoomNumber, string BedCode)?;
+    var whereNow = (ViewBag.Now as IReadOnlyList<HospitalWhere>) ?? Array.Empty<HospitalWhere>();   // H114
+    bool isArNow = System.Globalization.CultureInfo.CurrentUICulture.Name.StartsWith("ar");
     var stays = (ViewBag.Stays as IReadOnlyList<HospitalStayView>) ?? Array.Empty<HospitalStayView>();
     var sick = (ViewBag.SickLeaves as IReadOnlyList<HospitalSickLeaveRow>) ?? Array.Empty<HospitalSickLeaveRow>();   // H56
     bool sickReady = ViewBag.SickReady == true, canConsult = ViewBag.CanConsult == true;
@@ -87,6 +89,17 @@
     </div></div>
 
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (whereNow.Count > 0)
+        {
+            @* H114: where the patient is this minute — the most immediate place first *@
+            <div class="notice d-flex flex-wrap align-items-center gap-4 rounded border border-primary border-dashed bg-light-primary px-5 py-3 mb-5">
+                <span class="fw-bold text-primary fs-6"><i class="ki-outline ki-geolocation fs-3 text-primary me-1"></i>@T["Now:"]</span>
+                @foreach (var w in whereNow)
+                {
+                    <span class="fs-7 text-gray-800"><span class="fw-bold">@T["where:" + w.Kind]</span> · <bdi>@(isArNow ? w.Place : w.PlaceEn)</bdi>@if ((isArNow ? w.Detail : w.DetailEn) is string d) {<text> · <bdi class="text-muted">@d</bdi></text>}@if (w.Live) {<span class="badge badge-light-success fs-9 ms-1">@T["now"]</span>}</span>
+                }
+            </div>
+        }
 
         <div class="hp-pbanner p-6 mb-5">
             <div class="d-flex flex-wrap align-items-center gap-5">

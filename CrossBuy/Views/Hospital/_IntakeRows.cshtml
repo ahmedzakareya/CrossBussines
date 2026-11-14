@@ -20,3 +20,12 @@
         <td class="text-end"><a href="@Url.Action("IntakeReview", new { id = s.ID })" class="btn btn-sm @(alarm ? "btn-danger" : "btn-light-primary") text-nowrap">@T["Open"]</a></td>
     </tr>
 }
+@* H114: the list's body is replaced by these rows, so an empty list must say so itself *@
+@if (Model.Count == 0)
+{
+    <tr><td colspan="6" class="text-center py-10">
+        <i class="ki-outline ki-tablet fs-3x text-gray-300 d-block mb-3"></i>
+        <div class="fs-6 fw-semibold text-gray-700">@T["No intake waiting."]</div>
+        <div class="fs-8 text-muted mt-1">@T["When a patient fills in the reception tablet, it appears here for the desk to confirm."]</div>
+    </td></tr>
+}

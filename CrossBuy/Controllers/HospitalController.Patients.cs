@@ -129,6 +129,7 @@ namespace CrossBuy.Controllers
 			ViewBag.CanRegister = await _access.CanAsync(ctx, HospitalActions.Register, null, ct);
 			ViewBag.CanAdmit = await _access.CanAsync(ctx, HospitalActions.Admit, null, ct);
 			ViewBag.Current = await _admissions.CurrentAsync(ctx, p.ID, ct);
+			ViewBag.Now = (await WhereSvc.WhereAsync(ctx, new[] { p.ID }, DateTime.Now, ct)).GetValueOrDefault(p.ID);   // H114: where they are now
 			ViewBag.Stays = await _admissions.StaysAsync(ctx, p.ID, ct);
 			var (sick, sickReady) = await SickSvc.ListAsync(ctx, p.ID, ct);   // H56
 			ViewBag.SickLeaves = sick; ViewBag.SickReady = sickReady;
