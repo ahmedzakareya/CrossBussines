@@ -226,9 +226,13 @@
             // a BATCH is every call one refresh found: one call keeps the big single view, several share one window
             function announce(batch) { if (!batch.length) return; queue.push(batch); if (!showing) next(); }
             function sayAll(batch) {
-                // owner 2026-11-13: the call is spoken in ENGLISH and says only the ticket and the clinic ("Ticket A 4,
-                // Paediatrics clinic"); the window still shows the room and the doctor
-                batch.forEach(function (c) { say('Ticket A ' + c.num + ', ' + c.depEn + ' clinic', 'en'); });
+                // the call speaks the DISPLAY's language (the header's switch) and says only the ticket and the clinic:
+                // "التذكرة A 4، عيادة الأطفال" on the Arabic screen, "Ticket A 4, Paediatrics clinic" on the English one.
+                // The window still shows the room and the doctor.
+                batch.forEach(function (c) {
+                    if (isAr) say('التذكرة A ' + c.num + '، عيادة ' + c.depAr, 'ar');
+                    else say('Ticket A ' + c.num + ', ' + c.depEn + ' clinic', 'en');
+                });
             }
             function next() {
                 var batch = queue.shift(); if (!batch) { showing = false; callEl.classList.remove('is-on'); return; }
