@@ -283,7 +283,18 @@
                                             }
                                             @if (calc)
                                             {
+                                                @if (c.ValueType == HospitalConceptType.Score && c.Calculator == HospitalConceptCalculator.Sum)
+                                                {
+                                                    @* H118: a sum score adds itself up as its items are typed — and its alert shows the moment it crosses *@
+                                                    <input class="form-control form-control-solid fw-bold" readonly dir="ltr" data-sum="@c.CalcInputs" placeholder="@T["Adds up as you answer"]"
+                                                           data-lo="@D(c.NormalLow)" data-hi="@D(c.NormalHigh)" data-alert-above="@D(f.AlertAbove)" data-alert-below="@D(f.AlertBelow)" data-alert-text="@(isAr ? f.AlertText : f.AlertTextEn ?? f.AlertText)"
+                                                           data-bands="@string.Join("\n", HospitalConceptRules.Choices(c.Choices).Select(b => b.Code + "|" + (isAr ? b.Ar : b.En)))" />
+                                                    @if (lastObs != null) {<div class="text-muted fs-9 mt-1">@T["Last: {0} on {1}", Val(c, lastObs), lastObs.At.ToString("yyyy-MM-dd")]</div>}
+                                                }
+                                                else
+                                                {
                                                 <input class="form-control form-control-solid" readonly dir="ltr" value="@(lastObs == null ? "" : Val(c, lastObs) + (c.Calculator == HospitalConceptCalculator.EgfrCkdEpi2021 && lastObs.Value is decimal eg ? " → " + HospitalClinicalCalc.GCategory(eg) : ""))" placeholder="@T["Computed at sign-off"]" />
+                                                }
                                             }
                                             else if (c.ValueType == HospitalConceptType.Choice)
                                             {
@@ -630,7 +641,20 @@
                 var hit = (!isNaN(v) && ((!isNaN(a) && v >= a) || (!isNaN(b) && v <= b))) || (i.dataset.alertRange === '1' && outside(i));
                 if (hit && !msg) { msg = document.createElement('div'); msg.setAttribute('data-alert-msg', ''); msg.className = 'rounded bg-light-danger text-danger fw-bold fs-8 px-3 py-2 mt-2'; box.appendChild(msg); }
                 if (msg) { msg.textContent = hit ? '⚠ ' + i.dataset.alertText : ''; msg.classList.toggle('d-none', !hit); } }
-            if (form) form.querySelectorAll('[data-alert-text]').forEach(function (i) { if (i.dataset.alertText) alertOf(i); });
+            if (form) form.querySelectorAll('[data-alert-text]').forEach(function (i) { if (i.dataset.alertText && !i.dataset.sum) alertOf(i); });
+            sums();
+            // H118: each sum score adds up its items on this form as they are typed (all answered, or empty), names its band,
+            // and raises its alert at once — the signature computes the same sum again on the server
+            function sums() { if (!form) return; form.querySelectorAll('[data-sum]').forEach(function (s) {
+                var scope = s.closest('[data-form]') || form, total = 0, all = true;
+                s.dataset.sum.split(',').map(function (x) { return x.trim(); }).filter(Boolean).forEach(function (code) {
+                    var i = scope.querySelector('[data-key][data-code="' + code + '"]:not([data-mirror])'), v = i ? parseFloat((i.value || '').trim()) : NaN;
+                    if (isNaN(v)) all = false; else total += v; });
+                if (!all) { s.value = ''; s.removeAttribute('title'); } else {
+                    var band = ''; (s.dataset.bands || '').split('\n').forEach(function (b) { var p = b.split('|'); if (p.length > 1 && total >= parseFloat(p[0])) band = p[1]; });
+                    s.value = total + (band ? '  —  ' + band : ''); }
+                var probe = { value: all ? String(total) : '', dataset: s.dataset, parentNode: s.parentNode };
+                if (s.dataset.alertText) alertOf(probe); }); }
             function mirror(i) { if (!i.dataset.code || i.dataset.mirror) return; form.querySelectorAll('[data-mirror][data-code="' + i.dataset.code + '"][data-side="' + (i.dataset.side || '') + '"]').forEach(function (m) { m.value = i.value; }); }
             var timer = null, st = document.getElementById('saveState');
             // H106: what the save set off — the on-call doctor told, a template opened (once; the server never sends twice)
@@ -642,7 +666,7 @@
             }
             function autosave() { clearTimeout(timer); timer = setTimeout(function () { post(base + '/Save', answers()).then(function (res) { if (st) st.textContent = res.ok ? W.saved : (res.error || W.failed); if (!res.ok) toastr.error(res.error || W.failed); else escalation(res); }); }, 900); }
             if (form) { cond();
-                form.addEventListener('input', function (e) { if (e.target.matches('[data-key]')) { mirror(e.target); range(e.target); if (e.target.dataset.alertText) alertOf(e.target); cond(); if (document.querySelector('[data-sign]')) autosave(); } });
+                form.addEventListener('input', function (e) { if (e.target.matches('[data-key]')) { mirror(e.target); range(e.target); if (e.target.dataset.alertText) alertOf(e.target); cond(); sums(); if (document.querySelector('[data-sign]')) autosave(); } });
                 form.addEventListener('change', function (e) { if (e.target.matches('[data-key]')) { mirror(e.target); cond(); if (document.querySelector('[data-sign]')) autosave(); } });
                 if (window.jQuery) jQuery(form).find('select[data-key]').on('change', function () { mirror(this); cond(); if (document.querySelector('[data-sign]')) autosave(); });   // select2 changes never reach addEventListener
             }

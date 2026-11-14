@@ -188,6 +188,38 @@ namespace CrossBuy.BL.Hospital
 			return made;
 		}
 
+		/// H118: the values typed so far — a draft, so a field still empty (even a required one) or unreadable is simply
+		/// not there yet, never a refusal.
+		public static List<HospitalFormValue> Typed(IReadOnlyList<HospitalTemplateFieldView> fields, IReadOnlyDictionary<string, string> answers)
+		{
+			var all = fields.ToDictionary(f => f.Field.ID, f => f.Field);
+			var list = new List<HospitalFormValue>();
+			foreach (var fv in fields)
+			{
+				if (fv.Concept.ValueType is HospitalConceptType.Calculated || fv.Concept.ValueType == HospitalConceptType.Score && fv.Concept.Calculator == HospitalConceptCalculator.Sum) continue;
+				if (!Visible(fv.Field, all, answers)) continue;
+				foreach (var side in Sides(fv.Concept))
+				{
+					if (!answers.TryGetValue(Key(fv.Field.ID, side), out var raw) || string.IsNullOrWhiteSpace(raw)) continue;
+					var (v, v2, code, err) = Parse(fv.Concept, raw);
+					if (err == null && (v != null || code != null)) list.Add(new HospitalFormValue(fv.Field, fv.Concept, side, v, v2, code));
+				}
+			}
+			return list;
+		}
+
+		/// H118: the answers with the form's SUM scores added as they stand now (each under its own field's key), so an
+		/// alert on a score is judged on save like any typed value. Only a score whose every item is answered is added.
+		public static Dictionary<string, string> WithScores(IReadOnlyList<HospitalTemplateFieldView> fields, IReadOnlyDictionary<string, string> answers)
+		{
+			var outp = new Dictionary<string, string>(answers);
+			var sums = fields.Where(f => f.Concept.ValueType == HospitalConceptType.Score && f.Concept.Calculator == HospitalConceptCalculator.Sum).ToList();
+			if (sums.Count == 0) return outp;
+			foreach (var m in Compute(sums, Typed(fields, answers), null, false, new Dictionary<string, decimal>()))
+				if (m.Value is decimal v) outp[Key(m.Field.ID, null)] = v.ToString(CultureInfo.InvariantCulture);
+			return outp;
+		}
+
 		public static Dictionary<string, string> Answers(string? json)
 		{
 			try { return JsonSerializer.Deserialize<Dictionary<string, string>>(string.IsNullOrWhiteSpace(json) ? "{}" : json) ?? new(); }

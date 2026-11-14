@@ -91,9 +91,16 @@ namespace CrossBuy.BL.Hospital
 					eff = (await ranges.ForPatientAsync(ctx, await Q<HospitalConcept>(ctx).AsNoTracking().Where(c => cids.Contains(c.ID)).ToListAsync(ct), patient, nowUtc, ct)).ToDictionary(c => c.ID);
 					facts = await ranges.FactsAsync(ctx, patient, nowUtc, ct);
 				}
+				// H118: a score's alert (compartment syndrome, sudden hearing loss) is judged on the score as the items stand now
+				var formFields = await Q<HospitalClinicalTemplateField>(ctx).AsNoTracking().Where(x => versions.Contains(x.VersionId)).ToListAsync(ct);
+				var fcids = formFields.Select(x => x.ConceptId).Distinct().ToList();
+				var fconcepts = await Q<HospitalConcept>(ctx).AsNoTracking().Where(c => fcids.Contains(c.ID)).ToDictionaryAsync(c => c.ID, ct);
 				foreach (var f in forms)
 				{
 					var answers = HospitalFormRules.Answers(f.AnswersJson);
+					var mine = formFields.Where(x => x.VersionId == f.TemplateVersionId).ToList();
+					if (mine.Any(x => fconcepts.TryGetValue(x.ConceptId, out var cc) && cc.ValueType == HospitalConceptType.Score && cc.Calculator == HospitalConceptCalculator.Sum))
+						answers = HospitalFormRules.WithScores(mine.Where(x => fconcepts.ContainsKey(x.ConceptId)).Select(x => new HospitalTemplateFieldView(x, fconcepts[x.ConceptId], mine.FirstOrDefault(y => y.ID == x.ShowWhenFieldId))).ToList(), answers);
 					foreach (var x in fields.Where(x => x.VersionId == f.TemplateVersionId && HospitalFieldAlertRules.Fires(x, answers, eff.GetValueOrDefault(x.ConceptId), facts))) firing.Add((f, x));
 				}
 				if (firing.Count == 0) return new(null, null, false, Array.Empty<int>());
