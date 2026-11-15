@@ -11,30 +11,36 @@
 @foreach (var r in Model.Rows)
 {
     var s = r.Session; var o = r.Outcome; var p = r.Plan;
-    string tone = r.State == HospitalDialysisDayState.Running ? "info" : r.State == HospitalDialysisDayState.Done ? "success" : r.State == HospitalDialysisDayState.Missed ? "secondary" : "primary";
+    // H125: the theme's table rows (demo39 widgets/tables) — the person with their photo, a muted line under each figure, badges for the state and the risks
+    string tone = r.State == HospitalDialysisDayState.Running ? "info" : r.State == HospitalDialysisDayState.Done ? "success" : r.State == HospitalDialysisDayState.Missed ? "dark" : "primary";
     <tr>
-        <td><a href="@Url.Action("DialysisPatient", new { patientId = p.PatientId })" class="fw-bold text-gray-900 text-hover-primary">@DisplayName.Of(r.Name, r.NameEn)</a>
-            <div class="text-muted fs-8"><bdi class="hp-num">@r.Mrn</bdi> · @T["dxa:" + p.Access] · <span class="text-nowrap">@T["{0} h", (p.DurationMin / 60m).ToString("0.#")]</span></div></td>
-        <td class="text-nowrap">@T["Shift {0}", s?.Shift ?? p.Shift]@if (s?.Station != null) {<div class="text-muted fs-8">@T["Station"] <bdi class="hp-num fw-bold">@s.Station</bdi></div>}</td>
-        <td><span class="badge badge-light-@tone fs-8">@T["dxs:" + r.State]</span>
-            @if (r.MinutesOn is int m) {<div class="text-muted fs-9 mt-1">@T["{0} of {1} min", m, s!.PlannedMin]</div>}
-            @if (s?.MissedReason != null) {<div class="text-muted fs-9 mt-1"><bdi>@s.MissedReason</bdi></div>}</td>
-        <td class="hp-num fs-8">@if (s?.PreWeightKg != null) {<div><span class="fw-bold fs-7">@F1(s.PreWeightKg)</span> kg</div>
-                @if (o?.GainPct != null) {<div class="@(o.GainPct > HospitalDialysisRules.MaxGainPct ? "text-danger fw-bold" : "text-muted")">+@F1(o.GainKg) kg (@F1(o.GainPct) %)</div>}
-                @if (s.PreSbp != null) {<div class="text-muted" dir="ltr">@s.PreSbp/@s.PreDbp</div>}} else {<span class="text-muted">—</span>}</td>
-        <td class="fs-8">@if (r.State == HospitalDialysisDayState.Running) {
-                if (r.Last != null) {<div dir="ltr" class="hp-num @(r.Last.Sbp < HospitalDialysisRules.HypotensionNadir ? "text-danger fw-bold" : "")">@(r.Last.Sbp != null ? r.Last.Sbp + "/" + r.Last.Dbp : "—")</div>
-                    <div class="text-muted">@T["UF"] <bdi class="hp-num">@(r.Last.UfMl?.ToString() ?? "—") / @(s!.UfGoalMl?.ToString() ?? "—") ml</bdi></div>} else {<span class="text-muted">@T["No reading yet"]</span>}
-            } else if (r.State == HospitalDialysisDayState.Done) {<div class="hp-num"><span class="fw-bold fs-7">@F1(s!.PostWeightKg)</span> kg</div><div class="text-muted">@T["UF"] <bdi class="hp-num">@o!.UfMl ml · @F1(o.UfRate) ml/kg/h</bdi></div>
-            } else {<span class="text-muted">—</span>}</td>
-        <td class="hp-num fs-8">@if (o?.KtV != null || o?.Urr != null) {<div>Kt/V <span class="fw-bold @(o.KtV < HospitalDialysisRules.MinKtV ? "text-danger" : "text-success")">@(o.KtV?.ToString("0.00") ?? "—")</span></div><div class="text-muted">URR @F1(o.Urr) %</div>} else {<span class="text-muted">—</span>}</td>
-        <td>@if (o == null || o.Warnings.Count == 0) {<span class="text-muted fs-8">—</span>} else {<div class="d-flex flex-wrap gap-1">@foreach (var w in o.Warnings) {<span class="badge badge-light-danger fs-9">@T["dxw:" + w]</span>}</div>}</td>
-        <td class="text-end text-nowrap">
-            @if (s != null && s.Status != HospitalDialysisSessionStatus.Missed) {<a href="@Url.Action("DialysisSession", new { id = s.ID })" class="btn btn-sm btn-light-primary">@T["Open"]</a>}
+        <td class="ps-4"><div class="d-flex align-items-center">
+            <div class="symbol symbol-40px symbol-circle me-3 flex-shrink-0">@if (r.Photo != null) {<img src="@r.Photo" alt="" style="object-fit:cover" />} else {<span class="symbol-label fw-bold hp-initials fs-7">@HospitalUi.Initials(r.NameEn ?? r.Name)</span>}</div>
+            <div class="d-flex flex-column"><a href="@Url.Action("DialysisPatient", new { patientId = p.PatientId })" class="text-gray-900 fw-bold text-hover-primary fs-6">@DisplayName.Of(r.Name, r.NameEn)</a>
+                <span class="text-gray-500 fw-semibold fs-7"><bdi class="hp-num">@r.Mrn</bdi> · @T["dxa:" + p.Access] · <span class="text-nowrap">@T["{0} h", (p.DurationMin / 60m).ToString("0.#")]</span></span></div>
+        </div></td>
+        <td class="text-nowrap"><span class="text-gray-800 fw-bold fs-6">@T["Shift {0}", s?.Shift ?? p.Shift]</span>@if (s?.Station != null) {<span class="text-gray-500 fw-semibold fs-7 d-block">@T["Station"] <bdi class="hp-num">@s.Station</bdi></span>}</td>
+        <td><span class="badge badge-light-@tone fs-7 fw-bold">@T["dxs:" + r.State]</span>
+            @if (r.MinutesOn is int m) {<span class="text-gray-500 fw-semibold fs-8 d-block mt-1">@T["{0} of {1} min", m, s!.PlannedMin]</span>}
+            @if (s?.MissedReason != null) {<span class="text-gray-500 fw-semibold fs-8 d-block mt-1"><bdi>@s.MissedReason</bdi></span>}</td>
+        <td>@if (s?.PreWeightKg != null) {<span class="text-gray-800 fw-bold fs-6 hp-num d-block" dir="ltr">@F1(s.PreWeightKg)&nbsp;kg</span>
+                @if (o?.GainPct != null) {<span class="badge badge-light-@(o.GainPct > HospitalDialysisRules.MaxGainPct ? "danger" : "success") fs-8 fw-bold hp-num mt-1" dir="ltr">+@F1(o.GainKg)&nbsp;kg · @F1(o.GainPct)&nbsp;%</span>}
+                @if (s.PreSbp != null) {<span class="text-gray-500 fw-semibold fs-7 hp-num d-block mt-1" dir="ltr">@s.PreSbp/@s.PreDbp</span>}} else {<span class="text-gray-400">—</span>}</td>
+        <td>@if (r.State == HospitalDialysisDayState.Running) {
+                if (r.Last != null) {<span class="badge badge-light-@(r.Last.Sbp < HospitalDialysisRules.HypotensionNadir ? "danger" : "primary") fs-7 fw-bold hp-num" dir="ltr">@(r.Last.Sbp != null ? r.Last.Sbp + "/" + r.Last.Dbp : "—")</span>
+                    <span class="text-gray-500 fw-semibold fs-7 d-block mt-1">@T["UF"] <bdi class="hp-num">@(r.Last.UfMl?.ToString() ?? "—") / @(s!.UfGoalMl?.ToString() ?? "—")&nbsp;ml</bdi></span>} else {<span class="text-gray-500 fw-semibold fs-7">@T["No reading yet"]</span>}
+            } else if (r.State == HospitalDialysisDayState.Done) {<span class="text-gray-800 fw-bold fs-6 hp-num d-block" dir="ltr">@F1(s!.PostWeightKg)&nbsp;kg</span>
+                <span class="text-gray-500 fw-semibold fs-7 d-block mt-1">@T["UF"] <bdi class="hp-num">@o!.UfMl&nbsp;ml · @F1(o.UfRate)&nbsp;ml/kg/h</bdi></span>
+            } else {<span class="text-gray-400">—</span>}</td>
+        <td>@if (o?.KtV != null || o?.Urr != null) {<span class="badge badge-light-@(o.KtV < HospitalDialysisRules.MinKtV ? "danger" : "success") fs-7 fw-bold hp-num" dir="ltr">Kt/V @(o.KtV?.ToString("0.00") ?? "—")</span>
+                <span class="text-gray-500 fw-semibold fs-7 hp-num d-block mt-1" dir="ltr">URR @F1(o.Urr)&nbsp;%</span>} else {<span class="text-gray-400">—</span>}</td>
+        <td>@if (o == null || o.Warnings.Count == 0) {<span class="text-gray-400">—</span>} else {<div class="d-flex flex-wrap gap-1">@foreach (var w in o.Warnings) {<span class="badge badge-light-danger fs-8 fw-bold">@T["dxw:" + w]</span>}</div>}</td>
+        <td class="text-end text-nowrap pe-4">
+            @if (s != null && s.Status != HospitalDialysisSessionStatus.Missed) {<a href="@Url.Action("DialysisSession", new { id = s.ID })" class="btn btn-sm btn-icon btn-bg-light btn-active-color-primary" title="@T["Open"]" data-bs-toggle="tooltip"><i class="ki-outline ki-arrow-@(System.Globalization.CultureInfo.CurrentUICulture.TextInfo.IsRightToLeft ? "left" : "right") fs-2"></i></a>}
             else if (s == null && canTreat)
             {
                 if (Model.Day == today) {<button type="button" class="btn btn-sm btn-primary" data-dx-start="@p.ID" data-who="@DisplayName.Of(r.Name, r.NameEn) — @r.Mrn" data-dry="@p.DryWeightKg.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture)">@T["Start dialysis"]</button>}
-                if (Model.Day <= today) {<button type="button" class="btn btn-sm btn-light ms-1" data-dx-miss="@p.ID">@T["Mark missed"]</button>}
+                if (Model.Day <= today) {<button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-danger ms-1" data-dx-miss="@p.ID" title="@T["Mark missed"]" data-bs-toggle="tooltip"><i class="ki-outline ki-cross-circle fs-2"></i></button>}
             }
         </td>
     </tr>

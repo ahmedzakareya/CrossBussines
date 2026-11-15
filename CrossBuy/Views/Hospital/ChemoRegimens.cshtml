@@ -27,10 +27,16 @@
         @if (!ready) { <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice"><div class="fs-6 text-gray-700">@T[HospitalOncologyService.NoTables]</div></div> }
         else
         {
-            <div class="notice d-flex rounded border border-dashed p-4 mb-5 hp-notice fs-7 text-gray-700">@T["The library ships empty: the oncologists and the pharmacy enter the hospital's own protocols, and each dose is computed from them."]</div>
-            <div class="card">
-                <div class="card-header border-0 pt-6 flex-wrap gap-3">
-                    <div class="card-title flex-column m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Regimens"]</span><span class="text-muted fs-7 mt-1"><span id="resultCount">—</span></span></div>
+            <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-5 mb-5">
+                <i class="ki-outline ki-information-5 fs-2tx text-primary me-4"></i>
+                <div class="d-flex flex-stack flex-grow-1"><div class="fw-semibold">
+                    <h4 class="text-gray-900 fw-bold mb-1">@T["The hospital's own protocols"]</h4>
+                    <div class="fs-6 text-gray-700">@T["The library ships empty: the oncologists and the pharmacy enter the hospital's own protocols, and each dose is computed from them."]</div>
+                </div></div>
+            </div>
+            <div class="card card-flush">
+                <div class="card-header pt-5 flex-wrap gap-3">
+                    <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Regimens"]</span><span class="text-gray-500 mt-1 fw-semibold fs-7"><span id="resultCount">—</span></span></h3>
                     <div class="card-toolbar d-flex flex-wrap align-items-center gap-2">
                         <div class="w-250px"><input type="text" id="f_q" class="form-control form-control-solid form-control-sm" autocomplete="off" placeholder="@T["Search by code, name or drug…"]" /></div>
                         <div class="w-75px"><select id="f_size" class="form-select form-select-solid form-select-sm"><option value="25">25</option><option value="50">50</option><option value="100">100</option></select></div>
@@ -38,9 +44,10 @@
                     </div>
                 </div>
                 <div class="card-body pt-2">
-                    <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-3 mb-0">
-                        <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0"><th>@T["Regimen"]</th><th>@T["Cycle"]</th><th class="min-w-300px">@T["Drugs"]</th><th>@T["Courses on it"]</th><th class="text-end"></th></tr></thead>
-                        <tbody id="rows"><tr id="loadingRow"><td colspan="5" class="text-center text-muted py-10">@T["Loading…"]</td></tr><tr id="emptyRow" class="d-none"><td colspan="5" class="text-center text-muted py-10">@T["No regimen yet."]</td></tr></tbody>
+                    <div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
+                        <thead><tr class="fw-bold text-muted bg-light"><th class="ps-4 min-w-250px rounded-start">@T["Regimen"]</th><th class="min-w-125px">@T["Cycle"]</th><th class="min-w-300px">@T["Drugs"]</th><th class="min-w-100px">@T["Courses on it"]</th><th class="pe-4 text-end rounded-end"></th></tr></thead>
+                        <tbody id="rows"><tr id="loadingRow"><td colspan="5" class="text-center text-muted py-10"><span class="spinner-border spinner-border-sm text-primary me-2"></span>@T["Loading…"]</td></tr>
+                            <tr id="emptyRow" class="d-none"><td colspan="5" class="text-center py-12"><i class="ki-outline ki-capsule fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-semibold text-gray-600">@T["No regimen yet."]</div></td></tr></tbody>
                     </table></div>
                     <div class="d-flex flex-stack flex-wrap pt-5"><div class="fs-7 text-muted" id="pageInfo"></div><ul class="pagination" id="pager"></ul></div>
                 </div>
@@ -51,22 +58,40 @@
                 var dlinks = (ViewBag.DrugLinks as IReadOnlyList<HospitalChemoDrugLinkRow>) ?? Array.Empty<HospitalChemoDrugLinkRow>();
                 var meds = (ViewBag.Medicines as IReadOnlyList<(int Id, string Code, string Name, string NameEn, decimal? Price)>) ?? Array.Empty<(int, string, string, string, decimal?)>();
                 bool canPh = ViewBag.CanPharmacy == true;
-                <div class="card mt-5">
-                    <div class="card-header border-0 pt-6"><div class="card-title flex-column m-0">
-                        <span class="card-label fw-bold text-gray-900 fs-4"><i class="ki-outline ki-capsule fs-3 text-primary me-1"></i>@T["Pharmacy stock for each drug"]</span>
-                        <span class="text-muted fs-7 mt-1">@T["A cycle given sends its drugs to the pharmacy: each is prepared from the item linked here, in whole units — a vial is never shared between patients."]</span></div></div>
+                int linkedN = dlinks.Count(d => d.Link != null), unlinkedN = dlinks.Count - linkedN;
+                var inv = System.Globalization.CultureInfo.InvariantCulture;
+                <div class="card card-flush mt-5">
+                    <div class="card-header pt-5">
+                        <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Pharmacy stock for each drug"]</span>
+                            <span class="text-gray-500 mt-1 fw-semibold fs-7 mw-650px">@T["A cycle given sends its drugs to the pharmacy: each is prepared from the item linked here, in whole units — a vial is never shared between patients."]</span></h3>
+                        @if (dlinks.Count > 0)
+                        {
+                            <div class="card-toolbar gap-2">
+                                <span class="badge badge-light-success fs-7 fw-bold py-3 px-4">@T["{0} linked", linkedN]</span>
+                                @if (unlinkedN > 0) {<span class="badge badge-light-danger fs-7 fw-bold py-3 px-4">@T["{0} not linked", unlinkedN]</span>}
+                            </div>
+                        }
+                    </div>
                     <div class="card-body pt-2">
-                        @if (dlinks.Count == 0) { <div class="text-center text-muted py-8">@T["No regimen names a drug yet."]</div> }
+                        @if (dlinks.Count == 0)
+                        {
+                            <div class="text-center py-10"><i class="ki-outline ki-capsule fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-semibold text-gray-600">@T["No regimen names a drug yet."]</div></div>
+                        }
                         else
                         {
-                            <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-3 mb-0">
-                                <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0"><th>@T["Drug"]</th><th>@T["Regimens"]</th><th class="min-w-250px">@T["Stock item"]</th><th class="w-125px">@T["mg per unit"]</th><th class="text-end"></th></tr></thead>
+                            <div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
+                                <thead><tr class="fw-bold text-muted bg-light"><th class="ps-4 min-w-200px rounded-start">@T["Drug"]</th><th class="min-w-100px">@T["Regimens"]</th><th class="min-w-300px">@T["Stock item"]</th><th class="w-150px">@T["mg per unit"]</th><th class="pe-4 text-end rounded-end"></th></tr></thead>
                                 <tbody>
                                 @foreach (var d in dlinks)
                                 {
+                                    bool linked = d.Link != null;
                                     <tr data-dl="@d.DrugName">
-                                        <td><bdi dir="ltr" class="fw-bold text-gray-900">@d.DrugName</bdi>@if (d.Link == null) {<div><span class="badge badge-light-danger fs-9 mt-1">@T["Not linked"]</span></div>}</td>
-                                        <td class="hp-num">@d.Regimens</td>
+                                        <td class="ps-4"><div class="d-flex align-items-center">
+                                            <div class="symbol symbol-45px me-4"><span class="symbol-label bg-light-@(linked ? "success" : "danger")"><i class="ki-outline ki-@(linked ? "check-circle" : "cross-circle") fs-2 text-@(linked ? "success" : "danger")"></i></span></div>
+                                            <div class="d-flex flex-column"><bdi dir="ltr" class="text-gray-900 fw-bold fs-6">@d.DrugName</bdi>
+                                                <span class="badge badge-light-@(linked ? "success" : "danger") fs-8 fw-bold mt-1 align-self-start">@T[linked ? "Linked" : "Not linked"]</span></div>
+                                        </div></td>
+                                        <td><span class="badge badge-light-primary fs-7 fw-bold hp-num">@d.Regimens</span></td>
                                         <td>@if (canPh)
                                             {
                                                 <select class="form-select form-select-sm form-select-solid" data-dl-item data-control="select2" data-placeholder="@T["Choose the stock item"]">
@@ -74,10 +99,17 @@
                                                     @foreach (var m in meds) {<option value="@m.Id" selected="@(d.Link?.ItemId == m.Id)">@m.Code — @DisplayName.Of(m.Name, m.NameEn)</option>}
                                                 </select>
                                             }
-                                            else {<span>@(d.ItemName == null ? "—" : d.ItemCode + " — " + d.ItemName)</span>}</td>
-                                        <td>@if (canPh) {<input type="number" min="0" step="any" class="form-control form-control-sm form-control-solid" dir="ltr" data-dl-mg value="@(d.Link?.MgPerUnit.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))" placeholder="50" />}
-                                            else {<span class="hp-num">@(d.Link?.MgPerUnit.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) ?? "—")</span>}</td>
-                                        <td class="text-end">@if (canPh) {<button type="button" class="btn btn-sm btn-light-primary" data-dl-save><i class="ki-outline ki-check fs-5"></i>@T["Save"]</button>}</td>
+                                            else if (d.ItemName == null) {<span class="text-gray-400 fw-bold">—</span>}
+                                            else {<span class="text-gray-800 fw-bold fs-7"><bdi dir="ltr">@d.ItemCode</bdi> — @d.ItemName</span>}</td>
+                                        <td>@if (canPh)
+                                            {
+                                                <div class="input-group input-group-sm input-group-solid" dir="ltr">
+                                                    <input type="number" min="0" step="any" class="form-control form-control-sm form-control-solid" data-dl-mg value="@(d.Link?.MgPerUnit.ToString("0.##", inv))" placeholder="50" />
+                                                    <span class="input-group-text fs-8 fw-bold">mg</span>
+                                                </div>
+                                            }
+                                            else {<span class="text-gray-800 fw-bold hp-num" dir="ltr">@(d.Link == null ? "—" : d.Link.MgPerUnit.ToString("0.##", inv) + " mg")</span>}</td>
+                                        <td class="pe-4 text-end">@if (canPh) {<button type="button" class="btn btn-sm btn-light-primary text-nowrap" data-dl-save><i class="ki-outline ki-check fs-5"></i>@T["Save"]</button>}</td>
                                     </tr>
                                 }
                                 </tbody>
@@ -93,7 +125,7 @@
 @if (ready && canLib)
 {
     <div class="modal fade" id="regModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-900px"><div class="modal-content">
-        <div class="modal-header"><h2 class="fw-bold m-0" id="regTitle">@T["New regimen"]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-header border-0 pb-0"><h2 class="fw-bold m-0" id="regTitle">@T["New regimen"]</h2><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
         <div class="modal-body py-6 px-lg-10"><div class="row g-4">
             <div class="col-3"><label class="form-label required">@T["Code"]</label><input type="text" maxlength="30" class="form-control form-control-solid" dir="ltr" data-r="code" placeholder="AC" /></div>
             <div class="col-5"><label class="form-label required">@T["Name"]</label><input type="text" maxlength="150" class="form-control form-control-solid" data-r="name" /></div>
@@ -103,7 +135,7 @@
             <div class="col-6 d-flex align-items-end"><label class="form-check form-switch form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" data-r="isActive" checked /><span class="form-check-label">@T["In the library"]</span></label></div>
             <div class="col-12">
                 <div class="d-flex flex-stack mb-2"><label class="form-label required m-0">@T["Drugs"]</label><button type="button" class="btn btn-sm btn-light-primary" data-drug-add><i class="ki-outline ki-plus fs-5"></i>@T["Add a drug"]</button></div>
-                <table class="table table-row-dashed align-middle fs-7 gy-2 mb-0"><thead><tr class="text-gray-500 fw-bold fs-8"><th>@T["Drug"]</th><th class="w-90px">@T["Dose"]</th><th class="w-125px">@T["Basis"]</th><th class="w-90px">@T["Route"]</th><th class="w-100px">@T["Days of the cycle"]</th><th class="w-110px">@T["Lifetime limit (mg/m²)"]</th><th class="w-40px"></th></tr></thead>
+                <table class="table align-middle gs-0 gy-2 mb-0"><thead><tr class="fw-bold text-muted bg-light fs-8"><th class="ps-3 rounded-start">@T["Drug"]</th><th class="w-90px">@T["Dose"]</th><th class="w-125px">@T["Basis"]</th><th class="w-90px">@T["Route"]</th><th class="w-100px">@T["Days of the cycle"]</th><th class="w-110px">@T["Lifetime limit (mg/m²)"]</th><th class="w-40px rounded-end"></th></tr></thead>
                     <tbody id="drugRows"></tbody></table>
                 <template id="drugTpl"><tr>
                     <td><input type="text" maxlength="100" class="form-control form-control-sm form-control-solid" dir="ltr" data-d="drugName" /></td>
@@ -117,7 +149,7 @@
             </div>
             <div class="col-12"><label class="form-label">@T["Note"]</label><textarea rows="2" maxlength="500" class="form-control form-control-solid" data-r="note" placeholder="@T["Premedication, hydration, reference…"]"></textarea></div>
         </div></div>
-        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-reg-save>@T["Save"]</button></div>
+        <div class="modal-footer flex-center border-0 pt-0 pb-8"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-reg-save>@T["Save"]</button></div>
     </div></div></div>
 }
 

@@ -2,20 +2,41 @@
 @using CrossBuy.BL.Hospital
 @model IReadOnlyList<HospitalChemoCourseRow>
 @inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
-@{ var today = (DateTime)ViewBag.Today; }
+@*
+    H125 — the courses list's rows in the theme's table widget (demo39 widgets/tables): a symbol and the patient over a
+    muted line, the regimen and the diagnosis over their detail, the cycles as "n of m" with a progress bar, the next
+    cycle and the last toxicity as badges, an icon button to open.
+*@
+@{ var today = (DateTime)ViewBag.Today; bool isAr = System.Globalization.CultureInfo.CurrentUICulture.Name.StartsWith("ar"); }
 @foreach (var r in Model)
 {
     var c = r.Course;
+    int pct = r.MaxCycles == 0 ? 0 : Math.Clamp(r.Given * 100 / r.MaxCycles, 0, 100);
     <tr>
-        <td><a href="@Url.Action("ChemoCourse", new { id = c.ID })" class="fw-bold text-gray-900 text-hover-primary">@DisplayName.Of(r.Name, r.NameEn)</a>
-            <div class="text-muted fs-8"><span class="badge hp-code fs-9 hp-num me-1">@c.CourseNo</span><bdi class="hp-num">@r.Mrn</bdi></div></td>
-        <td class="fs-8"><bdi>@r.Regimen</bdi><div class="text-muted">@T["cin:" + c.Intent]</div></td>
-        <td class="fs-8"><bdi>@c.Diagnosis</bdi>@if (c.Stage != null) {<div class="text-muted"><bdi dir="ltr">@c.Stage</bdi></div>}</td>
-        <td><span class="fw-bold hp-num">@r.Given / @r.MaxCycles</span>
-            <div class="progress h-4px w-75px mt-1 bg-light"><div class="progress-bar bg-primary" style="width:@(r.MaxCycles == 0 ? 0 : r.Given * 100 / r.MaxCycles)%"></div></div></td>
-        <td class="text-nowrap">@if (r.NextDue is DateTime d) {<span class="hp-num fw-semibold @(r.Overdue ? "text-danger" : d <= today.AddDays(2) ? "text-primary" : "")">@d.ToString("yyyy-MM-dd")</span>
-                if (r.Overdue) {<div class="text-danger fs-9 fw-bold">@T["Overdue"]</div>} else if (r.Held) {<div class="text-muted fs-9">@T["Held"]</div>}} else {<span class="text-muted fs-8">@T["All cycles given"]</span>}</td>
-        <td>@if (r.LastToxicity is int g) {<span class="badge @(g >= 3 ? "badge-light-danger" : g >= 1 ? "badge-light-primary" : "badge-light") fs-8">@T["Grade {0}", g]</span>} else {<span class="text-muted fs-8">—</span>}</td>
-        <td class="text-end"><a href="@Url.Action("ChemoCourse", new { id = c.ID })" class="btn btn-sm btn-light-primary text-nowrap">@T["Open"]</a></td>
+        <td class="ps-4">
+            <div class="d-flex align-items-center">
+                <div class="symbol symbol-40px symbol-circle me-3"><span class="symbol-label bg-light-primary text-primary fw-bold">@HospitalUi.Initials(r.NameEn)</span></div>
+                <div class="d-flex flex-column">
+                    <a href="@Url.Action("ChemoCourse", new { id = c.ID })" class="text-gray-900 fw-bold text-hover-primary fs-6">@DisplayName.Of(r.Name, r.NameEn)</a>
+                    <span class="text-muted fw-semibold d-block fs-7"><span class="badge hp-code fs-9 hp-num me-1">@c.CourseNo</span><bdi class="hp-num">@r.Mrn</bdi></span>
+                </div>
+            </div>
+        </td>
+        <td><span class="text-gray-800 fw-bold d-block fs-6"><bdi>@r.Regimen</bdi></span><span class="text-muted fw-semibold d-block fs-7">@T["cin:" + c.Intent]</span></td>
+        <td><span class="text-gray-800 fw-bold d-block fs-7"><bdi>@c.Diagnosis</bdi></span>@if (c.Stage != null) {<span class="text-muted fw-semibold d-block fs-7"><bdi dir="ltr">@c.Stage</bdi></span>}</td>
+        <td class="min-w-125px">
+            <div class="d-flex flex-stack mb-2"><span class="text-gray-800 fw-bold fs-7 hp-num">@T["{0} of {1}", r.Given, r.MaxCycles]</span><span class="text-muted fs-8 hp-num" dir="ltr">@pct%</span></div>
+            <div class="progress h-6px w-100 bg-light-primary"><div class="progress-bar bg-primary" role="progressbar" style="width:@(pct)%"></div></div>
+        </td>
+        <td class="text-nowrap">
+            @if (r.NextDue is DateTime d)
+            {
+                <span class="badge badge-light-@(r.Overdue ? "danger" : d <= today.AddDays(2) ? "primary" : "success") fs-7 fw-bold hp-num">@d.ToString("yyyy-MM-dd")</span>
+                if (r.Overdue) {<span class="text-danger fw-bold d-block fs-8 mt-1">@T["Overdue"]</span>} else if (r.Held) {<span class="text-muted fw-semibold d-block fs-8 mt-1">@T["Held"]</span>}
+            }
+            else {<span class="badge badge-light fs-7 fw-semibold">@T["All cycles given"]</span>}
+        </td>
+        <td>@if (r.LastToxicity is int g) {<span class="badge badge-light-@(g >= 3 ? "danger" : g >= 1 ? "primary" : "success") fs-7 fw-bold">@T["Grade {0}", g]</span>} else {<span class="text-muted">—</span>}</td>
+        <td class="text-end pe-4"><a href="@Url.Action("ChemoCourse", new { id = c.ID })" class="btn btn-sm btn-icon btn-bg-light btn-active-color-primary" title="@T["Open"]"><i class="ki-outline ki-arrow-@(isAr ? "left" : "right") fs-2"></i></a></td>
     </tr>
 }

@@ -32,8 +32,14 @@
         @if (!ready) { <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice"><div class="fs-6 text-gray-700">@T[HospitalSelfIntakeService.NoTables]</div></div> }
         else
         {
-            <div id="urgentBar" class="notice d-flex align-items-center rounded border border-danger border-dashed bg-light-danger p-4 mb-5 gap-3 @(urgent == 0 ? "d-none" : "")"><i class="ki-outline ki-information-5 fs-2x text-danger"></i>
-                <div class="fs-5 fw-bold text-danger">@T["Danger signs waiting:"] <span id="urgentN" class="hp-num">@urgent</span> — @T["see the patient now and acknowledge"]</div></div>
+            @* H125: the theme's notice (demo39 utilities) — icon, heading, the line under it *@
+            <div id="urgentBar" class="notice d-flex bg-light-danger rounded border-danger border border-dashed p-6 mb-5 @(urgent == 0 ? "d-none" : "")">
+                <i class="ki-outline ki-information fs-2tx text-danger me-4"></i>
+                <div class="d-flex flex-stack flex-grow-1"><div class="fw-semibold">
+                    <h4 class="text-gray-900 fw-bold mb-1">@T["Danger signs waiting:"] <span id="urgentN" class="hp-num text-danger">@urgent</span></h4>
+                    <div class="fs-6 text-gray-700">@T["see the patient now and acknowledge"]</div>
+                </div></div>
+            </div>
             @if (counts != null)
             {
                 var tiles = new (string Icon, string Color, int N, string Label)[]
@@ -46,29 +52,33 @@
                     ("ki-scan-barcode", "primary", counts.InImaging, T["At imaging"].Value),
                     ("ki-calendar-tick", "success", counts.ArrivalsToday, T["Clinic arrivals today"].Value),
                 };
-                <div class="row g-4 mb-5">
+                @* H125: the theme's stat tile (demo39 dashboards/logistics) — symbol, the large figure, its label *@
+                <div class="row g-5 mb-5">
                     @foreach (var x in tiles)
                     {
-                        <div class="col-6 col-md-4 col-xl"><div class="card h-100"><div class="card-body d-flex align-items-center gap-4 p-5">
-                            <span class="symbol symbol-45px flex-shrink-0"><span class="symbol-label bg-light-@x.Color"><i class="ki-outline @x.Icon fs-2x text-@x.Color"></i></span></span>
-                            <div><div class="fs-2 fw-bold text-gray-900 hp-num lh-1">@x.N</div><div class="fs-8 text-muted fw-semibold mt-1">@x.Label</div></div>
+                        <div class="col-6 col-md-4 col-xl"><div class="card card-flush h-100"><div class="card-body d-flex flex-column justify-content-between p-6">
+                            <div class="symbol symbol-45px mb-6"><span class="symbol-label bg-light-@x.Color"><i class="ki-outline @x.Icon fs-2x text-@x.Color"></i></span></div>
+                            <div><span class="fs-2hx fw-bold @(x.N > 0 ? "text-gray-800" : "text-gray-400") lh-1 ls-n2 hp-num d-block mb-2">@x.N</span>
+                                <span class="fs-7 fw-semibold text-gray-500">@x.Label</span></div>
                         </div></div></div>
                     }
                 </div>
             }
-            <div class="card mb-5">
-                <div class="card-header border-0 pt-6"><div class="card-title flex-column m-0">
-                    <span class="card-label fw-bold text-gray-900 fs-4"><i class="ki-outline ki-geolocation fs-3 text-primary me-1"></i>@T["Where is the patient now?"]</span>
-                    <span class="text-muted fs-7 mt-1">@T["Name, file number, mobile or ID number: the ward bed, the clinic, imaging, an operation or the emergency department, as it is this minute."]</span></div></div>
+            <div class="card card-flush mb-5">
+                <div class="card-header pt-5">
+                    <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Where is the patient now?"]</span>
+                        <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Name, file number, mobile or ID number: the ward bed, the clinic, imaging, an operation or the emergency department, as it is this minute."]</span></h3>
+                    <div class="card-toolbar"><span class="symbol symbol-40px"><span class="symbol-label bg-light-primary"><i class="ki-outline ki-geolocation fs-2 text-primary"></i></span></span></div>
+                </div>
                 <div class="card-body pt-2">
-                    <div class="position-relative mb-4"><i class="ki-outline ki-magnifier fs-3 position-absolute top-50 translate-middle-y ms-4"></i>
-                        <input type="text" id="w_q" class="form-control form-control-solid ps-12" autocomplete="off" placeholder="@T["Type at least two letters or digits…"]" /></div>
-                    <div id="w_out"><div class="text-muted fs-7 text-center py-4">@T["Results appear as you type."]</div></div>
+                    <div class="position-relative mb-6"><i class="ki-outline ki-magnifier fs-2 text-gray-500 position-absolute top-50 translate-middle-y ms-5"></i>
+                        <input type="text" id="w_q" class="form-control form-control-lg form-control-solid ps-14" autocomplete="off" placeholder="@T["Type at least two letters or digits…"]" /></div>
+                    <div id="w_out"><div class="text-center py-6"><i class="ki-outline ki-geolocation fs-3x text-gray-300 d-block mb-3"></i><div class="fs-6 fw-semibold text-gray-500">@T["Results appear as you type."]</div></div></div>
                 </div>
             </div>
-            <div class="card">
-                <div class="card-header border-0 pt-6 flex-wrap gap-3">
-                    <div class="card-title flex-column m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Self-intake"]</span><span class="text-muted fs-7 mt-1"><span id="resultCount">—</span></span></div>
+            <div class="card card-flush">
+                <div class="card-header pt-5 flex-wrap gap-3">
+                    <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Self-intake"]</span><span class="text-gray-500 mt-1 fw-semibold fs-7"><span id="resultCount">—</span></span></h3>
                     <div class="card-toolbar d-flex flex-wrap align-items-center gap-2">
                         <div class="w-250px"><input type="text" id="f_q" class="form-control form-control-solid form-control-sm" autocomplete="off" placeholder="@T["Search by number, name, mobile or ID…"]" /></div>
                         <div class="w-175px"><select class="form-select form-select-solid form-select-sm cb-filter" id="f_filter">
@@ -79,8 +89,8 @@
                     </div>
                 </div>
                 <div class="card-body pt-2">
-                    <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-3 mb-0">
-                        <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0"><th>@T["Number"]</th><th>@T["Name entered"]</th><th>@T["Visit"]</th><th>@T["Waited"]</th><th>@T["State"]</th><th class="text-end"></th></tr></thead>
+                    <div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
+                        <thead><tr class="fw-bold text-muted bg-light"><th class="ps-4 min-w-125px rounded-start">@T["Number"]</th><th class="min-w-200px">@T["Name entered"]</th><th class="min-w-150px">@T["Visit"]</th><th>@T["Waited"]</th><th class="min-w-150px">@T["State"]</th><th class="pe-4 text-end rounded-end"></th></tr></thead>
                         <tbody id="rows"><tr id="loadingRow"><td colspan="6" class="text-center text-muted py-10">@T["Loading…"]</td></tr><tr id="emptyRow" class="d-none"><td colspan="6" class="text-center text-muted py-10">@T["No intake waiting."]</td></tr></tbody>
                     </table></div>
                     <div class="d-flex flex-stack flex-wrap pt-5"><div class="fs-7 text-muted" id="pageInfo"></div><ul class="pagination" id="pager"></ul></div>
@@ -103,25 +113,31 @@
             function esc(s) { var d = document.createElement('div'); d.textContent = s == null ? '' : String(s); return d.innerHTML; }
             function ini(n) { return (n || '?').trim().split(/\s+/).slice(0, 2).map(function (x) { return x[0]; }).join(''); }
             var wq = document.getElementById('w_q'), wo = document.getElementById('w_out'), wt = null, wseq = 0;
+            // H125: the theme's list widget — the person (photo, name over the file number), each place a tinted block (demo39 widgets/lists)
+            var TONE = { Theatre: 'danger', Emergency: 'danger', Imaging: 'primary', ClinicInRoom: 'success', ClinicWaiting: 'info', Ward: 'primary' };
             function wrender(rows) {
-                if (!rows.length) { wo.innerHTML = '<div class="text-muted fs-7 text-center py-4">' + esc(W.none) + '</div>'; return; }
-                wo.innerHTML = rows.map(function (r) {
-                    var face = r.photo ? '<img src="' + esc(r.photo) + '" alt="" style="object-fit:cover" />' : '<span class="symbol-label fw-bold hp-initials">' + esc(ini(r.name)) + '</span>';
-                    var now = r.restricted ? '<span class="badge badge-light fs-8"><i class="ki-outline ki-lock fs-7 me-1"></i>' + esc(W.restricted) + '</span>'
-                        : !r.now.length ? '<span class="text-muted fs-7">' + esc(W.out) + '</span>'
-                        : r.now.map(function (w) { return '<div class="d-flex align-items-start gap-3 py-2"><i class="ki-outline ' + (ICON[w.kind] || 'ki-geolocation') + ' fs-2 mt-1"></i><div class="flex-grow-1">' +
-                            '<div class="fw-bold text-gray-900 fs-6">' + esc(W.kind[w.kind] || w.kind) + (w.live ? ' <span class="badge badge-light-success fs-9 ms-1">' + esc(W.live) + '</span>' : '') + '</div>' +
-                            '<div class="fs-7 text-gray-800"><bdi>' + esc(w.place) + '</bdi></div>' +
-                            (w.detail || w.since ? '<div class="fs-8 text-muted">' + (w.detail ? '<bdi>' + esc(w.detail) + '</bdi>' : '') + (w.since ? (w.detail ? ' · ' : '') + esc(W.since.replace('{0}', w.since)) : '') + '</div>' : '') + '</div>' +
-                            (w.map ? '<a class="btn btn-sm btn-light-primary py-1 px-3 fs-8" href="' + esc(w.map) + '"><i class="ki-outline ki-map fs-6"></i>' + esc(W.map) + '</a>' : '') + '</div>'; }).join('');
-                    return '<div class="d-flex align-items-start gap-4 border border-dashed rounded p-4 mb-3">' +
-                        '<div class="symbol symbol-45px symbol-circle flex-shrink-0">' + face + '</div>' +
-                        '<div class="flex-grow-1"><div class="d-flex flex-wrap align-items-center gap-2 mb-1"><a class="fw-bold fs-5 text-gray-900 text-hover-primary" href="' + esc(r.url) + '"><bdi>' + esc(r.name) + '</bdi></a><span class="text-muted fs-8 hp-num" dir="ltr">' + esc(r.mrn) + '</span></div>' + now + '</div></div>';
+                if (!rows.length) { wo.innerHTML = '<div class="text-center py-6"><i class="ki-outline ki-user fs-3x text-gray-300 d-block mb-3"></i><div class="fs-6 fw-semibold text-gray-600">' + esc(W.none) + '</div></div>'; return; }
+                wo.innerHTML = rows.map(function (r, i) {
+                    var face = r.photo ? '<img src="' + esc(r.photo) + '" alt="" style="object-fit:cover" />' : '<span class="symbol-label bg-light-primary text-primary fw-bold fs-5 hp-initials">' + esc(ini(r.name)) + '</span>';
+                    var now = r.restricted ? '<div class="d-flex align-items-center bg-light rounded p-4"><i class="ki-outline ki-lock fs-1 text-gray-600 me-4"></i><span class="fw-semibold text-gray-700 fs-7">' + esc(W.restricted) + '</span></div>'
+                        : !r.now.length ? '<div class="d-flex align-items-center bg-light rounded p-4"><i class="ki-outline ki-exit-right fs-1 text-gray-500 me-4"></i><span class="fw-semibold text-gray-600 fs-6">' + esc(W.out) + '</span></div>'
+                        : r.now.map(function (w) { var tone = TONE[w.kind] || 'primary';
+                            return '<div class="d-flex align-items-center bg-light-' + tone + ' rounded p-4 mb-3">' +
+                                '<i class="ki-outline ' + (ICON[w.kind] || 'ki-geolocation') + ' fs-1 me-4"></i>' +
+                                '<div class="flex-grow-1 me-2"><span class="fw-bold text-gray-800 fs-6">' + esc(W.kind[w.kind] || w.kind) + '</span>' + (w.live ? ' <span class="badge badge-' + tone + ' fs-8 fw-bold ms-1">' + esc(W.live) + '</span>' : '') +
+                                '<span class="text-gray-700 fw-semibold d-block fs-7"><bdi>' + esc(w.place) + '</bdi></span>' +
+                                (w.detail || w.since ? '<span class="text-muted fw-semibold d-block fs-8">' + (w.detail ? '<bdi>' + esc(w.detail) + '</bdi>' : '') + (w.since ? (w.detail ? ' · ' : '') + esc(W.since.replace('{0}', w.since)) : '') + '</span>' : '') + '</div>' +
+                                (w.map ? '<a class="btn btn-sm btn-light btn-active-light-' + tone + ' text-nowrap" href="' + esc(w.map) + '"><i class="ki-outline ki-map fs-4"></i>' + esc(W.map) + '</a>' : '') + '</div>'; }).join('');
+                    return (i ? '<div class="separator separator-dashed my-5"></div>' : '') +
+                        '<div class="d-flex flex-stack mb-4"><div class="d-flex align-items-center">' +
+                        '<div class="symbol symbol-50px symbol-circle me-4">' + face + '</div>' +
+                        '<div class="d-flex flex-column"><a class="text-gray-900 fw-bold text-hover-primary fs-5" href="' + esc(r.url) + '"><bdi>' + esc(r.name) + '</bdi></a><span class="text-muted fw-semibold d-block fs-7 hp-num" dir="ltr">' + esc(r.mrn) + '</span></div></div>' +
+                        '<a class="btn btn-sm btn-light-primary text-nowrap" href="' + esc(r.url) + '"><i class="ki-outline ki-document fs-4"></i>' + esc(W.file) + '</a></div>' + now;
                 }).join('');
             }
             function wsearch() {
                 var q = wq.value.trim(), my = ++wseq;
-                if (q.length < 2) { wo.innerHTML = '<div class="text-muted fs-7 text-center py-4">' + esc(W.hint) + '</div>'; return; }
+                if (q.length < 2) { wo.innerHTML = '<div class="text-center py-6"><i class="ki-outline ki-geolocation fs-3x text-gray-300 d-block mb-3"></i><div class="fs-6 fw-semibold text-gray-500">' + esc(W.hint) + '</div></div>'; return; }
                 fetch(@Json.Serialize(Url.Action("IntakeWhere")) + '?q=' + encodeURIComponent(q), { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
                     .then(function (r) { return r.json(); }).then(function (res) { if (my === wseq && res.ok) wrender(res.rows); });
             }

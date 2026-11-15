@@ -2,6 +2,10 @@
 @using CrossBuy.BL.Hospital
 @model IReadOnlyList<HospitalChemoRegimenRow>
 @inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H88 / H125 — one page of the regimen library, as rows of the theme's table widget (demo39 widgets/tables): a symbol
+    beside the regimen, its drugs as dose / route / day badges, the courses on it, an icon button to change it.
+*@
 @{ bool canLib = ViewBag.CanLibrary == true; }
 @foreach (var row in Model)
 {
@@ -9,17 +13,29 @@
     var json = System.Text.Json.JsonSerializer.Serialize(new { id = r.ID, code = r.Code, name = r.Name, nameEn = r.NameEn, cycleDays = r.CycleDays, maxCycles = r.MaxCycles, note = r.Note, isActive = r.IsActive,
         drugs = row.Drugs.Select(d => new { drugName = d.DrugName, dose = d.Dose, basis = d.Basis, route = d.Route, days = d.Days, lifetimeMgM2 = d.LifetimeMgM2 }) });
     <tr class="@(r.IsActive ? "" : "opacity-50")">
-        <td><span class="badge hp-code fs-8 hp-num">@r.Code</span> <span class="fw-bold text-gray-900">@DisplayName.Of(r.Name, r.NameEn ?? r.Name)</span>
-            @if (!r.IsActive) {<div class="text-muted fs-9">@T["Out of the library"]</div>}@if (r.Note != null) {<div class="text-muted fs-8"><bdi>@r.Note</bdi></div>}</td>
-        <td class="text-nowrap fs-8">@T["Every {0} days", r.CycleDays]<div class="text-muted">@T["{0} cycles", r.MaxCycles]</div></td>
-        <td class="fs-8">@foreach (var d in row.Drugs)
+        <td class="ps-4">
+            <div class="d-flex align-items-center">
+                <div class="symbol symbol-45px me-4"><span class="symbol-label bg-light-@(r.IsActive ? "primary" : "secondary")"><i class="ki-outline ki-capsule fs-2 text-@(r.IsActive ? "primary" : "gray-500")"></i></span></div>
+                <div class="d-flex flex-column">
+                    <span class="text-gray-900 fw-bold fs-6">@DisplayName.Of(r.Name, r.NameEn ?? r.Name)</span>
+                    <span class="text-muted fw-semibold d-block fs-7"><bdi class="hp-num" dir="ltr">@r.Code</bdi>@if (!r.IsActive) {<text> · @T["Out of the library"]</text>}</span>
+                    @if (r.Note != null) {<span class="text-gray-500 fs-8 mt-1"><bdi>@r.Note</bdi></span>}
+                </div>
+            </div>
+        </td>
+        <td><span class="text-gray-900 fw-bold d-block fs-6 text-nowrap">@T["Every {0} days", r.CycleDays]</span><span class="text-muted fw-semibold d-block fs-7 text-nowrap">@T["{0} cycles", r.MaxCycles]</span></td>
+        <td>@foreach (var d in row.Drugs)
             {
-                <div class="d-flex flex-wrap gap-2 align-items-center py-1"><bdi class="fw-semibold" dir="ltr">@d.DrugName</bdi>
-                    <span class="hp-num" dir="ltr">@d.Dose.ToString("0.##") @T["cbs:" + d.Basis]</span><span class="badge badge-light fs-9">@d.Route</span>
-                    <span class="text-muted">@T["Day {0}", d.Days]</span>
-                    @if (d.LifetimeMgM2 != null) {<span class="badge badge-light-danger fs-9">@T["Lifetime {0} mg/m²", d.LifetimeMgM2.Value.ToString("0")]</span>}</div>
+                <div class="d-flex flex-wrap align-items-center gap-2 py-1">
+                    <span class="bullet bullet-dot bg-primary h-6px w-6px"></span>
+                    <bdi class="text-gray-800 fw-bold fs-7" dir="ltr">@d.DrugName</bdi>
+                    <span class="badge badge-light-primary fs-8 fw-bold hp-num" dir="ltr">@d.Dose.ToString("0.##") @T["cbs:" + d.Basis]</span>
+                    <span class="badge badge-light fs-8 fw-bold" dir="ltr">@d.Route</span>
+                    <span class="text-gray-500 fw-semibold fs-8">@T["Day {0}", d.Days]</span>
+                    @if (d.LifetimeMgM2 != null) {<span class="badge badge-light-danger fs-8 fw-bold">@T["Lifetime {0} mg/m²", d.LifetimeMgM2.Value.ToString("0")]</span>}
+                </div>
             }</td>
-        <td class="hp-num">@(row.ActiveCourses > 0 ? row.ActiveCourses.ToString() : "—")</td>
-        <td class="text-end">@if (canLib) {<button type="button" class="btn btn-sm btn-light-primary text-nowrap" data-reg-edit="@json">@T["Edit"]</button>}</td>
+        <td>@if (row.ActiveCourses > 0) {<span class="badge badge-light-success fs-7 fw-bold hp-num">@row.ActiveCourses</span>} else {<span class="text-gray-400 fw-bold">—</span>}</td>
+        <td class="text-end pe-4">@if (canLib) {<button type="button" class="btn btn-icon btn-sm btn-bg-light btn-active-color-primary" data-reg-edit="@json" title="@T["Edit"]"><i class="ki-outline ki-pencil fs-3"></i></button>}</td>
     </tr>
 }
