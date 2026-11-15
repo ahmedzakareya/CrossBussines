@@ -503,6 +503,10 @@ namespace CrossBuy.BL.Platform.Ai
 			// A REQUEST FOR A LIST IS NOT A NAME TO LOOK UP. "قائمة الموظفين" was answered with
 			// "nobody by that name — I searched 21 records and none matches «قائمة»".
 			"قائمة", "قايمة", "القائمة", "لستة", "اسماء", "الاسماء", "كشف", "جدول",
+			// A PRONOUN IS NOT A NAME TO LOOK UP. «اي ساعة فيها مواعيد اكتر» opened with "I could not
+			// find «فيها» in this data" - a doubt stapled to a correct answer, because the
+			// attached pronoun was treated as something that might name a row.
+			"فيها", "فيهم", "فيه", "عندها", "عندهم", "بيها", "ليها", "ليهم",
 			"list", "names", "roster", "register",
 			"name", "named", "called", "his", "her", "their", "whose",
 			"عندنا", "عندكم", "بتاعنا", "بتاع", "بتاعة", "الشركة", "شركتنا", "لدينا", "احنا",

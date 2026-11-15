@@ -49,6 +49,7 @@ DOCTORS = "hospital.practitioners"
 MEDS = "hospital.medications"
 BILLING = "hospital.billing"
 CLAIMS = "hospital.claims"
+APPTS = "hospital.appointments"
 OUT_OF_SCOPE = "none"
 
 # sales.top-items, sales.top-customers and sales.item-margin were retired into sales.query:
@@ -56,7 +57,7 @@ OUT_OF_SCOPE = "none"
 # them could. Their vocabulary is kept below, under the one id.
 INTENT_IDS = (STOCK, VALUE, MOVES, WAREHOUSES, CASH, RECEIVABLES, ANOMALIES, DORMANT,
               COLLECTION, SALES_QUERY, CATEGORIES, PURCHASES, STOCKQ, POSQ, HRQ,
-              EXPENSES, DOCTORS, MEDS, BILLING, CLAIMS)
+              EXPENSES, DOCTORS, MEDS, BILLING, CLAIMS, APPTS)
 
 # Slot fillers. Real names from the catalogue plus shapes the catalogue contains — a name with a
 # number in it, a Latin name inside an Arabic sentence, a two-word name, a code.
@@ -333,6 +334,25 @@ TEMPLATES: dict[str, list[str]] = {
         "resubmitted claims", "acceptance rate", "which payer claims most",
     ],
 
+    APPTS: [
+        # «جيب مواعيد اليوم» went into the assistant and was refused with the catalogue offered
+        # instead. 138 appointments in one table and no window onto them. Value-naming phrasings
+        # live HERE and never in the handler keywords: "الملغاة" as a keyword would make the
+        # filter blind to the very status being asked about.
+        "المواعيد", "مواعيد اليوم", "جيب مواعيد اليوم", "مواعيد النهاردة", "كام موعد",
+        "عدد المواعيد النهاردة", "جدول العيادة", "جدول المواعيد", "الحجوزات",
+        "المواعيد حسب الطبيب", "مواعيد كل دكتور", "المواعيد حسب القسم", "المواعيد حسب الساعة",
+        "المواعيد الملغاة", "المواعيد اللي اتلغت", "مين ماحضرش", "اللي محضروش",
+        "كام حد ماجاش", "المواعيد المحجوزة", "اللي خلصوا كشف", "مواعيد المتابعة",
+        "متوسط الانتظار", "المرضى بيستنوا قد ايه", "مدة الانتظار", "مدة الكشف",
+        "اطول انتظار", "اي ساعة فيها مواعيد اكتر",
+        "appointments", "todays appointments", "how many appointments", "clinic schedule",
+        "bookings today", "appointments by doctor", "appointments by department",
+        "cancelled appointments", "no shows", "how many did not turn up", "booked appointments",
+        "average wait", "waiting time", "how long do patients wait", "consultation time",
+        "busiest hour in clinic", "follow up visits",
+    ],
+
     DOCTORS: [
         # THE HOSPITAL'S FIRST INTENT. The owner asked «جيب قائمة الاطباء» and was offered the
         # revenue per item instead — six surfaces existed and none of them was the hospital.
@@ -432,6 +452,17 @@ TEMPLATES: dict[str, list[str]] = {
         "ايه اكتر صنف بيتباع", "الاصناف الاكثر مبيعا", "اكثر الاصناف مبيعا", "افضل الاصناف مبيعا",
         "ايه اللي بيتباع كتير", "ايه اللي ماشي", "اعلى مبيعات", "ترتيب الاصناف بالمبيعات",
         "ايه البضاعه اللي بتتباع", "الاصناف اللي بتمشي اكتر", "اقل الاصناف مبيعا", "اقل الاصناف ايرادا",
+        # TAUGHT AFTER A RETRAIN MOVED THE BOUNDARY. Adding the appointments intent flipped
+        # "ايه البضاعة اللي بتتباع اكتر من غيرها" to dormant-items - the exact opposite meaning -
+        # while the shorter "ايه البضاعه اللي بتتباع" stayed right. The tail was doing the work,
+        # so both halves of the contrast are stated rather than left to the margin.
+        # "SHOW ME THE LAST THREE INVOICES" is a sales question and the retrain began refusing
+        # it. A refusal is cheaper than a wrong answer and is still a loss: the surface can list
+        # invoices, so declining to is a capability quietly given up at the margin.
+        "وريني اخر ثلاث فواتير", "اخر ثلاث فواتير", "وريني اخر الفواتير", "اخر الفواتير",
+        "وريني اخر كام فاتورة", "اخر فواتير المبيعات", "اخر خمس فواتير",
+        "ايه البضاعه اللي بتتباع اكتر من غيرها", "البضاعه اللي بتتباع اكتر من غيرها",
+        "ايه الاصناف اللي بتتباع اكتر من غيرها", "الحاجات اللي بتتباع اكتر من غيرها",
         "best selling items", "top selling products", "what sells the most",
         "which items sell best", "top items by sales", "our best sellers", "rank items by sales",
         "lowest selling items", "worst selling products",
@@ -650,7 +681,8 @@ NEGATIVES = [
     # Measured as unanswerable here: 2 sales orders, 6 purchase orders, 4 payments with no
     # allocations, no budget table, and 28 active movement days in 312. A model that learns to
     # refuse these is refusing for the right reason.
-    "ايه نسبة تلبية الطلبات", "الموازنة مقابل الفعلي", "ايه الاصناف اللي هتخلص الاسبوع الجاي",
+    "ايه نسبة تلبية الطلبات", "ايه نسبة تلبية الطلبات عندنا", "نسبة تلبية الطلبات عندنا",
+    "الموازنة مقابل الفعلي", "ايه الاصناف اللي هتخلص الاسبوع الجاي",
     "تباين اسعار الموردين", "اعمار ديون الموردين", "نسبة التسليم في الموعد",
     "fill rate", "budget vs actual", "which items will stock out next week",
     "supplier price variance", "on time delivery rate", "payables ageing",

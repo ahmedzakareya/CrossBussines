@@ -195,6 +195,21 @@ const NAMED = [
   // filter held and 2 when it did not, because every accepted line belongs to one insurer.
   ['المطالبات المعتمدة حسب جهة الدفع', 1, 'filtered to accepted: one payer, not two'],
 
+  // ---- THE CLINIC'S DAY -----------------------------------------------------------------------
+  //
+  // «جيب مواعيد اليوم» was typed into the assistant and refused with the catalogue offered
+  // instead - 138 appointments in one table and no window onto them.
+  //
+  // The cancelled case is here because ONE RENDERING IS NOT ONE WORD. The status shows as
+  // «ملغي» and the question says «الملغاة»; before the search key carried the spoken forms, it
+  // answered about all 138 with a "could not find" opener while the English twin filtered
+  // correctly to 4. Four is the discriminator: unfiltered it is one group over 138 rows.
+  ['جيب مواعيد اليوم',          null, "today's appointments, not the whole book"],
+  ['المواعيد الملغاة',        1,    'filtered to cancelled, by the spoken spelling'],
+  ['المواعيد حسب الطبيب',     (n) => n > 1, 'grouped by practitioner'],
+  ['اي ساعة فيها مواعيد اكتر', (n) => n > 1, 'the attached pronoun is scaffolding, not a value to hunt'],
+
+
 
 ];
 
@@ -396,6 +411,9 @@ const ENGLISH = [
   // lines, because the measure was still NAMED "accepted" and a column's name is vocabulary
   // too. Grouped by payer the counts separate: 1 when the status filter held, 2 when it did not.
   ['accepted claims by payer',      1,        'filtered to accepted: one payer, not two'],
+  ['todays appointments',           'answer', "the relative window resolves to today"],
+  ['cancelled appointments',        1,        'the same filter the Arabic twin needs spoken forms for'],
+
 
 
   // THE SAME TWO SURFACES, ASKED IN ENGLISH WITH THE UI IN ENGLISH.
