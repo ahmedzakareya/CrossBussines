@@ -1,0 +1,92 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="1" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+    <data name="Answers only within your permissions" xml:space="preserve">
+    <value>Answers only within your permissions</value>
+  </data>
+  <data name="Ask" xml:space="preserve">
+    <value>Ask</value>
+  </data>
+  <data name="Assistant" xml:space="preserve">
+    <value>Assistant</value>
+  </data>
+  <data name="Authority" xml:space="preserve">
+    <value>Authority</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="Company" xml:space="preserve">
+    <value>Company</value>
+  </data>
+  <data name="Complete within your scope" xml:space="preserve">
+    <value>Complete within your scope</value>
+  </data>
+  <data name="I answer from your own data and nothing leaves this installation. I am not a language model yet: I match your wording against a defined list, so I answer only what I recognise and say so when I do not." xml:space="preserve">
+    <value>I answer from your own data and nothing leaves this installation. I am not a language model yet: I match your wording against a defined list, so I answer only what I recognise and say so when I do not.</value>
+  </data>
+  <data name="Partial answer" xml:space="preserve">
+    <value>Partial answer</value>
+  </data>
+  <data name="Read from" xml:space="preserve">
+    <value>Read from</value>
+  </data>
+  <data name="Reading only. Nothing here changes any record." xml:space="preserve">
+    <value>Reading only. Nothing here changes any record.</value>
+  </data>
+  <data name="The request could not be sent." xml:space="preserve">
+    <value>The request could not be sent.</value>
+  </data>
+  <data name="Type your question…" xml:space="preserve">
+    <value>Type your question…</value>
+  </data>
+  <data name="Looking…" xml:space="preserve">
+    <value>Looking…</value>
+  </data>
+  <data name="I could not reach the server. It may be restarting." xml:space="preserve">
+    <value>I could not reach the server. It may be restarting.</value>
+  </data>
+  <data name="Try again" xml:space="preserve">
+    <value>Try again</value>
+  </data>
+</root>

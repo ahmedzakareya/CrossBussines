@@ -1,0 +1,51 @@
+{
+ "item-stock": {
+  "requires": "a stock balance row",
+  "have": 91,
+  "of": 231,
+  "pct": 39.4,
+  "verdict": "NOT READY"
+ },
+ "item-value": {
+  "requires": "an average cost greater than zero",
+  "have": 83,
+  "of": 231,
+  "pct": 35.9,
+  "verdict": "NOT READY"
+ },
+ "item-movements": {
+  "requires": "at least one stock movement",
+  "have": 85,
+  "of": 231,
+  "pct": 36.8,
+  "verdict": "NOT READY"
+ },
+ "reorder": {
+  "requires": "a reorder point above zero",
+  "have": 2,
+  "of": 231,
+  "pct": 0.9,
+  "verdict": "NOT READY"
+ },
+ "cashflow-forecast": {
+  "requires": "payment terms on the customer",
+  "have": 0,
+  "of": 42,
+  "pct": 0.0,
+  "verdict": "NOT READY"
+ },
+ "journal-anomalies": {
+  "requires": "at least 500 journal entries",
+  "have": 2824,
+  "of": 500,
+  "pct": 564.8,
+  "verdict": "ready"
+ },
+ "customer-names": {
+  "requires": "an Arabic name that is not question marks",
+  "have": 37,
+  "of": 42,
+  "pct": 88.1,
+  "verdict": "NOT READY"
+ }
+}

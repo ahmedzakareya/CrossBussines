@@ -4,9 +4,9 @@
   "frozenBaseline": {
     "mutating": 566,
     "attributeProtected": 255,
-    "inBodyProtected": 219,
+    "inBodyProtected": 221,
     "anonymousByDesign": 1,
-    "gaps": 91
+    "gaps": 89
   },
   "rules": [
     "This baseline may only SHRINK. CI rejects any commit that adds an entry.",
@@ -16,7 +16,7 @@
     "No blanket suppression. No project-wide disable switch.",
     "The 'gaps' figure and the entries list are the ENFORCED invariant and may only shrink. The mutating, attributeProtected and inBodyProtected figures are descriptive totals of the tree and legitimately grow when protected endpoints are added; frozenBaselineHistory records every such change with its reason."
   ],
-  "count": 91,
+  "count": 89,
   "entries": [
     {
       "id": "AccountController.ChangePassword",
@@ -145,37 +145,9 @@
       "reason": "Pre-existing Stage 1 debt, frozen baseline of 143"
     },
     {
-      "id": "AnnouncementsController.Create",
-      "controller": "AnnouncementsController",
-      "action": "Create",
-      "httpMethod": "POST",
-      "module": "Communication",
-      "isApi": false,
-      "file": "CrossBuy/Controllers/AnnouncementsController.cs",
-      "inheritedGuard": "SessionValidation",
-      "classification": "AuthorizationGap",
-      "targetWave": "Wave 3-6",
-      "addedBy": "Stage-002A-Batch-00",
-      "reason": "Pre-existing Stage 1 debt, frozen baseline of 143"
-    },
-    {
       "id": "AnnouncementsController.Dismiss",
       "controller": "AnnouncementsController",
       "action": "Dismiss",
-      "httpMethod": "POST",
-      "module": "Communication",
-      "isApi": false,
-      "file": "CrossBuy/Controllers/AnnouncementsController.cs",
-      "inheritedGuard": "SessionValidation",
-      "classification": "AuthorizationGap",
-      "targetWave": "Wave 3-6",
-      "addedBy": "Stage-002A-Batch-00",
-      "reason": "Pre-existing Stage 1 debt, frozen baseline of 143"
-    },
-    {
-      "id": "AnnouncementsController.Toggle",
-      "controller": "AnnouncementsController",
-      "action": "Toggle",
       "httpMethod": "POST",
       "module": "Communication",
       "isApi": false,
@@ -1294,6 +1266,14 @@
     }
   ],
   "frozenBaselineHistory": [
+    {
+      "stage": "Announcements publish authority, stale-entry clearance (TARGET Tab AI, 2026-11-15)",
+      "mutating": 566,
+      "attributeProtected": 255,
+      "inBodyProtected": 221,
+      "gaps": 89,
+      "note": "TWO baseline entries REMOVED and nothing added: AnnouncementsController.Create and AnnouncementsController.Toggle. Both now authorize in body - each resolves the actor through MeAsync(), then refuses on !MayPublishAsync(companyId, branchId) with Forbid() - so CBA004 fired on both and the only resolution it accepts is removing their entries. The analyzer's own message is the evidence: 'it is now authorized in-body'. The two therefore move from the debt into inBodyProtected: 219 -> 221 and gaps 91 -> 89, with mutating and attributeProtected unchanged because no endpoint was added and neither is attribute-protected. The arithmetic still closes: 255 + 221 + 1 + 89 = 566. ANNOUNCEMENTS.DISMISS IS DELIBERATELY LEFT IN THE LIST. It is the third mutating action on the same controller and it still carries nothing beyond MeAsync() - a real open item, not a stale entry - and removing it to make the controller look finished would be exactly the re-bless this file exists to prevent. WHO CLEARED IT AND WHY A HOSPITAL SESSION TOUCHED THIS FILE: the two errors blocked the build for every session in the shared tree, with no CS error anywhere, while the controller change itself belonged to another tab. The entries were verified stale by reading both actions before removing them. No entry was added or edited, no diagnostic suppressed, no analyzer rule weakened and no permission loosened."
+    },
     {
       "stage": "Client Portal integration, central convergence (TAB-1, 2026-09-01)",
       "mutating": 439,

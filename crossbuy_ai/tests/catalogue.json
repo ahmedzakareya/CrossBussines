@@ -1,0 +1,307 @@
+{
+ "accounting.cash-balance": {
+  "keywords": [
+   "النقدية",
+   "نقدية",
+   "الخزنة",
+   "الخزينة",
+   "خزنه",
+   "كاش",
+   "البنك",
+   "البنوك",
+   "السيوله",
+   "السيولة",
+   "cash",
+   "cash balance",
+   "bank",
+   "banks",
+   "treasury",
+   "liquidity"
+  ],
+  "example": [
+   "كام رصيد النقدية؟",
+   "What is our cash balance?"
+  ],
+  "desc": [
+   "رصيد النقدية والبنوك من دفتر الأستاذ",
+   "The cash and bank balance, from the ledger"
+  ]
+ },
+ "accounting.open-receivables": {
+  "keywords": [
+   "المستحق",
+   "مستحق",
+   "الذمم",
+   "ذمم",
+   "المدينون",
+   "مديونية",
+   "العملاء",
+   "تحصيل",
+   "التحصيل",
+   "receivable",
+   "receivables",
+   "owed",
+   "owe",
+   "debtors",
+   "outstanding",
+   "collection",
+   "ar"
+  ],
+  "example": [
+   "كام المستحق على العملاء؟",
+   "How much do customers owe us?"
+  ],
+  "desc": [
+   "إجمالي المستحق على العملاء، من واقع الفواتير وما خُصّص لها فعلًا",
+   "Total owed by customers, from invoices and what was actually allocated against them"
+  ]
+ },
+ "inventory.dormant-items": {
+  "keywords": [
+   "الاصناف الراكدة",
+   "الأصناف الراكدة",
+   "اصناف راكدة",
+   "راكد",
+   "الراكد",
+   "البضاعة الراكدة",
+   "المخزون الراكد",
+   "مخزون ميت",
+   "بضاعة ميتة",
+   "اصناف واقفة",
+   "ايه اللي مش بيتحرك",
+   "الاصناف اللي مش بتتباع",
+   "اصناف بطيئة الحركة",
+   "بطيء الحركة",
+   "ايه اللي واقف في المخزن",
+   "اللي مش ماشي",
+   "dead stock",
+   "slow moving",
+   "slow movers",
+   "dormant items",
+   "stagnant stock",
+   "items not moving",
+   "what is not selling",
+   "idle stock",
+   "non moving inventory"
+  ],
+  "example": [
+   "إيه الأصناف الراكدة؟",
+   "Which items are not moving?"
+  ],
+  "desc": [
+   "الأصناف التي لها رصيد ولم تتحرك منذ فترة، في المخازن التي تملك صلاحية عليها",
+   "Items holding stock that have not moved for a while, in the warehouses you may see"
+  ]
+ },
+ "accounting.collection-days": {
+  "keywords": [
+   "ايام التحصيل",
+   "أيام التحصيل",
+   "متوسط التحصيل",
+   "مدة التحصيل",
+   "بياخدوا كام يوم",
+   "العملاء بيدفعوا امتى",
+   "سرعة التحصيل",
+   "فترة السداد",
+   "مدة السداد",
+   "العملاء بيتأخروا",
+   "التأخير في الدفع",
+   "بيدفعوا بعد كام يوم",
+   "dso",
+   "days sales outstanding",
+   "collection days",
+   "how long to get paid",
+   "average collection period",
+   "time to collect",
+   "payment speed",
+   "how fast do customers pay"
+  ],
+  "example": [
+   "العملاء بياخدوا كام يوم عشان يدفعوا؟",
+   "How long do customers take to pay?"
+  ],
+  "desc": [
+   "متوسط أيام التحصيل من تاريخ الفاتورة حتى الاستلام، وعدد الفواتير التي لم تُحصَّل بعد",
+   "Average days from invoice to receipt, and how many invoices have not been collected at all"
+  ]
+ },
+ "accounting.journal-anomalies": {
+  "keywords": [
+   "شاذة",
+   "شاذ",
+   "الشاذة",
+   "شذوذ",
+   "غريبة",
+   "مشبوهة",
+   "مراجعة القيود",
+   "قيود",
+   "anomaly",
+   "anomalies",
+   "unusual",
+   "suspicious",
+   "odd",
+   "journal entries",
+   "review entries"
+  ],
+  "example": [
+   "فيه قيود شاذة؟",
+   "Are there any unusual journal entries?"
+  ],
+  "desc": [
+   "القيود التي تستحق مراجعة، من النموذج المحلي",
+   "Journal entries worth reviewing, from the on-premises model"
+  ]
+ },
+ "inventory.item-movements": {
+  "keywords": [
+   "حركات",
+   "الحركات",
+   "حركة",
+   "اخر حركات",
+   "آخر حركات",
+   "صرف",
+   "الصرف",
+   "وارد",
+   "منصرف",
+   "movements",
+   "movement",
+   "transactions",
+   "issued",
+   "issues",
+   "received",
+   "latest movements"
+  ],
+  "example": [
+   "آخر حركات مياه معدنية",
+   "Latest movements for mineral water"
+  ],
+  "desc": [
+   "آخر حركات صنف معيّن في المخازن التي تملك صلاحية عليها",
+   "The latest movements of one item, in the warehouses you are allowed to see"
+  ]
+ },
+ "inventory.my-warehouses": {
+  "keywords": [
+   "المخازن",
+   "مخازني",
+   "صلاحيتي",
+   "صلاحياتي",
+   "اقدر اشوف",
+   "أقدر أشوف",
+   "my warehouses",
+   "warehouses",
+   "which warehouses",
+   "my permissions",
+   "my access"
+  ],
+  "example": [
+   "إيه المخازن اللي أقدر أشوفها؟",
+   "Which warehouses can I see?"
+  ],
+  "desc": [
+   "المخازن التي تملك صلاحية الاطلاع عليها",
+   "The warehouses you are allowed to see"
+  ]
+ },
+ "inventory.item-stock": {
+  "keywords": [
+   "رصيد",
+   "الرصيد",
+   "ارصدة",
+   "الارصدة",
+   "مخزون",
+   "المخزون",
+   "مخزن",
+   "المخزن",
+   "متبقي",
+   "المتبقي",
+   "متوفر",
+   "المتوفر",
+   "باقي",
+   "stock",
+   "in stock",
+   "on hand",
+   "onhand",
+   "inventory",
+   "balance",
+   "balances",
+   "available",
+   "remaining",
+   "left"
+  ],
+  "example": [
+   "كام رصيد مياه معدنية؟",
+   "How much mineral water do we hold?"
+  ],
+  "desc": [
+   "رصيد صنف معيّن موزّعًا على المخازن التي تملك صلاحية عليها",
+   "The on-hand quantity of one item, across the warehouses you are allowed to see"
+  ]
+ },
+ "inventory.item-value": {
+  "keywords": [
+   "قيمة مخزون",
+   "مخزون",
+   "stock value",
+   "stock",
+   "قيمة مخزون",
+   "قيمة المخزون",
+   "قيمه مخزون",
+   "stock value",
+   "inventory value",
+   "تكلفة",
+   "التكلفة",
+   "تكلفه",
+   "التكلفه",
+   "متوسط التكلفة",
+   "قيمة",
+   "القيمة",
+   "قيمه",
+   "سعر التكلفة",
+   "cost",
+   "costs",
+   "value",
+   "worth",
+   "average cost"
+  ],
+  "example": [
+   "كام تكلفة لاب توب؟",
+   "What does a laptop cost us?"
+  ],
+  "desc": [
+   "تكلفة صنف وقيمة رصيده في المخازن التي تملك صلاحية عليها",
+   "The cost of an item and the value of its stock, in the warehouses you may see"
+  ]
+ },
+ "sales.query": {
+  "keywords": [
+   "المبيعات",
+   "مبيعات",
+   "الايراد",
+   "ايراد",
+   "الايرادات",
+   "ايرادات",
+   "الدخل",
+   "بعنا كام",
+   "بيعنا كام",
+   "مبيعاتنا",
+   "ايه مبيعات",
+   "تحليل المبيعات",
+   "sales",
+   "revenue",
+   "turnover",
+   "how much did we sell",
+   "sales analysis",
+   "income from sales",
+   "sold"
+  ],
+  "example": [
+   "إيه الإيراد لكل شهر؟",
+   "What is the revenue by month?"
+  ],
+  "desc": [
+   "أي سؤال عن المبيعات: الإيراد أو التكلفة أو الهامش أو الكمية، مجمَّعًا حسب الصنف أو العميل أو الشهر",
+   "Any sales question: revenue, cost, margin or quantity, grouped by item, customer or month"
+  ]
+ }
+}

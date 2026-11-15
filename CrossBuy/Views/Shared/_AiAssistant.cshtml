@@ -1,0 +1,551 @@
+﻿@using CrossBuy.BL.Platform.Ai
+@inject IAskService Ask
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@{
+    // RENDERED ONLY FOR SOMEONE WHO CAN ACTUALLY ASK SOMETHING. The catalogue is already filtered by
+    // authority, so an empty one means this person holds no module permission any question needs —
+    // and a button that can only ever refuse is worse than no button.
+    IReadOnlyList<IAskHandler> catalogue;
+    try { catalogue = await Ask.AvailableAsync(Context.RequestAborted); }
+    catch { catalogue = new List<IAskHandler>(); }
+
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    string T(AskText t) => isAr ? t.Ar : t.En;
+}
+
+@if (catalogue.Count > 0)
+{
+    <style>
+        /* One token layer on the platform primary (#0E4A9E), so the panel belongs to the app.
+           EVERY colour below is a token: nothing inherits, because an element that sets no colour
+           picks up whatever the host theme happens to give it — which is how the item name came
+           out orange. */
+        .cb-ai{--cb-ai-brand:#0E4A9E;--cb-ai-brand-soft:#EAF1FB;--cb-ai-ink:#1B1B29;
+            --cb-ai-ink-2:#4B5675;--cb-ai-muted:#99A1B7;--cb-ai-line:#E9EDF5;
+            --cb-ai-surface:#fff;--cb-ai-canvas:#F7F9FC;
+            --cb-ai-ok:#17795E;--cb-ai-ok-bg:#E6F6F1;--cb-ai-part:#4B5675;--cb-ai-part-bg:#EEF1F6}
+
+        /* ---- launcher ---- */
+        .cb-ai-fab{position:fixed;inset-block-end:calc(24px + env(safe-area-inset-bottom,0px));
+            inset-inline-end:calc(24px + env(safe-area-inset-right,0px));z-index:1040;
+            width:60px;height:60px;border-radius:50%;border:0;cursor:pointer;padding:0;
+            background:var(--cb-ai-brand);color:#fff;
+            box-shadow:0 8px 22px rgba(14,74,158,.30);
+            display:grid;place-items:center;transition:transform .16s ease,box-shadow .16s ease}
+        .cb-ai-fab:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(14,74,158,.38)}
+        .cb-ai-fab:focus-visible{outline:3px solid #9CC4F2;outline-offset:3px}
+
+        /* ---- panel: hugs its content, capped — never a tall empty box ---- */
+        .cb-ai-panel{position:fixed;inset-block-end:calc(96px + env(safe-area-inset-bottom,0px));
+            inset-inline-end:calc(24px + env(safe-area-inset-right,0px));z-index:1041;
+            width:min(420px,calc(100vw - 24px));max-height:min(720px,calc(100vh - 150px));
+            background:var(--cb-ai-surface);border-radius:14px;border:1px solid var(--cb-ai-line);
+            box-shadow:0 20px 48px rgba(27,27,41,.16),0 2px 6px rgba(27,27,41,.06);
+            display:none;flex-direction:column;overflow:hidden;
+            opacity:0;transform:translateY(8px);transition:opacity .15s ease,transform .15s ease}
+        .cb-ai-panel.show{display:flex;opacity:1;transform:none}
+
+        /* ---- header: one calm band, not a heavy slab ---- */
+        .cb-ai-head{display:flex;align-items:center;gap:11px;padding:14px 16px;
+            background:var(--cb-ai-brand);color:#fff;flex:none}
+        .cb-ai-mark{width:36px;height:36px;border-radius:10px;flex:none;display:grid;place-items:center;
+            background:rgba(255,255,255,.18)}
+        .cb-ai-title{font-size:.95rem;font-weight:600;line-height:1.25;color:#fff}
+        .cb-ai-sub{font-size:.73rem;line-height:1.35;margin-top:2px;color:rgba(255,255,255,.80)}
+        .cb-ai-x{margin-inline-start:auto;width:30px;height:30px;border-radius:8px;border:0;padding:0;
+            background:transparent;color:#fff;cursor:pointer;display:grid;place-items:center;
+            transition:background .14s ease}
+        .cb-ai-x:hover{background:rgba(255,255,255,.18)}
+
+        /* ---- body ---- */
+        .cb-ai-body{padding:16px;overflow-y:auto;display:flex;flex-direction:column;gap:12px;
+            background:var(--cb-ai-canvas);flex:1 1 auto;min-height:0}
+        .cb-ai-intro{font-size:.8rem;line-height:1.75;color:var(--cb-ai-ink-2)}
+
+        /* suggestions are OFFERS: outlined, never filled like a primary action */
+        .cb-ai-sugs{display:flex;flex-wrap:wrap;gap:7px}
+        .cb-ai-sug{font-size:.79rem;line-height:1.3;padding:8px 13px;border-radius:10px;cursor:pointer;
+            border:1px solid #D6E2F3;background:var(--cb-ai-surface);color:var(--cb-ai-brand);
+            text-align:start;transition:background .14s ease,border-color .14s ease}
+        .cb-ai-sug:hover{background:var(--cb-ai-brand-soft);border-color:#B9D0EE}
+        .cb-ai-sug:focus-visible{outline:2px solid var(--cb-ai-brand);outline-offset:2px}
+
+        /* ---- messages ---- */
+        .cb-ai-q{align-self:flex-end;max-width:88%;background:var(--cb-ai-brand);color:#fff;
+            font-size:.86rem;line-height:1.65;padding:9px 14px;border-radius:12px 12px 4px 12px}
+        .cb-ai-a{align-self:stretch;background:var(--cb-ai-surface);border:1px solid var(--cb-ai-line);
+            border-radius:12px 12px 12px 4px;padding:12px 14px}
+        .cb-ai-refuse{border-style:dashed;background:var(--cb-ai-canvas)}
+
+        /* answers: one grid, so the figures line up down a single column */
+        .cb-ai-row{display:grid;grid-template-columns:1fr auto;gap:14px;align-items:start;
+            padding:9px 0;border-bottom:1px solid var(--cb-ai-line)}
+        .cb-ai-row:last-of-type{border-bottom:0}
+        /* A link is underlined on hover rather than permanently, so a list of twenty-five
+           rows does not read as a wall of underlines, and it inherits the row's colour so
+           the figure column stays the thing the eye lands on. */
+        .cb-ai-link{color:inherit;text-decoration:none;border-bottom:1px dashed currentColor;cursor:pointer}
+        .cb-ai-link:hover{color:#0E4A9E;border-bottom-style:solid}
+        .cb-ai-k{font-size:.84rem;line-height:1.45;color:var(--cb-ai-ink);font-weight:500;
+            min-width:0;overflow-wrap:anywhere}
+        .cb-ai-note{display:block;font-size:.73rem;line-height:1.5;color:var(--cb-ai-muted);
+            font-weight:400;margin-top:2px}
+        .cb-ai-v{font-size:.92rem;font-weight:700;color:var(--cb-ai-ink);white-space:nowrap;
+            font-variant-numeric:tabular-nums;font-feature-settings:"tnum";padding-top:1px}
+
+        /* ---- provenance ---- */
+        .cb-ai-prov{display:flex;flex-wrap:wrap;align-items:center;gap:6px;
+            margin-top:11px;padding-top:10px;border-top:1px solid var(--cb-ai-line);
+            font-size:.72rem;color:var(--cb-ai-muted)}
+        .cb-ai-pill{padding:3px 9px;border-radius:7px;background:var(--cb-ai-part-bg);
+            color:var(--cb-ai-part);font-size:.71rem}
+        .cb-ai-pill.ok{background:var(--cb-ai-ok-bg);color:var(--cb-ai-ok)}
+        .cb-ai-pill.part{background:var(--cb-ai-part-bg);color:var(--cb-ai-part)}
+        .cb-ai-withheld{font-size:.76rem;line-height:1.65;color:var(--cb-ai-ink-2);margin-top:8px}
+        /* An assumption the answer made. Quiet, but above the figures rather than under them:
+           it changes what the numbers MEAN, so it cannot sit where a footnote sits. */
+        /* The reply itself. Larger than the rows and set apart, because it is the answer and they
+           are the working. */
+        .cb-ai-spoken{font-size:.95rem;line-height:1.65;font-weight:600;color:var(--cb-ai-ink);
+                      margin:0 0 9px}
+        .cb-ai-about{font-size:.76rem;line-height:1.6;color:var(--cb-ai-ink-2);margin:0 0 7px;
+                     padding-inline-start:9px;border-inline-start:2px solid var(--cb-ai-brand-soft)}
+
+        .cb-ai-dots{display:inline-flex;gap:4px;align-items:center;margin-inline-start:4px}
+        .cb-ai-dots i{width:6px;height:6px;border-radius:50%;background:#C3CBDC;display:block;
+            animation:cbAiBlink 1s infinite ease-in-out}
+        .cb-ai-dots i:nth-child(2){animation-delay:.15s}
+        .cb-ai-dots i:nth-child(3){animation-delay:.3s}
+        @@keyframes cbAiBlink{0%,80%,100%{opacity:.3}40%{opacity:1}}
+        @@media (prefers-reduced-motion: reduce){.cb-ai-dots i{animation:none}.cb-ai-panel{transition:none}}
+
+        /* ---- composer: one field, a clear edge, the button sized to the field ---- */
+        .cb-ai-foot{padding:12px 16px 14px;border-top:1px solid var(--cb-ai-line);
+            background:var(--cb-ai-surface);flex:none}
+        .cb-ai-input{display:flex;align-items:center;gap:8px}
+        .cb-ai-input input{flex:1 1 auto;min-width:0;height:42px;padding:0 14px;
+            border:1px solid #DBE1EC;border-radius:10px;background:var(--cb-ai-surface);
+            font-size:.86rem;color:var(--cb-ai-ink);outline:none;
+            transition:border-color .14s ease,box-shadow .14s ease}
+        .cb-ai-input input::placeholder{color:var(--cb-ai-muted)}
+        /* A face is a fixed square so a column of people stays a column; object-fit keeps a
+           portrait from stretching, which is how a photo starts looking like a different person. */
+        .cb-ai-face{width:34px;height:34px;border-radius:50%;object-fit:cover;
+                    background:rgba(0,0,0,.06)}
+        .cb-ai-row-face{grid-template-columns:auto 1fr auto;align-items:center}
+        .cb-ai-row-nofig{grid-template-columns:1fr}
+        /* A field list, not a table: two columns that stay readable at phone width, with the
+           label quiet and the value carrying the weight. bdi on the value keeps a Latin drug
+           name or a date from flipping the line in Arabic. */
+        .cb-ai-fields{margin-top:7px;display:flex;flex-direction:column;gap:3px}
+        .cb-ai-field{display:grid;grid-template-columns:minmax(72px,34%) 1fr;gap:10px;
+                     padding:3px 0;border-bottom:1px dashed rgba(0,0,0,.07)}
+        .cb-ai-field:last-child{border-bottom:0}
+        .cb-ai-flabel{color:var(--cb-ai-muted);font-size:.86em}
+        .cb-ai-fvalue{font-weight:600}
+        .cb-ai-row-face.cb-ai-row-nofig{grid-template-columns:auto 1fr}
+        .cb-ai-input input:focus{border-color:var(--cb-ai-brand);
+            box-shadow:0 0 0 3px rgba(14,74,158,.10)}
+        .cb-ai-send{width:42px;height:42px;flex:none;border:0;border-radius:10px;cursor:pointer;
+            background:var(--cb-ai-brand);color:#fff;display:grid;place-items:center;
+            transition:opacity .14s ease}
+        .cb-ai-send:hover{opacity:.92}
+        .cb-ai-send:disabled{opacity:.4;cursor:default}
+        .cb-ai-hint{font-size:.7rem;color:var(--cb-ai-muted);margin-top:8px;text-align:center}
+
+        @@media (prefers-color-scheme: dark){
+            .cb-ai{--cb-ai-ink:#E6E9F0;--cb-ai-ink-2:#B5BCCC;--cb-ai-muted:#8A91A6;
+                --cb-ai-line:#2B2B40;--cb-ai-surface:#1B1B29;--cb-ai-canvas:#15151F;
+                --cb-ai-brand-soft:#1E2A3E;--cb-ai-part-bg:#232334;--cb-ai-part:#B5BCCC;
+                --cb-ai-ok-bg:#12302A;--cb-ai-ok:#5CC9A7}
+            .cb-ai-sug{border-color:#2F3A50;color:#8AB4F0}
+            .cb-ai-input input{border-color:#2F3A50}
+        }
+    </style>
+
+    <div class="cb-ai">
+        <button type="button" class="cb-ai-fab" id="cbAiFab"
+                title="@Localizer["Assistant"]" aria-label="@Localizer["Assistant"]"
+                aria-expanded="false" aria-controls="cbAiPanel">
+            <i class="ki-outline ki-message-text-2 fs-2x" style="color:#fff"></i>
+        </button>
+
+        <div class="cb-ai-panel" id="cbAiPanel" role="dialog" aria-modal="false" aria-labelledby="cbAiTitle">
+            <div class="cb-ai-head">
+                <span class="cb-ai-mark"><i class="ki-outline ki-abstract-26 fs-4" style="color:#fff"></i></span>
+                <div class="min-w-0">
+                    <div class="cb-ai-title" id="cbAiTitle">@Localizer["Assistant"]</div>
+                    <div class="cb-ai-sub">@Localizer["Answers only within your permissions"]</div>
+                </div>
+                <button type="button" class="cb-ai-x" id="cbAiClose" aria-label="@Localizer["Close"]">
+                    <i class="ki-outline ki-cross fs-5" style="color:#fff"></i>
+                </button>
+            </div>
+
+            <div class="cb-ai-body" id="cbAiBody">
+                <div class="cb-ai-intro" id="cbAiIntro">
+                    @Localizer["I answer from your own data and nothing leaves this installation. I am not a language model yet: I match your wording against a defined list, so I answer only what I recognise and say so when I do not."]
+                </div>
+                <div class="cb-ai-sugs" id="cbAiSugs">
+                    @foreach (var h in catalogue)
+                    {
+                        <button type="button" class="cb-ai-sug cb-ai-example"
+                                data-q="@T(h.Example)" title="@T(h.Description)">@T(h.Example)</button>
+                    }
+                </div>
+            </div>
+
+            <div class="cb-ai-foot">
+                <div class="cb-ai-input">
+                    <input id="cbAiQ" type="text" maxlength="400" autocomplete="off"
+                           placeholder="@Localizer["Type your question…"]" />
+                    <button type="button" class="cb-ai-send" id="cbAiSend" aria-label="@Localizer["Ask"]">
+                        <i class="ki-outline ki-send fs-5" style="color:#fff"></i>
+                    </button>
+                </div>
+                <div class="cb-ai-hint">@Localizer["Reading only. Nothing here changes any record."]</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    (function () {
+        var fab = document.getElementById('cbAiFab');
+        var panel = document.getElementById('cbAiPanel');
+        var body = document.getElementById('cbAiBody');
+        var input = document.getElementById('cbAiQ');
+        var send = document.getElementById('cbAiSend');
+        var url = '@Url.Action("Ask", "Inventory")';
+
+        // THE CATALOGUE, kept in JS as well as in the markup. The pills are removed from the body
+        // once a conversation starts, so a later refusal had nothing to show under its own promise.
+        var catalogue = [
+@Html.Raw(string.Join(",\r\n", catalogue.Select(h =>
+    "            " + System.Text.Json.JsonSerializer.Serialize(new { q = T(h.Example), d = T(h.Description) }))))
+        ];
+
+        var L = {
+            partial: '@Localizer["Partial answer"]',
+            complete: '@Localizer["Complete within your scope"]',
+            company: '@Localizer["Company"]',
+            read: '@Localizer["Read from"]',
+            authority: '@Localizer["Authority"]',
+            failed: '@Localizer["The request could not be sent."]',
+            unreachable: '@Localizer["I could not reach the server. It may be restarting."]',
+            retry: '@Localizer["Try again"]',
+            looking: '@Localizer["Looking…"]'
+        };
+
+        function el(tag, cls, text) {
+            var e = document.createElement(tag);
+            if (cls) e.className = cls;
+            if (text != null) e.textContent = text;
+            return e;
+        }
+
+        function suggestionPills(onPick) {
+            var wrap = el('div', 'cb-ai-sugs');
+            catalogue.forEach(function (c) {
+                var b = el('button', 'cb-ai-sug', c.q);
+                b.type = 'button';
+                b.title = c.d;
+                b.addEventListener('click', function () { onPick(c.q); });
+                wrap.appendChild(b);
+            });
+            return wrap;
+        }
+
+        function open(state) {
+            panel.classList.toggle('show', state);
+            fab.classList.toggle('open', state);
+            fab.setAttribute('aria-expanded', state ? 'true' : 'false');
+            if (state) setTimeout(function () { input.focus(); }, 60);
+        }
+
+        fab.addEventListener('click', function () { open(!panel.classList.contains('show')); });
+        document.getElementById('cbAiClose').addEventListener('click', function () { open(false); });
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && panel.classList.contains('show')) { open(false); fab.focus(); }
+        });
+
+        // Reaching the server failed. Say so plainly and hand the question back, rather than
+        // leaving a dead end that looks like the assistant refused.
+        function addUnreachable(q) {
+            var card = el('div', 'cb-ai-a cb-ai-refuse');
+            card.appendChild(el('div', 'cb-ai-k', L.unreachable));
+            var again = el('button', 'cb-ai-sug', L.retry);
+            again.type = 'button';
+            again.style.marginTop = '9px';
+            again.addEventListener('click', function () { ask(q); });
+            card.appendChild(again);
+            body.appendChild(card); body.scrollTop = body.scrollHeight;
+        }
+
+        // Buttons the SERVER offered: each carries the exact question to send, so a correction or
+        // a follow-up is one click instead of a retype. Clicking only ASKS it — it goes through the
+        // same gate as anything typed, so nothing here can reach data the person could not.
+        function serverPills(list) {
+            var wrap = el('div', 'cb-ai-sugs');
+            list.forEach(function (s) {
+                if (!s || !s.question) { return; }
+                var b = el('button', 'cb-ai-sug', s.label || s.question);
+                b.type = 'button';
+                b.title = s.question;
+                b.addEventListener('click', function () { ask(s.question); });
+                wrap.appendChild(b);
+            });
+            return wrap;
+        }
+
+        // EVERY ASSUMPTION, SAID OUT LOUD. "About: برجر دجاج" when the question named no item, and
+        // "Taken to mean: …" when a spelling was corrected. An assumption the reader cannot see is
+        // one they cannot correct, and a figure under a silent assumption is a wrong answer that
+        // looks right.
+        function addAssumptions(card, d) {
+            [d && d.about, d && d.understood].forEach(function (t) {
+                if (t) { card.appendChild(el('div', 'cb-ai-about', t)); }
+            });
+        }
+
+        // THE REPLY, ABOVE THE EVIDENCE. A grid is a result; a sentence is a reply, and the person
+        // asked a question. Rendered first and larger, with the rows kept underneath so the sentence
+        // can always be checked against them.
+        function addSpoken(card, d) {
+            if (d && d.spoken) { card.appendChild(el('div', 'cb-ai-spoken', d.spoken)); }
+        }
+
+        function addAnswer(d) {
+            var card = el('div', 'cb-ai-a');
+
+            if (!d || d.ok !== true) {
+                addSpoken(card, d);
+                addAssumptions(card, d);
+                // The refusal KIND comes from `code`, never from message text: matching a localised
+                // string works in Arabic and silently stops working in English.
+                // Small talk comes back with code 'None' and a spoken line only. It is not a
+                // refusal and must not be framed as one.
+                var isRefusal = !(d && d.code === 'None' && d.spoken && !d.message);
+                if (isRefusal) card.className = 'cb-ai-a cb-ai-refuse';
+                // A SPOKEN LINE CAN STAND ALONE. A greeting carries no refusal message, and printing
+                // the generic failure under it would answer "hello" with "could not be sent".
+                if (d && d.message) {
+                    card.appendChild(el('div', 'cb-ai-k', d.message));
+                } else if (!(d && d.spoken)) {
+                    card.appendChild(el('div', 'cb-ai-k', L.failed));
+                }
+
+                // A REFUSAL THAT NAMES WHAT IT MEANT. "هل تقصد: برجر دجاج" as plain text is a dead
+                // end with extra steps — the person still has to retype it. These are buttons.
+                var offered = (d && d.suggestions) || [];
+                if (offered.length) {
+                    var p = serverPills(offered);
+                    p.style.marginTop = '9px';
+                    card.appendChild(p);
+                    body.appendChild(card); body.scrollTop = body.scrollHeight; return;
+                }
+
+                // The message ends with "these are the questions I can answer:" — so show them.
+                // A promise the interface does not keep is worse than no promise.
+                if (d && d.code === 'NotUnderstood') {
+                    // Prefer the list the SERVER ranked against this question; fall back to the
+                    // static catalogue only when it sent none.
+                    var ranked = (d.rows || []).filter(function (r) { return r.name; });
+                    var pills;
+                    if (ranked.length) {
+                        pills = el('div', 'cb-ai-sugs');
+                        ranked.forEach(function (r) {
+                            var b = el('button', 'cb-ai-sug', r.name);
+                            b.type = 'button';
+                            if (r.code) b.title = r.code;
+                            b.addEventListener('click', function () { ask(r.name); });
+                            pills.appendChild(b);
+                        });
+                    } else {
+                        pills = suggestionPills(ask);
+                    }
+                    pills.style.marginTop = '9px';
+                    card.appendChild(pills);
+                }
+                body.appendChild(card); body.scrollTop = body.scrollHeight; return;
+            }
+
+            addSpoken(card, d);
+            addAssumptions(card, d);
+
+            (d.rows || []).forEach(function (r) {
+                var row = el('div', 'cb-ai-row');
+                // SHOW THE PERSON, NOT A GLYPH. An answer naming a colleague renders their photo;
+                // a row with no photo renders nothing at all rather than a placeholder, because a
+                // letter in a circle is the thing the house rule exists to prevent. The image is
+                // dropped on error too: a broken-image icon beside someone's name is worse than
+                // their name alone.
+                if (r.photo) {
+                    // The row is a TWO-column grid (label | figure). A third child without this
+                    // modifier does not sit beside them - it takes the label's column and pushes
+                    // the figure onto a line of its own.
+                    row.className = 'cb-ai-row cb-ai-row-face';
+                    var img = el('img', 'cb-ai-face');
+                    img.src = r.photo;
+                    img.alt = '';
+                    img.loading = 'lazy';
+                    img.addEventListener('error', function () { img.remove(); });
+                    row.appendChild(img);
+                }
+                var k = el('div', 'cb-ai-k');
+                // THE ANSWER IS A WAY IN, NOT A DEAD END.
+                //
+                // A row that names one record carries a link to it, so a figure can be opened and
+                // checked rather than taken on trust. It opens in a NEW TAB on purpose: navigating
+                // this tab away would destroy the conversation the question was asked in, and losing
+                // the thread to look at one row is a bad trade.
+                //
+                // No href means the server did not have ONE record for this row - a monthly total
+                // covers many invoices - and nothing is rendered rather than linking to whichever
+                // record happened to sort first.
+                var label = r.name || r.code || '';
+                if (r.href) {
+                    var a = el('a', 'cb-ai-link');
+                    a.href = r.href;
+                    a.target = '_blank';
+                    a.rel = 'noopener';
+                    a.appendChild(document.createTextNode(label));
+                    k.appendChild(a);
+                } else {
+                    k.appendChild(document.createTextNode(label));
+                }
+                // The secondary fact sits under the label rather than beside it, so the value
+                // column stays a clean single line of figures.
+                if (r.name && r.code) k.appendChild(el('span', 'cb-ai-note', r.code));
+                // ONE RECORD, LAID OUT. A list wants the compact "a · b · c" line under each name;
+                // a single record wants its fields with their labels, because the same five facts
+                // without them are five words the reader has to decode. The server decides which
+                // it sent by putting `fields` on the row or not.
+                if (r.fields && r.fields.length) {
+                    var dl = el('div', 'cb-ai-fields');
+                    r.fields.forEach(function (f) {
+                        var row = el('div', 'cb-ai-field');
+                        row.appendChild(el('span', 'cb-ai-flabel', f.label));
+                        row.appendChild(el('bdi', 'cb-ai-fvalue', f.value));
+                        dl.appendChild(row);
+                    });
+                    k.appendChild(dl);
+                }
+                if (r.warehouse) k.appendChild(el('span', 'cb-ai-note', r.warehouse));
+                row.appendChild(k);
+                // A ROW WITH NO FIGURE HAS NO FIGURE CELL. The em-dash is the placeholder for a
+                // value that was not RECORDED, which is a claim about the data; a person answering
+                // "is there an employee called X" has no quantity to record in the first place,
+                // and printing the dash there says something untrue about them.
+                var hasFigure = r.onHandText != null || r.onHand != null;
+                if (hasFigure) {
+                    row.appendChild(el('bdi', 'cb-ai-v',
+                        r.onHandText ? String(r.onHandText) : String(r.onHand)));
+                } else {
+                    row.classList.add('cb-ai-row-nofig');
+                }
+                card.appendChild(row);
+            });
+
+            // WHAT TO ASK NEXT. Offered after an answer too, not only after a refusal: once the
+            // subject is settled, the next question is usually about the SAME thing, and naming
+            // the ones that exist beats leaving the person to guess at phrasing.
+            var next = d.suggestions || [];
+            if (next.length) {
+                var np = serverPills(next);
+                np.style.marginTop = '9px';
+                card.appendChild(np);
+            }
+
+            // PROVENANCE ON EVERY ANSWER. A number without its scope is a number without a claim.
+            var p = d.provenance || {};
+            var prov = el('div', 'cb-ai-prov');
+            prov.appendChild(el('span', 'cb-ai-pill', L.company + ': ' + (p.companyName || p.companyId)));
+            if (p.authority) prov.appendChild(el('span', 'cb-ai-pill', p.authority));
+            prov.appendChild(el('span', 'cb-ai-pill ' + (p.complete ? 'ok' : 'part'),
+                p.complete ? L.complete : L.partial));
+            card.appendChild(prov);
+
+            if (!p.complete && p.withheldNote) {
+                card.appendChild(el('div', 'cb-ai-withheld', p.withheldNote));
+            }
+
+            body.appendChild(card);
+            body.scrollTop = body.scrollHeight;
+        }
+
+        // THE THREAD THIS TAB IS ON.
+        //
+        // An opaque token so the server can remember what we were talking about, and nothing more:
+        // it selects a SUBJECT, the server keys that subject by the signed-in user as well, and the
+        // follow-up is re-authorised from scratch. So a token that leaked would buy nobody
+        // anything.
+        //
+        // sessionStorage, not localStorage: a conversation belongs to this tab and should not
+        // outlive it or appear in another one. Wrapped because storage throws in a private window,
+        // and an assistant that breaks there is worse than one that merely forgets.
+        var convFallback = null;
+        function convId() {
+            var k = 'cbAiConv';
+            try {
+                var v = sessionStorage.getItem(k);
+                if (!v) {
+                    v = (Date.now().toString(36) + Math.random().toString(36).slice(2, 10));
+                    sessionStorage.setItem(k, v);
+                }
+                return v;
+            } catch (e) {
+                if (!convFallback) {
+                    convFallback = Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+                }
+                return convFallback;
+            }
+        }
+
+        function ask(q) {
+            q = (q || '').trim();
+            if (!q) return;
+            var intro = document.getElementById('cbAiIntro');
+            if (intro) intro.remove();
+            var sugs = document.getElementById('cbAiSugs');
+            if (sugs) sugs.remove();
+
+            body.appendChild(el('div', 'cb-ai-q', q));
+            input.value = ''; send.disabled = true;
+
+            // A VISIBLE WAIT. A question that reaches the on-premises model crosses 2,489 journal
+            // entries and takes about nine seconds; with no indicator the panel sits silent and
+            // reads as broken — which is exactly how I first misread a slow answer as a missing one.
+            var waiting = el('div', 'cb-ai-a');
+            var w = el('div', 'cb-ai-k');
+            w.appendChild(document.createTextNode(L.looking + ' '));
+            var dots = el('span', 'cb-ai-dots');
+            dots.appendChild(el('i')); dots.appendChild(el('i')); dots.appendChild(el('i'));
+            w.appendChild(dots);
+            waiting.setAttribute('aria-live', 'polite');
+            waiting.appendChild(w);
+            body.appendChild(waiting);
+            body.scrollTop = body.scrollHeight;
+
+            fetch(url + '?question=' + encodeURIComponent(q) + '&c=' + encodeURIComponent(convId()),
+                  { headers: { 'Accept': 'application/json' } })
+                .then(function (r) {
+                    // A NON-JSON REPLY IS AN OUTAGE, NOT A REFUSAL. The server returns JSON for
+                    // every decision it makes, including "no" — so anything else means it was not
+                    // there to decide. The owner met this during a restart and it read like a
+                    // product fault; it is now named as what it is, and offers the question back.
+                    if (!r.ok) throw new Error('http ' + r.status);
+                    return r.json();
+                })
+                .then(function (d) { waiting.remove(); addAnswer(d); })
+                .catch(function () { waiting.remove(); addUnreachable(q); })
+                .finally(function () { send.disabled = false; input.focus(); });
+        }
+
+        send.addEventListener('click', function () { ask(input.value); });
+        input.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); ask(input.value); } });
+        document.querySelectorAll('.cb-ai-example').forEach(function (b) {
+            b.addEventListener('click', function () { ask(b.getAttribute('data-q')); });
+        });
+    })();
+    </script>
+}

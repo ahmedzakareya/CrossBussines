@@ -715,6 +715,109 @@ builder.Services.AddScoped<CrossBuy.BL.Platform.IModuleAccessService>(sp => sp.G
 builder.Services.AddScoped<InventoryAccessService>();
 builder.Services.AddScoped<IInventoryAccessService>(sp => sp.GetRequiredService<InventoryAccessService>());
 builder.Services.AddScoped<CrossBuy.BL.Platform.IModuleAccessService>(sp => sp.GetRequiredService<InventoryAccessService>());
+
+// THE SAFE-QUESTION LAYER for the AI assistant. Handlers are registered as a COLLECTION so the
+// catalogue is exactly what is registered here and nothing else: there is no discovery, no
+// reflection scan, no convention that could pick up a type nobody reviewed. Adding a question is a
+// deliberate line in this file, which is also where someone looking for "what can it be asked?"
+// will go. AskService resolves the company itself and re-checks every handler's module authority
+// against IModuleAccessService, so a handler cannot answer by merely existing.
+builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.IAskHandler, CrossBuy.BL.Platform.Ai.AskItemStockHandler>();
+builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.IAskHandler, CrossBuy.BL.Platform.Ai.AskCashBalanceHandler>();
+builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.IAskHandler, CrossBuy.BL.Platform.Ai.AskOpenReceivablesHandler>();
+builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.IAskHandler, CrossBuy.BL.Platform.Ai.AskItemMovementsHandler>();
+builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.IAskHandler, CrossBuy.BL.Platform.Ai.AskMyWarehousesHandler>();
+builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.IAskHandler, CrossBuy.BL.Platform.Ai.AskAnomaliesHandler>();
+builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.IAskHandler, CrossBuy.BL.Platform.Ai.AskItemValueHandler>();
+// "What sells?" - asked by the owner and refused, because no handler existed rather than
+// because the question was unclear. A catalogue of seven meets a person who has dozens.
+// Four more, each chosen because this database was measured and found able to support it.
+// The ones it could not - fill rate, supplier price variance, payables ageing, budget variance,
+// stockout prediction, below-reorder-point - are deliberately absent rather than answered from
+// data that does not exist.
+builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.IAskHandler, CrossBuy.BL.Platform.Ai.AskDormantItemsHandler>();
+// "What categories do we have?" - asked, and answered with a list of ITEMS, which is a
+// confident answer to a different question. A category is not an item and nothing knew it.
+builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.IAskHandler, CrossBuy.BL.Platform.Ai.AskItemCategoriesHandler>();
+builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.IAskHandler, CrossBuy.BL.Platform.Ai.AskCollectionDaysHandler>();
+// THE SURFACE LAYER. One governed view of sales with its judgement baked in, and a question that
+// is COMPOSED rather than chosen from a list - so the next sales question needs no code. It is
+// still gated exactly as every other intent: company resolved, module authority checked, scope
+// injected after the query is validated against what the surface declares.
+// RETIRED: the three hand-written sales questions. Each was one fixed grouping and one
+// fixed measure, and because their keywords were the more specific ones they intercepted
+// questions the surface answers exactly - "الهامش لكل عميل" came back grouped by item, and
+// "كام كمية اتباعت لكل صنف" came back as margin. sales.query replaces all three.
+builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.AskSalesSurface>();
+// PURCHASES, the second governed surface. Registered beside sales rather than inside it: the two
+// are read under the same authority but answer different questions, and a surface is the unit of
+// judgement here - see AskPurchasesSurface for what it refuses to expose (no margin on a purchase).
+builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.AskPurchasesSurface>();
+// STOCK MOVEMENTS, the third governed surface and the first to carry a warehouse dimension -
+// which is why it answers a class of question the assistant simply could not reach before.
+builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.AskInventorySurface>();
+// THE TILL, the fourth governed surface and the first carrying an HOUR and a BRANCH - so
+// "which hour is busiest" and "which branch takes the most" become answerable at all.
+builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.AskPosSurface>();
+builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.AskExpensesSurface>();
+builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.AskPractitionersSurface>();
+builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.AskMedicationsSurface>();
+builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.AskHospitalBillingSurface>();
+builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.AskHospitalClaimsSurface>();
+// THE ROSTER, the fifth governed surface and the first under Hr authority. It carries no pay
+// data of any kind - see AskWorkforceSurface for why that is a decision and not an omission.
+builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.AskWorkforceSurface>();
+// COMPOSING A QUERY, cheap-and-exact first. The rule composer resolves an ordinary sales question
+// from the surface own declared vocabulary in microseconds; the model composer handles a wording
+// nobody declared and costs seconds, so it is asked only when the rules decline.
+builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.AskRuleComposer>();
+builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.AskQueryComposer>();
+builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.IAskQueryComposer>(sp =>
+	new CrossBuy.BL.Platform.Ai.ChainedQueryComposer(new CrossBuy.BL.Platform.Ai.IAskQueryComposer[]
+	{
+		sp.GetRequiredService<CrossBuy.BL.Platform.Ai.AskRuleComposer>(),
+		sp.GetRequiredService<CrossBuy.BL.Platform.Ai.AskQueryComposer>(),
+	}));
+builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.IAskHandler, CrossBuy.BL.Platform.Ai.AskSalesQueryHandler>();
+builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.IAskHandler, CrossBuy.BL.Platform.Ai.AskPurchasesQueryHandler>();
+builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.IAskHandler, CrossBuy.BL.Platform.Ai.AskInventoryQueryHandler>();
+builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.IAskHandler, CrossBuy.BL.Platform.Ai.AskPosQueryHandler>();
+builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.IAskHandler, CrossBuy.BL.Platform.Ai.AskExpensesQueryHandler>();
+builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.IAskHandler, CrossBuy.BL.Platform.Ai.AskPractitionersQueryHandler>();
+builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.IAskHandler, CrossBuy.BL.Platform.Ai.AskMedicationsQueryHandler>();
+builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.IAskHandler, CrossBuy.BL.Platform.Ai.AskHospitalBillingQueryHandler>();
+builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.IAskHandler, CrossBuy.BL.Platform.Ai.AskHospitalClaimsQueryHandler>();
+builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.IAskHandler, CrossBuy.BL.Platform.Ai.AskWorkforceQueryHandler>();
+builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.IAskService, CrossBuy.BL.Platform.Ai.AskService>();
+// What the chat box was last talking about, so a follow-up need not restate its subject. Keyed by
+// the authenticated user as well as the conversation, and it carries a PARAMETER, never an answer:
+// every follow-up still passes the whole gate. Singleton over IMemoryCache because the store
+// outlives the request that wrote it; AddMemoryCache is idempotent.
+// WHAT THE ASSISTANT COULD NOT ANSWER, written down so the catalogue stops growing by
+// anecdote. Singleton: it holds a write lock over one file per day and keeps no per-request
+// state. It records the question and never who asked it - see the type's own header.
+builder.Services.AddSingleton<CrossBuy.BL.Platform.Ai.IAskRefusalLog, CrossBuy.BL.Platform.Ai.AskRefusalLog>();
+builder.Services.AddMemoryCache();
+builder.Services.AddSingleton<CrossBuy.BL.Platform.Ai.IAskConversation, CrossBuy.BL.Platform.Ai.AskConversation>();
+
+// WHICH QUESTION IS THIS — the interchangeable part, registered in CAPABILITY ORDER.
+//
+// The understanding service generalises (character n-grams see a prefix, a suffix or a typo as
+// what they are), so it is asked first; the keyword matcher follows, because a declared phrase
+// appearing literally is strong evidence and is exactly what a statistical matcher under-scores.
+// Either declining passes to the next, and only when all have declined is the question refused.
+//
+// The chain carries no authority: it chooses from intents already filtered to the asker, and its
+// answer is re-checked by AskService. That is what makes a language model a drop-in here later
+// rather than a new governance argument.
+builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.ServiceIntentResolver>();
+builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.KeywordIntentResolver>();
+builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.IAskIntentResolver>(sp =>
+	new CrossBuy.BL.Platform.Ai.ChainedIntentResolver(new CrossBuy.BL.Platform.Ai.IAskIntentResolver[]
+	{
+		sp.GetRequiredService<CrossBuy.BL.Platform.Ai.ServiceIntentResolver>(),
+		sp.GetRequiredService<CrossBuy.BL.Platform.Ai.KeywordIntentResolver>(),
+	}));
 builder.Services.AddScoped<IInventoryApprovalService, InventoryApprovalService>();
 
 // Approvals read platform (TAB-6, narrow read ownership). The reusable cross-silo inbox: it consumes

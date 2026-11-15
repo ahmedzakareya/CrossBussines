@@ -1,0 +1,40 @@
+@model IReadOnlyList<CrossBuy.BL.Platform.Ai.AskRefusalGroup>
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@{
+    // One page of refused questions (InventoryController.AskGapsData), injected by cbServerList.
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+
+    // THE REFUSAL CODE IS A FIELD, NOT A MESSAGE. Matching the localised sentence would work in
+    // Arabic and silently stop working in English, which is the house rule for refusals.
+    (string Tone, string Text) Kind(string code) => code switch
+    {
+        "NotUnderstood" => ("primary", isAr ? "لم يُفهَم" : "Not understood"),
+        "NoData"        => ("warning", isAr ? "لا توجد بيانات" : "No data"),
+        "Forbidden"     => ("danger",  isAr ? "ليست لديه صلاحية" : "Not permitted"),
+        _               => ("secondary", code),
+    };
+}
+@foreach (var g in Model)
+{
+    var k = Kind(g.Refusal ?? "");
+    <tr>
+        <td class="ps-4">
+            <div class="text-gray-900 fw-bold fs-7"><bdi>@g.Example</bdi></div>
+            @if (!string.IsNullOrWhiteSpace(g.TriedIntent))
+            {
+                @* WHAT IT TRIED tells the reader whether the gap is a missing capability or a
+                   missing wording — two different fixes, and the only thing that distinguishes
+                   them. *@
+                <div class="text-muted fs-8">@Localizer["Tried"]: <code>@g.TriedIntent</code></div>
+            }
+        </td>
+        <td class="text-center">
+            @* The count IS the ranking. A wording refused forty times is a different problem from
+               one refused once, and today there is no other way to tell those apart. *@
+            <span class="fw-bold fs-6 text-gray-900">@g.Count</span>
+        </td>
+        <td class="text-center"><span class="badge badge-light-@k.Tone fw-semibold">@k.Text</span></td>
+        <td class="text-center text-muted fs-8">@g.FirstSeen.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</td>
+        <td class="text-center pe-4 text-muted fs-8">@g.LastSeen.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</td>
+    </tr>
+}
