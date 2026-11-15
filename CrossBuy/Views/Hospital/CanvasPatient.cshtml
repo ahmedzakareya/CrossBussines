@@ -63,7 +63,6 @@
         .pp-words { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
         .pp-word { border: 2px solid #e5e9f4; border-radius: 14px; padding: 16px 18px; font-size: 1.35rem; font-weight: 700; cursor: pointer; text-align: center; background: #fff; }
         .pp-word.on { border-color: #DC2626; background: #FEF2F2; color: #991B1B; }
-        .pp-sum { font-size: 1.35rem; } .pp-sum dt { color: #6b7280; font-weight: 600; } .pp-sum dd { font-weight: 700; margin-bottom: 14px; }
         @@media (max-width: 640px) { .pp-nrs { grid-template-columns: repeat(6, 1fr); } }
     </style>
 </head>
@@ -73,6 +72,7 @@
     <div class="ki-main"><div class="ki-box">
         @if (!canEdit)
         {
+            <div class="text-center mb-4"><div class="symbol symbol-100px symbol-circle"><span class="symbol-label bg-light-primary"><i class="ki-outline ki-lock text-primary" style="font-size:4rem"></i></span></div></div>
             <h2 class="text-center">@T["This visit is closed"]</h2>
             <div class="sub text-center">@T["Please hand the device back to the doctor."]</div>
             <div class="text-center"><a class="btn btn-light ki-btn" href="@Url.Action("CanvasSheet", new { id = e.ID, kind = HospitalCanvasKind.Body })">@T["For the doctor: back to the visit"]</a></div>
@@ -123,18 +123,23 @@
 
             <div class="ki-step" data-step="3">
                 <h2>@T["Check before you send"]</h2>
-                <dl class="pp-sum mt-4">
-                    <dt>@T["Places"]</dt><dd data-sum-places></dd>
-                    <dt>@T["Strength now"]</dt><dd data-sum-nrs></dd>
-                    <dt>@T["What it feels like"]</dt><dd data-sum-words></dd>
-                </dl>
+                @* H127: the review as the theme's list widget (demo39 widgets/lists) — a large tinted symbol · the label over the answer *@
+                <div class="pp-sum mt-6">
+                    @foreach (var (icon, tone, label, hook) in new[] { ("geolocation", "danger", "Places", "data-sum-places"), ("chart-simple", "primary", "Strength now", "data-sum-nrs"), ("message-text", "info", "What it feels like", "data-sum-words") })
+                    {
+                        <div class="d-flex align-items-center bg-light-@tone rounded p-5 mb-4">
+                            <div class="symbol symbol-60px me-5 flex-shrink-0"><span class="symbol-label bg-white"><i class="ki-outline ki-@icon fs-2x text-@tone"></i></span></div>
+                            <div class="flex-grow-1"><div class="text-gray-600 fw-semibold fs-4">@T[label]</div><div class="text-gray-900 fw-bold fs-2" @hook></div></div>
+                        </div>
+                    }
+                </div>
                 <div class="ki-err" data-err2></div>
                 <div class="ki-nav"><button type="button" class="btn btn-light ki-btn" data-go="2">@T["Back"]</button><button type="button" class="btn btn-success ki-btn" data-send>@T["Send to the doctor"]</button></div>
             </div>
 
             <div class="ki-step text-center" data-step="4">
-                <i class="ki-outline ki-check-circle text-success" style="font-size:6rem"></i>
-                <h2 class="mt-4">@T["Thank you"]</h2>
+                <div class="symbol symbol-125px symbol-circle mb-4"><span class="symbol-label bg-light-success"><i class="ki-outline ki-check-circle text-success" style="font-size:5rem"></i></span></div>
+                <h2 class="mt-2">@T["Thank you"]</h2>
                 <div class="sub fs-3">@T["Please hand the device back to the doctor."]</div>
                 <a class="btn btn-light ki-btn mt-4" href="@Url.Action("CanvasSheet", new { id = e.ID, kind = HospitalCanvasKind.Body })">@T["For the doctor: back to the visit"]</a>
             </div>

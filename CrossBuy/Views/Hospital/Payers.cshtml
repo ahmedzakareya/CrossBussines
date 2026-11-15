@@ -3,6 +3,11 @@
 @using CrossBuy.Models.Context.Hospital
 @model IReadOnlyList<HospitalPayerRow>
 @inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H127 — payers and their contracts, and the patients' policies, composed from the theme (demo39): stat tiles
+    (dashboards/logistics), table widgets with a search in the card toolbar (widgets/tables, apps/ecommerce lists) and the
+    form modal (utilities/modals/forms/new-target).
+*@
 @{
     Layout = "~/Views/Shared/_LayoutHospital.cshtml";
     ViewData["Title"] = T["Payers & contracts"].Value;
@@ -13,14 +18,22 @@
     var inv = System.Globalization.CultureInfo.InvariantCulture;
     string Pct(decimal v) => v.ToString("0.##", inv) + "%";
     string Day(DateTime? d) => d?.ToString("yyyy-MM-dd", inv) ?? "";
+    string Arrow() => DisplayName.IsArabic ? "←" : "→";
+    // the person, not a glyph: the patient's photo, or their initials
     string Avatar(string? photo, string nameEn) => photo != null
-        ? $"<div class=\"symbol symbol-30px symbol-circle flex-shrink-0\"><img src=\"{photo}\" alt=\"\" style=\"object-fit:cover\" data-initials=\"{HospitalUi.Initials(nameEn)}\" /></div>"
-        : $"<div class=\"symbol symbol-30px symbol-circle flex-shrink-0\"><span class=\"symbol-label fw-bold fs-9 hp-initials\">{HospitalUi.Initials(nameEn)}</span></div>";
+        ? $"<div class=\"symbol symbol-35px symbol-circle flex-shrink-0 me-3\"><img src=\"{photo}\" alt=\"\" style=\"object-fit:cover\" data-initials=\"{HospitalUi.Initials(nameEn)}\" /></div>"
+        : $"<div class=\"symbol symbol-35px symbol-circle flex-shrink-0 me-3\"><span class=\"symbol-label fw-bold fs-7 hp-initials\">{HospitalUi.Initials(nameEn)}</span></div>";
     var dental = (ViewBag.DentalBenefits as Dictionary<int, HospitalDentalBenefit>) ?? new();
     object DentalData(HospitalPayer p) { var b = dental.GetValueOrDefault(p.ID); return new { payerId = p.ID, who = DisplayName.Of(p.Name, p.NameEn), limit = b?.YearlyLimit ?? 0,
         cover = HospitalDentalCategory.All.ToDictionary(c => c, c => HospitalDentalRules.CoverFor(b, c)) }; }
     object PayerData(HospitalPayer p) => new { id = p.ID, code = p.Code, name = p.Name, nameEn = p.NameEn, kind = p.Kind, classes = p.Classes, discountPct = p.DiscountPct, copayPct = p.CopayPct, copayCap = p.CopayCap,
         priceListId = p.PriceListId, preauthCategories = HospitalInsuranceRules.PreauthCategories(p.PreauthCategories).ToArray(), validFrom = Day(p.ValidFrom), validTo = Day(p.ValidTo), isActive = p.IsActive };
+    int active = Model.Count(r => r.Payer.IsActive && !r.Expired), expired = Model.Count(r => r.Expired);
+    int covered = policies.Count(r => r.Ineligible == null);
+    var tiles = new[] {
+        (Num: active.ToString(), Label: T["Contracts"].Value, Icon: "shield-tick", Tone: "primary", Line: string.Format(T["{0} of {1}"].Value, active, Model.Count) + " · " + T["Active"].Value),
+        (Num: expired.ToString(), Label: T["Expired"].Value, Icon: "time", Tone: expired > 0 ? "danger" : "success", Line: T["Contracts"].Value),
+        (Num: policies.Count.ToString(), Label: T["Patient policies"].Value, Icon: "people", Tone: "info", Line: string.Format(T["{0} of {1}"].Value, covered, policies.Count) + " · " + T["Covered"].Value) };
 }
 <link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
 @Html.AntiForgeryToken()
@@ -36,43 +49,75 @@
             </ul>
         </div>
         <div class="d-flex align-items-center gap-2 gap-lg-3 d-print-none">
-            <a href="@Url.Action("PriceLists")" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-price-tag fs-4"></i>@T["Price lists"]</a>
+            <a href="@Url.Action("PriceLists")" class="btn btn-sm btn-light btn-active-light-primary"><i class="ki-outline ki-price-tag fs-4"></i>@T["Price lists"]</a>
             @if (canManage) { <button type="button" class="btn btn-sm btn-primary" data-edit-payer><i class="ki-outline ki-plus fs-4"></i>@T["New contract"]</button> }
         </div>
     </div></div>
 
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
-        <div class="card mb-5">
-            <div class="card-header border-0 pt-6">
-                <div class="card-title align-items-start flex-column m-0">
-                    <span class="card-label fw-bold text-gray-900 fs-4">@T["Payers & contracts"]</span>
-                    <span class="text-muted mt-1 fw-semibold fs-7">@T["Each contract sets the discount, co-pay, price list and services needing approval"]</span>
-                </div>
-                <div class="card-toolbar"><div class="d-flex align-items-center position-relative"><i class="ki-outline ki-magnifier fs-3 position-absolute ms-4"></i><input type="text" data-filter="payer" class="form-control form-control-solid w-200px ps-12" placeholder="@T["Search..."]" /></div></div>
+        @* stat tiles — demo39 dashboards/logistics *@
+        <div class="row g-5 g-xl-8 mb-5">
+            @foreach (var s in tiles)
+            {
+                <div class="col-md-4"><div class="card card-flush h-100">
+                    <div class="card-header pt-5 flex-nowrap gap-3">
+                        <div class="card-title d-flex flex-column">
+                            <span class="fs-2hx fw-bold text-gray-900 me-2 lh-1 ls-n2 hp-num">@s.Num</span>
+                            <span class="text-gray-500 pt-1 fw-semibold fs-6">@s.Label</span>
+                        </div>
+                        <div class="card-toolbar"><div class="symbol symbol-45px"><span class="symbol-label bg-light-@s.Tone"><i class="ki-outline ki-@s.Icon fs-2x text-@s.Tone"></i></span></div></div>
+                    </div>
+                    <div class="card-body d-flex align-items-end pt-0">
+                        <div class="d-flex fs-7 fw-semibold align-items-center text-gray-500"><div class="bullet w-8px h-6px rounded-2 bg-@s.Tone me-3"></div><span class="hp-num">@s.Line</span></div>
+                    </div>
+                </div></div>
+            }
+        </div>
+
+        @* contracts — demo39 widgets/tables *@
+        <div class="card card-flush mb-5">
+            <div class="card-header pt-5">
+                <h3 class="card-title align-items-start flex-column">
+                    <span class="card-label fw-bold text-gray-800">@T["Payers & contracts"]</span>
+                    <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Each contract sets the discount, co-pay, price list and services needing approval"]</span>
+                </h3>
+                <div class="card-toolbar"><div class="d-flex align-items-center position-relative"><i class="ki-outline ki-magnifier fs-3 position-absolute ms-4"></i><input type="text" data-filter="payer" class="form-control form-control-solid w-250px ps-12" placeholder="@T["Search..."]" /></div></div>
             </div>
             <div class="card-body pt-2">
-                @if (Model.Count == 0) { <div class="text-center text-muted py-15"><i class="ki-outline ki-shield-tick fs-3x text-gray-300 d-block mb-4"></i>@T["No contracts yet."]</div> }
+                @if (Model.Count == 0)
+                {
+                    <div class="text-center py-10"><i class="ki-outline ki-shield-tick fs-3x text-gray-300 mb-4 d-block"></i>
+                        <div class="fs-6 fw-bold text-gray-700">@T["No contracts yet."]</div>
+                        <div class="fs-7 text-gray-500">@T["Each contract sets the discount, co-pay, price list and services needing approval"]</div></div>
+                }
                 else
                 {
-                    <div class="table-responsive"><table class="table align-middle table-row-dashed fs-6 gy-3 mb-0">
-                        <thead><tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0">
-                            <th>@T["Payer"]</th><th>@T["Classes"]</th><th class="text-end">@T["Discount"]</th><th class="text-end">@T["Co-pay"]</th><th>@T["Price list"]</th><th>@T["Validity"]</th><th class="text-end">@T["Rejection"]</th><th>@T["State"]</th><th class="text-end w-75px"></th>
+                    <div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
+                        <thead><tr class="fw-bold text-muted bg-light">
+                            <th class="ps-4 rounded-start">@T["Payer"]</th><th>@T["Classes"]</th><th class="text-end">@T["Discount"]</th><th class="text-end">@T["Co-pay"]</th><th>@T["Price list"]</th><th>@T["Validity"]</th><th class="text-end">@T["Rejection"]</th><th>@T["State"]</th><th class="text-end pe-4 rounded-end"></th>
                         </tr></thead>
-                        <tbody class="fw-semibold text-gray-700">
+                        <tbody>
                             @foreach (var r in Model)
                             {
-                                var p = r.Payer;
+                                var p = r.Payer; var db = dental.GetValueOrDefault(p.ID);
+                                string tone = !p.IsActive ? "secondary" : r.Expired ? "danger" : "primary";
                                 <tr data-row="payer">
-                                    <td><div class="fw-bold text-gray-900">@DisplayName.Of(p.Name, p.NameEn)</div><div class="text-muted fs-8"><span class="hp-num">@p.Code</span> · @T["kind:" + p.Kind]</div>
-                                        @if (dental.GetValueOrDefault(p.ID) is HospitalDentalBenefit db) { <div class="text-muted fs-8 mt-1"><i class="ki-outline ki-emoji-happy fs-8"></i> @T["Dental limit"] <span class="hp-num">@(db.YearlyLimit > 0 ? db.YearlyLimit.ToString("N3", inv) : "∞")</span></div> }</td>
-                                    <td class="text-gray-700">@(p.Classes ?? "—")</td>
-                                    <td class="text-end hp-num">@(p.PriceListId == null && p.DiscountPct > 0 ? Pct(p.DiscountPct) : "—")</td>
-                                    <td class="text-end hp-num">@(p.CopayPct > 0 ? Pct(p.CopayPct) : "—")@if (p.CopayCap > 0) {<div class="text-muted fs-8">@T["cap"] @p.CopayCap.ToString("N3", inv)</div>}</td>
-                                    <td>@if (r.PriceList != null) {<a href="@Url.Action("PriceList", new { id = p.PriceListId })" class="fw-semibold">@r.PriceList</a>} else {<span class="text-muted">@T["Main list"]</span>}</td>
-                                    <td class="hp-num fs-7">@Day(p.ValidFrom) → @(p.ValidTo == null ? "…" : Day(p.ValidTo))</td>
-                                    <td class="text-end hp-num @(r.RejectionRate > 8 ? "text-danger fw-bold" : "")">@(r.RejectionRate is decimal rr ? rr.ToString("0.0", inv) + "%" : "—")</td>
-                                    <td>@if (!p.IsActive) {<span class="badge badge-light fs-8">@T["Inactive"]</span>} else if (r.Expired) {<span class="badge badge-light-danger fs-8">@T["Expired"]</span>} else {<span class="badge badge-light-success fs-8">@T["Active"]</span>}</td>
-                                    <td class="text-end text-nowrap">@if (canManage) {<button type="button" class="btn btn-sm btn-light-primary me-1" data-edit-dental="@System.Text.Json.JsonSerializer.Serialize(DentalData(p))">@T["Dental"]</button><button type="button" class="btn btn-sm btn-light" data-edit-payer="@System.Text.Json.JsonSerializer.Serialize(PayerData(p))">@T["Edit"]</button>}</td>
+                                    <td class="ps-4"><div class="d-flex align-items-center">
+                                        <div class="symbol symbol-45px me-4 flex-shrink-0"><span class="symbol-label bg-light-@tone"><i class="ki-outline ki-shield-tick fs-2 text-@(tone == "secondary" ? "gray-600" : tone)"></i></span></div>
+                                        <div class="d-flex flex-column">
+                                            <span class="text-gray-900 fw-bold fs-6">@DisplayName.Of(p.Name, p.NameEn)</span>
+                                            <span class="text-muted fw-semibold d-block fs-7"><bdi class="hp-num" dir="ltr">@p.Code</bdi> · @T["kind:" + p.Kind]</span>
+                                            @if (db != null) { <span class="text-muted fw-semibold d-block fs-8"><i class="ki-outline ki-emoji-happy fs-8"></i> @T["Dental limit"] <span class="hp-num" dir="ltr">@(db.YearlyLimit > 0 ? db.YearlyLimit.ToString("N3", inv) : "∞")</span></span> }
+                                        </div>
+                                    </div></td>
+                                    <td class="text-gray-600 fw-semibold fs-7"><bdi>@(p.Classes ?? "—")</bdi></td>
+                                    <td class="text-end">@if (p.PriceListId == null && p.DiscountPct > 0) {<span class="badge badge-light-success fs-7 fw-bold hp-num" dir="ltr">@Pct(p.DiscountPct)</span>} else {<span class="text-muted">—</span>}</td>
+                                    <td class="text-end">@if (p.CopayPct > 0) {<span class="badge badge-light-primary fs-7 fw-bold hp-num" dir="ltr">@Pct(p.CopayPct)</span>} else {<span class="text-muted">—</span>}@if (p.CopayCap > 0) {<span class="text-muted fw-semibold d-block fs-8">@T["cap"] <span class="hp-num" dir="ltr">@p.CopayCap.ToString("N3", inv)</span></span>}</td>
+                                    <td>@if (r.PriceList != null) {<a href="@Url.Action("PriceList", new { id = p.PriceListId })" class="text-gray-800 fw-bold text-hover-primary fs-7"><i class="ki-outline ki-price-tag fs-6 text-primary me-1"></i>@r.PriceList</a>} else {<span class="text-muted fw-semibold fs-7">@T["Main list"]</span>}</td>
+                                    <td class="text-gray-600 fw-semibold fs-7 text-nowrap"><span class="hp-num">@Day(p.ValidFrom)</span> @Arrow() <span class="hp-num">@(p.ValidTo == null ? "…" : Day(p.ValidTo))</span></td>
+                                    <td class="text-end">@if (r.RejectionRate is decimal rr) {<span class="badge badge-light-@(rr > 8 ? "danger" : "success") fs-7 fw-bold hp-num" dir="ltr">@(rr.ToString("0.0", inv) + "%")</span>} else {<span class="text-muted">—</span>}</td>
+                                    <td>@if (!p.IsActive) {<span class="badge badge-light fs-7 fw-bold">@T["Inactive"]</span>} else if (r.Expired) {<span class="badge badge-light-danger fs-7 fw-bold">@T["Expired"]</span>} else {<span class="badge badge-light-success fs-7 fw-bold">@T["Active"]</span>}</td>
+                                    <td class="text-end pe-4 text-nowrap">@if (canManage) {<button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-primary me-1" title="@T["Dental benefit"]" data-bs-toggle="tooltip" data-edit-dental="@System.Text.Json.JsonSerializer.Serialize(DentalData(p))"><i class="ki-outline ki-emoji-happy fs-3"></i></button><button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-primary" title="@T["Edit"]" data-bs-toggle="tooltip" data-edit-payer="@System.Text.Json.JsonSerializer.Serialize(PayerData(p))"><i class="ki-outline ki-pencil fs-3"></i></button>}</td>
                                 </tr>
                             }
                         </tbody>
@@ -81,44 +126,50 @@
             </div>
         </div>
 
-        <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice">
-            <span class="symbol symbol-45px me-5 flex-shrink-0"><span class="symbol-label"><i class="ki-outline ki-price-tag fs-2x text-white"></i></span></span>
+        <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-6 mb-5">
+            <i class="ki-outline ki-information fs-2tx text-primary me-4"></i>
             <div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@T["Prices live in the price lists"]</h4>
                 <div class="fs-6 text-gray-700">@T["Each contract points at one list, in that list's currency. A contract on the main list takes its discount on top; a payer's own list has the discount built in."]</div></div>
         </div>
 
-        <div class="card">
-            <div class="card-header border-0 pt-6">
-                <div class="card-title align-items-start flex-column m-0">
-                    <span class="card-label fw-bold text-gray-900 fs-4">@T["Patient policies"]</span>
-                    <span class="text-muted mt-1 fw-semibold fs-7">@T["A patient is covered when the policy and the contract are both valid on the day"]</span>
-                </div>
+        @* patients' policies — demo39 widgets/tables, the patient's photo first *@
+        <div class="card card-flush">
+            <div class="card-header pt-5">
+                <h3 class="card-title align-items-start flex-column">
+                    <span class="card-label fw-bold text-gray-800">@T["Patient policies"]</span>
+                    <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["A patient is covered when the policy and the contract are both valid on the day"]</span>
+                </h3>
                 <div class="card-toolbar d-flex gap-2">
-                    <div class="d-flex align-items-center position-relative"><i class="ki-outline ki-magnifier fs-3 position-absolute ms-4"></i><input type="text" data-filter="policy" class="form-control form-control-solid w-200px ps-12" placeholder="@T["Search..."]" /></div>
+                    <div class="d-flex align-items-center position-relative"><i class="ki-outline ki-magnifier fs-3 position-absolute ms-4"></i><input type="text" data-filter="policy" class="form-control form-control-solid w-250px ps-12" placeholder="@T["Search..."]" /></div>
                     @if (canRegister && Model.Count > 0) { <button type="button" class="btn btn-sm btn-primary" data-edit-policy><i class="ki-outline ki-plus fs-4"></i>@T["Add policy"]</button> }
                 </div>
             </div>
             <div class="card-body pt-2">
-                @if (policies.Count == 0) { <div class="text-center text-muted py-15">@T["No patient policies yet."]</div> }
+                @if (policies.Count == 0)
+                {
+                    <div class="text-center py-10"><i class="ki-outline ki-people fs-3x text-gray-300 mb-4 d-block"></i>
+                        <div class="fs-6 fw-bold text-gray-700">@T["No patient policies yet."]</div>
+                        <div class="fs-7 text-gray-500">@T["A patient is covered when the policy and the contract are both valid on the day"]</div></div>
+                }
                 else
                 {
-                    <div class="table-responsive"><table class="table align-middle table-row-dashed fs-6 gy-3 mb-0">
-                        <thead><tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0">
-                            <th>@T["Patient"]</th><th>@T["Payer"]</th><th>@T["Member no."]</th><th>@T["Class"]</th><th>@T["Validity"]</th><th>@T["Cover today"]</th><th class="text-end w-75px"></th>
+                    <div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
+                        <thead><tr class="fw-bold text-muted bg-light">
+                            <th class="ps-4 rounded-start">@T["Patient"]</th><th>@T["Payer"]</th><th>@T["Member no."]</th><th>@T["Class"]</th><th>@T["Validity"]</th><th>@T["Cover today"]</th><th class="text-end pe-4 rounded-end"></th>
                         </tr></thead>
-                        <tbody class="fw-semibold text-gray-700">
+                        <tbody>
                             @foreach (var r in policies)
                             {
                                 var po = r.Policy;
                                 <tr data-row="policy">
-                                    <td><div class="d-flex align-items-center gap-2">@Html.Raw(Avatar(r.Photo, r.PatientNameEn))
-                                        <div><a href="@Url.Action("Patient", new { id = po.PatientId })" class="fw-bold text-gray-900 text-hover-primary">@DisplayName.Of(r.PatientName, r.PatientNameEn)</a><div class="text-muted fs-8 hp-num">@r.Mrn</div></div></div></td>
-                                    <td>@DisplayName.Of(r.Payer, r.PayerEn)</td>
-                                    <td class="hp-num">@po.PolicyNo</td>
-                                    <td>@(po.MemberClass ?? "—")</td>
-                                    <td class="hp-num fs-7">@Day(po.ValidFrom) → @(po.ValidTo == null ? "…" : Day(po.ValidTo))</td>
-                                    <td>@if (r.Ineligible == null) {<span class="badge badge-light-success fs-8">@T["Covered"]</span>} else {<span class="badge badge-light-danger fs-8">@T["inelig:" + r.Ineligible]</span>}</td>
-                                    <td class="text-end">@if (canRegister) {<button type="button" class="btn btn-sm btn-light" data-edit-policy="@System.Text.Json.JsonSerializer.Serialize(new { id = po.ID, patientId = po.PatientId, patient = DisplayName.Of(r.PatientName, r.PatientNameEn) + " — " + r.Mrn, payerId = po.PayerId, policyNo = po.PolicyNo, memberClass = po.MemberClass, validFrom = Day(po.ValidFrom), validTo = Day(po.ValidTo), isActive = po.IsActive })">@T["Edit"]</button>}</td>
+                                    <td class="ps-4"><div class="d-flex align-items-center">@Html.Raw(Avatar(r.Photo, r.PatientNameEn))
+                                        <div class="d-flex flex-column"><a href="@Url.Action("Patient", new { id = po.PatientId })" class="text-gray-900 fw-bold text-hover-primary fs-6">@DisplayName.Of(r.PatientName, r.PatientNameEn)</a><bdi class="text-muted fw-semibold d-block fs-7 hp-num">@r.Mrn</bdi></div></div></td>
+                                    <td class="text-gray-800 fw-bold fs-7">@DisplayName.Of(r.Payer, r.PayerEn)</td>
+                                    <td><bdi class="text-gray-800 fw-bold fs-7 hp-num" dir="ltr">@po.PolicyNo</bdi></td>
+                                    <td>@if (po.MemberClass != null) {<span class="badge badge-light-primary fs-7 fw-bold"><bdi>@po.MemberClass</bdi></span>} else {<span class="text-muted">—</span>}</td>
+                                    <td class="text-gray-600 fw-semibold fs-7 text-nowrap"><span class="hp-num">@Day(po.ValidFrom)</span> @Arrow() <span class="hp-num">@(po.ValidTo == null ? "…" : Day(po.ValidTo))</span></td>
+                                    <td>@if (r.Ineligible == null) {<span class="badge badge-light-success fs-7 fw-bold">@T["Covered"]</span>} else {<span class="badge badge-light-danger fs-7 fw-bold">@T["inelig:" + r.Ineligible]</span>}</td>
+                                    <td class="text-end pe-4">@if (canRegister) {<button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-primary" title="@T["Edit"]" data-bs-toggle="tooltip" data-edit-policy="@System.Text.Json.JsonSerializer.Serialize(new { id = po.ID, patientId = po.PatientId, patient = DisplayName.Of(r.PatientName, r.PatientNameEn) + " — " + r.Mrn, payerId = po.PayerId, policyNo = po.PolicyNo, memberClass = po.MemberClass, validFrom = Day(po.ValidFrom), validTo = Day(po.ValidTo), isActive = po.IsActive })"><i class="ki-outline ki-pencil fs-3"></i></button>}</td>
                                 </tr>
                             }
                         </tbody>
@@ -131,64 +182,71 @@
 
 @if (canManage)
 {
-    <div class="modal fade" id="payerModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-750px"><div class="modal-content">
-        <div class="modal-header"><h2 class="fw-bold m-0">@T["Contract"]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
-        <div class="modal-body py-8 px-lg-10" data-payer-form>
-            <div class="row g-5">
-                <div class="col-md-3"><label class="form-label required">@T["Code"]</label><input class="form-control form-control-solid hp-num" dir="ltr" data-k="code" maxlength="20" /></div>
-                <div class="col-md-5"><label class="form-label required">@T["Name"]</label><input class="form-control form-control-solid" data-k="name" maxlength="150" /></div>
-                <div class="col-md-4"><label class="form-label required">@T["Name (English)"]</label><input class="form-control form-control-solid" dir="ltr" data-k="nameEn" maxlength="150" /></div>
-                <div class="col-md-4"><label class="form-label">@T["Kind"]</label><select class="form-select form-select-solid" data-k="kind" data-control="select2" data-hide-search="true" data-dropdown-parent="#payerModal">
+    @* the form modals — demo39 utilities/modals/forms/new-target *@
+    <div class="modal fade" id="payerModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-750px"><div class="modal-content rounded">
+        <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-10" data-payer-form>
+            <div class="mb-10 text-center"><h1 class="mb-3">@T["Contract"]</h1>
+                <div class="text-muted fw-semibold fs-5">@T["Each contract sets the discount, co-pay, price list and services needing approval"]</div></div>
+            <div class="row g-6">
+                <div class="col-md-3 fv-row"><label class="fs-6 fw-semibold mb-2 required">@T["Code"]</label><input class="form-control form-control-solid hp-num" dir="ltr" data-k="code" maxlength="20" /></div>
+                <div class="col-md-5 fv-row"><label class="fs-6 fw-semibold mb-2 required">@T["Name"]</label><input class="form-control form-control-solid" data-k="name" maxlength="150" /></div>
+                <div class="col-md-4 fv-row"><label class="fs-6 fw-semibold mb-2 required">@T["Name (English)"]</label><input class="form-control form-control-solid" dir="ltr" data-k="nameEn" maxlength="150" /></div>
+                <div class="col-md-4 fv-row"><label class="fs-6 fw-semibold mb-2">@T["Kind"]</label><select class="form-select form-select-solid" data-k="kind" data-control="select2" data-hide-search="true" data-dropdown-parent="#payerModal">
                     @foreach (var k in HospitalPayerKind.All) { <option value="@k">@T["kind:" + k]</option> }</select></div>
-                <div class="col-md-8"><label class="form-label">@T["Classes"]</label><input class="form-control form-control-solid" data-k="classes" maxlength="100" placeholder="VIP · A · B" /></div>
-                <div class="col-md-6"><label class="form-label">@T["Price list"]</label><select class="form-select form-select-solid" data-k="priceListId" data-control="select2" data-dropdown-parent="#payerModal">
+                <div class="col-md-8 fv-row"><label class="fs-6 fw-semibold mb-2">@T["Classes"]</label><input class="form-control form-control-solid" data-k="classes" maxlength="100" placeholder="VIP · A · B" /></div>
+                <div class="col-md-6 fv-row"><label class="fs-6 fw-semibold mb-2">@T["Price list"]</label><select class="form-select form-select-solid" data-k="priceListId" data-control="select2" data-dropdown-parent="#payerModal">
                     <option value="">@T["Main list"]</option>
                     @foreach (var l in lists) { <option value="@l.ID">@l.Label</option> }</select></div>
-                <div class="col-md-6"><label class="form-label">@T["Discount"] <span class="text-muted fs-8">@T["On the main list only"]</span></label><div class="input-group input-group-solid"><input class="form-control form-control-solid hp-num" dir="ltr" data-k="discountPct" data-num /><span class="input-group-text">%</span></div></div>
-                <div class="col-md-6"><label class="form-label">@T["Co-pay"]</label><div class="input-group input-group-solid"><input class="form-control form-control-solid hp-num" dir="ltr" data-k="copayPct" data-num /><span class="input-group-text">%</span></div></div>
-                <div class="col-md-6"><label class="form-label">@T["Co-pay cap per bill"] <span class="text-muted fs-8">@T["0 = no cap"]</span></label><div class="input-group input-group-solid"><input class="form-control form-control-solid hp-num" dir="ltr" data-k="copayCap" data-num /><span class="input-group-text">@cur</span></div></div>
-                <div class="col-12"><label class="form-label">@T["Services needing the payer's approval"]</label><select class="form-select form-select-solid" multiple data-k="preauthCategories" data-control="select2" data-close-on-select="false" data-dropdown-parent="#payerModal">
+                <div class="col-md-6 fv-row"><label class="fs-6 fw-semibold mb-2">@T["Discount"] <span class="text-muted fs-8">@T["On the main list only"]</span></label><div class="input-group input-group-solid"><input class="form-control form-control-solid hp-num" dir="ltr" data-k="discountPct" data-num /><span class="input-group-text">%</span></div></div>
+                <div class="col-md-6 fv-row"><label class="fs-6 fw-semibold mb-2">@T["Co-pay"]</label><div class="input-group input-group-solid"><input class="form-control form-control-solid hp-num" dir="ltr" data-k="copayPct" data-num /><span class="input-group-text">%</span></div></div>
+                <div class="col-md-6 fv-row"><label class="fs-6 fw-semibold mb-2">@T["Co-pay cap per bill"] <span class="text-muted fs-8">@T["0 = no cap"]</span></label><div class="input-group input-group-solid"><input class="form-control form-control-solid hp-num" dir="ltr" data-k="copayCap" data-num /><span class="input-group-text">@cur</span></div></div>
+                <div class="col-12 fv-row"><label class="fs-6 fw-semibold mb-2">@T["Services needing the payer's approval"]</label><select class="form-select form-select-solid" multiple data-k="preauthCategories" data-control="select2" data-close-on-select="false" data-dropdown-parent="#payerModal">
                     @foreach (var c in HospitalServiceCategories.All) { <option value="@c">@T["cat:" + c]</option> }</select></div>
-                <div class="col-md-4"><label class="form-label required">@T["Valid from"]</label><input type="date" class="form-control form-control-solid hp-num" data-k="validFrom" /></div>
-                <div class="col-md-4"><label class="form-label">@T["Valid to"]</label><input type="date" class="form-control form-control-solid hp-num" data-k="validTo" /></div>
-                <div class="col-md-4 d-flex align-items-end"><div class="form-check form-switch form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" data-k="isActive" checked /><label class="form-check-label">@T["Active"]</label></div></div>
+                <div class="col-md-4 fv-row"><label class="fs-6 fw-semibold mb-2 required">@T["Valid from"]</label><input type="date" class="form-control form-control-solid hp-num" data-k="validFrom" /></div>
+                <div class="col-md-4 fv-row"><label class="fs-6 fw-semibold mb-2">@T["Valid to"]</label><input type="date" class="form-control form-control-solid hp-num" data-k="validTo" /></div>
+                <div class="col-md-4 d-flex align-items-end"><div class="form-check form-switch form-check-custom form-check-solid mb-3"><input class="form-check-input" type="checkbox" data-k="isActive" checked /><label class="form-check-label fw-semibold">@T["Active"]</label></div></div>
             </div>
+            <div class="text-center pt-10"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-save-payer>@T["Save"]</button></div>
         </div>
-        <div class="modal-footer flex-center"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-save-payer>@T["Save"]</button></div>
     </div></div></div>
 }
 @if (canRegister)
 {
     @* H15: the payer's dental benefit — the cover per dental category and the yearly dental limit *@
-    <div class="modal fade" id="dentalModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-650px"><div class="modal-content">
-        <div class="modal-header"><h2 class="fw-bold m-0 fs-4">@T["Dental benefit"] <span class="text-muted fs-6" data-db-who></span></h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
-        <div class="modal-body py-6 px-lg-10">
-            <div class="mb-5"><label class="form-label required">@T["Yearly dental limit"] <span class="text-muted fs-8">@cur</span></label><input type="number" min="0" step="0.001" class="form-control form-control-solid hp-num" dir="ltr" data-db="limit" /><div class="form-text">@T["0 = no limit"]</div></div>
-            <div class="row g-4">
+    <div class="modal fade" id="dentalModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-650px"><div class="modal-content rounded">
+        <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-10">
+            <div class="mb-10 text-center"><h1 class="mb-3">@T["Dental benefit"]</h1>
+                <div class="text-muted fw-semibold fs-5" data-db-who></div></div>
+            <div class="d-flex flex-column mb-8 fv-row"><label class="fs-6 fw-semibold mb-2 required">@T["Yearly dental limit"] <span class="text-muted fs-8">@cur</span></label><input type="number" min="0" step="0.001" class="form-control form-control-solid hp-num" dir="ltr" data-db="limit" /><div class="text-muted fs-7 mt-2">@T["0 = no limit"]</div></div>
+            <div class="row g-5">
                 @foreach (var c in HospitalDentalCategory.All)
                 {
-                    <div class="col-md-3 col-6"><label class="form-label fs-7">@T["dcat:" + c]</label><div class="input-group input-group-sm input-group-solid"><input type="number" min="0" max="100" step="1" class="form-control hp-num" dir="ltr" data-db-cat="@c" /><span class="input-group-text">%</span></div></div>
+                    <div class="col-md-3 col-6"><label class="fs-7 fw-semibold mb-2">@T["dcat:" + c]</label><div class="input-group input-group-sm input-group-solid"><input type="number" min="0" max="100" step="1" class="form-control hp-num" dir="ltr" data-db-cat="@c" /><span class="input-group-text">%</span></div></div>
                 }
             </div>
+            <div class="text-center pt-10"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-save-dental>@T["Save"]</button></div>
         </div>
-        <div class="modal-footer flex-center"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-save-dental>@T["Save"]</button></div>
     </div></div></div>
 
-    <div class="modal fade" id="policyModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-650px"><div class="modal-content">
-        <div class="modal-header"><h2 class="fw-bold m-0">@T["Patient policy"]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
-        <div class="modal-body py-8 px-lg-10" data-policy-form>
-            <div class="row g-5">
-                <div class="col-12"><label class="form-label required">@T["Patient"]</label><select class="form-select form-select-solid" data-k="patientId" data-placeholder="@T["Search by name or MRN"]"></select></div>
-                <div class="col-md-6"><label class="form-label required">@T["Payer"]</label><select class="form-select form-select-solid" data-k="payerId" data-control="select2" data-hide-search="true" data-dropdown-parent="#policyModal">
+    <div class="modal fade" id="policyModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-650px"><div class="modal-content rounded">
+        <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-10" data-policy-form>
+            <div class="mb-10 text-center"><h1 class="mb-3">@T["Patient policy"]</h1>
+                <div class="text-muted fw-semibold fs-5">@T["A patient is covered when the policy and the contract are both valid on the day"]</div></div>
+            <div class="row g-6">
+                <div class="col-12 fv-row"><label class="fs-6 fw-semibold mb-2 required">@T["Patient"]</label><select class="form-select form-select-solid" data-k="patientId" data-no-select2 data-placeholder="@T["Search by name or MRN"]"></select></div>
+                <div class="col-md-6 fv-row"><label class="fs-6 fw-semibold mb-2 required">@T["Payer"]</label><select class="form-select form-select-solid" data-k="payerId" data-control="select2" data-hide-search="true" data-dropdown-parent="#policyModal">
                     @foreach (var r in Model) { <option value="@r.Payer.ID">@r.Payer.Code · @DisplayName.Of(r.Payer.Name, r.Payer.NameEn)</option> }</select></div>
-                <div class="col-md-6"><label class="form-label required">@T["Member no."]</label><input class="form-control form-control-solid hp-num" dir="ltr" data-k="policyNo" maxlength="40" /></div>
-                <div class="col-md-6"><label class="form-label">@T["Class"]</label><input class="form-control form-control-solid" data-k="memberClass" maxlength="30" /></div>
-                <div class="col-md-6 d-flex align-items-end"><div class="form-check form-switch form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" data-k="isActive" checked /><label class="form-check-label">@T["Active"]</label></div></div>
-                <div class="col-md-6"><label class="form-label required">@T["Valid from"]</label><input type="date" class="form-control form-control-solid hp-num" data-k="validFrom" /></div>
-                <div class="col-md-6"><label class="form-label">@T["Valid to"]</label><input type="date" class="form-control form-control-solid hp-num" data-k="validTo" /></div>
+                <div class="col-md-6 fv-row"><label class="fs-6 fw-semibold mb-2 required">@T["Member no."]</label><input class="form-control form-control-solid hp-num" dir="ltr" data-k="policyNo" maxlength="40" /></div>
+                <div class="col-md-6 fv-row"><label class="fs-6 fw-semibold mb-2">@T["Class"]</label><input class="form-control form-control-solid" data-k="memberClass" maxlength="30" /></div>
+                <div class="col-md-6 d-flex align-items-end"><div class="form-check form-switch form-check-custom form-check-solid mb-3"><input class="form-check-input" type="checkbox" data-k="isActive" checked /><label class="form-check-label fw-semibold">@T["Active"]</label></div></div>
+                <div class="col-md-6 fv-row"><label class="fs-6 fw-semibold mb-2 required">@T["Valid from"]</label><input type="date" class="form-control form-control-solid hp-num" data-k="validFrom" /></div>
+                <div class="col-md-6 fv-row"><label class="fs-6 fw-semibold mb-2">@T["Valid to"]</label><input type="date" class="form-control form-control-solid hp-num" data-k="validTo" /></div>
             </div>
+            <div class="text-center pt-10"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-save-policy>@T["Save"]</button></div>
         </div>
-        <div class="modal-footer flex-center"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-save-policy>@T["Save"]</button></div>
     </div></div></div>
 }
 

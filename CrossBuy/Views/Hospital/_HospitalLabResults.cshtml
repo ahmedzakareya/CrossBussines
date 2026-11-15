@@ -3,42 +3,57 @@
 @using CrossBuy.Models.Context.Hospital
 @model HospitalLabHistory
 @inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
-@* A patient's verified lab results — the patient file's tab and the consultation's side card share this one view. *@
+@* A patient's verified lab results — the patient file's tab and the consultation's side card share this one view.
+   H127: demo39 card header + list widget (dashboards/logistics); one block per order, its analytes in a light panel — narrow-friendly. *@
 @{
     string Num(decimal? v, int dec) => HospitalUi.LabNum(v, dec);
 }
-<div class="card @(Model.Compact ? "mb-5" : "")">
-    <div class="card-header border-0 pt-6">
-        <div class="card-title align-items-start flex-column m-0">
-            <span class="card-label fw-bold text-gray-900 fs-4">@T["Lab results"]</span>
-            @if (Model.Pending > 0) { <span class="text-muted mt-1 fw-semibold fs-7"><span class="hp-num">@Model.Pending</span> @T["still in the lab — shown once verified"]</span> }
-        </div>
+<div class="card card-flush @(Model.Compact ? "mb-5" : "")">
+    <div class="card-header pt-5">
+        <h3 class="card-title align-items-start flex-column">
+            <span class="card-label fw-bold text-gray-800">@T["Lab results"]</span>
+            @if (Model.Pending > 0) { <span class="text-gray-500 mt-1 fw-semibold fs-7"><span class="hp-num">@Model.Pending</span>&nbsp;@T["still in the lab — shown once verified"]</span> }
+        </h3>
+        @if (Model.Verified.Count > 0) { <div class="card-toolbar"><span class="badge badge-light-primary fs-7 fw-bold hp-num">@Model.Verified.Count</span></div> }
     </div>
     <div class="card-body pt-2">
-        @if (Model.Verified.Count == 0) { <div class="text-center text-muted py-8 fs-7">@T["No verified lab results yet."]</div> }
-        @foreach (var (o, results) in Model.Verified)
+        @if (Model.Verified.Count == 0)
         {
-            <div class="py-3 hp-row">
-                <div class="d-flex flex-stack mb-2">
-                    <div class="fw-bold text-gray-800">@DisplayName.Of(o.Name, o.NameEn)@if (o.IsCritical) {<span class="badge badge-danger fs-9 ms-2">@T["Critical"]</span>}</div>
-                    <a href="@Url.Action("LabOrder", new { id = o.ID })" class="text-muted text-hover-primary fs-8 hp-num" data-fmt data-utc="@o.VerifiedAt?.ToString("o")">@o.VerifiedAt?.ToLocalTime().ToString("yyyy-MM-dd")</a>
+            <div class="text-center py-10"><i class="ki-outline ki-flask fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-bold text-gray-700">@T["No verified lab results yet."]</div></div>
+        }
+        @for (int i = 0; i < Model.Verified.Count; i++)
+        {
+            var (o, results) = Model.Verified[i];
+            bool outOfRange = results.Any(r => r.Flag != HospitalLabFlag.Normal);
+            string tone = o.IsCritical || outOfRange ? "danger" : "primary";
+            <div class="d-flex align-items-center mb-3">
+                <div class="symbol symbol-35px me-3 flex-shrink-0"><span class="symbol-label bg-light-@tone"><i class="ki-outline ki-flask fs-3 text-@tone"></i></span></div>
+                <div class="d-flex flex-stack flex-row-fluid gap-2 min-w-0">
+                    <a href="@Url.Action("LabOrder", new { id = o.ID })" class="text-gray-800 text-hover-primary fw-bold fs-6 text-truncate">@DisplayName.Of(o.Name, o.NameEn)</a>
+                    <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                        @if (o.IsCritical) {<span class="badge badge-danger fs-8 fw-bold">@T["Critical"]</span>}
+                        <span class="text-gray-500 fw-semibold fs-7 hp-num" dir="ltr" data-fmt data-utc="@o.VerifiedAt?.ToString("o")">@o.VerifiedAt?.ToLocalTime().ToString("yyyy-MM-dd")</span>
+                    </div>
                 </div>
-                <table class="table table-sm align-middle mb-0 fs-7 gy-1">
+            </div>
+            <div class="bg-light rounded px-4 py-2">
+                <table class="table table-sm align-middle mb-0 fs-7 gy-1 w-100">
                     <tbody>
                         @foreach (var r in results)
                         {
                             var shown = r.Value != null ? Num(r.Value, r.Decimals) : r.TextValue ?? "—";
                             <tr>
-                                <td class="text-gray-700">@DisplayName.Of(r.Name, r.NameEn)</td>
-                                <td class="text-end text-nowrap"><bdi dir="ltr" class="hp-num @(r.Flag != HospitalLabFlag.Normal ? "hp-result-out" : "fw-bold text-gray-900")">@shown</bdi> @if (r.Unit != null) {<span class="text-muted fs-8" dir="ltr">@r.Unit</span>}</td>
-                                @if (!Model.Compact) { <td class="text-muted hp-num text-nowrap"><bdi dir="ltr">@HospitalUi.LabRange(r.RefLow, r.RefHigh, r.Decimals)</bdi></td> }
+                                <td class="text-gray-700 fw-semibold">@DisplayName.Of(r.Name, r.NameEn)</td>
+                                <td class="text-end text-nowrap"><bdi dir="ltr" class="hp-num @(r.Flag != HospitalLabFlag.Normal ? "hp-result-out" : "fw-bold text-gray-900")">@shown</bdi>@if (r.Unit != null) {<text>&nbsp;</text><span class="text-muted fs-8" dir="ltr">@r.Unit</span>}</td>
+                                @if (!Model.Compact) { <td class="text-muted hp-num text-nowrap d-none d-sm-table-cell"><bdi dir="ltr">@HospitalUi.LabRange(r.RefLow, r.RefHigh, r.Decimals)</bdi></td> }
                                 <td class="text-center w-40px">@if (r.Flag != HospitalLabFlag.Normal) {<span class="hp-flag hp-flag-@r.Flag">@r.Flag</span>}</td>
                             </tr>
                         }
                     </tbody>
                 </table>
-                @if (!Model.Compact && !string.IsNullOrWhiteSpace(o.Comment)) { <div class="text-muted fs-8 mt-2"><i class="ki-outline ki-message-text fs-7 me-1"></i>@o.Comment</div> }
             </div>
+            @if (!Model.Compact && !string.IsNullOrWhiteSpace(o.Comment)) { <div class="d-flex align-items-start text-gray-600 fw-semibold fs-7 mt-2"><i class="ki-outline ki-message-text fs-5 text-gray-500 me-2"></i><span dir="auto">@o.Comment</span></div> }
+            if (i < Model.Verified.Count - 1) { <div class="separator separator-dashed my-4"></div> }
         }
     </div>
 </div>

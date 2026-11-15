@@ -61,21 +61,21 @@
 
         <div class="row g-5 g-xl-8">
             <div class="col-xl-7">
-                <div class="card mb-5">
-                    <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
-                        <span class="card-label fw-bold text-gray-900 fs-4">@T["1 · Whom to tell?"]</span>
-                        <span class="text-muted mt-1 fw-semibold fs-7">@T["The ordering doctor is preselected; a doctor of his department or any other doctor can be chosen instead"]</span>
-                    </div></div>
+                <div class="card card-flush mb-5">
+                    <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column">
+                        <span class="card-label fw-bold text-gray-800">@T["1 · Whom to tell?"]</span>
+                        <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["The ordering doctor is preselected; a doctor of his department or any other doctor can be chosen instead"]</span>
+                    </h3></div>
                     <div class="card-body pt-2">
-                        @if (recipients.Count == 0) { <div class="text-muted py-6 text-center">@T["No doctors yet. Add them in practitioners."]</div> }
+                        @if (recipients.Count == 0) { <div class="text-center py-10"><i class="ki-outline ki-user-square fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-bold text-gray-700">@T["No doctors yet. Add them in practitioners."]</div></div> }
                         @foreach (var r in top)
                         {
                             var d = r.Practitioner; bool waiting = waitingFor.Contains(d.EmployeeId ?? 0); bool off = !r.HasUser || acknowledged || !canLab;
                             <div class="hp-crit-pick p-4 mb-3 d-flex align-items-center gap-4 @(preselect == r && !off ? "on" : "") @(off ? "off" : "")" data-pick="@d.ID" data-name="@DisplayName.Of(d.Name, d.NameEn)" @(off ? "data-off" : "")>
                                 <div class="symbol symbol-45px symbol-circle flex-shrink-0">@if (d.EmployeeId is int e && photos.TryGetValue(e, out var ph)) {<img src="@ph" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(d.NameEn)" />} else {<span class="symbol-label fw-bold hp-initials">@HospitalUi.Initials(d.NameEn)</span>}</div>
                                 <div class="flex-grow-1 min-w-0">
-                                    <div class="fw-bold text-gray-900">@DisplayName.Of(d.Name, d.NameEn)</div>
-                                    <div class="text-muted fs-7">@(r.HasUser ? WhyText(r) : T["has no user in the system — an alert cannot reach him"].Value)@if (waiting) {<text> · <span class="text-danger fw-semibold">@T["alert waiting"]</span></text>}</div>
+                                    <div class="text-gray-900 fw-bold fs-6">@DisplayName.Of(d.Name, d.NameEn)</div>
+                                    <div class="text-muted fw-semibold fs-7">@(r.HasUser ? WhyText(r) : T["has no user in the system — an alert cannot reach him"].Value)@if (waiting) {<text> · <span class="text-danger fw-semibold">@T["alert waiting"]</span></text>}</div>
                                 </div>
                                 <span class="hp-crit-dot" style="background:@(r.OnDuty ? "#16A34A" : "#99A1B7")"></span>
                             </div>
@@ -83,7 +83,7 @@
                         @if (rest.Count > 0)
                         {
                             <div class="mt-2">
-                                <label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Or another doctor"]</label>
+                                <label class="fs-6 fw-semibold mb-2">@T["Or another doctor"]</label>
                                 <select class="form-select form-select-solid" data-other data-control="select2" data-placeholder="—" @(acknowledged || !canLab ? "disabled" : "")>
                                     <option value="">—</option>
                                     @foreach (var r in rest)
@@ -97,8 +97,8 @@
                     </div>
                 </div>
 
-                <div class="card mb-5">
-                    <div class="card-header border-0 pt-6"><div class="card-title"><span class="card-label fw-bold text-gray-900 fs-4">@T["How"]</span></div></div>
+                <div class="card card-flush mb-5">
+                    <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["How"]</span></h3></div>
                     <div class="card-body pt-2">
                         <label class="form-check form-check-custom form-check-solid mb-3"><input class="form-check-input" type="checkbox" checked disabled /><span class="form-check-label text-gray-800">@T["An alert on any screen of the system that blocks work until acknowledged — if he is not signed in, it shows the moment he opens the system"]</span></label>
                         <label class="form-check form-check-custom form-check-solid mb-3"><input class="form-check-input" type="checkbox" disabled /><span class="form-check-label text-gray-800">@T["Text message to his mobile"] <span class="text-muted fs-8">— @T["needs an SMS provider, not connected yet"]</span></span></label>
@@ -117,11 +117,11 @@
             </div>
 
             <div class="col-xl-5">
-                <div class="card mb-5">
-                    <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
-                        <span class="card-label fw-bold text-gray-900 fs-4">@T["2 · Following it up"]</span>
-                        <span class="text-muted mt-1 fw-semibold fs-7">@T["The lab sees it live; the red flag clears only on acknowledgement"]</span>
-                    </div></div>
+                <div class="card card-flush mb-5">
+                    <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column">
+                        <span class="card-label fw-bold text-gray-800">@T["2 · Following it up"]</span>
+                        <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["The lab sees it live; the red flag clears only on acknowledgement"]</span>
+                    </h3></div>
                     <div class="card-body pt-2">
                         @{
                             var verified = Model.Final;
@@ -174,15 +174,22 @@
                     </div>
                 </div>
 
-                <div class="card mb-5">
-                    <div class="card-header border-0 pt-6"><div class="card-title"><span class="card-label fw-bold text-gray-900 fs-4">@T["Alert by danger"]</span></div></div>
+                @* H127: the three levels — demo39 dashboards/logistics list widget *@
+                <div class="card card-flush mb-5">
+                    <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Alert by danger"]</span></h3></div>
                     <div class="card-body pt-2">
-                        @foreach (var l in new[] {
-                            ("#DC2626", "ki-notification-status", T["Critical (LL / HH)"].Value, T["A full-screen alert with sound on any screen of the whole system; closes only on acknowledgement with read-back, and escalates if not acknowledged."].Value),
-                            ("#3A5795", "ki-information-5", T["Abnormal on a STAT/urgent order (L / H)"].Value, T["A notice to the ordering doctor when the result is verified — it does not stop his work."].Value),
-                            ("#16A34A", "ki-check-circle", T["Normal"].Value, T["No alert; it appears in the patient file once verified."].Value) })
+                        @{ var levels = new[] {
+                            ("danger", "ki-notification-status", T["Critical (LL / HH)"].Value, T["A full-screen alert with sound on any screen of the whole system; closes only on acknowledgement with read-back, and escalates if not acknowledged."].Value),
+                            ("primary", "ki-information-5", T["Abnormal on a STAT/urgent order (L / H)"].Value, T["A notice to the ordering doctor when the result is verified — it does not stop his work."].Value),
+                            ("success", "ki-check-circle", T["Normal"].Value, T["No alert; it appears in the patient file once verified."].Value) }; }
+                        @for (int i = 0; i < levels.Length; i++)
                         {
-                            <div class="hp-crit-level d-flex gap-3 mb-3"><i class="ki-outline @l.Item2 fs-2x" style="color:@l.Item1"></i><div><div class="fw-bold text-gray-900">@l.Item3</div><div class="text-muted fs-7">@l.Item4</div></div></div>
+                            var l = levels[i];
+                            <div class="d-flex align-items-start">
+                                <div class="symbol symbol-35px me-4 flex-shrink-0"><span class="symbol-label bg-light-@l.Item1"><i class="ki-outline @l.Item2 fs-3 text-@l.Item1"></i></span></div>
+                                <div class="flex-grow-1"><span class="text-gray-800 fw-bold fs-6 d-block">@l.Item3</span><span class="text-gray-500 fw-semibold fs-7 d-block">@l.Item4</span></div>
+                            </div>
+                            if (i < levels.Length - 1) { <div class="separator separator-dashed my-3"></div> }
                         }
                     </div>
                 </div>

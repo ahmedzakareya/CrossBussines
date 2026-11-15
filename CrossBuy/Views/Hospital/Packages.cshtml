@@ -3,6 +3,9 @@
 @using CrossBuy.Models.Context.Hospital
 @model IReadOnlyList<HospitalPackageRow>
 @inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H127 — packages: the theme's table widget (demo39 widgets/tables) and its form modal (utilities/modals/forms/new-target).
+*@
 @{
     Layout = "~/Views/Shared/_LayoutHospital.cshtml";
     ViewData["Title"] = T["Packages"].Value;
@@ -33,32 +36,40 @@
     </div></div>
 
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
-        <div class="card">
-            <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
-                <span class="card-label fw-bold text-gray-900 fs-4">@T["Packages"]</span>
-                <span class="text-muted mt-1 fw-semibold fs-7">@T["A procedure at a fixed price: its main service, the nights it includes and what it covers"]</span>
-            </div></div>
+        <div class="card card-flush">
+            <div class="card-header pt-5">
+                <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Packages"]</span>
+                    <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["A procedure at a fixed price: its main service, the nights it includes and what it covers"]</span></h3>
+                <div class="card-toolbar"><span class="badge badge-light-primary fs-7 fw-bold"><span class="hp-num">@Model.Count(r => r.Package.IsActive)</span>&nbsp;@T["Active"]</span></div>
+            </div>
             <div class="card-body pt-2">
-                @if (Model.Count == 0) { <div class="text-center text-muted py-15"><i class="ki-outline ki-package fs-3x text-gray-300 d-block mb-4"></i>@T["No packages yet."]</div> }
+                @if (Model.Count == 0)
+                {
+                    <div class="text-center py-10"><i class="ki-outline ki-package fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-bold text-gray-700">@T["No packages yet."]</div>
+                        <div class="fs-7 text-gray-500">@T["A procedure at a fixed price: its main service, the nights it includes and what it covers"]</div></div>
+                }
                 else
                 {
-                    <div class="table-responsive"><table class="table align-middle table-row-dashed fs-6 gy-3 mb-0">
-                        <thead><tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0">
-                            <th>@T["Package / procedure"]</th><th>@T["Main service"]</th><th class="text-end">@T["Price"]</th><th class="text-end">@T["Included nights"]</th><th>@T["Room class"]</th><th>@T["State"]</th><th class="text-end w-75px"></th>
+                    <div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
+                        <thead><tr class="fw-bold text-muted bg-light">
+                            <th class="ps-4 rounded-start">@T["Package / procedure"]</th><th>@T["Main service"]</th><th class="text-end">@T["Price"]</th><th class="text-end">@T["Included nights"]</th><th>@T["Room class"]</th><th>@T["State"]</th><th class="text-end pe-4 rounded-end"></th>
                         </tr></thead>
-                        <tbody class="fw-semibold text-gray-700">
+                        <tbody>
                             @foreach (var r in Model)
                             {
                                 var p = r.Package;
-                                <tr>
-                                    <td><div class="fw-bold text-gray-900">@DisplayName.Of(p.Name, p.NameEn)</div><div class="text-muted fs-8 hp-num">@p.Code</div>
-                                        @if (DisplayName.Of(p.Inclusions ?? "", p.InclusionsEn ?? "") is var inc && inc.Length > 0) {<div class="text-muted fs-8">@inc</div>}</td>
-                                    <td><span class="hp-num">@r.ServiceCode</span> · @DisplayName.Of(r.Service, r.ServiceEn)</td>
-                                    <td class="text-end hp-num fw-bold">@p.Price.ToString("N3", inv) <span class="text-muted fs-8">@cur</span></td>
-                                    <td class="text-end hp-num">@p.IncludedNights</td>
-                                    <td>@(r.RoomType ?? "—")</td>
-                                    <td>@if (p.IsActive) {<span class="badge badge-light-success fs-8">@T["Active"]</span>} else {<span class="badge badge-light fs-8">@T["Inactive"]</span>}</td>
-                                    <td class="text-end">@if (canManage) {<button type="button" class="btn btn-sm btn-light" data-edit="@System.Text.Json.JsonSerializer.Serialize(PackageData(r))">@T["Edit"]</button>}</td>
+                                <tr class="@(p.IsActive ? "" : "opacity-50")">
+                                    <td class="ps-4"><div class="d-flex align-items-center">
+                                        <div class="symbol symbol-45px me-4 flex-shrink-0"><span class="symbol-label bg-light-primary"><i class="ki-outline ki-package fs-2 text-primary"></i></span></div>
+                                        <div class="d-flex flex-column"><span class="text-gray-900 fw-bold fs-6">@DisplayName.Of(p.Name, p.NameEn)</span><bdi class="text-muted fw-semibold d-block fs-7 hp-num">@p.Code</bdi>
+                                            @if (DisplayName.Of(p.Inclusions ?? "", p.InclusionsEn ?? "") is var inc && inc.Length > 0) {<span class="text-gray-500 fw-semibold fs-8">@inc</span>}</div>
+                                    </div></td>
+                                    <td><span class="text-gray-800 fw-bold d-block fs-6">@DisplayName.Of(r.Service, r.ServiceEn)</span><bdi class="text-muted fw-semibold d-block fs-7 hp-num">@r.ServiceCode</bdi></td>
+                                    <td class="text-end"><span class="text-gray-900 fw-bold fs-6 hp-num" dir="ltr">@p.Price.ToString("N3", inv)</span>&nbsp;<span class="text-muted fs-8">@cur</span></td>
+                                    <td class="text-end"><span class="badge badge-light-info fs-7 fw-bold hp-num">@p.IncludedNights</span></td>
+                                    <td><span class="text-gray-700 fw-semibold fs-7">@(r.RoomType ?? "—")</span></td>
+                                    <td>@if (p.IsActive) {<span class="badge badge-light-success fs-7 fw-bold">@T["Active"]</span>} else {<span class="badge badge-light fs-7 fw-bold">@T["Inactive"]</span>}</td>
+                                    <td class="text-end pe-4">@if (canManage) {<button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-primary" title="@T["Edit"]" data-bs-toggle="tooltip" data-edit="@System.Text.Json.JsonSerializer.Serialize(PackageData(r))"><i class="ki-outline ki-pencil fs-3"></i></button>}</td>
                                 </tr>
                             }
                         </tbody>
@@ -71,25 +82,37 @@
 
 @if (canManage)
 {
-    <div class="modal fade" id="packageModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-750px"><div class="modal-content">
-        <div class="modal-header"><h2 class="fw-bold m-0">@T["Package"]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
-        <div class="modal-body py-8 px-lg-10" data-form>
-            <div class="row g-5">
-                <div class="col-md-3"><label class="form-label required">@T["Code"]</label><input class="form-control form-control-solid hp-num" dir="ltr" data-k="code" maxlength="20" /></div>
-                <div class="col-md-5"><label class="form-label required">@T["Name"]</label><input class="form-control form-control-solid" data-k="name" maxlength="150" /></div>
-                <div class="col-md-4"><label class="form-label required">@T["Name (English)"]</label><input class="form-control form-control-solid" dir="ltr" data-k="nameEn" maxlength="150" /></div>
-                <div class="col-12"><label class="form-label required">@T["Main service"] <span class="text-muted fs-8">@T["the procedure the payer approves"]</span></label><select class="form-select form-select-solid" data-k="serviceId" data-placeholder="@T["Search by code or name"]"></select></div>
-                <div class="col-md-4"><label class="form-label required">@T["Price"]</label><div class="input-group input-group-solid"><input class="form-control form-control-solid hp-num" dir="ltr" data-k="price" data-num /><span class="input-group-text">@cur</span></div></div>
-                <div class="col-md-4"><label class="form-label">@T["Included nights"]</label><input class="form-control form-control-solid hp-num" dir="ltr" type="number" min="0" max="365" data-k="includedNights" data-num /></div>
-                <div class="col-md-4"><label class="form-label">@T["Room class"]</label><select class="form-select form-select-solid" data-k="roomTypeId" data-control="select2" data-allow-clear="true" data-hide-search="true" data-placeholder="@T["Any room class"]" data-dropdown-parent="#packageModal">
+    @* form modal — demo39 utilities/modals/forms/new-target *@
+    <div class="modal fade" id="packageModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-750px"><div class="modal-content rounded">
+        <div class="modal-header pb-0 border-0 justify-content-end">
+            <div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div>
+        </div>
+        <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-15" data-form>
+            <div class="mb-10 text-center">
+                <h1 class="mb-3">@T["Package"]</h1>
+                <div class="text-muted fw-semibold fs-5">@T["A procedure at a fixed price: its main service, the nights it includes and what it covers"]</div>
+            </div>
+            <div class="row g-6 mb-8">
+                <div class="col-md-3 fv-row"><label class="fs-6 fw-semibold mb-2 required">@T["Code"]</label><input class="form-control form-control-solid hp-num" dir="ltr" data-k="code" maxlength="20" /></div>
+                <div class="col-md-5 fv-row"><label class="fs-6 fw-semibold mb-2 required">@T["Name"]</label><input class="form-control form-control-solid" data-k="name" maxlength="150" /></div>
+                <div class="col-md-4 fv-row"><label class="fs-6 fw-semibold mb-2 required">@T["Name (English)"]</label><input class="form-control form-control-solid" dir="ltr" data-k="nameEn" maxlength="150" /></div>
+                <div class="col-12 fv-row"><label class="d-flex align-items-center fs-6 fw-semibold mb-2"><span class="required">@T["Main service"]</span>
+                        <span class="ms-1" data-bs-toggle="tooltip" title="@T["the procedure the payer approves"]"><i class="ki-outline ki-information-5 text-gray-500 fs-6"></i></span></label>
+                    <select class="form-select form-select-solid" data-k="serviceId" data-placeholder="@T["Search by code or name"]"></select></div>
+                <div class="col-md-4 fv-row"><label class="fs-6 fw-semibold mb-2 required">@T["Price"]</label><div class="input-group input-group-solid"><input class="form-control form-control-solid hp-num" dir="ltr" data-k="price" data-num /><span class="input-group-text">@cur</span></div></div>
+                <div class="col-md-4 fv-row"><label class="fs-6 fw-semibold mb-2">@T["Included nights"]</label><input class="form-control form-control-solid hp-num" dir="ltr" type="number" min="0" max="365" data-k="includedNights" data-num /></div>
+                <div class="col-md-4 fv-row"><label class="fs-6 fw-semibold mb-2">@T["Room class"]</label><select class="form-select form-select-solid" data-k="roomTypeId" data-control="select2" data-allow-clear="true" data-hide-search="true" data-placeholder="@T["Any room class"]" data-dropdown-parent="#packageModal">
                     <option></option>
                     @foreach (var r in rooms) { <option value="@r.ID">@DisplayName.Of(r.Name, r.NameEn ?? r.Name)</option> }</select></div>
-                <div class="col-md-6"><label class="form-label">@T["What it covers"]</label><textarea class="form-control form-control-solid" rows="3" data-k="inclusions" maxlength="1000"></textarea></div>
-                <div class="col-md-6"><label class="form-label">@T["What it covers (English)"]</label><textarea class="form-control form-control-solid" rows="3" dir="ltr" data-k="inclusionsEn" maxlength="1000"></textarea></div>
-                <div class="col-12"><div class="form-check form-switch form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" data-k="isActive" checked /><label class="form-check-label">@T["Active"]</label></div></div>
+                <div class="col-md-6 fv-row"><label class="fs-6 fw-semibold mb-2">@T["What it covers"]</label><textarea class="form-control form-control-solid" rows="3" data-k="inclusions" maxlength="1000"></textarea></div>
+                <div class="col-md-6 fv-row"><label class="fs-6 fw-semibold mb-2">@T["What it covers (English)"]</label><textarea class="form-control form-control-solid" rows="3" dir="ltr" data-k="inclusionsEn" maxlength="1000"></textarea></div>
+                <div class="col-12"><label class="form-check form-switch form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" data-k="isActive" checked /><span class="form-check-label fw-semibold text-gray-700">@T["Active"]</span></label></div>
+            </div>
+            <div class="text-center pt-5">
+                <button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button>
+                <button type="button" class="btn btn-primary" data-save>@T["Save"]</button>
             </div>
         </div>
-        <div class="modal-footer flex-center"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-save>@T["Save"]</button></div>
     </div></div></div>
 }
 

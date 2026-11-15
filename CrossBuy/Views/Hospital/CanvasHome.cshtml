@@ -11,15 +11,17 @@
     ViewData["Title"] = T["The clinical canvas"].Value;
     bool isAr = CultureInfo.CurrentUICulture.Name.StartsWith("ar");
     var visits = (IReadOnlyList<(int EncounterId, DateTime StartedAt, string Patient, string PatientEn, string Mrn, string Doctor, string? DoctorEn)>)ViewBag.Visits;
+    // H127: each job is a tinted symbol over its title (demo39 dashboards/logistics tiles)
     var jobs = new[]
     {
-        ("ki-shield-tick", "Legal & billing evidence", "A detailed coloured fundus drawing is the proof the exam was done"),
-        ("ki-calculator", "Calculator", "Burn chart → %TBSA; joints → DAS28"),
-        ("ki-chart-line", "Tracker over time", "A mole growing, a wound healing, a child growing"),
-        ("ki-shield-cross", "Safety", "Marking the operation site on a body diagram"),
-        ("ki-message-text", "Patient communication", "The sketch made while consenting"),
-        ("ki-pencil", "Thinking aid", "The margin doodle — free ink, kept"),
+        ("ki-shield-tick", "Legal & billing evidence", "A detailed coloured fundus drawing is the proof the exam was done", "primary"),
+        ("ki-calculator", "Calculator", "Burn chart → %TBSA; joints → DAS28", "info"),
+        ("ki-chart-line", "Tracker over time", "A mole growing, a wound healing, a child growing", "success"),
+        ("ki-shield-cross", "Safety", "Marking the operation site on a body diagram", "danger"),
+        ("ki-message-text", "Patient communication", "The sketch made while consenting", "primary"),
+        ("ki-pencil", "Thinking aid", "The margin doodle — free ink, kept", "info"),
     };
+    string arrow = isAr ? "ki-arrow-left" : "ki-arrow-right";
     // a link: (label, the visit drawing's kind — or a fixed URL)
     var kinds = new[]
     {
@@ -43,11 +45,6 @@
     };
 }
 <link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
-<style>
-    .cv-job { border: 1px solid #E4E6EF; border-radius: .85rem; padding: 16px; height: 100%; background: #fff; }
-    .cv-kind { border: 1px solid #E4E6EF; border-radius: .85rem; padding: 18px; height: 100%; background: #fff; display: block; }
-    .cv-kind:hover { border-color: #3A5795; }
-</style>
 
 <div class="d-flex flex-column flex-column-fluid">
     <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
@@ -69,43 +66,78 @@
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
         @if (want != null)
         {
-            <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice">
-                <span class="symbol symbol-45px me-5 flex-shrink-0"><span class="symbol-label"><i class="ki-outline ki-pencil fs-2x text-white"></i></span></span>
+            <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-5 mb-5">
+                <i class="ki-outline ki-pencil fs-2tx text-primary me-4"></i>
                 <div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@T["A drawing belongs to a visit"]</h4><div class="fs-6 text-gray-700">@T["Choose the open visit above: the {0} opens on it.", want == "Body" ? T["Body map"].Value : want == "Burn" ? T["Burn chart"].Value : want == "Audio" ? T["Audiogram"].Value : want == "Joints" ? T["Rheumatoid joints — DAS28"].Value : want == "Pedigree" ? T["Pedigree"].Value : T["Fundus drawing"].Value]</div></div>
             </div>
         }
-        <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice">
-            <span class="symbol symbol-45px me-5 flex-shrink-0"><span class="symbol-label"><i class="ki-outline ki-information-5 fs-2x text-white"></i></span></span>
-            <div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@T["What a paper drawing does — six jobs"]</h4><div class="fs-6 text-gray-700">@T["No single widget covers them all: free ink for legal, explaining and thinking; coded marks for calculating, tracking and safety — most sheets need both."]</div></div>
+        @* H127: the six jobs — the theme's tiles (demo39 dashboards/logistics): a tinted symbol over the title and a muted line *@
+        <div class="card card-flush mb-5">
+            <div class="card-header pt-5">
+                <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["What a paper drawing does — six jobs"]</span>
+                    <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["No single widget covers them all: free ink for legal, explaining and thinking; coded marks for calculating, tracking and safety — most sheets need both."]</span></h3>
+            </div>
+            <div class="card-body pt-2">
+                <div class="row g-4">
+                    @foreach (var (icon, t, d, tone) in jobs)
+                    {
+                        <div class="col-md-4 col-xl-2"><div class="bg-light-@tone rounded p-5 h-100">
+                            <div class="symbol symbol-45px mb-4"><span class="symbol-label bg-white"><i class="ki-outline @icon fs-2x text-@tone"></i></span></div>
+                            <div class="text-gray-900 fw-bold fs-6 mb-1">@T[t]</div>
+                            <div class="text-gray-600 fw-semibold fs-7">@T[d]</div>
+                        </div></div>
+                    }
+                </div>
+            </div>
         </div>
-        <div class="row g-4 mb-6">
-            @foreach (var (icon, t, d) in jobs)
-            {
-                <div class="col-md-4 col-xl-2"><div class="cv-job"><i class="ki-outline @icon fs-2x text-primary"></i><div class="fw-bold mt-2 text-gray-900">@T[t]</div><div class="text-muted fs-8 mt-1">@T[d]</div></div></div>
-            }
-        </div>
-        <h3 class="fw-bold text-gray-900 mb-4">@T["One engine — four kinds"]</h3>
-        <div class="row g-5 mb-6">
+        @* the four kinds — one card each; its drawings are the theme's list-widget rows (demo39 widgets/lists) *@
+        <h3 class="fw-bold text-gray-800 fs-4 mb-4">@T["One engine — four kinds"]</h3>
+        <div class="row g-5 mb-5">
             @foreach (var (icon, t, d, links) in kinds)
             {
-                <div class="col-md-6 col-xl-3"><div class="cv-kind"><i class="ki-outline @icon fs-2x text-primary"></i><div class="fw-bold fs-5 mt-2 text-gray-900">@T[t]</div><div class="text-muted fs-8 mb-3">@T[d]</div>
-                    @foreach (var (label, kind, url) in links)
-                    {
-                        if (url != null) {<a href="@url" class="d-block fs-7 fw-semibold py-1">@T[label] ←</a>}
-                        else if (built.Contains(kind)) {<a href="#" data-kind="@kind" class="d-block fs-7 fw-semibold py-1">@T[label] ←</a>}
-                        else {<span class="d-flex align-items-center gap-2 fs-7 fw-semibold py-1 text-gray-500">@T[label] <span class="badge badge-light fs-9">@T["Next step"]</span></span>}
-                    }
+                <div class="col-md-6 col-xl-3"><div class="card card-flush h-100">
+                    <div class="card-header pt-5 flex-nowrap gap-3">
+                        <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T[t]</span><span class="text-gray-500 mt-1 fw-semibold fs-7">@T[d]</span></h3>
+                        <div class="card-toolbar"><div class="symbol symbol-45px"><span class="symbol-label bg-light-primary"><i class="ki-outline @icon fs-2x text-primary"></i></span></div></div>
+                    </div>
+                    <div class="card-body pt-2">
+                        @for (int li = 0; li < links.Length; li++)
+                        {
+                            var (label, kind, url) = links[li];
+                            bool open = url != null || built.Contains(kind);
+                            <div class="d-flex flex-stack">
+                                <div class="d-flex align-items-center me-3">
+                                    <span class="bullet bullet-dot @(open ? "bg-primary" : "bg-gray-400") h-8px w-8px me-3"></span>
+                                    @if (url != null) {<a href="@url" class="text-gray-800 text-hover-primary fw-bold fs-6">@T[label]</a>}
+                                    else if (open) {<a href="#" data-kind="@kind" class="text-gray-800 text-hover-primary fw-bold fs-6">@T[label]</a>}
+                                    else {<span class="text-gray-500 fw-bold fs-6">@T[label]</span>}
+                                </div>
+                                @if (url != null) {<a href="@url" class="btn btn-sm btn-icon btn-bg-light btn-active-color-primary" title="@T[label]"><i class="ki-outline @arrow fs-4"></i></a>}
+                                else if (open) {<a href="#" data-kind="@kind" class="btn btn-sm btn-icon btn-bg-light btn-active-color-primary" title="@T[label]"><i class="ki-outline @arrow fs-4"></i></a>}
+                                else {<span class="badge badge-light fs-8 fw-bold">@T["Next step"]</span>}
+                            </div>
+                            if (li < links.Length - 1) {<div class="separator separator-dashed my-3"></div>}
+                        }
+                    </div>
                 </div></div>
             }
         </div>
-        <div class="card mb-5">
-            <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["The layers of every canvas"]</span></div></div>
-            <div class="card-body pt-2"><div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-3 mb-0">
-                <thead><tr class="text-start text-muted fw-bold fs-8 text-uppercase"><th class="w-40px">#</th><th>@T["Layer"]</th><th>@T["What it keeps"]</th></tr></thead>
+        @* the layers — the theme's table widget (demo39 widgets/tables) *@
+        <div class="card card-flush mb-5">
+            <div class="card-header pt-5">
+                <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["The layers of every canvas"]</span></h3>
+            </div>
+            <div class="card-body pt-2"><div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
+                <thead><tr class="fw-bold text-muted bg-light"><th class="ps-4 rounded-start w-250px">@T["Layer"]</th><th class="pe-4 rounded-end">@T["What it keeps"]</th></tr></thead>
                 <tbody>
                     @for (int i = 0; i < layers.Length; i++)
                     {
-                        <tr><td><span class="hp-num">@(i + 1)</span></td><td class="fw-bold text-gray-900">@T[layers[i].Item1]</td><td>@T[layers[i].Item2]</td></tr>
+                        <tr>
+                            <td class="ps-4"><div class="d-flex align-items-center">
+                                <div class="symbol symbol-35px me-4"><span class="symbol-label bg-light-primary text-primary fw-bold fs-6 hp-num">@(i + 1)</span></div>
+                                <span class="text-gray-900 fw-bold fs-6">@T[layers[i].Item1]</span></div></td>
+                            <td class="pe-4 text-gray-600 fw-semibold fs-7">@T[layers[i].Item2]</td>
+                        </tr>
                     }
                 </tbody>
             </table></div></div>

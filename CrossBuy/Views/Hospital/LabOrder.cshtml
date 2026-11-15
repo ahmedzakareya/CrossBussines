@@ -50,14 +50,17 @@
     </div></div>
 
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
-        <div class="hp-pbanner p-6 mb-5"><div class="d-flex flex-wrap align-items-center gap-5">
-            <div class="symbol symbol-75px symbol-circle flex-shrink-0">@if (p.PhotoPath != null) {<img src="@p.PhotoPath" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(p.NameEn)" />} else {<span class="symbol-label fs-2 fw-bold hp-initials">@HospitalUi.Initials(p.NameEn)</span>}</div>
-            <div class="flex-grow-1 min-w-0">
-                <div class="d-flex flex-wrap align-items-center gap-2 mb-1"><a href="@Url.Action("Patient", new { id = p.ID })" class="fs-2 fw-bold text-gray-900 text-hover-primary">@name</a><span class="badge hp-code fw-bold fs-8 hp-num">@p.Mrn</span></div>
-                <div class="d-flex flex-wrap gap-2 mt-2">
-                    <span class="hp-chip"><i class="ki-outline ki-user fs-7"></i>@if (age != null) {<span class="hp-num">@age</span> @T["y"] <text> · </text>}@(p.Sex == HospitalPatientSex.Male ? T["Male"] : T["Female"])</span>
-                    @if (p.BloodGroup != null) { <span class="hp-chip"><i class="ki-outline ki-drop fs-7"></i>@T["Blood group"] <span class="hp-num">@p.BloodGroup</span></span> }
-                    @if (o.OrderedByEmployeeId != null) { <span class="hp-chip"><i class="ki-outline ki-briefcase fs-7"></i>@Who(o.OrderedByEmployeeId)</span> }
+        @* H127: the patient — demo39 account/overview profile header (photo · name and file number · details with icons) *@
+        <div class="card mb-5"><div class="card-body pt-7 pb-4">
+            <div class="d-flex flex-wrap flex-sm-nowrap align-items-center">
+                <div class="me-6 mb-3"><div class="symbol symbol-75px symbol-circle flex-shrink-0">@if (p.PhotoPath != null) {<img src="@p.PhotoPath" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(p.NameEn)" />} else {<span class="symbol-label fs-2 fw-bold bg-light-primary text-primary hp-initials">@HospitalUi.Initials(p.NameEn)</span>}</div></div>
+                <div class="flex-grow-1 min-w-0 mb-3">
+                    <div class="d-flex flex-wrap align-items-center gap-2 mb-2"><a href="@Url.Action("Patient", new { id = p.ID })" class="text-gray-900 text-hover-primary fs-2 fw-bold me-1">@name</a><span class="badge badge-light-primary fw-bold fs-7 hp-num" dir="ltr">@p.Mrn</span></div>
+                    <div class="d-flex flex-wrap fw-semibold fs-6">
+                        <span class="d-flex align-items-center text-gray-500 me-5 mb-1"><i class="ki-outline ki-profile-circle fs-4 me-1"></i>@if (age != null) {<span class="hp-num">@age</span><text>&nbsp;@T["y"]&nbsp;·&nbsp;</text>}@(p.Sex == HospitalPatientSex.Male ? T["Male"] : T["Female"])</span>
+                        @if (p.BloodGroup != null) { <span class="d-flex align-items-center text-gray-500 me-5 mb-1"><i class="ki-outline ki-drop fs-4 me-1"></i>@T["Blood group"]&nbsp;<bdi class="hp-num text-gray-800 fw-bold" dir="ltr">@p.BloodGroup</bdi></span> }
+                        @if (o.OrderedByEmployeeId != null) { <span class="d-flex align-items-center text-gray-500 me-5 mb-1"><i class="ki-outline ki-briefcase fs-4 me-1"></i>@Who(o.OrderedByEmployeeId)</span> }
+                    </div>
                 </div>
             </div>
         </div></div>
@@ -89,14 +92,15 @@
 
         <div class="row g-5 g-xl-8">
             <div class="col-xl-8">
-                <div class="card mb-5">
-                    <div class="card-header border-0 pt-6">
-                        <div class="card-title align-items-start flex-column m-0">
-                            <span class="card-label fw-bold text-gray-900 fs-4">@DisplayName.Of(o.Name, o.NameEn) <span class="badge hp-code fw-bold fs-8 hp-num ms-1">@o.AccessionNo</span></span>
-                            <span class="text-muted mt-1 fw-semibold fs-7">@if (specimen != null) {<text>@T["Specimen:"] @specimen</text>}@if (labSection != null) {<text> · @labSection</text>}@if (o.CollectedAt != null) {<text> · @T["collected at"] <span class="hp-num" data-fmt data-utc="@o.CollectedAt?.ToString("o")">@o.CollectedAt?.ToLocalTime().ToString("HH:mm")</span></text>}</span>
-                        </div>
+                @* H127: the results — demo39 widgets/tables (table widget) *@
+                <div class="card card-flush mb-5">
+                    <div class="card-header pt-5">
+                        <h3 class="card-title align-items-start flex-column">
+                            <span class="card-label fw-bold text-gray-800">@DisplayName.Of(o.Name, o.NameEn) <bdi class="badge badge-light-primary fw-bold fs-7 hp-num ms-1" dir="ltr">@o.AccessionNo</bdi></span>
+                            <span class="text-gray-500 mt-1 fw-semibold fs-7">@if (specimen != null) {<text>@T["Specimen:"] @specimen</text>}@if (labSection != null) {<text> · @labSection</text>}@if (o.CollectedAt != null) {<text> · @T["collected at"] <span class="hp-num" data-fmt data-utc="@o.CollectedAt?.ToString("o")">@o.CollectedAt?.ToLocalTime().ToString("HH:mm")</span></text>}</span>
+                        </h3>
                         <div class="card-toolbar">
-                            <span class="badge badge-light-@(locked ? "success" : o.Status == HospitalLabStatus.Resulted ? "primary" : "info") fs-7">@T["lab:" + o.Status]</span>
+                            <span class="badge badge-light-@(locked ? "success" : o.Status == HospitalLabStatus.Resulted ? "primary" : "info") fs-7 fw-bold">@T["lab:" + o.Status]</span>
                         </div>
                     </div>
                     <div class="card-body pt-2">
@@ -112,11 +116,11 @@
                         {
                             @if (!bench && !locked)
                             {
-                                <div class="text-muted fs-7 mb-3"><i class="ki-outline ki-information-5 fs-6 me-1"></i>@T["Results are entered once the specimen is received in the lab."]</div>
+                                <div class="d-flex align-items-center bg-light-primary rounded p-4 mb-5"><i class="ki-outline ki-information-5 fs-2 text-primary me-3"></i><span class="fs-7 fw-semibold text-gray-700">@T["Results are entered once the specimen is received in the lab."]</span></div>
                             }
-                            <div class="table-responsive"><table class="table align-middle table-row-dashed fs-6 gy-3 mb-0">
-                                <thead><tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0">
-                                    <th>@T["Analyte"]</th><th class="w-150px">@T["Result"]</th><th>@T["Unit"]</th><th>@T["Reference range"]</th><th class="text-center w-70px">@T["Flag"]</th><th class="w-100px">@T["Previous"]</th>
+                            <div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
+                                <thead><tr class="fw-bold text-muted bg-light">
+                                    <th class="ps-4 min-w-175px rounded-start">@T["Analyte"]</th><th class="w-150px">@T["Result"]</th><th>@T["Unit"]</th><th>@T["Reference range"]</th><th class="text-center w-70px">@T["Flag"]</th><th class="pe-4 w-100px rounded-end">@T["Previous"]</th>
                                 </tr></thead>
                                 <tbody class="fw-semibold text-gray-700">
                                     @foreach (var l in Model.Lines)
@@ -125,7 +129,9 @@
                                         var shown = r == null ? "" : r.Value != null ? Num(r.Value, r.Decimals) : r.TextValue ?? "";
                                         var flag = r?.Flag ?? HospitalLabFlag.Normal;
                                         <tr>
-                                            <td><div class="fw-bold text-gray-800">@DisplayName.Of(a.Name, a.NameEn)</div><div class="text-muted fs-8 hp-num">@a.Code</div></td>
+                                            <td class="ps-4"><div class="d-flex align-items-center">
+                                                <div class="symbol symbol-35px me-3 flex-shrink-0"><span class="symbol-label bg-light-@(flag == HospitalLabFlag.Normal ? "primary" : "danger")"><i class="ki-outline ki-flask fs-3 text-@(flag == HospitalLabFlag.Normal ? "primary" : "danger")"></i></span></div>
+                                                <div class="d-flex flex-column"><span class="text-gray-900 fw-bold fs-6">@DisplayName.Of(a.Name, a.NameEn)</span><bdi class="text-muted fw-semibold d-block fs-7 hp-num" dir="ltr">@a.Code</bdi></div></div></td>
                                             <td>
                                                 @if (canEnter)
                                                 {
@@ -140,15 +146,16 @@
                                             <td class="text-muted fs-7" dir="ltr">@(r?.Unit ?? a.Unit)</td>
                                             <td class="hp-num text-gray-700"><bdi dir="ltr">@HospitalUi.LabRange(r?.RefLow ?? a.RefLow, r?.RefHigh ?? a.RefHigh, r?.Decimals ?? a.Decimals)</bdi></td>
                                             <td class="text-center" data-flag-cell>@if (flag != HospitalLabFlag.Normal) {<span class="hp-flag hp-flag-@flag">@flag</span>} else {<span class="text-gray-400">—</span>}</td>
-                                            <td class="hp-num text-muted" dir="ltr">@(l.Previous != null ? Num(l.Previous, a.Decimals) : "—")</td>
+                                            <td class="pe-4 hp-num text-muted" dir="ltr">@(l.Previous != null ? Num(l.Previous, a.Decimals) : "—")</td>
                                         </tr>
                                     }
                                 </tbody>
                             </table></div>
-                            <div class="mt-6">
-                                <label class="form-label fw-semibold text-gray-700">@T["Laboratory comment"]</label>
+                            <div class="separator separator-dashed my-5"></div>
+                            <div>
+                                <label class="fs-6 fw-semibold mb-2">@T["Laboratory comment"]</label>
                                 @if (canEnter) { <textarea class="form-control form-control-solid" rows="2" maxlength="1000" data-comment>@o.Comment</textarea> }
-                                else { <div class="text-gray-800 fs-6">@(string.IsNullOrWhiteSpace(o.Comment) ? "—" : o.Comment)</div> }
+                                else { <div class="text-gray-700 fs-6" dir="auto">@(string.IsNullOrWhiteSpace(o.Comment) ? "—" : o.Comment)</div> }
                             </div>
                         }
                     </div>
@@ -160,23 +167,29 @@
                     <div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@T["Two-step verification"]</h4>
                         <div class="fs-6 text-gray-700">@T["A technician enters the result and a specialist verifies it; only then is it visible to the doctor and in the patient file."]</div></div>
                 </div>
-                <div class="card mb-5">
-                    <div class="card-header border-0 pt-6"><div class="card-title"><span class="card-label fw-bold text-gray-900 fs-4">@T["Specimen trail"]</span></div></div>
+                @* H127: the specimen trail — demo39 dashboards/logistics list widget *@
+                <div class="card card-flush mb-5">
+                    <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Specimen trail"]</span>
+                        <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["lab:" + o.Status]</span></h3></div>
                     <div class="card-body pt-2">
-                        @foreach (var s in trail)
+                        @for (int i = 0; i < trail.Length; i++)
                         {
-                            <div class="d-flex align-items-center py-3 hp-row">
-                                <span class="symbol symbol-30px flex-shrink-0"><span class="symbol-label @(s.At != null ? "bg-light-primary" : "bg-light")"><i class="ki-outline @s.Icon fs-5 @(s.At != null ? "text-primary" : "text-gray-400")"></i></span></span>
-                                <div class="ms-3 flex-grow-1"><div class="fw-semibold @(s.At != null ? "text-gray-800" : "text-gray-400")">@s.Label</div>@if (s.At != null) {<div class="text-muted fs-8">@Who(s.By)</div>}</div>
-                                <span class="hp-num text-muted fs-7" data-fmt data-utc="@s.At?.ToString("o")">@(s.At?.ToLocalTime().ToString("HH:mm") ?? "—")</span>
+                            var s = trail[i];
+                            <div class="d-flex flex-stack">
+                                <div class="symbol symbol-35px me-4 flex-shrink-0"><span class="symbol-label @(s.At != null ? "bg-light-primary" : "bg-light")"><i class="ki-outline @s.Icon fs-3 @(s.At != null ? "text-primary" : "text-gray-400")"></i></span></div>
+                                <div class="d-flex flex-stack flex-row-fluid gap-2">
+                                    <div class="me-3"><span class="fw-bold fs-6 @(s.At != null ? "text-gray-800" : "text-gray-400")">@s.Label</span>@if (s.At != null) {<span class="text-gray-500 fw-semibold fs-7 d-block">@Who(s.By)</span>}</div>
+                                    <span class="hp-num fw-bold fs-6 @(s.At != null ? "text-gray-800" : "text-gray-400")" dir="ltr" data-fmt data-utc="@s.At?.ToString("o")">@(s.At?.ToLocalTime().ToString("HH:mm") ?? "—")</span>
+                                </div>
                             </div>
+                            if (i < trail.Length - 1) { <div class="separator separator-dashed my-3"></div> }
                         }
                     </div>
                 </div>
                 @if (canLab && !locked)
                 {
-                    <div class="card">
-                        <div class="card-header border-0 pt-6"><div class="card-title"><span class="card-label fw-bold text-gray-900 fs-4">@T["Priority"]</span></div></div>
+                    <div class="card card-flush">
+                        <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Priority"]</span></h3></div>
                         <div class="card-body pt-2 d-flex gap-2">
                             @foreach (var pr in HospitalLabPriority.All)
                             {

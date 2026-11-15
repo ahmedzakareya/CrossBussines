@@ -24,32 +24,34 @@
         @if (ready && canManage) {<button type="button" class="btn btn-sm btn-primary" data-new><i class="ki-outline ki-plus fs-4"></i>@T["New concept"]</button>}
     </div></div>
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
-        @if (!ready) { <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice"><div class="fs-6 text-gray-700">@T[HospitalClinicalContentService.NoTables]</div></div> }
+        @if (!ready) { <div class="notice d-flex bg-light-danger rounded border-danger border border-dashed p-5 mb-5"><i class="ki-outline ki-information fs-2tx text-danger me-4"></i><div class="fs-6 text-gray-700 fw-semibold align-self-center">@T[HospitalClinicalContentService.NoTables]</div></div> }
         else
         {
-            <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice">
-                <span class="symbol symbol-45px me-5 flex-shrink-0"><span class="symbol-label"><i class="ki-outline ki-information-5 fs-2x text-white"></i></span></span>
-                <div class="d-flex flex-stack flex-grow-1 flex-wrap flex-md-nowrap">
-                    <div class="mb-3 mb-md-0 fw-semibold pe-5">
+            @* H127: the theme's notice and list page (demo39 widgets/tables, apps/ecommerce lists) *@
+            <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-5 mb-5">
+                <i class="ki-outline ki-information fs-2tx text-primary me-4"></i>
+                <div class="d-flex flex-stack flex-grow-1 flex-wrap flex-md-nowrap gap-4">
+                    <div class="fw-semibold">
                         <h4 class="text-gray-900 fw-bold mb-1">@T["One dictionary for every specialty"]</h4>
                         <div class="fs-6 text-gray-700">@T["Blood pressure is defined once and used by the internist, the cardiologist, obstetrics and nursing — so it draws one trend whichever clinic measured it."]</div>
                     </div>
-                    <span class="badge hp-badge fs-7 fw-bold px-4 py-2 flex-shrink-0"><bdi class="hp-num me-1">@total</bdi> @T["concepts"]</span>
+                    <div class="d-flex flex-column align-items-center flex-shrink-0 px-4"><span class="fs-2hx fw-bold text-gray-900 lh-1 hp-num">@total</span><span class="text-gray-500 fw-semibold fs-7 pt-1">@T["concepts"]</span></div>
                 </div>
             </div>
-            <div class="card">
-                <div class="card-header border-0 pt-6 flex-wrap gap-3">
-                    <div class="card-title flex-column m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Concept dictionary"]</span><span class="text-muted fs-7 mt-1">@T["The international code makes reports, insurance and device links possible"] · <span id="resultCount">—</span></span></div>
+            <div class="card card-flush">
+                <div class="card-header pt-5 flex-wrap gap-3">
+                    <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Concept dictionary"]</span><span class="text-gray-500 mt-1 fw-semibold fs-7">@T["The international code makes reports, insurance and device links possible"] · <span id="resultCount">—</span></span></h3>
                     <div class="card-toolbar d-flex flex-wrap align-items-center gap-2">
-                        <div class="d-flex align-items-center position-relative"><i class="ki-outline ki-magnifier fs-3 position-absolute ms-4"></i><input type="text" id="f_q" class="form-control form-control-solid w-250px ps-12" autocomplete="off" placeholder="@T["Search by name or code…"]" /></div>
+                        <div class="d-flex align-items-center position-relative"><i class="ki-outline ki-magnifier fs-3 position-absolute ms-4"></i><input type="text" id="f_q" class="form-control form-control-solid form-control-sm w-225px ps-12" autocomplete="off" placeholder="@T["Search by name or code…"]" /></div>
                         <div class="w-75px"><select id="f_size" class="form-select form-select-solid form-select-sm"><option value="25">25</option><option value="50">50</option><option value="100">100</option></select></div>
-                        <button type="button" id="f_reset" class="btn btn-sm btn-light" title="@T["Reset"]"><i class="ki-outline ki-arrows-circle fs-4"></i></button>
+                        <button type="button" id="f_reset" class="btn btn-sm btn-icon btn-light" title="@T["Reset"]"><i class="ki-outline ki-arrows-circle fs-4"></i></button>
                     </div>
                 </div>
-                <div class="card-body pt-4">
-                    <div class="table-responsive"><table class="table align-middle gy-4 mb-0 table-row-dashed">
-                        <thead><tr class="fw-bold fs-8 text-uppercase text-muted"><th class="w-120px">@T["The code"]</th><th>@T["Concept"]</th><th>@T["Type"]</th><th>@T["Unit"]</th><th>@T["Normal"]</th><th>@T["Critical limit"]</th><th>@T["Side"]</th><th>@T["Used by"]</th><th class="text-end"></th></tr></thead>
-                        <tbody id="rows" class="fs-6"><tr id="loadingRow"><td colspan="9" class="text-center text-muted py-10">@T["Loading…"]</td></tr><tr id="emptyRow" class="d-none"><td colspan="9" class="text-center text-muted py-10">@T["No records"]</td></tr></tbody>
+                <div class="card-body pt-2">
+                    <div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
+                        <thead><tr class="fw-bold text-muted bg-light"><th class="ps-4 rounded-start">@T["The code"]</th><th class="min-w-175px">@T["Concept"]</th><th>@T["Type"]</th><th>@T["Unit"]</th><th>@T["Normal"]</th><th>@T["Critical limit"]</th><th>@T["Side"]</th><th>@T["Used by"]</th><th class="text-end pe-4 rounded-end"></th></tr></thead>
+                        <tbody id="rows"><tr id="loadingRow"><td colspan="9" class="text-center py-10"><span class="spinner-border spinner-border-sm text-primary align-middle me-2"></span><span class="text-gray-500 fw-semibold">@T["Loading…"]</span></td></tr>
+                            <tr id="emptyRow" class="d-none"><td colspan="9" class="text-center py-12"><i class="ki-outline ki-book-open fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-semibold text-gray-600">@T["No records"]</div></td></tr></tbody>
                     </table></div>
                     <div class="d-flex flex-stack flex-wrap pt-5"><div class="fs-7 text-muted" id="pageInfo"></div><ul class="pagination" id="pager"></ul></div>
                 </div>
@@ -60,65 +62,69 @@
 
 @if (ready && canManage)
 {
-    <div class="modal fade" id="cModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-800px"><div class="modal-content">
-        <div class="modal-header"><h2 class="fw-bold m-0" id="cTitle">@T["New concept"]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
-        <div class="modal-body py-6 px-lg-10"><div class="row g-4">
-            <div class="col-4"><label class="form-label required">@T["The code"]</label><input type="text" maxlength="30" class="form-control form-control-solid" dir="ltr" data-c="code" placeholder="4548-4" /></div>
-            <div class="col-4"><label class="form-label required">@T["Code system"]</label><select class="form-select form-select-solid" data-c="codeSystem" data-control="none">@foreach (var s in HospitalCodeSystem.All) {<option value="@s">@s</option>}</select></div>
-            <div class="col-4"><label class="form-label required">@T["Type"]</label><select class="form-select form-select-solid" data-c="valueType" data-control="none">@foreach (var s in HospitalConceptType.All) {<option value="@s">@T["ctype:" + s]</option>}</select></div>
-            <div class="col-6"><label class="form-label required">@T["Name"]</label><input type="text" maxlength="150" class="form-control form-control-solid" data-c="name" dir="rtl" /></div>
-            <div class="col-6"><label class="form-label required">@T["Name in English"]</label><input type="text" maxlength="150" class="form-control form-control-solid" dir="ltr" data-c="nameEn" /></div>
-            <div class="col-4"><label class="form-label">@T["Unit"]</label><input type="text" maxlength="30" class="form-control form-control-solid" dir="ltr" data-c="unit" placeholder="mmHg" /></div>
-            <div class="col-4"><label class="form-label">@T["Decimals"]</label><input type="number" min="0" max="4" class="form-control form-control-solid" dir="ltr" data-c="decimals" value="1" /></div>
-            <div class="col-4"><label class="form-label">@T["Lab analyte code"]</label><input type="text" maxlength="20" class="form-control form-control-solid" dir="ltr" data-c="labAnalyteCode" placeholder="HBA1C" /></div>
+    @* H127: the theme's form modal (demo39 utilities/modals/forms/new-target) *@
+    <div class="modal fade" id="cModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-800px"><div class="modal-content rounded">
+        <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-10">
+            <div class="mb-10 text-center"><h1 class="mb-3" id="cTitle">@T["New concept"]</h1><div class="text-muted fw-semibold fs-5">@T["One dictionary for every specialty"]</div></div>
+            <div class="row g-6">
+            <div class="col-4"><label class="fs-6 fw-semibold mb-2 form-label required">@T["The code"]</label><input type="text" maxlength="30" class="form-control form-control-solid" dir="ltr" data-c="code" placeholder="4548-4" /></div>
+            <div class="col-4"><label class="fs-6 fw-semibold mb-2 form-label required">@T["Code system"]</label><select class="form-select form-select-solid" data-c="codeSystem" data-control="none">@foreach (var s in HospitalCodeSystem.All) {<option value="@s">@s</option>}</select></div>
+            <div class="col-4"><label class="fs-6 fw-semibold mb-2 form-label required">@T["Type"]</label><select class="form-select form-select-solid" data-c="valueType" data-control="none">@foreach (var s in HospitalConceptType.All) {<option value="@s">@T["ctype:" + s]</option>}</select></div>
+            <div class="col-6"><label class="fs-6 fw-semibold mb-2 form-label required">@T["Name"]</label><input type="text" maxlength="150" class="form-control form-control-solid" data-c="name" dir="rtl" /></div>
+            <div class="col-6"><label class="fs-6 fw-semibold mb-2 form-label required">@T["Name in English"]</label><input type="text" maxlength="150" class="form-control form-control-solid" dir="ltr" data-c="nameEn" /></div>
+            <div class="col-4"><label class="fs-6 fw-semibold mb-2 form-label">@T["Unit"]</label><input type="text" maxlength="30" class="form-control form-control-solid" dir="ltr" data-c="unit" placeholder="mmHg" /></div>
+            <div class="col-4"><label class="fs-6 fw-semibold mb-2 form-label">@T["Decimals"]</label><input type="number" min="0" max="4" class="form-control form-control-solid" dir="ltr" data-c="decimals" value="1" /></div>
+            <div class="col-4"><label class="fs-6 fw-semibold mb-2 form-label">@T["Lab analyte code"]</label><input type="text" maxlength="20" class="form-control form-control-solid" dir="ltr" data-c="labAnalyteCode" placeholder="HBA1C" /></div>
             <div class="col-12"><div class="separator separator-dashed"></div></div>
-            <div class="col-4"><label class="form-label text-success">@T["Normal low"]</label><input type="number" step="any" class="form-control form-control-solid" dir="ltr" data-c="normalLow" /></div>
-            <div class="col-4"><label class="form-label text-success">@T["Normal high"]</label><input type="number" step="any" class="form-control form-control-solid" dir="ltr" data-c="normalHigh" /></div>
-            <div class="col-4" data-panel><label class="form-label text-success">@T["Normal high — second number"]</label><input type="number" step="any" class="form-control form-control-solid" dir="ltr" data-c="normalHigh2" /></div>
-            <div class="col-4"><label class="form-label text-danger">@T["Critical low"]</label><input type="number" step="any" class="form-control form-control-solid" dir="ltr" data-c="criticalLow" /></div>
-            <div class="col-4"><label class="form-label text-danger">@T["Critical high"]</label><input type="number" step="any" class="form-control form-control-solid" dir="ltr" data-c="criticalHigh" /></div>
-            <div class="col-4" data-panel><label class="form-label text-danger">@T["Critical high — second number"]</label><input type="number" step="any" class="form-control form-control-solid" dir="ltr" data-c="criticalHigh2" /></div>
-            <div class="col-6"><label class="form-label">@T["Normal, as written"]</label><div class="d-flex gap-2"><input type="text" maxlength="60" class="form-control form-control-solid" data-c="normalText" dir="rtl" placeholder="@T["by age"]" /><input type="text" maxlength="60" class="form-control form-control-solid" dir="ltr" data-c="normalTextEn" placeholder="by age" /></div></div>
-            <div class="col-6"><label class="form-label">@T["Critical, as written"]</label><div class="d-flex gap-2"><input type="text" maxlength="60" class="form-control form-control-solid" data-c="criticalText" dir="rtl" /><input type="text" maxlength="60" class="form-control form-control-solid" dir="ltr" data-c="criticalTextEn" placeholder="± 2 SD" /></div></div>
-            <div class="col-12" data-choice><label class="form-label">@T["Answers — one per line: code|Arabic|English"]</label><div class="text-muted fs-8 mb-2">@T["For a score, its bands: the lowest value of each band|Arabic|English (PHQ-9: 0|لا يوجد|None, 5|خفيف|Mild …)"]</div><textarea rows="3" maxlength="2000" class="form-control form-control-solid" dir="ltr" data-c="choices" placeholder="N|طبيعي|Normal"></textarea></div>
-            <div class="col-4" data-calc><label class="form-label required">@T["Calculator"]</label><select class="form-select form-select-solid" data-c="calculator" data-control="none"><option value="">—</option>@foreach (var s in HospitalConceptCalculator.All) {<option value="@s">@T["calc:" + s]</option>}</select></div>
-            <div class="col-8" data-calc><label class="form-label required">@T["The codes it reads, comma-separated"]</label><input type="text" maxlength="200" class="form-control form-control-solid" dir="ltr" data-c="calcInputs" placeholder="62238-1, 9318-7" /></div>
+            <div class="col-4"><label class="fs-6 fw-semibold mb-2 form-label text-success">@T["Normal low"]</label><input type="number" step="any" class="form-control form-control-solid" dir="ltr" data-c="normalLow" /></div>
+            <div class="col-4"><label class="fs-6 fw-semibold mb-2 form-label text-success">@T["Normal high"]</label><input type="number" step="any" class="form-control form-control-solid" dir="ltr" data-c="normalHigh" /></div>
+            <div class="col-4" data-panel><label class="fs-6 fw-semibold mb-2 form-label text-success">@T["Normal high — second number"]</label><input type="number" step="any" class="form-control form-control-solid" dir="ltr" data-c="normalHigh2" /></div>
+            <div class="col-4"><label class="fs-6 fw-semibold mb-2 form-label text-danger">@T["Critical low"]</label><input type="number" step="any" class="form-control form-control-solid" dir="ltr" data-c="criticalLow" /></div>
+            <div class="col-4"><label class="fs-6 fw-semibold mb-2 form-label text-danger">@T["Critical high"]</label><input type="number" step="any" class="form-control form-control-solid" dir="ltr" data-c="criticalHigh" /></div>
+            <div class="col-4" data-panel><label class="fs-6 fw-semibold mb-2 form-label text-danger">@T["Critical high — second number"]</label><input type="number" step="any" class="form-control form-control-solid" dir="ltr" data-c="criticalHigh2" /></div>
+            <div class="col-6"><label class="fs-6 fw-semibold mb-2 form-label">@T["Normal, as written"]</label><div class="d-flex gap-2"><input type="text" maxlength="60" class="form-control form-control-solid" data-c="normalText" dir="rtl" placeholder="@T["by age"]" /><input type="text" maxlength="60" class="form-control form-control-solid" dir="ltr" data-c="normalTextEn" placeholder="by age" /></div></div>
+            <div class="col-6"><label class="fs-6 fw-semibold mb-2 form-label">@T["Critical, as written"]</label><div class="d-flex gap-2"><input type="text" maxlength="60" class="form-control form-control-solid" data-c="criticalText" dir="rtl" /><input type="text" maxlength="60" class="form-control form-control-solid" dir="ltr" data-c="criticalTextEn" placeholder="± 2 SD" /></div></div>
+            <div class="col-12" data-choice><label class="fs-6 fw-semibold mb-2 form-label">@T["Answers — one per line: code|Arabic|English"]</label><div class="text-muted fs-8 mb-2">@T["For a score, its bands: the lowest value of each band|Arabic|English (PHQ-9: 0|لا يوجد|None, 5|خفيف|Mild …)"]</div><textarea rows="3" maxlength="2000" class="form-control form-control-solid" dir="ltr" data-c="choices" placeholder="N|طبيعي|Normal"></textarea></div>
+            <div class="col-4" data-calc><label class="fs-6 fw-semibold mb-2 form-label required">@T["Calculator"]</label><select class="form-select form-select-solid" data-c="calculator" data-control="none"><option value="">—</option>@foreach (var s in HospitalConceptCalculator.All) {<option value="@s">@T["calc:" + s]</option>}</select></div>
+            <div class="col-8" data-calc><label class="fs-6 fw-semibold mb-2 form-label required">@T["The codes it reads, comma-separated"]</label><input type="text" maxlength="200" class="form-control form-control-solid" dir="ltr" data-c="calcInputs" placeholder="62238-1, 9318-7" /></div>
             <div class="col-6"><label class="form-check form-switch form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" data-c="hasLaterality" /><span class="form-check-label">@T["Recorded per side (right / left)"]</span></label></div>
             <div class="col-6"><label class="form-check form-switch form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" data-c="isActive" checked /><span class="form-check-label">@T["Active"]</span></label></div>
-        </div></div>
-        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-save>@T["Save"]</button></div>
+            </div>
+            <div class="text-center pt-10"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-save>@T["Save"]</button></div>
+        </div>
     </div></div></div>
 }
 
 @if (ready)
 {
     @* H115: the ranges by who the patient is — a sex, an age band, a pregnancy; the most specific that fits wins *@
-    <div class="modal fade" id="rModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-900px"><div class="modal-content">
-        <div class="modal-header"><div><h2 class="fw-bold m-0">@T["Ranges by patient"] <span class="text-muted fs-5" data-r-name></span></h2>
-            <div class="text-muted fs-8 mt-1">@T["The most specific range that fits the patient replaces the concept's own range for that reading: a trimester before \"pregnant\", an age band and a sex before either alone. None fits: the concept's own range."]</div></div>
-            <div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
-        <div class="modal-body py-6 px-lg-10">
-            <div class="table-responsive mb-6"><table class="table align-middle table-row-dashed fs-7 gy-3 mb-0">
-                <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0"><th>@T["For whom"]</th><th class="text-success">@T["Normal"]</th><th class="text-danger">@T["Critical"]</th><th>@T["Source"]</th><th class="text-end"></th></tr></thead>
+    <div class="modal fade" id="rModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-900px"><div class="modal-content rounded">
+        <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-10">
+            <div class="mb-10 text-center"><h1 class="mb-3">@T["Ranges by patient"] <span class="text-muted fs-3" data-r-name></span></h1>
+                <div class="text-muted fw-semibold fs-6">@T["The most specific range that fits the patient replaces the concept's own range for that reading: a trimester before \"pregnant\", an age band and a sex before either alone. None fits: the concept's own range."]</div></div>
+            <div class="table-responsive mb-8"><table class="table align-middle gs-0 gy-4 mb-0">
+                <thead><tr class="fw-bold text-muted bg-light"><th class="ps-4 rounded-start">@T["For whom"]</th><th class="text-success">@T["Normal"]</th><th class="text-danger">@T["Critical"]</th><th>@T["Source"]</th><th class="text-end pe-4 rounded-end"></th></tr></thead>
                 <tbody data-r-rows><tr><td colspan="5" class="text-center text-muted py-6">@T["Loading…"]</td></tr></tbody>
             </table></div>
             @if (canManage)
             {
-                <div class="rounded border border-dashed p-5">
-                    <div class="fw-bold text-gray-900 fs-6 mb-4">@T["Add a range"]</div>
+                <div class="rounded border border-gray-300 border-dashed p-6">
+                    <h4 class="fw-bold text-gray-900 mb-5">@T["Add a range"]</h4>
                     <div class="row g-4">
-                        <div class="col-md-3"><label class="form-label">@T["Sex"]</label><select class="form-select form-select-solid" data-r="sex" data-control="select2" data-hide-search="true" data-dropdown-parent="#rModal"><option value="">@T["Either"]</option><option value="M">@T["Male"]</option><option value="F">@T["Female"]</option></select></div>
-                        <div class="col-md-3"><label class="form-label">@T["Pregnancy"]</label><select class="form-select form-select-solid" data-r="pregnancy" data-control="select2" data-hide-search="true" data-dropdown-parent="#rModal"><option value="">@T["Either"]</option>@foreach (var pg in HospitalRangePregnancy.All) {<option value="@pg">@T["preg:" + pg]</option>}</select></div>
-                        <div class="col-md-2"><label class="form-label">@T["Age from"]</label><input type="number" min="0" class="form-control form-control-solid" dir="ltr" data-r="ageFrom" /></div>
-                        <div class="col-md-2"><label class="form-label">@T["to under"]</label><input type="number" min="0" class="form-control form-control-solid" dir="ltr" data-r="ageTo" /></div>
-                        <div class="col-md-2"><label class="form-label">@T["Age in"]</label><select class="form-select form-select-solid" data-r="ageUnit" data-control="select2" data-hide-search="true" data-dropdown-parent="#rModal"><option value="years">@T["years"]</option><option value="months">@T["months"]</option><option value="days">@T["days"]</option></select></div>
-                        <div class="col-6 col-md-3"><label class="form-label text-success">@T["Normal low"]</label><input type="number" step="any" class="form-control form-control-solid" dir="ltr" data-r="normalLow" /></div>
-                        <div class="col-6 col-md-3"><label class="form-label text-success">@T["Normal high"]</label><input type="number" step="any" class="form-control form-control-solid" dir="ltr" data-r="normalHigh" /></div>
-                        <div class="col-6 col-md-3"><label class="form-label text-danger">@T["Critical low"]</label><input type="number" step="any" class="form-control form-control-solid" dir="ltr" data-r="criticalLow" /></div>
-                        <div class="col-6 col-md-3"><label class="form-label text-danger">@T["Critical high"]</label><input type="number" step="any" class="form-control form-control-solid" dir="ltr" data-r="criticalHigh" /></div>
-                        <div class="col-6 col-md-3" data-r-pair><label class="form-label text-success">@T["Normal high — second number"]</label><input type="number" step="any" class="form-control form-control-solid" dir="ltr" data-r="normalHigh2" /></div>
-                        <div class="col-6 col-md-3" data-r-pair><label class="form-label text-danger">@T["Critical high — second number"]</label><input type="number" step="any" class="form-control form-control-solid" dir="ltr" data-r="criticalHigh2" /></div>
-                        <div class="col-12"><label class="form-label">@T["Source"]</label><input type="text" maxlength="200" class="form-control form-control-solid" data-r="source" placeholder="@T["The guideline or the laboratory's own validation"]" /></div>
+                        <div class="col-md-3"><label class="fs-6 fw-semibold mb-2 form-label">@T["Sex"]</label><select class="form-select form-select-solid" data-r="sex" data-control="select2" data-hide-search="true" data-dropdown-parent="#rModal"><option value="">@T["Either"]</option><option value="M">@T["Male"]</option><option value="F">@T["Female"]</option></select></div>
+                        <div class="col-md-3"><label class="fs-6 fw-semibold mb-2 form-label">@T["Pregnancy"]</label><select class="form-select form-select-solid" data-r="pregnancy" data-control="select2" data-hide-search="true" data-dropdown-parent="#rModal"><option value="">@T["Either"]</option>@foreach (var pg in HospitalRangePregnancy.All) {<option value="@pg">@T["preg:" + pg]</option>}</select></div>
+                        <div class="col-md-2"><label class="fs-6 fw-semibold mb-2 form-label">@T["Age from"]</label><input type="number" min="0" class="form-control form-control-solid" dir="ltr" data-r="ageFrom" /></div>
+                        <div class="col-md-2"><label class="fs-6 fw-semibold mb-2 form-label">@T["to under"]</label><input type="number" min="0" class="form-control form-control-solid" dir="ltr" data-r="ageTo" /></div>
+                        <div class="col-md-2"><label class="fs-6 fw-semibold mb-2 form-label">@T["Age in"]</label><select class="form-select form-select-solid" data-r="ageUnit" data-control="select2" data-hide-search="true" data-dropdown-parent="#rModal"><option value="years">@T["years"]</option><option value="months">@T["months"]</option><option value="days">@T["days"]</option></select></div>
+                        <div class="col-6 col-md-3"><label class="fs-6 fw-semibold mb-2 form-label text-success">@T["Normal low"]</label><input type="number" step="any" class="form-control form-control-solid" dir="ltr" data-r="normalLow" /></div>
+                        <div class="col-6 col-md-3"><label class="fs-6 fw-semibold mb-2 form-label text-success">@T["Normal high"]</label><input type="number" step="any" class="form-control form-control-solid" dir="ltr" data-r="normalHigh" /></div>
+                        <div class="col-6 col-md-3"><label class="fs-6 fw-semibold mb-2 form-label text-danger">@T["Critical low"]</label><input type="number" step="any" class="form-control form-control-solid" dir="ltr" data-r="criticalLow" /></div>
+                        <div class="col-6 col-md-3"><label class="fs-6 fw-semibold mb-2 form-label text-danger">@T["Critical high"]</label><input type="number" step="any" class="form-control form-control-solid" dir="ltr" data-r="criticalHigh" /></div>
+                        <div class="col-6 col-md-3" data-r-pair><label class="fs-6 fw-semibold mb-2 form-label text-success">@T["Normal high — second number"]</label><input type="number" step="any" class="form-control form-control-solid" dir="ltr" data-r="normalHigh2" /></div>
+                        <div class="col-6 col-md-3" data-r-pair><label class="fs-6 fw-semibold mb-2 form-label text-danger">@T["Critical high — second number"]</label><input type="number" step="any" class="form-control form-control-solid" dir="ltr" data-r="criticalHigh2" /></div>
+                        <div class="col-12"><label class="fs-6 fw-semibold mb-2 form-label">@T["Source"]</label><input type="text" maxlength="200" class="form-control form-control-solid" data-r="source" placeholder="@T["The guideline or the laboratory's own validation"]" /></div>
                     </div>
                     <div class="d-flex justify-content-end mt-4"><button type="button" class="btn btn-sm btn-primary" data-r-add><i class="ki-outline ki-plus fs-4"></i>@T["Add the range"]</button></div>
                 </div>
@@ -142,8 +148,8 @@
                 fetch(@Json.Serialize(Url.Content("~/Hospital/Concepts/")) + rConcept + '/Ranges', { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.json(); }).then(function (res) {
                     var tb = rm.querySelector('[data-r-rows]');
                     if (!res.ok) { tb.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-6">' + resc(res.error) + '</td></tr>'; return; }
-                    tb.innerHTML = res.rows.length ? res.rows.map(function (r) { return '<tr><td class="fw-semibold text-gray-900">' + resc(r.who) + '</td><td class="text-success"><bdi class="hp-num" dir="ltr">' + resc(r.normal) + '</bdi></td><td class="text-danger"><bdi class="hp-num" dir="ltr">' + resc(r.critical) + '</bdi></td>' +
-                        '<td class="text-muted fs-8">' + resc(r.source || '—') + '</td><td class="text-end">' + (canManage ? '<button type="button" class="btn btn-sm btn-icon btn-light" data-r-rm="' + r.id + '" title="' + resc(RW.rm) + '"><i class="ki-outline ki-trash fs-5"></i></button>' : '') + '</td></tr>'; }).join('')
+                    tb.innerHTML = res.rows.length ? res.rows.map(function (r) { return '<tr><td class="ps-4 fw-bold text-gray-900 fs-6">' + resc(r.who) + '</td><td><span class="badge badge-light-success fs-7 fw-bold hp-num" dir="ltr">' + resc(r.normal) + '</span></td><td><span class="badge badge-light-danger fs-7 fw-bold hp-num" dir="ltr">' + resc(r.critical) + '</span></td>' +
+                        '<td class="text-gray-600 fw-semibold fs-7">' + resc(r.source || '—') + '</td><td class="text-end pe-4">' + (canManage ? '<button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-danger" data-r-rm="' + r.id + '" title="' + resc(RW.rm) + '"><i class="ki-outline ki-trash fs-5"></i></button>' : '') + '</td></tr>'; }).join('')
                         : '<tr><td colspan="5" class="text-center text-muted py-6">' + resc(RW.none) + '</td></tr>';
                 });
             }

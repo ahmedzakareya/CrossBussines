@@ -3,26 +3,37 @@
 @using CrossBuy.Models.Context.Hospital
 @model HospitalRadHistory
 @inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
-@* A patient's signed imaging reports — the patient file's tab and the consultation's side card share this one view. *@
-<div class="card @(Model.Compact ? "mb-5" : "")">
-    <div class="card-header border-0 pt-6">
-        <div class="card-title align-items-start flex-column m-0">
-            <span class="card-label fw-bold text-gray-900 fs-4">@T["Imaging reports"]</span>
-            @if (Model.Pending > 0) { <span class="text-muted mt-1 fw-semibold fs-7"><span class="hp-num">@Model.Pending</span> @T["still in radiology — shown once signed"]</span> }
-        </div>
+@* A patient's signed imaging reports — the patient file's tab and the consultation's side card share this one view.
+   H127: demo39 card header + list widget (dashboards/logistics): symbol · exam over its impression · date — narrow-friendly. *@
+<div class="card card-flush @(Model.Compact ? "mb-5" : "")">
+    <div class="card-header pt-5">
+        <h3 class="card-title align-items-start flex-column">
+            <span class="card-label fw-bold text-gray-800">@T["Imaging reports"]</span>
+            @if (Model.Pending > 0) { <span class="text-gray-500 mt-1 fw-semibold fs-7"><span class="hp-num">@Model.Pending</span>&nbsp;@T["still in radiology — shown once signed"]</span> }
+        </h3>
+        @if (Model.Signed.Count > 0) { <div class="card-toolbar"><span class="badge badge-light-primary fs-7 fw-bold hp-num">@Model.Signed.Count</span></div> }
     </div>
     <div class="card-body pt-2">
-        @if (Model.Signed.Count == 0) { <div class="text-center text-muted py-8 fs-7">@T["No signed imaging reports yet."]</div> }
-        @foreach (var r in Model.Signed)
+        @if (Model.Signed.Count == 0)
         {
-            <a href="@Url.Action("RadOrder", new { id = r.ID })" class="d-block py-3 hp-row text-hover-primary">
-                <div class="d-flex flex-stack mb-1">
-                    <div class="fw-bold text-gray-800">@DisplayName.Of(r.Name, r.NameEn)
-                        @if (r.ImpressionCategory != null) { <span class="badge @(r.ImpressionCategory == HospitalRadImpression.Critical ? "badge-danger" : r.ImpressionCategory == HospitalRadImpression.Abnormal ? "badge-light-danger" : "badge-light-success") fs-9 ms-2">@T["imp:" + r.ImpressionCategory]</span> }</div>
-                    <span class="text-muted fs-8 hp-num" data-fmt data-utc="@r.SignedAt?.ToString("o")">@r.SignedAt?.ToLocalTime().ToString("yyyy-MM-dd")</span>
+            <div class="text-center py-10"><i class="ki-outline ki-scan-barcode fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-bold text-gray-700">@T["No signed imaging reports yet."]</div></div>
+        }
+        @for (int i = 0; i < Model.Signed.Count; i++)
+        {
+            var r = Model.Signed[i];
+            string tone = r.ImpressionCategory == HospitalRadImpression.Critical || r.ImpressionCategory == HospitalRadImpression.Abnormal ? "danger" : r.ImpressionCategory == null ? "primary" : "success";
+            <a href="@Url.Action("RadOrder", new { id = r.ID })" class="d-flex align-items-start text-hover-primary">
+                <div class="symbol symbol-35px me-3 flex-shrink-0"><span class="symbol-label bg-light-@tone"><i class="ki-outline ki-scan-barcode fs-3 text-@tone"></i></span></div>
+                <div class="flex-grow-1 min-w-0">
+                    <div class="d-flex flex-stack gap-2">
+                        <span class="text-gray-800 fw-bold fs-6 text-truncate">@DisplayName.Of(r.Name, r.NameEn)</span>
+                        <span class="text-gray-500 fw-semibold fs-7 hp-num text-nowrap" dir="ltr" data-fmt data-utc="@r.SignedAt?.ToString("o")">@r.SignedAt?.ToLocalTime().ToString("yyyy-MM-dd")</span>
+                    </div>
+                    @if (r.ImpressionCategory != null) { <span class="badge @(r.ImpressionCategory == HospitalRadImpression.Critical ? "badge-danger" : r.ImpressionCategory == HospitalRadImpression.Abnormal ? "badge-light-danger" : "badge-light-success") fs-8 fw-bold my-1">@T["imp:" + r.ImpressionCategory]</span> }
+                    <div class="text-gray-600 fw-semibold fs-7 @(Model.Compact ? "text-truncate" : "")" style="white-space:pre-line" dir="auto">@r.Impression</div>
                 </div>
-                <div class="text-gray-700 fs-7 @(Model.Compact ? "text-truncate" : "")" style="white-space:pre-line">@r.Impression</div>
             </a>
+            if (i < Model.Signed.Count - 1) { <div class="separator separator-dashed my-3"></div> }
         }
     </div>
 </div>

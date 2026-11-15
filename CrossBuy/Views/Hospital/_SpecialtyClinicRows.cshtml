@@ -7,19 +7,20 @@
 {
     var age = HospitalPatientService.AgeOn(r.BirthDate, DateTime.UtcNow);
     bool signed = r.Status == HospitalEncounterStatus.Signed;
+    @* H127: the theme's table rows (demo39 widgets/tables) — the patient with their photo, the doctor with theirs, badges for the forms and the state *@
     <tr>
-        <td><div class="d-flex align-items-center gap-3">
-            <div class="symbol symbol-40px symbol-circle flex-shrink-0">@if (r.Photo != null) {<img src="@r.Photo" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(r.NameEn)" />} else {<span class="symbol-label fw-bold fs-7 hp-initials">@HospitalUi.Initials(r.NameEn)</span>}</div>
-            <div><a href="@Url.Action("Patient", new { id = r.PatientId })" class="fw-bold text-gray-900 text-hover-primary">@DisplayName.Of(r.Name, r.NameEn)</a>
-                <div class="text-muted fs-8"><bdi class="hp-num">@r.Mrn</bdi> · @if (age != null) {<bdi class="hp-num">@age</bdi> @T["y"]<text> · </text>}@T["sex:" + r.Sex]</div></div>
+        <td class="ps-4"><div class="d-flex align-items-center">
+            <div class="symbol symbol-45px symbol-circle me-3 flex-shrink-0">@if (r.Photo != null) {<img src="@r.Photo" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(r.NameEn)" />} else {<span class="symbol-label fw-bold fs-7 hp-initials">@HospitalUi.Initials(r.NameEn)</span>}</div>
+            <div class="d-flex flex-column"><a href="@Url.Action("Patient", new { id = r.PatientId })" class="text-gray-900 fw-bold text-hover-primary fs-6">@DisplayName.Of(r.Name, r.NameEn)</a>
+                <span class="text-gray-500 fw-semibold fs-7"><bdi class="hp-num">@r.Mrn</bdi> · @if (age != null) {<span class="text-nowrap"><bdi class="hp-num">@age</bdi>&nbsp;@T["y"]</span><text> · </text>}@T["sex:" + r.Sex]</span></div>
         </div></td>
-        <td class="text-nowrap"><bdi class="hp-num">@HospitalNursingService.UtcToWard(r.StartedAt).ToString("yyyy-MM-dd HH:mm")</bdi></td>
+        <td class="text-nowrap"><span class="text-gray-800 fw-bold fs-6 hp-num d-block" dir="ltr">@HospitalNursingService.UtcToWard(r.StartedAt).ToString("HH:mm")</span><span class="text-gray-500 fw-semibold fs-7 hp-num" dir="ltr">@HospitalNursingService.UtcToWard(r.StartedAt).ToString("yyyy-MM-dd")</span></td>
         <td><div class="d-flex align-items-center">
             <div class="symbol symbol-35px symbol-circle flex-shrink-0 me-3">@if (!string.IsNullOrEmpty(r.DoctorPhoto)) {<img src="@r.DoctorPhoto" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(r.DoctorEn)" />} else {<span class="symbol-label fw-bold fs-8 hp-initials">@HospitalUi.Initials(r.DoctorEn)</span>}</div>
-            <span class="text-gray-800 fw-semibold">@DisplayName.Of(r.Doctor, r.DoctorEn)</span></div></td>
-        <td class="fs-8 text-gray-700">@(r.Complaint ?? "—")</td>
-        <td>@if (r.Forms == 0) {<span class="text-muted fs-8">—</span>} else {<span class="badge badge-light-@(r.SignedForms == r.Forms ? "success" : "primary") fs-8 hp-num">@r.SignedForms / @r.Forms</span>}</td>
-        <td>@if (signed) {<span class="badge badge-light-success fs-8">@T["Signed"]</span>} else {<span class="badge badge-light-primary fs-8">@T["Visit open"]</span>}</td>
-        <td class="text-end"><a href="@Url.Action("SpecialtyVisit", new { id = r.EncounterId })" class="btn btn-sm btn-light-primary text-nowrap"><i class="ki-outline ki-abstract-26 fs-5"></i>@T["Open the visit"]</a></td>
+            <span class="text-gray-800 fw-bold fs-7">@DisplayName.Of(r.Doctor, r.DoctorEn)</span></div></td>
+        <td class="text-gray-600 fw-semibold fs-7 mw-250px">@if (r.Complaint != null) {<bdi>@r.Complaint</bdi>} else {<span class="text-gray-400">—</span>}</td>
+        <td>@if (r.Forms == 0) {<span class="text-gray-400">—</span>} else {<span class="badge badge-light-@(r.SignedForms == r.Forms ? "success" : "primary") fs-7 fw-bold hp-num">@T["{0} of {1}", r.SignedForms, r.Forms]</span>}</td>
+        <td>@if (signed) {<span class="badge badge-light-success fs-7 fw-bold">@T["Signed"]</span>} else {<span class="badge badge-light-primary fs-7 fw-bold">@T["Visit open"]</span>}</td>
+        <td class="text-end pe-4"><a href="@Url.Action("SpecialtyVisit", new { id = r.EncounterId })" class="btn btn-sm btn-icon btn-bg-light btn-active-color-primary" title="@T["Open the visit"]" data-bs-toggle="tooltip"><i class="ki-outline ki-eye fs-3"></i></a></td>
     </tr>
 }

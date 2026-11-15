@@ -11,15 +11,16 @@
 {
     var c = r.Concept; bool calc = c.ValueType is HospitalConceptType.Calculated or HospitalConceptType.Score;
     var used = isAr ? r.UsedBy : r.UsedByEn;
+    @* H127: the theme's table rows (demo39 widgets/tables) *@
     <tr class="@(c.IsActive ? "" : "opacity-50")">
-        <td><span class="badge hp-code fw-bold fs-8 hp-num">@c.Code</span><div class="text-muted fs-9 mt-1">@c.CodeSystem</div></td>
-        <td><div class="fw-bold text-gray-900">@(isAr ? c.Name : c.NameEn)</div>@if (!c.IsActive) {<div class="text-muted fs-9">@T["Inactive"]</div>}</td>
-        <td><span class="badge badge-light-@(calc ? "primary" : "secondary") fw-bold fs-8">@T["ctype:" + c.ValueType]</span></td>
-        <td class="text-nowrap"><bdi class="hp-num">@(c.Unit ?? "—")</bdi></td>
-        <td class="text-success text-nowrap"><bdi class="hp-num">@HospitalConceptRules.NormalDisplay(c, isAr)</bdi>@if (rangeCounts.TryGetValue(c.ID, out var rn)) {<div class="fs-9 text-primary fw-semibold mt-1">@T["+{0} by patient", rn]</div>}</td>
-        <td class="text-danger text-nowrap"><bdi class="hp-num">@HospitalConceptRules.CriticalDisplay(c, isAr)</bdi></td>
-        <td>@if (c.HasLaterality) {<span class="badge badge-light-info fw-bold fs-8">@T["Right / left"]</span>} else {<span>—</span>}</td>
-        <td><span class="fs-8 text-muted">@(used.Count == 0 ? "—" : string.Join(" · ", used))</span></td>
-        <td class="text-end text-nowrap">@if (c.ValueType is HospitalConceptType.Number or HospitalConceptType.Score or HospitalConceptType.Panel) {<button type="button" class="btn btn-sm btn-icon btn-light-info me-1" data-ranges="@c.ID" data-pair="@(c.ValueType == HospitalConceptType.Panel ? "1" : "")" data-name="@(isAr ? c.Name : c.NameEn)" data-unit="@c.Unit" title="@T["Ranges by patient"]"><i class="ki-outline ki-people fs-5"></i></button>}@if (canManage) {<button type="button" class="btn btn-sm btn-icon btn-light-primary" data-edit="@c.ID" title="@T["Edit"]"><i class="ki-outline ki-pencil fs-5"></i></button>}</td>
+        <td class="ps-4"><span class="badge badge-light-primary fw-bold fs-7 hp-num" dir="ltr">@c.Code</span><span class="text-gray-500 fw-semibold d-block fs-8 mt-1" dir="ltr">@c.CodeSystem</span></td>
+        <td><span class="text-gray-900 fw-bold fs-6 d-block">@(isAr ? c.Name : c.NameEn)</span>@if (!c.IsActive) {<span class="badge badge-light fs-8 fw-bold mt-1">@T["Inactive"]</span>}</td>
+        <td><span class="badge badge-light-@(calc ? "primary" : "secondary") fw-bold fs-7">@T["ctype:" + c.ValueType]</span></td>
+        <td class="text-nowrap"><span class="text-gray-800 fw-semibold fs-7 hp-num" dir="ltr">@(c.Unit ?? "—")</span></td>
+        <td class="text-nowrap"><span class="badge badge-light-success fs-7 fw-bold hp-num" dir="ltr">@HospitalConceptRules.NormalDisplay(c, isAr)</span>@if (rangeCounts.TryGetValue(c.ID, out var rn)) {<span class="text-primary fw-semibold d-block fs-8 mt-1">@T["+{0} by patient", rn]</span>}</td>
+        <td class="text-nowrap"><span class="badge badge-light-danger fs-7 fw-bold hp-num" dir="ltr">@HospitalConceptRules.CriticalDisplay(c, isAr)</span></td>
+        <td>@if (c.HasLaterality) {<span class="badge badge-light-info fw-bold fs-7">@T["Right / left"]</span>} else {<span class="text-gray-400">—</span>}</td>
+        <td class="mw-200px"><span class="text-gray-600 fw-semibold fs-7">@(used.Count == 0 ? "—" : string.Join(" · ", used))</span></td>
+        <td class="text-end text-nowrap pe-4">@if (c.ValueType is HospitalConceptType.Number or HospitalConceptType.Score or HospitalConceptType.Panel) {<button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-primary me-1" data-ranges="@c.ID" data-pair="@(c.ValueType == HospitalConceptType.Panel ? "1" : "")" data-name="@(isAr ? c.Name : c.NameEn)" data-unit="@c.Unit" title="@T["Ranges by patient"]" data-bs-toggle="tooltip"><i class="ki-outline ki-people fs-3"></i></button>}@if (canManage) {<button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-primary" data-edit="@c.ID" title="@T["Edit"]" data-bs-toggle="tooltip"><i class="ki-outline ki-pencil fs-3"></i></button>}</td>
     </tr>
 }

@@ -40,19 +40,44 @@
         return new { ruler = i.Ruler, rulerMm = i.RulerMm, length = i.Length, width = i.Width, l = r.LengthMm, w = r.WidthMm, pm = r.PlusMinusMm };
     }
     object? ConsentOf(HospitalCanvasMark m) => m.PhotoConsentId is int c && Model.MarkConsents != null && Model.MarkConsents.TryGetValue(c, out var v) ? new { no = v.No, scope = v.Scope, wd = v.Withdrawn } : null;
+    // H110/H127: this measure on earlier signed visits (stored as observations, so it trends) — the theme's list-widget rows
+    void Earlier()
+    {
+        if (Model.History is not { Count: > 0 } hx) return;
+        var rows = hx.Take(8).ToList();
+        <div class="separator separator-dashed my-5"></div>
+        <div class="text-gray-800 fw-bold fs-6 mb-4">@T["Earlier results"]</div>
+        for (int i = 0; i < rows.Count; i++)
+        {
+            var r = rows[i];
+            <div class="d-flex flex-stack">
+                <div class="d-flex align-items-center me-3">
+                    <div class="symbol symbol-35px me-4"><span class="symbol-label bg-light-primary"><i class="ki-outline ki-chart-line fs-3 text-primary"></i></span></div>
+                    <div><span class="text-gray-800 fw-bold fs-6 hp-num" dir="ltr">@r.At.ToLocalTime().ToString("yyyy-MM-dd")</span>
+                        @if (r.Side == "R" || r.Side == "L") {<span class="text-gray-500 fw-semibold fs-7 d-block">@(r.Side == "R" ? T["right ear"] : T["left ear"])</span>}</div>
+                </div>
+                <span class="badge badge-light-primary fs-7 fw-bold hp-num" dir="ltr">@r.Value.ToString("0.##", CultureInfo.InvariantCulture)@(r.Code == "TBSA" ? "%" : r.Code == "PTA" ? " dB" : "")</span>
+            </div>
+            if (i < rows.Count - 1) {<div class="separator separator-dashed my-3"></div>}
+        }
+    }
 }
 <link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
 <style>
-    .cv-wrap { position: relative; background: #fff; border: 1px solid #E4E6EF; border-radius: .75rem; touch-action: none; user-select: none; }
+    .cv-wrap { position: relative; background: var(--bs-body-bg); border: 1px dashed var(--bs-gray-300); border-radius: .75rem; touch-action: none; user-select: none; }
     .cv-wrap svg { display: block; width: 100%; height: auto; direction: ltr; }
-    .cv-tools { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
-    .cv-tool { border: 1px solid #E4E6EF; background: #fff; border-radius: .6rem; padding: 6px 12px; font-size: .85rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
-    .cv-tool.on { border-color: #3A5795; background: #EEF2FA; color: #1E2F5A; }
-    .cv-sw { width: 14px; height: 14px; border-radius: 50%; display: inline-block; border: 1px solid rgba(0,0,0,.15); }
-    .cv-mark { display: flex; align-items: center; gap: 10px; padding: 8px 6px; border-bottom: 1px dashed #E4E6EF; font-size: .85rem; border-radius: .5rem; cursor: pointer; }
-    .cv-mark.sel { background: #EEF2FA; }
-    .cv-mark .n { width: 24px; height: 24px; border-radius: 50%; background: #3A5795; color: #fff; font-weight: 700; display: flex; align-items: center; justify-content: center; font-size: .75rem; flex: 0 0 24px; }
-    .cv-mark.carried .n { background: #9CA3AF; }
+    /* H127: the drawing tools as the theme's light buttons (demo39 btn-light / btn-light-primary when chosen) */
+    .cv-tools { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+    .cv-tool { border: 1px solid transparent; background: var(--bs-gray-100); color: var(--bs-gray-700); border-radius: .475rem; padding: .55rem 1rem; font-size: .925rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: background-color .15s, color .15s; }
+    .cv-tool:hover { color: var(--bs-primary); }
+    .cv-tool.on { background: var(--bs-primary-light); color: var(--bs-primary); border-color: var(--bs-primary); }
+    .cv-tool.on i { color: var(--bs-primary); }
+    .cv-sw { width: 14px; height: 14px; border-radius: 50%; display: inline-block; border: 1px solid rgba(0,0,0,.15); flex: 0 0 14px; }
+    /* the marks list: the theme's list-widget rows (demo39 widgets/lists) */
+    .cv-mark { display: flex; align-items: center; gap: 12px; padding: 12px 8px; border-bottom: 1px dashed var(--bs-gray-300); border-radius: .475rem; cursor: pointer; }
+    .cv-mark:last-child { border-bottom: 0; }
+    .cv-mark:hover { background: var(--bs-gray-100); }
+    .cv-mark.sel { background: var(--bs-primary-light); }
     .cv-skin { fill: #F6E7DD; stroke: #C9A68F; stroke-width: 1.5; }
 </style>
 @Html.AntiForgeryToken()
@@ -93,7 +118,7 @@
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
         @if (!ready)
         {
-            <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice"><div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@T["The clinical canvas is not installed yet (hospital_h99_canvas.sql)."]</h4></div></div>
+            <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-5 mb-5"><i class="ki-outline ki-information fs-2tx text-primary me-4"></i><div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@T["The clinical canvas is not installed yet (hospital_h99_canvas.sql)."]</h4></div></div>
         }
         else if (body)
         {
@@ -107,13 +132,13 @@
                             <a class="btn btn-sm btn-primary ms-4" href="@Url.Action("NewConsent", new { id = p.ID, kind = HospitalConsentKind.Photography })"><i class="ki-outline ki-notepad-edit fs-4"></i>@T["Record the photography consent"]</a>
                         </div>
                     }
-                    <div class="card mb-5"><div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
-                        <span class="card-label fw-bold text-gray-900 fs-4">@T["Body map — {0}", name]</span>
+                    <div class="card card-flush mb-5"><div class="card-header pt-5"><h3 class="card-title align-items-start flex-column">
+                        <span class="card-label fw-bold text-gray-800">@T["Body map — {0}", name]</span>
+                        <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Choose \"mark\" and tap the body; or \"pen\" and draw freely. Grey marks are carried from the last visit, not yet verified."]</span></h3>
                         @if (Model.PhotoConsent is { } pcn)
                         {
-                            <span class="text-muted mt-1 fw-semibold fs-8"><i class="ki-outline ki-shield-tick fs-6 text-success"></i> @T["Photos under consent {0} — {1}", pcn.No, T["photo-scope-short:" + pcn.Scope].Value]</span>
-                        }
-                        <span class="text-muted mt-1 fw-semibold fs-7">@T["Choose \"mark\" and tap the body; or \"pen\" and draw freely. Grey marks are carried from the last visit, not yet verified."]</span></div></div>
+                            <div class="card-toolbar"><span class="badge badge-light-success fs-7 fw-bold py-3 px-4"><i class="ki-outline ki-shield-tick fs-5 text-success me-2"></i>@T["Photos under consent {0} — {1}", pcn.No, T["photo-scope-short:" + pcn.Scope].Value]</span></div>
+                        }</div>
                         <div class="card-body pt-3">
                             @if (canEdit)
                             {
@@ -155,21 +180,22 @@
                 <div class="col-xl-4">
                     @if (canEdit)
                     {
-                        <div class="card mb-5"><div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Next mark"]</span></div></div>
-                            <div class="card-body pt-3"><div class="row g-3">
-                                <div class="col-7"><label class="form-label">@T["Mark type"]</label>
+                        <div class="card card-flush mb-5"><div class="card-header pt-5 flex-nowrap gap-3"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Next mark"]</span></h3>
+                            <div class="card-toolbar"><div class="symbol symbol-45px"><span class="symbol-label bg-light-primary"><i class="ki-outline ki-geolocation fs-2x text-primary"></i></span></div></div></div>
+                            <div class="card-body pt-2"><div class="row g-4">
+                                <div class="col-7 fv-row"><label class="fs-6 fw-semibold mb-2">@T["Mark type"]</label>
                                     <select class="form-select form-select-solid" id="bm_type" data-control="select2" data-hide-search="true">
                                         @foreach (var f in findings) {<option value="@f.Key">@(isAr ? f.Ar : f.En)</option>}
                                     </select></div>
-                                <div class="col-5"><label class="form-label">@T["Size mm"]</label><input type="number" min="0" max="500" step="0.5" class="form-control form-control-solid" dir="ltr" id="bm_size" value="4" /></div>
+                                <div class="col-5 fv-row"><label class="fs-6 fw-semibold mb-2">@T["Size mm"]</label><input type="number" min="0" max="500" step="0.5" class="form-control form-control-solid" dir="ltr" id="bm_size" value="4" /></div>
                             </div></div></div>
                     }
                     @if (pain != null)
                     {
                         var painPlaces = pain.Marks.Select(m => HospitalCanvasRules.BodyRegions.FirstOrDefault(r => r.Key == m.Region) is { } r ? (isAr ? r.Ar : r.En) + " — " + (m.Side == "B" ? T["back side"].Value : T["front side"].Value) : m.Region ?? "").Distinct().ToList();
-                        <div class="card mb-5 border border-danger border-dashed"><div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
-                            <span class="card-label fw-bold text-gray-900 fs-4"><i class="ki-outline ki-user fs-3 text-danger me-1"></i>@T["From the patient"]</span>
-                            <span class="text-muted mt-1 fw-semibold fs-7">@T["Patient-reported on the tablet — kept apart from your marks"]</span></div>
+                        <div class="card card-flush mb-5 border border-danger border-dashed"><div class="card-header pt-5"><h3 class="card-title align-items-start flex-column">
+                            <span class="card-label fw-bold text-gray-800"><i class="ki-outline ki-user fs-3 text-danger me-1"></i>@T["From the patient"]</span>
+                            <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Patient-reported on the tablet — kept apart from your marks"]</span></h3>
                             <div class="card-toolbar gap-2"><button type="button" class="btn btn-sm btn-light" data-pat-toggle><i class="ki-outline ki-eye fs-5"></i>@T["Show on the figures"]</button>
                                 @if (pain.Sheet.Status == HospitalCanvasStatus.Signed)
                                 {
@@ -178,46 +204,63 @@
                                 }
                             </div></div>
                             <div class="card-body pt-2">
-                                <div class="d-flex align-items-center gap-3 mb-3">
+                                @* H127: the patient's answers as the theme's list-widget rows *@
+                                <div class="d-flex flex-stack">
+                                    <div class="d-flex align-items-center me-3">
+                                        <div class="symbol symbol-35px me-4"><span class="symbol-label bg-light-danger"><i class="ki-outline ki-chart-simple fs-3 text-danger"></i></span></div>
+                                        <span class="text-gray-800 fw-bold fs-6">@T["Pain now"]</span>
+                                    </div>
                                     @if (pain.Report.Nrs is int n)
                                     {
-                                        <span class="badge fs-3 px-4 py-3 text-white" style="background:@(n >= 7 ? "#DC2626" : n >= 4 ? "#7239EA" : "#3A5795")">@T["{0} out of 10", n]</span>
+                                        <span class="badge fs-5 fw-bold px-4 py-2 text-white hp-num" style="background:@(n >= 7 ? "#DC2626" : n >= 4 ? "#7239EA" : "#3A5795")">@T["{0} out of 10", n]</span>
                                     }
-                                    <span class="fw-semibold text-gray-700">@T["Pain now"]</span>
+                                    else {<span class="text-muted">—</span>}
                                 </div>
                                 @if (pain.Report.Words.Count > 0)
                                 {
-                                    <div class="d-flex flex-wrap gap-2 mb-3">@foreach (var w in pain.Report.Words) {<span class="badge badge-light-danger fs-7">@T["pain:" + w]</span>}</div>
+                                    <div class="separator separator-dashed my-3"></div>
+                                    <div class="d-flex align-items-center">
+                                        <div class="symbol symbol-35px me-4 flex-shrink-0"><span class="symbol-label bg-light-danger"><i class="ki-outline ki-message-text fs-3 text-danger"></i></span></div>
+                                        <div class="d-flex flex-wrap gap-2">@foreach (var w in pain.Report.Words) {<span class="badge badge-light-danger fs-7 fw-bold">@T["pain:" + w]</span>}</div>
+                                    </div>
                                 }
-                                <div class="text-gray-800 fs-7">@(painPlaces.Count > 0 ? string.Join(isAr ? "، " : ", ", painPlaces) : T["No places tapped"].Value)@(pain.Sheet.InkJson is { Length: > 2 } ? " · " + T["drawn by hand"].Value : "")</div>
-                                <div class="text-muted fs-8 mt-2">@(pain.Sheet.Status == HospitalCanvasStatus.Signed ? T["Signed with the visit"] : T["Saved as a measurement from the patient when the visit is signed"])</div>
+                                <div class="separator separator-dashed my-3"></div>
+                                <div class="d-flex align-items-center">
+                                    <div class="symbol symbol-35px me-4 flex-shrink-0"><span class="symbol-label bg-light-danger"><i class="ki-outline ki-geolocation fs-3 text-danger"></i></span></div>
+                                    <div><span class="text-gray-800 fw-bold fs-6">@(painPlaces.Count > 0 ? string.Join(isAr ? "، " : ", ", painPlaces) : T["No places tapped"].Value)@(pain.Sheet.InkJson is { Length: > 2 } ? " · " + T["drawn by hand"].Value : "")</span>
+                                        <span class="text-gray-500 fw-semibold fs-7 d-block">@(pain.Sheet.Status == HospitalCanvasStatus.Signed ? T["Signed with the visit"] : T["Saved as a measurement from the patient when the visit is signed"])</span></div>
+                                </div>
                             </div></div>
                     }
-                    <div class="card mb-5"><div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Marks (stored as observations)"]</span>
-                        @if (Model.LastAt != null) {<span class="text-muted mt-1 fw-semibold fs-7">@T["Last drawing {0}", Model.LastAt.Value.ToString("yyyy-MM-dd")]</span>}</div></div>
+                    <div class="card card-flush mb-5"><div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Marks (stored as observations)"]</span>
+                        @if (Model.LastAt != null) {<span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Last drawing {0}", Model.LastAt.Value.ToString("yyyy-MM-dd")]</span>}</h3></div>
                         <div class="card-body pt-2"><div id="cv_list"></div></div></div>
                 </div>
             </div>
             <input type="file" accept="image/jpeg,image/png,image/webp" class="d-none" id="cv_photo" />
-            <div class="modal fade" id="ms_modal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered modal-xl"><div class="modal-content">
-                <div class="modal-header"><h3 class="modal-title fw-bold">@T["Measure on the photo"] <span class="text-muted fs-6" data-ms-title></span></h3>
-                    <button type="button" class="btn btn-icon btn-sm btn-active-light-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></button></div>
-                <div class="modal-body"><div class="row g-5">
+            @* H127: the theme's form modal (demo39 utilities/modals/forms/new-target) around the photo; the photo and its points are untouched *@
+            <div class="modal fade" id="ms_modal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered modal-xl"><div class="modal-content rounded">
+                <div class="modal-header pb-0 border-0 justify-content-end">
+                    <div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+                <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-10">
+                    <div class="mb-8 text-center"><h1 class="mb-3">@T["Measure on the photo"] <span class="text-gray-500 fs-4 fw-semibold" data-ms-title></span></h1>
+                        <div class="text-muted fw-semibold fs-6">@T["Lay a ruler beside the lesion, in the same plane, when taking the photo. The server computes the size from your points; the margin is one pixel at each end."]</div></div>
+                    <div class="row g-8">
                     <div class="col-lg-8"><div class="cv-wrap" style="cursor:crosshair"><svg id="ms_svg" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet"><image id="ms_img" x="0" y="0" /><g id="ms_lines"></g></svg></div></div>
                     <div class="col-lg-4">
-                        <div class="d-flex flex-column gap-2 mb-4" id="ms_steps">
-                            <button type="button" class="cv-tool on justify-content-start" data-ms-step="ruler"><span class="cv-sw" style="background:#3A5795"></span>@T["1 · The ruler: tap both ends of a known length"]</button>
-                            <button type="button" class="cv-tool justify-content-start" data-ms-step="length"><span class="cv-sw" style="background:#DC2626"></span>@T["2 · The lesion's longest length"]</button>
-                            <button type="button" class="cv-tool justify-content-start" data-ms-step="width"><span class="cv-sw" style="background:#7239EA"></span>@T["3 · Its widest across (optional)"]</button>
+                        <div class="d-flex flex-column gap-2 mb-6" id="ms_steps">
+                            <button type="button" class="cv-tool on justify-content-start text-start" data-ms-step="ruler"><span class="cv-sw" style="background:#3A5795"></span>@T["1 · The ruler: tap both ends of a known length"]</button>
+                            <button type="button" class="cv-tool justify-content-start text-start" data-ms-step="length"><span class="cv-sw" style="background:#DC2626"></span>@T["2 · The lesion's longest length"]</button>
+                            <button type="button" class="cv-tool justify-content-start text-start" data-ms-step="width"><span class="cv-sw" style="background:#7239EA"></span>@T["3 · Its widest across (optional)"]</button>
                         </div>
-                        <label class="form-label fs-7">@T["The ruler's length you marked (mm)"]</label>
-                        <input type="number" min="1" max="300" step="0.5" class="form-control form-control-solid mb-4" dir="ltr" id="ms_mm" value="10" />
-                        <div class="rounded border border-dashed p-4 mb-3"><div class="text-muted fs-8 mb-1">@T["Measured size"]</div><div class="fs-2 fw-bold text-gray-900"><bdi data-ms-out>—</bdi></div><div class="text-muted fs-8 mt-1" data-ms-note></div></div>
-                        <div class="text-muted fs-8">@T["Lay a ruler beside the lesion, in the same plane, when taking the photo. The server computes the size from your points; the margin is one pixel at each end."]</div>
-                        <button type="button" class="btn btn-sm btn-light mt-3" data-ms-clear><i class="ki-outline ki-arrow-circle-left fs-5"></i>@T["Start again"]</button>
+                        <label class="fs-6 fw-semibold mb-2">@T["The ruler's length you marked (mm)"]</label>
+                        <input type="number" min="1" max="300" step="0.5" class="form-control form-control-solid mb-6" dir="ltr" id="ms_mm" value="10" />
+                        <div class="border border-gray-300 border-dashed rounded py-4 px-5 mb-4"><div class="text-gray-500 fw-semibold fs-7 mb-1">@T["Measured size"]</div><div class="fs-2 fw-bold text-gray-900 lh-1"><bdi class="hp-num" dir="ltr" data-ms-out>—</bdi></div><div class="text-muted fs-7 mt-2" data-ms-note></div></div>
+                        <button type="button" class="btn btn-sm btn-light btn-active-light-primary" data-ms-clear><i class="ki-outline ki-arrow-circle-left fs-4"></i>@T["Start again"]</button>
                     </div>
-                </div></div>
-                <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-ms-save><i class="ki-outline ki-check fs-4"></i>@T["Save the size to the mark"]</button></div>
+                    </div>
+                    <div class="text-center pt-10"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-ms-save><i class="ki-outline ki-check fs-4"></i>@T["Save the size to the mark"]</button></div>
+                </div>
             </div></div></div>
         }
         else if (burn)
@@ -228,12 +271,12 @@
             </div>
             <div class="row g-5">
                 <div class="col-xl-7">
-                    <div class="card mb-5"><div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
-                        <span class="card-label fw-bold text-gray-900 fs-4">@(ageYears is < 15 ? T["Burn chart — Lund–Browder (age {0})", ageYears] : T["Burn chart — rule of nines (adult)"])</span>
-                        <span class="text-muted mt-1 fw-semibold fs-7">@T["Tap a region to cycle the depth: none → superficial → deep → full. A child uses the Lund–Browder table for their age."]</span></div></div>
+                    <div class="card card-flush mb-5"><div class="card-header pt-5"><h3 class="card-title align-items-start flex-column">
+                        <span class="card-label fw-bold text-gray-800">@(ageYears is < 15 ? T["Burn chart — Lund–Browder (age {0})", ageYears] : T["Burn chart — rule of nines (adult)"])</span>
+                        <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Tap a region to cycle the depth: none → superficial → deep → full. A child uses the Lund–Browder table for their age."]</span></h3></div>
                         <div class="card-body pt-3">
-                            <div class="d-flex flex-wrap gap-4 mb-3 fs-8">
-                                @for (int i = 0; i < 4; i++) {<span><span class="cv-sw me-1" style="background:@depthCol[i]"></span>@T[depthKey[i]]</span>}
+                            <div class="d-flex flex-wrap gap-5 mb-4 fs-7 fw-semibold text-gray-600">
+                                @for (int i = 0; i < 4; i++) {<span class="d-flex align-items-center"><span class="cv-sw me-2" style="background:@depthCol[i]"></span>@T[depthKey[i]]</span>}
                             </div>
                             <div class="cv-wrap"><svg id="cv" viewBox="0 0 440 460">
                                 @foreach (var (ox, lbl) in new[] { (0, T["Front view"].Value), (230, T["Back view"].Value) })
@@ -251,26 +294,23 @@
                         </div></div>
                 </div>
                 <div class="col-xl-5">
-                    <div class="card mb-5"><div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["The calculation"]</span></div></div>
+                    <div class="card card-flush mb-5"><div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["The calculation"]</span></h3></div>
                         <div class="card-body pt-2">
-                            <div class="text-muted fs-8">@T["TBSA (partial + full)"]</div>
-                            <div class="fw-bolder lh-1 hp-num" style="font-size:2.4rem" id="bn_tbsa">0%</div>
-                            <div class="row g-3 mt-3"><div class="col-6"><label class="form-label">@T["Weight kg"]</label>
-                                <input type="number" min="1" max="400" step="0.1" class="form-control form-control-solid" dir="ltr" id="bn_kg" value="@(burnKg?.ToString("0.#", CultureInfo.InvariantCulture))" @(canEdit ? "" : "disabled") /></div></div>
-                            <div class="rounded bg-light-primary p-4 mt-4"><div class="fw-bold">@T["Parkland fluids (24 h)"]</div><div class="fs-2 fw-bold hp-num" dir="ltr" id="bn_fl">—</div><div class="fs-8 text-gray-700" id="bn_half"></div></div>
-                            <div class="mt-4" id="bn_list"></div>
-                            <div class="text-muted fs-9 mt-3">@T["The server recomputes these figures when the drawing is saved."]</div>
-                            @* H110: this measure on earlier signed visits — stored as observations, so it trends *@
-                            @if (Model.History is { Count: > 0 } hx)
-                            {
-                                <div class="separator separator-dashed my-4"></div>
-                                <div class="fw-semibold fs-7 text-gray-700 mb-2">@T["Earlier results"]</div>
-                                @foreach (var r in hx.Take(8))
-                                {
-                                    <div class="d-flex flex-stack fs-8 py-1 border-bottom border-gray-200"><span class="text-muted hp-num" dir="ltr">@r.At.ToLocalTime().ToString("yyyy-MM-dd")</span>
-                                        <span class="fw-bold text-gray-900">@(r.Side == "R" ? T["right ear"].Value + " · " : r.Side == "L" ? T["left ear"].Value + " · " : "")<bdi class="hp-num" dir="ltr">@r.Value.ToString("0.##", CultureInfo.InvariantCulture)@(r.Code == "TBSA" ? "%" : r.Code == "PTA" ? " dB" : "")</bdi></span></div>
-                                }
-                            }
+                            @* H127: the result as the theme's stat (demo39 dashboards/logistics) beside the weight; the fluids as a tinted block *@
+                            <div class="row g-4 align-items-end">
+                                <div class="col-6"><div class="border border-gray-300 border-dashed rounded py-3 px-4 h-100">
+                                    <div class="text-gray-500 fw-semibold fs-7 mb-1">@T["TBSA (partial + full)"]</div>
+                                    <div class="fs-2hx fw-bold lh-1 hp-num" id="bn_tbsa">0%</div></div></div>
+                                <div class="col-6 fv-row"><label class="fs-6 fw-semibold mb-2">@T["Weight kg"]</label>
+                                    <input type="number" min="1" max="400" step="0.1" class="form-control form-control-solid" dir="ltr" id="bn_kg" value="@(burnKg?.ToString("0.#", CultureInfo.InvariantCulture))" @(canEdit ? "" : "disabled") /></div>
+                            </div>
+                            <div class="d-flex align-items-center bg-light-primary rounded p-5 mt-5">
+                                <div class="symbol symbol-45px me-4 flex-shrink-0"><span class="symbol-label bg-white"><i class="ki-outline ki-drop fs-2x text-primary"></i></span></div>
+                                <div class="flex-grow-1"><div class="text-gray-800 fw-bold fs-6">@T["Parkland fluids (24 h)"]</div><div class="fs-2 fw-bold text-gray-900 hp-num" dir="ltr" id="bn_fl">—</div><div class="fs-7 text-gray-700" id="bn_half"></div></div>
+                            </div>
+                            <div class="mt-5" id="bn_list"></div>
+                            <div class="text-muted fs-8 mt-3">@T["The server recomputes these figures when the drawing is saved."]</div>
+                            @{ Earlier(); }
                         </div></div>
                 </div>
             </div>
@@ -279,9 +319,9 @@
         {
             <div class="row g-5">
                 <div class="col-xl-8">
-                    <div class="card mb-5"><div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
-                        <span class="card-label fw-bold text-gray-900 fs-4">@T["Audiogram"]</span>
-                        <span class="text-muted mt-1 fw-semibold fs-7">@T["ASHA symbols: O right / X left air, < right / > left bone; red right, blue left. Tap to place; snaps to the frequency and nearest 5 dB."] @T["Tap a point again to remove it."]</span></div></div>
+                    <div class="card card-flush mb-5"><div class="card-header pt-5"><h3 class="card-title align-items-start flex-column">
+                        <span class="card-label fw-bold text-gray-800">@T["Audiogram"]</span>
+                        <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["ASHA symbols: O right / X left air, < right / > left bone; red right, blue left. Tap to place; snaps to the frequency and nearest 5 dB."] @T["Tap a point again to remove it."]</span></h3></div>
                         <div class="card-body pt-3">
                             @if (canEdit)
                             {
@@ -296,20 +336,10 @@
                         </div></div>
                 </div>
                 <div class="col-xl-4">
-                    <div class="card mb-5"><div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["The calculation"]</span></div></div>
+                    <div class="card card-flush mb-5"><div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["The calculation"]</span></h3></div>
                         <div class="card-body pt-2"><div id="au_out"></div>
-                            <div class="text-muted fs-9 mt-3">@T["The server recomputes these figures when the drawing is saved."]</div>
-                            @* H110: this measure on earlier signed visits — stored as observations, so it trends *@
-                            @if (Model.History is { Count: > 0 } hx)
-                            {
-                                <div class="separator separator-dashed my-4"></div>
-                                <div class="fw-semibold fs-7 text-gray-700 mb-2">@T["Earlier results"]</div>
-                                @foreach (var r in hx.Take(8))
-                                {
-                                    <div class="d-flex flex-stack fs-8 py-1 border-bottom border-gray-200"><span class="text-muted hp-num" dir="ltr">@r.At.ToLocalTime().ToString("yyyy-MM-dd")</span>
-                                        <span class="fw-bold text-gray-900">@(r.Side == "R" ? T["right ear"].Value + " · " : r.Side == "L" ? T["left ear"].Value + " · " : "")<bdi class="hp-num" dir="ltr">@r.Value.ToString("0.##", CultureInfo.InvariantCulture)@(r.Code == "TBSA" ? "%" : r.Code == "PTA" ? " dB" : "")</bdi></span></div>
-                                }
-                            }</div></div>
+                            <div class="text-muted fs-8 mt-3">@T["The server recomputes these figures when the drawing is saved."]</div>
+                            @{ Earlier(); }</div></div>
                 </div>
             </div>
         }
@@ -317,88 +347,83 @@
         {
             <div class="row g-5">
                 <div class="col-xl-7">
-                    <div class="card mb-5"><div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
-                        <span class="card-label fw-bold text-gray-900 fs-4">@T["The 28-joint map"]</span>
-                        <span class="text-muted mt-1 fw-semibold fs-7">@T["Tap a joint: tender → swollen → both → clear"]</span></div></div>
+                    <div class="card card-flush mb-5"><div class="card-header pt-5"><h3 class="card-title align-items-start flex-column">
+                        <span class="card-label fw-bold text-gray-800">@T["The 28-joint map"]</span>
+                        <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Tap a joint: tender → swollen → both → clear"]</span></h3></div>
                         <div class="card-body pt-3">
-                            <div class="d-flex flex-wrap gap-4 mb-3 fs-8">
-                                <span><span class="cv-sw me-1" style="background:#F87171"></span>@T["Tender"]</span><span><span class="cv-sw me-1" style="background:#60A5FA"></span>@T["Swollen"]</span><span><span class="cv-sw me-1" style="background:#7C3AED"></span>@T["Both"]</span>
+                            <div class="d-flex flex-wrap gap-5 mb-4 fs-7 fw-semibold text-gray-600">
+                                <span class="d-flex align-items-center"><span class="cv-sw me-2" style="background:#F87171"></span>@T["Tender"]</span><span class="d-flex align-items-center"><span class="cv-sw me-2" style="background:#60A5FA"></span>@T["Swollen"]</span><span class="d-flex align-items-center"><span class="cv-sw me-2" style="background:#7C3AED"></span>@T["Both"]</span>
                             </div>
                             <div class="cv-wrap"><svg id="jt" viewBox="0 0 400 420"></svg></div>
                         </div></div>
                 </div>
                 <div class="col-xl-5">
-                    <div class="card mb-5"><div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">DAS28-ESR</span></div></div>
+                    <div class="card card-flush mb-5"><div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">DAS28-ESR</span></h3></div>
                         <div class="card-body pt-2">
-                            <div class="row g-3">
-                                <div class="col-6"><label class="form-label">ESR mm/h</label><input type="number" min="1" max="150" class="form-control form-control-solid" dir="ltr" id="jt_esr" value="@dasNow?.Esr?.ToString("0", CultureInfo.InvariantCulture)" @(canEdit ? "" : "disabled") /></div>
-                                <div class="col-6"><label class="form-label">@T["Patient global 0–100"]</label><input type="number" min="0" max="100" class="form-control form-control-solid" dir="ltr" id="jt_pga" value="@dasNow?.Global" @(canEdit ? "" : "disabled") /></div>
+                            <div class="row g-4">
+                                <div class="col-6 fv-row"><label class="fs-6 fw-semibold mb-2" dir="ltr">ESR mm/h</label><input type="number" min="1" max="150" class="form-control form-control-solid" dir="ltr" id="jt_esr" value="@dasNow?.Esr?.ToString("0", CultureInfo.InvariantCulture)" @(canEdit ? "" : "disabled") /></div>
+                                <div class="col-6 fv-row"><label class="fs-6 fw-semibold mb-2">@T["Patient global 0–100"]</label><input type="number" min="0" max="100" class="form-control form-control-solid" dir="ltr" id="jt_pga" value="@dasNow?.Global" @(canEdit ? "" : "disabled") /></div>
                             </div>
-                            <div id="jt_out" class="mt-4"></div>
-                            <div class="text-muted fs-9 mt-3">@T["The server recomputes these figures when the drawing is saved."]</div>
-                            @* H110: this measure on earlier signed visits — stored as observations, so it trends *@
-                            @if (Model.History is { Count: > 0 } hx)
-                            {
-                                <div class="separator separator-dashed my-4"></div>
-                                <div class="fw-semibold fs-7 text-gray-700 mb-2">@T["Earlier results"]</div>
-                                @foreach (var r in hx.Take(8))
-                                {
-                                    <div class="d-flex flex-stack fs-8 py-1 border-bottom border-gray-200"><span class="text-muted hp-num" dir="ltr">@r.At.ToLocalTime().ToString("yyyy-MM-dd")</span>
-                                        <span class="fw-bold text-gray-900">@(r.Side == "R" ? T["right ear"].Value + " · " : r.Side == "L" ? T["left ear"].Value + " · " : "")<bdi class="hp-num" dir="ltr">@r.Value.ToString("0.##", CultureInfo.InvariantCulture)@(r.Code == "TBSA" ? "%" : r.Code == "PTA" ? " dB" : "")</bdi></span></div>
-                                }
-                            }
+                            <div id="jt_out" class="mt-5"></div>
+                            <div class="text-muted fs-8 mt-3">@T["The server recomputes these figures when the drawing is saved."]</div>
+                            @{ Earlier(); }
                         </div></div>
                 </div>
             </div>
         }
         else if (pedigree)
         {
-            <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice">
-                <span class="symbol symbol-45px me-5 flex-shrink-0"><span class="symbol-label"><i class="ki-outline ki-information-5 fs-2x text-white"></i></span></span>
+            <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-5 mb-5">
+                <i class="ki-outline ki-information fs-2tx text-primary me-4"></i>
                 <div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@T["Standard NSGC symbols (2022 revision)"]</h4><div class="fs-6 text-gray-700">@T["Square male, circle female, filled = affected, slash = deceased, arrow = proband, double line = consanguinity — very important in the Gulf and Egypt for inherited disease."]</div></div>
             </div>
             <div class="row g-5">
                 <div class="col-xl-8">
-                    <div class="card mb-5"><div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Pedigree"]</span></div>
+                    <div class="card card-flush mb-5"><div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Pedigree"]</span></h3>
                         @if (canEdit) {<div class="card-toolbar"><button type="button" class="btn btn-sm btn-light-primary" data-add-rel><i class="ki-outline ki-plus fs-4"></i>@T["Add a relative"]</button></div>}</div>
                         <div class="card-body pt-3">
-                            @if (canEdit) {<div class="text-muted fs-8 mb-3">@T["Tap a person to edit them."]</div>}
+                            @if (canEdit) {<div class="text-gray-500 fw-semibold fs-7 mb-4"><i class="ki-outline ki-mouse-square fs-5 text-gray-500 me-1"></i>@T["Tap a person to edit them."]</div>}
                             <div class="cv-wrap p-3" style="overflow-x:auto"><svg id="pd" viewBox="0 0 640 360"></svg></div>
                         </div></div>
                 </div>
                 <div class="col-xl-4">
-                    <div class="card mb-5"><div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["What the tree yields"]</span></div></div>
+                    <div class="card card-flush mb-5"><div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["What the tree yields"]</span></h3></div>
                         <div class="card-body pt-2"><div id="pd_yield"></div></div></div>
                 </div>
             </div>
-            <div class="modal fade" id="pd_modal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-550px"><div class="modal-content">
-                <div class="modal-header"><h2 class="fw-bold m-0" id="pd_title">@T["Add a relative"]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
-                <div class="modal-body py-6 px-lg-10"><div class="row g-4">
-                    <div class="col-6" data-new><label class="form-label required">@T["Relative of"]</label><select class="form-select form-select-solid" id="pd_of"></select></div>
-                    <div class="col-6" data-new><label class="form-label required">@T["Relation"]</label><select class="form-select form-select-solid" id="pd_rel">
+            @* H127: the theme's form modal (demo39 utilities/modals/forms/new-target) *@
+            <div class="modal fade" id="pd_modal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-650px"><div class="modal-content rounded">
+                <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+                <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-15">
+                    <div class="mb-10 text-center"><h1 class="mb-3" id="pd_title">@T["Add a relative"]</h1>
+                        <div class="text-muted fw-semibold fs-5">@T["Standard NSGC symbols (2022 revision)"]</div></div>
+                    <div class="row g-6">
+                    <div class="col-6 fv-row" data-new><label class="required fs-6 fw-semibold mb-2">@T["Relative of"]</label><select class="form-select form-select-solid" id="pd_of" data-control="select2" data-dropdown-parent="#pd_modal" data-hide-search="true"></select></div>
+                    <div class="col-6 fv-row" data-new><label class="required fs-6 fw-semibold mb-2">@T["Relation"]</label><select class="form-select form-select-solid" id="pd_rel" data-control="select2" data-dropdown-parent="#pd_modal" data-hide-search="true">
                         @foreach (var r in new[] { "father", "mother", "brother", "sister", "son", "daughter", "husband", "wife" }) {<option value="@r">@T["rel:" + r]</option>}
                     </select></div>
-                    <div class="col-12" data-new><label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" id="pd_cons" /><span class="form-check-label">@T["The partners are relatives (consanguinity)"]</span></label></div>
-                    <div class="col-12 d-flex flex-wrap gap-5">
-                        <label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" id="pd_aff" /><span class="form-check-label">@T["Affected"]</span></label>
-                        <label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" id="pd_dead" /><span class="form-check-label">@T["Deceased"]</span></label>
-                        <label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" id="pd_car" /><span class="form-check-label">@T["Carrier"]</span></label>
+                    <div class="col-12" data-new><label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" id="pd_cons" /><span class="form-check-label fw-semibold text-gray-700 fs-6">@T["The partners are relatives (consanguinity)"]</span></label></div>
+                    <div class="col-12"><div class="d-flex flex-wrap gap-5 bg-light rounded p-4">
+                        <label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" id="pd_aff" /><span class="form-check-label fw-semibold text-gray-700 fs-6">@T["Affected"]</span></label>
+                        <label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" id="pd_dead" /><span class="form-check-label fw-semibold text-gray-700 fs-6">@T["Deceased"]</span></label>
+                        <label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" id="pd_car" /><span class="form-check-label fw-semibold text-gray-700 fs-6">@T["Carrier"]</span></label>
+                    </div></div>
+                    <div class="col-6 fv-row"><label class="fs-6 fw-semibold mb-2">@T["Condition"]</label><input type="text" maxlength="60" class="form-control form-control-solid" id="pd_cond" /></div>
+                    <div class="col-6 fv-row"><label class="fs-6 fw-semibold mb-2">@T["Note (age, cause of death)"]</label><input type="text" maxlength="60" class="form-control form-control-solid" id="pd_note" /></div>
                     </div>
-                    <div class="col-6"><label class="form-label">@T["Condition"]</label><input type="text" maxlength="60" class="form-control form-control-solid" id="pd_cond" /></div>
-                    <div class="col-6"><label class="form-label">@T["Note (age, cause of death)"]</label><input type="text" maxlength="60" class="form-control form-control-solid" id="pd_note" /></div>
-                </div></div>
-                <div class="modal-footer"><button type="button" class="btn btn-light-danger me-auto d-none" id="pd_del">@T["Remove from the tree"]</button><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" id="pd_ok">@T["Save"]</button></div>
+                    <div class="d-flex flex-center flex-wrap gap-3 pt-10"><button type="button" class="btn btn-light-danger d-none" id="pd_del"><i class="ki-outline ki-trash fs-4"></i>@T["Remove from the tree"]</button><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" id="pd_ok">@T["Save"]</button></div>
+                </div>
             </div></div></div>
         }
         else
         {
-            <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice">
-                <span class="symbol symbol-45px me-5 flex-shrink-0"><span class="symbol-label"><i class="ki-outline ki-information-5 fs-2x text-white"></i></span></span>
+            <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-5 mb-5">
+                <i class="ki-outline ki-information fs-2tx text-primary me-4"></i>
                 <div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@T["The finding sets the colour, not the doctor"]</h4><div class="fs-6 text-gray-700">@T["The CMS retinal colour code is enforced: haemorrhage red, detachment blue, exudate yellow, new vessels purple. Each mark writes a SNOMED-coded finding into the visit."]</div></div>
             </div>
-            <div class="card mb-5"><div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
-                <span class="card-label fw-bold text-gray-900 fs-4">@T["Fundus — {0}", name]</span>
-                <span class="text-muted mt-1 fw-semibold fs-7">@T["Pick the finding, then tap its place; drawn inverted as the indirect ophthalmoscope shows it"]</span></div></div>
+            <div class="card card-flush mb-5"><div class="card-header pt-5"><h3 class="card-title align-items-start flex-column">
+                <span class="card-label fw-bold text-gray-800">@T["Fundus — {0}", name]</span>
+                <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Pick the finding, then tap its place; drawn inverted as the indirect ophthalmoscope shows it"]</span></h3></div>
                 <div class="card-body pt-3">
                     @if (canEdit)
                     {
@@ -411,7 +436,7 @@
                         @foreach (var (id, side, lbl) in new[] { ("od", "R", "OD — " + T["Right"].Value), ("os", "L", "OS — " + T["Left"].Value) })
                         {
                             int disc = id == "od" ? 120 : 180, mac = id == "od" ? 168 : 132, far = id == "od" ? 240 : 60, mid = id == "od" ? 170 : 130;
-                            <div class="col-md-6"><div class="text-center fw-bold mb-2">@lbl</div><div class="cv-wrap"><svg id="@id" data-side="@side" viewBox="0 0 300 300">
+                            <div class="col-md-6"><div class="text-center mb-3"><span class="badge badge-light-@(side == "R" ? "primary" : "info") fs-6 fw-bold px-4 py-2">@lbl</span></div><div class="cv-wrap"><svg id="@id" data-side="@side" viewBox="0 0 300 300">
                                 <circle cx="150" cy="150" r="140" fill="#FFF7ED" stroke="#9CA3AF" /><circle cx="150" cy="150" r="105" fill="none" stroke="#D1D5DB" stroke-dasharray="4 4" /><circle cx="150" cy="150" r="60" fill="none" stroke="#E5E7EB" stroke-dasharray="2 4" />
                                 <circle cx="@disc" cy="150" r="13" fill="#FDE68A" stroke="#D97706" /><circle cx="@mac" cy="152" r="5" fill="#9A3412" opacity=".5" />
                                 <path d="M@(disc) 140 Q@(mid) 90 @(far) 70" stroke="#DC2626" fill="none" stroke-width="2" /><path d="M@(disc) 160 Q@(mid) 210 @(far) 232" stroke="#2563EB" fill="none" stroke-width="2" />
@@ -419,7 +444,7 @@
                         }
                     </div>
                 </div></div>
-            <div class="card mb-5"><div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Findings written automatically"]</span></div></div>
+            <div class="card card-flush mb-5"><div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Findings written automatically"]</span></h3></div>
                 <div class="card-body pt-2"><div id="cv_list"></div></div></div>
         }
     </div></div>
@@ -515,16 +540,18 @@
                     gp.innerHTML = compare ? last.map(function (m) { return '<circle cx="' + m.x + '" cy="' + m.y + '" r="13" fill="none" stroke="#7239EA" stroke-width="1.5" stroke-dasharray="3 3"/>'; }).join('') : '';
                     document.getElementById('cv_list').innerHTML = marks.map(function (m, i) {
                         var prev = m.from ? last.filter(function (x) { return x.id === m.from; })[0] : null, grew = prev && prev.s != null && m.s != null && +m.s > +prev.s;
-                        return '<div class="cv-mark ' + (m.carried ? 'carried ' : '') + (sel === i ? 'sel' : '') + '" data-pick="' + i + '"><span class="n">' + numberOf(m) + '</span><div class="flex-grow-1"><div class="fw-bold text-gray-900">' + esc(fOf(m.f).t) + (m.s != null ? ' · <bdi class="hp-num">' + (m.ms && +m.ms.l === +m.s ? m.ms.l + (m.ms.w != null ? ' × ' + m.ms.w : '') + ' mm ±' + m.ms.pm : m.s + ' mm') + '</bdi>' : '') +
-                            (m.ms && +m.ms.l === +m.s ? ' <span class="badge badge-light-primary fs-9">' + W.onPhoto + '</span>' : '') + '</div>' +
-                            (m.photo && m.pc ? '<div class="fs-9 ' + (m.pc.wd ? 'text-danger fw-bold' : 'text-muted') + '">' + esc(fmt(W.underConsent, m.pc.no)) + ' · ' + esc(m.pc.wd ? W.withdrawn : (W.scope[m.pc.scope] || m.pc.scope)) + '</div>' : '') +
-                            '<div class="text-muted fs-8">' + esc(regionAt(+m.x, +m.y) || '—') + '</div>' +
-                            ((compare || grew) && prev && prev.s != null ? '<div class="fs-8 ' + (grew ? 'text-danger fw-bold' : 'text-muted') + '">' + fmt(W.was, prev.s) + (grew ? ' · ' + W.grew : '') + '</div>' : '') + '</div>' +
-                            (m.photo && m.id ? '<a href="@Url.Content("~/Hospital/Canvas/Marks/")' + m.id + '/Photo" target="_blank" class="btn btn-icon btn-sm btn-light"><i class="ki-outline ki-picture fs-4"></i></a>' : '') +
-                            (m.photo && m.id && canEdit ? '<button type="button" class="btn btn-icon btn-sm btn-light-primary" data-ms="' + i + '" title="' + esc(W.measure) + '"><i class="ki-outline ki-size fs-4"></i></button>' : '') +
-                            (m.carried ? (canEdit ? '<button type="button" class="btn btn-sm btn-light-primary py-1 px-2 fs-9" data-ok="' + i + '">' + W.confirm + '</button>' : '<span class="badge badge-light fs-9">' + W.carried + '</span>') : '<span class="badge badge-light-success fs-9">' + W.verified + '</span>') +
-                            (canEdit ? '<button type="button" class="btn btn-icon btn-sm btn-light" data-rm="' + i + '" title="' + W.remove + '"><i class="ki-outline ki-trash fs-5"></i></button>' : '') + '</div>';
-                    }).join('') || '<div class="text-muted fs-7 py-3">' + W.none + '</div>';
+                        // H127: one row of the theme's list widget — the numbered symbol · finding over its place · badges · icon actions
+                        return '<div class="cv-mark ' + (m.carried ? 'carried ' : '') + (sel === i ? 'sel' : '') + '" data-pick="' + i + '"><div class="symbol symbol-35px flex-shrink-0"><span class="symbol-label fw-bold fs-7 text-white hp-num" style="background:' + (m.carried ? '#9CA3AF' : '#3A5795') + '">' + numberOf(m) + '</span></div><div class="flex-grow-1 min-w-0"><div class="text-gray-800 fw-bold fs-6">' + esc(fOf(m.f).t) + (m.s != null ? ' · <bdi class="hp-num" dir="ltr">' + (m.ms && +m.ms.l === +m.s ? m.ms.l + (m.ms.w != null ? ' × ' + m.ms.w : '') + ' mm ±' + m.ms.pm : m.s + ' mm') + '</bdi>' : '') +
+                            (m.ms && +m.ms.l === +m.s ? ' <span class="badge badge-light-primary fs-8 fw-bold">' + W.onPhoto + '</span>' : '') + '</div>' +
+                            '<span class="text-gray-500 fw-semibold fs-7 d-block">' + esc(regionAt(+m.x, +m.y) || '—') + '</span>' +
+                            (m.photo && m.pc ? '<span class="fs-8 d-block ' + (m.pc.wd ? 'text-danger fw-bold' : 'text-gray-500 fw-semibold') + '"><i class="ki-outline ki-shield-tick fs-7 ' + (m.pc.wd ? 'text-danger' : 'text-success') + ' me-1"></i>' + esc(fmt(W.underConsent, m.pc.no)) + ' · ' + esc(m.pc.wd ? W.withdrawn : (W.scope[m.pc.scope] || m.pc.scope)) + '</span>' : '') +
+                            ((compare || grew) && prev && prev.s != null ? '<span class="fs-7 d-block ' + (grew ? 'text-danger fw-bold' : 'text-gray-500 fw-semibold') + '">' + fmt(W.was, prev.s) + (grew ? ' · ' + W.grew : '') + '</span>' : '') + '</div>' +
+                            '<div class="d-flex align-items-center gap-1 flex-shrink-0">' +
+                            (m.carried ? (canEdit ? '<button type="button" class="btn btn-sm btn-light-primary py-1 px-3 fs-7 fw-bold" data-ok="' + i + '">' + W.confirm + '</button>' : '<span class="badge badge-light fs-8 fw-bold">' + W.carried + '</span>') : '<span class="badge badge-light-success fs-8 fw-bold">' + W.verified + '</span>') +
+                            (m.photo && m.id ? '<a href="@Url.Content("~/Hospital/Canvas/Marks/")' + m.id + '/Photo" target="_blank" class="btn btn-icon btn-sm btn-bg-light btn-active-color-primary"><i class="ki-outline ki-picture fs-4"></i></a>' : '') +
+                            (m.photo && m.id && canEdit ? '<button type="button" class="btn btn-icon btn-sm btn-bg-light btn-active-color-primary" data-ms="' + i + '" title="' + esc(W.measure) + '"><i class="ki-outline ki-size fs-4"></i></button>' : '') +
+                            (canEdit ? '<button type="button" class="btn btn-icon btn-sm btn-bg-light btn-active-color-danger" data-rm="' + i + '" title="' + W.remove + '"><i class="ki-outline ki-trash fs-4"></i></button>' : '') + '</div></div>';
+                    }).join('') || '<div class="text-center py-10"><i class="ki-outline ki-geolocation fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-bold text-gray-700">' + W.none + '</div></div>';
                 }
                 document.getElementById('cv_list').addEventListener('click', function (ev) {
                     var ok = ev.target.closest('[data-ok]'), rm = ev.target.closest('[data-rm]'), pick = ev.target.closest('[data-pick]'), msb = ev.target.closest('[data-ms]');
@@ -618,13 +645,13 @@
                         return '<rect data-r="' + k + '" x="' + (r.r[0] + ox) + '" y="' + r.r[1] + '" width="' + r.r[2] + '" height="' + r.r[3] + '" rx="8" fill="' + DCOL[v] + '" fill-opacity="' + (v ? .85 : .05) + '" stroke="#3A5795" stroke-opacity=".25" style="cursor:' + (canEdit ? 'pointer' : 'default') + '"/>'; }).join('');
                     var tb = 0, rows = [];
                     Object.keys(SH).forEach(function (k) { var v = st[k] || 0; if (!v) return; tb += +SH[k]; var key = k.slice(0, -1);
-                        rows.push('<tr><td>' + esc(RN[key].t) + ' — ' + (k.slice(-1) === 'F' ? W.front : W.back) + '</td><td>' + esc(DT[v]) + '</td><td class="hp-num">' + (+SH[k]) + '%</td></tr>'); });
+                        rows.push('<tr><td class="ps-4"><div class="d-flex align-items-center"><span class="cv-sw me-3" style="background:' + DCOL[v] + '"></span><div><span class="text-gray-900 fw-bold fs-7 d-block">' + esc(RN[key].t) + '</span><span class="text-muted fw-semibold fs-8">' + (k.slice(-1) === 'F' ? W.front : W.back) + '</span></div></div></td><td><span class="badge badge-light-danger fs-8 fw-bold">' + esc(DT[v]) + '</span></td><td class="pe-4 text-end"><span class="text-gray-900 fw-bold fs-7 hp-num">' + (+SH[k]) + '%</span></td></tr>'); });
                     tb = Math.round(tb * 100) / 100;
                     var kg = parseFloat(document.getElementById('bn_kg').value), fl = isNaN(kg) ? null : Math.round(4 * kg * tb);
-                    var big = document.getElementById('bn_tbsa'); big.textContent = tb + '%'; big.className = 'fw-bolder lh-1 hp-num ' + (tb >= 20 ? 'text-danger' : 'text-gray-900');
+                    var big = document.getElementById('bn_tbsa'); big.textContent = tb + '%'; big.className = 'fs-2hx fw-bold lh-1 hp-num ' + (tb >= 20 ? 'text-danger' : 'text-gray-900');
                     document.getElementById('bn_fl').textContent = fl == null ? '—' : fl.toLocaleString('en') + ' mL';
                     document.getElementById('bn_half').textContent = !tb ? '' : fl == null ? BT.noKg : fmt(BT.half, Math.round(fl / 2).toLocaleString('en')) + (tb >= 20 ? ' · ' + BT.refer : '');
-                    document.getElementById('bn_list').innerHTML = rows.length ? '<table class="table align-middle table-row-dashed fs-7 gy-2 mb-0"><thead><tr class="text-muted fw-bold fs-8"><th>' + BT.region + '</th><th>' + BT.depth + '</th><th>%</th></tr></thead><tbody>' + rows.join('') + '</tbody></table>' : '';
+                    document.getElementById('bn_list').innerHTML = rows.length ? '<div class="table-responsive"><table class="table align-middle gs-0 gy-3 mb-0"><thead><tr class="fw-bold text-muted bg-light fs-7"><th class="ps-4 rounded-start">' + BT.region + '</th><th>' + BT.depth + '</th><th class="pe-4 text-end rounded-end">%</th></tr></thead><tbody>' + rows.join('') + '</tbody></table></div>' : '';
                 }
                 if (canEdit) g.addEventListener('click', function (ev) { var r = ev.target.closest('[data-r]'); if (!r) return; var k = r.getAttribute('data-r'); st[k] = ((st[k] || 0) + 1) % 4; draw(); });
                 document.getElementById('bn_kg').addEventListener('input', draw);
@@ -654,11 +681,12 @@
                             g += '<text x="' + (X(i) + dx) + '" y="' + (Y(v) + 6) + '" font-size="18" font-weight="700" text-anchor="middle" fill="' + sy.c + '">' + (sy.t === '<' ? '&lt;' : sy.t === '>' ? '&gt;' : sy.t) + '</text>'; }); });
                     s.innerHTML = g;
                     var r = pta('AR'), l = pta('AL');
-                    document.getElementById('au_out').innerHTML = '<div class="d-flex gap-6 mb-3"><div><div class="text-muted fs-8">PTA ' + AT.right + '</div><div class="fw-bolder lh-1 hp-num" style="font-size:2.4rem;color:#DC2626">' + (r == null ? '—' : Math.round(r)) + '</div><div class="fs-8">' + grade(r) + '</div></div>' +
-                        '<div><div class="text-muted fs-8">PTA ' + AT.left + '</div><div class="fw-bolder lh-1 hp-num" style="font-size:2.4rem;color:#2563EB">' + (l == null ? '—' : Math.round(l)) + '</div><div class="fs-8">' + grade(l) + '</div></div></div>' +
-                        '<div class="fs-8 text-muted mb-2">' + AT.avg + '</div>' +
-                        (gap('AR', 'BR') ? '<div class="mb-2"><span class="badge badge-light-danger">' + AT.gapR + '</span></div>' : '') + (gap('AL', 'BL') ? '<div class="mb-2"><span class="badge badge-light-danger">' + AT.gapL + '</span></div>' : '') +
-                        (r != null && l != null && Math.abs(r - l) >= 15 ? '<div class="mb-2"><span class="badge badge-light-danger">' + AT.asym + '</span></div>' : '');
+                    // H127: the two ears as the theme's stat boxes (demo39 dashboards/logistics), the flags as badges
+                    document.getElementById('au_out').innerHTML = '<div class="row g-3 mb-4"><div class="col-6"><div class="border border-gray-300 border-dashed rounded py-3 px-4 h-100"><div class="text-gray-500 fw-semibold fs-7 mb-1"><span dir="ltr">PTA</span> ' + AT.right + '</div><div class="fs-2hx fw-bold lh-1 hp-num" style="color:#DC2626">' + (r == null ? '—' : Math.round(r)) + '</div><div class="text-gray-700 fw-semibold fs-7 mt-1">' + grade(r) + '</div></div></div>' +
+                        '<div class="col-6"><div class="border border-gray-300 border-dashed rounded py-3 px-4 h-100"><div class="text-gray-500 fw-semibold fs-7 mb-1"><span dir="ltr">PTA</span> ' + AT.left + '</div><div class="fs-2hx fw-bold lh-1 hp-num" style="color:#2563EB">' + (l == null ? '—' : Math.round(l)) + '</div><div class="text-gray-700 fw-semibold fs-7 mt-1">' + grade(l) + '</div></div></div></div>' +
+                        '<div class="fs-7 text-muted mb-3">' + AT.avg + '</div>' +
+                        (gap('AR', 'BR') ? '<div class="mb-2"><span class="badge badge-light-danger fs-7 fw-bold text-wrap text-start lh-base">' + AT.gapR + '</span></div>' : '') + (gap('AL', 'BL') ? '<div class="mb-2"><span class="badge badge-light-danger fs-7 fw-bold text-wrap text-start lh-base">' + AT.gapL + '</span></div>' : '') +
+                        (r != null && l != null && Math.abs(r - l) >= 15 ? '<div class="mb-2"><span class="badge badge-light-danger fs-7 fw-bold text-wrap text-start lh-base">' + AT.asym + '</span></div>' : '');
                 }
                 if (canEdit) {
                     s.addEventListener('click', function (ev) { var q = pt(s, ev), i = Math.round((q[0] - PL) / ((WW - PL - PR) / (FREQ.length - 1))); if (i < 0 || i >= FREQ.length) return;
@@ -671,7 +699,7 @@
             } else if (KIND === 'Joints') {
                 // H102: tap a joint to cycle tender → swollen → both → clear; DAS28-ESR follows (the server recomputes it on save)
                 var J = [], s = document.getElementById('jt'), COL = ['#fff', '#F87171', '#60A5FA', '#7C3AED'], st = @Json.Serialize(dasNow?.Joints ?? new Dictionary<string, int>());
-                var JT = { tender: @Json.Serialize(T["Tender"].Value), swollen: @Json.Serialize(T["Swollen"].Value), noEsr: @Json.Serialize(T["Write the ESR and the patient's global assessment to score"].Value),
+                var JT = { tender: @Json.Serialize(T["Tender"].Value), swollen: @Json.Serialize(T["Swollen"].Value), of: @Json.Serialize(T["{0} of {1}"].Value),noEsr: @Json.Serialize(T["Write the ESR and the patient's global assessment to score"].Value),
                            b: @Json.Serialize(new[] { "High", "Moderate", "Low", "Remission" }.ToDictionary(k => k, k => T["das:" + k].Value)) };
                 function add(k, x, y) { J.push({ k: k, x: x, y: y }); }
                 add('ShR', 120, 95); add('ShL', 280, 95); add('ElR', 100, 165); add('ElL', 300, 165); add('WrR', 85, 230); add('WrL', 315, 230); add('KnR', 165, 340); add('KnL', 235, 340);
@@ -687,10 +715,11 @@
                     var esr = parseFloat(document.getElementById('jt_esr').value), pga = parseInt(document.getElementById('jt_pga').value, 10), ok = esr >= 1 && pga >= 0;
                     var das = ok ? 0.56 * Math.sqrt(tj) + 0.28 * Math.sqrt(sj) + 0.70 * Math.log(esr) + 0.014 * pga : null;
                     var band = das == null ? null : das > 5.1 ? ['High', 'danger'] : das > 3.2 ? ['Moderate', 'primary'] : das >= 2.6 ? ['Low', 'info'] : ['Remission', 'success'];
-                    document.getElementById('jt_out').innerHTML = '<div class="d-flex gap-6"><div><div class="text-muted fs-8">' + JT.tender + '</div><div class="fs-2 fw-bold hp-num">' + tj + '/28</div></div><div><div class="text-muted fs-8">' + JT.swollen + '</div><div class="fs-2 fw-bold hp-num">' + sj + '/28</div></div>' +
-                        '<div><div class="text-muted fs-8">DAS28</div><div class="fw-bolder lh-1 hp-num" style="font-size:2.4rem">' + (das == null ? '—' : das.toFixed(2)) + '</div></div></div>' +
-                        (band ? '<div class="mt-3"><span class="badge badge-light-' + band[1] + '">' + JT.b[band[0]] + '</span></div>' : '<div class="mt-3 text-muted fs-8">' + JT.noEsr + '</div>') +
-                        '<div class="text-muted fs-8 mt-2" dir="ltr">0.56√TJC + 0.28√SJC + 0.70 ln(ESR) + 0.014 PGA</div>';
+                    // H127: the counts and the score as the theme's stat boxes; a count of the 28 reads "{0} of {1}", never a slash
+                    function box(lbl, val, big) { return '<div class="col-4"><div class="border border-gray-300 border-dashed rounded py-3 px-4 h-100"><div class="text-gray-500 fw-semibold fs-7 mb-1">' + lbl + '</div><div class="' + (big ? 'fs-2hx hp-num' : 'fs-3') + ' fw-bold lh-1 text-gray-900">' + val + '</div></div></div>'; }
+                    document.getElementById('jt_out').innerHTML = '<div class="row g-3">' + box(JT.tender, esc(fmt(JT.of, tj).replace('{1}', 28))) + box(JT.swollen, esc(fmt(JT.of, sj).replace('{1}', 28))) + box('<span dir="ltr">DAS28</span>', das == null ? '—' : das.toFixed(2), true) + '</div>' +
+                        (band ? '<div class="mt-4"><span class="badge badge-light-' + band[1] + ' fs-6 fw-bold px-4 py-2">' + JT.b[band[0]] + '</span></div>' : '<div class="mt-4 text-muted fs-7">' + JT.noEsr + '</div>') +
+                        '<div class="text-muted fs-7 mt-3" dir="ltr">0.56√TJC + 0.28√SJC + 0.70 ln(ESR) + 0.014 PGA</div>';
                 }
                 if (canEdit) s.addEventListener('click', function (ev) { var c = ev.target.closest('[data-j]'); if (!c) return; var k = c.getAttribute('data-j'); st[k] = ((st[k] || 0) + 1) % 4; draw(); });
                 ['jt_esr', 'jt_pga'].forEach(function (id) { document.getElementById(id).addEventListener('input', draw); });
@@ -779,7 +808,9 @@
                         $('pd_del').classList.toggle('d-none', !x || x.proband);
                         $('pd_of').innerHTML = P.map(function (q) { return '<option value="' + q.id + '"' + (q.proband ? ' selected' : '') + '>' + esc(label(q)) + '</option>'; }).join('');
                         $('pd_aff').checked = !!(x && x.affected); $('pd_dead').checked = !!(x && x.deceased); $('pd_car').checked = !!(x && x.carrier); $('pd_cons').checked = false;
-                        $('pd_cond').value = (x && x.cond) || ''; $('pd_note').value = (x && x.note) || ''; modal.show(); }
+                        $('pd_cond').value = (x && x.cond) || ''; $('pd_note').value = (x && x.note) || '';
+                        if (window.jQuery) jQuery('#pd_of, #pd_rel').trigger('change.select2');   // H127: the select2 faces follow the rebuilt options
+                        modal.show(); }
                     document.querySelector('[data-add-rel]').addEventListener('click', function () { open(null); });
                     svg.addEventListener('click', function (ev) { var gp = ev.target.closest('[data-p]'); if (gp) open(byId(+gp.getAttribute('data-p'))); });
                     $('pd_del').addEventListener('click', function () { var x = editing; if (!x) return; cbConfirm(PT.del).then(function (ok) { if (!ok) return;
@@ -816,9 +847,9 @@
                     } }
                 function draw() {
                     ['od', 'os'].forEach(function (id) { var svg = document.getElementById(id), side = svg.getAttribute('data-side'); svg.querySelector('.fm').innerHTML = marks.filter(function (m) { return m.v === side; }).map(shape).join(''); });
-                    document.getElementById('cv_list').innerHTML = marks.length ? '<div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-3 mb-0"><thead><tr class="text-start text-muted fw-bold fs-8 text-uppercase"><th>' + W.eye + '</th><th>' + W.finding + '</th><th>' + W.where + '</th><th>' + W.code + '</th></tr></thead><tbody>' +
-                        marks.map(function (m) { var f = fOf(m.f); return '<tr><td><span class="badge badge-light-' + (m.v === 'R' ? 'primary' : 'info') + '">' + (m.v === 'R' ? 'OD' : 'OS') + '</span></td><td><span class="cv-sw me-2" style="background:' + f.c + '"></span>' + esc(f.t) + '</td><td>' + esc(fundusAt(+m.x, +m.y)) + '</td><td><code dir="ltr">' + esc(f.code || '') + '</code></td></tr>'; }).join('') + '</tbody></table></div>'
-                        : '<div class="text-muted fs-7 py-3">' + W.none + '</div>';
+                    document.getElementById('cv_list').innerHTML = marks.length ? '<div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0"><thead><tr class="fw-bold text-muted bg-light"><th class="ps-4 rounded-start">' + W.eye + '</th><th>' + W.finding + '</th><th>' + W.where + '</th><th class="pe-4 rounded-end">' + W.code + '</th></tr></thead><tbody>' +
+                        marks.map(function (m) { var f = fOf(m.f); return '<tr><td class="ps-4"><span class="badge badge-light-' + (m.v === 'R' ? 'primary' : 'info') + ' fs-7 fw-bold" dir="ltr">' + (m.v === 'R' ? 'OD' : 'OS') + '</span></td><td><div class="d-flex align-items-center"><span class="cv-sw me-3" style="background:' + f.c + '"></span><span class="text-gray-900 fw-bold fs-6">' + esc(f.t) + '</span></div></td><td><span class="text-gray-600 fw-semibold fs-7">' + esc(fundusAt(+m.x, +m.y)) + '</span></td><td class="pe-4"><span class="badge badge-light fs-7 fw-bold hp-num" dir="ltr">' + esc(f.code || '') + '</span></td></tr>'; }).join('') + '</tbody></table></div>'
+                        : '<div class="text-center py-10"><i class="ki-outline ki-eye fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-bold text-gray-700">' + W.none + '</div></div>';
                 }
                 if (canEdit) {
                     document.getElementById('fd_tools').addEventListener('click', function (ev) { var b = ev.target.closest('.cv-tool'); if (!b) return; var k = b.getAttribute('data-k');

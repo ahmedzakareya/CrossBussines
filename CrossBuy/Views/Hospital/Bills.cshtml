@@ -3,6 +3,9 @@
 @using CrossBuy.Models.Context.Hospital
 @model IReadOnlyList<HospitalBillRow>
 @inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H127 — the bills: stat tiles (demo39 dashboards/logistics) over the theme's table widget (widgets/tables).
+*@
 @{
     Layout = "~/Views/Shared/_LayoutHospital.cshtml";
     ViewData["Title"] = T["Bills"].Value;
@@ -15,6 +18,7 @@
     var home = Model.Where(b => b.Currency == null || b.Currency.Code == currency?.Code).ToList();
     string RM(HospitalBillRow b, decimal v) => b.Currency != null ? b.Currency.Format(v) : M(v);
     bool Foreign(HospitalBillRow b) => b.Currency != null && b.Currency.Code != currency?.Code;
+    decimal owed = home.Sum(b => b.Total - b.Paid);
 }
 <link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
 
@@ -34,24 +38,34 @@
     </div></div>
 
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @* stat tiles — demo39 dashboards/logistics *@
         <div class="row g-5 g-xl-8 mb-5">
             @foreach (var s in new[] {
-                (T["Open bills"].Value, open.Count.ToString(), T["visits and stays still running"].Value, "text-gray-900"),
-                (T["Billed"].Value, M(home.Sum(b => b.Total)), cur, "text-gray-900"),
-                (T["Collected"].Value, M(home.Sum(b => b.Paid)), cur, "text-success"),
-                (T["Still owed"].Value, M(home.Sum(b => b.Total - b.Paid)), cur, home.Sum(b => b.Total - b.Paid) > 0 ? "text-danger" : "text-gray-900") })
+                (T["Open bills"].Value, open.Count.ToString(), T["visits and stays still running"].Value, "primary", "bill", "text-gray-900"),
+                (T["Billed"].Value, M(home.Sum(b => b.Total)), cur, "info", "document", "text-gray-900"),
+                (T["Collected"].Value, M(home.Sum(b => b.Paid)), cur, "success", "wallet", "text-success"),
+                (T["Still owed"].Value, M(owed), cur, owed > 0 ? "danger" : "success", "dollar", owed > 0 ? "text-danger" : "text-gray-900") })
             {
-                <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
-                    <div class="text-muted fw-semibold fs-7 mb-1">@s.Item1</div>
-                    <div class="fs-2hx fw-bold @s.Item4 hp-num">@s.Item2</div>
-                    <div class="text-muted fs-8 mt-1">@s.Item3</div>
-                </div></div></div>
+                <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100">
+                    <div class="card-header pt-5 flex-nowrap gap-3">
+                        <div class="card-title d-flex flex-column">
+                            <span class="fs-2hx fw-bold @s.Item6 lh-1 hp-num" dir="ltr">@s.Item2</span>
+                            <span class="text-gray-500 pt-1 fw-semibold fs-6">@s.Item1</span>
+                        </div>
+                        <div class="card-toolbar"><div class="symbol symbol-45px"><span class="symbol-label bg-light-@s.Item4"><i class="ki-outline ki-@s.Item5 fs-2 text-@s.Item4"></i></span></div></div>
+                    </div>
+                    <div class="card-body d-flex align-items-end pt-0"><span class="d-flex align-items-center fs-7 fw-semibold text-gray-500"><span class="bullet bullet-dot bg-@s.Item4 me-2"></span>@s.Item3</span></div>
+                </div></div>
             }
         </div>
 
-        <div class="card">
-            <div class="card-header border-0 pt-6">
-                <div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Bills"]</span></div>
+        @* table widget — demo39 widgets/tables *@
+        <div class="card card-flush">
+            <div class="card-header pt-5">
+                <h3 class="card-title align-items-start flex-column">
+                    <span class="card-label fw-bold text-gray-800">@T["Bills"]</span>
+                    <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["{0} of {1}", open.Count, Model.Count] · @T["bill:Open"]</span>
+                </h3>
                 <div class="card-toolbar">
                     <div class="btn-group">
                         <a href="@Url.Action("Bills")" class="btn btn-sm @(status == null ? "btn-primary" : "btn-light")">@T["All"]</a>
@@ -61,30 +75,34 @@
                 </div>
             </div>
             <div class="card-body pt-2">
-                @if (Model.Count == 0) { <div class="text-center text-muted py-15"><i class="ki-outline ki-bill fs-3x text-gray-300 d-block mb-4"></i>@T["No bills yet. A bill opens when a visit is signed or a patient is admitted."]</div> }
+                @if (Model.Count == 0)
+                {
+                    <div class="text-center py-10"><i class="ki-outline ki-bill fs-3x text-gray-300 mb-4 d-block"></i>
+                        <div class="fs-6 fw-bold text-gray-700">@T["No bills yet. A bill opens when a visit is signed or a patient is admitted."]</div></div>
+                }
                 else
                 {
-                    <div class="table-responsive"><table class="table align-middle table-row-dashed fs-6 gy-4 mb-0">
-                        <thead><tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0">
-                            <th class="w-125px">@T["Bill"]</th><th>@T["Patient"]</th><th>@T["Type"]</th><th>@T["Opened"]</th><th class="text-end">@T["Total"]</th><th class="text-end">@T["Paid"]</th><th class="text-end">@T["Due"]</th><th>@T["Status"]</th><th class="text-end w-100px"></th>
+                    <div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
+                        <thead><tr class="fw-bold text-muted bg-light">
+                            <th class="ps-4 rounded-start">@T["Patient"]</th><th>@T["Bill"]</th><th class="text-end">@T["Total"]</th><th class="text-end">@T["Paid"]</th><th class="text-end">@T["Due"]</th><th>@T["Status"]</th><th class="text-end pe-4 rounded-end"></th>
                         </tr></thead>
-                        <tbody class="fw-semibold text-gray-700">
+                        <tbody>
                             @foreach (var b in Model)
                             {
                                 var url = Url.Action("Bill", new { id = b.Id });
+                                var due = b.Total - b.Paid;
                                 <tr>
-                                    <td><a href="@url" class="badge hp-code fw-bold fs-8 hp-num">@b.BillNo</a></td>
-                                    <td><div class="d-flex align-items-center min-w-0">
-                                        <div class="symbol symbol-35px symbol-circle flex-shrink-0">@if (b.PatientPhoto != null) {<img src="@b.PatientPhoto" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(b.PatientNameEn)" />} else {<span class="symbol-label fw-bold fs-8 hp-initials">@HospitalUi.Initials(b.PatientNameEn)</span>}</div>
-                                        <div class="d-flex flex-column ms-3 min-w-0"><a href="@Url.Action("Patient", new { id = b.PatientId })" class="text-gray-900 text-hover-primary fw-bold fs-7 text-truncate">@DisplayName.Of(b.PatientName, b.PatientNameEn)</a><span class="text-muted fs-8 hp-num">@b.Mrn</span></div>
+                                    <td class="ps-4"><div class="d-flex align-items-center min-w-0">
+                                        <div class="symbol symbol-45px symbol-circle flex-shrink-0 me-4">@if (b.PatientPhoto != null) {<img src="@b.PatientPhoto" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(b.PatientNameEn)" />} else {<span class="symbol-label bg-light-primary text-primary fw-bold fs-7">@HospitalUi.Initials(b.PatientNameEn)</span>}</div>
+                                        <div class="d-flex flex-column min-w-0"><a href="@Url.Action("Patient", new { id = b.PatientId })" class="text-gray-900 fw-bold text-hover-primary fs-6 text-truncate"><bdi>@DisplayName.Of(b.PatientName, b.PatientNameEn)</bdi></a><bdi class="text-muted fw-semibold d-block fs-7 hp-num">@b.Mrn</bdi></div>
                                     </div></td>
-                                    <td class="fs-7">@(b.Inpatient ? T["Inpatient stay"] : T["Outpatient visit"])</td>
-                                    <td class="hp-num fs-7">@b.OpenedAt.ToLocalTime().ToString("yyyy-MM-dd")</td>
-                                    <td class="text-end hp-num">@RM(b, b.Total)@if (Foreign(b)) {<span class="badge badge-light-info fs-9 ms-1">@b.Currency!.Code</span>}</td>
-                                    <td class="text-end hp-num text-success">@RM(b, b.Paid)</td>
-                                    <td class="text-end hp-num fw-bold @(b.Total - b.Paid > 0 ? "text-danger" : "")">@RM(b, b.Total - b.Paid)</td>
-                                    <td><span class="badge @(b.Status == HospitalBillStatus.Open ? "badge-light-primary" : "badge-light-success") fs-8">@T["bill:" + b.Status]</span></td>
-                                    <td class="text-end"><a href="@url" class="btn btn-sm btn-light-primary">@T["Open"]</a></td>
+                                    <td><a href="@url" class="text-gray-900 fw-bold text-hover-primary d-block fs-6"><bdi class="hp-num">@b.BillNo</bdi></a>
+                                        <span class="text-muted fw-semibold d-block fs-7">@(b.Inpatient ? T["Inpatient stay"] : T["Outpatient visit"]) · <span class="hp-num" dir="ltr">@b.OpenedAt.ToLocalTime().ToString("yyyy-MM-dd")</span></span></td>
+                                    <td class="text-end"><span class="text-gray-900 fw-bold fs-6 hp-num" dir="ltr">@RM(b, b.Total)</span>@if (Foreign(b)) {<span class="badge badge-light-info fs-8 ms-1">@b.Currency!.Code</span>}</td>
+                                    <td class="text-end"><span class="text-success fw-bold fs-6 hp-num" dir="ltr">@RM(b, b.Paid)</span></td>
+                                    <td class="text-end"><span class="badge badge-light-@(due > 0 ? "danger" : "success") fs-7 fw-bold hp-num" dir="ltr">@RM(b, due)</span></td>
+                                    <td><span class="badge badge-light-@(b.Status == HospitalBillStatus.Open ? "primary" : "success") fs-7 fw-bold">@T["bill:" + b.Status]</span></td>
+                                    <td class="text-end pe-4"><a href="@url" class="btn btn-sm btn-icon btn-bg-light btn-active-color-primary" title="@T["Open the bill"]" data-bs-toggle="tooltip"><i class="ki-outline ki-eye fs-3"></i></a></td>
                                 </tr>
                             }
                         </tbody>

@@ -3,6 +3,10 @@
 @using CrossBuy.Models.Context.Hospital
 @model IReadOnlyList<HospitalService>
 @inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H127 — the service catalogue: a notice, category pills over the theme's table widget (demo39 widgets/tables,
+    apps/ecommerce/catalog), and its form modal (utilities/modals/forms/new-target).
+*@
 @{
     Layout = "~/Views/Shared/_LayoutHospital.cshtml";
     ViewData["Title"] = T["Service catalogue"].Value;
@@ -41,50 +45,56 @@
     </div></div>
 
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
-        <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice">
-            <span class="symbol symbol-45px me-5 flex-shrink-0"><span class="symbol-label"><i class="ki-outline ki-price-tag fs-2x text-white"></i></span></span>
-            <div class="d-flex flex-stack flex-grow-1 flex-wrap flex-md-nowrap">
-                <div class="mb-3 mb-md-0 fw-semibold pe-5">
+        <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-5 mb-5">
+            <i class="ki-outline ki-information fs-2tx text-primary me-4"></i>
+            <div class="d-flex flex-stack flex-grow-1 flex-wrap flex-md-nowrap gap-3">
+                <div class="fw-semibold">
                     <h4 class="text-gray-900 fw-bold mb-1">@T["One price list for the whole hospital"]</h4>
                     <div class="fs-6 text-gray-700">@T["Every charge on a bill comes from here: the consultation a doctor is billed as, what the doctor orders, and what the desk adds. A bill keeps the price it was charged at."]</div>
                 </div>
-                <span class="badge hp-badge fs-7 fw-bold px-4 py-2 flex-shrink-0"><span class="hp-num me-1">@all.Count</span>@T["services"]</span>
+                <span class="badge badge-primary fs-7 fw-bold px-4 py-2 flex-shrink-0"><span class="hp-num">@all.Count</span>&nbsp;@T["services"]</span>
             </div>
         </div>
 
         <script type="application/json" id="serviceRows">@Html.Raw(System.Text.Json.JsonSerializer.Serialize(rows))</script>
-        <div class="card">
-            <div class="card-header border-0 pt-6">
-                <div class="card-title m-0">
-                    <div class="d-flex flex-wrap gap-2">
-                        <a href="@Url.Action("Services")" class="btn btn-sm @(category == null ? "btn-primary" : "btn-light")">@T["All"] <span class="hp-num ms-1">@all.Count</span></a>
-                        @foreach (var c in HospitalServiceCategories.All.Where(c => c != HospitalServiceCategories.Accommodation))
-                        {
-                            <a href="@Url.Action("Services", new { category = c })" class="btn btn-sm @(category == c ? "btn-primary" : "btn-light")">@T["cat:" + c] <span class="hp-num ms-1">@all.Count(s => s.Category == c)</span></a>
-                        }
-                    </div>
-                </div>
+        <div class="card card-flush">
+            <div class="card-header pt-5">
+                <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Service catalogue"]</span>
+                    <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["{0} of {1}", Model.Count, all.Count]</span></h3>
             </div>
             <div class="card-body pt-2">
-                @if (Model.Count == 0) { <div class="text-center text-muted py-15"><i class="ki-outline ki-price-tag fs-3x text-gray-300 d-block mb-4"></i>@T["No services yet."]</div> }
+                <div class="d-flex flex-wrap gap-2 mb-6">
+                    <a href="@Url.Action("Services")" class="btn btn-sm @(category == null ? "btn-primary" : "btn-light btn-active-light-primary")">@T["All"] <span class="badge badge-circle @(category == null ? "badge-light" : "badge-light-primary") hp-num ms-1">@all.Count</span></a>
+                    @foreach (var c in HospitalServiceCategories.All.Where(c => c != HospitalServiceCategories.Accommodation))
+                    {
+                        <a href="@Url.Action("Services", new { category = c })" class="btn btn-sm @(category == c ? "btn-primary" : "btn-light btn-active-light-primary")">@T["cat:" + c] <span class="badge badge-circle @(category == c ? "badge-light" : "badge-light-primary") hp-num ms-1">@all.Count(s => s.Category == c)</span></a>
+                    }
+                </div>
+                @if (Model.Count == 0)
+                {
+                    <div class="text-center py-10"><i class="ki-outline ki-price-tag fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-bold text-gray-700">@T["No services yet."]</div></div>
+                }
                 else
                 {
-                    <div class="table-responsive"><table class="table align-middle table-row-dashed fs-6 gy-3 mb-0">
-                        <thead><tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0">
-                            <th class="w-125px">@T["Code"]</th><th>@T["Service"]</th><th>@T["Category"]</th><th>@T["Department"]</th><th class="text-end">@T["Price"]</th><th>@T["Tax"]</th><th>@T["Revenue account"]</th><th class="text-end w-50px"></th>
+                    @* table widget — demo39 widgets/tables *@
+                    <div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
+                        <thead><tr class="fw-bold text-muted bg-light">
+                            <th class="ps-4 rounded-start">@T["Service"]</th><th>@T["Department"]</th><th class="text-end">@T["Price"]</th><th>@T["Tax"]</th><th>@T["Revenue account"]</th><th class="text-end pe-4 rounded-end"></th>
                         </tr></thead>
-                        <tbody class="fw-semibold text-gray-700">
+                        <tbody>
                             @foreach (var s in Model)
                             {
                                 <tr class="@(s.IsActive ? "" : "opacity-50")">
-                                    <td><span class="badge hp-code fw-bold fs-8 hp-num">@s.Code</span></td>
-                                    <td><div class="fw-semibold text-gray-800">@DisplayName.Of(s.Name, s.NameEn)</div></td>
-                                    <td class="fs-7">@T["cat:" + s.Category]</td>
-                                    <td class="fs-7">@(s.DepartmentId is int d && deptName.TryGetValue(d, out var dn) ? dn : "—")</td>
-                                    <td class="text-end hp-num fw-bold">@M(s.Price) <span class="text-muted fs-8 fw-semibold">@cur</span></td>
-                                    <td>@if (s.Taxable) {<span class="badge badge-light-primary fs-8">@T["Taxable"]</span>} else {<span class="text-muted fs-8">@T["Exempt"]</span>}</td>
-                                    <td class="fs-8 text-muted">@(s.RevenueAccountId is int a && accName.TryGetValue(a, out var an) ? an : T["Default"].Value)</td>
-                                    <td class="text-end">@if (canManage) {<button type="button" class="btn btn-icon btn-sm btn-light w-30px h-30px" data-edit="@s.ID" title="@T["Edit"]"><i class="ki-outline ki-pencil fs-6"></i></button>}</td>
+                                    <td class="ps-4"><div class="d-flex align-items-center">
+                                        <div class="symbol symbol-45px me-4 flex-shrink-0"><span class="symbol-label bg-light-primary"><i class="ki-outline ki-price-tag fs-2 text-primary"></i></span></div>
+                                        <div class="d-flex flex-column"><span class="text-gray-900 fw-bold fs-6">@DisplayName.Of(s.Name, s.NameEn)</span>
+                                            <span class="text-muted fw-semibold d-block fs-7"><bdi class="hp-num">@s.Code</bdi> · @T["cat:" + s.Category]@if (!s.IsActive) {<span class="badge badge-light fs-8 ms-2">@T["Inactive"]</span>}</span></div>
+                                    </div></td>
+                                    <td><span class="text-gray-700 fw-semibold fs-7">@(s.DepartmentId is int d && deptName.TryGetValue(d, out var dn) ? dn : "—")</span></td>
+                                    <td class="text-end text-nowrap"><span class="text-gray-900 fw-bold fs-6 hp-num" dir="ltr">@M(s.Price)</span>&nbsp;<span class="text-muted fs-8 fw-semibold">@cur</span></td>
+                                    <td>@if (s.Taxable) {<span class="badge badge-light-primary fs-7 fw-bold">@T["Taxable"]</span>} else {<span class="badge badge-light fs-7 fw-bold">@T["Exempt"]</span>}</td>
+                                    <td><bdi class="text-gray-500 fw-semibold fs-7">@(s.RevenueAccountId is int a && accName.TryGetValue(a, out var an) ? an : T["Default"].Value)</bdi></td>
+                                    <td class="text-end pe-4">@if (canManage) {<button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-primary" data-edit="@s.ID" title="@T["Edit"]" data-bs-toggle="tooltip"><i class="ki-outline ki-pencil fs-3"></i></button>}</td>
                                 </tr>
                             }
                         </tbody>
@@ -97,23 +107,36 @@
 
 @if (canManage)
 {
-    <div class="modal fade" id="serviceModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-650px"><div class="modal-content">
-        <div class="modal-header"><h2 class="fw-bold m-0" data-title></h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
-        <form class="modal-body py-8 px-lg-10" id="serviceForm"><input type="hidden" name="id" /><div class="row g-5">
-            <div class="col-md-4"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Code"]</label><input name="code" maxlength="40" class="form-control form-control-solid hp-num" dir="ltr" /></div>
-            <div class="col-md-4"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Category"]</label>
-                <select name="category" class="form-select form-select-solid">@foreach (var c in HospitalServiceCategories.All.Where(c => c != HospitalServiceCategories.Accommodation)) { <option value="@c">@T["cat:" + c]</option> }</select></div>
-            <div class="col-md-4"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Price"] (@cur)</label><input name="price" type="number" min="0" step="0.001" class="form-control form-control-solid hp-num" /></div>
-            <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Name (Arabic)"]</label><input name="name" maxlength="200" class="form-control form-control-solid" dir="rtl" /></div>
-            <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Name (English)"]</label><input name="nameEn" maxlength="200" class="form-control form-control-solid" dir="ltr" /></div>
-            <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Department"]</label>
-                <select name="departmentId" class="form-select form-select-solid"><option value="">—</option>@foreach (var d in departments) { <option value="@d.ID">@DisplayName.Of(d.Name, d.NameEn)</option> }</select></div>
-            <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Revenue account"]</label>
-                <select name="revenueAccountId" class="form-select form-select-solid"><option value="">@T["Default (billing settings)"]</option>@foreach (var a in accounts) { <option value="@a.Id">@a.Label · @DisplayName.Of(a.Name, a.NameEn)</option> }</select></div>
-            <div class="col-md-6"><label class="form-check form-switch form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" name="taxable" /><span class="form-check-label text-gray-700">@T["Taxable"]</span></label></div>
-            <div class="col-md-6"><label class="form-check form-switch form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" name="isActive" checked /><span class="form-check-label text-gray-700">@T["Active"]</span></label></div>
-        </div></form>
-        <div class="modal-footer flex-center"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-save>@T["Save"]</button></div>
+    @* form modal — demo39 utilities/modals/forms/new-target *@
+    <div class="modal fade" id="serviceModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-650px"><div class="modal-content rounded">
+        <div class="modal-header pb-0 border-0 justify-content-end">
+            <div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div>
+        </div>
+        <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-15">
+            <div class="mb-10 text-center">
+                <h1 class="mb-3" data-title></h1>
+                <div class="text-muted fw-semibold fs-5">@T["One price list for the whole hospital"]</div>
+            </div>
+            <form id="serviceForm"><input type="hidden" name="id" /><div class="row g-6 mb-8">
+                <div class="col-md-4 fv-row"><label class="fs-6 fw-semibold mb-2 required">@T["Code"]</label><input name="code" maxlength="40" class="form-control form-control-solid hp-num" dir="ltr" /></div>
+                <div class="col-md-4 fv-row"><label class="fs-6 fw-semibold mb-2 required">@T["Category"]</label>
+                    <select name="category" class="form-select form-select-solid">@foreach (var c in HospitalServiceCategories.All.Where(c => c != HospitalServiceCategories.Accommodation)) { <option value="@c">@T["cat:" + c]</option> }</select></div>
+                <div class="col-md-4 fv-row"><label class="fs-6 fw-semibold mb-2 required">@T["Price"]</label>
+                    <div class="input-group input-group-solid"><input name="price" type="number" min="0" step="0.001" class="form-control form-control-solid hp-num" dir="ltr" /><span class="input-group-text">@cur</span></div></div>
+                <div class="col-md-6 fv-row"><label class="fs-6 fw-semibold mb-2 required">@T["Name (Arabic)"]</label><input name="name" maxlength="200" class="form-control form-control-solid" dir="rtl" /></div>
+                <div class="col-md-6 fv-row"><label class="fs-6 fw-semibold mb-2 required">@T["Name (English)"]</label><input name="nameEn" maxlength="200" class="form-control form-control-solid" dir="ltr" /></div>
+                <div class="col-md-6 fv-row"><label class="fs-6 fw-semibold mb-2">@T["Department"]</label>
+                    <select name="departmentId" class="form-select form-select-solid"><option value="">—</option>@foreach (var d in departments) { <option value="@d.ID">@DisplayName.Of(d.Name, d.NameEn)</option> }</select></div>
+                <div class="col-md-6 fv-row"><label class="fs-6 fw-semibold mb-2">@T["Revenue account"]</label>
+                    <select name="revenueAccountId" class="form-select form-select-solid"><option value="">@T["Default (billing settings)"]</option>@foreach (var a in accounts) { <option value="@a.Id">@a.Label · @DisplayName.Of(a.Name, a.NameEn)</option> }</select></div>
+                <div class="col-md-6"><label class="form-check form-switch form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" name="taxable" /><span class="form-check-label fw-semibold text-gray-700">@T["Taxable"]</span></label></div>
+                <div class="col-md-6"><label class="form-check form-switch form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" name="isActive" checked /><span class="form-check-label fw-semibold text-gray-700">@T["Active"]</span></label></div>
+            </div></form>
+            <div class="text-center pt-5">
+                <button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button>
+                <button type="button" class="btn btn-primary" data-save>@T["Save"]</button>
+            </div>
+        </div>
     </div></div></div>
 }
 

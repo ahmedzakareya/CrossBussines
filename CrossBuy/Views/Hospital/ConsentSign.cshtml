@@ -30,6 +30,11 @@
     .hp-sign-pad { width: 100%; height: 220px; border: 2px dashed var(--bs-gray-300); border-radius: .75rem; background: var(--bs-body-bg); touch-action: none; cursor: crosshair; display: block; }
     .hp-sign-pad.hp-signed { border-style: solid; border-color: var(--bs-primary); }
     .hp-consent-text { white-space: pre-line; line-height: 1.9; max-height: 340px; overflow-y: auto; }
+    /* H127: a radio as the theme's option tile (demo39 modals/create-account) — the tile follows its own input */
+    .hp-choice { cursor: pointer; transition: border-color .15s, background-color .15s; }
+    .hp-choice:has(input:checked) { border-color: var(--bs-primary) !important; background-color: var(--bs-primary-light); }
+    .hp-choice.hp-choice-danger:has(input:checked) { border-color: var(--bs-danger) !important; background-color: var(--bs-danger-light); }
+    .hp-choice:has(input:disabled) { opacity: .55; cursor: not-allowed; }
 </style>
 @Html.AntiForgeryToken()
 
@@ -47,86 +52,105 @@
     </div></div>
 
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
-        @if (!ready) { <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice"><div class="fs-6 text-gray-700">@T[HospitalConsentService.NoTables]</div></div> }
-        else if (Model.DeceasedAt != null) { <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice"><div class="fs-6 text-gray-700">@T["This patient is deceased"]</div></div> }
-        else if (forms.Count == 0) { <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice"><div class="fs-6 text-gray-700">@T["No consent form is set up yet: the hospital administrator adds them in Consent forms."]</div></div> }
+        @if (!ready || Model.DeceasedAt != null || forms.Count == 0)
+        {
+            <div class="notice d-flex bg-light-@(Model.DeceasedAt != null ? "danger" : "primary") rounded border-@(Model.DeceasedAt != null ? "danger" : "primary") border border-dashed p-5 mb-5">
+                <i class="ki-outline ki-information fs-2tx text-@(Model.DeceasedAt != null ? "danger" : "primary") me-4"></i>
+                <div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@T["New consent"]</h4>
+                    <div class="fs-6 text-gray-700">@(!ready ? T[HospitalConsentService.NoTables] : Model.DeceasedAt != null ? T["This patient is deceased"] : T["No consent form is set up yet: the hospital administrator adds them in Consent forms."])</div></div>
+            </div>
+        }
         else
         {
+            @* H127: the theme's form cards (demo39 apps/user-management) — card-flush headers, labelled solid fields, radios as option tiles *@
             <div class="row g-5" data-consent>
                 <div class="col-xl-5">
-                    <div class="card mb-5">
-                        <div class="card-header border-0 pt-6"><div class="card-title flex-column m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["What the consent is for"]</span>
-                            <span class="text-muted fs-7 mt-1">@T["Explain it to the signer, in a language they understand, before they sign."]</span></div></div>
-                        <div class="card-body pt-2"><div class="row g-4">
-                            <div class="col-12"><label class="form-label required fs-7">@T["Consent form"]</label>
+                    <div class="card card-flush mb-5">
+                        <div class="card-header pt-5">
+                            <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["What the consent is for"]</span>
+                                <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Explain it to the signer, in a language they understand, before they sign."]</span></h3>
+                            <div class="card-toolbar"><div class="symbol symbol-45px"><span class="symbol-label bg-light-primary"><i class="ki-outline ki-notepad-edit fs-2x text-primary"></i></span></div></div>
+                        </div>
+                        <div class="card-body pt-2"><div class="row g-6">
+                            <div class="col-12 fv-row"><label class="required fs-6 fw-semibold mb-2">@T["Consent form"]</label>
                                 <select class="form-select form-select-solid" data-c="formId">
                                     @foreach (var f in forms) { <option value="@f.ID" data-kind="@f.Kind" selected="@(wantForm == f.ID)">@DisplayName.Of(f.Title, f.TitleEn)</option> }
                                 </select></div>
-                            <div class="col-12"><label class="form-label required fs-7">@T["The signer reads it in"]</label>
-                                <div class="d-flex gap-6">
-                                    <label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="radio" name="cLang" value="ar" @(en ? "" : "checked") data-c-lang /><span class="form-check-label fs-7">العربية</span></label>
-                                    <label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="radio" name="cLang" value="en" @(en ? "checked" : "") data-c-lang /><span class="form-check-label fs-7">English</span></label>
+                            <div class="col-12"><label class="required fs-6 fw-semibold mb-2">@T["The signer reads it in"]</label>
+                                <div class="row g-3">
+                                    <div class="col-6"><label class="hp-choice d-flex align-items-center border border-dashed border-gray-300 rounded p-4 h-100"><span class="form-check form-check-custom form-check-solid me-3"><input class="form-check-input" type="radio" name="cLang" value="ar" @(en ? "" : "checked") data-c-lang /></span><span class="fw-bold text-gray-800 fs-6">العربية</span></label></div>
+                                    <div class="col-6"><label class="hp-choice d-flex align-items-center border border-dashed border-gray-300 rounded p-4 h-100"><span class="form-check form-check-custom form-check-solid me-3"><input class="form-check-input" type="radio" name="cLang" value="en" @(en ? "checked" : "") data-c-lang /></span><span class="fw-bold text-gray-800 fs-6">English</span></label></div>
                                 </div></div>
-                            <div class="col-12" data-c-proc-wrap><label class="form-label fs-7" data-c-proc-label>@T["The procedure"]</label>
+                            <div class="col-12 fv-row" data-c-proc-wrap><label class="fs-6 fw-semibold mb-2" data-c-proc-label>@T["The procedure"]</label>
                                 <input type="text" class="form-control form-control-solid" maxlength="300" dir="auto" data-c="procedureName" /></div>
-                            <div class="col-12 d-none" data-c-scope-wrap><label class="form-label required fs-7">@T["What the photographs may be used for"]</label>
+                            <div class="col-12 d-none" data-c-scope-wrap><label class="required fs-6 fw-semibold mb-2">@T["What the photographs may be used for"]</label>
                                 <div class="d-flex flex-column gap-3">
                                     @foreach (var sc in HospitalConsentPhotoScope.All)
                                     {
-                                        <label class="form-check form-check-custom form-check-solid align-items-start"><input class="form-check-input" type="radio" name="cScope" value="@sc" data-c-scope />
-                                            <span class="form-check-label fs-7"><span class="fw-bold text-gray-900 d-block">@T["photo-scope:" + sc]</span><span class="text-muted">@T["photo-scope-hint:" + sc]</span></span></label>
+                                        <label class="hp-choice d-flex align-items-start border border-dashed border-gray-300 rounded p-4"><span class="form-check form-check-custom form-check-solid me-3 mt-1"><input class="form-check-input" type="radio" name="cScope" value="@sc" data-c-scope /></span>
+                                            <span class="d-flex flex-column"><span class="fw-bold text-gray-900 fs-6">@T["photo-scope:" + sc]</span><span class="text-gray-600 fw-semibold fs-7">@T["photo-scope-hint:" + sc]</span></span></label>
                                     }
                                 </div></div>
                             @if (cases.Count > 0)
                             {
-                                <div class="col-12"><label class="form-label fs-7">@T["Theatre case"]</label>
+                                <div class="col-12 fv-row"><label class="fs-6 fw-semibold mb-2">@T["Theatre case"]</label>
                                     <select class="form-select form-select-solid" data-c="surgeryId"><option value="">@T["Not for a theatre case"]</option>
                                         @foreach (var c in cases) { <option value="@c.Id" data-name="@DisplayName.Of(c.Name, c.NameEn)" selected="@(surgeryId == c.Id)">@c.CaseNo — @DisplayName.Of(c.Name, c.NameEn) · @c.CaseDate.ToString("yyyy-MM-dd", inv)</option> }
                                     </select></div>
                             }
-                            <div class="col-12"><label class="form-label fs-7">@T["Risks and alternatives explained for this patient"]</label>
+                            <div class="col-12 fv-row"><label class="fs-6 fw-semibold mb-2">@T["Risks and alternatives explained for this patient"]</label>
                                 <textarea class="form-control form-control-solid" rows="3" maxlength="1000" dir="auto" data-c="risks"></textarea></div>
                         </div></div>
                     </div>
-                    <div class="card mb-5">
-                        <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Who signs"]</span></div></div>
-                        <div class="card-body pt-2"><div class="row g-4">
-                            <div class="col-12"><div class="d-flex gap-6">
-                                <label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="radio" name="cSigner" value="Patient" @(minor ? "disabled" : "checked") data-c-signer /><span class="form-check-label fs-7">@T["The patient"]</span></label>
-                                <label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="radio" name="cSigner" value="Representative" @(minor ? "checked" : "") data-c-signer /><span class="form-check-label fs-7">@T["A representative"]</span></label>
-                            </div>
-                            @if (minor) { <div class="text-muted fs-8 mt-2">@T["A minor's consent is signed by a parent or guardian"]</div> }</div>
-                            <div class="col-md-6" data-c-proxy><label class="form-label required fs-7">@T["Representative's name"]</label><input type="text" class="form-control form-control-solid" maxlength="200" dir="auto" data-c="signerName" /></div>
-                            <div class="col-md-6" data-c-proxy><label class="form-label required fs-7">@T["Relation to the patient"]</label><input type="text" class="form-control form-control-solid" maxlength="60" dir="auto" data-c="signerRelation" /></div>
-                            <div class="col-12" data-c-proxy><label class="form-label required fs-7">@T["Why the representative signs"]</label>
+                    <div class="card card-flush mb-5">
+                        <div class="card-header pt-5">
+                            <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Who signs"]</span>
+                                @if (minor) {<span class="text-gray-500 mt-1 fw-semibold fs-7">@T["A minor's consent is signed by a parent or guardian"]</span>}</h3>
+                            <div class="card-toolbar"><div class="symbol symbol-45px"><span class="symbol-label bg-light-info"><i class="ki-outline ki-user-edit fs-2x text-info"></i></span></div></div>
+                        </div>
+                        <div class="card-body pt-2"><div class="row g-6">
+                            <div class="col-12"><div class="row g-3">
+                                <div class="col-6"><label class="hp-choice d-flex align-items-center border border-dashed border-gray-300 rounded p-4 h-100"><span class="form-check form-check-custom form-check-solid me-3"><input class="form-check-input" type="radio" name="cSigner" value="Patient" @(minor ? "disabled" : "checked") data-c-signer /></span><span class="fw-bold text-gray-800 fs-6">@T["The patient"]</span></label></div>
+                                <div class="col-6"><label class="hp-choice d-flex align-items-center border border-dashed border-gray-300 rounded p-4 h-100"><span class="form-check form-check-custom form-check-solid me-3"><input class="form-check-input" type="radio" name="cSigner" value="Representative" @(minor ? "checked" : "") data-c-signer /></span><span class="fw-bold text-gray-800 fs-6">@T["A representative"]</span></label></div>
+                            </div></div>
+                            <div class="col-md-6 fv-row" data-c-proxy><label class="required fs-6 fw-semibold mb-2">@T["Representative's name"]</label><input type="text" class="form-control form-control-solid" maxlength="200" dir="auto" data-c="signerName" /></div>
+                            <div class="col-md-6 fv-row" data-c-proxy><label class="required fs-6 fw-semibold mb-2">@T["Relation to the patient"]</label><input type="text" class="form-control form-control-solid" maxlength="60" dir="auto" data-c="signerRelation" /></div>
+                            <div class="col-12 fv-row" data-c-proxy><label class="required fs-6 fw-semibold mb-2">@T["Why the representative signs"]</label>
                                 <select class="form-select form-select-solid" data-c="proxyReason">
                                     @foreach (var r in HospitalConsentProxyReason.All) { <option value="@r" selected="@(minor && r == HospitalConsentProxyReason.Minor)">@T["cp:" + r]</option> }
                                 </select></div>
-                            <div class="col-12"><label class="form-label fs-7">@T["Interpreter (if any)"]</label><input type="text" class="form-control form-control-solid" maxlength="200" dir="auto" data-c="interpreter" /></div>
-                            <div class="col-12"><label class="form-label required fs-7">@T["Witness"]</label>
+                            <div class="col-12 fv-row"><label class="fs-6 fw-semibold mb-2">@T["Interpreter (if any)"]</label><input type="text" class="form-control form-control-solid" maxlength="200" dir="auto" data-c="interpreter" /></div>
+                            <div class="col-12 fv-row"><label class="required fs-6 fw-semibold mb-2">@T["Witness"]</label>
                                 <select class="form-select form-select-solid" data-c="witnessEmployeeId" data-person-select data-placeholder="@T["Choose the witness"]"><option value=""></option>
                                     @foreach (var s in staff) { <option value="@s.ID" data-photo="@s.Photo" data-initials="@HospitalUi.Initials(s.NameEn)">@DisplayName.Of(s.Name, s.NameEn)</option> }
                                 </select>
-                                <div class="text-muted fs-8 mt-1">@T["Someone other than the clinician who explained."]</div></div>
+                                <div class="text-muted fs-7 mt-2">@T["Someone other than the clinician who explained."]</div></div>
                         </div></div>
                     </div>
                 </div>
                 <div class="col-xl-7">
-                    <div class="card mb-5">
-                        <div class="card-header border-0 pt-6"><div class="card-title flex-column m-0"><span class="card-label fw-bold text-gray-900 fs-4" data-c-title></span>
-                            <span class="text-muted fs-7 mt-1"><span class="hp-num">@Model.Mrn</span> · @name</span></div></div>
-                        <div class="card-body pt-2"><div class="hp-consent-text fs-6 text-gray-800" data-c-text dir="auto"></div></div>
+                    <div class="card card-flush mb-5">
+                        <div class="card-header pt-5 flex-nowrap gap-3">
+                            <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800" data-c-title></span>
+                                <span class="text-gray-500 mt-1 fw-semibold fs-7"><bdi class="hp-num">@Model.Mrn</bdi> · <bdi>@name</bdi></span></h3>
+                            <div class="card-toolbar"><div class="symbol symbol-45px"><span class="symbol-label bg-light-primary text-primary fw-bold fs-5">@HospitalUi.Initials(string.IsNullOrWhiteSpace(Model.NameEn) ? Model.Name : Model.NameEn)</span></div></div>
+                        </div>
+                        <div class="card-body pt-2"><div class="hp-consent-text bg-light rounded p-6 fs-6 text-gray-800" data-c-text dir="auto"></div></div>
                     </div>
-                    <div class="card">
-                        <div class="card-body">
-                            <div class="d-flex flex-wrap gap-6 mb-5">
-                                <label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="radio" name="cDecision" value="Given" checked data-c-decision /><span class="form-check-label fw-semibold">@T["I give my consent"]</span></label>
-                                <label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="radio" name="cDecision" value="Refused" data-c-decision /><span class="form-check-label fw-semibold">@T["I refuse, having been told the risks of refusing"]</span></label>
+                    <div class="card card-flush">
+                        <div class="card-header pt-5">
+                            <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Signature"]</span>
+                                <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Sign with a finger, a stylus or the mouse. The signature is kept with the consent and its fingerprint is printed on it."]</span></h3>
+                            <div class="card-toolbar"><button type="button" class="btn btn-sm btn-light btn-active-light-primary" data-c-clear><i class="ki-outline ki-arrows-circle fs-4"></i>@T["Clear"]</button></div>
+                        </div>
+                        <div class="card-body pt-2">
+                            <div class="row g-3 mb-6">
+                                <div class="col-md-6"><label class="hp-choice d-flex align-items-center border border-dashed border-gray-300 rounded p-4 h-100"><span class="form-check form-check-custom form-check-solid me-3"><input class="form-check-input" type="radio" name="cDecision" value="Given" checked data-c-decision /></span>
+                                    <i class="ki-outline ki-check-circle fs-2x text-success me-3"></i><span class="fw-bold text-gray-800 fs-6">@T["I give my consent"]</span></label></div>
+                                <div class="col-md-6"><label class="hp-choice hp-choice-danger d-flex align-items-center border border-dashed border-gray-300 rounded p-4 h-100"><span class="form-check form-check-custom form-check-solid me-3"><input class="form-check-input" type="radio" name="cDecision" value="Refused" data-c-decision /></span>
+                                    <i class="ki-outline ki-cross-circle fs-2x text-danger me-3"></i><span class="fw-bold text-gray-800 fs-6">@T["I refuse, having been told the risks of refusing"]</span></label></div>
                             </div>
-                            <div class="d-flex flex-stack mb-2"><span class="fw-bold text-gray-900">@T["Signature"]</span>
-                                <button type="button" class="btn btn-sm btn-light" data-c-clear><i class="ki-outline ki-arrows-circle fs-5"></i>@T["Clear"]</button></div>
                             <canvas class="hp-sign-pad" data-c-pad></canvas>
-                            <div class="text-muted fs-8 mt-2">@T["Sign with a finger, a stylus or the mouse. The signature is kept with the consent and its fingerprint is printed on it."]</div>
                             <div class="d-flex justify-content-end mt-6"><button type="button" class="btn btn-primary" data-c-sign><i class="ki-outline ki-check fs-4"></i>@T["Record the signed consent"]</button></div>
                         </div>
                     </div>

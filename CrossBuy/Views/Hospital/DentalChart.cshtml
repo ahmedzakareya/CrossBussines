@@ -74,28 +74,39 @@
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
         @if (m == null)
         {
-            <div class="card"><div class="card-body py-15"><div class="mw-500px mx-auto text-center">
-                <i class="ki-outline ki-emoji-happy fs-3x text-gray-300 d-block mb-4"></i>
-                <div class="fw-bold fs-5 text-gray-900 mb-2">@T["Open a patient's chart"]</div>
-                <div class="text-muted fs-7 mb-6">@T["Search by name, file number or phone"]</div>
+            @* H127: the empty state of the theme — an icon in a light symbol, a title over a muted line, then the picker *@
+            <div class="card card-flush"><div class="card-body py-15"><div class="mw-500px mx-auto text-center">
+                <div class="symbol symbol-75px symbol-circle mb-6"><span class="symbol-label bg-light-primary"><i class="ki-outline ki-emoji-happy fs-3x text-primary"></i></span></div>
+                <h2 class="fw-bold text-gray-900 mb-2">@T["Open a patient's chart"]</h2>
+                <div class="text-gray-500 fw-semibold fs-6 mb-8">@T["Search by name, file number or phone"]</div>
                 <select class="form-select form-select-solid" data-dn-patient data-person-select data-person-ajax="@Url.Action("SearchDentalPatients")" data-searching="@T["Searching…"]" data-no-results="@T["No patient matches"]" data-placeholder="@T["Patient"]"><option value=""></option></select>
             </div></div></div>
         }
         else
         {
             var p = m.Patient;
-            <div class="card mb-5"><div class="card-body d-flex flex-wrap align-items-center gap-5 py-6">
-                <div class="d-flex align-items-center gap-4">
-                    <div class="symbol symbol-55px symbol-circle flex-shrink-0">@if (p.PhotoPath != null) {<img src="@p.PhotoPath" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(p.NameEn)" />} else {<span class="symbol-label fw-bold hp-initials">@HospitalUi.Initials(p.NameEn)</span>}</div>
-                    <div><a href="@Url.Action("Patient", new { id = p.ID })" class="fw-bold fs-5 text-gray-900 text-hover-primary">@DisplayName.Of(p.Name, p.NameEn)</a>
-                        <div class="text-muted fs-7"><span class="hp-num">@p.Mrn</span>@if (age != null) {<text> · </text><span class="hp-num">@age</span> @T["y"]} · @(p.Sex == HospitalPatientSex.Male ? T["Male"] : T["Female"])</div></div>
-                </div>
-                @* the medical alerts a dentist must see before any procedure, from the patient's own record *@
-                <div class="ms-auto d-flex flex-wrap gap-2">
-                    @foreach (var a in Lines(p.Allergies)) { <span class="badge badge-danger fs-8">@T["Allergy:"] @a</span> }
-                    @foreach (var c in Lines(p.ChronicConditions)) { <span class="badge badge-primary fs-8">@c</span> }
-                    @if (age is < 18) { <span class="badge badge-primary fs-8">@T["Child — guardian attends"]</span> }
-                    <span class="badge badge-info fs-8">@(m.Payer == null ? T["Self-pay"].Value : DisplayName.Of(m.Payer, m.PayerEn ?? m.Payer))</span>
+            @* H127: the profile header — demo39 account/overview (photo · name and file number · details with icons · the alerts) *@
+            <div class="card mb-5"><div class="card-body pt-8 pb-5">
+                <div class="d-flex flex-wrap flex-sm-nowrap">
+                    <div class="me-7 mb-3">
+                        <a href="@Url.Action("Patient", new { id = p.ID })" class="symbol symbol-75px symbol-lg-90px symbol-circle symbol-fixed">@if (p.PhotoPath != null) {<img src="@p.PhotoPath" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(p.NameEn)" />} else {<span class="symbol-label fs-2 fw-bold hp-initials">@HospitalUi.Initials(p.NameEn)</span>}</a>
+                    </div>
+                    <div class="flex-grow-1 min-w-0">
+                        <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                            <a href="@Url.Action("Patient", new { id = p.ID })" class="text-gray-900 text-hover-primary fs-2 fw-bold me-1">@DisplayName.Of(p.Name, p.NameEn)</a>
+                            <span class="badge badge-light-primary fw-bold fs-7 hp-num" dir="ltr">@p.Mrn</span>
+                        </div>
+                        <div class="d-flex flex-wrap fw-semibold fs-6 mb-3 pe-2">
+                            <span class="d-flex align-items-center text-gray-500 me-5 mb-2"><i class="ki-outline ki-profile-circle fs-4 me-1"></i>@if (age != null) {<span class="hp-num">@age</span><text>&nbsp;@T["y"]&nbsp;·&nbsp;</text>}@(p.Sex == HospitalPatientSex.Male ? T["Male"] : T["Female"])</span>
+                            <span class="d-flex align-items-center text-gray-500 me-5 mb-2"><i class="ki-outline ki-shield-tick fs-4 me-1"></i>@(m.Payer == null ? T["Self-pay"].Value : DisplayName.Of(m.Payer, m.PayerEn ?? m.Payer))</span>
+                        </div>
+                        @* the medical alerts a dentist must see before any procedure, from the patient's own record *@
+                        <div class="d-flex flex-wrap gap-2">
+                            @foreach (var a in Lines(p.Allergies)) { <span class="badge badge-light-danger fw-bold fs-7"><i class="ki-outline ki-shield-cross fs-7 text-danger me-1"></i>@T["Allergy:"] <bdi>@a</bdi></span> }
+                            @foreach (var c in Lines(p.ChronicConditions)) { <span class="badge badge-light-primary fw-bold fs-7"><i class="ki-outline ki-pulse fs-7 text-primary me-1"></i><bdi>@c</bdi></span> }
+                            @if (age is < 18) { <span class="badge badge-light-info fw-bold fs-7"><i class="ki-outline ki-people fs-7 text-info me-1"></i>@T["Child — guardian attends"]</span> }
+                        </div>
+                    </div>
                 </div>
             </div></div>
 
@@ -108,67 +119,73 @@
 
 @if (m != null && canConsult)
 {
-    <div class="modal fade" id="markModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-650px"><div class="modal-content">
-        <div class="modal-header"><h2 class="fw-bold m-0 fs-4">@T["Procedure on a tooth"]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
-        <div class="modal-body py-6 px-lg-10">
-            <div class="d-flex gap-2 mb-5">
+    <div class="modal fade" id="markModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-650px"><div class="modal-content rounded">
+        @* H127: the theme's form modals (demo39 utilities/modals/forms/new-target) *@
+        <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-10">
+            <div class="mb-8 text-center"><h1 class="mb-3">@T["Procedure on a tooth"]</h1><div class="text-muted fw-semibold fs-5"><bdi>@DisplayName.Of(m.Patient.Name, m.Patient.NameEn)</bdi> · <bdi class="hp-num">@m.Patient.Mrn</bdi></div></div>
+            <div class="d-flex gap-2 mb-8">
                 @foreach (var k in new[] { "plan", "cond", "exist", "state" })
                 {
-                    <label class="flex-fill"><input type="radio" class="btn-check" name="mk-kind" value="@k" @(k == "plan" ? "checked" : "") /><span class="btn btn-sm btn-light w-100 fw-bold">@T["mk:" + k]</span></label>
+                    <label class="flex-fill"><input type="radio" class="btn-check" name="mk-kind" value="@k" @(k == "plan" ? "checked" : "") /><span class="btn btn-sm btn-light btn-active-light-primary w-100 fw-bold">@T["mk:" + k]</span></label>
                 }
             </div>
-            <div class="row g-4">
-                <div class="col-md-4"><label class="form-label">@T["Tooth"]</label><select class="form-select form-select-solid" data-mk="tooth"></select></div>
-                <div class="col-md-8" data-mk-for="plan"><label class="form-label required">@T["Plan phase"]</label>
+            <div class="row g-6">
+                <div class="col-md-4"><label class="d-block fs-6 fw-semibold mb-2">@T["Tooth"]</label><select class="form-select form-select-solid" data-mk="tooth"></select></div>
+                <div class="col-md-8" data-mk-for="plan"><label class="d-block fs-6 fw-semibold mb-2 required">@T["Plan phase"]</label>
                     <select class="form-select form-select-solid" data-mk="phase">
                         @foreach (var op in m.OpenPlans) { foreach (var ph in op.PendingPhases) { <option value="@ph.Id">@op.PlanNo · @T["Phase"] @ph.Seq — @DisplayName.Of(ph.Title, ph.TitleEn)</option> } }
                         <option value="new">@T["A new treatment plan…"]</option>
                     </select></div>
-                <div class="col-12" data-mk-for="plan"><label class="form-label required">@T["Procedure"]</label>
+                <div class="col-12" data-mk-for="plan"><label class="d-block fs-6 fw-semibold mb-2 required">@T["Procedure"]</label>
                     <select class="form-select form-select-solid" data-mk="service" data-control="select2" data-dropdown-parent="#markModal">
                         @foreach (var pr in procs) { <option value="@pr.Procedure.ServiceId" data-surf="@pr.Procedure.Surfaces" data-work="@pr.Procedure.ToothWork" data-tooth="@(pr.Procedure.NeedsTooth ? "1" : "0")">@pr.Code — @DisplayName.Of(pr.Name, pr.NameEn)</option> }
                     </select></div>
-                <div class="col-md-6" data-mk-for="exist"><label class="form-label">@T["Whole tooth"]</label>
+                <div class="col-md-6" data-mk-for="exist"><label class="d-block fs-6 fw-semibold mb-2">@T["Whole tooth"]</label>
                     <select class="form-select form-select-solid" data-mk="work"><option value="">@T["— on surfaces —"]</option>@foreach (var w in new[] { HospitalToothWork.Crown, HospitalToothWork.RootCanal, HospitalToothWork.Implant }) { <option value="@w">@T["work:" + w]</option> }</select></div>
-                <div class="col-md-6" data-mk-for="state"><label class="form-label">@T["State of the tooth"]</label>
+                <div class="col-md-6" data-mk-for="state"><label class="d-block fs-6 fw-semibold mb-2">@T["State of the tooth"]</label>
                     <select class="form-select form-select-solid" data-mk="state"><option value="Missing">@T["Missing"]</option><option value="Impacted">@T["Impacted"]</option></select></div>
                 <div class="col-12" data-mk-surf-wrap>
-                    <label class="form-label">@T["Surfaces"] <span class="text-muted fs-8">@T["click them on the top view"]</span></label>
+                    <label class="d-block fs-6 fw-semibold mb-2">@T["Surfaces"] <span class="text-muted fs-8">@T["click them on the top view"]</span></label>
                     <div class="d-flex align-items-center gap-5"><div class="dn-pick" data-mk-pick></div><div><div class="fs-2 fw-bold hp-num text-gray-900" data-mk-surf-text>—</div><div class="text-muted fs-8" data-mk-surf-need></div></div></div>
                 </div>
-                <div class="col-md-6" data-mk-for="plan"><label class="form-label">@T["Done by"] <span class="text-muted fs-8">@T["when not the plan's dentist"]</span></label>
+                <div class="col-md-6" data-mk-for="plan"><label class="d-block fs-6 fw-semibold mb-2">@T["Done by"] <span class="text-muted fs-8">@T["when not the plan's dentist"]</span></label>
                     <select class="form-select form-select-solid" data-mk="provider" data-person-select data-allow-clear data-placeholder="@T["The plan's dentist"]"><option value=""></option>@foreach (var d in dentists) { <option value="@d.Id" data-photo="@d.Photo" data-initials="@HospitalUi.Initials(d.NameEn)">@DisplayName.Of(d.Name, d.NameEn)</option> }</select></div>
                 @* H33: the patient reads the note in their language — both are written; English is optional *@
-                <div class="col-md-6" data-mk-for="cond exist state"><label class="form-label">@T["Note"] — @T["Arabic"]</label><input class="form-control form-control-solid" maxlength="300" dir="auto" data-mk="note" /></div>
-                <div class="col-md-6" data-mk-for="cond exist state"><label class="form-label">@T["Note"] — @T["English"]</label><input class="form-control form-control-solid" maxlength="300" dir="auto" data-mk="noteEn" /></div>
+                <div class="col-md-6" data-mk-for="cond exist state"><label class="d-block fs-6 fw-semibold mb-2">@T["Note"] — @T["Arabic"]</label><input class="form-control form-control-solid" maxlength="300" dir="auto" data-mk="note" /></div>
+                <div class="col-md-6" data-mk-for="cond exist state"><label class="d-block fs-6 fw-semibold mb-2">@T["Note"] — @T["English"]</label><input class="form-control form-control-solid" maxlength="300" dir="auto" data-mk="noteEn" /></div>
             </div>
+            <div class="text-center pt-10"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-mk-save>@T["Record"]</button></div>
         </div>
-        <div class="modal-footer flex-center"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-mk-save>@T["Record"]</button></div>
     </div></div></div>
 
-    <div class="modal fade" id="planModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-550px"><div class="modal-content">
-        <div class="modal-header"><h2 class="fw-bold m-0 fs-4">@T["New treatment plan"]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
-        <div class="modal-body py-6 px-lg-10"><div class="row g-4">
-            <div class="col-12"><label class="form-label">@T["Dentist"]</label>
+    <div class="modal fade" id="planModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-550px"><div class="modal-content rounded">
+        <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-10">
+            <div class="mb-10 text-center"><h1 class="mb-3">@T["New treatment plan"]</h1><div class="text-muted fw-semibold fs-5"><bdi>@DisplayName.Of(m.Patient.Name, m.Patient.NameEn)</bdi> · <bdi class="hp-num">@m.Patient.Mrn</bdi></div></div>
+            <div class="row g-6">
+            <div class="col-12"><label class="d-block fs-6 fw-semibold mb-2">@T["Dentist"]</label>
                 <select class="form-select form-select-solid" data-pl="dentist" data-person-select data-allow-clear data-placeholder="@T["Dentist"]"><option value=""></option>@foreach (var d in dentists) { <option value="@d.Id" data-photo="@d.Photo" data-initials="@HospitalUi.Initials(d.NameEn)">@DisplayName.Of(d.Name, d.NameEn)</option> }</select></div>
-            <div class="col-md-6"><label class="form-label required">@T["First phase (Arabic)"]</label><input class="form-control form-control-solid" maxlength="150" dir="rtl" data-pl="title" placeholder="عاجل — الألم والعدوى" /></div>
-            <div class="col-md-6"><label class="form-label required">@T["First phase (English)"]</label><input class="form-control form-control-solid" maxlength="150" dir="ltr" data-pl="titleEn" placeholder="Urgent — pain and infection" /></div>
-        </div></div>
-        <div class="modal-footer flex-center"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-pl-save>@T["Open the plan"]</button></div>
+            <div class="col-md-6"><label class="d-block fs-6 fw-semibold mb-2 required">@T["First phase (Arabic)"]</label><input class="form-control form-control-solid" maxlength="150" dir="rtl" data-pl="title" placeholder="عاجل — الألم والعدوى" /></div>
+            <div class="col-md-6"><label class="d-block fs-6 fw-semibold mb-2 required">@T["First phase (English)"]</label><input class="form-control form-control-solid" maxlength="150" dir="ltr" data-pl="titleEn" placeholder="Urgent — pain and infection" /></div>
+            </div>
+            <div class="text-center pt-10"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-pl-save>@T["Open the plan"]</button></div>
+        </div>
     </div></div></div>
 
-    <div class="modal fade" id="perioModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered modal-xl modal-fullscreen-lg-down"><div class="modal-content">
-        <div class="modal-header"><h2 class="fw-bold m-0 fs-4">@T["Record a perio exam"]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
-        <div class="modal-body py-6 px-lg-10">
-            <div class="row g-4 mb-5">
-                <div class="col-sm-5 col-lg-3"><label class="form-label required">@T["Date"]</label><input type="date" class="form-control form-control-solid" data-pe="date" value="@DateTime.Now.ToString("yyyy-MM-dd")" max="@DateTime.Now.ToString("yyyy-MM-dd")" /></div>
-                <div class="col-sm-7 col-lg-5"><label class="form-label">@T["Examiner"]</label>
+    <div class="modal fade" id="perioModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered modal-xl modal-fullscreen-lg-down"><div class="modal-content rounded">
+        <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-10">
+            <div class="mb-8 text-center"><h1 class="mb-3">@T["Record a perio exam"]</h1><div class="text-muted fw-semibold fs-5"><bdi>@DisplayName.Of(m.Patient.Name, m.Patient.NameEn)</bdi> · <bdi class="hp-num">@m.Patient.Mrn</bdi></div></div>
+            <div class="row g-6 mb-8">
+                <div class="col-sm-5 col-lg-3"><label class="d-block fs-6 fw-semibold mb-2 required">@T["Date"]</label><input type="date" class="form-control form-control-solid" data-pe="date" value="@DateTime.Now.ToString("yyyy-MM-dd")" max="@DateTime.Now.ToString("yyyy-MM-dd")" /></div>
+                <div class="col-sm-7 col-lg-5"><label class="d-block fs-6 fw-semibold mb-2">@T["Examiner"]</label>
                     <select class="form-select form-select-solid" data-pe="examiner" data-person-select data-allow-clear data-placeholder="@T["Examiner"]"><option value=""></option>@foreach (var d in dentists) { <option value="@d.Id" data-photo="@d.Photo" data-initials="@HospitalUi.Initials(d.NameEn)">@DisplayName.Of(d.Name, d.NameEn)</option> }</select></div>
                 <div class="col-lg-4 d-flex align-items-end"><div class="text-muted fs-8">@T["Leave a tooth's depths empty to skip it. Opens with the last exam's values."]</div></div>
             </div>
             <div id="pe_grid"></div>
+            <div class="text-center pt-6"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-pe-save>@T["Save the exam"]</button></div>
         </div>
-        <div class="modal-footer flex-center"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-pe-save>@T["Save the exam"]</button></div>
     </div></div></div>
 }
 

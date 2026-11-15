@@ -3,6 +3,7 @@
 @using CrossBuy.Models.Context.Hospital
 @model IReadOnlyList<HospitalCharityRow>
 @inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@* H127 — the rows of Charity's table widget (demo39 widgets/tables): patient · request · fund · amount · state · actions *@
 @{
     bool canManage = ViewBag.CanManage == true; int? me = ViewBag.Me as int?; string? cur = ViewBag.Currency as string;
     var inv = System.Globalization.CultureInfo.InvariantCulture;
@@ -10,28 +11,29 @@
 @foreach (var r in Model)
 {
     var g = r.Grant;
-    string badge = g.Status == HospitalCharityStatus.Approved ? "badge-light-success" : g.Status == HospitalCharityStatus.Refused ? "badge-light-danger" : "badge-light-primary";
+    string tone = g.Status == HospitalCharityStatus.Approved ? "success" : g.Status == HospitalCharityStatus.Refused ? "danger" : "primary";
     <tr data-charity-row="@g.ID">
-        <td><span class="badge hp-code fs-8 hp-num">@g.GrantNo</span><div class="text-muted fs-9 mt-1 hp-num" dir="ltr">@HospitalNursingService.UtcToWard(g.RequestedAt).ToString("yyyy-MM-dd HH:mm", inv)</div></td>
-        <td><div class="d-flex align-items-center gap-3">
-            <div class="symbol symbol-35px symbol-circle flex-shrink-0">@if (r.PatientPhoto != null) {<img src="@r.PatientPhoto" alt="" style="object-fit:cover" />} else {<span class="symbol-label fw-bold hp-initials fs-8">@HospitalUi.Initials(r.PatientNameEn)</span>}</div>
-            <div><div class="fw-bold text-gray-900">@DisplayName.Of(r.PatientName, r.PatientNameEn)</div><div class="text-muted fs-8 hp-num">@r.Mrn · <a href="@Url.Action("Bill", new { id = g.BillId })">@r.BillNo</a></div></div></div></td>
-        <td>@DisplayName.Of(r.Fund, r.FundEn)<div class="text-muted fs-8" dir="auto">@g.Reason</div></td>
-        <td class="text-end fw-bold hp-num">@g.Amount.ToString("N3", inv) <span class="text-muted fs-8">@cur</span></td>
-        <td><span class="badge @badge">@T["ch:" + g.Status]</span>
-            <div class="text-muted fs-9 mt-1">@T["Asked by"] @DisplayName.Of(r.RequestedBy, r.RequestedByEn)@if (r.DecidedBy != null) {<br />@T["Decided by"] @DisplayName.Of(r.DecidedBy, r.DecidedByEn ?? r.DecidedBy)}</div>
-            @if (g.DecisionNote != null) {<div class="text-muted fs-9" dir="auto">@g.DecisionNote</div>}</td>
-        <td class="text-end">
+        <td class="ps-4"><div class="d-flex align-items-center">
+            <div class="symbol symbol-45px symbol-circle flex-shrink-0 me-4">@if (r.PatientPhoto != null) {<img src="@r.PatientPhoto" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(r.PatientNameEn)" />} else {<span class="symbol-label bg-light-primary text-primary fw-bold fs-7">@HospitalUi.Initials(r.PatientNameEn)</span>}</div>
+            <div class="d-flex flex-column"><span class="text-gray-900 fw-bold fs-6"><bdi>@DisplayName.Of(r.PatientName, r.PatientNameEn)</bdi></span>
+                <span class="text-muted fw-semibold d-block fs-7"><bdi class="hp-num">@r.Mrn</bdi> · <a href="@Url.Action("Bill", new { id = g.BillId })" class="text-muted text-hover-primary"><bdi class="hp-num">@r.BillNo</bdi></a></span></div></div></td>
+        <td><bdi class="text-gray-900 fw-bold d-block fs-6 hp-num">@g.GrantNo</bdi><span class="text-muted fw-semibold d-block fs-7 hp-num" dir="ltr">@HospitalNursingService.UtcToWard(g.RequestedAt).ToString("yyyy-MM-dd HH:mm", inv)</span></td>
+        <td><span class="text-gray-800 fw-bold d-block fs-6"><bdi>@DisplayName.Of(r.Fund, r.FundEn)</bdi></span><span class="text-muted fw-semibold d-block fs-7" dir="auto">@g.Reason</span></td>
+        <td class="text-end text-nowrap"><span class="text-gray-900 fw-bold fs-6 hp-num" dir="ltr">@g.Amount.ToString("N3", inv)</span>&nbsp;<span class="text-muted fs-8">@cur</span></td>
+        <td><span class="badge badge-light-@tone fs-7 fw-bold">@T["ch:" + g.Status]</span>
+            <div class="text-muted fw-semibold fs-8 mt-1">@T["Asked by"] <bdi>@DisplayName.Of(r.RequestedBy, r.RequestedByEn)</bdi>@if (r.DecidedBy != null) {<br />@T["Decided by"] <bdi>@DisplayName.Of(r.DecidedBy, r.DecidedByEn ?? r.DecidedBy)</bdi>}</div>
+            @if (g.DecisionNote != null) {<div class="text-muted fs-8" dir="auto">@g.DecisionNote</div>}</td>
+        <td class="text-end pe-4">
             @if (g.Status == HospitalCharityStatus.Requested && canManage && me != g.RequestedByEmployeeId)
             {
                 <div class="d-flex justify-content-end gap-2">
-                    <button type="button" class="btn btn-sm btn-primary" data-charity-decide="@g.ID" data-approve="1" data-ask="@string.Format(T["Approve waiver {0} of {1} {2}? It posts to the fund and the patient owes that much less."].Value, g.GrantNo, g.Amount.ToString("N3", inv), cur)">@T["Approve"]</button>
-                    <button type="button" class="btn btn-sm btn-light-danger" data-charity-decide="@g.ID" data-approve="0" data-ask="@string.Format(T["Why is waiver {0} refused?"].Value, g.GrantNo)">@T["Refuse"]</button>
+                    <button type="button" class="btn btn-sm btn-icon btn-light-primary" title="@T["Approve"]" data-charity-decide="@g.ID" data-approve="1" data-ask="@string.Format(T["Approve waiver {0} of {1} {2}? It posts to the fund and the patient owes that much less."].Value, g.GrantNo, g.Amount.ToString("N3", inv), cur)"><i class="ki-outline ki-check fs-3"></i></button>
+                    <button type="button" class="btn btn-sm btn-icon btn-light-danger" title="@T["Refuse"]" data-charity-decide="@g.ID" data-approve="0" data-ask="@string.Format(T["Why is waiver {0} refused?"].Value, g.GrantNo)"><i class="ki-outline ki-cross fs-3"></i></button>
                 </div>
             }
             else if (g.Status == HospitalCharityStatus.Requested && me == g.RequestedByEmployeeId)
             {
-                <span class="text-muted fs-8">@T["Waiting for another approver"]</span>
+                <span class="badge badge-light fs-8 fw-semibold text-gray-600">@T["Waiting for another approver"]</span>
             }
         </td>
     </tr>

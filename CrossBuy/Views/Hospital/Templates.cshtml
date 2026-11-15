@@ -41,26 +41,33 @@
         }
     </div></div>
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
-        @if (!Model.Ready) { <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice"><div class="fs-6 text-gray-700">@T[HospitalClinicalContentService.NoTables]</div></div> }
+        @if (!Model.Ready) { <div class="notice d-flex bg-light-danger rounded border-danger border border-dashed p-5 mb-5"><i class="ki-outline ki-information fs-2tx text-danger me-4"></i><div class="fs-6 text-gray-700 fw-semibold align-self-center">@T[HospitalClinicalContentService.NoTables]</div></div> }
         else
         {
-            <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice">
-                <span class="symbol symbol-45px me-5 flex-shrink-0"><span class="symbol-label"><i class="ki-outline ki-information-5 fs-2x text-white"></i></span></span>
+            @* H127: the theme's notice, card headers (title over a muted line + toolbar), list rows and table widget (demo39) *@
+            <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-5 mb-5">
+                <i class="ki-outline ki-information fs-2tx text-primary me-4"></i>
                 <div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@T["Clinicians build their templates without code"]</h4><div class="fs-6 text-gray-700">@T["Every field comes from the dictionary; publishing makes a new version and never changes an old visit."]</div></div>
             </div>
             <div class="row g-5">
                 <div class="col-xl-3">
-                    <div class="card mb-5 mb-xl-8">
-                        <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Templates"]</span></div>
-                            @if (canManage) {<div class="card-toolbar"><button type="button" class="btn btn-sm btn-icon btn-light-primary" data-modal="tplModal" title="@T["New template"]"><i class="ki-outline ki-plus fs-4"></i></button></div>}</div>
-                        <div class="card-body pt-4">
-                            @if (Model.Templates.Count == 0) {<div class="text-muted fs-7">@T["No template yet."]</div>}
+                    <div class="card card-flush mb-5 mb-xl-8">
+                        <div class="card-header pt-5">
+                            <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Templates"]</span><span class="text-gray-500 mt-1 fw-semibold fs-7 hp-num">@Model.Templates.Count</span></h3>
+                            @if (canManage) {<div class="card-toolbar"><button type="button" class="btn btn-sm btn-icon btn-light-primary" data-modal="tplModal" title="@T["New template"]" data-bs-toggle="tooltip"><i class="ki-outline ki-plus fs-3"></i></button></div>}</div>
+                        <div class="card-body pt-2">
+                            @if (Model.Templates.Count == 0) {<div class="text-center py-10"><i class="ki-outline ki-notepad-edit fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-bold text-gray-700">@T["No template yet."]</div></div>}
                             @foreach (var c in Model.Templates)
                             {
                                 bool pub = c.Current?.Status == HospitalTemplateStatus.Published;
                                 <a href="@Url3(c.Template.ID, null, null)" class="hp-tf d-block @(c.Template.ID == sel?.Template.ID ? "on" : "")">
-                                    <div class="d-flex flex-stack gap-2"><span class="fw-bold text-gray-900">@Nm(c.Template.Name, c.Template.NameEn)</span><span class="badge badge-light-@(pub ? "success" : "secondary") fw-bold fs-8">@(pub ? T["Published"] : T["Draft"])</span></div>
-                                    <div class="text-muted fs-8">@(c.Clinic == null ? T["All clinics"].Value : Nm(c.Clinic, c.ClinicEn)) · <bdi class="hp-num">v@(c.Current?.Version)</bdi> · @T["{0} visits", c.Visits]</div>
+                                    <div class="d-flex align-items-center">
+                                        <div class="symbol symbol-35px me-3 flex-shrink-0"><span class="symbol-label bg-light-@(pub ? "success" : "primary")"><i class="ki-outline ki-notepad-edit fs-3 text-@(pub ? "success" : "primary")"></i></span></div>
+                                        <div class="d-flex flex-column flex-grow-1 min-w-0">
+                                            <div class="d-flex flex-stack gap-2"><span class="text-gray-900 fw-bold fs-6 text-truncate">@Nm(c.Template.Name, c.Template.NameEn)</span><span class="badge badge-light-@(pub ? "success" : "secondary") fw-bold fs-8">@(pub ? T["Published"] : T["Draft"])</span></div>
+                                            <span class="text-gray-500 fw-semibold fs-7">@(c.Clinic == null ? T["All clinics"].Value : Nm(c.Clinic, c.ClinicEn)) · <bdi class="hp-num" dir="ltr">v@(c.Current?.Version)</bdi> · @T["{0} visits", c.Visits]</span>
+                                        </div>
+                                    </div>
                                 </a>
                             }
                         </div>
@@ -70,23 +77,23 @@
                 <div class="col-xl-5">
                     @if (sel != null && ver != null)
                     {
-                        <div class="card mb-5 mb-xl-8">
-                            <div class="card-header border-0 pt-6">
-                                <div class="card-title align-items-start flex-column m-0">
-                                    <span class="card-label fw-bold text-gray-900 fs-4">@Nm(sel.Template.Name, sel.Template.NameEn) <span class="badge badge-light-@(draft ? "secondary" : ver.Status == HospitalTemplateStatus.Published ? "success" : "secondary") fs-8 ms-1 hp-num">v@(ver.Version)</span>@if (ver.Status == HospitalTemplateStatus.Retired) {<span class="badge badge-light fs-8 ms-1">@T["Retired"]</span>}</span>
-                                    <span class="text-muted mt-1 fw-semibold fs-7">@(editable ? T["Drag a field from the dictionary into a section"] : T["A published version cannot change: make a new version"])</span>
+                        <div class="card card-flush mb-5 mb-xl-8">
+                            <div class="card-header pt-5">
+                                <div class="card-title align-items-start flex-column">
+                                    <span class="card-label fw-bold text-gray-800">@Nm(sel.Template.Name, sel.Template.NameEn) <span class="badge badge-light-@(draft ? "secondary" : ver.Status == HospitalTemplateStatus.Published ? "success" : "secondary") fs-8 ms-1 hp-num">v@(ver.Version)</span>@if (ver.Status == HospitalTemplateStatus.Retired) {<span class="badge badge-light fs-8 ms-1">@T["Retired"]</span>}</span>
+                                    <span class="text-gray-500 mt-1 fw-semibold fs-7">@(editable ? T["Drag a field from the dictionary into a section"] : T["A published version cannot change: make a new version"])</span>
                                 </div>
                                 <div class="card-toolbar gap-2">
                                     @if (editable) {<button type="button" class="btn btn-sm btn-light-primary" data-modal="addModal"><i class="ki-outline ki-plus fs-4"></i>@T["Add a field"]</button>}
                                     <button type="button" class="btn btn-sm btn-light-primary" data-modal="prevModal"><i class="ki-outline ki-eye fs-4"></i>@T["Preview"]</button>
                                 </div>
                             </div>
-                            <div class="card-body pt-4" id="canvas">
-                                @if (Model.Fields.Count == 0) {<div class="text-muted fs-7 py-6 text-center">@T["No field yet: add the first one from the dictionary."]</div>}
+                            <div class="card-body pt-2" id="canvas">
+                                @if (Model.Fields.Count == 0) {<div class="text-center py-10"><i class="ki-outline ki-element-plus fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-bold text-gray-700">@T["No field yet: add the first one from the dictionary."]</div></div>}
                                 @foreach (var s in sections)
                                 {
-                                    <div class="mb-4" data-section="@s.Key">
-                                        <div class="fw-bold text-gray-500 fs-8 text-uppercase mb-2">@Nm(s.Key, s.First().Field.SectionEn)</div>
+                                    <div class="mb-5" data-section="@s.Key">
+                                        <div class="d-flex align-items-center mb-3"><span class="bullet bullet-vertical h-20px bg-primary me-3"></span><span class="text-gray-800 fw-bold fs-6">@Nm(s.Key, s.First().Field.SectionEn)</span></div>
                                         @foreach (var fv in s)
                                         {
                                             var f = fv.Field; var c = fv.Concept;
@@ -95,10 +102,10 @@
                                             if (string.IsNullOrWhiteSpace(sub) && fv.ShowWhen != null) { var dep = Model.Fields.First(x => x.Field.ID == fv.ShowWhen.ID); sub = string.Format(T["Shown when {0} > {1}"].Value, isAr ? dep.Field.Label ?? dep.Concept.Name : dep.Field.LabelEn ?? dep.Concept.NameEn, D(f.ShowWhenAbove)); }
                                             <a href="@Url3(sel.Template.ID, ver.ID, f.ID)" class="hp-tf d-block @(f.ID == fld?.Field.ID ? "on" : "")" data-field="@f.ID" draggable="@(editable ? "true" : "false")">
                                                 <div class="d-flex flex-stack flex-wrap gap-2">
-                                                    <span class="fw-semibold text-gray-900">@(isAr ? f.Label ?? c.Name : f.LabelEn ?? c.NameEn)@if (f.Required) {<span class="text-danger"> *</span>}</span>
+                                                    <span class="fw-bold text-gray-900 fs-6">@(isAr ? f.Label ?? c.Name : f.LabelEn ?? c.NameEn)@if (f.Required) {<span class="text-danger"> *</span>}</span>
                                                     <span class="d-flex gap-1"><span class="badge badge-light-@(calc ? "primary" : "secondary") fw-bold fs-8">@T["ctype:" + ty]</span>@if (c.HasLaterality) {<span class="badge badge-light-info fw-bold fs-8">@T["R/L"]</span>}@if (f.ShowWhenFieldId != null) {<span class="badge badge-light-primary fw-bold fs-8">@T["Conditional"]</span>}</span>
                                                 </div>
-                                                <div class="text-muted fs-8 mt-1"><span class="badge hp-code fs-9 hp-num me-1">@(c.CodeSystem == HospitalCodeSystem.Snomed ? "SNOMED " : "")@c.Code</span>
+                                                <div class="text-gray-500 fw-semibold fs-7 mt-1"><span class="badge badge-light-primary fs-8 fw-bold hp-num me-1" dir="ltr">@(c.CodeSystem == HospitalCodeSystem.Snomed ? "SNOMED " : "")@c.Code</span>
                                                     @sub
                                                 </div>
                                             </a>
@@ -110,7 +117,7 @@
                     }
                     else
                     {
-                        <div class="card"><div class="card-body text-muted fs-7 py-10 text-center">@T["No template yet."]</div></div>
+                        <div class="card card-flush"><div class="card-body"><div class="text-center py-10"><i class="ki-outline ki-notepad-edit fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-bold text-gray-700">@T["No template yet."]</div></div></div></div>
                     }
                 </div>
 
@@ -127,32 +134,32 @@
                         // H106: what else the alert does (the rule box reads the same for a published version, which has no inputs)
                         if (f.AlertNotify) rule.Add("AND notify the on-call doctor");
                         if (f.AlertTemplateId is int otid && Model.Templates.FirstOrDefault(x => x.Template.ID == otid) is { } ot) rule.Add($"AND open \"{ot.Template.NameEn}\" on the visit");
-                        <div class="card mb-5 mb-xl-8" id="props" data-id="@f.ID">
-                            <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Field properties"]</span></div></div>
-                            <div class="card-body pt-4"><div class="d-flex flex-column gap-4">
-                                <div><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Concept from the dictionary"]</label><input class="form-control form-control-solid" readonly value="@c.Code — @cname" /></div>
+                        <div class="card card-flush mb-5 mb-xl-8" id="props" data-id="@f.ID">
+                            <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Field properties"]</span><span class="text-gray-500 mt-1 fw-semibold fs-7">@cname</span></h3></div>
+                            <div class="card-body pt-2"><div class="d-flex flex-column gap-5">
+                                <div><label class="fs-6 fw-semibold mb-2">@T["Concept from the dictionary"]</label><input class="form-control form-control-solid" readonly value="@c.Code — @cname" /></div>
                                 @if (editable)
                                 {
                                 <div class="row g-3">
-                                    <div class="col-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Section"]</label><input class="form-control form-control-solid" data-p="section" dir="rtl" maxlength="100" value="@f.Section" @dis /></div>
-                                    <div class="col-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Section in English"]</label><input class="form-control form-control-solid" dir="ltr" data-p="sectionEn" maxlength="100" value="@f.SectionEn" @dis /></div>
-                                    <div class="col-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Question"]</label><input class="form-control form-control-solid" data-p="label" dir="rtl" maxlength="200" value="@f.Label" placeholder="@c.Name" @dis /></div>
-                                    <div class="col-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Question in English"]</label><input class="form-control form-control-solid" dir="ltr" data-p="labelEn" maxlength="200" value="@f.LabelEn" placeholder="@c.NameEn" @dis /></div>
+                                    <div class="col-6"><label class="fs-6 fw-semibold mb-2">@T["Section"]</label><input class="form-control form-control-solid" data-p="section" dir="rtl" maxlength="100" value="@f.Section" @dis /></div>
+                                    <div class="col-6"><label class="fs-6 fw-semibold mb-2">@T["Section in English"]</label><input class="form-control form-control-solid" dir="ltr" data-p="sectionEn" maxlength="100" value="@f.SectionEn" @dis /></div>
+                                    <div class="col-6"><label class="fs-6 fw-semibold mb-2">@T["Question"]</label><input class="form-control form-control-solid" data-p="label" dir="rtl" maxlength="200" value="@f.Label" placeholder="@c.Name" @dis /></div>
+                                    <div class="col-6"><label class="fs-6 fw-semibold mb-2">@T["Question in English"]</label><input class="form-control form-control-solid" dir="ltr" data-p="labelEn" maxlength="200" value="@f.LabelEn" placeholder="@c.NameEn" @dis /></div>
                                 </div>
                                 }
-                                <div><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Value source"]</label>
+                                <div><label class="fs-6 fw-semibold mb-2">@T["Value source"]</label>
                                     <select class="form-select form-select-solid" data-p="valueSource" data-control="none" @dis><option value="LastLab" selected="@(f.ValueSource == HospitalValueSource.LastLab)" disabled="@(c.LabAnalyteCode == null)">@T["Last lab result within {0} days, typed when none", f.LookbackDays ?? 90]</option><option value="Manual" selected="@(f.ValueSource == HospitalValueSource.Manual)">@T["Manual entry"]</option></select>
                                     @if (editable) {<div class="d-flex align-items-center gap-2 mt-2 @(f.ValueSource == HospitalValueSource.LastLab ? "" : "d-none")" data-lookback><span class="fs-8 text-muted">@T["Look back (days)"]</span><input type="number" min="1" max="3650" class="form-control form-control-solid form-control-sm w-100px" dir="ltr" data-p="lookbackDays" value="@(f.LookbackDays ?? 90)" @dis /></div>}</div>
                                 @if (editable) {<div><label class="form-check form-switch form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" data-p="showTrend" checked="@f.ShowTrend" /><span class="form-check-label fs-7">@T["Heads the visit: a figure on top and a trend"]</span></label></div>}
                                 else if (f.ShowTrend) {<div><span class="badge badge-light-primary fw-bold fs-8">@T["Heads the visit: a figure on top and a trend"]</span></div>}
-                                <div><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Required to sign"]</label><select class="form-select form-select-solid" data-p="required" data-control="none" @dis><option value="1" selected="@f.Required">@T["Yes"]</option><option value="0" selected="@(!f.Required)">@T["No"]</option></select></div>
+                                <div><label class="fs-6 fw-semibold mb-2">@T["Required to sign"]</label><select class="form-select form-select-solid" data-p="required" data-control="none" @dis><option value="1" selected="@f.Required">@T["Yes"]</option><option value="0" selected="@(!f.Required)">@T["No"]</option></select></div>
                                 @if (editable)
                                 {
-                                <div><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Shown only when"]</label>
+                                <div><label class="fs-6 fw-semibold mb-2">@T["Shown only when"]</label>
                                     <div class="d-flex gap-2"><select class="form-select form-select-solid" data-p="showWhenFieldId" data-control="none" @dis><option value="">@T["Always shown"]</option>@foreach (var o in Model.Fields.Where(x => x.Field.ID != f.ID && x.Concept.ValueType != HospitalConceptType.Choice)) {<option value="@o.Field.ID" selected="@(o.Field.ID == f.ShowWhenFieldId)">@(isAr ? o.Field.Label ?? o.Concept.Name : o.Field.LabelEn ?? o.Concept.NameEn)</option>}</select>
                                         <span class="align-self-center fs-6">&gt;</span><input type="number" step="any" class="form-control form-control-solid w-100px" dir="ltr" data-p="showWhenAbove" value="@D(f.ShowWhenAbove)" @dis /></div></div>
                                 }
-                                <div><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Alert rule"]</label>
+                                <div><label class="fs-6 fw-semibold mb-2">@T["Alert rule"]</label>
                                     @if (editable)
                                     {
                                     <div class="row g-2">
@@ -175,17 +182,18 @@
                                         <div class="col-12 d-flex align-items-center gap-2"><span class="fs-8 text-muted">@T["Care gap when not recorded in (days)"]</span><input type="number" min="1" max="3650" class="form-control form-control-solid form-control-sm w-100px" dir="ltr" data-p="careGapDays" value="@f.CareGapDays" @dis /></div>
                                     </div>
                                     }
-                                    <div class="rounded bg-light p-3 fs-8 hp-num @(editable ? "mt-2" : "")" dir="ltr">@(rule.Count == 0 ? "—" : string.Join(" · ", rule))</div></div>
+                                    <div class="rounded bg-light-primary text-gray-800 fw-semibold p-4 fs-7 hp-num @(editable ? "mt-3" : "")" dir="ltr">@(rule.Count == 0 ? "—" : string.Join(" · ", rule))</div></div>
                                 @if (editable)
                                 {
                                 <div class="row g-3">
-                                    <div class="col-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Note"]</label><input class="form-control form-control-solid" data-p="note" dir="rtl" maxlength="300" value="@f.Note" @dis /></div>
-                                    <div class="col-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Note in English"]</label><input class="form-control form-control-solid" dir="ltr" data-p="noteEn" maxlength="300" value="@f.NoteEn" @dis /></div>
+                                    <div class="col-6"><label class="fs-6 fw-semibold mb-2">@T["Note"]</label><input class="form-control form-control-solid" data-p="note" dir="rtl" maxlength="300" value="@f.Note" @dis /></div>
+                                    <div class="col-6"><label class="fs-6 fw-semibold mb-2">@T["Note in English"]</label><input class="form-control form-control-solid" dir="ltr" data-p="noteEn" maxlength="300" value="@f.NoteEn" @dis /></div>
                                 </div>
                                 }
-                                <div><div class="fw-semibold fs-7 text-gray-700 mb-2">@T["At sign-off"]</div><div class="fs-8 text-gray-700">@T["The value is stored as its own observation for the patient, so it shows on the {0} trend in every clinic.", cname]</div></div>
+                                <div><div class="fs-6 fw-semibold mb-2">@T["At sign-off"]</div><div class="fs-7 text-gray-600">@T["The value is stored as its own observation for the patient, so it shows on the {0} trend in every clinic.", cname]</div></div>
                                 @if (editable)
                                 {
+                                    <div class="separator separator-dashed"></div>
                                     <div class="d-flex gap-2 justify-content-end"><button type="button" class="btn btn-sm btn-light-danger" data-remove="@f.ID"><i class="ki-outline ki-trash fs-5"></i>@T["Remove"]</button><button type="button" class="btn btn-sm btn-primary" data-saveprops><i class="ki-outline ki-check fs-5"></i>@T["Save"]</button></div>
                                 }
                             </div></div>
@@ -193,15 +201,15 @@
                     }
                     @if (sel != null)
                     {
-                        <div class="card mb-5 mb-xl-8">
-                            <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Versions"]</span></div></div>
-                            <div class="card-body pt-4"><div class="table-responsive"><table class="table align-middle gy-3 mb-0 table-row-dashed fs-7">
-                                <thead><tr class="fw-bold fs-8 text-uppercase text-muted"><th>@T["Version"]</th><th>@T["Published"]</th><th>@T["The change"]</th></tr></thead>
+                        <div class="card card-flush mb-5 mb-xl-8">
+                            <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Versions"]</span><span class="text-gray-500 mt-1 fw-semibold fs-7 hp-num">@Model.Versions.Count</span></h3></div>
+                            <div class="card-body pt-2"><div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
+                                <thead><tr class="fw-bold text-muted bg-light"><th class="ps-4 rounded-start">@T["Version"]</th><th>@T["Published"]</th><th class="pe-4 rounded-end">@T["The change"]</th></tr></thead>
                                 <tbody>
                                     @foreach (var v in Model.Versions)
                                     {
-                                        <tr class="@(v.ID == ver?.ID ? "bg-light-primary" : "")"><td><a href="@Url3(sel.Template.ID, v.ID, null)" class="hp-num fw-bold">v@(v.Version)</a>@if (v.Status == HospitalTemplateStatus.Draft) {<span class="badge badge-light-secondary fs-9 ms-1">@T["Draft"]</span>}</td>
-                                            <td class="text-nowrap"><bdi class="hp-num">@(v.PublishedAt?.ToString("yyyy-MM-dd") ?? "—")</bdi></td><td>@((isAr ? v.ChangeNote : v.ChangeNoteEn ?? v.ChangeNote) ?? "—")</td></tr>
+                                        <tr class="@(v.ID == ver?.ID ? "bg-light-primary" : "")"><td class="ps-4 text-nowrap"><a href="@Url3(sel.Template.ID, v.ID, null)" class="text-gray-900 fw-bold text-hover-primary fs-6 hp-num" dir="ltr">v@(v.Version)</a>@if (v.Status == HospitalTemplateStatus.Draft) {<span class="badge badge-light-secondary fs-8 fw-bold ms-2">@T["Draft"]</span>}</td>
+                                            <td class="text-nowrap"><span class="text-gray-800 fw-semibold fs-7 hp-num" dir="ltr">@(v.PublishedAt?.ToString("yyyy-MM-dd") ?? "—")</span></td><td class="pe-4 text-gray-600 fw-semibold fs-7">@((isAr ? v.ChangeNote : v.ChangeNoteEn ?? v.ChangeNote) ?? "—")</td></tr>
                                     }
                                 </tbody>
                             </table></div></div>
@@ -215,45 +223,53 @@
 
 @if (Model.Ready && canManage)
 {
-    <div class="modal fade" id="tplModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-600px"><div class="modal-content">
-        <div class="modal-header"><h2 class="fw-bold m-0">@T["New template"]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
-        <div class="modal-body py-6 px-lg-10"><div class="row g-4">
-            <div class="col-4"><label class="form-label required">@T["The code"]</label><input type="text" maxlength="20" class="form-control form-control-solid" dir="ltr" data-t="code" placeholder="DM-FU" /></div>
-            <div class="col-8"><label class="form-label">@T["Clinic"]</label><select class="form-select form-select-solid" data-t="departmentId" data-control="none"><option value="">@T["All clinics"]</option>@foreach (var d in Model.Clinics) {<option value="@d.ID">@Nm(d.Name, d.NameEn)</option>}</select></div>
-            <div class="col-6"><label class="form-label required">@T["Name"]</label><input type="text" maxlength="150" class="form-control form-control-solid" data-t="name" dir="rtl" /></div>
-            <div class="col-6"><label class="form-label required">@T["Name in English"]</label><input type="text" maxlength="150" class="form-control form-control-solid" dir="ltr" data-t="nameEn" /></div>
-        </div></div>
-        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-tplsave>@T["Create"]</button></div>
+    <div class="modal fade" id="tplModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-600px"><div class="modal-content rounded">
+        <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-10">
+            <div class="mb-10 text-center"><h1 class="mb-3">@T["New template"]</h1><div class="text-muted fw-semibold fs-5">@T["Clinicians build their templates without code"]</div></div>
+            <div class="row g-6">
+            <div class="col-4"><label class="fs-6 fw-semibold mb-2 form-label required">@T["The code"]</label><input type="text" maxlength="20" class="form-control form-control-solid" dir="ltr" data-t="code" placeholder="DM-FU" /></div>
+            <div class="col-8"><label class="fs-6 fw-semibold mb-2 form-label">@T["Clinic"]</label><select class="form-select form-select-solid" data-t="departmentId" data-control="none"><option value="">@T["All clinics"]</option>@foreach (var d in Model.Clinics) {<option value="@d.ID">@Nm(d.Name, d.NameEn)</option>}</select></div>
+            <div class="col-6"><label class="fs-6 fw-semibold mb-2 form-label required">@T["Name"]</label><input type="text" maxlength="150" class="form-control form-control-solid" data-t="name" dir="rtl" /></div>
+            <div class="col-6"><label class="fs-6 fw-semibold mb-2 form-label required">@T["Name in English"]</label><input type="text" maxlength="150" class="form-control form-control-solid" dir="ltr" data-t="nameEn" /></div>
+            </div>
+            <div class="text-center pt-10"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-tplsave>@T["Create"]</button></div>
+        </div>
     </div></div></div>
 }
 @if (editable)
 {
-    <div class="modal fade" id="addModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-650px"><div class="modal-content">
-        <div class="modal-header"><h2 class="fw-bold m-0">@T["Add a field"]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
-        <div class="modal-body py-6 px-lg-10"><div class="row g-4">
-            <div class="col-12"><label class="form-label required">@T["Concept from the dictionary"]</label><select class="form-select form-select-solid" data-a="conceptId" data-placeholder="@T["Search by name or code…"]"><option></option>@foreach (var c in Model.Concepts.Where(c => c.IsActive && !Model.Fields.Any(f => f.Concept.ID == c.ID))) {<option value="@c.ID">@c.Code — @Nm(c.Name, c.NameEn)</option>}</select></div>
-            <div class="col-6"><label class="form-label required">@T["Section"]</label><input type="text" maxlength="100" class="form-control form-control-solid" data-a="section" dir="rtl" list="secList" value="@(sections.LastOrDefault()?.Key)" /><datalist id="secList">@foreach (var s in sections) {<option value="@s.Key"></option>}</datalist></div>
-            <div class="col-6"><label class="form-label required">@T["Section in English"]</label><input type="text" maxlength="100" class="form-control form-control-solid" dir="ltr" data-a="sectionEn" value="@(sections.LastOrDefault()?.First().Field.SectionEn)" /></div>
+    <div class="modal fade" id="addModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-650px"><div class="modal-content rounded">
+        <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-10">
+            <div class="mb-10 text-center"><h1 class="mb-3">@T["Add a field"]</h1><div class="text-muted fw-semibold fs-5">@T["Every field comes from the dictionary; publishing makes a new version and never changes an old visit."]</div></div>
+            <div class="row g-6">
+            <div class="col-12"><label class="fs-6 fw-semibold mb-2 form-label required">@T["Concept from the dictionary"]</label><select class="form-select form-select-solid" data-a="conceptId" data-placeholder="@T["Search by name or code…"]"><option></option>@foreach (var c in Model.Concepts.Where(c => c.IsActive && !Model.Fields.Any(f => f.Concept.ID == c.ID))) {<option value="@c.ID">@c.Code — @Nm(c.Name, c.NameEn)</option>}</select></div>
+            <div class="col-6"><label class="fs-6 fw-semibold mb-2 form-label required">@T["Section"]</label><input type="text" maxlength="100" class="form-control form-control-solid" data-a="section" dir="rtl" list="secList" value="@(sections.LastOrDefault()?.Key)" /><datalist id="secList">@foreach (var s in sections) {<option value="@s.Key"></option>}</datalist></div>
+            <div class="col-6"><label class="fs-6 fw-semibold mb-2 form-label required">@T["Section in English"]</label><input type="text" maxlength="100" class="form-control form-control-solid" dir="ltr" data-a="sectionEn" value="@(sections.LastOrDefault()?.First().Field.SectionEn)" /></div>
             <div class="col-12"><label class="form-check form-switch form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" data-a="required" /><span class="form-check-label">@T["Required to sign"]</span></label></div>
-        </div></div>
-        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-addsave>@T["Add"]</button></div>
+            </div>
+            <div class="text-center pt-10"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-addsave>@T["Add"]</button></div>
+        </div>
     </div></div></div>
-    <div class="modal fade" id="pubModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-550px"><div class="modal-content">
-        <div class="modal-header"><h2 class="fw-bold m-0">@T["Publish v{0}", ver!.Version]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
-        <div class="modal-body py-6 px-lg-10"><label class="form-label required">@T["What changed in this version"]</label><textarea rows="2" maxlength="300" class="form-control form-control-solid" dir="rtl" id="pubNote"></textarea>
-            <label class="form-label required mt-4">@T["What changed, in English"]</label><textarea rows="2" maxlength="300" class="form-control form-control-solid" dir="ltr" id="pubNoteEn"></textarea>
-            <div class="text-muted fs-8 mt-3">@T["Once published, this version is frozen; visits already taken keep the version they were taken on."]</div></div>
-        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-pubsave>@T["Publish v{0}", ver.Version]</button></div>
+    <div class="modal fade" id="pubModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-550px"><div class="modal-content rounded">
+        <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-10">
+            <div class="mb-10 text-center"><h1 class="mb-3">@T["Publish v{0}", ver!.Version]</h1><div class="text-muted fw-semibold fs-5">@T["Once published, this version is frozen; visits already taken keep the version they were taken on."]</div></div>
+            <label class="fs-6 fw-semibold mb-2 form-label required">@T["What changed in this version"]</label><textarea rows="2" maxlength="300" class="form-control form-control-solid" dir="rtl" id="pubNote"></textarea>
+            <label class="fs-6 fw-semibold mb-2 form-label required mt-4">@T["What changed, in English"]</label><textarea rows="2" maxlength="300" class="form-control form-control-solid" dir="ltr" id="pubNoteEn"></textarea>
+            <div class="text-center pt-10"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-pubsave>@T["Publish v{0}", ver.Version]</button></div>
+        </div>
     </div></div></div>
 }
 @if (ver != null)
 {
-    <div class="modal fade" id="prevModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered modal-dialog-scrollable mw-750px"><div class="modal-content">
-        <div class="modal-header"><div><h2 class="fw-bold m-0">@Nm(sel!.Template.Name, sel.Template.NameEn) <span class="hp-num fs-6">v@(ver.Version)</span></h2><div class="text-muted fs-7 mt-1">@T["How the doctor sees the form"]</div></div><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
-        <div class="modal-body py-6 px-lg-10" id="prev">
+    <div class="modal fade" id="prevModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered modal-dialog-scrollable mw-750px"><div class="modal-content rounded">
+        <div class="modal-header border-0 pb-0 align-items-start"><div class="text-center flex-grow-1"><h1 class="mb-3">@Nm(sel!.Template.Name, sel.Template.NameEn) <span class="badge badge-light-primary fs-7 fw-bold hp-num align-middle" dir="ltr">v@(ver.Version)</span></h1><div class="text-muted fw-semibold fs-5">@T["How the doctor sees the form"]</div></div><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body px-10 px-lg-15 pt-8 pb-10" id="prev">
             @foreach (var s in sections)
             {
-                <div class="fw-bold text-gray-500 fs-8 text-uppercase mb-3 mt-2">@Nm(s.Key, s.First().Field.SectionEn)</div>
+                <div class="d-flex align-items-center mb-4 mt-2"><span class="bullet bullet-vertical h-20px bg-primary me-3"></span><span class="text-gray-800 fw-bold fs-5">@Nm(s.Key, s.First().Field.SectionEn)</span></div>
                 <div class="row g-4 mb-4">
                     @foreach (var fv in s)
                     {
@@ -262,7 +278,7 @@
                         foreach (var side in HospitalFormRules.Sides(c))
                         {
                             <div class="col-md-@(c.HasLaterality ? 3 : 6)" data-pf="@f.ID" data-when="@f.ShowWhenFieldId" data-above="@D(f.ShowWhenAbove)">
-                                <label class="fw-semibold fs-7 text-gray-700 mb-2 @(f.Required && !calc ? "required" : "")">@label@(side == null ? "" : " — " + (side == "R" ? T["Right"].Value : T["Left"].Value)) @if (!string.IsNullOrEmpty(c.Unit)) {<span class="text-muted fs-9 hp-num">(@c.Unit)</span>}</label>
+                                <label class="fs-6 fw-semibold mb-2 @(f.Required && !calc ? "required" : "")">@label@(side == null ? "" : " — " + (side == "R" ? T["Right"].Value : T["Left"].Value)) @if (!string.IsNullOrEmpty(c.Unit)) {<span class="text-muted fs-9 hp-num">(@c.Unit)</span>}</label>
                                 @if (calc) {<input class="form-control form-control-solid" readonly placeholder="@T["Computed at sign-off"]" />}
                                 else if (c.ValueType == HospitalConceptType.Choice) {<select class="form-select form-select-solid" data-control="none" data-src="@f.ID"><option value="">—</option>@foreach (var ch in HospitalConceptRules.Choices(c.Choices)) {<option value="@ch.Code">@(isAr ? ch.Ar : ch.En)</option>}</select>}
                                 else {<input class="form-control form-control-solid" dir="ltr" data-src="@f.ID" placeholder="@(c.ValueType == HospitalConceptType.Panel ? "120/80" : f.ValueSource == HospitalValueSource.LastLab ? T["From the last lab result"].Value : "")" />}

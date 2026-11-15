@@ -3,6 +3,10 @@
 @using CrossBuy.Models.Context.Hospital
 @model IReadOnlyList<HospitalEstimateRow>
 @inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H127 — estimates & deposits: the builder as a demo39 form card with the invoice's total block (apps/invoices/view),
+    the deposit as list-widget rows (dashboards/logistics), the estimates as the table widget (widgets/tables).
+*@
 @{
     Layout = "~/Views/Shared/_LayoutHospital.cshtml";
     ViewData["Title"] = T["Estimates & deposits"].Value;
@@ -13,8 +17,8 @@
     string Money(decimal v) => v.ToString("N3", System.Globalization.CultureInfo.InvariantCulture);
     string St(string s) => s switch { HospitalEstimateStatus.Issued => "success", HospitalEstimateStatus.Cancelled => "secondary", _ => "primary" };
     string Avatar(string? photo, string nameEn) => photo != null
-        ? $"<div class=\"symbol symbol-35px symbol-circle flex-shrink-0\"><img src=\"{photo}\" alt=\"\" style=\"object-fit:cover\" data-initials=\"{HospitalUi.Initials(nameEn)}\" /></div>"
-        : $"<div class=\"symbol symbol-35px symbol-circle flex-shrink-0\"><span class=\"symbol-label fw-bold fs-8 hp-initials\">{HospitalUi.Initials(nameEn)}</span></div>";
+        ? $"<div class=\"symbol symbol-45px symbol-circle flex-shrink-0\"><img src=\"{photo}\" alt=\"\" style=\"object-fit:cover\" data-initials=\"{HospitalUi.Initials(nameEn)}\" /></div>"
+        : $"<div class=\"symbol symbol-45px symbol-circle flex-shrink-0\"><span class=\"symbol-label bg-light-primary text-primary fw-bold fs-7\">{HospitalUi.Initials(nameEn)}</span></div>";
 }
 <link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
 @Html.AntiForgeryToken()
@@ -38,77 +42,100 @@
         @if (canBill)
         {
             <div class="row g-5 g-xl-8 mb-5" data-builder>
-                <div class="col-xl-8"><div class="card h-100">
-                    <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
-                        <span class="card-label fw-bold text-gray-900 fs-4">@T["Procedure estimate"]</span>
-                        <span class="text-muted mt-1 fw-semibold fs-7" data-cover-line>@T["Choose the patient: the estimate is priced on their price list and split by their cover today"]</span>
-                    </div></div>
+                <div class="col-xl-8"><div class="card card-flush h-100">
+                    <div class="card-header pt-5">
+                        <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Procedure estimate"]</span>
+                            <span class="text-gray-500 mt-1 fw-semibold fs-7" data-cover-line>@T["Choose the patient: the estimate is priced on their price list and split by their cover today"]</span></h3>
+                        <div class="card-toolbar"><div class="symbol symbol-45px"><span class="symbol-label bg-light-primary"><i class="ki-outline ki-calculator fs-2 text-primary"></i></span></div></div>
+                    </div>
                     <div class="card-body pt-2">
                         <div class="row g-5 mb-6">
-                            <div class="col-md-6"><label class="form-label required">@T["Patient"]</label><select class="form-select form-select-solid" data-e-patient data-placeholder="@T["Search by name or MRN"]"></select></div>
-                            <div class="col-md-6"><label class="form-label">@T["Package / procedure"]</label><select class="form-select form-select-solid" data-e-package data-control="select2" data-allow-clear="true" data-placeholder="@T["No package"]">
+                            <div class="col-md-6"><label class="fs-6 fw-semibold mb-2 required">@T["Patient"]</label><select class="form-select form-select-solid" data-e-patient data-placeholder="@T["Search by name or MRN"]"></select></div>
+                            <div class="col-md-6"><label class="fs-6 fw-semibold mb-2">@T["Package / procedure"]</label><select class="form-select form-select-solid" data-e-package data-control="select2" data-allow-clear="true" data-placeholder="@T["No package"]">
                                 <option></option>
                                 @foreach (var p in packages) { <option value="@p.Package.ID" data-room="@p.Package.RoomTypeId" data-nights="@p.Package.IncludedNights">@p.Package.Code · @DisplayName.Of(p.Package.Name, p.Package.NameEn)</option> }
                             </select></div>
-                            <div class="col-md-4"><label class="form-label">@T["Room class"]</label><select class="form-select form-select-solid" data-e-room data-control="select2" data-allow-clear="true" data-hide-search="true" data-placeholder="@T["No stay"]">
+                            <div class="col-md-4"><label class="fs-6 fw-semibold mb-2">@T["Room class"]</label><select class="form-select form-select-solid" data-e-room data-control="select2" data-allow-clear="true" data-hide-search="true" data-placeholder="@T["No stay"]">
                                 <option></option>
                                 @foreach (var r in rooms) { <option value="@r.ID">@DisplayName.Of(r.Name, r.NameEn ?? r.Name)</option> }
                             </select></div>
-                            <div class="col-md-4"><label class="form-label">@T["Expected stay (nights)"]</label><input class="form-control form-control-solid hp-num" dir="ltr" type="number" min="0" max="365" value="0" data-e-nights /></div>
-                            <div class="col-md-4"><label class="form-label">@T["Deposit margin"]</label><div class="input-group input-group-solid"><input class="form-control form-control-solid hp-num" dir="ltr" type="number" min="0" max="200" value="20" data-e-margin /><span class="input-group-text">%</span></div></div>
-                            <div class="col-12"><label class="form-label">@T["Other expected services"]</label><select class="form-select form-select-solid" multiple data-e-services data-placeholder="@T["Search by code or name"]"></select></div>
+                            <div class="col-md-4"><label class="fs-6 fw-semibold mb-2">@T["Expected stay (nights)"]</label><input class="form-control form-control-solid hp-num" dir="ltr" type="number" min="0" max="365" value="0" data-e-nights /></div>
+                            <div class="col-md-4"><label class="fs-6 fw-semibold mb-2">@T["Deposit margin"]</label><div class="input-group input-group-solid"><input class="form-control form-control-solid hp-num" dir="ltr" type="number" min="0" max="200" value="20" data-e-margin /><span class="input-group-text">%</span></div></div>
+                            <div class="col-12"><label class="fs-6 fw-semibold mb-2">@T["Other expected services"]</label><select class="form-select form-select-solid" multiple data-e-services data-placeholder="@T["Search by code or name"]"></select></div>
                         </div>
-                        <div class="table-responsive"><table class="table align-middle table-row-dashed fs-6 gy-3 mb-0">
-                            <thead><tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0"><th>@T["Item"]</th><th class="text-end w-75px">@T["Qty"]</th><th class="text-end">@T["Estimate"]</th><th class="text-end">@T["Payer's share"]</th></tr></thead>
-                            <tbody class="fw-semibold text-gray-700" data-e-lines><tr><td colspan="4" class="text-center text-muted py-8">@T["Choose a package or services to see the estimate."]</td></tr></tbody>
-                            <tfoot><tr class="fw-bolder fs-5"><td class="ps-4" colspan="2" style="color:#145DBF">@T["Estimated total"] <span class="text-muted fs-8">@cur</span></td><td class="text-end hp-num" data-e-gross>—</td><td></td></tr></tfoot>
+                        <div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
+                            <thead><tr class="fw-bold text-muted bg-light"><th class="ps-4 rounded-start">@T["Item"]</th><th class="text-end">@T["Qty"]</th><th class="text-end">@T["Estimate"]</th><th class="text-end pe-4 rounded-end">@T["Payer's share"]</th></tr></thead>
+                            <tbody data-e-lines><tr><td colspan="4" class="text-center text-muted py-8">@T["Choose a package or services to see the estimate."]</td></tr></tbody>
+                            <tfoot><tr class="border-top border-gray-200"><td class="ps-4" colspan="2"><span class="text-primary fw-bolder fs-5">@T["Estimated total"]</span> <span class="text-muted fs-8">@cur</span></td><td class="text-end"><span class="text-gray-900 fw-bolder fs-5 hp-num" dir="ltr" data-e-gross>—</span></td><td class="pe-4"></td></tr></tfoot>
                         </table></div>
-                        <div class="text-muted fs-8 mt-3">@T["A package has a fixed price; anything beyond its limits (extra nights, complications, a second implant) is billed outside it."]</div>
+                        <div class="text-gray-500 fw-semibold fs-7 mt-4">@T["A package has a fixed price; anything beyond its limits (extra nights, complications, a second implant) is billed outside it."]</div>
                     </div>
                 </div></div>
-                <div class="col-xl-4"><div class="card h-100">
-                    <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Required deposit"]</span></div></div>
-                    <div class="card-body pt-2">
-                        <div class="d-flex flex-stack py-3 border-bottom border-gray-200"><span class="fw-semibold text-gray-700">@T["Payer share"]</span><span class="fw-bold fs-4 hp-num text-gray-900" data-e-payer>—</span></div>
-                        <div class="d-flex flex-stack py-3 border-bottom border-gray-200"><span class="fw-semibold text-gray-700">@T["Expected patient share"]</span><span class="fw-bold fs-4 hp-num text-gray-900" data-e-patient-share>—</span></div>
-                        <div class="d-flex flex-stack py-3 mb-5"><span class="fw-semibold text-gray-700">@T["Deposit required"]</span><span class="fw-bold fs-2 hp-num" style="color:var(--cb-brand, #3A5795)" data-e-deposit>—</span></div>
-                        <div class="notice d-none rounded border border-dashed p-5 mb-5 hp-notice" data-e-preauth>
-                            <div class="fw-semibold"><h5 class="text-gray-900 fw-bold mb-1"><i class="ki-outline ki-shield-tick fs-4 me-1" style="color:var(--cb-brand, #3A5795)"></i>@T["Pre-authorisation needed"]</h5>
-                                <div class="fs-7 text-gray-700">@T["Issuing the estimate sends the payer an approval request."]</div></div>
+                <div class="col-xl-4"><div class="card card-flush h-100">
+                    <div class="card-header pt-5">
+                        <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Required deposit"]</span>
+                            <span class="text-gray-500 mt-1 fw-semibold fs-7">@cur</span></h3>
+                    </div>
+                    <div class="card-body pt-2 d-flex flex-column">
+                        <div class="d-flex flex-stack">
+                            <div class="d-flex align-items-center"><div class="symbol symbol-35px me-4"><span class="symbol-label bg-light-primary"><i class="ki-outline ki-shield-tick fs-3 text-primary"></i></span></div><span class="text-gray-800 fw-bold fs-6">@T["Payer share"]</span></div>
+                            <span class="text-gray-800 fw-bold fs-5 hp-num" dir="ltr" data-e-payer>—</span>
                         </div>
-                        <div class="text-muted fs-8 mb-5">@T["Collecting the deposit is done on the patient's bill; the estimate only states it."]</div>
-                        <button type="button" class="btn btn-primary w-100" data-e-save disabled><i class="ki-outline ki-document fs-4"></i>@T["Save estimate"]</button>
+                        <div class="separator separator-dashed my-3"></div>
+                        <div class="d-flex flex-stack">
+                            <div class="d-flex align-items-center"><div class="symbol symbol-35px me-4"><span class="symbol-label bg-light-info"><i class="ki-outline ki-user fs-3 text-info"></i></span></div><span class="text-gray-800 fw-bold fs-6">@T["Expected patient share"]</span></div>
+                            <span class="text-gray-800 fw-bold fs-5 hp-num" dir="ltr" data-e-patient-share>—</span>
+                        </div>
+                        <div class="separator separator-dashed my-3"></div>
+                        <div class="d-flex flex-stack mb-6">
+                            <div class="d-flex align-items-center"><div class="symbol symbol-35px me-4"><span class="symbol-label bg-light-success"><i class="ki-outline ki-wallet fs-3 text-success"></i></span></div><span class="text-gray-900 fw-bold fs-6">@T["Deposit required"]</span></div>
+                            <span class="text-primary fw-bolder fs-2 hp-num" dir="ltr" data-e-deposit>—</span>
+                        </div>
+                        <div class="notice d-none bg-light-primary rounded border-primary border border-dashed p-5 mb-5" data-e-preauth>
+                            <i class="ki-outline ki-information fs-2tx text-primary me-4"></i>
+                            <div class="d-flex flex-stack flex-grow-1"><div class="fw-semibold">
+                                <h4 class="text-gray-900 fw-bold mb-1">@T["Pre-authorisation needed"]</h4>
+                                <div class="fs-6 text-gray-700">@T["Issuing the estimate sends the payer an approval request."]</div>
+                            </div></div>
+                        </div>
+                        <div class="text-gray-500 fw-semibold fs-7 mb-6">@T["Collecting the deposit is done on the patient's bill; the estimate only states it."]</div>
+                        <button type="button" class="btn btn-primary w-100 mt-auto" data-e-save disabled><i class="ki-outline ki-document fs-4"></i>@T["Save estimate"]</button>
                     </div>
                 </div></div>
             </div>
         }
 
-        <div class="card">
-            <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
-                <span class="card-label fw-bold text-gray-900 fs-4">@T["Estimates"]</span>
-                <span class="text-muted mt-1 fw-semibold fs-7">@T["A draft can be re-priced; an issued estimate is what the patient was told"]</span>
-            </div></div>
+        <div class="card card-flush">
+            <div class="card-header pt-5">
+                <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Estimates"]</span>
+                    <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["A draft can be re-priced; an issued estimate is what the patient was told"]</span></h3>
+            </div>
             <div class="card-body pt-2">
-                @if (Model.Count == 0) { <div class="text-center text-muted py-15"><i class="ki-outline ki-calculator fs-3x text-gray-300 d-block mb-4"></i>@T["No estimates yet."]</div> }
+                @if (Model.Count == 0)
+                {
+                    <div class="text-center py-10"><i class="ki-outline ki-calculator fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-bold text-gray-700">@T["No estimates yet."]</div></div>
+                }
                 else
                 {
-                    <div class="table-responsive"><table class="table align-middle table-row-dashed fs-6 gy-3 mb-0">
-                        <thead><tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0">
-                            <th class="w-125px">@T["Estimate"]</th><th>@T["Patient"]</th><th>@T["Package / procedure"]</th><th>@T["Payer"]</th><th class="text-end">@T["Estimated total"]</th><th class="text-end">@T["Deposit required"]</th><th>@T["Status"]</th>
+                    <div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
+                        <thead><tr class="fw-bold text-muted bg-light">
+                            <th class="ps-4 rounded-start">@T["Patient"]</th><th>@T["Estimate"]</th><th>@T["Package / procedure"]</th><th class="text-end">@T["Estimated total"]</th><th class="text-end">@T["Deposit required"]</th><th>@T["Status"]</th><th class="text-end pe-4 rounded-end"></th>
                         </tr></thead>
-                        <tbody class="fw-semibold text-gray-700">
+                        <tbody>
                             @foreach (var r in Model)
                             {
                                 var e = r.Estimate;
+                                var url = Url.Action("Estimate", new { id = e.ID });
                                 <tr>
-                                    <td><a href="@Url.Action("Estimate", new { id = e.ID })" class="badge hp-code fw-bold fs-8 hp-num">@e.EstimateNo</a><div class="text-muted fs-8 hp-num mt-1" data-fmt data-utc="@e.CreatedAt.ToString("o")">@e.CreatedAt.ToString("yyyy-MM-dd HH:mm")</div></td>
-                                    <td><div class="d-flex align-items-center gap-3">@Html.Raw(Avatar(r.Photo, r.PatientNameEn))
-                                        <div><a href="@Url.Action("Patient", new { id = e.PatientId })" class="fw-bold text-gray-900 text-hover-primary">@DisplayName.Of(r.PatientName, r.PatientNameEn)</a><div class="text-muted fs-8 hp-num">@r.Mrn</div></div></div></td>
-                                    <td>@(r.Package == null ? T["Services only"].Value : DisplayName.Of(r.Package, r.PackageEn ?? r.Package))</td>
-                                    <td>@(r.Payer == null ? T["Self-pay"].Value : DisplayName.Of(r.Payer, r.PayerEn ?? r.Payer))</td>
-                                    <td class="text-end hp-num">@Money(e.Gross)</td>
-                                    <td class="text-end hp-num fw-bold">@Money(e.Deposit)</td>
-                                    <td><span class="badge badge-light-@St(e.Status) fs-8">@T["est:" + e.Status]</span></td>
+                                    <td class="ps-4"><div class="d-flex align-items-center gap-4">@Html.Raw(Avatar(r.Photo, r.PatientNameEn))
+                                        <div class="d-flex flex-column"><a href="@Url.Action("Patient", new { id = e.PatientId })" class="text-gray-900 fw-bold text-hover-primary fs-6"><bdi>@DisplayName.Of(r.PatientName, r.PatientNameEn)</bdi></a><bdi class="text-muted fw-semibold d-block fs-7 hp-num">@r.Mrn</bdi></div></div></td>
+                                    <td><a href="@url" class="text-gray-900 fw-bold text-hover-primary d-block fs-6"><bdi class="hp-num">@e.EstimateNo</bdi></a><span class="text-muted fw-semibold d-block fs-7 hp-num" dir="ltr" data-fmt data-utc="@e.CreatedAt.ToString("o")">@e.CreatedAt.ToString("yyyy-MM-dd HH:mm")</span></td>
+                                    <td><span class="text-gray-800 fw-bold d-block fs-6">@(r.Package == null ? T["Services only"].Value : DisplayName.Of(r.Package, r.PackageEn ?? r.Package))</span>
+                                        <span class="text-muted fw-semibold d-block fs-7">@(r.Payer == null ? T["Self-pay"].Value : DisplayName.Of(r.Payer, r.PayerEn ?? r.Payer))</span></td>
+                                    <td class="text-end"><span class="text-gray-900 fw-bold fs-6 hp-num" dir="ltr">@Money(e.Gross)</span></td>
+                                    <td class="text-end"><span class="badge badge-light-primary fs-7 fw-bold hp-num" dir="ltr">@Money(e.Deposit)</span></td>
+                                    <td><span class="badge badge-light-@St(e.Status) fs-7 fw-bold">@T["est:" + e.Status]</span></td>
+                                    <td class="text-end pe-4"><a href="@url" class="btn btn-sm btn-icon btn-bg-light btn-active-color-primary" title="@T["Open"]" data-bs-toggle="tooltip"><i class="ki-outline ki-eye fs-3"></i></a></td>
                                 </tr>
                             }
                         </tbody>
@@ -159,8 +186,8 @@
                     if (!q.ok) { toast('error', q.error || W.failed); return; }
                     last = body; save.disabled = false;
                     el('[data-e-lines]').innerHTML = q.lines.map(function (l) {
-                        return '<tr><td><div class="text-gray-800">' + esc(l.text) + '</div><div class="text-muted fs-8 hp-num">' + esc(l.code) + (l.covered || !q.payer ? '' : ' · <span class="text-danger">' + esc(W.outside) + '</span>') + '</div></td>' +
-                            '<td class="text-end hp-num">' + esc(l.qty) + '</td><td class="text-end hp-num">' + money(l.amount) + '</td><td class="text-end hp-num">' + (l.payer > 0 ? money(l.payer) : '—') + '</td></tr>';
+                        return '<tr><td class="ps-4"><span class="text-gray-900 fw-bold fs-6 d-block">' + esc(l.text) + '</span><span class="text-muted fw-semibold d-block fs-7"><bdi class="hp-num">' + esc(l.code) + '</bdi>' + (l.covered || !q.payer ? '' : ' · <span class="badge badge-light-danger fs-8 fw-bold">' + esc(W.outside) + '</span>') + '</span></td>' +
+                            '<td class="text-end"><span class="text-gray-800 fw-bold hp-num" dir="ltr">' + esc(l.qty) + '</span></td><td class="text-end"><span class="text-gray-900 fw-bold hp-num" dir="ltr">' + money(l.amount) + '</span></td><td class="text-end pe-4"><span class="text-gray-800 fw-bold hp-num" dir="ltr">' + (l.payer > 0 ? money(l.payer) : '—') + '</span></td></tr>';
                     }).join('');
                     el('[data-e-gross]').textContent = money(q.gross);
                     el('[data-e-payer]').textContent = money(q.payerShare);

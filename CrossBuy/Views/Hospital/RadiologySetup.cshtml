@@ -33,32 +33,34 @@
     </div></div>
 
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
-        <div class="card mb-5">
-            <div class="card-header border-0 pt-6">
-                <div class="card-title align-items-start flex-column m-0">
-                    <span class="card-label fw-bold text-gray-900 fs-4">@T["Imaging rooms"]</span>
-                    <span class="text-muted mt-1 fw-semibold fs-7">@T["Each machine takes the patients of its modality; one in maintenance takes nobody"]</span>
-                </div>
+        @* H127: the machines — demo39 widgets/tables (table widget) *@
+        <div class="card card-flush mb-5">
+            <div class="card-header pt-5">
+                <h3 class="card-title align-items-start flex-column">
+                    <span class="card-label fw-bold text-gray-800">@T["Imaging rooms"]</span>
+                    <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Each machine takes the patients of its modality; one in maintenance takes nobody"]</span>
+                </h3>
+                <div class="card-toolbar"><span class="badge badge-light-primary fs-7 fw-bold hp-num">@rooms.Count</span></div>
             </div>
             <div class="card-body pt-2">
-                <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-2 mb-0">
-                    <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0">
-                        <th class="min-w-80px">@T["Code"]</th><th class="min-w-150px">@T["Name"]</th><th class="min-w-150px">@T["Name (English)"]</th><th class="min-w-150px">@T["Modality"]</th><th class="w-50px">@T["Active"]</th><th class="min-w-100px">@T["State"]</th><th class="w-90px"></th>
+                <div class="table-responsive"><table class="table align-middle gs-0 gy-3 mb-0 fs-7">
+                    <thead><tr class="fw-bold text-muted bg-light">
+                        <th class="ps-4 min-w-80px rounded-start">@T["Code"]</th><th class="min-w-150px">@T["Name"]</th><th class="min-w-150px">@T["Name (English)"]</th><th class="min-w-150px">@T["Modality"]</th><th class="w-50px">@T["Active"]</th><th class="min-w-100px">@T["State"]</th><th class="pe-4 w-60px rounded-end"></th>
                     </tr></thead>
                     <tbody>
                         @foreach (var m in rooms.Append(null))
                         {
                             if (m == null && !canManage) { continue; }
                             <tr data-room-row data-id="@m?.ID">
-                                <td><input class="form-control form-control-sm form-control-solid hp-num" dir="ltr" data-k="code" value="@m?.Code" maxlength="20" placeholder="@(m == null ? T["New"].Value : "")" @ro /></td>
+                                <td class="ps-4"><input class="form-control form-control-sm form-control-solid hp-num" dir="ltr" data-k="code" value="@m?.Code" maxlength="20" placeholder="@(m == null ? T["New"].Value : "")" @ro /></td>
                                 <td><input class="form-control form-control-sm form-control-solid" data-k="name" value="@m?.Name" @ro /></td>
                                 <td><input class="form-control form-control-sm form-control-solid" dir="ltr" data-k="nameEn" value="@m?.NameEn" @ro /></td>
                                 <td><select class="form-select form-select-sm form-select-solid" data-k="modality" data-control="select2" data-hide-search="true" @ro>
                                     @foreach (var mod in HospitalRadModality.All) { <option value="@mod" selected="@(m?.Modality == mod)">@T["mod:" + mod]</option> }
                                 </select></td>
                                 <td><div class="form-check form-check-sm form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" data-k="isActive" @(m == null || m.IsActive ? "checked" : "") @ro /></div></td>
-                                <td>@if (m != null) { if (m.InMaintenance) {<span class="badge badge-light-danger fs-8">@T["Maintenance"]</span>} else {<span class="badge badge-light-success fs-8">@T["Working"]</span>}}</td>
-                                <td class="text-end">@if (canManage) {<button type="button" class="btn btn-sm @(m == null ? "btn-primary" : "btn-light")" data-save-room>@(m == null ? T["Add"] : T["Save"])</button>}</td>
+                                <td>@if (m != null) { if (m.InMaintenance) {<span class="badge badge-light-danger fs-7 fw-bold">@T["Maintenance"]</span>} else {<span class="badge badge-light-success fs-7 fw-bold">@T["Working"]</span>}}</td>
+                                <td class="text-end pe-4">@if (canManage) {<button type="button" class="btn btn-sm btn-icon @(m == null ? "btn-primary" : "btn-bg-light btn-active-color-primary")" data-save-room title="@(m == null ? T["Add"] : T["Save"])" data-bs-toggle="tooltip"><i class="ki-outline @(m == null ? "ki-plus" : "ki-check") fs-3"></i></button>}</td>
                             </tr>
                         }
                     </tbody>
@@ -66,8 +68,8 @@
             </div>
         </div>
 
-        <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice">
-            <span class="symbol symbol-45px me-5 flex-shrink-0"><span class="symbol-label"><i class="ki-outline ki-scan-barcode fs-2x text-white"></i></span></span>
+        <div class="notice d-flex rounded border border-primary border-dashed bg-light-primary p-6 mb-5">
+            <i class="ki-outline ki-information fs-2tx text-primary me-4"></i>
             <div class="d-flex flex-stack flex-grow-1 flex-wrap flex-md-nowrap">
                 <div class="mb-3 mb-md-0 fw-semibold pe-5">
                     <h4 class="text-gray-900 fw-bold mb-1">@T["Every imaging exam is a service of the Radiology category"]</h4>
@@ -77,27 +79,28 @@
             </div>
         </div>
 
-        @if (Model.Count == 0) { <div class="card"><div class="card-body text-center text-muted py-15">@T["No radiology services yet. Add them in the service catalogue."]</div></div> }
+        @if (Model.Count == 0) { <div class="card card-flush"><div class="card-body text-center py-10"><i class="ki-outline ki-scan-barcode fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-bold text-gray-700">@T["No radiology services yet. Add them in the service catalogue."]</div></div></div> }
         @foreach (var x in Model)
         {
             var s = x.Service; var e = x.Exam;
-            <div class="card mb-5" data-exam="@s.ID">
-                <div class="card-header border-0 pt-6">
-                    <div class="card-title align-items-start flex-column m-0">
-                        <span class="card-label fw-bold text-gray-900 fs-4">@DisplayName.Of(s.Name, s.NameEn) <span class="badge hp-code fw-bold fs-8 hp-num ms-1">@s.Code</span></span>
-                        <span class="text-muted mt-1 fw-semibold fs-7">@(e == null ? T["not set up yet"] : T["mod:" + e.Modality])@if (e?.Contrast == true) {<text> · @T["with contrast"]</text>}</span>
-                    </div>
+            @* H127: one exam — demo39 card header (title over a muted line · action in the toolbar) over its labelled fields *@
+            <div class="card card-flush mb-5" data-exam="@s.ID">
+                <div class="card-header pt-5">
+                    <h3 class="card-title align-items-start flex-column">
+                        <span class="card-label fw-bold text-gray-800">@DisplayName.Of(s.Name, s.NameEn) <bdi class="badge badge-light-primary fw-bold fs-7 hp-num ms-1" dir="ltr">@s.Code</bdi></span>
+                        <span class="text-gray-500 mt-1 fw-semibold fs-7">@if (e == null) {<span class="text-danger">@T["not set up yet"]</span>} else {@T["mod:" + e.Modality]}@if (e?.Contrast == true) {<text> · @T["with contrast"]</text>}</span>
+                    </h3>
+                    @if (canManage) {<div class="card-toolbar"><button type="button" class="btn btn-sm btn-light-primary" data-save-exam="@s.ID"><i class="ki-outline ki-check fs-4"></i>@T["Save"]</button></div>}
                 </div>
                 <div class="card-body pt-2">
-                    <div class="row g-4">
-                        <div class="col-md-4"><label class="form-label fs-7 fw-semibold text-gray-600">@T["Modality"]</label>
-                            <select class="form-select form-select-sm form-select-solid" data-k="modality" data-control="select2" data-hide-search="true" @ro>
+                    <div class="row g-5">
+                        <div class="col-md-6"><label class="fs-6 fw-semibold mb-2">@T["Modality"]</label>
+                            <select class="form-select form-select-solid" data-k="modality" data-control="select2" data-hide-search="true" @ro>
                                 @foreach (var mod in HospitalRadModality.All) { <option value="@mod" selected="@((e?.Modality ?? HospitalRadiologyService.GuessModality(s.Code)) == mod)">@T["mod:" + mod]</option> }
                             </select></div>
-                        <div class="col-md-4 d-flex align-items-end"><label class="form-check form-check-custom form-check-solid mb-2"><input class="form-check-input" type="checkbox" data-k="contrast" @(e?.Contrast == true ? "checked" : "") @ro /><span class="form-check-label text-gray-800">@T["Uses contrast"]</span></label></div>
-                        <div class="col-md-4 d-flex align-items-end justify-content-end">@if (canManage) {<button type="button" class="btn btn-sm btn-light-primary" data-save-exam="@s.ID">@T["Save"]</button>}</div>
-                        <div class="col-md-6"><label class="form-label fs-7 fw-semibold text-gray-600">@T["Report template"]</label><textarea class="form-control form-control-sm form-control-solid" rows="4" maxlength="2000" data-k="template" @ro>@e?.Template</textarea></div>
-                        <div class="col-md-6"><label class="form-label fs-7 fw-semibold text-gray-600">@T["Report template (English)"]</label><textarea class="form-control form-control-sm form-control-solid" rows="4" dir="ltr" maxlength="2000" data-k="templateEn" @ro>@e?.TemplateEn</textarea></div>
+                        <div class="col-md-6 d-flex align-items-end"><label class="form-check form-switch form-check-custom form-check-solid mb-3"><input class="form-check-input" type="checkbox" data-k="contrast" @(e?.Contrast == true ? "checked" : "") @ro /><span class="form-check-label fw-semibold text-gray-800">@T["Uses contrast"]</span></label></div>
+                        <div class="col-md-6"><label class="fs-6 fw-semibold mb-2">@T["Report template"]</label><textarea class="form-control form-control-solid" rows="4" maxlength="2000" data-k="template" @ro>@e?.Template</textarea></div>
+                        <div class="col-md-6"><label class="fs-6 fw-semibold mb-2">@T["Report template (English)"]</label><textarea class="form-control form-control-solid" rows="4" dir="ltr" maxlength="2000" data-k="templateEn" @ro>@e?.TemplateEn</textarea></div>
                     </div>
                 </div>
             </div>

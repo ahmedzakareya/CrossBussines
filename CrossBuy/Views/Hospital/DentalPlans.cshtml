@@ -8,6 +8,26 @@
     var s = ViewBag.Stats as HospitalDentalPlanStats;
     string N(decimal v, int dec) => v.ToString("N" + dec, System.Globalization.CultureInfo.InvariantCulture);
     string St(string state) => state switch { "Accepted" => "success", "Partial" => "info", "Declined" => "secondary", _ => "primary" };
+    // H127: a stat tile of the theme (demo39 dashboards/logistics) — the figure over its label, an icon, a line under it
+    void Stat(string label, string value, string? unit, object? sub, string icon, string tone)
+    {
+        <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100">
+            <div class="card-header pt-5 flex-nowrap gap-3">
+                <div class="card-title d-flex flex-column">
+                    <div class="d-flex align-items-baseline flex-wrap"><span class="fs-2hx fw-bold text-gray-900 me-2 lh-1 ls-n2 hp-num">@value</span>@if (unit != null) {<span class="fs-6 fw-semibold text-gray-500 hp-num">@unit</span>}</div>
+                    <span class="text-gray-500 pt-1 fw-semibold fs-6">@label</span>
+                </div>
+                <div class="card-toolbar"><div class="symbol symbol-45px"><span class="symbol-label bg-light-@tone"><i class="ki-outline ki-@icon fs-2x text-@tone"></i></span></div></div>
+            </div>
+            <div class="card-body d-flex align-items-end pt-0">
+                <div class="d-flex fs-7 fw-semibold align-items-center text-gray-500">@if (sub != null) {<span class="bullet w-8px h-6px rounded-2 bg-@tone me-3"></span>@sub} else {<span>&nbsp;</span>}</div>
+            </div>
+        </div></div>
+    }
+    void Person(string? photo, string nameEn, int size)
+    {
+        <div class="symbol symbol-@(size)px symbol-circle flex-shrink-0 me-3">@if (photo != null) {<img src="@photo" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(nameEn)" />} else {<span class="symbol-label fw-bold fs-7 hp-initials">@HospitalUi.Initials(nameEn)</span>}</div>
+    }
 }
 <link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
 
@@ -16,7 +36,7 @@
         <div class="page-title d-flex flex-column justify-content-center gap-1">
             <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Treatment plans"]</h1>
             <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
-                <li class="breadcrumb-item text-muted">@T["Dentistry"]</li>
+                <li class="breadcrumb-item text-muted"><a href="@Url.Action("Dental")" class="text-muted text-hover-primary">@T["Dentistry"]</a></li>
                 <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
                 <li class="breadcrumb-item text-muted">@T["Treatment plans"]</li>
             </ul>
@@ -27,53 +47,55 @@
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
         @if (s != null)
         {
+            @* H127: the month's figures — demo39 dashboards/logistics stat tiles *@
             <div class="row g-5 g-xl-8 mb-5">
-                <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
-                    <div class="text-muted fw-semibold fs-7 mb-1">@T["Plans presented"]</div><div class="fs-2hx fw-bold hp-num text-gray-900">@s.PresentedThisMonth</div>
-                    <div class="text-muted fs-8 mt-1">@T["this month"]</div></div></div></div>
-                <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
-                    <div class="text-muted fw-semibold fs-7 mb-1">@T["Acceptance rate"]</div><div class="fs-2hx fw-bold hp-num text-gray-900">@(s.AcceptanceRate == null ? "—" : s.AcceptanceRate + "%")</div>
-                    <div class="text-muted fs-8 mt-1">@T["by value"]</div></div></div></div>
-                <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
-                    <div class="text-muted fw-semibold fs-7 mb-1">@T["Accepted, not done"]</div><div class="fs-2hx fw-bold hp-num text-gray-900">@N(s.AcceptedNotDone, s.Decimals)</div>
-                    <div class="text-muted fs-8 mt-1">@T["accepted work not yet done"] · <span class="hp-num">@s.Currency</span></div></div></div></div>
-                <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
-                    <div class="text-muted fw-semibold fs-7 mb-1">@T["Yearly dental limit"]</div>
-                    <div class="fs-2hx fw-bold hp-num text-gray-900">@(s.YearlyLimitMin == null ? "—" : s.YearlyLimitMin == s.YearlyLimitMax ? N(s.YearlyLimitMin.Value, s.Decimals) : N(s.YearlyLimitMin.Value, 0) + "–" + N(s.YearlyLimitMax!.Value, 0))</div>
-                    <div class="text-muted fs-8 mt-1">@T["per the payer contract"]</div></div></div></div>
+                @{
+                    Stat(T["Plans presented"].Value, s.PresentedThisMonth.ToString(), null, T["this month"], "document", "primary");
+                    Stat(T["Acceptance rate"].Value, s.AcceptanceRate == null ? "—" : s.AcceptanceRate + "%", null, T["by value"], "check-square", "success");
+                    Stat(T["Accepted, not done"].Value, N(s.AcceptedNotDone, s.Decimals), s.Currency, T["accepted work not yet done"], "time", "info");
+                    Stat(T["Yearly dental limit"].Value, s.YearlyLimitMin == null ? "—" : s.YearlyLimitMin == s.YearlyLimitMax ? N(s.YearlyLimitMin.Value, s.Decimals) : N(s.YearlyLimitMin.Value, 0) + "–" + N(s.YearlyLimitMax!.Value, 0), null, T["per the payer contract"], "shield-tick", "primary");
+                }
             </div>
         }
 
-        <div class="card mb-5">
-            <div class="card-header border-0 pt-6">
-                <div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Treatment plans"]</span></div>
-                <div class="card-toolbar"><div class="position-relative"><i class="ki-outline ki-magnifier fs-4 position-absolute top-50 translate-middle-y ms-3"></i><input class="form-control form-control-sm form-control-solid w-250px ps-10" placeholder="@T["Search"]" data-filter /></div></div>
+        @* H127: the plans — demo39 widgets/tables *@
+        <div class="card card-flush mb-5">
+            <div class="card-header pt-5">
+                <h3 class="card-title align-items-start flex-column">
+                    <span class="card-label fw-bold text-gray-800">@T["Treatment plans"]</span>
+                    <span class="text-gray-500 mt-1 fw-semibold fs-7 hp-num">@Model.Count</span>
+                </h3>
+                <div class="card-toolbar"><div class="d-flex align-items-center position-relative"><i class="ki-outline ki-magnifier fs-3 position-absolute ms-4"></i><input type="text" class="form-control form-control-solid w-200px ps-12" placeholder="@T["Search"]" data-filter /></div></div>
             </div>
             <div class="card-body pt-2">
-                @if (Model.Count == 0) { <div class="text-center text-muted py-10">@T["No treatment plans yet: a plan is opened from the patient's chart."]</div> }
+                @if (Model.Count == 0)
+                {
+                    <div class="text-center py-10"><i class="ki-outline ki-document fs-3x text-gray-300 mb-4 d-block"></i>
+                        <div class="fs-6 fw-bold text-gray-700">@T["No treatment plans yet: a plan is opened from the patient's chart."]</div></div>
+                }
                 else
                 {
-                    <div class="table-responsive"><table class="table align-middle table-row-dashed fs-6 gy-3 mb-0">
-                        <thead><tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0">
-                            <th class="w-130px">@T["Plan"]</th><th>@T["Patient"]</th><th>@T["Dentist"]</th><th class="text-end">@T["Phases"]</th><th class="text-end">@T["Value"]</th><th class="text-end">@T["Patient share"]</th><th>@T["State"]</th><th class="text-end"></th>
+                    <div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
+                        <thead><tr class="fw-bold text-muted bg-light">
+                            <th class="ps-4 rounded-start">@T["Patient"]</th><th>@T["Plan"]</th><th>@T["Dentist"]</th><th class="text-end">@T["Phases"]</th><th class="text-end">@T["Value"]</th><th class="text-end">@T["Patient share"]</th><th>@T["State"]</th><th class="text-end pe-4 rounded-end"></th>
                         </tr></thead>
-                        <tbody class="fw-semibold text-gray-700">
+                        <tbody>
                             @foreach (var r in Model)
                             {
                                 <tr data-row="@r.Plan.PlanNo @r.PatientName @r.PatientNameEn @r.Mrn">
-                                    <td><span class="badge hp-code fw-bold fs-8 hp-num">@r.Plan.PlanNo</span></td>
-                                    <td><a href="@Url.Action("DentalChart", new { patientId = r.Plan.PatientId })" class="d-flex align-items-center gap-3 text-hover-primary">
-                                        <div class="symbol symbol-35px symbol-circle flex-shrink-0">@if (r.PatientPhoto != null) {<img src="@r.PatientPhoto" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(r.PatientNameEn)" />} else {<span class="symbol-label fw-bold fs-8 hp-initials">@HospitalUi.Initials(r.PatientNameEn)</span>}</div>
-                                        <div><div class="fw-bold text-gray-900">@DisplayName.Of(r.PatientName, r.PatientNameEn)</div><div class="text-muted fs-8 hp-num">@r.Mrn</div></div></a></td>
+                                    <td class="ps-4"><a href="@Url.Action("DentalChart", new { patientId = r.Plan.PatientId })" class="d-flex align-items-center text-hover-primary">
+                                        @{ Person(r.PatientPhoto, r.PatientNameEn, 40); }
+                                        <div class="d-flex flex-column"><span class="text-gray-900 fw-bold fs-6">@DisplayName.Of(r.PatientName, r.PatientNameEn)</span><bdi class="text-muted fw-semibold d-block fs-7 hp-num">@r.Mrn</bdi></div></a></td>
+                                    <td><bdi class="text-gray-900 fw-bold fs-6 hp-num">@r.Plan.PlanNo</bdi></td>
                                     <td>@if (r.Dentist != null)
                                         {
-                                            <div class="d-flex align-items-center gap-2"><div class="symbol symbol-30px symbol-circle flex-shrink-0">@if (r.Dentist.Photo != null) {<img src="@r.Dentist.Photo" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(r.Dentist.NameEn)" />} else {<span class="symbol-label fw-bold fs-8 hp-initials">@HospitalUi.Initials(r.Dentist.NameEn)</span>}</div><span>@DisplayName.Of(r.Dentist.Name, r.Dentist.NameEn)</span></div>
-                                        } else {<text>—</text>}</td>
-                                    <td class="text-end"><span class="hp-num">@r.Phases</span></td>
-                                    <td class="text-end"><span class="hp-num fw-bold">@N(r.Quote.Gross, r.Decimals)</span> <span class="text-muted fs-8">@r.Currency</span></td>
-                                    <td class="text-end"><span class="hp-num fw-bold">@N(r.Quote.PatientShare, r.Decimals)</span></td>
-                                    <td><span class="badge badge-light-@St(r.State) fs-8">@T["plan:" + r.State]</span></td>
-                                    <td class="text-end"><a href="@Url.Action("DentalPlan", new { id = r.Plan.ID })" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-arrow-left fs-5"></i>@T["Open"]</a></td>
+                                            <div class="d-flex align-items-center">@{ Person(r.Dentist.Photo, r.Dentist.NameEn, 30); }<span class="text-gray-800 fw-semibold fs-7">@DisplayName.Of(r.Dentist.Name, r.Dentist.NameEn)</span></div>
+                                        } else {<span class="text-muted">—</span>}</td>
+                                    <td class="text-end"><span class="text-gray-800 fw-bold hp-num">@r.Phases</span></td>
+                                    <td class="text-end text-nowrap"><span class="text-gray-900 fw-bold fs-6 hp-num">@N(r.Quote.Gross, r.Decimals)</span>&nbsp;<span class="text-muted fs-8">@r.Currency</span></td>
+                                    <td class="text-end"><span class="badge badge-light-primary fs-7 fw-bold hp-num">@N(r.Quote.PatientShare, r.Decimals)</span></td>
+                                    <td><span class="badge badge-light-@St(r.State) fs-7 fw-bold">@T["plan:" + r.State]</span></td>
+                                    <td class="text-end pe-4"><a href="@Url.Action("DentalPlan", new { id = r.Plan.ID })" class="btn btn-sm btn-icon btn-bg-light btn-active-color-primary" title="@T["Open"]" data-bs-toggle="tooltip"><i class="ki-outline ki-arrow-left fs-3"></i></a></td>
                                 </tr>
                             }
                         </tbody>

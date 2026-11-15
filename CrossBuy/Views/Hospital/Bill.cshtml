@@ -3,6 +3,11 @@
 @using CrossBuy.Models.Context.Hospital
 @model HospitalBillView
 @inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H127 — the patient's bill, composed from demo39: stat tiles (dashboards/logistics), the order-details summary cards
+    (apps/ecommerce/sales/details), the table widget with an invoice total block (widgets/tables, apps/invoices/view),
+    list-widget rows for the payments and the journal.
+*@
 @{
     Layout = "~/Views/Shared/_LayoutHospital.cshtml";
     var b = Model.Bill; var p = Model.Patient; var t = Model.Totals;
@@ -31,6 +36,7 @@
     var funds = (ViewBag.CharityFunds as List<HospitalCharityFund>) ?? new();
     int? me = ViewBag.Me as int?;
     bool canAskCharity = charityReady && canBill && !open && !foreign && t.Due > 0;
+    string PmIcon(string m) => m == HospitalPaymentMethods.Cash ? "dollar" : m == HospitalPaymentMethods.Card ? "credit-cart" : m == HospitalPaymentMethods.Transfer ? "bank" : "wallet";
 }
 <link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
 @Html.AntiForgeryToken()
@@ -42,7 +48,7 @@
             <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
                 <li class="breadcrumb-item text-muted"><a href="@Url.Action("Bills")" class="text-muted text-hover-primary">@T["Bills"]</a></li>
                 <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
-                <li class="breadcrumb-item text-muted hp-num">@b.BillNo</li>
+                <li class="breadcrumb-item text-muted"><bdi class="hp-num">@b.BillNo</bdi></li>
             </ul>
         </div>
         <div class="d-flex align-items-center gap-2 gap-lg-3 d-print-none">
@@ -65,145 +71,266 @@
     </div></div>
 
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid" id="billRoot">
-        <div class="card mb-5 mb-xl-10"><div class="card-body py-10">
-            <h2 class="mb-2">@T["Bill"] <span class="hp-num">@b.BillNo</span></h2>
-            <p class="fs-6 fw-semibold text-gray-600 py-1 m-0">
-                <a href="@Url.Action("Patient", new { id = p.ID })" class="text-gray-700 text-hover-primary">@name</a> ·
-                @if (b.AdmissionId != null) {<text>@T["Inpatient stay"]</text>} else {<text>@T["Outpatient visit"]</text>}
-                · @T["From"] <span class="hp-num">@b.OpenedAt.ToLocalTime().ToString("yyyy-MM-dd")</span>
-                @if (b.ClosedAt is DateTime c) {<text> — @T["To"] </text><span class="hp-num">@c.ToLocalTime().ToString("yyyy-MM-dd")</span>}
-            </p>
-            <div class="d-flex align-items-center flex-wrap gap-2 mt-3 fs-7">
-                <i class="ki-outline ki-price-tag fs-4 text-primary"></i><span class="text-gray-600">@T["Priced from"]</span>
-                @if (Model.List is HospitalPriceList pl) { <a href="@Url.Action("PriceList", new { id = pl.ID })" class="fw-bold">@DisplayName.Of(pl.Name, pl.NameEn)</a> <span class="text-muted hp-num">@pl.Code v@(pl.Version)</span> }
-                else { <a href="@Url.Action("Catalog")" class="fw-bold">@T["Main list"]</a> }
-                @if (billCur != null) { <span class="badge @(foreign ? "badge-light-info" : "badge-light-primary") fw-bold fs-8 hp-num">@billCur.Code</span> }
-                @if (foreign && b.ExchangeRate is decimal xr) { <span class="text-muted">@T["Closing rate"] <span class="hp-num">1 @billCur!.Code = @xr.ToString("0.####") @(currency?.Code)</span></span> }
-            </div>
-            <div class="row mt-6">
-                @foreach (var k in new[] { (T["Gross"].Value, t.Gross, "text-info"), (T["Insurer share"].Value, t.Insurer, "text-primary"), (T["Patient share + tax"].Value, t.Patient + t.Vat, "text-primary"), (T["Patient balance due"].Value, t.Due, t.Due > 0 ? "text-danger" : "text-success") })
-                {
-                    <div class="col-sm-6 col-xl-3"><div class="card card-dashed flex-center min-w-175px my-3 p-6">
-                        <span class="fs-4 fw-semibold @k.Item3 pb-1 px-2">@k.Item1</span>
-                        <span class="fs-lg-2tx fw-bold d-flex justify-content-center hp-num">@M(k.Item2)</span>
-                        <span class="text-muted fs-8">@cur</span>
-                    </div></div>
-                }
-            </div>
-            <div class="notice d-flex rounded border border-dashed p-6 mt-4 mb-0 hp-notice">
-                <span class="symbol symbol-45px me-5 flex-shrink-0"><span class="symbol-label"><i class="ki-outline ki-shield-tick fs-2x text-white"></i></span></span>
-                <div class="d-flex flex-stack flex-grow-1 flex-wrap flex-md-nowrap">
-                    <div class="mb-3 mb-md-0 fw-semibold pe-5">
-                        @* H18: who covers the bill, and so what the patient is asked for *@
+        @* the four amounts — stat tiles (demo39 dashboards/logistics) *@
+        <div class="row g-5 g-xl-8 mb-5">
+            @foreach (var k in new[] {
+                (T["Gross"].Value, t.Gross, "info", "bill"),
+                (T["Insurer share"].Value, t.Insurer, "primary", "shield-tick"),
+                (T["Patient share + tax"].Value, t.Patient + t.Vat, "primary", "user"),
+                (T["Patient balance due"].Value, t.Due, t.Due > 0 ? "danger" : "success", "wallet") })
+            {
+                <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100">
+                    <div class="card-header pt-5 flex-nowrap gap-3">
+                        <div class="card-title d-flex flex-column">
+                            <span class="fs-2hx fw-bold @(k.Item3 == "danger" ? "text-danger" : "text-gray-900") lh-1 hp-num" dir="ltr">@M(k.Item2)</span>
+                            <span class="text-gray-500 pt-1 fw-semibold fs-6">@k.Item1</span>
+                        </div>
+                        <div class="card-toolbar"><div class="symbol symbol-45px"><span class="symbol-label bg-light-@k.Item3"><i class="ki-outline ki-@k.Item4 fs-2 text-@k.Item3"></i></span></div></div>
+                    </div>
+                    <div class="card-body d-flex align-items-end pt-0"><span class="d-flex align-items-center fs-7 fw-semibold text-gray-500"><span class="bullet bullet-dot bg-@k.Item3 me-2"></span>@cur</span></div>
+                </div></div>
+            }
+        </div>
+
+        @* the bill, the patient, the cover — demo39 apps/ecommerce/sales/details summary cards *@
+        <div class="row g-5 g-xl-8 mb-5">
+            <div class="col-xl-4"><div class="card card-flush h-100">
+                <div class="card-header pt-5">
+                    <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Bill"] <bdi class="hp-num">@b.BillNo</bdi></span>
+                        <span class="text-gray-500 mt-1 fw-semibold fs-7">@if (b.AdmissionId != null) {@T["Inpatient stay"]} else {@T["Outpatient visit"]}</span></h3>
+                    <div class="card-toolbar"><span class="badge badge-light-@(open ? "primary" : "success") fs-7 fw-bold">@T["bill:" + b.Status]</span></div>
+                </div>
+                <div class="card-body pt-2">
+                    <div class="d-flex flex-stack">
+                        <div class="d-flex align-items-center"><div class="symbol symbol-35px me-4"><span class="symbol-label bg-light-primary"><i class="ki-outline ki-calendar fs-3 text-primary"></i></span></div><span class="text-gray-800 fw-bold fs-6">@T["From"]</span></div>
+                        <span class="text-gray-800 fw-bold fs-6 hp-num" dir="ltr">@b.OpenedAt.ToLocalTime().ToString("yyyy-MM-dd")</span>
+                    </div>
+                    @if (b.ClosedAt is DateTime c)
+                    {
+                        <div class="separator separator-dashed my-3"></div>
+                        <div class="d-flex flex-stack">
+                            <div class="d-flex align-items-center"><div class="symbol symbol-35px me-4"><span class="symbol-label bg-light-success"><i class="ki-outline ki-lock-2 fs-3 text-success"></i></span></div><span class="text-gray-800 fw-bold fs-6">@T["To"]</span></div>
+                            <span class="text-gray-800 fw-bold fs-6 hp-num" dir="ltr">@c.ToLocalTime().ToString("yyyy-MM-dd")</span>
+                        </div>
+                    }
+                    <div class="separator separator-dashed my-3"></div>
+                    <div class="d-flex flex-stack">
+                        <div class="d-flex align-items-center me-3"><div class="symbol symbol-35px me-4"><span class="symbol-label bg-light-info"><i class="ki-outline ki-price-tag fs-3 text-info"></i></span></div>
+                            <div><span class="text-gray-800 fw-bold fs-6 d-block">@T["Priced from"]</span>
+                                @if (Model.List is HospitalPriceList pl) { <a href="@Url.Action("PriceList", new { id = pl.ID })" class="text-gray-500 text-hover-primary fw-semibold fs-7"><bdi>@DisplayName.Of(pl.Name, pl.NameEn)</bdi> · <bdi class="hp-num">@pl.Code v@(pl.Version)</bdi></a> }
+                                else { <a href="@Url.Action("Catalog")" class="text-gray-500 text-hover-primary fw-semibold fs-7">@T["Main list"]</a> }</div></div>
+                        @if (billCur != null) { <span class="badge @(foreign ? "badge-light-info" : "badge-light-primary") fw-bold fs-7 hp-num">@billCur.Code</span> }
+                    </div>
+                    @if (foreign && b.ExchangeRate is decimal xr)
+                    {
+                        <div class="separator separator-dashed my-3"></div>
+                        <div class="d-flex flex-stack">
+                            <div class="d-flex align-items-center"><div class="symbol symbol-35px me-4"><span class="symbol-label bg-light-info"><i class="ki-outline ki-arrow-right-left fs-3 text-info"></i></span></div><span class="text-gray-800 fw-bold fs-6">@T["Closing rate"]</span></div>
+                            <span class="text-gray-800 fw-bold fs-7 hp-num" dir="ltr">1&nbsp;@billCur!.Code = @xr.ToString("0.####")&nbsp;@(currency?.Code)</span>
+                        </div>
+                    }
+                </div>
+            </div></div>
+
+            <div class="col-xl-4"><div class="card card-flush h-100">
+                <div class="card-header pt-5">
+                    <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Patient"]</span>
+                        <span class="text-gray-500 mt-1 fw-semibold fs-7"><bdi class="hp-num">@p.Mrn</bdi></span></h3>
+                </div>
+                <div class="card-body pt-2">
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="symbol symbol-50px symbol-circle flex-shrink-0 me-4">@if (p.PhotoPath != null) {<img src="@p.PhotoPath" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(p.NameEn)" />} else {<span class="symbol-label bg-light-primary text-primary fw-bold fs-5">@HospitalUi.Initials(p.NameEn)</span>}</div>
+                        <div class="d-flex flex-column"><a href="@Url.Action("Patient", new { id = p.ID })" class="text-gray-900 text-hover-primary fs-5 fw-bold"><bdi>@name</bdi></a><bdi class="text-muted fw-semibold fs-7 hp-num">@p.Mrn</bdi></div>
+                    </div>
+                    @if (admission != null)
+                    {
+                        <div class="separator separator-dashed my-3"></div>
+                        <div class="d-flex flex-stack">
+                            <div class="d-flex align-items-center"><div class="symbol symbol-35px me-4"><span class="symbol-label bg-light-primary"><i class="ki-outline ki-home-2 fs-3 text-primary"></i></span></div><span class="text-gray-800 fw-bold fs-6">@T["Admitted"]</span></div>
+                            <div class="d-flex align-items-center gap-2"><span class="text-gray-800 fw-bold fs-6 hp-num" dir="ltr">@admission.AdmittedAt.ToLocalTime().ToString("yyyy-MM-dd")</span>
+                                <span class="badge badge-light-@(admission.Status == HospitalAdmissionStatus.Active ? "info" : "success") fs-7 fw-bold">@(admission.Status == HospitalAdmissionStatus.Active ? T["still in hospital"] : T["discharged"])</span></div>
+                        </div>
+                    }
+                    @if (encounter != null)
+                    {
+                        <div class="separator separator-dashed my-3"></div>
+                        <a href="@Url.Action("Consult", new { id = encounter.ID })" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-pulse fs-4"></i>@T["Open the visit"]</a>
+                    }
+                </div>
+            </div></div>
+
+            <div class="col-xl-4"><div class="card card-flush h-100">
+                @* H18: who covers the bill, and so what the patient is asked for *@
+                <div class="card-header pt-5">
+                    <h3 class="card-title align-items-start flex-column">
                         @if (Model.Cover is HospitalBillCover cv)
                         {
-                            <h4 class="text-gray-900 fw-bold mb-1">@T["Covered by"] @DisplayName.Of(cv.Payer, cv.PayerEn) <span class="text-muted fs-7 fw-semibold">· @T["Co-pay"] <span class="hp-num">@cv.CopayPct.ToString("0.##")%</span></span></h4>
-                            <div class="fs-6 text-gray-700">@(cv.Frozen ? T["The split was fixed when the bill closed: the payer is claimed exactly this share."] : T["Split by the patient's cover today: the patient pays the co-pay and what the contract does not cover; the payer is claimed the rest."])
-                                @if (cv.Discount > 0) { <text> </text>@T["Contract discount (paid by neither side):"] <span class="hp-num fw-bold">@cv.Discount.ToString("N3", System.Globalization.CultureInfo.InvariantCulture)</span> }</div>
+                            <span class="card-label fw-bold text-gray-800">@T["Covered by"] <bdi>@DisplayName.Of(cv.Payer, cv.PayerEn)</bdi></span>
+                            <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Co-pay"] <span class="hp-num" dir="ltr">@cv.CopayPct.ToString("0.##")%</span></span>
                         }
                         else if (Model.List is HospitalPriceList onList)
                         {
-                            <h4 class="text-gray-900 fw-bold mb-1">@DisplayName.Of(onList.Name, onList.NameEn) <span class="text-muted fs-7 fw-semibold">· @T["kind:" + onList.Kind]</span></h4>
-                            <div class="fs-6 text-gray-700">@T["Priced from the patient's list, in its currency. No cover applies to this bill: the patient pays it in full."]</div>
+                            <span class="card-label fw-bold text-gray-800"><bdi>@DisplayName.Of(onList.Name, onList.NameEn)</bdi></span>
+                            <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["kind:" + onList.Kind]</span>
                         }
                         else
                         {
-                            <h4 class="text-gray-900 fw-bold mb-1">@T["Cash patient"]</h4>
-                            <div class="fs-6 text-gray-700">@T["No cover applies to this bill: the patient pays it in full. Tax applies only to services marked taxable."]</div>
+                            <span class="card-label fw-bold text-gray-800">@T["Cash patient"]</span>
                         }
-                    </div>
-                    <span class="badge hp-badge fs-7 fw-bold px-4 py-2 flex-shrink-0">@T["VAT"] <span class="hp-num ms-1">@Model.VatRatePercent.ToString("0.##")%</span></span>
+                    </h3>
+                    <div class="card-toolbar"><span class="badge badge-light-primary fs-7 fw-bold">@T["VAT"]&nbsp;<span class="hp-num" dir="ltr">@Model.VatRatePercent.ToString("0.##")%</span></span></div>
                 </div>
-            </div>
-        </div></div>
+                <div class="card-body pt-2">
+                    <div class="d-flex align-items-start">
+                        <div class="symbol symbol-35px me-4 flex-shrink-0"><span class="symbol-label bg-light-primary"><i class="ki-outline ki-shield-tick fs-3 text-primary"></i></span></div>
+                        <div class="text-gray-700 fw-semibold fs-7">
+                            @if (Model.Cover is HospitalBillCover cv2)
+                            {
+                                @(cv2.Frozen ? T["The split was fixed when the bill closed: the payer is claimed exactly this share."] : T["Split by the patient's cover today: the patient pays the co-pay and what the contract does not cover; the payer is claimed the rest."])
+                                @if (cv2.Discount > 0) { <div class="mt-2">@T["Contract discount (paid by neither side):"] <span class="hp-num fw-bold text-gray-900" dir="ltr">@cv2.Discount.ToString("N3", System.Globalization.CultureInfo.InvariantCulture)</span></div> }
+                            }
+                            else if (Model.List is HospitalPriceList)
+                            {
+                                @T["Priced from the patient's list, in its currency. No cover applies to this bill: the patient pays it in full."]
+                            }
+                            else
+                            {
+                                @T["No cover applies to this bill: the patient pays it in full. Tax applies only to services marked taxable."]
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div></div>
+        </div>
 
-        <div class="card mb-5">
-            <div class="card-header border-0 pt-6">
-                <div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Bill lines"]</span></div>
+        @* the lines — demo39 widgets/tables, with the invoice's total block (apps/invoices/view) *@
+        <div class="card card-flush mb-5">
+            <div class="card-header pt-5">
+                <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Bill lines"]</span>
+                    <span class="text-gray-500 mt-1 fw-semibold fs-7"><span class="hp-num">@Model.Lines.Count</span> · @cur</span></h3>
                 @if (open && canBill)
                 {
-                    <div class="card-toolbar d-flex gap-2 align-items-center">
-                        <div class="w-300px"><select class="form-select form-select-sm form-select-solid" data-no-select2 data-add-service data-placeholder="@T["Add service"]"></select></div>
-                        <input type="number" min="1" value="1" class="form-control form-control-sm form-control-solid hp-num w-70px" data-add-qty />
-                        <button type="button" class="btn btn-sm btn-light-primary" data-add-line><i class="ki-outline ki-plus fs-4"></i>@T["Add"]</button>
+                    <div class="card-toolbar d-flex flex-nowrap gap-2 align-items-center">
+                        <div class="w-250px w-xl-300px"><select class="form-select form-select-sm form-select-solid" data-no-select2 data-add-service data-placeholder="@T["Add service"]"></select></div>
+                        <input type="number" min="1" value="1" class="form-control form-control-sm form-control-solid hp-num w-70px" dir="ltr" data-add-qty />
+                        <button type="button" class="btn btn-sm btn-light-primary text-nowrap" data-add-line><i class="ki-outline ki-plus fs-4"></i>@T["Add"]</button>
                     </div>
                 }
             </div>
             <div class="card-body pt-2">
-                <div class="table-responsive"><table class="table align-middle table-row-dashed fs-6 gy-3 mb-0">
-                    <thead><tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0">
-                        <th class="w-125px">@T["Code"]</th><th>@T["Service"]</th><th class="text-end w-70px">@T["Qty"]</th><th class="text-end">@T["Price"]</th><th class="text-end">@T["Gross"]</th><th class="text-end">@T["Insurer"]</th><th class="text-end">@T["Patient"]</th><th class="text-end">@T["VAT"]</th><th class="w-40px"></th>
-                    </tr></thead>
-                    <tbody class="fw-semibold text-gray-700">
-                        @if (Model.Lines.Count == 0) { <tr><td colspan="9" class="text-center text-muted py-8">@T["No lines yet."]</td></tr> }
-                        @foreach (var l in Model.Lines)
-                        {
-                            <tr>
-                                <td><span class="badge hp-code fw-bold fs-8 hp-num">@l.Code</span></td>
-                                <td><div class="fw-semibold text-gray-800">@(isAr ? l.Description : l.DescriptionEn)</div>
-                                    <div class="text-muted fs-8">@T["cat:" + l.Category]@if (l.Running) {<span class="badge badge-light-info fs-9 ms-2">@T["Running — counted until discharge"]</span>}@if (l.OutsideList) {<span class="badge badge-light-danger fs-9 ms-2">@T["Outside the list — main price"]</span>}</div></td>
-                                <td class="text-end hp-num">@l.Quantity.ToString("0.##")</td>
-                                <td class="text-end hp-num">@M(l.UnitPrice)</td>
-                                <td class="text-end hp-num">@M(l.Gross)</td>
-                                <td class="text-end hp-num text-gray-500">@Dash(l.Insurer)</td>
-                                <td class="text-end hp-num">@Dash(l.Patient)</td>
-                                <td class="text-end hp-num">@Dash(l.Vat)</td>
-                                <td class="text-end">@if (open && canBill && l.Source == HospitalBillLineSources.Manual && l.Id != null) {<button type="button" class="btn btn-icon btn-sm btn-light w-30px h-30px" data-remove="@l.Id"><i class="ki-outline ki-trash fs-5"></i></button>}</td>
-                            </tr>
-                        }
-                    </tbody>
-                    <tfoot><tr class="fw-bolder fs-5">
-                        <td class="ps-4" colspan="4" style="color:#145DBF">@T["Total"] (@cur)</td>
-                        <td class="text-end hp-num">@M(t.Gross)</td><td class="text-end hp-num">@M(t.Insurer)</td><td class="text-end hp-num">@M(t.Patient)</td><td class="text-end hp-num">@M(t.Vat)</td><td></td>
-                    </tr></tfoot>
-                </table></div>
+                @if (Model.Lines.Count == 0)
+                {
+                    <div class="text-center py-10"><i class="ki-outline ki-bill fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-bold text-gray-700">@T["No lines yet."]</div></div>
+                }
+                else
+                {
+                    <div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
+                        <thead><tr class="fw-bold text-muted bg-light">
+                            <th class="ps-4 rounded-start">@T["Service"]</th><th class="text-end">@T["Qty"]</th><th class="text-end">@T["Price"]</th><th class="text-end">@T["Gross"]</th><th class="text-end">@T["Insurer"]</th><th class="text-end">@T["Patient"]</th><th class="text-end">@T["VAT"]</th><th class="pe-4 rounded-end w-50px"></th>
+                        </tr></thead>
+                        <tbody>
+                            @foreach (var l in Model.Lines)
+                            {
+                                <tr>
+                                    <td class="ps-4"><div class="d-flex align-items-center">
+                                        <div class="symbol symbol-35px me-4 flex-shrink-0"><span class="symbol-label bg-light-@(l.OutsideList ? "danger" : "primary")"><i class="ki-outline ki-@(l.Running ? "time" : "abstract-26") fs-3 text-@(l.OutsideList ? "danger" : "primary")"></i></span></div>
+                                        <div class="d-flex flex-column"><span class="text-gray-900 fw-bold fs-6">@(isAr ? l.Description : l.DescriptionEn)</span>
+                                            <span class="text-muted fw-semibold d-block fs-7"><bdi class="hp-num">@l.Code</bdi> · @T["cat:" + l.Category]@if (l.Running) {<span class="badge badge-light-info fs-8 ms-2">@T["Running — counted until discharge"]</span>}@if (l.OutsideList) {<span class="badge badge-light-danger fs-8 ms-2">@T["Outside the list — main price"]</span>}</span></div>
+                                    </div></td>
+                                    <td class="text-end"><span class="text-gray-800 fw-bold hp-num" dir="ltr">@l.Quantity.ToString("0.##")</span></td>
+                                    <td class="text-end"><span class="text-gray-800 fw-bold hp-num" dir="ltr">@M(l.UnitPrice)</span></td>
+                                    <td class="text-end"><span class="text-gray-900 fw-bold hp-num" dir="ltr">@M(l.Gross)</span></td>
+                                    <td class="text-end"><span class="text-gray-500 fw-bold hp-num" dir="ltr">@Dash(l.Insurer)</span></td>
+                                    <td class="text-end"><span class="text-gray-800 fw-bold hp-num" dir="ltr">@Dash(l.Patient)</span></td>
+                                    <td class="text-end"><span class="text-gray-800 fw-bold hp-num" dir="ltr">@Dash(l.Vat)</span></td>
+                                    <td class="text-end pe-4">@if (open && canBill && l.Source == HospitalBillLineSources.Manual && l.Id != null) {<button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-danger" data-remove="@l.Id" title="@T["Remove"]" data-bs-toggle="tooltip"><i class="ki-outline ki-trash fs-3"></i></button>}</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table></div>
+                }
+                @* the invoice total block *@
+                <div class="d-flex justify-content-end mt-6">
+                    <div class="mw-300px w-100">
+                        <div class="d-flex flex-stack mb-3"><span class="fw-semibold text-gray-600 fs-7">@T["Gross"]</span><span class="text-end fw-bold fs-6 text-gray-800 hp-num" dir="ltr">@M(t.Gross)</span></div>
+                        <div class="d-flex flex-stack mb-3"><span class="fw-semibold text-gray-600 fs-7">@T["Insurer"]</span><span class="text-end fw-bold fs-6 text-gray-800 hp-num" dir="ltr">@M(t.Insurer)</span></div>
+                        <div class="d-flex flex-stack mb-3"><span class="fw-semibold text-gray-600 fs-7">@T["Patient"]</span><span class="text-end fw-bold fs-6 text-gray-800 hp-num" dir="ltr">@M(t.Patient)</span></div>
+                        <div class="d-flex flex-stack mb-3"><span class="fw-semibold text-gray-600 fs-7">@T["VAT"]</span><span class="text-end fw-bold fs-6 text-gray-800 hp-num" dir="ltr">@M(t.Vat)</span></div>
+                        <div class="separator separator-dashed my-3"></div>
+                        <div class="d-flex flex-stack"><span class="fw-bold text-gray-900 fs-6">@T["Patient balance due"] <span class="text-muted fs-8">@cur</span></span><span class="text-end fw-bolder fs-3 hp-num text-@(t.Due > 0 ? "danger" : "success")" dir="ltr">@M(t.Due)</span></div>
+                    </div>
+                </div>
             </div>
         </div>
 
         <div class="row g-5 g-xl-8">
             <div class="col-xl-7">
-                <div class="card mb-5">
-                    <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
-                        <span class="card-label fw-bold text-gray-900 fs-4">@T["Journal preview"]</span>
-                        <span class="text-muted mt-1 fw-semibold fs-7">@(open ? T["Posted when the bill closes, through the accounting journal engine"] : T["Posted to the general ledger"])@if (foreign) {<text> · @T["in"] </text><span class="hp-num">@(currency?.Code)</span>@if (open) {<text> @T["at today's rate"]</text>}}</span>
-                    </div></div>
+                <div class="card card-flush mb-5">
+                    <div class="card-header pt-5">
+                        <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Journal preview"]</span>
+                            <span class="text-gray-500 mt-1 fw-semibold fs-7">@(open ? T["Posted when the bill closes, through the accounting journal engine"] : T["Posted to the general ledger"])@if (foreign) {<text> · @T["in"] </text><span class="hp-num">@(currency?.Code)</span>@if (open) {<text> @T["at today's rate"]</text>}}</span></h3>
+                    </div>
                     <div class="card-body pt-2">
                         @if (missing != null)
                         {
-                            <div class="notice d-flex rounded border border-danger border-dashed bg-light-danger p-5">
-                                <i class="ki-outline ki-information-5 fs-2tx text-danger me-4"></i>
-                                <div class="fw-semibold"><div class="fs-6 text-gray-800">@T[missing]</div>
-                                    <a href="@Url.Action("BillingSettings")" class="fs-7 fw-bold">@T["Billing settings"]</a></div>
+                            <div class="notice d-flex bg-light-danger rounded border-danger border border-dashed p-5">
+                                <i class="ki-outline ki-information fs-2tx text-danger me-4"></i>
+                                <div class="d-flex flex-stack flex-grow-1"><div class="fw-semibold">
+                                    <h4 class="text-gray-900 fw-bold mb-1">@T[missing]</h4>
+                                    <a href="@Url.Action("BillingSettings")" class="fs-6 fw-bold">@T["Billing settings"]</a>
+                                </div></div>
                             </div>
                         }
-                        else if (journal.Count == 0) { <div class="text-muted fs-7 py-4">@T["Nothing to post yet."]</div> }
+                        else if (journal.Count == 0)
+                        {
+                            <div class="text-center py-10"><i class="ki-outline ki-book fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-bold text-gray-700">@T["Nothing to post yet."]</div></div>
+                        }
                         else
                         {
-                            <table class="table align-middle table-row-dashed fs-6 gy-3 mb-0">
-                                <thead><tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0"><th>@T["Account"]</th><th class="text-end w-150px">@T["Debit"]</th><th class="text-end w-150px">@T["Credit"]</th></tr></thead>
-                                <tbody class="fw-semibold text-gray-700">
+                            <div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
+                                <thead><tr class="fw-bold text-muted bg-light"><th class="ps-4 rounded-start">@T["Account"]</th><th class="text-end">@T["Debit"]</th><th class="text-end pe-4 rounded-end">@T["Credit"]</th></tr></thead>
+                                <tbody>
                                     @foreach (var j in journal)
                                     {
-                                        <tr><td>@(accountNames.TryGetValue(j.AccountId, out var an) ? an : j.AccountId.ToString())</td><td class="text-end hp-num">@DashF(j.Debit)</td><td class="text-end hp-num">@DashF(j.Credit)</td></tr>
+                                        <tr><td class="ps-4"><span class="text-gray-800 fw-bold fs-6"><bdi>@(accountNames.TryGetValue(j.AccountId, out var an) ? an : j.AccountId.ToString())</bdi></span></td>
+                                            <td class="text-end"><span class="text-gray-800 fw-bold hp-num" dir="ltr">@DashF(j.Debit)</span></td><td class="text-end pe-4"><span class="text-gray-800 fw-bold hp-num" dir="ltr">@DashF(j.Credit)</span></td></tr>
                                     }
                                 </tbody>
-                                <tfoot><tr class="fw-bolder fs-5"><td class="ps-4" style="color:#145DBF">@T["Total"]</td><td class="text-end hp-num">@MF(journal.Sum(j => j.Debit))</td><td class="text-end hp-num pe-4">@MF(journal.Sum(j => j.Credit))</td></tr></tfoot>
-                            </table>
+                                <tfoot><tr class="border-top border-gray-200"><td class="ps-4"><span class="text-primary fw-bolder fs-6">@T["Total"] <span class="text-muted fs-8">@facCur</span></span></td>
+                                    <td class="text-end"><span class="text-gray-900 fw-bolder fs-6 hp-num" dir="ltr">@MF(journal.Sum(j => j.Debit))</span></td><td class="text-end pe-4"><span class="text-gray-900 fw-bolder fs-6 hp-num" dir="ltr">@MF(journal.Sum(j => j.Credit))</span></td></tr></tfoot>
+                            </table></div>
                         }
                     </div>
                 </div>
-                <div class="card">
-                    <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Payments"]</span></div></div>
+                <div class="card card-flush">
+                    <div class="card-header pt-5">
+                        <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Payments"]</span>
+                            <span class="text-gray-500 mt-1 fw-semibold fs-7"><span class="hp-num">@Model.Payments.Count</span></span></h3>
+                    </div>
                     <div class="card-body pt-2">
-                        @if (Model.Payments.Count == 0) { <div class="text-muted fs-7 py-4">@T["No payment yet."]</div> }
+                        @if (Model.Payments.Count == 0)
+                        {
+                            <div class="text-center py-10"><i class="ki-outline ki-wallet fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-bold text-gray-700">@T["No payment yet."]</div></div>
+                        }
                         else
                         {
-                            <table class="table align-middle table-row-dashed fs-6 gy-3 mb-0"><tbody class="fw-semibold text-gray-700">
-                                @foreach (var pay in Model.Payments)
-                                {
-                                    <tr><td><span class="badge hp-code fs-8 hp-num">@pay.ReceiptNo</span></td><td class="hp-num" data-utc="@pay.ReceivedAt.ToString("o")">@pay.ReceivedAt.ToString("yyyy-MM-dd HH:mm")</td><td>@T["pm:" + pay.Method]</td><td class="text-end hp-num fw-bold">@M(pay.Amount) <span class="text-muted fs-8">@cur</span>@if (pay.BaseAmount is decimal ba) {<div class="text-muted fs-8 fw-semibold">@MF(ba) @facCur</div>}</td></tr>
-                                }
-                            </tbody></table>
+                            @* list-widget rows — demo39 dashboards/logistics *@
+                            for (int i = 0; i < Model.Payments.Count; i++)
+                            {
+                                var pay = Model.Payments[i];
+                                <div class="d-flex flex-stack">
+                                    <div class="symbol symbol-35px me-4"><span class="symbol-label bg-light-success"><i class="ki-outline ki-@PmIcon(pay.Method) fs-3 text-success"></i></span></div>
+                                    <div class="d-flex flex-stack flex-row-fluid d-grid gap-2">
+                                        <div class="me-3"><bdi class="text-gray-800 fw-bold fs-6 hp-num">@pay.ReceiptNo</bdi><span class="text-gray-500 fw-semibold fs-7 d-block hp-num" dir="ltr" data-utc="@pay.ReceivedAt.ToString("o")">@pay.ReceivedAt.ToString("yyyy-MM-dd HH:mm")</span></div>
+                                        <div class="d-flex align-items-center">
+                                            <div class="text-end me-3"><span class="text-gray-800 fw-bold fs-6 hp-num text-nowrap" dir="ltr">@M(pay.Amount)</span>&nbsp;<span class="text-muted fs-8">@cur</span>
+                                                @if (pay.BaseAmount is decimal ba) {<div class="text-muted fs-8 fw-semibold"><span class="hp-num" dir="ltr">@MF(ba)</span>&nbsp;@facCur</div>}</div>
+                                            <span class="badge badge-light-success fs-7 fw-bold">@T["pm:" + pay.Method]</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                if (i < Model.Payments.Count - 1) { <div class="separator separator-dashed my-3"></div> }
+                            }
                         }
                     </div>
                 </div>
@@ -211,44 +338,52 @@
             <div class="col-xl-5">
                 @if (charityReady && (charity.Count > 0 || canAskCharity))
                 {
-                    <div class="card mb-5" data-charity-card>
-                        <div class="card-header border-0 pt-6"><div class="card-title flex-column m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Charity"]</span>
-                            <span class="text-muted fs-7 mt-1">@T["A fund waives part of what the patient owes; the administrator approves it."]</span></div></div>
+                    <div class="card card-flush mb-5" data-charity-card>
+                        <div class="card-header pt-5">
+                            <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Charity"]</span>
+                                <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["A fund waives part of what the patient owes; the administrator approves it."]</span></h3>
+                        </div>
                         <div class="card-body pt-2">
                             @foreach (var r in charity)
                             {
                                 var g = r.Grant;
-                                string badge = g.Status == HospitalCharityStatus.Approved ? "badge-light-success" : g.Status == HospitalCharityStatus.Refused ? "badge-light-danger" : "badge-light-primary";
-                                <div class="border border-dashed border-gray-300 rounded p-4 mb-3" data-charity-row="@g.ID">
-                                    <div class="d-flex flex-stack flex-wrap gap-2">
-                                        <div><span class="badge hp-code fs-8 hp-num">@g.GrantNo</span> <span class="badge @badge fs-8">@T["ch:" + g.Status]</span></div>
-                                        <div class="fw-bold hp-num">@M(g.Amount) <span class="text-muted fs-8">@cur</span></div>
-                                    </div>
-                                    <div class="fs-7 text-gray-700 mt-2">@DisplayName.Of(r.Fund, r.FundEn) · <span dir="auto">@g.Reason</span></div>
-                                    <div class="fs-8 text-muted mt-1">@T["Asked by"] @DisplayName.Of(r.RequestedBy, r.RequestedByEn)@if (r.DecidedBy != null) {<span> · @T["Decided by"] @DisplayName.Of(r.DecidedBy, r.DecidedByEn ?? r.DecidedBy)</span>}@if (g.DecisionNote != null) {<span dir="auto"> · @g.DecisionNote</span>}</div>
-                                    @if (g.Status == HospitalCharityStatus.Requested && canManage && me != g.RequestedByEmployeeId)
-                                    {
-                                        <div class="d-flex gap-2 mt-3">
-                                            <button type="button" class="btn btn-sm btn-primary" data-charity-decide="@g.ID" data-approve="1" data-ask="@string.Format(T["Approve waiver {0} of {1} {2}? It posts to the fund and the patient owes that much less."].Value, g.GrantNo, M(g.Amount), cur)"><i class="ki-outline ki-check fs-5"></i>@T["Approve"]</button>
-                                            <button type="button" class="btn btn-sm btn-light-danger" data-charity-decide="@g.ID" data-approve="0" data-ask="@string.Format(T["Why is waiver {0} refused?"].Value, g.GrantNo)">@T["Refuse"]</button>
+                                string tone = g.Status == HospitalCharityStatus.Approved ? "success" : g.Status == HospitalCharityStatus.Refused ? "danger" : "primary";
+                                <div class="d-flex align-items-start mb-1" data-charity-row="@g.ID">
+                                    <div class="symbol symbol-35px me-4 flex-shrink-0"><span class="symbol-label bg-light-@tone"><i class="ki-outline ki-heart fs-3 text-@tone"></i></span></div>
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex flex-stack flex-wrap gap-2">
+                                            <div><bdi class="text-gray-800 fw-bold fs-6 hp-num">@g.GrantNo</bdi> <span class="badge badge-light-@tone fs-7 fw-bold ms-1">@T["ch:" + g.Status]</span></div>
+                                            <div class="text-nowrap"><span class="text-gray-800 fw-bold fs-6 hp-num" dir="ltr">@M(g.Amount)</span>&nbsp;<span class="text-muted fs-8">@cur</span></div>
                                         </div>
-                                    }
+                                        <div class="text-gray-600 fw-semibold fs-7 mt-1"><bdi>@DisplayName.Of(r.Fund, r.FundEn)</bdi> · <span dir="auto">@g.Reason</span></div>
+                                        <div class="text-muted fs-8 mt-1">@T["Asked by"] <bdi>@DisplayName.Of(r.RequestedBy, r.RequestedByEn)</bdi>@if (r.DecidedBy != null) {<span> · @T["Decided by"] <bdi>@DisplayName.Of(r.DecidedBy, r.DecidedByEn ?? r.DecidedBy)</bdi></span>}@if (g.DecisionNote != null) {<span dir="auto"> · @g.DecisionNote</span>}</div>
+                                        @if (g.Status == HospitalCharityStatus.Requested && canManage && me != g.RequestedByEmployeeId)
+                                        {
+                                            <div class="d-flex gap-2 mt-3">
+                                                <button type="button" class="btn btn-sm btn-primary" data-charity-decide="@g.ID" data-approve="1" data-ask="@string.Format(T["Approve waiver {0} of {1} {2}? It posts to the fund and the patient owes that much less."].Value, g.GrantNo, M(g.Amount), cur)"><i class="ki-outline ki-check fs-5"></i>@T["Approve"]</button>
+                                                <button type="button" class="btn btn-sm btn-light-danger" data-charity-decide="@g.ID" data-approve="0" data-ask="@string.Format(T["Why is waiver {0} refused?"].Value, g.GrantNo)">@T["Refuse"]</button>
+                                            </div>
+                                        }
+                                    </div>
                                 </div>
+                                <div class="separator separator-dashed my-3"></div>
                             }
                             @if (canAskCharity)
                             {
                                 if (funds.Count == 0)
                                 {
-                                    <div class="text-muted fs-7">@T["No charity fund with an expense account yet."] <a href="@Url.Action("Charity")" class="fw-bold">@T["Charity cases"]</a></div>
+                                    <div class="text-center py-6"><i class="ki-outline ki-heart fs-3x text-gray-300 mb-4 d-block"></i>
+                                        <div class="fs-6 fw-bold text-gray-700">@T["No charity fund with an expense account yet."]</div>
+                                        <a href="@Url.Action("Charity")" class="fs-7 fw-bold">@T["Charity cases"]</a></div>
                                 }
                                 else
                                 {
-                                    <div class="row g-4 mt-1" data-charity-form>
-                                        <div class="col-7"><label class="form-label fs-7 required">@T["Fund"]</label>
+                                    <div class="row g-4" data-charity-form>
+                                        <div class="col-7"><label class="fs-6 fw-semibold mb-2 required">@T["Fund"]</label>
                                             <select class="form-select form-select-solid" data-ch="fundId">@foreach (var f in funds) { <option value="@f.ID">@DisplayName.Of(f.Name, f.NameEn)</option> }</select></div>
-                                        <div class="col-5"><label class="form-label fs-7 required">@T["Amount"]</label>
-                                            <input class="form-control form-control-solid hp-num" data-ch="amount" value="@M(t.Due).Replace(",", "")" /></div>
-                                        <div class="col-12"><label class="form-label fs-7 required">@T["Why the patient needs the help"]</label>
+                                        <div class="col-5"><label class="fs-6 fw-semibold mb-2 required">@T["Amount"]</label>
+                                            <input class="form-control form-control-solid hp-num" dir="ltr" data-ch="amount" value="@M(t.Due).Replace(",", "")" /></div>
+                                        <div class="col-12"><label class="fs-6 fw-semibold mb-2 required">@T["Why the patient needs the help"]</label>
                                             <textarea class="form-control form-control-solid" rows="2" maxlength="500" dir="auto" data-ch="reason"></textarea></div>
                                         <div class="col-12"><button type="button" class="btn btn-light-primary w-100" data-charity-ask data-ask="@T["Ask for this charity waiver? The administrator approves or refuses it."]"><i class="ki-outline ki-heart fs-4"></i>@T["Ask for a charity waiver"]</button></div>
                                     </div>
@@ -260,64 +395,49 @@
                 @* Money is collected while anything is owed - a closed bill too: a patient often pays after discharge. *@
                 @if (canBill && (open || t.Due > 0))
                 {
-                    <div class="card mb-5">
-                        <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Collect payment"]</span></div></div>
+                    <div class="card card-flush mb-5">
+                        <div class="card-header pt-5">
+                            <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Collect payment"]</span>
+                                @if (myShift != null) {<span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Shift"]: <bdi>@myShift.Desk</bdi></span>}</h3>
+                        </div>
                         <div class="card-body pt-2">
                             @if (foreign && open)
                             {
-                                <div class="notice d-flex rounded border border-primary border-dashed bg-light-primary p-5">
-                                    <i class="ki-outline ki-dollar fs-2tx text-primary me-4"></i>
-                                    <div class="fw-semibold"><div class="fs-6 text-gray-800">@T["A foreign-currency bill is collected after it is closed"]</div>
-                                        <div class="fs-7 text-gray-600">@T["Closing fixes its rate; a payment at another rate posts the difference to the exchange-difference account."]</div></div>
+                                <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-5">
+                                    <i class="ki-outline ki-information fs-2tx text-primary me-4"></i>
+                                    <div class="d-flex flex-stack flex-grow-1"><div class="fw-semibold">
+                                        <h4 class="text-gray-900 fw-bold mb-1">@T["A foreign-currency bill is collected after it is closed"]</h4>
+                                        <div class="fs-6 text-gray-700">@T["Closing fixes its rate; a payment at another rate posts the difference to the exchange-difference account."]</div>
+                                    </div></div>
                                 </div>
                             }
                             else if (myShift == null)
                             {
-                                <div class="notice d-flex rounded border border-primary border-dashed bg-light-primary p-5">
-                                    <i class="ki-outline ki-information-5 fs-2tx text-primary me-4"></i>
-                                    <div class="fw-semibold"><div class="fs-6 text-gray-800">@T["Open your cashier shift before taking a payment"]</div>
-                                        <a href="@Url.Action("Cashier")" class="fs-7 fw-bold">@T["Cashier closing"]</a></div>
+                                <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-5">
+                                    <i class="ki-outline ki-information fs-2tx text-primary me-4"></i>
+                                    <div class="d-flex flex-stack flex-grow-1"><div class="fw-semibold">
+                                        <h4 class="text-gray-900 fw-bold mb-1">@T["Open your cashier shift before taking a payment"]</h4>
+                                        <a href="@Url.Action("Cashier")" class="fs-6 fw-bold">@T["Cashier closing"]</a>
+                                    </div></div>
                                 </div>
                             }
                             else
                             {
-                                <div class="row g-5">
-                                    <div class="col-12"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Amount"]</label>
-                                        <div class="input-group input-group-solid"><input class="form-control form-control-solid hp-num" data-amount value="@(t.Due > 0 ? M(t.Due).Replace(",", "") : "")" /><span class="input-group-text">@cur</span></div></div>
-                                    <div class="col-12"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Method"]</label>
-                                        <div class="d-flex gap-2 flex-wrap">
-                                            @foreach (var m in HospitalPaymentMethods.All)
-                                            {
-                                                <label><input type="radio" class="btn-check" name="pm" value="@m" @(m == HospitalPaymentMethods.Cash ? "checked" : "") /><span class="btn btn-sm btn-outline btn-outline-dashed btn-active-light-primary">@T["pm:" + m]</span></label>
-                                            }
-                                        </div></div>
-                                </div>
-                                <button type="button" class="btn btn-primary w-100 mt-6" data-collect @(t.Due <= 0 ? "disabled" : "")><i class="ki-outline ki-wallet fs-4"></i>@T["Collect & issue receipt"]</button>
-                                <div class="text-muted fs-8 mt-4">@T["Shift"]: @myShift.Desk</div>
+                                <div class="mb-6"><label class="fs-6 fw-semibold mb-2">@T["Amount"]</label>
+                                    <div class="input-group input-group-solid"><input class="form-control form-control-solid hp-num fs-4 fw-bold" dir="ltr" data-amount value="@(t.Due > 0 ? M(t.Due).Replace(",", "") : "")" /><span class="input-group-text">@cur</span></div></div>
+                                <div class="mb-6"><label class="fs-6 fw-semibold mb-2">@T["Method"]</label>
+                                    <div class="row g-3">
+                                        @foreach (var m in HospitalPaymentMethods.All)
+                                        {
+                                            <div class="col-6"><label class="w-100"><input type="radio" class="btn-check" name="pm" value="@m" @(m == HospitalPaymentMethods.Cash ? "checked" : "") />
+                                                <span class="btn btn-outline btn-outline-dashed btn-active-light-primary d-flex align-items-center w-100 p-4"><i class="ki-outline ki-@PmIcon(m) fs-2x me-3"></i><span class="fw-bold fs-6">@T["pm:" + m]</span></span></label></div>
+                                        }
+                                    </div></div>
+                                <button type="button" class="btn btn-primary w-100" data-collect @(t.Due <= 0 ? "disabled" : "")><i class="ki-outline ki-wallet fs-4"></i>@T["Collect & issue receipt"]</button>
                             }
                         </div>
                     </div>
                 }
-                <div class="card">
-                    <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Patient"]</span></div></div>
-                    <div class="card-body pt-2">
-                        <div class="d-flex align-items-center">
-                            <div class="symbol symbol-50px symbol-circle flex-shrink-0">@if (p.PhotoPath != null) {<img src="@p.PhotoPath" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(p.NameEn)" />} else {<span class="symbol-label fw-bold hp-initials">@HospitalUi.Initials(p.NameEn)</span>}</div>
-                            <div class="d-flex flex-column ms-3"><a href="@Url.Action("Patient", new { id = p.ID })" class="text-gray-900 text-hover-primary fs-6 fw-bold">@name</a><span class="text-muted fs-7 hp-num">@p.Mrn</span></div>
-                        </div>
-                        @if (admission != null)
-                        {
-                            <div class="separator separator-dashed my-4"></div>
-                            <div class="fs-7"><span class="text-muted">@T["Admitted"]:</span> <span class="hp-num fw-bold">@admission.AdmittedAt.ToLocalTime().ToString("yyyy-MM-dd")</span>
-                                · @(admission.Status == HospitalAdmissionStatus.Active ? T["still in hospital"] : T["discharged"])</div>
-                        }
-                        @if (encounter != null)
-                        {
-                            <div class="separator separator-dashed my-4"></div>
-                            <a href="@Url.Action("Consult", new { id = encounter.ID })" class="fs-7 fw-bold">@T["Open the visit"]</a>
-                        }
-                    </div>
-                </div>
             </div>
         </div>
     </div></div>
@@ -346,6 +466,9 @@
                 });
             }
             function initPicker() {
+                // a swapped bill brings its fund dropdown back as a plain select: give it the theme's select2 again
+                var fund = document.querySelector('#billRoot select[data-ch="fundId"]');
+                if (fund && $ && $.fn.select2 && !$(fund).hasClass('select2-hidden-accessible')) $(fund).select2({ width: '100%', dir: isAr ? 'rtl' : 'ltr', minimumResultsForSearch: Infinity });
                 var el = document.querySelector('[data-add-service]');
                 if (!el || !$ || !$.fn.select2 || $(el).hasClass('select2-hidden-accessible')) return;
                 $(el).select2({ width: '100%', dir: isAr ? 'rtl' : 'ltr', placeholder: el.getAttribute('data-placeholder'),

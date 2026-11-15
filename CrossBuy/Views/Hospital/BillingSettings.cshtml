@@ -26,6 +26,7 @@
         ("claimAdjustmentAccountId", T["Claim adjustments"].Value, T["What a payer accepts short of what was claimed"].Value, ins.Item2?.ClaimAdjustmentAccountId),
         ("claimRejectionAccountId", T["Claim rejections"].Value, T["What a payer rejects, and recovers when a resubmission is accepted"].Value, ins.Item2?.ClaimRejectionAccountId) };
 }
+@* H127 — billing settings as demo39 form cards (card-flush headers, labelled solid fields), notices by tone. *@
 <link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
 @Html.AntiForgeryToken()
 
@@ -48,54 +49,57 @@
         <form id="settingsForm" autocomplete="off">
         <div class="row g-5 g-xl-8">
             <div class="col-xl-4">
-                <div class="card mb-5">
-                    <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Tax"]</span></div></div>
+                <div class="card card-flush mb-5">
+                    <div class="card-header pt-5">
+                        <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Tax"]</span></h3>
+                        <div class="card-toolbar"><div class="symbol symbol-45px"><span class="symbol-label bg-light-primary"><i class="ki-outline ki-percentage fs-2 text-primary"></i></span></div></div>
+                    </div>
                     <div class="card-body pt-2">
-                        <label class="fw-semibold fs-7 text-gray-700 mb-2">@T["VAT rate"]</label>
-                        <div class="input-group input-group-solid"><input name="vatRatePercent" type="number" min="0" max="100" step="0.01" value="@Model.VatRatePercent.ToString("0.##")" class="form-control form-control-solid hp-num" /><span class="input-group-text">%</span></div>
-                        <div class="text-muted fs-8 mt-3">@T["Applies only to services marked taxable. Medical services are usually exempt; Kuwait has no VAT."]</div>
+                        <label class="fs-6 fw-semibold mb-2">@T["VAT rate"]</label>
+                        <div class="input-group input-group-solid"><input name="vatRatePercent" type="number" min="0" max="100" step="0.01" value="@Model.VatRatePercent.ToString("0.##")" class="form-control form-control-solid hp-num" dir="ltr" /><span class="input-group-text">%</span></div>
+                        <div class="text-gray-500 fw-semibold fs-7 mt-3">@T["Applies only to services marked taxable. Medical services are usually exempt; Kuwait has no VAT."]</div>
                     </div>
                 </div>
-                <div class="notice d-flex rounded border border-dashed p-6 hp-notice">
-                    <span class="symbol symbol-45px me-4 flex-shrink-0"><span class="symbol-label"><i class="ki-outline ki-book fs-2x text-white"></i></span></span>
+                <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-5">
+                    <i class="ki-outline ki-information fs-2tx text-primary me-4"></i>
                     <div class="fw-semibold">
                         <h4 class="text-gray-900 fw-bold mb-1">@T["Through the accounting engine"]</h4>
-                        <div class="fs-7 text-gray-700">@T["Bills, payments and cash differences post through the same journal engine as the rest of the system, into these accounts, in"] <span class="hp-num">@(currency?.Code ?? "")</span>.</div>
+                        <div class="fs-6 text-gray-700">@T["Bills, payments and cash differences post through the same journal engine as the rest of the system, into these accounts, in"] <span class="hp-num">@(currency?.Code ?? "")</span>.</div>
                     </div>
                 </div>
             </div>
             <div class="col-xl-8">
-                <div class="card">
-                    <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
-                        <span class="card-label fw-bold text-gray-900 fs-4">@T["Accounts"]</span>
-                        <span class="text-muted mt-1 fw-semibold fs-7">@T["Only active posting accounts of this company are offered"]</span>
-                    </div></div>
+                <div class="card card-flush">
+                    <div class="card-header pt-5">
+                        <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Accounts"]</span>
+                            <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Only active posting accounts of this company are offered"]</span></h3>
+                        <div class="card-toolbar"><div class="symbol symbol-45px"><span class="symbol-label bg-light-success"><i class="ki-outline ki-book fs-2 text-success"></i></span></div></div>
+                    </div>
                     <div class="card-body pt-2"><div class="row g-6">
                         @foreach (var m in maps)
                         {
-                            <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@m.Label</label>
+                            <div class="col-md-6"><label class="fs-6 fw-semibold mb-2">@m.Label</label>
                                 <select name="@m.Key" class="form-select form-select-solid"><option value="">—</option>
                                     @foreach (var a in accounts) { <option value="@a.Id" selected="@(a.Id == m.Value)">@a.Label · @DisplayName.Of(a.Name, a.NameEn)</option> }
                                 </select>
-                                <div class="text-muted fs-8 mt-1">@m.Hint</div></div>
+                                <div class="text-gray-500 fw-semibold fs-7 mt-2">@m.Hint</div></div>
                         }
                     </div></div>
                 </div>
 
-                <div class="card mt-5" data-insurance>
-                    <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
-                        <span class="card-label fw-bold text-gray-900 fs-4">@T["Insurance accounts"]</span>
-                        <span class="text-muted mt-1 fw-semibold fs-7">@T["Until these are mapped, an insured bill cannot close and a payer's answer cannot be recorded"]</span>
-                    </div>
+                <div class="card card-flush mt-5" data-insurance>
+                    <div class="card-header pt-5">
+                        <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Insurance accounts"]</span>
+                            <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Until these are mapped, an insured bill cannot close and a payer's answer cannot be recorded"]</span></h3>
                     @if (ins.Item1) { <div class="card-toolbar"><button type="button" class="btn btn-sm btn-light-primary" data-save-insurance><i class="ki-outline ki-check fs-4"></i>@T["Save"]</button></div> }
                     </div>
                     <div class="card-body pt-2">
                         @if (!ins.Item1)
                         {
-                            <div class="notice d-flex rounded border border-dashed border-primary bg-light-primary p-6">
-                                <i class="ki-outline ki-information-5 fs-2tx text-primary me-4"></i>
+                            <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-5">
+                                <i class="ki-outline ki-information fs-2tx text-primary me-4"></i>
                                 <div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@T["Insurance accounting is not set up yet"]</h4>
-                                    <div class="fs-7 text-gray-700">@T["Its tables are created by the database update hospital_h20_claim_accounting.sql. Until then, self-pay bills close as before, and insured bills wait."]</div></div>
+                                    <div class="fs-6 text-gray-700">@T["Its tables are created by the database update hospital_h20_claim_accounting.sql. Until then, self-pay bills close as before, and insured bills wait."]</div></div>
                             </div>
                         }
                         else
@@ -103,26 +107,28 @@
                             <div class="row g-6">
                                 @foreach (var m in insMaps)
                                 {
-                                    <div class="col-md-4"><label class="fw-semibold fs-7 text-gray-700 mb-2">@m.Label</label>
+                                    <div class="col-md-4"><label class="fs-6 fw-semibold mb-2">@m.Label</label>
                                         <select name="@m.Key" class="form-select form-select-solid"><option value="">—</option>
                                             @foreach (var a in accounts) { <option value="@a.Id" selected="@(a.Id == m.Value)">@a.Label · @DisplayName.Of(a.Name, a.NameEn)</option> }
                                         </select>
-                                        <div class="text-muted fs-8 mt-1">@m.Hint</div></div>
+                                        <div class="text-gray-500 fw-semibold fs-7 mt-2">@m.Hint</div></div>
                                 }
                             </div>
                             @if (payers.Count > 0)
                             {
                                 <div class="separator separator-dashed my-6"></div>
-                                <div class="fw-bold text-gray-900 fs-6 mb-1">@T["A payer's own receivable"]</div>
-                                <div class="text-muted fs-8 mb-4">@T["Leave a payer on the company's payer receivable, or give it an account of its own"]</div>
-                                <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-2 mb-0">
-                                    <tbody class="fw-semibold text-gray-700">
+                                <div class="fw-bold text-gray-800 fs-5 mb-1">@T["A payer's own receivable"]</div>
+                                <div class="text-gray-500 fw-semibold fs-7 mb-4">@T["Leave a payer on the company's payer receivable, or give it an account of its own"]</div>
+                                <div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
+                                    <thead><tr class="fw-bold text-muted bg-light"><th class="ps-4 rounded-start">@T["Payer"]</th><th class="pe-4 rounded-end">@T["Account"]</th></tr></thead>
+                                    <tbody>
                                         @foreach (var p in payers)
                                         {
                                             int? own = ins.Item3.TryGetValue(p.ID, out var o) ? o : null;
                                             <tr>
-                                                <td class="w-250px"><div class="text-gray-900 fw-bold">@DisplayName.Of(p.Name, p.NameEn)</div><div class="text-muted fs-8 hp-num">@p.Code</div></td>
-                                                <td><select class="form-select form-select-solid form-select-sm" data-payer-account="@p.ID"><option value="">@T["The company's payer receivable"]</option>
+                                                <td class="ps-4 w-250px"><div class="d-flex align-items-center"><div class="symbol symbol-35px me-4 flex-shrink-0"><span class="symbol-label bg-light-primary"><i class="ki-outline ki-shield-tick fs-3 text-primary"></i></span></div>
+                                                    <div class="d-flex flex-column"><span class="text-gray-900 fw-bold fs-6"><bdi>@DisplayName.Of(p.Name, p.NameEn)</bdi></span><bdi class="text-muted fw-semibold fs-7 hp-num">@p.Code</bdi></div></div></td>
+                                                <td class="pe-4"><select class="form-select form-select-solid form-select-sm" data-payer-account="@p.ID"><option value="">@T["The company's payer receivable"]</option>
                                                     @foreach (var a in accounts) { <option value="@a.Id" selected="@(a.Id == own)">@a.Label · @DisplayName.Of(a.Name, a.NameEn)</option> }
                                                 </select></td>
                                             </tr>
@@ -134,18 +140,17 @@
                     </div>
                 </div>
                 @* H51: what an issued blood request is charged as *@
-                <div class="card mt-5" data-blood>
-                    <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
-                        <span class="card-label fw-bold text-gray-900 fs-4">@T["Blood products"]</span>
-                        <span class="text-muted mt-1 fw-semibold fs-7">@T["Issuing a blood request charges the bags to the patient's bill as this service; a product with none is issued uncharged"]</span>
-                    </div>
+                <div class="card card-flush mt-5" data-blood>
+                    <div class="card-header pt-5">
+                        <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Blood products"]</span>
+                            <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Issuing a blood request charges the bags to the patient's bill as this service; a product with none is issued uncharged"]</span></h3>
                     <div class="card-toolbar"><button type="button" class="btn btn-sm btn-light-primary" data-save-blood><i class="ki-outline ki-check fs-4"></i>@T["Save"]</button></div>
                     </div>
                     <div class="card-body pt-2"><div class="row g-6">
                         @foreach (var p in HospitalBloodProduct.All)
                         {
                             int? cur = bloodMap.TryGetValue(p, out var sid) ? sid : null;
-                            <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["bp:" + p]</label>
+                            <div class="col-md-6"><label class="fs-6 fw-semibold mb-2">@T["bp:" + p]</label>
                                 <select class="form-select form-select-solid" data-blood-product="@p"><option value="">@T["Not charged"]</option>
                                     @foreach (var s in services) { <option value="@s.ID" selected="@(s.ID == cur)">@s.Code · @DisplayName.Of(s.Name, s.NameEn)</option> }
                                 </select></div>

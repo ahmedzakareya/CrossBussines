@@ -11,6 +11,26 @@
     bool canConsult = ViewBag.CanConsult == true;
     var inv = System.Globalization.CultureInfo.InvariantCulture;
     string Stg(string v) => v switch { HospitalImplantStage.Restored => "success", HospitalImplantStage.Healing => "primary", HospitalImplantStage.Failed => "danger", _ => "secondary" };
+    // H127: a stat tile of the theme (demo39 dashboards/logistics) — the figure over its label, an icon, a line under it
+    void Stat(string label, string value, object? sub, string icon, string tone)
+    {
+        <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100">
+            <div class="card-header pt-5 flex-nowrap gap-3">
+                <div class="card-title d-flex flex-column">
+                    <span class="fs-2hx fw-bold text-gray-900 me-2 lh-1 ls-n2 hp-num">@value</span>
+                    <span class="text-gray-500 pt-1 fw-semibold fs-6">@label</span>
+                </div>
+                <div class="card-toolbar"><div class="symbol symbol-45px"><span class="symbol-label bg-light-@tone"><i class="ki-outline ki-@icon fs-2x text-@tone"></i></span></div></div>
+            </div>
+            <div class="card-body d-flex align-items-end pt-0">
+                <div class="d-flex fs-7 fw-semibold align-items-center text-gray-500">@if (sub != null) {<span class="bullet w-8px h-6px rounded-2 bg-@tone me-3 flex-shrink-0"></span><span>@sub</span>} else {<span>&nbsp;</span>}</div>
+            </div>
+        </div></div>
+    }
+    void Person(string? photo, string nameEn, int size)
+    {
+        <div class="symbol symbol-@(size)px symbol-circle flex-shrink-0 me-3">@if (photo != null) {<img src="@photo" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(nameEn)" />} else {<span class="symbol-label fw-bold fs-8 hp-initials">@HospitalUi.Initials(nameEn)</span>}</div>
+    }
 }
 <link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
 @Html.AntiForgeryToken()
@@ -29,58 +49,60 @@
     </div></div>
 
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @* H127: the register's figures — demo39 dashboards/logistics stat tiles *@
         <div class="row g-5 g-xl-8 mb-5">
-            <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
-                <div class="text-muted fw-semibold fs-7 mb-1">@T["Implants this year"]</div><div class="fs-2hx fw-bold hp-num text-gray-900">@s.ThisYear</div></div></div></div>
-            <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
-                <div class="text-muted fw-semibold fs-7 mb-1">@T["Healing now"]</div><div class="fs-2hx fw-bold hp-num text-gray-900">@s.Healing</div>
-                <div class="text-muted fs-8 mt-1">@T["3–6 months before the crown"]</div></div></div></div>
-            <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
-                <div class="text-muted fw-semibold fs-7 mb-1">@T["Survival rate"]</div><div class="fs-2hx fw-bold hp-num text-gray-900">@(s.SurvivalRate == null ? "—" : s.SurvivalRate.Value.ToString("0.#", inv) + "%")</div>
-                <div class="text-muted fs-8 mt-1">@T["last 3 years"]</div></div></div></div>
-            <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
-                <div class="text-muted fw-semibold fs-7 mb-1">@T["Fixtures in stock"]</div><div class="fs-2hx fw-bold hp-num text-gray-900">—</div>
-                <div class="text-muted fs-8 mt-1">@T["from Inventory, by lot and expiry"] · @T["lots recorded"] <span class="hp-num">@s.Lots</span></div></div></div></div>
+            @{
+                Stat(T["Implants this year"].Value, s.ThisYear.ToString(), null, "abstract-26", "primary");
+                Stat(T["Healing now"].Value, s.Healing.ToString(), T["3–6 months before the crown"], "time", "info");
+                Stat(T["Survival rate"].Value, s.SurvivalRate == null ? "—" : s.SurvivalRate.Value.ToString("0.#", inv) + "%", T["last 3 years"], "chart-line-up", "success");
+                Stat(T["Fixtures in stock"].Value, "—", new Microsoft.AspNetCore.Html.HtmlString(System.Net.WebUtility.HtmlEncode(T["from Inventory, by lot and expiry"].Value + " · " + T["lots recorded"].Value) + "&nbsp;<span class=\"hp-num\">" + s.Lots + "</span>"), "parcel", "primary");
+            }
         </div>
 
-        <div class="card mb-5">
-            <div class="card-header border-0 pt-6">
-                <div class="card-title align-items-start flex-column m-0">
-                    <span class="card-label fw-bold text-gray-900 fs-4">@T["Implant register"]</span>
-                    <span class="text-muted mt-1 fw-semibold fs-7">@T["Each implant with its system, size and lot — any lot can be traced if the maker recalls it"]</span>
-                </div>
-                <div class="card-toolbar"><div class="position-relative"><i class="ki-outline ki-magnifier fs-4 position-absolute top-50 translate-middle-y ms-3"></i><input class="form-control form-control-sm form-control-solid w-250px ps-10" placeholder="@T["Search by patient or lot"]" data-filter /></div></div>
+        @* H127: the register — demo39 widgets/tables *@
+        <div class="card card-flush mb-5">
+            <div class="card-header pt-5">
+                <h3 class="card-title align-items-start flex-column">
+                    <span class="card-label fw-bold text-gray-800">@T["Implant register"]</span>
+                    <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Each implant with its system, size and lot — any lot can be traced if the maker recalls it"]</span>
+                </h3>
+                <div class="card-toolbar"><div class="d-flex align-items-center position-relative"><i class="ki-outline ki-magnifier fs-3 position-absolute ms-4"></i><input type="text" class="form-control form-control-solid w-225px ps-12" placeholder="@T["Search by patient or lot"]" data-filter /></div></div>
             </div>
             <div class="card-body pt-2">
-                @if (Model.Count == 0) { <div class="text-center text-muted py-10">@T["No implants in the register yet."]</div> }
+                @if (Model.Count == 0)
+                {
+                    <div class="text-center py-10"><i class="ki-outline ki-abstract-26 fs-3x text-gray-300 mb-4 d-block"></i>
+                        <div class="fs-6 fw-bold text-gray-700">@T["No implants in the register yet."]</div></div>
+                }
                 else
                 {
-                    <div class="table-responsive"><table class="table align-middle table-row-dashed fs-6 gy-3 mb-0">
-                        <thead><tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0">
-                            <th class="w-100px">@T["No."]</th><th>@T["Patient"]</th><th>@T["Tooth"]</th><th>@T["System & size"]</th><th>@T["Lot"]</th><th>@T["Placed"]</th><th>@T["Stability ISQ"]</th><th>@T["Stage"]</th><th>@T["Surgeon"]</th><th class="text-end"></th>
+                    <div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
+                        <thead><tr class="fw-bold text-muted bg-light">
+                            <th class="ps-4 rounded-start">@T["Patient"]</th><th>@T["No."]</th><th>@T["System & size"]</th><th>@T["Lot"]</th><th>@T["Placed"]</th><th>@T["Stability ISQ"]</th><th>@T["Stage"]</th><th>@T["Surgeon"]</th><th class="text-end pe-4 rounded-end"></th>
                         </tr></thead>
-                        <tbody class="fw-semibold text-gray-700">
+                        <tbody>
                             @foreach (var r in Model)
                             {
                                 var m = r.Implant;
                                 <tr data-row="@m.ImplantNo @r.PatientName @r.PatientNameEn @r.Mrn @m.Lot @m.System">
-                                    <td><span class="badge hp-code fw-bold fs-8 hp-num">@m.ImplantNo</span></td>
-                                    <td><a href="@Url.Action("DentalChart", new { patientId = m.PatientId })" class="d-flex align-items-center gap-2 text-hover-primary">
-                                        <div class="symbol symbol-30px symbol-circle flex-shrink-0">@if (r.Photo != null) {<img src="@r.Photo" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(r.PatientNameEn)" />} else {<span class="symbol-label fw-bold fs-9 hp-initials">@HospitalUi.Initials(r.PatientNameEn)</span>}</div>
-                                        <div><div class="fw-bold text-gray-900 fs-7">@DisplayName.Of(r.PatientName, r.PatientNameEn)</div><div class="text-muted fs-8 hp-num">@r.Mrn</div></div></a></td>
-                                    <td><span class="hp-num fw-bold fs-5">@m.Tooth</span></td>
-                                    <td><div class="fw-semibold text-gray-800">@m.System</div><div class="text-muted fs-8 hp-num">@m.Diameter.ToString("0.0", inv) × @m.Length.ToString("0.#", inv) mm</div></td>
-                                    <td>@if (m.Lot != null) {<span class="badge hp-code hp-num">@m.Lot</span>} else {<span class="text-muted">—</span>}</td>
-                                    <td class="text-nowrap"><span class="hp-num">@(m.PlacedOn?.ToString("yyyy-MM-dd") ?? "—")</span></td>
-                                    <td>@if (m.Isq != null) {<span class="hp-num fw-bold @(m.Isq < HospitalDentalCasesRules.IsqLoadable ? "text-danger" : "text-success")">@m.Isq</span>} else {<span class="text-muted">—</span>}</td>
-                                    <td><span class="badge badge-@Stg(m.Stage) fs-8">@T["impl:" + m.Stage]</span>@if (m.FailureReason != null) {<div class="text-danger fs-8 mt-1">@m.FailureReason</div>}</td>
-                                    <td>@if (r.Surgeon != null) { <div class="d-flex align-items-center gap-2"><div class="symbol symbol-25px symbol-circle flex-shrink-0">@if (r.Surgeon.Photo != null) {<img src="@r.Surgeon.Photo" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(r.Surgeon.NameEn)" />} else {<span class="symbol-label fw-bold fs-9 hp-initials">@HospitalUi.Initials(r.Surgeon.NameEn)</span>}</div><span class="fs-7 text-nowrap">@DisplayName.Of(r.Surgeon.Name, r.Surgeon.NameEn)</span></div> } else {<text>—</text>}</td>
-                                    <td class="text-end text-nowrap">
+                                    <td class="ps-4"><a href="@Url.Action("DentalChart", new { patientId = m.PatientId })" class="d-flex align-items-center text-hover-primary">
+                                        @{ Person(r.Photo, r.PatientNameEn, 40); }
+                                        <div class="d-flex flex-column"><span class="text-gray-900 fw-bold fs-6">@DisplayName.Of(r.PatientName, r.PatientNameEn)</span><bdi class="text-muted fw-semibold d-block fs-7 hp-num">@r.Mrn</bdi></div></a></td>
+                                    <td><div class="d-flex align-items-center">
+                                        <div class="symbol symbol-35px me-3 flex-shrink-0" title="@T["Tooth"]"><span class="symbol-label bg-light-primary text-primary fw-bold fs-6 hp-num">@m.Tooth</span></div>
+                                        <bdi class="text-gray-900 fw-bold fs-7 hp-num">@m.ImplantNo</bdi></div></td>
+                                    <td><span class="text-gray-900 fw-bold d-block fs-7"><bdi>@m.System</bdi></span><span class="text-muted fw-semibold fs-7 hp-num">@m.Diameter.ToString("0.0", inv) × @m.Length.ToString("0.#", inv)&nbsp;mm</span></td>
+                                    <td>@if (m.Lot != null) {<span class="badge badge-light-primary fs-7 fw-bold hp-num">@m.Lot</span>} else {<span class="text-muted">—</span>}</td>
+                                    <td class="text-nowrap"><span class="text-gray-800 fw-semibold hp-num">@(m.PlacedOn?.ToString("yyyy-MM-dd") ?? "—")</span></td>
+                                    <td>@if (m.Isq != null) {<span class="badge badge-light-@(m.Isq < HospitalDentalCasesRules.IsqLoadable ? "danger" : "success") fs-7 fw-bold hp-num">@m.Isq</span>} else {<span class="text-muted">—</span>}</td>
+                                    <td><span class="badge badge-light-@Stg(m.Stage) fs-7 fw-bold">@T["impl:" + m.Stage]</span>@if (m.FailureReason != null) {<div class="text-danger fs-8 mt-1">@m.FailureReason</div>}</td>
+                                    <td>@if (r.Surgeon != null) { <div class="d-flex align-items-center">@{ Person(r.Surgeon.Photo, r.Surgeon.NameEn, 30); }<span class="text-gray-800 fw-semibold fs-7">@DisplayName.Of(r.Surgeon.Name, r.Surgeon.NameEn)</span></div> } else {<span class="text-muted">—</span>}</td>
+                                    <td class="text-end pe-4 text-nowrap">
                                         @if (canConsult)
                                         {
-                                            if (m.Stage == HospitalImplantStage.Planned) { <button type="button" class="btn btn-sm btn-light-primary py-1 px-3" data-place="@m.ID" data-what="@m.ImplantNo"><i class="ki-outline ki-check fs-6"></i>@T["Implant placed"]</button> }
-                                            if (m.Stage == HospitalImplantStage.Healing) { <button type="button" class="btn btn-sm btn-light-primary py-1 px-3" data-restore="@m.ID" data-what="@m.ImplantNo" data-isq="@m.Isq">@T["Crown fitted"]</button> }
-                                            if (m.Stage is HospitalImplantStage.Healing or HospitalImplantStage.Restored) { <button type="button" class="btn btn-sm btn-light py-1 px-3" data-fail="@m.ID" data-what="@m.ImplantNo">@T["Failed"]</button> }
+                                            if (m.Stage == HospitalImplantStage.Planned) { <button type="button" class="btn btn-sm btn-light-primary" data-place="@m.ID" data-what="@m.ImplantNo"><i class="ki-outline ki-check fs-4"></i>@T["Implant placed"]</button> }
+                                            if (m.Stage == HospitalImplantStage.Healing) { <button type="button" class="btn btn-sm btn-light-primary" data-restore="@m.ID" data-what="@m.ImplantNo" data-isq="@m.Isq"><i class="ki-outline ki-check-circle fs-4"></i>@T["Crown fitted"]</button> }
+                                            if (m.Stage is HospitalImplantStage.Healing or HospitalImplantStage.Restored) { <button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-danger ms-1" title="@T["Failed"]" data-bs-toggle="tooltip" data-fail="@m.ID" data-what="@m.ImplantNo"><i class="ki-outline ki-cross-circle fs-3"></i></button> }
                                         }
                                     </td>
                                 </tr>
@@ -90,37 +112,44 @@
                 }
             </div>
         </div>
-        <div class="notice d-flex rounded border border-dashed p-5 mb-0 hp-notice">
-            <span class="symbol symbol-40px me-4 flex-shrink-0"><span class="symbol-label"><i class="ki-outline ki-information-5 fs-2 text-white"></i></span></span>
-            <div><h4 class="text-gray-900 fw-bold mb-1">@T["Inventory by lot and expiry (FEFO)"]</h4><div class="fs-7 text-gray-700">@T["The fixtures themselves are stock items: their quantities, lots and expiry are kept in Inventory, and a placed fixture's lot is recorded here so a recall finds its patients."]</div></div>
+        <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-5">
+            <i class="ki-outline ki-information fs-2tx text-primary me-4"></i>
+            <div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@T["Inventory by lot and expiry (FEFO)"]</h4><div class="fs-6 text-gray-700">@T["The fixtures themselves are stock items: their quantities, lots and expiry are kept in Inventory, and a placed fixture's lot is recorded here so a recall finds its patients."]</div></div>
         </div>
     </div></div>
 </div>
 
 @if (canConsult)
 {
-    <div class="modal fade" id="impModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-650px"><div class="modal-content">
-        <div class="modal-header"><h2 class="fw-bold m-0 fs-4">@T["Plan an implant"]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
-        <div class="modal-body py-6 px-lg-10"><div class="row g-4">
-            <div class="col-12"><label class="form-label required">@T["Patient"]</label>
-                <select class="form-select form-select-solid" data-im="patient" data-person-select data-person-ajax="@Url.Action("SearchDentalPatients")" data-searching="@T["Searching…"]" data-no-results="@T["No patient matches"]" data-placeholder="@T["Patient"]"><option value=""></option></select></div>
-            <div class="col-md-4"><label class="form-label required">@T["Tooth"]</label><input type="number" min="11" max="48" class="form-control form-control-solid hp-num" dir="ltr" data-im="tooth" /></div>
-            <div class="col-md-8"><label class="form-label required">@T["System"]</label><input class="form-control form-control-solid" dir="ltr" maxlength="60" data-im="system" placeholder="Straumann BLX" /></div>
-            <div class="col-md-4"><label class="form-label required">@T["Diameter (mm)"]</label><input type="number" min="2" max="8" step="0.1" class="form-control form-control-solid hp-num" dir="ltr" data-im="diameter" value="4.0" /></div>
-            <div class="col-md-4"><label class="form-label required">@T["Length (mm)"]</label><input type="number" min="4" max="20" step="0.5" class="form-control form-control-solid hp-num" dir="ltr" data-im="length" value="10" /></div>
-            <div class="col-md-4"><label class="form-label">@T["Surgeon"]</label>
-                <select class="form-select form-select-solid" data-im="surgeon" data-person-select data-allow-clear data-placeholder="@T["Surgeon"]"><option value=""></option>@foreach (var d in dentists) { <option value="@d.Id" data-photo="@d.Photo" data-initials="@HospitalUi.Initials(d.NameEn)">@DisplayName.Of(d.Name, d.NameEn)</option> }</select></div>
-        </div></div>
-        <div class="modal-footer flex-center"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-im-save>@T["Add to the register"]</button></div>
+    @* H127: the theme's form modals (demo39 utilities/modals/forms/new-target) *@
+    <div class="modal fade" id="impModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-650px"><div class="modal-content rounded">
+        <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-10">
+            <div class="mb-10 text-center"><h1 class="mb-3">@T["Plan an implant"]</h1><div class="text-muted fw-semibold fs-5">@T["Each implant with its system, size and lot — any lot can be traced if the maker recalls it"]</div></div>
+            <div class="row g-6">
+                <div class="col-12"><label class="d-block fs-6 fw-semibold mb-2 required">@T["Patient"]</label>
+                    <select class="form-select form-select-solid" data-im="patient" data-person-select data-person-ajax="@Url.Action("SearchDentalPatients")" data-searching="@T["Searching…"]" data-no-results="@T["No patient matches"]" data-placeholder="@T["Patient"]"><option value=""></option></select></div>
+                <div class="col-md-4"><label class="d-block fs-6 fw-semibold mb-2 required">@T["Tooth"]</label><input type="number" min="11" max="48" class="form-control form-control-solid hp-num" dir="ltr" data-im="tooth" /></div>
+                <div class="col-md-8"><label class="d-block fs-6 fw-semibold mb-2 required">@T["System"]</label><input class="form-control form-control-solid" dir="ltr" maxlength="60" data-im="system" placeholder="Straumann BLX" /></div>
+                <div class="col-md-4"><label class="d-block fs-6 fw-semibold mb-2 required">@T["Diameter (mm)"]</label><input type="number" min="2" max="8" step="0.1" class="form-control form-control-solid hp-num" dir="ltr" data-im="diameter" value="4.0" /></div>
+                <div class="col-md-4"><label class="d-block fs-6 fw-semibold mb-2 required">@T["Length (mm)"]</label><input type="number" min="4" max="20" step="0.5" class="form-control form-control-solid hp-num" dir="ltr" data-im="length" value="10" /></div>
+                <div class="col-md-4"><label class="d-block fs-6 fw-semibold mb-2">@T["Surgeon"]</label>
+                    <select class="form-select form-select-solid" data-im="surgeon" data-person-select data-allow-clear data-placeholder="@T["Surgeon"]"><option value=""></option>@foreach (var d in dentists) { <option value="@d.Id" data-photo="@d.Photo" data-initials="@HospitalUi.Initials(d.NameEn)">@DisplayName.Of(d.Name, d.NameEn)</option> }</select></div>
+            </div>
+            <div class="text-center pt-10"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-im-save>@T["Add to the register"]</button></div>
+        </div>
     </div></div></div>
-    <div class="modal fade" id="placeModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-550px"><div class="modal-content">
-        <div class="modal-header"><h2 class="fw-bold m-0 fs-4">@T["Implant placed"] <span class="text-muted fs-6 hp-num" data-pl-what></span></h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
-        <div class="modal-body py-6 px-lg-10"><div class="row g-4">
-            <div class="col-md-6"><label class="form-label required">@T["Lot"]</label><input class="form-control form-control-solid hp-num" dir="ltr" maxlength="40" data-pl="lot" placeholder="STR-24K118" /></div>
-            <div class="col-md-6"><label class="form-label required">@T["Placed"]</label><input type="date" class="form-control form-control-solid hp-num" data-pl="on" value="@DateTime.Now.ToString("yyyy-MM-dd")" max="@DateTime.Now.ToString("yyyy-MM-dd")" /></div>
-            <div class="col-md-6"><label class="form-label">@T["Stability ISQ"]</label><input type="number" min="1" max="100" class="form-control form-control-solid hp-num" dir="ltr" data-pl="isq" /></div>
-        </div></div>
-        <div class="modal-footer flex-center"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-pl-save>@T["Record"]</button></div>
+    <div class="modal fade" id="placeModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-550px"><div class="modal-content rounded">
+        <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-10">
+            <div class="mb-10 text-center"><h1 class="mb-3">@T["Implant placed"]</h1><div class="text-muted fw-semibold fs-5"><bdi class="hp-num" data-pl-what></bdi></div></div>
+            <div class="row g-6">
+                <div class="col-md-6"><label class="d-block fs-6 fw-semibold mb-2 required">@T["Lot"]</label><input class="form-control form-control-solid hp-num" dir="ltr" maxlength="40" data-pl="lot" placeholder="STR-24K118" /></div>
+                <div class="col-md-6"><label class="d-block fs-6 fw-semibold mb-2 required">@T["Placed"]</label><input type="date" class="form-control form-control-solid hp-num" data-pl="on" value="@DateTime.Now.ToString("yyyy-MM-dd")" max="@DateTime.Now.ToString("yyyy-MM-dd")" /></div>
+                <div class="col-md-6"><label class="d-block fs-6 fw-semibold mb-2">@T["Stability ISQ"]</label><input type="number" min="1" max="100" class="form-control form-control-solid hp-num" dir="ltr" data-pl="isq" /></div>
+            </div>
+            <div class="text-center pt-10"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-pl-save>@T["Record"]</button></div>
+        </div>
     </div></div></div>
 }
 

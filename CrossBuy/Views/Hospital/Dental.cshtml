@@ -13,20 +13,34 @@
     var acc = ((decimal Accepted, decimal Presented, string? Currency, int Decimals))ViewBag.AcceptedThisMonth;
     string N(decimal v, int d) => v.ToString("N" + d, System.Globalization.CultureInfo.InvariantCulture);
     bool today = Model.Day == DateTime.Now.Date;
-    string Cls(string s) => s switch { HospitalAppointmentStatus.Done => "done", HospitalAppointmentStatus.InRoom => "chair", HospitalAppointmentStatus.Arrived => "arrived", HospitalAppointmentStatus.NoShow => "noshow", _ => "" };
+    // H127: a slot's tone — the theme's light colours (no amber/yellow, house rule)
+    string Tone(string s) => s switch { HospitalAppointmentStatus.Done => "success", HospitalAppointmentStatus.InRoom => "danger", HospitalAppointmentStatus.Arrived => "primary", HospitalAppointmentStatus.NoShow => "secondary", _ => "info" };
     string Badge(string s) => s switch { HospitalAppointmentStatus.Done => "success", HospitalAppointmentStatus.InRoom => "danger", HospitalAppointmentStatus.Arrived => "primary", _ => "secondary" };
     string Av(string? photo, string nameEn, int size) => photo != null
         ? $"<div class=\"symbol symbol-{size}px symbol-circle flex-shrink-0\"><img src=\"{photo}\" alt=\"\" style=\"object-fit:cover\" data-initials=\"{HospitalUi.Initials(nameEn)}\" /></div>"
         : $"<div class=\"symbol symbol-{size}px symbol-circle flex-shrink-0\"><span class=\"symbol-label fw-bold fs-9 hp-initials\">{HospitalUi.Initials(nameEn)}</span></div>";
+    // H127: a stat tile of the theme (demo39 dashboards/logistics) — the figure over its label, an icon, a line under it
+    void Stat(object label, string value, string? unit, object? sub, string icon, string tone, bool alert = false)
+    {
+        <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100">
+            <div class="card-header pt-5 flex-nowrap gap-3">
+                <div class="card-title d-flex flex-column">
+                    <div class="d-flex align-items-baseline flex-wrap"><span class="fs-2hx fw-bold @(alert ? "text-danger" : "text-gray-900") me-2 lh-1 ls-n2 hp-num">@value</span>@if (unit != null) {<span class="fs-6 fw-semibold text-gray-500 hp-num">@unit</span>}</div>
+                    <span class="text-gray-500 pt-1 fw-semibold fs-6">@label</span>
+                </div>
+                <div class="card-toolbar"><div class="symbol symbol-45px"><span class="symbol-label bg-light-@tone"><i class="ki-outline ki-@icon fs-2x text-@tone"></i></span></div></div>
+            </div>
+            <div class="card-body d-flex align-items-end pt-0">
+                <div class="d-flex fs-7 fw-semibold align-items-center text-gray-500">@if (sub != null) {<span class="bullet w-8px h-6px rounded-2 bg-@tone me-3 flex-shrink-0"></span><span>@sub</span>} else {<span>&nbsp;</span>}</div>
+            </div>
+        </div></div>
+    }
 }
 <link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
-@* The chair day as the approved prototype draws it. No amber/yellow (house rule). *@
+@* The chair day: one column per chair, its slots in the theme's light tones. No amber/yellow (house rule). *@
 <style>
-    .chair-board { width: 0; min-width: 100%; } .chair-col { min-width: 210px; flex: 1 0 210px; }
-    .chair-slot { border-radius: 8px; padding: 8px 10px; margin-bottom: 6px; border-inline-start: 4px solid var(--cb-brand, #3A5795); background: #F7FAFF; }
-    .chair-slot.done { border-color: #17A34A; background: #F0FBF4; } .chair-slot.chair { border-color: #DC2626; background: #FFF5F5; }
-    .chair-slot.arrived { border-color: var(--cb-brand, #3A5795); background: #EEF4FF; } .chair-slot.noshow { border-color: #A1A5B7; background: #F4F6FA; opacity: .75; }
-    .chair-slot .btn { padding: 2px 8px !important; font-size: .75rem; }
+    .chair-board { width: 0; min-width: 100%; } .chair-col { min-width: 220px; flex: 1 0 220px; }
+    .chair-slot.noshow { opacity: .7; }
 </style>
 @Html.AntiForgeryToken()
 
@@ -41,72 +55,78 @@
             </ul>
         </div>
         <div class="d-flex flex-wrap gap-2 align-items-center">
-            <form method="get" class="d-print-none"><input type="date" name="day" class="form-control form-control-sm form-control-solid hp-num" value="@Model.Day.ToString("yyyy-MM-dd")" onchange="this.form.submit()" /></form>
+            <form method="get" class="d-print-none w-150px"><input type="date" name="day" class="form-control form-control-sm form-control-solid hp-num" value="@Model.Day.ToString("yyyy-MM-dd")" onchange="this.form.submit()" /></form>
             <a href="@Url.Action("DentalChart")" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-emoji-happy fs-4"></i>@T["Patient chart"]</a>
-            @if (canManage) { <button type="button" class="btn btn-sm btn-light" data-chairs-open><i class="ki-outline ki-setting-2 fs-4"></i>@T["Chairs"]</button> }
+            @if (canManage) { <button type="button" class="btn btn-sm btn-light btn-active-light-primary" data-chairs-open><i class="ki-outline ki-setting-2 fs-4"></i>@T["Chairs"]</button> }
             @if (canBook && allChairs.Any(c => c.IsActive)) { <button type="button" class="btn btn-sm btn-primary" data-book-open><i class="ki-outline ki-plus fs-4"></i>@T["Chair booking"]</button> }
         </div>
     </div></div>
 
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @* H127: the day's figures — demo39 dashboards/logistics stat tiles *@
         <div class="row g-5 g-xl-8 mb-5">
-            <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
-                <div class="text-muted fw-semibold fs-7 mb-1">@(today ? T["Appointments today"] : T["Appointments"])</div><div class="fs-2hx fw-bold hp-num text-gray-900">@Model.Appointments</div>
-                <div class="text-muted fs-8 mt-1">@Html.Raw(string.Format(T["over {0} chairs"].Value, "<span class=\"hp-num\">" + Model.Chairs.Count + "</span>"))</div></div></div></div>
-            <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
-                <div class="text-muted fw-semibold fs-7 mb-1">@T["Chair occupancy"]</div><div class="fs-2hx fw-bold hp-num text-gray-900">@(Model.Occupancy == null ? "—" : Model.Occupancy + "%")</div>
-                <div class="text-muted fs-8 mt-1">@T["of the open chair hours (08:00–16:00)"]</div></div></div></div>
-            <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
-                <div class="text-muted fw-semibold fs-7 mb-1">@T["Plans accepted this month"]</div><div class="fs-2hx fw-bold hp-num text-gray-900">@N(acc.Accepted, acc.Decimals) <span class="fs-7 text-muted">@acc.Currency</span></div>
-                <div class="text-muted fs-8 mt-1">@T["of plans worth"] <span class="hp-num">@N(acc.Presented, acc.Decimals)</span></div></div></div></div>
-            <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
-                <div class="text-muted fw-semibold fs-7 mb-1">@T["Lab cases at risk"]</div><div class="fs-2hx fw-bold hp-num @(Model.LabAtRisk.Count > 0 ? "text-danger" : "text-gray-900")">@Model.LabAtRisk.Count</div>
-                <div class="text-muted fs-8 mt-1">@T["fit booked before receipt"]</div></div></div></div>
+            @{
+                Stat(today ? T["Appointments today"] : T["Appointments"], Model.Appointments.ToString(), null, new Microsoft.AspNetCore.Html.HtmlString(string.Format(System.Net.WebUtility.HtmlEncode(T["over {0} chairs"].Value), "<span class=\"hp-num\">" + Model.Chairs.Count + "</span>")), "calendar", "primary");
+                Stat(T["Chair occupancy"], Model.Occupancy == null ? "—" : Model.Occupancy + "%", null, T["of the open chair hours (08:00–16:00)"], "chart-pie-simple", "info");
+                Stat(T["Plans accepted this month"], N(acc.Accepted, acc.Decimals), acc.Currency, new Microsoft.AspNetCore.Html.HtmlString(System.Net.WebUtility.HtmlEncode(T["of plans worth"].Value) + "&nbsp;<span class=\"hp-num\">" + N(acc.Presented, acc.Decimals) + "</span>"), "document", "success");
+                Stat(T["Lab cases at risk"], Model.LabAtRisk.Count.ToString(), null, T["fit booked before receipt"], "abstract-26", Model.LabAtRisk.Count > 0 ? "danger" : "success", Model.LabAtRisk.Count > 0);
+            }
         </div>
 
         @if (Model.LabAtRisk.Count > 0)
         {
-            <div class="notice d-flex rounded border border-danger border-dashed p-5 mb-5" style="background:#FFF5F5">
-                <span class="symbol symbol-40px me-4 flex-shrink-0"><span class="symbol-label bg-danger"><i class="ki-outline ki-abstract-26 fs-2 text-white"></i></span></span>
-                <div class="flex-grow-1"><h4 class="text-gray-900 fw-bold mb-1">@T["A lab case has not arrived and its fit is close"]</h4>
-                    <div class="fs-7 text-gray-700">@for (int i = 0; i < Model.LabAtRisk.Count; i++) { var c = Model.LabAtRisk[i]; if (i > 0) {<text> · </text>}<span class="badge hp-code hp-num">@c.Case.CaseNo</span> @DisplayName.Of(c.PatientName, c.PatientNameEn) <text> — </text>@T["fit"] <span class="hp-num">@c.FitAt?.ToString("yyyy-MM-dd HH:mm")</span> }</div></div>
-                <a href="@Url.Action("DentalLab")" class="btn btn-sm btn-danger align-self-center">@T["Call the lab"]</a>
+            <div class="notice d-flex bg-light-danger rounded border-danger border border-dashed p-5 mb-5">
+                <i class="ki-outline ki-information fs-2tx text-danger me-4"></i>
+                <div class="d-flex flex-stack flex-grow-1 flex-wrap flex-md-nowrap gap-3">
+                    <div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@T["A lab case has not arrived and its fit is close"]</h4>
+                        <div class="fs-6 text-gray-700">@for (int i = 0; i < Model.LabAtRisk.Count; i++) { var c = Model.LabAtRisk[i]; if (i > 0) {<text> · </text>}<bdi class="badge badge-light-danger fs-7 fw-bold hp-num">@c.Case.CaseNo</bdi> @DisplayName.Of(c.PatientName, c.PatientNameEn) <text> — </text>@T["fit"] <span class="hp-num">@c.FitAt?.ToString("yyyy-MM-dd HH:mm")</span> }</div></div>
+                    <a href="@Url.Action("DentalLab")" class="btn btn-sm btn-danger flex-shrink-0">@T["Call the lab"]</a>
+                </div>
             </div>
         }
 
-        <div class="card mb-5">
-            <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
-                <span class="card-label fw-bold text-gray-900 fs-4">@T["Chair schedule"] — <span class="hp-num">@(today ? T["Today"].Value : Model.Day.ToString("yyyy-MM-dd"))</span></span>
-                <span class="text-muted mt-1 fw-semibold fs-7">@T["Each slot is as long as its procedure: exam 30 min, hygiene 45, root canal 60, surgery 90"]</span>
-            </div></div>
+        @* H127: the chair board — demo39 card with a title over a muted line; each chair is a list widget of its slots *@
+        <div class="card card-flush mb-5">
+            <div class="card-header pt-5">
+                <h3 class="card-title align-items-start flex-column">
+                    <span class="card-label fw-bold text-gray-800">@T["Chair schedule"] — <span class="hp-num">@(today ? T["Today"].Value : Model.Day.ToString("yyyy-MM-dd"))</span></span>
+                    <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Each slot is as long as its procedure: exam 30 min, hygiene 45, root canal 60, surgery 90"]</span>
+                </h3>
+            </div>
             <div class="card-body pt-2">
-                @if (Model.Chairs.Count == 0) { <div class="text-center text-muted py-10">@T["No chairs yet: add the practice's chairs first."]</div> }
+                @if (Model.Chairs.Count == 0)
+                {
+                    <div class="text-center py-10"><i class="ki-outline ki-home-2 fs-3x text-gray-300 mb-4 d-block"></i>
+                        <div class="fs-6 fw-bold text-gray-700 mb-4">@T["No chairs yet: add the practice's chairs first."]</div>
+                        @if (canManage) { <button type="button" class="btn btn-sm btn-light-primary" data-chairs-open><i class="ki-outline ki-setting-2 fs-4"></i>@T["Chairs"]</button> }</div>
+                }
                 else
                 {
-                    <div class="d-flex gap-4 overflow-auto pb-2 chair-board">
+                    <div class="d-flex gap-5 overflow-auto pb-2 chair-board">
                         @foreach (var col in Model.Chairs)
                         {
                             <div class="chair-col">
-                                <div class="d-flex align-items-center gap-3 mb-4">
+                                <div class="d-flex align-items-center gap-3 bg-light rounded px-4 py-3 mb-4">
                                     @Html.Raw(col.Person == null ? Av(null, col.Chair.NameEn, 35) : Av(col.Person.Photo, col.Person.NameEn, 35))
-                                    <div><div class="fw-bold text-gray-900">@DisplayName.Of(col.Chair.Name, col.Chair.NameEn)</div><div class="text-muted fs-8">@(col.Person == null ? "—" : DisplayName.Of(col.Person.Name, col.Person.NameEn))</div></div>
+                                    <div class="flex-grow-1 min-w-0"><div class="text-gray-900 fw-bold fs-6">@DisplayName.Of(col.Chair.Name, col.Chair.NameEn)</div><div class="text-gray-500 fw-semibold fs-7">@(col.Person == null ? "—" : DisplayName.Of(col.Person.Name, col.Person.NameEn))</div></div>
+                                    <span class="badge badge-light-primary fs-7 fw-bold hp-num">@col.Slots.Count</span>
                                 </div>
-                                @if (col.Slots.Count == 0) { <div class="text-muted fs-8 py-3">@T["Nothing booked"]</div> }
+                                @if (col.Slots.Count == 0) { <div class="text-center text-gray-500 fw-semibold fs-7 py-4 border border-dashed border-gray-300 rounded">@T["Nothing booked"]</div> }
                                 @foreach (var s in col.Slots)
                                 {
-                                    var st = s.Appointment.Status;
-                                    <div class="chair-slot @Cls(st)">
-                                        <div class="d-flex flex-stack mb-1"><span class="hp-num fw-bold fs-7">@HospitalUi.Clock(s.Appointment.StartMinute) · @s.Appointment.DurationMinutes @T["min"]</span><span class="badge badge-@Badge(st) fs-9">@T["chairst:" + st]</span></div>
-                                        <a href="@Url.Action("DentalChart", new { patientId = s.Appointment.PatientId })" class="d-flex align-items-center gap-2 text-hover-primary">@Html.Raw(Av(s.PatientPhoto, s.PatientNameEn, 25))<span class="fw-semibold text-gray-800 fs-7">@DisplayName.Of(s.PatientName, s.PatientNameEn)</span></a>
-                                        <div class="text-gray-700 fs-8 mt-1">@(s.Procedure == null ? T["Visit"].Value : DisplayName.Of(s.Procedure, s.ProcedureEn ?? s.Procedure))@if (s.Visit.Tooth != null) {<text> · </text>@T["Tooth"] <span class="hp-num fw-bold">@s.Visit.Tooth</span>}</div>
-                                        @if (s.LabCaseNo != null) { <div class="fs-8 mt-1 @(s.LabAtRisk ? "text-danger fw-bold" : "")"><i class="ki-outline ki-abstract-26 fs-8 @(s.LabAtRisk ? "text-danger" : "text-primary")"></i> @T["Needs lab case"] <span class="badge hp-code hp-num">@s.LabCaseNo</span></div> }
-                                        @if (s.Appointment.Note != null) { <div class="text-muted fs-8 mt-1">@s.Appointment.Note</div> }
+                                    var st = s.Appointment.Status; var tone = Tone(st);
+                                    <div class="chair-slot @(st == HospitalAppointmentStatus.NoShow ? "noshow" : "") rounded border border-dashed border-@tone bg-light-@tone p-3 mb-3">
+                                        <div class="d-flex flex-stack mb-2"><span class="text-gray-800 fw-bold fs-7"><span class="hp-num">@HospitalUi.Clock(s.Appointment.StartMinute)</span> · <span class="hp-num">@s.Appointment.DurationMinutes</span>&nbsp;@T["min"]</span><span class="badge badge-@Badge(st) fs-8 fw-bold">@T["chairst:" + st]</span></div>
+                                        <a href="@Url.Action("DentalChart", new { patientId = s.Appointment.PatientId })" class="d-flex align-items-center gap-2 text-hover-primary">@Html.Raw(Av(s.PatientPhoto, s.PatientNameEn, 30))<span class="text-gray-900 fw-bold fs-7">@DisplayName.Of(s.PatientName, s.PatientNameEn)</span></a>
+                                        <div class="text-gray-700 fw-semibold fs-8 mt-2">@(s.Procedure == null ? T["Visit"].Value : DisplayName.Of(s.Procedure, s.ProcedureEn ?? s.Procedure))@if (s.Visit.Tooth != null) {<text> · </text>@T["Tooth"]<text>&nbsp;</text><span class="hp-num fw-bold">@s.Visit.Tooth</span>}</div>
+                                        @if (s.LabCaseNo != null) { <div class="fs-8 fw-semibold mt-1 @(s.LabAtRisk ? "text-danger" : "text-gray-600")"><i class="ki-outline ki-abstract-26 fs-7 @(s.LabAtRisk ? "text-danger" : "text-primary")"></i> @T["Needs lab case"] <bdi class="hp-num fw-bold">@s.LabCaseNo</bdi></div> }
+                                        @if (s.Appointment.Note != null) { <div class="text-muted fs-8 mt-1"><bdi>@s.Appointment.Note</bdi></div> }
                                         @if (canBook)
                                         {
                                             var moves = st switch { HospitalAppointmentStatus.Booked => new[] { HospitalAppointmentStatus.Arrived, HospitalAppointmentStatus.NoShow }, HospitalAppointmentStatus.Arrived => new[] { HospitalAppointmentStatus.InRoom }, HospitalAppointmentStatus.InRoom => new[] { HospitalAppointmentStatus.Done }, _ => Array.Empty<string>() };
                                             if (moves.Length > 0)
                                             {
-                                                <div class="d-flex gap-1 mt-2">@foreach (var mv in moves) { <button type="button" class="btn btn-sm @(mv == HospitalAppointmentStatus.NoShow ? "btn-light" : "btn-light-primary")" data-move="@s.Appointment.ID" data-to="@mv" data-what="@DisplayName.Of(s.PatientName, s.PatientNameEn)" data-label="@T["chairmv:" + mv]">@T["chairmv:" + mv]</button> }</div>
+                                                <div class="d-flex gap-1 mt-3">@foreach (var mv in moves) { <button type="button" class="btn btn-sm py-1 px-3 fs-8 @(mv == HospitalAppointmentStatus.NoShow ? "btn-light" : "btn-primary")" data-move="@s.Appointment.ID" data-to="@mv" data-what="@DisplayName.Of(s.PatientName, s.PatientNameEn)" data-label="@T["chairmv:" + mv]">@T["chairmv:" + mv]</button> }</div>
                                             }
                                         }
                                     </div>
@@ -117,61 +137,70 @@
                 }
             </div>
         </div>
-        <div class="notice d-flex rounded border border-dashed p-5 mb-0 hp-notice">
-            <span class="symbol symbol-40px me-4 flex-shrink-0"><span class="symbol-label"><i class="ki-outline ki-information-5 fs-2 text-white"></i></span></span>
-            <div><h4 class="text-gray-900 fw-bold mb-1">@T["The chair is the room"]</h4><div class="fs-7 text-gray-700">@T["A dental practice schedules chairs, not only doctors: a dentist moves between two chairs, the hygienist has her own, and sterilisation books the turnover time between patients."]</div></div>
+        <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-5">
+            <i class="ki-outline ki-information fs-2tx text-primary me-4"></i>
+            <div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@T["The chair is the room"]</h4><div class="fs-6 text-gray-700">@T["A dental practice schedules chairs, not only doctors: a dentist moves between two chairs, the hygienist has her own, and sterilisation books the turnover time between patients."]</div></div>
         </div>
     </div></div>
 </div>
 
 @if (canBook)
 {
-    <div class="modal fade" id="bookModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-650px"><div class="modal-content">
-        <div class="modal-header"><h2 class="fw-bold m-0 fs-4">@T["Chair booking"]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
-        <div class="modal-body py-6 px-lg-10"><div class="row g-4">
-            <div class="col-12"><label class="form-label required">@T["Patient"]</label>
-                <select class="form-select form-select-solid" data-bk="patient" data-person-select data-person-ajax="@Url.Action("SearchDentalPatients")" data-searching="@T["Searching…"]" data-no-results="@T["No patient matches"]" data-placeholder="@T["Patient"]"><option value=""></option></select></div>
-            <div class="col-md-6"><label class="form-label required">@T["Chair"]</label>
-                <select class="form-select form-select-solid" data-bk="chair">@foreach (var c in allChairs.Where(c => c.IsActive)) { <option value="@c.ID" data-person="@c.PractitionerId">@c.Code · @DisplayName.Of(c.Name, c.NameEn)</option> }</select></div>
-            <div class="col-md-6"><label class="form-label required">@T["Dentist"]</label>
-                <select class="form-select form-select-solid" data-bk="dentist" data-person-select data-placeholder="@T["Dentist"]"><option value=""></option>@foreach (var d in dentists) { <option value="@d.Id" data-photo="@d.Photo" data-initials="@HospitalUi.Initials(d.NameEn)">@DisplayName.Of(d.Name, d.NameEn)</option> }</select></div>
-            <div class="col-md-6"><label class="form-label required">@T["Date"]</label><input type="date" class="form-control form-control-solid hp-num" data-bk="date" value="@Model.Day.ToString("yyyy-MM-dd")" /></div>
-            <div class="col-md-6"><label class="form-label required">@T["Time"]</label><input type="time" step="900" class="form-control form-control-solid hp-num" data-bk="time" value="09:00" /></div>
-            <div class="col-md-8"><label class="form-label">@T["Procedure"] <span class="text-muted fs-8">@T["its chair time is the slot's length"]</span></label>
-                <select class="form-select form-select-solid" data-bk="service"><option value="">@T["Visit"] (@HospitalDentalPracticeRules.DefaultMinutes @T["min"])</option>@foreach (var p in procs) { <option value="@p.Procedure.ServiceId">@p.Code — @DisplayName.Of(p.Name, p.NameEn) (@p.Procedure.Minutes @T["min"])</option> }</select></div>
-            <div class="col-md-4"><label class="form-label">@T["Tooth"]</label><input type="number" min="11" max="85" class="form-control form-control-solid hp-num" dir="ltr" data-bk="tooth" /></div>
-            <div class="col-12"><label class="form-label">@T["Note"]</label><input class="form-control form-control-solid" maxlength="400" data-bk="note" /></div>
-        </div></div>
-        <div class="modal-footer flex-center"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-bk-save>@T["Book"]</button></div>
+    @* H127: the theme's form modals (demo39 utilities/modals/forms/new-target) *@
+    <div class="modal fade" id="bookModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-650px"><div class="modal-content rounded">
+        <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-10">
+            <div class="mb-10 text-center"><h1 class="mb-3">@T["Chair booking"]</h1><div class="text-muted fw-semibold fs-5">@T["Each slot is as long as its procedure: exam 30 min, hygiene 45, root canal 60, surgery 90"]</div></div>
+            <div class="row g-6">
+                <div class="col-12"><label class="d-block fs-6 fw-semibold mb-2 required">@T["Patient"]</label>
+                    <select class="form-select form-select-solid" data-bk="patient" data-person-select data-person-ajax="@Url.Action("SearchDentalPatients")" data-searching="@T["Searching…"]" data-no-results="@T["No patient matches"]" data-placeholder="@T["Patient"]"><option value=""></option></select></div>
+                <div class="col-md-6"><label class="d-block fs-6 fw-semibold mb-2 required">@T["Chair"]</label>
+                    <select class="form-select form-select-solid" data-bk="chair">@foreach (var c in allChairs.Where(c => c.IsActive)) { <option value="@c.ID" data-person="@c.PractitionerId">@c.Code · @DisplayName.Of(c.Name, c.NameEn)</option> }</select></div>
+                <div class="col-md-6"><label class="d-block fs-6 fw-semibold mb-2 required">@T["Dentist"]</label>
+                    <select class="form-select form-select-solid" data-bk="dentist" data-person-select data-placeholder="@T["Dentist"]"><option value=""></option>@foreach (var d in dentists) { <option value="@d.Id" data-photo="@d.Photo" data-initials="@HospitalUi.Initials(d.NameEn)">@DisplayName.Of(d.Name, d.NameEn)</option> }</select></div>
+                <div class="col-md-6"><label class="d-block fs-6 fw-semibold mb-2 required">@T["Date"]</label><input type="date" class="form-control form-control-solid hp-num" data-bk="date" value="@Model.Day.ToString("yyyy-MM-dd")" /></div>
+                @* the theme's time picker (flatpickr, H:i, quarter hours), never the browser's time control *@
+                <div class="col-md-6"><label class="d-block fs-6 fw-semibold mb-2 required">@T["Time"]</label><input type="text" class="form-control form-control-solid hp-num" dir="ltr" data-bk="time" value="09:00" /></div>
+                <div class="col-md-8"><label class="d-block fs-6 fw-semibold mb-2">@T["Procedure"] <span class="text-muted fs-8">@T["its chair time is the slot's length"]</span></label>
+                    <select class="form-select form-select-solid" data-bk="service"><option value="">@T["Visit"] (@HospitalDentalPracticeRules.DefaultMinutes @T["min"])</option>@foreach (var p in procs) { <option value="@p.Procedure.ServiceId">@p.Code — @DisplayName.Of(p.Name, p.NameEn) (@p.Procedure.Minutes @T["min"])</option> }</select></div>
+                <div class="col-md-4"><label class="d-block fs-6 fw-semibold mb-2">@T["Tooth"]</label><input type="number" min="11" max="85" class="form-control form-control-solid hp-num" dir="ltr" data-bk="tooth" /></div>
+                <div class="col-12"><label class="d-block fs-6 fw-semibold mb-2">@T["Note"]</label><input class="form-control form-control-solid" maxlength="400" data-bk="note" /></div>
+            </div>
+            <div class="text-center pt-10"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-bk-save>@T["Book"]</button></div>
+        </div>
     </div></div></div>
 }
 @if (canManage)
 {
-    <div class="modal fade" id="chairsModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-750px"><div class="modal-content">
-        <div class="modal-header"><h2 class="fw-bold m-0 fs-4">@T["Chairs"]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
-        <div class="modal-body py-6 px-lg-10">
-            <div class="table-responsive mb-6"><table class="table align-middle table-row-dashed fs-7 gy-2 mb-0">
-                <thead><tr class="text-gray-500 fw-bold fs-8 text-uppercase"><th>@T["Code"]</th><th>@T["Name"]</th><th>@T["Usually"]</th><th></th><th></th></tr></thead>
+    <div class="modal fade" id="chairsModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-750px"><div class="modal-content rounded">
+        <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-10">
+            <div class="mb-8 text-center"><h1 class="mb-3">@T["Chairs"]</h1><div class="text-muted fw-semibold fs-5">@T["The chair is the room"]</div></div>
+            <div class="table-responsive mb-8"><table class="table align-middle gs-0 gy-3 mb-0">
+                <thead><tr class="fw-bold text-muted bg-light"><th class="ps-4 rounded-start">@T["Name"]</th><th>@T["Usually"]</th><th></th><th class="pe-4 rounded-end"></th></tr></thead>
                 <tbody>
                     @foreach (var c in allChairs)
                     {
                         var who = dentists.FirstOrDefault(d => d.Id == c.PractitionerId);
-                        <tr><td class="hp-num fw-bold">@c.Code</td><td>@DisplayName.Of(c.Name, c.NameEn)</td><td>@(who == null ? "—" : DisplayName.Of(who.Name, who.NameEn))</td><td>@if (!c.IsActive) {<span class="badge badge-light fs-9">@T["Inactive"]</span>}</td>
-                            <td class="text-end"><button type="button" class="btn btn-sm btn-light" data-chair-edit="@System.Text.Json.JsonSerializer.Serialize(new { id = c.ID, code = c.Code, name = c.Name, nameEn = c.NameEn, practitionerId = c.PractitionerId, sortOrder = c.SortOrder, isActive = c.IsActive })">@T["Edit"]</button></td></tr>
+                        <tr><td class="ps-4"><div class="d-flex align-items-center"><div class="symbol symbol-35px me-3"><span class="symbol-label bg-light-primary text-primary fw-bold fs-8 hp-num">@c.Code</span></div><span class="text-gray-900 fw-bold fs-6">@DisplayName.Of(c.Name, c.NameEn)</span></div></td>
+                            <td>@if (who != null) {<div class="d-flex align-items-center gap-2">@Html.Raw(Av(who.Photo, who.NameEn, 30))<span class="text-gray-800 fw-semibold fs-7">@DisplayName.Of(who.Name, who.NameEn)</span></div>} else {<span class="text-muted">—</span>}</td>
+                            <td>@if (!c.IsActive) {<span class="badge badge-light-secondary fs-8 fw-bold">@T["Inactive"]</span>}</td>
+                            <td class="text-end pe-4"><button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-primary" title="@T["Edit"]" data-chair-edit="@System.Text.Json.JsonSerializer.Serialize(new { id = c.ID, code = c.Code, name = c.Name, nameEn = c.NameEn, practitionerId = c.PractitionerId, sortOrder = c.SortOrder, isActive = c.IsActive })"><i class="ki-outline ki-pencil fs-3"></i></button></td></tr>
                     }
                 </tbody>
             </table></div>
-            <div class="row g-3" data-ch-form>
-                <div class="col-md-3"><label class="form-label required fs-7">@T["Code"]</label><input class="form-control form-control-solid form-control-sm hp-num" maxlength="20" data-ch="code" /></div>
-                <div class="col-md-4"><label class="form-label required fs-7">@T["Name (Arabic)"]</label><input class="form-control form-control-solid form-control-sm" dir="rtl" maxlength="100" data-ch="name" /></div>
-                <div class="col-md-5"><label class="form-label required fs-7">@T["Name (English)"]</label><input class="form-control form-control-solid form-control-sm" dir="ltr" maxlength="100" data-ch="nameEn" /></div>
-                <div class="col-md-6"><label class="form-label fs-7">@T["Usually"]</label>
-                    <select class="form-select form-select-solid form-select-sm" data-ch="practitionerId" data-person-select data-allow-clear data-placeholder="—"><option value=""></option>@foreach (var d in dentists) { <option value="@d.Id" data-photo="@d.Photo" data-initials="@HospitalUi.Initials(d.NameEn)">@DisplayName.Of(d.Name, d.NameEn)</option> }</select></div>
-                <div class="col-md-3"><label class="form-label fs-7">@T["Order"]</label><input type="number" class="form-control form-control-solid form-control-sm hp-num" data-ch="sortOrder" value="0" /></div>
-                <div class="col-md-3 d-flex align-items-end"><label class="form-check form-check-sm form-check-custom form-check-solid mb-2"><input class="form-check-input" type="checkbox" data-ch="isActive" checked /><span class="form-check-label fs-7">@T["Active"]</span></label></div>
+            <div class="separator separator-dashed mb-8"></div>
+            <div class="row g-6" data-ch-form>
+                <div class="col-md-3"><label class="d-block fs-6 fw-semibold mb-2 required">@T["Code"]</label><input class="form-control form-control-solid hp-num" maxlength="20" data-ch="code" /></div>
+                <div class="col-md-4"><label class="d-block fs-6 fw-semibold mb-2 required">@T["Name (Arabic)"]</label><input class="form-control form-control-solid" dir="rtl" maxlength="100" data-ch="name" /></div>
+                <div class="col-md-5"><label class="d-block fs-6 fw-semibold mb-2 required">@T["Name (English)"]</label><input class="form-control form-control-solid" dir="ltr" maxlength="100" data-ch="nameEn" /></div>
+                <div class="col-md-6"><label class="d-block fs-6 fw-semibold mb-2">@T["Usually"]</label>
+                    <select class="form-select form-select-solid" data-ch="practitionerId" data-person-select data-allow-clear data-placeholder="—"><option value=""></option>@foreach (var d in dentists) { <option value="@d.Id" data-photo="@d.Photo" data-initials="@HospitalUi.Initials(d.NameEn)">@DisplayName.Of(d.Name, d.NameEn)</option> }</select></div>
+                <div class="col-md-3"><label class="d-block fs-6 fw-semibold mb-2">@T["Order"]</label><input type="number" class="form-control form-control-solid hp-num" data-ch="sortOrder" value="0" /></div>
+                <div class="col-md-3 d-flex align-items-end"><label class="form-check form-switch form-check-custom form-check-solid mb-3"><input class="form-check-input" type="checkbox" data-ch="isActive" checked /><span class="form-check-label fw-semibold text-gray-700">@T["Active"]</span></label></div>
             </div>
+            <div class="text-center pt-10"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-ch-save>@T["Save"]</button></div>
         </div>
-        <div class="modal-footer flex-center"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-ch-save>@T["Save"]</button></div>
     </div></div></div>
 }
 
@@ -201,6 +230,8 @@
             }
             function done(btn, modal) { return function (res) { if (btn) btn.disabled = false; if (!res.ok) { toast('error', res.error || W.failed); return; } toast('success', W.saved); if (modal) bootstrap.Modal.getOrCreateInstance(modal).hide(); swap(); }; }
             var bk = document.getElementById('bookModal'), ch = document.getElementById('chairsModal'), chairEditing = null;
+            // the booking's time: the theme's time picker (24 h, quarter hours); its value stays "HH:mm"
+            if (bk && window.flatpickr) { var tEl = bk.querySelector('[data-bk=time]'); flatpickr(tEl, { enableTime: true, noCalendar: true, dateFormat: 'H:i', time_24hr: true, minuteIncrement: 15, static: true, disableMobile: true, defaultDate: tEl.value }); }
             // the chair's usual dentist is proposed when the chair is chosen
             if (bk) bk.querySelector('[data-bk=chair]').addEventListener('change', function (e) { var p = e.target.selectedOptions[0].getAttribute('data-person'); if (p) $(bk.querySelector('[data-bk=dentist]')).val(p).trigger('change'); });
             document.addEventListener('click', function (e) {

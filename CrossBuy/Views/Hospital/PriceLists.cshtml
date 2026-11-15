@@ -3,6 +3,10 @@
 @using CrossBuy.Models.Context.Hospital
 @model IReadOnlyList<HospitalPriceListRow>
 @inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H127 — the price lists, composed from the theme (demo39): stat tiles (dashboards/logistics), the table widget
+    (widgets/tables), the list widget for the pricing steps (widgets/lists) and the form modal (utilities/modals/forms/new-target).
+*@
 @{
     Layout = "~/Views/Shared/_LayoutHospital.cshtml";
     ViewData["Title"] = T["Price lists"].Value;
@@ -15,9 +19,15 @@
     int stale = live.Sum(r => r.Stale), pending = live.Sum(r => r.Pending);
     string Pct(decimal v) => (v > 0 ? "+" : "") + v.ToString("0.##") + "%";
     // Each percentage is isolated left-to-right, or "-15%" reads "15-%" on an Arabic page.
-    string P(decimal v) => "<bdi class=\"hp-num\" dir=\"ltr\">" + Pct(v) + "</bdi>";
-    string Rule(HospitalPriceList l) => T["Services (group)"].Value + " " + P(l.ServicesAdjPct) + " · " + T["Medicines"].Value + " " + P(l.MedicinesAdjPct) + " · " + T["Consumables"].Value + " " + P(l.ConsumablesAdjPct);
+    string P(decimal v) => "<bdi class=\"hp-num text-gray-800 fw-bold\" dir=\"ltr\">" + Pct(v) + "</bdi>";
+    string Rule(HospitalPriceList l) => "<span class=\"d-block\">" + T["Services (group)"].Value + " " + P(l.ServicesAdjPct) + "</span><span class=\"d-block\">" + T["Medicines"].Value + " " + P(l.MedicinesAdjPct) + " · " + T["Consumables"].Value + " " + P(l.ConsumablesAdjPct) + "</span>";
     string StatusBadge(string s) => s == HospitalPriceListStatus.Active ? "success" : s == HospitalPriceListStatus.Draft ? "secondary" : "danger";
+    string Arrow() => DisplayName.IsArabic ? "←" : "→";
+    var tiles = new[] {
+        (Num: (live.Count + 1).ToString(), Label: T["Price lists"].Value, Icon: "price-tag", Tone: "primary", Line: (string?)null),
+        (Num: inUse.Count.ToString(), Label: T["Currencies in use"].Value, Icon: "dollar", Tone: "info", Line: (string?)null),
+        (Num: stale.ToString(), Label: T["Prices not updated"].Value, Icon: "time", Tone: stale > 0 ? "danger" : "success", Line: (string?)T["Awaiting review, or the main price moved"].Value),
+        (Num: pending.ToString(), Label: T["New items not added"].Value, Icon: "add-item", Tone: pending > 0 ? "info" : "success", Line: (string?)T["On the main list only"].Value) };
 }
 <link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
 @Html.AntiForgeryToken()
@@ -33,83 +43,98 @@
             </ul>
         </div>
         <div class="d-flex align-items-center gap-2 gap-lg-3 d-print-none">
-            <a href="@Url.Action("Catalog")" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-element-11 fs-4"></i>@T["Services & items"]</a>
+            <a href="@Url.Action("Catalog")" class="btn btn-sm btn-light btn-active-light-primary"><i class="ki-outline ki-element-11 fs-4"></i>@T["Services & items"]</a>
             @if (canManage) { <button type="button" class="btn btn-sm btn-primary" data-new><i class="ki-outline ki-plus fs-4"></i>@T["New list"]</button> }
         </div>
     </div></div>
 
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @* stat tiles — demo39 dashboards/logistics *@
         <div class="row g-5 g-xl-8 mb-5">
-            <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
-                <div class="d-flex flex-stack"><div class="text-muted fw-semibold fs-7 mb-1">@T["Price lists"]</div><i class="ki-outline ki-price-tag fs-2 text-gray-400"></i></div>
-                <div class="fs-2hx fw-bold text-gray-900 hp-num">@(live.Count + 1)</div>
-                <div class="text-muted fs-8 mt-1">@T["The main list and"] <span class="hp-num">@live.Count</span> @T["others"]</div>
-            </div></div></div>
-            <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
-                <div class="d-flex flex-stack"><div class="text-muted fw-semibold fs-7 mb-1">@T["Currencies in use"]</div><i class="ki-outline ki-dollar fs-2 text-gray-400"></i></div>
-                <div class="fs-2 fw-bold py-2">@foreach (var c in inUse) { <span class="badge badge-light-primary fs-6 fw-bold hp-num me-1">@c</span> }</div>
-                <div class="text-muted fs-8 mt-1">@T["Facility currency"] <span class="hp-num">@fac.Code</span></div>
-            </div></div></div>
-            <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
-                <div class="d-flex flex-stack"><div class="text-muted fw-semibold fs-7 mb-1">@T["Prices not updated"]</div><i class="ki-outline ki-time fs-2 text-gray-400"></i></div>
-                <div class="fs-2hx fw-bold hp-num @(stale > 0 ? "text-danger" : "text-gray-900")">@stale</div>
-                <div class="text-muted fs-8 mt-1">@T["Awaiting review, or the main price moved"]</div>
-            </div></div></div>
-            <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
-                <div class="d-flex flex-stack"><div class="text-muted fw-semibold fs-7 mb-1">@T["New items not added"]</div><i class="ki-outline ki-add-item fs-2 text-gray-400"></i></div>
-                <div class="fs-2hx fw-bold text-gray-900 hp-num">@pending</div>
-                <div class="text-muted fs-8 mt-1">@T["On the main list only"]</div>
-            </div></div></div>
+            @for (int i = 0; i < tiles.Length; i++)
+            {
+                var s = tiles[i];
+                <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100">
+                    <div class="card-header pt-5 flex-nowrap gap-3">
+                        <div class="card-title d-flex flex-column">
+                            <span class="fs-2hx fw-bold text-gray-900 me-2 lh-1 ls-n2 hp-num">@s.Num</span>
+                            <span class="text-gray-500 pt-1 fw-semibold fs-6">@s.Label</span>
+                        </div>
+                        <div class="card-toolbar"><div class="symbol symbol-45px"><span class="symbol-label bg-light-@s.Tone"><i class="ki-outline ki-@s.Icon fs-2x text-@s.Tone"></i></span></div></div>
+                    </div>
+                    <div class="card-body d-flex align-items-end pt-0">
+                        <div class="d-flex flex-wrap fs-7 fw-semibold align-items-center text-gray-500 gap-1">
+                            <div class="bullet w-8px h-6px rounded-2 bg-@s.Tone me-2"></div>
+                            @if (i == 0) {<span>@T["The main list and"] <span class="hp-num">@live.Count</span> @T["others"]</span>}
+                            else if (i == 1) { foreach (var c in inUse) {<span class="badge badge-light-@(c == fac.Code ? "primary" : "info") fs-8 fw-bold hp-num">@c</span>}}
+                            else {<span>@s.Line</span>}
+                        </div>
+                    </div>
+                </div></div>
+            }
         </div>
 
-        <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice">
-            <span class="symbol symbol-45px me-5 flex-shrink-0"><span class="symbol-label"><i class="ki-outline ki-price-tag fs-2x text-white"></i></span></span>
-            <div class="d-flex flex-stack flex-grow-1 flex-wrap flex-md-nowrap">
-                <div class="mb-3 mb-md-0 fw-semibold pe-5">
+        <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-6 mb-5">
+            <i class="ki-outline ki-information fs-2tx text-primary me-4"></i>
+            <div class="d-flex flex-stack flex-grow-1 flex-wrap flex-md-nowrap gap-3">
+                <div class="fw-semibold">
                     <h4 class="text-gray-900 fw-bold mb-1">@T["The selling price on the card IS the main list"]</h4>
                     <div class="fs-6 text-gray-700">@T["A new service, medicine or consumable lands on the main list only. Every other list shows it as new until you add it through its discount rule, and a change of the main price marks the line not updated there."]</div>
                 </div>
-                <span class="badge hp-badge fs-7 fw-bold px-4 py-2 flex-shrink-0">@T["Facility currency"] <span class="hp-num ms-1">@fac.Code</span></span>
+                <span class="badge badge-primary fs-7 fw-bold px-4 py-2 flex-shrink-0">@T["Facility currency"] <bdi class="hp-num ms-1">@fac.Code</bdi></span>
             </div>
         </div>
 
-        <div class="card mb-5">
-            <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
-                <span class="card-label fw-bold text-gray-900 fs-4">@T["Price lists"]</span>
-                <span class="text-muted mt-1 fw-semibold fs-7">@T["Open a list to see its lines and review its prices"]</span>
-            </div></div>
+        @* the lists — demo39 widgets/tables *@
+        <div class="card card-flush mb-5">
+            <div class="card-header pt-5">
+                <h3 class="card-title align-items-start flex-column">
+                    <span class="card-label fw-bold text-gray-800">@T["Price lists"]</span>
+                    <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Open a list to see its lines and review its prices"]</span>
+                </h3>
+            </div>
             <div class="card-body pt-2">
-                <div class="table-responsive"><table class="table align-middle table-row-dashed fs-6 gy-3 mb-0">
-                    <thead><tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0">
-                        <th class="w-125px">@T["Code"]</th><th>@T["List"]</th><th>@T["Currency"]</th><th>@T["Discount rule"]</th><th class="text-center">@T["Patients"]</th><th>@T["Price state"]</th><th>@T["Validity"]</th><th>@T["State"]</th>
+                <div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
+                    <thead><tr class="fw-bold text-muted bg-light">
+                        <th class="ps-4 rounded-start">@T["List"]</th><th>@T["Currency"]</th><th>@T["Discount rule"]</th><th class="text-center">@T["Patients"]</th><th>@T["Price state"]</th><th>@T["Validity"]</th><th class="pe-4 rounded-end">@T["State"]</th>
                     </tr></thead>
-                    <tbody class="fw-semibold text-gray-700">
+                    <tbody>
                         <tr>
-                            <td><span class="badge hp-code fw-bold fs-8 hp-num">MAIN</span></td>
-                            <td><a href="@Url.Action("Catalog")" class="fw-bold text-gray-900 text-hover-primary">@T["Main list"]</a> <span class="badge badge-light-primary fs-8">@T["Cash"]</span><div class="text-muted fs-8">@T["Updates itself from the card"]</div></td>
-                            <td><span class="badge badge-light-primary fw-bold fs-8 hp-num">@fac.Code</span></td>
-                            <td class="fs-7">@T["No discount — it is the selling price"]</td>
+                            <td class="ps-4"><div class="d-flex align-items-center">
+                                <div class="symbol symbol-45px me-4"><span class="symbol-label bg-light-success"><i class="ki-outline ki-price-tag fs-2 text-success"></i></span></div>
+                                <div class="d-flex flex-column">
+                                    <a href="@Url.Action("Catalog")" class="text-gray-900 fw-bold text-hover-primary fs-6">@T["Main list"] <span class="badge badge-light-primary fs-8 ms-1">@T["Cash"]</span></a>
+                                    <span class="text-muted fw-semibold d-block fs-7"><bdi class="hp-num" dir="ltr">MAIN</bdi> · @T["Updates itself from the card"]</span>
+                                </div>
+                            </div></td>
+                            <td><span class="badge badge-light-primary fs-7 fw-bold hp-num">@fac.Code</span></td>
+                            <td class="text-gray-600 fw-semibold fs-7">@T["No discount — it is the selling price"]</td>
                             <td class="text-center text-muted">—</td>
-                            <td><span class="badge badge-light-success fs-8">@T["Automatic"]</span></td>
-                            <td class="text-muted fs-7">@T["Open"]</td>
-                            <td><span class="badge badge-light-success fs-8">@T["Active"]</span></td>
+                            <td><span class="badge badge-light-success fs-7 fw-bold">@T["Automatic"]</span></td>
+                            <td class="text-muted fw-semibold fs-7">@T["Open"]</td>
+                            <td class="pe-4"><span class="badge badge-light-success fs-7 fw-bold">@T["Active"]</span></td>
                         </tr>
                         @foreach (var r in Model)
                         {
                             var l = r.List; bool foreign = l.CurrencyId != null;
                             <tr class="@(l.Status == HospitalPriceListStatus.Archived ? "opacity-50" : "")">
-                                <td><span class="badge hp-code fw-bold fs-8 hp-num">@l.Code</span> <span class="text-muted fs-8 hp-num">v@(l.Version)</span></td>
-                                <td><a href="@Url.Action("PriceList", new { id = l.ID })" class="fw-bold text-gray-900 text-hover-primary">@DisplayName.Of(l.Name, l.NameEn)</a><div class="text-muted fs-8">@T["kind:" + l.Kind]</div></td>
-                                <td><span class="badge @(foreign ? "badge-light-info" : "badge-light-primary") fw-bold fs-8 hp-num">@r.Currency.Code</span>@if (foreign) {<span class="text-muted fs-8 ms-1">@T["foreign"]</span>}</td>
-                                <td class="fs-7">@Html.Raw(Rule(l))</td>
-                                <td class="text-center hp-num">@r.Patients</td>
+                                <td class="ps-4"><div class="d-flex align-items-center">
+                                    <div class="symbol symbol-45px me-4"><span class="symbol-label bg-light-primary"><i class="ki-outline ki-price-tag fs-2 text-primary"></i></span></div>
+                                    <div class="d-flex flex-column">
+                                        <a href="@Url.Action("PriceList", new { id = l.ID })" class="text-gray-900 fw-bold text-hover-primary fs-6">@DisplayName.Of(l.Name, l.NameEn)</a>
+                                        <span class="text-muted fw-semibold d-block fs-7"><bdi class="hp-num" dir="ltr">@l.Code v@(l.Version)</bdi> · @T["kind:" + l.Kind]</span>
+                                    </div>
+                                </div></td>
+                                <td><span class="badge @(foreign ? "badge-light-info" : "badge-light-primary") fs-7 fw-bold hp-num">@r.Currency.Code</span>@if (foreign) {<span class="text-muted fs-8 ms-1">@T["foreign"]</span>}</td>
+                                <td class="text-gray-600 fw-semibold fs-7">@Html.Raw(Rule(l))</td>
+                                <td class="text-center"><span class="text-gray-900 fw-bold fs-6 hp-num">@r.Patients</span></td>
                                 <td>
-                                    @if (r.Stale > 0) { <span class="badge badge-light-danger fs-8 me-1"><span class="hp-num me-1">@r.Stale</span>@T["not updated (count)"]</span> }
-                                    @if (r.Pending > 0) { <span class="badge badge-light-info fs-8"><span class="hp-num me-1">@r.Pending</span>@T["new (count)"]</span> }
-                                    @if (r.Stale == 0 && r.Pending == 0) { <span class="badge badge-light-success fs-8">@T["Up to date"]</span> }
+                                    @if (r.Stale > 0) { <span class="badge badge-light-danger fs-7 fw-bold me-1"><span class="hp-num me-1">@r.Stale</span>@T["not updated (count)"]</span> }
+                                    @if (r.Pending > 0) { <span class="badge badge-light-info fs-7 fw-bold"><span class="hp-num me-1">@r.Pending</span>@T["new (count)"]</span> }
+                                    @if (r.Stale == 0 && r.Pending == 0) { <span class="badge badge-light-success fs-7 fw-bold">@T["Up to date"]</span> }
                                 </td>
-                                <td class="fs-7 text-nowrap"><span class="hp-num">@l.ValidFrom.ToString("yyyy-MM-dd")</span> @(DisplayName.IsArabic ? "←" : "→") @if (l.ValidTo is DateTime to) {<span class="hp-num">@to.ToString("yyyy-MM-dd")</span>} else {<span class="text-muted">@T["Open"]</span>}</td>
-                                <td><span class="badge badge-light-@StatusBadge(l.Status) fs-8">@T["plst:" + l.Status]</span></td>
+                                <td class="text-gray-600 fw-semibold fs-7 text-nowrap"><span class="hp-num">@l.ValidFrom.ToString("yyyy-MM-dd")</span> @Arrow() @if (l.ValidTo is DateTime to) {<span class="hp-num">@to.ToString("yyyy-MM-dd")</span>} else {<span class="text-muted">@T["Open"]</span>}</td>
+                                <td class="pe-4"><span class="badge badge-light-@StatusBadge(l.Status) fs-7 fw-bold">@T["plst:" + l.Status]</span></td>
                             </tr>
                         }
                     </tbody>
@@ -118,9 +143,12 @@
         </div>
 
         <div class="row g-5 g-xl-8">
+            @* how a line is priced — demo39 widgets/lists *@
             <div class="col-xl-6">
-                <div class="card h-100">
-                    <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["How a bill line is priced"]</span></div></div>
+                <div class="card card-flush h-100">
+                    <div class="card-header pt-5">
+                        <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["How a bill line is priced"]</span></h3>
+                    </div>
                     <div class="card-body pt-2">
                         @{ var steps = new[] {
                             (T["The patient's list"].Value, T["The list on the patient's file prices the bill, in its currency. No list, or a list not approved or not valid that day: the main list."].Value),
@@ -130,29 +158,35 @@
                             (T["The snapshot"].Value, T["The bill keeps the price, the currency and the list. Editing the list later never changes an existing bill."].Value) }; }
                         @for (int i = 0; i < steps.Length; i++)
                         {
-                            <div class="d-flex py-3 @(i < steps.Length - 1 ? "border-bottom border-gray-200 border-bottom-dashed" : "")">
-                                <span class="symbol symbol-30px me-4 flex-shrink-0"><span class="symbol-label fw-bold fs-7 hp-badge hp-num">@(i + 1)</span></span>
-                                <div><div class="fw-bold text-gray-900">@steps[i].Item1</div><div class="text-gray-700 fs-7">@steps[i].Item2</div></div>
+                            <div class="d-flex align-items-start">
+                                <div class="symbol symbol-35px me-4 flex-shrink-0"><span class="symbol-label bg-light-primary text-primary fw-bold fs-6 hp-num">@(i + 1)</span></div>
+                                <div class="flex-grow-1"><span class="text-gray-800 fw-bold fs-6 d-block">@steps[i].Item1</span><span class="text-gray-500 fw-semibold fs-7 d-block">@steps[i].Item2</span></div>
                             </div>
+                            if (i < steps.Length - 1) { <div class="separator separator-dashed my-3"></div> }
                         }
                     </div>
                 </div>
             </div>
             <div class="col-xl-6">
-                <div class="card h-100">
-                    <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
-                        <span class="card-label fw-bold text-gray-900 fs-4">@T["Try the pricing"]</span>
-                        <span class="text-muted mt-1 fw-semibold fs-7">@T["Pick a patient and a service to see the list and the price"]</span>
-                    </div></div>
+                <div class="card card-flush h-100">
+                    <div class="card-header pt-5">
+                        <h3 class="card-title align-items-start flex-column">
+                            <span class="card-label fw-bold text-gray-800">@T["Try the pricing"]</span>
+                            <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Pick a patient and a service to see the list and the price"]</span>
+                        </h3>
+                        <div class="card-toolbar"><div class="symbol symbol-45px"><span class="symbol-label bg-light-info"><i class="ki-outline ki-calculator fs-2x text-info"></i></span></div></div>
+                    </div>
                     <div class="card-body pt-2">
                         <div class="row g-4 mb-4">
-                            <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Patient"]</label><select id="pcPatient" class="form-select form-select-solid" data-no-select2 data-placeholder="@T["Search by name or MRN"]"><option></option></select></div>
-                            <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Service"]</label>
+                            <div class="col-md-6"><label class="fs-6 fw-semibold mb-2">@T["Patient"]</label><select id="pcPatient" class="form-select form-select-solid" data-no-select2 data-placeholder="@T["Search by name or MRN"]"><option></option></select></div>
+                            <div class="col-md-6"><label class="fs-6 fw-semibold mb-2">@T["Service"]</label>
                                 <select id="pcService" class="form-select form-select-solid" data-placeholder="@T["Choose a service"]"><option></option>
                                     @foreach (var e in catalog.Where(e => e.ServiceId != null)) { <option value="@e.ServiceId">@e.Code — @DisplayName.Of(e.Name, e.NameEn)</option> }
                                 </select></div>
                         </div>
-                        <div id="pcOut" class="text-muted fs-7">@T["Pick a patient and a service."]</div>
+                        <div id="pcOut" class="text-gray-500 fw-semibold fs-7">
+                            <div class="text-center py-8"><i class="ki-outline ki-calculator fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-7 text-gray-500">@T["Pick a patient and a service."]</div></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -162,30 +196,40 @@
 
 @if (canManage)
 {
-    <div class="modal fade" id="listModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-750px"><div class="modal-content">
-        <div class="modal-header"><h2 class="fw-bold m-0">@T["New price list"]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
-        <form class="modal-body py-8 px-lg-10" id="listForm" autocomplete="off"><div class="row g-5">
-            <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Name (Arabic)"]</label><input name="name" maxlength="200" class="form-control form-control-solid" dir="rtl" /></div>
-            <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Name (English)"]</label><input name="nameEn" maxlength="200" class="form-control form-control-solid" dir="ltr" /></div>
-            <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Kind"]</label>
-                <select name="kind" class="form-select form-select-solid">@foreach (var k in HospitalPriceListKinds.All) { <option value="@k" selected="@(k == HospitalPriceListKinds.Insurer)">@T["kind:" + k]</option> }</select></div>
-            <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Currency"]</label>
-                <select name="currencyId" class="form-select form-select-solid">@foreach (var c in currencies) { <option value="@c.Id" selected="@(c.Id == fac.Id)">@c.Code @(c.Id == fac.Id ? "— " + T["Facility currency"].Value : "")</option> }</select></div>
-            <div class="col-12"><div class="fw-bold text-gray-900">@T["Discount rule"]</div><div class="text-muted fs-8">@T["Negative = a discount off the main price, positive = a mark-up"]</div></div>
-            <div class="col-md-4"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Services (group)"] %</label><input name="servicesAdjPct" type="number" step="0.01" value="-10" class="form-control form-control-solid hp-num" dir="ltr" /></div>
-            <div class="col-md-4"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Medicines"] %</label><input name="medicinesAdjPct" type="number" step="0.01" value="0" class="form-control form-control-solid hp-num" dir="ltr" /></div>
-            <div class="col-md-4"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Consumables"] %</label><input name="consumablesAdjPct" type="number" step="0.01" value="0" class="form-control form-control-solid hp-num" dir="ltr" /></div>
-            <div class="col-md-4"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Rounding step"]</label><input name="roundingStep" type="number" min="0" step="0.001" placeholder="@T["None"]" class="form-control form-control-solid hp-num" dir="ltr" /></div>
-            <div class="col-md-4"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Valid from"]</label><input name="validFrom" class="form-control form-control-solid hp-num" type="date" value="@DateTime.Today.ToString("yyyy-MM-dd")" /></div>
-            <div class="col-md-4"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Valid to"]</label><input name="validTo" class="form-control form-control-solid hp-num" type="date" value="@(new DateTime(DateTime.Today.Year, 12, 31).ToString("yyyy-MM-dd"))" /></div>
-        </div>
-            <div class="notice d-flex rounded border border-dashed p-5 mt-6 hp-notice">
-                <span class="symbol symbol-40px me-4 flex-shrink-0"><span class="symbol-label"><i class="ki-outline ki-information-5 fs-2 text-white"></i></span></span>
+    @* the form modal — demo39 utilities/modals/forms/new-target *@
+    <div class="modal fade" id="listModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-750px"><div class="modal-content rounded">
+        <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <form class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-10" id="listForm" autocomplete="off">
+            <div class="mb-10 text-center"><h1 class="mb-3">@T["New price list"]</h1>
+                <div class="text-muted fw-semibold fs-5">@T["Negative = a discount off the main price, positive = a mark-up"]</div></div>
+            <div class="row g-6">
+                <div class="col-md-6 fv-row"><label class="fs-6 fw-semibold mb-2 required">@T["Name (Arabic)"]</label><input name="name" maxlength="200" class="form-control form-control-solid" dir="rtl" /></div>
+                <div class="col-md-6 fv-row"><label class="fs-6 fw-semibold mb-2 required">@T["Name (English)"]</label><input name="nameEn" maxlength="200" class="form-control form-control-solid" dir="ltr" /></div>
+                <div class="col-md-6 fv-row"><label class="fs-6 fw-semibold mb-2 required">@T["Kind"]</label>
+                    <select name="kind" class="form-select form-select-solid" data-control="select2" data-hide-search="true" data-dropdown-parent="#listModal">@foreach (var k in HospitalPriceListKinds.All) { <option value="@k" selected="@(k == HospitalPriceListKinds.Insurer)">@T["kind:" + k]</option> }</select></div>
+                <div class="col-md-6 fv-row"><label class="fs-6 fw-semibold mb-2 required">@T["Currency"]</label>
+                    <select name="currencyId" class="form-select form-select-solid" data-control="select2" data-hide-search="true" data-dropdown-parent="#listModal">@foreach (var c in currencies) { <option value="@c.Id" selected="@(c.Id == fac.Id)">@c.Code @(c.Id == fac.Id ? "— " + T["Facility currency"].Value : "")</option> }</select></div>
+            </div>
+            <div class="separator separator-dashed my-8"></div>
+            <div class="fs-5 fw-bold text-gray-900 mb-5">@T["Discount rule"]</div>
+            <div class="row g-6">
+                <div class="col-md-4 fv-row"><label class="fs-6 fw-semibold mb-2">@T["Services (group)"]</label><div class="input-group input-group-solid"><input name="servicesAdjPct" type="number" step="0.01" value="-10" class="form-control form-control-solid hp-num" dir="ltr" /><span class="input-group-text">%</span></div></div>
+                <div class="col-md-4 fv-row"><label class="fs-6 fw-semibold mb-2">@T["Medicines"]</label><div class="input-group input-group-solid"><input name="medicinesAdjPct" type="number" step="0.01" value="0" class="form-control form-control-solid hp-num" dir="ltr" /><span class="input-group-text">%</span></div></div>
+                <div class="col-md-4 fv-row"><label class="fs-6 fw-semibold mb-2">@T["Consumables"]</label><div class="input-group input-group-solid"><input name="consumablesAdjPct" type="number" step="0.01" value="0" class="form-control form-control-solid hp-num" dir="ltr" /><span class="input-group-text">%</span></div></div>
+                <div class="col-md-4 fv-row"><label class="fs-6 fw-semibold mb-2">@T["Rounding step"]</label><input name="roundingStep" type="number" min="0" step="0.001" placeholder="@T["None"]" class="form-control form-control-solid hp-num" dir="ltr" /></div>
+                <div class="col-md-4 fv-row"><label class="fs-6 fw-semibold mb-2 required">@T["Valid from"]</label><input name="validFrom" class="form-control form-control-solid hp-num" type="date" value="@DateTime.Today.ToString("yyyy-MM-dd")" /></div>
+                <div class="col-md-4 fv-row"><label class="fs-6 fw-semibold mb-2">@T["Valid to"]</label><input name="validTo" class="form-control form-control-solid hp-num" type="date" value="@(new DateTime(DateTime.Today.Year, 12, 31).ToString("yyyy-MM-dd"))" /></div>
+            </div>
+            <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-5 mt-8">
+                <i class="ki-outline ki-information fs-2tx text-primary me-4"></i>
                 <div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@T["Every item is copied — all not updated"]</h4>
                     <div class="fs-7 text-gray-700">@T["All"] <span class="hp-num">@catalog.Count</span> @T["catalogue items are copied at the main list's latest price through the rule, and every price is marked not updated until you review it. The list prices no bill before it is approved."]</div></div>
             </div>
+            <div class="text-center pt-10">
+                <button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button>
+                <button type="button" class="btn btn-primary" data-create>@T["Create and copy the items"]</button>
+            </div>
         </form>
-        <div class="modal-footer flex-center"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-create>@T["Create and copy the items"]</button></div>
     </div></div></div>
 }
 
@@ -221,20 +265,22 @@
                 }
             });
 
-            // ---- try the pricing ------------------------------------------------------------
+            // ---- try the pricing: the answer in the theme's list-widget rows --------------------------------
             var pSel = document.getElementById('pcPatient'), sSel = document.getElementById('pcService'), out = document.getElementById('pcOut');
             if ($ && $.fn.select2) $(pSel).select2({ placeholder: pSel.getAttribute('data-placeholder'), allowClear: true, width: '100%', minimumInputLength: 0,
                 ajax: { url: urls.patients, dataType: 'json', delay: 250, data: function (p) { return { q: p.term || '' }; }, processResults: function (d) { return { results: d.results || [] }; } } });
-            function row(k, v) { return '<div class="d-flex flex-stack py-3 border-bottom border-gray-200 border-bottom-dashed"><span class="text-gray-600 fw-semibold fs-7">' + k + '</span><span class="text-end">' + v + '</span></div>'; }
+            function row(icon, tone, k, v) { return '<div class="d-flex flex-stack py-1"><div class="d-flex align-items-center"><div class="symbol symbol-35px me-4"><span class="symbol-label bg-light-' + tone + '"><i class="ki-outline ki-' + icon + ' fs-3 text-' + tone + '"></i></span></div>' +
+                '<span class="text-gray-800 fw-bold fs-6">' + k + '</span></div><span class="text-end">' + v + '</span></div>'; }
+            var sep = '<div class="separator separator-dashed my-3"></div>';
             function quote() {
                 if (!pSel.value || !sSel.value) return;
                 fetch(urls.quote + '?patientId=' + pSel.value + '&serviceId=' + sSel.value, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.json(); }).then(function (d) {
                     if (!d.ok) { out.textContent = W.failed; return; }
-                    var html = row(W.list, d.list ? '<a class="fw-bold" href="' + urls.list.replace(/0$/, d.list.id) + '">' + esc(d.list.name) + '</a> <span class="badge ' + (d.foreign ? 'badge-light-info' : 'badge-light-primary') + ' fs-8 hp-num">' + esc(d.currencyCode) + '</span>' : esc(W.main));
-                    html += row(W.price, '<span class="fw-bold hp-num">' + esc(d.price) + '</span> <span class="text-muted fs-8">' + esc(d.currency) + '</span> <span class="badge badge-light-primary fs-8">' + esc(W.src[d.source] || d.source) + '</span>');
-                    if (d.facility) html += row(W.facility, '<span class="hp-num">' + esc(d.facility) + '</span> <span class="text-muted fs-8">(' + esc(W.rate) + ' <span class="hp-num">' + esc(d.rate) + '</span>)</span>');
-                    if (d.outside) html += '<div class="text-danger fs-7 mt-3">' + esc(W.outside) + '</div>';
-                    if (d.assignedButUnusable) html += '<div class="text-danger fs-7 mt-3">' + esc(W.unusable) + '</div>';
+                    var html = row('price-tag', 'primary', W.list, d.list ? '<a class="fw-bold" href="' + urls.list.replace(/0$/, d.list.id) + '">' + esc(d.list.name) + '</a> <span class="badge ' + (d.foreign ? 'badge-light-info' : 'badge-light-primary') + ' fs-8 hp-num">' + esc(d.currencyCode) + '</span>' : '<span class="text-gray-800 fw-bold">' + esc(W.main) + '</span>');
+                    html += sep + row('dollar', 'success', W.price, '<span class="text-gray-900 fw-bold fs-5 hp-num" dir="ltr">' + esc(d.price) + '</span> <span class="text-muted fs-8">' + esc(d.currency) + '</span> <span class="badge badge-light-primary fs-8 fw-bold">' + esc(W.src[d.source] || d.source) + '</span>');
+                    if (d.facility) html += sep + row('arrows-loop', 'info', W.facility, '<span class="text-gray-800 fw-bold hp-num" dir="ltr">' + esc(d.facility) + '</span> <span class="text-muted fs-8">(' + esc(W.rate) + ' <span class="hp-num">' + esc(d.rate) + '</span>)</span>');
+                    if (d.outside) html += '<div class="text-danger fw-semibold fs-7 mt-4">' + esc(W.outside) + '</div>';
+                    if (d.assignedButUnusable) html += '<div class="text-danger fw-semibold fs-7 mt-4">' + esc(W.unusable) + '</div>';
                     out.innerHTML = html;
                 });
             }

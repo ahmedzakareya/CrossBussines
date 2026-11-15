@@ -3,6 +3,11 @@
 @using CrossBuy.Models.Context.Hospital
 @model IReadOnlyList<HospitalPreauthRow>
 @inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H127 — approvals and claims, composed from the theme (demo39): stat tiles (dashboards/logistics), a tabbed card of
+    table widgets (widgets/tables) with the patient's photo first, icon actions, and the form modal
+    (utilities/modals/forms/new-target). The batch month is a month field the theme's month picker takes over (crossbuy-monthpicker).
+*@
 @{
     Layout = "~/Views/Shared/_LayoutHospital.cshtml";
     ViewData["Title"] = T["Approvals & claims"].Value;
@@ -13,13 +18,20 @@
     string tab = (ViewBag.Tab as string) ?? "pa";
     string? cur = ViewBag.Currency as string;
     bool canBill = ViewBag.CanBill == true;
-    string Money(decimal v) => v.ToString("N3", System.Globalization.CultureInfo.InvariantCulture);
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+    string Money(decimal v) => v.ToString("N3", inv);
     string PaBadge(string s) => s switch { HospitalPreauthStatus.Approved => "success", HospitalPreauthStatus.Rejected => "danger", _ => "primary" };
     string BatchBadge(string s) => s switch { HospitalClaimBatchStatus.Paid => "success", HospitalClaimBatchStatus.Partial => "info", HospitalClaimBatchStatus.Rejected => "danger", HospitalClaimBatchStatus.Submitted => "primary", _ => "secondary" };
+    // the person, not a glyph: the patient's photo, or their initials
     string Avatar(string? photo, string nameEn, int px) => photo != null
-        ? $"<div class=\"symbol symbol-{px}px symbol-circle flex-shrink-0\"><img src=\"{photo}\" alt=\"\" style=\"object-fit:cover\" data-initials=\"{HospitalUi.Initials(nameEn)}\" /></div>"
-        : $"<div class=\"symbol symbol-{px}px symbol-circle flex-shrink-0\"><span class=\"symbol-label fw-bold fs-8 hp-initials\">{HospitalUi.Initials(nameEn)}</span></div>";
-    var claimMonth = DateTime.UtcNow.AddMonths(-1).ToString("yyyy-MM", System.Globalization.CultureInfo.InvariantCulture);
+        ? $"<div class=\"symbol symbol-{px}px symbol-circle flex-shrink-0 me-3\"><img src=\"{photo}\" alt=\"\" style=\"object-fit:cover\" data-initials=\"{HospitalUi.Initials(nameEn)}\" /></div>"
+        : $"<div class=\"symbol symbol-{px}px symbol-circle flex-shrink-0 me-3\"><span class=\"symbol-label fw-bold fs-7 hp-initials\">{HospitalUi.Initials(nameEn)}</span></div>";
+    var claimMonth = DateTime.UtcNow.AddMonths(-1).ToString("yyyy-MM", inv);
+    var tiles = new[] {
+        (Num: stats.PendingPreauths.ToString(), Label: T["Approvals pending"].Value, Icon: "shield-tick", Tone: stats.PendingPreauths > 0 ? "primary" : "success", Ltr: false),
+        (Num: Money(stats.ClaimedThisMonth), Label: T["Claims this month"].Value, Icon: "send", Tone: "info", Ltr: true),
+        (Num: stats.RejectionRate is decimal rr ? rr.ToString("0.0", inv) + "%" : "—", Label: T["Rejection rate"].Value, Icon: "cross-circle", Tone: stats.RejectionRate > 5 ? "danger" : "success", Ltr: true),
+        (Num: stats.DaysToCollect?.ToString() ?? "—", Label: T["Days to collect"].Value, Icon: "time", Tone: "primary", Ltr: false) };
 }
 <link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
 @Html.AntiForgeryToken()
@@ -35,7 +47,7 @@
             </ul>
         </div>
         <div class="d-flex align-items-center gap-2 gap-lg-3 d-print-none">
-            <a href="@Url.Action("Payers")" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-shield-tick fs-4"></i>@T["Payers & contracts"]</a>
+            <a href="@Url.Action("Payers")" class="btn btn-sm btn-light btn-active-light-primary"><i class="ki-outline ki-shield-tick fs-4"></i>@T["Payers & contracts"]</a>
             @if (canBill)
             {
                 <button type="button" class="btn btn-sm btn-light-primary" data-bs-toggle="modal" data-bs-target="#paModal"><i class="ki-outline ki-plus fs-4"></i>@T["New approval request"]</button>
@@ -45,158 +57,186 @@
     </div></div>
 
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @* stat tiles — demo39 dashboards/logistics *@
         <div class="row g-5 g-xl-8 mb-5">
-            <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
-                <div class="text-muted fw-semibold fs-7 mb-1">@T["Approvals pending"]</div>
-                <div class="fs-2hx fw-bold hp-num text-gray-900">@stats.PendingPreauths</div>
-                <div class="text-muted fs-8 mt-1">@if (stats.OldestPendingMinutes is int om) {<text>@T["oldest"] <span class="hp-num">@om</span> @T["min"]</text>} else {<text>@T["None waiting"]</text>}</div>
-            </div></div></div>
-            <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
-                <div class="text-muted fw-semibold fs-7 mb-1">@T["Claims this month"]</div>
-                <div class="fs-2hx fw-bold hp-num text-gray-900">@Money(stats.ClaimedThisMonth)</div>
-                <div class="text-muted fs-8 mt-1">@cur</div>
-            </div></div></div>
-            <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
-                <div class="text-muted fw-semibold fs-7 mb-1">@T["Rejection rate"]</div>
-                <div class="fs-2hx fw-bold hp-num @(stats.RejectionRate > 5 ? "text-danger" : "text-gray-900")">@(stats.RejectionRate is decimal rr ? rr.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture) + "%" : "—")</div>
-                <div class="text-muted fs-8 mt-1">@T["Target below 5%"]</div>
-            </div></div></div>
-            <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
-                <div class="text-muted fw-semibold fs-7 mb-1">@T["Days to collect"]</div>
-                <div class="fs-2hx fw-bold hp-num text-gray-900">@(stats.DaysToCollect?.ToString() ?? "—")</div>
-                <div class="text-muted fs-8 mt-1">@T["from submission"]</div>
-            </div></div></div>
+            @for (int i = 0; i < tiles.Length; i++)
+            {
+                var s = tiles[i];
+                <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100">
+                    <div class="card-header pt-5 flex-nowrap gap-3">
+                        <div class="card-title d-flex flex-column">
+                            <span class="fs-2hx fw-bold me-2 lh-1 ls-n2 hp-num @(i == 2 && s.Tone == "danger" ? "text-danger" : "text-gray-900")" dir="@(s.Ltr ? "ltr" : "auto")">@s.Num</span>
+                            <span class="text-gray-500 pt-1 fw-semibold fs-6">@s.Label</span>
+                        </div>
+                        <div class="card-toolbar"><div class="symbol symbol-45px"><span class="symbol-label bg-light-@s.Tone"><i class="ki-outline ki-@s.Icon fs-2x text-@s.Tone"></i></span></div></div>
+                    </div>
+                    <div class="card-body d-flex align-items-end pt-0">
+                        <div class="d-flex fs-7 fw-semibold align-items-center text-gray-500"><div class="bullet w-8px h-6px rounded-2 bg-@s.Tone me-3"></div>
+                            @if (i == 0) { if (stats.OldestPendingMinutes is int om) {<span>@T["oldest"] <span class="hp-num">@om</span>&nbsp;@T["min"]</span>} else {<span>@T["None waiting"]</span>} }
+                            else if (i == 1) {<span class="hp-num">@cur</span>}
+                            else if (i == 2) {<span>@T["Target below 5%"]</span>}
+                            else {<span>@T["from submission"]</span>}
+                        </div>
+                    </div>
+                </div></div>
+            }
         </div>
 
-        <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice">
-            <span class="symbol symbol-45px me-5 flex-shrink-0"><span class="symbol-label"><i class="ki-outline ki-arrows-circle fs-2x text-white"></i></span></span>
+        <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-6 mb-5">
+            <i class="ki-outline ki-information fs-2tx text-primary me-4"></i>
             <div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@T["E-claims channel: not connected"]</h4>
                 <div class="fs-6 text-gray-700">@T["A batch is sent to the payer outside the system; record its submission and the payer's answer for each line here."]</div></div>
         </div>
 
-        <ul class="nav nav-stretch nav-line-tabs nav-line-tabs-2x border-transparent fs-5 fw-bold mb-5">
-            <li class="nav-item"><a class="nav-link text-active-primary @(tab == "pa" ? "active" : "")" data-bs-toggle="tab" href="#ins_pa">@T["Pre-authorisations"] <span class="badge badge-light ms-2 hp-num">@Model.Count</span></a></li>
-            <li class="nav-item"><a class="nav-link text-active-primary @(tab == "cl" ? "active" : "")" data-bs-toggle="tab" href="#ins_cl">@T["Claim batches"] <span class="badge badge-light ms-2 hp-num">@batches.Count</span></a></li>
-            <li class="nav-item"><a class="nav-link text-active-primary @(tab == "rj" ? "active" : "")" data-bs-toggle="tab" href="#ins_rj">@T["Rejections"] <span class="badge badge-light-danger ms-2 hp-num">@rejections.Count</span></a></li>
-        </ul>
+        @* one card, three table widgets behind the theme's line tabs — demo39 widgets/tables *@
+        <div class="card card-flush">
+            <div class="card-header pt-5">
+                <ul class="nav nav-stretch nav-line-tabs nav-line-tabs-2x border-transparent fs-5 fw-bold">
+                    <li class="nav-item"><a class="nav-link text-active-primary pb-4 me-6 @(tab == "pa" ? "active" : "")" data-bs-toggle="tab" href="#ins_pa"><i class="ki-outline ki-shield-tick fs-3 me-2"></i>@T["Pre-authorisations"] <span class="badge badge-light-primary ms-2 hp-num">@Model.Count</span></a></li>
+                    <li class="nav-item"><a class="nav-link text-active-primary pb-4 me-6 @(tab == "cl" ? "active" : "")" data-bs-toggle="tab" href="#ins_cl"><i class="ki-outline ki-send fs-3 me-2"></i>@T["Claim batches"] <span class="badge badge-light-primary ms-2 hp-num">@batches.Count</span></a></li>
+                    <li class="nav-item"><a class="nav-link text-active-primary pb-4 @(tab == "rj" ? "active" : "")" data-bs-toggle="tab" href="#ins_rj"><i class="ki-outline ki-cross-circle fs-3 me-2"></i>@T["Rejections"] <span class="badge badge-light-danger ms-2 hp-num">@rejections.Count</span></a></li>
+                </ul>
+            </div>
+            <div class="card-body pt-6"><div class="tab-content">
+                <div class="tab-pane fade @(tab == "pa" ? "show active" : "")" id="ins_pa">
+                    @if (Model.Count == 0)
+                    {
+                        <div class="text-center py-10"><i class="ki-outline ki-shield-tick fs-3x text-gray-300 mb-4 d-block"></i>
+                            <div class="fs-6 fw-bold text-gray-700">@T["No approval requests yet."]</div></div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
+                            <thead><tr class="fw-bold text-muted bg-light">
+                                <th class="ps-4 rounded-start">@T["Request"]</th><th>@T["Patient"]</th><th>@T["Payer"]</th><th>@T["Service (catalogue)"]</th><th class="text-end">@T["Amount"]</th><th>@T["Status"]</th><th class="text-end pe-4 rounded-end"></th>
+                            </tr></thead>
+                            <tbody>
+                                @foreach (var r in Model)
+                                {
+                                    var a = r.Preauth; var who = DisplayName.Of(r.PatientName, r.PatientNameEn);
+                                    <tr>
+                                        <td class="ps-4"><div class="d-flex flex-column">
+                                            <bdi class="text-gray-900 fw-bold fs-6 hp-num" dir="ltr">@a.RequestNo</bdi>
+                                            <span class="text-muted fw-semibold d-block fs-7 hp-num" data-fmt data-utc="@a.RequestedAt.ToString("o")">@a.RequestedAt.ToString("yyyy-MM-dd HH:mm")</span></div></td>
+                                        <td><div class="d-flex align-items-center">@Html.Raw(Avatar(r.Photo, r.PatientNameEn, 35))
+                                            <div class="d-flex flex-column"><a href="@Url.Action("Patient", new { id = a.PatientId })" class="text-gray-900 fw-bold text-hover-primary fs-6">@who</a><bdi class="text-muted fw-semibold d-block fs-7 hp-num">@r.Mrn</bdi></div></div></td>
+                                        <td class="text-gray-800 fw-bold fs-7">@DisplayName.Of(r.Payer, r.PayerEn)</td>
+                                        <td><span class="text-gray-800 fw-bold fs-7 d-block">@DisplayName.Of(r.Service, r.ServiceEn)</span><bdi class="text-muted fw-semibold fs-7 hp-num" dir="ltr">@r.ServiceCode</bdi>
+                                            @if (a.Reason != null) {<span class="text-danger fw-semibold d-block fs-7"><bdi>@a.Reason</bdi></span>}
+                                            @if (a.ApprovalRef != null) {<span class="text-muted fw-semibold d-block fs-7">@T["Ref."] <bdi class="hp-num" dir="ltr">@a.ApprovalRef</bdi></span>}</td>
+                                        <td class="text-end"><span class="text-gray-900 fw-bold fs-6 hp-num">@Money(a.Amount)</span></td>
+                                        <td><span class="badge badge-light-@PaBadge(a.Status) fs-7 fw-bold">@T["pa:" + a.Status]</span></td>
+                                        <td class="text-end pe-4 text-nowrap">
+                                            @if (canBill && a.Status == HospitalPreauthStatus.Pending)
+                                            {
+                                                <button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-success me-1" title="@T["pa:Approved"]" data-bs-toggle="tooltip" data-decide="@a.ID" data-approve="1" data-ask="@string.Format(T["The payer approved {0} for {1}: enter its approval reference."].Value, DisplayName.Of(r.Service, r.ServiceEn), who)"><i class="ki-outline ki-check fs-3"></i></button>
+                                                <button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-danger" title="@T["pa:Rejected"]" data-bs-toggle="tooltip" data-decide="@a.ID" data-approve="0" data-ask="@string.Format(T["The payer rejected {0} for {1}: enter its reason."].Value, DisplayName.Of(r.Service, r.ServiceEn), who)"><i class="ki-outline ki-cross fs-3"></i></button>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table></div>
+                    }
+                </div>
 
-        <div class="tab-content">
-            <div class="tab-pane fade @(tab == "pa" ? "show active" : "")" id="ins_pa"><div class="card"><div class="card-body pt-6">
-                @if (Model.Count == 0) { <div class="text-center text-muted py-15"><i class="ki-outline ki-shield-tick fs-3x text-gray-300 d-block mb-4"></i>@T["No approval requests yet."]</div> }
-                else
-                {
-                    <div class="table-responsive"><table class="table align-middle table-row-dashed fs-6 gy-3 mb-0">
-                        <thead><tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0">
-                            <th class="w-125px">@T["Request"]</th><th>@T["Patient"]</th><th>@T["Payer"]</th><th>@T["Service (catalogue)"]</th><th class="text-end">@T["Amount"]</th><th>@T["Status"]</th><th class="text-end w-175px"></th>
-                        </tr></thead>
-                        <tbody class="fw-semibold text-gray-700">
-                            @foreach (var r in Model)
-                            {
-                                var a = r.Preauth; var who = DisplayName.Of(r.PatientName, r.PatientNameEn);
-                                <tr>
-                                    <td><span class="badge hp-code fw-bold fs-8 hp-num">@a.RequestNo</span><div class="text-muted fs-8 hp-num mt-1" data-fmt data-utc="@a.RequestedAt.ToString("o")">@a.RequestedAt.ToString("yyyy-MM-dd HH:mm")</div></td>
-                                    <td><div class="d-flex align-items-center gap-3">@Html.Raw(Avatar(r.Photo, r.PatientNameEn, 35))
-                                        <div><a href="@Url.Action("Patient", new { id = a.PatientId })" class="fw-bold text-gray-900 text-hover-primary">@who</a><div class="text-muted fs-8 hp-num">@r.Mrn</div></div></div></td>
-                                    <td>@DisplayName.Of(r.Payer, r.PayerEn)</td>
-                                    <td><div class="text-gray-800">@DisplayName.Of(r.Service, r.ServiceEn)</div><div class="text-muted fs-8 hp-num">@r.ServiceCode</div>
-                                        @if (a.Reason != null) {<div class="text-danger fs-8">@a.Reason</div>}
-                                        @if (a.ApprovalRef != null) {<div class="text-muted fs-8">@T["Ref."] <span class="hp-num">@a.ApprovalRef</span></div>}</td>
-                                    <td class="text-end hp-num">@Money(a.Amount)</td>
-                                    <td><span class="badge badge-light-@PaBadge(a.Status) fs-8">@T["pa:" + a.Status]</span></td>
-                                    <td class="text-end">
-                                        @if (canBill && a.Status == HospitalPreauthStatus.Pending)
-                                        {
-                                            <button type="button" class="btn btn-sm btn-light-success" data-decide="@a.ID" data-approve="1" data-ask="@string.Format(T["The payer approved {0} for {1}: enter its approval reference."].Value, DisplayName.Of(r.Service, r.ServiceEn), who)">@T["pa:Approved"]</button>
-                                            <button type="button" class="btn btn-sm btn-light-danger" data-decide="@a.ID" data-approve="0" data-ask="@string.Format(T["The payer rejected {0} for {1}: enter its reason."].Value, DisplayName.Of(r.Service, r.ServiceEn), who)">@T["pa:Rejected"]</button>
-                                        }
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table></div>
-                }
-            </div></div></div>
+                <div class="tab-pane fade @(tab == "cl" ? "show active" : "")" id="ins_cl">
+                    @if (batches.Count == 0)
+                    {
+                        <div class="text-center py-10"><i class="ki-outline ki-send fs-3x text-gray-300 mb-4 d-block"></i>
+                            <div class="fs-6 fw-bold text-gray-700">@T["No claim batches yet. Build one from a month's closed bills."]</div></div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
+                            <thead><tr class="fw-bold text-muted bg-light">
+                                <th class="ps-4 rounded-start">@T["Batch"]</th><th>@T["Payer"]</th><th class="text-end">@T["Claims"]</th><th class="text-end">@T["Amount"]</th><th class="text-end">@T["Accepted"]</th><th class="text-end">@T["Rejected"]</th><th class="pe-4 rounded-end">@T["Status"]</th>
+                            </tr></thead>
+                            <tbody>
+                                @foreach (var b in batches)
+                                {
+                                    <tr>
+                                        <td class="ps-4"><div class="d-flex align-items-center">
+                                            <div class="symbol symbol-45px me-4 flex-shrink-0"><span class="symbol-label bg-light-@BatchBadge(b.Batch.Status)"><i class="ki-outline ki-send fs-2 text-@(BatchBadge(b.Batch.Status) == "secondary" ? "gray-600" : BatchBadge(b.Batch.Status))"></i></span></div>
+                                            <div class="d-flex flex-column"><a href="@Url.Action("ClaimBatch", new { id = b.Batch.ID })" class="text-gray-900 fw-bold text-hover-primary fs-6"><bdi class="hp-num" dir="ltr">@b.Batch.BatchNo</bdi></a>
+                                                <span class="text-muted fw-semibold d-block fs-7">@T["Period"] <span class="hp-num">@b.Batch.Period</span></span></div>
+                                        </div></td>
+                                        <td class="text-gray-800 fw-bold fs-7">@DisplayName.Of(b.Payer, b.PayerEn)</td>
+                                        <td class="text-end"><span class="text-gray-900 fw-bold fs-6 hp-num">@b.Claims</span></td>
+                                        <td class="text-end text-nowrap"><span class="text-gray-900 fw-bold fs-6 hp-num">@Money(b.Amount)</span>@if (b.Currency != null) {<span class="badge badge-light-info fs-8 fw-bold ms-1 hp-num">@b.Currency</span>}</td>
+                                        <td class="text-end">@if (b.Accepted > 0) {<span class="badge badge-light-success fs-7 fw-bold hp-num">@Money(b.Accepted)</span>} else {<span class="text-muted">—</span>}</td>
+                                        <td class="text-end">@if (b.Rejected > 0) {<span class="badge badge-light-danger fs-7 fw-bold hp-num">@Money(b.Rejected)</span>} else {<span class="text-muted">—</span>}</td>
+                                        <td class="pe-4"><span class="badge badge-light-@BatchBadge(b.Batch.Status) fs-7 fw-bold">@T["cb:" + b.Batch.Status]</span></td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table></div>
+                    }
+                </div>
 
-            <div class="tab-pane fade @(tab == "cl" ? "show active" : "")" id="ins_cl"><div class="card"><div class="card-body pt-6">
-                @if (batches.Count == 0) { <div class="text-center text-muted py-15"><i class="ki-outline ki-send fs-3x text-gray-300 d-block mb-4"></i>@T["No claim batches yet. Build one from a month's closed bills."]</div> }
-                else
-                {
-                    <div class="table-responsive"><table class="table align-middle table-row-dashed fs-6 gy-3 mb-0">
-                        <thead><tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0">
-                            <th class="w-175px">@T["Batch"]</th><th>@T["Payer"]</th><th>@T["Period"]</th><th class="text-end">@T["Claims"]</th><th class="text-end">@T["Amount"]</th><th class="text-end">@T["Accepted"]</th><th class="text-end">@T["Rejected"]</th><th>@T["Status"]</th>
-                        </tr></thead>
-                        <tbody class="fw-semibold text-gray-700">
-                            @foreach (var b in batches)
-                            {
-                                <tr>
-                                    <td><a href="@Url.Action("ClaimBatch", new { id = b.Batch.ID })" class="badge hp-code fw-bold fs-8 hp-num">@b.Batch.BatchNo</a></td>
-                                    <td>@DisplayName.Of(b.Payer, b.PayerEn)</td>
-                                    <td class="hp-num">@b.Batch.Period</td>
-                                    <td class="text-end hp-num">@b.Claims</td>
-                                    <td class="text-end hp-num">@Money(b.Amount)@if (b.Currency != null) {<span class="badge badge-light fs-9 ms-1">@b.Currency</span>}</td>
-                                    <td class="text-end hp-num">@(b.Accepted > 0 ? Money(b.Accepted) : "—")</td>
-                                    <td class="text-end hp-num">@if (b.Rejected > 0) {<span class="text-danger">@Money(b.Rejected)</span>} else {<span class="text-muted">—</span>}</td>
-                                    <td><span class="badge badge-light-@BatchBadge(b.Batch.Status) fs-8">@T["cb:" + b.Batch.Status]</span></td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table></div>
-                }
-            </div></div></div>
-
-            <div class="tab-pane fade @(tab == "rj" ? "show active" : "")" id="ins_rj"><div class="card"><div class="card-body pt-6">
-                @if (rejections.Count == 0) { <div class="text-center text-muted py-15"><i class="ki-outline ki-check-circle fs-3x text-gray-300 d-block mb-4"></i>@T["No rejected lines waiting."]</div> }
-                else
-                {
-                    <div class="table-responsive"><table class="table align-middle table-row-dashed fs-6 gy-3 mb-0">
-                        <thead><tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0">
-                            <th class="w-175px">@T["Batch"]</th><th>@T["Patient"]</th><th>@T["Line"]</th><th>@T["Reason"]</th><th class="text-end">@T["Amount"]</th><th class="text-end w-150px"></th>
-                        </tr></thead>
-                        <tbody class="fw-semibold text-gray-700">
-                            @foreach (var r in rejections)
-                            {
-                                var l = r.Line;
-                                <tr>
-                                    <td><a href="@Url.Action("ClaimBatch", new { id = r.BatchId })" class="badge hp-code fw-bold fs-8 hp-num">@r.BatchNo</a></td>
-                                    <td><div class="d-flex align-items-center gap-2">@Html.Raw(Avatar(r.Photo, r.PatientNameEn, 30))<span class="text-gray-800">@DisplayName.Of(r.PatientName, r.PatientNameEn)</span></div></td>
-                                    <td><div class="text-gray-800">@DisplayName.Of(l.Description, l.DescriptionEn)</div><div class="text-muted fs-8 hp-num">@l.Code</div></td>
-                                    <td><span class="badge hp-code fs-8 hp-num">@l.RejectCode</span> <span class="text-gray-700 fs-7">@l.RejectReason</span></td>
-                                    <td class="text-end hp-num">@Money(l.InsurerAmount)</td>
-                                    <td class="text-end">@if (canBill) {<button type="button" class="btn btn-sm btn-light-primary" data-resubmit="@l.ID" data-ask="@string.Format(T["Resubmit {0} in this month's batch: write the justification the payer will read."].Value, DisplayName.Of(l.Description, l.DescriptionEn))"><i class="ki-outline ki-arrow-circle-right fs-5"></i>@T["Resubmit"]</button>}</td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table></div>
-                }
-            </div></div></div>
+                <div class="tab-pane fade @(tab == "rj" ? "show active" : "")" id="ins_rj">
+                    @if (rejections.Count == 0)
+                    {
+                        <div class="text-center py-10"><i class="ki-outline ki-check-circle fs-3x text-gray-300 mb-4 d-block"></i>
+                            <div class="fs-6 fw-bold text-gray-700">@T["No rejected lines waiting."]</div></div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
+                            <thead><tr class="fw-bold text-muted bg-light">
+                                <th class="ps-4 rounded-start">@T["Patient"]</th><th>@T["Batch"]</th><th>@T["Line"]</th><th>@T["Reason"]</th><th class="text-end">@T["Amount"]</th><th class="text-end pe-4 rounded-end"></th>
+                            </tr></thead>
+                            <tbody>
+                                @foreach (var r in rejections)
+                                {
+                                    var l = r.Line;
+                                    <tr>
+                                        <td class="ps-4"><div class="d-flex align-items-center">@Html.Raw(Avatar(r.Photo, r.PatientNameEn, 35))<span class="text-gray-900 fw-bold fs-6">@DisplayName.Of(r.PatientName, r.PatientNameEn)</span></div></td>
+                                        <td><a href="@Url.Action("ClaimBatch", new { id = r.BatchId })" class="text-gray-800 fw-bold text-hover-primary fs-7"><bdi class="hp-num" dir="ltr">@r.BatchNo</bdi></a></td>
+                                        <td><span class="text-gray-800 fw-bold fs-7 d-block">@DisplayName.Of(l.Description, l.DescriptionEn)</span><bdi class="text-muted fw-semibold fs-7 hp-num" dir="ltr">@l.Code</bdi></td>
+                                        <td><span class="badge badge-light-danger fs-7 fw-bold hp-num me-1">@l.RejectCode</span><span class="text-gray-600 fw-semibold fs-7"><bdi>@l.RejectReason</bdi></span></td>
+                                        <td class="text-end"><span class="text-gray-900 fw-bold fs-6 hp-num">@Money(l.InsurerAmount)</span></td>
+                                        <td class="text-end pe-4">@if (canBill) {<button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-primary" title="@T["Resubmit"]" data-bs-toggle="tooltip" data-resubmit="@l.ID" data-ask="@string.Format(T["Resubmit {0} in this month's batch: write the justification the payer will read."].Value, DisplayName.Of(l.Description, l.DescriptionEn))"><i class="ki-outline ki-arrow-circle-right fs-3"></i></button>}</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table></div>
+                    }
+                </div>
+            </div></div>
         </div>
     </div></div>
 </div>
 
 @if (canBill)
 {
-    <div class="modal fade" id="paModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-650px"><div class="modal-content">
-        <div class="modal-header"><h2 class="fw-bold m-0">@T["New approval request"]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
-        <div class="modal-body py-8 px-lg-10">
-            <div class="mb-6"><label class="form-label required">@T["Patient"]</label><select class="form-select form-select-solid" data-pa-patient data-placeholder="@T["Search by name or MRN"]"></select>
+    @* the form modals — demo39 utilities/modals/forms/new-target *@
+    <div class="modal fade" id="paModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-650px"><div class="modal-content rounded">
+        <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-10">
+            <div class="mb-10 text-center"><h1 class="mb-3">@T["New approval request"]</h1>
+                <div class="text-muted fw-semibold fs-5">@T["Pre-authorisations"]</div></div>
+            <div class="d-flex flex-column mb-8 fv-row"><label class="fs-6 fw-semibold mb-2 required">@T["Patient"]</label><select class="form-select form-select-solid" data-pa-patient data-no-select2 data-placeholder="@T["Search by name or MRN"]"></select>
                 <div class="fs-7 mt-2" data-pa-cover></div></div>
-            <div class="mb-6"><label class="form-label required">@T["Service (catalogue)"]</label><select class="form-select form-select-solid" data-pa-service data-placeholder="@T["Search by code or name"]"></select></div>
-            <div class="mb-2"><label class="form-label">@T["Amount"] <span class="text-muted fs-8">@cur</span></label><input class="form-control form-control-solid hp-num" dir="ltr" data-pa-amount placeholder="@T["The service price"]" /></div>
+            <div class="d-flex flex-column mb-8 fv-row"><label class="fs-6 fw-semibold mb-2 required">@T["Service (catalogue)"]</label><select class="form-select form-select-solid" data-pa-service data-no-select2 data-placeholder="@T["Search by code or name"]"></select></div>
+            <div class="d-flex flex-column fv-row"><label class="fs-6 fw-semibold mb-2">@T["Amount"] <span class="text-muted fs-8">@cur</span></label><input class="form-control form-control-solid hp-num" dir="ltr" data-pa-amount placeholder="@T["The service price"]" /></div>
+            <div class="text-center pt-10"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-pa-send>@T["Send request"]</button></div>
         </div>
-        <div class="modal-footer flex-center"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-pa-send>@T["Send request"]</button></div>
     </div></div></div>
 
-    <div class="modal fade" id="batchModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-550px"><div class="modal-content">
-        <div class="modal-header"><h2 class="fw-bold m-0">@T["Build month batch"]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
-        <div class="modal-body py-8 px-lg-10">
-            <div class="mb-6"><label class="form-label required">@T["Payer"]</label>
+    <div class="modal fade" id="batchModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-550px"><div class="modal-content rounded">
+        <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-10">
+            <div class="mb-10 text-center"><h1 class="mb-3">@T["Build month batch"]</h1>
+                <div class="text-muted fw-semibold fs-5">@T["The month's closed bills of the payer's covered patients, not claimed yet, are gathered into its draft batch."]</div></div>
+            <div class="d-flex flex-column mb-8 fv-row"><label class="fs-6 fw-semibold mb-2 required">@T["Payer"]</label>
                 <select class="form-select form-select-solid" data-b-payer data-control="select2" data-hide-search="true" data-dropdown-parent="#batchModal">
                     @foreach (var p in payers) { <option value="@p.Payer.ID">@p.Payer.Code · @DisplayName.Of(p.Payer.Name, p.Payer.NameEn)</option> }
                 </select></div>
-            <div class="mb-4"><label class="form-label required">@T["Month"]</label><input type="month" class="form-control form-control-solid hp-num" data-b-period value="@claimMonth" /></div>
-            <div class="text-muted fs-7">@T["The month's closed bills of the payer's covered patients, not claimed yet, are gathered into its draft batch."]</div>
+            <div class="d-flex flex-column fv-row"><label class="fs-6 fw-semibold mb-2 required">@T["Month"]</label>
+                <input type="month" class="form-control form-control-solid hp-num" data-b-period value="@claimMonth" /></div>
+            <div class="text-center pt-10"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-b-build @(payers.Count == 0 ? "disabled" : "")>@T["Build batch"]</button></div>
         </div>
-        <div class="modal-footer flex-center"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-b-build @(payers.Count == 0 ? "disabled" : "")>@T["Build batch"]</button></div>
     </div></div></div>
 }
 
