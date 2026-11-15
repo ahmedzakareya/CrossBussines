@@ -10,7 +10,18 @@
 		public int Scanned { get; set; }
 		public int AnomalyCount { get; set; }
 		public List<AnomalyItem> Anomalies { get; set; } = new();
+
+		// SEPARATE FROM Anomalies, AND NOT COUNTED IN AnomalyCount.
+		//
+		// IsolationForest's `contamination` fixes the PROPORTION it labels, so the old detector
+		// flagged exactly 6% of the ledger and would have flagged exactly 6% of a spotless one — it
+		// could never say "nothing unusual". That is a ranking, not a finding, so it now arrives as
+		// a short queue of the structurally strangest entries, labelled as such. A reader must be
+		// able to tell "this entry is wrong" from "this entry is the oddest-looking of the batch".
+		public List<AnomalyItem> ReviewQueue { get; set; } = new();
+
 		public AnomalySummary Summary { get; set; } = new();
+		public AiReason? Note { get; set; }
 	}
 	public class AnomalyItem
 	{
@@ -18,12 +29,27 @@
 		public string? EntryNo { get; set; }
 		public string? Date { get; set; }
 		public string? SourceType { get; set; }
+		/// The source DOCUMENT. Duplication is judged on this, never on the description, because
+		/// descriptions in this product are templated and cannot distinguish two documents.
+		public int? SourceId { get; set; }
 		public decimal Amount { get; set; }
+		public int LineCount { get; set; }
 		public double Score { get; set; }
 		public string? Severity { get; set; }   // high / medium / low
 		public List<AiReason> Reasons { get; set; } = new();
 	}
-	public class AnomalySummary { public int Duplicates { get; set; } public int AmountOutliers { get; set; } }
+	public class AnomalySummary
+	{
+		public int Duplicates { get; set; }
+		public int AmountOutliers { get; set; }
+
+		/// Entries whose duplication could NOT be judged: system-generated, carrying no document id
+		/// and a templated description, so a duplicate and a coincidence are indistinguishable from
+		/// the payload. Surfaced as a number rather than silently absent — a reader is entitled to
+		/// know the scan did not cover everything.
+		public int NotCheckedForDuplicates { get; set; }
+		public int ReviewQueueSize { get; set; }
+	}
 
 	// ----- cash-flow -----
 	public class CashflowResult
@@ -55,6 +81,20 @@
 		public int FlaggedCount { get; set; }
 		public InventorySummary Summary { get; set; } = new();
 		public List<InventoryItem> Flagged { get; set; } = new();
+
+		// ACTIVITY ACROSS THE WHOLE WINDOW. "No issues in 90 days" means dormant stock only if the
+		// business was issuing stock at all. Measured on 2026-11-08 the window held 4 active days
+		// and 35 movements, with 18 of 80 stocked items moving — so 60 items were being reported as
+		// 218,498.16 of dead capital when the finding was about the PERIOD. When the window is
+		// near-empty the analyser says so once, here, instead of accusing every item on the shelf.
+		public int? WindowActiveDays { get; set; }
+		public int? WindowMovements { get; set; }
+		public bool WindowTooQuiet { get; set; }
+		public AiReason? WindowNote { get; set; }
+
+		/// Items whose issue history cannot support a daily rate, so none was stated for them.
+		/// Visible rather than silent: an absent number and a number of zero are different claims.
+		public int RateNotEstimable { get; set; }
 	}
 	public class InventorySummary
 	{
@@ -70,11 +110,105 @@
 		public string? Name { get; set; }
 		public decimal OnHand { get; set; }
 		public decimal Value { get; set; }
-		public double AvgDailyUsage { get; set; }
+		/// NULLABLE on purpose. The analyser now declines to state a rate it cannot support, and a
+		/// non-nullable double would turn that refusal into a confident 0.0 on the screen.
+		public double? AvgDailyUsage { get; set; }
 		public double? DaysCover { get; set; }
 		public string? Class { get; set; }      // slow / reorder / stockout
 		public string? Severity { get; set; }   // high / medium / low
 		public decimal? SuggestedReorderQty { get; set; }
+		/// A..D, or null when the item has no usable issue history. Carried so a reader can see
+		/// how much evidence sits behind AvgDailyUsage rather than taking the figure on faith.
+		public string? HistoryGrade { get; set; }
+		public List<AiReason> Reasons { get; set; } = new();
+	}
+
+	// ----- Reorder point advice (crossbuy_ai: app/ml/reorder.py) -----
+	//
+	// SEPARATE FROM InventoryResult ON PURPOSE. That one classifies an item from a demand TOTAL;
+	// this one computes a reorder point from the demand DISTRIBUTION and may decline to compute one
+	// at all. The two answer different questions and fail in different ways, so merging them would
+	// have forced a shape where "refused, and here is what is missing" had nowhere to go.
+	public sealed class ReorderResult
+	{
+		public string? AsOf { get; set; }
+		public int WindowDays { get; set; }
+		public double ServiceLevel { get; set; }
+		public double Z { get; set; }
+		public double DefaultLeadTimeDays { get; set; }
+		public int PairsAnalyzed { get; set; }
+		public ReorderSummary Summary { get; set; } = new();
+		public AiReason? Note { get; set; }
+		public List<ReorderRow> Results { get; set; } = new();
+	}
+
+	public sealed class ReorderSummary
+	{
+		public int Advised { get; set; }
+		public int RefusedInsufficientHistory { get; set; }
+		public int NoDemand { get; set; }
+		public int ToOrderNow { get; set; }
+		/// Grade letter -> count. A dictionary rather than four properties because the grading
+		/// thresholds live in the engine and may gain a band without a C# change.
+		public Dictionary<string, int> Grades { get; set; } = new();
+	}
+
+	/// One term of the reorder point, itemised so the arithmetic can be read rather than trusted.
+	public sealed class ReorderTerm
+	{
+		public string? Key { get; set; }
+		public double Value { get; set; }
+		public AiReason? Label { get; set; }
+		public AiReason? Detail { get; set; }
+	}
+
+	public sealed class ReorderRow
+	{
+		public int ItemId { get; set; }
+		public int WarehouseId { get; set; }
+		public string? Code { get; set; }
+		public string? Name { get; set; }
+		public string? NameEn { get; set; }
+		public string? WarehouseName { get; set; }
+
+		public decimal OnHand { get; set; }
+		public int ActiveDays { get; set; }
+		public int SpanDays { get; set; }
+		public decimal TotalQty { get; set; }
+		public int EffectiveWindowDays { get; set; }
+
+		/// What the system holds TODAY — null across the board on this installation, which is the
+		/// point: the fields have existed all along and nothing has ever filled them.
+		public decimal? CurrentReorderPoint { get; set; }
+		public decimal? CurrentSafetyStock { get; set; }
+		public double LeadTimeDays { get; set; }
+		public string? LeadTimeSource { get; set; }   // setting | default
+
+		/// A..D — can the HISTORY support a number at all.
+		public string? Grade { get; set; }
+		public double Confidence { get; set; }
+		/// False means no figure was produced. `Needed` then says what is missing.
+		public bool Advise { get; set; }
+		public string? Status { get; set; }           // computed | insufficientHistory | noDemand
+
+		public double AvgDailyDemand { get; set; }
+		public double SdDailyDemand { get; set; }
+		/// sd / mean — is the demand the SHAPE the formula was built for. A separate axis from
+		/// Grade: a row can have ample history and still be the wrong shape.
+		public double CoefficientOfVariation { get; set; }
+		public string? DemandShape { get; set; }      // stable | lumpy | intermittent
+		/// Safety stock as a share of the point. High means the figure is mostly padding.
+		public double SafetyShare { get; set; }
+
+		public decimal? ReorderPoint { get; set; }
+		public decimal? SafetyStock { get; set; }
+		public double? DaysOfCover { get; set; }
+		public decimal? SuggestedOrderQty { get; set; }
+
+		public string? Action { get; set; }           // order | hold
+		public AiReason? ActionText { get; set; }
+		public AiReason? Needed { get; set; }
+		public List<ReorderTerm> Terms { get; set; } = new();
 		public List<AiReason> Reasons { get; set; } = new();
 	}
 
@@ -226,6 +360,45 @@
 
 		public IEnumerable<InventoryItem> OfClass(string cls) =>
 			Flagged.Where(f => string.Equals(f.Class, cls, StringComparison.OrdinalIgnoreCase));
+	}
+
+	// ----- Reorder advice screen -----
+	//
+	// WHAT THIS SCREEN CLAIMS, AND WHAT IT DOES NOT. It proposes a reorder point and a safety stock
+	// per item x warehouse and shows the arithmetic behind each one. It does NOT forecast demand, and
+	// where the history cannot carry a number it shows the REFUSAL with its reason rather than a
+	// figure — on this installation that is most rows, and the screen is built to make that readable
+	// instead of hiding it behind an empty table.
+	//
+	// NOTHING IS WRITTEN BY LOADING IT. A proposed figure reaches ItemWarehouseSettings only through
+	// the separate POST, one row at a time, under InvPerm("manage").
+	public sealed class InventoryReorderVm
+	{
+		public ReorderResult? Result { get; set; }
+		public AiInsightPanel Panel { get; set; } = new();
+
+		/// The resolved company. Server-derived; this screen accepts no company from the caller.
+		public int CompanyId { get; set; }
+		public int WindowDays { get; set; }
+		public double ServiceLevel { get; set; }
+
+		public IReadOnlyList<ReorderRow> Rows =>
+			Result?.Results ?? (IReadOnlyList<ReorderRow>)Array.Empty<ReorderRow>();
+
+		public IEnumerable<ReorderRow> Advised => Rows.Where(r => r.Advise);
+		public IEnumerable<ReorderRow> Refused => Rows.Where(r => !r.Advise);
+
+		/// Rows the buyer must act on today, which is the only group that is ever urgent.
+		public IEnumerable<ReorderRow> ToOrder =>
+			Advised.Where(r => string.Equals(r.Action, "order", StringComparison.OrdinalIgnoreCase));
+
+		/// Why each refusal happened, most common first — the one view that turns 72 individual
+		/// refusals into an actionable statement about the DATA rather than about the items.
+		public IEnumerable<(string Reason, int Count)> RefusalBreakdown =>
+			Refused.Where(r => r.Reasons.Count > 0)
+				   .GroupBy(r => r.Reasons[0].Ar)
+				   .Select(g => (g.Key, g.Count()))
+				   .OrderByDescending(x => x.Item2);
 	}
 
 	// ----- CRM Opportunity Insights (product expansion wave 2) -----

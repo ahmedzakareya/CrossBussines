@@ -913,6 +913,7 @@ namespace CrossBuy.BL.Platform.Ai
 					? Explain(result, clean, arabic, composedBy)
 					: AskText.Of(namedNote.Ar + " · " + Explain(result, clean, arabic, composedBy).Ar,
 								 namedNote.En + " · " + Explain(result, clean, arabic, composedBy).En),
+				Notes = _surface.Rules,
 				Provenance = new AskProvenance
 				{
 					CompanyId = scope.CompanyId,
@@ -1195,6 +1196,8 @@ namespace CrossBuy.BL.Platform.Ai
 		/// What was actually asked, what it covered, and what the surface had already decided.
 		private AskText Explain(AskSurfaceRunner.Result result, AskQuery query, bool arabic, string engine)
 		{
+			_ = engine;   // recorded by the caller's provenance; never shown to the reader
+
 			string Names(IEnumerable<string> cols, bool ar) => string.Join(" + ", cols.Select(c =>
 			{
 				var col = _surface.Column(c);
@@ -1212,10 +1215,13 @@ namespace CrossBuy.BL.Platform.Ai
 					? $" · الفترة المغطاة فعليًا: {result.FromDate} إلى {result.ToDate}"
 					: $" · actual period covered: {result.FromDate} to {result.ToDate}");
 
-			var ar = $"{measures} حسب {groups} · {result.GroupsFound} مجموعة من {result.RowsRead} سطر{span}"
-				+ $" · [{engine}]. " + _surface.Rules.Ar;
-			var en = $"{measures} by {groups} · {result.GroupsFound} group(s) from {result.RowsRead} line(s){span}"
-				+ $" · [{engine}]. " + _surface.Rules.En;
+			// THE ENGINE THAT COMPOSED THIS IS NOT NEWS TO THE READER. "[rules]" was printing into
+			// the answer as if it meant something; it is the name of the composer and belongs in
+			// the log, not on screen. The surface's own rules used to be appended here too and are
+			// now carried separately as Notes, so this line says ONE thing: what was computed over
+			// how much, and when.
+			var ar = $"{measures} حسب {groups} · {result.GroupsFound} مجموعة من {result.RowsRead} سطر{span}";
+			var en = $"{measures} by {groups} · {result.GroupsFound} group(s) from {result.RowsRead} line(s){span}";
 			return AskText.Of(ar, en);
 		}
 

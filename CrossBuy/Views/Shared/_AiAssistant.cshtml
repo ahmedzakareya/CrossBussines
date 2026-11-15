@@ -111,6 +111,33 @@
         .cb-ai-about{font-size:.76rem;line-height:1.6;color:var(--cb-ai-ink-2);margin:0 0 7px;
                      padding-inline-start:9px;border-inline-start:2px solid var(--cb-ai-brand-soft)}
 
+        /* WHAT WAS ASKED FOR, FIRST AND BIG. The reply used to sit in the same small grey type as
+           the caveats around it, so the eye landed on a paragraph of rules and had to hunt for the
+           figure underneath. The headline is now the size of an answer. */
+        .cb-ai-headline{font-size:1.28rem;line-height:1.45;font-weight:700;color:var(--cb-ai-ink);
+                        margin:2px 0 10px}
+
+        /* THE WORKING, FOLDED. Everything that justifies the figure - what was computed over how
+           many rows, and the surface's standing rules - is one disclosure the reader opens when
+           they want to check, not a wall they read to get past. */
+        .cb-ai-why{margin:10px 0 0;border-top:1px dashed var(--cb-ai-line);padding-top:8px}
+        .cb-ai-why > summary{list-style:none;cursor:pointer;font-size:.75rem;font-weight:600;
+                             color:var(--cb-ai-ink-2);display:flex;align-items:center;gap:6px;
+                             user-select:none}
+        .cb-ai-why > summary::-webkit-details-marker{display:none}
+        .cb-ai-why > summary::after{content:'';width:6px;height:6px;border-inline-end:1.5px solid currentColor;
+                             border-block-end:1.5px solid currentColor;transform:rotate(45deg);
+                             margin-block-end:3px;transition:transform .15s ease}
+        .cb-ai-why[open] > summary::after{transform:rotate(-135deg);margin-block:3px 0}
+        .cb-ai-whybody{font-size:.75rem;line-height:1.7;color:var(--cb-ai-ink-2);margin-top:7px}
+        .cb-ai-whybody p{margin:0 0 6px}
+        .cb-ai-whybody p:last-child{margin-bottom:0}
+        /* The surface's rules arrive as one line of clauses joined by '·'. Shown as a list, they
+           are six short statements; shown as a paragraph, they are the wall this replaced. */
+        .cb-ai-rules{margin:0;padding-inline-start:16px}
+        .cb-ai-rules li{margin:0 0 4px}
+        .cb-ai-rules li:last-child{margin-bottom:0}
+
         .cb-ai-dots{display:inline-flex;gap:4px;align-items:center;margin-inline-start:4px}
         .cb-ai-dots i{width:6px;height:6px;border-radius:50%;background:#C3CBDC;display:block;
             animation:cbAiBlink 1s infinite ease-in-out}
@@ -233,7 +260,8 @@
             failed: '@Localizer["The request could not be sent."]',
             unreachable: '@Localizer["I could not reach the server. It may be restarting."]',
             retry: '@Localizer["Try again"]',
-            looking: '@Localizer["Looking…"]'
+            looking: '@Localizer["Looking…"]',
+            why: '@Localizer["How this was worked out"]'
         };
 
         function el(tag, cls, text) {
@@ -310,15 +338,48 @@
         // THE REPLY, ABOVE THE EVIDENCE. A grid is a result; a sentence is a reply, and the person
         // asked a question. Rendered first and larger, with the rows kept underneath so the sentence
         // can always be checked against them.
-        function addSpoken(card, d) {
-            if (d && d.spoken) { card.appendChild(el('div', 'cb-ai-spoken', d.spoken)); }
+        function addSpoken(card, d, headline) {
+            if (d && d.spoken) {
+                card.appendChild(el('div', headline ? 'cb-ai-headline' : 'cb-ai-spoken', d.spoken));
+            }
+        }
+
+        // THE WORKING, FOLDED AWAY UNDER THE ANSWER.
+        //
+        // `understood` says what was computed over how many rows; `notes` carries the surface's
+        // standing rules. Both are load-bearing - they are what stops a billed figure being read
+        // as a collected one - and neither is what the person asked for. Printed above the figure
+        // they buried it; printed here they are one click from anyone checking.
+        //
+        // The rules arrive as clauses joined by '·', which is a wall as a paragraph and six short
+        // statements as a list, so they are split back out.
+        function addWhy(card, d) {
+            var understood = d && d.understood;
+            var notes = d && d.notes;
+            if (!understood && !notes) return;
+
+            var box = el('details', 'cb-ai-why');
+            var sum = el('summary', '', L.why);
+            box.appendChild(sum);
+            var bodyEl = el('div', 'cb-ai-whybody');
+            if (understood) bodyEl.appendChild(el('p', '', understood));
+            if (notes) {
+                var ul = el('ul', 'cb-ai-rules');
+                notes.split('·').forEach(function (part) {
+                    var t = part.trim();
+                    if (t) ul.appendChild(el('li', '', t));
+                });
+                bodyEl.appendChild(ul);
+            }
+            box.appendChild(bodyEl);
+            card.appendChild(box);
         }
 
         function addAnswer(d) {
             var card = el('div', 'cb-ai-a');
 
             if (!d || d.ok !== true) {
-                addSpoken(card, d);
+                addSpoken(card, d, false);
                 addAssumptions(card, d);
                 // The refusal KIND comes from `code`, never from message text: matching a localised
                 // string works in Arabic and silently stops working in English.
@@ -369,8 +430,14 @@
                 body.appendChild(card); body.scrollTop = body.scrollHeight; return;
             }
 
-            addSpoken(card, d);
-            addAssumptions(card, d);
+            // THE FIGURE, THEN THE EVIDENCE, THEN THE WORKING.
+            //
+            // `about` stays above the rows because it changes WHAT the answer is about and a reader
+            // who misses it reads the wrong question's answer. `understood` and the rules describe
+            // HOW it was computed, and they moved below into a disclosure - that is the whole of
+            // this change.
+            addSpoken(card, d, true);
+            if (d && d.about) card.appendChild(el('div', 'cb-ai-about', d.about));
 
             (d.rows || []).forEach(function (r) {
                 var row = el('div', 'cb-ai-row');
@@ -458,6 +525,8 @@
 
             // PROVENANCE ON EVERY ANSWER. A number without its scope is a number without a claim.
             var p = d.provenance || {};
+            addWhy(card, d);
+
             var prov = el('div', 'cb-ai-prov');
             prov.appendChild(el('span', 'cb-ai-pill', L.company + ': ' + (p.companyName || p.companyId)));
             if (p.authority) prov.appendChild(el('span', 'cb-ai-pill', p.authority));

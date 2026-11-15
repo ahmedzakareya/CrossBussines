@@ -209,6 +209,15 @@ namespace CrossBuy.BL.Platform.Ai
 		/// correct, so every one of them is said out loud above the rows.
 		public AskText? Understood { get; init; }
 
+		/// THE SURFACE'S STANDING RULES — reference, not a headline.
+		///
+		/// These used to be glued onto the end of Understood, so every answer opened with a
+		/// paragraph of caveats and the figure that was actually asked for sat underneath it. The
+		/// owner's word for the result was "زفت". The rules still matter and are still shown — they
+		/// are what stops a reader taking a billed figure for a collected one — but they are what
+		/// you read SECOND, so the client renders them folded away under the answer.
+		public AskText? Notes { get; init; }
+
 		/// Set by the GATE when the question named no subject and the remembered one was used.
 		/// Not init-only: only the gate knows a question was a follow-up, and it learns that after
 		/// the handler has already built its answer.
