@@ -19,7 +19,7 @@ namespace CrossBuy.BL.Hospital
 		public string? OtherConditions { get; set; } public string? Manner { get; set; } public bool AutopsyRequested { get; set; }
 	}
 
-	public sealed record HospitalDeathRow(HospitalDeath Death, string Patient, string? PatientEn, string Mrn, string? Photo, string? Doctor, string? DoctorEn);
+	public sealed record HospitalDeathRow(HospitalDeath Death, string Patient, string? PatientEn, string Mrn, string? Photo, string? Doctor, string? DoctorEn, string? DoctorPhoto = null);
 
 	public static class HospitalDeathRules
 	{
@@ -68,10 +68,12 @@ namespace CrossBuy.BL.Hospital
 				var pats = await _db.HospitalPatients.AsNoTracking().Where(p => p.CompanyId == ctx.CompanyId && pids.Contains(p.ID)).ToDictionaryAsync(p => p.ID, ct);
 				var dids = rows.Where(r => r.PractitionerId != null).Select(r => r.PractitionerId!.Value).Distinct().ToList();
 				var docs = await _db.HospitalPractitioners.AsNoTracking().Where(p => p.CompanyId == ctx.CompanyId && dids.Contains(p.ID)).ToDictionaryAsync(p => p.ID, ct);
+				// The certifying doctor is shown by face, like the patient: the practitioner's employee record carries the photo.
+				var photos = await CrossBuy.BL.Platform.EmployeePhotos.ResolveAsync(_db, ctx, docs.Values.Where(x => x.EmployeeId != null).Select(x => x.EmployeeId!.Value), ct);
 				return (rows.Select(r =>
 				{
 					var p = pats.GetValueOrDefault(r.PatientId); var d = r.PractitionerId is int did ? docs.GetValueOrDefault(did) : null;
-					return new HospitalDeathRow(r, p?.Name ?? "", p?.NameEn, p?.Mrn ?? "", p?.PhotoPath, d?.Name, d?.NameEn);
+					return new HospitalDeathRow(r, p?.Name ?? "", p?.NameEn, p?.Mrn ?? "", p?.PhotoPath, d?.Name, d?.NameEn, d?.EmployeeId is int de ? photos.GetValueOrDefault(de) : null);
 				}).ToList(), true);
 			}
 			catch (Microsoft.Data.SqlClient.SqlException ex) when (ex.Number is 207 or 208) { return (Array.Empty<HospitalDeathRow>(), false); }
