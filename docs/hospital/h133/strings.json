@@ -1,0 +1,580 @@
+{
+ "unit": "H133 - the drug master (formulary): generic, strength, form, routes, ATC, formulary status, safety flags; read by the dispense review",
+ "strings": {
+  "Drug formulary": {
+   "ar": "دليل الأدوية",
+   "en": "Drug formulary",
+   "fr": "Formulaire des médicaments"
+  },
+  "{0} described": {
+   "ar": "⁦{0}⁩ لها بطاقة دواء",
+   "en": "{0} described",
+   "fr": "{0} décrits"
+  },
+  "Not described yet": {
+   "ar": "لم تُوصف بعد",
+   "en": "Not described yet",
+   "fr": "Pas encore décrit"
+  },
+  "no generic name behind the brand": {
+   "ar": "لا اسم علمي وراء الاسم التجاري",
+   "en": "no generic name behind the brand",
+   "fr": "aucun nom générique derrière la marque"
+  },
+  "Incomplete records": {
+   "ar": "بطاقات ناقصة",
+   "en": "Incomplete records",
+   "fr": "Fiches incomplètes"
+  },
+  "strength, form, route or ATC missing": {
+   "ar": "ينقصها التركيز أو الشكل أو طريق الإعطاء أو كود ATC",
+   "en": "strength, form, route or ATC missing",
+   "fr": "dosage, forme, voie ou ATC manquant"
+  },
+  "High-alert medicines": {
+   "ar": "أدوية عالية الخطورة",
+   "en": "High-alert medicines",
+   "fr": "Médicaments à haut risque"
+  },
+  "a second check before they leave": {
+   "ar": "مراجعة ثانية قبل خروجها",
+   "en": "a second check before they leave",
+   "fr": "double contrôle avant la sortie"
+  },
+  "narcotics and psychotropics": {
+   "ar": "المخدرات والمؤثرات العقلية",
+   "en": "narcotics and psychotropics",
+   "fr": "stupéfiants et psychotropes"
+  },
+  "Off the list or restricted": {
+   "ar": "خارج الدليل أو مقيّدة",
+   "en": "Off the list or restricted",
+   "fr": "Hors liste ou restreints"
+  },
+  "{0} restricted": {
+   "ar": "⁦{0}⁩ مقيّدة",
+   "en": "{0} restricted",
+   "fr": "{0} restreints"
+  },
+  "Generic name, strength, form, route, ATC and safety flags of every medicine": {
+   "ar": "الاسم العلمي والتركيز والشكل وطريق الإعطاء وكود ATC وتنبيهات الأمان لكل دواء",
+   "en": "Generic name, strength, form, route, ATC and safety flags of every medicine",
+   "fr": "Nom générique, dosage, forme, voie, ATC et alertes de chaque médicament"
+  },
+  "Search by name, generic or ATC…": {
+   "ar": "ابحث بالاسم التجاري أو العلمي أو كود ATC…",
+   "en": "Search by name, generic or ATC…",
+   "fr": "Rechercher par nom, générique ou ATC…"
+  },
+  "fstat:Formulary": {
+   "ar": "ضمن الدليل",
+   "en": "On the formulary",
+   "fr": "Au formulaire"
+  },
+  "fstat:Restricted": {
+   "ar": "مقيّد",
+   "en": "Restricted",
+   "fr": "Restreint"
+  },
+  "fstat:NonFormulary": {
+   "ar": "خارج الدليل",
+   "en": "Off the formulary",
+   "fr": "Hors formulaire"
+  },
+  "fstat:Unavailable": {
+   "ar": "غير متاح",
+   "en": "Unavailable",
+   "fr": "Indisponible"
+  },
+  "High-alert": {
+   "ar": "عالي الخطورة",
+   "en": "High-alert",
+   "fr": "Haut risque"
+  },
+  "Look-alike / sound-alike": {
+   "ar": "متشابه الشكل أو النطق",
+   "en": "Look-alike / sound-alike",
+   "fr": "Noms ou emballages semblables"
+  },
+  "Hazardous / cytotoxic": {
+   "ar": "خطر / سام للخلايا",
+   "en": "Hazardous / cytotoxic",
+   "fr": "Dangereux / cytotoxique"
+  },
+  "Cold chain": {
+   "ar": "سلسلة تبريد",
+   "en": "Cold chain",
+   "fr": "Chaîne du froid"
+  },
+  "Strength, form and routes": {
+   "ar": "التركيز والشكل وطرق الإعطاء",
+   "en": "Strength, form and routes",
+   "fr": "Dosage, forme et voies"
+  },
+  "Routes": {
+   "ar": "طرق الإعطاء",
+   "en": "Routes",
+   "fr": "Voies"
+  },
+  "Formulary status": {
+   "ar": "حالة الدليل",
+   "en": "Formulary status",
+   "fr": "Statut au formulaire"
+  },
+  "Safety flags": {
+   "ar": "تنبيهات الأمان",
+   "en": "Safety flags",
+   "fr": "Alertes de sécurité"
+  },
+  "Drug record": {
+   "ar": "بطاقة الدواء",
+   "en": "Drug record",
+   "fr": "Fiche du médicament"
+  },
+  "The active ingredient": {
+   "ar": "المادة الفعالة",
+   "en": "The active ingredient",
+   "fr": "Le principe actif"
+  },
+  "What the brand contains; allergies and interactions are matched on it too.": {
+   "ar": "ما يحتويه الاسم التجاري؛ والحساسية والتداخلات تُطابَق عليه أيضًا.",
+   "en": "What the brand contains; allergies and interactions are matched on it too.",
+   "fr": "Ce que contient la marque ; allergies et interactions sont aussi recherchées dessus."
+  },
+  "Generic name (Arabic)": {
+   "ar": "الاسم العلمي (عربي)",
+   "en": "Generic name (Arabic)",
+   "fr": "Nom générique (arabe)"
+  },
+  "Generic name (English)": {
+   "ar": "الاسم العلمي (إنجليزي)",
+   "en": "Generic name (English)",
+   "fr": "Nom générique (anglais)"
+  },
+  "Tall Man spelling": {
+   "ar": "كتابة Tall Man",
+   "en": "Tall Man spelling",
+   "fr": "Écriture Tall Man"
+  },
+  "Strength": {
+   "ar": "التركيز",
+   "en": "Strength",
+   "fr": "Dosage"
+  },
+  "Dosage form": {
+   "ar": "الشكل الصيدلي",
+   "en": "Dosage form",
+   "fr": "Forme galénique"
+  },
+  "VEN class": {
+   "ar": "تصنيف VEN",
+   "en": "VEN class",
+   "fr": "Classe VEN"
+  },
+  "Choose the routes": {
+   "ar": "اختر طرق الإعطاء",
+   "en": "Choose the routes",
+   "fr": "Choisissez les voies"
+  },
+  "ATC code": {
+   "ar": "كود ATC",
+   "en": "ATC code",
+   "fr": "Code ATC"
+  },
+  "Therapeutic class": {
+   "ar": "الفئة العلاجية",
+   "en": "Therapeutic class",
+   "fr": "Classe thérapeutique"
+  },
+  "A medicine marked unavailable is refused at dispensing.": {
+   "ar": "الدواء المعلَّم «غير متاح» يُرفض صرفه.",
+   "en": "A medicine marked unavailable is refused at dispensing.",
+   "fr": "Un médicament indisponible est refusé à la dispensation."
+  },
+  "Who may prescribe it, or why it is off the list": {
+   "ar": "من يحق له وصفه، أو لماذا هو خارج الدليل",
+   "en": "Who may prescribe it, or why it is off the list",
+   "fr": "Qui peut le prescrire, ou pourquoi il est hors liste"
+  },
+  "Shown on the dispense review beside the medicine's name.": {
+   "ar": "تظهر في مراجعة الصرف بجوار اسم الدواء.",
+   "en": "Shown on the dispense review beside the medicine's name.",
+   "fr": "Affichées à la revue de dispensation à côté du nom."
+  },
+  "Controlled schedule": {
+   "ar": "جدول المراقبة",
+   "en": "Controlled schedule",
+   "fr": "Classement des contrôlés"
+  },
+  "Not controlled": {
+   "ar": "غير مراقب",
+   "en": "Not controlled",
+   "fr": "Non contrôlé"
+  },
+  "Confused with (look-alike / sound-alike)": {
+   "ar": "يُخلط بينه وبين (تشابه شكل أو نطق)",
+   "en": "Confused with (look-alike / sound-alike)",
+   "fr": "Confondu avec (noms semblables)"
+  },
+  "High-alert medicine": {
+   "ar": "دواء عالي الخطورة",
+   "en": "High-alert medicine",
+   "fr": "Médicament à haut risque"
+  },
+  "Cold chain (2–8 °C)": {
+   "ar": "سلسلة تبريد (2–8 °C)",
+   "en": "Cold chain (2–8 °C)",
+   "fr": "Chaîne du froid (2–8 °C)"
+  },
+  "Save this medicine's record?": {
+   "ar": "حفظ بطاقة هذا الدواء؟",
+   "en": "Save this medicine's record?",
+   "fr": "Enregistrer la fiche de ce médicament ?"
+  },
+  "Controlled": {
+   "ar": "مراقب",
+   "en": "Controlled",
+   "fr": "Contrôlé"
+  },
+  "Cytotoxic": {
+   "ar": "سام للخلايا",
+   "en": "Cytotoxic",
+   "fr": "Cytotoxique"
+  },
+  "Missing:": {
+   "ar": "ينقصه:",
+   "en": "Missing:",
+   "fr": "Manque :"
+  },
+  "missing:record": {
+   "ar": "البطاقة",
+   "en": "record",
+   "fr": "fiche"
+  },
+  "missing:generic": {
+   "ar": "الاسم العلمي",
+   "en": "generic name",
+   "fr": "nom générique"
+  },
+  "missing:strength": {
+   "ar": "التركيز",
+   "en": "strength",
+   "fr": "dosage"
+  },
+  "missing:form": {
+   "ar": "الشكل",
+   "en": "form",
+   "fr": "forme"
+  },
+  "missing:route": {
+   "ar": "طريق الإعطاء",
+   "en": "route",
+   "fr": "voie"
+  },
+  "missing:atc": {
+   "ar": "كود ATC",
+   "en": "ATC",
+   "fr": "ATC"
+  },
+  "Describe": {
+   "ar": "اكتب البطاقة",
+   "en": "Describe",
+   "fr": "Décrire"
+  },
+  "sched:Narcotic": {
+   "ar": "مخدر",
+   "en": "Narcotic",
+   "fr": "Stupéfiant"
+  },
+  "sched:Psychotropic": {
+   "ar": "مؤثر عقلي",
+   "en": "Psychotropic",
+   "fr": "Psychotrope"
+  },
+  "ven:V": {
+   "ar": "حيوي — لا ينفد أبدًا",
+   "en": "Vital — never out of stock",
+   "fr": "Vital — jamais en rupture"
+  },
+  "ven:E": {
+   "ar": "أساسي",
+   "en": "Essential",
+   "fr": "Essentiel"
+  },
+  "ven:N": {
+   "ar": "غير أساسي",
+   "en": "Non-essential",
+   "fr": "Non essentiel"
+  },
+  "route:SL": {
+   "ar": "تحت اللسان",
+   "en": "Sublingual",
+   "fr": "Sublinguale"
+  },
+  "route:PR": {
+   "ar": "شرجي",
+   "en": "Rectal",
+   "fr": "Rectale"
+  },
+  "route:OPH": {
+   "ar": "في العين",
+   "en": "Ophthalmic",
+   "fr": "Ophtalmique"
+  },
+  "route:OTIC": {
+   "ar": "في الأذن",
+   "en": "Otic",
+   "fr": "Auriculaire"
+  },
+  "route:NAS": {
+   "ar": "أنفي",
+   "en": "Nasal",
+   "fr": "Nasale"
+  },
+  "route:VAG": {
+   "ar": "مهبلي",
+   "en": "Vaginal",
+   "fr": "Vaginale"
+  },
+  "form:Tablet": {
+   "ar": "أقراص",
+   "en": "Tablet",
+   "fr": "Comprimé"
+  },
+  "form:Capsule": {
+   "ar": "كبسولات",
+   "en": "Capsule",
+   "fr": "Gélule"
+  },
+  "form:Syrup": {
+   "ar": "شراب",
+   "en": "Syrup",
+   "fr": "Sirop"
+  },
+  "form:Suspension": {
+   "ar": "معلّق",
+   "en": "Suspension",
+   "fr": "Suspension"
+  },
+  "form:Solution": {
+   "ar": "محلول",
+   "en": "Solution",
+   "fr": "Solution"
+  },
+  "form:Drops": {
+   "ar": "نقط",
+   "en": "Drops",
+   "fr": "Gouttes"
+  },
+  "form:Injection": {
+   "ar": "حقن",
+   "en": "Injection",
+   "fr": "Injectable"
+  },
+  "form:Infusion": {
+   "ar": "محلول وريدي",
+   "en": "Infusion",
+   "fr": "Perfusion"
+  },
+  "form:Cream": {
+   "ar": "كريم",
+   "en": "Cream",
+   "fr": "Crème"
+  },
+  "form:Ointment": {
+   "ar": "مرهم",
+   "en": "Ointment",
+   "fr": "Pommade"
+  },
+  "form:Gel": {
+   "ar": "جل",
+   "en": "Gel",
+   "fr": "Gel"
+  },
+  "form:Inhaler": {
+   "ar": "بخاخ استنشاق",
+   "en": "Inhaler",
+   "fr": "Inhalateur"
+  },
+  "form:Nebule": {
+   "ar": "أمبول نيبولايزر",
+   "en": "Nebule",
+   "fr": "Unidose pour nébulisation"
+  },
+  "form:Suppository": {
+   "ar": "لبوس",
+   "en": "Suppository",
+   "fr": "Suppositoire"
+  },
+  "form:Patch": {
+   "ar": "لصقة",
+   "en": "Patch",
+   "fr": "Patch"
+  },
+  "form:Powder": {
+   "ar": "بودرة",
+   "en": "Powder",
+   "fr": "Poudre"
+  },
+  "form:Spray": {
+   "ar": "بخاخ",
+   "en": "Spray",
+   "fr": "Spray"
+  },
+  "form:Lozenge": {
+   "ar": "أقراص استحلاب",
+   "en": "Lozenge",
+   "fr": "Pastille"
+  },
+  "atc:A": {
+   "ar": "الجهاز الهضمي والتمثيل الغذائي",
+   "en": "Alimentary tract and metabolism",
+   "fr": "Voies digestives et métabolisme"
+  },
+  "atc:B": {
+   "ar": "الدم والأعضاء المكونة له",
+   "en": "Blood and blood-forming organs",
+   "fr": "Sang et organes hématopoïétiques"
+  },
+  "atc:C": {
+   "ar": "القلب والأوعية الدموية",
+   "en": "Cardiovascular system",
+   "fr": "Système cardiovasculaire"
+  },
+  "atc:D": {
+   "ar": "الأمراض الجلدية",
+   "en": "Dermatologicals",
+   "fr": "Dermatologie"
+  },
+  "atc:G": {
+   "ar": "الجهاز البولي التناسلي والهرمونات الجنسية",
+   "en": "Genito-urinary system and sex hormones",
+   "fr": "Système génito-urinaire et hormones sexuelles"
+  },
+  "atc:H": {
+   "ar": "الهرمونات الجهازية",
+   "en": "Systemic hormonal preparations",
+   "fr": "Hormones systémiques"
+  },
+  "atc:J": {
+   "ar": "مضادات العدوى الجهازية",
+   "en": "Anti-infectives for systemic use",
+   "fr": "Anti-infectieux généraux"
+  },
+  "atc:L": {
+   "ar": "مضادات الأورام ومعدّلات المناعة",
+   "en": "Antineoplastic and immunomodulating agents",
+   "fr": "Antinéoplasiques et immunomodulateurs"
+  },
+  "atc:M": {
+   "ar": "الجهاز العضلي الهيكلي",
+   "en": "Musculo-skeletal system",
+   "fr": "Muscle et squelette"
+  },
+  "atc:N": {
+   "ar": "الجهاز العصبي",
+   "en": "Nervous system",
+   "fr": "Système nerveux"
+  },
+  "atc:P": {
+   "ar": "مضادات الطفيليات",
+   "en": "Antiparasitic products",
+   "fr": "Antiparasitaires"
+  },
+  "atc:R": {
+   "ar": "الجهاز التنفسي",
+   "en": "Respiratory system",
+   "fr": "Système respiratoire"
+  },
+  "atc:S": {
+   "ar": "أعضاء الحس",
+   "en": "Sensory organs",
+   "fr": "Organes sensoriels"
+  },
+  "atc:V": {
+   "ar": "متنوعات",
+   "en": "Various",
+   "fr": "Divers"
+  },
+  "{0} is withdrawn from the formulary and cannot be dispensed": {
+   "ar": "⁦{0}⁩ مسحوب من الدليل ولا يُصرف",
+   "en": "{0} is withdrawn from the formulary and cannot be dispensed",
+   "fr": "{0} est retiré du formulaire et ne peut être dispensé"
+  },
+  "{0} is off the formulary: {1}": {
+   "ar": "⁦{0}⁩ خارج الدليل: ⁦{1}⁩",
+   "en": "{0} is off the formulary: {1}",
+   "fr": "{0} est hors formulaire : {1}"
+  },
+  "{0} is restricted: {1}": {
+   "ar": "⁦{0}⁩ مقيّد: ⁦{1}⁩",
+   "en": "{0} is restricted: {1}",
+   "fr": "{0} est restreint : {1}"
+  },
+  "{0} is a high-alert medicine — a second pharmacist checks it before it leaves": {
+   "ar": "⁦{0}⁩ دواء عالي الخطورة — صيدلي ثانٍ يراجعه قبل خروجه",
+   "en": "{0} is a high-alert medicine — a second pharmacist checks it before it leaves",
+   "fr": "{0} est à haut risque — un second pharmacien le vérifie avant la sortie"
+  },
+  "{0} is confused with {1} — read the label twice": {
+   "ar": "⁦{0}⁩ يُخلط بينه وبين ⁦{1}⁩ — اقرأ الملصق مرتين",
+   "en": "{0} is confused with {1} — read the label twice",
+   "fr": "{0} est confondu avec {1} — relisez l'étiquette"
+  },
+  "Enter the generic name": {
+   "ar": "اكتب الاسم العلمي",
+   "en": "Enter the generic name",
+   "fr": "Saisissez le nom générique"
+  },
+  "The Tall Man name must spell the generic name — only the letter case changes": {
+   "ar": "كتابة Tall Man لازم تكون نفس حروف الاسم العلمي — يتغير حجم الحروف فقط",
+   "en": "The Tall Man name must spell the generic name — only the letter case changes",
+   "fr": "L'écriture Tall Man doit épeler le nom générique — seule la casse change"
+  },
+  "The strength must be above zero": {
+   "ar": "التركيز لازم يكون أكبر من صفر",
+   "en": "The strength must be above zero",
+   "fr": "Le dosage doit être supérieur à zéro"
+  },
+  "Choose the strength's unit": {
+   "ar": "اختر وحدة التركيز",
+   "en": "Choose the strength's unit",
+   "fr": "Choisissez l'unité du dosage"
+  },
+  "Choose the dosage form from the list": {
+   "ar": "اختر الشكل الصيدلي من القائمة",
+   "en": "Choose the dosage form from the list",
+   "fr": "Choisissez la forme dans la liste"
+  },
+  "Choose the routes from the list": {
+   "ar": "اختر طرق الإعطاء من القائمة",
+   "en": "Choose the routes from the list",
+   "fr": "Choisissez les voies dans la liste"
+  },
+  "The ATC code is a letter, then two digits, then letters and digits — like A02BC01": {
+   "ar": "كود ATC حرف ثم رقمان ثم حروف وأرقام — مثل A02BC01",
+   "en": "The ATC code is a letter, then two digits, then letters and digits — like A02BC01",
+   "fr": "Le code ATC est une lettre, deux chiffres, puis lettres et chiffres — comme A02BC01"
+  },
+  "Choose the formulary status": {
+   "ar": "اختر حالة الدليل",
+   "en": "Choose the formulary status",
+   "fr": "Choisissez le statut"
+  },
+  "Write who may prescribe it, or why it is off the list": {
+   "ar": "اكتب من يحق له وصفه، أو لماذا هو خارج الدليل",
+   "en": "Write who may prescribe it, or why it is off the list",
+   "fr": "Indiquez qui peut le prescrire, ou pourquoi il est hors liste"
+  },
+  "Choose the controlled schedule": {
+   "ar": "اختر جدول المراقبة",
+   "en": "Choose the controlled schedule",
+   "fr": "Choisissez le classement"
+  },
+  "Choose V, E or N": {
+   "ar": "اختر V أو E أو N",
+   "en": "Choose V, E or N",
+   "fr": "Choisissez V, E ou N"
+  }
+ }
+}

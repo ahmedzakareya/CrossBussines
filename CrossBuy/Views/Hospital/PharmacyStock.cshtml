@@ -147,10 +147,15 @@
         <script>
             (function () {
                 // a figure opens its list already filtered (#Out, #Near…): the filter is set before the first load
-                var f = document.getElementById('f_filter'), h = (location.hash || '').replace('#', '');
-                if (h && f && Array.prototype.some.call(f.options, function (o) { return o.value === h; })) { f.value = h; if (window.jQuery) jQuery(f).trigger('change.select2'); }
-                cbServerList({ url: @Json.Serialize(Url.Action("PharmacyStockData")), isAr: @(isAr ? "true" : "false"),
+                var f = document.getElementById('f_filter');
+                function fromHash() { var h = (location.hash || '').replace('#', '');
+                    if (!h || !f || !Array.prototype.some.call(f.options, function (o) { return o.value === h; })) return false;
+                    f.value = h; if (window.jQuery) jQuery(f).trigger('change.select2'); return true; }
+                fromHash();
+                var list = cbServerList({ url: @Json.Serialize(Url.Action("PharmacyStockData")), isAr: @(isAr ? "true" : "false"),
                     addParams: function (p) { p.set('tab', @Json.Serialize(tab)); p.set('filter', f.value); } });
+                // a figure of the same tab only changes the hash: the browser does not reload, so the list does
+                window.addEventListener('hashchange', function () { if (fromHash()) list.reload(); });
             })();
         </script>
     }

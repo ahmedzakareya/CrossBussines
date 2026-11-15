@@ -218,5 +218,94 @@ namespace CrossBuy.Tests
 			Assert.Equal(own.ID, (await w.Billing.PeekWardChargeBillAsync(ctx, pid))!.ID);   // discharged: back to the patient's own
 			Assert.Null(await w.Billing.PeekWardChargeBillAsync(Ctx(9, CompanyTwo), pid));   // never another company's
 		}
+
+		// ==========================================================================================
+		// H133: the drug master. The pharmacist describes a medicine once, and the dispense review reads it.
+		// What must never happen:
+		//   · a brand-name prescription slipping past an allergy to its generic;
+		//   · a high-alert or look-alike medicine leaving with no word said;
+		//   · a withdrawn medicine leaving the store;
+		//   · the formulary and the ward's controlled register disagreeing;
+		//   · another company's item being described.
+		// ==========================================================================================
+
+		private static HospitalDrugMasterService Master(World w) => new(w.Host.Db,
+			new HospitalAccessService(new PlatformRoleDirectory(w.Host.Db, NullLogger<PlatformRoleDirectory>.Instance), NullLogger<HospitalAccessService>.Instance));
+
+		private static HospitalDrugInput Amoxicillin(int item) => new()
+		{
+			ItemId = item, GenericName = "أموكسيسيلين", GenericNameEn = "amoxicillin", TallMan = "amOXicillin", Strength = 500, StrengthUnit = "mg",
+			Form = HospitalDrugForm.Capsule, Routes = new() { HospitalMedRoute.Oral }, Atc = "j01ca04", FormularyStatus = HospitalFormularyStatus.Formulary,
+		};
+
+		[Fact]
+		public async Task The_formulary_lists_the_medicines_and_the_pharmacist_describes_one()
+		{
+			using var host = new PlatformTestHost(); var w = Make(host); var m = Master(w);
+			var (para, amox, food) = await FormularyAsync(w);
+			var stats = await m.StatsAsync(Ctx());
+			Assert.Equal((2, 0, 0), (stats.Medicines, stats.Described, stats.Incomplete));   // the food item is no medicine
+
+			Assert.True((await m.SaveAsync(Ctx(), Amoxicillin(amox), 7, Now)).Ok);
+			var (rows, total) = await m.ListAsync(Ctx(), null, null, 1, 25);
+			Assert.Equal(2, total);
+			Assert.Equal(para, rows[0].ItemId);   // the one still to describe comes first
+			var d = rows[1].Drug!;
+			Assert.Equal(("J01CA04", "PO", "amOXicillin", 0), (d.Atc, d.Routes, d.TallMan, rows[1].Missing.Count));
+			Assert.Single((await m.ListAsync(Ctx(), "j01", null, 1, 25)).Rows);
+			Assert.Equal(para, Assert.Single((await m.ListAsync(Ctx(), null, HospitalFormularyFilter.Undescribed, 1, 25)).Rows).ItemId);
+
+			Assert.Equal("not_found", (await m.SaveAsync(Ctx(), Amoxicillin(food), 7, Now)).Error);              // not a medicine
+			Assert.Equal("not_found", (await m.SaveAsync(Ctx(9, CompanyTwo), Amoxicillin(amox), 7, Now)).Error); // another company's
+			var bad = Amoxicillin(amox); bad.FormularyStatus = HospitalFormularyStatus.Restricted;
+			Assert.Equal("Write who may prescribe it, or why it is off the list", (await m.SaveAsync(Ctx(), bad, 7, Now)).Error);
+			Assert.Equal(1, await host.Db.Set<HospitalDrug>().CountAsync());
+		}
+
+		[Fact]
+		public async Task A_controlled_schedule_keeps_the_wards_controlled_register_in_step()
+		{
+			using var host = new PlatformTestHost(); var w = Make(host); var m = Master(w);
+			var (_, amox, _) = await FormularyAsync(w);
+			var i = Amoxicillin(amox); i.ControlledSchedule = HospitalControlledSchedule.Psychotropic;
+			Assert.True((await m.SaveAsync(Ctx(), i, 7, Now)).Ok);
+			Assert.True(await host.Db.Set<HospitalControlledItem>().AnyAsync(c => c.ItemId == amox));
+			Assert.True((await m.SaveAsync(Ctx(), i, 7, Now)).Ok);   // saved again: still one flag
+			Assert.Equal(1, await host.Db.Set<HospitalControlledItem>().CountAsync());
+			i.ControlledSchedule = null;
+			Assert.True((await m.SaveAsync(Ctx(), i, 7, Now)).Ok);
+			Assert.False(await host.Db.Set<HospitalControlledItem>().AnyAsync());
+		}
+
+		[Fact]
+		public async Task The_review_reads_the_record_and_a_withdrawn_medicine_never_leaves()
+		{
+			using var host = new PlatformTestHost(); var w = Make(host); var m = Master(w);
+			var (para, amox, _) = await FormularyAsync(w);
+			// the doctor wrote the brand; the file records an allergy to the generic
+			await SignedAsync(w, "1", "Amoxicillin (hives)", new HospitalPrescriptionInput { Drug = "Augmentin 1 g", ItemId = amox, Quantity = 1 },
+				new HospitalPrescriptionInput { Drug = "MED-PARA", ItemId = para, Quantity = 1 });
+			await w.Pharmacy.SyncAsync(Ctx());
+			var id = (await host.Db.HospitalDispenses.SingleAsync()).ID;
+			Assert.DoesNotContain(HospitalPharmacyService.WarnAllergy, (await w.Pharmacy.RxAsync(Ctx(), id, Now))!.Lines[0].Warnings);   // no record: the brand hides it
+
+			var i = Amoxicillin(amox); i.HighAlert = true; i.LasaWith = "amoxapine";
+			Assert.True((await m.SaveAsync(Ctx(), i, 7, Now)).Ok);
+			var v = (await w.Pharmacy.RxAsync(Ctx(), id, Now))!;
+			Assert.Equal(new[] { HospitalPharmacyService.WarnAllergy, HospitalPharmacyService.WarnHighAlert, HospitalPharmacyService.WarnLasa },
+				v.Lines[0].Warnings.Where(x => x is HospitalPharmacyService.WarnAllergy or HospitalPharmacyService.WarnHighAlert or HospitalPharmacyService.WarnLasa).ToArray());
+			Assert.Equal("amOXicillin", HospitalDrugRules.Shown(v.Lines[0].Master));
+			Assert.Null(v.Lines[1].Master);
+
+			i.FormularyStatus = HospitalFormularyStatus.Unavailable; i.RestrictionNote = "Recalled batch, supplier notice";
+			Assert.True((await m.SaveAsync(Ctx(), i, 7, Now)).Ok);
+			Assert.Contains(HospitalPharmacyService.WarnUnavailable, (await w.Pharmacy.RxAsync(Ctx(), id, Now))!.Lines[0].Warnings);
+			Assert.True((await w.Pharmacy.VerifyAsync(Ctx(), id, null, 7, Now)).Ok);
+			host.Seed.Warehouses.Add(new Warehouse { ID = 5, CompanyID = CompanyOne, Code = "WH-PH", Name = "صيدلية", NameEn = "Pharmacy", IsActive = true });
+			await host.Seed.SaveChangesAsync();
+			Assert.True((await w.Pharmacy.SaveSettingsAsync(Ctx(), 5, 60)).Ok);
+			Assert.Equal("{0} is withdrawn from the formulary and cannot be dispensed", (await w.Pharmacy.DispenseAsync(Ctx(), id, 7, "u", Now)).Error);
+			Assert.Equal(0, w.Stock.Calls);
+		}
 	}
 }

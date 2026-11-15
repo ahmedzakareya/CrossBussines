@@ -1,0 +1,74 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model IReadOnlyList<HospitalDrugRow>
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@* H133: one medicine per row, in the theme's table widget.
+     · The symbol is coloured by how far its record is: red = not described, primary = incomplete, green = complete.
+     · Next to it: the generic as the formulary spells it, over the brand and its code.
+     · Then: strength and form, routes, ATC with its anatomical group, the formulary status, the safety flags, and the edit button. *@
+@{
+    bool canEdit = ViewBag.CanPharmacy == true;
+    string StatusTone(string s) => s == HospitalFormularyStatus.Formulary ? "success" : s == HospitalFormularyStatus.Restricted ? "info" : "danger";
+}
+@foreach (var r in Model)
+{
+    var d = r.Drug;
+    string tone = d == null ? "danger" : r.Missing.Count > 0 ? "primary" : "success";
+    string brand = DisplayName.Of(r.Name, r.NameEn);
+    <tr>
+        <td class="ps-4"><div class="d-flex align-items-center">
+            <div class="symbol symbol-45px me-4 flex-shrink-0"><span class="symbol-label bg-light-@tone"><i class="ki-outline ki-capsule fs-2 text-@tone"></i></span></div>
+            <div class="d-flex flex-column min-w-0">
+                @if (d != null)
+                {
+                    <span class="text-gray-900 fw-bold fs-6"><bdi dir="auto">@HospitalDrugRules.Shown(d)</bdi></span>
+                    <span class="text-muted fw-semibold fs-7"><bdi>@brand</bdi> · <bdi dir="ltr">@r.Code</bdi></span>
+                }
+                else
+                {
+                    <span class="text-gray-900 fw-bold fs-6"><bdi>@brand</bdi></span>
+                    <span class="text-muted fw-semibold fs-7"><bdi dir="ltr">@r.Code</bdi> · <span class="text-danger">@T["Not described yet"]</span></span>
+                }
+            </div>
+        </div></td>
+        <td>@if (d != null && (d.Strength != null || d.Form != null || d.Routes != null))
+            {
+                <div class="d-flex align-items-center gap-2"><span class="text-gray-800 fw-bold hp-num" dir="ltr">@(HospitalDrugRules.StrengthText(d) ?? "—")</span>@if (d.Form != null) {<span class="text-muted fw-semibold fs-7">@T["form:" + d.Form]</span>}</div>
+                @if (d.Routes != null) {<div class="d-flex flex-wrap gap-1 mt-1">@foreach (var rt in d.Routes.Split(',')) {<span class="badge badge-light fs-8 fw-bold" title="@T["route:" + rt]" data-bs-toggle="tooltip">@rt</span>}</div>}
+            }
+            else {<span class="text-gray-400">—</span>}</td>
+        <td>@if (d?.Atc != null)
+            {
+                <span class="badge badge-light-primary fs-7 fw-bold" dir="ltr">@d.Atc</span>
+                <span class="text-muted fw-semibold fs-8 d-block mt-1">@T["atc:" + HospitalDrugRules.AtcGroup(d.Atc)]</span>
+            }
+            else {<span class="text-gray-400">—</span>}</td>
+        <td>@if (d != null)
+            {
+                <span class="badge badge-light-@StatusTone(d.FormularyStatus) fs-7 fw-bold">@T["fstat:" + d.FormularyStatus]</span>
+                @if (d.RestrictionNote != null) {<span class="text-muted fw-semibold fs-8 d-block mt-1 text-truncate mw-150px" title="@d.RestrictionNote"><bdi>@d.RestrictionNote</bdi></span>}
+            }
+            else {<span class="text-gray-400">—</span>}</td>
+        <td><div class="d-flex flex-wrap gap-1">
+            @if (d?.HighAlert == true) {<span class="badge badge-danger fs-8 fw-bold">@T["High-alert"]</span>}
+            @if (d?.LasaWith != null) {<span class="badge badge-light-danger fs-8 fw-bold" title="@d.LasaWith" data-bs-toggle="tooltip">LASA</span>}
+            @if (r.Controlled) {<span class="badge badge-light-dark fs-8 fw-bold">@(d?.ControlledSchedule != null ? T["sched:" + d.ControlledSchedule] : T["Controlled"])</span>}
+            @if (d?.Hazardous == true) {<span class="badge badge-light-danger fs-8 fw-bold">@T["Cytotoxic"]</span>}
+            @if (d?.ColdChain == true) {<span class="badge badge-light-info fs-8 fw-bold"><i class="ki-outline ki-cloud-change fs-8 text-info me-1"></i>2–8 °C</span>}
+            @if (d?.Ven != null) {<span class="badge badge-light fs-8 fw-bold" title="@T["ven:" + d.Ven]" data-bs-toggle="tooltip">VEN · @d.Ven</span>}
+            @if (d != null && r.Missing.Count > 0) {<span class="badge badge-light-primary fs-8 fw-semibold">@T["Missing:"] @string.Join("، ", r.Missing.Select(m => T["missing:" + m].Value))</span>}
+        </div></td>
+        <td class="text-end pe-4">@if (canEdit)
+            {
+                var row = new { itemId = r.ItemId, title = brand + " · " + r.Code,
+                    genericName = d?.GenericName, genericNameEn = d?.GenericNameEn,tallMan = d?.TallMan, strength = d?.Strength, strengthUnit = d?.StrengthUnit, form = d?.Form,
+                    routes = d?.Routes?.Split(',') ?? Array.Empty<string>(), atc = d?.Atc, therapeuticClass = d?.TherapeuticClass,
+                    formularyStatus = d?.FormularyStatus ?? HospitalFormularyStatus.Formulary, restrictionNote = d?.RestrictionNote, highAlert = d?.HighAlert ?? false,
+                    lasaWith = d?.LasaWith, controlledSchedule = d?.ControlledSchedule ?? (r.Controlled ? HospitalControlledSchedule.Narcotic : null),
+                    hazardous = d?.Hazardous ?? false, coldChain = d?.ColdChain ?? false, ven = d?.Ven };
+                <button type="button" class="btn btn-sm text-nowrap btn-@(d == null ? "primary" : "light btn-active-light-primary")" data-drug-edit data-row="@System.Text.Json.JsonSerializer.Serialize(row)">
+                    <i class="ki-outline ki-@(d == null ? "plus" : "pencil") fs-5"></i>@(d == null ? T["Describe"] : T["Edit"])</button>
+            }</td>
+    </tr>
+}

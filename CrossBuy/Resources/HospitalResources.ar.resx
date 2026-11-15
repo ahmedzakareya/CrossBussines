@@ -6685,4 +6685,119 @@
   <data name="still on the shelf" xml:space="preserve"><value>ما زالت على الرف</value></data>
   <data name="{0} batches" xml:space="preserve"><value>⁦{0}⁩ دفعات</value></data>
   <data name="{0} days left" xml:space="preserve"><value>باقٍ ⁦{0}⁩ يومًا</value></data>
+  <data name="A medicine marked unavailable is refused at dispensing." xml:space="preserve"><value>الدواء المعلَّم «غير متاح» يُرفض صرفه.</value></data>
+  <data name="ATC code" xml:space="preserve"><value>كود ATC</value></data>
+  <data name="Choose V, E or N" xml:space="preserve"><value>اختر V أو E أو N</value></data>
+  <data name="Choose the controlled schedule" xml:space="preserve"><value>اختر جدول المراقبة</value></data>
+  <data name="Choose the dosage form from the list" xml:space="preserve"><value>اختر الشكل الصيدلي من القائمة</value></data>
+  <data name="Choose the formulary status" xml:space="preserve"><value>اختر حالة الدليل</value></data>
+  <data name="Choose the routes" xml:space="preserve"><value>اختر طرق الإعطاء</value></data>
+  <data name="Choose the routes from the list" xml:space="preserve"><value>اختر طرق الإعطاء من القائمة</value></data>
+  <data name="Choose the strength's unit" xml:space="preserve"><value>اختر وحدة التركيز</value></data>
+  <data name="Cold chain" xml:space="preserve"><value>سلسلة تبريد</value></data>
+  <data name="Cold chain (2–8 °C)" xml:space="preserve"><value>سلسلة تبريد (2–8 °C)</value></data>
+  <data name="Confused with (look-alike / sound-alike)" xml:space="preserve"><value>يُخلط بينه وبين (تشابه شكل أو نطق)</value></data>
+  <data name="Controlled" xml:space="preserve"><value>مراقب</value></data>
+  <data name="Controlled schedule" xml:space="preserve"><value>جدول المراقبة</value></data>
+  <data name="Cytotoxic" xml:space="preserve"><value>سام للخلايا</value></data>
+  <data name="Describe" xml:space="preserve"><value>اكتب البطاقة</value></data>
+  <data name="Dosage form" xml:space="preserve"><value>الشكل الصيدلي</value></data>
+  <data name="Drug formulary" xml:space="preserve"><value>دليل الأدوية</value></data>
+  <data name="Drug record" xml:space="preserve"><value>بطاقة الدواء</value></data>
+  <data name="Enter the generic name" xml:space="preserve"><value>اكتب الاسم العلمي</value></data>
+  <data name="Formulary status" xml:space="preserve"><value>حالة الدليل</value></data>
+  <data name="Generic name (Arabic)" xml:space="preserve"><value>الاسم العلمي (عربي)</value></data>
+  <data name="Generic name (English)" xml:space="preserve"><value>الاسم العلمي (إنجليزي)</value></data>
+  <data name="Generic name, strength, form, route, ATC and safety flags of every medicine" xml:space="preserve"><value>الاسم العلمي والتركيز والشكل وطريق الإعطاء وكود ATC وتنبيهات الأمان لكل دواء</value></data>
+  <data name="Hazardous / cytotoxic" xml:space="preserve"><value>خطر / سام للخلايا</value></data>
+  <data name="High-alert" xml:space="preserve"><value>عالي الخطورة</value></data>
+  <data name="High-alert medicine" xml:space="preserve"><value>دواء عالي الخطورة</value></data>
+  <data name="High-alert medicines" xml:space="preserve"><value>أدوية عالية الخطورة</value></data>
+  <data name="Incomplete records" xml:space="preserve"><value>بطاقات ناقصة</value></data>
+  <data name="Look-alike / sound-alike" xml:space="preserve"><value>متشابه الشكل أو النطق</value></data>
+  <data name="Missing:" xml:space="preserve"><value>ينقصه:</value></data>
+  <data name="Not controlled" xml:space="preserve"><value>غير مراقب</value></data>
+  <data name="Not described yet" xml:space="preserve"><value>لم تُوصف بعد</value></data>
+  <data name="Off the list or restricted" xml:space="preserve"><value>خارج الدليل أو مقيّدة</value></data>
+  <data name="Routes" xml:space="preserve"><value>طرق الإعطاء</value></data>
+  <data name="Safety flags" xml:space="preserve"><value>تنبيهات الأمان</value></data>
+  <data name="Save this medicine's record?" xml:space="preserve"><value>حفظ بطاقة هذا الدواء؟</value></data>
+  <data name="Search by name, generic or ATC…" xml:space="preserve"><value>ابحث بالاسم التجاري أو العلمي أو كود ATC…</value></data>
+  <data name="Shown on the dispense review beside the medicine's name." xml:space="preserve"><value>تظهر في مراجعة الصرف بجوار اسم الدواء.</value></data>
+  <data name="Strength" xml:space="preserve"><value>التركيز</value></data>
+  <data name="Tall Man spelling" xml:space="preserve"><value>كتابة Tall Man</value></data>
+  <data name="The ATC code is a letter, then two digits, then letters and digits — like A02BC01" xml:space="preserve"><value>كود ATC حرف ثم رقمان ثم حروف وأرقام — مثل A02BC01</value></data>
+  <data name="The Tall Man name must spell the generic name — only the letter case changes" xml:space="preserve"><value>كتابة Tall Man لازم تكون نفس حروف الاسم العلمي — يتغير حجم الحروف فقط</value></data>
+  <data name="The active ingredient" xml:space="preserve"><value>المادة الفعالة</value></data>
+  <data name="The strength must be above zero" xml:space="preserve"><value>التركيز لازم يكون أكبر من صفر</value></data>
+  <data name="Therapeutic class" xml:space="preserve"><value>الفئة العلاجية</value></data>
+  <data name="VEN class" xml:space="preserve"><value>تصنيف VEN</value></data>
+  <data name="What the brand contains; allergies and interactions are matched on it too." xml:space="preserve"><value>ما يحتويه الاسم التجاري؛ والحساسية والتداخلات تُطابَق عليه أيضًا.</value></data>
+  <data name="Who may prescribe it, or why it is off the list" xml:space="preserve"><value>من يحق له وصفه، أو لماذا هو خارج الدليل</value></data>
+  <data name="Write who may prescribe it, or why it is off the list" xml:space="preserve"><value>اكتب من يحق له وصفه، أو لماذا هو خارج الدليل</value></data>
+  <data name="a second check before they leave" xml:space="preserve"><value>مراجعة ثانية قبل خروجها</value></data>
+  <data name="atc:A" xml:space="preserve"><value>الجهاز الهضمي والتمثيل الغذائي</value></data>
+  <data name="atc:B" xml:space="preserve"><value>الدم والأعضاء المكونة له</value></data>
+  <data name="atc:C" xml:space="preserve"><value>القلب والأوعية الدموية</value></data>
+  <data name="atc:D" xml:space="preserve"><value>الأمراض الجلدية</value></data>
+  <data name="atc:G" xml:space="preserve"><value>الجهاز البولي التناسلي والهرمونات الجنسية</value></data>
+  <data name="atc:H" xml:space="preserve"><value>الهرمونات الجهازية</value></data>
+  <data name="atc:J" xml:space="preserve"><value>مضادات العدوى الجهازية</value></data>
+  <data name="atc:L" xml:space="preserve"><value>مضادات الأورام ومعدّلات المناعة</value></data>
+  <data name="atc:M" xml:space="preserve"><value>الجهاز العضلي الهيكلي</value></data>
+  <data name="atc:N" xml:space="preserve"><value>الجهاز العصبي</value></data>
+  <data name="atc:P" xml:space="preserve"><value>مضادات الطفيليات</value></data>
+  <data name="atc:R" xml:space="preserve"><value>الجهاز التنفسي</value></data>
+  <data name="atc:S" xml:space="preserve"><value>أعضاء الحس</value></data>
+  <data name="atc:V" xml:space="preserve"><value>متنوعات</value></data>
+  <data name="form:Capsule" xml:space="preserve"><value>كبسولات</value></data>
+  <data name="form:Cream" xml:space="preserve"><value>كريم</value></data>
+  <data name="form:Drops" xml:space="preserve"><value>نقط</value></data>
+  <data name="form:Gel" xml:space="preserve"><value>جل</value></data>
+  <data name="form:Infusion" xml:space="preserve"><value>محلول وريدي</value></data>
+  <data name="form:Inhaler" xml:space="preserve"><value>بخاخ استنشاق</value></data>
+  <data name="form:Injection" xml:space="preserve"><value>حقن</value></data>
+  <data name="form:Lozenge" xml:space="preserve"><value>أقراص استحلاب</value></data>
+  <data name="form:Nebule" xml:space="preserve"><value>أمبول نيبولايزر</value></data>
+  <data name="form:Ointment" xml:space="preserve"><value>مرهم</value></data>
+  <data name="form:Patch" xml:space="preserve"><value>لصقة</value></data>
+  <data name="form:Powder" xml:space="preserve"><value>بودرة</value></data>
+  <data name="form:Solution" xml:space="preserve"><value>محلول</value></data>
+  <data name="form:Spray" xml:space="preserve"><value>بخاخ</value></data>
+  <data name="form:Suppository" xml:space="preserve"><value>لبوس</value></data>
+  <data name="form:Suspension" xml:space="preserve"><value>معلّق</value></data>
+  <data name="form:Syrup" xml:space="preserve"><value>شراب</value></data>
+  <data name="form:Tablet" xml:space="preserve"><value>أقراص</value></data>
+  <data name="fstat:Formulary" xml:space="preserve"><value>ضمن الدليل</value></data>
+  <data name="fstat:NonFormulary" xml:space="preserve"><value>خارج الدليل</value></data>
+  <data name="fstat:Restricted" xml:space="preserve"><value>مقيّد</value></data>
+  <data name="fstat:Unavailable" xml:space="preserve"><value>غير متاح</value></data>
+  <data name="missing:atc" xml:space="preserve"><value>كود ATC</value></data>
+  <data name="missing:form" xml:space="preserve"><value>الشكل</value></data>
+  <data name="missing:generic" xml:space="preserve"><value>الاسم العلمي</value></data>
+  <data name="missing:record" xml:space="preserve"><value>البطاقة</value></data>
+  <data name="missing:route" xml:space="preserve"><value>طريق الإعطاء</value></data>
+  <data name="missing:strength" xml:space="preserve"><value>التركيز</value></data>
+  <data name="narcotics and psychotropics" xml:space="preserve"><value>المخدرات والمؤثرات العقلية</value></data>
+  <data name="no generic name behind the brand" xml:space="preserve"><value>لا اسم علمي وراء الاسم التجاري</value></data>
+  <data name="route:NAS" xml:space="preserve"><value>أنفي</value></data>
+  <data name="route:OPH" xml:space="preserve"><value>في العين</value></data>
+  <data name="route:OTIC" xml:space="preserve"><value>في الأذن</value></data>
+  <data name="route:PR" xml:space="preserve"><value>شرجي</value></data>
+  <data name="route:SL" xml:space="preserve"><value>تحت اللسان</value></data>
+  <data name="route:VAG" xml:space="preserve"><value>مهبلي</value></data>
+  <data name="sched:Narcotic" xml:space="preserve"><value>مخدر</value></data>
+  <data name="sched:Psychotropic" xml:space="preserve"><value>مؤثر عقلي</value></data>
+  <data name="strength, form, route or ATC missing" xml:space="preserve"><value>ينقصها التركيز أو الشكل أو طريق الإعطاء أو كود ATC</value></data>
+  <data name="ven:E" xml:space="preserve"><value>أساسي</value></data>
+  <data name="ven:N" xml:space="preserve"><value>غير أساسي</value></data>
+  <data name="ven:V" xml:space="preserve"><value>حيوي — لا ينفد أبدًا</value></data>
+  <data name="{0} described" xml:space="preserve"><value>⁦{0}⁩ لها بطاقة دواء</value></data>
+  <data name="{0} is a high-alert medicine — a second pharmacist checks it before it leaves" xml:space="preserve"><value>⁦{0}⁩ دواء عالي الخطورة — صيدلي ثانٍ يراجعه قبل خروجه</value></data>
+  <data name="{0} is confused with {1} — read the label twice" xml:space="preserve"><value>⁦{0}⁩ يُخلط بينه وبين ⁦{1}⁩ — اقرأ الملصق مرتين</value></data>
+  <data name="{0} is off the formulary: {1}" xml:space="preserve"><value>⁦{0}⁩ خارج الدليل: ⁦{1}⁩</value></data>
+  <data name="{0} is restricted: {1}" xml:space="preserve"><value>⁦{0}⁩ مقيّد: ⁦{1}⁩</value></data>
+  <data name="{0} is withdrawn from the formulary and cannot be dispensed" xml:space="preserve"><value>⁦{0}⁩ مسحوب من الدليل ولا يُصرف</value></data>
+  <data name="{0} restricted" xml:space="preserve"><value>⁦{0}⁩ مقيّدة</value></data>
+  <data name="Strength, form and routes" xml:space="preserve"><value>التركيز والشكل وطرق الإعطاء</value></data>
 </root>

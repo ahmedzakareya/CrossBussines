@@ -24,7 +24,10 @@ namespace CrossBuy.BL.Hospital
 	public sealed record HospitalRxRow(int Id, string RxNo, int PatientId, string PatientName, string PatientNameEn, string Mrn, string? PatientPhoto,
 		string Source, int Items, string? Doctor, string? DoctorEn, string? DoctorPhoto, string Status, DateTime PrescribedAt, bool HasWarning);
 
-	public sealed record HospitalRxLineView(HospitalDispenseLine Line, string? ItemCode, decimal? OnHand, string? NextBatch, DateTime? NextExpiry, decimal? Price, IReadOnlyList<string> Warnings);
+	/// H133: Master is the line's drug record (null when the item has none); MatchText the words its allergies and interactions
+/// were matched in (the prescribed name and the generic).
+public sealed record HospitalRxLineView(HospitalDispenseLine Line, string? ItemCode, decimal? OnHand, string? NextBatch, DateTime? NextExpiry, decimal? Price, IReadOnlyList<string> Warnings,
+		HospitalDrug? Master = null, string? MatchText = null);
 
 	public sealed record HospitalRxView(HospitalDispense Dispense, HospitalPatient Patient, IReadOnlyList<HospitalRxLineView> Lines, IReadOnlyDictionary<int, string> People,
 		string? WarehouseName, string? PriceListName, string? CurrencyLabel, decimal Total, string? BillNo = null, bool OnStay = false);
@@ -42,6 +45,9 @@ namespace CrossBuy.BL.Hospital
 		public const string WarnAllergy = "allergy", WarnDuplicate = "duplicate", WarnNotStocked = "not-stocked", WarnShort = "short", WarnNearExpiry = "near-expiry";
 		/// H73: the line interacts with another line or with a medicine the patient is still given in hospital.
 		public const string WarnInteraction = "interaction";
+		/// H133, from the drug master: a high-alert medicine (a second check before it leaves), one confused with another
+		/// name, a restricted or non-formulary one, one withdrawn from the formulary (refused at dispensing).
+		public const string WarnHighAlert = "high-alert", WarnLasa = "lasa", WarnRestricted = "restricted", WarnNonFormulary = "non-formulary", WarnUnavailable = "unavailable";
 
 		private readonly CrossDbContext _db;
 		private readonly IHospitalAccessService _access;
@@ -187,6 +193,9 @@ namespace CrossBuy.BL.Hospital
 				: await _billing.PeekWardChargeBillAsync(ctx, d.PatientId, ct);   // H121: the bill it will go on, priced by that bill's list
 			var listId = bill?.PriceListId;
 			var near = nowUtc.Date.AddDays(settings.NearExpiryDays);
+			var masters = await HospitalDrugMasterService.LookupAsync(_db, ctx.CompanyId, itemIds, ct);
+			HospitalDrug? Master(HospitalDispenseLine x) => x.ItemId is int mi ? masters.GetValueOrDefault(mi) : null;
+			string Words(HospitalDispenseLine x) => HospitalDrugRules.MatchText(x.Drug, Master(x));
 			var (kbPairs, _) = await HospitalDrugSafetyService.KbAsync(_db, ctx.CompanyId, ct);
 			var running = kbPairs.Count == 0 ? new List<string>() : await (from o in _db.Set<HospitalMedOrder>().AsNoTracking()
 				join a in _db.HospitalAdmissions.AsNoTracking() on o.AdmissionId equals a.ID
@@ -196,9 +205,15 @@ namespace CrossBuy.BL.Hospital
 			foreach (var l in lines)
 			{
 				var w = new List<string>();
-				if (AllergiesIn(l.Drug, p.Allergies).Count > 0) w.Add(WarnAllergy);
+				var m = Master(l); var words = Words(l);
+				if (AllergiesIn(words, p.Allergies).Count > 0) w.Add(WarnAllergy);
 				if (l.ItemId != null && lines.Count(x => x.ItemId == l.ItemId) > 1) w.Add(WarnDuplicate);
-				if (kbPairs.Count > 0 && HospitalDrugSafetyRules.Interactions(l.Drug, lines.Where(x => x.ID != l.ID).Select(x => x.Drug).Concat(running), kbPairs).Count > 0) w.Add(WarnInteraction);
+				if (kbPairs.Count > 0 && HospitalDrugSafetyRules.Interactions(words, lines.Where(x => x.ID != l.ID).Select(Words).Concat(running), kbPairs).Count > 0) w.Add(WarnInteraction);
+				if (m?.FormularyStatus == HospitalFormularyStatus.Unavailable) w.Add(WarnUnavailable);
+				if (m?.FormularyStatus == HospitalFormularyStatus.NonFormulary) w.Add(WarnNonFormulary);
+				if (m?.FormularyStatus == HospitalFormularyStatus.Restricted) w.Add(WarnRestricted);
+				if (m?.HighAlert == true) w.Add(WarnHighAlert);
+				if (m?.LasaWith != null) w.Add(WarnLasa);
 				decimal? onHand = null; string? nextBatch = null; DateTime? nextExpiry = null; decimal? price = l.UnitPrice;
 				if (l.ItemId is not int iid) w.Add(WarnNotStocked);
 				else
@@ -211,7 +226,7 @@ namespace CrossBuy.BL.Hospital
 					if (exp != null && exp <= near) w.Add(WarnNearExpiry);
 					price ??= (await _billing.QuoteItemForBillAsync(ctx, listId, iid, ct))?.Price;
 				}
-				views.Add(new HospitalRxLineView(l, l.ItemId is int i2 && items.TryGetValue(i2, out var it) ? it.ItemCode : null, onHand, nextBatch, nextExpiry, price, w));
+				views.Add(new HospitalRxLineView(l, l.ItemId is int i2 && items.TryGetValue(i2, out var it) ? it.ItemCode : null, onHand, nextBatch, nextExpiry, price, w, m, words));
 			}
 			var empIds = new[] { d.PrescribedByEmployeeId, d.VerifiedByEmployeeId, d.DispensedByEmployeeId }.Where(i => i != null).Select(i => i!.Value).Distinct().ToList();
 			var people = await _db.Employee.AsNoTracking().Where(e => empIds.Contains(e.ID) && e.EmpCompanyID == ctx.CompanyId).ToDictionaryAsync(e => e.ID, e => DisplayName.Of(e.FullName ?? "", e.FullNameEn), ct);
@@ -286,6 +301,10 @@ namespace CrossBuy.BL.Hospital
 			var itemIds = stocked.Select(l => l.ItemId!.Value).Distinct().ToList();
 			var items = await _db.Items.AsNoTracking().Where(i => i.CompanyID == ctx.CompanyId && itemIds.Contains(i.ID)).ToDictionaryAsync(i => i.ID, ct);
 			if (items.Count != itemIds.Count) return HospitalResult.Fail("not_found");
+			// H133: a medicine the formulary withdrew (recall, shortage) does not leave the store
+			var withdrawn = (await HospitalDrugMasterService.LookupAsync(_db, ctx.CompanyId, itemIds, ct)).Values.FirstOrDefault(x => x.FormularyStatus == HospitalFormularyStatus.Unavailable);
+			if (withdrawn != null && items.TryGetValue(withdrawn.ItemId, out var wi))
+				return HospitalResult.Fail("{0} is withdrawn from the formulary and cannot be dispensed", DisplayName.Of(wi.Name, wi.NameEn ?? wi.Name));
 			var catIds = items.Values.Select(i => i.ItemCategoryId).Distinct().ToList();
 			var cogs = await _db.ItemCategories.AsNoTracking().Where(c => catIds.Contains(c.ID)).ToDictionaryAsync(c => c.ID, c => c.CogsAccountId, ct);
 			if (items.Values.FirstOrDefault(i => cogs.GetValueOrDefault(i.ItemCategoryId) == null) is { } noCogs)

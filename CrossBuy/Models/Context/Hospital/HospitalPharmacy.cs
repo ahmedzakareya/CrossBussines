@@ -87,6 +87,7 @@ namespace CrossBuy.Models.Context.Hospital
 		public static void Configure(ModelBuilder b)
 		{
 			b.Entity<HospitalPharmacySettings>(e => e.HasIndex(x => x.CompanyId).IsUnique());
+			HospitalDrugModel.Configure(b);   // H133: the drug master hangs off the pharmacy
 			b.Entity<HospitalDispense>(e =>
 			{
 				e.HasIndex(x => new { x.CompanyId, x.RxNo }).IsUnique();
