@@ -98,6 +98,9 @@ namespace CrossBuy.Controllers
 			Chrome();
 			ViewBag.CanTreat = await OncSvc.CanTreatAsync(ctx, ct);
 			ViewBag.Today = HospitalNursingService.UtcToWard(DateTime.UtcNow).Date;
+			// H130: what each cycle draws from the oncology unit's store
+			ViewBag.KitCard = new HospitalSessionKitCard(HospitalSessionKinds.Chemo, await SessionKitSvc.KitAsync(ctx, HospitalSessionKinds.Chemo, null, ct), null, false,
+				await _access.CanAsync(ctx, HospitalActions.Manage, null, ct));
 			return View(page);
 		}
 
@@ -146,7 +149,8 @@ namespace CrossBuy.Controllers
 		{
 			var ctx = await ContextAsync(ct);
 			if (ctx == null || input == null) return NotFound(new { ok = false, code = "not_found" });
-			return Result(await OncSvc.GiveAsync(ctx, id, input, ctx.EmployeeId, DateTime.UtcNow, ct));
+			// H130: the cycle given draws the oncology unit's kit
+			return await CompletedWithKitAsync(ctx, HospitalSessionKinds.Chemo, await OncSvc.GiveAsync(ctx, id, input, ctx.EmployeeId, DateTime.UtcNow, ct), ct);
 		}
 
 		[HttpPost("Oncology/Course/{id:int}/Hold"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Consult)]

@@ -58,7 +58,7 @@
                     </div>
                     <div class="col-12 fv-row">
                         <label class="fs-6 fw-semibold mb-2">@T["The unit's store"]</label>
-                        <select class="form-select form-select-solid" data-us="warehouseId" data-control="select2" data-dropdown-parent="#@mid" data-allow-clear="true" data-placeholder="@T["The dialysis store..."]">
+                        <select class="form-select form-select-solid" data-us="warehouseId" data-control="select2" data-dropdown-parent="#@mid" data-allow-clear="true" data-placeholder="@T["Choose the store..."]">
                             <option></option>
                             @foreach (var w in Model.Stores) {<option value="@w.Id" selected="@(w.Id == Model.StoreWarehouseId)">@w.Code · @DisplayName.Of(w.Name, w.NameEn)</option>}
                         </select>

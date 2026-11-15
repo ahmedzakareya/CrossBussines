@@ -1,0 +1,75 @@
+{
+ "unit": "H130 - chemotherapy cycles and physiotherapy sessions draw their unit's kit; one kit card and row cell for the three units",
+ "strings": {
+  "The unit has no kit set": {
+   "ar": "لم تُحدَّد مستلزمات الوحدة بعد",
+   "en": "The unit has no kit set",
+   "fr": "L'unité n'a pas de kit défini"
+  },
+  "Choose the unit's store first": {
+   "ar": "اختر مخزن الوحدة أولًا",
+   "en": "Choose the unit's store first",
+   "fr": "Choisissez d'abord le magasin de l'unité"
+  },
+  "From the unit's store": {
+   "ar": "من مخزن الوحدة",
+   "en": "From the unit's store",
+   "fr": "Depuis le magasin de l'unité"
+  },
+  "In the unit's store": {
+   "ar": "في مخزن الوحدة",
+   "en": "In the unit's store",
+   "fr": "Au magasin de l'unité"
+  },
+  "Choose the store...": {
+   "ar": "اختر المخزن...",
+   "en": "Choose the store...",
+   "fr": "Choisissez le magasin..."
+  },
+  "Issue this session's kit from the unit's store now?": {
+   "ar": "صرف مستلزمات هذه الجلسة من مخزن الوحدة الآن؟",
+   "en": "Issue this session's kit from the unit's store now?",
+   "fr": "Sortir maintenant le kit de cette séance du magasin de l'unité ?"
+  },
+  "kitcard:Chemo": {
+   "ar": "مستلزمات كل دورة علاج كيماوي",
+   "en": "Each chemotherapy cycle's kit",
+   "fr": "Kit de chaque cycle de chimiothérapie"
+  },
+  "kitcard:Physio": {
+   "ar": "مستلزمات كل جلسة علاج طبيعي",
+   "en": "Each physiotherapy session's kit",
+   "fr": "Kit de chaque séance de kinésithérapie"
+  },
+  "kitcard:Dialysis": {
+   "ar": "مستلزمات كل جلسة غسيل",
+   "en": "Each dialysis session's kit",
+   "fr": "Kit de chaque séance de dialyse"
+  },
+  "kitwhen:Dialysis": {
+   "ar": "تخرج من المخزن عند إنهاء الجلسة",
+   "en": "Leaves the store when the session is finished",
+   "fr": "Sort du magasin à la fin de la séance"
+  },
+  "kitwhen:Chemo": {
+   "ar": "تخرج من المخزن عند إعطاء الدورة",
+   "en": "Leaves the store when the cycle is given",
+   "fr": "Sort du magasin quand le cycle est administré"
+  },
+  "kitwhen:Physio": {
+   "ar": "تخرج من المخزن عند حضور الجلسة",
+   "en": "Leaves the store when the session is attended",
+   "fr": "Sort du magasin quand la séance a lieu"
+  },
+  "Kit issued": {
+   "ar": "صُرفت المستلزمات",
+   "en": "Kit issued",
+   "fr": "Kit sorti"
+  },
+  "Kit waiting": {
+   "ar": "المستلزمات منتظرة",
+   "en": "Kit waiting",
+   "fr": "Kit en attente"
+  }
+ }
+}

@@ -104,6 +104,7 @@ namespace CrossBuy.Tests
 		{
 			var s = HospitalSliceParity.Slice("hospital_h89_rehab.sql");
 			s += Environment.NewLine + HospitalSliceParity.Slice("hospital_h119_session_charges.sql");   // H119: the bill line a session was charged on
+			s += Environment.NewLine + HospitalSliceParity.Slice("hospital_h130_session_kits.sql");   // H130: when the session's kit left the store
 			var m = HospitalSliceParity.Model(HospitalRehabModel.Configure);
 			foreach (var (t, n) in new[] { (typeof(HospitalRehabEpisode), "HospitalRehabEpisodes"), (typeof(HospitalRehabGoal), "HospitalRehabGoals"), (typeof(HospitalRehabSession), "HospitalRehabSessions") })
 			{

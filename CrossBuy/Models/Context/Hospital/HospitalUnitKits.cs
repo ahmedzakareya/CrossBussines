@@ -23,7 +23,7 @@ namespace CrossBuy.Models.Context.Hospital
 		/// The eye clinic's ordered tests (H129).
 		public static readonly IReadOnlyList<string> Eye = new[] { EyeOct, EyeVf };
 		/// The units whose sessions draw a kit from a store (H122); the others only name their session service.
-		public static readonly IReadOnlyList<string> WithKit = new[] { Dialysis };
+		public static readonly IReadOnlyList<string> WithKit = new[] { Dialysis, Chemo, Physio };   // H130: chemotherapy and physiotherapy too
 	}
 
 	public class HospitalUnitKit

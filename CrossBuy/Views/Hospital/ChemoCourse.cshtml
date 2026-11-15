@@ -133,6 +133,8 @@
                         </div>
                     </div>
                 }
+                @* H130: what each cycle draws from the oncology unit's store *@
+                @await Html.PartialAsync("_SessionKit", ViewBag.KitCard as HospitalSessionKitCard)
                 <div class="card card-flush">
                     <div class="card-header pt-5">
                         <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Chemo cycles"]</span>
@@ -164,7 +166,7 @@
                                                 foreach (var d in v.Doses) {<div class="d-flex flex-wrap align-items-center gap-2 mb-1"><bdi dir="ltr" class="text-gray-800 fw-bold">@d.DrugName</bdi><span class="badge badge-light-primary fs-8 fw-bold hp-num" dir="ltr">@d.DoseMg.ToString("0.#") mg @d.Route</span><span class="text-gray-500 fs-8">@T["Day {0}", d.Days]</span></div>}
                                                 if (y.OverrideReason != null) {<span class="text-danger fw-semibold d-block fs-8 mt-1">@T["Overruled"]: <bdi>@y.OverrideReason</bdi></span>}
                                             }</td>
-                                        <td class="pe-4">@await Html.PartialAsync("_SessionCharge", new HospitalSessionChargeCell(HospitalSessionKinds.Chemo, y.ID, y.BillLineId, y.Status == HospitalChemoCycleStatus.Given))@if (y.DispenseId is int rxId && rxs.TryGetValue(rxId, out var rx)) {<a href="@Url.Action("Pharmacy")" class="badge badge-light-@(rx.Status == HospitalDispenseStatus.Dispensed ? "success" : "primary") fs-8 fw-bold mt-2 text-nowrap"><i class="ki-outline ki-capsule fs-7 me-1 text-@(rx.Status == HospitalDispenseStatus.Dispensed ? "success" : "primary")"></i><bdi class="hp-num">@rx.RxNo</bdi>&nbsp;·&nbsp;@T["rxs:" + rx.Status]</a>}</td>
+                                        <td class="pe-4">@await Html.PartialAsync("_SessionCharge", new HospitalSessionChargeCell(HospitalSessionKinds.Chemo, y.ID, y.BillLineId, y.Status == HospitalChemoCycleStatus.Given))<div class="mt-2">@await Html.PartialAsync("_SessionKitCell", new HospitalSessionKitCell(HospitalSessionKinds.Chemo, y.ID, y.KitIssuedAt, y.Status == HospitalChemoCycleStatus.Given, (ViewBag.KitCard as HospitalSessionKitCard)?.Kit.KitItemId != null))</div>@if (y.DispenseId is int rxId && rxs.TryGetValue(rxId, out var rx)) {<a href="@Url.Action("Pharmacy")" class="badge badge-light-@(rx.Status == HospitalDispenseStatus.Dispensed ? "success" : "primary") fs-8 fw-bold mt-2 text-nowrap"><i class="ki-outline ki-capsule fs-7 me-1 text-@(rx.Status == HospitalDispenseStatus.Dispensed ? "success" : "primary")"></i><bdi class="hp-num">@rx.RxNo</bdi>&nbsp;·&nbsp;@T["rxs:" + rx.Status]</a>}</td>
                                     </tr>
                                 }
                                 </tbody>
@@ -205,7 +207,9 @@
                       stopTitle: @Json.Serialize(T["Stop the course"].Value), noLimit: '—', ofN: @Json.Serialize(T["{0} of {1}"].Value) };
             function post(u, b) { return fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': tok }, body: JSON.stringify(b) })
                 .then(function (r) { return r.json().catch(function () { return { ok: false }; }); }); }
-            function done(btn) { return function (res) { if (btn) btn.disabled = false; if (!res.ok) { toastr.error(res.error || W.failed); return; } toastr.success(W.saved); location.reload(); }; }
+            // H130: the cycle is given; a short store leaves its kit waiting, and says so
+            function done(btn) { return function (res) { if (btn) btn.disabled = false; if (!res.ok) { toastr.error(res.error || W.failed); return; } toastr.success(W.saved);
+                if (res.kitError) { toastr.info(@Json.Serialize(T["The session is finished, but its kit did not leave the store:"].Value) + ' ' + res.kitError); setTimeout(function () { location.reload(); }, 2500); } else location.reload(); }; }
             function num(v) { return v === '' ? null : Number(v); }
             function esc(s) { var d = document.createElement('div'); d.textContent = s == null ? '' : String(s); return d.innerHTML; }
             var panel = document.getElementById('givePanel'), blocks = false, timer = null;

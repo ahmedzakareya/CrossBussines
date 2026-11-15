@@ -122,6 +122,8 @@ namespace CrossBuy.Models.Context.Hospital
 		public int ID { get; set; }
 		/// H119: the bill line this session was charged on (null = not charged: not done, or no price yet).
 		public int? BillLineId { get; set; }
+		/// H130: when this session's kit left its unit's store (null until it has — never twice).
+		public DateTime? KitIssuedAt { get; set; }
 		public int CompanyId { get; set; }
 		public int EpisodeId { get; set; }
 		public int PatientId { get; set; }

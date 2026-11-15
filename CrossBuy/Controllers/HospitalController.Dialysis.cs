@@ -15,8 +15,6 @@ namespace CrossBuy.Controllers
 	{
 		private HospitalDialysisService? _dialysisSvc;
 		private HospitalDialysisService DialysisSvc => _dialysisSvc ??= ActivatorUtilities.CreateInstance<HospitalDialysisService>(HttpContext.RequestServices);
-		private HospitalDialysisKitService? _dialysisKitSvc;   // H122
-		private HospitalDialysisKitService DialysisKitSvc => _dialysisKitSvc ??= ActivatorUtilities.CreateInstance<HospitalDialysisKitService>(HttpContext.RequestServices);
 
 		private static void Paging(ref int page, ref int pageSize) { if (pageSize is < 1 or > 200) pageSize = 25; if (page < 1) page = 1; }
 
@@ -105,7 +103,7 @@ namespace CrossBuy.Controllers
 			Chrome();
 			ViewBag.CanTreat = await DialysisSvc.CanTreatAsync(ctx, ct);
 			// H122: the unit's kit — what this session draws from the dialysis store, and whether it left
-			ViewBag.Kit = await DialysisKitSvc.KitAsync(ctx, page.Session.KitIssuedAt, ct);
+			ViewBag.Kit = await SessionKitSvc.KitAsync(ctx, HospitalSessionKinds.Dialysis, page.Session.KitIssuedAt, ct);
 			ViewBag.UnitSettings = await UnitSettingsSvc.ViewAsync(ctx, HospitalSessionKinds.Dialysis, ct);   // H123: the kit, the store and the service, in the unit's settings
 			return View(page);
 		}
@@ -151,9 +149,7 @@ namespace CrossBuy.Controllers
 			if (!r.Ok) return Result(r);
 			// H122: a finished session's kit leaves the dialysis store now; a short store never undoes the session — the page
 			// keeps "not issued" and the reason, and the kit is issued from there once the store is stocked
-			var kit = await DialysisKitSvc.IssueAsync(ctx, id, ctx.UserId, DateTime.UtcNow, ct);
-			return Json(new { ok = true, id, kitIssued = kit.Ok,
-				kitError = kit.Ok || kit.Error is "The dialysis unit has no kit set" or HospitalDialysisKitService.NoTables ? null : _t[kit.Error ?? "The change could not be saved", kit.Args ?? Array.Empty<object>()].Value });
+			return await CompletedWithKitAsync(ctx, HospitalSessionKinds.Dialysis, r, ct);   // H130: one path for the three units
 		}
 
 		[HttpPost("Dialysis/Session/{id:int}/Kit/Issue"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Read)]
@@ -161,7 +157,7 @@ namespace CrossBuy.Controllers
 		{
 			var ctx = await ContextAsync(ct);
 			if (ctx == null) return NotFound(new { ok = false, code = "not_found" });
-			return Result(await DialysisKitSvc.IssueAsync(ctx, id, ctx.UserId, DateTime.UtcNow, ct));
+			return Result(await SessionKitSvc.IssueAsync(ctx, HospitalSessionKinds.Dialysis, id, ctx.UserId, DateTime.UtcNow, ct));
 		}
 
 		[HttpPost("Dialysis/Miss"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Read)]

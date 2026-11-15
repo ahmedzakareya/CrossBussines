@@ -26,15 +26,15 @@ namespace CrossBuy.Tests
 		};
 
 		[Theory]
-		[InlineData("Done", true, true, true, 2, "This session's kit has already left the store")]
-		[InlineData("Running", false, true, true, 2, "The kit is issued when the session is finished")]
-		[InlineData("Missed", false, true, true, 2, "The kit is issued when the session is finished")]
-		[InlineData("Done", false, false, true, 2, "The dialysis unit has no kit set")]
-		[InlineData("Done", false, true, false, 2, "Choose the dialysis unit's store first")]
-		[InlineData("Done", false, true, true, 0, "The kit item has no components (Inventory › the item's BOM)")]
-		[InlineData("Done", false, true, true, 2, null)]
-		public void A_kit_leaves_only_a_finished_session_once(string status, bool issued, bool kit, bool store, int lines, string? why)
-			=> Assert.Equal(why, HospitalDialysisKitRules.IssueRefusal(status, issued ? Now : null, kit, store, lines));
+		[InlineData(true, true, true, true, 2, "This session's kit has already left the store")]
+		[InlineData(false, false, true, true, 2, "The kit is issued when the session is finished")]
+		[InlineData(false, false, true, true, 2, "The kit is issued when the session is finished")]
+		[InlineData(true, false, false, true, 2, "The unit has no kit set")]
+		[InlineData(true, false, true, false, 2, "Choose the unit's store first")]
+		[InlineData(true, false, true, true, 0, "The kit item has no components (Inventory › the item's BOM)")]
+		[InlineData(true, false, true, true, 2, null)]
+		public void A_kit_leaves_only_a_finished_session_once(bool completed, bool issued, bool kit, bool store, int lines, string? why)
+			=> Assert.Equal(why, HospitalSessionKitRules.IssueRefusal(completed, issued ? Now : null, kit, store, lines));
 
 		[Fact]
 		public void The_table_matches_its_slice()
@@ -72,7 +72,7 @@ namespace CrossBuy.Tests
 				=> throw new NotSupportedException();
 		}
 
-		private static async Task<(HospitalDialysisKitService Svc, Stock Stock, int SessionId)> MakeAsync(PlatformTestHost host, string status = HospitalDialysisSessionStatus.Done)
+		private static async Task<(HospitalSessionKitService Svc, Stock Stock, int SessionId)> MakeAsync(PlatformTestHost host, string status = HospitalDialysisSessionStatus.Done)
 		{
 			var access = new HospitalAccessService(new PlatformRoleDirectory(host.Db, NullLogger<PlatformRoleDirectory>.Instance), NullLogger<HospitalAccessService>.Instance);
 			var stock = System.Reflection.DispatchProxy.Create<IStockService, Stock>();
@@ -85,7 +85,7 @@ namespace CrossBuy.Tests
 			var s = new HospitalDialysisSession { CompanyId = CompanyOne, PlanId = 1, PatientId = 1, SessionDate = Now.Date, Shift = 1, Status = status, DryWeightKg = 70, PlannedMin = 240, CreatedAt = Now };
 			host.Seed.Set<HospitalDialysisSession>().Add(s);
 			await host.Seed.SaveChangesAsync();
-			return (new HospitalDialysisKitService(host.Db, access, new Bom(), stock), (Stock)(object)stock, s.ID);
+			return (new HospitalSessionKitService(host.Db, access, new Bom(), stock), (Stock)(object)stock, s.ID);
 		}
 
 		/// H123: the unit's kit and store are saved with its other settings.
@@ -100,20 +100,20 @@ namespace CrossBuy.Tests
 		{
 			using var host = new PlatformTestHost();
 			var (svc, stock, id) = await MakeAsync(host);
-			Assert.Equal("The dialysis unit has no kit set", (await svc.IssueAsync(Ctx(), id, "u", Now)).Error);
+			Assert.Equal("The unit has no kit set", (await svc.IssueAsync(Ctx(), HospitalKitUnits.Dialysis, id, "u", Now)).Error);
 			Assert.Equal("Choose a kit item that has a bill of materials", (await Set(host, 91, 5)).Error);   // a plain item is not a kit
 			Assert.True((await Set(host, 90, null)).Ok);
-			Assert.Equal("Choose the dialysis unit's store first", (await svc.IssueAsync(Ctx(), id, "u", Now)).Error);
+			Assert.Equal("Choose the unit's store first", (await svc.IssueAsync(Ctx(), HospitalKitUnits.Dialysis, id, "u", Now)).Error);
 			Assert.True((await Set(host, 90, 5)).Ok);
 
-			var view = await svc.KitAsync(Ctx(), null);
+			var view = await svc.KitAsync(Ctx(), HospitalKitUnits.Dialysis, null);
 			Assert.Equal((90, 5, 2), (view.KitItemId!.Value, view.StoreWarehouseId!.Value, view.Lines.Count));
-			Assert.True((await svc.IssueAsync(Ctx(), id, "u", Now)).Ok);
+			Assert.True((await svc.IssueAsync(Ctx(), HospitalKitUnits.Dialysis, id, "u", Now)).Ok);
 			Assert.Equal(new[] { (91, 1m), (92, 2m) }, stock.Posted.Select(p => (p.ItemId, p.Qty)));
-			Assert.All(stock.Posted, p => Assert.Equal((5, -1, HospitalDialysisKitRules.MovementSource, id, 501), (p.WarehouseId, (int)p.Direction, p.SourceType, p.SourceId, p.CounterAccountOverride!.Value)));
+			Assert.All(stock.Posted, p => Assert.Equal((5, -1, HospitalSessionKitRules.MovementSource(HospitalKitUnits.Dialysis), id, 501), (p.WarehouseId, (int)p.Direction, p.SourceType, p.SourceId, p.CounterAccountOverride!.Value)));
 			Assert.Equal(Now, (await host.Db.Set<HospitalDialysisSession>().AsNoTracking().SingleAsync()).KitIssuedAt);
 
-			Assert.Equal("This session's kit has already left the store", (await svc.IssueAsync(Ctx(), id, "u", Now)).Error);
+			Assert.Equal("This session's kit has already left the store", (await svc.IssueAsync(Ctx(), HospitalKitUnits.Dialysis, id, "u", Now)).Error);
 			Assert.Equal(2, stock.Posted.Count);   // never twice
 		}
 
@@ -124,11 +124,11 @@ namespace CrossBuy.Tests
 			var (svc, stock, id) = await MakeAsync(host);
 			Assert.True((await Set(host, 90, 5)).Ok);
 			stock.RefuseAt = 2;   // the dialyser leaves, the stock writer refuses the needles (a batch, an expiry…)
-			var r = await svc.IssueAsync(Ctx(), id, "u", Now);
+			var r = await svc.IssueAsync(Ctx(), HospitalKitUnits.Dialysis, id, "u", Now);
 			Assert.Equal("{0}: {1}", r.Error);
 			Assert.Null((await host.Db.Set<HospitalDialysisSession>().AsNoTracking().SingleAsync()).KitIssuedAt);   // still waiting: issued again once stocked
 			stock.RefuseAt = int.MaxValue; stock.Posted.Clear();
-			Assert.True((await svc.IssueAsync(Ctx(), id, "u", Now)).Ok);
+			Assert.True((await svc.IssueAsync(Ctx(), HospitalKitUnits.Dialysis, id, "u", Now)).Ok);
 		}
 
 		/// Found live: the stock writer's refusal is English by design, so the shortfall is named first, in the reader's language.
@@ -140,7 +140,7 @@ namespace CrossBuy.Tests
 			Assert.True((await Set(host, 90, 5)).Ok);
 			var needles = await host.Seed.StockBalances.SingleAsync(b => b.ItemId == 92);
 			needles.QtyOnHand = 1; await host.Seed.SaveChangesAsync();
-			var r = await svc.IssueAsync(Ctx(), id, "u", Now);
+			var r = await svc.IssueAsync(Ctx(), HospitalKitUnits.Dialysis, id, "u", Now);
 			Assert.Equal("Not enough {0} in the store: {1} of {2}", r.Error);
 			Assert.Equal(new object[] { "NEEDLE", "1", "2" }, r.Args);
 			Assert.Empty(stock.Posted);
@@ -153,7 +153,48 @@ namespace CrossBuy.Tests
 			using var host = new PlatformTestHost();
 			var (svc, stock, id) = await MakeAsync(host, HospitalDialysisSessionStatus.Running);
 			Assert.True((await Set(host, 90, 5)).Ok);
-			Assert.Equal("The kit is issued when the session is finished", (await svc.IssueAsync(Ctx(), id, "u", Now)).Error);
+			Assert.Equal("The kit is issued when the session is finished", (await svc.IssueAsync(Ctx(), HospitalKitUnits.Dialysis, id, "u", Now)).Error);
+			Assert.Empty(stock.Posted);
+		}
+		/// H130: the oncology unit and physiotherapy draw their own kits the same way, from their own stores, once.
+		private static async Task<(HospitalSessionKitService Svc, Stock Stock, int CycleId, int Attended, int NoShow)> MakeUnitsAsync(PlatformTestHost host)
+		{
+			var (svc, stock, _) = await MakeAsync(host);
+			var cycle = new HospitalChemoCycle { CompanyId = CompanyOne, CourseId = 1, PatientId = 1, CycleNo = 1, Status = HospitalChemoCycleStatus.Given, CycleDate = Now.Date, CreatedAt = Now };
+			host.Seed.Set<HospitalChemoCycle>().Add(cycle);
+			var came = new HospitalRehabSession { CompanyId = CompanyOne, EpisodeId = 1, PatientId = 1, SessionDate = Now.Date, Attendance = HospitalRehabAttendance.Attended, CreatedAt = Now };
+			var away = new HospitalRehabSession { CompanyId = CompanyOne, EpisodeId = 1, PatientId = 1, SessionDate = Now.Date.AddDays(-1), Attendance = HospitalRehabAttendance.NoShow, CreatedAt = Now };
+			host.Seed.Set<HospitalRehabSession>().AddRange(came, away);
+			await host.Seed.SaveChangesAsync();
+			foreach (var u in new[] { HospitalKitUnits.Chemo, HospitalKitUnits.Physio })
+				Assert.True((await new HospitalUnitSettingsService(host.Db, new HospitalAccessService(new PlatformRoleDirectory(host.Db, NullLogger<PlatformRoleDirectory>.Instance), NullLogger<HospitalAccessService>.Instance))
+					.SaveAsync(Ctx(), u, new HospitalUnitSettingsInput { KitItemId = 90, WarehouseId = 5 }, 7, Now)).Ok);
+			return (svc, stock, cycle.ID, came.ID, away.ID);
+		}
+
+		[Fact]
+		public async Task A_cycle_given_and_a_session_attended_draw_their_units_kit_once()
+		{
+			using var host = new PlatformTestHost();
+			var (svc, stock, cycle, came, away) = await MakeUnitsAsync(host);
+			Assert.True((await svc.IssueAsync(Ctx(), HospitalKitUnits.Chemo, cycle, "u", Now)).Ok);
+			Assert.True((await svc.IssueAsync(Ctx(), HospitalKitUnits.Physio, came, "u", Now)).Ok);
+			Assert.Equal(new[] { "HospitalChemo", "HospitalChemo", "HospitalRehab", "HospitalRehab" }, stock.Posted.Select(x => x.SourceType));
+			Assert.Equal(new int?[] { cycle, cycle, came, came }, stock.Posted.Select(x => x.SourceId));
+			Assert.Equal(Now, (await host.Db.Set<HospitalChemoCycle>().AsNoTracking().SingleAsync()).KitIssuedAt);
+			Assert.Equal(Now, (await host.Db.Set<HospitalRehabSession>().AsNoTracking().SingleAsync(x => x.ID == came)).KitIssuedAt);
+			Assert.Equal("This session's kit has already left the store", (await svc.IssueAsync(Ctx(), HospitalKitUnits.Chemo, cycle, "u", Now)).Error);
+			Assert.Equal(4, stock.Posted.Count);   // never twice
+		}
+
+		[Fact]
+		public async Task A_no_show_draws_nothing_and_an_eye_test_has_no_kit()
+		{
+			using var host = new PlatformTestHost();
+			var (svc, stock, _, _, away) = await MakeUnitsAsync(host);
+			Assert.Equal("The kit is issued when the session is finished", (await svc.IssueAsync(Ctx(), HospitalKitUnits.Physio, away, "u", Now)).Error);
+			Assert.Equal("not_found", (await svc.IssueAsync(Ctx(), HospitalKitUnits.EyeOct, 1, "u", Now)).Error);
+			Assert.Equal("not_found", (await svc.IssueAsync(Ctx(), HospitalKitUnits.Chemo, 999, "u", Now)).Error);
 			Assert.Empty(stock.Posted);
 		}
 	}

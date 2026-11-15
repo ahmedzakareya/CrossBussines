@@ -53,6 +53,9 @@ namespace CrossBuy.Controllers
 			Chrome();
 			ViewBag.CanTreat = await RehabSvc.CanTreatAsync(ctx, ct);
 			ViewBag.Today = HospitalNursingService.UtcToWard(DateTime.UtcNow).Date;
+			// H130: what each attended session draws from the physiotherapy store
+			ViewBag.KitCard = new HospitalSessionKitCard(HospitalSessionKinds.Physio, await SessionKitSvc.KitAsync(ctx, HospitalSessionKinds.Physio, null, ct), null, false,
+				await _access.CanAsync(ctx, HospitalActions.Manage, null, ct));
 			return View(page);
 		}
 
@@ -77,7 +80,8 @@ namespace CrossBuy.Controllers
 		{
 			var ctx = await ContextAsync(ct);
 			if (ctx == null || input == null) return NotFound(new { ok = false, code = "not_found" });
-			return Result(await RehabSvc.AddSessionAsync(ctx, input, ctx.EmployeeId, DateTime.UtcNow, ct));
+			// H130: an attended session draws the physiotherapy kit (a no-show or a cancellation draws nothing)
+			return await CompletedWithKitAsync(ctx, HospitalSessionKinds.Physio, await RehabSvc.AddSessionAsync(ctx, input, ctx.EmployeeId, DateTime.UtcNow, ct), ct);
 		}
 
 		[HttpPost("Rehab/Goal"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Read)]

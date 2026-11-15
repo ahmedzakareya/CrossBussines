@@ -1,0 +1,22 @@
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@* H130: issuing a session's kit from its card or its row — one handler per page, confirmed in the theme's dialog *@
+@if (ViewData["__sessionKitScript"] == null)
+{
+    ViewData["__sessionKitScript"] = true;
+    <script>
+        (function () {
+            if (window.__sessionKit) return; window.__sessionKit = true;
+            var W = { ask: @Json.Serialize(T["Issue this session's kit from the unit's store now?"].Value), failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value) };
+            document.addEventListener('click', function (e) {
+                var b = e.target.closest('[data-kit-issue-unit]'); if (!b) return;
+                cbConfirm(W.ask).then(function (ok) { if (!ok) return; b.disabled = true;
+                    var tok = (document.querySelector('input[name="__RequestVerificationToken"]') || {}).value;
+                    fetch(@Json.Serialize(Url.Content("~/Hospital/Units/")) + b.getAttribute('data-kit-issue-unit') + '/Sessions/' + b.getAttribute('data-kit-id') + '/Kit/Issue',
+                        { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': tok }, body: '{}' })
+                        .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+                        .then(function (res) { b.disabled = false; if (!res.ok) { toastr.error(res.error || W.failed); return; } toastr.success(W.saved); location.reload(); });
+                });
+            });
+        })();
+    </script>
+}

@@ -6643,9 +6643,18 @@
   <data name="Nobody here" xml:space="preserve"><value>Personne ici</value></data>
   <data name="The case is closed; its kit leaves the store once the store holds every component." xml:space="preserve"><value>Le cas est clos ; son kit sort dès que le magasin a chaque composant.</value></data>
   <data name="{0} d {1} h" xml:space="preserve"><value>{0} j {1} h</value></data>
-  <data name="Choose the OCT and visual-field services in the eye clinic's settings to order them here." xml:space="preserve"><value>Choisissez les services OCT et champ visuel dans les paramètres de la clinique pour les commander ici.</value></data>
-  <data name="The service the eye visit orders for this test." xml:space="preserve"><value>Le service que la visite ophtalmologique commande pour cet examen.</value></data>
-  <data name="unitset:EyeOct" xml:space="preserve"><value>Service OCT</value></data>
-  <data name="unitset:EyeVf" xml:space="preserve"><value>Service champ visuel</value></data>
-  <data name="Test service" xml:space="preserve"><value>Service de l'examen</value></data>
+  <data name="Choose the store..." xml:space="preserve"><value>Choisissez le magasin...</value></data>
+  <data name="Choose the unit's store first" xml:space="preserve"><value>Choisissez d'abord le magasin de l'unité</value></data>
+  <data name="From the unit's store" xml:space="preserve"><value>Depuis le magasin de l'unité</value></data>
+  <data name="In the unit's store" xml:space="preserve"><value>Au magasin de l'unité</value></data>
+  <data name="Issue this session's kit from the unit's store now?" xml:space="preserve"><value>Sortir maintenant le kit de cette séance du magasin de l'unité ?</value></data>
+  <data name="Kit issued" xml:space="preserve"><value>Kit sorti</value></data>
+  <data name="Kit waiting" xml:space="preserve"><value>Kit en attente</value></data>
+  <data name="The unit has no kit set" xml:space="preserve"><value>L'unité n'a pas de kit défini</value></data>
+  <data name="kitcard:Chemo" xml:space="preserve"><value>Kit de chaque cycle de chimiothérapie</value></data>
+  <data name="kitcard:Dialysis" xml:space="preserve"><value>Kit de chaque séance de dialyse</value></data>
+  <data name="kitcard:Physio" xml:space="preserve"><value>Kit de chaque séance de kinésithérapie</value></data>
+  <data name="kitwhen:Chemo" xml:space="preserve"><value>Sort du magasin quand le cycle est administré</value></data>
+  <data name="kitwhen:Dialysis" xml:space="preserve"><value>Sort du magasin à la fin de la séance</value></data>
+  <data name="kitwhen:Physio" xml:space="preserve"><value>Sort du magasin quand la séance a lieu</value></data>
 </root>

@@ -1,0 +1,16 @@
+@using CrossBuy.BL.Hospital
+@model HospitalSessionKitCell
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H130 — one session's kit in a list row (a chemotherapy cycle, a physiotherapy session): a badge once it left the store,
+    an icon button to issue it once the session is completed (a short store left it waiting), nothing before.
+*@
+@if (Model.IssuedAt != null)
+{
+    <span class="badge badge-light-success fs-8 fw-bold text-nowrap" title="@Model.IssuedAt.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm")"><i class="ki-outline ki-parcel fs-7 text-success me-1"></i>@T["Kit issued"]</span>
+}
+else if (Model.Completed && Model.HasKit)
+{
+    <button type="button" class="btn btn-sm btn-light-danger py-1 px-3 fs-8 fw-bold text-nowrap" data-kit-issue-unit="@Model.Unit" data-kit-id="@Model.Id" title="@T["Issue the kit now"]" data-bs-toggle="tooltip"><i class="ki-outline ki-parcel fs-6"></i>@T["Kit waiting"]</button>
+    @await Html.PartialAsync("_SessionKitScript")
+}

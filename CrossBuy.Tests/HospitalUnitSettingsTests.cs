@@ -67,11 +67,11 @@ namespace CrossBuy.Tests
 			using var host = new PlatformTestHost(); await SeedAsync(host); var svc = Make(host);
 			host.Seed.Warehouses.Add(new CrossBuy.Models.Context.Inventory.Warehouse { ID = 5, CompanyID = CompanyOne, Code = "WH", Name = "م", NameEn = "S", IsActive = true });
 			await host.Seed.SaveChangesAsync();
-			Assert.True((await svc.SaveAsync(Ctx(), HospitalKitUnits.Physio, new HospitalUnitSettingsInput { ServiceId = 301, WarehouseId = 5 }, 7, Now)).Ok);
-			var row = await host.Db.Set<HospitalUnitKit>().AsNoTracking().SingleAsync(k => k.Unit == HospitalKitUnits.Physio);
+			Assert.True((await svc.SaveAsync(Ctx(), HospitalKitUnits.EyeVf, new HospitalUnitSettingsInput { ServiceId = 301, WarehouseId = 5 }, 7, Now)).Ok);
+			var row = await host.Db.Set<HospitalUnitKit>().AsNoTracking().SingleAsync(k => k.Unit == HospitalKitUnits.EyeVf);
 			Assert.Equal((301, (int?)null, (int?)null), (row.SessionServiceId!.Value, row.KitItemId, row.StoreWarehouseId));
 			Assert.Equal("not_found", (await svc.SaveAsync(Ctx(), "Kitchen", new HospitalUnitSettingsInput(), 7, Now)).Error);
-			Assert.Empty((await svc.ViewAsync(Ctx(), HospitalKitUnits.Physio)).Stores);
+			Assert.Empty((await svc.ViewAsync(Ctx(), HospitalKitUnits.EyeVf)).Stores);
 		}
 
 		/// H129: the eye clinic's two tests name their services the same way; they carry no kit and no store.

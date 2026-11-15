@@ -146,6 +146,8 @@
 
         @if (!referred)
         {
+            @* H130: what each attended session draws from the physiotherapy store *@
+            @await Html.PartialAsync("_SessionKit", ViewBag.KitCard as HospitalSessionKitCard)
             <div class="row g-5">
                 @* H128: the goals as the theme's list widget (demo39 widgets/lists) *@
                 <div class="col-xl-4"><div class="card card-flush h-100">
@@ -195,7 +197,7 @@
                                             @if (s.Note != null) {<span class="text-gray-500 fw-semibold fs-7 d-block mt-1"><bdi>@s.Note</bdi></span>}</td>
                                         <td><span class="text-gray-800 fw-bold hp-num text-nowrap" dir="ltr">@(s.PainBefore?.ToString() ?? "—") → @(s.PainAfter?.ToString() ?? "—")</span></td>
                                         <td><span class="text-gray-800 fw-bold hp-num">@(s.Score?.ToString("0.#") ?? "—")</span></td>
-                                        <td class="pe-4">@await Html.PartialAsync("_SessionCharge", new HospitalSessionChargeCell(HospitalSessionKinds.Physio, s.ID, s.BillLineId, came))</td>
+                                        <td class="pe-4">@await Html.PartialAsync("_SessionCharge", new HospitalSessionChargeCell(HospitalSessionKinds.Physio, s.ID, s.BillLineId, came))<div class="mt-2">@await Html.PartialAsync("_SessionKitCell", new HospitalSessionKitCell(HospitalSessionKinds.Physio, s.ID, s.KitIssuedAt, came, (ViewBag.KitCard as HospitalSessionKitCard)?.Kit.KitItemId != null))</div></td>
                                     </tr>
                                 }
                                 </tbody>
@@ -257,7 +259,9 @@
                       cancelT: @Json.Serialize(T["Cancel the referral"].Value), goal: @Json.Serialize(T["Write the goal"].Value), goalT: @Json.Serialize(T["Add a goal"].Value), mark: @Json.Serialize(T["Close this goal?"].Value) };
             function post(u, b) { return fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': tok }, body: JSON.stringify(b) })
                 .then(function (r) { return r.json().catch(function () { return { ok: false }; }); }); }
-            function done(btn) { return function (res) { if (btn) btn.disabled = false; if (!res.ok) { toastr.error(res.error || W.failed); return; } toastr.success(W.saved); location.reload(); }; }
+            // H130: the session is recorded; a short store leaves its kit waiting, and says so
+            function done(btn) { return function (res) { if (btn) btn.disabled = false; if (!res.ok) { toastr.error(res.error || W.failed); return; } toastr.success(W.saved);
+                if (res.kitError) { toastr.info(@Json.Serialize(T["The session is finished, but its kit did not leave the store:"].Value) + ' ' + res.kitError); setTimeout(function () { location.reload(); }, 2500); } else location.reload(); }; }
             function num(v) { return v === '' ? null : Number(v); }
             var ses = document.getElementById('sesModal');
             if (ses) {
