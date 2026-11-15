@@ -235,8 +235,14 @@ namespace CrossBuy.BL.Hospital
 			HospitalEyeOutputs? eye = null;
 			if (m.Clinic?.Code == "OPH")
 			{
-				var svc = await Q<HospitalService>(ctx).AsNoTracking().Where(s => s.IsActive && HospitalEyeOutputs.Codes.Contains(s.Code)).ToListAsync(ct);
-				eye = new HospitalEyeOutputs(svc.FirstOrDefault(s => s.Code == "OCT"), svc.FirstOrDefault(s => s.Code == "VF"));
+				// H129: the services the eye clinic chose in its settings; a service listed under the old code still counts
+				async Task<HospitalService?> Chosen(string unit, string code)
+				{
+					if ((await HospitalUnitSettingsService.RowAsync(_db, ctx.CompanyId, unit, ct))?.SessionServiceId is int sid)
+						return await Q<HospitalService>(ctx).AsNoTracking().FirstOrDefaultAsync(s => s.ID == sid && s.IsActive, ct);
+					return await Q<HospitalService>(ctx).AsNoTracking().FirstOrDefaultAsync(s => s.IsActive && s.Code == code, ct);
+				}
+				eye = new HospitalEyeOutputs(await Chosen(HospitalKitUnits.EyeOct, "OCT"), await Chosen(HospitalKitUnits.EyeVf, "VF"));
 			}
 			return new HospitalVisitWidgets(child, years, growth, crossing, dosing, dev, scores, overdue, due, vReady, glaucoma, spt, showImmuno ? immuno : null, iReady, renal, adrenaline, chads, eye);
 		}

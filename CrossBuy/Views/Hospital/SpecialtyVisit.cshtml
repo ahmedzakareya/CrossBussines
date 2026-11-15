@@ -473,7 +473,9 @@
                 @if (W?.EyeOutputs is { } eo)
                 {
                     <div class="card card-flush mb-5 mb-xl-8">
-                        <div class="card-header pt-5"><div class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Outputs"]</span></div></div>
+                        <div class="card-header pt-5"><div class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Outputs"]</span></div>
+                            @* H129: the services the two tests are ordered as — the eye clinic's settings *@
+                            <div class="card-toolbar gap-2">@await Html.PartialAsync("_UnitSettings", ViewBag.EyeOct as HospitalUnitSettingsView)@await Html.PartialAsync("_UnitSettings", ViewBag.EyeVf as HospitalUnitSettingsView)</div></div>
                         <div class="card-body pt-2 d-flex flex-column gap-2">
                             @* H109: the glasses prescription and the letter are Report Studio papers, read from the SIGNED visit *@
                             @if (e.Status == HospitalEncounterStatus.Signed)
@@ -491,7 +493,7 @@
                             }
                             else
                             {
-                                <div class="notice d-flex align-items-center bg-light-primary rounded border-primary border border-dashed p-4 fs-7 text-gray-700 fw-semibold"><i class="ki-outline ki-information fs-2 text-primary me-3"></i>@T["To order OCT and visual fields here, add them to the price list with the codes OCT and VF."] <a href="@Url.Action("Services")" class="fw-semibold">@T["Price list"]</a></div>
+                                <div class="notice d-flex align-items-center bg-light-primary rounded border-primary border border-dashed p-4 fs-7 text-gray-700 fw-semibold"><i class="ki-outline ki-information fs-2 text-primary me-3"></i>@T["Choose the OCT and visual-field services in the eye clinic's settings to order them here."]</div>
                             }
                         </div>
                     </div>

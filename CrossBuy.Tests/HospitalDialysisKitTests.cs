@@ -44,7 +44,7 @@ namespace CrossBuy.Tests
 			HospitalSliceParity.NamesItsTable(m, s, typeof(HospitalUnitKit), "HospitalUnitKits");
 			HospitalSliceParity.ColumnsMatch(m, s + Environment.NewLine + HospitalSliceParity.Slice("hospital_h123_unit_settings.sql"), typeof(HospitalUnitKit), "HospitalUnitKits");   // H123: the session service
 			Assert.Contains("ALTER TABLE dbo.HospitalDialysisSessions ADD KitIssuedAt datetime2 NULL", s);
-			foreach (var u in HospitalKitUnits.All) Assert.Contains("'" + u + "'", s + HospitalSliceParity.Slice("hospital_h123_unit_settings.sql"));
+			foreach (var u in HospitalKitUnits.All) Assert.Contains("'" + u + "'", s + HospitalSliceParity.Slice("hospital_h123_unit_settings.sql") + HospitalSliceParity.Slice("hospital_h129_eye_services.sql"));
 			Assert.Equal(new[] { "Items", "Warehouses" }, HospitalSliceParity.CheckedPrerequisites(s).OrderBy(x => x));
 		}
 

@@ -21,7 +21,10 @@
             <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["{0} clinic", name]</h1>
             <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted">@T["Specialty clinics"]</li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@name</li></ul>
         </div>
-        <a href="@Url.Action("Worklist")" class="btn btn-sm btn-light"><i class="ki-outline ki-briefcase fs-4"></i>@T["Doctor worklist"]</a>
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+            @await Html.PartialAsync("_UnitSettings", ViewBag.EyeOct as HospitalUnitSettingsView)@await Html.PartialAsync("_UnitSettings", ViewBag.EyeVf as HospitalUnitSettingsView)
+            <a href="@Url.Action("Worklist")" class="btn btn-sm btn-light"><i class="ki-outline ki-briefcase fs-4"></i>@T["Doctor worklist"]</a>
+        </div>
     </div></div>
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
         @* H127: the theme's notice (demo39) — what a clinic visit carries, with today's count *@

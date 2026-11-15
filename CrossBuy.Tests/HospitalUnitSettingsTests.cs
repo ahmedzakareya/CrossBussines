@@ -74,11 +74,27 @@ namespace CrossBuy.Tests
 			Assert.Empty((await svc.ViewAsync(Ctx(), HospitalKitUnits.Physio)).Stores);
 		}
 
+		/// H129: the eye clinic's two tests name their services the same way; they carry no kit and no store.
+		[Fact]
+		public async Task The_eye_clinics_tests_name_a_service_and_nothing_else()
+		{
+			using var host = new PlatformTestHost(); await SeedAsync(host); var svc = Make(host);
+			Assert.True((await svc.SaveAsync(Ctx(), HospitalKitUnits.EyeOct, new HospitalUnitSettingsInput { ServiceId = 301, KitItemId = 90, WarehouseId = 5 }, 7, Now)).Ok);
+			var row = await host.Db.Set<HospitalUnitKit>().AsNoTracking().SingleAsync(k => k.Unit == HospitalKitUnits.EyeOct);
+			Assert.Equal((301, (int?)null, (int?)null), (row.SessionServiceId!.Value, row.KitItemId, row.StoreWarehouseId));
+			var view = await svc.ViewAsync(Ctx(), HospitalKitUnits.EyeVf);
+			Assert.False(view.WithKit);
+			Assert.Null(view.ServiceId);
+			Assert.DoesNotContain(HospitalKitUnits.EyeOct, HospitalSessionKinds.All);   // never charged as a session
+		}
+
 		[Fact]
 		public void Every_unit_is_a_session_kind_and_allowed_by_its_slice()
 		{
 			var s = HospitalSliceParity.Slice("hospital_h123_unit_settings.sql");
-			foreach (var u in HospitalKitUnits.All) { Assert.Contains(u, HospitalSessionKinds.All); Assert.Contains("'" + u + "'", s); }
+			foreach (var u in HospitalKitUnits.Sessions) Assert.Contains(u, HospitalSessionKinds.All);
+			s += Environment.NewLine + HospitalSliceParity.Slice("hospital_h129_eye_services.sql");   // H129: the eye clinic's tests
+			foreach (var u in HospitalKitUnits.All) Assert.Contains("'" + u + "'", s[s.LastIndexOf("CK_HospitalUnitKits_Unit CHECK", StringComparison.Ordinal)..]);
 			Assert.Contains("ALTER TABLE dbo.HospitalUnitKits ADD SessionServiceId int NULL", s);
 			Assert.Equal(new[] { "HospitalServices" }, HospitalSliceParity.CheckedPrerequisites(s));
 		}

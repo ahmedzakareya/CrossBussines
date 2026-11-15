@@ -14,7 +14,14 @@ namespace CrossBuy.Models.Context.Hospital
 		public const string Dialysis = "Dialysis";
 		public const string Chemo = "Chemo";        // H123
 		public const string Physio = "Physio";      // H123
-		public static readonly IReadOnlyList<string> All = new[] { Dialysis, Chemo, Physio };
+		/// H129: the eye clinic's two ordered tests — each names its service from the services list (no session, no kit)
+		public const string EyeOct = "EyeOct";
+		public const string EyeVf = "EyeVf";
+		public static readonly IReadOnlyList<string> All = new[] { Dialysis, Chemo, Physio, EyeOct, EyeVf };
+		/// The units whose sessions are charged (H119/H123) — the treatment-session kinds.
+		public static readonly IReadOnlyList<string> Sessions = new[] { Dialysis, Chemo, Physio };
+		/// The eye clinic's ordered tests (H129).
+		public static readonly IReadOnlyList<string> Eye = new[] { EyeOct, EyeVf };
 		/// The units whose sessions draw a kit from a store (H122); the others only name their session service.
 		public static readonly IReadOnlyList<string> WithKit = new[] { Dialysis };
 	}
