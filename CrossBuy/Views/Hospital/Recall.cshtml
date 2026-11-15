@@ -42,6 +42,7 @@
             <div class="d-flex flex-wrap gap-2 align-items-center">
                 <button type="button" class="btn btn-sm btn-light btn-active-light-primary" data-act="Sweep" data-ask="@T["Move into quarantine whatever of this batch has reached a store since?"]"><i class="ki-outline ki-arrows-loop fs-4"></i>@T["Sweep the stores again"]</button>
                 <button type="button" class="btn btn-sm btn-light btn-active-light-primary" data-act="Release" data-prompt="@T["Why is the recall withdrawn? The batch goes back to the pharmacy store."]"><i class="ki-outline ki-exit-left fs-4"></i>@T["Release the batch"]</button>
+                <a href="@Url.Action("Disposals", new { tab = "todo" })#Quarantined" class="btn btn-sm btn-light-danger"><i class="ki-outline ki-trash fs-4"></i>@T["Destroy or return it"]</a>
                 <button type="button" class="btn btn-sm btn-dark" data-act="Close" data-prompt="@T["What was done with the batch (returned to the supplier, destroyed)?"]"><i class="ki-outline ki-check-circle fs-4"></i>@T["Close the recall"]</button>
             </div>
         }

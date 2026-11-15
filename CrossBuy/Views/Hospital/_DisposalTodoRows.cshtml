@@ -1,0 +1,49 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@model IReadOnlyList<HospitalDisposalCandidate>
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@* H135: one batch to deal with per row, in the theme's table widget. Each row shows:
+     · the medicine, with its symbol coloured by why it is here;
+     · the batch and expiry, the store;
+     · the state as a badge (days since or until expiry; the recall that quarantined it);
+     · quantity and value at cost;
+     · the two acts: destroy and return. *@
+@{
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+    bool canEdit = ViewBag.CanPharmacy == true;
+    int dp = ViewBag.MoneyDp is int d ? d : 2;
+    string Tone(string s) => s == HospitalDisposalState.Quarantined ? "dark" : "danger";
+    string Icon(string s) => s == HospitalDisposalState.Expired ? "ki-calendar-remove" : s == HospitalDisposalState.Near ? "ki-time" : "ki-lock-2";
+}
+@foreach (var r in Model)
+{
+    string tone = Tone(r.State);
+    <tr>
+        <td class="ps-4"><div class="d-flex align-items-center">
+            <div class="symbol symbol-45px me-4 flex-shrink-0"><span class="symbol-label bg-light-@tone"><i class="ki-outline @Icon(r.State) fs-2 text-@tone"></i></span></div>
+            <div class="d-flex flex-column"><span class="text-gray-900 fw-bold fs-6"><bdi>@DisplayName.Of(r.Name, r.NameEn)</bdi></span><bdi class="text-muted fw-semibold fs-7" dir="ltr">@r.Code</bdi></div>
+        </div></td>
+        <td><span class="badge badge-light fs-7 fw-bold" dir="ltr">@r.BatchNo</span>@if (r.Expiry is DateTime e) {<span class="text-muted fs-8 d-block mt-1 hp-num" dir="ltr">@e.ToString("yyyy-MM-dd")</span>}</td>
+        <td><span class="text-gray-800 fw-semibold d-block"><bdi>@DisplayName.Of(r.StoreName, r.StoreNameEn)</bdi></span><bdi class="text-muted fs-8" dir="ltr">@r.StoreCode</bdi></td>
+        <td>
+            @if (r.State == HospitalDisposalState.Quarantined)
+            {
+                <span class="badge badge-light-dark fs-7 fw-bold">@T["In quarantine"]</span>
+                @if (r.RecallNo != null) {<a href="@Url.Action("Recall", "Hospital", new { id = r.RecallId })" class="d-block fs-8 fw-semibold text-danger text-hover-primary mt-1 hp-num">@r.RecallNo</a>}
+            }
+            else if (r.DaysLeft is int dl)
+            {
+                <span class="badge badge-light-danger fs-7 fw-bold">@(dl < 0 ? T["Expired {0} days ago", -dl] : T["{0} days left", dl])</span>
+            }
+        </td>
+        <td class="text-end"><span class="text-gray-900 fw-bold fs-6 hp-num">@r.Qty.ToString("0.###", inv)</span></td>
+        <td class="text-end"><span class="text-gray-900 fw-bold hp-num">@r.Value.ToString("N" + dp, inv)</span><span class="text-muted fs-8 d-block hp-num">@r.UnitCost.ToString("0.###", inv) @T["per unit"]</span></td>
+        <td class="text-end pe-4 text-nowrap">@if (canEdit)
+            {
+                var row = System.Text.Json.JsonSerializer.Serialize(new { itemId = r.ItemId, batchNo = r.BatchNo, warehouseId = r.WarehouseId, qty = r.Qty, state = r.State, recallNo = r.RecallNo,
+                    title = DisplayName.Of(r.Name, r.NameEn) + " · " + r.BatchNo + " · " + r.StoreCode });
+                <button type="button" class="btn btn-sm btn-light-danger me-1" data-destroy data-row="@row"><i class="ki-outline ki-trash fs-5"></i>@T["Destroy"]</button>
+                @if (r.State != HospitalDisposalState.Expired) {<button type="button" class="btn btn-sm btn-light-primary" data-return data-row="@row"><i class="ki-outline ki-arrow-circle-left fs-5"></i>@T["Return"]</button>}
+            }</td>
+    </tr>
+}

@@ -506,6 +506,7 @@
 				new() { LabelAr = "مخزون الصيدلية", LabelEn = "Pharmacy stock", Action = "PharmacyStock", Controller = "Hospital" },   // H132
 				new() { LabelAr = "دليل الأدوية", LabelEn = "Drug formulary", Action = "Formulary", Controller = "Hospital" },   // H133
 				new() { LabelAr = "سحب التشغيلات", LabelEn = "Batch recalls", Action = "Recalls", Controller = "Hospital" },   // H134
+				new() { LabelAr = "الصلاحية والإتلاف", LabelEn = "Expiry and disposal", Action = "Disposals", Controller = "Hospital" },   // H135
 				new() { LabelAr = "توجيه الأدوية", LabelEn = "Medication routing", Action = "MedRouting", Controller = "Hospital" },
 				new() { LabelAr = "تداخلات الأدوية والجرعات", LabelEn = "Drug interactions & doses", Action = "DrugSafety", Controller = "Hospital" },
 				new() { LabelAr = "مجموعات الأوامر", LabelEn = "Order sets", Action = "OrderSets", Controller = "Hospital" },

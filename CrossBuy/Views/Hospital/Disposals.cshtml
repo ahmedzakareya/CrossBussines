@@ -1,0 +1,239 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Controllers
+@using CrossBuy.Models.Context.Hospital
+@model HospitalDisposalStats
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H135: expiry and disposal.
+      · The money figures are demo39 ecommerce-dashboard tiles: currency beside a large value, a note under it.
+      · Two line tabs:
+          - what to deal with: expired or near-expiry batches in the pharmacy store, and everything in quarantine;
+          - what was done.
+        Each list sits in the theme's table widget, searched, filtered and paged by cbServerList.
+      · Two modals in the theme's form layout, every list a select2:
+          - destroy, witnessed: the witness list shows each person's photo;
+          - return to the supplier.
+*@
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Expiry and disposal"].Value;
+    string tab = (string)ViewBag.Tab;
+    bool isAr = System.Globalization.CultureInfo.CurrentUICulture.Name.StartsWith("ar");
+    bool canEdit = ViewBag.CanPharmacy == true && Model.Ready;
+    int dp = ViewBag.MoneyDp is int d ? d : 2; string cur = (string?)ViewBag.Currency ?? "";
+    string Money(decimal v) => v.ToString("N" + dp, System.Globalization.CultureInfo.InvariantCulture);
+    var witnesses = (ViewBag.Witnesses as List<(int ID, string Name, string NameEn, string? Photo)>) ?? new();
+    var vendors = (ViewBag.Vendors as List<(int ID, string Name, string? NameEn)>) ?? new();
+    var tiles = new (string Label, decimal Value, string Note, string Icon, string Tone, string? Filter, string Tab)[] {
+        (T["Expired on the shelf"].Value, Model.ExpiredValue, string.Format(T["{0} batches to destroy"].Value, Model.ExpiredBatches), "ki-calendar-remove", Model.ExpiredValue > 0 ? "danger" : "success", HospitalDisposalState.Expired, HospitalController.DisposalTabs.Todo),
+        (T["Near expiry"].Value, Model.NearValue, T["return or use it before it expires"].Value, "ki-time", Model.NearValue > 0 ? "danger" : "success", HospitalDisposalState.Near, HospitalController.DisposalTabs.Todo),
+        (T["In quarantine"].Value, Model.QuarantineValue, T["recalled or suspect"].Value, "ki-lock-2", "dark", HospitalDisposalState.Quarantined, HospitalController.DisposalTabs.Todo),
+        (T["Lost this year"].Value, Model.DestroyedValue, T["destroyed, written off at cost"].Value, "ki-chart-line-down", Model.DestroyedValue > 0 ? "danger" : "primary", HospitalDisposalKind.Destroyed, HospitalController.DisposalTabs.Done),
+        (T["Credited this year"].Value, Model.ReturnedValue, T["returned, debit notes to suppliers"].Value, "ki-arrow-circle-left", "success", HospitalDisposalKind.Returned, HospitalController.DisposalTabs.Done) };
+    var tabs = new (string Key, string Label, string Icon)[] {
+        (HospitalController.DisposalTabs.Todo, T["To deal with"].Value, "ki-notification-status"),
+        (HospitalController.DisposalTabs.Done, T["Destroyed and returned"].Value, "ki-archive-tick") };
+    bool todo = tab == HospitalController.DisposalTabs.Todo;
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Expiry and disposal"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item"><a href="@Url.Action("Pharmacy")" class="text-muted text-hover-primary">@T["Pharmacy"]</a></li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-400 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@T["What expires or is recalled is destroyed with a witness or returned to its supplier"]</li>
+            </ul>
+        </div>
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+            <a href="@Url.Action("PharmacyStock", new { tab = "batches" })" class="btn btn-sm btn-light btn-active-light-primary"><i class="ki-outline ki-calendar fs-4"></i>@T["Batches and expiry dates"]</a>
+            <a href="@Url.Action("Recalls")" class="btn btn-sm btn-light btn-active-light-danger"><i class="ki-outline ki-shield-cross fs-4"></i>@T["Batch recalls"]</a>
+        </div>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (!Model.Ready)
+        {
+            <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-6 mb-5">
+                <i class="ki-outline ki-information fs-2tx text-primary me-4"></i>
+                <div class="d-flex flex-stack flex-grow-1 flex-wrap gap-3"><div class="fw-semibold">
+                    <h4 class="text-gray-900 fw-bold mb-1">@T["Choose the pharmacy store first"]</h4>
+                    <div class="fs-6 text-gray-700">@T["The pharmacy's stock is the store chosen in the pharmacy settings."]</div></div>
+                    <a href="@Url.Action("Pharmacy")" class="btn btn-sm btn-primary">@T["Pharmacy settings"]</a></div>
+            </div>
+        }
+        @* the money: demo39's ecommerce tiles — the currency beside a large value *@
+        <div class="row g-5 g-xl-8 mb-5">
+            @foreach (var s in tiles)
+            {
+                <div class="col-sm-6 col-xl">
+                    <a href="@Url.Action("Disposals", new { tab = s.Tab })#@s.Filter" class="card card-flush h-100 hover-elevate-up">
+                        <div class="card-body d-flex flex-column justify-content-between pt-6 pb-0 px-6">
+                            <div class="symbol symbol-45px mb-5"><span class="symbol-label bg-light-@s.Tone"><i class="ki-outline @s.Icon fs-2x text-@s.Tone"></i></span></div>
+                            <div class="d-flex flex-column">
+                                <div class="d-flex align-items-center"><span class="fs-6 fw-semibold text-gray-500 align-self-start me-1">@cur</span>
+                                    <span class="fs-2x fw-bold text-@(s.Tone == "danger" ? "danger" : "gray-900") lh-1 ls-n2 hp-num">@Money(s.Value)</span></div>
+                                <span class="text-gray-500 pt-2 fw-semibold fs-6">@s.Label</span>
+                            </div>
+                        </div>
+                        <div class="card-body d-flex align-items-end pt-3 pb-6 px-6">
+                            <div class="d-flex fs-7 fw-semibold align-items-center text-gray-500"><div class="bullet w-8px h-6px rounded-2 bg-@s.Tone me-3 flex-shrink-0"></div><span>@s.Note</span></div>
+                        </div>
+                    </a>
+                </div>
+            }
+        </div>
+
+        <div class="card card-flush">
+            <div class="card-header pt-5 border-0">
+                <ul class="nav nav-stretch nav-line-tabs nav-line-tabs-2x border-transparent fs-6 fw-bold">
+                    @foreach (var t in tabs)
+                    {
+                        <li class="nav-item"><a class="nav-link text-active-primary pb-4 @(t.Key == tab ? "active" : "")" href="@Url.Action("Disposals", new { tab = t.Key })"><i class="ki-outline @t.Icon fs-4 me-2"></i>@t.Label</a></li>
+                    }
+                </ul>
+            </div>
+            <div class="card-header align-items-center pt-2 gap-2 gap-md-5 border-0">
+                <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@tabs.First(t => t.Key == tab).Label</span>
+                    <span class="text-gray-500 mt-1 fw-semibold fs-7"><span id="resultCount">—</span></span></h3>
+                <div class="card-toolbar d-flex flex-wrap align-items-center gap-2">
+                    <div class="w-250px"><input type="text" id="f_q" class="form-control form-control-solid form-control-sm" autocomplete="off" placeholder="@T["Search by medicine or batch…"]" /></div>
+                    <div class="w-175px"><select class="form-select form-select-solid form-select-sm cb-filter" id="f_filter">
+                        <option value="">@T["All"]</option>
+                        @if (todo)
+                        {
+                            <option value="@HospitalDisposalState.Expired">@T["Expired"]</option><option value="@HospitalDisposalState.Near">@T["Near expiry"]</option><option value="@HospitalDisposalState.Quarantined">@T["In quarantine"]</option>
+                        }
+                        else
+                        {
+                            foreach (var k in HospitalDisposalKind.All) { <option value="@k">@T["dsp:" + k]</option> }
+                        }
+                    </select></div>
+                    <div class="w-75px"><select id="f_size" class="form-select form-select-solid form-select-sm"><option value="25">25</option><option value="50">50</option><option value="100">100</option></select></div>
+                    <button type="button" id="f_reset" class="btn btn-sm btn-icon btn-light btn-active-light-primary" title="@T["Reset"]" data-bs-toggle="tooltip"><i class="ki-outline ki-arrows-circle fs-3"></i></button>
+                </div>
+            </div>
+            <div class="card-body pt-2">
+                @{ int cols = todo ? 7 : 8; }
+                <div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
+                    <thead><tr class="fw-bold text-muted bg-light">
+                        @if (todo)
+                        {
+                            <th class="ps-4 min-w-200px rounded-start">@T["Medicine"]</th><th>@T["Batch"]</th><th>@T["Store"]</th><th>@T["State"]</th><th class="text-end">@T["Qty"]</th><th class="text-end">@T["Value"]</th><th class="text-end pe-4 rounded-end"></th>
+                        }
+                        else
+                        {
+                            <th class="ps-4 rounded-start">@T["Act"]</th><th class="min-w-200px">@T["Medicine"]</th><th>@T["Store"]</th><th>@T["What was done"]</th><th class="text-end">@T["Qty"]</th><th class="text-end">@T["Value"]</th><th>@T["Document"]</th><th class="pe-4 rounded-end">@T["Witness"]</th>
+                        }
+                    </tr></thead>
+                    <tbody id="rows"><tr id="loadingRow"><td colspan="@cols" class="text-center text-muted py-10"><span class="spinner-border spinner-border-sm text-primary me-2"></span>@T["Loading…"]</td></tr>
+                        <tr id="emptyRow" class="d-none"><td colspan="@cols" class="text-center py-12"><i class="ki-outline ki-@(todo ? "shield-tick" : "archive") fs-3x text-gray-300 mb-4 d-block"></i><span class="fs-6 fw-semibold text-gray-600">@(todo ? T["Nothing on the shelves has expired, is near expiry or is in quarantine."] : T["Nothing was destroyed or returned yet."])</span></td></tr></tbody>
+                </table></div>
+                <div class="d-flex flex-stack flex-wrap pt-5"><div class="fs-7 text-muted" id="pageInfo"></div><ul class="pagination" id="pager"></ul></div>
+            </div>
+        </div>
+    </div></div>
+</div>
+
+@if (canEdit)
+{
+    @* destroy, witnessed *@
+    <div class="modal fade" id="destroyModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-650px"><div class="modal-content rounded">
+        <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-10">
+            <div class="mb-8 text-center"><h1 class="mb-2">@T["Destroy a batch"]</h1><div class="text-muted fw-semibold fs-6"><bdi data-title></bdi></div></div>
+            <div class="notice d-flex bg-light-danger rounded border-danger border border-dashed p-5 mb-8">
+                <i class="ki-outline ki-trash fs-2tx text-danger me-4"></i>
+                <div class="fw-semibold fs-7 text-gray-700">@T["The inventory writes the batch off at cost (write-off expense against inventory). A witness confirms with their own password."]</div>
+            </div>
+            <div class="row g-6">
+                <div class="col-md-3"><label class="fs-6 fw-semibold mb-2 required">@T["Qty"]</label><input type="number" step="any" min="0" class="form-control form-control-solid hp-num" data-x="qty" /><div class="text-muted fs-8 mt-1">@T["On hand"] <span class="hp-num" data-max-label></span></div></div>
+                <div class="col-md-4"><label class="fs-6 fw-semibold mb-2 required">@T["Why"]</label><select class="form-select form-select-solid" data-x="reason" data-hide-search="true">@foreach (var r in HospitalDisposalReason.All) { <option value="@r">@T["dspr:" + r]</option> }</select></div>
+                <div class="col-md-5"><label class="fs-6 fw-semibold mb-2 required">@T["Destruction method"]</label><select class="form-select form-select-solid" data-x="method" data-hide-search="true">@foreach (var m in HospitalDestructionMethod.All) { <option value="@m">@T["dspm:" + m]</option> }</select></div>
+                <div class="col-md-7"><label class="fs-6 fw-semibold mb-2 required">@T["Witness"]</label>
+                    <select class="form-select form-select-solid" data-x="witnessId" data-witness data-no-select2 data-placeholder="—"><option></option>
+                        @foreach (var w in witnesses) { <option value="@w.ID" data-photo="@w.Photo" data-initials="@HospitalUi.Initials(w.NameEn)">@DisplayName.Of(w.Name, w.NameEn)</option> }</select></div>
+                <div class="col-md-5"><label class="fs-6 fw-semibold mb-2 required">@T["The witness's password"]</label><input type="password" class="form-control form-control-solid" autocomplete="new-password" data-x="password" /></div>
+                <div class="col-12"><label class="fs-6 fw-semibold mb-2">@T["Note"]</label><textarea class="form-control form-control-solid" rows="2" maxlength="400" dir="auto" data-x="note"></textarea></div>
+            </div>
+            <div class="text-center pt-10"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-danger" data-go="Destroy"><i class="ki-outline ki-trash fs-4"></i>@T["Destroy and write off"]</button></div>
+        </div>
+    </div></div></div>
+
+    @* return to the supplier *@
+    <div class="modal fade" id="returnModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-650px"><div class="modal-content rounded">
+        <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-10">
+            <div class="mb-8 text-center"><h1 class="mb-2">@T["Return to the supplier"]</h1><div class="text-muted fw-semibold fs-6"><bdi data-title></bdi></div></div>
+            <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-5 mb-8">
+                <i class="ki-outline ki-arrow-circle-left fs-2tx text-primary me-4"></i>
+                <div class="fw-semibold fs-7 text-gray-700">@T["A debit note against the supplier at cost, written by the payables. An expired batch is destroyed instead."]</div>
+            </div>
+            <div class="row g-6">
+                <div class="col-md-4"><label class="fs-6 fw-semibold mb-2 required">@T["Qty"]</label><input type="number" step="any" min="0" class="form-control form-control-solid hp-num" data-x="qty" /><div class="text-muted fs-8 mt-1">@T["On hand"] <span class="hp-num" data-max-label></span></div></div>
+                <div class="col-md-8"><label class="fs-6 fw-semibold mb-2 required">@T["Why"]</label><select class="form-select form-select-solid" data-x="reason" data-hide-search="true">@foreach (var r in HospitalDisposalReason.All) { <option value="@r">@T["dspr:" + r]</option> }</select></div>
+                <div class="col-12"><label class="fs-6 fw-semibold mb-2 required">@T["Supplier"]</label>
+                    <select class="form-select form-select-solid" data-x="vendorId"><option value="">—</option>@foreach (var v in vendors) { <option value="@v.ID">@DisplayName.Of(v.Name, v.NameEn)</option> }</select></div>
+                <div class="col-12"><label class="fs-6 fw-semibold mb-2">@T["Note"]</label><textarea class="form-control form-control-solid" rows="2" maxlength="400" dir="auto" data-x="note"></textarea></div>
+            </div>
+            <div class="text-center pt-10"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-go="Return"><i class="ki-outline ki-arrow-circle-left fs-4"></i>@T["Return and write the debit note"]</button></div>
+        </div>
+    </div></div></div>
+}
+
+@section Scripts {
+    <script>
+        (function () {
+            var f = document.getElementById('f_filter'), tab = @Json.Serialize(tab);
+            function fromHash() { var h = (location.hash || '').replace('#', '');
+                if (!h || !Array.prototype.some.call(f.options, function (o) { return o.value === h; })) return false;
+                f.value = h; if (window.jQuery) jQuery(f).trigger('change.select2'); return true; }
+            fromHash();
+            var list = cbServerList({ url: @Json.Serialize(Url.Action("DisposalsData")), isAr: @(isAr ? "true" : "false"), addParams: function (p) { p.set('tab', tab); p.set('filter', f.value); } });
+            window.addEventListener('hashchange', function () { if (fromHash()) list.reload(); });
+
+            var dEl = document.getElementById('destroyModal'), rEl = document.getElementById('returnModal'); if (!dEl) return;
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value, row = null;
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value),
+                askD: @Json.Serialize(T["Destroy this batch and write it off?"].Value), askR: @Json.Serialize(T["Return this batch to the supplier and write the debit note?"].Value) };
+            // the witness list shows each person's face (initials when the photo is gone)
+            function face(o) {
+                if (!o.id || !o.element) return o.text;
+                var ph = o.element.getAttribute('data-photo'), s = document.createElement('span'); s.className = 'd-flex align-items-center';
+                var sym = document.createElement('span'); sym.className = 'symbol symbol-25px symbol-circle me-2';
+                var lb = document.createElement('span'); lb.className = 'symbol-label fw-bold fs-9 hp-initials'; lb.textContent = o.element.getAttribute('data-initials') || '';
+                if (ph) { var im = document.createElement('img'); im.alt = ''; im.style.objectFit = 'cover'; im.onerror = function () { sym.replaceChild(lb, im); }; im.src = ph; sym.appendChild(im); } else sym.appendChild(lb);
+                s.appendChild(sym); s.appendChild(document.createTextNode(o.text)); return s;
+            }
+            if (window.jQuery) jQuery(dEl.querySelector('[data-witness]')).select2({ dropdownParent: jQuery(dEl), placeholder: '—', width: '100%', dir: document.documentElement.dir || 'rtl', templateResult: face, templateSelection: face });
+            function set(m, k, v) { var i = m.querySelector('[data-x="' + k + '"]'); if (!i) return; i.value = v == null ? '' : v; if (i.tagName === 'SELECT' && window.jQuery) jQuery(i).trigger('change.select2'); }
+            function open(m, r) {
+                row = r; m.querySelector('[data-title]').textContent = r.title; m.querySelector('[data-max-label]').textContent = r.qty;
+                set(m, 'qty', r.qty); set(m, 'note', ''); set(m, 'password', ''); set(m, 'witnessId', '');
+                set(m, 'reason', r.state === 'Quarantined' ? (r.recallNo ? 'Recalled' : 'Damaged') : r.state === 'Expired' ? 'Expired' : 'NearExpiry');
+                if (m === rEl) { set(m, 'vendorId', '');   // the supplier the batch came from, when a receipt brought it
+                    fetch(@Json.Serialize(Url.Action("DisposalSupplier")) + '?itemId=' + r.itemId + '&batchNo=' + encodeURIComponent(r.batchNo)).then(function (x) { return x.json(); }).then(function (j) { if (j.vendorId) set(m, 'vendorId', j.vendorId); }); }
+                bootstrap.Modal.getOrCreateInstance(m).show();
+            }
+            document.addEventListener('click', function (e) {
+                var b = e.target.closest('[data-destroy],[data-return]');
+                if (b) { open(b.hasAttribute('data-destroy') ? dEl : rEl, JSON.parse(b.getAttribute('data-row'))); return; }
+                var g = e.target.closest('[data-go]'); if (!g) return;
+                var m = g.closest('.modal'), act = g.getAttribute('data-go');
+                var body = { itemId: row.itemId, batchNo: row.batchNo, warehouseId: row.warehouseId };
+                m.querySelectorAll('[data-x]').forEach(function (i) { var k = i.getAttribute('data-x'), v = i.value.trim();
+                    body[k] = k === 'qty' ? (v === '' ? 0 : Number(v)) : (k === 'witnessId' || k === 'vendorId') ? (v ? Number(v) : null) : (v || null); });
+                cbConfirm(act === 'Destroy' ? W.askD : W.askR, { kind: act === 'Destroy' ? 'danger' : 'primary' }).then(function (ok) { if (!ok) return; g.disabled = true;
+                    fetch(@Json.Serialize(Url.Content("~/Hospital/Pharmacy/Disposals/")) + act, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(body) })
+                        .then(function (x) { return x.json().catch(function () { return { ok: false }; }); })
+                        .then(function (res) { g.disabled = false; if (!res.ok) { toastr.error(res.error || W.failed); return; }
+                            toastr.success(W.saved); bootstrap.Modal.getOrCreateInstance(m).hide(); setTimeout(function () { location.reload(); }, 500); });
+                });
+            });
+        })();
+    </script>
+}

@@ -91,6 +91,7 @@ namespace CrossBuy.Models.Context.Hospital
 			b.Entity<HospitalPharmacySettings>(e => e.HasIndex(x => x.CompanyId).IsUnique());
 			HospitalDrugModel.Configure(b);   // H133: the drug master hangs off the pharmacy
 			HospitalLotRecallModel.Configure(b);   // H134: batch recalls and their quarantine
+			HospitalStockDisposalModel.Configure(b);   // H135: what is destroyed or returned to the supplier
 			b.Entity<HospitalDispense>(e =>
 			{
 				e.HasIndex(x => new { x.CompanyId, x.RxNo }).IsUnique();

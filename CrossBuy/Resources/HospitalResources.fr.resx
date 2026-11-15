@@ -6882,4 +6882,51 @@
   <data name="{0} units of this batch are outside quarantine" xml:space="preserve"><value>{0} unités de ce lot sont hors quarantaine</value></data>
   <data name="Received how" xml:space="preserve"><value>Reçu comment</value></data>
   <data name="held in quarantine" xml:space="preserve"><value>en quarantaine</value></data>
+  <data name="A debit note against the supplier at cost, written by the payables. An expired batch is destroyed instead." xml:space="preserve"><value>Un avoir fournisseur au coût, émis par les comptes fournisseurs. Un lot périmé est détruit.</value></data>
+  <data name="Act" xml:space="preserve"><value>Acte</value></data>
+  <data name="An expired batch is destroyed, not returned to the supplier" xml:space="preserve"><value>Un lot périmé est détruit, pas retourné</value></data>
+  <data name="Another batch of this medicine would leave the store first — quarantine this batch and return it from there" xml:space="preserve"><value>Un autre lot sortirait en premier — mettez ce lot en quarantaine et retournez-le de là</value></data>
+  <data name="Choose how it is destroyed" xml:space="preserve"><value>Choisissez la méthode de destruction</value></data>
+  <data name="Choose the reason" xml:space="preserve"><value>Choisissez le motif</value></data>
+  <data name="Choose the supplier" xml:space="preserve"><value>Choisissez le fournisseur</value></data>
+  <data name="Credited this year" xml:space="preserve"><value>Crédité cette année</value></data>
+  <data name="Destroy" xml:space="preserve"><value>Détruire</value></data>
+  <data name="Destroy a batch" xml:space="preserve"><value>Détruire un lot</value></data>
+  <data name="Destroy and write off" xml:space="preserve"><value>Détruire et sortir</value></data>
+  <data name="Destroy or return it" xml:space="preserve"><value>La détruire ou la retourner</value></data>
+  <data name="Destroy this batch and write it off?" xml:space="preserve"><value>Détruire ce lot et le sortir du stock ?</value></data>
+  <data name="Destroyed and returned" xml:space="preserve"><value>Détruit et retourné</value></data>
+  <data name="Destruction method" xml:space="preserve"><value>Méthode de destruction</value></data>
+  <data name="Enter the quantity" xml:space="preserve"><value>Saisissez la quantité</value></data>
+  <data name="Expired on the shelf" xml:space="preserve"><value>Périmé en rayon</value></data>
+  <data name="Expiry and disposal" xml:space="preserve"><value>Péremption et élimination</value></data>
+  <data name="Lost this year" xml:space="preserve"><value>Perdu cette année</value></data>
+  <data name="Nothing on the shelves has expired, is near expiry or is in quarantine." xml:space="preserve"><value>Rien en rayon n'est périmé, proche de la péremption ou en quarantaine.</value></data>
+  <data name="Nothing was destroyed or returned yet." xml:space="preserve"><value>Rien n'a encore été détruit ni retourné.</value></data>
+  <data name="Return" xml:space="preserve"><value>Retourner</value></data>
+  <data name="Return and write the debit note" xml:space="preserve"><value>Retourner et émettre l'avoir</value></data>
+  <data name="Return this batch to the supplier and write the debit note?" xml:space="preserve"><value>Retourner ce lot et émettre l'avoir ?</value></data>
+  <data name="The inventory refused the write-off: {0}" xml:space="preserve"><value>Le stock a refusé la sortie : {0}</value></data>
+  <data name="The inventory writes the batch off at cost (write-off expense against inventory). A witness confirms with their own password." xml:space="preserve"><value>Le stock sort le lot au coût (charge de mise au rebut contre stock). Un témoin confirme avec son mot de passe.</value></data>
+  <data name="The store does not hold that much of this batch" xml:space="preserve"><value>Le magasin ne détient pas autant de ce lot</value></data>
+  <data name="The supplier return was refused: {0}" xml:space="preserve"><value>Le retour fournisseur a été refusé : {0}</value></data>
+  <data name="The witness enters their password" xml:space="preserve"><value>Le témoin saisit son mot de passe</value></data>
+  <data name="To deal with" xml:space="preserve"><value>À traiter</value></data>
+  <data name="What expires or is recalled is destroyed with a witness or returned to its supplier" xml:space="preserve"><value>Ce qui est périmé ou rappelé est détruit devant témoin ou retourné au fournisseur</value></data>
+  <data name="destroyed, written off at cost" xml:space="preserve"><value>détruit, sorti au coût</value></data>
+  <data name="dsp:Destroyed" xml:space="preserve"><value>Détruit</value></data>
+  <data name="dsp:Returned" xml:space="preserve"><value>Retourné au fournisseur</value></data>
+  <data name="dspm:Chemical" xml:space="preserve"><value>Traitement chimique</value></data>
+  <data name="dspm:Contractor" xml:space="preserve"><value>Prestataire agréé</value></data>
+  <data name="dspm:Incineration" xml:space="preserve"><value>Incinération</value></data>
+  <data name="dspm:Other" xml:space="preserve"><value>Autre</value></data>
+  <data name="dspr:Damaged" xml:space="preserve"><value>Endommagé</value></data>
+  <data name="dspr:Expired" xml:space="preserve"><value>Périmé</value></data>
+  <data name="dspr:NearExpiry" xml:space="preserve"><value>Proche de la péremption</value></data>
+  <data name="dspr:Recalled" xml:space="preserve"><value>Rappelé</value></data>
+  <data name="recalled or suspect" xml:space="preserve"><value>rappelés ou suspects</value></data>
+  <data name="return or use it before it expires" xml:space="preserve"><value>à retourner ou utiliser avant péremption</value></data>
+  <data name="returned, debit notes to suppliers" xml:space="preserve"><value>retourné, avoirs fournisseurs</value></data>
+  <data name="{0} batches to destroy" xml:space="preserve"><value>{0} lots à détruire</value></data>
+  <data name="Link the goods-received (GRNI) account of {0}'s inventory category first" xml:space="preserve"><value>Liez d'abord le compte de réceptions non facturées (GRNI) de la catégorie de {0}</value></data>
 </root>
