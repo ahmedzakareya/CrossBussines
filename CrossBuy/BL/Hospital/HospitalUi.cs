@@ -6,8 +6,11 @@ namespace CrossBuy.BL.Hospital
 		/// Two initials from a name (the English one reads best on the brand tint), for a person with no photo.
 		public static string Initials(string? name)
 		{
-			var p = (name ?? "").Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
-			return ((p.Length > 0 ? p[0][..1] : "") + (p.Length > 1 ? p[1][..1] : "")).ToUpperInvariant();
+			// The first LETTER of the first two words that have one: "Test — death cert" was "T—" before, and "د. أحمد" was "دأ".
+			var p = (name ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries)
+				.Where(w => w.Any(char.IsLetter) && !w.EndsWith('.'))
+				.Select(w => w.First(char.IsLetter).ToString()).Take(2);
+			return string.Concat(p).ToUpperInvariant();
 		}
 
 		/// A queue number as the patient's ticket reads it, "A-004" — the one spelling the desk, the clinics board, the
