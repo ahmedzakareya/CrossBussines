@@ -21,6 +21,21 @@
     string Local(DateTime? utc) => utc == null ? "—" : HospitalNursingService.UtcToWard(utc.Value).ToString("HH:mm");
     string F1(decimal? x) => x?.ToString("0.#") ?? "—";
     string F(double v) => v.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture);
+    // H124: one row of the theme's list widget (demo39 dashboards/logistics) — symbol · label over a muted line · value · badge
+    void Row(string icon, string tone, string label, string? sub, string value, string? badge = null, string badgeTone = "success", bool last = false, bool ltr = true)
+    {
+        <div class="d-flex flex-stack">
+            <div class="symbol symbol-35px me-4"><span class="symbol-label bg-light-@tone"><i class="ki-outline ki-@icon fs-3 text-@tone"></i></span></div>
+            <div class="d-flex flex-stack flex-row-fluid d-grid gap-2">
+                <div class="me-3"><span class="text-gray-800 fw-bold fs-6">@label</span>@if (sub != null) {<span class="text-gray-500 fw-semibold fs-7 d-block">@sub</span>}</div>
+                <div class="d-flex align-items-center">
+                    <span class="text-gray-800 fw-bold fs-6 hp-num text-nowrap @(badge != null ? "me-3" : "")" dir="@(ltr ? "ltr" : "auto")">@value</span>
+                    @if (badge != null) {<span class="badge badge-light-@badgeTone fs-7 fw-bold hp-num text-nowrap" dir="ltr">@badge</span>}
+                </div>
+            </div>
+        </div>
+        if (!last) { <div class="separator separator-dashed my-3"></div> }
+    }
     // the systolic chart: minutes from the start across (at least the planned time), 60–200 mmHg up
     const double W = 760, H = 210, PL = 40, PR = 16, PT = 12, PB = 28;
     var start = s.StartedAt ?? DateTime.UtcNow;
@@ -60,40 +75,84 @@
             <div class="notice d-flex align-items-center rounded border border-danger border-dashed bg-light-danger p-4 mb-5 gap-3"><i class="ki-outline ki-information-5 fs-2x text-danger"></i>
                 <div class="d-flex flex-wrap gap-2">@foreach (var w in o.Warnings) {<span class="badge badge-danger fs-7">@T["dxw:" + w]</span>}</div></div>
         }
+        @* H124: before · after · adequacy — the theme's list widget (demo39 dashboards/logistics) *@
         <div class="row g-5 mb-5">
-            <div class="col-md-4"><div class="card h-100"><div class="card-body py-5">
-                <div class="fw-bold fs-5 mb-3">@T["Before"]</div>
-                <div class="d-flex flex-stack py-2 border-bottom border-dashed"><span class="text-muted fs-7">@T["Weight"]</span><span class="fw-bold fs-3 hp-num">@F1(s.PreWeightKg) <span class="fs-8 text-muted">kg</span></span></div>
-                <div class="d-flex flex-stack py-2 border-bottom border-dashed"><span class="text-muted fs-7">@T["Dry weight"]</span><span class="hp-num">@s.DryWeightKg.ToString("0.0") kg</span></div>
-                <div class="d-flex flex-stack py-2 border-bottom border-dashed"><span class="text-muted fs-7">@T["Gain since the last session"]</span>
-                    <span class="hp-num @(o.GainPct > HospitalDialysisRules.MaxGainPct ? "text-danger fw-bold" : "")">@(o.GainKg == null ? "—" : "+" + F1(o.GainKg) + " kg · " + F1(o.GainPct) + " %")</span></div>
-                <div class="d-flex flex-stack py-2 border-bottom border-dashed"><span class="text-muted fs-7">@T["Volume to remove"]</span><span class="hp-num fw-semibold">@(s.UfGoalMl?.ToString() ?? "—") ml</span></div>
-                <div class="d-flex flex-stack py-2 border-bottom border-dashed"><span class="text-muted fs-7">@T["Blood pressure"]</span><span class="hp-num" dir="ltr">@(s.PreSbp != null ? s.PreSbp + "/" + s.PreDbp : "—")</span></div>
-                <div class="d-flex flex-stack py-2"><span class="text-muted fs-7">@T["Started"]</span><span class="hp-num">@Local(s.StartedAt) <span class="text-muted fs-8" style="font-family:inherit">@Who(s.CreatedByEmployeeId)</span></span></div>
-            </div></div></div>
-            <div class="col-md-4"><div class="card h-100"><div class="card-body py-5">
-                <div class="fw-bold fs-5 mb-3">@T["After"]</div>
-                @if (running) { <div class="text-muted text-center py-8">@T["The session is on the machine."]<div class="fs-8 mt-1">@T["{0} of {1} min", (int)Math.Round((DateTime.UtcNow - start).TotalMinutes), s.PlannedMin]</div></div> }
-                else
-                {
-                    <div class="d-flex flex-stack py-2 border-bottom border-dashed"><span class="text-muted fs-7">@T["Weight"]</span><span class="fw-bold fs-3 hp-num @(s.PostWeightKg > s.DryWeightKg + HospitalDialysisRules.AboveDryKg ? "text-danger" : "")">@F1(s.PostWeightKg) <span class="fs-8 text-muted">kg</span></span></div>
-                    <div class="d-flex flex-stack py-2 border-bottom border-dashed"><span class="text-muted fs-7">@T["Volume removed"]</span><span class="hp-num">@(o.UfMl?.ToString() ?? "—") ml · <span class="@(o.UfRate > HospitalDialysisRules.MaxUfRate ? "text-danger fw-bold" : "")">@F1(o.UfRate) ml/kg/h</span></span></div>
-                    <div class="d-flex flex-stack py-2 border-bottom border-dashed"><span class="text-muted fs-7">@T["Minutes"]</span><span class="hp-num @(o.Warnings.Contains(HospitalDialysisWarning.Short) ? "text-danger fw-bold" : "")">@o.Minutes / @s.PlannedMin</span></div>
-                    <div class="d-flex flex-stack py-2 border-bottom border-dashed"><span class="text-muted fs-7">@T["Blood pressure"]</span><span class="hp-num" dir="ltr">@(s.PostSbp != null ? s.PostSbp + "/" + s.PostDbp : "—")</span></div>
-                    <div class="d-flex flex-stack py-2 border-bottom border-dashed"><span class="text-muted fs-7">@T["The bill"]</span>@await Html.PartialAsync("_SessionCharge", new HospitalSessionChargeCell(HospitalSessionKinds.Dialysis, s.ID, s.BillLineId, s.Status == HospitalDialysisSessionStatus.Done))</div>
-                    <div class="d-flex flex-stack py-2"><span class="text-muted fs-7">@T["Ended"]</span><span class="hp-num">@Local(s.EndedAt) <span class="text-muted fs-8" style="font-family:inherit">@Who(s.ClosedByEmployeeId)</span></span></div>
-                }
-            </div></div></div>
-            <div class="col-md-4"><div class="card h-100"><div class="card-body py-5">
-                <div class="fw-bold fs-5 mb-3">@T["Adequacy"]</div>
-                <div class="d-flex gap-8 mb-3 hp-num">
-                    <div><div class="text-muted fs-8">Kt/V</div><div class="fs-2hx fw-bold @(o.KtV < HospitalDialysisRules.MinKtV ? "text-danger" : o.KtV != null ? "text-success" : "text-gray-400")">@(o.KtV?.ToString("0.00") ?? "—")</div></div>
-                    <div><div class="text-muted fs-8">URR</div><div class="fs-2hx fw-bold @(o.Urr < HospitalDialysisRules.MinUrr ? "text-danger" : o.Urr != null ? "text-success" : "text-gray-400")">@(o.Urr == null ? "—" : F1(o.Urr) + "%")</div></div>
+            <div class="col-xl-4"><div class="card card-flush h-100">
+                <div class="card-header pt-5">
+                    <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Before"]</span>
+                        <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Started"] <bdi class="hp-num">@Local(s.StartedAt)</bdi> · @Who(s.CreatedByEmployeeId)</span></h3>
                 </div>
-                <div class="text-muted fs-8 mb-3">@if (s.PreUrea != null) {<span class="hp-num">@T["Urea {0} → {1}", F1(s.PreUrea), F1(s.PostUrea)]</span>} else {@T["Draw the urea before and after to measure the dose (usually once a month)."]}</div>
-                @if (s.Complications != null) {<div class="text-muted fs-7 mb-1">@T["Complications"]</div><div class="d-flex flex-wrap gap-1">@foreach (var c in s.Complications.Split(',')) {<span class="badge badge-light-danger fs-8">@T["dxc:" + c]</span>}</div>}
-                @if (s.Note != null) {<div class="text-muted fs-7 mt-3">@T["Note"]</div><div class="fs-7"><bdi>@s.Note</bdi></div>}
-            </div></div></div>
+                <div class="card-body pt-2">
+                    @{
+                        var aboveDry = s.PreWeightKg - s.DryWeightKg;
+                        Row("abstract-26", "primary", T["Weight"].Value, T["Dry weight"].Value + " ⁦" + s.DryWeightKg.ToString("0.0", inv) + " kg⁩", F1(s.PreWeightKg) + " kg", aboveDry == null ? null : (aboveDry >= 0 ? "+" : "") + aboveDry.Value.ToString("0.0", inv) + " kg", "primary");
+                        Row("chart-line-up", o.GainPct > HospitalDialysisRules.MaxGainPct ? "danger" : "success", T["Gain since the last session"].Value, null, o.GainKg == null ? "—" : "+" + F1(o.GainKg) + " kg", o.GainPct == null ? null : F1(o.GainPct) + " %", o.GainPct > HospitalDialysisRules.MaxGainPct ? "danger" : "success");
+                        Row("drop", "info", T["Volume to remove"].Value, null, (s.UfGoalMl?.ToString() ?? "—") + " ml");
+                        Row("heart", "danger", T["Blood pressure"].Value, s.PrePulse != null ? T["Pulse"].Value + " " + s.PrePulse : null, s.PreSbp != null ? s.PreSbp + "/" + s.PreDbp : "—", last: true);
+                    }
+                </div>
+            </div></div>
+            <div class="col-xl-4"><div class="card card-flush h-100">
+                <div class="card-header pt-5">
+                    <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["After"]</span>
+                        <span class="text-gray-500 mt-1 fw-semibold fs-7">@if (running) {@T["The session is on the machine."]} else {<text>@T["Ended"] <bdi class="hp-num">@Local(s.EndedAt)</bdi> · @Who(s.ClosedByEmployeeId)</text>}</span></h3>
+                </div>
+                <div class="card-body pt-2">
+                    @if (running)
+                    {
+                        var onMin = (int)Math.Round((DateTime.UtcNow - start).TotalMinutes); var pct = Math.Clamp(onMin * 100 / Math.Max(1, s.PlannedMin), 0, 100);
+                        <div class="d-flex flex-column justify-content-center h-100 py-8">
+                            <div class="d-flex align-items-center mb-3"><span class="fs-2hx fw-bold text-gray-900 me-2 lh-1 hp-num">@onMin</span><span class="text-gray-500 fw-semibold fs-6">@T["{0} of {1} min", onMin, s.PlannedMin]</span></div>
+                            <div class="progress h-8px bg-light-primary"><div class="progress-bar bg-primary" role="progressbar" style="width:@(pct)%"></div></div>
+                        </div>
+                    }
+                    else
+                    {
+                        var overDry = s.PostWeightKg > s.DryWeightKg + HospitalDialysisRules.AboveDryKg;
+                        bool fast = o.UfRate > HospitalDialysisRules.MaxUfRate, shortS = o.Warnings.Contains(HospitalDialysisWarning.Short);
+                        Row("abstract-26", overDry ? "danger" : "success", T["Weight"].Value, T["Dry weight"].Value + " ⁦" + s.DryWeightKg.ToString("0.0", inv) + " kg⁩", F1(s.PostWeightKg) + " kg",
+                            s.PostWeightKg == null ? null : ((s.PostWeightKg - s.DryWeightKg) >= 0 ? "+" : "") + (s.PostWeightKg - s.DryWeightKg)!.Value.ToString("0.0", inv) + " kg", overDry ? "danger" : "success");
+                        Row("drop", fast ? "danger" : "info", T["Volume removed"].Value, null, (o.UfMl?.ToString() ?? "—") + " ml", F1(o.UfRate) + " ml/kg/h", fast ? "danger" : "success");
+                        Row("time", shortS ? "danger" : "primary", T["Minutes"].Value, null, string.Format(T["{0} of {1} min"].Value, o.Minutes, s.PlannedMin), ltr: false);
+                        Row("heart", "danger", T["Blood pressure"].Value, null, s.PostSbp != null ? s.PostSbp + "/" + s.PostDbp : "—");
+                        <div class="d-flex flex-stack">
+                            <div class="symbol symbol-35px me-4"><span class="symbol-label bg-light-success"><i class="ki-outline ki-bill fs-3 text-success"></i></span></div>
+                            <div class="d-flex flex-stack flex-row-fluid d-grid gap-2"><span class="text-gray-800 fw-bold fs-6">@T["The bill"]</span>
+                                @await Html.PartialAsync("_SessionCharge", new HospitalSessionChargeCell(HospitalSessionKinds.Dialysis, s.ID, s.BillLineId, s.Status == HospitalDialysisSessionStatus.Done))</div>
+                        </div>
+                    }
+                </div>
+            </div></div>
+            <div class="col-xl-4"><div class="card card-flush h-100">
+                <div class="card-header pt-5">
+                    <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Adequacy"]</span>
+                        <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Target: Kt/V {0} or more · URR {1}% or more", HospitalDialysisRules.MinKtV.ToString("0.0#", inv), HospitalDialysisRules.MinUrr.ToString("0", inv)]</span></h3>
+                </div>
+                <div class="card-body pt-2 d-flex flex-column">
+                    @if (o.KtV == null && o.Urr == null)
+                    {
+                        <div class="text-center py-8 my-auto"><i class="ki-outline ki-flask fs-3x text-gray-300 mb-4 d-block"></i>
+                            <div class="fs-6 fw-bold text-gray-700 mb-1">@T["No urea this session"]</div>
+                            <div class="fs-7 text-gray-500">@T["Draw the urea before and after to measure the dose (usually once a month)."]</div></div>
+                    }
+                    else
+                    {
+                    @foreach (var (name, val, target, shown, scale) in new[] { ("Kt/V", o.KtV, HospitalDialysisRules.MinKtV, o.KtV?.ToString("0.00", inv), 2.0m), ("URR", o.Urr, HospitalDialysisRules.MinUrr, o.Urr == null ? null : F1(o.Urr) + "%", 100m) })
+                    {
+                        string tone = val == null ? "gray-400" : val < target ? "danger" : "success";
+                        <div class="mb-6">
+                            <div class="d-flex flex-stack mb-2"><span class="text-gray-500 fw-bold fs-7" dir="ltr">@name</span>
+                                @if (val != null) {<span class="badge badge-light-@(val < target ? "danger" : "success") fs-8 fw-bold">@T[val < target ? "Below the target" : "On target"]</span>}</div>
+                            <div class="fs-2hx fw-bold lh-1 mb-3 hp-num text-@tone" dir="ltr">@(shown ?? "—")</div>
+                            <div class="progress h-6px bg-light"><div class="progress-bar bg-@(val == null ? "secondary" : val < target ? "danger" : "success")" role="progressbar" style="width:@(val == null ? 0 : Math.Clamp((int)(val.Value * 100 / scale), 0, 100))%"></div></div>
+                        </div>
+                    }
+                    <div class="text-gray-500 fw-semibold fs-7"><span class="hp-num">@T["Urea {0} → {1}", F1(s.PreUrea), F1(s.PostUrea)]</span></div>
+                    }
+                    @if (s.Complications != null) {<div class="separator separator-dashed my-4"></div><div class="text-gray-800 fw-bold fs-7 mb-2">@T["Complications"]</div><div class="d-flex flex-wrap gap-2">@foreach (var c in s.Complications.Split(',')) {<span class="badge badge-light-danger fs-7 fw-bold">@T["dxc:" + c]</span>}</div>}
+                    @if (s.Note != null) {<div class="separator separator-dashed my-4"></div><div class="text-gray-800 fw-bold fs-7 mb-1">@T["Note"]</div><div class="text-gray-600 fs-7"><bdi>@s.Note</bdi></div>}
+                </div>
+            </div></div>
         </div>
 
         @* H122/H123: the session's kit — the theme's table widget (demo39 widgets/tables): what one session draws from the unit's store *@
@@ -155,7 +214,14 @@
             </div>
         }
         <div class="card mb-5">
-            <div class="card-header border-0 pt-6"><div class="card-title flex-column m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Systolic pressure on the machine"]</span><span class="text-muted fs-8 mt-1">@T["Under 90 is intradialytic hypotension; so is a fall of 20 from the pressure before with cramps, nausea, headache or chest pain."]</span></div></div>
+            <div class="card-header pt-5">
+                <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Systolic pressure on the machine"]</span>
+                    <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Under 90 is intradialytic hypotension; so is a fall of 20 from the pressure before with cramps, nausea, headache or chest pain."]</span></h3>
+                <div class="card-toolbar gap-4 fs-7 fw-semibold text-gray-600">
+                    <span class="d-flex align-items-center"><span class="bullet bullet-dot bg-primary h-8px w-8px me-2"></span>@T["Systolic"]</span>
+                    <span class="d-flex align-items-center"><span class="bullet h-2px w-20px me-2" style="background:#DC2626"></span><bdi class="hp-num">90</bdi></span>
+                </div>
+            </div>
             <div class="card-body pt-0">
                 @if (pts.Count == 0) { <div class="text-center text-muted py-8">@T["No reading yet."]</div> }
                 else
@@ -172,27 +238,35 @@
             </div>
         </div>
 
-        <div class="card">
-            <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Readings"]</span></div></div>
+        <div class="card card-flush">
+            <div class="card-header pt-5">
+                <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Readings"]</span>
+                    <span class="text-gray-500 mt-1 fw-semibold fs-7 hp-num">@Model.Observations.Count</span></h3>
+                @if (running && canTreat) {<div class="card-toolbar"><button type="button" class="btn btn-sm btn-light-primary" data-modal="obsModal"><i class="ki-outline ki-plus fs-4"></i>@T["Record a reading"]</button></div>}
+            </div>
             <div class="card-body pt-2">
-                @if (Model.Observations.Count == 0) { <div class="text-center text-muted py-8">@T["No reading yet."]</div> }
+                @if (Model.Observations.Count == 0)
+                {
+                    <div class="text-center py-10"><i class="ki-outline ki-pulse fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-semibold text-gray-600">@T["No reading yet."]</div></div>
+                }
                 else
                 {
-                    <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-3 mb-0">
-                        <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0"><th>@T["Time"]</th><th>@T["Blood pressure"]</th><th>@T["Pulse"]</th><th>@T["Blood flow"]</th><th>@T["Venous pressure"]</th><th>@T["UF so far"]</th><th>@T["Note"]</th><th>@T["Recorded by"]</th></tr></thead>
-                        <tbody class="hp-num">
+                    <div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
+                        <thead><tr class="fw-bold text-muted bg-light">
+                            <th class="ps-4 rounded-start">@T["Time"]</th><th>@T["Blood pressure"]</th><th>@T["Pulse"]</th><th>@T["Blood flow"]</th><th>@T["Venous pressure"]</th><th>@T["UF so far"]</th><th>@T["Note"]</th><th class="pe-4 rounded-end">@T["Recorded by"]</th></tr></thead>
+                        <tbody>
                         @foreach (var x in Model.Observations)
                         {
                             bool low = x.Sbp < HospitalDialysisRules.HypotensionNadir;
                             <tr>
-                                <td>@Local(x.At)</td>
-                                <td dir="ltr" class="@(low ? "text-danger fw-bold" : "")">@(x.Sbp != null ? x.Sbp + "/" + x.Dbp : "—")</td>
-                                <td>@(x.Pulse?.ToString() ?? "—")</td>
-                                <td>@(x.BloodFlow?.ToString() ?? "—")</td>
-                                <td>@(x.VenousPressure?.ToString() ?? "—")</td>
-                                <td>@(x.UfMl?.ToString() ?? "—")</td>
-                                <td style="font-family:inherit"><bdi>@x.Note</bdi></td>
-                                <td class="text-muted fs-8" style="font-family:inherit">@Who(x.CreatedByEmployeeId)</td>
+                                <td class="ps-4"><span class="text-gray-900 fw-bold fs-6 hp-num">@Local(x.At)</span></td>
+                                <td>@if (x.Sbp != null) {<span class="badge badge-light-@(low ? "danger" : "primary") fs-7 fw-bold hp-num" dir="ltr">@x.Sbp/@x.Dbp</span>} else {<span class="text-muted">—</span>}</td>
+                                <td><span class="text-gray-800 fw-bold hp-num">@(x.Pulse?.ToString() ?? "—")</span></td>
+                                <td><span class="text-gray-800 fw-bold hp-num">@(x.BloodFlow?.ToString() ?? "—")</span></td>
+                                <td><span class="text-gray-800 fw-bold hp-num">@(x.VenousPressure?.ToString() ?? "—")</span></td>
+                                <td><span class="text-gray-800 fw-bold hp-num">@(x.UfMl?.ToString() ?? "—")</span></td>
+                                <td class="text-gray-600 fs-7"><bdi>@x.Note</bdi></td>
+                                <td class="pe-4 text-gray-500 fw-semibold fs-7">@Who(x.CreatedByEmployeeId)</td>
                             </tr>
                         }
                         </tbody>
