@@ -26,6 +26,7 @@ namespace CrossBuy.Controllers
 			var (_, _, ready) = await RehabSvc.ListAsync(ctx, null, null, 1, 1, DateTime.UtcNow, ct);
 			ViewBag.Ready = ready;
 			ViewBag.CanRefer = await RehabSvc.CanReferAsync(ctx, ct);
+			ViewBag.UnitSettings = await UnitSettingsSvc.ViewAsync(ctx, HospitalSessionKinds.Physio, ct);   // H123
 			return View();
 		}
 

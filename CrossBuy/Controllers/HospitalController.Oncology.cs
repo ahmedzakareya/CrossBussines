@@ -27,6 +27,7 @@ namespace CrossBuy.Controllers
 			ViewBag.CanTreat = await OncSvc.CanTreatAsync(ctx, ct);
 			ViewBag.CanLibrary = await OncSvc.CanLibraryAsync(ctx, ct);
 			ViewBag.Regimens = await OncSvc.ActiveRegimensAsync(ctx, ct);
+			ViewBag.UnitSettings = await UnitSettingsSvc.ViewAsync(ctx, HospitalSessionKinds.Chemo, ct);   // H123
 			return View();
 		}
 

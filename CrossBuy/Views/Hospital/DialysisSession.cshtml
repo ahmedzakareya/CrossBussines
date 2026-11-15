@@ -15,10 +15,9 @@
     var s = Model.Session; var o = Model.Outcome; bool running = s.Status == HospitalDialysisSessionStatus.Running;
     string Who(int? id) => id is int i && Model.People.TryGetValue(i, out var n) ? n : "";
     // H122: the unit's kit — what a finished session draws from the dialysis store
-    var kit = ViewBag.Kit as HospitalKitView; bool canManage = ViewBag.CanManage == true;
-    var kitItems = (ViewBag.KitItems as IReadOnlyList<(int Id, string Code, string Name, string NameEn)>) ?? Array.Empty<(int, string, string, string)>();
-    var stores = (ViewBag.Stores as List<CrossBuy.Controllers.HospitalController.HospitalChoice>) ?? new();
+    var kit = ViewBag.Kit as HospitalKitView; var unitSet = ViewBag.UnitSettings as HospitalUnitSettingsView; bool canManage = unitSet?.CanManage == true;
     var inv = System.Globalization.CultureInfo.InvariantCulture;
+    bool kitShort = kit != null && kit.IssuedAt == null && kit.Lines.Any(l => l.InStore < l.Qty);
     string Local(DateTime? utc) => utc == null ? "—" : HospitalNursingService.UtcToWard(utc.Value).ToString("HH:mm");
     string F1(decimal? x) => x?.ToString("0.#") ?? "—";
     string F(double v) => v.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture);
@@ -50,6 +49,7 @@
         <div class="d-flex gap-2 align-items-center">
             <span class="badge badge-light-@(running ? "info" : "success") fs-7">@T["dxs:" + s.Status]</span>
             <a href="@Url.Action("DialysisPatient", new { patientId = s.PatientId })" class="btn btn-sm btn-light">@T["The patient's sessions"]</a>
+            @await Html.PartialAsync("_UnitSettings", unitSet)
             @if (running && canTreat) {<button type="button" class="btn btn-sm btn-light-primary" data-modal="obsModal"><i class="ki-outline ki-plus fs-4"></i>@T["Record a reading"]</button>
                 <button type="button" class="btn btn-sm btn-primary" data-modal="finishModal"><i class="ki-outline ki-check-square fs-4"></i>@T["Finish the session"]</button>}
         </div>
@@ -96,48 +96,63 @@
             </div></div></div>
         </div>
 
-        @* H122: the session's kit, exploded from its bill of materials and drawn from the dialysis store when the session is finished *@
+        @* H122/H123: the session's kit — the theme's table widget (demo39 widgets/tables): what one session draws from the unit's store *@
         @if (kit != null && kit.Ready && s.Status != HospitalDialysisSessionStatus.Missed)
         {
-            <div class="card mb-5" data-kit><div class="card-body py-5">
-                <div class="d-flex flex-stack flex-wrap gap-3 mb-2">
-                    <div><div class="fw-bold fs-5"><i class="ki-outline ki-parcel fs-3 me-1 text-primary"></i>@T["Session kit"]@if (kit.KitItemId != null) {<text> · </text><span>@DisplayName.Of(kit.KitName ?? "", kit.KitNameEn ?? "")</span>}</div>
-                        <div class="text-muted fs-8">@T["From the dialysis store"]: @(kit.StoreName ?? T["not set"].Value)</div></div>
-                    @if (kit.IssuedAt != null) { <span class="badge badge-light-success fs-8"><i class="ki-outline ki-check fs-8 me-1 text-success"></i>@T["Issued from the store"] <bdi class="hp-num ms-1" data-fmt data-utc="@kit.IssuedAt?.ToString("o")">@kit.IssuedAt?.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</bdi></span> }
-                    else if (s.Status == HospitalDialysisSessionStatus.Done && kit.KitItemId != null) { <button type="button" class="btn btn-sm btn-light-primary" data-kit-issue><i class="ki-outline ki-exit-up fs-4"></i>@T["Issue the kit now"]</button> }
-                    else if (kit.KitItemId != null) { <span class="badge badge-light fs-8">@T["Leaves the store when the session is finished"]</span> }
-                </div>
-                @if (kit.Lines.Count > 0)
-                {
-                    <table class="table table-row-dashed align-middle fs-7 gy-2 mb-0">
-                        <thead><tr class="text-gray-500 fw-bold fs-8 text-uppercase"><th>@T["Item"]</th><th class="text-end">@T["Qty"]</th><th class="text-end">@T["In the dialysis store"]</th></tr></thead>
-                        <tbody>@foreach (var l in kit.Lines)
-                        {
-                            <tr><td><span class="fw-semibold text-gray-800">@DisplayName.Of(l.Name, l.NameEn)</span> <span class="text-muted fs-8 hp-num">@l.Code</span></td>
-                                <td class="text-end"><span class="hp-num">@l.Qty.ToString("0.###", inv)</span></td>
-                                <td class="text-end"><span class="hp-num @(kit.IssuedAt == null && l.InStore < l.Qty ? "text-danger fw-bold" : "text-gray-600")">@l.InStore.ToString("0.###", inv)</span></td></tr>
-                        }</tbody>
-                    </table>
-                }
-                else if (kit.KitItemId == null) { <div class="text-muted fs-8">@T["The dialysis unit has no kit set"]</div> }
-                @if (canManage)
-                {
-                    <div class="separator separator-dashed my-4"></div>
-                    <div class="row g-3 align-items-end">
-                        <div class="col-md-5"><label class="form-label fs-8 text-muted mb-1">@T["Session kit"]</label>
-                            <select class="form-select form-select-sm form-select-solid" data-unit-kit data-control="select2" data-allow-clear="true" data-placeholder="@T["The unit's kit..."]">
-                                <option></option>
-                                @foreach (var k in kitItems) { <option value="@k.Id" selected="@(k.Id == kit.KitItemId)">@k.Code · @DisplayName.Of(k.Name, k.NameEn)</option> }
-                            </select></div>
-                        <div class="col-md-5"><label class="form-label fs-8 text-muted mb-1">@T["From the dialysis store"]</label>
-                            <select class="form-select form-select-sm form-select-solid" data-unit-store data-control="select2" data-allow-clear="true" data-placeholder="@T["The dialysis store..."]">
-                                <option></option>
-                                @foreach (var w in stores) { <option value="@w.Id" selected="@(w.Id == kit.StoreWarehouseId)">@w.Label · @DisplayName.Of(w.Name, w.NameEn ?? w.Name)</option> }
-                            </select></div>
-                        <div class="col-md-2"><button type="button" class="btn btn-sm btn-light-primary w-100" data-unit-save><i class="ki-outline ki-check fs-5"></i>@T["Save"]</button></div>
+            <div class="card mb-5" data-kit>
+                <div class="card-header border-0 pt-5">
+                    <h3 class="card-title align-items-start flex-column">
+                        <span class="card-label fw-bold fs-3 mb-1">@T["Session kit"]</span>
+                        <span class="text-muted mt-1 fw-semibold fs-7">@(kit.KitItemId != null ? DisplayName.Of(kit.KitName ?? "", kit.KitNameEn ?? "") : T["The dialysis unit has no kit set"].Value) · @T["From the dialysis store"]: <bdi>@(kit.StoreName ?? T["not set"].Value)</bdi></span>
+                    </h3>
+                    <div class="card-toolbar gap-2">
+                        @if (kit.IssuedAt != null) { <span class="badge badge-light-success fs-7 fw-bold py-3 px-4"><i class="ki-outline ki-check-circle fs-5 text-success me-2"></i>@T["Issued from the store"] <bdi class="hp-num ms-2" data-fmt data-utc="@kit.IssuedAt?.ToString("o")">@kit.IssuedAt?.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</bdi></span> }
+                        else if (s.Status == HospitalDialysisSessionStatus.Done && kit.KitItemId != null) { <button type="button" class="btn btn-sm btn-primary" data-kit-issue><i class="ki-outline ki-exit-up fs-4"></i>@T["Issue the kit now"]</button> }
+                        else if (kit.KitItemId != null) { <span class="badge badge-light-primary fs-7 fw-bold py-3 px-4"><i class="ki-outline ki-time fs-5 text-primary me-2"></i>@T["Leaves the store when the session is finished"]</span> }
                     </div>
-                }
-            </div></div>
+                </div>
+                <div class="card-body py-3">
+                    @if (kitShort && s.Status == HospitalDialysisSessionStatus.Done)
+                    {
+                        <div class="notice d-flex bg-light-danger rounded border-danger border border-dashed p-5 mb-5">
+                            <i class="ki-outline ki-information fs-2tx text-danger me-4"></i>
+                            <div class="d-flex flex-stack flex-grow-1"><div class="fw-semibold">
+                                <h4 class="text-gray-900 fw-bold mb-1">@T["The kit is waiting for the store"]</h4>
+                                <div class="fs-6 text-gray-700">@T["The session is finished; its kit leaves the store once the store holds every component."]</div>
+                            </div></div>
+                        </div>
+                    }
+                    @if (kit.Lines.Count > 0)
+                    {
+                        <div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
+                            <thead><tr class="fw-bold text-muted bg-light">
+                                <th class="ps-4 min-w-250px rounded-start">@T["Item"]</th><th class="text-end min-w-100px">@T["Qty"]</th><th class="text-end pe-4 min-w-150px rounded-end">@T["In the dialysis store"]</th></tr></thead>
+                            <tbody>@foreach (var l in kit.Lines)
+                            {
+                                bool lineShort = kit.IssuedAt == null && l.InStore < l.Qty;
+                                <tr>
+                                    <td class="ps-4"><div class="d-flex align-items-center">
+                                        <div class="symbol symbol-45px me-4"><span class="symbol-label bg-light-primary"><i class="ki-outline ki-capsule fs-2 text-primary"></i></span></div>
+                                        <div class="d-flex flex-column"><span class="text-gray-900 fw-bold fs-6">@DisplayName.Of(l.Name, l.NameEn)</span><bdi class="text-muted fw-semibold d-block fs-7" dir="ltr">@l.Code</bdi></div>
+                                    </div></td>
+                                    <td class="text-end"><span class="text-gray-900 fw-bold d-block fs-6 hp-num">@l.Qty.ToString("0.###", inv)</span></td>
+                                    <td class="text-end pe-4">@if (kit.IssuedAt != null) {<span class="text-muted fw-bold hp-num">@l.InStore.ToString("0.###", inv)</span>}
+                                        else {<span class="badge badge-light-@(lineShort ? "danger" : "success") fs-7 fw-bold hp-num">@l.InStore.ToString("0.###", inv)</span>}</td>
+                                </tr>
+                            }</tbody>
+                        </table></div>
+                    }
+                    else if (kit.KitItemId == null)
+                    {
+                        <div class="text-center py-10">
+                            <i class="ki-outline ki-parcel fs-3x text-gray-300 mb-4 d-block"></i>
+                            <div class="fs-5 fw-bold text-gray-700 mb-1">@T["The dialysis unit has no kit set"]</div>
+                            <div class="fs-7 text-muted mb-5">@T["An inventory bundle whose bill of materials lists the consumables of one session."]</div>
+                            @if (canManage) {<button type="button" class="btn btn-sm btn-light-primary" data-bs-toggle="modal" data-bs-target="#unitSettings"><i class="ki-outline ki-setting-2 fs-4"></i>@T["Unit settings"]</button>}
+                        </div>
+                    }
+                </div>
+            </div>
         }
         <div class="card mb-5">
             <div class="card-header border-0 pt-6"><div class="card-title flex-column m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Systolic pressure on the machine"]</span><span class="text-muted fs-8 mt-1">@T["Under 90 is intradialytic hypotension; so is a fall of 20 from the pressure before with cramps, nausea, headache or chest pain."]</span></div></div>
@@ -229,18 +244,15 @@
             var tokEl = document.querySelector('input[name="__RequestVerificationToken"]'); if (!tokEl) return; var tok = tokEl.value;
             var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value),
                       obs: @Json.Serialize(T["Save this reading?"].Value), fin: @Json.Serialize(T["Finish this session? It cannot be reopened."].Value),
-                      kit: @Json.Serialize(T["Issue this session's kit from the dialysis store now?"].Value), unit: @Json.Serialize(T["Save the dialysis unit's kit and store?"].Value),
+                      kit: @Json.Serialize(T["Issue this session's kit from the dialysis store now?"].Value),
                       kitNot: @Json.Serialize(T["The session is finished, but its kit did not leave the store:"].Value) };
             function post(url, body) { return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': tok }, body: JSON.stringify(body || {}) })
                 .then(function (r) { return r.json().catch(function () { return { ok: false }; }); }); }
-            // H122: issue the session's kit; the unit's kit and store
+            // H122: issue the session's kit (its kit and store are the unit's settings, H123)
             document.addEventListener('click', function (e) {
-                var ki = e.target.closest('[data-kit-issue]'), us = e.target.closest('[data-unit-save]');
+                var ki = e.target.closest('[data-kit-issue]');
                 if (ki) cbConfirm(W.kit).then(function (ok) { if (!ok) return; ki.disabled = true;
                     post(@Json.Serialize(Url.Content("~/Hospital/Dialysis/Session/" + s.ID + "/Kit/Issue"))).then(function (res) { ki.disabled = false; if (!res.ok) { toastr.error(res.error || W.failed); return; } toastr.success(W.saved); location.reload(); }); });
-                if (us) cbConfirm(W.unit).then(function (ok) { if (!ok) return; us.disabled = true;
-                    var k = document.querySelector('[data-unit-kit]').value, st = document.querySelector('[data-unit-store]').value;
-                    post(@Json.Serialize(Url.Action("DialysisKitSet")), { kitItemId: k ? +k : null, warehouseId: st ? +st : null }).then(function (res) { us.disabled = false; if (!res.ok) { toastr.error(res.error || W.failed); return; } toastr.success(W.saved); location.reload(); }); });
             });
             function collect(m, attr) { var b = {}; m.querySelectorAll('[' + attr + ']').forEach(function (i) { var k = i.getAttribute(attr), v = (i.value || '').trim();
                 b[k] = v === '' ? null : (i.type === 'number' ? Number(v) : v); }); return b; }

@@ -24,6 +24,7 @@
         </div>
         <div class="d-flex gap-2">
             <a href="@Url.Action("ChemoRegimens")" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-book fs-4"></i>@T["Regimens"]</a>
+            @await Html.PartialAsync("_UnitSettings", ViewBag.UnitSettings as HospitalUnitSettingsView)
             @if (ready && canTreat) {<button type="button" class="btn btn-sm btn-primary" data-course-new><i class="ki-outline ki-plus fs-4"></i>@T["Start a course"]</button>}
         </div>
     </div></div>

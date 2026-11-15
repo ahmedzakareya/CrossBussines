@@ -31,6 +31,7 @@
             <input type="date" id="f_date" class="form-control form-control-solid form-control-sm w-175px" dir="ltr" value="@Model.Day.ToString("yyyy-MM-dd")" max="@today.AddDays(7).ToString("yyyy-MM-dd")" title="@T["Day"]" />
             @if (Model.Day != today) {<a href="@Url.Action("Dialysis")" class="btn btn-sm btn-light text-nowrap">@T["Today"]</a>}
             <a href="@Url.Action("DialysisPatients")" class="btn btn-sm btn-light-primary text-nowrap"><i class="ki-outline ki-people fs-4"></i>@T["Dialysis patients"]</a>
+            @await Html.PartialAsync("_UnitSettings", ViewBag.UnitSettings as HospitalUnitSettingsView)
         </div>
     </div></div>
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">

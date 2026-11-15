@@ -21,7 +21,10 @@
             <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Physiotherapy"]</h1>
             <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted">@T["Rehabilitation"]</li></ul>
         </div>
-        @if (ready && canRefer) {<button type="button" class="btn btn-sm btn-primary" data-refer-new><i class="ki-outline ki-plus fs-4"></i>@T["Refer to physiotherapy"]</button>}
+        <div class="d-flex gap-2 align-items-center">
+            @await Html.PartialAsync("_UnitSettings", ViewBag.UnitSettings as HospitalUnitSettingsView)
+            @if (ready && canRefer) {<button type="button" class="btn btn-sm btn-primary" data-refer-new><i class="ki-outline ki-plus fs-4"></i>@T["Refer to physiotherapy"]</button>}
+        </div>
     </div></div>
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
         @if (!ready) { <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice"><div class="fs-6 text-gray-700">@T[HospitalRehabService.NoTables]</div></div> }

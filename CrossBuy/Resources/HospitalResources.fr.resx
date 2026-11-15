@@ -6608,4 +6608,25 @@
   <data name="The unit's kit..." xml:space="preserve"><value>Kit de l'unité...</value></data>
   <data name="This session's kit has already left the store" xml:space="preserve"><value>Le kit de cette séance est déjà sorti du magasin</value></data>
   <data name="Not enough {0} in the store: {1} of {2}" xml:space="preserve"><value>Pas assez de {0} au magasin : {1} sur {2}</value></data>
+  <data name="An inventory bundle whose bill of materials lists the consumables of one session." xml:space="preserve"><value>Un article composé dont la nomenclature liste les consommables d'une séance.</value></data>
+  <data name="Charged once for every completed session, on the stay's bill while the patient is admitted, otherwise on their own bill." xml:space="preserve"><value>Facturé une fois par séance terminée, sur la facture du séjour si le patient est hospitalisé, sinon sur sa propre facture.</value></data>
+  <data name="Choose the service..." xml:space="preserve"><value>Choisissez le service...</value></data>
+  <data name="Choose the session's service" xml:space="preserve"><value>Choisir le service de la séance</value></data>
+  <data name="Choose the session's service from the services list" xml:space="preserve"><value>Choisissez le service de la séance dans la liste des services</value></data>
+  <data name="Choose the session's service in the unit's settings" xml:space="preserve"><value>Choisissez le service de la séance dans les paramètres de l'unité</value></data>
+  <data name="Please wait..." xml:space="preserve"><value>Veuillez patienter...</value></data>
+  <data name="Save the unit's settings?" xml:space="preserve"><value>Enregistrer les paramètres de l'unité ?</value></data>
+  <data name="Session service" xml:space="preserve"><value>Service de la séance</value></data>
+  <data name="The kit is waiting for the store" xml:space="preserve"><value>Le kit attend le magasin</value></data>
+  <data name="The price comes from the patient's price list; the main list when they have none." xml:space="preserve"><value>Le prix vient de la liste de prix du patient ; la liste principale s'il n'en a pas.</value></data>
+  <data name="The services list" xml:space="preserve"><value>La liste des services</value></data>
+  <data name="The session is finished; its kit leaves the store once the store holds every component." xml:space="preserve"><value>La séance est terminée ; son kit sort dès que le magasin a chaque composant.</value></data>
+  <data name="The session's service is not chosen" xml:space="preserve"><value>Le service de la séance n'est pas choisi</value></data>
+  <data name="The unit settings are not created yet (hospital_h122_unit_kits.sql, hospital_h123_unit_settings.sql)" xml:space="preserve"><value>Les paramètres des unités ne sont pas encore créés (hospital_h122_unit_kits.sql, hospital_h123_unit_settings.sql)</value></data>
+  <data name="The unit's store" xml:space="preserve"><value>Magasin de l'unité</value></data>
+  <data name="Unit settings" xml:space="preserve"><value>Paramètres de l'unité</value></data>
+  <data name="What a completed session is charged as, and what it draws from the store." xml:space="preserve"><value>Ce que coûte une séance terminée, et ce qu'elle tire du magasin.</value></data>
+  <data name="unitset:Chemo" xml:space="preserve"><value>Paramètres de l'unité de chimiothérapie</value></data>
+  <data name="unitset:Dialysis" xml:space="preserve"><value>Paramètres de l'unité de dialyse</value></data>
+  <data name="unitset:Physio" xml:space="preserve"><value>Paramètres de l'unité de kinésithérapie</value></data>
 </root>

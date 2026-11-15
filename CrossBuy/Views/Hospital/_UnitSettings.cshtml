@@ -1,0 +1,95 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@model HospitalUnitSettingsView
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H123 — a treatment unit's settings (the dialysis unit, the oncology day unit, physiotherapy): the service a completed
+    session is charged as, chosen from the services list, and — for a unit whose sessions consume one — the kit and the
+    store. The toolbar button and the theme's form modal (demo39 utilities/modals/forms/new-target); `#unit-settings` in
+    the address opens it (the "not billed" cell links here).
+*@
+@if (Model != null && Model.Ready && Model.CanManage)
+{
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+    <button type="button" class="btn btn-sm btn-light btn-active-light-primary text-nowrap" data-bs-toggle="modal" data-bs-target="#unitSettings">
+        <i class="ki-outline ki-setting-2 fs-4"></i>@T["Unit settings"]
+        @if (Model.ServiceId == null) {<span class="bullet bullet-dot bg-danger h-6px w-6px ms-2" title="@T["The session's service is not chosen"]"></span>}
+    </button>
+
+    <div class="modal fade" id="unitSettings" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-650px"><div class="modal-content rounded">
+        <div class="modal-header pb-0 border-0 justify-content-end">
+            <div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div>
+        </div>
+        <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-15">
+            <div class="mb-13 text-center">
+                <h1 class="mb-3">@T["unitset:" + Model.Unit]</h1>
+                <div class="text-muted fw-semibold fs-5">@T["What a completed session is charged as, and what it draws from the store."]
+                    <a href="@Url.Action("Services", "Hospital")" class="fw-bold link-primary">@T["The services list"]</a></div>
+            </div>
+
+            <div class="d-flex flex-column mb-8 fv-row">
+                <label class="d-flex align-items-center fs-6 fw-semibold mb-2">
+                    <span class="required">@T["Session service"]</span>
+                    <span class="ms-1" data-bs-toggle="tooltip" title="@T["Charged once for every completed session, on the stay's bill while the patient is admitted, otherwise on their own bill."]"><i class="ki-outline ki-information-5 text-gray-500 fs-6"></i></span>
+                </label>
+                <select class="form-select form-select-solid" data-us="serviceId" data-control="select2" data-dropdown-parent="#unitSettings" data-allow-clear="true" data-placeholder="@T["Choose the service..."]">
+                    <option></option>
+                    @foreach (var s in Model.Services) {<option value="@s.Id" selected="@(s.Id == Model.ServiceId)">@s.Code · @DisplayName.Of(s.Name, s.NameEn)@(s.Price is decimal p ? " — " + p.ToString("0.###", inv) : "")</option>}
+                </select>
+                <div class="text-muted fs-7 mt-2">@T["The price comes from the patient's price list; the main list when they have none."]</div>
+            </div>
+
+            @if (Model.WithKit)
+            {
+                <div class="separator separator-dashed mb-8"></div>
+                <div class="row g-8 mb-8">
+                    <div class="col-12 fv-row">
+                        <label class="d-flex align-items-center fs-6 fw-semibold mb-2"><span>@T["Session kit"]</span>
+                            <span class="ms-1" data-bs-toggle="tooltip" title="@T["An inventory bundle whose bill of materials lists the consumables of one session."]"><i class="ki-outline ki-information-5 text-gray-500 fs-6"></i></span></label>
+                        <select class="form-select form-select-solid" data-us="kitItemId" data-control="select2" data-dropdown-parent="#unitSettings" data-allow-clear="true" data-placeholder="@T["The unit's kit..."]">
+                            <option></option>
+                            @foreach (var k in Model.Kits) {<option value="@k.Id" selected="@(k.Id == Model.KitItemId)">@k.Code · @DisplayName.Of(k.Name, k.NameEn)</option>}
+                        </select>
+                    </div>
+                    <div class="col-12 fv-row">
+                        <label class="fs-6 fw-semibold mb-2">@T["The unit's store"]</label>
+                        <select class="form-select form-select-solid" data-us="warehouseId" data-control="select2" data-dropdown-parent="#unitSettings" data-allow-clear="true" data-placeholder="@T["The dialysis store..."]">
+                            <option></option>
+                            @foreach (var w in Model.Stores) {<option value="@w.Id" selected="@(w.Id == Model.StoreWarehouseId)">@w.Code · @DisplayName.Of(w.Name, w.NameEn)</option>}
+                        </select>
+                    </div>
+                </div>
+            }
+
+            <div class="text-center pt-5">
+                <button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button>
+                <button type="button" class="btn btn-primary" data-us-save><span class="indicator-label">@T["Save"]</span>
+                    <span class="indicator-progress">@T["Please wait..."] <span class="spinner-border spinner-border-sm align-middle ms-2"></span></span></button>
+            </div>
+        </div>
+    </div></div></div>
+
+    <script>
+        (function () {
+            if (window.__unitSettings) return; window.__unitSettings = true;
+            var W = { ask: @Json.Serialize(T["Save the unit's settings?"].Value), failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value) };
+            var m = document.getElementById('unitSettings');
+            function val(k) { var el = m.querySelector('[data-us="' + k + '"]'); return el && el.value ? +el.value : null; }
+            m.querySelector('[data-us-save]').addEventListener('click', function () {
+                var b = this;
+                cbConfirm(W.ask).then(function (ok) { if (!ok) return;
+                    b.setAttribute('data-kt-indicator', 'on'); b.disabled = true;
+                    var tok = (document.querySelector('input[name="__RequestVerificationToken"]') || {}).value;
+                    fetch(@Json.Serialize(Url.Content("~/Hospital/Units/" + Model.Unit + "/Settings")), { method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': tok },
+                        body: JSON.stringify({ serviceId: val('serviceId'), kitItemId: val('kitItemId'), warehouseId: val('warehouseId') }) })
+                        .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+                        .then(function (res) { b.removeAttribute('data-kt-indicator'); b.disabled = false;
+                            if (!res.ok) { toastr.error(res.error || W.failed); return; }
+                            toastr.success(W.saved); location.hash = ''; location.reload(); });
+                });
+            });
+            if (location.hash === '#unit-settings') document.addEventListener('DOMContentLoaded', function () { bootstrap.Modal.getOrCreateInstance(m).show(); });
+        })();
+    </script>
+}

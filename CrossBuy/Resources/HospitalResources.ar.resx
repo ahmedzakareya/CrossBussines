@@ -6608,4 +6608,25 @@
   <data name="The unit's kit..." xml:space="preserve"><value>مستلزمات الجلسة...</value></data>
   <data name="This session's kit has already left the store" xml:space="preserve"><value>مستلزمات هذه الجلسة خرجت من المخزن بالفعل</value></data>
   <data name="Not enough {0} in the store: {1} of {2}" xml:space="preserve"><value>لا يكفي المخزون من ⁨{0}⁩: الموجود {1} والمطلوب {2}</value></data>
+  <data name="An inventory bundle whose bill of materials lists the consumables of one session." xml:space="preserve"><value>صنف مجمّع في المخزون، مكوّناته هي مستلزمات الجلسة الواحدة.</value></data>
+  <data name="Charged once for every completed session, on the stay's bill while the patient is admitted, otherwise on their own bill." xml:space="preserve"><value>تُحسب مرة واحدة لكل جلسة مكتملة، على فاتورة الإقامة إن كان المريض منوّمًا، وإلا على فاتورته.</value></data>
+  <data name="Choose the service..." xml:space="preserve"><value>اختر الخدمة...</value></data>
+  <data name="Choose the session's service" xml:space="preserve"><value>حدّد خدمة الجلسة</value></data>
+  <data name="Choose the session's service from the services list" xml:space="preserve"><value>اختر خدمة الجلسة من قائمة الخدمات</value></data>
+  <data name="Choose the session's service in the unit's settings" xml:space="preserve"><value>حدّد خدمة الجلسة من إعدادات الوحدة</value></data>
+  <data name="Please wait..." xml:space="preserve"><value>برجاء الانتظار...</value></data>
+  <data name="Save the unit's settings?" xml:space="preserve"><value>حفظ إعدادات الوحدة؟</value></data>
+  <data name="Session service" xml:space="preserve"><value>خدمة الجلسة</value></data>
+  <data name="The kit is waiting for the store" xml:space="preserve"><value>المستلزمات في انتظار المخزن</value></data>
+  <data name="The price comes from the patient's price list; the main list when they have none." xml:space="preserve"><value>السعر من قائمة أسعار المريض، ومن القائمة الرئيسية إن لم تكن له قائمة.</value></data>
+  <data name="The services list" xml:space="preserve"><value>قائمة الخدمات</value></data>
+  <data name="The session is finished; its kit leaves the store once the store holds every component." xml:space="preserve"><value>انتهت الجلسة، وتُصرف مستلزماتها حين يتوفر في المخزن كل مكوّن.</value></data>
+  <data name="The session's service is not chosen" xml:space="preserve"><value>لم تُختر خدمة الجلسة</value></data>
+  <data name="The unit settings are not created yet (hospital_h122_unit_kits.sql, hospital_h123_unit_settings.sql)" xml:space="preserve"><value>إعدادات الوحدات غير منشأة بعد (hospital_h122_unit_kits.sql, hospital_h123_unit_settings.sql)</value></data>
+  <data name="The unit's store" xml:space="preserve"><value>مخزن الوحدة</value></data>
+  <data name="Unit settings" xml:space="preserve"><value>إعدادات الوحدة</value></data>
+  <data name="What a completed session is charged as, and what it draws from the store." xml:space="preserve"><value>بماذا تُحسب الجلسة المكتملة، وماذا تصرف من المخزن.</value></data>
+  <data name="unitset:Chemo" xml:space="preserve"><value>إعدادات وحدة العلاج الكيماوي</value></data>
+  <data name="unitset:Dialysis" xml:space="preserve"><value>إعدادات وحدة الغسيل الكلوي</value></data>
+  <data name="unitset:Physio" xml:space="preserve"><value>إعدادات وحدة العلاج الطبيعي</value></data>
 </root>

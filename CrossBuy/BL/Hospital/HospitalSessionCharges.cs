@@ -43,11 +43,20 @@ namespace CrossBuy.BL.Hospital
 		public static Task<HospitalService?> ServiceAsync(CrossDbContext db, BusinessContext ctx, string code, CancellationToken ct) =>
 			db.HospitalServices.AsNoTracking().FirstOrDefaultAsync(s => s.CompanyId == ctx.CompanyId && s.Code == code && s.IsActive, ct);
 
-		/// Charges the code's service to the patient's bill (the stay's while admitted). Null when the price list has no
-		/// such service. The caller saves the line's id on the session, in the same transaction.
-		public static async Task<HospitalBillLine?> ChargeAsync(CrossDbContext db, HospitalBillingService billing, BusinessContext ctx, int patientId, string code, int? employeeId, DateTime nowUtc, CancellationToken ct)
+		/// H123: the service a session of this kind is charged as — the one its unit's settings name (chosen from the services
+		/// list); a service already listed under the old fixed code still counts. Null = the unit has none yet.
+		public static async Task<HospitalService?> ServiceForAsync(CrossDbContext db, BusinessContext ctx, string kind, CancellationToken ct)
 		{
-			var s = await ServiceAsync(db, ctx, code, ct);
+			if ((await HospitalUnitSettingsService.RowAsync(db, ctx.CompanyId, kind, ct))?.SessionServiceId is int id)
+				return await db.HospitalServices.AsNoTracking().FirstOrDefaultAsync(s => s.ID == id && s.CompanyId == ctx.CompanyId && s.IsActive, ct);
+			return await ServiceAsync(db, ctx, HospitalSessionKinds.Code(kind), ct);
+		}
+
+		/// Charges the session's service (its unit's, H123) to the patient's bill (the stay's while admitted). Null when the unit
+		/// has no service yet. The caller saves the line's id on the session, in the same transaction.
+		public static async Task<HospitalBillLine?> ChargeAsync(CrossDbContext db, HospitalBillingService billing, BusinessContext ctx, int patientId, string kind, int? employeeId, DateTime nowUtc, CancellationToken ct)
+		{
+			var s = await ServiceForAsync(db, ctx, kind, ct);
 			if (s == null) return null;
 			var local = HospitalNursingService.UtcToWard(nowUtc);
 			var bill = await billing.BillForWardChargeAsync(ctx, patientId, employeeId, local, ct);
@@ -77,11 +86,10 @@ namespace CrossBuy.BL.Hospital
 				_ => await _db.Set<HospitalRehabSession>().Where(s => s.ID == id && s.CompanyId == cid && s.Attendance == HospitalRehabAttendance.Attended && s.BillLineId == null).Select(s => (int?)s.PatientId).FirstOrDefaultAsync(ct),
 			};
 			if (patient is not int pid) return HospitalResult.Fail("This session is already charged, or is not one that is charged");
-			var code = HospitalSessionKinds.Code(kind);
-			if (await HospitalSessionCharges.ServiceAsync(_db, ctx, code, ct) == null) return HospitalResult.Fail("No price is set for {0} in the services list", code);
+			if (await HospitalSessionCharges.ServiceForAsync(_db, ctx, kind, ct) == null) return HospitalResult.Fail("Choose the session's service in the unit's settings");
 			await using var tx = await ScopedTx.BeginOrJoinAsync(_db);
-			var line = await HospitalSessionCharges.ChargeAsync(_db, _billing, ctx, pid, code, employeeId, nowUtc, ct);
-			if (line == null) { await tx.RollbackAsync(); return HospitalResult.Fail("No price is set for {0} in the services list", code); }
+			var line = await HospitalSessionCharges.ChargeAsync(_db, _billing, ctx, pid, kind, employeeId, nowUtc, ct);
+			if (line == null) { await tx.RollbackAsync(); return HospitalResult.Fail("Choose the session's service in the unit's settings"); }
 			int n = kind switch
 			{
 				HospitalSessionKinds.Dialysis => await _db.Set<HospitalDialysisSession>().Where(s => s.ID == id && s.CompanyId == cid && s.BillLineId == null).ExecuteUpdateAsync(u => u.SetProperty(s => s.BillLineId, line.ID), ct),

@@ -1,0 +1,110 @@
+{
+ "unit": "H123 — each treatment unit chooses its session service from the services list (unit settings modal)",
+ "strings": {
+  "unitset:Dialysis": {
+   "ar": "إعدادات وحدة الغسيل الكلوي",
+   "en": "Dialysis unit settings",
+   "fr": "Paramètres de l'unité de dialyse"
+  },
+  "unitset:Chemo": {
+   "ar": "إعدادات وحدة العلاج الكيماوي",
+   "en": "Chemotherapy unit settings",
+   "fr": "Paramètres de l'unité de chimiothérapie"
+  },
+  "unitset:Physio": {
+   "ar": "إعدادات وحدة العلاج الطبيعي",
+   "en": "Physiotherapy unit settings",
+   "fr": "Paramètres de l'unité de kinésithérapie"
+  },
+  "Unit settings": {
+   "ar": "إعدادات الوحدة",
+   "en": "Unit settings",
+   "fr": "Paramètres de l'unité"
+  },
+  "The session's service is not chosen": {
+   "ar": "لم تُختر خدمة الجلسة",
+   "en": "The session's service is not chosen",
+   "fr": "Le service de la séance n'est pas choisi"
+  },
+  "What a completed session is charged as, and what it draws from the store.": {
+   "ar": "بماذا تُحسب الجلسة المكتملة، وماذا تصرف من المخزن.",
+   "en": "What a completed session is charged as, and what it draws from the store.",
+   "fr": "Ce que coûte une séance terminée, et ce qu'elle tire du magasin."
+  },
+  "The services list": {
+   "ar": "قائمة الخدمات",
+   "en": "The services list",
+   "fr": "La liste des services"
+  },
+  "Session service": {
+   "ar": "خدمة الجلسة",
+   "en": "Session service",
+   "fr": "Service de la séance"
+  },
+  "Charged once for every completed session, on the stay's bill while the patient is admitted, otherwise on their own bill.": {
+   "ar": "تُحسب مرة واحدة لكل جلسة مكتملة، على فاتورة الإقامة إن كان المريض منوّمًا، وإلا على فاتورته.",
+   "en": "Charged once for every completed session, on the stay's bill while the patient is admitted, otherwise on their own bill.",
+   "fr": "Facturé une fois par séance terminée, sur la facture du séjour si le patient est hospitalisé, sinon sur sa propre facture."
+  },
+  "Choose the service...": {
+   "ar": "اختر الخدمة...",
+   "en": "Choose the service...",
+   "fr": "Choisissez le service..."
+  },
+  "The price comes from the patient's price list; the main list when they have none.": {
+   "ar": "السعر من قائمة أسعار المريض، ومن القائمة الرئيسية إن لم تكن له قائمة.",
+   "en": "The price comes from the patient's price list; the main list when they have none.",
+   "fr": "Le prix vient de la liste de prix du patient ; la liste principale s'il n'en a pas."
+  },
+  "An inventory bundle whose bill of materials lists the consumables of one session.": {
+   "ar": "صنف مجمّع في المخزون، مكوّناته هي مستلزمات الجلسة الواحدة.",
+   "en": "An inventory bundle whose bill of materials lists the consumables of one session.",
+   "fr": "Un article composé dont la nomenclature liste les consommables d'une séance."
+  },
+  "The unit's store": {
+   "ar": "مخزن الوحدة",
+   "en": "The unit's store",
+   "fr": "Magasin de l'unité"
+  },
+  "Please wait...": {
+   "ar": "برجاء الانتظار...",
+   "en": "Please wait...",
+   "fr": "Veuillez patienter..."
+  },
+  "Save the unit's settings?": {
+   "ar": "حفظ إعدادات الوحدة؟",
+   "en": "Save the unit's settings?",
+   "fr": "Enregistrer les paramètres de l'unité ?"
+  },
+  "The kit is waiting for the store": {
+   "ar": "المستلزمات في انتظار المخزن",
+   "en": "The kit is waiting for the store",
+   "fr": "Le kit attend le magasin"
+  },
+  "The session is finished; its kit leaves the store once the store holds every component.": {
+   "ar": "انتهت الجلسة، وتُصرف مستلزماتها حين يتوفر في المخزن كل مكوّن.",
+   "en": "The session is finished; its kit leaves the store once the store holds every component.",
+   "fr": "La séance est terminée ; son kit sort dès que le magasin a chaque composant."
+  },
+  "Choose the session's service": {
+   "ar": "حدّد خدمة الجلسة",
+   "en": "Choose the session's service",
+   "fr": "Choisir le service de la séance"
+  },
+  "Choose the session's service from the services list": {
+   "ar": "اختر خدمة الجلسة من قائمة الخدمات",
+   "en": "Choose the session's service from the services list",
+   "fr": "Choisissez le service de la séance dans la liste des services"
+  },
+  "Choose the session's service in the unit's settings": {
+   "ar": "حدّد خدمة الجلسة من إعدادات الوحدة",
+   "en": "Choose the session's service in the unit's settings",
+   "fr": "Choisissez le service de la séance dans les paramètres de l'unité"
+  },
+  "The unit settings are not created yet (hospital_h122_unit_kits.sql, hospital_h123_unit_settings.sql)": {
+   "ar": "إعدادات الوحدات غير منشأة بعد (hospital_h122_unit_kits.sql, hospital_h123_unit_settings.sql)",
+   "en": "The unit settings are not created yet (hospital_h122_unit_kits.sql, hospital_h123_unit_settings.sql)",
+   "fr": "Les paramètres des unités ne sont pas encore créés (hospital_h122_unit_kits.sql, hospital_h123_unit_settings.sql)"
+  }
+ }
+}

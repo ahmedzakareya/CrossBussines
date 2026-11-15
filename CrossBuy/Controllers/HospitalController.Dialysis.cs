@@ -38,6 +38,7 @@ namespace CrossBuy.Controllers
 			ViewBag.Ready = ready;
 			ViewBag.CanTreat = await DialysisSvc.CanTreatAsync(ctx, ct);
 			ViewBag.Today = HospitalNursingService.UtcToWard(DateTime.UtcNow).Date;
+			ViewBag.UnitSettings = await UnitSettingsSvc.ViewAsync(ctx, HospitalSessionKinds.Dialysis, ct);   // H123
 			return View(board);
 		}
 
@@ -105,13 +106,7 @@ namespace CrossBuy.Controllers
 			ViewBag.CanTreat = await DialysisSvc.CanTreatAsync(ctx, ct);
 			// H122: the unit's kit — what this session draws from the dialysis store, and whether it left
 			ViewBag.Kit = await DialysisKitSvc.KitAsync(ctx, page.Session.KitIssuedAt, ct);
-			ViewBag.CanManage = await _access.CanAsync(ctx, HospitalActions.Manage, null, ct);
-			if (ViewBag.CanManage == true)
-			{
-				ViewBag.KitItems = await DialysisKitSvc.KitItemsAsync(ctx, ct);
-				ViewBag.Stores = await _db.Warehouses.AsNoTracking().Where(w => w.CompanyID == ctx.CompanyId && w.IsActive).OrderBy(w => w.Code)
-					.Select(w => new HospitalChoice(w.ID, w.Name, w.NameEn, w.Code)).ToListAsync(ct);
-			}
+			ViewBag.UnitSettings = await UnitSettingsSvc.ViewAsync(ctx, HospitalSessionKinds.Dialysis, ct);   // H123: the kit, the store and the service, in the unit's settings
 			return View(page);
 		}
 
@@ -167,16 +162,6 @@ namespace CrossBuy.Controllers
 			var ctx = await ContextAsync(ct);
 			if (ctx == null) return NotFound(new { ok = false, code = "not_found" });
 			return Result(await DialysisKitSvc.IssueAsync(ctx, id, ctx.UserId, DateTime.UtcNow, ct));
-		}
-
-		public sealed class HospitalUnitKitInput { public int? KitItemId { get; set; } public int? WarehouseId { get; set; } }
-
-		[HttpPost("Dialysis/Kit"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Manage)]
-		public async Task<IActionResult> DialysisKitSet([FromBody] HospitalUnitKitInput input, CancellationToken ct = default)
-		{
-			var ctx = await ContextAsync(ct);
-			if (ctx == null || input == null) return NotFound(new { ok = false, code = "not_found" });
-			return Result(await DialysisKitSvc.SetAsync(ctx, input.KitItemId, input.WarehouseId, ctx.EmployeeId, DateTime.UtcNow, ct));
 		}
 
 		[HttpPost("Dialysis/Miss"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Read)]

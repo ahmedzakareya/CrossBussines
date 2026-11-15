@@ -62,25 +62,7 @@ namespace CrossBuy.BL.Hospital
 			catch (Microsoft.Data.SqlClient.SqlException ex) when (Missing(ex)) { return new HospitalKitView(null, null, null, Array.Empty<HospitalKitLine>(), null, null, null, false); }
 		}
 
-		public Task<IReadOnlyList<(int Id, string Code, string Name, string NameEn)>> KitItemsAsync(BusinessContext ctx, CancellationToken ct = default)
-			=> HospitalKitStock.KitItemsAsync(_db, ctx.CompanyId, ct);
-
-		/// The unit's kit and store (`manage`); a null clears that one.
-		public async Task<HospitalResult> SetAsync(BusinessContext ctx, int? kitItemId, int? warehouseId, int? employeeId, DateTime nowUtc, CancellationToken ct = default)
-		{
-			if (!await Can(ctx, HospitalActions.Manage, ct)) return HospitalResult.Fail("forbidden");
-			if (kitItemId is int k && !(await KitItemsAsync(ctx, ct)).Any(x => x.Id == k)) return HospitalResult.Fail("Choose a kit item that has a bill of materials");
-			if (warehouseId is int w && !await _db.Warehouses.AnyAsync(x => x.ID == w && x.CompanyID == ctx.CompanyId && x.IsActive, ct)) return HospitalResult.Fail("not_found");
-			try
-			{
-				var row = await _db.Set<HospitalUnitKit>().FirstOrDefaultAsync(x => x.CompanyId == ctx.CompanyId && x.Unit == HospitalKitUnits.Dialysis, ct)
-					?? _db.Set<HospitalUnitKit>().Add(new HospitalUnitKit { CompanyId = ctx.CompanyId, Unit = HospitalKitUnits.Dialysis }).Entity;
-				row.KitItemId = kitItemId; row.StoreWarehouseId = warehouseId; row.UpdatedAt = nowUtc; row.UpdatedByEmployeeId = employeeId;
-				await _db.SaveChangesAsync(ct);
-				return HospitalResult.Success(row.ID);
-			}
-			catch (Microsoft.Data.SqlClient.SqlException ex) when (Missing(ex)) { _db.ChangeTracker.Clear(); return HospitalResult.Fail(NoTables); }
-		}
+		// H123: the unit's kit and store are saved with its other settings (HospitalUnitSettingsService)
 
 		/// A finished session's kit leaves the dialysis store: every component, or none (one transaction), once.
 		/// Who treats (`admit` / `consult`) or the store's keepers (`pharmacy` / `manage`) may issue it.

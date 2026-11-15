@@ -258,7 +258,7 @@ namespace CrossBuy.BL.Hospital
 				// H119: a session attended is charged with it; a no-show or a cancellation is not
 				await using var tx = await ScopedTx.BeginOrJoinAsync(_db);
 				await _db.SaveChangesAsync(ct);
-				if (came && _billing != null && await HospitalSessionCharges.ChargeAsync(_db, _billing, ctx, e.PatientId, HospitalSessionServiceCodes.Physio, employeeId, nowUtc, ct) is { } line)
+				if (came && _billing != null && await HospitalSessionCharges.ChargeAsync(_db, _billing, ctx, e.PatientId, HospitalSessionKinds.Physio, employeeId, nowUtc, ct) is { } line)
 				{ row.BillLineId = line.ID; await _db.SaveChangesAsync(ct); }
 				await tx.CommitAsync();
 				return HospitalResult.Success(row.ID);

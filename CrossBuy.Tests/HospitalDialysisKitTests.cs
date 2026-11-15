@@ -42,9 +42,9 @@ namespace CrossBuy.Tests
 			var s = HospitalSliceParity.Slice("hospital_h122_unit_kits.sql");
 			var m = HospitalSliceParity.Model(HospitalDialysisModel.Configure);
 			HospitalSliceParity.NamesItsTable(m, s, typeof(HospitalUnitKit), "HospitalUnitKits");
-			HospitalSliceParity.ColumnsMatch(m, s, typeof(HospitalUnitKit), "HospitalUnitKits");
+			HospitalSliceParity.ColumnsMatch(m, s + Environment.NewLine + HospitalSliceParity.Slice("hospital_h123_unit_settings.sql"), typeof(HospitalUnitKit), "HospitalUnitKits");   // H123: the session service
 			Assert.Contains("ALTER TABLE dbo.HospitalDialysisSessions ADD KitIssuedAt datetime2 NULL", s);
-			foreach (var u in HospitalKitUnits.All) Assert.Contains("'" + u + "'", s);
+			foreach (var u in HospitalKitUnits.All) Assert.Contains("'" + u + "'", s + HospitalSliceParity.Slice("hospital_h123_unit_settings.sql"));
 			Assert.Equal(new[] { "Items", "Warehouses" }, HospitalSliceParity.CheckedPrerequisites(s).OrderBy(x => x));
 		}
 
@@ -88,16 +88,23 @@ namespace CrossBuy.Tests
 			return (new HospitalDialysisKitService(host.Db, access, new Bom(), stock), (Stock)(object)stock, s.ID);
 		}
 
+		/// H123: the unit's kit and store are saved with its other settings.
+		private static Task<HospitalResult> Set(PlatformTestHost host, int? kit, int? store)
+		{
+			var access = new HospitalAccessService(new PlatformRoleDirectory(host.Db, NullLogger<PlatformRoleDirectory>.Instance), NullLogger<HospitalAccessService>.Instance);
+			return new HospitalUnitSettingsService(host.Db, access).SaveAsync(Ctx(), HospitalKitUnits.Dialysis, new HospitalUnitSettingsInput { KitItemId = kit, WarehouseId = store }, 7, Now);
+		}
+
 		[Fact]
 		public async Task A_finished_session_draws_its_kit_from_the_unit_store_once()
 		{
 			using var host = new PlatformTestHost();
 			var (svc, stock, id) = await MakeAsync(host);
 			Assert.Equal("The dialysis unit has no kit set", (await svc.IssueAsync(Ctx(), id, "u", Now)).Error);
-			Assert.Equal("Choose a kit item that has a bill of materials", (await svc.SetAsync(Ctx(), 91, 5, 7, Now)).Error);   // a plain item is not a kit
-			Assert.True((await svc.SetAsync(Ctx(), 90, null, 7, Now)).Ok);
+			Assert.Equal("Choose a kit item that has a bill of materials", (await Set(host, 91, 5)).Error);   // a plain item is not a kit
+			Assert.True((await Set(host, 90, null)).Ok);
 			Assert.Equal("Choose the dialysis unit's store first", (await svc.IssueAsync(Ctx(), id, "u", Now)).Error);
-			Assert.True((await svc.SetAsync(Ctx(), 90, 5, 7, Now)).Ok);
+			Assert.True((await Set(host, 90, 5)).Ok);
 
 			var view = await svc.KitAsync(Ctx(), null);
 			Assert.Equal((90, 5, 2), (view.KitItemId!.Value, view.StoreWarehouseId!.Value, view.Lines.Count));
@@ -115,7 +122,7 @@ namespace CrossBuy.Tests
 		{
 			using var host = new PlatformTestHost();
 			var (svc, stock, id) = await MakeAsync(host);
-			Assert.True((await svc.SetAsync(Ctx(), 90, 5, 7, Now)).Ok);
+			Assert.True((await Set(host, 90, 5)).Ok);
 			stock.RefuseAt = 2;   // the dialyser leaves, the stock writer refuses the needles (a batch, an expiry…)
 			var r = await svc.IssueAsync(Ctx(), id, "u", Now);
 			Assert.Equal("{0}: {1}", r.Error);
@@ -130,7 +137,7 @@ namespace CrossBuy.Tests
 		{
 			using var host = new PlatformTestHost();
 			var (svc, stock, id) = await MakeAsync(host);
-			Assert.True((await svc.SetAsync(Ctx(), 90, 5, 7, Now)).Ok);
+			Assert.True((await Set(host, 90, 5)).Ok);
 			var needles = await host.Seed.StockBalances.SingleAsync(b => b.ItemId == 92);
 			needles.QtyOnHand = 1; await host.Seed.SaveChangesAsync();
 			var r = await svc.IssueAsync(Ctx(), id, "u", Now);
@@ -145,7 +152,7 @@ namespace CrossBuy.Tests
 		{
 			using var host = new PlatformTestHost();
 			var (svc, stock, id) = await MakeAsync(host, HospitalDialysisSessionStatus.Running);
-			Assert.True((await svc.SetAsync(Ctx(), 90, 5, 7, Now)).Ok);
+			Assert.True((await Set(host, 90, 5)).Ok);
 			Assert.Equal("The kit is issued when the session is finished", (await svc.IssueAsync(Ctx(), id, "u", Now)).Error);
 			Assert.Empty(stock.Posted);
 		}

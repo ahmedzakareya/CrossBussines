@@ -378,7 +378,7 @@ namespace CrossBuy.BL.Hospital
 				// H119: the session and its charge are one step
 				await using var tx = await ScopedTx.BeginOrJoinAsync(_db);
 				await _db.SaveChangesAsync(ct);
-				if (_billing != null && s.BillLineId == null && await HospitalSessionCharges.ChargeAsync(_db, _billing, ctx, s.PatientId, HospitalSessionServiceCodes.Dialysis, employeeId, nowUtc, ct) is { } line)
+				if (_billing != null && s.BillLineId == null && await HospitalSessionCharges.ChargeAsync(_db, _billing, ctx, s.PatientId, HospitalSessionKinds.Dialysis, employeeId, nowUtc, ct) is { } line)
 				{ s.BillLineId = line.ID; await _db.SaveChangesAsync(ct); }
 				await tx.CommitAsync();
 				return HospitalResult.Success(s.ID);

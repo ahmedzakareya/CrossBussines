@@ -10,11 +10,12 @@
 *@
 @{
     var ctx = await Contexts.TryGetCurrentAsync();
-    string code = HospitalSessionKinds.Code(Model.Kind);
+    // H123: the unit's page, whose settings name the session's service
+    string unitPage = Url.Action(Model.Kind == HospitalSessionKinds.Dialysis ? "Dialysis" : Model.Kind == HospitalSessionKinds.Chemo ? "Oncology" : "Rehab", "Hospital") + "#unit-settings";
     var bill = Model.BillLineId is int lid
         ? await (from l in Db.HospitalBillLines.AsNoTracking() join b in Db.HospitalBills.AsNoTracking() on l.BillId equals b.ID where l.ID == lid select new { b.ID, b.BillNo }).FirstOrDefaultAsync()
         : null;
-    bool priced = bill == null && Model.Chargeable && ctx != null && await Db.HospitalServices.AsNoTracking().AnyAsync(s => s.CompanyId == ctx.CompanyId && s.Code == code && s.IsActive);
+    bool priced = bill == null && Model.Chargeable && ctx != null && await HospitalSessionCharges.ServiceForAsync(Db, ctx, Model.Kind, default) != null;
 }
 @if (bill != null)
 {
@@ -26,8 +27,8 @@ else if (!Model.Chargeable)
 }
 else if (!priced)
 {
-    <div title="@T["Add the service {0} with its price to the services list: this session is charged then, from here.", code]"><span class="badge badge-light fs-9">@T["Not billed"]</span>
-        <div class="text-muted fs-9 mt-1">@T["no price for"]</div><div class="text-muted fs-9 hp-num text-nowrap" dir="ltr">@code</div></div>
+    <div class="d-flex flex-column align-items-start gap-1"><span class="badge badge-light-danger fs-8 fw-bold">@T["Not billed"]</span>
+        <a href="@unitPage" class="fs-8 fw-semibold text-nowrap"><i class="ki-outline ki-setting-2 fs-7 text-primary me-1"></i>@T["Choose the session's service"]</a></div>
 }
 else
 {
