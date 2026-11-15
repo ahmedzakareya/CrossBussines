@@ -25,6 +25,14 @@ namespace CrossBuy.Models.Platform
         // The /api/ai/diag connectivity probe. Its own category because it forwards CALLER-SUPPLIED TEXT,
         // which is a different risk from a computed business payload and must be governable separately.
         ConnectivityDiagnostic,
+
+        // Deciding WHICH catalogue question someone just typed. Separated for the same reason as the
+        // diagnostic above and more sharply: this forwards a person's own words, unprompted and
+        // unedited, and people type customer names, amounts and grievances into a chat box. It
+        // carries no rows — only the question and the intent ids the asker already holds authority
+        // for — but the text itself is the sensitive part, so it must be approvable, refusable and
+        // auditable on its own rather than riding on an analysis purpose someone approved earlier.
+        QuestionUnderstanding,
     }
 
     // WHERE it is going. Ownership of the code is not the question — hosting and onward transmission are.
