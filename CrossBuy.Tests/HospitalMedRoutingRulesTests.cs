@@ -160,7 +160,7 @@ namespace CrossBuy.Tests
 		public void The_model_names_the_table_its_slice_creates() => HospitalSliceParity.NamesItsTable(Model(), Slice(), typeof(HospitalMedDelivery), "HospitalMedDeliveries");
 
 		[Fact]
-		public void Every_column_is_read_in_the_type_its_slice_creates() => HospitalSliceParity.ColumnsMatch(Model(), Slice(), typeof(HospitalMedDelivery), "HospitalMedDeliveries");
+		public void Every_column_is_read_in_the_type_its_slice_creates() => HospitalSliceParity.ColumnsMatch(Model(), Slice() + Environment.NewLine + HospitalSliceParity.Slice("hospital_h131_med_returns.sql"), typeof(HospitalMedDelivery), "HospitalMedDeliveries");   // H131: ReturnedAt
 
 		[Fact]
 		public void Every_table_the_slice_references_but_does_not_create_is_a_checked_prerequisite() =>
@@ -172,5 +172,26 @@ namespace CrossBuy.Tests
 		[Fact]
 		public void The_stage_column_is_a_byte_read_as_tinyint() =>
 			Assert.Equal(typeof(byte), Model().FindEntityType(typeof(HospitalMedDelivery))!.FindProperty(nameof(HospitalMedDelivery.Stage))!.ClrType);
+		/// H131: a dose not yet given can be cancelled; if the store issued it, the cancel returns it; a given or cancelled one cannot.
+		[Theory]
+		[InlineData(HospitalMedStage.Verified, false, null)]
+		[InlineData(HospitalMedStage.Received, false, null)]
+		[InlineData(HospitalMedStage.Administered, false, "The dose was given: it cannot be cancelled")]
+		[InlineData(HospitalMedStage.Prepared, true, "This delivery is already cancelled")]
+		public void A_dose_not_given_can_be_cancelled(byte stage, bool cancelled, string? why)
+			=> Assert.Equal(why, HospitalMedRoutingRules.CancelRefusal(stage, cancelled));
+
+		[Fact]
+		public void Cancelling_returns_the_dose_only_when_the_store_issued_it()
+		{
+			Assert.True(HospitalMedRoutingRules.Returns(3017));
+			Assert.False(HospitalMedRoutingRules.Returns(null));
+		}
+
+		[Fact]
+		public void The_returns_slice_checks_its_own_prerequisite()
+		{
+			Assert.Empty(HospitalSliceParity.CheckedPrerequisites(HospitalSliceParity.Slice("hospital_h131_med_returns.sql")));
+		}
 	}
 }

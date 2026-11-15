@@ -75,6 +75,8 @@ namespace CrossBuy.Models.Context.Hospital
 		public DateTime? CancelledAt { get; set; }
 		public int? CancelledByEmployeeId { get; set; }
 		public string? CancelReason { get; set; }
+		/// H131: when a dose issued but never given went back into the store it left (null when nothing returned).
+		public DateTime? ReturnedAt { get; set; }
 	}
 
 	public static class HospitalMedRoutingModel

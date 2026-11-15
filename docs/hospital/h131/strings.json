@@ -1,0 +1,30 @@
+{
+ "unit": "H131 - a dose issued but never given returns to the store it left",
+ "strings": {
+  "This delivery is already cancelled": {
+   "ar": "هذا التوصيل أُلغي بالفعل",
+   "en": "This delivery is already cancelled",
+   "fr": "Cette livraison est déjà annulée"
+  },
+  "The dose was given: it cannot be cancelled": {
+   "ar": "أُعطيت الجرعة للمريض: لا يمكن إلغاؤها",
+   "en": "The dose was given: it cannot be cancelled",
+   "fr": "La dose a été administrée : elle ne peut pas être annulée"
+  },
+  "Cancel and return the dose to the pharmacy store": {
+   "ar": "إلغاء وإرجاع الجرعة إلى مخزن الصيدلية",
+   "en": "Cancel and return the dose to the pharmacy store",
+   "fr": "Annuler et retourner la dose au magasin de la pharmacie"
+  },
+  "The store already issued {0}: cancelling returns it to the store, batch by batch. Write why:": {
+   "ar": "صرف المخزن ⁨{0}⁩ بالفعل: الإلغاء يُرجعه إلى المخزن بنفس دفعاته. اكتب السبب:",
+   "en": "The store already issued {0}: cancelling returns it to the store, batch by batch. Write why:",
+   "fr": "Le magasin a déjà sorti {0} : l'annulation le retourne au magasin, lot par lot. Indiquez pourquoi :"
+  },
+  "Cancelled — the dose is back in the store": {
+   "ar": "أُلغي — والجرعة عادت إلى المخزن",
+   "en": "Cancelled — the dose is back in the store",
+   "fr": "Annulé — la dose est de retour au magasin"
+  }
+ }
+}

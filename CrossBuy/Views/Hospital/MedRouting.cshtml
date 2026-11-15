@@ -140,9 +140,12 @@
                                     {
                                         <button type="button" class="btn btn-sm btn-light-primary" data-step="@d.ID" data-next="@nx" data-label="@T["mr:" + stages[nx]]" data-what="@what" data-controlled="@(r.Controlled ? "1" : "0")">@T["mra:" + stages[nx]]</button>
                                     }
-                                    @if (canPharmacy && d.WarehouseId == null && d.Stage < HospitalMedStage.Administered)
+                                    @if (canPharmacy && d.Stage < HospitalMedStage.Administered)
                                     {
-                                        <button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-danger ms-1" data-cancel="@d.ID" data-what="@what" title="@T["Cancel the delivery"]" data-bs-toggle="tooltip"><i class="ki-outline ki-cross fs-3"></i></button>
+                                        @* H131: a dose the store issued but nobody gave goes back to the store it left *@
+                                        bool back = HospitalMedRoutingRules.Returns(d.WarehouseId);
+                                        <button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-danger ms-1" data-cancel="@d.ID" data-what="@what" data-returns="@(back ? "1" : "0")"
+                                            title="@(back ? T["Cancel and return the dose to the pharmacy store"] : T["Cancel the delivery"])" data-bs-toggle="tooltip"><i class="ki-outline ki-@(back ? "arrow-circle-left" : "cross") fs-3"></i></button>
                                     }
                                 </td>
                             </tr>
@@ -230,7 +233,8 @@
         (function () {
             var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
             var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value),
-                cancel: @Json.Serialize(T["Cancel the delivery of {0}? Write why:"].Value), send: @Json.Serialize(T["Send {0}?"].Value) };
+                cancel: @Json.Serialize(T["Cancel the delivery of {0}? Write why:"].Value), send: @Json.Serialize(T["Send {0}?"].Value),
+                ret: @Json.Serialize(T["The store already issued {0}: cancelling returns it to the store, batch by batch. Write why:"].Value), returned: @Json.Serialize(T["Cancelled — the dose is back in the store"].Value) };
             var root = @Json.Serialize(Url.Action("MedRouting"));
             function toast(k, m) { if (window.toastr) toastr[k](m); }
             function post(url, body) {
@@ -267,8 +271,10 @@
                 var t = e.target.closest('[data-step],[data-cancel],[data-new-delivery]'); if (!t) return;
                 if (t.hasAttribute('data-new-delivery')) { viaFor(); bootstrap.Modal.getOrCreateInstance(nEl).show(); return; }
                 if (t.hasAttribute('data-cancel')) {
-                    cbPrompt(W.cancel.replace('{0}', t.getAttribute('data-what')), { kind: 'danger', textarea: true }).then(function (reason) {
-                        if (reason == null) return; t.disabled = true; post(root + '/' + t.getAttribute('data-cancel') + '/Cancel', { reason: reason }).then(done(t));
+                    var back = t.getAttribute('data-returns') === '1';   // H131: the issued dose returns to the store
+                    cbPrompt((back ? W.ret : W.cancel).replace('{0}', t.getAttribute('data-what')), { kind: 'danger', textarea: true }).then(function (reason) {
+                        if (reason == null) return; t.disabled = true; post(root + '/' + t.getAttribute('data-cancel') + '/Cancel', { reason: reason }).then(function (res) {
+                            if (res.ok && back) toast('info', W.returned); done(t)(res); });
                     });
                     return;
                 }

@@ -17,7 +17,9 @@ namespace CrossBuy.BL.Hospital
 	//   · Administering needs the wristband scan, writes the dose through H14's MAR (RecordAsync — its rules, its
 	//     witness, its one-answer-per-dose index) and adds the charge to the STAY's bill at the patient's price.
 	//   · Every step is conditional on the stage it starts from, in one transaction: two hands cannot both do it.
-	//   · Not here yet: a dose that was issued but never given returning to the store (cancelling then refuses),
+	//   · H131: cancelling a dose the store issued but nobody gave returns it to the store it left, movement by movement
+	//     (the same batch, quantity and cost, the cost back off cost of goods), in the cancel's own transaction.
+	//   · Not here yet:
 	//     and the ward cabinet as a store of its own (it issues from the pharmacy store).
 	// ==========================================================================================
 
@@ -51,6 +53,8 @@ namespace CrossBuy.BL.Hospital
 	public sealed class HospitalMedRoutingService
 	{
 		public const string MovementSource = "HospitalMedDelivery";
+		/// H131: the stock that came back from a cancelled delivery (found again by the delivery).
+		public const string ReturnSource = "HospitalMedReturn";
 
 		private readonly CrossDbContext _db;
 		private readonly IHospitalAccessService _access;
@@ -262,18 +266,60 @@ namespace CrossBuy.BL.Hospital
 			return null;
 		}
 
-		/// Cancels a delivery that has not left the store (an issued dose returns by hand until returns are built).
-		public async Task<HospitalResult> CancelAsync(BusinessContext ctx, int id, string? reason, int? employeeId, DateTime nowUtc, CancellationToken ct = default)
+		/// Cancels a delivery not yet given. If the store already issued it (H131), the dose returns to the store it left in the
+		/// same transaction — every movement replayed in: its batch, its quantity, its cost, the cost back off cost of goods —
+		/// or the cancel does not happen.
+		public async Task<HospitalResult> CancelAsync(BusinessContext ctx, int id, string? reason, int? employeeId, string? userId, DateTime nowUtc, CancellationToken ct = default)
 		{
 			if (!await Can(ctx, HospitalActions.Pharmacy, ct)) return HospitalResult.Fail("forbidden");
 			var d = await Deliveries(ctx).AsNoTracking().FirstOrDefaultAsync(x => x.ID == id, ct);
 			if (d == null) return HospitalResult.Fail("not_found");
+			if (HospitalMedRoutingRules.CancelRefusal(d.Stage, d.CancelledAt != null) is string why) return HospitalResult.Fail(why);
 			if (string.IsNullOrWhiteSpace(reason)) return HospitalResult.Fail("Write why it is cancelled");
-			if (d.WarehouseId != null) return HospitalResult.Fail("The stock has left the store: return it to the pharmacy by hand");
 			string r = reason.Trim()[..Math.Min(300, reason.Trim().Length)];
-			int n = await Deliveries(ctx).Where(x => x.ID == id && x.CancelledAt == null && x.WarehouseId == null && x.Stage < HospitalMedStage.Administered).ExecuteUpdateAsync(u => u
-				.SetProperty(x => x.CancelledAt, nowUtc).SetProperty(x => x.CancelledByEmployeeId, employeeId).SetProperty(x => x.CancelReason, r), ct);
-			return n == 1 ? HospitalResult.Success(id) : HospitalResult.Fail(ConcurrentChange);
+			bool returns = HospitalMedRoutingRules.Returns(d.WarehouseId);
+
+			await using var tx = await ScopedTx.BeginOrJoinAsync(_db);
+			try
+			{
+				int n = await Deliveries(ctx).Where(x => x.ID == id && x.CancelledAt == null && x.Stage < HospitalMedStage.Administered && (x.WarehouseId != null) == returns).ExecuteUpdateAsync(u => u
+					.SetProperty(x => x.CancelledAt, nowUtc).SetProperty(x => x.CancelledByEmployeeId, employeeId).SetProperty(x => x.CancelReason, r)
+					.SetProperty(x => x.ReturnedAt, returns ? nowUtc : (DateTime?)null), ct);
+				if (n != 1) { await tx.RollbackAsync(); return HospitalResult.Fail(ConcurrentChange); }
+				if (returns && await ReturnAsync(ctx, d, userId, nowUtc, ct) is { } refused) { await tx.RollbackAsync(); _db.ChangeTracker.Clear(); return refused; }
+				await tx.CommitAsync();
+				return HospitalResult.Success(id);
+			}
+			catch { await tx.RollbackAsync(); _db.ChangeTracker.Clear(); throw; }
+		}
+
+		/// H131: the issued dose goes back into the store it left — each outgoing movement replayed in, with its own batch
+		/// (and expiry), quantity and unit cost; the cost-of-goods account it was charged to is the counter, so the value
+		/// returns exactly. Null when everything came back.
+		private async Task<HospitalResult?> ReturnAsync(BusinessContext ctx, HospitalMedDelivery d, string? userId, DateTime nowUtc, CancellationToken ct)
+		{
+			var outs = await _db.StockMovements.AsNoTracking().Where(m => m.CompanyID == ctx.CompanyId && m.SourceType == MovementSource && m.SourceId == d.ID && m.Direction == -1).OrderBy(m => m.ID).ToListAsync(ct);
+			if (outs.Count == 0) return null;   // nothing actually left (an unstocked drug): nothing to bring back
+			var itemIds = outs.Select(m => m.ItemId).Distinct().ToList();
+			var items = await _db.Items.AsNoTracking().Where(i => itemIds.Contains(i.ID) && i.CompanyID == ctx.CompanyId).ToDictionaryAsync(i => i.ID, ct);
+			var catIds = items.Values.Select(i => i.ItemCategoryId).Distinct().ToList();
+			var cogs = await _db.ItemCategories.AsNoTracking().Where(c => catIds.Contains(c.ID)).ToDictionaryAsync(c => c.ID, c => c.CogsAccountId, ct);
+			var bids = outs.Where(m => m.BatchId != null).Select(m => m.BatchId!.Value).ToList();
+			var batches = await _db.StockBatches.AsNoTracking().Where(b => bids.Contains(b.ID)).ToDictionaryAsync(b => b.ID, ct);
+			foreach (var m in outs)
+			{
+				var it = items[m.ItemId];
+				var b = m.BatchId is int bid && batches.TryGetValue(bid, out var bb) ? bb : null;
+				var (ok, error, _) = await _stock.PostMovementAsync(ctx.CompanyId, new MovementRequest
+				{
+					Date = nowUtc, ItemId = m.ItemId, WarehouseId = m.WarehouseId, Direction = 1, Qty = m.QtyBase, UnitCostInBase = m.UnitCost,
+					BatchNo = b?.BatchNo, Expiry = b?.ExpiryDate, AllowExpired = true,
+					SourceType = ReturnSource, SourceId = d.ID, SourceLineId = m.ID, PostToGl = true, CounterAccountOverride = cogs.GetValueOrDefault(it.ItemCategoryId),
+					Notes = "Medication returned " + d.DeliveryNo,
+				}, userId);
+				if (!ok) return HospitalResult.Fail("{0}: {1}", DisplayName.Of(it.Name, it.NameEn ?? it.Name), error ?? "");
+			}
+			return null;
 		}
 	}
 }

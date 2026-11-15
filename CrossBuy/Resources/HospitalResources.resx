@@ -6641,18 +6641,9 @@
   <data name="Nobody here" xml:space="preserve"><value>Nobody here</value></data>
   <data name="The case is closed; its kit leaves the store once the store holds every component." xml:space="preserve"><value>The case is closed; its kit leaves the store once the store holds every component.</value></data>
   <data name="{0} d {1} h" xml:space="preserve"><value>{0} d {1} h</value></data>
-  <data name="Choose the store..." xml:space="preserve"><value>Choose the store...</value></data>
-  <data name="Choose the unit's store first" xml:space="preserve"><value>Choose the unit's store first</value></data>
-  <data name="From the unit's store" xml:space="preserve"><value>From the unit's store</value></data>
-  <data name="In the unit's store" xml:space="preserve"><value>In the unit's store</value></data>
-  <data name="Issue this session's kit from the unit's store now?" xml:space="preserve"><value>Issue this session's kit from the unit's store now?</value></data>
-  <data name="Kit issued" xml:space="preserve"><value>Kit issued</value></data>
-  <data name="Kit waiting" xml:space="preserve"><value>Kit waiting</value></data>
-  <data name="The unit has no kit set" xml:space="preserve"><value>The unit has no kit set</value></data>
-  <data name="kitcard:Chemo" xml:space="preserve"><value>Each chemotherapy cycle's kit</value></data>
-  <data name="kitcard:Dialysis" xml:space="preserve"><value>Each dialysis session's kit</value></data>
-  <data name="kitcard:Physio" xml:space="preserve"><value>Each physiotherapy session's kit</value></data>
-  <data name="kitwhen:Chemo" xml:space="preserve"><value>Leaves the store when the cycle is given</value></data>
-  <data name="kitwhen:Dialysis" xml:space="preserve"><value>Leaves the store when the session is finished</value></data>
-  <data name="kitwhen:Physio" xml:space="preserve"><value>Leaves the store when the session is attended</value></data>
+  <data name="Cancel and return the dose to the pharmacy store" xml:space="preserve"><value>Cancel and return the dose to the pharmacy store</value></data>
+  <data name="Cancelled — the dose is back in the store" xml:space="preserve"><value>Cancelled — the dose is back in the store</value></data>
+  <data name="The dose was given: it cannot be cancelled" xml:space="preserve"><value>The dose was given: it cannot be cancelled</value></data>
+  <data name="The store already issued {0}: cancelling returns it to the store, batch by batch. Write why:" xml:space="preserve"><value>The store already issued {0}: cancelling returns it to the store, batch by batch. Write why:</value></data>
+  <data name="This delivery is already cancelled" xml:space="preserve"><value>This delivery is already cancelled</value></data>
 </root>

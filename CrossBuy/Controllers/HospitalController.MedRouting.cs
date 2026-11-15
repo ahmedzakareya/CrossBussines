@@ -49,7 +49,7 @@ namespace CrossBuy.Controllers
 		{
 			var ctx = await ContextAsync(ct);
 			if (ctx == null) return NotFound(new { ok = false, code = "not_found" });
-			return Result(await MedRoutingSvc.CancelAsync(ctx, id, input?.Reason, ctx.EmployeeId, DateTime.UtcNow, ct));
+			return Result(await MedRoutingSvc.CancelAsync(ctx, id, input?.Reason, ctx.EmployeeId, ctx.UserId, DateTime.UtcNow, ct));   // H131: an issued dose returns to the store
 		}
 	}
 }

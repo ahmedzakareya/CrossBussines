@@ -7,6 +7,13 @@ namespace CrossBuy.BL.Hospital
 	// ==========================================================================================
 	public static class HospitalMedRoutingRules
 	{
+		/// H131: why a delivery cannot be cancelled, or null. A dose given is in the patient; a cancelled one is gone already.
+		public static string? CancelRefusal(byte stage, bool cancelled) =>
+			cancelled ? "This delivery is already cancelled" : stage >= HospitalMedStage.Administered ? "The dose was given: it cannot be cancelled" : null;
+
+		/// H131: cancelling returns the dose to the store when the store had issued it (it left: the delivery names its store).
+		public static bool Returns(int? warehouseId) => warehouseId != null;
+
 		/// The routing the prototype's rules suggest: a controlled drug and a STAT dose go by porter; anything else by tube.
 		/// (The ward cabinet is chosen by the pharmacist when the ward stocks the drug.)
 		public static string SuggestedVia(string priority, bool controlled) =>
