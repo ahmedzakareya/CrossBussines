@@ -60,17 +60,23 @@
     </div></div>
 
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
-        <div class="hp-pbanner p-6 mb-5"><div class="d-flex flex-wrap align-items-center gap-5">
-            <div class="symbol symbol-75px symbol-circle flex-shrink-0">@if (p.PhotoPath != null) {<img src="@p.PhotoPath" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(p.NameEn)" />} else {<span class="symbol-label fs-2 fw-bold hp-initials">@HospitalUi.Initials(p.NameEn)</span>}</div>
+        @* H126: the patient strip — demo39 apps/customers/view: photo, name over the file number, the facts as badges *@
+        <div class="card card-flush mb-5"><div class="card-body py-6"><div class="d-flex flex-wrap align-items-center gap-5">
+            <div class="symbol symbol-75px symbol-circle flex-shrink-0">@if (p.PhotoPath != null) {<img src="@p.PhotoPath" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(p.NameEn)" />} else {<span class="symbol-label fs-2 fw-bold bg-light-primary text-primary">@HospitalUi.Initials(p.NameEn)</span>}</div>
             <div class="flex-grow-1 min-w-0">
-                <div class="d-flex flex-wrap align-items-center gap-2 mb-1"><a href="@Url.Action("Patient", new { id = p.ID })" class="fs-2 fw-bold text-gray-900 text-hover-primary">@name</a><span class="badge hp-code fw-bold fs-8 hp-num">@p.Mrn</span></div>
-                <div class="d-flex flex-wrap gap-2 mt-2">
-                    <span class="hp-chip"><i class="ki-outline ki-user fs-7"></i>@if (age != null) {<span class="hp-num">@age</span> @T["y"] <text> · </text>}@(p.Sex == HospitalPatientSex.Male ? T["Male"] : T["Female"])</span>
-                    @if (p.BloodGroup != null) { <span class="hp-chip"><i class="ki-outline ki-drop fs-7"></i>@T["Blood group"] <span class="hp-num">@p.BloodGroup</span></span> }
-                    @if (doctor != null) { <span class="hp-chip"><i class="ki-outline ki-briefcase fs-7"></i>@DisplayName.Of(doctor.Row.Name, doctor.Row.NameEn)</span> }
+                <a href="@Url.Action("Patient", new { id = p.ID })" class="fs-2 fw-bold text-gray-900 text-hover-primary d-block mb-1">@name</a>
+                <div class="d-flex flex-wrap align-items-center fw-semibold fs-6 text-gray-500 gap-4">
+                    <span class="d-flex align-items-center"><i class="ki-outline ki-profile-circle fs-4 me-1"></i><bdi class="hp-num" dir="ltr">@p.Mrn</bdi></span>
+                    <span class="d-flex align-items-center"><i class="ki-outline ki-user fs-4 me-1"></i>@if (age != null) {<span class="hp-num">@age</span><text>&nbsp;@T["y"] · </text>}@(p.Sex == HospitalPatientSex.Male ? T["Male"] : T["Female"])</span>
+                    @if (p.BloodGroup != null) { <span class="d-flex align-items-center"><i class="ki-outline ki-drop fs-4 me-1"></i>@T["Blood group"]&nbsp;<bdi class="hp-num" dir="ltr">@p.BloodGroup</bdi></span> }
+                    @if (doctor != null) { <span class="d-flex align-items-center"><i class="ki-outline ki-briefcase fs-4 me-1"></i>@DisplayName.Of(doctor.Row.Name, doctor.Row.NameEn)</span> }
                 </div>
             </div>
-        </div></div>
+            <div class="d-flex flex-wrap gap-2">
+                @if (allergies.Length > 0) { <span class="badge badge-light-danger fs-7 fw-bold py-3 px-4"><i class="ki-outline ki-shield-cross fs-5 text-danger me-1"></i>@T["Allergy"]</span> }
+                <span class="badge badge-light-@(e.Status == HospitalEncounterStatus.Signed ? "success" : "primary") fs-7 fw-bold py-3 px-4">@(e.Status == HospitalEncounterStatus.Signed ? T["Signed"] : T["Draft"])</span>
+            </div>
+        </div></div></div>
 
         @if (allergies.Length > 0)
         {
@@ -89,28 +95,30 @@
         <form id="encForm" autocomplete="off">
         <div class="row g-5 g-xl-8">
             <div class="col-xl-8">
-                <div class="card mb-5">
-                    <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
-                        <span class="card-label fw-bold text-gray-900 fs-4">@T["Clinical note"]</span><span class="text-muted mt-1 fw-semibold fs-7">SOAP</span>
-                    </div></div>
+                <div class="card card-flush mb-5">
+                    <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column">
+                        <span class="card-label fw-bold text-gray-800">@T["Clinical note"]</span><span class="text-gray-500 mt-1 fw-semibold fs-7" dir="ltr">SOAP</span>
+                    </h3></div>
                     <div class="card-body pt-4">
                         <div class="row g-6">
-                            <div class="col-12"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Chief complaint"]</label><input name="chiefComplaint" value="@e.ChiefComplaint" maxlength="400" class="form-control form-control-solid" @ro /></div>
-                            <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["History (S)"]</label><textarea name="history" rows="4" maxlength="4000" class="form-control form-control-solid" @ro>@e.History</textarea></div>
-                            <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Examination (O)"]</label><textarea name="examination" rows="4" maxlength="4000" class="form-control form-control-solid" @ro>@e.Examination</textarea></div>
+                            <div class="col-12"><label class="fs-6 fw-semibold mb-2 required">@T["Chief complaint"]</label><input name="chiefComplaint" value="@e.ChiefComplaint" maxlength="400" class="form-control form-control-solid" @ro /></div>
+                            <div class="col-md-6"><label class="fs-6 fw-semibold mb-2">@T["History (S)"]</label><textarea name="history" rows="4" maxlength="4000" class="form-control form-control-solid" @ro>@e.History</textarea></div>
+                            <div class="col-md-6"><label class="fs-6 fw-semibold mb-2">@T["Examination (O)"]</label><textarea name="examination" rows="4" maxlength="4000" class="form-control form-control-solid" @ro>@e.Examination</textarea></div>
                         </div>
-                        <div class="row g-4 mt-2">
+                        <div class="separator separator-dashed my-6"></div>
+                        <div class="d-flex align-items-center mb-4"><span class="symbol symbol-30px me-3"><span class="symbol-label bg-light-danger"><i class="ki-outline ki-heart fs-4 text-danger"></i></span></span><span class="fs-6 fw-bold text-gray-800">@T["Vitals"]</span></div>
+                        <div class="row g-4">
                             @foreach (var v in vitals)
                             {
-                                <div class="col-4 col-md"><label class="fw-semibold fs-8 text-muted mb-1 d-block">@v.Label</label><input name="@v.Key" type="number" step="@v.Step" value="@v.Value" class="form-control form-control-sm form-control-solid hp-num" @ro /></div>
+                                <div class="col-6 col-md-3"><label class="fw-semibold fs-7 text-gray-600 mb-1 d-block">@v.Label</label><input name="@v.Key" type="number" step="@v.Step" value="@v.Value" class="form-control form-control-sm form-control-solid hp-num" dir="ltr" @ro /></div>
                             }
-                            <div class="col-4 col-md"><label class="fw-semibold fs-8 text-muted mb-1 d-block">BMI</label><div class="form-control form-control-sm form-control-solid hp-num bg-transparent border-0 fw-bold" data-bmi>@(e.Bmi?.ToString("0.0") ?? "—")</div></div>
+                            <div class="col-4 col-md"><label class="fw-semibold fs-7 text-gray-600 mb-1 d-block" dir="ltr">BMI</label><div class="d-flex align-items-center h-35px"><span class="badge badge-light-primary fs-6 fw-bold hp-num" data-bmi>@(e.Bmi?.ToString("0.0") ?? "—")</span></div></div>
                         </div>
                     </div>
                 </div>
 
-                <div class="card mb-5">
-                    <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Assessment (A)"]</span></div>
+                <div class="card card-flush mb-5">
+                    <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Assessment (A)"]</span><span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Coding system"]: <bdi dir="ltr">ICD-10</bdi></span></h3>
                         @if (codeCount == 0 && canManage) { <div class="card-toolbar"><button type="button" class="btn btn-sm btn-light-primary" data-seed-codes><i class="ki-outline ki-arrow-down fs-4"></i>@T["Load standard ICD-10 codes"]</button></div> }
                     </div>
                     <div class="card-body pt-2">
@@ -119,88 +127,101 @@
                             <div class="mb-4"><select class="form-select form-select-solid" data-no-select2 data-dx-picker data-placeholder="@T["Search code or description..."]"></select></div>
                         }
                         <div data-dx-list></div>
-                        <div class="text-muted fs-8 mt-3">@T["Coding system"]: <span class="hp-num">ICD-10</span></div>
                     </div>
                 </div>
 
-                <div class="card mb-5">
-                    <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
-                        <span class="card-label fw-bold text-gray-900 fs-4">@T["Orders (P)"]</span>
-                        <span class="text-muted mt-1 fw-semibold fs-7">@T["Lab, imaging and procedures — billed to the visit when it is signed"]</span>
-                    </div></div>
+                <div class="card card-flush mb-5">
+                    <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column">
+                        <span class="card-label fw-bold text-gray-800">@T["Orders (P)"]</span>
+                        <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Lab, imaging and procedures — billed to the visit when it is signed"]</span>
+                    </h3></div>
                     <div class="card-body pt-2">
-                        @if (canEdit) { <div class="mb-4"><select class="form-select form-select-solid" data-no-select2 data-order-picker data-placeholder="@T["Search a test, scan or procedure..."]"></select></div> }
-                        <table class="table align-middle table-row-dashed fs-6 gy-3 mb-0">
-                            <thead><tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0"><th>@T["Service"]</th><th class="text-end">@T["Price"]</th><th>@T["Coverage"]</th><th class="w-40px"></th></tr></thead>
+                        @if (canEdit) { <div class="mb-5"><select class="form-select form-select-solid" data-no-select2 data-order-picker data-placeholder="@T["Search a test, scan or procedure..."]"></select></div> }
+                        <div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
+                            <thead><tr class="fw-bold text-muted bg-light"><th class="ps-4 rounded-start">@T["Service"]</th><th class="text-end">@T["Price"]</th><th>@T["Coverage"]</th><th class="w-50px pe-4 rounded-end"></th></tr></thead>
                             <tbody data-order-body></tbody>
-                        </table>
+                        </table></div>
                     </div>
                 </div>
 
-                <div class="card mb-5">
-                    <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
-                        <span class="card-label fw-bold text-gray-900 fs-4">@T["Prescription"]</span>
-                        <span class="text-muted mt-1 fw-semibold fs-7">@T["Linked to the pharmacy stock when the pharmacy unit lands"]</span>
-                    </div></div>
+                <div class="card card-flush mb-5">
+                    <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column">
+                        <span class="card-label fw-bold text-gray-800">@T["Prescription"]</span>
+                        <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Linked to the pharmacy stock when the pharmacy unit lands"]</span>
+                    </h3>
+                        @if (canEdit) { <div class="card-toolbar"><button type="button" class="btn btn-sm btn-light-primary" data-rx-add><i class="ki-outline ki-plus fs-4"></i>@T["Add drug"]</button></div> }
+                    </div>
                     <div class="card-body pt-2">
-                        <table class="table align-middle table-row-dashed fs-6 gy-3 mb-0">
-                            <thead><tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0"><th>@T["Drug"]</th><th>@T["Dose & duration"]</th><th class="w-100px">@T["Qty"]</th><th class="w-40px"></th></tr></thead>
+                        <div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
+                            <thead><tr class="fw-bold text-muted bg-light"><th class="ps-4 rounded-start">@T["Drug"]</th><th>@T["Dose & duration"]</th><th class="w-100px">@T["Qty"]</th><th class="w-50px pe-4 rounded-end"></th></tr></thead>
                             <tbody data-rx-body></tbody>
-                        </table>
-                        @if (canEdit) { <button type="button" class="btn btn-sm btn-light-primary mt-4" data-rx-add><i class="ki-outline ki-plus fs-4"></i>@T["Add drug"]</button> }
+                        </table></div>
                     </div>
                 </div>
 
-                <div class="card">
-                    <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Plan (P)"]</span></div></div>
+                <div class="card card-flush">
+                    <div class="card-header pt-5"><h3 class="card-title"><span class="card-label fw-bold text-gray-800">@T["Plan (P)"]</span></h3></div>
                     <div class="card-body pt-2"><textarea name="planNote" rows="3" maxlength="4000" class="form-control form-control-solid" @ro>@e.PlanNote</textarea></div>
                 </div>
             </div>
 
             <div class="col-xl-4">
-                <div class="card mb-5">
-                    <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["At a glance"]</span></div></div>
+                <div class="card card-flush mb-5">
+                    <div class="card-header pt-5"><h3 class="card-title"><span class="card-label fw-bold text-gray-800">@T["At a glance"]</span></h3></div>
                     <div class="card-body pt-2">
-                        <div class="mb-5"><div class="text-muted fs-7 fw-semibold mb-1">@T["Last visit"]</div>
+                        <div class="d-flex align-items-start">
+                            <div class="symbol symbol-35px me-4"><span class="symbol-label bg-light-primary"><i class="ki-outline ki-calendar fs-3 text-primary"></i></span></div>
+                            <div class="flex-grow-1 min-w-0"><span class="text-gray-500 fw-semibold fs-7 d-block">@T["Last visit"]</span>
                             @if (history.FirstOrDefault() is HospitalEncounterSummary last)
                             {
-                                <div class="fw-bold text-gray-800"><span class="hp-num">@last.StartedAt.ToLocalTime().ToString("yyyy-MM-dd")</span>@if (doctors.TryGetValue(last.PractitionerId, out var ld)) {<text> · </text>@DisplayName.Of(ld.Row.Name, ld.Row.NameEn)}</div>
-                                @if (last.PrimaryCode != null) { <div class="text-muted fs-7"><span class="badge hp-code fs-9 hp-num">@last.PrimaryCode</span> @DisplayName.Of(last.PrimaryName, last.PrimaryNameEn)</div> }
+                                <div class="text-gray-800 fw-bold fs-6"><bdi class="hp-num">@last.StartedAt.ToLocalTime().ToString("yyyy-MM-dd")</bdi>@if (doctors.TryGetValue(last.PractitionerId, out var ld)) {<text> · </text>@DisplayName.Of(ld.Row.Name, ld.Row.NameEn)}</div>
+                                @if (last.PrimaryCode != null) { <div class="text-gray-600 fs-7 mt-1"><span class="badge badge-light-primary fs-8 fw-bold hp-num" dir="ltr">@last.PrimaryCode</span> @DisplayName.Of(last.PrimaryName, last.PrimaryNameEn)</div> }
                             }
-                            else { <div class="fw-bold text-gray-800">@T["First visit"]</div> }
+                            else { <div class="text-gray-800 fw-bold fs-6">@T["First visit"]</div> }
+                            </div>
                         </div>
-                        <div><div class="text-muted fs-7 fw-semibold mb-1">@T["Chronic conditions"]</div><div class="fw-bold text-gray-800">@(chronic.Length == 0 ? T["None recorded"].Value : string.Join(DisplayName.IsArabic ? "، " : ", ", chronic))</div></div>
+                        <div class="separator separator-dashed my-3"></div>
+                        <div class="d-flex align-items-start">
+                            <div class="symbol symbol-35px me-4"><span class="symbol-label bg-light-@(chronic.Length == 0 ? "success" : "danger")"><i class="ki-outline ki-pulse fs-3 text-@(chronic.Length == 0 ? "success" : "danger")"></i></span></div>
+                            <div class="flex-grow-1 min-w-0"><span class="text-gray-500 fw-semibold fs-7 d-block">@T["Chronic conditions"]</span>
+                                @if (chronic.Length == 0) { <div class="text-gray-800 fw-bold fs-6">@T["None recorded"]</div> }
+                                else { <div class="d-flex flex-wrap gap-1 mt-1">@foreach (var c in chronic) {<span class="badge badge-light-danger fs-7 fw-bold">@c</span>}</div> }
+                            </div>
+                        </div>
                         @if (history.Count > 1)
                         {
-                            <div class="separator separator-dashed my-5"></div>
-                            <div class="text-muted fs-7 fw-semibold mb-2">@T["Earlier visits"]</div>
+                            <div class="separator separator-dashed my-3"></div>
+                            <div class="text-gray-500 fw-semibold fs-7 mb-2">@T["Earlier visits"]</div>
                             @foreach (var h in history.Skip(1))
                             {
-                                <a href="@Url.Action("Consult", new { id = h.Id })" class="d-flex align-items-center py-2 text-hover-primary"><span class="hp-num text-gray-700 fs-7 me-3">@h.StartedAt.ToLocalTime().ToString("yyyy-MM-dd")</span><span class="text-gray-800 fs-7 text-truncate">@(h.PrimaryCode == null ? h.ChiefComplaint : DisplayName.Of(h.PrimaryName, h.PrimaryNameEn))</span></a>
+                                <a href="@Url.Action("Consult", new { id = h.Id })" class="d-flex align-items-center py-2 rounded bg-hover-light-primary px-2">
+                                    <div class="symbol symbol-30px me-3"><span class="symbol-label bg-light"><i class="ki-outline ki-document fs-5 text-gray-600"></i></span></div>
+                                    <div class="min-w-0 flex-grow-1"><span class="text-gray-800 fw-bold fs-7 d-block text-truncate">@(h.PrimaryCode == null ? h.ChiefComplaint : DisplayName.Of(h.PrimaryName, h.PrimaryNameEn))</span><bdi class="text-gray-500 fs-8 hp-num">@h.StartedAt.ToLocalTime().ToString("yyyy-MM-dd")</bdi></div>
+                                </a>
                             }
                         }
                     </div>
                 </div>
                 @if (ViewBag.Lab is HospitalLabHistory lab) { <partial name="_HospitalLabResults" model="lab" /> }
                 @if (ViewBag.Rad is HospitalRadHistory rad) { <partial name="_HospitalRadResults" model="rad" /> }
-                <div class="card mb-5">
-                    <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Referral & follow-up"]</span></div></div>
-                    <div class="card-body pt-2"><div class="row g-4">
-                        <div class="col-12"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Follow-up in"]</label>
-                            <select name="followUpDays" class="form-select form-select-solid" @ro>
+                <div class="card card-flush mb-5">
+                    <div class="card-header pt-5"><h3 class="card-title"><span class="card-label fw-bold text-gray-800">@T["Referral & follow-up"]</span></h3></div>
+                    <div class="card-body pt-2"><div class="row g-6">
+                        <div class="col-12"><label class="fs-6 fw-semibold mb-2">@T["Follow-up in"]</label>
+                            <select name="followUpDays" class="form-select form-select-solid" data-control="select2" data-hide-search="true" @ro>
                                 <option value="">—</option>
                                 @foreach (var f in new[] { (7, T["1 week"].Value), (14, T["2 weeks"].Value), (30, T["1 month"].Value), (90, T["3 months"].Value), (180, T["6 months"].Value) })
                                 { <option value="@f.Item1" selected="@(e.FollowUpDays == f.Item1)">@f.Item2</option> }
                             </select></div>
-                        <div class="col-12"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Refer to"]</label>
-                            <select name="referToDepartmentId" class="form-select form-select-solid" @ro>
+                        <div class="col-12"><label class="fs-6 fw-semibold mb-2">@T["Refer to"]</label>
+                            <select name="referToDepartmentId" class="form-select form-select-solid" data-control="select2" @ro>
                                 <option value="">—</option>
                                 @foreach (var dep in departments) { <option value="@dep.ID" selected="@(e.ReferToDepartmentId == dep.ID)">@DisplayName.Of(dep.Name, dep.NameEn)</option> }
                             </select></div>
                     </div></div>
                 </div>
-                <div class="notice d-flex rounded border border-dashed p-6 hp-notice">
-                    <span class="symbol symbol-45px me-4 flex-shrink-0"><span class="symbol-label"><i class="ki-outline ki-check-square fs-2x text-white"></i></span></span>
+                <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-6">
+                    <i class="ki-outline ki-check-square fs-2tx text-primary me-4"></i>
                     <div class="fw-semibold">
                         <h4 class="text-gray-900 fw-bold mb-1">@T["On signing"]</h4>
                         <div class="fs-7 text-gray-700">@T["The visit is locked, the appointment is finished, and the consultation fee and the orders go to the visit's bill."]</div>
@@ -232,20 +253,24 @@
                 none: @Json.Serialize(T["No diagnosis yet."].Value), noRx: @Json.Serialize(T["No drug prescribed."].Value),
                 saved: @Json.Serialize(T["Saved"].Value), failed: @Json.Serialize(T["The change could not be saved"].Value), confirm: @Json.Serialize(T["Sign and close this visit? It cannot be changed afterwards."].Value),
                 drug: @Json.Serialize(T["Drug name and strength"].Value), stocked: @Json.Serialize(T["In the pharmacy"].Value), dose: @Json.Serialize(T["e.g. 1 tab twice daily · 30 days"].Value), doseEn: @Json.Serialize(T["In English: e.g. 1 tab twice daily · 30 days"].Value),
-                noOrder: @Json.Serialize(T["Nothing ordered."].Value), cash: @Json.Serialize(T["Cash"].Value)
+                noOrder: @Json.Serialize(T["Nothing ordered."].Value), cash: @Json.Serialize(T["Cash"].Value), remove: @Json.Serialize(T["Remove"].Value)
             };
             var urls = { services: @Json.Serialize(Url.Action("SearchServices", new { orderable = true })), codes: @Json.Serialize(Url.Action("SearchDiagnosisCodes")), save: @Json.Serialize(Url.Action("SaveConsultation", new { id = e.ID })), sign: @Json.Serialize(Url.Action("SignConsultation", new { id = e.ID })), seed: @Json.Serialize(Url.Action("SeedDiagnosisCodes")), worklist: @Json.Serialize(Url.Action("Worklist", new { doctor = e.PractitionerId })) };
             function toast(k, m) { if (window.toastr) toastr[k](m); }
+            // H126: the theme's empty state and icon action
+            function empty(icon, text, cols) { var h = '<div class="text-center py-6"><i class="ki-outline ki-' + icon + ' fs-3x text-gray-300 mb-3 d-block"></i><div class="fs-7 fw-semibold text-gray-500">' + esc(text) + '</div></div>'; return cols ? '<tr><td colspan="' + cols + '">' + h + '</td></tr>' : h; }
+            function trash(attr, i) { return '<button type="button" class="btn btn-icon btn-sm btn-bg-light btn-active-color-danger" title="' + esc(W.remove) + '" ' + attr + '="' + i + '"><i class="ki-outline ki-trash fs-4"></i></button>'; }
 
             // ---- diagnoses ------------------------------------------------------------------
             var dxList = document.querySelector('[data-dx-list]');
             function drawDx() {
-                if (!dx.length) { dxList.innerHTML = '<div class="text-muted fs-7 py-3">' + esc(W.none) + '</div>'; return; }
+                if (!dx.length) { dxList.innerHTML = empty('questionnaire-tablet', W.none); return; }
                 dxList.innerHTML = dx.map(function (d, i) {
-                    return '<div class="d-flex align-items-center py-3 border-bottom border-gray-200 border-bottom-dashed"><span class="badge hp-code fw-bold fs-8 hp-num">' + esc(d.code) + '</span>' +
-                        '<span class="ms-3 fw-semibold text-gray-800 flex-grow-1">' + esc(d.name) + '</span>' +
-                        (d.primary ? '<span class="badge hp-badge fs-8">' + esc(W.primary) + '</span>' : (canEdit ? '<button type="button" class="btn btn-sm btn-light py-1 px-3 fs-8" data-dx-primary="' + i + '">' + esc(W.makePrimary) + '</button>' : '<span class="badge badge-light fs-8">' + esc(W.secondary) + '</span>')) +
-                        (canEdit ? '<button type="button" class="btn btn-icon btn-sm btn-light w-30px h-30px ms-2" data-dx-remove="' + i + '"><i class="ki-outline ki-trash fs-5"></i></button>' : '') + '</div>';
+                    return (i ? '<div class="separator separator-dashed my-3"></div>' : '') + '<div class="d-flex align-items-center">' +
+                        '<div class="symbol symbol-35px me-4"><span class="symbol-label bg-light-' + (d.primary ? 'primary' : 'secondary') + '"><i class="ki-outline ki-notepad fs-3 text-' + (d.primary ? 'primary' : 'gray-600') + '"></i></span></div>' +
+                        '<div class="flex-grow-1 min-w-0 me-3"><span class="text-gray-800 fw-bold fs-6 d-block">' + esc(d.name) + '</span><span class="text-gray-500 fw-semibold fs-7 hp-num" dir="ltr">' + esc(d.code) + '</span></div>' +
+                        (d.primary ? '<span class="badge badge-light-primary fs-7 fw-bold">' + esc(W.primary) + '</span>' : (canEdit ? '<button type="button" class="btn btn-sm btn-light btn-active-light-primary py-2 px-3 fs-8" data-dx-primary="' + i + '">' + esc(W.makePrimary) + '</button>' : '<span class="badge badge-light fs-7 fw-bold">' + esc(W.secondary) + '</span>')) +
+                        (canEdit ? '<span class="ms-2">' + trash('data-dx-remove', i) + '</span>' : '') + '</div>';
                 }).join('');
             }
             var picker = document.querySelector('[data-dx-picker]');
@@ -267,17 +292,17 @@
             // ---- prescription ---------------------------------------------------------------
             var rxBody = document.querySelector('[data-rx-body]');
             function drawRx() {
-                if (!rx.length) { rxBody.innerHTML = '<tr><td colspan="4" class="text-muted fs-7 py-3">' + esc(W.noRx) + '</td></tr>'; return; }
+                if (!rx.length) { rxBody.innerHTML = empty('capsule', W.noRx, 4); return; }
                 rxBody.innerHTML = rx.map(function (r, i) {
-                    if (!canEdit) return '<tr><td class="fw-semibold text-gray-800">' + esc(r.drug) + (r.itemId ? ' <span class="badge badge-light-success fs-9">' + esc(W.stocked) + '</span>' : '') + '</td><td class="fs-7" dir="auto">' + esc(r.instructions || '') + (r.instructionsEn ? '<div class="text-muted fs-8" dir="auto">' + esc(r.instructionsEn) + '</div>' : '') + '</td><td class="hp-num">' + r.quantity + '</td><td></td></tr>';
+                    if (!canEdit) return '<tr><td class="ps-4"><div class="d-flex align-items-center"><div class="symbol symbol-35px me-3"><span class="symbol-label bg-light-' + (r.itemId ? 'success' : 'secondary') + '"><i class="ki-outline ki-capsule fs-3 text-' + (r.itemId ? 'success' : 'gray-600') + '"></i></span></div><div><span class="text-gray-800 fw-bold fs-6 d-block" dir="auto">' + esc(r.drug) + '</span>' + (r.itemId ? '<span class="badge badge-light-success fs-8 fw-bold">' + esc(W.stocked) + '</span>' : '') + '</div></div></td><td class="fs-7 text-gray-700" dir="auto">' + esc(r.instructions || '') + (r.instructionsEn ? '<div class="text-gray-500 fs-8" dir="auto">' + esc(r.instructionsEn) + '</div>' : '') + '</td><td><span class="text-gray-800 fw-bold hp-num">' + r.quantity + '</span></td><td class="pe-4"></td></tr>';
                     var opts = '<option value=""></option>' + formulary.map(function (f) { return '<option value="i:' + f.id + '"' + (r.itemId === f.id ? ' selected' : '') + '>' + esc(f.name + ' · ' + f.code) + '</option>'; }).join('') +
                         (!r.itemId && r.drug ? '<option value="t:' + esc(r.drug) + '" selected>' + esc(r.drug) + '</option>' : '');
-                    return '<tr><td class="min-w-250px"><select class="form-select form-select-sm form-select-solid" data-rx-drug data-i="' + i + '" data-placeholder="' + esc(W.drug) + '">' + opts + '</select></td>' +
+                    return '<tr><td class="ps-4 min-w-200px"><select class="form-select form-select-sm form-select-solid" data-rx-drug data-i="' + i + '" data-placeholder="' + esc(W.drug) + '">' + opts + '</select></td>' +
                         // H33: the directions in both languages (the patient reads them in theirs on the portal)
                         '<td><input class="form-control form-control-sm form-control-solid" data-rx="instructions" data-i="' + i + '" value="' + esc(r.instructions || '') + '" placeholder="' + esc(W.dose) + '" maxlength="400" dir="auto" />' +
                         '<input class="form-control form-control-sm form-control-solid mt-1" data-rx="instructionsEn" data-i="' + i + '" value="' + esc(r.instructionsEn || '') + '" placeholder="' + esc(W.doseEn) + '" maxlength="400" dir="auto" /></td>' +
                         '<td><input type="number" min="1" class="form-control form-control-sm form-control-solid hp-num" data-rx="quantity" data-i="' + i + '" value="' + r.quantity + '" /></td>' +
-                        '<td><button type="button" class="btn btn-icon btn-sm btn-light w-30px h-30px" data-rx-remove="' + i + '"><i class="ki-outline ki-trash fs-5"></i></button></td></tr>';
+                        '<td class="pe-4 text-end">' + trash('data-rx-remove', i) + '</td></tr>';
                 }).join('');
                 // The house select2, with tags: a stocked item, or any name typed (not stocked). select2's change only reaches jQuery.
                 if (canEdit && window.jQuery && jQuery.fn.select2) jQuery(rxBody).find('[data-rx-drug]').each(function () {
@@ -303,12 +328,13 @@
             var orderBody = document.querySelector('[data-order-body]');
             function fmtMoney(v) { return Number(v).toLocaleString('en-US', { minimumFractionDigits: money.dp, maximumFractionDigits: money.dp }); }
             function drawOrders() {
-                if (!orders.length) { orderBody.innerHTML = '<tr><td colspan="4" class="text-muted fs-7 py-3">' + esc(W.noOrder) + '</td></tr>'; return; }
+                if (!orders.length) { orderBody.innerHTML = empty('flask', W.noOrder, 4); return; }
                 orderBody.innerHTML = orders.map(function (o, i) {
-                    return '<tr><td><div class="fw-semibold text-gray-800">' + esc(o.name) + '</div><div class="text-muted fs-8 hp-num">' + esc(o.code) + '</div></td>' +
-                        '<td class="text-end hp-num">' + fmtMoney(o.price) + ' <span class="text-muted fs-8">' + esc(money.label) + '</span></td>' +
-                        '<td><span class="badge badge-light fs-8">' + esc(W.cash) + '</span></td>' +
-                        '<td>' + (canEdit ? '<button type="button" class="btn btn-icon btn-sm btn-light w-30px h-30px" data-order-remove="' + i + '"><i class="ki-outline ki-trash fs-5"></i></button>' : '') + '</td></tr>';
+                    return '<tr><td class="ps-4"><div class="d-flex align-items-center"><div class="symbol symbol-35px me-3"><span class="symbol-label bg-light-info"><i class="ki-outline ki-flask fs-3 text-info"></i></span></div>' +
+                        '<div><span class="text-gray-800 fw-bold fs-6 d-block">' + esc(o.name) + '</span><span class="text-gray-500 fw-semibold fs-7 hp-num" dir="ltr">' + esc(o.code) + '</span></div></div></td>' +
+                        '<td class="text-end text-nowrap"><span class="text-gray-800 fw-bold fs-6 hp-num">' + fmtMoney(o.price) + '</span>&nbsp;<span class="text-gray-500 fs-8">' + esc(money.label) + '</span></td>' +
+                        '<td><span class="badge badge-light-primary fs-7 fw-bold">' + esc(W.cash) + '</span></td>' +
+                        '<td class="pe-4 text-end">' + (canEdit ? trash('data-order-remove', i) : '') + '</td></tr>';
                 }).join('');
             }
             var op = document.querySelector('[data-order-picker]');

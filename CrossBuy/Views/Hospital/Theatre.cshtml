@@ -78,26 +78,40 @@
             <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice"><div class="fs-6 text-gray-700">@T["No operating theatre is set up yet: add a room of kind Theatre in the floor & room designer."]</div></div>
         }
 
+        @* H126: the day's figures — demo39 dashboards/logistics stat card *@
         <div class="row g-5 g-xl-8 mb-5">
             @foreach (var s in new[] {
-                (T["Cases today"].Value, cases.Count.ToString(inv), "", "text-gray-900"),
-                (T["Completed"].Value, cases.Count(c => c.Case.Status == HospitalSurgeryStatus.Done).ToString(inv), "", "text-success"),
-                (T["Theatre utilisation"].Value, (Model?.Utilisation ?? 0).ToString(inv) + "%", T["Target 75%"].Value, "text-gray-900"),
-                (T["First-case on-time start"].Value, (Model?.OnTime ?? 0).ToString(inv) + " / " + (Model?.FirstCases ?? 0).ToString(inv), "", "text-gray-900") })
+                (T["Cases today"].Value, cases.Count.ToString(inv), "", "ki-calendar-8", "primary"),
+                (T["Completed"].Value, cases.Count(c => c.Case.Status == HospitalSurgeryStatus.Done).ToString(inv), "", "ki-check-circle", "success"),
+                (T["Theatre utilisation"].Value, (Model?.Utilisation ?? 0).ToString(inv) + "%", T["Target 75%"].Value, "ki-chart-pie-simple", (Model?.Utilisation ?? 0) >= 75 ? "success" : "info"),
+                (T["First-case on-time start"].Value, string.Format(T["{0} of {1}"].Value, (Model?.OnTime ?? 0).ToString(inv), (Model?.FirstCases ?? 0).ToString(inv)), "", "ki-time", "primary") })
             {
-                <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
-                    <div class="text-muted fw-semibold fs-7 mb-1">@s.Item1</div>
-                    <div class="fs-2hx fw-bold @s.Item4"><bdi class="hp-num" dir="ltr">@s.Item2</bdi></div>
-                    @if (s.Item3 != "") { <div class="text-muted fs-8 mt-1">@s.Item3</div> }
-                </div></div></div>
+                <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100">
+                    <div class="card-header pt-5 flex-nowrap gap-3">
+                        <div class="card-title d-flex flex-column">
+                            <span class="fs-2hx fw-bold text-gray-900 me-2 lh-1 ls-n2 hp-num">@s.Item2</span>
+                            <span class="text-gray-500 pt-1 fw-semibold fs-6">@s.Item1</span>
+                        </div>
+                        <div class="card-toolbar"><div class="symbol symbol-45px"><span class="symbol-label bg-light-@s.Item5"><i class="ki-outline @s.Item4 fs-2x text-@s.Item5"></i></span></div></div>
+                    </div>
+                    <div class="card-body d-flex align-items-end pt-0">
+                        <div class="d-flex fs-7 fw-semibold align-items-center text-gray-500">@if (s.Item3 != "") {<div class="bullet w-8px h-6px rounded-2 bg-@s.Item5 me-3"></div>@s.Item3} else {<span>&nbsp;</span>}</div>
+                    </div>
+                </div></div>
             }
         </div>
 
-        <div class="card mb-5">
-            <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
-                <span class="card-label fw-bold text-gray-900 fs-4">@T["Theatre schedule"]</span>
-                <span class="text-muted mt-1 fw-semibold fs-7">@day.ToString("dddd d MMMM yyyy", System.Globalization.CultureInfo.CurrentUICulture)</span>
-            </div></div>
+        <div class="card card-flush mb-5">
+            <div class="card-header pt-5">
+                <h3 class="card-title align-items-start flex-column">
+                    <span class="card-label fw-bold text-gray-800">@T["Theatre schedule"]</span>
+                    <span class="text-gray-500 mt-1 fw-semibold fs-7">@day.ToString("dddd d MMMM yyyy", System.Globalization.CultureInfo.CurrentUICulture)</span>
+                </h3>
+                <div class="card-toolbar gap-4 fs-7 fw-semibold text-gray-600">
+                    @foreach (var (st, tone) in new[] { (HospitalSurgeryStatus.Planned, "secondary"), (HospitalSurgeryStatus.InProgress, "primary"), (HospitalSurgeryStatus.Done, "success") })
+                    {<span class="d-flex align-items-center"><span class="bullet bullet-dot bg-@tone h-8px w-8px me-2"></span>@T["or:" + st]</span>}
+                </div>
+            </div>
             <div class="card-body pt-2"><div class="overflow-auto"><div style="min-width:820px">
                 <div class="hp-sched" style="grid-template-columns:150px 1fr;">
                     <div class="hd"></div>
@@ -125,132 +139,223 @@
         {
             var sc = sel.Case;
             bool open = HospitalSurgeryStatus.Holds(sc.Status);
+            var room = rooms.FirstOrDefault(r => r.Id == sc.RoomId);
+            var issuedSets = (ViewBag.CaseSets as List<string>) ?? new List<string>();
+            bool kitShort = kit != null && kit.IssuedAt == null && kit.Lines.Any(l => l.InStore < l.Qty);
             <div class="row g-5 g-xl-8">
                 <div class="col-xl-7">
-                    <div class="card h-100">
-                        <div class="card-header border-0 pt-6">
-                            <div class="card-title align-items-start flex-column m-0">
-                                <span class="card-label fw-bold text-gray-900 fs-4">@(sc.Status == HospitalSurgeryStatus.InProgress ? T["Case in progress"] : T["Operation"])</span>
-                                <span class="text-muted mt-1 fw-semibold fs-7">@DisplayName.Of(rooms.FirstOrDefault(r => r.Id == sc.RoomId)?.Name ?? "", rooms.FirstOrDefault(r => r.Id == sc.RoomId)?.NameEn ?? "") · <bdi class="hp-num" dir="ltr">@HospitalUi.Clock(sc.StartMinute)–@HospitalUi.Clock(sc.StartMinute + sc.DurationMinutes)</bdi> · <span class="hp-num">@sc.CaseNo</span></span>
-                            </div>
+                    @* H126: the case — demo39 card-header (title over a muted line, actions in the toolbar) and list-widget rows *@
+                    <div class="card card-flush mb-5">
+                        <div class="card-header pt-5">
+                            <h3 class="card-title align-items-start flex-column">
+                                <span class="card-label fw-bold text-gray-800">@(sc.Status == HospitalSurgeryStatus.InProgress ? T["Case in progress"] : T["Operation"])</span>
+                                <span class="text-gray-500 mt-1 fw-semibold fs-7">@DisplayName.Of(room?.Name ?? "", room?.NameEn ?? "") · <bdi class="hp-num" dir="ltr">@HospitalUi.Clock(sc.StartMinute)–@HospitalUi.Clock(sc.StartMinute + sc.DurationMinutes)</bdi> · <bdi class="hp-num">@sc.CaseNo</bdi></span>
+                            </h3>
                             <div class="card-toolbar gap-2">
-                                <span class="badge badge-light-@(sc.Status == HospitalSurgeryStatus.Done ? "success" : sc.Status == HospitalSurgeryStatus.InProgress ? "primary" : "secondary") fs-7">@T["or:" + sc.Status]</span>
+                                <span class="badge badge-light-@(sc.Status == HospitalSurgeryStatus.Done ? "success" : sc.Status == HospitalSurgeryStatus.InProgress ? "primary" : "secondary") fs-7 fw-bold">@T["or:" + sc.Status]</span>
                                 @if (canConsult && sc.Status == HospitalSurgeryStatus.Planned) { <button type="button" class="btn btn-sm btn-primary" data-case-move="InProgress" data-id="@sc.ID"><i class="ki-outline ki-time fs-4"></i>@T["Start"]</button> }
                                 @if (canConsult && sc.Status == HospitalSurgeryStatus.InProgress) { <button type="button" class="btn btn-sm btn-primary" data-case-move="Done" data-id="@sc.ID"><i class="ki-outline ki-check-circle fs-4"></i>@T["Close the case"]</button> }
-                                @if (canBook && sc.Status == HospitalSurgeryStatus.Planned) { <button type="button" class="btn btn-sm btn-light-danger" data-case-move="Cancelled" data-id="@sc.ID"><i class="ki-outline ki-cross-circle fs-4"></i>@T["Cancel"]</button> }
+                                @if (canBook && sc.Status == HospitalSurgeryStatus.Planned) { <button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-danger" data-case-move="Cancelled" data-id="@sc.ID" title="@T["Cancel"]" data-bs-toggle="tooltip"><i class="ki-outline ki-cross-circle fs-2"></i></button> }
                             </div>
                         </div>
                         <div class="card-body pt-2">
-                            <div class="d-flex flex-wrap align-items-center gap-8 mb-7">
+                            <div class="d-flex flex-stack">
                                 <div class="d-flex align-items-center">
-                                    <div class="symbol symbol-50px symbol-circle me-3 flex-shrink-0">@if (sel.PatientPhoto != null) {<img src="@sel.PatientPhoto" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(sel.PatientNameEn)" />} else {<span class="symbol-label fw-bold hp-initials">@HospitalUi.Initials(sel.PatientNameEn)</span>}</div>
-                                    <div class="d-flex flex-column"><a href="@Url.Action("Patient", new { id = sc.PatientId })" class="text-gray-900 text-hover-primary fw-bold">@DisplayName.Of(sel.PatientName, sel.PatientNameEn)</a><span class="text-muted fs-8 hp-num">@sel.Mrn</span></div>
+                                    <div class="symbol symbol-50px symbol-circle me-4 flex-shrink-0">@if (sel.PatientPhoto != null) {<img src="@sel.PatientPhoto" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(sel.PatientNameEn)" />} else {<span class="symbol-label fw-bold hp-initials">@HospitalUi.Initials(sel.PatientNameEn)</span>}</div>
+                                    <div class="d-flex flex-column"><a href="@Url.Action("Patient", new { id = sc.PatientId })" class="text-gray-800 text-hover-primary fw-bold fs-6">@DisplayName.Of(sel.PatientName, sel.PatientNameEn)</a><bdi class="text-gray-500 fw-semibold fs-7 hp-num">@sel.Mrn</bdi></div>
                                 </div>
-                                <div><div class="text-muted fs-7 fw-semibold">@T["Procedure"]</div><div class="fw-bold text-gray-900">@DisplayName.Of(sc.Name, sc.NameEn) <span class="badge badge-light fs-8 ms-1 hp-num">@sc.Code</span></div></div>
+                                <a href="@Url.Action("Patient", new { id = sc.PatientId })" class="btn btn-sm btn-icon btn-bg-light btn-active-color-primary" title="@T["Open"]" data-bs-toggle="tooltip"><i class="ki-outline ki-arrow-@(System.Globalization.CultureInfo.CurrentUICulture.TextInfo.IsRightToLeft ? "left" : "right") fs-2"></i></a>
                             </div>
+                            <div class="separator separator-dashed my-4"></div>
+                            <div class="d-flex flex-stack">
+                                <div class="d-flex align-items-center">
+                                    <div class="symbol symbol-35px me-4"><span class="symbol-label bg-light-primary"><i class="ki-outline ki-bandage fs-3 text-primary"></i></span></div>
+                                    <div class="d-flex flex-column"><span class="text-gray-800 fw-bold fs-6">@DisplayName.Of(sc.Name, sc.NameEn)</span><span class="text-gray-500 fw-semibold fs-7">@T["Procedure"]</span></div>
+                                </div>
+                                <span class="badge badge-light fs-7 fw-bold hp-num" dir="ltr">@sc.Code</span>
+                            </div>
+                            <div class="separator separator-dashed my-4"></div>
                             <div class="row g-5">
-                                <div class="col-md-6"><div class="text-muted fs-7 fw-semibold mb-2">@T["Surgeon"]</div>@Person(sel.Surgeon, DisplayName.Of(sel.Surgeon?.Title ?? "", sel.Surgeon?.TitleEn ?? sel.Surgeon?.Title ?? ""))</div>
-                                <div class="col-md-6"><div class="text-muted fs-7 fw-semibold mb-2">@T["Anaesthetist"]</div>@Person(sel.Anaesthetist, DisplayName.Of(sel.Anaesthetist?.Title ?? "", sel.Anaesthetist?.TitleEn ?? sel.Anaesthetist?.Title ?? ""))</div>
+                                <div class="col-md-6"><div class="text-gray-500 fw-semibold fs-7 mb-2">@T["Surgeon"]</div>@Person(sel.Surgeon, DisplayName.Of(sel.Surgeon?.Title ?? "", sel.Surgeon?.TitleEn ?? sel.Surgeon?.Title ?? ""))</div>
+                                <div class="col-md-6"><div class="text-gray-500 fw-semibold fs-7 mb-2">@T["Anaesthetist"]</div>@Person(sel.Anaesthetist, DisplayName.Of(sel.Anaesthetist?.Title ?? "", sel.Anaesthetist?.TitleEn ?? sel.Anaesthetist?.Title ?? ""))</div>
                             </div>
-                            @if (!string.IsNullOrWhiteSpace(sc.Note)) { <div class="text-gray-700 fs-7 mt-6"><i class="ki-outline ki-message-text fs-6 me-1"></i>@sc.Note</div> }
-                            @{ var issuedSets = (ViewBag.CaseSets as List<string>) ?? new List<string>(); }
+                            @if (!string.IsNullOrWhiteSpace(sc.Note))
+                            {
+                                <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-4 mt-5">
+                                    <i class="ki-outline ki-message-text fs-2tx text-primary me-4"></i>
+                                    <div class="fs-6 text-gray-700"><bdi>@sc.Note</bdi></div>
+                                </div>
+                            }
                             @if (sc.Status != HospitalSurgeryStatus.Cancelled)
                             {
-                                <div class="d-flex flex-wrap align-items-center gap-2 fs-7 mt-6" data-case-sets>
-                                    <i class="ki-outline ki-shield-tick fs-5 text-gray-500"></i><span class="text-muted fw-semibold">@T["Sterile sets issued"]</span>
-                                    @if (issuedSets.Count == 0) { <span class="text-gray-600">@T["None yet"]</span> <a href="@Url.Action("Cssd")" class="fs-8 ms-1">@T["The sterile supply"]</a> }
-                                    @foreach (var code in issuedSets) { <span class="badge hp-code fs-8 hp-num">@code</span> }
-                                </div>
-                            }
-                            @if (sc.Status == HospitalSurgeryStatus.Done) { <div class="text-muted fs-8 mt-6"><i class="ki-outline ki-bill fs-6 me-1"></i>@T["The procedure is on the patient's bill."]</div> }
-                            @* H38: consignment implants used on this case — charged to the patient, a draft PO to the supplier *@
-                            @if (caseImplants.Count > 0 || ((canConsult || canManage) && (sc.Status == HospitalSurgeryStatus.InProgress || sc.Status == HospitalSurgeryStatus.Done) && storeImplants.Count > 0))
-                            {
-                                <div class="border border-dashed rounded p-4 mt-6">
-                                    <div class="fw-bold text-gray-800 mb-3"><i class="ki-outline ki-shield-tick fs-4 me-1 text-primary"></i>@T["Implants"]</div>
-                                    @foreach (var c in caseImplants)
-                                    {
-                                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 py-2 border-bottom border-gray-200 border-bottom-dashed">
-                                            <div><span class="fw-semibold text-gray-800">@DisplayName.Of(c.Item, c.ItemEn)</span> <span class="badge badge-light fs-8 hp-num ms-1">SN @c.Row.SerialNo</span>
-                                                <div class="text-muted fs-8">@DisplayName.Of(c.Vendor, c.VendorEn) · @T["Lot"] <span class="hp-num">@(c.Row.Lot ?? "—")</span></div></div>
-                                            <div class="text-end"><span class="badge badge-light-primary">@T["cons:" + HospitalConsignmentRules.State(c.Row.Status, c.PoStatus)]</span>@if (c.PoNo != null) {<div class="text-muted fs-8 hp-num mt-1">@c.PoNo</div>}</div>
-                                        </div>
-                                    }
-                                    @if ((canConsult || canManage) && (sc.Status == HospitalSurgeryStatus.InProgress || sc.Status == HospitalSurgeryStatus.Done) && storeImplants.Count > 0)
-                                    {
-                                        <div class="d-flex flex-wrap gap-2 mt-3">
-                                            <select class="form-select form-select-sm form-select-solid w-325px" data-implant-pick data-control="select2" data-placeholder="@T["A consignment implant in the store..."]">
-                                                <option></option>
-                                                @foreach (var c in storeImplants) { <option value="@c.Row.ID">SN @c.Row.SerialNo · @DisplayName.Of(c.Item, c.ItemEn)</option> }
-                                            </select>
-                                            <button type="button" class="btn btn-sm btn-light-primary" data-implant-use="@sc.ID"><i class="ki-outline ki-plus fs-4"></i>@T["Record the implant"]</button>
-                                        </div>
-                                    }
-                                </div>
-                            }
-                            @* H37: the procedure's kit, exploded from its bill of materials and drawn from the theatre store when the case closes *@
-                            @if (kit != null && kit.Ready)
-                            {
-                                <div class="border border-dashed rounded p-4 mt-6" data-kit>
-                                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
-                                        <div><div class="fw-bold text-gray-800"><i class="ki-outline ki-parcel fs-4 me-1 text-primary"></i>@T["Procedure kit"]@if (kit.KitItemId != null) {<text> · </text><span>@DisplayName.Of(kit.KitName ?? "", kit.KitNameEn ?? "")</span>}</div>
-                                            <div class="text-muted fs-8">@T["From the theatre store"]: @(kit.StoreName ?? T["not set"].Value)</div></div>
-                                        @if (kit.IssuedAt != null) { <span class="badge badge-light-success fs-8"><i class="ki-outline ki-check fs-8 me-1 text-success"></i>@T["Issued from the store"] <bdi class="hp-num ms-1" data-fmt data-utc="@kit.IssuedAt?.ToString("o")">@kit.IssuedAt?.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</bdi></span> }
-                                        else if (sc.Status == HospitalSurgeryStatus.Done && kit.KitItemId != null) { <button type="button" class="btn btn-sm btn-light-primary" data-kit-issue="@sc.ID"><i class="ki-outline ki-exit-up fs-4"></i>@T["Issue the kit now"]</button> }
-                                        else if (kit.KitItemId != null) { <span class="badge badge-light fs-8">@T["Leaves the store when the case closes"]</span> }
+                                <div class="separator separator-dashed my-4"></div>
+                                <div class="d-flex flex-stack" data-case-sets>
+                                    <div class="d-flex align-items-center">
+                                        <div class="symbol symbol-35px me-4"><span class="symbol-label bg-light-info"><i class="ki-outline ki-shield-tick fs-3 text-info"></i></span></div>
+                                        <div class="d-flex flex-column"><span class="text-gray-800 fw-bold fs-6">@T["Sterile sets issued"]</span>
+                                            @if (issuedSets.Count == 0) {<a href="@Url.Action("Cssd")" class="text-gray-500 text-hover-primary fw-semibold fs-7">@T["None yet"] · @T["The sterile supply"]</a>}</div>
                                     </div>
-                                    @if (kit.Lines.Count > 0)
-                                    {
-                                        <table class="table table-row-dashed align-middle fs-7 gy-2 mb-0">
-                                            <thead><tr class="text-gray-500 fw-bold fs-8 text-uppercase"><th>@T["Item"]</th><th class="text-end">@T["Qty"]</th><th class="text-end">@T["In the theatre store"]</th></tr></thead>
-                                            <tbody>@foreach (var l in kit.Lines)
-                                            {
-                                                <tr><td><span class="fw-semibold text-gray-800">@DisplayName.Of(l.Name, l.NameEn)</span> <span class="text-muted fs-8 hp-num">@l.Code</span></td>
-                                                    <td class="text-end"><span class="hp-num">@l.Qty.ToString("0.###", inv)</span></td>
-                                                    <td class="text-end"><span class="hp-num @(kit.IssuedAt == null && l.InStore < l.Qty ? "text-danger fw-bold" : "text-gray-600")">@l.InStore.ToString("0.###", inv)</span></td></tr>
-                                            }</tbody>
-                                        </table>
-                                    }
-                                    else if (kit.KitItemId == null) { <div class="text-muted fs-8">@T["This procedure has no kit set"]</div> }
-                                    @if (canManage)
-                                    {
-                                        <div class="d-flex flex-wrap gap-2 mt-4">
-                                            <select class="form-select form-select-sm form-select-solid w-275px" data-kit-pick="@sc.ServiceId" data-control="select2" data-allow-clear="true" data-placeholder="@T["The procedure's kit..."]">
-                                                <option></option>
-                                                @foreach (var k in kitItems) { <option value="@k.Id" selected="@(k.Id == kit.KitItemId)">@k.Code · @DisplayName.Of(k.Name, k.NameEn)</option> }
-                                            </select>
-                                            <select class="form-select form-select-sm form-select-solid w-225px" data-theatre-store data-control="select2" data-placeholder="@T["The theatre store..."]">
-                                                <option></option>
-                                                @foreach (var w in stores) { <option value="@w.Id" selected="@(w.Id == kit.StoreWarehouseId)">@w.Label · @DisplayName.Of(w.Name, w.NameEn ?? w.Name)</option> }
-                                            </select>
-                                        </div>
-                                    }
+                                    <div class="d-flex flex-wrap justify-content-end gap-2">@foreach (var code in issuedSets) {<span class="badge badge-light-info fs-7 fw-bold hp-num" dir="ltr">@code</span>}</div>
+                                </div>
+                            }
+                            @if (sc.Status == HospitalSurgeryStatus.Done)
+                            {
+                                <div class="separator separator-dashed my-4"></div>
+                                <div class="d-flex align-items-center">
+                                    <div class="symbol symbol-35px me-4"><span class="symbol-label bg-light-success"><i class="ki-outline ki-bill fs-3 text-success"></i></span></div>
+                                    <span class="text-gray-700 fw-semibold fs-6">@T["The procedure is on the patient's bill."]</span>
                                 </div>
                             }
                         </div>
                     </div>
+
+                    @* H38: consignment implants used on this case — the theme's table widget *@
+                    @if (caseImplants.Count > 0 || ((canConsult || canManage) && (sc.Status == HospitalSurgeryStatus.InProgress || sc.Status == HospitalSurgeryStatus.Done) && storeImplants.Count > 0))
+                    {
+                        <div class="card card-flush mb-5">
+                            <div class="card-header pt-5">
+                                <h3 class="card-title align-items-start flex-column">
+                                    <span class="card-label fw-bold text-gray-800">@T["Implants"]</span>
+                                    <span class="text-gray-500 mt-1 fw-semibold fs-7 hp-num">@caseImplants.Count</span>
+                                </h3>
+                            </div>
+                            <div class="card-body pt-2">
+                                @if (caseImplants.Count > 0)
+                                {
+                                    <div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
+                                        <thead><tr class="fw-bold text-muted bg-light"><th class="ps-4 rounded-start">@T["Item"]</th><th>@T["Lot"]</th><th class="text-end pe-4 rounded-end"></th></tr></thead>
+                                        <tbody>@foreach (var c in caseImplants)
+                                        {
+                                            <tr>
+                                                <td class="ps-4"><div class="d-flex align-items-center">
+                                                    <div class="symbol symbol-45px me-4"><span class="symbol-label bg-light-primary"><i class="ki-outline ki-shield-tick fs-2 text-primary"></i></span></div>
+                                                    <div class="d-flex flex-column"><span class="text-gray-900 fw-bold fs-6">@DisplayName.Of(c.Item, c.ItemEn)</span><span class="text-gray-500 fw-semibold fs-7">@DisplayName.Of(c.Vendor, c.VendorEn) · <bdi class="hp-num" dir="ltr">SN @c.Row.SerialNo</bdi></span></div>
+                                                </div></td>
+                                                <td><bdi class="text-gray-800 fw-bold hp-num" dir="ltr">@(c.Row.Lot ?? "—")</bdi></td>
+                                                <td class="text-end pe-4"><span class="badge badge-light-primary fs-7 fw-bold">@T["cons:" + HospitalConsignmentRules.State(c.Row.Status, c.PoStatus)]</span>@if (c.PoNo != null) {<bdi class="text-gray-500 fw-semibold d-block fs-7 hp-num mt-1">@c.PoNo</bdi>}</td>
+                                            </tr>
+                                        }</tbody>
+                                    </table></div>
+                                }
+                                @if ((canConsult || canManage) && (sc.Status == HospitalSurgeryStatus.InProgress || sc.Status == HospitalSurgeryStatus.Done) && storeImplants.Count > 0)
+                                {
+                                    <div class="row g-3 align-items-end mt-2">
+                                        <div class="col-md-8"><label class="form-label fs-7 fw-semibold text-gray-600 mb-1">@T["Implants"]</label>
+                                            <select class="form-select form-select-sm form-select-solid" data-implant-pick data-control="select2" data-placeholder="@T["A consignment implant in the store..."]">
+                                                <option></option>
+                                                @foreach (var c in storeImplants) { <option value="@c.Row.ID">SN @c.Row.SerialNo · @DisplayName.Of(c.Item, c.ItemEn)</option> }
+                                            </select></div>
+                                        <div class="col-md-4"><button type="button" class="btn btn-sm btn-light-primary w-100" data-implant-use="@sc.ID"><i class="ki-outline ki-plus fs-4"></i>@T["Record the implant"]</button></div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+
+                    @* H37/H122: the procedure's kit — the same card as the dialysis session's kit (demo39 widgets/tables) *@
+                    @if (kit != null && kit.Ready)
+                    {
+                        <div class="card card-flush" data-kit>
+                            <div class="card-header pt-5">
+                                <h3 class="card-title align-items-start flex-column">
+                                    <span class="card-label fw-bold text-gray-800">@T["Procedure kit"]</span>
+                                    <span class="text-gray-500 mt-1 fw-semibold fs-7">@(kit.KitItemId != null ? DisplayName.Of(kit.KitName ?? "", kit.KitNameEn ?? "") : T["This procedure has no kit set"].Value) · @T["From the theatre store"]: <bdi>@(kit.StoreName ?? T["not set"].Value)</bdi></span>
+                                </h3>
+                                <div class="card-toolbar gap-2">
+                                    @if (kit.IssuedAt != null) { <span class="badge badge-light-success fs-7 fw-bold py-3 px-4"><i class="ki-outline ki-check-circle fs-5 text-success me-2"></i>@T["Issued from the store"] <bdi class="hp-num ms-2" data-fmt data-utc="@kit.IssuedAt?.ToString("o")">@kit.IssuedAt?.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</bdi></span> }
+                                    else if (sc.Status == HospitalSurgeryStatus.Done && kit.KitItemId != null) { <button type="button" class="btn btn-sm btn-primary" data-kit-issue="@sc.ID"><i class="ki-outline ki-exit-up fs-4"></i>@T["Issue the kit now"]</button> }
+                                    else if (kit.KitItemId != null) { <span class="badge badge-light-primary fs-7 fw-bold py-3 px-4"><i class="ki-outline ki-time fs-5 text-primary me-2"></i>@T["Leaves the store when the case closes"]</span> }
+                                </div>
+                            </div>
+                            <div class="card-body py-3">
+                                @if (kitShort && sc.Status == HospitalSurgeryStatus.Done)
+                                {
+                                    <div class="notice d-flex bg-light-danger rounded border-danger border border-dashed p-5 mb-5">
+                                        <i class="ki-outline ki-information fs-2tx text-danger me-4"></i>
+                                        <div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@T["The kit is waiting for the store"]</h4>
+                                            <div class="fs-6 text-gray-700">@T["The case is closed; its kit leaves the store once the store holds every component."]</div></div>
+                                    </div>
+                                }
+                                @if (kit.Lines.Count > 0)
+                                {
+                                    <div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
+                                        <thead><tr class="fw-bold text-muted bg-light">
+                                            <th class="ps-4 min-w-200px rounded-start">@T["Item"]</th><th class="text-end">@T["Qty"]</th><th class="text-end pe-4 rounded-end">@T["In the theatre store"]</th></tr></thead>
+                                        <tbody>@foreach (var l in kit.Lines)
+                                        {
+                                            bool lineShort = kit.IssuedAt == null && l.InStore < l.Qty;
+                                            <tr>
+                                                <td class="ps-4"><div class="d-flex align-items-center">
+                                                    <div class="symbol symbol-45px me-4"><span class="symbol-label bg-light-primary"><i class="ki-outline ki-capsule fs-2 text-primary"></i></span></div>
+                                                    <div class="d-flex flex-column"><span class="text-gray-900 fw-bold fs-6">@DisplayName.Of(l.Name, l.NameEn)</span><bdi class="text-muted fw-semibold d-block fs-7" dir="ltr">@l.Code</bdi></div>
+                                                </div></td>
+                                                <td class="text-end"><span class="text-gray-900 fw-bold d-block fs-6 hp-num">@l.Qty.ToString("0.###", inv)</span></td>
+                                                <td class="text-end pe-4">@if (kit.IssuedAt != null) {<span class="text-muted fw-bold hp-num">@l.InStore.ToString("0.###", inv)</span>}
+                                                    else {<span class="badge badge-light-@(lineShort ? "danger" : "success") fs-7 fw-bold hp-num">@l.InStore.ToString("0.###", inv)</span>}</td>
+                                            </tr>
+                                        }</tbody>
+                                    </table></div>
+                                }
+                                else if (kit.KitItemId == null)
+                                {
+                                    <div class="text-center py-8">
+                                        <i class="ki-outline ki-parcel fs-3x text-gray-300 mb-4 d-block"></i>
+                                        <div class="fs-6 fw-bold text-gray-700">@T["This procedure has no kit set"]</div>
+                                    </div>
+                                }
+                                @if (canManage)
+                                {
+                                    <div class="separator separator-dashed my-4"></div>
+                                    <div class="row g-3 mb-2">
+                                        <div class="col-md-6"><label class="form-label fs-7 fw-semibold text-gray-600 mb-1">@T["Procedure kit"]</label>
+                                            <select class="form-select form-select-sm form-select-solid" data-kit-pick="@sc.ServiceId" data-control="select2" data-allow-clear="true" data-placeholder="@T["The procedure's kit..."]">
+                                                <option></option>
+                                                @foreach (var k in kitItems) { <option value="@k.Id" selected="@(k.Id == kit.KitItemId)">@k.Code · @DisplayName.Of(k.Name, k.NameEn)</option> }
+                                            </select></div>
+                                        <div class="col-md-6"><label class="form-label fs-7 fw-semibold text-gray-600 mb-1">@T["From the theatre store"]</label>
+                                            <select class="form-select form-select-sm form-select-solid" data-theatre-store data-control="select2" data-placeholder="@T["The theatre store..."]">
+                                                <option></option>
+                                                @foreach (var w in stores) { <option value="@w.Id" selected="@(w.Id == kit.StoreWarehouseId)">@w.Label · @DisplayName.Of(w.Name, w.NameEn ?? w.Name)</option> }
+                                            </select></div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
                 </div>
                 <div class="col-xl-5">
-                    <div class="card h-100">
-                        <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
-                            <span class="card-label fw-bold text-gray-900 fs-4">@T["Surgical safety checklist"]</span>
-                            <span class="text-muted mt-1 fw-semibold fs-7">@T["WHO checklist"]</span>
-                        </div></div>
+                    @* H126: the WHO checklist — the theme's custom checks, a row per item with its phase *@
+                    @{ int doneN = HospitalSurgeryChecklist.All.Count(i => sel.Checks.Contains(i)), allN = HospitalSurgeryChecklist.All.Count; }
+                    <div class="card card-flush h-100">
+                        <div class="card-header pt-5">
+                            <h3 class="card-title align-items-start flex-column">
+                                <span class="card-label fw-bold text-gray-800">@T["Surgical safety checklist"]</span>
+                                <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["WHO checklist"]</span>
+                            </h3>
+                            <div class="card-toolbar"><span class="badge badge-light-@(doneN == allN ? "success" : "primary") fs-7 fw-bold">@T["{0} of {1}", doneN, allN]</span></div>
+                        </div>
                         <div class="card-body pt-2">
+                            <div class="progress h-6px bg-light mb-6"><div class="progress-bar bg-@(doneN == allN ? "success" : "primary")" role="progressbar" style="width:@(allN == 0 ? 0 : doneN * 100 / allN)%"></div></div>
+                            @{ int ix = 0; }
                             @foreach (var item in HospitalSurgeryChecklist.All)
                             {
                                 bool on = sel.Checks.Contains(item);
-                                <label class="d-flex align-items-center py-3 border-bottom border-gray-200 border-bottom-dashed">
-                                    <input type="checkbox" class="form-check-input me-3" data-check="@item" data-id="@sc.ID" @(on ? "checked" : "") @(canConsult && open ? "" : "disabled") />
-                                    <span class="fw-semibold @(on ? "text-gray-800" : "text-gray-600")">@T["orc:" + item]</span>
-                                    @if (item == HospitalSurgeryChecklist.Consent)
-                                    {
-                                        var cno = ViewBag.CaseConsentNo as string;
-                                        if (cno != null) { <a href="@Url.Action("Patient", new { id = sc.PatientId })#pfConsents" class="badge hp-code fs-9 ms-2 hp-num">@cno</a> }
-                                        else if (canConsult && open) { <a href="@Url.Action("NewConsent", new { id = sc.PatientId, surgeryId = sc.ID })" class="btn btn-sm btn-light-primary py-1 px-2 ms-2 fs-8">@T["Take the consent"]</a> }
-                                    }
-                                    @if (HospitalSurgeryChecklist.BeforeStart.Contains(item)) { <span class="badge badge-light fs-9 ms-auto">@T["Before induction"]</span> } else { <span class="badge badge-light fs-9 ms-auto">@T["Before leaving theatre"]</span> }
-                                </label>
+                                if (ix++ > 0) { <div class="separator separator-dashed my-3"></div> }
+                                <div class="d-flex flex-stack">
+                                    <label class="form-check form-check-custom form-check-solid align-items-center me-3">
+                                        <input type="checkbox" class="form-check-input h-20px w-20px" data-check="@item" data-id="@sc.ID" @(on ? "checked" : "") @(canConsult && open ? "" : "disabled") />
+                                        <span class="form-check-label fw-semibold fs-6 @(on ? "text-gray-800" : "text-gray-600")">@T["orc:" + item]</span>
+                                    </label>
+                                    <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                                        @if (item == HospitalSurgeryChecklist.Consent)
+                                        {
+                                            var cno = ViewBag.CaseConsentNo as string;
+                                            if (cno != null) { <a href="@Url.Action("Patient", new { id = sc.PatientId })#pfConsents" class="badge badge-light-success fs-8 fw-bold hp-num">@cno</a> }
+                                            else if (canConsult && open) { <a href="@Url.Action("NewConsent", new { id = sc.PatientId, surgeryId = sc.ID })" class="btn btn-sm btn-light-primary py-1 px-3 fs-8">@T["Take the consent"]</a> }
+                                        }
+                                        <span class="badge badge-light-@(HospitalSurgeryChecklist.BeforeStart.Contains(item) ? "info" : "primary") fs-8">@(HospitalSurgeryChecklist.BeforeStart.Contains(item) ? T["Before induction"] : T["Before leaving theatre"])</span>
+                                    </div>
+                                </div>
                             }
                         </div>
                     </div>
@@ -259,16 +364,22 @@
         }
         else if (ready && rooms.Count > 0)
         {
-            <div class="card"><div class="card-body text-center text-muted py-15"><i class="ki-outline ki-calendar fs-3x text-gray-300 d-block mb-4"></i>@T["No operation is booked this day."]</div></div>
+            <div class="card card-flush"><div class="card-body text-center py-15">
+                <i class="ki-outline ki-calendar fs-3x text-gray-300 d-block mb-4"></i>
+                <div class="fs-5 fw-bold text-gray-700 mb-5">@T["No operation is booked this day."]</div>
+                @if (canBook) {<button type="button" class="btn btn-sm btn-primary" data-case-open><i class="ki-outline ki-plus fs-4"></i>@T["Book a case"]</button>}
+            </div></div>
         }
     </div></div>
 </div>
 
 @if (canBook)
 {
-    <div class="modal fade" id="caseModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-650px"><div class="modal-content">
-        <div class="modal-header"><h2 class="fw-bold m-0 fs-4">@T["Book a case"]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
-        <div class="modal-body py-6 px-lg-10"><div class="row g-4">
+    <div class="modal fade" id="caseModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-650px"><div class="modal-content rounded">
+        <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-10">
+            <div class="mb-10 text-center"><h1 class="mb-3">@T["Book a case"]</h1><div class="text-muted fw-semibold fs-5">@T["Theatre schedule"] · <bdi class="hp-num">@day.ToString("yyyy-MM-dd", inv)</bdi></div></div>
+            <div class="row g-6">
             <div class="col-12"><label class="form-label required">@T["Patient"]</label>
                 <select class="form-select form-select-solid" data-cs="patient" data-person-select data-person-ajax="@Url.Action("SearchDentalPatients")" data-searching="@T["Searching…"]" data-no-results="@T["No patient matches"]" data-placeholder="@T["Patient"]"><option value=""></option></select></div>
             <div class="col-12"><label class="form-label required">@T["Procedure"]</label>
@@ -276,9 +387,9 @@
                     @foreach (var p in procedures) { <option value="@p.Id">@p.Label — @DisplayName.Of(p.Name, p.NameEn ?? p.Name)</option> }
                 </select></div>
             <div class="col-md-6"><label class="form-label required">@T["Theatre"]</label>
-                <select class="form-select form-select-solid" data-cs="room">@foreach (var r in rooms) { <option value="@r.Id">@DisplayName.Of(r.Name, r.NameEn)</option> }</select></div>
+                <select class="form-select form-select-solid" data-cs="room" data-control="select2" data-dropdown-parent="#caseModal" data-hide-search="true">@foreach (var r in rooms) { <option value="@r.Id">@DisplayName.Of(r.Name, r.NameEn)</option> }</select></div>
             <div class="col-md-6"><label class="form-label required">@T["Date"]</label><input type="date" class="form-control form-control-solid hp-num" dir="ltr" data-cs="date" value="@day.ToString("yyyy-MM-dd", inv)" /></div>
-            <div class="col-md-6"><label class="form-label required">@T["From"]</label><input type="time" class="form-control form-control-solid hp-num" dir="ltr" data-cs="start" value="08:00" step="300" /></div>
+            <div class="col-md-6"><label class="form-label required">@T["From"]</label><input type="text" class="form-control form-control-solid hp-num" dir="ltr" data-cs="start" value="08:00" data-cs-time /></div>
             <div class="col-md-6"><label class="form-label required">@T["Minutes"]</label><input type="number" min="15" max="720" step="5" class="form-control form-control-solid hp-num" dir="ltr" data-cs="minutes" value="60" /></div>
             <div class="col-md-6"><label class="form-label required">@T["Surgeon"]</label>
                 <select class="form-select form-select-solid" data-cs="surgeon" data-person-select data-placeholder="@T["Surgeon"]"><option value=""></option>
@@ -289,8 +400,9 @@
                     @foreach (var t in team.Where(t => HasPriv(t.Privileges, "anes"))) { <option value="@t.Doctor.Id" data-photo="@t.Doctor.Photo" data-initials="@HospitalUi.Initials(t.Doctor.NameEn)">@DisplayName.Of(t.Doctor.Name, t.Doctor.NameEn)</option> }
                 </select></div>
             <div class="col-12"><label class="form-label">@T["Note"]</label><input type="text" maxlength="500" class="form-control form-control-solid" data-cs="note" /></div>
-        </div></div>
-        <div class="modal-footer flex-center"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-case-save>@T["Book"]</button></div>
+            </div>
+            <div class="text-center pt-10"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-case-save>@T["Book"]</button></div>
+        </div>
     </div></div></div>
 }
 
@@ -357,7 +469,12 @@
                     return;
                 }
                 var t = e.target.closest('[data-case-open],[data-case-save],[data-case-move]'); if (!t) return;
-                if (t.hasAttribute('data-case-open')) { bootstrap.Modal.getOrCreateInstance(m).show(); if (window.hpPersonSelect) hpPersonSelect(m); return; }
+                if (t.hasAttribute('data-case-open')) {
+                    bootstrap.Modal.getOrCreateInstance(m).show(); if (window.hpPersonSelect) hpPersonSelect(m);
+                    var tm = m.querySelector('[data-cs-time]');   // H126: the start time in the theme's calendar, never a native time box
+                    if (tm && window.flatpickr && !tm._flatpickr) flatpickr(tm, { enableTime: true, noCalendar: true, dateFormat: 'H:i', time_24hr: true, minuteIncrement: 5, static: true, disableMobile: true });
+                    return;
+                }
                 if (t.hasAttribute('data-case-save')) {
                     var v = function (k) { return m.querySelector('[data-cs=' + k + ']').value; };
                     var body = { patientId: +v('patient') || 0, serviceId: +v('service') || 0, roomId: +v('room') || 0, date: v('date') || undefined, startMinute: minutes(v('start')),

@@ -101,37 +101,50 @@
             </div>
         }
 
-        <div class="hp-pbanner p-6 mb-5">
-            <div class="d-flex flex-wrap align-items-center gap-5">
-                <label class="symbol symbol-75px symbol-circle flex-shrink-0 m-0 @(canRegister ? "hp-photo-edit" : "")" title="@(canRegister ? T["Change photo"].Value : "")">
-                    @if (Model.PhotoPath != null) { <img src="@Model.PhotoPath" alt="@name" style="object-fit:cover" data-photo-img /> }
-                    else { <span class="symbol-label fs-2 fw-bold hp-initials" data-photo-img>@initials</span> }
-                    @if (canRegister)
-                    {
-                        <span class="hp-photo-btn"><i class="ki-outline ki-picture fs-6 text-white"></i></span>
-                        <input type="file" accept="image/jpeg,image/png,image/webp" class="d-none" data-photo-input />
-                    }
-                </label>
-                <div class="flex-grow-1 min-w-0">
-                    <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
-                        <span class="fs-2 fw-bold text-gray-900">@name</span>
-                        <span class="badge hp-code fw-bold fs-8 hp-num">@Model.Mrn</span>
-                    </div>
-                    
-                    <div class="d-flex flex-wrap gap-2 mt-3">
-                        <span class="hp-chip"><i class="ki-outline ki-user fs-7"></i>@if (age != null) {<span class="hp-num">@age</span> @T["y"] <text> · </text>}@(Model.Sex == HospitalPatientSex.Male ? T["Male"] : T["Female"])</span>
-                        @if (Model.BloodGroup != null) { <span class="hp-chip"><i class="ki-outline ki-drop fs-7"></i>@T["Blood group"] <span class="hp-num">@Model.BloodGroup</span></span> }
-                        @if (nationality != null) { <span class="hp-chip"><i class="ki-outline ki-flag fs-7"></i>@nationality</span> }
-                        @if (Model.Phone != null) { <span class="hp-chip"><i class="ki-outline ki-phone fs-7"></i><span class="hp-num">@Model.Phone</span></span> }
-                        @if (Model.NationalId != null) { <span class="hp-chip"><i class="ki-outline ki-badge fs-7"></i><span class="hp-num">@Model.NationalId</span></span> }
-                        @if (current != null)
+        @* H126: the profile header — demo39 account/overview (photo · name and file number · details with icons · dashed figures) *@
+        <div class="card mb-5"><div class="card-body pt-9 pb-6">
+            <div class="d-flex flex-wrap flex-sm-nowrap">
+                <div class="me-7 mb-4">
+                    <label class="symbol symbol-100px symbol-lg-125px symbol-circle symbol-fixed position-relative m-0 @(canRegister ? "hp-photo-edit" : "")" title="@(canRegister ? T["Change photo"].Value : "")">
+                        @if (Model.PhotoPath != null) { <img src="@Model.PhotoPath" alt="@name" style="object-fit:cover" data-photo-img /> }
+                        else { <span class="symbol-label fs-1 fw-bold bg-light-primary text-primary" data-photo-img>@initials</span> }
+                        @if (canRegister)
                         {
-                            <span class="hp-chip" style="background:#E7F0FF;color:var(--cb-brand, #3A5795)"><i class="ki-outline ki-geolocation fs-7" style="color:var(--cb-brand, #3A5795)"></i>@T["Room"] <span class="hp-num">@current.Value.RoomNumber</span> · @T["Bed"] <span class="hp-num">@current.Value.BedCode</span></span>
+                            <span class="hp-photo-btn"><i class="ki-outline ki-picture fs-6 text-white"></i></span>
+                            <input type="file" accept="image/jpeg,image/png,image/webp" class="d-none" data-photo-input />
+                        }
+                        @if (current != null) {<div class="position-absolute translate-middle bottom-0 start-100 mb-6 bg-success rounded-circle border border-4 border-body h-20px w-20px" title="@T["Admitted"]"></div>}
+                    </label>
+                </div>
+                <div class="flex-grow-1 min-w-0">
+                    <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                        <span class="text-gray-900 fs-2 fw-bold me-1">@name</span>
+                        <span class="badge badge-light-primary fw-bold fs-7 hp-num" dir="ltr">@Model.Mrn</span>
+                        @if (Model.DeceasedAt != null) {<span class="badge badge-light-dark fw-bold fs-7">@T["Deceased"]</span>}
+                        @if (restriction != null) {<span class="badge badge-light-danger fw-bold fs-7"><i class="ki-outline ki-lock-2 fs-7 text-danger me-1"></i>@T["Restricted file"]</span>}
+                        @if (allergies.Length > 0) {<span class="badge badge-light-danger fw-bold fs-7"><i class="ki-outline ki-shield-cross fs-7 text-danger me-1"></i>@T["Allergy"]</span>}
+                    </div>
+                    <div class="d-flex flex-wrap fw-semibold fs-6 mb-4 pe-2">
+                        <span class="d-flex align-items-center text-gray-500 me-5 mb-2"><i class="ki-outline ki-profile-circle fs-4 me-1"></i>@if (age != null) {<span class="hp-num">@age</span><text>&nbsp;@T["y"]&nbsp;·&nbsp;</text>}@(Model.Sex == HospitalPatientSex.Male ? T["Male"] : T["Female"])</span>
+                        @if (Model.BloodGroup != null) {<span class="d-flex align-items-center text-gray-500 me-5 mb-2"><i class="ki-outline ki-drop fs-4 me-1"></i>@T["Blood group"]&nbsp;<bdi class="hp-num text-gray-800 fw-bold" dir="ltr">@Model.BloodGroup</bdi></span>}
+                        @if (nationality != null) {<span class="d-flex align-items-center text-gray-500 me-5 mb-2"><i class="ki-outline ki-flag fs-4 me-1"></i>@nationality</span>}
+                        @if (Model.Phone != null) {<span class="d-flex align-items-center text-gray-500 me-5 mb-2"><i class="ki-outline ki-phone fs-4 me-1"></i><bdi class="hp-num" dir="ltr">@Model.Phone</bdi></span>}
+                        @if (Model.NationalId != null) {<span class="d-flex align-items-center text-gray-500 me-5 mb-2"><i class="ki-outline ki-badge fs-4 me-1"></i><bdi class="hp-num" dir="ltr">@Model.NationalId</bdi></span>}
+                        @if (current != null) {<span class="d-flex align-items-center text-primary fw-bold me-5 mb-2"><i class="ki-outline ki-geolocation fs-4 text-primary me-1"></i>@T["Room"]&nbsp;<bdi class="hp-num">@current.Value.RoomNumber</bdi>&nbsp;·&nbsp;@T["Bed"]&nbsp;<bdi class="hp-num">@current.Value.BedCode</bdi></span>}
+                    </div>
+                    <div class="d-flex flex-wrap">
+                        @foreach (var (label, n, icon, tone) in new[] { (T["Visits"].Value, visits.Count, "ki-notepad-edit", "primary"), (T["Admissions"].Value, stays.Count, "ki-home-2", "info"),
+                            (T["Appointments"].Value, appointments.Count, "ki-calendar", "success"), (T["Bills"].Value, bills.Count, "ki-bill", "danger") })
+                        {
+                            <div class="border border-gray-300 border-dashed rounded min-w-125px py-3 px-4 me-6 mb-3">
+                                <div class="d-flex align-items-center"><i class="ki-outline @icon fs-3 text-@tone me-2"></i><div class="fs-2 fw-bold hp-num">@n</div></div>
+                                <div class="fw-semibold fs-6 text-gray-500">@label</div>
+                            </div>
                         }
                     </div>
                 </div>
             </div>
-        </div>
+        </div></div>
 
         @if (allergies.Length > 0)
         {
@@ -188,8 +201,8 @@
                     <div class="tab-pane fade show active" id="pfOverview">
                         <div class="row g-5">
                             <div class="col-md-6">
-                                <div class="card h-100">
-                                    <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Patient details"]</span></div></div>
+                                <div class="card card-flush h-100">
+                                    <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Patient details"]</span></h3></div>
                                     <div class="card-body pt-2">
                                         @foreach (var f in new (string Label, string? Value, bool Num)[] {
                                             (T["Name (Arabic)"].Value, Model.Name, false), (T["Name (English)"].Value, Model.NameEn, false),
@@ -205,8 +218,8 @@
                                 </div>
                             </div>
                             <div class="col-md-6">
-                                <div class="card mb-5">
-                                    <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Chronic conditions"]</span></div></div>
+                                <div class="card card-flush mb-5">
+                                    <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Chronic conditions"]</span></h3></div>
                                     <div class="card-body pt-2">
                                         @if (chronic.Length == 0) { <div class="text-muted fs-7 py-2">@T["None recorded"]</div> }
                                         @foreach (var c in chronic)
@@ -215,8 +228,8 @@
                                         }
                                     </div>
                                 </div>
-                                <div class="card">
-                                    <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Emergency contact"]</span></div></div>
+                                <div class="card card-flush">
+                                    <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Emergency contact"]</span></h3></div>
                                     <div class="card-body pt-2">
                                         @if (Model.EmergencyName == null && Model.EmergencyPhone == null) { <div class="text-muted fs-7 py-2">@T["None recorded"]</div> }
                                         else
@@ -235,12 +248,12 @@
                     </div>
 
                     <div class="tab-pane fade" id="pfVisits">
-                        <div class="card"><div class="card-body pt-6">
-                            @if (visits.Count == 0) { <div class="text-center text-muted py-10">@T["No visits yet."]</div> }
+                        <div class="card card-flush"><div class="card-body pt-6">
+                            @if (visits.Count == 0) { <div class="text-center py-10"><i class="ki-outline ki-notepad-edit fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-semibold text-gray-600">@T["No visits yet."]</div></div> }
                             else
                             {
-                                <table class="table align-middle table-row-dashed fs-6 gy-3 mb-0">
-                                    <thead><tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0"><th>@T["Date"]</th><th>@T["Doctor"]</th><th>@T["Diagnosis"]</th><th>@T["Status"]</th><th class="text-end"></th></tr></thead>
+                                <table class="table align-middle gs-4 gy-4 fs-6 mb-0">
+                                    <thead><tr class="fw-bold text-muted bg-light"><th class="rounded-start">@T["Date"]</th><th>@T["Doctor"]</th><th>@T["Diagnosis"]</th><th>@T["Status"]</th><th class="text-end rounded-end"></th></tr></thead>
                                     <tbody class="fw-semibold text-gray-700">
                                         @foreach (var v in visits)
                                         {
@@ -263,12 +276,12 @@
                     <div class="tab-pane fade" id="pfRad"><partial name="_HospitalRadResults" model="rad" /></div>
 
                     <div class="tab-pane fade" id="pfAppts">
-                        <div class="card"><div class="card-body pt-6">
-                            @if (appointments.Count == 0) { <div class="text-center text-muted py-10">@T["No appointments yet."]</div> }
+                        <div class="card card-flush"><div class="card-body pt-6">
+                            @if (appointments.Count == 0) { <div class="text-center py-10"><i class="ki-outline ki-calendar fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-semibold text-gray-600">@T["No appointments yet."]</div></div> }
                             else
                             {
-                                <table class="table align-middle table-row-dashed fs-6 gy-3 mb-0">
-                                    <thead><tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0"><th>@T["Date"]</th><th>@T["Doctor"]</th><th>@T["Visit type"]</th><th class="text-end">@T["Status"]</th></tr></thead>
+                                <table class="table align-middle gs-4 gy-4 fs-6 mb-0">
+                                    <thead><tr class="fw-bold text-muted bg-light"><th class="rounded-start">@T["Date"]</th><th>@T["Doctor"]</th><th>@T["Visit type"]</th><th class="text-end rounded-end">@T["Status"]</th></tr></thead>
                                     <tbody class="fw-semibold text-gray-700">
                                         @foreach (var a in appointments)
                                         {
@@ -287,12 +300,12 @@
                     </div>
 
                     <div class="tab-pane fade" id="pfStays">
-                        <div class="card"><div class="card-body pt-6">
-                            @if (stays.Count == 0) { <div class="text-center text-muted py-10">@T["No admissions yet."]</div> }
+                        <div class="card card-flush"><div class="card-body pt-6">
+                            @if (stays.Count == 0) { <div class="text-center py-10"><i class="ki-outline ki-home-2 fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-semibold text-gray-600">@T["No admissions yet."]</div></div> }
                             else
                             {
-                                <table class="table align-middle table-row-dashed fs-6 gy-3 mb-0">
-                                    <thead><tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0"><th>@T["Room"]</th><th>@T["Bed"]</th><th>@T["From"]</th><th>@T["To"]</th><th>@T["Diagnosis"]</th><th class="text-end"></th></tr></thead>
+                                <table class="table align-middle gs-4 gy-4 fs-6 mb-0">
+                                    <thead><tr class="fw-bold text-muted bg-light"><th class="rounded-start">@T["Room"]</th><th>@T["Bed"]</th><th>@T["From"]</th><th>@T["To"]</th><th>@T["Diagnosis"]</th><th class="text-end rounded-end"></th></tr></thead>
                                     <tbody class="fw-semibold text-gray-700">
                                         @foreach (var s in stays)
                                         {
@@ -318,14 +331,14 @@
                                 <div class="col-md-4"><div class="card card-flush h-100"><div class="card-body py-5"><div class="text-muted fw-semibold fs-7 mb-1">@k.Item1</div><div class="fs-2x fw-bold @k.Item3 hp-num">@BM(k.Item2)</div><div class="text-muted fs-8">@billCurrency?.Label(DisplayName.IsArabic)</div></div></div></div>
                             }
                         </div>
-                        <div class="card"><div class="card-body pt-6">
+                        <div class="card card-flush"><div class="card-body pt-6">
                             @* H63: the patient's account statement — bills, payments and charity, with the running balance (Report Studio) *@
                             <div class="d-flex justify-content-end mb-4">@await Html.PartialAsync("_ReportPrintMenu", new CrossBuy.BL.Reporting.ReportPrintMenuModel { ScreenKey = CrossBuy.BL.Reporting.ReportScreenKeys.HospitalPatientStatement, DocumentId = Model.ID.ToString(), DocumentTitle = Model.Mrn })</div>
-                            @if (bills.Count == 0) { <div class="text-center text-muted py-10">@T["No bills yet."]</div> }
+                            @if (bills.Count == 0) { <div class="text-center py-10"><i class="ki-outline ki-bill fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-semibold text-gray-600">@T["No bills yet."]</div></div> }
                             else
                             {
-                                <table class="table align-middle table-row-dashed fs-6 gy-3 mb-0">
-                                    <thead><tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0"><th>@T["Bill"]</th><th>@T["Type"]</th><th>@T["Opened"]</th><th class="text-end">@T["Total"]</th><th class="text-end">@T["Due"]</th><th>@T["Status"]</th><th class="text-end"></th></tr></thead>
+                                <table class="table align-middle gs-4 gy-4 fs-6 mb-0">
+                                    <thead><tr class="fw-bold text-muted bg-light"><th class="rounded-start">@T["Bill"]</th><th>@T["Type"]</th><th>@T["Opened"]</th><th class="text-end">@T["Total"]</th><th class="text-end">@T["Due"]</th><th>@T["Status"]</th><th class="text-end rounded-end"></th></tr></thead>
                                     <tbody class="fw-semibold text-gray-700">
                                         @foreach (var b in bills)
                                         {
@@ -347,7 +360,7 @@
 
                     @* H56: sick leave certificates — issued by a doctor, voided with a reason, printed through Report Studio *@
                     <div class="tab-pane fade" id="pfSick">
-                        <div class="card"><div class="card-body pt-6" data-sick-body>
+                        <div class="card card-flush"><div class="card-body pt-6" data-sick-body>
                             @if (!sickReady) { <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice"><div class="fs-6 text-gray-700">@T[HospitalSickLeaveService.NoTables]</div></div> }
                             @if (sickReady && canConsult)
                             {
@@ -366,11 +379,11 @@
                                     </div>
                                 </div>
                             }
-                            @if (sick.Count == 0) { <div class="text-center text-muted py-8">@T["No sick leave yet."]</div> }
+                            @if (sick.Count == 0) { <div class="text-center py-10"><i class="ki-outline ki-document fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-semibold text-gray-600">@T["No sick leave yet."]</div></div> }
                             else
                             {
-                                <table class="table align-middle table-row-dashed fs-7 gy-3 mb-0" data-sick-list>
-                                    <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0"><th>@T["Certificate"]</th><th>@T["Period"]</th><th>@T["Recommendation"]</th><th>@T["Doctor"]</th><th>@T["State"]</th><th class="text-end"></th></tr></thead>
+                                <table class="table align-middle gs-4 gy-4 fs-7 mb-0" data-sick-list>
+                                    <thead><tr class="fw-bold text-muted bg-light"><th class="rounded-start">@T["Certificate"]</th><th>@T["Period"]</th><th>@T["Recommendation"]</th><th>@T["Doctor"]</th><th>@T["State"]</th><th class="text-end rounded-end"></th></tr></thead>
                                     <tbody class="fw-semibold text-gray-700">
                                         @foreach (var r in sick)
                                         {
@@ -396,17 +409,17 @@
                     @* H60: signed consents (and signed refusals) — taken on their own signing page, the signature shown here,
                        printed through Report Studio, withdrawn with a reason (never edited) *@
                     <div class="tab-pane fade" id="pfConsents">
-                        <div class="card"><div class="card-body pt-6" data-consent-body>
+                        <div class="card card-flush"><div class="card-body pt-6" data-consent-body>
                             @if (!consentsReady) { <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice"><div class="fs-6 text-gray-700">@T[HospitalConsentService.NoTables]</div></div> }
                             @if (consentsReady && canConsult && Model.DeceasedAt == null)
                             {
                                 <div class="d-flex justify-content-end mb-5"><a href="@Url.Action("NewConsent", new { id = Model.ID })" class="btn btn-sm btn-primary"><i class="ki-outline ki-pencil fs-4"></i>@T["New consent"]</a></div>
                             }
-                            @if (consents.Count == 0) { <div class="text-center text-muted py-8">@T["No consent signed yet."]</div> }
+                            @if (consents.Count == 0) { <div class="text-center py-10"><i class="ki-outline ki-shield-tick fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-semibold text-gray-600">@T["No consent signed yet."]</div></div> }
                             else
                             {
-                                <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-3 mb-0" data-consent-list>
-                                    <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0"><th>@T["cn:consent"]</th><th class="min-w-200px">@T["Form"]</th><th>@T["cn:decision"]</th><th class="min-w-150px">@T["cn:signedBy"]</th></tr></thead>
+                                <div class="table-responsive"><table class="table align-middle gs-4 gy-4 fs-7 mb-0" data-consent-list>
+                                    <thead><tr class="fw-bold text-muted bg-light"><th class="rounded-start">@T["cn:consent"]</th><th class="min-w-200px">@T["Form"]</th><th>@T["cn:decision"]</th><th class="min-w-150px rounded-end">@T["cn:signedBy"]</th></tr></thead>
                                     <tbody class="fw-semibold text-gray-700">
                                         @foreach (var r in consents)
                                         {
@@ -436,8 +449,8 @@
                     <div class="tab-pane fade" id="pfAccess">
                         <div class="card">
                             <div class="card-body pt-6">
-                                <table class="table align-middle table-row-dashed fs-6 gy-3 mb-0">
-                                    <thead><tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0"><th>@T["Who"]</th><th>@T["What"]</th><th class="text-end">@T["When"]</th></tr></thead>
+                                <table class="table align-middle gs-4 gy-4 fs-6 mb-0">
+                                    <thead><tr class="fw-bold text-muted bg-light"><th class="rounded-start">@T["Who"]</th><th>@T["What"]</th><th class="text-end rounded-end">@T["When"]</th></tr></thead>
                                     <tbody class="fw-semibold text-gray-700">
                                         @foreach (var a in log)
                                         {
