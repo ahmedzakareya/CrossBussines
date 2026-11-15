@@ -6646,4 +6646,41 @@
   <data name="The dose was given: it cannot be cancelled" xml:space="preserve"><value>The dose was given: it cannot be cancelled</value></data>
   <data name="The store already issued {0}: cancelling returns it to the store, batch by batch. Write why:" xml:space="preserve"><value>The store already issued {0}: cancelling returns it to the store, batch by batch. Write why:</value></data>
   <data name="This delivery is already cancelled" xml:space="preserve"><value>This delivery is already cancelled</value></data>
+  <data name="Batches and expiry dates" xml:space="preserve"><value>Batches and expiry dates</value></data>
+  <data name="Choose the pharmacy store first" xml:space="preserve"><value>Choose the pharmacy store first</value></data>
+  <data name="Days left" xml:space="preserve"><value>Days left</value></data>
+  <data name="Expired batches" xml:space="preserve"><value>Expired batches</value></data>
+  <data name="Expired {0} days ago" xml:space="preserve"><value>Expired {0} days ago</value></data>
+  <data name="Fine" xml:space="preserve"><value>Fine</value></data>
+  <data name="Has an expired batch" xml:space="preserve"><value>Has an expired batch</value></data>
+  <data name="Into the store" xml:space="preserve"><value>Into the store</value></data>
+  <data name="Medicines in the formulary" xml:space="preserve"><value>Medicines in the formulary</value></data>
+  <data name="Near expiry" xml:space="preserve"><value>Near expiry</value></data>
+  <data name="Nearest expiry" xml:space="preserve"><value>Nearest expiry</value></data>
+  <data name="Out of stock" xml:space="preserve"><value>Out of stock</value></data>
+  <data name="Out of the store" xml:space="preserve"><value>Out of the store</value></data>
+  <data name="Receive stock" xml:space="preserve"><value>Receive stock</value></data>
+  <data name="Reorder point" xml:space="preserve"><value>Reorder point</value></data>
+  <data name="Search by medicine code or name…" xml:space="preserve"><value>Search by medicine code or name…</value></data>
+  <data name="Search by medicine or batch…" xml:space="preserve"><value>Search by medicine or batch…</value></data>
+  <data name="Store movements" xml:space="preserve"><value>Store movements</value></data>
+  <data name="The pharmacy's stock is the store chosen in the pharmacy settings." xml:space="preserve"><value>The pharmacy's stock is the store chosen in the pharmacy settings.</value></data>
+  <data name="Unit cost" xml:space="preserve"><value>Unit cost</value></data>
+  <data name="nothing on the shelf" xml:space="preserve"><value>nothing on the shelf</value></data>
+  <data name="pmv:Delivery" xml:space="preserve"><value>Medication delivery to the ward</value></data>
+  <data name="pmv:Dispense" xml:space="preserve"><value>Prescription dispensed</value></data>
+  <data name="pmv:Kit" xml:space="preserve"><value>A session's or a case's kit</value></data>
+  <data name="pmv:Opening" xml:space="preserve"><value>Opening balance</value></data>
+  <data name="pmv:Other" xml:space="preserve"><value>Other stock movement</value></data>
+  <data name="pmv:Receipt" xml:space="preserve"><value>Goods received</value></data>
+  <data name="pmv:Return" xml:space="preserve"><value>Dose returned to the store</value></data>
+  <data name="pmv:Transfer" xml:space="preserve"><value>Transfer between stores</value></data>
+  <data name="pstock:Expired" xml:space="preserve"><value>Has an expired batch</value></data>
+  <data name="pstock:Low" xml:space="preserve"><value>Below reorder</value></data>
+  <data name="pstock:Near" xml:space="preserve"><value>Near expiry</value></data>
+  <data name="pstock:Ok" xml:space="preserve"><value>Fine</value></data>
+  <data name="pstock:Out" xml:space="preserve"><value>Out of stock</value></data>
+  <data name="still on the shelf" xml:space="preserve"><value>still on the shelf</value></data>
+  <data name="{0} batches" xml:space="preserve"><value>{0} batches</value></data>
+  <data name="{0} days left" xml:space="preserve"><value>{0} days left</value></data>
 </root>

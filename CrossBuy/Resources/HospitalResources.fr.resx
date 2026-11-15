@@ -6648,4 +6648,41 @@
   <data name="The dose was given: it cannot be cancelled" xml:space="preserve"><value>La dose a été administrée : elle ne peut pas être annulée</value></data>
   <data name="The store already issued {0}: cancelling returns it to the store, batch by batch. Write why:" xml:space="preserve"><value>Le magasin a déjà sorti {0} : l'annulation le retourne au magasin, lot par lot. Indiquez pourquoi :</value></data>
   <data name="This delivery is already cancelled" xml:space="preserve"><value>Cette livraison est déjà annulée</value></data>
+  <data name="Batches and expiry dates" xml:space="preserve"><value>Lots et dates de péremption</value></data>
+  <data name="Choose the pharmacy store first" xml:space="preserve"><value>Choisissez d'abord le magasin de la pharmacie</value></data>
+  <data name="Days left" xml:space="preserve"><value>Jours restants</value></data>
+  <data name="Expired batches" xml:space="preserve"><value>Lots périmés</value></data>
+  <data name="Expired {0} days ago" xml:space="preserve"><value>Périmé depuis {0} jours</value></data>
+  <data name="Fine" xml:space="preserve"><value>Correct</value></data>
+  <data name="Has an expired batch" xml:space="preserve"><value>A un lot périmé</value></data>
+  <data name="Into the store" xml:space="preserve"><value>Entrée au magasin</value></data>
+  <data name="Medicines in the formulary" xml:space="preserve"><value>Médicaments du formulaire</value></data>
+  <data name="Near expiry" xml:space="preserve"><value>Proche de la péremption</value></data>
+  <data name="Nearest expiry" xml:space="preserve"><value>Péremption la plus proche</value></data>
+  <data name="Out of stock" xml:space="preserve"><value>En rupture</value></data>
+  <data name="Out of the store" xml:space="preserve"><value>Sortie du magasin</value></data>
+  <data name="Receive stock" xml:space="preserve"><value>Recevoir du stock</value></data>
+  <data name="Reorder point" xml:space="preserve"><value>Seuil de réapprovisionnement</value></data>
+  <data name="Search by medicine code or name…" xml:space="preserve"><value>Rechercher par code ou nom…</value></data>
+  <data name="Search by medicine or batch…" xml:space="preserve"><value>Rechercher par médicament ou lot…</value></data>
+  <data name="Store movements" xml:space="preserve"><value>Mouvements du magasin</value></data>
+  <data name="The pharmacy's stock is the store chosen in the pharmacy settings." xml:space="preserve"><value>Le stock de la pharmacie est le magasin choisi dans ses paramètres.</value></data>
+  <data name="Unit cost" xml:space="preserve"><value>Coût unitaire</value></data>
+  <data name="nothing on the shelf" xml:space="preserve"><value>rien en rayon</value></data>
+  <data name="pmv:Delivery" xml:space="preserve"><value>Livraison au service</value></data>
+  <data name="pmv:Dispense" xml:space="preserve"><value>Ordonnance dispensée</value></data>
+  <data name="pmv:Kit" xml:space="preserve"><value>Kit d'une séance ou d'une intervention</value></data>
+  <data name="pmv:Opening" xml:space="preserve"><value>Solde d'ouverture</value></data>
+  <data name="pmv:Other" xml:space="preserve"><value>Autre mouvement</value></data>
+  <data name="pmv:Receipt" xml:space="preserve"><value>Réception</value></data>
+  <data name="pmv:Return" xml:space="preserve"><value>Dose retournée au magasin</value></data>
+  <data name="pmv:Transfer" xml:space="preserve"><value>Transfert entre magasins</value></data>
+  <data name="pstock:Expired" xml:space="preserve"><value>A un lot périmé</value></data>
+  <data name="pstock:Low" xml:space="preserve"><value>Sous le seuil</value></data>
+  <data name="pstock:Near" xml:space="preserve"><value>Proche de la péremption</value></data>
+  <data name="pstock:Ok" xml:space="preserve"><value>Correct</value></data>
+  <data name="pstock:Out" xml:space="preserve"><value>En rupture</value></data>
+  <data name="still on the shelf" xml:space="preserve"><value>encore en rayon</value></data>
+  <data name="{0} batches" xml:space="preserve"><value>{0} lots</value></data>
+  <data name="{0} days left" xml:space="preserve"><value>{0} jours restants</value></data>
 </root>

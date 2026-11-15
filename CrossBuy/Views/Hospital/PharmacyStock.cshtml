@@ -1,0 +1,157 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Controllers
+@model HospitalPharmacyStockStats
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H132 — the pharmacy's own stock, inside the hospital: the figures (demo39 dashboards/logistics stat tiles), three tabs
+    (the theme's line tabs), and one list per tab in the theme's table widget, searched, filtered and paged by cbServerList:
+    the medicines (on hand, nearest expiry, reorder level, state), the batches (expiry, days left), the movements of the
+    pharmacy store (what came in and went out, and why).
+*@
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Pharmacy stock"].Value;
+    string tab = (string)ViewBag.Tab;
+    bool isAr = System.Globalization.CultureInfo.CurrentUICulture.Name.StartsWith("ar");
+    var tiles = new (string Label, int N, string Note, string Icon, string Tone, string? Filter, string Tab)[] {
+        (T["Medicines in the formulary"].Value, Model.Medicines, Model.StoreName ?? "", "ki-capsule", "primary", null, HospitalController.PharmacyStockTabs.Medicines),
+        (T["Out of stock"].Value, Model.OutOfStock, T["nothing on the shelf"].Value, "ki-cross-circle", Model.OutOfStock > 0 ? "danger" : "success", HospitalPharmacyStockState.Out, HospitalController.PharmacyStockTabs.Medicines),
+        (T["Below reorder point"].Value, Model.Low, T["in the pharmacy store"].Value, "ki-chart-line-down", Model.Low > 0 ? "danger" : "success", HospitalPharmacyStockState.Low, HospitalController.PharmacyStockTabs.Medicines),
+        (T["Near-expiry batches"].Value, Model.NearBatches, string.Format(T["within {0} days"].Value, Model.NearDays), "ki-time", Model.NearBatches > 0 ? "danger" : "success", HospitalPharmacyStockState.Near, HospitalController.PharmacyStockTabs.Batches),
+        (T["Expired batches"].Value, Model.ExpiredBatches, T["still on the shelf"].Value, "ki-information", Model.ExpiredBatches > 0 ? "danger" : "success", HospitalPharmacyStockState.Expired, HospitalController.PharmacyStockTabs.Batches) };
+    var tabs = new (string Key, string Label, string Icon)[] {
+        (HospitalController.PharmacyStockTabs.Medicines, T["Medicines"].Value, "ki-capsule"),
+        (HospitalController.PharmacyStockTabs.Batches, T["Batches and expiry dates"].Value, "ki-calendar"),
+        (HospitalController.PharmacyStockTabs.Movements, T["Store movements"].Value, "ki-arrow-right-left") };
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Pharmacy stock"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item"><a href="@Url.Action("Pharmacy")" class="text-muted text-hover-primary">@T["Pharmacy"]</a></li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-400 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted"><bdi>@(Model.StoreName ?? T["not set"].Value)</bdi></li>
+            </ul>
+        </div>
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+            <a href="@Url.Action("Pharmacy")" class="btn btn-sm btn-light btn-active-light-primary"><i class="ki-outline ki-capsule fs-4"></i>@T["Dispensing queue"]</a>
+            <a href="@Url.Action("GoodsReceipts", "Inventory")" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-entrance-left fs-4"></i>@T["Receive stock"]</a>
+        </div>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (!Model.Ready)
+        {
+            <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-6">
+                <i class="ki-outline ki-information fs-2tx text-primary me-4"></i>
+                <div class="d-flex flex-stack flex-grow-1 flex-wrap gap-3"><div class="fw-semibold">
+                    <h4 class="text-gray-900 fw-bold mb-1">@T["Choose the pharmacy store first"]</h4>
+                    <div class="fs-6 text-gray-700">@T["The pharmacy's stock is the store chosen in the pharmacy settings."]</div></div>
+                    <a href="@Url.Action("Pharmacy")" class="btn btn-sm btn-primary">@T["Pharmacy settings"]</a></div>
+            </div>
+        }
+        else
+        {
+            @* the figures — each opens its list, filtered *@
+            <div class="row g-5 g-xl-8 mb-5">
+                @foreach (var s in tiles)
+                {
+                    <div class="col-sm-6 col-xl">
+                        <a href="@Url.Action("PharmacyStock", new { tab = s.Tab })@(s.Filter != null ? "#" + s.Filter : "")" class="card card-flush h-100 hover-elevate-up" data-tile-filter="@s.Filter">
+                            <div class="card-body d-flex flex-column justify-content-between pt-6 pb-0 px-6">
+                                <div class="symbol symbol-45px mb-5"><span class="symbol-label bg-light-@s.Tone"><i class="ki-outline @s.Icon fs-2x text-@s.Tone"></i></span></div>
+                                <div class="d-flex flex-column">
+                                    <span class="fs-2hx fw-bold text-@(s.Tone == "danger" && s.N > 0 ? "danger" : "gray-900") lh-1 ls-n2 hp-num">@s.N</span>
+                                    <span class="text-gray-500 pt-2 fw-semibold fs-6">@s.Label</span>
+                                </div>
+                            </div>
+                            <div class="card-body d-flex align-items-end pt-3 pb-6 px-6">
+                                <div class="d-flex fs-7 fw-semibold align-items-center text-gray-500">@if (!string.IsNullOrEmpty(s.Note)) {<div class="bullet w-8px h-6px rounded-2 bg-@s.Tone me-3"></div><bdi>@s.Note</bdi>} else {<span>&nbsp;</span>}</div>
+                            </div>
+                        </a>
+                    </div>
+                }
+            </div>
+
+            <div class="card card-flush">
+                <div class="card-header pt-5 border-0">
+                    <ul class="nav nav-stretch nav-line-tabs nav-line-tabs-2x border-transparent fs-6 fw-bold">
+                        @foreach (var t in tabs)
+                        {
+                            <li class="nav-item"><a class="nav-link text-active-primary pb-4 @(t.Key == tab ? "active" : "")" href="@Url.Action("PharmacyStock", new { tab = t.Key })"><i class="ki-outline @t.Icon fs-4 me-2"></i>@t.Label</a></li>
+                        }
+                    </ul>
+                </div>
+                <div class="card-header align-items-center pt-2 gap-2 gap-md-5 border-0">
+                    <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@tabs.First(t => t.Key == tab).Label</span>
+                        <span class="text-gray-500 mt-1 fw-semibold fs-7"><span id="resultCount">—</span></span></h3>
+                    <div class="card-toolbar d-flex flex-wrap align-items-center gap-2">
+                        <div class="w-250px"><input type="text" id="f_q" class="form-control form-control-solid form-control-sm" autocomplete="off" placeholder="@(tab == HospitalController.PharmacyStockTabs.Batches ? T["Search by medicine or batch…"] : T["Search by medicine code or name…"])" /></div>
+                        <div class="w-175px"><select class="form-select form-select-solid form-select-sm cb-filter" id="f_filter">
+                            <option value="">@T["All"]</option>
+                            @if (tab == HospitalController.PharmacyStockTabs.Medicines)
+                            {
+                                <option value="@HospitalPharmacyStockState.Out">@T["Out of stock"]</option><option value="@HospitalPharmacyStockState.Expired">@T["Has an expired batch"]</option>
+                                <option value="@HospitalPharmacyStockState.Near">@T["Near expiry"]</option><option value="@HospitalPharmacyStockState.Low">@T["Below reorder point"]</option><option value="@HospitalPharmacyStockState.Ok">@T["Fine"]</option>
+                            }
+                            else if (tab == HospitalController.PharmacyStockTabs.Batches)
+                            {
+                                <option value="@HospitalPharmacyStockState.Expired">@T["Expired"]</option><option value="@HospitalPharmacyStockState.Near">@T["Near expiry"]</option><option value="@HospitalPharmacyStockState.Ok">@T["Fine"]</option>
+                            }
+                            else
+                            {
+                                <option value="in">@T["Into the store"]</option><option value="out">@T["Out of the store"]</option>
+                            }
+                        </select></div>
+                        <div class="w-75px"><select id="f_size" class="form-select form-select-solid form-select-sm"><option value="25">25</option><option value="50">50</option><option value="100">100</option></select></div>
+                        <button type="button" id="f_reset" class="btn btn-sm btn-icon btn-light btn-active-light-primary" title="@T["Reset"]" data-bs-toggle="tooltip"><i class="ki-outline ki-arrows-circle fs-3"></i></button>
+                    </div>
+                </div>
+                <div class="card-body pt-2">
+                    @{
+                        int cols = tab == HospitalController.PharmacyStockTabs.Movements ? 6 : 5;
+                        string emptyIcon = tab == HospitalController.PharmacyStockTabs.Movements ? "ki-arrow-right-left" : tab == HospitalController.PharmacyStockTabs.Batches ? "ki-calendar" : "ki-capsule";
+                    }
+                    <div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
+                        <thead><tr class="fw-bold text-muted bg-light">
+                            @if (tab == HospitalController.PharmacyStockTabs.Medicines)
+                            {
+                                <th class="ps-4 min-w-250px rounded-start">@T["Medicine"]</th><th class="text-end">@T["On hand"]</th><th>@T["Nearest expiry"]</th><th class="text-end">@T["Reorder point"]</th><th class="pe-4 rounded-end">@T["State"]</th>
+                            }
+                            else if (tab == HospitalController.PharmacyStockTabs.Batches)
+                            {
+                                <th class="ps-4 min-w-250px rounded-start">@T["Medicine"]</th><th>@T["Batch"]</th><th>@T["Expiry"]</th><th class="text-end">@T["On hand"]</th><th class="pe-4 rounded-end">@T["Days left"]</th>
+                            }
+                            else
+                            {
+                                <th class="ps-4 rounded-start">@T["Date"]</th><th class="min-w-250px">@T["Medicine"]</th><th class="text-end">@T["Qty"]</th><th>@T["Batch"]</th><th>@T["Why"]</th><th class="text-end pe-4 rounded-end">@T["Unit cost"]</th>
+                            }
+                        </tr></thead>
+                        <tbody id="rows"><tr id="loadingRow"><td colspan="@cols" class="text-center text-muted py-10"><span class="spinner-border spinner-border-sm text-primary me-2"></span>@T["Loading…"]</td></tr>
+                            <tr id="emptyRow" class="d-none"><td colspan="@cols" class="text-center py-12"><i class="ki-outline @emptyIcon fs-3x text-gray-300 mb-4 d-block"></i><span class="fs-6 fw-semibold text-gray-600">@T["Nothing matches."]</span></td></tr></tbody>
+                    </table></div>
+                    <div class="d-flex flex-stack flex-wrap pt-5"><div class="fs-7 text-muted" id="pageInfo"></div><ul class="pagination" id="pager"></ul></div>
+                </div>
+            </div>
+        }
+    </div></div>
+</div>
+
+@section Scripts {
+    @if (Model.Ready)
+    {
+        <script>
+            (function () {
+                // a figure opens its list already filtered (#Out, #Near…): the filter is set before the first load
+                var f = document.getElementById('f_filter'), h = (location.hash || '').replace('#', '');
+                if (h && f && Array.prototype.some.call(f.options, function (o) { return o.value === h; })) { f.value = h; if (window.jQuery) jQuery(f).trigger('change.select2'); }
+                cbServerList({ url: @Json.Serialize(Url.Action("PharmacyStockData")), isAr: @(isAr ? "true" : "false"),
+                    addParams: function (p) { p.set('tab', @Json.Serialize(tab)); p.set('filter', f.value); } });
+            })();
+        </script>
+    }
+}

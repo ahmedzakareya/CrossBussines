@@ -1,0 +1,31 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@model IReadOnlyList<HospitalPharmacyMedRow>
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@* H132 — the pharmacy's medicines in the theme's table widget: a symbol coloured by state, the name over its code, what is
+   on hand, the nearest expiry, the reorder point, the state as a badge. *@
+@{
+    var inv = System.Globalization.CultureInfo.InvariantCulture; var today = (DateTime)ViewBag.Today;
+    string Tone(string s) => s == HospitalPharmacyStockState.Ok ? "success" : s == HospitalPharmacyStockState.Low ? "primary" : "danger";
+}
+@foreach (var r in Model)
+{
+    string tone = Tone(r.State);
+    <tr>
+        <td class="ps-4"><div class="d-flex align-items-center">
+            <div class="symbol symbol-45px me-4"><span class="symbol-label bg-light-@tone"><i class="ki-outline ki-capsule fs-2 text-@tone"></i></span></div>
+            <div class="d-flex flex-column"><span class="text-gray-900 fw-bold fs-6">@DisplayName.Of(r.Name, r.NameEn)</span>
+                <span class="text-muted fw-semibold fs-7"><bdi dir="ltr">@r.Code</bdi>@if (r.Batches > 0) {<text> · @T["{0} batches", r.Batches]</text>}</span></div>
+        </div></td>
+        <td class="text-end"><span class="text-gray-900 fw-bold fs-6 hp-num">@r.OnHand.ToString("0.###", inv)</span></td>
+        <td>@if (r.NearestExpiry is DateTime e)
+            {
+                @* the nearest batch is the one that made the medicine "near" or "expired" *@
+                bool red = r.State is HospitalPharmacyStockState.Near or HospitalPharmacyStockState.Expired || e.Date < today;
+                <span class="badge badge-@(red ? "light-danger" : "light") fs-7 fw-bold hp-num" dir="ltr">@e.ToString("yyyy-MM-dd")</span>
+            }
+            else {<span class="text-gray-400">—</span>}</td>
+        <td class="text-end"><span class="text-gray-700 fw-semibold hp-num">@(r.Reorder?.ToString("0.###", inv) ?? "—")</span></td>
+        <td class="pe-4"><span class="badge badge-light-@tone fs-7 fw-bold">@T["pstock:" + r.State]</span></td>
+    </tr>
+}

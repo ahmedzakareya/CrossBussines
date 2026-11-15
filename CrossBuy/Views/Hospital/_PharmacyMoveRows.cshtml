@@ -1,0 +1,36 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@model IReadOnlyList<HospitalPharmacyMoveRow>
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@* H132 — the pharmacy store's movements in the theme's table widget, the newest first: when, which medicine, in (green) or
+   out (red), the batch, why — the prescription dispensed, the medication delivery, the dose returned, a session's kit, a
+   receipt — and the unit cost. *@
+@{
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+    string Why(string? s) => s switch
+    {
+        HospitalPharmacyService.MovementSource => "pmv:Dispense",
+        HospitalMedRoutingService.MovementSource => "pmv:Delivery",
+        HospitalMedRoutingService.ReturnSource => "pmv:Return",
+        "HospitalDialysis" or "HospitalChemo" or "HospitalRehab" or "HospitalSurgery" => "pmv:Kit",
+        "Receipt" or "GoodsReceipt" or "PurchaseInvoice" => "pmv:Receipt",
+        "Opening" => "pmv:Opening",
+        "TransferIn" or "TransferOut" or "Transfer" => "pmv:Transfer",
+        _ => "pmv:Other",
+    };
+}
+@foreach (var r in Model)
+{
+    bool inward = r.Direction > 0;
+    <tr>
+        <td class="ps-4 text-nowrap"><span class="text-gray-800 fw-bold d-block fs-7 hp-num" data-fmt data-utc="@r.At.ToString("o")">@r.At.ToLocalTime().ToString("yyyy-MM-dd")</span><span class="text-muted fs-8 hp-num">@r.At.ToLocalTime().ToString("HH:mm")</span></td>
+        <td><div class="d-flex align-items-center">
+            <div class="symbol symbol-40px me-3"><span class="symbol-label bg-light-@(inward ? "success" : "danger")"><i class="ki-outline ki-arrow-@(inward ? "down" : "up") fs-3 text-@(inward ? "success" : "danger")"></i></span></div>
+            <div class="d-flex flex-column"><span class="text-gray-900 fw-bold fs-6">@DisplayName.Of(r.Name, r.NameEn)</span><bdi class="text-muted fw-semibold fs-7" dir="ltr">@r.Code</bdi></div>
+        </div></td>
+        <td class="text-end"><span class="badge badge-light-@(inward ? "success" : "danger") fs-7 fw-bold hp-num" dir="ltr">@(inward ? "+" : "−")@r.Qty.ToString("0.###", inv)</span></td>
+        <td>@if (r.BatchNo != null) {<span class="badge badge-light fs-8 fw-bold" dir="ltr">@r.BatchNo</span>} else {<span class="text-gray-400">—</span>}</td>
+        <td><span class="text-gray-800 fw-semibold fs-7">@T[Why(r.SourceType)]</span>@if (r.Reference != null) {<bdi class="text-muted fs-8 d-block hp-num" dir="ltr">@r.Reference</bdi>}</td>
+        <td class="text-end pe-4"><span class="text-gray-700 fw-semibold hp-num">@r.UnitCost.ToString("0.000", inv)</span></td>
+    </tr>
+}

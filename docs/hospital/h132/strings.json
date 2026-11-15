@@ -1,0 +1,190 @@
+{
+ "unit": "H132 - the pharmacy's own stock inside the hospital: medicines, batches and expiry, store movements",
+ "strings": {
+  "Medicines in the formulary": {
+   "ar": "أدوية في دليل الصيدلية",
+   "en": "Medicines in the formulary",
+   "fr": "Médicaments du formulaire"
+  },
+  "Out of stock": {
+   "ar": "نفدت من المخزن",
+   "en": "Out of stock",
+   "fr": "En rupture"
+  },
+  "nothing on the shelf": {
+   "ar": "لا شيء على الرف",
+   "en": "nothing on the shelf",
+   "fr": "rien en rayon"
+  },
+  "Expired batches": {
+   "ar": "دفعات منتهية الصلاحية",
+   "en": "Expired batches",
+   "fr": "Lots périmés"
+  },
+  "still on the shelf": {
+   "ar": "ما زالت على الرف",
+   "en": "still on the shelf",
+   "fr": "encore en rayon"
+  },
+  "Batches and expiry dates": {
+   "ar": "الدفعات وتواريخ الانتهاء",
+   "en": "Batches and expiry dates",
+   "fr": "Lots et dates de péremption"
+  },
+  "Store movements": {
+   "ar": "حركة المخزن",
+   "en": "Store movements",
+   "fr": "Mouvements du magasin"
+  },
+  "Receive stock": {
+   "ar": "استلام بضاعة",
+   "en": "Receive stock",
+   "fr": "Recevoir du stock"
+  },
+  "Choose the pharmacy store first": {
+   "ar": "اختر مخزن الصيدلية أولًا",
+   "en": "Choose the pharmacy store first",
+   "fr": "Choisissez d'abord le magasin de la pharmacie"
+  },
+  "The pharmacy's stock is the store chosen in the pharmacy settings.": {
+   "ar": "مخزون الصيدلية هو المخزن المختار في إعدادات الصيدلية.",
+   "en": "The pharmacy's stock is the store chosen in the pharmacy settings.",
+   "fr": "Le stock de la pharmacie est le magasin choisi dans ses paramètres."
+  },
+  "Search by medicine or batch…": {
+   "ar": "ابحث بالدواء أو رقم الدفعة…",
+   "en": "Search by medicine or batch…",
+   "fr": "Rechercher par médicament ou lot…"
+  },
+  "Search by medicine code or name…": {
+   "ar": "ابحث بكود الدواء أو اسمه…",
+   "en": "Search by medicine code or name…",
+   "fr": "Rechercher par code ou nom…"
+  },
+  "Has an expired batch": {
+   "ar": "له دفعة منتهية",
+   "en": "Has an expired batch",
+   "fr": "A un lot périmé"
+  },
+  "Near expiry": {
+   "ar": "قريب الانتهاء",
+   "en": "Near expiry",
+   "fr": "Proche de la péremption"
+  },
+  "Fine": {
+   "ar": "سليم",
+   "en": "Fine",
+   "fr": "Correct"
+  },
+  "Into the store": {
+   "ar": "داخل إلى المخزن",
+   "en": "Into the store",
+   "fr": "Entrée au magasin"
+  },
+  "Out of the store": {
+   "ar": "خارج من المخزن",
+   "en": "Out of the store",
+   "fr": "Sortie du magasin"
+  },
+  "Nearest expiry": {
+   "ar": "أقرب انتهاء",
+   "en": "Nearest expiry",
+   "fr": "Péremption la plus proche"
+  },
+  "Reorder point": {
+   "ar": "حد إعادة الطلب",
+   "en": "Reorder point",
+   "fr": "Seuil de réapprovisionnement"
+  },
+  "Days left": {
+   "ar": "الأيام المتبقية",
+   "en": "Days left",
+   "fr": "Jours restants"
+  },
+  "Unit cost": {
+   "ar": "تكلفة الوحدة",
+   "en": "Unit cost",
+   "fr": "Coût unitaire"
+  },
+  "{0} batches": {
+   "ar": "⁦{0}⁩ دفعات",
+   "en": "{0} batches",
+   "fr": "{0} lots"
+  },
+  "Expired {0} days ago": {
+   "ar": "انتهى منذ ⁦{0}⁩ يومًا",
+   "en": "Expired {0} days ago",
+   "fr": "Périmé depuis {0} jours"
+  },
+  "{0} days left": {
+   "ar": "باقٍ ⁦{0}⁩ يومًا",
+   "en": "{0} days left",
+   "fr": "{0} jours restants"
+  },
+  "pstock:Ok": {
+   "ar": "سليم",
+   "en": "Fine",
+   "fr": "Correct"
+  },
+  "pstock:Low": {
+   "ar": "تحت حد الطلب",
+   "en": "Below reorder",
+   "fr": "Sous le seuil"
+  },
+  "pstock:Out": {
+   "ar": "نفد",
+   "en": "Out of stock",
+   "fr": "En rupture"
+  },
+  "pstock:Near": {
+   "ar": "قريب الانتهاء",
+   "en": "Near expiry",
+   "fr": "Proche de la péremption"
+  },
+  "pstock:Expired": {
+   "ar": "له دفعة منتهية",
+   "en": "Has an expired batch",
+   "fr": "A un lot périmé"
+  },
+  "pmv:Dispense": {
+   "ar": "صرف روشتة",
+   "en": "Prescription dispensed",
+   "fr": "Ordonnance dispensée"
+  },
+  "pmv:Delivery": {
+   "ar": "توصيل دواء للجناح",
+   "en": "Medication delivery to the ward",
+   "fr": "Livraison au service"
+  },
+  "pmv:Return": {
+   "ar": "جرعة عادت للمخزن",
+   "en": "Dose returned to the store",
+   "fr": "Dose retournée au magasin"
+  },
+  "pmv:Kit": {
+   "ar": "مستلزمات جلسة أو عملية",
+   "en": "A session's or a case's kit",
+   "fr": "Kit d'une séance ou d'une intervention"
+  },
+  "pmv:Receipt": {
+   "ar": "استلام بضاعة",
+   "en": "Goods received",
+   "fr": "Réception"
+  },
+  "pmv:Opening": {
+   "ar": "رصيد افتتاحي",
+   "en": "Opening balance",
+   "fr": "Solde d'ouverture"
+  },
+  "pmv:Transfer": {
+   "ar": "تحويل بين المخازن",
+   "en": "Transfer between stores",
+   "fr": "Transfert entre magasins"
+  },
+  "pmv:Other": {
+   "ar": "حركة مخزون أخرى",
+   "en": "Other stock movement",
+   "fr": "Autre mouvement"
+  }
+ }
+}

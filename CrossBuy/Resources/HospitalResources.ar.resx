@@ -6648,4 +6648,41 @@
   <data name="The dose was given: it cannot be cancelled" xml:space="preserve"><value>أُعطيت الجرعة للمريض: لا يمكن إلغاؤها</value></data>
   <data name="The store already issued {0}: cancelling returns it to the store, batch by batch. Write why:" xml:space="preserve"><value>صرف المخزن ⁨{0}⁩ بالفعل: الإلغاء يُرجعه إلى المخزن بنفس دفعاته. اكتب السبب:</value></data>
   <data name="This delivery is already cancelled" xml:space="preserve"><value>هذا التوصيل أُلغي بالفعل</value></data>
+  <data name="Batches and expiry dates" xml:space="preserve"><value>الدفعات وتواريخ الانتهاء</value></data>
+  <data name="Choose the pharmacy store first" xml:space="preserve"><value>اختر مخزن الصيدلية أولًا</value></data>
+  <data name="Days left" xml:space="preserve"><value>الأيام المتبقية</value></data>
+  <data name="Expired batches" xml:space="preserve"><value>دفعات منتهية الصلاحية</value></data>
+  <data name="Expired {0} days ago" xml:space="preserve"><value>انتهى منذ ⁦{0}⁩ يومًا</value></data>
+  <data name="Fine" xml:space="preserve"><value>سليم</value></data>
+  <data name="Has an expired batch" xml:space="preserve"><value>له دفعة منتهية</value></data>
+  <data name="Into the store" xml:space="preserve"><value>داخل إلى المخزن</value></data>
+  <data name="Medicines in the formulary" xml:space="preserve"><value>أدوية في دليل الصيدلية</value></data>
+  <data name="Near expiry" xml:space="preserve"><value>قريب الانتهاء</value></data>
+  <data name="Nearest expiry" xml:space="preserve"><value>أقرب انتهاء</value></data>
+  <data name="Out of stock" xml:space="preserve"><value>نفدت من المخزن</value></data>
+  <data name="Out of the store" xml:space="preserve"><value>خارج من المخزن</value></data>
+  <data name="Receive stock" xml:space="preserve"><value>استلام بضاعة</value></data>
+  <data name="Reorder point" xml:space="preserve"><value>حد إعادة الطلب</value></data>
+  <data name="Search by medicine code or name…" xml:space="preserve"><value>ابحث بكود الدواء أو اسمه…</value></data>
+  <data name="Search by medicine or batch…" xml:space="preserve"><value>ابحث بالدواء أو رقم الدفعة…</value></data>
+  <data name="Store movements" xml:space="preserve"><value>حركة المخزن</value></data>
+  <data name="The pharmacy's stock is the store chosen in the pharmacy settings." xml:space="preserve"><value>مخزون الصيدلية هو المخزن المختار في إعدادات الصيدلية.</value></data>
+  <data name="Unit cost" xml:space="preserve"><value>تكلفة الوحدة</value></data>
+  <data name="nothing on the shelf" xml:space="preserve"><value>لا شيء على الرف</value></data>
+  <data name="pmv:Delivery" xml:space="preserve"><value>توصيل دواء للجناح</value></data>
+  <data name="pmv:Dispense" xml:space="preserve"><value>صرف روشتة</value></data>
+  <data name="pmv:Kit" xml:space="preserve"><value>مستلزمات جلسة أو عملية</value></data>
+  <data name="pmv:Opening" xml:space="preserve"><value>رصيد افتتاحي</value></data>
+  <data name="pmv:Other" xml:space="preserve"><value>حركة مخزون أخرى</value></data>
+  <data name="pmv:Receipt" xml:space="preserve"><value>استلام بضاعة</value></data>
+  <data name="pmv:Return" xml:space="preserve"><value>جرعة عادت للمخزن</value></data>
+  <data name="pmv:Transfer" xml:space="preserve"><value>تحويل بين المخازن</value></data>
+  <data name="pstock:Expired" xml:space="preserve"><value>له دفعة منتهية</value></data>
+  <data name="pstock:Low" xml:space="preserve"><value>تحت حد الطلب</value></data>
+  <data name="pstock:Near" xml:space="preserve"><value>قريب الانتهاء</value></data>
+  <data name="pstock:Ok" xml:space="preserve"><value>سليم</value></data>
+  <data name="pstock:Out" xml:space="preserve"><value>نفد</value></data>
+  <data name="still on the shelf" xml:space="preserve"><value>ما زالت على الرف</value></data>
+  <data name="{0} batches" xml:space="preserve"><value>⁦{0}⁩ دفعات</value></data>
+  <data name="{0} days left" xml:space="preserve"><value>باقٍ ⁦{0}⁩ يومًا</value></data>
 </root>

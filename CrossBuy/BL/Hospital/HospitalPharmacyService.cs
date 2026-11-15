@@ -157,7 +157,7 @@ namespace CrossBuy.BL.Hospital
 		}
 
 		/// On-hand in the warehouse per batch of these items (from the movements — the inventory keeps no per-batch balance).
-		private async Task<List<(int ItemId, string BatchNo, DateTime? Expiry, decimal Qty)>> BatchesAsync(BusinessContext ctx, int warehouseId, IReadOnlyCollection<int> itemIds, CancellationToken ct)
+		public async Task<List<(int ItemId, string BatchNo, DateTime? Expiry, decimal Qty)>> BatchesAsync(BusinessContext ctx, int warehouseId, IReadOnlyCollection<int> itemIds, CancellationToken ct)
 		{
 			var sums = await _db.StockMovements.AsNoTracking()
 				.Where(m => m.CompanyID == ctx.CompanyId && m.WarehouseId == warehouseId && m.BatchId != null && itemIds.Contains(m.ItemId))

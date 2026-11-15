@@ -39,7 +39,7 @@
             </ul>
         </div>
         <div class="d-flex align-items-center gap-2 gap-lg-3 d-print-none">
-            <a href="@Url.Action("ExpiryAlerts", "Inventory", new { days = stats.NearExpiryDays })" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-package fs-4"></i>@T["Pharmacy stock"]</a>
+            <a href="@Url.Action("PharmacyStock")" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-package fs-4"></i>@T["Pharmacy stock"]</a>
             @if (canManage) { <button type="button" class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#pharmacySettings"><i class="ki-outline ki-setting-3 fs-4"></i>@T["Pharmacy settings"]</button> }
         </div>
     </div></div>
