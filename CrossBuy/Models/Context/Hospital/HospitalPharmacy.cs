@@ -38,6 +38,8 @@ namespace CrossBuy.Models.Context.Hospital
 		public int CompanyId { get; set; }
 		public int? WarehouseId { get; set; }
 		public int NearExpiryDays { get; set; } = 60;
+		/// H134: the store a recalled or suspect batch is moved into, out of reach of dispensing (hospital_h134_recalls.sql).
+		public int? QuarantineWarehouseId { get; set; }
 	}
 
 	public class HospitalDispense
@@ -88,6 +90,7 @@ namespace CrossBuy.Models.Context.Hospital
 		{
 			b.Entity<HospitalPharmacySettings>(e => e.HasIndex(x => x.CompanyId).IsUnique());
 			HospitalDrugModel.Configure(b);   // H133: the drug master hangs off the pharmacy
+			HospitalLotRecallModel.Configure(b);   // H134: batch recalls and their quarantine
 			b.Entity<HospitalDispense>(e =>
 			{
 				e.HasIndex(x => new { x.CompanyId, x.RxNo }).IsUnique();

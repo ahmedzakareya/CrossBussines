@@ -277,6 +277,14 @@
                 <label class="fs-6 fw-semibold mb-2">@T["A batch is near expiry within (days)"]</label>
                 <input type="number" min="1" max="365" class="form-control form-control-solid hp-num" data-k="nearExpiryDays" value="@settings.NearExpiryDays" />
             </div>
+            <div class="d-flex flex-column mb-8 fv-row">
+                <label class="fs-6 fw-semibold mb-2">@T["Quarantine store (recalled or suspect batches)"]</label>
+                <select class="form-select form-select-solid" data-k="quarantineWarehouseId" data-control="select2" data-dropdown-parent="#pharmacySettings">
+                    <option value="">—</option>
+                    @foreach (var w in warehouses) { <option value="@w.Id" selected="@(settings.QuarantineWarehouseId == w.Id)">@w.Code · @DisplayName.Of(w.Name, w.NameEn)</option> }
+                </select>
+                <div class="text-muted fs-7 mt-2">@T["A recalled batch is moved here from every store, out of reach of dispensing."]</div>
+            </div>
             <div class="text-center pt-5"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-save-settings>@T["Save"]</button></div>
         </div>
     </div></div></div>
@@ -309,8 +317,8 @@
                 t.removeAttribute('data-confirmed');
                 t.disabled = true;
                 if (t.hasAttribute('data-save-settings')) {
-                    var m = document.getElementById('pharmacySettings'), w = m.querySelector('[data-k="warehouseId"]').value;
-                    post(base + '/Settings', { warehouseId: w ? +w : null, nearExpiryDays: +m.querySelector('[data-k="nearExpiryDays"]').value || 60 }).then(function (r) {
+                    var m = document.getElementById('pharmacySettings'), w = m.querySelector('[data-k="warehouseId"]').value, qw = m.querySelector('[data-k="quarantineWarehouseId"]').value;
+                    post(base + '/Settings', { warehouseId: w ? +w : null, nearExpiryDays: +m.querySelector('[data-k="nearExpiryDays"]').value || 60, quarantineWarehouseId: qw ? +qw : null }).then(function (r) {
                         t.disabled = false; if (!r.ok) { toast('error', r.error || W.failed); return; }
                         bootstrap.Modal.getOrCreateInstance(m).hide(); toast('success', W.saved); swap();
                     });

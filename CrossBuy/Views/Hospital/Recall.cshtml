@@ -1,0 +1,187 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model HospitalLotRecallView
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H134: one recall.
+      · Left: the recall's card (demo39's user-profile aside): the medicine and batch, the class, the notice, who opened it,
+        the quarantine store, the transfers that moved it, and how it ended.
+      · Right, the two questions a recall asks:
+          - where the batch is now (every store that holds units of it);
+          - which patients received it (with their photo, number and phone, so a class I recall can call them).
+      · Actions while it is open: sweep again, release (the notice was withdrawn), close (returned or destroyed).
+        Each asks through cbConfirm or cbPrompt.
+*@
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    var r = Model.Recall;
+    ViewData["Title"] = r.RecallNo;
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+    bool open = r.Status == HospitalLotRecallStatus.Quarantined, canEdit = ViewBag.CanPharmacy == true && open;
+    string classTone = r.RecallClass == HospitalLotRecallClass.I ? "danger" : r.RecallClass == HospitalLotRecallClass.II ? "primary" : "info";
+    string stateTone = open ? "danger" : r.Status == HospitalLotRecallStatus.Released ? "success" : "dark";
+    string Who(int? id) => id != null && Model.People.TryGetValue(id.Value, out var n) ? n : "—";
+    decimal held = Model.Places.Where(p => p.Quarantine).Sum(p => p.Qty), outside = Model.Places.Where(p => !p.Quarantine && p.Qty > 0).Sum(p => p.Qty);
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Recall"] <bdi class="hp-num">@r.RecallNo</bdi></h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item"><a href="@Url.Action("Pharmacy")" class="text-muted text-hover-primary">@T["Pharmacy"]</a></li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-400 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item"><a href="@Url.Action("Recalls")" class="text-muted text-hover-primary">@T["Batch recalls"]</a></li>
+            </ul>
+        </div>
+        @if (canEdit)
+        {
+            <div class="d-flex flex-wrap gap-2 align-items-center">
+                <button type="button" class="btn btn-sm btn-light btn-active-light-primary" data-act="Sweep" data-ask="@T["Move into quarantine whatever of this batch has reached a store since?"]"><i class="ki-outline ki-arrows-loop fs-4"></i>@T["Sweep the stores again"]</button>
+                <button type="button" class="btn btn-sm btn-light btn-active-light-primary" data-act="Release" data-prompt="@T["Why is the recall withdrawn? The batch goes back to the pharmacy store."]"><i class="ki-outline ki-exit-left fs-4"></i>@T["Release the batch"]</button>
+                <button type="button" class="btn btn-sm btn-dark" data-act="Close" data-prompt="@T["What was done with the batch (returned to the supplier, destroyed)?"]"><i class="ki-outline ki-check-circle fs-4"></i>@T["Close the recall"]</button>
+            </div>
+        }
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (open && r.RecallClass == HospitalLotRecallClass.I && Model.Patients.Count > 0)
+        {
+            <div class="notice d-flex bg-light-danger rounded border-danger border border-dashed p-6 mb-5">
+                <i class="ki-outline ki-information-2 fs-2tx text-danger me-4"></i>
+                <div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@T["A class I recall: contact every patient below"]</h4>
+                    <div class="fs-6 text-gray-700">@string.Format(T["{0} patients received units of this batch."].Value, Model.Patients.Count)</div></div>
+            </div>
+        }
+        @if (open && outside > 0)
+        {
+            <div class="notice d-flex bg-light-danger rounded border-danger border border-dashed p-6 mb-5">
+                <i class="ki-outline ki-shield-cross fs-2tx text-danger me-4"></i>
+                <div class="d-flex flex-stack flex-grow-1 flex-wrap gap-3"><div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@string.Format(T["{0} units of this batch are outside quarantine"].Value, outside.ToString("0.###", inv))</h4>
+                    <div class="fs-6 text-gray-700">@T["They reached a store after the recall; sweep the stores again."]</div></div></div>
+            </div>
+        }
+        <div class="row g-5 g-xl-8">
+            <div class="col-xl-4">
+                <div class="card card-flush mb-5">
+                    <div class="card-body pt-10">
+                        <div class="d-flex flex-center flex-column mb-6">
+                            <div class="symbol symbol-75px mb-5"><span class="symbol-label bg-light-@stateTone"><i class="ki-outline ki-shield-cross fs-2tx text-@stateTone"></i></span></div>
+                            <span class="fs-4 text-gray-900 fw-bold mb-1 text-center"><bdi>@DisplayName.Of(Model.ItemName, Model.ItemNameEn)</bdi></span>
+                            <div class="fs-6 fw-semibold text-muted mb-4"><bdi dir="ltr">@Model.ItemCode</bdi></div>
+                            <div class="d-flex flex-wrap flex-center gap-2">
+                                <span class="badge badge-light fs-6 fw-bold" dir="ltr">@r.BatchNo</span>
+                                <span class="badge badge-light-@classTone fs-7 fw-bold">@T["Class {0}", r.RecallClass]</span>
+                                <span class="badge badge-light-@stateTone fs-7 fw-bold">@T["recall:" + r.Status]</span>
+                            </div>
+                        </div>
+                        <div class="d-flex flex-wrap flex-center mb-5">
+                            <div class="border border-gray-300 border-dashed rounded py-3 px-4 mx-2 mb-3 text-center"><div class="fs-3 fw-bold text-gray-800 hp-num">@held.ToString("0.###", inv)</div><div class="fw-semibold text-muted fs-7">@T["held in quarantine"]</div></div>
+                            <div class="border border-gray-300 border-dashed rounded py-3 px-4 mx-2 mb-3 text-center"><div class="fs-3 fw-bold text-@(Model.Patients.Count > 0 ? "danger" : "gray-800") hp-num">@Model.Patients.Count</div><div class="fw-semibold text-muted fs-7">@T["patients reached"]</div></div>
+                        </div>
+                        <div class="separator separator-dashed my-3"></div>
+                        <div class="fs-6">
+                            <div class="fw-bold mt-5">@T["Class"]</div><div class="text-gray-700">@T["rclass:" + r.RecallClass]</div>
+                            <div class="fw-bold mt-5">@T["Issued by"]</div><div class="text-gray-700">@T["rsrc:" + r.Source]@if (r.Reference != null) {<text> · </text><bdi dir="auto">@r.Reference</bdi>}</div>
+                            <div class="fw-bold mt-5">@T["Why the batch is recalled"]</div><div class="text-gray-700"><bdi dir="auto">@r.Reason</bdi></div>
+                            <div class="fw-bold mt-5">@T["Expiry"]</div><div class="text-gray-700 hp-num" dir="ltr">@(Model.Expiry?.ToString("yyyy-MM-dd") ?? "—")</div>
+                            <div class="fw-bold mt-5">@T["Opened"]</div><div class="text-gray-700"><span class="hp-num" data-fmt data-utc="@r.OpenedAt.ToString("o")">@r.OpenedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</span> · @Who(r.OpenedByEmployeeId)</div>
+                            <div class="fw-bold mt-5">@T["Quarantine store"]</div><div class="text-gray-700"><bdi>@(Model.QuarantineStore ?? "—")</bdi></div>
+                            <div class="fw-bold mt-5">@T["Inventory transfers"]</div>
+                            <div class="d-flex flex-wrap gap-1 mt-1">@if (r.Transfers != null) { foreach (var tno in r.Transfers.Split(',')) {<span class="badge badge-light fs-8 fw-bold hp-num">@tno</span>} } else {<span class="text-muted">@T["nothing was in stock"]</span>}</div>
+                            @if (!open)
+                            {
+                                <div class="fw-bold mt-5">@T["Ended"]</div>
+                                <div class="text-gray-700"><span class="hp-num" data-fmt data-utc="@r.EndedAt?.ToString("o")">@r.EndedAt?.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</span> · @Who(r.EndedByEmployeeId)</div>
+                                <div class="text-gray-800 fw-semibold mt-1"><bdi dir="auto">@r.EndNote</bdi></div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-8">
+                <div class="card card-flush mb-5">
+                    <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Where the batch is now"]</span>
+                        <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Every store holding units of it, from the inventory's movements"]</span></h3></div>
+                    <div class="card-body pt-2">
+                        @if (Model.Places.Count == 0)
+                        {
+                            <div class="text-center py-10"><i class="ki-outline ki-shop fs-3x text-gray-300 mb-4 d-block"></i><span class="fs-6 fw-semibold text-gray-600">@T["No store holds any of this batch."]</span></div>
+                        }
+                        else
+                        {
+                            <div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
+                                <thead><tr class="fw-bold text-muted bg-light"><th class="ps-4 rounded-start">@T["Store"]</th><th class="text-end">@T["Units"]</th><th class="pe-4 rounded-end"></th></tr></thead>
+                                <tbody>
+                                    @foreach (var p in Model.Places)
+                                    {
+                                        <tr>
+                                            <td class="ps-4"><div class="d-flex align-items-center"><div class="symbol symbol-40px me-3"><span class="symbol-label bg-light-@(p.Quarantine ? "dark" : open ? "danger" : "primary")"><i class="ki-outline ki-@(p.Quarantine ? "lock-2" : "shop") fs-3 text-@(p.Quarantine ? "dark" : open ? "danger" : "primary")"></i></span></div>
+                                                <div class="d-flex flex-column"><span class="text-gray-900 fw-bold"><bdi>@DisplayName.Of(p.Name, p.NameEn)</bdi></span><bdi class="text-muted fs-7" dir="ltr">@p.Code</bdi></div></div></td>
+                                            <td class="text-end"><span class="text-gray-900 fw-bold fs-6 hp-num">@p.Qty.ToString("0.###", inv)</span></td>
+                                            <td class="pe-4">@if (p.Quarantine) {<span class="badge badge-light-dark fs-7 fw-bold">@T["In quarantine"]</span>} else if (open) {<span class="badge badge-light-danger fs-7 fw-bold">@T["Still within reach"]</span>}</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table></div>
+                        }
+                    </div>
+                </div>
+
+                <div class="card card-flush">
+                    <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Patients who received it"]</span>
+                        <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Dispensed, delivered to the ward or used in a session's kit; doses that came back are not counted"]</span></h3></div>
+                    <div class="card-body pt-2">
+                        @if (Model.Patients.Count == 0)
+                        {
+                            <div class="text-center py-10"><i class="ki-outline ki-shield-tick fs-3x text-gray-300 mb-4 d-block"></i><span class="fs-6 fw-semibold text-gray-600">@T["No patient received units of this batch."]</span></div>
+                        }
+                        else
+                        {
+                            <div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
+                                <thead><tr class="fw-bold text-muted bg-light"><th class="ps-4 min-w-225px rounded-start">@T["Patient"]</th><th>@T["Phone"]</th><th class="text-end">@T["Units"]</th><th>@T["Last received"]</th><th class="pe-4 rounded-end">@T["Received how"]</th></tr></thead>
+                                <tbody>
+                                    @foreach (var p in Model.Patients)
+                                    {
+                                        <tr>
+                                            <td class="ps-4"><div class="d-flex align-items-center">
+                                                <div class="symbol symbol-40px symbol-circle me-3 flex-shrink-0">@if (p.Photo != null) {<img src="@p.Photo" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(p.NameEn ?? p.Name)" />} else {<span class="symbol-label fw-bold fs-7 hp-initials">@HospitalUi.Initials(p.NameEn ?? p.Name)</span>}</div>
+                                                <div class="d-flex flex-column"><a href="@Url.Action("Patient", new { id = p.PatientId })" class="text-gray-900 fw-bold text-hover-primary"><bdi>@DisplayName.Of(p.Name, p.NameEn)</bdi></a><span class="text-muted fs-7 hp-num">@p.Mrn</span></div>
+                                            </div></td>
+                                            <td>@if (p.Phone != null) {<a href="tel:@p.Phone" class="text-gray-800 text-hover-primary fw-semibold hp-num" dir="ltr">@p.Phone</a>} else {<span class="text-gray-400">—</span>}</td>
+                                            <td class="text-end"><span class="text-gray-900 fw-bold hp-num">@p.Qty.ToString("0.###", inv)</span></td>
+                                            <td><span class="text-gray-700 fw-semibold fs-7 hp-num" data-fmt data-utc="@p.LastAt.ToString("o")">@p.LastAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</span></td>
+                                            <td class="pe-4"><div class="d-flex flex-wrap gap-1">@foreach (var w in p.Ways) {<span class="badge badge-light-primary fs-8 fw-bold">@T["rway:" + w]</span>}</div></td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table></div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div></div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value, base = @Json.Serialize(Url.Content("~/Hospital/Pharmacy/Recalls/" + r.ID + "/"));
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value) };
+            function post(act, body) { return fetch(base + act, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(body || {}) })
+                .then(function (x) { return x.json().catch(function () { return { ok: false }; }); }); }
+            function done(t) { return function (res) { t.disabled = false; if (!res.ok) { toastr.error(res.error || W.failed); return; } toastr.success(W.saved); setTimeout(function () { location.reload(); }, 400); }; }
+            document.addEventListener('click', function (e) {
+                var t = e.target.closest('[data-act]'); if (!t) return;
+                var act = t.getAttribute('data-act');
+                if (t.hasAttribute('data-prompt')) cbPrompt(t.getAttribute('data-prompt'), { kind: act === 'Close' ? 'danger' : 'primary' }).then(function (note) { if (!note) return; t.disabled = true; post(act, { note: note }).then(done(t)); });
+                else cbConfirm(t.getAttribute('data-ask')).then(function (ok) { if (!ok) return; t.disabled = true; post(act).then(done(t)); });
+            });
+        })();
+    </script>
+}

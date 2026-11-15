@@ -6798,4 +6798,86 @@
   <data name="{0} is withdrawn from the formulary and cannot be dispensed" xml:space="preserve"><value>{0} is withdrawn from the formulary and cannot be dispensed</value></data>
   <data name="{0} restricted" xml:space="preserve"><value>{0} restricted</value></data>
   <data name="Strength, form and routes" xml:space="preserve"><value>Strength, form and routes</value></data>
+  <data name="A class I recall: contact every patient below" xml:space="preserve"><value>A class I recall: contact every patient below</value></data>
+  <data name="A recalled batch is moved here from every store, out of reach of dispensing." xml:space="preserve"><value>A recalled batch is moved here from every store, out of reach of dispensing.</value></data>
+  <data name="A recalled batch is moved into the quarantine store chosen in the pharmacy settings." xml:space="preserve"><value>A recalled batch is moved into the quarantine store chosen in the pharmacy settings.</value></data>
+  <data name="A recalled batch leaves every store for quarantine, and its patients are found" xml:space="preserve"><value>A recalled batch leaves every store for quarantine, and its patients are found</value></data>
+  <data name="Batch recalls" xml:space="preserve"><value>Batch recalls</value></data>
+  <data name="Choose the batch" xml:space="preserve"><value>Choose the batch</value></data>
+  <data name="Choose the medicine" xml:space="preserve"><value>Choose the medicine</value></data>
+  <data name="Choose the quarantine store first" xml:space="preserve"><value>Choose the quarantine store first</value></data>
+  <data name="Choose the quarantine store in the pharmacy settings first" xml:space="preserve"><value>Choose the quarantine store in the pharmacy settings first</value></data>
+  <data name="Choose the recall class" xml:space="preserve"><value>Choose the recall class</value></data>
+  <data name="Choose who issued the recall" xml:space="preserve"><value>Choose who issued the recall</value></data>
+  <data name="Class I open" xml:space="preserve"><value>Class I open</value></data>
+  <data name="Class {0}" xml:space="preserve"><value>Class {0}</value></data>
+  <data name="Close the recall" xml:space="preserve"><value>Close the recall</value></data>
+  <data name="Dispensed, delivered to the ward or used in a session's kit; doses that came back are not counted" xml:space="preserve"><value>Dispensed, delivered to the ward or used in a session's kit; doses that came back are not counted</value></data>
+  <data name="Ended recalls" xml:space="preserve"><value>Ended recalls</value></data>
+  <data name="Every store holding units of it, from the inventory's movements" xml:space="preserve"><value>Every store holding units of it, from the inventory's movements</value></data>
+  <data name="Every unit of the batch, in every store, moves into quarantine now; its patients are listed on the recall." xml:space="preserve"><value>Every unit of the batch, in every store, moves into quarantine now; its patients are listed on the recall.</value></data>
+  <data name="In quarantine" xml:space="preserve"><value>In quarantine</value></data>
+  <data name="Inventory transfers" xml:space="preserve"><value>Inventory transfers</value></data>
+  <data name="Issued by" xml:space="preserve"><value>Issued by</value></data>
+  <data name="Last received" xml:space="preserve"><value>Last received</value></data>
+  <data name="Move into quarantine whatever of this batch has reached a store since?" xml:space="preserve"><value>Move into quarantine whatever of this batch has reached a store since?</value></data>
+  <data name="No batch is recalled." xml:space="preserve"><value>No batch is recalled.</value></data>
+  <data name="No patient received units of this batch." xml:space="preserve"><value>No patient received units of this batch.</value></data>
+  <data name="No store holds any of this batch." xml:space="preserve"><value>No store holds any of this batch.</value></data>
+  <data name="Nothing of this batch is left outside quarantine" xml:space="preserve"><value>Nothing of this batch is left outside quarantine</value></data>
+  <data name="Open recalls" xml:space="preserve"><value>Open recalls</value></data>
+  <data name="Patients who received it" xml:space="preserve"><value>Patients who received it</value></data>
+  <data name="Quarantine store" xml:space="preserve"><value>Quarantine store</value></data>
+  <data name="Quarantine store (recalled or suspect batches)" xml:space="preserve"><value>Quarantine store (recalled or suspect batches)</value></data>
+  <data name="Recall" xml:space="preserve"><value>Recall</value></data>
+  <data name="Recall a batch" xml:space="preserve"><value>Recall a batch</value></data>
+  <data name="Recall and quarantine" xml:space="preserve"><value>Recall and quarantine</value></data>
+  <data name="Recall class" xml:space="preserve"><value>Recall class</value></data>
+  <data name="Recall this batch" xml:space="preserve"><value>Recall this batch</value></data>
+  <data name="Recall this batch? Every unit moves into quarantine now." xml:space="preserve"><value>Recall this batch? Every unit moves into quarantine now.</value></data>
+  <data name="Recalls" xml:space="preserve"><value>Recalls</value></data>
+  <data name="Release the batch" xml:space="preserve"><value>Release the batch</value></data>
+  <data name="Search by medicine, batch or notice…" xml:space="preserve"><value>Search by medicine, batch or notice…</value></data>
+  <data name="Still within reach" xml:space="preserve"><value>Still within reach</value></data>
+  <data name="Store" xml:space="preserve"><value>Store</value></data>
+  <data name="Sweep the stores again" xml:space="preserve"><value>Sweep the stores again</value></data>
+  <data name="The batch could not be moved back: {0}" xml:space="preserve"><value>The batch could not be moved back: {0}</value></data>
+  <data name="The batch could not be moved into quarantine: {0}" xml:space="preserve"><value>The batch could not be moved into quarantine: {0}</value></data>
+  <data name="The notice's number" xml:space="preserve"><value>The notice's number</value></data>
+  <data name="The quarantine store must be another store than the pharmacy's" xml:space="preserve"><value>The quarantine store must be another store than the pharmacy's</value></data>
+  <data name="They reached a store after the recall; sweep the stores again." xml:space="preserve"><value>They reached a store after the recall; sweep the stores again.</value></data>
+  <data name="This batch is already under recall {0}" xml:space="preserve"><value>This batch is already under recall {0}</value></data>
+  <data name="This medicine has no batch in the inventory" xml:space="preserve"><value>This medicine has no batch in the inventory</value></data>
+  <data name="This recall has ended" xml:space="preserve"><value>This recall has ended</value></data>
+  <data name="Units" xml:space="preserve"><value>Units</value></data>
+  <data name="Units in quarantine" xml:space="preserve"><value>Units in quarantine</value></data>
+  <data name="Units quarantined" xml:space="preserve"><value>Units quarantined</value></data>
+  <data name="What was done with the batch (returned to the supplier, destroyed)?" xml:space="preserve"><value>What was done with the batch (returned to the supplier, destroyed)?</value></data>
+  <data name="Where the batch is now" xml:space="preserve"><value>Where the batch is now</value></data>
+  <data name="Why is the recall withdrawn? The batch goes back to the pharmacy store." xml:space="preserve"><value>Why is the recall withdrawn? The batch goes back to the pharmacy store.</value></data>
+  <data name="Why the batch is recalled" xml:space="preserve"><value>Why the batch is recalled</value></data>
+  <data name="Write why the batch is recalled" xml:space="preserve"><value>Write why the batch is recalled</value></data>
+  <data name="Write why the recall ends" xml:space="preserve"><value>Write why the recall ends</value></data>
+  <data name="batches held in quarantine" xml:space="preserve"><value>batches held in quarantine</value></data>
+  <data name="may cause serious harm" xml:space="preserve"><value>may cause serious harm</value></data>
+  <data name="nothing was in stock" xml:space="preserve"><value>nothing was in stock</value></data>
+  <data name="out of reach of dispensing" xml:space="preserve"><value>out of reach of dispensing</value></data>
+  <data name="patients reached" xml:space="preserve"><value>patients reached</value></data>
+  <data name="rclass:I" xml:space="preserve"><value>Class I — may cause serious harm or death</value></data>
+  <data name="rclass:II" xml:space="preserve"><value>Class II — temporary or reversible harm</value></data>
+  <data name="rclass:III" xml:space="preserve"><value>Class III — unlikely to cause harm</value></data>
+  <data name="recall:Closed" xml:space="preserve"><value>Closed</value></data>
+  <data name="recall:Quarantined" xml:space="preserve"><value>Quarantined</value></data>
+  <data name="recall:Released" xml:space="preserve"><value>Released</value></data>
+  <data name="released or closed" xml:space="preserve"><value>released or closed</value></data>
+  <data name="rsrc:Internal" xml:space="preserve"><value>The pharmacy itself (suspicion)</value></data>
+  <data name="rsrc:Regulator" xml:space="preserve"><value>The regulator</value></data>
+  <data name="rsrc:Supplier" xml:space="preserve"><value>The supplier or maker</value></data>
+  <data name="rway:Delivered" xml:space="preserve"><value>Delivered to the ward</value></data>
+  <data name="rway:Dispensed" xml:space="preserve"><value>Prescription dispensed</value></data>
+  <data name="rway:Kit" xml:space="preserve"><value>A session's kit</value></data>
+  <data name="{0} patients received units of this batch." xml:space="preserve"><value>{0} patients received units of this batch.</value></data>
+  <data name="{0} units of this batch are outside quarantine" xml:space="preserve"><value>{0} units of this batch are outside quarantine</value></data>
+  <data name="Received how" xml:space="preserve"><value>Received how</value></data>
+  <data name="held in quarantine" xml:space="preserve"><value>held in quarantine</value></data>
 </root>

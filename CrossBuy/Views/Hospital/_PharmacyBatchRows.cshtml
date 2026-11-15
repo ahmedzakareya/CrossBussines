@@ -16,10 +16,12 @@
         <td><span class="badge badge-light fs-7 fw-bold" dir="ltr">@r.BatchNo</span></td>
         <td><span class="text-gray-800 fw-bold hp-num" dir="ltr">@(r.Expiry?.ToString("yyyy-MM-dd") ?? "—")</span></td>
         <td class="text-end"><span class="text-gray-900 fw-bold fs-6 hp-num">@r.Qty.ToString("0.###", inv)</span></td>
-        <td class="pe-4">@if (r.DaysLeft is int d)
+        <td>@if (r.DaysLeft is int d)
             {
                 <span class="badge badge-light-@tone fs-7 fw-bold">@(d < 0 ? T["Expired {0} days ago", -d] : T["{0} days left", d])</span>
             }
             else {<span class="text-gray-400">—</span>}</td>
+        @* H134: the batch can be recalled from here; the form opens with it chosen *@
+        <td class="text-end pe-4"><a href="@Url.Action("Recalls", "Hospital", new { item = r.ItemId, batch = r.BatchNo })" class="btn btn-sm btn-icon btn-light btn-active-light-danger" title="@T["Recall this batch"]" data-bs-toggle="tooltip"><i class="ki-outline ki-shield-cross fs-4"></i></a></td>
     </tr>
 }

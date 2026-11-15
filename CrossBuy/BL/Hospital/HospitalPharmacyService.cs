@@ -83,14 +83,17 @@ public sealed record HospitalRxLineView(HospitalDispenseLine Line, string? ItemC
 			=> (await _db.Warehouses.AsNoTracking().Where(w => w.CompanyID == ctx.CompanyId && w.IsActive).OrderBy(w => w.Code)
 				.Select(w => new { w.ID, w.Code, w.Name, w.NameEn }).ToListAsync(ct)).Select(w => (w.ID, w.Code, w.Name, w.NameEn)).ToList();
 
-		public async Task<HospitalResult> SaveSettingsAsync(BusinessContext ctx, int? warehouseId, int nearExpiryDays, CancellationToken ct = default)
+		public async Task<HospitalResult> SaveSettingsAsync(BusinessContext ctx, int? warehouseId, int nearExpiryDays, CancellationToken ct = default, int? quarantineWarehouseId = null)
 		{
 			if (!await Can(ctx, HospitalActions.Manage, ct)) return HospitalResult.Fail("forbidden");
 			if (nearExpiryDays is < 1 or > 365) return HospitalResult.Fail("Near expiry is 1 to 365 days");
 			if (warehouseId is int w && !await _db.Warehouses.AnyAsync(x => x.ID == w && x.CompanyID == ctx.CompanyId && x.IsActive, ct)) return HospitalResult.Fail("not_found");
+			// H134: the quarantine store holds what must not be dispensed, so it is never the store that dispenses
+			if (quarantineWarehouseId is int q && q == warehouseId) return HospitalResult.Fail("The quarantine store must be another store than the pharmacy's");
+			if (quarantineWarehouseId is int q2 && !await _db.Warehouses.AnyAsync(x => x.ID == q2 && x.CompanyID == ctx.CompanyId && x.IsActive, ct)) return HospitalResult.Fail("not_found");
 			var s = await _db.HospitalPharmacySettings.FirstOrDefaultAsync(x => x.CompanyId == ctx.CompanyId, ct);
 			if (s == null) { s = new HospitalPharmacySettings { CompanyId = ctx.CompanyId }; _db.HospitalPharmacySettings.Add(s); }
-			s.WarehouseId = warehouseId; s.NearExpiryDays = nearExpiryDays;
+			s.WarehouseId = warehouseId; s.NearExpiryDays = nearExpiryDays; s.QuarantineWarehouseId = quarantineWarehouseId;
 			await _db.SaveChangesAsync(ct); return HospitalResult.Success(s.ID);
 		}
 

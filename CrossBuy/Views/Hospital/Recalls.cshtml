@@ -1,0 +1,177 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model HospitalLotRecallStats
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H134: batch recalls. The page has three parts:
+      · the figures, as demo39 stat tiles;
+      · the recalls, in the theme's table widget, searched, filtered and paged by cbServerList;
+      · the new-recall form, in the theme's modal. Its lists are select2. The batch list refills when a medicine is chosen.
+    A medicine's batch is prefilled from ?item=&batch= when the pharmacist comes from the stock screen.
+*@
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Batch recalls"].Value;
+    bool isAr = System.Globalization.CultureInfo.CurrentUICulture.Name.StartsWith("ar");
+    bool canEdit = ViewBag.CanPharmacy == true && Model.Ready;
+    var meds = (IReadOnlyList<(int Id, string Code, string Name, string NameEn, decimal? Price)>)ViewBag.Medicines;
+    int.TryParse(Context.Request.Query["item"], out var preItem);
+    string? preBatch = Context.Request.Query["batch"];
+    var tiles = new (string Label, string N, string Note, string Icon, string Tone, string? Filter)[] {
+        (T["Open recalls"].Value, Model.Open.ToString(), T["batches held in quarantine"].Value, "ki-shield-cross", Model.Open > 0 ? "danger" : "success", HospitalLotRecallStatus.Quarantined),
+        (T["Class I open"].Value, Model.ClassIOpen.ToString(), T["may cause serious harm"].Value, "ki-information-2", Model.ClassIOpen > 0 ? "danger" : "success", HospitalLotRecallStatus.Quarantined),
+        (T["Units in quarantine"].Value, HospitalUi.LabNum(Model.UnitsHeld, 0), T["out of reach of dispensing"].Value, "ki-lock-2", "dark", null),
+        (T["Ended recalls"].Value, Model.Closed.ToString(), T["released or closed"].Value, "ki-check-circle", "primary", HospitalLotRecallStatus.Closed) };
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Batch recalls"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item"><a href="@Url.Action("Pharmacy")" class="text-muted text-hover-primary">@T["Pharmacy"]</a></li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-400 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@T["A recalled batch leaves every store for quarantine, and its patients are found"]</li>
+            </ul>
+        </div>
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+            <a href="@Url.Action("PharmacyStock", new { tab = "batches" })" class="btn btn-sm btn-light btn-active-light-primary"><i class="ki-outline ki-calendar fs-4"></i>@T["Batches and expiry dates"]</a>
+            @if (canEdit) { <button type="button" class="btn btn-sm btn-primary" data-recall-new><i class="ki-outline ki-shield-cross fs-4"></i>@T["Recall a batch"]</button> }
+        </div>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (!Model.Ready)
+        {
+            <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-6 mb-5">
+                <i class="ki-outline ki-information fs-2tx text-primary me-4"></i>
+                <div class="d-flex flex-stack flex-grow-1 flex-wrap gap-3"><div class="fw-semibold">
+                    <h4 class="text-gray-900 fw-bold mb-1">@T["Choose the quarantine store first"]</h4>
+                    <div class="fs-6 text-gray-700">@T["A recalled batch is moved into the quarantine store chosen in the pharmacy settings."]</div></div>
+                    <a href="@Url.Action("Pharmacy")" class="btn btn-sm btn-primary">@T["Pharmacy settings"]</a></div>
+            </div>
+        }
+        <div class="row g-5 g-xl-8 mb-5">
+            @foreach (var s in tiles)
+            {
+                <div class="col-sm-6 col-xl-3">
+                    <a href="@Url.Action("Recalls")@(s.Filter != null ? "#" + s.Filter : "")" class="card card-flush h-100 hover-elevate-up">
+                        <div class="card-body d-flex flex-column justify-content-between pt-6 pb-0 px-6">
+                            <div class="symbol symbol-45px mb-5"><span class="symbol-label bg-light-@s.Tone"><i class="ki-outline @s.Icon fs-2x text-@s.Tone"></i></span></div>
+                            <div class="d-flex flex-column">
+                                <span class="fs-2hx fw-bold text-@(s.Tone == "danger" ? "danger" : "gray-900") lh-1 ls-n2 hp-num">@s.N</span>
+                                <span class="text-gray-500 pt-2 fw-semibold fs-6">@s.Label</span>
+                            </div>
+                        </div>
+                        <div class="card-body d-flex align-items-end pt-3 pb-6 px-6">
+                            <div class="d-flex fs-7 fw-semibold align-items-center text-gray-500"><div class="bullet w-8px h-6px rounded-2 bg-@s.Tone me-3 flex-shrink-0"></div><span>@s.Note</span></div>
+                        </div>
+                    </a>
+                </div>
+            }
+        </div>
+
+        <div class="card card-flush">
+            <div class="card-header align-items-center pt-5 gap-2 gap-md-5 border-0">
+                <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Recalls"]</span>
+                    <span class="text-gray-500 mt-1 fw-semibold fs-7"><span id="resultCount">—</span></span></h3>
+                <div class="card-toolbar d-flex flex-wrap align-items-center gap-2">
+                    <div class="w-250px"><input type="text" id="f_q" class="form-control form-control-solid form-control-sm" autocomplete="off" placeholder="@T["Search by medicine, batch or notice…"]" /></div>
+                    <div class="w-175px"><select class="form-select form-select-solid form-select-sm cb-filter" id="f_status">
+                        <option value="">@T["All"]</option>
+                        @foreach (var st in HospitalLotRecallStatus.All) { <option value="@st">@T["recall:" + st]</option> }
+                    </select></div>
+                    <div class="w-75px"><select id="f_size" class="form-select form-select-solid form-select-sm"><option value="25">25</option><option value="50">50</option><option value="100">100</option></select></div>
+                    <button type="button" id="f_reset" class="btn btn-sm btn-icon btn-light btn-active-light-primary" title="@T["Reset"]" data-bs-toggle="tooltip"><i class="ki-outline ki-arrows-circle fs-3"></i></button>
+                </div>
+            </div>
+            <div class="card-body pt-2">
+                <div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
+                    <thead><tr class="fw-bold text-muted bg-light">
+                        <th class="ps-4 rounded-start">@T["Recall"]</th><th class="min-w-200px">@T["Medicine"]</th><th>@T["Batch"]</th><th>@T["Class"]</th><th>@T["Issued by"]</th>
+                        <th class="text-end">@T["Units quarantined"]</th><th>@T["State"]</th><th class="text-end pe-4 rounded-end"></th>
+                    </tr></thead>
+                    <tbody id="rows"><tr id="loadingRow"><td colspan="8" class="text-center text-muted py-10"><span class="spinner-border spinner-border-sm text-primary me-2"></span>@T["Loading…"]</td></tr>
+                        <tr id="emptyRow" class="d-none"><td colspan="8" class="text-center py-12"><i class="ki-outline ki-shield-tick fs-3x text-gray-300 mb-4 d-block"></i><span class="fs-6 fw-semibold text-gray-600">@T["No batch is recalled."]</span></td></tr></tbody>
+                </table></div>
+                <div class="d-flex flex-stack flex-wrap pt-5"><div class="fs-7 text-muted" id="pageInfo"></div><ul class="pagination" id="pager"></ul></div>
+            </div>
+        </div>
+    </div></div>
+</div>
+
+@if (canEdit)
+{
+    <div class="modal fade" id="recallModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-750px"><div class="modal-content rounded">
+        <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-10">
+            <div class="mb-10 text-center"><h1 class="mb-2">@T["Recall a batch"]</h1>
+                <div class="text-muted fw-semibold fs-6">@T["Every unit of the batch, in every store, moves into quarantine now; its patients are listed on the recall."]</div></div>
+            <div class="row g-6">
+                <div class="col-md-7"><label class="fs-6 fw-semibold mb-2 required">@T["Medicine"]</label>
+                    <select class="form-select form-select-solid" data-r="itemId" data-placeholder="@T["Choose the medicine"]"><option value=""></option>
+                        @foreach (var m in meds) { <option value="@m.Id" selected="@(m.Id == preItem)">@m.Code · @DisplayName.Of(m.Name, m.NameEn)</option> }</select></div>
+                <div class="col-md-5"><label class="fs-6 fw-semibold mb-2 required">@T["Batch"]</label>
+                    <select class="form-select form-select-solid" data-r="batchNo" data-placeholder="@T["Choose the batch"]"><option value=""></option></select></div>
+                <div class="col-md-6"><label class="fs-6 fw-semibold mb-2 required">@T["Recall class"]</label>
+                    <select class="form-select form-select-solid" data-r="recallClass" data-hide-search="true">@foreach (var c in HospitalLotRecallClass.All) { <option value="@c" selected="@(c == HospitalLotRecallClass.II)">@T["rclass:" + c]</option> }</select></div>
+                <div class="col-md-6"><label class="fs-6 fw-semibold mb-2 required">@T["Issued by"]</label>
+                    <select class="form-select form-select-solid" data-r="source" data-hide-search="true">@foreach (var s in HospitalLotRecallSource.All) { <option value="@s">@T["rsrc:" + s]</option> }</select></div>
+                <div class="col-12"><label class="fs-6 fw-semibold mb-2">@T["The notice's number"]</label><input class="form-control form-control-solid" dir="auto" maxlength="100" data-r="reference" /></div>
+                <div class="col-12"><label class="fs-6 fw-semibold mb-2 required">@T["Why the batch is recalled"]</label><textarea class="form-control form-control-solid" rows="3" maxlength="400" dir="auto" data-r="reason"></textarea></div>
+            </div>
+            <div class="text-center pt-10"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-danger" data-recall-save><i class="ki-outline ki-shield-cross fs-4"></i>@T["Recall and quarantine"]</button></div>
+        </div>
+    </div></div></div>
+}
+
+@section Scripts {
+    <script>
+        (function () {
+            var st = document.getElementById('f_status');
+            function fromHash() { var h = (location.hash || '').replace('#', '');
+                if (!h || !Array.prototype.some.call(st.options, function (o) { return o.value === h; })) return false;
+                st.value = h; if (window.jQuery) jQuery(st).trigger('change.select2'); return true; }
+            fromHash();
+            var list = cbServerList({ url: @Json.Serialize(Url.Action("RecallsData")), isAr: @(isAr ? "true" : "false"), addParams: function (p) { p.set('status', st.value); } });
+            window.addEventListener('hashchange', function () { if (fromHash()) list.reload(); });
+            document.addEventListener('click', function (e) { var row = e.target.closest('tr[data-href]'); if (row && !e.target.closest('a,button')) location.href = row.getAttribute('data-href'); });
+
+            var mEl = document.getElementById('recallModal'); if (!mEl) return;
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), ask: @Json.Serialize(T["Recall this batch? Every unit moves into quarantine now."].Value),
+                onHand: @Json.Serialize(T["On hand"].Value), none: @Json.Serialize(T["This medicine has no batch in the inventory"].Value) };
+            var item = mEl.querySelector('[data-r="itemId"]'), batch = mEl.querySelector('[data-r="batchNo"]'), pre = @Json.Serialize(preBatch);
+            // the batches of the chosen medicine, as select2 options (the layout's enhancer ran at page load: re-init after the swap)
+            function loadBatches(want) {
+                batch.innerHTML = '<option value=""></option>';
+                if (!item.value) { if (window.jQuery) jQuery(batch).trigger('change.select2'); return; }
+                fetch(@Json.Serialize(Url.Action("RecallBatches")) + '?itemId=' + item.value).then(function (r) { return r.json(); }).then(function (rows) {
+                    if (!rows.length) toastr.info(W.none);
+                    rows.forEach(function (b) { var o = document.createElement('option'); o.value = b.batchNo;
+                        o.textContent = b.batchNo + (b.expiry ? ' · ' + b.expiry : '') + ' · ' + W.onHand + ' ' + (+b.onHand).toLocaleString('en'); batch.appendChild(o); });
+                    if (want) batch.value = want;
+                    if (window.jQuery) jQuery(batch).trigger('change.select2');
+                });
+            }
+            if (window.CB && CB.onSelectChange) CB.onSelectChange(item, function () { loadBatches(null); }); else item.addEventListener('change', function () { loadBatches(null); });
+            function open() { bootstrap.Modal.getOrCreateInstance(mEl).show(); }
+            document.addEventListener('click', function (e) {
+                if (e.target.closest('[data-recall-new]')) { open(); return; }
+                var t = e.target.closest('[data-recall-save]'); if (!t) return;
+                var body = {}; mEl.querySelectorAll('[data-r]').forEach(function (i) { body[i.getAttribute('data-r')] = i.value.trim() || null; });
+                body.itemId = body.itemId ? +body.itemId : 0;
+                cbConfirm(W.ask, { kind: 'danger' }).then(function (ok) { if (!ok) return; t.disabled = true;
+                    fetch(@Json.Serialize(Url.Action("RecallOpen")), { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(body) })
+                        .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+                        .then(function (res) { t.disabled = false; if (!res.ok) { toastr.error(res.error || W.failed); return; } location.href = @Json.Serialize(Url.Content("~/Hospital/Pharmacy/Recalls/")) + res.id; });
+                });
+            });
+            // from the stock screen's batch: the form opens with the medicine and the batch chosen
+            if (item.value) { loadBatches(pre); if (pre) open(); }
+        })();
+    </script>
+}

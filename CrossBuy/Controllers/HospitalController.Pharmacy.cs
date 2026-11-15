@@ -14,7 +14,7 @@ namespace CrossBuy.Controllers
 	public partial class HospitalController
 	{
 		public sealed class HospitalRxVerifyInput { public string? Note { get; set; } }
-		public sealed class HospitalPharmacySettingsInput { public int? WarehouseId { get; set; } public int NearExpiryDays { get; set; } = 60; }
+		public sealed class HospitalPharmacySettingsInput { public int? WarehouseId { get; set; } public int NearExpiryDays { get; set; } = 60; public int? QuarantineWarehouseId { get; set; } }
 
 		[HttpGet("Pharmacy")]
 		[HospitalPerm(HospitalActions.Read)]
@@ -57,7 +57,7 @@ namespace CrossBuy.Controllers
 		{
 			var ctx = await ContextAsync(ct);
 			if (ctx == null) return NotFound(new { ok = false, code = "not_found" });
-			return Result(await _pharmacy.SaveSettingsAsync(ctx, input?.WarehouseId, input?.NearExpiryDays ?? 60, ct));
+			return Result(await _pharmacy.SaveSettingsAsync(ctx, input?.WarehouseId, input?.NearExpiryDays ?? 60, ct, input?.QuarantineWarehouseId));
 		}
 	}
 }

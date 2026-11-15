@@ -1,0 +1,415 @@
+{
+ "unit": "H134 - batch recalls: quarantine from every store, trace to patients, release or close",
+ "strings": {
+  "Batch recalls": {
+   "ar": "سحب التشغيلات",
+   "en": "Batch recalls",
+   "fr": "Rappels de lots"
+  },
+  "Open recalls": {
+   "ar": "سحب مفتوح",
+   "en": "Open recalls",
+   "fr": "Rappels ouverts"
+  },
+  "batches held in quarantine": {
+   "ar": "تشغيلات محجوزة في الحجر",
+   "en": "batches held in quarantine",
+   "fr": "lots en quarantaine"
+  },
+  "Class I open": {
+   "ar": "فئة أولى مفتوحة",
+   "en": "Class I open",
+   "fr": "Classe I ouverts"
+  },
+  "may cause serious harm": {
+   "ar": "قد تسبب ضررًا جسيمًا",
+   "en": "may cause serious harm",
+   "fr": "peut causer un préjudice grave"
+  },
+  "Units in quarantine": {
+   "ar": "وحدات في الحجر",
+   "en": "Units in quarantine",
+   "fr": "Unités en quarantaine"
+  },
+  "out of reach of dispensing": {
+   "ar": "بعيدًا عن متناول الصرف",
+   "en": "out of reach of dispensing",
+   "fr": "hors de portée de la dispensation"
+  },
+  "Ended recalls": {
+   "ar": "سحب منتهٍ",
+   "en": "Ended recalls",
+   "fr": "Rappels terminés"
+  },
+  "released or closed": {
+   "ar": "أُفرج عنها أو أُغلقت",
+   "en": "released or closed",
+   "fr": "levés ou clos"
+  },
+  "A recalled batch leaves every store for quarantine, and its patients are found": {
+   "ar": "التشغيلة المسحوبة تخرج من كل المخازن إلى الحجر، ويُعرف كل مريض أخذها",
+   "en": "A recalled batch leaves every store for quarantine, and its patients are found",
+   "fr": "Un lot rappelé quitte chaque magasin pour la quarantaine, et ses patients sont retrouvés"
+  },
+  "Recall a batch": {
+   "ar": "سحب تشغيلة",
+   "en": "Recall a batch",
+   "fr": "Rappeler un lot"
+  },
+  "Choose the quarantine store first": {
+   "ar": "اختر مخزن الحجر أولًا",
+   "en": "Choose the quarantine store first",
+   "fr": "Choisissez d'abord le magasin de quarantaine"
+  },
+  "A recalled batch is moved into the quarantine store chosen in the pharmacy settings.": {
+   "ar": "التشغيلة المسحوبة تُنقل إلى مخزن الحجر المختار في إعدادات الصيدلية.",
+   "en": "A recalled batch is moved into the quarantine store chosen in the pharmacy settings.",
+   "fr": "Un lot rappelé est déplacé vers le magasin de quarantaine choisi dans les paramètres."
+  },
+  "Recalls": {
+   "ar": "عمليات السحب",
+   "en": "Recalls",
+   "fr": "Rappels"
+  },
+  "Search by medicine, batch or notice…": {
+   "ar": "ابحث بالدواء أو التشغيلة أو رقم الإشعار…",
+   "en": "Search by medicine, batch or notice…",
+   "fr": "Rechercher par médicament, lot ou avis…"
+  },
+  "recall:Quarantined": {
+   "ar": "محجوزة",
+   "en": "Quarantined",
+   "fr": "En quarantaine"
+  },
+  "recall:Released": {
+   "ar": "أُفرج عنها",
+   "en": "Released",
+   "fr": "Levé"
+  },
+  "recall:Closed": {
+   "ar": "مغلقة",
+   "en": "Closed",
+   "fr": "Clos"
+  },
+  "Recall": {
+   "ar": "سحب",
+   "en": "Recall",
+   "fr": "Rappel"
+  },
+  "Issued by": {
+   "ar": "الجهة المُصدِرة",
+   "en": "Issued by",
+   "fr": "Émis par"
+  },
+  "Units quarantined": {
+   "ar": "الوحدات المحجوزة",
+   "en": "Units quarantined",
+   "fr": "Unités en quarantaine"
+  },
+  "No batch is recalled.": {
+   "ar": "لا توجد تشغيلة مسحوبة.",
+   "en": "No batch is recalled.",
+   "fr": "Aucun lot rappelé."
+  },
+  "Every unit of the batch, in every store, moves into quarantine now; its patients are listed on the recall.": {
+   "ar": "كل وحدات التشغيلة في كل المخازن تنتقل الآن إلى الحجر، ومرضاها يظهرون في صفحة السحب.",
+   "en": "Every unit of the batch, in every store, moves into quarantine now; its patients are listed on the recall.",
+   "fr": "Chaque unité du lot, dans chaque magasin, part maintenant en quarantaine ; ses patients sont listés sur le rappel."
+  },
+  "Choose the medicine": {
+   "ar": "اختر الدواء",
+   "en": "Choose the medicine",
+   "fr": "Choisissez le médicament"
+  },
+  "Choose the batch": {
+   "ar": "اختر التشغيلة",
+   "en": "Choose the batch",
+   "fr": "Choisissez le lot"
+  },
+  "Recall class": {
+   "ar": "فئة السحب",
+   "en": "Recall class",
+   "fr": "Classe du rappel"
+  },
+  "rclass:I": {
+   "ar": "الفئة الأولى — قد تسبب ضررًا جسيمًا أو الوفاة",
+   "en": "Class I — may cause serious harm or death",
+   "fr": "Classe I — préjudice grave ou décès possible"
+  },
+  "rclass:II": {
+   "ar": "الفئة الثانية — ضرر مؤقت أو قابل للعلاج",
+   "en": "Class II — temporary or reversible harm",
+   "fr": "Classe II — préjudice temporaire ou réversible"
+  },
+  "rclass:III": {
+   "ar": "الفئة الثالثة — لا يُتوقع منها ضرر",
+   "en": "Class III — unlikely to cause harm",
+   "fr": "Classe III — préjudice peu probable"
+  },
+  "Class {0}": {
+   "ar": "الفئة ⁦{0}⁩",
+   "en": "Class {0}",
+   "fr": "Classe {0}"
+  },
+  "rsrc:Regulator": {
+   "ar": "هيئة الدواء",
+   "en": "The regulator",
+   "fr": "L'autorité"
+  },
+  "rsrc:Supplier": {
+   "ar": "المورد أو المصنّع",
+   "en": "The supplier or maker",
+   "fr": "Le fournisseur ou fabricant"
+  },
+  "rsrc:Internal": {
+   "ar": "الصيدلية نفسها (اشتباه)",
+   "en": "The pharmacy itself (suspicion)",
+   "fr": "La pharmacie (suspicion)"
+  },
+  "The notice's number": {
+   "ar": "رقم الإشعار أو المنشور",
+   "en": "The notice's number",
+   "fr": "Numéro de l'avis"
+  },
+  "Why the batch is recalled": {
+   "ar": "سبب السحب",
+   "en": "Why the batch is recalled",
+   "fr": "Motif du rappel"
+  },
+  "Recall and quarantine": {
+   "ar": "اسحب واحجز",
+   "en": "Recall and quarantine",
+   "fr": "Rappeler et mettre en quarantaine"
+  },
+  "Recall this batch? Every unit moves into quarantine now.": {
+   "ar": "سحب هذه التشغيلة؟ كل وحداتها ستنتقل الآن إلى الحجر.",
+   "en": "Recall this batch? Every unit moves into quarantine now.",
+   "fr": "Rappeler ce lot ? Toutes ses unités partent maintenant en quarantaine."
+  },
+  "This medicine has no batch in the inventory": {
+   "ar": "هذا الدواء ليس له تشغيلات في المخزن",
+   "en": "This medicine has no batch in the inventory",
+   "fr": "Ce médicament n'a aucun lot en stock"
+  },
+  "Move into quarantine whatever of this batch has reached a store since?": {
+   "ar": "نقل ما وصل من هذه التشغيلة إلى أي مخزن بعد السحب إلى الحجر؟",
+   "en": "Move into quarantine whatever of this batch has reached a store since?",
+   "fr": "Mettre en quarantaine ce qui de ce lot a rejoint un magasin depuis ?"
+  },
+  "Sweep the stores again": {
+   "ar": "امسح المخازن مرة أخرى",
+   "en": "Sweep the stores again",
+   "fr": "Repasser les magasins"
+  },
+  "Why is the recall withdrawn? The batch goes back to the pharmacy store.": {
+   "ar": "لماذا أُلغي السحب؟ التشغيلة ترجع إلى مخزن الصيدلية.",
+   "en": "Why is the recall withdrawn? The batch goes back to the pharmacy store.",
+   "fr": "Pourquoi le rappel est-il levé ? Le lot retourne au magasin de la pharmacie."
+  },
+  "Release the batch": {
+   "ar": "أفرج عن التشغيلة",
+   "en": "Release the batch",
+   "fr": "Lever le rappel"
+  },
+  "What was done with the batch (returned to the supplier, destroyed)?": {
+   "ar": "ماذا تم في التشغيلة (رجعت للمورد، أُعدمت)؟",
+   "en": "What was done with the batch (returned to the supplier, destroyed)?",
+   "fr": "Qu'est devenu le lot (retourné, détruit) ?"
+  },
+  "Close the recall": {
+   "ar": "أغلق السحب",
+   "en": "Close the recall",
+   "fr": "Clore le rappel"
+  },
+  "A class I recall: contact every patient below": {
+   "ar": "سحب من الفئة الأولى: تواصل مع كل مريض بالأسفل",
+   "en": "A class I recall: contact every patient below",
+   "fr": "Rappel de classe I : contactez chaque patient ci-dessous"
+  },
+  "{0} patients received units of this batch.": {
+   "ar": "⁦{0}⁩ مريض أخذوا من هذه التشغيلة.",
+   "en": "{0} patients received units of this batch.",
+   "fr": "{0} patients ont reçu ce lot."
+  },
+  "{0} units of this batch are outside quarantine": {
+   "ar": "⁦{0}⁩ وحدة من هذه التشغيلة خارج الحجر",
+   "en": "{0} units of this batch are outside quarantine",
+   "fr": "{0} unités de ce lot sont hors quarantaine"
+  },
+  "They reached a store after the recall; sweep the stores again.": {
+   "ar": "وصلت إلى مخزن بعد السحب؛ امسح المخازن مرة أخرى.",
+   "en": "They reached a store after the recall; sweep the stores again.",
+   "fr": "Elles ont rejoint un magasin après le rappel ; repassez les magasins."
+  },
+  "held in quarantine": {
+   "ar": "في الحجر",
+   "en": "held in quarantine",
+   "fr": "en quarantaine"
+  },
+  "Received how": {
+   "ar": "كيف وصلته",
+   "en": "Received how",
+   "fr": "Reçu comment"
+  },
+  "patients reached": {
+   "ar": "مريض وصلته",
+   "en": "patients reached",
+   "fr": "patients atteints"
+  },
+  "Quarantine store": {
+   "ar": "مخزن الحجر",
+   "en": "Quarantine store",
+   "fr": "Magasin de quarantaine"
+  },
+  "Inventory transfers": {
+   "ar": "تحويلات المخزن",
+   "en": "Inventory transfers",
+   "fr": "Transferts de stock"
+  },
+  "nothing was in stock": {
+   "ar": "لم يكن منها شيء في المخزن",
+   "en": "nothing was in stock",
+   "fr": "rien n'était en stock"
+  },
+  "Where the batch is now": {
+   "ar": "أين التشغيلة الآن",
+   "en": "Where the batch is now",
+   "fr": "Où est le lot maintenant"
+  },
+  "Every store holding units of it, from the inventory's movements": {
+   "ar": "كل مخزن فيه وحدات منها، من حركات المخزن",
+   "en": "Every store holding units of it, from the inventory's movements",
+   "fr": "Chaque magasin qui en détient, d'après les mouvements"
+  },
+  "No store holds any of this batch.": {
+   "ar": "لا يوجد مخزن فيه شيء من هذه التشغيلة.",
+   "en": "No store holds any of this batch.",
+   "fr": "Aucun magasin ne détient ce lot."
+  },
+  "Store": {
+   "ar": "المخزن",
+   "en": "Store",
+   "fr": "Magasin"
+  },
+  "Units": {
+   "ar": "الوحدات",
+   "en": "Units",
+   "fr": "Unités"
+  },
+  "In quarantine": {
+   "ar": "في الحجر",
+   "en": "In quarantine",
+   "fr": "En quarantaine"
+  },
+  "Still within reach": {
+   "ar": "ما زالت في متناول الصرف",
+   "en": "Still within reach",
+   "fr": "Encore accessible"
+  },
+  "Patients who received it": {
+   "ar": "المرضى الذين أخذوها",
+   "en": "Patients who received it",
+   "fr": "Patients qui l'ont reçu"
+  },
+  "Dispensed, delivered to the ward or used in a session's kit; doses that came back are not counted": {
+   "ar": "صُرفت أو وُصّلت للجناح أو استُخدمت في مستلزمات جلسة؛ الجرعات التي رجعت لا تُحسب",
+   "en": "Dispensed, delivered to the ward or used in a session's kit; doses that came back are not counted",
+   "fr": "Dispensé, livré au service ou utilisé dans un kit ; les doses revenues ne comptent pas"
+  },
+  "No patient received units of this batch.": {
+   "ar": "لم يأخذ أي مريض من هذه التشغيلة.",
+   "en": "No patient received units of this batch.",
+   "fr": "Aucun patient n'a reçu ce lot."
+  },
+  "Last received": {
+   "ar": "آخر استلام",
+   "en": "Last received",
+   "fr": "Dernière réception"
+  },
+  "rway:Dispensed": {
+   "ar": "صرف روشتة",
+   "en": "Prescription dispensed",
+   "fr": "Ordonnance dispensée"
+  },
+  "rway:Delivered": {
+   "ar": "توصيل للجناح",
+   "en": "Delivered to the ward",
+   "fr": "Livré au service"
+  },
+  "rway:Kit": {
+   "ar": "مستلزمات جلسة",
+   "en": "A session's kit",
+   "fr": "Kit de séance"
+  },
+  "Recall this batch": {
+   "ar": "اسحب هذه التشغيلة",
+   "en": "Recall this batch",
+   "fr": "Rappeler ce lot"
+  },
+  "Quarantine store (recalled or suspect batches)": {
+   "ar": "مخزن الحجر (التشغيلات المسحوبة أو المشتبه فيها)",
+   "en": "Quarantine store (recalled or suspect batches)",
+   "fr": "Magasin de quarantaine (lots rappelés ou suspects)"
+  },
+  "A recalled batch is moved here from every store, out of reach of dispensing.": {
+   "ar": "التشغيلة المسحوبة تُنقل هنا من كل المخازن، بعيدًا عن متناول الصرف.",
+   "en": "A recalled batch is moved here from every store, out of reach of dispensing.",
+   "fr": "Un lot rappelé est déplacé ici depuis chaque magasin, hors de portée de la dispensation."
+  },
+  "The quarantine store must be another store than the pharmacy's": {
+   "ar": "مخزن الحجر لازم يكون مخزن غير مخزن الصيدلية",
+   "en": "The quarantine store must be another store than the pharmacy's",
+   "fr": "Le magasin de quarantaine doit différer de celui de la pharmacie"
+  },
+  "Choose the recall class": {
+   "ar": "اختر فئة السحب",
+   "en": "Choose the recall class",
+   "fr": "Choisissez la classe du rappel"
+  },
+  "Choose who issued the recall": {
+   "ar": "اختر الجهة المُصدِرة للسحب",
+   "en": "Choose who issued the recall",
+   "fr": "Choisissez l'émetteur du rappel"
+  },
+  "Write why the batch is recalled": {
+   "ar": "اكتب سبب السحب",
+   "en": "Write why the batch is recalled",
+   "fr": "Indiquez le motif du rappel"
+  },
+  "Choose the quarantine store in the pharmacy settings first": {
+   "ar": "اختر مخزن الحجر في إعدادات الصيدلية أولًا",
+   "en": "Choose the quarantine store in the pharmacy settings first",
+   "fr": "Choisissez d'abord le magasin de quarantaine dans les paramètres"
+  },
+  "This batch is already under recall {0}": {
+   "ar": "هذه التشغيلة مسحوبة بالفعل في ⁦{0}⁩",
+   "en": "This batch is already under recall {0}",
+   "fr": "Ce lot fait déjà l'objet du rappel {0}"
+  },
+  "The batch could not be moved into quarantine: {0}": {
+   "ar": "تعذّر نقل التشغيلة إلى الحجر: ⁦{0}⁩",
+   "en": "The batch could not be moved into quarantine: {0}",
+   "fr": "Le lot n'a pas pu être mis en quarantaine : {0}"
+  },
+  "This recall has ended": {
+   "ar": "هذا السحب انتهى",
+   "en": "This recall has ended",
+   "fr": "Ce rappel est terminé"
+  },
+  "Nothing of this batch is left outside quarantine": {
+   "ar": "لا شيء من هذه التشغيلة خارج الحجر",
+   "en": "Nothing of this batch is left outside quarantine",
+   "fr": "Rien de ce lot n'est hors quarantaine"
+  },
+  "Write why the recall ends": {
+   "ar": "اكتب سبب إنهاء السحب",
+   "en": "Write why the recall ends",
+   "fr": "Indiquez pourquoi le rappel se termine"
+  },
+  "The batch could not be moved back: {0}": {
+   "ar": "تعذّر إرجاع التشغيلة: ⁦{0}⁩",
+   "en": "The batch could not be moved back: {0}",
+   "fr": "Le lot n'a pas pu être remis : {0}"
+  }
+ }
+}

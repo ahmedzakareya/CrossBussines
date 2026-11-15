@@ -6800,4 +6800,86 @@
   <data name="{0} is withdrawn from the formulary and cannot be dispensed" xml:space="preserve"><value>⁦{0}⁩ مسحوب من الدليل ولا يُصرف</value></data>
   <data name="{0} restricted" xml:space="preserve"><value>⁦{0}⁩ مقيّدة</value></data>
   <data name="Strength, form and routes" xml:space="preserve"><value>التركيز والشكل وطرق الإعطاء</value></data>
+  <data name="A class I recall: contact every patient below" xml:space="preserve"><value>سحب من الفئة الأولى: تواصل مع كل مريض بالأسفل</value></data>
+  <data name="A recalled batch is moved here from every store, out of reach of dispensing." xml:space="preserve"><value>التشغيلة المسحوبة تُنقل هنا من كل المخازن، بعيدًا عن متناول الصرف.</value></data>
+  <data name="A recalled batch is moved into the quarantine store chosen in the pharmacy settings." xml:space="preserve"><value>التشغيلة المسحوبة تُنقل إلى مخزن الحجر المختار في إعدادات الصيدلية.</value></data>
+  <data name="A recalled batch leaves every store for quarantine, and its patients are found" xml:space="preserve"><value>التشغيلة المسحوبة تخرج من كل المخازن إلى الحجر، ويُعرف كل مريض أخذها</value></data>
+  <data name="Batch recalls" xml:space="preserve"><value>سحب التشغيلات</value></data>
+  <data name="Choose the batch" xml:space="preserve"><value>اختر التشغيلة</value></data>
+  <data name="Choose the medicine" xml:space="preserve"><value>اختر الدواء</value></data>
+  <data name="Choose the quarantine store first" xml:space="preserve"><value>اختر مخزن الحجر أولًا</value></data>
+  <data name="Choose the quarantine store in the pharmacy settings first" xml:space="preserve"><value>اختر مخزن الحجر في إعدادات الصيدلية أولًا</value></data>
+  <data name="Choose the recall class" xml:space="preserve"><value>اختر فئة السحب</value></data>
+  <data name="Choose who issued the recall" xml:space="preserve"><value>اختر الجهة المُصدِرة للسحب</value></data>
+  <data name="Class I open" xml:space="preserve"><value>فئة أولى مفتوحة</value></data>
+  <data name="Class {0}" xml:space="preserve"><value>الفئة ⁦{0}⁩</value></data>
+  <data name="Close the recall" xml:space="preserve"><value>أغلق السحب</value></data>
+  <data name="Dispensed, delivered to the ward or used in a session's kit; doses that came back are not counted" xml:space="preserve"><value>صُرفت أو وُصّلت للجناح أو استُخدمت في مستلزمات جلسة؛ الجرعات التي رجعت لا تُحسب</value></data>
+  <data name="Ended recalls" xml:space="preserve"><value>سحب منتهٍ</value></data>
+  <data name="Every store holding units of it, from the inventory's movements" xml:space="preserve"><value>كل مخزن فيه وحدات منها، من حركات المخزن</value></data>
+  <data name="Every unit of the batch, in every store, moves into quarantine now; its patients are listed on the recall." xml:space="preserve"><value>كل وحدات التشغيلة في كل المخازن تنتقل الآن إلى الحجر، ومرضاها يظهرون في صفحة السحب.</value></data>
+  <data name="In quarantine" xml:space="preserve"><value>في الحجر</value></data>
+  <data name="Inventory transfers" xml:space="preserve"><value>تحويلات المخزن</value></data>
+  <data name="Issued by" xml:space="preserve"><value>الجهة المُصدِرة</value></data>
+  <data name="Last received" xml:space="preserve"><value>آخر استلام</value></data>
+  <data name="Move into quarantine whatever of this batch has reached a store since?" xml:space="preserve"><value>نقل ما وصل من هذه التشغيلة إلى أي مخزن بعد السحب إلى الحجر؟</value></data>
+  <data name="No batch is recalled." xml:space="preserve"><value>لا توجد تشغيلة مسحوبة.</value></data>
+  <data name="No patient received units of this batch." xml:space="preserve"><value>لم يأخذ أي مريض من هذه التشغيلة.</value></data>
+  <data name="No store holds any of this batch." xml:space="preserve"><value>لا يوجد مخزن فيه شيء من هذه التشغيلة.</value></data>
+  <data name="Nothing of this batch is left outside quarantine" xml:space="preserve"><value>لا شيء من هذه التشغيلة خارج الحجر</value></data>
+  <data name="Open recalls" xml:space="preserve"><value>سحب مفتوح</value></data>
+  <data name="Patients who received it" xml:space="preserve"><value>المرضى الذين أخذوها</value></data>
+  <data name="Quarantine store" xml:space="preserve"><value>مخزن الحجر</value></data>
+  <data name="Quarantine store (recalled or suspect batches)" xml:space="preserve"><value>مخزن الحجر (التشغيلات المسحوبة أو المشتبه فيها)</value></data>
+  <data name="Recall" xml:space="preserve"><value>سحب</value></data>
+  <data name="Recall a batch" xml:space="preserve"><value>سحب تشغيلة</value></data>
+  <data name="Recall and quarantine" xml:space="preserve"><value>اسحب واحجز</value></data>
+  <data name="Recall class" xml:space="preserve"><value>فئة السحب</value></data>
+  <data name="Recall this batch" xml:space="preserve"><value>اسحب هذه التشغيلة</value></data>
+  <data name="Recall this batch? Every unit moves into quarantine now." xml:space="preserve"><value>سحب هذه التشغيلة؟ كل وحداتها ستنتقل الآن إلى الحجر.</value></data>
+  <data name="Recalls" xml:space="preserve"><value>عمليات السحب</value></data>
+  <data name="Release the batch" xml:space="preserve"><value>أفرج عن التشغيلة</value></data>
+  <data name="Search by medicine, batch or notice…" xml:space="preserve"><value>ابحث بالدواء أو التشغيلة أو رقم الإشعار…</value></data>
+  <data name="Still within reach" xml:space="preserve"><value>ما زالت في متناول الصرف</value></data>
+  <data name="Store" xml:space="preserve"><value>المخزن</value></data>
+  <data name="Sweep the stores again" xml:space="preserve"><value>امسح المخازن مرة أخرى</value></data>
+  <data name="The batch could not be moved back: {0}" xml:space="preserve"><value>تعذّر إرجاع التشغيلة: ⁦{0}⁩</value></data>
+  <data name="The batch could not be moved into quarantine: {0}" xml:space="preserve"><value>تعذّر نقل التشغيلة إلى الحجر: ⁦{0}⁩</value></data>
+  <data name="The notice's number" xml:space="preserve"><value>رقم الإشعار أو المنشور</value></data>
+  <data name="The quarantine store must be another store than the pharmacy's" xml:space="preserve"><value>مخزن الحجر لازم يكون مخزن غير مخزن الصيدلية</value></data>
+  <data name="They reached a store after the recall; sweep the stores again." xml:space="preserve"><value>وصلت إلى مخزن بعد السحب؛ امسح المخازن مرة أخرى.</value></data>
+  <data name="This batch is already under recall {0}" xml:space="preserve"><value>هذه التشغيلة مسحوبة بالفعل في ⁦{0}⁩</value></data>
+  <data name="This medicine has no batch in the inventory" xml:space="preserve"><value>هذا الدواء ليس له تشغيلات في المخزن</value></data>
+  <data name="This recall has ended" xml:space="preserve"><value>هذا السحب انتهى</value></data>
+  <data name="Units" xml:space="preserve"><value>الوحدات</value></data>
+  <data name="Units in quarantine" xml:space="preserve"><value>وحدات في الحجر</value></data>
+  <data name="Units quarantined" xml:space="preserve"><value>الوحدات المحجوزة</value></data>
+  <data name="What was done with the batch (returned to the supplier, destroyed)?" xml:space="preserve"><value>ماذا تم في التشغيلة (رجعت للمورد، أُعدمت)؟</value></data>
+  <data name="Where the batch is now" xml:space="preserve"><value>أين التشغيلة الآن</value></data>
+  <data name="Why is the recall withdrawn? The batch goes back to the pharmacy store." xml:space="preserve"><value>لماذا أُلغي السحب؟ التشغيلة ترجع إلى مخزن الصيدلية.</value></data>
+  <data name="Why the batch is recalled" xml:space="preserve"><value>سبب السحب</value></data>
+  <data name="Write why the batch is recalled" xml:space="preserve"><value>اكتب سبب السحب</value></data>
+  <data name="Write why the recall ends" xml:space="preserve"><value>اكتب سبب إنهاء السحب</value></data>
+  <data name="batches held in quarantine" xml:space="preserve"><value>تشغيلات محجوزة في الحجر</value></data>
+  <data name="may cause serious harm" xml:space="preserve"><value>قد تسبب ضررًا جسيمًا</value></data>
+  <data name="nothing was in stock" xml:space="preserve"><value>لم يكن منها شيء في المخزن</value></data>
+  <data name="out of reach of dispensing" xml:space="preserve"><value>بعيدًا عن متناول الصرف</value></data>
+  <data name="patients reached" xml:space="preserve"><value>مريض وصلته</value></data>
+  <data name="rclass:I" xml:space="preserve"><value>الفئة الأولى — قد تسبب ضررًا جسيمًا أو الوفاة</value></data>
+  <data name="rclass:II" xml:space="preserve"><value>الفئة الثانية — ضرر مؤقت أو قابل للعلاج</value></data>
+  <data name="rclass:III" xml:space="preserve"><value>الفئة الثالثة — لا يُتوقع منها ضرر</value></data>
+  <data name="recall:Closed" xml:space="preserve"><value>مغلقة</value></data>
+  <data name="recall:Quarantined" xml:space="preserve"><value>محجوزة</value></data>
+  <data name="recall:Released" xml:space="preserve"><value>أُفرج عنها</value></data>
+  <data name="released or closed" xml:space="preserve"><value>أُفرج عنها أو أُغلقت</value></data>
+  <data name="rsrc:Internal" xml:space="preserve"><value>الصيدلية نفسها (اشتباه)</value></data>
+  <data name="rsrc:Regulator" xml:space="preserve"><value>هيئة الدواء</value></data>
+  <data name="rsrc:Supplier" xml:space="preserve"><value>المورد أو المصنّع</value></data>
+  <data name="rway:Delivered" xml:space="preserve"><value>توصيل للجناح</value></data>
+  <data name="rway:Dispensed" xml:space="preserve"><value>صرف روشتة</value></data>
+  <data name="rway:Kit" xml:space="preserve"><value>مستلزمات جلسة</value></data>
+  <data name="{0} patients received units of this batch." xml:space="preserve"><value>⁦{0}⁩ مريض أخذوا من هذه التشغيلة.</value></data>
+  <data name="{0} units of this batch are outside quarantine" xml:space="preserve"><value>⁦{0}⁩ وحدة من هذه التشغيلة خارج الحجر</value></data>
+  <data name="Received how" xml:space="preserve"><value>كيف وصلته</value></data>
+  <data name="held in quarantine" xml:space="preserve"><value>في الحجر</value></data>
 </root>

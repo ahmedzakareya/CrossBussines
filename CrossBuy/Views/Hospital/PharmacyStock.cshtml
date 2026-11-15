@@ -39,6 +39,7 @@
         </div>
         <div class="d-flex flex-wrap gap-2 align-items-center">
             <a href="@Url.Action("Pharmacy")" class="btn btn-sm btn-light btn-active-light-primary"><i class="ki-outline ki-capsule fs-4"></i>@T["Dispensing queue"]</a>
+            <a href="@Url.Action("Recalls")" class="btn btn-sm btn-light btn-active-light-danger"><i class="ki-outline ki-shield-cross fs-4"></i>@T["Batch recalls"]</a>
             <a href="@Url.Action("GoodsReceipts", "Inventory")" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-entrance-left fs-4"></i>@T["Receive stock"]</a>
         </div>
     </div></div>
@@ -113,7 +114,7 @@
                 </div>
                 <div class="card-body pt-2">
                     @{
-                        int cols = tab == HospitalController.PharmacyStockTabs.Movements ? 6 : 5;
+                        int cols = tab == HospitalController.PharmacyStockTabs.Medicines ? 5 : 6;
                         string emptyIcon = tab == HospitalController.PharmacyStockTabs.Movements ? "ki-arrow-right-left" : tab == HospitalController.PharmacyStockTabs.Batches ? "ki-calendar" : "ki-capsule";
                     }
                     <div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
@@ -124,7 +125,7 @@
                             }
                             else if (tab == HospitalController.PharmacyStockTabs.Batches)
                             {
-                                <th class="ps-4 min-w-250px rounded-start">@T["Medicine"]</th><th>@T["Batch"]</th><th>@T["Expiry"]</th><th class="text-end">@T["On hand"]</th><th class="pe-4 rounded-end">@T["Days left"]</th>
+                                <th class="ps-4 min-w-250px rounded-start">@T["Medicine"]</th><th>@T["Batch"]</th><th>@T["Expiry"]</th><th class="text-end">@T["On hand"]</th><th>@T["Days left"]</th><th class="pe-4 rounded-end"></th>
                             }
                             else
                             {
