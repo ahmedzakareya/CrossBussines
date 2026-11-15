@@ -78,6 +78,8 @@ namespace CrossBuy.Models.Context.Hospital
 		public int ID { get; set; }
 		/// H119: the bill line this session was charged on (null = not charged: not done, or no price yet).
 		public int? BillLineId { get; set; }
+		/// H122: when the session's kit left the dialysis store (null until it has — never twice).
+		public DateTime? KitIssuedAt { get; set; }
 		public int CompanyId { get; set; }
 		public int PlanId { get; set; }
 		public int PatientId { get; set; }
@@ -134,6 +136,7 @@ namespace CrossBuy.Models.Context.Hospital
 	{
 		public static void Configure(ModelBuilder b)
 		{
+			HospitalUnitKitModel.Configure(b);   // H122: the unit's kit and store (the dialysis unit is the first unit to use it)
 			b.Entity<HospitalDialysisPlan>(e =>
 			{
 				e.ToTable("HospitalDialysisPlans");   // no DbSet: each names its table

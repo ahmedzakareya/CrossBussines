@@ -6593,4 +6593,19 @@
   <data name="rxs:New" xml:space="preserve"><value>بانتظار الصيدلي</value></data>
   <data name="rxs:Verified" xml:space="preserve"><value>راجعه الصيدلي</value></data>
   <data name="The stay's bill" xml:space="preserve"><value>فاتورة الإقامة</value></data>
+  <data name="Choose the dialysis unit's store first" xml:space="preserve"><value>اختر مخزن وحدة الغسيل أولًا</value></data>
+  <data name="From the dialysis store" xml:space="preserve"><value>من مخزن وحدة الغسيل</value></data>
+  <data name="In the dialysis store" xml:space="preserve"><value>في مخزن الغسيل</value></data>
+  <data name="Issue this session's kit from the dialysis store now?" xml:space="preserve"><value>صرف مستلزمات هذه الجلسة من مخزن الغسيل الآن؟</value></data>
+  <data name="Leaves the store when the session is finished" xml:space="preserve"><value>تخرج من المخزن عند إنهاء الجلسة</value></data>
+  <data name="Save the dialysis unit's kit and store?" xml:space="preserve"><value>حفظ مستلزمات جلسة الغسيل ومخزنها؟</value></data>
+  <data name="Session kit" xml:space="preserve"><value>مستلزمات الجلسة</value></data>
+  <data name="The dialysis store..." xml:space="preserve"><value>مخزن الغسيل...</value></data>
+  <data name="The dialysis unit has no kit set" xml:space="preserve"><value>لم تُحدَّد مستلزمات جلسة الغسيل بعد</value></data>
+  <data name="The kit is issued when the session is finished" xml:space="preserve"><value>تُصرف المستلزمات عند إنهاء الجلسة</value></data>
+  <data name="The session is finished, but its kit did not leave the store:" xml:space="preserve"><value>انتهت الجلسة، لكن مستلزماتها لم تخرج من المخزن:</value></data>
+  <data name="The unit kit tables are not created yet (hospital_h122_unit_kits.sql)" xml:space="preserve"><value>جداول مستلزمات الوحدات غير منشأة بعد (hospital_h122_unit_kits.sql)</value></data>
+  <data name="The unit's kit..." xml:space="preserve"><value>مستلزمات الجلسة...</value></data>
+  <data name="This session's kit has already left the store" xml:space="preserve"><value>مستلزمات هذه الجلسة خرجت من المخزن بالفعل</value></data>
+  <data name="Not enough {0} in the store: {1} of {2}" xml:space="preserve"><value>لا يكفي المخزون من ⁨{0}⁩: الموجود {1} والمطلوب {2}</value></data>
 </root>

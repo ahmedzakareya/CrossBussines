@@ -1,0 +1,80 @@
+{
+ "unit": "H122 — a dialysis session's consumables leave the unit's store (the unit's kit and store; one shared kit path with the theatre)",
+ "strings": {
+  "Session kit": {
+   "ar": "مستلزمات الجلسة",
+   "en": "Session kit",
+   "fr": "Kit de séance"
+  },
+  "From the dialysis store": {
+   "ar": "من مخزن وحدة الغسيل",
+   "en": "From the dialysis store",
+   "fr": "Depuis le magasin de dialyse"
+  },
+  "Leaves the store when the session is finished": {
+   "ar": "تخرج من المخزن عند إنهاء الجلسة",
+   "en": "Leaves the store when the session is finished",
+   "fr": "Sort du magasin à la fin de la séance"
+  },
+  "In the dialysis store": {
+   "ar": "في مخزن الغسيل",
+   "en": "In the dialysis store",
+   "fr": "Au magasin de dialyse"
+  },
+  "The dialysis unit has no kit set": {
+   "ar": "لم تُحدَّد مستلزمات جلسة الغسيل بعد",
+   "en": "The dialysis unit has no kit set",
+   "fr": "L'unité de dialyse n'a pas de kit défini"
+  },
+  "The unit's kit...": {
+   "ar": "مستلزمات الجلسة...",
+   "en": "The unit's kit...",
+   "fr": "Kit de l'unité..."
+  },
+  "The dialysis store...": {
+   "ar": "مخزن الغسيل...",
+   "en": "The dialysis store...",
+   "fr": "Magasin de dialyse..."
+  },
+  "Issue this session's kit from the dialysis store now?": {
+   "ar": "صرف مستلزمات هذه الجلسة من مخزن الغسيل الآن؟",
+   "en": "Issue this session's kit from the dialysis store now?",
+   "fr": "Sortir maintenant le kit de cette séance du magasin de dialyse ?"
+  },
+  "Save the dialysis unit's kit and store?": {
+   "ar": "حفظ مستلزمات جلسة الغسيل ومخزنها؟",
+   "en": "Save the dialysis unit's kit and store?",
+   "fr": "Enregistrer le kit et le magasin de l'unité de dialyse ?"
+  },
+  "The session is finished, but its kit did not leave the store:": {
+   "ar": "انتهت الجلسة، لكن مستلزماتها لم تخرج من المخزن:",
+   "en": "The session is finished, but its kit did not leave the store:",
+   "fr": "La séance est terminée, mais son kit n'est pas sorti du magasin :"
+  },
+  "This session's kit has already left the store": {
+   "ar": "مستلزمات هذه الجلسة خرجت من المخزن بالفعل",
+   "en": "This session's kit has already left the store",
+   "fr": "Le kit de cette séance est déjà sorti du magasin"
+  },
+  "The kit is issued when the session is finished": {
+   "ar": "تُصرف المستلزمات عند إنهاء الجلسة",
+   "en": "The kit is issued when the session is finished",
+   "fr": "Le kit sort à la fin de la séance"
+  },
+  "Choose the dialysis unit's store first": {
+   "ar": "اختر مخزن وحدة الغسيل أولًا",
+   "en": "Choose the dialysis unit's store first",
+   "fr": "Choisissez d'abord le magasin de l'unité de dialyse"
+  },
+  "The unit kit tables are not created yet (hospital_h122_unit_kits.sql)": {
+   "ar": "جداول مستلزمات الوحدات غير منشأة بعد (hospital_h122_unit_kits.sql)",
+   "en": "The unit kit tables are not created yet (hospital_h122_unit_kits.sql)",
+   "fr": "Les tables des kits d'unité ne sont pas encore créées (hospital_h122_unit_kits.sql)"
+  },
+  "Not enough {0} in the store: {1} of {2}": {
+   "ar": "لا يكفي المخزون من ⁨{0}⁩: الموجود {1} والمطلوب {2}",
+   "en": "Not enough {0} in the store: {1} of {2}",
+   "fr": "Pas assez de {0} au magasin : {1} sur {2}"
+  }
+ }
+}

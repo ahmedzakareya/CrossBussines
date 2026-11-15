@@ -6593,4 +6593,19 @@
   <data name="rxs:New" xml:space="preserve"><value>En attente du pharmacien</value></data>
   <data name="rxs:Verified" xml:space="preserve"><value>Vérifiée</value></data>
   <data name="The stay's bill" xml:space="preserve"><value>Facture du séjour</value></data>
+  <data name="Choose the dialysis unit's store first" xml:space="preserve"><value>Choisissez d'abord le magasin de l'unité de dialyse</value></data>
+  <data name="From the dialysis store" xml:space="preserve"><value>Depuis le magasin de dialyse</value></data>
+  <data name="In the dialysis store" xml:space="preserve"><value>Au magasin de dialyse</value></data>
+  <data name="Issue this session's kit from the dialysis store now?" xml:space="preserve"><value>Sortir maintenant le kit de cette séance du magasin de dialyse ?</value></data>
+  <data name="Leaves the store when the session is finished" xml:space="preserve"><value>Sort du magasin à la fin de la séance</value></data>
+  <data name="Save the dialysis unit's kit and store?" xml:space="preserve"><value>Enregistrer le kit et le magasin de l'unité de dialyse ?</value></data>
+  <data name="Session kit" xml:space="preserve"><value>Kit de séance</value></data>
+  <data name="The dialysis store..." xml:space="preserve"><value>Magasin de dialyse...</value></data>
+  <data name="The dialysis unit has no kit set" xml:space="preserve"><value>L'unité de dialyse n'a pas de kit défini</value></data>
+  <data name="The kit is issued when the session is finished" xml:space="preserve"><value>Le kit sort à la fin de la séance</value></data>
+  <data name="The session is finished, but its kit did not leave the store:" xml:space="preserve"><value>La séance est terminée, mais son kit n'est pas sorti du magasin :</value></data>
+  <data name="The unit kit tables are not created yet (hospital_h122_unit_kits.sql)" xml:space="preserve"><value>Les tables des kits d'unité ne sont pas encore créées (hospital_h122_unit_kits.sql)</value></data>
+  <data name="The unit's kit..." xml:space="preserve"><value>Kit de l'unité...</value></data>
+  <data name="This session's kit has already left the store" xml:space="preserve"><value>Le kit de cette séance est déjà sorti du magasin</value></data>
+  <data name="Not enough {0} in the store: {1} of {2}" xml:space="preserve"><value>Pas assez de {0} au magasin : {1} sur {2}</value></data>
 </root>

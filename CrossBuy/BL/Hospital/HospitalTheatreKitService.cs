@@ -63,30 +63,18 @@ namespace CrossBuy.BL.Hospital
 			{
 				var kitId = await _db.Set<HospitalProcedureKit>().AsNoTracking().Where(k => k.CompanyId == ctx.CompanyId && k.ServiceId == s.ServiceId).Select(k => (int?)k.KitItemId).FirstOrDefaultAsync(ct);
 				var store = await StoreAsync(ctx, ct);
-				var storeName = store is int w ? await _db.Warehouses.AsNoTracking().Where(x => x.ID == w && x.CompanyID == ctx.CompanyId).Select(x => x.Code + " · " + (DisplayName.IsArabic ? x.Name : x.NameEn)).FirstOrDefaultAsync(ct) : null;
+				var storeName = await HospitalKitStock.StoreNameAsync(_db, ctx.CompanyId, store, ct);   // H122: one place for a kit and its store
 				if (kitId is not int kid) return new HospitalKitView(null, null, null, Array.Empty<HospitalKitLine>(), store, storeName, s.KitIssuedAt, true);
 				var kit = await _db.Items.AsNoTracking().Where(i => i.ID == kid && i.CompanyID == ctx.CompanyId).Select(i => new { i.Name, i.NameEn }).FirstOrDefaultAsync(ct);
-				var bom = await _bom.ExplodeAsync(ctx.CompanyId, kid, 1, new BomExplosionOptions { ConvertToBaseUoM = true }, ct);
-				var ids = bom.Lines.Select(l => l.ComponentItemId).Distinct().ToList();
-				var items = await _db.Items.AsNoTracking().Where(i => ids.Contains(i.ID) && i.CompanyID == ctx.CompanyId).ToDictionaryAsync(i => i.ID, ct);
-				var onHand = store is int sw
-					? await _db.StockBalances.AsNoTracking().Where(b => b.CompanyID == ctx.CompanyId && b.WarehouseId == sw && ids.Contains(b.ItemId)).GroupBy(b => b.ItemId).Select(g => new { g.Key, Q = g.Sum(x => x.QtyOnHand) }).ToDictionaryAsync(x => x.Key, x => x.Q, ct)
-					: new Dictionary<int, decimal>();
-				var lines = bom.Lines.Where(l => items.ContainsKey(l.ComponentItemId)).Select(l => new HospitalKitLine(l.ComponentItemId, items[l.ComponentItemId].ItemCode, items[l.ComponentItemId].Name,
-					items[l.ComponentItemId].NameEn ?? items[l.ComponentItemId].Name, l.Quantity, onHand.GetValueOrDefault(l.ComponentItemId))).ToList();
+				var lines = await HospitalKitStock.LinesAsync(_db, _bom, ctx.CompanyId, kid, store, ct);
 				return new HospitalKitView(kid, kit?.Name, kit?.NameEn ?? kit?.Name, lines, store, storeName, s.KitIssuedAt, true);
 			}
 			catch (Microsoft.Data.SqlClient.SqlException ex) when (ex.Number is 208 or 207) { return new HospitalKitView(null, null, null, Array.Empty<HospitalKitLine>(), null, null, null, false); }
 		}
 
 		/// The composite inventory items a procedure may use as its kit (a bundle with a bill of materials).
-		public async Task<IReadOnlyList<(int Id, string Code, string Name, string NameEn)>> KitItemsAsync(BusinessContext ctx, CancellationToken ct = default)
-		{
-			var withBom = _db.ItemComponents.Where(c => c.CompanyID == ctx.CompanyId).Select(c => c.ParentItemId);
-			var rows = await _db.Items.AsNoTracking().Where(i => i.CompanyID == ctx.CompanyId && i.IsActive && i.IsComposite && withBom.Contains(i.ID))
-				.OrderBy(i => i.ItemCode).Select(i => new { i.ID, i.ItemCode, i.Name, NameEn = i.NameEn ?? i.Name }).ToListAsync(ct);
-			return rows.Select(r => (r.ID, r.ItemCode, r.Name, r.NameEn)).ToList();
-		}
+		public Task<IReadOnlyList<(int Id, string Code, string Name, string NameEn)>> KitItemsAsync(BusinessContext ctx, CancellationToken ct = default)
+			=> HospitalKitStock.KitItemsAsync(_db, ctx.CompanyId, ct);
 
 		/// A procedure's kit (`manage`); null clears it.
 		public async Task<HospitalResult> SetKitAsync(BusinessContext ctx, int serviceId, int? kitItemId, DateTime nowUtc, CancellationToken ct = default)
@@ -135,29 +123,17 @@ namespace CrossBuy.BL.Hospital
 			var kit = await KitAsync(ctx, s, ct);
 			if (!kit.Ready) return HospitalResult.Fail(NoTables);
 			if (HospitalTheatreKitRules.IssueRefusal(s.Status, s.KitIssuedAt, kit.KitItemId != null, kit.StoreWarehouseId != null, kit.Lines.Count) is string why) return HospitalResult.Fail(why);
-			var ids = kit.Lines.Select(l => l.ItemId).ToList();
-			var cats = await _db.Items.AsNoTracking().Where(i => ids.Contains(i.ID) && i.CompanyID == ctx.CompanyId).ToDictionaryAsync(i => i.ID, i => i.ItemCategoryId, ct);
-			var catIds = cats.Values.Distinct().ToList();
-			var cogs = await _db.ItemCategories.AsNoTracking().Where(c => catIds.Contains(c.ID)).ToDictionaryAsync(c => c.ID, c => c.CogsAccountId, ct);
-			if (kit.Lines.FirstOrDefault(l => cogs.GetValueOrDefault(cats[l.ItemId]) == null) is { } noCogs)
-				return HospitalResult.Fail("Map the cost-of-goods account of {0}'s inventory category first", DisplayName.Of(noCogs.Name, noCogs.NameEn));
+			var (noCogs, cogs) = await HospitalKitStock.CostAccountsAsync(_db, ctx.CompanyId, kit.Lines, ct);
+			if (noCogs != null) return noCogs;
+			if (HospitalKitStock.ShortRefusal(kit.Lines, 1) is { } shortOf) return shortOf;   // H122: said in the reader's language
 
 			await using var tx = await ScopedTx.BeginOrJoinAsync(_db);
 			// nothing issues a kit twice: the case is claimed first, under the transaction
 			int claimed = await _db.Set<HospitalSurgery>().Where(x => x.ID == surgeryId && x.CompanyId == ctx.CompanyId && x.KitIssuedAt == null)
 				.ExecuteUpdateAsync(u => u.SetProperty(x => x.KitIssuedAt, nowUtc), ct);
 			if (claimed != 1) { await tx.RollbackAsync(); return HospitalResult.Fail("This case's kit has already left the store"); }
-			int n = 0;
-			foreach (var l in kit.Lines)
-			{
-				var (ok, error, _) = await _stock.PostMovementAsync(ctx.CompanyId, new MovementRequest
-				{
-					Date = nowUtc, ItemId = l.ItemId, WarehouseId = kit.StoreWarehouseId!.Value, Direction = -1, Qty = HospitalTheatreKitRules.Need(l.Qty, 1),
-					SourceType = HospitalTheatreKitRules.MovementSource, SourceId = s.ID, SourceLineId = ++n, PostToGl = true, CounterAccountOverride = cogs[cats[l.ItemId]],
-					Notes = "Theatre kit " + s.CaseNo,
-				}, userId);
-				if (!ok) { await tx.RollbackAsync(); _db.ChangeTracker.Clear(); return HospitalResult.Fail("{0}: {1}", DisplayName.Of(l.Name, l.NameEn), error ?? ""); }
-			}
+			if (await HospitalKitStock.PostAsync(_stock, ctx.CompanyId, kit.Lines, cogs, kit.StoreWarehouseId!.Value, 1, HospitalTheatreKitRules.MovementSource, s.ID, "Theatre kit " + s.CaseNo, userId, nowUtc) is { } refused)
+			{ await tx.RollbackAsync(); _db.ChangeTracker.Clear(); return refused; }
 			await tx.CommitAsync();
 			return HospitalResult.Success(s.ID);
 		}

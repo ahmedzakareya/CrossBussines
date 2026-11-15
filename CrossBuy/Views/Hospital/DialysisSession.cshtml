@@ -14,6 +14,11 @@
     bool canTreat = ViewBag.CanTreat == true;
     var s = Model.Session; var o = Model.Outcome; bool running = s.Status == HospitalDialysisSessionStatus.Running;
     string Who(int? id) => id is int i && Model.People.TryGetValue(i, out var n) ? n : "";
+    // H122: the unit's kit — what a finished session draws from the dialysis store
+    var kit = ViewBag.Kit as HospitalKitView; bool canManage = ViewBag.CanManage == true;
+    var kitItems = (ViewBag.KitItems as IReadOnlyList<(int Id, string Code, string Name, string NameEn)>) ?? Array.Empty<(int, string, string, string)>();
+    var stores = (ViewBag.Stores as List<CrossBuy.Controllers.HospitalController.HospitalChoice>) ?? new();
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
     string Local(DateTime? utc) => utc == null ? "—" : HospitalNursingService.UtcToWard(utc.Value).ToString("HH:mm");
     string F1(decimal? x) => x?.ToString("0.#") ?? "—";
     string F(double v) => v.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture);
@@ -91,6 +96,49 @@
             </div></div></div>
         </div>
 
+        @* H122: the session's kit, exploded from its bill of materials and drawn from the dialysis store when the session is finished *@
+        @if (kit != null && kit.Ready && s.Status != HospitalDialysisSessionStatus.Missed)
+        {
+            <div class="card mb-5" data-kit><div class="card-body py-5">
+                <div class="d-flex flex-stack flex-wrap gap-3 mb-2">
+                    <div><div class="fw-bold fs-5"><i class="ki-outline ki-parcel fs-3 me-1 text-primary"></i>@T["Session kit"]@if (kit.KitItemId != null) {<text> · </text><span>@DisplayName.Of(kit.KitName ?? "", kit.KitNameEn ?? "")</span>}</div>
+                        <div class="text-muted fs-8">@T["From the dialysis store"]: @(kit.StoreName ?? T["not set"].Value)</div></div>
+                    @if (kit.IssuedAt != null) { <span class="badge badge-light-success fs-8"><i class="ki-outline ki-check fs-8 me-1 text-success"></i>@T["Issued from the store"] <bdi class="hp-num ms-1" data-fmt data-utc="@kit.IssuedAt?.ToString("o")">@kit.IssuedAt?.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</bdi></span> }
+                    else if (s.Status == HospitalDialysisSessionStatus.Done && kit.KitItemId != null) { <button type="button" class="btn btn-sm btn-light-primary" data-kit-issue><i class="ki-outline ki-exit-up fs-4"></i>@T["Issue the kit now"]</button> }
+                    else if (kit.KitItemId != null) { <span class="badge badge-light fs-8">@T["Leaves the store when the session is finished"]</span> }
+                </div>
+                @if (kit.Lines.Count > 0)
+                {
+                    <table class="table table-row-dashed align-middle fs-7 gy-2 mb-0">
+                        <thead><tr class="text-gray-500 fw-bold fs-8 text-uppercase"><th>@T["Item"]</th><th class="text-end">@T["Qty"]</th><th class="text-end">@T["In the dialysis store"]</th></tr></thead>
+                        <tbody>@foreach (var l in kit.Lines)
+                        {
+                            <tr><td><span class="fw-semibold text-gray-800">@DisplayName.Of(l.Name, l.NameEn)</span> <span class="text-muted fs-8 hp-num">@l.Code</span></td>
+                                <td class="text-end"><span class="hp-num">@l.Qty.ToString("0.###", inv)</span></td>
+                                <td class="text-end"><span class="hp-num @(kit.IssuedAt == null && l.InStore < l.Qty ? "text-danger fw-bold" : "text-gray-600")">@l.InStore.ToString("0.###", inv)</span></td></tr>
+                        }</tbody>
+                    </table>
+                }
+                else if (kit.KitItemId == null) { <div class="text-muted fs-8">@T["The dialysis unit has no kit set"]</div> }
+                @if (canManage)
+                {
+                    <div class="separator separator-dashed my-4"></div>
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-5"><label class="form-label fs-8 text-muted mb-1">@T["Session kit"]</label>
+                            <select class="form-select form-select-sm form-select-solid" data-unit-kit data-control="select2" data-allow-clear="true" data-placeholder="@T["The unit's kit..."]">
+                                <option></option>
+                                @foreach (var k in kitItems) { <option value="@k.Id" selected="@(k.Id == kit.KitItemId)">@k.Code · @DisplayName.Of(k.Name, k.NameEn)</option> }
+                            </select></div>
+                        <div class="col-md-5"><label class="form-label fs-8 text-muted mb-1">@T["From the dialysis store"]</label>
+                            <select class="form-select form-select-sm form-select-solid" data-unit-store data-control="select2" data-allow-clear="true" data-placeholder="@T["The dialysis store..."]">
+                                <option></option>
+                                @foreach (var w in stores) { <option value="@w.Id" selected="@(w.Id == kit.StoreWarehouseId)">@w.Label · @DisplayName.Of(w.Name, w.NameEn ?? w.Name)</option> }
+                            </select></div>
+                        <div class="col-md-2"><button type="button" class="btn btn-sm btn-light-primary w-100" data-unit-save><i class="ki-outline ki-check fs-5"></i>@T["Save"]</button></div>
+                    </div>
+                }
+            </div></div>
+        }
         <div class="card mb-5">
             <div class="card-header border-0 pt-6"><div class="card-title flex-column m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Systolic pressure on the machine"]</span><span class="text-muted fs-8 mt-1">@T["Under 90 is intradialytic hypotension; so is a fall of 20 from the pressure before with cramps, nausea, headache or chest pain."]</span></div></div>
             <div class="card-body pt-0">
@@ -180,7 +228,20 @@
         (function () {
             var tokEl = document.querySelector('input[name="__RequestVerificationToken"]'); if (!tokEl) return; var tok = tokEl.value;
             var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value),
-                      obs: @Json.Serialize(T["Save this reading?"].Value), fin: @Json.Serialize(T["Finish this session? It cannot be reopened."].Value) };
+                      obs: @Json.Serialize(T["Save this reading?"].Value), fin: @Json.Serialize(T["Finish this session? It cannot be reopened."].Value),
+                      kit: @Json.Serialize(T["Issue this session's kit from the dialysis store now?"].Value), unit: @Json.Serialize(T["Save the dialysis unit's kit and store?"].Value),
+                      kitNot: @Json.Serialize(T["The session is finished, but its kit did not leave the store:"].Value) };
+            function post(url, body) { return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': tok }, body: JSON.stringify(body || {}) })
+                .then(function (r) { return r.json().catch(function () { return { ok: false }; }); }); }
+            // H122: issue the session's kit; the unit's kit and store
+            document.addEventListener('click', function (e) {
+                var ki = e.target.closest('[data-kit-issue]'), us = e.target.closest('[data-unit-save]');
+                if (ki) cbConfirm(W.kit).then(function (ok) { if (!ok) return; ki.disabled = true;
+                    post(@Json.Serialize(Url.Content("~/Hospital/Dialysis/Session/" + s.ID + "/Kit/Issue"))).then(function (res) { ki.disabled = false; if (!res.ok) { toastr.error(res.error || W.failed); return; } toastr.success(W.saved); location.reload(); }); });
+                if (us) cbConfirm(W.unit).then(function (ok) { if (!ok) return; us.disabled = true;
+                    var k = document.querySelector('[data-unit-kit]').value, st = document.querySelector('[data-unit-store]').value;
+                    post(@Json.Serialize(Url.Action("DialysisKitSet")), { kitItemId: k ? +k : null, warehouseId: st ? +st : null }).then(function (res) { us.disabled = false; if (!res.ok) { toastr.error(res.error || W.failed); return; } toastr.success(W.saved); location.reload(); }); });
+            });
             function collect(m, attr) { var b = {}; m.querySelectorAll('[' + attr + ']').forEach(function (i) { var k = i.getAttribute(attr), v = (i.value || '').trim();
                 b[k] = v === '' ? null : (i.type === 'number' ? Number(v) : v); }); return b; }
             document.addEventListener('click', function (e) {
@@ -193,7 +254,8 @@
                 cbConfirm(ask).then(function (ok) { if (!ok) return; s.disabled = true;
                     fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': tok }, body: JSON.stringify(body) })
                         .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
-                        .then(function (res) { s.disabled = false; if (!res.ok) { toastr.error(res.error || W.failed); return; } toastr.success(W.saved); location.reload(); }); });
+                        .then(function (res) { s.disabled = false; if (!res.ok) { toastr.error(res.error || W.failed); return; } toastr.success(W.saved);
+                            if (res.kitError) { toastr.info(W.kitNot + ' ' + res.kitError); setTimeout(function () { location.reload(); }, 2500); } else location.reload(); }); });   // H122: the session is finished; the kit waits for the store
             });
         })();
     </script>

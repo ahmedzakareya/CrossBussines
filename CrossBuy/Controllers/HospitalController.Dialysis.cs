@@ -2,6 +2,7 @@ using CrossBuy.BL;
 using CrossBuy.BL.Hospital;
 using CrossBuy.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace CrossBuy.Controllers
 {
@@ -14,6 +15,8 @@ namespace CrossBuy.Controllers
 	{
 		private HospitalDialysisService? _dialysisSvc;
 		private HospitalDialysisService DialysisSvc => _dialysisSvc ??= ActivatorUtilities.CreateInstance<HospitalDialysisService>(HttpContext.RequestServices);
+		private HospitalDialysisKitService? _dialysisKitSvc;   // H122
+		private HospitalDialysisKitService DialysisKitSvc => _dialysisKitSvc ??= ActivatorUtilities.CreateInstance<HospitalDialysisKitService>(HttpContext.RequestServices);
 
 		private static void Paging(ref int page, ref int pageSize) { if (pageSize is < 1 or > 200) pageSize = 25; if (page < 1) page = 1; }
 
@@ -100,6 +103,15 @@ namespace CrossBuy.Controllers
 			if (page == null) return NotFound();
 			Chrome();
 			ViewBag.CanTreat = await DialysisSvc.CanTreatAsync(ctx, ct);
+			// H122: the unit's kit — what this session draws from the dialysis store, and whether it left
+			ViewBag.Kit = await DialysisKitSvc.KitAsync(ctx, page.Session.KitIssuedAt, ct);
+			ViewBag.CanManage = await _access.CanAsync(ctx, HospitalActions.Manage, null, ct);
+			if (ViewBag.CanManage == true)
+			{
+				ViewBag.KitItems = await DialysisKitSvc.KitItemsAsync(ctx, ct);
+				ViewBag.Stores = await _db.Warehouses.AsNoTracking().Where(w => w.CompanyID == ctx.CompanyId && w.IsActive).OrderBy(w => w.Code)
+					.Select(w => new HospitalChoice(w.ID, w.Name, w.NameEn, w.Code)).ToListAsync(ct);
+			}
 			return View(page);
 		}
 
@@ -140,7 +152,31 @@ namespace CrossBuy.Controllers
 		{
 			var ctx = await ContextAsync(ct);
 			if (ctx == null || input == null) return NotFound(new { ok = false, code = "not_found" });
-			return Result(await DialysisSvc.FinishAsync(ctx, id, input, ctx.EmployeeId, DateTime.UtcNow, ct));
+			var r = await DialysisSvc.FinishAsync(ctx, id, input, ctx.EmployeeId, DateTime.UtcNow, ct);
+			if (!r.Ok) return Result(r);
+			// H122: a finished session's kit leaves the dialysis store now; a short store never undoes the session — the page
+			// keeps "not issued" and the reason, and the kit is issued from there once the store is stocked
+			var kit = await DialysisKitSvc.IssueAsync(ctx, id, ctx.UserId, DateTime.UtcNow, ct);
+			return Json(new { ok = true, id, kitIssued = kit.Ok,
+				kitError = kit.Ok || kit.Error is "The dialysis unit has no kit set" or HospitalDialysisKitService.NoTables ? null : _t[kit.Error ?? "The change could not be saved", kit.Args ?? Array.Empty<object>()].Value });
+		}
+
+		[HttpPost("Dialysis/Session/{id:int}/Kit/Issue"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Read)]
+		public async Task<IActionResult> DialysisKitIssue(int id, CancellationToken ct = default)
+		{
+			var ctx = await ContextAsync(ct);
+			if (ctx == null) return NotFound(new { ok = false, code = "not_found" });
+			return Result(await DialysisKitSvc.IssueAsync(ctx, id, ctx.UserId, DateTime.UtcNow, ct));
+		}
+
+		public sealed class HospitalUnitKitInput { public int? KitItemId { get; set; } public int? WarehouseId { get; set; } }
+
+		[HttpPost("Dialysis/Kit"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Manage)]
+		public async Task<IActionResult> DialysisKitSet([FromBody] HospitalUnitKitInput input, CancellationToken ct = default)
+		{
+			var ctx = await ContextAsync(ct);
+			if (ctx == null || input == null) return NotFound(new { ok = false, code = "not_found" });
+			return Result(await DialysisKitSvc.SetAsync(ctx, input.KitItemId, input.WarehouseId, ctx.EmployeeId, DateTime.UtcNow, ct));
 		}
 
 		[HttpPost("Dialysis/Miss"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Read)]
