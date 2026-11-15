@@ -6,12 +6,18 @@
 @*
     H86 — the labour ward: every labour in progress, the most worrying first (its latest warnings, then the longest since
     anyone looked), and starting a partograph for a woman admitted.
+    H128: composed from demo39 — stat tiles (dashboards/logistics), one card-flush per labour with the figures in dashed
+    boxes (apps/user-management/users/view), and the start form moved into the theme's form modal (utilities/modals/forms/
+    new-target) so the woman picker is select2 and the time is flatpickr (the toolbar picker was a native select).
 *@
 @{
     Layout = "~/Views/Shared/_LayoutHospital.cshtml";
     ViewData["Title"] = T["Labour ward"].Value;
     bool ready = ViewBag.Ready == true, canWard = ViewBag.CanWard == true;
     var cands = (ViewBag.Candidates as List<(int Id, string Text)>) ?? new();
+    int warned = Model.Count(r => r.Warnings.Count > 0), late = Model.Count(r => r.MinutesSinceLast > 60);
+    var tiles = new (string Label, int N, string Tone, string Icon)[] {
+        ("Active", Model.Count, "primary", "heart"), ("With a warning", warned, "danger", "information"), ("Over an hour since the last look", late, "info", "time") };
 }
 <link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
 @Html.AntiForgeryToken()
@@ -25,40 +31,94 @@
         @if (ready && canWard && cands.Count > 0)
         {
             <div class="d-flex gap-2 align-items-center">
-                <select id="startPick" class="form-select form-select-solid form-select-sm w-300px"><option value="">@T["Choose an admitted woman…"]</option>@foreach (var c in cands) {<option value="@c.Id">@c.Text</option>}</select>
-                <input type="datetime-local" id="startAt" class="form-control form-control-solid form-control-sm w-200px" dir="ltr" title="@T["Labour started at (empty means now)"]" />
-                <button type="button" class="btn btn-sm btn-primary text-nowrap" data-start><i class="ki-outline ki-plus fs-4"></i>@T["Start a partograph"]</button>
+                <button type="button" class="btn btn-sm btn-primary text-nowrap" data-bs-toggle="modal" data-bs-target="#startModal"><i class="ki-outline ki-plus fs-4"></i>@T["Start a partograph"]</button>
             </div>
         }
     </div></div>
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
         @if (!ready) { <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice"><div class="fs-6 text-gray-700">@T[HospitalLabourService.NoTables]</div></div> }
-        else if (Model.Count == 0) { <div class="card"><div class="card-body text-center text-muted py-15"><i class="ki-outline ki-heart fs-3x text-gray-300 d-block mb-4"></i>@T["No labour in progress."]</div></div> }
         else
         {
-            <div class="row g-5">
-                @foreach (var r in Model)
+            <div class="row g-4 mb-5">
+                @foreach (var t in tiles)
                 {
-                    var o = r.Last;
-                    <div class="col-md-6 col-xl-4"><div class="card h-100 border-top border-3 border-@(r.Warnings.Count > 0 ? "danger" : "primary")"><div class="card-body py-5">
-                        <div class="d-flex flex-stack mb-3">
-                            <div><a href="@Url.Action("Partograph", new { id = r.Labour.ID })" class="fs-5 fw-bold text-gray-900 text-hover-primary">@DisplayName.Of(r.Name, r.NameEn)</a>
-                                <div class="text-muted fs-8"><bdi class="hp-num">@r.Mrn</bdi>@if (r.Bed != null) {<text> · @T["Bed"] <bdi class="hp-num fw-bold">@r.Bed</bdi></text>}</div></div>
-                            <span class="badge @(r.MinutesSinceLast > 60 ? "badge-light-danger" : "badge-light") fs-8">@T["{0} min since the last look", r.MinutesSinceLast]</span>
+                    <div class="col-md-4"><div class="card card-flush h-100">
+                        <div class="card-header pt-5 flex-nowrap gap-3">
+                            <div class="card-title d-flex flex-column"><span class="fs-2hx fw-bold lh-1 hp-num text-@(t.N > 0 ? "gray-900" : "gray-400")">@t.N</span><span class="text-gray-500 pt-1 fw-semibold fs-6">@T[t.Label]</span></div>
+                            <div class="card-toolbar"><div class="symbol symbol-45px"><span class="symbol-label bg-light-@t.Tone"><i class="ki-outline ki-@t.Icon fs-2 text-@t.Tone"></i></span></div></div>
                         </div>
-                        <div class="d-flex gap-5 mb-3 hp-num">
-                            <div><div class="text-muted fs-9">@T["Cervix"]</div><div class="fs-2 fw-bold">@(o?.CervixCm?.ToString("0.#") ?? "—") <span class="fs-8 text-muted">cm</span></div></div>
-                            <div><div class="text-muted fs-9">@T["Fetal heart"]</div><div class="fs-2 fw-bold @(o?.FetalHeartRate is int f && (f < 110 || f > 160) ? "text-danger" : "")">@(o?.FetalHeartRate?.ToString() ?? "—")</div></div>
-                            <div><div class="text-muted fs-9">@T["Contractions"]</div><div class="fs-2 fw-bold">@(o?.ContractionsPer10?.ToString() ?? "—")<span class="fs-8 text-muted">/10</span></div></div>
-                        </div>
-                        <div class="d-flex flex-wrap gap-1">@foreach (var w in r.Warnings) {<span class="badge badge-light-danger fs-9">@T["lbw:" + w]</span>}</div>
-                        <a href="@Url.Action("Partograph", new { id = r.Labour.ID })" class="btn btn-sm btn-light-primary w-100 mt-4">@T["Open the partograph"]</a>
-                    </div></div></div>
+                        <div class="card-body pt-0"></div>
+                    </div></div>
                 }
             </div>
+            if (Model.Count == 0)
+            {
+                <div class="card card-flush"><div class="card-body"><div class="text-center py-10"><i class="ki-outline ki-heart fs-3x text-gray-300 mb-4 d-block"></i>
+                    <div class="fs-6 fw-bold text-gray-700">@T["No labour in progress."]</div>
+                    @if (canWard && cands.Count > 0) {<div class="fs-7 text-gray-500 mt-1">@T["Choose an admitted woman…"]</div>}</div></div></div>
+            }
+            else
+            {
+                <div class="row g-5">
+                    @foreach (var r in Model)
+                    {
+                        var o = r.Last; bool warn = r.Warnings.Count > 0;
+                        bool fhrBad = o?.FetalHeartRate is int f && (f < 110 || f > 160);
+                        <div class="col-md-6 col-xl-4"><div class="card card-flush h-100">
+                            <div class="card-header pt-5 flex-nowrap gap-3">
+                                <div class="card-title d-flex align-items-center min-w-0">
+                                    <div class="symbol symbol-45px symbol-circle me-3 flex-shrink-0"><span class="symbol-label bg-light-@(warn ? "danger" : "primary") text-@(warn ? "danger" : "primary") fw-bold fs-6">@HospitalUi.Initials(r.NameEn)</span></div>
+                                    <div class="d-flex flex-column min-w-0">
+                                        <a href="@Url.Action("Partograph", new { id = r.Labour.ID })" class="text-gray-900 fw-bold text-hover-primary fs-5 text-truncate">@DisplayName.Of(r.Name, r.NameEn)</a>
+                                        <span class="text-gray-500 fw-semibold fs-7"><bdi class="hp-num">@r.Mrn</bdi>@if (r.Bed != null) {<text> · @T["Bed"] <bdi class="hp-num fw-bold">@r.Bed</bdi></text>}</span>
+                                    </div>
+                                </div>
+                                <div class="card-toolbar"><span class="badge badge-light-@(r.MinutesSinceLast > 60 ? "danger" : "success") fs-8 fw-bold text-nowrap">@T["{0} min since the last look", r.MinutesSinceLast]</span></div>
+                            </div>
+                            <div class="card-body pt-4 d-flex flex-column">
+                                <div class="d-flex flex-wrap gap-3 mb-4">
+                                    <div class="border border-gray-300 border-dashed rounded py-3 px-4 flex-grow-1">
+                                        <div class="fs-2 fw-bold text-gray-900 hp-num" dir="ltr">@(o?.CervixCm?.ToString("0.#") ?? "—")&nbsp;<span class="fs-7 text-gray-500">cm</span></div>
+                                        <div class="fw-semibold fs-7 text-gray-500">@T["Cervix"]</div>
+                                    </div>
+                                    <div class="border border-@(fhrBad ? "danger" : "gray-300") border-dashed rounded py-3 px-4 flex-grow-1">
+                                        <div class="fs-2 fw-bold hp-num text-@(fhrBad ? "danger" : "gray-900")" dir="ltr">@(o?.FetalHeartRate?.ToString() ?? "—")</div>
+                                        <div class="fw-semibold fs-7 text-gray-500">@T["Fetal heart"]</div>
+                                    </div>
+                                    <div class="border border-gray-300 border-dashed rounded py-3 px-4 flex-grow-1">
+                                        <div class="fs-2 fw-bold text-gray-900 hp-num" dir="ltr">@(o?.ContractionsPer10?.ToString() ?? "—")<span class="fs-7 text-gray-500">/10</span></div>
+                                        <div class="fw-semibold fs-7 text-gray-500">@T["Contractions"]</div>
+                                    </div>
+                                </div>
+                                @if (warn) {<div class="d-flex flex-wrap gap-2 mb-4">@foreach (var w in r.Warnings) {<span class="badge badge-light-danger fs-7 fw-bold">@T["lbw:" + w]</span>}</div>}
+                                <a href="@Url.Action("Partograph", new { id = r.Labour.ID })" class="btn btn-sm btn-light-primary w-100 mt-auto">@T["Open the partograph"]</a>
+                            </div>
+                        </div></div>
+                    }
+                </div>
+            }
         }
     </div></div>
 </div>
+
+@if (ready && canWard && cands.Count > 0)
+{
+    @* H128: the start form as the theme's form modal (demo39 utilities/modals/forms/new-target); the select2 and flatpickr enhancers of the layout pick both fields up *@
+    <div class="modal fade" id="startModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-550px"><div class="modal-content rounded">
+        <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-10">
+            <div class="mb-10 text-center"><h1 class="mb-3">@T["Start a partograph"]</h1><div class="text-muted fw-semibold fs-6">@T["Labour ward"] · @T["Maternity"]</div></div>
+            <div class="row g-6">
+                <div class="col-12"><label class="required fs-6 fw-semibold mb-2">@T["Mother"]</label>
+                    <select id="startPick" class="form-select form-select-solid" data-control="select2" data-dropdown-parent="#startModal"><option value="">@T["Choose an admitted woman…"]</option>@foreach (var c in cands) {<option value="@c.Id">@c.Text</option>}</select></div>
+                <div class="col-12"><label class="fs-6 fw-semibold mb-2">@T["Started at"]</label>
+                    <input type="datetime-local" id="startAt" class="form-control form-control-solid" dir="ltr" title="@T["Labour started at (empty means now)"]" />
+                    <div class="text-muted fs-7 mt-1">@T["Empty means now."]</div></div>
+            </div>
+            <div class="text-center pt-10"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-start>@T["Start a partograph"]</button></div>
+        </div>
+    </div></div></div>
+}
 
 @section Scripts {
     <script>

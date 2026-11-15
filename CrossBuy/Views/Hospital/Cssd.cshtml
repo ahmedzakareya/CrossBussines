@@ -20,6 +20,22 @@
         HospitalSetStatus.InUse => "dark", HospitalCssdRules.Expired => "danger", _ => "secondary",
     };
     var packed = b.Sets.Where(s => s.Set.Status == HospitalSetStatus.Packed).ToList();
+    int CountOf(string state) => b.Sets.Count(x => x.State == state);
+    // H128: the theme's stat tile (demo39 dashboards/logistics) — the number over its label, a toned symbol on the side
+    void Tile(int value, string label, string icon, string tone, string numTone = "gray-900")
+    {
+        <div class="card card-flush h-100">
+            <div class="card-header pt-5 pb-5 flex-nowrap gap-3">
+                <div class="card-title d-flex flex-column">
+                    <span class="fs-2hx fw-bold text-@numTone lh-1 hp-num" dir="ltr">@value</span>
+                    <span class="text-gray-500 pt-1 fw-semibold fs-6">@label</span>
+                </div>
+                <div class="card-toolbar"><div class="symbol symbol-45px"><span class="symbol-label bg-light-@tone"><i class="ki-outline ki-@icon fs-2x text-@tone"></i></span></div></div>
+            </div>
+        </div>
+    }
+    // the theme's form modal (demo39 utilities/modals/forms/new-target): borderless header, a centred title
+    Microsoft.AspNetCore.Html.IHtmlContent Close() => new Microsoft.AspNetCore.Html.HtmlString("<div class=\"modal-header pb-0 border-0 justify-content-end\"><div class=\"btn btn-sm btn-icon btn-active-color-primary\" data-bs-dismiss=\"modal\"><i class=\"ki-outline ki-cross fs-1\"></i></div></div>");
 }
 <link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
 @Html.AntiForgeryToken()
@@ -37,8 +53,8 @@
         @if (ready)
         {
             <div class="d-flex align-items-center gap-2 gap-lg-3 d-print-none">
-                <button type="button" class="btn btn-sm btn-light" data-cs-cycles><i class="ki-outline ki-time fs-4"></i>@T["Cycles"]</button>
-                @if (canManage) { <button type="button" class="btn btn-sm btn-light" data-cs-newset><i class="ki-outline ki-plus fs-4"></i>@T["New set"]</button> }
+                <button type="button" class="btn btn-sm btn-light btn-active-light-primary" data-cs-cycles><i class="ki-outline ki-time fs-4"></i>@T["Cycles"]</button>
+                @if (canManage) { <button type="button" class="btn btn-sm btn-light btn-active-light-primary" data-cs-newset><i class="ki-outline ki-plus fs-4"></i>@T["New set"]</button> }
                 @if (canWork) { <button type="button" class="btn btn-sm btn-primary" data-cs-load><i class="ki-outline ki-shield-search fs-4"></i>@T["Start a cycle"]</button> }
             </div>
         }
@@ -47,41 +63,60 @@
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
         @if (!ready)
         {
-            <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice"><div class="fs-6 text-gray-700">@T[HospitalCssdService.NoTables]</div></div>
+            <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-5 mb-5">
+                <i class="ki-outline ki-information fs-2tx text-primary me-4"></i>
+                <div class="d-flex flex-stack flex-grow-1"><div class="fw-semibold">
+                    <h4 class="text-gray-900 fw-bold mb-1">@T["Central sterile supply"]</h4>
+                    <div class="fs-6 text-gray-700">@T[HospitalCssdService.NoTables]</div>
+                </div></div>
+            </div>
         }
-        <div class="card mb-5">
-            <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Instrument-set tracking"]</span></div></div>
+        @* H128: the sets in figures — the theme's stat tiles (demo39 dashboards/logistics) *@
+        <div class="row g-5 mb-5">
+            <div class="col-sm-6 col-xl-3">@{ Tile(CountOf(HospitalSetStatus.Sterile), T["set:" + HospitalSetStatus.Sterile].Value, "shield-tick", "success", "success"); }</div>
+            <div class="col-sm-6 col-xl-3">@{ Tile(CountOf(HospitalSetStatus.InAutoclave), T["set:" + HospitalSetStatus.InAutoclave].Value, "timer", "primary"); }</div>
+            <div class="col-sm-6 col-xl-3">@{ Tile(CountOf(HospitalSetStatus.AwaitingWash), T["set:" + HospitalSetStatus.AwaitingWash].Value, "drop", "info"); }</div>
+            <div class="col-sm-6 col-xl-3">@{ int ex = CountOf(HospitalCssdRules.Expired); Tile(ex, T["set:" + HospitalCssdRules.Expired].Value, "information-5", "danger", ex > 0 ? "danger" : "gray-900"); }</div>
+        </div>
+        @* the sets — the theme's table widget (demo39 widgets/tables) *@
+        <div class="card card-flush mb-5">
+            <div class="card-header pt-5">
+                <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Instrument-set tracking"]</span>
+                    <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Sets"] · <span class="hp-num">@b.Sets.Count</span></span></h3>
+            </div>
             <div class="card-body pt-2">
-                @if (b.Sets.Count == 0) { <div class="text-center text-muted py-10">@T["No instrument set yet."]</div> }
+                @if (b.Sets.Count == 0) { <div class="text-center py-10"><i class="ki-outline ki-shield-search fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-bold text-gray-700">@T["No instrument set yet."]</div></div> }
                 else
                 {
-                    <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-3 mb-0">
-                        <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0">
-                            <th>@T["Set"]</th><th>@T["Description"]</th><th>@T["Status"]</th><th>@T["Sterile until"]</th><th class="text-end"></th>
+                    <div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
+                        <thead><tr class="fw-bold text-muted bg-light">
+                            <th class="ps-4 rounded-start">@T["Set"]</th><th>@T["Status"]</th><th>@T["Sterile until"]</th><th class="text-end pe-4 rounded-end"></th>
                         </tr></thead>
-                        <tbody class="fw-semibold text-gray-700">
+                        <tbody>
                             @foreach (var r in b.Sets)
                             {
                                 var s = r.Set;
                                 <tr>
-                                    <td><span class="badge badge-light fs-8 hp-num">@s.Code</span></td>
-                                    <td><span class="text-gray-800">@DisplayName.Of(s.Name, s.NameEn ?? s.Name)</span></td>
-                                    <td><span class="badge badge-light-@Kind(r.State)">@T["set:" + r.State]</span>
-                                        @if (s.Status == HospitalSetStatus.InAutoclave && r.CycleNo != null) {<span class="text-muted fs-8 hp-num ms-1">@r.CycleNo</span>}
-                                        @if (s.Status == HospitalSetStatus.InUse && r.CaseNo != null) {<span class="text-muted fs-8 hp-num ms-1">@r.CaseNo</span>}</td>
-                                    <td>@if (s.SterileUntil is DateTime u) {<span class="hp-num @(r.State == HospitalCssdRules.Expired ? "text-danger fw-bold" : "")" dir="ltr">@u.ToString("yyyy-MM-dd", inv)</span>} else {<span class="text-gray-400">—</span>}</td>
-                                    <td class="text-end">@if (canWork)
+                                    <td class="ps-4"><div class="d-flex align-items-center">
+                                        <div class="symbol symbol-45px me-4 flex-shrink-0"><span class="symbol-label bg-light-@(Kind(r.State) == "secondary" ? "primary" : Kind(r.State))"><i class="ki-outline ki-shield-search fs-2 text-@(Kind(r.State) == "secondary" ? "primary" : Kind(r.State))"></i></span></div>
+                                        <div class="d-flex flex-column"><span class="text-gray-900 fw-bold fs-6"><bdi>@DisplayName.Of(s.Name, s.NameEn ?? s.Name)</bdi></span><bdi class="text-muted fw-semibold d-block fs-7 hp-num" dir="ltr">@s.Code</bdi></div>
+                                    </div></td>
+                                    <td><span class="badge badge-light-@Kind(r.State) fs-7 fw-bold">@T["set:" + r.State]</span>
+                                        @if (s.Status == HospitalSetStatus.InAutoclave && r.CycleNo != null) {<bdi class="text-muted fw-semibold fs-7 hp-num ms-1" dir="ltr">@r.CycleNo</bdi>}
+                                        @if (s.Status == HospitalSetStatus.InUse && r.CaseNo != null) {<bdi class="text-muted fw-semibold fs-7 hp-num ms-1" dir="ltr">@r.CaseNo</bdi>}</td>
+                                    <td>@if (s.SterileUntil is DateTime u) {<span class="hp-num fw-bold fs-6 @(r.State == HospitalCssdRules.Expired ? "text-danger" : "text-gray-800")" dir="ltr">@u.ToString("yyyy-MM-dd", inv)</span>} else {<span class="text-gray-400">—</span>}</td>
+                                    <td class="text-end pe-4">@if (canWork)
                                         {
-                                            <div class="d-flex justify-content-end gap-2">
+                                            <div class="d-flex justify-content-end align-items-center flex-nowrap gap-2">
                                                 @switch (r.State)
                                                 {
                                                     case HospitalSetStatus.AwaitingWash: <button type="button" class="btn btn-sm btn-light-primary" data-cs-step="@s.ID" data-step="Washed"><i class="ki-outline ki-drop fs-5"></i>@T["Washed & packed"]</button> break;
                                                     case HospitalSetStatus.InAutoclave:
-                                                        <button type="button" class="btn btn-sm btn-light-danger" data-cs-end="@s.CycleId" data-passed="0">@T["Cycle failed"]</button>
+                                                        <button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-danger" data-cs-end="@s.CycleId" data-passed="0" title="@T["Cycle failed"]" data-bs-toggle="tooltip"><i class="ki-outline ki-cross-circle fs-3"></i></button>
                                                         <button type="button" class="btn btn-sm btn-primary" data-cs-end="@s.CycleId" data-passed="1"><i class="ki-outline ki-check fs-5"></i>@T["Cycle passed"]</button> break;
                                                     case HospitalSetStatus.Sterile: <button type="button" class="btn btn-sm btn-primary" data-cs-issue="@s.ID"><i class="ki-outline ki-delivery fs-5"></i>@T["Issue to a case"]</button> break;
                                                     case HospitalSetStatus.InUse: <button type="button" class="btn btn-sm btn-light-primary" data-cs-step="@s.ID" data-step="Returned"><i class="ki-outline ki-exit-left fs-5"></i>@T["Returned from the case"]</button> break;
-                                                    case HospitalCssdRules.Expired: <button type="button" class="btn btn-sm btn-light-danger" data-cs-step="@s.ID" data-step="Reprocess">@T["Reprocess"]</button> break;
+                                                    case HospitalCssdRules.Expired: <button type="button" class="btn btn-sm btn-light-danger" data-cs-step="@s.ID" data-step="Reprocess"><i class="ki-outline ki-arrows-circle fs-5"></i>@T["Reprocess"]</button> break;
                                                 }
                                             </div>
                                         }</td>
@@ -95,27 +130,27 @@
 
         @* rendered here, shown in their windows (the swap keeps them current) *@
         <div class="d-none" data-cs-packed-body>
-            @if (packed.Count == 0) { <div class="text-muted fs-7">@T["No washed and packed set waits for a cycle."]</div> }
+            @if (packed.Count == 0) { <div class="text-center py-6"><i class="ki-outline ki-shield-search fs-2x text-gray-300 mb-3 d-block"></i><div class="fs-7 fw-semibold text-gray-600">@T["No washed and packed set waits for a cycle."]</div></div> }
             @foreach (var r in packed)
             {
-                <label class="form-check form-check-custom form-check-solid py-2"><input class="form-check-input" type="checkbox" value="@r.Set.ID" data-cs-pick checked /><span class="form-check-label fs-7"><span class="badge badge-light fs-8 hp-num me-2">@r.Set.Code</span>@DisplayName.Of(r.Set.Name, r.Set.NameEn ?? r.Set.Name)</span></label>
+                <label class="form-check form-check-custom form-check-solid py-3 border-bottom border-gray-200 border-bottom-dashed"><input class="form-check-input" type="checkbox" value="@r.Set.ID" data-cs-pick checked /><span class="form-check-label fs-6 fw-semibold text-gray-800"><span class="badge badge-light-primary fs-7 fw-bold hp-num me-2" dir="ltr">@r.Set.Code</span><bdi>@DisplayName.Of(r.Set.Name, r.Set.NameEn ?? r.Set.Name)</bdi></span></label>
             }
         </div>
         <div class="d-none" data-cs-cycles-body>
-            @if (b.Cycles.Count == 0) { <div class="text-center text-muted py-8">@T["No cycle in the last seven days."]</div> }
+            @if (b.Cycles.Count == 0) { <div class="text-center py-10"><i class="ki-outline ki-time fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-bold text-gray-700">@T["No cycle in the last seven days."]</div></div> }
             else
             {
-                <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-2 mb-0">
-                    <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0"><th>@T["Cycle"]</th><th>@T["Autoclave"]</th><th>@T["Started"]</th><th>@T["Sets"]</th><th>@T["Result"]</th></tr></thead>
-                    <tbody class="fw-semibold text-gray-700">
+                <div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
+                    <thead><tr class="fw-bold text-muted bg-light"><th class="ps-4 rounded-start">@T["Cycle"]</th><th>@T["Autoclave"]</th><th>@T["Started"]</th><th>@T["Sets"]</th><th class="pe-4 rounded-end">@T["Result"]</th></tr></thead>
+                    <tbody>
                         @foreach (var c in b.Cycles)
                         {
                             <tr>
-                                <td><span class="badge badge-light fs-8 hp-num">@c.Cycle.CycleNo</span></td>
-                                <td dir="auto">@c.Cycle.Autoclave</td>
-                                <td><span class="hp-num" dir="ltr" data-utc="@c.Cycle.StartedAt.ToString("o", inv)">@c.Cycle.StartedAt.ToString("yyyy-MM-dd HH:mm", inv)</span></td>
-                                <td><span class="hp-num fs-8" dir="ltr">@string.Join(" · ", c.Sets)</span></td>
-                                <td><span class="badge badge-light-@(c.Cycle.Result == HospitalCycleResult.Passed ? "success" : c.Cycle.Result == HospitalCycleResult.Failed ? "danger" : "primary")">@T["cyc:" + c.Cycle.Result]</span>@if (c.Cycle.Note != null) {<div class="text-muted fs-8" dir="auto">@c.Cycle.Note</div>}</td>
+                                <td class="ps-4"><span class="badge badge-light-primary fs-7 fw-bold hp-num" dir="ltr">@c.Cycle.CycleNo</span></td>
+                                <td class="text-gray-800 fw-semibold" dir="auto">@c.Cycle.Autoclave</td>
+                                <td><span class="text-gray-800 fw-semibold hp-num text-nowrap" dir="ltr" data-utc="@c.Cycle.StartedAt.ToString("o", inv)">@c.Cycle.StartedAt.ToString("yyyy-MM-dd HH:mm", inv)</span></td>
+                                <td><span class="text-gray-600 fw-semibold hp-num fs-7" dir="ltr">@string.Join(" · ", c.Sets)</span></td>
+                                <td class="pe-4"><span class="badge badge-light-@(c.Cycle.Result == HospitalCycleResult.Passed ? "success" : c.Cycle.Result == HospitalCycleResult.Failed ? "danger" : "primary") fs-7 fw-bold">@T["cyc:" + c.Cycle.Result]</span>@if (c.Cycle.Note != null) {<div class="text-muted fw-semibold fs-8 mt-1" dir="auto">@c.Cycle.Note</div>}</td>
                             </tr>
                         }
                     </tbody>
@@ -127,49 +162,57 @@
 
 @if (ready)
 {
-    <div class="modal fade" id="csCyclesModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered modal-dialog-scrollable mw-800px"><div class="modal-content">
-        <div class="modal-header"><h3 class="fw-bold m-0">@T["Cycles"]</h3><div class="btn btn-icon btn-sm btn-active-light-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
-        <div class="modal-body" data-cs-cycles-view></div>
+    <div class="modal fade" id="csCyclesModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered modal-dialog-scrollable mw-800px"><div class="modal-content rounded">
+        @Close()
+        <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-15">
+            <div class="mb-10 text-center"><h1 class="mb-3">@T["Cycles"]</h1><div class="text-muted fw-semibold fs-5">@T["Central sterile supply"]</div></div>
+            <div data-cs-cycles-view></div>
+        </div>
     </div></div></div>
 }
 @if (ready && canWork)
 {
-    <div class="modal fade" id="csLoadModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-500px"><div class="modal-content">
-        <div class="modal-header"><h3 class="fw-bold m-0">@T["Start a cycle"]</h3><div class="btn btn-icon btn-sm btn-active-light-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
-        <div class="modal-body">
-            <label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Autoclave"]</label>
-            <input class="form-control form-control-solid mb-5" maxlength="60" dir="auto" data-cs-autoclave value="@T["Autoclave 1"]" />
-            <label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Washed and packed sets"]</label>
-            <div data-cs-packed-view></div>
+    <div class="modal fade" id="csLoadModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-550px"><div class="modal-content rounded">
+        @Close()
+        <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-15">
+            <div class="mb-10 text-center"><h1 class="mb-3">@T["Start a cycle"]</h1><div class="text-muted fw-semibold fs-5">@T["Washed and packed sets"]</div></div>
+            <div class="d-flex flex-column mb-8 fv-row"><label class="fs-6 fw-semibold mb-2 required">@T["Autoclave"]</label>
+                <input class="form-control form-control-solid" maxlength="60" dir="auto" data-cs-autoclave value="@T["Autoclave 1"]" /></div>
+            <div class="d-flex flex-column fv-row"><label class="fs-6 fw-semibold mb-2 required">@T["Washed and packed sets"]</label>
+                <div data-cs-packed-view></div></div>
+            <div class="text-center pt-10"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-cs-load-save><i class="ki-outline ki-check fs-4"></i>@T["Load & start"]</button></div>
         </div>
-        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-cs-load-save><i class="ki-outline ki-check fs-4"></i>@T["Load & start"]</button></div>
     </div></div></div>
-    <div class="modal fade" id="csIssueModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-500px"><div class="modal-content">
-        <div class="modal-header"><h3 class="fw-bold m-0">@T["Issue to a case"]</h3><div class="btn btn-icon btn-sm btn-active-light-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
-        <div class="modal-body">
-            @if (b.Cases.Count == 0) { <div class="text-muted fs-7">@T["No theatre case is planned or in progress around today."]</div> }
+    <div class="modal fade" id="csIssueModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-550px"><div class="modal-content rounded">
+        @Close()
+        <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-15">
+            <div class="mb-10 text-center"><h1 class="mb-3">@T["Issue to a case"]</h1><div class="text-muted fw-semibold fs-5">@T["Theatre case"]</div></div>
+            @if (b.Cases.Count == 0) { <div class="text-center py-6"><i class="ki-outline ki-calendar-tick fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-semibold text-gray-600">@T["No theatre case is planned or in progress around today."]</div></div> }
             else
             {
-                <label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Theatre case"]</label>
+                <div class="d-flex flex-column fv-row"><label class="fs-6 fw-semibold mb-2 required">@T["Theatre case"]</label>
                 <select class="form-select form-select-solid" data-cs-case>
                     @foreach (var c in b.Cases) { <option value="@c.Id">@c.CaseNo · @DisplayName.Of(c.Name, c.NameEn) · @DisplayName.Of(c.Patient, c.PatientEn)</option> }
-                </select>
+                </select></div>
             }
+            <div class="text-center pt-10"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button>@if (b.Cases.Count > 0) {<button type="button" class="btn btn-primary" data-cs-issue-save><i class="ki-outline ki-check fs-4"></i>@T["Issue"]</button>}</div>
         </div>
-        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button>@if (b.Cases.Count > 0) {<button type="button" class="btn btn-primary" data-cs-issue-save><i class="ki-outline ki-check fs-4"></i>@T["Issue"]</button>}</div>
     </div></div></div>
 }
 @if (ready && canManage)
 {
-    <div class="modal fade" id="csSetModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-500px"><div class="modal-content">
-        <div class="modal-header"><h3 class="fw-bold m-0">@T["New set"]</h3><div class="btn btn-icon btn-sm btn-active-light-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
-        <div class="modal-body"><div class="row g-4">
-            <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Code"]</label><input class="form-control form-control-solid hp-num" dir="ltr" maxlength="30" data-s="code" /></div>
-            <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Shelf life (days)"]</label><input type="number" min="1" max="365" value="30" class="form-control form-control-solid hp-num" dir="ltr" data-s="shelfLifeDays" /></div>
-            <div class="col-12"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Name (Arabic)"]</label><input class="form-control form-control-solid" dir="rtl" maxlength="150" data-s="name" /></div>
-            <div class="col-12"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Name (English)"]</label><input class="form-control form-control-solid" dir="ltr" maxlength="150" data-s="nameEn" /></div>
-        </div></div>
-        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-cs-set-save><i class="ki-outline ki-check fs-4"></i>@T["Save"]</button></div>
+    <div class="modal fade" id="csSetModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-600px"><div class="modal-content rounded">
+        @Close()
+        <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-15">
+            <div class="mb-10 text-center"><h1 class="mb-3">@T["New set"]</h1><div class="text-muted fw-semibold fs-5">@T["Instrument-set tracking"]</div></div>
+            <div class="row g-8">
+            <div class="col-md-6"><label class="fs-6 fw-semibold mb-2 required">@T["Code"]</label><input class="form-control form-control-solid hp-num" dir="ltr" maxlength="30" data-s="code" /></div>
+            <div class="col-md-6"><label class="fs-6 fw-semibold mb-2 required">@T["Shelf life (days)"]</label><input type="number" min="1" max="365" value="30" class="form-control form-control-solid hp-num" dir="ltr" data-s="shelfLifeDays" /></div>
+            <div class="col-12"><label class="fs-6 fw-semibold mb-2 required">@T["Name (Arabic)"]</label><input class="form-control form-control-solid" dir="rtl" maxlength="150" data-s="name" /></div>
+            <div class="col-12"><label class="fs-6 fw-semibold mb-2">@T["Name (English)"]</label><input class="form-control form-control-solid" dir="ltr" maxlength="150" data-s="nameEn" /></div>
+            </div>
+            <div class="text-center pt-10"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-cs-set-save><i class="ki-outline ki-check fs-4"></i>@T["Save"]</button></div>
+        </div>
     </div></div></div>
 }
 

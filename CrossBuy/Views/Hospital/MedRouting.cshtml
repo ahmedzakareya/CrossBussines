@@ -40,49 +40,64 @@
     </div></div>
 
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @* H128: the four figures — the theme's stat tiles (demo39 dashboards/logistics) *@
         <div class="row g-5 g-xl-8 mb-5">
-            <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
-                <div class="text-muted fw-semibold fs-7 mb-1">@T["Active medication orders"]</div><div class="fs-2hx fw-bold hp-num text-gray-900">@Model.Active</div>
-                <div class="text-muted fs-8 mt-1">@T["on their way to the bedside"]</div></div></div></div>
-            <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
-                <div class="text-muted fw-semibold fs-7 mb-1">@T["STAT turnaround"]</div><div class="fs-2hx fw-bold text-gray-900">@if (Model.StatTurnaround is int st) {<span class="hp-num">@st</span> <span class="fs-5">@T["min"]</span>} else {<span>—</span>}</div>
-                <div class="text-muted fs-8 mt-1">@string.Format(T["Target {0} minutes"].Value, HospitalMedRoutingRules.TargetMinutes(HospitalMedPriority.Stat))</div></div></div></div>
-            <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
-                <div class="text-muted fw-semibold fs-7 mb-1">@T["Routine turnaround"]</div><div class="fs-2hx fw-bold text-gray-900">@if (Model.RoutineTurnaround is int rt) {<span class="hp-num">@rt</span> <span class="fs-5">@T["min"]</span>} else {<span>—</span>}</div>
-                <div class="text-muted fs-8 mt-1">@string.Format(T["Target {0} minutes"].Value, HospitalMedRoutingRules.TargetMinutes(HospitalMedPriority.Routine))</div></div></div></div>
-            <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
-                <div class="text-muted fw-semibold fs-7 mb-1">@T["Late against target"]</div><div class="fs-2hx fw-bold hp-num @(Model.Late > 0 ? "text-danger" : "text-gray-900")">@Model.Late</div>
-                <div class="text-muted fs-8 mt-1">@T["still on their way past their target"]</div></div></div></div>
+            @foreach (var (label, num, unit, sub, icon, tone, red) in new[] {
+                (T["Active medication orders"].Value, (int?)Model.Active, "", T["on their way to the bedside"].Value, "capsule", "primary", false),
+                (T["STAT turnaround"].Value, Model.StatTurnaround, T["min"].Value, string.Format(T["Target {0} minutes"].Value, HospitalMedRoutingRules.TargetMinutes(HospitalMedPriority.Stat)), "timer", "danger", false),
+                (T["Routine turnaround"].Value, Model.RoutineTurnaround, T["min"].Value, string.Format(T["Target {0} minutes"].Value, HospitalMedRoutingRules.TargetMinutes(HospitalMedPriority.Routine)), "time", "info", false),
+                (T["Late against target"].Value, (int?)Model.Late, "", T["still on their way past their target"].Value, "information-5", Model.Late > 0 ? "danger" : "success", Model.Late > 0) })
+            {
+                <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100">
+                    <div class="card-header pt-5 flex-nowrap gap-3">
+                        <div class="card-title d-flex flex-column">
+                            <div class="d-flex align-items-baseline"><span class="fs-2hx fw-bold lh-1 hp-num @(red ? "text-danger" : "text-gray-900")">@(num?.ToString() ?? "—")</span>@if (num != null && unit != "") {<span class="fs-5 fw-semibold text-gray-500 ms-1">@unit</span>}</div>
+                            <span class="text-gray-500 pt-1 fw-semibold fs-6">@label</span>
+                        </div>
+                        <div class="card-toolbar"><div class="symbol symbol-45px"><span class="symbol-label bg-light-@tone"><i class="ki-outline ki-@icon fs-2x text-@tone"></i></span></div></div>
+                    </div>
+                    <div class="card-body d-flex align-items-end pt-0"><span class="d-flex align-items-center text-gray-600 fw-semibold fs-7"><span class="bullet bullet-dot bg-@tone me-2 h-6px w-6px"></span>@sub</span></div>
+                </div></div>
+            }
         </div>
 
-        <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice">
-            <span class="symbol symbol-45px me-4 flex-shrink-0"><span class="symbol-label"><i class="ki-outline ki-route fs-2x text-white"></i></span></span>
+        <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-5 mb-5">
+            <i class="ki-outline ki-route fs-2tx text-primary me-4"></i>
             <div class="d-flex flex-stack flex-grow-1 flex-wrap gap-3">
                 <div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@T["From the prescription to the bedside"]</h4>
-                    <div class="fs-7 text-gray-700">@T["Every medication order is tracked through six steps, each stamped with who did it and when; administration needs a wristband scan."]</div></div>
-                <span class="badge badge-primary fs-7">@T["6 steps"]</span>
+                    <div class="fs-6 text-gray-700">@T["Every medication order is tracked through six steps, each stamped with who did it and when; administration needs a wristband scan."]</div></div>
+                <span class="badge badge-primary fs-7 fw-bold px-4 py-2">@T["6 steps"]</span>
             </div>
         </div>
 
-        <div class="card mb-5">
-            <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Routing stages now"]</span></div></div>
+        @* the six steps now — a stepper strip, one tile per step (demo39 dashboards/logistics tiles) *@
+        <div class="card card-flush mb-5">
+            <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Routing stages now"]</span>
+                <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["6 steps"]</span></h3></div>
             <div class="card-body pt-2"><div class="row g-3">
+                @{ var stageIcons = new[] { "notepad-edit", "shield-tick", "flask", "delivery", "entrance-left", "check-circle" }; }
                 @for (int i = 0; i < stages.Length; i++)
                 {
-                    <div class="col-6 col-md-4 col-xl-2"><div class="rounded p-4 text-center h-100 mr-stage @(i == stages.Length - 1 ? "last" : "")"><div class="fs-2 fw-bold hp-num">@Model.StageCounts[i]</div><div class="fs-8 fw-semibold text-gray-700">@T["mr:" + stages[i]]</div></div></div>
+                    bool lastStage = i == stages.Length - 1;
+                    <div class="col-6 col-md-4 col-xl-2"><div class="rounded p-4 h-100 mr-stage @(lastStage ? "last" : "")">
+                        <div class="d-flex flex-stack mb-3"><span class="symbol symbol-30px"><span class="symbol-label bg-white"><i class="ki-outline ki-@stageIcons[i] fs-3 text-@(lastStage ? "success" : "primary")"></i></span></span><span class="text-gray-500 fw-bold fs-8 hp-num">@(i + 1)</span></div>
+                        <div class="fs-2hx fw-bold lh-1 text-gray-900 hp-num">@Model.StageCounts[i]</div>
+                        <div class="fs-7 fw-semibold text-gray-600 pt-1">@T["mr:" + stages[i]]</div>
+                    </div></div>
                 }
             </div></div>
         </div>
 
-        <div class="card mb-5">
-            <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Medication orders"]</span></div></div>
+        <div class="card card-flush mb-5">
+            <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Medication orders"]</span>
+                <span class="text-gray-500 mt-1 fw-semibold fs-7 hp-num">@Model.Rows.Count</span></h3></div>
             <div class="card-body pt-2">
-                @if (Model.Rows.Count == 0) { <div class="text-center text-muted py-10">@T["No medication is on its way."]</div> }
+                @if (Model.Rows.Count == 0) { <div class="text-center py-10"><i class="ki-outline ki-delivery fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-bold text-gray-700">@T["No medication is on its way."]</div></div> }
                 else
                 {
-                <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-3 gx-2 mb-0">
-                    <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0">
-                        <th>@T["Order"]</th><th>@T["Patient"]</th><th>@T["Medication"]</th><th>@T["Priority"]</th><th>@T["Progress"]</th><th>@T["Last step"]</th><th></th>
+                <div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
+                    <thead><tr class="fw-bold text-muted bg-light">
+                        <th class="ps-4 rounded-start">@T["Order"]</th><th>@T["Patient"]</th><th>@T["Medication"]</th><th>@T["Priority"]</th><th>@T["Progress"]</th><th>@T["Last step"]</th><th class="pe-4 rounded-end"></th>
                     </tr></thead>
                     <tbody class="fw-semibold text-gray-700">
                         @foreach (var r in Model.Rows)
@@ -93,16 +108,16 @@
                             bool mine = next is byte n && (n >= HospitalMedStage.Received ? canAdmit : canPharmacy);
                             var what = r.Drug + " " + r.Dose;
                             <tr>
-                                <td><span class="badge hp-code fs-8 hp-num">@d.DeliveryNo</span></td>
+                                <td class="ps-4"><span class="text-gray-900 fw-bold fs-6 hp-num">@d.DeliveryNo</span></td>
                                 <td><div class="d-flex align-items-center gap-3">
                                     <div class="symbol symbol-35px symbol-circle flex-shrink-0">@if (r.PatientPhoto != null) {<img src="@r.PatientPhoto" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(r.PatientNameEn)" />} else {<span class="symbol-label fw-bold fs-8 hp-initials">@HospitalUi.Initials(r.PatientNameEn)</span>}</div>
-                                    <div class="text-nowrap"><a href="@Url.Action("Patient", new { id = r.PatientId })" class="fw-bold text-gray-900 text-hover-primary">@DisplayName.Of(r.PatientName, r.PatientNameEn)</a>
-                                        <div class="text-muted fs-8">@T["Bed"] <span class="hp-num">@(r.Bed ?? "—")</span></div></div></div></td>
-                                <td><div class="fw-semibold text-gray-800"><bdi>@r.Drug</bdi> <span class="hp-num" dir="ltr">@r.Dose</span> <span class="text-muted fs-8">@T["route:" + r.Route]</span></div>
-                                    @if (r.Controlled) {<span class="badge badge-light-danger fs-9">@T["Controlled — two signatures"]</span>}
-                                    @if (r.Late) {<span class="badge badge-light-danger fs-9 ms-1">@T["Late"]</span>}</td>
-                                <td class="text-nowrap">@if (d.Priority == HospitalMedPriority.Stat) {<span class="badge badge-danger fs-8">STAT</span>} else {<span class="badge badge-light-@PrioBadge(d.Priority) fs-8">@T["mp:" + d.Priority]</span>}
-                                    <div class="text-gray-600 fs-8 mt-1">@T["mv:" + d.Via]</div></td>
+                                    <div class="d-flex flex-column"><a href="@Url.Action("Patient", new { id = r.PatientId })" class="text-gray-900 fw-bold text-hover-primary fs-6">@DisplayName.Of(r.PatientName, r.PatientNameEn)</a>
+                                        <span class="text-muted fw-semibold d-block fs-7">@T["Bed"] <bdi class="hp-num">@(r.Bed ?? "—")</bdi></span></div></div></td>
+                                <td><div class="text-gray-900 fw-bold"><bdi>@r.Drug</bdi> <span class="hp-num" dir="ltr">@r.Dose</span></div><span class="text-muted fw-semibold d-block fs-7">@T["route:" + r.Route]</span>
+                                    @if (r.Controlled) {<span class="badge badge-light-danger fs-8 fw-bold mt-1">@T["Controlled — two signatures"]</span>}
+                                    @if (r.Late) {<span class="badge badge-light-danger fs-8 fw-bold ms-1 mt-1">@T["Late"]</span>}</td>
+                                <td class="text-nowrap">@if (d.Priority == HospitalMedPriority.Stat) {<span class="badge badge-danger fs-7 fw-bold">STAT</span>} else {<span class="badge badge-light-@PrioBadge(d.Priority) fs-7 fw-bold">@T["mp:" + d.Priority]</span>}
+                                    <span class="text-muted fw-semibold d-block fs-7 mt-1">@T["mv:" + d.Via]</span></td>
                                 <td><div class="d-flex align-items-center">
                                     @for (int i = 0; i < 6; i++)
                                     {
@@ -120,14 +135,14 @@
                                             <span class="hp-num fs-8 text-muted">@Clock(last.At)</span></div>
                                     }
                                     else { <span class="hp-num fs-8 text-muted">@Clock(last.At)</span> }</td>
-                                <td class="text-nowrap" style="text-align:end">
+                                <td class="text-nowrap pe-4" style="text-align:end">
                                     @if (mine && next is byte nx)
                                     {
-                                        <button type="button" class="btn btn-sm btn-light-primary py-1 px-3" data-step="@d.ID" data-next="@nx" data-label="@T["mr:" + stages[nx]]" data-what="@what" data-controlled="@(r.Controlled ? "1" : "0")">@T["mra:" + stages[nx]]</button>
+                                        <button type="button" class="btn btn-sm btn-light-primary" data-step="@d.ID" data-next="@nx" data-label="@T["mr:" + stages[nx]]" data-what="@what" data-controlled="@(r.Controlled ? "1" : "0")">@T["mra:" + stages[nx]]</button>
                                     }
                                     @if (canPharmacy && d.WarehouseId == null && d.Stage < HospitalMedStage.Administered)
                                     {
-                                        <button type="button" class="btn btn-sm btn-icon btn-light py-1" data-cancel="@d.ID" data-what="@what" title="@T["Cancel the delivery"]"><i class="ki-outline ki-cross fs-5"></i></button>
+                                        <button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-danger ms-1" data-cancel="@d.ID" data-what="@what" title="@T["Cancel the delivery"]" data-bs-toggle="tooltip"><i class="ki-outline ki-cross fs-3"></i></button>
                                     }
                                 </td>
                             </tr>
@@ -139,21 +154,33 @@
         </div>
 
         <div class="row g-5">
-            <div class="col-xl-6"><div class="card h-100">
-                <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Routing rules"]</span></div></div>
+            @* the rules and what follows — the theme's list widget (demo39 dashboards/logistics) *@
+            <div class="col-xl-6"><div class="card card-flush h-100">
+                <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Routing rules"]</span></h3></div>
                 <div class="card-body pt-2">
-                    @foreach (var rule in new[] { ("STAT doses", "Direct porter within 15 minutes"), ("Drugs stocked in the ward cabinet", "Cabinet issue after pharmacist review"), ("Controlled drugs", "Porter + two signatures on receipt and administration"), ("Everything else", "Pneumatic tube on dose rounds") })
+                    @{ var rules = new[] { ("STAT doses", "Direct porter within 15 minutes", "timer", "danger"), ("Drugs stocked in the ward cabinet", "Cabinet issue after pharmacist review", "lock-2", "info"), ("Controlled drugs", "Porter + two signatures on receipt and administration", "shield-tick", "danger"), ("Everything else", "Pneumatic tube on dose rounds", "delivery", "primary") }; }
+                    @for (int ri = 0; ri < rules.Length; ri++)
                     {
-                        <div class="d-flex flex-stack border-bottom border-gray-200 border-bottom-dashed py-3"><span class="fw-semibold text-gray-800">@T[rule.Item1]</span><span class="text-gray-600 fs-7" style="text-align:end">@T[rule.Item2]</span></div>
+                        var rule = rules[ri];
+                        <div class="d-flex align-items-center">
+                            <div class="symbol symbol-35px me-4 flex-shrink-0"><span class="symbol-label bg-light-@rule.Item4"><i class="ki-outline ki-@rule.Item3 fs-3 text-@rule.Item4"></i></span></div>
+                            <div class="d-flex flex-column"><span class="text-gray-800 fw-bold fs-6">@T[rule.Item1]</span><span class="text-gray-500 fw-semibold fs-7">@T[rule.Item2]</span></div>
+                        </div>
+                        if (ri < rules.Length - 1) { <div class="separator separator-dashed my-3"></div> }
                     }
                 </div>
             </div></div>
-            <div class="col-xl-6"><div class="card h-100">
-                <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["What happens behind it"]</span></div></div>
+            <div class="col-xl-6"><div class="card card-flush h-100">
+                <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["What happens behind it"]</span></h3></div>
                 <div class="card-body pt-2">
-                    @foreach (var line in new[] { "Preparation issues stock from the pharmacy store by batch (FEFO)", "Ward receipt moves custody to nursing", "Administration writes the MAR and adds the bill line", "The cabinet issues from the pharmacy store until it is a store of its own" })
+                    @{ var behind = new[] { "Preparation issues stock from the pharmacy store by batch (FEFO)", "Ward receipt moves custody to nursing", "Administration writes the MAR and adds the bill line", "The cabinet issues from the pharmacy store until it is a store of its own" }; }
+                    @for (int bi = 0; bi < behind.Length; bi++)
                     {
-                        <div class="d-flex align-items-center border-bottom border-gray-200 border-bottom-dashed py-3"><i class="ki-outline ki-check-circle fs-3 text-primary me-3"></i><span class="fw-semibold text-gray-800">@T[line]</span></div>
+                        <div class="d-flex align-items-center">
+                            <div class="symbol symbol-35px me-4 flex-shrink-0"><span class="symbol-label bg-light-success"><i class="ki-outline ki-check-circle fs-3 text-success"></i></span></div>
+                            <span class="text-gray-800 fw-bold fs-6">@T[behind[bi]]</span>
+                        </div>
+                        if (bi < behind.Length - 1) { <div class="separator separator-dashed my-3"></div> }
                     }
                 </div>
             </div></div>
@@ -161,36 +188,38 @@
     </div></div>
 </div>
 
-<div class="modal fade" id="stepModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-550px"><div class="modal-content">
-    <div class="modal-header"><h2 class="fw-bold m-0 fs-4"><span data-s-label></span> <span class="text-muted fs-6" data-s-what></span></h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
-    <div class="modal-body py-6 px-lg-10">
-        <div class="mb-4 d-none" data-s-band-wrap><label class="form-label required">@T["Scan the patient's wristband"]</label><input class="form-control form-control-solid hp-num" dir="ltr" autocomplete="off" data-s-band placeholder="MRN" />
-            <div class="form-text">@T["The dose is recorded on the medication administration record."]</div></div>
-        <div class="mb-2 d-none" data-s-witness-wrap><label class="form-label required">@T["Witness"]</label><select class="form-select form-select-solid" data-s-witness data-person-select data-allow-clear data-placeholder="@T["Witness"]"><option value=""></option>@foreach (var s in staff) { <option value="@s.Id" data-photo="@s.Photo" data-initials="@HospitalUi.Initials(s.NameEn)">@s.Name</option> }</select>
-            <div class="form-text">@T["A controlled drug is signed for by a second person."]</div></div>
-        <div class="text-gray-700 fs-6" data-s-plain>@T["Stamp this step with your name and the time?"]</div>
+<div class="modal fade" id="stepModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-550px"><div class="modal-content rounded">
+    <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-10">
+        <div class="mb-8 text-center"><h1 class="mb-3" data-s-label></h1><div class="text-muted fw-semibold fs-5" data-s-what></div></div>
+        <div class="mb-6 d-none" data-s-band-wrap><label class="fs-6 fw-semibold mb-2 required">@T["Scan the patient's wristband"]</label><input class="form-control form-control-solid hp-num" dir="ltr" autocomplete="off" data-s-band placeholder="MRN" />
+            <div class="text-muted fs-7 mt-2">@T["The dose is recorded on the medication administration record."]</div></div>
+        <div class="mb-6 d-none" data-s-witness-wrap><label class="fs-6 fw-semibold mb-2 required">@T["Witness"]</label><select class="form-select form-select-solid" data-s-witness data-person-select data-allow-clear data-placeholder="@T["Witness"]"><option value=""></option>@foreach (var s in staff) { <option value="@s.Id" data-photo="@s.Photo" data-initials="@HospitalUi.Initials(s.NameEn)">@s.Name</option> }</select>
+            <div class="text-muted fs-7 mt-2">@T["A controlled drug is signed for by a second person."]</div></div>
+        <div data-s-plain><div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-5"><i class="ki-outline ki-time fs-2tx text-primary me-4"></i><div class="fs-6 fw-semibold text-gray-700 align-self-center">@T["Stamp this step with your name and the time?"]</div></div></div>
+        <div class="text-center pt-8"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-s-save>@T["Confirm"]</button></div>
     </div>
-    <div class="modal-footer flex-center"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-s-save>@T["Confirm"]</button></div>
 </div></div></div>
 
 @if (canPharmacy)
 {
-    <div class="modal fade" id="newModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-650px"><div class="modal-content">
-        <div class="modal-header"><h2 class="fw-bold m-0">@T["Send a medication"]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
-        <div class="modal-body py-6 px-lg-10">
-            <div class="mb-5"><label class="form-label required">@T["Medication order"]</label>
+    <div class="modal fade" id="newModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-650px"><div class="modal-content rounded">
+        <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-10">
+            <div class="mb-10 text-center"><h1 class="mb-3">@T["Send a medication"]</h1><div class="text-muted fw-semibold fs-5">@T["From the prescription to the bedside"]</div></div>
+            <div class="mb-8"><label class="fs-6 fw-semibold mb-2 required">@T["Medication order"]</label>
                 <select class="form-select form-select-solid" data-n-order data-person-select data-placeholder="@T["Medication order"]"><option value=""></option>
                     @foreach (var o in Model.Orders) { <option value="@o.OrderId" data-photo="@o.Photo" data-initials="@HospitalUi.Initials(o.PatientNameEn)" data-controlled="@(o.Controlled ? "1" : "0")" data-stocked="@(o.Stocked ? "1" : "0")">@DisplayName.Of(o.PatientName, o.PatientNameEn) · @T["Bed"] @(o.Bed ?? "—") — @o.Drug @o.Dose</option> }
                 </select></div>
-            <div class="mb-5"><label class="form-label required">@T["Priority"]</label>
-                <div class="d-flex gap-2">@foreach (var p in HospitalMedPriority.All) { <label class="flex-fill"><input type="radio" class="btn-check" name="n-prio" value="@p" @(p == HospitalMedPriority.Routine ? "checked" : "") /><span class="btn btn-sm btn-light w-100 fw-bold">@(p == HospitalMedPriority.Stat ? "STAT" : T["mp:" + p].Value)</span></label> }</div></div>
-            <div class="row g-4">
-                <div class="col-md-7"><label class="form-label required">@T["Route"]</label><select class="form-select form-select-solid" data-n-via>@foreach (var v in HospitalMedVia.All) { <option value="@v">@T["mv:" + v]</option> }</select>
-                    <div class="form-text" data-n-via-hint>@T["A controlled drug and a STAT dose go by porter"]</div></div>
-                <div class="col-md-5" data-n-qty-wrap><label class="form-label required">@T["Units from the store"]</label><input type="text" inputmode="decimal" dir="ltr" class="form-control form-control-solid hp-num" value="1" data-n-qty /></div>
+            <div class="mb-8"><label class="fs-6 fw-semibold mb-2 required">@T["Priority"]</label>
+                <div class="d-flex gap-3">@foreach (var p in HospitalMedPriority.All) { <label class="flex-fill"><input type="radio" class="btn-check" name="n-prio" value="@p" @(p == HospitalMedPriority.Routine ? "checked" : "") /><span class="btn btn-outline btn-outline-dashed btn-active-light-primary w-100 fw-bold">@(p == HospitalMedPriority.Stat ? "STAT" : T["mp:" + p].Value)</span></label> }</div></div>
+            <div class="row g-6">
+                <div class="col-md-7"><label class="fs-6 fw-semibold mb-2 required">@T["Route"]</label><select class="form-select form-select-solid" data-n-via>@foreach (var v in HospitalMedVia.All) { <option value="@v">@T["mv:" + v]</option> }</select>
+                    <div class="text-muted fs-7 mt-2" data-n-via-hint>@T["A controlled drug and a STAT dose go by porter"]</div></div>
+                <div class="col-md-5" data-n-qty-wrap><label class="fs-6 fw-semibold mb-2 required">@T["Units from the store"]</label><input type="text" inputmode="decimal" dir="ltr" class="form-control form-control-solid hp-num" value="1" data-n-qty /></div>
             </div>
+            <div class="text-center pt-10"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-n-save>@T["Send"]</button></div>
         </div>
-        <div class="modal-footer flex-center"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-n-save>@T["Send"]</button></div>
     </div></div></div>
 }
 
@@ -227,7 +256,7 @@
             function viaFor() {
                 var o = nEl.querySelector('[data-n-order]'), opt = o.options[o.selectedIndex], prio = (nEl.querySelector('[name=n-prio]:checked') || {}).value;
                 var controlled = opt && opt.getAttribute('data-controlled') === '1', stocked = !opt || opt.getAttribute('data-stocked') === '1';
-                var v = nEl.querySelector('[data-n-via]'); v.value = controlled || prio === 'Stat' ? 'Porter' : 'Tube';
+                var v = nEl.querySelector('[data-n-via]'); v.value = controlled || prio === 'Stat' ? 'Porter' : 'Tube'; if (window.jQuery) jQuery(v).trigger('change.select2');
                 nEl.querySelector('[data-n-qty-wrap]').classList.toggle('d-none', !stocked);
             }
             if (nEl) {

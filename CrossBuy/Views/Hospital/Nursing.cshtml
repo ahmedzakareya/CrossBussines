@@ -871,10 +871,17 @@
             resolve: @Json.Serialize(T["Mark this problem as resolved?"].Value), closeTitle: @Json.Serialize(T["Close this plan"].Value), outcome: @Json.Serialize(T["The outcome"].Value) };
         var base = @Json.Serialize(Url.Content("~/Hospital/Admissions/"));
         function post(u, b) { return fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': tok ? tok.value : '' }, body: JSON.stringify(b || {}) }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); }); }
-        function fill(need) { var f = mEl.querySelector('[data-cp-form]'); if (!f) return; var s = f.querySelector('[data-cp="need"]'); if (need) s.value = need;
+        function fill(need) { var f = mEl.querySelector('[data-cp-form]'); if (!f) return; var s = f.querySelector('[data-cp="need"]'); if (need) { s.value = need; if (window.jQuery && s.classList.contains('select2-hidden-accessible')) jQuery(s).trigger('change.select2'); }
             var o = s.options[s.selectedIndex]; f.querySelector('[data-cp="goal"]').value = o.getAttribute('data-goal') || ''; f.querySelector('[data-cp="interventions"]').value = o.getAttribute('data-iv') || ''; }
         function wire() {
             var s = mEl.querySelector('[data-cp="need"]'); if (s) { s.addEventListener('change', function () { fill(); }); fill(); }
+            // H128: the panel arrives by innerHTML after the modal opens, past the layout's select2 enhancer — the need and the
+            // problem's kind get the theme's dropdown here, and select2's choice is relayed as the native change the form listens to
+            if (window.jQuery && jQuery.fn.select2) mEl.querySelectorAll('[data-cp="need"],[data-pb="kind"]').forEach(function (el) {
+                if (el.classList.contains('select2-hidden-accessible')) return;
+                jQuery(el).select2({ width: '100%', dir: isAr ? 'rtl' : 'ltr', dropdownParent: jQuery(mEl), minimumResultsForSearch: el.options.length > 8 ? 0 : Infinity })
+                    .on('select2:select select2:clear', function () { el.dispatchEvent(new Event('change', { bubbles: true })); });
+            });
             var a = mEl.querySelector('a[href="' + tab + '"]'); if (a) bootstrap.Tab.getOrCreateInstance(a).show();
             mEl.querySelectorAll('a[data-bs-toggle="tab"]').forEach(function (x) { x.addEventListener('shown.bs.tab', function () { tab = x.getAttribute('href'); }); });
             var pk = mEl.querySelector('[data-pb="code"]');

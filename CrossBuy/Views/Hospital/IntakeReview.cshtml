@@ -24,90 +24,109 @@
 <div class="d-flex flex-column flex-column-fluid">
     <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
         <div class="page-title d-flex flex-column justify-content-center gap-1">
-            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Self-intake"] <span class="badge hp-code fs-5 hp-num ms-2" dir="ltr">@s.TicketNo</span></h1>
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Self-intake"] <span class="badge badge-light-primary fs-5 fw-bold hp-num ms-2" dir="ltr">@s.TicketNo</span></h1>
             <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item"><a href="@Url.Action("Intake")" class="text-muted text-hover-primary">@T["Self-intake"]</a></li><li class="breadcrumb-item text-muted"><span class="hp-num">@s.IntakeNo</span> · <span class="hp-num">@L(s.SubmittedAt)</span></li></ul>
         </div>
         <div class="d-flex gap-2 align-items-center">
-            <span class="badge @(open ? "badge-light-primary" : "badge-light") fs-7">@T["ist:" + s.Status]</span>
+            <span class="badge @(open ? "badge-light-primary" : "badge-light") fs-7 fw-bold">@T["ist:" + s.Status]</span>
             @if (open && canDesk && !alarm) {<button type="button" class="btn btn-sm btn-light-danger" data-reject><i class="ki-outline ki-cross-circle fs-4"></i>@T["Reject"]</button>}
         </div>
     </div></div>
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
         @if (s.Urgent)
         {
+            @* H128: the theme's notice (demo39) — icon, title, the danger signs as badges, the acknowledgement on the end *@
             <div class="notice d-flex flex-stack flex-wrap rounded border border-danger border-dashed @(alarm ? "bg-light-danger" : "") p-5 mb-5 gap-3">
-                <div class="d-flex align-items-center gap-3"><i class="ki-outline ki-information-5 fs-2x text-danger"></i>
-                    <div><div class="fw-bold fs-5 text-danger">@T["The patient reported danger signs"]</div>
-                        <div class="d-flex flex-wrap gap-2 mt-2">@foreach (var f in (s.RedFlags ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries)) {<span class="badge badge-danger fs-7">@T["irf:" + f]</span>}</div>
-                        @if (s.AlertAckAt != null) {<div class="text-muted fs-8 mt-2">@T["Acknowledged {0}", L(s.AlertAckAt)] · @Who(s.AlertAckByEmployeeId)</div>}</div></div>
+                <div class="d-flex align-items-start"><i class="ki-outline ki-information fs-2tx text-danger me-4"></i>
+                    <div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@T["The patient reported danger signs"]</h4>
+                        <div class="d-flex flex-wrap gap-2 mt-2">@foreach (var f in (s.RedFlags ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries)) {<span class="badge badge-danger fs-7 fw-bold">@T["irf:" + f]</span>}</div>
+                        @if (s.AlertAckAt != null) {<div class="text-gray-600 fs-7 mt-2">@T["Acknowledged {0}", L(s.AlertAckAt)] · @Who(s.AlertAckByEmployeeId)</div>}</div></div>
                 @if (alarm && canDesk) {<button type="button" class="btn btn-danger" data-ack><i class="ki-outline ki-check fs-3"></i>@T["I have seen the patient — send to the nurse"]</button>}
             </div>
         }
         <div class="row g-5">
-            <div class="col-xl-5"><div class="card h-100"><div class="card-body py-6">
-                <div class="fw-bold fs-4 mb-4">@T["What the patient entered"]</div>
-                @if (s.Name == null) { <div class="text-muted">@T["Not given — sent to the desk"]</div> }
+            @* H128: the entry as the theme's detail list (demo39 apps/customers/view) *@
+            <div class="col-xl-5"><div class="card card-flush h-100">
+                <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["What the patient entered"]</span>
+                    <span class="text-gray-500 mt-1 fw-semibold fs-7"><bdi class="hp-num" dir="ltr">@s.IntakeNo</bdi> · <span class="hp-num" dir="ltr">@L(s.SubmittedAt)</span></span></h3></div>
+                <div class="card-body pt-2">
+                @if (s.Name == null) { <div class="text-center py-10"><i class="ki-outline ki-user-square fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-bold text-gray-700">@T["Not given — sent to the desk"]</div></div> }
                 else
                 {
-                    <div class="d-flex flex-stack py-2 border-bottom border-dashed"><span class="text-muted fs-7">@T["Name"]</span><span class="fw-bold fs-5"><bdi>@s.Name</bdi></span></div>
-                    if (s.NameEn != null) {<div class="d-flex flex-stack py-2 border-bottom border-dashed"><span class="text-muted fs-7">@T["Name in English"]</span><bdi dir="ltr" class="fw-semibold">@s.NameEn</bdi></div>}
-                    <div class="d-flex flex-stack py-2 border-bottom border-dashed"><span class="text-muted fs-7">@T["Identity document"]</span><span class="fw-semibold">@T["iid:" + (s.IdType ?? "None")] <bdi class="hp-num" dir="ltr">@s.IdNumber</bdi></span></div>
-                    <div class="d-flex flex-stack py-2 border-bottom border-dashed"><span class="text-muted fs-7">@T["Date of birth"]</span><span class="hp-num fw-semibold">@s.BirthDate?.ToString("yyyy-MM-dd")</span></div>
-                    <div class="d-flex flex-stack py-2 border-bottom border-dashed"><span class="text-muted fs-7">@T["Sex"]</span><span class="fw-semibold">@(s.Sex == "F" ? T["sex:F"] : T["sex:M"])</span></div>
-                    <div class="d-flex flex-stack py-2 border-bottom border-dashed"><span class="text-muted fs-7">@T["Mobile number"]</span><bdi class="hp-num fw-semibold" dir="ltr">@s.Phone</bdi></div>
-                    <div class="d-flex flex-stack py-2 border-bottom border-dashed"><span class="text-muted fs-7">@T["Visit"]</span><span class="fw-semibold">@T["ivt:" + s.VisitType]</span></div>
-                    if (s.Reason != null) {<div class="py-2 border-bottom border-dashed"><div class="text-muted fs-7">@T["What brings you today?"]</div><div class="fs-7"><bdi>@s.Reason</bdi></div></div>}
-                    if (s.Allergies != null) {<div class="py-2 border-bottom border-dashed"><div class="text-muted fs-7">@T["Allergies (medicines, food)"]</div><div class="fs-7 text-danger fw-semibold"><bdi>@s.Allergies</bdi></div></div>}
-                    if (s.Medications != null) {<div class="py-2 border-bottom border-dashed"><div class="text-muted fs-7">@T["Medicines you take"]</div><div class="fs-7"><bdi>@s.Medications</bdi></div></div>}
-                    if (s.Pregnant == true) {<div class="py-2 border-bottom border-dashed"><span class="badge badge-light-danger">@T["I am or may be pregnant"]</span></div>}
-                    if (s.Infection != null) {<div class="py-2 border-bottom border-dashed"><div class="text-muted fs-7">@T["Infection signs in two weeks"]</div><div class="d-flex flex-wrap gap-1 mt-1">@foreach (var x in s.Infection.Split(',')) {<span class="badge badge-light-danger fs-8">@T["iin:" + x]</span>}</div></div>}
-                    if (s.EmergencyName != null) {<div class="d-flex flex-stack py-2 border-bottom border-dashed"><span class="text-muted fs-7">@T["Someone to call in an emergency"]</span><span class="fs-7"><bdi>@s.EmergencyName</bdi> <bdi class="hp-num" dir="ltr">@s.EmergencyPhone</bdi></span></div>}
-                    <div class="text-muted fs-8 mt-3">@(s.ConsentAt != null ? T["Consent given {0} (version {1})", L(s.ConsentAt), s.ConsentVersion ?? ""] : T["No consent recorded"])</div>
+                    <div class="d-flex flex-stack py-3 border-bottom border-gray-200 border-bottom-dashed"><span class="text-muted fw-semibold fs-7">@T["Name"]</span><span class="fw-bold text-gray-900 fs-5"><bdi>@s.Name</bdi></span></div>
+                    if (s.NameEn != null) {<div class="d-flex flex-stack py-3 border-bottom border-gray-200 border-bottom-dashed"><span class="text-muted fw-semibold fs-7">@T["Name in English"]</span><bdi dir="ltr" class="fw-bold text-gray-800 fs-6">@s.NameEn</bdi></div>}
+                    <div class="d-flex flex-stack py-3 border-bottom border-gray-200 border-bottom-dashed"><span class="text-muted fw-semibold fs-7">@T["Identity document"]</span><span class="fw-bold text-gray-800 fs-6">@T["iid:" + (s.IdType ?? "None")] <bdi class="hp-num" dir="ltr">@s.IdNumber</bdi></span></div>
+                    <div class="d-flex flex-stack py-3 border-bottom border-gray-200 border-bottom-dashed"><span class="text-muted fw-semibold fs-7">@T["Date of birth"]</span><span class="hp-num fw-bold text-gray-800 fs-6" dir="ltr">@s.BirthDate?.ToString("yyyy-MM-dd")</span></div>
+                    <div class="d-flex flex-stack py-3 border-bottom border-gray-200 border-bottom-dashed"><span class="text-muted fw-semibold fs-7">@T["Sex"]</span><span class="fw-bold text-gray-800 fs-6">@(s.Sex == "F" ? T["sex:F"] : T["sex:M"])</span></div>
+                    <div class="d-flex flex-stack py-3 border-bottom border-gray-200 border-bottom-dashed"><span class="text-muted fw-semibold fs-7">@T["Mobile number"]</span><bdi class="hp-num fw-bold text-gray-800 fs-6" dir="ltr">@s.Phone</bdi></div>
+                    <div class="d-flex flex-stack py-3 border-bottom border-gray-200 border-bottom-dashed"><span class="text-muted fw-semibold fs-7">@T["Visit"]</span><span class="badge badge-light-primary fs-7 fw-bold">@T["ivt:" + s.VisitType]</span></div>
+                    if (s.Reason != null) {<div class="py-3 border-bottom border-gray-200 border-bottom-dashed"><div class="text-muted fw-semibold fs-7 mb-1">@T["What brings you today?"]</div><div class="fs-6 text-gray-800"><bdi>@s.Reason</bdi></div></div>}
+                    if (s.Allergies != null) {<div class="py-3 border-bottom border-gray-200 border-bottom-dashed"><div class="text-muted fw-semibold fs-7 mb-1">@T["Allergies (medicines, food)"]</div><div class="fs-6 text-danger fw-bold"><i class="ki-outline ki-shield-cross fs-5 text-danger me-1"></i><bdi>@s.Allergies</bdi></div></div>}
+                    if (s.Medications != null) {<div class="py-3 border-bottom border-gray-200 border-bottom-dashed"><div class="text-muted fw-semibold fs-7 mb-1">@T["Medicines you take"]</div><div class="fs-6 text-gray-800"><bdi>@s.Medications</bdi></div></div>}
+                    if (s.Pregnant == true) {<div class="py-3 border-bottom border-gray-200 border-bottom-dashed"><span class="badge badge-light-danger fs-7 fw-bold">@T["I am or may be pregnant"]</span></div>}
+                    if (s.Infection != null) {<div class="py-3 border-bottom border-gray-200 border-bottom-dashed"><div class="text-muted fw-semibold fs-7 mb-1">@T["Infection signs in two weeks"]</div><div class="d-flex flex-wrap gap-1">@foreach (var x in s.Infection.Split(',')) {<span class="badge badge-light-danger fs-7 fw-bold">@T["iin:" + x]</span>}</div></div>}
+                    if (s.EmergencyName != null) {<div class="d-flex flex-stack py-3 border-bottom border-gray-200 border-bottom-dashed"><span class="text-muted fw-semibold fs-7">@T["Someone to call in an emergency"]</span><span class="fw-bold text-gray-800 fs-7"><bdi>@s.EmergencyName</bdi> <bdi class="hp-num" dir="ltr">@s.EmergencyPhone</bdi></span></div>}
+                    <div class="d-flex align-items-center text-gray-500 fw-semibold fs-7 mt-4"><i class="ki-outline @(s.ConsentAt != null ? "ki-check-circle text-success" : "ki-information-5 text-gray-500") fs-5 me-2"></i>@(s.ConsentAt != null ? T["Consent given {0} (version {1})", L(s.ConsentAt), s.ConsentVersion ?? ""] : T["No consent recorded"])</div>
                 }
                 @if (!open)
                 {
                     <div class="separator separator-dashed my-4"></div>
-                    <div class="fw-bold fs-6 mb-1">@T["ist:" + s.Status] · <span class="text-muted fs-8 hp-num">@L(s.ReconciledAt)</span> · <span class="text-muted fs-8">@Who(s.ReconciledByEmployeeId)</span></div>
-                    if (Model.Linked != null) {<a href="@Url.Action("Patient", new { id = Model.Linked.ID })" class="fw-bold text-primary"><bdi>@DisplayName.Of(Model.Linked.Name, Model.Linked.NameEn)</bdi> · <bdi class="hp-num">@Model.Linked.Mrn</bdi></a>}
-                    if (s.MatchScore != null && s.Status == HospitalIntakeStatus.Linked) {<div class="text-muted fs-8">@T["Match {0} — {1}", s.MatchScore.Value.ToString("0"), T["imm:" + (s.MatchMethod ?? "None")].Value]</div>}
-                    if (s.DecisionNote != null) {<div class="fs-7 mt-1"><bdi>@s.DecisionNote</bdi></div>}
+                    <div class="d-flex flex-stack">
+                        <div class="symbol symbol-35px me-4"><span class="symbol-label bg-light-success"><i class="ki-outline ki-check-square fs-3 text-success"></i></span></div>
+                        <div class="d-flex flex-stack flex-row-fluid d-grid gap-2">
+                            <div class="me-3"><span class="text-gray-800 fw-bold fs-6">@T["ist:" + s.Status]</span>
+                                <span class="text-gray-500 fw-semibold fs-7 d-block"><span class="hp-num" dir="ltr">@L(s.ReconciledAt)</span> · @Who(s.ReconciledByEmployeeId)</span>
+                                @if (Model.Linked != null) {<a href="@Url.Action("Patient", new { id = Model.Linked.ID })" class="fw-bold text-primary fs-7 d-block mt-1"><bdi>@DisplayName.Of(Model.Linked.Name, Model.Linked.NameEn)</bdi> · <bdi class="hp-num" dir="ltr">@Model.Linked.Mrn</bdi></a>}
+                                @if (s.DecisionNote != null) {<span class="fs-7 text-gray-700 d-block mt-1"><bdi>@s.DecisionNote</bdi></span>}
+                            </div>
+                            @if (s.MatchScore != null && s.Status == HospitalIntakeStatus.Linked) {<span class="badge badge-light-success fs-7 fw-bold text-nowrap">@T["Match {0} — {1}", s.MatchScore.Value.ToString("0"), T["imm:" + (s.MatchMethod ?? "None")].Value]</span>}
+                        </div>
+                    </div>
                 }
-            </div></div></div>
+                </div>
+            </div></div>
 
             <div class="col-xl-7 d-flex flex-column gap-5">
                 @if (open && s.Name != null)
                 {
-                    <div class="card"><div class="card-header border-0 pt-6"><div class="card-title flex-column m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Files that may be this patient"]</span>
-                        <span class="text-muted fs-8 mt-1">@T["Scored on the identity number, the date of birth, the mobile and the name's parts in any order. The patient never sees this."]</span></div></div>
+                    @* H128: the candidates as the theme's list widget (demo39 widgets/lists) — the score in its symbol, the matching details in green *@
+                    <div class="card card-flush"><div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Files that may be this patient"]</span>
+                        <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Scored on the identity number, the date of birth, the mobile and the name's parts in any order. The patient never sees this."]</span></h3></div>
                         <div class="card-body pt-2">
-                            @if (Model.Candidates.Count == 0) { <div class="text-center text-muted py-6">@T["No existing file looks like this patient."]</div> }
-                            @foreach (var c in Model.Candidates)
+                            @if (Model.Candidates.Count == 0) { <div class="text-center py-10"><i class="ki-outline ki-people fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-bold text-gray-700">@T["No existing file looks like this patient."]</div></div> }
+                            @for (int ci = 0; ci < Model.Candidates.Count; ci++)
                             {
-                                var p = c.Patient; bool strong = c.Score >= HospitalIntakeRules.Strong;
-                                <div class="d-flex flex-stack gap-4 py-4 border-bottom border-dashed">
-                                    <div class="d-flex align-items-center gap-4">
-                                        <div class="text-center" style="min-width:64px"><div class="fs-2 fw-bold hp-num @(strong ? "text-success" : "text-primary")">@c.Score.ToString("0")</div><div class="fs-9 text-muted">@T["imm:" + c.Method]</div></div>
-                                        <div><a href="@Url.Action("Patient", new { id = p.ID })" target="_blank" class="fw-bold fs-5 @Mark(c.Matched, "Name")"><bdi>@p.Name</bdi></a> <span class="badge hp-code hp-num ms-1">@p.Mrn</span>
-                                            <div class="fs-7 mt-1 hp-num"><span class="@Mark(c.Matched, "BirthDate")">@p.BirthDate?.ToString("yyyy-MM-dd")</span> · <bdi dir="ltr" class="@Mark(c.Matched, "Phone")">@p.Phone</bdi> · <bdi dir="ltr" class="@Mark(c.Matched, "IdNumber")">@p.NationalId</bdi></div></div>
+                                var c = Model.Candidates[ci]; var p = c.Patient; bool strong = c.Score >= HospitalIntakeRules.Strong;
+                                <div class="d-flex flex-stack gap-4">
+                                    <div class="d-flex align-items-center gap-4 min-w-0">
+                                        <div class="d-flex flex-column align-items-center flex-shrink-0" style="min-width:64px">
+                                            <div class="symbol symbol-50px"><span class="symbol-label bg-light-@(strong ? "success" : "primary")"><span class="fs-3 fw-bold hp-num text-@(strong ? "success" : "primary")">@c.Score.ToString("0")</span></span></div>
+                                            <span class="text-gray-500 fw-semibold fs-8 mt-1 text-center">@T["imm:" + c.Method]</span></div>
+                                        <div class="min-w-0"><a href="@Url.Action("Patient", new { id = p.ID })" target="_blank" class="fs-6 text-hover-primary @Mark(c.Matched, "Name")"><bdi class="fw-bold">@p.Name</bdi></a> <span class="badge badge-light-primary fs-7 fw-bold hp-num ms-1" dir="ltr">@p.Mrn</span>
+                                            <div class="fs-7 fw-semibold mt-1 hp-num"><span class="@Mark(c.Matched, "BirthDate")" dir="ltr">@p.BirthDate?.ToString("yyyy-MM-dd")</span> · <bdi dir="ltr" class="@Mark(c.Matched, "Phone")">@p.Phone</bdi> · <bdi dir="ltr" class="@Mark(c.Matched, "IdNumber")">@p.NationalId</bdi></div></div>
                                     </div>
-                                    @if (canDesk && !alarm) {<button type="button" class="btn btn-sm @(strong ? "btn-success" : "btn-light-success") text-nowrap" data-link="@p.ID" data-who="@p.Name — @p.Mrn">@T["Link to this file"]</button>}
+                                    @if (canDesk && !alarm) {<button type="button" class="btn btn-sm @(strong ? "btn-success" : "btn-light-success") text-nowrap" data-link="@p.ID" data-who="@p.Name — @p.Mrn"><i class="ki-outline ki-fasten fs-4"></i>@T["Link to this file"]</button>}
                                 </div>
+                                if (ci < Model.Candidates.Count - 1) {<div class="separator separator-dashed my-4"></div>}
                             }
                         </div></div>
                     if (canDesk && !alarm)
                     {
-                        <div class="card border border-dashed @(best >= HospitalIntakeRules.Strong ? "border-danger" : "border-primary")"><div class="card-body py-6">
-                            <div class="fw-bold fs-5 mb-1">@T["Open a new file"]</div>
-                            <div class="text-muted fs-8 mb-4">@(best >= HospitalIntakeRules.Strong ? T["A file above very likely belongs to this patient: a new one needs a reason."] : T["When none of the files above is this patient."])</div>
-                            <div class="row g-3">
-                                <div class="col-md-6"><label class="form-label fs-8 required">@T["Name in English"]</label><input type="text" maxlength="200" class="form-control form-control-sm form-control-solid" dir="ltr" data-n="nameEn" value="@s.NameEn" /></div>
-                                <div class="col-md-6"><label class="form-label fs-8 @(best >= HospitalIntakeRules.Strong ? "required" : "")">@T["Why a new file"]</label><input type="text" maxlength="300" class="form-control form-control-sm form-control-solid" data-n="reason" /></div>
+                        var nfTone = best >= HospitalIntakeRules.Strong ? "danger" : "primary";
+                        <div class="card card-flush border border-dashed border-@nfTone">
+                            <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Open a new file"]</span>
+                                <span class="text-gray-500 mt-1 fw-semibold fs-7">@(best >= HospitalIntakeRules.Strong ? T["A file above very likely belongs to this patient: a new one needs a reason."] : T["When none of the files above is this patient."])</span></h3>
+                                <div class="card-toolbar"><div class="symbol symbol-45px"><span class="symbol-label bg-light-@nfTone"><i class="ki-outline ki-profile-user fs-2x text-@nfTone"></i></span></div></div></div>
+                            <div class="card-body pt-2">
+                            <div class="row g-5">
+                                <div class="col-md-6"><label class="fs-6 fw-semibold mb-2 required">@T["Name in English"]</label><input type="text" maxlength="200" class="form-control form-control-solid" dir="ltr" data-n="nameEn" value="@s.NameEn" /></div>
+                                <div class="col-md-6"><label class="fs-6 fw-semibold mb-2 @(best >= HospitalIntakeRules.Strong ? "required" : "")">@T["Why a new file"]</label><input type="text" maxlength="300" class="form-control form-control-solid" data-n="reason" /></div>
                             </div>
-                            <div class="d-flex justify-content-end mt-4"><button type="button" class="btn btn-sm btn-primary" data-new><i class="ki-outline ki-plus fs-4"></i>@T["Open a new file"]</button></div>
+                            <div class="d-flex justify-content-end mt-6"><button type="button" class="btn btn-sm btn-primary" data-new><i class="ki-outline ki-plus fs-4"></i>@T["Open a new file"]</button></div>
                         </div></div>
                     }
                 }
-                @if (open && alarm) { <div class="card"><div class="card-body text-center text-muted py-10">@T["Acknowledge the danger signs first"]</div></div> }
+                @if (open && alarm) { <div class="card card-flush"><div class="card-body"><div class="text-center py-10"><i class="ki-outline ki-shield-cross fs-3x text-danger mb-4 d-block"></i><div class="fs-6 fw-bold text-gray-700">@T["Acknowledge the danger signs first"]</div></div></div></div> }
             </div>
         </div>
     </div></div>
@@ -115,15 +134,18 @@
 
 @if (open && canDesk)
 {
-    <div class="modal fade" id="verifyModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-550px"><div class="modal-content">
-        <div class="modal-header"><h2 class="fw-bold m-0" id="vTitle">@T["Confirm the identity"]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
-        <div class="modal-body py-6 px-lg-10">
-            <div class="fs-6 mb-4" id="vWho"></div>
-            <label class="form-check form-check-custom form-check-solid mb-4"><input class="form-check-input" type="checkbox" id="vChecked" /><span class="form-check-label fw-semibold">@T["I checked two identifiers (name, date of birth or ID number) against the patient's identity document"]</span></label>
-            <label class="form-check form-check-custom form-check-solid" id="vPhoneRow"><input class="form-check-input" type="checkbox" id="vPhone" /><span class="form-check-label">@T["Update the file's mobile number to the one entered"]</span></label>
-            <div class="text-muted fs-8 mt-3">@T["The allergies entered are added to the file's list; none are removed."]</div>
+    @* H128: the theme's form modal (demo39 utilities/modals/forms/new-target) *@
+    <div class="modal fade" id="verifyModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-600px"><div class="modal-content rounded">
+        <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-12">
+            <div class="mb-10 text-center"><h1 class="mb-3" id="vTitle">@T["Confirm the identity"]</h1><div class="text-muted fw-semibold fs-6" id="vWho"></div></div>
+            <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-5 mb-6">
+                <label class="form-check form-check-custom form-check-solid align-items-start"><input class="form-check-input mt-1" type="checkbox" id="vChecked" /><span class="form-check-label fw-semibold text-gray-800 fs-6">@T["I checked two identifiers (name, date of birth or ID number) against the patient's identity document"]</span></label>
+            </div>
+            <label class="form-check form-check-custom form-check-solid mb-4" id="vPhoneRow"><input class="form-check-input" type="checkbox" id="vPhone" /><span class="form-check-label fw-semibold text-gray-700">@T["Update the file's mobile number to the one entered"]</span></label>
+            <div class="d-flex align-items-center text-gray-500 fw-semibold fs-7"><i class="ki-outline ki-information-5 fs-5 text-gray-500 me-2"></i>@T["The allergies entered are added to the file's list; none are removed."]</div>
+            <div class="text-center pt-10"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-verify-go>@T["Confirm"]</button></div>
         </div>
-        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-verify-go>@T["Confirm"]</button></div>
     </div></div></div>
 }
 

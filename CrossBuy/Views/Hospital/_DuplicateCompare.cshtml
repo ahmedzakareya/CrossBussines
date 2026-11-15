@@ -19,49 +19,54 @@
         (T["Allergies"].Value, a.Allergies, b.Allergies), (T["Chronic conditions"].Value, a.ChronicConditions, b.ChronicConditions) };
 }
 <div data-dup-compare data-a="@a.ID" data-b="@b.ID">
-    <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-2 mb-5">
-        <thead><tr class="text-gray-500 fw-bold fs-8 text-uppercase"><th class="w-150px"></th>
+    @* H128: the theme's table widget (demo39 widgets/tables); a field that differs is marked red *@
+    <div class="table-responsive"><table class="table align-middle gs-0 gy-3 mb-6">
+        <thead><tr class="fw-bold text-muted bg-light"><th class="ps-4 rounded-start w-150px"></th>
             @foreach (var s in new[] { Model.A, Model.B })
             {
-                <th><div class="d-flex align-items-center">
-                    <div class="symbol symbol-35px symbol-circle me-3">@if (s.Patient.PhotoPath != null) {<img src="@s.Patient.PhotoPath" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(s.Patient.NameEn ?? s.Patient.Name)" />} else {<span class="symbol-label fw-bold fs-8 hp-initials">@HospitalUi.Initials(s.Patient.NameEn ?? s.Patient.Name)</span>}</div>
-                    <div><a href="@Url.Action("Patient", new { id = s.Patient.ID })" target="_blank" class="text-gray-900 text-hover-primary fw-bold text-none">@DisplayName.Of(s.Patient.Name, s.Patient.NameEn ?? s.Patient.Name)</a>
-                        <div><span class="badge hp-code fs-9 hp-num">@s.Patient.Mrn</span></div></div></div></th>
+                <th class="@(s.Patient.ID == b.ID ? "pe-4 rounded-end" : "")"><div class="d-flex align-items-center py-1">
+                    <div class="symbol symbol-45px symbol-circle me-4 flex-shrink-0">@if (s.Patient.PhotoPath != null) {<img src="@s.Patient.PhotoPath" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(s.Patient.NameEn ?? s.Patient.Name)" />} else {<span class="symbol-label fw-bold bg-light-primary text-primary">@HospitalUi.Initials(s.Patient.NameEn ?? s.Patient.Name)</span>}</div>
+                    <div class="d-flex flex-column"><a href="@Url.Action("Patient", new { id = s.Patient.ID })" target="_blank" class="text-gray-900 text-hover-primary fw-bold fs-6">@DisplayName.Of(s.Patient.Name, s.Patient.NameEn ?? s.Patient.Name)</a>
+                        <span><span class="badge badge-light-primary fs-7 fw-bold hp-num" dir="ltr">@s.Patient.Mrn</span></span></div></div></th>
             }
         </tr></thead>
-        <tbody class="fw-semibold text-gray-700">
+        <tbody class="fw-semibold text-gray-800">
             @foreach (var f in fields)
             {
                 bool differ = !string.IsNullOrWhiteSpace(f.A) && !string.IsNullOrWhiteSpace(f.B) && HospitalPatientMergeRules.Normalise(f.A) != HospitalPatientMergeRules.Normalise(f.B);
-                <tr class="@(differ ? "bg-light-danger" : "")"><td class="text-muted">@f.Label</td><td dir="auto" style="white-space:pre-line">@(f.A ?? "—")</td><td dir="auto" style="white-space:pre-line">@(f.B ?? "—")</td></tr>
+                <tr class="@(differ ? "bg-light-danger" : "")"><td class="ps-4 text-gray-500 fs-7">@if (differ) {<i class="ki-outline ki-information-5 fs-6 text-danger me-1"></i>}@f.Label</td><td class="fs-6" dir="auto" style="white-space:pre-line">@(f.A ?? "—")</td><td class="fs-6 pe-4" dir="auto" style="white-space:pre-line">@(f.B ?? "—")</td></tr>
             }
-            <tr><td class="text-muted">@T["Records"]</td>
+            <tr><td class="ps-4 text-gray-500 fs-7">@T["Records"]</td>
                 @foreach (var s in new[] { Model.A, Model.B })
                 {
-                    <td><span class="fw-bold text-gray-900 hp-num">@s.Total</span>
-                        <div class="text-muted fs-9">@string.Join(" · ", s.Records.OrderByDescending(r => r.Value).Take(6).Select(r => T["dup:" + r.Key].Value + " " + r.Value))</div>
-                        @if (s.InNow) {<span class="badge badge-light-primary fs-9 mt-1">@T["In hospital now"]</span>} @if (s.HasPortal) {<span class="badge badge-light-info fs-9 mt-1">@T["Has a portal account"]</span>}</td>
+                    <td><span class="fs-2 fw-bold text-gray-900 hp-num lh-1">@s.Total</span>
+                        <div class="text-gray-500 fw-semibold fs-7 mt-1">@string.Join(" · ", s.Records.OrderByDescending(r => r.Value).Take(6).Select(r => T["dup:" + r.Key].Value + "\u00A0" + r.Value))</div>
+                        @if (s.InNow) {<span class="badge badge-light-primary fs-8 fw-bold mt-1">@T["In hospital now"]</span>} @if (s.HasPortal) {<span class="badge badge-light-info fs-8 fw-bold mt-1">@T["Has a portal account"]</span>}</td>
                 }
             </tr>
         </tbody>
     </table></div>
     @if (canMerge)
     {
-        <div class="notice d-flex rounded border border-danger border-dashed bg-light-danger p-5 mb-4"><i class="ki-outline ki-information-5 fs-2tx text-danger me-3"></i>
-            <div class="fs-7 text-gray-700">@T["Everything of the other file moves to the file you keep; the other file is closed, not deleted, and opening it opens the file you keep. Allergies and chronic conditions of both are kept."]</div></div>
-        <div class="fw-bold text-gray-900 fs-7 mb-2">@T["The file to keep"]</div>
-        <div class="d-flex gap-5 mb-4">
+        <div class="notice d-flex bg-light-danger rounded border-danger border border-dashed p-5 mb-6"><i class="ki-outline ki-information fs-2tx text-danger me-4"></i>
+            <div class="fs-6 fw-semibold text-gray-700">@T["Everything of the other file moves to the file you keep; the other file is closed, not deleted, and opening it opens the file you keep. Allergies and chronic conditions of both are kept."]</div></div>
+        <label class="fs-6 fw-semibold mb-3">@T["The file to keep"]</label>
+        @* the theme's option tiles (demo39 utilities/modals/forms); the label's first .hp-num stays the file number the merge question names *@
+        <div class="row g-4 mb-6">
             @foreach (var s in new[] { Model.A, Model.B })
             {
-                <label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="radio" name="dupKeep" value="@s.Patient.ID" @(s.Patient.ID == keep ? "checked" : "") /><span class="form-check-label fw-semibold"><span class="hp-num">@s.Patient.Mrn</span> · @s.Total @T["dup:records"]</span></label>
+                <div class="col-md-6"><label class="btn btn-outline btn-outline-dashed btn-active-light-primary d-flex align-items-center text-start p-5 h-100 @(s.Patient.ID == keep ? "active" : "")">
+                    <span class="form-check form-check-custom form-check-solid form-check-sm me-4"><input class="form-check-input" type="radio" name="dupKeep" value="@s.Patient.ID" @(s.Patient.ID == keep ? "checked" : "") onchange="this.closest('.row').querySelectorAll('label.btn').forEach(function (l) { l.classList.toggle('active', l.contains(this)); }, this)" /></span>
+                    <span class="d-block fw-semibold"><span class="text-gray-900 fw-bold d-block fs-5 hp-num" dir="ltr">@s.Patient.Mrn</span><span class="text-gray-500 fs-7"><span dir="ltr">@s.Total</span>&nbsp;@T["dup:records"]</span></span>
+                </label></div>
             }
         </div>
-        <label class="form-label required fs-7">@T["Why are these one patient?"]</label>
-        <textarea class="form-control form-control-solid mb-4" rows="2" maxlength="500" dir="auto" data-dup-reason></textarea>
-        <div class="d-flex justify-content-end"><button type="button" class="btn btn-danger" data-dup-merge><i class="ki-outline ki-abstract-26 fs-4"></i>@T["Merge the files"]</button></div>
+        <label class="fs-6 fw-semibold mb-2 required">@T["Why are these one patient?"]</label>
+        <textarea class="form-control form-control-solid mb-8" rows="2" maxlength="500" dir="auto" data-dup-reason></textarea>
+        <div class="text-center"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-danger" data-dup-merge><i class="ki-outline ki-abstract-26 fs-4"></i>@T["Merge the files"]</button></div>
     }
     else
     {
-        <div class="text-muted fs-7">@T["Only the hospital administrator merges files. Tell them about this pair."]</div>
+        <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-5"><i class="ki-outline ki-information fs-2tx text-primary me-4"></i><div class="fs-6 fw-semibold text-gray-700">@T["Only the hospital administrator merges files. Tell them about this pair."]</div></div>
     }
 </div>

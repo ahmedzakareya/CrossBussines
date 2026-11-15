@@ -3,21 +3,33 @@
 @using CrossBuy.Models.Context.Hospital
 @model IReadOnlyList<HospitalRehabRow>
 @inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H128 — the physiotherapy list's rows in the theme's table widget (demo39 widgets/tables): the patient over a muted
+    line, the region over the problem, the state as a badge, the sessions as "n of m" with a progress bar, the outcome
+    trend, the warnings and an icon button to open.
+*@
+@{ bool isAr = System.Globalization.CultureInfo.CurrentUICulture.Name.StartsWith("ar"); }
 @foreach (var r in Model)
 {
     var e = r.Episode; var p = r.Progress;
     string tone = e.Status == HospitalRehabStatus.Referred ? "primary" : e.Status == HospitalRehabStatus.Active ? "success" : "secondary";
+    int pct = e.PlannedSessions == 0 ? 0 : Math.Clamp(p.Attended * 100 / e.PlannedSessions, 0, 100);
     <tr>
-        <td><a href="@Url.Action("RehabEpisode", new { id = e.ID })" class="fw-bold text-gray-900 text-hover-primary">@DisplayName.Of(r.Name, r.NameEn)</a>
-            <div class="text-muted fs-8"><span class="badge hp-code fs-9 hp-num me-1">@e.EpisodeNo</span><bdi class="hp-num">@r.Mrn</bdi></div></td>
-        <td class="fs-8"><span class="fw-semibold">@T["rgn:" + e.Region]</span><div class="text-muted"><bdi>@e.Problem</bdi></div></td>
-        <td><span class="badge badge-light-@tone fs-8">@T["rhs:" + e.Status]</span></td>
-        <td class="text-nowrap"><span class="fw-bold hp-num">@p.Attended / @e.PlannedSessions</span>
-            @if (p.AttendancePct is int a) {<div class="fs-9 @(a < 80 ? "text-danger" : "text-muted")">@T["Attendance {0}%", a]</div>}</td>
-        <td class="fs-8">@if (p.Trend != null) {<span class="badge @(p.Trend == HospitalRehabTrend.Improved ? "badge-light-success" : p.Trend == HospitalRehabTrend.Worse ? "badge-light-danger" : "badge-light") fs-8">@T["rht:" + p.Trend]</span>
-                <div class="text-muted mt-1"><bdi dir="ltr" class="hp-num">@e.MeasureCode @e.BaselineScore?.ToString("0.#") → @p.LatestScore?.ToString("0.#")</bdi></div>}
-            else if (e.MeasureCode != null) {<span class="text-muted"><bdi dir="ltr" class="hp-num">@e.MeasureCode @e.BaselineScore?.ToString("0.#")</bdi></span>} else {<span class="text-muted">—</span>}</td>
-        <td>@if (p.Warnings.Count == 0) {<span class="text-muted fs-8">—</span>} else {<div class="d-flex flex-wrap gap-1">@foreach (var w in p.Warnings) {<span class="badge badge-light-danger fs-9">@T["rhw:" + w]</span>}</div>}</td>
-        <td class="text-end"><a href="@Url.Action("RehabEpisode", new { id = e.ID })" class="btn btn-sm btn-light-primary text-nowrap">@T["Open"]</a></td>
+        <td class="ps-4"><div class="d-flex align-items-center">
+            <div class="symbol symbol-40px symbol-circle me-3 flex-shrink-0"><span class="symbol-label bg-light-primary text-primary fw-bold fs-7">@HospitalUi.Initials(r.NameEn)</span></div>
+            <div class="d-flex flex-column"><a href="@Url.Action("RehabEpisode", new { id = e.ID })" class="text-gray-900 fw-bold text-hover-primary fs-6">@DisplayName.Of(r.Name, r.NameEn)</a>
+                <span class="text-gray-500 fw-semibold fs-7"><span class="badge hp-code fs-9 hp-num me-1">@e.EpisodeNo</span><bdi class="hp-num">@r.Mrn</bdi></span></div>
+        </div></td>
+        <td><span class="text-gray-800 fw-bold d-block fs-6">@T["rgn:" + e.Region]</span><span class="text-gray-500 fw-semibold d-block fs-7"><bdi>@e.Problem</bdi></span></td>
+        <td><span class="badge badge-light-@tone fs-7 fw-bold">@T["rhs:" + e.Status]</span></td>
+        <td class="min-w-125px">
+            <div class="d-flex flex-stack mb-2"><span class="text-gray-800 fw-bold fs-7 hp-num">@T["{0} of {1}", p.Attended, e.PlannedSessions]</span>@if (p.AttendancePct is int a) {<span class="fs-8 fw-semibold @(a < 80 ? "text-danger" : "text-gray-500")">@T["Attendance {0}%", a]</span>}</div>
+            <div class="progress h-6px w-100 bg-light-primary"><div class="progress-bar bg-primary" role="progressbar" style="width:@(pct)%"></div></div>
+        </td>
+        <td>@if (p.Trend != null) {<span class="badge badge-light-@(p.Trend == HospitalRehabTrend.Improved ? "success" : p.Trend == HospitalRehabTrend.Worse ? "danger" : "secondary") fs-7 fw-bold">@T["rht:" + p.Trend]</span>
+                <span class="text-gray-500 fw-semibold fs-7 d-block mt-1"><bdi dir="ltr" class="hp-num">@e.MeasureCode @e.BaselineScore?.ToString("0.#") → @p.LatestScore?.ToString("0.#")</bdi></span>}
+            else if (e.MeasureCode != null) {<span class="text-gray-500 fw-semibold fs-7"><bdi dir="ltr" class="hp-num">@e.MeasureCode @e.BaselineScore?.ToString("0.#")</bdi></span>} else {<span class="text-gray-400">—</span>}</td>
+        <td>@if (p.Warnings.Count == 0) {<span class="text-gray-400">—</span>} else {<div class="d-flex flex-wrap gap-1">@foreach (var w in p.Warnings) {<span class="badge badge-light-danger fs-8 fw-bold">@T["rhw:" + w]</span>}</div>}</td>
+        <td class="text-end pe-4"><a href="@Url.Action("RehabEpisode", new { id = e.ID })" class="btn btn-sm btn-icon btn-bg-light btn-active-color-primary" title="@T["Open"]" data-bs-toggle="tooltip"><i class="ki-outline ki-arrow-@(isAr ? "left" : "right") fs-2"></i></a></td>
     </tr>
 }

@@ -40,43 +40,66 @@
         </div>
     </div></div>
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
-        @if (!ready) { <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice"><div class="fs-6 text-gray-700">@T[HospitalSurveyService.NoTables]</div></div> }
+        @if (!ready)
+        {
+            <div class="notice d-flex bg-light-danger rounded border-danger border border-dashed p-5 mb-5">
+                <i class="ki-outline ki-information fs-2tx text-danger me-4"></i>
+                <div class="fw-semibold"><div class="fs-6 text-gray-700">@T[HospitalSurveyService.NoTables]</div></div>
+            </div>
+        }
         else
         {
+            @* H128: stat tiles (demo39 dashboards/logistics) *@
             <div class="row g-5 mb-5">
-                <div class="col-md-3"><div class="card card-flush h-100"><div class="card-body py-5"><div class="text-muted fw-semibold fs-7 mb-1">@T["Surveys"]</div><div class="fs-2x fw-bold text-gray-900 hp-num">@Model.Responses</div></div></div></div>
-                <div class="col-md-3"><div class="card card-flush h-100"><div class="card-body py-5"><div class="text-muted fw-semibold fs-7 mb-1">@T["Net promoter score"]</div>
-                    <div class="fs-2x fw-bold hp-num @(Model.Nps is >= 30 ? "text-success" : Model.Nps is < 0 ? "text-danger" : "text-gray-900")" dir="ltr">@(Model.Nps?.ToString() ?? "—")</div>
-                    <div class="text-muted fs-8 mt-1">@T["Promoters (9–10) less detractors (0–6)"]</div></div></div></div>
-                <div class="col-md-3"><div class="card card-flush h-100"><div class="card-body py-5"><div class="text-muted fw-semibold fs-7 mb-1">@T["Average satisfaction"]</div><div class="fs-2x fw-bold text-gray-900 hp-num">@(Model.Average?.ToString("0.0", inv) ?? "—") <span class="fs-6 text-muted">/ 5</span></div></div></div></div>
-                <div class="col-md-3"><div class="card card-flush h-100"><div class="card-body py-5"><div class="text-muted fw-semibold fs-7 mb-1">@T["Follow-ups open"]</div><div class="fs-2x fw-bold hp-num @(Model.OpenFollowUps > 0 ? "text-danger" : "text-gray-900")">@Model.OpenFollowUps</div></div></div></div>
+                @foreach (var t in new (string Label, string Value, string? Sub, string Icon, string Tone, string NumTone)[] {
+                    (T["Surveys"].Value, Model.Responses.ToString(inv), null, "ki-questionnaire-tablet", "primary", "text-gray-900"),
+                    (T["Net promoter score"].Value, Model.Nps?.ToString(inv) ?? "—", T["Promoters (9–10) less detractors (0–6)"].Value, "ki-like", Model.Nps is < 0 ? "danger" : "success", Model.Nps is >= 30 ? "text-success" : Model.Nps is < 0 ? "text-danger" : "text-gray-900"),
+                    (T["Average satisfaction"].Value, Model.Average?.ToString("0.0", inv) ?? "—", Model.Average == null ? null : string.Format(T["{0} of {1}"].Value, Model.Average.Value.ToString("0.0", inv), 5), "ki-star", "info", "text-gray-900"),
+                    (T["Follow-ups open"].Value, Model.OpenFollowUps.ToString(inv), null, "ki-message-question", Model.OpenFollowUps > 0 ? "danger" : "success", Model.OpenFollowUps > 0 ? "text-danger" : "text-gray-900") })
+                {
+                    <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100">
+                        <div class="card-header pt-5 flex-nowrap gap-3">
+                            <div class="card-title d-flex flex-column">
+                                <span class="fs-2hx fw-bold @t.NumTone me-2 lh-1 ls-n2 hp-num" dir="ltr">@t.Value</span>
+                                <span class="text-gray-500 pt-1 fw-semibold fs-6">@t.Label</span>
+                            </div>
+                            <div class="card-toolbar"><div class="symbol symbol-45px"><span class="symbol-label bg-light-@t.Tone"><i class="ki-outline @t.Icon fs-2x text-@t.Tone"></i></span></div></div>
+                        </div>
+                        <div class="card-body d-flex align-items-end pt-0">
+                            <div class="d-flex fs-7 fw-semibold align-items-center text-gray-500">@if (t.Sub != null) {<div class="bullet w-8px h-6px rounded-2 bg-@t.Tone me-3"></div><span class="hp-num">@t.Sub</span>} else {<span>&nbsp;</span>}</div>
+                        </div>
+                    </div></div>
+                }
             </div>
             <div class="row g-5 mb-5">
                 <div class="col-xl-7">
-                    <div class="card h-100">
-                        <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Each question"]</span></div></div>
+                    <div class="card card-flush h-100">
+                        <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Each question"]</span>
+                            <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Each kind of care has its own questions, answered 1 to 5."]</span></h3></div>
                         <div class="card-body pt-2">
-                            @if (Model.ByQuestion.Count == 0) { <div class="text-muted fs-7">@T["There are no questions for this kind of care yet"]</div> }
+                            @if (Model.ByQuestion.Count == 0) { <div class="text-center py-10"><i class="ki-outline ki-questionnaire-tablet fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-bold text-gray-700">@T["There are no questions for this kind of care yet"]</div></div> }
                             @foreach (var (q, avg, count) in Model.ByQuestion)
                             {
                                 var pct = avg is decimal a ? (int)Math.Round((a - 1) / 4 * 100) : 0;
-                                <div class="mb-4">
-                                    <div class="d-flex flex-stack fs-7 mb-1"><span class="text-gray-800" dir="auto">@DisplayName.Of(q.Text, q.TextEn) @if (!q.IsActive) {<span class="badge badge-light fs-9">@T["cf:inactive"]</span>}</span>
-                                        <span class="fw-bold hp-num">@(avg?.ToString("0.0", inv) ?? "—") <span class="text-muted fw-normal fs-9">(@count)</span></span></div>
-                                    <div class="progress h-6px bg-light"><div class="progress-bar @(avg is <= 2.5m ? "bg-danger" : "bg-primary")" style="width:@(pct)%"></div></div>
+                                <div class="mb-5">
+                                    <div class="d-flex flex-stack mb-2"><span class="text-gray-800 fw-bold fs-6" dir="auto">@DisplayName.Of(q.Text, q.TextEn) @if (!q.IsActive) {<span class="badge badge-light fs-8">@T["cf:inactive"]</span>}</span>
+                                        <span class="text-nowrap"><span class="badge badge-light-@(avg is <= 2.5m ? "danger" : "primary") fs-7 fw-bold hp-num" dir="ltr">@(avg?.ToString("0.0", inv) ?? "—")</span> <span class="text-gray-500 fw-semibold fs-7 hp-num">(@count)</span></span></div>
+                                    <div class="progress h-6px bg-light-@(avg is <= 2.5m ? "danger" : "primary")"><div class="progress-bar @(avg is <= 2.5m ? "bg-danger" : "bg-primary")" style="width:@(pct)%"></div></div>
                                 </div>
                             }
                         </div>
                     </div>
                 </div>
                 <div class="col-xl-5">
-                    <div class="card h-100">
-                        <div class="card-header border-0 pt-6"><div class="card-title flex-column m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Take a survey"]</span>
-                            <span class="text-muted fs-7 mt-1">@string.Format(T["A visit, stay or emergency visit of the last {0} days, not surveyed yet. Hand the tablet to the patient."].Value, HospitalSurveyRules.WindowDays)</span></div></div>
+                    <div class="card card-flush h-100">
+                        <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Take a survey"]</span>
+                            <span class="text-gray-500 mt-1 fw-semibold fs-7">@string.Format(T["A visit, stay or emergency visit of the last {0} days, not surveyed yet. Hand the tablet to the patient."].Value, HospitalSurveyRules.WindowDays)</span></h3>
+                            <div class="card-toolbar"><div class="symbol symbol-40px"><span class="symbol-label bg-light-primary"><i class="ki-outline ki-tablet fs-2 text-primary"></i></span></div></div></div>
                         <div class="card-body pt-2">
-                            @if (episodes.Count == 0) { <div class="text-muted fs-7">@T["No recent visit is waiting for a survey."]</div> }
+                            @if (episodes.Count == 0) { <div class="text-center py-10"><i class="ki-outline ki-tablet fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-bold text-gray-700">@T["No recent visit is waiting for a survey."]</div></div> }
                             else
                             {
+                                <label class="fs-6 fw-semibold mb-2">@T["Choose the visit"]</label>
                                 <select class="form-select form-select-solid" data-episode-pick data-placeholder="@T["Choose the visit"]"><option value=""></option>
                                     @foreach (var e in episodes) { <option value="@Url.Action("TakeSurvey", new { kind = e.Kind, id = e.Id })">@DisplayName.Of(e.PatientName, e.PatientNameEn) · @e.Mrn · @T["sv:" + e.Kind] · @HospitalNursingService.UtcToWard(e.EndedAt).ToString("yyyy-MM-dd", inv)</option> }
                                 </select>
@@ -86,9 +109,9 @@
                     </div>
                 </div>
             </div>
-            <div class="card mb-5">
-                <div class="card-header border-0 pt-6 flex-wrap gap-3">
-                    <div class="card-title flex-column m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Responses"]</span><span class="text-muted fs-7 mt-1"><span id="resultCount">—</span></span></div>
+            <div class="card card-flush mb-5">
+                <div class="card-header pt-5 flex-wrap gap-3">
+                    <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Responses"]</span><span class="text-gray-500 mt-1 fw-semibold fs-7"><span id="resultCount">—</span></span></h3>
                     <div class="card-toolbar d-flex flex-wrap align-items-center gap-2">
                         <div class="w-200px"><input type="text" id="f_q" class="form-control form-control-solid form-control-sm" autocomplete="off" placeholder="@T["Search by patient, number or comment…"]" /></div>
                         <div class="w-150px"><select class="form-select form-select-solid form-select-sm cb-filter" id="f_state"><option value="">@T["All states"]</option><option value="followup">@T["svf:Open"]</option><option value="settled">@T["No follow-up needed or done"]</option></select></div>
@@ -97,35 +120,38 @@
                     </div>
                 </div>
                 <div class="card-body pt-2">
-                    <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-3 mb-0">
-                        <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0"><th>@T["sv:no"]</th><th>@T["Patient"]</th><th>@T["sv:kind"]</th><th>@T["sv:score"]</th><th>@T["sv:recommend"]</th><th>@T["sv:comment"]</th><th>@T["sv:followup"]</th></tr></thead>
-                        <tbody class="fw-semibold text-gray-700" id="rows"></tbody>
+                    @* H128: table widget (demo39 widgets/tables) *@
+                    <div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
+                        <thead><tr class="fw-bold text-muted bg-light"><th class="ps-4 rounded-start">@T["Patient"]</th><th>@T["sv:kind"]</th><th>@T["sv:score"]</th><th>@T["sv:recommend"]</th><th>@T["sv:comment"]</th><th class="pe-4 rounded-end">@T["sv:followup"]</th></tr></thead>
+                        <tbody id="rows"></tbody>
                     </table></div>
                     <div class="text-center text-muted py-10 d-none" id="loadingRow"><span class="spinner-border spinner-border-sm me-2"></span>@T["Loading…"]</div>
-                    <div class="text-center text-muted py-10 d-none" id="emptyRow">@T["No survey yet."]</div>
+                    <div class="text-center py-10 d-none" id="emptyRow"><i class="ki-outline ki-questionnaire-tablet fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-bold text-gray-700">@T["No survey yet."]</div></div>
                     <div class="d-flex flex-stack flex-wrap pt-5"><div class="fs-7 text-muted" id="pageInfo"></div><ul class="pagination" id="pager"></ul></div>
                 </div>
             </div>
             @if (canManage)
             {
-                <div class="card">
-                    <div class="card-header border-0 pt-6"><div class="card-title flex-column m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["The questions"]</span>
-                        <span class="text-muted fs-7 mt-1">@T["Each kind of care has its own questions, answered 1 to 5."]</span></div></div>
+                <div class="card card-flush">
+                    <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["The questions"]</span>
+                        <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Each kind of care has its own questions, answered 1 to 5."]</span></h3></div>
                     <div class="card-body pt-2">
-                        <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-2 mb-5"><tbody>
+                        <div class="table-responsive"><table class="table align-middle gs-0 gy-3 mb-5">
+                            <thead><tr class="fw-bold text-muted bg-light"><th class="ps-4 rounded-start">@T["Code"]</th><th>@T["sv:kind"]</th><th>@T["Question"]</th><th>@T["Status"]</th><th class="pe-4 rounded-end"></th></tr></thead>
+                            <tbody>
                             @foreach (var q in questions)
                             {
-                                <tr><td><span class="badge hp-code fs-9 hp-num">@q.Code</span></td><td>@T["sv:" + q.Kind]</td><td dir="auto">@DisplayName.Of(q.Text, q.TextEn)</td>
-                                    <td>@if (q.IsActive) {<span class="badge badge-light-success fs-9">@T["cf:active"]</span>} else {<span class="badge badge-light fs-9">@T["cf:inactive"]</span>}</td>
-                                    <td class="text-end"><button type="button" class="btn btn-sm btn-icon btn-light" data-q-edit='@Json.Serialize(new { id = q.ID, code = q.Code, kind = q.Kind, text = q.Text, textEn = q.TextEn, sortOrder = q.SortOrder, isActive = q.IsActive })'><i class="ki-outline ki-pencil fs-5"></i></button></td></tr>
+                                <tr><td class="ps-4"><span class="badge badge-light fs-7 fw-bold hp-num" dir="ltr">@q.Code</span></td><td class="text-gray-700 fw-semibold fs-7">@T["sv:" + q.Kind]</td><td class="text-gray-900 fw-bold fs-6" dir="auto">@DisplayName.Of(q.Text, q.TextEn)</td>
+                                    <td>@if (q.IsActive) {<span class="badge badge-light-success fs-7 fw-bold">@T["cf:active"]</span>} else {<span class="badge badge-light fs-7 fw-bold">@T["cf:inactive"]</span>}</td>
+                                    <td class="text-end pe-4"><button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-primary" title="@T["Edit"]" data-bs-toggle="tooltip" data-q-edit='@Json.Serialize(new { id = q.ID, code = q.Code, kind = q.Kind, text = q.Text, textEn = q.TextEn, sortOrder = q.SortOrder, isActive = q.IsActive })'><i class="ki-outline ki-pencil fs-5"></i></button></td></tr>
                             }
                         </tbody></table></div>
-                        <div class="row g-3 border border-dashed border-gray-300 rounded p-4 mx-0" data-q-form>
-                            <div class="col-md-2"><label class="form-label fs-8 required">@T["Code"]</label><input class="form-control form-control-solid form-control-sm" maxlength="20" dir="ltr" data-qf="code" /></div>
-                            <div class="col-md-2"><label class="form-label fs-8 required">@T["sv:kind"]</label><select class="form-select form-select-solid form-select-sm" data-qf="kind">@foreach (var k in HospitalSurveyKind.All) { <option value="@k">@T["sv:" + k]</option> }</select></div>
-                            <div class="col-md-1"><label class="form-label fs-8">@T["Order"]</label><input type="number" class="form-control form-control-solid form-control-sm hp-num" data-qf="sortOrder" value="1" /></div>
-                            <div class="col-md-3"><label class="form-label fs-8 required">السؤال (عربي)</label><input class="form-control form-control-solid form-control-sm" maxlength="300" dir="rtl" data-qf="text" /></div>
-                            <div class="col-md-3"><label class="form-label fs-8 required">Question (English)</label><input class="form-control form-control-solid form-control-sm" maxlength="300" dir="ltr" data-qf="textEn" /></div>
+                        <div class="row g-4 border border-dashed border-gray-300 rounded p-5 mx-0 bg-light" data-q-form>
+                            <div class="col-md-2"><label class="fs-6 fw-semibold mb-2 required">@T["Code"]</label><input class="form-control form-control-solid form-control-sm" maxlength="20" dir="ltr" data-qf="code" /></div>
+                            <div class="col-md-2"><label class="fs-6 fw-semibold mb-2 required">@T["sv:kind"]</label><select class="form-select form-select-solid form-select-sm" data-qf="kind">@foreach (var k in HospitalSurveyKind.All) { <option value="@k">@T["sv:" + k]</option> }</select></div>
+                            <div class="col-md-1"><label class="fs-6 fw-semibold mb-2">@T["Order"]</label><input type="number" class="form-control form-control-solid form-control-sm hp-num" data-qf="sortOrder" value="1" /></div>
+                            <div class="col-md-3"><label class="fs-6 fw-semibold mb-2 required">السؤال (عربي)</label><input class="form-control form-control-solid form-control-sm" maxlength="300" dir="rtl" data-qf="text" /></div>
+                            <div class="col-md-3"><label class="fs-6 fw-semibold mb-2 required">Question (English)</label><input class="form-control form-control-solid form-control-sm" maxlength="300" dir="ltr" data-qf="textEn" /></div>
                             <div class="col-md-1 d-flex align-items-end"><label class="form-check form-check-custom form-check-solid mb-2"><input class="form-check-input" type="checkbox" data-qf="isActive" checked /></label></div>
                             <div class="col-12"><button type="button" class="btn btn-sm btn-primary" data-q-save><i class="ki-outline ki-check fs-5"></i>@T["Save"]</button></div>
                         </div>
@@ -164,6 +190,7 @@
                 if (t.hasAttribute('data-q-edit')) {
                     var d = JSON.parse(t.getAttribute('data-q-edit')); editing = d.id;
                     ['code', 'kind', 'text', 'textEn', 'sortOrder'].forEach(function (k) { qf(k).value = d[k]; }); qf('isActive').checked = d.isActive;
+                    if (window.jQuery) jQuery(qf('kind')).trigger('change.select2');   // H128: the kind is a select2; show the value just set
                     form.scrollIntoView({ behavior: 'smooth', block: 'center' }); return;
                 }
                 cbConfirm(W.save).then(function (ok) { if (!ok) return; t.disabled = true;

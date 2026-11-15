@@ -8,22 +8,25 @@
 {
     var r = row.Response;
     string score = r.Average >= 4 ? "badge-light-success" : r.Average <= HospitalSurveyRules.LowAverage ? "badge-light-danger" : "badge-light-primary";
+    @* H128: a row of the theme's table widget (demo39 widgets/tables) — the response number and time ride under the patient *@
     <tr data-survey-row="@r.ID">
-        <td><span class="badge hp-code fs-8 hp-num">@r.ResponseNo</span><div class="text-muted fs-9 mt-1 hp-num" dir="ltr">@HospitalNursingService.UtcToWard(r.At).ToString("yyyy-MM-dd HH:mm", inv)</div></td>
-        <td>@if (r.Anonymous) {<span class="text-muted"><i class="ki-outline ki-eye-slash fs-6 me-1"></i>@T["Anonymous"]</span>} else {<div class="fw-bold text-gray-900">@DisplayName.Of(row.PatientName, row.PatientNameEn)</div><div class="text-muted fs-8 hp-num">@row.Mrn</div>}</td>
-        <td>@T["sv:" + r.Kind]</td>
-        <td><span class="badge @score hp-num">@r.Average.ToString("0.0", inv) / 5</span></td>
-        <td class="hp-num fw-bold">@r.Recommend</td>
-        <td class="mw-300px"><div class="text-gray-800 fs-7" dir="auto">@r.Comment</div></td>
-        <td>
+        <td class="ps-4"><div class="d-flex align-items-center">
+            <div class="symbol symbol-35px me-3 flex-shrink-0">@if (r.Anonymous) {<span class="symbol-label bg-light"><i class="ki-outline ki-eye-slash fs-3 text-gray-600"></i></span>} else {<span class="symbol-label bg-light-primary fw-bold fs-7 text-primary">@HospitalUi.Initials(row.PatientNameEn ?? row.PatientName ?? "?")</span>}</div>
+            <div class="d-flex flex-column">@if (r.Anonymous) {<span class="text-gray-600 fw-bold fs-6">@T["Anonymous"]</span>} else {<span class="text-gray-900 fw-bold fs-6"><bdi>@DisplayName.Of(row.PatientName, row.PatientNameEn)</bdi></span>}
+                <span class="text-muted fw-semibold d-block fs-7"><bdi class="hp-num">@r.ResponseNo</bdi>@if (!r.Anonymous) {<text> · <bdi class="hp-num">@row.Mrn</bdi></text>} · <span class="hp-num" dir="ltr">@HospitalNursingService.UtcToWard(r.At).ToString("yyyy-MM-dd HH:mm", inv)</span></span></div></div></td>
+        <td class="text-gray-700 fw-semibold fs-7">@T["sv:" + r.Kind]</td>
+        <td><span class="badge @score fs-7 fw-bold hp-num">@T["{0} of {1}", r.Average.ToString("0.0", inv), 5]</span></td>
+        <td><span class="text-gray-900 fw-bold fs-6 hp-num">@r.Recommend</span></td>
+        <td class="mw-300px"><div class="text-gray-700 fw-semibold fs-7" dir="auto">@r.Comment</div></td>
+        <td class="pe-4">
             @if (r.FollowUp == HospitalSurveyFollowUp.Open)
             {
-                <span class="badge badge-light-danger">@T["svf:Open"]</span>
-                @if (canManage) { <button type="button" class="btn btn-sm btn-light-primary ms-2" data-survey-follow="@r.ID" data-ask="@string.Format(T["What was done about survey {0}?"].Value, r.ResponseNo)">@T["Close the follow-up"]</button> }
+                <div class="d-flex align-items-center gap-2"><span class="badge badge-light-danger fs-7 fw-bold">@T["svf:Open"]</span>
+                @if (canManage) { <button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-primary" title="@T["Close the follow-up"]" data-bs-toggle="tooltip" data-survey-follow="@r.ID" data-ask="@string.Format(T["What was done about survey {0}?"].Value, r.ResponseNo)"><i class="ki-outline ki-check-square fs-3"></i></button> }</div>
             }
             else if (r.FollowUp == HospitalSurveyFollowUp.Done)
             {
-                <span class="badge badge-light-success">@T["svf:Done"]</span><div class="text-muted fs-9 mt-1" dir="auto">@DisplayName.Of(row.FollowedBy ?? "", row.FollowedByEn ?? row.FollowedBy ?? "") · @r.FollowUpNote</div>
+                <span class="badge badge-light-success fs-7 fw-bold">@T["svf:Done"]</span><div class="text-muted fs-7 mt-1" dir="auto">@DisplayName.Of(row.FollowedBy ?? "", row.FollowedByEn ?? row.FollowedBy ?? "") · @r.FollowUpNote</div>
             }
         </td>
     </tr>

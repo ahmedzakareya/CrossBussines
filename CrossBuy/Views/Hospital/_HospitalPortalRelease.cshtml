@@ -9,9 +9,9 @@
 *@
 @if (Model.Release is { } r)
 {
-    <span class="badge badge-light-primary fs-7 px-4 py-3" title="@(r.Note == null && r.NoteEn == null ? "" : DisplayName.Of(r.Note ?? "", r.NoteEn ?? ""))"><i class="ki-outline ki-user-tick fs-5 text-primary me-1"></i>@T["On the patient portal"] <span class="hp-num ms-1" data-fmt data-utc="@r.ReleasedAt.ToString("o")">@r.ReleasedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</span></span>
+    <span class="badge badge-light-primary fs-7 fw-bold px-4 py-3" title="@(r.Note == null && r.NoteEn == null ? "" : DisplayName.Of(r.Note ?? "", r.NoteEn ?? ""))"><i class="ki-outline ki-user-tick fs-5 text-primary me-1"></i>@T["On the patient portal"] <span class="hp-num ms-1" data-fmt data-utc="@r.ReleasedAt.ToString("o")">@r.ReleasedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</span></span>
     @* H33: the doctor's words to the patient, in both languages; corrected here *@
-    @if (Model.CanConsult) { <button type="button" class="btn btn-sm btn-icon btn-light" title="@T["Edit the words to the patient"]" data-portal-release="@Model.Source" data-order="@Model.OrderId" data-edit="1" data-ar="@r.Note" data-en="@r.NoteEn"><i class="ki-outline ki-pencil fs-5"></i></button> }
+    @if (Model.CanConsult) { <button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-primary" title="@T["Edit the words to the patient"]" data-bs-toggle="tooltip" data-portal-release="@Model.Source" data-order="@Model.OrderId" data-edit="1" data-ar="@r.Note" data-en="@r.NoteEn"><i class="ki-outline ki-pencil fs-5"></i></button> }
 }
 else if (Model.Done && Model.CanConsult)
 {

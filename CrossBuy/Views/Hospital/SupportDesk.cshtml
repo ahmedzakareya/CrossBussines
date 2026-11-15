@@ -17,6 +17,20 @@
     var rooms = (ViewBag.Rooms as List<CrossBuy.Controllers.HospitalController.HospitalChoice>) ?? new();
     var bedList = (ViewBag.Beds as List<CrossBuy.Controllers.HospitalController.HospitalChoice>) ?? new();
     bool isAr = System.Globalization.CultureInfo.CurrentUICulture.Name.StartsWith("ar");
+    // H128: the theme's stat tile (demo39 dashboards/logistics) — the number over its label, a toned symbol on the side
+    void Tile(string value, string label, string icon, string tone, string? unit = null, string? sub = null, string numTone = "gray-900")
+    {
+        <div class="card card-flush h-100">
+            <div class="card-header pt-5 flex-nowrap gap-3">
+                <div class="card-title d-flex flex-column">
+                    <div class="d-flex align-items-baseline"><span class="fs-2hx fw-bold text-@numTone lh-1 hp-num" dir="ltr">@value</span>@if (unit != null) {<span class="fs-6 fw-semibold text-gray-500 ms-2">@unit</span>}</div>
+                    <span class="text-gray-500 pt-1 fw-semibold fs-6">@label</span>
+                </div>
+                <div class="card-toolbar"><div class="symbol symbol-45px"><span class="symbol-label bg-light-@tone"><i class="ki-outline ki-@icon fs-2x text-@tone"></i></span></div></div>
+            </div>
+            <div class="card-body d-flex align-items-end pt-0">@if (sub != null) {<span class="d-flex align-items-center fs-7 fw-semibold text-gray-500"><span class="bullet bullet-dot bg-@tone me-2"></span>@sub</span>}</div>
+        </div>
+    }
 }
 <link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
 @Html.AntiForgeryToken()
@@ -27,63 +41,78 @@
             <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Housekeeping, porters & laundry"]</h1>
             <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted">@T["Support services"]</li></ul>
         </div>
-        <div class="btn-group btn-group-sm">
-            <a href="@Url.Action("SupportDesk")" class="btn btn-sm @(kind == null ? "btn-primary" : "btn-light")">@T["All kinds"]</a>
-            @foreach (var k in HospitalSupportKind.All) { <a href="@Url.Action("SupportDesk", new { kind = k })" class="btn btn-sm @(kind == k ? "btn-primary" : "btn-light")">@T["sj:" + k] <span class="badge badge-circle badge-light ms-1 hp-num">@openBy.GetValueOrDefault(k)</span></a> }
+        <div class="d-flex flex-wrap gap-2">
+            <a href="@Url.Action("SupportDesk")" class="btn btn-sm @(kind == null ? "btn-primary" : "btn-light btn-active-light-primary")">@T["All kinds"]</a>
+            @foreach (var k in HospitalSupportKind.All) { <a href="@Url.Action("SupportDesk", new { kind = k })" class="btn btn-sm text-nowrap @(kind == k ? "btn-primary" : "btn-light btn-active-light-primary")">@T["sj:" + k] <span class="badge badge-circle @(kind == k ? "badge-light" : "badge-light-primary") ms-1 hp-num">@openBy.GetValueOrDefault(k)</span></a> }
         </div>
     </div></div>
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
-        @if (!ready) { <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice"><div class="fs-6 text-gray-700">@T[HospitalSupportDeskService.NoTables]</div></div> }
+        @if (!ready)
+        {
+            <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-5 mb-5">
+                <i class="ki-outline ki-information fs-2tx text-primary me-4"></i>
+                <div class="d-flex flex-stack flex-grow-1"><div class="fw-semibold">
+                    <h4 class="text-gray-900 fw-bold mb-1">@T["Housekeeping, porters & laundry"]</h4>
+                    <div class="fs-6 text-gray-700">@T[HospitalSupportDeskService.NoTables]</div>
+                </div></div>
+            </div>
+        }
         else
         {
+            @* H128: the figures — the theme's stat tiles (demo39 dashboards/logistics) *@
             <div class="row g-5 mb-5">
-                <div class="col-md-3"><div class="card card-flush h-100"><div class="card-body py-5"><div class="text-muted fw-semibold fs-7 mb-1">@T["Jobs open"]</div><div class="fs-2x fw-bold text-gray-900 hp-num">@openBy.Values.Sum()</div></div></div></div>
-                <div class="col-md-3"><div class="card card-flush h-100"><div class="card-body py-5"><div class="text-muted fw-semibold fs-7 mb-1">@T["Beds waiting to be cleaned"]</div><div class="fs-2x fw-bold hp-num @(beds > 0 ? "text-primary" : "text-gray-900")">@beds</div></div></div></div>
-                <div class="col-md-3"><div class="card card-flush h-100"><div class="card-body py-5"><div class="text-muted fw-semibold fs-7 mb-1">@T["Average response today"]</div><div class="fs-2x fw-bold text-gray-900 hp-num">@(avg?.ToString() ?? "—")@if (avg != null) {<span class="fs-6 text-muted"> @T["min"]</span>}</div></div></div></div>
-                <div class="col-md-3"><div class="card card-flush h-100"><div class="card-body py-5"><div class="text-muted fw-semibold fs-7 mb-1">@T["Done today"]</div><div class="fs-2x fw-bold text-success hp-num">@doneToday</div></div></div></div>
+                <div class="col-md-6 col-xl-3">@{ Tile(openBy.Values.Sum().ToString(), T["Jobs open"].Value, "notification-on", "primary"); }</div>
+                <div class="col-md-6 col-xl-3">@{ Tile(beds.ToString(), T["Beds waiting to be cleaned"].Value, "brush", "info", numTone: beds > 0 ? "primary" : "gray-900"); }</div>
+                <div class="col-md-6 col-xl-3">@{ Tile(avg?.ToString() ?? "—", T["Average response today"].Value, "time", "primary", avg != null ? T["min"].Value : null); }</div>
+                <div class="col-md-6 col-xl-3">@{ Tile(doneToday.ToString(), T["Done today"].Value, "check-circle", "success", numTone: "success"); }</div>
             </div>
             <div class="row g-5">
                 <div class="col-xl-4">
-                    <div class="card" data-job-form>
-                        <div class="card-header border-0 pt-6"><div class="card-title flex-column m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Ask for a job"]</span></div></div>
-                        <div class="card-body pt-2"><div class="row g-4">
+                    <div class="card card-flush" data-job-form>
+                        <div class="card-header pt-5">
+                            <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Ask for a job"]</span>
+                                <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Housekeeping, porters & laundry"]</span></h3>
+                            <div class="card-toolbar"><div class="symbol symbol-40px"><span class="symbol-label bg-light-primary"><i class="ki-outline ki-notification-on fs-2 text-primary"></i></span></div></div>
+                        </div>
+                        <div class="card-body pt-2"><div class="row g-5">
                             <div class="col-12"><div class="btn-group w-100" data-j-kinds>
                                 @foreach (var k in HospitalSupportKind.All) { <button type="button" class="btn btn-sm @(k == HospitalSupportKind.Cleaning ? "btn-primary" : "btn-light")" data-j-kind="@k">@T["sj:" + k]</button> }
                             </div></div>
-                            <div class="col-6" data-for="Cleaning Laundry"><label class="form-label fs-7">@T["Room"]</label>
+                            <div class="col-6" data-for="Cleaning Laundry"><label class="fs-6 fw-semibold mb-2">@T["Room"]</label>
                                 <select class="form-select form-select-solid" data-j="roomId"><option value="">—</option>@foreach (var r in rooms) { <option value="@r.Id">@r.Name</option> }</select></div>
-                            <div class="col-6" data-for="Cleaning"><label class="form-label fs-7">@T["Bed"]</label>
+                            <div class="col-6" data-for="Cleaning"><label class="fs-6 fw-semibold mb-2">@T["Bed"]</label>
                                 <select class="form-select form-select-solid" data-j="bedId"><option value="">—</option>@foreach (var b in bedList) { <option value="@b.Id">@b.Label · @b.Name</option> }</select></div>
-                            <div class="col-12 d-none" data-for="Porter"><label class="form-label fs-7">@T["Patient (optional)"]</label>
+                            <div class="col-12 d-none" data-for="Porter"><label class="fs-6 fw-semibold mb-2">@T["Patient (optional)"]</label>
                                 <select class="form-select form-select-solid" data-j="patientId" data-desk-patient data-placeholder="—"></select></div>
-                            <div class="col-6 d-none" data-for="Porter"><label class="form-label fs-7 required">@T["From"]</label><input class="form-control form-control-solid" maxlength="150" dir="auto" data-j="fromPlace" placeholder="@T["e.g. Ward 2, bed 105-A"]" /></div>
-                            <div class="col-6 d-none" data-for="Porter"><label class="form-label fs-7 required">@T["To"]</label><input class="form-control form-control-solid" maxlength="150" dir="auto" data-j="toPlace" placeholder="@T["e.g. Radiology"]" /></div>
-                            <div class="col-6 d-none" data-for="Laundry"><label class="form-label fs-7 required">@T["Bags"]</label><input type="number" min="1" max="99" class="form-control form-control-solid hp-num" data-j="bags" value="1" /></div>
-                            <div class="col-12"><label class="form-label fs-7">@T["Details"]</label><input class="form-control form-control-solid" maxlength="500" dir="auto" data-j="details" /></div>
-                            <div class="col-12"><label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" data-j="urgent" /><span class="form-check-label fs-7">@T["wop:Urgent"]</span></label></div>
+                            <div class="col-6 d-none" data-for="Porter"><label class="fs-6 fw-semibold mb-2 required">@T["From"]</label><input class="form-control form-control-solid" maxlength="150" dir="auto" data-j="fromPlace" placeholder="@T["e.g. Ward 2, bed 105-A"]" /></div>
+                            <div class="col-6 d-none" data-for="Porter"><label class="fs-6 fw-semibold mb-2 required">@T["To"]</label><input class="form-control form-control-solid" maxlength="150" dir="auto" data-j="toPlace" placeholder="@T["e.g. Radiology"]" /></div>
+                            <div class="col-6 d-none" data-for="Laundry"><label class="fs-6 fw-semibold mb-2 required">@T["Bags"]</label><input type="number" min="1" max="99" class="form-control form-control-solid hp-num" dir="ltr" data-j="bags" value="1" /></div>
+                            <div class="col-12"><label class="fs-6 fw-semibold mb-2">@T["Details"]</label><input class="form-control form-control-solid" maxlength="500" dir="auto" data-j="details" /></div>
+                            <div class="col-12"><label class="form-check form-switch form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" data-j="urgent" /><span class="form-check-label fs-6 fw-semibold text-gray-700">@T["wop:Urgent"]</span></label></div>
                             <div class="col-12"><button type="button" class="btn btn-primary w-100" data-job-ask><i class="ki-outline ki-notification-on fs-4"></i>@T["Send the request"]</button></div>
                         </div></div>
                     </div>
                 </div>
                 <div class="col-xl-8">
-                    <div class="card">
-                        <div class="card-header border-0 pt-6 flex-wrap gap-3">
-                            <div class="card-title flex-column m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Jobs"]</span><span class="text-muted fs-7 mt-1"><span id="resultCount">—</span></span></div>
+                    <div class="card card-flush">
+                        <div class="card-header pt-5 flex-wrap gap-3">
+                            <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Jobs"]</span>
+                                <span class="text-gray-500 mt-1 fw-semibold fs-7"><span id="resultCount">—</span></span></h3>
                             <div class="card-toolbar d-flex flex-wrap align-items-center gap-2">
-                                <div class="w-300px"><input type="text" id="f_q" class="form-control form-control-solid form-control-sm" autocomplete="off" placeholder="@T["Search by number, room, bed, place or patient…"]" /></div>
+                                <div class="w-250px"><input type="text" id="f_q" class="form-control form-control-solid form-control-sm" autocomplete="off" placeholder="@T["Search by number, room, bed, place or patient…"]" /></div>
                                 <div class="w-150px"><select class="form-select form-select-solid form-select-sm cb-filter" id="f_state"><option value="active">@T["wo:active"]</option><option value="closed">@T["wo:closed"]</option><option value="">@T["All states"]</option></select></div>
                                 <div class="w-75px"><select id="f_size" class="form-select form-select-solid form-select-sm"><option value="25">25</option><option value="50">50</option><option value="100">100</option></select></div>
-                                <button type="button" id="f_reset" class="btn btn-sm btn-light" title="@T["Reset"]"><i class="ki-outline ki-arrows-circle fs-4"></i></button>
+                                <button type="button" id="f_reset" class="btn btn-sm btn-icon btn-light btn-active-light-primary" title="@T["Reset"]" data-bs-toggle="tooltip"><i class="ki-outline ki-arrows-circle fs-4"></i></button>
                             </div>
                         </div>
                         <div class="card-body pt-2">
-                            <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-3 mb-0">
-                                <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0"><th>@T["sj:no"]</th><th>@T["sj:kind"]</th><th>@T["sj:where"]</th><th>@T["State"]</th><th class="text-end"></th></tr></thead>
-                                <tbody class="fw-semibold text-gray-700" id="rows"></tbody>
+                            <div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
+                                <thead><tr class="fw-bold text-muted bg-light"><th class="ps-4 rounded-start">@T["sj:no"]</th><th>@T["sj:kind"]</th><th>@T["sj:where"]</th><th>@T["State"]</th><th class="text-end pe-4 rounded-end"></th></tr></thead>
+                                <tbody id="rows"></tbody>
                             </table></div>
-                            <div class="text-center text-muted py-10 d-none" id="loadingRow"><span class="spinner-border spinner-border-sm me-2"></span>@T["Loading…"]</div>
-                            <div class="text-center text-muted py-10 d-none" id="emptyRow">@T["No job here."]</div>
-                            <div class="d-flex flex-stack flex-wrap pt-5"><div class="fs-7 text-muted" id="pageInfo"></div><ul class="pagination" id="pager"></ul></div>
+                            <div class="text-center text-muted py-10 d-none" id="loadingRow"><span class="spinner-border spinner-border-sm text-primary me-2"></span>@T["Loading…"]</div>
+                            <div class="text-center py-10 d-none" id="emptyRow"><i class="ki-outline ki-brush fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-bold text-gray-700">@T["No job here."]</div></div>
+                            <div class="d-flex flex-stack flex-wrap pt-5"><div class="fs-7 fw-semibold text-gray-500" id="pageInfo"></div><ul class="pagination" id="pager"></ul></div>
                         </div>
                     </div>
                 </div>

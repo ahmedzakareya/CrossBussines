@@ -41,76 +41,74 @@
             <input type="hidden" name="id" value="@(isNew ? "" : p.ID.ToString())" />
             <div class="row g-5 g-xl-8">
                 <div class="col-xl-8">
-                    <div class="card mb-5">
-                        <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
-                            <span class="card-label fw-bold text-gray-900 fs-4">@T["Doctor details"]</span>
-                            <span class="text-muted mt-1 fw-semibold fs-7">@T["Link the employee to show their photo and pay them through payroll"]</span>
-                        </div></div>
-                        <div class="card-body pt-4"><div class="row g-6">
-                            <div class="col-md-12"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Employee"]</label>
-                                <select name="employeeId" class="form-select form-select-solid" data-placeholder="@T["Not an employee (visiting)"]">
+                    <div class="card card-flush mb-5">
+                        <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Doctor details"]</span><span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Link the employee to show their photo and pay them through payroll"]</span></h3></div>
+                        <div class="card-body pt-2"><div class="row g-6">
+                            <div class="col-md-12"><label class="fs-6 fw-semibold mb-2">@T["Employee"]</label>
+                                <select name="employeeId" class="form-select form-select-solid" data-placeholder="@T["Not an employee (visiting)"]" data-control="select2">
                                     <option value="">@T["Not an employee (visiting)"]</option>
                                     @foreach (var e in employees) { <option value="@e.Id" selected="@(p.EmployeeId == e.Id)" data-ar="@e.Name" data-en="@e.NameEn">@DisplayName.Of(e.Name, e.NameEn)</option> }
                                 </select></div>
-                            <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Name (Arabic)"]</label><input name="name" value="@p.Name" class="form-control form-control-solid" dir="rtl" maxlength="200" /></div>
-                            <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Name (English)"]</label><input name="nameEn" value="@p.NameEn" class="form-control form-control-solid" dir="ltr" maxlength="200" /></div>
-                            <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Title (Arabic)"]</label><input name="title" value="@p.Title" class="form-control form-control-solid" dir="rtl" maxlength="200" placeholder="استشاري الباطنة" /></div>
-                            <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Title (English)"]</label><input name="titleEn" value="@p.TitleEn" class="form-control form-control-solid" dir="ltr" maxlength="200" placeholder="Consultant, internal medicine" /></div>
-                            <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Department"]</label>
-                                <select name="departmentId" class="form-select form-select-solid"><option value="">—</option>
+                            <div class="col-md-6"><label class="fs-6 fw-semibold mb-2 required">@T["Name (Arabic)"]</label><input name="name" value="@p.Name" class="form-control form-control-solid" dir="rtl" maxlength="200" /></div>
+                            <div class="col-md-6"><label class="fs-6 fw-semibold mb-2 required">@T["Name (English)"]</label><input name="nameEn" value="@p.NameEn" class="form-control form-control-solid" dir="ltr" maxlength="200" /></div>
+                            <div class="col-md-6"><label class="fs-6 fw-semibold mb-2">@T["Title (Arabic)"]</label><input name="title" value="@p.Title" class="form-control form-control-solid" dir="rtl" maxlength="200" placeholder="استشاري الباطنة" /></div>
+                            <div class="col-md-6"><label class="fs-6 fw-semibold mb-2">@T["Title (English)"]</label><input name="titleEn" value="@p.TitleEn" class="form-control form-control-solid" dir="ltr" maxlength="200" placeholder="Consultant, internal medicine" /></div>
+                            <div class="col-md-6"><label class="fs-6 fw-semibold mb-2">@T["Department"]</label>
+                                <select name="departmentId" class="form-select form-select-solid" data-control="select2"><option value="">—</option>
                                     @foreach (var d in departments) { <option value="@d.ID" selected="@(d.ID == p.DepartmentId)">@DisplayName.Of(d.Name, d.NameEn)</option> }
                                 </select></div>
-                            <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Clinic room"]</label>
-                                <select name="clinicRoomId" class="form-select form-select-solid"><option value="">—</option>
+                            <div class="col-md-6"><label class="fs-6 fw-semibold mb-2">@T["Clinic room"]</label>
+                                <select name="clinicRoomId" class="form-select form-select-solid" data-control="select2"><option value="">—</option>
                                     @foreach (var r in rooms) { <option value="@r.Id" selected="@(p.ClinicRoomId == r.Id)">@T["Room"] @r.Label@(string.IsNullOrEmpty(r.Name) ? "" : " · " + DisplayName.Of(r.Name, r.NameEn))</option> }
                                 </select></div>
-                            <div class="col-md-12"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Billed as"]</label>
-                                <select name="consultationServiceId" class="form-select form-select-solid"><option value="">@T["The department's consultation"]</option>
+                            <div class="col-md-12"><label class="fs-6 fw-semibold mb-2">@T["Billed as"]</label>
+                                <select name="consultationServiceId" class="form-select form-select-solid" data-control="select2"><option value="">@T["The department's consultation"]</option>
                                     @foreach (var s in feeServices) { <option value="@s.Id" selected="@(p.ConsultationServiceId == s.Id)">@s.Label · @DisplayName.Of(s.Name, s.NameEn)</option> }
                                 </select></div>
-                            <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Engagement"]</label>
-                                <select name="engagement" class="form-select form-select-solid">
+                            <div class="col-md-6"><label class="fs-6 fw-semibold mb-2 required">@T["Engagement"]</label>
+                                <select name="engagement" class="form-select form-select-solid" data-control="select2" data-hide-search="true">
                                     @foreach (var e in HospitalEngagements.All) { <option value="@e" selected="@(e == p.Engagement)">@T["eng:" + e]</option> }
                                 </select></div>
-                            <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Paid through"]</label>
-                                <select name="payChannel" class="form-select form-select-solid">
+                            <div class="col-md-6"><label class="fs-6 fw-semibold mb-2 required">@T["Paid through"]</label>
+                                <select name="payChannel" class="form-select form-select-solid" data-control="select2" data-hide-search="true">
                                     @foreach (var c in HospitalPayChannels.All) { <option value="@c" selected="@(c == p.PayChannel)">@T["pay:" + c]</option> }
                                 </select></div>
                         </div></div>
                     </div>
 
-                    <div class="card mb-5">
-                        <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
-                            <span class="card-label fw-bold text-gray-900 fs-4">@T["Clinic schedule"]</span>
-                            <span class="text-muted mt-1 fw-semibold fs-7">@T["The appointment book offers exactly these days and slots"]</span>
-                        </div></div>
-                        <div class="card-body pt-4">
-                            <div class="d-flex flex-wrap gap-3 mb-6">
+                    <div class="card card-flush mb-5">
+                        <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Clinic schedule"]</span><span class="text-gray-500 mt-1 fw-semibold fs-7">@T["The appointment book offers exactly these days and slots"]</span></h3></div>
+                        <div class="card-body pt-2">
+                            @* H128: the work days as the theme's dashed toggle buttons (demo39 utilities/modals/forms) — still checkboxes named workDays *@
+                            <div class="d-flex flex-wrap gap-2 mb-7">
                                 @foreach (var d in week)
                                 {
-                                    <label class="form-check form-check-custom form-check-solid form-check-sm"><input class="form-check-input" type="checkbox" name="workDays" value="@((int)d)" @(days.Contains(d) ? "checked" : "") /><span class="form-check-label fw-semibold text-gray-700">@T["day:" + d]</span></label>
+                                    <input class="btn-check" type="checkbox" name="workDays" id="wd@((int)d)" value="@((int)d)" @(days.Contains(d) ? "checked" : "") />
+                                    <label class="btn btn-sm btn-outline btn-outline-dashed btn-active-light-primary fw-semibold px-5" for="wd@((int)d)">@T["day:" + d]</label>
                                 }
                             </div>
                             <div class="row g-6">
-                                <div class="col-md-4"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["From"]</label><input name="sessionStart" type="time" value="@HospitalUi.Clock(p.SessionStartMinute)" class="form-control form-control-solid hp-num" /></div>
-                                <div class="col-md-4"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["To"]</label><input name="sessionEnd" type="time" value="@HospitalUi.Clock(p.SessionEndMinute)" class="form-control form-control-solid hp-num" /></div>
-                                <div class="col-md-4"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Minutes per patient"]</label><input name="slotMinutes" type="number" min="5" max="120" step="5" value="@p.SlotMinutes" class="form-control form-control-solid hp-num" /></div>
+                                <div class="col-md-4"><label class="fs-6 fw-semibold mb-2" for="sessionStart">@T["From"]</label>
+                                    <div class="position-relative d-flex align-items-center"><i class="ki-outline ki-time fs-2 position-absolute mx-4"></i><input name="sessionStart" id="sessionStart" type="text" value="@HospitalUi.Clock(p.SessionStartMinute)" class="form-control form-control-solid ps-12 hp-num" dir="ltr" data-hp-time /></div></div>
+                                <div class="col-md-4"><label class="fs-6 fw-semibold mb-2" for="sessionEnd">@T["To"]</label>
+                                    <div class="position-relative d-flex align-items-center"><i class="ki-outline ki-time fs-2 position-absolute mx-4"></i><input name="sessionEnd" id="sessionEnd" type="text" value="@HospitalUi.Clock(p.SessionEndMinute)" class="form-control form-control-solid ps-12 hp-num" dir="ltr" data-hp-time /></div></div>
+                                <div class="col-md-4"><label class="fs-6 fw-semibold mb-2">@T["Minutes per patient"]</label><input name="slotMinutes" type="number" min="5" max="120" step="5" value="@p.SlotMinutes" class="form-control form-control-solid hp-num" dir="ltr" /></div>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <div class="col-xl-4">
-                    <div class="card mb-5">
-                        <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Professional licence"]</span></div></div>
+                    <div class="card card-flush mb-5">
+                        <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Professional licence"]</span></h3></div>
                         <div class="card-body pt-2"><div class="row g-5">
-                            <div class="col-12"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Number"]</label><input name="licenseNumber" value="@p.LicenseNumber" class="form-control form-control-solid hp-num" dir="ltr" maxlength="60" /></div>
-                            <div class="col-12"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Expiry"]</label><input name="licenseExpiry" type="date" value="@p.LicenseExpiry?.ToString("yyyy-MM-dd")" class="form-control form-control-solid" /></div>
+                            <div class="col-12"><label class="fs-6 fw-semibold mb-2">@T["Number"]</label><input name="licenseNumber" value="@p.LicenseNumber" class="form-control form-control-solid hp-num" dir="ltr" maxlength="60" /></div>
+                            <div class="col-12"><label class="fs-6 fw-semibold mb-2">@T["Expiry"]</label><input name="licenseExpiry" type="date" value="@p.LicenseExpiry?.ToString("yyyy-MM-dd")" class="form-control form-control-solid" /></div>
                             <div class="col-12 text-muted fs-8">@T["On expiry, new bookings for this doctor stop automatically until the renewed licence is entered."]</div>
                         </div></div>
                     </div>
-                    <div class="card">
-                        <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Clinical privileges"]</span></div></div>
+                    <div class="card card-flush">
+                        <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Clinical privileges"]</span></h3></div>
                         <div class="card-body pt-2">
                             @foreach (var k in HospitalPrivileges.All)
                             {
@@ -133,6 +131,8 @@
             var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
             function val(n) { return (form.elements[n] ? form.elements[n].value : '').trim(); }
             function minutes(v) { var m = /^(\d{1,2}):(\d{2})/.exec(v || ''); return m ? (+m[1]) * 60 + (+m[2]) : null; }
+            // H128: the session's clock is the theme's time-only picker (never the browser's native time popup); the value stays "HH:mm"
+            if (window.flatpickr) form.querySelectorAll('[data-hp-time]').forEach(function (el) { flatpickr(el, { enableTime: true, noCalendar: true, dateFormat: 'H:i', time_24hr: true, allowInput: true, disableMobile: true, defaultDate: el.value || null }); });
             function checked(n) { return [].slice.call(form.querySelectorAll('[name="' + n + '"]:checked')).map(function (c) { return c.value; }); }
             // Choosing the employee fills both names when they are still empty.
             CB.onSelectChange(form.elements.employeeId, function () {

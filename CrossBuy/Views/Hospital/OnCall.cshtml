@@ -66,26 +66,32 @@
         {
             <div class="row g-5 mb-5">
                 <div class="@(canManage ? "col-xl-7" : "col-12")">
-                    <div class="card h-100">
-                        <div class="card-header border-0 pt-6"><div class="card-title flex-column m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["On call now"]</span><span class="text-muted fs-7 mt-1">@T["Whom each department calls at this moment"]</span></div></div>
+                    <div class="card card-flush h-100">
+                        <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["On call now"]</span><span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Whom each department calls at this moment"]</span></h3>
+                            <div class="card-toolbar"><span class="badge badge-light-primary fs-7 fw-bold py-3 px-4"><i class="ki-outline ki-time fs-5 text-primary me-2"></i><bdi class="hp-num" dir="ltr">@wardNow.ToString("HH:mm", inv)</bdi></span></div></div>
                         <div class="card-body pt-2">
-                            @if (Model.Now.Count == 0) { <div class="notice d-flex rounded border border-dashed p-5 hp-notice"><div class="fs-7 text-gray-700">@T["Nobody is on call right now."]</div></div> }
+                            @if (Model.Now.Count == 0) { <div class="text-center py-10"><i class="ki-outline ki-call fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-bold text-gray-700">@T["Nobody is on call right now."]</div></div> }
                             else
                             {
-                                <div class="row g-3">
+                                @* one department per block — the theme's list widget (demo39 dashboards/logistics) *@
+                                <div class="row g-5">
                                 @foreach (var g in Model.Now.GroupBy(r => r.Shift.DepartmentId))
                                 {
-                                    var f = g.First();
-                                    <div class="col-md-6"><div class="border border-gray-200 rounded p-4 h-100">
-                                        <div class="fw-bold text-gray-800 fs-7 mb-3">@DisplayName.Of(f.Department, f.DepartmentEn ?? f.Department)</div>
-                                        @foreach (var r in g)
+                                    var f = g.First(); var people = g.ToList();
+                                    <div class="col-md-6"><div class="border border-dashed border-gray-300 rounded p-5 h-100">
+                                        <div class="d-flex align-items-center mb-4"><span class="bullet bullet-vertical h-20px bg-primary me-3"></span><span class="text-gray-800 fw-bold fs-6">@DisplayName.Of(f.Department, f.DepartmentEn ?? f.Department)</span></div>
+                                        @for (int pi = 0; pi < people.Count; pi++)
                                         {
-                                            <div class="d-flex align-items-center gap-3 mb-2">
-                                                <div class="symbol symbol-40px symbol-circle">@if (r.Photo != null) {<img src="@r.Photo" alt="" style="object-fit:cover" />} else {<span class="symbol-label fw-bold hp-initials">@HospitalUi.Initials(r.DoctorEn)</span>}</div>
-                                                <div class="flex-grow-1"><div class="fw-bold text-gray-900 fs-7">@DisplayName.Of(r.Doctor, r.DoctorEn)</div>
-                                                    <div class="text-muted fs-8">@T["oc:until"] <bdi class="hp-num" dir="ltr">@Hm(r.Shift.EndsAt)</bdi></div></div>
-                                                <span class="badge @(r.Shift.Level == HospitalOnCallLevel.First ? "badge-light-primary" : "badge-light") fs-8">@T["oc:" + r.Shift.Level]</span>
+                                            var r = people[pi];
+                                            <div class="d-flex align-items-center">
+                                                <div class="symbol symbol-40px symbol-circle me-4 flex-shrink-0">@if (r.Photo != null) {<img src="@r.Photo" alt="" style="object-fit:cover" />} else {<span class="symbol-label fw-bold hp-initials">@HospitalUi.Initials(r.DoctorEn)</span>}</div>
+                                                <div class="d-flex flex-stack flex-row-fluid gap-2">
+                                                    <div class="d-flex flex-column"><span class="text-gray-800 fw-bold fs-6">@DisplayName.Of(r.Doctor, r.DoctorEn)</span>
+                                                        <span class="text-gray-500 fw-semibold fs-7">@T["oc:until"] <bdi class="hp-num" dir="ltr">@Hm(r.Shift.EndsAt)</bdi></span></div>
+                                                    <span class="badge @(r.Shift.Level == HospitalOnCallLevel.First ? "badge-light-primary" : "badge-light") fs-7 fw-bold">@T["oc:" + r.Shift.Level]</span>
+                                                </div>
                                             </div>
+                                            if (pi < people.Count - 1) { <div class="separator separator-dashed my-3"></div> }
                                         }
                                     </div></div>
                                 }
@@ -97,30 +103,35 @@
                 @if (canManage)
                 {
                     <div class="col-xl-5">
-                        <div class="card h-100" data-oc-form>
-                            <div class="card-header border-0 pt-6"><div class="card-title flex-column m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Plan a shift"]</span></div></div>
-                            <div class="card-body pt-2"><div class="row g-4">
-                                <div class="col-6"><label class="form-label fs-7 required">@T["Department"]</label>
+                        <div class="card card-flush h-100" data-oc-form>
+                            <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Plan a shift"]</span>
+                                <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["An end at or before the start runs into the next morning."]</span></h3>
+                                <div class="card-toolbar"><div class="symbol symbol-40px"><span class="symbol-label bg-light-primary"><i class="ki-outline ki-calendar-add fs-2 text-primary"></i></span></div></div></div>
+                            <div class="card-body pt-2"><div class="row g-5">
+                                <div class="col-6"><label class="fs-6 fw-semibold mb-2 required">@T["Department"]</label>
                                     <select class="form-select form-select-solid" data-oc="departmentId"><option value="">—</option>@foreach (var d in Model.Departments) { <option value="@d.ID">@DisplayName.Of(d.Name, d.NameEn ?? d.Name)</option> }</select></div>
-                                <div class="col-6"><label class="form-label fs-7 required">@T["Doctor"]</label>
+                                <div class="col-6"><label class="fs-6 fw-semibold mb-2 required">@T["Doctor"]</label>
                                     <select class="form-select form-select-solid" data-oc="practitionerId"><option value="">—</option>@foreach (var p in Model.Doctors) { <option value="@p.ID" data-dept="@p.DepartmentId">@DisplayName.Of(p.Name, p.NameEn)</option> }</select></div>
                                 <div class="col-12"><div class="btn-group w-100">
                                     @foreach (var l in HospitalOnCallLevel.All) { <button type="button" class="btn btn-sm @(l == HospitalOnCallLevel.First ? "btn-primary" : "btn-light")" data-oc-level="@l">@T["oc:" + l]</button> }
                                 </div></div>
-                                <div class="col-4"><label class="form-label fs-7 required">@T["Day"]</label><input type="date" class="form-control form-control-solid hp-num" data-oc="date" value="@Ymd(today)" /></div>
-                                <div class="col-4"><label class="form-label fs-7 required">@T["From"]</label><input class="form-control form-control-solid hp-num" data-oc="from" data-oc-time value="20:00" /></div>
-                                <div class="col-4"><label class="form-label fs-7 required">@T["To"]</label><input class="form-control form-control-solid hp-num" data-oc="to" data-oc-time value="08:00" /></div>
-                                <div class="col-12 text-muted fs-8">@T["An end at or before the start runs into the next morning."]</div>
-                                <div class="col-12"><label class="form-label fs-7">@T["Note"]</label><input class="form-control form-control-solid" maxlength="300" dir="auto" data-oc="note" /></div>
+                                <div class="col-4"><label class="fs-6 fw-semibold mb-2 required">@T["Day"]</label><input type="date" class="form-control form-control-solid hp-num" data-oc="date" value="@Ymd(today)" /></div>
+                                <div class="col-4"><label class="fs-6 fw-semibold mb-2 required">@T["From"]</label><input class="form-control form-control-solid hp-num" data-oc="from" data-oc-time value="20:00" /></div>
+                                <div class="col-4"><label class="fs-6 fw-semibold mb-2 required">@T["To"]</label><input class="form-control form-control-solid hp-num" data-oc="to" data-oc-time value="08:00" /></div>
+                                <div class="col-12"><label class="fs-6 fw-semibold mb-2">@T["Note"]</label><input class="form-control form-control-solid" maxlength="300" dir="auto" data-oc="note" /></div>
                                 <div class="col-12"><button type="button" class="btn btn-primary w-100" data-oc-plan><i class="ki-outline ki-calendar-add fs-4"></i>@T["Add the shift"]</button></div>
                             </div></div>
                         </div>
                     </div>
                 }
             </div>
-            <div class="card">
-                <div class="card-header border-0 pt-6"><div class="card-title flex-column m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["The week"]</span>
-                    <span class="text-muted fs-7 mt-1"><span class="hp-num">@Model.Shifts.Count(s => s.Shift.CancelledAt == null)</span> @T["shifts"]</span></div></div>
+            <div class="card card-flush">
+                <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["The week"]</span>
+                    <span class="text-gray-500 mt-1 fw-semibold fs-7"><span class="hp-num">@Model.Shifts.Count(s => s.Shift.CancelledAt == null)</span>&nbsp;@T["shifts"]</span></h3>
+                    <div class="card-toolbar gap-4 fs-7 fw-semibold text-gray-600">
+                        <span class="d-flex align-items-center"><span class="bullet bullet-vertical h-15px w-3px bg-primary me-2"></span>@T["oc:" + HospitalOnCallLevel.First]</span>
+                        <span class="d-flex align-items-center"><span class="bullet bullet-vertical h-15px w-3px bg-gray-400 me-2"></span>@T["oc:" + HospitalOnCallLevel.Backup]</span>
+                    </div></div>
                 <div class="card-body pt-2"><div class="hp-oc-scroll"><table class="table table-row-dashed align-top fs-7 gy-3 mb-0 hp-oc-grid">
                     <colgroup><col class="hp-oc-dept" />@foreach (var d in days) {<col />}</colgroup>
                     <thead><tr>
@@ -174,6 +185,7 @@
                     var dep = this.value, sel = f('practitionerId'), opts = Array.prototype.slice.call(sel.options, 1);
                     opts.sort(function (a, b) { return (b.getAttribute('data-dept') === dep) - (a.getAttribute('data-dept') === dep) || a.text.localeCompare(b.text); }).forEach(function (o) { sel.appendChild(o); });
                     var mine = opts.filter(function (o) { return o.getAttribute('data-dept') === dep; }); if (mine.length && !sel.value) sel.value = mine[0].value;
+                    if (window.jQuery) jQuery(sel).trigger('change.select2');   // the theme's dropdown shows the new order and choice
                 });
                 form.addEventListener('click', function (e) {
                     var l = e.target.closest('[data-oc-level]');

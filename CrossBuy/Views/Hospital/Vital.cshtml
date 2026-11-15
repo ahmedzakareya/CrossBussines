@@ -39,56 +39,60 @@
             @if (ready && canAdmit)
             {
                 <div class="col-xl-4">
-                    <div class="card mb-5" data-birth-form>
-                        <div class="card-header border-0 pt-6"><div class="card-title flex-column m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Register a birth"]</span>
-                            <span class="text-muted fs-7 mt-1">@T["A live birth opens the newborn's own file, linked to the mother."]</span></div></div>
+                    <div class="card card-flush mb-5" data-birth-form>
+                        <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Register a birth"]</span>
+                            <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["A live birth opens the newborn's own file, linked to the mother."]</span></h3>
+                            <div class="card-toolbar"><div class="symbol symbol-40px"><span class="symbol-label bg-light-primary"><i class="ki-outline ki-heart fs-2 text-primary"></i></span></div></div></div>
                         <div class="card-body pt-2"><div class="row g-4">
-                            <div class="col-12"><label class="form-label required fs-7">@T["The mother"]</label>
+                            <div class="col-12"><label class="fs-6 fw-semibold mb-2 required">@T["The mother"]</label>
                                 <select class="form-select form-select-solid" data-b="motherPatientId" data-birth-mother data-placeholder="—"></select></div>
-                            <div class="col-12"><label class="form-label required fs-7">@T["Time of birth"]</label><input type="datetime-local" class="form-control form-control-solid" data-b="bornAt" value="@nowW" max="@nowW" /></div>
-                            <div class="col-6"><label class="form-label required fs-7">@T["Outcome"]</label>
+                            <div class="col-12"><label class="fs-6 fw-semibold mb-2 required">@T["Time of birth"]</label><input type="datetime-local" class="form-control form-control-solid" data-b="bornAt" value="@nowW" max="@nowW" /></div>
+                            <div class="col-6"><label class="fs-6 fw-semibold mb-2 required">@T["Outcome"]</label>
                                 <select class="form-select form-select-solid" data-b="outcome">@foreach (var o in HospitalBirthOutcome.All) { <option value="@o">@T["bo:" + o]</option> }</select></div>
-                            <div class="col-6"><label class="form-label required fs-7">@T["Baby's sex"]</label>
+                            <div class="col-6"><label class="fs-6 fw-semibold mb-2 required">@T["Baby's sex"]</label>
                                 <select class="form-select form-select-solid" data-b="sex"><option value="M">@T["bs:M"]</option><option value="F">@T["bs:F"]</option></select></div>
-                            <div class="col-6"><label class="form-label required fs-7">@T["Delivery"]</label>
+                            <div class="col-6"><label class="fs-6 fw-semibold mb-2 required">@T["Delivery"]</label>
                                 <select class="form-select form-select-solid" data-b="deliveryMode">@foreach (var m in HospitalDeliveryMode.All) { <option value="@m">@T["dm:" + m]</option> }</select></div>
-                            <div class="col-6"><label class="form-label fs-7">@T["Gestation (weeks)"]</label><input type="number" min="20" max="45" class="form-control form-control-solid hp-num" data-b="gestationWeeks" /></div>
-                            <div class="col-6"><label class="form-label required fs-7">@T["Weight (g)"]</label><input type="number" min="200" max="7000" class="form-control form-control-solid hp-num" data-b="weightGrams" /></div>
-                            <div class="col-6"><label class="form-label fs-7">@T["Birth order"]</label><input type="number" min="1" max="6" value="1" class="form-control form-control-solid hp-num" data-b="birthOrder" /></div>
-                            <div class="col-6"><label class="form-label fs-7">@T["Length (cm)"]</label><input type="number" step="0.1" class="form-control form-control-solid hp-num" data-b="lengthCm" /></div>
-                            <div class="col-6"><label class="form-label fs-7">@T["Head (cm)"]</label><input type="number" step="0.1" class="form-control form-control-solid hp-num" data-b="headCm" /></div>
-                            <div class="col-6"><label class="form-label fs-7">@T["Apgar at 1 min"]</label><input type="number" min="0" max="10" class="form-control form-control-solid hp-num" data-b="apgar1" /></div>
-                            <div class="col-6"><label class="form-label fs-7">@T["Apgar at 5 min"]</label><input type="number" min="0" max="10" class="form-control form-control-solid hp-num" data-b="apgar5" /></div>
-                            <div class="col-12"><label class="form-label fs-7">@T["sl:notes"]</label><input type="text" maxlength="500" dir="auto" class="form-control form-control-solid" data-b="note" /></div>
+                            <div class="col-6"><label class="fs-6 fw-semibold mb-2">@T["Gestation (weeks)"]</label><input type="number" min="20" max="45" class="form-control form-control-solid hp-num" data-b="gestationWeeks" /></div>
+                            <div class="col-6"><label class="fs-6 fw-semibold mb-2 required">@T["Weight (g)"]</label><input type="number" min="200" max="7000" class="form-control form-control-solid hp-num" data-b="weightGrams" /></div>
+                            <div class="col-6"><label class="fs-6 fw-semibold mb-2">@T["Birth order"]</label><input type="number" min="1" max="6" value="1" class="form-control form-control-solid hp-num" data-b="birthOrder" /></div>
+                            <div class="col-6"><label class="fs-6 fw-semibold mb-2">@T["Length (cm)"]</label><input type="number" step="0.1" class="form-control form-control-solid hp-num" data-b="lengthCm" /></div>
+                            <div class="col-6"><label class="fs-6 fw-semibold mb-2">@T["Head (cm)"]</label><input type="number" step="0.1" class="form-control form-control-solid hp-num" data-b="headCm" /></div>
+                            <div class="col-6"><label class="fs-6 fw-semibold mb-2">@T["Apgar at 1 min"]</label><input type="number" min="0" max="10" class="form-control form-control-solid hp-num" data-b="apgar1" /></div>
+                            <div class="col-6"><label class="fs-6 fw-semibold mb-2">@T["Apgar at 5 min"]</label><input type="number" min="0" max="10" class="form-control form-control-solid hp-num" data-b="apgar5" /></div>
+                            <div class="col-12"><label class="fs-6 fw-semibold mb-2">@T["sl:notes"]</label><input type="text" maxlength="500" dir="auto" class="form-control form-control-solid" data-b="note" /></div>
                             <div class="col-12"><button type="button" class="btn btn-primary w-100" data-birth-register><i class="ki-outline ki-heart fs-4"></i>@T["Register the birth"]</button></div>
                         </div></div>
                     </div>
                 </div>
             }
             <div class="@(ready && canAdmit ? "col-xl-8" : "col-12")">
-                <div class="card mb-5">
-                    <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Births"]</span></div></div>
+                <div class="card card-flush mb-5">
+                    <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Births"]</span>
+                        <span class="text-gray-500 mt-1 fw-semibold fs-7 hp-num">@Model.Count</span></h3></div>
                     <div class="card-body pt-2" data-birth-list>
-                        @if (Model.Count == 0) { <div class="text-center text-muted py-10">@T["No birth registered yet."]</div> }
+                        @if (Model.Count == 0) { <div class="text-center py-10"><i class="ki-outline ki-heart fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-bold text-gray-700">@T["No birth registered yet."]</div></div> }
                         else
                         {
-                            <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-3 mb-0">
-                                <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0"><th>@T["Registration"]</th><th>@T["The mother"]</th><th>@T["The baby"]</th><th>@T["Delivery"]</th><th class="text-end"></th></tr></thead>
+                            <div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
+                                <thead><tr class="fw-bold text-muted bg-light"><th class="ps-4 rounded-start">@T["Registration"]</th><th>@T["The mother"]</th><th>@T["The baby"]</th><th>@T["Delivery"]</th><th class="text-end pe-4 rounded-end">@T["Actions"]</th></tr></thead>
                                 <tbody class="fw-semibold text-gray-700">
                                     @foreach (var r in Model)
                                     {
                                         var b = r.Birth; bool isVoid = b.VoidedAt != null;
                                         <tr data-birth-row="@b.ID" class="@(isVoid ? "opacity-75" : "")">
-                                            <td><span class="badge hp-code fs-8 hp-num">@b.BirthNo</span><div class="text-muted fs-9 mt-1 hp-num" dir="ltr">@At(b.BornAt)</div>
-                                                @if (isVoid) {<span class="badge badge-light-danger fs-9 mt-1">@T["sl:void"]</span><div class="text-muted fs-9" dir="auto">@b.VoidReason</div>}</td>
-                                            <td><a href="@Url.Action("Patient", new { id = b.MotherPatientId })" class="text-gray-900 text-hover-primary">@DisplayName.Of(r.Mother, r.MotherEn ?? r.Mother)</a><div><span class="badge hp-code fs-9 hp-num">@r.MotherMrn</span></div></td>
-                                            <td>@if (b.NewbornPatientId is int nid) {<a href="@Url.Action("Patient", new { id = nid })" class="text-gray-900 text-hover-primary">@DisplayName.Of(r.Newborn ?? "", r.NewbornEn ?? r.Newborn ?? "")</a><div><span class="badge hp-code fs-9 hp-num">@r.NewbornMrn</span></div>}
-                                                else {<span class="badge badge-light-dark">@T["bo:Stillbirth"]</span>}
-                                                <div class="text-muted fs-8">@T["bs:" + b.Sex] · <span class="hp-num">@b.WeightGrams</span> @T["g"] @if (b.Apgar1 != null || b.Apgar5 != null) {<text> · </text>@T["Apgar"] <span class="hp-num">@(b.Apgar1?.ToString() ?? "—")/@(b.Apgar5?.ToString() ?? "—")</span>}</div></td>
-                                            <td>@T["dm:" + b.DeliveryMode]@if (b.GestationWeeks is int gw) {<div class="text-muted fs-8"><span class="hp-num">@gw</span> @T["weeks"]</div>}</td>
-                                            <td class="text-end"><div class="d-flex justify-content-end gap-2">
+                                            <td class="ps-4"><span class="text-gray-900 fw-bold fs-6 hp-num d-block">@b.BirthNo</span><span class="text-muted fw-semibold d-block fs-7 hp-num" dir="ltr">@At(b.BornAt)</span>
+                                                @if (isVoid) {<span class="badge badge-light-danger fs-7 fw-bold mt-1">@T["sl:void"]</span><div class="text-muted fs-8" dir="auto">@b.VoidReason</div>}</td>
+                                            <td><div class="d-flex align-items-center">
+                                                <div class="symbol symbol-35px symbol-circle me-3 flex-shrink-0"><span class="symbol-label fw-bold fs-8 hp-initials">@HospitalUi.Initials(r.MotherEn ?? r.Mother)</span></div>
+                                                <div class="d-flex flex-column"><a href="@Url.Action("Patient", new { id = b.MotherPatientId })" class="text-gray-900 fw-bold text-hover-primary fs-6">@DisplayName.Of(r.Mother, r.MotherEn ?? r.Mother)</a><bdi class="text-muted fw-semibold d-block fs-7 hp-num">@r.MotherMrn</bdi></div></div></td>
+                                            <td>@if (b.NewbornPatientId is int nid) {<a href="@Url.Action("Patient", new { id = nid })" class="text-gray-900 fw-bold text-hover-primary fs-6">@DisplayName.Of(r.Newborn ?? "", r.NewbornEn ?? r.Newborn ?? "")</a><bdi class="text-muted fw-semibold d-block fs-7 hp-num">@r.NewbornMrn</bdi>}
+                                                else {<span class="badge badge-light-dark fs-7 fw-bold">@T["bo:Stillbirth"]</span>}
+                                                <div class="text-muted fs-7 mt-1">@T["bs:" + b.Sex] · <span class="hp-num">@b.WeightGrams</span>&nbsp;@T["g"] @if (b.Apgar1 != null || b.Apgar5 != null) {<text> · </text>@T["Apgar"] <span class="hp-num" dir="ltr">@(b.Apgar1?.ToString() ?? "—")/@(b.Apgar5?.ToString() ?? "—")</span>}</div></td>
+                                            <td><span class="badge badge-light-primary fs-7 fw-bold">@T["dm:" + b.DeliveryMode]</span>@if (b.GestationWeeks is int gw) {<div class="text-muted fs-7 mt-1"><span class="hp-num">@gw</span>&nbsp;@T["weeks"]</div>}</td>
+                                            <td class="text-end pe-4"><div class="d-flex justify-content-end gap-2">
                                                 @await Html.PartialAsync("_ReportPrintMenu", new CrossBuy.BL.Reporting.ReportPrintMenuModel { ScreenKey = CrossBuy.BL.Reporting.ReportScreenKeys.HospitalBirth, DocumentId = b.ID.ToString(), DocumentTitle = b.BirthNo })
-                                                @if (!isVoid && canVoid) { <button type="button" class="btn btn-sm btn-light-danger" data-birth-void="@b.ID" data-no="@b.BirthNo">@T["sl:voidAction"]</button> }
+                                                @if (!isVoid && canVoid) { <button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-danger" data-birth-void="@b.ID" data-no="@b.BirthNo" title="@T["sl:voidAction"]" data-bs-toggle="tooltip"><i class="ki-outline ki-trash fs-4"></i></button> }
                                             </div></td>
                                         </tr>
                                     }
@@ -105,22 +109,23 @@
             @if (deathsReady && canCertify)
             {
                 <div class="col-xl-4">
-                    <div class="card mb-5" data-death-form>
-                        <div class="card-header border-0 pt-6"><div class="card-title flex-column m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Certify a death"]</span>
-                            <span class="text-muted fs-7 mt-1">@T["The cause of death in the international form: the chain from the immediate cause down to the underlying cause."]</span></div></div>
+                    <div class="card card-flush mb-5" data-death-form>
+                        <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Certify a death"]</span>
+                            <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["The cause of death in the international form: the chain from the immediate cause down to the underlying cause."]</span></h3>
+                            <div class="card-toolbar"><div class="symbol symbol-40px"><span class="symbol-label bg-light-dark"><i class="ki-outline ki-document fs-2 text-gray-800"></i></span></div></div></div>
                         <div class="card-body pt-2"><div class="row g-4">
-                            <div class="col-12"><label class="form-label required fs-7">@T["Patient"]</label>
+                            <div class="col-12"><label class="fs-6 fw-semibold mb-2 required">@T["Patient"]</label>
                                 <select class="form-select form-select-solid" data-d="patientId" data-death-patient data-placeholder="—"></select></div>
-                            <div class="col-12"><label class="form-label required fs-7">@T["Time of death"]</label><input type="datetime-local" class="form-control form-control-solid" data-d="diedAt" value="@nowW" max="@nowW" /></div>
-                            <div class="col-12"><label class="form-label required fs-7">@T["Place of death"]</label>
+                            <div class="col-12"><label class="fs-6 fw-semibold mb-2 required">@T["Time of death"]</label><input type="datetime-local" class="form-control form-control-solid" data-d="diedAt" value="@nowW" max="@nowW" /></div>
+                            <div class="col-12"><label class="fs-6 fw-semibold mb-2 required">@T["Place of death"]</label>
                                 <select class="form-select form-select-solid" data-d="place">@foreach (var pl in HospitalDeathPlace.All) { <option value="@pl">@T["dp:" + pl]</option> }</select></div>
-                            <div class="col-12"><div class="fw-bold text-gray-800 fs-7">@T["Part I — the chain of events"]</div></div>
-                            <div class="col-12"><label class="form-label required fs-8">@T["(a) Immediate cause"]</label><input type="text" maxlength="300" dir="auto" class="form-control form-control-solid" data-d="immediateCause" /></div>
-                            <div class="col-12"><label class="form-label fs-8">@T["(b) Due to"]</label><input type="text" maxlength="300" dir="auto" class="form-control form-control-solid" data-d="dueTo1" /></div>
-                            <div class="col-12"><label class="form-label fs-8">@T["(c) Due to"]</label><input type="text" maxlength="300" dir="auto" class="form-control form-control-solid" data-d="dueTo2" /></div>
-                            <div class="col-12"><label class="form-label fs-8">@T["(d) Due to (underlying cause)"]</label><input type="text" maxlength="300" dir="auto" class="form-control form-control-solid" data-d="underlyingCause" /></div>
-                            <div class="col-12"><label class="form-label fs-7">@T["Part II — other significant conditions"]</label><input type="text" maxlength="500" dir="auto" class="form-control form-control-solid" data-d="otherConditions" /></div>
-                            <div class="col-12"><label class="form-label required fs-7">@T["Manner of death"]</label>
+                            <div class="col-12"><div class="separator separator-dashed mb-4"></div><div class="fw-bold text-gray-800 fs-6">@T["Part I — the chain of events"]</div></div>
+                            <div class="col-12"><label class="fs-7 fw-semibold mb-2 required">@T["(a) Immediate cause"]</label><input type="text" maxlength="300" dir="auto" class="form-control form-control-solid" data-d="immediateCause" /></div>
+                            <div class="col-12"><label class="fs-7 fw-semibold mb-2">@T["(b) Due to"]</label><input type="text" maxlength="300" dir="auto" class="form-control form-control-solid" data-d="dueTo1" /></div>
+                            <div class="col-12"><label class="fs-7 fw-semibold mb-2">@T["(c) Due to"]</label><input type="text" maxlength="300" dir="auto" class="form-control form-control-solid" data-d="dueTo2" /></div>
+                            <div class="col-12"><label class="fs-7 fw-semibold mb-2">@T["(d) Due to (underlying cause)"]</label><input type="text" maxlength="300" dir="auto" class="form-control form-control-solid" data-d="underlyingCause" /></div>
+                            <div class="col-12"><label class="fs-6 fw-semibold mb-2">@T["Part II — other significant conditions"]</label><input type="text" maxlength="500" dir="auto" class="form-control form-control-solid" data-d="otherConditions" /></div>
+                            <div class="col-12"><label class="fs-6 fw-semibold mb-2 required">@T["Manner of death"]</label>
                                 <select class="form-select form-select-solid" data-d="manner">@foreach (var m in HospitalDeathManner.All) { <option value="@m">@T["mn:" + m]</option> }</select></div>
                             <div class="col-12"><label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" data-d="autopsyRequested" /><span class="form-check-label fs-7">@T["Autopsy requested"]</span></label></div>
                             <div class="col-12"><button type="button" class="btn btn-dark w-100" data-death-certify><i class="ki-outline ki-document fs-4"></i>@T["Certify the death"]</button></div>
@@ -129,29 +134,30 @@
                 </div>
             }
             <div class="@(deathsReady && canCertify ? "col-xl-8" : "col-12")">
-                <div class="card mb-5">
-                    <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Deaths"]</span></div></div>
+                <div class="card card-flush mb-5">
+                    <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Deaths"]</span>
+                        <span class="text-gray-500 mt-1 fw-semibold fs-7 hp-num">@deaths.Count</span></h3></div>
                     <div class="card-body pt-2" data-death-list>
-                        @if (deaths.Count == 0) { <div class="text-center text-muted py-10">@T["No death certified."]</div> }
+                        @if (deaths.Count == 0) { <div class="text-center py-10"><i class="ki-outline ki-document fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-bold text-gray-700">@T["No death certified."]</div></div> }
                         else
                         {
-                            <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-3 mb-0">
-                                <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0"><th>@T["Certificate"]</th><th>@T["Patient"]</th><th>@T["Cause of death"]</th><th>@T["Doctor"]</th><th class="text-end"></th></tr></thead>
+                            <div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
+                                <thead><tr class="fw-bold text-muted bg-light"><th class="ps-4 rounded-start">@T["Certificate"]</th><th>@T["Patient"]</th><th>@T["Cause of death"]</th><th>@T["Doctor"]</th><th class="text-end pe-4 rounded-end">@T["Actions"]</th></tr></thead>
                                 <tbody class="fw-semibold text-gray-700">
                                     @foreach (var r in deaths)
                                     {
                                         var dd = r.Death; bool isVoid = dd.VoidedAt != null;
                                         <tr data-death-row="@dd.ID" class="@(isVoid ? "opacity-75" : "")">
-                                            <td><span class="badge hp-code fs-8 hp-num">@dd.DeathNo</span><div class="text-muted fs-9 mt-1 hp-num" dir="ltr">@At(dd.DiedAt)</div><div class="text-muted fs-9">@T["dp:" + dd.Place]</div>
-                                                @if (isVoid) {<span class="badge badge-light-danger fs-9 mt-1">@T["sl:void"]</span><div class="text-muted fs-9" dir="auto">@dd.VoidReason</div>}</td>
+                                            <td class="ps-4"><span class="text-gray-900 fw-bold fs-6 hp-num d-block">@dd.DeathNo</span><span class="text-muted fw-semibold d-block fs-7"><span class="hp-num" dir="ltr">@At(dd.DiedAt)</span> · @T["dp:" + dd.Place]</span>
+                                                @if (isVoid) {<span class="badge badge-light-danger fs-7 fw-bold mt-1">@T["sl:void"]</span><div class="text-muted fs-8" dir="auto">@dd.VoidReason</div>}</td>
                                             <td><div class="d-flex align-items-center">
                                                 <div class="symbol symbol-35px symbol-circle me-3 flex-shrink-0">@if (r.Photo != null) {<img src="@r.Photo" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(r.PatientEn ?? r.Patient)" />} else {<span class="symbol-label fw-bold fs-8 hp-initials">@HospitalUi.Initials(r.PatientEn ?? r.Patient)</span>}</div>
-                                                <div><a href="@Url.Action("Patient", new { id = dd.PatientId })" class="text-gray-900 text-hover-primary">@DisplayName.Of(r.Patient, r.PatientEn ?? r.Patient)</a><div><span class="badge hp-code fs-9 hp-num">@r.Mrn</span></div></div></div></td>
-                                            <td><div class="text-gray-800" dir="auto">@dd.ImmediateCause</div><div class="text-muted fs-8" dir="auto">@T["Underlying"]: @HospitalDeathRules.Underlying(dd) · @T["mn:" + dd.Manner]</div></td>
-                                            <td>@DisplayName.Of(r.Doctor ?? "", r.DoctorEn ?? r.Doctor ?? "")</td>
-                                            <td class="text-end"><div class="d-flex justify-content-end gap-2">
+                                                <div class="d-flex flex-column"><a href="@Url.Action("Patient", new { id = dd.PatientId })" class="text-gray-900 fw-bold text-hover-primary fs-6">@DisplayName.Of(r.Patient, r.PatientEn ?? r.Patient)</a><bdi class="text-muted fw-semibold d-block fs-7 hp-num">@r.Mrn</bdi></div></div></td>
+                                            <td><div class="text-gray-900 fw-bold" dir="auto">@dd.ImmediateCause</div><div class="text-muted fs-7" dir="auto">@T["Underlying"]: @HospitalDeathRules.Underlying(dd)</div><span class="badge badge-light fs-7 fw-bold mt-1">@T["mn:" + dd.Manner]</span></td>
+                                            <td><span class="text-gray-800 fw-semibold">@DisplayName.Of(r.Doctor ?? "", r.DoctorEn ?? r.Doctor ?? "")</span></td>
+                                            <td class="text-end pe-4"><div class="d-flex justify-content-end gap-2">
                                                 @await Html.PartialAsync("_ReportPrintMenu", new CrossBuy.BL.Reporting.ReportPrintMenuModel { ScreenKey = CrossBuy.BL.Reporting.ReportScreenKeys.HospitalDeath, DocumentId = dd.ID.ToString(), DocumentTitle = dd.DeathNo })
-                                                @if (!isVoid && canVoid) { <button type="button" class="btn btn-sm btn-light-danger" data-death-void="@dd.ID" data-no="@dd.DeathNo">@T["sl:voidAction"]</button> }
+                                                @if (!isVoid && canVoid) { <button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-danger" data-death-void="@dd.ID" data-no="@dd.DeathNo" title="@T["sl:voidAction"]" data-bs-toggle="tooltip"><i class="ki-outline ki-trash fs-4"></i></button> }
                                             </div></td>
                                         </tr>
                                     }

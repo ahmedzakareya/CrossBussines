@@ -46,11 +46,39 @@
         </div>
     </div></div>
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
-        @if (Model.Current.Count > 0) {<div class="notice d-flex align-items-center rounded border border-danger border-dashed bg-light-danger p-4 mb-5"><i class="ki-outline ki-information-5 fs-2x text-danger me-3"></i>
-            <div class="d-flex flex-wrap gap-2">@foreach (var w in Model.Current) {<span class="badge badge-danger fs-7">@T["lbw:" + w]</span>}</div></div>}
-        <div class="card mb-5">
-            <div class="card-header border-0 pt-6"><div class="card-title flex-column m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Cervicograph"]</span>
-                <span class="text-muted fs-7 mt-1">@(sH == null ? T["The active phase starts at 4 cm: the lines appear from then."].Value : string.Format(T["Alert line from {0} cm at 1 cm an hour; action line four hours to its right."].Value, F(sCm)))</span></div></div>
+        @if (Model.Current.Count > 0) {<div class="notice d-flex bg-light-danger rounded border-danger border border-dashed p-5 mb-5"><i class="ki-outline ki-information fs-2tx text-danger me-4"></i>
+            <div class="d-flex flex-wrap align-items-center gap-2">@foreach (var w in Model.Current) {<span class="badge badge-danger fs-7 fw-bold">@T["lbw:" + w]</span>}</div></div>}
+        @* H128: the latest figures as the theme's stat tiles (demo39 dashboards/logistics) *@
+        @{
+            var lastCx = Model.Points.LastOrDefault(q => q.Obs.CervixCm != null)?.Obs.CervixCm;
+            var lastFh = Model.Points.LastOrDefault(q => q.Obs.FetalHeartRate != null)?.Obs.FetalHeartRate;
+            var lastCt = Model.Points.LastOrDefault(q => q.Obs.ContractionsPer10 != null)?.Obs.ContractionsPer10;
+            bool fhBad = lastFh is < 110 or > 160;
+            var ptiles = new (string Label, string Value, string Unit, string Tone, string Icon, bool Bad)[] {
+                ("Cervix", lastCx?.ToString("0.#", inv) ?? "—", lastCx == null ? "" : "cm", "primary", "abstract-26", false),
+                ("Fetal heart", lastFh?.ToString() ?? "—", "", fhBad ? "danger" : "success", "heart", fhBad),
+                ("Contractions", lastCt?.ToString() ?? "—", lastCt == null ? "" : "/10", "info", "pulse", false),
+                ("Observations", Model.Points.Count.ToString(), "", "primary", "notepad", false) };
+        }
+        <div class="row g-4 mb-5">
+            @foreach (var t in ptiles)
+            {
+                <div class="col-6 col-md-3"><div class="card card-flush h-100">
+                    <div class="card-header pt-5 flex-nowrap gap-3">
+                        <div class="card-title d-flex flex-column"><span class="fs-2hx fw-bold lh-1 hp-num text-@(t.Bad ? "danger" : "gray-900")" dir="ltr">@t.Value@if (t.Unit != "") {<span class="fs-6 text-gray-500 fw-semibold">&nbsp;@t.Unit</span>}</span><span class="text-gray-500 pt-1 fw-semibold fs-6">@T[t.Label]</span></div>
+                        <div class="card-toolbar"><div class="symbol symbol-45px"><span class="symbol-label bg-light-@t.Tone"><i class="ki-outline ki-@t.Icon fs-2 text-@t.Tone"></i></span></div></div>
+                    </div>
+                    <div class="card-body pt-0"></div>
+                </div></div>
+            }
+        </div>
+        <div class="card card-flush mb-5">
+            <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Cervicograph"]</span>
+                <span class="text-gray-500 mt-1 fw-semibold fs-7">@(sH == null ? T["The active phase starts at 4 cm: the lines appear from then."].Value : string.Format(T["Alert line from {0} cm at 1 cm an hour; action line four hours to its right."].Value, F(sCm)))</span></h3>
+                <div class="card-toolbar gap-4 fs-7 fw-semibold text-gray-600">
+                    <span class="d-flex align-items-center"><span class="bullet h-2px w-20px me-2" style="background:#3A5795"></span>@T["Alert line"]</span>
+                    <span class="d-flex align-items-center"><span class="bullet h-2px w-20px me-2" style="background:#DC2626"></span>@T["Action line"]</span>
+                </div></div>
             <div class="card-body pt-2" dir="ltr">
                 <svg viewBox="0 0 @F(W) @F(H)" width="100%" style="max-width:100%;height:auto" role="img" aria-label="@T["Cervicograph"]">
                     @for (int cm = 0; cm <= 10; cm += 2) {<line x1="@F(PL)" x2="@F(W - PR)" y1="@F(Y(cm))" y2="@F(Y(cm))" stroke="#eef0f6" />@Svg(PL - 8, Y(cm) + 4, "end", "#6b7280", cm.ToString())}
@@ -73,7 +101,8 @@
                         <g stroke="@(bad ? "#DC2626" : "#1e2f5a")" stroke-width="2.5"><line x1="@F(x - 5)" y1="@F(y - 5)" x2="@F(x + 5)" y2="@F(y + 5)" /><line x1="@F(x - 5)" y1="@F(y + 5)" x2="@F(x + 5)" y2="@F(y - 5)" /></g>
                     }
                 </svg>
-                <div class="fw-bold text-gray-800 fs-7 mt-4 mb-1" dir="auto">@T["Fetal heart"]</div>
+                <div class="separator separator-dashed my-5"></div>
+                <div class="d-flex flex-stack mb-2" dir="auto"><span class="fw-bold text-gray-800 fs-6">@T["Fetal heart"]</span><span class="badge badge-light-success fs-8 fw-bold hp-num" dir="ltr">110–160</span></div>
                 <svg viewBox="0 0 @F(W) @F(FH)" width="100%" style="max-width:100%;height:auto" role="img" aria-label="@T["Fetal heart"]">
                     <rect x="@F(PL)" width="@F(W - PL - PR)" y="@F(FY(160))" height="@F(FY(110) - FY(160))" fill="#e8f5ee" />
                     @foreach (var b in new[] { 80, 110, 160, 200 }) {@Svg(PL - 8, FY(b) + 4, "end", "#6b7280", b.ToString())}
@@ -83,29 +112,32 @@
                 </svg>
             </div>
         </div>
-        <div class="card">
-            <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Observations"]</span></div></div>
+        @* H128: the observations as the theme's table widget (demo39 widgets/tables) *@
+        <div class="card card-flush">
+            <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Observations"]</span>
+                <span class="text-gray-500 mt-1 fw-semibold fs-7 hp-num">@Model.Points.Count</span></h3>
+                @if (active && canWard) {<div class="card-toolbar"><button type="button" class="btn btn-sm btn-light-primary" data-o-new><i class="ki-outline ki-plus fs-4"></i>@T["Record an observation"]</button></div>}</div>
             <div class="card-body pt-2">
-                @if (Model.Points.Count == 0) { <div class="text-center text-muted py-8">@T["No observation yet."]</div> }
+                @if (Model.Points.Count == 0) { <div class="text-center py-10"><i class="ki-outline ki-notepad fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-bold text-gray-700">@T["No observation yet."]</div></div> }
                 else
                 {
-                    <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-2 mb-0">
-                        <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0"><th>@T["Time"]</th><th>@T["Cervix"]</th><th>@T["Descent"]</th><th>@T["Contractions"]</th><th>@T["Fetal heart"]</th><th>@T["Liquor"]</th><th>@T["BP"]</th><th>@T["Pulse"]</th><th>@T["Temp"]</th><th>@T["Warnings"]</th></tr></thead>
-                        <tbody class="hp-num">
+                    <div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
+                        <thead><tr class="fw-bold text-muted bg-light"><th class="ps-4 rounded-start">@T["Time"]</th><th>@T["Cervix"]</th><th>@T["Descent"]</th><th>@T["Contractions"]</th><th>@T["Fetal heart"]</th><th>@T["Liquor"]</th><th>@T["BP"]</th><th>@T["Pulse"]</th><th>@T["Temp"]</th><th class="pe-4 rounded-end">@T["Warnings"]</th></tr></thead>
+                        <tbody>
                         @foreach (var p in Model.Points.AsEnumerable().Reverse())
                         {
                             var o = p.Obs;
                             <tr>
-                                <td>@Local(o.At)<div class="text-muted fs-9" style="font-family:inherit">@Who(o.CreatedByEmployeeId)</div></td>
-                                <td>@(o.CervixCm?.ToString("0.#") ?? "—")</td>
-                                <td>@(o.DescentFifths == null ? "—" : o.DescentFifths + "/5")</td>
-                                <td>@(o.ContractionsPer10 == null ? "—" : o.ContractionsPer10 + "/10" + (o.ContractionSeconds != null ? " · " + o.ContractionSeconds + "s" : ""))</td>
-                                <td class="@(o.FetalHeartRate is < 110 or > 160 ? "text-danger fw-bold" : "")">@(o.FetalHeartRate?.ToString() ?? "—")</td>
-                                <td style="font-family:inherit">@(o.Liquor == null ? "—" : T["liq:" + o.Liquor].Value)</td>
-                                <td dir="ltr" class="text-start">@(o.BpSystolic == null ? "—" : o.BpSystolic + "/" + o.BpDiastolic)</td>
-                                <td>@(o.Pulse?.ToString() ?? "—")</td>
-                                <td>@(o.TemperatureC?.ToString("0.0") ?? "—")</td>
-                                <td style="font-family:inherit">@foreach (var w in p.Warnings) {<span class="badge badge-light-danger fs-9 me-1">@T["lbw:" + w]</span>}@if (o.Note != null) {<div class="text-muted fs-8"><bdi>@o.Note</bdi></div>}</td>
+                                <td class="ps-4"><span class="text-gray-900 fw-bold fs-6 hp-num d-block">@Local(o.At)</span><span class="text-gray-500 fw-semibold fs-7">@Who(o.CreatedByEmployeeId)</span></td>
+                                <td>@if (o.CervixCm != null) {<span class="text-gray-800 fw-bold fs-6 hp-num" dir="ltr">@o.CervixCm.Value.ToString("0.#", inv)&nbsp;cm</span>} else {<span class="text-gray-400">—</span>}</td>
+                                <td><span class="text-gray-800 fw-bold hp-num" dir="ltr">@(o.DescentFifths == null ? "—" : o.DescentFifths + "/5")</span></td>
+                                <td><span class="text-gray-800 fw-bold hp-num d-block" dir="ltr">@(o.ContractionsPer10 == null ? "—" : o.ContractionsPer10 + "/10")</span>@if (o.ContractionSeconds != null) {<span class="text-gray-500 fw-semibold fs-7 hp-num" dir="ltr">@o.ContractionSeconds&nbsp;s</span>}</td>
+                                <td>@if (o.FetalHeartRate != null) {<span class="badge badge-light-@(o.FetalHeartRate is < 110 or > 160 ? "danger" : "success") fs-7 fw-bold hp-num">@o.FetalHeartRate</span>} else {<span class="text-gray-400">—</span>}</td>
+                                <td><span class="text-gray-800 fw-semibold fs-7">@(o.Liquor == null ? "—" : T["liq:" + o.Liquor].Value)</span></td>
+                                <td><span class="text-gray-800 fw-bold hp-num" dir="ltr">@(o.BpSystolic == null ? "—" : o.BpSystolic + "/" + o.BpDiastolic)</span></td>
+                                <td><span class="text-gray-800 fw-bold hp-num">@(o.Pulse?.ToString() ?? "—")</span></td>
+                                <td><span class="text-gray-800 fw-bold hp-num" dir="ltr">@(o.TemperatureC?.ToString("0.0", inv) ?? "—")</span></td>
+                                <td class="pe-4">@if (p.Warnings.Count > 0) {<div class="d-flex flex-wrap gap-1">@foreach (var w in p.Warnings) {<span class="badge badge-light-danger fs-8 fw-bold">@T["lbw:" + w]</span>}</div>}@if (o.Note != null) {<span class="text-gray-500 fw-semibold fs-7 d-block mt-1"><bdi>@o.Note</bdi></span>}@if (p.Warnings.Count == 0 && o.Note == null) {<span class="text-gray-400">—</span>}</td>
                             </tr>
                         }
                         </tbody>
@@ -118,32 +150,38 @@
 
 @if (active && canWard)
 {
-    <div class="modal fade" id="obsModal2" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-650px"><div class="modal-content">
-        <div class="modal-header"><h2 class="fw-bold m-0">@T["Labour observation"]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
-        <div class="modal-body py-6 px-lg-10"><div class="row g-4">
-            <div class="col-4"><label class="form-label">@T["Time"]</label><input type="datetime-local" class="form-control form-control-solid" dir="ltr" data-o="at" /><div class="form-text">@T["Empty means now."]</div></div>
-            <div class="col-4"><label class="form-label">@T["Cervix (cm)"]</label><input type="number" min="0" max="10" step="0.5" class="form-control form-control-solid" dir="ltr" data-o="cervixCm" /></div>
-            <div class="col-4"><label class="form-label">@T["Descent (fifths)"]</label><input type="number" min="0" max="5" class="form-control form-control-solid" dir="ltr" data-o="descentFifths" /></div>
-            <div class="col-4"><label class="form-label">@T["Contractions in 10 min"]</label><input type="number" min="0" max="10" class="form-control form-control-solid" dir="ltr" data-o="contractionsPer10" /></div>
-            <div class="col-4"><label class="form-label">@T["Each lasts (s)"]</label><input type="number" min="0" max="180" class="form-control form-control-solid" dir="ltr" data-o="contractionSeconds" /></div>
-            <div class="col-4"><label class="form-label">@T["Fetal heart (bpm)"]</label><input type="number" class="form-control form-control-solid" dir="ltr" data-o="fetalHeartRate" /></div>
-            <div class="col-4"><label class="form-label">@T["Liquor"]</label><select class="form-select form-select-solid" data-o="liquor"><option value="">—</option>@foreach (var l in HospitalLiquor.All) {<option value="@l">@T["liq:" + l]</option>}</select></div>
-            <div class="col-4"><label class="form-label">@T["BP (systolic)"]</label><input type="number" class="form-control form-control-solid" dir="ltr" data-o="bpSystolic" /></div>
-            <div class="col-4"><label class="form-label">@T["BP (diastolic)"]</label><input type="number" class="form-control form-control-solid" dir="ltr" data-o="bpDiastolic" /></div>
-            <div class="col-4"><label class="form-label">@T["Pulse"]</label><input type="number" class="form-control form-control-solid" dir="ltr" data-o="pulse" /></div>
-            <div class="col-4"><label class="form-label">@T["Temperature (°C)"]</label><input type="number" step="0.1" class="form-control form-control-solid" dir="ltr" data-o="temperatureC" /></div>
-            <div class="col-12"><label class="form-label">@T["Notes"]</label><input class="form-control form-control-solid" maxlength="300" data-o="note" /></div>
-        </div></div>
-        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-o-save>@T["Save"]</button></div>
+    @* H128: both forms as the theme's form modal (demo39 utilities/modals/forms/new-target) *@
+    <div class="modal fade" id="obsModal2" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-650px"><div class="modal-content rounded">
+        <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-10">
+            <div class="mb-10 text-center"><h1 class="mb-3">@T["Labour observation"]</h1><div class="text-muted fw-semibold fs-6">@DisplayName.Of(Model.Name, Model.NameEn) · <bdi class="hp-num">@Model.Mrn</bdi></div></div>
+            <div class="row g-6">
+            <div class="col-4"><label class="fs-6 fw-semibold mb-2">@T["Time"]</label><input type="datetime-local" class="form-control form-control-solid" dir="ltr" data-o="at" /><div class="text-muted fs-7 mt-1">@T["Empty means now."]</div></div>
+            <div class="col-4"><label class="fs-6 fw-semibold mb-2">@T["Cervix (cm)"]</label><input type="number" min="0" max="10" step="0.5" class="form-control form-control-solid" dir="ltr" data-o="cervixCm" /></div>
+            <div class="col-4"><label class="fs-6 fw-semibold mb-2">@T["Descent (fifths)"]</label><input type="number" min="0" max="5" class="form-control form-control-solid" dir="ltr" data-o="descentFifths" /></div>
+            <div class="col-4"><label class="fs-6 fw-semibold mb-2">@T["Contractions in 10 min"]</label><input type="number" min="0" max="10" class="form-control form-control-solid" dir="ltr" data-o="contractionsPer10" /></div>
+            <div class="col-4"><label class="fs-6 fw-semibold mb-2">@T["Each lasts (s)"]</label><input type="number" min="0" max="180" class="form-control form-control-solid" dir="ltr" data-o="contractionSeconds" /></div>
+            <div class="col-4"><label class="fs-6 fw-semibold mb-2">@T["Fetal heart (bpm)"]</label><input type="number" class="form-control form-control-solid" dir="ltr" data-o="fetalHeartRate" /></div>
+            <div class="col-4"><label class="fs-6 fw-semibold mb-2">@T["Liquor"]</label><select class="form-select form-select-solid" data-control="select2" data-dropdown-parent="#obsModal2" data-o="liquor"><option value="">—</option>@foreach (var l in HospitalLiquor.All) {<option value="@l">@T["liq:" + l]</option>}</select></div>
+            <div class="col-4"><label class="fs-6 fw-semibold mb-2">@T["BP (systolic)"]</label><input type="number" class="form-control form-control-solid" dir="ltr" data-o="bpSystolic" /></div>
+            <div class="col-4"><label class="fs-6 fw-semibold mb-2">@T["BP (diastolic)"]</label><input type="number" class="form-control form-control-solid" dir="ltr" data-o="bpDiastolic" /></div>
+            <div class="col-4"><label class="fs-6 fw-semibold mb-2">@T["Pulse"]</label><input type="number" class="form-control form-control-solid" dir="ltr" data-o="pulse" /></div>
+            <div class="col-4"><label class="fs-6 fw-semibold mb-2">@T["Temperature (°C)"]</label><input type="number" step="0.1" class="form-control form-control-solid" dir="ltr" data-o="temperatureC" /></div>
+            <div class="col-12"><label class="fs-6 fw-semibold mb-2">@T["Notes"]</label><input class="form-control form-control-solid" maxlength="300" data-o="note" /></div>
+            </div>
+            <div class="text-center pt-10"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-o-save>@T["Save"]</button></div>
+        </div>
     </div></div></div>
-    <div class="modal fade" id="closeModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-450px"><div class="modal-content">
-        <div class="modal-header"><h2 class="fw-bold m-0">@T["Close the labour"]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
-        <div class="modal-body py-6 px-lg-10"><div class="row g-4">
-            <div class="col-12"><label class="form-label required">@T["How it ended"]</label><select class="form-select form-select-solid" data-c="outcome">@foreach (var x in HospitalLabourOutcome.All) {<option value="@x">@T["lbo:" + x]</option>}</select></div>
-            <div class="col-12"><label class="form-label">@T["Notes"]</label><textarea class="form-control form-control-solid" rows="2" maxlength="500" data-c="note"></textarea></div>
-            <div class="col-12 text-muted fs-8">@T["The baby is registered from the births screen, on the mother's file."]</div>
-        </div></div>
-        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-c-save>@T["Close"]</button></div>
+    <div class="modal fade" id="closeModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-500px"><div class="modal-content rounded">
+        <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-10">
+            <div class="mb-10 text-center"><h1 class="mb-3">@T["Close the labour"]</h1><div class="text-muted fw-semibold fs-6">@T["The baby is registered from the births screen, on the mother's file."]</div></div>
+            <div class="row g-6">
+            <div class="col-12"><label class="required fs-6 fw-semibold mb-2">@T["How it ended"]</label><select class="form-select form-select-solid" data-control="select2" data-dropdown-parent="#closeModal" data-c="outcome">@foreach (var x in HospitalLabourOutcome.All) {<option value="@x">@T["lbo:" + x]</option>}</select></div>
+            <div class="col-12"><label class="fs-6 fw-semibold mb-2">@T["Notes"]</label><textarea class="form-control form-control-solid" rows="2" maxlength="500" data-c="note"></textarea></div>
+            </div>
+            <div class="text-center pt-10"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-c-save>@T["Close"]</button></div>
+        </div>
     </div></div></div>
 }
 
@@ -157,7 +195,7 @@
             function post(u, b) { return fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': tok }, body: JSON.stringify(b || {}) }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); }); }
             function done(res) { if (!res.ok) { toastr.error(res.error || W.failed); return; } toastr.success(W.saved); location.reload(); }
             document.addEventListener('click', function (e) {
-                if (e.target.closest('[data-o-new]')) { oEl.querySelectorAll('[data-o]').forEach(function (i) { i.value = ''; }); bootstrap.Modal.getOrCreateInstance(oEl).show(); return; }
+                if (e.target.closest('[data-o-new]')) { oEl.querySelectorAll('[data-o]').forEach(function (i) { i.value = ''; if (i._flatpickr) i._flatpickr.clear(); }); if (window.jQuery) jQuery(oEl).find('select').trigger('change.select2'); bootstrap.Modal.getOrCreateInstance(oEl).show(); return; }
                 if (e.target.closest('[data-close]')) { bootstrap.Modal.getOrCreateInstance(cEl).show(); return; }
                 var s = e.target.closest('[data-o-save]');
                 if (s) { var b = { labourId: @L.ID }; oEl.querySelectorAll('[data-o]').forEach(function (i) { var k = i.getAttribute('data-o'), v = i.value.trim(); b[k] = v === '' ? null : (nums.indexOf(k) >= 0 ? Number(v) : v); });

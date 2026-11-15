@@ -8,13 +8,18 @@
 {
     var u = r.Row; bool open = u.IdentifiedAt == null;
     <tr>
-        <td><a href="@Url.Action("Patient", new { id = u.MergedIntoPatientId ?? u.PatientId })" class="fw-bold text-gray-900 text-hover-primary"><bdi>@r.Name</bdi></a>
-            <div class="text-muted fs-8"><bdi class="hp-num">@r.Mrn</bdi> · @T["About {0} years", u.EstimatedAge]@if (r.InEmergency) {<span class="badge badge-light-danger fs-9 ms-1">@T["In the emergency department"]</span>}</div></td>
-        <td class="fs-8"><bdi>@u.Description</bdi>@if (u.BroughtBy != null) {<div class="text-muted">@T["Brought by"]: <bdi>@u.BroughtBy</bdi></div>}</td>
-        <td class="text-nowrap fs-8"><span class="hp-num">@HospitalNursingService.UtcToWard(u.CreatedAt).ToString("yyyy-MM-dd HH:mm")</span><div class="@(open && r.Hours >= 24 ? "text-danger fw-bold" : "text-muted")">@T["{0} h", r.Hours]</div></td>
-        <td>@if (u.MedicoLegal) {<span class="badge badge-light-danger fs-8">@T["Police case"]</span>@if (u.PoliceRef != null) {<div class="text-muted fs-9"><bdi dir="ltr">@u.PoliceRef</bdi></div>}} else {<span class="text-muted">—</span>}</td>
-        <td>@if (open) {<span class="badge badge-light-primary fs-8">@T["Not yet identified"]</span>}
-            else {<span class="badge badge-light-success fs-8">@T["unr:" + u.Resolution]</span><div class="text-muted fs-9"><bdi>@u.IdentifiedHow</bdi></div>}</td>
-        <td class="text-end">@if (open && canReg) {<button type="button" class="btn btn-sm btn-primary text-nowrap" data-identify="@u.ID" data-who="@r.Name — @r.Mrn" data-sex="@(r.Name.Contains("أنثى") || r.Name.Contains("female") ? "F" : "M")">@T["Identify"]</button>}</td>
+        @* H128: a table-widget row (demo39 widgets/tables) — symbol · name over file and age · values as badges *@
+        <td class="ps-4"><div class="d-flex align-items-center">
+            <div class="symbol symbol-45px me-4 flex-shrink-0"><span class="symbol-label bg-light-@(open ? "danger" : "success")"><i class="ki-outline @(open ? "ki-question-2" : "ki-user-tick") fs-2x text-@(open ? "danger" : "success")"></i></span></div>
+            <div class="d-flex flex-column"><a href="@Url.Action("Patient", new { id = u.MergedIntoPatientId ?? u.PatientId })" class="text-gray-900 fw-bold text-hover-primary fs-6"><bdi>@r.Name</bdi></a>
+                <span class="text-muted fw-semibold d-block fs-7"><bdi class="hp-num" dir="ltr">@r.Mrn</bdi> · @T["About {0} years", u.EstimatedAge]</span>
+                @if (r.InEmergency) {<span><span class="badge badge-light-danger fs-8 fw-bold mt-1">@T["In the emergency department"]</span></span>}</div>
+        </div></td>
+        <td><span class="text-gray-800 fw-semibold fs-7 d-block"><bdi>@u.Description</bdi></span>@if (u.BroughtBy != null) {<span class="text-muted fw-semibold fs-7 d-block">@T["Brought by"]: <bdi>@u.BroughtBy</bdi></span>}</td>
+        <td class="text-nowrap"><span class="text-gray-800 fw-bold fs-7 hp-num d-block" dir="ltr">@HospitalNursingService.UtcToWard(u.CreatedAt).ToString("yyyy-MM-dd HH:mm")</span><span class="badge badge-light-@(open && r.Hours >= 24 ? "danger" : "primary") fs-8 fw-bold hp-num mt-1">@T["{0} h", r.Hours]</span></td>
+        <td>@if (u.MedicoLegal) {<span class="badge badge-light-danger fs-7 fw-bold">@T["Police case"]</span>@if (u.PoliceRef != null) {<bdi class="text-muted fw-semibold fs-7 d-block mt-1" dir="ltr">@u.PoliceRef</bdi>}} else {<span class="text-muted">—</span>}</td>
+        <td>@if (open) {<span class="badge badge-light-danger fs-7 fw-bold">@T["Not yet identified"]</span>}
+            else {<span class="badge badge-light-success fs-7 fw-bold">@T["unr:" + u.Resolution]</span><span class="text-muted fw-semibold fs-7 d-block mt-1"><bdi>@u.IdentifiedHow</bdi></span>}</td>
+        <td class="text-end pe-4">@if (open && canReg) {<button type="button" class="btn btn-sm btn-light-primary text-nowrap" data-identify="@u.ID" data-who="@r.Name — @r.Mrn" data-sex="@(r.Name.Contains("أنثى") || r.Name.Contains("female") ? "F" : "M")"><i class="ki-outline ki-user-tick fs-4"></i>@T["Identify"]</button>}</td>
     </tr>
 }

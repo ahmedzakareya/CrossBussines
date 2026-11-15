@@ -39,23 +39,23 @@
     </div></div>
 
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
-        <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice">
-            <span class="symbol symbol-45px me-5 flex-shrink-0"><span class="symbol-label"><i class="ki-outline ki-element-11 fs-2x text-white"></i></span></span>
+        <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-5 mb-5">
+            <i class="ki-outline ki-information fs-2tx text-primary me-4"></i>
             <div class="d-flex flex-stack flex-grow-1 flex-wrap flex-md-nowrap">
                 <div class="mb-3 mb-md-0 fw-semibold pe-5">
                     <h4 class="text-gray-900 fw-bold mb-1">@T["Each item is defined once"]</h4>
                     <div class="fs-6 text-gray-700">@T["Services are created in the service catalogue. Any item already in the inventory joins as a medicine or a consumable, one at a time from the inventory or a whole category below; its selling price is the main-list price."]</div>
                 </div>
-                <span class="badge hp-badge fs-7 fw-bold px-4 py-2 flex-shrink-0"><span class="hp-num me-1">@Model.Count</span>@T["items"]</span>
+                <span class="badge badge-primary fs-7 fw-bold px-4 py-2 flex-shrink-0"><span class="hp-num">@Model.Count</span>&nbsp;@T["items"]</span>
             </div>
         </div>
 
-        <div class="card mb-5">
-            <div class="card-header border-0 pt-6">
+        <div class="card card-flush mb-5">
+            <div class="card-header pt-5">
                 <ul class="nav nav-stretch nav-line-tabs nav-line-tabs-2x border-transparent fs-6 fw-bold">
                     @foreach (var g in HospitalPriceGroups.All)
                     {
-                        <li class="nav-item"><a class="nav-link text-active-primary py-4 me-6 @(g == tab ? "active" : "")" data-bs-toggle="tab" href="#cat_@g">@T["group:" + g] <span class="badge badge-light-primary ms-1 hp-num">@Model.Count(e => e.Group == g)</span></a></li>
+                        <li class="nav-item"><a class="nav-link text-active-primary py-4 me-6 @(g == tab ? "active" : "")" data-bs-toggle="tab" href="#cat_@g">@T["group:" + g] <span class="badge badge-light-primary fs-7 fw-bold ms-1 hp-num">@Model.Count(e => e.Group == g)</span></a></li>
                     }
                 </ul>
             </div>
@@ -66,26 +66,28 @@
                     <div class="tab-pane fade @(g == tab ? "show active" : "")" id="cat_@g" role="tabpanel">
                         @if (rows.Count == 0)
                         {
-                            <div class="text-center text-muted py-12"><i class="ki-outline @(g == HospitalPriceGroups.Service ? "ki-price-tag" : "ki-capsule") fs-3x text-gray-300 d-block mb-4"></i>
-                                @(g == HospitalPriceGroups.Service ? T["No services yet."] : T["Map an inventory category to the hospital below; its items appear here."])</div>
+                            <div class="text-center py-10"><i class="ki-outline @(g == HospitalPriceGroups.Service ? "ki-price-tag" : "ki-capsule") fs-3x text-gray-300 mb-4 d-block"></i>
+                                <div class="fs-6 fw-bold text-gray-700">@(g == HospitalPriceGroups.Service ? T["No services yet."] : T["Map an inventory category to the hospital below; its items appear here."])</div></div>
                         }
                         else
                         {
-                            <div class="table-responsive"><table class="table align-middle table-row-dashed fs-6 gy-3 mb-0">
-                                <thead><tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0">
-                                    <th class="w-125px">@T["Code"]</th><th>@T["Item"]</th><th>@T["Type"]</th><th class="text-end">@T["Selling price"] (<span class="hp-num">@fac.Code</span>)</th>@if (g == HospitalPriceGroups.Medicine) {<th class="text-end">@T["Public price"]</th>}<th>@T["On other lists"]</th>
+                            @* H128: table widget (demo39 widgets/tables) — the code rides under the name *@
+                            <div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
+                                <thead><tr class="fw-bold text-muted bg-light">
+                                    <th class="ps-4 rounded-start">@T["Item"]</th><th>@T["Type"]</th><th class="text-end">@T["Selling price"] (<span class="hp-num">@fac.Code</span>)</th>@if (g == HospitalPriceGroups.Medicine) {<th class="text-end">@T["Public price"]</th>}<th class="pe-4 rounded-end">@T["On other lists"]</th>
                                 </tr></thead>
-                                <tbody class="fw-semibold text-gray-700">
+                                <tbody>
                                     @foreach (var e in rows)
                                     {
                                         var st = state.GetValueOrDefault(e.Key);
                                         <tr>
-                                            <td><span class="badge hp-code fw-bold fs-8 hp-num">@e.Code</span></td>
-                                            <td><a href="@Url.Action("CatalogEntry", new { key = e.Key })" class="fw-bold text-gray-900 text-hover-primary">@DisplayName.Of(e.Name, e.NameEn)</a></td>
-                                            <td class="fs-7">@(g == HospitalPriceGroups.Service ? T["cat:" + e.Category].Value : T["group:" + g].Value)</td>
-                                            <td class="text-end hp-num fw-bold">@fac.Format(e.MainPrice)</td>
-                                            @if (g == HospitalPriceGroups.Medicine) {<td class="text-end hp-num">@(e.PublicPrice is decimal pp ? fac.Format(pp) : "—")</td>}
-                                            <td><span class="hp-num">@st.On / @lists.Count</span>@if (st.Stale > 0) {<span class="badge badge-light-danger fs-8 ms-2"><span class="hp-num me-1">@st.Stale</span>@T["not updated (count)"]</span>}@if (st.On < lists.Count) {<span class="badge badge-light-info fs-8 ms-2">@T["New — not added"]</span>}</td>
+                                            <td class="ps-4"><div class="d-flex align-items-center">
+                                                <div class="symbol symbol-40px me-3 flex-shrink-0"><span class="symbol-label bg-light-@(g == HospitalPriceGroups.Service ? "primary" : g == HospitalPriceGroups.Medicine ? "success" : "info")"><i class="ki-outline @(g == HospitalPriceGroups.Service ? "ki-price-tag" : g == HospitalPriceGroups.Medicine ? "ki-capsule" : "ki-package") fs-2 text-@(g == HospitalPriceGroups.Service ? "primary" : g == HospitalPriceGroups.Medicine ? "success" : "info")"></i></span></div>
+                                                <div class="d-flex flex-column"><a href="@Url.Action("CatalogEntry", new { key = e.Key })" class="text-gray-900 fw-bold text-hover-primary fs-6">@DisplayName.Of(e.Name, e.NameEn)</a><bdi class="text-muted fw-semibold d-block fs-7 hp-num" dir="ltr" style="text-align:start">@e.Code</bdi></div></div></td>
+                                            <td class="text-gray-700 fw-semibold fs-7">@(g == HospitalPriceGroups.Service ? T["cat:" + e.Category].Value : T["group:" + g].Value)</td>
+                                            <td class="text-end"><span class="text-gray-900 fw-bold fs-6 hp-num">@fac.Format(e.MainPrice)</span></td>
+                                            @if (g == HospitalPriceGroups.Medicine) {<td class="text-end hp-num text-gray-700 fw-semibold">@(e.PublicPrice is decimal pp ? fac.Format(pp) : "—")</td>}
+                                            <td class="pe-4"><span class="badge badge-light fs-7 fw-bold hp-num">@T["{0} of {1}", st.On, lists.Count]</span>@if (st.Stale > 0) {<span class="badge badge-light-danger fs-7 fw-bold ms-2"><span class="hp-num">@st.Stale</span>&nbsp;@T["not updated (count)"]</span>}@if (st.On < lists.Count) {<span class="badge badge-light-info fs-7 fw-bold ms-2">@T["New — not added"]</span>}</td>
                                         </tr>
                                     }
                                 </tbody>
@@ -98,15 +100,15 @@
 
         @if (canManage)
         {
-            <div class="card">
-                <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
-                    <span class="card-label fw-bold text-gray-900 fs-4">@T["Inventory categories in the hospital"]</span>
-                    <span class="text-muted mt-1 fw-semibold fs-7">@T["Every active item of a mapped category is a hospital medicine or consumable, priced at its selling price on the main list"]</span>
-                </div>
+            <div class="card card-flush">
+                <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column">
+                    <span class="card-label fw-bold text-gray-800">@T["Inventory categories in the hospital"]</span>
+                    <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Every active item of a mapped category is a hospital medicine or consumable, priced at its selling price on the main list"]</span>
+                </h3>
                     <div class="card-toolbar"><button type="button" class="btn btn-sm btn-primary" data-save-map><i class="ki-outline ki-check fs-4"></i>@T["Save"]</button></div>
                 </div>
                 <div class="card-body pt-2">
-                    @if (categories.Count == 0) { <div class="text-muted">@T["Inventory has no categories yet."]</div> }
+                    @if (categories.Count == 0) { <div class="text-center py-10"><i class="ki-outline ki-category fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-bold text-gray-700">@T["Inventory has no categories yet."]</div></div> }
                     else
                     {
                         <div class="row g-4" id="catMap">
@@ -115,7 +117,8 @@
                                 var k = mapped.GetValueOrDefault(c.Id);
                                 @* The picker sits under the name at the card's full width: "Not hospital" never gets cut. *@
                                 <div class="col-md-6 col-xl-4"><div class="d-flex flex-column gap-2 h-100 border border-dashed border-gray-300 rounded p-4">
-                                    <div class="d-flex flex-stack gap-2"><span class="fw-semibold text-gray-800 fs-7">@DisplayName.Of(c.Name, c.NameEn)</span><span class="badge hp-code fw-bold fs-9 hp-num">@c.Label</span></div>
+                                    <div class="d-flex align-items-center gap-3"><div class="symbol symbol-35px flex-shrink-0"><span class="symbol-label bg-light-@(k == null ? "secondary" : "primary")"><i class="ki-outline ki-category fs-3 text-@(k == null ? "gray-600" : "primary")"></i></span></div>
+                                        <div class="d-flex flex-column min-w-0"><span class="text-gray-800 fw-bold fs-6">@DisplayName.Of(c.Name, c.NameEn)</span><bdi class="text-muted fw-semibold fs-7 hp-num">@c.Label</bdi></div></div>
                                     <select class="form-select form-select-sm form-select-solid" data-cat="@c.Id">
                                         <option value="">@T["Not hospital"]</option>
                                         @foreach (var kind in HospitalPriceGroups.ItemKinds) { <option value="@kind" selected="@(k == kind)">@T["group:" + kind]</option> }
@@ -133,18 +136,19 @@
 @if (canManage)
 {
     <div class="modal fade" id="joinModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered modal-xl"><div class="modal-content">
-        <div class="modal-header"><h2 class="fw-bold m-0">@T["Add from the inventory"]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
-        <div class="modal-body py-6 px-lg-10">
-            <div class="text-gray-700 fs-7 mb-4">@T["Any item already in the inventory, whatever its category. Choose whether it is a medicine or a consumable: that decides which of the list's percentages prices it."]</div>
+        <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-10">
+            <div class="mb-8 text-center"><h1 class="mb-3">@T["Add from the inventory"]</h1>
+                <div class="text-gray-500 fw-semibold fs-6">@T["Any item already in the inventory, whatever its category. Choose whether it is a medicine or a consumable: that decides which of the list's percentages prices it."]</div></div>
             <div class="position-relative mb-4"><i class="ki-outline ki-magnifier fs-3 text-gray-500 position-absolute top-50 translate-middle-y ms-4"></i>
                 <input type="text" class="form-control form-control-solid ps-12" data-inv-q autocomplete="off" placeholder="@T["Search by code, barcode or name"]" /></div>
-            <div class="table-responsive mh-350px overflow-auto"><table class="table align-middle table-row-dashed fs-7 gy-2 mb-0">
-                <thead><tr class="text-gray-500 fw-bold fs-8 text-uppercase"><th class="w-30px"></th><th>@T["Item"]</th><th>@T["Category"]</th><th style="text-align:end">@T["Main price"] (<span class="hp-num">@fac.Code</span>)</th><th class="w-175px">@T["Type"]</th></tr></thead>
+            <div class="table-responsive mh-350px overflow-auto"><table class="table align-middle gs-0 gy-3 fs-7 mb-0">
+                <thead><tr class="fw-bold text-muted bg-light"><th class="w-30px ps-4 rounded-start"></th><th>@T["Item"]</th><th>@T["Category"]</th><th style="text-align:end">@T["Main price"] (<span class="hp-num">@fac.Code</span>)</th><th class="w-175px pe-4 rounded-end">@T["Type"]</th></tr></thead>
                 <tbody data-inv-rows><tr><td colspan="5" class="text-center text-muted py-8">@T["Type at least two letters to search."]</td></tr></tbody>
             </table></div>
-            <div class="text-muted fs-7 mt-3"><span data-inv-count class="hp-num">0</span> @T["items selected"]</div>
+            <div class="mt-4"><span class="badge badge-light-primary fs-7 fw-bold"><span data-inv-count class="hp-num">0</span>&nbsp;@T["items selected"]</span></div>
+            <div class="text-center pt-10"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-join-save><i class="ki-outline ki-plus fs-4"></i>@T["Add selected"]</button></div>
         </div>
-        <div class="modal-footer flex-center"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-join-save>@T["Add selected"]</button></div>
     </div></div></div>
 }
 
@@ -160,7 +164,7 @@
                 return fetch(location.pathname + (tab ? '?tab=' + tab : ''), { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.text(); }).then(function (html) {
                     var fresh = new DOMParser().parseFromString(html, 'text/html').getElementById('kt_app_content');
                     if (fresh) document.getElementById('kt_app_content').innerHTML = fresh.innerHTML;
-                    if (window.jQuery && jQuery.fn.select2) jQuery('#kt_app_content select.form-select:not([data-no-select2])').select2({ minimumResultsForSearch: Infinity, width: '100%', dir: document.documentElement.dir === 'rtl' ? 'rtl' : 'ltr' });
+                    if (window.jQuery && jQuery.fn.select2) jQuery('#kt_app_content select.form-select:not([data-no-select2])').select2({ minimumResultsForSearch: Infinity, width: '100%', dir: document.documentElement.dir === 'rtl' ? 'rtl' : 'ltr', dropdownParent: jQuery(document.body) });
                 });
             }
             // Any inventory item joins the catalogue: the same search as a price list's, ticks kept across searches
@@ -175,11 +179,22 @@
                 tb.innerHTML = inv.last.map(function (h) {
                     var kind = inv.picked[h.id] || h.kind || 'Medicine', on = h.onList;
                     var opts = ['Medicine', 'Consumable'].map(function (k) { return '<option value="' + k + '"' + (k === kind ? ' selected' : '') + '>' + esc(W2.kinds[k]) + '</option>'; }).join('');
-                    return '<tr><td><input type="checkbox" class="form-check-input" data-inv-pick="' + h.id + '"' + (on ? ' disabled' : '') + (inv.picked[h.id] ? ' checked' : '') + ' /></td>' +
-                        '<td><span class="badge hp-code fw-bold fs-8 hp-num me-2">' + esc(h.code) + '</span>' + esc(h.name) + ' <span class="badge ' + (on ? 'badge-light-success' : 'badge-light-info') + ' fs-9">' + esc(on ? W2.inCat : W2.notIn) + '</span></td>' +
-                        '<td class="text-gray-600">' + esc(h.category) + '</td><td class="hp-num" style="text-align:end">' + Number(h.price).toFixed(3) + '</td>' +
-                        '<td><select class="form-select form-select-sm form-select-solid" data-no-select2 data-inv-kind="' + h.id + '"' + (on ? ' disabled' : '') + '>' + opts + '</select></td></tr>';
+                    return '<tr><td class="ps-4"><div class="form-check form-check-sm form-check-custom form-check-solid"><input type="checkbox" class="form-check-input" data-inv-pick="' + h.id + '"' + (on ? ' disabled' : '') + (inv.picked[h.id] ? ' checked' : '') + ' /></div></td>' +
+                        '<td><span class="text-gray-900 fw-bold fs-6">' + esc(h.name) + '</span> <span class="badge ' + (on ? 'badge-light-success' : 'badge-light-info') + ' fs-8 fw-bold">' + esc(on ? W2.inCat : W2.notIn) + '</span><bdi class="text-muted fw-semibold d-block fs-7 hp-num">' + esc(h.code) + '</bdi></td>' +
+                        '<td class="text-gray-600 fw-semibold">' + esc(h.category) + '</td><td class="hp-num text-gray-900 fw-bold" style="text-align:end">' + Number(h.price).toFixed(3) + '</td>' +
+                        '<td class="pe-4"><select class="form-select form-select-sm form-select-solid" data-inv-kind="' + h.id + '"' + (on ? ' disabled' : '') + '>' + opts + '</select></td></tr>';
                 }).join('');
+                kinds(tb);
+            }
+            // H128: the kind of each found item is the theme's select2 inside the modal; its change reaches the listener below
+            function kinds(scope) {
+                if (!window.jQuery || !jQuery.fn.select2) return;
+                var rtl = (document.documentElement.getAttribute('dir') || '').toLowerCase() === 'rtl', $m = jQuery('#joinModal');
+                scope.querySelectorAll('select[data-inv-kind]').forEach(function (el) {
+                    var $el = jQuery(el); if ($el.hasClass('select2-hidden-accessible')) return;
+                    $el.select2({ width: '100%', dir: rtl ? 'rtl' : 'ltr', minimumResultsForSearch: Infinity, dropdownParent: $m.length ? $m : jQuery(document.body) });
+                    $el.on('change.relay', function () { if (el.__relaying) return; el.__relaying = true; el.dispatchEvent(new Event('change', { bubbles: true })); el.__relaying = false; });
+                });
             }
             document.addEventListener('input', function (e) {
                 if (!e.target.matches('[data-inv-q]')) return;

@@ -13,26 +13,30 @@
     var names = System.Globalization.CultureInfo.CurrentUICulture.DateTimeFormat.DayNames;
     string V(decimal? d) => d?.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture) ?? "";
 }
-<div class="modal fade" id="planModal" tabindex="-1" aria-hidden="true" data-plan-id="@(p?.ID ?? 0)" data-patient-id="@(p?.PatientId ?? fixedPatient)"><div class="modal-dialog modal-dialog-centered mw-650px"><div class="modal-content">
-    <div class="modal-header"><h2 class="fw-bold m-0">@(isNew ? T["New dialysis plan"] : T["Change the dialysis plan"])</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
-    <div class="modal-body py-6 px-lg-10"><div class="row g-4">
-        @if (pick) {<div class="col-12"><label class="form-label required">@T["Patient"]</label><select class="form-select form-select-solid" data-pl="patientId" data-placeholder="@T["Search by name or file…"]"><option></option></select></div>}
-        <div class="col-4"><label class="form-label required">@T["Dry weight (kg)"]</label><input type="number" step="0.1" min="20" max="250" class="form-control form-control-solid" dir="ltr" data-pl="dryWeightKg" value="@V(p?.DryWeightKg)" /></div>
-        <div class="col-4"><label class="form-label required">@T["Vascular access"]</label><select class="form-select form-select-solid" data-pl="access">@foreach (var a in HospitalDialysisAccess.All) {<option value="@a" selected="@(p?.Access == a)">@T["dxa:" + a]</option>}</select></div>
-        <div class="col-4"><label class="form-label required">@T["Hours"]</label><select class="form-select form-select-solid" data-pl="durationMin">@foreach (var m in new[] { 120, 150, 180, 210, 240, 270, 300, 360, 480 }) {<option value="@m" selected="@((p?.DurationMin ?? 240) == m)">@((m / 60m).ToString("0.#"))</option>}</select></div>
-        <div class="col-4"><label class="form-label required">@T["Blood flow (ml/min)"]</label><input type="number" min="100" max="600" step="10" class="form-control form-control-solid" dir="ltr" data-pl="bloodFlow" value="@(p?.BloodFlow ?? 300)" /></div>
-        <div class="col-4"><label class="form-label">@T["Dialysate flow (ml/min)"]</label><input type="number" min="300" max="1000" step="50" class="form-control form-control-solid" dir="ltr" data-pl="dialysateFlow" value="@(p?.DialysateFlow ?? 500)" /></div>
-        <div class="col-4"><label class="form-label required">@T["Shift"]</label><select class="form-select form-select-solid" data-pl="shift">@for (int s = 1; s <= 3; s++) {<option value="@s" selected="@((p?.Shift ?? 1) == s)">@T["Shift {0}", s]</option>}</select></div>
-        <div class="col-12"><label class="form-label required">@T["Dialysis days"]</label>
+@* H128: the theme's form modal (demo39 utilities/modals/forms/new-target): borderless header, centred title over a muted line, labelled fields, centred footer *@
+<div class="modal fade" id="planModal" tabindex="-1" aria-hidden="true" data-plan-id="@(p?.ID ?? 0)" data-patient-id="@(p?.PatientId ?? fixedPatient)"><div class="modal-dialog modal-dialog-centered mw-650px"><div class="modal-content rounded">
+    <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-10">
+        <div class="mb-10 text-center"><h1 class="mb-3">@(isNew ? T["New dialysis plan"] : T["Change the dialysis plan"])</h1><div class="text-muted fw-semibold fs-6">@T["Haemodialysis"] · @T["Dialysis unit"]</div></div>
+        <div class="row g-6">
+        @if (pick) {<div class="col-12"><label class="required fs-6 fw-semibold mb-2">@T["Patient"]</label><select class="form-select form-select-solid" data-pl="patientId" data-placeholder="@T["Search by name or file…"]"><option></option></select></div>}
+        <div class="col-4"><label class="required fs-6 fw-semibold mb-2">@T["Dry weight (kg)"]</label><input type="number" step="0.1" min="20" max="250" class="form-control form-control-solid" dir="ltr" data-pl="dryWeightKg" value="@V(p?.DryWeightKg)" /></div>
+        <div class="col-4"><label class="required fs-6 fw-semibold mb-2">@T["Vascular access"]</label><select class="form-select form-select-solid" data-control="select2" data-dropdown-parent="#planModal" data-hide-search="true" data-pl="access">@foreach (var a in HospitalDialysisAccess.All) {<option value="@a" selected="@(p?.Access == a)">@T["dxa:" + a]</option>}</select></div>
+        <div class="col-4"><label class="required fs-6 fw-semibold mb-2">@T["Hours"]</label><select class="form-select form-select-solid" data-control="select2" data-dropdown-parent="#planModal" data-hide-search="true" data-pl="durationMin">@foreach (var m in new[] { 120, 150, 180, 210, 240, 270, 300, 360, 480 }) {<option value="@m" selected="@((p?.DurationMin ?? 240) == m)">@((m / 60m).ToString("0.#"))</option>}</select></div>
+        <div class="col-4"><label class="required fs-6 fw-semibold mb-2">@T["Blood flow (ml/min)"]</label><input type="number" min="100" max="600" step="10" class="form-control form-control-solid" dir="ltr" data-pl="bloodFlow" value="@(p?.BloodFlow ?? 300)" /></div>
+        <div class="col-4"><label class="fs-6 fw-semibold mb-2">@T["Dialysate flow (ml/min)"]</label><input type="number" min="300" max="1000" step="50" class="form-control form-control-solid" dir="ltr" data-pl="dialysateFlow" value="@(p?.DialysateFlow ?? 500)" /></div>
+        <div class="col-4"><label class="required fs-6 fw-semibold mb-2">@T["Shift"]</label><select class="form-select form-select-solid" data-control="select2" data-dropdown-parent="#planModal" data-hide-search="true" data-pl="shift">@for (int s = 1; s <= 3; s++) {<option value="@s" selected="@((p?.Shift ?? 1) == s)">@T["Shift {0}", s]</option>}</select></div>
+        <div class="col-12"><label class="required fs-6 fw-semibold mb-2">@T["Dialysis days"]</label>
             <div class="d-flex flex-wrap gap-2">@for (int i = 0; i < 7; i++) {
                 bool on = p != null ? (p.DaysMask & (1 << i)) != 0 : false;
                 <label class="btn btn-sm btn-outline btn-outline-dashed btn-active-light-primary @(on ? "active" : "") mb-0"><input type="checkbox" class="d-none" data-day="@(1 << i)" checked="@on" />@names[i]</label>}</div>
-            <div class="d-flex gap-2 mt-2"><button type="button" class="btn btn-link btn-sm p-0" data-days="@(2 | 8 | 32)">@T["Mon · Wed · Fri"]</button><span class="text-muted">|</span><button type="button" class="btn btn-link btn-sm p-0" data-days="@(1 | 4 | 16)">@T["Sun · Tue · Thu"]</button><span class="text-muted">|</span><button type="button" class="btn btn-link btn-sm p-0" data-days="@(64 | 2 | 8)">@T["Sat · Mon · Wed"]</button></div></div>
-        <div class="col-6"><label class="form-label">@T["Dialyser"]</label><input type="text" maxlength="60" class="form-control form-control-solid" dir="ltr" data-pl="dialyzer" value="@p?.Dialyzer" /></div>
-        <div class="col-6"><label class="form-label">@T["Anticoagulation"]</label><input type="text" maxlength="100" class="form-control form-control-solid" data-pl="anticoagulation" value="@p?.Anticoagulation" placeholder="@T["Heparin 2000 units, then 1000 an hour…"]" /></div>
-        <div class="col-12"><label class="form-label">@T["Note"]</label><textarea class="form-control form-control-solid" rows="2" maxlength="500" data-pl="note">@p?.Note</textarea></div>
-    </div></div>
-    <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-plan-save>@T["Save"]</button></div>
+            <div class="d-flex flex-wrap gap-2 mt-3"><button type="button" class="btn btn-sm btn-light-primary py-1 px-3" data-days="@(2 | 8 | 32)">@T["Mon · Wed · Fri"]</button><button type="button" class="btn btn-sm btn-light-primary py-1 px-3" data-days="@(1 | 4 | 16)">@T["Sun · Tue · Thu"]</button><button type="button" class="btn btn-sm btn-light-primary py-1 px-3" data-days="@(64 | 2 | 8)">@T["Sat · Mon · Wed"]</button></div></div>
+        <div class="col-6"><label class="fs-6 fw-semibold mb-2">@T["Dialyser"]</label><input type="text" maxlength="60" class="form-control form-control-solid" dir="ltr" data-pl="dialyzer" value="@p?.Dialyzer" /></div>
+        <div class="col-6"><label class="fs-6 fw-semibold mb-2">@T["Anticoagulation"]</label><input type="text" maxlength="100" class="form-control form-control-solid" data-pl="anticoagulation" value="@p?.Anticoagulation" placeholder="@T["Heparin 2000 units, then 1000 an hour…"]" /></div>
+        <div class="col-12"><label class="fs-6 fw-semibold mb-2">@T["Note"]</label><textarea class="form-control form-control-solid" rows="2" maxlength="500" data-pl="note">@p?.Note</textarea></div>
+        </div>
+        <div class="text-center pt-10"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-plan-save>@T["Save"]</button></div>
+    </div>
 </div></div></div>
 <script>
     document.addEventListener('DOMContentLoaded', function () {

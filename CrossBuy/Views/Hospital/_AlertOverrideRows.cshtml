@@ -6,10 +6,10 @@
 @foreach (var r in Model)
 {
     <tr>
-        <td class="hp-num text-nowrap fs-8" dir="ltr">@HospitalNursingService.UtcToWard(r.Row.At).ToString("yyyy-MM-dd HH:mm", inv)</td>
-        <td><a href="@Url.Action("Patient", new { id = r.Row.PatientId })" class="fw-bold text-gray-900 text-hover-primary">@DisplayName.Of(r.Patient, r.PatientEn)</a><div class="text-muted fs-8 hp-num">@r.Mrn</div></td>
-        <td><span class="badge badge-light-danger">@T["alertKind:" + r.Row.Kind]</span><div class="fs-8 text-gray-700 mt-1" dir="ltr" style="text-align:start"><bdi>@r.Row.Detail</bdi></div></td>
-        <td class="fs-7 text-gray-800" dir="auto">@r.Row.Reason</td>
-        <td class="fs-8">@(r.By ?? "—")</td>
+        <td class="ps-4 text-nowrap"><span class="hp-num text-gray-900 fw-bold d-block" dir="ltr">@HospitalNursingService.UtcToWard(r.Row.At).ToString("yyyy-MM-dd", inv)</span><span class="hp-num text-muted fw-semibold fs-7" dir="ltr">@HospitalNursingService.UtcToWard(r.Row.At).ToString("HH:mm", inv)</span></td>
+        <td><a href="@Url.Action("Patient", new { id = r.Row.PatientId })" class="fw-bold fs-6 text-gray-900 text-hover-primary">@DisplayName.Of(r.Patient, r.PatientEn)</a><bdi class="text-muted fw-semibold d-block fs-7 hp-num">@r.Mrn</bdi></td>
+        <td><span class="badge badge-light-danger fs-7 fw-bold">@T["alertKind:" + r.Row.Kind]</span><div class="fs-7 text-gray-600 mt-1" dir="ltr" style="text-align:start"><bdi>@r.Row.Detail</bdi></div></td>
+        <td class="fs-7 fw-semibold text-gray-800" dir="auto">@r.Row.Reason</td>
+        <td class="pe-4 fs-7 fw-semibold text-gray-600">@(r.By ?? "—")</td>
     </tr>
 }

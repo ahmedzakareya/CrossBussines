@@ -16,6 +16,20 @@
     var b = Model;
     string[] Lines(string? s) => (s ?? "").Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
     int unsent = b?.Rows.Count(r => r.Meal == null) ?? 0, toServe = b?.Rows.Count(r => r.Meal?.Status == HospitalMealStatus.Sent) ?? 0;
+    int served = b?.Rows.Count(r => r.Meal?.Status == HospitalMealStatus.Served) ?? 0, allergic = b?.Rows.Count(r => Lines(r.Allergies).Length > 0) ?? 0;
+    // H128: the theme's stat tile (demo39 dashboards/logistics) — the number over its label, a toned symbol on the side
+    void Tile(int value, string label, string icon, string tone, string numTone = "gray-900")
+    {
+        <div class="card card-flush h-100">
+            <div class="card-header pt-5 pb-5 flex-nowrap gap-3">
+                <div class="card-title d-flex flex-column">
+                    <span class="fs-2hx fw-bold text-@numTone lh-1 hp-num" dir="ltr">@value</span>
+                    <span class="text-gray-500 pt-1 fw-semibold fs-6">@label</span>
+                </div>
+                <div class="card-toolbar"><div class="symbol symbol-45px"><span class="symbol-label bg-light-@tone"><i class="ki-outline ki-@icon fs-2x text-@tone"></i></span></div></div>
+            </div>
+        </div>
+    }
 }
 <link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
 @Html.AntiForgeryToken()
@@ -33,10 +47,10 @@
         @if (wards.Count > 0)
         {
             <div class="d-flex align-items-center gap-3 d-print-none">
-                <div class="btn-group" role="group">
+                <div class="d-flex gap-2" role="group">
                     @foreach (var r in HospitalMealRound.All)
                     {
-                        <a href="@Url.Action("Dietary", new { ward = b?.Ward.Id, round = r })" class="btn btn-sm @(b?.Round == r ? "btn-primary" : "btn-light")">@T["round:" + r]</a>
+                        <a href="@Url.Action("Dietary", new { ward = b?.Ward.Id, round = r })" class="btn btn-sm text-nowrap @(b?.Round == r ? "btn-primary" : "btn-light btn-active-light-primary")">@T["round:" + r]</a>
                     }
                 </div>
                 <div style="width:240px">
@@ -51,17 +65,32 @@
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid" data-dt-board="@(b?.Ward.Id ?? 0)" data-round="@b?.Round">
         @if (!ready)
         {
-            <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice"><div class="fs-6 text-gray-700">@T[HospitalDietaryService.NoTables]</div></div>
+            <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-5 mb-5">
+                <i class="ki-outline ki-information fs-2tx text-primary me-4"></i>
+                <div class="d-flex flex-stack flex-grow-1"><div class="fw-semibold">
+                    <h4 class="text-gray-900 fw-bold mb-1">@T["Dietary"]</h4>
+                    <div class="fs-6 text-gray-700">@T[HospitalDietaryService.NoTables]</div>
+                </div></div>
+            </div>
         }
         @if (b == null)
         {
-            <div class="card"><div class="card-body text-center text-muted py-15"><i class="ki-outline ki-home-2 fs-3x text-gray-300 d-block mb-4"></i>@T["No wards yet: add them in the facility."]</div></div>
+            <div class="card card-flush"><div class="card-body text-center py-15"><i class="ki-outline ki-home-2 fs-3x text-gray-300 d-block mb-4"></i><div class="fs-6 fw-bold text-gray-700">@T["No wards yet: add them in the facility."]</div></div></div>
         }
         else
         {
-            <div class="card mb-5">
-                <div class="card-header border-0 pt-6">
-                    <div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@string.Format(T["{0} orders — {1}"].Value, T["round:" + b.Round].Value, DisplayName.Of(b.Ward.Name, b.Ward.NameEn ?? b.Ward.Name))</span></div>
+            @* H128: the round in figures — the theme's stat tiles (demo39 dashboards/logistics) *@
+            <div class="row g-5 mb-5">
+                <div class="col-sm-6 col-xl-3">@{ Tile(b.Rows.Count, T["Patients on the ward"].Value, "people", "primary"); }</div>
+                <div class="col-sm-6 col-xl-3">@{ Tile(toServe, T["meal:" + HospitalMealStatus.Sent].Value, "delivery-3", "success"); }</div>
+                <div class="col-sm-6 col-xl-3">@{ Tile(served, T["meal:" + HospitalMealStatus.Served].Value, "check-circle", "primary"); }</div>
+                <div class="col-sm-6 col-xl-3">@{ Tile(allergic, T["Allergies"].Value, "shield-cross", "danger", allergic > 0 ? "danger" : "gray-900"); }</div>
+            </div>
+            @* the round's trays — the theme's table widget (demo39 widgets/tables) *@
+            <div class="card card-flush mb-5">
+                <div class="card-header pt-5">
+                    <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@string.Format(T["{0} orders — {1}"].Value, T["round:" + b.Round].Value, DisplayName.Of(b.Ward.Name, b.Ward.NameEn ?? b.Ward.Name))</span>
+                        <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Patients on the ward"] · <span class="hp-num">@b.Rows.Count</span></span></h3>
                     @if (ready && canAdmit && b.Rows.Count > 0)
                     {
                         <div class="card-toolbar gap-2 d-print-none">
@@ -71,21 +100,21 @@
                     }
                 </div>
                 <div class="card-body pt-2">
-                    @if (b.Rows.Count == 0) { <div class="text-center text-muted py-10">@T["No patient is on this ward now."]</div> }
+                    @if (b.Rows.Count == 0) { <div class="text-center py-10"><i class="ki-outline ki-people fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-bold text-gray-700">@T["No patient is on this ward now."]</div></div> }
                     else
                     {
-                        <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-3 mb-0">
-                            <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0">
-                                <th>@T["Patient"]</th><th style="width:200px">@T["Diet"]</th><th>@T["Allergy"]</th><th>@T["Kitchen"]</th>
+                        <div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
+                            <thead><tr class="fw-bold text-muted bg-light">
+                                <th class="ps-4 rounded-start">@T["Patient"]</th><th style="width:220px">@T["Diet"]</th><th>@T["Allergy"]</th><th class="pe-4 rounded-end">@T["Kitchen"]</th>
                             </tr></thead>
-                            <tbody class="fw-semibold text-gray-700">
+                            <tbody>
                                 @foreach (var r in b.Rows)
                                 {
                                     var al = Lines(r.Allergies);
                                     <tr>
-                                        <td><div class="d-flex align-items-center">
-                                            <div class="symbol symbol-35px symbol-circle me-3 flex-shrink-0">@if (r.Photo != null) {<img src="@r.Photo" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(r.NameEn)" />} else {<span class="symbol-label fw-bold fs-8 hp-initials">@HospitalUi.Initials(r.NameEn)</span>}</div>
-                                            <div class="d-flex flex-column"><a href="@Url.Action("Patient", new { id = r.PatientId })" class="text-gray-900 text-hover-primary">@DisplayName.Of(r.Name, r.NameEn)</a><span class="text-muted fs-8">@T["Bed"] <bdi class="hp-num" dir="ltr">@r.Bed</bdi></span></div>
+                                        <td class="ps-4"><div class="d-flex align-items-center">
+                                            <div class="symbol symbol-45px symbol-circle me-4 flex-shrink-0">@if (r.Photo != null) {<img src="@r.Photo" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(r.NameEn)" />} else {<span class="symbol-label fw-bold fs-8 hp-initials">@HospitalUi.Initials(r.NameEn)</span>}</div>
+                                            <div class="d-flex flex-column"><a href="@Url.Action("Patient", new { id = r.PatientId })" class="text-gray-900 fw-bold text-hover-primary fs-6"><bdi>@DisplayName.Of(r.Name, r.NameEn)</bdi></a><span class="text-muted fw-semibold d-block fs-7">@T["Bed"] <bdi class="hp-num" dir="ltr">@r.Bed</bdi></span></div>
                                         </div></td>
                                         <td>@if (canDiet && ready)
                                             {
@@ -93,12 +122,12 @@
                                                     @foreach (var d in HospitalDiet.All) { <option value="@d" selected="@(r.Diet == d)">@T["diet:" + d]</option> }
                                                 </select>
                                             }
-                                            else { <span class="text-gray-800">@T["diet:" + r.Diet]</span> }
-                                            @if (!r.Ordered) { <div class="text-muted fs-9 mt-1">@T["No diet ordered: regular"]</div> }</td>
-                                        <td>@if (al.Length > 0) {<span class="badge badge-light-danger">@string.Join(DisplayName.IsArabic ? "، " : ", ", al)</span>} else {<span class="text-gray-400">—</span>}</td>
-                                        <td>@if (r.Meal == null) {<span class="text-gray-400">—</span>}
-                                            else { <span class="badge badge-light-@(r.Meal.Status == HospitalMealStatus.Served ? "primary" : r.Meal.Status == HospitalMealStatus.Held ? "dark" : "success")">@T["meal:" + r.Meal.Status]</span>
-                                                @if (r.Meal.Diet != r.Diet) {<div class="text-muted fs-9 mt-1">@T["diet:" + r.Meal.Diet]</div>} }</td>
+                                            else { <span class="badge badge-light-primary fs-7 fw-bold">@T["diet:" + r.Diet]</span> }
+                                            @if (!r.Ordered) { <div class="text-muted fw-semibold fs-8 mt-1">@T["No diet ordered: regular"]</div> }</td>
+                                        <td>@if (al.Length > 0) {<span class="badge badge-light-danger fs-7 fw-bold text-wrap text-start"><i class="ki-outline ki-information-5 fs-6 text-danger me-1"></i>@string.Join(DisplayName.IsArabic ? "، " : ", ", al)</span>} else {<span class="text-gray-400">—</span>}</td>
+                                        <td class="pe-4">@if (r.Meal == null) {<span class="text-gray-400">—</span>}
+                                            else { <span class="badge badge-light-@(r.Meal.Status == HospitalMealStatus.Served ? "primary" : r.Meal.Status == HospitalMealStatus.Held ? "dark" : "success") fs-7 fw-bold">@T["meal:" + r.Meal.Status]</span>
+                                                @if (r.Meal.Diet != r.Diet) {<div class="text-muted fw-semibold fs-8 mt-1">@T["diet:" + r.Meal.Diet]</div>} }</td>
                                     </tr>
                                 }
                             </tbody>
@@ -131,6 +160,7 @@
                 return fetch(root + '?ward=' + bd.ward + '&round=' + bd.round, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.text(); }).then(function (html) {
                     var d = new DOMParser().parseFromString(html, 'text/html'), f = d.getElementById('kt_app_content');
                     if (f) document.getElementById('kt_app_content').innerHTML = f.innerHTML;
+                    themeDiets();
                 });
             }
             function done(btn) { return function (res) { if (btn) btn.disabled = false; if (!res.ok) { toast('error', res.error || W.failed); swap(); return; } toast('success', W.saved); swap(); }; }
@@ -140,14 +170,23 @@
                 jQuery(wp).select2({ minimumResultsForSearch: Infinity });
                 CB.onSelectChange(wp, function () { location.href = root + '?ward=' + wp.value + '&round=' + board().round; });
             }
-            // the diet list is a plain select (no select2), so its change event reaches here
+            // H128: the diet lists are the theme's select2 (the layout converts them at load); a list swapped in after a
+            // change is converted here, and select2's jQuery change is relayed so the native listener below hears it
+            function themeDiets() {
+                if (!window.jQuery || !jQuery.fn.select2) return;
+                document.querySelectorAll('#kt_app_content [data-dt-diet]').forEach(function (el) {
+                    if (el.classList.contains('select2-hidden-accessible')) return;
+                    jQuery(el).select2({ width: '100%', minimumResultsForSearch: Infinity, dir: document.documentElement.dir === 'rtl' ? 'rtl' : 'ltr' })
+                        .on('change.relay', function () { if (el.__relaying) return; el.__relaying = true; el.dispatchEvent(new Event('change', { bubbles: true })); el.__relaying = false; });
+                });
+            }
             document.addEventListener('change', function (e) {
                 var s = e.target.closest('[data-dt-diet]'); if (!s) return;
                 var was = s.getAttribute('data-was'), now = s.value;
                 var msg = fmt(W.diet, s.getAttribute('data-name'), label(s, was), label(s, now)) + (s.getAttribute('data-sent') ? ' ' + W.tray : '');
                 // nothing is saved until it is confirmed; a cancel puts the list back as it was
                 cbConfirm(msg).then(function (ok) {
-                    if (!ok) { s.value = was; return; }
+                    if (!ok) { s.value = was; if (window.jQuery) jQuery(s).trigger('change.select2'); return; }
                     s.disabled = true; post('/Diet', { admissionId: +s.getAttribute('data-dt-diet'), diet: now }).then(done(s));
                 });
             });

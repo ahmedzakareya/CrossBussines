@@ -44,24 +44,35 @@
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
         @if (!ready)
         {
-            <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice"><div class="fs-6 text-gray-700">@T[HospitalPortalAccountsAdminService.NoTables]</div></div>
+            <div class="notice d-flex bg-light-danger rounded border-danger border border-dashed p-5 mb-5">
+                <i class="ki-outline ki-information fs-2tx text-danger me-4"></i>
+                <div class="fw-semibold"><div class="fs-6 text-gray-700">@T[HospitalPortalAccountsAdminService.NoTables]</div></div>
+            </div>
         }
         <div class="row g-5 g-xl-8 mb-5">
+            @* H128: stat tiles (demo39 dashboards/logistics) *@
             @foreach (var s in new[] {
-                (T["Portal accounts"].Value, rows.Count, "", "text-gray-900"),
-                (T["Signed in this month"].Value, rows.Count(r => r.Account.LastSeenAt >= monthStart), "", "text-gray-900"),
-                (T["Invitations waiting"].Value, rows.Count(r => r.State == HospitalPortalAccountState.Invited), string.Format(T["Link valid {0} hours"].Value, HospitalPortalPasswordRules.InviteHours), "text-gray-900"),
-                (T["Locked accounts"].Value, rows.Count(r => r.State == HospitalPortalAccountState.Locked), string.Format(T["Unlock by themselves after {0} minutes"].Value, HospitalPortalPasswordRules.LockMinutes), "text-danger") })
+                (T["Portal accounts"].Value, rows.Count, "", "ki-profile-circle", "primary"),
+                (T["Signed in this month"].Value, rows.Count(r => r.Account.LastSeenAt >= monthStart), "", "ki-entrance-left", "success"),
+                (T["Invitations waiting"].Value, rows.Count(r => r.State == HospitalPortalAccountState.Invited), string.Format(T["Link valid {0} hours"].Value, HospitalPortalPasswordRules.InviteHours), "ki-send", "info"),
+                (T["Locked accounts"].Value, rows.Count(r => r.State == HospitalPortalAccountState.Locked), string.Format(T["Unlock by themselves after {0} minutes"].Value, HospitalPortalPasswordRules.LockMinutes), "ki-lock-2", "danger") })
             {
-                <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
-                    <div class="text-muted fw-semibold fs-7 mb-1">@s.Item1</div>
-                    <div class="fs-2hx fw-bold @s.Item4"><bdi class="hp-num" dir="ltr">@s.Item2</bdi></div>
-                    @if (s.Item3 != "") { <div class="text-muted fs-8 mt-1">@s.Item3</div> }
-                </div></div></div>
+                <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100">
+                    <div class="card-header pt-5 flex-nowrap gap-3">
+                        <div class="card-title d-flex flex-column">
+                            <span class="fs-2hx fw-bold @(s.Item5 == "danger" && s.Item2 > 0 ? "text-danger" : "text-gray-900") me-2 lh-1 ls-n2"><bdi class="hp-num" dir="ltr">@s.Item2</bdi></span>
+                            <span class="text-gray-500 pt-1 fw-semibold fs-6">@s.Item1</span>
+                        </div>
+                        <div class="card-toolbar"><div class="symbol symbol-45px"><span class="symbol-label bg-light-@s.Item5"><i class="ki-outline @s.Item4 fs-2x text-@s.Item5"></i></span></div></div>
+                    </div>
+                    <div class="card-body d-flex align-items-end pt-0">
+                        <div class="d-flex fs-7 fw-semibold align-items-center text-gray-500">@if (s.Item3 != "") {<div class="bullet w-8px h-6px rounded-2 bg-@s.Item5 me-3"></div><span class="hp-num">@s.Item3</span>} else {<span>&nbsp;</span>}</div>
+                    </div>
+                </div></div>
             }
         </div>
 
-        <div class="notice d-flex rounded border border-primary border-dashed bg-light-primary p-6 mb-5">
+        <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-5 mb-5">
             <i class="ki-outline ki-shield-tick fs-2tx text-primary me-4"></i>
             <div class="d-flex flex-stack flex-grow-1 flex-wrap flex-md-nowrap">
                 <div class="mb-3 mb-md-0 fw-semibold pe-5">
@@ -72,34 +83,36 @@
             </div>
         </div>
 
-        <div class="card mb-5">
-            <div class="card-header border-0 pt-6">
-                <div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Accounts"]</span></div>
+        <div class="card card-flush mb-5">
+            <div class="card-header pt-5">
+                <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Accounts"]</span>
+                    <span class="text-gray-500 mt-1 fw-semibold fs-7"><bdi class="hp-num" dir="ltr">@rows.Count</bdi></span></h3>
                 <div class="card-toolbar gap-2">
                     <div class="d-flex align-items-center position-relative"><i class="ki-outline ki-magnifier fs-3 position-absolute ms-4"></i>
-                        <input type="text" class="form-control form-control-solid w-225px ps-12" placeholder="@T["Search..."]" data-pa-search autocomplete="off" /></div>
+                        <input type="text" class="form-control form-control-solid form-control-sm w-225px ps-12" placeholder="@T["Search..."]" data-pa-search autocomplete="off" /></div>
                     @if (ready) { <button type="button" class="btn btn-sm btn-primary" data-pa-new><i class="ki-outline ki-plus fs-4"></i>@T["Open an account"]</button> }
                 </div>
             </div>
             <div class="card-body pt-2">
-                @if (rows.Count == 0) { <div class="text-center text-muted py-10">@T["No portal account yet."]</div> }
+                @if (rows.Count == 0) { <div class="text-center py-10"><i class="ki-outline ki-profile-circle fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-bold text-gray-700">@T["No portal account yet."]</div></div> }
                 else
                 {
-                    <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-3 mb-0">
-                        <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0">
-                            <th>@T["Patient"]</th><th>@T["User name & email"]</th><th>@T["Family"]</th><th>@T["Last sign-in"]</th><th>@T["State"]</th><th class="w-50px"></th>
+                    @* H128: table widget (demo39 widgets/tables) *@
+                    <div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
+                        <thead><tr class="fw-bold text-muted bg-light">
+                            <th class="ps-4 rounded-start">@T["Patient"]</th><th>@T["User name & email"]</th><th>@T["Family"]</th><th>@T["Last sign-in"]</th><th>@T["State"]</th><th class="w-50px pe-4 rounded-end"></th>
                         </tr></thead>
-                        <tbody class="fw-semibold text-gray-700">
+                        <tbody>
                             @foreach (var r in rows)
                             {
                                 var a = r.Account;
                                 <tr data-pa-row>
-                                    <td><div class="d-flex align-items-center">
-                                        <div class="symbol symbol-35px symbol-circle me-3 flex-shrink-0">@if (r.Photo != null) {<img src="@r.Photo" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(a.NameEn ?? a.Name)" />} else {<span class="symbol-label fw-bold fs-8 hp-initials">@HospitalUi.Initials(a.NameEn ?? a.Name)</span>}</div>
-                                        <div class="d-flex flex-column">@if (a.PatientId is int pid) {<a href="@Url.Action("Patient", new { id = pid })" class="text-gray-900 text-hover-primary">@DisplayName.Of(a.Name, a.NameEn ?? a.Name)</a>} else {<span class="text-gray-900">@DisplayName.Of(a.Name, a.NameEn ?? a.Name)</span>}
-                                            @if (r.Mrn != null) {<span class="badge hp-code fs-9 hp-num align-self-start mt-1">@r.Mrn</span>}</div>
+                                    <td class="ps-4"><div class="d-flex align-items-center">
+                                        <div class="symbol symbol-45px symbol-circle me-3 flex-shrink-0">@if (r.Photo != null) {<img src="@r.Photo" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(a.NameEn ?? a.Name)" />} else {<span class="symbol-label fw-bold fs-8 hp-initials">@HospitalUi.Initials(a.NameEn ?? a.Name)</span>}</div>
+                                        <div class="d-flex flex-column">@if (a.PatientId is int pid) {<a href="@Url.Action("Patient", new { id = pid })" class="text-gray-900 fw-bold text-hover-primary fs-6"><bdi>@DisplayName.Of(a.Name, a.NameEn ?? a.Name)</bdi></a>} else {<span class="text-gray-900 fw-bold fs-6"><bdi>@DisplayName.Of(a.Name, a.NameEn ?? a.Name)</bdi></span>}
+                                            @if (r.Mrn != null) {<bdi class="text-muted fw-semibold d-block fs-7 hp-num">@r.Mrn</bdi>}</div>
                                     </div></td>
-                                    <td><div class="fw-semibold text-gray-800 hp-num" dir="ltr">@(r.UserName ?? "—")</div><div class="text-muted fs-8 hp-num" dir="ltr">@(a.Email ?? T["No email"].Value)</div></td>
+                                    <td><div class="text-gray-800 fw-bold fs-6 hp-num" dir="ltr">@(r.UserName ?? "—")</div><div class="text-muted fw-semibold fs-7 hp-num" dir="ltr">@(a.Email ?? T["No email"].Value)</div></td>
                                     <td>@if (r.Family.Count > 0)
                                         {
                                             <div class="symbol-group symbol-hover">
@@ -110,12 +123,12 @@
                                             </div>
                                         }
                                         else { <span class="text-muted fs-8">—</span> }</td>
-                                    <td>@if (a.LastSeenAt is DateTime seen) {<span class="hp-num" dir="ltr">@Local(seen)</span>} else {<span class="text-muted fs-8">@T["Never signed in"]</span>}</td>
-                                    <td><span class="badge @Badge(r.State)">@T["pa:" + r.State]</span>
+                                    <td>@if (a.LastSeenAt is DateTime seen) {<span class="text-gray-800 fw-bold hp-num" dir="ltr">@Local(seen)</span>} else {<span class="text-muted fw-semibold fs-7">@T["Never signed in"]</span>}</td>
+                                    <td><span class="badge @Badge(r.State) fs-7 fw-bold">@T["pa:" + r.State]</span>
                                         @if (r.LockedUntil is DateTime lu) {<div class="text-muted fs-9 mt-1">@T["until"] <span class="hp-num" dir="ltr">@Local(lu)</span></div>}
                                         @if (r.InviteSentAt is DateTime sent) {<div class="text-muted fs-9 mt-1">@T["Sent"] <span class="hp-num" dir="ltr">@Local(sent)</span></div>}</td>
-                                    <td class="text-end">
-                                        <button class="btn btn-sm btn-icon btn-light" data-kt-menu-trigger="click" data-kt-menu-placement="bottom-end"><i class="ki-outline ki-dots-horizontal fs-3"></i></button>
+                                    <td class="text-end pe-4">
+                                        <button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-primary" data-kt-menu-trigger="click" data-kt-menu-placement="bottom-end"><i class="ki-outline ki-dots-horizontal fs-3"></i></button>
                                         <div class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-700 menu-state-bg-light-primary fw-semibold fs-7 w-250px py-3" data-kt-menu="true">
                                             @{
                                                 var items = new List<(string Key, string Icon, string Text, bool Danger)>();
@@ -142,20 +155,25 @@
         </div>
 
         <div class="row g-5">
-            <div class="col-xl-6"><div class="card h-100">
-                <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["What the patient receives"]</span></div></div>
+            @* H128: list widgets (demo39 dashboards/logistics) *@
+            <div class="col-xl-6"><div class="card card-flush h-100">
+                <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["What the patient receives"]</span>
+                    <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Email only"]</span></h3></div>
                 <div class="card-body pt-2">
                     @foreach (var (title, text) in new[] {
                         (T["Account invitation"].Value, string.Format(T["A link to set the password, valid {0} hours, single use"].Value, HospitalPortalPasswordRules.InviteHours)),
                         (T["Forgot-password link"].Value, string.Format(T["Valid {0} minutes, single use; signs out every open session once changed"].Value, HospitalPortalPasswordRules.LinkMinutes)),
                         (T["Password-changed notice"].Value, T["Sent after every change; if it wasn't them, they call the hospital"].Value) })
                     {
-                        <div class="py-3 border-bottom border-gray-200 border-bottom-dashed"><div class="fw-bold text-gray-800">@title</div><div class="text-muted fs-7">@text</div></div>
+                        <div class="d-flex align-items-center py-3 border-bottom border-gray-300 border-bottom-dashed">
+                            <div class="symbol symbol-35px me-4 flex-shrink-0"><span class="symbol-label bg-light-primary"><i class="ki-outline ki-sms fs-3 text-primary"></i></span></div>
+                            <div><span class="text-gray-800 fw-bold fs-6 d-block">@title</span><span class="text-gray-500 fw-semibold fs-7 d-block">@text</span></div></div>
                     }
                 </div>
             </div></div>
-            <div class="col-xl-6"><div class="card h-100">
-                <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Account protection"]</span></div></div>
+            <div class="col-xl-6"><div class="card card-flush h-100">
+                <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Account protection"]</span>
+                    <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Staff never see or set a password"]</span></h3></div>
                 <div class="card-body pt-2">
                     @foreach (var text in new[] {
                         string.Format(T["{0} wrong attempts lock the account for {1} minutes"].Value, HospitalPortalPasswordRules.MaxFailures, HospitalPortalPasswordRules.LockMinutes),
@@ -163,7 +181,9 @@
                         T["\"Forgot password\" answers the same whether the account exists or not"].Value,
                         T["At least 6 characters with a capital letter, a small letter, a digit and a symbol"].Value })
                     {
-                        <div class="d-flex align-items-center py-3 border-bottom border-gray-200 border-bottom-dashed"><i class="ki-outline ki-check-circle fs-3 text-primary me-3"></i><span class="fw-semibold text-gray-800">@text</span></div>
+                        <div class="d-flex align-items-center py-3 border-bottom border-gray-300 border-bottom-dashed">
+                            <div class="symbol symbol-35px me-4 flex-shrink-0"><span class="symbol-label bg-light-success"><i class="ki-outline ki-shield-tick fs-3 text-success"></i></span></div>
+                            <span class="text-gray-800 fw-bold fs-6">@text</span></div>
                     }
                 </div>
             </div></div>
@@ -174,20 +194,23 @@
 @if (ready)
 {
     <div class="modal fade" id="paNewModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-600px"><div class="modal-content">
-        <div class="modal-header"><h3 class="fw-bold m-0">@T["Open a portal account"]</h3><div class="btn btn-icon btn-sm btn-active-light-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
-        <div class="modal-body"><div class="row g-5">
-            <div class="col-12"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Patient"]</label><select class="form-select form-select-solid" data-n="patientId" data-pa-patient data-placeholder="@T["Search..."]"></select></div>
-            <div class="col-md-7"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Email"]</label><input type="email" class="form-control form-control-solid" dir="ltr" maxlength="256" data-n="email" /></div>
-            <div class="col-md-5"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["User name"]</label><input class="form-control form-control-solid" dir="ltr" maxlength="40" value="pt." data-n="userName" /></div>
-            <div class="col-12"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Family members this account books for"]</label>
+        <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-10">
+            <div class="mb-10 text-center"><h1 class="mb-3">@T["Open a portal account"]</h1><div class="text-gray-500 fw-semibold fs-5">@T["Staff never see or set a password"]</div></div>
+            <div class="row g-5">
+            <div class="col-12"><label class="fs-6 fw-semibold mb-2 required">@T["Patient"]</label><select class="form-select form-select-solid" data-n="patientId" data-pa-patient data-placeholder="@T["Search..."]"></select></div>
+            <div class="col-md-7"><label class="fs-6 fw-semibold mb-2 required">@T["Email"]</label><input type="email" class="form-control form-control-solid" dir="ltr" maxlength="256" data-n="email" /></div>
+            <div class="col-md-5"><label class="fs-6 fw-semibold mb-2 required">@T["User name"]</label><input class="form-control form-control-solid" dir="ltr" maxlength="40" value="pt." data-n="userName" /></div>
+            <div class="col-12"><label class="fs-6 fw-semibold mb-2">@T["Family members this account books for"]</label>
                 <div class="d-flex gap-2"><div class="flex-grow-1"><select class="form-select form-select-solid" data-pa-family data-placeholder="@T["Search..."]"></select></div>
-                    <select class="form-select form-select-solid w-150px" data-pa-relation>@foreach (var rel in HospitalPortalRelations.All) { <option value="@rel">@T["rel:" + rel]</option> }</select>
+                    <div class="w-150px flex-shrink-0"><select class="form-select form-select-solid" data-control="select2" data-hide-search="true" data-dropdown-parent="#paNewModal" data-pa-relation>@foreach (var rel in HospitalPortalRelations.All) { <option value="@rel">@T["rel:" + rel]</option> }</select></div>
                     <button type="button" class="btn btn-light-primary" data-pa-family-add><i class="ki-outline ki-plus fs-4"></i></button></div>
                 <div class="mt-3" data-pa-family-list></div></div>
-            <div class="col-12"><div class="notice d-flex rounded border border-primary border-dashed bg-light-primary p-4"><i class="ki-outline ki-sms fs-2 text-primary me-3"></i>
-                <div class="fs-7 text-gray-700">@string.Format(T["The patient gets an email invitation with a link to set their password (valid {0} hours). No password is typed here."].Value, HospitalPortalPasswordRules.InviteHours)</div></div></div>
-        </div></div>
-        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-pa-open><i class="ki-outline ki-send fs-4"></i>@T["Open & send the invitation"]</button></div>
+            <div class="col-12"><div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-5"><i class="ki-outline ki-information fs-2tx text-primary me-4"></i>
+                <div class="fs-6 text-gray-700 fw-semibold">@string.Format(T["The patient gets an email invitation with a link to set their password (valid {0} hours). No password is typed here."].Value, HospitalPortalPasswordRules.InviteHours)</div></div></div>
+            </div>
+            <div class="text-center pt-10"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-pa-open><i class="ki-outline ki-send fs-4"></i>@T["Open & send the invitation"]</button></div>
+        </div>
     </div></div></div>
 }
 

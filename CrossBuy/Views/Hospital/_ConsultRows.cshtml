@@ -6,7 +6,8 @@
 @*
     Rows follow Metronic demo39 apps/user-management/users/list.html verbatim: avatar block (symbol-circle symbol-50px
     overflow-hidden, link over a plain line), "badge badge-light fw-bold" values, and the "Actions ▾" menu
-    (btn-flex btn-center, w-125px py-4, plain text items).
+    (btn-flex btn-center, w-125px py-4, plain text items). H128: inside the table widget's padded band (ps-4/pe-4),
+    bold name over a muted line, fs-7 badges (demo39 widgets/tables).
 *@
 @foreach (var x in Model)
 {
@@ -17,18 +18,18 @@
     string st = r.Status == HospitalConsultRequestStatus.Answered ? "badge-light-success" : r.Status == HospitalConsultRequestStatus.Cancelled ? "badge-light" : r.Status == HospitalConsultRequestStatus.Accepted ? "badge-light-info" : "badge-light-primary";
     string doctor = x.Practitioner == null ? "" : DisplayName.Of(x.Practitioner, x.PractitionerEn ?? x.Practitioner);
     <tr class="@(r.Status == HospitalConsultRequestStatus.Cancelled ? "opacity-50" : "")">
-        <td><div class="d-flex flex-column align-items-start">
-                <span class="text-gray-800 fw-bold mb-1 hp-num">@r.RequestNo</span>
-                <div class="badge @urg fw-bold">@T["cru:" + r.Urgency]</div>
+        <td class="ps-4"><div class="d-flex flex-column align-items-start">
+                <span class="text-gray-900 fw-bold fs-6 mb-1 hp-num">@r.RequestNo</span>
+                <div class="badge @urg fs-7 fw-bold">@T["cru:" + r.Urgency]</div>
             </div></td>
         <td><div class="d-flex align-items-center">
-                <div class="symbol symbol-circle symbol-50px overflow-hidden me-3 flex-shrink-0"><a href="@Url.Action("Patient", new { id = r.PatientId })">
+                <div class="symbol symbol-circle symbol-45px overflow-hidden me-3 flex-shrink-0"><a href="@Url.Action("Patient", new { id = r.PatientId })">
                     @if (!string.IsNullOrEmpty(x.Photo)) {<div class="symbol-label"><img src="@x.Photo" alt="@who" class="w-100" data-initials="@HospitalUi.Initials(x.NameEn ?? x.Name)" /></div>}
-                    else {<div class="symbol-label fs-3 hp-initials">@HospitalUi.Initials(x.NameEn ?? x.Name)</div>}
+                    else {<div class="symbol-label fs-5 fw-bold hp-initials">@HospitalUi.Initials(x.NameEn ?? x.Name)</div>}
                 </a></div>
                 <div class="d-flex flex-column">
-                    <a href="@Url.Action("Patient", new { id = r.PatientId })" class="text-gray-800 text-hover-primary mb-1">@who</a>
-                    <span><bdi class="hp-num">@x.Mrn</bdi>@if (x.Bed != null) {<text> · @T["Bed"] <bdi class="hp-num">@x.Bed</bdi></text>}</span>
+                    <a href="@Url.Action("Patient", new { id = r.PatientId })" class="text-gray-900 fw-bold text-hover-primary fs-6">@who</a>
+                    <span class="text-muted fw-semibold d-block fs-7"><bdi class="hp-num">@x.Mrn</bdi>@if (x.Bed != null) {<text> · @T["Bed"] <bdi class="hp-num">@x.Bed</bdi></text>}</span>
                 </div>
             </div></td>
         <td>@if (x.Practitioner != null)
@@ -38,10 +39,10 @@
                         @if (!string.IsNullOrEmpty(x.PractitionerPhoto)) {<div class="symbol-label"><img src="@x.PractitionerPhoto" alt="@doctor" class="w-100" data-initials="@HospitalUi.Initials(x.PractitionerEn ?? x.Practitioner)" /></div>}
                         else {<div class="symbol-label fs-7 hp-initials">@HospitalUi.Initials(x.PractitionerEn ?? x.Practitioner)</div>}
                     </div>
-                    <div class="d-flex flex-column"><span class="text-gray-800 mb-1">@doctor</span><span>@DisplayName.Of(x.Department, x.DepartmentEn)</span></div>
+                    <div class="d-flex flex-column"><span class="text-gray-800 fw-bold">@doctor</span><span class="text-muted fw-semibold fs-7">@DisplayName.Of(x.Department, x.DepartmentEn)</span></div>
                 </div>
             }
-            else {<span class="text-gray-800">@DisplayName.Of(x.Department, x.DepartmentEn)</span>}</td>
+            else {<span class="badge badge-light-primary fs-7 fw-bold">@DisplayName.Of(x.Department, x.DepartmentEn)</span>}</td>
         <td><div class="text-gray-800 mb-1" style="white-space:pre-wrap"><bdi>@r.Question</bdi></div>
             @if (x.Requester != null) {<div class="d-flex align-items-center fs-7"><div class="symbol symbol-circle symbol-20px overflow-hidden me-2 flex-shrink-0">@if (!string.IsNullOrEmpty(x.RequesterPhoto)) {<div class="symbol-label"><img src="@x.RequesterPhoto" alt="" class="w-100" data-initials="@HospitalUi.Initials(x.Requester)" /></div>} else {<div class="symbol-label hp-initials" style="font-size:.55rem">@HospitalUi.Initials(x.Requester)</div>}</div><span>@T["Asked by {0}", x.Requester] · <span class="hp-num">@HospitalNursingService.UtcToWard(r.RequestedAt).ToString("yyyy-MM-dd HH:mm")</span></span></div>}
             @if (r.Status == HospitalConsultRequestStatus.Answered)
@@ -53,10 +54,10 @@
                 </div>
             }
             @if (r.Status == HospitalConsultRequestStatus.Cancelled && r.CancelReason != null) {<div class="fs-7 mt-1"><bdi>@r.CancelReason</bdi></div>}</td>
-        <td class="text-nowrap"><span class="hp-num @(x.Overdue ? "text-danger" : "")" dir="ltr">@HospitalNursingService.UtcToWard(r.DueAt).ToString("MM-dd HH:mm")</span>
-            @if (x.Overdue) {<div class="mt-1"><div class="badge badge-light-danger fw-bold">@T["Overdue"]</div></div>}</td>
-        <td><div class="badge @st fw-bold">@T["crs:" + r.Status]</div></td>
-        <td class="text-end">
+        <td class="text-nowrap"><span class="hp-num fw-bold @(x.Overdue ? "text-danger" : "text-gray-800")" dir="ltr">@HospitalNursingService.UtcToWard(r.DueAt).ToString("MM-dd HH:mm")</span>
+            @if (x.Overdue) {<div class="mt-1"><div class="badge badge-light-danger fs-7 fw-bold">@T["Overdue"]</div></div>}</td>
+        <td><div class="badge @st fs-7 fw-bold">@T["crs:" + r.Status]</div></td>
+        <td class="text-end pe-4">
             @if (x.CanAnswer || (x.CanCancel && open))
             {
                 <a href="#" class="btn btn-light btn-active-light-primary btn-flex btn-center btn-sm" data-kt-menu-trigger="click" data-kt-menu-placement="bottom-end">@T["Actions"]<i class="ki-outline ki-down fs-5 ms-1"></i></a>

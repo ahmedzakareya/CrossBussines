@@ -59,7 +59,7 @@
         }
         @if (p == null)
         {
-            <div class="card mb-5"><div class="card-body text-center text-muted py-15"><i class="ki-outline ki-graph-up fs-3x text-gray-300 d-block mb-4"></i>@T["No patient is in an intensive-care bed now."]</div></div>
+            <div class="card card-flush mb-5"><div class="card-body"><div class="text-center py-10"><i class="ki-outline ki-graph-up fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-bold text-gray-700">@T["No patient is in an intensive-care bed now."]</div></div></div></div>
         }
         else
         {
@@ -91,29 +91,37 @@
             }
         }
 
+        @* H128: the unit's four figures — the theme's stat tiles (demo39 dashboards/logistics) *@
         <div class="row g-5 g-xl-8 mb-5">
             @foreach (var st in new[] {
-                (T["ICU beds"].Value, b.Patients.Count.ToString(inv) + " / " + b.Beds.ToString(inv), T["beds:occupied"].Value, "text-gray-900"),
-                (T["Ventilated"].Value, b.Ventilated.ToString(inv), "", "text-gray-900"),
-                (T["On vasopressors"].Value, b.Vasopressors.ToString(inv), "", "text-gray-900"),
-                ("SOFA", sofa?.ToString(inv) ?? "—", p == null ? "" : sofaSub, sofa is int a1 && sofaY is int a0 && a1 > a0 ? "text-danger" : "text-gray-900") })
+                (T["ICU beds"].Value, b.Patients.Count.ToString(inv), string.Format(T["{0} of {1}"].Value, b.Patients.Count, b.Beds) + " " + T["beds:occupied"].Value, "text-gray-900", "home-2", "primary"),
+                (T["Ventilated"].Value, b.Ventilated.ToString(inv), "", "text-gray-900", "wind", "info"),
+                (T["On vasopressors"].Value, b.Vasopressors.ToString(inv), "", b.Vasopressors > 0 ? "text-danger" : "text-gray-900", "pulse", "danger"),
+                ("SOFA", sofa?.ToString(inv) ?? "—", p == null ? "" : sofaSub, sofa is int a1 && sofaY is int a0 && a1 > a0 ? "text-danger" : "text-gray-900", "graph-up", sofa is int a2 && sofaY is int a3 && a2 > a3 ? "danger" : "success") })
             {
-                <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
-                    <div class="text-muted fw-semibold fs-7 mb-1">@st.Item1</div>
-                    <div class="fs-2hx fw-bold @st.Item4"><bdi class="hp-num" dir="ltr">@st.Item2</bdi></div>
-                    @if (st.Item3 != "") { <div class="text-muted fs-8 mt-1">@st.Item3</div> }
-                </div></div></div>
+                <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100">
+                    <div class="card-header pt-5 flex-nowrap gap-3">
+                        <div class="card-title d-flex flex-column">
+                            <span class="fs-2hx fw-bold lh-1 hp-num @st.Item4" dir="ltr">@st.Item2</span>
+                            <span class="text-gray-500 pt-1 fw-semibold fs-6">@st.Item1</span>
+                        </div>
+                        <div class="card-toolbar"><div class="symbol symbol-45px"><span class="symbol-label bg-light-@st.Item6"><i class="ki-outline ki-@st.Item5 fs-2x text-@st.Item6"></i></span></div></div>
+                    </div>
+                    <div class="card-body d-flex align-items-end pt-0">
+                        @if (st.Item3 != "") { <span class="d-flex align-items-center text-gray-600 fw-semibold fs-7"><span class="bullet bullet-dot bg-@st.Item6 me-2 h-6px w-6px"></span><span class="hp-num">@st.Item3</span></span> }
+                    </div>
+                </div></div>
             }
         </div>
 
         @if (p != null)
         {
-            <div class="card mb-5">
-                <div class="card-header border-0 pt-6">
-                    <div class="card-title align-items-start flex-column m-0">
-                        <span class="card-label fw-bold text-gray-900 fs-4">@T["Hourly flowsheet"]</span>
-                        <span class="text-muted mt-1 fw-semibold fs-7">@T["Values stream from bedside monitors once connected; until then the nurse enters each hour"]</span>
-                    </div>
+            <div class="card card-flush mb-5">
+                <div class="card-header pt-5">
+                    <h3 class="card-title align-items-start flex-column">
+                        <span class="card-label fw-bold text-gray-800">@T["Hourly flowsheet"]</span>
+                        <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Values stream from bedside monitors once connected; until then the nurse enters each hour"]</span>
+                    </h3>
                     @if (ready)
                     {
                         <div class="card-toolbar gap-2 d-print-none">
@@ -123,23 +131,23 @@
                     }
                 </div>
                 <div class="card-body pt-2">
-                    <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-3 mb-0">
-                        <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0">
-                            <th>@T["Parameter"]</th>
+                    <div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
+                        <thead><tr class="fw-bold text-muted bg-light">
+                            <th class="ps-4 rounded-start">@T["Parameter"]</th>
                             @foreach (var h in b.Hours) { <th class="text-center"><span class="hp-num">@h.ToString("HH:mm", inv)</span></th> }
-                            <th>@T["Unit"]</th>
+                            <th class="pe-4 rounded-end">@T["Unit"]</th>
                         </tr></thead>
                         <tbody class="fw-semibold text-gray-700">
                             @foreach (var r in rows)
                             {
                                 <tr>
-                                    <td><span class="fw-bold text-gray-800">@r.Label</span></td>
+                                    <td class="ps-4"><span class="text-gray-900 fw-bold fs-6">@r.Label</span></td>
                                     @foreach (var h in b.Hours)
                                     {
                                         var o = At(h); var v = o == null ? null : r.Value(o);
-                                        <td class="text-center">@if (v != null) {<span class="hp-num">@v</span>} else {<span class="text-gray-400">—</span>}</td>
+                                        <td class="text-center">@if (v != null) {<span class="text-gray-800 fw-bold hp-num">@v</span>} else {<span class="text-gray-400">—</span>}</td>
                                     }
-                                    <td><span class="text-muted fs-8" dir="ltr">@r.Unit</span></td>
+                                    <td class="pe-4"><span class="text-muted fw-semibold fs-7" dir="ltr">@r.Unit</span></td>
                                 </tr>
                             }
                         </tbody>
@@ -147,7 +155,7 @@
                     @if (b.Today != null)
                     {
                         <div class="d-flex flex-wrap gap-2 mt-5">
-                            @if (b.Today.Ventilated) { <span class="badge badge-light-primary fs-8"><i class="ki-outline ki-wind fs-7 me-1 text-primary"></i>@T["Ventilated"]</span> }
+                            @if (b.Today.Ventilated) { <span class="badge badge-light-primary fs-8"><i class="ki-outline ki-cloud-change fs-7 me-1 text-primary"></i>@T["Ventilated"]</span> }
                             @if (b.Today.Vasopressors) { <span class="badge badge-light-danger fs-8"><i class="ki-outline ki-pulse fs-7 me-1 text-danger"></i>@T["On vasopressors"]</span> }
                         </div>
                     }
@@ -159,38 +167,46 @@
 
 @if (p != null && ready && canAdmit)
 {
-    <div class="modal fade" id="icuHourModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-550px"><div class="modal-content">
-        <div class="modal-header"><h3 class="fw-bold m-0">@T["Record an hour"]</h3><div class="btn btn-icon btn-sm btn-active-light-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
-        <div class="modal-body"><div class="row g-4">
-            <div class="col-12"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Hour"]</label>
-                <select class="form-select form-select-solid hp-num" data-h="hour">
+    <div class="modal fade" id="icuHourModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-600px"><div class="modal-content rounded">
+        <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-10">
+            <div class="mb-10 text-center"><h1 class="mb-3">@T["Record an hour"]</h1>
+                <div class="text-muted fw-semibold fs-6">@DisplayName.Of(p.Name, p.NameEn) · @T["Bed"] <bdi class="hp-num">@p.Bed</bdi></div></div>
+            <div class="row g-6">
+            <div class="col-12"><label class="fs-6 fw-semibold mb-2 required">@T["Hour"]</label>
+                <select class="form-select form-select-solid hp-num" data-h="hour" data-control="select2" data-hide-search="true" data-dropdown-parent="#icuHourModal">
                     @foreach (var h in b.Hours.Reverse()) { <option value="@h.ToString("yyyy-MM-ddTHH:mm", inv)">@h.ToString("HH:mm", inv)</option> }
                 </select></div>
             @foreach (var (key, label, unit, step) in new[] { ("heartRate", "HR", "bpm", "1"), ("map", "MAP", "mmHg", "1"), ("spO2", "SpO₂", "%", "1"), ("respRate", "RR", "/min", "1"), ("tempC", T["Temp"].Value, "°C", "0.1"), ("urineMl", T["Urine output"].Value, "ml", "1") })
             {
-                <div class="col-md-4"><label class="fw-semibold fs-7 text-gray-700 mb-2">@label <span class="text-muted fs-8" dir="ltr">(@unit)</span></label>
+                <div class="col-md-4"><label class="fs-6 fw-semibold mb-2">@label <span class="text-muted fs-8" dir="ltr">(@unit)</span></label>
                     <input type="number" step="@step" class="form-control form-control-solid hp-num" dir="ltr" data-h="@key" /></div>
             }
-        </div></div>
-        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-icu-hour-save><i class="ki-outline ki-check fs-4"></i>@T["Save"]</button></div>
+            </div>
+            <div class="text-center pt-10"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-icu-hour-save><i class="ki-outline ki-check fs-4"></i>@T["Save"]</button></div>
+        </div>
     </div></div></div>
 }
 @if (p != null && ready && canAssess)
 {
-    <div class="modal fade" id="icuAssessModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-450px"><div class="modal-content">
-        <div class="modal-header"><h3 class="fw-bold m-0">@T["Day's assessment"]</h3><div class="btn btn-icon btn-sm btn-active-light-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
-        <div class="modal-body"><div class="row g-4">
-            <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Day"]</label>
-                <select class="form-select form-select-solid" data-a="day">
+    <div class="modal fade" id="icuAssessModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-500px"><div class="modal-content rounded">
+        <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-10">
+            <div class="mb-10 text-center"><h1 class="mb-3">@T["Day's assessment"]</h1>
+                <div class="text-muted fw-semibold fs-6">@DisplayName.Of(p.Name, p.NameEn) · @T["Bed"] <bdi class="hp-num">@p.Bed</bdi></div></div>
+            <div class="row g-6">
+            <div class="col-md-6"><label class="fs-6 fw-semibold mb-2 required">@T["Day"]</label>
+                <select class="form-select form-select-solid" data-a="day" data-control="select2" data-hide-search="true" data-dropdown-parent="#icuAssessModal">
                     <option value="@b.WardNow.Date.ToString("yyyy-MM-dd", inv)">@T["Today"]</option>
                     <option value="@b.WardNow.Date.AddDays(-1).ToString("yyyy-MM-dd", inv)">@T["Yesterday"]</option>
                 </select></div>
-            <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">SOFA <span class="text-muted fs-8">(0–24)</span></label>
+            <div class="col-md-6"><label class="fs-6 fw-semibold mb-2">SOFA <span class="text-muted fs-8">(<bdi class="hp-num" dir="ltr">0–24</bdi>)</span></label>
                 <input type="number" min="0" max="24" step="1" class="form-control form-control-solid hp-num" dir="ltr" data-a="sofa" value="@(b.Today?.Sofa?.ToString(inv))" /></div>
             <div class="col-12"><label class="form-check form-switch form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" data-a="ventilated" @(b.Today?.Ventilated == true ? "checked" : "") /><span class="form-check-label fs-6 text-gray-800">@T["Ventilated"]</span></label></div>
             <div class="col-12"><label class="form-check form-switch form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" data-a="vasopressors" @(b.Today?.Vasopressors == true ? "checked" : "") /><span class="form-check-label fs-6 text-gray-800">@T["On vasopressors"]</span></label></div>
-        </div></div>
-        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-icu-assess-save><i class="ki-outline ki-check fs-4"></i>@T["Save"]</button></div>
+            </div>
+            <div class="text-center pt-10"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-icu-assess-save><i class="ki-outline ki-check fs-4"></i>@T["Save"]</button></div>
+        </div>
     </div></div></div>
 }
 

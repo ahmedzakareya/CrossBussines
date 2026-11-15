@@ -9,32 +9,37 @@
     var o = r.Order; bool mine = o.TechnicianEmployeeId == me;
     string pr = o.Priority == HospitalWorkOrderPriority.Urgent ? "badge-light-danger" : o.Priority == HospitalWorkOrderPriority.High ? "badge-light-primary" : "badge-light";
     string st = o.Status switch { HospitalWorkOrderStatus.Done => "badge-light-success", HospitalWorkOrderStatus.Cancelled => "badge-light", HospitalWorkOrderStatus.InProgress => "badge-primary", _ => "badge-light-primary" };
+    string icTone = o.Priority == HospitalWorkOrderPriority.Urgent ? "danger" : o.Status == HospitalWorkOrderStatus.Done ? "success" : "primary";
+    @* H128: the theme's table widget row (demo39 widgets/tables) — symbol · device over its tag · values as light badges *@
     <tr data-wo-row="@o.ID" class="@(o.Status == HospitalWorkOrderStatus.Cancelled ? "opacity-75" : "")">
-        <td><span class="badge hp-code fs-8 hp-num">@o.OrderNo</span><div class="text-muted fs-9 mt-1 hp-num" dir="ltr">@At(o.ReportedAt)</div></td>
-        <td><div class="fw-bold text-gray-900">@DisplayName.Of(r.Device, r.DeviceEn ?? r.Device)</div>
-            <div class="text-muted fs-8">@if (r.AssetNo != null) {<span class="hp-num">@r.AssetNo</span>} else {@T["Not in the asset register"]}@if (r.Room != null) {<span> · @T["Room"] <span class="hp-num">@r.Room</span></span>}</div></td>
-        <td class="mw-250px"><div class="text-gray-800" dir="auto">@o.Problem</div><div class="text-muted fs-9">@T["wo:by"] @DisplayName.Of(r.Reporter, r.ReporterEn)</div></td>
-        <td><span class="badge @pr">@T["wop:" + o.Priority]</span></td>
-        <td><span class="badge @st">@T["wos:" + o.Status]</span>
-            @if (r.Technician != null) { <div class="d-flex align-items-center gap-2 mt-2"><div class="symbol symbol-25px symbol-circle">@if (r.TechnicianPhoto != null) {<img src="@r.TechnicianPhoto" alt="" style="object-fit:cover" />} else {<span class="symbol-label fs-9 fw-bold hp-initials">@HospitalUi.Initials(r.TechnicianEn ?? "")</span>}</div><span class="fs-8">@DisplayName.Of(r.Technician, r.TechnicianEn ?? r.Technician)</span></div> }
-            @if (o.Status == HospitalWorkOrderStatus.Done) { <div class="text-muted fs-9 mt-1" dir="auto">@o.Resolution · <span class="hp-num">@HospitalWorkOrderRules.HoursToFix(o)?.ToString("0.#", inv)</span> @T["wo:hours"]@if (o.LoggedToAsset) {<span> · @T["Logged on the asset"]</span>}</div> }
-            @if (o.Status == HospitalWorkOrderStatus.Cancelled) { <div class="text-muted fs-9 mt-1" dir="auto">@o.CancelReason</div> }</td>
-        <td class="text-end"><div class="d-flex justify-content-end flex-wrap gap-2">
+        <td class="ps-4"><span class="badge badge-light-primary fs-7 fw-bold hp-num" dir="ltr">@o.OrderNo</span><div class="text-muted fw-semibold fs-8 mt-1 hp-num text-nowrap" dir="ltr">@At(o.ReportedAt)</div></td>
+        <td><div class="d-flex align-items-center">
+            <div class="symbol symbol-35px me-3 flex-shrink-0"><span class="symbol-label bg-light-@icTone"><i class="ki-outline ki-setting-3 fs-3 text-@icTone"></i></span></div>
+            <div class="d-flex flex-column"><span class="text-gray-900 fw-bold fs-6"><bdi>@DisplayName.Of(r.Device, r.DeviceEn ?? r.Device)</bdi></span>
+                <span class="text-muted fw-semibold d-block fs-7">@if (r.AssetNo != null) {<bdi class="hp-num" dir="ltr">@r.AssetNo</bdi>} else {@T["Not in the asset register"]}@if (r.Room != null) {<span> · @T["Room"] <bdi class="hp-num">@r.Room</bdi></span>}</span></div>
+        </div></td>
+        <td class="mw-250px"><div class="text-gray-800 fw-semibold fs-7" dir="auto">@o.Problem</div><div class="text-muted fw-semibold fs-8 mt-1">@T["wo:by"] <bdi>@DisplayName.Of(r.Reporter, r.ReporterEn)</bdi></div></td>
+        <td><span class="badge @pr fs-7 fw-bold">@T["wop:" + o.Priority]</span></td>
+        <td><span class="badge @st fs-7 fw-bold">@T["wos:" + o.Status]</span>
+            @if (r.Technician != null) { <div class="d-flex align-items-center gap-2 mt-2"><div class="symbol symbol-25px symbol-circle">@if (r.TechnicianPhoto != null) {<img src="@r.TechnicianPhoto" alt="" style="object-fit:cover" />} else {<span class="symbol-label fs-9 fw-bold hp-initials">@HospitalUi.Initials(r.TechnicianEn ?? "")</span>}</div><span class="text-gray-700 fw-semibold fs-8"><bdi>@DisplayName.Of(r.Technician, r.TechnicianEn ?? r.Technician)</bdi></span></div> }
+            @if (o.Status == HospitalWorkOrderStatus.Done) { <div class="text-muted fw-semibold fs-8 mt-1" dir="auto">@o.Resolution · <span class="hp-num" dir="ltr">@HospitalWorkOrderRules.HoursToFix(o)?.ToString("0.#", inv)</span>&nbsp;@T["wo:hours"]@if (o.LoggedToAsset) {<span> · @T["Logged on the asset"]</span>}</div> }
+            @if (o.Status == HospitalWorkOrderStatus.Cancelled) { <div class="text-muted fw-semibold fs-8 mt-1" dir="auto">@o.CancelReason</div> }</td>
+        <td class="text-end pe-4"><div class="d-flex justify-content-end align-items-center flex-nowrap gap-2">
             @if (canManage && o.Status is HospitalWorkOrderStatus.Open or HospitalWorkOrderStatus.Assigned)
             {
-                <button type="button" class="btn btn-sm btn-light-primary" data-wo-assign="@o.ID" data-no="@o.OrderNo">@(o.Status == HospitalWorkOrderStatus.Open ? T["Assign"] : T["Reassign"])</button>
+                <button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-primary" data-wo-assign="@o.ID" data-no="@o.OrderNo" title="@(o.Status == HospitalWorkOrderStatus.Open ? T["Assign"].Value : T["Reassign"].Value)" data-bs-toggle="tooltip"><i class="ki-outline ki-user-tick fs-3"></i></button>
             }
             @if (o.Status == HospitalWorkOrderStatus.Assigned && (canManage || mine))
             {
-                <button type="button" class="btn btn-sm btn-primary" data-wo-start="@o.ID" data-ask="@string.Format(T["Start work on {0}?"].Value, "⁨" + o.OrderNo + "⁩")">@T["wo:start"]</button>
+                <button type="button" class="btn btn-sm btn-primary" data-wo-start="@o.ID" data-ask="@string.Format(T["Start work on {0}?"].Value, "⁨" + o.OrderNo + "⁩")"><i class="ki-outline ki-wrench fs-5"></i>@T["wo:start"]</button>
             }
             @if (o.Status == HospitalWorkOrderStatus.InProgress && (canManage || mine))
             {
-                <button type="button" class="btn btn-sm btn-primary" data-wo-done="@o.ID" data-no="@o.OrderNo" data-asset="@(o.AssetId != null ? "1" : "0")">@T["wo:close"]</button>
+                <button type="button" class="btn btn-sm btn-primary" data-wo-done="@o.ID" data-no="@o.OrderNo" data-asset="@(o.AssetId != null ? "1" : "0")"><i class="ki-outline ki-check fs-5"></i>@T["wo:close"]</button>
             }
             @if (canManage && o.Status is HospitalWorkOrderStatus.Open or HospitalWorkOrderStatus.Assigned)
             {
-                <button type="button" class="btn btn-sm btn-light-danger" data-wo-cancel="@o.ID" data-ask="@string.Format(T["Why is {0} cancelled?"].Value, "⁨" + o.OrderNo + "⁩")">@T["Cancel"]</button>
+                <button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-danger" data-wo-cancel="@o.ID" data-ask="@string.Format(T["Why is {0} cancelled?"].Value, "⁨" + o.OrderNo + "⁩")" title="@T["Cancel"]" data-bs-toggle="tooltip"><i class="ki-outline ki-cross-circle fs-3"></i></button>
             }
         </div></td>
     </tr>

@@ -44,95 +44,111 @@
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
         @if (!ready)
         {
-            <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice"><div class="fs-6 text-gray-700">@T[HospitalIncidentService.NoTables]</div></div>
+            <div class="notice d-flex bg-light-danger rounded border-danger border border-dashed p-5 mb-5">
+                <i class="ki-outline ki-information fs-2tx text-danger me-4"></i>
+                <div class="fw-semibold"><div class="fs-6 text-gray-700">@T[HospitalIncidentService.NoTables]</div></div>
+            </div>
         }
+        @* H128: stat tiles (demo39 dashboards/logistics) *@
         <div class="row g-5 g-xl-8 mb-5">
             @foreach (var s in new[] {
-                (T["Reports this month"].Value, b.ThisMonth.ToString(inv), b.ThisMonth > b.LastMonth ? T["Reporting culture: healthy rise"].Value : string.Format(T["{0} last month"].Value, b.LastMonth), "text-gray-900"),
-                (T["Medication errors"].Value, b.MedicationErrors.ToString(inv), "", "text-gray-900"),
-                (T["Falls"].Value, b.Falls.ToString(inv), b.FallsPer1000 is decimal f ? f.ToString("0.0", inv) + " " + T["per 1,000 patient-days"].Value : T["no patient-days yet this month"].Value, "text-gray-900"),
-                (T["Open root-cause analyses"].Value, b.OpenRca.ToString(inv), b.NearestDue is DateTime d ? string.Format(T["next due {0}"].Value, d.ToString("yyyy-MM-dd", inv)) : T["45-day deadline"].Value, b.OpenRca > 0 ? "text-danger" : "text-gray-900") })
+                (T["Reports this month"].Value, b.ThisMonth.ToString(inv), b.ThisMonth > b.LastMonth ? T["Reporting culture: healthy rise"].Value : string.Format(T["{0} last month"].Value, b.LastMonth), "ki-notepad", "primary"),
+                (T["Medication errors"].Value, b.MedicationErrors.ToString(inv), "", "ki-capsule", "info"),
+                (T["Falls"].Value, b.Falls.ToString(inv), b.FallsPer1000 is decimal f ? f.ToString("0.0", inv) + " " + T["per 1,000 patient-days"].Value : T["no patient-days yet this month"].Value, "ki-arrow-down", "primary"),
+                (T["Open root-cause analyses"].Value, b.OpenRca.ToString(inv), b.NearestDue is DateTime d ? string.Format(T["next due {0}"].Value, d.ToString("yyyy-MM-dd", inv)) : T["45-day deadline"].Value, "ki-search-list", b.OpenRca > 0 ? "danger" : "success") })
             {
-                <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5">
-                    <div class="text-muted fw-semibold fs-7 mb-1">@s.Item1</div>
-                    <div class="fs-2hx fw-bold @s.Item4"><bdi class="hp-num" dir="ltr">@s.Item2</bdi></div>
-                    @if (s.Item3 != "") { <div class="text-muted fs-8 mt-1">@s.Item3</div> }
-                </div></div></div>
+                <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100">
+                    <div class="card-header pt-5 flex-nowrap gap-3">
+                        <div class="card-title d-flex flex-column">
+                            <span class="fs-2hx fw-bold @(s.Item5 == "danger" ? "text-danger" : "text-gray-900") me-2 lh-1 ls-n2"><bdi class="hp-num" dir="ltr">@s.Item2</bdi></span>
+                            <span class="text-gray-500 pt-1 fw-semibold fs-6">@s.Item1</span>
+                        </div>
+                        <div class="card-toolbar"><div class="symbol symbol-45px"><span class="symbol-label bg-light-@s.Item5"><i class="ki-outline @s.Item4 fs-2x text-@s.Item5"></i></span></div></div>
+                    </div>
+                    <div class="card-body d-flex align-items-end pt-0">
+                        <div class="d-flex fs-7 fw-semibold align-items-center text-gray-500">@if (s.Item3 != "") {<div class="bullet w-8px h-6px rounded-2 bg-@s.Item5 me-3"></div><span class="hp-num">@s.Item3</span>} else {<span>&nbsp;</span>}</div>
+                    </div>
+                </div></div>
             }
         </div>
 
-        <div class="notice d-flex rounded border border-primary border-dashed bg-light-primary p-6 mb-5">
+        <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-5 mb-5">
             <i class="ki-outline ki-shield-search fs-2tx text-primary me-4"></i>
             <div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@T["Reporting is for learning, not blame"]</h4>
                 <div class="fs-6 text-gray-700">@T["Any staff member can report in a minute, anonymously if they wish; serious events open a root-cause analysis automatically."]</div></div>
         </div>
 
         <div class="row g-5 g-xl-8">
-            <div class="col-xl-8"><div class="card mb-5">
-                <div class="card-header border-0 pt-6">
-                    <div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Reports"]</span></div>
+            <div class="col-xl-8"><div class="card card-flush mb-5">
+                <div class="card-header pt-5">
+                    <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Reports"]</span>
+                        <span class="text-gray-500 mt-1 fw-semibold fs-7"><bdi class="hp-num" dir="ltr">@b.Rows.Count</bdi></span></h3>
                     <div class="card-toolbar"><div class="d-flex align-items-center position-relative">
                         <i class="ki-outline ki-magnifier fs-3 position-absolute ms-4"></i>
-                        <input type="text" class="form-control form-control-solid w-225px ps-12" placeholder="@T["Search..."]" data-inc-search autocomplete="off" />
+                        <input type="text" class="form-control form-control-solid form-control-sm w-225px ps-12" placeholder="@T["Search..."]" data-inc-search autocomplete="off" />
                     </div></div>
                 </div>
                 <div class="card-body pt-2">
-                    @if (b.Rows.Count == 0) { <div class="text-center text-muted py-10">@T["No incident reported yet."]</div> }
+                    @if (b.Rows.Count == 0) { <div class="text-center py-10"><i class="ki-outline ki-shield-tick fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-bold text-gray-700">@T["No incident reported yet."]</div></div> }
                     else
                     {
-                        <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-3 mb-0">
-                            <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0">
-                                <th>@T["Report"]</th><th>@T["Description"]</th><th>@T["Location"]</th><th>@T["Harm"]</th><th>@T["State"]</th><th class="text-nowrap">@T["Reporter"]</th>
+                        @* H128: table widget (demo39 widgets/tables) *@
+                        <div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
+                            <thead><tr class="fw-bold text-muted bg-light">
+                                <th class="ps-4 rounded-start">@T["Description"]</th><th>@T["Location"]</th><th>@T["Harm"]</th><th>@T["State"]</th><th class="text-nowrap pe-4 rounded-end">@T["Reporter"]</th>
                             </tr></thead>
-                            <tbody class="fw-semibold text-gray-700">
+                            <tbody>
                                 @foreach (var r in b.Rows)
                                 {
                                     var i = r.Row;
                                     <tr role="@(canManage ? "button" : null)" data-inc-row="@i.ID">
-                                        <td><span class="badge badge-light fs-8 hp-num">@i.IncidentNo</span></td>
-                                        <td><div class="fw-semibold text-gray-800">@T["kind:" + i.Kind]</div><div class="text-muted fs-8 text-truncate mw-250px" dir="auto">@i.Description</div><div class="text-muted fs-9 hp-num">@When(i.ReportedAt)</div></td>
-                                        <td class="text-nowrap">@Place(r)</td>
-                                        <td><span class="badge @HarmBadge(i.Harm) fs-8">@T["harm:" + i.Harm]</span></td>
-                                        <td><span class="badge badge-light-@StateKind(i.Status)">@T["inc:" + i.Status]</span>@if (i.Status == HospitalIncidentStatus.Rca && i.RcaDueOn is DateTime due) {<div class="text-muted fs-9 hp-num mt-1">@T["rca:due"] @due.ToString("yyyy-MM-dd", inv)</div>}</td>
-                                        <td>@if (i.Anonymous || r.Reporter == null) {<span class="text-muted fs-8">@T["Anonymous"]</span>}
+                                        <td class="ps-4"><div class="d-flex align-items-center">
+                                            <div class="symbol symbol-45px me-4 flex-shrink-0"><span class="symbol-label bg-light-@(HospitalIncidentRules.Serious(i.Harm) ? "danger" : "primary")"><i class="ki-outline ki-shield-search fs-2 text-@(HospitalIncidentRules.Serious(i.Harm) ? "danger" : "primary")"></i></span></div>
+                                            <div class="d-flex flex-column min-w-0"><span class="text-gray-900 fw-bold fs-6">@T["kind:" + i.Kind]</span>
+                                                <span class="text-muted fw-semibold d-block fs-7 text-truncate mw-250px" dir="auto">@i.Description</span>
+                                                <span class="text-gray-500 fs-8"><bdi class="hp-num">@i.IncidentNo</bdi> · <span class="hp-num">@When(i.ReportedAt)</span></span></div></div></td>
+                                        <td class="text-nowrap text-gray-700 fw-semibold fs-7">@Place(r)</td>
+                                        <td><span class="badge @HarmBadge(i.Harm) fs-7 fw-bold">@T["harm:" + i.Harm]</span></td>
+                                        <td><span class="badge badge-light-@StateKind(i.Status) fs-7 fw-bold">@T["inc:" + i.Status]</span>@if (i.Status == HospitalIncidentStatus.Rca && i.RcaDueOn is DateTime due) {<div class="text-muted fs-8 hp-num mt-1">@T["rca:due"] @due.ToString("yyyy-MM-dd", inv)</div>}</td>
+                                        <td class="pe-4">@if (i.Anonymous || r.Reporter == null) {<span class="text-muted fs-7">@T["Anonymous"]</span>}
                                             else {<div class="symbol symbol-30px symbol-circle" title="@DisplayName.Of(r.Reporter, r.ReporterEn ?? r.Reporter)">@if (r.ReporterPhoto != null) {<img src="@r.ReporterPhoto" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(r.ReporterEn)" />} else {<span class="symbol-label fw-bold fs-9 hp-initials">@HospitalUi.Initials(r.ReporterEn)</span>}</div>}</td>
                                     </tr>
                                     @* the report's detail, opened in the window *@
                                     <template data-inc-detail="@i.ID">
                                         <div class="d-flex flex-wrap gap-2 mb-4"><span class="badge badge-light fs-7 hp-num">@i.IncidentNo</span><span class="badge @HarmBadge(i.Harm)">@T["harm:" + i.Harm]</span><span class="badge badge-light-@StateKind(i.Status)">@T["inc:" + i.Status]</span></div>
                                         <div class="row g-3 fs-7 mb-4">
-                                            <div class="col-6"><div class="text-muted fs-8">@T["Incident type"]</div><div class="fw-semibold text-gray-800">@T["kind:" + i.Kind]</div></div>
-                                            <div class="col-6"><div class="text-muted fs-8">@T["Location"]</div><div class="fw-semibold text-gray-800">@Place(r)</div></div>
-                                            <div class="col-6"><div class="text-muted fs-8">@T["Affected patient"]</div><div class="fw-semibold text-gray-800">@(r.Patient == null ? "—" : DisplayName.Of(r.Patient, r.PatientEn ?? r.Patient) + " · " + r.Mrn)</div></div>
-                                            <div class="col-6"><div class="text-muted fs-8">@T["Reporter"]</div><div class="fw-semibold text-gray-800">@(i.Anonymous || r.Reporter == null ? T["Anonymous"].Value : DisplayName.Of(r.Reporter, r.ReporterEn ?? r.Reporter))</div></div>
+                                            <div class="col-6"><div class="text-gray-500 fw-semibold fs-7">@T["Incident type"]</div><div class="fw-bold text-gray-800 fs-6">@T["kind:" + i.Kind]</div></div>
+                                            <div class="col-6"><div class="text-gray-500 fw-semibold fs-7">@T["Location"]</div><div class="fw-semibold text-gray-800">@Place(r)</div></div>
+                                            <div class="col-6"><div class="text-gray-500 fw-semibold fs-7">@T["Affected patient"]</div><div class="fw-semibold text-gray-800">@(r.Patient == null ? "—" : DisplayName.Of(r.Patient, r.PatientEn ?? r.Patient) + " · " + r.Mrn)</div></div>
+                                            <div class="col-6"><div class="text-gray-500 fw-semibold fs-7">@T["Reporter"]</div><div class="fw-semibold text-gray-800">@(i.Anonymous || r.Reporter == null ? T["Anonymous"].Value : DisplayName.Of(r.Reporter, r.ReporterEn ?? r.Reporter))</div></div>
                                         </div>
-                                        <div class="text-muted fs-8">@T["What happened?"]</div><div class="fs-6 text-gray-800 mb-4" dir="auto" style="white-space:pre-wrap">@i.Description</div>
+                                        <div class="text-gray-500 fw-semibold fs-7">@T["What happened?"]</div><div class="fs-6 text-gray-800 mb-4" dir="auto" style="white-space:pre-wrap">@i.Description</div>
                                         @if (i.Status == HospitalIncidentStatus.Rca || i.RootCause != null)
                                         {
                                             <div class="separator separator-dashed my-4"></div>
                                             <div class="fw-bold text-gray-900 mb-2">@T["Root-cause analysis"] @if (i.RcaDueOn is DateTime dd) {<span class="text-muted fs-8 fw-semibold hp-num ms-2">@T["rca:due"] @dd.ToString("yyyy-MM-dd", inv)</span>}</div>
-                                            <label class="text-muted fs-8 mb-1">@T["Root cause"]</label>
+                                            <label class="fs-6 fw-semibold mb-2">@T["Root cause"]</label>
                                             <textarea class="form-control form-control-solid mb-3" rows="2" dir="auto" maxlength="2000" data-x="rootCause" @(i.Status == HospitalIncidentStatus.Rca && canManage ? "" : "readonly")>@i.RootCause</textarea>
-                                            <label class="text-muted fs-8 mb-1">@T["Actions agreed"]</label>
+                                            <label class="fs-6 fw-semibold mb-2">@T["Actions agreed"]</label>
                                             <textarea class="form-control form-control-solid mb-3" rows="2" dir="auto" maxlength="2000" data-x="actions" @(i.Status == HospitalIncidentStatus.Rca && canManage ? "" : "readonly")>@i.Actions</textarea>
                                             @* H54: the actions as real tasks of the task module *@
                                             <div class="fw-bold text-gray-900 fs-7 mt-2 mb-2">@T["Follow-up tasks"]</div>
-                                            @if ((r.FollowUps?.Count ?? 0) == 0) { <div class="text-muted fs-8 mb-3">@T["No follow-up task yet."]</div> }
+                                            @if ((r.FollowUps?.Count ?? 0) == 0) { <div class="text-center py-5"><i class="ki-outline ki-check-square fs-2x text-gray-300 mb-2 d-block"></i><div class="fs-7 text-gray-500">@T["No follow-up task yet."]</div></div> }
                                             @foreach (var f in r.FollowUps ?? Array.Empty<HospitalIncidentFollowUp>())
                                             {
                                                 var who = DisplayName.Of(f.Assignee ?? "", f.AssigneeEn ?? f.Assignee ?? "");
-                                                <div class="d-flex align-items-center py-2 border-bottom border-gray-200 border-bottom-dashed" data-inc-task="@f.TaskId">
+                                                <div class="d-flex flex-stack py-3 border-bottom border-gray-300 border-bottom-dashed" data-inc-task="@f.TaskId">
                                                     <div class="symbol symbol-30px symbol-circle me-3 flex-shrink-0" title="@who">@if (f.Photo != null) {<img src="@f.Photo" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(f.AssigneeEn ?? who)" />} else {<span class="symbol-label fw-bold fs-9 hp-initials">@HospitalUi.Initials(f.AssigneeEn ?? who)</span>}</div>
                                                     <div class="flex-grow-1 min-w-0"><a href="@Url.Action("Detail", "Tasks", new { id = f.TaskId })" target="_blank" class="text-gray-800 text-hover-primary fs-7 fw-semibold" dir="auto">@f.Title</a>
                                                         <div class="text-muted fs-9">@who @if (f.Due is DateTime fd) {<text> · </text><span class="hp-num @(f.Overdue ? "text-danger" : "")" dir="ltr">@fd.ToString("yyyy-MM-dd", inv)</span>}</div></div>
-                                                    <span class="badge @(f.Status == "Done" ? "badge-light-success" : f.Overdue ? "badge-light-danger" : "badge-light-primary") fs-9">@T["task:" + f.Status]</span>
+                                                    <span class="badge @(f.Status == "Done" ? "badge-light-success" : f.Overdue ? "badge-light-danger" : "badge-light-primary") fs-7 fw-bold">@T["task:" + f.Status]</span>
                                                 </div>
                                             }
                                             @if (i.Status == HospitalIncidentStatus.Rca && canManage && staff.Count > 0)
                                             {
                                                 <div class="row g-2 align-items-end mt-2 mb-3" data-inc-followup>
                                                     <div class="col-12"><input type="text" class="form-control form-control-solid form-control-sm" maxlength="180" dir="auto" placeholder="@T["What is to be done"]" data-y="title" /></div>
-                                                    <div class="col-6"><select class="form-select form-select-solid form-select-sm" data-y="assignee"><option value="">@T["Who will do it"]</option>@foreach (var s in staff) {<option value="@s.Id">@s.Name</option>}</select></div>
+                                                    <div class="col-6"><select class="form-select form-select-solid form-select-sm" data-control="select2" data-dropdown-parent="#incModal" data-y="assignee"><option value="">@T["Who will do it"]</option>@foreach (var s in staff) {<option value="@s.Id">@s.Name</option>}</select></div>
                                                     <div class="col-4"><input type="date" class="form-control form-control-solid form-control-sm" data-y="due" min="@HospitalNursingService.UtcToWard(DateTime.UtcNow).ToString("yyyy-MM-dd", inv)" /></div>
                                                     <div class="col-2"><button type="button" class="btn btn-sm btn-light-primary w-100" data-inc-addtask title="@T["Open a follow-up task"]"><i class="ki-outline ki-plus fs-4 p-0"></i></button></div>
                                                 </div>
@@ -140,10 +156,10 @@
                                         }
                                         @if (i.Status != HospitalIncidentStatus.Rca && i.Status != HospitalIncidentStatus.Closed && canManage)
                                         {
-                                            <label class="text-muted fs-8 mb-1">@T["Outcome (to close without an analysis)"]</label>
+                                            <label class="fs-6 fw-semibold mb-2">@T["Outcome (to close without an analysis)"]</label>
                                             <textarea class="form-control form-control-solid mb-3" rows="2" dir="auto" maxlength="1000" data-x="outcome"></textarea>
                                         }
-                                        @if (i.Outcome != null) { <div class="text-muted fs-8">@T["Outcome"]</div><div class="fs-7 text-gray-800 mb-3" dir="auto">@i.Outcome</div> }
+                                        @if (i.Outcome != null) { <div class="text-gray-500 fw-semibold fs-7">@T["Outcome"]</div><div class="fs-7 text-gray-800 mb-3" dir="auto">@i.Outcome</div> }
                                         @if (canManage && i.Status != HospitalIncidentStatus.Closed)
                                         {
                                             <div class="d-flex flex-wrap justify-content-end gap-2 mt-4">
@@ -161,25 +177,27 @@
                 </div>
             </div></div>
 
-            <div class="col-xl-4"><div class="card mb-5" data-inc-form>
-                <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["New report"]</span></div></div>
+            <div class="col-xl-4"><div class="card card-flush mb-5" data-inc-form>
+                <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["New report"]</span>
+                    <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Reporting is for learning, not blame"]</span></h3>
+                    <div class="card-toolbar"><div class="symbol symbol-40px"><span class="symbol-label bg-light-primary"><i class="ki-outline ki-notepad-edit fs-2 text-primary"></i></span></div></div></div>
                 <div class="card-body pt-2">
                     <div class="row g-5">
-                        <div class="col-12"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Incident type"]</label>
-                            <select class="form-select form-select-solid" data-f="kind"><option value="">—</option>@foreach (var k in HospitalIncidentKind.All) { <option value="@k">@T["kind:" + k]</option> }</select></div>
-                        <div class="col-12"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Harm level"]</label>
-                            <select class="form-select form-select-solid" data-f="harm"><option value="">—</option>@foreach (var h in HospitalIncidentHarm.All) { <option value="@h">@T["harm:" + h]</option> }</select></div>
-                        <div class="col-md-6 col-xl-12"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Location"]</label>
-                            <select class="form-select form-select-solid" data-f="where"><option value="">—</option>
+                        <div class="col-12"><label class="fs-6 fw-semibold mb-2 required">@T["Incident type"]</label>
+                            <select class="form-select form-select-solid" data-control="select2" data-f="kind"><option value="">—</option>@foreach (var k in HospitalIncidentKind.All) { <option value="@k">@T["kind:" + k]</option> }</select></div>
+                        <div class="col-12"><label class="fs-6 fw-semibold mb-2 required">@T["Harm level"]</label>
+                            <select class="form-select form-select-solid" data-control="select2" data-f="harm"><option value="">—</option>@foreach (var h in HospitalIncidentHarm.All) { <option value="@h">@T["harm:" + h]</option> }</select></div>
+                        <div class="col-md-6 col-xl-12"><label class="fs-6 fw-semibold mb-2 required">@T["Location"]</label>
+                            <select class="form-select form-select-solid" data-control="select2" data-f="where"><option value="">—</option>
                                 @foreach (var w in wards) { <option value="ward:@w.Id">@DisplayName.Of(w.Name, w.NameEn ?? w.Name)</option> }
                                 @foreach (var p in HospitalIncidentPlace.All.Where(p => p != HospitalIncidentPlace.Ward)) { <option value="@p">@T["place:" + p]</option> }
                             </select></div>
                         @if (canFind)
                         {
-                            <div class="col-md-6 col-xl-12"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Affected patient (optional)"]</label>
+                            <div class="col-md-6 col-xl-12"><label class="fs-6 fw-semibold mb-2">@T["Affected patient (optional)"]</label>
                                 <select class="form-select form-select-solid" data-f="patientId" data-inc-patient data-placeholder="—"></select></div>
                         }
-                        <div class="col-12"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["What happened?"]</label><textarea class="form-control form-control-solid" rows="3" dir="auto" maxlength="2000" data-f="description"></textarea></div>
+                        <div class="col-12"><label class="fs-6 fw-semibold mb-2 required">@T["What happened?"]</label><textarea class="form-control form-control-solid" rows="3" dir="auto" maxlength="2000" data-f="description"></textarea></div>
                     </div>
                     <label class="form-check form-check-custom form-check-solid mt-5"><input class="form-check-input" type="checkbox" data-f="anonymous" /><span class="form-check-label text-gray-700">@T["Submit without my name"]</span></label>
                     <button type="button" class="btn btn-primary w-100 mt-5" data-inc-submit @(ready ? "" : "disabled")><i class="ki-outline ki-send fs-4"></i>@T["Submit report"]</button>
@@ -190,8 +208,9 @@
 </div>
 
 <div class="modal fade" id="incModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered modal-dialog-scrollable mw-650px"><div class="modal-content">
-    <div class="modal-header"><h3 class="fw-bold m-0">@T["Incident report"]</h3><div class="btn btn-icon btn-sm btn-active-light-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
-    <div class="modal-body" data-inc-body></div>
+    <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="text-center px-10 mb-2"><h1 class="mb-2">@T["Incident report"]</h1><div class="text-gray-500 fw-semibold fs-6">@T["Reporting is for learning, not blame"]</div></div>
+    <div class="modal-body scroll-y px-10 px-lg-15 pt-5 pb-10" data-inc-body></div>
 </div></div></div>
 
 @section Scripts {
@@ -218,14 +237,27 @@
                     wire(); if (open) show(open, true);
                 });
             }
+            // H128: the theme's select2 for selects that arrive after the page loaded (an in-place swap, the report's window);
+            // select2's change is relayed as a native change, as the layout's enhancer does.
+            function hpS2(scope) {
+                if (!scope || !window.jQuery || !jQuery.fn.select2) return;
+                var rtl = (document.documentElement.getAttribute('dir') || '').toLowerCase() === 'rtl';
+                jQuery(scope).find('select.form-select').each(function () {
+                    var el = this, $el = jQuery(el); if (el.hasAttribute('data-no-select2') || $el.hasClass('select2-hidden-accessible') || el.hasAttribute('data-inc-patient')) return;
+                    var $m = $el.closest('.modal'), first = el.querySelector('option[value=""]');
+                    $el.select2({ width: '100%', dir: rtl ? 'rtl' : 'ltr', placeholder: first ? ((first.textContent || '').trim() || null) : null, minimumResultsForSearch: el.options.length > 7 ? 0 : Infinity, dropdownParent: $m.length ? $m : jQuery(document.body) });
+                    $el.on('change.relay', function () { if (el.__relaying) return; el.__relaying = true; el.dispatchEvent(new Event('change', { bubbles: true })); el.__relaying = false; });
+                });
+            }
             function wire() {
                 var pp = document.querySelector('[data-inc-patient]');
                 if (pp && window.jQuery && !pp.classList.contains('select2-hidden-accessible')) jQuery(pp).select2({ placeholder: '—', allowClear: true,
                     ajax: { url: W.patients, delay: 250, data: function (p) { return { q: p.term || '' }; }, processResults: function (r) { return { results: r.results || [] }; } } });
+                hpS2(document.getElementById('kt_app_content'));
             }
             function show(id, keep) {
                 var t = document.querySelector('template[data-inc-detail="' + id + '"]'); if (!t) return;
-                open = id; document.querySelector('[data-inc-body]').innerHTML = t.innerHTML;
+                open = id; document.querySelector('[data-inc-body]').innerHTML = t.innerHTML; hpS2(document.querySelector('[data-inc-body]'));
                 if (!keep) bootstrap.Modal.getOrCreateInstance(document.getElementById('incModal')).show();
             }
             wire();

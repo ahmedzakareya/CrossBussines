@@ -51,57 +51,85 @@
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
         @if (p.Warnings.Count > 0)
         {
-            <div class="notice d-flex align-items-center rounded border border-danger border-dashed bg-light-danger p-4 mb-5 gap-3"><i class="ki-outline ki-information-5 fs-2x text-danger"></i>
-                <div class="d-flex flex-wrap gap-2">@foreach (var w in p.Warnings) {<span class="badge badge-danger fs-7">@T["rhw:" + w]</span>}</div></div>
+            <div class="notice d-flex bg-light-danger rounded border-danger border border-dashed p-5 mb-5"><i class="ki-outline ki-information fs-2tx text-danger me-4"></i>
+                <div class="d-flex flex-wrap align-items-center gap-2">@foreach (var w in p.Warnings) {<span class="badge badge-danger fs-7 fw-bold">@T["rhw:" + w]</span>}</div></div>
         }
         <div class="row g-5 mb-5">
-            <div class="col-xl-4"><div class="card h-100"><div class="card-body py-6">
-                <div class="d-flex align-items-center gap-4 mb-5">
-                    <div class="symbol symbol-55px symbol-circle">@if (Model.Photo != null) {<img src="@Model.Photo" alt="" style="object-fit:cover" />} else {<span class="symbol-label fw-bold hp-initials">@HospitalUi.Initials(Model.NameEn)</span>}</div>
-                    <div><a href="@Url.Action("Patient", new { id = e.PatientId })" class="fs-4 fw-bold text-gray-900 text-hover-primary">@DisplayName.Of(Model.Name, Model.NameEn)</a>
-                        <div class="text-muted fs-7"><bdi class="hp-num">@Model.Mrn</bdi></div></div>
+            @* H128: the patient's profile card (demo39 apps/user-management/users/view): photo, name, state, then the details list *@
+            <div class="col-xl-4"><div class="card card-flush h-100"><div class="card-body pt-10">
+                <div class="d-flex flex-center flex-column mb-5">
+                    <div class="symbol symbol-100px symbol-circle mb-5">@if (Model.Photo != null) {<img src="@Model.Photo" alt="" style="object-fit:cover" />} else {<span class="symbol-label fs-2x fw-bold hp-initials">@HospitalUi.Initials(Model.NameEn)</span>}</div>
+                    <a href="@Url.Action("Patient", new { id = e.PatientId })" class="fs-3 text-gray-800 text-hover-primary fw-bold mb-1">@DisplayName.Of(Model.Name, Model.NameEn)</a>
+                    <div class="fs-6 fw-semibold text-gray-500 mb-4"><bdi class="hp-num">@Model.Mrn</bdi></div>
+                    <span class="badge badge-lg badge-light-@(referred ? "primary" : active ? "success" : "secondary")">@T["rhs:" + e.Status]</span>
                 </div>
-                <div class="d-flex flex-stack py-2 border-bottom border-dashed"><span class="text-muted fs-7">@T["State"]</span><span class="badge badge-light-@(referred ? "primary" : active ? "success" : "secondary") fs-7">@T["rhs:" + e.Status]</span></div>
-                <div class="d-flex flex-stack py-2 border-bottom border-dashed"><span class="text-muted fs-7">@T["Body region"]</span><span class="fw-semibold">@T["rgn:" + e.Region]</span></div>
-                <div class="py-2 border-bottom border-dashed"><div class="text-muted fs-7">@T["Problem"]</div><div class="fw-semibold fs-7"><bdi>@e.Problem</bdi></div></div>
-                @if (e.Precautions != null) {<div class="py-2 border-bottom border-dashed"><div class="text-muted fs-7">@T["Precautions"]</div><div class="text-danger fs-7 fw-semibold"><bdi>@e.Precautions</bdi></div></div>}
-                <div class="d-flex flex-stack py-2 border-bottom border-dashed"><span class="text-muted fs-7">@T["Plan"]</span><span class="fw-semibold">@T["{0} sessions, {1} a week", e.PlannedSessions, e.PerWeek]</span></div>
-                <div class="d-flex flex-stack py-2 border-bottom border-dashed"><span class="text-muted fs-7">@T["Referred by"]</span><span class="fs-7">@Who(e.ReferredByEmployeeId) <span class="text-muted hp-num">@HospitalNursingService.UtcToWard(e.ReferredAt).ToString("yyyy-MM-dd")</span></span></div>
-                @if (e.AssessedAt != null) {<div class="d-flex flex-stack py-2 border-bottom border-dashed"><span class="text-muted fs-7">@T["Therapist"]</span><span class="fs-7">@Who(e.TherapistEmployeeId) <span class="text-muted hp-num">@HospitalNursingService.UtcToWard(e.AssessedAt.Value).ToString("yyyy-MM-dd")</span></span></div>}
-                @if (e.Assessment != null) {<div class="py-2"><div class="text-muted fs-7">@T["Assessment"]</div><div class="fs-7"><bdi>@e.Assessment</bdi></div></div>}
-                @if (e.EndedAt != null) {<div class="separator separator-dashed my-3"></div><div class="fs-7">@if (e.EndReason != null) {<span class="badge badge-light fs-8 me-1">@T["rhd:" + e.EndReason]</span>}<bdi>@e.Summary</bdi></div>}
+                <div class="d-flex flex-stack fs-4 py-3"><div class="fw-bold">@T["Details"]</div></div>
+                <div class="separator separator-dashed"></div>
+                <div class="pb-2 fs-6">
+                    <div class="fw-bold mt-5">@T["Body region"]</div><div class="text-gray-600">@T["rgn:" + e.Region]</div>
+                    <div class="fw-bold mt-5">@T["Problem"]</div><div class="text-gray-600"><bdi>@e.Problem</bdi></div>
+                    @if (e.Precautions != null) {<div class="fw-bold mt-5">@T["Precautions"]</div><div class="text-danger fw-semibold"><bdi>@e.Precautions</bdi></div>}
+                    <div class="fw-bold mt-5">@T["Plan"]</div><div class="text-gray-600">@T["{0} sessions, {1} a week", e.PlannedSessions, e.PerWeek]</div>
+                    <div class="fw-bold mt-5">@T["Referred by"]</div><div class="text-gray-600">@Who(e.ReferredByEmployeeId) · <span class="hp-num">@HospitalNursingService.UtcToWard(e.ReferredAt).ToString("yyyy-MM-dd")</span></div>
+                    @if (e.AssessedAt != null) {<div class="fw-bold mt-5">@T["Therapist"]</div><div class="text-gray-600">@Who(e.TherapistEmployeeId) · <span class="hp-num">@HospitalNursingService.UtcToWard(e.AssessedAt.Value).ToString("yyyy-MM-dd")</span></div>}
+                    @if (e.Assessment != null) {<div class="fw-bold mt-5">@T["Assessment"]</div><div class="text-gray-600"><bdi>@e.Assessment</bdi></div>}
+                    @if (e.EndedAt != null) {<div class="fw-bold mt-5">@T["Discharge summary"]</div><div class="text-gray-600">@if (e.EndReason != null) {<span class="badge badge-light-secondary fs-7 fw-bold me-1">@T["rhd:" + e.EndReason]</span>}<bdi>@e.Summary</bdi></div>}
+                </div>
             </div></div></div>
 
             <div class="col-xl-8 d-flex flex-column gap-5">
                 @if (referred && canTreat)
                 {
-                    <div class="card border border-primary border-dashed" id="assessPanel"><div class="card-body py-6">
-                        <div class="fw-bold fs-4 mb-1">@T["Assess the patient"]</div><div class="text-muted fs-8 mb-4">@T["One standard measure scored now and again during the sessions shows whether the change is real."]</div>
-                        <div class="row g-3">
-                            <div class="col-md-5"><label class="form-label fs-8 required">@T["Outcome measure"]</label><select class="form-select form-select-sm form-select-solid" data-a="measureCode">@foreach (var m in HospitalRehabMeasure.All) {<option value="@m.Code" data-min="@m.Min" data-max="@m.Max">@T["msr:" + m.Code]</option>}</select></div>
-                            <div class="col-md-3"><label class="form-label fs-8 required">@T["Baseline score"]</label><input type="number" step="0.5" class="form-control form-control-sm form-control-solid" dir="ltr" data-a="baselineScore" /></div>
-                            <div class="col-md-4"><label class="form-label fs-8">@T["Pain now (0–10)"]</label><input type="number" min="0" max="10" class="form-control form-control-sm form-control-solid" dir="ltr" data-a="baselinePain" /></div>
-                            <div class="col-12"><label class="form-label fs-8">@T["Assessment"]</label><textarea rows="2" maxlength="1000" class="form-control form-control-sm form-control-solid" data-a="assessment" placeholder="@T["Range of motion, strength, function, special tests…"]"></textarea></div>
-                            <div class="col-12"><label class="form-label fs-8">@T["Goals (one a line)"]</label><textarea rows="3" class="form-control form-control-sm form-control-solid" data-a="goals" placeholder="@T["Walk 500 m without pain, climb stairs with one rail…"]"></textarea></div>
+                    <div class="card card-flush border border-primary border-dashed" id="assessPanel">
+                        <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Assess the patient"]</span>
+                            <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["One standard measure scored now and again during the sessions shows whether the change is real."]</span></h3></div>
+                        <div class="card-body pt-4">
+                            <div class="row g-5">
+                                <div class="col-md-5"><label class="required fs-6 fw-semibold mb-2">@T["Outcome measure"]</label><select class="form-select form-select-solid" data-control="select2" data-a="measureCode">@foreach (var m in HospitalRehabMeasure.All) {<option value="@m.Code" data-min="@m.Min" data-max="@m.Max">@T["msr:" + m.Code]</option>}</select></div>
+                                <div class="col-md-3"><label class="required fs-6 fw-semibold mb-2">@T["Baseline score"]</label><input type="number" step="0.5" class="form-control form-control-solid" dir="ltr" data-a="baselineScore" /></div>
+                                <div class="col-md-4"><label class="fs-6 fw-semibold mb-2">@T["Pain now (0–10)"]</label><input type="number" min="0" max="10" class="form-control form-control-solid" dir="ltr" data-a="baselinePain" /></div>
+                                <div class="col-12"><label class="fs-6 fw-semibold mb-2">@T["Assessment"]</label><textarea rows="2" maxlength="1000" class="form-control form-control-solid" data-a="assessment" placeholder="@T["Range of motion, strength, function, special tests…"]"></textarea></div>
+                                <div class="col-12"><label class="fs-6 fw-semibold mb-2">@T["Goals (one a line)"]</label><textarea rows="3" class="form-control form-control-solid" data-a="goals" placeholder="@T["Walk 500 m without pain, climb stairs with one rail…"]"></textarea></div>
+                            </div>
+                            <div class="d-flex justify-content-end mt-6"><button type="button" class="btn btn-primary" data-assess><i class="ki-outline ki-check fs-4"></i>@T["Start the episode"]</button></div>
                         </div>
-                        <div class="d-flex justify-content-end mt-4"><button type="button" class="btn btn-sm btn-primary" data-assess><i class="ki-outline ki-check fs-4"></i>@T["Start the episode"]</button></div>
-                    </div></div>
+                    </div>
                 }
                 @if (!referred)
                 {
+                    @* H128: the episode's figures as the theme's stat tiles (demo39 dashboards/logistics) *@
+                    int pct = e.PlannedSessions == 0 ? 0 : Math.Clamp(p.Attended * 100 / e.PlannedSessions, 0, 100);
+                    string chTone = p.Trend == HospitalRehabTrend.Improved ? "success" : p.Trend == HospitalRehabTrend.Worse ? "danger" : "primary";
+                    string painTone = p.PainChange >= 2 ? "success" : p.PainChange <= -2 ? "danger" : "primary";
                     <div class="row g-4">
-                        <div class="col-md-3 col-6"><div class="card card-flush h-100 border-top border-3 border-primary"><div class="card-body py-4 px-5"><div class="fs-2hx fw-bold hp-num">@p.Attended<span class="fs-6 text-muted"> / @e.PlannedSessions</span></div><div class="text-muted fs-7">@T["Sessions done"]</div></div></div></div>
-                        <div class="col-md-3 col-6"><div class="card card-flush h-100 border-top border-3 border-@(p.AttendancePct < 80 ? "danger" : "success")"><div class="card-body py-4 px-5"><div class="fs-2hx fw-bold hp-num">@(p.AttendancePct?.ToString() ?? "—")<span class="fs-6 text-muted">%</span></div><div class="text-muted fs-7">@T["Attendance"]</div></div></div></div>
-                        <div class="col-md-3 col-6"><div class="card card-flush h-100 border-top border-3 border-@(p.Trend == HospitalRehabTrend.Improved ? "success" : p.Trend == HospitalRehabTrend.Worse ? "danger" : "gray-300")"><div class="card-body py-4 px-5">
-                            <div class="fs-2hx fw-bold hp-num" dir="ltr">@(p.Change == null ? "—" : (p.Change > 0 ? "+" : "") + p.Change.Value.ToString("0.#"))</div><div class="text-muted fs-7">@T["Change in {0}", e.MeasureCode ?? ""]@if (p.Trend != null) {<text> · @T["rht:" + p.Trend]</text>}</div></div></div></div>
-                        <div class="col-md-3 col-6"><div class="card card-flush h-100 border-top border-3 border-@(p.PainChange >= 2 ? "success" : p.PainChange <= -2 ? "danger" : "gray-300")"><div class="card-body py-4 px-5">
-                            <div class="fs-2hx fw-bold hp-num" dir="ltr">@(e.BaselinePain?.ToString() ?? "—") → @(p.LatestPain?.ToString() ?? "—")</div><div class="text-muted fs-7">@T["Pain (0–10)"]</div></div></div></div>
+                        <div class="col-md-3 col-6"><div class="card card-flush h-100">
+                            <div class="card-header pt-5 flex-nowrap gap-3"><div class="card-title d-flex flex-column"><span class="fs-2hx fw-bold text-gray-900 lh-1 hp-num">@p.Attended</span><span class="text-gray-500 pt-1 fw-semibold fs-6">@T["Sessions done"]</span></div>
+                                <div class="card-toolbar"><div class="symbol symbol-45px"><span class="symbol-label bg-light-primary"><i class="ki-outline ki-calendar-tick fs-2 text-primary"></i></span></div></div></div>
+                            <div class="card-body d-flex flex-column justify-content-end pt-0">
+                                <div class="d-flex flex-stack mb-2"><span class="text-gray-500 fw-semibold fs-7 hp-num">@T["{0} of {1}", p.Attended, e.PlannedSessions]</span><span class="text-gray-500 fw-bold fs-7 hp-num" dir="ltr">@pct%</span></div>
+                                <div class="progress h-6px w-100 bg-light-primary"><div class="progress-bar bg-primary" role="progressbar" style="width:@(pct)%"></div></div></div>
+                        </div></div>
+                        <div class="col-md-3 col-6"><div class="card card-flush h-100">
+                            <div class="card-header pt-5 flex-nowrap gap-3"><div class="card-title d-flex flex-column"><span class="fs-2hx fw-bold lh-1 hp-num text-@(p.AttendancePct < 80 ? "danger" : "gray-900")" dir="ltr">@(p.AttendancePct?.ToString() ?? "—")<span class="fs-6 text-gray-500">&nbsp;%</span></span><span class="text-gray-500 pt-1 fw-semibold fs-6">@T["Attendance"]</span></div>
+                                <div class="card-toolbar"><div class="symbol symbol-45px"><span class="symbol-label bg-light-@(p.AttendancePct < 80 ? "danger" : "success")"><i class="ki-outline ki-user-tick fs-2 text-@(p.AttendancePct < 80 ? "danger" : "success")"></i></span></div></div></div>
+                            <div class="card-body pt-0"></div>
+                        </div></div>
+                        <div class="col-md-3 col-6"><div class="card card-flush h-100">
+                            <div class="card-header pt-5 flex-nowrap gap-3"><div class="card-title d-flex flex-column"><span class="fs-2hx fw-bold text-gray-900 lh-1 hp-num" dir="ltr">@(p.Change == null ? "—" : (p.Change > 0 ? "+" : "") + p.Change.Value.ToString("0.#"))</span><span class="text-gray-500 pt-1 fw-semibold fs-6">@T["Change in {0}", e.MeasureCode ?? ""]</span></div>
+                                <div class="card-toolbar"><div class="symbol symbol-45px"><span class="symbol-label bg-light-@chTone"><i class="ki-outline ki-chart-line-up fs-2 text-@chTone"></i></span></div></div></div>
+                            <div class="card-body pt-0">@if (p.Trend != null) {<span class="badge badge-light-@chTone fs-7 fw-bold">@T["rht:" + p.Trend]</span>}</div>
+                        </div></div>
+                        <div class="col-md-3 col-6"><div class="card card-flush h-100">
+                            <div class="card-header pt-5 flex-nowrap gap-3"><div class="card-title d-flex flex-column"><span class="fs-2hx fw-bold text-gray-900 lh-1 hp-num" dir="ltr">@(e.BaselinePain?.ToString() ?? "—") → @(p.LatestPain?.ToString() ?? "—")</span><span class="text-gray-500 pt-1 fw-semibold fs-6">@T["Pain (0–10)"]</span></div>
+                                <div class="card-toolbar"><div class="symbol symbol-45px"><span class="symbol-label bg-light-@painTone"><i class="ki-outline ki-heart fs-2 text-@painTone"></i></span></div></div></div>
+                            <div class="card-body pt-0"></div>
+                        </div></div>
                     </div>
                     if (def != null)
                     {
                         double target = def.HigherIsBetter ? (double)(e.BaselineScore + def.Mcid)! : (double)(e.BaselineScore - def.Mcid)!;
-                        <div class="card"><div class="card-header border-0 pt-6"><div class="card-title flex-column m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["msr:" + def.Code]</span>
-                            <span class="text-muted fs-8 mt-1">@T["A change of {0} or more is one the patient notices; the dashed line marks it.", def.Mcid.ToString("0.#")] @(def.HigherIsBetter ? T["Higher is better."] : T["Lower is better."])</span></div></div>
+                        <div class="card card-flush"><div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["msr:" + def.Code]</span>
+                            <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["A change of {0} or more is one the patient notices; the dashed line marks it.", def.Mcid.ToString("0.#")] @(def.HigherIsBetter ? T["Higher is better."] : T["Lower is better."])</span></h3></div>
                             <div class="card-body pt-0">
                                 <svg viewBox="0 0 @F(W) @F(H)" class="w-100" style="max-height:260px" dir="ltr" role="img" aria-label="@T["msr:" + def.Code]">
                                     @for (int v = def.Min; v <= def.Max; v += (def.Max - def.Min) / 4) {<line x1="@F(PL)" x2="@F(W - PR)" y1="@F(Y(v))" y2="@F(Y(v))" stroke="#eef0f6" />@Svg(PL - 6, Y(v) + 4, "end", "#6b7280", v.ToString())}
@@ -119,43 +147,55 @@
         @if (!referred)
         {
             <div class="row g-5">
-                <div class="col-xl-4"><div class="card h-100">
-                    <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Goals"]</span></div>
-                        @if (active && canTreat) {<div class="card-toolbar"><button type="button" class="btn btn-sm btn-light-primary" data-goal-new><i class="ki-outline ki-plus fs-5"></i>@T["Add a goal"]</button></div>}</div>
-                    <div class="card-body pt-2">
-                        @if (Model.Goals.Count == 0) { <div class="text-center text-muted py-6">@T["No goal yet."]</div> }
-                        @foreach (var g in Model.Goals)
+                @* H128: the goals as the theme's list widget (demo39 widgets/lists) *@
+                <div class="col-xl-4"><div class="card card-flush h-100">
+                    <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Goals"]</span>
+                        <span class="text-gray-500 mt-1 fw-semibold fs-7 hp-num">@Model.Goals.Count</span></h3>
+                        @if (active && canTreat) {<div class="card-toolbar"><button type="button" class="btn btn-sm btn-light-primary" data-goal-new><i class="ki-outline ki-plus fs-4"></i>@T["Add a goal"]</button></div>}</div>
+                    <div class="card-body pt-4">
+                        @if (Model.Goals.Count == 0) { <div class="text-center py-10"><i class="ki-outline ki-flag fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-bold text-gray-700">@T["No goal yet."]</div></div> }
+                        @for (int gi = 0; gi < Model.Goals.Count; gi++)
                         {
-                            <div class="d-flex align-items-start gap-3 py-3 border-bottom border-dashed">
-                                <i class="ki-outline @(g.Status == HospitalRehabGoalStatus.Met ? "ki-check-circle text-success" : g.Status == HospitalRehabGoalStatus.NotMet ? "ki-cross-circle text-danger" : "ki-time text-primary") fs-2 mt-1"></i>
-                                <div class="flex-grow-1"><div class="fw-semibold fs-7"><bdi>@g.Text</bdi></div>
-                                    <div class="text-muted fs-8">@if (g.TargetDate != null) {<span class="hp-num @(g.Status == HospitalRehabGoalStatus.Open && g.TargetDate < today ? "text-danger fw-bold" : "")">@T["By {0}", g.TargetDate.Value.ToString("yyyy-MM-dd")]</span>} @if (g.Status != HospitalRehabGoalStatus.Open) {<span> · @T["rgs:" + g.Status]</span>}</div></div>
-                                @if (active && canTreat && g.Status == HospitalRehabGoalStatus.Open) {<div class="d-flex gap-1"><button type="button" class="btn btn-icon btn-sm btn-light-success" title="@T["rgs:Met"]" data-goal="@g.ID" data-st="Met"><i class="ki-outline ki-check fs-5"></i></button>
-                                    <button type="button" class="btn btn-icon btn-sm btn-light-danger" title="@T["rgs:NotMet"]" data-goal="@g.ID" data-st="NotMet"><i class="ki-outline ki-cross fs-5"></i></button></div>}
+                            var g = Model.Goals[gi];
+                            string gTone = g.Status == HospitalRehabGoalStatus.Met ? "success" : g.Status == HospitalRehabGoalStatus.NotMet ? "danger" : "primary";
+                            string gIcon = g.Status == HospitalRehabGoalStatus.Met ? "check-circle" : g.Status == HospitalRehabGoalStatus.NotMet ? "cross-circle" : "time";
+                            <div class="d-flex flex-stack">
+                                <div class="symbol symbol-35px me-4 flex-shrink-0"><span class="symbol-label bg-light-@gTone"><i class="ki-outline ki-@gIcon fs-3 text-@gTone"></i></span></div>
+                                <div class="d-flex flex-stack flex-row-fluid d-grid gap-2">
+                                    <div class="me-3"><span class="text-gray-800 fw-bold fs-6 d-block"><bdi>@g.Text</bdi></span>
+                                        <span class="fw-semibold fs-7 d-block">@if (g.TargetDate != null) {<span class="hp-num @(g.Status == HospitalRehabGoalStatus.Open && g.TargetDate < today ? "text-danger fw-bold" : "text-gray-500")">@T["By {0}", g.TargetDate.Value.ToString("yyyy-MM-dd")]</span>}
+                                            @if (g.Status != HospitalRehabGoalStatus.Open) {<span class="badge badge-light-@gTone fs-8 fw-bold ms-1">@T["rgs:" + g.Status]</span>}</span></div>
+                                    @if (active && canTreat && g.Status == HospitalRehabGoalStatus.Open) {<div class="d-flex gap-1 flex-shrink-0"><button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-success" title="@T["rgs:Met"]" data-bs-toggle="tooltip" data-goal="@g.ID" data-st="Met"><i class="ki-outline ki-check fs-2"></i></button>
+                                        <button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-danger" title="@T["rgs:NotMet"]" data-bs-toggle="tooltip" data-goal="@g.ID" data-st="NotMet"><i class="ki-outline ki-cross fs-2"></i></button></div>}
+                                </div>
                             </div>
+                            if (gi < Model.Goals.Count - 1) { <div class="separator separator-dashed my-3"></div> }
                         }
                     </div>
                 </div></div>
-                <div class="col-xl-8"><div class="card h-100">
-                    <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Sessions"]</span></div></div>
+                @* H128: the sessions as the theme's table widget (demo39 widgets/tables) *@
+                <div class="col-xl-8"><div class="card card-flush h-100">
+                    <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Sessions"]</span>
+                        <span class="text-gray-500 mt-1 fw-semibold fs-7 hp-num">@T["{0} of {1}", p.Attended, e.PlannedSessions]</span></h3>
+                        @if (active && canTreat) {<div class="card-toolbar"><button type="button" class="btn btn-sm btn-light-primary" data-modal="sesModal"><i class="ki-outline ki-plus fs-4"></i>@T["Record a session"]</button></div>}</div>
                     <div class="card-body pt-2">
-                        @if (Model.Sessions.Count == 0) { <div class="text-center text-muted py-6">@T["No session yet."]</div> }
+                        @if (Model.Sessions.Count == 0) { <div class="text-center py-10"><i class="ki-outline ki-calendar fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-bold text-gray-700">@T["No session yet."]</div></div> }
                         else
                         {
-                            <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-3 mb-0">
-                                <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0"><th>@T["Date"]</th><th>@T["Attendance"]</th><th>@T["What was done"]</th><th>@T["Pain"]</th><th>@e.MeasureCode</th><th>@T["Note"]</th><th>@T["The bill"]</th></tr></thead>
+                            <div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
+                                <thead><tr class="fw-bold text-muted bg-light"><th class="ps-4 rounded-start">@T["Date"]</th><th>@T["Attendance"]</th><th>@T["What was done"]</th><th>@T["Pain"]</th><th dir="ltr">@e.MeasureCode</th><th class="pe-4 rounded-end">@T["The bill"]</th></tr></thead>
                                 <tbody>
                                 @foreach (var s in Model.Sessions.AsEnumerable().Reverse())
                                 {
                                     bool came = s.Attendance == HospitalRehabAttendance.Attended;
-                                    <tr class="@(came ? "" : "bg-light")">
-                                        <td class="hp-num text-nowrap">@s.SessionDate.ToString("yyyy-MM-dd")<div class="text-muted fs-9" style="font-family:inherit">@Who(s.CreatedByEmployeeId)</div></td>
-                                        <td><span class="badge @(came ? "badge-light-success" : s.Attendance == HospitalRehabAttendance.NoShow ? "badge-light-danger" : "badge-light") fs-8">@T["rha:" + s.Attendance]</span>@if (s.Minutes != null) {<div class="text-muted fs-9">@T["{0} min", s.Minutes]</div>}</td>
-                                        <td class="fs-8">@if (s.Interventions != null) {<div class="d-flex flex-wrap gap-1">@foreach (var x in s.Interventions.Split(',')) {<span class="badge badge-light fs-9">@T["rhi:" + x]</span>}</div>}</td>
-                                        <td class="hp-num text-nowrap" dir="ltr">@(s.PainBefore?.ToString() ?? "—") → @(s.PainAfter?.ToString() ?? "—")</td>
-                                        <td class="hp-num fw-bold">@(s.Score?.ToString("0.#") ?? "")</td>
-                                        <td class="fs-8"><bdi>@s.Note</bdi></td>
-                                        <td>@await Html.PartialAsync("_SessionCharge", new HospitalSessionChargeCell(HospitalSessionKinds.Physio, s.ID, s.BillLineId, came))</td>
+                                    <tr>
+                                        <td class="ps-4"><span class="text-gray-900 fw-bold fs-6 hp-num d-block text-nowrap">@s.SessionDate.ToString("yyyy-MM-dd")</span><span class="text-gray-500 fw-semibold fs-7">@Who(s.CreatedByEmployeeId)</span></td>
+                                        <td><span class="badge badge-light-@(came ? "success" : s.Attendance == HospitalRehabAttendance.NoShow ? "danger" : "secondary") fs-7 fw-bold">@T["rha:" + s.Attendance]</span>@if (s.Minutes != null) {<span class="text-gray-500 fw-semibold fs-7 d-block mt-1">@T["{0} min", s.Minutes]</span>}</td>
+                                        <td>@if (s.Interventions != null) {<div class="d-flex flex-wrap gap-1">@foreach (var x in s.Interventions.Split(',')) {<span class="badge badge-light-primary fs-8 fw-semibold">@T["rhi:" + x]</span>}</div>}
+                                            @if (s.Note != null) {<span class="text-gray-500 fw-semibold fs-7 d-block mt-1"><bdi>@s.Note</bdi></span>}</td>
+                                        <td><span class="text-gray-800 fw-bold hp-num text-nowrap" dir="ltr">@(s.PainBefore?.ToString() ?? "—") → @(s.PainAfter?.ToString() ?? "—")</span></td>
+                                        <td><span class="text-gray-800 fw-bold hp-num">@(s.Score?.ToString("0.#") ?? "—")</span></td>
+                                        <td class="pe-4">@await Html.PartialAsync("_SessionCharge", new HospitalSessionChargeCell(HospitalSessionKinds.Physio, s.ID, s.BillLineId, came))</td>
                                     </tr>
                                 }
                                 </tbody>
@@ -170,37 +210,43 @@
 
 @if (active && canTreat)
 {
-    <div class="modal fade" id="sesModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-650px"><div class="modal-content">
-        <div class="modal-header"><h2 class="fw-bold m-0">@T["Record a session"]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
-        <div class="modal-body py-6 px-lg-10"><div class="row g-4">
-            <div class="col-6"><label class="form-label required">@T["Date"]</label><input type="date" class="form-control form-control-solid" dir="ltr" data-s="date" value="@today.ToString("yyyy-MM-dd")" max="@today.ToString("yyyy-MM-dd")" /></div>
-            <div class="col-6"><label class="form-label required">@T["Attendance"]</label>
-                <div class="d-flex gap-3 pt-2">@foreach (var a in HospitalRehabAttendance.All) {<label class="form-check form-check-sm form-check-custom form-check-solid"><input class="form-check-input" type="radio" name="att" value="@a" checked="@(a == HospitalRehabAttendance.Attended)" /><span class="form-check-label">@T["rha:" + a]</span></label>}</div></div>
+    @* H128: the forms as the theme's form modal (demo39 utilities/modals/forms/new-target) *@
+    <div class="modal fade" id="sesModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-650px"><div class="modal-content rounded">
+        <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-10">
+            <div class="mb-10 text-center"><h1 class="mb-3">@T["Record a session"]</h1><div class="text-muted fw-semibold fs-6">@DisplayName.Of(Model.Name, Model.NameEn) · <span class="hp-num">@e.EpisodeNo</span></div></div>
+            <div class="row g-6">
+            <div class="col-6"><label class="required fs-6 fw-semibold mb-2">@T["Date"]</label><input type="date" class="form-control form-control-solid" dir="ltr" data-s="date" value="@today.ToString("yyyy-MM-dd")" max="@today.ToString("yyyy-MM-dd")" /></div>
+            <div class="col-6"><label class="required fs-6 fw-semibold mb-2">@T["Attendance"]</label>
+                <div class="d-flex flex-wrap gap-4 pt-3">@foreach (var a in HospitalRehabAttendance.All) {<label class="form-check form-check-sm form-check-custom form-check-solid"><input class="form-check-input" type="radio" name="att" value="@a" checked="@(a == HospitalRehabAttendance.Attended)" /><span class="form-check-label">@T["rha:" + a]</span></label>}</div></div>
             <div class="col-12" data-came>
-                <div class="row g-4">
-                    <div class="col-4"><label class="form-label required">@T["Minutes"]</label><input type="number" min="5" max="240" value="45" class="form-control form-control-solid" dir="ltr" data-s="minutes" /></div>
-                    <div class="col-4"><label class="form-label">@T["Pain before"]</label><input type="number" min="0" max="10" class="form-control form-control-solid" dir="ltr" data-s="painBefore" /></div>
-                    <div class="col-4"><label class="form-label">@T["Pain after"]</label><input type="number" min="0" max="10" class="form-control form-control-solid" dir="ltr" data-s="painAfter" /></div>
-                    <div class="col-12"><label class="form-label required">@T["What was done"]</label>
+                <div class="row g-6">
+                    <div class="col-4"><label class="required fs-6 fw-semibold mb-2">@T["Minutes"]</label><input type="number" min="5" max="240" value="45" class="form-control form-control-solid" dir="ltr" data-s="minutes" /></div>
+                    <div class="col-4"><label class="fs-6 fw-semibold mb-2">@T["Pain before"]</label><input type="number" min="0" max="10" class="form-control form-control-solid" dir="ltr" data-s="painBefore" /></div>
+                    <div class="col-4"><label class="fs-6 fw-semibold mb-2">@T["Pain after"]</label><input type="number" min="0" max="10" class="form-control form-control-solid" dir="ltr" data-s="painAfter" /></div>
+                    <div class="col-12"><label class="required fs-6 fw-semibold mb-2">@T["What was done"]</label>
                         <div class="d-flex flex-wrap gap-2">@foreach (var x in HospitalRehabIntervention.All) {<label class="btn btn-sm btn-outline btn-outline-dashed btn-active-light-primary mb-0"><input type="checkbox" class="d-none" data-iv="@x" />@T["rhi:" + x]</label>}</div></div>
-                    @if (def != null) {<div class="col-6"><label class="form-label">@T["msr:" + def.Code]</label><input type="number" step="0.5" min="@def.Min" max="@def.Max" class="form-control form-control-solid" dir="ltr" data-s="score" placeholder="@T["Re-scored today (optional)"]" /></div>}
+                    @if (def != null) {<div class="col-6"><label class="fs-6 fw-semibold mb-2">@T["msr:" + def.Code]</label><input type="number" step="0.5" min="@def.Min" max="@def.Max" class="form-control form-control-solid" dir="ltr" data-s="score" placeholder="@T["Re-scored today (optional)"]" /></div>}
                 </div>
             </div>
-            <div class="col-12"><label class="form-label">@T["Note"]</label><textarea rows="2" maxlength="500" class="form-control form-control-solid" data-s="note"></textarea></div>
-        </div></div>
-        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-ses-save>@T["Save"]</button></div>
+            <div class="col-12"><label class="fs-6 fw-semibold mb-2">@T["Note"]</label><textarea rows="2" maxlength="500" class="form-control form-control-solid" data-s="note"></textarea></div>
+            </div>
+            <div class="text-center pt-10"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-ses-save>@T["Save"]</button></div>
+        </div>
     </div></div></div>
 
-    <div class="modal fade" id="endModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-550px"><div class="modal-content">
-        <div class="modal-header"><h2 class="fw-bold m-0">@T["End physiotherapy"]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
-        <div class="modal-body py-6 px-lg-10"><div class="row g-4">
-            <div class="col-12"><label class="form-label required">@T["Why"]</label><select class="form-select form-select-solid" data-e="reason">@foreach (var d in HospitalRehabDischarge.All) {<option value="@d">@T["rhd:" + d]</option>}</select></div>
-            <div class="col-12"><label class="form-label required">@T["Discharge summary"]</label><textarea rows="4" maxlength="1000" class="form-control form-control-solid" data-e="summary" placeholder="@T["Where the patient is now, the home programme, when to come back…"]"></textarea></div>
-        </div></div>
-        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-end-save>@T["End physiotherapy"]</button></div>
+    <div class="modal fade" id="endModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-550px"><div class="modal-content rounded">
+        <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-10">
+            <div class="mb-10 text-center"><h1 class="mb-3">@T["End physiotherapy"]</h1><div class="text-muted fw-semibold fs-6">@DisplayName.Of(Model.Name, Model.NameEn) · <span class="hp-num">@e.EpisodeNo</span></div></div>
+            <div class="row g-6">
+            <div class="col-12"><label class="required fs-6 fw-semibold mb-2">@T["Why"]</label><select class="form-select form-select-solid" data-control="select2" data-dropdown-parent="#endModal" data-hide-search="true" data-e="reason">@foreach (var d in HospitalRehabDischarge.All) {<option value="@d">@T["rhd:" + d]</option>}</select></div>
+            <div class="col-12"><label class="required fs-6 fw-semibold mb-2">@T["Discharge summary"]</label><textarea rows="4" maxlength="1000" class="form-control form-control-solid" data-e="summary" placeholder="@T["Where the patient is now, the home programme, when to come back…"]"></textarea></div>
+            </div>
+            <div class="text-center pt-10"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-end-save>@T["End physiotherapy"]</button></div>
+        </div>
     </div></div></div>
 }
-
 @section Scripts {
     <script>
         (function () {

@@ -2,17 +2,26 @@
 @using CrossBuy.BL.Hospital
 @model IReadOnlyList<HospitalPregnancyRow>
 @inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H128 — the antenatal list's rows in the theme's table widget (demo39 widgets/tables): the mother over a muted line,
+    the gestation as a badge over its trimester, the due date, the last visit over the next, the warnings as badges and
+    an icon button to open.
+*@
+@{ bool isAr = System.Globalization.CultureInfo.CurrentUICulture.Name.StartsWith("ar"); }
 @foreach (var r in Model)
 {
-    var p = r.Pregnancy;
+    var p = r.Pregnancy; bool term = r.GaDays >= 37 * 7;
     <tr>
-        <td><a href="@Url.Action("Pregnancy", new { id = p.ID })" class="fw-bold text-gray-900 text-hover-primary">@DisplayName.Of(r.Name, r.NameEn)</a>
-            <div class="text-muted fs-8"><span class="badge hp-code fs-9 hp-num me-1">@p.PregnancyNo</span><bdi class="hp-num">@r.Mrn</bdi> · <span class="hp-num" dir="ltr">G@(p.Gravida) P@(p.Para) A@(p.Abortions)</span></div></td>
-        <td><span class="fw-bold hp-num @(r.GaDays >= 37 * 7 ? "text-success" : "text-gray-800")" dir="ltr">@HospitalAntenatalRules.Ga(Math.Max(0, r.GaDays))</span><div class="text-muted fs-9">@T["Trimester {0}", HospitalAntenatalRules.Trimester(r.GaDays)]</div></td>
-        <td class="hp-num text-nowrap">@r.Edd.ToString("yyyy-MM-dd")</td>
-        <td class="fs-8">@if (r.LastVisit == null) {<span class="text-muted">@T["No visit yet"]</span>} else {<span class="hp-num">@r.LastVisit.VisitDate.ToString("yyyy-MM-dd")</span>
-                @if (r.LastVisit.NextVisitOn is DateTime n) {<div class="@(r.VisitMissed ? "text-danger fw-bold" : "text-muted")">@T["Next"]: <span class="hp-num">@n.ToString("yyyy-MM-dd")</span>@if (r.VisitMissed) {<text> · @T["Visit missed"]</text>}</div>}}</td>
-        <td>@if (r.Warnings.Count == 0) {<span class="text-muted fs-8">—</span>} else {<div class="d-flex flex-wrap gap-1">@foreach (var w in r.Warnings) {<span class="badge badge-light-danger fs-9">@T["anw:" + w]</span>}</div>}</td>
-        <td class="text-end"><a href="@Url.Action("Pregnancy", new { id = p.ID })" class="btn btn-sm btn-light-primary text-nowrap">@T["Open"]</a></td>
+        <td class="ps-4"><div class="d-flex align-items-center">
+            <div class="symbol symbol-40px symbol-circle me-3 flex-shrink-0"><span class="symbol-label bg-light-primary text-primary fw-bold fs-7">@HospitalUi.Initials(r.NameEn)</span></div>
+            <div class="d-flex flex-column"><a href="@Url.Action("Pregnancy", new { id = p.ID })" class="text-gray-900 fw-bold text-hover-primary fs-6">@DisplayName.Of(r.Name, r.NameEn)</a>
+                <span class="text-gray-500 fw-semibold fs-7"><span class="badge hp-code fs-9 hp-num me-1">@p.PregnancyNo</span><bdi class="hp-num">@r.Mrn</bdi> · <span class="hp-num" dir="ltr">G@(p.Gravida) P@(p.Para) A@(p.Abortions)</span></span></div>
+        </div></td>
+        <td><span class="badge badge-light-@(term ? "success" : "primary") fs-7 fw-bold hp-num" dir="ltr">@HospitalAntenatalRules.Ga(Math.Max(0, r.GaDays))</span><span class="text-gray-500 fw-semibold fs-7 d-block mt-1">@T["Trimester {0}", HospitalAntenatalRules.Trimester(r.GaDays)]</span></td>
+        <td><span class="text-gray-800 fw-bold fs-6 hp-num text-nowrap">@r.Edd.ToString("yyyy-MM-dd")</span></td>
+        <td>@if (r.LastVisit == null) {<span class="text-gray-500 fw-semibold fs-7">@T["No visit yet"]</span>} else {<span class="text-gray-800 fw-bold fs-6 hp-num d-block">@r.LastVisit.VisitDate.ToString("yyyy-MM-dd")</span>
+                @if (r.LastVisit.NextVisitOn is DateTime n) {<span class="fs-7 d-block @(r.VisitMissed ? "text-danger fw-bold" : "text-gray-500 fw-semibold")">@T["Next"]: <span class="hp-num">@n.ToString("yyyy-MM-dd")</span>@if (r.VisitMissed) {<text> · @T["Visit missed"]</text>}</span>}}</td>
+        <td>@if (r.Warnings.Count == 0) {<span class="text-gray-400">—</span>} else {<div class="d-flex flex-wrap gap-1">@foreach (var w in r.Warnings) {<span class="badge badge-light-danger fs-8 fw-bold">@T["anw:" + w]</span>}</div>}</td>
+        <td class="text-end pe-4"><a href="@Url.Action("Pregnancy", new { id = p.ID })" class="btn btn-sm btn-icon btn-bg-light btn-active-color-primary" title="@T["Open"]" data-bs-toggle="tooltip"><i class="ki-outline ki-arrow-@(isAr ? "left" : "right") fs-2"></i></a></td>
     </tr>
 }

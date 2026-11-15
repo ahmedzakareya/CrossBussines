@@ -55,10 +55,19 @@
             @foreach (var g in HospitalBloodGroups.All)
             {
                 var n = b.Shelf.GetValueOrDefault(g); var low = n < HospitalBloodRules.SafetyLevel;
-                <div class="col-6 col-md-3 col-xl-3"><div class="card card-flush h-100"><div class="card-body py-5 d-flex align-items-center">
-                    <span class="symbol symbol-50px me-4"><span class="symbol-label fw-bold fs-4 hp-num @(low ? "bg-light-danger text-danger" : "")" dir="ltr" style="@(low ? "" : "background:#E7F0FF;color:#0E4A9E")">@g</span></span>
-                    <div><div class="fs-2hx fw-bold text-gray-900 hp-num">@n</div><div class="text-muted fs-8">@T["whole blood / PRBC units"]</div></div>
-                </div></div></div>
+                @* H128: one blood group — the theme's stat tile (demo39 dashboards/logistics) *@
+                <div class="col-6 col-md-3 col-xl-3"><div class="card card-flush h-100">
+                    <div class="card-header pt-5 flex-nowrap gap-3">
+                        <div class="card-title d-flex flex-column">
+                            <span class="fs-2hx fw-bold lh-1 hp-num @(low ? "text-danger" : "text-gray-900")">@n</span>
+                            <span class="text-gray-500 pt-1 fw-semibold fs-6">@T["whole blood / PRBC units"]</span>
+                        </div>
+                        <div class="card-toolbar"><div class="symbol symbol-45px"><span class="symbol-label fw-bold fs-4 hp-num bg-light-@(low ? "danger" : "primary") text-@(low ? "danger" : "primary")" dir="ltr">@g</span></div></div>
+                    </div>
+                    <div class="card-body d-flex align-items-end pt-0">
+                        <div class="w-100"><div class="progress h-6px bg-light-@(low ? "danger" : "primary")"><div class="progress-bar bg-@(low ? "danger" : "primary")" role="progressbar" style="width:@(Math.Clamp(n * 100 / Math.Max(1, HospitalBloodRules.SafetyLevel * 2), 0, 100))%"></div></div></div>
+                    </div>
+                </div></div>
             }
         </div>
 
@@ -77,34 +86,36 @@
         }
         @if (b.Expired > 0)
         {
-            <div class="notice d-flex rounded border border-dashed p-5 mb-5 hp-notice"><div class="fs-7 text-gray-700"><i class="ki-outline ki-information fs-5 me-1"></i>@string.Format(T["{0} bags on the shelf have expired: discard them from Bags on the shelf."].Value, b.Expired)</div></div>
+            <div class="notice d-flex bg-light-danger rounded border-danger border border-dashed p-5 mb-5"><i class="ki-outline ki-information fs-2tx text-danger me-4"></i>
+                <div class="fs-6 fw-semibold text-gray-700 align-self-center">@string.Format(T["{0} bags on the shelf have expired: discard them from Bags on the shelf."].Value, b.Expired)</div></div>
         }
 
-        <div class="card mb-5">
-            <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Transfusion requests"]</span></div></div>
+        <div class="card card-flush mb-5">
+            <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Transfusion requests"]</span>
+                <span class="text-gray-500 mt-1 fw-semibold fs-7 hp-num">@b.Requests.Count</span></h3></div>
             <div class="card-body pt-2">
-                @if (b.Requests.Count == 0) { <div class="text-center text-muted py-10">@T["No transfusion request yet."]</div> }
+                @if (b.Requests.Count == 0) { <div class="text-center py-10"><i class="ki-outline ki-drop fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-bold text-gray-700">@T["No transfusion request yet."]</div></div> }
                 else
                 {
-                    <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-3 mb-0">
-                        <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0">
-                            <th>@T["Patient"]</th><th>@T["Product"]</th><th class="text-end">@T["bb:Units"]</th><th>@T["Cross-match"]</th><th class="text-end"></th>
+                    <div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
+                        <thead><tr class="fw-bold text-muted bg-light">
+                            <th class="ps-4 rounded-start">@T["Patient"]</th><th>@T["Product"]</th><th class="text-end">@T["bb:Units"]</th><th>@T["Cross-match"]</th><th class="text-end pe-4 rounded-end">@T["Actions"]</th>
                         </tr></thead>
                         <tbody class="fw-semibold text-gray-700">
                             @foreach (var r in b.Requests)
                             {
                                 var st = r.Row.Status;
                                 <tr>
-                                    <td><div class="d-flex align-items-center">
-                                        <div class="symbol symbol-35px symbol-circle me-3 flex-shrink-0">@if (r.Photo != null) {<img src="@r.Photo" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(r.PatientEn)" />} else {<span class="symbol-label fw-bold fs-8 hp-initials">@HospitalUi.Initials(r.PatientEn)</span>}</div>
-                                        <div class="d-flex flex-column"><a href="@Url.Action("Patient", new { id = r.Row.PatientId })" class="text-gray-900 text-hover-primary">@DisplayName.Of(r.Patient, r.PatientEn)</a>
-                                            <span class="text-muted fs-8">@if (r.Place != null) {<span>@(r.Place == "ICU" ? T["crumb:ICU"].Value : DisplayName.Of(r.Place, r.PlaceEn ?? r.Place))</span><text> · </text>}<bdi class="hp-num" dir="ltr">@r.BloodGroup</bdi></span></div>
+                                    <td class="ps-4"><div class="d-flex align-items-center">
+                                        <div class="symbol symbol-45px symbol-circle me-3 flex-shrink-0">@if (r.Photo != null) {<img src="@r.Photo" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(r.PatientEn)" />} else {<span class="symbol-label fw-bold fs-7 hp-initials">@HospitalUi.Initials(r.PatientEn)</span>}</div>
+                                        <div class="d-flex flex-column"><a href="@Url.Action("Patient", new { id = r.Row.PatientId })" class="text-gray-900 fw-bold text-hover-primary fs-6">@DisplayName.Of(r.Patient, r.PatientEn)</a>
+                                            <span class="text-muted fw-semibold d-block fs-7">@if (r.Place != null) {<span>@(r.Place == "ICU" ? T["crumb:ICU"].Value : DisplayName.Of(r.Place, r.PlaceEn ?? r.Place))</span><text> · </text>}<bdi class="hp-num fw-bold text-danger" dir="ltr">@r.BloodGroup</bdi></span></div>
                                     </div></td>
-                                    <td><span class="text-gray-800">@T["bp:" + r.Row.Product]</span>@if (r.Row.Note != null) {<div class="text-muted fs-8" dir="auto">@r.Row.Note</div>}</td>
-                                    <td class="text-end"><span class="hp-num">@r.Row.Units</span>@if (r.UnitNos.Count > 0) {<div class="text-muted fs-9 hp-num" dir="ltr">@string.Join(" · ", r.UnitNos)</div>}</td>
-                                    <td><span class="badge badge-light-@Kind(st)">@T["tx:" + st]</span>@if (r.Row.Reason != null) {<div class="text-muted fs-8 mt-1" dir="auto">@r.Row.Reason</div>}
-                                        @if (st == HospitalTransfusionStatus.Issued) {<div class="fs-8 mt-1 @(r.Row.BillLineId == null ? "text-muted" : "text-success")" data-bb-billed="@(r.Row.BillLineId != null ? 1 : 0)">@(r.Row.BillLineId == null ? T["Not charged"] : T["Charged to the bill"])</div>}</td>
-                                    <td class="text-end"><div class="d-flex justify-content-end gap-2">
+                                    <td><span class="text-gray-900 fw-bold">@T["bp:" + r.Row.Product]</span>@if (r.Row.Note != null) {<div class="text-muted fs-7" dir="auto">@r.Row.Note</div>}</td>
+                                    <td class="text-end"><span class="text-gray-900 fw-bold fs-6 hp-num">@r.Row.Units</span>@if (r.UnitNos.Count > 0) {<div class="text-muted fs-8 hp-num" dir="ltr">@string.Join(" · ", r.UnitNos)</div>}</td>
+                                    <td><span class="badge badge-light-@Kind(st) fs-7 fw-bold">@T["tx:" + st]</span>@if (r.Row.Reason != null) {<div class="text-muted fs-7 mt-1" dir="auto">@r.Row.Reason</div>}
+                                        @if (st == HospitalTransfusionStatus.Issued) {<div class="fs-7 mt-1 @(r.Row.BillLineId == null ? "text-muted" : "text-success")" data-bb-billed="@(r.Row.BillLineId != null ? 1 : 0)">@(r.Row.BillLineId == null ? T["Not charged"] : T["Charged to the bill"])</div>}</td>
+                                    <td class="text-end pe-4"><div class="d-flex justify-content-end gap-2">
                                         @if (canLab && st == HospitalTransfusionStatus.Requested) { <button type="button" class="btn btn-sm btn-light-primary" data-bb-move="@r.Row.ID" data-to="CrossMatching">@T["Start cross-match"]</button> }
                                         @if (canLab && st == HospitalTransfusionStatus.CrossMatching)
                                         {
@@ -112,7 +123,7 @@
                                             <button type="button" class="btn btn-sm btn-primary" data-bb-move="@r.Row.ID" data-to="Compatible">@T["tx:Compatible"]</button>
                                         }
                                         @if (canLab && st == HospitalTransfusionStatus.Compatible) { <button type="button" class="btn btn-sm btn-primary" data-bb-move="@r.Row.ID" data-to="Issued" data-confirm="1"><i class="ki-outline ki-delivery fs-5"></i>@T["Issue"]</button> }
-                                        @if ((canLab || canConsult) && open(st)) { <button type="button" class="btn btn-icon btn-sm btn-light w-30px h-30px" data-bb-move="@r.Row.ID" data-to="Cancelled" data-reason="1" title="@T["Cancel request"]"><i class="ki-outline ki-cross fs-5"></i></button> }
+                                        @if ((canLab || canConsult) && open(st)) { <button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-danger" data-bb-move="@r.Row.ID" data-to="Cancelled" data-reason="1" title="@T["Cancel request"]"><i class="ki-outline ki-cross fs-3"></i></button> }
                                     </div></td>
                                 </tr>
                             }
@@ -124,22 +135,22 @@
 
         @* the bags on the shelf — rendered here, shown in its window (the swap keeps it current) *@
         <div class="d-none" data-bb-shelf-body>
-            @if (b.Units.Count == 0) { <div class="text-center text-muted py-8">@T["No bag on the shelf."]</div> }
+            @if (b.Units.Count == 0) { <div class="text-center py-10"><i class="ki-outline ki-drop fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-bold text-gray-700">@T["No bag on the shelf."]</div></div> }
             else
             {
-                <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-2 mb-0">
-                    <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0"><th>@T["Bag"]</th><th>@T["Group"]</th><th>@T["Product"]</th><th>@T["Expiry"]</th><th>@T["State"]</th><th></th></tr></thead>
+                <div class="table-responsive"><table class="table align-middle gs-0 gy-3 mb-0">
+                    <thead><tr class="fw-bold text-muted bg-light"><th class="ps-4 rounded-start">@T["Bag"]</th><th>@T["Group"]</th><th>@T["Product"]</th><th>@T["Expiry"]</th><th>@T["State"]</th><th class="pe-4 rounded-end"></th></tr></thead>
                     <tbody class="fw-semibold text-gray-700">
                         @foreach (var u in b.Units)
                         {
                             var expired = u.ExpiresOn.Date < DateTime.Today;
                             <tr>
-                                <td><span class="badge badge-light fs-8 hp-num">@u.UnitNo</span></td>
-                                <td><bdi class="hp-num fw-bold" dir="ltr">@u.BloodGroup</bdi></td>
-                                <td>@T["bp:" + u.Product]</td>
-                                <td><span class="hp-num @(expired ? "text-danger fw-bold" : "")" dir="ltr">@u.ExpiresOn.ToString("yyyy-MM-dd", inv)</span></td>
-                                <td><span class="badge badge-light-@(u.Status == HospitalBloodUnitStatus.Reserved ? "primary" : "success")">@T["bu:" + u.Status]</span></td>
-                                <td class="text-end">@if (canLab && u.Status == HospitalBloodUnitStatus.Available) { <button type="button" class="btn btn-icon btn-sm btn-light w-30px h-30px" data-bb-discard="@u.ID" title="@T["Discard"]"><i class="ki-outline ki-trash fs-5"></i></button> }</td>
+                                <td class="ps-4"><span class="text-gray-900 fw-bold hp-num">@u.UnitNo</span></td>
+                                <td><span class="badge badge-light-danger fs-7 fw-bold hp-num" dir="ltr">@u.BloodGroup</span></td>
+                                <td class="text-gray-800">@T["bp:" + u.Product]</td>
+                                <td><span class="hp-num @(expired ? "text-danger fw-bold" : "text-gray-800")" dir="ltr">@u.ExpiresOn.ToString("yyyy-MM-dd", inv)</span></td>
+                                <td><span class="badge badge-light-@(u.Status == HospitalBloodUnitStatus.Reserved ? "primary" : "success") fs-7 fw-bold">@T["bu:" + u.Status]</span></td>
+                                <td class="text-end pe-4">@if (canLab && u.Status == HospitalBloodUnitStatus.Available) { <button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-danger" data-bb-discard="@u.ID" title="@T["Discard"]"><i class="ki-outline ki-trash fs-4"></i></button> }</td>
                             </tr>
                         }
                     </tbody>
@@ -151,42 +162,49 @@
 
 @if (ready)
 {
-    <div class="modal fade" id="bbShelfModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered modal-dialog-scrollable mw-750px"><div class="modal-content">
-        <div class="modal-header"><h3 class="fw-bold m-0">@T["Bags on the shelf"]</h3><div class="btn btn-icon btn-sm btn-active-light-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
-        <div class="modal-body" data-bb-shelf-view></div>
+    <div class="modal fade" id="bbShelfModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered modal-dialog-scrollable mw-750px"><div class="modal-content rounded">
+        <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="px-10 px-lg-15 text-center"><h1 class="mb-0">@T["Bags on the shelf"]</h1></div>
+        <div class="modal-body px-10 px-lg-15 pt-8 pb-10" data-bb-shelf-view></div>
     </div></div></div>
 }
 @if (ready && canLab)
 {
-    <div class="modal fade" id="bbReceiveModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-550px"><div class="modal-content">
-        <div class="modal-header"><h3 class="fw-bold m-0">@T["Receive bags"]</h3><div class="btn btn-icon btn-sm btn-active-light-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
-        <div class="modal-body"><div class="row g-4">
-            <div class="col-md-4"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Group"]</label>
+    <div class="modal fade" id="bbReceiveModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-600px"><div class="modal-content rounded">
+        <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-10">
+            <div class="mb-10 text-center"><h1 class="mb-0">@T["Receive bags"]</h1></div>
+            <div class="row g-6">
+            <div class="col-md-4"><label class="fs-6 fw-semibold mb-2 required">@T["Group"]</label>
                 <select class="form-select form-select-solid hp-num" dir="ltr" data-r="group">@foreach (var g in HospitalBloodGroups.All) { <option value="@g">@g</option> }</select></div>
-            <div class="col-md-8"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Product"]</label>
+            <div class="col-md-8"><label class="fs-6 fw-semibold mb-2 required">@T["Product"]</label>
                 <select class="form-select form-select-solid" data-r="product">@foreach (var pr in HospitalBloodProduct.All) { <option value="@pr" selected="@(pr == HospitalBloodProduct.PackedCells)">@T["bp:" + pr]</option> }</select></div>
-            <div class="col-12"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Bag numbers (one per line)"]</label>
+            <div class="col-12"><label class="fs-6 fw-semibold mb-2 required">@T["Bag numbers (one per line)"]</label>
                 <textarea class="form-control form-control-solid hp-num" rows="4" dir="ltr" data-r="nos"></textarea></div>
-            <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Expiry"]</label><input type="date" class="form-control form-control-solid hp-num" dir="ltr" data-r="expires" /></div>
-            <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Note"]</label><input class="form-control form-control-solid" dir="auto" maxlength="300" data-r="note" /></div>
-        </div></div>
-        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-bb-receive-save><i class="ki-outline ki-check fs-4"></i>@T["Receive"]</button></div>
+            <div class="col-md-6"><label class="fs-6 fw-semibold mb-2 required">@T["Expiry"]</label><input type="date" class="form-control form-control-solid hp-num" dir="ltr" data-r="expires" /></div>
+            <div class="col-md-6"><label class="fs-6 fw-semibold mb-2">@T["Note"]</label><input class="form-control form-control-solid" dir="auto" maxlength="300" data-r="note" /></div>
+            </div>
+            <div class="text-center pt-10"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-bb-receive-save><i class="ki-outline ki-check fs-4"></i>@T["Receive"]</button></div>
+        </div>
     </div></div></div>
 }
 @if (ready && canConsult)
 {
-    <div class="modal fade" id="bbNewModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-550px"><div class="modal-content">
-        <div class="modal-header"><h3 class="fw-bold m-0">@T["Transfusion request"]</h3><div class="btn btn-icon btn-sm btn-active-light-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
-        <div class="modal-body"><div class="row g-4">
-            <div class="col-12"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Patient"]</label>
+    <div class="modal fade" id="bbNewModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-600px"><div class="modal-content rounded">
+        <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-10">
+            <div class="mb-10 text-center"><h1 class="mb-3">@T["Transfusion request"]</h1>
+                <div class="text-muted fw-semibold fs-6">@T["The patient's blood group is taken from the file; the laboratory cross-matches and reserves compatible bags."]</div></div>
+            <div class="row g-6">
+            <div class="col-12"><label class="fs-6 fw-semibold mb-2 required">@T["Patient"]</label>
                 <select class="form-select form-select-solid" data-n="patientId" data-bb-patient data-placeholder="@T["Search..."]"></select></div>
-            <div class="col-md-8"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Product"]</label>
+            <div class="col-md-8"><label class="fs-6 fw-semibold mb-2 required">@T["Product"]</label>
                 <select class="form-select form-select-solid" data-n="product">@foreach (var pr in HospitalBloodProduct.All) { <option value="@pr" selected="@(pr == HospitalBloodProduct.PackedCells)">@T["bp:" + pr]</option> }</select></div>
-            <div class="col-md-4"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["bb:Units"]</label><input type="number" min="1" max="10" step="1" value="1" class="form-control form-control-solid hp-num" dir="ltr" data-n="units" /></div>
-            <div class="col-12"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Note"]</label><textarea class="form-control form-control-solid" rows="2" maxlength="500" dir="auto" data-n="note"></textarea></div>
-            <div class="col-12 text-muted fs-8">@T["The patient's blood group is taken from the file; the laboratory cross-matches and reserves compatible bags."]</div>
-        </div></div>
-        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-bb-new-save><i class="ki-outline ki-check fs-4"></i>@T["Send to the laboratory"]</button></div>
+            <div class="col-md-4"><label class="fs-6 fw-semibold mb-2 required">@T["bb:Units"]</label><input type="number" min="1" max="10" step="1" value="1" class="form-control form-control-solid hp-num" dir="ltr" data-n="units" /></div>
+            <div class="col-12"><label class="fs-6 fw-semibold mb-2">@T["Note"]</label><textarea class="form-control form-control-solid" rows="2" maxlength="500" dir="auto" data-n="note"></textarea></div>
+            </div>
+            <div class="text-center pt-10"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-bb-new-save><i class="ki-outline ki-check fs-4"></i>@T["Send to the laboratory"]</button></div>
+        </div>
     </div></div></div>
 }
 

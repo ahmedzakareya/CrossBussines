@@ -34,30 +34,51 @@
         <input type="month" id="f_month" class="form-control form-control-solid form-control-sm w-175px" dir="ltr" value="@($"{Model.Year:0000}-{Model.Month:00}")" />
     </div></div>
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
-        @if (!Model.TargetsReady) { <div class="notice d-flex rounded border border-dashed p-5 mb-5 hp-notice"><div class="fs-7 text-gray-700">@T["Targets cannot be changed until hospital_h81_quality_targets.sql is installed; the published defaults apply."]</div></div> }
-        <div class="d-flex flex-wrap gap-4 mb-5 fs-7">
-            <span><span class="badge badge-light-success me-1">@Model.Values.Count(v => v.Status == "Met")</span>@T["qs:Met"]</span>
-            <span><span class="badge badge-light-danger me-1">@Model.Values.Count(v => v.Status == "NotMet")</span>@T["qs:NotMet"]</span>
-            <span><span class="badge badge-light me-1">@Model.Values.Count(v => v.Status == "NoData")</span>@T["qs:NoData"]</span>
+        @if (!Model.TargetsReady)
+        {
+            <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-5 mb-5">
+                <i class="ki-outline ki-information fs-2tx text-primary me-4"></i>
+                <div class="fw-semibold"><div class="fs-6 text-gray-700">@T["Targets cannot be changed until hospital_h81_quality_targets.sql is installed; the published defaults apply."]</div></div>
+            </div>
+        }
+        @* H128: stat tiles (demo39 dashboards/logistics) *@
+        <div class="row g-5 mb-5">
+            @foreach (var (st, icon, tone) in new[] { ("Met", "ki-check-circle", "success"), ("NotMet", "ki-cross-circle", "danger"), ("NoData", "ki-question", "gray") })
+            {
+                <div class="col-md-4"><div class="card card-flush h-100">
+                    <div class="card-header pt-5 flex-nowrap gap-3">
+                        <div class="card-title d-flex flex-column">
+                            <span class="fs-2hx fw-bold text-gray-900 me-2 lh-1 ls-n2 hp-num" dir="ltr">@Model.Values.Count(v => v.Status == st)</span>
+                            <span class="text-gray-500 pt-1 fw-semibold fs-6">@T["qs:" + st]</span>
+                        </div>
+                        <div class="card-toolbar"><div class="symbol symbol-45px"><span class="symbol-label bg-light-@(tone == "gray" ? "secondary" : tone)"><i class="ki-outline @icon fs-2x text-@(tone == "gray" ? "gray-600" : tone)"></i></span></div></div>
+                    </div>
+                    <div class="card-body d-flex align-items-end pt-0">
+                        <div class="d-flex fs-7 fw-semibold align-items-center text-gray-500"><div class="bullet w-8px h-6px rounded-2 bg-@(tone == "gray" ? "gray-400" : tone) me-3"></div>@T["{0} of {1}", Model.Values.Count(v => v.Status == st), Model.Values.Count]</div>
+                    </div>
+                </div></div>
+            }
         </div>
         <div class="row g-5">
             @foreach (var q in Model.Values)
             {
                 string tone = q.Status == "Met" ? "success" : q.Status == "NotMet" ? "danger" : "gray-500";
-                <div class="col-md-6 col-xl-4"><div class="card card-flush h-100 border-top border-3 border-@(q.Status == "NoData" ? "gray-300" : tone)">
-                    <div class="card-body py-5">
-                        <div class="d-flex flex-stack mb-3">
-                            <div class="fw-bold text-gray-900 fs-6">@T["qi:" + q.Code]</div>
-                            <span class="badge @(q.Status == "Met" ? "badge-light-success" : q.Status == "NotMet" ? "badge-light-danger" : "badge-light") fs-9">@T["qs:" + q.Status]</span>
-                        </div>
+                string badge = q.Status == "Met" ? "success" : q.Status == "NotMet" ? "danger" : "primary";
+                <div class="col-md-6 col-xl-4"><div class="card card-flush h-100">
+                    <div class="card-header pt-5 flex-nowrap gap-3">
+                        <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800 fs-6">@T["qi:" + q.Code]</span>
+                            <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["qd:" + q.Code]</span></h3>
+                        <div class="card-toolbar"><span class="badge @(q.Status == "NoData" ? "badge-light" : "badge-light-" + badge) fs-7 fw-bold">@T["qs:" + q.Status]</span></div>
+                    </div>
+                    <div class="card-body pt-2">
                         <div class="d-flex align-items-baseline gap-2 mb-1">
                             <span class="fs-2hx fw-bold hp-num lh-1 text-@(q.Status == "NoData" ? "gray-400" : tone)" dir="ltr">@F(q.Value, q.Unit)</span>
-                            <span class="text-muted fs-8">@T["qu:" + q.Unit]</span>
+                            <span class="text-gray-500 fw-semibold fs-7">@T["qu:" + q.Unit]</span>
                         </div>
-                        <div class="text-muted fs-8 mb-4">@T["qd:" + q.Code]@if (q.Denominator != null) {<text> · <bdi class="hp-num" dir="ltr">@(q.Numerator != null ? q.Numerator + " / " : "")@q.Denominator</bdi></text>}</div>
-                        <div class="d-flex flex-stack fs-8 mb-3">
-                            <span class="text-gray-700">@T["Target"]: <bdi class="hp-num fw-bold" dir="ltr">@Cmp(q)</bdi>@if (q.TargetIsDefault) {<span class="text-muted"> (@T["Default"])</span>}</span>
-                            @if (canManage && Model.TargetsReady) {<button type="button" class="btn btn-sm btn-light py-1 px-2 fs-9" data-target="@q.Code" data-current="@q.Target.ToString("0.##", inv)" data-what="@T["qi:" + q.Code]">@T["Change"]</button>}
+                        @if (q.Denominator != null) {<div class="text-gray-500 fw-semibold fs-7 mb-4 hp-num">@if (q.Numerator != null) {@T["{0} of {1}", q.Numerator, q.Denominator]} else {<bdi dir="ltr">@q.Denominator</bdi>}</div>} else {<div class="mb-4"></div>}
+                        <div class="d-flex flex-stack fs-7 mb-3">
+                            <span class="text-gray-700 fw-semibold">@T["Target"]: <bdi class="hp-num fw-bold" dir="ltr">@Cmp(q)</bdi>@if (q.TargetIsDefault) {<span class="text-muted"> (@T["Default"])</span>}</span>
+                            @if (canManage && Model.TargetsReady) {<button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-primary w-30px h-30px" title="@T["Change"]" data-bs-toggle="tooltip" data-target="@q.Code" data-current="@q.Target.ToString("0.##", inv)" data-what="@T["qi:" + q.Code]"><i class="ki-outline ki-pencil fs-5"></i></button>}
                         </div>
                         <div class="d-flex gap-1 align-items-end" dir="ltr" title="@T["The last six months"]">
                             @for (int i = 0; i < q.Trend.Count; i++)

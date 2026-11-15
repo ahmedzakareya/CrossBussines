@@ -9,40 +9,42 @@
     string At(DateTime u) => HospitalNursingService.UtcToWard(u).ToString("dd/MM HH:mm", inv);
     string Who(int? id) => id is int i && Model.People.TryGetValue(i, out var n) ? n : "—";
 }
-<div class="fs-7 text-muted mb-3">@DisplayName.Of(Model.Name, Model.NameEn) · <span class="hp-num">@Model.Mrn</span></div>
-@if (Model.Observations.Count == 0) { <div class="text-muted fs-7 mb-5">@T["No observations yet"]</div> }
+<div class="d-flex align-items-center mb-5"><div class="symbol symbol-35px me-3"><span class="symbol-label bg-light-primary"><i class="ki-outline ki-pulse fs-3 text-primary"></i></span></div>
+    <div class="d-flex flex-column"><span class="text-gray-900 fw-bold fs-6">@DisplayName.Of(Model.Name, Model.NameEn)</span><bdi class="text-muted fw-semibold fs-7 hp-num">@Model.Mrn</bdi></div></div>
+@if (Model.Observations.Count == 0) { <div class="text-center py-8 mb-5"><i class="ki-outline ki-pulse fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-bold text-gray-700">@T["No observations yet"]</div></div> }
 else
 {
-    <div class="table-responsive mb-6"><table class="table table-row-dashed align-middle fs-8 gy-2 mb-0 hp-num">
-        <thead><tr class="text-gray-500 fw-bold text-uppercase"><th>@T["Time"]</th><th>RR</th><th>SpO₂</th><th>O₂</th><th>BP</th><th>HR</th><th>ACVPU</th><th>°C</th><th>@T["Pain"]</th><th>NEWS2</th><th>@T["By"]</th></tr></thead>
+    @* H128: the theme's table widget (demo39 widgets/tables) *@
+    <div class="table-responsive mb-6"><table class="table align-middle gs-0 gy-3 fs-7 mb-0 hp-num">
+        <thead><tr class="fw-bold text-muted bg-light"><th class="ps-4 rounded-start">@T["Time"]</th><th>RR</th><th>SpO₂</th><th>O₂</th><th>BP</th><th>HR</th><th>ACVPU</th><th>°C</th><th>@T["Pain"]</th><th>NEWS2</th><th class="pe-4 rounded-end">@T["By"]</th></tr></thead>
         <tbody>
         @foreach (var o in Model.Observations)
         {
             <tr>
-                <td class="text-nowrap" dir="ltr">@At(o.TakenAt)</td><td>@(o.RespRate?.ToString() ?? "—")</td>
+                <td class="text-nowrap ps-4 text-gray-900 fw-bold" dir="ltr">@At(o.TakenAt)</td><td>@(o.RespRate?.ToString() ?? "—")</td>
                 <td>@(o.SpO2?.ToString() ?? "—")@(o.SpO2Scale2 ? " (2)" : "")</td><td>@(o.OnOxygen ? "✓" : "")</td>
                 <td class="text-nowrap" dir="ltr">@(o.SystolicBp?.ToString() ?? "—")@(o.DiastolicBp != null ? "/" + o.DiastolicBp : "")</td>
                 <td>@(o.HeartRate?.ToString() ?? "—")</td><td>@(o.Consciousness ?? "—")</td><td>@(o.TempC?.ToString("0.0", inv) ?? "—")</td><td>@(o.PainScore?.ToString() ?? "—")</td>
-                <td>@if (o.News2 is int n) {<span class="badge @(o.News2Risk is HospitalNews2Risk.High ? "badge-danger" : o.News2Risk is HospitalNews2Risk.Medium or HospitalNews2Risk.LowSingle ? "badge-light-danger" : "badge-light")">@n</span>} else {<span class="text-muted">—</span>}</td>
-                <td class="fs-9 text-muted">@Who(o.RecordedByEmployeeId)</td>
+                <td>@if (o.News2 is int n) {<span class="badge @(o.News2Risk is HospitalNews2Risk.High ? "badge-danger" : o.News2Risk is HospitalNews2Risk.Medium or HospitalNews2Risk.LowSingle ? "badge-light-danger" : "badge-light") fs-7 fw-bold">@n</span>} else {<span class="text-muted">—</span>}</td>
+                <td class="fs-8 text-muted pe-4">@Who(o.RecordedByEmployeeId)</td>
             </tr>
-            @if (o.Note != null) { <tr><td colspan="11" class="fs-9 text-muted pt-0" dir="auto">@o.Note</td></tr> }
+            @if (o.Note != null) { <tr><td colspan="11" class="fs-8 text-muted pt-0 ps-4" dir="auto">@o.Note</td></tr> }
         }
         </tbody>
     </table></div>
 }
-<div class="fw-bold text-gray-900 fs-6 mb-3">@T["Risk assessments"]</div>
-@if (Model.Assessments.Count == 0) { <div class="text-muted fs-7">@T["None yet."]</div> }
+<div class="fw-bold text-gray-800 fs-6 mb-3">@T["Risk assessments"]</div>
+@if (Model.Assessments.Count == 0) { <div class="text-center py-8"><i class="ki-outline ki-shield-search fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-bold text-gray-700">@T["None yet."]</div></div> }
 else
 {
-    <div class="table-responsive"><table class="table table-row-dashed align-middle fs-8 gy-2 mb-0">
-        <thead><tr class="text-gray-500 fw-bold text-uppercase"><th>@T["Time"]</th><th>@T["Scale"]</th><th>@T["Score"]</th><th>@T["Level"]</th><th>@T["By"]</th></tr></thead>
+    <div class="table-responsive"><table class="table align-middle gs-0 gy-3 fs-7 mb-0">
+        <thead><tr class="fw-bold text-muted bg-light"><th class="ps-4 rounded-start">@T["Time"]</th><th>@T["Scale"]</th><th>@T["Score"]</th><th>@T["Level"]</th><th class="pe-4 rounded-end">@T["By"]</th></tr></thead>
         <tbody>
         @foreach (var a in Model.Assessments)
         {
-            <tr><td class="text-nowrap hp-num" dir="ltr">@At(a.AssessedAt)</td><td>@T["riskKind:" + a.Kind]</td>
-                <td><span class="badge @(HospitalRiskRules.Flags(a) ? "badge-light-danger" : "badge-light") hp-num">@a.Score</span></td>
-                <td>@T["riskLevel:" + a.Level]</td><td class="fs-9 text-muted">@Who(a.AssessedByEmployeeId)</td></tr>
+            <tr><td class="text-nowrap hp-num ps-4 text-gray-900 fw-bold" dir="ltr">@At(a.AssessedAt)</td><td class="text-gray-800 fw-semibold">@T["riskKind:" + a.Kind]</td>
+                <td><span class="badge @(HospitalRiskRules.Flags(a) ? "badge-light-danger" : "badge-light") fs-7 fw-bold hp-num">@a.Score</span></td>
+                <td>@T["riskLevel:" + a.Level]</td><td class="fs-8 text-muted pe-4">@Who(a.AssessedByEmployeeId)</td></tr>
         }
         </tbody>
     </table></div>

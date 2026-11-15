@@ -46,14 +46,38 @@
     </div></div>
 
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
-        <div class="hp-pbanner p-6 mb-5"><div class="d-flex flex-wrap align-items-center gap-5">
-            <div class="symbol symbol-75px symbol-circle flex-shrink-0">@if (Model.PhotoPath != null) {<img src="@Model.PhotoPath" alt="@name" style="object-fit:cover" data-initials="@HospitalUi.Initials(p.NameEn)" />} else {<span class="symbol-label fs-2 fw-bold hp-initials">@HospitalUi.Initials(p.NameEn)</span>}</div>
-            <div class="flex-grow-1 min-w-0">
-                <div class="d-flex flex-wrap align-items-center gap-2"><span class="fs-2 fw-bold text-gray-900">@name</span><span class="badge hp-badge fs-8">@T["eng:" + p.Engagement]</span></div>
-                <div class="text-muted fw-semibold mt-1">@DisplayName.Of(p.Title, p.TitleEn)@if (Model.Department != null) {<text> · </text>@DisplayName.Of(Model.Department.Name, Model.Department.NameEn)}@if (Model.ClinicRoomNumber != null) {<text> · </text>@T["Clinic"] <span class="hp-num">@Model.ClinicRoomNumber</span>}</div>
-                <div class="d-flex flex-wrap gap-2 mt-3">
-                    <span class="hp-chip"><i class="ki-outline ki-time fs-7"></i><span class="hp-num">@HospitalUi.Clock(p.SessionStartMinute) – @HospitalUi.Clock(p.SessionEndMinute)</span> · <span class="hp-num">@p.SlotMinutes</span> @T["min per patient"]</span>
-                    <span class="hp-chip"><i class="ki-outline ki-wallet fs-7"></i>@T["paid:" + p.PayChannel]</span>
+        @* H128: the profile header — demo39 account/overview, as on the patient file (photo · name and badges · details with icons · dashed figures) *@
+        <div class="card mb-5"><div class="card-body pt-9 pb-6">
+            <div class="d-flex flex-wrap flex-sm-nowrap">
+                <div class="me-7 mb-4">
+                    <div class="symbol symbol-100px symbol-lg-125px symbol-circle symbol-fixed position-relative">
+                        @if (Model.PhotoPath != null) {<img src="@Model.PhotoPath" alt="@name" style="object-fit:cover" data-initials="@HospitalUi.Initials(p.NameEn)" />} else {<span class="symbol-label fs-1 fw-bold bg-light-primary text-primary">@HospitalUi.Initials(p.NameEn)</span>}
+                        @if (day.Count > 0) {<div class="position-absolute translate-middle bottom-0 start-100 mb-6 bg-success rounded-circle border border-4 border-body h-20px w-20px" title="@T["Today's appointments"]"></div>}
+                    </div>
+                </div>
+                <div class="flex-grow-1 min-w-0">
+                    <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                        <span class="text-gray-900 fs-2 fw-bold me-1">@name</span>
+                        <span class="badge badge-light-primary fw-bold fs-7">@T["eng:" + p.Engagement]</span>
+                        @if (left is int lb && lb < 0) {<span class="badge badge-light-danger fw-bold fs-7"><i class="ki-outline ki-shield-cross fs-7 text-danger me-1"></i>@T["Expired"]</span>}
+                    </div>
+                    <div class="d-flex flex-wrap fw-semibold fs-6 mb-4 pe-2">
+                        @if (!string.IsNullOrEmpty(p.Title) || !string.IsNullOrEmpty(p.TitleEn)) {<span class="d-flex align-items-center text-gray-500 me-5 mb-2"><i class="ki-outline ki-profile-circle fs-4 me-1"></i>@DisplayName.Of(p.Title, p.TitleEn)</span>}
+                        @if (Model.Department != null) {<span class="d-flex align-items-center text-gray-500 me-5 mb-2"><i class="ki-outline ki-bank fs-4 me-1"></i>@DisplayName.Of(Model.Department.Name, Model.Department.NameEn)</span>}
+                        @if (Model.ClinicRoomNumber != null) {<span class="d-flex align-items-center text-gray-500 me-5 mb-2"><i class="ki-outline ki-geolocation fs-4 me-1"></i>@T["Clinic"]&nbsp;<bdi class="hp-num text-gray-800 fw-bold">@Model.ClinicRoomNumber</bdi></span>}
+                        <span class="d-flex align-items-center text-gray-500 me-5 mb-2"><i class="ki-outline ki-time fs-4 me-1"></i><bdi class="hp-num" dir="ltr">@HospitalUi.Clock(p.SessionStartMinute)–@HospitalUi.Clock(p.SessionEndMinute)</bdi></span>
+                        <span class="d-flex align-items-center text-gray-500 me-5 mb-2"><i class="ki-outline ki-wallet fs-4 me-1"></i>@T["paid:" + p.PayChannel]</span>
+                    </div>
+                    <div class="d-flex flex-wrap">
+                        @foreach (var (label, n, icon, tone) in new[] { (T["Today's appointments"].Value, day.Count, "ki-calendar", "primary"), (T["Fee rules"].Value, feeRules.Count, "ki-wallet", "info"),
+                            (T["Leave"].Value, leaves.Count, "ki-calendar-remove", "danger"), (T["Minutes per patient"].Value, p.SlotMinutes, "ki-timer", "success") })
+                        {
+                            <div class="border border-gray-300 border-dashed rounded min-w-125px py-3 px-4 me-6 mb-3">
+                                <div class="d-flex align-items-center"><i class="ki-outline @icon fs-3 text-@tone me-2"></i><div class="fs-2 fw-bold hp-num">@n</div></div>
+                                <div class="fw-semibold fs-6 text-gray-500">@label</div>
+                            </div>
+                        }
+                    </div>
                 </div>
             </div>
         </div></div>
@@ -74,116 +98,136 @@
 
         <div class="row g-5 g-xl-8">
             <div class="col-xl-7">
-                <div class="card mb-5">
-                    <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
-                        <span class="card-label fw-bold text-gray-900 fs-4">@T["Today's appointments"]</span>
-                        <span class="text-muted mt-1 fw-semibold fs-7 hp-num">@today.ToString("yyyy-MM-dd")</span>
-                    </div></div>
+                @* H128: today's book — the theme's table widget (demo39 widgets/tables) *@
+                <div class="card card-flush mb-5">
+                    <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column">
+                        <span class="card-label fw-bold text-gray-800">@T["Today's appointments"]</span>
+                        <span class="text-gray-500 mt-1 fw-semibold fs-7 hp-num" dir="ltr">@today.ToString("yyyy-MM-dd")</span>
+                    </h3></div>
                     <div class="card-body pt-2">
-                        @if (day.Count == 0) { <div class="text-muted fs-7 py-6 text-center">@T["No appointments today."]</div> }
+                        @if (day.Count == 0)
+                        {
+                            <div class="text-center py-10"><i class="ki-outline ki-calendar fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-bold text-gray-700">@T["No appointments today."]</div></div>
+                        }
                         else
                         {
-                            <table class="table align-middle table-row-dashed fs-6 gy-3 mb-0"><tbody class="fw-semibold text-gray-700">
+                            <div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
+                                <thead><tr class="fw-bold text-muted bg-light">
+                                    <th class="ps-4 rounded-start">@T["Time"]</th><th>@T["Patient"]</th><th>@T["Visit type"]</th><th class="text-end pe-4 rounded-end">@T["Status"]</th></tr></thead>
+                                <tbody>
                                 @foreach (var a in day)
                                 {
+                                    var st = a.Status.ToString();
+                                    var tone = st switch { "Done" => "success", "Arrived" => "info", "InRoom" => "primary", "NoShow" => "danger", "Cancelled" => "secondary", _ => "primary" };
                                     <tr>
-                                        <td class="hp-num fw-bold text-gray-900 w-75px">@HospitalUi.Clock(a.StartMinute)</td>
+                                        <td class="ps-4"><span class="text-gray-900 fw-bold fs-6 hp-num" dir="ltr">@HospitalUi.Clock(a.StartMinute)</span></td>
                                         <td><div class="d-flex align-items-center">
-                                            <div class="symbol symbol-35px symbol-circle me-3">@if (a.PatientPhoto != null) {<img src="@a.PatientPhoto" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(a.PatientNameEn)" />} else {<span class="symbol-label fw-bold fs-8 hp-initials">@HospitalUi.Initials(a.PatientNameEn)</span>}</div>
-                                            <div class="d-flex flex-column"><a href="@Url.Action("Patient", new { id = a.PatientId })" class="text-gray-900 text-hover-primary fw-bold fs-7">@DisplayName.Of(a.PatientName, a.PatientNameEn)</a><span class="text-muted fs-8 hp-num">@a.Mrn</span></div>
+                                            <div class="symbol symbol-35px symbol-circle me-3 flex-shrink-0">@if (a.PatientPhoto != null) {<img src="@a.PatientPhoto" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(a.PatientNameEn)" />} else {<span class="symbol-label fw-bold fs-8 bg-light-primary text-primary">@HospitalUi.Initials(a.PatientNameEn)</span>}</div>
+                                            <div class="d-flex flex-column min-w-0"><a href="@Url.Action("Patient", new { id = a.PatientId })" class="text-gray-900 text-hover-primary fw-bold fs-6 text-truncate">@DisplayName.Of(a.PatientName, a.PatientNameEn)</a><bdi class="text-muted fw-semibold d-block fs-7 hp-num" dir="ltr">@a.Mrn</bdi></div>
                                         </div></td>
-                                        <td class="fs-7">@T["visit:" + a.VisitType]</td>
-                                        <td class="text-end"><span class="hp-slot @a.Status d-inline-block px-3">@T["appt:" + a.Status]</span></td>
+                                        <td class="text-gray-600 fw-semibold fs-7">@T["visit:" + a.VisitType]</td>
+                                        <td class="text-end pe-4"><span class="badge badge-light-@tone fs-7 fw-bold">@T["appt:" + a.Status]</span></td>
                                     </tr>
                                 }
-                            </tbody></table>
+                                </tbody>
+                            </table></div>
                         }
                     </div>
                 </div>
                 @* H19: what he earns on the work he does *@
-                <div class="card mb-5">
-                    <div class="card-header border-0 pt-6">
-                        <div class="card-title align-items-start flex-column m-0">
-                            <span class="card-label fw-bold text-gray-900 fs-4">@T["Fee rules"]</span>
-                            <span class="text-muted mt-1 fw-semibold fs-7">@(p.PayChannel == HospitalPayChannels.Vendor ? T["Basis: actually collected (cash when paid, insurance when the claim is accepted)"] : T["Basis: actually collected; added as a variable line in the payroll run"])</span>
-                        </div>
+                <div class="card card-flush mb-5">
+                    <div class="card-header pt-5">
+                        <h3 class="card-title align-items-start flex-column">
+                            <span class="card-label fw-bold text-gray-800">@T["Fee rules"]</span>
+                            <span class="text-gray-500 mt-1 fw-semibold fs-7">@(p.PayChannel == HospitalPayChannels.Vendor ? T["Basis: actually collected (cash when paid, insurance when the claim is accepted)"] : T["Basis: actually collected; added as a variable line in the payroll run"])</span>
+                        </h3>
                         @if (canManage) { <div class="card-toolbar"><button type="button" class="btn btn-sm btn-light-primary" data-rule-open><i class="ki-outline ki-plus fs-4"></i>@T["Rule"]</button></div> }
                     </div>
                     <div class="card-body pt-2" data-fee-rules>
-                        @if (feeRules.Count == 0) { <div class="text-muted fs-7 py-6 text-center">@T["No fee rules: this doctor earns no fees on his work yet."]</div> }
+                        @if (feeRules.Count == 0)
+                        {
+                            <div class="text-center py-10"><i class="ki-outline ki-wallet fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-bold text-gray-700">@T["No fee rules: this doctor earns no fees on his work yet."]</div></div>
+                        }
                         else
                         {
-                            <table class="table align-middle table-row-dashed fs-6 gy-3 mb-0">
-                                <thead><tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0"><th>@T["Service"]</th><th>@T["Calculation"]</th><th class="text-end w-50px"></th></tr></thead>
-                                <tbody class="fw-semibold text-gray-700">
+                            <div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
+                                <thead><tr class="fw-bold text-muted bg-light"><th class="ps-4 rounded-start">@T["Service"]</th><th>@T["Calculation"]</th><th class="text-end pe-4 rounded-end"></th></tr></thead>
+                                <tbody>
                                     @foreach (var r in feeRules)
                                     {
                                         <tr>
-                                            <td class="fw-bold text-gray-800">@if (r.Service != null) {@DisplayName.Of(r.Service, r.ServiceEn ?? r.Service)<div class="text-muted fs-8"><span class="hp-num">@r.ServiceCode</span> · @T["cat:" + r.Rule.Category]</div>} else {@T["All of"] <text> </text>@T["cat:" + r.Rule.Category]}</td>
-                                            <td>@if (r.Rule.Basis == HospitalFeeBasis.Percent) {<span class="hp-num fw-bold">@r.Rule.Value.ToString("0.##", inv)%</span> <span class="text-muted fs-8">@T["of what was collected"]</span>} else {<span class="hp-num fw-bold">@r.Rule.Value.ToString("N3", inv)</span> <span class="text-muted fs-8">@T["per unit"]</span>}</td>
-                                            <td class="text-end">@if (canManage) {<button type="button" class="btn btn-icon btn-sm btn-active-light-danger" data-rule-remove="@r.Rule.ID"><i class="ki-outline ki-trash fs-5"></i></button>}</td>
+                                            <td class="ps-4"><div class="d-flex align-items-center">
+                                                <div class="symbol symbol-35px me-3 flex-shrink-0"><span class="symbol-label bg-light-info"><i class="ki-outline ki-tag fs-3 text-info"></i></span></div>
+                                                <div class="d-flex flex-column">@if (r.Service != null) {<span class="text-gray-900 fw-bold fs-6">@DisplayName.Of(r.Service, r.ServiceEn ?? r.Service)</span><span class="text-muted fw-semibold d-block fs-7"><bdi class="hp-num" dir="ltr">@r.ServiceCode</bdi> · @T["cat:" + r.Rule.Category]</span>} else {<span class="text-gray-900 fw-bold fs-6">@T["All of"] @T["cat:" + r.Rule.Category]</span>}</div>
+                                            </div></td>
+                                            <td>@if (r.Rule.Basis == HospitalFeeBasis.Percent) {<span class="badge badge-light-primary fs-7 fw-bold hp-num" dir="ltr">@r.Rule.Value.ToString("0.##", inv)%</span> <span class="text-muted fw-semibold fs-7 ms-1">@T["of what was collected"]</span>} else {<span class="badge badge-light-primary fs-7 fw-bold hp-num" dir="ltr">@r.Rule.Value.ToString("N3", inv)</span> <span class="text-muted fw-semibold fs-7 ms-1">@T["per unit"]</span>}</td>
+                                            <td class="text-end pe-4">@if (canManage) {<button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-danger" data-rule-remove="@r.Rule.ID" title="@T["Remove"]" data-bs-toggle="tooltip"><i class="ki-outline ki-trash fs-3"></i></button>}</td>
                                         </tr>
                                     }
                                 </tbody>
-                            </table>
+                            </table></div>
                         }
-                        <div class="mt-4 text-muted fs-8"><i class="ki-outline ki-information-5 fs-7"></i> @(p.PayChannel == HospitalPayChannels.Vendor ? T["Paid as a vendor: the approved statement posts to his payable."] : T["Paid through payroll: the approved statement goes to the payroll run as a variable line."])</div>
+                        <div class="d-flex align-items-center mt-4 text-gray-500 fw-semibold fs-7"><i class="ki-outline ki-information-5 fs-5 text-gray-500 me-2"></i>@(p.PayChannel == HospitalPayChannels.Vendor ? T["Paid as a vendor: the approved statement posts to his payable."] : T["Paid through payroll: the approved statement goes to the payroll run as a variable line."])</div>
                     </div>
                 </div>
-                <div class="card">
-                    <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Credentials & licences"]</span></div></div>
+                <div class="card card-flush">
+                    <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Credentials & licences"]</span></h3></div>
                     <div class="card-body pt-2">
-                        <table class="table align-middle table-row-dashed fs-6 gy-3 mb-0">
-                            <thead><tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0"><th>@T["Document"]</th><th>@T["Number"]</th><th>@T["Expiry"]</th></tr></thead>
-                            <tbody class="fw-semibold text-gray-700"><tr>
-                                <td class="fw-bold text-gray-800">@T["Professional licence"]</td>
-                                <td class="hp-num">@(p.LicenseNumber ?? "—")</td>
-                                <td class="hp-num @(left is int ll && ll <= 60 ? "text-danger" : "")">@(p.LicenseExpiry?.ToString("yyyy-MM-dd") ?? "—")</td>
-                            </tr></tbody>
-                        </table>
+                        <div class="d-flex flex-stack">
+                            <div class="symbol symbol-35px me-4"><span class="symbol-label bg-light-@(left is int lt && lt <= 60 ? "danger" : "primary")"><i class="ki-outline ki-shield-tick fs-3 text-@(left is int lt2 && lt2 <= 60 ? "danger" : "primary")"></i></span></div>
+                            <div class="d-flex flex-stack flex-row-fluid d-grid gap-2">
+                                <div class="me-3"><span class="text-gray-800 fw-bold fs-6">@T["Professional licence"]</span><bdi class="text-gray-500 fw-semibold fs-7 d-block hp-num" dir="ltr">@(p.LicenseNumber ?? "—")</bdi></div>
+                                <div class="d-flex align-items-center"><span class="text-gray-500 fw-semibold fs-7 me-3">@T["Expiry"]</span>
+                                    <span class="badge badge-light-@(left is int ll && ll <= 60 ? "danger" : "success") fs-7 fw-bold hp-num" dir="ltr">@(p.LicenseExpiry?.ToString("yyyy-MM-dd") ?? "—")</span></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
             <div class="col-xl-5">
-                <div class="card mb-5">
-                    <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
-                        <span class="card-label fw-bold text-gray-900 fs-4">@T["Clinical privileges"]</span>
-                        <span class="text-muted mt-1 fw-semibold fs-7">@T["Decides what the doctor can do in clinic, wards and theatre"]</span>
-                    </div></div>
+                <div class="card card-flush mb-5">
+                    <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column">
+                        <span class="card-label fw-bold text-gray-800">@T["Clinical privileges"]</span>
+                        <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Decides what the doctor can do in clinic, wards and theatre"]</span>
+                    </h3></div>
                     <div class="card-body pt-2">
-                        @foreach (var k in HospitalPrivileges.All)
+                        @{ var privAll = HospitalPrivileges.All.ToList(); }
+                        @for (int i = 0; i < privAll.Count; i++)
                         {
-                            <div class="d-flex align-items-center py-3 border-bottom border-gray-200 border-bottom-dashed">
-                                <i class="ki-outline @(privileges.Contains(k) ? "ki-check-square text-primary" : "ki-cross-square text-gray-400") fs-2 me-3"></i>
-                                <span class="fw-semibold @(privileges.Contains(k) ? "text-gray-800" : "text-gray-500")">@T["priv:" + k]</span>
+                            var k = privAll[i]; bool has = privileges.Contains(k);
+                            <div class="d-flex align-items-center">
+                                <div class="symbol symbol-35px me-4"><span class="symbol-label bg-light-@(has ? "success" : "secondary")"><i class="ki-outline @(has ? "ki-check" : "ki-cross") fs-3 text-@(has ? "success" : "gray-500")"></i></span></div>
+                                <span class="fw-bold fs-6 @(has ? "text-gray-800" : "text-gray-500")">@T["priv:" + k]</span>
                             </div>
+                            if (i < privAll.Count - 1) {<div class="separator separator-dashed my-3"></div>}
                         }
                     </div>
                 </div>
                 @* H26: the weekly schedule (the day tiles of "Weekly presence", each with its sessions) and the leave *@
-                <div class="card mb-5">
-                    <div class="card-header border-0 pt-6"><div class="card-title align-items-start flex-column m-0">
-                        <span class="card-label fw-bold text-gray-900 fs-4">@T["Weekly presence"]</span>
-                        <span class="text-muted mt-1 fw-semibold fs-7">@(weekly ? T["Each day's sessions and the minutes per patient"] : T["The same hours every working day"])</span>
-                    </div></div>
+                <div class="card card-flush mb-5">
+                    <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column">
+                        <span class="card-label fw-bold text-gray-800">@T["Weekly presence"]</span>
+                        <span class="text-gray-500 mt-1 fw-semibold fs-7">@(weekly ? T["Each day's sessions and the minutes per patient"] : T["The same hours every working day"])</span>
+                    </h3></div>
                     <div class="card-body pt-2">
                         @if (!scheduleReady)
                         {
-                            <div class="notice d-flex rounded border border-dashed p-4 mb-4 hp-notice"><div class="fs-7 text-gray-700">@T[HospitalScheduleService.NoTables]</div></div>
+                            <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-5 mb-4"><i class="ki-outline ki-information fs-2tx text-primary me-4"></i><div class="fs-7 fw-semibold text-gray-700">@T[HospitalScheduleService.NoTables]</div></div>
                         }
-                        @foreach (var d in week)
+                        @for (int di = 0; di < week.Length; di++)
                         {
+                            var d = week[di];
                             var sessions = schedule?.Sessions.Where(s => s.DayOfWeek == (byte)d).ToList() ?? new();
                             var spans = schedule?.SessionsOn(d) ?? Array.Empty<(int Start, int End, int Slot)>();
-                            <div class="d-flex align-items-center gap-3 py-2 border-bottom border-gray-200 border-bottom-dashed">
-                                <div class="rounded px-3 py-3 text-center fw-bold fs-7 hp-day @(spans.Count > 0 ? "on" : "off")">@T["day:" + d]</div>
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="rounded px-3 py-3 text-center fw-bold fs-7 min-w-80px @(spans.Count > 0 ? "bg-light-primary text-primary" : "bg-light text-gray-500")">@T["day:" + d]</div>
                                 <div class="d-flex flex-wrap gap-2 flex-grow-1">
-                                    @if (spans.Count == 0) { <span class="text-muted fs-7">@T["Not working"]</span> }
+                                    @if (spans.Count == 0) { <span class="text-gray-500 fw-semibold fs-7">@T["Not working"]</span> }
                                     @if (weekly)
                                     {
                                         foreach (var s in sessions)
                                         {
-                                            <span class="badge badge-light-primary fs-7 fw-semibold py-2 px-3"><bdi class="hp-num" dir="ltr">@HospitalUi.Clock(s.StartMinute)–@HospitalUi.Clock(s.EndMinute)</bdi><span class="text-gray-600 ms-2">· <bdi class="hp-num">@s.SlotMinutes</bdi> @T["min"]</span>
+                                            <span class="badge badge-light-primary fs-7 fw-semibold py-2 px-3"><bdi class="hp-num" dir="ltr">@HospitalUi.Clock(s.StartMinute)–@HospitalUi.Clock(s.EndMinute)</bdi><span class="text-gray-600 ms-2">· <bdi class="hp-num">@s.SlotMinutes</bdi>&nbsp;@T["min"]</span>
                                                 @if (canManage) {<button type="button" class="btn btn-icon btn-active-light-danger w-20px h-20px ms-2" data-session-remove="@s.ID" title="@T["Remove"]"><i class="ki-outline ki-cross fs-5"></i></button>}</span>
                                         }
                                     }
@@ -191,44 +235,51 @@
                                     {
                                         foreach (var s in spans)
                                         {
-                                            <span class="badge badge-light fs-7 fw-semibold py-2 px-3"><bdi class="hp-num" dir="ltr">@HospitalUi.Clock(s.Start)–@HospitalUi.Clock(s.End)</bdi><span class="text-gray-600 ms-2">· <bdi class="hp-num">@s.Slot</bdi> @T["min"]</span></span>
+                                            <span class="badge badge-light fs-7 fw-semibold py-2 px-3"><bdi class="hp-num" dir="ltr">@HospitalUi.Clock(s.Start)–@HospitalUi.Clock(s.End)</bdi><span class="text-gray-600 ms-2">· <bdi class="hp-num">@s.Slot</bdi>&nbsp;@T["min"]</span></span>
                                         }
                                     }
                                 </div>
-                                @if (canManage && weekly) {<button type="button" class="btn btn-icon btn-sm btn-light-primary flex-shrink-0" data-session-open="@((int)d)" title="@T["Add a session"]"><i class="ki-outline ki-plus fs-4"></i></button>}
+                                @if (canManage && weekly) {<button type="button" class="btn btn-icon btn-sm btn-bg-light btn-active-color-primary flex-shrink-0" data-session-open="@((int)d)" title="@T["Add a session"]" data-bs-toggle="tooltip"><i class="ki-outline ki-plus fs-3"></i></button>}
                             </div>
+                            if (di < week.Length - 1) {<div class="separator separator-dashed my-3"></div>}
                         }
                         @if (canManage && !weekly && scheduleReady)
                         {
-                            <div class="d-flex flex-stack flex-wrap gap-3 mt-4">
-                                <div class="text-muted fs-7">@T["To give each day its own hours, or a morning and an evening session, start the weekly schedule from these hours."]</div>
+                            <div class="d-flex flex-stack flex-wrap gap-3 mt-5">
+                                <div class="text-gray-500 fw-semibold fs-7">@T["To give each day its own hours, or a morning and an evening session, start the weekly schedule from these hours."]</div>
                                 <button type="button" class="btn btn-sm btn-light-primary" data-schedule-start><i class="ki-outline ki-calendar-edit fs-4"></i>@T["Set each day's hours"]</button>
                             </div>
                         }
                     </div>
                 </div>
-                <div class="card">
-                    <div class="card-header border-0 pt-6">
-                        <div class="card-title align-items-start flex-column m-0">
-                            <span class="card-label fw-bold text-gray-900 fs-4">@T["Leave"]</span>
-                            <span class="text-muted mt-1 fw-semibold fs-7">@T["No booking is offered inside a leave, at the desk or on the portal"]</span>
-                        </div>
+                <div class="card card-flush">
+                    <div class="card-header pt-5">
+                        <h3 class="card-title align-items-start flex-column">
+                            <span class="card-label fw-bold text-gray-800">@T["Leave"]</span>
+                            <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["No booking is offered inside a leave, at the desk or on the portal"]</span>
+                        </h3>
                         @if (canManage && scheduleReady) { <div class="card-toolbar"><button type="button" class="btn btn-sm btn-light-primary" data-leave-open><i class="ki-outline ki-plus fs-4"></i>@T["Add leave"]</button></div> }
                     </div>
                     <div class="card-body pt-2">
-                        @if (leaves.Count == 0) { <div class="text-muted fs-7 py-6 text-center">@T["No leave from today on."]</div> }
-                        @foreach (var lr in leaves)
+                        @if (leaves.Count == 0)
                         {
-                            var lv = lr.Leave;
-                            <div class="d-flex align-items-center gap-3 py-3 border-bottom border-gray-200 border-bottom-dashed">
-                                <i class="ki-outline ki-calendar-remove fs-2 text-gray-500"></i>
-                                <div class="d-flex flex-column flex-grow-1">
-                                    <span class="fw-bold text-gray-900 fs-7"><bdi class="hp-num" dir="ltr">@lv.FromDate.ToString("yyyy-MM-dd", inv)</bdi>@if (lv.ToDate.Date != lv.FromDate.Date) {<span class="mx-1">–</span><bdi class="hp-num" dir="ltr">@lv.ToDate.ToString("yyyy-MM-dd", inv)</bdi>}</span>
-                                    <span class="text-muted fs-8">@if (lv.StartMinute is int ls && lv.EndMinute is int le) {<bdi class="hp-num" dir="ltr">@HospitalUi.Clock(ls)–@HospitalUi.Clock(le)</bdi>} else {@T["Whole day"]}@if (!string.IsNullOrEmpty(lv.Reason)) {<span> · @lv.Reason</span>}</span>
-                                    @if (lr.BookedInside > 0) {<span class="text-danger fs-8 fw-semibold mt-1"><i class="ki-outline ki-information-5 fs-6 text-danger me-1"></i>@T.GetString("{0} booked appointments fall inside: move them from the appointments screen", lr.BookedInside)</span>}
+                            <div class="text-center py-10"><i class="ki-outline ki-calendar-tick fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-bold text-gray-700">@T["No leave from today on."]</div></div>
+                        }
+                        @for (int li = 0; li < leaves.Count; li++)
+                        {
+                            var lr = leaves[li]; var lv = lr.Leave;
+                            <div class="d-flex flex-stack">
+                                <div class="symbol symbol-35px me-4"><span class="symbol-label bg-light-@(lr.BookedInside > 0 ? "danger" : "info")"><i class="ki-outline ki-calendar-remove fs-3 text-@(lr.BookedInside > 0 ? "danger" : "info")"></i></span></div>
+                                <div class="d-flex flex-stack flex-row-fluid d-grid gap-2">
+                                    <div class="me-3">
+                                        <span class="text-gray-800 fw-bold fs-6"><bdi class="hp-num" dir="ltr">@lv.FromDate.ToString("yyyy-MM-dd", inv)</bdi>@if (lv.ToDate.Date != lv.FromDate.Date) {<span class="mx-1">–</span><bdi class="hp-num" dir="ltr">@lv.ToDate.ToString("yyyy-MM-dd", inv)</bdi>}</span>
+                                        <span class="text-gray-500 fw-semibold fs-7 d-block">@if (lv.StartMinute is int ls && lv.EndMinute is int le) {<bdi class="hp-num" dir="ltr">@HospitalUi.Clock(ls)–@HospitalUi.Clock(le)</bdi>} else {@T["Whole day"]}@if (!string.IsNullOrEmpty(lv.Reason)) {<span> · <bdi>@lv.Reason</bdi></span>}</span>
+                                        @if (lr.BookedInside > 0) {<span class="text-danger fs-7 fw-semibold d-block mt-1"><i class="ki-outline ki-information-5 fs-6 text-danger me-1"></i>@T.GetString("{0} booked appointments fall inside: move them from the appointments screen", lr.BookedInside)</span>}
+                                    </div>
+                                    @if (canManage) {<button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-danger flex-shrink-0" data-leave-remove="@lv.ID" title="@T["Remove"]" data-bs-toggle="tooltip"><i class="ki-outline ki-trash fs-3"></i></button>}
                                 </div>
-                                @if (canManage) {<button type="button" class="btn btn-icon btn-sm btn-active-light-danger" data-leave-remove="@lv.ID" title="@T["Remove"]"><i class="ki-outline ki-trash fs-5"></i></button>}
                             </div>
+                            if (li < leaves.Count - 1) {<div class="separator separator-dashed my-3"></div>}
                         }
                     </div>
                 </div>
@@ -240,41 +291,51 @@
 @if (canManage)
 {
     @Html.AntiForgeryToken()
-    <div class="modal fade" id="ruleModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-550px"><div class="modal-content">
-        <div class="modal-header"><h2 class="fw-bold m-0 fs-4">@T["Fee rule"]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
-        <div class="modal-body py-6 px-lg-10"><div class="row g-4">
-            <div class="col-12"><label class="form-label required">@T["Applies to"]</label>
-                <select class="form-select form-select-solid" data-fr="target" data-control="select2" data-dropdown-parent="#ruleModal">
-                    @foreach (var c in HospitalServiceCategories.All) { <option value="cat:@c">@T["All of"] @T["cat:" + c]</option> }
-                    @foreach (var sv in ruleServices) { var bits = (sv.Label ?? "|").Split('|'); <option value="svc:@sv.Id">@bits[0] — @DisplayName.Of(sv.Name, sv.NameEn ?? sv.Name)</option> }
-                </select></div>
-            <div class="col-md-6"><label class="form-label required">@T["Calculation"]</label>
-                <select class="form-select form-select-solid" data-fr="basis"><option value="Percent">@T["Percent of what was collected"]</option><option value="PerUnit">@T["Fixed amount per unit"]</option></select></div>
-            <div class="col-md-6"><label class="form-label required">@T["Value"]</label><input type="number" min="0" step="0.001" class="form-control form-control-solid hp-num" dir="ltr" data-fr="value" /></div>
-        </div><div class="form-text mt-3">@T["A rule for one service wins over the rule for its category."]</div></div>
-        <div class="modal-footer flex-center"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-fr-save>@T["Save"]</button></div>
+    @* H128: form modals as the theme's (demo39 utilities/modals/forms/new-target): borderless header, centred title, labelled fields, centred footer *@
+    <div class="modal fade" id="ruleModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-550px"><div class="modal-content rounded">
+        <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-15">
+            <div class="mb-10 text-center"><h1 class="mb-3">@T["Fee rule"]</h1><div class="text-muted fw-semibold fs-6">@T["A rule for one service wins over the rule for its category."]</div></div>
+            <div class="row g-8 mb-8">
+                <div class="col-12 fv-row"><label class="fs-6 fw-semibold mb-2 required">@T["Applies to"]</label>
+                    <select class="form-select form-select-solid" data-fr="target" data-control="select2" data-dropdown-parent="#ruleModal">
+                        @foreach (var c in HospitalServiceCategories.All) { <option value="cat:@c">@T["All of"] @T["cat:" + c]</option> }
+                        @foreach (var sv in ruleServices) { var bits = (sv.Label ?? "|").Split('|'); <option value="svc:@sv.Id">@bits[0] — @DisplayName.Of(sv.Name, sv.NameEn ?? sv.Name)</option> }
+                    </select></div>
+                <div class="col-md-6 fv-row"><label class="fs-6 fw-semibold mb-2 required">@T["Calculation"]</label>
+                    <select class="form-select form-select-solid" data-fr="basis" data-control="select2" data-dropdown-parent="#ruleModal" data-hide-search="true"><option value="Percent">@T["Percent of what was collected"]</option><option value="PerUnit">@T["Fixed amount per unit"]</option></select></div>
+                <div class="col-md-6 fv-row"><label class="fs-6 fw-semibold mb-2 required">@T["Value"]</label><input type="number" min="0" step="0.001" class="form-control form-control-solid hp-num" dir="ltr" data-fr="value" /></div>
+            </div>
+            <div class="text-center pt-5"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-fr-save>@T["Save"]</button></div>
+        </div>
     </div></div></div>
     @* H26 *@
-    <div class="modal fade" id="sessionModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-500px"><div class="modal-content">
-        <div class="modal-header"><h2 class="fw-bold m-0 fs-4">@T["Add a session"] — <span data-ss-dayname></span></h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
-        <div class="modal-body py-6 px-lg-10"><div class="row g-4">
-            <div class="col-md-4"><label class="form-label required">@T["From"]</label><input type="time" class="form-control form-control-solid hp-num" dir="ltr" data-ss="start" value="17:00" /></div>
-            <div class="col-md-4"><label class="form-label required">@T["To"]</label><input type="time" class="form-control form-control-solid hp-num" dir="ltr" data-ss="end" value="21:00" /></div>
-            <div class="col-md-4"><label class="form-label required">@T["Minutes per patient"]</label><input type="number" min="5" max="120" step="5" class="form-control form-control-solid hp-num" dir="ltr" data-ss="slot" value="@p.SlotMinutes" /></div>
-        </div><div class="form-text mt-3">@T["A day can hold a morning and an evening session; two sessions of one day may not overlap."]</div></div>
-        <div class="modal-footer flex-center"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-ss-save>@T["Save"]</button></div>
+    <div class="modal fade" id="sessionModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-550px"><div class="modal-content rounded">
+        <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-15">
+            <div class="mb-10 text-center"><h1 class="mb-3">@T["Add a session"] — <span data-ss-dayname></span></h1><div class="text-muted fw-semibold fs-6">@T["A day can hold a morning and an evening session; two sessions of one day may not overlap."]</div></div>
+            <div class="row g-8 mb-8">
+                <div class="col-md-4 fv-row"><label class="fs-6 fw-semibold mb-2 required">@T["From"]</label><input type="text" class="form-control form-control-solid hp-num" dir="ltr" data-ss="start" value="17:00" data-hp-time /></div>
+                <div class="col-md-4 fv-row"><label class="fs-6 fw-semibold mb-2 required">@T["To"]</label><input type="text" class="form-control form-control-solid hp-num" dir="ltr" data-ss="end" value="21:00" data-hp-time /></div>
+                <div class="col-md-4 fv-row"><label class="fs-6 fw-semibold mb-2 required">@T["Minutes per patient"]</label><input type="number" min="5" max="120" step="5" class="form-control form-control-solid hp-num" dir="ltr" data-ss="slot" value="@p.SlotMinutes" /></div>
+            </div>
+            <div class="text-center pt-5"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-ss-save>@T["Save"]</button></div>
+        </div>
     </div></div></div>
-    <div class="modal fade" id="leaveModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-550px"><div class="modal-content">
-        <div class="modal-header"><h2 class="fw-bold m-0 fs-4">@T["Add leave"]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
-        <div class="modal-body py-6 px-lg-10"><div class="row g-4">
-            <div class="col-md-6"><label class="form-label required">@T["From date"]</label><input type="date" class="form-control form-control-solid hp-num" dir="ltr" data-lv="from" /></div>
-            <div class="col-md-6"><label class="form-label required">@T["To date"]</label><input type="date" class="form-control form-control-solid hp-num" dir="ltr" data-lv="to" /></div>
-            <div class="col-12"><label class="form-check form-switch form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" data-lv="part" /><span class="form-check-label fw-semibold text-gray-700">@T["Only part of each day"]</span></label></div>
-            <div class="col-md-6 d-none" data-lv-times><label class="form-label required">@T["From"]</label><input type="time" class="form-control form-control-solid hp-num" dir="ltr" data-lv="start" value="08:00" /></div>
-            <div class="col-md-6 d-none" data-lv-times><label class="form-label required">@T["To"]</label><input type="time" class="form-control form-control-solid hp-num" dir="ltr" data-lv="end" value="12:00" /></div>
-            <div class="col-12"><label class="form-label">@T["Reason"]</label><input type="text" maxlength="200" class="form-control form-control-solid" data-lv="reason" /></div>
-        </div><div class="form-text mt-3">@T["A leave does not cancel what is already booked: the page shows how many appointments fall inside, and the front desk moves them."]</div></div>
-        <div class="modal-footer flex-center"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-lv-save>@T["Save"]</button></div>
+    <div class="modal fade" id="leaveModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-650px"><div class="modal-content rounded">
+        <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-15">
+            <div class="mb-10 text-center"><h1 class="mb-3">@T["Add leave"]</h1><div class="text-muted fw-semibold fs-6">@T["A leave does not cancel what is already booked: the page shows how many appointments fall inside, and the front desk moves them."]</div></div>
+            <div class="row g-8 mb-8">
+                <div class="col-md-6 fv-row"><label class="fs-6 fw-semibold mb-2 required">@T["From date"]</label><input type="date" class="form-control form-control-solid hp-num" dir="ltr" data-lv="from" /></div>
+                <div class="col-md-6 fv-row"><label class="fs-6 fw-semibold mb-2 required">@T["To date"]</label><input type="date" class="form-control form-control-solid hp-num" dir="ltr" data-lv="to" /></div>
+                <div class="col-12"><label class="form-check form-switch form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" data-lv="part" /><span class="form-check-label fw-semibold text-gray-700">@T["Only part of each day"]</span></label></div>
+                <div class="col-md-6 fv-row d-none" data-lv-times><label class="fs-6 fw-semibold mb-2 required">@T["From"]</label><input type="text" class="form-control form-control-solid hp-num" dir="ltr" data-lv="start" value="08:00" data-hp-time /></div>
+                <div class="col-md-6 fv-row d-none" data-lv-times><label class="fs-6 fw-semibold mb-2 required">@T["To"]</label><input type="text" class="form-control form-control-solid hp-num" dir="ltr" data-lv="end" value="12:00" data-hp-time /></div>
+                <div class="col-12 fv-row"><label class="fs-6 fw-semibold mb-2">@T["Reason"]</label><input type="text" maxlength="200" class="form-control form-control-solid" data-lv="reason" /></div>
+            </div>
+            <div class="text-center pt-5"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-lv-save>@T["Save"]</button></div>
+        </div>
     </div></div></div>
 }
 
@@ -314,6 +375,8 @@
                 var S = { start: @Json.Serialize(T["Start the weekly schedule from the current hours?"].Value), session: @Json.Serialize(T["Add this session?"].Value), sessionRemove: @Json.Serialize(T["Remove this session? Booked appointments in it stay booked."].Value),
                     leave: @Json.Serialize(T["Save this leave?"].Value), leaveRemove: @Json.Serialize(T["Remove this leave? Its times become bookable again."].Value), days: @Json.Serialize(Enum.GetValues<DayOfWeek>().Select(d => T["day:" + d].Value)) };
                 function minutes(v) { var x = (v || '').split(':'); return x.length < 2 ? -1 : (+x[0]) * 60 + (+x[1]); }
+                // H128: the session and leave clocks are the theme's time-only picker (never the browser's native time popup); the value stays "HH:mm"
+                if (window.flatpickr) document.querySelectorAll('[data-hp-time]').forEach(function (el) { flatpickr(el, { enableTime: true, noCalendar: true, dateFormat: 'H:i', time_24hr: true, allowInput: true, disableMobile: true, static: true, defaultDate: el.value || null }); });
                 var sm = document.getElementById('sessionModal'), lm = document.getElementById('leaveModal'), ssDay = 0;
                 lm.querySelector('[data-lv=part]').addEventListener('change', function () { var on = this.checked; lm.querySelectorAll('[data-lv-times]').forEach(function (x) { x.classList.toggle('d-none', !on); }); });
                 document.addEventListener('click', function (e) {

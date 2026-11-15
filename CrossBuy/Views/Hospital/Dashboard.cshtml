@@ -44,17 +44,23 @@
             @foreach (var s in new[] {
                 (T["Outpatient visits today"].Value, N(V(HospitalKpis.Appointments)), string.Format(T["of which {0} completed"].Value, N(V(HospitalKpis.Seen))), "ki-briefcase", Report(HospitalReportCodes.DoctorProductivity, m.Today)),
                 (T["ER — waiting"].Value, N(V(HospitalKpis.ErWaiting)), string.Format(T["Door-to-doctor avg {0} min"].Value, N(V(HospitalKpis.ErDoorToDoctor), "0")), "ki-pulse", Report(HospitalReportCodes.ErWaiting, m.Today)),
-                (T["Bed occupancy"].Value, occPct == null ? "—" : N(occPct, "0") + "%", string.Format(T["{0} / {1} beds occupied"].Value, N(occ), N(beds)), "ki-home-3", Report(HospitalReportCodes.BedOccupancy, m.Today)),
+                (T["Bed occupancy"].Value, occPct == null ? "—" : N(occPct, "0") + "%", string.Format(T["{0} of {1}"].Value, N(occ), N(beds)) + " " + T["beds occupied"].Value, "ki-home-3", Report(HospitalReportCodes.BedOccupancy, m.Today)),
                 (T["Revenue today"].Value, N(V(HospitalKpis.Revenue)), string.Format(T["Collected {0}"].Value, N(V(HospitalKpis.Collected))), "ki-dollar", Report(HospitalReportCodes.Revenue, m.Today)) })
             {
-                <div class="col-sm-6 col-xl-3"><a href="@s.Item5" class="card card-flush h-100 text-decoration-none" data-hd-tile><div class="card-body py-5 d-flex align-items-start">
-                    <div class="flex-grow-1">
-                        <div class="text-muted fw-semibold fs-7 mb-1">@s.Item1</div>
-                        <div class="fs-2hx fw-bold text-gray-900"><bdi class="hp-num" dir="ltr">@s.Item2</bdi></div>
-                        <div class="text-muted fs-8 mt-1">@s.Item3</div>
+                string tone = s.Item4 == "ki-pulse" ? "danger" : s.Item4 == "ki-home-3" ? "info" : s.Item4 == "ki-dollar" ? "success" : "primary";
+                @* H128: stat tile (demo39 dashboards/logistics) — the whole tile opens its report *@
+                <div class="col-sm-6 col-xl-3"><a href="@s.Item5" class="card card-flush h-100 text-decoration-none hoverable" data-hd-tile>
+                    <div class="card-header pt-5 flex-nowrap gap-3">
+                        <div class="card-title d-flex flex-column">
+                            <span class="fs-2hx fw-bold text-gray-900 me-2 lh-1 ls-n2"><bdi class="hp-num" dir="ltr">@s.Item2</bdi></span>
+                            <span class="text-gray-500 pt-1 fw-semibold fs-6">@s.Item1</span>
+                        </div>
+                        <div class="card-toolbar"><div class="symbol symbol-45px"><span class="symbol-label bg-light-@tone"><i class="ki-outline @s.Item4 fs-2x text-@tone"></i></span></div></div>
                     </div>
-                    <span class="symbol symbol-40px"><span class="symbol-label bg-light-primary"><i class="ki-outline @s.Item4 fs-2 text-primary"></i></span></span>
-                </div></a></div>
+                    <div class="card-body d-flex align-items-end pt-0">
+                        <div class="d-flex fs-7 fw-semibold align-items-center text-gray-500"><div class="bullet w-8px h-6px rounded-2 bg-@tone me-3"></div><span class="hp-num">@s.Item3</span></div>
+                    </div>
+                </a></div>
             }
         </div>
 
@@ -71,109 +77,125 @@
 
         <div class="row g-5 g-xl-8">
             <div class="col-xl-7">
-                <div class="card mb-5">
-                    <div class="card-header border-0 pt-6">
-                        <div class="card-title flex-column m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Occupancy by ward"]</span><span class="text-muted fs-7 mt-1">@T["Live from the bed board"]</span></div>
+                @* H128: table widget (demo39 widgets/tables) *@
+                <div class="card card-flush mb-5">
+                    <div class="card-header pt-5">
+                        <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Occupancy by ward"]</span><span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Live from the bed board"]</span></h3>
                         <div class="card-toolbar gap-2"><a href="@Report(HospitalReportCodes.BedOccupancy, m.MonthStart, m.Today)" class="btn btn-sm btn-light">@T["hd:report"]</a><a href="@Url.Action("Index", "Hospital")" class="btn btn-sm btn-light-primary">@T["Bed board"]</a></div>
                     </div>
                     <div class="card-body pt-2">
-                        @if (m.Wards.Count == 0) { <div class="text-center text-muted py-8">@T["No ward yet."]</div> }
+                        @if (m.Wards.Count == 0) { <div class="text-center py-10"><i class="ki-outline ki-home-3 fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-bold text-gray-700">@T["No ward yet."]</div></div> }
                         else
                         {
-                            <table class="table align-middle table-row-dashed fs-7 gy-3 mb-0" data-hd-wards>
-                                <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0"><th>@T["Ward"]</th><th class="text-end w-90px">@T["Occupied"]</th><th class="text-end w-90px">@T["Vacant"]</th><th class="w-200px">@T["hd:occupancy"]</th></tr></thead>
-                                <tbody class="fw-semibold text-gray-700">
+                            <div class="table-responsive"><table class="table align-middle gs-0 gy-3 mb-0" data-hd-wards>
+                                <thead><tr class="fw-bold text-muted bg-light"><th class="ps-4 rounded-start">@T["Ward"]</th><th class="text-end w-90px">@T["Occupied"]</th><th class="text-end w-90px">@T["Vacant"]</th><th class="w-200px pe-4 rounded-end">@T["hd:occupancy"]</th></tr></thead>
+                                <tbody>
                                     @foreach (var w in m.Wards)
                                     {
                                         int b = (int)w["Beds"]!, o2 = (int)w["OccupiedNow"]!; int pct = b == 0 ? 0 : (int)Math.Round(o2 * 100m / b);
                                         <tr>
-                                            <td><div class="fw-bold text-gray-800">@w["Ward"]</div><div class="text-muted fs-8">@w["Floor"]</div></td>
-                                            <td class="text-end"><span class="hp-num fw-bold">@o2</span></td>
-                                            <td class="text-end">@if (b - o2 > 0) {<span class="hp-num">@(b - o2)</span>} else {<span class="text-muted">—</span>}</td>
-                                            <td><div class="d-flex align-items-center gap-2"><div class="progress h-6px flex-grow-1"><div class="progress-bar @(pct > 85 ? "bg-danger" : "bg-primary")" style="width:@(pct)%"></div></div><span class="hp-num fs-8 text-muted w-35px">@(pct)%</span></div></td>
+                                            <td class="ps-4"><div class="d-flex align-items-center">
+                                                <div class="symbol symbol-35px me-3 flex-shrink-0"><span class="symbol-label bg-light-primary"><i class="ki-outline ki-home-3 fs-3 text-primary"></i></span></div>
+                                                <div class="d-flex flex-column"><span class="text-gray-900 fw-bold fs-6">@w["Ward"]</span><span class="text-muted fw-semibold d-block fs-7">@w["Floor"]</span></div></div></td>
+                                            <td class="text-end"><span class="text-gray-900 fw-bold fs-6 hp-num">@o2</span></td>
+                                            <td class="text-end">@if (b - o2 > 0) {<span class="badge badge-light-success fs-7 fw-bold hp-num">@(b - o2)</span>} else {<span class="text-muted">—</span>}</td>
+                                            <td class="pe-4"><div class="d-flex align-items-center gap-2"><div class="progress h-6px flex-grow-1 bg-light-@(pct > 85 ? "danger" : "primary")"><div class="progress-bar @(pct > 85 ? "bg-danger" : "bg-primary")" style="width:@(pct)%"></div></div><span class="hp-num fs-7 fw-bold text-gray-600 w-35px" dir="ltr">@(pct)%</span></div></td>
                                         </tr>
                                     }
                                 </tbody>
-                            </table>
+                            </table></div>
                         }
                     </div>
                 </div>
-                <div class="card mb-5">
-                    <div class="card-header border-0 pt-6">
-                        <div class="card-title flex-column m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Emergency queue"]</span><span class="text-muted fs-7 mt-1">@T["Ordered by triage level"]</span></div>
+                <div class="card card-flush mb-5">
+                    <div class="card-header pt-5">
+                        <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Emergency queue"]</span><span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Ordered by triage level"]</span></h3>
                         <div class="card-toolbar gap-2"><a href="@Report(HospitalReportCodes.ErWaiting, m.Today)" class="btn btn-sm btn-light">@T["hd:report"]</a><a href="@Url.Action("Emergency", "Hospital")" class="btn btn-sm btn-light-primary">@T["ER board"]</a></div>
                     </div>
                     <div class="card-body pt-2">
-                        @if (m.Er.Count == 0) { <div class="text-center text-muted py-8">@T["No one is in the ER now."]</div> }
+                        @if (m.Er.Count == 0) { <div class="text-center py-10"><i class="ki-outline ki-pulse fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-bold text-gray-700">@T["No one is in the ER now."]</div></div> }
                         else
                         {
-                            <table class="table align-middle table-row-dashed fs-7 gy-3 mb-0" data-hd-er>
-                                <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0"><th>@T["Patient"]</th><th class="w-70px">ESI</th><th>@T["Complaint"]</th><th class="text-end w-90px">@T["Wait"]</th></tr></thead>
-                                <tbody class="fw-semibold text-gray-700">
+                            <div class="table-responsive"><table class="table align-middle gs-0 gy-3 mb-0" data-hd-er>
+                                <thead><tr class="fw-bold text-muted bg-light"><th class="ps-4 rounded-start">@T["Patient"]</th><th class="w-70px">ESI</th><th>@T["Complaint"]</th><th class="text-end w-90px pe-4 rounded-end">@T["Wait"]</th></tr></thead>
+                                <tbody>
                                     @foreach (var e in m.Er)
                                     {
                                         var face = e["PatientId"] is int pid ? m.ErPatients.GetValueOrDefault(pid) : default;
                                         string initials = HospitalUi.Initials(face.NameEn ?? e["PatientName"] as string ?? "?");
                                         int wait = e["ArrivedAt"] is DateTime at ? (int)Math.Max(0, (DateTime.Now - at).TotalMinutes) : 0;
                                         <tr>
-                                            <td><div class="d-flex align-items-center">
+                                            <td class="ps-4"><div class="d-flex align-items-center">
                                                 <div class="symbol symbol-35px symbol-circle me-3 flex-shrink-0">@if (face.Photo != null) {<img src="@face.Photo" alt="" style="object-fit:cover" data-initials="@initials" />} else {<span class="symbol-label fw-bold fs-8 hp-initials">@initials</span>}</div>
-                                                <span class="text-gray-900">@e["PatientName"]</span></div></td>
-                                            <td><span class="badge @Esi(e["Esi"] as int?) fw-bold">@(e["Esi"] is int esi ? "ESI " + esi : "—")</span></td>
-                                            <td class="text-gray-700">@e["Complaint"]</td>
-                                            <td class="text-end">@if (wait < 60) {<span class="hp-num fw-bold">@wait</span> @T["hd:minutes"]} else if (wait < 1440) {<span class="hp-num fw-bold">@(wait / 60)</span> @T["h"]} else {<span class="hp-num fw-bold text-danger">@(wait / 1440)</span> @T["days"]}</td>
+                                                <span class="text-gray-900 fw-bold fs-6"><bdi>@e["PatientName"]</bdi></span></div></td>
+                                            <td><span class="badge @Esi(e["Esi"] as int?) fs-7 fw-bold" dir="ltr">@(e["Esi"] is int esi ? "ESI " + esi : "—")</span></td>
+                                            <td class="text-gray-700 fw-semibold fs-7">@e["Complaint"]</td>
+                                            <td class="text-end pe-4 text-nowrap">@if (wait < 60) {<span class="hp-num fw-bold">@wait</span>@Html.Raw("&nbsp;")@T["hd:minutes"]} else if (wait < 1440) {<span class="hp-num fw-bold">@(wait / 60)</span>@Html.Raw("&nbsp;")@T["h"]} else {<span class="hp-num fw-bold text-danger">@(wait / 1440)</span>@Html.Raw("&nbsp;")@T["days"]}</td>
                                         </tr>
                                     }
                                 </tbody>
-                            </table>
+                            </table></div>
                         }
                     </div>
                 </div>
             </div>
             <div class="col-xl-5">
-                <div class="card mb-5">
-                    <div class="card-header border-0 pt-6">
-                        <div class="card-title flex-column m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Doctors on duty"]</span><span class="text-muted fs-7 mt-1">@T["Today"]</span></div>
+                @* H128: list widgets (demo39 dashboards/logistics) *@
+                <div class="card card-flush mb-5">
+                    <div class="card-header pt-5">
+                        <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Doctors on duty"]</span><span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Today"]</span></h3>
                         <div class="card-toolbar"><a href="@Report(HospitalReportCodes.DoctorProductivity, m.Today)" class="btn btn-sm btn-light">@T["hd:report"]</a></div>
                     </div>
                     <div class="card-body pt-2" data-hd-doctors>
-                        @if (m.Doctors.Count == 0) { <div class="text-center text-muted py-8">@T["No appointments today."]</div> }
-                        @foreach (var d in m.Doctors)
+                        @if (m.Doctors.Count == 0) { <div class="text-center py-10"><i class="ki-outline ki-user-tick fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-bold text-gray-700">@T["No appointments today."]</div></div> }
+                        @for (int i = 0; i < m.Doctors.Count; i++)
                         {
+                            var d = m.Doctors[i];
                             var photo = m.DoctorPhotos.GetValueOrDefault((int)d["PractitionerId"]!);
                             string initials = HospitalUi.Initials(d["Doctor"] as string ?? "?");
-                            <div class="d-flex align-items-center py-3 border-bottom border-gray-200 border-bottom-dashed">
-                                <div class="symbol symbol-40px symbol-circle me-3 flex-shrink-0">@if (photo != null) {<img src="@photo" alt="" style="object-fit:cover" data-initials="@initials" />} else {<span class="symbol-label fw-bold fs-8 hp-initials">@initials</span>}</div>
-                                <div class="flex-grow-1 min-w-0"><div class="fw-bold text-gray-800">@d["Doctor"]</div><div class="text-muted fs-8">@d["Department"]</div></div>
-                                <span class="badge badge-light-primary"><bdi class="hp-num">@d["Appointments"]</bdi>&nbsp;@T["appts"]</span>
+                            <div class="d-flex flex-stack">
+                                <div class="symbol symbol-40px symbol-circle me-4 flex-shrink-0">@if (photo != null) {<img src="@photo" alt="" style="object-fit:cover" data-initials="@initials" />} else {<span class="symbol-label fw-bold fs-8 hp-initials">@initials</span>}</div>
+                                <div class="d-flex flex-stack flex-row-fluid d-grid gap-2">
+                                    <div class="me-3 min-w-0"><span class="text-gray-800 fw-bold fs-6"><bdi>@d["Doctor"]</bdi></span><span class="text-gray-500 fw-semibold fs-7 d-block">@d["Department"]</span></div>
+                                    <span class="badge badge-light-primary fs-7 fw-bold text-nowrap"><bdi class="hp-num">@d["Appointments"]</bdi>&nbsp;@T["appts"]</span>
+                                </div>
                             </div>
+                            if (i < m.Doctors.Count - 1) { <div class="separator separator-dashed my-3"></div> }
                         }
                     </div>
                 </div>
-                <div class="card mb-5">
-                    <div class="card-header border-0 pt-6">
-                        <div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Theatre today"]</span></div>
+                <div class="card card-flush mb-5">
+                    <div class="card-header pt-5">
+                        <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Theatre today"]</span><span class="text-gray-500 mt-1 fw-semibold fs-7 hp-num">@Day(m.Today)</span></h3>
                         <div class="card-toolbar gap-2"><a href="@Report(HospitalReportCodes.Theatre, m.Today)" class="btn btn-sm btn-light">@T["hd:report"]</a><a href="@Url.Action("Theatre", "Hospital")" class="btn btn-sm btn-light-primary">@T["hd:schedule"]</a></div>
                     </div>
                     <div class="card-body pt-2" data-hd-theatre>
-                        @if (m.Theatre.Count == 0) { <div class="text-center text-muted py-8">@T["No operations today."]</div> }
-                        @foreach (var s in m.Theatre)
+                        @if (m.Theatre.Count == 0) { <div class="text-center py-10"><i class="ki-outline ki-bandage fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-bold text-gray-700">@T["No operations today."]</div></div> }
+                        @for (int i = 0; i < m.Theatre.Count; i++)
                         {
-                            <div class="d-flex align-items-center py-3 border-bottom border-gray-200 border-bottom-dashed">
-                                <div class="flex-grow-1 min-w-0"><div class="fw-bold text-gray-800 text-truncate">@s["Procedure"]</div><div class="text-muted fs-8">@s["PatientName"] · @s["Room"]</div></div>
-                                <span class="badge badge-light-primary">@s["Status"]</span>
+                            var s = m.Theatre[i];
+                            <div class="d-flex flex-stack">
+                                <div class="symbol symbol-35px me-4"><span class="symbol-label bg-light-info"><i class="ki-outline ki-bandage fs-3 text-info"></i></span></div>
+                                <div class="d-flex flex-stack flex-row-fluid d-grid gap-2">
+                                    <div class="me-3 min-w-0"><span class="text-gray-800 fw-bold fs-6 d-block text-truncate">@s["Procedure"]</span><span class="text-gray-500 fw-semibold fs-7 d-block"><bdi>@s["PatientName"]</bdi> · <bdi>@s["Room"]</bdi></span></div>
+                                    <span class="badge badge-light-primary fs-7 fw-bold text-nowrap">@s["Status"]</span>
+                                </div>
                             </div>
+                            if (i < m.Theatre.Count - 1) { <div class="separator separator-dashed my-3"></div> }
                         }
                     </div>
                 </div>
-                <div class="card mb-5">
-                    <div class="card-header border-0 pt-6">
-                        <div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Claims this month"]</span></div>
+                <div class="card card-flush mb-5">
+                    <div class="card-header pt-5">
+                        <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Claims this month"]</span><span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Target below 5%"]</span></h3>
                         <div class="card-toolbar"><a href="@Report(HospitalReportCodes.PayerPerformance, m.MonthStart, m.Today)" class="btn btn-sm btn-light">@T["hd:report"]</a></div>
                     </div>
                     <div class="card-body pt-2"><div class="row g-5" data-hd-claims>
-                        <div class="col-6"><div class="text-muted fw-semibold fs-7 mb-1">@T["hd:submitted"]</div><div class="fs-2 fw-bold text-gray-900"><bdi class="hp-num" dir="ltr">@N(claimed)</bdi></div></div>
-                        <div class="col-6"><div class="text-muted fw-semibold fs-7 mb-1">@T["Rejection rate"]</div><div class="fs-2 fw-bold @(rejPct > 5 ? "text-danger" : "text-gray-900")"><bdi class="hp-num" dir="ltr">@(rejPct == null ? "—" : N(rejPct, "0.#") + "%")</bdi></div><div class="text-muted fs-8">@T["Target below 5%"]</div></div>
+                        <div class="col-6"><div class="border border-gray-300 border-dashed rounded py-3 px-4 h-100">
+                            <div class="fs-2 fw-bold text-gray-900"><bdi class="hp-num" dir="ltr">@N(claimed)</bdi></div><div class="fw-semibold fs-7 text-gray-500">@T["hd:submitted"]</div></div></div>
+                        <div class="col-6"><div class="border border-gray-300 border-dashed rounded py-3 px-4 h-100">
+                            <div class="fs-2 fw-bold @(rejPct > 5 ? "text-danger" : "text-gray-900")"><bdi class="hp-num" dir="ltr">@(rejPct == null ? "—" : N(rejPct, "0.#") + "%")</bdi></div><div class="fw-semibold fs-7 text-gray-500">@T["Rejection rate"]</div>
+                            @if (rejPct != null) {<div class="progress h-5px mt-3 bg-light-@(rejPct > 5 ? "danger" : "success")"><div class="progress-bar bg-@(rejPct > 5 ? "danger" : "success")" style="width:@(Math.Min(100, (int)(rejPct.Value * 10)))%"></div></div>}</div></div>
                     </div></div>
                 </div>
             </div>

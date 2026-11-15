@@ -11,34 +11,34 @@
     var (icon, tint) = j.Kind == HospitalSupportKind.Cleaning ? ("ki-brush", "primary") : j.Kind == HospitalSupportKind.Porter ? ("ki-route", "info") : ("ki-basket", "success");
     string st = j.Status switch { HospitalSupportStatus.Done => "badge-light-success", HospitalSupportStatus.Cancelled => "badge-light", HospitalSupportStatus.Taken => "badge-primary", _ => "badge-light-primary" };
     <tr data-job-row="@j.ID" class="@(j.Status == HospitalSupportStatus.Cancelled ? "opacity-75" : "")">
-        <td><span class="badge hp-code fs-8 hp-num">@j.JobNo</span><div class="text-muted fs-9 mt-1 hp-num" dir="ltr">@At(j.RequestedAt)</div></td>
+        <td class="ps-4"><span class="badge badge-light-primary fs-7 fw-bold hp-num" dir="ltr">@j.JobNo</span><div class="text-muted fw-semibold fs-8 mt-1 hp-num text-nowrap" dir="ltr">@At(j.RequestedAt)</div></td>
         <td><div class="d-flex align-items-center gap-3">
                 <span class="symbol symbol-35px flex-shrink-0"><span class="symbol-label bg-light-@tint"><i class="ki-outline @icon fs-3 text-@tint"></i></span></span>
-                <div class="d-flex flex-column gap-1"><span class="fw-bold text-gray-800 text-nowrap">@T["sj:" + j.Kind]</span>
-                    @if (j.Urgent) {<span class="badge badge-light-danger fs-9 align-self-start">@T["wop:Urgent"]</span>}
-                    @if (j.Source == HospitalSupportSource.BedTurnover) {<span class="text-muted fs-9">@T["After a patient left"]</span>}</div>
+                <div class="d-flex flex-column gap-1"><span class="text-gray-900 fw-bold fs-6 text-nowrap">@T["sj:" + j.Kind]</span>
+                    @if (j.Urgent) {<span class="badge badge-light-danger fs-8 fw-bold align-self-start">@T["wop:Urgent"]</span>}
+                    @if (j.Source == HospitalSupportSource.BedTurnover) {<span class="text-muted fw-semibold fs-7">@T["After a patient left"]</span>}</div>
             </div></td>
         <td class="min-w-200px">
             @if (j.Kind == HospitalSupportKind.Porter)
             {
-                @if (r.PatientName != null) {<div class="fw-bold text-gray-900">@DisplayName.Of(r.PatientName, r.PatientNameEn ?? r.PatientName)</div>}
-                <div class="fs-8" dir="auto">@j.FromPlace <i class="ki-outline ki-arrow-left fs-8 mx-1"></i> @j.ToPlace</div>
+                @if (r.PatientName != null) {<div class="text-gray-900 fw-bold fs-6"><bdi>@DisplayName.Of(r.PatientName, r.PatientNameEn ?? r.PatientName)</bdi></div>}
+                <div class="text-muted fw-semibold fs-7" dir="auto">@j.FromPlace <i class="ki-outline ki-arrow-left fs-8 mx-1"></i> @j.ToPlace</div>
             }
             else
             {
-                <div class="fw-bold text-gray-900">@if (r.Room != null) {<span class="text-nowrap">@T["Room"] <span class="hp-num" dir="ltr">@r.Room</span></span>}@if (r.Bed != null) {<span class="text-nowrap">@(r.Room != null ? " · " : "")@T["Bed"] <span class="hp-num" dir="ltr">@r.Bed</span></span>}@if (r.Room == null && r.Bed == null) {<span dir="auto">@j.FromPlace</span>}</div>
-                @if (j.Bags is int bags) {<div class="fs-8"><span class="hp-num">@bags</span> @T["sj:bags"]</div>}
+                <div class="text-gray-900 fw-bold fs-6">@if (r.Room != null) {<span class="text-nowrap">@T["Room"] <span class="hp-num" dir="ltr">@r.Room</span></span>}@if (r.Bed != null) {<span class="text-nowrap">@(r.Room != null ? " · " : "")@T["Bed"] <span class="hp-num" dir="ltr">@r.Bed</span></span>}@if (r.Room == null && r.Bed == null) {<span dir="auto">@j.FromPlace</span>}</div>
+                @if (j.Bags is int bags) {<div class="text-muted fw-semibold fs-7"><span class="hp-num" dir="ltr">@bags</span>&nbsp;@T["sj:bags"]</div>}
             }
-            @if (j.Details != null && j.Source != HospitalSupportSource.BedTurnover) {<div class="text-muted fs-8" dir="auto">@j.Details</div>}
+            @if (j.Details != null && j.Source != HospitalSupportSource.BedTurnover) {<div class="text-muted fw-semibold fs-7" dir="auto">@j.Details</div>}
         </td>
-        <td><span class="badge @st">@T["sjs:" + j.Status]</span>
-            @if (r.Taker != null) { <div class="d-flex flex-wrap align-items-center gap-2 mt-2"><div class="symbol symbol-25px symbol-circle">@if (r.TakerPhoto != null) {<img src="@r.TakerPhoto" alt="" style="object-fit:cover" />} else {<span class="symbol-label fs-9 fw-bold hp-initials">@HospitalUi.Initials(r.TakerEn ?? "")</span>}</div><span class="fs-8">@DisplayName.Of(r.Taker, r.TakerEn ?? r.Taker)</span>@if (HospitalSupportDeskRules.ResponseMinutes(j) is int rm) {<span class="text-muted fs-9 text-nowrap">· <span class="hp-num">@rm</span> @T["min"]</span>}</div> }
-            @if (j.DoneNote != null) {<div class="text-muted fs-9 mt-1" dir="auto">@j.DoneNote</div>}
-            @if (j.CancelReason != null) {<div class="text-muted fs-9 mt-1" dir="auto">@j.CancelReason</div>}</td>
-        <td class="text-end"><div class="d-flex justify-content-end gap-2">
-            @if (j.Status == HospitalSupportStatus.Open) { <button type="button" class="btn btn-sm text-nowrap btn-primary" data-job-move="@j.ID" data-to="Taken" data-ask="@string.Format(T["Take {0}?"].Value, "⁨" + j.JobNo + "⁩")">@T["I'll take it"]</button> }
-            @if (j.Status == HospitalSupportStatus.Taken && j.TakenByEmployeeId == me) { <button type="button" class="btn btn-sm text-nowrap btn-primary" data-job-move="@j.ID" data-to="Done" data-prompt="@string.Format(T["{0} is done — anything to note? (optional)"].Value, "⁨" + j.JobNo + "⁩")">@T["Done"]</button> }
-            @if (HospitalSupportStatus.Active(j.Status) && (canManage || j.RequestedByEmployeeId == me)) { <button type="button" class="btn btn-sm text-nowrap btn-light-danger" data-job-move="@j.ID" data-to="Cancelled" data-prompt="@string.Format(T["Why is {0} cancelled?"].Value, "⁨" + j.JobNo + "⁩")" data-danger="1">@T["Cancel"]</button> }
+        <td><span class="badge @st fs-7 fw-bold">@T["sjs:" + j.Status]</span>
+            @if (r.Taker != null) { <div class="d-flex flex-wrap align-items-center gap-2 mt-2"><div class="symbol symbol-25px symbol-circle">@if (r.TakerPhoto != null) {<img src="@r.TakerPhoto" alt="" style="object-fit:cover" />} else {<span class="symbol-label fs-9 fw-bold hp-initials">@HospitalUi.Initials(r.TakerEn ?? "")</span>}</div><span class="text-gray-700 fw-semibold fs-8"><bdi>@DisplayName.Of(r.Taker, r.TakerEn ?? r.Taker)</bdi></span>@if (HospitalSupportDeskRules.ResponseMinutes(j) is int rm) {<span class="text-muted fs-9 text-nowrap">· <span class="hp-num" dir="ltr">@rm</span>&nbsp;@T["min"]</span>}</div> }
+            @if (j.DoneNote != null) {<div class="text-muted fw-semibold fs-8 mt-1" dir="auto">@j.DoneNote</div>}
+            @if (j.CancelReason != null) {<div class="text-muted fw-semibold fs-8 mt-1" dir="auto">@j.CancelReason</div>}</td>
+        <td class="text-end pe-4"><div class="d-flex justify-content-end align-items-center flex-nowrap gap-2">
+            @if (j.Status == HospitalSupportStatus.Open) { <button type="button" class="btn btn-sm text-nowrap btn-primary" data-job-move="@j.ID" data-to="Taken" data-ask="@string.Format(T["Take {0}?"].Value, "⁨" + j.JobNo + "⁩")"><i class="ki-outline ki-check-square fs-5"></i>@T["I'll take it"]</button> }
+            @if (j.Status == HospitalSupportStatus.Taken && j.TakenByEmployeeId == me) { <button type="button" class="btn btn-sm text-nowrap btn-primary" data-job-move="@j.ID" data-to="Done" data-prompt="@string.Format(T["{0} is done — anything to note? (optional)"].Value, "⁨" + j.JobNo + "⁩")"><i class="ki-outline ki-check fs-5"></i>@T["Done"]</button> }
+            @if (HospitalSupportStatus.Active(j.Status) && (canManage || j.RequestedByEmployeeId == me)) { <button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-danger" data-job-move="@j.ID" data-to="Cancelled" data-prompt="@string.Format(T["Why is {0} cancelled?"].Value, "⁨" + j.JobNo + "⁩")" data-danger="1" title="@T["Cancel"]" data-bs-toggle="tooltip"><i class="ki-outline ki-cross-circle fs-3"></i></button> }
         </div></td>
     </tr>
 }

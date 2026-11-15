@@ -36,14 +36,15 @@
     </div></div>
 
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
-        <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice">
-            <span class="symbol symbol-45px me-5 flex-shrink-0"><span class="symbol-label"><i class="ki-outline ki-element-11 fs-2x text-white"></i></span></span>
+        @* H128: the theme's notice (demo39) over a grid of type cards (card-flush, header with a muted line) *@
+        <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-5 mb-5">
+            <i class="ki-outline ki-element-11 fs-2tx text-primary me-4"></i>
             <div class="d-flex flex-stack flex-grow-1 flex-wrap flex-md-nowrap">
                 <div class="mb-3 mb-md-0 fw-semibold pe-5">
                     <h4 class="text-gray-900 fw-bold mb-1">@T["The type decides price, beds and who may share"]</h4>
                     <div class="fs-6 text-gray-700">@T["Every room takes its daily rate, its starting beds and the same-sex rule from its type."]</div>
                 </div>
-                <span class="badge hp-badge fs-7 fw-bold px-4 py-2 flex-shrink-0"><span class="hp-num" id="typeCount">@Model.Count</span>&nbsp;@T["types"]</span>
+                <span class="badge badge-primary fs-7 fw-bold px-4 py-3 flex-shrink-0"><span class="hp-num" id="typeCount">@Model.Count</span>&nbsp;@T["types"]</span>
             </div>
         </div>
         <div class="row g-5 g-xl-8" id="typeCards"></div>
@@ -53,19 +54,21 @@
 @if (canManage)
 {
     <div class="modal fade" id="typeModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered mw-700px"><div class="modal-content">
-            <div class="modal-header"><h2 class="fw-bold m-0" id="typeModalTitle">@T["New room type"]</h2>
-                <div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
-            <form id="typeForm" class="modal-body py-8 px-lg-10">
+        <div class="modal-dialog modal-dialog-centered mw-700px"><div class="modal-content rounded">
+            <div class="modal-header pb-0 border-0 justify-content-end">
+                <div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+            <form id="typeForm" class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-5">
+                <div class="mb-10 text-center"><h1 class="mb-3" id="typeModalTitle">@T["New room type"]</h1>
+                    <div class="text-muted fw-semibold fs-5">@T["Every room takes its daily rate, its starting beds and the same-sex rule from its type."]</div></div>
                 <input type="hidden" name="Id" />
                 <div class="row g-5">
-                    <div class="col-md-4"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Code"]</label><input name="Code" class="form-control form-control-solid" maxlength="40" dir="ltr" /></div>
-                    <div class="col-md-4"><label class="fw-semibold fs-7 text-gray-700 mb-2 required">@T["Name (Arabic)"]</label><input name="Name" class="form-control form-control-solid" dir="rtl" /></div>
-                    <div class="col-md-4"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Name (English)"]</label><input name="NameEn" class="form-control form-control-solid" dir="ltr" /></div>
-                    <div class="col-md-4"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Beds in a new room"]</label><input name="BedCount" type="number" min="1" max="20" value="1" class="form-control form-control-solid" /></div>
-                    <div class="col-md-4"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Daily rate"]</label><input name="DailyRate" type="number" min="0" step="0.01" value="0" class="form-control form-control-solid" dir="ltr" /></div>
-                    <div class="col-md-4"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Order"]</label><input name="SortOrder" type="number" value="0" class="form-control form-control-solid" /></div>
-                    <div class="col-12"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Features"]</label>
+                    <div class="col-md-4"><label class="fs-6 fw-semibold mb-2 required">@T["Code"]</label><input name="Code" class="form-control form-control-solid" maxlength="40" dir="ltr" /></div>
+                    <div class="col-md-4"><label class="fs-6 fw-semibold mb-2 required">@T["Name (Arabic)"]</label><input name="Name" class="form-control form-control-solid" dir="rtl" /></div>
+                    <div class="col-md-4"><label class="fs-6 fw-semibold mb-2">@T["Name (English)"]</label><input name="NameEn" class="form-control form-control-solid" dir="ltr" /></div>
+                    <div class="col-md-4"><label class="fs-6 fw-semibold mb-2">@T["Beds in a new room"]</label><input name="BedCount" type="number" min="1" max="20" value="1" class="form-control form-control-solid" /></div>
+                    <div class="col-md-4"><label class="fs-6 fw-semibold mb-2">@T["Daily rate"]</label><input name="DailyRate" type="number" min="0" step="0.01" value="0" class="form-control form-control-solid" dir="ltr" /></div>
+                    <div class="col-md-4"><label class="fs-6 fw-semibold mb-2">@T["Order"]</label><input name="SortOrder" type="number" value="0" class="form-control form-control-solid" /></div>
+                    <div class="col-12"><label class="fs-6 fw-semibold mb-2">@T["Features"]</label>
                         <div class="d-flex flex-wrap gap-4">
                             @foreach (var f in HospitalRoomFeatures.All)
                             {
@@ -73,12 +76,12 @@
                             }
                         </div>
                     </div>
-                    <div class="col-md-6"><label class="form-check form-switch form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" name="SameSexOnly" value="true" /><span class="form-check-label text-gray-700">@T["Same sex only"]</span></label></div>
-                    <div class="col-md-6"><label class="form-check form-switch form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" name="IsActive" value="true" checked /><span class="form-check-label text-gray-700">@T["Active"]</span></label></div>
+                    <div class="col-md-6"><label class="form-check form-switch form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" name="SameSexOnly" value="true" /><span class="form-check-label fs-6 fw-semibold text-gray-700">@T["Same sex only"]</span></label></div>
+                    <div class="col-md-6"><label class="form-check form-switch form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" name="IsActive" value="true" checked /><span class="form-check-label fs-6 fw-semibold text-gray-700">@T["Active"]</span></label></div>
                 </div>
             </form>
-            <div class="modal-footer flex-center">
-                <button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button>
+            <div class="text-center pt-5 pb-15">
+                <button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button>
                 <button type="button" class="btn btn-primary" id="typeSave">@T["Save"]</button>
             </div>
         </div></div>
@@ -112,19 +115,22 @@
                 document.getElementById('typeCount').textContent = data.types.length;
                 var seed = document.getElementById('btnSeed'); if (seed) seed.classList.toggle('d-none', data.types.length > 0);
                 var host = document.getElementById('typeCards');
-                if (!data.types.length) { host.innerHTML = '<div class="col-12"><div class="card"><div class="card-body text-center text-muted py-15">' + esc(txt.empty) + '</div></div></div>'; return; }
+                if (!data.types.length) { host.innerHTML = '<div class="col-12"><div class="card card-flush"><div class="card-body text-center py-15"><i class="ki-outline ki-element-11 fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-bold text-gray-700">' + esc(txt.empty) + '</div></div></div></div>'; return; }
                 host.innerHTML = data.types.map(function (t) {
                     var mine = rooms.filter(function (r) { return r.typeId === t.id; });
                     var sample = mine[0] || { kind: t.code === 'icu' ? 'Icu' : 'Ward', layout: null, beds: Array.apply(null, Array(t.beds)).map(function (_, i) { return { code: String.fromCharCode(65 + i), status: 'Vacant' }; }) };
-                    return '<div class="col-md-6 col-xl-4"><div class="card h-100"><div class="card-body p-6">' +
-                        '<div class="d-flex flex-stack mb-2"><span class="fw-bold fs-4 text-gray-900">' + esc(name(t)) + '</span><span class="fs-4 fw-bold" style="color:var(--cb-brand, #3A5795)">' + money(t.rate) + '</span></div>' +
-                        '<div class="text-muted fs-7 mb-4">' + esc(txt.beds) + ' <span class="hp-num fw-bold text-gray-800">' + t.beds + '</span> · ' + esc(t.sameSex ? txt.same : txt.any) + (t.active ? '' : ' · <span class="text-danger">' + esc(txt.inactive) + '</span>') + '</div>' +
+                    // H128: the theme's card header (demo39 dashboards/logistics) — the name over a muted line, the rate in the toolbar
+                    return '<div class="col-md-6 col-xl-4"><div class="card card-flush h-100' + (t.active ? '' : ' opacity-75') + '">' +
+                        '<div class="card-header pt-5 flex-nowrap gap-3"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800"><bdi>' + esc(name(t)) + '</bdi></span>' +
+                        '<span class="text-gray-500 mt-1 fw-semibold fs-7">' + esc(txt.beds) + ' <span class="hp-num fw-bold text-gray-800">' + t.beds + '</span> · ' + esc(t.sameSex ? txt.same : txt.any) + (t.active ? '' : ' · <span class="text-danger">' + esc(txt.inactive) + '</span>') + '</span></h3>' +
+                        '<div class="card-toolbar"><span class="badge badge-light-primary fs-6 fw-bold px-3 py-2 text-nowrap">' + money(t.rate) + '</span></div></div>' +
+                        '<div class="card-body pt-2">' +
                         HospitalPlan.render(sample, { features: t.features }, { small: true }) +
                         '<div class="d-flex flex-wrap gap-2 mt-4">' + t.features.map(function (f) { var x = features[f] || { label: f, icon: 'ki-check' }; return '<span class="hp-feature"><i class="ki-outline ' + x.icon + '"></i>' + esc(x.label) + '</span>'; }).join('') + '</div>' +
                         // The prototype's footer: rooms · beds, and how many are free now (or "full").
-                        '<div class="separator my-4"></div><div class="d-flex flex-stack fs-7 gap-2"><span class="text-muted">' + esc(txt.rooms) + ' <span class="hp-num fw-bold text-gray-800">' + mine.length + '</span> · ' + esc(txt.bedsWord) + ' <span class="hp-num fw-bold text-gray-800">' + bedsOf(mine).length + '</span></span>' +
-                        '<span class="d-flex align-items-center gap-2">' + (mine.length ? (freeOf(mine) ? '<span class="badge badge-light-success fs-8"><span class="hp-num">' + freeOf(mine) + '</span>&nbsp;' + esc(txt.free) + '</span>' : '<span class="badge badge-light fs-8">' + esc(txt.full) + '</span>') : '') +
-                        (canManage ? '<button type="button" class="btn btn-icon btn-sm btn-light w-30px h-30px" title="' + esc(txt.edit) + '" data-edit="' + t.id + '"><i class="ki-outline ki-pencil fs-6"></i></button>' : '') + '</span></div></div></div></div>';
+                        '<div class="separator separator-dashed my-4"></div><div class="d-flex flex-stack fs-7 gap-2"><span class="text-gray-500 fw-semibold">' + esc(txt.rooms) + ' <span class="hp-num fw-bold text-gray-800">' + mine.length + '</span> · ' + esc(txt.bedsWord) + ' <span class="hp-num fw-bold text-gray-800">' + bedsOf(mine).length + '</span></span>' +
+                        '<span class="d-flex align-items-center gap-2">' + (mine.length ? (freeOf(mine) ? '<span class="badge badge-light-success fs-7 fw-bold"><span class="hp-num">' + freeOf(mine) + '</span>&nbsp;' + esc(txt.free) + '</span>' : '<span class="badge badge-light-danger fs-7 fw-bold">' + esc(txt.full) + '</span>') : '') +
+                        (canManage ? '<button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-primary" title="' + esc(txt.edit) + '" data-bs-toggle="tooltip" data-edit="' + t.id + '"><i class="ki-outline ki-pencil fs-3"></i></button>' : '') + '</span></div></div></div></div>';
                 }).join('');
                 host.querySelectorAll('[data-edit]').forEach(function (b) { b.addEventListener('click', function () { open(data.types.filter(function (t) { return t.id === +b.getAttribute('data-edit'); })[0]); }); });
             }

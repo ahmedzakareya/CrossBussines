@@ -3,16 +3,26 @@
 @using CrossBuy.Models.Context.Hospital
 @model IReadOnlyList<HospitalMorgueRow>
 @inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H128 — the mortuary register's rows in the theme's table widget (demo39 widgets/tables): the deceased over a muted
+    line, the compartment over the tag, the time received over the hours kept, the state as a badge, the warnings and an
+    icon button to open.
+*@
+@{ bool isAr = System.Globalization.CultureInfo.CurrentUICulture.Name.StartsWith("ar"); }
 @foreach (var r in Model)
 {
     var c = r.Case; bool inside = c.Status == HospitalMorgueStatus.InStorage;
     <tr>
-        <td><a href="@Url.Action("MorgueCase", new { id = c.ID })" class="fw-bold text-gray-900 text-hover-primary">@(r.Name == null ? T["Unknown"].Value : DisplayName.Of(r.Name, r.NameEn ?? r.Name))</a>
-            <div class="text-muted fs-8"><span class="badge hp-code fs-9 hp-num me-1">@c.CaseNo</span>@if (r.Mrn != null) {<bdi class="hp-num">@r.Mrn</bdi>} else {<bdi>@c.Description</bdi>}</div></td>
-        <td><span class="fw-bold hp-num">@r.Compartment</span><div class="text-muted fs-9 hp-num">@c.TagNo</div></td>
-        <td class="hp-num text-nowrap">@HospitalNursingService.UtcToWard(c.ReceivedAt).ToString("yyyy-MM-dd HH:mm")<div class="fs-9 @(inside && r.Hours >= HospitalMorgueRules.AlertHours ? "text-danger fw-bold" : "text-muted")" style="font-family:inherit">@T["{0} h", r.Hours]</div></td>
-        <td><span class="badge @(inside ? "badge-light-primary" : "badge-light") fs-8">@T["mgs:" + c.Status]</span>@if (!inside) {<div class="text-muted fs-9"><bdi>@c.ReleasedTo</bdi>@if (c.Destination != null) {<text> · <bdi>@c.Destination</bdi></text>}</div>}</td>
-        <td>@if (r.Warnings.Count == 0) {<span class="text-muted fs-8">—</span>} else {<div class="d-flex flex-wrap gap-1">@foreach (var w in r.Warnings) {<span class="badge badge-light-danger fs-9">@T["mgw:" + w]</span>}</div>}</td>
-        <td class="text-end"><a href="@Url.Action("MorgueCase", new { id = c.ID })" class="btn btn-sm btn-light-primary text-nowrap">@T["Open"]</a></td>
+        <td class="ps-4"><div class="d-flex align-items-center">
+            <div class="symbol symbol-40px symbol-circle me-3 flex-shrink-0"><span class="symbol-label bg-light-@(r.Name == null ? "danger" : "primary") text-@(r.Name == null ? "danger" : "primary") fw-bold fs-7">@(r.NameEn == null ? "?" : HospitalUi.Initials(r.NameEn))</span></div>
+            <div class="d-flex flex-column"><a href="@Url.Action("MorgueCase", new { id = c.ID })" class="text-gray-900 fw-bold text-hover-primary fs-6">@(r.Name == null ? T["Unknown"].Value : DisplayName.Of(r.Name, r.NameEn ?? r.Name))</a>
+                <span class="text-gray-500 fw-semibold fs-7"><span class="badge hp-code fs-9 hp-num me-1">@c.CaseNo</span>@if (r.Mrn != null) {<bdi class="hp-num">@r.Mrn</bdi>} else {<bdi>@c.Description</bdi>}</span></div>
+        </div></td>
+        <td><span class="text-gray-800 fw-bold fs-6 hp-num d-block"><bdi>@r.Compartment</bdi></span><span class="text-gray-500 fw-semibold fs-7 hp-num"><bdi>@c.TagNo</bdi></span></td>
+        <td class="text-nowrap"><span class="text-gray-800 fw-bold fs-7 hp-num d-block">@HospitalNursingService.UtcToWard(c.ReceivedAt).ToString("yyyy-MM-dd HH:mm")</span>
+            <span class="badge badge-light-@(inside && r.Hours >= HospitalMorgueRules.AlertHours ? "danger" : "secondary") fs-8 fw-bold hp-num mt-1">@T["{0} h", r.Hours]</span></td>
+        <td><span class="badge badge-light-@(inside ? "primary" : "secondary") fs-7 fw-bold">@T["mgs:" + c.Status]</span>@if (!inside) {<span class="text-gray-500 fw-semibold fs-7 d-block mt-1"><bdi>@c.ReleasedTo</bdi>@if (c.Destination != null) {<text> · <bdi>@c.Destination</bdi></text>}</span>}</td>
+        <td>@if (r.Warnings.Count == 0) {<span class="text-gray-400">—</span>} else {<div class="d-flex flex-wrap gap-1">@foreach (var w in r.Warnings) {<span class="badge badge-light-danger fs-8 fw-bold">@T["mgw:" + w]</span>}</div>}</td>
+        <td class="text-end pe-4"><a href="@Url.Action("MorgueCase", new { id = c.ID })" class="btn btn-sm btn-icon btn-bg-light btn-active-color-primary" title="@T["Open"]" data-bs-toggle="tooltip"><i class="ki-outline ki-arrow-@(isAr ? "left" : "right") fs-2"></i></a></td>
     </tr>
 }

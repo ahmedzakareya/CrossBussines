@@ -15,25 +15,28 @@
     { words[k] = T[k].Value; }
 }
 @Html.AntiForgeryToken()
-<div class="modal fade" id="admitModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-1000px"><div class="modal-content">
-    <div class="modal-header"><h2 class="fw-bold m-0" data-admit-title>@T["Accommodate a patient"]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
-    <div class="modal-body py-8 px-lg-10">
-        <div class="mb-5" data-admit-picker>
-            <label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Patient"]</label>
+@* H128: both windows follow the theme's form modal (demo39 utilities/modals/forms/new-target): borderless header, centred title, centred footer *@
+<div class="modal fade" id="admitModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-1000px"><div class="modal-content rounded">
+    <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-5">
+        <div class="mb-10 text-center"><h1 class="mb-0" data-admit-title>@T["Accommodate a patient"]</h1></div>
+        <div class="mb-8" data-admit-picker>
+            <label class="fs-6 fw-semibold mb-2 required">@T["Patient"]</label>
             <select class="form-select form-select-solid" data-no-select2 data-admit-patient data-placeholder="@T["Search by name, MRN or ID"]"></select>
         </div>
         <div data-admit-body></div>
     </div>
-    <div class="modal-footer flex-center">
-        <button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button>
+    <div class="modal-footer flex-center border-0 pt-0 pb-10">
+        <button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button>
         <button type="button" class="btn btn-primary" data-admit-confirm disabled><i class="ki-outline ki-entrance-left fs-4"></i><span>@T["Confirm accommodation"]</span></button>
     </div>
 </div></div></div>
 
-<div class="modal fade" id="bedModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-750px"><div class="modal-content">
-    <div class="modal-header"><h2 class="fw-bold m-0" data-bed-title></h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
-    <div class="modal-body py-8 px-lg-10" data-bed-body></div>
-    <div class="modal-footer flex-center" data-bed-footer></div>
+<div class="modal fade" id="bedModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-750px"><div class="modal-content rounded">
+    <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="px-10 px-lg-15 pb-2 text-center"><h1 class="mb-0" data-bed-title></h1></div>
+    <div class="modal-body px-10 px-lg-15 pt-6 pb-5" data-bed-body></div>
+    <div class="modal-footer flex-center border-0 pt-0 pb-10" data-bed-footer></div>
 </div></div></div>
 
 <script>

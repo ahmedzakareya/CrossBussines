@@ -2,20 +2,28 @@
 @using CrossBuy.BL.Hospital
 @model IReadOnlyList<HospitalVaccineDueRow>
 @inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H128 — the due doses' rows in the theme's table widget (demo39 widgets/tables): the patient over a muted line, the
+    age, the vaccine with its dose, the due date over the days late, the state as a badge and an icon button to the card.
+*@
 @{
     var today = HospitalNursingService.UtcToWard(DateTime.UtcNow).Date;
     string AgeOf(DateTime b) { var m = (today.Year - b.Year) * 12 + today.Month - b.Month - (today.Day < b.Day ? 1 : 0); return m < 1 ? string.Format(T["{0} days"].Value, (today - b.Date).Days) : m < 24 ? string.Format(T["{0} month(s)"].Value, m) : string.Format(T["{0} year(s)"].Value, m / 12); }
+    bool isAr = System.Globalization.CultureInfo.CurrentUICulture.Name.StartsWith("ar");
 }
 @foreach (var r in Model)
 {
-    string tone = r.Status == HospitalImmunizationStatus.Overdue ? "badge-light-danger" : r.Status == HospitalImmunizationStatus.Due ? "badge-light-primary" : "badge-light";
+    string tone = r.Status == HospitalImmunizationStatus.Overdue ? "danger" : r.Status == HospitalImmunizationStatus.Due ? "primary" : "secondary";
     <tr>
-        <td><a href="@Url.Action("PatientVaccines", new { id = r.PatientId })" class="fw-bold text-gray-900 text-hover-primary">@DisplayName.Of(r.Name, r.NameEn)</a>
-            <div class="text-muted fs-8"><bdi class="hp-num">@r.Mrn</bdi>@if (r.Phone != null) {<text> · <bdi class="hp-num" dir="ltr">@r.Phone</bdi></text>}</div></td>
-        <td class="fs-8">@AgeOf(r.BirthDate)</td>
-        <td><span class="fw-semibold text-gray-800">@DisplayName.Of(r.Vaccine, r.VaccineEn)</span> <span class="text-muted fs-8">· @T["Dose {0}", r.DoseNo]</span></td>
-        <td class="hp-num text-nowrap">@r.DueOn.ToString("yyyy-MM-dd")@if (r.DaysLate > 0) {<div class="fs-9 @(r.Status == HospitalImmunizationStatus.Overdue ? "text-danger fw-bold" : "text-muted")">@T["{0} days late", r.DaysLate]</div>}</td>
-        <td><span class="badge @tone">@T["vxs:" + r.Status]</span></td>
-        <td class="text-end"><a href="@Url.Action("PatientVaccines", new { id = r.PatientId })" class="btn btn-sm btn-light-primary text-nowrap">@T["Open the card"]</a></td>
+        <td class="ps-4"><div class="d-flex align-items-center">
+            <div class="symbol symbol-40px symbol-circle me-3 flex-shrink-0"><span class="symbol-label bg-light-primary text-primary fw-bold fs-7">@HospitalUi.Initials(r.NameEn)</span></div>
+            <div class="d-flex flex-column"><a href="@Url.Action("PatientVaccines", new { id = r.PatientId })" class="text-gray-900 fw-bold text-hover-primary fs-6">@DisplayName.Of(r.Name, r.NameEn)</a>
+                <span class="text-gray-500 fw-semibold fs-7"><bdi class="hp-num">@r.Mrn</bdi>@if (r.Phone != null) {<text> · <bdi class="hp-num" dir="ltr">@r.Phone</bdi></text>}</span></div>
+        </div></td>
+        <td><span class="text-gray-800 fw-bold fs-7">@AgeOf(r.BirthDate)</span></td>
+        <td><span class="text-gray-800 fw-bold d-block fs-6">@DisplayName.Of(r.Vaccine, r.VaccineEn)</span><span class="text-gray-500 fw-semibold fs-7">@T["Dose {0}", r.DoseNo]</span></td>
+        <td class="text-nowrap"><span class="text-gray-800 fw-bold fs-6 hp-num d-block">@r.DueOn.ToString("yyyy-MM-dd")</span>@if (r.DaysLate > 0) {<span class="fs-7 @(r.Status == HospitalImmunizationStatus.Overdue ? "text-danger fw-bold" : "text-gray-500 fw-semibold")">@T["{0} days late", r.DaysLate]</span>}</td>
+        <td><span class="badge badge-light-@tone fs-7 fw-bold">@T["vxs:" + r.Status]</span></td>
+        <td class="text-end pe-4"><a href="@Url.Action("PatientVaccines", new { id = r.PatientId })" class="btn btn-sm btn-icon btn-bg-light btn-active-color-primary" title="@T["Open the card"]" data-bs-toggle="tooltip"><i class="ki-outline ki-arrow-@(isAr ? "left" : "right") fs-2"></i></a></td>
     </tr>
 }

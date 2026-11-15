@@ -36,7 +36,7 @@
         o = o || {};
         if (!window.Swal) return Promise.resolve(null);
         var esc = function (v) { return String(v || '').replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
-        var field = function (id, label, v) { return '<div class="text-start mx-8 mt-4"><label class="form-label fw-semibold fs-7" for="' + id + '">' + label + '</label>' +
+        var field = function (id, label, v) { return '<div class="text-start mx-8 mt-4"><label class="fs-6 fw-semibold mb-2" for="' + id + '">' + label + '</label>' +
             '<textarea id="' + id + '" class="form-control form-control-solid" rows="3" dir="auto" maxlength="500">' + esc(v) + '</textarea></div>'; };
         return Swal.fire({
             title: o.title || '', html: '<div class="text-gray-700 mb-2">' + esc(text) + '</div>' + field('cbpb_ar', arLabel, o.ar) + field('cbpb_en', enLabel, o.en),

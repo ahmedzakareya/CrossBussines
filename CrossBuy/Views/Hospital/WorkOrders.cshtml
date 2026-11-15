@@ -18,6 +18,20 @@
     var accounts = (ViewBag.Accounts as List<CrossBuy.Controllers.HospitalController.HospitalChoice>) ?? new();
     bool isAr = System.Globalization.CultureInfo.CurrentUICulture.Name.StartsWith("ar");
     var inv = System.Globalization.CultureInfo.InvariantCulture;
+    // H128: the theme's stat tile (demo39 dashboards/logistics) — the number over its label, a toned symbol on the side
+    void Tile(string value, string label, string icon, string tone, string? unit = null, string? sub = null, string numTone = "gray-900")
+    {
+        <div class="card card-flush h-100">
+            <div class="card-header pt-5 flex-nowrap gap-3">
+                <div class="card-title d-flex flex-column">
+                    <div class="d-flex align-items-baseline"><span class="fs-2hx fw-bold text-@numTone lh-1 hp-num" dir="ltr">@value</span>@if (unit != null) {<span class="fs-6 fw-semibold text-gray-500 ms-2">@unit</span>}</div>
+                    <span class="text-gray-500 pt-1 fw-semibold fs-6">@label</span>
+                </div>
+                <div class="card-toolbar"><div class="symbol symbol-45px"><span class="symbol-label bg-light-@tone"><i class="ki-outline ki-@icon fs-2x text-@tone"></i></span></div></div>
+            </div>
+            <div class="card-body d-flex align-items-end pt-0">@if (sub != null) {<span class="d-flex align-items-center fs-7 fw-semibold text-gray-500"><span class="bullet bullet-dot bg-@tone me-2"></span>@sub</span>}</div>
+        </div>
+    }
 }
 <link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
 @Html.AntiForgeryToken()
@@ -34,53 +48,67 @@
         </div>
     </div></div>
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
-        @if (!ready) { <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice"><div class="fs-6 text-gray-700">@T[HospitalWorkOrderService.NoTables]</div></div> }
+        @if (!ready)
+        {
+            <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-5 mb-5">
+                <i class="ki-outline ki-information fs-2tx text-primary me-4"></i>
+                <div class="d-flex flex-stack flex-grow-1"><div class="fw-semibold">
+                    <h4 class="text-gray-900 fw-bold mb-1">@T["Equipment work orders"]</h4>
+                    <div class="fs-6 text-gray-700">@T[HospitalWorkOrderService.NoTables]</div>
+                </div></div>
+            </div>
+        }
         else
         {
+            @* H128: the figures — the theme's stat tiles (demo39 dashboards/logistics) *@
             <div class="row g-5 mb-5">
-                <div class="col-md-3"><div class="card card-flush h-100"><div class="card-body py-5"><div class="text-muted fw-semibold fs-7 mb-1">@T["Open orders"]</div><div class="fs-2x fw-bold text-gray-900 hp-num">@open</div></div></div></div>
-                <div class="col-md-3"><div class="card card-flush h-100"><div class="card-body py-5"><div class="text-muted fw-semibold fs-7 mb-1">@T["Urgent, still open"]</div><div class="fs-2x fw-bold hp-num @(urgent > 0 ? "text-danger" : "text-gray-900")">@urgent</div></div></div></div>
-                <div class="col-md-3"><div class="card card-flush h-100"><div class="card-body py-5"><div class="text-muted fw-semibold fs-7 mb-1">@T["Average time to fix"]</div><div class="fs-2x fw-bold text-gray-900 hp-num">@(avg?.ToString("0.#", inv) ?? "—") <span class="fs-6 text-muted">@T["wo:hours"]</span></div><div class="text-muted fs-8 mt-1">@T["The last 30 days"]</div></div></div></div>
-                <div class="col-md-3"><div class="card card-flush h-100"><div class="card-body py-5"><div class="text-muted fw-semibold fs-7 mb-1">@T["Fixed in 30 days"]</div><div class="fs-2x fw-bold text-success hp-num">@done30</div></div></div></div>
+                <div class="col-md-6 col-xl-3">@{ Tile(open.ToString(), T["Open orders"].Value, "setting-3", "primary"); }</div>
+                <div class="col-md-6 col-xl-3">@{ Tile(urgent.ToString(), T["Urgent, still open"].Value, "information-5", "danger", numTone: urgent > 0 ? "danger" : "gray-900"); }</div>
+                <div class="col-md-6 col-xl-3">@{ Tile(avg?.ToString("0.#", inv) ?? "—", T["Average time to fix"].Value, "time", "info", T["wo:hours"].Value, T["The last 30 days"].Value); }</div>
+                <div class="col-md-6 col-xl-3">@{ Tile(done30.ToString(), T["Fixed in 30 days"].Value, "check-circle", "success", numTone: "success"); }</div>
             </div>
             <div class="row g-5">
                 <div class="col-xl-4">
-                    <div class="card" data-wo-form>
-                        <div class="card-header border-0 pt-6"><div class="card-title flex-column m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Report a fault"]</span>
-                            <span class="text-muted fs-7 mt-1">@T["A device that does not work: biomedical engineering takes it from here."]</span></div></div>
-                        <div class="card-body pt-2"><div class="row g-4">
-                            <div class="col-12"><label class="form-label fs-7">@T["Device (from the asset register)"]</label>
+                    <div class="card card-flush" data-wo-form>
+                        <div class="card-header pt-5">
+                            <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Report a fault"]</span>
+                                <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["A device that does not work: biomedical engineering takes it from here."]</span></h3>
+                            <div class="card-toolbar"><div class="symbol symbol-40px"><span class="symbol-label bg-light-danger"><i class="ki-outline ki-setting-3 fs-2 text-danger"></i></span></div></div>
+                        </div>
+                        <div class="card-body pt-2"><div class="row g-5">
+                            <div class="col-12"><label class="fs-6 fw-semibold mb-2">@T["Device (from the asset register)"]</label>
                                 <select class="form-select form-select-solid" data-w="assetId" data-placeholder="@T["Choose the device"]"><option value=""></option>
                                     @foreach (var a in assets) { <option value="@a.Id">@a.Label · @DisplayName.Of(a.Name, a.NameEn ?? a.Name)</option> }</select></div>
-                            <div class="col-12"><label class="form-label fs-7">@T["Or describe it, if it is not registered"]</label><input class="form-control form-control-solid" maxlength="200" dir="auto" data-w="equipment" /></div>
-                            <div class="col-6"><label class="form-label fs-7">@T["Room"]</label>
+                            <div class="col-12"><label class="fs-6 fw-semibold mb-2">@T["Or describe it, if it is not registered"]</label><input class="form-control form-control-solid" maxlength="200" dir="auto" data-w="equipment" /></div>
+                            <div class="col-6"><label class="fs-6 fw-semibold mb-2">@T["Room"]</label>
                                 <select class="form-select form-select-solid" data-w="roomId"><option value="">—</option>@foreach (var r in rooms) { <option value="@r.Id">@r.Name</option> }</select></div>
-                            <div class="col-6"><label class="form-label fs-7 required">@T["How urgent"]</label>
+                            <div class="col-6"><label class="fs-6 fw-semibold mb-2 required">@T["How urgent"]</label>
                                 <select class="form-select form-select-solid" data-w="priority">@foreach (var p in HospitalWorkOrderPriority.All) { <option value="@p" selected="@(p == HospitalWorkOrderPriority.Normal)">@T["wop:" + p]</option> }</select></div>
-                            <div class="col-12"><label class="form-label fs-7 required">@T["The problem"]</label><textarea class="form-control form-control-solid" rows="3" maxlength="1000" dir="auto" data-w="problem"></textarea></div>
+                            <div class="col-12"><label class="fs-6 fw-semibold mb-2 required">@T["The problem"]</label><textarea class="form-control form-control-solid" rows="3" maxlength="1000" dir="auto" data-w="problem"></textarea></div>
                             <div class="col-12"><button type="button" class="btn btn-primary w-100" data-wo-report><i class="ki-outline ki-setting-3 fs-4"></i>@T["Report the fault"]</button></div>
                         </div></div>
                     </div>
                 </div>
                 <div class="col-xl-8">
-                    <div class="card">
-                        <div class="card-header border-0 pt-6 flex-wrap gap-3">
-                            <div class="card-title flex-column m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Work orders"]</span><span class="text-muted fs-7 mt-1"><span id="resultCount">—</span></span></div>
+                    <div class="card card-flush">
+                        <div class="card-header pt-5 flex-wrap gap-3">
+                            <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Work orders"]</span>
+                                <span class="text-gray-500 mt-1 fw-semibold fs-7"><span id="resultCount">—</span></span></h3>
                             <div class="card-toolbar d-flex flex-wrap align-items-center gap-2">
-                                <div class="w-300px"><input type="text" id="f_q" class="form-control form-control-solid form-control-sm" autocomplete="off" placeholder="@T["Search by number, device, room or problem…"]" /></div>
+                                <div class="position-relative w-250px"><input type="text" id="f_q" class="form-control form-control-solid form-control-sm" autocomplete="off" placeholder="@T["Search by number, device, room or problem…"]" /></div>
                                 <div class="w-150px"><select class="form-select form-select-solid form-select-sm cb-filter" id="f_state"><option value="active">@T["wo:active"]</option><option value="closed">@T["wo:closed"]</option><option value="">@T["All states"]</option></select></div>
                                 <div class="w-75px"><select id="f_size" class="form-select form-select-solid form-select-sm"><option value="25">25</option><option value="50">50</option><option value="100">100</option></select></div>
-                                <button type="button" id="f_reset" class="btn btn-sm btn-light" title="@T["Reset"]"><i class="ki-outline ki-arrows-circle fs-4"></i></button>
+                                <button type="button" id="f_reset" class="btn btn-sm btn-icon btn-light btn-active-light-primary" title="@T["Reset"]" data-bs-toggle="tooltip"><i class="ki-outline ki-arrows-circle fs-4"></i></button>
                             </div>
                         </div>
                         <div class="card-body pt-2">
-                            <div class="table-responsive"><table class="table align-middle table-row-dashed fs-7 gy-3 mb-0">
-                                <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0"><th>@T["wo:no"]</th><th>@T["wo:device"]</th><th>@T["The problem"]</th><th>@T["wo:priority"]</th><th>@T["State"]</th><th class="text-end"></th></tr></thead>
-                                <tbody class="fw-semibold text-gray-700" id="rows"></tbody>
+                            <div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
+                                <thead><tr class="fw-bold text-muted bg-light"><th class="ps-4 rounded-start">@T["wo:no"]</th><th>@T["wo:device"]</th><th>@T["The problem"]</th><th>@T["wo:priority"]</th><th>@T["State"]</th><th class="text-end pe-4 rounded-end"></th></tr></thead>
+                                <tbody id="rows"></tbody>
                             </table></div>
-                            <div class="text-center text-muted py-10 d-none" id="loadingRow"><span class="spinner-border spinner-border-sm me-2"></span>@T["Loading…"]</div>
-                            <div class="text-center text-muted py-10 d-none" id="emptyRow">@T["No work order here."]</div>
-                            <div class="d-flex flex-stack flex-wrap pt-5"><div class="fs-7 text-muted" id="pageInfo"></div><ul class="pagination" id="pager"></ul></div>
+                            <div class="text-center text-muted py-10 d-none" id="loadingRow"><span class="spinner-border spinner-border-sm text-primary me-2"></span>@T["Loading…"]</div>
+                            <div class="text-center py-10 d-none" id="emptyRow"><i class="ki-outline ki-setting-3 fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-bold text-gray-700">@T["No work order here."]</div></div>
+                            <div class="d-flex flex-stack flex-wrap pt-5"><div class="fs-7 fw-semibold text-gray-500" id="pageInfo"></div><ul class="pagination" id="pager"></ul></div>
                         </div>
                     </div>
                 </div>
@@ -91,28 +119,35 @@
 
 @if (canManage)
 {
-    <div class="modal fade" id="hpWoAssign" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
-        <div class="modal-header"><h3 class="modal-title" data-wa-title>@T["Assign"]</h3><button type="button" class="btn btn-icon btn-sm btn-active-light-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></button></div>
-        <div class="modal-body"><label class="form-label required fs-7">@T["Technician"]</label>
-            <select class="form-select form-select-solid" data-wa-tech data-person-select data-placeholder="@T["Choose the technician"]"><option value=""></option>
-                @foreach (var s in staff) { <option value="@s.ID" data-photo="@s.Photo" data-initials="@HospitalUi.Initials(s.NameEn)">@DisplayName.Of(s.Name, s.NameEn)</option> }</select></div>
-        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-wa-save>@T["Assign"]</button></div>
+    @* H128: the theme's form modal (demo39 utilities/modals/forms/new-target) *@
+    <div class="modal fade" id="hpWoAssign" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-500px"><div class="modal-content rounded">
+        <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-15">
+            <div class="mb-10 text-center"><h1 class="mb-3">@T["Assign"]</h1><div class="text-muted fw-semibold fs-5"><bdi class="hp-num" data-wa-title>@T["Assign"]</bdi></div></div>
+            <div class="d-flex flex-column fv-row"><label class="fs-6 fw-semibold mb-2 required">@T["Technician"]</label>
+                <select class="form-select form-select-solid" data-wa-tech data-person-select data-placeholder="@T["Choose the technician"]"><option value=""></option>
+                    @foreach (var s in staff) { <option value="@s.ID" data-photo="@s.Photo" data-initials="@HospitalUi.Initials(s.NameEn)">@DisplayName.Of(s.Name, s.NameEn)</option> }</select></div>
+            <div class="text-center pt-10"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-wa-save>@T["Assign"]</button></div>
+        </div>
     </div></div></div>
 }
-<div class="modal fade" id="hpWoDone" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
-    <div class="modal-header"><h3 class="modal-title" data-wd-title>@T["wo:close"]</h3><button type="button" class="btn btn-icon btn-sm btn-active-light-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></button></div>
-    <div class="modal-body"><div class="row g-4">
-        <div class="col-12"><label class="form-label required fs-7">@T["What was done"]</label><textarea class="form-control form-control-solid" rows="3" maxlength="1000" dir="auto" data-wd="resolution"></textarea></div>
-        <div class="col-6"><label class="form-label fs-7">@T["Cost"]</label><input class="form-control form-control-solid hp-num" data-wd="cost" /></div>
-        <div class="col-6"><label class="form-label fs-7">@T["Vendor"]</label><input class="form-control form-control-solid" maxlength="200" dir="auto" data-wd="vendor" /></div>
-        @if (canManage)
-        {
-            <div class="col-12" data-wd-paywrap><label class="form-label fs-7">@T["Paid from (posts the cost to the asset's maintenance)"]</label>
-                <select class="form-select form-select-solid" data-wd="payFromAccountId"><option value="">@T["Not posted"]</option>@foreach (var a in accounts) { <option value="@a.Id">@a.Label · @DisplayName.Of(a.Name, a.NameEn ?? a.Name)</option> }</select></div>
-        }
-        <div class="col-12 text-muted fs-8" data-wd-note>@T["A registered device's repair is logged in its maintenance history."]</div>
-    </div></div>
-    <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-wd-save>@T["wo:close"]</button></div>
+<div class="modal fade" id="hpWoDone" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-650px"><div class="modal-content rounded">
+    <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-15">
+        <div class="mb-10 text-center"><h1 class="mb-3">@T["wo:close"]</h1><div class="text-muted fw-semibold fs-5"><bdi class="hp-num" data-wd-title>@T["wo:close"]</bdi></div></div>
+        <div class="row g-8">
+            <div class="col-12 fv-row"><label class="fs-6 fw-semibold mb-2 required">@T["What was done"]</label><textarea class="form-control form-control-solid" rows="3" maxlength="1000" dir="auto" data-wd="resolution"></textarea></div>
+            <div class="col-md-6 fv-row"><label class="fs-6 fw-semibold mb-2">@T["Cost"]</label><input class="form-control form-control-solid hp-num" dir="ltr" data-wd="cost" /></div>
+            <div class="col-md-6 fv-row"><label class="fs-6 fw-semibold mb-2">@T["Vendor"]</label><input class="form-control form-control-solid" maxlength="200" dir="auto" data-wd="vendor" /></div>
+            @if (canManage)
+            {
+                <div class="col-12 fv-row" data-wd-paywrap><label class="fs-6 fw-semibold mb-2">@T["Paid from (posts the cost to the asset's maintenance)"]</label>
+                    <select class="form-select form-select-solid" data-wd="payFromAccountId"><option value="">@T["Not posted"]</option>@foreach (var a in accounts) { <option value="@a.Id">@a.Label · @DisplayName.Of(a.Name, a.NameEn ?? a.Name)</option> }</select></div>
+            }
+            <div class="col-12 text-muted fs-7" data-wd-note><i class="ki-outline ki-information-5 fs-6 text-gray-500 me-1"></i>@T["A registered device's repair is logged in its maintenance history."]</div>
+        </div>
+        <div class="text-center pt-10"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-wd-save>@T["wo:close"]</button></div>
+    </div>
 </div></div></div>
 
 @section Scripts {

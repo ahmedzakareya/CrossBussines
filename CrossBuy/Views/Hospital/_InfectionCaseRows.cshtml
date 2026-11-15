@@ -9,20 +9,23 @@
     var c = r.Case;
     var who = DisplayName.Of(r.Name, r.NameEn);
     string state = c.Status == HospitalInfectionStatus.Confirmed ? "badge-light-danger" : c.Status == HospitalInfectionStatus.RuledOut ? "badge-light" : "badge-light-info";
+    @* H128: a row of the theme's table widget (demo39 widgets/tables) — the case number rides under the patient *@
     <tr class="@(c.Status == HospitalInfectionStatus.RuledOut ? "opacity-75" : "")">
-        <td><span class="badge hp-code fs-8 hp-num">@c.CaseNo</span></td>
-        <td><a href="@Url.Action("Patient", new { id = c.PatientId })" class="fw-bold text-gray-900 text-hover-primary">@who</a><div class="text-muted fs-8 hp-num">@r.Mrn</div></td>
-        <td><span class="fw-semibold text-gray-800">@T["ick:" + c.Kind]</span>
-            @if (c.Organism != null) {<div class="fs-8"><bdi dir="ltr">@c.Organism</bdi></div>}
-            @if (r.Device != null) {<div class="text-muted fs-8">@T["dev:" + r.Device]</div>}</td>
-        <td class="hp-num text-nowrap">@c.OnsetDate.ToString("yyyy-MM-dd")</td>
-        <td>@if (c.HospitalAcquired) {<span class="badge badge-light-danger">@T["Hospital"]</span>} else {<span class="badge badge-light">@T["Community"]</span>}</td>
-        <td class="fs-8">@(r.Ward == null ? "—" : DisplayName.Of(r.Ward, r.WardEn ?? r.Ward))</td>
-        <td><span class="badge @state">@T["ics:" + c.Status]</span>@if (c.DecisionNote != null) {<div class="text-muted fs-8 mt-1"><bdi>@c.DecisionNote</bdi></div>}</td>
-        <td class="text-end">@if (canManage && c.Status == HospitalInfectionStatus.Suspected)
+        <td class="ps-4"><div class="d-flex align-items-center">
+            <div class="symbol symbol-35px me-3 flex-shrink-0"><span class="symbol-label bg-light-@(c.Status == HospitalInfectionStatus.Confirmed ? "danger" : "primary")"><i class="ki-outline ki-virus fs-3 text-@(c.Status == HospitalInfectionStatus.Confirmed ? "danger" : "primary")"></i></span></div>
+            <div class="d-flex flex-column"><a href="@Url.Action("Patient", new { id = c.PatientId })" class="text-gray-900 fw-bold text-hover-primary fs-6"><bdi>@who</bdi></a>
+                <span class="text-muted fw-semibold d-block fs-7"><bdi class="hp-num">@c.CaseNo</bdi> · <bdi class="hp-num">@r.Mrn</bdi></span></div></div></td>
+        <td><span class="text-gray-800 fw-bold fs-6">@T["ick:" + c.Kind]</span>
+            @if (c.Organism != null) {<div class="fs-7 fw-semibold"><bdi dir="ltr">@c.Organism</bdi></div>}
+            @if (r.Device != null) {<div class="text-muted fw-semibold fs-7">@T["dev:" + r.Device]</div>}</td>
+        <td class="text-nowrap"><span class="text-gray-800 fw-bold hp-num">@c.OnsetDate.ToString("yyyy-MM-dd")</span></td>
+        <td>@if (c.HospitalAcquired) {<span class="badge badge-light-danger fs-7 fw-bold">@T["Hospital"]</span>} else {<span class="badge badge-light fs-7 fw-bold">@T["Community"]</span>}</td>
+        <td class="text-gray-700 fw-semibold fs-7">@(r.Ward == null ? "—" : DisplayName.Of(r.Ward, r.WardEn ?? r.Ward))</td>
+        <td><span class="badge @state fs-7 fw-bold">@T["ics:" + c.Status]</span>@if (c.DecisionNote != null) {<div class="text-muted fs-7 mt-1"><bdi>@c.DecisionNote</bdi></div>}</td>
+        <td class="text-end pe-4">@if (canManage && c.Status == HospitalInfectionStatus.Suspected)
             {<div class="d-flex justify-content-end gap-2">
-                <button type="button" class="btn btn-sm btn-light-danger text-nowrap" data-confirm-case="@c.ID" data-what="@c.CaseNo — @who — @T["ick:" + c.Kind]">@T["Confirm"]</button>
-                <button type="button" class="btn btn-sm btn-light text-nowrap" data-ruleout-case="@c.ID" data-what="@c.CaseNo — @who — @T["ick:" + c.Kind]">@T["Rule out"]</button>
+                <button type="button" class="btn btn-sm btn-icon btn-light-danger" title="@T["Confirm"]" data-bs-toggle="tooltip" data-confirm-case="@c.ID" data-what="@c.CaseNo — @who — @T["ick:" + c.Kind]"><i class="ki-outline ki-check fs-3"></i></button>
+                <button type="button" class="btn btn-sm btn-icon btn-bg-light btn-active-color-primary" title="@T["Rule out"]" data-bs-toggle="tooltip" data-ruleout-case="@c.ID" data-what="@c.CaseNo — @who — @T["ick:" + c.Kind]"><i class="ki-outline ki-cross fs-3"></i></button>
             </div>}</td>
     </tr>
 }

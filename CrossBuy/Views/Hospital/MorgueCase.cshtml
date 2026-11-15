@@ -36,72 +36,112 @@
     </div></div>
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
         <div class="row g-5">
-            <div class="col-xl-4"><div class="card h-100"><div class="card-body py-6">
-                <div class="d-flex align-items-center gap-4 mb-5">
-                    <div class="symbol symbol-55px symbol-circle">@if (Model.Photo != null) {<img src="@Model.Photo" alt="" style="object-fit:cover;filter:grayscale(1)" />} else {<span class="symbol-label fw-bold hp-initials">@(Model.NameEn == null ? "?" : HospitalUi.Initials(Model.NameEn))</span>}</div>
-                    <div>@if (c.PatientId != null) {<a href="@Url.Action("Patient", new { id = c.PatientId })" class="fs-4 fw-bold text-gray-900 text-hover-primary">@DisplayName.Of(Model.Name!, Model.NameEn ?? Model.Name!)</a><div class="text-muted fs-7"><bdi class="hp-num">@Model.Mrn</bdi></div>}
-                        else {<div class="fs-4 fw-bold text-gray-900">@T["Unknown"]</div><div class="text-muted fs-7"><bdi>@c.Description</bdi></div>}</div>
+            @* H128: the deceased's profile card (demo39 apps/user-management/users/view): photo, name, state, the figures in dashed boxes, then the details list *@
+            <div class="col-xl-4"><div class="card card-flush h-100"><div class="card-body pt-10">
+                <div class="d-flex flex-center flex-column mb-5">
+                    <div class="symbol symbol-100px symbol-circle mb-5">@if (Model.Photo != null) {<img src="@Model.Photo" alt="" style="object-fit:cover;filter:grayscale(1)" />} else {<span class="symbol-label fs-2x fw-bold hp-initials">@(Model.NameEn == null ? "?" : HospitalUi.Initials(Model.NameEn))</span>}</div>
+                    @if (c.PatientId != null) {<a href="@Url.Action("Patient", new { id = c.PatientId })" class="fs-3 text-gray-800 text-hover-primary fw-bold mb-1">@DisplayName.Of(Model.Name!, Model.NameEn ?? Model.Name!)</a><div class="fs-6 fw-semibold text-gray-500 mb-4"><bdi class="hp-num">@Model.Mrn</bdi></div>}
+                    else {<div class="fs-3 text-gray-800 fw-bold mb-1">@T["Unknown"]</div><div class="fs-6 fw-semibold text-gray-500 mb-4 text-center"><bdi>@c.Description</bdi></div>}
+                    <span class="badge badge-lg badge-light-@(inside ? "primary" : "secondary") mb-6">@T["mgs:" + c.Status]</span>
+                    <div class="d-flex flex-wrap flex-center gap-3">
+                        <div class="border border-gray-300 border-dashed rounded py-3 px-4 text-center min-w-100px">
+                            <div class="fs-2 fw-bold text-gray-800 hp-num"><bdi>@Model.Compartment</bdi></div><div class="fw-semibold fs-7 text-gray-500">@T["Compartment"]</div></div>
+                        <div class="border border-@(inside && Model.Hours >= HospitalMorgueRules.AlertHours ? "danger" : "gray-300") border-dashed rounded py-3 px-4 text-center min-w-100px">
+                            <div class="fs-2 fw-bold hp-num text-@(inside && Model.Hours >= HospitalMorgueRules.AlertHours ? "danger" : "gray-800")">@T["{0} h", Model.Hours]</div><div class="fw-semibold fs-7 text-gray-500">@T["Kept"]</div></div>
+                    </div>
                 </div>
-                <div class="d-flex flex-stack py-2 border-bottom border-dashed"><span class="text-muted fs-7">@T["State"]</span><span class="badge @(inside ? "badge-light-primary" : "badge-light") fs-7">@T["mgs:" + c.Status]</span></div>
-                <div class="d-flex flex-stack py-2 border-bottom border-dashed"><span class="text-muted fs-7">@T["Compartment"]</span><span class="fw-bold fs-4 hp-num">@Model.Compartment</span></div>
-                <div class="d-flex flex-stack py-2 border-bottom border-dashed"><span class="text-muted fs-7">@T["Tag number"]</span><span class="fw-semibold hp-num">@c.TagNo</span></div>
-                <div class="d-flex flex-stack py-2 border-bottom border-dashed"><span class="text-muted fs-7">@T["Received"]</span><span class="hp-num fs-7">@L(c.ReceivedAt) <span class="text-muted" style="font-family:inherit">@Who(c.ReceivedByEmployeeId)</span></span></div>
-                <div class="d-flex flex-stack py-2 border-bottom border-dashed"><span class="text-muted fs-7">@T["Kept"]</span><span class="fw-bold @(inside && Model.Hours >= HospitalMorgueRules.AlertHours ? "text-danger" : "")">@T["{0} h", Model.Hours]</span></div>
-                @if (c.BroughtFrom != null) {<div class="d-flex flex-stack py-2 border-bottom border-dashed"><span class="text-muted fs-7">@T["Brought from"]</span><bdi class="fs-7">@c.BroughtFrom</bdi></div>}
-                @if (Model.Death != null)
-                {
-                    <div class="d-flex flex-stack py-2 border-bottom border-dashed"><span class="text-muted fs-7">@T["Death certificate"]</span><span class="fs-7"><span class="badge hp-code hp-num">@Model.Death.DeathNo</span>@if (Model.Death.VoidedAt != null) {<span class="badge badge-light-danger ms-1">@T["Voided"]</span>}</span></div>
-                    <div class="d-flex flex-stack py-2 border-bottom border-dashed"><span class="text-muted fs-7">@T["Died at"]</span><span class="hp-num fs-7">@L(Model.Death.DiedAt)</span></div>
-                    <div class="py-2 border-bottom border-dashed"><div class="text-muted fs-7">@T["Cause of death"]</div><div class="fs-7 fw-semibold"><bdi>@Model.Death.ImmediateCause</bdi></div></div>
-                }
-                @if (!inside)
-                {
-                    <div class="separator separator-dashed my-3"></div>
-                    <div class="fw-bold fs-6 mb-2">@T[c.Status == HospitalMorgueStatus.Transferred ? "Transferred to" : "Released to"]</div>
-                    <div class="fs-7"><bdi class="fw-semibold">@c.ReleasedTo</bdi>@if (c.ReleasedToRelation != null) {<text> · <bdi>@c.ReleasedToRelation</bdi></text>}</div>
-                    <div class="text-muted fs-8">@T["Identity"] <bdi class="hp-num">@c.ReleasedToIdNo</bdi>@if (c.ReleasedToPhone != null) {<text> · <bdi class="hp-num" dir="ltr">@c.ReleasedToPhone</bdi></text>}</div>
-                    if (c.Destination != null) {<div class="fs-7 mt-1"><bdi>@c.Destination</bdi></div>}
-                    <div class="text-muted fs-8 mt-1"><span class="hp-num">@L(c.ReleasedAt)</span> · @Who(c.ReleasedByEmployeeId)</div>
-                }
-                @if (c.Note != null) {<div class="py-2"><div class="text-muted fs-7">@T["Note"]</div><div class="fs-7"><bdi>@c.Note</bdi></div></div>}
+                <div class="d-flex flex-stack fs-4 py-3"><div class="fw-bold">@T["Details"]</div></div>
+                <div class="separator separator-dashed"></div>
+                <div class="pb-2 fs-6">
+                    <div class="fw-bold mt-5">@T["Tag number"]</div><div class="text-gray-600 hp-num"><bdi>@c.TagNo</bdi></div>
+                    <div class="fw-bold mt-5">@T["Received"]</div><div class="text-gray-600"><span class="hp-num">@L(c.ReceivedAt)</span> · @Who(c.ReceivedByEmployeeId)</div>
+                    @if (c.BroughtFrom != null) {<div class="fw-bold mt-5">@T["Brought from"]</div><div class="text-gray-600"><bdi>@c.BroughtFrom</bdi></div>}
+                    @if (Model.Death != null)
+                    {
+                        <div class="fw-bold mt-5">@T["Death certificate"]</div><div class="text-gray-600"><span class="badge hp-code hp-num">@Model.Death.DeathNo</span>@if (Model.Death.VoidedAt != null) {<span class="badge badge-light-danger fw-bold ms-1">@T["Voided"]</span>}</div>
+                        <div class="fw-bold mt-5">@T["Died at"]</div><div class="text-gray-600 hp-num">@L(Model.Death.DiedAt)</div>
+                        <div class="fw-bold mt-5">@T["Cause of death"]</div><div class="text-gray-600"><bdi>@Model.Death.ImmediateCause</bdi></div>
+                    }
+                    @if (!inside)
+                    {
+                        <div class="fw-bold mt-5">@T[c.Status == HospitalMorgueStatus.Transferred ? "Transferred to" : "Released to"]</div>
+                        <div class="text-gray-800 fw-semibold"><bdi>@c.ReleasedTo</bdi>@if (c.ReleasedToRelation != null) {<text> · <bdi>@c.ReleasedToRelation</bdi></text>}</div>
+                        <div class="text-gray-500 fs-7">@T["Identity"] <bdi class="hp-num">@c.ReleasedToIdNo</bdi>@if (c.ReleasedToPhone != null) {<text> · <bdi class="hp-num" dir="ltr">@c.ReleasedToPhone</bdi></text>}</div>
+                        if (c.Destination != null) {<div class="text-gray-600 fs-7"><bdi>@c.Destination</bdi></div>}
+                        <div class="text-gray-500 fs-7"><span class="hp-num">@L(c.ReleasedAt)</span> · @Who(c.ReleasedByEmployeeId)</div>
+                    }
+                    @if (c.Note != null) {<div class="fw-bold mt-5">@T["Note"]</div><div class="text-gray-600"><bdi>@c.Note</bdi></div>}
+                </div>
             </div></div></div>
 
             <div class="col-xl-8 d-flex flex-column gap-5">
                 @if (inside)
                 {
-                    <div class="card @(Model.Holds.Count > 0 ? "border border-danger border-dashed" : "border border-success border-dashed")"><div class="card-body py-6">
-                        <div class="fw-bold fs-4 mb-1">@(Model.Holds.Count > 0 ? T["What still holds the body"] : T["Nothing holds the body: it may be released"])</div>
-                        <div class="text-muted fs-8 mb-4">@T["Each hold is lifted by its own step; the release opens when none is left. A transfer (to forensic medicine, another hospital) is not held."]</div>
-                        @if (c.MedicoLegal)
-                        {
-                            <div class="d-flex flex-stack py-3 border-bottom border-dashed">
-                                <div><div class="fw-semibold">@T["Police clearance"]</div><div class="text-muted fs-8">@if (c.PoliceRef != null) {<span>@T["Report"] <bdi class="hp-num">@c.PoliceRef</bdi></span>}@if (c.PoliceClearedAt != null) {<span> · @T["Cleared {0}", L(c.PoliceClearedAt)] · @Who(c.PoliceClearedByEmployeeId)</span>}</div></div>
-                                @if (policeOpen) {if (canWork) {<button type="button" class="btn btn-sm btn-light-danger" data-police>@T["Record the clearance"]</button>} else {<span class="badge badge-light-danger">@T["mgw:PoliceHold"]</span>}} else {<i class="ki-outline ki-check-circle text-success fs-2"></i>}
+                    @* H128: what still holds the body as the theme's list widget (demo39 widgets/lists): symbol · step over its detail · action *@
+                    bool unidentified = Model.Holds.Contains(HospitalMorgueWarning.Unidentified) || Model.Holds.Contains(HospitalMorgueWarning.NoCertificate);
+                    bool autopsyOpen = c.AutopsyStatus == HospitalAutopsyStatus.Requested;
+                    <div class="card card-flush">
+                        <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@(Model.Holds.Count > 0 ? T["What still holds the body"] : T["Nothing holds the body: it may be released"])</span>
+                            <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Each hold is lifted by its own step; the release opens when none is left. A transfer (to forensic medicine, another hospital) is not held."]</span></h3>
+                            <div class="card-toolbar"><span class="badge badge-light-@(Model.Holds.Count > 0 ? "danger" : "success") fs-7 fw-bold hp-num">@Model.Holds.Count</span></div></div>
+                        <div class="card-body pt-4">
+                            @if (c.MedicoLegal)
+                            {
+                                <div class="d-flex flex-stack">
+                                    <div class="symbol symbol-40px me-4 flex-shrink-0"><span class="symbol-label bg-light-@(policeOpen ? "danger" : "success")"><i class="ki-outline ki-shield-tick fs-2 text-@(policeOpen ? "danger" : "success")"></i></span></div>
+                                    <div class="d-flex flex-stack flex-row-fluid d-grid gap-2">
+                                        <div class="me-3"><span class="text-gray-800 fw-bold fs-6 d-block">@T["Police clearance"]</span><span class="text-gray-500 fw-semibold fs-7 d-block">@if (c.PoliceRef != null) {<span>@T["Report"] <bdi class="hp-num">@c.PoliceRef</bdi></span>}@if (c.PoliceClearedAt != null) {<span> · @T["Cleared {0}", L(c.PoliceClearedAt)] · @Who(c.PoliceClearedByEmployeeId)</span>}</span></div>
+                                        <div class="flex-shrink-0">@if (policeOpen) {if (canWork) {<button type="button" class="btn btn-sm btn-light-danger" data-police>@T["Record the clearance"]</button>} else {<span class="badge badge-light-danger fs-7 fw-bold">@T["mgw:PoliceHold"]</span>}} else {<i class="ki-outline ki-check-circle text-success fs-2"></i>}</div>
+                                    </div>
+                                </div>
+                                <div class="separator separator-dashed my-4"></div>
+                            }
+                            <div class="d-flex flex-stack">
+                                <div class="symbol symbol-40px me-4 flex-shrink-0"><span class="symbol-label bg-light-@(autopsyOpen ? "danger" : "primary")"><i class="ki-outline ki-flask fs-2 text-@(autopsyOpen ? "danger" : "primary")"></i></span></div>
+                                <div class="d-flex flex-stack flex-row-fluid d-grid gap-2">
+                                    <div class="me-3"><span class="text-gray-800 fw-bold fs-6 d-block">@T["Autopsy"]</span><span class="text-gray-500 fw-semibold fs-7 d-block">@T["aut:" + c.AutopsyStatus]@if (c.AutopsyNote != null) {<span> · <bdi>@c.AutopsyNote</bdi></span>}</span></div>
+                                    <div class="flex-shrink-0">
+                                        @if (canWork && c.AutopsyStatus == HospitalAutopsyStatus.Requested) {<button type="button" class="btn btn-sm btn-light-danger" data-autopsy="AutopsyDone">@T["Record it done"]</button>}
+                                        else if (canWork && c.AutopsyStatus == HospitalAutopsyStatus.None) {<button type="button" class="btn btn-sm btn-light" data-autopsy="AutopsyRequest">@T["Request an autopsy"]</button>}
+                                        else {<i class="ki-outline ki-check-circle text-success fs-2"></i>}
+                                    </div>
+                                </div>
                             </div>
-                        }
-                        <div class="d-flex flex-stack py-3 border-bottom border-dashed">
-                            <div><div class="fw-semibold">@T["Autopsy"]</div><div class="text-muted fs-8">@T["aut:" + c.AutopsyStatus]@if (c.AutopsyNote != null) {<span> · <bdi>@c.AutopsyNote</bdi></span>}</div></div>
-                            @if (canWork && c.AutopsyStatus == HospitalAutopsyStatus.Requested) {<button type="button" class="btn btn-sm btn-light-danger" data-autopsy="AutopsyDone">@T["Record it done"]</button>}
-                            else if (canWork && c.AutopsyStatus == HospitalAutopsyStatus.None) {<button type="button" class="btn btn-sm btn-light" data-autopsy="AutopsyRequest">@T["Request an autopsy"]</button>}
-                            else {<i class="ki-outline ki-check-circle text-success fs-2"></i>}
+                            <div class="separator separator-dashed my-4"></div>
+                            <div class="d-flex flex-stack">
+                                <div class="symbol symbol-40px me-4 flex-shrink-0"><span class="symbol-label bg-light-@(unidentified ? "danger" : "success")"><i class="ki-outline ki-profile-circle fs-2 text-@(unidentified ? "danger" : "success")"></i></span></div>
+                                <div class="d-flex flex-stack flex-row-fluid d-grid gap-2">
+                                    <div class="me-3"><span class="text-gray-800 fw-bold fs-6 d-block">@T["Identity and certificate"]</span><span class="text-gray-500 fw-semibold fs-7 d-block">@(c.PatientId == null ? T["Unknown body: released only by transfer to the authorities, or once identified and certified."] : Model.Holds.Contains(HospitalMorgueWarning.NoCertificate) ? T["The certificate is voided: certify the death again."] : T["Identified and certified"])</span></div>
+                                    <div class="flex-shrink-0">@if (unidentified) {<i class="ki-outline ki-cross-circle text-danger fs-2"></i>} else {<i class="ki-outline ki-check-circle text-success fs-2"></i>}</div>
+                                </div>
+                            </div>
                         </div>
-                        <div class="d-flex flex-stack py-3">
-                            <div><div class="fw-semibold">@T["Identity and certificate"]</div><div class="text-muted fs-8">@(c.PatientId == null ? T["Unknown body: released only by transfer to the authorities, or once identified and certified."] : Model.Holds.Contains(HospitalMorgueWarning.NoCertificate) ? T["The certificate is voided: certify the death again."] : T["Identified and certified"])</div></div>
-                            @if (Model.Holds.Contains(HospitalMorgueWarning.Unidentified) || Model.Holds.Contains(HospitalMorgueWarning.NoCertificate)) {<i class="ki-outline ki-cross-circle text-danger fs-2"></i>} else {<i class="ki-outline ki-check-circle text-success fs-2"></i>}
-                        </div>
-                    </div></div>
+                    </div>
                 }
-                <div class="card flex-grow-1">
-                    <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Belongings"]</span></div>
-                        @if (inside && canWork) {<div class="card-toolbar"><button type="button" class="btn btn-sm btn-light-primary" data-item><i class="ki-outline ki-plus fs-5"></i>@T["Add an item"]</button></div>}</div>
+                @* H128: the belongings as the theme's table widget (demo39 widgets/tables) *@
+                <div class="card card-flush flex-grow-1">
+                    <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Belongings"]</span>
+                        <span class="text-gray-500 mt-1 fw-semibold fs-7 hp-num">@Model.Belongings.Count</span></h3>
+                        @if (inside && canWork) {<div class="card-toolbar"><button type="button" class="btn btn-sm btn-light-primary" data-item><i class="ki-outline ki-plus fs-4"></i>@T["Add an item"]</button></div>}</div>
                     <div class="card-body pt-2">
-                        @if (Model.Belongings.Count == 0) { <div class="text-center text-muted py-6">@T["Nothing was found with the body."]</div> }
+                        @if (Model.Belongings.Count == 0) { <div class="text-center py-10"><i class="ki-outline ki-parcel fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-bold text-gray-700">@T["Nothing was found with the body."]</div></div> }
                         else
                         {
-                            <table class="table table-row-dashed align-middle fs-7 gy-2 mb-0"><thead><tr class="text-gray-500 fw-bold fs-8"><th>@T["Item"]</th><th>@T["Quantity"]</th><th>@T["Note"]</th><th>@T["Recorded"]</th></tr></thead><tbody>
-                                @foreach (var b in Model.Belongings) {<tr><td class="fw-semibold"><bdi>@b.Item</bdi></td><td class="hp-num">@b.Quantity</td><td class="text-muted"><bdi>@b.Note</bdi></td><td class="hp-num text-muted fs-8">@L(b.RecordedAt)</td></tr>}
-                            </tbody></table>
-                            @if (!inside) {<div class="text-success fs-8 mt-3"><i class="ki-outline ki-check fs-6 text-success"></i> @T["Handed over with the body"]</div>}
+                            <div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
+                                <thead><tr class="fw-bold text-muted bg-light"><th class="ps-4 rounded-start">@T["Item"]</th><th>@T["Quantity"]</th><th>@T["Note"]</th><th class="pe-4 rounded-end">@T["Recorded"]</th></tr></thead>
+                                <tbody>
+                                @foreach (var b in Model.Belongings)
+                                {
+                                    <tr>
+                                        <td class="ps-4"><div class="d-flex align-items-center"><div class="symbol symbol-35px me-3 flex-shrink-0"><span class="symbol-label bg-light-primary"><i class="ki-outline ki-parcel fs-3 text-primary"></i></span></div><span class="text-gray-900 fw-bold fs-6"><bdi>@b.Item</bdi></span></div></td>
+                                        <td><span class="badge badge-light-primary fs-7 fw-bold hp-num">@b.Quantity</span></td>
+                                        <td><span class="text-gray-600 fw-semibold fs-7"><bdi>@b.Note</bdi></span></td>
+                                        <td class="pe-4"><span class="text-gray-500 fw-semibold fs-7 hp-num text-nowrap">@L(b.RecordedAt)</span></td>
+                                    </tr>
+                                }
+                                </tbody>
+                            </table></div>
+                            @if (!inside) {<div class="notice d-flex bg-light-success rounded border-success border border-dashed p-4 mt-5"><i class="ki-outline ki-check-circle fs-2x text-success me-3"></i><div class="fs-6 fw-semibold text-gray-700 align-self-center">@T["Handed over with the body"]</div></div>}
                         }
                     </div>
                 </div>
@@ -112,21 +152,24 @@
 
 @if (inside && canWork)
 {
-    <div class="modal fade" id="relModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-600px"><div class="modal-content">
-        <div class="modal-header"><h2 class="fw-bold m-0" id="relTitle">@T["Release the body"]</h2><div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
-        <div class="modal-body py-6 px-lg-10"><div class="row g-4">
-            <div class="col-7"><label class="form-label required">@T["Received by (full name)"]</label><input type="text" maxlength="150" class="form-control form-control-solid" data-l="releasedTo" /></div>
-            <div class="col-5" data-rel-only><label class="form-label required">@T["Relation to the deceased"]</label><input type="text" maxlength="50" class="form-control form-control-solid" data-l="relation" placeholder="@T["Son, wife, brother…"]" /></div>
-            <div class="col-6"><label class="form-label required">@T["Identity number"]</label><input type="text" maxlength="30" class="form-control form-control-solid" dir="ltr" data-l="idNo" /></div>
-            <div class="col-6"><label class="form-label">@T["Phone"]</label><input type="text" maxlength="30" class="form-control form-control-solid" dir="ltr" data-l="phone" /></div>
-            <div class="col-12"><label class="form-label" id="destLabel">@T["Funeral home"]</label><input type="text" maxlength="150" class="form-control form-control-solid" data-l="destination" /></div>
-            @if (Model.Belongings.Count > 0) {<div class="col-12"><label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" data-l="belongingsHandedOver" /><span class="form-check-label">@T["The {0} belongings were handed over and signed for", Model.Belongings.Count]</span></label></div>}
-            <div class="col-12"><label class="form-label">@T["Note"]</label><input type="text" maxlength="200" class="form-control form-control-solid" data-l="note" /></div>
-        </div></div>
-        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-rel-save>@T["Confirm"]</button></div>
+    @* H128: the theme's form modal (demo39 utilities/modals/forms/new-target); the title and the destination label still switch between release and transfer *@
+    <div class="modal fade" id="relModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-650px"><div class="modal-content rounded">
+        <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-10">
+            <div class="mb-10 text-center"><h1 class="mb-3" id="relTitle">@T["Release the body"]</h1><div class="text-muted fw-semibold fs-6"><span class="hp-num">@c.CaseNo</span> · @(c.PatientId != null ? DisplayName.Of(Model.Name!, Model.NameEn ?? Model.Name!) : T["Unknown"].Value)</div></div>
+            <div class="row g-6">
+            <div class="col-7"><label class="required fs-6 fw-semibold mb-2">@T["Received by (full name)"]</label><input type="text" maxlength="150" class="form-control form-control-solid" data-l="releasedTo" /></div>
+            <div class="col-5" data-rel-only><label class="required fs-6 fw-semibold mb-2">@T["Relation to the deceased"]</label><input type="text" maxlength="50" class="form-control form-control-solid" data-l="relation" placeholder="@T["Son, wife, brother…"]" /></div>
+            <div class="col-6"><label class="required fs-6 fw-semibold mb-2">@T["Identity number"]</label><input type="text" maxlength="30" class="form-control form-control-solid" dir="ltr" data-l="idNo" /></div>
+            <div class="col-6"><label class="fs-6 fw-semibold mb-2">@T["Phone"]</label><input type="text" maxlength="30" class="form-control form-control-solid" dir="ltr" data-l="phone" /></div>
+            <div class="col-12"><label class="fs-6 fw-semibold mb-2" id="destLabel">@T["Funeral home"]</label><input type="text" maxlength="150" class="form-control form-control-solid" data-l="destination" /></div>
+            @if (Model.Belongings.Count > 0) {<div class="col-12"><label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" data-l="belongingsHandedOver" /><span class="form-check-label fw-semibold text-gray-700">@T["The {0} belongings were handed over and signed for", Model.Belongings.Count]</span></label></div>}
+            <div class="col-12"><label class="fs-6 fw-semibold mb-2">@T["Note"]</label><input type="text" maxlength="200" class="form-control form-control-solid" data-l="note" /></div>
+            </div>
+            <div class="text-center pt-10"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-rel-save>@T["Confirm"]</button></div>
+        </div>
     </div></div></div>
 }
-
 @section Scripts {
     <script>
         (function () {

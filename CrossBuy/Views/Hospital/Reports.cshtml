@@ -30,12 +30,12 @@
             <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted">@T["hr:crumb"]</li></ul>
         </div>
         <div class="d-flex align-items-center gap-2 d-print-none">
-            <a href="@Url.Action("Studio", "Reports")" class="btn btn-sm btn-light"><i class="ki-outline ki-design-1 fs-4"></i>@T["Report Studio"]</a>
+            <a href="@Url.Action("Studio", "Reports")" class="btn btn-sm btn-light"><i class="ki-outline ki-design-2 fs-4"></i>@T["Report Studio"]</a>
         </div>
     </div></div>
 
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
-        <div class="notice d-flex rounded border border-primary border-dashed bg-light-primary p-6 mb-5">
+        <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-5 mb-5">
             <i class="ki-outline ki-chart-pie-simple fs-2tx text-primary me-4"></i>
             <div class="d-flex flex-stack flex-grow-1 flex-wrap flex-md-nowrap">
                 <div class="mb-3 mb-md-0 fw-semibold pe-5">
@@ -50,29 +50,40 @@
             @foreach (var g in groups)
             {
                 bool money = g.Key is HospitalReportGroups.Financial or HospitalReportGroups.Insurance;
+                string tone = g.Key == HospitalReportGroups.Clinical ? "danger" : g.Key == HospitalReportGroups.Operational ? "primary" : g.Key == HospitalReportGroups.Financial ? "success" : "info";
+                var list = Model.Where(x => x.Group == g.Key).ToList();
+                @* H128: list widget (demo39 dashboards/logistics) — symbol · title over a muted line · action *@
                 <div class="col-xl-6">
-                    <div class="card mb-5 h-xl-100">
-                        <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@g.Title</span></div></div>
+                    <div class="card card-flush mb-5 h-xl-100">
+                        <div class="card-header pt-5">
+                            <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@g.Title</span>
+                                <span class="text-gray-500 mt-1 fw-semibold fs-7"><bdi class="hp-num" dir="ltr">@list.Count</bdi>&nbsp;@T["hr:count"]</span></h3>
+                            <div class="card-toolbar"><div class="symbol symbol-40px"><span class="symbol-label bg-light-@tone"><i class="ki-outline @g.Icon fs-2 text-@tone"></i></span></div></div>
+                        </div>
                         <div class="card-body pt-2">
-                            @foreach (var r in Model.Where(x => x.Group == g.Key))
+                            @for (int i = 0; i < list.Count; i++)
                             {
-                                var d = r.Dataset;
-                                <div class="d-flex align-items-center py-3 border-bottom border-gray-200 border-bottom-dashed" data-hr-report="@d.DatasetCode">
-                                    <span class="symbol symbol-40px me-4 flex-shrink-0"><span class="symbol-label bg-light-primary"><i class="ki-outline @g.Icon fs-3 text-primary"></i></span></span>
-                                    <div class="min-w-0 pe-3" style="flex:1 1 0">
-                                        <div class="fw-semibold text-gray-800">@(ar ? d.TitleAr : d.TitleEn)</div>
-                                        <div class="text-muted fs-8 hp-clamp2" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;white-space:normal" title="@(ar ? d.DescriptionAr : d.DescriptionEn)">@(ar ? d.DescriptionAr : d.DescriptionEn)</div>
+                                var d = list[i].Dataset;
+                                <div class="d-flex flex-stack" data-hr-report="@d.DatasetCode">
+                                    <div class="symbol symbol-35px me-4 flex-shrink-0"><span class="symbol-label bg-light-@tone"><i class="ki-outline ki-document fs-3 text-@tone"></i></span></div>
+                                    <div class="d-flex flex-stack flex-row-fluid gap-3">
+                                        <div class="min-w-0 me-3" style="flex:1 1 0">
+                                            <span class="text-gray-800 fw-bold fs-6 d-block">@(ar ? d.TitleAr : d.TitleEn)</span>
+                                            <span class="text-gray-500 fw-semibold fs-7 d-block hp-clamp2" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;white-space:normal" title="@(ar ? d.DescriptionAr : d.DescriptionEn)">@(ar ? d.DescriptionAr : d.DescriptionEn)</span>
+                                        </div>
+                                        @if (!money || finance)
+                                        {
+                                            <a href="@Url.Action("Viewer", "Reports", new { id = d.DatasetCode, run = true })" class="btn btn-sm btn-light-primary flex-shrink-0"><i class="ki-outline ki-eye fs-4"></i>@T["Open"]</a>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge badge-light fs-7 fw-bold flex-shrink-0"><i class="ki-outline ki-lock-2 fs-6 me-1"></i>@T["Billing desk only"]</span>
+                                        }
                                     </div>
-                                    @if (!money || finance)
-                                    {
-                                        <a href="@Url.Action("Viewer", "Reports", new { id = d.DatasetCode, run = true })" class="btn btn-sm btn-light-primary flex-shrink-0">@T["Open"]</a>
-                                    }
-                                    else
-                                    {
-                                        <span class="badge badge-light fs-8 flex-shrink-0">@T["Billing desk only"]</span>
-                                    }
                                 </div>
+                                if (i < list.Count - 1) { <div class="separator separator-dashed my-3"></div> }
                             }
+                            @if (list.Count == 0) { <div class="text-center py-10"><i class="ki-outline ki-chart-pie-simple fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-bold text-gray-700">@T["None"]</div></div> }
                         </div>
                     </div>
                 </div>

@@ -59,64 +59,80 @@
         @if (!ready) { <div class="notice d-flex rounded border border-dashed p-6 mb-5 hp-notice"><div class="fs-6 text-gray-700">@T[HospitalDischargeService.NoTables]</div></div> }
         <div class="row g-5">
             <div class="col-xl-4">
-                <div class="card mb-5">
-                    <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["The stay"]</span></div></div>
-                    <div class="card-body pt-2">
-                        <div class="d-flex align-items-center mb-5">
-                            <div class="symbol symbol-50px symbol-circle me-4">@if (p.PhotoPath != null) {<img src="@p.PhotoPath" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(p.NameEn ?? p.Name)" />} else {<span class="symbol-label fw-bold hp-initials">@HospitalUi.Initials(p.NameEn ?? p.Name)</span>}</div>
-                            <div><a href="@Url.Action("Patient", new { id = p.ID })" class="fw-bold text-gray-900 text-hover-primary fs-5">@name</a><div><span class="badge hp-code fs-8 hp-num">@p.Mrn</span></div></div>
+                @* H128: the stay — the theme's profile card with its detail list (demo39 apps/customers/view) *@
+                <div class="card card-flush mb-5">
+                    <div class="card-body pt-10">
+                        <div class="d-flex flex-center flex-column mb-6">
+                            <div class="symbol symbol-100px symbol-circle mb-5">@if (p.PhotoPath != null) {<img src="@p.PhotoPath" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(p.NameEn ?? p.Name)" />} else {<span class="symbol-label fs-1 fw-bold hp-initials">@HospitalUi.Initials(p.NameEn ?? p.Name)</span>}</div>
+                            <a href="@Url.Action("Patient", new { id = p.ID })" class="fs-3 text-gray-800 text-hover-primary fw-bold mb-1">@name</a>
+                            <bdi class="fs-6 fw-semibold text-muted hp-num mb-4">@p.Mrn</bdi>
+                            <span class="badge badge-light-@(signed ? "success" : s != null ? "primary" : "secondary") fs-7 fw-bold">@(signed ? T["Signed"] : s != null ? T["Draft"] : T["Open"])</span>
                         </div>
-                        @foreach (var f in new (string Label, string? Value, bool Num)[] {
-                            (T["ds:admitted"].Value, At(a.AdmittedAt), true),
-                            (T["ds:discharged"].Value, a.DischargedAt is DateTime d ? At(d) : T["Still in"].Value, a.DischargedAt != null),
-                            (T["Length of stay"].Value, Model.StayDays.ToString("0.#", inv) + " " + T["days"].Value, false),
-                            (T["Ward"].Value, Model.Ward == null ? null : DisplayName.Of(Model.Ward, Model.WardEn ?? Model.Ward) + (Model.Room != null ? " · " + Model.Room : "") + (Model.Bed != null ? " · " + Model.Bed : ""), false),
-                            (T["Attending doctor"].Value, Model.Attending == null ? null : DisplayName.Of(Model.Attending, Model.AttendingEn ?? Model.Attending), false),
-                            (T["Reason for admission"].Value, a.Diagnosis, false) })
+                        <div class="d-flex flex-stack fs-4 py-3"><div class="fw-bold">@T["The stay"]</div></div>
+                        <div class="separator separator-dashed mb-4"></div>
+                        @{
+                            var facts = new (string Label, string? Value, bool Num, string Icon)[] {
+                                (T["ds:admitted"].Value, At(a.AdmittedAt), true, "entrance-left"),
+                                (T["ds:discharged"].Value, a.DischargedAt is DateTime d ? At(d) : T["Still in"].Value, a.DischargedAt != null, "exit-right"),
+                                (T["Length of stay"].Value, Model.StayDays.ToString("0.#", inv) + " " + T["days"].Value, false, "calendar"),
+                                (T["Ward"].Value, Model.Ward == null ? null : DisplayName.Of(Model.Ward, Model.WardEn ?? Model.Ward) + (Model.Room != null ? " · " + Model.Room : "") + (Model.Bed != null ? " · " + Model.Bed : ""), false, "home-2"),
+                                (T["Attending doctor"].Value, Model.Attending == null ? null : DisplayName.Of(Model.Attending, Model.AttendingEn ?? Model.Attending), false, "user-tick"),
+                                (T["Reason for admission"].Value, a.Diagnosis, false, "notepad") };
+                        }
+                        @for (int fi = 0; fi < facts.Length; fi++)
                         {
-                            <div class="d-flex flex-stack py-3 border-bottom border-gray-200 border-bottom-dashed">
-                                <span class="text-muted fw-semibold fs-7">@f.Label</span>
-                                <span class="fw-bold text-gray-800 fs-7 text-end @(f.Num ? "hp-num" : "")" dir="auto">@(f.Value ?? "—")</span>
+                            var f = facts[fi];
+                            <div class="d-flex align-items-center">
+                                <div class="symbol symbol-35px me-4 flex-shrink-0"><span class="symbol-label bg-light-primary"><i class="ki-outline ki-@f.Icon fs-3 text-primary"></i></span></div>
+                                <div class="d-flex flex-column min-w-0"><span class="text-gray-500 fw-semibold fs-7">@f.Label</span><span class="text-gray-800 fw-bold fs-6 @(f.Num ? "hp-num" : "")" dir="auto">@(f.Value ?? "—")</span></div>
                             </div>
+                            if (fi < facts.Length - 1) { <div class="separator separator-dashed my-3"></div> }
                         }
                     </div>
                 </div>
-                <div class="card mb-5">
-                    <div class="card-header border-0 pt-6"><div class="card-title m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["Operations during the stay"]</span></div></div>
+                <div class="card card-flush mb-5">
+                    <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Operations during the stay"]</span>
+                        <span class="text-gray-500 mt-1 fw-semibold fs-7 hp-num">@Model.Operations.Count</span></h3></div>
                     <div class="card-body pt-2" data-ds-ops>
-                        @if (Model.Operations.Count == 0) { <div class="text-muted fs-7">@T["No operation during this stay."]</div> }
-                        @foreach (var o in Model.Operations)
+                        @if (Model.Operations.Count == 0) { <div class="text-center py-8"><i class="ki-outline ki-bandage fs-3x text-gray-300 mb-4 d-block"></i><div class="fs-6 fw-bold text-gray-700">@T["No operation during this stay."]</div></div> }
+                        @for (int oi = 0; oi < Model.Operations.Count; oi++)
                         {
-                            <div class="py-2 border-bottom border-gray-200 border-bottom-dashed"><div class="fw-semibold text-gray-800">@DisplayName.Of(o.Name, o.NameEn)</div>
-                                <div class="text-muted fs-8"><span class="hp-num" dir="ltr">@o.Date.ToString("yyyy-MM-dd", inv)</span>@if (o.Surgeon != null) {<text> · </text>@DisplayName.Of(o.Surgeon, o.SurgeonEn ?? o.Surgeon)}</div></div>
+                            var o = Model.Operations[oi];
+                            <div class="d-flex align-items-center">
+                                <div class="symbol symbol-35px me-4 flex-shrink-0"><span class="symbol-label bg-light-info"><i class="ki-outline ki-bandage fs-3 text-info"></i></span></div>
+                                <div class="d-flex flex-column"><span class="text-gray-800 fw-bold fs-6">@DisplayName.Of(o.Name, o.NameEn)</span>
+                                    <span class="text-gray-500 fw-semibold fs-7"><span class="hp-num" dir="ltr">@o.Date.ToString("yyyy-MM-dd", inv)</span>@if (o.Surgeon != null) {<text> · </text>@DisplayName.Of(o.Surgeon, o.SurgeonEn ?? o.Surgeon)}</span></div>
+                            </div>
+                            if (oi < Model.Operations.Count - 1) { <div class="separator separator-dashed my-3"></div> }
                         }
                     </div>
                 </div>
             </div>
             <div class="col-xl-8">
-                <div class="card mb-5" data-ds-form>
-                    <div class="card-header border-0 pt-6"><div class="card-title flex-column m-0">
-                        <span class="card-label fw-bold text-gray-900 fs-4">@T["The doctor's summary"]</span>
-                        <span class="text-muted fs-7 mt-1">@(signed ? T["Signed: it cannot change."] : T["Saved as a draft until it is signed."])</span>
-                    </div></div>
+                <div class="card card-flush mb-5" data-ds-form>
+                    <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column">
+                        <span class="card-label fw-bold text-gray-800">@T["The doctor's summary"]</span>
+                        <span class="text-gray-500 mt-1 fw-semibold fs-7">@(signed ? T["Signed: it cannot change."] : T["Saved as a draft until it is signed."])</span>
+                    </h3>
+                    <div class="card-toolbar"><div class="symbol symbol-40px"><span class="symbol-label bg-light-@(signed ? "success" : "primary")"><i class="ki-outline ki-@(signed ? "shield-tick" : "notepad-edit") fs-2 text-@(signed ? "success" : "primary")"></i></span></div></div></div>
                     <div class="card-body pt-2"><div class="row g-5">
-                        <div class="col-12"><label class="form-label required">@T["Final diagnosis"]</label>
+                        <div class="col-12"><label class="fs-6 fw-semibold mb-2 required">@T["Final diagnosis"]</label>
                             <textarea class="form-control form-control-solid" rows="2" maxlength="1000" dir="auto" data-k="finalDiagnosis" @ro>@s?.FinalDiagnosis</textarea></div>
-                        <div class="col-12"><label class="form-label">@T["Course in hospital"]</label>
+                        <div class="col-12"><label class="fs-6 fw-semibold mb-2">@T["Course in hospital"]</label>
                             <textarea class="form-control form-control-solid" rows="5" maxlength="4000" dir="auto" data-k="course" @ro>@s?.Course</textarea></div>
-                        <div class="col-12"><label class="form-label">@T["Procedures"]</label>
+                        <div class="col-12"><label class="fs-6 fw-semibold mb-2">@T["Procedures"]</label>
                             <textarea class="form-control form-control-solid" rows="2" maxlength="2000" dir="auto" data-k="procedures" @ro>@procedures</textarea></div>
-                        <div class="col-md-6"><label class="form-label required">@T["Condition at discharge"]</label>
+                        <div class="col-md-6"><label class="fs-6 fw-semibold mb-2 required">@T["Condition at discharge"]</label>
                             <select class="form-select form-select-solid" data-k="condition" @ro><option value="">—</option>
                                 @foreach (var c in HospitalDischargeCondition.All) { <option value="@c" selected="@(s?.Condition == c)">@T["dc:" + c]</option> }
                             </select></div>
-                        <div class="col-md-3"><label class="form-label">@T["Follow-up on"]</label>
+                        <div class="col-md-3"><label class="fs-6 fw-semibold mb-2">@T["Follow-up on"]</label>
                             <input type="date" class="form-control form-control-solid" data-k="followUpOn" value="@s?.FollowUpOn?.ToString("yyyy-MM-dd", inv)" @ro /></div>
-                        <div class="col-md-3"><label class="form-label">@T["Follow-up with"]</label>
+                        <div class="col-md-3"><label class="fs-6 fw-semibold mb-2">@T["Follow-up with"]</label>
                             <input type="text" class="form-control form-control-solid" maxlength="200" dir="auto" data-k="followUpWith" value="@s?.FollowUpWith" @ro /></div>
-                        <div class="col-md-6"><label class="form-label">@T["Medicines to take home"]</label>
+                        <div class="col-md-6"><label class="fs-6 fw-semibold mb-2">@T["Medicines to take home"]</label>
                             <textarea class="form-control form-control-solid" rows="4" maxlength="2000" dir="auto" data-k="medications" @ro>@s?.Medications</textarea></div>
-                        <div class="col-md-6"><label class="form-label">@T["Instructions for the patient"]</label>
+                        <div class="col-md-6"><label class="fs-6 fw-semibold mb-2">@T["Instructions for the patient"]</label>
                             <textarea class="form-control form-control-solid" rows="4" maxlength="2000" dir="auto" data-k="instructions" @ro>@s?.Instructions</textarea></div>
                     </div></div>
                 </div>
