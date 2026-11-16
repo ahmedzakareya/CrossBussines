@@ -40,7 +40,7 @@
             <div class="w-250px"><select class="form-select form-select-solid form-select-sm" data-nav="ward">
                 @foreach (var w in wards) { <option value="@w.Id" selected="@(w.Id == Model?.WardId)">@w.Code · @DisplayName.Of(w.Name, w.NameEn) (@w.Patients)</option> }
             </select></div>
-            <div class="w-200px"><select class="form-select form-select-solid form-select-sm" data-nav="window">
+            <div class="w-275px"><select class="form-select form-select-solid form-select-sm" data-nav="window">
                 @foreach (var x in HospitalController.CartWindows.All) { <option value="@x" selected="@(x == window)">@T["cartw:" + x]</option> }
             </select></div>
             <a href="@Url.Action("MedRouting")" class="btn btn-sm btn-light btn-active-light-primary"><i class="ki-outline ki-delivery fs-4"></i>@T["Medication routing"]</a>
