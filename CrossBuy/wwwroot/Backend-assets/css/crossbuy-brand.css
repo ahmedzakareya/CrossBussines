@@ -90,6 +90,26 @@
     background-color: #1F2D4D !important;
     border-color: #1F2D4D !important;
 }
+/* The same trap on a btn-outline base (2026-11-16): the payment-method tiles on /Hospital/Bill are
+   `btn-check + btn btn-outline btn-outline-dashed btn-active-light-primary`. The theme's outline hover keeps a
+   near-white background while the rule above forces white text, so the label vanished on hover. Hover now
+   reads like the btn-light case: brand ink on the brand surface, and the dashed border turns brand blue. */
+.btn.btn-outline.btn-active-light-primary:hover:not(.btn-active),
+.btn.btn-outline.btn-active-light-primary:focus:not(.btn-active) {
+    color: #3A5795 !important;
+    background-color: #E7F0FF !important;
+    border-color: #3A5795 !important;
+}
+.btn.btn-outline.btn-active-light-primary:hover:not(.btn-active) i { color: #3A5795 !important; }
+/* ...and the CHOSEN tile must read as chosen, not as a faded one: solid brand border, brand surface, ink text. */
+.btn-check:checked + .btn.btn-outline.btn-active-light-primary,
+.btn-check:checked + .btn.btn-outline.btn-active-light-primary:hover {
+    color: #1F2D4D !important;
+    background-color: #E7F0FF !important;
+    border-color: #3A5795 !important;
+    border-style: solid !important;
+}
+.btn-check:checked + .btn.btn-outline.btn-active-light-primary i { color: #3A5795 !important; }
 .bg-light-primary { background-color: #E7F0FF !important; }
 .badge-light-primary { color: #1F2D4D; background-color: #E7F0FF; }
 .badge-primary { background-color: #3A5795; color: #fff; }
