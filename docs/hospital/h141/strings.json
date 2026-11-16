@@ -1,0 +1,175 @@
+{
+ "unit": "H141 - the desk's work: confirm tomorrow, reschedule, the queues with their rows; confirmations before collecting, moving and a walk-in",
+ "strings": {
+  "Book or decline": {
+   "ar": "احجز أو اعتذر",
+   "en": "Book or decline",
+   "fr": "Réserver ou refuser"
+  },
+  "Call": {
+   "ar": "اتصال",
+   "en": "Call",
+   "fr": "Appeler"
+  },
+  "Collect {0} by {1} on bill {2}?": {
+   "ar": "تحصيل ⁦{0}⁩ ⁦{1}⁩ على الفاتورة ⁦{2}⁩؟",
+   "en": "Collect {0} by {1} on bill {2}?",
+   "fr": "Encaisser {0} par {1} sur la facture {2} ?"
+  },
+  "Confirm tomorrow": {
+   "ar": "تأكيد مواعيد الغد",
+   "en": "Confirm tomorrow",
+   "fr": "Confirmer demain"
+  },
+  "Expires": {
+   "ar": "ينتهي",
+   "en": "Expires",
+   "fr": "Expire"
+  },
+  "Free slots": {
+   "ar": "المواعيد الخالية",
+   "en": "Free slots",
+   "fr": "Créneaux libres"
+  },
+  "Looks like": {
+   "ar": "يشبه",
+   "en": "Looks like",
+   "fr": "Ressemble à"
+  },
+  "Match": {
+   "ar": "التطابق",
+   "en": "Match",
+   "fr": "Correspondance"
+  },
+  "Medico-legal": {
+   "ar": "حالة قانونية",
+   "en": "Medico-legal",
+   "fr": "Médico-légal"
+  },
+  "Move the appointment": {
+   "ar": "نقل الموعد",
+   "en": "Move the appointment",
+   "fr": "Déplacer le rendez-vous"
+  },
+  "Move the appointment to {0} at {1}?": {
+   "ar": "نقل الموعد إلى ⁦{0}⁩ الساعة ⁦{1}⁩؟ يُلغى الموعد الحالي.",
+   "en": "Move the appointment to {0} at {1}? The current one is cancelled.",
+   "fr": "Déplacer le rendez-vous au {0} à {1} ? L'actuel est annulé."
+  },
+  "Moved; the old appointment is cancelled.": {
+   "ar": "نُقل الموعد وأُلغي القديم.",
+   "en": "Moved; the old appointment is cancelled.",
+   "fr": "Déplacé ; l'ancien rendez-vous est annulé."
+  },
+  "No appointment booked for tomorrow.": {
+   "ar": "لا مواعيد محجوزة للغد.",
+   "en": "No appointment booked for tomorrow.",
+   "fr": "Aucun rendez-vous demain."
+  },
+  "No file yet": {
+   "ar": "لا ملف بعد",
+   "en": "No file yet",
+   "fr": "Pas encore de dossier"
+  },
+  "No free slot that day": {
+   "ar": "لا مواعيد خالية في هذا اليوم",
+   "en": "No free slot that day",
+   "fr": "Aucun créneau libre ce jour-là"
+  },
+  "Not called yet": {
+   "ar": "لم يُتصل به بعد",
+   "en": "Not called yet",
+   "fr": "Pas encore appelé"
+  },
+  "Now booked": {
+   "ar": "المحجوز حاليًا",
+   "en": "Now booked",
+   "fr": "Réservé actuellement"
+  },
+  "Only a booked appointment can be moved": {
+   "ar": "لا يُنقل إلا موعد محجوز لم يحضر صاحبه بعد",
+   "en": "Only a booked appointment can be moved",
+   "fr": "Seul un rendez-vous réservé peut être déplacé"
+  },
+  "Only a booked appointment is confirmed": {
+   "ar": "لا يُؤكَّد إلا موعد محجوز",
+   "en": "Only a booked appointment is confirmed",
+   "fr": "Seul un rendez-vous réservé se confirme"
+  },
+  "Open the screen": {
+   "ar": "افتح الشاشة",
+   "en": "Open the screen",
+   "fr": "Ouvrir l'écran"
+  },
+  "Pick another time": {
+   "ar": "اختر وقتًا آخر",
+   "en": "Pick another time",
+   "fr": "Choisissez une autre heure"
+  },
+  "Reminder": {
+   "ar": "التذكير",
+   "en": "Reminder",
+   "fr": "Rappel"
+  },
+  "Review & link": {
+   "ar": "راجع واربط",
+   "en": "Review & link",
+   "fr": "Revoir et rattacher"
+  },
+  "See all": {
+   "ar": "عرض الكل",
+   "en": "See all",
+   "fr": "Tout voir"
+  },
+  "This queue is clear.": {
+   "ar": "لا شيء ينتظر هنا.",
+   "en": "This queue is clear.",
+   "fr": "Cette file est vide."
+  },
+  "This slot is no longer free": {
+   "ar": "هذا الموعد لم يعد خاليًا",
+   "en": "This slot is no longer free",
+   "fr": "Ce créneau n'est plus libre"
+  },
+  "Ticket": {
+   "ar": "تذكرة",
+   "en": "Ticket",
+   "fr": "Ticket"
+  },
+  "Tomorrow's appointments: call those who have not confirmed.": {
+   "ar": "مواعيد الغد: اتصل بمن لم يؤكد.",
+   "en": "Tomorrow's appointments: call those who have not confirmed.",
+   "fr": "Rendez-vous de demain : appelez ceux qui n'ont pas confirmé."
+  },
+  "Unknown answer": {
+   "ar": "رد غير معروف",
+   "en": "Unknown answer",
+   "fr": "Réponse inconnue"
+  },
+  "confirm:Confirmed": {
+   "ar": "أكّد الحضور",
+   "en": "Confirmed",
+   "fr": "Confirmé"
+  },
+  "confirm:NoAnswer": {
+   "ar": "لم يرد",
+   "en": "No answer",
+   "fr": "Pas de réponse"
+  },
+  "confirm:WantsToMove": {
+   "ar": "يريد التأجيل",
+   "en": "Wants to move",
+   "fr": "Veut déplacer"
+  },
+  "{0} calls": {
+   "ar": "⁦{0}⁩ مكالمات",
+   "en": "{0} calls",
+   "fr": "{0} appels"
+  },
+  "{0} of {1} confirmed": {
+   "ar": "أكّد ⁦{0}⁩ من ⁦{1}⁩",
+   "en": "{0} of {1} confirmed",
+   "fr": "{0} sur {1} confirmés"
+  }
+ }
+}

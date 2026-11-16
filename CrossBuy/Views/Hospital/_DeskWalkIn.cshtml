@@ -13,7 +13,7 @@
 <div class="d-flex flex-wrap align-items-center gap-4 mb-6">
     <div class="d-flex align-items-center flex-grow-1">
         <div class="symbol symbol-45px symbol-circle me-3 flex-shrink-0">@if (pt.Photo != null) {<img src="@pt.Photo" alt="" style="object-fit:cover" />} else {<span class="symbol-label fw-bold hp-initials">@HospitalUi.Initials(pt.NameEn ?? pt.Name)</span>}</div>
-        <div><div class="fw-bold text-gray-900 fs-6"><bdi>@DisplayName.Of(pt.Name, pt.NameEn)</bdi></div><div class="text-muted fs-7 hp-num">@pt.Mrn</div></div>
+        <div><div class="fw-bold text-gray-900 fs-6"><bdi data-walkin-name>@DisplayName.Of(pt.Name, pt.NameEn)</bdi></div><div class="text-muted fs-7 hp-num">@pt.Mrn</div></div>
     </div>
     <div class="w-200px"><select class="form-select form-select-solid form-select-sm" data-walkin-type>@foreach (var v in HospitalVisitTypes.All) { <option value="@v">@T["visit:" + v]</option> }</select></div>
 </div>

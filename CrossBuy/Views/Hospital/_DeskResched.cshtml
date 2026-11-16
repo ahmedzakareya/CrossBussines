@@ -1,0 +1,46 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model HospitalAppointment
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@* H141: the reschedule window — the appointment as it stands, then the doctor (select2), the day (flatpickr) and the
+   doctor's free slots that day. A slot moves the appointment: the new one booked and the old cancelled together. *@
+@{
+    var p = (HospitalPatient)ViewBag.Patient; var doctors = (IReadOnlyList<HospitalPractitionerView>)ViewBag.Doctors;
+    var slots = (IReadOnlyList<int>)ViewBag.Slots; var today = (DateTime)ViewBag.Today;
+    var day = Model.AppointmentDate < today ? today : Model.AppointmentDate;
+    var doc = doctors.FirstOrDefault(d => d.Row.ID == Model.PractitionerId);
+    string Time(int minute) => (minute / 60).ToString("00") + ":" + (minute % 60).ToString("00");
+}
+<div data-rs="@Model.ID" data-today="@today.ToString("yyyy-MM-dd")">
+    <div class="d-flex flex-wrap align-items-center gap-4 mb-6">
+        <div class="d-flex align-items-center flex-grow-1">
+            <div class="symbol symbol-45px symbol-circle me-3 flex-shrink-0">@if (p.PhotoPath != null) {<img src="@p.PhotoPath" alt="" style="object-fit:cover" />} else {<span class="symbol-label fw-bold hp-initials">@HospitalUi.Initials(p.NameEn ?? p.Name)</span>}</div>
+            <div><div class="fw-bold text-gray-900 fs-6"><bdi>@DisplayName.Of(p.Name, p.NameEn)</bdi></div><div class="text-muted fs-7 hp-num">@p.Mrn</div></div>
+        </div>
+        <div class="bg-light rounded px-4 py-3 fs-7"><div class="text-muted fs-8">@T["Now booked"]</div>
+            <div class="fw-bold"><span class="hp-num">@Model.AppointmentDate.ToString("yyyy-MM-dd") · @Time(Model.StartMinute)</span>@if (doc != null) {<text> · </text><bdi>@DisplayName.Of(doc.Row.Name, doc.Row.NameEn)</bdi>}</div></div>
+    </div>
+    @if (Model.Status != HospitalAppointmentStatus.Booked)
+    {
+        <div class="notice d-flex bg-light-danger rounded border-danger border border-dashed p-5"><i class="ki-outline ki-information-5 fs-2tx text-danger me-4"></i><div class="fs-6 fw-semibold text-gray-800 align-self-center">@T["Only a booked appointment can be moved"]</div></div>
+    }
+    else
+    {
+        <div class="row g-5 mb-6">
+            <div class="col-md-7"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Doctor"]</label>
+                <select class="form-select form-select-solid" data-rs-doctor>@foreach (var d in doctors) { <option value="@d.Row.ID" selected="@(d.Row.ID == Model.PractitionerId)">@DisplayName.Of(d.Row.Name, d.Row.NameEn)@if (d.Department != null) {<text> · @DisplayName.Of(d.Department.Name, d.Department.NameEn)</text>}</option> }</select></div>
+            <div class="col-md-5"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Day"]</label>
+                <input type="text" class="form-control form-control-solid hp-num" value="@day.ToString("yyyy-MM-dd")" data-rs-date readonly /></div>
+        </div>
+        <div class="fw-bold fs-7 text-gray-800 mb-3">@T["Free slots"]</div>
+        <div class="d-flex flex-wrap gap-2" data-rs-slots>
+            @if (slots.Count == 0) {<span class="text-muted fs-7">@T["No free slot that day"]</span>}
+            @foreach (var m in slots)
+            {
+                bool same = m == Model.StartMinute && day == Model.AppointmentDate;
+                <button type="button" class="btn btn-sm btn-light-primary hp-num py-1 px-3" data-rs-slot="@m" @(same ? "disabled" : "")>@Time(m)</button>
+            }
+        </div>
+    }
+</div>

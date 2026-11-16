@@ -39,7 +39,7 @@
             @foreach (var b in Model)
             {
                 decimal due = b.Total - b.Paid;
-                <tr data-bill="@b.Id">
+                <tr data-bill="@b.Id" data-bill-no="@b.BillNo" data-cur="@cur">
                     <td class="ps-2"><a href="@Url.Action("Bill", "Hospital", new { id = b.Id })" class="fw-bold text-gray-900 text-hover-primary hp-num">@b.BillNo</a>
                         <div class="text-muted fs-8"><span class="hp-num">@HospitalNursingService.UtcToWard(b.OpenedAt).ToString("yyyy-MM-dd")</span> · @(b.Inpatient ? T["Inpatient"] : T["Outpatient"])@if (b.Paid > 0) {<text> · @T["Paid"] </text><span class="hp-num">@Money(b.Paid)</span>}</div></td>
                     <td class="text-end fw-bold text-danger hp-num">@Money(due)</td>

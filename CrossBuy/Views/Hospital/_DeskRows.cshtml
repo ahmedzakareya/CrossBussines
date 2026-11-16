@@ -57,6 +57,7 @@
                 <div class="menu-item px-3"><a href="@Url.Action("Patient", "Hospital", new { id = a.PatientId })" class="menu-link px-3"><i class="ki-outline ki-document fs-5 me-3"></i>@T["Open the file"]</a></div>
                 @if (canBook && r.Stage == HospitalDeskStage.Expected)
                 {
+                    <div class="menu-item px-3"><a href="#" class="menu-link px-3" data-desk-resched="@a.Id"><i class="ki-outline ki-calendar-edit fs-5 me-3"></i>@T["Move the appointment"]</a></div>
                     <div class="separator my-2"></div>
                     <div class="menu-item px-3"><a href="#" class="menu-link px-3 text-danger" data-move="NoShow" data-appt="@a.Id" data-ask="@string.Format(T["Mark {0} as a no-show?"].Value, name)"><i class="ki-outline ki-cross-circle fs-5 me-3 text-danger"></i>@T["No-show"]</a></div>
                 }

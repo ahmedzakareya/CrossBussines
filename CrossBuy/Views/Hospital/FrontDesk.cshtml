@@ -45,13 +45,15 @@
         (T["Collected today"].Value, Money(collected), cur + " · " + string.Format(T["{0} receipts"].Value, me.ReceiptsToday), "ki-wallet", "success", null),
         (T["Insurance to verify"].Value, Model.ToVerify.ToString(), T["before the doctor"].Value, "ki-shield-search", Model.ToVerify > 0 ? "danger" : "info", null) };
     var stages = new[] { (Key: "", Label: T["All"].Value) }.Concat(HospitalDeskStage.All.Select(s => (Key: s, Label: T["desk:" + s].Value))).ToList();
-    var work = new (string Key, string Label, int N, string Icon, string Tone, string Text, string Href, string Go)[] {
-        ("portal", T["Portal requests"].Value, inbox.PortalRequests, "ki-message-question", "primary", T["Booking requests patients sent from the portal, waiting for a slot."].Value, Url.Action("PortalRequests")!, T["Open the requests"].Value),
-        ("waitlist", T["Waitlist"].Value, inbox.WaitlistOffers, "ki-time", "info", T["Freed slots offered to patients waiting for an earlier one."].Value, Url.Action("PortalWaitlist")!, T["Open the waitlist"].Value),
-        ("intake", T["Self-intake"].Value, inbox.Intake, "ki-tablet-text-down", "primary", T["Forms patients filled on the tablet, to review and link to a file."].Value, Url.Action("Intake")!, T["Review the forms"].Value),
-        ("preauth", T["Insurance to verify"].Value, inbox.Preauths, "ki-shield-search", "info", T["Pre-authorisations waiting for the insurer's answer."].Value, Url.Action("Insurance")!, T["Open insurance"].Value),
-        ("unidentified", T["Incomplete registration"].Value, inbox.Unidentified, "ki-question-2", "danger", T["Patients registered without an identity, to identify and complete."].Value, Url.Action("Unidentified")!, T["Open the list"].Value),
-        ("dup", T["Duplicates"].Value, inbox.Duplicates, "ki-copy", "danger", T["Files that look like the same person, to review and merge."].Value, Url.Action("Duplicates")!, T["Review and merge"].Value) };
+    int unconfirmed = ViewBag.Unconfirmed is int uc ? uc : 0;
+    var work = new (string Key, string Label, int N, string Tone, string Text)[] {
+        ("confirm", T["Confirm tomorrow"].Value, unconfirmed, "primary", T["Tomorrow's appointments: call those who have not confirmed."].Value),
+        ("portal", T["Portal requests"].Value, inbox.PortalRequests, "primary", T["Booking requests patients sent from the portal, waiting for a slot."].Value),
+        ("waitlist", T["Waitlist"].Value, inbox.WaitlistOffers, "info", T["Freed slots offered to patients waiting for an earlier one."].Value),
+        ("intake", T["Self-intake"].Value, inbox.Intake, "primary", T["Forms patients filled on the tablet, to review and link to a file."].Value),
+        ("preauth", T["Insurance to verify"].Value, inbox.Preauths, "info", T["Pre-authorisations waiting for the insurer's answer."].Value),
+        ("unidentified", T["Incomplete registration"].Value, inbox.Unidentified, "danger", T["Patients registered without an identity, to identify and complete."].Value),
+        ("dup", T["Duplicates"].Value, inbox.Duplicates, "danger", T["Files that look like the same person, to review and merge."].Value) };
     var shift = me.Shift;
 }
 <link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
@@ -246,7 +248,7 @@
                 <div class="card h-100 mb-0">
                     <div class="card-header border-0 pt-6">
                         <div class="card-title align-items-start flex-column m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["The desk's work"]</span>
-                            <span class="text-muted mt-1 fw-semibold fs-7">@string.Format(T["{0} items"].Value, inbox.Total)</span></div>
+                            <span class="text-muted mt-1 fw-semibold fs-7">@string.Format(T["{0} items"].Value, inbox.Total + unconfirmed)</span></div>
                     </div>
                     <div class="card-body pt-2">
                         <ul class="nav nav-stretch nav-line-tabs nav-line-tabs-2x border-transparent fs-6 fw-bold mb-6" role="tablist">
@@ -261,13 +263,8 @@
                             {
                                 var w = work[i];
                                 <div class="tab-pane fade @(i == 0 ? "show active" : "")" id="desk_w_@w.Key" role="tabpanel">
-                                    <div class="notice d-flex rounded border border-dashed p-6 @(w.N > 0 ? "bg-light-" + w.Tone + " border-" + w.Tone : "bg-light border-gray-300")">
-                                        <span class="symbol symbol-45px me-5 flex-shrink-0"><span class="symbol-label bg-@(w.N > 0 ? w.Tone : "secondary")"><i class="ki-outline @w.Icon fs-2x text-white"></i></span></span>
-                                        <div class="d-flex flex-stack flex-grow-1 flex-wrap flex-md-nowrap gap-3">
-                                            <div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@(w.N > 0 ? string.Format(T["{0} waiting"].Value, w.N) : T["Nothing waiting"].Value)</h4><div class="fs-6 text-gray-700">@w.Text</div></div>
-                                            <a href="@w.Href" class="btn btn-sm btn-@(w.N > 0 ? w.Tone : "light") text-nowrap">@w.Go</a>
-                                        </div>
-                                    </div>
+                                    <div class="text-muted fs-7 mb-4">@w.Text</div>
+                                    <div data-desk-work="@w.Key"><div class="text-center text-muted py-10"><span class="spinner-border spinner-border-sm text-primary me-2"></span>@T["Loading…"]</div></div>
                                 </div>
                             }
                         </div>
@@ -338,7 +335,11 @@
                 collected: @Json.Serialize(T["Collected; the receipt is in the bill."].Value), askSlot: @Json.Serialize(T["Book {0} at {1} and check them in now?"].Value) };
             var U = { board: @Json.Serialize(Url.Action("FrontDeskBoard")), grid: @Json.Serialize(Url.Action("FrontDeskGrid")), search: @Json.Serialize(Url.Action("FrontDeskSearch")),
                 card: @Json.Serialize(Url.Content("~/Hospital/FrontDesk/Patient/")), slots: @Json.Serialize(Url.Action("FrontDeskWalkInSlots")), walkin: @Json.Serialize(Url.Action("FrontDeskWalkIn")),
-                move: @Json.Serialize(Url.Content("~/Hospital/FrontDesk/Appointments/")), collect: @Json.Serialize(Url.Content("~/Hospital/Bill/")) };
+                move: @Json.Serialize(Url.Content("~/Hospital/FrontDesk/Appointments/")), collect: @Json.Serialize(Url.Content("~/Hospital/Bill/")),
+                work: @Json.Serialize(Url.Action("FrontDeskWork")), slotsOf: @Json.Serialize(Url.Action("FrontDeskSlots")) };
+            var W2 = { resched: @Json.Serialize(T["Move the appointment"].Value), moved: @Json.Serialize(T["Moved; the old appointment is cancelled."].Value), noSlot: @Json.Serialize(T["No free slot that day"].Value),
+                askCollect: @Json.Serialize(T["Collect {0} by {1} on bill {2}?"].Value), amount: @Json.Serialize(T["Enter an amount above zero"].Value),
+                askMove: @Json.Serialize(T["Move the appointment to {0} at {1}?"].Value) };
             function post(u, b) { return fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(b || {}) }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); }); }
             function get(u) { return fetch(u, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.text(); }); }
             function tips(root) { if (window.bootstrap) root.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) { bootstrap.Tooltip.getOrCreateInstance(el); }); }
@@ -389,8 +390,49 @@
                     .then(function (r) { if (btn) btn.disabled = false; if (!r.ok) { toastr.error(r.error || W.failed); return; } toastr.success(W.done); bootstrap.Modal.getOrCreateInstance(modalEl).hide(); refresh(); });
             }
 
+            // the desk's work: a tab loads when it is opened (the first at once)
+            function loadWork(k) { var el = document.querySelector('[data-desk-work="' + k + '"]'); if (!el) return;
+                get(U.work + '?kind=' + k).then(function (h) { el.innerHTML = h; tips(el); }); }
+            document.querySelectorAll('a[href^="#desk_w_"]').forEach(function (a) { a.addEventListener('shown.bs.tab', function () { loadWork(a.getAttribute('href').replace('#desk_w_', '')); }); });
+            loadWork('confirm');
+
+            // the reschedule window: the doctor (select2) and the day (flatpickr) reload the free slots
+            function rsSlots() {
+                var box = mBody.querySelector('[data-rs]'); if (!box) return;
+                var doc = box.querySelector('[data-rs-doctor]').value, day = box.querySelector('[data-rs-date]').value, out = box.querySelector('[data-rs-slots]');
+                out.innerHTML = '<span class="spinner-border spinner-border-sm text-primary"></span>';
+                fetch(U.slotsOf + '?doctor=' + doc + '&date=' + day, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.json(); }).then(function (j) {
+                    out.innerHTML = (j.slots || []).length ? j.slots.map(function (s) { return '<button type="button" class="btn btn-sm btn-light-primary hp-num py-1 px-3" data-rs-slot="' + s.m + '">' + s.t + '</button>'; }).join('') : '<span class="text-muted fs-7">' + W2.noSlot + '</span>';
+                });
+            }
+            function rescheduleWindow(id) {
+                windowOf(W2.resched, U.move + id + '/Reschedule');
+                var wait = setInterval(function () { var box = mBody.querySelector('[data-rs]'); if (!box) return; clearInterval(wait);
+                    var d = box.querySelector('[data-rs-date]');
+                    if (d && window.flatpickr) flatpickr(d, { dateFormat: 'Y-m-d', defaultDate: d.value, minDate: box.getAttribute('data-today'), disableMobile: true, static: true,
+                        locale: @(isAr ? "true" : "false") && flatpickr.l10ns && flatpickr.l10ns.ar ? flatpickr.l10ns.ar : 'default', onChange: rsSlots });
+                    if (window.jQuery) jQuery(box).find('[data-rs-doctor]').on('change', rsSlots);
+                }, 100);
+            }
+
             document.addEventListener('click', function (e) {
                 var t;
+                if ((t = e.target.closest('[data-desk-resched]'))) { e.preventDefault(); rescheduleWindow(t.getAttribute('data-desk-resched')); return; }
+                if ((t = e.target.closest('[data-rs-slot]'))) {
+                    e.preventDefault(); var box = t.closest('[data-rs]'), day = box.querySelector('[data-rs-date]').value;
+                    cbConfirm(W2.askMove.replace('{0}', day).replace('{1}', t.textContent.trim()), { kind: 'primary' }).then(function (ok) {
+                        if (!ok) return; t.disabled = true;
+                        post(U.move + box.getAttribute('data-rs') + '/Reschedule', { practitionerId: Number(box.querySelector('[data-rs-doctor]').value), date: day, startMinute: Number(t.getAttribute('data-rs-slot')) })
+                            .then(function (r) { t.disabled = false; if (!r.ok) { toastr.error(r.error || W.failed); return; } toastr.success(W2.moved); bootstrap.Modal.getOrCreateInstance(modalEl).hide(); refresh(); loadWork('confirm'); });
+                    });
+                    return;
+                }
+                if ((t = e.target.closest('[data-desk-confirm]'))) {
+                    e.preventDefault(); var id = t.getAttribute('data-desk-confirm'), st = t.getAttribute('data-status'); t.disabled = true;
+                    post(U.move + id + '/Confirm', { status: st }).then(function (r) { t.disabled = false; if (!r.ok) { toastr.error(r.error || W.failed); return; }
+                        if (st === 'WantsToMove') rescheduleWindow(id); else toastr.success(W.saved); loadWork('confirm'); });
+                    return;
+                }
                 if ((t = e.target.closest('[data-stage]'))) { e.preventDefault(); pick(t.getAttribute('data-stage')); return; }
                 if ((t = e.target.closest('[data-stage-tile]'))) { e.preventDefault(); if (view !== 'list') document.querySelector('[data-desk-view="list"]').click(); pick(t.getAttribute('data-stage-tile')); document.getElementById('rows').scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
                 if ((t = e.target.closest('[data-desk-kind]'))) { e.preventDefault(); kind = t.getAttribute('data-desk-kind'); document.querySelectorAll('[data-desk-kind]').forEach(function (a) { a.classList.toggle('btn-light-primary', a === t); a.classList.toggle('btn-light', a !== t); }); box.focus(); search(); return; }
@@ -409,7 +451,11 @@
                 }
                 if ((t = e.target.closest('[data-desk-walkin]'))) { e.preventDefault(); walkIn(t.getAttribute('data-desk-walkin'), null); return; }
                 if ((t = e.target.closest('[data-desk-walkin-doc]'))) { e.preventDefault(); walkIn(current, t.getAttribute('data-desk-walkin-doc')); return; }
-                if ((t = e.target.closest('[data-desk-slot]'))) { e.preventDefault(); book(t.getAttribute('data-patient'), t.getAttribute('data-doctor'), t.getAttribute('data-desk-slot'), t); return; }
+                if ((t = e.target.closest('[data-desk-slot]'))) {
+                    e.preventDefault(); var who = (mBody.querySelector('[data-walkin-name]') || {}).textContent || '';
+                    cbConfirm(W.askSlot.replace('{0}', who).replace('{1}', t.textContent.trim()), { kind: 'primary' }).then(function (ok) { if (ok) book(t.getAttribute('data-patient'), t.getAttribute('data-doctor'), t.getAttribute('data-desk-slot'), t); });
+                    return;
+                }
                 if ((t = e.target.closest('[data-grid-free]'))) {
                     e.preventDefault(); if (!current) { toastr.warning(W.pickFirst); return; }
                     var who = (cardEl.querySelector('[data-desk-name]') || {}).textContent || '';
@@ -418,10 +464,14 @@
                 }
                 if ((t = e.target.closest('[data-desk-pay]'))) { e.preventDefault(); windowOf(W.pay, U.card + t.getAttribute('data-desk-pay') + '/Pay'); return; }
                 if ((t = e.target.closest('[data-desk-collect]'))) {
-                    e.preventDefault(); var row = t.closest('[data-bill]'), amount = Number(row.querySelector('[data-amount]').value), method = row.querySelector('[data-method]').value;
-                    t.disabled = true;
-                    post(U.collect + row.getAttribute('data-bill') + '/Collect', { amount: amount, method: method })
-                        .then(function (r) { t.disabled = false; if (!r.ok) { toastr.error(r.error || W.failed); return; } toastr.success(W.collected); bootstrap.Modal.getOrCreateInstance(modalEl).hide(); refresh(); });
+                    e.preventDefault(); var row = t.closest('[data-bill]'), amount = Number(row.querySelector('[data-amount]').value), sel = row.querySelector('[data-method]'), method = sel.value;
+                    if (!(amount > 0)) { toastr.error(W2.amount); return; }
+                    var ask = W2.askCollect.replace('{0}', amount + ' ' + row.getAttribute('data-cur')).replace('{1}', sel.options[sel.selectedIndex].text).replace('{2}', row.getAttribute('data-bill-no'));
+                    cbConfirm(ask, { kind: 'primary' }).then(function (ok) {
+                        if (!ok) return; t.disabled = true;
+                        post(U.collect + row.getAttribute('data-bill') + '/Collect', { amount: amount, method: method })
+                            .then(function (r) { t.disabled = false; if (!r.ok) { toastr.error(r.error || W.failed); return; } toastr.success(W.collected); bootstrap.Modal.getOrCreateInstance(modalEl).hide(); refresh(); });
+                    });
                     return;
                 }
                 if ((t = e.target.closest('[data-open-patient]'))) { e.preventDefault(); openCard(t.getAttribute('data-open-patient'), true); return; }

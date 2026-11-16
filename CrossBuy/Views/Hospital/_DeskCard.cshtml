@@ -98,7 +98,9 @@ else
     <div class="fw-bold fs-7 text-gray-800 mb-2">@T["Next visits"]</div>
     @foreach (var a in Model.Upcoming)
     {
-        <div class="d-flex flex-stack py-2 fs-7"><span class="text-gray-800 hp-num">@a.Date.ToString("yyyy-MM-dd") · @Time(a.StartMinute)</span><span class="badge badge-light fs-8">@T["visit:" + a.VisitType]</span></div>
+        <div class="d-flex flex-stack py-2 fs-7"><span class="text-gray-800 hp-num">@a.Date.ToString("yyyy-MM-dd") · @Time(a.StartMinute)</span>
+            <span class="d-flex align-items-center gap-2"><span class="badge badge-light fs-8">@T["visit:" + a.VisitType]</span>
+                @if (canBook) {<button type="button" class="btn btn-sm btn-icon btn-light btn-active-light-primary w-25px h-25px" data-desk-resched="@a.Id" title="@T["Move the appointment"]" data-bs-toggle="tooltip"><i class="ki-outline ki-calendar-edit fs-5"></i></button>}</span></div>
     }
     <div class="separator separator-dashed my-4"></div>
 }
@@ -108,6 +110,7 @@ else
     @if (canBook && visit != null && visit.Stage == HospitalDeskStage.Expected)
     {
         <button type="button" class="btn btn-primary flex-grow-1" data-move="Arrived" data-appt="@visit.A.Id"><i class="ki-outline ki-check fs-3"></i>@T["Check in"]</button>
+        <button type="button" class="btn btn-icon btn-light btn-active-light-primary" data-desk-resched="@visit.A.Id" title="@T["Move the appointment"]" data-bs-toggle="tooltip"><i class="ki-outline ki-calendar-edit fs-3"></i></button>
         <button type="button" class="btn btn-icon btn-light btn-active-light-danger" data-move="NoShow" data-appt="@visit.A.Id" data-ask="@string.Format(T["Mark {0} as a no-show?"].Value, name)" title="@T["No-show"]" data-bs-toggle="tooltip"><i class="ki-outline ki-cross-circle fs-3"></i></button>
     }
     else if (visit != null && visit.Stage is HospitalDeskStage.Waiting or HospitalDeskStage.WithDoctor)
