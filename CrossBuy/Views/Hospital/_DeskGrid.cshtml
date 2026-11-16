@@ -14,9 +14,16 @@
 }
 else
 {
-    <div class="table-responsive mh-700px scroll-y"><table class="table table-bordered align-middle mb-0 fs-7">
+    @* The doctors row and the time column stay put while the grid scrolls inside its own box. Sticky cells lose
+       their collapsed borders, so the edge is drawn as an inset shadow. *@
+    <style>.hp-dg thead th{position:sticky;top:0;z-index:2;background:var(--bs-gray-100);box-shadow:inset 0 -1px 0 var(--bs-gray-300)}
+        .hp-dg .hp-dg-time{position:sticky;left:0;z-index:1;background:var(--bs-body-bg);box-shadow:inset -1px 0 0 var(--bs-gray-300)}
+        [dir=rtl] .hp-dg .hp-dg-time{left:auto;right:0;box-shadow:inset 1px 0 0 var(--bs-gray-300)}
+        .hp-dg thead th.hp-dg-time{z-index:3;background:var(--bs-gray-100)}
+        .hp-dg tr.bg-light-danger .hp-dg-time{background:var(--bs-danger-light)}</style>
+    <div class="table-responsive mh-700px scroll-y hp-dg"><table class="table table-bordered align-middle mb-0 fs-7">
         <thead><tr class="fw-bold text-muted bg-light">
-            <th class="w-70px ps-3">@T["Time"]</th>
+            <th class="w-70px ps-3 hp-dg-time">@T["Time"]</th>
             @foreach (var d in Model.Doctors)
             {
                 <th class="min-w-150px"><div class="d-flex align-items-center">
@@ -30,7 +37,7 @@ else
                 int m = Model.Minutes[i]; int nextM = i + 1 < Model.Minutes.Count ? Model.Minutes[i + 1] : m + 30;
                 bool now = m <= Model.NowMinute && Model.NowMinute < nextM;
                 <tr class="@(now ? "bg-light-danger" : "")">
-                    <td class="ps-3 fw-bold hp-num">@Time(m)</td>
+                    <td class="ps-3 fw-bold hp-num hp-dg-time">@Time(m)</td>
                     @foreach (var d in Model.Doctors)
                     {
                         <td class="p-1">
