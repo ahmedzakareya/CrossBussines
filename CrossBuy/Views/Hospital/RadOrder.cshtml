@@ -84,7 +84,7 @@
             <div class="notice d-flex rounded border border-dashed border-danger bg-light-danger p-6 mb-5">
                 <i class="ki-outline ki-shield-cross fs-2tx text-danger me-4"></i>
                 <div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@T["Contrast allergy"]</h4>
-                    <div class="fs-6 text-gray-700">@T["This exam uses contrast and the patient's file records an allergy to it:"] @p.Allergies</div></div>
+                    <div class="fs-6 text-gray-700">@T["This exam uses contrast and the patient's file records an allergy to it:"] <bdi>@HospitalAllergyText.Display(p.Allergies)</bdi></div></div>
             </div>
         }
         @if (o.IsCritical)

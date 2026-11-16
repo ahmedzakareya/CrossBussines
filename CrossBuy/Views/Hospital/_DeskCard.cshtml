@@ -29,7 +29,7 @@
         <span class="text-gray-900 fw-bold fs-4" data-desk-name><bdi>@name</bdi></span>
         <span class="text-muted fw-semibold fs-7"><span class="hp-num">@p.Mrn</span> · @T["sex:" + p.Sex]@if (Model.Age is int ag) {<text> · @string.Format(T["{0} years"].Value, ag)</text>}@if (!string.IsNullOrWhiteSpace(p.BloodGroup)) {<text> · @T["Blood"] </text><span class="hp-num">@p.BloodGroup</span>}</span>
         <div class="d-flex flex-wrap gap-1 mt-2">
-            @if (!string.IsNullOrWhiteSpace(p.Allergies)) {<span class="badge badge-light-danger fs-8 fw-bold"><i class="ki-outline ki-shield-cross fs-8 text-danger me-1"></i><bdi>@p.Allergies</bdi></span>}
+            @if (!string.IsNullOrWhiteSpace(p.Allergies)) {<span class="badge badge-light-danger fs-8 fw-bold"><i class="ki-outline ki-shield-cross fs-8 text-danger me-1"></i><bdi>@HospitalAllergyText.Display(p.Allergies)</bdi></span>}
             @if (Model.Admitted) {<span class="badge badge-light-info fs-8 fw-bold">@T["In hospital now"]</span>}
             @if (Model.Insured) {<span class="badge badge-light-success fs-8 fw-bold"><bdi>@Model.Payer</bdi></span>} else if (Model.Ineligible) {<span class="badge badge-light-danger fs-8 fw-bold">@T["Not covered today"]</span>} else {<span class="badge badge-light fs-8 fw-bold">@T["Self-pay"]</span>}
         </div>

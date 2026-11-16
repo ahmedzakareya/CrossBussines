@@ -127,7 +127,7 @@
                                                         <div class="d-flex flex-column"><a href="@Url.Action("Patient", new { id = p.PatientId })" class="text-gray-900 fw-bold text-hover-primary fs-6">@who</a>
                                                             <span class="text-gray-500 fw-semibold fs-7">@T["Bed"] <bdi class="hp-num text-gray-800 fw-bold">@p.Bed</bdi> · <bdi class="hp-num">@p.Mrn</bdi></span></div>
                                                     </div>
-                                                    @if (p.Allergies != null) {<div class="mt-3"><span class="badge badge-light-danger fs-8 fw-bold text-wrap text-start"><i class="ki-outline ki-information-5 fs-7 text-danger me-1"></i><bdi>@p.Allergies</bdi></span></div>}
+                                                    @if (p.Allergies != null) {<div class="mt-3"><span class="badge badge-light-danger fs-8 fw-bold text-wrap text-start"><i class="ki-outline ki-information-5 fs-7 text-danger me-1"></i><bdi>@HospitalAllergyText.Display(p.Allergies)</bdi></span></div>}
                                                     @{ var ic = (ViewBag.Ic as IReadOnlyDictionary<int, HospitalIcBadge>) is { } icAll && icAll.TryGetValue(p.AdmissionId, out var icOne) ? icOne : null; }
                                                     @if (ic != null) {<div class="d-flex flex-wrap gap-1 mt-2">
                                                         @foreach (var iso in ic.Isolations) {<span class="badge badge-light-danger fs-8 fw-bold" title="@iso.Reason"><i class="ki-outline ki-shield-cross fs-8 text-danger me-1"></i>@T["prec:" + iso.Precaution]@if (iso.Organism != null) {<text> · <bdi dir="ltr">@iso.Organism</bdi></text>}</span>}
