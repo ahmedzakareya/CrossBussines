@@ -169,6 +169,44 @@ namespace CrossBuy.BL.Reporting
 			return OneBand(Roll(), r.Y + 2, r.E);
 		}
 
+		/// H149 — the CREDIT NOTE: an 80 mm roll like the deposit receipt (it is handed over at the same counter): the
+		/// note and the bill it credits, the patient, what came back, the amount the patient no longer owes framed, its net
+		/// and VAT, the reason, who issued it, and what went to the patient's deposit.
+		public static ReportVisualLayout CreditNote()
+		{
+			const double W = Roll80.W;
+			var r = new Roll80()
+				.Centered(Field("CompanyName", 0, 0, W, 0, S(11, true, align: ReportTextAlign.Center)))
+				.Centered(Field("CompanyTaxNo", 0, 0, W, 0, S(8, color: Muted, align: ReportTextAlign.Center)))
+				.Gap(1)
+				.Centered(Text("إشعار دائن", "Credit note", 0, 0, W, 0, S(13, true, Brand, ReportTextAlign.Center)))
+				.Rule()
+				.Row("رقم الإشعار", "Note no.", "DocumentNo", true)
+				.Row("التاريخ", "Date", "DocumentDate", date: "yyyy-MM-dd HH:mm")
+				.Row("على الفاتورة", "On bill", "BillNo")
+				.Row("الروشتة", "Prescription", "RxNo")
+				.Gap(1)
+				.Centered(Field("PatientName", 0, 0, W, 0, S(10.5, true, align: ReportTextAlign.Center)))
+				.Row("رقم الملف", "File no.", "PatientMrn")
+				.Rule()
+				.Row("الدواء المرتجع", "Returned", "Drug", true, lines: 2)
+				.Row("الكمية", "Quantity", "Quantity")
+				.Row("السعر", "Price", "UnitPrice")
+				.Rule().Gap(1);
+			double top = r.Y, label = Need(8), amount = Need(20);
+			r.E.Add(Box(0, top, W, label + amount + 2, Brand));
+			r.E.Add(Text("لم يعد على المريض", "No longer owed", 2, top + 0.5, W - 4, label, S(8, color: Muted, align: ReportTextAlign.Center)));
+			r.E.Add(Field("Total", 2, top + 0.5 + label, W - 24, amount, S(20, true, Ink, ReportTextAlign.End)));
+			r.E.Add(Field("Currency", W - 21, top + 0.5 + label, 19, amount, S(11, true, Brand)));
+			r.Y = top + label + amount + 2 + 2;
+			r.Row("الصافي", "Net", "Net").Row("الضريبة", "VAT", "Vat")
+				.Rule()
+				.Row("السبب", "Reason", "Reason", pt: 8.5, lines: 2).Row("أصدره", "Issued by", "IssuedBy").Row("إلى العربون", "To the deposit", "ToDeposit", true)
+				.Gap(2)
+				.Centered(Text("خُصم هذا المبلغ من فاتورتك، وما دُفع زيادة صار رصيدًا في عربونك", "This amount is off your bill; anything you had overpaid is now credit on your deposit", 0, 0, W, Need(8) * 2, S(8, color: Muted, align: ReportTextAlign.Center)));
+			return OneBand(Roll(), r.Y + 2, r.E);
+		}
+
 		/// H147 — the PHARMACY LABEL: a 100 × 60 mm thermal label, one per medicine. The label is a DETAIL band exactly
 		/// one label page high, so each dispensed medicine (one row) prints on a label of its own. Read top to bottom the
 		/// way a patient does: whose it is, what it is, how to take it (framed, the largest instruction text), then how
@@ -217,6 +255,7 @@ namespace CrossBuy.BL.Reporting
 			HospitalDocumentDatasetCodes.Wristband => Wristband(),
 			HospitalDocumentDatasetCodes.DepositReceipt => DepositReceipt(),
 			HospitalDocumentDatasetCodes.RxLabel => RxLabel(),   // H147
+			HospitalDocumentDatasetCodes.CreditNote => CreditNote(),   // H149
 			_ => null,
 		};
 	}

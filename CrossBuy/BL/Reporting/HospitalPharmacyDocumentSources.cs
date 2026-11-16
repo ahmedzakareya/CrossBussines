@@ -143,4 +143,75 @@ namespace CrossBuy.BL.Reporting
 			return builder.Build(totalRowCount: n);
 		}
 	}
+
+	// ============================================================================================
+	// HOSPITAL H149 — a credit note as ONE row (it credits one returned medicine). Everything on it is what the note
+	// recorded when it was issued — nothing is recomputed — so a reprint says what the original said. Amounts are text in
+	// the facility currency's own decimals. Another company's id is an empty set.
+	// ============================================================================================
+	public sealed class HospitalCreditNoteDocumentSource : IReportDataSource
+	{
+		private readonly CrossDbContext _db;
+		public HospitalCreditNoteDocumentSource(CrossDbContext db) { _db = db; }
+		public string Key => HospitalDocumentDatasetCodes.CreditNote;
+
+		public async Task<ReportDataSet> FetchAsync(ReportDataQuery query, CancellationToken cancellationToken = default)
+		{
+			ArgumentNullException.ThrowIfNull(query);
+			var ctx = query.Context; var ct = cancellationToken;
+			var builder = new ReportDataSetBuilder(query.RequestedColumns.Count > 0 ? query.RequestedColumns : query.Definition.Columns);
+			if (ctx.CompanyId <= 0) return builder.Build(totalRowCount: 0);
+			var id = query.Parameters.GetInt("CreditNoteId");
+			if (id is not > 0) return builder.Build(totalRowCount: 0);
+			var n = await _db.Set<HospitalCreditNote>().AsNoTracking().FirstOrDefaultAsync(x => x.ID == id.Value && x.CompanyId == ctx.CompanyId, ct);
+			if (n == null) return builder.Build(totalRowCount: 0);
+			var patient = await _db.HospitalPatients.AsNoTracking().FirstOrDefaultAsync(p => p.ID == n.PatientId && p.CompanyId == ctx.CompanyId, ct);
+			var bill = await _db.HospitalBills.AsNoTracking().FirstOrDefaultAsync(b => b.ID == n.BillId && b.CompanyId == ctx.CompanyId, ct);
+			if (patient == null || bill == null) return builder.Build(totalRowCount: 0);
+			bool ar = AccountingSourceHelpers.Arabic(query);
+			var lines = await _db.Set<HospitalCreditNoteLine>().AsNoTracking().Where(x => x.CompanyId == ctx.CompanyId && x.CreditNoteId == n.ID).ToListAsync(ct);
+
+			// what came back: the return the note was issued for, its dispense and the prescription's own words
+			string? drug = null, rxNo = null; decimal? toDeposit = null;
+			if (n.SourceType == HospitalCreditNoteSource.DispenseReturn)
+			{
+				var r = await _db.Set<HospitalDispenseReturn>().AsNoTracking().FirstOrDefaultAsync(x => x.ID == n.SourceId && x.CompanyId == ctx.CompanyId, ct);
+				if (r != null)
+				{
+					rxNo = await _db.HospitalDispenses.AsNoTracking().Where(x => x.ID == r.DispenseId && x.CompanyId == ctx.CompanyId).Select(x => x.RxNo).FirstOrDefaultAsync(ct);
+					var l = await _db.HospitalDispenseLines.AsNoTracking().FirstOrDefaultAsync(x => x.ID == r.LineId && x.CompanyId == ctx.CompanyId, ct);
+					if (l != null)
+					{
+						var en = l.PrescriptionLineId is int plid ? await _db.HospitalPrescriptionLines.AsNoTracking().Where(x => x.ID == plid && x.CompanyId == ctx.CompanyId).Select(x => x.DrugEn).FirstOrDefaultAsync(ct) : null;
+						drug = HospitalDocumentRows.P(ar, l.Drug, en);
+					}
+					if (r.DepositId is int depId)
+						toDeposit = await _db.Set<HospitalPatientDeposit>().AsNoTracking().Where(x => x.ID == depId && x.CompanyId == ctx.CompanyId).Select(x => (decimal?)x.Amount).FirstOrDefaultAsync(ct);
+				}
+			}
+			var by = n.ByEmployeeId is int eid
+				? await _db.Employee.AsNoTracking().Where(e => e.ID == eid && e.EmpCompanyID == ctx.CompanyId).Select(e => new { e.FullName, e.FullNameEn }).FirstOrDefaultAsync(ct)
+				: null;
+			var curId = await _db.Companies.AsNoTracking().Where(c => c.CompanyID == ctx.CompanyId).Select(c => c.DefaultCurrencyId).FirstOrDefaultAsync(ct);   // a note is only issued in the facility's currency
+			var cur = curId is int cid ? await _db.Currencies.AsNoTracking().Where(c => c.ID == cid).Select(c => new { Label = ar ? (c.Symbol ?? c.Code) : c.Code, c.DecimalPlaces }).FirstOrDefaultAsync(ct) : null;
+			var fmt = "N" + (cur?.DecimalPlaces ?? 2);
+			string Money(decimal v) => v.ToString(fmt, CultureInfo.InvariantCulture);
+
+			var header = await HospitalDocumentRows.HeaderAsync(_db, ctx, ar, patient, null, n.NoteNo, n.At, n.At, ct);
+			header["LineNo"] = 1;
+			header["BillNo"] = bill.BillNo;
+			header["RxNo"] = rxNo;
+			header["Drug"] = drug;
+			header["Quantity"] = HospitalRxLabelText.Quantity(lines.Sum(x => x.Quantity));
+			var prices = lines.Select(x => x.UnitPrice).Distinct().ToList();
+			header["UnitPrice"] = prices.Count == 1 ? Money(prices[0]) : null;   // fills at different prices: no single price to print
+			header["Net"] = Money(n.Net); header["Vat"] = Money(n.Vat); header["Total"] = Money(n.Total);
+			header["Currency"] = cur?.Label;
+			header["Reason"] = n.Reason;
+			header["IssuedBy"] = by == null ? null : HospitalDocumentRows.P(ar, by.FullName, by.FullNameEn);
+			header["ToDeposit"] = Money(toDeposit ?? 0m);   // stated either way: a blank line reads as unfinished
+			builder.AddRow(header);
+			return builder.Build(totalRowCount: 1);
+		}
+	}
 }

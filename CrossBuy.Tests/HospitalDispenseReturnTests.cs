@@ -1,5 +1,6 @@
 using CrossBuy.BL;
 using CrossBuy.BL.Hospital;
+using CrossBuy.BL.Reporting;
 using CrossBuy.Models.Context.Hospital;
 using CrossBuy.Models.Platform;
 using Microsoft.EntityFrameworkCore;
@@ -235,6 +236,38 @@ namespace CrossBuy.Tests
 			Assert.Equal(asked, w.Stock.Asked.Count);
 			Assert.Empty(await w.Host.Db.Set<HospitalCreditNote>().ToListAsync());
 			Assert.Empty(await w.Host.Db.Set<HospitalDispenseReturn>().ToListAsync());
+		}
+
+		[Fact]
+		public async Task The_credit_note_paper_says_what_the_note_recorded_and_another_company_prints_nothing()
+		{
+			var ledger = new Recorder();
+			var (w, rx, para, _) = await Prescribed(ledger);
+			using var _h = w.Host;
+			var billId = await DispensedAndClosed(w, ledger, rx);
+			var lines = await Lines(w, rx.ID);
+			Assert.True((await Svc(w, ledger).ReturnAsync(Ctx(), rx.ID, lines[para].ID, 3, "Unopened, sealed box", 7, "u7", Now)).Ok);
+			var note = await w.Host.Db.Set<HospitalCreditNote>().AsNoTracking().SingleAsync();
+			var ds = HospitalDocumentDatasets.CreditNote();
+			ReportDataQuery Q(BusinessContext c) => new()
+			{
+				Definition = new ReportDefinition
+				{
+					Code = "test." + ds.DatasetCode, Module = ds.Module, TitleAr = "اختبار", TitleEn = "Test", DataSourceKey = ds.DataSourceKey, PermissionKey = ds.RequiredPermissionKey,
+					Columns = ds.Fields.Select(x => new ReportColumn { Key = x.Key, TitleAr = x.TitleAr, TitleEn = x.TitleEn, Type = x.Type }).ToList(),
+				},
+				Context = c,
+				Parameters = new ReportParameterSet(new[] { new ReportParameterValue { Key = "CreditNoteId", Type = ReportFieldType.Integer, Value = note.ID } }, new Dictionary<string, string?>()),
+				Culture = System.Globalization.CultureInfo.GetCultureInfo("en"),
+			};
+			var src = new HospitalCreditNoteDocumentSource(w.Host.Db);
+			var row = Assert.Single((await src.FetchAsync(Q(Ctx()))).Rows);
+			static decimal Num(object? v) => decimal.Parse((string)v!, System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture);
+			Assert.Equal(("CN-000001", "MED-PARA", "3", rx.RxNo), ((string?)row["DocumentNo"], (string?)row["Drug"], (string?)row["Quantity"], (string?)row["RxNo"]));
+			Assert.Equal((9m, 0m, 9m, 3m), (Num(row["Net"]), Num(row["Vat"]), Num(row["Total"]), Num(row["UnitPrice"])));
+			Assert.Equal("Unopened, sealed box", (string?)row["Reason"]);
+			Assert.Equal(0m, Num(row["ToDeposit"]));   // nothing had been paid: stated as nothing, not left blank
+			Assert.Empty((await src.FetchAsync(Q(Ctx(7, 2)))).Rows);
 		}
 
 		[Fact]

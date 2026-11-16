@@ -41,6 +41,8 @@ namespace CrossBuy.BL.Reporting
         public const string DepositReceipt = "Hospital.DepositReceipt";
         /// H147: the pharmacy's dispensing labels — ONE row per medicine given (a label each), from one dispense.
         public const string RxLabel = "Hospital.RxLabel";
+        /// H149: one credit note on a closed bill (medicine brought back), as ONE row.
+        public const string CreditNote = "Hospital.CreditNote";
         public const string CategoryKey = "hospital.reporting";
     }
 
@@ -508,6 +510,29 @@ namespace CrossBuy.BL.Reporting
             };
         }
 
+        public static ReportDatasetDefinition CreditNote() => Show(Doc(HospitalDocumentDatasetCodes.CreditNote,
+            "إشعار دائن", "Credit note",
+            "إشعار دائن واحد على فاتورة مغلقة: الدواء الذي أُرجع وكميته وسعره، والصافي والضريبة والإجمالي الذي لم يعد على المريض، والسبب، وما ذهب إلى عربونه.",
+            "One credit note on a closed bill: the medicine brought back, its quantity and price, the net, the VAT and the total the patient no longer owes, the reason, and what went to the patient's deposit.",
+            new[] { F("LineNo", "م", "#", ReportFieldType.Integer, 10, false, ReportAlign.Center) },
+            new[]
+            {
+                F("BillNo", "الفاتورة", "Bill", width: 24, visible: true),
+                F("RxNo", "الروشتة", "Prescription", width: 24),
+                F("Drug", "الدواء", "Medicine", width: 60, visible: true),
+                // amounts as TEXT in the facility currency's own decimals (a Money field prints two; the dinar has three)
+                F("Quantity", "الكمية", "Quantity", width: 16, visible: true, align: ReportAlign.End),
+                F("UnitPrice", "السعر", "Price", width: 20, align: ReportAlign.End),
+                F("Net", "الصافي", "Net", width: 24, align: ReportAlign.End),
+                F("Vat", "الضريبة", "VAT", width: 20, align: ReportAlign.End),
+                F("Total", "الإجمالي", "Total", width: 24, visible: true, align: ReportAlign.End),
+                F("Currency", "العملة", "Currency", width: 14),
+                F("Reason", "السبب", "Reason", width: 60, visible: true),
+                F("IssuedBy", "أصدره", "Issued by", width: 40),
+                F("ToDeposit", "إلى العربون", "To the deposit", width: 24, align: ReportAlign.End),
+            },
+            Params("CreditNoteId", "رقم الإشعار الداخلي", "Credit note id")), "DocumentNo", "DocumentDate", "PatientName", "PatientMrn");
+
         public static IEnumerable<ReportDatasetDefinition> All()
         {
             yield return Bill();
@@ -527,6 +552,7 @@ namespace CrossBuy.BL.Reporting
             yield return Wristband();        // H144
             yield return DepositReceipt();   // H144
             yield return RxLabel();          // H147
+            yield return CreditNote();       // H149
             yield return DentalClaim();
         }
     }

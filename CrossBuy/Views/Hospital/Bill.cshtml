@@ -280,7 +280,9 @@
                                     <div class="fw-bold text-gray-800 fs-6"><bdi class="hp-num">@n.NoteNo</bdi> <span class="text-muted fw-semibold fs-7 ms-2"><bdi class="hp-num" dir="ltr">@n.At.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</bdi></span></div>
                                     <div class="text-gray-600 fs-7"><bdi>@n.Reason</bdi></div>
                                 </div>
-                                <span class="fw-bold fs-5 text-primary hp-num text-nowrap" dir="ltr">−@M(n.Total)</span>
+                                <span class="fw-bold fs-5 text-primary hp-num text-nowrap me-3" dir="ltr">−@M(n.Total)</span>
+                                @* H149: the credit note is a Report Studio layout of this note — see _ReportPrintMenu *@
+                                @await Html.PartialAsync("_ReportPrintMenu", new CrossBuy.BL.Reporting.ReportPrintMenuModel { ScreenKey = CrossBuy.BL.Reporting.ReportScreenKeys.HospitalCreditNote, DocumentId = n.ID.ToString(), DocumentTitle = n.NoteNo })
                             </div>
                         }
                     </div>
