@@ -7309,4 +7309,13 @@
   <data name="Receipt" xml:space="preserve"><value>إيصال</value></data>
   <data name="Visit slip &amp; ticket" xml:space="preserve"><value>ورقة الزيارة والتذكرة</value></data>
   <data name="Wristband" xml:space="preserve"><value>سوار المعصم</value></data>
+  <data name="A quantity cannot be negative" xml:space="preserve"><value>الكمية لا تكون سالبة</value></data>
+  <data name="Dispense what is owed" xml:space="preserve"><value>اصرف المتبقي المستحق</value></data>
+  <data name="Give now" xml:space="preserve"><value>يُصرف الآن</value></data>
+  <data name="Nothing to dispense: enter a quantity" xml:space="preserve"><value>لا شيء للصرف: أدخل كمية</value></data>
+  <data name="Partly dispensed" xml:space="preserve"><value>صُرفت جزئيًا</value></data>
+  <data name="The rest is owed to the patient: give it when the stock arrives." xml:space="preserve"><value>الباقي مستحق للمريض: يُصرف عند وصول المخزون.</value></data>
+  <data name="rx:Partial" xml:space="preserve"><value>صُرف جزئيًا</value></data>
+  <data name="{0} of {1} given" xml:space="preserve"><value>صُرف ⁦{0}⁩ من ⁦{1}⁩</value></data>
+  <data name="{0}: more than the prescription still owes ({1})" xml:space="preserve"><value>⁦{0}⁩: أكثر من المتبقي في الوصفة (⁦{1}⁩)</value></data>
 </root>

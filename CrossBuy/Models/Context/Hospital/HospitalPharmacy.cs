@@ -21,7 +21,12 @@ namespace CrossBuy.Models.Context.Hospital
 		public const string Dispensed = "Dispensed";
 		/// H136: the pharmacist refused it, with the reason; it never reaches dispensing.
 		public const string Rejected = "Rejected";
-		public static readonly IReadOnlyList<string> All = new[] { New, Verified, Dispensed, Rejected };
+		/// H145: some of it left the store and the rest is owed to the patient (the store was short); dispensing again
+		/// gives what is owed. A partial dispense is still a dispense: what left is charged, what is owed is not.
+		public const string Partial = "Partial";
+		public static readonly IReadOnlyList<string> All = new[] { New, Verified, Dispensed, Rejected, Partial };
+		/// The pharmacy can still dispense it: reviewed and not, or not wholly, dispensed.
+		public static bool Dispensable(string s) => s is Verified or Partial;
 	}
 
 	public static class HospitalDispenseSource
@@ -104,6 +109,7 @@ namespace CrossBuy.Models.Context.Hospital
 			HospitalCartFillModel.Configure(b);   // H138: the unit-dose cart fill
 			HospitalDeskConfirmationModel.Configure(b);   // H141: the desk confirms tomorrow's appointments
 			HospitalPatientDepositModel.Configure(b);   // H143: the patient's deposits taken at the counter
+			HospitalDispenseFillModel.Configure(b);   // H145: each time a dispense line leaves the store (partial dispensing)
 			b.Entity<HospitalDispense>(e =>
 			{
 				e.HasIndex(x => new { x.CompanyId, x.RxNo }).IsUnique();

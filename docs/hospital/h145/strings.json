@@ -1,0 +1,50 @@
+{
+ "unit": "H145 - partial dispensing: give what the store holds, the rest owed until given",
+ "strings": {
+  "rx:Partial": {
+   "ar": "صُرف جزئيًا",
+   "en": "Partly dispensed",
+   "fr": "Délivrée en partie"
+  },
+  "Give now": {
+   "ar": "يُصرف الآن",
+   "en": "Give now",
+   "fr": "Délivrer maintenant"
+  },
+  "{0} of {1} given": {
+   "ar": "صُرف ⁦{0}⁩ من ⁦{1}⁩",
+   "en": "{0} of {1} given",
+   "fr": "{0} sur {1} délivrés"
+  },
+  "Partly dispensed": {
+   "ar": "صُرفت جزئيًا",
+   "en": "Partly dispensed",
+   "fr": "Délivrée en partie"
+  },
+  "The rest is owed to the patient: give it when the stock arrives.": {
+   "ar": "الباقي مستحق للمريض: يُصرف عند وصول المخزون.",
+   "en": "The rest is owed to the patient: give it when the stock arrives.",
+   "fr": "Le reste est dû au patient : délivrez-le à l'arrivée du stock."
+  },
+  "Dispense what is owed": {
+   "ar": "اصرف المتبقي المستحق",
+   "en": "Dispense what is owed",
+   "fr": "Délivrer ce qui est dû"
+  },
+  "A quantity cannot be negative": {
+   "ar": "الكمية لا تكون سالبة",
+   "en": "A quantity cannot be negative",
+   "fr": "Une quantité ne peut pas être négative"
+  },
+  "{0}: more than the prescription still owes ({1})": {
+   "ar": "⁦{0}⁩: أكثر من المتبقي في الوصفة (⁦{1}⁩)",
+   "en": "{0}: more than the prescription still owes ({1})",
+   "fr": "{0} : plus que ce que l'ordonnance doit encore ({1})"
+  },
+  "Nothing to dispense: enter a quantity": {
+   "ar": "لا شيء للصرف: أدخل كمية",
+   "en": "Nothing to dispense: enter a quantity",
+   "fr": "Rien à délivrer : saisissez une quantité"
+  }
+ }
+}

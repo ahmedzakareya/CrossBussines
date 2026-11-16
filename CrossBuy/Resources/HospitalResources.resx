@@ -7307,4 +7307,13 @@
   <data name="Receipt" xml:space="preserve"><value>Receipt</value></data>
   <data name="Visit slip &amp; ticket" xml:space="preserve"><value>Visit slip &amp; ticket</value></data>
   <data name="Wristband" xml:space="preserve"><value>Wristband</value></data>
+  <data name="A quantity cannot be negative" xml:space="preserve"><value>A quantity cannot be negative</value></data>
+  <data name="Dispense what is owed" xml:space="preserve"><value>Dispense what is owed</value></data>
+  <data name="Give now" xml:space="preserve"><value>Give now</value></data>
+  <data name="Nothing to dispense: enter a quantity" xml:space="preserve"><value>Nothing to dispense: enter a quantity</value></data>
+  <data name="Partly dispensed" xml:space="preserve"><value>Partly dispensed</value></data>
+  <data name="The rest is owed to the patient: give it when the stock arrives." xml:space="preserve"><value>The rest is owed to the patient: give it when the stock arrives.</value></data>
+  <data name="rx:Partial" xml:space="preserve"><value>Partly dispensed</value></data>
+  <data name="{0} of {1} given" xml:space="preserve"><value>{0} of {1} given</value></data>
+  <data name="{0}: more than the prescription still owes ({1})" xml:space="preserve"><value>{0}: more than the prescription still owes ({1})</value></data>
 </root>

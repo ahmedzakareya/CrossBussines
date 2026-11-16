@@ -50,12 +50,15 @@ namespace CrossBuy.Controllers
 			return Result(await _pharmacy.VerifyAsync(ctx, id, input?.Note, ctx.EmployeeId, DateTime.UtcNow, ct));
 		}
 
+		/// H145: the quantity to give now per line (absent = all that is owed); the rest stays owed.
+		public sealed class HospitalDispenseInput { public Dictionary<int, decimal>? Quantities { get; set; } }
+
 		[HttpPost("Pharmacy/{id:int}/Dispense"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Pharmacy)]
-		public async Task<IActionResult> PharmacyDispense(int id, CancellationToken ct = default)
+		public async Task<IActionResult> PharmacyDispense(int id, [FromBody] HospitalDispenseInput? input, CancellationToken ct = default)
 		{
 			var ctx = await ContextAsync(ct);
 			if (ctx == null) return NotFound(new { ok = false, code = "not_found" });
-			return Result(await _pharmacy.DispenseAsync(ctx, id, ctx.EmployeeId, ctx.UserId, DateTime.UtcNow, ct));
+			return Result(await _pharmacy.DispenseAsync(ctx, id, ctx.EmployeeId, ctx.UserId, DateTime.UtcNow, ct, input?.Quantities));
 		}
 
 		[HttpPost("Pharmacy/Settings"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Manage)]

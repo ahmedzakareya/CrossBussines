@@ -22,6 +22,31 @@ namespace CrossBuy.BL.Hospital
 	// ==========================================================================================
 
 	/// H136: Priority is the effective one (HospitalRxPriority.Effective); ReviewedAt stops the review clock.
+	/// H145: partial dispensing — what a line still owes, what may leave now, and the prescription's status after.
+	public static class HospitalPartialDispenseRules
+	{
+		public static decimal Owed(HospitalDispenseLine l) => Math.Max(0, l.Quantity - (l.DispensedQty ?? 0));
+
+		/// The quantity to give now on each stocked line: what the pharmacist asked (null = all that is owed). Refused when a
+		/// line asks for less than nothing or more than it owes, or when nothing at all would leave.
+		public static (IReadOnlyDictionary<int, decimal>? Now, string? Error) Plan(IEnumerable<HospitalDispenseLine> stocked, IReadOnlyDictionary<int, decimal>? asked)
+		{
+			var now = new Dictionary<int, decimal>();
+			foreach (var l in stocked)
+			{
+				decimal owed = Owed(l);
+				decimal q = asked != null && asked.TryGetValue(l.ID, out var a) ? Math.Round(a, 4) : owed;
+				if (q < 0) return (null, "A quantity cannot be negative");
+				if (q > owed) return (null, "{0}: more than the prescription still owes ({1})");
+				if (q > 0) now[l.ID] = q;
+			}
+			return now.Count == 0 ? (null, "Nothing to dispense: enter a quantity") : (now, null);
+		}
+
+		/// Dispensed when nothing is owed on any stocked line; Partial otherwise.
+		public static string StatusAfter(IEnumerable<HospitalDispenseLine> stocked) => stocked.All(l => Owed(l) == 0) ? HospitalDispenseStatus.Dispensed : HospitalDispenseStatus.Partial;
+	}
+
 	public sealed record HospitalRxRow(int Id, string RxNo, int PatientId, string PatientName, string PatientNameEn, string Mrn, string? PatientPhoto,
 		string Source, int Items, string? Doctor, string? DoctorEn, string? DoctorPhoto, string Status, DateTime PrescribedAt, bool HasWarning,
 		string Priority = HospitalRxPriority.Routine, DateTime? ReviewedAt = null);
@@ -29,7 +54,12 @@ namespace CrossBuy.BL.Hospital
 	/// H133: Master is the line's drug record (null when the item has none); MatchText the words its allergies and interactions
 /// were matched in (the prescribed name and the generic).
 public sealed record HospitalRxLineView(HospitalDispenseLine Line, string? ItemCode, decimal? OnHand, string? NextBatch, DateTime? NextExpiry, decimal? Price, IReadOnlyList<string> Warnings,
-		HospitalDrug? Master = null, string? MatchText = null);
+		HospitalDrug? Master = null, string? MatchText = null, string? DrugEn = null, string? InstructionsEn = null)
+	{
+		/// The drug and its directions in the screen's language: the prescription wrote both (H33); the dispense line kept one.
+		public string Drug => DisplayName.Of(Line.Drug, DrugEn);
+		public string? Instructions => string.IsNullOrWhiteSpace(Line.Instructions) && string.IsNullOrWhiteSpace(InstructionsEn) ? null : DisplayName.Of(Line.Instructions ?? "", InstructionsEn);
+	}
 
 	public sealed record HospitalRxView(HospitalDispense Dispense, HospitalPatient Patient, IReadOnlyList<HospitalRxLineView> Lines, IReadOnlyDictionary<int, string> People,
 		string? WarehouseName, string? PriceListName, string? CurrencyLabel, decimal Total, string? BillNo = null, bool OnStay = false);
@@ -155,9 +185,9 @@ public sealed record HospitalRxLineView(HospitalDispenseLine Line, string? ItemC
 					where d.CompanyId == ctx.CompanyId && p.CompanyId == ctx.CompanyId
 					select new { d, p, r };
 			if (status != null) q = q.Where(x => x.d.Status == status);
-			else q = q.Where(x => x.d.Status == HospitalDispenseStatus.New || x.d.Status == HospitalDispenseStatus.Verified
+			else q = q.Where(x => x.d.Status == HospitalDispenseStatus.New || x.d.Status == HospitalDispenseStatus.Verified || x.d.Status == HospitalDispenseStatus.Partial
 				|| (x.d.Status == HospitalDispenseStatus.Dispensed && x.d.DispensedAt >= DateTime.UtcNow.AddDays(-1)));
-			bool Open(HospitalDispense d) => d.Status == HospitalDispenseStatus.New || d.Status == HospitalDispenseStatus.Verified;
+			bool Open(HospitalDispense d) => d.Status == HospitalDispenseStatus.New || d.Status == HospitalDispenseStatus.Verified || d.Status == HospitalDispenseStatus.Partial;
 			// H136: what still needs the pharmacy comes first, the most urgent priority first, then the oldest
 			var rows = (await q.OrderBy(x => x.d.PrescribedAt).Take(300).ToListAsync(ct))
 				.OrderBy(x => Open(x.d) ? 0 : 1).ThenBy(x => HospitalRxPriority.Rank(HospitalRxPriority.Effective(x.d.Priority, x.d.Source))).ThenBy(x => x.d.PrescribedAt).ToList();
@@ -205,6 +235,9 @@ public sealed record HospitalRxLineView(HospitalDispenseLine Line, string? ItemC
 				: await _billing.PeekWardChargeBillAsync(ctx, d.PatientId, ct);   // H121: the bill it will go on, priced by that bill's list
 			var listId = bill?.PriceListId;
 			var near = nowUtc.Date.AddDays(settings.NearExpiryDays);
+			var writtenIds = lines.Where(x => x.PrescriptionLineId != null).Select(x => x.PrescriptionLineId!.Value).ToList();   // the prescription's own lines: both languages
+			var written = await _db.HospitalPrescriptionLines.AsNoTracking().Where(x => x.CompanyId == ctx.CompanyId && writtenIds.Contains(x.ID))
+				.Select(x => new { x.ID, x.DrugEn, x.InstructionsEn }).ToDictionaryAsync(x => x.ID, ct);
 			var masters = await HospitalDrugMasterService.LookupAsync(_db, ctx.CompanyId, itemIds, ct);
 			HospitalDrug? Master(HospitalDispenseLine x) => x.ItemId is int mi ? masters.GetValueOrDefault(mi) : null;
 			string Words(HospitalDispenseLine x) => HospitalDrugRules.MatchText(x.Drug, Master(x));
@@ -238,7 +271,8 @@ public sealed record HospitalRxLineView(HospitalDispenseLine Line, string? ItemC
 					if (exp != null && exp <= near) w.Add(WarnNearExpiry);
 					price ??= (await _billing.QuoteItemForBillAsync(ctx, listId, iid, ct))?.Price;
 				}
-				views.Add(new HospitalRxLineView(l, l.ItemId is int i2 && items.TryGetValue(i2, out var it) ? it.ItemCode : null, onHand, nextBatch, nextExpiry, price, w, m, words));
+				var pl = l.PrescriptionLineId is int plid ? written.GetValueOrDefault(plid) : null;
+				views.Add(new HospitalRxLineView(l, l.ItemId is int i2 && items.TryGetValue(i2, out var it) ? it.ItemCode : null, onHand, nextBatch, nextExpiry, price, w, m, words, pl?.DrugEn, pl?.InstructionsEn));
 			}
 			var empIds = new[] { d.PrescribedByEmployeeId, d.VerifiedByEmployeeId, d.DispensedByEmployeeId, d.RejectedByEmployeeId }.Where(i => i != null).Select(i => i!.Value).Distinct().ToList();
 			var people = await _db.Employee.AsNoTracking().Where(e => empIds.Contains(e.ID) && e.EmpCompanyID == ctx.CompanyId).ToDictionaryAsync(e => e.ID, e => DisplayName.Of(e.FullName ?? "", e.FullNameEn), ct);
@@ -303,18 +337,27 @@ public sealed record HospitalRxLineView(HospitalDispenseLine Line, string? ItemC
 			await _db.SaveChangesAsync(ct); return HospitalResult.Success(d.ID);
 		}
 
-		/// Dispenses a reviewed prescription: all of it, or nothing.
-		public async Task<HospitalResult> DispenseAsync(BusinessContext ctx, int id, int? employeeId, string? userId, DateTime nowUtc, CancellationToken ct = default)
+		/// Dispenses a reviewed prescription: each stocked line all it still owes, or (H145) the quantity the pharmacist gives
+		/// now when the store is short; the rest stays owed (Partial) and a later dispense gives it. Everything asked for now
+		/// leaves, or nothing does. Only what left is charged.
+		public async Task<HospitalResult> DispenseAsync(BusinessContext ctx, int id, int? employeeId, string? userId, DateTime nowUtc, CancellationToken ct = default,
+			IReadOnlyDictionary<int, decimal>? quantities = null)
 		{
 			if (!await Can(ctx, HospitalActions.Pharmacy, ct)) return HospitalResult.Fail("forbidden");
 			var d = await _db.HospitalDispenses.FirstOrDefaultAsync(x => x.ID == id && x.CompanyId == ctx.CompanyId, ct);
 			if (d == null) return HospitalResult.Fail("not_found");
 			if (d.Status == HospitalDispenseStatus.Dispensed) return HospitalResult.Fail("This prescription was already dispensed");
-			if (d.Status != HospitalDispenseStatus.Verified) return HospitalResult.Fail("Review the prescription before dispensing");
+			if (!HospitalDispenseStatus.Dispensable(d.Status)) return HospitalResult.Fail("Review the prescription before dispensing");
 			var settings = await SettingsAsync(ctx, ct);
 			if (settings.WarehouseId is not int wh) return HospitalResult.Fail("Choose the pharmacy store in the pharmacy settings");
 			var lines = await _db.HospitalDispenseLines.Where(l => l.CompanyId == ctx.CompanyId && l.DispenseId == d.ID).OrderBy(l => l.SortOrder).ToListAsync(ct);
 			var stocked = lines.Where(l => l.ItemId != null).ToList();
+			var (plan, planError) = stocked.Count == 0 ? (new Dictionary<int, decimal>(), null) : HospitalPartialDispenseRules.Plan(stocked, quantities);
+			if (planError != null)
+			{
+				var over = stocked.FirstOrDefault(l => quantities != null && quantities.TryGetValue(l.ID, out var a) && a > HospitalPartialDispenseRules.Owed(l));
+				return over == null ? HospitalResult.Fail(planError) : HospitalResult.Fail(planError, over.Drug, HospitalPartialDispenseRules.Owed(over).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture));
+			}
 			var itemIds = stocked.Select(l => l.ItemId!.Value).Distinct().ToList();
 			var items = await _db.Items.AsNoTracking().Where(i => i.CompanyID == ctx.CompanyId && itemIds.Contains(i.ID)).ToDictionaryAsync(i => i.ID, ct);
 			if (items.Count != itemIds.Count) return HospitalResult.Fail("not_found");
@@ -334,27 +377,35 @@ public sealed record HospitalRxLineView(HospitalDispenseLine Line, string? ItemC
 					: await _billing.BillForDispenseAsync(ctx, d.PatientId, d.EncounterId, employeeId, nowUtc, ct);
 				foreach (var l in stocked)
 				{
+					if (!plan!.TryGetValue(l.ID, out var give)) continue;   // nothing for this line now
 					var it = items[l.ItemId!.Value];
+					// this fill's movements are the ones after the line's last
+					long before = await _db.StockMovements.AsNoTracking().Where(m => m.CompanyID == ctx.CompanyId && m.SourceType == MovementSource && m.SourceId == d.ID && m.SourceLineId == l.ID)
+						.Select(m => (long?)m.ID).MaxAsync(ct) ?? 0;
 					var (ok, error, _) = await _stock.PostMovementAsync(ctx.CompanyId, new MovementRequest
 					{
-						Date = nowUtc, ItemId = it.ID, WarehouseId = wh, Direction = -1, Qty = l.Quantity,
+						Date = nowUtc, ItemId = it.ID, WarehouseId = wh, Direction = -1, Qty = give,
 						SourceType = MovementSource, SourceId = d.ID, SourceLineId = l.ID, PostToGl = true, CounterAccountOverride = cogs[it.ItemCategoryId],
 						Notes = "Pharmacy dispense " + d.RxNo,
 					}, userId);
 					if (!ok) { await tx.RollbackAsync(); _db.ChangeTracker.Clear(); return HospitalResult.Fail("{0}: {1}", DisplayName.Of(it.Name, it.NameEn ?? it.Name), error ?? ""); }
 					// What actually left: one movement per batch when the inventory split it nearest-expiry-first.
-					var moved = await _db.StockMovements.AsNoTracking().Where(m => m.CompanyID == ctx.CompanyId && m.SourceType == MovementSource && m.SourceId == d.ID && m.SourceLineId == l.ID).ToListAsync(ct);
-					var bids = moved.Where(m => m.BatchId != null).Select(m => m.BatchId!.Value).ToList();
-					var batches = await _db.StockBatches.AsNoTracking().Where(b => bids.Contains(b.ID)).ToListAsync(ct);
-					decimal qty = moved.Sum(m => m.QtyBase), cost = moved.Sum(m => m.TotalCost);
-					var charge = await _billing.AddItemChargeAsync(ctx, bill!, it.ID, it.ItemCode, it.Name, it.NameEn ?? it.Name, l.Quantity, employeeId, nowUtc, ct);
+					var all = await _db.StockMovements.AsNoTracking().Where(m => m.CompanyID == ctx.CompanyId && m.SourceType == MovementSource && m.SourceId == d.ID && m.SourceLineId == l.ID).ToListAsync(ct);
+					var moved = all.Where(m => m.ID > before).ToList();
+					var bids = all.Where(m => m.BatchId != null).Select(m => m.BatchId!.Value).Distinct().ToList();
+					var batches = await _db.StockBatches.AsNoTracking().Where(b => bids.Contains(b.ID)).ToDictionaryAsync(b => b.ID, ct);
+					string? Names(IEnumerable<CrossBuy.Models.Context.Inventory.StockMovement> ms) { var s = string.Join(", ", ms.Where(m => m.BatchId != null && batches.ContainsKey(m.BatchId.Value)).Select(m => batches[m.BatchId!.Value].BatchNo).Distinct()); return s.Length == 0 ? null : s[..Math.Min(400, s.Length)]; }
+					decimal qty = all.Sum(m => m.QtyBase), cost = all.Sum(m => m.TotalCost), nowQty = moved.Sum(m => m.QtyBase), nowCost = moved.Sum(m => m.TotalCost);
+					var charge = await _billing.AddItemChargeAsync(ctx, bill!, it.ID, it.ItemCode, it.Name, it.NameEn ?? it.Name, give, employeeId, nowUtc, ct);
 					await _db.SaveChangesAsync(ct);
-					l.DispensedQty = l.Quantity; l.UnitPrice = charge.UnitPrice; l.UnitCost = qty == 0 ? 0 : Math.Round(cost / qty, 4);
-					l.Batches = batches.Count == 0 ? null : string.Join(", ", batches.Select(b => b.BatchNo))[..Math.Min(400, string.Join(", ", batches.Select(b => b.BatchNo)).Length)];
-					l.NearestExpiry = batches.Where(b => b.ExpiryDate != null).Select(b => b.ExpiryDate).Min();
-					l.BillLineId = charge.ID;
+					l.DispensedQty = (l.DispensedQty ?? 0) + give; l.UnitPrice = charge.UnitPrice; l.UnitCost = qty == 0 ? 0 : Math.Round(cost / qty, 4);
+					l.Batches = Names(all);
+					l.NearestExpiry = all.Where(m => m.BatchId != null && batches.ContainsKey(m.BatchId.Value)).Select(m => batches[m.BatchId!.Value].ExpiryDate).Where(x => x != null).Min();
+					l.BillLineId ??= charge.ID;
+					_db.Add(new HospitalDispenseFill { CompanyId = ctx.CompanyId, DispenseId = d.ID, LineId = l.ID, Quantity = give, UnitCost = nowQty == 0 ? 0 : Math.Round(nowCost / nowQty, 4),
+						UnitPrice = charge.UnitPrice, Batches = Names(moved), BillLineId = charge.ID, At = nowUtc, ByEmployeeId = employeeId });
 				}
-				d.Status = HospitalDispenseStatus.Dispensed; d.DispensedAt = nowUtc; d.DispensedByEmployeeId = employeeId; d.WarehouseId = wh; d.BillId = bill?.ID;
+				d.Status = HospitalPartialDispenseRules.StatusAfter(stocked); d.DispensedAt = nowUtc; d.DispensedByEmployeeId = employeeId; d.WarehouseId = wh; d.BillId ??= bill?.ID;
 				await _db.SaveChangesAsync(ct);
 				await tx.CommitAsync();
 				return HospitalResult.Success(d.ID);

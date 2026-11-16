@@ -88,7 +88,9 @@ namespace CrossBuy.Tests
 			foreach (var c in new[] { "Priority nvarchar(10)", "RejectedAt datetime2", "RejectedByEmployeeId int", "RejectReason nvarchar(400)" })
 				Assert.Contains("ALTER TABLE dbo.HospitalDispenses ADD " + c + " NULL", sql);
 			Assert.Contains("CHECK (Status IN ('New','Verified','Dispensed','Rejected'))", sql);
-			Assert.Equal(HospitalDispenseStatus.All.OrderBy(s => s), new[] { "Dispensed", "New", "Rejected", "Verified" });
+			// H145 widens the rule with 'Partial': the model's statuses are exactly the latest slice's
+			Assert.Contains("CHECK (Status IN ('New','Verified','Dispensed','Rejected','Partial'))", HospitalSliceParity.Slice("hospital_h145_partial_dispense.sql"));
+			Assert.Equal(HospitalDispenseStatus.All.OrderBy(s => s), new[] { "Dispensed", "New", "Partial", "Rejected", "Verified" });
 		}
 	}
 }

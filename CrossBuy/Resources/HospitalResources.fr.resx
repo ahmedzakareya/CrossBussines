@@ -7309,4 +7309,13 @@
   <data name="Receipt" xml:space="preserve"><value>Reçu</value></data>
   <data name="Visit slip &amp; ticket" xml:space="preserve"><value>Fiche de visite et ticket</value></data>
   <data name="Wristband" xml:space="preserve"><value>Bracelet</value></data>
+  <data name="A quantity cannot be negative" xml:space="preserve"><value>Une quantité ne peut pas être négative</value></data>
+  <data name="Dispense what is owed" xml:space="preserve"><value>Délivrer ce qui est dû</value></data>
+  <data name="Give now" xml:space="preserve"><value>Délivrer maintenant</value></data>
+  <data name="Nothing to dispense: enter a quantity" xml:space="preserve"><value>Rien à délivrer : saisissez une quantité</value></data>
+  <data name="Partly dispensed" xml:space="preserve"><value>Délivrée en partie</value></data>
+  <data name="The rest is owed to the patient: give it when the stock arrives." xml:space="preserve"><value>Le reste est dû au patient : délivrez-le à l'arrivée du stock.</value></data>
+  <data name="rx:Partial" xml:space="preserve"><value>Délivrée en partie</value></data>
+  <data name="{0} of {1} given" xml:space="preserve"><value>{0} sur {1} délivrés</value></data>
+  <data name="{0}: more than the prescription still owes ({1})" xml:space="preserve"><value>{0} : plus que ce que l'ordonnance doit encore ({1})</value></data>
 </root>
