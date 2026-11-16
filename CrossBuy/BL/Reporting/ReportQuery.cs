@@ -98,6 +98,10 @@ namespace CrossBuy.BL.Reporting
         // A patient identification band, 280 × 25.4 mm (1 inch high) - the wristband printers' common stock.
         // ADDITIVE at the end: a stored layout holds the integer.
         Wristband = 5,
+
+        // A dispensing label, 100 × 60 mm - the thermal label stock a pharmacy counter prints one medicine to.
+        // ADDITIVE at the end: a stored layout holds the integer.
+        RxLabel = 6,
     }
 
     public enum ReportOrientation

@@ -11,6 +11,8 @@ namespace CrossBuy.BL.Reporting
 	//     the allergies in red, the ward and bed when admitted, and the file's QR for the bedside scan;
 	//   · the DEPOSIT RECEIPT — an 80 mm roll: the deposit number and date, the patient, the amount large, how and
 	//     what for, who took it, and what is used, refunded and left.
+	// None of them carries the PDF engine's running footer (the report code and "page 1 of 1"): it printed over the foot
+	// of a one-piece paper, so ShowPageNumbers is off on every one (H147).
 	// One document = ONE row, laid out in the report header band (which reads the first row). X is measured from the
 	// content's start edge, so one layout serves Arabic and English. Colours are the brand palette, no green.
 	// ============================================================================================
@@ -53,7 +55,7 @@ namespace CrossBuy.BL.Reporting
 			return layout;
 		}
 
-		private static ReportPageSetup Roll() => new() { PageSize = ReportPageSize.Thermal80, MarginTopMm = 4, MarginBottomMm = 4, MarginLeftMm = 4, MarginRightMm = 4, ShowHeader = false, ShowFooter = false };
+		private static ReportPageSetup Roll() => new() { PageSize = ReportPageSize.Thermal80, MarginTopMm = 4, MarginBottomMm = 4, MarginLeftMm = 4, MarginRightMm = 4, ShowHeader = false, ShowFooter = false, ShowPageNumbers = false };
 
 		/// The height a line of text needs at a size: Arabic glyphs (marks above and below) need about 1.9× the font's
 		/// em, plus the padding. A box any shorter clips the text - the owner's "النصوص مقصوصة".
@@ -113,7 +115,7 @@ namespace CrossBuy.BL.Reporting
 
 		public static ReportVisualLayout Wristband()
 		{
-			var page = new ReportPageSetup { PageSize = ReportPageSize.Wristband, MarginTopMm = 2, MarginBottomMm = 2, MarginLeftMm = 2, MarginRightMm = 2, ShowHeader = false, ShowFooter = false };
+			var page = new ReportPageSetup { PageSize = ReportPageSize.Wristband, MarginTopMm = 2, MarginBottomMm = 2, MarginLeftMm = 2, MarginRightMm = 2, ShowHeader = false, ShowFooter = false, ShowPageNumbers = false };
 			const double H = 21.4;   // 25.4 mm band less its margins: two lines of text per column, no more
 			double l1 = Need(12), l2 = Need(9.5), c1 = Need(9.5), c2 = Need(8.5);
 			var e = new List<ReportElement>
@@ -167,12 +169,54 @@ namespace CrossBuy.BL.Reporting
 			return OneBand(Roll(), r.Y + 2, r.E);
 		}
 
+		/// H147 — the PHARMACY LABEL: a 100 × 60 mm thermal label, one per medicine. The label is a DETAIL band exactly
+		/// one label page high, so each dispensed medicine (one row) prints on a label of its own. Read top to bottom the
+		/// way a patient does: whose it is, what it is, how to take it (framed, the largest instruction text), then how
+		/// much, the batch and the expiry beside it, and the warnings in red along the foot.
+		public static ReportVisualLayout RxLabel()
+		{
+			var page = new ReportPageSetup { PageSize = ReportPageSize.RxLabel, MarginTopMm = 1, MarginBottomMm = 1, MarginLeftMm = 2, MarginRightMm = 2, ShowHeader = false, ShowFooter = false, ShowPageNumbers = false };
+			const double W = 96, H = 58;   // the label less its margins
+			double a = Need(7.5), b = Need(9.5), c = Need(11), side = Need(7.5), ins = Need(9.5) * 2;
+			double yB = a + 0.8, yC = yB + b, yD = yC + c, yBox = yD + a + 0.5, box = side * 3, yE = yBox + box + 0.4;
+			var e = new List<ReportElement>
+			{
+				Field("CompanyName", 0, 0, 56, a, S(7.5, true, Brand)),
+				Field("DocumentNo", 56, 0, 20, a, S(7.5, color: Muted, align: ReportTextAlign.End)),
+				Field("DispensedOn", 76, 0, 20, a, S(7.5, color: Muted, align: ReportTextAlign.End, date: "yyyy-MM-dd")),
+				Line(0, a + 0.4, W),
+				Field("PatientName", 0, yB, 70, b, S(9.5, true)),
+				Field("PatientMrn", 70, yB, 26, b, S(8.5, true, Brand, ReportTextAlign.End)),
+				Field("Drug", 0, yC, W, c, S(11, true)),
+				Field("DrugDetail", 0, yD, 58, a, S(7.5, color: Muted)),
+				Field("DoctorName", 58, yD, 38, a, S(7.5, color: Muted, align: ReportTextAlign.End)),
+				// how to take it: framed, the instruction the patient must not miss
+				Box(0, yBox, 62, box, Brand),
+				Field("Instructions", 1, yBox + (box - ins) / 2, 60, ins, S(9.5, true)),
+				// how much, which batch, until when
+				Text("الكمية", "Qty", 64, yBox, 12, side, S(6.5, color: Muted)),
+				Field("Quantity", 76, yBox, 20, side, S(7.5, true)),
+				Text("التشغيلة", "Batch", 64, yBox + side, 12, side, S(6.5, color: Muted)),
+				Field("Batch", 76, yBox + side, 20, side, S(7.5)),
+				Text("ينتهي", "Exp.", 64, yBox + side * 2, 12, side, S(6.5, color: Muted)),
+				Field("Expiry", 76, yBox + side * 2, 20, side, S(7.5, true, date: "yyyy-MM")),
+				Field("Warnings", 0, yE, W, a, S(7.5, true, Alert)),
+			};
+			if (yE + a > H) throw new InvalidOperationException("The pharmacy label no longer fits its label: " + (yE + a) + " mm");
+			var band = new ReportBand { Kind = ReportBandKind.Detail, HeightMm = H };
+			band.Elements.AddRange(e);
+			var layout = new ReportVisualLayout { Page = page, GridMm = 1, SnapToGrid = false };
+			layout.Bands.Add(band);
+			return layout;
+		}
+
 		/// The designed layout a desk report ships with, by report code (null = the platform's starter).
 		public static ReportVisualLayout? For(string code) => code switch
 		{
 			HospitalDocumentDatasetCodes.VisitSlip => VisitSlip(),
 			HospitalDocumentDatasetCodes.Wristband => Wristband(),
 			HospitalDocumentDatasetCodes.DepositReceipt => DepositReceipt(),
+			HospitalDocumentDatasetCodes.RxLabel => RxLabel(),   // H147
 			_ => null,
 		};
 	}

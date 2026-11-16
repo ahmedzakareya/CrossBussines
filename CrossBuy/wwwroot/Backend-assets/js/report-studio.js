@@ -71,7 +71,7 @@
 
     // Paper, in mm. The same table ReportPaper holds server-side; duplicated here ONLY to draw the sheet,
     // never to decide anything — the server recomputes the printable box from its own copy.
-    var PAPER = { 0: [210, 297], 1: [148, 210], 2: [215.9, 279.4], 3: [215.9, 355.6], 4: [80, 297] };
+    var PAPER = { 0: [210, 297], 1: [148, 210], 2: [215.9, 279.4], 3: [215.9, 355.6], 4: [80, 297], 5: [280, 25.4], 6: [100, 60] };
 
     // FROM THE SERVER, not a literal. The list used to name Amiri, which is not installed on this
     // host - a designer that offers a face the render machine lacks produces a layout that looks one

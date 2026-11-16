@@ -428,6 +428,7 @@ namespace CrossBuy.BL.Reporting
                 // height would either clip a long receipt or pad a short one with blank paper.
                 ReportPageSize.Thermal80 => "80mm auto",
                 ReportPageSize.Wristband => "280mm 25.4mm",   // a fixed band: no named paper, no orientation
+                ReportPageSize.RxLabel => "100mm 60mm",       // one dispensing label per page: one medicine per label
                 _ => "A4" + landscape,
             };
         }

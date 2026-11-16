@@ -241,6 +241,7 @@ namespace CrossBuy.BL.Reporting
             services.AddScoped<IReportDataSource, HospitalVisitSlipSource>();          // H144: the visit slip and the queue ticket
             services.AddScoped<IReportDataSource, HospitalWristbandSource>();          // H144
             services.AddScoped<IReportDataSource, HospitalDepositReceiptSource>();     // H144
+            services.AddScoped<IReportDataSource, HospitalRxLabelSource>();            // H147
             services.AddScoped<IReportDataSource, HospitalPatientStatementSource>();   // H63
             services.AddScoped<IReportModuleAuthority, HospitalReportModuleAuthority>();
             // H49: the hospital's fifteen management reports (the prototype's #/reports), on the same authority

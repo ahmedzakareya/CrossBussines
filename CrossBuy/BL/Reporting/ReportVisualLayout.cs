@@ -520,6 +520,7 @@ namespace CrossBuy.BL.Reporting
             ReportPageSize.Legal => (215.9, 355.6),
             ReportPageSize.Thermal80 => (80, 297),
             ReportPageSize.Wristband => (280, 25.4),
+            ReportPageSize.RxLabel => (100, 60),
             _ => (210, 297),
         };
 

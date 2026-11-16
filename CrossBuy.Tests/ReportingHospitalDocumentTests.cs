@@ -77,6 +77,7 @@ namespace CrossBuy.Tests
             HospitalDocumentDatasetCodes.VisitSlip,          // H144: the visit slip and the queue ticket
             HospitalDocumentDatasetCodes.Wristband,          // H144
             HospitalDocumentDatasetCodes.DepositReceipt,     // H144
+            HospitalDocumentDatasetCodes.RxLabel,            // H147
         };
 
         // ---- the datasets are declared, and declared legally ------------------------------------

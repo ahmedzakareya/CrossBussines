@@ -39,6 +39,8 @@ namespace CrossBuy.BL.Reporting
         public const string VisitSlip = "Hospital.VisitSlip";
         public const string Wristband = "Hospital.Wristband";
         public const string DepositReceipt = "Hospital.DepositReceipt";
+        /// H147: the pharmacy's dispensing labels — ONE row per medicine given (a label each), from one dispense.
+        public const string RxLabel = "Hospital.RxLabel";
         public const string CategoryKey = "hospital.reporting";
     }
 
@@ -472,6 +474,40 @@ namespace CrossBuy.BL.Reporting
             },
             Params("DepositId", "رقم العربون الداخلي", "Deposit id")), "DocumentNo", "DocumentDate", "PatientName", "PatientMrn");
 
+        public static ReportDatasetDefinition RxLabel()
+        {
+            var d = Show(Doc(HospitalDocumentDatasetCodes.RxLabel,
+                "ملصقات الدواء", "Dispensing labels",
+                "ملصق لكل دواء صُرف من الصيدلية: المريض والدواء وتركيزه وطريقة الاستعمال والكمية والتشغيلة وتاريخ الانتهاء وتحذيرات الحفظ.",
+                "A label for each medicine the pharmacy gave: the patient, the medicine and its strength, how to take it, the quantity, the batch, the expiry and the storage warnings.",
+                new[] { F("LineNo", "م", "#", ReportFieldType.Integer, 10, false, ReportAlign.Center) },
+                new[]
+                {
+                    F("Drug", "الدواء", "Medicine", width: 60, visible: true),
+                    F("DrugDetail", "المادة والتركيز", "Generic and strength", width: 60, visible: true),
+                    F("Instructions", "طريقة الاستعمال", "How to take it", width: 80, visible: true),
+                    F("Quantity", "الكمية", "Quantity", width: 16, visible: true, align: ReportAlign.End),
+                    F("Batch", "التشغيلة", "Batch", width: 24, visible: true),
+                    F("Expiry", "تاريخ الانتهاء", "Expiry", ReportFieldType.Date, visible: true),
+                    F("Warnings", "تحذيرات", "Warnings", width: 80, visible: true),
+                    F("DispensedOn", "تاريخ الصرف", "Dispensed on", ReportFieldType.Date),
+                    F("Pharmacist", "الصيدلي", "Pharmacist", width: 40),
+                },
+                Params("DispenseId", "رقم الصرف الداخلي", "Dispense id")), "DocumentNo", "PatientName", "PatientMrn", "DoctorName");
+            // one medicine's label again (a reprint), not the whole dispense
+            var line = new ReportParameterDescriptor
+            {
+                Key = "LineId", TitleAr = "سطر الدواء", TitleEn = "Medicine line", Type = ReportFieldType.Integer, Required = false,
+                HelpTextAr = "اتركه فارغًا لطباعة ملصقات كل الأدوية المصروفة.", HelpTextEn = "Leave it empty to print a label for every medicine given.",
+            };
+            return new ReportDatasetDefinition
+            {
+                DatasetCode = d.DatasetCode, Module = d.Module, TitleAr = d.TitleAr, TitleEn = d.TitleEn, DescriptionAr = d.DescriptionAr, DescriptionEn = d.DescriptionEn,
+                DataSourceKey = d.DataSourceKey, RequiredPermissionKey = d.RequiredPermissionKey, MaxRows = d.MaxRows, RowCapPolicy = d.RowCapPolicy,
+                Fields = d.Fields, Parameters = d.Parameters.Concat(new[] { line }).ToArray(),
+            };
+        }
+
         public static IEnumerable<ReportDatasetDefinition> All()
         {
             yield return Bill();
@@ -490,6 +526,7 @@ namespace CrossBuy.BL.Reporting
             yield return VisitSlip();        // H144
             yield return Wristband();        // H144
             yield return DepositReceipt();   // H144
+            yield return RxLabel();          // H147
             yield return DentalClaim();
         }
     }
@@ -532,7 +569,7 @@ namespace CrossBuy.BL.Reporting
                     Icon = "ki-outline ki-document",
                     Color = "primary",
                     SortOrder = order++,
-                    ShippedVisual = HospitalDeskLayouts.For(dataset.DatasetCode),   // H144: the desk's papers are designed, not tables
+                    ShippedVisual = HospitalDeskLayouts.For(dataset.DatasetCode),   // H144: the desk's papers are designed, not tables (H147: and the pharmacy label)
                     DefaultPageSetup = HospitalDeskLayouts.For(dataset.DatasetCode)?.Page ?? ReportPageSetup.Default,
                 };
             }

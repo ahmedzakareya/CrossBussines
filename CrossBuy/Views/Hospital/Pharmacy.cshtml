@@ -158,7 +158,12 @@
                             @{ var pri = HospitalRxPriority.Effective(d.Priority, d.Source); int selWait = HospitalReviewRules.WaitingMinutes(d.PrescribedAt, d.VerifiedAt ?? d.RejectedAt, now); bool selLate = selWait > HospitalRxPriority.TargetMinutes(pri); }
                             <div class="card-toolbar gap-2"><span class="badge @PriClass(pri) fs-7 fw-bold">@T["rxp:" + pri]</span>
                                 @if (d.Status != HospitalDispenseStatus.Dispensed && d.Status != HospitalDispenseStatus.Rejected) {<span class="badge badge-light-@(selLate ? "danger" : "primary") fs-7 fw-bold"><i class="ki-outline ki-timer fs-7 me-1 text-@(selLate ? "danger" : "primary")"></i>@Dur(selWait)</span>}
-                                <span class="badge badge-light fs-7 fw-bold">@Src(d.Source)</span>@Html.Raw(St(d.Status))</div>
+                                <span class="badge badge-light fs-7 fw-bold">@Src(d.Source)</span>@Html.Raw(St(d.Status))
+                                @if (d.Status == HospitalDispenseStatus.Dispensed || d.Status == HospitalDispenseStatus.Partial)
+                                {
+                                    @* H147: a label per medicine given — a Report Studio layout of this dispense, see _ReportPrintMenu *@
+                                    @await Html.PartialAsync("_ReportPrintMenu", new CrossBuy.BL.Reporting.ReportPrintMenuModel { ScreenKey = CrossBuy.BL.Reporting.ReportScreenKeys.HospitalPharmacyLabels, DocumentId = d.ID.ToString(), DocumentTitle = d.RxNo, ButtonLabel = T["Labels"].Value })
+                                }</div>
                         </div>
                         <div class="card-body pt-2">
                             @if (warnings.Count > 0 && d.Status != HospitalDispenseStatus.Dispensed && d.Status != HospitalDispenseStatus.Rejected)
@@ -463,6 +468,7 @@
         </div>
     </div></div></div>
 }
+@await Html.PartialAsync("_ReportPreviewModal", (object)T["Dispensing labels"].Value)
 
 @section Scripts {
     <script>
