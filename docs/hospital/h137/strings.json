@@ -1,0 +1,270 @@
+{
+ "unit": "H137 - the controlled-drug register: running-balance ledger, blind witnessed counts, discrepancies closed within the shift",
+ "strings": {
+  "Controlled-drug register": {
+   "ar": "سجل المخدرات",
+   "en": "Controlled-drug register",
+   "fr": "Registre des stupéfiants"
+  },
+  "Every movement with its running balance; blind counts, witnessed": {
+   "ar": "كل حركة برصيدها الجاري؛ وجرد أعمى بحضور شاهد",
+   "en": "Every movement with its running balance; blind counts, witnessed",
+   "fr": "Chaque mouvement avec son solde courant ; comptages à l'aveugle, témoignés"
+  },
+  "Controlled drugs in stock": {
+   "ar": "أدوية مراقبة في المخزن",
+   "en": "Controlled drugs in stock",
+   "fr": "Stupéfiants en stock"
+  },
+  "{0} units on hand": {
+   "ar": "⁦{0}⁩ وحدة في الرصيد",
+   "en": "{0} units on hand",
+   "fr": "{0} unités en stock"
+  },
+  "Open discrepancies": {
+   "ar": "فروق مفتوحة",
+   "en": "Open discrepancies",
+   "fr": "Écarts ouverts"
+  },
+  "counts that did not match": {
+   "ar": "جرد لم يطابق الرصيد",
+   "en": "counts that did not match",
+   "fr": "comptages non concordants"
+  },
+  "open past the 12-hour shift": {
+   "ar": "مفتوحة بعد وردية الـ12 ساعة",
+   "en": "open past the 12-hour shift",
+   "fr": "ouverts au-delà du poste de 12 h"
+  },
+  "Counts this week": {
+   "ar": "جرد هذا الأسبوع",
+   "en": "Counts this week",
+   "fr": "Comptages cette semaine"
+  },
+  "blind, witnessed": {
+   "ar": "أعمى وبحضور شاهد",
+   "en": "blind, witnessed",
+   "fr": "à l'aveugle, témoignés"
+  },
+  "Balances": {
+   "ar": "الأرصدة",
+   "en": "Balances",
+   "fr": "Soldes"
+  },
+  "Ledger": {
+   "ar": "دفتر الحركة",
+   "en": "Ledger",
+   "fr": "Registre"
+  },
+  "Counts and discrepancies": {
+   "ar": "الجرد والفروق",
+   "en": "Counts and discrepancies",
+   "fr": "Comptages et écarts"
+  },
+  "cdk:Pharmacy": {
+   "ar": "الصيدلية",
+   "en": "Pharmacy",
+   "fr": "Pharmacie"
+  },
+  "cdk:Ward": {
+   "ar": "جناح",
+   "en": "Ward",
+   "fr": "Service"
+  },
+  "cdk:Quarantine": {
+   "ar": "حجر",
+   "en": "Quarantine",
+   "fr": "Quarantaine"
+  },
+  "With an open discrepancy": {
+   "ar": "عليه فرق مفتوح",
+   "en": "With an open discrepancy",
+   "fr": "Avec un écart ouvert"
+  },
+  "In stock": {
+   "ar": "في الرصيد",
+   "en": "In stock",
+   "fr": "En stock"
+  },
+  "cds:Open": {
+   "ar": "فرق مفتوح",
+   "en": "Open discrepancy",
+   "fr": "Écart ouvert"
+  },
+  "cds:Matched": {
+   "ar": "مطابق",
+   "en": "Matched",
+   "fr": "Concordant"
+  },
+  "cds:Resolved": {
+   "ar": "أُغلق الفرق",
+   "en": "Discrepancy closed",
+   "fr": "Écart clos"
+  },
+  "cdr:Miscount": {
+   "ar": "خطأ عد (أعيد الجرد فطابق)",
+   "en": "Miscount (the recount matched)",
+   "fr": "Erreur de comptage (recomptage conforme)"
+  },
+  "cdr:Documentation": {
+   "ar": "حركة لم تُسجَّل",
+   "en": "A movement not recorded",
+   "fr": "Mouvement non enregistré"
+  },
+  "cdr:Loss": {
+   "ar": "فقد — يُشطب",
+   "en": "Loss — written off",
+   "fr": "Perte — sortie du stock"
+  },
+  "Last count": {
+   "ar": "آخر جرد",
+   "en": "Last count",
+   "fr": "Dernier comptage"
+  },
+  "Never counted": {
+   "ar": "لم يُجرد",
+   "en": "Never counted",
+   "fr": "Jamais compté"
+  },
+  "Movement": {
+   "ar": "الحركة",
+   "en": "Movement",
+   "fr": "Mouvement"
+  },
+  "Balance after": {
+   "ar": "الرصيد بعدها",
+   "en": "Balance after",
+   "fr": "Solde après"
+  },
+  "Made by": {
+   "ar": "بواسطة",
+   "en": "Made by",
+   "fr": "Par"
+  },
+  "Count no.": {
+   "ar": "رقم الجرد",
+   "en": "Count no.",
+   "fr": "N° de comptage"
+  },
+  "Expected": {
+   "ar": "المتوقع",
+   "en": "Expected",
+   "fr": "Attendu"
+  },
+  "Difference": {
+   "ar": "الفرق",
+   "en": "Difference",
+   "fr": "Écart"
+  },
+  "Counted by and witness": {
+   "ar": "الجارد والشاهد",
+   "en": "Counted by and witness",
+   "fr": "Compté par et témoin"
+  },
+  "witness:": {
+   "ar": "الشاهد:",
+   "en": "witness:",
+   "fr": "témoin :"
+  },
+  "Blind count": {
+   "ar": "جرد أعمى",
+   "en": "Blind count",
+   "fr": "Comptage à l'aveugle"
+  },
+  "Count what is on the shelf. The quantity the register expects is not shown; a difference opens a discrepancy to close within the shift.": {
+   "ar": "اعدّ ما على الرف. الكمية التي يتوقعها السجل لا تظهر، وأي فرق يُفتح ولازم يُقفل خلال الوردية.",
+   "en": "Count what is on the shelf. The quantity the register expects is not shown; a difference opens a discrepancy to close within the shift.",
+   "fr": "Comptez ce qui est en rayon. La quantité attendue n'est pas affichée ; un écart doit être clos dans le poste."
+  },
+  "Counted on the shelf": {
+   "ar": "المعدود على الرف",
+   "en": "Counted on the shelf",
+   "fr": "Compté en rayon"
+  },
+  "Record the count": {
+   "ar": "سجّل الجرد",
+   "en": "Record the count",
+   "fr": "Enregistrer le comptage"
+  },
+  "Close the discrepancy": {
+   "ar": "أغلق الفرق",
+   "en": "Close the discrepancy",
+   "fr": "Clore l'écart"
+  },
+  "The recount": {
+   "ar": "إعادة العد",
+   "en": "The recount",
+   "fr": "Le recomptage"
+  },
+  "The missing units are written off through the inventory at cost.": {
+   "ar": "الوحدات الناقصة تُشطب من المخزن بالتكلفة.",
+   "en": "The missing units are written off through the inventory at cost.",
+   "fr": "Les unités manquantes sont sorties du stock au coût."
+  },
+  "The count matches the register": {
+   "ar": "الجرد مطابق للسجل",
+   "en": "The count matches the register",
+   "fr": "Le comptage concorde avec le registre"
+  },
+  "The count does not match: a discrepancy is open — close it within the shift": {
+   "ar": "الجرد لا يطابق: فُتح فرق — أغلقه خلال الوردية",
+   "en": "The count does not match: a discrepancy is open — close it within the shift",
+   "fr": "Le comptage ne concorde pas : un écart est ouvert — à clore dans le poste"
+  },
+  "Write the missing units off as a loss?": {
+   "ar": "شطب الوحدات الناقصة كفقد؟",
+   "en": "Write the missing units off as a loss?",
+   "fr": "Sortir les unités manquantes en perte ?"
+  },
+  "This count has no open discrepancy": {
+   "ar": "هذا الجرد ليس عليه فرق مفتوح",
+   "en": "This count has no open discrepancy",
+   "fr": "Ce comptage n'a pas d'écart ouvert"
+  },
+  "Enter the recount": {
+   "ar": "اكتب إعادة العد",
+   "en": "Enter the recount",
+   "fr": "Saisissez le recomptage"
+  },
+  "The recount differs from the expected quantity — choose another reason": {
+   "ar": "إعادة العد تختلف عن المتوقع — اختر سببًا آخر",
+   "en": "The recount differs from the expected quantity — choose another reason",
+   "fr": "Le recomptage diffère de l'attendu — choisissez un autre motif"
+  },
+  "Write which movement was not recorded": {
+   "ar": "اكتب أي حركة لم تُسجَّل",
+   "en": "Write which movement was not recorded",
+   "fr": "Indiquez le mouvement non enregistré"
+  },
+  "A surplus is not a loss": {
+   "ar": "الزيادة ليست فقدًا",
+   "en": "A surplus is not a loss",
+   "fr": "Un excédent n'est pas une perte"
+  },
+  "Enter what is on the shelf": {
+   "ar": "اكتب الموجود على الرف",
+   "en": "Enter what is on the shelf",
+   "fr": "Saisissez ce qui est en rayon"
+  },
+  "pmv:Controlled": {
+   "ar": "سجل المخدرات بالجناح (جرعة أو هدر)",
+   "en": "Ward controlled register (dose or waste)",
+   "fr": "Registre du service (dose ou perte)"
+  },
+  "pmv:SupplierReturn": {
+   "ar": "مرتجع للمورّد",
+   "en": "Returned to the supplier",
+   "fr": "Retour fournisseur"
+  },
+  "pmv:WriteOff": {
+   "ar": "شطب",
+   "en": "Write-off",
+   "fr": "Sortie de stock"
+  },
+  "pmv:Adjustment": {
+   "ar": "تسوية جرد",
+   "en": "Count adjustment",
+   "fr": "Ajustement d'inventaire"
+  }
+ }
+}

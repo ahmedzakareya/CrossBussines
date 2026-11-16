@@ -1,0 +1,45 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model IReadOnlyList<HospitalCdCountRow>
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@* H137: one count per row, the open discrepancies first. Each row shows:
+     · the expected and counted quantities and the gap;
+     · the state, overdue past the shift;
+     · the counter's and witness's faces;
+     · how it was closed (with the write-off when a loss), or the button that closes it. *@
+@{
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+    bool canEdit = ViewBag.CanPharmacy == true;
+    string Face(string? photo, string? name, string? nameEn) => photo != null
+        ? "<img src=\"" + System.Net.WebUtility.HtmlEncode(photo) + "\" alt=\"\" style=\"object-fit:cover\" />"
+        : "<span class=\"symbol-label fw-bold fs-9 hp-initials\">" + System.Net.WebUtility.HtmlEncode(HospitalUi.Initials(nameEn ?? name)) + "</span>";
+}
+@foreach (var r in Model)
+{
+    var c = r.C;
+    string tone = c.Status == HospitalCountStatus.Open ? "danger" : c.Status == HospitalCountStatus.Matched ? "success" : "primary";
+    string diff = (c.Difference > 0 ? "+" : c.Difference < 0 ? "−" : "") + Math.Abs(c.Difference).ToString("0.###", inv);
+    <tr>
+        <td class="ps-4 text-nowrap"><span class="text-gray-900 fw-bold hp-num d-block">@c.CountNo</span><span class="text-muted fs-8 hp-num" data-fmt data-utc="@c.CountedAt.ToString("o")">@c.CountedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</span></td>
+        <td><span class="text-gray-900 fw-bold d-block"><bdi>@DisplayName.Of(r.Name, r.NameEn)</bdi></span><bdi class="text-muted fs-8" dir="ltr">@r.Code</bdi></td>
+        <td class="text-end"><span class="text-gray-700 fw-bold hp-num">@c.Expected.ToString("0.###", inv)</span></td>
+        <td class="text-end"><span class="text-gray-900 fw-bold hp-num">@c.Counted.ToString("0.###", inv)</span></td>
+        <td class="text-end"><span class="badge badge-light-@(c.Difference == 0 ? "success" : "danger") fs-7 fw-bold hp-num" dir="ltr">@diff</span></td>
+        <td><span class="badge badge-light-@tone fs-7 fw-bold">@T["cds:" + c.Status]</span>@if (r.Overdue) {<span class="badge badge-danger fs-8 fw-bold ms-1">@T["Overdue"]</span>}
+            @if (c.Resolution != null) {<span class="text-muted fs-8 d-block mt-1">@T["cdr:" + c.Resolution]@if (c.DocumentNo != null) {<text> · </text><span class="hp-num">@c.DocumentNo</span>}</span>@if (c.ResolutionNote != null) {<bdi class="text-gray-600 fs-8 d-block" dir="auto">@c.ResolutionNote</bdi>}}</td>
+        <td><div class="d-flex align-items-center">
+            <div class="symbol-group symbol-hover me-2">
+                <div class="symbol symbol-30px symbol-circle" title="@DisplayName.Of(r.CountedBy ?? "—", r.CountedByEn)" data-bs-toggle="tooltip">@Html.Raw(Face(r.CountedByPhoto, r.CountedBy, r.CountedByEn))</div>
+                <div class="symbol symbol-30px symbol-circle" title="@DisplayName.Of(r.Witness ?? "—", r.WitnessEn)" data-bs-toggle="tooltip">@Html.Raw(Face(r.WitnessPhoto, r.Witness, r.WitnessEn))</div>
+            </div>
+            <span class="text-gray-700 fs-8">@DisplayName.Of(r.CountedBy ?? "—", r.CountedByEn)<br /><span class="text-muted">@T["witness:"] @DisplayName.Of(r.Witness ?? "—", r.WitnessEn)</span></span>
+        </div></td>
+        <td class="text-end pe-4">@if (canEdit && c.Status == HospitalCountStatus.Open)
+            {
+                var row = System.Text.Json.JsonSerializer.Serialize(new { id = c.ID, title = c.CountNo + " · " + DisplayName.Of(r.Name, r.NameEn),
+                    expected = c.Expected.ToString("0.###", inv), counted = c.Counted.ToString("0.###", inv), difference = (c.Difference < 0 ? "-" : "+") + Math.Abs(c.Difference).ToString("0.###", inv) });
+                <button type="button" class="btn btn-sm btn-light-danger text-nowrap" data-resolve data-row="@row"><i class="ki-outline ki-check-circle fs-5"></i>@T["Close the discrepancy"]</button>
+            }</td>
+    </tr>
+}

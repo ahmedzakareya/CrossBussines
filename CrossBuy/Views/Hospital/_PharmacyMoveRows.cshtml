@@ -7,17 +7,7 @@
    receipt — and the unit cost. *@
 @{
     var inv = System.Globalization.CultureInfo.InvariantCulture;
-    string Why(string? s) => s switch
-    {
-        HospitalPharmacyService.MovementSource => "pmv:Dispense",
-        HospitalMedRoutingService.MovementSource => "pmv:Delivery",
-        HospitalMedRoutingService.ReturnSource => "pmv:Return",
-        "HospitalDialysis" or "HospitalChemo" or "HospitalRehab" or "HospitalSurgery" => "pmv:Kit",
-        "Receipt" or "GoodsReceipt" or "PurchaseInvoice" => "pmv:Receipt",
-        "Opening" => "pmv:Opening",
-        "TransferIn" or "TransferOut" or "Transfer" => "pmv:Transfer",
-        _ => "pmv:Other",
-    };
+    string Why(string? s) => HospitalStockSourceLabels.Key(s);   // H137: one map, shared with the controlled-drug ledger
 }
 @foreach (var r in Model)
 {

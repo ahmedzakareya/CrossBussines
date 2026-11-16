@@ -33,6 +33,15 @@ namespace CrossBuy.Controllers
 			ViewBag.MoneyDp = await HttpContext.RequestServices.GetRequiredService<ICurrencyRounding>().DecimalsAsync(ctx.CompanyId, null);
 		}
 
+		/// The witnesses a pharmacy act may name: anyone else with a sign-in (they confirm with their own password), with their faces.
+		private async Task<List<(int ID, string Name, string NameEn, string? Photo)>> WitnessesAsync(BusinessContext ctx, CancellationToken ct)
+		{
+			var wit = await _db.Employee.AsNoTracking().Where(e => e.EmpCompanyID == ctx.CompanyId && e.IsActive && e.UserId != null && e.ID != ctx.EmployeeId)
+				.OrderBy(e => e.FullName).Select(e => new { e.ID, e.FullName, e.FullNameEn }).ToListAsync(ct);
+			var wp = await EmployeePhotos.ResolveAsync(_db, ctx, wit.Select(s => s.ID).ToList(), ct);
+			return wit.Select(s => (s.ID, Name: s.FullName ?? "", NameEn: s.FullNameEn ?? s.FullName ?? "", Photo: (string?)wp.GetValueOrDefault(s.ID))).ToList();
+		}
+
 		private static DateTime WardToday() => HospitalNursingService.UtcToWard(DateTime.UtcNow).Date;
 
 		[HttpGet("Pharmacy/Disposals")]
@@ -47,11 +56,7 @@ namespace CrossBuy.Controllers
 			await MoneyFormatAsync(ctx, ct);
 			if (ViewBag.CanPharmacy == true)
 			{
-				// the witness: anyone else with a sign-in (they confirm with their own password)
-				var wit = await _db.Employee.AsNoTracking().Where(e => e.EmpCompanyID == ctx.CompanyId && e.IsActive && e.UserId != null && e.ID != ctx.EmployeeId)
-					.OrderBy(e => e.FullName).Select(e => new { e.ID, e.FullName, e.FullNameEn }).ToListAsync(ct);
-				var wp = await EmployeePhotos.ResolveAsync(_db, ctx, wit.Select(s => s.ID).ToList(), ct);
-				ViewBag.Witnesses = wit.Select(s => (s.ID, Name: s.FullName ?? "", NameEn: s.FullNameEn ?? s.FullName ?? "", Photo: (string?)wp.GetValueOrDefault(s.ID))).ToList();
+				ViewBag.Witnesses = await WitnessesAsync(ctx, ct);
 				ViewBag.Vendors = (await _db.Vendors.AsNoTracking().Where(v => v.CompanyID == ctx.CompanyId).OrderBy(v => v.Name).Select(v => new { v.ID, v.Name, v.NameEn }).ToListAsync(ct))
 					.Select(v => (v.ID, Name: v.Name, NameEn: v.NameEn)).ToList();
 			}

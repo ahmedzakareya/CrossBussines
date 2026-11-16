@@ -1,0 +1,278 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Controllers
+@using CrossBuy.Models.Context.Hospital
+@model HospitalCdStats
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H137: the controlled-drug register of a store.
+      · Toolbar: the store (a select2 of the pharmacy's store, the ward stores and quarantine).
+      · Four demo39 stat tiles.
+      · Three line tabs, each list in the theme's table widget (cbServerList): balances, one drug's ledger with its running
+        balance, counts and their discrepancies.
+      · Two theme modals:
+          - the blind count: the expected quantity is never shown;
+          - the resolution: its fields follow the chosen reason.
+*@
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Controlled-drug register"].Value;
+    var stores = (IReadOnlyList<HospitalCdStore>)ViewBag.Stores;
+    var store = ViewBag.Store as HospitalCdStore;
+    string tab = (string)ViewBag.Tab;
+    var drugs = (IReadOnlyList<HospitalCdBalance>)ViewBag.Drugs;
+    int? item = ViewBag.Item as int?;
+    bool isAr = System.Globalization.CultureInfo.CurrentUICulture.Name.StartsWith("ar");
+    bool canEdit = ViewBag.CanPharmacy == true && store != null;
+    var witnesses = (ViewBag.Witnesses as List<(int ID, string Name, string NameEn, string? Photo)>) ?? new();
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+    var tiles = new (string Label, string N, string Note, string Icon, string Tone, string? Tab, string? Filter)[] {
+        (T["Controlled drugs in stock"].Value, Model.Drugs.ToString(), string.Format(T["{0} units on hand"].Value, Model.Units.ToString("0.###", inv)), "ki-lock-2", "dark", HospitalController.CdTabs.Balances, "stock"),
+        (T["Open discrepancies"].Value, Model.OpenDiscrepancies.ToString(), T["counts that did not match"].Value, "ki-information-2", Model.OpenDiscrepancies > 0 ? "danger" : "success", HospitalController.CdTabs.Counts, HospitalCountStatus.Open),
+        (T["Overdue"].Value, Model.Overdue.ToString(), T["open past the 12-hour shift"].Value, "ki-timer", Model.Overdue > 0 ? "danger" : "success", HospitalController.CdTabs.Counts, HospitalCountStatus.Open),
+        (T["Counts this week"].Value, Model.CountsThisWeek.ToString(), T["blind, witnessed"].Value, "ki-clipboard", "primary", HospitalController.CdTabs.Counts, null) };
+    var tabs = new (string Key, string Label, string Icon)[] {
+        (HospitalController.CdTabs.Balances, T["Balances"].Value, "ki-capsule"),
+        (HospitalController.CdTabs.Ledger, T["Ledger"].Value, "ki-row-vertical"),
+        (HospitalController.CdTabs.Counts, T["Counts and discrepancies"].Value, "ki-clipboard") };
+    string StoreLabel(HospitalCdStore s) => s.Code + " · " + DisplayName.Of(s.Name, s.NameEn) + " (" + T["cdk:" + s.Kind].Value + ")";
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Controlled-drug register"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item"><a href="@Url.Action("Pharmacy")" class="text-muted text-hover-primary">@T["Pharmacy"]</a></li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-400 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@T["Every movement with its running balance; blind counts, witnessed"]</li>
+            </ul>
+        </div>
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+            <div class="w-300px"><select class="form-select form-select-solid form-select-sm" data-store data-hide-search="true">
+                @foreach (var s in stores) { <option value="@s.Id" selected="@(s.Id == store?.Id)">@StoreLabel(s)</option> }
+            </select></div>
+            <a href="@Url.Action("Formulary")#controlled" class="btn btn-sm btn-light btn-active-light-primary"><i class="ki-outline ki-book-open fs-4"></i>@T["Drug formulary"]</a>
+        </div>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (store == null)
+        {
+            <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-6 mb-5">
+                <i class="ki-outline ki-information fs-2tx text-primary me-4"></i>
+                <div class="d-flex flex-stack flex-grow-1 flex-wrap gap-3"><div class="fw-semibold">
+                    <h4 class="text-gray-900 fw-bold mb-1">@T["Choose the pharmacy store first"]</h4>
+                    <div class="fs-6 text-gray-700">@T["The pharmacy's stock is the store chosen in the pharmacy settings."]</div></div>
+                    <a href="@Url.Action("Pharmacy")" class="btn btn-sm btn-primary">@T["Pharmacy settings"]</a></div>
+            </div>
+        }
+        else
+        {
+            <div class="row g-5 g-xl-8 mb-5">
+                @foreach (var s in tiles)
+                {
+                    <div class="col-sm-6 col-xl-3">
+                        <a href="@Url.Action("ControlledRegister", new { store = store.Id, tab = s.Tab })@(s.Filter != null ? "#" + s.Filter : "")" class="card card-flush h-100 hover-elevate-up">
+                            <div class="card-body d-flex flex-column justify-content-between pt-6 pb-0 px-6">
+                                <div class="symbol symbol-45px mb-5"><span class="symbol-label bg-light-@s.Tone"><i class="ki-outline @s.Icon fs-2x text-@s.Tone"></i></span></div>
+                                <div class="d-flex flex-column">
+                                    <span class="fs-2hx fw-bold text-@(s.Tone == "danger" ? "danger" : "gray-900") lh-1 ls-n2 hp-num">@s.N</span>
+                                    <span class="text-gray-500 pt-2 fw-semibold fs-6">@s.Label</span>
+                                </div>
+                            </div>
+                            <div class="card-body d-flex align-items-end pt-3 pb-6 px-6">
+                                <div class="d-flex fs-7 fw-semibold align-items-center text-gray-500"><div class="bullet w-8px h-6px rounded-2 bg-@s.Tone me-3 flex-shrink-0"></div><span>@s.Note</span></div>
+                            </div>
+                        </a>
+                    </div>
+                }
+            </div>
+
+            <div class="card card-flush">
+                <div class="card-header pt-5 border-0">
+                    <ul class="nav nav-stretch nav-line-tabs nav-line-tabs-2x border-transparent fs-6 fw-bold">
+                        @foreach (var t in tabs)
+                        {
+                            <li class="nav-item"><a class="nav-link text-active-primary pb-4 @(t.Key == tab ? "active" : "")" href="@Url.Action("ControlledRegister", new { store = store.Id, tab = t.Key, item })"><i class="ki-outline @t.Icon fs-4 me-2"></i>@t.Label</a></li>
+                        }
+                    </ul>
+                </div>
+                <div class="card-header align-items-center pt-2 gap-2 gap-md-5 border-0">
+                    <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@tabs.First(t => t.Key == tab).Label</span>
+                        <span class="text-gray-500 mt-1 fw-semibold fs-7"><span id="resultCount">—</span></span></h3>
+                    <div class="card-toolbar d-flex flex-wrap align-items-center gap-2">
+                        @if (tab == HospitalController.CdTabs.Ledger)
+                        {
+                            <div class="w-275px"><select class="form-select form-select-solid form-select-sm" data-ledger-item>
+                                @foreach (var d in drugs) { <option value="@d.ItemId" selected="@(d.ItemId == item)">@(HospitalDrugRules.Shown(d.Drug) ?? DisplayName.Of(d.Name, d.NameEn)) · @d.Code</option> }
+                            </select></div>
+                        }
+                        else if (tab == HospitalController.CdTabs.Balances)
+                        {
+                            <div class="w-225px"><input type="text" id="f_q" class="form-control form-control-solid form-control-sm" autocomplete="off" placeholder="@T["Search by name or code…"]" /></div>
+                        }
+                        <div class="w-175px"><select class="form-select form-select-solid form-select-sm cb-filter" id="f_filter">
+                            <option value="">@T["All"]</option>
+                            @if (tab == HospitalController.CdTabs.Balances) { <option value="stock">@T["In stock"]</option><option value="open">@T["With an open discrepancy"]</option> }
+                            else if (tab == HospitalController.CdTabs.Ledger) { <option value="in">@T["Into the store"]</option><option value="out">@T["Out of the store"]</option> }
+                            else { foreach (var st in HospitalCountStatus.All) { <option value="@st">@T["cds:" + st]</option> } }
+                        </select></div>
+                        <div class="w-75px"><select id="f_size" class="form-select form-select-solid form-select-sm"><option value="25">25</option><option value="50">50</option><option value="100">100</option></select></div>
+                        <button type="button" id="f_reset" class="btn btn-sm btn-icon btn-light btn-active-light-primary" title="@T["Reset"]" data-bs-toggle="tooltip"><i class="ki-outline ki-arrows-circle fs-3"></i></button>
+                    </div>
+                </div>
+                <div class="card-body pt-2">
+                    @{ int cols = tab == HospitalController.CdTabs.Balances ? 4 : tab == HospitalController.CdTabs.Ledger ? 6 : 8; }
+                    <div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
+                        <thead><tr class="fw-bold text-muted bg-light">
+                            @if (tab == HospitalController.CdTabs.Balances)
+                            {
+                                <th class="ps-4 min-w-250px rounded-start">@T["Medicine"]</th><th class="text-end">@T["On hand"]</th><th>@T["Last count"]</th><th class="text-end pe-4 rounded-end"></th>
+                            }
+                            else if (tab == HospitalController.CdTabs.Ledger)
+                            {
+                                <th class="ps-4 rounded-start">@T["Date"]</th><th>@T["Movement"]</th><th class="text-end">@T["Qty"]</th><th class="text-end">@T["Balance after"]</th><th>@T["Why"]</th><th class="pe-4 rounded-end">@T["Made by"]</th>
+                            }
+                            else
+                            {
+                                <th class="ps-4 rounded-start">@T["Count no."]</th><th class="min-w-175px">@T["Medicine"]</th><th class="text-end">@T["Expected"]</th><th class="text-end">@T["Counted"]</th><th class="text-end">@T["Difference"]</th><th>@T["State"]</th><th>@T["Counted by and witness"]</th><th class="text-end pe-4 rounded-end"></th>
+                            }
+                        </tr></thead>
+                        <tbody id="rows"><tr id="loadingRow"><td colspan="@cols" class="text-center text-muted py-10"><span class="spinner-border spinner-border-sm text-primary me-2"></span>@T["Loading…"]</td></tr>
+                            <tr id="emptyRow" class="d-none"><td colspan="@cols" class="text-center py-12"><i class="ki-outline ki-lock-2 fs-3x text-gray-300 mb-4 d-block"></i><span class="fs-6 fw-semibold text-gray-600">@T["Nothing matches."]</span></td></tr></tbody>
+                    </table></div>
+                    <div class="d-flex flex-stack flex-wrap pt-5"><div class="fs-7 text-muted" id="pageInfo"></div><ul class="pagination" id="pager"></ul></div>
+                </div>
+            </div>
+        }
+    </div></div>
+</div>
+
+@if (canEdit)
+{
+    @* the blind count *@
+    <div class="modal fade" id="countModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-600px"><div class="modal-content rounded">
+        <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-10">
+            <div class="mb-8 text-center"><h1 class="mb-2">@T["Blind count"]</h1><div class="text-muted fw-semibold fs-6"><bdi data-title></bdi></div></div>
+            <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-5 mb-8">
+                <i class="ki-outline ki-eye-slash fs-2tx text-primary me-4"></i>
+                <div class="fw-semibold fs-7 text-gray-700">@T["Count what is on the shelf. The quantity the register expects is not shown; a difference opens a discrepancy to close within the shift."]</div>
+            </div>
+            <div class="row g-6">
+                <div class="col-12"><label class="fs-6 fw-semibold mb-2 required">@T["Counted on the shelf"]</label><input type="number" min="0" step="any" class="form-control form-control-solid form-control-lg hp-num fs-2 fw-bold text-center" data-c="counted" /></div>
+                <div class="col-md-7"><label class="fs-6 fw-semibold mb-2 required">@T["Witness"]</label>
+                    <select class="form-select form-select-solid" data-c="witnessId" data-witness data-no-select2><option></option>
+                        @foreach (var w in witnesses) { <option value="@w.ID" data-photo="@w.Photo" data-initials="@HospitalUi.Initials(w.NameEn)">@DisplayName.Of(w.Name, w.NameEn)</option> }</select></div>
+                <div class="col-md-5"><label class="fs-6 fw-semibold mb-2 required">@T["The witness's password"]</label><input type="password" class="form-control form-control-solid" autocomplete="new-password" data-c="password" /></div>
+            </div>
+            <div class="text-center pt-10"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-count-save><i class="ki-outline ki-check fs-4"></i>@T["Record the count"]</button></div>
+        </div>
+    </div></div></div>
+
+    @* closing a discrepancy *@
+    <div class="modal fade" id="resolveModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-650px"><div class="modal-content rounded">
+        <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-10">
+            <div class="mb-8 text-center"><h1 class="mb-2">@T["Close the discrepancy"]</h1><div class="text-muted fw-semibold fs-6"><bdi data-title></bdi></div></div>
+            <div class="d-flex flex-wrap flex-center mb-8">
+                <div class="border border-gray-300 border-dashed rounded py-3 px-5 mx-2 text-center"><div class="fs-3 fw-bold text-gray-800 hp-num" data-v="expected"></div><div class="fw-semibold text-muted fs-7">@T["Expected"]</div></div>
+                <div class="border border-gray-300 border-dashed rounded py-3 px-5 mx-2 text-center"><div class="fs-3 fw-bold text-gray-800 hp-num" data-v="counted"></div><div class="fw-semibold text-muted fs-7">@T["Counted"]</div></div>
+                <div class="border border-danger border-dashed rounded py-3 px-5 mx-2 text-center"><div class="fs-3 fw-bold text-danger hp-num" dir="ltr" data-v="difference"></div><div class="fw-semibold text-muted fs-7">@T["Difference"]</div></div>
+            </div>
+            <div class="row g-6">
+                <div class="col-12"><label class="fs-6 fw-semibold mb-2 required">@T["Why"]</label>
+                    <select class="form-select form-select-solid" data-r="resolution" data-hide-search="true">@foreach (var r in HospitalCountResolution.All) { <option value="@r">@T["cdr:" + r]</option> }</select></div>
+                <div class="col-md-6" data-for="Miscount"><label class="fs-6 fw-semibold mb-2 required">@T["The recount"]</label><input type="number" min="0" step="any" class="form-control form-control-solid hp-num" data-r="recounted" /></div>
+                <div class="col-12"><label class="fs-6 fw-semibold mb-2">@T["Note"]</label><textarea class="form-control form-control-solid" rows="2" maxlength="400" dir="auto" data-r="note"></textarea></div>
+                <div class="col-md-7" data-for="Loss"><label class="fs-6 fw-semibold mb-2 required">@T["Witness"]</label>
+                    <select class="form-select form-select-solid" data-r="witnessId" data-witness data-no-select2><option></option>
+                        @foreach (var w in witnesses) { <option value="@w.ID" data-photo="@w.Photo" data-initials="@HospitalUi.Initials(w.NameEn)">@DisplayName.Of(w.Name, w.NameEn)</option> }</select></div>
+                <div class="col-md-5" data-for="Loss"><label class="fs-6 fw-semibold mb-2 required">@T["The witness's password"]</label><input type="password" class="form-control form-control-solid" autocomplete="new-password" data-r="password" /></div>
+                <div class="col-12" data-for="Loss"><div class="notice d-flex bg-light-danger rounded border-danger border border-dashed p-4"><i class="ki-outline ki-trash fs-2 text-danger me-3"></i><div class="fs-7 fw-semibold text-gray-700">@T["The missing units are written off through the inventory at cost."]</div></div></div>
+            </div>
+            <div class="text-center pt-10"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-resolve-save><i class="ki-outline ki-check fs-4"></i>@T["Close the discrepancy"]</button></div>
+        </div>
+    </div></div></div>
+}
+
+@section Scripts {
+    @if (store != null)
+    {
+        <script>
+            (function () {
+                var storeId = @store.Id, tab = @Json.Serialize(tab), base = @Json.Serialize(Url.Action("ControlledRegister"));
+                // the store and the ledger's drug navigate: they choose what the page is about
+                function go(el, key) { var u = new URL(location.href); u.searchParams.set(key, el.value); if (key === 'store') { u.searchParams.delete('item'); } u.hash = ''; location.href = u.toString(); }
+                var st = document.querySelector('[data-store]'), li = document.querySelector('[data-ledger-item]');
+                // the toolbar is outside the content the layout's enhancer dresses: the store's dropdown is set up here
+                if (window.jQuery && jQuery.fn.select2 && !jQuery(st).hasClass('select2-hidden-accessible'))
+                    jQuery(st).select2({ width: '100%', dir: document.documentElement.dir || 'rtl', minimumResultsForSearch: Infinity });
+                if (window.CB && CB.onSelectChange) { CB.onSelectChange(st, function () { go(st, 'store'); }); if (li) CB.onSelectChange(li, function () { go(li, 'item'); }); }
+                else { st.addEventListener('change', function () { go(st, 'store'); }); if (li) li.addEventListener('change', function () { go(li, 'item'); }); }
+                var f = document.getElementById('f_filter');
+                function fromHash() { var h = (location.hash || '').replace('#', '');
+                    if (!h || !Array.prototype.some.call(f.options, function (o) { return o.value === h; })) return false;
+                    f.value = h; if (window.jQuery) jQuery(f).trigger('change.select2'); return true; }
+                fromHash();
+                var list = cbServerList({ url: @Json.Serialize(Url.Action("ControlledRegisterData")), isAr: @(isAr ? "true" : "false"),
+                    addParams: function (p) { p.set('store', storeId); p.set('tab', tab); p.set('filter', f.value); if (li) p.set('item', li.value); } });
+                window.addEventListener('hashchange', function () { if (fromHash()) list.reload(); });
+
+                var cEl = document.getElementById('countModal'), rEl = document.getElementById('resolveModal'); if (!cEl) return;
+                var token = document.querySelector('input[name="__RequestVerificationToken"]').value, row = null;
+                var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), matched: @Json.Serialize(T["The count matches the register"].Value),
+                    gap: @Json.Serialize(T["The count does not match: a discrepancy is open — close it within the shift"].Value), saved: @Json.Serialize(T["Saved"].Value),
+                    askLoss: @Json.Serialize(T["Write the missing units off as a loss?"].Value) };
+                function face(o) {
+                    if (!o.id || !o.element) return o.text;
+                    var ph = o.element.getAttribute('data-photo'), s = document.createElement('span'); s.className = 'd-flex align-items-center';
+                    var sym = document.createElement('span'); sym.className = 'symbol symbol-25px symbol-circle me-2';
+                    var lb = document.createElement('span'); lb.className = 'symbol-label fw-bold fs-9 hp-initials'; lb.textContent = o.element.getAttribute('data-initials') || '';
+                    if (ph) { var im = document.createElement('img'); im.alt = ''; im.style.objectFit = 'cover'; im.onerror = function () { sym.replaceChild(lb, im); }; im.src = ph; sym.appendChild(im); } else sym.appendChild(lb);
+                    s.appendChild(sym); s.appendChild(document.createTextNode(o.text)); return s;
+                }
+                [cEl, rEl].forEach(function (m) { if (window.jQuery) jQuery(m.querySelector('[data-witness]')).select2({ dropdownParent: jQuery(m), placeholder: '—', width: '100%', dir: document.documentElement.dir || 'rtl', templateResult: face, templateSelection: face }); });
+                function post(u, b) { return fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(b) }).then(function (x) { return x.json().catch(function () { return { ok: false }; }); }); }
+                function clear(m) { m.querySelectorAll('input,textarea').forEach(function (i) { i.value = ''; }); if (window.jQuery) jQuery(m.querySelector('[data-witness]')).val('').trigger('change.select2'); }
+                // the resolution's fields follow its reason
+                var reason = rEl.querySelector('[data-r="resolution"]');
+                function shape() { rEl.querySelectorAll('[data-for]').forEach(function (b) { b.style.display = b.getAttribute('data-for') === reason.value ? '' : 'none'; }); }
+                if (window.CB && CB.onSelectChange) CB.onSelectChange(reason, shape); else reason.addEventListener('change', shape);
+                document.addEventListener('click', function (e) {
+                    var b = e.target.closest('[data-count],[data-resolve]');
+                    if (b) {
+                        row = JSON.parse(b.getAttribute('data-row'));
+                        var m = b.hasAttribute('data-count') ? cEl : rEl; clear(m);
+                        m.querySelector('[data-title]').textContent = row.title;
+                        if (m === rEl) { ['expected', 'counted', 'difference'].forEach(function (k) { rEl.querySelector('[data-v="' + k + '"]').textContent = row[k]; });
+                            reason.value = row.difference.indexOf('-') === 0 ? 'Loss' : 'Miscount'; if (window.jQuery) jQuery(reason).trigger('change.select2'); shape(); }
+                        bootstrap.Modal.getOrCreateInstance(m).show(); return;
+                    }
+                    var cs = e.target.closest('[data-count-save]');
+                    if (cs) {
+                        var v = cEl.querySelector('[data-c="counted"]').value.trim();
+                        cs.disabled = true;
+                        post(base + '/Count', { storeId: storeId, itemId: row.itemId, counted: v === '' ? -1 : Number(v), witnessId: Number(cEl.querySelector('[data-c="witnessId"]').value) || null, password: cEl.querySelector('[data-c="password"]').value })
+                            .then(function (res) { cs.disabled = false; if (!res.ok) { toastr.error(res.error || W.failed); return; }
+                                bootstrap.Modal.getOrCreateInstance(cEl).hide();
+                                if (res.matched) { toastr.success(W.matched); list.reload(); }
+                                else { toastr.error(W.gap); setTimeout(function () { location.href = base + '?store=' + storeId + '&tab=counts#Open'; }, 900); } });
+                        return;
+                    }
+                    var rs = e.target.closest('[data-resolve-save]');
+                    if (rs) {
+                        var body = {}; rEl.querySelectorAll('[data-r]').forEach(function (i) { var k = i.getAttribute('data-r'), val = i.value.trim();
+                            body[k] = k === 'recounted' ? (val === '' ? null : Number(val)) : k === 'witnessId' ? (Number(val) || null) : (val || null); });
+                        var send = function () { rs.disabled = true; post(base + '/Counts/' + row.id + '/Resolve', body).then(function (res) { rs.disabled = false; if (!res.ok) { toastr.error(res.error || W.failed); return; }
+                            bootstrap.Modal.getOrCreateInstance(rEl).hide(); toastr.success(W.saved); setTimeout(function () { location.reload(); }, 500); }); };
+                        if (body.resolution === 'Loss') cbConfirm(W.askLoss, { kind: 'danger' }).then(function (ok) { if (ok) send(); }); else send();
+                    }
+                });
+            })();
+        </script>
+    }
+}

@@ -6993,4 +6993,57 @@
   <data name="{0} h {1} min" xml:space="preserve"><value>{0} h {1} min</value></data>
   <data name="{0}% accepted by prescribers" xml:space="preserve"><value>{0} % acceptées par les prescripteurs</value></data>
   <data name="{0} d" xml:space="preserve"><value>{0} j</value></data>
+  <data name="A surplus is not a loss" xml:space="preserve"><value>Un excédent n'est pas une perte</value></data>
+  <data name="Balance after" xml:space="preserve"><value>Solde après</value></data>
+  <data name="Balances" xml:space="preserve"><value>Soldes</value></data>
+  <data name="Blind count" xml:space="preserve"><value>Comptage à l'aveugle</value></data>
+  <data name="Close the discrepancy" xml:space="preserve"><value>Clore l'écart</value></data>
+  <data name="Controlled drugs in stock" xml:space="preserve"><value>Stupéfiants en stock</value></data>
+  <data name="Controlled-drug register" xml:space="preserve"><value>Registre des stupéfiants</value></data>
+  <data name="Count no." xml:space="preserve"><value>N° de comptage</value></data>
+  <data name="Count what is on the shelf. The quantity the register expects is not shown; a difference opens a discrepancy to close within the shift." xml:space="preserve"><value>Comptez ce qui est en rayon. La quantité attendue n'est pas affichée ; un écart doit être clos dans le poste.</value></data>
+  <data name="Counted by and witness" xml:space="preserve"><value>Compté par et témoin</value></data>
+  <data name="Counted on the shelf" xml:space="preserve"><value>Compté en rayon</value></data>
+  <data name="Counts and discrepancies" xml:space="preserve"><value>Comptages et écarts</value></data>
+  <data name="Counts this week" xml:space="preserve"><value>Comptages cette semaine</value></data>
+  <data name="Difference" xml:space="preserve"><value>Écart</value></data>
+  <data name="Enter the recount" xml:space="preserve"><value>Saisissez le recomptage</value></data>
+  <data name="Enter what is on the shelf" xml:space="preserve"><value>Saisissez ce qui est en rayon</value></data>
+  <data name="Every movement with its running balance; blind counts, witnessed" xml:space="preserve"><value>Chaque mouvement avec son solde courant ; comptages à l'aveugle, témoignés</value></data>
+  <data name="Expected" xml:space="preserve"><value>Attendu</value></data>
+  <data name="In stock" xml:space="preserve"><value>En stock</value></data>
+  <data name="Last count" xml:space="preserve"><value>Dernier comptage</value></data>
+  <data name="Ledger" xml:space="preserve"><value>Registre</value></data>
+  <data name="Made by" xml:space="preserve"><value>Par</value></data>
+  <data name="Movement" xml:space="preserve"><value>Mouvement</value></data>
+  <data name="Never counted" xml:space="preserve"><value>Jamais compté</value></data>
+  <data name="Open discrepancies" xml:space="preserve"><value>Écarts ouverts</value></data>
+  <data name="Record the count" xml:space="preserve"><value>Enregistrer le comptage</value></data>
+  <data name="The count does not match: a discrepancy is open — close it within the shift" xml:space="preserve"><value>Le comptage ne concorde pas : un écart est ouvert — à clore dans le poste</value></data>
+  <data name="The count matches the register" xml:space="preserve"><value>Le comptage concorde avec le registre</value></data>
+  <data name="The missing units are written off through the inventory at cost." xml:space="preserve"><value>Les unités manquantes sont sorties du stock au coût.</value></data>
+  <data name="The recount" xml:space="preserve"><value>Le recomptage</value></data>
+  <data name="The recount differs from the expected quantity — choose another reason" xml:space="preserve"><value>Le recomptage diffère de l'attendu — choisissez un autre motif</value></data>
+  <data name="This count has no open discrepancy" xml:space="preserve"><value>Ce comptage n'a pas d'écart ouvert</value></data>
+  <data name="With an open discrepancy" xml:space="preserve"><value>Avec un écart ouvert</value></data>
+  <data name="Write the missing units off as a loss?" xml:space="preserve"><value>Sortir les unités manquantes en perte ?</value></data>
+  <data name="Write which movement was not recorded" xml:space="preserve"><value>Indiquez le mouvement non enregistré</value></data>
+  <data name="blind, witnessed" xml:space="preserve"><value>à l'aveugle, témoignés</value></data>
+  <data name="cdk:Pharmacy" xml:space="preserve"><value>Pharmacie</value></data>
+  <data name="cdk:Quarantine" xml:space="preserve"><value>Quarantaine</value></data>
+  <data name="cdk:Ward" xml:space="preserve"><value>Service</value></data>
+  <data name="cdr:Documentation" xml:space="preserve"><value>Mouvement non enregistré</value></data>
+  <data name="cdr:Loss" xml:space="preserve"><value>Perte — sortie du stock</value></data>
+  <data name="cdr:Miscount" xml:space="preserve"><value>Erreur de comptage (recomptage conforme)</value></data>
+  <data name="cds:Matched" xml:space="preserve"><value>Concordant</value></data>
+  <data name="cds:Open" xml:space="preserve"><value>Écart ouvert</value></data>
+  <data name="cds:Resolved" xml:space="preserve"><value>Écart clos</value></data>
+  <data name="counts that did not match" xml:space="preserve"><value>comptages non concordants</value></data>
+  <data name="open past the 12-hour shift" xml:space="preserve"><value>ouverts au-delà du poste de 12 h</value></data>
+  <data name="pmv:Adjustment" xml:space="preserve"><value>Ajustement d'inventaire</value></data>
+  <data name="pmv:Controlled" xml:space="preserve"><value>Registre du service (dose ou perte)</value></data>
+  <data name="pmv:SupplierReturn" xml:space="preserve"><value>Retour fournisseur</value></data>
+  <data name="pmv:WriteOff" xml:space="preserve"><value>Sortie de stock</value></data>
+  <data name="witness:" xml:space="preserve"><value>témoin :</value></data>
+  <data name="{0} units on hand" xml:space="preserve"><value>{0} unités en stock</value></data>
 </root>

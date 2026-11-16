@@ -23,6 +23,27 @@ namespace CrossBuy.BL.Hospital
 	public sealed record HospitalPharmacyBatchRow(int ItemId, string Code, string Name, string NameEn, string BatchNo, DateTime? Expiry, decimal Qty, int? DaysLeft, string State);
 	public sealed record HospitalPharmacyMoveRow(DateTime At, int ItemId, string Code, string Name, string NameEn, short Direction, decimal Qty, decimal UnitCost, string? SourceType, string? Reference, string? BatchNo);
 
+	/// Why a stock movement happened, as a label key (pmv:…): the pharmacy stock screen and the controlled-drug ledger read
+	/// the same map (H137).
+	public static class HospitalStockSourceLabels
+	{
+		public static string Key(string? sourceType) => sourceType switch
+		{
+			HospitalPharmacyService.MovementSource => "pmv:Dispense",
+			HospitalMedRoutingService.MovementSource => "pmv:Delivery",
+			HospitalMedRoutingService.ReturnSource => "pmv:Return",
+			"HospitalDialysis" or "HospitalChemo" or "HospitalRehab" or "HospitalSurgery" => "pmv:Kit",
+			HospitalControlledRules.MovementSource => "pmv:Controlled",
+			"Receipt" or "GoodsReceipt" or "PurchaseInvoice" => "pmv:Receipt",
+			"PurchaseReturn" => "pmv:SupplierReturn",
+			"StockWriteOff" => "pmv:WriteOff",
+			"Adjustment" => "pmv:Adjustment",
+			"Opening" => "pmv:Opening",
+			"TransferIn" or "TransferOut" or "Transfer" => "pmv:Transfer",
+			_ => "pmv:Other",
+		};
+	}
+
 	public static class HospitalPharmacyStockRules
 	{
 		/// A batch's state on a day: expired, near (within the pharmacy's near-expiry days), fine — or nothing to say (no expiry).
