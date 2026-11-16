@@ -679,6 +679,60 @@ NEGATIVES = [
     "average salary", "total payroll", "salary by job title", "staff cost",
     "what does the manager earn", "who is on leave", "leave balance",
 
+    # ---- THE HOSPITAL'S UNANSWERED QUESTIONS, WHICH WERE BEING ANSWERED --------------------
+    #
+    # A census of 28 realistic hospital questions on 2026-11-16 found six that did not refuse.
+    # They were not near-misses; they were other departments' figures wearing a hospital question:
+    #   «كام كيس دم عندنا»        -> the CASH BALANCE, 239,605
+    #   «فصائل الدم المتاحة»       -> the WAREHOUSE list
+    #   «كام عملية اتعملت»        -> a SALES line, "TM5 استشارة 1,600.00"
+    #   «كام اشعة اتعملت»         -> the same sales line
+    #   «التحاليل حسب النوع»      -> STOCK MOVEMENTS by movement type
+    #   «المرضى المنومين حسب القسم» -> the amount BILLED by department
+    # Two of them came back with an EMPTY `spoken`, so the reader got a table of cash balances
+    # under a blood-bank question with no sentence to question.
+    #
+    # The mechanism is the one «كام زيارة عندنا» taught: a noun the model has never seen does not
+    # refuse, it falls to whichever intent owns the sentence SHAPE. "كام … عندنا" belongs to cash,
+    # "… المتاحة" to warehouses, "كام … اتعمل" to sales. So the discriminator has to be the NOUN,
+    # which is why each one below appears in several frames and no frame appears only here.
+    #
+    # THESE ARE NOT PERMANENT. The data exists for some of them — 75 blood units, 18 surgeries,
+    # 26 lab results — and each will move to its own intent as its surface ships. What is NOT
+    # coming back is the alternative: an honest refusal is correct today and 1,600.00 never was.
+    #
+    # BEDS ARE DIFFERENT AND STAY. 22 beds carry a Status (8 vacant, 7 occupied) and there is
+    # exactly ONE admission in the whole database, so the status is seeded rather than derived.
+    # An occupancy surface would report seven occupied beds for one admitted patient — the most
+    # believable wrong answer on this list, and the hardest to catch once shipped.
+    "كام سرير فاضي", "كام سرير متاح", "الاسرة الفاضية", "نسبة اشغال الاسرة", "اشغال الاسرة",
+    "كام مريض منوم", "المرضى المنومين", "المرضى المنومين حسب القسم", "كام حالة منومة",
+    "how many free beds", "bed occupancy", "occupancy rate", "how many inpatients",
+    # THE THEATRE. "عملية" alone is also "اخر عملية بيع", so the surgical sense is carried by the
+    # company it keeps rather than by the word.
+    "كام عملية اتعملت", "كام عملية جراحية", "العمليات الجراحية", "عمليات الشهر ده",
+    "العمليات حسب الجراح", "جدول العمليات", "غرفة العمليات", "كام جراحة اتعملت",
+    "how many surgeries", "surgeries this month", "operating theatre schedule", "cases by surgeon",
+    # THE LAB AND THE IMAGING FLOOR. Never the bare "تحليل": that word is "تحليل المصروفات" and
+    # "تحليل القيود" in two intents that answer correctly today.
+    "كام تحليل معمل", "التحاليل", "التحاليل حسب النوع", "تحاليل المعمل", "طلبات التحاليل",
+    "نتايج التحاليل الحرجة", "النتايج الحرجة", "تحاليل الدم", "كام عينة اتسحبت",
+    "كام اشعة اتعملت", "الاشعات", "طلبات الاشعة", "تقارير الاشعة",
+    "lab tests", "lab orders", "critical lab results", "how many scans", "imaging requests",
+    # THE BLOOD BANK.
+    "كام كيس دم عندنا", "كام كيس دم", "اكياس الدم", "مخزون الدم", "فصائل الدم المتاحة",
+    "الفصائل المتاحة", "كام وحدة دم", "بنك الدم",
+    "how many blood bags", "blood stock", "available blood groups", "blood bank",
+    # WHAT WAS MEASURED ON THE PATIENT. 347 observations, but from SIX patients — and 100 of the
+    # numeric ones sit on a concept with no reference range, so nothing can call them normal.
+    # An average here is an average of six people, and «متوسط الضغط» was being answered with the
+    # COUNT of hypertension diagnoses (18) because "الضغط" is inside that diagnosis's name.
+    "متوسط الضغط", "متوسط السكر التراكمي", "متوسط الوزن", "متوسط القياسات",
+    "كام قراءة خارج المعدل الطبيعي", "القراءات الحرجة", "القراءات غير الطبيعية",
+    "قياسات المرضى", "العلامات الحيوية",
+    "average blood pressure", "average hba1c", "abnormal readings", "critical readings",
+    "vital signs", "patient measurements",
+
     "sales report", "maintenance schedule", "project budget",
     # LOOK-ALIKES: inventory and finance words, no handler
     # RATING A SUPPLIER. No such judgement is recorded anywhere in this product, so every one of
@@ -705,6 +759,13 @@ NEGATIVES = [
     "ايه الاصناف اللي قربت تخلص", "الاصناف اللي قربت تخلص", "ايه الاصناف اللي محتاجة طلب",
     "الاصناف تحت حد الطلب", "حد اعادة الطلب", "نقطة اعادة الطلب", "ايه اللي لازم اطلبه",
     "الاصناف الناقصة", "اصناف قربت تنتهي", "اطلبلي اللي ناقص",
+    # «كام صنف دوا خلص» REFUSED UNTIL THE HOSPITAL NEGATIVES WERE ADDED, AND THEN ANSWERED —
+    # with revenue by item, "مياه معدنية 72,125", under a question about drugs that ran out. The
+    # retrain that was meant to stop six wrong answers created a seventh, in an intent nothing in
+    # that edit touched. Caught by re-asking the whole census rather than only the six, which is
+    # the only way this class of regression is ever visible: a retrain has no local edits.
+    "كام صنف دوا خلص", "ايه الادوية اللي خلصت", "الادوية الناقصة", "ادوية قربت تخلص",
+    "كام دوا خلص من الصيدلية", "which drugs are out of stock", "drugs running out",
     "which items should I reorder", "items below reorder level", "low stock items",
     "what needs reordering", "items running out", "reorder point",
 

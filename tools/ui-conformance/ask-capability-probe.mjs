@@ -92,6 +92,37 @@ const CASES = [
   // to: a surface over an invented threshold answers confidently and wrongly forever.
   ['ايه الاصناف اللي قربت تخلص', 'refuse', 'no reorder point is recorded anywhere'],
   ['مين المورد اللي رفع اسعاره', 'refuse', 'no price history exists to compare against'],
+
+  // ---- THE HOSPITAL QUESTIONS THAT WERE BEING ANSWERED FROM ANOTHER DEPARTMENT ---------------
+  //
+  // A census of 28 realistic hospital questions on 2026-11-16 found SIX that did not refuse, and
+  // none of them was a near miss. They were other departments' figures wearing a hospital
+  // question, and two arrived with an EMPTY spoken line, so the reader got a table of cash
+  // balances under a blood-bank question with no sentence to doubt.
+  //
+  // The cause is one mechanism: a noun the router has never seen does not refuse, it falls to
+  // whichever intent owns the sentence SHAPE. "كام … عندنا" is cash, "… المتاحة" is warehouses,
+  // "كام … اتعمل" is sales. Each case below records what it used to answer, because the number
+  // is the only thing that makes the failure legible.
+  ['كام كيس دم عندنا',      'refuse', 'was the CASH BALANCE, 239,605'],
+  ['فصائل الدم المتاحة',    'refuse', 'was the WAREHOUSE list'],
+  ['كام عملية اتعملت',      'refuse', 'was a sales line, "TM5 استشارة 1,600.00"'],
+  ['التحاليل حسب النوع',    'refuse', 'was stock movements grouped by movement type'],
+  ['المرضى المنومين حسب القسم', 'refuse', 'was the amount BILLED by department'],
+  // 22 beds carry a status (8 vacant, 7 occupied) and the database holds ONE admission, so the
+  // status is seeded, not derived. An occupancy surface would report seven occupied beds for one
+  // admitted patient: the most believable wrong answer on this list.
+  ['كام سرير فاضي',         'refuse', 'bed status is seeded; 1 admission exists in total'],
+  // 347 observations from SIX patients, and 100 of the numeric ones sit on a concept with no
+  // reference range. «متوسط الضغط» was answered with the COUNT of hypertension diagnoses (18),
+  // because "الضغط" is inside that diagnosis's own name - a regression from the surface shipped
+  // the same day.
+  ['متوسط الضغط',           'refuse', 'was 18 - the COUNT of hypertension diagnoses, as an average'],
+  // NOT A HOSPITAL CASE, AND THAT IS THE POINT. This refused before the hospital negatives were
+  // added and ANSWERED afterwards, with revenue by item under a question about drugs that ran
+  // out. The retrain that removed six wrong answers created a seventh, in an intent the edit
+  // never touched. A retrain has no local edits, so the whole census is re-asked, never the six.
+  ['كام صنف دوا خلص',       'refuse', 'was "مياه معدنية 72,125 (الإيراد)"; no reorder point exists'],
 ];
 
 // ---- ASKING ABOUT A PERSON BY NAME ------------------------------------------------------------
