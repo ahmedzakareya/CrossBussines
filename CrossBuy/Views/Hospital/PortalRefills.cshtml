@@ -8,7 +8,7 @@
     ViewData["Title"] = T["Refill requests"].Value;
     bool canConsult = ViewBag.CanConsult == true;
     int open = Model.Count(r => r.Refill.Status == HospitalPortalRefillStatus.Open);
-    string Badge(string s) => s switch { HospitalPortalRefillStatus.Approved => "success", HospitalPortalRefillStatus.Declined => "danger", _ => "primary" };
+    string Badge(string s) => s switch { HospitalPortalRefillStatus.Approved => "primary", HospitalPortalRefillStatus.Declined => "danger", _ => "primary" };
 }
 <link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
 @Html.AntiForgeryToken()
