@@ -3,7 +3,7 @@
 @model HospitalDeskGrid
 @inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
 @* H140: the day as a time grid — doctors across, every booked or free time down. An appointment opens its patient at
-   the counter; a free slot books the patient at the counter into it and checks them in. The current half-hour is tinted. *@
+   the counter; a free slot books the patient at the counter into it and checks them in. The current half-hour is a neutral band with a red time: a red tint hid the red "waiting" cards on it. *@
 @{
     string Tone(string s) => s switch { "Waiting" => "danger", "WithDoctor" => "info", "Done" => "success", "NoShow" or "Cancelled" => "secondary", _ => "primary" };
     string Time(int minute) => (minute / 60).ToString("00") + ":" + (minute % 60).ToString("00");
@@ -20,7 +20,9 @@ else
         .hp-dg .hp-dg-time{position:sticky;left:0;z-index:1;background:var(--bs-body-bg);box-shadow:inset -1px 0 0 var(--bs-gray-300)}
         [dir=rtl] .hp-dg .hp-dg-time{left:auto;right:0;box-shadow:inset 1px 0 0 var(--bs-gray-300)}
         .hp-dg thead th.hp-dg-time{z-index:3;background:var(--bs-gray-100)}
-        .hp-dg tr.bg-light-danger .hp-dg-time{background:var(--bs-danger-light)}</style>
+        .hp-dg tr.hp-dg-now > td{background:var(--bs-gray-100)}
+        .hp-dg tr.hp-dg-now .hp-dg-time{color:var(--bs-danger);box-shadow:inset 3px 0 0 var(--bs-danger)}
+        [dir=rtl] .hp-dg tr.hp-dg-now .hp-dg-time{box-shadow:inset -3px 0 0 var(--bs-danger)}</style>
     <div class="table-responsive mh-700px scroll-y hp-dg"><table class="table table-bordered align-middle mb-0 fs-7">
         <thead><tr class="fw-bold text-muted bg-light">
             <th class="w-70px ps-3 hp-dg-time">@T["Time"]</th>
@@ -36,7 +38,7 @@ else
             {
                 int m = Model.Minutes[i]; int nextM = i + 1 < Model.Minutes.Count ? Model.Minutes[i + 1] : m + 30;
                 bool now = m <= Model.NowMinute && Model.NowMinute < nextM;
-                <tr class="@(now ? "bg-light-danger" : "")">
+                <tr class="@(now ? "hp-dg-now" : "")">
                     <td class="ps-3 fw-bold hp-num hp-dg-time">@Time(m)</td>
                     @foreach (var d in Model.Doctors)
                     {
