@@ -12,7 +12,7 @@
         <span class="symbol symbol-45px me-5 flex-shrink-0"><span class="symbol-label bg-primary"><i class="ki-outline ki-user-tick fs-2x text-white"></i></span></span>
         <div class="d-flex flex-stack flex-grow-1 flex-wrap gap-3"><div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@T["No file matches"]</h4>
             <div class="fs-6 text-gray-700">@T["Check the spelling or search by the national ID or phone before opening a new file."]</div></div>
-            <a href="@Url.Action("RegisterPatient", "Hospital")" class="btn btn-sm btn-primary"><i class="ki-outline ki-plus fs-4"></i>@T["Register a patient"]</a></div>
+            <button type="button" class="btn btn-sm btn-primary" data-desk-register data-q="@ViewBag.Query"><i class="ki-outline ki-plus fs-4"></i>@T["Register a patient"]</button></div>
     </div>
 }
 else
@@ -46,5 +46,5 @@ else
             </div>
         }
     </div>
-    <div class="d-flex justify-content-end mt-3"><a href="@Url.Action("RegisterPatient", "Hospital")" class="btn btn-sm btn-light btn-active-light-primary"><i class="ki-outline ki-plus fs-5"></i>@T["Not here? Register a patient"]</a></div>
+    <div class="d-flex justify-content-end mt-3"><button type="button" class="btn btn-sm btn-light btn-active-light-primary" data-desk-register data-q="@ViewBag.Query"><i class="ki-outline ki-plus fs-5"></i>@T["Not here? Register a patient"]</button></div>
 }

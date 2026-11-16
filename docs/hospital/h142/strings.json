@@ -1,0 +1,80 @@
+{
+ "unit": "H142 - registering a patient inside the front desk: quick or full, the duplicate warning, the camera",
+ "strings": {
+  "A similar file already exists. Open a new file anyway?": {
+   "ar": "يوجد ملف مشابه بالفعل. فتح ملف جديد رغم ذلك؟",
+   "en": "A similar file already exists. Open a new file anyway?",
+   "fr": "Un dossier semblable existe déjà. En ouvrir un nouveau quand même ?"
+  },
+  "Capture": {
+   "ar": "التقط",
+   "en": "Capture",
+   "fr": "Prendre"
+  },
+  "From a file": {
+   "ar": "من ملف",
+   "en": "From a file",
+   "fr": "Depuis un fichier"
+  },
+  "Full registration": {
+   "ar": "تسجيل كامل",
+   "en": "Full registration",
+   "fr": "Enregistrement complet"
+  },
+  "Insurance and the price list are set from the patient's file after saving.": {
+   "ar": "التأمين وقائمة الأسعار تُضبط من ملف المريض بعد الحفظ.",
+   "en": "Insurance and the price list are set from the patient's file after saving.",
+   "fr": "L'assurance et la liste de prix se règlent depuis le dossier après l'enregistrement."
+  },
+  "Open the full form": {
+   "ar": "افتح النموذج الكامل",
+   "en": "Open the full form",
+   "fr": "Ouvrir le formulaire complet"
+  },
+  "Quick registration": {
+   "ar": "تسجيل سريع",
+   "en": "Quick registration",
+   "fr": "Enregistrement rapide"
+  },
+  "Save and book a walk-in": {
+   "ar": "احفظ واحجز بدون موعد",
+   "en": "Save and book a walk-in",
+   "fr": "Enregistrer et réserver sans rendez-vous"
+  },
+  "Save and open at the counter": {
+   "ar": "احفظ وافتحه عند الشباك",
+   "en": "Save and open at the counter",
+   "fr": "Enregistrer et ouvrir au guichet"
+  },
+  "Scan the card now: the reader types into the ID field.": {
+   "ar": "امسح البطاقة الآن: القارئ يكتب في خانة الهوية.",
+   "en": "Scan the card now: the reader types into the ID field.",
+   "fr": "Passez la carte : le lecteur écrit dans le champ de la pièce."
+  },
+  "Start the camera": {
+   "ar": "شغّل الكاميرا",
+   "en": "Start the camera",
+   "fr": "Ouvrir la caméra"
+  },
+  "The camera could not be opened: allow it in the browser, or take the photo from a file.": {
+   "ar": "تعذّر فتح الكاميرا: اسمح بها في المتصفح، أو خذ الصورة من ملف.",
+   "en": "The camera could not be opened: allow it in the browser, or take the photo from a file.",
+   "fr": "La caméra n'a pas pu s'ouvrir : autorisez-la dans le navigateur, ou prenez la photo depuis un fichier."
+  },
+  "The file is opened": {
+   "ar": "تم فتح الملف",
+   "en": "The file is opened",
+   "fr": "Le dossier est ouvert"
+  },
+  "The file is saved but the photo was not; add it from the file.": {
+   "ar": "حُفظ الملف لكن الصورة لم تُحفظ؛ أضفها من الملف.",
+   "en": "The file is saved but the photo was not; add it from the file.",
+   "fr": "Le dossier est enregistré mais pas la photo ; ajoutez-la depuis le dossier."
+  },
+  "This patient may already have a file": {
+   "ar": "قد يكون لهذا المريض ملف بالفعل",
+   "en": "This patient may already have a file",
+   "fr": "Ce patient a peut-être déjà un dossier"
+  }
+ }
+}
