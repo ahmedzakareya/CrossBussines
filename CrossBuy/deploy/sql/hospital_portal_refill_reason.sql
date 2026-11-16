@@ -19,7 +19,7 @@ IF COL_LENGTH('dbo.HospitalPortalRefills', 'Reason') IS NULL
     ALTER TABLE dbo.HospitalPortalRefills ADD Reason NVARCHAR(20) NULL;
 
 IF NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = 'CK_HospitalPortalRefills_Reason')
-    EXEC('ALTER TABLE dbo.HospitalPortalRefills ADD CONSTRAINT CK_HospitalPortalRefills_Reason
+    EXEC('ALTER TABLE dbo.HospitalPortalRefills WITH CHECK ADD CONSTRAINT CK_HospitalPortalRefills_Reason
           CHECK (Reason IS NULL OR Reason IN (''RunningOut'', ''Lost'', ''Travelling'', ''DoseChanged'', ''Other''))');
 
 EXEC('UPDATE dbo.HospitalPortalRefills SET Reason = ''RunningOut'', Note = NULL

@@ -84,8 +84,9 @@ namespace CrossBuy.Tests
 
 		// ---------------- the model against its slice ----------------
 
-		// H33 adds the English twins (NoteEn, AnswerEn) to these tables
-		private static string Slice() => HospitalSliceParity.Slice("hospital_h27_portal_records.sql") + HospitalSliceParity.Slice("hospital_h33_bilingual_text.sql");
+		// H33 adds the English twins (NoteEn, AnswerEn) to these tables; the refill-reason slice adds HospitalPortalRefills.Reason
+		private static string Slice() => HospitalSliceParity.Slice("hospital_h27_portal_records.sql") + HospitalSliceParity.Slice("hospital_h33_bilingual_text.sql")
+			+ HospitalSliceParity.Slice("hospital_portal_refill_reason.sql");
 		private static Microsoft.EntityFrameworkCore.Metadata.IModel Model() => HospitalSliceParity.Model(HospitalPortalRecordsModel.Configure);
 
 		public static TheoryData<Type, string> Tables => new()
