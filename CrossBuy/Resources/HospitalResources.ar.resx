@@ -6929,4 +6929,68 @@
   <data name="returned, debit notes to suppliers" xml:space="preserve"><value>رُدّ بإشعارات مدينة على الموردين</value></data>
   <data name="{0} batches to destroy" xml:space="preserve"><value>⁦{0}⁩ تشغيلات للإتلاف</value></data>
   <data name="Link the goods-received (GRNI) account of {0}'s inventory category first" xml:space="preserve"><value>اربط حساب البضاعة المستلمة غير المفوترة (GRNI) لفئة ⁦{0}⁩ في المخزون أولًا</value></data>
+  <data name="About" xml:space="preserve"><value>بخصوص</value></data>
+  <data name="Age and sex" xml:space="preserve"><value>العمر والجنس</value></data>
+  <data name="Choose how serious it is" xml:space="preserve"><value>اختر درجة الخطورة</value></data>
+  <data name="Choose the kind of problem" xml:space="preserve"><value>اختر نوع المشكلة</value></data>
+  <data name="Clinical picture" xml:space="preserve"><value>الصورة السريرية</value></data>
+  <data name="How serious" xml:space="preserve"><value>درجة الخطورة</value></data>
+  <data name="Interventions this month" xml:space="preserve"><value>تدخلات هذا الشهر</value></data>
+  <data name="Kind of problem" xml:space="preserve"><value>نوع المشكلة</value></data>
+  <data name="Late for review" xml:space="preserve"><value>متأخرة عن المراجعة</value></data>
+  <data name="Minutes spent" xml:space="preserve"><value>الدقائق المستغرقة</value></data>
+  <data name="No intervention on this prescription." xml:space="preserve"><value>لا تدخلات على هذه الروشتة.</value></data>
+  <data name="Not recorded" xml:space="preserve"><value>غير مسجل</value></data>
+  <data name="Pharmacist interventions" xml:space="preserve"><value>تدخلات الصيدلي</value></data>
+  <data name="Prescriber accepted" xml:space="preserve"><value>قبِلها الطبيب</value></data>
+  <data name="Prescriber declined" xml:space="preserve"><value>رفضها الطبيب</value></data>
+  <data name="Problems raised with the prescriber, and the answer" xml:space="preserve"><value>مشكلات أُبلغ بها الطبيب، ورده عليها</value></data>
+  <data name="Record an intervention" xml:space="preserve"><value>تسجيل تدخل</value></data>
+  <data name="Refuse the prescription" xml:space="preserve"><value>رفض الروشتة</value></data>
+  <data name="Refused by the pharmacist" xml:space="preserve"><value>رفضها الصيدلي</value></data>
+  <data name="Review clock" xml:space="preserve"><value>زمن المراجعة</value></data>
+  <data name="The minutes spent are 0 to 600" xml:space="preserve"><value>الدقائق من 0 إلى 600</value></data>
+  <data name="The prescriber's answer is already recorded" xml:space="preserve"><value>رد الطبيب مسجل بالفعل</value></data>
+  <data name="The prescription as a whole" xml:space="preserve"><value>الروشتة كلها</value></data>
+  <data name="This prescription has left the pharmacy" xml:space="preserve"><value>هذه الروشتة خرجت من الصيدلية</value></data>
+  <data name="Waiting {0} since it was prescribed" xml:space="preserve"><value>تنتظر منذ ⁦{0}⁩ من كتابتها</value></data>
+  <data name="What the review weighs" xml:space="preserve"><value>ما تزنه المراجعة</value></data>
+  <data name="What you recommend" xml:space="preserve"><value>التوصية</value></data>
+  <data name="Why is prescription {0} refused? It will not be dispensed." xml:space="preserve"><value>لماذا تُرفض الروشتة ⁦{0}⁩؟ لن تُصرف.</value></data>
+  <data name="Write the problem" xml:space="preserve"><value>اكتب المشكلة</value></data>
+  <data name="Write what you recommend" xml:space="preserve"><value>اكتب توصيتك</value></data>
+  <data name="Write why the prescription is refused" xml:space="preserve"><value>اكتب سبب رفض الروشتة</value></data>
+  <data name="ivc:Allergy" xml:space="preserve"><value>حساسية</value></data>
+  <data name="ivc:Dose" xml:space="preserve"><value>الجرعة</value></data>
+  <data name="ivc:Duplicate" xml:space="preserve"><value>ازدواج علاجي</value></data>
+  <data name="ivc:Interaction" xml:space="preserve"><value>تداخل دوائي</value></data>
+  <data name="ivc:Monitoring" xml:space="preserve"><value>متابعة تحاليل أو مستوى</value></data>
+  <data name="ivc:NoIndication" xml:space="preserve"><value>دواء بلا داعٍ</value></data>
+  <data name="ivc:Other" xml:space="preserve"><value>أخرى</value></data>
+  <data name="ivc:Renal" xml:space="preserve"><value>ضبط حسب الكلى</value></data>
+  <data name="ivc:Route" xml:space="preserve"><value>طريق الإعطاء</value></data>
+  <data name="ivc:Substitution" xml:space="preserve"><value>بديل أنسب</value></data>
+  <data name="ivc:Untreated" xml:space="preserve"><value>حالة بلا علاج</value></data>
+  <data name="ivo:Accepted" xml:space="preserve"><value>قبِلها الطبيب</value></data>
+  <data name="ivo:Declined" xml:space="preserve"><value>رفضها الطبيب</value></data>
+  <data name="ivo:Pending" xml:space="preserve"><value>بانتظار رد الطبيب</value></data>
+  <data name="ivs:High" xml:space="preserve"><value>خطورة عالية</value></data>
+  <data name="ivs:Low" xml:space="preserve"><value>منخفضة</value></data>
+  <data name="ivs:Moderate" xml:space="preserve"><value>متوسطة</value></data>
+  <data name="kg" xml:space="preserve"><value>كجم</value></data>
+  <data name="no answer recorded yet" xml:space="preserve"><value>لم يُسجَّل رد بعد</value></data>
+  <data name="past the priority's target" xml:space="preserve"><value>تجاوزت زمن أولويتها</value></data>
+  <data name="review within {0}" xml:space="preserve"><value>المراجعة خلال ⁦{0}⁩</value></data>
+  <data name="reviewed" xml:space="preserve"><value>رُوجعت</value></data>
+  <data name="rx:Rejected" xml:space="preserve"><value>رفضها الصيدلي</value></data>
+  <data name="rxp:Routine" xml:space="preserve"><value>عادي</value></data>
+  <data name="rxp:Stat" xml:space="preserve"><value>فوري</value></data>
+  <data name="rxp:Urgent" xml:space="preserve"><value>عاجل</value></data>
+  <data name="rxs:Rejected" xml:space="preserve"><value>رفضها الصيدلي</value></data>
+  <data name="target {0}" xml:space="preserve"><value>الهدف ⁦{0}⁩</value></data>
+  <data name="was {0}" xml:space="preserve"><value>كان ⁦{0}⁩</value></data>
+  <data name="with the pharmacy now" xml:space="preserve"><value>عند الصيدلية الآن</value></data>
+  <data name="{0} h {1} min" xml:space="preserve"><value>⁦{0}⁩ س ⁦{1}⁩ د</value></data>
+  <data name="{0}% accepted by prescribers" xml:space="preserve"><value>قبِل الأطباء ⁦{0}⁩%</value></data>
+  <data name="{0} d" xml:space="preserve"><value>⁦{0}⁩ يوم</value></data>
 </root>

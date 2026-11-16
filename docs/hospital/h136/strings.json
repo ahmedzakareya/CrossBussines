@@ -1,0 +1,325 @@
+{
+ "unit": "H136 - the pharmacist's review: priority with a target clock, refusal, interventions log, clinical picture",
+ "strings": {
+  "rx:Rejected": {
+   "ar": "رفضها الصيدلي",
+   "en": "Refused",
+   "fr": "Refusée"
+  },
+  "rxs:Rejected": {
+   "ar": "رفضها الصيدلي",
+   "en": "Refused by the pharmacist",
+   "fr": "Refusée par le pharmacien"
+  },
+  "rxp:Stat": {
+   "ar": "فوري",
+   "en": "STAT",
+   "fr": "Immédiat"
+  },
+  "rxp:Urgent": {
+   "ar": "عاجل",
+   "en": "Urgent",
+   "fr": "Urgent"
+  },
+  "rxp:Routine": {
+   "ar": "عادي",
+   "en": "Routine",
+   "fr": "Routine"
+  },
+  "{0} h {1} min": {
+   "ar": "⁦{0}⁩ س ⁦{1}⁩ د",
+   "en": "{0} h {1} min",
+   "fr": "{0} h {1} min"
+  },
+  "{0} d": {
+   "ar": "⁦{0}⁩ يوم",
+   "en": "{0} d",
+   "fr": "{0} j"
+  },
+  "with the pharmacy now": {
+   "ar": "عند الصيدلية الآن",
+   "en": "with the pharmacy now",
+   "fr": "à la pharmacie maintenant"
+  },
+  "Late for review": {
+   "ar": "متأخرة عن المراجعة",
+   "en": "Late for review",
+   "fr": "En retard de revue"
+  },
+  "past the priority's target": {
+   "ar": "تجاوزت زمن أولويتها",
+   "en": "past the priority's target",
+   "fr": "au-delà du délai de la priorité"
+  },
+  "Interventions this month": {
+   "ar": "تدخلات هذا الشهر",
+   "en": "Interventions this month",
+   "fr": "Interventions ce mois"
+  },
+  "{0}% accepted by prescribers": {
+   "ar": "قبِل الأطباء ⁦{0}⁩%",
+   "en": "{0}% accepted by prescribers",
+   "fr": "{0} % acceptées par les prescripteurs"
+  },
+  "no answer recorded yet": {
+   "ar": "لم يُسجَّل رد بعد",
+   "en": "no answer recorded yet",
+   "fr": "aucune réponse encore"
+  },
+  "Review clock": {
+   "ar": "زمن المراجعة",
+   "en": "Review clock",
+   "fr": "Délai de revue"
+  },
+  "target {0}": {
+   "ar": "الهدف ⁦{0}⁩",
+   "en": "target {0}",
+   "fr": "objectif {0}"
+  },
+  "reviewed": {
+   "ar": "رُوجعت",
+   "en": "reviewed",
+   "fr": "revue"
+  },
+  "Clinical picture": {
+   "ar": "الصورة السريرية",
+   "en": "Clinical picture",
+   "fr": "Tableau clinique"
+  },
+  "What the review weighs": {
+   "ar": "ما تزنه المراجعة",
+   "en": "What the review weighs",
+   "fr": "Ce que la revue pèse"
+  },
+  "Age and sex": {
+   "ar": "العمر والجنس",
+   "en": "Age and sex",
+   "fr": "Âge et sexe"
+  },
+  "kg": {
+   "ar": "كجم",
+   "en": "kg",
+   "fr": "kg"
+  },
+  "Not recorded": {
+   "ar": "غير مسجل",
+   "en": "Not recorded",
+   "fr": "Non enregistré"
+  },
+  "was {0}": {
+   "ar": "كان ⁦{0}⁩",
+   "en": "was {0}",
+   "fr": "était {0}"
+  },
+  "review within {0}": {
+   "ar": "المراجعة خلال ⁦{0}⁩",
+   "en": "review within {0}",
+   "fr": "revue sous {0}"
+  },
+  "Waiting {0} since it was prescribed": {
+   "ar": "تنتظر منذ ⁦{0}⁩ من كتابتها",
+   "en": "Waiting {0} since it was prescribed",
+   "fr": "En attente depuis {0}"
+  },
+  "Why is prescription {0} refused? It will not be dispensed.": {
+   "ar": "لماذا تُرفض الروشتة ⁦{0}⁩؟ لن تُصرف.",
+   "en": "Why is prescription {0} refused? It will not be dispensed.",
+   "fr": "Pourquoi l'ordonnance {0} est-elle refusée ? Elle ne sera pas dispensée."
+  },
+  "Refuse the prescription": {
+   "ar": "رفض الروشتة",
+   "en": "Refuse the prescription",
+   "fr": "Refuser l'ordonnance"
+  },
+  "Refused by the pharmacist": {
+   "ar": "رفضها الصيدلي",
+   "en": "Refused by the pharmacist",
+   "fr": "Refusée par le pharmacien"
+  },
+  "Pharmacist interventions": {
+   "ar": "تدخلات الصيدلي",
+   "en": "Pharmacist interventions",
+   "fr": "Interventions pharmaceutiques"
+  },
+  "Problems raised with the prescriber, and the answer": {
+   "ar": "مشكلات أُبلغ بها الطبيب، ورده عليها",
+   "en": "Problems raised with the prescriber, and the answer",
+   "fr": "Problèmes signalés au prescripteur, et sa réponse"
+  },
+  "Record an intervention": {
+   "ar": "تسجيل تدخل",
+   "en": "Record an intervention",
+   "fr": "Enregistrer une intervention"
+  },
+  "No intervention on this prescription.": {
+   "ar": "لا تدخلات على هذه الروشتة.",
+   "en": "No intervention on this prescription.",
+   "fr": "Aucune intervention sur cette ordonnance."
+  },
+  "Prescriber accepted": {
+   "ar": "قبِلها الطبيب",
+   "en": "Prescriber accepted",
+   "fr": "Acceptée par le prescripteur"
+  },
+  "Prescriber declined": {
+   "ar": "رفضها الطبيب",
+   "en": "Prescriber declined",
+   "fr": "Refusée par le prescripteur"
+  },
+  "ivo:Pending": {
+   "ar": "بانتظار رد الطبيب",
+   "en": "Awaiting the prescriber",
+   "fr": "En attente du prescripteur"
+  },
+  "ivo:Accepted": {
+   "ar": "قبِلها الطبيب",
+   "en": "Accepted by the prescriber",
+   "fr": "Acceptée"
+  },
+  "ivo:Declined": {
+   "ar": "رفضها الطبيب",
+   "en": "Declined by the prescriber",
+   "fr": "Refusée"
+  },
+  "ivs:High": {
+   "ar": "خطورة عالية",
+   "en": "High",
+   "fr": "Élevée"
+  },
+  "ivs:Moderate": {
+   "ar": "متوسطة",
+   "en": "Moderate",
+   "fr": "Modérée"
+  },
+  "ivs:Low": {
+   "ar": "منخفضة",
+   "en": "Low",
+   "fr": "Faible"
+  },
+  "ivc:Dose": {
+   "ar": "الجرعة",
+   "en": "Dose",
+   "fr": "Dose"
+  },
+  "ivc:Renal": {
+   "ar": "ضبط حسب الكلى",
+   "en": "Renal adjustment",
+   "fr": "Adaptation rénale"
+  },
+  "ivc:Allergy": {
+   "ar": "حساسية",
+   "en": "Allergy",
+   "fr": "Allergie"
+  },
+  "ivc:Interaction": {
+   "ar": "تداخل دوائي",
+   "en": "Interaction",
+   "fr": "Interaction"
+  },
+  "ivc:Duplicate": {
+   "ar": "ازدواج علاجي",
+   "en": "Duplicate therapy",
+   "fr": "Doublon thérapeutique"
+  },
+  "ivc:Substitution": {
+   "ar": "بديل أنسب",
+   "en": "Substitution",
+   "fr": "Substitution"
+  },
+  "ivc:NoIndication": {
+   "ar": "دواء بلا داعٍ",
+   "en": "No indication",
+   "fr": "Sans indication"
+  },
+  "ivc:Untreated": {
+   "ar": "حالة بلا علاج",
+   "en": "Untreated condition",
+   "fr": "Indication non traitée"
+  },
+  "ivc:Monitoring": {
+   "ar": "متابعة تحاليل أو مستوى",
+   "en": "Monitoring",
+   "fr": "Surveillance"
+  },
+  "ivc:Route": {
+   "ar": "طريق الإعطاء",
+   "en": "Route",
+   "fr": "Voie"
+  },
+  "ivc:Other": {
+   "ar": "أخرى",
+   "en": "Other",
+   "fr": "Autre"
+  },
+  "About": {
+   "ar": "بخصوص",
+   "en": "About",
+   "fr": "Concerne"
+  },
+  "The prescription as a whole": {
+   "ar": "الروشتة كلها",
+   "en": "The prescription as a whole",
+   "fr": "L'ordonnance entière"
+  },
+  "Kind of problem": {
+   "ar": "نوع المشكلة",
+   "en": "Kind of problem",
+   "fr": "Type de problème"
+  },
+  "How serious": {
+   "ar": "درجة الخطورة",
+   "en": "How serious",
+   "fr": "Gravité"
+  },
+  "What you recommend": {
+   "ar": "التوصية",
+   "en": "What you recommend",
+   "fr": "La recommandation"
+  },
+  "Minutes spent": {
+   "ar": "الدقائق المستغرقة",
+   "en": "Minutes spent",
+   "fr": "Minutes passées"
+  },
+  "Choose the kind of problem": {
+   "ar": "اختر نوع المشكلة",
+   "en": "Choose the kind of problem",
+   "fr": "Choisissez le type de problème"
+  },
+  "Choose how serious it is": {
+   "ar": "اختر درجة الخطورة",
+   "en": "Choose how serious it is",
+   "fr": "Choisissez la gravité"
+  },
+  "Write the problem": {
+   "ar": "اكتب المشكلة",
+   "en": "Write the problem",
+   "fr": "Décrivez le problème"
+  },
+  "Write what you recommend": {
+   "ar": "اكتب توصيتك",
+   "en": "Write what you recommend",
+   "fr": "Indiquez votre recommandation"
+  },
+  "The minutes spent are 0 to 600": {
+   "ar": "الدقائق من 0 إلى 600",
+   "en": "The minutes spent are 0 to 600",
+   "fr": "Les minutes vont de 0 à 600"
+  },
+  "This prescription has left the pharmacy": {
+   "ar": "هذه الروشتة خرجت من الصيدلية",
+   "en": "This prescription has left the pharmacy",
+   "fr": "Cette ordonnance a quitté la pharmacie"
+  },
+  "Write why the prescription is refused": {
+   "ar": "اكتب سبب رفض الروشتة",
+   "en": "Write why the prescription is refused",
+   "fr": "Indiquez pourquoi l'ordonnance est refusée"
+  },
+  "The prescriber's answer is already recorded": {
+   "ar": "رد الطبيب مسجل بالفعل",
+   "en": "The prescriber's answer is already recorded",
+   "fr": "La réponse du prescripteur est déjà enregistrée"
+  }
+ }
+}

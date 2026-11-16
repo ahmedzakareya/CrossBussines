@@ -14,7 +14,16 @@
     bool canPharmacy = ViewBag.CanPharmacy == true, canManage = ViewBag.CanManage == true;
     string Src(string s) => s == HospitalDispenseSource.Inpatient ? T["Inpatient"].Value : s == HospitalDispenseSource.Emergency ? T["Emergency"].Value
         : s == HospitalDispenseSource.Oncology ? T["Oncology"].Value : T["Outpatient"].Value;   // H120: a chemotherapy cycle's drugs
-    string St(string s) => s switch { "New" => "<span class=\"badge badge-light fs-8\">" + T["rx:New"].Value + "</span>", "Verified" => "<span class=\"badge badge-light-primary fs-8\">" + T["rx:Verified"].Value + "</span>", _ => "<span class=\"badge badge-light-success fs-8\">" + T["rx:Dispensed"].Value + "</span>" };
+    string St(string s) => s switch { "New" => "<span class=\"badge badge-light fs-8\">" + T["rx:New"].Value + "</span>", "Verified" => "<span class=\"badge badge-light-primary fs-8\">" + T["rx:Verified"].Value + "</span>",
+        "Rejected" => "<span class=\"badge badge-light-dark fs-8\">" + T["rx:Rejected"].Value + "</span>", _ => "<span class=\"badge badge-light-success fs-8\">" + T["rx:Dispensed"].Value + "</span>" };
+    // H136: the priority as a badge (STAT solid red), and the review clock in hours and minutes
+    string PriClass(string pr) => pr == HospitalRxPriority.Stat ? "badge-danger" : pr == HospitalRxPriority.Urgent ? "badge-light-danger" : "badge-light";
+    string Dur(int m) => m < 60 ? string.Format(T["{0} min"].Value, m)
+        : m >= 1440 ? (m / 60 % 24 == 0 ? string.Format(T["{0} d"].Value, m / 1440) : string.Format(T["{0} d {1} h"].Value, m / 1440, m / 60 % 24))
+        : m % 60 == 0 ? string.Format(T["{0} h"].Value, m / 60) : string.Format(T["{0} h {1} min"].Value, m / 60, m % 60);
+    var now = DateTime.UtcNow;
+    var clinical = ViewBag.Clinical as HospitalRxClinical;
+    var interventions = (ViewBag.Interventions as IReadOnlyList<HospitalInterventionView>) ?? Array.Empty<HospitalInterventionView>();
     string Money(decimal v) => v.ToString("N3", System.Globalization.CultureInfo.InvariantCulture);
     string WarnText(string w, HospitalRxLineView l) => w switch
     {
@@ -60,24 +69,25 @@
             </div>
         }
 
-        @* H125: the day's figures — demo39 dashboards/logistics card widget *@
+        @* H125/H136: the day's figures — demo39 stat tiles, the symbol above the figure *@
         <div class="row g-5 g-xl-8 mb-5">
             @foreach (var s in new[] {
-                (T["Prescriptions waiting"].Value, stats.Waiting.ToString(), "", "ki-capsule", "primary"),
+                (T["Prescriptions waiting"].Value, stats.Waiting.ToString(), T["with the pharmacy now"].Value, "ki-capsule", "primary"),
+                (T["Late for review"].Value, stats.Late.ToString(), T["past the priority's target"].Value, "ki-timer", stats.Late > 0 ? "danger" : "success"),
                 (T["Average dispense time"].Value, stats.AvgDispenseMinutes?.ToString() ?? "—", T["minutes, today"].Value, "ki-time", "info"),
-                (T["Near-expiry batches"].Value, stats.NearExpiry.ToString(), string.Format(T["within {0} days"].Value, stats.NearExpiryDays), "ki-calendar-remove", stats.NearExpiry > 0 ? "danger" : "success"),
-                (T["Below reorder point"].Value, stats.BelowReorder.ToString(), T["in the pharmacy store"].Value, "ki-chart-simple-3", stats.BelowReorder > 0 ? "danger" : "success") })
+                (T["Interventions this month"].Value, stats.Interventions.ToString(), stats.AcceptedPct is int ap ? string.Format(T["{0}% accepted by prescribers"].Value, ap) : T["no answer recorded yet"].Value, "ki-shield-tick", "primary"),
+                (T["Near-expiry batches"].Value, stats.NearExpiry.ToString(), string.Format(T["within {0} days"].Value, stats.NearExpiryDays), "ki-calendar-remove", stats.NearExpiry > 0 ? "danger" : "success") })
             {
-                <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100">
-                    <div class="card-header pt-5 flex-nowrap gap-3">
-                        <div class="card-title d-flex flex-column">
-                            <span class="fs-2hx fw-bold text-gray-900 me-2 lh-1 ls-n2 hp-num">@s.Item2</span>
-                            <span class="text-gray-500 pt-1 fw-semibold fs-6">@s.Item1</span>
+                <div class="col-sm-6 col-xl"><div class="card card-flush h-100">
+                    <div class="card-body d-flex flex-column justify-content-between pt-6 pb-0 px-6">
+                        <div class="symbol symbol-45px mb-5"><span class="symbol-label bg-light-@s.Item5"><i class="ki-outline @s.Item4 fs-2x text-@s.Item5"></i></span></div>
+                        <div class="d-flex flex-column">
+                            <span class="fs-2hx fw-bold text-@(s.Item5 == "danger" ? "danger" : "gray-900") lh-1 ls-n2 hp-num">@s.Item2</span>
+                            <span class="text-gray-500 pt-2 fw-semibold fs-6">@s.Item1</span>
                         </div>
-                        <div class="card-toolbar"><div class="symbol symbol-45px"><span class="symbol-label bg-light-@s.Item5"><i class="ki-outline @s.Item4 fs-2x text-@s.Item5"></i></span></div></div>
                     </div>
-                    <div class="card-body d-flex align-items-end pt-0">
-                        <div class="d-flex fs-7 fw-semibold align-items-center text-gray-500">@if (!string.IsNullOrEmpty(s.Item3)) {<div class="bullet w-8px h-6px rounded-2 bg-@s.Item5 me-3"></div>@s.Item3} else {<span>&nbsp;</span>}</div>
+                    <div class="card-body d-flex align-items-end pt-3 pb-6 px-6">
+                        <div class="d-flex fs-7 fw-semibold align-items-center text-gray-500"><div class="bullet w-8px h-6px rounded-2 bg-@s.Item5 me-3 flex-shrink-0"></div><span>@s.Item3</span></div>
                     </div>
                 </div></div>
             }
@@ -101,7 +111,7 @@
                 {
                     <div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
                         <thead><tr class="fw-bold text-muted bg-light">
-                            <th class="ps-4 w-125px rounded-start">@T["Prescription"]</th><th class="min-w-200px">@T["Patient"]</th><th>@T["Source"]</th><th>@T["Items (count)"]</th><th>@T["Doctor"]</th><th class="pe-4 rounded-end">@T["State"]</th>
+                            <th class="ps-4 w-125px rounded-start">@T["Prescription"]</th><th class="min-w-200px">@T["Patient"]</th><th>@T["Priority"]</th><th>@T["Review clock"]</th><th>@T["Source"]</th><th>@T["Items (count)"]</th><th>@T["Doctor"]</th><th class="pe-4 rounded-end">@T["State"]</th>
                         </tr></thead>
                         <tbody class="fw-semibold text-gray-700">
                             @foreach (var r in Model)
@@ -111,6 +121,12 @@
                                     <td><div class="d-flex align-items-center gap-3">
                                         <div class="symbol symbol-35px symbol-circle flex-shrink-0">@if (r.PatientPhoto != null) {<img src="@r.PatientPhoto" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(r.PatientNameEn)" />} else {<span class="symbol-label fw-bold fs-8 hp-initials">@HospitalUi.Initials(r.PatientNameEn)</span>}</div>
                                         <div class="d-flex flex-column"><span class="text-gray-900 fw-bold fs-6">@DisplayName.Of(r.PatientName, r.PatientNameEn)</span><span class="text-muted fw-semibold d-block fs-7 hp-num">@r.Mrn</span></div></div></td>
+                                    @{ int waited = HospitalReviewRules.WaitingMinutes(r.PrescribedAt, r.ReviewedAt, now); bool late = waited > HospitalRxPriority.TargetMinutes(r.Priority); bool waiting = r.Status == HospitalDispenseStatus.New; }
+                                    <td><span class="badge @PriClass(r.Priority) fs-7 fw-bold">@T["rxp:" + r.Priority]</span></td>
+                                    <td>@if (r.Status == HospitalDispenseStatus.New || r.Status == HospitalDispenseStatus.Verified)
+                                        {<span class="badge badge-light-@(late ? "danger" : "success") fs-7 fw-bold text-nowrap"><i class="ki-outline ki-timer fs-7 me-1 text-@(late ? "danger" : "success")"></i>@Dur(waited)</span>
+                                         <span class="text-muted fs-8 d-block mt-1">@(waiting ? string.Format(T["target {0}"].Value, Dur(HospitalRxPriority.TargetMinutes(r.Priority))) : T["reviewed"].Value)</span>}
+                                        else {<span class="text-gray-400">—</span>}</td>
                                     <td><span class="badge badge-light-@(r.Source == HospitalDispenseSource.Oncology ? "info" : r.Source == HospitalDispenseSource.Inpatient ? "primary" : r.Source == HospitalDispenseSource.Emergency ? "danger" : "success") fs-7 fw-bold">@Src(r.Source)</span></td>
                                     <td><span class="text-gray-800 fw-bold hp-num">@r.Items</span></td>
                                     <td>@if (r.Doctor != null) {<div class="d-flex align-items-center gap-2">
@@ -137,10 +153,13 @@
                                 <span class="card-label fw-bold text-gray-800">@T["Dispense"] <bdi class="text-primary hp-num ms-1">@d.RxNo</bdi></span>
                                 <span class="text-gray-500 mt-1 fw-semibold fs-7"><a href="@Url.Action("Patient", new { id = p.ID })" class="text-gray-700 text-hover-primary">@DisplayName.Of(p.Name, p.NameEn)</a> · <span class="hp-num">@p.Mrn</span> · @(sel.PriceListName ?? T["Main price list"].Value)@if (sel.BillNo != null) {<text> · </text><span class="text-nowrap"><i class="ki-outline ki-bill fs-7"></i> @(sel.OnStay ? T["The stay's bill"] : T["Bill"]) <bdi class="hp-num">@sel.BillNo</bdi></span>}</span>
                             </h3>
-                            <div class="card-toolbar gap-2"><span class="badge badge-light fs-7 fw-bold">@Src(d.Source)</span>@Html.Raw(St(d.Status))</div>
+                            @{ var pri = HospitalRxPriority.Effective(d.Priority, d.Source); int selWait = HospitalReviewRules.WaitingMinutes(d.PrescribedAt, d.VerifiedAt ?? d.RejectedAt, now); bool selLate = selWait > HospitalRxPriority.TargetMinutes(pri); }
+                            <div class="card-toolbar gap-2"><span class="badge @PriClass(pri) fs-7 fw-bold">@T["rxp:" + pri]</span>
+                                @if (d.Status != HospitalDispenseStatus.Dispensed && d.Status != HospitalDispenseStatus.Rejected) {<span class="badge badge-light-@(selLate ? "danger" : "success") fs-7 fw-bold"><i class="ki-outline ki-timer fs-7 me-1 text-@(selLate ? "danger" : "success")"></i>@Dur(selWait)</span>}
+                                <span class="badge badge-light fs-7 fw-bold">@Src(d.Source)</span>@Html.Raw(St(d.Status))</div>
                         </div>
                         <div class="card-body pt-2">
-                            @if (warnings.Count > 0 && d.Status != HospitalDispenseStatus.Dispensed)
+                            @if (warnings.Count > 0 && d.Status != HospitalDispenseStatus.Dispensed && d.Status != HospitalDispenseStatus.Rejected)
                             {
                                 <div class="notice d-flex rounded border border-dashed border-danger bg-light-danger p-5 mb-5">
                                     <i class="ki-outline ki-shield-cross fs-2tx text-danger me-4"></i>
@@ -198,22 +217,63 @@
                     </div>
                 </div>
                 <div class="col-xl-4">
+                    @* H136: what the review weighs — demo39's account-overview details list *@
+                    @if (clinical != null)
+                    {
+                        string eTone = clinical.Egfr == null ? "gray-500" : clinical.Egfr.Value < 30 ? "danger" : clinical.Egfr.Value < 60 ? "primary" : "success";
+                        <div class="card card-flush mb-5">
+                            <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Clinical picture"]</span>
+                                <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["What the review weighs"]</span></h3></div>
+                            <div class="card-body pt-2">
+                                @{ var facts = new List<(string Icon, string Tone, string Label, string Value, string? Sub)> {
+                                    ("ki-profile-circle", "primary", T["Age and sex"].Value, (clinical.AgeYears is int ag ? string.Format(T["{0} years"].Value, ag) + " · " : "") + T["sex:" + clinical.Sex].Value, clinical.Admitted ? T["In hospital now"].Value : null),
+                                    ("ki-chart-simple", "info", T["Weight"].Value, clinical.WeightKg is decimal kg ? kg.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture) + " " + T["kg"].Value : T["Not recorded"].Value, clinical.WeightAt?.ToLocalTime().ToString("yyyy-MM-dd")),
+                                    ("ki-drop", eTone, "eGFR", clinical.Egfr is HospitalEgfr eg ? eg.Value.ToString("0", System.Globalization.CultureInfo.InvariantCulture) + " mL/min" : T["Not recorded"].Value,
+                                        clinical.Egfr is HospitalEgfr eg2 ? eg2.At.ToLocalTime().ToString("yyyy-MM-dd") + (eg2.Previous is decimal pv ? " · " + string.Format(T["was {0}"].Value, pv.ToString("0", System.Globalization.CultureInfo.InvariantCulture)) : "") : null) }; }
+                                @for (int i = 0; i < facts.Count; i++)
+                                {
+                                    var f = facts[i];
+                                    <div class="d-flex flex-stack">
+                                        <div class="d-flex align-items-center me-3"><div class="symbol symbol-35px me-4"><span class="symbol-label bg-light-@(f.Tone == "gray-500" ? "secondary" : f.Tone)"><i class="ki-outline @f.Icon fs-3 text-@f.Tone"></i></span></div>
+                                            <span class="text-gray-600 fw-semibold fs-7">@f.Label</span></div>
+                                        <div class="text-end"><span class="text-gray-900 fw-bold fs-6 hp-num d-block" dir="auto">@f.Value</span>@if (f.Sub != null) {<span class="text-muted fs-8 hp-num">@f.Sub</span>}</div>
+                                    </div>
+                                    <div class="separator separator-dashed my-3"></div>
+                                }
+                                <div class="d-flex align-items-start">
+                                    <div class="symbol symbol-35px me-4"><span class="symbol-label bg-light-@(clinical.Allergies != null ? "danger" : "success")"><i class="ki-outline ki-shield-cross fs-3 text-@(clinical.Allergies != null ? "danger" : "success")"></i></span></div>
+                                    <div class="d-flex flex-column"><span class="text-gray-600 fw-semibold fs-7 mb-1">@T["Allergies"]</span>
+                                        @if (clinical.Allergies != null) {<div class="d-flex flex-wrap gap-1">@foreach (var a in clinical.Allergies.Split(new[] { '\n', ',', '،', ';' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)) {<span class="badge badge-light-danger fs-7 fw-bold"><bdi>@a</bdi></span>}</div>}
+                                        else {<span class="text-gray-800 fw-bold fs-7">@T["None recorded"]</span>}</div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+
                     <div class="card card-flush mb-5">
                         <div class="card-header pt-5">
                             <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Pharmacist's review"]</span>
                                 <span class="text-gray-500 mt-1 fw-semibold fs-7">@Html.Raw(St(d.Status))</span></h3>
                         </div>
                         <div class="card-body pt-2">
+                            @if ((d.Status == HospitalDispenseStatus.New || d.Status == HospitalDispenseStatus.Verified) && canPharmacy)
+                            {
+                                <label class="fs-6 fw-semibold mb-2">@T["Priority"]</label>
+                                <select class="form-select form-select-solid mb-2" data-priority data-id="@d.ID" data-hide-search="true">@foreach (var pr in HospitalRxPriority.All) { <option value="@pr" selected="@(pr == pri)">@T["rxp:" + pr] (@Dur(HospitalRxPriority.TargetMinutes(pr)))</option> }</select>
+                                <div class="text-muted fs-8 mb-6">@string.Format(T["review within {0}"].Value, Dur(HospitalRxPriority.TargetMinutes(pri))) · @string.Format(T["Waiting {0} since it was prescribed"].Value, Dur(selWait))</div>
+                            }
                             @if (d.Status == HospitalDispenseStatus.New && canPharmacy)
                             {
                                 <label class="fs-6 fw-semibold mb-2">@T["Pharmacist's note (optional)"]</label>
                                 <textarea class="form-control form-control-solid mb-5" rows="3" maxlength="400" data-note placeholder="@T["Pharmacist's note (optional)"]"></textarea>
-                                <button type="button" class="btn btn-light-primary w-100" data-step="Verify" data-id="@d.ID" data-confirm="@string.Format(T["Mark prescription {0} as reviewed?"].Value, d.RxNo)"><i class="ki-outline ki-shield-tick fs-4"></i>@T["Reviewed by the pharmacist"]</button>
+                                <button type="button" class="btn btn-light-primary w-100 mb-3" data-step="Verify" data-id="@d.ID" data-confirm="@string.Format(T["Mark prescription {0} as reviewed?"].Value, d.RxNo)"><i class="ki-outline ki-shield-tick fs-4"></i>@T["Reviewed by the pharmacist"]</button>
+                                <button type="button" class="btn btn-light-danger w-100" data-reject="@d.ID" data-ask="@string.Format(T["Why is prescription {0} refused? It will not be dispensed."].Value, d.RxNo)"><i class="ki-outline ki-cross-circle fs-4"></i>@T["Refuse the prescription"]</button>
                             }
                             else if (d.Status == HospitalDispenseStatus.Verified && canPharmacy)
                             {
                                 @if (d.PharmacistNote != null) { <div class="d-flex align-items-start bg-light rounded p-4 mb-5"><i class="ki-outline ki-message-text fs-3 text-gray-500 me-3"></i><div class="fs-7 text-gray-700"><div class="fw-bold text-gray-800 mb-1">@Who(d.VerifiedByEmployeeId)</div><bdi>@d.PharmacistNote</bdi></div></div> }
-                                <button type="button" class="btn btn-primary w-100" data-step="Dispense" data-id="@d.ID" data-confirm="@string.Format(T["Dispense {0} to {1}? The stock leaves the pharmacy store and the items are charged on the bill."].Value, d.RxNo, DisplayName.Of(p.Name, p.NameEn))"><i class="ki-outline ki-check fs-4"></i>@T["Confirm dispensing"]</button>
+                                <button type="button" class="btn btn-primary w-100 mb-3" data-step="Dispense" data-id="@d.ID" data-confirm="@string.Format(T["Dispense {0} to {1}? The stock leaves the pharmacy store and the items are charged on the bill."].Value, d.RxNo, DisplayName.Of(p.Name, p.NameEn))"><i class="ki-outline ki-check fs-4"></i>@T["Confirm dispensing"]</button>
+                                <button type="button" class="btn btn-light-danger w-100" data-reject="@d.ID" data-ask="@string.Format(T["Why is prescription {0} refused? It will not be dispensed."].Value, d.RxNo)"><i class="ki-outline ki-cross-circle fs-4"></i>@T["Refuse the prescription"]</button>
                             }
                             else if (d.Status == HospitalDispenseStatus.Dispensed)
                             {
@@ -224,12 +284,87 @@
                                         @if (d.BillId != null) { <a href="@Url.Action("Bill", new { id = d.BillId })" class="fw-bold fs-7">@T["Open the bill"]</a> }</div>
                                 </div>
                             }
+                            else if (d.Status == HospitalDispenseStatus.Rejected)
+                            {
+                                <div class="notice d-flex rounded border border-dashed border-danger bg-light-danger p-5">
+                                    <i class="ki-outline ki-cross-circle fs-2tx text-danger me-4"></i>
+                                    <div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@T["Refused by the pharmacist"]</h4>
+                                        <div class="fs-7 text-gray-800 mb-1"><bdi>@d.RejectReason</bdi></div>
+                                        <div class="fs-8 text-gray-600">@Who(d.RejectedByEmployeeId) · <span class="hp-num" data-fmt data-utc="@d.RejectedAt?.ToString("o")">@d.RejectedAt?.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</span></div></div>
+                                </div>
+                            }
                             else
                             {
                                 <div class="text-center py-6"><i class="ki-outline ki-lock fs-3x text-gray-300 d-block mb-3"></i><div class="fs-7 fw-semibold text-gray-600">@T["Waiting for the pharmacist"]</div></div>
                             }
                         </div>
                     </div>
+
+                    @* H136: the pharmacist's interventions — demo39's timeline-style list, each with its answer *@
+                    <div class="card card-flush mb-5">
+                        <div class="card-header pt-5">
+                            <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Pharmacist interventions"]</span>
+                                <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Problems raised with the prescriber, and the answer"]</span></h3>
+                            @if (canPharmacy) {<div class="card-toolbar"><button type="button" class="btn btn-sm btn-icon btn-light-primary" data-bs-toggle="modal" data-bs-target="#ivModal" title="@T["Record an intervention"]"><i class="ki-outline ki-plus fs-3"></i></button></div>}
+                        </div>
+                        <div class="card-body pt-2">
+                            @if (interventions.Count == 0)
+                            {
+                                <div class="text-center py-6"><i class="ki-outline ki-shield-tick fs-3x text-gray-300 d-block mb-3"></i><div class="fs-7 fw-semibold text-gray-600">@T["No intervention on this prescription."]</div></div>
+                            }
+                            @for (int i = 0; i < interventions.Count; i++)
+                            {
+                                var v = interventions[i]; var iv = v.I;
+                                string sevTone = iv.Severity == HospitalInterventionSeverity.High ? "danger" : iv.Severity == HospitalInterventionSeverity.Moderate ? "primary" : "info";
+                                <div class="d-flex flex-column">
+                                    <div class="d-flex flex-wrap align-items-center gap-1 mb-2">
+                                        <span class="badge badge-light-@sevTone fs-8 fw-bold">@T["ivs:" + iv.Severity]</span>
+                                        <span class="badge badge-light fs-8 fw-bold">@T["ivc:" + iv.Category]</span>
+                                        @if (iv.Drug != null) {<span class="text-gray-800 fw-bold fs-7"><bdi>@iv.Drug</bdi></span>}
+                                    </div>
+                                    <div class="text-gray-800 fs-7 mb-1"><bdi dir="auto">@iv.Problem</bdi></div>
+                                    <div class="text-gray-600 fs-7 mb-2"><i class="ki-outline ki-arrow-right fs-8 text-primary me-1"></i><bdi dir="auto">@iv.Recommendation</bdi></div>
+                                    <div class="d-flex flex-stack flex-wrap gap-2">
+                                        <div class="d-flex align-items-center">
+                                            <div class="symbol symbol-25px symbol-circle me-2">@if (v.RecordedByPhoto != null) {<img src="@v.RecordedByPhoto" alt="" style="object-fit:cover" />} else {<span class="symbol-label fw-bold fs-9 hp-initials">@HospitalUi.Initials(v.RecordedByEn ?? v.RecordedBy)</span>}</div>
+                                            <span class="text-muted fs-8"><span>@DisplayName.Of(v.RecordedBy ?? "—", v.RecordedByEn)</span> · <span class="hp-num" data-fmt data-utc="@iv.RecordedAt.ToString("o")">@iv.RecordedAt.ToLocalTime().ToString("MM-dd HH:mm")</span>@if (iv.Minutes is int mn) {<text> · </text><span class="hp-num">@string.Format(T["{0} min"].Value, mn)</span>}</span>
+                                        </div>
+                                        @if (iv.Outcome == HospitalInterventionOutcome.Pending && canPharmacy)
+                                        {
+                                            <div class="d-flex gap-1">
+                                                <button type="button" class="btn btn-sm btn-light-success py-1 px-3 fs-8" data-outcome="Accepted" data-iv="@iv.ID"><i class="ki-outline ki-check fs-7"></i>@T["Prescriber accepted"]</button>
+                                                <button type="button" class="btn btn-sm btn-light-danger py-1 px-3 fs-8" data-outcome="Declined" data-iv="@iv.ID"><i class="ki-outline ki-cross fs-7"></i>@T["Prescriber declined"]</button>
+                                            </div>
+                                        }
+                                        else {<span class="badge badge-light-@(iv.Outcome == HospitalInterventionOutcome.Accepted ? "success" : iv.Outcome == HospitalInterventionOutcome.Declined ? "danger" : "secondary") fs-8 fw-bold">@T["ivo:" + iv.Outcome]</span>}
+                                    </div>
+                                </div>
+                                if (i < interventions.Count - 1) { <div class="separator separator-dashed my-4"></div> }
+                            }
+                        </div>
+                    </div>
+
+                    @if (canPharmacy)
+                    {
+                        <div class="modal fade" id="ivModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-650px"><div class="modal-content rounded">
+                            <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+                            <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-10">
+                                <div class="mb-8 text-center"><h1 class="mb-2">@T["Record an intervention"]</h1><div class="text-muted fw-semibold fs-6"><bdi class="hp-num">@d.RxNo</bdi> · @DisplayName.Of(p.Name, p.NameEn)</div></div>
+                                <div class="row g-6">
+                                    <div class="col-12"><label class="fs-6 fw-semibold mb-2">@T["About"]</label>
+                                        <select class="form-select form-select-solid" data-iv-k="lineId"><option value="">@T["The prescription as a whole"]</option>@foreach (var l in sel.Lines) { <option value="@l.Line.ID">@l.Line.Drug</option> }</select></div>
+                                    <div class="col-md-7"><label class="fs-6 fw-semibold mb-2 required">@T["Kind of problem"]</label>
+                                        <select class="form-select form-select-solid" data-iv-k="category">@foreach (var c in HospitalInterventionCategory.All) { <option value="@c">@T["ivc:" + c]</option> }</select></div>
+                                    <div class="col-md-5"><label class="fs-6 fw-semibold mb-2 required">@T["How serious"]</label>
+                                        <select class="form-select form-select-solid" data-iv-k="severity" data-hide-search="true">@foreach (var sv in HospitalInterventionSeverity.All) { <option value="@sv" selected="@(sv == HospitalInterventionSeverity.Moderate)">@T["ivs:" + sv]</option> }</select></div>
+                                    <div class="col-12"><label class="fs-6 fw-semibold mb-2 required">@T["The problem"]</label><textarea class="form-control form-control-solid" rows="2" maxlength="400" dir="auto" data-iv-k="problem"></textarea></div>
+                                    <div class="col-12"><label class="fs-6 fw-semibold mb-2 required">@T["What you recommend"]</label><textarea class="form-control form-control-solid" rows="2" maxlength="400" dir="auto" data-iv-k="recommendation"></textarea></div>
+                                    <div class="col-md-5"><label class="fs-6 fw-semibold mb-2">@T["Minutes spent"]</label><input type="number" min="0" max="600" step="1" class="form-control form-control-solid hp-num" data-iv-k="minutes" /></div>
+                                </div>
+                                <div class="text-center pt-10"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-iv-save="@d.ID"><i class="ki-outline ki-check fs-4"></i>@T["Save"]</button></div>
+                            </div>
+                        </div></div></div>
+                    }
                     @* what dispensing does — demo39 dashboards/logistics list widget *@
                     <div class="card card-flush mb-5">
                         <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["On dispensing"]</span></h3></div>
@@ -305,12 +440,48 @@
             function swap() {
                 return fetch(location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.text(); }).then(function (html) {
                     var fresh = new DOMParser().parseFromString(html, 'text/html').getElementById('kt_app_content');
-                    if (fresh) document.getElementById('kt_app_content').innerHTML = fresh.innerHTML;
+                    if (fresh) { document.getElementById('kt_app_content').innerHTML = fresh.innerHTML; wire(); }
                 });
             }
+            // H136: content swapped in carries plain selects. The layout's enhancer ran at page load, so the theme's
+            // dropdowns are set up here, and the interventions modal moves to the body so no card clips its backdrop.
+            function s2(el, parent) {
+                if (!window.jQuery || !jQuery.fn.select2 || jQuery(el).hasClass('select2-hidden-accessible')) return;
+                jQuery(el).select2({ width: '100%', dir: document.documentElement.dir || 'rtl', minimumResultsForSearch: el.hasAttribute('data-hide-search') ? Infinity : 0, dropdownParent: parent ? jQuery(parent) : jQuery(document.body) });
+            }
+            function wire() {
+                var fresh = document.querySelector('#kt_app_content #ivModal');
+                if (fresh) { document.querySelectorAll('body > #ivModal').forEach(function (m) { m.remove(); }); document.body.appendChild(fresh); }
+                var iv = document.getElementById('ivModal');
+                if (iv) iv.querySelectorAll('select').forEach(function (el) { s2(el, iv); });
+                var pri = document.querySelector('[data-priority]');
+                if (pri && !pri.__wired) {
+                    pri.__wired = true; s2(pri, null);
+                    var onPri = function () { post(base + '/' + pri.getAttribute('data-id') + '/Priority', { priority: pri.value }).then(function (r) { if (!r.ok) { toast('error', r.error || W.failed); return; } toast('success', W.saved); swap(); }); };
+                    if (window.CB && CB.onSelectChange) CB.onSelectChange(pri, onPri); else pri.addEventListener('change', onPri);
+                }
+            }
+            wire();
             document.addEventListener('click', function (e) {
                 var row = e.target.closest('tr[data-href]');
                 if (row && !e.target.closest('a,button')) { location.href = row.getAttribute('data-href'); return; }
+                // H136: refuse with the reason; the prescriber's answer to an intervention; a new intervention
+                var rj = e.target.closest('[data-reject]');
+                if (rj) { cbPrompt(rj.getAttribute('data-ask'), { kind: 'danger' }).then(function (why) { if (!why) return; rj.disabled = true;
+                    post(base + '/' + rj.getAttribute('data-reject') + '/Reject', { reason: why }).then(function (r) { rj.disabled = false; if (!r.ok) { toast('error', r.error || W.failed); return; } toast('success', W.saved); swap(); }); }); return; }
+                var oc = e.target.closest('[data-outcome]');
+                if (oc) { oc.disabled = true; post(base + '/Interventions/' + oc.getAttribute('data-iv') + '/Outcome', { outcome: oc.getAttribute('data-outcome') })
+                    .then(function (r) { oc.disabled = false; if (!r.ok) { toast('error', r.error || W.failed); return; } toast('success', W.saved); swap(); }); return; }
+                var sv = e.target.closest('[data-iv-save]');
+                if (sv) {
+                    var m2 = document.getElementById('ivModal'), body = {};
+                    m2.querySelectorAll('[data-iv-k]').forEach(function (i) { var k = i.getAttribute('data-iv-k'), v = i.value.trim();
+                        body[k] = (k === 'lineId' || k === 'minutes') ? (v === '' ? null : Number(v)) : (v || null); });
+                    sv.disabled = true;
+                    post(base + '/' + sv.getAttribute('data-iv-save') + '/Interventions', body).then(function (r) { sv.disabled = false; if (!r.ok) { toast('error', r.error || W.failed); return; }
+                        bootstrap.Modal.getOrCreateInstance(m2).hide(); toast('success', W.saved); swap(); });
+                    return;
+                }
                 var t = e.target.closest('[data-step],[data-save-settings]'); if (!t) return;
                 var msg = t.getAttribute('data-confirm');
                 if (msg && !t.hasAttribute('data-confirmed')) { cbConfirm(msg).then(function (ok) { if (ok) { t.setAttribute('data-confirmed', ''); t.click(); } }); return; }

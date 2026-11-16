@@ -6929,4 +6929,68 @@
   <data name="returned, debit notes to suppliers" xml:space="preserve"><value>returned, debit notes to suppliers</value></data>
   <data name="{0} batches to destroy" xml:space="preserve"><value>{0} batches to destroy</value></data>
   <data name="Link the goods-received (GRNI) account of {0}'s inventory category first" xml:space="preserve"><value>Link the goods-received (GRNI) account of {0}'s inventory category first</value></data>
+  <data name="About" xml:space="preserve"><value>About</value></data>
+  <data name="Age and sex" xml:space="preserve"><value>Age and sex</value></data>
+  <data name="Choose how serious it is" xml:space="preserve"><value>Choose how serious it is</value></data>
+  <data name="Choose the kind of problem" xml:space="preserve"><value>Choose the kind of problem</value></data>
+  <data name="Clinical picture" xml:space="preserve"><value>Clinical picture</value></data>
+  <data name="How serious" xml:space="preserve"><value>How serious</value></data>
+  <data name="Interventions this month" xml:space="preserve"><value>Interventions this month</value></data>
+  <data name="Kind of problem" xml:space="preserve"><value>Kind of problem</value></data>
+  <data name="Late for review" xml:space="preserve"><value>Late for review</value></data>
+  <data name="Minutes spent" xml:space="preserve"><value>Minutes spent</value></data>
+  <data name="No intervention on this prescription." xml:space="preserve"><value>No intervention on this prescription.</value></data>
+  <data name="Not recorded" xml:space="preserve"><value>Not recorded</value></data>
+  <data name="Pharmacist interventions" xml:space="preserve"><value>Pharmacist interventions</value></data>
+  <data name="Prescriber accepted" xml:space="preserve"><value>Prescriber accepted</value></data>
+  <data name="Prescriber declined" xml:space="preserve"><value>Prescriber declined</value></data>
+  <data name="Problems raised with the prescriber, and the answer" xml:space="preserve"><value>Problems raised with the prescriber, and the answer</value></data>
+  <data name="Record an intervention" xml:space="preserve"><value>Record an intervention</value></data>
+  <data name="Refuse the prescription" xml:space="preserve"><value>Refuse the prescription</value></data>
+  <data name="Refused by the pharmacist" xml:space="preserve"><value>Refused by the pharmacist</value></data>
+  <data name="Review clock" xml:space="preserve"><value>Review clock</value></data>
+  <data name="The minutes spent are 0 to 600" xml:space="preserve"><value>The minutes spent are 0 to 600</value></data>
+  <data name="The prescriber's answer is already recorded" xml:space="preserve"><value>The prescriber's answer is already recorded</value></data>
+  <data name="The prescription as a whole" xml:space="preserve"><value>The prescription as a whole</value></data>
+  <data name="This prescription has left the pharmacy" xml:space="preserve"><value>This prescription has left the pharmacy</value></data>
+  <data name="Waiting {0} since it was prescribed" xml:space="preserve"><value>Waiting {0} since it was prescribed</value></data>
+  <data name="What the review weighs" xml:space="preserve"><value>What the review weighs</value></data>
+  <data name="What you recommend" xml:space="preserve"><value>What you recommend</value></data>
+  <data name="Why is prescription {0} refused? It will not be dispensed." xml:space="preserve"><value>Why is prescription {0} refused? It will not be dispensed.</value></data>
+  <data name="Write the problem" xml:space="preserve"><value>Write the problem</value></data>
+  <data name="Write what you recommend" xml:space="preserve"><value>Write what you recommend</value></data>
+  <data name="Write why the prescription is refused" xml:space="preserve"><value>Write why the prescription is refused</value></data>
+  <data name="ivc:Allergy" xml:space="preserve"><value>Allergy</value></data>
+  <data name="ivc:Dose" xml:space="preserve"><value>Dose</value></data>
+  <data name="ivc:Duplicate" xml:space="preserve"><value>Duplicate therapy</value></data>
+  <data name="ivc:Interaction" xml:space="preserve"><value>Interaction</value></data>
+  <data name="ivc:Monitoring" xml:space="preserve"><value>Monitoring</value></data>
+  <data name="ivc:NoIndication" xml:space="preserve"><value>No indication</value></data>
+  <data name="ivc:Other" xml:space="preserve"><value>Other</value></data>
+  <data name="ivc:Renal" xml:space="preserve"><value>Renal adjustment</value></data>
+  <data name="ivc:Route" xml:space="preserve"><value>Route</value></data>
+  <data name="ivc:Substitution" xml:space="preserve"><value>Substitution</value></data>
+  <data name="ivc:Untreated" xml:space="preserve"><value>Untreated condition</value></data>
+  <data name="ivo:Accepted" xml:space="preserve"><value>Accepted by the prescriber</value></data>
+  <data name="ivo:Declined" xml:space="preserve"><value>Declined by the prescriber</value></data>
+  <data name="ivo:Pending" xml:space="preserve"><value>Awaiting the prescriber</value></data>
+  <data name="ivs:High" xml:space="preserve"><value>High</value></data>
+  <data name="ivs:Low" xml:space="preserve"><value>Low</value></data>
+  <data name="ivs:Moderate" xml:space="preserve"><value>Moderate</value></data>
+  <data name="kg" xml:space="preserve"><value>kg</value></data>
+  <data name="no answer recorded yet" xml:space="preserve"><value>no answer recorded yet</value></data>
+  <data name="past the priority's target" xml:space="preserve"><value>past the priority's target</value></data>
+  <data name="review within {0}" xml:space="preserve"><value>review within {0}</value></data>
+  <data name="reviewed" xml:space="preserve"><value>reviewed</value></data>
+  <data name="rx:Rejected" xml:space="preserve"><value>Refused</value></data>
+  <data name="rxp:Routine" xml:space="preserve"><value>Routine</value></data>
+  <data name="rxp:Stat" xml:space="preserve"><value>STAT</value></data>
+  <data name="rxp:Urgent" xml:space="preserve"><value>Urgent</value></data>
+  <data name="rxs:Rejected" xml:space="preserve"><value>Refused by the pharmacist</value></data>
+  <data name="target {0}" xml:space="preserve"><value>target {0}</value></data>
+  <data name="was {0}" xml:space="preserve"><value>was {0}</value></data>
+  <data name="with the pharmacy now" xml:space="preserve"><value>with the pharmacy now</value></data>
+  <data name="{0} h {1} min" xml:space="preserve"><value>{0} h {1} min</value></data>
+  <data name="{0}% accepted by prescribers" xml:space="preserve"><value>{0}% accepted by prescribers</value></data>
+  <data name="{0} d" xml:space="preserve"><value>{0} d</value></data>
 </root>

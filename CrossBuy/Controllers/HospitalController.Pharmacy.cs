@@ -29,6 +29,12 @@ namespace CrossBuy.Controllers
 			var queue = await _pharmacy.QueueAsync(ctx, ViewBag.Status as string, ct);
 			int? pick = rx ?? queue.FirstOrDefault(q => q.Status != HospitalDispenseStatus.Dispensed)?.Id ?? queue.FirstOrDefault()?.Id;
 			ViewBag.Selected = pick == null ? null : await _pharmacy.RxAsync(ctx, pick.Value, DateTime.UtcNow, ct);
+			if (ViewBag.Selected is HospitalRxView sel)
+			{
+				// H136: what the review weighs, and what the pharmacist raised
+				ViewBag.Clinical = await ReviewSvc.ClinicalAsync(ctx, sel.Patient, DateTime.UtcNow, ct);
+				ViewBag.Interventions = await ReviewSvc.InterventionsAsync(ctx, sel.Dispense.ID, ct);
+			}
 			ViewBag.Settings = await _pharmacy.SettingsAsync(ctx, ct);
 			ViewBag.Warehouses = await _pharmacy.WarehousesAsync(ctx, ct);
 			ViewBag.CanPharmacy = await _access.CanAsync(ctx, HospitalActions.Pharmacy, null, ct);

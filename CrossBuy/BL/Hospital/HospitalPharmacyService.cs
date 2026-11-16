@@ -21,8 +21,10 @@ namespace CrossBuy.BL.Hospital
 	//   · No stock rule lives here; the movements carry SourceType "HospitalDispense" so they are found again.
 	// ==========================================================================================
 
+	/// H136: Priority is the effective one (HospitalRxPriority.Effective); ReviewedAt stops the review clock.
 	public sealed record HospitalRxRow(int Id, string RxNo, int PatientId, string PatientName, string PatientNameEn, string Mrn, string? PatientPhoto,
-		string Source, int Items, string? Doctor, string? DoctorEn, string? DoctorPhoto, string Status, DateTime PrescribedAt, bool HasWarning);
+		string Source, int Items, string? Doctor, string? DoctorEn, string? DoctorPhoto, string Status, DateTime PrescribedAt, bool HasWarning,
+		string Priority = HospitalRxPriority.Routine, DateTime? ReviewedAt = null);
 
 	/// H133: Master is the line's drug record (null when the item has none); MatchText the words its allergies and interactions
 /// were matched in (the prescribed name and the generic).
@@ -32,7 +34,9 @@ public sealed record HospitalRxLineView(HospitalDispenseLine Line, string? ItemC
 	public sealed record HospitalRxView(HospitalDispense Dispense, HospitalPatient Patient, IReadOnlyList<HospitalRxLineView> Lines, IReadOnlyDictionary<int, string> People,
 		string? WarehouseName, string? PriceListName, string? CurrencyLabel, decimal Total, string? BillNo = null, bool OnStay = false);
 
-	public sealed record HospitalPharmacyStats(int Waiting, int? AvgDispenseMinutes, int NearExpiry, int BelowReorder, int NearExpiryDays);
+	/// H136: Late = waiting for the review past its priority's target; the month's interventions and how many the prescribers accepted.
+	public sealed record HospitalPharmacyStats(int Waiting, int? AvgDispenseMinutes, int NearExpiry, int BelowReorder, int NearExpiryDays,
+		int Late = 0, int Interventions = 0, int? AcceptedPct = null);
 
 	public sealed class HospitalPharmacyService
 	{
@@ -151,8 +155,12 @@ public sealed record HospitalRxLineView(HospitalDispenseLine Line, string? ItemC
 					where d.CompanyId == ctx.CompanyId && p.CompanyId == ctx.CompanyId
 					select new { d, p, r };
 			if (status != null) q = q.Where(x => x.d.Status == status);
-			else q = q.Where(x => x.d.Status != HospitalDispenseStatus.Dispensed || x.d.DispensedAt >= DateTime.UtcNow.AddDays(-1));
-			var rows = await q.OrderBy(x => x.d.Status == HospitalDispenseStatus.Dispensed).ThenBy(x => x.d.PrescribedAt).Take(300).ToListAsync(ct);
+			else q = q.Where(x => x.d.Status == HospitalDispenseStatus.New || x.d.Status == HospitalDispenseStatus.Verified
+				|| (x.d.Status == HospitalDispenseStatus.Dispensed && x.d.DispensedAt >= DateTime.UtcNow.AddDays(-1)));
+			bool Open(HospitalDispense d) => d.Status == HospitalDispenseStatus.New || d.Status == HospitalDispenseStatus.Verified;
+			// H136: what still needs the pharmacy comes first, the most urgent priority first, then the oldest
+			var rows = (await q.OrderBy(x => x.d.PrescribedAt).Take(300).ToListAsync(ct))
+				.OrderBy(x => Open(x.d) ? 0 : 1).ThenBy(x => HospitalRxPriority.Rank(HospitalRxPriority.Effective(x.d.Priority, x.d.Source))).ThenBy(x => x.d.PrescribedAt).ToList();
 			var dids = rows.Select(x => x.d.ID).ToList();
 			var lines = await _db.HospitalDispenseLines.AsNoTracking().Where(l => l.CompanyId == ctx.CompanyId && dids.Contains(l.DispenseId)).ToListAsync(ct);
 			var photos = await CrossBuy.BL.Platform.EmployeePhotos.ResolveAsync(_db, ctx, rows.Where(x => x.r?.EmployeeId != null).Select(x => x.r!.EmployeeId!.Value).Distinct(), ct);
@@ -161,7 +169,8 @@ public sealed record HospitalRxLineView(HospitalDispenseLine Line, string? ItemC
 				var ls = lines.Where(l => l.DispenseId == x.d.ID).ToList();
 				bool warn = ls.Any(l => AllergiesIn(l.Drug, x.p.Allergies).Count > 0) || ls.Where(l => l.ItemId != null).GroupBy(l => l.ItemId).Any(g => g.Count() > 1);
 				return new HospitalRxRow(x.d.ID, x.d.RxNo, x.p.ID, x.p.Name, x.p.NameEn, x.p.Mrn, x.p.PhotoPath, x.d.Source, ls.Count, x.r?.Name, x.r?.NameEn,
-					x.r?.EmployeeId is int de ? photos.GetValueOrDefault(de) : null, x.d.Status, x.d.PrescribedAt, warn);
+					x.r?.EmployeeId is int de ? photos.GetValueOrDefault(de) : null, x.d.Status, x.d.PrescribedAt, warn,
+					HospitalRxPriority.Effective(x.d.Priority, x.d.Source), x.d.VerifiedAt ?? x.d.RejectedAt);
 			}).ToList();
 		}
 
@@ -231,7 +240,7 @@ public sealed record HospitalRxLineView(HospitalDispenseLine Line, string? ItemC
 				}
 				views.Add(new HospitalRxLineView(l, l.ItemId is int i2 && items.TryGetValue(i2, out var it) ? it.ItemCode : null, onHand, nextBatch, nextExpiry, price, w, m, words));
 			}
-			var empIds = new[] { d.PrescribedByEmployeeId, d.VerifiedByEmployeeId, d.DispensedByEmployeeId }.Where(i => i != null).Select(i => i!.Value).Distinct().ToList();
+			var empIds = new[] { d.PrescribedByEmployeeId, d.VerifiedByEmployeeId, d.DispensedByEmployeeId, d.RejectedByEmployeeId }.Where(i => i != null).Select(i => i!.Value).Distinct().ToList();
 			var people = await _db.Employee.AsNoTracking().Where(e => empIds.Contains(e.ID) && e.EmpCompanyID == ctx.CompanyId).ToDictionaryAsync(e => e.ID, e => DisplayName.Of(e.FullName ?? "", e.FullNameEn), ct);
 			var whName = wh == null ? null : await _db.Warehouses.AsNoTracking().Where(x => x.ID == wh && x.CompanyID == ctx.CompanyId).Select(x => x.Code + " · " + (DisplayName.IsArabic ? x.Name : x.NameEn ?? x.Name)).FirstOrDefaultAsync(ct);
 			var listName = listId == null ? null : await _db.HospitalPriceLists.AsNoTracking().Where(x => x.ID == listId && x.CompanyId == ctx.CompanyId).Select(x => DisplayName.IsArabic ? x.Name : x.NameEn).FirstOrDefaultAsync(ct);
@@ -243,7 +252,12 @@ public sealed record HospitalRxLineView(HospitalDispenseLine Line, string? ItemC
 		{
 			var settings = await SettingsAsync(ctx, ct);
 			var all = _db.HospitalDispenses.AsNoTracking().Where(d => d.CompanyId == ctx.CompanyId);
-			int waiting = await all.CountAsync(d => d.Status != HospitalDispenseStatus.Dispensed, ct);
+			var open = await all.Where(d => d.Status == HospitalDispenseStatus.New || d.Status == HospitalDispenseStatus.Verified)
+				.Select(d => new { d.Status, d.Priority, d.Source, d.PrescribedAt }).ToListAsync(ct);
+			int waiting = open.Count;
+			// H136: still waiting for the review past its priority's target
+			int late = open.Count(d => d.Status == HospitalDispenseStatus.New && HospitalReviewRules.IsLate(HospitalRxPriority.Effective(d.Priority, d.Source), d.PrescribedAt, null, nowUtc));
+			var (interventions, acceptedPct) = await HospitalPharmacyReviewService.MonthAsync(_db, ctx.CompanyId, nowUtc, ct);
 			var done = await all.Where(d => d.DispensedAt >= dayStartUtc).Select(d => new { d.PrescribedAt, d.DispensedAt }).ToListAsync(ct);
 			int? avg = done.Count == 0 ? null : (int)Math.Round(done.Average(x => (x.DispensedAt!.Value - x.PrescribedAt).TotalMinutes));
 			int nearCount = 0, below = 0;
@@ -256,7 +270,7 @@ public sealed record HospitalRxLineView(HospitalDispenseLine Line, string? ItemC
 				var bal = await _db.StockBalances.AsNoTracking().Where(b => b.CompanyID == ctx.CompanyId && b.WarehouseId == wh && meds.Contains(b.ItemId)).ToDictionaryAsync(b => b.ItemId, b => b.QtyOnHand, ct);
 				below = settingsRows.Count(s => bal.GetValueOrDefault(s.ItemId) <= (s.ReorderPoint ?? s.MinQty ?? 0));
 			}
-			return new HospitalPharmacyStats(waiting, avg, nearCount, below, settings.NearExpiryDays);
+			return new HospitalPharmacyStats(waiting, avg, nearCount, below, settings.NearExpiryDays, late, interventions, acceptedPct);
 		}
 
 		/// The items the hospital dispenses: those in the inventory categories it maps (medicines and consumables).

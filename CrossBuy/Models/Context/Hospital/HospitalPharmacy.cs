@@ -19,7 +19,9 @@ namespace CrossBuy.Models.Context.Hospital
 		public const string New = "New";
 		public const string Verified = "Verified";
 		public const string Dispensed = "Dispensed";
-		public static readonly IReadOnlyList<string> All = new[] { New, Verified, Dispensed };
+		/// H136: the pharmacist refused it, with the reason; it never reaches dispensing.
+		public const string Rejected = "Rejected";
+		public static readonly IReadOnlyList<string> All = new[] { New, Verified, Dispensed, Rejected };
 	}
 
 	public static class HospitalDispenseSource
@@ -61,6 +63,11 @@ namespace CrossBuy.Models.Context.Hospital
 		public int? DispensedByEmployeeId { get; set; }
 		public int? WarehouseId { get; set; }
 		public int? BillId { get; set; }
+		/// H136: the pharmacist's priority (HospitalRxPriority; null: what the source implies), and a refusal.
+		public string? Priority { get; set; }
+		public DateTime? RejectedAt { get; set; }
+		public int? RejectedByEmployeeId { get; set; }
+		public string? RejectReason { get; set; }
 	}
 
 	public class HospitalDispenseLine
@@ -92,6 +99,7 @@ namespace CrossBuy.Models.Context.Hospital
 			HospitalDrugModel.Configure(b);   // H133: the drug master hangs off the pharmacy
 			HospitalLotRecallModel.Configure(b);   // H134: batch recalls and their quarantine
 			HospitalStockDisposalModel.Configure(b);   // H135: what is destroyed or returned to the supplier
+			HospitalPharmacyReviewModel.Configure(b);   // H136: priority, refusal and the pharmacist's interventions
 			b.Entity<HospitalDispense>(e =>
 			{
 				e.HasIndex(x => new { x.CompanyId, x.RxNo }).IsUnique();

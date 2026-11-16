@@ -307,5 +307,72 @@ namespace CrossBuy.Tests
 			Assert.Equal("{0} is withdrawn from the formulary and cannot be dispensed", (await w.Pharmacy.DispenseAsync(Ctx(), id, 7, "u", Now)).Error);
 			Assert.Equal(0, w.Stock.Calls);
 		}
+
+		// ==========================================================================================
+		// H136: the pharmacist's review. What must never happen:
+		//   · a STAT prescription waiting behind routine ones;
+		//   · a refused prescription dispensed, or refused without a reason;
+		//   · an intervention filed against another prescription's line;
+		//   · a prescriber's answer recorded twice;
+		//   · the late count including what was already reviewed.
+		// ==========================================================================================
+
+		private static HospitalPharmacyReviewService Review(World w) => new(w.Host.Db,
+			new HospitalAccessService(new PlatformRoleDirectory(w.Host.Db, NullLogger<PlatformRoleDirectory>.Instance), NullLogger<HospitalAccessService>.Instance));
+
+		[Fact]
+		public async Task The_queue_works_the_most_urgent_first_and_counts_what_is_late()
+		{
+			using var host = new PlatformTestHost(); var w = Make(host); var r = Review(w);
+			var (para, _, _) = await FormularyAsync(w);
+			await SignedAsync(w, "1", null, new HospitalPrescriptionInput { Drug = "MED-PARA", ItemId = para, Quantity = 1 });
+			await SignedAsync(w, "2", null, new HospitalPrescriptionInput { Drug = "MED-PARA", ItemId = para, Quantity = 1 });
+			await w.Pharmacy.SyncAsync(Ctx());
+			var ids = await host.Db.HospitalDispenses.OrderBy(d => d.ID).Select(d => d.ID).ToListAsync();
+			Assert.True((await r.SetPriorityAsync(Ctx(), ids[1], HospitalRxPriority.Stat)).Ok);
+			Assert.Equal("Choose the priority", (await r.SetPriorityAsync(Ctx(), ids[1], "Soon")).Error);
+
+			var q = await w.Pharmacy.QueueAsync(Ctx(), null);
+			Assert.Equal(new[] { (ids[1], HospitalRxPriority.Stat), (ids[0], HospitalRxPriority.Routine) }, q.Select(x => (x.Id, x.Priority)).ToArray());
+
+			// both were prescribed at Now: an hour later the STAT one is late, the routine one is not
+			var s = await w.Pharmacy.StatsAsync(Ctx(), Now.Date, Now.AddHours(1));
+			Assert.Equal((2, 1), (s.Waiting, s.Late));
+			Assert.True((await w.Pharmacy.VerifyAsync(Ctx(), ids[1], null, 7, Now.AddMinutes(50))).Ok);
+			Assert.Equal(0, (await w.Pharmacy.StatsAsync(Ctx(), Now.Date, Now.AddHours(1))).Late);   // reviewed: no longer waiting for the review
+		}
+
+		[Fact]
+		public async Task A_refused_prescription_never_reaches_dispensing_and_interventions_are_answered_once()
+		{
+			using var host = new PlatformTestHost(); var w = Make(host); var r = Review(w);
+			var (para, amox, _) = await FormularyAsync(w);
+			await SignedAsync(w, "1", null, new HospitalPrescriptionInput { Drug = "MED-AMOX", ItemId = amox, Quantity = 1 });
+			await SignedAsync(w, "2", null, new HospitalPrescriptionInput { Drug = "MED-PARA", ItemId = para, Quantity = 1 });
+			await w.Pharmacy.SyncAsync(Ctx());
+			var ds = await host.Db.HospitalDispenses.OrderBy(d => d.ID).ToListAsync();
+			var lineOfOther = await host.Db.HospitalDispenseLines.Where(l => l.DispenseId == ds[1].ID).Select(l => l.ID).FirstAsync();
+			var line = await host.Db.HospitalDispenseLines.Where(l => l.DispenseId == ds[0].ID).Select(l => l.ID).FirstAsync();
+
+			var iv = new HospitalInterventionInput { LineId = lineOfOther, Category = HospitalInterventionCategory.Renal, Severity = HospitalInterventionSeverity.High, Problem = "eGFR 25", Recommendation = "Halve the dose", Minutes = 8 };
+			Assert.Equal("not_found", (await r.RecordAsync(Ctx(), ds[0].ID, iv, 7, Now)).Error);   // another prescription's line
+			iv.LineId = line;
+			var rec = await r.RecordAsync(Ctx(), ds[0].ID, iv, 7, Now);
+			Assert.True(rec.Ok, rec.Error);
+			Assert.Equal("MED-AMOX", (await r.InterventionsAsync(Ctx(), ds[0].ID)).Single().I.Drug);
+			Assert.True((await r.OutcomeAsync(Ctx(), rec.Id!.Value, HospitalInterventionOutcome.Accepted, 7, Now)).Ok);
+			Assert.Equal("The prescriber's answer is already recorded", (await r.OutcomeAsync(Ctx(), rec.Id!.Value, HospitalInterventionOutcome.Declined, 7, Now)).Error);
+			var month = await w.Pharmacy.StatsAsync(Ctx(), Now.Date, Now);
+			Assert.Equal((1, (int?)100), (month.Interventions, month.AcceptedPct));
+
+			Assert.Equal("Write why the prescription is refused", (await r.RejectAsync(Ctx(), ds[0].ID, " ", 7, Now)).Error);
+			Assert.True((await r.RejectAsync(Ctx(), ds[0].ID, "Duplicate of the ward's order", 7, Now)).Ok);
+			Assert.Equal("This prescription has left the pharmacy", (await r.RejectAsync(Ctx(), ds[0].ID, "again", 7, Now)).Error);
+			Assert.Equal("This prescription has left the pharmacy", (await r.SetPriorityAsync(Ctx(), ds[0].ID, HospitalRxPriority.Stat)).Error);
+			Assert.Equal("This prescription was already reviewed", (await w.Pharmacy.VerifyAsync(Ctx(), ds[0].ID, null, 7, Now)).Error);
+			Assert.Equal("Review the prescription before dispensing", (await w.Pharmacy.DispenseAsync(Ctx(), ds[0].ID, 7, "u", Now)).Error);
+			Assert.DoesNotContain(ds[0].ID, (await w.Pharmacy.QueueAsync(Ctx(), null)).Select(x => x.Id));   // off the open work
+			Assert.Equal("not_found", (await r.RejectAsync(Ctx(9, CompanyTwo), ds[1].ID, "x", 9, Now)).Error);
+		}
 	}
 }
