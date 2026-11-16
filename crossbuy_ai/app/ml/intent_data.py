@@ -52,6 +52,7 @@ CLAIMS = "hospital.claims"
 APPTS = "hospital.appointments"
 DX = "hospital.diagnoses"
 WARD = "hospital.ward"
+LAB = "hospital.lab"
 OUT_OF_SCOPE = "none"
 
 # sales.top-items, sales.top-customers and sales.item-margin were retired into sales.query:
@@ -59,7 +60,7 @@ OUT_OF_SCOPE = "none"
 # them could. Their vocabulary is kept below, under the one id.
 INTENT_IDS = (STOCK, VALUE, MOVES, WAREHOUSES, CASH, RECEIVABLES, ANOMALIES, DORMANT,
               COLLECTION, SALES_QUERY, CATEGORIES, PURCHASES, STOCKQ, POSQ, HRQ,
-              EXPENSES, DOCTORS, MEDS, BILLING, CLAIMS, APPTS, DX, WARD)
+              EXPENSES, DOCTORS, MEDS, BILLING, CLAIMS, APPTS, DX, WARD, LAB)
 
 # Slot fillers. Real names from the catalogue plus shapes the catalogue contains — a name with a
 # number in it, a Latin name inside an Arabic sentence, a two-word name, a code.
@@ -418,6 +419,27 @@ TEMPLATES: dict[str, list[str]] = {
         "wards", "how many rooms", "rooms by type", "blocked beds",
     ],
 
+    LAB: [
+        # THE BENCH, AND THE SAFETY QUEUE. These were refused one commit ago because nothing could
+        # answer them; the data was always there — 16 orders, 26 results, and unlike the clinical
+        # observations EVERY result carries its own reference range, so a flag here means something.
+        #
+        # The highest-stakes question this layer has ever been asked is in this block: a result the
+        # laboratory marked critical that nobody has acknowledged. Note that the VALUE wordings
+        # («الحرجة», «محدش استلمها») appear here, in the training data, and in NO keyword or synonym
+        # on the surface — that is the split this layer has paid for five times.
+        "التحاليل", "تحاليل المعمل", "طلبات التحاليل", "كام تحليل اتعمل", "عدد التحاليل",
+        "التحاليل حسب الحالة", "التحاليل حسب النوع", "التحاليل حسب الاولوية", "كام عينة اتسحبت",
+        "نتايج التحاليل الحرجة", "النتايج الحرجة", "التحاليل الحرجة",
+        "في نتايج حرجة محدش استلمها", "نتايج حرجة لسه محدش شافها", "التحاليل اللي محدش استلمها",
+        "التحاليل المستعجلة", "التحاليل الفورية", "التحاليل اللي لسه ماتعتمدتش",
+        "زمن التحاليل", "التحاليل بتاخد قد ايه", "متوسط زمن التحليل", "اسرع واطول تحليل",
+        "lab orders", "lab tests", "how many lab orders", "lab by status", "lab by priority",
+        "critical lab results", "unacknowledged critical results",
+        "critical results nobody has seen", "urgent lab tests", "stat tests",
+        "lab turnaround", "average lab turnaround", "how long do lab tests take",
+    ],
+
     DOCTORS: [
         # THE HOSPITAL'S FIRST INTENT. The owner asked «جيب قائمة الاطباء» and was offered the
         # revenue per item instead — six surfaces existed and none of them was the hospital.
@@ -532,6 +554,12 @@ TEMPLATES: dict[str, list[str]] = {
         "which items sell best", "top items by sales", "our best sellers", "rank items by sales",
         "lowest selling items", "worst selling products",
         # who buys
+        # «زباين» IS THE WORD PEOPLE ACTUALLY USE, and it was only ever here inside a longer
+        # receivables phrase. «مين اكبر زباين عندنا» started refusing after the sales intent was
+        # reinforced — the formal «العملاء» had plenty of weight and the colloquial twin had none,
+        # so widening one half of a pair moved the boundary across the other half.
+        "مين اكبر زباين عندنا", "اكبر زباين", "اكبر الزباين", "مين اكبر زبون", "اهم الزباين",
+        "الزباين اللي بيشتروا اكتر", "ترتيب الزباين", "زباينا الكبار",
         "مين اعلى العملاء", "اعلى العملاء", "اكبر العملاء", "اهم العملاء", "افضل العملاء",
         "مين اكتر عميل بيشتري", "مين بيشتري اكتر", "ترتيب العملاء", "العملاء بالمبيعات",
         "اكبر عميل عندنا", "مين اكبر زبون", "اعلى عشرة عملاء", "المبيعات حسب العميل",
@@ -587,6 +615,15 @@ TEMPLATES: dict[str, list[str]] = {
         "بعنا كام من {i}", "كام بعنا من {i}", "مبيعات {i} كام", "ايه مبيعات {i}",
         "{i} عمل كام", "فلوس {i}", "sales of {i}", "revenue for {i}", "how much {i} did we sell",
         "{i} revenue", "{i} sales",
+        # "ايراد" WAS LOSING ITS OWN ITEMS TO THE HOSPITAL. After the lab intent shipped,
+        # «ايراد برجر دجاج» ranked hospital.billing @0.3386 over sales.query @0.2545 and the app
+        # refused it — a capability that had a probe case and had passed all day. Six hospital
+        # intents between them carry a great deal of revenue vocabulary, so the plain "ايراد <صنف>"
+        # shape needed more of its own weight rather than the hospital needing less.
+        # Nothing about the hospital was changed to fix this: the fix belongs where the loss was.
+        "ايراد {i} كام", "ايراد الـ{i}", "ايرادات {i}", "كام ايراد {i}", "ايراد صنف {i}",
+        "جيب ايراد {i}", "عايز ايراد {i}", "ايراد {i} الشهر ده", "الايراد بتاع {i}",
+        "revenue of {i}", "what revenue did {i} make", "income from {i}",
         "الهامش", "ربح الاصناف", "ارباح الاصناف", "ايه اللي بيكسب", "الاصناف الرابحة",
         "اكتر صنف بيكسب", "نسبة الربح", "ربحية الاصناف", "الهامش لكل عميل", "الهامش حسب الصنف",
         "gross margin", "margin by item", "profit margin", "margin per customer",
@@ -738,12 +775,11 @@ NEGATIVES = [
     "كام عملية اتعملت", "كام عملية جراحية", "العمليات الجراحية", "عمليات الشهر ده",
     "العمليات حسب الجراح", "جدول العمليات", "غرفة العمليات", "كام جراحة اتعملت",
     "how many surgeries", "surgeries this month", "operating theatre schedule", "cases by surgeon",
-    # THE LAB AND THE IMAGING FLOOR. Never the bare "تحليل": that word is "تحليل المصروفات" and
-    # "تحليل القيود" in two intents that answer correctly today.
-    "كام تحليل معمل", "التحاليل", "التحاليل حسب النوع", "تحاليل المعمل", "طلبات التحاليل",
-    "نتايج التحاليل الحرجة", "النتايج الحرجة", "تحاليل الدم", "كام عينة اتسحبت",
-    "كام اشعة اتعملت", "الاشعات", "طلبات الاشعة", "تقارير الاشعة",
-    "lab tests", "lab orders", "critical lab results", "how many scans", "imaging requests",
+    # THE LAB WORDINGS MOVED OUT OF HERE to the hospital.lab intent, which now answers them: 16
+    # orders, 26 results, and every result carrying its own reference range. Only IMAGING stays
+    # refused — 0 rows and no surface.
+    "كام اشعة اتعملت", "الاشعات", "طلبات الاشعة", "تقارير الاشعة", "اشعات المرضى",
+    "how many scans", "imaging requests", "radiology orders", "scan reports",
     # THE BLOOD BANK.
     "كام كيس دم عندنا", "كام كيس دم", "اكياس الدم", "مخزون الدم", "فصائل الدم المتاحة",
     "الفصائل المتاحة", "كام وحدة دم", "بنك الدم",
@@ -789,8 +825,16 @@ NEGATIVES = [
     # retrain that was meant to stop six wrong answers created a seventh, in an intent nothing in
     # that edit touched. Caught by re-asking the whole census rather than only the six, which is
     # the only way this class of regression is ever visible: a retrain has no local edits.
+    # «الادوية» BELONGS TO THE MEDICATIONS INTENT AND «خلصت» IS THE ONLY THING ARGUING OTHERWISE,
+    # so this side needs the variety. «ايه الادوية اللي خلصت دلوقتي» leaked to medications at
+    # 0.7795 — a must-refuse answered with real confidence, because the medications surface sees
+    # prescription ORDERS and knows nothing about pharmacy stock on hand.
     "كام صنف دوا خلص", "ايه الادوية اللي خلصت", "الادوية الناقصة", "ادوية قربت تخلص",
-    "كام دوا خلص من الصيدلية", "which drugs are out of stock", "drugs running out",
+    "كام دوا خلص من الصيدلية", "ايه الادوية اللي خلصت دلوقتي", "الادوية اللي نفدت",
+    "مخزون الادوية", "رصيد الادوية في الصيدلية", "ايه الادوية اللي محتاجين نطلبها",
+    "الادوية اللي تحت الحد الادنى", "نواقص الصيدلية", "ادوية مفيش منها",
+    "which drugs are out of stock", "drugs running out", "pharmacy stock levels",
+    "drug stock on hand", "which medicines need reordering",
     "which items should I reorder", "items below reorder level", "low stock items",
     "what needs reordering", "items running out", "reorder point",
 
@@ -806,6 +850,13 @@ NEGATIVES = [
     "supplier quality", "supplier performance", "which vendor is most reliable",
 "ايه الاصناف اللي قربت تخلص", "امتى اطلب من المورد",
     "توقع المبيعات الشهر الجاي", "ايه اسعار المنافسين",     "كام صنف تحت الحد الادنى", "الاصناف منتهية الصلاحية",
+    # EXPIRY HAD ONE SPELLING AND LEAKED AT 0.5343 to item-categories — a must-refuse answered with
+    # real confidence, found in the held-out set after the lab intent was added. Nothing records an
+    # expiry date to rank by, so every one of these has to refuse; the lever is variety, as always.
+    "الاصناف منتهية الصلاحية؟", "اصناف منتهية الصلاحية", "الاصناف اللي خلصت صلاحيتها",
+    "ايه اللي قربت تنتهي صلاحيته", "تواريخ الصلاحية", "صلاحية الاصناف", "الاصناف قرب تاريخها",
+    "expired items", "items past expiry", "expiry dates", "what is expiring soon",
+    "shelf life", "items near expiry",
     "who is our best supplier",     "forecast next month sales", "which items should I reorder",     "what we owe to suppliers", "accounts payable", "supplier balances",
     # Measured as unanswerable here: 2 sales orders, 6 purchase orders, 4 payments with no
     # allocations, no budget table, and 28 active movement days in 312. A model that learns to

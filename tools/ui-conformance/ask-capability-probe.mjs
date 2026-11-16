@@ -107,7 +107,9 @@ const CASES = [
   ['كام كيس دم عندنا',      'refuse', 'was the CASH BALANCE, 239,605'],
   ['فصائل الدم المتاحة',    'refuse', 'was the WAREHOUSE list'],
   ['كام عملية اتعملت',      'refuse', 'was a sales line, "TM5 استشارة 1,600.00"'],
-  ['التحاليل حسب النوع',    'refuse', 'was stock movements grouped by movement type'],
+  // «التحاليل حسب النوع» USED TO BE HERE as a must-refuse (it answered with stock movements by
+  // movement type). It is answerable now and lives in the NAMED block below — 16 orders and 26
+  // results, every result carrying its own reference range.
   // 347 observations from SIX patients, and 100 of the numeric ones sit on a concept with no
   // reference range. «متوسط الضغط» was answered with the COUNT of hypertension diagnoses (18),
   // because "الضغط" is inside that diagnosis's own name - a regression from the surface shipped
@@ -268,6 +270,31 @@ const NAMED = [
   ['الاسرة حسب الجناح',        (n) => n > 1, 'grouped by ward, which comes from the room'],
   ['المرضى المنومين حسب القسم', (n) => n > 1,
    '"القسم" means the WARD on this surface; it used to answer with the amount BILLED by department'],
+
+  // ---- THE LABORATORY, AND THE SAFETY PAIR ----------------------------------------------------
+  //
+  // «التحاليل حسب النوع» used to answer with STOCK MOVEMENTS by movement type, and was then taught
+  // to refuse. It is answerable: 16 orders, 26 results, and — unlike the clinical observations —
+  // every result carries its own reference range, so a flag here means something.
+  //
+  // The critical case is the one worth having. The surface's whole reason for existing is the pair
+  // IsCritical + CriticalAcknowledgedAt: a result the laboratory called alarming and whether a
+  // human took it. Unfiltered and grouped by stage the pipeline returns every status it holds;
+  // filtered to the criticals it returns fewer, which is what tells a filter from no filter.
+  ['التحاليل حسب الحالة',    (n) => n > 1, 'the lab pipeline, grouped by stage'],
+  ['التحاليل حسب الاولوية',  (n) => n > 1, 'grouped by priority: routine, urgent, stat'],
+  ['نتايج التحاليل الحرجة',  (n) => n > 0 && n < 4,
+   'filtered to the orders the lab flagged critical, not the whole pipeline'],
+  // THE QUESTION THE WHOLE SURFACE EXISTS FOR, and the only wording that answers it completely:
+  // critical AND split by whether a human took it. Both of this hospital's criticals are
+  // acknowledged, so the honest answer is one line — but it has to be the acknowledgement line,
+  // not the pipeline. It is checked in English too, below, because the word "critical" lives
+  // inside an English column name far more easily than «حرجة» lives inside an Arabic one: naming
+  // this column `criticality` once already made "critical" surface vocabulary, and
+  // «critical lab results» came back as all 16 orders with nothing on screen to say it had not
+  // filtered, while the Arabic twin passed.
+  ['التحاليل الحرجة حسب الاستلام', (n) => n > 0 && n < 4,
+   'critical, grouped by acknowledgement: the safety split, not the status pipeline'],
 
 
 
@@ -501,6 +528,11 @@ const ENGLISH = [
    '"primary" must resolve to the rank, not to the hypertension that is spelt with it'],
   ['secondary diagnoses',            (n) => n > 0 && n < 10, 'the Arabic twin of this filter, in English'],
   ['asthma cases',                   1,        'a diagnosis NAMED in English reaches the filter'],
+  // "criticality".Contains("critical") made the value word part of the column's own vocabulary,
+  // so the filter never looked for it and this returned all 16 orders. The column is named
+  // `severity` now. Fewer than the four pipeline stages means it filtered.
+  ['critical lab results',           (n) => n > 0 && n < 4,
+   '"critical" must reach the VALUE filter, not be swallowed by the column name'],
   ['diagnoses by department',        'answer', 'the clinical surface, grouped'],
 
 ];
@@ -625,6 +657,10 @@ const SAYS = [
   // screen rather than let a reader take one for the other.
   ['ar', 'نسبة اشغال الاسرة', 'شاشة جودة الخدمة',
    'the monthly occupancy indicator is computed elsewhere and reads differently on purpose'],
+  // AN ORDER IS NOT A RESULT, and 16 against 26 is close enough to be believed either way. The
+  // per-analyte flags are not on this surface at all, so the answer has to say which it counted.
+  ['ar', 'كام نتيجة تحليل طلعت', 'مش عدد النتايج',
+   'the lab surface counts ORDERS; the per-result flags live at a different grain'],
 ];
 
 try {
