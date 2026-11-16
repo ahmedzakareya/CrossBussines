@@ -7085,4 +7085,66 @@
   <data name="{0} deliveries, {1} units" xml:space="preserve"><value>⁦{0}⁩ توصيل، ⁦{1}⁩ وحدة</value></data>
   <data name="{0} lines, {1} units" xml:space="preserve"><value>⁦{0}⁩ بند، ⁦{1}⁩ وحدة</value></data>
   <data name="{0} medicines" xml:space="preserve"><value>⁦{0}⁩ دواء</value></data>
+  <data name="All doctors" xml:space="preserve"><value>كل الأطباء</value></data>
+  <data name="An exact ID or file number comes first" xml:space="preserve"><value>الرقم القومي أو رقم الملف المطابق يأتي أولًا</value></data>
+  <data name="Arabic spellings are folded: أحمد = احمد" xml:space="preserve"><value>الهمزات والتشكيل لا تفرق: أحمد = احمد</value></data>
+  <data name="Average wait" xml:space="preserve"><value>متوسط الانتظار</value></data>
+  <data name="Book and check in now" xml:space="preserve"><value>احجز وسجّل الحضور الآن</value></data>
+  <data name="Booked and checked in" xml:space="preserve"><value>تم الحجز وتسجيل الحضور</value></data>
+  <data name="Check the spelling or search by the national ID or phone before opening a new file." xml:space="preserve"><value>راجع الكتابة أو ابحث بالرقم القومي أو الهاتف قبل فتح ملف جديد.</value></data>
+  <data name="Check-in checklist" xml:space="preserve"><value>قائمة تسجيل الحضور</value></data>
+  <data name="Edit the file" xml:space="preserve"><value>عدّل الملف</value></data>
+  <data name="Elsewhere for the desk" xml:space="preserve"><value>للاستقبال أيضًا</value></data>
+  <data name="Expected today" xml:space="preserve"><value>متوقعون اليوم</value></data>
+  <data name="Front desk" xml:space="preserve"><value>مكتب الاستقبال</value></data>
+  <data name="Mark {0} as a no-show?" xml:space="preserve"><value>تسجيل ⁦{0}⁩ كغائب عن موعده؟</value></data>
+  <data name="Name in Arabic or English, file number, national ID, phone or queue number…" xml:space="preserve"><value>الاسم بالعربي أو الإنجليزي، رقم الملف، الرقم القومي، الهاتف أو رقم الدور…</value></data>
+  <data name="Name, file or queue number…" xml:space="preserve"><value>الاسم أو رقم الملف أو الدور…</value></data>
+  <data name="Next visits" xml:space="preserve"><value>الزيارات القادمة</value></data>
+  <data name="No appointment matches." xml:space="preserve"><value>لا مواعيد مطابقة.</value></data>
+  <data name="No appointment today." xml:space="preserve"><value>لا موعد اليوم.</value></data>
+  <data name="No file matches" xml:space="preserve"><value>لا يوجد ملف مطابق</value></data>
+  <data name="No-show" xml:space="preserve"><value>لم يحضر</value></data>
+  <data name="Not covered today" xml:space="preserve"><value>غير مغطى اليوم</value></data>
+  <data name="Not here? Register a patient" xml:space="preserve"><value>ليس هنا؟ سجّل مريضًا</value></data>
+  <data name="Owed" xml:space="preserve"><value>مستحق</value></data>
+  <data name="Patient card" xml:space="preserve"><value>بطاقة المريض</value></data>
+  <data name="Portal booking requests" xml:space="preserve"><value>طلبات حجز من البوابة</value></data>
+  <data name="Possible duplicate files" xml:space="preserve"><value>ملفات مكررة محتملة</value></data>
+  <data name="Pre-authorisations pending" xml:space="preserve"><value>موافقات مسبقة معلقة</value></data>
+  <data name="Ready to check in" xml:space="preserve"><value>جاهز لتسجيل الحضور</value></data>
+  <data name="Search, check in, book and follow the day in one place" xml:space="preserve"><value>بحث وتسجيل حضور وحجز ومتابعة اليوم في مكان واحد</value></data>
+  <data name="Self-intake forms to review" xml:space="preserve"><value>نماذج تسجيل ذاتي للمراجعة</value></data>
+  <data name="Sign a consent" xml:space="preserve"><value>توقيع موافقة</value></data>
+  <data name="This doctor has no free slot left today" xml:space="preserve"><value>هذا الطبيب ليس لديه مواعيد خالية متبقية اليوم</value></data>
+  <data name="Today's board" xml:space="preserve"><value>لوحة اليوم</value></data>
+  <data name="Waiting now" xml:space="preserve"><value>ينتظرون الآن</value></data>
+  <data name="Waitlist offers open" xml:space="preserve"><value>عروض قائمة الانتظار المفتوحة</value></data>
+  <data name="Walk-in: the doctor's next free slot today" xml:space="preserve"><value>بدون موعد: أقرب موعد خالٍ للطبيب اليوم</value></data>
+  <data name="With the doctor" xml:space="preserve"><value>مع الطبيب</value></data>
+  <data name="chk:balance" xml:space="preserve"><value>لا مديونية سابقة</value></data>
+  <data name="chk:consent" xml:space="preserve"><value>موافقة موقعة</value></data>
+  <data name="chk:identity" xml:space="preserve"><value>الهوية (رقم قومي أو صورة)</value></data>
+  <data name="chk:payer" xml:space="preserve"><value>جهة الدفع (تأمين ساري أو على نفقته)</value></data>
+  <data name="chk:phone" xml:space="preserve"><value>هاتف للتواصل</value></data>
+  <data name="chk:photo" xml:space="preserve"><value>صورة المريض</value></data>
+  <data name="desk:Cancelled" xml:space="preserve"><value>ملغى</value></data>
+  <data name="desk:Done" xml:space="preserve"><value>انتهى</value></data>
+  <data name="desk:Expected" xml:space="preserve"><value>متوقع</value></data>
+  <data name="desk:NoShow" xml:space="preserve"><value>لم يحضر</value></data>
+  <data name="desk:Waiting" xml:space="preserve"><value>ينتظر</value></data>
+  <data name="desk:WithDoctor" xml:space="preserve"><value>مع الطبيب</value></data>
+  <data name="from arrival to the doctor" xml:space="preserve"><value>من الوصول حتى الطبيب</value></data>
+  <data name="match:id" xml:space="preserve"><value>الرقم القومي</value></data>
+  <data name="match:mrn" xml:space="preserve"><value>رقم الملف</value></data>
+  <data name="match:name" xml:space="preserve"><value>الاسم</value></data>
+  <data name="match:phone" xml:space="preserve"><value>الهاتف</value></data>
+  <data name="match:queue" xml:space="preserve"><value>رقم الدور</value></data>
+  <data name="the longest {0}" xml:space="preserve"><value>الأطول ⁦{0}⁩</value></data>
+  <data name="{0} admitted · {1} in emergency" xml:space="preserve"><value>⁦{0}⁩ منوَّم · ⁦{1}⁩ في الطوارئ</value></data>
+  <data name="{0} arrived" xml:space="preserve"><value>وصل ⁦{0}⁩</value></data>
+  <data name="{0} done" xml:space="preserve"><value>انتهى ⁦{0}⁩</value></data>
+  <data name="{0} items" xml:space="preserve"><value>⁦{0}⁩ عنصر</value></data>
+  <data name="{0} open bills" xml:space="preserve"><value>⁦{0}⁩ فاتورة مفتوحة</value></data>
+  <data name="Needs attention" xml:space="preserve"><value>يحتاج انتباه</value></data>
 </root>

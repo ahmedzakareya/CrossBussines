@@ -1,0 +1,315 @@
+{
+ "unit": "H139 - the front desk: one search, today's board, the patient card with its check-in checklist, walk-in, the inbox",
+ "strings": {
+  "Front desk": {
+   "ar": "مكتب الاستقبال",
+   "en": "Front desk",
+   "fr": "Accueil"
+  },
+  "Search, check in, book and follow the day in one place": {
+   "ar": "بحث وتسجيل حضور وحجز ومتابعة اليوم في مكان واحد",
+   "en": "Search, check in, book and follow the day in one place",
+   "fr": "Rechercher, enregistrer, réserver et suivre la journée au même endroit"
+  },
+  "Name in Arabic or English, file number, national ID, phone or queue number…": {
+   "ar": "الاسم بالعربي أو الإنجليزي، رقم الملف، الرقم القومي، الهاتف أو رقم الدور…",
+   "en": "Name in Arabic or English, file number, national ID, phone or queue number…",
+   "fr": "Nom en arabe ou en latin, n° de dossier, pièce d'identité, téléphone ou n° de file…"
+  },
+  "Arabic spellings are folded: أحمد = احمد": {
+   "ar": "الهمزات والتشكيل لا تفرق: أحمد = احمد",
+   "en": "Arabic spellings are folded: أحمد = احمد",
+   "fr": "Les graphies arabes sont unifiées : أحمد = احمد"
+  },
+  "An exact ID or file number comes first": {
+   "ar": "الرقم القومي أو رقم الملف المطابق يأتي أولًا",
+   "en": "An exact ID or file number comes first",
+   "fr": "Une pièce ou un n° de dossier exact vient en premier"
+  },
+  "Expected today": {
+   "ar": "متوقعون اليوم",
+   "en": "Expected today",
+   "fr": "Attendus aujourd'hui"
+  },
+  "{0} arrived": {
+   "ar": "وصل ⁦{0}⁩",
+   "en": "{0} arrived",
+   "fr": "{0} arrivés"
+  },
+  "Waiting now": {
+   "ar": "ينتظرون الآن",
+   "en": "Waiting now",
+   "fr": "En attente"
+  },
+  "the longest {0}": {
+   "ar": "الأطول ⁦{0}⁩",
+   "en": "the longest {0}",
+   "fr": "le plus long {0}"
+  },
+  "With the doctor": {
+   "ar": "مع الطبيب",
+   "en": "With the doctor",
+   "fr": "Avec le médecin"
+  },
+  "{0} done": {
+   "ar": "انتهى ⁦{0}⁩",
+   "en": "{0} done",
+   "fr": "{0} terminés"
+  },
+  "Average wait": {
+   "ar": "متوسط الانتظار",
+   "en": "Average wait",
+   "fr": "Attente moyenne"
+  },
+  "from arrival to the doctor": {
+   "ar": "من الوصول حتى الطبيب",
+   "en": "from arrival to the doctor",
+   "fr": "de l'arrivée au médecin"
+  },
+  "{0} admitted · {1} in emergency": {
+   "ar": "⁦{0}⁩ منوَّم · ⁦{1}⁩ في الطوارئ",
+   "en": "{0} admitted · {1} in emergency",
+   "fr": "{0} hospitalisés · {1} aux urgences"
+  },
+  "desk:Expected": {
+   "ar": "متوقع",
+   "en": "Expected",
+   "fr": "Attendu"
+  },
+  "desk:Waiting": {
+   "ar": "ينتظر",
+   "en": "Waiting",
+   "fr": "En attente"
+  },
+  "desk:WithDoctor": {
+   "ar": "مع الطبيب",
+   "en": "With the doctor",
+   "fr": "Avec le médecin"
+  },
+  "desk:Done": {
+   "ar": "انتهى",
+   "en": "Done",
+   "fr": "Terminé"
+  },
+  "desk:NoShow": {
+   "ar": "لم يحضر",
+   "en": "No-show",
+   "fr": "Absent"
+  },
+  "desk:Cancelled": {
+   "ar": "ملغى",
+   "en": "Cancelled",
+   "fr": "Annulé"
+  },
+  "Portal booking requests": {
+   "ar": "طلبات حجز من البوابة",
+   "en": "Portal booking requests",
+   "fr": "Demandes de rendez-vous du portail"
+  },
+  "Waitlist offers open": {
+   "ar": "عروض قائمة الانتظار المفتوحة",
+   "en": "Waitlist offers open",
+   "fr": "Offres de liste d'attente ouvertes"
+  },
+  "Self-intake forms to review": {
+   "ar": "نماذج تسجيل ذاتي للمراجعة",
+   "en": "Self-intake forms to review",
+   "fr": "Formulaires d'auto-enregistrement à revoir"
+  },
+  "Pre-authorisations pending": {
+   "ar": "موافقات مسبقة معلقة",
+   "en": "Pre-authorisations pending",
+   "fr": "Accords préalables en attente"
+  },
+  "Possible duplicate files": {
+   "ar": "ملفات مكررة محتملة",
+   "en": "Possible duplicate files",
+   "fr": "Dossiers en double possibles"
+  },
+  "Today's board": {
+   "ar": "لوحة اليوم",
+   "en": "Today's board",
+   "fr": "Tableau du jour"
+  },
+  "Name, file or queue number…": {
+   "ar": "الاسم أو رقم الملف أو الدور…",
+   "en": "Name, file or queue number…",
+   "fr": "Nom, dossier ou n° de file…"
+  },
+  "All doctors": {
+   "ar": "كل الأطباء",
+   "en": "All doctors",
+   "fr": "Tous les médecins"
+  },
+  "No appointment matches.": {
+   "ar": "لا مواعيد مطابقة.",
+   "en": "No appointment matches.",
+   "fr": "Aucun rendez-vous ne correspond."
+  },
+  "{0} items": {
+   "ar": "⁦{0}⁩ عنصر",
+   "en": "{0} items",
+   "fr": "{0} éléments"
+  },
+  "Elsewhere for the desk": {
+   "ar": "للاستقبال أيضًا",
+   "en": "Elsewhere for the desk",
+   "fr": "Ailleurs pour l'accueil"
+  },
+  "Patient card": {
+   "ar": "بطاقة المريض",
+   "en": "Patient card",
+   "fr": "Fiche patient"
+  },
+  "Mark {0} as a no-show?": {
+   "ar": "تسجيل ⁦{0}⁩ كغائب عن موعده؟",
+   "en": "Mark {0} as a no-show?",
+   "fr": "Marquer {0} comme absent ?"
+  },
+  "No-show": {
+   "ar": "لم يحضر",
+   "en": "No-show",
+   "fr": "Absent"
+  },
+  "No file matches": {
+   "ar": "لا يوجد ملف مطابق",
+   "en": "No file matches",
+   "fr": "Aucun dossier ne correspond"
+  },
+  "Check the spelling or search by the national ID or phone before opening a new file.": {
+   "ar": "راجع الكتابة أو ابحث بالرقم القومي أو الهاتف قبل فتح ملف جديد.",
+   "en": "Check the spelling or search by the national ID or phone before opening a new file.",
+   "fr": "Vérifiez l'orthographe ou cherchez par pièce ou téléphone avant d'ouvrir un dossier."
+  },
+  "match:mrn": {
+   "ar": "رقم الملف",
+   "en": "File number",
+   "fr": "N° de dossier"
+  },
+  "match:id": {
+   "ar": "الرقم القومي",
+   "en": "National ID",
+   "fr": "Pièce d'identité"
+  },
+  "match:phone": {
+   "ar": "الهاتف",
+   "en": "Phone",
+   "fr": "Téléphone"
+  },
+  "match:queue": {
+   "ar": "رقم الدور",
+   "en": "Queue number",
+   "fr": "N° de file"
+  },
+  "match:name": {
+   "ar": "الاسم",
+   "en": "Name",
+   "fr": "Nom"
+  },
+  "Not here? Register a patient": {
+   "ar": "ليس هنا؟ سجّل مريضًا",
+   "en": "Not here? Register a patient",
+   "fr": "Absent de la liste ? Enregistrer un patient"
+  },
+  "Check-in checklist": {
+   "ar": "قائمة تسجيل الحضور",
+   "en": "Check-in checklist",
+   "fr": "Liste d'enregistrement"
+  },
+  "Ready to check in": {
+   "ar": "جاهز لتسجيل الحضور",
+   "en": "Ready to check in",
+   "fr": "Prêt à enregistrer"
+  },
+  "chk:identity": {
+   "ar": "الهوية (رقم قومي أو صورة)",
+   "en": "Identity (national ID or photo)",
+   "fr": "Identité (pièce ou photo)"
+  },
+  "chk:payer": {
+   "ar": "جهة الدفع (تأمين ساري أو على نفقته)",
+   "en": "Payer (valid insurance or self-pay)",
+   "fr": "Payeur (assurance valide ou à ses frais)"
+  },
+  "chk:photo": {
+   "ar": "صورة المريض",
+   "en": "Patient photo",
+   "fr": "Photo du patient"
+  },
+  "chk:phone": {
+   "ar": "هاتف للتواصل",
+   "en": "Contact phone",
+   "fr": "Téléphone de contact"
+  },
+  "chk:consent": {
+   "ar": "موافقة موقعة",
+   "en": "Signed consent",
+   "fr": "Consentement signé"
+  },
+  "chk:balance": {
+   "ar": "لا مديونية سابقة",
+   "en": "No previous balance",
+   "fr": "Aucun solde antérieur"
+  },
+  "Needs attention": {
+   "ar": "يحتاج انتباه",
+   "en": "Needs attention",
+   "fr": "À traiter"
+  },
+  "Owed": {
+   "ar": "مستحق",
+   "en": "Owed",
+   "fr": "Dû"
+  },
+  "No appointment today.": {
+   "ar": "لا موعد اليوم.",
+   "en": "No appointment today.",
+   "fr": "Aucun rendez-vous aujourd'hui."
+  },
+  "Walk-in: the doctor's next free slot today": {
+   "ar": "بدون موعد: أقرب موعد خالٍ للطبيب اليوم",
+   "en": "Walk-in: the doctor's next free slot today",
+   "fr": "Sans rendez-vous : le prochain créneau libre du médecin"
+  },
+  "Booked and checked in": {
+   "ar": "تم الحجز وتسجيل الحضور",
+   "en": "Booked and checked in",
+   "fr": "Réservé et enregistré"
+  },
+  "Book and check in now": {
+   "ar": "احجز وسجّل الحضور الآن",
+   "en": "Book and check in now",
+   "fr": "Réserver et enregistrer maintenant"
+  },
+  "Next visits": {
+   "ar": "الزيارات القادمة",
+   "en": "Next visits",
+   "fr": "Prochaines visites"
+  },
+  "Not covered today": {
+   "ar": "غير مغطى اليوم",
+   "en": "Not covered today",
+   "fr": "Non couvert aujourd'hui"
+  },
+  "{0} open bills": {
+   "ar": "⁦{0}⁩ فاتورة مفتوحة",
+   "en": "{0} open bills",
+   "fr": "{0} factures ouvertes"
+  },
+  "Edit the file": {
+   "ar": "عدّل الملف",
+   "en": "Edit the file",
+   "fr": "Modifier le dossier"
+  },
+  "Sign a consent": {
+   "ar": "توقيع موافقة",
+   "en": "Sign a consent",
+   "fr": "Signer un consentement"
+  },
+  "This doctor has no free slot left today": {
+   "ar": "هذا الطبيب ليس لديه مواعيد خالية متبقية اليوم",
+   "en": "This doctor has no free slot left today",
+   "fr": "Ce médecin n'a plus de créneau libre aujourd'hui"
+  }
+ }
+}

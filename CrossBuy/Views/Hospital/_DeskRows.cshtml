@@ -1,0 +1,39 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model IReadOnlyList<HospitalDeskRow>
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@* H139: one appointment of the day per row. Each row shows:
+     · the queue number, the time (with a "late" flag), the patient's face and file;
+     · the doctor's face and department, the stage, the wait since arrival;
+     · the desk's acts: check in or no-show for the expected; the card for everyone. *@
+@{
+    string Tone(string s) => s switch { "Waiting" => "danger", "WithDoctor" => "info", "Done" => "success", "NoShow" or "Cancelled" => "secondary", _ => "primary" };
+    string Mins(int m) => m < 60 ? string.Format(T["{0} min"].Value, m) : string.Format(T["{0} h {1} min"].Value, m / 60, m % 60);
+    string Time(int minute) => (minute / 60).ToString("00") + ":" + (minute % 60).ToString("00");
+}
+@foreach (var r in Model)
+{
+    var a = r.A; string tone = Tone(r.Stage);
+    <tr>
+        <td class="ps-4">@if (a.QueueNumber is int qn) {<span class="badge badge-light-primary fs-6 fw-bold hp-num">@qn</span>} else {<span class="text-gray-400">—</span>}</td>
+        <td class="text-nowrap"><span class="text-gray-800 fw-bold hp-num">@Time(a.StartMinute)</span>@if (r.Late) {<span class="badge badge-light-danger fs-9 fw-bold d-block mt-1">@T["Late"]</span>}
+            <span class="text-muted fs-8 d-block">@T["visit:" + a.VisitType]</span></td>
+        <td><a href="#" class="d-flex align-items-center text-hover-primary" data-open-patient="@a.PatientId">
+            <div class="symbol symbol-35px symbol-circle me-3 flex-shrink-0">@if (a.PatientPhoto != null) {<img src="@a.PatientPhoto" alt="" style="object-fit:cover" />} else {<span class="symbol-label fw-bold fs-8 hp-initials">@HospitalUi.Initials(a.PatientNameEn)</span>}</div>
+            <div class="d-flex flex-column"><span class="text-gray-900 fw-bold fs-6"><bdi>@DisplayName.Of(a.PatientName, a.PatientNameEn)</bdi></span><span class="text-muted fs-7 hp-num">@a.Mrn</span></div></a></td>
+        <td><div class="d-flex align-items-center">
+            <div class="symbol symbol-30px symbol-circle me-2 flex-shrink-0">@if (r.DoctorPhoto != null) {<img src="@r.DoctorPhoto" alt="" style="object-fit:cover" />} else {<span class="symbol-label fw-bold fs-9 hp-initials">@HospitalUi.Initials(r.DoctorEn ?? r.Doctor)</span>}</div>
+            <div class="d-flex flex-column"><span class="text-gray-800 fw-semibold fs-7"><bdi>@DisplayName.Of(r.Doctor, r.DoctorEn)</bdi></span>@if (r.Department != null) {<span class="text-muted fs-8"><bdi>@DisplayName.Of(r.Department, r.DepartmentEn)</bdi></span>}</div></div></td>
+        <td><span class="badge badge-light-@tone fs-7 fw-bold">@T["desk:" + r.Stage]</span></td>
+        <td>@if (r.WaitMinutes is int w) {<span class="badge badge-light-@(r.Stage == HospitalDeskStage.Waiting && w > 30 ? "danger" : "success") fs-7 fw-bold text-nowrap"><i class="ki-outline ki-timer fs-7 me-1"></i>@Mins(w)</span>} else {<span class="text-gray-400">—</span>}</td>
+        <td class="text-end pe-4 text-nowrap">
+            @if (r.Stage == HospitalDeskStage.Expected)
+            {
+                <button type="button" class="btn btn-sm btn-light-primary me-1" data-move="Arrived" data-appt="@a.Id"><i class="ki-outline ki-check fs-5"></i>@T["Check in"]</button>
+                <button type="button" class="btn btn-sm btn-icon btn-light btn-active-light-danger" data-move="NoShow" data-appt="@a.Id" data-ask="@string.Format(T["Mark {0} as a no-show?"].Value, DisplayName.Of(a.PatientName, a.PatientNameEn))" title="@T["No-show"]" data-bs-toggle="tooltip"><i class="ki-outline ki-cross-circle fs-4"></i></button>
+            }
+            <button type="button" class="btn btn-sm btn-icon btn-light btn-active-light-primary" data-open-patient="@a.PatientId" title="@T["Patient card"]" data-bs-toggle="tooltip"><i class="ki-outline ki-profile-circle fs-4"></i></button>
+        </td>
+    </tr>
+}

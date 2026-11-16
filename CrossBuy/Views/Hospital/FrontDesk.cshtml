@@ -1,0 +1,228 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model HospitalDeskStats
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H139: the front desk, one workspace (docs/hospital/front-desk-plan.md).
+      · Top: the one search (a large theme input, its candidates in a card under it).
+      · Five demo39 stat tiles.
+      · The day's board (stage pills with counts, filters, table widget, cbServerList) and, beside it, the inbox (demo39
+        list widget).
+      · The patient card in the theme's side drawer (kt_drawer), loaded per patient. Its select2 lists are set up after
+        each load: the layout's enhancer never sees a drawer.
+*@
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Front desk"].Value;
+    bool isAr = System.Globalization.CultureInfo.CurrentUICulture.Name.StartsWith("ar");
+    var inbox = (HospitalDeskInbox)ViewBag.Inbox;
+    var counts = (Dictionary<string, int>)ViewBag.StageCounts;
+    var departments = (IReadOnlyList<HospitalDepartment>)ViewBag.Departments;
+    var doctors = (IReadOnlyList<HospitalPractitionerView>)ViewBag.Doctors;
+    string Mins(int? m) => m == null ? "—" : m < 60 ? string.Format(T["{0} min"].Value, m) : string.Format(T["{0} h {1} min"].Value, m / 60, m % 60);
+    var tiles = new (string Label, string N, string Note, string Icon, string Tone, string? Stage)[] {
+        (T["Expected today"].Value, Model.Expected.ToString(), string.Format(T["{0} arrived"].Value, Model.Arrived), "ki-calendar-tick", "primary", null),
+        (T["Waiting now"].Value, Model.WaitingNow.ToString(), Model.MaxWaitMinutes is int mx ? string.Format(T["the longest {0}"].Value, Mins(mx)) : T["nobody waiting"].Value, "ki-timer", Model.WaitingNow > 0 ? "danger" : "success", HospitalDeskStage.Waiting),
+        (T["With the doctor"].Value, Model.WithDoctor.ToString(), string.Format(T["{0} done"].Value, Model.Done), "ki-pulse", "info", HospitalDeskStage.WithDoctor),
+        (T["Average wait"].Value, Mins(Model.AvgWaitMinutes), T["from arrival to the doctor"].Value, "ki-time", "primary", null),
+        (T["No-shows"].Value, Model.NoShow.ToString(), string.Format(T["{0} admitted · {1} in emergency"].Value, Model.Admitted, Model.InEmergency), "ki-cross-circle", Model.NoShow > 0 ? "danger" : "success", HospitalDeskStage.NoShow) };
+    var stages = new[] { (Key: "", Label: T["All"].Value) }.Concat(HospitalDeskStage.All.Select(s => (Key: s, Label: T["desk:" + s].Value))).ToList();
+    var inboxItems = new (string Label, int N, string Icon, string Tone, string Href)[] {
+        (T["Portal booking requests"].Value, inbox.PortalRequests, "ki-message-question", "primary", Url.Action("PortalRequests")!),
+        (T["Waitlist offers open"].Value, inbox.WaitlistOffers, "ki-time", "info", Url.Action("PortalWaitlist")!),
+        (T["Self-intake forms to review"].Value, inbox.Intake, "ki-tablet-text-down", "primary", Url.Action("Intake")!),
+        (T["Unidentified patients"].Value, inbox.Unidentified, "ki-question-2", "danger", Url.Action("Unidentified")!),
+        (T["Pre-authorisations pending"].Value, inbox.Preauths, "ki-shield-search", "info", Url.Action("Insurance")!),
+        (T["Possible duplicate files"].Value, inbox.Duplicates, "ki-copy", "danger", Url.Action("Duplicates")!) };
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Front desk"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item text-muted"><span class="hp-num">@(((DateTime)ViewBag.Today).ToString("yyyy-MM-dd"))</span></li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-400 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@T["Search, check in, book and follow the day in one place"]</li>
+            </ul>
+        </div>
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+            <a href="@Url.Action("Emergency")" class="btn btn-sm btn-light-danger"><i class="ki-outline ki-truck fs-4"></i>@T["Emergency arrival"]</a>
+            <a href="@Url.Action("Unidentified")" class="btn btn-sm btn-light btn-active-light-primary"><i class="ki-outline ki-question-2 fs-4"></i>@T["Unidentified patients"]</a>
+            <a href="@Url.Action("RegisterPatient")" class="btn btn-sm btn-primary"><i class="ki-outline ki-user-tick fs-4"></i>@T["Register a patient"]</a>
+        </div>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @* the one search *@
+        <div class="card card-flush mb-5"><div class="card-body py-6">
+            <div class="position-relative">
+                <i class="ki-outline ki-magnifier fs-1 text-gray-500 position-absolute top-50 translate-middle-y ms-6"></i>
+                <input type="text" class="form-control form-control-lg form-control-solid ps-16 fs-4" autocomplete="off" data-desk-search
+                       placeholder="@T["Name in Arabic or English, file number, national ID, phone or queue number…"]" />
+            </div>
+            <div class="d-flex flex-wrap gap-2 mt-3 fs-8 text-muted">
+                <span class="badge badge-light fs-8">@T["Arabic spellings are folded: أحمد = احمد"]</span><span class="badge badge-light fs-8">Mohamed = Muhammad</span><span class="badge badge-light fs-8">@T["An exact ID or file number comes first"]</span>
+            </div>
+            <div class="mt-4 d-none" data-desk-results></div>
+        </div></div>
+
+        <div class="row g-5 g-xl-8 mb-5">
+            @foreach (var s in tiles)
+            {
+                <div class="col-sm-6 col-xl">
+                    <a href="#" class="card card-flush h-100 hover-elevate-up" data-stage-tile="@s.Stage">
+                        <div class="card-body d-flex flex-column justify-content-between pt-6 pb-0 px-6">
+                            <div class="symbol symbol-45px mb-5"><span class="symbol-label bg-light-@s.Tone"><i class="ki-outline @s.Icon fs-2x text-@s.Tone"></i></span></div>
+                            <div class="d-flex flex-column"><span class="fs-2hx fw-bold text-@(s.Tone == "danger" ? "danger" : "gray-900") lh-1 ls-n2 hp-num">@s.N</span><span class="text-gray-500 pt-2 fw-semibold fs-6">@s.Label</span></div>
+                        </div>
+                        <div class="card-body d-flex align-items-end pt-3 pb-6 px-6"><div class="d-flex fs-7 fw-semibold align-items-center text-gray-500"><div class="bullet w-8px h-6px rounded-2 bg-@s.Tone me-3 flex-shrink-0"></div><span>@s.Note</span></div></div>
+                    </a>
+                </div>
+            }
+        </div>
+
+        <div class="row g-5 g-xl-8">
+            <div class="col-xl-9">
+                <div class="card card-flush">
+                    <div class="card-header pt-5 border-0">
+                        <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Today's board"]</span>
+                            <span class="text-gray-500 mt-1 fw-semibold fs-7"><span id="resultCount">—</span></span></h3>
+                        <div class="card-toolbar d-flex flex-wrap align-items-center gap-2">
+                            <div class="w-175px"><input type="text" id="f_q" class="form-control form-control-solid form-control-sm" autocomplete="off" placeholder="@T["Name, file or queue number…"]" /></div>
+                            <div class="w-175px"><select class="form-select form-select-solid form-select-sm cb-filter" id="f_dept"><option value="">@T["All departments"]</option>@foreach (var d in departments) { <option value="@d.ID">@DisplayName.Of(d.Name, d.NameEn)</option> }</select></div>
+                            <div class="w-175px"><select class="form-select form-select-solid form-select-sm cb-filter" id="f_doc"><option value="">@T["All doctors"]</option>@foreach (var d in doctors) { <option value="@d.Row.ID">@DisplayName.Of(d.Row.Name, d.Row.NameEn)</option> }</select></div>
+                            <div class="w-75px"><select id="f_size" class="form-select form-select-solid form-select-sm"><option value="25">25</option><option value="50">50</option><option value="100">100</option></select></div>
+                            <button type="button" id="f_reset" class="btn btn-sm btn-icon btn-light btn-active-light-primary" title="@T["Reset"]" data-bs-toggle="tooltip"><i class="ki-outline ki-arrows-circle fs-3"></i></button>
+                        </div>
+                    </div>
+                    <div class="card-body pt-2">
+                        <ul class="nav nav-pills nav-pills-custom mb-5 gap-2" data-stages>
+                            @foreach (var s in stages)
+                            {
+                                int n = s.Key == "" ? counts.Values.Sum() : counts.GetValueOrDefault(s.Key);
+                                <li class="nav-item"><a class="nav-link btn btn-sm btn-color-gray-600 btn-active btn-active-light-primary px-4 py-2 @(s.Key == "" ? "active" : "")" href="#" data-stage="@s.Key">@s.Label <span class="badge badge-light ms-2 hp-num">@n</span></a></li>
+                            }
+                        </ul>
+                        <div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
+                            <thead><tr class="fw-bold text-muted bg-light">
+                                <th class="ps-4 rounded-start">@T["No."]</th><th>@T["Time"]</th><th class="min-w-200px">@T["Patient"]</th><th class="min-w-150px">@T["Doctor"]</th><th>@T["Stage"]</th><th>@T["Waiting"]</th><th class="text-end pe-4 rounded-end"></th>
+                            </tr></thead>
+                            <tbody id="rows"><tr id="loadingRow"><td colspan="7" class="text-center text-muted py-10"><span class="spinner-border spinner-border-sm text-primary me-2"></span>@T["Loading…"]</td></tr>
+                                <tr id="emptyRow" class="d-none"><td colspan="7" class="text-center py-12"><i class="ki-outline ki-calendar fs-3x text-gray-300 mb-4 d-block"></i><span class="fs-6 fw-semibold text-gray-600">@T["No appointment matches."]</span></td></tr></tbody>
+                        </table></div>
+                        <div class="d-flex flex-stack flex-wrap pt-5"><div class="fs-7 text-muted" id="pageInfo"></div><ul class="pagination" id="pager"></ul></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3">
+                <div class="card card-flush mb-5">
+                    <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Waiting for the desk"]</span>
+                        <span class="text-gray-500 mt-1 fw-semibold fs-7">@string.Format(T["{0} items"].Value, inbox.Total)</span></h3></div>
+                    <div class="card-body pt-2">
+                        @for (int i = 0; i < inboxItems.Length; i++)
+                        {
+                            var it = inboxItems[i];
+                            <a href="@it.Href" class="d-flex flex-stack text-hover-primary">
+                                <div class="d-flex align-items-center me-3"><div class="symbol symbol-35px me-3"><span class="symbol-label bg-light-@(it.N > 0 ? it.Tone : "secondary")"><i class="ki-outline @it.Icon fs-3 text-@(it.N > 0 ? it.Tone : "gray-500")"></i></span></div>
+                                    <span class="text-gray-800 fw-semibold fs-7">@it.Label</span></div>
+                                <span class="badge badge-@(it.N > 0 ? "light-" + it.Tone : "light") fs-7 fw-bold hp-num">@it.N</span>
+                            </a>
+                            if (i < inboxItems.Length - 1) { <div class="separator separator-dashed my-3"></div> }
+                        }
+                    </div>
+                </div>
+                <div class="card card-flush bg-light-primary border-0">
+                    <div class="card-body py-6">
+                        <div class="fw-bold text-gray-800 fs-6 mb-3">@T["Elsewhere for the desk"]</div>
+                        <div class="d-flex flex-column gap-2 fs-7">
+                            <a href="@Url.Action("Patients")" class="text-gray-700 text-hover-primary"><i class="ki-outline ki-people fs-5 me-2"></i>@T["Patient registry"]</a>
+                            <a href="@Url.Action("Appointments")" class="text-gray-700 text-hover-primary"><i class="ki-outline ki-calendar fs-5 me-2"></i>@T["Appointments"]</a>
+                            <a href="@Url.Action("Sms")" class="text-gray-700 text-hover-primary"><i class="ki-outline ki-sms fs-5 me-2"></i>@T["Patient SMS"]</a>
+                            <a href="@Url.Action("Cashier")" class="text-gray-700 text-hover-primary"><i class="ki-outline ki-wallet fs-5 me-2"></i>@T["Cashier"]</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div></div>
+</div>
+
+@* the patient card — the theme's side drawer *@
+<div id="kt_desk_drawer" class="bg-body" data-kt-drawer="true" data-kt-drawer-name="desk" data-kt-drawer-activate="true" data-kt-drawer-overlay="true"
+     data-kt-drawer-width="{default:'360px', 'md': '560px'}" data-kt-drawer-direction="end">
+    <div class="card shadow-none rounded-0 w-100">
+        <div class="card-header pe-5">
+            <div class="card-title"><span class="fw-bold text-gray-800">@T["Patient card"]</span></div>
+            <div class="card-toolbar"><button type="button" class="btn btn-sm btn-icon btn-active-light-primary" data-desk-close><i class="ki-outline ki-cross fs-1"></i></button></div>
+        </div>
+        <div class="card-body hover-scroll-overlay-y" data-desk-card><div class="text-center text-muted py-15"><span class="spinner-border spinner-border-sm text-primary me-2"></span>@T["Loading…"]</div></div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value), loading: @Json.Serialize(T["Loading…"].Value) };
+            function post(u, b) { return fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(b || {}) }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); }); }
+
+            // the board: stage pills and filters feed the list
+            var stage = '';
+            var list = cbServerList({ url: @Json.Serialize(Url.Action("FrontDeskBoard")), isAr: @(isAr ? "true" : "false"),
+                addParams: function (p) { p.set('stage', stage); var d = document.getElementById('f_dept').value, o = document.getElementById('f_doc').value; if (d) p.set('department', d); if (o) p.set('doctor', o); } });
+            function pick(s) { stage = s || ''; document.querySelectorAll('[data-stage]').forEach(function (a) { a.classList.toggle('active', a.getAttribute('data-stage') === stage); }); list.reload(); }
+
+            // the one search: candidates under the box, a short pause after typing
+            var box = document.querySelector('[data-desk-search]'), res = document.querySelector('[data-desk-results]'), timer = null, seq = 0;
+            box.addEventListener('input', function () {
+                clearTimeout(timer); var q = box.value.trim();
+                if (q.length < 2) { res.classList.add('d-none'); res.innerHTML = ''; return; }
+                timer = setTimeout(function () { var my = ++seq;
+                    fetch(@Json.Serialize(Url.Action("FrontDeskSearch")) + '?q=' + encodeURIComponent(q), { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.text(); })
+                        .then(function (h) { if (my !== seq) return; res.innerHTML = h; res.classList.remove('d-none'); }); }, 250);
+            });
+
+            // the patient card in the drawer
+            var drawerEl = document.getElementById('kt_desk_drawer'), cardEl = drawerEl.querySelector('[data-desk-card]'), current = null;
+            function drawer() { return window.KTDrawer ? (KTDrawer.getInstance(drawerEl) || new KTDrawer(drawerEl)) : null; }
+            function s2(el, parent) { if (!window.jQuery || !jQuery.fn.select2 || jQuery(el).hasClass('select2-hidden-accessible')) return;
+                jQuery(el).select2({ width: '100%', dir: document.documentElement.dir || 'rtl', minimumResultsForSearch: el.querySelectorAll('option').length > 7 ? 0 : Infinity, dropdownParent: jQuery(parent) }); }
+            function openCard(id) {
+                current = id; cardEl.innerHTML = '<div class="text-center text-muted py-15"><span class="spinner-border spinner-border-sm text-primary me-2"></span>' + W.loading + '</div>';
+                var d = drawer(); if (d) d.show();
+                fetch(@Json.Serialize(Url.Content("~/Hospital/FrontDesk/Patient/")) + id, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.text(); })
+                    .then(function (h) { cardEl.innerHTML = h; cardEl.querySelectorAll('select').forEach(function (el) { s2(el, drawerEl); }); });
+            }
+            function refresh() { list.reload(); if (current) openCard(current); }
+
+            document.addEventListener('click', function (e) {
+                var t;
+                if ((t = e.target.closest('[data-stage]'))) { e.preventDefault(); pick(t.getAttribute('data-stage')); return; }
+                if ((t = e.target.closest('[data-stage-tile]'))) { e.preventDefault(); pick(t.getAttribute('data-stage-tile')); document.getElementById('rows').scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+                if ((t = e.target.closest('[data-desk-close]'))) { var d = drawer(); if (d) d.hide(); return; }
+                if ((t = e.target.closest('[data-move]'))) {
+                    var to = t.getAttribute('data-move'), ask = t.getAttribute('data-ask');
+                    var go = function () { t.disabled = true; post(@Json.Serialize(Url.Content("~/Hospital/FrontDesk/Appointments/")) + t.getAttribute('data-appt') + '/Move', { to: to })
+                        .then(function (r) { t.disabled = false; if (!r.ok) { toastr.error(r.error || W.failed); return; } toastr.success(W.saved); refresh(); }); };
+                    if (ask) cbConfirm(ask, { kind: to === 'Arrived' ? 'primary' : 'danger' }).then(function (ok) { if (ok) go(); }); else go();
+                    return;
+                }
+                if ((t = e.target.closest('[data-walkin]'))) {
+                    var doc = cardEl.querySelector('[data-walkin-doctor]').value, vt = cardEl.querySelector('[data-walkin-type]').value;
+                    if (!doc) { toastr.error(t.getAttribute('data-need')); return; }
+                    t.disabled = true;
+                    post(@Json.Serialize(Url.Action("FrontDeskWalkIn")), { patientId: Number(t.getAttribute('data-walkin')), practitionerId: Number(doc), visitType: vt })
+                        .then(function (r) { t.disabled = false; if (!r.ok) { toastr.error(r.error || W.failed); return; } toastr.success(t.getAttribute('data-done')); refresh(); });
+                    return;
+                }
+                if ((t = e.target.closest('[data-open-patient]'))) { e.preventDefault(); openCard(t.getAttribute('data-open-patient')); return; }
+            });
+            // after a select2 change on the board's filters the list reloads (cbServerList listens to .cb-filter)
+        })();
+    </script>
+}

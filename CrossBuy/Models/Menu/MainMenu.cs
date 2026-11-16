@@ -415,6 +415,7 @@
 			}},
 			new() { LabelAr = "المرضى والاستقبال", LabelEn = "Patients & front desk", Icon = "ki-outline ki-profile-user", Items = new()
 			{
+				new() { LabelAr = "مكتب الاستقبال", LabelEn = "Front desk", Action = "FrontDesk", Controller = "Hospital" },   // H139
 				new() { LabelAr = "سجل المرضى", LabelEn = "Patient registry", Action = "Patients", Controller = "Hospital" },
 				new() { LabelAr = "تسجيل مريض", LabelEn = "Register patient", Action = "RegisterPatient", Controller = "Hospital" },
 				new() { LabelAr = "التسجيل الذاتي", LabelEn = "Self-intake", Action = "Intake", Controller = "Hospital" },   // H91

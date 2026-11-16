@@ -7085,4 +7085,66 @@
   <data name="{0} deliveries, {1} units" xml:space="preserve"><value>{0} livraisons, {1} unités</value></data>
   <data name="{0} lines, {1} units" xml:space="preserve"><value>{0} lignes, {1} unités</value></data>
   <data name="{0} medicines" xml:space="preserve"><value>{0} médicaments</value></data>
+  <data name="All doctors" xml:space="preserve"><value>Tous les médecins</value></data>
+  <data name="An exact ID or file number comes first" xml:space="preserve"><value>Une pièce ou un n° de dossier exact vient en premier</value></data>
+  <data name="Arabic spellings are folded: أحمد = احمد" xml:space="preserve"><value>Les graphies arabes sont unifiées : أحمد = احمد</value></data>
+  <data name="Average wait" xml:space="preserve"><value>Attente moyenne</value></data>
+  <data name="Book and check in now" xml:space="preserve"><value>Réserver et enregistrer maintenant</value></data>
+  <data name="Booked and checked in" xml:space="preserve"><value>Réservé et enregistré</value></data>
+  <data name="Check the spelling or search by the national ID or phone before opening a new file." xml:space="preserve"><value>Vérifiez l'orthographe ou cherchez par pièce ou téléphone avant d'ouvrir un dossier.</value></data>
+  <data name="Check-in checklist" xml:space="preserve"><value>Liste d'enregistrement</value></data>
+  <data name="Edit the file" xml:space="preserve"><value>Modifier le dossier</value></data>
+  <data name="Elsewhere for the desk" xml:space="preserve"><value>Ailleurs pour l'accueil</value></data>
+  <data name="Expected today" xml:space="preserve"><value>Attendus aujourd'hui</value></data>
+  <data name="Front desk" xml:space="preserve"><value>Accueil</value></data>
+  <data name="Mark {0} as a no-show?" xml:space="preserve"><value>Marquer {0} comme absent ?</value></data>
+  <data name="Name in Arabic or English, file number, national ID, phone or queue number…" xml:space="preserve"><value>Nom en arabe ou en latin, n° de dossier, pièce d'identité, téléphone ou n° de file…</value></data>
+  <data name="Name, file or queue number…" xml:space="preserve"><value>Nom, dossier ou n° de file…</value></data>
+  <data name="Next visits" xml:space="preserve"><value>Prochaines visites</value></data>
+  <data name="No appointment matches." xml:space="preserve"><value>Aucun rendez-vous ne correspond.</value></data>
+  <data name="No appointment today." xml:space="preserve"><value>Aucun rendez-vous aujourd'hui.</value></data>
+  <data name="No file matches" xml:space="preserve"><value>Aucun dossier ne correspond</value></data>
+  <data name="No-show" xml:space="preserve"><value>Absent</value></data>
+  <data name="Not covered today" xml:space="preserve"><value>Non couvert aujourd'hui</value></data>
+  <data name="Not here? Register a patient" xml:space="preserve"><value>Absent de la liste ? Enregistrer un patient</value></data>
+  <data name="Owed" xml:space="preserve"><value>Dû</value></data>
+  <data name="Patient card" xml:space="preserve"><value>Fiche patient</value></data>
+  <data name="Portal booking requests" xml:space="preserve"><value>Demandes de rendez-vous du portail</value></data>
+  <data name="Possible duplicate files" xml:space="preserve"><value>Dossiers en double possibles</value></data>
+  <data name="Pre-authorisations pending" xml:space="preserve"><value>Accords préalables en attente</value></data>
+  <data name="Ready to check in" xml:space="preserve"><value>Prêt à enregistrer</value></data>
+  <data name="Search, check in, book and follow the day in one place" xml:space="preserve"><value>Rechercher, enregistrer, réserver et suivre la journée au même endroit</value></data>
+  <data name="Self-intake forms to review" xml:space="preserve"><value>Formulaires d'auto-enregistrement à revoir</value></data>
+  <data name="Sign a consent" xml:space="preserve"><value>Signer un consentement</value></data>
+  <data name="This doctor has no free slot left today" xml:space="preserve"><value>Ce médecin n'a plus de créneau libre aujourd'hui</value></data>
+  <data name="Today's board" xml:space="preserve"><value>Tableau du jour</value></data>
+  <data name="Waiting now" xml:space="preserve"><value>En attente</value></data>
+  <data name="Waitlist offers open" xml:space="preserve"><value>Offres de liste d'attente ouvertes</value></data>
+  <data name="Walk-in: the doctor's next free slot today" xml:space="preserve"><value>Sans rendez-vous : le prochain créneau libre du médecin</value></data>
+  <data name="With the doctor" xml:space="preserve"><value>Avec le médecin</value></data>
+  <data name="chk:balance" xml:space="preserve"><value>Aucun solde antérieur</value></data>
+  <data name="chk:consent" xml:space="preserve"><value>Consentement signé</value></data>
+  <data name="chk:identity" xml:space="preserve"><value>Identité (pièce ou photo)</value></data>
+  <data name="chk:payer" xml:space="preserve"><value>Payeur (assurance valide ou à ses frais)</value></data>
+  <data name="chk:phone" xml:space="preserve"><value>Téléphone de contact</value></data>
+  <data name="chk:photo" xml:space="preserve"><value>Photo du patient</value></data>
+  <data name="desk:Cancelled" xml:space="preserve"><value>Annulé</value></data>
+  <data name="desk:Done" xml:space="preserve"><value>Terminé</value></data>
+  <data name="desk:Expected" xml:space="preserve"><value>Attendu</value></data>
+  <data name="desk:NoShow" xml:space="preserve"><value>Absent</value></data>
+  <data name="desk:Waiting" xml:space="preserve"><value>En attente</value></data>
+  <data name="desk:WithDoctor" xml:space="preserve"><value>Avec le médecin</value></data>
+  <data name="from arrival to the doctor" xml:space="preserve"><value>de l'arrivée au médecin</value></data>
+  <data name="match:id" xml:space="preserve"><value>Pièce d'identité</value></data>
+  <data name="match:mrn" xml:space="preserve"><value>N° de dossier</value></data>
+  <data name="match:name" xml:space="preserve"><value>Nom</value></data>
+  <data name="match:phone" xml:space="preserve"><value>Téléphone</value></data>
+  <data name="match:queue" xml:space="preserve"><value>N° de file</value></data>
+  <data name="the longest {0}" xml:space="preserve"><value>le plus long {0}</value></data>
+  <data name="{0} admitted · {1} in emergency" xml:space="preserve"><value>{0} hospitalisés · {1} aux urgences</value></data>
+  <data name="{0} arrived" xml:space="preserve"><value>{0} arrivés</value></data>
+  <data name="{0} done" xml:space="preserve"><value>{0} terminés</value></data>
+  <data name="{0} items" xml:space="preserve"><value>{0} éléments</value></data>
+  <data name="{0} open bills" xml:space="preserve"><value>{0} factures ouvertes</value></data>
+  <data name="Needs attention" xml:space="preserve"><value>À traiter</value></data>
 </root>
