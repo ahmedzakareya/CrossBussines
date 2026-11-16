@@ -34,6 +34,8 @@ namespace CrossBuy.Controllers
 				// H136: what the review weighs, and what the pharmacist raised
 				ViewBag.Clinical = await ReviewSvc.ClinicalAsync(ctx, sel.Patient, DateTime.UtcNow, ct);
 				ViewBag.Interventions = await ReviewSvc.InterventionsAsync(ctx, sel.Dispense.ID, ct);
+				ViewBag.Returns = await ReturnSvc.ListAsync(ctx, sel.Dispense.ID, ct);       // H146
+				ViewBag.Returned = await ReturnSvc.ReturnedAsync(ctx, sel.Dispense.ID, ct);
 			}
 			ViewBag.Settings = await _pharmacy.SettingsAsync(ctx, ct);
 			ViewBag.Warehouses = await _pharmacy.WarehousesAsync(ctx, ct);

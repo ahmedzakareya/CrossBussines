@@ -203,7 +203,7 @@ namespace CrossBuy.BL.Hospital
 				var taken = await db.Set<HospitalPatientDeposit>().AsNoTracking().Where(d => d.CompanyId == companyId && d.ShiftId == shiftId).Select(d => new { d.Method, d.Amount }).ToListAsync(ct);
 				var back = await db.Set<HospitalDepositMove>().AsNoTracking().Where(m => m.CompanyId == companyId && m.ShiftId == shiftId && m.Kind == HospitalDepositMoveKind.Refund).Select(m => new { m.Method, m.Amount }).ToListAsync(ct);
 				return (taken.GroupBy(x => x.Method).ToDictionary(g => g.Key, g => g.Sum(x => x.Amount)),
-					back.Where(x => x.Method != null).GroupBy(x => x.Method!).ToDictionary(g => g.Key, g => g.Sum(x => x.Amount)), taken.Count);
+					back.Where(x => x.Method != null).GroupBy(x => x.Method!).ToDictionary(g => g.Key, g => g.Sum(x => x.Amount)), taken.Count(x => HospitalPaymentMethods.IsKnown(x.Method)));   // H146: a return's credit is no receipt
 			}
 			catch (Microsoft.Data.SqlClient.SqlException ex) when (ex.Number == 208) { return (new(), new(), 0); }
 		}

@@ -84,7 +84,7 @@
         <tbody class="fs-7">
             @foreach (var d in deposits)
             {
-                <tr data-dep="@d.Deposit.ID" data-dep-no="@d.Deposit.DepositNo" data-left="@Raw(d.Left)" data-cur="@cur" data-dep-method="@d.Deposit.Method" data-dep-method-label="@T["pm:" + d.Deposit.Method]">
+                <tr data-dep="@d.Deposit.ID" data-dep-no="@d.Deposit.DepositNo" data-left="@Raw(d.Left)" data-cur="@cur" data-dep-method="@(HospitalPaymentMethods.IsKnown(d.Deposit.Method) ? d.Deposit.Method : HospitalPaymentMethods.Cash)" data-dep-method-label="@T["pm:" + (HospitalPaymentMethods.IsKnown(d.Deposit.Method) ? d.Deposit.Method : HospitalPaymentMethods.Cash)]">
                     <td class="ps-2"><span class="fw-bold hp-num">@d.Deposit.DepositNo</span><div class="text-muted fs-8"><span class="hp-num">@HospitalNursingService.UtcToWard(d.Deposit.ReceivedAt).ToString("yyyy-MM-dd HH:mm")</span> · @T["pm:" + d.Deposit.Method]</div></td>
                     <td>@T["deposit:" + d.Deposit.Purpose]@if (d.Deposit.Note != null) {<div class="text-muted fs-8"><bdi>@d.Deposit.Note</bdi></div>}</td>
                     <td class="text-end hp-num">@Money(d.Deposit.Amount)</td>

@@ -23,8 +23,8 @@ namespace CrossBuy.Tests
 	public class HospitalPartialDispenseTests
 	{
 		private static readonly DateTime Today = new(2026, 11, 15);
-		private static readonly DateTime Now = new(2026, 11, 15, 9, 0, 0, DateTimeKind.Utc);
-		private static BusinessContext Ctx(int employeeId = 7, int companyId = 1) => new() { CompanyId = companyId, EmployeeId = employeeId, UserId = "u" + employeeId, Roles = Array.Empty<string>(), CorrelationId = Guid.NewGuid() };
+		internal static readonly DateTime Now = new(2026, 11, 15, 9, 0, 0, DateTimeKind.Utc);
+		internal static BusinessContext Ctx(int employeeId = 7, int companyId = 1) => new() { CompanyId = companyId, EmployeeId = employeeId, UserId = "u" + employeeId, Roles = Array.Empty<string>(), CorrelationId = Guid.NewGuid() };
 
 		public class Movements : System.Reflection.DispatchProxy
 		{
@@ -47,17 +47,17 @@ namespace CrossBuy.Tests
 				=> Task.FromResult<(bool, string?, int?)>((true, null, 1));
 		}
 
-		private sealed record World(PlatformTestHost Host, HospitalPharmacyService Pharmacy, Movements Stock, HospitalBillingService Billing);
+		internal sealed record World(PlatformTestHost Host, HospitalPharmacyService Pharmacy, Movements Stock, HospitalBillingService Billing, IStockService StockService, HospitalAccessService Access);
 
 		/// A verified prescription for 10 paracetamol and 4 amoxicillin, the pharmacy store set. Returns the world and the dispense.
-		private static async Task<(World W, HospitalDispense Rx, int Para, int Amox)> Prescribed()
+		internal static async Task<(World W, HospitalDispense Rx, int Para, int Amox)> Prescribed(IHospitalLedger? ledger = null)
 		{
 			var host = new PlatformTestHost();
 			var access = new HospitalAccessService(new PlatformRoleDirectory(host.Db, NullLogger<PlatformRoleDirectory>.Instance), NullLogger<HospitalAccessService>.Instance);
-			var billing = new HospitalBillingService(host.Db, access, new NoLedger());
+			var billing = new HospitalBillingService(host.Db, access, ledger ?? new NoLedger());
 			var stock = System.Reflection.DispatchProxy.Create<IStockService, Movements>();
 			((Movements)(object)stock).Db = host.Db;
-			var w = new World(host, new HospitalPharmacyService(host.Db, access, stock, billing), (Movements)(object)stock, billing);
+			var w = new World(host, new HospitalPharmacyService(host.Db, access, stock, billing), (Movements)(object)stock, billing, stock, access);
 			var ctx = Ctx();
 
 			host.Seed.ItemCategories.Add(new ItemCategory { ID = 61, CompanyID = 1, Code = "MED", Name = "أدوية", NameEn = "Medicines", CogsAccountId = 501, InventoryAccountId = 101 });
@@ -84,7 +84,7 @@ namespace CrossBuy.Tests
 			return (w, rx, 71, 72);
 		}
 
-		private static async Task<Dictionary<int, HospitalDispenseLine>> Lines(World w, int rx)
+		internal static async Task<Dictionary<int, HospitalDispenseLine>> Lines(World w, int rx)
 			=> await w.Host.Db.HospitalDispenseLines.AsNoTracking().Where(l => l.DispenseId == rx).ToDictionaryAsync(l => l.ItemId!.Value);
 
 		[Fact]

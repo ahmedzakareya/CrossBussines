@@ -176,7 +176,8 @@
                                     </div>
                                 </div>
                             }
-                            @{ bool giving = HospitalDispenseStatus.Dispensable(d.Status) && canPharmacy; }   @* H145: the quantity to give now *@
+                            @{ bool giving = HospitalDispenseStatus.Dispensable(d.Status) && canPharmacy; }
+                            @{ var returnedQ = ViewBag.Returned as Dictionary<int, decimal> ?? new(); var returnRows = ViewBag.Returns as IReadOnlyList<HospitalReturnView> ?? Array.Empty<HospitalReturnView>(); }   @* H145: the quantity to give now *@
                             <div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
                                 <thead><tr class="fw-bold text-muted bg-light">
                                     <th class="ps-4 min-w-200px rounded-start">@T["Item"]</th><th>@T["Batch"]</th><th>@T["Expiry"]</th><th class="text-end">@T["Qty"]</th><th class="text-end">@T["On hand"]</th>
@@ -203,7 +204,10 @@
                                                             @if (dm.ControlledSchedule != null) {<span class="badge badge-light-dark fs-9 fw-bold">@T["sched:" + dm.ControlledSchedule]</span>}
                                                             @if (dm.FormularyStatus != HospitalFormularyStatus.Formulary) {<span class="badge badge-light-danger fs-9 fw-bold">@T["fstat:" + dm.FormularyStatus]</span>}</span>
                                                     }
-                                                    @if (l.Instructions != null) {<span class="text-muted fw-semibold d-block fs-7"><bdi>@l.Instructions</bdi></span>}</div></div></td>
+                                                    @if (l.Instructions != null) {<span class="text-muted fw-semibold d-block fs-7"><bdi>@l.Instructions</bdi></span>}
+                                                    @{ var back = returnedQ.GetValueOrDefault(l.Line.ID); var canBack = dispensed && canPharmacy && l.Line.ItemId != null && HospitalReturnRules.Returnable(l.Line, back) > 0; }
+                                                    @if (back > 0) {<span class="text-primary fw-semibold d-block fs-8">@string.Format(T["{0} returned"].Value, HospitalUi.LabNum(back, 0))</span>}
+                                                    @if (canBack) {<a href="#" class="fw-bold fs-8" data-return-line="@l.Line.ID" data-id="@d.ID" data-max="@HospitalReturnRules.Returnable(l.Line, back).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)" data-drug="@l.Drug"><i class="ki-outline ki-arrow-circle-left fs-7 me-1"></i>@T["Patient returned some"]</a>}</div></div></td>
                                             <td>@if (batch != null) {<span class="badge badge-light fs-7 fw-bold hp-num">@batch</span>} else {<span class="text-muted">—</span>}</td>
                                             <td class="hp-num fs-7 @(l.Warnings.Contains(HospitalPharmacyService.WarnNearExpiry) ? "text-danger fw-bold" : "")">@(exp?.ToString("yyyy-MM") ?? "—")</td>
                                             <td class="text-end"><span class="text-gray-900 fw-bold hp-num">@HospitalUi.LabNum(l.Line.DispensedQty ?? l.Line.Quantity, 0)</span>
@@ -218,8 +222,23 @@
                                     }
                                 </tbody>
                                 <tfoot><tr class="border-top border-dashed"><td colspan="@(giving ? 6 : 5)" class="ps-4 pt-5"><span class="text-gray-800 fw-bold fs-5">@T["Patient pays"]</span> @if (sel.CurrencyLabel != null) {<span class="text-muted fw-semibold fs-7">(@sel.CurrencyLabel)</span>}</td>
-                                    <td class="text-end pe-4 pt-5"><span class="fs-2 fw-bold text-primary hp-num">@Money(sel.Total)</span></td></tr></tfoot>
+                                    <td class="text-end pe-4 pt-5"><span class="fs-2 fw-bold text-primary hp-num">@Money(sel.Total - returnRows.Sum(x => x.Return.Credited))</span></td></tr></tfoot>
                             </table></div>
+                            @if (returnRows.Count > 0)
+                            {
+                                @* H146: what the patient brought back — back on the shelf, off the bill *@
+                                <div class="separator separator-dashed my-5"></div>
+                                <div class="fw-bold text-gray-800 fs-6 mb-3">@T["Returned by the patient"]</div>
+                                @foreach (var rr in returnRows)
+                                {
+                                    var rl = sel.Lines.FirstOrDefault(x => x.Line.ID == rr.Return.LineId);
+                                    <div class="d-flex flex-stack flex-wrap gap-2 py-2 border-bottom border-dashed">
+                                        <div class="d-flex flex-column"><span class="text-gray-800 fw-bold fs-7"><bdi>@(rl?.Drug ?? "—")</bdi> · <span class="hp-num">@HospitalUi.LabNum(rr.Return.Quantity, 0)</span></span>
+                                            <span class="text-muted fs-8"><bdi>@rr.Return.Reason</bdi> · @(rr.By ?? "—") · <span class="hp-num" data-fmt data-utc="@rr.Return.At.ToString("o")">@rr.Return.At.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</span></span></div>
+                                        <div class="text-end"><span class="fw-bold hp-num">−@Money(rr.Return.Credited)</span>@if (rr.Return.DepositId != null) {<span class="badge badge-light-primary fs-8 fw-bold d-block mt-1">@T["Credit to the patient's deposit"]</span>}</div>
+                                    </div>
+                                }
+                            }
                             <div class="d-flex flex-wrap gap-2 align-items-center mt-5">
                                 <span class="badge badge-light-primary fs-7 fw-semibold py-2 px-3"><i class="ki-outline ki-arrows-loop fs-6 text-primary me-2"></i>@T["Inventory — nearest-expiry batch first (FEFO)"]</span>
                                 @if (sel.WarehouseName != null) { <span class="badge badge-light fs-7 fw-semibold py-2 px-3"><i class="ki-outline ki-shop fs-6 me-2"></i><bdi>@sel.WarehouseName</bdi></span> }
@@ -450,7 +469,9 @@
         (function () {
             var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
             var base = @Json.Serialize(Url.Action("Pharmacy"));
-            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value), dispensed: @Json.Serialize(T["Dispensed — the stock left the store and the bill was charged"].Value) };
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value), dispensed: @Json.Serialize(T["Dispensed — the stock left the store and the bill was charged"].Value),
+                retQty: @Json.Serialize(T["How much of {0} did the patient bring back? (up to {1})"].Value), retWhy: @Json.Serialize(T["Why did it come back? It goes back on the shelf only if it can be sold again."].Value),
+                retAsk: @Json.Serialize(T["Put {0} of {1} back on the shelf and take it off the patient's bill?"].Value), returned: @Json.Serialize(T["Returned: back on the shelf and off the bill"].Value) };
             function toast(k, m) { if (window.toastr) toastr[k](m); }
             function post(url, body) {
                 return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(body || {}) })
@@ -500,6 +521,22 @@
                     sv.disabled = true;
                     post(base + '/' + sv.getAttribute('data-iv-save') + '/Interventions', body).then(function (r) { sv.disabled = false; if (!r.ok) { toast('error', r.error || W.failed); return; }
                         bootstrap.Modal.getOrCreateInstance(m2).hide(); toast('success', W.saved); swap(); });
+                    return;
+                }
+                var rb = e.target.closest('[data-return-line]');
+                if (rb) {
+                    e.preventDefault(); var max = rb.getAttribute('data-max');
+                    cbPrompt(W.retQty.replace('{0}', rb.getAttribute('data-drug')).replace('{1}', max), { number: true, value: max }).then(function (q) {
+                        if (q == null) return; var qty = Number(String(q).replace(',', '.'));
+                        cbPrompt(W.retWhy, { textarea: true }).then(function (why) {
+                            if (why == null) return;
+                            cbConfirm(W.retAsk.replace('{0}', qty).replace('{1}', rb.getAttribute('data-drug')), { kind: 'primary' }).then(function (ok) {
+                                if (!ok) return;
+                                post(base + '/' + rb.getAttribute('data-id') + '/Lines/' + rb.getAttribute('data-return-line') + '/Return', { quantity: qty, reason: why }).then(function (r) {
+                                    if (!r.ok) { toast('error', r.error || W.failed); return; } toast('success', W.returned); swap(); });
+                            });
+                        });
+                    });
                     return;
                 }
                 var t = e.target.closest('[data-step],[data-save-settings]'); if (!t) return;

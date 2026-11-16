@@ -41,6 +41,7 @@ namespace CrossBuy.BL.Reporting
 			HospitalPaymentMethods.Card => ar ? "بطاقة" : "Card",
 			HospitalPaymentMethods.Transfer => ar ? "تحويل" : "Transfer",
 			HospitalPaymentMethods.Wallet => ar ? "محفظة" : "Wallet",
+			HospitalReturnRules.CreditMethod => ar ? "رصيد مرتجع" : "Return credit",   // H146
 			_ => m,
 		};
 

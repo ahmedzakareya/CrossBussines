@@ -1,0 +1,85 @@
+{
+ "unit": "H146 - medicine returned by the patient: back on the shelf, off the open bill, any overpaid excess as a deposit credit",
+ "strings": {
+  "{0} returned": {
+   "ar": "رُجع ⁦{0}⁩",
+   "en": "{0} returned",
+   "fr": "{0} retourné(s)"
+  },
+  "Patient returned some": {
+   "ar": "أرجع المريض جزءًا",
+   "en": "Patient returned some",
+   "fr": "Le patient en a rapporté"
+  },
+  "Returned by the patient": {
+   "ar": "مرتجع من المريض",
+   "en": "Returned by the patient",
+   "fr": "Rapporté par le patient"
+  },
+  "Credit to the patient's deposit": {
+   "ar": "رصيد في عربون المريض",
+   "en": "Credit to the patient's deposit",
+   "fr": "Crédit sur l'acompte du patient"
+  },
+  "How much of {0} did the patient bring back? (up to {1})": {
+   "ar": "كم أرجع المريض من ⁦{0}⁩؟ (حتى ⁦{1}⁩)",
+   "en": "How much of {0} did the patient bring back? (up to {1})",
+   "fr": "Quelle quantité de {0} le patient a-t-il rapportée ? (jusqu'à {1})"
+  },
+  "Why did it come back? It goes back on the shelf only if it can be sold again.": {
+   "ar": "لماذا رجع؟ يعود للرف فقط إن كان صالحًا للبيع مرة أخرى.",
+   "en": "Why did it come back? It goes back on the shelf only if it can be sold again.",
+   "fr": "Pourquoi revient-il ? Il ne retourne en rayon que s'il peut être revendu."
+  },
+  "Put {0} of {1} back on the shelf and take it off the patient's bill?": {
+   "ar": "إرجاع ⁦{0}⁩ من ⁦{1}⁩ إلى الرف وخصمها من فاتورة المريض؟",
+   "en": "Put {0} of {1} back on the shelf and take it off the patient's bill?",
+   "fr": "Remettre {0} de {1} en rayon et le retirer de la facture du patient ?"
+  },
+  "Returned: back on the shelf and off the bill": {
+   "ar": "تم الإرجاع: عاد للرف وخُصم من الفاتورة",
+   "en": "Returned: back on the shelf and off the bill",
+   "fr": "Retourné : en rayon et retiré de la facture"
+  },
+  "Only dispensed medicine can come back": {
+   "ar": "لا يُرجع إلا دواء مصروف",
+   "en": "Only dispensed medicine can come back",
+   "fr": "Seul un médicament délivré peut être rapporté"
+  },
+  "More than was dispensed and not yet returned ({0})": {
+   "ar": "أكثر مما صُرف ولم يُرجع بعد (⁦{0}⁩)",
+   "en": "More than was dispensed and not yet returned ({0})",
+   "fr": "Plus que ce qui a été délivré et pas encore rapporté ({0})"
+  },
+  "Write why the medicine came back": {
+   "ar": "اكتب سبب إرجاع الدواء",
+   "en": "Write why the medicine came back",
+   "fr": "Indiquez pourquoi le médicament est rapporté"
+  },
+  "The bill is closed: a return after closing needs a credit note": {
+   "ar": "الفاتورة مغلقة: الإرجاع بعد الإغلاق يحتاج إشعار دائن",
+   "en": "The bill is closed: a return after closing needs a credit note",
+   "fr": "La facture est clôturée : un retour après clôture nécessite un avoir"
+  },
+  "The bill no longer carries what was dispensed: settle it at billing": {
+   "ar": "الفاتورة لم تعد تحمل ما صُرف: سوِّها من الفوترة",
+   "en": "The bill no longer carries what was dispensed: settle it at billing",
+   "fr": "La facture ne porte plus ce qui a été délivré : régularisez à la facturation"
+  },
+  "The store's record of this dispense is short: nothing returned": {
+   "ar": "سجل المخزن لهذا الصرف ناقص: لم يُرجع شيء",
+   "en": "The store's record of this dispense is short: nothing returned",
+   "fr": "Le registre du stock pour cette délivrance est incomplet : rien n'est retourné"
+  },
+  "The bill is already paid: the cashier records this return, so the excess goes to the patient's deposit": {
+   "ar": "الفاتورة مدفوعة: أمين الخزينة يسجّل هذا الإرجاع ليذهب الفرق إلى عربون المريض",
+   "en": "The bill is already paid: the cashier records this return, so the excess goes to the patient's deposit",
+   "fr": "La facture est déjà payée : le caissier enregistre ce retour pour que l'excédent aille à l'acompte du patient"
+  },
+  "pm:Credit": {
+   "ar": "رصيد مرتجع",
+   "en": "Return credit",
+   "fr": "Crédit de retour"
+  }
+ }
+}

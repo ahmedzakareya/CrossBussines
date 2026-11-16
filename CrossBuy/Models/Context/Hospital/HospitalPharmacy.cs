@@ -110,6 +110,7 @@ namespace CrossBuy.Models.Context.Hospital
 			HospitalDeskConfirmationModel.Configure(b);   // H141: the desk confirms tomorrow's appointments
 			HospitalPatientDepositModel.Configure(b);   // H143: the patient's deposits taken at the counter
 			HospitalDispenseFillModel.Configure(b);   // H145: each time a dispense line leaves the store (partial dispensing)
+			HospitalDispenseReturnModel.Configure(b);   // H146: medicine the patient brings back
 			b.Entity<HospitalDispense>(e =>
 			{
 				e.HasIndex(x => new { x.CompanyId, x.RxNo }).IsUnique();

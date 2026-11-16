@@ -7325,4 +7325,20 @@
   <data name="rfr:Travelling" xml:space="preserve"><value>سأسافر</value></data>
   <data name="rfr:DoseChanged" xml:space="preserve"><value>تغيّرت الجرعة</value></data>
   <data name="rfr:Other" xml:space="preserve"><value>سبب آخر</value></data>
+  <data name="Credit to the patient's deposit" xml:space="preserve"><value>رصيد في عربون المريض</value></data>
+  <data name="How much of {0} did the patient bring back? (up to {1})" xml:space="preserve"><value>كم أرجع المريض من ⁦{0}⁩؟ (حتى ⁦{1}⁩)</value></data>
+  <data name="More than was dispensed and not yet returned ({0})" xml:space="preserve"><value>أكثر مما صُرف ولم يُرجع بعد (⁦{0}⁩)</value></data>
+  <data name="Only dispensed medicine can come back" xml:space="preserve"><value>لا يُرجع إلا دواء مصروف</value></data>
+  <data name="Patient returned some" xml:space="preserve"><value>أرجع المريض جزءًا</value></data>
+  <data name="Put {0} of {1} back on the shelf and take it off the patient's bill?" xml:space="preserve"><value>إرجاع ⁦{0}⁩ من ⁦{1}⁩ إلى الرف وخصمها من فاتورة المريض؟</value></data>
+  <data name="Returned by the patient" xml:space="preserve"><value>مرتجع من المريض</value></data>
+  <data name="Returned: back on the shelf and off the bill" xml:space="preserve"><value>تم الإرجاع: عاد للرف وخُصم من الفاتورة</value></data>
+  <data name="The bill is already paid: the cashier records this return, so the excess goes to the patient's deposit" xml:space="preserve"><value>الفاتورة مدفوعة: أمين الخزينة يسجّل هذا الإرجاع ليذهب الفرق إلى عربون المريض</value></data>
+  <data name="The bill is closed: a return after closing needs a credit note" xml:space="preserve"><value>الفاتورة مغلقة: الإرجاع بعد الإغلاق يحتاج إشعار دائن</value></data>
+  <data name="The bill no longer carries what was dispensed: settle it at billing" xml:space="preserve"><value>الفاتورة لم تعد تحمل ما صُرف: سوِّها من الفوترة</value></data>
+  <data name="The store's record of this dispense is short: nothing returned" xml:space="preserve"><value>سجل المخزن لهذا الصرف ناقص: لم يُرجع شيء</value></data>
+  <data name="Why did it come back? It goes back on the shelf only if it can be sold again." xml:space="preserve"><value>لماذا رجع؟ يعود للرف فقط إن كان صالحًا للبيع مرة أخرى.</value></data>
+  <data name="Write why the medicine came back" xml:space="preserve"><value>اكتب سبب إرجاع الدواء</value></data>
+  <data name="pm:Credit" xml:space="preserve"><value>رصيد مرتجع</value></data>
+  <data name="{0} returned" xml:space="preserve"><value>رُجع ⁦{0}⁩</value></data>
 </root>

@@ -7325,4 +7325,20 @@
   <data name="rfr:Travelling" xml:space="preserve"><value>Je pars en voyage</value></data>
   <data name="rfr:DoseChanged" xml:space="preserve"><value>Ma dose a changé</value></data>
   <data name="rfr:Other" xml:space="preserve"><value>Autre raison</value></data>
+  <data name="Credit to the patient's deposit" xml:space="preserve"><value>Crédit sur l'acompte du patient</value></data>
+  <data name="How much of {0} did the patient bring back? (up to {1})" xml:space="preserve"><value>Quelle quantité de {0} le patient a-t-il rapportée ? (jusqu'à {1})</value></data>
+  <data name="More than was dispensed and not yet returned ({0})" xml:space="preserve"><value>Plus que ce qui a été délivré et pas encore rapporté ({0})</value></data>
+  <data name="Only dispensed medicine can come back" xml:space="preserve"><value>Seul un médicament délivré peut être rapporté</value></data>
+  <data name="Patient returned some" xml:space="preserve"><value>Le patient en a rapporté</value></data>
+  <data name="Put {0} of {1} back on the shelf and take it off the patient's bill?" xml:space="preserve"><value>Remettre {0} de {1} en rayon et le retirer de la facture du patient ?</value></data>
+  <data name="Returned by the patient" xml:space="preserve"><value>Rapporté par le patient</value></data>
+  <data name="Returned: back on the shelf and off the bill" xml:space="preserve"><value>Retourné : en rayon et retiré de la facture</value></data>
+  <data name="The bill is already paid: the cashier records this return, so the excess goes to the patient's deposit" xml:space="preserve"><value>La facture est déjà payée : le caissier enregistre ce retour pour que l'excédent aille à l'acompte du patient</value></data>
+  <data name="The bill is closed: a return after closing needs a credit note" xml:space="preserve"><value>La facture est clôturée : un retour après clôture nécessite un avoir</value></data>
+  <data name="The bill no longer carries what was dispensed: settle it at billing" xml:space="preserve"><value>La facture ne porte plus ce qui a été délivré : régularisez à la facturation</value></data>
+  <data name="The store's record of this dispense is short: nothing returned" xml:space="preserve"><value>Le registre du stock pour cette délivrance est incomplet : rien n'est retourné</value></data>
+  <data name="Why did it come back? It goes back on the shelf only if it can be sold again." xml:space="preserve"><value>Pourquoi revient-il ? Il ne retourne en rayon que s'il peut être revendu.</value></data>
+  <data name="Write why the medicine came back" xml:space="preserve"><value>Indiquez pourquoi le médicament est rapporté</value></data>
+  <data name="pm:Credit" xml:space="preserve"><value>Crédit de retour</value></data>
+  <data name="{0} returned" xml:space="preserve"><value>{0} retourné(s)</value></data>
 </root>

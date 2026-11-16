@@ -430,7 +430,7 @@ namespace CrossBuy.BL.Hospital
 				var dIn = await _db.Set<HospitalPatientDeposit>().AsNoTracking().Where(d => d.CompanyId == cid && d.ReceivedAt >= startUtc).Select(d => new { d.Method, d.Amount }).ToListAsync(ct);
 				var dOut = await _db.Set<HospitalDepositMove>().AsNoTracking().Where(m => m.CompanyId == cid && m.At >= startUtc && m.Kind == HospitalDepositMoveKind.Refund && m.Method != null).Select(m => new { m.Method, m.Amount }).ToListAsync(ct);
 				foreach (var x in HospitalPaymentMethods.All) by[x] += dIn.Where(d => d.Method == x).Sum(d => d.Amount) - dOut.Where(d => d.Method == x).Sum(d => d.Amount);
-				depositsToday = dIn.Count;
+				depositsToday = dIn.Count(x => HospitalPaymentMethods.IsKnown(x.Method));   // H146: a return's credit is no receipt
 			}
 			catch (Microsoft.Data.SqlClient.SqlException ex) when (ex.Number == 208) { }
 			var mine = pays.Where(p => p.CashierEmployeeId == ctx.EmployeeId).OrderByDescending(p => p.ReceivedAt).Take(5).ToList();
