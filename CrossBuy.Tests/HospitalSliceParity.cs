@@ -41,8 +41,8 @@ namespace CrossBuy.Tests
 			var cols = sql[a..b].Split('\n').Select(l => l.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries))
 				.Where(p => p.Length > 1 && !p[0].StartsWith("CONSTRAINT") && !p[0].StartsWith("--") && char.IsLower(p[1][0]))   // a column line: name, then its (lower-case) type
 				.ToDictionary(p => p[0], p => p[1].TrimEnd(','));
-			// a later slice may add a column (H33: "ALTER TABLE dbo.T ADD Col type NULL") — pass both slices' text
-			foreach (System.Text.RegularExpressions.Match m in System.Text.RegularExpressions.Regex.Matches(sql, $@"ALTER TABLE dbo\.{table} ADD (\w+) (\w+(?:\(\d+(?:,\d+)?\))?)"))
+			// a later slice may add a column (H33: "ALTER TABLE dbo.T ADD Col type NULL"); ADD CONSTRAINT (plain or WITH CHECK) is not a column — pass every slice's text
+			foreach (System.Text.RegularExpressions.Match m in System.Text.RegularExpressions.Regex.Matches(sql, $@"ALTER TABLE dbo\.{table} (?:WITH (?:NO)?CHECK )?ADD (?!CONSTRAINT\b)(\w+) (\w+(?:\(\d+(?:,\d+)?\))?)"))
 				cols[m.Groups[1].Value] = m.Groups[2].Value;
 			var et = model.FindEntityType(entity)!;
 			foreach (var p in et.GetProperties())
