@@ -116,11 +116,11 @@
                         <tbody class="fw-semibold text-gray-700">
                             @foreach (var r in Model)
                             {
-                                <tr data-row class="cursor-pointer @(sel?.Dispense.ID == r.Id ? "bg-light-primary" : "")" data-href="@Url.Action("Pharmacy", new { rx = r.Id, status })">
-                                    <td class="ps-4"><a href="@Url.Action("Pharmacy", new { rx = r.Id, status })" class="text-gray-900 fw-bold text-hover-primary fs-6 hp-num">@r.RxNo</a></td>
+                                <tr data-row class="cursor-pointer @(sel?.Dispense.ID == r.Id ? "bg-light-primary" : "")" data-href="@(Url.Action("Pharmacy", new { rx = r.Id, status }))#rx-detail">
+                                    <td class="ps-4"><a href="@(Url.Action("Pharmacy", new { rx = r.Id, status }))#rx-detail" class="text-gray-900 fw-bold text-hover-primary fs-6 hp-num">@r.RxNo</a></td>
                                     <td><div class="d-flex align-items-center gap-3">
                                         <div class="symbol symbol-35px symbol-circle flex-shrink-0">@if (r.PatientPhoto != null) {<img src="@r.PatientPhoto" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(r.PatientNameEn)" />} else {<span class="symbol-label fw-bold fs-8 hp-initials">@HospitalUi.Initials(r.PatientNameEn)</span>}</div>
-                                        <div class="d-flex flex-column"><span class="text-gray-900 fw-bold fs-6">@DisplayName.Of(r.PatientName, r.PatientNameEn)</span><span class="text-muted fw-semibold d-block fs-7 hp-num">@r.Mrn</span></div></div></td>
+                                        <div class="d-flex flex-column"><a href="@Url.Action("Patient", new { id = r.PatientId })" class="text-gray-900 fw-bold fs-6 text-hover-primary">@DisplayName.Of(r.PatientName, r.PatientNameEn)</a><span class="text-muted fw-semibold d-block fs-7 hp-num">@r.Mrn</span></div></div></td>
                                     @{ int waited = HospitalReviewRules.WaitingMinutes(r.PrescribedAt, r.ReviewedAt, now); bool late = waited > HospitalRxPriority.TargetMinutes(r.Priority); bool waiting = r.Status == HospitalDispenseStatus.New; }
                                     <td><span class="badge @PriClass(r.Priority) fs-7 fw-bold">@T["rxp:" + r.Priority]</span></td>
                                     <td>@if (r.Status == HospitalDispenseStatus.New || r.Status == HospitalDispenseStatus.Verified)
@@ -145,7 +145,7 @@
         {
             var d = sel.Dispense; var p = sel.Patient;
             var warnings = sel.Lines.SelectMany(l => l.Warnings.Select(w => (w, l))).ToList();
-            <div class="row g-5 g-xl-8">
+            <div class="row g-5 g-xl-8" id="rx-detail" style="scroll-margin-top:90px">
                 <div class="col-xl-8">
                     <div class="card card-flush mb-5">
                         <div class="card-header pt-5">
