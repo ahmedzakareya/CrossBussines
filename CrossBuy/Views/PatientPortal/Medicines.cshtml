@@ -9,7 +9,7 @@
     ViewData["Title"] = T["My medicines"].Value;
     ViewData["BandTitle"] = T["My medicines"].Value;
     ViewData["BandDesc"] = T["What your doctors prescribed, and asking for a medicine again"].Value;
-    string Kind(string s) => s switch { HospitalPortalRefillStatus.Approved => "success", HospitalPortalRefillStatus.Declined => "danger", _ => "primary" };
+    string Kind(string s) => s switch { HospitalPortalRefillStatus.Approved => "primary", HospitalPortalRefillStatus.Declined => "danger", _ => "primary" };
 }
 @section Figures {
     <div class="d-flex flex-column"><span class="text-white fw-bold fs-3 mb-1 pp-num">@Model.Count</span><div class="text-white opacity-50 fw-bold">@T["Medicines"]</div></div>
@@ -65,7 +65,8 @@
     <script>
         (function () {
             var W = { ask: @Json.Serialize(T["Ask your doctor to renew {0}? You can add a note."].Value), withdraw: @Json.Serialize(T["Withdraw this refill request?"].Value),
-                send: @Json.Serialize(T["Send the request"].Value), yes: @Json.Serialize(T["Yes"].Value), no: @Json.Serialize(T["No"].Value), note: @Json.Serialize(T["A note for your doctor (optional)"].Value),
+                send: @Json.Serialize(T["Send the request"].Value), yes: @Json.Serialize(T["Yes"].Value), no: @Json.Serialize(T["No"].Value), note: @Json.Serialize(T["A note for your doctor (optional)"].Value), why: @Json.Serialize(T["Why do you need it again?"].Value), pick: @Json.Serialize(T["Choose why you need it again"].Value),
+                reasons: @Json.Serialize(HospitalPortalRefillReason.All.Select(x => new { v = x, t = T["rfr:" + x].Value })),
                 failed: @Json.Serialize(T["The change could not be saved"].Value), sent: @Json.Serialize(T["Refill request sent to your doctor"].Value), saved: @Json.Serialize(T["Saved"].Value) };
             var urls = { refill: @Json.Serialize(Url.Action("Refill")), withdraw: @Json.Serialize(Url.Action("WithdrawRefill", new { id = 0 })) };
             // In place, never a reload.
@@ -85,11 +86,23 @@
                         });
                     return;
                 }
-                Swal.fire({ text: W.ask.replace('{0}', t.getAttribute('data-drug')), icon: 'question', input: 'textarea', inputPlaceholder: W.note, showCancelButton: true, buttonsStyling: false,
-                    confirmButtonText: W.send, cancelButtonText: W.no, customClass: { input: 'form-control form-control-solid', confirmButton: 'btn btn-primary', cancelButton: 'btn btn-light' } })
+                // Why is CHOSEN (a code the doctor reads in their own language); the note is optional, for anything else.
+                function esc(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+                var html = '<div class="text-start"><div class="fs-6 text-gray-700 mb-5">' + esc(W.ask.replace('{0}', t.getAttribute('data-drug'))) + '</div>' +
+                    '<div class="fw-bold fs-6 text-gray-900 mb-3">' + esc(W.why) + '</div>' +
+                    W.reasons.map(function (x) { return '<label class="form-check form-check-custom form-check-solid mb-3"><input class="form-check-input" type="radio" name="rfr" value="' + x.v + '" /><span class="form-check-label fs-6 text-gray-800">' + esc(x.t) + '</span></label>'; }).join('') +
+                    '<textarea class="form-control form-control-solid mt-3" rows="2" maxlength="500" data-rfr-note placeholder="' + esc(W.note) + '"></textarea></div>';
+                Swal.fire({ html: html, icon: 'question', showCancelButton: true, buttonsStyling: false, focusConfirm: false,
+                    didOpen: function (p) { var h = p.querySelector('.swal2-html-container'); if (h) h.style.maxHeight = 'none'; },   // the theme caps it at 200px: every reason must show
+                    confirmButtonText: W.send, cancelButtonText: W.no, customClass: { confirmButton: 'btn btn-primary', cancelButton: 'btn btn-light' },
+                    preConfirm: function () {
+                        var c = Swal.getPopup().querySelector('input[name=rfr]:checked');
+                        if (!c) { Swal.showValidationMessage(W.pick); return false; }
+                        return { reason: c.value, note: Swal.getPopup().querySelector('[data-rfr-note]').value || '' };
+                    } })
                     .then(function (r) {
                         if (!r.isConfirmed) return; t.disabled = true;
-                        pp.post(urls.refill, { lineId: +t.getAttribute('data-refill'), note: r.value || '' }).then(function (res) { t.disabled = false; if (!res.ok) { pp.toast('error', res.error || W.failed); return; } pp.toast('success', W.sent); swap(); });
+                        pp.post(urls.refill, { lineId: +t.getAttribute('data-refill'), reason: r.value.reason, note: r.value.note }).then(function (res) { t.disabled = false; if (!res.ok) { pp.toast('error', res.error || W.failed); return; } pp.toast('success', W.sent); swap(); });
                     });
             });
         })();

@@ -34,7 +34,7 @@ namespace CrossBuy.BL.Hospital
 	public sealed record HospitalPortalRefillRow(HospitalPortalRefill Refill, int PatientId, string PatientName, string PatientNameEn, string Mrn, string? PatientPhoto,
 		string Drug, string? Instructions, int Quantity, DateTime PrescribedAt, HospitalPortalDoctorRef? Doctor);
 
-	public sealed class HospitalPortalRefillInput { public int LineId { get; set; } public string? Note { get; set; } }
+	public sealed class HospitalPortalRefillInput { public int LineId { get; set; } public string? Reason { get; set; } public string? Note { get; set; } }
 	public sealed class HospitalPortalDecisionInput { public bool Approve { get; set; } public string? Answer { get; set; } public string? AnswerEn { get; set; } }
 	/// H33: `NoteEn` is the note's English twin; `Edit` corrects the words of a release already made.
 	public sealed class HospitalPortalReleaseInput { public string Source { get; set; } = HospitalPortalResultSource.Lab; public int OrderId { get; set; } public string? Note { get; set; } public string? NoteEn { get; set; } public bool Edit { get; set; } }
@@ -227,7 +227,9 @@ namespace CrossBuy.BL.Hospital
 			var med = (await MedicinesAsync(ctx, accountId, nowUtc.ToLocalTime(), ct)).FirstOrDefault(m => m.LineId == input.LineId);
 			if (med == null) return HospitalResult.Fail("not_found");   // not one of this account's people's medicines
 			if (med.CannotRefill is string why) return HospitalResult.Fail(why);
-			var row = new HospitalPortalRefill { CompanyId = ctx.CompanyId, AccountId = accountId, PatientId = med.Person.PatientId, PrescriptionLineId = med.LineId, Status = HospitalPortalRefillStatus.Open, Note = Clip(input.Note, 500), CreatedAt = nowUtc };
+			var reason = string.IsNullOrWhiteSpace(input.Reason) ? null : input.Reason.Trim();
+			if (reason != null && !HospitalPortalRefillReason.All.Contains(reason)) return HospitalResult.Fail("Choose why you need it again");
+			var row = new HospitalPortalRefill { CompanyId = ctx.CompanyId, AccountId = accountId, PatientId = med.Person.PatientId, PrescriptionLineId = med.LineId, Status = HospitalPortalRefillStatus.Open, Reason = reason, Note = Clip(input.Note, 500), CreatedAt = nowUtc };
 			_db.Add(row);
 			await _db.SaveChangesAsync(ct);
 			return HospitalResult.Success(row.ID);

@@ -32,6 +32,18 @@ namespace CrossBuy.Models.Context.Hospital
 		public static readonly IReadOnlyList<string> All = new[] { Open, Approved, Declined, Withdrawn };
 	}
 
+	/// Why the patient asks for a medicine again: a CODE, so the doctor reads it in their language (the screens translate
+	/// "rfr:" + code). The free note stays for anything the list does not say.
+	public static class HospitalPortalRefillReason
+	{
+		public const string RunningOut = "RunningOut";
+		public const string Lost = "Lost";
+		public const string Travelling = "Travelling";
+		public const string DoseChanged = "DoseChanged";
+		public const string Other = "Other";
+		public static readonly IReadOnlyList<string> All = new[] { RunningOut, Lost, Travelling, DoseChanged, Other };
+	}
+
 	public class HospitalPortalRelease
 	{
 		public int ID { get; set; }
@@ -55,6 +67,8 @@ namespace CrossBuy.Models.Context.Hospital
 		public int PrescriptionLineId { get; set; }
 		public string Status { get; set; } = HospitalPortalRefillStatus.Open;
 		public string? Note { get; set; }
+		/// Why, from HospitalPortalRefillReason (null on a request made before the list existed).
+		public string? Reason { get; set; }
 		public DateTime CreatedAt { get; set; }
 		public DateTime? HandledAt { get; set; }
 		public int? HandledByEmployeeId { get; set; }
@@ -81,6 +95,7 @@ namespace CrossBuy.Models.Context.Hospital
 				e.ToTable("HospitalPortalRefills");
 				e.Property(x => x.Status).HasMaxLength(20);
 				e.Property(x => x.Note).HasMaxLength(500);
+				e.Property(x => x.Reason).HasMaxLength(20);
 				e.Property(x => x.Answer).HasMaxLength(500);
 				e.Property(x => x.AnswerEn).HasMaxLength(500);
 				e.HasIndex(x => new { x.CompanyId, x.Status });

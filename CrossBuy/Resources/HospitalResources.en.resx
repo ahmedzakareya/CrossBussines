@@ -7318,4 +7318,11 @@
   <data name="rx:Partial" xml:space="preserve"><value>Partly dispensed</value></data>
   <data name="{0} of {1} given" xml:space="preserve"><value>{0} of {1} given</value></data>
   <data name="{0}: more than the prescription still owes ({1})" xml:space="preserve"><value>{0}: more than the prescription still owes ({1})</value></data>
+  <data name="Why do you need it again?" xml:space="preserve"><value>Why do you need it again?</value></data>
+  <data name="Choose why you need it again" xml:space="preserve"><value>Choose why you need it again</value></data>
+  <data name="rfr:RunningOut" xml:space="preserve"><value>Running out</value></data>
+  <data name="rfr:Lost" xml:space="preserve"><value>I lost my medicine</value></data>
+  <data name="rfr:Travelling" xml:space="preserve"><value>I am travelling</value></data>
+  <data name="rfr:DoseChanged" xml:space="preserve"><value>My dose changed</value></data>
+  <data name="rfr:Other" xml:space="preserve"><value>Another reason</value></data>
 </root>
