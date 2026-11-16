@@ -7046,4 +7046,43 @@
   <data name="pmv:WriteOff" xml:space="preserve"><value>شطب</value></data>
   <data name="witness:" xml:space="preserve"><value>الشاهد:</value></data>
   <data name="{0} units on hand" xml:space="preserve"><value>⁦{0}⁩ وحدة في الرصيد</value></data>
+  <data name="Cart fill" xml:space="preserve"><value>تجهيز عربة الجرعات</value></data>
+  <data name="Check the dose" xml:space="preserve"><value>راجع الجرعة</value></data>
+  <data name="Dose and route" xml:space="preserve"><value>الجرعة والطريق</value></data>
+  <data name="Doses × units" xml:space="preserve"><value>جرعات × وحدات</value></data>
+  <data name="Each line becomes a medication delivery, prepared from the pharmacy store; a dose is charged when given and returned if it never is." xml:space="preserve"><value>كل بند يصبح توصيل دواء يُجهَّز من مخزن الصيدلية؛ والجرعة تُحاسَب عند إعطائها وترجع لو لم تُعطَ.</value></data>
+  <data name="Each patient's doses for the next 24 hours, prepared in one go" xml:space="preserve"><value>جرعات كل مريض للـ24 ساعة القادمة، تُجهَّز مرة واحدة</value></data>
+  <data name="Fill list" xml:space="preserve"><value>قائمة التجهيز</value></data>
+  <data name="Fill the cart" xml:space="preserve"><value>جهّز العربة</value></data>
+  <data name="Fill the cart of {0}? {1} deliveries will be prepared from the pharmacy store." xml:space="preserve"><value>تجهيز عربة ⁦{0}⁩؟ سيُجهَّز ⁦{1}⁩ توصيل من مخزن الصيدلية.</value></data>
+  <data name="Last fill" xml:space="preserve"><value>آخر تجهيز</value></data>
+  <data name="Lines to fill" xml:space="preserve"><value>بنود للتجهيز</value></data>
+  <data name="No active medication order on this ward." xml:space="preserve"><value>لا أوامر أدوية نشطة على هذا الجناح.</value></data>
+  <data name="No ward to fill" xml:space="preserve"><value>لا يوجد جناح للتجهيز</value></data>
+  <data name="Not filled" xml:space="preserve"><value>لن تُجهَّز</value></data>
+  <data name="Nothing on this ward is due to be filled" xml:space="preserve"><value>لا شيء على هذا الجناح يحتاج تجهيزًا</value></data>
+  <data name="Nothing to pick." xml:space="preserve"><value>لا شيء للتجميع.</value></data>
+  <data name="Patients on the fill" xml:space="preserve"><value>مرضى في التجهيز</value></data>
+  <data name="Schedule" xml:space="preserve"><value>المواعيد</value></data>
+  <data name="The cart is filled: {0} deliveries prepared" xml:space="preserve"><value>جُهِّزت العربة: {0} توصيل</value></data>
+  <data name="The fill works from the wards of the hospital's facility and their admitted patients." xml:space="preserve"><value>التجهيز يعمل من أجنحة المستشفى ومرضاها المنوَّمين.</value></data>
+  <data name="The written dose could not be matched to the item's strength: one unit a dose is assumed." xml:space="preserve"><value>الجرعة المكتوبة لم تُطابَق مع تركيز الصنف: افتُرضت وحدة لكل جرعة.</value></data>
+  <data name="This ward keeps no cabinet: every medicine comes from the pharmacy." xml:space="preserve"><value>هذا الجناح ليس له دولاب: كل الأدوية من الصيدلية.</value></data>
+  <data name="To pick" xml:space="preserve"><value>للتجميع</value></data>
+  <data name="Totals per medicine, against the pharmacy store" xml:space="preserve"><value>الإجمالي لكل دواء مقابل مخزن الصيدلية</value></data>
+  <data name="Units to send" xml:space="preserve"><value>وحدات تُرسل</value></data>
+  <data name="cabinet, on its way, not stocked or short" xml:space="preserve"><value>من الدولاب، أو في الطريق، أو غير متوفر، أو ناقص</value></data>
+  <data name="cart:Cabinet" xml:space="preserve"><value>من دولاب الجناح</value></data>
+  <data name="cart:Fill" xml:space="preserve"><value>سيُجهَّز</value></data>
+  <data name="cart:NoDose" xml:space="preserve"><value>لا جرعة في هذه الفترة</value></data>
+  <data name="cart:NotStocked" xml:space="preserve"><value>غير متوفر بالصيدلية</value></data>
+  <data name="cart:OnItsWay" xml:space="preserve"><value>في الطريق بالفعل</value></data>
+  <data name="cart:Short" xml:space="preserve"><value>المخزن لا يكفي</value></data>
+  <data name="cartw:now" xml:space="preserve"><value>الـ24 ساعة القادمة من الآن</value></data>
+  <data name="cartw:tomorrow" xml:space="preserve"><value>غدًا من منتصف الليل</value></data>
+  <data name="from the pharmacy store, nearest expiry first" xml:space="preserve"><value>من مخزن الصيدلية، الأقرب انتهاءً أولًا</value></data>
+  <data name="of {0} in the ward's beds" xml:space="preserve"><value>من ⁦{0}⁩ على أسرّة الجناح</value></data>
+  <data name="{0} deliveries, {1} units" xml:space="preserve"><value>⁦{0}⁩ توصيل، ⁦{1}⁩ وحدة</value></data>
+  <data name="{0} lines, {1} units" xml:space="preserve"><value>⁦{0}⁩ بند، ⁦{1}⁩ وحدة</value></data>
+  <data name="{0} medicines" xml:space="preserve"><value>⁦{0}⁩ دواء</value></data>
 </root>

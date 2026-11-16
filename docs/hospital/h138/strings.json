@@ -1,0 +1,200 @@
+{
+ "unit": "H138 - the unit-dose cart fill: a ward's 24-hour doses as prepared medication deliveries",
+ "strings": {
+  "Cart fill": {
+   "ar": "تجهيز عربة الجرعات",
+   "en": "Cart fill",
+   "fr": "Remplissage des chariots"
+  },
+  "Each patient's doses for the next 24 hours, prepared in one go": {
+   "ar": "جرعات كل مريض للـ24 ساعة القادمة، تُجهَّز مرة واحدة",
+   "en": "Each patient's doses for the next 24 hours, prepared in one go",
+   "fr": "Les doses de chaque patient pour 24 heures, préparées en une fois"
+  },
+  "cartw:now": {
+   "ar": "الـ24 ساعة القادمة من الآن",
+   "en": "Next 24 hours from now",
+   "fr": "24 h à partir de maintenant"
+  },
+  "cartw:tomorrow": {
+   "ar": "غدًا من منتصف الليل",
+   "en": "Tomorrow from midnight",
+   "fr": "Demain dès minuit"
+  },
+  "No ward to fill": {
+   "ar": "لا يوجد جناح للتجهيز",
+   "en": "No ward to fill",
+   "fr": "Aucun service à remplir"
+  },
+  "The fill works from the wards of the hospital's facility and their admitted patients.": {
+   "ar": "التجهيز يعمل من أجنحة المستشفى ومرضاها المنوَّمين.",
+   "en": "The fill works from the wards of the hospital's facility and their admitted patients.",
+   "fr": "Le remplissage part des services et de leurs patients hospitalisés."
+  },
+  "Patients on the fill": {
+   "ar": "مرضى في التجهيز",
+   "en": "Patients on the fill",
+   "fr": "Patients au remplissage"
+  },
+  "of {0} in the ward's beds": {
+   "ar": "من ⁦{0}⁩ على أسرّة الجناح",
+   "en": "of {0} in the ward's beds",
+   "fr": "sur {0} dans les lits du service"
+  },
+  "Lines to fill": {
+   "ar": "بنود للتجهيز",
+   "en": "Lines to fill",
+   "fr": "Lignes à remplir"
+  },
+  "{0} medicines": {
+   "ar": "⁦{0}⁩ دواء",
+   "en": "{0} medicines",
+   "fr": "{0} médicaments"
+  },
+  "Units to send": {
+   "ar": "وحدات تُرسل",
+   "en": "Units to send",
+   "fr": "Unités à envoyer"
+  },
+  "from the pharmacy store, nearest expiry first": {
+   "ar": "من مخزن الصيدلية، الأقرب انتهاءً أولًا",
+   "en": "from the pharmacy store, nearest expiry first",
+   "fr": "du magasin de la pharmacie, péremption la plus proche d'abord"
+  },
+  "Not filled": {
+   "ar": "لن تُجهَّز",
+   "en": "Not filled",
+   "fr": "Non remplis"
+  },
+  "cabinet, on its way, not stocked or short": {
+   "ar": "من الدولاب، أو في الطريق، أو غير متوفر، أو ناقص",
+   "en": "cabinet, on its way, not stocked or short",
+   "fr": "armoire, en route, non stocké ou insuffisant"
+  },
+  "Fill list": {
+   "ar": "قائمة التجهيز",
+   "en": "Fill list",
+   "fr": "Liste de remplissage"
+  },
+  "No active medication order on this ward.": {
+   "ar": "لا أوامر أدوية نشطة على هذا الجناح.",
+   "en": "No active medication order on this ward.",
+   "fr": "Aucune prescription active dans ce service."
+  },
+  "Dose and route": {
+   "ar": "الجرعة والطريق",
+   "en": "Dose and route",
+   "fr": "Dose et voie"
+  },
+  "Schedule": {
+   "ar": "المواعيد",
+   "en": "Schedule",
+   "fr": "Horaires"
+  },
+  "Doses × units": {
+   "ar": "جرعات × وحدات",
+   "en": "Doses × units",
+   "fr": "Doses × unités"
+  },
+  "The written dose could not be matched to the item's strength: one unit a dose is assumed.": {
+   "ar": "الجرعة المكتوبة لم تُطابَق مع تركيز الصنف: افتُرضت وحدة لكل جرعة.",
+   "en": "The written dose could not be matched to the item's strength: one unit a dose is assumed.",
+   "fr": "La dose écrite ne correspond pas au dosage de l'article : une unité par dose est supposée."
+  },
+  "Check the dose": {
+   "ar": "راجع الجرعة",
+   "en": "Check the dose",
+   "fr": "Vérifiez la dose"
+  },
+  "cart:Fill": {
+   "ar": "سيُجهَّز",
+   "en": "To fill",
+   "fr": "À remplir"
+  },
+  "cart:Cabinet": {
+   "ar": "من دولاب الجناح",
+   "en": "From the ward cabinet",
+   "fr": "Depuis l'armoire du service"
+  },
+  "cart:NotStocked": {
+   "ar": "غير متوفر بالصيدلية",
+   "en": "Not stocked",
+   "fr": "Non stocké"
+  },
+  "cart:OnItsWay": {
+   "ar": "في الطريق بالفعل",
+   "en": "Already on its way",
+   "fr": "Déjà en route"
+  },
+  "cart:NoDose": {
+   "ar": "لا جرعة في هذه الفترة",
+   "en": "No dose in the window",
+   "fr": "Aucune dose dans la période"
+  },
+  "cart:Short": {
+   "ar": "المخزن لا يكفي",
+   "en": "The store is short",
+   "fr": "Stock insuffisant"
+  },
+  "Fill the cart": {
+   "ar": "جهّز العربة",
+   "en": "Fill the cart",
+   "fr": "Remplir le chariot"
+  },
+  "{0} lines, {1} units": {
+   "ar": "⁦{0}⁩ بند، ⁦{1}⁩ وحدة",
+   "en": "{0} lines, {1} units",
+   "fr": "{0} lignes, {1} unités"
+  },
+  "Each line becomes a medication delivery, prepared from the pharmacy store; a dose is charged when given and returned if it never is.": {
+   "ar": "كل بند يصبح توصيل دواء يُجهَّز من مخزن الصيدلية؛ والجرعة تُحاسَب عند إعطائها وترجع لو لم تُعطَ.",
+   "en": "Each line becomes a medication delivery, prepared from the pharmacy store; a dose is charged when given and returned if it never is.",
+   "fr": "Chaque ligne devient une livraison préparée depuis la pharmacie ; la dose est facturée à l'administration et retournée sinon."
+  },
+  "This ward keeps no cabinet: every medicine comes from the pharmacy.": {
+   "ar": "هذا الجناح ليس له دولاب: كل الأدوية من الصيدلية.",
+   "en": "This ward keeps no cabinet: every medicine comes from the pharmacy.",
+   "fr": "Ce service n'a pas d'armoire : tout vient de la pharmacie."
+  },
+  "Fill the cart of {0}? {1} deliveries will be prepared from the pharmacy store.": {
+   "ar": "تجهيز عربة ⁦{0}⁩؟ سيُجهَّز ⁦{1}⁩ توصيل من مخزن الصيدلية.",
+   "en": "Fill the cart of {0}? {1} deliveries will be prepared from the pharmacy store.",
+   "fr": "Remplir le chariot de {0} ? {1} livraisons seront préparées."
+  },
+  "Last fill": {
+   "ar": "آخر تجهيز",
+   "en": "Last fill",
+   "fr": "Dernier remplissage"
+  },
+  "{0} deliveries, {1} units": {
+   "ar": "⁦{0}⁩ توصيل، ⁦{1}⁩ وحدة",
+   "en": "{0} deliveries, {1} units",
+   "fr": "{0} livraisons, {1} unités"
+  },
+  "To pick": {
+   "ar": "للتجميع",
+   "en": "To pick",
+   "fr": "À prélever"
+  },
+  "Totals per medicine, against the pharmacy store": {
+   "ar": "الإجمالي لكل دواء مقابل مخزن الصيدلية",
+   "en": "Totals per medicine, against the pharmacy store",
+   "fr": "Totaux par médicament, face au stock"
+  },
+  "Nothing to pick.": {
+   "ar": "لا شيء للتجميع.",
+   "en": "Nothing to pick.",
+   "fr": "Rien à prélever."
+  },
+  "The cart is filled: {0} deliveries prepared": {
+   "ar": "جُهِّزت العربة: {0} توصيل",
+   "en": "The cart is filled: {0} deliveries prepared",
+   "fr": "Chariot rempli : {0} livraisons préparées"
+  },
+  "Nothing on this ward is due to be filled": {
+   "ar": "لا شيء على هذا الجناح يحتاج تجهيزًا",
+   "en": "Nothing on this ward is due to be filled",
+   "fr": "Rien à remplir dans ce service"
+  }
+ }
+}

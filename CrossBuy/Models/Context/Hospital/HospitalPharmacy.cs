@@ -101,6 +101,7 @@ namespace CrossBuy.Models.Context.Hospital
 			HospitalStockDisposalModel.Configure(b);   // H135: what is destroyed or returned to the supplier
 			HospitalPharmacyReviewModel.Configure(b);   // H136: priority, refusal and the pharmacist's interventions
 			HospitalControlledCountModel.Configure(b);   // H137: blind counts of the controlled drugs and their discrepancies
+			HospitalCartFillModel.Configure(b);   // H138: the unit-dose cart fill
 			b.Entity<HospitalDispense>(e =>
 			{
 				e.HasIndex(x => new { x.CompanyId, x.RxNo }).IsUnique();

@@ -7046,4 +7046,43 @@
   <data name="pmv:WriteOff" xml:space="preserve"><value>Sortie de stock</value></data>
   <data name="witness:" xml:space="preserve"><value>témoin :</value></data>
   <data name="{0} units on hand" xml:space="preserve"><value>{0} unités en stock</value></data>
+  <data name="Cart fill" xml:space="preserve"><value>Remplissage des chariots</value></data>
+  <data name="Check the dose" xml:space="preserve"><value>Vérifiez la dose</value></data>
+  <data name="Dose and route" xml:space="preserve"><value>Dose et voie</value></data>
+  <data name="Doses × units" xml:space="preserve"><value>Doses × unités</value></data>
+  <data name="Each line becomes a medication delivery, prepared from the pharmacy store; a dose is charged when given and returned if it never is." xml:space="preserve"><value>Chaque ligne devient une livraison préparée depuis la pharmacie ; la dose est facturée à l'administration et retournée sinon.</value></data>
+  <data name="Each patient's doses for the next 24 hours, prepared in one go" xml:space="preserve"><value>Les doses de chaque patient pour 24 heures, préparées en une fois</value></data>
+  <data name="Fill list" xml:space="preserve"><value>Liste de remplissage</value></data>
+  <data name="Fill the cart" xml:space="preserve"><value>Remplir le chariot</value></data>
+  <data name="Fill the cart of {0}? {1} deliveries will be prepared from the pharmacy store." xml:space="preserve"><value>Remplir le chariot de {0} ? {1} livraisons seront préparées.</value></data>
+  <data name="Last fill" xml:space="preserve"><value>Dernier remplissage</value></data>
+  <data name="Lines to fill" xml:space="preserve"><value>Lignes à remplir</value></data>
+  <data name="No active medication order on this ward." xml:space="preserve"><value>Aucune prescription active dans ce service.</value></data>
+  <data name="No ward to fill" xml:space="preserve"><value>Aucun service à remplir</value></data>
+  <data name="Not filled" xml:space="preserve"><value>Non remplis</value></data>
+  <data name="Nothing on this ward is due to be filled" xml:space="preserve"><value>Rien à remplir dans ce service</value></data>
+  <data name="Nothing to pick." xml:space="preserve"><value>Rien à prélever.</value></data>
+  <data name="Patients on the fill" xml:space="preserve"><value>Patients au remplissage</value></data>
+  <data name="Schedule" xml:space="preserve"><value>Horaires</value></data>
+  <data name="The cart is filled: {0} deliveries prepared" xml:space="preserve"><value>Chariot rempli : {0} livraisons préparées</value></data>
+  <data name="The fill works from the wards of the hospital's facility and their admitted patients." xml:space="preserve"><value>Le remplissage part des services et de leurs patients hospitalisés.</value></data>
+  <data name="The written dose could not be matched to the item's strength: one unit a dose is assumed." xml:space="preserve"><value>La dose écrite ne correspond pas au dosage de l'article : une unité par dose est supposée.</value></data>
+  <data name="This ward keeps no cabinet: every medicine comes from the pharmacy." xml:space="preserve"><value>Ce service n'a pas d'armoire : tout vient de la pharmacie.</value></data>
+  <data name="To pick" xml:space="preserve"><value>À prélever</value></data>
+  <data name="Totals per medicine, against the pharmacy store" xml:space="preserve"><value>Totaux par médicament, face au stock</value></data>
+  <data name="Units to send" xml:space="preserve"><value>Unités à envoyer</value></data>
+  <data name="cabinet, on its way, not stocked or short" xml:space="preserve"><value>armoire, en route, non stocké ou insuffisant</value></data>
+  <data name="cart:Cabinet" xml:space="preserve"><value>Depuis l'armoire du service</value></data>
+  <data name="cart:Fill" xml:space="preserve"><value>À remplir</value></data>
+  <data name="cart:NoDose" xml:space="preserve"><value>Aucune dose dans la période</value></data>
+  <data name="cart:NotStocked" xml:space="preserve"><value>Non stocké</value></data>
+  <data name="cart:OnItsWay" xml:space="preserve"><value>Déjà en route</value></data>
+  <data name="cart:Short" xml:space="preserve"><value>Stock insuffisant</value></data>
+  <data name="cartw:now" xml:space="preserve"><value>24 h à partir de maintenant</value></data>
+  <data name="cartw:tomorrow" xml:space="preserve"><value>Demain dès minuit</value></data>
+  <data name="from the pharmacy store, nearest expiry first" xml:space="preserve"><value>du magasin de la pharmacie, péremption la plus proche d'abord</value></data>
+  <data name="of {0} in the ward's beds" xml:space="preserve"><value>sur {0} dans les lits du service</value></data>
+  <data name="{0} deliveries, {1} units" xml:space="preserve"><value>{0} livraisons, {1} unités</value></data>
+  <data name="{0} lines, {1} units" xml:space="preserve"><value>{0} lignes, {1} unités</value></data>
+  <data name="{0} medicines" xml:space="preserve"><value>{0} médicaments</value></data>
 </root>

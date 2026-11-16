@@ -1,0 +1,201 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Controllers
+@using CrossBuy.Models.Context.Hospital
+@model HospitalCartPreview?
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H138: the unit-dose cart fill.
+      · Toolbar: the ward and the window, both select2.
+      · Four demo39 stat tiles.
+      · The fill list, patient by patient, in the theme's table widget. Each patient's row has their face and bed; each
+        line shows the doses × units per dose, and what it does.
+      · Aside: the totals to pick from the pharmacy store, and the fill action with the last fill.
+*@
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Cart fill"].Value;
+    var wards = (IReadOnlyList<(int Id, string Code, string Name, string? NameEn, int Patients)>)ViewBag.Wards;
+    string window = (string)ViewBag.Window;
+    bool canFill = ViewBag.CanPharmacy == true && Model != null;
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+    string Q(decimal v) => v.ToString("0.##", inv);
+    string StateTone(string s) => s == HospitalCartLineState.Fill ? "success" : s == HospitalCartLineState.Short ? "danger" : s == HospitalCartLineState.Cabinet ? "info" : "secondary";
+    var fill = Model?.Lines.Where(l => l.State == HospitalCartLineState.Fill).ToList() ?? new();
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Cart fill"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item"><a href="@Url.Action("Pharmacy")" class="text-muted text-hover-primary">@T["Pharmacy"]</a></li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-400 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@T["Each patient's doses for the next 24 hours, prepared in one go"]</li>
+            </ul>
+        </div>
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+            <div class="w-250px"><select class="form-select form-select-solid form-select-sm" data-nav="ward">
+                @foreach (var w in wards) { <option value="@w.Id" selected="@(w.Id == Model?.WardId)">@w.Code · @DisplayName.Of(w.Name, w.NameEn) (@w.Patients)</option> }
+            </select></div>
+            <div class="w-200px"><select class="form-select form-select-solid form-select-sm" data-nav="window">
+                @foreach (var x in HospitalController.CartWindows.All) { <option value="@x" selected="@(x == window)">@T["cartw:" + x]</option> }
+            </select></div>
+            <a href="@Url.Action("MedRouting")" class="btn btn-sm btn-light btn-active-light-primary"><i class="ki-outline ki-delivery fs-4"></i>@T["Medication routing"]</a>
+        </div>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (Model == null)
+        {
+            <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-6"><i class="ki-outline ki-information fs-2tx text-primary me-4"></i>
+                <div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@T["No ward to fill"]</h4><div class="fs-6 text-gray-700">@T["The fill works from the wards of the hospital's facility and their admitted patients."]</div></div></div>
+        }
+        else
+        {
+            var tiles = new (string Label, string N, string Note, string Icon, string Tone)[] {
+                (T["Patients on the fill"].Value, fill.Select(l => l.PatientId).Distinct().Count().ToString(), string.Format(T["of {0} in the ward's beds"].Value, Model.Lines.Select(l => l.PatientId).Distinct().Count()), "ki-people", "primary"),
+                (T["Lines to fill"].Value, fill.Count.ToString(), string.Format(T["{0} medicines"].Value, Model.Totals.Count), "ki-capsule", "success"),
+                (T["Units to send"].Value, Q(fill.Sum(l => l.Units)), T["from the pharmacy store, nearest expiry first"].Value, "ki-delivery", "info"),
+                (T["Not filled"].Value, (Model.Lines.Count - fill.Count).ToString(), T["cabinet, on its way, not stocked or short"].Value, "ki-information-2", Model.Lines.Any(l => l.State == HospitalCartLineState.Short) ? "danger" : "secondary") };
+            <div class="row g-5 g-xl-8 mb-5">
+                @foreach (var s in tiles)
+                {
+                    <div class="col-sm-6 col-xl-3"><div class="card card-flush h-100">
+                        <div class="card-body d-flex flex-column justify-content-between pt-6 pb-0 px-6">
+                            <div class="symbol symbol-45px mb-5"><span class="symbol-label bg-light-@s.Tone"><i class="ki-outline @s.Icon fs-2x text-@(s.Tone == "secondary" ? "gray-600" : s.Tone)"></i></span></div>
+                            <div class="d-flex flex-column"><span class="fs-2hx fw-bold text-gray-900 lh-1 ls-n2 hp-num">@s.N</span><span class="text-gray-500 pt-2 fw-semibold fs-6">@s.Label</span></div>
+                        </div>
+                        <div class="card-body d-flex align-items-end pt-3 pb-6 px-6"><div class="d-flex fs-7 fw-semibold align-items-center text-gray-500"><div class="bullet w-8px h-6px rounded-2 bg-@s.Tone me-3 flex-shrink-0"></div><span>@s.Note</span></div></div>
+                    </div></div>
+                }
+            </div>
+
+            <div class="row g-5 g-xl-8">
+                <div class="col-xl-8">
+                    <div class="card card-flush">
+                        <div class="card-header pt-5">
+                            <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Fill list"] · <bdi>@DisplayName.Of(Model.WardName, Model.WardNameEn)</bdi></span>
+                                <span class="text-gray-500 mt-1 fw-semibold fs-7 hp-num">@Model.WindowStart.ToLocalTime().ToString("yyyy-MM-dd HH:mm") → @Model.WindowEnd.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</span></h3>
+                            <div class="card-toolbar"><div class="d-flex align-items-center position-relative"><i class="ki-outline ki-magnifier fs-3 position-absolute ms-4"></i><input type="text" data-filter class="form-control form-control-solid form-control-sm w-200px ps-12" placeholder="@T["Search..."]" /></div></div>
+                        </div>
+                        <div class="card-body pt-2">
+                            @if (Model.Lines.Count == 0)
+                            {
+                                <div class="text-center py-12"><i class="ki-outline ki-capsule fs-3x text-gray-300 d-block mb-4"></i><div class="fs-6 fw-semibold text-gray-600">@T["No active medication order on this ward."]</div></div>
+                            }
+                            else
+                            {
+                                <div class="table-responsive"><table class="table align-middle gs-0 gy-3 mb-0">
+                                    <thead><tr class="fw-bold text-muted bg-light"><th class="ps-4 min-w-225px rounded-start">@T["Medicine"]</th><th>@T["Dose and route"]</th><th>@T["Schedule"]</th><th class="text-end">@T["Doses × units"]</th><th class="pe-4 rounded-end">@T["State"]</th></tr></thead>
+                                    <tbody>
+                                        @foreach (var g in Model.Lines.GroupBy(l => l.AdmissionId))
+                                        {
+                                            var p = g.First();
+                                            <tr class="bg-light-primary" data-row data-group="@g.Key"><td colspan="5" class="ps-4 py-3"><div class="d-flex align-items-center">
+                                                <div class="symbol symbol-35px symbol-circle me-3 flex-shrink-0">@if (p.Photo != null) {<img src="@p.Photo" alt="" style="object-fit:cover" />} else {<span class="symbol-label fw-bold fs-8 hp-initials">@HospitalUi.Initials(p.PatientNameEn ?? p.PatientName)</span>}</div>
+                                                <span class="text-gray-900 fw-bold fs-6 me-2"><bdi>@DisplayName.Of(p.PatientName, p.PatientNameEn)</bdi></span><span class="text-muted fs-7 hp-num me-3">@p.Mrn</span>
+                                                <span class="badge badge-primary fs-8 fw-bold"><i class="ki-outline ki-home-2 fs-8 text-white me-1"></i>@p.Bed</span></div></td></tr>
+                                            @foreach (var l in g)
+                                            {
+                                                string tone = StateTone(l.State);
+                                                <tr data-row data-in="@g.Key">
+                                                    <td class="ps-8"><div class="d-flex align-items-center">
+                                                        <div class="symbol symbol-35px me-3 flex-shrink-0"><span class="symbol-label bg-light-@(tone == "secondary" ? "secondary" : tone)"><i class="ki-outline ki-capsule fs-3 text-@(tone == "secondary" ? "gray-500" : tone)"></i></span></div>
+                                                        <div class="d-flex flex-column"><span class="text-gray-900 fw-bold"><bdi dir="auto">@(l.DrugShown ?? l.Drug)</bdi>@if (l.Controlled) {<span class="badge badge-light-dark fs-9 fw-bold ms-1">@T["Controlled"]</span>}</span>
+                                                            @if (l.DrugShown != null) {<span class="text-muted fs-8"><bdi>@l.Drug</bdi></span>}</div></div></td>
+                                                    <td><span class="text-gray-800 fw-semibold fs-7" dir="auto">@l.Dose</span><span class="text-muted fs-8 d-block">@T["route:" + l.Route]</span></td>
+                                                    <td>@if (l.AsNeeded) {<span class="badge badge-light-info fs-8 fw-bold">@T["As needed"]</span>}
+                                                        else if (l.Hours != null) {<div class="d-flex flex-wrap gap-1">@foreach (var h in l.Hours.Split(',')) {<span class="badge badge-light fs-8 fw-bold hp-num">@h:00</span>}</div>}</td>
+                                                    <td class="text-end text-nowrap"><span class="text-gray-900 fw-bold hp-num">@l.Doses × @Q(l.UnitsPerDose) = @Q(l.Units)</span>
+                                                        @if (!l.UnitsExact && l.ItemId != null) {<span class="badge badge-light-danger fs-9 fw-bold d-block mt-1" title="@T["The written dose could not be matched to the item's strength: one unit a dose is assumed."]" data-bs-toggle="tooltip">@T["Check the dose"]</span>}</td>
+                                                    <td class="pe-4"><span class="badge badge-light-@tone fs-7 fw-bold">@T["cart:" + l.State]</span></td>
+                                                </tr>
+                                            }
+                                        }
+                                    </tbody>
+                                </table></div>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xl-4">
+                    <div class="card card-flush mb-5">
+                        <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Fill the cart"]</span>
+                            <span class="text-gray-500 mt-1 fw-semibold fs-7">@string.Format(T["{0} lines, {1} units"].Value, fill.Count, Q(fill.Sum(l => l.Units)))</span></h3></div>
+                        <div class="card-body pt-2">
+                            <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-4 mb-5"><i class="ki-outline ki-information-5 fs-2 text-primary me-3"></i>
+                                <div class="fs-7 fw-semibold text-gray-700">@T["Each line becomes a medication delivery, prepared from the pharmacy store; a dose is charged when given and returned if it never is."]</div></div>
+                            @if (!Model.HasCabinet) {<div class="text-muted fs-8 mb-4">@T["This ward keeps no cabinet: every medicine comes from the pharmacy."]</div>}
+                            @if (canFill && fill.Count > 0)
+                            {
+                                <button type="button" class="btn btn-primary w-100" data-fill="@Model.WardId" data-window="@window" data-ask="@string.Format(T["Fill the cart of {0}? {1} deliveries will be prepared from the pharmacy store."].Value, DisplayName.Of(Model.WardName, Model.WardNameEn), fill.Count)"><i class="ki-outline ki-delivery fs-4"></i>@T["Fill the cart"]</button>
+                            }
+                            @if (Model.LastFill is { } lf)
+                            {
+                                <div class="separator separator-dashed my-5"></div>
+                                <div class="d-flex align-items-center"><div class="symbol symbol-35px me-3"><span class="symbol-label bg-light-success"><i class="ki-outline ki-check-circle fs-3 text-success"></i></span></div>
+                                    <div class="d-flex flex-column"><span class="text-gray-800 fw-bold fs-7">@T["Last fill"] <span class="hp-num">@lf.FillNo</span></span>
+                                        <span class="text-muted fs-8"><span class="hp-num" data-fmt data-utc="@lf.DoneAt.ToString("o")">@lf.DoneAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</span> · @string.Format(T["{0} deliveries, {1} units"].Value, lf.Deliveries, Q(lf.Units))</span></div></div>
+                            }
+                        </div>
+                    </div>
+                    <div class="card card-flush">
+                        <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["To pick"]</span>
+                            <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Totals per medicine, against the pharmacy store"]</span></h3></div>
+                        <div class="card-body pt-2">
+                            @if (Model.Totals.Count == 0) {<div class="text-center text-muted fs-7 py-6">@T["Nothing to pick."]</div>}
+                            @for (int i = 0; i < Model.Totals.Count; i++)
+                            {
+                                var t = Model.Totals[i];
+                                <div class="d-flex flex-stack">
+                                    <div class="d-flex flex-column me-3"><span class="text-gray-800 fw-bold fs-7"><bdi>@DisplayName.Of(t.Name, t.NameEn)</bdi></span><bdi class="text-muted fs-8" dir="ltr">@t.Code</bdi></div>
+                                    <div class="text-end"><span class="text-gray-900 fw-bold fs-5 hp-num d-block">@Q(t.Units)</span><span class="text-muted fs-8 hp-num">@T["In store"] @Q(t.InStore)</span></div>
+                                </div>
+                                if (i < Model.Totals.Count - 1) { <div class="separator separator-dashed my-3"></div> }
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div></div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            // the toolbar is outside the content the layout dresses: the ward and the window are set up here, and navigate
+            document.querySelectorAll('[data-nav]').forEach(function (el) {
+                if (window.jQuery && jQuery.fn.select2) jQuery(el).select2({ width: '100%', dir: document.documentElement.dir || 'rtl', minimumResultsForSearch: Infinity });
+                var go = function () { var u = new URL(location.href); u.searchParams.set(el.getAttribute('data-nav'), el.value); location.href = u.toString(); };
+                if (window.CB && CB.onSelectChange) CB.onSelectChange(el, go); else el.addEventListener('change', go);
+            });
+            document.addEventListener('input', function (e) {
+                if (!e.target.matches('[data-filter]')) return;
+                var q = e.target.value.trim().toLowerCase(), show = {};
+                document.querySelectorAll('tr[data-in]').forEach(function (tr) { var g = tr.closest('tbody').querySelector('tr[data-group="' + tr.getAttribute('data-in') + '"]');
+                    var hit = !q || tr.textContent.toLowerCase().indexOf(q) !== -1 || (g && g.textContent.toLowerCase().indexOf(q) !== -1);
+                    tr.style.display = hit ? '' : 'none'; if (hit) show[tr.getAttribute('data-in')] = true; });
+                document.querySelectorAll('tr[data-group]').forEach(function (tr) { tr.style.display = show[tr.getAttribute('data-group')] ? '' : 'none'; });
+            });
+            var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), done: @Json.Serialize(T["The cart is filled: {0} deliveries prepared"].Value), skipped: @Json.Serialize(T["Not filled"].Value) };
+            document.addEventListener('click', function (e) {
+                var b = e.target.closest('[data-fill]'); if (!b) return;
+                cbConfirm(b.getAttribute('data-ask')).then(function (ok) { if (!ok) return; b.disabled = true;
+                    fetch(@Json.Serialize(Url.Action("CartFillSend")), { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token },
+                        body: JSON.stringify({ wardId: Number(b.getAttribute('data-fill')), window: b.getAttribute('data-window') }) })
+                        .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+                        .then(function (res) { b.disabled = false; if (!res.ok) { toastr.error(res.error || W.failed); return; }
+                            toastr.success(W.done.replace('{0}', res.sent));
+                            (res.problems || []).forEach(function (p) { toastr.error(p); });
+                            setTimeout(function () { location.reload(); }, 900); });
+                });
+            });
+        })();
+    </script>
+}
