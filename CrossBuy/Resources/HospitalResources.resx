@@ -2371,7 +2371,7 @@
   <data name="Referral for a new visit" xml:space="preserve"><value>Referral for a new visit</value></data>
   <data name="Show the cost before confirming" xml:space="preserve"><value>Show the cost before confirming</value></data>
   <data name="Takes new patients" xml:space="preserve"><value>Takes new patients</value></data>
-  <data name="The account stays unverified until the front desk matches it to a file; until then it books only a new visit" xml:space="preserve"><value>The account stays unverified until the front desk matches it to a file; until then it books only a new visit</value></data>
+  <data name="The account stays unverified until the front desk matches it to a file; until then it books only a new visit" xml:space="preserve"><value>The account stays unverified until reception matches it to a file; until then it books only a new visit</value></data>
   <data name="The booking window is 1 to 365 days" xml:space="preserve"><value>The booking window is 1 to 365 days</value></data>
   <data name="The furthest slot a patient can book" xml:space="preserve"><value>The furthest slot a patient can book</value></data>
   <data name="The minimum notice is 0 to 72 hours" xml:space="preserve"><value>The minimum notice is 0 to 72 hours</value></data>
@@ -2491,7 +2491,7 @@
   <data name="Remember me" xml:space="preserve"><value>Remember me</value></data>
   <data name="Review and confirm" xml:space="preserve"><value>Review and confirm</value></data>
   <data name="Send a booking request" xml:space="preserve"><value>Send a booking request</value></data>
-  <data name="Send a booking request and the call centre will call you; on your first visit the front desk checks who you are, and from then on you book directly." xml:space="preserve"><value>Send a booking request and the call centre will call you; on your first visit the front desk checks who you are, and from then on you book directly.</value></data>
+  <data name="Send a booking request and the call centre will call you; on your first visit the front desk checks who you are, and from then on you book directly." xml:space="preserve"><value>Send a booking request and the call centre will call you; on your first visit reception checks who you are, and from then on you book directly.</value></data>
   <data name="Send the request" xml:space="preserve"><value>Send the request</value></data>
   <data name="Sign in" xml:space="preserve"><value>Sign in</value></data>
   <data name="Sign out" xml:space="preserve"><value>Sign out</value></data>
@@ -2538,7 +2538,7 @@
   <data name="{0} free" xml:space="preserve"><value>{0} free</value></data>
   <data name="Free time" xml:space="preserve"><value>Free</value></data>
   <data name="A day can hold a morning and an evening session; two sessions of one day may not overlap." xml:space="preserve"><value>A day can hold a morning and an evening session; two sessions of one day may not overlap.</value></data>
-  <data name="A leave does not cancel what is already booked: the page shows how many appointments fall inside, and the front desk moves them." xml:space="preserve"><value>A leave does not cancel what is already booked: the page shows how many appointments fall inside, and the front desk moves them.</value></data>
+  <data name="A leave does not cancel what is already booked: the page shows how many appointments fall inside, and the front desk moves them." xml:space="preserve"><value>A leave does not cancel what is already booked: the page shows how many appointments fall inside, and reception moves them.</value></data>
   <data name="A leave is at most a year" xml:space="preserve"><value>A leave is at most a year</value></data>
   <data name="Add a session" xml:space="preserve"><value>Add a session</value></data>
   <data name="Add this session?" xml:space="preserve"><value>Add this session?</value></data>
@@ -2610,10 +2610,10 @@
   <data name="What your doctors prescribed, and asking for a medicine again" xml:space="preserve"><value>What your doctors prescribed, and asking for a medicine again</value></data>
   <data name="Withdraw this refill request?" xml:space="preserve"><value>Withdraw this refill request?</value></data>
   <data name="Write the reason the patient will read" xml:space="preserve"><value>Write the reason the patient will read</value></data>
-  <data name="Your bills show here once the front desk has verified your account." xml:space="preserve"><value>Your bills show here once the front desk has verified your account.</value></data>
+  <data name="Your bills show here once the front desk has verified your account." xml:space="preserve"><value>Your bills show here once reception has verified your account.</value></data>
   <data name="Your doctor's note" xml:space="preserve"><value>Your doctor's note</value></data>
-  <data name="Your medicines show here once the front desk has verified your account." xml:space="preserve"><value>Your medicines show here once the front desk has verified your account.</value></data>
-  <data name="Your results show here once the front desk has verified your account." xml:space="preserve"><value>Your results show here once the front desk has verified your account.</value></data>
+  <data name="Your medicines show here once the front desk has verified your account." xml:space="preserve"><value>Your medicines show here once reception has verified your account.</value></data>
+  <data name="Your results show here once the front desk has verified your account." xml:space="preserve"><value>Your results show here once reception has verified your account.</value></data>
   <data name="Your share" xml:space="preserve"><value>Your share</value></data>
   <data name="Your share of each visit" xml:space="preserve"><value>Your share of each visit</value></data>
   <data name="Your word to the patient with this result (for example: normal, no action needed)" xml:space="preserve"><value>Your word to the patient with this result (for example: normal, no action needed)</value></data>
@@ -2686,7 +2686,7 @@
   <data name="The report shows here after your first finished visit at the dental clinic." xml:space="preserve"><value>The report shows here after your first finished visit at the dental clinic.</value></data>
   <data name="Visit finished" xml:space="preserve"><value>Visit finished</value></data>
   <data name="What your dentist found" xml:space="preserve"><value>What your dentist found</value></data>
-  <data name="Your dental report shows here once the front desk has verified your account." xml:space="preserve"><value>Your dental report shows here once the front desk has verified your account.</value></data>
+  <data name="Your dental report shows here once the front desk has verified your account." xml:space="preserve"><value>Your dental report shows here once reception has verified your account.</value></data>
   <data name="Your dentist" xml:space="preserve"><value>Your dentist</value></data>
   <data name="mark:Completed" xml:space="preserve"><value>Treated here</value></data>
   <data name="mark:Condition" xml:space="preserve"><value>Needs treatment</value></data>
@@ -4168,7 +4168,7 @@
   <data name="Nothing is written to them until they are allowed again" xml:space="preserve"><value>Nothing is written to them until they are allowed again</value></data>
   <data name="Only a message still waiting to go can be cancelled" xml:space="preserve"><value>Only a message still waiting to go can be cancelled</value></data>
   <data name="Patient SMS" xml:space="preserve"><value>Patient SMS</value></data>
-  <data name="Patients &amp; front desk" xml:space="preserve"><value>Patients &amp; front desk</value></data>
+  <data name="Patients &amp; front desk" xml:space="preserve"><value>Patients &amp; reception</value></data>
   <data name="SMS is not installed yet (hospital_h70_sms.sql)." xml:space="preserve"><value>SMS is not installed yet (hospital_h70_sms.sql).</value></data>
   <data name="SMS parts" xml:space="preserve"><value>SMS parts</value></data>
   <data name="Save the words of this message?" xml:space="preserve"><value>Save the words of this message?</value></data>
@@ -7094,7 +7094,7 @@
   <data name="Edit the file" xml:space="preserve"><value>Edit the file</value></data>
   <data name="Elsewhere for the desk" xml:space="preserve"><value>Elsewhere for the desk</value></data>
   <data name="Expected today" xml:space="preserve"><value>Expected today</value></data>
-  <data name="Front desk" xml:space="preserve"><value>Front desk</value></data>
+  <data name="Front desk" xml:space="preserve"><value>Reception</value></data>
   <data name="Mark {0} as a no-show?" xml:space="preserve"><value>Mark {0} as a no-show?</value></data>
   <data name="Name in Arabic or English, file number, national ID, phone or queue number…" xml:space="preserve"><value>Name in Arabic or English, file number, national ID, phone or queue number…</value></data>
   <data name="Name, file or queue number…" xml:space="preserve"><value>Name, file or queue number…</value></data>
