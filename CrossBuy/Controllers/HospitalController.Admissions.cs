@@ -27,7 +27,9 @@ namespace CrossBuy.Controllers
 			return Json(new
 			{
 				ok = true,
-				results = page.Rows.Select(p => new { id = p.Id, text = DisplayName.Of(p.Name, p.NameEn) + " — " + p.Mrn }),
+				// id + text keep every existing picker working; name, mrn, photo and initials let the shared select2 template
+				// (crossbuy-person-option.js) show the patient by face.
+				results = page.Rows.Select(p => new { id = p.Id, text = DisplayName.Of(p.Name, p.NameEn) + " — " + p.Mrn, name = DisplayName.Of(p.Name, p.NameEn), mrn = p.Mrn, photo = p.PhotoPath, initials = HospitalUi.Initials(p.NameEn ?? p.Name) }),
 			});
 		}
 
