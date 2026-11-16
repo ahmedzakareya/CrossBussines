@@ -34,6 +34,11 @@ namespace CrossBuy.BL.Reporting
         public const string AllergyPlan = "Hospital.AllergyPlan";
         /// H111: one signed clinical drawing (the canvas) — its picture, its marks and its results.
         public const string CanvasDrawing = "Hospital.CanvasDrawing";
+        /// H144: the front desk's papers, each ONE row — the visit (its slip and its queue ticket are two layouts of it),
+        /// the patient's wristband, and a deposit's receipt.
+        public const string VisitSlip = "Hospital.VisitSlip";
+        public const string Wristband = "Hospital.Wristband";
+        public const string DepositReceipt = "Hospital.DepositReceipt";
         public const string CategoryKey = "hospital.reporting";
     }
 
@@ -400,6 +405,72 @@ namespace CrossBuy.BL.Reporting
             },
             Params("SheetId", "رقم الرسم الداخلي", "Drawing id"));
 
+        // ---- H144: the front desk's papers ----
+
+        /// The same dataset with some shared header fields shown by default — the platform's starter layout (seeded once
+        /// per report) prints the visible fields, and a front-desk paper without the patient's name is no paper.
+        private static ReportDatasetDefinition Show(ReportDatasetDefinition d, params string[] keys) => new()
+        {
+            DatasetCode = d.DatasetCode, Module = d.Module, TitleAr = d.TitleAr, TitleEn = d.TitleEn, DescriptionAr = d.DescriptionAr, DescriptionEn = d.DescriptionEn,
+            DataSourceKey = d.DataSourceKey, RequiredPermissionKey = d.RequiredPermissionKey, MaxRows = d.MaxRows, RowCapPolicy = d.RowCapPolicy, Parameters = d.Parameters,
+            Fields = d.Fields.Select(f => keys.Contains(f.Key) ? F(f.Key, f.TitleAr, f.TitleEn, f.Type, f.WidthMm, true, f.Align) : f).ToArray(),
+        };
+
+        public static ReportDatasetDefinition VisitSlip() => Show(Doc(HospitalDocumentDatasetCodes.VisitSlip,
+            "ورقة الزيارة وتذكرة الدور", "Visit slip and queue ticket",
+            "زيارة واحدة كما تُسلَّم للمريض عند الشباك: الطبيب والعيادة والغرفة والموعد ورقم الدور وكم مريضًا أمامه، وجهة الدفع. ورقة الزيارة وتذكرة الدور قالبان لها.",
+            "One visit as the patient takes it from the counter: the doctor, the clinic, the room, the time, the queue number and how many are ahead, and the payer. The visit slip and the queue ticket are two layouts of it.",
+            new[] { F("LineNo", "م", "#", ReportFieldType.Integer, 10, false, ReportAlign.Center) },
+            new[]
+            {
+                F("QueueNumber", "رقم الدور", "Queue no.", ReportFieldType.Integer, 20, true, ReportAlign.Center),
+                F("VisitDate", "اليوم", "Day", ReportFieldType.Date, visible: true),
+                F("VisitTime", "الموعد", "Time", width: 16, visible: true),
+                F("VisitType", "نوع الزيارة", "Visit type", width: 24, visible: true),
+                F("Department", "العيادة", "Clinic", width: 40, visible: true),
+                F("Room", "الغرفة", "Room", width: 16, visible: true),
+                F("AheadOfYou", "أمامك", "Ahead of you", ReportFieldType.Integer, 16, true, ReportAlign.Center),
+                F("Status", "الحالة", "Status", width: 20),
+                F("ArrivedAt", "وقت الحضور", "Arrived at", ReportFieldType.DateTime),
+            },
+            Params("AppointmentId", "رقم الموعد الداخلي", "Appointment id")), "PatientName", "PatientMrn", "DoctorName");
+
+        public static ReportDatasetDefinition Wristband() => Show(Doc(HospitalDocumentDatasetCodes.Wristband,
+            "سوار المريض", "Patient wristband",
+            "سوار تعريف المريض: الاسم ورقم الملف وتاريخ الميلاد والنوع وفصيلة الدم والحساسية، والقسم والسرير إن كان منوَّمًا.",
+            "The patient's identification band: the name, the file number, the date of birth, the sex, the blood group and the allergies, and the ward and bed when admitted.",
+            new[] { F("LineNo", "م", "#", ReportFieldType.Integer, 10, false, ReportAlign.Center) },
+            new[]
+            {
+                F("BirthDate", "تاريخ الميلاد", "Date of birth", ReportFieldType.Date, visible: true),
+                F("BloodGroup", "فصيلة الدم", "Blood group", width: 14, visible: true),
+                F("Allergies", "الحساسية", "Allergies", width: 80, visible: true),
+                F("AllergyAlert", "تنبيه الحساسية", "Allergy alert", width: 30),
+                F("Ward", "القسم", "Ward", width: 30),
+                F("Bed", "السرير", "Bed", width: 16),
+                F("AdmittedOn", "تاريخ الدخول", "Admitted on", ReportFieldType.Date),
+            },
+            Params("PatientId", "رقم المريض الداخلي", "Patient id")), "PatientName", "PatientMrn", "PatientAge", "PatientSex");
+
+        public static ReportDatasetDefinition DepositReceipt() => Show(Doc(HospitalDocumentDatasetCodes.DepositReceipt,
+            "إيصال عربون", "Deposit receipt",
+            "إيصال عربون واحد: المبلغ وطريقة الدفع والغرض، ومن حصّله، وما استُخدم منه وما رُدّ وما بقي.",
+            "One deposit's receipt: the amount, how it was paid and what for, who took it, and what was used, refunded and is left.",
+            new[] { F("LineNo", "م", "#", ReportFieldType.Integer, 10, false, ReportAlign.Center) },
+            new[]
+            {
+                F("Amount", "المبلغ", "Amount", ReportFieldType.Money, 24, true),
+                F("Currency", "العملة", "Currency", width: 14, visible: true),
+                F("Method", "طريقة الدفع", "Method", width: 24, visible: true),
+                F("Purpose", "الغرض", "For", width: 24, visible: true),
+                F("Note", "ملاحظة", "Note", width: 60),
+                F("Cashier", "المحصّل", "Received by", width: 40, visible: true),
+                F("Used", "المستخدم", "Used", ReportFieldType.Money, 24),
+                F("Refunded", "المردود", "Refunded", ReportFieldType.Money, 24),
+                F("Left", "المتبقي", "Left", ReportFieldType.Money, 24),
+            },
+            Params("DepositId", "رقم العربون الداخلي", "Deposit id")), "DocumentNo", "DocumentDate", "PatientName", "PatientMrn");
+
         public static IEnumerable<ReportDatasetDefinition> All()
         {
             yield return Bill();
@@ -415,6 +486,9 @@ namespace CrossBuy.BL.Reporting
             yield return EyeLetter();
             yield return AllergyPlan();
             yield return CanvasDrawing();
+            yield return VisitSlip();        // H144
+            yield return Wristband();        // H144
+            yield return DepositReceipt();   // H144
             yield return DentalClaim();
         }
     }

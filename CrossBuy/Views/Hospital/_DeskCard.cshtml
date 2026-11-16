@@ -96,6 +96,16 @@ else
     }
 </div>
 
+@* H144: the counter's papers — Report Studio layouts only (the visit slip and the queue ticket of today's visit, the wristband) *@
+<div class="fw-bold fs-7 text-gray-800 mb-3">@T["Print"]</div>
+<div class="d-flex flex-wrap gap-2 mb-5">
+    @if (visit != null)
+    {
+        @await Html.PartialAsync("_ReportPrintMenu", new CrossBuy.BL.Reporting.ReportPrintMenuModel { ScreenKey = CrossBuy.BL.Reporting.ReportScreenKeys.HospitalDeskVisit, DocumentId = visit.A.Id.ToString(), DocumentTitle = name, ButtonLabel = T["Visit slip & ticket"].Value })
+    }
+    @await Html.PartialAsync("_ReportPrintMenu", new CrossBuy.BL.Reporting.ReportPrintMenuModel { ScreenKey = CrossBuy.BL.Reporting.ReportScreenKeys.HospitalDeskPatient, DocumentId = p.ID.ToString(), DocumentTitle = name, ButtonLabel = T["Wristband"].Value })
+</div>
+
 @* the next visits *@
 @if (Model.Upcoming.Count > 0)
 {

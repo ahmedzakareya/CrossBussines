@@ -85,7 +85,9 @@
                     <td>@T["deposit:" + d.Deposit.Purpose]@if (d.Deposit.Note != null) {<div class="text-muted fs-8"><bdi>@d.Deposit.Note</bdi></div>}</td>
                     <td class="text-end hp-num">@Money(d.Deposit.Amount)</td>
                     <td class="text-end fw-bold hp-num @(d.Left > 0 ? "text-success" : "text-muted")">@Money(d.Left)</td>
-                    <td class="text-end pe-2">@if (d.Left > 0) {<button type="button" class="btn btn-sm btn-light-danger py-1 px-3 text-nowrap" data-desk-refund @(shift == null ? "disabled" : "")>@T["Refund"]</button>}</td>
+                    <td class="text-end pe-2"><div class="d-flex justify-content-end gap-1">
+                        @await Html.PartialAsync("_ReportPrintMenu", new CrossBuy.BL.Reporting.ReportPrintMenuModel { ScreenKey = CrossBuy.BL.Reporting.ReportScreenKeys.HospitalDeskDeposit, DocumentId = d.Deposit.ID.ToString(), DocumentTitle = d.Deposit.DepositNo, ButtonLabel = T["Receipt"].Value })
+                        @if (d.Left > 0) {<button type="button" class="btn btn-sm btn-light-danger py-1 px-3 text-nowrap" data-desk-refund @(shift == null ? "disabled" : "")>@T["Refund"]</button>}</div></td>
                 </tr>
             }
         </tbody>

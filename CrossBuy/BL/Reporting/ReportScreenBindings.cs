@@ -80,6 +80,9 @@ namespace CrossBuy.BL.Reporting
         public const string HospitalEyeVisit = "Hospital.EyeVisit";             // H109: the glasses prescription, the letter
         public const string HospitalAllergyVisit = "Hospital.AllergyVisit";     // H109: the emergency plan
         public const string HospitalCanvasSheet = "Hospital.CanvasSheet";       // H111: a clinical drawing's paper
+        public const string HospitalDeskVisit = "Hospital.DeskVisit";           // H144: the visit slip and the queue ticket
+        public const string HospitalDeskPatient = "Hospital.DeskPatient";       // H144: the wristband
+        public const string HospitalDeskDeposit = "Hospital.DeskDeposit";       // H144: the deposit receipt
         public const string HospitalBirth = "Hospital.Birth";           // H58
         public const string HospitalDeath = "Hospital.Death";           // H59
         public const string HospitalConsent = "Hospital.Consent";       // H60
@@ -199,6 +202,9 @@ namespace CrossBuy.BL.Reporting
             new() { ScreenKey = ReportScreenKeys.HospitalEyeVisit, ReportCode = HospitalDocumentDatasetCodes.EyeLetter, IdParameter = "EncounterId", SortOrder = 20 },   // H109
             new() { ScreenKey = ReportScreenKeys.HospitalAllergyVisit, ReportCode = HospitalDocumentDatasetCodes.AllergyPlan, IdParameter = "EncounterId", SortOrder = 10 },   // H109
             new() { ScreenKey = ReportScreenKeys.HospitalCanvasSheet, ReportCode = HospitalDocumentDatasetCodes.CanvasDrawing, IdParameter = "SheetId", SortOrder = 10 },   // H111
+            new() { ScreenKey = ReportScreenKeys.HospitalDeskVisit, ReportCode = HospitalDocumentDatasetCodes.VisitSlip, IdParameter = "AppointmentId", SortOrder = 10 },   // H144
+            new() { ScreenKey = ReportScreenKeys.HospitalDeskPatient, ReportCode = HospitalDocumentDatasetCodes.Wristband, IdParameter = "PatientId", SortOrder = 10 },   // H144
+            new() { ScreenKey = ReportScreenKeys.HospitalDeskDeposit, ReportCode = HospitalDocumentDatasetCodes.DepositReceipt, IdParameter = "DepositId", SortOrder = 10 },   // H144
             new() { ScreenKey = ReportScreenKeys.HospitalBirth, ReportCode = HospitalDocumentDatasetCodes.BirthNotice, IdParameter = "BirthId", SortOrder = 10 },   // H58
             new() { ScreenKey = ReportScreenKeys.HospitalDeath, ReportCode = HospitalDocumentDatasetCodes.DeathCertificate, IdParameter = "DeathId", SortOrder = 10 },   // H59
             new() { ScreenKey = ReportScreenKeys.HospitalConsent, ReportCode = HospitalDocumentDatasetCodes.Consent, IdParameter = "ConsentId", SortOrder = 10 },   // H60

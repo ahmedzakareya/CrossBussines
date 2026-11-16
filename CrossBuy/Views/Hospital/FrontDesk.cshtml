@@ -316,6 +316,9 @@
     </div></div>
 </div>
 
+@* H144: the Report Studio preview the print menus open (one for the page; the menus come with the counter and the payment window) *@
+@await Html.PartialAsync("_ReportPreviewModal", (object)T["Front desk"].Value)
+
 @* the desk's window: walk-in slots, payment *@
 <div class="modal fade" id="desk_modal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered mw-850px"><div class="modal-content">
@@ -388,14 +391,14 @@
             var cardEl = document.querySelector('[data-desk-card]'), current = null;
             function openCard(id, scroll) {
                 current = Number(id); cardEl.innerHTML = '<div class="text-center text-muted py-15"><span class="spinner-border spinner-border-sm text-primary me-2"></span>' + W.loading + '</div>';
-                get(U.card + id).then(function (h) { cardEl.innerHTML = h; tips(cardEl); if (scroll) cardEl.closest('.card').scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+                get(U.card + id).then(function (h) { cardEl.innerHTML = h; tips(cardEl); menus(); if (scroll) cardEl.closest('.card').scrollIntoView({ behavior: 'smooth', block: 'start' }); });
             }
             function refresh() { list.reload(); if (view === 'grid') loadGrid(); if (current) openCard(current); }
 
             // the window
             var modalEl = document.getElementById('desk_modal'), mTitle = modalEl.querySelector('[data-desk-modal-title]'), mBody = modalEl.querySelector('[data-desk-modal-body]');
             function windowOf(title, url, size) { mTitle.textContent = title; modalEl.querySelector('.modal-dialog').className = 'modal-dialog modal-dialog-centered ' + (size || 'mw-850px'); mBody.innerHTML = '<div class="text-center text-muted py-10"><span class="spinner-border spinner-border-sm text-primary me-2"></span>' + W.loading + '</div>';
-                bootstrap.Modal.getOrCreateInstance(modalEl).show(); get(url).then(function (h) { mBody.innerHTML = h; s2(mBody, modalEl); tips(mBody); }); }
+                bootstrap.Modal.getOrCreateInstance(modalEl).show(); get(url).then(function (h) { mBody.innerHTML = h; s2(mBody, modalEl); tips(mBody); menus(); }); }
             function walkIn(patient, doctor) { if (!patient) { toastr.warning(W.pickFirst); return; } windowOf(W.walkin, U.slots + '?patient=' + patient + (doctor ? '&doctor=' + doctor : '')); }
             function book(patient, doctor, minute, btn) {
                 if (btn) btn.disabled = true;
