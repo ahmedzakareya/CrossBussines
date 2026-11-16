@@ -51,6 +51,7 @@ BILLING = "hospital.billing"
 CLAIMS = "hospital.claims"
 APPTS = "hospital.appointments"
 DX = "hospital.diagnoses"
+WARD = "hospital.ward"
 OUT_OF_SCOPE = "none"
 
 # sales.top-items, sales.top-customers and sales.item-margin were retired into sales.query:
@@ -58,7 +59,7 @@ OUT_OF_SCOPE = "none"
 # them could. Their vocabulary is kept below, under the one id.
 INTENT_IDS = (STOCK, VALUE, MOVES, WAREHOUSES, CASH, RECEIVABLES, ANOMALIES, DORMANT,
               COLLECTION, SALES_QUERY, CATEGORIES, PURCHASES, STOCKQ, POSQ, HRQ,
-              EXPENSES, DOCTORS, MEDS, BILLING, CLAIMS, APPTS, DX)
+              EXPENSES, DOCTORS, MEDS, BILLING, CLAIMS, APPTS, DX, WARD)
 
 # Slot fillers. Real names from the catalogue plus shapes the catalogue contains — a name with a
 # number in it, a Latin name inside an Arabic sentence, a two-word name, a code.
@@ -396,6 +397,27 @@ TEMPLATES: dict[str, list[str]] = {
         "distribution of conditions",
     ],
 
+    WARD: [
+        # THE BED BOARD. These were taught as REFUSALS one commit earlier, on a miscount that said
+        # the hospital held one admission when it holds ten. They are answerable and always were:
+        # 22 active beds, 8 vacant, 7 occupied, and seven open bed stays that agree with seven
+        # active admissions.
+        #
+        # «نسبة اشغال الاسرة» is here and not in the negatives even though this surface is a
+        # SNAPSHOT and occupancy is a monthly rate: the question belongs to the beds, and the
+        # handler's caveat sends the reader to the Quality screen for the rate. Routing it to
+        # nothing taught the assistant to deny a number the product has been displaying all along.
+        "كام سرير فاضي", "كام سرير متاح", "الاسرة الفاضية", "الاسرة المتاحة", "كام سرير عندنا",
+        "عدد الاسرة", "الاسرة حسب الجناح", "الاسرة حسب الغرفة", "لوحة الاسرة", "سعة المستشفى",
+        "كام سرير مشغول", "الاسرة المشغولة", "نسبة اشغال الاسرة", "اشغال الاسرة", "معدل الاشغال",
+        "كام مريض منوم", "المرضى المنومين", "كام حالة منومة", "الاجنحة عندنا", "كام غرفة",
+        "الغرف حسب النوع", "الاسرة الموقوفة", "الاسرة تحت التنظيف",
+        "how many free beds", "how many beds are available", "free beds", "available beds",
+        "bed board", "beds by ward", "bed capacity", "how many beds do we have",
+        "occupied beds", "bed occupancy", "occupancy rate", "how many inpatients",
+        "wards", "how many rooms", "rooms by type", "blocked beds",
+    ],
+
     DOCTORS: [
         # THE HOSPITAL'S FIRST INTENT. The owner asked «جيب قائمة الاطباء» and was offered the
         # revenue per item instead — six surfaces existed and none of them was the hospital.
@@ -701,13 +723,16 @@ NEGATIVES = [
     # 26 lab results — and each will move to its own intent as its surface ships. What is NOT
     # coming back is the alternative: an honest refusal is correct today and 1,600.00 never was.
     #
-    # BEDS ARE DIFFERENT AND STAY. 22 beds carry a Status (8 vacant, 7 occupied) and there is
-    # exactly ONE admission in the whole database, so the status is seeded rather than derived.
-    # An occupancy surface would report seven occupied beds for one admitted patient — the most
-    # believable wrong answer on this list, and the hardest to catch once shipped.
-    "كام سرير فاضي", "كام سرير متاح", "الاسرة الفاضية", "نسبة اشغال الاسرة", "اشغال الاسرة",
-    "كام مريض منوم", "المرضى المنومين", "المرضى المنومين حسب القسم", "كام حالة منومة",
-    "how many free beds", "bed occupancy", "occupancy rate", "how many inpatients",
+    # THE BEDS WERE HERE AND THEY WERE WRONG TO BE. The entry read "22 beds carry a Status and
+    # there is exactly ONE admission, so the status is seeded rather than derived" — and that one
+    # came from a query that said COUNT(*) FROM sys.partitions where it meant SUM(p.rows), so it
+    # counted PARTITIONS. There are ten admissions, seven open, and the beds agree exactly: seven
+    # open bed stays, seven beds Occupied, seven active admissions. The wordings moved to the ward
+    # intent, which is what should have happened the first time.
+    #
+    # The lesson kept here rather than in the commit log: a refusal taught on a measurement is only
+    # ever as good as the measurement, and this one was shipped before anyone asked the screen. The
+    # hospital's Quality screen had been showing «نسبة إشغال الأسرّة 30.9%» the whole time.
     # THE THEATRE. "عملية" alone is also "اخر عملية بيع", so the surgical sense is carried by the
     # company it keeps rather than by the word.
     "كام عملية اتعملت", "كام عملية جراحية", "العمليات الجراحية", "عمليات الشهر ده",
@@ -786,7 +811,15 @@ NEGATIVES = [
     # allocations, no budget table, and 28 active movement days in 312. A model that learns to
     # refuse these is refusing for the right reason.
     "ايه نسبة تلبية الطلبات", "ايه نسبة تلبية الطلبات عندنا", "نسبة تلبية الطلبات عندنا",
-    "الموازنة مقابل الفعلي", "ايه الاصناف اللي هتخلص الاسبوع الجاي",
+    # ONE SPELLING WAS NOT ENOUGH ONCE THE WARD INTENT ARRIVED. «الموازنة مقابل الفعلي للشهر ده»
+    # — the same question with a month on the end — leaked to stock-query at 0.2755, a hair over
+    # the 0.10 floor, in a retrain that added beds and touched nothing about budgets. The negative
+    # class is capped at one intent's worth of examples, so the lever is VARIETY, not repetition.
+    "الموازنة مقابل الفعلي", "الموازنة مقابل الفعلي للشهر ده", "الموازنة والفعلي",
+    "المخطط مقابل المنفذ", "المستهدف مقابل الفعلي", "مقارنة الموازنة بالفعلي",
+    "انحراف الموازنة", "الموازنة التقديرية", "موازنة الشهر", "مقارنة بالموازنة",
+    "budget versus actual", "plan vs actual", "budget variance", "actual against budget",
+    "ايه الاصناف اللي هتخلص الاسبوع الجاي",
     "تباين اسعار الموردين", "اعمار ديون الموردين", "نسبة التسليم في الموعد",
     "fill rate", "budget vs actual", "which items will stock out next week",
     "supplier price variance", "on time delivery rate", "payables ageing",

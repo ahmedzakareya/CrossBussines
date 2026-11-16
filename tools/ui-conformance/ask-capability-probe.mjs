@@ -108,11 +108,6 @@ const CASES = [
   ['فصائل الدم المتاحة',    'refuse', 'was the WAREHOUSE list'],
   ['كام عملية اتعملت',      'refuse', 'was a sales line, "TM5 استشارة 1,600.00"'],
   ['التحاليل حسب النوع',    'refuse', 'was stock movements grouped by movement type'],
-  ['المرضى المنومين حسب القسم', 'refuse', 'was the amount BILLED by department'],
-  // 22 beds carry a status (8 vacant, 7 occupied) and the database holds ONE admission, so the
-  // status is seeded, not derived. An occupancy surface would report seven occupied beds for one
-  // admitted patient: the most believable wrong answer on this list.
-  ['كام سرير فاضي',         'refuse', 'bed status is seeded; 1 admission exists in total'],
   // 347 observations from SIX patients, and 100 of the numeric ones sit on a concept with no
   // reference range. «متوسط الضغط» was answered with the COUNT of hypertension diagnoses (18),
   // because "الضغط" is inside that diagnosis's own name - a regression from the surface shipped
@@ -256,6 +251,23 @@ const NAMED = [
   ['التشخيصات حسب القسم',      (n) => n > 1, 'grouped by department, which comes from the practitioner'],
   ['التشخيصات الثانوية',        (n) => n > 0 && n < 10,
    'filtered to the ADDITIONAL diagnoses: a handful of codes, not the full fifteen'],
+
+  // ---- THE BED BOARD, AND A REFUSAL THAT WAS WRONG ABOUT THE PRODUCT --------------------------
+  //
+  // These three were taught as REFUSALS one commit before this one, on a finding that bed status
+  // was seeded rather than derived — from a query that counted sys.partitions instead of rows and
+  // so reported one admission where there are ten. Seven open bed stays, seven beds Occupied and
+  // seven active admissions agree exactly, and /Hospital/Quality had been displaying
+  // «نسبة إشغال الأسرّة 30.9%» throughout. The refusal was honest about my measurement and wrong
+  // about the hospital.
+  //
+  // The vacancy case is the discriminator: grouped by status an unfiltered board returns every
+  // status it holds, and filtered to the free beds it returns ONE row. Without a filter this
+  // question would be answered with a table in which the free beds are merely one line.
+  ['كام سرير فاضي',             1,            'filtered to the vacant beds, not a table of every status'],
+  ['الاسرة حسب الجناح',        (n) => n > 1, 'grouped by ward, which comes from the room'],
+  ['المرضى المنومين حسب القسم', (n) => n > 1,
+   '"القسم" means the WARD on this surface; it used to answer with the amount BILLED by department'],
 
 
 
@@ -607,6 +619,12 @@ const SAYS = [
   // mislead about — one patient can be seen several times and collect a diagnosis each visit.
   ['ar', 'التشخيصات لكام مريض', 'مش عدد المرضى',
    'the diagnoses surface counts diagnoses; patients are fewer and it must not imply otherwise'],
+  // A SNAPSHOT IS NOT A RATE, AND THE RATE HAS A SCREEN. The bed board says seven of twenty-two
+  // are occupied this instant; /Hospital/Quality says 30.9% for the month, from patient-days ÷
+  // (beds × days). Both are right and they are not the same number, so the board has to name the
+  // screen rather than let a reader take one for the other.
+  ['ar', 'نسبة اشغال الاسرة', 'شاشة جودة الخدمة',
+   'the monthly occupancy indicator is computed elsewhere and reads differently on purpose'],
 ];
 
 try {

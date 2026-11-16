@@ -769,6 +769,9 @@ builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.AskAppointmentsSurface>();
 // treating is the doctors' record; the aggregate names nobody, but it answers under the authority
 // that governs the note it came from.
 builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.AskHospitalDiagnosesSurface>();
+// THE BED BOARD. A snapshot surface with no date column at all - beds have a state, not a history,
+// and the occupancy RATE over a period is the Quality screen's, deliberately a different number.
+builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.AskWardSurface>();
 // THE ROSTER, the fifth governed surface and the first under Hr authority. It carries no pay
 // data of any kind - see AskWorkforceSurface for why that is a decision and not an omission.
 builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.AskWorkforceSurface>();
@@ -794,6 +797,7 @@ builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.IAskHandler, CrossBuy.BL.Plat
 builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.IAskHandler, CrossBuy.BL.Platform.Ai.AskHospitalClaimsQueryHandler>();
 builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.IAskHandler, CrossBuy.BL.Platform.Ai.AskAppointmentsQueryHandler>();
 builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.IAskHandler, CrossBuy.BL.Platform.Ai.AskHospitalDiagnosesQueryHandler>();
+builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.IAskHandler, CrossBuy.BL.Platform.Ai.AskWardQueryHandler>();
 builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.IAskHandler, CrossBuy.BL.Platform.Ai.AskWorkforceQueryHandler>();
 builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.IAskService, CrossBuy.BL.Platform.Ai.AskService>();
 // What the chat box was last talking about, so a follow-up need not restate its subject. Keyed by
