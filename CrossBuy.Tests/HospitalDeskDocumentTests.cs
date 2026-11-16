@@ -147,7 +147,8 @@ namespace CrossBuy.Tests
 			host.Db.Add(d); await host.Db.SaveChangesAsync();
 			var src = new HospitalDepositReceiptSource(host.Db);
 			var row = Assert.Single((await src.FetchAsync(Query(HospitalDocumentDatasets.DepositReceipt(), Ctx(), "DepositId", d.ID))).Rows);
-			Assert.Equal((50m, 25m, "DEP-000001"), (Convert.ToDecimal(row["Amount"]), Convert.ToDecimal(row["Left"]), (string?)row["DocumentNo"]));
+			static decimal Num(object? v) => decimal.Parse((string)v!, System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture);
+			Assert.Equal((50m, 25m, "DEP-000001"), (Num(row["Amount"]), Num(row["Left"]), (string?)row["DocumentNo"]));   // text in the currency's decimals
 			Assert.Empty((await src.FetchAsync(Query(HospitalDocumentDatasets.DepositReceipt(), Ctx(2), "DepositId", d.ID))).Rows);
 		}
 	}

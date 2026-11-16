@@ -33,7 +33,7 @@ namespace CrossBuy.BL.Reporting
 			=> new() { Id = "d" + (++_n), Kind = ReportElementKind.Field, FieldKey = key, XMm = x, YMm = y, WidthMm = w, HeightMm = h, Style = s };
 
 		private static ReportElement Line(double x, double y, double w)
-			=> new() { Id = "d" + (++_n), Kind = ReportElementKind.Line, XMm = x, YMm = y, WidthMm = w, HeightMm = 0, Style = new ReportElementStyle { BorderColor = Rule, BorderStyle = ReportBorderStyle.Dashed, BorderWidthMm = 0.3 } };
+			=> new() { Id = "d" + (++_n), Kind = ReportElementKind.Line, XMm = x, YMm = y, WidthMm = w, HeightMm = 0, Style = new ReportElementStyle { BorderColor = Rule, BorderWidthMm = 0.3 } };   // no border style: a style would also frame the line (the renderer draws the rule itself)
 
 		private static ReportElement Box(double x, double y, double w, double h, string border, string? fill = null)
 			=> new() { Id = "d" + (++_n), Kind = ReportElementKind.Rectangle, XMm = x, YMm = y, WidthMm = w, HeightMm = h, Style = new ReportElementStyle { BorderColor = border, BorderStyle = ReportBorderStyle.Solid, BorderWidthMm = 0.4, Background = fill } };
@@ -68,9 +68,9 @@ namespace CrossBuy.BL.Reporting
 			public Roll80 Centered(ReportElement el) { el.YMm = Y; el.HeightMm = Math.Max(el.HeightMm, Need(el.Style.FontSizePt)); E.Add(el); Y += el.HeightMm; return this; }
 			public Roll80 Gap(double mm) { Y += mm; return this; }
 			public Roll80 Rule() { Y += 1; E.Add(Line(0, Y, W)); Y += 2; return this; }
-			public Roll80 Row(string ar, string en, string key, bool bold = false, string? date = null, double pt = 9.5)
+			public Roll80 Row(string ar, string en, string key, bool bold = false, string? date = null, double pt = 9.5, int lines = 1)
 			{
-				double h = Need(pt);
+				double h = Need(pt) * lines;
 				E.Add(Text(ar, en, 0, Y, 22, h, S(8, color: Muted)));
 				E.Add(Field(key, 22, Y, W - 22, h, S(pt, bold, date: date)));
 				Y += h; return this;
@@ -159,7 +159,7 @@ namespace CrossBuy.BL.Reporting
 			r.E.Add(Field("Amount", 2, top + 0.5 + label, W - 24, amount, S(20, true, Ink, ReportTextAlign.End)));
 			r.E.Add(Field("Currency", W - 21, top + 0.5 + label, 19, amount, S(11, true, Brand)));
 			r.Y = top + label + amount + 2 + 2;
-			r.Row("طريقة الدفع", "Paid by", "Method").Row("الغرض", "For", "Purpose").Row("المحصّل", "Received by", "Cashier").Row("ملاحظة", "Note", "Note")
+			r.Row("طريقة الدفع", "Paid by", "Method").Row("الغرض", "For", "Purpose").Row("المحصّل", "Received by", "Cashier").Row("ملاحظة", "Note", "Note", pt: 8.5, lines: 2)
 				.Rule()
 				.Row("المستخدم", "Used", "Used").Row("المردود", "Refunded", "Refunded").Row("المتبقي", "Left", "Left", true)
 				.Gap(2)

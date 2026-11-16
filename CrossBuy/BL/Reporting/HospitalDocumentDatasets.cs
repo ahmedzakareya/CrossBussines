@@ -459,15 +459,16 @@ namespace CrossBuy.BL.Reporting
             new[] { F("LineNo", "م", "#", ReportFieldType.Integer, 10, false, ReportAlign.Center) },
             new[]
             {
-                F("Amount", "المبلغ", "Amount", ReportFieldType.Money, 24, true),
+                // amounts as TEXT in the facility currency's own decimals: a Money field prints two, and the dinar has three
+                F("Amount", "المبلغ", "Amount", width: 24, visible: true, align: ReportAlign.End),
                 F("Currency", "العملة", "Currency", width: 14, visible: true),
                 F("Method", "طريقة الدفع", "Method", width: 24, visible: true),
                 F("Purpose", "الغرض", "For", width: 24, visible: true),
                 F("Note", "ملاحظة", "Note", width: 60),
                 F("Cashier", "المحصّل", "Received by", width: 40, visible: true),
-                F("Used", "المستخدم", "Used", ReportFieldType.Money, 24),
-                F("Refunded", "المردود", "Refunded", ReportFieldType.Money, 24),
-                F("Left", "المتبقي", "Left", ReportFieldType.Money, 24),
+                F("Used", "المستخدم", "Used", width: 24, align: ReportAlign.End),
+                F("Refunded", "المردود", "Refunded", width: 24, align: ReportAlign.End),
+                F("Left", "المتبقي", "Left", width: 24, align: ReportAlign.End),
             },
             Params("DepositId", "رقم العربون الداخلي", "Deposit id")), "DocumentNo", "DocumentDate", "PatientName", "PatientMrn");
 

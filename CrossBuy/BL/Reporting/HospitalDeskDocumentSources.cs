@@ -166,15 +166,18 @@ namespace CrossBuy.BL.Reporting
 			bool ar = AccountingSourceHelpers.Arabic(query);
 			var cashier = await _db.Employee.AsNoTracking().Where(e => e.ID == d.CashierEmployeeId && e.EmpCompanyID == ctx.CompanyId).Select(e => new { e.FullName, e.FullNameEn }).FirstOrDefaultAsync(ct);
 			var curId = await _db.Companies.AsNoTracking().Where(c => c.CompanyID == ctx.CompanyId).Select(c => c.DefaultCurrencyId).FirstOrDefaultAsync(ct);   // the facility's currency (a deposit is taken in it)
-			var currency = curId is int cid ? await _db.Currencies.AsNoTracking().Where(c => c.ID == cid).Select(c => ar ? (c.Symbol ?? c.Code) : c.Code).FirstOrDefaultAsync(ct) : null;
+			var cur = curId is int cid ? await _db.Currencies.AsNoTracking().Where(c => c.ID == cid).Select(c => new { Label = ar ? (c.Symbol ?? c.Code) : c.Code, c.DecimalPlaces }).FirstOrDefaultAsync(ct) : null;
+			var currency = cur?.Label;
+			var fmt = "N" + (cur?.DecimalPlaces ?? 2);
+			string Money(decimal v) => v.ToString(fmt, System.Globalization.CultureInfo.InvariantCulture);
 			var header = await HospitalDocumentRows.HeaderAsync(_db, ctx, ar, patient, null, d.DepositNo, d.ReceivedAt, d.ReceivedAt, ct);
 			header["LineNo"] = 1;
-			header["Amount"] = d.Amount; header["Currency"] = currency;
+			header["Amount"] = Money(d.Amount); header["Currency"] = currency;
 			header["Method"] = HospitalDeskDocumentText.Method(d.Method, ar);
 			header["Purpose"] = HospitalDeskDocumentText.Purpose(d.Purpose, ar);
 			header["Note"] = d.Note;
 			header["Cashier"] = cashier == null ? null : HospitalDocumentRows.P(ar, cashier.FullName, cashier.FullNameEn);
-			header["Used"] = d.Used; header["Refunded"] = d.Refunded; header["Left"] = HospitalDepositRules.Left(d);
+			header["Used"] = Money(d.Used); header["Refunded"] = Money(d.Refunded); header["Left"] = Money(HospitalDepositRules.Left(d));
 			builder.AddRow(header);
 			return builder.Build(totalRowCount: 1);
 		}
