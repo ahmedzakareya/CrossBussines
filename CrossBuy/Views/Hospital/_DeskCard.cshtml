@@ -31,7 +31,7 @@
         <div class="d-flex flex-wrap gap-1 mt-2">
             @if (!string.IsNullOrWhiteSpace(p.Allergies)) {<span class="badge badge-light-danger fs-8 fw-bold"><i class="ki-outline ki-shield-cross fs-8 text-danger me-1"></i><bdi>@HospitalAllergyText.Display(p.Allergies)</bdi></span>}
             @if (Model.Admitted) {<span class="badge badge-light-info fs-8 fw-bold">@T["In hospital now"]</span>}
-            @if (Model.Insured) {<span class="badge badge-light-success fs-8 fw-bold"><bdi>@Model.Payer</bdi></span>} else if (Model.Ineligible) {<span class="badge badge-light-danger fs-8 fw-bold">@T["Not covered today"]</span>} else {<span class="badge badge-light fs-8 fw-bold">@T["Self-pay"]</span>}
+            @if (Model.Insured) {<span class="badge badge-light-primary fs-8 fw-bold"><bdi>@Model.Payer</bdi></span>} else if (Model.Ineligible) {<span class="badge badge-light-danger fs-8 fw-bold">@T["Not covered today"]</span>} else {<span class="badge badge-light fs-8 fw-bold">@T["Self-pay"]</span>}
         </div>
     </div>
 </div>
@@ -57,7 +57,7 @@ else
 @for (int i = 0; i < steps.Length; i++)
 {
     var s = steps[i]; var c = Model.Checklist.FirstOrDefault(x => x.Key == s.Key); if (c == null) { continue; }
-    string tone = c.Done ? "success" : c.Blocks ? "danger" : "primary";
+    string tone = c.Done ? "primary" : c.Blocks ? "danger" : "primary";
     <div class="d-flex align-items-center mb-4">
         <span class="symbol symbol-35px me-3"><span class="symbol-label bg-light-@tone"><i class="ki-outline @s.Icon fs-3 text-@tone"></i></span></span>
         <div class="flex-grow-1 min-w-0">
@@ -71,7 +71,7 @@ else
                 else if (c.Key == "balance") {@if (c.Done) {@T["Nothing owed"]} else {<span>@T["Owed"] </span><span class="hp-num">@Money(Model.Owed)</span> <span>@cur</span>}}
             </div>
         </div>
-        @if (c.Done) {<i class="ki-outline ki-check-circle fs-2 text-success"></i>}
+        @if (c.Done) {<i class="ki-outline ki-check-circle fs-2 text-primary"></i>}
         else if (c.Key is "identity" or "phone" or "photo") {<a href="@Url.Action("EditPatient", "Hospital", new { id = p.ID })" class="btn btn-sm btn-light-@(c.Blocks ? "danger" : "primary") py-1 px-3">@T["Complete"]</a>}
         else if (c.Key == "payer") {<a href="@Url.Action("Insurance", "Hospital")" class="btn btn-sm btn-light-danger py-1 px-3">@T["Check"]</a>}
         else if (c.Key == "consent") {<a href="@Url.Action("NewConsent", "Hospital", new { id = p.ID })" class="btn btn-sm btn-light-primary py-1 px-3">@T["Sign"]</a>}
@@ -84,7 +84,7 @@ else
     <div class="fw-bold fs-7 text-gray-800 mb-3">@T["At the counter"]</div>
     <div class="d-flex flex-stack fs-7 py-1"><span class="text-gray-600">@T["Payer"]</span><span class="fw-bold text-end"><bdi>@(Model.Payer ?? T["Self-pay"].Value)</bdi></span></div>
     <div class="d-flex flex-stack fs-7 py-1"><span class="text-gray-600">@T["Open bills"]</span><span class="fw-bold hp-num">@Model.OpenBills</span></div>
-    @if (Model.DepositLeft > 0) {<div class="d-flex flex-stack fs-7 py-1"><span class="text-gray-600">@T["Deposit held"]</span><span class="fw-bold text-success"><span class="hp-num">@Money(Model.DepositLeft)</span> @cur</span></div>}
+    @if (Model.DepositLeft > 0) {<div class="d-flex flex-stack fs-7 py-1"><span class="text-gray-600">@T["Deposit held"]</span><span class="fw-bold text-primary"><span class="hp-num">@Money(Model.DepositLeft)</span> @cur</span></div>}
     <div class="separator separator-dashed my-2"></div>
     <div class="d-flex flex-stack"><span class="fw-bold">@T["Total due"]</span><span class="fw-bold fs-3 text-@(Model.Owed > 0 ? "danger" : "gray-800")"><span class="hp-num">@Money(Model.Owed)</span> <span class="fs-8 text-muted fw-semibold">@cur</span></span></div>
     @if (canBill)
@@ -129,7 +129,7 @@ else
     }
     else if (visit != null && visit.Stage is HospitalDeskStage.Waiting or HospitalDeskStage.WithDoctor)
     {
-        <span class="btn btn-light-success flex-grow-1 pe-none"><i class="ki-outline ki-check-circle fs-3"></i>@T["desk:" + visit.Stage]@if (visit.A.QueueNumber is int q2) {<text> · </text><span class="hp-num">@q2</span>}</span>
+        <span class="btn btn-light-primary flex-grow-1 pe-none"><i class="ki-outline ki-check-circle fs-3"></i>@T["desk:" + visit.Stage]@if (visit.A.QueueNumber is int q2) {<text> · </text><span class="hp-num">@q2</span>}</span>
     }
     @if (canBook && !active)
     {

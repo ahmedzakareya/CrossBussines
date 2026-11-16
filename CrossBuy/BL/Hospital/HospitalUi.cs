@@ -13,6 +13,13 @@ namespace CrossBuy.BL.Hospital
 			return string.Concat(p).ToUpperInvariant();
 		}
 
+		/// The cashier desk as the reader's language names it. The shift stores the name as typed, and the open form
+		/// prefills the DEFAULT desk in the opener's language, so an English screen showed "خزينة العيادات". The default
+		/// in any of its three spellings is shown translated; a desk somebody named is shown as written.
+		public static readonly string[] DefaultDeskNames = { "Clinics desk", "خزينة العيادات", "Caisse des consultations" };
+		public static string DeskName(string? desk, string localizedDefault)
+			=> string.IsNullOrWhiteSpace(desk) || DefaultDeskNames.Contains(desk.Trim()) ? localizedDefault : desk;
+
 		/// A queue number as the patient's ticket reads it, "A-004" — the one spelling the desk, the clinics board, the
 		/// kiosk and the waiting-room display share (it used to be formatted inline in each view, and the display showed a bare "4").
 		public static string Ticket(int? n) => n is int v ? "A-" + v.ToString("000", System.Globalization.CultureInfo.InvariantCulture) : "—";

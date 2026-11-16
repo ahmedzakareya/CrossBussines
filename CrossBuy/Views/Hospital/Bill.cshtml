@@ -398,7 +398,7 @@
                     <div class="card card-flush mb-5">
                         <div class="card-header pt-5">
                             <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Collect payment"]</span>
-                                @if (myShift != null) {<span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Shift"]: <bdi>@myShift.Desk</bdi></span>}</h3>
+                                @if (myShift != null) {<span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Shift"]: <bdi>@HospitalUi.DeskName(myShift.Desk, T["Clinics desk"].Value)</bdi></span>}</h3>
                         </div>
                         <div class="card-body pt-2">
                             @if (foreign && open)

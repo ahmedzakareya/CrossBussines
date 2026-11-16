@@ -5,7 +5,7 @@
 @* H140: the day as a time grid — doctors across, every booked or free time down. An appointment opens its patient at
    the counter; a free slot books the patient at the counter into it and checks them in. The current half-hour is a neutral band with a red time: a red tint hid the red "waiting" cards on it. *@
 @{
-    string Tone(string s) => s switch { "Waiting" => "danger", "WithDoctor" => "info", "Done" => "success", "NoShow" or "Cancelled" => "secondary", _ => "primary" };
+    string Tone(string s) => s switch { "Waiting" => "danger", "WithDoctor" => "primary", "Done" => "secondary", "NoShow" or "Cancelled" => "secondary", _ => "primary" };
     string Time(int minute) => (minute / 60).ToString("00") + ":" + (minute % 60).ToString("00");
 }
 @if (Model.Doctors.Count == 0 || Model.Minutes.Count == 0)

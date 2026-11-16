@@ -8,12 +8,12 @@
 @{
     bool canBook = ViewBag.CanBook == true; var day = (DateTime)ViewBag.Day;
     string Time(int minute) => (minute / 60).ToString("00") + ":" + (minute % 60).ToString("00");
-    string Tone(string? s) => s switch { HospitalConfirmStatus.Confirmed => "success", HospitalConfirmStatus.NoAnswer => "secondary", HospitalConfirmStatus.WantsToMove => "danger", _ => "primary" };
+    string Tone(string? s) => s switch { HospitalConfirmStatus.Confirmed => "primary", HospitalConfirmStatus.NoAnswer => "secondary", HospitalConfirmStatus.WantsToMove => "danger", _ => "primary" };
     int done = Model.Count(r => r.Answer?.Status == HospitalConfirmStatus.Confirmed);
 }
 <div class="d-flex flex-wrap flex-stack gap-3 mb-4">
     <div class="fs-7 text-gray-700"><span class="fw-bold text-gray-900 hp-num">@day.ToString("yyyy-MM-dd")</span> · @string.Format(T["{0} of {1} confirmed"].Value, done, Model.Count)</div>
-    <div class="w-200px"><div class="progress h-6px bg-light-success"><div class="progress-bar bg-success" style="width:@(Model.Count == 0 ? 0 : 100 * done / Model.Count)%"></div></div></div>
+    <div class="w-200px"><div class="progress h-6px bg-light-primary"><div class="progress-bar bg-primary" style="width:@(Model.Count == 0 ? 0 : 100 * done / Model.Count)%"></div></div></div>
 </div>
 @if (Model.Count == 0)
 {
@@ -36,13 +36,13 @@ else
                         <div class="d-flex flex-column min-w-0"><span class="text-gray-900 fw-bold fs-7 text-truncate"><bdi>@DisplayName.Of(a.PatientName, a.PatientNameEn)</bdi></span>
                             @if (r.Phone != null) {<span class="text-muted fs-8 hp-num" dir="ltr">@r.Phone</span>} else {<span class="text-danger fs-8">@T["No mobile on file"]</span>}</div></a></td>
                     <td><span class="text-gray-800 fw-semibold"><bdi>@DisplayName.Of(r.Doctor, r.DoctorEn)</bdi></span>@if (r.Department != null) {<div class="text-muted fs-8"><bdi>@DisplayName.Of(r.Department, r.DepartmentEn)</bdi></div>}</td>
-                    <td>@if (r.Reminder != null) {<span class="badge badge-light-@(r.Reminder == "Sent" ? "success" : r.Reminder == "Failed" ? "danger" : "primary") fs-8 fw-bold"><i class="ki-outline ki-sms fs-8 me-1"></i>@T["sms:" + r.Reminder]</span>} else {<span class="text-gray-400">—</span>}</td>
+                    <td>@if (r.Reminder != null) {<span class="badge badge-light-@(r.Reminder == "Sent" ? "primary" : r.Reminder == "Failed" ? "danger" : "primary") fs-8 fw-bold"><i class="ki-outline ki-sms fs-8 me-1"></i>@T["sms:" + r.Reminder]</span>} else {<span class="text-gray-400">—</span>}</td>
                     <td>@if (ans != null) {<span class="badge badge-light-@Tone(ans.Status) fs-8 fw-bold">@T["confirm:" + ans.Status]</span>@if (ans.Calls > 1) {<span class="text-muted fs-8 ms-1">@string.Format(T["{0} calls"].Value, ans.Calls)</span>}} else {<span class="badge badge-light fs-8 fw-bold">@T["Not called yet"]</span>}</td>
                     <td class="text-end pe-2"><div class="d-flex justify-content-end gap-1">
                         @if (r.Phone != null) {<a href="tel:@r.Phone" class="btn btn-sm btn-icon btn-light-primary w-30px h-30px" title="@T["Call"]" data-bs-toggle="tooltip"><i class="ki-outline ki-phone fs-4"></i></a>}
                         @if (canBook)
                         {
-                            <button type="button" class="btn btn-sm btn-icon btn-light-success w-30px h-30px" data-desk-confirm="@a.Id" data-status="Confirmed" title="@T["confirm:Confirmed"]" data-bs-toggle="tooltip"><i class="ki-outline ki-check fs-4"></i></button>
+                            <button type="button" class="btn btn-sm btn-icon btn-light-primary w-30px h-30px" data-desk-confirm="@a.Id" data-status="Confirmed" title="@T["confirm:Confirmed"]" data-bs-toggle="tooltip"><i class="ki-outline ki-check fs-4"></i></button>
                             <button type="button" class="btn btn-sm btn-icon btn-light w-30px h-30px" data-desk-confirm="@a.Id" data-status="NoAnswer" title="@T["confirm:NoAnswer"]" data-bs-toggle="tooltip"><i class="ki-outline ki-call fs-4"></i></button>
                             <button type="button" class="btn btn-sm btn-icon btn-light-danger w-30px h-30px" data-desk-confirm="@a.Id" data-status="WantsToMove" title="@T["confirm:WantsToMove"]" data-bs-toggle="tooltip"><i class="ki-outline ki-calendar-edit fs-4"></i></button>
                         }

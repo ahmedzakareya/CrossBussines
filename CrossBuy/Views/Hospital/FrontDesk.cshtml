@@ -37,21 +37,21 @@
     decimal collected = me.CollectedToday.Values.Sum();
     var tiles = new (string Label, string N, string Note, string Icon, string Tone, string? Stage)[] {
         (T["Booked today"].Value, Model.Expected.ToString(), string.Format(T["{0} walk-ins"].Value, Model.WalkIns), "ki-calendar-tick", "primary", ""),
-        (T["Arrived"].Value, Model.Arrived.ToString(), string.Format(T["{0}% of the day"].Value, Pct(Model.Arrived, Model.Expected)), "ki-entrance-left", "success", null),
-        (T["Waiting now"].Value, Model.WaitingNow.ToString(), Model.MaxWaitMinutes is int mx && Model.WaitingNow > 0 ? string.Format(T["the longest {0}"].Value, Mins(mx)) : T["nobody waiting"].Value, "ki-timer", Model.WaitingNow > 0 ? "danger" : "success", HospitalDeskStage.Waiting),
-        (T["With the doctor"].Value, Model.WithDoctor.ToString(), T["Average wait"].Value + " " + Mins(Model.AvgWaitMinutes), "ki-pulse", "info", HospitalDeskStage.WithDoctor),
-        (T["No-shows"].Value, Model.NoShow.ToString(), string.Format(T["{0}% of the day"].Value, Pct(Model.NoShow, Model.Expected)), "ki-cross-circle", Model.NoShow > 0 ? "danger" : "success", HospitalDeskStage.NoShow),
+        (T["Arrived"].Value, Model.Arrived.ToString(), string.Format(T["{0}% of the day"].Value, Pct(Model.Arrived, Model.Expected)), "ki-entrance-left", "primary", null),
+        (T["Waiting now"].Value, Model.WaitingNow.ToString(), Model.MaxWaitMinutes is int mx && Model.WaitingNow > 0 ? string.Format(T["the longest {0}"].Value, Mins(mx)) : T["nobody waiting"].Value, "ki-timer", Model.WaitingNow > 0 ? "danger" : "primary", HospitalDeskStage.Waiting),
+        (T["With the doctor"].Value, Model.WithDoctor.ToString(), T["Average wait"].Value + " " + Mins(Model.AvgWaitMinutes), "ki-pulse", "primary", HospitalDeskStage.WithDoctor),
+        (T["No-shows"].Value, Model.NoShow.ToString(), string.Format(T["{0}% of the day"].Value, Pct(Model.NoShow, Model.Expected)), "ki-cross-circle", Model.NoShow > 0 ? "danger" : "primary", HospitalDeskStage.NoShow),
         (T["Late"].Value, Model.Late.ToString(), T["15 minutes past their time"].Value, "ki-time", Model.Late > 0 ? "danger" : "primary", HospitalDeskStage.Expected),
-        (T["Collected today"].Value, Money(collected), cur + " · " + string.Format(T["{0} receipts"].Value, me.ReceiptsToday), "ki-wallet", "success", null),
-        (T["Insurance to verify"].Value, Model.ToVerify.ToString(), T["before the doctor"].Value, "ki-shield-search", Model.ToVerify > 0 ? "danger" : "info", null) };
+        (T["Collected today"].Value, Money(collected), cur + " · " + string.Format(T["{0} receipts"].Value, me.ReceiptsToday), "ki-wallet", "primary", null),
+        (T["Insurance to verify"].Value, Model.ToVerify.ToString(), T["before the doctor"].Value, "ki-shield-search", Model.ToVerify > 0 ? "danger" : "primary", null) };
     var stages = new[] { (Key: "", Label: T["All"].Value) }.Concat(HospitalDeskStage.All.Select(s => (Key: s, Label: T["desk:" + s].Value))).ToList();
     int unconfirmed = ViewBag.Unconfirmed is int uc ? uc : 0;
     var work = new (string Key, string Label, int N, string Tone, string Text)[] {
         ("confirm", T["Confirm tomorrow"].Value, unconfirmed, "primary", T["Tomorrow's appointments: call those who have not confirmed."].Value),
         ("portal", T["Portal requests"].Value, inbox.PortalRequests, "primary", T["Booking requests patients sent from the portal, waiting for a slot."].Value),
-        ("waitlist", T["Waitlist"].Value, inbox.WaitlistOffers, "info", T["Freed slots offered to patients waiting for an earlier one."].Value),
+        ("waitlist", T["Waitlist"].Value, inbox.WaitlistOffers, "primary", T["Freed slots offered to patients waiting for an earlier one."].Value),
         ("intake", T["Self-intake"].Value, inbox.Intake, "primary", T["Forms patients filled on the tablet, to review and link to a file."].Value),
-        ("preauth", T["Insurance to verify"].Value, inbox.Preauths, "info", T["Pre-authorisations waiting for the insurer's answer."].Value),
+        ("preauth", T["Insurance to verify"].Value, inbox.Preauths, "primary", T["Pre-authorisations waiting for the insurer's answer."].Value),
         ("unidentified", T["Incomplete registration"].Value, inbox.Unidentified, "danger", T["Patients registered without an identity, to identify and complete."].Value),
         ("dup", T["Duplicates"].Value, inbox.Duplicates, "danger", T["Files that look like the same person, to review and merge."].Value) };
     var shift = me.Shift;
@@ -82,11 +82,11 @@
         <div class="card mb-5 bg-light-primary border-0"><div class="card-body py-4 d-flex flex-wrap align-items-center gap-6">
             <div class="d-flex align-items-center">
                 <div class="symbol symbol-45px symbol-circle flex-shrink-0">@if (me.Photo != null) {<img src="@me.Photo" alt="" style="object-fit:cover" />} else {<span class="symbol-label fw-bold hp-initials">@HospitalUi.Initials(me.Name)</span>}</div>
-                <div class="ms-3"><div class="fw-bold text-gray-900 fs-6"><bdi>@me.Name</bdi></div><div class="text-muted fs-7">@(shift != null ? shift.Shift.Desk : T["Front desk"].Value)</div></div>
+                <div class="ms-3"><div class="fw-bold text-gray-900 fs-6"><bdi>@me.Name</bdi></div><div class="text-muted fs-7">@(shift != null ? HospitalUi.DeskName(shift.Shift.Desk, T["Clinics desk"].Value) : T["Front desk"].Value)</div></div>
             </div>
             <div class="vr d-none d-md-block"></div>
             <div><div class="text-muted fs-8">@T["Shift"]</div>
-                @if (shift != null) {<span class="badge badge-light-success fs-8 fw-bold">@T["Open since"] <span class="hp-num ms-1">@HospitalNursingService.UtcToWard(shift.Shift.OpenedAt).ToString("HH:mm")</span></span>}
+                @if (shift != null) {<span class="badge badge-light-primary fs-8 fw-bold">@T["Open since"] <span class="hp-num ms-1">@HospitalNursingService.UtcToWard(shift.Shift.OpenedAt).ToString("HH:mm")</span></span>}
                 else {<a href="@Url.Action("Cashier")" class="badge badge-light-danger fs-8 fw-bold">@T["No open shift — open one"]</a>}</div>
             <div><div class="text-muted fs-8">@T["Cash in the drawer"]</div><div class="fw-bold fs-5"><span class="hp-num">@(shift != null ? Money(shift.Expected) : "—")</span> <span class="fs-8 text-muted fw-semibold">@cur</span></div></div>
             <div><div class="text-muted fs-8">@T["Last called"]</div><div class="fw-bold fs-4 text-primary hp-num">@(me.LastCalled?.ToString() ?? "—")</div></div>
@@ -148,7 +148,7 @@
                     @foreach (var c in clinics)
                     {
                         var p = c.Card.Practitioner; int fill = HospitalFrontDeskRules.Fill(c.Booked, c.FreeLeft);
-                        var (stTone, stText) = c.Card.Current != null ? ("success", T["In session"].Value) : c.Card.Waiting.Count > 0 ? ("danger", T["Patients waiting"].Value) : c.Card.Seen > 0 ? ("info", T["Between patients"].Value) : ("primary", T["Not started"].Value);
+                        var (stTone, stText) = c.Card.Current != null ? ("primary", T["In session"].Value) : c.Card.Waiting.Count > 0 ? ("danger", T["Patients waiting"].Value) : c.Card.Seen > 0 ? ("secondary", T["Between patients"].Value) : ("primary", T["Not started"].Value);
                         <div class="col-md-6 col-xl-4"><div class="border border-dashed border-gray-300 rounded p-4 h-100">
                             <div class="d-flex align-items-center mb-3">
                                 <div class="symbol symbol-40px symbol-circle flex-shrink-0">@if (p.PhotoPath != null) {<img src="@p.PhotoPath" alt="" style="object-fit:cover" />} else {<span class="symbol-label fw-bold hp-initials">@HospitalUi.Initials(p.Row.NameEn ?? p.Row.Name)</span>}</div>
@@ -275,7 +275,7 @@
                 <div class="card h-100 mb-0">
                     <div class="card-header border-0 pt-6">
                         <div class="card-title align-items-start flex-column m-0"><span class="card-label fw-bold text-gray-900 fs-4">@T["My drawer"]</span>
-                            <span class="text-muted mt-1 fw-semibold fs-7">@(shift != null ? shift.Shift.Desk : T["No open shift"].Value)</span></div>
+                            <span class="text-muted mt-1 fw-semibold fs-7">@(shift != null ? HospitalUi.DeskName(shift.Shift.Desk, T["Clinics desk"].Value) : T["No open shift"].Value)</span></div>
                     </div>
                     <div class="card-body pt-4">
                         @if (shift == null)
@@ -290,7 +290,7 @@
                         {
                             decimal mine = shift.ByMethod.Values.Sum();
                             <div class="d-flex flex-stack mb-4"><div><div class="text-muted fs-8">@T["I collected"]</div><div class="fw-bold fs-2x"><span class="hp-num">@Money(mine)</span> <span class="fs-7 text-muted fw-semibold">@cur</span></div></div>
-                                <span class="badge badge-light-success fs-8 fw-bold">@string.Format(T["{0} receipts"].Value, shift.Receipts)</span></div>
+                                <span class="badge badge-light-primary fs-8 fw-bold">@string.Format(T["{0} receipts"].Value, shift.Receipts)</span></div>
                             @foreach (var m in HospitalPaymentMethods.All)
                             {
                                 decimal v = shift.ByMethod.GetValueOrDefault(m); int pc = mine == 0 ? 0 : (int)Math.Round(100m * v / mine);

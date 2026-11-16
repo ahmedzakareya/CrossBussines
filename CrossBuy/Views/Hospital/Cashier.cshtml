@@ -77,7 +77,7 @@
                 <div class="flex-grow-1">
                     <div class="d-flex align-items-center gap-3 mb-1"><span class="fs-3 fw-bold text-gray-900"><bdi>@w.Name</bdi></span><span class="badge badge-light-info fs-7 fw-bold">@T["shift:Open"]</span></div>
                     <div class="d-flex flex-wrap gap-5 fw-semibold fs-6 text-gray-500">
-                        <span class="d-flex align-items-center"><i class="ki-outline ki-shop fs-4 me-1"></i><bdi>@s.Desk</bdi></span>
+                        <span class="d-flex align-items-center"><i class="ki-outline ki-shop fs-4 me-1"></i><bdi>@HospitalUi.DeskName(s.Desk, T["Clinics desk"].Value)</bdi></span>
                         <span class="d-flex align-items-center"><i class="ki-outline ki-time fs-4 me-1"></i>@T["shift:opened"]&nbsp;<span class="hp-num" dir="ltr" data-utc="@s.OpenedAt.ToString("o")">@s.OpenedAt.ToString("HH:mm")</span></span>
                         <span class="d-flex align-items-center"><i class="ki-outline ki-receipt-square fs-4 me-1"></i><span class="hp-num">@mine.Receipts</span>&nbsp;@T["shift:receipts"]</span>
                     </div>
@@ -183,7 +183,7 @@
                                 <tr>
                                     <td class="ps-4"><div class="d-flex align-items-center">
                                         <div class="symbol symbol-45px symbol-circle me-4 flex-shrink-0">@if (photos.TryGetValue(x.Shift.CashierEmployeeId, out var ph2)) {<img src="@ph2" alt="" style="object-fit:cover" data-initials="@HospitalUi.Initials(w.En)" />} else {<span class="symbol-label bg-light-primary text-primary fw-bold fs-7">@HospitalUi.Initials(w.En)</span>}</div>
-                                        <div class="d-flex flex-column"><span class="text-gray-900 fw-bold fs-6"><bdi>@w.Name</bdi></span><span class="text-muted fw-semibold d-block fs-7"><bdi>@x.Shift.Desk</bdi></span></div>
+                                        <div class="d-flex flex-column"><span class="text-gray-900 fw-bold fs-6"><bdi>@w.Name</bdi></span><span class="text-muted fw-semibold d-block fs-7"><bdi>@HospitalUi.DeskName(x.Shift.Desk, T["Clinics desk"].Value)</bdi></span></div>
                                     </div></td>
                                     <td><span class="text-gray-800 fw-bold hp-num" dir="ltr"><span data-utc-time="@x.Shift.OpenedAt.ToString("o")">@x.Shift.OpenedAt.ToString("HH:mm")</span>–@if (x.Shift.ClosedAt is DateTime c) {<span data-utc-time="@c.ToString("o")">@c.ToString("HH:mm")</span>}</span></td>
                                     <td class="text-end"><span class="text-gray-900 fw-bold fs-6 hp-num" dir="ltr">@M(x.ByMethod.Values.Sum())</span></td>

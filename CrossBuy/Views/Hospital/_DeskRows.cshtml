@@ -11,7 +11,7 @@
 @{
     bool canBook = ViewBag.CanBook == true;
     var inv = System.Globalization.CultureInfo.InvariantCulture; int dp = ViewBag.MoneyDp is int d0 ? d0 : 2; string cur = ViewBag.Currency as string ?? "";
-    string Tone(string s) => s switch { "Waiting" => "danger", "WithDoctor" => "info", "Done" => "success", "NoShow" or "Cancelled" => "secondary", _ => "primary" };
+    string Tone(string s) => s switch { "Waiting" => "danger", "WithDoctor" => "primary", "Done" => "secondary", "NoShow" or "Cancelled" => "secondary", _ => "primary" };
     string Mins(int m) => m < 60 ? string.Format(T["{0} min"].Value, m) : string.Format(T["{0} h {1} min"].Value, m / 60, m % 60);
     string Time(int minute) => (minute / 60).ToString("00") + ":" + (minute % 60).ToString("00");
 }
@@ -29,7 +29,7 @@
             @if (f?.Allergies != null) {<i class="ki-outline ki-shield-cross fs-4 text-danger" data-bs-toggle="tooltip" title="@T["Allergy"]: @HospitalAllergyText.Display(f.Allergies)"></i>}
             @if (f?.Owed > 0) {<i class="ki-outline ki-wallet fs-4 text-danger" data-bs-toggle="tooltip" title="@T["Owes"] @f.Owed.ToString("N" + dp, inv) @cur"></i>}
             @if (f?.Unverified == true) {<i class="ki-outline ki-shield-search fs-4 text-info" data-bs-toggle="tooltip" title="@T["Insurance does not cover today"]"></i>}
-            @if (f?.FirstVisit == true) {<i class="ki-outline ki-star fs-4 text-success" data-bs-toggle="tooltip" title="@T["First visit"]"></i>}
+            @if (f?.FirstVisit == true) {<i class="ki-outline ki-star fs-4 text-primary" data-bs-toggle="tooltip" title="@T["First visit"]"></i>}
             @if (f?.WalkIn == true) {<i class="ki-outline ki-entrance-right fs-4 text-gray-600" data-bs-toggle="tooltip" title="@T["Walk-in"]"></i>}
         </div></td>
         <td><div class="d-flex align-items-center">
@@ -38,7 +38,7 @@
                 <span class="text-muted fs-8 text-truncate mw-125px"><bdi>@(f?.Payer != null ? DisplayName.Of(f.Payer, f.PayerEn) : T["Self-pay"].Value)</bdi></span></div></div></td>
         <td><div class="d-flex flex-column align-items-start gap-1">
             <span class="badge badge-light-@tone fs-8 fw-bold">@T["desk:" + r.Stage]</span>
-            @if (r.WaitMinutes is int w) {<span class="badge badge-light-@(r.Stage == HospitalDeskStage.Waiting && w > 30 ? "danger" : "success") fs-8 fw-bold text-nowrap"><i class="ki-outline ki-timer fs-8 me-1"></i>@Mins(w)</span>}
+            @if (r.WaitMinutes is int w) {<span class="badge badge-light-@(r.Stage == HospitalDeskStage.Waiting && w > 30 ? "danger" : "primary") fs-8 fw-bold text-nowrap"><i class="ki-outline ki-timer fs-8 me-1"></i>@Mins(w)</span>}
             else if (r.Late) {<span class="badge badge-light-danger fs-8 fw-bold text-nowrap"><i class="ki-outline ki-time fs-8 me-1"></i>@T["Late"]</span>}
         </div></td>
         <td class="text-end pe-4"><div class="d-flex justify-content-end gap-1">
