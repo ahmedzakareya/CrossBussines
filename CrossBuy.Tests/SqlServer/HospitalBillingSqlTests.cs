@@ -32,7 +32,7 @@ namespace CrossBuy.Tests.SqlServer
 		{
 			await using var c = new SqlConnection(_probe!.ConnectionString);
 			await c.OpenAsync();
-			foreach (var s in new[] { "hospital_h2_patients.sql", "hospital_h3_admissions.sql", "hospital_h4_outpatient.sql", "hospital_h5_consultation.sql", "hospital_h6_billing.sql", "hospital_h7_pricelists.sql" })
+			foreach (var s in new[] { "hospital_h2_patients.sql", "hospital_h3_admissions.sql", "hospital_h4_outpatient.sql", "hospital_h5_consultation.sql", "hospital_h6_billing.sql", "hospital_h7_pricelists.sql", "hospital_h143_deposits.sql" })   // H143: the deposit account the settings map
 				await _sql.RunScriptAsync(c, s);
 		}
 
