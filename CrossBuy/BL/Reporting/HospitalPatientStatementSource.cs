@@ -64,6 +64,12 @@ namespace CrossBuy.BL.Reporting
                 entries.Add(new Entry(g.DecidedAt!.Value, 2, ar ? "إعفاء خيري" : "Charity waiver", g.GrantNo,
                     (fund == null ? "" : (ar ? fund.Name : fund.NameEn) + " — ") + (ar ? "على الفاتورة " : "on bill ") + billNos[g.BillId], 0, g.Amount));
             }
+            // H148: credit notes on a closed bill (medicine brought back) — what the patient no longer owes
+            List<HospitalCreditNote> notes;
+            try { notes = await _db.Set<HospitalCreditNote>().AsNoTracking().Where(n => n.CompanyId == ctx.CompanyId && n.PatientId == p.ID).ToListAsync(cancellationToken); }
+            catch (Microsoft.Data.SqlClient.SqlException ex) when (ex.Number == 208) { notes = new(); }
+            foreach (var cn in notes.Where(x => billNos.ContainsKey(x.BillId)))
+                entries.Add(new Entry(cn.At, 2, ar ? "إشعار دائن" : "Credit note", cn.NoteNo, (ar ? "مرتجع على الفاتورة " : "Return on bill ") + billNos[cn.BillId], 0, cn.Total));
 
             var header = await HospitalDocumentRows.HeaderAsync(_db, ctx, ar, p, null, p.Mrn, now, now, cancellationToken);
             var currency = await Billing.CurrencyLabelAsync(ctx, null, cancellationToken);

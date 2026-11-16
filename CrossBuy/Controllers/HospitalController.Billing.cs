@@ -158,6 +158,7 @@ namespace CrossBuy.Controllers
 			ViewBag.MyShift = ctx.EmployeeId is int me ? await _billing.OpenShiftOfAsync(ctx, me, ct) : null;
 			var (charity, charityReady) = await CharitySvc.ForBillAsync(ctx, v.Bill.ID, ct);   // H63
 			ViewBag.Charity = charity; ViewBag.CharityReady = charityReady;
+			ViewBag.CreditNotes = await _billing.CreditNotesAsync(ctx, v.Bill.ID, ct);   // H148
 			ViewBag.CharityFunds = charityReady ? (await CharitySvc.FundsAsync(ctx, true, ct)).Funds.Where(f => f.AccountId != null).ToList() : new List<CrossBuy.Models.Context.Hospital.HospitalCharityFund>();
 			ViewBag.CanManage = await _access.CanAsync(ctx, HospitalActions.Manage, null, ct);
 			ViewBag.Me = ctx.EmployeeId;

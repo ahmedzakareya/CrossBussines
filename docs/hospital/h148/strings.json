@@ -1,0 +1,25 @@
+{
+ "unit": "H148 - credit notes on a closed bill: medicine brought back after closing",
+ "strings": {
+  "Credit notes": {
+   "ar": "إشعارات دائنة",
+   "en": "Credit notes",
+   "fr": "Avoirs"
+  },
+  "Medicine brought back after the bill closed: the bill stays as posted, the patient owes this much less.": {
+   "ar": "دواء أُرجع بعد إغلاق الفاتورة: تبقى الفاتورة كما رُحّلت، ويقل ما على المريض بهذا القدر.",
+   "en": "Medicine brought back after the bill closed: the bill stays as posted, the patient owes this much less.",
+   "fr": "Médicament rapporté après la clôture de la facture : la facture reste telle que comptabilisée, le patient doit d'autant moins."
+  },
+  "The bill was closed in a foreign currency: settle this return at billing": {
+   "ar": "أُغلقت الفاتورة بعملة أجنبية: سوِّ هذا المرتجع من الفوترة",
+   "en": "The bill was closed in a foreign currency: settle this return at billing",
+   "fr": "La facture a été clôturée en devise étrangère : régularisez ce retour à la facturation"
+  },
+  "The insurer paid part of this medicine: correct it through the insurance claim": {
+   "ar": "دفعت شركة التأمين جزءًا من هذا الدواء: صحّحه من خلال مطالبة التأمين",
+   "en": "The insurer paid part of this medicine: correct it through the insurance claim",
+   "fr": "L'assureur a payé une partie de ce médicament : corrigez-le via la demande de remboursement"
+  }
+ }
+}

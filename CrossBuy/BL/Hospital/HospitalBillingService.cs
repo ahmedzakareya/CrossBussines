@@ -56,9 +56,10 @@ namespace CrossBuy.BL.Hospital
 		decimal UnitPrice, decimal Gross, decimal Insurer, decimal Patient, decimal Vat, string Source, bool Running, int? RevenueAccountId, bool OutsideList = false);
 
 	/// H63: `Waived` = approved charity waivers on the bill — what the patient no longer owes, never collected.
-	public sealed record HospitalBillTotals(decimal Gross, decimal Insurer, decimal Patient, decimal Vat, decimal Paid, decimal Waived = 0)
+	/// H148: `Credited` = credit notes issued on the bill after it closed (medicine brought back) — net + VAT.
+	public sealed record HospitalBillTotals(decimal Gross, decimal Insurer, decimal Patient, decimal Vat, decimal Paid, decimal Waived = 0, decimal Credited = 0)
 	{
-		public decimal Due => Patient + Vat - Paid - Waived;
+		public decimal Due => Patient + Vat - Paid - Waived - Credited;
 	}
 
 	/// Currency is the bill's (its list's, or the facility's); List is the list that priced it (null = the main list).
@@ -454,10 +455,25 @@ namespace CrossBuy.BL.Hospital
 			var payments = await _db.HospitalPayments.AsNoTracking().Where(p => p.CompanyId == ctx.CompanyId && p.BillId == bill.ID).OrderBy(p => p.ReceivedAt).ToListAsync(ct);
 			decimal waived = 0;
 			waived = await HospitalCharityService.WaivedAsync(_db, ctx.CompanyId, bill.ID, ct);   // H63
-			var totals = new HospitalBillTotals(lines.Sum(l => l.Gross), lines.Sum(l => l.Insurer), lines.Sum(l => l.Patient), lines.Sum(l => l.Vat), payments.Sum(p => p.Amount), waived);
+			var credited = await CreditedAsync(_db, ctx.CompanyId, bill.ID, ct);   // H148
+			var totals = new HospitalBillTotals(lines.Sum(l => l.Gross), lines.Sum(l => l.Insurer), lines.Sum(l => l.Patient), lines.Sum(l => l.Vat), payments.Sum(p => p.Amount), waived, credited);
 			HospitalPriceCurrency? currency = _pricing == null ? null : await _pricing.CurrencyOfAsync(ctx, bill.CurrencyId, ct);
 			var list = bill.PriceListId is int lid ? await _db.HospitalPriceLists.AsNoTracking().FirstOrDefaultAsync(l => l.ID == lid && l.CompanyId == ctx.CompanyId, ct) : null;
 			return new HospitalBillView(bill, patient, lines, payments, totals, settings.VatRatePercent, currency, list, cover);
+		}
+
+		/// H148: a closed bill's credit notes, oldest first (empty when the tables are not installed).
+		public async Task<IReadOnlyList<HospitalCreditNote>> CreditNotesAsync(BusinessContext ctx, int billId, CancellationToken ct = default)
+		{
+			try { return await _db.Set<HospitalCreditNote>().AsNoTracking().Where(n => n.CompanyId == ctx.CompanyId && n.BillId == billId).OrderBy(n => n.ID).ToListAsync(ct); }
+			catch (Microsoft.Data.SqlClient.SqlException ex) when (ex.Number == 208) { return Array.Empty<HospitalCreditNote>(); }
+		}
+
+		/// H148: what credit notes took off a closed bill (0 when the credit-note tables are not installed).
+		public static async Task<decimal> CreditedAsync(CrossDbContext db, int companyId, int billId, CancellationToken ct)
+		{
+			try { return await db.Set<HospitalCreditNote>().AsNoTracking().Where(n => n.CompanyId == companyId && n.BillId == billId).SumAsync(n => (decimal?)n.Total, ct) ?? 0; }
+			catch (Microsoft.Data.SqlClient.SqlException ex) when (ex.Number == 208) { return 0; }
 		}
 
 		/// The split a bill is shown and posted on: frozen at closing if it was split then, live while open, none for a
@@ -495,7 +511,7 @@ namespace CrossBuy.BL.Hospital
 			{
 				var v = await BillAsync(ctx, x.b.ID, nowUtc, ct);
 				result.Add(new HospitalBillRow(x.b.ID, x.b.BillNo, x.p.ID, x.p.Name, x.p.NameEn, x.p.Mrn, x.p.PhotoPath, x.b.AdmissionId != null, x.b.Status, x.b.OpenedAt,
-					v!.Totals.Patient + v.Totals.Vat - v.Totals.Waived, v.Totals.Paid, v.Currency));   // H63: net of charity
+					v!.Totals.Patient + v.Totals.Vat - v.Totals.Waived - v.Totals.Credited, v.Totals.Paid, v.Currency));   // H63: net of charity (H148: and of credit notes)
 			}
 			return result;
 		}

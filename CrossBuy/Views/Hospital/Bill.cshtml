@@ -256,10 +256,35 @@
                         <div class="d-flex flex-stack mb-3"><span class="fw-semibold text-gray-600 fs-7">@T["Insurer"]</span><span class="text-end fw-bold fs-6 text-gray-800 hp-num" dir="ltr">@M(t.Insurer)</span></div>
                         <div class="d-flex flex-stack mb-3"><span class="fw-semibold text-gray-600 fs-7">@T["Patient"]</span><span class="text-end fw-bold fs-6 text-gray-800 hp-num" dir="ltr">@M(t.Patient)</span></div>
                         <div class="d-flex flex-stack mb-3"><span class="fw-semibold text-gray-600 fs-7">@T["VAT"]</span><span class="text-end fw-bold fs-6 text-gray-800 hp-num" dir="ltr">@M(t.Vat)</span></div>
+                        @if (t.Credited > 0)
+                        {
+                            @* H148: what credit notes took off the closed bill (medicine brought back) *@
+                            <div class="d-flex flex-stack mb-3" data-credited><span class="fw-semibold text-gray-600 fs-7">@T["Credit notes"]</span><span class="text-end fw-bold fs-6 text-primary hp-num" dir="ltr">−@M(t.Credited)</span></div>
+                        }
                         <div class="separator separator-dashed my-3"></div>
                         <div class="d-flex flex-stack"><span class="fw-bold text-gray-900 fs-6">@T["Patient balance due"] <span class="text-muted fs-8">@cur</span></span><span class="text-end fw-bolder fs-3 hp-num text-@(t.Due > 0 ? "danger" : "success")" dir="ltr">@M(t.Due)</span></div>
                     </div>
                 </div>
+                @{ var creditNotes = (ViewBag.CreditNotes as IReadOnlyList<HospitalCreditNote>) ?? Array.Empty<HospitalCreditNote>(); }
+                @if (creditNotes.Count > 0)
+                {
+                    @* H148: each credit note on the closed bill — the bill itself stays as it was posted *@
+                    <div class="mt-8" data-credit-notes>
+                        <h4 class="fs-6 fw-bold text-gray-800 mb-1">@T["Credit notes"]</h4>
+                        <div class="text-muted fs-7 mb-4">@T["Medicine brought back after the bill closed: the bill stays as posted, the patient owes this much less."]</div>
+                        @foreach (var n in creditNotes)
+                        {
+                            <div class="d-flex align-items-center border border-dashed border-gray-300 rounded px-4 py-3 mb-3">
+                                <i class="ki-outline ki-arrow-circle-left fs-2 text-primary me-4"></i>
+                                <div class="flex-grow-1 me-3">
+                                    <div class="fw-bold text-gray-800 fs-6"><bdi class="hp-num">@n.NoteNo</bdi> <span class="text-muted fw-semibold fs-7 ms-2"><bdi class="hp-num" dir="ltr">@n.At.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</bdi></span></div>
+                                    <div class="text-gray-600 fs-7"><bdi>@n.Reason</bdi></div>
+                                </div>
+                                <span class="fw-bold fs-5 text-primary hp-num text-nowrap" dir="ltr">−@M(n.Total)</span>
+                            </div>
+                        }
+                    </div>
+                }
             </div>
         </div>
 
