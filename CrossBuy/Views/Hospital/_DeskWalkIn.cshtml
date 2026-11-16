@@ -1,0 +1,53 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model IReadOnlyList<HospitalDeskSlots>
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@* H140: the walk-in window — every doctor working today with their free slots from now on. A slot books the patient
+   and checks them in at once (the queue number comes with it). The doctor the desk came from is outlined. *@
+@{
+    var pt = ((int Id, string Name, string? NameEn, string Mrn, string? Photo))ViewBag.Patient;
+    int? chosen = ViewBag.Doctor as int?;
+    string Time(int minute) => (minute / 60).ToString("00") + ":" + (minute % 60).ToString("00");
+}
+<div class="d-flex flex-wrap align-items-center gap-4 mb-6">
+    <div class="d-flex align-items-center flex-grow-1">
+        <div class="symbol symbol-45px symbol-circle me-3 flex-shrink-0">@if (pt.Photo != null) {<img src="@pt.Photo" alt="" style="object-fit:cover" />} else {<span class="symbol-label fw-bold hp-initials">@HospitalUi.Initials(pt.NameEn ?? pt.Name)</span>}</div>
+        <div><div class="fw-bold text-gray-900 fs-6"><bdi>@DisplayName.Of(pt.Name, pt.NameEn)</bdi></div><div class="text-muted fs-7 hp-num">@pt.Mrn</div></div>
+    </div>
+    <div class="w-200px"><select class="form-select form-select-solid form-select-sm" data-walkin-type>@foreach (var v in HospitalVisitTypes.All) { <option value="@v">@T["visit:" + v]</option> }</select></div>
+</div>
+<div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-5 mb-6">
+    <i class="ki-outline ki-entrance-right fs-2tx text-primary me-4"></i>
+    <div class="fw-semibold"><div class="fs-6 text-gray-900 fw-bold">@T["Pick the next free slot"]</div><div class="fs-7 text-gray-700">@T["The patient is booked, checked in and given a queue number in one step."]</div></div>
+</div>
+@if (Model.Count == 0)
+{
+    <div class="text-center text-muted py-10">@T["No clinic works today."]</div>
+}
+<div class="row g-4">
+    @foreach (var s in Model)
+    {
+        var d = s.Doctor;
+        <div class="col-md-6"><div class="border border-dashed @(d.Row.ID == chosen ? "border-primary bg-light-primary" : "border-gray-300") rounded p-4 h-100">
+            <div class="d-flex align-items-center mb-3">
+                <div class="symbol symbol-40px symbol-circle flex-shrink-0">@if (d.PhotoPath != null) {<img src="@d.PhotoPath" alt="" style="object-fit:cover" />} else {<span class="symbol-label fw-bold hp-initials">@HospitalUi.Initials(d.Row.NameEn ?? d.Row.Name)</span>}</div>
+                <div class="ms-3 min-w-0"><div class="fw-bold text-gray-900 fs-6 text-truncate"><bdi>@DisplayName.Of(d.Row.Name, d.Row.NameEn)</bdi></div>
+                    <div class="text-muted fs-7">@if (d.Department != null) {<bdi>@DisplayName.Of(d.Department.Name, d.Department.NameEn)</bdi><text> · </text>}@string.Format(T["{0} waiting"].Value, s.Waiting)</div></div>
+            </div>
+            @if (s.Free.Count == 0)
+            {
+                <span class="text-muted fs-7">@T["No free slot left today"]</span>
+            }
+            else
+            {
+                <div class="d-flex flex-wrap gap-2">
+                    @for (int i = 0; i < Math.Min(8, s.Free.Count); i++)
+                    {
+                        <button type="button" class="btn btn-sm @(i == 0 ? "btn-primary" : "btn-light-primary") hp-num py-1 px-3" data-desk-slot="@s.Free[i]" data-doctor="@d.Row.ID" data-patient="@pt.Id">@Time(s.Free[i])</button>
+                    }
+                </div>
+            }
+        </div></div>
+    }
+</div>

@@ -1,3 +1,4 @@
+using CrossBuy.BL.Platform;
 using CrossBuy.Models.Context;
 using CrossBuy.Models.Context.Hospital;
 using CrossBuy.Models.Platform;
@@ -34,9 +35,28 @@ namespace CrossBuy.BL.Hospital
 		int Score, string Reason, int? TodayAppointmentId, string? TodayStatus, int? QueueNumber);
 
 	public sealed record HospitalDeskRow(HospitalAppointmentView A, string Doctor, string? DoctorEn, string? DoctorPhoto, string? Department, string? DepartmentEn,
-		string Stage, int? WaitMinutes, bool Late);
+		string Stage, int? WaitMinutes, bool Late, HospitalDeskFlags? Flags = null);
 
-	public sealed record HospitalDeskStats(int Expected, int Arrived, int WaitingNow, int WithDoctor, int Done, int NoShow, int? AvgWaitMinutes, int? MaxWaitMinutes, int Admitted, int InEmergency);
+	/// H140: what the desk must see on a row before the patient reaches the counter.
+	public sealed record HospitalDeskFlags(string? Allergies, decimal Owed, bool Insured, bool Unverified, string? Payer, string? PayerEn, bool FirstVisit, bool WalkIn);
+
+	public sealed record HospitalDeskStats(int Expected, int Arrived, int WaitingNow, int WithDoctor, int Done, int NoShow, int? AvgWaitMinutes, int? MaxWaitMinutes, int Admitted, int InEmergency,
+		int Late = 0, int WalkIns = 0, int ToVerify = 0);
+
+	/// H140: a clinic as the desk sees it: the board card, how full the day is and the next free slot.
+	public sealed record HospitalDeskClinic(HospitalClinicCard Card, int Booked, int FreeLeft, int? NextFree);
+
+	/// H140: the desk's own strip: who sits here, the shift, the day's collections and the last receipts.
+	public sealed record HospitalDeskReceipt(string ReceiptNo, string Patient, string? PatientEn, decimal Amount, string Method, DateTime At);
+	public sealed record HospitalDeskMe(string Name, string? Photo, HospitalShiftSummary? Shift, IReadOnlyList<HospitalDeskReceipt> Receipts, int? LastCalled,
+		IReadOnlyDictionary<string, decimal> CollectedToday, int ReceiptsToday);
+
+	/// H140: the time grid: doctors across, the day's times down; a cell is an appointment, a free slot or nothing.
+	public sealed record HospitalDeskGrid(IReadOnlyList<HospitalPractitionerView> Doctors, IReadOnlyList<int> Minutes,
+		IReadOnlyDictionary<(int Doctor, int Minute), HospitalDeskRow> Taken, IReadOnlySet<(int Doctor, int Minute)> Free, int NowMinute);
+
+	/// H140: a doctor's free slots for a walk-in, from now on.
+	public sealed record HospitalDeskSlots(HospitalPractitionerView Doctor, int Waiting, IReadOnlyList<int> Free);
 
 	public sealed record HospitalDeskInbox(int PortalRequests, int WaitlistOffers, int Intake, int Unidentified, int Preauths, int Duplicates)
 	{
@@ -107,6 +127,18 @@ namespace CrossBuy.BL.Hospital
 
 		/// The walk-in's slot: the first free one from now on (a slot that began within the last 10 minutes still counts).
 		public static int? WalkInSlot(IReadOnlyList<int> free, int nowMinute) => free.Where(m => m >= nowMinute - 10).OrderBy(m => m).Select(m => (int?)m).FirstOrDefault();
+
+		/// H140: the slot the desk picked, if it is still free and not past; otherwise none.
+		public static int? ChosenSlot(IReadOnlyList<int> free, int nowMinute, int chosen) => free.Contains(chosen) && chosen >= nowMinute - 10 ? chosen : null;
+
+		/// The note a walk-in's appointment carries; the board's walk-in flag reads it.
+		public const string WalkInNote = "Walk-in";
+
+		/// H140: the grid's rows — every time a doctor has an appointment or a free slot, in order.
+		public static IReadOnlyList<int> GridMinutes(IEnumerable<int> taken, IEnumerable<int> free) => taken.Concat(free).Distinct().OrderBy(m => m).ToList();
+
+		/// H140: how full a doctor's day is, 0-100: booked against booked plus what is still free.
+		public static int Fill(int booked, int freeLeft) => booked + freeLeft == 0 ? 0 : (int)Math.Round(100m * booked / (booked + freeLeft));
 
 		/// The check-in checklist. Identity (a file with a national ID or a photo) and the payer decision (insured and
 		/// eligible, or self-pay) need attention (Blocks marks them); consent, the photo and an open balance are owed.
@@ -217,7 +249,8 @@ namespace CrossBuy.BL.Hospital
 			var waits = live.Where(r => r.WaitMinutes != null).Select(r => r.WaitMinutes!.Value).ToList();
 			return new HospitalDeskStats(live.Count, live.Count(r => r.A.ArrivedAt != null), live.Count(r => r.Stage == HospitalDeskStage.Waiting), live.Count(r => r.Stage == HospitalDeskStage.WithDoctor),
 				live.Count(r => r.Stage == HospitalDeskStage.Done), live.Count(r => r.Stage == HospitalDeskStage.NoShow),
-				waits.Count == 0 ? null : (int)Math.Round(waits.Average()), waits.Count == 0 ? null : waits.Max(), where?.Admitted ?? 0, where?.InEmergency ?? 0);
+				waits.Count == 0 ? null : (int)Math.Round(waits.Average()), waits.Count == 0 ? null : waits.Max(), where?.Admitted ?? 0, where?.InEmergency ?? 0,
+				live.Count(r => r.Late), live.Count(r => r.Flags?.WalkIn == true), live.Count(r => r.Flags?.Unverified == true && r.Stage is HospitalDeskStage.Expected or HospitalDeskStage.Waiting));
 		}
 
 		// ====================================================================================
@@ -274,16 +307,134 @@ namespace CrossBuy.BL.Hospital
 				? _op.MoveAsync(ctx, appointmentId, to, employeeId, nowUtc, ct) : Task.FromResult(HospitalResult.Fail("not_found"));
 
 		/// A walk-in: the doctor's next free slot today, booked and arrived at once.
-		public async Task<HospitalResult> WalkInAsync(BusinessContext ctx, int patientId, int practitionerId, string? visitType, int? employeeId, DateTime nowUtc, DateTime nowLocal, CancellationToken ct = default)
+		/// H140: the desk may pick the slot; a picked slot that is no longer free is refused rather than moved.
+		public async Task<HospitalResult> WalkInAsync(BusinessContext ctx, int patientId, int practitionerId, string? visitType, int? employeeId, DateTime nowUtc, DateTime nowLocal, CancellationToken ct = default, int? startMinute = null)
 		{
 			var free = await _portal.StaffFreeSlotsAsync(ctx, practitionerId, nowLocal.Date, nowLocal, ct);
-			var slot = HospitalFrontDeskRules.WalkInSlot(free, nowLocal.Hour * 60 + nowLocal.Minute);
-			if (slot == null) return HospitalResult.Fail("This doctor has no free slot left today");
+			int nowMinute = nowLocal.Hour * 60 + nowLocal.Minute;
+			var slot = startMinute is int chosen ? HospitalFrontDeskRules.ChosenSlot(free, nowMinute, chosen) : HospitalFrontDeskRules.WalkInSlot(free, nowMinute);
+			if (slot == null) return HospitalResult.Fail(startMinute != null ? "This slot is no longer free" : "This doctor has no free slot left today");
 			var booked = await _op.BookAsync(ctx, new HospitalBookingInput { PatientId = patientId, PractitionerId = practitionerId, Date = nowLocal.Date, StartMinute = slot.Value,
-				VisitType = HospitalVisitTypes.All.Contains(visitType ?? "") ? visitType! : HospitalVisitTypes.New, Note = "Walk-in" }, employeeId, nowLocal.Date, ct);
+				VisitType = HospitalVisitTypes.All.Contains(visitType ?? "") ? visitType! : HospitalVisitTypes.New, Note = HospitalFrontDeskRules.WalkInNote }, employeeId, nowLocal.Date, ct);
 			if (!booked.Ok) return booked;
 			var arrived = await _op.MoveAsync(ctx, booked.Id!.Value, HospitalAppointmentStatus.Arrived, employeeId, nowUtc, ct);
 			return arrived.Ok ? HospitalResult.Success(booked.Id) : arrived;
 		}
+
+		// ====================================================================================
+		// H140 - THE WORKSPACE
+		// ====================================================================================
+
+		/// The board's rows with what the desk must see on each: allergy, money owed, the payer and whether today is
+		/// covered, a first visit, a walk-in. One query per kind, one eligibility check per insured patient.
+		public async Task<IReadOnlyList<HospitalDeskRow>> FlagAsync(BusinessContext ctx, IReadOnlyList<HospitalDeskRow> rows, DateTime todayLocal, DateTime nowUtc, CancellationToken ct = default)
+		{
+			var ids = rows.Select(r => r.A.PatientId).Distinct().ToList();
+			if (ids.Count == 0) return rows;
+			var allergies = await _db.HospitalPatients.AsNoTracking().Where(p => p.CompanyId == ctx.CompanyId && ids.Contains(p.ID)).Select(p => new { p.ID, p.Allergies }).ToDictionaryAsync(p => p.ID, p => p.Allergies, ct);
+			var withPolicy = await _db.Set<HospitalPatientPolicy>().AsNoTracking().Where(x => x.CompanyId == ctx.CompanyId && ids.Contains(x.PatientId)).Select(x => x.PatientId).Distinct().ToListAsync(ct);
+			var cover = new Dictionary<int, (bool Insured, bool Unverified, string? Payer, string? PayerEn)>();
+			foreach (var id in withPolicy)
+			{
+				var (policy, payer, _) = await _insurance.EligibilityAsync(ctx, id, todayLocal, null, ct);
+				cover[id] = (policy != null, policy == null, payer?.Name, payer?.NameEn);
+			}
+			var owed = new Dictionary<int, decimal>();
+			var billed = await _db.HospitalBills.AsNoTracking().Where(b => b.CompanyId == ctx.CompanyId && ids.Contains(b.PatientId)).Select(b => b.PatientId).Distinct().ToListAsync(ct);
+			foreach (var id in billed)
+				owed[id] = (await _billing.BillsAsync(ctx, null, id, nowUtc, ct)).Sum(b => Math.Max(0, b.Total - b.Paid));
+			return rows.Select(r =>
+			{
+				var c = cover.GetValueOrDefault(r.A.PatientId);
+				var al = allergies.GetValueOrDefault(r.A.PatientId);
+				return r with { Flags = new HospitalDeskFlags(string.IsNullOrWhiteSpace(al) ? null : al, owed.GetValueOrDefault(r.A.PatientId),
+					c.Insured, c.Unverified, c.Payer, c.PayerEn, r.A.VisitType == HospitalVisitTypes.New, r.A.Note == HospitalFrontDeskRules.WalkInNote) };
+			}).ToList();
+		}
+
+		/// The clinics right now: the outpatient board's cards with how full each day is and the next free slot.
+		public async Task<IReadOnlyList<HospitalDeskClinic>> ClinicsAsync(BusinessContext ctx, DateTime nowLocal, DateTime nowUtc, CancellationToken ct = default)
+		{
+			int nowMinute = nowLocal.Hour * 60 + nowLocal.Minute;
+			var cards = await _op.BoardAsync(ctx, nowLocal.Date, nowMinute, nowUtc, ct);
+			var day = await _op.DayAsync(ctx, nowLocal.Date, ct);
+			var list = new List<HospitalDeskClinic>();
+			foreach (var c in cards)
+			{
+				var free = await _portal.StaffFreeSlotsAsync(ctx, c.Practitioner.Row.ID, nowLocal.Date, nowLocal, ct);
+				var ahead = free.Where(m => m >= nowMinute - 10).ToList();
+				int booked = day.Count(a => a.PractitionerId == c.Practitioner.Row.ID && a.Status != HospitalAppointmentStatus.Cancelled);
+				list.Add(new HospitalDeskClinic(c, booked, ahead.Count, ahead.Count == 0 ? null : ahead.Min()));
+			}
+			return list.OrderByDescending(x => x.Card.Waiting.Count).ThenBy(x => DisplayName.Of(x.Card.Practitioner.Row.Name, x.Card.Practitioner.Row.NameEn)).ToList();
+		}
+
+		/// The time grid of the day for the doctors working today (and any doctor with an appointment today).
+		public async Task<HospitalDeskGrid> GridAsync(BusinessContext ctx, IReadOnlyList<HospitalDeskRow> rows, DateTime nowLocal, DateTime nowUtc, int? department, CancellationToken ct = default)
+		{
+			int nowMinute = nowLocal.Hour * 60 + nowLocal.Minute;
+			var cards = await _op.BoardAsync(ctx, nowLocal.Date, nowMinute, nowUtc, ct);
+			var all = await _op.PractitionersAsync(ctx, ct);
+			var doctors = cards.Select(c => c.Practitioner).Concat(all.Where(p => rows.Any(r => r.A.PractitionerId == p.Row.ID)))
+				.Where(p => department == null || p.Row.DepartmentId == department)
+				.GroupBy(p => p.Row.ID).Select(g => g.First()).OrderBy(p => DisplayName.Of(p.Row.Name, p.Row.NameEn)).ToList();
+			var taken = new Dictionary<(int Doctor, int Minute), HospitalDeskRow>();
+			foreach (var r in rows.Where(r => r.Stage != HospitalDeskStage.Cancelled)) taken.TryAdd((r.A.PractitionerId, r.A.StartMinute), r);
+			var free = new HashSet<(int Doctor, int Minute)>();
+			foreach (var d in doctors)
+				foreach (var m in await _portal.StaffFreeSlotsAsync(ctx, d.Row.ID, nowLocal.Date, nowLocal, ct)) free.Add((d.Row.ID, m));
+			var ids = doctors.Select(d => d.Row.ID).ToHashSet();
+			var minutes = HospitalFrontDeskRules.GridMinutes(taken.Keys.Where(k => ids.Contains(k.Doctor)).Select(k => k.Minute), free.Select(f => f.Minute));
+			return new HospitalDeskGrid(doctors, minutes, taken, free, nowMinute);
+		}
+
+		/// The doctors working today with their free slots from now on, for a walk-in.
+		public async Task<IReadOnlyList<HospitalDeskSlots>> WalkInSlotsAsync(BusinessContext ctx, DateTime nowLocal, DateTime nowUtc, CancellationToken ct = default)
+		{
+			int nowMinute = nowLocal.Hour * 60 + nowLocal.Minute;
+			var list = new List<HospitalDeskSlots>();
+			foreach (var c in await _op.BoardAsync(ctx, nowLocal.Date, nowMinute, nowUtc, ct))
+			{
+				var free = (await _portal.StaffFreeSlotsAsync(ctx, c.Practitioner.Row.ID, nowLocal.Date, nowLocal, ct)).Where(m => m >= nowMinute - 10).OrderBy(m => m).ToList();
+				list.Add(new HospitalDeskSlots(c.Practitioner, c.Waiting.Count, free));
+			}
+			return list.OrderBy(s => s.Free.Count == 0 ? 1 : 0).ThenBy(s => s.Free.FirstOrDefault()).ToList();
+		}
+
+		/// The desk's strip and drawer: who sits here, their open shift, the day's collections (everyone's, by method),
+		/// their last receipts, and the last queue number called into a room.
+		public async Task<HospitalDeskMe> MeAsync(BusinessContext ctx, DateTime todayLocal, CancellationToken ct = default)
+		{
+			int cid = ctx.CompanyId;
+			string name = "-"; string? photo = null;
+			HospitalShiftSummary? summary = null;
+			if (ctx.EmployeeId is int me)
+			{
+				var e = await _db.Employee.AsNoTracking().Where(x => x.ID == me && x.EmpCompanyID == cid).Select(x => new { x.FullName, x.FullNameEn }).FirstOrDefaultAsync(ct);
+				if (e != null) name = DisplayName.Of(e.FullName, e.FullNameEn);
+				photo = (await EmployeePhotos.ResolveAsync(_db, ctx, new[] { me }, ct)).GetValueOrDefault(me);
+				var shift = await _billing.OpenShiftOfAsync(ctx, me, ct);
+				if (shift != null) summary = await _billing.ShiftSummaryAsync(ctx, shift.ID, ct);
+			}
+			var startUtc = HospitalNursingService.WardToUtc(todayLocal.Date);
+			var pays = await _db.HospitalPayments.AsNoTracking().Where(p => p.CompanyId == cid && p.ReceivedAt >= startUtc).ToListAsync(ct);
+			var by = HospitalPaymentMethods.All.ToDictionary(x => x, x => pays.Where(p => p.Method == x).Sum(p => p.BaseAmount ?? p.Amount));
+			var mine = pays.Where(p => p.CashierEmployeeId == ctx.EmployeeId).OrderByDescending(p => p.ReceivedAt).Take(5).ToList();
+			var billIds = mine.Select(p => p.BillId).ToList();
+			var who = await (from b in _db.HospitalBills.AsNoTracking()
+							 join p in _db.HospitalPatients.AsNoTracking() on b.PatientId equals p.ID
+							 where b.CompanyId == cid && billIds.Contains(b.ID)
+							 select new { b.ID, p.Name, p.NameEn }).ToDictionaryAsync(x => x.ID, ct);
+			var receipts = mine.Select(p => new HospitalDeskReceipt(p.ReceiptNo, who.GetValueOrDefault(p.BillId)?.Name ?? "-", who.GetValueOrDefault(p.BillId)?.NameEn,
+				p.BaseAmount ?? p.Amount, p.Method, p.ReceivedAt)).ToList();
+			var day = todayLocal.Date;
+			int? last = await _db.HospitalAppointments.AsNoTracking().Where(a => a.CompanyId == cid && a.AppointmentDate == day && a.StartedAt != null && a.QueueNumber != null)
+				.OrderByDescending(a => a.StartedAt).Select(a => a.QueueNumber).FirstOrDefaultAsync(ct);
+			return new HospitalDeskMe(name, photo, summary, receipts, last, by, pays.Count);
+		}
+
+		/// The patient's open bills for the counter's payment window.
+		public async Task<IReadOnlyList<HospitalBillRow>> OpenBillsAsync(BusinessContext ctx, int patientId, DateTime nowUtc, CancellationToken ct = default)
+			=> (await _billing.BillsAsync(ctx, null, patientId, nowUtc, ct)).Where(b => b.Total - b.Paid > 0).OrderBy(b => b.OpenedAt).ToList();
 	}
 }

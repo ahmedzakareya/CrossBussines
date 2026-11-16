@@ -1,0 +1,54 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@model HospitalDeskGrid
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@* H140: the day as a time grid — doctors across, every booked or free time down. An appointment opens its patient at
+   the counter; a free slot books the patient at the counter into it and checks them in. The current half-hour is tinted. *@
+@{
+    string Tone(string s) => s switch { "Waiting" => "danger", "WithDoctor" => "info", "Done" => "success", "NoShow" or "Cancelled" => "secondary", _ => "primary" };
+    string Time(int minute) => (minute / 60).ToString("00") + ":" + (minute % 60).ToString("00");
+}
+@if (Model.Doctors.Count == 0 || Model.Minutes.Count == 0)
+{
+    <div class="text-center text-muted py-12"><i class="ki-outline ki-element-11 fs-3x text-gray-300 d-block mb-3"></i>@T["No clinic works today."]</div>
+}
+else
+{
+    <div class="table-responsive mh-700px scroll-y"><table class="table table-bordered align-middle mb-0 fs-7">
+        <thead><tr class="fw-bold text-muted bg-light">
+            <th class="w-70px ps-3">@T["Time"]</th>
+            @foreach (var d in Model.Doctors)
+            {
+                <th class="min-w-150px"><div class="d-flex align-items-center">
+                    <div class="symbol symbol-25px symbol-circle flex-shrink-0">@if (d.PhotoPath != null) {<img src="@d.PhotoPath" alt="" style="object-fit:cover" />} else {<span class="symbol-label fw-bold fs-9 hp-initials">@HospitalUi.Initials(d.Row.NameEn ?? d.Row.Name)</span>}</div>
+                    <span class="ms-2 fs-8 text-gray-800 text-truncate"><bdi>@DisplayName.Of(d.Row.Name, d.Row.NameEn)</bdi></span></div></th>
+            }
+        </tr></thead>
+        <tbody>
+            @for (int i = 0; i < Model.Minutes.Count; i++)
+            {
+                int m = Model.Minutes[i]; int nextM = i + 1 < Model.Minutes.Count ? Model.Minutes[i + 1] : m + 30;
+                bool now = m <= Model.NowMinute && Model.NowMinute < nextM;
+                <tr class="@(now ? "bg-light-danger" : "")">
+                    <td class="ps-3 fw-bold hp-num">@Time(m)</td>
+                    @foreach (var d in Model.Doctors)
+                    {
+                        <td class="p-1">
+                            @if (Model.Taken.TryGetValue((d.Row.ID, m), out var r))
+                            {
+                                <a href="#" data-open-patient="@r.A.PatientId" class="d-block rounded px-3 py-2 bg-light-@Tone(r.Stage)">
+                                    <div class="fw-bold text-gray-800 fs-8 text-truncate"><bdi>@DisplayName.Of(r.A.PatientName, r.A.PatientNameEn)</bdi></div>
+                                    <div class="fs-9 text-muted">@T["desk:" + r.Stage]@if (r.A.QueueNumber is int q) {<text> · </text><span class="hp-num">@q</span>}</div>
+                                </a>
+                            }
+                            else if (Model.Free.Contains((d.Row.ID, m)))
+                            {
+                                <a href="#" class="d-block rounded px-3 py-2 border border-dashed border-gray-300 text-center text-muted fs-8 bg-hover-light-primary" data-grid-free="@m" data-doctor="@d.Row.ID" data-time="@Time(m)"><i class="ki-outline ki-plus fs-7"></i> @T["free"]</a>
+                            }
+                        </td>
+                    }
+                </tr>
+            }
+        </tbody>
+    </table></div>
+}

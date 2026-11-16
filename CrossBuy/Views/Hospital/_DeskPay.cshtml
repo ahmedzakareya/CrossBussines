@@ -1,0 +1,53 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model IReadOnlyList<HospitalBillRow>
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@* H140: collecting at the counter — the patient's open bills, each with what is still due, the amount and the method.
+   The billing service takes the money (its receipt number, its ledger posting, never more than is due) into the
+   cashier's open shift; with no open shift the window says so and points to the cashier. *@
+@{
+    var p = (HospitalPatient)ViewBag.Patient; var shift = ViewBag.Shift as HospitalCashierShift;
+    var inv = System.Globalization.CultureInfo.InvariantCulture; int dp = ViewBag.MoneyDp is int d0 ? d0 : 2; string cur = ViewBag.Currency as string ?? "";
+    string Money(decimal v) => v.ToString("N" + dp, inv);
+    string Raw(decimal v) => Math.Round(v, dp).ToString("0." + new string('#', Math.Max(dp, 1)), inv);
+}
+<div class="d-flex align-items-center mb-6">
+    <div class="symbol symbol-45px symbol-circle me-3 flex-shrink-0">@if (p.PhotoPath != null) {<img src="@p.PhotoPath" alt="" style="object-fit:cover" />} else {<span class="symbol-label fw-bold hp-initials">@HospitalUi.Initials(p.NameEn ?? p.Name)</span>}</div>
+    <div><div class="fw-bold text-gray-900 fs-6"><bdi>@DisplayName.Of(p.Name, p.NameEn)</bdi></div><div class="text-muted fs-7 hp-num">@p.Mrn</div></div>
+    <div class="ms-auto text-end"><div class="text-muted fs-8">@T["Total due"]</div><div class="fw-bold fs-2 text-primary"><span class="hp-num">@Money(Model.Sum(b => b.Total - b.Paid))</span> <span class="fs-8 text-muted fw-semibold">@cur</span></div></div>
+</div>
+@if (shift == null)
+{
+    <div class="notice d-flex bg-light-danger rounded border-danger border border-dashed p-5 mb-6">
+        <i class="ki-outline ki-wallet fs-2tx text-danger me-4"></i>
+        <div class="d-flex flex-stack flex-grow-1 flex-wrap gap-3"><div class="fw-semibold"><div class="fs-6 text-gray-900 fw-bold">@T["No open shift"]</div><div class="fs-7 text-gray-700">@T["Open a shift at the cashier to take money at the counter."]</div></div>
+            <a href="@Url.Action("Cashier", "Hospital")" class="btn btn-sm btn-danger">@T["Open a shift"]</a></div>
+    </div>
+}
+@if (Model.Count == 0)
+{
+    <div class="text-center text-muted py-10"><i class="ki-outline ki-check-circle fs-3x text-success d-block mb-3"></i>@T["Nothing owed"]</div>
+}
+@if (Model.Count > 0)
+{
+    <div class="table-responsive mh-500px scroll-y"><table class="table align-middle gs-0 gy-3 mb-0">
+        <thead><tr class="fw-bold fs-8 text-uppercase text-muted">
+            <th class="ps-2">@T["Bill"]</th><th class="text-end">@T["Due"]</th><th class="w-125px">@T["Amount"]</th><th class="w-150px">@T["Method"]</th><th class="text-end pe-2"></th>
+        </tr></thead>
+        <tbody class="fs-7">
+            @foreach (var b in Model)
+            {
+                decimal due = b.Total - b.Paid;
+                <tr data-bill="@b.Id">
+                    <td class="ps-2"><a href="@Url.Action("Bill", "Hospital", new { id = b.Id })" class="fw-bold text-gray-900 text-hover-primary hp-num">@b.BillNo</a>
+                        <div class="text-muted fs-8"><span class="hp-num">@HospitalNursingService.UtcToWard(b.OpenedAt).ToString("yyyy-MM-dd")</span> · @(b.Inpatient ? T["Inpatient"] : T["Outpatient"])@if (b.Paid > 0) {<text> · @T["Paid"] </text><span class="hp-num">@Money(b.Paid)</span>}</div></td>
+                    <td class="text-end fw-bold text-danger hp-num">@Money(due)</td>
+                    <td><input type="number" min="0" step="any" class="form-control form-control-sm form-control-solid hp-num" value="@Raw(due)" data-amount /></td>
+                    <td><select class="form-select form-select-sm form-select-solid" data-method>@foreach (var m in HospitalPaymentMethods.All) { <option value="@m">@T["pm:" + m]</option> }</select></td>
+                    <td class="text-end pe-2"><button type="button" class="btn btn-sm btn-primary text-nowrap" data-desk-collect @(shift == null ? "disabled" : "")><i class="ki-outline ki-wallet fs-5"></i>@T["Collect payment"]</button></td>
+                </tr>
+            }
+        </tbody>
+    </table></div>
+}

@@ -67,6 +67,51 @@ namespace CrossBuy.Tests
 			Assert.Null(HospitalFrontDeskRules.WalkInSlot(new[] { 540 }, 600));
 		}
 
+		// ---------------- H140: the workspace ----------------
+
+		[Fact]
+		public void A_picked_walk_in_slot_must_still_be_free_and_not_past()
+		{
+			var free = new[] { 540, 600, 630 };
+			Assert.Equal(600, HospitalFrontDeskRules.ChosenSlot(free, 595, 600));
+			Assert.Null(HospitalFrontDeskRules.ChosenSlot(free, 595, 615));    // not free: refused, never moved to another slot
+			Assert.Null(HospitalFrontDeskRules.ChosenSlot(free, 595, 540));    // long past
+			Assert.Equal(540, HospitalFrontDeskRules.ChosenSlot(free, 548, 540));   // began 8 minutes ago: still fine
+		}
+
+		[Fact]
+		public void The_grid_has_a_row_for_every_booked_or_free_time_once_in_order()
+		{
+			Assert.Equal(new[] { 480, 500, 510, 540 }, HospitalFrontDeskRules.GridMinutes(new[] { 540, 480, 510 }, new[] { 500, 510, 480 }));
+			Assert.Empty(HospitalFrontDeskRules.GridMinutes(Array.Empty<int>(), Array.Empty<int>()));
+		}
+
+		[Fact]
+		public void How_full_a_day_is_counts_booked_against_what_is_still_free()
+		{
+			Assert.Equal(0, HospitalFrontDeskRules.Fill(0, 0));
+			Assert.Equal(100, HospitalFrontDeskRules.Fill(6, 0));
+			Assert.Equal(75, HospitalFrontDeskRules.Fill(6, 2));
+		}
+
+		[Fact]
+		public void The_figures_count_the_late_the_walk_ins_and_the_insurance_to_verify_among_the_living_only()
+		{
+			HospitalDeskRow R(string status, int start, bool late, HospitalDeskFlags? f) => new(
+				new HospitalAppointmentView(start, 1, "x", "x", "MRN-1", null, "M", 1, Now.Date, start, 15, HospitalVisitTypes.New, status, null, null, null, null, null),
+				"d", null, null, null, null, HospitalFrontDeskRules.Stage(status), null, late, f);
+			HospitalDeskFlags F(bool unverified, bool walkIn) => new(null, 0, !unverified, unverified, null, null, false, walkIn);
+			var rows = new[]
+			{
+				R(HospitalAppointmentStatus.Booked, 540, true, F(true, false)),       // late, insurance to verify
+				R(HospitalAppointmentStatus.Arrived, 560, false, F(true, true)),      // waiting walk-in, insurance to verify
+				R(HospitalAppointmentStatus.Done, 500, false, F(true, false)),        // done: nothing left to verify before the doctor
+				R(HospitalAppointmentStatus.Cancelled, 520, false, F(true, true)),    // cancelled: counts nowhere
+			};
+			var s = HospitalFrontDeskService.Stats(rows, null);
+			Assert.Equal((3, 1, 1, 2), (s.Expected, s.Late, s.WalkIns, s.ToVerify));
+		}
+
 		[Fact]
 		public void Identity_and_the_payer_need_attention_and_nothing_else_does()
 		{

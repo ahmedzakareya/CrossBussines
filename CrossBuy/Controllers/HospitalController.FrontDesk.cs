@@ -2,22 +2,26 @@ using CrossBuy.BL;
 using CrossBuy.BL.Hospital;
 using CrossBuy.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace CrossBuy.Controllers
 {
 	// ==========================================================================================
-	// HOSPITAL H139: the front desk, one workspace. The screen carries:
-	//   · the one search;
-	//   · the day's board (searched, filtered, paged);
-	//   · the inbox;
-	//   · the patient card in a side drawer, with check-in, no-show and walk-in.
-	// The appointment endpoints belong to the outpatient screens. The desk calls the outpatient service through its own
-	// actions here.
+	// HOSPITAL H139/H140: the front desk, one workspace, as the approved prototype lays it out
+	// (design-output/hospital-prototype, route #/frontdesk). The screen carries:
+	//   · the desk strip: who sits here, the shift, the cash in the drawer, the last number called, the clock;
+	//   · the one search, narrowed by kind (name, file, ID, phone, queue);
+	//   · eight figures; the clinics right now (serving, waiting, delay, next free slot, how full);
+	//   · today's board as a list (searched, filtered, paged, flagged) or as a time grid;
+	//   · the patient at the counter (check-in steps, money, prints) beside the board;
+	//   · the desk's work and the drawer;
+	//   · the walk-in window (the doctors' free slots) and the payment window (the patient's open bills).
+	// The appointment rules belong to the outpatient service and the money to the billing service; the desk calls them.
 	// ==========================================================================================
 	public partial class HospitalController
 	{
 		public sealed class HospitalDeskMoveInput { public string? To { get; set; } }
-		public sealed class HospitalDeskWalkInInput { public int PatientId { get; set; } public int PractitionerId { get; set; } public string? VisitType { get; set; } }
+		public sealed class HospitalDeskWalkInInput { public int PatientId { get; set; } public int PractitionerId { get; set; } public string? VisitType { get; set; } public int? StartMinute { get; set; } }
 
 		private HospitalFrontDeskService? _frontDesk;
 		private HospitalFrontDeskService FrontDeskSvc => _frontDesk ??= ActivatorUtilities.CreateInstance<HospitalFrontDeskService>(HttpContext.RequestServices,
@@ -38,24 +42,25 @@ namespace CrossBuy.Controllers
 			if (ctx == null) return RedirectToAction("Index", "Home");
 			Chrome();
 			var now = DateTime.UtcNow; var (today, minute, local) = DeskClock(now);
-			var board = await FrontDeskSvc.BoardAsync(ctx, today, minute, now, ct);
+			var board = await FrontDeskSvc.FlagAsync(ctx, await FrontDeskSvc.BoardAsync(ctx, today, minute, now, ct), today, now, ct);
 			var where = await ActivatorUtilities.CreateInstance<HospitalWhereaboutsService>(HttpContext.RequestServices).CountsAsync(ctx, local, ct);
 			ViewBag.Inbox = await FrontDeskSvc.InboxAsync(ctx, now, ct);
 			ViewBag.StageCounts = board.GroupBy(r => r.Stage).ToDictionary(g => g.Key, g => g.Count());
 			ViewBag.Departments = await _outpatient.DepartmentsAsync(ctx, ct);
 			ViewBag.Doctors = await _outpatient.PractitionersAsync(ctx, ct);
-			ViewBag.Today = today;
+			ViewBag.Clinics = await FrontDeskSvc.ClinicsAsync(ctx, local, now, ct);
+			ViewBag.Me = await FrontDeskSvc.MeAsync(ctx, today, ct);
+			ViewBag.Next = board.FirstOrDefault(r => r.Stage == HospitalDeskStage.Expected && !r.Late) ?? board.FirstOrDefault(r => r.Stage == HospitalDeskStage.Expected);
+			ViewBag.Today = today; ViewBag.NowLocal = local;
+			ViewBag.CanBook = await _access.CanAsync(ctx, HospitalActions.Book, null, ct);
+			ViewBag.CanBill = await _access.CanAsync(ctx, HospitalActions.Bill, null, ct);
+			await MoneyFormatAsync(ctx, ct);
 			return View(HospitalFrontDeskService.Stats(board, where));
 		}
 
-		[HttpGet("FrontDesk/Board")]
-		[HospitalPerm(HospitalActions.Read)]
-		public async Task<IActionResult> FrontDeskBoard(string? stage, int? department, int? doctor, string? q, int page = 1, int pageSize = 25, CancellationToken ct = default)
+		private async Task<IEnumerable<HospitalDeskRow>> DeskRowsAsync(Models.Platform.BusinessContext ctx, string? stage, int? department, int? doctor, string? q, DateTime now, CancellationToken ct)
 		{
-			var ctx = await ContextAsync(ct);
-			if (ctx == null) return NotFound();
-			Paging(ref page, ref pageSize);
-			var now = DateTime.UtcNow; var (today, minute, _) = DeskClock(now);
+			var (today, minute, _) = DeskClock(now);
 			IEnumerable<HospitalDeskRow> rows = await FrontDeskSvc.BoardAsync(ctx, today, minute, now, ct);
 			if (HospitalDeskStage.All.Contains(stage ?? "")) rows = rows.Where(r => r.Stage == stage);
 			if (doctor is int d) rows = rows.Where(r => r.A.PractitionerId == d);
@@ -69,20 +74,50 @@ namespace CrossBuy.Controllers
 				var t = q.Trim();
 				rows = rows.Where(r => r.A.Mrn.Contains(t) || r.A.QueueNumber?.ToString() == t || HospitalFrontDeskRules.NameScore(t, r.A.PatientName, r.A.PatientNameEn) >= 50);
 			}
-			var list = rows.ToList();
+			return rows;
+		}
+
+		[HttpGet("FrontDesk/Board")]
+		[HospitalPerm(HospitalActions.Read)]
+		public async Task<IActionResult> FrontDeskBoard(string? stage, int? department, int? doctor, string? q, int page = 1, int pageSize = 25, CancellationToken ct = default)
+		{
+			var ctx = await ContextAsync(ct);
+			if (ctx == null) return NotFound();
+			Paging(ref page, ref pageSize);
+			var now = DateTime.UtcNow;
+			var list = (await DeskRowsAsync(ctx, stage, department, doctor, q, now, ct)).ToList();
 			PageHeaders(list.Count, page, pageSize);
-			ViewBag.Today = today;
-			return PartialView("_DeskRows", list.Skip((page - 1) * pageSize).Take(pageSize).ToList());
+			ViewBag.Today = DeskClock(now).Today;
+			ViewBag.CanBook = await _access.CanAsync(ctx, HospitalActions.Book, null, ct);
+			ViewBag.CanBill = await _access.CanAsync(ctx, HospitalActions.Bill, null, ct);
+			await MoneyFormatAsync(ctx, ct);
+			return PartialView("_DeskRows", await FrontDeskSvc.FlagAsync(ctx, list.Skip((page - 1) * pageSize).Take(pageSize).ToList(), DeskClock(now).Today, now, ct));
+		}
+
+		[HttpGet("FrontDesk/Grid")]
+		[HospitalPerm(HospitalActions.Read)]
+		public async Task<IActionResult> FrontDeskGrid(int? department, int? doctor, CancellationToken ct = default)
+		{
+			var ctx = await ContextAsync(ct);
+			if (ctx == null) return NotFound();
+			var now = DateTime.UtcNow; var (_, _, local) = DeskClock(now);
+			var rows = (await DeskRowsAsync(ctx, null, department, doctor, null, now, ct)).ToList();
+			var grid = await FrontDeskSvc.GridAsync(ctx, rows, local, now, department, ct);
+			if (doctor is int d) grid = grid with { Doctors = grid.Doctors.Where(x => x.Row.ID == d).ToList() };
+			return PartialView("_DeskGrid", grid);
 		}
 
 		[HttpGet("FrontDesk/Search")]
 		[HospitalPerm(HospitalActions.Read)]
-		public async Task<IActionResult> FrontDeskSearch(string? q, CancellationToken ct = default)
+		public async Task<IActionResult> FrontDeskSearch(string? q, string? kind, CancellationToken ct = default)
 		{
 			var ctx = await ContextAsync(ct);
 			if (ctx == null) return NotFound();
 			ViewBag.Query = q;
-			return PartialView("_DeskSearch", await FrontDeskSvc.SearchAsync(ctx, q, DeskClock(DateTime.UtcNow).Today, 12, ct));
+			IEnumerable<HospitalDeskCandidate> hits = await FrontDeskSvc.SearchAsync(ctx, q, DeskClock(DateTime.UtcNow).Today, 12, ct);
+			if (kind is "name" or "mrn" or "id" or "phone" or "queue") hits = hits.Where(h => h.Reason == kind);
+			ViewBag.CanBook = await _access.CanAsync(ctx, HospitalActions.Book, null, ct);
+			return PartialView("_DeskSearch", hits.ToList());
 		}
 
 		[HttpGet("FrontDesk/Patient/{id:int}")]
@@ -95,8 +130,37 @@ namespace CrossBuy.Controllers
 			var card = await FrontDeskSvc.CardAsync(ctx, id, today, minute, now, ct);
 			if (card == null) return NotFound();
 			ViewBag.CanBook = await _access.CanAsync(ctx, HospitalActions.Book, null, ct);
+			ViewBag.CanBill = await _access.CanAsync(ctx, HospitalActions.Bill, null, ct);
 			await MoneyFormatAsync(ctx, ct);
 			return PartialView("_DeskCard", card);
+		}
+
+		[HttpGet("FrontDesk/WalkInSlots")]
+		[HospitalPerm(HospitalActions.Book)]
+		public async Task<IActionResult> FrontDeskWalkInSlots(int patient, int? doctor, CancellationToken ct = default)
+		{
+			var ctx = await ContextAsync(ct);
+			if (ctx == null) return NotFound();
+			var now = DateTime.UtcNow; var (today, _, local) = DeskClock(now);
+			var p = await _db.HospitalPatients.AsNoTracking().Where(x => x.ID == patient && x.CompanyId == ctx.CompanyId).Select(x => new { x.ID, x.Name, x.NameEn, x.Mrn, x.PhotoPath }).FirstOrDefaultAsync(ct);
+			if (p == null) return NotFound();
+			ViewBag.Patient = (p.ID, p.Name, p.NameEn, p.Mrn, p.PhotoPath);
+			ViewBag.Doctor = doctor;
+			return PartialView("_DeskWalkIn", await FrontDeskSvc.WalkInSlotsAsync(ctx, local, now, ct));
+		}
+
+		[HttpGet("FrontDesk/Patient/{id:int}/Pay")]
+		[HospitalPerm(HospitalActions.Bill)]
+		public async Task<IActionResult> FrontDeskPay(int id, CancellationToken ct = default)
+		{
+			var ctx = await ContextAsync(ct);
+			if (ctx == null) return NotFound();
+			var p = await _db.HospitalPatients.AsNoTracking().FirstOrDefaultAsync(x => x.ID == id && x.CompanyId == ctx.CompanyId, ct);
+			if (p == null) return NotFound();
+			ViewBag.Patient = p;
+			ViewBag.Shift = ctx.EmployeeId is int me ? await _billing.OpenShiftOfAsync(ctx, me, ct) : null;
+			await MoneyFormatAsync(ctx, ct);
+			return PartialView("_DeskPay", await FrontDeskSvc.OpenBillsAsync(ctx, id, DateTime.UtcNow, ct));
 		}
 
 		[HttpPost("FrontDesk/Appointments/{id:int}/Move"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Book)]
@@ -113,7 +177,7 @@ namespace CrossBuy.Controllers
 			var ctx = await ContextAsync(ct);
 			if (ctx == null) return NotFound(new { ok = false, code = "not_found" });
 			var now = DateTime.UtcNow;
-			return Result(await FrontDeskSvc.WalkInAsync(ctx, input?.PatientId ?? 0, input?.PractitionerId ?? 0, input?.VisitType, ctx.EmployeeId, now, DeskClock(now).NowLocal, ct));
+			return Result(await FrontDeskSvc.WalkInAsync(ctx, input?.PatientId ?? 0, input?.PractitionerId ?? 0, input?.VisitType, ctx.EmployeeId, now, DeskClock(now).NowLocal, ct, input?.StartMinute));
 		}
 	}
 }

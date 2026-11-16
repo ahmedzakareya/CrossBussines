@@ -1,0 +1,425 @@
+{
+ "unit": "H140 - the front desk rebuilt from the approved prototype: desk strip, clinics now, flagged board and time grid, the counter, walk-in slots, collect at the counter, the drawer",
+ "strings": {
+  "15 minutes past their time": {
+   "ar": "تجاوزوا موعدهم بربع ساعة",
+   "en": "15 minutes past their time",
+   "fr": "15 minutes après leur heure"
+  },
+  "At the counter": {
+   "ar": "عند الشباك",
+   "en": "At the counter",
+   "fr": "Au guichet"
+  },
+  "Between patients": {
+   "ar": "بين مريضين",
+   "en": "Between patients",
+   "fr": "Entre deux patients"
+  },
+  "Blood": {
+   "ar": "فصيلة",
+   "en": "Blood",
+   "fr": "Groupe"
+  },
+  "Book {0} at {1} and check them in now?": {
+   "ar": "حجز ⁦{0}⁩ الساعة ⁦{1}⁩ وتسجيل حضوره الآن؟",
+   "en": "Book {0} at {1} and check them in now?",
+   "fr": "Réserver {0} à {1} et l'enregistrer maintenant ?"
+  },
+  "Booked today": {
+   "ar": "مواعيد اليوم",
+   "en": "Booked today",
+   "fr": "Rendez-vous du jour"
+  },
+  "Booking requests patients sent from the portal, waiting for a slot.": {
+   "ar": "طلبات حجز أرسلها المرضى من البوابة وتنتظر موعدًا.",
+   "en": "Booking requests patients sent from the portal, waiting for a slot.",
+   "fr": "Demandes envoyées depuis le portail, en attente d'un créneau."
+  },
+  "Cash in the drawer": {
+   "ar": "النقدية في الدرج",
+   "en": "Cash in the drawer",
+   "fr": "Espèces en caisse"
+  },
+  "Check-in steps": {
+   "ar": "خطوات تسجيل الحضور",
+   "en": "Check-in steps",
+   "fr": "Étapes d'enregistrement"
+  },
+  "Clinics right now": {
+   "ar": "العيادات الآن",
+   "en": "Clinics right now",
+   "fr": "Les consultations en ce moment"
+  },
+  "Collect at the counter": {
+   "ar": "التحصيل عند الشباك",
+   "en": "Collect at the counter",
+   "fr": "Encaisser au guichet"
+  },
+  "Collected today": {
+   "ar": "تحصيل اليوم",
+   "en": "Collected today",
+   "fr": "Encaissé aujourd'hui"
+  },
+  "Collected; the receipt is in the bill.": {
+   "ar": "تم التحصيل؛ الإيصال في الفاتورة.",
+   "en": "Collected; the receipt is in the bill.",
+   "fr": "Encaissé ; le reçu est dans la facture."
+  },
+  "Complete": {
+   "ar": "استكمل",
+   "en": "Complete",
+   "fr": "Compléter"
+  },
+  "Contact details": {
+   "ar": "بيانات التواصل",
+   "en": "Contact details",
+   "fr": "Coordonnées"
+  },
+  "Delay": {
+   "ar": "التأخير",
+   "en": "Delay",
+   "fr": "Retard"
+  },
+  "Doctor · payer": {
+   "ar": "الطبيب · الجهة",
+   "en": "Doctor · payer",
+   "fr": "Médecin · payeur"
+  },
+  "Duplicates": {
+   "ar": "ملفات مكررة",
+   "en": "Duplicates",
+   "fr": "Doublons"
+  },
+  "Files that look like the same person, to review and merge.": {
+   "ar": "ملفات تبدو لنفس الشخص، للمراجعة والدمج.",
+   "en": "Files that look like the same person, to review and merge.",
+   "fr": "Dossiers qui semblent être la même personne, à revoir et fusionner."
+  },
+  "Forms patients filled on the tablet, to review and link to a file.": {
+   "ar": "نماذج ملأها المرضى على التابلت، للمراجعة والربط بملف.",
+   "en": "Forms patients filled on the tablet, to review and link to a file.",
+   "fr": "Formulaires remplis sur la tablette, à revoir et rattacher à un dossier."
+  },
+  "Freed slots offered to patients waiting for an earlier one.": {
+   "ar": "مواعيد أُخليت وعُرضت على مرضى ينتظرون موعدًا أقرب.",
+   "en": "Freed slots offered to patients waiting for an earlier one.",
+   "fr": "Créneaux libérés proposés aux patients qui attendent plus tôt."
+  },
+  "I collected": {
+   "ar": "حصّلت",
+   "en": "I collected",
+   "fr": "J'ai encaissé"
+  },
+  "Incomplete registration": {
+   "ar": "تسجيل غير مكتمل",
+   "en": "Incomplete registration",
+   "fr": "Enregistrement incomplet"
+  },
+  "Insurance does not cover today": {
+   "ar": "التأمين لا يغطي اليوم",
+   "en": "Insurance does not cover today",
+   "fr": "L'assurance ne couvre pas aujourd'hui"
+  },
+  "Insurance to verify": {
+   "ar": "تأمين يحتاج تحقق",
+   "en": "Insurance to verify",
+   "fr": "Assurance à vérifier"
+  },
+  "Known by the photo": {
+   "ar": "معروف بالصورة",
+   "en": "Known by the photo",
+   "fr": "Identifié par la photo"
+  },
+  "Last called": {
+   "ar": "آخر رقم نُودي",
+   "en": "Last called",
+   "fr": "Dernier appelé"
+  },
+  "Matched by": {
+   "ar": "طابق بـ",
+   "en": "Matched by",
+   "fr": "Trouvé par"
+  },
+  "My drawer": {
+   "ar": "درجي",
+   "en": "My drawer",
+   "fr": "Ma caisse"
+  },
+  "My last receipts": {
+   "ar": "آخر إيصالاتي",
+   "en": "My last receipts",
+   "fr": "Mes derniers reçus"
+  },
+  "Next expected": {
+   "ar": "المتوقع التالي",
+   "en": "Next expected",
+   "fr": "Prochain attendu"
+  },
+  "Next free": {
+   "ar": "أقرب موعد خالٍ",
+   "en": "Next free",
+   "fr": "Prochain libre"
+  },
+  "No ID and no photo on file": {
+   "ar": "لا هوية ولا صورة في الملف",
+   "en": "No ID and no photo on file",
+   "fr": "Ni pièce ni photo au dossier"
+  },
+  "No clinic works today.": {
+   "ar": "لا عيادة تعمل اليوم.",
+   "en": "No clinic works today.",
+   "fr": "Aucune consultation aujourd'hui."
+  },
+  "No free slot left today": {
+   "ar": "لا مواعيد خالية متبقية اليوم",
+   "en": "No free slot left today",
+   "fr": "Plus de créneau libre aujourd'hui"
+  },
+  "No mobile on file": {
+   "ar": "لا جوال في الملف",
+   "en": "No mobile on file",
+   "fr": "Pas de mobile au dossier"
+  },
+  "No open shift": {
+   "ar": "لا وردية مفتوحة",
+   "en": "No open shift",
+   "fr": "Aucune session ouverte"
+  },
+  "No open shift — open one": {
+   "ar": "لا وردية مفتوحة — افتح واحدة",
+   "en": "No open shift — open one",
+   "fr": "Aucune session — en ouvrir une"
+  },
+  "No photo yet": {
+   "ar": "لا صورة بعد",
+   "en": "No photo yet",
+   "fr": "Pas encore de photo"
+  },
+  "No receipt yet today.": {
+   "ar": "لا إيصالات اليوم بعد.",
+   "en": "No receipt yet today.",
+   "fr": "Aucun reçu aujourd'hui."
+  },
+  "Not signed yet": {
+   "ar": "لم يوقّع بعد",
+   "en": "Not signed yet",
+   "fr": "Pas encore signé"
+  },
+  "Nothing owed": {
+   "ar": "لا مستحقات",
+   "en": "Nothing owed",
+   "fr": "Rien de dû"
+  },
+  "Nothing waiting": {
+   "ar": "لا شيء ينتظر",
+   "en": "Nothing waiting",
+   "fr": "Rien en attente"
+  },
+  "On file": {
+   "ar": "موجودة في الملف",
+   "en": "On file",
+   "fr": "Au dossier"
+  },
+  "Open a shift": {
+   "ar": "افتح وردية",
+   "en": "Open a shift",
+   "fr": "Ouvrir une session"
+  },
+  "Open a shift at the cashier to take money at the counter.": {
+   "ar": "افتح وردية في الخزينة لتحصّل عند الشباك.",
+   "en": "Open a shift at the cashier to take money at the counter.",
+   "fr": "Ouvrez une session à la caisse pour encaisser au guichet."
+  },
+  "Open at the counter": {
+   "ar": "افتح عند الشباك",
+   "en": "Open at the counter",
+   "fr": "Ouvrir au guichet"
+  },
+  "Open insurance": {
+   "ar": "افتح التأمين",
+   "en": "Open insurance",
+   "fr": "Ouvrir l'assurance"
+  },
+  "Open since": {
+   "ar": "مفتوحة منذ",
+   "en": "Open since",
+   "fr": "Ouverte depuis"
+  },
+  "Open the list": {
+   "ar": "افتح القائمة",
+   "en": "Open the list",
+   "fr": "Ouvrir la liste"
+  },
+  "Open the patient at the counter first.": {
+   "ar": "افتح المريض عند الشباك أولًا.",
+   "en": "Open the patient at the counter first.",
+   "fr": "Ouvrez d'abord le patient au guichet."
+  },
+  "Open the requests": {
+   "ar": "افتح الطلبات",
+   "en": "Open the requests",
+   "fr": "Ouvrir les demandes"
+  },
+  "Open the waitlist": {
+   "ar": "افتح قائمة الانتظار",
+   "en": "Open the waitlist",
+   "fr": "Ouvrir la liste d'attente"
+  },
+  "Owes": {
+   "ar": "مديونية",
+   "en": "Owes",
+   "fr": "Doit"
+  },
+  "Patients registered without an identity, to identify and complete.": {
+   "ar": "مرضى سُجّلوا بلا هوية، للتعرّف عليهم واستكمالهم.",
+   "en": "Patients registered without an identity, to identify and complete.",
+   "fr": "Patients enregistrés sans identité, à identifier et compléter."
+  },
+  "Patients waiting": {
+   "ar": "مرضى ينتظرون",
+   "en": "Patients waiting",
+   "fr": "Patients en attente"
+  },
+  "Photo": {
+   "ar": "الصورة",
+   "en": "Photo",
+   "fr": "Photo"
+  },
+  "Pick the next free slot": {
+   "ar": "اختر أقرب موعد خالٍ",
+   "en": "Pick the next free slot",
+   "fr": "Choisissez le prochain créneau libre"
+  },
+  "Pre-authorisations waiting for the insurer's answer.": {
+   "ar": "موافقات مسبقة تنتظر رد شركة التأمين.",
+   "en": "Pre-authorisations waiting for the insurer's answer.",
+   "fr": "Accords préalables en attente de l'assureur."
+  },
+  "Read the ID card": {
+   "ar": "قراءة بطاقة الهوية",
+   "en": "Read the ID card",
+   "fr": "Lire la carte d'identité"
+  },
+  "Review and merge": {
+   "ar": "راجع وادمج",
+   "en": "Review and merge",
+   "fr": "Revoir et fusionner"
+  },
+  "Review the forms": {
+   "ar": "راجع النماذج",
+   "en": "Review the forms",
+   "fr": "Revoir les formulaires"
+  },
+  "Scan the card now: the reader types into the search.": {
+   "ar": "امسح البطاقة الآن: القارئ يكتب في البحث.",
+   "en": "Scan the card now: the reader types into the search.",
+   "fr": "Passez la carte : le lecteur écrit dans la recherche."
+  },
+  "Search by name in Arabic or English, file, ID, mobile or queue number…": {
+   "ar": "ابحث بالاسم عربي أو إنجليزي، رقم الملف، الهوية، الجوال أو رقم الدور…",
+   "en": "Search by name in Arabic or English, file, ID, mobile or queue number…",
+   "fr": "Nom en arabe ou en latin, dossier, pièce, mobile ou n° de file…"
+  },
+  "Search for the patient or pick one from the board.": {
+   "ar": "ابحث عن المريض أو اختره من اللوحة.",
+   "en": "Search for the patient or pick one from the board.",
+   "fr": "Cherchez le patient ou choisissez-le sur le tableau."
+  },
+  "Serving": {
+   "ar": "يخدم الآن",
+   "en": "Serving",
+   "fr": "En cours"
+  },
+  "Sign": {
+   "ar": "وقّع",
+   "en": "Sign",
+   "fr": "Signer"
+  },
+  "The desk's work": {
+   "ar": "مهام الاستقبال",
+   "en": "The desk's work",
+   "fr": "Le travail de l'accueil"
+  },
+  "The patient is booked, checked in and given a queue number in one step.": {
+   "ar": "يُحجز المريض ويُسجَّل حضوره ويأخذ رقم الدور في خطوة واحدة.",
+   "en": "The patient is booked, checked in and given a queue number in one step.",
+   "fr": "Le patient est réservé, enregistré et reçoit un numéro en une étape."
+  },
+  "The patient you are serving": {
+   "ar": "المريض الذي تخدمه الآن",
+   "en": "The patient you are serving",
+   "fr": "Le patient que vous servez"
+  },
+  "The policy does not cover today": {
+   "ar": "الوثيقة لا تغطي اليوم",
+   "en": "The policy does not cover today",
+   "fr": "La police ne couvre pas aujourd'hui"
+  },
+  "Those waiting first, the longest wait on top": {
+   "ar": "الأولوية لمن ينتظر، والأطول انتظارًا أولًا",
+   "en": "Those waiting first, the longest wait on top",
+   "fr": "Les patients en attente d'abord, la plus longue attente en haut"
+  },
+  "Time grid": {
+   "ar": "جدول زمني",
+   "en": "Time grid",
+   "fr": "Grille horaire"
+  },
+  "Today's visit": {
+   "ar": "موعد اليوم",
+   "en": "Today's visit",
+   "fr": "Visite du jour"
+  },
+  "Total due": {
+   "ar": "الإجمالي المستحق",
+   "en": "Total due",
+   "fr": "Total dû"
+  },
+  "Unidentified patient": {
+   "ar": "مريض مجهول",
+   "en": "Unidentified patient",
+   "fr": "Patient non identifié"
+  },
+  "Waiting screen": {
+   "ar": "شاشة الانتظار",
+   "en": "Waiting screen",
+   "fr": "Écran d'attente"
+  },
+  "Walk-in": {
+   "ar": "بدون موعد",
+   "en": "Walk-in",
+   "fr": "Sans rendez-vous"
+  },
+  "Who is served, how many wait, the delay": {
+   "ar": "من يُخدم، كم ينتظر، والتأخير",
+   "en": "Who is served, how many wait, the delay",
+   "fr": "Qui est servi, combien attendent, le retard"
+  },
+  "before the doctor": {
+   "ar": "قبل دخول الطبيب",
+   "en": "before the doctor",
+   "fr": "avant le médecin"
+  },
+  "{0} receipts": {
+   "ar": "⁦{0}⁩ إيصال",
+   "en": "{0} receipts",
+   "fr": "{0} reçus"
+  },
+  "{0} waiting": {
+   "ar": "⁦{0}⁩ ينتظرون",
+   "en": "{0} waiting",
+   "fr": "{0} en attente"
+  },
+  "{0} walk-ins": {
+   "ar": "منها ⁦{0}⁩ بدون موعد",
+   "en": "{0} walk-ins",
+   "fr": "dont {0} sans rendez-vous"
+  },
+  "{0}% of the day": {
+   "ar": "⁦{0}⁩٪ من اليوم",
+   "en": "{0}% of the day",
+   "fr": "{0} % de la journée"
+  }
+ }
+}
