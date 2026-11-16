@@ -59,6 +59,18 @@ namespace CrossBuy.BL.Platform.Ai
 		private static readonly string[] Patients =
 			{ "مريض", "مرضى", "المرضى", "كام مريض", "patients", "how many patients" };
 
+		/// A BOOKING IS NOT A VISIT, AND THE TOTAL QUIETLY TREATS THEM AS ONE.
+		///
+		/// «كام زيارة عندنا» used to be answered with the CASH BALANCE; teaching the router to
+		/// bring it here fixed the routing and left a subtler fault behind. Asked for a number, the
+		/// composer collapses to a grand total — and that total counts the cancelled, the no-shows
+		/// and everything still only booked for a future date, none of which is a visit anybody
+		/// made. The figure is right for the question the surface answers and wrong for the one
+		/// that was asked, which is precisely when it has to say which is which.
+		private static readonly string[] Visits =
+			{ "زيارة", "زيارات", "الزيارات", "كشف", "كشوف", "الكشوف", "كام زيارة", "كام كشف",
+			  "visit", "visits", "consultation", "consultations", "how many visits" };
+
 		public override AskText? Caveat(string? question)
 		{
 			if (string.IsNullOrWhiteSpace(question)) return null;
@@ -70,6 +82,16 @@ namespace CrossBuy.BL.Platform.Ai
 				return AskText.Of(
 					"ده عدد المواعيد مش عدد المرضى — المريض الواحد ممكن يكون ليه أكتر من موعد:",
 					"This counts APPOINTMENTS, not patients — one patient can hold several:");
+
+			if (Mentions(Visits))
+				return AskText.Of(
+					"ده عدد المواعيد كلها — والملغاة واللي محدش حضرها واللي لسه محجوزة لأيام جاية "
+					+ "داخلة فيه، ودي مش زيارات حصلت. اللي اتعمل فعلًا هو اللي حالته «تم»، فاسأل "
+					+ "عن المواعيد حسب الحالة علشان تشوف الفرق:",
+					"This is the count of ALL appointments — the cancelled, the no-shows and those "
+					+ "still booked for a future date are in it, and none of those is a visit anyone "
+					+ "made. The ones that happened are those marked Done; ask for appointments by "
+					+ "status to see the split:");
 
 			if (Mentions(Timing))
 				return AskText.Of(

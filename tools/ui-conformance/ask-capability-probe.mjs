@@ -209,6 +209,23 @@ const NAMED = [
   ['المواعيد حسب الطبيب',     (n) => n > 1, 'grouped by practitioner'],
   ['اي ساعة فيها مواعيد اكتر', (n) => n > 1, 'the attached pronoun is scaffolding, not a value to hunt'],
 
+  // ---- WHAT THE HOSPITAL IS TREATING ----------------------------------------------------------
+  //
+  // 85 diagnoses on 68 consultations, and «ايه اكتر الامراض» used to land on the appointments
+  // surface, which knows when people came and nothing about why.
+  //
+  // THE SECONDARY CASE IS THE ONE THAT EARNS ITS KEEP. Grouped by diagnosis, an unfiltered answer
+  // returns the full limit of fifteen; filtered to the additional diagnoses it returns the handful
+  // of codes that are ever recorded alongside something else. A bound rather than an exact count,
+  // because the exact one moves the first time anybody sees a patient — but fifteen and a handful
+  // are far enough apart that the bound still tells a filter from no filter, which is the whole
+  // point of asserting a row count here at all.
+  ['ايه اكتر الامراض عندنا',   (n) => n > 1, 'the diagnoses ranked, not the appointment book'],
+  ['حالات الربو',               1,            'filtered to asthma: one code, not a ranking of fifteen'],
+  ['التشخيصات حسب القسم',      (n) => n > 1, 'grouped by department, which comes from the practitioner'],
+  ['التشخيصات الثانوية',        (n) => n > 0 && n < 10,
+   'filtered to the ADDITIONAL diagnoses: a handful of codes, not the full fifteen'],
+
 
 
 ];
@@ -429,6 +446,20 @@ const ENGLISH = [
   ['rejected claims',                'answer', 'claims surface, filtered by status'],
   ['claims by payer',                'answer', 'payer comes from the batch, not the claim'],
 
+  // ---- THE WORD "PRIMARY" IS INSIDE A DIAGNOSIS NAME ------------------------------------------
+  //
+  // This hospital records "Essential (primary) hypertension". The named-value filter walks the
+  // dimensions in DECLARATION order and takes the first that matches, so with the diagnosis column
+  // declared before the rank, «primary diagnoses» filtered to hypertension and returned a single
+  // confident row. Fifteen rows means it resolved to the RANK; one means the collision is back.
+  // There is no Arabic twin of this case because the collision does not exist in Arabic — which is
+  // exactly why a single-language run could never have found it.
+  ['primary diagnoses',              (n) => n > 1,
+   '"primary" must resolve to the rank, not to the hypertension that is spelt with it'],
+  ['secondary diagnoses',            (n) => n > 0 && n < 10, 'the Arabic twin of this filter, in English'],
+  ['asthma cases',                   1,        'a diagnosis NAMED in English reaches the filter'],
+  ['diagnoses by department',        'answer', 'the clinical surface, grouped'],
+
 ];
 
 try {
@@ -449,7 +480,15 @@ try {
                understood: d ? `${d.understood || ''}` : '' };
     }, [BASE, q]);
 
-    const routed = r.status === 200 && (typeof want === 'number'
+    // A BOUND IS AN ASSERTION TOO, and this loop could not express one. It understood a number and
+    // the word 'answer', and anything else fell through to the final branch — which expects a
+    // REFUSAL. So a case written as a predicate did not merely fail to be checked: it was checked
+    // against the opposite of what it claimed, and two correct answers were reported as defects.
+    // The Arabic loop above has taken a predicate since it was written; this is that window widened
+    // to match, not a claim relaxed to fit it.
+    const routed = r.status === 200 && (typeof want === 'function'
+      ? (r.ok === true && want(r.rows))
+      : typeof want === 'number'
       ? (r.ok === true && r.rows === want)
       : want === 'answer' ? (r.ok === true && r.rows > 0) : r.ok === false);
     const arabicLeak = ARABIC.test(r.say) || ARABIC.test(r.understood);
@@ -475,6 +514,13 @@ try {
 const MISSINGVALUE = [
   ['ar', 'المطالبات المرفوضة', 'no rejected lines exist: say so rather than answer about all of them'],
   ['en', 'rejected claims',  'same question, same obligation, in the other language'],
+
+  // MIGRAINE IS IN THE CATALOGUE AND NOBODY HAS EVER BEEN DIAGNOSED WITH IT. Eighteen of the
+  // fifty-three codes have ever been used, so most of this hospital's own vocabulary names zero
+  // rows — and a question using one of those words is the easiest place for this surface to answer
+  // confidently about everything instead of admitting it found nothing.
+  ['ar', 'كام حالة صداع نصفي',    'a code in the catalogue that no doctor has recorded'],
+  ['en', 'how many migraine cases', 'the same absent value, asked in the other language'],
 ];
 
 try {
@@ -499,6 +545,60 @@ try {
   }
 } catch (e) {
   console.error('NOT VERIFIED (missing value) —', e?.message ?? e);
+  await browser.close();
+  process.exit(2);
+}
+
+// ---- A FIGURE THAT IS RIGHT FOR A DIFFERENT QUESTION ------------------------------------------
+//
+// Every assertion above this point can be satisfied by a number. These cannot: they check that a
+// particular SENTENCE travels with the answer, because the failure they guard has a correct-looking
+// figure and no row count that could ever expose it.
+//
+// «كام زيارة عندنا» is the case that forced the block into existence, and it failed twice over.
+// First it was answered with the CASH BALANCE — 239,605 under a question about visits — because
+// "كام ... عندنا" is the shape of «كام فلوس عندنا» and "زيارة" was a word the router had never
+// seen. Teaching it fixed the routing and left the subtler half behind: asked for a number, the
+// composer collapses the appointments surface to a grand total, and that total includes the
+// cancelled, the no-shows and the bookings for dates that have not happened yet. None of those is
+// a visit. The count is honest about what the surface holds and wrong about what was asked, and
+// the only thing on screen that can tell the two apart is the caveat.
+const SAYS = [
+  ['ar', 'كام زيارة عندنا', 'مش زيارات حصلت',
+   'the total counts cancelled, no-shows and future bookings: it must say so'],
+  ['en', 'how many visits do we have', 'a visit anyone made',
+   'the same obligation in the other language'],
+  // NOT «كام زيارة فيها تشخيص». I wrote that one first, expecting it to reach the diagnoses
+  // surface, and it reached APPOINTMENTS — correctly, because "زيارة" now routes there. Reading
+  // the answer rather than the verdict showed the case was the mistake: no surface holds that
+  // figure, so asserting one would have been asserting a capability nobody built. This asks about
+  // the diagnoses and names PATIENTS, which the surface really does answer and really does
+  // mislead about — one patient can be seen several times and collect a diagnosis each visit.
+  ['ar', 'التشخيصات لكام مريض', 'مش عدد المرضى',
+   'the diagnoses surface counts diagnoses; patients are fewer and it must not imply otherwise'],
+];
+
+try {
+  for (const [culture, q, must, why] of SAYS) {
+    await page.goto(`${BASE}/Account/SetLanguage?culture=${culture}&returnUrl=%2F`, { waitUntil: 'domcontentloaded' }).catch(() => {});
+    const r = await page.evaluate(async ([base, question]) => {
+      const res = await fetch(`${base}/Inventory/Ask?question=${encodeURIComponent(question)}&c=probe:say${Date.now()}`,
+        { credentials: 'same-origin', headers: { Accept: 'application/json' } });
+      const t = await res.text();
+      let d = null;
+      try { d = JSON.parse(t); } catch { /* not json */ }
+      return { status: res.status, ok: d ? d.ok : null, rows: d && d.rows ? d.rows.length : 0,
+               say: d ? `${d.about || ''} ${d.spoken || d.message || ''}` : t.slice(0, 160),
+               understood: d ? `${d.understood || ''}` : '' };
+    }, [BASE, q]);
+    const said = `${r.say} ${r.understood}`;
+    const good = r.status === 200 && r.ok === true && said.includes(must);
+    if (good) { pass++; }
+    else { failures.push({ q: `[${culture}] ${q}`, want: `says "${must}"`, why, ...r, say: said.slice(0, 160) }); }
+    total++;
+  }
+} catch (e) {
+  console.error('NOT VERIFIED (caveat text) —', e?.message ?? e);
   await browser.close();
   process.exit(2);
 }

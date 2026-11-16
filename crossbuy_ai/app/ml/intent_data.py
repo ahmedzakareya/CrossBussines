@@ -50,6 +50,7 @@ MEDS = "hospital.medications"
 BILLING = "hospital.billing"
 CLAIMS = "hospital.claims"
 APPTS = "hospital.appointments"
+DX = "hospital.diagnoses"
 OUT_OF_SCOPE = "none"
 
 # sales.top-items, sales.top-customers and sales.item-margin were retired into sales.query:
@@ -57,7 +58,7 @@ OUT_OF_SCOPE = "none"
 # them could. Their vocabulary is kept below, under the one id.
 INTENT_IDS = (STOCK, VALUE, MOVES, WAREHOUSES, CASH, RECEIVABLES, ANOMALIES, DORMANT,
               COLLECTION, SALES_QUERY, CATEGORIES, PURCHASES, STOCKQ, POSQ, HRQ,
-              EXPENSES, DOCTORS, MEDS, BILLING, CLAIMS, APPTS)
+              EXPENSES, DOCTORS, MEDS, BILLING, CLAIMS, APPTS, DX)
 
 # Slot fillers. Real names from the catalogue plus shapes the catalogue contains — a name with a
 # number in it, a Latin name inside an Arabic sentence, a two-word name, a code.
@@ -346,11 +347,53 @@ TEMPLATES: dict[str, list[str]] = {
         "كام حد ماجاش", "المواعيد المحجوزة", "اللي خلصوا كشف", "مواعيد المتابعة",
         "متوسط الانتظار", "المرضى بيستنوا قد ايه", "مدة الانتظار", "مدة الكشف",
         "اطول انتظار", "اي ساعة فيها مواعيد اكتر",
+        # A VISIT IS AN APPOINTMENT THAT HAPPENED, AND IT BELONGS HERE.
+        #
+        # «كام زيارة عندنا» was answered with the CASH BALANCE — 239,605 under a question about
+        # visits. "كام ... عندنا" is the shape of «كام فلوس عندنا», "زيارة" was a word the model
+        # had never seen, and nothing in the sentence pulled the other way. Found the day the
+        # diagnoses surface shipped, because that surface makes the question likely: the moment a
+        # reader is told 85 diagnoses, the next thing they ask is how many visits produced them.
+        #
+        # They are taught HERE and not on the diagnoses intent, because the diagnoses surface's
+        # grain is the diagnosis: it would answer 85 for 68 visits, which is close enough to be
+        # believed. This surface counts the appointments themselves and shows their status.
+        "كام زيارة", "كام زيارة عندنا", "عدد الزيارات", "الزيارات", "زيارات الشهر ده",
+        "كام كشف اتعمل", "عدد الكشوف", "الكشوف", "كام كشف", "زيارات العيادة",
+        "how many visits", "number of visits", "visits", "visits this month",
+        "how many consultations", "consultations",
         "appointments", "todays appointments", "how many appointments", "clinic schedule",
         "bookings today", "appointments by doctor", "appointments by department",
         "cancelled appointments", "no shows", "how many did not turn up", "booked appointments",
         "average wait", "waiting time", "how long do patients wait", "consultation time",
         "busiest hour in clinic", "follow up visits",
+    ],
+
+    DX: [
+        # WHAT THE HOSPITAL IS TREATING. 85 diagnoses on 68 consultations, and until now no
+        # question could reach them: «ايه اكتر الامراض» landed on the appointments surface, which
+        # knows when people came and nothing about why.
+        #
+        # NOTHING HERE ASKS FOR A COUNT OF VISITS OR OF NOTES. The surface's grain is the
+        # diagnosis, so «كام زيارة» answered from it would be 85 for 68 visits — close enough to
+        # be believed and wrong. Those wordings stay with APPTS, and the handler's caveat says so
+        # when one slips through.
+        "ايه اكتر التشخيصات", "اكتر التشخيصات عندنا", "ايه اكتر الامراض", "اكتر الامراض عندنا",
+        "التشخيصات", "تشخيصات المرضى", "ايه الامراض اللي بنعالجها", "احنا بنعالج ايه",
+        "ايه اكتر مرض بيتكرر", "توزيع الامراض", "الحالات المرضية عندنا",
+        "التشخيصات حسب القسم", "الامراض حسب القسم", "التشخيصات حسب الطبيب",
+        "تشخيصات كل دكتور", "الامراض حسب الشهر", "التشخيصات حسب الشهر", "تشخيصات الشهر ده",
+        "كام حالة سكري", "حالات السكري", "كام حالة ضغط", "حالات الضغط", "كام حالة ربو",
+        "تشخيصات الاطفال", "تشخيصات قسم الباطنة", "امراض قسم العيون",
+        "التشخيصات الرئيسية", "التشخيصات الثانوية", "كام تشخيص اتسجل",
+        "اكواد التشخيص المستخدمة", "اكتر كود تشخيص", "كام كود تشخيص استخدمناه",
+        "diagnoses", "the diagnoses", "commonest diagnoses", "top diagnoses",
+        "most common conditions", "what are we treating", "what conditions do we see most",
+        "case mix", "our case mix", "diagnoses by department", "diagnoses by doctor",
+        "diagnoses by month", "how many diabetes cases", "how many hypertension cases",
+        "asthma cases", "principal diagnoses", "secondary diagnoses",
+        "diagnosis codes used", "icd codes used", "how many diagnoses were recorded",
+        "distribution of conditions",
     ],
 
     DOCTORS: [
