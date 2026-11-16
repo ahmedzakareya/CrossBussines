@@ -7280,4 +7280,30 @@
   <data name="The file is opened" xml:space="preserve"><value>Le dossier est ouvert</value></data>
   <data name="The file is saved but the photo was not; add it from the file." xml:space="preserve"><value>Le dossier est enregistré mais pas la photo ; ajoutez-la depuis le dossier.</value></data>
   <data name="This patient may already have a file" xml:space="preserve"><value>Ce patient a peut-être déjà un dossier</value></data>
+  <data name="A deposit pays only a bill in the facility's currency" xml:space="preserve"><value>Un acompte ne paie qu'une facture dans la devise de l'établissement</value></data>
+  <data name="Deposit" xml:space="preserve"><value>Acompte</value></data>
+  <data name="Deposit held" xml:space="preserve"><value>Acompte détenu</value></data>
+  <data name="Deposits taken at the counter and not yet used or refunded (a liability)" xml:space="preserve"><value>Acomptes encaissés au guichet, ni utilisés ni remboursés (un passif)</value></data>
+  <data name="For" xml:space="preserve"><value>Pour</value></data>
+  <data name="From the deposit" xml:space="preserve"><value>Sur l'acompte</value></data>
+  <data name="How much of deposit {0} to refund? ({1} left)" xml:space="preserve"><value>Combien rembourser de l'acompte {0} ? (reste {1})</value></data>
+  <data name="Map the patient deposits account in billing settings" xml:space="preserve"><value>Associez le compte des acomptes patients dans les paramètres de facturation</value></data>
+  <data name="Money taken ahead of a bill: a procedure, an admission, a visit." xml:space="preserve"><value>Somme encaissée avant la facture : un acte, une hospitalisation, une visite.</value></data>
+  <data name="Note (optional)" xml:space="preserve"><value>Note (facultatif)</value></data>
+  <data name="Patient deposits" xml:space="preserve"><value>Acomptes des patients</value></data>
+  <data name="Pay {0} of bill {1} from the deposit?" xml:space="preserve"><value>Payer {0} de la facture {1} sur l'acompte ?</value></data>
+  <data name="Refund" xml:space="preserve"><value>Rembourser</value></data>
+  <data name="Refund {0} of deposit {1} by {2}?" xml:space="preserve"><value>Rembourser {0} de l'acompte {1} par {2} ?</value></data>
+  <data name="Take a deposit of {0} by {1} from {2}?" xml:space="preserve"><value>Encaisser un acompte de {0} par {1} de {2} ?</value></data>
+  <data name="Take the deposit" xml:space="preserve"><value>Encaisser l'acompte</value></data>
+  <data name="The deposit changed meanwhile; try again" xml:space="preserve"><value>L'acompte a changé entre-temps ; réessayez</value></data>
+  <data name="The deposits hold less than that ({0})" xml:space="preserve"><value>Les acomptes détiennent moins que cela ({0})</value></data>
+  <data name="The reason for the refund" xml:space="preserve"><value>Le motif du remboursement</value></data>
+  <data name="The refund is more than is left on the deposit" xml:space="preserve"><value>Le remboursement dépasse le reste de l'acompte</value></data>
+  <data name="Unknown deposit purpose" xml:space="preserve"><value>Objet d'acompte inconnu</value></data>
+  <data name="Write the reason for the refund" xml:space="preserve"><value>Indiquez le motif du remboursement</value></data>
+  <data name="deposit:Admission" xml:space="preserve"><value>Hospitalisation</value></data>
+  <data name="deposit:General" xml:space="preserve"><value>Général</value></data>
+  <data name="deposit:Procedure" xml:space="preserve"><value>Acte</value></data>
+  <data name="pm:Deposit" xml:space="preserve"><value>Sur l'acompte</value></data>
 </root>

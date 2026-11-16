@@ -47,6 +47,7 @@ namespace CrossBuy.BL.Hospital
 		public int? VatAccountId { get; set; }
 		public int? CashOverShortAccountId { get; set; }
 		public int? FxDifferenceAccountId { get; set; }
+		public int? PatientDepositAccountId { get; set; }   // H143
 	}
 
 	/// A bill line as the screen shows it, with its money worked out. Accommodation lines of an open
@@ -115,7 +116,7 @@ namespace CrossBuy.BL.Hospital
 		{
 			if (!await Can(ctx, HospitalActions.Manage, ct)) return HospitalResult.Fail("forbidden");
 			if (input.VatRatePercent is < 0 or > 100) return HospitalResult.Fail("The tax rate is 0 to 100%");
-			var ids = new[] { input.CashAccountId, input.BankAccountId, input.ReceivableAccountId, input.RevenueAccountId, input.VatAccountId, input.CashOverShortAccountId, input.FxDifferenceAccountId }
+			var ids = new[] { input.CashAccountId, input.BankAccountId, input.ReceivableAccountId, input.RevenueAccountId, input.VatAccountId, input.CashOverShortAccountId, input.FxDifferenceAccountId, input.PatientDepositAccountId }
 				.Where(i => i != null).Select(i => i!.Value).Distinct().ToList();
 			var found = await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == ctx.CompanyId && a.IsActive && a.IsPostable && ids.Contains(a.ID)).Select(a => a.ID).ToListAsync(ct);
 			if (found.Count != ids.Count) return HospitalResult.Fail("Choose active posting accounts of this company");
@@ -124,7 +125,7 @@ namespace CrossBuy.BL.Hospital
 			if (row == null) { row = new HospitalBillingSettings { CompanyId = ctx.CompanyId }; _db.HospitalBillingSettings.Add(row); }
 			row.VatRatePercent = input.VatRatePercent; row.CashAccountId = input.CashAccountId; row.BankAccountId = input.BankAccountId;
 			row.ReceivableAccountId = input.ReceivableAccountId; row.RevenueAccountId = input.RevenueAccountId; row.VatAccountId = input.VatAccountId;
-			row.CashOverShortAccountId = input.CashOverShortAccountId; row.FxDifferenceAccountId = input.FxDifferenceAccountId; row.UpdatedAt = DateTime.UtcNow; row.UpdatedByEmployeeId = employeeId;
+			row.CashOverShortAccountId = input.CashOverShortAccountId; row.FxDifferenceAccountId = input.FxDifferenceAccountId; row.PatientDepositAccountId = input.PatientDepositAccountId; row.UpdatedAt = DateTime.UtcNow; row.UpdatedByEmployeeId = employeeId;
 			await _db.SaveChangesAsync(ct);
 			return HospitalResult.Success(row.ID);
 		}
@@ -765,8 +766,12 @@ namespace CrossBuy.BL.Hospital
 			var pays = await _db.HospitalPayments.AsNoTracking().Where(p => p.CompanyId == ctx.CompanyId && p.ShiftId == s.ID).ToListAsync(ct);
 			// The till is counted in the facility's currency: a foreign-currency receipt counts at what was taken.
 			var byMethod = HospitalPaymentMethods.All.ToDictionary(m => m, m => pays.Where(p => p.Method == m).Sum(p => p.BaseAmount ?? p.Amount));
+			// H143: deposits taken in this shift are money in the drawer, refunds money out; a deposit used on a bill moved no
+			// money (method "Deposit", outside All) and is not counted again.
+			var (inn, outt, deposits) = await HospitalDepositService.ShiftMovesAsync(_db, ctx.CompanyId, s.ID, ct);
+			foreach (var m in HospitalPaymentMethods.All) byMethod[m] += inn.GetValueOrDefault(m) - outt.GetValueOrDefault(m);
 			var cash = byMethod[HospitalPaymentMethods.Cash];
-			return new HospitalShiftSummary(s, byMethod, cash, s.OpeningFloat + cash, pays.Count);
+			return new HospitalShiftSummary(s, byMethod, cash, s.OpeningFloat + cash, pays.Count(p => p.Method != HospitalPaymentMethods.Deposit) + deposits);
 		}
 
 		public async Task<IReadOnlyList<HospitalShiftSummary>> ShiftsOfDayAsync(BusinessContext ctx, DateTime dayStartUtc, CancellationToken ct = default)

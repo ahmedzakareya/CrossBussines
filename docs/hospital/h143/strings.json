@@ -1,0 +1,135 @@
+{
+ "unit": "H143 - the patient's deposit at the counter: taken, used on a bill, refunded; the till follows it",
+ "strings": {
+  "Deposit": {
+   "ar": "عربون",
+   "en": "Deposit",
+   "fr": "Acompte"
+  },
+  "Deposit held": {
+   "ar": "عربون محفوظ",
+   "en": "Deposit held",
+   "fr": "Acompte détenu"
+  },
+  "Deposits taken at the counter and not yet used or refunded (a liability)": {
+   "ar": "العربون المحصّل عند الشباك ولم يُستخدم أو يُرد بعد (التزام)",
+   "en": "Deposits taken at the counter and not yet used or refunded (a liability)",
+   "fr": "Acomptes encaissés au guichet, ni utilisés ni remboursés (un passif)"
+  },
+  "For": {
+   "ar": "الغرض",
+   "en": "For",
+   "fr": "Pour"
+  },
+  "From the deposit": {
+   "ar": "من العربون",
+   "en": "From the deposit",
+   "fr": "Sur l'acompte"
+  },
+  "How much of deposit {0} to refund? ({1} left)": {
+   "ar": "كم يُرد من العربون ⁦{0}⁩؟ (المتبقي ⁦{1}⁩)",
+   "en": "How much of deposit {0} to refund? ({1} left)",
+   "fr": "Combien rembourser de l'acompte {0} ? (reste {1})"
+  },
+  "Money taken ahead of a bill: a procedure, an admission, a visit.": {
+   "ar": "مبلغ يُحصّل قبل الفاتورة: لإجراء أو تنويم أو زيارة.",
+   "en": "Money taken ahead of a bill: a procedure, an admission, a visit.",
+   "fr": "Somme encaissée avant la facture : un acte, une hospitalisation, une visite."
+  },
+  "Note (optional)": {
+   "ar": "ملاحظة (اختياري)",
+   "en": "Note (optional)",
+   "fr": "Note (facultatif)"
+  },
+  "Patient deposits": {
+   "ar": "عربون المرضى",
+   "en": "Patient deposits",
+   "fr": "Acomptes des patients"
+  },
+  "Pay {0} of bill {1} from the deposit?": {
+   "ar": "سداد ⁦{0}⁩ من الفاتورة ⁦{1}⁩ من العربون؟",
+   "en": "Pay {0} of bill {1} from the deposit?",
+   "fr": "Payer {0} de la facture {1} sur l'acompte ?"
+  },
+  "Refund": {
+   "ar": "رد",
+   "en": "Refund",
+   "fr": "Rembourser"
+  },
+  "Refund {0} of deposit {1} by {2}?": {
+   "ar": "رد ⁦{0}⁩ من العربون ⁦{1}⁩ ⁦{2}⁩؟",
+   "en": "Refund {0} of deposit {1} by {2}?",
+   "fr": "Rembourser {0} de l'acompte {1} par {2} ?"
+  },
+  "Take a deposit of {0} by {1} from {2}?": {
+   "ar": "تحصيل عربون ⁦{0}⁩ ⁦{1}⁩ من ⁦{2}⁩؟",
+   "en": "Take a deposit of {0} by {1} from {2}?",
+   "fr": "Encaisser un acompte de {0} par {1} de {2} ?"
+  },
+  "Take the deposit": {
+   "ar": "حصّل العربون",
+   "en": "Take the deposit",
+   "fr": "Encaisser l'acompte"
+  },
+  "The reason for the refund": {
+   "ar": "سبب الرد",
+   "en": "The reason for the refund",
+   "fr": "Le motif du remboursement"
+  },
+  "Unknown deposit purpose": {
+   "ar": "غرض العربون غير معروف",
+   "en": "Unknown deposit purpose",
+   "fr": "Objet d'acompte inconnu"
+  },
+  "Map the patient deposits account in billing settings": {
+   "ar": "اربط حساب عربون المرضى في إعدادات الفوترة",
+   "en": "Map the patient deposits account in billing settings",
+   "fr": "Associez le compte des acomptes patients dans les paramètres de facturation"
+  },
+  "The deposits hold less than that ({0})": {
+   "ar": "العربون المتاح أقل من ذلك (⁦{0}⁩)",
+   "en": "The deposits hold less than that ({0})",
+   "fr": "Les acomptes détiennent moins que cela ({0})"
+  },
+  "The deposit changed meanwhile; try again": {
+   "ar": "تغيّر العربون في الأثناء؛ أعد المحاولة",
+   "en": "The deposit changed meanwhile; try again",
+   "fr": "L'acompte a changé entre-temps ; réessayez"
+  },
+  "A deposit pays only a bill in the facility's currency": {
+   "ar": "العربون يسدد فقط فاتورة بعملة المنشأة",
+   "en": "A deposit pays only a bill in the facility's currency",
+   "fr": "Un acompte ne paie qu'une facture dans la devise de l'établissement"
+  },
+  "The refund is more than is left on the deposit": {
+   "ar": "مبلغ الرد أكبر من المتبقي في العربون",
+   "en": "The refund is more than is left on the deposit",
+   "fr": "Le remboursement dépasse le reste de l'acompte"
+  },
+  "Write the reason for the refund": {
+   "ar": "اكتب سبب الرد",
+   "en": "Write the reason for the refund",
+   "fr": "Indiquez le motif du remboursement"
+  },
+  "pm:Deposit": {
+   "ar": "من العربون",
+   "en": "From the deposit",
+   "fr": "Sur l'acompte"
+  },
+  "deposit:General": {
+   "ar": "عام",
+   "en": "General",
+   "fr": "Général"
+  },
+  "deposit:Procedure": {
+   "ar": "إجراء",
+   "en": "Procedure",
+   "fr": "Acte"
+  },
+  "deposit:Admission": {
+   "ar": "تنويم",
+   "en": "Admission",
+   "fr": "Hospitalisation"
+  }
+ }
+}

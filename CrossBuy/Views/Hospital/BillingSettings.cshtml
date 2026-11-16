@@ -15,7 +15,8 @@
         ("revenueAccountId", T["Revenue (default)"].Value, T["Used for a service with no revenue account of its own"].Value, Model.RevenueAccountId),
         ("vatAccountId", T["Output VAT"].Value, T["Tax on taxable services"].Value, Model.VatAccountId),
         ("cashOverShortAccountId", T["Cash over/short"].Value, T["A difference found when a shift is counted"].Value, Model.CashOverShortAccountId),
-        ("fxDifferenceAccountId", T["Exchange differences"].Value, T["A foreign-currency bill paid at a rate other than its closing rate"].Value, Model.FxDifferenceAccountId) };
+        ("fxDifferenceAccountId", T["Exchange differences"].Value, T["A foreign-currency bill paid at a rate other than its closing rate"].Value, Model.FxDifferenceAccountId),
+        ("patientDepositAccountId", T["Patient deposits"].Value, T["Deposits taken at the counter and not yet used or refunded (a liability)"].Value, Model.PatientDepositAccountId) };
     // H20: the insurance accounts (their own tables: Ready = false until hospital_h20_claim_accounting.sql runs)
     var ins = ViewBag.Insurance is ValueTuple<bool, HospitalInsuranceAccounts?, IReadOnlyDictionary<int, int>> im ? im : (false, null, new Dictionary<int, int>());
     var payers = (ViewBag.Payers as List<HospitalPayer>) ?? new();
@@ -172,7 +173,7 @@
             document.querySelector('[data-save]').addEventListener('click', function () {
                 var b = this; b.disabled = true;
                 var body = { vatRatePercent: +(form.elements.vatRatePercent.value || 0), cashAccountId: n('cashAccountId'), bankAccountId: n('bankAccountId'), receivableAccountId: n('receivableAccountId'),
-                    revenueAccountId: n('revenueAccountId'), vatAccountId: n('vatAccountId'), cashOverShortAccountId: n('cashOverShortAccountId'), fxDifferenceAccountId: n('fxDifferenceAccountId') };
+                    revenueAccountId: n('revenueAccountId'), vatAccountId: n('vatAccountId'), cashOverShortAccountId: n('cashOverShortAccountId'), fxDifferenceAccountId: n('fxDifferenceAccountId'), patientDepositAccountId: n('patientDepositAccountId') };
                 fetch(@Json.Serialize(Url.Action("SaveBillingSettings")), { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(body) })
                     .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
                     .then(function (res) { b.disabled = false; if (window.toastr) { if (res.ok) toastr.success(@Json.Serialize(T["Saved"].Value)); else toastr.error(res.error || @Json.Serialize(T["The change could not be saved"].Value)); } });

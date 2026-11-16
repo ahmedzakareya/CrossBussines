@@ -160,6 +160,7 @@ namespace CrossBuy.Controllers
 			if (p == null) return NotFound();
 			ViewBag.Patient = p;
 			ViewBag.Shift = ctx.EmployeeId is int me ? await _billing.OpenShiftOfAsync(ctx, me, ct) : null;
+			ViewBag.Deposits = await DepositSvc.ListAsync(ctx, id, ct);   // H143
 			await MoneyFormatAsync(ctx, ct);
 			return PartialView("_DeskPay", await FrontDeskSvc.OpenBillsAsync(ctx, id, DateTime.UtcNow, ct));
 		}

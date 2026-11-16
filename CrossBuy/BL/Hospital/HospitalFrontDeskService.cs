@@ -67,7 +67,8 @@ namespace CrossBuy.BL.Hospital
 
 	public sealed record HospitalDeskCard(HospitalPatient Patient, int? Age, IReadOnlyList<HospitalDeskRow> Today, IReadOnlyList<HospitalAppointmentView> Upcoming,
 		IReadOnlyList<(int Id, string Name, string? NameEn, string? Department, string? DepartmentEn)> Doctors,
-		string? Payer, string? PolicyNo, bool Insured, bool Ineligible, decimal Owed, int OpenBills, int Consents, bool Admitted, IReadOnlyList<HospitalDeskCheck> Checklist);
+		string? Payer, string? PolicyNo, bool Insured, bool Ineligible, decimal Owed, int OpenBills, int Consents, bool Admitted, IReadOnlyList<HospitalDeskCheck> Checklist,
+		decimal DepositLeft = 0);
 
 	public static class HospitalFrontDeskRules
 	{
@@ -293,8 +294,11 @@ namespace CrossBuy.BL.Hospital
 			var doctors = docs.Values.Where(d => d.Row.IsActive).OrderBy(d => d.Department?.Name).ThenBy(d => d.Row.Name)
 				.Select(d => (d.Row.ID, d.Row.Name, d.Row.NameEn, d.Department?.Name, d.Department?.NameEn)).ToList();
 			bool insured = policy != null;
+			decimal depositLeft = 0;   // H143: what the hospital holds for the patient
+			try { depositLeft = await _db.Set<HospitalPatientDeposit>().Where(d => d.CompanyId == ctx.CompanyId && d.PatientId == p.ID).SumAsync(d => d.Amount - d.Used - d.Refunded, ct); }
+			catch (Microsoft.Data.SqlClient.SqlException ex) when (ex.Number == 208) { }
 			return new HospitalDeskCard(p, HospitalPatientService.AgeOn(p.BirthDate, todayLocal), today, upcoming, doctors, payer == null ? null : DisplayName.Of(payer.Name, payer.NameEn), policy?.PolicyNo,
-				insured, ineligible, owed, open.Count, consents, admitted, HospitalFrontDeskRules.Checklist(p, insured, ineligible, consents, owed));
+				insured, ineligible, owed, open.Count, consents, admitted, HospitalFrontDeskRules.Checklist(p, insured, ineligible, consents, owed), depositLeft);
 		}
 
 		// ====================================================================================
@@ -419,6 +423,16 @@ namespace CrossBuy.BL.Hospital
 			var startUtc = HospitalNursingService.WardToUtc(todayLocal.Date);
 			var pays = await _db.HospitalPayments.AsNoTracking().Where(p => p.CompanyId == cid && p.ReceivedAt >= startUtc).ToListAsync(ct);
 			var by = HospitalPaymentMethods.All.ToDictionary(x => x, x => pays.Where(p => p.Method == x).Sum(p => p.BaseAmount ?? p.Amount));
+			// H143: deposits taken today are money in, refunds money out; a deposit used on a bill moved no money
+			int depositsToday = 0;
+			try
+			{
+				var dIn = await _db.Set<HospitalPatientDeposit>().AsNoTracking().Where(d => d.CompanyId == cid && d.ReceivedAt >= startUtc).Select(d => new { d.Method, d.Amount }).ToListAsync(ct);
+				var dOut = await _db.Set<HospitalDepositMove>().AsNoTracking().Where(m => m.CompanyId == cid && m.At >= startUtc && m.Kind == HospitalDepositMoveKind.Refund && m.Method != null).Select(m => new { m.Method, m.Amount }).ToListAsync(ct);
+				foreach (var x in HospitalPaymentMethods.All) by[x] += dIn.Where(d => d.Method == x).Sum(d => d.Amount) - dOut.Where(d => d.Method == x).Sum(d => d.Amount);
+				depositsToday = dIn.Count;
+			}
+			catch (Microsoft.Data.SqlClient.SqlException ex) when (ex.Number == 208) { }
 			var mine = pays.Where(p => p.CashierEmployeeId == ctx.EmployeeId).OrderByDescending(p => p.ReceivedAt).Take(5).ToList();
 			var billIds = mine.Select(p => p.BillId).ToList();
 			var who = await (from b in _db.HospitalBills.AsNoTracking()
@@ -430,7 +444,7 @@ namespace CrossBuy.BL.Hospital
 			var day = todayLocal.Date;
 			int? last = await _db.HospitalAppointments.AsNoTracking().Where(a => a.CompanyId == cid && a.AppointmentDate == day && a.StartedAt != null && a.QueueNumber != null)
 				.OrderByDescending(a => a.StartedAt).Select(a => a.QueueNumber).FirstOrDefaultAsync(ct);
-			return new HospitalDeskMe(name, photo, summary, receipts, last, by, pays.Count);
+			return new HospitalDeskMe(name, photo, summary, receipts, last, by, pays.Count(p => p.Method != HospitalPaymentMethods.Deposit) + depositsToday);
 		}
 
 		/// The patient's open bills for the counter's payment window.

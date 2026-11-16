@@ -54,6 +54,7 @@ namespace CrossBuy.BL.Hospital
 			(typeof(HospitalSurgery), "HospitalSurgeries"), (typeof(HospitalTransfusionRequest), "HospitalTransfusionRequests"),
 			(typeof(HospitalDeath), "HospitalDeaths"),   // H59
 			(typeof(HospitalPharmacyIntervention), "HospitalPharmacyInterventions"),   // H136: the pharmacist's interventions follow the patient
+			(typeof(HospitalPatientDeposit), "HospitalPatientDeposits"),   // H143: what the hospital holds for the patient follows the patient
 			(typeof(HospitalConsent), "HospitalConsents"),   // H60: the signature stays on the consent, which moves whole
 			(typeof(HospitalCharityGrant), "HospitalCharityGrants"),   // H63: a waiver follows its patient (its bill moves too)
 			(typeof(HospitalRestrictedFile), "HospitalRestrictedFiles"),   // H64: a restriction (live: one per patient — see the conflict)

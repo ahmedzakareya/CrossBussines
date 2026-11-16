@@ -103,6 +103,7 @@ namespace CrossBuy.Models.Context.Hospital
 			HospitalControlledCountModel.Configure(b);   // H137: blind counts of the controlled drugs and their discrepancies
 			HospitalCartFillModel.Configure(b);   // H138: the unit-dose cart fill
 			HospitalDeskConfirmationModel.Configure(b);   // H141: the desk confirms tomorrow's appointments
+			HospitalPatientDepositModel.Configure(b);   // H143: the patient's deposits taken at the counter
 			b.Entity<HospitalDispense>(e =>
 			{
 				e.HasIndex(x => new { x.CompanyId, x.RxNo }).IsUnique();

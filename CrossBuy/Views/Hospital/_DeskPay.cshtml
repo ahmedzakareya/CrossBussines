@@ -5,17 +5,22 @@
 @inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
 @* H140: collecting at the counter — the patient's open bills, each with what is still due, the amount and the method.
    The billing service takes the money (its receipt number, its ledger posting, never more than is due) into the
-   cashier's open shift; with no open shift the window says so and points to the cashier. *@
+   cashier's open shift; with no open shift the window says so and points to the cashier.
+   H143: the deposit — what the hospital holds for the patient: a bill can be paid from it, a new deposit taken (a
+   procedure, an admission, ahead of a visit), and what is left refunded with a reason. Every act asks first. *@
 @{
     var p = (HospitalPatient)ViewBag.Patient; var shift = ViewBag.Shift as HospitalCashierShift;
     var inv = System.Globalization.CultureInfo.InvariantCulture; int dp = ViewBag.MoneyDp is int d0 ? d0 : 2; string cur = ViewBag.Currency as string ?? "";
     string Money(decimal v) => v.ToString("N" + dp, inv);
     string Raw(decimal v) => Math.Round(v, dp).ToString("0." + new string('#', Math.Max(dp, 1)), inv);
+    var deposits = (IReadOnlyList<HospitalDepositView>?)ViewBag.Deposits ?? Array.Empty<HospitalDepositView>();
+    decimal held = deposits.Sum(d => d.Left);
 }
 <div class="d-flex align-items-center mb-6">
     <div class="symbol symbol-45px symbol-circle me-3 flex-shrink-0">@if (p.PhotoPath != null) {<img src="@p.PhotoPath" alt="" style="object-fit:cover" />} else {<span class="symbol-label fw-bold hp-initials">@HospitalUi.Initials(p.NameEn ?? p.Name)</span>}</div>
     <div><div class="fw-bold text-gray-900 fs-6"><bdi>@DisplayName.Of(p.Name, p.NameEn)</bdi></div><div class="text-muted fs-7 hp-num">@p.Mrn</div></div>
-    <div class="ms-auto text-end"><div class="text-muted fs-8">@T["Total due"]</div><div class="fw-bold fs-2 text-primary"><span class="hp-num">@Money(Model.Sum(b => b.Total - b.Paid))</span> <span class="fs-8 text-muted fw-semibold">@cur</span></div></div>
+    @if (held > 0) {<div class="ms-auto text-end me-8"><div class="text-muted fs-8">@T["Deposit held"]</div><div class="fw-bold fs-2 text-success"><span class="hp-num">@Money(held)</span> <span class="fs-8 text-muted fw-semibold">@cur</span></div></div>}
+    <div class="@(held > 0 ? "" : "ms-auto ")text-end"><div class="text-muted fs-8">@T["Total due"]</div><div class="fw-bold fs-2 text-primary"><span class="hp-num">@Money(Model.Sum(b => b.Total - b.Paid))</span> <span class="fs-8 text-muted fw-semibold">@cur</span></div></div>
 </div>
 @if (shift == null)
 {
@@ -39,13 +44,48 @@
             @foreach (var b in Model)
             {
                 decimal due = b.Total - b.Paid;
-                <tr data-bill="@b.Id" data-bill-no="@b.BillNo" data-cur="@cur">
+                <tr data-bill="@b.Id" data-bill-no="@b.BillNo" data-cur="@cur" data-due="@Raw(due)">
                     <td class="ps-2"><a href="@Url.Action("Bill", "Hospital", new { id = b.Id })" class="fw-bold text-gray-900 text-hover-primary hp-num">@b.BillNo</a>
                         <div class="text-muted fs-8"><span class="hp-num">@HospitalNursingService.UtcToWard(b.OpenedAt).ToString("yyyy-MM-dd")</span> · @(b.Inpatient ? T["Inpatient"] : T["Outpatient"])@if (b.Paid > 0) {<text> · @T["Paid"] </text><span class="hp-num">@Money(b.Paid)</span>}</div></td>
                     <td class="text-end fw-bold text-danger hp-num">@Money(due)</td>
                     <td><input type="number" min="0" step="any" class="form-control form-control-sm form-control-solid hp-num" value="@Raw(due)" data-amount /></td>
                     <td><select class="form-select form-select-sm form-select-solid" data-method>@foreach (var m in HospitalPaymentMethods.All) { <option value="@m">@T["pm:" + m]</option> }</select></td>
-                    <td class="text-end pe-2"><button type="button" class="btn btn-sm btn-primary text-nowrap" data-desk-collect @(shift == null ? "disabled" : "")><i class="ki-outline ki-wallet fs-5"></i>@T["Collect payment"]</button></td>
+                    <td class="text-end pe-2"><div class="d-flex justify-content-end gap-1">
+                        @if (held > 0 && b.Currency == null) {<button type="button" class="btn btn-sm btn-light-success text-nowrap" data-desk-usedep="@Raw(Math.Min(held, due))" @(shift == null ? "disabled" : "")><i class="ki-outline ki-wallet fs-5"></i>@T["From the deposit"]</button>}
+                        <button type="button" class="btn btn-sm btn-primary text-nowrap" data-desk-collect @(shift == null ? "disabled" : "")><i class="ki-outline ki-wallet fs-5"></i>@T["Collect payment"]</button></div></td>
+                </tr>
+            }
+        </tbody>
+    </table></div>
+}
+
+@* ---------------- the deposit ---------------- *@
+<div class="separator separator-dashed my-8"></div>
+<div class="d-flex flex-stack mb-4">
+    <div><div class="fw-bold fs-5 text-gray-900">@T["Deposit"]</div><div class="text-muted fs-7">@T["Money taken ahead of a bill: a procedure, an admission, a visit."]</div></div>
+</div>
+<div class="bg-light rounded p-5 mb-5" data-deposit-form data-patient="@p.ID" data-cur="@cur">
+    <div class="row g-3 align-items-end">
+        <div class="col-md-3"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Amount"]</label><input type="number" min="0" step="any" class="form-control form-control-sm form-control-solid hp-num" data-dep-amount /></div>
+        <div class="col-md-3"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Method"]</label><select class="form-select form-select-sm form-select-solid" data-dep-method>@foreach (var m in HospitalPaymentMethods.All) { <option value="@m">@T["pm:" + m]</option> }</select></div>
+        <div class="col-md-3"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["For"]</label><select class="form-select form-select-sm form-select-solid" data-dep-purpose>@foreach (var x in HospitalDepositPurpose.All) { <option value="@x">@T["deposit:" + x]</option> }</select></div>
+        <div class="col-md-3"><button type="button" class="btn btn-sm btn-success w-100" data-desk-deposit @(shift == null ? "disabled" : "")><i class="ki-outline ki-plus fs-5"></i>@T["Take the deposit"]</button></div>
+        <div class="col-12"><input class="form-control form-control-sm form-control-solid" maxlength="300" placeholder="@T["Note (optional)"]" data-dep-note /></div>
+    </div>
+</div>
+@if (deposits.Count > 0)
+{
+    <div class="table-responsive mh-250px scroll-y"><table class="table align-middle gs-0 gy-2 mb-0">
+        <thead><tr class="fw-bold fs-8 text-uppercase text-muted"><th class="ps-2">@T["Deposit"]</th><th>@T["For"]</th><th class="text-end">@T["Amount"]</th><th class="text-end">@T["Left"]</th><th class="text-end pe-2"></th></tr></thead>
+        <tbody class="fs-7">
+            @foreach (var d in deposits)
+            {
+                <tr data-dep="@d.Deposit.ID" data-dep-no="@d.Deposit.DepositNo" data-left="@Raw(d.Left)" data-cur="@cur" data-dep-method="@d.Deposit.Method" data-dep-method-label="@T["pm:" + d.Deposit.Method]">
+                    <td class="ps-2"><span class="fw-bold hp-num">@d.Deposit.DepositNo</span><div class="text-muted fs-8"><span class="hp-num">@HospitalNursingService.UtcToWard(d.Deposit.ReceivedAt).ToString("yyyy-MM-dd HH:mm")</span> · @T["pm:" + d.Deposit.Method]</div></td>
+                    <td>@T["deposit:" + d.Deposit.Purpose]@if (d.Deposit.Note != null) {<div class="text-muted fs-8"><bdi>@d.Deposit.Note</bdi></div>}</td>
+                    <td class="text-end hp-num">@Money(d.Deposit.Amount)</td>
+                    <td class="text-end fw-bold hp-num @(d.Left > 0 ? "text-success" : "text-muted")">@Money(d.Left)</td>
+                    <td class="text-end pe-2">@if (d.Left > 0) {<button type="button" class="btn btn-sm btn-light-danger py-1 px-3 text-nowrap" data-desk-refund @(shift == null ? "disabled" : "")>@T["Refund"]</button>}</td>
                 </tr>
             }
         </tbody>

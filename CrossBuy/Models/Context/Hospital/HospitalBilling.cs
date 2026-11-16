@@ -50,6 +50,8 @@ namespace CrossBuy.Models.Context.Hospital
 		public const string Card = "Card";
 		public const string Transfer = "Transfer";
 		public const string Wallet = "Wallet";
+		/// H143: a deposit used on a bill. Not a way to take money (no till, not in All): the money came in with the deposit.
+		public const string Deposit = "Deposit";
 		public static readonly IReadOnlyList<string> All = new[] { Cash, Card, Transfer, Wallet };
 		public static bool IsKnown(string? s) => s != null && All.Contains(s, StringComparer.Ordinal);
 	}
@@ -73,6 +75,8 @@ namespace CrossBuy.Models.Context.Hospital
 		public int? CashOverShortAccountId { get; set; }
 		/// H7: gains and losses when a foreign-currency bill is paid at a rate other than its closing rate.
 		public int? FxDifferenceAccountId { get; set; }
+		/// H143: the hospital's debt to patients for deposits taken and not yet used or refunded (a liability).
+		public int? PatientDepositAccountId { get; set; }
 		public DateTime? UpdatedAt { get; set; }
 		public int? UpdatedByEmployeeId { get; set; }
 	}

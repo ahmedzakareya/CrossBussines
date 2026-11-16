@@ -7280,4 +7280,30 @@
   <data name="The file is opened" xml:space="preserve"><value>تم فتح الملف</value></data>
   <data name="The file is saved but the photo was not; add it from the file." xml:space="preserve"><value>حُفظ الملف لكن الصورة لم تُحفظ؛ أضفها من الملف.</value></data>
   <data name="This patient may already have a file" xml:space="preserve"><value>قد يكون لهذا المريض ملف بالفعل</value></data>
+  <data name="A deposit pays only a bill in the facility's currency" xml:space="preserve"><value>العربون يسدد فقط فاتورة بعملة المنشأة</value></data>
+  <data name="Deposit" xml:space="preserve"><value>عربون</value></data>
+  <data name="Deposit held" xml:space="preserve"><value>عربون محفوظ</value></data>
+  <data name="Deposits taken at the counter and not yet used or refunded (a liability)" xml:space="preserve"><value>العربون المحصّل عند الشباك ولم يُستخدم أو يُرد بعد (التزام)</value></data>
+  <data name="For" xml:space="preserve"><value>الغرض</value></data>
+  <data name="From the deposit" xml:space="preserve"><value>من العربون</value></data>
+  <data name="How much of deposit {0} to refund? ({1} left)" xml:space="preserve"><value>كم يُرد من العربون ⁦{0}⁩؟ (المتبقي ⁦{1}⁩)</value></data>
+  <data name="Map the patient deposits account in billing settings" xml:space="preserve"><value>اربط حساب عربون المرضى في إعدادات الفوترة</value></data>
+  <data name="Money taken ahead of a bill: a procedure, an admission, a visit." xml:space="preserve"><value>مبلغ يُحصّل قبل الفاتورة: لإجراء أو تنويم أو زيارة.</value></data>
+  <data name="Note (optional)" xml:space="preserve"><value>ملاحظة (اختياري)</value></data>
+  <data name="Patient deposits" xml:space="preserve"><value>عربون المرضى</value></data>
+  <data name="Pay {0} of bill {1} from the deposit?" xml:space="preserve"><value>سداد ⁦{0}⁩ من الفاتورة ⁦{1}⁩ من العربون؟</value></data>
+  <data name="Refund" xml:space="preserve"><value>رد</value></data>
+  <data name="Refund {0} of deposit {1} by {2}?" xml:space="preserve"><value>رد ⁦{0}⁩ من العربون ⁦{1}⁩ ⁦{2}⁩؟</value></data>
+  <data name="Take a deposit of {0} by {1} from {2}?" xml:space="preserve"><value>تحصيل عربون ⁦{0}⁩ ⁦{1}⁩ من ⁦{2}⁩؟</value></data>
+  <data name="Take the deposit" xml:space="preserve"><value>حصّل العربون</value></data>
+  <data name="The deposit changed meanwhile; try again" xml:space="preserve"><value>تغيّر العربون في الأثناء؛ أعد المحاولة</value></data>
+  <data name="The deposits hold less than that ({0})" xml:space="preserve"><value>العربون المتاح أقل من ذلك (⁦{0}⁩)</value></data>
+  <data name="The reason for the refund" xml:space="preserve"><value>سبب الرد</value></data>
+  <data name="The refund is more than is left on the deposit" xml:space="preserve"><value>مبلغ الرد أكبر من المتبقي في العربون</value></data>
+  <data name="Unknown deposit purpose" xml:space="preserve"><value>غرض العربون غير معروف</value></data>
+  <data name="Write the reason for the refund" xml:space="preserve"><value>اكتب سبب الرد</value></data>
+  <data name="deposit:Admission" xml:space="preserve"><value>تنويم</value></data>
+  <data name="deposit:General" xml:space="preserve"><value>عام</value></data>
+  <data name="deposit:Procedure" xml:space="preserve"><value>إجراء</value></data>
+  <data name="pm:Deposit" xml:space="preserve"><value>من العربون</value></data>
 </root>
