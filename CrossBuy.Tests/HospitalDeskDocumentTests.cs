@@ -70,6 +70,61 @@ namespace CrossBuy.Tests
 			Assert.Empty((await src.FetchAsync(Query(HospitalDocumentDatasets.VisitSlip(), Ctx(2), "AppointmentId", ids[1]))).Rows);
 		}
 
+		// ---- the designed layouts (owner: "the papers must be the prototype's, not tables") ----
+
+		[Theory]
+		[InlineData(HospitalDocumentDatasetCodes.VisitSlip)]
+		[InlineData(HospitalDocumentDatasetCodes.Wristband)]
+		[InlineData(HospitalDocumentDatasetCodes.DepositReceipt)]
+		public void Each_designed_paper_passes_the_studio_validator_whole_and_fits_its_paper(string code)
+		{
+			var dataset = HospitalDocumentDatasets.All().Single(d => d.DatasetCode == code);
+			var layout = HospitalDeskLayouts.For(code)!;
+			var permitted = dataset.Fields.Select(f => f.Key).ToHashSet(StringComparer.Ordinal);
+			var result = new ReportVisualLayoutValidator().Validate(layout, dataset, permitted, new HashSet<int>());
+			Assert.True(result.Ok, string.Join(" | ", result.Errors));
+			Assert.Equal(layout.Bands.Sum(b => b.Elements.Count), result.Sanitised!.Bands.Sum(b => b.Elements.Count));   // nothing silently dropped
+			double width = ReportPaper.ContentWidthMm(layout.Page);
+			Assert.All(layout.Bands.SelectMany(b => b.Elements), e => Assert.True(e.XMm + e.WidthMm <= width + 0.01, $"{e.Kind} {e.FieldKey ?? e.Text} runs off the paper"));
+			// every field the design draws is one the dataset gives
+			Assert.All(layout.Bands.SelectMany(b => b.Elements).Where(e => e.FieldKey != null), e => Assert.Contains(e.FieldKey!, permitted));
+		}
+
+		[Theory]
+		[InlineData(HospitalDocumentDatasetCodes.VisitSlip)]
+		[InlineData(HospitalDocumentDatasetCodes.Wristband)]
+		[InlineData(HospitalDocumentDatasetCodes.DepositReceipt)]
+		public void No_text_is_given_less_height_than_its_font_needs_and_nothing_overlaps_its_neighbour_below(string code)
+		{
+			// the owner's "النصوص مقصوصة": Arabic at 9.5pt in a 6 mm box loses its marks
+			var layout = HospitalDeskLayouts.For(code)!;
+			var texts = layout.Bands.SelectMany(b => b.Elements).Where(e => e.Kind is ReportElementKind.Text or ReportElementKind.Field or ReportElementKind.SystemField).ToList();
+			Assert.All(texts, e => Assert.True(e.HeightMm >= HospitalDeskLayouts.Need(e.Style.FontSizePt) - 0.01,
+				$"{e.FieldKey ?? e.Text} at {e.Style.FontSizePt}pt has {e.HeightMm}mm, needs {HospitalDeskLayouts.Need(e.Style.FontSizePt)}mm"));
+			Assert.All(layout.Bands, b => Assert.All(b.Elements, e => Assert.True(e.YMm + e.HeightMm <= b.HeightMm + 0.01, $"{e.FieldKey ?? e.Text} runs out of its band")));
+			// two text boxes that share horizontal space never share vertical space
+			foreach (var a in texts)
+				foreach (var b in texts.Where(x => !ReferenceEquals(x, a)))
+				{
+					bool across = a.XMm < b.XMm + b.WidthMm - 0.01 && b.XMm < a.XMm + a.WidthMm - 0.01;
+					bool down = a.YMm < b.YMm + b.HeightMm - 0.01 && b.YMm < a.YMm + a.HeightMm - 0.01;
+					Assert.False(across && down, $"{a.FieldKey ?? a.Text} overlaps {b.FieldKey ?? b.Text}");
+				}
+		}
+
+		[Fact]
+		public void The_wristband_is_a_band_and_the_slips_are_a_receipt_roll()
+		{
+			Assert.Equal((280d, 25.4d), ReportPaper.SizeOf(ReportPageSize.Wristband));
+			Assert.Equal(ReportPageSize.Wristband, HospitalDeskLayouts.Wristband().Page.PageSize);
+			Assert.True(HospitalDeskLayouts.Wristband().Bands.Single().HeightMm <= 25.4 - 4);   // the band never runs to a second label
+			Assert.Equal(ReportPageSize.Thermal80, HospitalDeskLayouts.VisitSlip().Page.PageSize);
+			Assert.Equal(ReportPageSize.Thermal80, HospitalDeskLayouts.DepositReceipt().Page.PageSize);
+			var provider = new HospitalReportDefinitionProvider().GetDefinitions().ToDictionary(d => d.Code);
+			Assert.NotNull(provider[HospitalDocumentDatasetCodes.Wristband].ShippedVisual);
+			Assert.Null(provider[HospitalDocumentDatasetCodes.Bill].ShippedVisual);   // the other papers keep what they had
+		}
+
 		[Fact]
 		public async Task The_wristband_keeps_every_allergy_and_another_company_prints_nothing()
 		{

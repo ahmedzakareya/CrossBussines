@@ -94,6 +94,10 @@ namespace CrossBuy.BL.Reporting
         // 80 mm continuous roll — the POS/thermal receipt profile. Present in the page model because the
         // hypermarket lane prints receipts through the same abstraction; the renderer decides how to honour it.
         Thermal80 = 4,
+
+        // A patient identification band, 280 × 25.4 mm (1 inch high) - the wristband printers' common stock.
+        // ADDITIVE at the end: a stored layout holds the integer.
+        Wristband = 5,
     }
 
     public enum ReportOrientation

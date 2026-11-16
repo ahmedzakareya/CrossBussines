@@ -531,6 +531,8 @@ namespace CrossBuy.BL.Reporting
                     Icon = "ki-outline ki-document",
                     Color = "primary",
                     SortOrder = order++,
+                    ShippedVisual = HospitalDeskLayouts.For(dataset.DatasetCode),   // H144: the desk's papers are designed, not tables
+                    DefaultPageSetup = HospitalDeskLayouts.For(dataset.DatasetCode)?.Page ?? ReportPageSetup.Default,
                 };
             }
         }

@@ -90,6 +90,7 @@ namespace CrossBuy.BL.Reporting
 			header["Department"] = dep == null ? null : HospitalDocumentRows.P(ar, dep.Name, dep.NameEn);
 			header["Room"] = room;
 			header["AheadOfYou"] = ahead;
+			header["Payer"] ??= ar ? "على نفقته" : "Self-pay";   // a slip never leaves the payer blank
 			header["Status"] = HospitalDeskDocumentText.Status(a.Status, ar);
 			header["ArrivedAt"] = a.ArrivedAt?.ToLocalTime();
 			builder.AddRow(header);

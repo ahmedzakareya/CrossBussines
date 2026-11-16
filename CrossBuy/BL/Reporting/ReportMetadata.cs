@@ -261,6 +261,11 @@ namespace CrossBuy.BL.Reporting
         // Display order inside its category.
         public int SortOrder { get; init; }
 
+        // A DESIGNED layout the report ships with: the platform seeds its platform template from this instead of
+        // the plain starter table (a paper - a ticket, a wristband - is not a table). Still an ordinary Studio
+        // layout: opened, edited, versioned and forked like any other. Null = the starter.
+        public ReportVisualLayout? ShippedVisual { get; init; }
+
 
         // ---- lookups the engine and shaper use constantly -------------------------------------------------
 

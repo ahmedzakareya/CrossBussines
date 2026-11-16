@@ -427,6 +427,7 @@ namespace CrossBuy.BL.Reporting
                 // A continuous roll has no fixed height. 80mm × auto is the standard receipt profile; a fixed
                 // height would either clip a long receipt or pad a short one with blank paper.
                 ReportPageSize.Thermal80 => "80mm auto",
+                ReportPageSize.Wristband => "280mm 25.4mm",   // a fixed band: no named paper, no orientation
                 _ => "A4" + landscape,
             };
         }

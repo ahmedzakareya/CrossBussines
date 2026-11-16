@@ -363,13 +363,18 @@ namespace CrossBuy.BL.Reporting
                 // THE TEMPLATE CARRIES THE TYPEFACE, which is the whole point of seeding one. A stored null
                 // would mean "whatever the code says", leaving the document's font a constant no author can
                 // see -- so the row names a real face that Studio's picker shows and can change.
-                var page = ReportPageSetup.Default.WithTypography(ReportTypography.DefaultDocumentFace, null);
+                var page = (definition.ShippedVisual?.Page ?? ReportPageSetup.Default).WithTypography(ReportTypography.DefaultDocumentFace, null);
+                var shipped = definition.ShippedVisual;
+                if (shipped != null) shipped.Page = page;
+                // a shipped design must FETCH what it draws: its bound fields join the visible columns
+                var drawn = shipped == null ? new List<string>() : shipped.Bands.SelectMany(b => b.Elements)
+                    .Select(x => x.FieldKey).Where(k => !string.IsNullOrWhiteSpace(k)).Select(k => k!).ToList();
 
                 var layout = new ReportLayout
                 {
                     VisibleColumns = definition.Columns
                         .Where(c => c.VisibleByDefault && !c.Internal)
-                        .Select(c => c.Key).ToList(),
+                        .Select(c => c.Key).Union(drawn).ToList(),
                     Sorts = definition.DefaultSorts,
                     ShowGrandTotals = true,
 
@@ -381,7 +386,7 @@ namespace CrossBuy.BL.Reporting
                     // Visual.Page. Leaving StarterFor to build its own default is how a designed page kept
                     // its paper and lost its font -- the visual renderer never saw the setup beside it.
                     PageSetup = page,
-                    Visual = ReportVisualLayout.StarterFor(
+                    Visual = shipped ?? ReportVisualLayout.StarterFor(
                         definition.TitleAr ?? definition.TitleEn ?? definition.Code, definition.Columns, page),
 
                     // The document's heading follows the template's name from here on, which is why renaming
