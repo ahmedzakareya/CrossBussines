@@ -26,6 +26,10 @@
             --cb-ai-ok:#17795E;--cb-ai-ok-bg:#E6F6F1;--cb-ai-part:#4B5675;--cb-ai-part-bg:#EEF1F6}
 
         /* ---- launcher ---- */
+        /* The theme's back-to-top button lives in the same corner and sat UNDER this 60px launcher. It stacks above
+           it instead, centred on it with a 14px gap: 24 + 60 + 14 from the bottom, (60 - 36) / 2 + 24 from the side. */
+        #kt_scrolltop{inset-block-end:calc(98px + env(safe-area-inset-bottom,0px)) !important;
+            inset-inline-end:calc(36px + env(safe-area-inset-right,0px)) !important;inset-inline-start:auto !important}
         .cb-ai-fab{position:fixed;inset-block-end:calc(24px + env(safe-area-inset-bottom,0px));
             inset-inline-end:calc(24px + env(safe-area-inset-right,0px));z-index:1040;
             width:60px;height:60px;border-radius:50%;border:0;cursor:pointer;padding:0;
