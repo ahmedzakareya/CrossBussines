@@ -7746,4 +7746,46 @@
   <data name="dst:Applied" xml:space="preserve"><value>Plans appliqués</value></data>
   <data name="dst:Closed" xml:space="preserve"><value>Clos</value></data>
   <data name="dst:Open" xml:space="preserve"><value>En attente de validation</value></data>
+  <data name="Choose how the cover was verified" xml:space="preserve"><value>Choisissez comment la couverture a été vérifiée</value></data>
+  <data name="Choose insured or self-pay" xml:space="preserve"><value>Choisissez assuré ou à ses frais</value></data>
+  <data name="Choose the policy that covers the visit" xml:space="preserve"><value>Choisissez la police qui couvre la visite</value></data>
+  <data name="Final patient share" xml:space="preserve"><value>Part finale du patient</value></data>
+  <data name="How it was verified" xml:space="preserve"><value>Mode de vérification</value></data>
+  <data name="Insurance for this visit" xml:space="preserve"><value>Assurance pour cette visite</value></data>
+  <data name="Insured" xml:space="preserve"><value>Assuré</value></data>
+  <data name="Known when the visit's bill closes" xml:space="preserve"><value>Connue à la clôture de la facture de la visite</value></data>
+  <data name="Last verification" xml:space="preserve"><value>Dernière vérification</value></data>
+  <data name="No policy on file" xml:space="preserve"><value>Aucune police au dossier</value></data>
+  <data name="No priced service for this visit yet" xml:space="preserve"><value>Aucun acte tarifé pour cette visite</value></data>
+  <data name="Not requested" xml:space="preserve"><value>Non demandé</value></data>
+  <data name="Not verified for this visit" xml:space="preserve"><value>Non vérifiée pour cette visite</value></data>
+  <data name="Payer for this visit" xml:space="preserve"><value>Payeur pour cette visite</value></data>
+  <data name="Policy" xml:space="preserve"><value>Police</value></data>
+  <data name="Prior approval" xml:space="preserve"><value>Accord préalable</value></data>
+  <data name="Record the verification" xml:space="preserve"><value>Enregistrer la vérification</value></data>
+  <data name="Request approval" xml:space="preserve"><value>Demander l'accord</value></data>
+  <data name="The approval is requested" xml:space="preserve"><value>L'accord est demandé</value></data>
+  <data name="The insurer's reference" xml:space="preserve"><value>Référence de l'assureur</value></data>
+  <data name="The verification is recorded" xml:space="preserve"><value>La vérification est enregistrée</value></data>
+  <data name="The visit is not taking place" xml:space="preserve"><value>La visite n'a pas lieu</value></data>
+  <data name="The visit's services" xml:space="preserve"><value>Les actes de la visite</value></data>
+  <data name="This policy does not cover the visit's day" xml:space="preserve"><value>Cette police ne couvre pas le jour de la visite</value></data>
+  <data name="Write the insurer's reference for the check" xml:space="preserve"><value>Indiquez la référence de l'assureur pour la vérification</value></data>
+  <data name="at most" xml:space="preserve"><value>au plus</value></data>
+  <data name="cov:Insured" xml:space="preserve"><value>Assuré</value></data>
+  <data name="cov:SelfPay" xml:space="preserve"><value>À ses frais</value></data>
+  <data name="next:await" xml:space="preserve"><value>En attente de la réponse de l'assureur pour : {0}</value></data>
+  <data name="next:collect" xml:space="preserve"><value>Encaissez la part du patient</value></data>
+  <data name="next:decide" xml:space="preserve"><value>Aucune police ne couvre le jour de la visite : choisissez le payeur ou notez la visite à ses frais</value></data>
+  <data name="next:none" xml:space="preserve"><value>Rien à faire</value></data>
+  <data name="next:refused" xml:space="preserve"><value>L'assureur a refusé : {0} — informez le patient que c'est à ses frais, ou annulez</value></data>
+  <data name="next:request" xml:space="preserve"><value>Demandez l'accord préalable pour : {0}</value></data>
+  <data name="next:verify" xml:space="preserve"><value>Vérifiez la couverture pour cette visite</value></data>
+  <data name="outside the contract's list" xml:space="preserve"><value>hors liste du contrat</value></data>
+  <data name="src:Card" xml:space="preserve"><value>Carte d'assurance</value></data>
+  <data name="src:Letter" xml:space="preserve"><value>Lettre d'accord</value></data>
+  <data name="src:Patient" xml:space="preserve"><value>Déclaration du patient</value></data>
+  <data name="src:Phone" xml:space="preserve"><value>Appel à l'assureur</value></data>
+  <data name="src:Portal" xml:space="preserve"><value>Portail de l'assureur</value></data>
+  <data name="The service" xml:space="preserve"><value>Acte</value></data>
 </root>

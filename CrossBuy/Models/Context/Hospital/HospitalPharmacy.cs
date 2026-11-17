@@ -119,6 +119,7 @@ namespace CrossBuy.Models.Context.Hospital
 			HospitalCheckinGapModel.Configure(b);        // H159: check-in steps followed up after the counter
 			HospitalDeskCheckoutModel.Configure(b);      // H160: checkout at the desk after the consultation
 			HospitalClinicDisruptionModel.Configure(b);   // H161: clinic disruptions and the patients they reach
+			HospitalVisitCoverageModel.Configure(b);     // H162: insurance verified for each visit
 			b.Entity<HospitalDispense>(e =>
 			{
 				e.HasIndex(x => new { x.CompanyId, x.RxNo }).IsUnique();

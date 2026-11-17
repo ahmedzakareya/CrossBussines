@@ -1,0 +1,215 @@
+{
+ "unit": "H162 - insurance for this visit: payer, verification and source, services and approvals, estimated and final share, next step",
+ "strings": {
+  "cov:Insured": {
+   "ar": "مؤمَّن عليه",
+   "en": "Insured",
+   "fr": "Assuré"
+  },
+  "cov:SelfPay": {
+   "ar": "على نفقته",
+   "en": "Self-pay",
+   "fr": "À ses frais"
+  },
+  "src:Card": {
+   "ar": "بطاقة التأمين",
+   "en": "Insurance card",
+   "fr": "Carte d'assurance"
+  },
+  "src:Portal": {
+   "ar": "بوابة شركة التأمين",
+   "en": "Insurer's portal",
+   "fr": "Portail de l'assureur"
+  },
+  "src:Phone": {
+   "ar": "اتصال بشركة التأمين",
+   "en": "Call to the insurer",
+   "fr": "Appel à l'assureur"
+  },
+  "src:Letter": {
+   "ar": "خطاب موافقة",
+   "en": "Approval letter",
+   "fr": "Lettre d'accord"
+  },
+  "src:Patient": {
+   "ar": "إفادة المريض",
+   "en": "The patient's word",
+   "fr": "Déclaration du patient"
+  },
+  "next:verify": {
+   "ar": "تحقّق من التغطية التأمينية لهذه الزيارة",
+   "en": "Verify the cover for this visit",
+   "fr": "Vérifiez la couverture pour cette visite"
+  },
+  "next:decide": {
+   "ar": "لا توجد وثيقة تغطي يوم الزيارة: حدّد جهة الدفع أو سجّل الزيارة على نفقة المريض",
+   "en": "No policy covers the visit's day: decide the payer or record the visit as self-pay",
+   "fr": "Aucune police ne couvre le jour de la visite : choisissez le payeur ou notez la visite à ses frais"
+  },
+  "next:request": {
+   "ar": "اطلب موافقة مسبقة على: {0}",
+   "en": "Request prior approval for: {0}",
+   "fr": "Demandez l'accord préalable pour : {0}"
+  },
+  "next:await": {
+   "ar": "بانتظار رد شركة التأمين على: {0}",
+   "en": "Waiting for the insurer's answer on: {0}",
+   "fr": "En attente de la réponse de l'assureur pour : {0}"
+  },
+  "next:refused": {
+   "ar": "رفضت شركة التأمين: {0} — أبلغ المريض أنها على نفقته أو ألغِها",
+   "en": "The insurer refused: {0} — tell the patient it is self-pay, or cancel it",
+   "fr": "L'assureur a refusé : {0} — informez le patient que c'est à ses frais, ou annulez"
+  },
+  "next:collect": {
+   "ar": "حصّل حصة المريض",
+   "en": "Collect the patient's share",
+   "fr": "Encaissez la part du patient"
+  },
+  "next:none": {
+   "ar": "لا يوجد إجراء مطلوب",
+   "en": "Nothing to do",
+   "fr": "Rien à faire"
+  },
+  "Choose how the cover was verified": {
+   "ar": "اختر طريقة التحقق من التغطية",
+   "en": "Choose how the cover was verified",
+   "fr": "Choisissez comment la couverture a été vérifiée"
+  },
+  "Choose insured or self-pay": {
+   "ar": "اختر مؤمَّنًا عليه أو على نفقته",
+   "en": "Choose insured or self-pay",
+   "fr": "Choisissez assuré ou à ses frais"
+  },
+  "Choose the policy that covers the visit": {
+   "ar": "اختر الوثيقة التي تغطي الزيارة",
+   "en": "Choose the policy that covers the visit",
+   "fr": "Choisissez la police qui couvre la visite"
+  },
+  "Final patient share": {
+   "ar": "حصة المريض النهائية",
+   "en": "Final patient share",
+   "fr": "Part finale du patient"
+  },
+  "How it was verified": {
+   "ar": "طريقة التحقق",
+   "en": "How it was verified",
+   "fr": "Mode de vérification"
+  },
+  "Insurance for this visit": {
+   "ar": "التأمين لهذه الزيارة",
+   "en": "Insurance for this visit",
+   "fr": "Assurance pour cette visite"
+  },
+  "Insured": {
+   "ar": "مؤمَّن عليه",
+   "en": "Insured",
+   "fr": "Assuré"
+  },
+  "Known when the visit's bill closes": {
+   "ar": "تُعرف عند إغلاق فاتورة الزيارة",
+   "en": "Known when the visit's bill closes",
+   "fr": "Connue à la clôture de la facture de la visite"
+  },
+  "Last verification": {
+   "ar": "آخر تحقق",
+   "en": "Last verification",
+   "fr": "Dernière vérification"
+  },
+  "No policy on file": {
+   "ar": "لا توجد وثيقة تأمين في الملف",
+   "en": "No policy on file",
+   "fr": "Aucune police au dossier"
+  },
+  "No priced service for this visit yet": {
+   "ar": "لا توجد خدمة مسعّرة لهذه الزيارة بعد",
+   "en": "No priced service for this visit yet",
+   "fr": "Aucun acte tarifé pour cette visite"
+  },
+  "Not requested": {
+   "ar": "لم تُطلب",
+   "en": "Not requested",
+   "fr": "Non demandé"
+  },
+  "Not verified for this visit": {
+   "ar": "لم يُتحقق منها لهذه الزيارة",
+   "en": "Not verified for this visit",
+   "fr": "Non vérifiée pour cette visite"
+  },
+  "Payer for this visit": {
+   "ar": "جهة الدفع لهذه الزيارة",
+   "en": "Payer for this visit",
+   "fr": "Payeur pour cette visite"
+  },
+  "The service": {
+   "ar": "الخدمة",
+   "en": "Service",
+   "fr": "Acte"
+  },
+  "Policy": {
+   "ar": "الوثيقة",
+   "en": "Policy",
+   "fr": "Police"
+  },
+  "Prior approval": {
+   "ar": "الموافقة المسبقة",
+   "en": "Prior approval",
+   "fr": "Accord préalable"
+  },
+  "Record the verification": {
+   "ar": "تسجيل التحقق",
+   "en": "Record the verification",
+   "fr": "Enregistrer la vérification"
+  },
+  "Request approval": {
+   "ar": "طلب الموافقة",
+   "en": "Request approval",
+   "fr": "Demander l'accord"
+  },
+  "The approval is requested": {
+   "ar": "طُلبت الموافقة",
+   "en": "The approval is requested",
+   "fr": "L'accord est demandé"
+  },
+  "The insurer's reference": {
+   "ar": "مرجع شركة التأمين",
+   "en": "The insurer's reference",
+   "fr": "Référence de l'assureur"
+  },
+  "The verification is recorded": {
+   "ar": "سُجِّل التحقق",
+   "en": "The verification is recorded",
+   "fr": "La vérification est enregistrée"
+  },
+  "The visit is not taking place": {
+   "ar": "الزيارة لن تتم",
+   "en": "The visit is not taking place",
+   "fr": "La visite n'a pas lieu"
+  },
+  "The visit's services": {
+   "ar": "خدمات الزيارة",
+   "en": "The visit's services",
+   "fr": "Les actes de la visite"
+  },
+  "This policy does not cover the visit's day": {
+   "ar": "هذه الوثيقة لا تغطي يوم الزيارة",
+   "en": "This policy does not cover the visit's day",
+   "fr": "Cette police ne couvre pas le jour de la visite"
+  },
+  "Write the insurer's reference for the check": {
+   "ar": "اكتب مرجع شركة التأمين للتحقق",
+   "en": "Write the insurer's reference for the check",
+   "fr": "Indiquez la référence de l'assureur pour la vérification"
+  },
+  "at most": {
+   "ar": "بحد أقصى",
+   "en": "at most",
+   "fr": "au plus"
+  },
+  "outside the contract's list": {
+   "ar": "خارج قائمة العقد",
+   "en": "outside the contract's list",
+   "fr": "hors liste du contrat"
+  }
+ }
+}

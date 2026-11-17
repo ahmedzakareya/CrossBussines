@@ -352,7 +352,8 @@
                 work: @Json.Serialize(Url.Action("FrontDeskWork")), slotsOf: @Json.Serialize(Url.Action("FrontDeskSlots")),
                 arrival: @Json.Serialize(Url.Action("FrontDeskArrival")), handoffs: @Json.Serialize(Url.Action("FrontDeskHandoffs")), handoffsPost: @Json.Serialize(Url.Content("~/Hospital/FrontDesk/Handoffs")),
                 gapWin: @Json.Serialize(Url.Action("FrontDeskGap")), gaps: @Json.Serialize(Url.Action("FrontDeskGaps")), gapsPost: @Json.Serialize(Url.Content("~/Hospital/FrontDesk/Gaps")), gapAct: @Json.Serialize(Url.Content("~/Hospital/CheckinGaps/")),
-                checkouts: @Json.Serialize(Url.Action("FrontDeskCheckouts")), toCall: @Json.Serialize(Url.Action("FrontDeskToCall")), checkout: @Json.Serialize(Url.Content("~/Hospital/FrontDesk/Checkout/")) };
+                checkouts: @Json.Serialize(Url.Action("FrontDeskCheckouts")), toCall: @Json.Serialize(Url.Action("FrontDeskToCall")), coverage: @Json.Serialize(Url.Content("~/Hospital/FrontDesk/Coverage/")), checkout: @Json.Serialize(Url.Content("~/Hospital/FrontDesk/Checkout/")) };
+            var W8 = { title: @Json.Serialize(T["Insurance for this visit"].Value), saved: @Json.Serialize(T["The verification is recorded"].Value), asked: @Json.Serialize(T["The approval is requested"].Value) };   // H162
             var W7 = { title: @Json.Serialize(T["Check out"].Value), why: @Json.Serialize(T["Something is still open: write why the visit is closed anyway"].Value), done: @Json.Serialize(T["Checked out"].Value) };
             var W6 = { gap: @Json.Serialize(T["Follow up a check-in step"].Value), reason: @Json.Serialize(T["Write why it could not be finished at the counter"].Value), opened: @Json.Serialize(T["Followed up; it is on the check-in gaps list."].Value),
                 done: @Json.Serialize(T["Mark \"{0}\" as finished?"].Value), take: @Json.Serialize(T["Take this follow-up as yours?"].Value) };
@@ -692,6 +693,15 @@
                     return;
                 }
                 if ((t = e.target.closest('[data-open-patient]'))) { e.preventDefault(); openCard(t.getAttribute('data-open-patient'), true); return; }
+                if ((t = e.target.closest('[data-desk-coverage]'))) { e.preventDefault(); windowOf(W8.title, U.coverage + t.getAttribute('data-desk-coverage'), 'mw-850px'); return; }   // H162
+                if ((t = e.target.closest('[data-cov-save]'))) { e.preventDefault();
+                    var vb = mBody.querySelector('[data-coverage]'), sel = vb.querySelector('[data-cov="decision"]'), opt = sel.options[sel.selectedIndex], f = function (k) { return vb.querySelector('[data-cov="' + k + '"]').value.trim(); };
+                    var vid = t.getAttribute('data-cov-save'), vbtn = t; vbtn.disabled = true;
+                    post(U.coverage + vid, { decision: sel.value, policyId: opt && opt.getAttribute('data-policy') ? Number(opt.getAttribute('data-policy')) : null, source: f('source'), reference: f('reference') || null, note: f('note') || null })
+                        .then(function (r) { vbtn.disabled = false; if (!r.ok) { toastr.error(r.error || W.failed); return; } toastr.success(W8.saved); windowOf(W8.title, U.coverage + vid, 'mw-850px'); if (current) openCard(current, false); }); return; }
+                if ((t = e.target.closest('[data-cov-preauth]'))) { e.preventDefault();
+                    var cid2 = mBody.querySelector('[data-coverage]').getAttribute('data-coverage'), pb = t; pb.disabled = true;
+                    post(U.coverage + cid2 + '/Preauth/' + t.getAttribute('data-cov-preauth')).then(function (r) { pb.disabled = false; if (!r.ok) { toastr.error(r.error || W.failed); return; } toastr.success(W8.asked); windowOf(W8.title, U.coverage + cid2, 'mw-850px'); }); return; }
                 if ((t = e.target.closest('[data-desk-checkout]'))) { e.preventDefault(); windowOf(W7.title, U.checkout + t.getAttribute('data-desk-checkout'), 'mw-700px'); return; }   // H160
                 if ((t = e.target.closest('[data-co-close]'))) { e.preventDefault();
                     var cbox = mBody.querySelector('[data-checkout]'), note = (cbox.querySelector('[data-co-note]') || {}).value || '';

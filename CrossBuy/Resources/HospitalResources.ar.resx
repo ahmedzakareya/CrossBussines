@@ -7746,4 +7746,46 @@
   <data name="dst:Applied" xml:space="preserve"><value>طُبِّقت الخطط</value></data>
   <data name="dst:Closed" xml:space="preserve"><value>مغلق</value></data>
   <data name="dst:Open" xml:space="preserve"><value>بانتظار الاعتماد</value></data>
+  <data name="Choose how the cover was verified" xml:space="preserve"><value>اختر طريقة التحقق من التغطية</value></data>
+  <data name="Choose insured or self-pay" xml:space="preserve"><value>اختر مؤمَّنًا عليه أو على نفقته</value></data>
+  <data name="Choose the policy that covers the visit" xml:space="preserve"><value>اختر الوثيقة التي تغطي الزيارة</value></data>
+  <data name="Final patient share" xml:space="preserve"><value>حصة المريض النهائية</value></data>
+  <data name="How it was verified" xml:space="preserve"><value>طريقة التحقق</value></data>
+  <data name="Insurance for this visit" xml:space="preserve"><value>التأمين لهذه الزيارة</value></data>
+  <data name="Insured" xml:space="preserve"><value>مؤمَّن عليه</value></data>
+  <data name="Known when the visit's bill closes" xml:space="preserve"><value>تُعرف عند إغلاق فاتورة الزيارة</value></data>
+  <data name="Last verification" xml:space="preserve"><value>آخر تحقق</value></data>
+  <data name="No policy on file" xml:space="preserve"><value>لا توجد وثيقة تأمين في الملف</value></data>
+  <data name="No priced service for this visit yet" xml:space="preserve"><value>لا توجد خدمة مسعّرة لهذه الزيارة بعد</value></data>
+  <data name="Not requested" xml:space="preserve"><value>لم تُطلب</value></data>
+  <data name="Not verified for this visit" xml:space="preserve"><value>لم يُتحقق منها لهذه الزيارة</value></data>
+  <data name="Payer for this visit" xml:space="preserve"><value>جهة الدفع لهذه الزيارة</value></data>
+  <data name="Policy" xml:space="preserve"><value>الوثيقة</value></data>
+  <data name="Prior approval" xml:space="preserve"><value>الموافقة المسبقة</value></data>
+  <data name="Record the verification" xml:space="preserve"><value>تسجيل التحقق</value></data>
+  <data name="Request approval" xml:space="preserve"><value>طلب الموافقة</value></data>
+  <data name="The approval is requested" xml:space="preserve"><value>طُلبت الموافقة</value></data>
+  <data name="The insurer's reference" xml:space="preserve"><value>مرجع شركة التأمين</value></data>
+  <data name="The verification is recorded" xml:space="preserve"><value>سُجِّل التحقق</value></data>
+  <data name="The visit is not taking place" xml:space="preserve"><value>الزيارة لن تتم</value></data>
+  <data name="The visit's services" xml:space="preserve"><value>خدمات الزيارة</value></data>
+  <data name="This policy does not cover the visit's day" xml:space="preserve"><value>هذه الوثيقة لا تغطي يوم الزيارة</value></data>
+  <data name="Write the insurer's reference for the check" xml:space="preserve"><value>اكتب مرجع شركة التأمين للتحقق</value></data>
+  <data name="at most" xml:space="preserve"><value>بحد أقصى</value></data>
+  <data name="cov:Insured" xml:space="preserve"><value>مؤمَّن عليه</value></data>
+  <data name="cov:SelfPay" xml:space="preserve"><value>على نفقته</value></data>
+  <data name="next:await" xml:space="preserve"><value>بانتظار رد شركة التأمين على: {0}</value></data>
+  <data name="next:collect" xml:space="preserve"><value>حصّل حصة المريض</value></data>
+  <data name="next:decide" xml:space="preserve"><value>لا توجد وثيقة تغطي يوم الزيارة: حدّد جهة الدفع أو سجّل الزيارة على نفقة المريض</value></data>
+  <data name="next:none" xml:space="preserve"><value>لا يوجد إجراء مطلوب</value></data>
+  <data name="next:refused" xml:space="preserve"><value>رفضت شركة التأمين: {0} — أبلغ المريض أنها على نفقته أو ألغِها</value></data>
+  <data name="next:request" xml:space="preserve"><value>اطلب موافقة مسبقة على: {0}</value></data>
+  <data name="next:verify" xml:space="preserve"><value>تحقّق من التغطية التأمينية لهذه الزيارة</value></data>
+  <data name="outside the contract's list" xml:space="preserve"><value>خارج قائمة العقد</value></data>
+  <data name="src:Card" xml:space="preserve"><value>بطاقة التأمين</value></data>
+  <data name="src:Letter" xml:space="preserve"><value>خطاب موافقة</value></data>
+  <data name="src:Patient" xml:space="preserve"><value>إفادة المريض</value></data>
+  <data name="src:Phone" xml:space="preserve"><value>اتصال بشركة التأمين</value></data>
+  <data name="src:Portal" xml:space="preserve"><value>بوابة شركة التأمين</value></data>
+  <data name="The service" xml:space="preserve"><value>الخدمة</value></data>
 </root>

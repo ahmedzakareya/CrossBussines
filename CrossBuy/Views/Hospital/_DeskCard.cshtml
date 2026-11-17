@@ -128,9 +128,11 @@ else
                 <div class="fs-8 fw-semibold @(gp.DueDate.Date < todayD.Date ? "text-danger" : "text-primary")"><i class="ki-outline ki-notepad-edit fs-7 me-1"></i>@T["Followed up"] · @T["due by"] <span class="hp-num" dir="ltr">@gp.DueDate.ToString("yyyy-MM-dd")</span></div>
             }
         </div>
+        @if (c.Key == "payer" && visit != null && c.Done) {<button type="button" class="btn btn-sm btn-icon btn-light btn-active-light-primary w-30px h-30px me-2" data-desk-coverage="@visit.A.Id" title="@T["Insurance for this visit"]" data-bs-toggle="tooltip"><i class="ki-outline ki-shield-search fs-4"></i></button>}   @* H162 *@
         @if (!c.Done && !gaps.Any(x => x.Item == c.Key)) {<button type="button" class="btn btn-sm btn-icon btn-light btn-active-light-primary w-30px h-30px me-2" data-desk-gap="@p.ID" data-item="@c.Key" title="@T["Follow up later"]" data-bs-toggle="tooltip"><i class="ki-outline ki-notepad-edit fs-4"></i></button>}   @* H159 *@
         @if (c.Done) {<i class="ki-outline ki-check-circle fs-2 text-primary"></i>}
         else if (c.Key is "identity" or "phone" or "photo") {<a href="@Url.Action("EditPatient", "Hospital", new { id = p.ID })" class="btn btn-sm btn-light-@(c.Blocks ? "danger" : "primary") py-1 px-3">@T["Complete"]</a>}
+        else if (c.Key == "payer" && visit != null) {<button type="button" class="btn btn-sm btn-light-danger py-1 px-3" data-desk-coverage="@visit.A.Id">@T["Check"]</button>}   @* H162: this visit's cover *@
         else if (c.Key == "payer") {<a href="@Url.Action("Insurance", "Hospital")" class="btn btn-sm btn-light-danger py-1 px-3">@T["Check"]</a>}
         else if (c.Key == "consent") {<a href="@Url.Action("NewConsent", "Hospital", new { id = p.ID })" class="btn btn-sm btn-light-primary py-1 px-3">@T["Sign"]</a>}
         else if (c.Key == "balance" && canBill) {<button type="button" class="btn btn-sm btn-light-primary py-1 px-3" data-desk-pay="@p.ID">@T["Collect payment"]</button>}

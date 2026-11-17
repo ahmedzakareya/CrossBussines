@@ -1,0 +1,96 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model HospitalVisitCoverageSheet
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@* H162 — insurance for this visit: the next step first; the payer and policy (or why none covers the day); the last
+   verification (when, by whom, how, the insurer's reference); the visit's services with their price and approval;
+   the estimated share beside the final one; then "record the verification" (insured under a policy, or self-pay). *@
+@{
+    var a = Model.Appointment; var inv = System.Globalization.CultureInfo.InvariantCulture; bool canBill = ViewBag.CanBill == true;
+    int dp = ViewBag.MoneyDp is int d0 ? d0 : 2; string cur = ViewBag.Currency as string ?? "";
+    string Money(decimal v) => v.ToString("N" + dp, inv);
+    var l = Model.Latest; bool alert = Model.NextStep is not "next:none";
+}
+<div data-coverage="@a.ID">
+    <div class="notice d-flex align-items-center rounded border border-dashed p-5 mb-6 @(alert ? "bg-light-danger border-danger" : "bg-light-primary border-primary")">
+        <i class="ki-outline @(alert ? "ki-information-2 text-danger" : "ki-check-circle text-primary") fs-2tx me-4"></i>
+        <div><div class="fs-8 text-muted fw-semibold">@T["Next step"]</div>
+            <div class="fs-6 fw-bold text-gray-900">@(Model.NextService != null ? string.Format(T[Model.NextStep].Value, Model.NextService) : T[Model.NextStep].Value)</div></div>
+    </div>
+
+    <div class="row g-5 mb-6">
+        <div class="col-md-6"><div class="border border-dashed border-gray-300 rounded p-4 h-100">
+            <div class="fs-8 text-muted fw-semibold mb-1">@T["Payer for this visit"]</div>
+            @if (Model.Payer != null && Model.Policy != null)
+            {
+                <div class="fw-bold fs-6 text-gray-900"><bdi>@DisplayName.Of(Model.Payer.Name, Model.Payer.NameEn)</bdi></div>
+                <div class="fs-7 text-gray-700">@T["Policy"] <span class="hp-num">@Model.Policy.PolicyNo</span>@if (Model.Policy.MemberClass != null) {<text> · </text><bdi>@Model.Policy.MemberClass</bdi>}</div>
+                <div class="fs-8 text-muted">@T["Patient share"] <span class="hp-num">@Model.Payer.CopayPct.ToString("0.##", inv)%</span>@if (Model.Payer.CopayCap > 0) {<text> · @T["at most"] </text><span class="hp-num">@Money(Model.Payer.CopayCap)</span>}</div>
+            }
+            else if (l?.Decision == HospitalCoverageDecision.SelfPay) {<div class="fw-bold fs-6 text-gray-900">@T["Self-pay"]</div>}
+            else if (Model.Ineligible != null) {<div class="fw-bold fs-7 text-danger">@T["inelig:" + Model.Ineligible]</div>}
+            else {<div class="fw-bold fs-6 text-gray-900">@T["Self-pay"]</div><div class="fs-8 text-muted">@T["No policy on file"]</div>}
+        </div></div>
+        <div class="col-md-6"><div class="border border-dashed border-gray-300 rounded p-4 h-100">
+            <div class="fs-8 text-muted fw-semibold mb-1">@T["Last verification"]</div>
+            @if (l != null)
+            {
+                <div class="fw-bold fs-6 text-gray-900">@T["cov:" + l.Decision] · @T["src:" + l.Source]</div>
+                <div class="fs-7 text-gray-700"><span class="hp-num" dir="ltr">@l.VerifiedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</span>@if (Model.VerifiedBy != null) {<text> · </text>@Model.VerifiedBy}</div>
+                @if (l.Reference != null) {<div class="fs-8 text-muted">@T["Reference"] <span class="hp-num">@l.Reference</span></div>}
+            }
+            else {<div class="fw-bold fs-7 text-danger">@T["Not verified for this visit"]</div>}
+        </div></div>
+    </div>
+
+    <div class="fw-bold fs-7 text-gray-800 mb-3">@T["The visit's services"]</div>
+    <div class="table-responsive mb-6"><table class="table align-middle gs-0 gy-3 mb-0">
+        <thead><tr class="fw-bold text-muted bg-light fs-8"><th class="ps-3 rounded-start">@T["The service"]</th><th class="text-end">@T["Price"]</th><th>@T["Prior approval"]</th><th class="text-end pe-3 rounded-end"></th></tr></thead>
+        <tbody>
+            @if (Model.Services.Count == 0) {<tr><td colspan="4" class="text-muted fs-7 ps-3">@T["No priced service for this visit yet"]</td></tr>}
+            @foreach (var s in Model.Services)
+            {
+                <tr>
+                    <td class="ps-3"><div class="fs-7 fw-semibold text-gray-900"><bdi>@DisplayName.Of(s.Name, s.NameEn)</bdi></div><div class="fs-8 text-muted hp-num">@s.Code@if (s.OutsideList) {<text> · @T["outside the contract's list"]</text>}</div></td>
+                    <td class="text-end"><span class="hp-num fs-7">@Money(s.Price)</span></td>
+                    <td>@if (!s.NeedsApproval) {<span class="text-muted fs-8">@T["not needed"]</span>}
+                        else if (s.Approval == null) {<span class="badge badge-light-danger fs-8">@T["Not requested"]</span>}
+                        else {<span class="badge badge-light-@(s.Approval == HospitalPreauthStatus.Approved ? "primary" : "danger") fs-8">@T["pa:" + s.Approval]</span>@if (s.ApprovalRef != null) {<span class="fs-8 text-muted hp-num ms-1">@s.ApprovalRef</span>}}</td>
+                    <td class="text-end pe-3">@if (s.NeedsApproval && s.Approval == null && canBill && Model.Payer != null) {<button type="button" class="btn btn-sm btn-light-primary py-1 px-3" data-cov-preauth="@s.ServiceId">@T["Request approval"]</button>}</td>
+                </tr>
+            }
+        </tbody>
+    </table></div>
+
+    <div class="row g-5 mb-6">
+        <div class="col-6"><div class="bg-light rounded p-4"><div class="fs-8 text-muted fw-semibold">@T["Estimated patient share"]</div>
+            <div class="fs-3 fw-bold text-gray-900"><span class="hp-num">@Money(Model.EstimatedShare)</span> <span class="fs-8 text-muted">@cur</span></div>
+            <div class="fs-8 text-muted">@T["of"] <span class="hp-num">@Money(Model.EstimatedTotal)</span></div></div></div>
+        <div class="col-6"><div class="bg-light rounded p-4"><div class="fs-8 text-muted fw-semibold">@T["Final patient share"]</div>
+            @if (Model.FinalShare is decimal fs)
+            {
+                <div class="fs-3 fw-bold text-gray-900"><span class="hp-num">@Money(fs)</span> <span class="fs-8 text-muted">@cur</span></div>
+                <div class="fs-8 text-muted">@T["Insurer"] <span class="hp-num">@Money(Model.FinalInsurer ?? 0)</span>@if (Model.ShareOwed > 0) {<text> · @T["Still owed"] </text><span class="hp-num text-danger">@Money(Model.ShareOwed)</span>}</div>
+            }
+            else {<div class="fs-7 text-muted mt-2">@T["Known when the visit's bill closes"]</div>}
+        </div></div>
+    </div>
+
+    <div class="separator separator-dashed mb-6"></div>
+    <div class="fw-bold fs-7 text-gray-800 mb-3">@T["Record the verification"]</div>
+    <div class="row g-4">
+        <div class="col-md-6"><label class="required fs-7 fw-semibold mb-2">@T["Decision"]</label>
+            <select class="form-select form-select-solid" data-cov="decision">
+                @foreach (var x in Model.Policies) { <option value="@HospitalCoverageDecision.Insured" data-policy="@x.Policy.ID" selected="@(Model.Policy?.ID == x.Policy.ID && l?.Decision != HospitalCoverageDecision.SelfPay)">@T["Insured"] — @DisplayName.Of(x.Payer.Name, x.Payer.NameEn) · @x.Policy.PolicyNo</option> }
+                <option value="@HospitalCoverageDecision.SelfPay" data-policy="" selected="@(Model.Policies.Count == 0 || l?.Decision == HospitalCoverageDecision.SelfPay)">@T["Self-pay"]</option>
+            </select></div>
+        <div class="col-md-6"><label class="required fs-7 fw-semibold mb-2">@T["How it was verified"]</label>
+            <select class="form-select form-select-solid" data-cov="source">
+                @foreach (var x in HospitalCoverageSource.All) { <option value="@x">@T["src:" + x]</option> }
+            </select></div>
+        <div class="col-md-6"><label class="fs-7 fw-semibold mb-2">@T["The insurer's reference"]</label><input class="form-control form-control-solid" data-cov="reference" maxlength="60" /></div>
+        <div class="col-md-6"><label class="fs-7 fw-semibold mb-2">@T["Note"]</label><input class="form-control form-control-solid" data-cov="note" maxlength="300" /></div>
+    </div>
+    <div class="text-end mt-6"><button type="button" class="btn btn-primary" data-cov-save="@a.ID"><i class="ki-outline ki-shield-tick fs-4"></i>@T["Record the verification"]</button></div>
+</div>
