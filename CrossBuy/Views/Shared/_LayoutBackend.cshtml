@@ -5,6 +5,8 @@
 @inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
 @using System.Text.Json
 @{
+	// ?embed=1: the page alone, for the chat drawer (crossbuy-chat-drawer.js) - no header, sidebar, aside or footer.
+	var cbEmbed = Context.Request.Query["embed"] == "1";
     var employeeJson = Context.Session.GetString("Employee");
     var employee = employeeJson != null ? JsonSerializer.Deserialize<EmployeeViewModel>(employeeJson) : null;
 }
@@ -79,10 +81,20 @@ License: For each use you must have a valid license purchased only from above li
 
 		<!--end::Global Stylesheets Bundle-->
 		<script>// Frame-busting to prevent site from being loaded within a frame without permission (click-jacking) if (window.top != window.self) { window.top.location.replace(window.self.location.href); }</script>
-	</head>
+		@if (cbEmbed)
+	{
+		<base target="_top" />
+		<style>
+			body.cb-embed #kt_app_header, body.cb-embed #kt_app_sidebar, body.cb-embed #kt_app_aside, body.cb-embed #kt_app_footer,
+			body.cb-embed #kt_app_toolbar, body.cb-embed .app-toolbar, body.cb-embed #kt_scrolltop, body.cb-embed .cb-ai-fab, body.cb-embed .cb-ai-panel { display: none !important; }
+			body.cb-embed .app-wrapper, body.cb-embed .app-main, body.cb-embed .app-content, body.cb-embed .app-container { margin: 0 !important; padding: 0 !important; }
+			body.cb-embed { background: var(--bs-body-bg) !important; }
+		</style>
+	}
+</head>
 	<!--end::Head-->
 	<!--begin::Body-->
-<body id="kt_app_body" data-kt-app-header-fixed="true" data-kt-app-header-fixed-mobile="true" data-kt-app-sidebar-enabled="true" data-kt-app-sidebar-fixed="true" data-kt-app-sidebar-hoverable="true" data-kt-app-sidebar-push-toolbar="true" data-kt-app-sidebar-push-footer="true" data-kt-app-aside-enabled="true" data-kt-app-aside-fixed="true" data-kt-app-aside-push-toolbar="true" data-kt-app-aside-push-footer="true" class="app-default" data-kt-app-page-loading="on">
+<body id="kt_app_body" data-kt-app-header-fixed="@(cbEmbed ? "false" : "true")" data-kt-app-header-fixed-mobile="@(cbEmbed ? "false" : "true")" data-kt-app-sidebar-enabled="@(cbEmbed ? "false" : "true")" data-kt-app-sidebar-fixed="@(cbEmbed ? "false" : "true")" data-kt-app-sidebar-hoverable="true" data-kt-app-sidebar-push-toolbar="true" data-kt-app-sidebar-push-footer="true" data-kt-app-aside-enabled="@(cbEmbed ? "false" : "true")" data-kt-app-aside-fixed="@(cbEmbed ? "false" : "true")" data-kt-app-aside-push-toolbar="true" data-kt-app-aside-push-footer="true" class="app-default@(cbEmbed ? " cb-embed" : "")" data-kt-app-page-loading="on">
 		<!--begin::Theme mode setup on page load-->
 		<script>var defaultThemeMode = "light"; var themeMode; if ( document.documentElement ) { if ( document.documentElement.hasAttribute("data-bs-theme-mode")) { themeMode = document.documentElement.getAttribute("data-bs-theme-mode"); } else { if ( localStorage.getItem("data-bs-theme") !== null ) { themeMode = localStorage.getItem("data-bs-theme"); } else { themeMode = defaultThemeMode; } } if (themeMode === "system") { themeMode = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"; } document.documentElement.setAttribute("data-bs-theme", themeMode); }</script>
 		<!--end::Theme mode setup on page load-->
@@ -1661,6 +1673,7 @@ License: For each use you must have a valid license purchased only from above li
 <script src="~/Backend-assets/js/custom/apps/ecommerce/catalog/products.js" asp-append-version="true"></script>
 	<script src="~/assets/js/app.ajax.js" asp-append-version="true"></script>
 	<script src="~/Backend-assets/js/crossbuy-confirm.js" asp-append-version="true"></script>
+	<script src="~/Backend-assets/js/crossbuy-chat-drawer.js" asp-append-version="true"></script>
 	<script src="~/Backend-assets/js/crossbuy-monthpicker.js" asp-append-version="true"></script>
 	@await Html.PartialAsync("_CbToastr")
 	@await Html.PartialAsync("_LabCriticalAlerts")
