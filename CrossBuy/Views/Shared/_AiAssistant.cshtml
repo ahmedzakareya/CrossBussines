@@ -284,11 +284,24 @@
         }
 
         function open(state) {
+            // ONE floating layer at a time: the panel and a header dropdown (the account menu, notifications,
+            // the language list) used to stand open together and cover each other on a narrow screen.
+            if (state) {
+                try { if (window.KTMenu && KTMenu.hideDropdowns) KTMenu.hideDropdowns(); } catch (e) { }
+                document.querySelectorAll('.dropdown-menu.show').forEach(function (m) {
+                    var t = m.previousElementSibling; if (t && window.bootstrap && bootstrap.Dropdown) { var d = bootstrap.Dropdown.getInstance(t); if (d) d.hide(); }
+                });
+            }
             panel.classList.toggle('show', state);
             fab.classList.toggle('open', state);
             fab.setAttribute('aria-expanded', state ? 'true' : 'false');
             if (state) setTimeout(function () { input.focus(); }, 60);
         }
+        // ...and the other way round: opening any menu closes the panel
+        document.addEventListener('click', function (e) {
+            if (!panel.classList.contains('show') || panel.contains(e.target) || fab.contains(e.target)) return;
+            if (e.target.closest('[data-kt-menu-trigger], [data-bs-toggle="dropdown"]')) open(false);
+        }, true);
 
         fab.addEventListener('click', function () { open(!panel.classList.contains('show')); });
         document.getElementById('cbAiClose').addEventListener('click', function () { open(false); });
