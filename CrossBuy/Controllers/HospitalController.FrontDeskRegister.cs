@@ -15,6 +15,7 @@ namespace CrossBuy.Controllers
 	// ==========================================================================================
 	public partial class HospitalController
 	{
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpGet("FrontDesk/Register")]
 		[HospitalPerm(HospitalActions.Register)]
 		public async Task<IActionResult> FrontDeskRegister(string? q, CancellationToken ct = default)
@@ -25,6 +26,7 @@ namespace CrossBuy.Controllers
 			ViewBag.DefaultNationality = await _db.Companies.AsNoTracking().Where(c => c.CompanyID == ctx.CompanyId).Select(c => (int?)c.CountryID).FirstOrDefaultAsync(ct);
 			ViewBag.NextMrn = await _patients.NextMrnAsync(ctx, ct);
 			ViewBag.Today = DeskClock(DateTime.UtcNow).Today;
+			ViewBag.CanClinical = await _access.CanAsync(ctx, HospitalActions.ClinicalRead, null, ct);   // H156
 			return PartialView("_DeskRegister", HospitalDeskRegisterRules.Prefill(q));
 		}
 	}

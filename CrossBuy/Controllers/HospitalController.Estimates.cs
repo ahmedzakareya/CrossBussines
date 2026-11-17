@@ -19,6 +19,7 @@ namespace CrossBuy.Controllers
 		private HospitalEstimateService? _estimatesSvc;
 		private HospitalEstimateService EstimatesSvc => _estimatesSvc ??= ActivatorUtilities.CreateInstance<HospitalEstimateService>(HttpContext.RequestServices, InsuranceSvc);
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpGet("Estimates")]
 		[HospitalPerm(HospitalActions.Read)]
 		public async Task<IActionResult> Estimates(CancellationToken ct = default)
@@ -33,6 +34,7 @@ namespace CrossBuy.Controllers
 			return View(await EstimatesSvc.EstimatesAsync(ctx, ct));
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpGet("Estimates/{id:int}")]
 		[HospitalPerm(HospitalActions.Read)]
 		public async Task<IActionResult> Estimate(int id, CancellationToken ct = default)
@@ -47,6 +49,7 @@ namespace CrossBuy.Controllers
 			return View(v);
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpGet("Estimates/Packages")]
 		[HospitalPerm(HospitalActions.Read)]
 		public async Task<IActionResult> Packages(CancellationToken ct = default)
@@ -61,6 +64,7 @@ namespace CrossBuy.Controllers
 		}
 
 		/// Prices the builder as it is filled in: nothing is stored.
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("Estimates/Quote"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Bill)]
 		public async Task<IActionResult> QuoteEstimate([FromBody] HospitalEstimateInput input, CancellationToken ct = default)
 		{
@@ -78,6 +82,7 @@ namespace CrossBuy.Controllers
 			});
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("Estimates/Draft"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Bill)]
 		public async Task<IActionResult> SaveEstimateDraft([FromBody] HospitalEstimateInput input, CancellationToken ct = default)
 		{
@@ -86,6 +91,7 @@ namespace CrossBuy.Controllers
 			return Result(await EstimatesSvc.SaveDraftAsync(ctx, input, ctx.EmployeeId, DateTime.UtcNow, ct));
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("Estimates/{id:int}/Issue"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Bill)]
 		public async Task<IActionResult> IssueEstimate(int id, CancellationToken ct = default)
 		{
@@ -95,6 +101,7 @@ namespace CrossBuy.Controllers
 			return Result(r.Ok || r.Args is not { Length: 1 } ? r : r with { Args = new object[] { _t["inelig:" + r.Args[0]].Value } });
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("Estimates/{id:int}/Cancel"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Bill)]
 		public async Task<IActionResult> CancelEstimate(int id, CancellationToken ct = default)
 		{
@@ -103,6 +110,7 @@ namespace CrossBuy.Controllers
 			return Result(await EstimatesSvc.CancelAsync(ctx, id, ct));
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("Estimates/Package"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Manage)]
 		public async Task<IActionResult> SavePackage([FromBody] HospitalPackageInput input, CancellationToken ct = default)
 		{

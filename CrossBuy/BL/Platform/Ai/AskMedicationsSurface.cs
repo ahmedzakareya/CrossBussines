@@ -36,7 +36,7 @@ namespace CrossBuy.BL.Platform.Ai
 
 		public override string Code => SurfaceCode;
 		public override string Module => EntityRegistry.ScopeHospital;
-		public override string Action => HospitalActions.Read;
+		public override string Action => HospitalActions.ClinicalRead;   // H156: a patient's medicines are the care team's
 
 		public override AskText Description => AskText.Of(
 			"أوامر الأدوية للمرضى المنوَّمين: العدد حسب الدواء أو طريقة الإعطاء أو الحالة",

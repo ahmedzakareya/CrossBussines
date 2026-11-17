@@ -52,6 +52,9 @@ namespace CrossBuy.BL.Reporting
     {
         public const string Prefix = "hospital.";
         public const string View = "hospital.reports.view";
+        /// H156: a report that carries clinical content (a prescription, a discharge summary, a certificate, a label, the
+        /// clinical and management analyses) — the care team's (`clinical-read`), never a reception-only person's.
+        public const string Clinical = "hospital.reports.clinical";
         /// H49: the financial and insurance management reports — the billing desk's (`bill`), not every reader's.
         public const string Finance = "hospital.reports.finance";
     }
@@ -100,6 +103,16 @@ namespace CrossBuy.BL.Reporting
             AccountingDatasets.CompanyParam(),
         };
 
+        /// H156: the papers with clinical content. The desk's own papers (bill, statement, visit slip, wristband, deposit
+        /// receipt, credit note, consent) stay on the module's read.
+        public static readonly IReadOnlySet<string> ClinicalDocuments = new HashSet<string>(StringComparer.Ordinal)
+        {
+            HospitalDocumentDatasetCodes.Prescription, HospitalDocumentDatasetCodes.PrescriptionForm, HospitalDocumentDatasetCodes.DischargeSummary,
+            HospitalDocumentDatasetCodes.SickLeave, HospitalDocumentDatasetCodes.BirthNotice, HospitalDocumentDatasetCodes.DeathCertificate,
+            HospitalDocumentDatasetCodes.GlassesRx, HospitalDocumentDatasetCodes.EyeLetter, HospitalDocumentDatasetCodes.AllergyPlan,
+            HospitalDocumentDatasetCodes.CanvasDrawing, HospitalDocumentDatasetCodes.RxLabel, HospitalDocumentDatasetCodes.CompoundLabel,
+        };
+
         private static ReportDatasetDefinition Doc(string code, string ar, string en, string descAr, string descEn,
             IEnumerable<ReportDatasetField> lines, IEnumerable<ReportDatasetField> extra, ReportParameterDescriptor[] parameters) => new()
         {
@@ -110,7 +123,7 @@ namespace CrossBuy.BL.Reporting
             DescriptionAr = descAr,
             DescriptionEn = descEn,
             DataSourceKey = code,
-            RequiredPermissionKey = HospitalReportPermissions.View,
+            RequiredPermissionKey = ClinicalDocuments.Contains(code) ? HospitalReportPermissions.Clinical : HospitalReportPermissions.View,   // H156
             MaxRows = MaxRows,
             RowCapPolicy = ReportRowCapPolicy.TruncateAndDeclare,
             Fields = lines.Concat(Header()).Concat(extra).ToArray(),

@@ -34,6 +34,7 @@ namespace CrossBuy.Controllers
 			return (local.Date, local.Hour * 60 + local.Minute, local);
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpGet("FrontDesk")]
 		[HospitalPerm(HospitalActions.Read)]
 		public async Task<IActionResult> FrontDesk(CancellationToken ct = default)
@@ -78,6 +79,7 @@ namespace CrossBuy.Controllers
 			return rows;
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpGet("FrontDesk/Board")]
 		[HospitalPerm(HospitalActions.Read)]
 		public async Task<IActionResult> FrontDeskBoard(string? stage, int? department, int? doctor, string? q, int page = 1, int pageSize = 25, CancellationToken ct = default)
@@ -95,6 +97,7 @@ namespace CrossBuy.Controllers
 			return PartialView("_DeskRows", await FrontDeskSvc.FlagAsync(ctx, list.Skip((page - 1) * pageSize).Take(pageSize).ToList(), DeskClock(now).Today, now, ct));
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpGet("FrontDesk/Grid")]
 		[HospitalPerm(HospitalActions.Read)]
 		public async Task<IActionResult> FrontDeskGrid(int? department, int? doctor, CancellationToken ct = default)
@@ -108,6 +111,7 @@ namespace CrossBuy.Controllers
 			return PartialView("_DeskGrid", grid);
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpGet("FrontDesk/Search")]
 		[HospitalPerm(HospitalActions.Read)]
 		public async Task<IActionResult> FrontDeskSearch(string? q, string? kind, CancellationToken ct = default)
@@ -125,6 +129,7 @@ namespace CrossBuy.Controllers
 			return PartialView("_DeskSearch", list);
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpGet("FrontDesk/Patient/{id:int}")]
 		[HospitalPerm(HospitalActions.Read)]
 		public async Task<IActionResult> FrontDeskPatient(int id, CancellationToken ct = default)
@@ -144,6 +149,7 @@ namespace CrossBuy.Controllers
 			return PartialView("_DeskCard", card);
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpGet("FrontDesk/WalkInSlots")]
 		[HospitalPerm(HospitalActions.Book)]
 		public async Task<IActionResult> FrontDeskWalkInSlots(int patient, int? doctor, CancellationToken ct = default)
@@ -158,6 +164,7 @@ namespace CrossBuy.Controllers
 			return PartialView("_DeskWalkIn", await FrontDeskSvc.WalkInSlotsAsync(ctx, local, now, ct));
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpGet("FrontDesk/Patient/{id:int}/Pay")]
 		[HospitalPerm(HospitalActions.Bill)]
 		public async Task<IActionResult> FrontDeskPay(int id, CancellationToken ct = default)
@@ -173,6 +180,7 @@ namespace CrossBuy.Controllers
 			return PartialView("_DeskPay", await FrontDeskSvc.OpenBillsAsync(ctx, id, DateTime.UtcNow, ct));
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("FrontDesk/Appointments/{id:int}/Move"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Book)]
 		public async Task<IActionResult> FrontDeskMove(int id, [FromBody] HospitalDeskMoveInput? input, CancellationToken ct = default)
 		{
@@ -181,6 +189,7 @@ namespace CrossBuy.Controllers
 			return Result(await FrontDeskSvc.MoveAsync(ctx, id, input?.To ?? "", ctx.EmployeeId, DateTime.UtcNow, ct));
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("FrontDesk/WalkIn"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Book)]
 		public async Task<IActionResult> FrontDeskWalkIn([FromBody] HospitalDeskWalkInInput input, CancellationToken ct = default)
 		{

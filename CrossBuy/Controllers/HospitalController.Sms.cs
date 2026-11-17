@@ -20,6 +20,7 @@ namespace CrossBuy.Controllers
 
 		public sealed class HospitalSmsOptOutInput { public int PatientId { get; set; } public string? Reason { get; set; } }
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpGet("Sms")]
 		[HospitalPerm(HospitalActions.Read)]
 		public async Task<IActionResult> Sms(CancellationToken ct = default)
@@ -37,6 +38,7 @@ namespace CrossBuy.Controllers
 			return View();
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpGet("Sms/Data")]
 		[HospitalPerm(HospitalActions.Read)]
 		public async Task<IActionResult> SmsData(string? q, string? kind, string? state, int page = 1, int pageSize = 25, CancellationToken ct = default)
@@ -53,6 +55,7 @@ namespace CrossBuy.Controllers
 			return PartialView("_SmsRows", rows);
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("Sms"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Book)]
 		public async Task<IActionResult> ComposeSms([FromBody] HospitalSmsComposeInput input, CancellationToken ct = default)
 		{
@@ -61,6 +64,7 @@ namespace CrossBuy.Controllers
 			return Result(await SmsSvc.ComposeAsync(ctx, input, ctx.EmployeeId, DateTime.UtcNow, ct));
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("Sms/{id:int}/Cancel"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Book)]
 		public async Task<IActionResult> CancelSms(int id, CancellationToken ct = default)
 		{
@@ -69,6 +73,7 @@ namespace CrossBuy.Controllers
 			return Result(await SmsSvc.CancelAsync(ctx, id, ctx.EmployeeId, DateTime.UtcNow, ct));
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("Sms/Send"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Manage)]
 		public async Task<IActionResult> SendSmsQueue(CancellationToken ct = default)
 		{
@@ -79,6 +84,7 @@ namespace CrossBuy.Controllers
 			return r.Ok ? Json(new { ok = true, sent = r.Id }) : Result(r);
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("Sms/Templates"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Manage)]
 		public async Task<IActionResult> SaveSmsTemplate([FromBody] HospitalSmsTemplateInput input, CancellationToken ct = default)
 		{
@@ -87,6 +93,7 @@ namespace CrossBuy.Controllers
 			return Result(await SmsSvc.SaveTemplateAsync(ctx, input, ctx.EmployeeId, DateTime.UtcNow, ct));
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("Sms/OptOut"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Book)]
 		public async Task<IActionResult> SmsOptOut([FromBody] HospitalSmsOptOutInput input, CancellationToken ct = default)
 		{
@@ -95,6 +102,7 @@ namespace CrossBuy.Controllers
 			return Result(await SmsSvc.OptOutAsync(ctx, input.PatientId, input.Reason, ctx.EmployeeId, DateTime.UtcNow, ct));
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("Sms/OptIn"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Book)]
 		public async Task<IActionResult> SmsOptIn([FromBody] HospitalSmsOptOutInput input, CancellationToken ct = default)
 		{

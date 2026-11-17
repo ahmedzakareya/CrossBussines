@@ -79,7 +79,7 @@ namespace CrossBuy.Tests
 		public void It_prints_only_through_report_studio_bound_by_the_stay()
 		{
 			var d = HospitalDocumentDatasets.All().Single(x => x.DatasetCode == HospitalDocumentDatasetCodes.DischargeSummary);
-			Assert.Equal(HospitalReportPermissions.View, d.RequiredPermissionKey);
+			Assert.Equal(HospitalReportPermissions.Clinical, d.RequiredPermissionKey);   // H156: a clinical paper, the care team's
 			Assert.Contains(d.Parameters, p => p.Key == "AdmissionId" && p.Required);
 			foreach (var k in new[] { "FinalDiagnosis", "Course", "Condition", "Medications", "Instructions", "FollowUpOn", "SignedBy", "PatientName", "PatientMrn" })
 				Assert.Contains(d.Fields, f => f.Key == k);

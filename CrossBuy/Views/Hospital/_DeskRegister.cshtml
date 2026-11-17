@@ -47,7 +47,10 @@
                     <div class="col-md-3"><label class="fw-semibold fs-7 text-gray-700 mb-2">@T["Blood group"]</label>
                         <select class="form-select form-select-solid" data-reg-f="bloodGroup"><option value="">—</option>@foreach (var g in HospitalBloodGroups.All) { <option value="@g">@g</option> }</select></div>
                     <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2"><i class="ki-outline ki-shield-cross fs-6 text-danger me-1"></i>@T["Allergies"]</label><textarea class="form-control form-control-solid" rows="2" data-reg-f="allergies" placeholder="@T["One per line"]"></textarea></div>
-                    <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2"><i class="ki-outline ki-heart fs-6 text-primary me-1"></i>@T["Chronic conditions"]</label><textarea class="form-control form-control-solid" rows="2" data-reg-f="chronicConditions" placeholder="@T["One per line"]"></textarea></div>
+                    @if (ViewBag.CanClinical != false)
+                    {
+                        <div class="col-md-6"><label class="fw-semibold fs-7 text-gray-700 mb-2"><i class="ki-outline ki-heart fs-6 text-primary me-1"></i>@T["Chronic conditions"]</label><textarea class="form-control form-control-solid" rows="2" data-reg-f="chronicConditions" placeholder="@T["One per line"]"></textarea></div>
+                    }
                 </div>
                 <div class="fw-bold fs-6 text-gray-800 mt-6 mb-4">@T["Emergency contact"]</div>
                 <div class="row g-5">

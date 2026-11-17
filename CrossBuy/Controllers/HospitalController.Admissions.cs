@@ -17,6 +17,7 @@ namespace CrossBuy.Controllers
 		public sealed class HospitalTransferInput { public int BedId { get; set; } }
 
 		/// The accommodation window's patient picker (select2, as the desk types).
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpGet("Patients/Search")]
 		[HospitalPerm(HospitalActions.Admit)]
 		public async Task<IActionResult> SearchPatients(string? q, CancellationToken ct = default)
@@ -34,6 +35,7 @@ namespace CrossBuy.Controllers
 		}
 
 		/// One patient, as the accommodation window shows them, and every bed they may take now.
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpGet("Admissions/Suitable")]
 		[HospitalPerm(HospitalActions.Admit)]
 		public async Task<IActionResult> SuitableBeds(int patientId, CancellationToken ct = default)
@@ -65,6 +67,7 @@ namespace CrossBuy.Controllers
 			});
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("Admissions/Admit"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Admit)]
 		public async Task<IActionResult> Admit([FromBody] HospitalAdmitInput input, CancellationToken ct = default)
 		{
@@ -73,6 +76,7 @@ namespace CrossBuy.Controllers
 			return Result(await _admissions.AdmitAsync(ctx, input ?? new(), ctx.EmployeeId, DateTime.UtcNow, ct));
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("Admissions/{id:int}/Transfer"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Admit)]
 		public async Task<IActionResult> Transfer(int id, [FromBody] HospitalTransferInput input, CancellationToken ct = default)
 		{
@@ -81,6 +85,7 @@ namespace CrossBuy.Controllers
 			return Result(await _admissions.TransferAsync(ctx, id, input?.BedId ?? 0, ctx.EmployeeId, DateTime.UtcNow, ct));
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("Admissions/{id:int}/Discharge"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Admit)]
 		public async Task<IActionResult> Discharge(int id, CancellationToken ct = default)
 		{
@@ -92,6 +97,7 @@ namespace CrossBuy.Controllers
 		private HospitalPatientPhotoService PhotoSvc => Microsoft.Extensions.DependencyInjection.ActivatorUtilities.CreateInstance<HospitalPatientPhotoService>(HttpContext.RequestServices);
 
 		/// The patient's photo, read through the document platform (it authorises the reader on this patient).
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpGet("Patient/{id:int}/Photo")]
 		[HospitalPerm(HospitalActions.Read)]
 		public async Task<IActionResult> PatientPhotoImage(int id, long d, CancellationToken ct = default)
@@ -104,6 +110,7 @@ namespace CrossBuy.Controllers
 			return File(file.Content, file.ContentType);
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("Patient/{id:int}/Photo"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Register)]
 		[RequestSizeLimit(6_000_000)]
 		public async Task<IActionResult> PatientPhoto(int id, IFormFile? photo, CancellationToken ct = default)

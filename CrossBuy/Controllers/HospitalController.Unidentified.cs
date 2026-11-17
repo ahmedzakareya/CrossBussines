@@ -14,6 +14,7 @@ namespace CrossBuy.Controllers
 		private HospitalUnidentifiedService? _unknownSvc;
 		private HospitalUnidentifiedService UnknownSvc => _unknownSvc ??= ActivatorUtilities.CreateInstance<HospitalUnidentifiedService>(HttpContext.RequestServices);
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpGet("Unidentified")]
 		[HospitalPerm(HospitalActions.Read)]
 		public async Task<IActionResult> Unidentified(CancellationToken ct = default)
@@ -29,6 +30,7 @@ namespace CrossBuy.Controllers
 			return View();
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpGet("Unidentified/Data")]
 		[HospitalPerm(HospitalActions.Read)]
 		public async Task<IActionResult> UnidentifiedData(string? q, string? filter, int page = 1, int pageSize = 25, CancellationToken ct = default)
@@ -42,6 +44,7 @@ namespace CrossBuy.Controllers
 			return PartialView("_UnidentifiedRows", rows);
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("Unidentified"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Register)]
 		public async Task<IActionResult> RegisterUnidentified([FromBody] HospitalUnidentifiedInput input, CancellationToken ct = default)
 		{
@@ -53,6 +56,7 @@ namespace CrossBuy.Controllers
 			return Json(new { ok = true, id = r.Id, erVisit = r.Args?[0], erError = erError == null ? null : _t[erError].Value });
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("Unidentified/{id:int}/Identify"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Register)]
 		public async Task<IActionResult> IdentifyUnidentified(int id, [FromBody] HospitalIdentifyInput input, CancellationToken ct = default)
 		{

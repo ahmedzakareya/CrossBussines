@@ -20,6 +20,7 @@ namespace CrossBuy.Controllers
 
 		// ---------------- forms (settings) ----------------
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpGet("Settings/Consents")]
 		[HospitalPerm(HospitalActions.Manage)]
 		public async Task<IActionResult> ConsentForms(CancellationToken ct = default)
@@ -33,6 +34,7 @@ namespace CrossBuy.Controllers
 		}
 
 		/// The forms list (cbServerList): every search term matches the code or a title, a kind narrows it; X-Total/X-Page/X-Pages.
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpGet("Settings/Consents/Data")]
 		[HospitalPerm(HospitalActions.Manage)]
 		public async Task<IActionResult> ConsentFormsData(string? q, string? kind, int page = 1, int pageSize = 25, CancellationToken ct = default)
@@ -52,6 +54,7 @@ namespace CrossBuy.Controllers
 			return PartialView("_ConsentFormRows", hit.Skip((page - 1) * pageSize).Take(pageSize).ToList());
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("Settings/Consents/Forms"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Manage)]
 		public async Task<IActionResult> SaveConsentForm(int? id, [FromBody] HospitalConsentFormInput input, CancellationToken ct = default)
 		{
@@ -60,6 +63,7 @@ namespace CrossBuy.Controllers
 			return Result(await ConsentSvc.SaveFormAsync(ctx, id is > 0 ? id : null, input, ctx.EmployeeId, DateTime.UtcNow, ct));
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("Settings/Consents/Standard"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Manage)]
 		public async Task<IActionResult> AddStandardConsentForms(CancellationToken ct = default)
 		{
@@ -71,6 +75,7 @@ namespace CrossBuy.Controllers
 
 		// ---------------- signing ----------------
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpGet("Patient/{id:int}/Consents/New")]
 		[HospitalPerm(HospitalActions.Consult)]
 		public async Task<IActionResult> NewConsent(int id, int? surgeryId, CancellationToken ct = default)
@@ -98,6 +103,7 @@ namespace CrossBuy.Controllers
 			return View("ConsentSign", p);
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("Patient/{id:int}/Consents"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Consult)]
 		[RequestSizeLimit(1024 * 1024)]
 		public async Task<IActionResult> SignConsent(int id, [FromBody] HospitalConsentInput input, CancellationToken ct = default)
@@ -107,6 +113,7 @@ namespace CrossBuy.Controllers
 			return Result(await ConsentSvc.SignAsync(ctx, id, input, ctx.EmployeeId, DateTime.UtcNow, ct));
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("Consents/{id:int}/Withdraw"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Read)]
 		public async Task<IActionResult> WithdrawConsent(int id, [FromBody] HospitalVoidInput input, CancellationToken ct = default)
 		{
@@ -116,6 +123,7 @@ namespace CrossBuy.Controllers
 		}
 
 		/// The signature picture (never cached by the browser: it is a clinical record).
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpGet("Consents/{id:int}/Signature")]
 		[HospitalPerm(HospitalActions.Read)]
 		public async Task<IActionResult> ConsentSignature(int id, CancellationToken ct = default)
@@ -129,6 +137,7 @@ namespace CrossBuy.Controllers
 		}
 
 		/// A consent's own address (the entity registry's route): its patient's file, on the consents tab.
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpGet("Consents/{id:int}")]
 		[HospitalPerm(HospitalActions.Read)]
 		public async Task<IActionResult> Consent(int id, CancellationToken ct = default)

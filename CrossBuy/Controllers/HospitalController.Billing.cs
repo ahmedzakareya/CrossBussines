@@ -27,6 +27,7 @@ namespace CrossBuy.Controllers
 
 		// ---------------- the service catalogue ----------------
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpGet("Services")]
 		[HospitalPerm(HospitalActions.Read)]
 		public async Task<IActionResult> Services(string? category, CancellationToken ct = default)
@@ -43,6 +44,7 @@ namespace CrossBuy.Controllers
 			return View(await _billing.ServicesAsync(ctx, ViewBag.Category as string, false, ct));
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("Services/Save"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Manage)]
 		public async Task<IActionResult> SaveService([FromBody] HospitalServiceInput input, CancellationToken ct = default)
 		{
@@ -51,6 +53,7 @@ namespace CrossBuy.Controllers
 			return Result(await _billing.SaveServiceAsync(ctx, input ?? new(), ctx.EmployeeId, ct));
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("Services/SeedDefaults"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Manage)]
 		public async Task<IActionResult> SeedDefaultServices(CancellationToken ct = default)
 		{
@@ -60,6 +63,7 @@ namespace CrossBuy.Controllers
 		}
 
 		/// The service picker (select2): `orderable` limits it to what a doctor orders.
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpGet("Services/Search")]
 		[HospitalPerm(HospitalActions.Read)]
 		public async Task<IActionResult> SearchServices(string? q, bool orderable = false, CancellationToken ct = default)
@@ -86,6 +90,7 @@ namespace CrossBuy.Controllers
 
 		// ---------------- billing settings ----------------
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpGet("Settings/Billing")]
 		[HospitalPerm(HospitalActions.Manage)]
 		public async Task<IActionResult> BillingSettings(CancellationToken ct = default)
@@ -105,6 +110,7 @@ namespace CrossBuy.Controllers
 		public sealed class HospitalBloodServicesInput { public Dictionary<string, int?> Map { get; set; } = new(); }
 
 		/// H51: what each blood product is charged as when a request is issued.
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("Settings/Billing/Blood"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Manage)]
 		public async Task<IActionResult> SaveBloodProductServices([FromBody] HospitalBloodServicesInput input, CancellationToken ct = default)
 		{
@@ -113,6 +119,7 @@ namespace CrossBuy.Controllers
 			return Result(await BloodSvc.SaveProductServicesAsync(ctx, input.Map, ctx.EmployeeId, DateTime.UtcNow, ct));
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("Settings/Billing"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Manage)]
 		public async Task<IActionResult> SaveBillingSettings([FromBody] HospitalBillingSettingsInput input, CancellationToken ct = default)
 		{
@@ -123,6 +130,7 @@ namespace CrossBuy.Controllers
 
 		// ---------------- bills ----------------
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpGet("Bills")]
 		[HospitalPerm(HospitalActions.Read)]
 		public async Task<IActionResult> Bills(string? status, CancellationToken ct = default)
@@ -138,6 +146,7 @@ namespace CrossBuy.Controllers
 			return View(await _billing.BillsAsync(ctx, ViewBag.Status as string, null, DateTime.UtcNow, ct));
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpGet("Bill/{id:int}")]
 		[HospitalPerm(HospitalActions.Read)]
 		public async Task<IActionResult> Bill(int id, CancellationToken ct = default)
@@ -167,6 +176,7 @@ namespace CrossBuy.Controllers
 			return View(v);
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("Bill/{id:int}/Lines"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Bill)]
 		public async Task<IActionResult> AddBillLine(int id, [FromBody] HospitalAddLineInput input, CancellationToken ct = default)
 		{
@@ -175,6 +185,7 @@ namespace CrossBuy.Controllers
 			return Result(await _billing.AddLineAsync(ctx, id, input?.ServiceId ?? 0, input?.Quantity ?? 1, ctx.EmployeeId, DateTime.UtcNow, ct));
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("BillLines/{id:int}/Remove"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Bill)]
 		public async Task<IActionResult> RemoveBillLine(int id, CancellationToken ct = default)
 		{
@@ -183,6 +194,7 @@ namespace CrossBuy.Controllers
 			return Result(await _billing.RemoveLineAsync(ctx, id, ct));
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("Bill/{id:int}/Collect"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Bill)]
 		public async Task<IActionResult> CollectPayment(int id, [FromBody] HospitalCollectInput input, CancellationToken ct = default)
 		{
@@ -191,6 +203,7 @@ namespace CrossBuy.Controllers
 			return Result(await _billing.CollectAsync(ctx, id, input?.Amount ?? 0, input?.Method ?? "", me, DateTime.UtcNow, ct));
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("Bill/{id:int}/Close"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Bill)]
 		public async Task<IActionResult> CloseBill(int id, CancellationToken ct = default)
 		{
@@ -201,6 +214,7 @@ namespace CrossBuy.Controllers
 
 		// ---------------- the cashier ----------------
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpGet("Cashier")]
 		[HospitalPerm(HospitalActions.Read)]
 		public async Task<IActionResult> Cashier(CancellationToken ct = default)
@@ -223,6 +237,7 @@ namespace CrossBuy.Controllers
 			return View(today);
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("Cashier/Open"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Bill)]
 		public async Task<IActionResult> OpenShift([FromBody] HospitalOpenShiftInput input, CancellationToken ct = default)
 		{
@@ -231,6 +246,7 @@ namespace CrossBuy.Controllers
 			return Result(await _billing.OpenShiftAsync(ctx, input?.Desk ?? "", input?.OpeningFloat ?? 0, me, DateTime.UtcNow, ct));
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("Cashier/{id:int}/Close"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Bill)]
 		public async Task<IActionResult> CloseShift(int id, [FromBody] HospitalCloseShiftInput input, CancellationToken ct = default)
 		{

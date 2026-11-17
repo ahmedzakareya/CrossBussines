@@ -39,6 +39,7 @@ namespace CrossBuy.Controllers
 			}).OrderBy(c => c.Item2).ToList();
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpGet("Patients")]
 		[HospitalPerm(HospitalActions.Read)]
 		public async Task<IActionResult> Patients(string? q, int page = 1, CancellationToken ct = default)
@@ -51,6 +52,7 @@ namespace CrossBuy.Controllers
 			return View(await _patients.ListAsync(ctx, q, page, DateTime.UtcNow, ct));
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpGet("Patients/Register")]
 		[HospitalPerm(HospitalActions.Register)]
 		public async Task<IActionResult> RegisterPatient(CancellationToken ct = default)
@@ -63,9 +65,11 @@ namespace CrossBuy.Controllers
 			ViewBag.DefaultNationality = await _db.Companies.AsNoTracking().Where(c => c.CompanyID == ctx.CompanyId).Select(c => (int?)c.CountryID).FirstOrDefaultAsync(ct);
 			ViewBag.NextMrn = await _patients.NextMrnAsync(ctx, ct);
 			ViewBag.PriceLists = await ApprovedPriceListsAsync(ctx, ct);
+			ViewBag.CanClinical = await _access.CanAsync(ctx, HospitalActions.ClinicalRead, null, ct);   // H156
 			return View("PatientEdit", null);
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpGet("Patient/{id:int}/Edit")]
 		[HospitalPerm(HospitalActions.Register)]
 		public async Task<IActionResult> EditPatient(int id, CancellationToken ct = default)
@@ -77,9 +81,11 @@ namespace CrossBuy.Controllers
 			Chrome();
 			ViewBag.Countries = await CountriesAsync(ct);
 			ViewBag.PriceLists = await ApprovedPriceListsAsync(ctx, ct);
+			ViewBag.CanClinical = await _access.CanAsync(ctx, HospitalActions.ClinicalRead, null, ct);   // H156
 			return View("PatientEdit", p);
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("Patients/Save"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Register)]
 		public async Task<IActionResult> SavePatient([FromBody] HospitalPatientInput input, CancellationToken ct = default)
 		{
@@ -89,6 +95,7 @@ namespace CrossBuy.Controllers
 		}
 
 		/// The registration form's duplicate check, as the desk types.
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpGet("Patients/Similar")]
 		[HospitalPerm(HospitalActions.Register)]
 		public async Task<IActionResult> SimilarPatients(string? nationalId, string? phone, string? name, string? nameEn, int? exclude, CancellationToken ct = default)
@@ -99,6 +106,7 @@ namespace CrossBuy.Controllers
 			return Json(new { ok = true, items = hits.Select(h => new { id = h.Id, mrn = h.Mrn, name = DisplayName.Of(h.Name, h.NameEn), nationalId = h.NationalId, phone = h.Phone, reason = h.Reason, url = Url.Action("Patient", new { id = h.Id }) }) });
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpGet("Patient/{id:int}")]
 		[HospitalPerm(HospitalActions.Read)]
 		public async Task<IActionResult> Patient(int id, CancellationToken ct = default)
@@ -180,6 +188,7 @@ namespace CrossBuy.Controllers
 			return exists ? ctx : null;
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpGet("Patient/{id:int}/Conversation")]
 		[HospitalPerm(HospitalActions.Read)]
 		public async Task<IActionResult> PatientConversation(int id, CancellationToken ct = default)
@@ -188,6 +197,7 @@ namespace CrossBuy.Controllers
 			return ctx == null ? NotFound(new { ok = false, code = "not_found" }) : await ConversationListAsync(ctx, EntityRegistry.HospitalPatient, id, ct);
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("Patient/{id:int}/ConversationAdd"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Read)]
 		[RequestSizeLimit(21_000_000)]
 		public async Task<IActionResult> PatientConversationAdd(int id, string? body, long? parentCommentId, IFormFile? file, CancellationToken ct = default)
@@ -196,6 +206,7 @@ namespace CrossBuy.Controllers
 			return ctx == null ? NotFound(new { ok = false, code = "not_found" }) : await ConversationAddAsync(ctx, EntityRegistry.HospitalPatient, id, body, parentCommentId, file, ct);
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("Patient/{id:int}/ConversationReact"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Read)]
 		public async Task<IActionResult> PatientConversationReact(int id, long commentId, string? key, bool on, CancellationToken ct = default)
 		{

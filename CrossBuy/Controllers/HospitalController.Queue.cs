@@ -19,6 +19,7 @@ namespace CrossBuy.Controllers
 		public sealed class HospitalKioskFindInput { public string? Mrn { get; set; } public int? BirthYear { get; set; } }
 		public sealed class HospitalKioskCheckInInput { public int AppointmentId { get; set; } public string? Mrn { get; set; } public int? BirthYear { get; set; } }
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpGet("Queue/Display")]
 		[HospitalPerm(HospitalActions.Read)]
 		public async Task<IActionResult> QueueDisplay(int? department, CancellationToken ct = default)
@@ -30,6 +31,7 @@ namespace CrossBuy.Controllers
 			return View(await QueueSvc.BoardAsync(ctx, ClinicToday(), department, DateTime.UtcNow, ct));
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpGet("Queue/Display/Data")]
 		[HospitalPerm(HospitalActions.Read)]
 		public async Task<IActionResult> QueueDisplayData(int? department, CancellationToken ct = default)
@@ -40,6 +42,7 @@ namespace CrossBuy.Controllers
 			return PartialView("_QueueClinics", b);
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpGet("Queue/Kiosk")]
 		[HospitalPerm(HospitalActions.Book)]
 		public async Task<IActionResult> QueueKiosk(CancellationToken ct = default)
@@ -49,6 +52,7 @@ namespace CrossBuy.Controllers
 			return View();
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("Queue/Kiosk/Find"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Book)]
 		public async Task<IActionResult> KioskFind([FromBody] HospitalKioskFindInput input, CancellationToken ct = default)
 		{
@@ -68,6 +72,7 @@ namespace CrossBuy.Controllers
 			});
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("Queue/Kiosk/CheckIn"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Book)]
 		public async Task<IActionResult> KioskCheckIn([FromBody] HospitalKioskCheckInInput input, CancellationToken ct = default)
 		{

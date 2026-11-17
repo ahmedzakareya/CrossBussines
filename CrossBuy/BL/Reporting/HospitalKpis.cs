@@ -23,7 +23,7 @@ namespace CrossBuy.BL.Reporting
         public const string PreauthPending = "hospital.preauth.pending";
 
         private static readonly ReportFilter[] None = Array.Empty<ReportFilter>();
-        private const string C = HospitalReportPermissions.View, M = HospitalReportPermissions.Finance, Owner = "Hospital";
+        private const string C = HospitalReportPermissions.Clinical, M = HospitalReportPermissions.Finance, Owner = "Hospital";   // H156
 
         public static IEnumerable<KpiDefinition> All()
         {

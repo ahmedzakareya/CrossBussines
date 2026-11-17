@@ -25,6 +25,7 @@ namespace CrossBuy.Controllers
 	// use. The Communication Platform stores and notifies; nothing here re-implements it.
 	// ==========================================================================================
 	[SessionValidation]
+	[HospitalClinicalGate]   // H156: every endpoint needs clinical-read unless marked [HospitalReceptionAllowed]
 	[Route("Hospital")]
 	public partial class HospitalController : Controller
 	{
@@ -65,6 +66,7 @@ namespace CrossBuy.Controllers
 		// SCREENS
 		// ====================================================================================
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpGet("")]
 		[HttpGet("Index")]   // /Hospital/Index answers too: the conventional URL people type
 		[HospitalPerm(HospitalActions.Read)]
@@ -80,6 +82,7 @@ namespace CrossBuy.Controllers
 			return View(await _facility.BuildingAsync(ctx, ct));
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpGet("Room/{id:int}")]
 		[HospitalPerm(HospitalActions.Read)]
 		public async Task<IActionResult> Room(int id, CancellationToken ct = default)
@@ -98,6 +101,7 @@ namespace CrossBuy.Controllers
 			return View(room);
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpGet("RoomTypes")]
 		[HospitalPerm(HospitalActions.Read)]
 		public async Task<IActionResult> RoomTypes(CancellationToken ct = default)
@@ -111,6 +115,7 @@ namespace CrossBuy.Controllers
 			return View(await _facility.RoomTypesAsync(ctx, ct));
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpGet("Designer")]
 		[HospitalPerm(HospitalActions.Manage)]
 		public IActionResult Designer()
@@ -120,6 +125,7 @@ namespace CrossBuy.Controllers
 		}
 
 		/// The building as JSON, for the designer and the board's live refresh.
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpGet("Building")]
 		[HospitalPerm(HospitalActions.Read)]
 		public async Task<IActionResult> Building(CancellationToken ct = default)
@@ -153,6 +159,7 @@ namespace CrossBuy.Controllers
 		// WRITES — all [HospitalPerm(manage)] at the door; the service asks again.
 		// ====================================================================================
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("RoomTypes/Save"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Manage)]
 		public async Task<IActionResult> SaveRoomType([FromForm] HospitalRoomTypeInput input, CancellationToken ct = default)
 		{
@@ -161,6 +168,7 @@ namespace CrossBuy.Controllers
 			return Result(await _facility.SaveRoomTypeAsync(ctx, input, ctx.EmployeeId, ct));
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("RoomTypes/SeedDefaults"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Manage)]
 		public async Task<IActionResult> SeedDefaultRoomTypes(CancellationToken ct = default)
 		{
@@ -169,6 +177,7 @@ namespace CrossBuy.Controllers
 			return Result(await _facility.SeedDefaultRoomTypesAsync(ctx, ctx.EmployeeId, ct));
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("Floors/Save"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Manage)]
 		public async Task<IActionResult> SaveFloor([FromBody] HospitalFloorInput input, CancellationToken ct = default)
 		{
@@ -177,6 +186,7 @@ namespace CrossBuy.Controllers
 			return Result(await _facility.SaveFloorAsync(ctx, input, ctx.EmployeeId, ct));
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("Wards/Save"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Manage)]
 		public async Task<IActionResult> SaveWard([FromBody] HospitalWardInput input, CancellationToken ct = default)
 		{
@@ -185,6 +195,7 @@ namespace CrossBuy.Controllers
 			return Result(await _facility.SaveWardAsync(ctx, input, ctx.EmployeeId, ct));
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("Rooms/Create"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Manage)]
 		public async Task<IActionResult> CreateRoom([FromBody] HospitalRoomInput input, CancellationToken ct = default)
 		{
@@ -193,6 +204,7 @@ namespace CrossBuy.Controllers
 			return Result(await _facility.CreateRoomAsync(ctx, input, ctx.EmployeeId, ct));
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("Floors/{id:int}/Plan"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Manage)]
 		public async Task<IActionResult> SaveFloorPlan(int id, [FromBody] List<HospitalRoomPlacement> placements, CancellationToken ct = default)
 		{
@@ -201,6 +213,7 @@ namespace CrossBuy.Controllers
 			return Result(await _facility.SaveFloorPlanAsync(ctx, id, placements ?? new(), ctx.EmployeeId, ct));
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("Rooms/{id:int}/Layout"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Manage)]
 		public async Task<IActionResult> SaveRoomLayout(int id, [FromBody] List<HospitalLayoutItem> items, CancellationToken ct = default)
 		{
@@ -209,6 +222,7 @@ namespace CrossBuy.Controllers
 			return Result(await _facility.SaveRoomLayoutAsync(ctx, id, items ?? new(), ctx.EmployeeId, ct));
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("Beds/{id:int}/Status"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Manage)]
 		public async Task<IActionResult> SetBedStatus(int id, [FromForm] string status, CancellationToken ct = default)
 		{
@@ -256,6 +270,7 @@ namespace CrossBuy.Controllers
 			return exists ? ctx : null;
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpGet("Room/{id:int}/Conversation")]
 		[HospitalPerm(HospitalActions.Read)]
 		public async Task<IActionResult> RoomConversation(int id, CancellationToken ct = default)
@@ -264,6 +279,7 @@ namespace CrossBuy.Controllers
 			return ctx == null ? NotFound(new { ok = false, code = "not_found" }) : await ConversationListAsync(ctx, EntityRegistry.HospitalRoom, id, ct);
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("Room/{id:int}/ConversationAdd"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Read)]
 		[RequestSizeLimit(21_000_000)]
 		public async Task<IActionResult> RoomConversationAdd(int id, string? body, long? parentCommentId, IFormFile? file, CancellationToken ct = default)
@@ -272,6 +288,7 @@ namespace CrossBuy.Controllers
 			return ctx == null ? NotFound(new { ok = false, code = "not_found" }) : await ConversationAddAsync(ctx, EntityRegistry.HospitalRoom, id, body, parentCommentId, file, ct);
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("Room/{id:int}/ConversationReact"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Read)]
 		public async Task<IActionResult> RoomConversationReact(int id, long commentId, string? key, bool on, CancellationToken ct = default)
 		{

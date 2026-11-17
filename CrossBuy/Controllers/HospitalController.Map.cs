@@ -26,6 +26,7 @@ namespace CrossBuy.Controllers
 		/// A theatre, imaging room or emergency department as it is NOW: its cases, the staff with them, the next case today.
 		public sealed record HospitalMapLive(List<HospitalMapCase> Cases, List<HospitalMapPerson> Staff, string? Next, int Today, bool Maintenance);
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpGet("Map")]
 		[HospitalPerm(HospitalActions.Read)]
 		public async Task<IActionResult> Map(int? floor, CancellationToken ct = default)

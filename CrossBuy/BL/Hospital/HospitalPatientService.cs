@@ -202,7 +202,10 @@ namespace CrossBuy.BL.Hospital
 
 			row.Name = name; row.NameEn = nameEn; row.Sex = input.Sex; row.BirthDate = input.BirthDate?.Date;
 			row.NationalId = nid; row.NationalityId = input.NationalityId; row.Phone = phone; row.BloodGroup = blood;
-			row.Allergies = Clean(input.Allergies, 1000); row.ChronicConditions = Clean(input.ChronicConditions, 1000);
+			row.Allergies = Clean(input.Allergies, 1000);   // the desk records allergies: a safety fact it prints on the wristband
+			// H156: chronic conditions are clinical — a reception-only person neither sets nor, by saving a form without the
+			// field, wipes them
+			if (await _access.CanAsync(ctx, HospitalActions.ClinicalRead, null, ct)) row.ChronicConditions = Clean(input.ChronicConditions, 1000);
 			row.EmergencyName = Clean(input.EmergencyName, 200); row.EmergencyRelation = Clean(input.EmergencyRelation, 60); row.EmergencyPhone = ePhone;
 			row.ConsentSigned = input.ConsentSigned;
 			row.PriceListId = input.PriceListId;

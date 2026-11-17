@@ -30,6 +30,7 @@ namespace CrossBuy.Controllers
 
 		// ---------------- practitioners ----------------
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpGet("Practitioners")]
 		[HospitalPerm(HospitalActions.Read)]
 		public async Task<IActionResult> Practitioners(CancellationToken ct = default)
@@ -43,6 +44,7 @@ namespace CrossBuy.Controllers
 			return View(await _outpatient.PractitionersAsync(ctx, ct));
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpGet("Practitioner/{id:int}")]
 		[HospitalPerm(HospitalActions.Read)]
 		public async Task<IActionResult> Practitioner(int id, CancellationToken ct = default)
@@ -63,10 +65,12 @@ namespace CrossBuy.Controllers
 			return View(p);
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpGet("Practitioners/New")]
 		[HospitalPerm(HospitalActions.Manage)]
 		public async Task<IActionResult> NewPractitioner(CancellationToken ct = default) => await PractitionerFormAsync(null, ct);
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpGet("Practitioner/{id:int}/Edit")]
 		[HospitalPerm(HospitalActions.Manage)]
 		public async Task<IActionResult> EditPractitioner(int id, CancellationToken ct = default) => await PractitionerFormAsync(id, ct);
@@ -89,6 +93,7 @@ namespace CrossBuy.Controllers
 			return View("PractitionerEdit", p);
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("Practitioners/Save"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Manage)]
 		public async Task<IActionResult> SavePractitioner([FromBody] HospitalPractitionerInput input, CancellationToken ct = default)
 		{
@@ -97,6 +102,7 @@ namespace CrossBuy.Controllers
 			return Result(await _outpatient.SavePractitionerAsync(ctx, input ?? new(), ctx.EmployeeId, ct));
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("Departments/SeedDefaults"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Manage)]
 		public async Task<IActionResult> SeedDefaultDepartments(CancellationToken ct = default)
 		{
@@ -107,6 +113,7 @@ namespace CrossBuy.Controllers
 
 		// ---------------- appointments ----------------
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpGet("Appointments")]
 		[HospitalPerm(HospitalActions.Read)]
 		public async Task<IActionResult> Appointments(DateTime? date, int? department, CancellationToken ct = default)
@@ -135,6 +142,7 @@ namespace CrossBuy.Controllers
 		/// his schedule (weekly sessions less leave, H26) minus what is already booked (anything not cancelled), and on
 		/// today minus the times already past. The calendar enables only these days; the time list shows only these slots.
 		/// BookAsync still refuses a taken slot, so this is a guide for the picker, never the authority.
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpGet("Appointments/Availability")]
 		[HospitalPerm(HospitalActions.Book)]
 		public async Task<IActionResult> AppointmentAvailability(int practitionerId, int days = 60, CancellationToken ct = default)
@@ -159,6 +167,7 @@ namespace CrossBuy.Controllers
 			return Json(new { ok = true, days = result });
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("Appointments/Book"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Book)]
 		public async Task<IActionResult> BookAppointment([FromBody] HospitalBookingInput input, CancellationToken ct = default)
 		{
@@ -167,6 +176,7 @@ namespace CrossBuy.Controllers
 			return Result(await _outpatient.BookAsync(ctx, input ?? new(), ctx.EmployeeId, ClinicToday(), ct));
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("Appointments/{id:int}/Move"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Book)]
 		public async Task<IActionResult> MoveAppointment(int id, [FromBody] HospitalMoveInput input, CancellationToken ct = default)
 		{
@@ -180,6 +190,7 @@ namespace CrossBuy.Controllers
 
 		// ---------------- clinics board ----------------
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpGet("Clinics")]
 		[HospitalPerm(HospitalActions.Read)]
 		public async Task<IActionResult> Clinics(CancellationToken ct = default)
@@ -192,6 +203,7 @@ namespace CrossBuy.Controllers
 			return View(await _outpatient.BoardAsync(ctx, ClinicToday(), ClinicMinute(), DateTime.UtcNow, ct));
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("Clinics/{practitionerId:int}/CallNext"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Book)]
 		public async Task<IActionResult> CallNext(int practitionerId, CancellationToken ct = default)
 		{

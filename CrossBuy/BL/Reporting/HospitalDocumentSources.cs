@@ -456,6 +456,7 @@ namespace CrossBuy.BL.Reporting
             var action = permissionKey switch
             {
                 HospitalReportPermissions.View => HospitalActions.Read,
+                HospitalReportPermissions.Clinical => HospitalActions.ClinicalRead,   // H156
                 HospitalReportPermissions.Finance => HospitalActions.Bill,
                 _ => null,
             };

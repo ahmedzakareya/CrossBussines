@@ -27,6 +27,7 @@ namespace CrossBuy.Controllers
 
 		private string PortalLink(string token) => Url.Action("Reset", "PatientPortal", new { t = token }, Request.Scheme)!;
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpGet("PortalAccounts")]
 		[HospitalPerm(HospitalActions.Register)]
 		public async Task<IActionResult> PortalAccounts(CancellationToken ct = default)
@@ -41,6 +42,7 @@ namespace CrossBuy.Controllers
 
 		/// The open-account window's patient picker, for the desk that may open accounts (`register`): the same list the
 		/// admission desk searches (HospitalPatientService.ListAsync), its photo shown.
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpGet("PortalAccounts/Patients")]
 		[HospitalPerm(HospitalActions.Register)]
 		public async Task<IActionResult> PortalAccountPatients(string? q, CancellationToken ct = default)
@@ -52,6 +54,7 @@ namespace CrossBuy.Controllers
 		}
 
 		/// Opens an account for a patient's file: the account, its email, the family it books for, then the invitation.
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("PortalAccounts/Open"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Register)]
 		public async Task<IActionResult> PortalAccountOpen([FromBody] HospitalPortalOpenInput input, CancellationToken ct = default)
 		{
@@ -70,6 +73,7 @@ namespace CrossBuy.Controllers
 			return Result(await PortalAdmin.InviteAsync(ctx, id, input.UserName, (t, u) => HospitalPortalMails.Invite(_t, PortalLink(t), u), DateTime.UtcNow, ct));
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("PortalAccounts/{id:int}/Invite"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Register)]
 		public async Task<IActionResult> PortalAccountInvite(int id, [FromBody] HospitalPortalInviteInput input, CancellationToken ct = default)
 		{
@@ -78,6 +82,7 @@ namespace CrossBuy.Controllers
 			return Result(await PortalAdmin.InviteAsync(ctx, id, input?.UserName, (t, u) => HospitalPortalMails.Invite(_t, PortalLink(t), u), DateTime.UtcNow, ct));
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("PortalAccounts/{id:int}/Reset"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Register)]
 		public async Task<IActionResult> PortalAccountReset(int id, CancellationToken ct = default)
 		{
@@ -86,6 +91,7 @@ namespace CrossBuy.Controllers
 			return Result(await PortalAdmin.SendResetAsync(ctx, id, (t, u) => HospitalPortalMails.Reset(_t, PortalLink(t), u), DateTime.UtcNow, ct));
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("PortalAccounts/{id:int}/Unlock"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Register)]
 		public async Task<IActionResult> PortalAccountUnlock(int id, CancellationToken ct = default)
 		{
@@ -94,6 +100,7 @@ namespace CrossBuy.Controllers
 			return Result(await PortalAdmin.UnlockAsync(ctx, id, ct));
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("PortalAccounts/{id:int}/Disable"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Register)]
 		public async Task<IActionResult> PortalAccountDisable(int id, CancellationToken ct = default)
 		{
@@ -102,6 +109,7 @@ namespace CrossBuy.Controllers
 			return Result(await PortalAdmin.SetEnabledAsync(ctx, id, false, ct));
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("PortalAccounts/{id:int}/Enable"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Register)]
 		public async Task<IActionResult> PortalAccountEnable(int id, CancellationToken ct = default)
 		{

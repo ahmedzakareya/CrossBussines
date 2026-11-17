@@ -23,10 +23,11 @@ namespace CrossBuy.Tests
 		}
 
 		[Fact]
-		public void Money_is_the_billing_desks_and_the_rest_is_every_hospital_reader()
+		public void Money_is_the_billing_desks_and_the_rest_is_the_care_teams()
 		{
+			// H156: the clinical and operational analyses carry patients and diagnoses — never a reception-only reader's
 			foreach (var r in Reports)
-				Assert.Equal(r.Group is HospitalReportGroups.Financial or HospitalReportGroups.Insurance ? HospitalReportPermissions.Finance : HospitalReportPermissions.View,
+				Assert.Equal(r.Group is HospitalReportGroups.Financial or HospitalReportGroups.Insurance ? HospitalReportPermissions.Finance : HospitalReportPermissions.Clinical,
 					r.Dataset.RequiredPermissionKey);
 		}
 

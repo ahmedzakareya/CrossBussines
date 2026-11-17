@@ -16,6 +16,7 @@ namespace CrossBuy.Controllers
 
 		public sealed class HospitalMergeInput { public int SurvivorId { get; set; } public int MergedId { get; set; } public string? Reason { get; set; } }
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpGet("Duplicates")]
 		[HospitalPerm(HospitalActions.Register)]
 		public async Task<IActionResult> Duplicates(CancellationToken ct = default)
@@ -30,6 +31,7 @@ namespace CrossBuy.Controllers
 		}
 
 		/// The two files side by side (a partial the screen shows in its window).
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpGet("Duplicates/Compare")]
 		[HospitalPerm(HospitalActions.Register)]
 		public async Task<IActionResult> DuplicatesCompare(int a, int b, CancellationToken ct = default)
@@ -42,6 +44,7 @@ namespace CrossBuy.Controllers
 			return PartialView("_DuplicateCompare", sides.Value);
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("Duplicates/Merge"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Manage)]
 		public async Task<IActionResult> DuplicatesMerge([FromBody] HospitalMergeInput input, CancellationToken ct = default)
 		{

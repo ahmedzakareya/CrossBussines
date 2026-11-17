@@ -18,6 +18,7 @@ namespace CrossBuy.Controllers
 
 		public sealed class HospitalCharityDecisionInput { public bool Approve { get; set; } public string? Note { get; set; } }
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpGet("Charity")]
 		[HospitalPerm(HospitalActions.Bill)]
 		public async Task<IActionResult> Charity(CancellationToken ct = default)
@@ -35,6 +36,7 @@ namespace CrossBuy.Controllers
 		}
 
 		/// The requests and decisions (cbServerList): search by patient, MRN, bill or number; a status narrows it.
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpGet("Charity/Data")]
 		[HospitalPerm(HospitalActions.Bill)]
 		public async Task<IActionResult> CharityData(string? q, string? status, int page = 1, int pageSize = 25, CancellationToken ct = default)
@@ -54,6 +56,7 @@ namespace CrossBuy.Controllers
 			return PartialView("_CharityRows", rows);
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("Charity/Funds"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Manage)]
 		public async Task<IActionResult> SaveCharityFund(int? id, [FromBody] HospitalCharityFundInput input, CancellationToken ct = default)
 		{
@@ -62,6 +65,7 @@ namespace CrossBuy.Controllers
 			return Result(await CharitySvc.SaveFundAsync(ctx, id is > 0 ? id : null, input, ctx.EmployeeId, DateTime.UtcNow, ct));
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("Bill/{id:int}/Charity"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Bill)]
 		public async Task<IActionResult> RequestCharity(int id, [FromBody] HospitalCharityRequestInput input, CancellationToken ct = default)
 		{
@@ -70,6 +74,7 @@ namespace CrossBuy.Controllers
 			return Result(await CharitySvc.RequestAsync(ctx, id, input, ctx.EmployeeId, DateTime.UtcNow, ct));
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("Charity/{id:int}/Decide"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Manage)]
 		public async Task<IActionResult> DecideCharity(int id, [FromBody] HospitalCharityDecisionInput input, CancellationToken ct = default)
 		{

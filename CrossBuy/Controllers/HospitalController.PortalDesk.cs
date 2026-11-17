@@ -17,6 +17,7 @@ namespace CrossBuy.Controllers
 		private HospitalPortalBookingService? _portalBookingSvc;
 		private HospitalPortalBookingService PortalBookingSvc => _portalBookingSvc ??= ActivatorUtilities.CreateInstance<HospitalPortalBookingService>(HttpContext.RequestServices);
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpGet("PortalRequests")]
 		[HospitalPerm(HospitalActions.Book)]
 		public async Task<IActionResult> PortalRequests(string? status, CancellationToken ct = default)
@@ -34,6 +35,7 @@ namespace CrossBuy.Controllers
 			return View(await PortalBookingSvc.RequestsAsync(ctx, st, ct));
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpGet("PortalRequests/Slots")]
 		[HospitalPerm(HospitalActions.Book)]
 		public async Task<IActionResult> PortalRequestSlots(int practitionerId, DateTime date, CancellationToken ct = default)
@@ -44,6 +46,7 @@ namespace CrossBuy.Controllers
 			return Json(new { ok = true, slots = slots.Select(m => new { minute = m, label = (m / 60).ToString("00") + ":" + (m % 60).ToString("00") }) });
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("PortalRequests/{id:int}/Book"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Book)]
 		public async Task<IActionResult> PortalRequestBook(int id, [FromBody] HospitalRequestBookInput input, CancellationToken ct = default)
 		{
@@ -52,6 +55,7 @@ namespace CrossBuy.Controllers
 			return Result(await PortalBookingSvc.BookRequestAsync(ctx, _outpatient, id, input, ctx.EmployeeId, DateTime.Today, DateTime.UtcNow, ct, PracticeSvc));
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("PortalRequests/{id:int}/Decline"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Book)]
 		public async Task<IActionResult> PortalRequestDecline(int id, [FromBody] HospitalDeclineInput input, CancellationToken ct = default)
 		{
@@ -62,6 +66,7 @@ namespace CrossBuy.Controllers
 
 		public sealed class HospitalFamilyInput { public int PatientId { get; set; } public string? Relation { get; set; } }
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("PortalAccounts/ForPatient/{patientId:int}"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Register)]
 		public async Task<IActionResult> PortalAccountForPatient(int patientId, CancellationToken ct = default)
 		{
@@ -70,6 +75,7 @@ namespace CrossBuy.Controllers
 			return Result(await PortalBookingSvc.CreateForPatientAsync(ctx, patientId, ctx.EmployeeId, DateTime.UtcNow, ct));
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("PortalAccounts/{id:int}/Family"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Register)]
 		public async Task<IActionResult> PortalAccountFamily(int id, [FromBody] HospitalFamilyInput input, CancellationToken ct = default)
 		{
@@ -80,6 +86,7 @@ namespace CrossBuy.Controllers
 
 		public sealed class HospitalSignInInput { public string? UserName { get; set; } public string? Password { get; set; } }
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("PortalAccounts/{id:int}/SignIn"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Register)]
 		public async Task<IActionResult> PortalAccountSignIn(int id, [FromBody] HospitalSignInInput input, CancellationToken ct = default)
 		{
@@ -92,6 +99,7 @@ namespace CrossBuy.Controllers
 		public sealed class HospitalPortalEmailInput { public string? Email { get; set; } }
 
 		/// H46: the address a patient's portal emails go to (a password-reset link, the notice of a change).
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("PortalAccounts/{id:int}/Email"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Register)]
 		public async Task<IActionResult> PortalAccountEmail(int id, [FromBody] HospitalPortalEmailInput input, CancellationToken ct = default)
 		{
@@ -102,6 +110,7 @@ namespace CrossBuy.Controllers
 			return Result(await svc.SetEmailAsync(ctx, id, input.Email, ct));
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("PortalAccounts/{id:int}/Verify"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Register)]
 		public async Task<IActionResult> PortalAccountVerify(int id, [FromBody] HospitalVerifyInput input, CancellationToken ct = default)
 		{

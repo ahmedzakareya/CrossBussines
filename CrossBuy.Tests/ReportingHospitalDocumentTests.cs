@@ -112,8 +112,12 @@ namespace CrossBuy.Tests
         [Fact]
         public void Every_hospital_document_requires_the_hospital_key()
         {
+            // H156: the hospital's own keys only — a clinical paper the care team's (clinical-read), the desk's papers the
+            // module's read
             foreach (var dataset in HospitalDocumentDatasets.All())
-                Assert.Equal(HospitalReportPermissions.View, dataset.RequiredPermissionKey);
+                Assert.Equal(HospitalDocumentDatasets.ClinicalDocuments.Contains(dataset.DatasetCode) ? HospitalReportPermissions.Clinical : HospitalReportPermissions.View,
+                    dataset.RequiredPermissionKey);
+            Assert.StartsWith(HospitalReportPermissions.Prefix, HospitalReportPermissions.Clinical);
         }
 
         // The key must sit inside the namespace the authority claims, or the adapter would route it

@@ -15,6 +15,7 @@ namespace CrossBuy.Controllers
 		private HospitalSelfIntakeService? _intakeSvc;
 		private HospitalSelfIntakeService IntakeSvc => _intakeSvc ??= ActivatorUtilities.CreateInstance<HospitalSelfIntakeService>(HttpContext.RequestServices);
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpGet("Intake/Kiosk")]
 		[HospitalPerm(HospitalActions.Book)]
 		public async Task<IActionResult> IntakeKiosk(CancellationToken ct = default)
@@ -26,6 +27,7 @@ namespace CrossBuy.Controllers
 
 		/// The tablet's submission: answers with the ticket and whether the patient must go to the desk now — never
 		/// with anything about an existing file.
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("Intake/Submit"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Book)]
 		public async Task<IActionResult> SubmitIntake([FromBody] HospitalIntakeSubmitInput input, CancellationToken ct = default)
 		{
@@ -36,6 +38,7 @@ namespace CrossBuy.Controllers
 			return Json(new { ok = true, ticket = r.Args![0], urgent = r.Args[1] });
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpGet("Intake")]
 		[HospitalPerm(HospitalActions.Read)]
 		public async Task<IActionResult> Intake(CancellationToken ct = default)
@@ -54,6 +57,7 @@ namespace CrossBuy.Controllers
 		private HospitalWhereaboutsService WhereSvc => _whereSvc ??= ActivatorUtilities.CreateInstance<HospitalWhereaboutsService>(HttpContext.RequestServices);
 
 		/// H114: "where is the patient now?" — the desk's search: each match with every place they are in right now.
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpGet("Intake/Where")]
 		[HospitalPerm(HospitalActions.Read)]
 		public async Task<IActionResult> IntakeWhere(string? q, CancellationToken ct = default)
@@ -75,6 +79,7 @@ namespace CrossBuy.Controllers
 			});
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpGet("Intake/Data")]
 		[HospitalPerm(HospitalActions.Read)]
 		public async Task<IActionResult> IntakeData(string? q, string? filter, int page = 1, int pageSize = 25, CancellationToken ct = default)
@@ -88,6 +93,7 @@ namespace CrossBuy.Controllers
 			return PartialView("_IntakeRows", rows);
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpGet("Intake/{id:int}")]
 		[HospitalPerm(HospitalActions.Read)]
 		public async Task<IActionResult> IntakeReview(int id, CancellationToken ct = default)
@@ -101,6 +107,7 @@ namespace CrossBuy.Controllers
 			return View(page);
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("Intake/{id:int}/{step}"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Register)]
 		public async Task<IActionResult> DecideIntake(int id, string step, [FromBody] HospitalIntakeDecisionInput input, CancellationToken ct = default)
 		{

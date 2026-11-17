@@ -22,6 +22,7 @@ namespace CrossBuy.Controllers
 		private (string Subject, string Html) WaitlistMail(string token, HospitalWaitlistOfferMail m) =>
 			HospitalPortalMails.Offer(_t, Url.Action("Offer", "PatientPortal", new { t = token }, Request.Scheme)!, m);
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpGet("PortalWaitlist")]
 		[HospitalPerm(HospitalActions.Book)]
 		public async Task<IActionResult> PortalWaitlist(CancellationToken ct = default)
@@ -33,6 +34,7 @@ namespace CrossBuy.Controllers
 			return View(await WaitlistSvc.BoardAsync(ctx, DateTime.Now, DateTime.UtcNow, ct));
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("PortalWaitlist/{id:int}/Offer"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Book)]
 		public async Task<IActionResult> PortalWaitlistOffer(int id, CancellationToken ct = default)
 		{
@@ -41,6 +43,7 @@ namespace CrossBuy.Controllers
 			return Result(await WaitlistSvc.OfferNowAsync(ctx, id, WaitlistMail, DateTime.Now, DateTime.UtcNow, ct));
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("PortalWaitlist/Offers/{id:int}/Pass"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Book)]
 		public async Task<IActionResult> PortalWaitlistPass(int id, CancellationToken ct = default)
 		{

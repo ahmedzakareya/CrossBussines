@@ -21,6 +21,7 @@ namespace CrossBuy.Controllers
 		private HospitalFrontDeskWorkService DeskWorkSvc => _deskWork ??= ActivatorUtilities.CreateInstance<HospitalFrontDeskWorkService>(HttpContext.RequestServices,
 			_outpatient, ActivatorUtilities.CreateInstance<HospitalPortalBookingService>(HttpContext.RequestServices));
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpGet("FrontDesk/Work")]
 		[HospitalPerm(HospitalActions.Read)]
 		public async Task<IActionResult> FrontDeskWork(string? kind, CancellationToken ct = default)
@@ -40,6 +41,7 @@ namespace CrossBuy.Controllers
 			return PartialView("_DeskWork", await DeskWorkSvc.WorkAsync(ctx, kind!, now, 8, ct));
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("FrontDesk/Appointments/{id:int}/Confirm"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Book)]
 		public async Task<IActionResult> FrontDeskConfirm(int id, [FromBody] HospitalDeskConfirmInput? input, CancellationToken ct = default)
 		{
@@ -48,6 +50,7 @@ namespace CrossBuy.Controllers
 			return Result(await DeskWorkSvc.ConfirmAsync(ctx, id, input?.Status, input?.Note, ctx.EmployeeId, DateTime.UtcNow, ct));
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpGet("FrontDesk/Appointments/{id:int}/Reschedule")]
 		[HospitalPerm(HospitalActions.Book)]
 		public async Task<IActionResult> FrontDeskRescheduleWindow(int id, CancellationToken ct = default)
@@ -66,6 +69,7 @@ namespace CrossBuy.Controllers
 			return PartialView("_DeskResched", a);
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpGet("FrontDesk/Slots")]
 		[HospitalPerm(HospitalActions.Book)]
 		public async Task<IActionResult> FrontDeskSlots(int doctor, DateTime date, CancellationToken ct = default)
@@ -76,6 +80,7 @@ namespace CrossBuy.Controllers
 			return Json(new { ok = true, slots = slots.Select(m => new { m, t = (m / 60).ToString("00") + ":" + (m % 60).ToString("00") }) });
 		}
 
+		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpPost("FrontDesk/Appointments/{id:int}/Reschedule"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Book)]
 		public async Task<IActionResult> FrontDeskReschedule(int id, [FromBody] HospitalDeskRescheduleInput? input, CancellationToken ct = default)
 		{

@@ -86,7 +86,7 @@ namespace CrossBuy.BL.Reporting
             Fields = fields, Parameters = parameters ?? Period(),
         };
 
-        private const string C = HospitalReportPermissions.View, M = HospitalReportPermissions.Finance;
+        private const string C = HospitalReportPermissions.Clinical, M = HospitalReportPermissions.Finance;   // H156: clinical and operational analyses are the care team's
 
         public static IReadOnlyList<HospitalManagementReport> All() => new[]
         {
