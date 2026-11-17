@@ -80,6 +80,7 @@ namespace CrossBuy.Controllers
 			// H95: growth, dosing, development, scores and vaccines — shown by what the visit holds
 			ViewBag.Widgets = await ActivatorUtilities.CreateInstance<HospitalVisitWidgetsService>(HttpContext.RequestServices).BuildAsync(ctx, m, DateTime.UtcNow, ct);
 			ViewBag.Canvas = await CanvasSvc.SummaryAsync(ctx, id, ct);   // H99: the visit's drawings
+			ViewBag.ImmunoSteps = (int)await HospitalClinicalRuleCatalog.ParamAsync(_db, ctx.CompanyId, HospitalClinicalRuleCatalog.Immunotherapy, "restartStepsDown", ct);   // H174
 			if (m?.Clinic?.Code == "OPH")
 			{   // H129: the eye clinic's two tests, chosen from the services list
 				ViewBag.EyeOct = await UnitSettingsSvc.ViewAsync(ctx, CrossBuy.Models.Context.Hospital.HospitalKitUnits.EyeOct, ct);

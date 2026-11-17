@@ -110,12 +110,13 @@ namespace CrossBuy.BL.Hospital
 		public static decimal Bsa(decimal heightCm, decimal weightKg) =>
 			heightCm <= 0 || weightKg <= 0 ? 0 : Math.Round((decimal)Math.Sqrt((double)(heightCm * weightKg) / 3600.0), 2);
 
-		/// Cockcroft-Gault in ml/min (× 0.85 for a woman), capped at 125 for the Calvert formula.
-		public static decimal? Gfr(int? age, decimal weightKg, decimal? creatinineMgDl, bool female)
+		/// Cockcroft-Gault in ml/min (× 0.85 for a woman), capped for the Calvert formula — at 125 by default; H174: the cap
+		/// is register rule "carboplatin"'s approved value.
+		public static decimal? Gfr(int? age, decimal weightKg, decimal? creatinineMgDl, bool female, decimal cap = GfrCap)
 		{
 			if (age is not int a || a <= 0 || creatinineMgDl is not decimal cr || cr <= 0 || weightKg <= 0) return null;
 			var g = (140 - a) * weightKg / (72m * cr) * (female ? 0.85m : 1m);
-			return Math.Round(Math.Min(GfrCap, Math.Max(0, g)), 1);
+			return Math.Round(Math.Min(cap, Math.Max(0, g)), 1);
 		}
 
 		public static int DayCount(string? days) => (days ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Count(d => int.TryParse(d, out var n) && n >= 1);
@@ -187,7 +188,7 @@ namespace CrossBuy.BL.Hospital
 		/// Everything a cycle is checked and dosed on, without writing. `prior` is each drug's mg/m² given in earlier
 		/// cycles of ANY course; `lastGiven` the day the previous cycle of THIS course was given.
 		public static HospitalChemoPreview Preview(HospitalChemoCourse c, HospitalChemoRegimen r, IReadOnlyList<HospitalChemoRegimenDrug> drugs, int given, DateTime? lastGiven,
-			int? prevToxicity, IReadOnlyDictionary<string, decimal> prior, int? age, bool female, HospitalChemoCycleInput i, DateTime day)
+			int? prevToxicity, IReadOnlyDictionary<string, decimal> prior, int? age, bool female, HospitalChemoCycleInput i, DateTime day, decimal gfrCap = GfrCap)
 		{
 			int no = given + 1;
 			string? refusal = null;
@@ -199,7 +200,7 @@ namespace CrossBuy.BL.Hospital
 			else if (i.Anc is < 0 or > 100 || i.Platelets is < 0 or > 2000 || i.Creatinine is < 0.1m or > 20m) refusal = "A count is not plausible";
 			var w = i.WeightKg ?? c.WeightKg;
 			var bsa = HospitalOncologyRules.Bsa(c.HeightCm, w);
-			var gfr = Gfr(age, w, i.Creatinine, female);
+			var gfr = Gfr(age, w, i.Creatinine, female, gfrCap);
 			var lines = new List<HospitalChemoDoseLine>();
 			var checks = new List<string>();
 			foreach (var d in drugs.OrderBy(d => d.SortOrder))
@@ -420,7 +421,8 @@ namespace CrossBuy.BL.Hospital
 				if (l == null) return null;
 				var (c, r, d, y, age, female) = l.Value;
 				var (given, lastGiven, prevTox) = State(y);
-				return HospitalOncologyRules.Preview(c, r, d, given, lastGiven, prevTox, await LifetimeAsync(ctx, c.PatientId, ct), age, female, input, (input.Date ?? today).Date);
+				return HospitalOncologyRules.Preview(c, r, d, given, lastGiven, prevTox, await LifetimeAsync(ctx, c.PatientId, ct), age, female, input, (input.Date ?? today).Date,
+					await HospitalClinicalRuleCatalog.ParamAsync(_db, ctx.CompanyId, HospitalClinicalRuleCatalog.Carboplatin, "gfrCap", ct));   // H174
 			}
 			catch (Microsoft.Data.SqlClient.SqlException ex) when (Missing(ex)) { return null; }
 		}
@@ -439,7 +441,8 @@ namespace CrossBuy.BL.Hospital
 				var (c, r, d, y, age, female) = l.Value;
 				var (given, lastGiven, prevTox) = State(y);
 				if (lastGiven is DateTime lg && day < lg) return HospitalResult.Fail("The day is before the previous cycle");
-				var pv = HospitalOncologyRules.Preview(c, r, d, given, lastGiven, prevTox, await LifetimeAsync(ctx, c.PatientId, ct), age, female, input, day);
+				var pv = HospitalOncologyRules.Preview(c, r, d, given, lastGiven, prevTox, await LifetimeAsync(ctx, c.PatientId, ct), age, female, input, day,
+					await HospitalClinicalRuleCatalog.ParamAsync(_db, ctx.CompanyId, HospitalClinicalRuleCatalog.Carboplatin, "gfrCap", ct));   // H174
 				if (pv.Refusal != null) return HospitalResult.Fail(pv.Refusal);
 				if (pv.Checks.Any(HospitalChemoCheck.Blocks) && string.IsNullOrWhiteSpace(input.OverrideReason)) return HospitalResult.Fail("A check stops this cycle: write the reason to give it anyway");
 				await using var tx = await _db.Database.BeginTransactionAsync(ct);

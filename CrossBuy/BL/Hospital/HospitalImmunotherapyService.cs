@@ -9,7 +9,11 @@ namespace CrossBuy.BL.Hospital
 	// HOSPITAL H97 — allergen immunotherapy: the build-up schedule (vials 1:1000 → 1:1, 0.05 → 0.50 mL on each), the next
 	// dose the schedule allows, giving it (and its 30-minute observation), its reaction, a course held by a systemic
 	// reaction and resumed by the doctor two steps lower.
+	// H174 — register rule "immunotherapy" (H171): how many steps lower a held course resumes (2) and the wheal that makes
+	// a large local reaction (25 mm) are the clinic's approved protocol values, not constants.
 	// ==========================================================================================
+	/// H174: the clinic's approved protocol values; the defaults are the published ones.
+	public sealed record HospitalImmunoProtocol(int RestartStepsDown = 2, int LargeLocalMm = 25);
 	public sealed record HospitalImmunoNext(string? Vial, decimal? DoseMl, string? Refusal, object[]? Args);
 	public sealed record HospitalImmunoCourseView(HospitalImmunoCourse Course, IReadOnlyList<HospitalImmunoDose> Doses, HospitalImmunoNext Next);
 
@@ -33,8 +37,9 @@ namespace CrossBuy.BL.Hospital
 		private static int IndexOf(string vial, decimal ml) => Schedule().ToList().FindIndex(x => x.Vial == vial && x.Ml == ml);
 
 		/// The next dose the schedule allows, or why none can be given now.
-		public static HospitalImmunoNext Next(HospitalImmunoCourse c, IReadOnlyList<HospitalImmunoDose> doses)
+		public static HospitalImmunoNext Next(HospitalImmunoCourse c, IReadOnlyList<HospitalImmunoDose> doses, HospitalImmunoProtocol? protocol = null)
 		{
+			protocol ??= new HospitalImmunoProtocol();
 			if (c.Status == HospitalImmunoStatus.Stopped) return new(null, null, "This course is stopped", null);
 			if (c.Status == HospitalImmunoStatus.Held) return new(null, null, "This course is held after a systemic reaction: the doctor must resume it first", null);
 			var sched = Schedule();
@@ -46,15 +51,16 @@ namespace CrossBuy.BL.Hospital
 			int next = last.Reaction switch
 			{
 				HospitalImmunoReaction.LargeLocal => i,               // repeat the same dose
-				HospitalImmunoReaction.Systemic => Math.Max(0, i - 2), // resumed: two steps lower
+				HospitalImmunoReaction.Systemic => Math.Max(0, i - protocol.RestartStepsDown), // resumed: the approved number of steps lower
 				_ => Math.Min(i + 1, sched.Count - 1),              // up the schedule; at the top it stays (maintenance)
 			};
 			return new(sched[next].Vial, sched[next].Ml, null, null);
 		}
 
 		/// The reaction as recorded: a local wheal of 25 mm or more is a large local reaction.
-		public static (string? Reaction, string? Error) Classify(HospitalImmunoReactionInput i, DateTime nowUtc, HospitalImmunoDose d)
+		public static (string? Reaction, string? Error) Classify(HospitalImmunoReactionInput i, DateTime nowUtc, HospitalImmunoDose d, HospitalImmunoProtocol? protocol = null)
 		{
+			protocol ??= new HospitalImmunoProtocol();
 			if (d.Reaction != HospitalImmunoReaction.Pending) return (null, "This dose's reaction is already recorded");
 			switch (i.Reaction)
 			{
@@ -67,7 +73,7 @@ namespace CrossBuy.BL.Hospital
 				case HospitalImmunoReaction.Local:
 					if (i.WhealMm is not (> 0 and <= 200)) return (null, "Write the local wheal in mm");
 					if (nowUtc < d.ObserveUntil) return (null, "The 30-minute observation is not over: the patient stays until {0}");
-					return (i.WhealMm >= LargeLocalMm ? HospitalImmunoReaction.LargeLocal : HospitalImmunoReaction.Local, null);
+					return (i.WhealMm >= protocol.LargeLocalMm ? HospitalImmunoReaction.LargeLocal : HospitalImmunoReaction.Local, null);
 				default: return (null, "Choose the reaction");
 			}
 		}
@@ -76,6 +82,11 @@ namespace CrossBuy.BL.Hospital
 	public sealed class HospitalImmunotherapyService
 	{
 		public const string NoTables = "Immunotherapy is not installed yet (hospital_h97_allergy.sql).";
+
+		/// H174: the clinic's approved protocol values (register rule "immunotherapy").
+		private async Task<HospitalImmunoProtocol> ProtocolAsync(BusinessContext ctx, CancellationToken ct) => new(
+			(int)await HospitalClinicalRuleCatalog.ParamAsync(_db, ctx.CompanyId, HospitalClinicalRuleCatalog.Immunotherapy, "restartStepsDown", ct),
+			(int)await HospitalClinicalRuleCatalog.ParamAsync(_db, ctx.CompanyId, HospitalClinicalRuleCatalog.Immunotherapy, "largeLocalMm", ct));
 		private readonly CrossDbContext _db;
 		private readonly IHospitalAccessService _access;
 		public HospitalImmunotherapyService(CrossDbContext db, IHospitalAccessService access) { _db = db; _access = access; }
@@ -91,7 +102,8 @@ namespace CrossBuy.BL.Hospital
 				var cs = await Q<HospitalImmunoCourse>(ctx).Where(c => c.PatientId == patientId).OrderByDescending(c => c.ID).ToListAsync(ct);
 				var ids = cs.Select(c => c.ID).ToList();
 				var ds = await Q<HospitalImmunoDose>(ctx).Where(d => ids.Contains(d.CourseId)).OrderBy(d => d.Seq).ToListAsync(ct);
-				return (cs.Select(c => { var mine = ds.Where(d => d.CourseId == c.ID).ToList(); return new HospitalImmunoCourseView(c, mine, HospitalImmunoRules.Next(c, mine)); }).ToList(), true);
+				var pr = await ProtocolAsync(ctx, ct);
+				return (cs.Select(c => { var mine = ds.Where(d => d.CourseId == c.ID).ToList(); return new HospitalImmunoCourseView(c, mine, HospitalImmunoRules.Next(c, mine, pr)); }).ToList(), true);
 			}
 			catch (Microsoft.Data.SqlClient.SqlException ex) when (Missing(ex)) { return (Array.Empty<HospitalImmunoCourseView>(), false); }
 		}
@@ -123,7 +135,7 @@ namespace CrossBuy.BL.Hospital
 				var c = await Q<HospitalImmunoCourse>(ctx).FirstOrDefaultAsync(x => x.ID == courseId, ct);
 				if (c == null) return HospitalResult.Fail("not_found");
 				var doses = await Q<HospitalImmunoDose>(ctx).Where(d => d.CourseId == c.ID).ToListAsync(ct);
-				var next = HospitalImmunoRules.Next(c, doses);
+				var next = HospitalImmunoRules.Next(c, doses, await ProtocolAsync(ctx, ct));
 				if (next.Refusal != null) return HospitalResult.Fail(next.Refusal, next.Args ?? Array.Empty<object>());
 				var d = new HospitalImmunoDose
 				{
@@ -144,7 +156,7 @@ namespace CrossBuy.BL.Hospital
 			{
 				var d = await Q<HospitalImmunoDose>(ctx).FirstOrDefaultAsync(x => x.ID == doseId, ct);
 				if (d == null) return HospitalResult.Fail("not_found");
-				var (kind, err) = HospitalImmunoRules.Classify(input, nowUtc, d);
+				var (kind, err) = HospitalImmunoRules.Classify(input, nowUtc, d, await ProtocolAsync(ctx, ct));
 				if (err != null) return HospitalResult.Fail(err, HospitalNursingService.UtcToWard(d.ObserveUntil).ToString("HH:mm"));
 				d.Reaction = kind!; d.WhealMm = kind is HospitalImmunoReaction.Local or HospitalImmunoReaction.LargeLocal ? input.WhealMm : null;
 				d.ReactionNote = Clip(input.Note, 300); d.ReactionAt = nowUtc; d.ReactionByEmployeeId = employeeId;

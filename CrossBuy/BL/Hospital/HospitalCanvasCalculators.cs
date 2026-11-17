@@ -9,9 +9,27 @@ namespace CrossBuy.BL.Hospital
 	//   * each body region (front / back) has a depth: none, superficial partial, deep partial, full thickness;
 	//   * %TBSA counts partial + full thickness by the rule of nines (adult). A child under 15 uses Lund–Browder's
 	//     larger head: the head's extra share comes off the legs, by age band (0, 1, 5, 10 years);
-	//   * Parkland: 4 mL × kg × %TBSA in 24 h, half in the first 8 h FROM THE BURN; 20 % or more → a burn centre.
+	//   * Parkland: 4 mL × kg × %TBSA in 24 h, half in the first 8 h FROM THE BURN.
+	// H172 — rule "burns" of the clinical register (H171), version 2. The old single test "20 % or more → a burn centre"
+	// mixed two questions. Now:
+	//   * FLUIDS: the Parkland figure is given from the approved share (20 % adult, 10 % child under 15 by default);
+	//     below it there is no formal resuscitation figure;
+	//   * REFERRAL by the American Burn Association criteria (2022), each reason named: partial thickness above the
+	//     approved share (10 %), any full thickness, the face (the head region) or the perineum, and — what the chart
+	//     cannot draw — the doctor's ticks: hands, feet or major joints; an electrical, chemical or inhalation injury.
 	// ==========================================================================================
-	public sealed record HospitalBurnResult(IReadOnlyDictionary<string, int> Depths, decimal? Kg, decimal Tbsa, int? FluidsMl, bool Refer, IReadOnlyDictionary<string, decimal> Share);
+	public sealed record HospitalBurnResult(IReadOnlyDictionary<string, int> Depths, decimal? Kg, decimal Tbsa, int? FluidsMl, bool Refer, IReadOnlyDictionary<string, decimal> Share)
+	{
+		/// H172: the partial-thickness share, the ticks the chart cannot draw, why it refers, and whether fluids apply.
+		public decimal Partial { get; init; }
+		public bool Hands { get; init; }
+		public bool Mechanism { get; init; }
+		public IReadOnlyList<string> Why { get; init; } = Array.Empty<string>();
+		public bool FluidsIndicated { get; init; }
+	}
+
+	/// H172: the clinic's approved thresholds (register rule "burns"); the defaults are the published ones.
+	public sealed record HospitalBurnThresholds(decimal ReferPartialPct = 10, decimal FluidsAdultPct = 20, decimal FluidsChildPct = 10);
 
 	public static class HospitalBurnRules
 	{
@@ -36,10 +54,11 @@ namespace CrossBuy.BL.Hospital
 			return d;
 		}
 
-		/// Reads the drawing's state {"d":{"armRF":2,…},"kg":70}; refuses an unknown region or depth.
-		public static (HospitalBurnResult? Result, string? Error) Read(string? state, int? ageYears)
+		/// Reads the drawing's state {"d":{"armRF":2,…},"kg":70,"hf":true,"mx":false}; refuses an unknown region or depth.
+		public static (HospitalBurnResult? Result, string? Error) Read(string? state, int? ageYears, HospitalBurnThresholds? limits = null)
 		{
-			var depths = new Dictionary<string, int>(); decimal? kg = null;
+			limits ??= new HospitalBurnThresholds();
+			var depths = new Dictionary<string, int>(); decimal? kg = null; bool hands = false, mech = false;
 			var cells = Cells();
 			if (!string.IsNullOrEmpty(state))
 			{
@@ -57,6 +76,8 @@ namespace CrossBuy.BL.Hospital
 							if (v > 0) depths[p.Name] = v;
 						}
 					}
+					hands = root.TryGetProperty("hf", out var hf) && hf.ValueKind == JsonValueKind.True;
+					mech = root.TryGetProperty("mx", out var mx) && mx.ValueKind == JsonValueKind.True;
 					if (root.TryGetProperty("kg", out var k) && k.ValueKind == JsonValueKind.Number)
 					{
 						var w = k.GetDecimal();
@@ -68,12 +89,60 @@ namespace CrossBuy.BL.Hospital
 			}
 			var share = Share(ageYears);
 			decimal tbsa = depths.Where(x => x.Value >= 1).Sum(x => share[x.Key]);
-			int? fluids = kg is decimal kgv && tbsa > 0 ? (int)Math.Round(4 * kgv * tbsa) : null;
-			return (new HospitalBurnResult(depths, kg, tbsa, fluids, tbsa >= 20, share), null);
+			decimal partial = depths.Where(x => x.Value is 1 or 2).Sum(x => share[x.Key]);
+			bool child = ageYears is < 15;
+			bool indicated = tbsa > 0 && tbsa >= (child ? limits.FluidsChildPct : limits.FluidsAdultPct);
+			int? fluids = indicated && kg is decimal kgv ? (int)Math.Round(4 * kgv * tbsa) : null;
+			var why = new List<string>();
+			if (partial > limits.ReferPartialPct) why.Add("partial");
+			if (depths.Values.Any(v => v == 3)) why.Add("full");
+			if (depths.Keys.Any(c => c.StartsWith("head"))) why.Add("face");
+			if (depths.Keys.Any(c => c.StartsWith("groin"))) why.Add("perineum");
+			if (hands) why.Add("hands");
+			if (mech) why.Add("mechanism");
+			return (new HospitalBurnResult(depths, kg, tbsa, fluids, why.Count > 0, share) { Partial = partial, Hands = hands, Mechanism = mech, Why = why, FluidsIndicated = indicated }, null);
 		}
 
-		/// The state as it is STORED: the depths and the weight, with the server's own figures beside them.
-		public static string Store(HospitalBurnResult r) => JsonSerializer.Serialize(new { d = r.Depths, kg = r.Kg, tbsa = r.Tbsa, fluidsMl = r.FluidsMl, refer = r.Refer });
+		/// H172: what the server stored at save — the fluids figure, the referral reasons (a state saved before H172 has only
+		/// "refer").
+		public static (int? FluidsMl, IReadOnlyList<string> Why, bool Refer) Saved(string? state)
+		{
+			if (string.IsNullOrEmpty(state)) return (null, Array.Empty<string>(), false);
+			try
+			{
+				using var doc = JsonDocument.Parse(state);
+				var root = doc.RootElement;
+				if (root.ValueKind != JsonValueKind.Object) return (null, Array.Empty<string>(), false);
+				int? fl = root.TryGetProperty("fluidsMl", out var f) && f.ValueKind == JsonValueKind.Number && f.TryGetInt32(out var v) ? v : null;
+				var why = root.TryGetProperty("why", out var w) && w.ValueKind == JsonValueKind.Array
+					? w.EnumerateArray().Where(x => x.ValueKind == JsonValueKind.String).Select(x => x.GetString()!).Where(x => WhyKeys.Contains(x)).ToList() : new List<string>();
+				bool refer = root.TryGetProperty("refer", out var rf) && rf.ValueKind == JsonValueKind.True;
+				return (fl, why, refer);
+			}
+			catch (JsonException) { return (null, Array.Empty<string>(), false); }
+		}
+
+		public static readonly IReadOnlyList<string> WhyKeys = new[] { "partial", "full", "face", "perineum", "hands", "mechanism" };
+
+		/// A referral reason as the paper prints it.
+		public static string WhyText(string why, bool ar) => why switch
+		{
+			"partial" => ar ? "حرق جزئي السماكة فوق النسبة المعتمدة" : "partial thickness above the approved share",
+			"full" => ar ? "حرق كامل السماكة" : "full thickness",
+			"face" => ar ? "حرق في الوجه أو الرأس" : "the face or head",
+			"perineum" => ar ? "حرق في العجان أو الأعضاء التناسلية" : "the perineum or genitals",
+			"hands" => ar ? "حرق في اليدين أو القدمين أو المفاصل الكبرى" : "hands, feet or major joints",
+			_ => ar ? "حرق كهربائي أو كيميائي أو استنشاقي" : "an electrical, chemical or inhalation injury",
+		};
+
+		/// The clinic's thresholds from the register (rule "burns").
+		public static async Task<HospitalBurnThresholds> ThresholdsAsync(CrossBuy.Models.Context.CrossDbContext db, int companyId, CancellationToken ct) => new(
+			await HospitalClinicalRuleCatalog.ParamAsync(db, companyId, HospitalClinicalRuleCatalog.Burns, "referPartialPct", ct),
+			await HospitalClinicalRuleCatalog.ParamAsync(db, companyId, HospitalClinicalRuleCatalog.Burns, "fluidsAdultPct", ct),
+			await HospitalClinicalRuleCatalog.ParamAsync(db, companyId, HospitalClinicalRuleCatalog.Burns, "fluidsChildPct", ct));
+
+		/// The state as it is STORED: the depths, the weight and the ticks, with the server's own figures beside them.
+		public static string Store(HospitalBurnResult r) => JsonSerializer.Serialize(new { d = r.Depths, kg = r.Kg, hf = r.Hands, mx = r.Mechanism, tbsa = r.Tbsa, fluidsMl = r.FluidsMl, refer = r.Refer, why = r.Why });
 	}
 	// ==========================================================================================
 	// HOSPITAL H101 — the audiogram (the approved prototype screen cv-audio), with the ASHA symbols: air O right / X left,

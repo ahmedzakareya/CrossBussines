@@ -51,6 +51,15 @@ namespace CrossBuy.BL.Hospital
 			return s <= 0 ? "Low" : s == 1 ? "Moderate" : s == 2 ? "High" : "VeryHigh";
 		}
 
+		/// H173 (register rule "kdigo", 2024.1): a cell is a kidney DISEASE marker when the eGFR is under 60 (G3a–G5) or
+		/// the ACR is 30 or more (A2–A3); G1–G2 with A1 is not CKD at all.
+		public static bool KdigoAbnormal(string g, string a) => g is "G3a" or "G3b" or "G4" or "G5" || a is "A2" or "A3";
+
+		/// KDIGO defines CKD by an abnormality that lasts MORE THAN THREE MONTHS: the stage is confirmed when an abnormal
+		/// stage was also recorded at least 90 days before this one; otherwise it is provisional (repeat to confirm).
+		public static bool KdigoConfirmed(DateTime at, IEnumerable<(string G, string A, DateTime At)> earlier) =>
+			earlier.Any(e => e.At <= at.AddDays(-90) && KdigoAbnormal(e.G, e.A));
+
 		public static int? AgeOn(DateTime? birth, DateTime day)
 		{
 			if (birth is not DateTime b) return null;

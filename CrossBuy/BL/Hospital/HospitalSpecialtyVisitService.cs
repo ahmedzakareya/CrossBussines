@@ -21,7 +21,12 @@ namespace CrossBuy.BL.Hospital
 	public sealed record HospitalVisitForm(HospitalClinicalTemplate Template, HospitalClinicalTemplateVersion Version, HospitalClinicalForm Form,
 		IReadOnlyList<HospitalTemplateFieldView> Fields, IReadOnlyDictionary<string, string> Answers);
 	public sealed record HospitalVisitHeadline(HospitalConcept Concept, HospitalClinicalTemplateField Field, HospitalObsPoint? Last, HospitalObsPoint? Previous, IReadOnlyList<HospitalObsPoint> Points);
-	public sealed record HospitalVisitKdigo(string G, string A, string Risk, DateTime At);
+	public sealed record HospitalVisitKdigo(string G, string A, string Risk, DateTime At)
+	{
+		/// H173: an abnormal stage not yet seen 90 days earlier is provisional (KDIGO: more than three months).
+		public bool Abnormal { get; init; }
+		public bool Confirmed { get; init; }
+	}
 	public sealed record HospitalVisitOrderSet(HospitalOrderSet Set, IReadOnlyList<HospitalOrderSetItem> Items);
 	public sealed record HospitalVisitDone(HospitalConcept Concept, DateTime At, string? Value);
 	public sealed record HospitalVisitModel(HospitalEncounterView Visit, HospitalPatient Patient, HospitalPractitioner? Doctor, HospitalDepartment? Clinic,
@@ -195,7 +200,13 @@ namespace CrossBuy.BL.Hospital
 			{
 				var k = obs.LastOrDefault(o => o.ConceptId == kdc.ID && o.ValueCode != null);
 				var parts = k?.ValueCode?.Split(' ');
-				if (k != null && parts!.Length == 2 && HospitalClinicalCalc.KdigoRisk(parts[0], parts[1]) is string risk) kd = new HospitalVisitKdigo(parts[0], parts[1], risk, k.ObservedAt);
+				if (k != null && parts!.Length == 2 && HospitalClinicalCalc.KdigoRisk(parts[0], parts[1]) is string risk)
+				{
+					var earlier = obs.Where(o => o.ConceptId == kdc.ID && o.ValueCode != null && o.ObservedAt < k.ObservedAt)
+						.Select(o => (Parts: o.ValueCode!.Split(' '), o.ObservedAt)).Where(x => x.Parts.Length == 2).Select(x => (x.Parts[0], x.Parts[1], x.ObservedAt)).ToList();
+					bool abnormal = HospitalClinicalCalc.KdigoAbnormal(parts[0], parts[1]);
+					kd = new HospitalVisitKdigo(parts[0], parts[1], risk, k.ObservedAt) { Abnormal = abnormal, Confirmed = abnormal && HospitalClinicalCalc.KdigoConfirmed(k.ObservedAt, earlier) };
+				}
 			}
 
 			// order sets the visit's diagnoses propose

@@ -352,7 +352,7 @@ namespace CrossBuy.BL.Hospital
 				if (kind == HospitalCanvasKind.Burn)
 				{
 					var birth = await Q<HospitalPatient>(ctx).Where(p => p.ID == e.PatientId).Select(p => p.BirthDate).FirstOrDefaultAsync(ct);
-					var burn = HospitalBurnRules.Read(input.State, HospitalPatientService.AgeOn(birth, e.StartedAt));
+					var burn = HospitalBurnRules.Read(input.State, HospitalPatientService.AgeOn(birth, e.StartedAt), await HospitalBurnRules.ThresholdsAsync(_db, ctx.CompanyId, ct));   // H172: the clinic's approved thresholds
 					if (burn.Error != null) return HospitalResult.Fail(burn.Error);
 					state = HospitalBurnRules.Store(burn.Result!);
 				}

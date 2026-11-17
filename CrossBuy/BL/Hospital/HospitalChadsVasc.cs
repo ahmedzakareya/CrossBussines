@@ -5,13 +5,15 @@ using Microsoft.EntityFrameworkCore;
 namespace CrossBuy.BL.Hospital
 {
 	// ==========================================================================================
-	// HOSPITAL H108 — CHA₂DS₂-VASc (the approved prototype screen sc-im: a read-only field, "No AF — not scored").
-	// It is never typed: the score is read from the patient's age and sex and from the CODED conditions on file — the
-	// active problem list and every diagnosis of the patient's visits (ICD-10). Without atrial fibrillation (I48) there
-	// is no score: CHA₂DS₂-VASc answers an AF question only.
+	// HOSPITAL H108 — the AF stroke score (the approved prototype screen sc-im: a read-only field, "No AF — not scored").
+	// It is never typed: the score is read from the patient's age and from the CODED conditions on file — the active
+	// problem list and every diagnosis of the patient's visits (ICD-10). Without atrial fibrillation (I48) there is no
+	// score: it answers an AF question only.
+	// H172 — CHA₂DS₂-VA, ESC 2024 (rule "af-stroke" of the clinical register, H171). The 2024 guidelines dropped the sex
+	// category of CHA₂DS₂-VASc: it adds nothing once the other factors are counted and confused the thresholds.
 	//   C heart failure 1 · H hypertension 1 · A₂ age ≥ 75 2 · D diabetes 1 · S₂ stroke / TIA / thromboembolism 2 ·
-	//   V vascular disease 1 · A age 65–74 1 · Sc female 1 (0–9).
-	//   ESC 2020: men 0 / women 1 — no anticoagulant; men 1 / women 2 — consider one; men ≥ 2 / women ≥ 3 — recommended.
+	//   V vascular disease 1 · A age 65–74 1 (0–8).
+	//   ESC 2024: 0 — no anticoagulant; 1 — consider one; 2 or more — recommended.
 	// ==========================================================================================
 	public sealed record HospitalChadsItem(string Key, int Points);
 	public sealed record HospitalChadsVasc(bool Af, int? Score, IReadOnlyList<HospitalChadsItem> Items, string? Advice);
@@ -21,8 +23,10 @@ namespace CrossBuy.BL.Hospital
 		private static bool Starts(IEnumerable<string> codes, params string[] prefixes) =>
 			codes.Any(c => prefixes.Any(p => c.StartsWith(p, StringComparison.OrdinalIgnoreCase)));
 
-		/// The score from age, sex and the coded conditions; no AF, no score.
-		public static HospitalChadsVasc Score(int? ageYears, bool female, IEnumerable<string> icd)
+		public const int Max = 8;
+
+		/// The score from age and the coded conditions; no AF, no score.
+		public static HospitalChadsVasc Score(int? ageYears, IEnumerable<string> icd)
 		{
 			var codes = icd.Where(c => !string.IsNullOrWhiteSpace(c)).Select(c => c.Trim().ToUpperInvariant()).Distinct().ToList();
 			bool af = Starts(codes, "I48");
@@ -35,10 +39,8 @@ namespace CrossBuy.BL.Hospital
 			if (Starts(codes, "E10", "E11", "E12", "E13", "E14")) items.Add(new("dm", 1));
 			if (Starts(codes, "I63", "I64", "G45", "I74", "Z86.73")) items.Add(new("stroke", 2));
 			if (Starts(codes, "I21", "I22", "I25.2", "I70", "I73.9")) items.Add(new("vasc", 1));
-			if (female) items.Add(new("female", 1));
 			int score = items.Sum(x => x.Points);
-			int risk = score - (female ? 1 : 0);   // ESC 2020 reads the score without the female point
-			string advice = risk <= 0 ? "none" : risk == 1 ? "consider" : "recommended";
+			string advice = score <= 0 ? "none" : score == 1 ? "consider" : "recommended";
 			return new HospitalChadsVasc(true, score, items, advice);
 		}
 
@@ -55,7 +57,7 @@ namespace CrossBuy.BL.Hospital
 								  join e in db.Set<HospitalEncounter>().AsNoTracking() on d.EncounterId equals e.ID
 								  where e.CompanyId == companyId && e.PatientId == p.ID
 								  select d.Code).ToListAsync(ct));
-			return Score(HospitalPatientService.AgeOn(p.BirthDate, nowUtc), p.Sex == HospitalPatientSex.Female, codes);
+			return Score(HospitalPatientService.AgeOn(p.BirthDate, nowUtc), codes);
 		}
 	}
 }

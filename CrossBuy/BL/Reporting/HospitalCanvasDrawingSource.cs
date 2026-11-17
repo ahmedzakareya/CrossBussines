@@ -106,10 +106,14 @@ namespace CrossBuy.BL.Reporting
                 {
                     var r = HospitalBurnRules.Read(state, HospitalPatientService.AgeOn(p.BirthDate, at)).Result;
                     if (r == null || r.Tbsa == 0) return null;
+                    // H172: the fluids and the referral as the server decided them when the drawing was saved (the clinic's
+                    // approved thresholds then), not recomputed on the defaults
+                    var (fluidsMl, why, refer) = HospitalBurnRules.Saved(state);
                     var s = (ar ? "نسبة الحرق: " : "TBSA: ") + Ltr(N(r.Tbsa) + "%");
-                    if (r.FluidsMl is int fl) s += " · " + (ar ? "سوائل باركلاند ٢٤ ساعة: " : "Parkland 24 h: ") + Ltr(fl.ToString("N0", CultureInfo.InvariantCulture) + " mL")
+                    if (fluidsMl is int fl) s += " · " + (ar ? "سوائل باركلاند ٢٤ ساعة: " : "Parkland 24 h: ") + Ltr(fl.ToString("N0", CultureInfo.InvariantCulture) + " mL")
                         + (ar ? " (نصفها في أول ٨ ساعات من وقت الحرق)" : " (half in the first 8 h from the burn)");
-                    if (r.Refer) s += "\n" + (ar ? "تحويل لمركز حروق: النسبة ٢٠٪ أو أكثر" : "Refer to a burn centre: 20% or more");
+                    if (why.Count > 0) s += "\n" + (ar ? "تحويل إلى مركز حروق: " : "Refer to a burn centre: ") + string.Join(ar ? "، " : ", ", why.Select(w => HospitalBurnRules.WhyText(w, ar)));
+                    else if (refer) s += "\n" + (ar ? "تحويل إلى مركز حروق" : "Refer to a burn centre");
                     return s;
                 }
                 case HospitalCanvasKind.Audio:

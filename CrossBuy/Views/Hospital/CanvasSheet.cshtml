@@ -23,7 +23,8 @@
     var audioNow = audio ? HospitalAudioRules.Read(Model.Sheet?.StateJson).Result : null;
     // H100: the burn chart reads its depths and weight back; the shares follow the patient's age (Lund–Browder under 15)
     int? ageYears = HospitalPatientService.AgeOn(p.BirthDate, e.StartedAt);
-    var burnNow = burn ? HospitalBurnRules.Read(Model.Sheet?.StateJson, ageYears).Result : null;
+    var burnLimits = (ViewBag.BurnLimits as HospitalBurnThresholds) ?? new HospitalBurnThresholds();   // H172: the clinic's approved thresholds
+    var burnNow = burn ? HospitalBurnRules.Read(Model.Sheet?.StateJson, ageYears, burnLimits).Result : null;
     decimal? burnKg = burnNow?.Kg ?? e.WeightKg;
     string[] depthCol = { "#F6E7DD", "#FCA5A5", "#EF4444", "#7F1D1D" };
     string[] depthKey = { "No burn", "Superficial partial", "Deep partial", "Full thickness" };
@@ -307,6 +308,15 @@
                             <div class="d-flex align-items-center bg-light-primary rounded p-5 mt-5">
                                 <div class="symbol symbol-45px me-4 flex-shrink-0"><span class="symbol-label bg-white"><i class="ki-outline ki-drop fs-2x text-primary"></i></span></div>
                                 <div class="flex-grow-1"><div class="text-gray-800 fw-bold fs-6">@T["Parkland fluids (24 h)"]</div><div class="fs-2 fw-bold text-gray-900 hp-num" dir="ltr" id="bn_fl">—</div><div class="fs-7 text-gray-700" id="bn_half"></div></div>
+                            </div>
+                            @* H172: what the chart cannot draw, and the referral by the ABA criteria with each reason named *@
+                            <div class="d-flex flex-column gap-3 mt-5">
+                                <label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" id="bn_hf" @(burnNow?.Hands == true ? "checked" : "") @(canEdit ? "" : "disabled") /><span class="form-check-label fw-semibold text-gray-700">@T["The burn involves the hands, feet or major joints"]</span></label>
+                                <label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" id="bn_mx" @(burnNow?.Mechanism == true ? "checked" : "") @(canEdit ? "" : "disabled") /><span class="form-check-label fw-semibold text-gray-700">@T["Electrical, chemical or inhalation injury"]</span></label>
+                            </div>
+                            <div class="d-none bg-light-danger rounded border-danger border border-dashed p-4 mt-5" id="bn_refer">
+                                <div class="fw-bold text-gray-900 fs-6 mb-2">@T["Refer to a burn centre"]</div>
+                                <ul class="mb-0 ps-5 fs-7 text-gray-800" id="bn_why"></ul>
                             </div>
                             <div class="mt-5" id="bn_list"></div>
                             <div class="text-muted fs-8 mt-3">@T["The server recomputes these figures when the drawing is saved."]</div>
@@ -634,12 +644,17 @@
                 // H100: tap a region to cycle its depth; %TBSA and Parkland follow (the server recomputes them on save)
                 var SH = @Json.Serialize(burn ? HospitalBurnRules.Share(ageYears) : new Dictionary<string, decimal>());
                 var DCOL = @Json.Serialize(depthCol), DT = @Json.Serialize(depthKey.Select(k => T[k].Value));
-                var BT = { half: @Json.Serialize(T["Half ({0} mL) in the first 8 h from the burn, the rest over 16 h"].Value), refer: @Json.Serialize(T["≥ 20%: refer to a burn centre"].Value),
+                // H172: the clinic's approved thresholds (register rule "burns"); the server applies the same ones on save
+                var BL = { partial: @Json.Serialize(burnLimits.ReferPartialPct), fluids: @Json.Serialize(ageYears is < 15 ? burnLimits.FluidsChildPct : burnLimits.FluidsAdultPct) };
+                var WHY = { partial: @Json.Serialize(T["Partial thickness above {0}%"].Value), full: @Json.Serialize(T["Any full-thickness burn"].Value), face: @Json.Serialize(T["The face or head"].Value),
+                            perineum: @Json.Serialize(T["The perineum or genitals"].Value), hands: @Json.Serialize(T["Hands, feet or major joints"].Value), mechanism: @Json.Serialize(T["Electrical, chemical or inhalation injury"].Value) };
+                var BT = { half: @Json.Serialize(T["Half ({0} mL) in the first 8 h from the burn, the rest over 16 h"].Value), below: @Json.Serialize(T["Below {0}%: no formal fluid resuscitation figure"].Value),
                            noKg: @Json.Serialize(T["Write the weight to compute the fluids"].Value), region: @Json.Serialize(T["Region"].Value), depth: @Json.Serialize(T["Depth"].Value) };
                 var st = @Json.Serialize(burnNow?.Depths ?? new Dictionary<string, int>()), g = document.getElementById('bn_regs');
                 var RN = {}; REG.forEach(function (r) { RN[r.k] = r; });
                 var MIR = { armR: 'armL', armL: 'armR', legR: 'legL', legL: 'legR' };
-                burnState = function () { var kg = parseFloat(document.getElementById('bn_kg').value); var d = {}; Object.keys(st).forEach(function (k) { if (st[k]) d[k] = st[k]; }); return isNaN(kg) ? { d: d } : { d: d, kg: kg }; };
+                burnState = function () { var kg = parseFloat(document.getElementById('bn_kg').value); var d = {}; Object.keys(st).forEach(function (k) { if (st[k]) d[k] = st[k]; });
+                    var o = { d: d, hf: document.getElementById('bn_hf').checked, mx: document.getElementById('bn_mx').checked }; if (!isNaN(kg)) o.kg = kg; return o; };
                 function draw() {
                     g.innerHTML = Object.keys(SH).map(function (k) { var key = k.slice(0, -1), side = k.slice(-1), r = RN[side === 'B' && MIR[key] ? MIR[key] : key], ox = side === 'F' ? 0 : 230, v = st[k] || 0;
                         return '<rect data-r="' + k + '" x="' + (r.r[0] + ox) + '" y="' + r.r[1] + '" width="' + r.r[2] + '" height="' + r.r[3] + '" rx="8" fill="' + DCOL[v] + '" fill-opacity="' + (v ? .85 : .05) + '" stroke="#3A5795" stroke-opacity=".25" style="cursor:' + (canEdit ? 'pointer' : 'default') + '"/>'; }).join('');
@@ -647,14 +662,23 @@
                     Object.keys(SH).forEach(function (k) { var v = st[k] || 0; if (!v) return; tb += +SH[k]; var key = k.slice(0, -1);
                         rows.push('<tr><td class="ps-4"><div class="d-flex align-items-center"><span class="cv-sw me-3" style="background:' + DCOL[v] + '"></span><div><span class="text-gray-900 fw-bold fs-7 d-block">' + esc(RN[key].t) + '</span><span class="text-muted fw-semibold fs-8">' + (k.slice(-1) === 'F' ? W.front : W.back) + '</span></div></div></td><td><span class="badge badge-light-danger fs-8 fw-bold">' + esc(DT[v]) + '</span></td><td class="pe-4 text-end"><span class="text-gray-900 fw-bold fs-7 hp-num">' + (+SH[k]) + '%</span></td></tr>'); });
                     tb = Math.round(tb * 100) / 100;
-                    var kg = parseFloat(document.getElementById('bn_kg').value), fl = isNaN(kg) ? null : Math.round(4 * kg * tb);
-                    var big = document.getElementById('bn_tbsa'); big.textContent = tb + '%'; big.className = 'fs-2hx fw-bold lh-1 hp-num ' + (tb >= 20 ? 'text-danger' : 'text-gray-900');
+                    var part = 0, full = false, face = false, per = false;
+                    Object.keys(st).forEach(function (k) { var v = st[k] || 0; if (!v) return; if (v < 3) part += +SH[k]; else full = true; if (k.indexOf('head') === 0) face = true; if (k.indexOf('groin') === 0) per = true; });
+                    var why = [];
+                    if (part > BL.partial) why.push(fmt(WHY.partial, BL.partial)); if (full) why.push(WHY.full); if (face) why.push(WHY.face); if (per) why.push(WHY.perineum);
+                    if (document.getElementById('bn_hf').checked) why.push(WHY.hands); if (document.getElementById('bn_mx').checked) why.push(WHY.mechanism);
+                    var ind = tb > 0 && tb >= BL.fluids;
+                    var kg = parseFloat(document.getElementById('bn_kg').value), fl = !ind || isNaN(kg) ? null : Math.round(4 * kg * tb);
+                    var big = document.getElementById('bn_tbsa'); big.textContent = tb + '%'; big.className = 'fs-2hx fw-bold lh-1 hp-num ' + (why.length ? 'text-danger' : 'text-gray-900');
                     document.getElementById('bn_fl').textContent = fl == null ? '—' : fl.toLocaleString('en') + ' mL';
-                    document.getElementById('bn_half').textContent = !tb ? '' : fl == null ? BT.noKg : fmt(BT.half, Math.round(fl / 2).toLocaleString('en')) + (tb >= 20 ? ' · ' + BT.refer : '');
+                    document.getElementById('bn_half').textContent = !tb ? '' : !ind ? fmt(BT.below, BL.fluids) : isNaN(kg) ? BT.noKg : fmt(BT.half, Math.round(fl / 2).toLocaleString('en'));
+                    document.getElementById('bn_refer').classList.toggle('d-none', !why.length);
+                    document.getElementById('bn_why').innerHTML = why.map(function (w) { return '<li>' + esc(w) + '</li>'; }).join('');
                     document.getElementById('bn_list').innerHTML = rows.length ? '<div class="table-responsive"><table class="table align-middle gs-0 gy-3 mb-0"><thead><tr class="fw-bold text-muted bg-light fs-7"><th class="ps-4 rounded-start">' + BT.region + '</th><th>' + BT.depth + '</th><th class="pe-4 text-end rounded-end">%</th></tr></thead><tbody>' + rows.join('') + '</tbody></table></div>' : '';
                 }
                 if (canEdit) g.addEventListener('click', function (ev) { var r = ev.target.closest('[data-r]'); if (!r) return; var k = r.getAttribute('data-r'); st[k] = ((st[k] || 0) + 1) % 4; draw(); });
                 document.getElementById('bn_kg').addEventListener('input', draw);
+                ['bn_hf', 'bn_mx'].forEach(function (id) { document.getElementById(id).addEventListener('change', draw); });
                 draw();
             } else if (KIND === 'Audio') {
                 // H101: tap to place the chosen symbol; it snaps to the frequency and the nearest 5 dB (the server re-reads it)

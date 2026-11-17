@@ -327,14 +327,14 @@
                                 }
                             </div>
                         }
-                        @* H108: CHA2DS2-VASc — the prototype's read-only field: read from age, sex and the coded conditions, never typed *@
+                        @* H108: the AF stroke score — the prototype's read-only field: read from age and the coded conditions, never typed. H172: CHA₂DS₂-VA (ESC 2024) *@
                         @if (W?.Chads is { } chv)
                         {
                             <div class="separator separator-dashed my-5"></div>
                             <div class="row g-4"><div class="col-md-6">
-                                <label class="fs-6 fw-semibold mb-2">CHA₂DS₂-VASc</label>
+                                <label class="fs-6 fw-semibold mb-2">CHA₂DS₂-VA <span class="text-muted fs-8 fw-semibold ms-1" dir="ltr">ESC 2024</span></label>
                                 <input type="text" readonly class="form-control form-control-solid @(chv.Score >= 2 ? "is-invalid" : "")" dir="auto"
-                                       value="@(chv.Af ? string.Format(T["{0} of 9"].Value, chv.Score) + " — " + T["chads:" + chv.Advice].Value : T["No AF — not scored"].Value)" />
+                                       value="@(chv.Af ? string.Format(T["{0} of 8"].Value, chv.Score) + " — " + T["chads:" + chv.Advice].Value : T["No AF — not scored"].Value)" />
                                 <div class="text-muted fs-8 mt-1 d-flex flex-wrap gap-3">@if (chv.Af) { foreach (var it in chv.Items) {<span>@T["chads:" + it.Key] <bdi class="hp-num" dir="ltr">+@it.Points</bdi></span>} } else {<span>@T["Read from the diagnoses on file: atrial fibrillation (I48) is not among them."]</span>}</div>
                             </div></div>
                         }
@@ -402,7 +402,7 @@
                                 @if (held && Model.CanEdit)
                                 {
                                     <div class="notice bg-light-danger rounded border-danger border border-dashed p-4 mt-4"><div class="text-gray-900 fw-bold fs-6 mb-1">@T["Held after a systemic reaction"]</div><div class="text-gray-700 fs-7"><bdi>@co.StatusNote</bdi></div>
-                                        <div class="d-flex gap-2 mt-2"><button type="button" class="btn btn-sm btn-light-primary py-1 px-3 fs-8" data-decide="@co.ID" data-resume="1">@T["Resume two steps lower"]</button><button type="button" class="btn btn-sm btn-light-danger py-1 px-3 fs-8" data-decide="@co.ID" data-resume="0">@T["Stop the course"]</button></div></div>
+                                        <div class="d-flex gap-2 mt-2"><button type="button" class="btn btn-sm btn-light-primary py-1 px-3 fs-8" data-decide="@co.ID" data-resume="1">@T["Resume {0} steps lower", (int)(ViewBag.ImmunoSteps ?? 2)]</button><button type="button" class="btn btn-sm btn-light-danger py-1 px-3 fs-8" data-decide="@co.ID" data-resume="0">@T["Stop the course"]</button></div></div>
                                 }
                             </div>
                         </div>
@@ -563,6 +563,9 @@
                         <div class="card-body pt-2">
                             <table class="table hp-kd mb-2 fs-8"><thead><tr><th></th>@foreach (var a in new[] { ("A1", "<30"), ("A2", "30–300"), ("A3", ">300") }) {<th class="text-center fs-9">@a.Item1<br />@a.Item2</th>}</tr></thead>
                                 <tbody>@foreach (var r in KG) {<tr><th class="fs-9 text-nowrap">@r[0] <span class="text-muted">@r[1]</span></th>@for (int j = 0; j < 3; j++) { bool me = kdc != null && kdc.G == r[0] && kdc.A == AC[j]; <td class="@r[j + 2] @(me ? "me" : "")">@(me ? "●" : "")</td> }</tr>}</tbody></table>
+                            @* H173: CKD needs the abnormality to last more than three months — one value is provisional *@
+                            @if (kdc is { Abnormal: true, Confirmed: false }) { <div class="d-flex align-items-center gap-2 mt-3"><span class="badge badge-light-info fs-8 fw-bold">@T["kdigo:Provisional"]</span><span class="fs-8 text-gray-600 fw-semibold">@T["Not seen 3 months earlier: repeat the eGFR and ACR to confirm chronic kidney disease."]</span></div> }
+                            else if (kdc is { Abnormal: true, Confirmed: true }) { <div class="mt-3"><span class="badge badge-light-primary fs-8 fw-bold">@T["kdigo:Confirmed"]</span></div> }
                             <div class="fs-7 text-gray-600 fw-semibold mt-3">@(kdc == null ? T["No KDIGO stage recorded yet: it is computed when the visit is signed."] : T[HospitalVisitRules.AdviceKey(kdc.Risk)])</div>
                         </div>
                     </div>
@@ -754,7 +757,7 @@
             if (form && document.querySelector('[data-milestone]')) { form.addEventListener('change', devTicks); if (window.jQuery) jQuery(form).find('select[data-key]').on('change', devTicks); }
             // H97: immunotherapy — start, give (and its 30-minute timer), the reaction, resume / stop
             var IM = { start: @Json.Serialize(T["Start this immunotherapy course?"].Value), give: @Json.Serialize(T["Give this dose now? The patient stays 30 minutes under observation."].Value),
-                       react: @Json.Serialize(T["Record this reaction?"].Value), resume: @Json.Serialize(T["Resume the course two steps lower?"].Value), stop: @Json.Serialize(T["Stop this course?"].Value),
+                       react: @Json.Serialize(T["Record this reaction?"].Value), resume: @Json.Serialize(T["Resume the course {0} steps lower?", (int)(ViewBag.ImmunoSteps ?? 2)].Value), stop: @Json.Serialize(T["Stop this course?"].Value),
                        why: @Json.Serialize(T["Write the reason"].Value), left: @Json.Serialize(T["Observation: {0} min left"].Value), over: @Json.Serialize(T["Observation over"].Value) };
             var ibase = @Json.Serialize(Url.Content("~/Hospital/Immuno/")), reactId = 0, decide = null;
             function timers() { document.querySelectorAll('[data-timer]').forEach(function (t) { var ms = new Date(t.dataset.timer) - new Date(); t.textContent = ms > 0 ? IM.left.replace('{0}', Math.ceil(ms / 60000)) : IM.over; }); }

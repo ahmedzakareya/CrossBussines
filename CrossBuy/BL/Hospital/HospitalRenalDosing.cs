@@ -8,7 +8,8 @@ namespace CrossBuy.BL.Hospital
 	// HOSPITAL H104 — DOSING BY THE KIDNEY (the approved prototype screen sc-im: "Metformin with eGFR 47 — review the dose
 	// below 45, stop below 30 — the trend is falling"). A dose limit (H73) may carry two eGFR thresholds: review the dose
 	// below one, stop the medicine below the other. The patient's eGFR is the last one STORED (the visit forms' CKD-EPI
-	// 2021 calculation, or a LOINC eGFR) within a year — never guessed, and an old one is not used.
+	// 2021 calculation, or a LOINC eGFR) within the window the clinical lead approved (H173: register rule "egfr-dosing",
+	// 90 days by default) — never guessed, and an older one is not used.
 	//   * a new hospital order meets it: below "stop" it is a stopping alert (overridden only with a reason, H73);
 	//     below "review" a warning; a kidney rule with no eGFR on file says it could not check;
 	//   * the specialty visit shows it for the medicines prescribed in the last 180 days — and a FALLING eGFR within 5 of
@@ -25,7 +26,6 @@ namespace CrossBuy.BL.Hospital
 	{
 		/// LOINC codes of an eGFR result (CKD-EPI 2021 without race, MDRD, CKD-EPI creatinine).
 		public static readonly IReadOnlyList<string> EgfrLoinc = new[] { "98979-8", "62238-1", "33914-3", "48642-3", "48643-1" };
-		public static readonly TimeSpan Valid = TimeSpan.FromDays(365);
 		public const decimal Approach = 5;
 
 		/// The kidney rules a medicine meets at this eGFR: (limit, stop?) — below "stop", or below "review".
@@ -46,12 +46,13 @@ namespace CrossBuy.BL.Hospital
 		public static IEnumerable<HospitalDoseLimit> Rules(string drug, string? route, IEnumerable<HospitalDoseLimit> limits) =>
 			limits.Where(l => (l.RenalReviewBelow != null || l.RenalStopBelow != null) && HospitalDrugSafetyRules.Mentions(drug, l.Drug) && (l.Route == null || route == null || l.Route == route));
 
-		/// The patient's last stored eGFR within a year, and the one before it (for the trend).
+		/// The patient's last stored eGFR within the approved window (H173: register rule "egfr-dosing", 90 days by default;
+		/// it was a fixed year), and the one before it (for the trend).
 		public static async Task<HospitalEgfr?> EgfrAsync(CrossDbContext db, int companyId, int patientId, DateTime nowUtc, CancellationToken ct)
 		{
 			try
 			{
-				var since = nowUtc - Valid;
+				var since = nowUtc.AddDays(-(double)await HospitalClinicalRuleCatalog.ParamAsync(db, companyId, HospitalClinicalRuleCatalog.EgfrDosing, "recencyDays", ct));
 				var pts = await (from o in db.Set<HospitalClinicalObservation>().AsNoTracking().Where(o => o.CompanyId == companyId && o.PatientId == patientId && o.Value != null)
 								 join c in db.Set<HospitalConcept>().AsNoTracking() on o.ConceptId equals c.ID
 								 where c.Calculator == HospitalConceptCalculator.EgfrCkdEpi2021 || (c.CodeSystem == "LOINC" && EgfrLoinc.Contains(c.Code))
