@@ -24,7 +24,7 @@ namespace CrossBuy.Controllers
 		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)
 		[HttpGet("FrontDesk/Work")]
 		[HospitalPerm(HospitalActions.Read)]
-		public async Task<IActionResult> FrontDeskWork(string? kind, CancellationToken ct = default)
+		public async Task<IActionResult> FrontDeskWork(string? kind, string? whose, CancellationToken ct = default)
 		{
 			var ctx = await ContextAsync(ct);
 			if (ctx == null) return NotFound();
@@ -38,7 +38,32 @@ namespace CrossBuy.Controllers
 			}
 			if (!HospitalFrontDeskWorkRules.Kinds.Contains(kind ?? "")) return NotFound();
 			await MoneyFormatAsync(ctx, ct);
-			return PartialView("_DeskWork", await DeskWorkSvc.WorkAsync(ctx, kind!, now, 8, ct));
+			// H164: every item with its owner and lateness; the tab shows the slice asked for (mine / unassigned / all)
+			var all = await DeskWorkSvc.WorkAsync(ctx, kind!, now, 300, ct);
+			var (items, counts) = await ClaimSvc.QueueAsync(ctx, all, whose, ctx.EmployeeId, now, 8, ct);
+			ViewBag.Counts = counts; ViewBag.Whose = whose is "mine" or "unassigned" ? whose : "all"; ViewBag.Me = ctx.EmployeeId;
+			return PartialView("_DeskWork", items);
+		}
+
+		private HospitalDeskClaimService? _claims;
+		private HospitalDeskClaimService ClaimSvc => _claims ??= ActivatorUtilities.CreateInstance<HospitalDeskClaimService>(HttpContext.RequestServices);
+
+		[HospitalReceptionAllowed]   // H164: take an item of a queue (it becomes mine)
+		[HttpPost("FrontDesk/Work/{kind}/Take"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Register)]
+		public async Task<IActionResult> FrontDeskWorkTake(string kind, string? key, CancellationToken ct = default)
+		{
+			var ctx = await ContextAsync(ct);
+			if (ctx == null || ctx.EmployeeId is not int me) return NotFound(new { ok = false, code = "not_found" });
+			return Result(await ClaimSvc.TakeAsync(ctx, kind, key, me, DateTime.UtcNow, ct));
+		}
+
+		[HospitalReceptionAllowed]   // H164: give it back to nobody
+		[HttpPost("FrontDesk/Work/{kind}/Release"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Register)]
+		public async Task<IActionResult> FrontDeskWorkRelease(string kind, string? key, CancellationToken ct = default)
+		{
+			var ctx = await ContextAsync(ct);
+			if (ctx == null || ctx.EmployeeId is not int me) return NotFound(new { ok = false, code = "not_found" });
+			return Result(await ClaimSvc.ReleaseAsync(ctx, kind, key, me, DateTime.UtcNow, ct));
 		}
 
 		[HospitalReceptionAllowed]   // H156: the reception desk works here (administrative)

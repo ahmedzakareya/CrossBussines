@@ -22,7 +22,7 @@ namespace CrossBuy.BL.Hospital
 
 	/// One waiting item of a work queue. Line/LineEn is data (a department, a doctor, a payer, a description), never prose.
 	public sealed record HospitalDeskWorkItem(string Kind, int? PatientId, string Name, string? NameEn, string? Photo, string? Mrn, string? Code,
-		string? Line, string? LineEn, DateTime? At, DateTime? Due, bool Urgent, decimal? Amount, string? Extra);
+		string? Line, string? LineEn, DateTime? At, DateTime? Due, bool Urgent, decimal? Amount, string? Extra, string? Key = null);   // H164: Key = the item, for its owner
 
 	public static class HospitalFrontDeskWorkRules
 	{
@@ -182,7 +182,7 @@ namespace CrossBuy.BL.Hospital
 						return rows.Select(r =>
 						{
 							var p = r.PatientId is int pid ? pts.GetValueOrDefault(pid) : null; var acc = accounts.GetValueOrDefault(r.AccountId); var d = deps.GetValueOrDefault(r.DepartmentId);
-							return new HospitalDeskWorkItem(kind, p?.ID, p?.Name ?? acc?.Name ?? r.RequestNo, p?.NameEn ?? acc?.NameEn, p?.PhotoPath, p?.Mrn, r.RequestNo, d?.Name, d?.NameEn, r.CreatedAt, null, false, null, r.TimeOfDay);
+							return new HospitalDeskWorkItem(kind, p?.ID, p?.Name ?? acc?.Name ?? r.RequestNo, p?.NameEn ?? acc?.NameEn, p?.PhotoPath, p?.Mrn, r.RequestNo, d?.Name, d?.NameEn, r.CreatedAt, null, false, null, r.TimeOfDay, r.ID.ToString());
 						}).ToList();
 					}, empty);
 				case "waitlist":
@@ -196,7 +196,7 @@ namespace CrossBuy.BL.Hospital
 						{
 							var p = pts.GetValueOrDefault(r.PatientId); var d = docs.GetValueOrDefault(r.PractitionerId);
 							return new HospitalDeskWorkItem(kind, p?.ID, p?.Name ?? "—", p?.NameEn, p?.PhotoPath, p?.Mrn, (r.StartMinute / 60).ToString("00") + ":" + (r.StartMinute % 60).ToString("00"),
-								d?.Name, d?.NameEn, r.OfferDate, r.ExpiresAt, false, null, null);
+								d?.Name, d?.NameEn, r.OfferDate, r.ExpiresAt, false, null, null, r.ID.ToString());
 						}).ToList();
 					}, empty);
 				case "intake":
@@ -204,7 +204,7 @@ namespace CrossBuy.BL.Hospital
 					{
 						var rows = await _db.Set<HospitalSelfIntake>().AsNoTracking().Where(i => i.CompanyId == cid && i.Status == HospitalIntakeStatus.Submitted)
 							.OrderByDescending(i => i.Urgent).ThenBy(i => i.SubmittedAt).Take(take).ToListAsync(ct);
-						return rows.Select(r => new HospitalDeskWorkItem(kind, r.PatientId, r.Name ?? r.NameEn ?? r.IntakeNo, r.NameEn, null, null, r.TicketNo, r.Reason, null, r.SubmittedAt, null, r.Urgent, r.MatchScore, r.RedFlags)).ToList();
+						return rows.Select(r => new HospitalDeskWorkItem(kind, r.PatientId, r.Name ?? r.NameEn ?? r.IntakeNo, r.NameEn, null, null, r.TicketNo, r.Reason, null, r.SubmittedAt, null, r.Urgent, r.MatchScore, r.RedFlags, r.ID.ToString())).ToList();
 					}, empty);
 				case "preauth":
 					return await Safe<IReadOnlyList<HospitalDeskWorkItem>>(async () =>
@@ -216,7 +216,7 @@ namespace CrossBuy.BL.Hospital
 						return rows.Select(r =>
 						{
 							var p = pts.GetValueOrDefault(r.PatientId); var y = payers.GetValueOrDefault(r.PayerId);
-							return new HospitalDeskWorkItem(kind, p?.ID, p?.Name ?? "—", p?.NameEn, p?.PhotoPath, p?.Mrn, r.RequestNo, y?.Name, y?.NameEn, r.RequestedAt, null, false, r.Amount, null);
+							return new HospitalDeskWorkItem(kind, p?.ID, p?.Name ?? "—", p?.NameEn, p?.PhotoPath, p?.Mrn, r.RequestNo, y?.Name, y?.NameEn, r.RequestedAt, null, false, r.Amount, null, r.ID.ToString());
 						}).ToList();
 					}, empty);
 				case "unidentified":
@@ -227,14 +227,14 @@ namespace CrossBuy.BL.Hospital
 						return rows.Select(r =>
 						{
 							var p = pts.GetValueOrDefault(r.PatientId);
-							return new HospitalDeskWorkItem(kind, p?.ID, p?.Name ?? "—", p?.NameEn, p?.PhotoPath, p?.Mrn, r.EstimatedAge.ToString(), r.Description, null, r.CreatedAt, null, r.MedicoLegal, null, r.BroughtBy);
+							return new HospitalDeskWorkItem(kind, p?.ID, p?.Name ?? "—", p?.NameEn, p?.PhotoPath, p?.Mrn, r.EstimatedAge.ToString(), r.Description, null, r.CreatedAt, null, r.MedicoLegal, null, r.BroughtBy, r.ID.ToString());
 						}).ToList();
 					}, empty);
 				case "dup":
 					return await Safe<IReadOnlyList<HospitalDeskWorkItem>>(async () =>
 					{
 						var pairs = await new HospitalPatientMergeService(_db, _access).CandidatesAsync(ctx, 2000, ct);
-						return pairs.Take(take).Select(x => new HospitalDeskWorkItem(kind, x.A.ID, x.A.Name, x.A.NameEn, x.A.PhotoPath, x.A.Mrn, x.B.Mrn, x.B.Name, x.B.NameEn, null, null, false, null, string.Join(",", x.Reasons))).ToList();
+						return pairs.Take(take).Select(x => new HospitalDeskWorkItem(kind, x.A.ID, x.A.Name, x.A.NameEn, x.A.PhotoPath, x.A.Mrn, x.B.Mrn, x.B.Name, x.B.NameEn, null, null, false, null, string.Join(",", x.Reasons), Math.Min(x.A.ID, x.B.ID) + "-" + Math.Max(x.A.ID, x.B.ID))).ToList();
 					}, empty);
 				default:
 					return empty;

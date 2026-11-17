@@ -121,6 +121,7 @@ namespace CrossBuy.Models.Context.Hospital
 			HospitalClinicDisruptionModel.Configure(b);   // H161: clinic disruptions and the patients they reach
 			HospitalVisitCoverageModel.Configure(b);     // H162: insurance verified for each visit
 			HospitalPatientContactModel.Configure(b);    // H163: contact preferences, help needed, representatives
+			HospitalDeskClaimModel.Configure(b);         // H164: who owns an item of the desk's queues
 			b.Entity<HospitalDispense>(e =>
 			{
 				e.HasIndex(x => new { x.CompanyId, x.RxNo }).IsUnique();

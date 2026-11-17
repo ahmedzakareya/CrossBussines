@@ -352,7 +352,7 @@
                 work: @Json.Serialize(Url.Action("FrontDeskWork")), slotsOf: @Json.Serialize(Url.Action("FrontDeskSlots")),
                 arrival: @Json.Serialize(Url.Action("FrontDeskArrival")), handoffs: @Json.Serialize(Url.Action("FrontDeskHandoffs")), handoffsPost: @Json.Serialize(Url.Content("~/Hospital/FrontDesk/Handoffs")),
                 gapWin: @Json.Serialize(Url.Action("FrontDeskGap")), gaps: @Json.Serialize(Url.Action("FrontDeskGaps")), gapsPost: @Json.Serialize(Url.Content("~/Hospital/FrontDesk/Gaps")), gapAct: @Json.Serialize(Url.Content("~/Hospital/CheckinGaps/")),
-                checkouts: @Json.Serialize(Url.Action("FrontDeskCheckouts")), toCall: @Json.Serialize(Url.Action("FrontDeskToCall")), coverage: @Json.Serialize(Url.Content("~/Hospital/FrontDesk/Coverage/")), deskPatient: @Json.Serialize(Url.Content("~/Hospital/FrontDesk/Patient/")), reps: @Json.Serialize(Url.Content("~/Hospital/FrontDesk/Representatives/")), checkout: @Json.Serialize(Url.Content("~/Hospital/FrontDesk/Checkout/")) };
+                checkouts: @Json.Serialize(Url.Action("FrontDeskCheckouts")), toCall: @Json.Serialize(Url.Action("FrontDeskToCall")), coverage: @Json.Serialize(Url.Content("~/Hospital/FrontDesk/Coverage/")), deskPatient: @Json.Serialize(Url.Content("~/Hospital/FrontDesk/Patient/")), workAct: @Json.Serialize(Url.Content("~/Hospital/FrontDesk/Work/")), reps: @Json.Serialize(Url.Content("~/Hospital/FrontDesk/Representatives/")), checkout: @Json.Serialize(Url.Content("~/Hospital/FrontDesk/Checkout/")) };
             var W9 = { title: @Json.Serialize(T["Documents and contact"].Value), saved: @Json.Serialize(T["Saved"].Value), stop: @Json.Serialize(T["Why is {0} no longer the patient's representative?"].Value),
                 optout: @Json.Serialize(T["Why does the patient want no messages?"].Value), optin: @Json.Serialize(T["Allow messages to the patient again?"].Value), sent: @Json.Serialize(T["The message is queued"].Value),
                 uploaded: @Json.Serialize(T["The scan is saved on the patient's file"].Value), body: @Json.Serialize(T["Write the message"].Value) };   // H163
@@ -437,9 +437,10 @@
                     .then(function (r) { if (btn) btn.disabled = false; if (!r.ok) { toastr.error(r.error || W.failed); return; } toastr.success(W.done); bootstrap.Modal.getOrCreateInstance(modalEl).hide(); refresh(); });
             }
 
-            // the desk's work: a tab loads when it is opened (the first at once)
+            // the desk's work: a tab loads when it is opened (the first at once); H164: each queue remembers its mine / unassigned / all
+            var whoseOf = {};
             function loadWork(k) { var el = document.querySelector('[data-desk-work="' + k + '"]'); if (!el) return;
-                get(k === 'handoff' ? U.handoffs : k === 'gaps' ? U.gaps : k === 'checkout' ? U.checkouts : k === 'tocall' ? U.toCall : U.work + '?kind=' + k).then(function (h) { el.innerHTML = h; tips(el); }); }
+                get(k === 'handoff' ? U.handoffs : k === 'gaps' ? U.gaps : k === 'checkout' ? U.checkouts : k === 'tocall' ? U.toCall : U.work + '?kind=' + k + '&whose=' + (whoseOf[k] || 'all')).then(function (h) { el.innerHTML = h; tips(el); }); }
             document.querySelectorAll('a[href^="#desk_w_"]').forEach(function (a) { a.addEventListener('shown.bs.tab', function () { loadWork(a.getAttribute('href').replace('#desk_w_', '')); }); });
             loadWork('handoff');
 
@@ -713,6 +714,11 @@
                 }
                 if ((t = e.target.closest('[data-open-patient]'))) { e.preventDefault(); openCard(t.getAttribute('data-open-patient'), true); return; }
                 // ---- H163: documents and contact ----
+                // ---- H164: whose work it is ----
+                if ((t = e.target.closest('[data-queue-whose]'))) { e.preventDefault(); var qk = t.closest('[data-queue]').getAttribute('data-queue'); whoseOf[qk] = t.getAttribute('data-queue-whose'); loadWork(qk); return; }
+                if ((t = e.target.closest('[data-queue-take], [data-queue-release]'))) { e.preventDefault(); var qkind = t.getAttribute('data-kind'), take = t.hasAttribute('data-queue-take'), qb = t; qb.disabled = true;
+                    post(U.workAct + qkind + (take ? '/Take' : '/Release') + '?key=' + encodeURIComponent(t.getAttribute(take ? 'data-queue-take' : 'data-queue-release')))
+                        .then(function (r) { qb.disabled = false; if (!r.ok) { toastr.error(r.error || W.failed); return; } loadWork(qkind); }); return; }
                 if ((t = e.target.closest('[data-desk-contact]'))) { e.preventDefault(); contactWindow(t.getAttribute('data-desk-contact'), t.getAttribute('data-appt'), null); return; }
                 if ((t = e.target.closest('[data-ct-save]'))) { e.preventDefault(); var cb0 = ctBox(), g = function (k) { return cb0.querySelector('[data-ct="' + k + '"]').value.trim(); };
                     ctPost('/Contact', { channel: g('channel'), language: g('language'), bestTime: g('besttime'), needs: [].slice.call(cb0.querySelectorAll('[data-ct-need]:checked')).map(function (x) { return x.value; }),

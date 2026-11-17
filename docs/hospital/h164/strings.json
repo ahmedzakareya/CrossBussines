@@ -1,0 +1,30 @@
+{
+ "unit": "H164 - ownership on the desk's queues: mine / unassigned / all, overdue, take and release",
+ "strings": {
+  "Give back": {
+   "ar": "إعادته إلى الجميع",
+   "en": "Give back",
+   "fr": "Rendre"
+  },
+  "Nothing here for this filter.": {
+   "ar": "لا يوجد شيء ضمن هذه التصفية.",
+   "en": "Nothing here for this filter.",
+   "fr": "Rien pour ce filtre."
+  },
+  "This item is yours already": {
+   "ar": "هذا البند مسند إليك بالفعل",
+   "en": "This item is yours already",
+   "fr": "Cet élément vous est déjà attribué"
+  },
+  "Only the one who took an item releases it": {
+   "ar": "لا يعيد البند إلا من تسلّمه",
+   "en": "Only the one who took an item releases it",
+   "fr": "Seul celui qui a pris l'élément peut le rendre"
+  },
+  "Someone took it a moment ago: refresh the list": {
+   "ar": "تسلّمه زميل قبل لحظات: حدّث القائمة",
+   "en": "Someone took it a moment ago: refresh the list",
+   "fr": "Quelqu'un l'a pris à l'instant : actualisez la liste"
+  }
+ }
+}

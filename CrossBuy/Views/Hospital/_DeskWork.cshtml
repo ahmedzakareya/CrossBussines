@@ -1,9 +1,11 @@
 @using CrossBuy.BL
 @using CrossBuy.BL.Hospital
-@model IReadOnlyList<HospitalDeskWorkItem>
+@model IReadOnlyList<HospitalQueueItem>
 @inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
 @* H141: one of the desk's queues, the oldest (or most urgent) first: who, what, since when, and the screen where the act
-   lives. Eight at most; "see all" opens the queue's own screen. *@
+   lives. Eight at most; "see all" opens the queue's own screen.
+   H164: whose it is — mine / unassigned / all with their counts and the overdue count; each item shows its owner, with
+   "take" (it becomes mine) or "release" (mine only). *@
 @{
     string kind = (string)ViewBag.Kind;
     var inv = System.Globalization.CultureInfo.InvariantCulture; int dp = ViewBag.MoneyDp is int d0 ? d0 : 2; string cur = ViewBag.Currency as string ?? "";
@@ -16,13 +18,23 @@
         "unidentified" => (Url.Action("Unidentified", "Hospital"), T["Identify"].Value),
         _ => (Url.Action("Duplicates", "Hospital"), T["Review and merge"].Value),
     };
+    var counts = ViewBag.Counts as HospitalQueueCounts ?? new HospitalQueueCounts(0, 0, 0, 0); string whose = ViewBag.Whose as string ?? "all"; int? me = ViewBag.Me as int?;
     string Ago(DateTime? utc) { if (utc is not DateTime u) return ""; var m = (int)(DateTime.UtcNow - u).TotalMinutes; return m < 60 ? string.Format(T["{0} min"].Value, Math.Max(0, m)) : m < 1440 ? string.Format(T["{0} h"].Value, m / 60) : string.Format(T["{0} days"].Value, m / 1440); }
 }
+<div class="d-flex flex-stack flex-wrap gap-2 mb-4" data-queue="@kind">
+    <div class="d-flex gap-2">
+        @foreach (var (key, label, n) in new[] { ("mine", T["Mine"].Value, counts.Mine), ("unassigned", T["Nobody yet"].Value, counts.Unassigned), ("all", T["All"].Value, counts.Total) })
+        {
+            <a href="#" class="btn btn-sm @(whose == key ? "btn-light-primary" : "btn-light") py-1 px-4 fs-8" data-queue-whose="@key">@label <span class="hp-num ms-1">@n</span></a>
+        }
+    </div>
+    @if (counts.Overdue > 0) {<span class="badge badge-light-danger fs-8 fw-bold"><i class="ki-outline ki-time fs-8 text-danger me-1"></i>@T["Overdue"] <span class="hp-num ms-1">@counts.Overdue</span></span>}
+</div>
 @if (Model.Count == 0)
 {
     <div class="notice d-flex bg-light rounded border border-dashed border-gray-300 p-6">
         <span class="symbol symbol-45px me-5 flex-shrink-0"><span class="symbol-label bg-light-primary"><i class="ki-outline ki-check-circle fs-2x text-primary"></i></span></span>
-        <div class="d-flex flex-stack flex-grow-1 flex-wrap gap-3"><div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@T["Nothing waiting"]</h4><div class="fs-6 text-gray-700">@T["This queue is clear."]</div></div>
+        <div class="d-flex flex-stack flex-grow-1 flex-wrap gap-3"><div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@T["Nothing waiting"]</h4><div class="fs-6 text-gray-700">@(whose == "all" ? T["This queue is clear."] : T["Nothing here for this filter."])</div></div>
             <a href="@href" class="btn btn-sm btn-light">@T["Open the screen"]</a></div>
     </div>
 }
@@ -30,9 +42,10 @@ else
 {
     <div class="table-responsive"><table class="table align-middle gs-0 gy-3 mb-0">
         <tbody class="fs-7">
-            @foreach (var w in Model)
+            @foreach (var q in Model)
             {
-                <tr>
+                var w = q.Item;
+                <tr class="@(q.Overdue ? "bg-light-danger" : "")">
                     <td class="ps-2">
                         @if (w.PatientId is int pid)
                         {
@@ -63,7 +76,14 @@ else
                         @if (kind == "waitlist" && w.Due is DateTime due) {<span class="badge badge-light-primary fs-8 fw-bold">@T["Expires"] <span class="hp-num ms-1">@HospitalNursingService.UtcToWard(due).ToString("MM-dd HH:mm")</span></span>}
                         else if (w.At != null && kind != "waitlist") {<span class="badge badge-light fs-8 fw-bold"><i class="ki-outline ki-time fs-8 me-1"></i>@Ago(w.At)</span>}
                     </td>
-                    <td class="text-end pe-2"><a href="@href" class="btn btn-sm btn-light-primary text-nowrap">@go</a></td>
+                    <td class="text-nowrap">
+                        @if (q.OwnerId == null) {<span class="text-muted fs-8">@T["Nobody yet"]</span>}
+                        else {<span class="fs-8 fw-semibold @(q.OwnerId == me ? "text-primary" : "text-gray-700")">@(q.OwnerId == me ? T["me"].Value : q.Owner)</span>}
+                    </td>
+                    <td class="text-end pe-2 text-nowrap">
+                        @if (w.Key != null && q.OwnerId != me) {<button type="button" class="btn btn-sm btn-light py-1 px-3 me-1" data-queue-take="@w.Key" data-kind="@kind">@T["Take"]</button>}
+                        else if (w.Key != null) {<button type="button" class="btn btn-sm btn-light py-1 px-3 me-1" data-queue-release="@w.Key" data-kind="@kind">@T["Give back"]</button>}
+                        <a href="@href" class="btn btn-sm btn-light-primary text-nowrap">@go</a></td>
                 </tr>
             }
         </tbody>
