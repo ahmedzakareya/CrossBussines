@@ -89,7 +89,7 @@
                     </div>
                     <div class="card-body pt-2">
                         <div class="table-responsive"><table class="table table-borderless align-middle text-center mb-0" data-abc-matrix>
-                            <thead><tr class="fw-bold text-muted fs-7"><th class="w-100px"></th>
+                            <thead><tr class="fw-bold text-muted fs-7"><th style="width:190px"></th>
                                 @* the heading is the class's short name ("حيوي"), the full label ("حيوي — لا ينفد أبدًا") in its tooltip: the long one made its column half the matrix *@
                                 @foreach (var v in HospitalAbcVenRules.Vens) { <th style="width:30%" title="@T["ven:" + v]">@T["ven:" + v].Value.Split('—')[0].Trim()</th> }
                             </tr></thead>
@@ -97,7 +97,7 @@
                                 @foreach (var a in HospitalAbcVenRules.Classes)
                                 {
                                     <tr>
-                                        <th class="text-start"><span class="fw-bold text-gray-900 fs-4">@a</span><span class="d-block text-muted fs-8">@T["abc:" + a]</span></th>
+                                        <th class="text-start"><div class="d-flex align-items-center gap-3"><span class="symbol symbol-35px flex-shrink-0"><span class="symbol-label bg-light-primary text-primary fw-bold fs-5">@a</span></span><span class="text-gray-700 fw-semibold fs-7 text-nowrap">@T["abc:" + a]</span></div></th>
                                         @foreach (var v in HospitalAbcVenRules.Vens)
                                         {
                                             var c = Model.Matrix.First(x => x.Abc == a && x.Ven == v);
