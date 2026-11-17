@@ -118,6 +118,7 @@ namespace CrossBuy.Controllers
 			ViewBag.FileAccess = fileAccess; ViewBag.GlassUntil = glassUntil;
 			ViewBag.Restriction = await RestrictedSvc.RestrictionAsync(ctx, id, ct);
 			ViewBag.CanManage = await _access.CanAsync(ctx, HospitalActions.Manage, null, ct);
+			ViewBag.CanClinical = await _access.CanAsync(ctx, HospitalActions.ClinicalRead, null, ct);   // H155: reception reads the administrative file
 			var p = await _patients.OpenAsync(ctx, id, ctx.EmployeeId, ct);   // records the open
 			if (p == null)
 			{

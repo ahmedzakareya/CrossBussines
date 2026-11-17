@@ -24,6 +24,9 @@ namespace CrossBuy.BL
 	public static class HospitalActions
 	{
 		public const string Read = "read";
+		/// H155: the clinical content of a patient's file — results, imaging, diagnoses, chronic conditions. Everyone who
+		/// reads the module except a RECEPTION-only person: the desk works from the administrative file.
+		public const string ClinicalRead = "clinical-read";
 		/// The platform's middle tier (ViewConfidential). Distinct from both neighbours so a Confidential
 		/// record row is never readable on the base grant; today it is the administrator's, like manage.
 		public const string ConfidentialView = "confidential-view";
@@ -59,7 +62,7 @@ namespace CrossBuy.BL
 		/// H10: review and dispense prescriptions from the pharmacy store. Pharmacists and administrators.
 		public const string Pharmacy = "pharmacy";
 
-		public static readonly IReadOnlyCollection<string> All = new[] { Read, ConfidentialView, Manage, Register, Admit, Book, Consult, Bill, Lab, LabVerify, Rad, RadReport, Pharmacy };
+		public static readonly IReadOnlyCollection<string> All = new[] { Read, ClinicalRead, ConfidentialView, Manage, Register, Admit, Book, Consult, Bill, Lab, LabVerify, Rad, RadReport, Pharmacy };
 	}
 
 	public static class HospitalRoles
@@ -80,8 +83,11 @@ namespace CrossBuy.BL
 
 		/// H10: reviews and dispenses prescriptions.
 		public const string HospitalPharmacist = "HospitalPharmacist";
+		/// H155: the reception desk — finds, registers and books patients and takes their money; reads the administrative
+		/// file (where they are, visits, stays, bills) but never the clinical content.
+		public const string HospitalReception = "HospitalReception";
 
-		public static readonly IReadOnlyList<string> All = new[] { HospitalAdministrator, HospitalStaff, HospitalDoctor, HospitalLabTechnician, HospitalLabSpecialist, HospitalRadiographer, HospitalRadiologist, HospitalPharmacist };
+		public static readonly IReadOnlyList<string> All = new[] { HospitalAdministrator, HospitalStaff, HospitalDoctor, HospitalLabTechnician, HospitalLabSpecialist, HospitalRadiographer, HospitalRadiologist, HospitalPharmacist, HospitalReception };
 	}
 
 	public sealed class HospitalAccessService : ModuleAccessServiceBase, IHospitalAccessService
@@ -106,19 +112,22 @@ namespace CrossBuy.BL
 			bool radiologist = Holds(grants, HospitalRoles.HospitalRadiologist);
 			bool radiographer = radiologist || Holds(grants, HospitalRoles.HospitalRadiographer);
 			bool pharmacist = Holds(grants, HospitalRoles.HospitalPharmacist);
+			bool reception = Holds(grants, HospitalRoles.HospitalReception);
+			bool clinical = admin || staff || doctor || labTech || radiographer || pharmacist;
 
 			// Facility rows carry no per-record owner, so every decision is a module-level one; the
 			// company of a named record is enforced by the base gate and by the service's own WHERE.
 			return Task.FromResult(action switch
 			{
-				HospitalActions.Read => admin || staff || doctor || labTech || radiographer || pharmacist,
+				HospitalActions.Read => clinical || reception,
+				HospitalActions.ClinicalRead => clinical,   // H155: a reception-only person reads the administrative file
 				HospitalActions.ConfidentialView => admin,
 				HospitalActions.Manage => admin,
-				HospitalActions.Register => admin || staff,
+				HospitalActions.Register => admin || staff || reception,
 				HospitalActions.Admit => admin || staff,
-				HospitalActions.Book => admin || staff || doctor,
+				HospitalActions.Book => admin || staff || doctor || reception,
 				HospitalActions.Consult => admin || doctor,
-				HospitalActions.Bill => admin || staff,
+				HospitalActions.Bill => admin || staff || reception,
 				HospitalActions.Lab => admin || labTech,
 				HospitalActions.LabVerify => admin || labSpecialist,
 				HospitalActions.Rad => admin || radiographer,

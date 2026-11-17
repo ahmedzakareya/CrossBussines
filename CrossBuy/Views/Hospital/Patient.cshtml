@@ -37,6 +37,8 @@
     // H64: a restricted file — its banner, how this reader got in, and the administrator's restrict / lift
     var restriction = ViewBag.Restriction as HospitalRestrictedFile;
     string fileAccess = ViewBag.FileAccess as string ?? HospitalFileAccess.Open;
+    // H155: a reception-only reader sees the administrative file; results, imaging and diagnoses are the care team's
+    bool canClinical = ViewBag.CanClinical != false;
     var glassUntil = ViewBag.GlassUntil as DateTime?;
     bool canManageFile = ViewBag.CanManage == true;
     var appointments = (ViewBag.Appointments as IReadOnlyList<HospitalAppointmentView>) ?? Array.Empty<HospitalAppointmentView>();
@@ -188,8 +190,11 @@
                 <ul class="nav nav-tabs nav-line-tabs nav-line-tabs-2x border-transparent fs-5 fw-bold mb-5">
                     <li class="nav-item"><a class="nav-link text-active-primary pb-3 active" data-bs-toggle="tab" href="#pfOverview">@T["Overview"]</a></li>
                     <li class="nav-item"><a class="nav-link text-active-primary pb-3" data-bs-toggle="tab" href="#pfVisits">@T["Visits"] <span class="badge badge-light-primary ms-1 hp-num">@visits.Count</span></a></li>
-                    <li class="nav-item"><a class="nav-link text-active-primary pb-3" data-bs-toggle="tab" href="#pfLab">@T["Lab results"] <span class="badge badge-light-primary ms-1 hp-num">@lab.Verified.Count</span></a></li>
-                    <li class="nav-item"><a class="nav-link text-active-primary pb-3" data-bs-toggle="tab" href="#pfRad">@T["Imaging"] <span class="badge badge-light-primary ms-1 hp-num">@rad.Signed.Count</span></a></li>
+                    @if (canClinical)
+                    {
+                        <li class="nav-item"><a class="nav-link text-active-primary pb-3" data-bs-toggle="tab" href="#pfLab">@T["Lab results"] <span class="badge badge-light-primary ms-1 hp-num">@lab.Verified.Count</span></a></li>
+                        <li class="nav-item"><a class="nav-link text-active-primary pb-3" data-bs-toggle="tab" href="#pfRad">@T["Imaging"] <span class="badge badge-light-primary ms-1 hp-num">@rad.Signed.Count</span></a></li>
+                    }
                     <li class="nav-item"><a class="nav-link text-active-primary pb-3" data-bs-toggle="tab" href="#pfAppts">@T["Appointments"] <span class="badge badge-light-primary ms-1 hp-num">@appointments.Count</span></a></li>
                     <li class="nav-item"><a class="nav-link text-active-primary pb-3" data-bs-toggle="tab" href="#pfStays">@T["Admissions"] <span class="badge badge-light-primary ms-1 hp-num">@stays.Count</span></a></li>
                     <li class="nav-item"><a class="nav-link text-active-primary pb-3" data-bs-toggle="tab" href="#pfSick">@T["Sick leave"] <span class="badge badge-light-primary ms-1 hp-num" data-sick-count>@sick.Count</span></a></li>
@@ -221,8 +226,9 @@
                                 <div class="card card-flush mb-5">
                                     <div class="card-header pt-5"><h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Chronic conditions"]</span></h3></div>
                                     <div class="card-body pt-2">
-                                        @if (chronic.Length == 0) { <div class="text-muted fs-7 py-2">@T["None recorded"]</div> }
-                                        @foreach (var c in chronic)
+                                        @if (!canClinical) { <div class="text-muted fs-7 py-2"><i class="ki-outline ki-lock-2 fs-7 me-1"></i>@T["For the care team"]</div> }
+                                        else if (chronic.Length == 0) { <div class="text-muted fs-7 py-2">@T["None recorded"]</div> }
+                                        @foreach (var c in canClinical ? chronic : Array.Empty<string>())
                                         {
                                             <div class="d-flex align-items-center py-2"><span class="bullet bullet-dot bg-primary me-3"></span><span class="fw-semibold text-gray-800">@c</span></div>
                                         }
@@ -261,7 +267,7 @@
                                             <tr>
                                                 <td class="hp-num">@v.StartedAt.ToLocalTime().ToString("yyyy-MM-dd")</td>
                                                 <td class="fs-7">@(vd == null ? "—" : DisplayName.Of(vd.Row.Name, vd.Row.NameEn))</td>
-                                                <td>@if (v.PrimaryCode != null) {<span class="badge hp-code fs-9 hp-num me-1">@v.PrimaryCode</span>@DisplayName.Of(v.PrimaryName, v.PrimaryNameEn)} else {<span class="text-muted">@(v.ChiefComplaint ?? "—")</span>}</td>
+                                                <td>@if (!canClinical) {<span class="text-muted fs-8"><i class="ki-outline ki-lock-2 fs-8 me-1"></i>@T["For the care team"]</span>} else if (v.PrimaryCode != null) {<span class="badge hp-code fs-9 hp-num me-1">@v.PrimaryCode</span>@DisplayName.Of(v.PrimaryName, v.PrimaryNameEn)} else {<span class="text-muted">@(v.ChiefComplaint ?? "—")</span>}</td>
                                                 <td><span class="badge @(v.Status == HospitalEncounterStatus.Signed ? "badge-light-success" : "badge-light-primary") fs-8">@T["enc:" + v.Status]</span></td>
                                                 <td class="text-end"><a href="@Url.Action("Consult", new { id = v.Id })" class="btn btn-sm btn-light-primary">@T["Open"]</a></td>
                                             </tr>
@@ -272,8 +278,11 @@
                         </div></div>
                     </div>
 
-                    <div class="tab-pane fade" id="pfLab"><partial name="_HospitalLabResults" model="lab" /></div>
-                    <div class="tab-pane fade" id="pfRad"><partial name="_HospitalRadResults" model="rad" /></div>
+                    @if (canClinical)
+                    {
+                        <div class="tab-pane fade" id="pfLab"><partial name="_HospitalLabResults" model="lab" /></div>
+                        <div class="tab-pane fade" id="pfRad"><partial name="_HospitalRadResults" model="rad" /></div>
+                    }
 
                     <div class="tab-pane fade" id="pfAppts">
                         <div class="card card-flush"><div class="card-body pt-6">
@@ -314,7 +323,7 @@
                                                 <td><span class="badge hp-code fw-bold fs-8 hp-num">@s.BedCode</span></td>
                                                 <td><span class="hp-num" data-utc="@s.StartedAt.ToString("o")">@s.StartedAt.ToString("yyyy-MM-dd HH:mm")</span></td>
                                                 <td>@if (s.EndedAt is DateTime e) {<span class="hp-num" data-utc="@e.ToString("o")">@e.ToString("yyyy-MM-dd HH:mm")</span> <span class="text-muted fs-8">@T["end:" + s.EndReason]</span>} else {<span class="badge badge-light-primary">@T["Current"]</span>}</td>
-                                                <td>@(s.Diagnosis ?? "—")</td>
+                                                <td>@if (!canClinical) {<span class="text-muted fs-8"><i class="ki-outline ki-lock-2 fs-8 me-1"></i>@T["For the care team"]</span>} else {@(s.Diagnosis ?? "—")}</td>
                                                 <td class="text-end"><a href="@Url.Action("DischargeSummary", new { id = s.AdmissionId })" class="btn btn-sm btn-light-primary" data-ds-open="@s.AdmissionId"><i class="ki-outline ki-document fs-5"></i>@T["Discharge summary"]</a></td>
                                             </tr>
                                         }
@@ -391,7 +400,7 @@
                                             <tr data-sick-row="@l.ID" class="@(isVoid ? "opacity-75" : "")">
                                                 <td><span class="badge hp-code fs-8 hp-num">@l.LeaveNo</span><div class="text-muted fs-9 mt-1 hp-num" dir="ltr">@HospitalNursingService.UtcToWard(l.IssuedAt).ToString("yyyy-MM-dd HH:mm")</div></td>
                                                 <td><span class="hp-num" dir="ltr">@l.FromDate.ToString("yyyy-MM-dd") → @l.ToDate.ToString("yyyy-MM-dd")</span><div class="text-muted fs-8"><span class="hp-num">@l.Days</span> @T["days"]</div></td>
-                                                <td>@T["sl:" + l.Kind]@if (l.Diagnosis != null) {<div class="text-muted fs-8" dir="auto">@l.Diagnosis @if (!l.ShowDiagnosis) {<span class="badge badge-light fs-9">@T["not printed"]</span>}</div>}</td>
+                                                <td>@T["sl:" + l.Kind]@if (l.Diagnosis != null && canClinical) {<div class="text-muted fs-8" dir="auto">@l.Diagnosis @if (!l.ShowDiagnosis) {<span class="badge badge-light fs-9">@T["not printed"]</span>}</div>}</td>
                                                 <td>@DisplayName.Of(r.Doctor ?? "", r.DoctorEn ?? r.Doctor ?? "")</td>
                                                 <td>@if (isVoid) {<span class="badge badge-light-danger">@T["sl:void"]</span><div class="text-muted fs-9 mt-1" dir="auto">@l.VoidReason</div>} else {<span class="badge badge-light-success">@T["sl:valid"]</span>}</td>
                                                 <td class="text-end"><div class="d-flex justify-content-end gap-2">
