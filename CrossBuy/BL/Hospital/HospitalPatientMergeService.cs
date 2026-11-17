@@ -66,6 +66,7 @@ namespace CrossBuy.BL.Hospital
 			(typeof(HospitalPatientRepresentative), "HospitalPatientRepresentatives"),   // H163: who speaks for the patient follows the patient
 			(typeof(HospitalContactPreference), "HospitalContactPreferences"),   // H163: one per patient — the survivor's is kept (MergeAsync)
 			(typeof(HospitalImplantMeasure), "HospitalImplantMeasures"),   // H168: an implant's stability measurements follow its patient
+			(typeof(HospitalSterilRecall), "HospitalSterilRecalls"),   // H169: a sterilisation recall follow-up follows its patient
 			(typeof(HospitalConsent), "HospitalConsents"),   // H60: the signature stays on the consent, which moves whole
 			(typeof(HospitalCharityGrant), "HospitalCharityGrants"),   // H63: a waiver follows its patient (its bill moves too)
 			(typeof(HospitalRestrictedFile), "HospitalRestrictedFiles"),   // H64: a restriction (live: one per patient — see the conflict)

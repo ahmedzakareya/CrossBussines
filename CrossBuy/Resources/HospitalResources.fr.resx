@@ -7948,4 +7948,61 @@
   <data name="mom:Placement" xml:space="preserve"><value>À la pose</value></data>
   <data name="rest:Definitive" xml:space="preserve"><value>Définitive</value></data>
   <data name="rest:Provisional" xml:space="preserve"><value>Provisoire</value></data>
+  <data name="A cycle was recalled" xml:space="preserve"><value>Un cycle a été rappelé</value></data>
+  <data name="A load with implantable items waits for its biological indicator" xml:space="preserve"><value>Une charge contenant des dispositifs implantables attend son indicateur biologique</value></data>
+  <data name="A pack that is not intact is not used: send it back to be re-sterilised" xml:space="preserve"><value>Un sachet non intact n'est pas utilisé : renvoyez-le en restérilisation</value></data>
+  <data name="A run did not meet its programme" xml:space="preserve"><value>Un cycle n'a pas respecté son programme</value></data>
+  <data name="Biological indicator failed after release" xml:space="preserve"><value>Indicateur biologique en échec après libération</value></data>
+  <data name="Chemical indicator failed after release" xml:space="preserve"><value>Indicateur chimique en échec après libération</value></data>
+  <data name="Close with outcome" xml:space="preserve"><value>Clôturer avec l'issue</value></data>
+  <data name="Confirm the pack was checked intact" xml:space="preserve"><value>Confirmez que le sachet a été vérifié intact</value></data>
+  <data name="Did the run meet its programme?" xml:space="preserve"><value>Le cycle a-t-il respecté son programme ?</value></data>
+  <data name="Each patient is told, followed up by infection control, then closed with the outcome" xml:space="preserve"><value>Chaque patient est informé, suivi par l'hygiène, puis clôturé avec l'issue</value></data>
+  <data name="Enter the exposure time in minutes" xml:space="preserve"><value>Saisissez la durée d'exposition en minutes</value></data>
+  <data name="Enter the outcome of the follow-up" xml:space="preserve"><value>Saisissez l'issue du suivi</value></data>
+  <data name="Enter the reason for the recall" xml:space="preserve"><value>Saisissez le motif du rappel</value></data>
+  <data name="Enter the sterilisation temperature (100–150 °C)" xml:space="preserve"><value>Saisissez la température de stérilisation (100–150 °C)</value></data>
+  <data name="Exposure (min)" xml:space="preserve"><value>Exposition (min)</value></data>
+  <data name="Implantable items" xml:space="preserve"><value>Dispositifs implantables</value></data>
+  <data name="Kit used" xml:space="preserve"><value>Kit utilisé</value></data>
+  <data name="Met" xml:space="preserve"><value>Respecté</value></data>
+  <data name="Not met: hold the load" xml:space="preserve"><value>Non respecté : retenir la charge</value></data>
+  <data name="Patient told" xml:space="preserve"><value>Patient informé</value></data>
+  <data name="Physical readings" xml:space="preserve"><value>Relevés physiques</value></data>
+  <data name="Pressure (kPa)" xml:space="preserve"><value>Pression (kPa)</value></data>
+  <data name="Recall follow-up" xml:space="preserve"><value>Suivi des rappels</value></data>
+  <data name="Recall reason" xml:space="preserve"><value>Motif du rappel</value></data>
+  <data name="Recall this cycle" xml:space="preserve"><value>Rappeler ce cycle</value></data>
+  <data name="Record that the patient was told first" xml:space="preserve"><value>Enregistrez d'abord que le patient a été informé</value></data>
+  <data name="Record that {0} was told?" xml:space="preserve"><value>Enregistrer que {0} a été informé ?</value></data>
+  <data name="Record the physical readings of the run first" xml:space="preserve"><value>Enregistrez d'abord les relevés physiques du cycle</value></data>
+  <data name="Record these readings? They are not changed afterwards." xml:space="preserve"><value>Enregistrer ces relevés ? Ils ne sont plus modifiés ensuite.</value></data>
+  <data name="Release {0}? Its kits become usable." xml:space="preserve"><value>Libérer {0} ? Ses kits deviennent utilisables.</value></data>
+  <data name="Say whether the run met its programme" xml:space="preserve"><value>Indiquez si le cycle a respecté son programme</value></data>
+  <data name="Such a load is released only after its biological indicator passes." xml:space="preserve"><value>Une telle charge n'est libérée qu'après la réussite de son indicateur biologique.</value></data>
+  <data name="The load holds implantable items" xml:space="preserve"><value>La charge contient des dispositifs implantables</value></data>
+  <data name="The outcome of the follow-up" xml:space="preserve"><value>L'issue du suivi</value></data>
+  <data name="The pack was checked intact before opening: wrap and seal whole, dry, its indicator turned" xml:space="preserve"><value>Le sachet a été vérifié intact avant ouverture : emballage et scellé entiers, sec, indicateur viré</value></data>
+  <data name="The physical readings of this cycle are already recorded" xml:space="preserve"><value>Les relevés physiques de ce cycle sont déjà enregistrés</value></data>
+  <data name="The pressure is out of range" xml:space="preserve"><value>La pression est hors plage</value></data>
+  <data name="This cycle failed its checks or was recalled: its kits are held" xml:space="preserve"><value>Ce cycle a échoué à ses contrôles ou a été rappelé : ses kits sont retenus</value></data>
+  <data name="This cycle failed its checks: its kits are held" xml:space="preserve"><value>Ce cycle a échoué à ses contrôles : ses kits sont retenus</value></data>
+  <data name="This cycle is already released" xml:space="preserve"><value>Ce cycle est déjà libéré</value></data>
+  <data name="This cycle is already released or recalled" xml:space="preserve"><value>Ce cycle est déjà libéré ou rappelé</value></data>
+  <data name="This cycle is not released yet" xml:space="preserve"><value>Ce cycle n'est pas encore libéré</value></data>
+  <data name="This cycle was recalled" xml:space="preserve"><value>Ce cycle a été rappelé</value></data>
+  <data name="This follow-up is already closed" xml:space="preserve"><value>Ce suivi est déjà clôturé</value></data>
+  <data name="This patient is already recorded as told" xml:space="preserve"><value>Ce patient est déjà enregistré comme informé</value></data>
+  <data name="Wet packs found" xml:space="preserve"><value>Sachets humides trouvés</value></data>
+  <data name="Why is {0} recalled? Its kits are held and the patients they reached are listed." xml:space="preserve"><value>Pourquoi rappeler {0} ? Ses kits sont retenus et les patients concernés sont listés.</value></data>
+  <data name="from the unit's printout or display" xml:space="preserve"><value>d'après le ticket ou l'écran de l'appareil</value></data>
+  <data name="programme not met" xml:space="preserve"><value>programme non respecté</value></data>
+  <data name="rcl:Closed" xml:space="preserve"><value>Clôturé</value></data>
+  <data name="rcl:Open" xml:space="preserve"><value>Ouverts</value></data>
+  <data name="rcl:ToTell" xml:space="preserve"><value>À informer</value></data>
+  <data name="rcl:Told" xml:space="preserve"><value>Informé</value></data>
+  <data name="rel:Awaiting" xml:space="preserve"><value>En attente de libération</value></data>
+  <data name="rel:Recalled" xml:space="preserve"><value>Rappelé</value></data>
+  <data name="rel:Release" xml:space="preserve"><value>Libérer</value></data>
+  <data name="rel:Released" xml:space="preserve"><value>Libéré</value></data>
 </root>

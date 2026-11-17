@@ -18,7 +18,8 @@ namespace CrossBuy.Controllers
 		public sealed class HospitalVisitMoveInput { public string To { get; set; } = ""; }
 		public sealed class HospitalLabCaseMoveInput { public string To { get; set; } = ""; public string? Fault { get; set; } public string? Reason { get; set; } }
 		public sealed class HospitalIndicatorInput { public string Kind { get; set; } = ""; public string Result { get; set; } = ""; }
-		public sealed class HospitalKitUseInput { public int PatientId { get; set; } public int? AppointmentId { get; set; } }
+		public sealed class HospitalKitUseInput { public int PatientId { get; set; } public int? AppointmentId { get; set; } public bool PackIntact { get; set; } }
+		public sealed class HospitalSterilReasonInput { public string? Reason { get; set; } }
 
 		private HospitalDentalPracticeService? _practiceSvc;
 		private HospitalDentalPracticeService PracticeSvc => _practiceSvc ??= ActivatorUtilities.CreateInstance<HospitalDentalPracticeService>(HttpContext.RequestServices, DentalSvc);
@@ -154,6 +155,7 @@ namespace CrossBuy.Controllers
 			var (rows, stats) = await PracticeSvc.RecallsAsync(ctx, DateTime.Now.Date, ct);
 			ViewBag.Stats = stats;
 			ViewBag.Cycles = await PracticeSvc.CyclesAsync(ctx, ct);
+			ViewBag.SterilRecalls = await PracticeSvc.SterilRecallsAsync(ctx, DateTime.UtcNow, ct);   // H169
 			ViewBag.CanBook = await _access.CanAsync(ctx, HospitalActions.Book, null, ct);
 			ViewBag.CanConsult = await _access.CanAsync(ctx, HospitalActions.Consult, null, ct);
 			return View(rows);
@@ -180,7 +182,7 @@ namespace CrossBuy.Controllers
 		{
 			var ctx = await ContextAsync(ct);
 			if (ctx == null || input == null) return NotFound(new { ok = false, code = "not_found" });
-			return Result(await PracticeSvc.RecordIndicatorAsync(ctx, id, input.Kind, input.Result, ct));
+			return Result(await PracticeSvc.RecordIndicatorAsync(ctx, id, input.Kind, input.Result, DateTime.UtcNow, ct));
 		}
 
 		[HttpPost("Dental/Steril/{id:int}/Use"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Consult)]
@@ -188,7 +190,48 @@ namespace CrossBuy.Controllers
 		{
 			var ctx = await ContextAsync(ct);
 			if (ctx == null || input == null) return NotFound(new { ok = false, code = "not_found" });
-			return Result(await PracticeSvc.UseKitAsync(ctx, id, input.PatientId, input.AppointmentId, ctx.EmployeeId, DateTime.UtcNow, ct));
+			return Result(await PracticeSvc.UseKitAsync(ctx, id, input.PatientId, input.AppointmentId, input.PackIntact, ctx.EmployeeId, DateTime.UtcNow, ct));
+		}
+
+		// H169: the physical record of a run, its release by a person, a recall by hand, and the recall follow-up.
+		[HttpPost("Dental/Steril/{id:int}/Physical"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Consult)]
+		public async Task<IActionResult> DentalSterilPhysical(int id, [FromBody] HospitalSterilPhysicalInput input, CancellationToken ct = default)
+		{
+			var ctx = await ContextAsync(ct);
+			if (ctx == null || input == null) return NotFound(new { ok = false, code = "not_found" });
+			return Result(await PracticeSvc.RecordPhysicalAsync(ctx, id, input, ct));
+		}
+
+		[HttpPost("Dental/Steril/{id:int}/Release"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Consult)]
+		public async Task<IActionResult> DentalSterilRelease(int id, CancellationToken ct = default)
+		{
+			var ctx = await ContextAsync(ct);
+			if (ctx == null) return NotFound(new { ok = false, code = "not_found" });
+			return Result(await PracticeSvc.ReleaseAsync(ctx, id, ctx.EmployeeId, DateTime.UtcNow, ct));
+		}
+
+		[HttpPost("Dental/Steril/{id:int}/Recall"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Consult)]
+		public async Task<IActionResult> DentalSterilRecall(int id, [FromBody] HospitalSterilReasonInput input, CancellationToken ct = default)
+		{
+			var ctx = await ContextAsync(ct);
+			if (ctx == null || input == null) return NotFound(new { ok = false, code = "not_found" });
+			return Result(await PracticeSvc.RecallCycleAsync(ctx, id, input.Reason, DateTime.UtcNow, ct));
+		}
+
+		[HttpPost("Dental/Steril/Recalls/{id:int}/Notified"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Consult)]
+		public async Task<IActionResult> DentalSterilRecallNotified(int id, CancellationToken ct = default)
+		{
+			var ctx = await ContextAsync(ct);
+			if (ctx == null) return NotFound(new { ok = false, code = "not_found" });
+			return Result(await PracticeSvc.SterilRecallNotifyAsync(ctx, id, ctx.EmployeeId, DateTime.UtcNow, ct));
+		}
+
+		[HttpPost("Dental/Steril/Recalls/{id:int}/Close"), ValidateAntiForgeryToken, HospitalPerm(HospitalActions.Consult)]
+		public async Task<IActionResult> DentalSterilRecallClose(int id, [FromBody] HospitalSterilReasonInput input, CancellationToken ct = default)
+		{
+			var ctx = await ContextAsync(ct);
+			if (ctx == null || input == null) return NotFound(new { ok = false, code = "not_found" });
+			return Result(await PracticeSvc.SterilRecallCloseAsync(ctx, id, input.Reason, ctx.EmployeeId, DateTime.UtcNow, ct));
 		}
 	}
 }

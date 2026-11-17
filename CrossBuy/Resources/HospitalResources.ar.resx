@@ -7948,4 +7948,61 @@
   <data name="mom:Placement" xml:space="preserve"><value>عند الزرع</value></data>
   <data name="rest:Definitive" xml:space="preserve"><value>تركيبة نهائية</value></data>
   <data name="rest:Provisional" xml:space="preserve"><value>تركيبة مؤقتة</value></data>
+  <data name="A cycle was recalled" xml:space="preserve"><value>سُحبت دورة تعقيم</value></data>
+  <data name="A load with implantable items waits for its biological indicator" xml:space="preserve"><value>الحمولة التي تضم مواد قابلة للزرع تنتظر نتيجة مؤشرها البيولوجي</value></data>
+  <data name="A pack that is not intact is not used: send it back to be re-sterilised" xml:space="preserve"><value>لا تُستخدم عبوة غير سليمة: أعِدها لإعادة التعقيم</value></data>
+  <data name="A run did not meet its programme" xml:space="preserve"><value>دورة لم تستوفِ برنامجها</value></data>
+  <data name="Biological indicator failed after release" xml:space="preserve"><value>أخفق المؤشر البيولوجي بعد الإفراج</value></data>
+  <data name="Chemical indicator failed after release" xml:space="preserve"><value>أخفق المؤشر الكيميائي بعد الإفراج</value></data>
+  <data name="Close with outcome" xml:space="preserve"><value>إغلاق بالنتيجة</value></data>
+  <data name="Confirm the pack was checked intact" xml:space="preserve"><value>أكِّد أن العبوة فُحصت وهي سليمة</value></data>
+  <data name="Did the run meet its programme?" xml:space="preserve"><value>هل استوفت الدورة برنامجها؟</value></data>
+  <data name="Each patient is told, followed up by infection control, then closed with the outcome" xml:space="preserve"><value>يُبلَّغ كل مريض، وتتابعه مكافحة العدوى، ثم تُغلق حالته بنتيجتها</value></data>
+  <data name="Enter the exposure time in minutes" xml:space="preserve"><value>أدخل زمن التعريض بالدقائق</value></data>
+  <data name="Enter the outcome of the follow-up" xml:space="preserve"><value>أدخل نتيجة المتابعة</value></data>
+  <data name="Enter the reason for the recall" xml:space="preserve"><value>أدخل سبب السحب</value></data>
+  <data name="Enter the sterilisation temperature (100–150 °C)" xml:space="preserve"><value>أدخل درجة حرارة التعقيم (100–150 °م)</value></data>
+  <data name="Exposure (min)" xml:space="preserve"><value>زمن التعريض (دقيقة)</value></data>
+  <data name="Implantable items" xml:space="preserve"><value>مواد قابلة للزرع</value></data>
+  <data name="Kit used" xml:space="preserve"><value>استُخدمت الأداة</value></data>
+  <data name="Met" xml:space="preserve"><value>استوفت</value></data>
+  <data name="Not met: hold the load" xml:space="preserve"><value>لم تستوفِ: تُحجز الحمولة</value></data>
+  <data name="Patient told" xml:space="preserve"><value>أُبلغ المريض</value></data>
+  <data name="Physical readings" xml:space="preserve"><value>القراءات الفيزيائية</value></data>
+  <data name="Pressure (kPa)" xml:space="preserve"><value>الضغط (كيلوباسكال)</value></data>
+  <data name="Recall follow-up" xml:space="preserve"><value>متابعة سحب الدورات</value></data>
+  <data name="Recall reason" xml:space="preserve"><value>سبب السحب</value></data>
+  <data name="Recall this cycle" xml:space="preserve"><value>سحب هذه الدورة</value></data>
+  <data name="Record that the patient was told first" xml:space="preserve"><value>سجِّل إبلاغ المريض أولًا</value></data>
+  <data name="Record that {0} was told?" xml:space="preserve"><value>هل تسجّل أن {0} قد أُبلغ؟</value></data>
+  <data name="Record the physical readings of the run first" xml:space="preserve"><value>سجِّل القراءات الفيزيائية للدورة أولًا</value></data>
+  <data name="Record these readings? They are not changed afterwards." xml:space="preserve"><value>هل تسجّل هذه القراءات؟ لا تُعدَّل بعد ذلك.</value></data>
+  <data name="Release {0}? Its kits become usable." xml:space="preserve"><value>هل تُفرج عن {0}؟ تصبح أدواتها صالحة للاستخدام.</value></data>
+  <data name="Say whether the run met its programme" xml:space="preserve"><value>حدِّد هل استوفت الدورة برنامجها</value></data>
+  <data name="Such a load is released only after its biological indicator passes." xml:space="preserve"><value>لا يُفرج عن هذه الحمولة إلا بعد نجاح مؤشرها البيولوجي.</value></data>
+  <data name="The load holds implantable items" xml:space="preserve"><value>الحمولة تضم مواد قابلة للزرع</value></data>
+  <data name="The outcome of the follow-up" xml:space="preserve"><value>نتيجة المتابعة</value></data>
+  <data name="The pack was checked intact before opening: wrap and seal whole, dry, its indicator turned" xml:space="preserve"><value>فُحصت العبوة قبل فتحها وهي سليمة: الغلاف والختم سليمان، جافة، ومؤشرها متغيّر اللون</value></data>
+  <data name="The physical readings of this cycle are already recorded" xml:space="preserve"><value>القراءات الفيزيائية لهذه الدورة مسجلة من قبل</value></data>
+  <data name="The pressure is out of range" xml:space="preserve"><value>الضغط خارج النطاق المقبول</value></data>
+  <data name="This cycle failed its checks or was recalled: its kits are held" xml:space="preserve"><value>أخفقت هذه الدورة في فحوصها أو سُحبت: أدواتها محجوزة</value></data>
+  <data name="This cycle failed its checks: its kits are held" xml:space="preserve"><value>أخفقت هذه الدورة في فحوصها: أدواتها محجوزة</value></data>
+  <data name="This cycle is already released" xml:space="preserve"><value>أُفرج عن هذه الدورة من قبل</value></data>
+  <data name="This cycle is already released or recalled" xml:space="preserve"><value>هذه الدورة مُفرَج عنها أو مسحوبة من قبل</value></data>
+  <data name="This cycle is not released yet" xml:space="preserve"><value>لم يُفرج عن هذه الدورة بعد</value></data>
+  <data name="This cycle was recalled" xml:space="preserve"><value>سُحبت هذه الدورة</value></data>
+  <data name="This follow-up is already closed" xml:space="preserve"><value>أُغلقت هذه المتابعة من قبل</value></data>
+  <data name="This patient is already recorded as told" xml:space="preserve"><value>سُجِّل إبلاغ هذا المريض من قبل</value></data>
+  <data name="Wet packs found" xml:space="preserve"><value>وُجدت عبوات رطبة</value></data>
+  <data name="Why is {0} recalled? Its kits are held and the patients they reached are listed." xml:space="preserve"><value>ما سبب سحب {0}؟ تُحجز أدواتها ويُدرج المرضى الذين استُخدمت لهم.</value></data>
+  <data name="from the unit's printout or display" xml:space="preserve"><value>من مطبوعة الجهاز أو شاشته</value></data>
+  <data name="programme not met" xml:space="preserve"><value>لم يُستوفَ البرنامج</value></data>
+  <data name="rcl:Closed" xml:space="preserve"><value>مغلقة</value></data>
+  <data name="rcl:Open" xml:space="preserve"><value>مفتوحة</value></data>
+  <data name="rcl:ToTell" xml:space="preserve"><value>بانتظار الإبلاغ</value></data>
+  <data name="rcl:Told" xml:space="preserve"><value>أُبلغ المريض</value></data>
+  <data name="rel:Awaiting" xml:space="preserve"><value>بانتظار الإفراج</value></data>
+  <data name="rel:Recalled" xml:space="preserve"><value>مسحوبة</value></data>
+  <data name="rel:Release" xml:space="preserve"><value>إفراج</value></data>
+  <data name="rel:Released" xml:space="preserve"><value>مُفرَج عنها</value></data>
 </root>

@@ -78,12 +78,13 @@ namespace CrossBuy.Tests
 		[Fact]
 		public void A_kit_is_never_used_from_a_failed_cycle()
 		{
-			HospitalSterilCycle C(string chem, string bio) => new() { Chemical = chem, Biological = bio };
+			// H169: usable means RELEASED; a released cycle whose biological is still incubating stays usable (not an implant load)
+			HospitalSterilCycle C(string chem, string bio) => new() { Chemical = chem, Biological = bio, PhysicalOk = true, ReleasedAt = new DateTime(2026, 11, 3) };
 			Assert.Null(HospitalDentalPracticeRules.UseRefusal(C(HospitalIndicator.Pass, HospitalIndicator.Pass)));
 			Assert.Null(HospitalDentalPracticeRules.UseRefusal(C(HospitalIndicator.Pass, HospitalIndicator.Pending)));   // parametric release
 			Assert.NotNull(HospitalDentalPracticeRules.UseRefusal(C(HospitalIndicator.Pass, HospitalIndicator.Fail)));
 			Assert.NotNull(HospitalDentalPracticeRules.UseRefusal(C(HospitalIndicator.Fail, HospitalIndicator.Pending)));
-			Assert.NotNull(HospitalDentalPracticeRules.UseRefusal(C(HospitalIndicator.Pending, HospitalIndicator.Pending)));
+			Assert.NotNull(HospitalDentalPracticeRules.UseRefusal(new HospitalSterilCycle { Chemical = HospitalIndicator.Pending, Biological = HospitalIndicator.Pending }));   // never released
 		}
 
 		[Fact]
@@ -95,7 +96,7 @@ namespace CrossBuy.Tests
 
 		// ---------------- model and slice ----------------
 
-		private static string Slice() => HospitalSliceParity.Slice("hospital_h16_dental_practice.sql");
+		private static string Slice() => HospitalSliceParity.Slice("hospital_h16_dental_practice.sql") + Environment.NewLine + HospitalSliceParity.Slice("hospital_h169_steril_release.sql");   // H169 release columns and the recall table
 		private static Microsoft.EntityFrameworkCore.Metadata.IModel Model() => HospitalSliceParity.Model(HospitalDentalOpsModel.Configure);
 
 		public static IEnumerable<object[]> Tables() => new[]
@@ -103,7 +104,7 @@ namespace CrossBuy.Tests
 			new object[] { typeof(HospitalDentalChair), "HospitalDentalChairs" }, new object[] { typeof(HospitalDentalVisit), "HospitalDentalVisits" },
 			new object[] { typeof(HospitalDentalLab), "HospitalDentalLabs" }, new object[] { typeof(HospitalDentalLabCase), "HospitalDentalLabCases" },
 			new object[] { typeof(HospitalDentalRecall), "HospitalDentalRecalls" }, new object[] { typeof(HospitalSterilCycle), "HospitalSterilCycles" },
-			new object[] { typeof(HospitalSterilUse), "HospitalSterilUses" },
+			new object[] { typeof(HospitalSterilUse), "HospitalSterilUses" }, new object[] { typeof(HospitalSterilRecall), "HospitalSterilRecalls" },
 		};
 
 		[Theory]
@@ -120,6 +121,6 @@ namespace CrossBuy.Tests
 
 		[Fact]
 		public void Every_table_the_slice_references_but_does_not_create_is_a_checked_prerequisite() =>
-			Assert.Equal(5, HospitalSliceParity.CheckedPrerequisites(Slice()).Count);   // practitioners, patients, plan lines, appointments, services
+			Assert.Equal(5, HospitalSliceParity.CheckedPrerequisites(HospitalSliceParity.Slice("hospital_h16_dental_practice.sql")).Count);   // practitioners, patients, plan lines, appointments, services
 	}
 }

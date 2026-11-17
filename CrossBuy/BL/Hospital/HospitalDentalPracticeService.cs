@@ -74,7 +74,21 @@ namespace CrossBuy.BL.Hospital
 		public string Unit { get; set; } = "";
 		public string Load { get; set; } = "";
 		public DateTime? RunAt { get; set; }
+		/// H169: the load holds implantable items — its biological indicator must pass before release.
+		public bool ImplantLoad { get; set; }
 	}
+
+	/// H169: the physical record of a run.
+	public sealed class HospitalSterilPhysicalInput
+	{
+		public int? ExposureMinutes { get; set; }
+		public decimal? TemperatureC { get; set; }
+		public decimal? PressureKpa { get; set; }
+		public bool? Ok { get; set; }
+	}
+
+	/// H169: a patient a recalled cycle's kit reached, for infection control.
+	public sealed record HospitalSterilRecallRow(HospitalSterilRecall Recall, string CycleNo, string? RecallReason, string PatientName, string PatientNameEn, string Mrn, string? Phone, string? Photo, DateTime UsedAt);
 
 	public sealed record HospitalChairSlot(HospitalAppointment Appointment, HospitalDentalVisit Visit, string PatientName, string PatientNameEn, string Mrn, string? PatientPhoto,
 		string? Procedure, string? ProcedureEn, string? LabCaseNo, bool LabAtRisk);
@@ -89,7 +103,7 @@ namespace CrossBuy.BL.Hospital
 
 	public sealed record HospitalRecallRow(HospitalDentalRecall Recall, string PatientName, string PatientNameEn, string Mrn, string? Phone, string? Photo, DateTime? NextVisit, string State);
 
-	public sealed record HospitalSterilRow(HospitalSterilCycle Cycle, int Used, string? Operator, string? OperatorEn, string? OperatorPhoto, IReadOnlyList<string> UsedOn);
+	public sealed record HospitalSterilRow(HospitalSterilCycle Cycle, int Used, string? Operator, string? OperatorEn, string? OperatorPhoto, IReadOnlyList<string> UsedOn, string? ReleasedBy = null);
 
 	public sealed record HospitalRecallStats(int? PreBookedRate, int DueThisMonth, int Overdue, int FailedCycles);
 
@@ -343,7 +357,7 @@ namespace CrossBuy.BL.Hospital
 				return new HospitalRecallRow(x.r, x.Name, x.NameEn, x.Mrn, x.Phone, x.PhotoPath, n, HospitalDentalPracticeRules.RecallState(x.r.DueDate, n, today));
 			}).ToList();
 			var dueSoon = list.Where(x => x.Recall.DueDate <= today.AddMonths(1)).ToList();
-			int failed = await Cycles(ctx).CountAsync(c => c.Biological == HospitalIndicator.Fail || c.Chemical == HospitalIndicator.Fail, ct);
+			int failed = await Cycles(ctx).CountAsync(c => c.Biological == HospitalIndicator.Fail || c.Chemical == HospitalIndicator.Fail || c.PhysicalOk == false || c.RecalledAt != null, ct);
 			return (list, new HospitalRecallStats(dueSoon.Count == 0 ? null : (int)Math.Round(dueSoon.Count(x => x.State == "Booked") * 100m / dueSoon.Count),
 				list.Count(x => x.Recall.DueDate.Year == today.Year && x.Recall.DueDate.Month == today.Month), list.Count(x => x.State == "Overdue"), failed));
 		}
@@ -361,12 +375,14 @@ namespace CrossBuy.BL.Hospital
 			var ids = cycles.Select(c => c.ID).ToList();
 			var uses = await (from u in _db.Set<HospitalSterilUse>().AsNoTracking() join p in _db.HospitalPatients.AsNoTracking() on u.PatientId equals p.ID
 							  where ids.Contains(u.CycleId) select new { u.CycleId, p.Name, p.NameEn, p.Mrn }).ToListAsync(ct);
-			var emps = cycles.Where(c => c.OperatorEmployeeId != null).Select(c => c.OperatorEmployeeId!.Value).Distinct().ToList();
+			var emps = cycles.Where(c => c.OperatorEmployeeId != null).Select(c => c.OperatorEmployeeId!.Value)
+				.Concat(cycles.Where(c => c.ReleasedByEmployeeId != null).Select(c => c.ReleasedByEmployeeId!.Value)).Distinct().ToList();
 			var names = await _db.Employee.AsNoTracking().Where(e => emps.Contains(e.ID)).Select(e => new { e.ID, Name = e.FullName, NameEn = e.FullNameEn }).ToListAsync(ct);
 			var photos = await CrossBuy.BL.Platform.EmployeePhotos.ResolveAsync(_db, ctx, emps, ct);
 			return cycles.Select(c => new HospitalSterilRow(c, uses.Count(u => u.CycleId == c.ID), names.FirstOrDefault(n => n.ID == c.OperatorEmployeeId) is { } op ? DisplayName.Of(op.Name, op.NameEn ?? op.Name) : null, names.FirstOrDefault(n => n.ID == c.OperatorEmployeeId)?.NameEn,
 				c.OperatorEmployeeId is int e ? photos.GetValueOrDefault(e) : null,
-				uses.Where(u => u.CycleId == c.ID).Select(u => DisplayName.Of(u.Name, u.NameEn) + " — " + u.Mrn).ToList())).ToList();
+				uses.Where(u => u.CycleId == c.ID).Select(u => DisplayName.Of(u.Name, u.NameEn) + " — " + u.Mrn).ToList(),
+				names.FirstOrDefault(n => n.ID == c.ReleasedByEmployeeId) is { } rb ? DisplayName.Of(rb.Name, rb.NameEn ?? rb.Name) : null)).ToList();
 		}
 
 		public async Task<HospitalResult> CreateCycleAsync(BusinessContext ctx, HospitalSterilCycleInput input, int? employeeId, DateTime nowUtc, DateTime nowLocal, CancellationToken ct = default)
@@ -378,34 +394,140 @@ namespace CrossBuy.BL.Hospital
 			if (run > nowLocal.AddMinutes(5)) return HospitalResult.Fail("A cycle cannot be recorded before it runs");
 			string prefix = "AC-" + run.ToString("yyyy-MMdd") + "-";
 			var nos = await Cycles(ctx).Where(c => c.CycleNo.StartsWith(prefix)).Select(c => c.CycleNo).ToListAsync(ct);
-			var c = new HospitalSterilCycle { CompanyId = ctx.CompanyId, CycleNo = HospitalDentalPracticeRules.NextNo(nos, prefix, 2), Unit = unit, Load = load, RunAt = run, OperatorEmployeeId = employeeId, CreatedAt = nowUtc };
+			var c = new HospitalSterilCycle { CompanyId = ctx.CompanyId, CycleNo = HospitalDentalPracticeRules.NextNo(nos, prefix, 2), Unit = unit, Load = load, RunAt = run, OperatorEmployeeId = employeeId, CreatedAt = nowUtc, ImplantLoad = input.ImplantLoad };
 			_db.Add(c);
 			return await SaveAsync(ct, null) is { Ok: true } ? HospitalResult.Success(c.ID) : HospitalResult.Fail(ConcurrentChange);
 		}
 
-		/// An indicator's result. Only a pending one is recorded: a result is never rewritten.
-		public async Task<HospitalResult> RecordIndicatorAsync(BusinessContext ctx, int id, string kind, string result, CancellationToken ct = default)
+		/// An indicator's result. Only a pending one is recorded: a result is never rewritten. H169: a failure found after
+		/// the cycle was released recalls it, and every patient its kits reached is listed for infection control.
+		public async Task<HospitalResult> RecordIndicatorAsync(BusinessContext ctx, int id, string kind, string result, DateTime nowUtc, CancellationToken ct = default)
 		{
 			if (!await Can(ctx, HospitalActions.Consult, ct)) return HospitalResult.Fail("forbidden");
 			if (result is not (HospitalIndicator.Pass or HospitalIndicator.Fail)) return HospitalResult.Fail("Record pass or fail");
+			await using var tx = _db.Database.IsRelational() ? await ScopedTx.BeginOrJoinAsync(_db) : null;
 			int n = kind switch
 			{
 				"Chemical" => await Cycles(ctx).Where(c => c.ID == id && c.Chemical == HospitalIndicator.Pending).ExecuteUpdateAsync(u => u.SetProperty(c => c.Chemical, result), ct),
 				"Biological" => await Cycles(ctx).Where(c => c.ID == id && c.Biological == HospitalIndicator.Pending).ExecuteUpdateAsync(u => u.SetProperty(c => c.Biological, result), ct),
 				_ => -1,
 			};
-			return n == 1 ? HospitalResult.Success(id) : n == -1 ? HospitalResult.Fail("not_found") : HospitalResult.Fail("This indicator is already recorded");
+			if (n != 1) return n == -1 ? HospitalResult.Fail("not_found") : HospitalResult.Fail("This indicator is already recorded");
+			if (result == HospitalIndicator.Fail)
+			{
+				var c = await Cycles(ctx).AsNoTracking().FirstAsync(x => x.ID == id, ct);
+				if (HospitalDentalPracticeRules.RecallsOnFail(c))
+				{
+					var r = await RecallInTxAsync(ctx, c, kind == "Biological" ? "Biological indicator failed after release" : "Chemical indicator failed after release", nowUtc, ct);
+					if (!r.Ok) return r;
+				}
+			}
+			if (tx != null) await tx.CommitAsync();
+			return HospitalResult.Success(id);
 		}
 
-		/// A kit from a cycle, used on a patient (refused from a failed cycle).
-		public async Task<HospitalResult> UseKitAsync(BusinessContext ctx, int cycleId, int patientId, int? appointmentId, int? employeeId, DateTime nowUtc, CancellationToken ct = default)
+		/// H169: the physical record of the run, once, before release. A run that did not meet its programme holds the load.
+		public async Task<HospitalResult> RecordPhysicalAsync(BusinessContext ctx, int id, HospitalSterilPhysicalInput input, CancellationToken ct = default)
+		{
+			if (!await Can(ctx, HospitalActions.Consult, ct)) return HospitalResult.Fail("forbidden");
+			var c = await Cycles(ctx).AsNoTracking().FirstOrDefaultAsync(x => x.ID == id, ct);
+			if (c == null) return HospitalResult.Fail("not_found");
+			if (HospitalDentalPracticeRules.PhysicalRefusal(c, input.ExposureMinutes, input.TemperatureC, input.PressureKpa, input.Ok) is string why) return HospitalResult.Fail(why);
+			int n = await Cycles(ctx).Where(x => x.ID == id && x.PhysicalOk == null && x.ReleasedAt == null)
+				.ExecuteUpdateAsync(u => u.SetProperty(x => x.ExposureMinutes, input.ExposureMinutes).SetProperty(x => x.TemperatureC, input.TemperatureC)
+					.SetProperty(x => x.PressureKpa, input.PressureKpa).SetProperty(x => x.PhysicalOk, input.Ok), ct);
+			return n == 1 ? HospitalResult.Success(id) : HospitalResult.Fail(ConcurrentChange);
+		}
+
+		/// H169: a person releases the cycle once the run is proven (physical, chemical, and biological for an implant load).
+		public async Task<HospitalResult> ReleaseAsync(BusinessContext ctx, int id, int? employeeId, DateTime nowUtc, CancellationToken ct = default)
+		{
+			if (!await Can(ctx, HospitalActions.Consult, ct)) return HospitalResult.Fail("forbidden");
+			var c = await Cycles(ctx).AsNoTracking().FirstOrDefaultAsync(x => x.ID == id, ct);
+			if (c == null) return HospitalResult.Fail("not_found");
+			if (HospitalDentalPracticeRules.ReleaseRefusal(c) is string why) return HospitalResult.Fail(why);
+			// the same conditions again in the write: a result recorded meanwhile wins
+			int n = await Cycles(ctx).Where(x => x.ID == id && x.ReleasedAt == null && x.RecalledAt == null && x.PhysicalOk == true && x.Chemical == HospitalIndicator.Pass
+					&& x.Biological != HospitalIndicator.Fail && (!x.ImplantLoad || x.Biological == HospitalIndicator.Pass))
+				.ExecuteUpdateAsync(u => u.SetProperty(x => x.ReleasedAt, nowUtc).SetProperty(x => x.ReleasedByEmployeeId, employeeId), ct);
+			return n == 1 ? HospitalResult.Success(id) : HospitalResult.Fail(ConcurrentChange);
+		}
+
+		/// H169: a cycle recalled by hand (a wet pack, a fault found in the unit's log): its kits are held from now, and the
+		/// patients they already reached are listed for infection control.
+		public async Task<HospitalResult> RecallCycleAsync(BusinessContext ctx, int id, string? reason, DateTime nowUtc, CancellationToken ct = default)
+		{
+			if (!await Can(ctx, HospitalActions.Consult, ct)) return HospitalResult.Fail("forbidden");
+			var why = Clip(reason, 300);
+			if (why == null) return HospitalResult.Fail("Enter the reason for the recall");
+			var c = await Cycles(ctx).AsNoTracking().FirstOrDefaultAsync(x => x.ID == id, ct);
+			if (c == null) return HospitalResult.Fail("not_found");
+			if (c.RecalledAt != null) return HospitalResult.Fail("This cycle was recalled");
+			await using var tx = _db.Database.IsRelational() ? await ScopedTx.BeginOrJoinAsync(_db) : null;
+			var r = await RecallInTxAsync(ctx, c, why, nowUtc, ct);
+			if (r.Ok && tx != null) await tx.CommitAsync();
+			return r.Ok ? HospitalResult.Success(id) : r;
+		}
+
+		private async Task<HospitalResult> RecallInTxAsync(BusinessContext ctx, HospitalSterilCycle c, string reason, DateTime nowUtc, CancellationToken ct)
+		{
+			int n = await Cycles(ctx).Where(x => x.ID == c.ID && x.RecalledAt == null)
+				.ExecuteUpdateAsync(u => u.SetProperty(x => x.RecalledAt, nowUtc).SetProperty(x => x.RecallReason, reason), ct);
+			if (n != 1) return HospitalResult.Fail(ConcurrentChange);
+			var uses = await _db.Set<HospitalSterilUse>().AsNoTracking().Where(u => u.CompanyId == ctx.CompanyId && u.CycleId == c.ID).ToListAsync(ct);
+			foreach (var u in uses)
+				_db.Add(new HospitalSterilRecall { CompanyId = ctx.CompanyId, CycleId = c.ID, PatientId = u.PatientId, UseId = u.ID, CreatedAt = nowUtc });
+			return await SaveAsync(ct, c.ID);
+		}
+
+		/// H169: the recall follow-up — every patient still open, and those closed in the last 30 days.
+		public async Task<IReadOnlyList<HospitalSterilRecallRow>> SterilRecallsAsync(BusinessContext ctx, DateTime nowUtc, CancellationToken ct = default)
+		{
+			var since = nowUtc.AddDays(-30);
+			var rows = await (from r in _db.Set<HospitalSterilRecall>().AsNoTracking()
+							  join c in Cycles(ctx).AsNoTracking() on r.CycleId equals c.ID
+							  join u in _db.Set<HospitalSterilUse>().AsNoTracking() on r.UseId equals u.ID
+							  join p in _db.HospitalPatients.AsNoTracking() on r.PatientId equals p.ID
+							  where r.CompanyId == ctx.CompanyId && (r.ClosedAt == null || r.ClosedAt >= since)
+							  orderby r.ClosedAt != null, r.CreatedAt descending
+							  select new { r, c.CycleNo, c.RecallReason, p.Name, p.NameEn, p.Mrn, p.Phone, p.PhotoPath, u.UsedAt }).Take(200).ToListAsync(ct);
+			return rows.Select(x => new HospitalSterilRecallRow(x.r, x.CycleNo, x.RecallReason, x.Name, x.NameEn ?? x.Name, x.Mrn, x.Phone, x.PhotoPath, x.UsedAt)).ToList();
+		}
+
+		/// H169: the patient was told.
+		public async Task<HospitalResult> SterilRecallNotifyAsync(BusinessContext ctx, int id, int? employeeId, DateTime nowUtc, CancellationToken ct = default)
+		{
+			if (!await Can(ctx, HospitalActions.Consult, ct)) return HospitalResult.Fail("forbidden");
+			int n = await _db.Set<HospitalSterilRecall>().Where(r => r.CompanyId == ctx.CompanyId && r.ID == id && r.NotifiedAt == null && r.ClosedAt == null)
+				.ExecuteUpdateAsync(u => u.SetProperty(r => r.NotifiedAt, nowUtc).SetProperty(r => r.NotifiedByEmployeeId, employeeId), ct);
+			return n == 1 ? HospitalResult.Success(id) : HospitalResult.Fail("This patient is already recorded as told");
+		}
+
+		/// H169: closed with its outcome, once the patient was told.
+		public async Task<HospitalResult> SterilRecallCloseAsync(BusinessContext ctx, int id, string? outcome, int? employeeId, DateTime nowUtc, CancellationToken ct = default)
+		{
+			if (!await Can(ctx, HospitalActions.Consult, ct)) return HospitalResult.Fail("forbidden");
+			var o = Clip(outcome, 300);
+			if (o == null) return HospitalResult.Fail("Enter the outcome of the follow-up");
+			var r0 = await _db.Set<HospitalSterilRecall>().AsNoTracking().FirstOrDefaultAsync(r => r.CompanyId == ctx.CompanyId && r.ID == id, ct);
+			if (r0 == null) return HospitalResult.Fail("not_found");
+			if (r0.ClosedAt != null) return HospitalResult.Fail("This follow-up is already closed");
+			if (r0.NotifiedAt == null) return HospitalResult.Fail("Record that the patient was told first");
+			int n = await _db.Set<HospitalSterilRecall>().Where(r => r.CompanyId == ctx.CompanyId && r.ID == id && r.ClosedAt == null && r.NotifiedAt != null)
+				.ExecuteUpdateAsync(u => u.SetProperty(r => r.Outcome, o).SetProperty(r => r.ClosedAt, nowUtc).SetProperty(r => r.ClosedByEmployeeId, employeeId), ct);
+			return n == 1 ? HospitalResult.Success(id) : HospitalResult.Fail(ConcurrentChange);
+		}
+
+		/// A kit from a cycle, used on a patient: only from a released cycle, not held or recalled, and from a pack checked
+		/// intact just before it is opened (H169).
+		public async Task<HospitalResult> UseKitAsync(BusinessContext ctx, int cycleId, int patientId, int? appointmentId, bool packIntact, int? employeeId, DateTime nowUtc, CancellationToken ct = default)
 		{
 			if (!await Can(ctx, HospitalActions.Consult, ct)) return HospitalResult.Fail("forbidden");
 			var c = await Cycles(ctx).AsNoTracking().FirstOrDefaultAsync(x => x.ID == cycleId, ct);
 			if (c == null || !await _db.HospitalPatients.AnyAsync(p => p.ID == patientId && p.CompanyId == ctx.CompanyId, ct)) return HospitalResult.Fail("not_found");
-			var why = HospitalDentalPracticeRules.UseRefusal(c);
+			var why = HospitalDentalPracticeRules.UseRefusal(c, packIntact);
 			if (why != null) return HospitalResult.Fail(why);
-			_db.Add(new HospitalSterilUse { CompanyId = ctx.CompanyId, CycleId = cycleId, PatientId = patientId, AppointmentId = appointmentId, UsedAt = nowUtc, UsedByEmployeeId = employeeId });
+			_db.Add(new HospitalSterilUse { CompanyId = ctx.CompanyId, CycleId = cycleId, PatientId = patientId, AppointmentId = appointmentId, UsedAt = nowUtc, UsedByEmployeeId = employeeId, PackIntact = true });
 			return await SaveAsync(ct, cycleId);
 		}
 	}

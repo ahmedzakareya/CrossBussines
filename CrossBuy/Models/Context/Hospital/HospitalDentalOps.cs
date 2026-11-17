@@ -138,6 +138,19 @@ namespace CrossBuy.Models.Context.Hospital
 		public string Biological { get; set; } = HospitalIndicator.Pending;
 		public int? OperatorEmployeeId { get; set; }
 		public DateTime CreatedAt { get; set; }
+		// H169: "not failed" is not "released". The physical record of the run (time at temperature, temperature,
+		// pressure, and the operator's word that they met the programme), whether the load holds implantable items
+		// (then the biological indicator must pass before release), and who released it, when. A failure found after
+		// release recalls the cycle: every patient it was used on is followed up by infection control.
+		public int? ExposureMinutes { get; set; }
+		public decimal? TemperatureC { get; set; }
+		public decimal? PressureKpa { get; set; }
+		public bool? PhysicalOk { get; set; }
+		public bool ImplantLoad { get; set; }
+		public DateTime? ReleasedAt { get; set; }
+		public int? ReleasedByEmployeeId { get; set; }
+		public DateTime? RecalledAt { get; set; }
+		public string? RecallReason { get; set; }
 	}
 
 	/// A kit from a cycle, used on a patient.
@@ -150,6 +163,24 @@ namespace CrossBuy.Models.Context.Hospital
 		public int? AppointmentId { get; set; }
 		public DateTime UsedAt { get; set; }
 		public int? UsedByEmployeeId { get; set; }
+		/// H169: the pack was checked intact (wrap, seal, dry, its own indicator turned) before it was opened.
+		public bool? PackIntact { get; set; }
+	}
+
+	/// H169: a patient a recalled cycle's kit was used on — followed up by infection control until closed.
+	public class HospitalSterilRecall
+	{
+		public int ID { get; set; }
+		public int CompanyId { get; set; }
+		public int CycleId { get; set; }
+		public int PatientId { get; set; }
+		public int UseId { get; set; }
+		public DateTime CreatedAt { get; set; }
+		public DateTime? NotifiedAt { get; set; }
+		public int? NotifiedByEmployeeId { get; set; }
+		public string? Outcome { get; set; }
+		public DateTime? ClosedAt { get; set; }
+		public int? ClosedByEmployeeId { get; set; }
 	}
 
 	public static class HospitalDentalOpsModel
@@ -188,7 +219,17 @@ namespace CrossBuy.Models.Context.Hospital
 			b.Entity<HospitalSterilCycle>(e =>
 			{
 				e.ToTable("HospitalSterilCycles");
+				e.Property(x => x.TemperatureC).HasColumnType("decimal(5,1)");   // H169
+				e.Property(x => x.PressureKpa).HasColumnType("decimal(6,1)");
+				e.Property(x => x.RecallReason).HasMaxLength(300);
 				e.HasIndex(x => new { x.CompanyId, x.CycleNo }).IsUnique();
+			});
+			b.Entity<HospitalSterilRecall>(e =>   // H169
+			{
+				e.ToTable("HospitalSterilRecalls");
+				e.Property(x => x.Outcome).HasMaxLength(300);
+				e.HasIndex(x => new { x.CompanyId, x.CycleId, x.UseId }).IsUnique();
+				e.HasIndex(x => new { x.CompanyId, x.PatientId });
 			});
 			b.Entity<HospitalSterilUse>(e =>
 			{

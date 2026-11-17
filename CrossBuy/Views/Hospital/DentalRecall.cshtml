@@ -9,7 +9,10 @@
     var s = (HospitalRecallStats)ViewBag.Stats;
     var cycles = (ViewBag.Cycles as IReadOnlyList<HospitalSterilRow>) ?? Array.Empty<HospitalSterilRow>();
     bool canBook = ViewBag.CanBook == true, canConsult = ViewBag.CanConsult == true;
-    var failed = cycles.FirstOrDefault(c => c.Cycle.Biological == HospitalIndicator.Fail || c.Cycle.Chemical == HospitalIndicator.Fail);
+    var follow = (ViewBag.SterilRecalls as IReadOnlyList<HospitalSterilRecallRow>) ?? Array.Empty<HospitalSterilRecallRow>();   // H169
+    // the notice names a held cycle still needing action: a recalled cycle whose every patient follow-up is closed is done
+    var failed = cycles.FirstOrDefault(c => HospitalDentalPracticeRules.Held(c.Cycle)
+        && !(c.Cycle.RecalledAt != null && follow.Any(f => f.Recall.CycleId == c.Cycle.ID) && follow.Where(f => f.Recall.CycleId == c.Cycle.ID).All(f => f.Recall.ClosedAt != null)));
     string Ind(string v) => v switch { HospitalIndicator.Pass => "success", HospitalIndicator.Fail => "danger", _ => "primary" };
     string Av(string? photo, string nameEn, int size) => photo != null
         ? $"<div class=\"symbol symbol-{size}px symbol-circle flex-shrink-0\"><img src=\"{photo}\" alt=\"\" style=\"object-fit:cover\" data-initials=\"{HospitalUi.Initials(nameEn)}\" /></div>"
@@ -63,7 +66,8 @@
             <div class="notice d-flex bg-light-danger rounded border-danger border border-dashed p-5 mb-5">
                 <i class="ki-outline ki-shield-cross fs-2tx text-danger me-4"></i>
                 <div class="d-flex flex-stack flex-grow-1 flex-wrap flex-md-nowrap gap-3">
-                    <div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@(failed.Cycle.Biological == HospitalIndicator.Fail ? T["A biological indicator failed"] : T["A chemical indicator failed"])</h4>
+                    <div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">@(failed.Cycle.RecalledAt != null ? T["A cycle was recalled"] : failed.Cycle.PhysicalOk == false ? T["A run did not meet its programme"] : failed.Cycle.Biological == HospitalIndicator.Fail ? T["A biological indicator failed"] : T["A chemical indicator failed"])</h4>
+                        @if (failed.Cycle.RecallReason != null) { <div class="fs-7 text-gray-700 mb-1">@T["Recall reason"]: <bdi>@T[failed.Cycle.RecallReason]</bdi></div> }
                         <div class="fs-6 text-gray-700"><bdi class="badge badge-light-danger fs-7 fw-bold hp-num">@failed.Cycle.CycleNo</bdi> —
                             @if (failed.UsedOn.Count == 0) { @T["its kits are held and were used on no patient; they are re-sterilised and the unit is checked."] }
                             else { @T["its kits reached these patients before the result; they are to be told and followed up:"] <span class="fw-bold">@string.Join(" · ", failed.UsedOn)</span> }</div></div>
@@ -72,9 +76,45 @@
             </div>
         }
 
+        @* H169: the recall follow-up — every patient a recalled cycle's kit reached, told, then closed with its outcome *@
+        @if (follow.Count > 0)
+        {
+            <div class="card card-flush mb-5">
+                <div class="card-header pt-5">
+                    <h3 class="card-title align-items-start flex-column">
+                        <span class="card-label fw-bold text-gray-800">@T["Recall follow-up"]</span>
+                        <span class="text-gray-500 mt-1 fw-semibold fs-7">@T["Each patient is told, followed up by infection control, then closed with the outcome"]</span>
+                    </h3>
+                    <div class="card-toolbar"><span class="badge badge-light-danger fs-7 fw-bold">@T["rcl:Open"]: <span class="hp-num ms-1">@follow.Count(f => f.Recall.ClosedAt == null)</span></span></div>
+                </div>
+                <div class="card-body pt-2"><div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
+                    <thead><tr class="fw-bold text-muted bg-light"><th class="ps-4 rounded-start">@T["Patient"]</th><th>@T["Cycle"]</th><th>@T["Kit used"]</th><th>@T["State"]</th><th class="pe-4 rounded-end text-end"></th></tr></thead>
+                    <tbody>
+                        @foreach (var f in follow)
+                        {
+                            <tr>
+                                <td class="ps-4"><div class="d-flex align-items-center gap-3">@Html.Raw(Av(f.Photo, f.PatientNameEn, 35))
+                                    <div class="d-flex flex-column"><span class="text-gray-900 fw-bold fs-7">@DisplayName.Of(f.PatientName, f.PatientNameEn)</span><span class="text-muted fw-semibold fs-8"><bdi class="hp-num">@f.Mrn</bdi>@if (f.Phone != null) { <text> · </text><bdi class="hp-num">@f.Phone</bdi> }</span></div></div></td>
+                                <td><bdi class="text-gray-900 fw-bold fs-7 hp-num">@f.CycleNo</bdi>@if (f.RecallReason != null) { <div class="text-muted fw-semibold fs-8">@T[f.RecallReason]</div> }</td>
+                                <td class="text-nowrap"><span class="text-gray-800 fw-semibold fs-7 hp-num">@f.UsedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</span></td>
+                                <td>@if (f.Recall.ClosedAt != null) { <span class="badge badge-light-primary fs-8 fw-bold">@T["rcl:Closed"]</span><div class="text-gray-700 fs-8 mt-1">@f.Recall.Outcome</div> }
+                                    else if (f.Recall.NotifiedAt != null) { <span class="badge badge-light-info fs-8 fw-bold">@T["rcl:Told"]</span><div class="text-muted fs-8 hp-num mt-1">@f.Recall.NotifiedAt.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</div> }
+                                    else { <span class="badge badge-light-danger fs-8 fw-bold">@T["rcl:ToTell"]</span> }</td>
+                                <td class="pe-4 text-end text-nowrap">@if (canConsult && f.Recall.ClosedAt == null)
+                                    {
+                                        if (f.Recall.NotifiedAt == null) { <button type="button" class="btn btn-sm btn-light-primary" data-rcl-told="@f.Recall.ID" data-what="@DisplayName.Of(f.PatientName, f.PatientNameEn)"><i class="ki-outline ki-message-text fs-5"></i>@T["Patient told"]</button> }
+                                        else { <button type="button" class="btn btn-sm btn-light-primary" data-rcl-close="@f.Recall.ID"><i class="ki-outline ki-check-square fs-5"></i>@T["Close with outcome"]</button> }
+                                    }</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table></div></div>
+            </div>
+        }
+
         <div class="row g-5">
             @* H127: the recall list — demo39 widgets/tables *@
-            <div class="col-xl-6"><div class="card card-flush h-xl-100 mb-5">
+            <div class="col-12"><div class="card card-flush mb-5">
                 <div class="card-header pt-5">
                     <h3 class="card-title align-items-start flex-column">
                         <span class="card-label fw-bold text-gray-800">@T["Hygiene recall"]</span>
@@ -115,7 +155,7 @@
             </div></div>
 
             @* H127: the sterilisation cycles — demo39 widgets/tables *@
-            <div class="col-xl-6"><div class="card card-flush h-xl-100 mb-5">
+            <div class="col-12"><div class="card card-flush mb-5">   @* H169: full width — the release columns need the room *@
                 <div class="card-header pt-5">
                     <h3 class="card-title align-items-start flex-column">
                         <span class="card-label fw-bold text-gray-800">@T["Sterilisation cycles"]</span>
@@ -139,9 +179,17 @@
                                     <tr>
                                         <td class="ps-4"><div class="d-flex align-items-center">
                                             <div class="symbol symbol-35px me-3 flex-shrink-0"><span class="symbol-label bg-light-@(bad ? "danger" : "primary")"><i class="ki-outline ki-shield-tick fs-3 text-@(bad ? "danger" : "primary")"></i></span></div>
-                                            <div class="d-flex flex-column"><bdi class="text-gray-900 fw-bold fs-7 hp-num">@c.Cycle.CycleNo</bdi><span class="text-muted fw-semibold fs-8"><bdi>@c.Cycle.Unit</bdi> · <span class="hp-num">@c.Cycle.RunAt.ToString("yyyy-MM-dd HH:mm")</span></span></div>
+                                            <div class="d-flex flex-column"><bdi class="text-gray-900 fw-bold fs-7 hp-num">@c.Cycle.CycleNo</bdi><span class="text-muted fw-semibold fs-8"><bdi>@c.Cycle.Unit</bdi> · <span class="hp-num">@c.Cycle.RunAt.ToString("yyyy-MM-dd HH:mm")</span></span>
+                                                @if (c.Cycle.PhysicalOk != null)
+                                                {
+                                                    <span class="fs-8 fw-semibold @(c.Cycle.PhysicalOk == true ? "text-gray-700" : "text-danger")"><bdi class="hp-num">@c.Cycle.TemperatureC?.ToString("0.#") °C · @c.Cycle.ExposureMinutes @T["min"]@if (c.Cycle.PressureKpa != null) { <text> · @c.Cycle.PressureKpa.Value.ToString("0.#") kPa</text> }</bdi>@if (c.Cycle.PhysicalOk == false) { <text> · @T["programme not met"]</text> }</span>
+                                                }
+                                                else if (canConsult && c.Cycle.ReleasedAt == null && !HospitalDentalPracticeRules.Held(c.Cycle))
+                                                {
+                                                    <button type="button" class="btn btn-link btn-color-primary btn-active-color-primary p-0 fs-8 fw-bold text-start" data-phys="@c.Cycle.ID" data-what="@c.Cycle.CycleNo">@T["Physical readings"]</button>
+                                                }</div>
                                         </div></td>
-                                        <td class="text-gray-700 fw-semibold fs-8">@c.Cycle.Load</td>
+                                        <td class="text-gray-700 fw-semibold fs-8">@c.Cycle.Load @if (c.Cycle.ImplantLoad) { <span class="badge badge-light-info fs-9 fw-bold d-inline-block mt-1">@T["Implantable items"]</span> }</td>
                                         @foreach (var kind in new[] { "Chemical", "Biological" })
                                         {
                                             var v = kind == "Chemical" ? c.Cycle.Chemical : c.Cycle.Biological;
@@ -152,7 +200,20 @@
                                                 }</td>
                                         }
                                         <td class="text-nowrap"><span class="text-gray-900 fw-bold hp-num">@c.Used</span>
-                                            @if (canConsult && HospitalDentalPracticeRules.UseRefusal(c.Cycle) == null) { <button type="button" class="btn btn-icon btn-sm btn-light-primary w-25px h-25px ms-1" title="@T["A kit used on a patient"]" data-bs-toggle="tooltip" data-use="@c.Cycle.ID" data-what="@c.Cycle.CycleNo"><i class="ki-outline ki-plus fs-5"></i></button> }</td>
+                                            @if (canConsult && HospitalDentalPracticeRules.UseRefusal(c.Cycle) == null) { <button type="button" class="btn btn-icon btn-sm btn-light-primary w-25px h-25px ms-1" title="@T["A kit used on a patient"]" data-bs-toggle="tooltip" data-use="@c.Cycle.ID" data-what="@c.Cycle.CycleNo"><i class="ki-outline ki-plus fs-5"></i></button> }
+                                            <div class="mt-2">
+                                                @if (c.Cycle.RecalledAt != null) { <span class="badge badge-danger fs-8 fw-bold">@T["rel:Recalled"]</span> }
+                                                else if (c.Cycle.ReleasedAt != null) { <span class="badge badge-light-primary fs-8 fw-bold">@T["rel:Released"]</span>@if (c.ReleasedBy != null) { <div class="text-muted fs-8 mt-1">@c.ReleasedBy</div> } }
+                                                else if (HospitalDentalPracticeRules.Held(c.Cycle)) { <span class="badge badge-light-danger fs-8 fw-bold">@T["On hold"]</span> }
+                                                else { <span class="badge badge-light-secondary fs-8 fw-bold" title="@(HospitalDentalPracticeRules.ReleaseRefusal(c.Cycle) is string why ? T[why].Value : "")" data-bs-toggle="tooltip">@T["rel:Awaiting"]</span> }
+                                            </div>
+                                            @if (canConsult)
+                                            {
+                                                <div class="d-flex gap-1 mt-2">
+                                                    @if (HospitalDentalPracticeRules.ReleaseRefusal(c.Cycle) == null) { <button type="button" class="btn btn-sm btn-primary py-1 px-3 fs-8" data-release="@c.Cycle.ID" data-what="@c.Cycle.CycleNo">@T["rel:Release"]</button> }
+                                                    @if (c.Cycle.RecalledAt == null) { <button type="button" class="btn btn-icon btn-sm btn-light-danger w-25px h-25px" title="@T["Recall this cycle"]" data-bs-toggle="tooltip" data-recall="@c.Cycle.ID" data-what="@c.Cycle.CycleNo"><i class="ki-outline ki-arrow-circle-left fs-5"></i></button> }
+                                                </div>
+                                            }</td>
                                         <td class="pe-4">@if (c.Operator != null) { <div class="d-flex align-items-center gap-2">@Html.Raw(Av(c.OperatorPhoto, c.OperatorEn ?? c.Operator, 30))<span class="text-gray-800 fw-semibold fs-8">@c.Operator</span></div> } else {<span class="text-muted">—</span>}</td>
                                     </tr>
                                 }
@@ -176,6 +237,8 @@
                 <div class="col-md-6"><label class="d-block fs-6 fw-semibold mb-2 required">@T["Unit"]</label><input class="form-control form-control-solid" maxlength="60" data-cy="unit" placeholder="@T["Autoclave 1"]" /></div>
                 <div class="col-md-6"><label class="d-block fs-6 fw-semibold mb-2">@T["Run at"]</label><input type="datetime-local" class="form-control form-control-solid hp-num" data-cy="runAt" /></div>
                 <div class="col-12"><label class="d-block fs-6 fw-semibold mb-2 required">@T["Load"]</label><input class="form-control form-control-solid" maxlength="300" data-cy="load" placeholder="@T["Exam kits ×12, filling kits ×6"]" /></div>
+                <div class="col-12"><label class="form-check form-switch form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" data-cy-implant /><span class="form-check-label fw-semibold text-gray-700">@T["The load holds implantable items"]</span></label>
+                    <div class="text-muted fs-8 mt-2">@T["Such a load is released only after its biological indicator passes."]</div></div>
             </div>
             <div class="text-center pt-10"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-cy-save>@T["Record"]</button></div>
         </div>
@@ -186,7 +249,26 @@
             <div class="mb-10 text-center"><h1 class="mb-3">@T["A kit used on a patient"]</h1><div class="text-muted fw-semibold fs-5"><bdi class="hp-num" data-use-what></bdi></div></div>
             <label class="d-block fs-6 fw-semibold mb-2 required">@T["Patient"]</label>
             <select class="form-select form-select-solid" data-use-patient data-person-select data-person-ajax="@Url.Action("SearchDentalPatients")" data-searching="@T["Searching…"]" data-no-results="@T["No patient matches"]" data-placeholder="@T["Patient"]"><option value=""></option></select>
+            <label class="form-check form-check-custom form-check-solid mt-7"><input class="form-check-input" type="checkbox" data-use-intact /><span class="form-check-label fw-semibold text-gray-700">@T["The pack was checked intact before opening: wrap and seal whole, dry, its indicator turned"]</span></label>
             <div class="text-center pt-10"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-use-save>@T["Record"]</button></div>
+        </div>
+    </div></div></div>
+    @* H169: the physical record of the run, before release *@
+    <div class="modal fade" id="physModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered mw-550px"><div class="modal-content rounded">
+        <div class="modal-header pb-0 border-0 justify-content-end"><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-10">
+            <div class="mb-10 text-center"><h1 class="mb-3">@T["Physical readings"]</h1><div class="text-muted fw-semibold fs-5"><bdi class="hp-num" data-phys-what></bdi> — @T["from the unit's printout or display"]</div></div>
+            <div class="row g-6">
+                <div class="col-md-4"><label class="d-block fs-6 fw-semibold mb-2 required">@T["Exposure (min)"]</label><input type="number" min="1" max="240" class="form-control form-control-solid hp-num" data-ph="min" /></div>
+                <div class="col-md-4"><label class="d-block fs-6 fw-semibold mb-2 required">@T["Temperature (°C)"]</label><input type="number" min="100" max="150" step="0.1" class="form-control form-control-solid hp-num" data-ph="temp" /></div>
+                <div class="col-md-4"><label class="d-block fs-6 fw-semibold mb-2">@T["Pressure (kPa)"]</label><input type="number" min="0" max="400" step="0.1" class="form-control form-control-solid hp-num" data-ph="kpa" /></div>
+                <div class="col-12"><label class="d-block fs-6 fw-semibold mb-3 required">@T["Did the run meet its programme?"]</label>
+                    <div class="d-flex gap-8">
+                        <label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="radio" name="phOk" value="true" /><span class="form-check-label fw-semibold">@T["Met"]</span></label>
+                        <label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="radio" name="phOk" value="false" /><span class="form-check-label fw-semibold">@T["Not met: hold the load"]</span></label>
+                    </div></div>
+            </div>
+            <div class="text-center pt-10"><button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@T["Cancel"]</button><button type="button" class="btn btn-primary" data-phys-save>@T["Record"]</button></div>
         </div>
     </div></div></div>
 }
@@ -198,7 +280,10 @@
             var token = document.querySelector('input[name="__RequestVerificationToken"]').value, root = @Json.Serialize(Url.Content("~/Hospital/Dental"));
             var W = { failed: @Json.Serialize(T["The change could not be saved"].Value), saved: @Json.Serialize(T["Saved"].Value),
                 contact: @Json.Serialize(T["Record a contact attempt with {0}?"].Value), ind: @Json.Serialize(T["Record {1} for {0}? A result is not changed afterwards."].Value),
-                pass: @Json.Serialize(T["Pass"].Value), fail: @Json.Serialize(T["Fail"].Value), cycle: @Json.Serialize(T["Record this cycle?"].Value), use: @Json.Serialize(T["Record this kit as used on the patient?"].Value) };
+                pass: @Json.Serialize(T["Pass"].Value), fail: @Json.Serialize(T["Fail"].Value), cycle: @Json.Serialize(T["Record this cycle?"].Value), use: @Json.Serialize(T["Record this kit as used on the patient?"].Value),
+                release: @Json.Serialize(T["Release {0}? Its kits become usable."].Value), recall: @Json.Serialize(T["Why is {0} recalled? Its kits are held and the patients they reached are listed."].Value),
+                phys: @Json.Serialize(T["Record these readings? They are not changed afterwards."].Value), told: @Json.Serialize(T["Record that {0} was told?"].Value),
+                outcome: @Json.Serialize(T["The outcome of the follow-up"].Value), intact: @Json.Serialize(T["Confirm the pack was checked intact"].Value) };
             function toast(k, m) { if (window.toastr) toastr[k](m); }
             function post(url, body) {
                 return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': token }, body: JSON.stringify(body || {}) })
@@ -211,9 +296,21 @@
                 });
             }
             function done(btn, modal) { return function (res) { if (btn) btn.disabled = false; if (!res.ok) { toast('error', res.error || W.failed); return; } toast('success', W.saved); if (modal) bootstrap.Modal.getOrCreateInstance(modal).hide(); swap(); }; }
-            var cy = document.getElementById('cycleModal'), um = document.getElementById('useModal'), useCycle = null;
+            var cy = document.getElementById('cycleModal'), um = document.getElementById('useModal'), pm = document.getElementById('physModal'), useCycle = null, physCycle = null;
             document.addEventListener('click', function (e) {
-                var t = e.target.closest('[data-contact],[data-ind],[data-cycle-open],[data-cy-save],[data-use],[data-use-save]'); if (!t) return;
+                var t = e.target.closest('[data-contact],[data-ind],[data-cycle-open],[data-cy-save],[data-use],[data-use-save],[data-phys],[data-phys-save],[data-release],[data-recall],[data-rcl-told],[data-rcl-close]'); if (!t) return;
+                // H169: physical readings, release, recall, and the recall follow-up
+                if (t.hasAttribute('data-phys')) { physCycle = +t.getAttribute('data-phys'); pm.querySelector('[data-phys-what]').textContent = t.getAttribute('data-what'); pm.querySelectorAll('[data-ph]').forEach(function (i) { i.value = ''; }); pm.querySelectorAll('[name=phOk]').forEach(function (i) { i.checked = false; }); bootstrap.Modal.getOrCreateInstance(pm).show(); return; }
+                if (t.hasAttribute('data-phys-save')) {
+                    var v = function (k) { var x = pm.querySelector('[data-ph=' + k + ']').value.trim(); return x === '' ? null : +x; }, okEl = pm.querySelector('[name=phOk]:checked');
+                    var pb = { exposureMinutes: v('min'), temperatureC: v('temp'), pressureKpa: v('kpa'), ok: okEl ? okEl.value === 'true' : null };
+                    cbConfirm(W.phys).then(function (ok) { if (!ok) return; t.disabled = true; post(root + '/Steril/' + physCycle + '/Physical', pb).then(done(t, pm)); });
+                    return;
+                }
+                if (t.hasAttribute('data-release')) { cbConfirm(W.release.replace('{0}', t.getAttribute('data-what'))).then(function (ok) { if (!ok) return; t.disabled = true; post(root + '/Steril/' + t.getAttribute('data-release') + '/Release').then(done(t)); }); return; }
+                if (t.hasAttribute('data-recall')) { cbPrompt(W.recall.replace('{0}', t.getAttribute('data-what')), { kind: 'danger' }).then(function (why) { if (!why) return; t.disabled = true; post(root + '/Steril/' + t.getAttribute('data-recall') + '/Recall', { reason: why }).then(done(t)); }); return; }
+                if (t.hasAttribute('data-rcl-told')) { cbConfirm(W.told.replace('{0}', t.getAttribute('data-what'))).then(function (ok) { if (!ok) return; t.disabled = true; post(root + '/Steril/Recalls/' + t.getAttribute('data-rcl-told') + '/Notified').then(done(t)); }); return; }
+                if (t.hasAttribute('data-rcl-close')) { cbPrompt(W.outcome).then(function (o) { if (!o) return; t.disabled = true; post(root + '/Steril/Recalls/' + t.getAttribute('data-rcl-close') + '/Close', { reason: o }).then(done(t)); }); return; }
                 if (t.hasAttribute('data-contact')) { cbConfirm(W.contact.replace('{0}', t.getAttribute('data-what'))).then(function (ok) { if (!ok) return; t.disabled = true; post(root + '/Recall/' + t.getAttribute('data-contact') + '/Contact').then(done(t)); }); return; }
                 if (t.hasAttribute('data-ind')) {
                     var res = t.getAttribute('data-result');
@@ -222,16 +319,17 @@
                     });
                     return;
                 }
-                if (t.hasAttribute('data-cycle-open')) { cy.querySelectorAll('[data-cy]').forEach(function (i) { if (i._flatpickr) i._flatpickr.clear(); i.value = ''; }); bootstrap.Modal.getOrCreateInstance(cy).show(); return; }
+                if (t.hasAttribute('data-cycle-open')) { cy.querySelectorAll('[data-cy]').forEach(function (i) { if (i._flatpickr) i._flatpickr.clear(); i.value = ''; }); cy.querySelector('[data-cy-implant]').checked = false; bootstrap.Modal.getOrCreateInstance(cy).show(); return; }
                 if (t.hasAttribute('data-cy-save')) {
                     var g = function (k) { return cy.querySelector('[data-cy=' + k + ']').value.trim(); };
-                    var body = { unit: g('unit'), load: g('load'), runAt: g('runAt') || null };
+                    var body = { unit: g('unit'), load: g('load'), runAt: g('runAt') || null, implantLoad: cy.querySelector('[data-cy-implant]').checked };
                     cbConfirm(W.cycle).then(function (ok) { if (!ok) return; t.disabled = true; post(root + '/Steril', body).then(done(t, cy)); });
                     return;
                 }
-                if (t.hasAttribute('data-use')) { useCycle = +t.getAttribute('data-use'); um.querySelector('[data-use-what]').textContent = t.getAttribute('data-what'); $(um.querySelector('[data-use-patient]')).val(null).trigger('change'); bootstrap.Modal.getOrCreateInstance(um).show(); return; }
-                var p = um.querySelector('[data-use-patient]').value;
-                cbConfirm(W.use).then(function (ok) { if (!ok) return; t.disabled = true; post(root + '/Steril/' + useCycle + '/Use', { patientId: +p || 0 }).then(done(t, um)); });
+                if (t.hasAttribute('data-use')) { useCycle = +t.getAttribute('data-use'); um.querySelector('[data-use-what]').textContent = t.getAttribute('data-what'); $(um.querySelector('[data-use-patient]')).val(null).trigger('change'); um.querySelector('[data-use-intact]').checked = false; bootstrap.Modal.getOrCreateInstance(um).show(); return; }
+                var p = um.querySelector('[data-use-patient]').value, intact = um.querySelector('[data-use-intact]').checked;
+                if (!intact) { toast('error', W.intact); return; }
+                cbConfirm(W.use).then(function (ok) { if (!ok) return; t.disabled = true; post(root + '/Steril/' + useCycle + '/Use', { patientId: +p || 0, packIntact: intact }).then(done(t, um)); });
             });
         })();
     </script>

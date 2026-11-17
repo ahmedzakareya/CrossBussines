@@ -1,0 +1,290 @@
+{
+ "unit": "H169 - dental sterilisation release: physical record, release by a person, implant loads wait for the biological, pack integrity, recall and follow-up",
+ "strings": {
+  "This cycle failed its checks: its kits are held": {
+   "ar": "أخفقت هذه الدورة في فحوصها: أدواتها محجوزة",
+   "en": "This cycle failed its checks: its kits are held",
+   "fr": "Ce cycle a échoué à ses contrôles : ses kits sont retenus"
+  },
+  "The physical readings of this cycle are already recorded": {
+   "ar": "القراءات الفيزيائية لهذه الدورة مسجلة من قبل",
+   "en": "The physical readings of this cycle are already recorded",
+   "fr": "Les relevés physiques de ce cycle sont déjà enregistrés"
+  },
+  "This cycle is already released or recalled": {
+   "ar": "هذه الدورة مُفرَج عنها أو مسحوبة من قبل",
+   "en": "This cycle is already released or recalled",
+   "fr": "Ce cycle est déjà libéré ou rappelé"
+  },
+  "Enter the exposure time in minutes": {
+   "ar": "أدخل زمن التعريض بالدقائق",
+   "en": "Enter the exposure time in minutes",
+   "fr": "Saisissez la durée d'exposition en minutes"
+  },
+  "Enter the sterilisation temperature (100–150 °C)": {
+   "ar": "أدخل درجة حرارة التعقيم (100–150 °م)",
+   "en": "Enter the sterilisation temperature (100–150 °C)",
+   "fr": "Saisissez la température de stérilisation (100–150 °C)"
+  },
+  "The pressure is out of range": {
+   "ar": "الضغط خارج النطاق المقبول",
+   "en": "The pressure is out of range",
+   "fr": "La pression est hors plage"
+  },
+  "Say whether the run met its programme": {
+   "ar": "حدِّد هل استوفت الدورة برنامجها",
+   "en": "Say whether the run met its programme",
+   "fr": "Indiquez si le cycle a respecté son programme"
+  },
+  "This cycle was recalled": {
+   "ar": "سُحبت هذه الدورة",
+   "en": "This cycle was recalled",
+   "fr": "Ce cycle a été rappelé"
+  },
+  "This cycle is already released": {
+   "ar": "أُفرج عن هذه الدورة من قبل",
+   "en": "This cycle is already released",
+   "fr": "Ce cycle est déjà libéré"
+  },
+  "Record the physical readings of the run first": {
+   "ar": "سجِّل القراءات الفيزيائية للدورة أولًا",
+   "en": "Record the physical readings of the run first",
+   "fr": "Enregistrez d'abord les relevés physiques du cycle"
+  },
+  "A load with implantable items waits for its biological indicator": {
+   "ar": "الحمولة التي تضم مواد قابلة للزرع تنتظر نتيجة مؤشرها البيولوجي",
+   "en": "A load with implantable items waits for its biological indicator",
+   "fr": "Une charge contenant des dispositifs implantables attend son indicateur biologique"
+  },
+  "This cycle failed its checks or was recalled: its kits are held": {
+   "ar": "أخفقت هذه الدورة في فحوصها أو سُحبت: أدواتها محجوزة",
+   "en": "This cycle failed its checks or was recalled: its kits are held",
+   "fr": "Ce cycle a échoué à ses contrôles ou a été rappelé : ses kits sont retenus"
+  },
+  "This cycle is not released yet": {
+   "ar": "لم يُفرج عن هذه الدورة بعد",
+   "en": "This cycle is not released yet",
+   "fr": "Ce cycle n'est pas encore libéré"
+  },
+  "A pack that is not intact is not used: send it back to be re-sterilised": {
+   "ar": "لا تُستخدم عبوة غير سليمة: أعِدها لإعادة التعقيم",
+   "en": "A pack that is not intact is not used: send it back to be re-sterilised",
+   "fr": "Un sachet non intact n'est pas utilisé : renvoyez-le en restérilisation"
+  },
+  "Biological indicator failed after release": {
+   "ar": "أخفق المؤشر البيولوجي بعد الإفراج",
+   "en": "Biological indicator failed after release",
+   "fr": "Indicateur biologique en échec après libération"
+  },
+  "Chemical indicator failed after release": {
+   "ar": "أخفق المؤشر الكيميائي بعد الإفراج",
+   "en": "Chemical indicator failed after release",
+   "fr": "Indicateur chimique en échec après libération"
+  },
+  "Enter the reason for the recall": {
+   "ar": "أدخل سبب السحب",
+   "en": "Enter the reason for the recall",
+   "fr": "Saisissez le motif du rappel"
+  },
+  "This patient is already recorded as told": {
+   "ar": "سُجِّل إبلاغ هذا المريض من قبل",
+   "en": "This patient is already recorded as told",
+   "fr": "Ce patient est déjà enregistré comme informé"
+  },
+  "Enter the outcome of the follow-up": {
+   "ar": "أدخل نتيجة المتابعة",
+   "en": "Enter the outcome of the follow-up",
+   "fr": "Saisissez l'issue du suivi"
+  },
+  "This follow-up is already closed": {
+   "ar": "أُغلقت هذه المتابعة من قبل",
+   "en": "This follow-up is already closed",
+   "fr": "Ce suivi est déjà clôturé"
+  },
+  "Record that the patient was told first": {
+   "ar": "سجِّل إبلاغ المريض أولًا",
+   "en": "Record that the patient was told first",
+   "fr": "Enregistrez d'abord que le patient a été informé"
+  },
+  "A cycle was recalled": {
+   "ar": "سُحبت دورة تعقيم",
+   "en": "A cycle was recalled",
+   "fr": "Un cycle a été rappelé"
+  },
+  "A run did not meet its programme": {
+   "ar": "دورة لم تستوفِ برنامجها",
+   "en": "A run did not meet its programme",
+   "fr": "Un cycle n'a pas respecté son programme"
+  },
+  "Recall reason": {
+   "ar": "سبب السحب",
+   "en": "Recall reason",
+   "fr": "Motif du rappel"
+  },
+  "Recall follow-up": {
+   "ar": "متابعة سحب الدورات",
+   "en": "Recall follow-up",
+   "fr": "Suivi des rappels"
+  },
+  "Each patient is told, followed up by infection control, then closed with the outcome": {
+   "ar": "يُبلَّغ كل مريض، وتتابعه مكافحة العدوى، ثم تُغلق حالته بنتيجتها",
+   "en": "Each patient is told, followed up by infection control, then closed with the outcome",
+   "fr": "Chaque patient est informé, suivi par l'hygiène, puis clôturé avec l'issue"
+  },
+  "rcl:Open": {
+   "ar": "مفتوحة",
+   "en": "Open",
+   "fr": "Ouverts"
+  },
+  "Kit used": {
+   "ar": "استُخدمت الأداة",
+   "en": "Kit used",
+   "fr": "Kit utilisé"
+  },
+  "rcl:Closed": {
+   "ar": "مغلقة",
+   "en": "Closed",
+   "fr": "Clôturé"
+  },
+  "rcl:Told": {
+   "ar": "أُبلغ المريض",
+   "en": "Told",
+   "fr": "Informé"
+  },
+  "rcl:ToTell": {
+   "ar": "بانتظار الإبلاغ",
+   "en": "To be told",
+   "fr": "À informer"
+  },
+  "Patient told": {
+   "ar": "أُبلغ المريض",
+   "en": "Patient told",
+   "fr": "Patient informé"
+  },
+  "Close with outcome": {
+   "ar": "إغلاق بالنتيجة",
+   "en": "Close with outcome",
+   "fr": "Clôturer avec l'issue"
+  },
+  "programme not met": {
+   "ar": "لم يُستوفَ البرنامج",
+   "en": "programme not met",
+   "fr": "programme non respecté"
+  },
+  "Physical readings": {
+   "ar": "القراءات الفيزيائية",
+   "en": "Physical readings",
+   "fr": "Relevés physiques"
+  },
+  "Implantable items": {
+   "ar": "مواد قابلة للزرع",
+   "en": "Implantable items",
+   "fr": "Dispositifs implantables"
+  },
+  "rel:Recalled": {
+   "ar": "مسحوبة",
+   "en": "Recalled",
+   "fr": "Rappelé"
+  },
+  "rel:Released": {
+   "ar": "مُفرَج عنها",
+   "en": "Released",
+   "fr": "Libéré"
+  },
+  "rel:Awaiting": {
+   "ar": "بانتظار الإفراج",
+   "en": "Awaiting release",
+   "fr": "En attente de libération"
+  },
+  "rel:Release": {
+   "ar": "إفراج",
+   "en": "Release",
+   "fr": "Libérer"
+  },
+  "Recall this cycle": {
+   "ar": "سحب هذه الدورة",
+   "en": "Recall this cycle",
+   "fr": "Rappeler ce cycle"
+  },
+  "The load holds implantable items": {
+   "ar": "الحمولة تضم مواد قابلة للزرع",
+   "en": "The load holds implantable items",
+   "fr": "La charge contient des dispositifs implantables"
+  },
+  "Such a load is released only after its biological indicator passes.": {
+   "ar": "لا يُفرج عن هذه الحمولة إلا بعد نجاح مؤشرها البيولوجي.",
+   "en": "Such a load is released only after its biological indicator passes.",
+   "fr": "Une telle charge n'est libérée qu'après la réussite de son indicateur biologique."
+  },
+  "The pack was checked intact before opening: wrap and seal whole, dry, its indicator turned": {
+   "ar": "فُحصت العبوة قبل فتحها وهي سليمة: الغلاف والختم سليمان، جافة، ومؤشرها متغيّر اللون",
+   "en": "The pack was checked intact before opening: wrap and seal whole, dry, its indicator turned",
+   "fr": "Le sachet a été vérifié intact avant ouverture : emballage et scellé entiers, sec, indicateur viré"
+  },
+  "from the unit's printout or display": {
+   "ar": "من مطبوعة الجهاز أو شاشته",
+   "en": "from the unit's printout or display",
+   "fr": "d'après le ticket ou l'écran de l'appareil"
+  },
+  "Exposure (min)": {
+   "ar": "زمن التعريض (دقيقة)",
+   "en": "Exposure (min)",
+   "fr": "Exposition (min)"
+  },
+  "Pressure (kPa)": {
+   "ar": "الضغط (كيلوباسكال)",
+   "en": "Pressure (kPa)",
+   "fr": "Pression (kPa)"
+  },
+  "Did the run meet its programme?": {
+   "ar": "هل استوفت الدورة برنامجها؟",
+   "en": "Did the run meet its programme?",
+   "fr": "Le cycle a-t-il respecté son programme ?"
+  },
+  "Met": {
+   "ar": "استوفت",
+   "en": "Met",
+   "fr": "Respecté"
+  },
+  "Not met: hold the load": {
+   "ar": "لم تستوفِ: تُحجز الحمولة",
+   "en": "Not met: hold the load",
+   "fr": "Non respecté : retenir la charge"
+  },
+  "Release {0}? Its kits become usable.": {
+   "ar": "هل تُفرج عن {0}؟ تصبح أدواتها صالحة للاستخدام.",
+   "en": "Release {0}? Its kits become usable.",
+   "fr": "Libérer {0} ? Ses kits deviennent utilisables."
+  },
+  "Why is {0} recalled? Its kits are held and the patients they reached are listed.": {
+   "ar": "ما سبب سحب {0}؟ تُحجز أدواتها ويُدرج المرضى الذين استُخدمت لهم.",
+   "en": "Why is {0} recalled? Its kits are held and the patients they reached are listed.",
+   "fr": "Pourquoi rappeler {0} ? Ses kits sont retenus et les patients concernés sont listés."
+  },
+  "Record these readings? They are not changed afterwards.": {
+   "ar": "هل تسجّل هذه القراءات؟ لا تُعدَّل بعد ذلك.",
+   "en": "Record these readings? They are not changed afterwards.",
+   "fr": "Enregistrer ces relevés ? Ils ne sont plus modifiés ensuite."
+  },
+  "Record that {0} was told?": {
+   "ar": "هل تسجّل أن {0} قد أُبلغ؟",
+   "en": "Record that {0} was told?",
+   "fr": "Enregistrer que {0} a été informé ?"
+  },
+  "The outcome of the follow-up": {
+   "ar": "نتيجة المتابعة",
+   "en": "The outcome of the follow-up",
+   "fr": "L'issue du suivi"
+  },
+  "Confirm the pack was checked intact": {
+   "ar": "أكِّد أن العبوة فُحصت وهي سليمة",
+   "en": "Confirm the pack was checked intact",
+   "fr": "Confirmez que le sachet a été vérifié intact"
+  },
+  "Wet packs found": {
+   "ar": "وُجدت عبوات رطبة",
+   "en": "Wet packs found",
+   "fr": "Sachets humides trouvés"
+  }
+ }
+}
