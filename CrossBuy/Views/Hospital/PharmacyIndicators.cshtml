@@ -1,0 +1,185 @@
+@using CrossBuy.BL
+@using CrossBuy.BL.Hospital
+@using CrossBuy.Models.Context.Hospital
+@model HospitalPharmacyKpis
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.HospitalResources> T
+@*
+    H151 — the pharmacy's indicators (demo39 dashboard stat tiles) over a chosen period, the ABC/VEN matrix (WHO method:
+    the cell's colour is its attention category, a click lists its medicines), and the medicines list behind it, searched,
+    filtered and paged by cbServerList. Every figure is HospitalPharmacyKpiService's.
+*@
+@{
+    Layout = "~/Views/Shared/_LayoutHospital.cshtml";
+    ViewData["Title"] = T["Pharmacy indicators"].Value;
+    bool isAr = System.Globalization.CultureInfo.CurrentUICulture.Name.StartsWith("ar");
+    var currency = ViewBag.Currency as HospitalCurrency;
+    string M(decimal v) => currency == null ? v.ToString("N2") : currency.Format(v);
+    string Min(int? m) => m == null ? "—" : m < 60 ? string.Format(T["{0} min"].Value, m) : string.Format(T["{0} h {1} min"].Value, m / 60, m % 60);
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+    var tiles = new (string Label, string Value, string Note, string Icon, bool Alert)[] {
+        (T["Prescriptions dispensed"].Value, Model.Dispensed.ToString(inv), string.Format(T["{0} refused · {1} still owing"].Value, Model.Rejected, Model.Owing), "ki-capsule", false),
+        (T["Median dispensing time"].Value, Min(Model.MedianMinutes), string.Format(T["9 in 10 within {0}"].Value, Min(Model.P90Minutes)), "ki-timer", false),
+        (T["Within the priority's target"].Value, Model.WithinTargetPct == null ? "—" : Model.WithinTargetPct + "%", T["prescribed to dispensed"].Value, "ki-check-circle", Model.WithinTargetPct is < 80),
+        (T["Consumption"].Value, M(Model.Consumption), T["cost of what the patients took, less returns"].Value, "ki-chart-simple", false),
+        (T["Stock value"].Value, M(Model.StockValue), Model.TurnsPerYear == null ? T["no consumption yet"].Value : string.Format(T["turns {0} times a year"].Value, Model.TurnsPerYear.Value.ToString("0.##", inv)), "ki-shop", false),
+        (T["Days of cover"].Value, Model.DaysOnHand is int doh ? (doh > 999 ? "999+" : doh.ToString(inv)) : "—", T["at the period's consumption"].Value, "ki-calendar", false),
+        (T["Expiry loss"].Value, M(Model.ExpiryLoss), T["expired stock destroyed"].Value, "ki-trash", Model.ExpiryLoss > 0),
+        (T["Returns"].Value, Model.Returns.ToString(inv), string.Format(T["{0} back on the shelf"].Value, M(Model.ReturnsValue)), "ki-arrow-circle-left", false) };
+    string CellTone(string cat) => cat == HospitalAbcVenRules.CategoryI ? "bg-light-primary border-primary" : cat == HospitalAbcVenRules.CategoryII ? "bg-light border-gray-300" : "bg-body border-gray-200";
+}
+<link href="~/css/hospital.css" rel="stylesheet" asp-append-version="true" />
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T["Pharmacy indicators"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item"><a href="@Url.Action("Pharmacy")" class="text-muted text-hover-primary">@T["Pharmacy"]</a></li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-400 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted"><bdi>@(Model.StoreName ?? T["not set"].Value)</bdi></li>
+            </ul>
+        </div>
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+            <div class="w-175px"><select class="form-select form-select-solid form-select-sm" data-control="select2" data-hide-search="true" id="f_days" aria-label="@T["Period"]">
+                @foreach (var d in HospitalPharmacyKpiService.Periods) { <option value="@d" selected="@(d == Model.Days)">@string.Format(T["Last {0} days"].Value, d)</option> }
+            </select></div>
+            <a href="@Url.Action("PharmacyStock")" class="btn btn-sm btn-light btn-active-light-primary"><i class="ki-outline ki-shop fs-4"></i>@T["Pharmacy stock"]</a>
+            <a href="@Url.Action("Pharmacy")" class="btn btn-sm btn-light btn-active-light-primary"><i class="ki-outline ki-capsule fs-4"></i>@T["Dispensing queue"]</a>
+        </div>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (!Model.Ready)
+        {
+            <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-6 mb-5">
+                <i class="ki-outline ki-information fs-2tx text-primary me-4"></i>
+                <div class="d-flex flex-stack flex-grow-1 flex-wrap gap-3"><div class="fw-semibold">
+                    <h4 class="text-gray-900 fw-bold mb-1">@T["Choose the pharmacy store first"]</h4>
+                    <div class="fs-6 text-gray-700">@T["The pharmacy's stock is the store chosen in the pharmacy settings."]</div></div>
+                    <a href="@Url.Action("Pharmacy")" class="btn btn-sm btn-primary">@T["Pharmacy settings"]</a></div>
+            </div>
+        }
+        <div class="row g-5 g-xl-8 mb-5">
+            @foreach (var s in tiles)
+            {
+                <div class="col-sm-6 col-xl-3">
+                    <div class="card card-flush h-100">
+                        <div class="card-body d-flex flex-column justify-content-between pt-6 pb-0 px-6">
+                            <div class="symbol symbol-45px mb-5"><span class="symbol-label bg-light-@(s.Alert ? "danger" : "primary")"><i class="ki-outline @s.Icon fs-2x text-@(s.Alert ? "danger" : "primary")"></i></span></div>
+                            <div class="d-flex flex-column">
+                                <span class="fs-2hx fw-bold text-@(s.Alert ? "danger" : "gray-900") lh-1 ls-n2 hp-num" dir="ltr">@s.Value</span>
+                                <span class="text-gray-500 pt-2 fw-semibold fs-6">@s.Label</span>
+                            </div>
+                        </div>
+                        <div class="card-body d-flex align-items-end pt-3 pb-6 px-6">
+                            <div class="d-flex fs-7 fw-semibold align-items-center text-gray-500"><div class="bullet w-8px h-6px rounded-2 bg-@(s.Alert ? "danger" : "primary") me-3"></div><bdi>@s.Note</bdi></div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div class="row g-5 g-xl-8 mb-5">
+            <div class="col-xl-7">
+                <div class="card card-flush h-100">
+                    <div class="card-header pt-5">
+                        <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["ABC / VEN matrix"]</span>
+                            <span class="text-gray-500 mt-1 fw-semibold fs-7">@string.Format(T["Consumption value of the last 365 days: {0}"].Value, M(Model.AnnualConsumption))</span></h3>
+                        <div class="card-toolbar"><span class="text-gray-500 fs-8 fw-semibold">@T["Interventions this month"]: <span class="hp-num">@Model.Interventions</span>@if (Model.AcceptedPct != null) {<text> · @T["Accepted"]: </text><span class="hp-num">@Model.AcceptedPct%</span>}</span></div>
+                    </div>
+                    <div class="card-body pt-2">
+                        <div class="table-responsive"><table class="table table-borderless align-middle text-center mb-0" data-abc-matrix>
+                            <thead><tr class="fw-bold text-muted fs-7"><th class="w-100px"></th>
+                                @foreach (var v in HospitalAbcVenRules.Vens) { <th>@T["ven:" + v]</th> }
+                            </tr></thead>
+                            <tbody>
+                                @foreach (var a in HospitalAbcVenRules.Classes)
+                                {
+                                    <tr>
+                                        <th class="text-start"><span class="fw-bold text-gray-900 fs-4">@a</span><span class="d-block text-muted fs-8">@T["abc:" + a]</span></th>
+                                        @foreach (var v in HospitalAbcVenRules.Vens)
+                                        {
+                                            var c = Model.Matrix.First(x => x.Abc == a && x.Ven == v);
+                                            var cat = HospitalAbcVenRules.Category(a, v);
+                                            <td class="p-1"><a href="#" class="d-block rounded border @CellTone(cat) px-3 py-4 text-hover-primary" data-cell="@(a + v)" title="@T["Category"] @cat">
+                                                <span class="d-block fs-2 fw-bold text-gray-900 hp-num">@c.Items</span>
+                                                <span class="d-block fs-8 fw-semibold text-gray-600 hp-num" dir="ltr">@M(c.Value)</span>
+                                                <span class="badge badge-@(cat == HospitalAbcVenRules.CategoryI ? "primary" : "light") fs-9 mt-2">@T["Category"] @cat</span></a></td>
+                                        }
+                                    </tr>
+                                }
+                            </tbody>
+                        </table></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-5">
+                <div class="card card-flush h-100">
+                    <div class="card-header pt-5"><h3 class="card-title"><span class="card-label fw-bold text-gray-800">@T["What each category asks"]</span></h3></div>
+                    <div class="card-body pt-2">
+                        @foreach (var (cat, tone) in new[] { (HospitalAbcVenRules.CategoryI, "primary"), (HospitalAbcVenRules.CategoryII, "gray-600"), (HospitalAbcVenRules.CategoryIII, "gray-400") })
+                        {
+                            <div class="d-flex align-items-start mb-6">
+                                <span class="symbol symbol-40px me-4 flex-shrink-0"><span class="symbol-label bg-light fw-bold fs-5 text-@tone">@cat</span></span>
+                                <div><div class="fw-bold text-gray-800 fs-6">@T["abccat:" + cat]</div><div class="text-gray-600 fs-7">@T["abccatnote:" + cat]</div></div>
+                            </div>
+                        }
+                        <div class="separator separator-dashed my-4"></div>
+                        <div class="text-muted fs-7">@T["A: the medicines making the first 80% of the value; B: the next 15%; C: the rest. V/E/N is the clinical class in the drug formulary (unclassified counts as essential)."]</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card card-flush">
+            <div class="card-header align-items-center pt-5 gap-2 gap-md-5 border-0">
+                <h3 class="card-title align-items-start flex-column"><span class="card-label fw-bold text-gray-800">@T["Medicines by class"]</span>
+                    <span class="text-gray-500 mt-1 fw-semibold fs-7"><span id="resultCount">—</span> <span id="cellNote" class="text-primary"></span></span></h3>
+                <div class="card-toolbar d-flex flex-wrap align-items-center gap-2">
+                    <div class="w-250px"><input type="text" id="f_q" class="form-control form-control-solid form-control-sm" autocomplete="off" placeholder="@T["Search by medicine code or name…"]" /></div>
+                    <div class="w-175px"><select class="form-select form-select-solid form-select-sm cb-filter" id="f_cat">
+                        <option value="">@T["All categories"]</option>
+                        @foreach (var cat in new[] { HospitalAbcVenRules.CategoryI, HospitalAbcVenRules.CategoryII, HospitalAbcVenRules.CategoryIII }) { <option value="@cat">@T["Category"] @cat</option> }
+                    </select></div>
+                    <div class="w-75px"><select id="f_size" class="form-select form-select-solid form-select-sm"><option value="25">25</option><option value="50">50</option><option value="100">100</option></select></div>
+                    <button type="button" id="f_reset" class="btn btn-sm btn-icon btn-light btn-active-light-primary" title="@T["Reset"]" data-bs-toggle="tooltip"><i class="ki-outline ki-arrows-circle fs-3"></i></button>
+                </div>
+            </div>
+            <div class="card-body pt-2">
+                <div class="table-responsive"><table class="table align-middle gs-0 gy-4 mb-0">
+                    <thead><tr class="fw-bold text-muted bg-light">
+                        <th class="ps-4 min-w-250px rounded-start">@T["Medicine"]</th><th>@T["Class"]</th><th>@T["Category"]</th><th class="text-end">@T["Consumption (365 days)"]</th><th class="text-end">@T["Share"]</th><th class="text-end">@T["On hand"]</th><th class="text-end pe-4 rounded-end">@T["Days of cover"]</th>
+                    </tr></thead>
+                    <tbody id="rows"><tr id="loadingRow"><td colspan="7" class="text-center text-muted py-10"><span class="spinner-border spinner-border-sm text-primary me-2"></span>@T["Loading…"]</td></tr>
+                        <tr id="emptyRow" class="d-none"><td colspan="7" class="text-center py-12"><i class="ki-outline ki-capsule fs-3x text-gray-300 mb-4 d-block"></i><span class="fs-6 fw-semibold text-gray-600">@T["Nothing matches."]</span></td></tr></tbody>
+                </table></div>
+                <div class="d-flex flex-stack flex-wrap pt-5"><div class="fs-7 text-muted" id="pageInfo"></div><ul class="pagination" id="pager"></ul></div>
+            </div>
+        </div>
+    </div></div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            var cell = '', cat = document.getElementById('f_cat'), note = document.getElementById('cellNote');
+            var cellWord = @Json.Serialize(T["cell {0}"].Value);
+            var list = cbServerList({ url: @Json.Serialize(Url.Action("PharmacyIndicatorsData")), isAr: @(isAr ? "true" : "false"),
+                addParams: function (p) { p.set('category', cat.value); if (cell) p.set('cell', cell); } });
+            // a cell of the matrix lists its medicines; the same cell again shows them all
+            document.addEventListener('click', function (e) {
+                var c = e.target.closest('[data-cell]'); if (!c) return;
+                e.preventDefault();
+                cell = cell === c.getAttribute('data-cell') ? '' : c.getAttribute('data-cell');
+                document.querySelectorAll('[data-cell]').forEach(function (x) { x.classList.toggle('border-2', x.getAttribute('data-cell') === cell); });
+                note.textContent = cell ? '· ' + cellWord.replace('{0}', cell) : '';
+                list.reload();
+                document.getElementById('rows').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+            document.getElementById('f_reset').addEventListener('click', function () { cell = ''; note.textContent = ''; document.querySelectorAll('[data-cell]').forEach(function (x) { x.classList.remove('border-2'); }); });
+            // the period reloads the page: every figure is computed over it
+            var days = document.getElementById('f_days');
+            CB.onSelectChange(days, function () { location.href = @Json.Serialize(Url.Action("PharmacyIndicators")) + '?days=' + days.value; });
+        })();
+    </script>
+}

@@ -7359,4 +7359,41 @@
   <data name="This pack expired on {0}: it cannot be given" xml:space="preserve"><value>This pack expired on {0}: it cannot be given</value></data>
   <data name="This pack is not a medicine of this prescription" xml:space="preserve"><value>This pack is not a medicine of this prescription</value></data>
   <data name="{0} scanned" xml:space="preserve"><value>{0} scanned</value></data>
+  <data name="9 in 10 within {0}" xml:space="preserve"><value>9 in 10 within {0}</value></data>
+  <data name="A: the medicines making the first 80% of the value; B: the next 15%; C: the rest. V/E/N is the clinical class in the drug formulary (unclassified counts as essential)." xml:space="preserve"><value>A: the medicines making the first 80% of the value; B: the next 15%; C: the rest. V/E/N is the clinical class in the drug formulary (unclassified counts as essential).</value></data>
+  <data name="ABC / VEN matrix" xml:space="preserve"><value>ABC / VEN matrix</value></data>
+  <data name="All categories" xml:space="preserve"><value>All categories</value></data>
+  <data name="Consumption" xml:space="preserve"><value>Consumption</value></data>
+  <data name="Consumption (365 days)" xml:space="preserve"><value>Consumption (365 days)</value></data>
+  <data name="Consumption value of the last 365 days: {0}" xml:space="preserve"><value>Consumption value of the last 365 days: {0}</value></data>
+  <data name="Days of cover" xml:space="preserve"><value>Days of cover</value></data>
+  <data name="Expiry loss" xml:space="preserve"><value>Expiry loss</value></data>
+  <data name="Last {0} days" xml:space="preserve"><value>Last {0} days</value></data>
+  <data name="Median dispensing time" xml:space="preserve"><value>Median dispensing time</value></data>
+  <data name="Medicines by class" xml:space="preserve"><value>Medicines by class</value></data>
+  <data name="Not classified in the formulary" xml:space="preserve"><value>Not classified in the formulary</value></data>
+  <data name="Pharmacy indicators" xml:space="preserve"><value>Pharmacy indicators</value></data>
+  <data name="Prescriptions dispensed" xml:space="preserve"><value>Prescriptions dispensed</value></data>
+  <data name="Returns" xml:space="preserve"><value>Returns</value></data>
+  <data name="Stock value" xml:space="preserve"><value>Stock value</value></data>
+  <data name="What each category asks" xml:space="preserve"><value>What each category asks</value></data>
+  <data name="Within the priority's target" xml:space="preserve"><value>Within the priority's target</value></data>
+  <data name="abc:A" xml:space="preserve"><value>top 80% of the value</value></data>
+  <data name="abc:B" xml:space="preserve"><value>the next 15%</value></data>
+  <data name="abc:C" xml:space="preserve"><value>the rest</value></data>
+  <data name="abccat:I" xml:space="preserve"><value>Category I: watched closely</value></data>
+  <data name="abccat:II" xml:space="preserve"><value>Category II: managed normally</value></data>
+  <data name="abccat:III" xml:space="preserve"><value>Category III: kept lean</value></data>
+  <data name="abccatnote:I" xml:space="preserve"><value>AV, AE, AN, BV, CV: a safety stock, frequent counts and early orders; running out harms patients or costs most.</value></data>
+  <data name="abccatnote:II" xml:space="preserve"><value>BE, BN, CE: a normal reorder point and a monthly review.</value></data>
+  <data name="abccatnote:III" xml:space="preserve"><value>CN: the least stock possible, and its place in the formulary reviewed.</value></data>
+  <data name="at the period's consumption" xml:space="preserve"><value>at the period's consumption</value></data>
+  <data name="cell {0}" xml:space="preserve"><value>cell {0}</value></data>
+  <data name="cost of what the patients took, less returns" xml:space="preserve"><value>cost of what the patients took, less returns</value></data>
+  <data name="expired stock destroyed" xml:space="preserve"><value>expired stock destroyed</value></data>
+  <data name="no consumption yet" xml:space="preserve"><value>no consumption yet</value></data>
+  <data name="prescribed to dispensed" xml:space="preserve"><value>prescribed to dispensed</value></data>
+  <data name="turns {0} times a year" xml:space="preserve"><value>turns {0} times a year</value></data>
+  <data name="{0} back on the shelf" xml:space="preserve"><value>{0} back on the shelf</value></data>
+  <data name="{0} refused · {1} still owing" xml:space="preserve"><value>{0} refused · {1} still owing</value></data>
 </root>

@@ -7361,4 +7361,41 @@
   <data name="This pack expired on {0}: it cannot be given" xml:space="preserve"><value>انتهت صلاحية هذه العلبة في ⁦{0}⁩: لا تُصرف</value></data>
   <data name="This pack is not a medicine of this prescription" xml:space="preserve"><value>هذه العلبة ليست من أدوية هذه الوصفة</value></data>
   <data name="{0} scanned" xml:space="preserve"><value>مُسح ⁦{0}⁩</value></data>
+  <data name="9 in 10 within {0}" xml:space="preserve"><value>9 من كل 10 خلال ⁦{0}⁩</value></data>
+  <data name="A: the medicines making the first 80% of the value; B: the next 15%; C: the rest. V/E/N is the clinical class in the drug formulary (unclassified counts as essential)." xml:space="preserve"><value>A: الأدوية التي تكوّن أول 80% من القيمة؛ B: الـ 15% التالية؛ C: الباقي. V/E/N هو التصنيف الإكلينيكي في دليل الأدوية (غير المصنَّف يُعد أساسيًا).</value></data>
+  <data name="ABC / VEN matrix" xml:space="preserve"><value>مصفوفة ABC / VEN</value></data>
+  <data name="All categories" xml:space="preserve"><value>كل الفئات</value></data>
+  <data name="Consumption" xml:space="preserve"><value>الاستهلاك</value></data>
+  <data name="Consumption (365 days)" xml:space="preserve"><value>الاستهلاك (365 يومًا)</value></data>
+  <data name="Consumption value of the last 365 days: {0}" xml:space="preserve"><value>قيمة استهلاك آخر 365 يومًا: ⁦{0}⁩</value></data>
+  <data name="Days of cover" xml:space="preserve"><value>أيام التغطية</value></data>
+  <data name="Expiry loss" xml:space="preserve"><value>خسارة انتهاء الصلاحية</value></data>
+  <data name="Last {0} days" xml:space="preserve"><value>آخر ⁦{0}⁩ يومًا</value></data>
+  <data name="Median dispensing time" xml:space="preserve"><value>الوسيط لزمن الصرف</value></data>
+  <data name="Medicines by class" xml:space="preserve"><value>الأدوية حسب التصنيف</value></data>
+  <data name="Not classified in the formulary" xml:space="preserve"><value>غير مصنَّف في الدليل</value></data>
+  <data name="Pharmacy indicators" xml:space="preserve"><value>مؤشرات الصيدلية</value></data>
+  <data name="Prescriptions dispensed" xml:space="preserve"><value>وصفات صُرفت</value></data>
+  <data name="Returns" xml:space="preserve"><value>المرتجعات</value></data>
+  <data name="Stock value" xml:space="preserve"><value>قيمة المخزون</value></data>
+  <data name="What each category asks" xml:space="preserve"><value>ما تطلبه كل فئة</value></data>
+  <data name="Within the priority's target" xml:space="preserve"><value>ضمن هدف الأولوية</value></data>
+  <data name="abc:A" xml:space="preserve"><value>أعلى 80% من القيمة</value></data>
+  <data name="abc:B" xml:space="preserve"><value>الـ 15% التالية</value></data>
+  <data name="abc:C" xml:space="preserve"><value>الباقي</value></data>
+  <data name="abccat:I" xml:space="preserve"><value>الفئة الأولى: مراقبة لصيقة</value></data>
+  <data name="abccat:II" xml:space="preserve"><value>الفئة الثانية: إدارة عادية</value></data>
+  <data name="abccat:III" xml:space="preserve"><value>الفئة الثالثة: مخزون محدود</value></data>
+  <data name="abccatnote:I" xml:space="preserve"><value>⁦AV، AE، AN، BV، CV⁩: مخزون أمان، وجرد متكرر، وطلب مبكر؛ نفادها يضر المرضى أو يكلّف كثيرًا.</value></data>
+  <data name="abccatnote:II" xml:space="preserve"><value>⁦BE، BN، CE⁩: نقطة إعادة طلب عادية ومراجعة شهرية.</value></data>
+  <data name="abccatnote:III" xml:space="preserve"><value>⁦CN⁩: أقل مخزون ممكن، ويُراجع وجوده في الدليل.</value></data>
+  <data name="at the period's consumption" xml:space="preserve"><value>بمعدل استهلاك الفترة</value></data>
+  <data name="cell {0}" xml:space="preserve"><value>الخانة ⁦{0}⁩</value></data>
+  <data name="cost of what the patients took, less returns" xml:space="preserve"><value>تكلفة ما أخذه المرضى ناقص المرتجع</value></data>
+  <data name="expired stock destroyed" xml:space="preserve"><value>مخزون منتهٍ أُتلف</value></data>
+  <data name="no consumption yet" xml:space="preserve"><value>لا استهلاك بعد</value></data>
+  <data name="prescribed to dispensed" xml:space="preserve"><value>من الوصف إلى الصرف</value></data>
+  <data name="turns {0} times a year" xml:space="preserve"><value>يدور ⁦{0}⁩ مرة في السنة</value></data>
+  <data name="{0} back on the shelf" xml:space="preserve"><value>⁦{0}⁩ عادت للرف</value></data>
+  <data name="{0} refused · {1} still owing" xml:space="preserve"><value>⁦{0}⁩ مرفوضة · ⁦{1}⁩ لم تكتمل</value></data>
 </root>

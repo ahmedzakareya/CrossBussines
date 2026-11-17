@@ -1,0 +1,190 @@
+{
+ "unit": "H151 - pharmacy indicators and the ABC/VEN matrix",
+ "strings": {
+  "Pharmacy indicators": {
+   "ar": "مؤشرات الصيدلية",
+   "en": "Pharmacy indicators",
+   "fr": "Indicateurs de la pharmacie"
+  },
+  "Last {0} days": {
+   "ar": "آخر ⁦{0}⁩ يومًا",
+   "en": "Last {0} days",
+   "fr": "{0} derniers jours"
+  },
+  "Prescriptions dispensed": {
+   "ar": "وصفات صُرفت",
+   "en": "Prescriptions dispensed",
+   "fr": "Ordonnances délivrées"
+  },
+  "{0} refused · {1} still owing": {
+   "ar": "⁦{0}⁩ مرفوضة · ⁦{1}⁩ لم تكتمل",
+   "en": "{0} refused · {1} still owing",
+   "fr": "{0} refusée(s) · {1} encore dues"
+  },
+  "Median dispensing time": {
+   "ar": "الوسيط لزمن الصرف",
+   "en": "Median dispensing time",
+   "fr": "Délai médian de délivrance"
+  },
+  "9 in 10 within {0}": {
+   "ar": "9 من كل 10 خلال ⁦{0}⁩",
+   "en": "9 in 10 within {0}",
+   "fr": "9 sur 10 en moins de {0}"
+  },
+  "Within the priority's target": {
+   "ar": "ضمن هدف الأولوية",
+   "en": "Within the priority's target",
+   "fr": "Dans l'objectif de la priorité"
+  },
+  "prescribed to dispensed": {
+   "ar": "من الوصف إلى الصرف",
+   "en": "prescribed to dispensed",
+   "fr": "de la prescription à la délivrance"
+  },
+  "Consumption": {
+   "ar": "الاستهلاك",
+   "en": "Consumption",
+   "fr": "Consommation"
+  },
+  "cost of what the patients took, less returns": {
+   "ar": "تكلفة ما أخذه المرضى ناقص المرتجع",
+   "en": "cost of what the patients took, less returns",
+   "fr": "coût de ce que les patients ont reçu, moins les retours"
+  },
+  "Stock value": {
+   "ar": "قيمة المخزون",
+   "en": "Stock value",
+   "fr": "Valeur du stock"
+  },
+  "no consumption yet": {
+   "ar": "لا استهلاك بعد",
+   "en": "no consumption yet",
+   "fr": "pas encore de consommation"
+  },
+  "turns {0} times a year": {
+   "ar": "يدور ⁦{0}⁩ مرة في السنة",
+   "en": "turns {0} times a year",
+   "fr": "tourne {0} fois par an"
+  },
+  "Days of cover": {
+   "ar": "أيام التغطية",
+   "en": "Days of cover",
+   "fr": "Jours de couverture"
+  },
+  "at the period's consumption": {
+   "ar": "بمعدل استهلاك الفترة",
+   "en": "at the period's consumption",
+   "fr": "au rythme de consommation de la période"
+  },
+  "Expiry loss": {
+   "ar": "خسارة انتهاء الصلاحية",
+   "en": "Expiry loss",
+   "fr": "Perte par péremption"
+  },
+  "expired stock destroyed": {
+   "ar": "مخزون منتهٍ أُتلف",
+   "en": "expired stock destroyed",
+   "fr": "stock périmé détruit"
+  },
+  "Returns": {
+   "ar": "المرتجعات",
+   "en": "Returns",
+   "fr": "Retours"
+  },
+  "{0} back on the shelf": {
+   "ar": "⁦{0}⁩ عادت للرف",
+   "en": "{0} back on the shelf",
+   "fr": "{0} remis en rayon"
+  },
+  "ABC / VEN matrix": {
+   "ar": "مصفوفة ABC / VEN",
+   "en": "ABC / VEN matrix",
+   "fr": "Matrice ABC / VEN"
+  },
+  "Consumption value of the last 365 days: {0}": {
+   "ar": "قيمة استهلاك آخر 365 يومًا: ⁦{0}⁩",
+   "en": "Consumption value of the last 365 days: {0}",
+   "fr": "Valeur consommée sur les 365 derniers jours : {0}"
+  },
+  "abc:A": {
+   "ar": "أعلى 80% من القيمة",
+   "en": "top 80% of the value",
+   "fr": "80 % de la valeur"
+  },
+  "abc:B": {
+   "ar": "الـ 15% التالية",
+   "en": "the next 15%",
+   "fr": "les 15 % suivants"
+  },
+  "abc:C": {
+   "ar": "الباقي",
+   "en": "the rest",
+   "fr": "le reste"
+  },
+  "What each category asks": {
+   "ar": "ما تطلبه كل فئة",
+   "en": "What each category asks",
+   "fr": "Ce que demande chaque catégorie"
+  },
+  "abccat:I": {
+   "ar": "الفئة الأولى: مراقبة لصيقة",
+   "en": "Category I: watched closely",
+   "fr": "Catégorie I : suivi étroit"
+  },
+  "abccat:II": {
+   "ar": "الفئة الثانية: إدارة عادية",
+   "en": "Category II: managed normally",
+   "fr": "Catégorie II : gestion normale"
+  },
+  "abccat:III": {
+   "ar": "الفئة الثالثة: مخزون محدود",
+   "en": "Category III: kept lean",
+   "fr": "Catégorie III : stock réduit"
+  },
+  "abccatnote:I": {
+   "ar": "⁦AV، AE، AN، BV، CV⁩: مخزون أمان، وجرد متكرر، وطلب مبكر؛ نفادها يضر المرضى أو يكلّف كثيرًا.",
+   "en": "AV, AE, AN, BV, CV: a safety stock, frequent counts and early orders; running out harms patients or costs most.",
+   "fr": "AV, AE, AN, BV, CV : stock de sécurité, inventaires fréquents et commandes anticipées ; une rupture nuit aux patients ou coûte le plus."
+  },
+  "abccatnote:II": {
+   "ar": "⁦BE، BN، CE⁩: نقطة إعادة طلب عادية ومراجعة شهرية.",
+   "en": "BE, BN, CE: a normal reorder point and a monthly review.",
+   "fr": "BE, BN, CE : un point de commande normal et une revue mensuelle."
+  },
+  "abccatnote:III": {
+   "ar": "⁦CN⁩: أقل مخزون ممكن، ويُراجع وجوده في الدليل.",
+   "en": "CN: the least stock possible, and its place in the formulary reviewed.",
+   "fr": "CN : le moins de stock possible, et sa place dans le livret revue."
+  },
+  "A: the medicines making the first 80% of the value; B: the next 15%; C: the rest. V/E/N is the clinical class in the drug formulary (unclassified counts as essential).": {
+   "ar": "A: الأدوية التي تكوّن أول 80% من القيمة؛ B: الـ 15% التالية؛ C: الباقي. V/E/N هو التصنيف الإكلينيكي في دليل الأدوية (غير المصنَّف يُعد أساسيًا).",
+   "en": "A: the medicines making the first 80% of the value; B: the next 15%; C: the rest. V/E/N is the clinical class in the drug formulary (unclassified counts as essential).",
+   "fr": "A : les médicaments faisant les premiers 80 % de la valeur ; B : les 15 % suivants ; C : le reste. V/E/N est la classe clinique du livret (non classé compte comme essentiel)."
+  },
+  "Medicines by class": {
+   "ar": "الأدوية حسب التصنيف",
+   "en": "Medicines by class",
+   "fr": "Médicaments par classe"
+  },
+  "All categories": {
+   "ar": "كل الفئات",
+   "en": "All categories",
+   "fr": "Toutes les catégories"
+  },
+  "cell {0}": {
+   "ar": "الخانة ⁦{0}⁩",
+   "en": "cell {0}",
+   "fr": "case {0}"
+  },
+  "Consumption (365 days)": {
+   "ar": "الاستهلاك (365 يومًا)",
+   "en": "Consumption (365 days)",
+   "fr": "Consommation (365 jours)"
+  },
+  "Not classified in the formulary": {
+   "ar": "غير مصنَّف في الدليل",
+   "en": "Not classified in the formulary",
+   "fr": "Non classé dans le livret"
+  }
+ }
+}
